@@ -1,0 +1,64 @@
+Verifiqué la ronda 2: los 5 ajustes están correctos y pasan las 45 pruebas. Ahora
+agrega estas funciones nuevas antes de que pasemos a pruebas en tienda. Para cada una
+agrega pruebas, ejecuta pnpm check y pnpm test:integration, actualiza MANUAL.md y
+entrégame el ZIP.
+
+A. VARIAS PC/LAPTOPS FACTURANDO AL MISMO TIEMPO, CON STOCK EN TIEMPO REAL
+   (La base central y el descuento atómico de stock ya existen y funcionan; falta que
+   todos los equipos se enteren al instante.)
+1. Tiempo real: endpoint GET /api/events con Server-Sent Events (autenticado y filtrado
+   por sucursal). Emite stock.changed {variantId, qtyOnHand} después del commit de cada
+   venta, devolución, anulación, recepción, ajuste y conteo. Emite también
+   alert.created.
+   El web escucha los eventos y actualiza el catálogo del POS, el carrito (aviso si un
+   producto del carrito se agotó en otra caja), el inventario, el dashboard y la
+   campana de alertas, sin recargar.
+   Reconexión automática; al reconectar, refresca stock completo.
+   Usa la nueva nginx.conf sin buffering para /api/events.
+2. Terminales: cada equipo se registra con un nombre ("Caja 1", "Laptop 2", "Celular
+   Marcos"). Pantalla de Configuración > Equipos, para ver los conectados ahora, la
+   última actividad y la caja abierta en cada uno, y para revocar un equipo.
+3. Prueba: 3 clientes simultáneos venden el mismo producto con stock 5. Ninguno vende
+   de más y los 3 reciben el stock actualizado por SSE en menos de 2 segundos.
+
+B. ENTRADA Y SALIDA DE MERCANCÍA DESDE EL CELULAR
+4. Pantalla móvil "Mercancía" (botón grande en la barra inferior del celular, solo para
+   admin, gerente y almacén) con dos modos:
+   - ENTRADA: elegir proveedor (opcional), escanear con la cámara de forma CONTINUA
+     (cada escaneo suma +1 y vibra o suena; se puede tocar para cambiar la cantidad y el
+     costo). Si la categoría lo exige, pedir lote y vencimiento. Botón "Confirmar
+     entrada" que crea la recepción (con o sin orden de compra) y actualiza el costo
+     promedio.
+   - SALIDA: escanear y elegir motivo (merma, dañado, vencido, muestra, uso interno,
+     devolución a proveedor). Requiere confirmación y queda en el kardex y en la
+     auditoría.
+   - Si el código escaneado no existe: "Crear producto rápido" (nombre, categoría,
+     precio, costo, variante) sin salir de la pantalla.
+   - Que funcione sin internet: guarda en cola y sincroniza al reconectar, con UUID
+     idempotente igual que las ventas.
+5. Botón "Imprimir etiquetas de lo recibido" al confirmar una entrada.
+
+C. ENTRADA RÁPIDA DESDE LA FACTURA DEL PROVEEDOR
+6. "Importar factura del proveedor": subir una foto o PDF de la factura, o un Excel/CSV.
+   - Excel/CSV: mapeo de columnas (código, descripción, cantidad, costo), recordado por
+     proveedor.
+   - Foto/PDF: extraer las líneas con IA usando la API de Claude (Anthropic) con salida
+     JSON estructurada: código, descripción, cantidad, costo unitario, lote y
+     vencimiento. La clave va en la variable ANTHROPIC_API_KEY. Sin clave, la opción se
+     oculta y queda solo Excel/CSV.
+   - Emparejar cada línea con productos existentes por código de barras, SKU,
+     código del proveedor (guardar la equivalencia) o similitud de nombre.
+   - Pantalla de REVISIÓN obligatoria: cada línea muestra el producto sugerido, la
+     confianza y la cantidad/costo editables. Las líneas sin pareja se marcan en
+     amarillo para crear o elegir el producto. Nada entra al inventario hasta que el
+     usuario pulse "Confirmar".
+   - Al confirmar, crea la recepción, prorratea flete e impuestos, actualiza el costo y
+     el stock, emite los eventos SSE y guarda la imagen como comprobante.
+   - Valida que el total de las líneas coincida con el total de la factura y avisa si
+     no.
+7. Pruebas: importar un CSV de ejemplo y una respuesta simulada de la IA (mock), sin
+   llamar a la API real en las pruebas.
+
+D. PERMISOS
+8. Vendedor: no puede usar Mercancía ni importar facturas. Almacén: entradas y salidas
+   sin ver la ganancia. Todo queda en la auditoría con usuario, equipo y hora.
