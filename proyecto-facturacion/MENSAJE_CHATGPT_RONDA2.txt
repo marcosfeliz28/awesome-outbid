@@ -1,0 +1,23 @@
+Verifiqué la versión corregida: compila, pasan las 40 pruebas y 11 de los 12 errores
+quedaron arreglados (lo comprobé atacando la API). Excelente trabajo. Faltan estos ajustes;
+agrega una prueba para cada uno, ejecuta pnpm check y pnpm test:integration, y entrégame
+el ZIP:
+
+1. Notas de crédito (sales.ts, cerca de la línea 316, y GET /credit-notes):
+   - Un vendedor puede usar la nota de crédito de cualquier cliente.
+   - Para pagar con nota de crédito exige el PIN de gerente o un código único impreso
+     en la nota que el cliente presenta.
+   - Que GET /credit-notes no liste las notas de todos los clientes al vendedor: solo
+     búsqueda por código o por el cliente ya seleccionado.
+   - Las notas sin cliente solo se pueden usar con su código.
+   - Registra en auditoría cada uso.
+2. Ventas a crédito: agrega un límite por cliente (credit_limit) y exige PIN de gerente
+   para vender a crédito por encima de un monto configurable.
+3. Abonos por transferencia: no deben reducir la deuda mientras estén "pendientes de
+   verificación"; solo al verificarlos.
+4. Ventas offline con capturedAt: acepta solo la sesión de caja más reciente del
+   vendedor (o como máximo 48 horas atrás) y marca en auditoría las ventas fechadas en
+   el pasado.
+5. Límite por IP: en el despliegue, el puerto 3001 de la API no debe quedar expuesto
+   directamente, solo detrás de nginx. Documéntalo en DESPLIEGUE.md y en compose.yaml
+   publica solo nginx.
