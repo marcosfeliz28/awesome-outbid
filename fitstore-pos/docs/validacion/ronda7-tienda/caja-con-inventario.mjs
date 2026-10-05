@@ -29,8 +29,23 @@ try {
     if (label === "cel")
       await page.getByRole("button", { name: "Abrir menú" }).click();
     await page.getByRole("button", { name: "Caja", exact: true }).click();
+    await page
+      .locator(".main-content .loading")
+      .waitFor({ state: "detached" })
+      .catch(() => {});
+    // Una caja por usuario y por equipo: el celular traslada la caja abierta en
+    // la PC (la dueña no necesita PIN), como en la tienda.
+    const transfer = page.getByRole("button", { name: "Trasladar caja aquí" });
+    if (await transfer.isVisible().catch(() => false)) {
+      await transfer.click();
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Trasladar caja", exact: true })
+        .click();
+      await transfer.waitFor({ state: "detached" });
+    }
     const open = page.getByRole("button", { name: "Abrir caja", exact: true });
-    if (await open.isVisible().catch(() => false)) {
+    if (await open.isEnabled().catch(() => false)) {
       await open.click();
       await page.getByLabel("Efectivo inicial").fill("1000");
       await page.getByRole("button", { name: "Guardar", exact: true }).click();
@@ -64,7 +79,13 @@ try {
       "proteina whey",
     ]) {
       await search.fill(q);
-      r["search:" + q] = await page.locator(".product-card").count();
+      r["search:" + q] = {
+        cards: await page.locator(".product-card").count(),
+        caption: await page
+          .locator(".catalog-caption span")
+          .first()
+          .innerText(),
+      };
     }
     await search.fill("moira foundation");
     const name = await page.locator(".product-card h3").first().innerText();

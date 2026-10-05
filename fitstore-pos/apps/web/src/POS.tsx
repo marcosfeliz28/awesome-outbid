@@ -296,25 +296,38 @@ export function POS({ go }: { go: (page: string) => void }) {
   // "iso100 vanilla 5lb" encuentra "ISO100 Hydrolyzed - Dymatize - Gourmet
   // Vanilla / 5 lb" y "loreal" encuentra "L'Oréal".
   const words = searchWords(q);
-  const filtered =
-    products.data?.filter(
-      (p) =>
-        (category === "all" || p.categoryId === category) &&
-        (!words.length ||
-          matchesWords(
-            [
-              p.name,
-              p.sku,
-              p.brand,
-              ...p.variants.flatMap((v) => [
-                v.sku,
-                v.barcode,
-                ...Object.values(v.attributes || {}).map(String),
-              ]),
-            ].join(" "),
-            words,
-          )),
-    ) || [];
+  const searchText = (p: Product) =>
+    [
+      p.name,
+      p.sku,
+      p.brand,
+      ...p.variants.flatMap((v) => [
+        v.sku,
+        v.barcode,
+        ...Object.values(v.attributes || {}).map(String),
+      ]),
+    ].join(" ");
+  const inCategory = (products.data ?? []).filter(
+    (p) => category === "all" || p.categoryId === category,
+  );
+  const exactMatches = inCategory.filter(
+    (p) => !words.length || matchesWords(searchText(p), words),
+  );
+  // Ninguno tiene todas las palabras ("proteina whey" frente a nombres en
+  // inglés): se muestran los que tienen más de ellas, como sugerencia.
+  const approximate = !exactMatches.length && words.length > 1;
+  const filtered = approximate
+    ? inCategory
+        .map((p) => ({
+          p,
+          hits: words.filter(
+            (w) => w.length >= 3 && matchesWords(searchText(p), [w]),
+          ).length,
+        }))
+        .filter((x) => x.hits > 0)
+        .sort((a, b) => b.hits - a.hits)
+        .map((x) => x.p)
+    : exactMatches;
   // Con cientos de productos se dibujan 120 tarjetas; la búsqueda llega al resto.
   const MAX_CARDS = 120;
   const visible = filtered.slice(0, MAX_CARDS);
@@ -387,7 +400,8 @@ export function POS({ go }: { go: (page: string) => void }) {
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 if (byCode(q)) scan(q);
-                else if (filtered.length === 1) addProduct(filtered[0]);
+                else if (filtered.length === 1 && !approximate)
+                  addProduct(filtered[0]);
                 else if (!filtered.length && /^\S*\d\S*$/.test(q.trim())) {
                   // Parece un código y no existe: se avisa y queda
                   // seleccionado para el siguiente escaneo.
@@ -407,22 +421,31 @@ export function POS({ go }: { go: (page: string) => void }) {
           >
             Todos los productos
           </button>
-          {categories.data?.map((c: any) => (
-            <button
-              key={c.id}
-              onClick={() => setCategory(c.id)}
-              className={category === c.id ? "active" : ""}
-            >
-              <i style={{ background: c.color }} />
-              {c.name}
-            </button>
-          ))}
+          {categories.data
+            // Sólo categorías con productos a la venta: las vacías no estorban.
+            ?.filter((c: any) =>
+              (products.data ?? []).some((p) => p.categoryId === c.id),
+            )
+            .map((c: any) => (
+              <button
+                key={c.id}
+                onClick={() => setCategory(c.id)}
+                className={category === c.id ? "active" : ""}
+              >
+                <i style={{ background: c.color }} />
+                {c.name}
+              </button>
+            ))}
         </div>
         <div className="catalog-caption">
           <span>
-            {filtered.length > MAX_CARDS
-              ? `Mostrando ${MAX_CARDS} de ${filtered.length} · escribe para encontrar el resto`
-              : `${filtered.length} productos para descubrir`}
+            {approximate && filtered.length
+              ? `Ninguno tiene todas esas palabras · ${filtered.length} parecidos`
+              : filtered.length > MAX_CARDS
+                ? `Mostrando ${MAX_CARDS} de ${filtered.length} · escribe para encontrar el resto`
+                : filtered.length === 1
+                  ? "1 producto encontrado"
+                  : `${filtered.length} productos para descubrir`}
           </span>
           <span>
             <span className="live-dot" />

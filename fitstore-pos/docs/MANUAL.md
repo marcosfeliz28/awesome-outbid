@@ -1,5 +1,42 @@
 # Manual de demostración
 
+## Cargar el inventario de la tienda (ronda 7)
+
+El inventario de la tienda (por ejemplo `INVENTARIO_2026_Actualizado.xlsx`) se carga tal como está. El archivo necesita la hoja de inventario con estas columnas: **ID, DESCRIPCION, REFERENCIA, SUB-GRUPO DE ARTICULO, EXISTENCIA, COSTO y PRECIO DETALLE**.
+
+1. Crea el administrador (`pnpm --filter @fitstore/api admin:create`, ver DESPLIEGUE.md).
+2. Prueba sin guardar nada: `pnpm --filter @fitstore/api inventory:import ruta/al/INVENTARIO.xlsx --dry-run`.
+3. Carga: `pnpm --filter @fitstore/api inventory:import ruta/al/INVENTARIO.xlsx`.
+4. Abre `revision-inventario.csv` en Excel. Ahí están los productos que conviene revisar:
+   - sin precio o sin costo (quedan **inactivos** y no se venden);
+   - con precio igual o menor que el costo;
+   - con margen menor que 15% sin ITBIS;
+   - sin existencia.
+
+Qué hace la carga:
+
+- **Productos:** crea uno por fila, en su categoría (Suplementos, Maquillaje, Fajas). La marca de los suplementos se toma del nombre ("Producto - Marca - Presentación").
+- **Códigos:** el **ID** (1001, 1223…) es el código para cobrar. Si la REFERENCIA o la descripción ("Barcode 0815…") traen otro número, ese es el código de barras y también sirve para escanear.
+- **Existencias:** entran al kardex como "Inventario inicial", con su costo.
+- **Lotes:** el Excel no trae lotes ni vencimientos, así que esas categorías no los exigen y la caja vende sin pedir datos extra.
+- **Archivo rechazado:** si un ID, una REFERENCIA o un código de barras se repite, o una REFERENCIA es el ID de otra fila, la carga no guarda nada y explica qué corregir.
+
+Al repetir la carga con el mismo archivo, o con uno corregido, no se duplica nada ni se pisa lo editado en la app (precio, costo promedio, mínimos, activo). Sólo:
+
+- crea los productos nuevos;
+- activa los que estaban inactivos porque les faltaba precio o costo y ahora los tienen;
+- con `--actualizar-precios`, cambia los precios al valor del Excel y lo deja en la bitácora.
+
+Las existencias de un producto ya cargado nunca se tocan: los cambios de stock se hacen con Mercancía o ajustes.
+
+## Cobrar rápido en la caja
+
+- **Por código:** escribe el ID del producto (por ejemplo 1002) o escanéalo y pulsa Enter: entra al carrito.
+  - Si no queda stock, el aviso queda a la vista y el código queda seleccionado; el siguiente escaneo lo reemplaza.
+  - Un código que no existe muestra "Código no encontrado".
+- **Por palabras:** escribe palabras sueltas, sin acentos ni orden: "iso100 vanilla", "moira 275n", "cinturilla 2xs", "loreal". Si ningún producto tiene todas las palabras (por ejemplo "proteina whey", con los nombres en inglés), la caja muestra los más parecidos.
+- **Catálogo:** la caja muestra hasta 120 tarjetas; escribe para encontrar el resto. Cada tarjeta muestra el nombre completo en dos líneas (con el tono, la talla o el sabor) y el código.
+
 ## Comenzar el día
 
 1. Inicia sesión con tu correo y contraseña.

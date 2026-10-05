@@ -81,6 +81,10 @@ Nginx sustituye X-Forwarded-For por la IP de su conexión. La API confía en un 
 - Deja **pendientes** los equipos registrados antes de la ronda 4. Ten un gerente disponible en la tienda el día de la actualización para aprobarlos con su PIN; los vendedores no podrán cobrar hasta entonces.
 - Recupera el proveedor y el total de las compras anteriores. Usa la bitácora de cada operación de Mercancía y las líneas guardadas en cada recepción de orden. Revisa la columna **Sin conciliar** del reporte de compras.
 
+**Actualización a la ronda 7** (`202610070001_round7`). Corrige la recuperación de compras de la ronda 6: una recepción antigua con líneas incompletas (sin cantidad, sin costo, vacías o que no son objetos) vuelve a quedar **sin total** y aparece en **Sin conciliar**, en vez de contar sólo las líneas conocidas. El SQL de la ronda 6 también se corrigió para las bases que todavía no lo aplicaron. Ambas migraciones se pueden repetir sin cambiar nada más.
+
+**Inventario inicial de la tienda.** Después de crear el administrador, carga el Excel de inventario con `pnpm --filter @fitstore/api inventory:import archivo.xlsx`. Primero pruébalo con `--dry-run`. Ver «Cargar el inventario de la tienda» en MANUAL.md.
+
 ## Eventos y recepción móvil (ronda 3)
 
 Aplica las migraciones `202610040006_round3` y `202610040007_commit_events` antes de levantar la API. Los triggers diferidos guardan eventos dentro de la transacción, en orden de confirmación; una operación revertida no publica stock. Cada instancia de API consulta la tabla de eventos de su sucursal cada 100 ms mientras tiene un cliente SSE conectado. Esto funciona con varias instancias de API sobre la misma base central. Al reconectar se refresca el catálogo completo, sin depender de reproducción histórica.

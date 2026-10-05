@@ -1,0 +1,56 @@
+{
+  "checks": {
+    "pc": {
+      "caption": "Mostrando 120 de 586 · escribe para encontrar el resto",
+      "cardsRendered": 120,
+      "codeEnterMs": 119,
+      "cartAfterCode": "Tribulus 1400 - Nutrex - 90 cápsulas",
+      "search:iso100 vanilla": {
+        "cards": 3,
+        "caption": "3 productos para descubrir"
+      },
+      "search:moira 275n": {
+        "cards": 1,
+        "caption": "1 productos para descubrir"
+      },
+      "search:cinturilla 2xs": {
+        "cards": 1,
+        "caption": "1 productos para descubrir"
+      },
+      "search:proteina whey": {
+        "cards": 16,
+        "caption": "Ninguno tiene todas esas palabras · 16 parecidos"
+      },
+      "cardNameShowsTone": true,
+      "cardName": "MOIRA Complete Wear Powder Foundation 275N",
+      "horizontalOverflow": 0,
+      "jsErrors": []
+    },
+    "cel": {
+      "caption": "Mostrando 120 de 586 · escribe para encontrar el resto",
+      "cardsRendered": 120,
+      "codeEnterMs": 121,
+      "cartAfterCode": "Tribulus 1400 - Nutrex - 90 cápsulas",
+      "search:iso100 vanilla": {
+        "cards": 3,
+        "caption": "3 productos para descubrir"
+      },
+      "search:moira 275n": {
+        "cards": 1,
+        "caption": "1 productos para descubrir"
+      },
+      "search:cinturilla 2xs": {
+        "cards": 1,
+        "caption": "1 productos para descubrir"
+      },
+      "search:proteina whey": {
+        "cards": 16,
+        "caption": "Ninguno tiene todas esas palabras · 16 parecidos"
+      },
+      "cardNameShowsTone": true,
+      "cardName": "MOIRA Complete Wear Powder Foundation 275N",
+      "horizontalOverflow": 0,
+      "jsErrors": []
+    }
+  }
+}
