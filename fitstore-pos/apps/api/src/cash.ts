@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Inject, Param, Post } from "@nestjs/common";
+import { compare } from "bcryptjs";
 import { z } from "zod";
 import { d, money, can } from "@fitstore/shared";
 import {
@@ -12,8 +13,10 @@ import {
   reason,
   audit,
   bad,
+  denied,
 } from "./common";
-import { cashLock } from "./sales";
+import { cashLock, terminalName } from "./sales";
+import { verifyPinAttempt } from "./security";
 
 export async function cashExpected(db: any, session: any) {
   const payments = await db.payment.findMany({
@@ -72,6 +75,7 @@ export class CashController {
     return Promise.all(
       sessions.map(async (s) => ({
         ...s,
+        registerName: await terminalName(this.db, s.registerId),
         expected: await cashExpected(this.db, s),
         differences: s.closedAt
           ? {
@@ -139,6 +143,83 @@ export class CashController {
       return row;
     });
   }
+  // Traslada la caja abierta del usuario al equipo desde el que se solicita
+  // (por ejemplo, si el equipo original se dañó). Un vendedor necesita el PIN
+  // de un gerente; el traslado queda en la bitácora con ambos equipos.
+  @Post(":id/transfer")
+  @Permit("cash:write")
+  async transfer(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const data = parse(
+      z.object({
+        managerPin: z
+          .string()
+          .regex(/^\d{4,6}$/)
+          .optional(),
+      }),
+      body,
+    );
+    const target = actor.terminalId;
+    if (!target) bad("Este equipo aún no está registrado. Recarga la página.");
+    let approvedBy: string | null = null;
+    if (!can(actor.permissions, "sale:manage")) {
+      if (!data.managerPin)
+        bad("Trasladar la caja requiere el PIN de un gerente.");
+      const managers = await this.db.user.findMany({
+        where: { active: true, branchId: actor.branchId },
+        include: { role: true },
+      });
+      approvedBy = await verifyPinAttempt(
+        this.db,
+        "approval:" + actor.id,
+        async () => {
+          for (const manager of managers.filter((m) =>
+            can(m.role.permissions, "sale:manage"),
+          ))
+            if (await compare(data.managerPin!, manager.pinHash))
+              return manager.id;
+          return null;
+        },
+      );
+    }
+    return this.db.$transaction(async (tx) => {
+      const sessionId = parse(uuid, id);
+      await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id = ${sessionId}::uuid FOR UPDATE`;
+      const session = await tx.cashSession.findFirstOrThrow({
+        where: { id: sessionId, branchId: actor.branchId, closedAt: null },
+      });
+      if (session.userId !== actor.id) denied();
+      if (session.registerId === target) return session;
+      const busy = await tx.cashSession.findFirst({
+        where: {
+          branchId: actor.branchId,
+          closedAt: null,
+          registerId: target,
+          id: { not: sessionId },
+        },
+      });
+      if (busy) bad("Este equipo ya tiene otra caja abierta.");
+      const from = await terminalName(tx, session.registerId);
+      const to = await terminalName(tx, target!);
+      const row = await tx.cashSession.update({
+        where: { id: sessionId },
+        data: { registerId: target },
+      });
+      await audit(
+        tx,
+        actor,
+        "cash_transferred",
+        "cash",
+        sessionId,
+        { registerId: session.registerId, terminal: from },
+        { registerId: target, terminal: to, approvedBy },
+      );
+      return { ...row, registerName: to };
+    });
+  }
   @Post(":id/close")
   @Permit("cash:write")
   async close(
@@ -156,7 +237,14 @@ export class CashController {
       body,
     );
     return this.db.$transaction(async (tx) => {
-      const session = await cashLock(tx, actor, parse(uuid, id), true);
+      const session = await cashLock(
+        tx,
+        actor,
+        parse(uuid, id),
+        true,
+        undefined,
+        { closing: true },
+      );
       const expected = await cashExpected(tx, session);
       const difference = money(
         d(data.countedCash)

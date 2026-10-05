@@ -3686,3 +3686,58 @@ td strong {
     grid-template-columns: 1fr;
   }
 }
+/* Caja abierta en otro equipo */
+.cash-elsewhere {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  background: #fff8eb;
+  border: 1px solid #fde3b4;
+  color: #8a4b08;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 0 0 18px;
+}
+.cash-elsewhere strong {
+  display: block;
+  font-size: 12px;
+  color: #6b3a06;
+}
+.cash-elsewhere p {
+  margin: 3px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.cash-elsewhere.compact {
+  grid-template-columns: auto 1fr;
+  margin: 10px 0;
+  padding: 12px;
+}
+.cash-elsewhere.compact .button {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+}
+:root[data-theme="dark"] .cash-elsewhere {
+  background: #2b2111;
+  border-color: #5b4210;
+  color: #f8d48a;
+}
+:root[data-theme="dark"] .cash-elsewhere strong {
+  color: #fde3b4;
+}
+.modal-intro {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+@media (max-width: 640px) {
+  .cash-elsewhere {
+    grid-template-columns: auto 1fr;
+  }
+  .cash-elsewhere .button {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+}

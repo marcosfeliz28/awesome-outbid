@@ -42,6 +42,7 @@ import {
   type Variant,
 } from "./api";
 import { QueryState, attrLabel, toast } from "./helpers";
+import { CashElsewhere, cashOnOtherDevice } from "./realtime";
 
 function discountFor(
   promo: any,
@@ -146,6 +147,7 @@ export function POS({ go }: { go: (page: string) => void }) {
   const session = sessions.data?.find(
     (s: any) => !s.closedAt && s.userId === user!.id,
   );
+  const elsewhere = cashOnOtherDevice(session);
   const config = useQuery({
     queryKey: ["settings"],
     queryFn: async () => {
@@ -231,6 +233,15 @@ export function POS({ go }: { go: (page: string) => void }) {
     if (!cart.length) return;
     if (!session) {
       toast("Abre tu caja antes de cobrar.", true);
+      return;
+    }
+    if (elsewhere) {
+      toast(
+        "Tu caja está abierta en «" +
+          (session.registerName ?? "otro equipo") +
+          "». Trasládala a este equipo para cobrar.",
+        true,
+      );
       return;
     }
     setCheckout(true);
@@ -429,7 +440,11 @@ export function POS({ go }: { go: (page: string) => void }) {
             <h2>Venta actual</h2>
             <span>
               <span className="live-dot" />
-              {session ? "Caja abierta" : "Caja sin abrir"}
+              {!session
+                ? "Caja sin abrir"
+                : elsewhere
+                  ? "Caja abierta en otro equipo"
+                  : "Caja abierta"}
             </span>
           </div>
           <Badge tone="violet">
@@ -591,6 +606,7 @@ export function POS({ go }: { go: (page: string) => void }) {
               Abre tu caja para comenzar <ArrowLeft size={14} />
             </button>
           )}
+          {elsewhere && <CashElsewhere session={session} compact />}
           <Button
             variant="success"
             className="charge-button"

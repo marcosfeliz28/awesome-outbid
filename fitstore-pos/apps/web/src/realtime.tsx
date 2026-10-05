@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@fitstore/ui";
+import { MonitorSmartphone } from "lucide-react";
+import { Button, Modal } from "@fitstore/ui";
+import { can } from "@fitstore/shared";
 import {
   api,
   loadCatalog,
@@ -239,5 +241,101 @@ export function Equipment() {
         </div>
       ))}
     </div>
+  );
+}
+
+// La caja abierta del usuario está asignada a otro equipo: sólo se puede vender,
+// cobrar abonos o mover efectivo desde ese equipo, o trasladándola aquí.
+export function cashOnOtherDevice(session: any) {
+  return !!session && session.registerId !== terminalIdentity().id;
+}
+export function CashElsewhere({
+  session,
+  compact = false,
+}: {
+  session: any;
+  compact?: boolean;
+}) {
+  const user = useStore((s) => s.user)!;
+  const client = useQueryClient();
+  const [open, setOpen] = useState(false),
+    [pin, setPin] = useState(""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const needsPin = !can(user.permissions, "sale:manage");
+  const submit = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      // Asegura que el servidor conozca este equipo antes de trasladar.
+      await registerTerminal();
+      await post(
+        "/cash-sessions/" + session.id + "/transfer",
+        needsPin ? { managerPin: pin } : {},
+      );
+      toast("Caja trasladada a este equipo.");
+      setOpen(false);
+      setPin("");
+      await client.invalidateQueries({ queryKey: ["cash-sessions"] });
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <div
+        className={`cash-elsewhere ${compact ? "compact" : ""}`}
+        role="status"
+      >
+        <MonitorSmartphone size={compact ? 18 : 22} aria-hidden="true" />
+        <div>
+          <strong>
+            Tu caja está abierta en «{session.registerName ?? "otro equipo"}»
+          </strong>
+          <p>
+            Para cobrar aquí, trasládala a este equipo o ciérrala en el otro.
+          </p>
+        </div>
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          Trasladar caja aquí
+        </Button>
+      </div>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Trasladar caja a este equipo"
+      >
+        <p className="modal-intro">
+          Las ventas, abonos y movimientos de esta caja se registrarán desde
+          este equipo. El cambio queda en la bitácora con ambos equipos.
+        </p>
+        {needsPin && (
+          <label className="field">
+            PIN del gerente
+            <input
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={6}
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+            />
+          </label>
+        )}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+        <Button
+          disabled={busy || (needsPin && pin.length < 4)}
+          onClick={submit}
+        >
+          {busy ? "Trasladando…" : "Trasladar caja"}
+        </Button>
+      </Modal>
+    </>
   );
 }

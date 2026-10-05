@@ -50,7 +50,6 @@ async function ensureCash(page: any) {
   if (await open.isVisible()) {
     await open.click();
     await page.getByLabel("Efectivo inicial").fill("500");
-    await page.getByLabel(/^Terminal/).fill("e2e-" + Date.now());
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
   }
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();

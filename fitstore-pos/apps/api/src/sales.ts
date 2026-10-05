@@ -34,6 +34,7 @@ import {
   audit,
   safe,
   bad,
+  conflict,
   denied,
   json,
   safeErrorMessage,
@@ -42,12 +43,17 @@ import { lockVariant, takeStock, stockChange } from "./inventory";
 import PDFDocument from "pdfkit";
 import type { Response } from "express";
 
+// Una caja abierta pertenece a un usuario y a un equipo. El dinero (ventas,
+// abonos, movimientos) sólo se registra desde el equipo donde está la caja;
+// cerrar y arquear se permite desde cualquier equipo del dueño, y un gerente
+// puede actuar sobre la caja de otro usuario desde su propio equipo.
 export async function cashLock(
   tx: any,
   actor: Actor,
   id: string,
   manager = false,
   capturedAt?: Date,
+  options: { closing?: boolean } = {},
 ) {
   await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id = ${id}::uuid FOR UPDATE`;
   const session = await tx.cashSession.findFirstOrThrow({
@@ -57,7 +63,8 @@ export async function cashLock(
       ...(capturedAt ? {} : { closedAt: null }),
     },
   });
-  if (actor.terminalId && session.registerId !== actor.terminalId) denied();
+  const own = session.userId === actor.id;
+  if (!own && !(manager && can(actor.permissions, "sale:manage"))) denied();
   if (
     capturedAt &&
     (capturedAt < session.openedAt ||
@@ -65,12 +72,27 @@ export async function cashLock(
       (session.closedAt && capturedAt > session.closedAt))
   )
     bad("La venta offline no corresponde al horario de esta caja.");
+  // Las ventas offline se sincronizan desde la cola del equipo que las capturó.
   if (
-    session.userId !== actor.id &&
-    !(manager && can(actor.permissions, "sale:manage"))
-  )
-    denied();
+    own &&
+    !capturedAt &&
+    !options.closing &&
+    actor.terminalId &&
+    session.registerId !== actor.terminalId
+  ) {
+    conflict(
+      `Tu caja está abierta en el equipo «${await terminalName(tx, session.registerId)}». ` +
+        "Ciérrala en ese equipo o trasládala a este desde Caja.",
+    );
+  }
   return session;
+}
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Las cajas anteriores a los equipos guardan un nombre libre en registerId.
+export async function terminalName(tx: any, registerId: string) {
+  if (!UUID.test(registerId)) return registerId;
+  const terminal = await tx.terminal.findUnique({ where: { id: registerId } });
+  return terminal?.name ?? "otro equipo";
 }
 function promotionDiscount(promo: any, variant: any, qty: number) {
   const scope = promo.scope as any;

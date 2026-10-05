@@ -1,4 +1,10 @@
-import { Equipment } from "./realtime";
+import {
+  CashElsewhere,
+  Equipment,
+  cashOnOtherDevice,
+  registerTerminal,
+  terminalIdentity,
+} from "./realtime";
 import { useEffect, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1540,6 +1546,7 @@ export function Cash() {
   const active = query.data?.find(
     (s: any) => !s.closedAt && s.userId === user.id,
   );
+  const elsewhere = cashOnOtherDevice(active);
   return (
     <>
       <Heading
@@ -1553,7 +1560,16 @@ export function Cash() {
           </Button>
         ) : (
           <>
-            <Button variant="secondary" onClick={() => setMovement(true)}>
+            <Button
+              variant="secondary"
+              disabled={elsewhere}
+              title={
+                elsewhere
+                  ? "Traslada la caja a este equipo para registrar movimientos."
+                  : undefined
+              }
+              onClick={() => setMovement(true)}
+            >
               <Plus size={17} />
               Movimiento
             </Button>
@@ -1561,11 +1577,12 @@ export function Cash() {
           </>
         )}
       </Heading>
+      {elsewhere && <CashElsewhere session={active} />}
       {active ? (
         <div className="cash-overview">
           <div className="cash-main">
             <Badge tone="success">Caja abierta</Badge>
-            <h2>{active.registerId}</h2>
+            <h2>{active.registerName ?? active.registerId}</h2>
             <p>
               Desde{" "}
               {new Date(active.openedAt).toLocaleString("es-DO", {
@@ -1685,8 +1702,10 @@ export function Cash() {
             rows={query.data || []}
             columns={[
               {
-                label: "Terminal",
-                render: (s) => <strong>{s.registerId}</strong>,
+                label: "Equipo",
+                render: (s) => (
+                  <strong>{s.registerName ?? s.registerId}</strong>
+                ),
               },
               { label: "Apertura", render: (s) => dateLabel(s.openedAt) },
               {
@@ -1739,17 +1758,16 @@ export function Cash() {
       {open && (
         <FormModal
           title="Abrir mi caja"
-          fields={[
-            requiredNumber("openingAmount", "Efectivo inicial"),
-            {
-              key: "registerId",
-              label: "Terminal",
-              required: true,
-              initial: "terminal-" + user.role,
-            },
-          ]}
+          fields={[requiredNumber("openingAmount", "Efectivo inicial")]}
           onClose={() => setOpen(false)}
-          onSubmit={(data) => post("/cash-sessions/open", data)}
+          onSubmit={async (data) => {
+            // La caja queda asignada a este equipo (el servidor usa su registro).
+            await registerTerminal().catch(() => undefined);
+            return post("/cash-sessions/open", {
+              ...data,
+              registerId: terminalIdentity().name,
+            });
+          }}
         />
       )}
       {movement && (

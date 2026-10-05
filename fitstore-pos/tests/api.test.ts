@@ -2373,3 +2373,150 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
     expect(config).toContain("proxy_read_timeout 75s;");
   });
 });
+describe("Ronda 4 · Claude: caja y equipos", () => {
+  let product: any,
+    seller: any,
+    manager: any,
+    sellerA: string,
+    sellerB: string,
+    managerToken: string,
+    cash: any;
+  const terminalA = randomUUID(),
+    terminalB = randomUUID(),
+    terminalM = randomUUID();
+  const login = async (email: string) =>
+    (await ok("/auth/login", { email, password: "FitStore-QA-2026!" }, ""))
+      .accessToken as string;
+  beforeAll(async () => {
+    const cats = await ok("/categories");
+    product = await ok("/products", {
+      name: "QA R4 caja " + suffix,
+      sku: "R4-C-" + suffix,
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [
+        {
+          sku: "R4-CV-" + suffix,
+          barcode: "R4-CB-" + suffix,
+          costAvg: 40,
+          price: 118,
+        },
+      ],
+    });
+    products.push(product);
+    await ok("/inventory/adjustments", {
+      variantId: product.variants[0].id,
+      qty: 10,
+      reason: "QA ronda 4",
+    });
+    const roles = await ok("/roles");
+    seller = await ok("/users", {
+      name: "QA R4 vendedora",
+      email: "r4-seller-" + suffix + "@example.test",
+      password: "FitStore-QA-2026!",
+      pin: "640531",
+      roleId: roles.find((r: any) => r.name === "seller").id,
+    });
+    manager = await ok("/users", {
+      name: "QA R4 gerente",
+      email: "r4-manager-" + suffix + "@example.test",
+      password: "FitStore-QA-2026!",
+      pin: "730142",
+      roleId: roles.find((r: any) => r.name === "manager").id,
+    });
+    actors.push(seller, manager);
+    sellerA = await login(seller.email);
+    await ok(
+      "/terminals/register",
+      { id: terminalA, name: "Caja 1 QA" },
+      sellerA,
+    );
+    cash = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 200, registerId: "Caja 1 QA" },
+      sellerA,
+    );
+    sellerB = await login(seller.email);
+    await ok(
+      "/terminals/register",
+      { id: terminalB, name: "Laptop 2 QA" },
+      sellerB,
+    );
+    managerToken = await login(manager.email);
+    await ok(
+      "/terminals/register",
+      { id: terminalM, name: "PC gerencia QA" },
+      managerToken,
+    );
+  });
+  const sale = (as: string) =>
+    request("/sales", input(product.variants[0].id, 118, cash), as);
+  it("la caja queda asignada al equipo y muestra su nombre", async () => {
+    expect(cash.registerId).toBe(terminalA);
+    const listed = (await ok("/cash-sessions", undefined, sellerB)).find(
+      (s: any) => s.id === cash.id,
+    );
+    expect(listed.registerName).toBe("Caja 1 QA");
+  });
+  it("vender desde otro equipo explica dónde está la caja (409, no 403)", async () => {
+    const r = await sale(sellerB);
+    expect(r.status).toBe(409);
+    expect(r.body.message).toContain("«Caja 1 QA»");
+    expect((await sale(sellerA)).status).toBe(201);
+  });
+  it("trasladar exige PIN de gerente al vendedor y queda en bitácora", async () => {
+    const path = "/cash-sessions/" + cash.id + "/transfer";
+    expect((await request(path, {}, sellerB)).status).toBe(400);
+    expect(
+      (await request(path, { managerPin: "000000" }, sellerB)).status,
+    ).toBe(400);
+    const moved = await ok(path, { managerPin: "730142" }, sellerB);
+    expect(moved.registerId).toBe(terminalB);
+    expect(moved.registerName).toBe("Laptop 2 QA");
+    expect((await sale(sellerB)).status).toBe(201);
+    const old = await sale(sellerA);
+    expect(old.status).toBe(409);
+    expect(old.body.message).toContain("«Laptop 2 QA»");
+    const log = await ok("/audit-log");
+    const entry = log.find(
+      (a: any) => a.entityId === cash.id && a.action === "cash_transferred",
+    );
+    expect(entry).toBeTruthy();
+  });
+  it("otro usuario no puede trasladar una caja ajena", async () => {
+    const r = await request(
+      "/cash-sessions/" + cash.id + "/transfer",
+      {},
+      managerToken,
+    );
+    expect(r.status).toBe(403);
+  });
+  it("el gerente cierra la caja de una vendedora desde su propio equipo", async () => {
+    const current = (await ok("/cash-sessions", undefined, managerToken)).find(
+      (s: any) => s.id === cash.id,
+    );
+    const r = await request(
+      "/cash-sessions/" + cash.id + "/close",
+      {
+        countedCash: current.expected.cash,
+        countedCard: current.expected.card,
+        countedTransfer: current.expected.transfer,
+        notes: "Cierre por gerencia QA",
+      },
+      managerToken,
+    );
+    expect(r.status).toBe(201);
+  });
+  it("la dueña puede cerrar su caja desde cualquier equipo", async () => {
+    const own = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 50, registerId: "Laptop 2 QA" },
+      sellerB,
+    );
+    const r = await request(
+      "/cash-sessions/" + own.id + "/close",
+      { countedCash: 50, countedCard: 0, countedTransfer: 0 },
+      sellerA,
+    );
+    expect(r.status).toBe(201);
+  });
+});

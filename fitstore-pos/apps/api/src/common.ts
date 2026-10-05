@@ -50,6 +50,9 @@ export function bad(message: string): never {
 export function denied(): never {
   throw new HttpException("No tienes permiso para realizar esta acción.", 403);
 }
+export function conflict(message: string): never {
+  throw new HttpException(message, 409);
+}
 export const parse = <T extends z.ZodTypeAny>(
   schema: T,
   input: unknown,
