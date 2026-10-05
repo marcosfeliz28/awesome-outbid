@@ -4301,3 +4301,35 @@ td strong {
     justify-self: stretch;
   }
 }
+/* En el carrito, el aviso de caja no hereda el diseño de las filas de totales. */
+.cart-summary > div.cash-elsewhere {
+  display: grid;
+  justify-content: stretch;
+  font-size: inherit;
+  color: #8a4b08;
+}
+:root[data-theme="dark"] .cart-summary > div.cash-elsewhere {
+  color: #f8d48a;
+}
+/* En el celular los avisos van arriba: abajo están las barras de acción fijas
+   (Mercancía, cobrar) y un aviso no debe tapar el botón de confirmar. */
+@media (max-width: 768px) {
+  .toast {
+    top: calc(72px + env(safe-area-inset-top));
+    bottom: auto;
+  }
+}
+/* Celular: los botones de escaneo se ajustan al ancho sin desbordar la tarjeta. */
+.goods-scan > *,
+.goods-grid > *,
+.goods-fields > * {
+  min-width: 0;
+}
+@media (max-width: 768px) {
+  .goods-scan-actions .button {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+    padding: 10px 12px;
+  }
+}

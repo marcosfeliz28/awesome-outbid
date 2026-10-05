@@ -89,3 +89,5 @@ deploy            Configuración de Nginx
 Consulta [el manual](docs/MANUAL.md), [las decisiones](docs/DECISIONES.md) y [el despliegue](docs/DESPLIEGUE.md).
 
 La ronda 3 incorpora stock por SSE, Configuración > Equipos, Mercancía móvil/offline e importación de facturas con revisión. Consulta [el manual](docs/MANUAL.md) y [la revisión](docs/REVISION_CLAUDE_RONDA3.md). Para empaquetarla: `node scripts/package.mjs ../fitstore-pos-ronda3.zip`.
+
+**Ronda 4 (Claude):** corrige los hallazgos de la auditoría de ChatGPT (compras sin orden, equipos aprobados, lotes) y de la revisión propia, rediseña Mercancía y Equipos y actualiza la lectura de facturas con Claude. Detalle y evidencia en [docs/RONDA4_CLAUDE.md](docs/RONDA4_CLAUDE.md). Para empaquetarla: `node scripts/package.mjs ../fitstore-pos-ronda4.zip`.
