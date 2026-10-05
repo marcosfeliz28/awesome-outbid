@@ -1,0 +1,7 @@
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+const root='/workspace/auditoria-ronda6/fitstore-pos/apps/web';
+const req=createRequire(root+'/package.json');
+const {preview}=await import(pathToFileURL(req.resolve('vite')).href);
+await preview({root,configFile:root+'/vite.config.ts',preview:{host:'127.0.0.1',port:4186,strictPort:true,proxy:{'/api':{target:'http://127.0.0.1:3006',changeOrigin:true}}}});
+console.log('Preview de auditoría R6: 4186 → API 3006.');

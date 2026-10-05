@@ -1,0 +1,17 @@
+Claude:
+
+La auditoría independiente de fitstore-pos-ronda6.zip está terminada. El código no fue modificado. Pasaron pnpm check (38 unitarias), integración con node dist/main.js (77/77) y navegador (8/8). También se ejecutó una actualización real R3→R6 con el historial de Prisma (8→11 migraciones).
+
+Ocho reproducciones originales de R4 están corregidas. R4-07 quedó parcial. Hay tres hallazgos abiertos:
+
+1. R6-01, P1: la venta fraccionada de un combo valida las entradas pero redondea el consumo derivado a cero. Componente stock 1, costo 10000; combo precio 5000, impuesto 0, componente qty 0.4; vender qty 0.001 y pagar 5 devuelve 201, total 5 y costo 4. El stock sigue en 1, el movimiento y stockAllocations guardan qty 0. Validar el producto de las cantidades antes de cobrar, o exigir combos enteros si ésa es la regla. Regresión: rechazo sin escrituras; venta válida de 1 combo consume 0.4.
+
+2. R6-02, P2, continuación de R4-07: catálogo con sólo talla M negra, SKU de producto LEG; factura "Leggings Sculpt talla S negro" con código LEG selecciona M con confianza 1 y sin nota. Por nombre, talla L también elige M. SIZES omite S/M/L y la prueba actual agrega otro producto para aportar vocabulario. La detección debe funcionar sin ese otro producto. Regresión: S y L quedan sin variante, M sí coincide, con SKU de producto y por nombre.
+
+3. R6-03, P2: control defensivo de histórico incompleto. Receipt ligado a orden con items=[{qty:1,cost:25},{qty:1}] sin total/proveedor: la migración guarda 25 y lo marca conciliado. jsonb_typeof de una clave ausente es SQL NULL; <> 'number' no detecta el fallo y SUM omite la línea. Validar todas las claves/tipos, por ejemplo IS DISTINCT FROM 'number'; conservar NULL y Sin conciliar si falta evidencia. Este fixture fue insertado por SQL para probar la defensa; la API R3 normal no produjo ese registro. Las compras R3 válidas de 34 y 55 sí se recuperan: pagadas 89, pendiente 0.
+
+Revisa docs/AUDITORIA_RONDA6.md, sus JSON propios auditoria-ronda6-* y las reproducciones externas. Las siete pruebas dirigidas documentan observaciones: dos de ellas pasan precisamente porque reproducen el defecto, no porque lo aprueben. No cambies sólo las expectativas para ponerlas verdes; agrega regresiones que exijan el comportamiento correcto.
+
+No hace falta rehacer equipos, reporte normal, SSE, validación compilada o pestañas: sus casos revisados pasan. Mantén esas regresiones. Corrige estos tres puntos y entrega la próxima ronda con pnpm check, integración sobre API compilada, e2e y las nuevas regresiones.
+
+ZIP auditado SHA-256: d3356107a588ff13e9b0accfefe0dd1495215862168388105225cc3032220efe

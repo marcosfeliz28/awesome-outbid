@@ -1,0 +1,266 @@
+{
+  "audit": "FitStore POS R6",
+  "uploadedSourceSha256": "d3356107a588ff13e9b0accfefe0dd1495215862168388105225cc3032220efe",
+  "files": [
+    {
+      "path": "LEEME_AUDITORIA_RONDA6.txt",
+      "bytes": 2649,
+      "sha256": "65a70a3345ea10969a59309f65bf960b0a24c6ae63604d6175962dab93deae54"
+    },
+    {
+      "path": "MENSAJE_PARA_CLAUDE_AUDITORIA_RONDA6.txt",
+      "bytes": 2676,
+      "sha256": "cc47961d172e2b5fb821cc78e7882bb5ba6b9719de07b3d4905e7b787032133a"
+    },
+    {
+      "path": "api-comprobar.mjs",
+      "bytes": 8584,
+      "sha256": "65b6ee84403163eeea93e2421bcd73b01c8690162f472628d1cda85b8c9b608c"
+    },
+    {
+      "path": "compras-orden-comprobar.mjs",
+      "bytes": 2376,
+      "sha256": "98363df03ef5dda2d8a830d85453c58da0910fb0f94c26860a6a051c3a76afc2"
+    },
+    {
+      "path": "desarrollo-comprobar.mjs",
+      "bytes": 1133,
+      "sha256": "a568bc8518ac7f1675d710e4afd77998c72bce4da70583da3064b74690dc4dc5"
+    },
+    {
+      "path": "entregar.py",
+      "bytes": 5326,
+      "sha256": "ec1981fa28d8134d83b1d59308108f76fdf81e6c9e10824f7fc58d68c2599fde"
+    },
+    {
+      "path": "fitstore-pos/docs/AUDITORIA_RONDA6.md",
+      "bytes": 11965,
+      "sha256": "cd7a94f0d5b622f900bf1bd2bc2ed75fa7f7e1553d0a58620026ecbbb6ffaf4b"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-api.json",
+      "bytes": 3208,
+      "sha256": "6bdfc7f932fc7fce68f7312f7aeab7d53e08f87bccae3c291c2adc0d0e4f66a2"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas/cel-caja-otro-equipo.png",
+      "bytes": 34407,
+      "sha256": "927e6cab2b1ed94b8e43d08d7aecaae311d0eb557f5358744fa79c09e989d825"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas/cel-equipo-pendiente.png",
+      "bytes": 49122,
+      "sha256": "5faeb08ec7bd49b3ac7cdbf97896f78e6dd0c5171783e95dda1b425b6643c2a6"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas/cel-equipos-320.png",
+      "bytes": 46088,
+      "sha256": "fa751f06f147e7d9738c942c2afbd67217df5249b08918e67e6234a199b932d9"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas/cel-equipos.png",
+      "bytes": 51313,
+      "sha256": "b543334c3933aec0e7e30d8ac6b343595d629d13819f8d44913ab804ee3730ad"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas/cel-mercancia-entrada.png",
+      "bytes": 44258,
+      "sha256": "8ab43842bb9aca4fa7289135f1d5b265f4a872592096b15533af33580600904d"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas/cel-mercancia-salida.png",
+      "bytes": 39777,
+      "sha256": "b03ebbad4a91047ad0505a6b4bbbd37c5323cefa801546e13fe617c2edb0187a"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas/pc-caja-otro-equipo.png",
+      "bytes": 140267,
+      "sha256": "84492a10cc94e9923b5152cd74566782b65f9e19d9f8d1f792a579c08ddf703e"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas/pc-equipos.png",
+      "bytes": 166733,
+      "sha256": "e11cda2cd97f6c9e41910eb5338cde212562e17a686069aa0b8cb1ab2717af4e"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas-oficiales/cobro-exitoso.png",
+      "bytes": 186128,
+      "sha256": "b6b9ceb394b352480ee0be7bc38bc4cc4a4475e3419600989270cf1e0f89aced"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas-oficiales/dashboard-mobile.png",
+      "bytes": 157929,
+      "sha256": "f592a19ee865d01a3934fdf0f10949c74d00ab8f85dd6405bcca6f87242c3062"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas-oficiales/pos-mobile.png",
+      "bytes": 67920,
+      "sha256": "0e187b4d005752b31fb18df77671dff4c66d8d03f4e9b31179857e6aeeb1fe43"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas-oficiales/validacion/ronda6-capturas/cel-equipos-320.png",
+      "bytes": 44067,
+      "sha256": "373c82c3a2c9c5a140e4e83a30070b4ac8e4c52b34114760e9df1ded21c29209"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-capturas-oficiales/validacion/ronda6-capturas/cel-equipos-390.png",
+      "bytes": 47132,
+      "sha256": "edc9285081abe891e9baca7878bbc0236a7d23c3521d5cb906569047b13b2671"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-check.txt",
+      "bytes": 2173,
+      "sha256": "dbf0fe917128112dff6a7b0f685cd04adb86ca05593161624e65bdfe30e9d409"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-compras-orden.json",
+      "bytes": 446,
+      "sha256": "bae63b832f85ae4a029f61fa62d4886847a6c44ee5b9757911b5ebeffc1abc27"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-desarrollo-validacion.json",
+      "bytes": 207,
+      "sha256": "970c284d5d364fa149954dd57bd64231111d2f8a2219f02482ddc56f61e3b354"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-dirigidas.json",
+      "bytes": 1453,
+      "sha256": "19ff36566ab367a13cf4b97264631abb2efda52f46c77add34661d79082a524e"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-dirigidas.txt",
+      "bytes": 274,
+      "sha256": "420f5f3af12649894000afd490f41232c62c1a2f2e846401c8eafcd3ac1cab0f"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-integracion-compilada.txt",
+      "bytes": 3613,
+      "sha256": "2b83bb89b193f8183d7afec38ed7990d087781a76b03bf023a50b3aed7e3a3b5"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-integridad.json",
+      "bytes": 630,
+      "sha256": "8fd22a8a230ccbb6d5412f7bde26b72c56217b64778f08bf3cce0d2526179b68"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-kit.json",
+      "bytes": 1105,
+      "sha256": "08e0063de4c9d0d99c71933646125eeaed58eb22e3c02d308e42ebb195ec41ec"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-legado.json",
+      "bytes": 1725,
+      "sha256": "73b58ab9a6c30e506105db6b280816415d134ab45fc6631776e7d9221b03fea6"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-limpieza.json",
+      "bytes": 389,
+      "sha256": "4bab48e489075daa35ff523b724412c8c7debb4343f6c9e413df02afaa63c4ea"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-migracion-antes.json",
+      "bytes": 2194,
+      "sha256": "11315f7541d9ef2f7d9dfa7c2b19fada52bc3bd43df9c967c9a215c79bb55553"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-migracion-despues.json",
+      "bytes": 4036,
+      "sha256": "0dd3d2ad50988cfa030dd636ffaa2872ef9d2bee309da6ca30b6625d15419e2d"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-navegador.txt",
+      "bytes": 1257,
+      "sha256": "a572f344cbbbd0be58909d8399777130e5080d626a1d9841975aa2e4d1c934cc"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-sse.json",
+      "bytes": 743,
+      "sha256": "aed10c6b82c185610066f28f625d326353c272ce4cf3e1ee24e3f8dc61f3009e"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6-ui.json",
+      "bytes": 1982,
+      "sha256": "9f23991bb683ef0029f895e5619d12e79f94c3c1efc371ee54475ffff0b5bfe3"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda6.json",
+      "bytes": 3365,
+      "sha256": "6e043d9a3e5ee65af9274f0550a749a64ba72b58e1d6364342da83fa911cfdd6"
+    },
+    {
+      "path": "kit-comprobar.mjs",
+      "bytes": 3710,
+      "sha256": "0aa926f642436a171d92f675ba11c1f49c4164eb01933cbdea9f77d2ade1191b"
+    },
+    {
+      "path": "legacy-aislar.mjs",
+      "bytes": 1963,
+      "sha256": "eb61b8d1d50c854643fa505e1a83acb60eeb6dc31e8c02d4a36cb1fa4f19616e"
+    },
+    {
+      "path": "legacy-antes.mjs",
+      "bytes": 1959,
+      "sha256": "ce4f7a06ca815ef32804cfa29b548ef152f51dbd9f0cae2c1cae83379402e48e"
+    },
+    {
+      "path": "legacy-comprobar.mjs",
+      "bytes": 3057,
+      "sha256": "5c8a5fdc4ba3ca8fa57e4d33b094b359ecf70026971cedc1fd2a302fa14d8bf8"
+    },
+    {
+      "path": "legacy-despues.mjs",
+      "bytes": 2366,
+      "sha256": "09a84c07e69f50ad431a7b92539018a4b87e10f378d134ba7bb3c6b7fa111789"
+    },
+    {
+      "path": "legacy-preparar.mjs",
+      "bytes": 2886,
+      "sha256": "7f8ec4d6cbf9ade40f75e8fe0f0b7e776f921f1be21b9d61b0511d57f66ed606"
+    },
+    {
+      "path": "limpiar.mjs",
+      "bytes": 1396,
+      "sha256": "97a2c46c3dde237bfaf33c3cff64aa9c200d38e29f73d30a5971c94ca0de0ec9"
+    },
+    {
+      "path": "preparar-db.mjs",
+      "bytes": 495,
+      "sha256": "c59c1c6f4741d86693f1a2101ff14c9d2cf27093937dc6a67fbef08b857a7f64"
+    },
+    {
+      "path": "preview.mjs",
+      "bytes": 502,
+      "sha256": "1ee102d1837c5b11ede04d48c3c8211bceeca127f6db7119443103eb7f1f6eb4"
+    },
+    {
+      "path": "pruebas/independientes.test.ts",
+      "bytes": 5524,
+      "sha256": "b8d8574ef44c897fe6fe3a917229e014120bd03028c68b5501df848dd3c70614"
+    },
+    {
+      "path": "pruebas/vitest.config.ts",
+      "bytes": 108,
+      "sha256": "af7f34a8d6d3474b6512a2aa4cb882fe12421c0db54bfff89c5b6cc93117bc70"
+    },
+    {
+      "path": "runtime.mjs",
+      "bytes": 945,
+      "sha256": "e39c00c618955a647a69150dbce6d8c81f8c1dfa86b25463a94b84cf53088815"
+    },
+    {
+      "path": "source-baseline.json",
+      "bytes": 24062,
+      "sha256": "d01aa8ab11124c5c2f4b3febb214f145fbd67ad77a9f557d2b495c1717e6d648"
+    },
+    {
+      "path": "sse-comprobar.mjs",
+      "bytes": 4146,
+      "sha256": "4e9284b8e4fc2674966bdcc8318cd2a4cc9076446dcca5b319708efcce11fa3c"
+    },
+    {
+      "path": "ui-comprobar.mjs",
+      "bytes": 5477,
+      "sha256": "0613fa61767b0eac6f07f3970d1b2a818f27d2d76e60ad7e7c21fc45f93b87b5"
+    }
+  ]
+}

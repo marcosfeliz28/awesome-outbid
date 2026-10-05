@@ -1,0 +1,61 @@
+{
+  "oldSessionMutation": {
+    "status": 403,
+    "body": {
+      "statusCode": 403,
+      "message": "Este equipo espera aprobación de un gerente (Configuración › Equipos o PIN de gerente en este equipo).",
+      "code": "TERMINAL_PENDING"
+    }
+  },
+  "claim": {
+    "status": "pending",
+    "legacy": true,
+    "identified": true,
+    "hasSecretHash": false
+  },
+  "mutationBeforeApproval": {
+    "status": 403,
+    "body": {
+      "statusCode": 403,
+      "message": "Este equipo espera aprobación de un gerente (Configuración › Equipos o PIN de gerente en este equipo).",
+      "code": "TERMINAL_PENDING"
+    }
+  },
+  "mutationAfterApprovalStatus": 201,
+  "purchaseBeforePay": {
+    "Proveedor": "Proveedor actualización legacy-r6-muvettf1",
+    "Ordenado": 50,
+    "Compras": 114,
+    "Pagado": 0,
+    "Pendiente": 114,
+    "Sin_conciliar": 0
+  },
+  "purchaseAfterPay89": {
+    "Proveedor": "Proveedor actualización legacy-r6-muvettf1",
+    "Ordenado": 50,
+    "Compras": 114,
+    "Pagado": 89,
+    "Pendiente": 25,
+    "Sin_conciliar": 0
+  },
+  "knownOriginalPurchases": 89,
+  "syntheticIncorrectBackfill": 25,
+  "syntheticCase": "Una línea completa (1×25), otra sin costo; registro alterado vía SQL para control defensivo, no creado por API.",
+  "originalPurchasesAfterRemovingSynthetic": {
+    "Proveedor": "Proveedor actualización legacy-r6-muvettf1",
+    "Ordenado": 50,
+    "Compras": 89,
+    "Pagado": 89,
+    "Pendiente": 0,
+    "Sin_conciliar": 0
+  },
+  "withoutEvidenceRow": {
+    "Proveedor": "Recepciones sin proveedor (conciliar)",
+    "Ordenado": 0,
+    "Compras": 0,
+    "Pagado": 0,
+    "Pendiente": 0,
+    "Sin_conciliar": 2
+  },
+  "syntheticFixtureRemovedAfterRecordingEvidence": true
+}

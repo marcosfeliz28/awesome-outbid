@@ -10,6 +10,6 @@ Applying migration `202610070001_round7`
 The following migration(s) have been applied:
 All migrations have been successfully applied.
 == Recepciones de la orden después de migrar (id | con proveedor | total)
-26caf230-6221-4dbb-a88e-1d88c8ef7846|t|50.00
 aaaaaaaa-0000-4000-8000-000000000001|f|
 aaaaaaaa-0000-4000-8000-000000000002|t|55.00
+c306b2d0-3f10-4c95-9cc5-b07ada69fd61|t|50.00

@@ -3,7 +3,7 @@
     "pc": {
       "caption": "Mostrando 120 de 586 · escribe para encontrar el resto",
       "cardsRendered": 120,
-      "codeEnterMs": 119,
+      "codeEnterMs": 137,
       "cartAfterCode": "Tribulus 1400 - Nutrex - 90 cápsulas",
       "search:iso100 vanilla": {
         "cards": 3,
@@ -11,11 +11,11 @@
       },
       "search:moira 275n": {
         "cards": 1,
-        "caption": "1 productos para descubrir"
+        "caption": "1 producto encontrado"
       },
       "search:cinturilla 2xs": {
         "cards": 1,
-        "caption": "1 productos para descubrir"
+        "caption": "1 producto encontrado"
       },
       "search:proteina whey": {
         "cards": 16,
@@ -29,7 +29,7 @@
     "cel": {
       "caption": "Mostrando 120 de 586 · escribe para encontrar el resto",
       "cardsRendered": 120,
-      "codeEnterMs": 121,
+      "codeEnterMs": 127,
       "cartAfterCode": "Tribulus 1400 - Nutrex - 90 cápsulas",
       "search:iso100 vanilla": {
         "cards": 3,
@@ -37,11 +37,11 @@
       },
       "search:moira 275n": {
         "cards": 1,
-        "caption": "1 productos para descubrir"
+        "caption": "1 producto encontrado"
       },
       "search:cinturilla 2xs": {
         "cards": 1,
-        "caption": "1 productos para descubrir"
+        "caption": "1 producto encontrado"
       },
       "search:proteina whey": {
         "cards": 16,

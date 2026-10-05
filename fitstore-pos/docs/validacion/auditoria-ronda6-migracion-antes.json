@@ -1,0 +1,90 @@
+{
+  "source": "API y migraciones R3 originales, base aislada",
+  "terminal": {
+    "id": "1f67e5f4-8abd-4d42-9a18-213b362f937c",
+    "name": "Equipo anterior R3",
+    "branchId": "main",
+    "revokedAt": null,
+    "lastActivityAt": "2026-10-05T15:33:59.539Z",
+    "createdAt": "2026-10-05T15:33:59.439Z"
+  },
+  "standalone": {
+    "id": "7a347cc9-699b-4bc4-838c-8a4e426e6432",
+    "orderId": null,
+    "freight": "4.00",
+    "otherCosts": "0.00",
+    "items": [
+      {
+        "qty": 2,
+        "unitCost": 15,
+        "variantId": "20559650-5b42-46fe-a6cc-535e1dc54c05",
+        "landedCost": 17
+      }
+    ],
+    "userId": "310ddd21-e0b7-4313-a994-f8910eaebdad",
+    "branchId": "main",
+    "createdAt": "2026-10-05T15:33:59.485Z"
+  },
+  "ordered": {
+    "id": "b31a2671-5279-463b-b489-8ccde80405b7",
+    "orderId": "29da3c2a-75ca-422f-a2e2-5561d2246765",
+    "freight": "4.00",
+    "otherCosts": "1.00",
+    "items": [
+      {
+        "qty": 2,
+        "cost": 25,
+        "itemId": "0da99f54-f2d6-4391-a141-14b1f668b050",
+        "variantId": "20559650-5b42-46fe-a6cc-535e1dc54c05",
+        "landedCost": 27.5
+      }
+    ],
+    "userId": "310ddd21-e0b7-4313-a994-f8910eaebdad",
+    "branchId": "main",
+    "createdAt": "2026-10-05T15:33:59.544Z"
+  },
+  "migrations": [
+    {
+      "migration_name": "202610030001_initial"
+    },
+    {
+      "migration_name": "202610040001_review"
+    },
+    {
+      "migration_name": "202610040002_sessions"
+    },
+    {
+      "migration_name": "202610040003_finance"
+    },
+    {
+      "migration_name": "202610040004_negative_stock"
+    },
+    {
+      "migration_name": "202610040005_round2"
+    },
+    {
+      "migration_name": "202610040006_round3"
+    },
+    {
+      "migration_name": "202610040007_commit_events"
+    }
+  ],
+  "syntheticIncompleteBefore": {
+    "id": "e535fd97-6070-4336-9634-969ec7de4526",
+    "orderId": "29da3c2a-75ca-422f-a2e2-5561d2246765",
+    "freight": "0.00",
+    "otherCosts": "0.00",
+    "items": [
+      {
+        "qty": 1,
+        "cost": 25
+      },
+      {
+        "qty": 1
+      }
+    ],
+    "userId": "310ddd21-e0b7-4313-a994-f8910eaebdad",
+    "branchId": "main",
+    "createdAt": "2026-10-05T15:34:44.417Z"
+  }
+}

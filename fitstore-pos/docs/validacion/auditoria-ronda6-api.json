@@ -1,0 +1,119 @@
+{
+  "equipment": {
+    "missing": {
+      "status": 403,
+      "code": "TERMINAL_REQUIRED"
+    },
+    "initialRegistrationStatus": "pending",
+    "pending": {
+      "status": 403,
+      "code": "TERMINAL_PENDING"
+    },
+    "approved": {
+      "status": 201,
+      "auditTerminalId": "cfab61e0-d4c4-46be-abaa-ff78ef49a12f"
+    },
+    "secretMismatch": 403,
+    "revokedOldSession": 401,
+    "revokedRegistration": 400,
+    "newSessionWithoutTerminal": 403,
+    "replacementStatus": "pending",
+    "replacementMutation": 403
+  },
+  "purchases": {
+    "receiptTotal": 34,
+    "receipt": {
+      "id": "f3f90c23-8b0b-41b0-baac-3ff2e0ae5298",
+      "orderId": null,
+      "supplierId": "d6de884c-d86f-4be8-a68d-a77e080aca0f",
+      "total": "34",
+      "attachmentId": null,
+      "operationId": "369ec6a0-a048-4a3c-8d5e-4faa6ac92aba",
+      "freight": "4",
+      "otherCosts": "0",
+      "items": [
+        {
+          "qty": 2,
+          "unitCost": 15,
+          "variantId": "059ee1db-59ad-42d8-afbb-6d87ba182951",
+          "landedCost": 17
+        }
+      ],
+      "userId": "f5e6e58b-a43a-4744-8ecd-a5cccd81f874",
+      "branchId": "main",
+      "createdAt": "2026-10-05T15:36:38.383Z"
+    },
+    "reportAfterStandalone": {
+      "Proveedor": "Proveedor auditoría audit-r6-muvex8gv",
+      "Ordenado": 0,
+      "Compras": 34,
+      "Pagado": 0,
+      "Pendiente": 34,
+      "Sin_conciliar": 0
+    },
+    "repeatSameReceipt": true,
+    "receiptsForOperation": 1,
+    "reportAfterOrder50": {
+      "Proveedor": "Proveedor auditoría audit-r6-muvex8gv",
+      "Ordenado": 50,
+      "Compras": 84,
+      "Pagado": 0,
+      "Pendiente": 84,
+      "Sin_conciliar": 0
+    },
+    "reportAfterPaying34": {
+      "Proveedor": "Proveedor auditoría audit-r6-muvex8gv",
+      "Ordenado": 50,
+      "Compras": 84,
+      "Pagado": 34,
+      "Pendiente": 50,
+      "Sin_conciliar": 0
+    },
+    "reportOutsideDateRange": {
+      "Proveedor": "Proveedor auditoría audit-r6-muvex8gv",
+      "Ordenado": 0,
+      "Compras": 0,
+      "Pagado": 0,
+      "Pendiente": 0,
+      "Sin_conciliar": 0
+    }
+  },
+  "lots": {
+    "invalidEntryStatus": 400,
+    "message": "En una entrada indica el número de lote, no un lote existente.",
+    "stockUnchanged": true,
+    "receiptCountUnchanged": true,
+    "movementCountUnchanged": true,
+    "inventedLotStored": false,
+    "directForeignKeyRejectCode": "P2003",
+    "validEntry": {
+      "status": 201,
+      "receiptId": "4f72c098-864a-49e1-88ca-b7449ea83ccf",
+      "lotQty": "1",
+      "movementQty": "1"
+    }
+  },
+  "precision": {
+    "qtySubmitted": 0.0004,
+    "legacyReceiveStatus": 400,
+    "stockBefore": "1",
+    "stockAfter": "1",
+    "costBefore": "10",
+    "costAfter": "10",
+    "storedMovementQty": "undefined",
+    "storedReceivedQty": "0",
+    "merchandiseSameQtyStatus": 400
+  },
+  "productionValidation": {
+    "status": 400,
+    "body": {
+      "statusCode": 400,
+      "message": "Revisa los campos: identificador de la operación es obligatorio; caja es obligatorio; línea es obligatorio; pago es obligatorio."
+    }
+  },
+  "source": {
+    "api": "API R6 compilada (node dist/main.js)",
+    "db": "fitstore_audit_r6",
+    "originalZipUnchanged": true
+  }
+}

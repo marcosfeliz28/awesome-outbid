@@ -1,0 +1,248 @@
+{
+  "description": "Revisiones adversariales de Claude en la ronda 7 (antes de la entrega). Cada hallazgo propuesto lo verificaron dos agentes independientes que intentaron refutarlo; 'confirmed' = ambos lo reprodujeron. Todos los confirmados están corregidos con regresiones (ver docs/RONDA7_CLAUDE.md).",
+  "passes": [
+    {
+      "pass": 1,
+      "scope": "Correcciones R6-01/02/03 e inventario de la tienda",
+      "agents": 39,
+      "confirmed": [
+        {
+          "severity": "P3",
+          "title": "Kit return cost and profit report use SaleItem.unitCost, which is rounded to 2 decimals per kit, so they do not match Sale.costTotal or the stock value put back",
+          "file": "fitstore-pos/apps/api/src/sales.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "R6-02 size check never applies to the real imported catalog: invoices for a missing size are silently linked to another size's product",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "A talla 'XL'/'XS' variant is accepted for invoice '2XL'/'3XL'/'2XS': the contains() short-circuit runs before sizesIn",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "Regression: a variant whose talla is not a letter size (32, 34, 8, One Size, 2X) lost the old size-vocabulary conflict check",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "SIZE_ALIASES maps 'X-Large'/'Extra Large'/'XX-Large'/'X-Small' to L/S: an XL variant is falsely rejected and an L variant is accepted for XL",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "A number before a one-letter size ('Leggings 7/8 M', 'Ref 1055 S') hides the declared size, so the wrong single variant is auto-selected",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "Possessive stripping misses the acute-accent apostrophe ('Women´s'), so a stray 's' becomes size S and a correct single variant is rejected",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "Six shop IDs are dropped because REFERENCIA (a barcode) is used as the product key instead of ID. The cashier cannot find these products by code, and fixing REFERENCIA later duplicates their stock",
+          "file": "fitstore-pos/apps/api/scripts/import-inventario.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "Re-running the import overwrites cost, prices, min/max stock, active flag, names and brands edited in the app, and resets the weighted-average cost with no kardex record. Re-running is the only way to activate the 30 inactive products",
+          "file": "fitstore-pos/apps/api/scripts/import-inventario.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "Typing a product code and pressing Enter shows \"agregado\" even when the stock check rejected the item, so the item can go out unpaid",
+          "file": "fitstore-pos/apps/web/src/POS.tsx",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "Six products cannot be found by their inventory ID because the importer uses REFERENCIA (a barcode) as their only code",
+          "file": "fitstore-pos/apps/api/scripts/import-inventario.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "byCode returns whichever product sorts first by name when one variant's SKU equals another variant's barcode, and the importer's clash path creates that case",
+          "file": "fitstore-pos/apps/web/src/POS.tsx",
+          "status": "corregido"
+        }
+      ],
+      "rejected": [
+        "Several partial returns of a kit (or any line) refund less than the line total even though stock is restored exactly",
+        "Legacy fractional kit sale lines can no longer be returned at all, not even the full remainder",
+        "The import permanently turns off lot/expiry control for Suplementos and Maquillaje on every run. The re-enable path the code comment promises does not exist, and turning it back on would block sales of the imported stock",
+        "Search does not ignore apostrophes: \"loreal\" finds none of the 27 L'Oréal products and \"puritans pride\" none of the 19 Puritan's Pride products",
+        "The search example in the code comment ('iso100 vainilla 5lb') returns nothing: Spanish flavor words never match the English product names"
+      ]
+    },
+    {
+      "pass": 2,
+      "scope": "Correcciones de la revisión 1",
+      "agents": 35,
+      "confirmed": [
+        {
+          "severity": "P1",
+          "title": "measures() reads the decimal part of a size as a second size, so name traits pick the wrong whey tub with the variant preselected",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "'2X-Large' / '3X-Large' are read as XL, so invoices for sizes the shop lacks (or 2XL) are preselected into the XL product",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "Ties between products that differ only by size or colour are settled by catalog order, preselecting an arbitrary size with confidence up to 100%",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "nameConflicts treats every number+unit in a product name as its package size, rejecting correct matches with misleading notes",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "A reference number before XL ('Ref 1201 XL') becomes size '1201XL', rejecting the right size and suggesting XS/S with a nonsense note",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "Short names made of colour words drop below the 0.6 threshold: 'Shaker negro' no longer matches anything",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "Return cost is rounded per SaleItem but Sale.costTotal per ticket, so a full return can reverse more cost than was booked",
+          "file": "fitstore-pos/apps/api/src/sales.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "Legacy fractional combo: allocationCost uses rounded allocation quantities, so a return reverses more cost than the sale booked",
+          "file": "fitstore-pos/packages/shared/src/index.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "A REFERENCIA that repeats, or that equals another row's ID, makes one row take over another product's code; the second product is never created and the next re-run crashes",
+          "file": "fitstore-pos/apps/api/scripts/import-inventario.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "Old-key fallback findFirst(sku OR barcode) has no ordering and can rename an unrelated in-app variant, leaving the imported stock under the barcode-string sku",
+          "file": "fitstore-pos/apps/api/scripts/import-inventario.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "On code+Enter or camera scan, the 'dejará stock negativo' warning is replaced in the same tick by the 'agregado' toast and never shows",
+          "file": "fitstore-pos/apps/web/src/POS.tsx",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "After an out-of-stock code, the code stays in the search box, so the next scan from a keyboard-wedge barcode reader is appended to it and fails silently",
+          "file": "fitstore-pos/apps/web/src/POS.tsx",
+          "status": "corregido"
+        }
+      ],
+      "rejected": [
+        "coreText strips colour words that are part of a shade or flavour name, so the colour-named sibling wins every unrecognised shade or flavour at high confidence",
+        "Profit/ABC report cost no longer matches dashboard and income statement COGS for combos with sub-cent unit cost",
+        "byCode now prefers barcode, so a typed inventory ID sells a different product whenever some barcode equals that ID (including the importer's own clash path)",
+        "Re-run ignores a REFERENCIA/'Barcode …' added later to an existing ID and reports it as 'sin cambios', so that barcode never scans"
+      ]
+    },
+    {
+      "pass": 3,
+      "scope": "Correcciones de la revisión 2",
+      "agents": 28,
+      "confirmed": [
+        {
+          "severity": "P1",
+          "title": "Gold/cream/light are now dropped from the core, so short invoice lines preselect a different brand that only shares flavour and size",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P1",
+          "title": "measuresIn no longer reads hyphenated sizes ('5-lb'), so the 2 lb product is preselected for a 5-lb invoice",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P1",
+          "title": "5% size tolerance makes a different stocked size count as agreeing: wrong tub or wrong brand preselected",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "'Shaker negro - Color negro' becomes the default for any shaker line, including 'Shaker Clear'",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "Invoice 'Natural' (sin sabor) now conflicts with catalog 'unflavored' and blocks clear creatine matches",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "Unstocked rule is defeated by any incidental agreement (the 'Gold' brand word as a colour, a shared ml size): another product line is preselected",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P2",
+          "title": "'Café' (brown) is read only as a flavour: café fajas preselect the black or cream size",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "Sizes 7XL/8XL become XL, and 'Talla L-XL' keeps only L",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "European thousands '1.000 ml' parsed as 1 ml: false size conflict on Redken 1,000 ml",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        },
+        {
+          "severity": "P3",
+          "title": "Flavour agreement is a boolean overlap: 'Chocolate Mantequilla de Maní' goes to Gourmet Chocolate",
+          "file": "fitstore-pos/apps/api/src/invoice.ts",
+          "status": "corregido"
+        }
+      ],
+      "rejected": [
+        "FILLER 'oscuro' erases the only distinguishing word: 'Envase Oscuro' becomes ambiguous and points at Envase blanco",
+        "Ambiguity note sets productId to the arbitrary first tied product, and the review UI offers only that product",
+        "Legacy whole-unit combo lines now return and report cost from the rounded per-unit cost, so it no longer matches the booked sale cost or the stock value put back"
+      ]
+    }
+  ]
+}

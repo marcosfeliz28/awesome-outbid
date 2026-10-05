@@ -1,0 +1,7 @@
+{
+  "status": 400,
+  "body": {
+    "statusCode": 400,
+    "message": "Revisa los campos: identificador de la operación es obligatorio; caja es obligatorio; línea es obligatorio; pago es obligatorio."
+  }
+}

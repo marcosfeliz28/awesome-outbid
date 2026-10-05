@@ -11,6 +11,7 @@ export default tseslint.config(
       "apps/web/src-tauri/target/**",
       // Reproducciones externas de ChatGPT, guardadas tal cual como evidencia.
       "docs/validacion/auditoria-ronda4-reproducciones/**",
+      "docs/validacion/auditoria-ronda6-reproducciones/**",
     ],
   },
   eslint.configs.recommended,

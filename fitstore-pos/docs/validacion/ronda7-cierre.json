@@ -1,0 +1,106 @@
+{
+  "project": "FitStore POS",
+  "round": 7,
+  "author": "Claude",
+  "audit": {
+    "report": "docs/AUDITORIA_RONDA6.md",
+    "evidence": "docs/validacion/auditoria-ronda6.json",
+    "auditedZipSha256": "d3356107a588ff13e9b0accfefe0dd1495215862168388105225cc3032220efe"
+  },
+  "suites": {
+    "check": {
+      "passed": true,
+      "unitTests": 74,
+      "log": "ronda7-check.txt"
+    },
+    "integrationCompiled": {
+      "passed": 81,
+      "total": 81,
+      "runtime": "node dist/main.js",
+      "database": "fitstore_r7 nueva (12 migraciones + semilla)",
+      "log": "ronda7-integracion-compilada.txt"
+    },
+    "integrationDevelopment": {
+      "passed": 81,
+      "total": 81,
+      "runtime": "tsx src/main.ts",
+      "log": "ronda7-integracion-desarrollo.txt"
+    },
+    "e2e": {
+      "passed": 9,
+      "total": 9,
+      "log": "ronda7-navegador.txt"
+    },
+    "upgradeFromR3": {
+      "passed": 7,
+      "total": 7,
+      "dir": "ronda7-actualizacion/"
+    },
+    "storeInventory": {
+      "products": 616,
+      "units": 3158,
+      "rerunUnchanged": 616,
+      "dir": "ronda7-tienda/"
+    },
+    "adversarialReviews": {
+      "passes": 3,
+      "confirmed": [
+        12,
+        12,
+        10
+      ],
+      "allFixed": true,
+      "file": "ronda7-revision-adversarial.json"
+    }
+  },
+  "findings": [
+    {
+      "id": "R6-01",
+      "priority": "P1",
+      "status": "corregido",
+      "fix": [
+        "Combos por unidades enteras en venta y devolución",
+        "derivedStockQty valida el consumo exacto antes de escribir",
+        "returnShares reparte devoluciones exactas por lote y componente",
+        "Sale.costTotal = suma por línea; devolución con allocationCost y redondeo acumulado; reporte de utilidad redondea al final"
+      ],
+      "tests": [
+        "tests/api.test.ts › Ronda 7 › R6-01",
+        "tests/api.test.ts › revisión R7: costo de combos exacto",
+        "tests/api.test.ts › revisión R7: línea fraccionada anterior",
+        "packages/shared/src/business.test.ts › derivedStockQty / returnShares / allocationCost"
+      ],
+      "failsOnPreviousCode": true
+    },
+    {
+      "id": "R6-02",
+      "priority": "P2",
+      "status": "corregido",
+      "fix": [
+        "Tallas reconocidas por sí mismas (XS–XL, 2XL–9XL, XXL=2XL, X-Large, Mediana, 'talla L-XL')",
+        "Talla comparada como talla antes que como texto",
+        "Tallas no estándar chocan con talla declarada distinta"
+      ],
+      "tests": [
+        "tests/invoice.test.ts › talla explícita sin vocabulario del catálogo",
+        "tests/invoice.test.ts › casos de tallas de la revisión adversarial",
+        "tests/invoice.test.ts › catálogo real de la tienda"
+      ],
+      "failsOnPreviousCode": true
+    },
+    {
+      "id": "R6-03",
+      "priority": "P2",
+      "status": "corregido",
+      "fix": [
+        "Predicado de 202610060001 con IS DISTINCT FROM, líneas objeto y CASE",
+        "Nueva 202610070001_round7 devuelve a NULL los totales parciales ya conciliados"
+      ],
+      "tests": [
+        "tests/api.test.ts › Ronda 7 › R6-03",
+        "docs/validacion/ronda7-actualizacion/ (R3 → R7 real)"
+      ],
+      "failsOnPreviousCode": true
+    }
+  ]
+}

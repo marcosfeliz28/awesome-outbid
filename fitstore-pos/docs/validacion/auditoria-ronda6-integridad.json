@@ -1,0 +1,17 @@
+{
+  "uploadedFile": "fitstore-pos-ronda6.zip",
+  "uploadedBytes": 3110532,
+  "sha256": "d3356107a588ff13e9b0accfefe0dd1495215862168388105225cc3032220efe",
+  "zipIntegrity": "ok",
+  "originalFiles": 193,
+  "originalFilesIdenticalAfterAudit": 193,
+  "sourceOrConfigChanges": [],
+  "officialScreenshotsCopiedAndRestored": [
+    "fitstore-pos/docs/cobro-exitoso.png",
+    "fitstore-pos/docs/dashboard-mobile.png",
+    "fitstore-pos/docs/pos-mobile.png",
+    "fitstore-pos/docs/validacion/ronda6-capturas/cel-equipos-320.png",
+    "fitstore-pos/docs/validacion/ronda6-capturas/cel-equipos-390.png"
+  ],
+  "auditAddedFilesOnly": true
+}

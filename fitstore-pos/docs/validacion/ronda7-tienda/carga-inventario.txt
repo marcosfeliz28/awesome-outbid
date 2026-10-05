@@ -3,10 +3,10 @@ Inventario real de la tienda (INVENTARIO_2026_Actualizado.xlsx) en una base nuev
 == Segunda carga del mismo archivo
 616 productos leídos · 0 nuevos (0 unidades) · 616 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 códigos corregidos · 30 sin precio o costo en el Excel (inactivos).
 94 productos para revisar en revision-inventario.csv (ábrelo en Excel).
-== Totales por categoría (productos | unidades | valor costo | valor venta) — coinciden con la hoja Resumen
-Fajas|40|186.000|261700.00000|570100.00000
-Maquillaje|355|2062.000|861116.00000|1985985.00000
-Suplementos|221|910.000|1098035.00000|2033920.00000
+== Totales por categoría (productos | unidades); los valores de costo y venta coinciden con la hoja Resumen y no se publican aquí
+Fajas|40|186.000
+Maquillaje|355|2062.000
+Suplementos|221|910.000
 == Las 6 filas con código de barras en REFERENCIA: el ID es el código para cobrar
 1223|081555969837
 1259|7898143971461

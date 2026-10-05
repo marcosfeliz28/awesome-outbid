@@ -1,0 +1,134 @@
+{
+  "project": "FitStore POS",
+  "round": 6,
+  "auditDate": "2026-10-05",
+  "verdict": "REQUIERE_CORRECCIONES",
+  "originalReproductionsCorrected": 8,
+  "partiallyCorrected": [
+    "R4-07"
+  ],
+  "officialTests": {
+    "unit": {
+      "passed": 38,
+      "total": 38
+    },
+    "integrationCompiled": {
+      "passed": 77,
+      "total": 77
+    },
+    "browser": {
+      "passed": 8,
+      "total": 8
+    },
+    "types": "passed",
+    "lint": "passed",
+    "build": "passed"
+  },
+  "independentObservations": {
+    "vitest": {
+      "passed": 7,
+      "total": 7,
+      "correctionControls": 5,
+      "defectReproductions": 2
+    },
+    "screenshots": 8,
+    "browserJsErrors": 0,
+    "httpSseBurst": {
+      "submitted": 8,
+      "accepted": 2,
+      "rejected429": 6
+    }
+  },
+  "openFindings": [
+    {
+      "id": "R6-01",
+      "priority": "P1",
+      "title": "Venta de combo redondea el consumo derivado a cero",
+      "evidence": "auditoria-ronda6-kit.json",
+      "ordinaryApiReproduction": true
+    },
+    {
+      "id": "R6-02",
+      "priority": "P2",
+      "continues": "R4-07",
+      "title": "Talla explícita incompatible se asigna si no está en el vocabulario del catálogo",
+      "evidence": "auditoria-ronda6-dirigidas.json",
+      "ordinaryFunctionReproduction": true
+    },
+    {
+      "id": "R6-03",
+      "priority": "P2",
+      "title": "Migración guarda suma parcial de recepción histórica incompleta",
+      "evidence": "auditoria-ronda6-migracion-despues.json",
+      "syntheticSqlFixture": true,
+      "observedFromNormalR3Api": false
+    }
+  ],
+  "migration": {
+    "origin": "R3 original API and Prisma migration history",
+    "originalMigrationCount": 8,
+    "finalMigrationCount": 11,
+    "idempotent": true,
+    "validStandaloneReceiptTotal": 34,
+    "validOrderedReceiptTotal": 55,
+    "originalPurchasesPaidBalance": 0
+  },
+  "integrity": {
+    "uploadedFile": "fitstore-pos-ronda6.zip",
+    "uploadedBytes": 3110532,
+    "sha256": "d3356107a588ff13e9b0accfefe0dd1495215862168388105225cc3032220efe",
+    "zipIntegrity": "ok",
+    "originalFiles": 193,
+    "originalFilesIdenticalAfterAudit": 193,
+    "sourceOrConfigChanges": [],
+    "officialScreenshotsCopiedAndRestored": [
+      "fitstore-pos/docs/cobro-exitoso.png",
+      "fitstore-pos/docs/dashboard-mobile.png",
+      "fitstore-pos/docs/pos-mobile.png",
+      "fitstore-pos/docs/validacion/ronda6-capturas/cel-equipos-320.png",
+      "fitstore-pos/docs/validacion/ronda6-capturas/cel-equipos-390.png"
+    ],
+    "auditAddedFilesOnly": true
+  },
+  "implementationModified": false,
+  "limitations": [
+    "PostgreSQL 18.4 local; Compose/PostgreSQL 17 no ejecutado",
+    "Anthropic con SDK y respuestas simuladas; sin llamadas reales",
+    "Sin pruebas de hardware, carga de producción o múltiples sucursales",
+    "Suite completa ejecutada sobre API compilada; tsx sólo validación dirigida"
+  ],
+  "cleanup": {
+    "auditRoots": [
+      45764,
+      46100,
+      46679,
+      45765
+    ],
+    "signalled": [
+      46717,
+      46708,
+      46692,
+      46107,
+      45796,
+      45787,
+      45765,
+      46679,
+      46100,
+      45764
+    ],
+    "originalServices": [
+      {
+        "pid": 2258,
+        "running": true
+      },
+      {
+        "pid": 5998,
+        "running": true
+      },
+      {
+        "pid": 6058,
+        "running": true
+      }
+    ]
+  }
+}

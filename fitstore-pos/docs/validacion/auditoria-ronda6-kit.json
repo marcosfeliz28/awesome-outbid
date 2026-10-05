@@ -1,0 +1,49 @@
+{
+  "input": {
+    "offlineUuid": "87eb2c40-6856-4c48-83be-db116f42d2a9",
+    "cashSessionId": "ea01e588-cc99-4235-b725-a7abd4af8191",
+    "items": [
+      {
+        "variantId": "70d353bb-9205-4dcf-aa20-eb9f4c383f1d",
+        "qty": 0.001
+      }
+    ],
+    "payments": [
+      {
+        "method": "cash",
+        "amount": 5
+      }
+    ],
+    "expectedTotal": 5
+  },
+  "componentQuantityPerKit": 0.4,
+  "expectedExactConsumption": 0.0004,
+  "saleStatus": 201,
+  "saleTotal": "5",
+  "saleCost": "4",
+  "stockBefore": 1,
+  "stockAfter": 1,
+  "moves": [
+    {
+      "qty": "0",
+      "balanceAfter": "1",
+      "unitCost": "10000"
+    }
+  ],
+  "newMovementCount": 1,
+  "saleItems": [
+    {
+      "qty": "0.001",
+      "unitCost": "4000",
+      "stockAllocations": [
+        {
+          "qty": 0,
+          "unitCost": 10000,
+          "variantId": "7ffa76f9-5313-4a7a-bd47-1af61c6203be"
+        }
+      ]
+    }
+  ],
+  "observedDefect": true,
+  "expectedBehavior": "Rechazar la venta antes de cobrar cuando el consumo de un componente no es representable a 3 decimales; preservar stock, caja y facturas."
+}

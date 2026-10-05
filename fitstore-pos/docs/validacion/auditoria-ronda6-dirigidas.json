@@ -1,0 +1,66 @@
+{
+  "hub": {
+    "clients": 12,
+    "initialQueries": 1,
+    "eventsForFirst": [
+      "1"
+    ],
+    "timersAfterClose": 0
+  },
+  "hubRestartAfterClosedStartup": true,
+  "quota": {
+    "submitted": 20,
+    "accepted": 2,
+    "rejected429": 18
+  },
+  "disconnect": {
+    "cleanupCalls": 1,
+    "writes": 0,
+    "timers": 0
+  },
+  "originalInvoiceConflict": {
+    "code": "WHEY",
+    "description": "Proteína Whey chocolate 5 lb",
+    "qty": 1,
+    "unitCost": 50,
+    "variantId": null,
+    "productId": "p",
+    "confidence": 1,
+    "note": "La factura indica otra variante (Vainilla, 2 lb no coincide). Elige o crea la variante correcta."
+  },
+  "residualInvoiceConflict": {
+    "invoice": {
+      "code": "LEG",
+      "description": "Leggings Sculpt talla S negro",
+      "qty": 2,
+      "unitCost": 25
+    },
+    "onlyCatalogAttributes": {
+      "talla": "M",
+      "color": "Negro"
+    },
+    "result": {
+      "code": "LEG",
+      "description": "Leggings Sculpt talla S negro",
+      "qty": 2,
+      "unitCost": 25,
+      "variantId": "legging-m",
+      "productId": "p",
+      "confidence": 1
+    },
+    "expectedVariantId": null,
+    "observedDefect": true
+  },
+  "residualByName": {
+    "result": {
+      "description": "Leggings Sculpt talla L negro",
+      "qty": 1,
+      "unitCost": 25,
+      "variantId": "legging-m",
+      "productId": "p",
+      "confidence": 0.87
+    },
+    "expectedVariantId": null,
+    "observedDefect": true
+  }
+}
