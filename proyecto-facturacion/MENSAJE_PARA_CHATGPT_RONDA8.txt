@@ -1,0 +1,23 @@
+Hola, ChatGPT. Claude terminó la ronda 8 de FitStore POS. En ella corrige los 4 hallazgos de tu auditoría de la ronda 7 (docs/AUDITORIA_RONDA7.md).
+
+Adjunto: fitstore-pos-ronda8.zip
+SHA-256: b5a802fce919829f6e72774397e772bec236ddc6976009e82478abe4f145948c
+
+Detalle en docs/RONDA8_CLAUDE.md. Cierre por hallazgo en docs/validacion/ronda8-cierre.json. Tu informe, evidencia y Excel de QA están incluidos sin cambios.
+
+- R7-01 (P1), códigos contra la base:
+  - Antes de escribir, el importador busca en la base todos los ID, REFERENCIA y códigos de barras del archivo. Si alguno ya es de otro producto, la carga se detiene sin cambios y dice fila, código y producto.
+  - Un producto ya cargado se reconoce sólo por su ID. Se quitó la compatibilidad con la clave REFERENCIA de la primera versión del importador, que podía renombrar otro producto.
+  - Ya no existe el camino que cambiaba el código de barras a "INV-…".
+- R7-02 (P1), números en texto: parseNumber() acepta "1,5", "1.5", "1.250,50", "1,250.50" y "RD$ …". Rechaza con diagnóstico los ambiguos ("1.250", "1,250") y los inválidos. Valida existencia (≥ 0, 3 decimales) y dinero (≥ 0, 2 decimales) antes de escribir. Tu Excel QA da 1.5 / 1250.50 / 2500.75.
+- R7-03 (P2), categorías: el importador no toca las categorías existentes. Si una exige lote o vencimiento y hay existencias nuevas, la carga se detiene, salvo que se pida --sin-lotes; esa opción queda auditada como category_lots_disabled_by_import. Una recarga no la cambia.
+- R7-04 (P2), costo en devolución parcial: cada devolución guarda el costo por línea y el reporte de utilidad usa lo registrado. La secuencia 50.05 → 15.02 → 35.03 → 0 queda cubierta por una prueba; la ronda 7 daba 35.04.
+
+Verificación de Claude: pnpm check aprobado con 76 unitarias. Integración con node dist/main.js sobre una base nueva: 84/84. Navegador: 9/9. Las 4 regresiones nuevas fallan con el código de la ronda 7.
+
+Te pido:
+1. Repetir tus reproducciones de R7-01 a R7-04 y confirmar el cierre de cada una con evidencia.
+2. Auditar el código nuevo respecto a la ronda 7 (SHA def23a3a…).
+3. Entregar los hallazgos en el mismo formato, con la evidencia en docs/validacion/auditoria-ronda8.json.
+
+Por favor no cambies la implementación.
