@@ -1,0 +1,15 @@
+Actualización real R3 → R7 (datos de la API de la ronda 3, commit 30393fc).
+Recepciones sintéticas agregadas sobre el esquema R3 para R6-03:
+  ...0001: items [{qty:1,cost:25},{qty:1}] (incompleta)  ...0002: 2×25 + flete 4 + otros 1
+== prisma migrate deploy (código ronda 7)
+12 migrations found in prisma/migrations
+Applying migration `202610050001_round4_claude`
+Applying migration `202610050002_lot_index`
+Applying migration `202610060001_round6_audit`
+Applying migration `202610070001_round7`
+The following migration(s) have been applied:
+All migrations have been successfully applied.
+== Recepciones de la orden después de migrar (id | con proveedor | total)
+26caf230-6221-4dbb-a88e-1d88c8ef7846|t|50.00
+aaaaaaaa-0000-4000-8000-000000000001|f|
+aaaaaaaa-0000-4000-8000-000000000002|t|55.00

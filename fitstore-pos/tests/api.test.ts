@@ -3682,7 +3682,12 @@ describe("Ronda 7 · auditoría R6 de ChatGPT", () => {
     const item = await fixtureDb.saleItem.findFirstOrThrow({
       where: { saleId: sale.id },
     });
-    // Como la dejaba una venta anterior: 0.5 combos que consumieron 0.2.
+    // Como la dejaba una venta anterior: 0.5 combos que consumieron 0.2 (el
+    // costo de la venta se ajusta igual, para que los reportes cuadren).
+    await fixtureDb.sale.update({
+      where: { id: sale.id },
+      data: { costTotal: 2 },
+    });
     await fixtureDb.saleItem.update({
       where: { id: item.id },
       data: {

@@ -1,0 +1,26 @@
+{
+  "source": "API y esquema de la ronda 3 (commit 30393fc), base separada",
+  "users": [
+    {
+      "id": "fb031ce4-4ca2-4e07-bdbf-3983ab513c85",
+      "email": "r7-upgrade-muvi55ek-original@example.test"
+    },
+    {
+      "id": "099437f3-601a-41ae-b8b1-70d77e426d52",
+      "email": "r7-upgrade-muvi55ek-otro@example.test"
+    }
+  ],
+  "terminalId": "f070e94e-ee31-41b6-b3ca-12f2bf4fe45b",
+  "variantId": "eb8be1f9-7857-4b16-9dba-b4c6ec4aa1c8",
+  "supplierId": "e0915801-7b8b-4542-90b4-3b0bf6a32795",
+  "supplierName": "Proveedor actualización r7-upgrade-muvi55ek",
+  "entry": {
+    "id": "6335587c-8ddb-4a65-8c75-57f8033df13d",
+    "receiptId": "4ee420f5-3366-4da8-a0e8-840510b59027",
+    "variantIds": [
+      "eb8be1f9-7857-4b16-9dba-b4c6ec4aa1c8"
+    ],
+    "total": 34
+  },
+  "orderId": "ba2ef493-3fac-4592-9786-f0a71540c1fc"
+}

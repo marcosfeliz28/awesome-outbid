@@ -1,0 +1,64 @@
+{
+  "source": "API y esquema de la ronda 3 (commit 30393fc), base separada",
+  "runtime": "node dist/main.js",
+  "legacySession": {
+    "status": 403,
+    "body": {
+      "statusCode": 403,
+      "message": "Este equipo espera aprobación de un gerente (Configuración › Equipos o PIN de gerente en este equipo).",
+      "code": "TERMINAL_PENDING"
+    }
+  },
+  "otherUserClaim": {
+    "status": 201,
+    "terminalStatus": "pending",
+    "approvedBy": null,
+    "secretHashInResponse": false
+  },
+  "otherUserMutation": {
+    "status": 403,
+    "body": {
+      "statusCode": 403,
+      "message": "Este equipo espera aprobación de un gerente (Configuración › Equipos o PIN de gerente en este equipo).",
+      "code": "TERMINAL_PENDING"
+    }
+  },
+  "originalOwnerRegistration": {
+    "status": 403,
+    "body": {
+      "statusCode": 403,
+      "message": "Este identificador de equipo pertenece a otro dispositivo."
+    }
+  },
+  "managerView": {
+    "legacy": true,
+    "status": "pending",
+    "claimedBy": "Actualización otro"
+  },
+  "purchasesAfterMigration": {
+    "Proveedor": "Proveedor actualización r7-upgrade-muvi55ek",
+    "Ordenado": 50,
+    "Compras": 139,
+    "Pagado": 0,
+    "Pendiente": 139,
+    "Sin_conciliar": 1
+  },
+  "purchasesAfterPaying139": {
+    "Proveedor": "Proveedor actualización r7-upgrade-muvi55ek",
+    "Ordenado": 50,
+    "Compras": 139,
+    "Pagado": 139,
+    "Pendiente": 0,
+    "Sin_conciliar": 1
+  },
+  "ownerDeviceStatus": "approved",
+  "checks": {
+    "legacySessionBlocked": true,
+    "claimLeftPending": true,
+    "claimerCannotOperate": true,
+    "managerSeesLegacyClaim": true,
+    "purchasesRecovered": true,
+    "incompleteReceiptUnreconciled": true,
+    "paidToZero": true
+  }
+}
