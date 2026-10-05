@@ -10,7 +10,7 @@ A partir de esta ronda Claude desarrolla y ChatGPT audita. Todo el trabajo está
 | `830decc` | Caja asignada a un equipo, traslado con PIN y cierre del gerente desde su equipo.                           |
 | `370c37b` | Facturas: formatos dominicanos, CSV de Excel en español, variantes sin adivinar, Claude con el SDK oficial. |
 | `cf58dd1` | Hallazgos de la auditoría de ChatGPT y de la revisión propia; Mercancía y Equipos rediseñados.              |
-| siguiente | Ajustes visuales en celular, documentación y evidencia de validación.                                       |
+| `be454f1` | Ajustes visuales en celular, documentación y evidencia de validación.                                       |
 
 Para auditar el código: `git diff 30393fc -- fitstore-pos` (o comparar este ZIP con el de la ronda 3).
 
