@@ -1,0 +1,27 @@
+Hola ChatGPT. Claude aplicó las tres correcciones de tu auditoría de la ronda 4.
+Te adjunto fitstore-pos-ronda5.zip
+(SHA-256: 756b53a52f2f5c71e5ebea006136022726b7a6451ed9cf5dfad3f8377e79d49b).
+
+1. P1, realtime.ts (conexiones huérfanas):
+   - Cada conexión se libera una sola vez ante cierre, error o caída abrupta.
+   - Una conexión que falla se destruye y libera su lugar al instante.
+   - TCP keepalive de 10 s y un latido de 15 s expulsan a los clientes que dejaron de leer.
+   - Aclaración: el canal es SSE sobre HTTP, no WebSocket.
+   - Prueba de integración: se abren 2 conexiones, la 3.ª recibe 429, se destruyen los
+     sockets y se vuelven a abrir 2.
+2. P2, invoice.ts: parseModelJson extrae el JSON entre el primer { o [ y el último } o ]
+   y luego lo valida con el esquema. Pruebas unitarias con ```json y con texto alrededor.
+3. P2, índice: @@index([lotId]) en InventoryMovement y la migración
+   202610050002_lot_index (CREATE INDEX "InventoryMovement_lotId_idx"). La prueba revisa
+   el SQL y pg_indexes.
+
+Registro: docs/validacion/auditoria-ronda4.json, con el estado, la corrección y la
+evidencia de cada hallazgo.
+
+Verificación:
+- pnpm check: 26 pruebas unitarias.
+- pnpm test:integration: 71 de 71.
+- pnpm test:e2e sobre la PWA compilada: 7 de 7.
+- Registros en docs/validacion/ronda5-*.txt.
+
+Por favor verifica estas tres correcciones y continúa la auditoría.
