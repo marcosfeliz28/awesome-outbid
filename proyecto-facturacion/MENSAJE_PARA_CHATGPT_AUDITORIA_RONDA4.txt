@@ -1,0 +1,66 @@
+Hola ChatGPT. Claude terminó la ronda 4 de FitStore POS y te toca auditarla. Te adjunto
+fitstore-pos-ronda4.zip
+(SHA-256: 2dab7feecca84918b95443a6636e67c31b32234e98bcbc7b6f675780ea43c7c2).
+
+Qué se hizo (detalle en docs/RONDA4_CLAUDE.md):
+
+1. Tus tres hallazgos de la ronda 3 (docs/AUDITORIA_RONDA3_CHATGPT.md):
+   - P1 compras: la recepción guarda proveedor, total, comprobante y operación. El reporte
+     de compras suma las órdenes por su total y las recepciones sin orden por lo recibido,
+     sin contar dos veces.
+   - P1 equipos:
+     - Toda ruta que mueve stock o caja exige un equipo aprobado (403 TERMINAL_REQUIRED /
+       TERMINAL_PENDING).
+     - Enrolamiento con id y secreto del dispositivo (el servidor guarda el hash).
+     - Los equipos de vendedor y almacén esperan la aprobación de un gerente, en
+       Configuración › Equipos o con su PIN en el equipo.
+     - Un equipo revocado no vuelve a operar.
+     - Las integraciones que no son navegador usan el mismo proceso.
+   - P2 lotes: las entradas no aceptan lotId (sólo número de lote) y hay una FK de
+     InventoryMovement.lotId a Lot.
+2. Hallazgos propios de Claude:
+   - Caja asignada al equipo, con traslado y cierre por el gerente.
+   - Emparejamiento de facturas por sabor, talla y color sin adivinar.
+   - Números y CSV en formato dominicano.
+   - Claude con el SDK oficial y el modelo claude-opus-5-5.
+   - Tiempo real con un solo sondeo y límite de conexiones.
+   - Límites de tamaño en la importación.
+   - El producto rápido creado por almacén queda inactivo.
+   - El costo nunca se rellena con un valor inventado.
+   - Cantidades con máximo 3 decimales.
+   - El kardex registra el costo recibido.
+   - Mensajes de error en español.
+3. Rediseño de Mercancía y de Equipos (capturas en docs/validacion/ronda4-capturas/).
+
+Verificación de Claude (registros en docs/validacion/ronda4-*.txt):
+- pnpm check: TypeScript, ESLint, 24 pruebas unitarias y compilación, todo aprobado.
+- pnpm test:integration: 69 de 69 (57 anteriores y 12 nuevas, incluidas las regresiones
+  exactas que pediste para P1, P1 y P2).
+- pnpm test:e2e sobre la PWA compilada: 7 de 7 (los 6 escenarios anteriores y la
+  aprobación de un equipo con PIN).
+- Tres equipos simultáneos: entrada, venta y salida se reflejan en las otras pantallas en
+  207–215 ms.
+
+Te pido:
+1. Repetir tus tres reproducciones de la ronda 3 y confirmar que cada hallazgo queda
+   cerrado, con evidencia.
+2. Auditar el código nuevo. Comparar contra la ronda 3: el repositorio tiene la base en el
+   commit 30393fc; también puedes comparar este ZIP con el anterior. Revisa sobre todo:
+   - Seguridad del enrolamiento (realtime.ts, common.ts), incluidos los equipos
+     registrados antes de esta ronda.
+   - Contabilidad del reporte de compras y de la recepción (reports.ts, merchandise.ts,
+     inventory.ts).
+   - Lectura e importación de facturas (invoice.ts), con números, CSV, emparejamiento
+     y la llamada a Claude.
+   - Concurrencia y recursos de la conexión en tiempo real (hub de realtime.ts).
+   - Migración 202610050001_round4_claude.
+   - Interfaz en celular de Mercancía, Equipos y el aviso de caja en otro equipo.
+3. Ejecutar pnpm check, pnpm test:integration y pnpm test:e2e.
+4. Entregar los hallazgos en el mismo formato de la ronda 3 (prioridad, comprobado, causa,
+   corrección pedida, prueba exigida), con la evidencia en
+   docs/validacion/auditoria-ronda4.json.
+
+Por favor no cambies la implementación: Claude corrige lo que encuentres en la siguiente
+ronda. Las pruebas de la IA usan respuestas simuladas; si tienes una ANTHROPIC_API_KEY de
+prueba, puedes validar la lectura de una foto real, sabiendo que la clave nunca va en el
+ZIP.
