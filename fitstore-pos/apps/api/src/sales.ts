@@ -23,6 +23,8 @@ import {
   can,
   z,
   stockQty,
+  derivedStockQty,
+  returnShares,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -293,6 +295,24 @@ export class SalesController {
             config?.taxIncluded !== false,
           );
           const kit = components.filter((c) => c.kitVariantId === variant.id);
+          // Combos (R6-01): se venden por unidades enteras y cada consumo
+          // derivado debe ser exacto antes de cobrar; nunca se redondea.
+          if (kit.length && !Number.isInteger(item.qty))
+            bad(
+              "Los combos se venden por unidades enteras: " +
+                variant.product.name +
+                ".",
+            );
+          const consumption = kit.map((c) => {
+            const qty = derivedStockQty(c.qty, item.qty);
+            if (qty === null)
+              bad(
+                "El consumo de un componente de " +
+                  variant.product.name +
+                  " no es una cantidad válida (mínimo 0.001 y 3 decimales).",
+              );
+            return { component: c, qty };
+          });
           const cost = kit.length
             ? kit.reduce(
                 (a, c) =>
@@ -302,7 +322,7 @@ export class SalesController {
                 d(0),
               )
             : d(variant.costAvg);
-          return { item, variant, totals, kit, cost };
+          return { item, variant, totals, kit, consumption, cost };
         });
         const total = money(
           lines.reduce((a, l) => a.plus(l.totals.total), d(0)),
@@ -437,19 +457,12 @@ export class SalesController {
             branchId: actor.branchId,
           },
         });
-        for (const { item, variant, totals, kit, cost } of lines) {
+        for (const { item, variant, totals, kit, consumption, cost } of lines) {
           if (kit.length) {
             const allocations: any[] = [];
-            for (const component of kit) {
+            for (const { component, qty } of consumption) {
               const v = variants.get(component.componentVariantId);
-              const parts = await takeStock(
-                tx,
-                actor,
-                v,
-                quantity(d(component.qty).times(item.qty)),
-                "sale",
-                sale.id,
-              );
+              const parts = await takeStock(tx, actor, v, qty, "sale", sale.id);
               allocations.push(
                 ...parts.map((p) => ({
                   ...p,
@@ -943,6 +956,12 @@ export class SalesController {
         const line = sale.items.find((l) => l.id === i.saleItemId);
         if (!line || d(i.qty).plus(line.returnedQty).gt(line.qty))
           bad("Cantidad de devolución inválida.");
+        // Un combo vendido se devuelve por unidades enteras (R6-01).
+        const isKit = (line.stockAllocations as any[]).some(
+          (a) => a.variantId !== line.variantId,
+        );
+        if (isKit && !Number.isInteger(i.qty))
+          bad("Los combos se devuelven por unidades enteras.");
         if (
           i.restock &&
           (i.damaged || (i.opened && line.variant.product.category.requiresLot))
@@ -976,9 +995,13 @@ export class SalesController {
           where: { id: i.line.id },
           data: { returnedQty: { increment: i.qty } },
         });
-        for (const allocation of i.line.stockAllocations as any[]) {
+        for (const { allocation, qty } of returnShares(
+          i.line.stockAllocations as any[],
+          i.line.qty,
+          i.line.returnedQty,
+          i.qty,
+        )) {
           const variant = variants.get(allocation.variantId);
-          const qty = quantity(d(allocation.qty).times(fraction));
           if (i.restock) {
             if (allocation.lotId) {
               const lot = await tx.lot.findUniqueOrThrow({

@@ -5,6 +5,8 @@ import {
   expiryDays,
   weekStart,
   weightedCost,
+  derivedStockQty,
+  returnShares,
   landedCosts,
   lineTotals,
   paymentTotals,
@@ -147,5 +149,63 @@ describe("Fechas dominicanas y descuentos por monto", () => {
     });
     expect(lineTotals(1, 118, 10, 18, true, 18).total).toBe(100);
     expect(() => lineTotals(1, 118, 0, 18, true, 119)).toThrow();
+  });
+});
+
+// Auditoría R6 (ChatGPT) · R6-01: consumos derivados de combos.
+describe("derivedStockQty · consumos exactos", () => {
+  it("acepta productos representables y rechaza los que se redondearían", () => {
+    expect(derivedStockQty(0.4, 1)).toBe(0.4);
+    expect(derivedStockQty(0.4, 3)).toBe(1.2);
+    expect(derivedStockQty(0.123, 2)).toBe(0.246);
+    // 0.4 × 0.001 = 0.0004: antes se guardaba como 0.
+    expect(derivedStockQty(0.4, 0.001)).toBeNull();
+    // Mayor que cero pero con más de tres decimales.
+    expect(derivedStockQty(0.123, 1.5)).toBeNull();
+    expect(derivedStockQty(0, 5)).toBeNull();
+  });
+});
+describe("returnShares · devoluciones exactas por lote y componente", () => {
+  const sum = (parts: { qty: number }[]) =>
+    parts.reduce((s, p) => s + Math.round(p.qty * 1000), 0) / 1000;
+  it("tres devoluciones de un combo repartido en dos lotes suman lo tomado de cada lote", () => {
+    // 3 combos × 0.4 = 1.2 tomados de dos lotes: 0.7 + 0.5.
+    const allocations = [
+      { variantId: "comp", lotId: "A", qty: 0.7 },
+      { variantId: "comp", lotId: "B", qty: 0.5 },
+    ];
+    const perLot: Record<string, number> = { A: 0, B: 0 };
+    for (let returned = 0; returned < 3; returned++) {
+      const parts = returnShares(allocations, 3, returned, 1);
+      expect(sum(parts)).toBe(0.4);
+      for (const p of parts)
+        perLot[p.allocation.lotId] =
+          Math.round((perLot[p.allocation.lotId] + p.qty) * 1000) / 1000;
+    }
+    expect(perLot).toEqual({ A: 0.7, B: 0.5 });
+  });
+  it("línea simple: devuelve exactamente la cantidad pedida", () => {
+    const parts = returnShares([{ variantId: "v", qty: 3 }], 3, 0, 1);
+    expect(parts.map((p) => p.qty)).toEqual([1]);
+    expect(returnShares([{ variantId: "v", qty: 3 }], 3, 1, 2)[0].qty).toBe(2);
+  });
+  it("varios componentes: cada uno recibe su proporción exacta", () => {
+    const parts = returnShares(
+      [
+        { variantId: "shaker", qty: 2 },
+        { variantId: "whey", qty: 0.8 },
+      ],
+      2,
+      0,
+      1,
+    );
+    expect(
+      Object.fromEntries(parts.map((p) => [p.allocation.variantId, p.qty])),
+    ).toEqual({ shaker: 1, whey: 0.4 });
+  });
+  it("una asignación de 0 (ventas antiguas) no devuelve nada", () => {
+    expect(returnShares([{ variantId: "v", qty: 0 }], 0.001, 0, 0.001)).toEqual(
+      [],
+    );
   });
 });

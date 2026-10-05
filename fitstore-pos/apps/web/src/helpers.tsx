@@ -263,3 +263,27 @@ export function ConfirmModal({
 export async function mutate(path: string, data: unknown, method = "POST") {
   return api(path, { method, body: JSON.stringify(data) });
 }
+
+// Búsqueda de la caja: sin acentos, sin mayúsculas y por palabras sueltas.
+const fold = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+export const searchWords = (query: string) =>
+  fold(query)
+    .split(/[\s/,-]+/)
+    .filter(Boolean);
+export const matchesWords = (text: string, words: string[]) => {
+  const haystack = fold(text).replace(/(\d)\s+(lb|oz|g|kg|ml|mg)\b/g, "$1$2");
+  return words.every((w) => haystack.includes(w));
+};
+// Imagen genérica por categoría cuando el producto no tiene foto.
+export const categoryImage = (category = "") => {
+  const c = fold(category);
+  if (c.includes("suplement")) return "/products/supplements.svg";
+  if (c.includes("maquill")) return "/products/makeup.svg";
+  if (c.includes("faja")) return "/products/shapewear.svg";
+  if (c.includes("ropa")) return "/products/clothing.svg";
+  return "/products/accessories.svg";
+};

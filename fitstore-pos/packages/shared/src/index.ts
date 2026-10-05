@@ -24,6 +24,51 @@ export const stockQty = (max = 1000000) =>
     .min(0.001, "debe ser al menos 0.001")
     .max(max)
     .refine(isStockQty, QTY_PRECISION);
+/**
+ * Cantidad derivada exacta, por ejemplo componente × combos vendidos (R6-01).
+ * Devuelve null si el resultado no cabe en el stock: menor que 0.001 o con más
+ * de 3 decimales. Nunca redondea: redondear desconecta el cobro del consumo.
+ */
+export const derivedStockQty = (...factors: Decimal.Value[]) => {
+  const value = factors.reduce<Decimal>((acc, f) => acc.times(f), d(1));
+  return value.gte(0.001) && value.decimalPlaces() <= 3
+    ? value.toNumber()
+    : null;
+};
+// Reparto exacto de una devolución entre las asignaciones de stock de la línea
+// (lotes y componentes de combo), en milésimas y sin redondeos acumulados
+// (R6-01). Por cada variante, lo devuelto hasta ahora corresponde a la
+// proporción acumulada de la línea; las asignaciones se llenan en orden, así
+// varias devoluciones parciales suman exactamente lo que se tomó de cada lote.
+export function returnShares(
+  allocations: { variantId: string; qty: number; [k: string]: any }[],
+  lineQty: Decimal.Value,
+  returnedBefore: Decimal.Value,
+  returning: Decimal.Value,
+) {
+  const out: { allocation: (typeof allocations)[number]; qty: number }[] = [];
+  const before = d(returnedBefore),
+    after = before.plus(returning);
+  const groups = new Map<string, typeof allocations>();
+  for (const a of allocations)
+    groups.set(a.variantId, [...(groups.get(a.variantId) ?? []), a]);
+  for (const list of groups.values()) {
+    const taken = list.reduce((s, a) => s.plus(a.qty), d(0));
+    const target = (returned: Decimal) =>
+      d(quantity(taken.times(returned).div(lineQty)));
+    let restBefore = target(before),
+      restAfter = target(after);
+    for (const allocation of list) {
+      const cap = d(allocation.qty);
+      const clamp = (v: Decimal) => (v.lt(0) ? d(0) : v.gt(cap) ? cap : v);
+      const qty = clamp(restAfter).minus(clamp(restBefore));
+      restBefore = restBefore.minus(cap);
+      restAfter = restAfter.minus(cap);
+      if (qty.gt(0)) out.push({ allocation, qty: qty.toNumber() });
+    }
+  }
+  return out;
+}
 /** Cantidad contada (puede ser 0), con como máximo 3 decimales. */
 export const countedQty = (max = 1000000) =>
   z.number().min(0).max(max).refine(isStockQty, QTY_PRECISION);

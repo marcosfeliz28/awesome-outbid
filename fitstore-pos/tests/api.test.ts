@@ -3480,3 +3480,213 @@ describe("Ronda 6 · auditoría R4 de ChatGPT", () => {
     expect(discount.body.message).toMatch(/Revisa los campos/);
   });
 });
+// Ronda 7: regresiones exigidas por la auditoría R6 de ChatGPT
+// (docs/AUDITORIA_RONDA6.md).
+describe("Ronda 7 · auditoría R6 de ChatGPT", () => {
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Santo_Domingo",
+  });
+  let cats: any[];
+  const product = async (label: string, price: number, costAvg: number) => {
+    const p = await ok("/products", {
+      name: "QA R7 " + label + " " + suffix,
+      sku: "R7-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      taxRate: 0,
+      variants: [
+        {
+          sku: "R7V-" + randomUUID().slice(0, 8),
+          barcode: "R7B-" + randomUUID().slice(0, 8),
+          price,
+          costAvg,
+        },
+      ],
+    });
+    products.push(p);
+    return p.variants[0];
+  };
+  const runMigrationSql = async (dir: string) => {
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync(
+      new URL(
+        "../apps/api/prisma/migrations/" + dir + "/migration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    )
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("--"))
+      .join("\n");
+    for (const statement of sql.split(/;\s*\n/).map((s) => s.trim()))
+      if (statement) await fixtureDb.$executeRawUnsafe(statement);
+  };
+  beforeAll(async () => {
+    cats = await ok("/categories");
+  });
+
+  it("R6-01: un combo fraccionado se rechaza sin escrituras; 1 combo consume exactamente 0.4 y su devolución lo repone", async () => {
+    const component = await product("componente", 12000, 10000);
+    const combo = await product("combo", 5000, 0);
+    await ok("/inventory/adjustments", {
+      variantId: component.id,
+      qty: 1,
+      reason: "QA stock para combo",
+    });
+    await ok("/kits", {
+      kitVariantId: combo.id,
+      components: [{ componentVariantId: component.id, qty: 0.4 }],
+    });
+    const cashOf = async () =>
+      (await ok("/cash-sessions")).find((s: any) => s.id === session.id)
+        .expected;
+    const snapshot = async () => ({
+      stock: Number(
+        (await fixtureDb.variant.findUnique({ where: { id: component.id } }))
+          .stock,
+      ),
+      moves: await fixtureDb.inventoryMovement.count({
+        where: { variantId: component.id },
+      }),
+      sales: await fixtureDb.saleItem.count({
+        where: { variantId: combo.id },
+      }),
+      payments: await fixtureDb.payment.count({
+        where: { sale: { cashSessionId: session.id } },
+      }),
+      cash: await cashOf(),
+    });
+    const before = await snapshot();
+    // Reproducción exacta de ChatGPT: 0.001 combos, pago de 5.
+    const fractional = {
+      ...input(combo.id, 5),
+      items: [{ variantId: combo.id, qty: 0.001 }],
+    };
+    const rejected = await request("/sales", fractional);
+    expect(rejected.status).toBe(400);
+    expect(rejected.body.message).toMatch(/unidades enteras/);
+    expect(
+      await fixtureDb.sale.count({
+        where: { offlineUuid: fractional.offlineUuid },
+      }),
+    ).toBe(0);
+    // Otra fracción con consumo representable (0.5 × 0.4 = 0.2) también se
+    // rechaza: los combos se venden enteros.
+    const half = await request("/sales", {
+      ...input(combo.id, 2500),
+      items: [{ variantId: combo.id, qty: 0.5 }],
+    });
+    expect(half.status).toBe(400);
+    expect(await snapshot()).toEqual(before);
+    // Una venta de 1 combo consume exactamente 0.4 con costo coherente.
+    const sale = await ok("/sales", input(combo.id, 5000));
+    expect(Number(sale.costTotal)).toBe(4000);
+    const item = await fixtureDb.saleItem.findFirstOrThrow({
+      where: { saleId: sale.id },
+    });
+    expect(Number(item.unitCost)).toBe(4000);
+    expect(item.stockAllocations).toEqual([
+      expect.objectContaining({
+        variantId: component.id,
+        qty: 0.4,
+        unitCost: 10000,
+      }),
+    ]);
+    const move = await fixtureDb.inventoryMovement.findFirstOrThrow({
+      where: { variantId: component.id, refId: sale.id, type: "sale" },
+    });
+    expect(Number(move.qty)).toBe(-0.4);
+    expect(Number(move.balanceAfter)).toBe(0.6);
+    // Devoluciones: media unidad de combo se rechaza; una entera repone 0.4.
+    const returnBody = (qty: number) => ({
+      saleId: sale.id,
+      cashSessionId: session.id,
+      reason: "QA devolución combo",
+      refundMethod: "credit_note",
+      items: [{ saleItemId: item.id, qty, restock: true }],
+    });
+    const partial = await request("/returns", returnBody(0.5));
+    expect(partial.status).toBe(400);
+    expect(partial.body.message).toMatch(/unidades enteras/);
+    await ok("/returns", returnBody(1));
+    const restored = await fixtureDb.variant.findUnique({
+      where: { id: component.id },
+    });
+    expect(Number(restored.stock)).toBe(1);
+    expect(Number(restored.costAvg)).toBe(10000);
+    const back = await fixtureDb.inventoryMovement.findFirstOrThrow({
+      where: { variantId: component.id, refId: sale.id, type: "return" },
+    });
+    expect(Number(back.qty)).toBe(0.4);
+  });
+
+  it("R6-03: la recuperación no concilia recepciones con líneas incompletas; la completa sigue en 55", async () => {
+    const v = await product("recepción", 100, 25);
+    const supplier = await ok("/suppliers", {
+      name: "QA R7 recuperación " + suffix,
+    });
+    const order = await ok("/purchase-orders", {
+      supplierId: supplier.id,
+      items: [{ variantId: v.id, qty: 20, unitCost: 25 }],
+    });
+    const user = await fixtureDb.user.findFirstOrThrow();
+    const legacyReceipt = (items: unknown, freight = 0, otherCosts = 0) =>
+      fixtureDb.goodsReceipt.create({
+        data: {
+          orderId: order.id,
+          freight,
+          otherCosts,
+          items,
+          userId: user.id,
+          branchId: "main",
+        },
+      });
+    const incomplete = [
+      await legacyReceipt([{ qty: 1, cost: 25 }, { qty: 1 }]),
+      await legacyReceipt([{ qty: 1, cost: 25 }, { cost: 25 }]),
+      await legacyReceipt([{ qty: 1, cost: 25 }, {}]),
+      await legacyReceipt(["línea", { qty: 1, cost: 25 }]),
+      await legacyReceipt([{ qty: 0, cost: 25 }]),
+      await legacyReceipt([]),
+    ];
+    const complete = await legacyReceipt([{ qty: 2, cost: 25 }], 4, 1);
+    // Base que ya aplicó la versión con el error: un total parcial de 25.
+    const alreadyWrong = await legacyReceipt([
+      { qty: 1, cost: 25 },
+      { qty: 1 },
+    ]);
+    await fixtureDb.goodsReceipt.update({
+      where: { id: alreadyWrong.id },
+      data: { total: 25, supplierId: supplier.id },
+    });
+    for (let run = 0; run < 2; run++) {
+      await runMigrationSql("202610060001_round6_audit");
+      await runMigrationSql("202610070001_round7");
+    }
+    for (const r of [...incomplete, alreadyWrong]) {
+      const row = await fixtureDb.goodsReceipt.findUnique({
+        where: { id: r.id },
+      });
+      expect(row.total, JSON.stringify(r.items)).toBeNull();
+    }
+    const ok55 = await fixtureDb.goodsReceipt.findUnique({
+      where: { id: complete.id },
+    });
+    expect(ok55.supplierId).toBe(supplier.id);
+    expect(Number(ok55.total)).toBe(55);
+    const report = async () =>
+      (await ok(`/reports/purchases?from=${today}&to=${today}`)).rows.find(
+        (r: any) => r.Proveedor === supplier.name,
+      );
+    expect(await report()).toMatchObject({
+      Compras: 55,
+      Pendiente: 55,
+      Sin_conciliar: incomplete.length + 1,
+    });
+    await ok("/supplier-payments", {
+      supplierId: supplier.id,
+      amount: 55,
+      method: "transfer",
+    });
+    expect(await report()).toMatchObject({ Pagado: 55, Pendiente: 0 });
+  });
+});

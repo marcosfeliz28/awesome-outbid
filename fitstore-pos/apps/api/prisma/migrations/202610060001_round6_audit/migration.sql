@@ -57,11 +57,23 @@ UPDATE "GoodsReceipt" r SET
 FROM "PurchaseOrder" o
 WHERE o."id" = r."orderId" AND o."branchId" = r."branchId"
   AND r."operationId" IS NULL AND r."total" IS NULL AND r."supplierId" IS NULL
+  -- Corregido en la ronda 7 (R6-03): todas las líneas deben ser objetos con
+  -- qty > 0 y cost >= 0 numéricos. IS DISTINCT FROM detecta también claves
+  -- ausentes (jsonb_typeof devuelve NULL y "<> 'number'" no las marcaba), y el
+  -- CASE evita leer como arreglo algo que no lo es.
   AND jsonb_typeof(r."items") = 'array'
-  AND jsonb_array_length(r."items") > 0
+  AND (CASE WHEN jsonb_typeof(r."items") = 'array'
+            THEN jsonb_array_length(r."items") ELSE 0 END) > 0
   AND NOT EXISTS (
-    SELECT 1 FROM jsonb_array_elements(r."items") i
-     WHERE jsonb_typeof(i->'qty') <> 'number' OR jsonb_typeof(i->'cost') <> 'number')
+    SELECT 1 FROM jsonb_array_elements(
+      CASE WHEN jsonb_typeof(r."items") = 'array' THEN r."items" ELSE '[]'::jsonb END) i
+     WHERE jsonb_typeof(i) IS DISTINCT FROM 'object'
+        OR jsonb_typeof(i->'qty') IS DISTINCT FROM 'number'
+        OR jsonb_typeof(i->'cost') IS DISTINCT FROM 'number'
+        OR (CASE WHEN jsonb_typeof(i->'qty') = 'number'
+                 THEN (i->>'qty')::numeric <= 0 ELSE true END)
+        OR (CASE WHEN jsonb_typeof(i->'cost') = 'number'
+                 THEN (i->>'cost')::numeric < 0 ELSE true END))
   AND NOT EXISTS (
     SELECT 1 FROM "MerchandiseOperation" op
      WHERE op."result"->>'receiptId' = r."id"::text);

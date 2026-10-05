@@ -41,7 +41,14 @@ import {
   type Product,
   type Variant,
 } from "./api";
-import { QueryState, attrLabel, toast } from "./helpers";
+import {
+  QueryState,
+  attrLabel,
+  categoryImage,
+  matchesWords,
+  searchWords,
+  toast,
+} from "./helpers";
 import { CashElsewhere, cashOnOtherDevice } from "./realtime";
 
 function discountFor(
@@ -268,23 +275,46 @@ export function POS({ go }: { go: (page: string) => void }) {
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [cart, session, online]);
+  // Búsqueda por palabras sueltas, sin acentos ni orden: "iso100 vainilla 5lb"
+  // encuentra "ISO100 Hydrolyzed - Dymatize - Gourmet Vanilla / 5 lb".
+  const words = searchWords(q);
   const filtered =
     products.data?.filter(
       (p) =>
         (category === "all" || p.categoryId === category) &&
-        (!q ||
-          [
-            p.name,
-            p.sku,
-            p.brand,
-            ...p.variants.flatMap((v) => [v.sku, v.barcode]),
-          ].some((value) => value.toLowerCase().includes(q.toLowerCase()))),
+        (!words.length ||
+          matchesWords(
+            [
+              p.name,
+              p.sku,
+              p.brand,
+              ...p.variants.flatMap((v) => [
+                v.sku,
+                v.barcode,
+                ...Object.values(v.attributes || {}).map(String),
+              ]),
+            ].join(" "),
+            words,
+          )),
     ) || [];
+  // Con cientos de productos se dibujan 120 tarjetas; la búsqueda llega al resto.
+  const MAX_CARDS = 120;
+  const visible = filtered.slice(0, MAX_CARDS);
+  // Código exacto: código de barras o código del producto (el ID del
+  // inventario, por ejemplo 1216). Así se cobra escribiendo el número + Enter.
+  const byCode = (code: string) => {
+    const c = code.trim().toLowerCase();
+    if (!c) return undefined;
+    for (const p of products.data ?? [])
+      for (const v of p.variants)
+        if (v.barcode.toLowerCase() === c || v.sku.toLowerCase() === c)
+          return { product: p, variant: v };
+    return undefined;
+  };
   const scan = (code: string) => {
-    const product = products.data?.find((p) =>
-      p.variants.some((v) => v.barcode === code),
-    );
-    const variant = product?.variants.find((v) => v.barcode === code);
+    const found = byCode(code);
+    const product = found?.product,
+      variant = found?.variant;
     if (product && variant) {
       choose(variant, product);
       setQ("");
@@ -324,15 +354,12 @@ export function POS({ go }: { go: (page: string) => void }) {
           <input
             ref={search}
             aria-label="Buscar productos"
-            placeholder="Busca un producto, SKU o código de barras…"
+            placeholder="Escribe el código (ej. 1216) o palabras del producto…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                const exact = products.data?.find((p) =>
-                  p.variants.some((v) => v.barcode === q),
-                );
-                if (exact) scan(q);
+                if (byCode(q)) scan(q);
                 else if (filtered.length === 1) addProduct(filtered[0]);
               }
             }}
@@ -359,7 +386,11 @@ export function POS({ go }: { go: (page: string) => void }) {
           ))}
         </div>
         <div className="catalog-caption">
-          <span>{filtered.length} productos para descubrir</span>
+          <span>
+            {filtered.length > MAX_CARDS
+              ? `Mostrando ${MAX_CARDS} de ${filtered.length} · escribe para encontrar el resto`
+              : `${filtered.length} productos para descubrir`}
+          </span>
           <span>
             <span className="live-dot" />
             Stock actualizado {online ? "en línea" : "localmente"}
@@ -368,7 +399,7 @@ export function POS({ go }: { go: (page: string) => void }) {
         <QueryState query={products}>
           {filtered.length ? (
             <div className="product-grid">
-              {filtered.map((p) => {
+              {visible.map((p) => {
                 const stock = p.variants.reduce(
                   (a, v) => a + Number(v.stock),
                   0,
@@ -388,7 +419,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                   >
                     <div className="product-image">
                       <img
-                        src={p.imageUrl || "/products/accessories.svg"}
+                        src={p.imageUrl || categoryImage(p.category.name)}
                         alt={p.name}
                       />
                       {stock <= Number(p.minStock) && (
@@ -407,11 +438,16 @@ export function POS({ go }: { go: (page: string) => void }) {
                       >
                         {p.category.name}
                       </span>
-                      <h3>{p.name}</h3>
+                      <h3 title={p.name}>{p.name}</h3>
                       <p>
                         {p.variants.length > 1
                           ? `${p.variants.length} variantes`
-                          : attrLabel(p.variants[0]?.attributes || {})}
+                          : [
+                              "Cód. " + p.variants[0]?.sku,
+                              attrLabel(p.variants[0]?.attributes || {}),
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
                       </p>
                       <div className="product-bottom">
                         <strong>
@@ -429,7 +465,7 @@ export function POS({ go }: { go: (page: string) => void }) {
           ) : (
             <Empty
               title="No encontramos ese producto"
-              description="Prueba con otro nombre, SKU o código."
+              description="Prueba con el código del producto o con menos palabras."
             />
           )}
         </QueryState>
@@ -472,7 +508,10 @@ export function POS({ go }: { go: (page: string) => void }) {
             cart.map((i, index) => (
               <div className="cart-item" key={i.variant.id}>
                 <img
-                  src={i.product.imageUrl || "/products/accessories.svg"}
+                  src={
+                    i.product.imageUrl ||
+                    categoryImage(i.product.category?.name)
+                  }
                   alt=""
                 />
                 <div className="cart-item-detail">

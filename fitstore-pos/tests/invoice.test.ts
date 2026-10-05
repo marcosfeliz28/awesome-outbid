@@ -560,3 +560,82 @@ describe("emparejamiento · variante única y atributos en conflicto", () => {
     expect(byBarcode.variantId).toBe("vainilla-2lb");
   });
 });
+
+// Auditoría R6 (ChatGPT) · R6-02: la talla se reconoce aunque el catálogo no
+// tenga otras tallas. Fixture aislado: un solo producto con talla M.
+describe("emparejamiento · talla explícita sin vocabulario del catálogo", () => {
+  const catalog = [
+    {
+      id: "legging-m",
+      sku: "LEG-M-N",
+      barcode: "500",
+      product: { id: "p-leg", name: "Leggings Sculpt", sku: "LEG" },
+      attributes: { talla: "M", color: "Negro" },
+    },
+  ];
+  const line = (description: string, code?: string) => ({
+    code,
+    description,
+    qty: 1,
+    unitCost: 900,
+  });
+  it("S y L frente a la única M: sin variante, con SKU de producto y por nombre", () => {
+    for (const d of [
+      "Leggings Sculpt talla S negro",
+      "Leggings Sculpt talla L negro",
+    ]) {
+      const [byCode] = matchInvoiceLines([line(d, "LEG")], catalog);
+      const [byName] = matchInvoiceLines([line(d)], catalog);
+      for (const r of [byCode, byName]) {
+        expect(r.variantId, d).toBeNull();
+        expect(r.productId, d).toBe("p-leg");
+        expect(r.note, d).toMatch(/\bM\b/);
+      }
+    }
+  });
+  it("M sigue seleccionándose, con SKU de producto y por nombre", () => {
+    for (const code of ["LEG", undefined])
+      expect(
+        matchInvoiceLines(
+          [line("Leggings Sculpt talla M negro", code)],
+          catalog,
+        )[0].variantId,
+      ).toBe("legging-m");
+  });
+  it("tallas compuestas, alias y medidas no se confunden", () => {
+    const faja = [
+      {
+        id: "faja-2xs",
+        sku: "FAJA-2XS",
+        barcode: "600",
+        product: { id: "p-faja", name: "Cinturilla tipo corset", sku: "CIN" },
+        attributes: { talla: "2XS" },
+      },
+    ];
+    const pick = (d: string) =>
+      matchInvoiceLines([line(d, "CIN")], faja)[0].variantId;
+    expect(pick("Cinturilla tipo corset 2XS")).toBe("faja-2xs");
+    expect(pick("Cinturilla tipo corset 3XS")).toBeNull();
+    expect(pick("Cinturilla tipo corset XS")).toBeNull();
+    expect(pick("Cinturilla tipo corset talla Large")).toBeNull();
+    // "Women's" no es talla S; "1 l" es una medida, no talla L.
+    expect(
+      matchInvoiceLines(
+        [line("Leggings Sculpt Women's M negro", "LEG")],
+        catalog,
+      )[0].variantId,
+    ).toBe("legging-m");
+    expect(
+      matchInvoiceLines([line("Leggings Sculpt negro 1 l", "LEG")], catalog)[0]
+        .variantId,
+    ).toBe("legging-m");
+  });
+  it("el código exacto de la variante sigue mandando", () => {
+    expect(
+      matchInvoiceLines(
+        [line("Leggings Sculpt talla S negro", "LEG-M-N")],
+        catalog,
+      )[0].variantId,
+    ).toBe("legging-m");
+  });
+});

@@ -437,7 +437,8 @@ const UNIT_ALIASES: Record<string, string> = {
   mililitros: "ml",
 };
 export function tokens(text: string) {
-  return normalize(text)
+  // "Women's" → "womens": el posesivo no debe leerse como talla S.
+  return normalize(text.replace(/(\w)['’]s\b/gi, "$1s"))
     .replace(/(\d)([a-z])/g, "$1 $2")
     .replace(/([a-z])(\d)/g, "$1 $2")
     .split(" ")
@@ -538,7 +539,41 @@ const COLORS = [
   "plateado",
   "dorado",
 ];
-const SIZES = ["xs", "xl", "xxl", "xxxl", "2xl", "3xl", "4xl"];
+// Tallas reconocidas por sí mismas, aunque el catálogo no tenga otras (R6-02).
+const SIZES = [
+  "xxs",
+  "xs",
+  "s",
+  "m",
+  "l",
+  "xl",
+  "xxl",
+  "xxxl",
+  "2xs",
+  "3xs",
+  "2xl",
+  "3xl",
+  "4xl",
+  "5xl",
+];
+const SIZE_ALIASES: Record<string, string> = {
+  small: "s",
+  medium: "m",
+  large: "l",
+};
+// Tallas explícitas en una lista de tokens. "2XS" llega como "2","xs" y se une;
+// una letra suelta tras un número ("1 l", "5 m") es una medida, no una talla.
+export function sizesIn(toks: string[]) {
+  const out = new Set<string>();
+  toks.forEach((raw, i) => {
+    const t = SIZE_ALIASES[raw] ?? raw;
+    const prev = toks[i - 1] ?? "";
+    const numeric = /^\d+$/.test(prev);
+    if (numeric && (t === "xs" || t === "xl")) out.add(prev + t);
+    else if (SIZES.includes(t) && !(numeric && t.length === 1)) out.add(t);
+  });
+  return out;
+}
 const UNITS = new Set(["lb", "oz", "g", "kg", "l", "ml", "caps", "tabs"]);
 const attrKind = (key: string) => {
   const k = normalize(key);
@@ -608,8 +643,25 @@ export function matchInvoiceLines(
         out.push(value);
         continue;
       }
+      // Talla: si la factura declara tallas y ninguna es la de la variante,
+      // hay conflicto aunque el catálogo no tenga otras tallas.
+      if (attrKind(k) === SIZES) {
+        const own = sizesIn(tokens(value)),
+          declared = sizesIn(descToks);
+        if (
+          own.size &&
+          declared.size &&
+          ![...own].some((x) => declared.has(x))
+        ) {
+          out.push(value);
+          continue;
+        }
+      }
       const ownToks = new Set(tokens(value));
-      const others = [...(known.get(normalize(k)) ?? []), ...attrKind(k)];
+      const others = [
+        ...(known.get(normalize(k)) ?? []),
+        ...(attrKind(k) === SIZES ? [] : attrKind(k)),
+      ];
       if (
         others.some(
           (o) =>
