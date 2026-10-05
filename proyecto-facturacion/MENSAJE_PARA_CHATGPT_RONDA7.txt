@@ -1,0 +1,59 @@
+Hola, ChatGPT. Claude terminó la ronda 7 de FitStore POS. En ella corrige los 3 hallazgos abiertos de tu auditoría de la ronda 6 (docs/AUDITORIA_RONDA6.md) y adapta el sistema al inventario real de la tienda.
+
+Adjunto: fitstore-pos-ronda7.zip
+SHA-256: def23a3aed35a86bd753bcdf69bcca442103d7bd8e749a2e120cbaf2a0f1d314
+
+Detalle en docs/RONDA7_CLAUDE.md. Cierre por hallazgo en docs/validacion/ronda7-cierre.json. Tu informe, evidencia y reproducciones están incluidos sin cambios.
+
+Correcciones
+- R6-01 (P1), combos:
+  - Se venden y devuelven por unidades enteras.
+  - derivedStockQty() valida el consumo exacto de cada componente antes de cualquier escritura; nunca redondea.
+  - returnShares() reparte las devoluciones entre lotes y componentes de forma exacta.
+  - Sale.costTotal es la suma del costo por línea. Las devoluciones usan allocationCost() con redondeo acumulado: una devolución total deja el costo neto en 0.
+  - Un combo fraccionado antiguo puede devolverse completo.
+  - Tu reproducción exacta (0.001 combos, pago 5) da 400 sin escrituras. 1 combo consume 0.4 con costo 4000.
+- R6-02 (P2), tallas:
+  - Se reconocen por sí mismas (XS–XL, 2XL–9XL, XXL = 2XL, X-Large, Mediana, "talla L-XL") y se comparan como talla antes que como texto.
+  - Tu catálogo aislado con sólo M rechaza S y L, con SKU de producto y por nombre.
+- R6-03 (P2), recuperación de compras:
+  - El SQL de 202610060001 exige líneas objeto con qty > 0 y cost >= 0 (IS DISTINCT FROM, CASE).
+  - La nueva 202610070001_round7 repara las bases que ya conciliaron un total parcial.
+  - Seis variantes incompletas quedan sin total, también al repetir. La completa 2×25 + 4 + 1 sigue en 55.
+
+Además
+- Tres revisiones adversariales propias, con dos verificadores por hallazgo. Confirmaron 12, 12 y 10 hallazgos, todos corregidos con regresiones (docs/validacion/ronda7-revision-adversarial.json).
+- Emparejamiento de facturas conservador:
+  - Sólo deja elegido un producto si la factura nombra todo lo que lo identifica (la marca es opcional) y su presentación no contradice la factura.
+  - Si no, lo sugiere con una nota para confirmar.
+  - Lee del nombre la talla, el color y el tamaño, porque la tienda tiene un producto por talla o tamaño.
+  - Lee tamaños con decimales, miles y guion.
+- Inventario real (616 productos):
+  - Importador apps/api/scripts/import-inventario.ts. El ID es el código para cobrar. Rechaza códigos ambiguos. Repetir la carga no duplica ni pisa lo editado.
+  - Caja: código + Enter (con aviso de stock y lector de códigos) y búsqueda por palabras con sugerencias.
+  - El Excel y los costos no van en el ZIP; tests/fixtures/catalogo-tienda.json sólo tiene ID, nombre y categoría.
+
+Verificación de Claude (registros en docs/validacion/ronda7-*):
+- pnpm check: aprobado, con 74 pruebas unitarias.
+- Integración con la API compilada (node dist/main.js), sobre una base nueva: 81/81. Con tsx: 81/81.
+- Pruebas en el navegador con la PWA y la API compiladas: 9/9.
+- Actualización real R3 → R7: datos de la API de la ronda 3, más tus recepciones sintéticas, luego migrate deploy y la API compilada. 7/7 controles.
+- Caja con el inventario real, en PC y celular: capturas incluidas.
+- Las regresiones de R6-01, R6-02 y R6-03 y la de la caja fallan con el código anterior.
+
+Te pido:
+1. Repetir tus reproducciones de R6-01, R6-02 y R6-03 (incluida la actualización desde la ronda 3) y la suite con node dist/main.js. Confirmar el cierre de cada hallazgo con evidencia.
+2. Auditar lo nuevo respecto a la ronda 6 (commit 240aaea…; el ZIP auditado tenía SHA d3356107…). Revisa sobre todo:
+   - Las cantidades y el costo de los combos en venta, devolución y reportes.
+   - El emparejamiento de facturas contra el catálogo real (tests/fixtures/catalogo-tienda.json).
+   - Las migraciones 202610060001 (editada) y 202610070001.
+   - El importador de inventario.
+   - La caja: código + Enter y búsqueda.
+3. Entregar los hallazgos en el mismo formato, con la evidencia en docs/validacion/auditoria-ronda7.json.
+
+Límites conocidos:
+- Muchas líneas de factura quedarán como sugerencia para confirmar. Es a propósito.
+- El importador deja Suplementos y Maquillaje sin lote obligatorio, porque el Excel no trae lotes.
+- No se probó la lectura de una factura real con Anthropic ni varias sucursales.
+
+Por favor no cambies la implementación: Claude corrige lo que encuentres en la siguiente ronda.
