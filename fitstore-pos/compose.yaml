@@ -25,7 +25,7 @@ services:
       WEB_ORIGIN: ${WEB_ORIGIN:?Configura el origen HTTPS del sitio}
       PORT: 3001
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
     expose:
       - "3001"
     depends_on:

@@ -53,6 +53,118 @@ export function denied(): never {
 export function conflict(message: string): never {
   throw new HttpException(message, 409);
 }
+// Mensajes de validación en español y con nombres de campo comprensibles.
+const FIELD_NAMES: Record<string, string> = {
+  lines: "línea",
+  items: "línea",
+  payments: "pago",
+  variants: "variante",
+  qty: "cantidad",
+  unitCost: "costo unitario",
+  cost: "costo",
+  costAvg: "costo",
+  price: "precio",
+  amount: "monto",
+  name: "nombre",
+  email: "correo",
+  password: "contraseña",
+  pin: "PIN",
+  managerPin: "PIN del gerente",
+  reason: "motivo",
+  description: "descripción",
+  code: "código",
+  barcode: "código de barras",
+  sku: "SKU",
+  expiryDate: "vencimiento",
+  lotNumber: "lote",
+  openingAmount: "efectivo inicial",
+  countedCash: "efectivo contado",
+  countedCard: "tarjetas contadas",
+  countedTransfer: "transferencias contadas",
+  customerId: "cliente",
+  categoryId: "categoría",
+  supplierId: "proveedor",
+  total: "total",
+  freight: "flete",
+  taxes: "impuestos",
+  offlineUuid: "identificador de la operación",
+  id: "identificador",
+  cashSessionId: "caja",
+  variantId: "producto",
+  productId: "producto",
+  saleId: "venta",
+  saleItemId: "artículo vendido",
+  globalDiscount: "descuento global",
+  discountPercent: "descuento %",
+  discountAmount: "descuento",
+  method: "forma de pago",
+  reference: "referencia",
+  bank: "banco",
+  approvalCode: "número de aprobación",
+  cardLast4: "últimos 4 dígitos",
+  expectedTotal: "total esperado",
+  phone: "teléfono",
+  legalId: "cédula/RNC",
+  creditLimit: "límite de crédito",
+  stock: "existencias",
+  minStock: "stock mínimo",
+  maxStock: "stock máximo",
+  attributes: "atributos",
+  mapping: "columnas",
+};
+export function fieldLabel(path: (string | number)[]) {
+  const parts: string[] = [];
+  for (const p of path) {
+    if (typeof p === "number") {
+      if (parts.length) parts[parts.length - 1] += " " + (p + 1);
+      else parts.push("elemento " + (p + 1));
+    } else parts.push(FIELD_NAMES[p] ?? p);
+  }
+  return parts.join(" · ") || "datos";
+}
+z.setErrorMap((issue, ctx) => {
+  switch (issue.code) {
+    case "invalid_type":
+      if (issue.received === "undefined" || issue.received === "null")
+        return { message: "es obligatorio" };
+      return {
+        message:
+          issue.expected === "number"
+            ? "debe ser un número"
+            : issue.expected === "string"
+              ? "debe ser texto"
+              : "tiene un formato inválido",
+      };
+    case "too_small":
+      return {
+        message:
+          issue.type === "string"
+            ? `debe tener al menos ${issue.minimum} caracteres`
+            : issue.type === "array"
+              ? `debe tener al menos ${issue.minimum} elemento(s)`
+              : issue.inclusive
+                ? `debe ser mayor o igual a ${issue.minimum}`
+                : `debe ser mayor que ${issue.minimum}`,
+      };
+    case "too_big":
+      return {
+        message:
+          issue.type === "string"
+            ? `admite como máximo ${issue.maximum} caracteres`
+            : issue.type === "array"
+              ? `admite como máximo ${issue.maximum} elementos`
+              : `debe ser como máximo ${issue.maximum}`,
+      };
+    case "invalid_string":
+      return { message: "tiene un formato inválido" };
+    case "invalid_enum_value":
+      return { message: "no es una opción válida" };
+    case "invalid_date":
+      return { message: "no es una fecha válida" };
+    default:
+      return { message: ctx.defaultError };
+  }
+});
 export const parse = <T extends z.ZodTypeAny>(
   schema: T,
   input: unknown,
@@ -223,8 +335,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
       message =
         "Revisa los campos: " +
         exception.issues
-          .map((i) => i.path.join(".") + ": " + i.message)
-          .join("; ");
+          .slice(0, 5)
+          .map((i) => fieldLabel(i.path) + " " + i.message)
+          .join("; ") +
+        ".";
     } else if (exception?.code === "P2002") {
       status = 409;
       message = "Ya existe un registro con esos datos.";
