@@ -1,0 +1,475 @@
+import { test, expect } from "@playwright/test";
+// Cada contexto representa un equipo nuevo: cerrar la caja del escenario anterior.
+test.beforeEach(async ({ request }) => {
+  const login = await request.post("/api/auth/login", {
+    data: { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" },
+  });
+  const { accessToken, user } = await login.json();
+  const headers = { Authorization: "Bearer " + accessToken };
+  const sessions = await (
+    await request.get("/api/cash-sessions", { headers })
+  ).json();
+  for (const s of sessions.filter(
+    (s: any) => s.userId === user.id && !s.closedAt,
+  )) {
+    const response = await request.post(
+      "/api/cash-sessions/" + s.id + "/close",
+      {
+        headers,
+        data: {
+          countedCash: Math.max(0, s.expected.cash),
+          countedCard: Math.max(0, s.expected.card),
+          countedTransfer: Math.max(0, s.expected.transfer),
+          notes: "Cierre entre escenarios E2E",
+        },
+      },
+    );
+    expect(response.ok()).toBe(true);
+  }
+});
+async function login(page: any) {
+  await page.goto("/");
+  await page.getByLabel("Correo electrónico").fill("admin@fitstore.demo");
+  await page
+    .getByLabel("Contraseña", { exact: true })
+    .fill("FitStore-Demo-2026!");
+  const response = page.waitForResponse(
+    (r: any) =>
+      r.url().endsWith("/api/auth/login") && r.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
+  const logged = await response;
+  expect(logged.ok()).toBe(true);
+  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  return (await logged.json()).accessToken;
+}
+async function ensureCash(page: any) {
+  await page.getByRole("button", { name: "Caja", exact: true }).click();
+  await expect(page.locator(".main-content .loading")).toHaveCount(0);
+  const open = page.getByRole("button", { name: "Abrir caja", exact: true });
+  if (await open.isVisible()) {
+    await open.click();
+    await page.getByLabel("Efectivo inicial").fill("500");
+    await page.getByLabel(/^Terminal/).fill("e2e-" + Date.now());
+    await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  }
+  await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();
+}
+test("venta completa desde caja hasta pagos combinados y recibo", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await login(page);
+  await ensureCash(page);
+  await page
+    .getByRole("button", { name: "Punto de venta", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Punto de venta" }),
+  ).toBeVisible();
+  await page.getByLabel("Buscar productos").fill("Proteína Whey Isolate");
+  await page.locator(".product-card").first().click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /Chocolate/ })
+    .click();
+  await page.getByLabel("Buscar productos").fill("Legging Essential");
+  await page.locator(".product-card").first().click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /M · Negro/ })
+    .click();
+  await page.getByRole("button", { name: /Cobrar/ }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Todo listo para cobrar" }),
+  ).toBeVisible();
+  const total = Number(
+    (await page.locator(".payment-total h2").textContent())!.replace(
+      /[^0-9.]/g,
+      "",
+    ),
+  );
+  await page.getByLabel("Monto del pago").fill("1000");
+  await page.getByRole("button", { name: "Agregar pago" }).click();
+  await page.getByRole("button", { name: "Tarjeta", exact: true }).click();
+  await page.getByLabel("Monto del pago").fill(String(total - 1000));
+  await page.getByLabel("Últimos 4 dígitos").fill("4242");
+  await page.getByLabel("Número de aprobación").fill("E2E-APROBADO");
+  await page.getByRole("button", { name: "Agregar pago" }).click();
+  await page.getByRole("button", { name: "Finalizar venta" }).click();
+  await expect(
+    page.getByRole("dialog", { name: /Una venta más/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Venta registrada", { exact: true }),
+  ).toBeVisible();
+  await page.screenshot({ path: "docs/cobro-exitoso.png" });
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  await expect(page.locator(".cart-items")).toContainText(
+    "Tu próxima venta empieza aquí",
+  );
+  expect(errors).toEqual([]);
+});
+test("pantallas de gestión, tema oscuro y versión móvil", async ({ page }) => {
+  await login(page);
+  for (const label of [
+    "Productos",
+    "Inventario",
+    "Compras",
+    "Gastos",
+    "Clientes",
+    "Promociones",
+    "Reportes",
+    "Alertas",
+  ]) {
+    await page
+      .getByRole("button", { name: label, exact: true })
+      .first()
+      .click();
+    await expect(page.locator(".main-content h1")).toBeVisible();
+    await expect(page.locator(".main-content .loading")).toHaveCount(0);
+    await expect(page.locator(".error-panel")).toHaveCount(0);
+  }
+  await page.getByRole("button", { name: "Activar modo oscuro" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: "Activar modo claro" }).click();
+  await page.getByRole("button", { name: "Resumen", exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "docs/dashboard-mobile.png", fullPage: true });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page
+    .getByRole("button", { name: "Punto de venta", exact: true })
+    .click();
+  await page.getByLabel("Buscar productos").fill("Shaker");
+  await expect(page.locator(".product-card")).toHaveCount(1);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "docs/pos-mobile.png", fullPage: true });
+});
+test("venta offline queda guardada y se sincroniza una sola vez", async ({
+  page,
+  context,
+}) => {
+  await login(page);
+  await ensureCash(page);
+  await page
+    .getByRole("button", { name: "Punto de venta", exact: true })
+    .click();
+  await expect(page.locator(".product-card").first()).toBeVisible();
+  await page.getByLabel("Buscar productos").fill("Shaker FitStore");
+  await page.locator(".product-card").click();
+  await page.getByRole("dialog").getByRole("button", { name: /Lila/ }).click();
+  await context.setOffline(true);
+  await expect(page.locator(".connection")).toContainText("Offline");
+  await page.getByRole("button", { name: /Cobrar/ }).click();
+  await page.getByRole("button", { name: "Agregar pago" }).click();
+  await page.getByRole("button", { name: "Finalizar venta" }).click();
+  await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible();
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  await context.setOffline(false);
+  await expect(page.locator(".connection")).toContainText("En línea");
+  await expect(async () => {
+    const count = await page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const r = indexedDB.open("fitstore-pos-v1");
+        r.onsuccess = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+      });
+      return await new Promise<number>((resolve, reject) => {
+        const r = db.transaction("sales").objectStore("sales").count();
+        r.onsuccess = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+      });
+    });
+    expect(count).toBe(0);
+  }).toPass({ timeout: 20000 });
+});
+
+test("descuento por monto, crédito y abono en interfaz", async ({ page }) => {
+  const token = await login(page);
+  const headers = { Authorization: "Bearer " + token };
+  async function call(
+    path: string,
+    data?: any,
+    method = data ? "POST" : "GET",
+  ) {
+    const r = await page.request.fetch("/api" + path, {
+      method,
+      headers,
+      ...(data ? { data } : {}),
+    });
+    expect(r.ok()).toBe(true);
+    return r.json();
+  }
+  const settings = await call("/settings");
+  let product: any;
+  try {
+    await call("/settings", { ...settings, allowCreditSales: true }, "PUT");
+    const categories = await call("/categories");
+    const suffix = Date.now();
+    const name = "QA navegador " + suffix;
+    product = await call("/products", {
+      name,
+      sku: "QA-E2E-" + suffix,
+      categoryId: categories.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [
+        {
+          sku: "QA-E2EV-" + suffix,
+          barcode: "QA-E2EB-" + suffix,
+          costAvg: 40,
+          price: 118,
+        },
+      ],
+    });
+    await call("/inventory/adjustments", {
+      variantId: product.variants[0].id,
+      qty: 3,
+      reason: "QA navegador",
+    });
+    const customer = await call("/customers", {
+      name: "QA cliente " + suffix,
+      creditLimit: 500,
+    });
+    await ensureCash(page);
+    await page
+      .getByRole("button", { name: "Punto de venta", exact: true })
+      .click();
+    await page.getByLabel("Buscar productos").fill(name);
+    await page.locator(".product-card").click();
+    await page.getByLabel("Descuento por monto de " + name).fill("18");
+    await page.keyboard.press("F4");
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: customer.name })
+      .click();
+    await page.getByRole("button", { name: /Cobrar/ }).click();
+    await page.getByRole("button", { name: "A crédito", exact: true }).click();
+    await page.getByLabel("Vencimiento del crédito").fill("2030-01-01");
+    await page
+      .getByRole("button", { name: "Agregar pago", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Finalizar venta", exact: true })
+      .click();
+    await expect(
+      page.getByText("Venta registrada", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Nueva venta", exact: true })
+      .click();
+    const sold = (await call("/sales")).find(
+      (s: any) => s.customerId === customer.id,
+    );
+    expect(Number(sold.total)).toBe(100);
+    expect(Number(sold.creditBalance)).toBe(100);
+    await page.getByRole("button", { name: "Ventas", exact: true }).click();
+    await page
+      .getByRole("row")
+      .filter({ hasText: sold.number })
+      .getByRole("button", { name: "Registrar abono", exact: true })
+      .click();
+    await page.getByLabel("Monto del abono").fill("50");
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Guardar", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(
+      Number(
+        (await call("/sales")).find((s: any) => s.id === sold.id).creditBalance,
+      ),
+    ).toBe(50);
+  } finally {
+    await call("/settings", settings, "PUT");
+    if (product)
+      await call("/products/" + product.id, { active: false }, "PATCH");
+  }
+});
+
+test("Mercancía móvil: entrada offline, sincronización única y etiquetas", async ({
+  page,
+  context,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.setViewportSize({ width: 390, height: 844 });
+  const token = await login(page);
+  const headers = { Authorization: "Bearer " + token };
+  const cats = await (
+    await page.request.get("/api/categories", { headers })
+  ).json();
+  const suffix = Date.now().toString(36);
+  const create = await page.request.post("/api/products", {
+    headers,
+    data: {
+      name: "E2E Mercancía " + suffix,
+      sku: "E2E-G-" + suffix,
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [
+        {
+          sku: "E2E-GV-" + suffix,
+          barcode: "E2E-GB-" + suffix,
+          costAvg: 10,
+          price: 118,
+        },
+      ],
+    },
+  });
+  expect(create.ok()).toBe(true);
+  const p = await create.json();
+  page.on("dialog", (d) => d.accept());
+  await page
+    .locator(".goods-mobile-bar")
+    .getByRole("button", { name: "Mercancía", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Mercancía", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByLabel("Agregar producto")
+      .locator("option")
+      .filter({ hasText: p.name }),
+  ).toHaveCount(1);
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  // La primera instalación empieza a controlar la página en la próxima navegación.
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Mercancía", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByLabel("Agregar producto")
+      .locator("option")
+      .filter({ hasText: p.name }),
+  ).toHaveCount(1);
+  expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(
+    true,
+  );
+  await context.setOffline(true);
+  await page.getByLabel("Código de barras o SKU").fill(p.variants[0].barcode);
+  await page.getByRole("button", { name: "Sumar una unidad" }).click();
+  await page.getByLabel("Cantidad", { exact: true }).fill("3");
+  await page.getByLabel("Costo unitario", { exact: true }).fill("20");
+  await page
+    .getByRole("button", { name: "Confirmar entrada", exact: true })
+    .click();
+  await expect(
+    page.getByText("Guardado en cola. Se sincronizará al reconectar."),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Mercancía", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/Pendiente · Entrada/)).toBeVisible();
+  await context.setOffline(false);
+  await expect(page.getByText(/Pendiente · Entrada/)).toHaveCount(0, {
+    timeout: 15000,
+  });
+  const fetched = await (
+    await page.request.get("/api/products/" + p.id, { headers })
+  ).json();
+  expect(Number(fetched.variants[0].stock)).toBe(3);
+  expect(Number(fetched.variants[0].costAvg)).toBe(20);
+  await page
+    .getByRole("button", { name: "Imprimir etiquetas de lo recibido" })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Etiquetas de lo recibido" }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".barcode-label").filter({ hasText: p.name }),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+  await page.request.patch("/api/products/" + p.id, {
+    headers,
+    data: { active: false },
+  });
+});
+
+test("Importar CSV exige revisión antes de modificar existencias", async ({
+  page,
+}) => {
+  const token = await login(page),
+    headers = { Authorization: "Bearer " + token };
+  const cats = await (
+    await page.request.get("/api/categories", { headers })
+  ).json();
+  const suffix = Date.now().toString(36);
+  const p = await (
+    await page.request.post("/api/products", {
+      headers,
+      data: {
+        name: "E2E Factura " + suffix,
+        sku: "E2E-I-" + suffix,
+        categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+        variants: [
+          {
+            sku: "E2E-IV-" + suffix,
+            barcode: "E2E-IB-" + suffix,
+            costAvg: 10,
+            price: 118,
+          },
+        ],
+      },
+    })
+  ).json();
+  page.on("dialog", (d) => d.accept());
+  await page
+    .getByRole("button", { name: "Mercancía", exact: true })
+    .first()
+    .click();
+  await page
+    .getByRole("button", { name: "Importar factura del proveedor" })
+    .click();
+  await page.getByLabel("Archivo", { exact: true }).setInputFiles({
+    name: "factura.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(
+      `codigo,descripcion,cantidad,costo\n${p.variants[0].barcode},${p.name},2,15\n`,
+    ),
+  });
+  await page.getByRole("button", { name: "Extraer para revisar" }).click();
+  await expect(
+    page.getByRole("heading", { name: "REVISIÓN de factura" }),
+  ).toBeVisible();
+  expect(
+    Number(
+      (
+        await (
+          await page.request.get("/api/products/" + p.id, { headers })
+        ).json()
+      ).variants[0].stock,
+    ),
+  ).toBe(0);
+  await page.getByLabel("Costo unitario", { exact: true }).fill("16");
+  await page
+    .getByRole("button", { name: "Confirmar entrada", exact: true })
+    .click();
+  await expect(page.getByText("Mercancía registrada.")).toBeVisible();
+  expect(
+    Number(
+      (
+        await (
+          await page.request.get("/api/products/" + p.id, { headers })
+        ).json()
+      ).variants[0].stock,
+    ),
+  ).toBe(2);
+  await page.request.patch("/api/products/" + p.id, {
+    headers,
+    data: { active: false },
+  });
+});

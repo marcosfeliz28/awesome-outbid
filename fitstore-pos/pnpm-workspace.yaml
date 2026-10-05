@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+storeDir: ../.pnpm-store
+verifyDepsBeforeRun: false
+allowBuilds:
+  "@nestjs/core": true
+  "@prisma/client": true
+  "@prisma/engines": true
+  "@embedded-postgres/linux-x64": true
+  esbuild: true
+  prisma: true
+  "@scarf/scarf": false

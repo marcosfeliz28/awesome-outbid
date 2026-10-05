@@ -1,0 +1,29 @@
+$ vitest run --config vitest.integration.config.ts
+
+ RUN  v3.2.7 /workspace/fitstore-pos
+
+ ✓ tests/api.test.ts (45 tests) 40793ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  675ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  741ms
+   ✓ Aceptación financiera y permisos > conserva conflictos offline sin stock negativo  379ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1452ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  1935ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  1637ms
+   ✓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal  316ms
+   ✓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco  3829ms
+   ✓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor  12258ms
+   ✓ Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP  569ms
+   ✓ Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido  1923ms
+   ✓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores  2524ms
+   ✓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión  943ms
+   ✓ Seguridad, offline y funciones completadas > stock negativo optativo conserva advertencia y prohíbe saltarse lotes  476ms
+   ✓ Seguridad, offline y funciones completadas > alerta efectivo aunque tarjeta lo compense  409ms
+   ✓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios  728ms
+   ✓ Ronda 2 de Claude > 1: notas requieren prueba de posesión o gerente, no se divulgan códigos y cada uso se audita  1483ms
+   ✓ Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite  1929ms
+
+ Test Files  1 passed (1)
+      Tests  45 passed (45)
+   Start at  13:50:56
+   Duration  41.16s (transform 103ms, setup 0ms, collect 119ms, tests 40.79s, environment 0ms, prepare 86ms)
+

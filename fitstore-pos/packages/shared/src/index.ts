@@ -1,0 +1,248 @@
+import Decimal from "decimal.js";
+import { z } from "zod";
+
+Decimal.set({ precision: 28, rounding: Decimal.ROUND_HALF_UP });
+export const d = (value: Decimal.Value) => new Decimal(value);
+export const money = (value: Decimal.Value) =>
+  d(value).toDecimalPlaces(2).toNumber();
+export const quantity = (value: Decimal.Value) =>
+  d(value).toDecimalPlaces(3).toNumber();
+export const weightedCost = (
+  stock: Decimal.Value,
+  cost: Decimal.Value,
+  received: Decimal.Value,
+  receivedCost: Decimal.Value,
+) => {
+  const total = d(stock).plus(received);
+  return total.isZero()
+    ? 0
+    : money(
+        d(stock).times(cost).plus(d(received).times(receivedCost)).div(total),
+      );
+};
+export const landedCosts = (
+  items: { qty: number; cost: number }[],
+  additional: number,
+  by: "value" | "units" = "value",
+) => {
+  const weights = items.map((i) => d(i.qty).times(by === "value" ? i.cost : 1));
+  const total = weights.reduce((a, b) => a.plus(b), d(0));
+  if (total.lte(0))
+    throw new Error("La recepción debe tener cantidades y valores positivos.");
+  return items.map((i, index) =>
+    money(
+      d(i.cost).plus(d(additional).times(weights[index]).div(total).div(i.qty)),
+    ),
+  );
+};
+export const lineTotals = (
+  qty: number,
+  price: number,
+  discountPercent = 0,
+  taxRate = 18,
+  taxIncluded = true,
+  discountAmount = 0,
+) => {
+  const gross = d(qty).times(price);
+  if (discountAmount < 0 || discountAmount > gross.toNumber())
+    throw new Error("El descuento por monto supera el importe de la línea.");
+  const discount = Decimal.max(
+    gross.times(discountPercent).div(100),
+    discountAmount,
+  );
+  const amount = gross.minus(discount);
+  const tax = taxIncluded
+    ? amount.minus(amount.div(d(1).plus(d(taxRate).div(100))))
+    : amount.times(taxRate).div(100);
+  return {
+    subtotal: money(gross),
+    discount: money(discount),
+    tax: money(tax),
+    net: money(taxIncluded ? amount.minus(tax) : amount),
+    total: money(taxIncluded ? amount : amount.plus(tax)),
+  };
+};
+export const paymentTotals = (
+  total: number,
+  payments: { method: string; amount: number }[],
+) => {
+  const paid = payments.reduce((a, p) => a.plus(p.amount), d(0));
+  const nonCash = payments
+    .filter((p) => p.method !== "cash")
+    .reduce((a, p) => a.plus(p.amount), d(0));
+  if (nonCash.gt(total))
+    throw new Error(
+      "Los pagos distintos de efectivo no pueden generar cambio.",
+    );
+  return {
+    paid: money(paid),
+    pending: money(Decimal.max(0, d(total).minus(paid))),
+    change: money(Decimal.max(0, paid.minus(total))),
+  };
+};
+export const grossProfit = (net: number, cost: number) =>
+  money(d(net).minus(cost));
+export const margin = (net: number, cost: number) =>
+  net <= 0 ? 0 : money(d(net).minus(cost).div(net).times(100));
+export const markup = (price: number, cost: number) =>
+  cost <= 0 ? 0 : money(d(price).minus(cost).div(cost).times(100));
+export const netProfit = (
+  net: number,
+  cost: number,
+  expenses: number,
+  fees = 0,
+) => money(d(net).minus(cost).minus(expenses).minus(fees));
+export const breakEven = (fixedExpenses: number, marginPercent: number) =>
+  marginPercent <= 0
+    ? null
+    : money(d(fixedExpenses).div(d(marginPercent).div(100)));
+export const turnover = (costOfSales: number, averageInventory: number) =>
+  averageInventory <= 0 ? 0 : money(d(costOfSales).div(averageInventory));
+export const inventoryDays = (stock: number, averageDaily: number) =>
+  averageDaily <= 0 ? null : money(d(stock).div(averageDaily));
+export const reorderPoint = (
+  averageDaily: number,
+  leadDays: number,
+  safety: number,
+) => quantity(d(averageDaily).times(leadDays).plus(safety));
+export const averageTicket = (sales: number, invoices: number) =>
+  invoices <= 0 ? 0 : money(d(sales).div(invoices));
+export const abc = <T extends { revenue: number }>(items: T[]) => {
+  const sorted = [...items].sort((a, b) => b.revenue - a.revenue);
+  const total = sorted.reduce((a, i) => a.plus(i.revenue), d(0));
+  let cumulative = d(0);
+  return sorted.map((i) => {
+    const start = total.isZero() ? 1 : cumulative.div(total).toNumber();
+    cumulative = cumulative.plus(i.revenue);
+    return { ...i, class: start < 0.8 ? "A" : start < 0.95 ? "B" : "C" };
+  });
+};
+export const clearanceScore = (
+  daysIdle: number,
+  daysToExpiry: number | null,
+  stock: number,
+  cost: number,
+) =>
+  money(
+    Math.min(daysIdle, 180) / 3 +
+      (daysToExpiry === null ? 0 : Math.max(0, 60 - daysToExpiry) * 2) +
+      Math.min((stock * cost) / 1000, 40),
+  );
+export const safeDiscount = (price: number, cost: number, taxRate = 18) =>
+  Math.max(
+    0,
+    Math.min(50, Math.floor(margin(price / (1 + taxRate / 100), cost))),
+  );
+export const saleSchema = z.object({
+  offlineUuid: z.string().uuid(),
+  capturedAt: z.string().datetime().optional(),
+  customerId: z.string().uuid().nullable().optional(),
+  cashSessionId: z.string().uuid(),
+  items: z
+    .array(
+      z.object({
+        variantId: z.string().uuid(),
+        qty: z.number().positive().max(10000),
+        discountPercent: z.number().min(0).max(100).default(0),
+        discountAmount: z.number().nonnegative().max(100000000).optional(),
+      }),
+    )
+    .min(1)
+    .max(200),
+  globalDiscount: z.number().min(0).max(100).default(0),
+  expectedTotal: z.number().nonnegative().optional(),
+  managerPin: z
+    .string()
+    .regex(/^\d{4,6}$/)
+    .optional(),
+  creditDueDate: z.string().datetime().optional(),
+  ncfType: z.enum(["B01", "B02", "B14", "B15", "E31", "E32"]).optional(),
+  recipientLegalId: z.string().min(9).max(11).regex(/^\d+$/).optional(),
+  notes: z.string().max(1000).optional(),
+  payments: z
+    .array(
+      z.object({
+        method: z.enum(["cash", "card", "transfer", "credit_note", "credit"]),
+        creditNoteId: z.string().uuid().optional(),
+        creditNoteCode: z
+          .string()
+          .trim()
+          .toUpperCase()
+          .regex(/^[0-9A-F]{32}$/)
+          .optional(),
+        amount: z.number().positive().max(100000000),
+        bank: z.string().max(100).optional(),
+        reference: z.string().max(100).optional(),
+        cardBrand: z.string().max(40).optional(),
+        cardLast4: z
+          .string()
+          .regex(/^\d{4}$/)
+          .optional(),
+        cardType: z.enum(["credit", "debit"]).optional(),
+        approvalCode: z.string().max(100).optional(),
+      }),
+    )
+    .min(1)
+    .max(20),
+});
+export type SaleInput = z.infer<typeof saleSchema>;
+export const permissions: Record<string, string[]> = {
+  admin: ["*"],
+  manager: [
+    "catalog:read",
+    "catalog:write",
+    "inventory:write",
+    "purchase:write",
+    "sale:write",
+    "sale:manage",
+    "cash:write",
+    "expense:write",
+    "reports:read",
+    "profit:read",
+    "customers:write",
+    "promotions:write",
+    "alerts:write",
+  ],
+  seller: ["catalog:read", "sale:write", "cash:write", "customers:write"],
+  warehouse: ["catalog:read", "inventory:write", "purchase:write"],
+};
+export const can = (grants: string[], permission: string) =>
+  grants.includes("*") || grants.includes(permission);
+export const categories = [
+  "Suplementos",
+  "Ropa deportiva",
+  "Fajas",
+  "Accesorios de gym",
+  "Maquillaje",
+];
+export const formatMoney = (value: number | string) =>
+  "RD$ " +
+  Number(value).toLocaleString("es-DO", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+export const BUSINESS_TIME_ZONE = "America/Santo_Domingo";
+export const businessDate = (value: Date | string | number = new Date()) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: BUSINESS_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(value));
+// Los vencimientos son fechas civiles: vencen al terminar ese día en Santo Domingo.
+export const expired = (
+  value: Date | string | null | undefined,
+  now: Date = new Date(),
+) => !!value && businessDate(value) < businessDate(now);
+export const expiryDays = (value: Date | string, now: Date = new Date()) =>
+  Math.round(
+    (Date.parse(businessDate(value) + "T12:00:00Z") -
+      Date.parse(businessDate(now) + "T12:00:00Z")) /
+      86400000,
+  );
+export const weekStart = (value: Date = new Date()) => {
+  const day = new Date(businessDate(value) + "T12:00:00Z");
+  day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));
+  return day.toISOString().slice(0, 10);
+};

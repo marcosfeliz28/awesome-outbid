@@ -1,0 +1,26 @@
+$ vitest run --config vitest.integration.config.ts
+
+ RUN  v3.2.7 .
+
+ ✓ tests/api.test.ts (40 tests) 33896ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  641ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  663ms
+   ✓ Aceptación financiera y permisos > conserva conflictos offline sin stock negativo  336ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1297ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  1907ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  1687ms
+   ✓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal  322ms
+   ✓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco  3865ms
+   ✓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor  12202ms
+   ✓ Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP  630ms
+   ✓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores  2551ms
+   ✓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión  971ms
+   ✓ Seguridad, offline y funciones completadas > stock negativo optativo conserva advertencia y prohíbe saltarse lotes  436ms
+   ✓ Seguridad, offline y funciones completadas > alerta efectivo aunque tarjeta lo compense  441ms
+   ✓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios  764ms
+
+ Test Files  1 passed (1)
+      Tests  40 passed (40)
+   Start at  04:45:34
+   Duration  34.15s (transform 69ms, setup 0ms, collect 89ms, tests 33.90s, environment 0ms, prepare 53ms)
+

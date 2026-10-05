@@ -1,0 +1,20 @@
+$ pnpm --filter @fitstore/api db:migrate
+$ prisma migrate deploy
+◇ injected env (5) from ../../.env // tip: ◈ encrypted .env [www.dotenvx.com]
+Loaded Prisma config from prisma.config.ts.
+
+Prisma config detected, skipping environment variable loading.
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "fitstore", schema "public" at "localhost:5434"
+
+8 migrations found in prisma/migrations
+
+Applying migration `202610040007_commit_events`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 202610040007_commit_events/
+    └─ migration.sql
+      
+All migrations have been successfully applied.

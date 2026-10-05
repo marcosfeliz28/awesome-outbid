@@ -1,0 +1,516 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+model Role {
+  id String @id @default(uuid()) @db.Uuid
+  name String @unique
+  permissions String[]
+  users User[]
+  updatedAt DateTime @updatedAt
+}
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  email String @unique
+  passwordHash String
+  pinHash String
+  roleId String @db.Uuid
+  role Role @relation(fields:[roleId],references:[id])
+  active Boolean @default(true)
+  authVersion Int @default(0)
+  failedAttempts Int @default(0)
+  lockedUntil DateTime?
+  branchId String @default("main")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model RefreshToken {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  authVersion Int @default(0)
+  sessionId String? @db.Uuid
+  hash String @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+model Category {
+  id String @id @default(uuid()) @db.Uuid
+  name String @unique
+  requiresLot Boolean @default(false)
+  requiresExpiry Boolean @default(false)
+  color String @default("#7C3AED")
+  attributes Json @default("[]")
+  products Product[]
+  branchId String @default("main")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Brand {
+  id String @id @default(uuid()) @db.Uuid
+  name String @unique
+}
+model Supplier {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  legalId String?
+  phone String?
+  email String?
+  paymentTermsDays Int @default(30)
+  leadTimeDays Int @default(7)
+  active Boolean @default(true)
+  branchId String @default("main")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Product {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  sku String @unique
+  categoryId String @db.Uuid
+  category Category @relation(fields:[categoryId],references:[id])
+  brand String @default("FitStore")
+  supplierId String? @db.Uuid
+  description String @default("")
+  imageUrl String?
+  taxRate Decimal @default(18) @db.Decimal(5,2)
+  minStock Decimal @default(5) @db.Decimal(14,3)
+  maxStock Decimal @default(80) @db.Decimal(14,3)
+  unit String @default("unidad")
+  location String @default("")
+  active Boolean @default(true)
+  isKit Boolean @default(false)
+  variants Variant[]
+  branchId String @default("main")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([name])
+}
+model Variant {
+  id String @id @default(uuid()) @db.Uuid
+  productId String @db.Uuid
+  product Product @relation(fields:[productId],references:[id])
+  sku String @unique
+  barcode String @unique
+  attributes Json @default("{}")
+  costAvg Decimal @db.Decimal(14,2)
+  price Decimal @db.Decimal(14,2)
+  wholesalePrice Decimal? @db.Decimal(14,2)
+  stock Decimal @default(0) @db.Decimal(14,3)
+  active Boolean @default(true)
+  lots Lot[]
+  movements InventoryMovement[]
+  saleItems SaleItem[]
+  branchId String @default("main")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model KitComponent {
+  id String @id @default(uuid()) @db.Uuid
+  kitVariantId String @db.Uuid
+  componentVariantId String @db.Uuid
+  qty Decimal @db.Decimal(14,3)
+  @@unique([kitVariantId,componentVariantId])
+}
+model Lot {
+  id String @id @default(uuid()) @db.Uuid
+  variantId String @db.Uuid
+  variant Variant @relation(fields:[variantId],references:[id])
+  lotNumber String
+  expiryDate DateTime?
+  qty Decimal @db.Decimal(14,3)
+  cost Decimal @db.Decimal(14,2)
+  branchId String @default("main")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([variantId,lotNumber])
+  @@index([expiryDate])
+}
+model InventoryMovement {
+  id String @id @default(uuid()) @db.Uuid
+  variantId String @db.Uuid
+  variant Variant @relation(fields:[variantId],references:[id])
+  lotId String? @db.Uuid
+  type String
+  qty Decimal @db.Decimal(14,3)
+  unitCost Decimal @db.Decimal(14,2)
+  balanceAfter Decimal @db.Decimal(14,3)
+  refId String?
+  reason String
+  userId String
+  branchId String @default("main")
+  createdAt DateTime @default(now())
+  @@index([variantId,createdAt])
+}
+model Customer {
+  id String @id @default(uuid()) @db.Uuid
+  creditLimit Decimal @default(0) @db.Decimal(14,2)
+  name String
+  phone String?
+  email String?
+  legalId String?
+  birthday DateTime?
+  notes String @default("")
+  active Boolean @default(true)
+  branchId String @default("main")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Sale {
+  id String @id @default(uuid()) @db.Uuid
+  number String @unique
+  status String @default("completed")
+  offlineUuid String @unique @db.Uuid
+  requestHash String @default("")
+  customerId String? @db.Uuid
+  sellerId String @db.Uuid
+  cashSessionId String? @db.Uuid
+  subtotal Decimal @db.Decimal(14,2)
+  discountTotal Decimal @db.Decimal(14,2)
+  taxTotal Decimal @db.Decimal(14,2)
+  total Decimal @db.Decimal(14,2)
+  costTotal Decimal @db.Decimal(14,2)
+  creditBalance Decimal @default(0) @db.Decimal(14,2)
+  creditDueDate DateTime?
+  ncf String? @unique
+  ncfType String?
+  recipientLegalId String?
+  fiscalStatus String @default("not_issued")
+  notes String @default("")
+  voidedReason String?
+  voidedBy String?
+  items SaleItem[]
+  payments Payment[]
+  returns SaleReturn[]
+  branchId String @default("main")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([createdAt])
+  @@index([sellerId,createdAt])
+}
+model SaleItem {
+  id String @id @default(uuid()) @db.Uuid
+  saleId String @db.Uuid
+  sale Sale @relation(fields:[saleId],references:[id])
+  variantId String @db.Uuid
+  variant Variant @relation(fields:[variantId],references:[id])
+  lotId String? @db.Uuid
+  qty Decimal @db.Decimal(14,3)
+  returnedQty Decimal @default(0) @db.Decimal(14,3)
+  unitPrice Decimal @db.Decimal(14,2)
+  unitCost Decimal @db.Decimal(14,2)
+  discount Decimal @db.Decimal(14,2)
+  tax Decimal @db.Decimal(14,2)
+  lineTotal Decimal @db.Decimal(14,2)
+  stockAllocations Json @default("[]")
+  @@index([variantId])
+}
+model Payment {
+  id String @id @default(uuid()) @db.Uuid
+  saleId String @db.Uuid
+  sale Sale @relation(fields:[saleId],references:[id])
+  cashSessionId String? @db.Uuid
+  creditNoteId String? @db.Uuid
+  entryType String @default("sale")
+  idempotencyKey String? @unique @db.Uuid
+  createdAt DateTime @default(now())
+  method String
+  amount Decimal @db.Decimal(14,2)
+  tendered Decimal @db.Decimal(14,2)
+  change Decimal @default(0) @db.Decimal(14,2)
+  bank String?
+  reference String?
+  cardBrand String?
+  cardLast4 String?
+  approvalCode String?
+  cardType String?
+  feeAmount Decimal @default(0) @db.Decimal(14,2)
+  status String @default("ok")
+  proofUrl String?
+}
+model SaleReturn {
+  id String @id @default(uuid()) @db.Uuid
+  saleId String @db.Uuid
+  sale Sale @relation(fields:[saleId],references:[id])
+  number String @unique
+  reason String
+  total Decimal @db.Decimal(14,2)
+  taxTotal Decimal @db.Decimal(14,2)
+  costTotal Decimal @db.Decimal(14,2)
+  refundAmount Decimal @default(0) @db.Decimal(14,2)
+  refundMethod String
+  cashSessionId String? @db.Uuid
+  userId String
+  items Json
+  branchId String @default("main")
+  createdAt DateTime @default(now())
+}
+model CreditNote {
+  id String @id @default(uuid()) @db.Uuid
+  redemptionCode String @unique
+  returnId String @unique @db.Uuid
+  customerId String? @db.Uuid
+  amount Decimal @db.Decimal(14,2)
+  balance Decimal @db.Decimal(14,2)
+  createdAt DateTime @default(now())
+}
+model Quote {
+  id String @id @default(uuid()) @db.Uuid
+  type String @default("quote")
+  customerId String? @db.Uuid
+  userId String
+  items Json
+  notes String @default("")
+  status String @default("open")
+  branchId String @default("main")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model PurchaseOrder {
+  id String @id @default(uuid()) @db.Uuid
+  number String @unique
+  supplierId String @db.Uuid
+  status String @default("ordered")
+  expectedDate DateTime?
+  total Decimal @db.Decimal(14,2)
+  items PurchaseItem[]
+  receipts GoodsReceipt[]
+  branchId String @default("main")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model PurchaseItem {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String @db.Uuid
+  order PurchaseOrder @relation(fields:[orderId],references:[id])
+  variantId String @db.Uuid
+  qty Decimal @db.Decimal(14,3)
+  receivedQty Decimal @default(0) @db.Decimal(14,3)
+  unitCost Decimal @db.Decimal(14,2)
+}
+model GoodsReceipt {
+  id String @id @default(uuid()) @db.Uuid
+  orderId String? @db.Uuid
+  order PurchaseOrder? @relation(fields:[orderId],references:[id])
+  freight Decimal @db.Decimal(14,2)
+  otherCosts Decimal @db.Decimal(14,2)
+  items Json
+  userId String
+  branchId String @default("main")
+  createdAt DateTime @default(now())
+}
+model SupplierPayment {
+  id String @id @default(uuid()) @db.Uuid
+  supplierId String @db.Uuid
+  amount Decimal @db.Decimal(14,2)
+  method String
+  reference String?
+  branchId String @default("main")
+  createdBy String?
+  createdAt DateTime @default(now())
+}
+model InventoryCount {
+  id String @id @default(uuid()) @db.Uuid
+  items Json
+  status String @default("pending")
+  userId String
+  appliedBy String?
+  branchId String @default("main")
+  createdAt DateTime @default(now())
+}
+model CashSession {
+  id String @id @default(uuid()) @db.Uuid
+  registerId String @default("terminal-1")
+  userId String
+  openingAmount Decimal @db.Decimal(14,2)
+  openedAt DateTime @default(now())
+  closedAt DateTime?
+  expectedCash Decimal? @db.Decimal(14,2)
+  countedCash Decimal? @db.Decimal(14,2)
+  expectedCard Decimal? @db.Decimal(14,2)
+  countedCard Decimal? @db.Decimal(14,2)
+  expectedTransfer Decimal? @db.Decimal(14,2)
+  countedTransfer Decimal? @db.Decimal(14,2)
+  differenceCash Decimal? @db.Decimal(14,2)
+  differenceCard Decimal? @db.Decimal(14,2)
+  differenceTransfer Decimal? @db.Decimal(14,2)
+  difference Decimal? @db.Decimal(14,2)
+  notes String @default("")
+  branchId String @default("main")
+  @@index([userId,closedAt])
+}
+model CashMovement {
+  id String @id @default(uuid()) @db.Uuid
+  sessionId String @db.Uuid
+  type String
+  amount Decimal @db.Decimal(14,2)
+  reason String
+  userId String
+  createdAt DateTime @default(now())
+}
+model ExpenseCategory {
+  id String @id @default(uuid()) @db.Uuid
+  name String @unique
+  monthlyBudget Decimal @default(10000) @db.Decimal(14,2)
+  expenses Expense[]
+}
+model Expense {
+  id String @id @default(uuid()) @db.Uuid
+  categoryId String @db.Uuid
+  category ExpenseCategory @relation(fields:[categoryId],references:[id])
+  date DateTime @default(now())
+  amount Decimal @db.Decimal(14,2)
+  method String
+  supplierId String?
+  description String
+  receiptUrl String?
+  recurring Boolean @default(false)
+  voided Boolean @default(false)
+  branchId String @default("main")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([date])
+}
+model Promotion {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  type String @default("percent")
+  value Decimal @db.Decimal(14,2)
+  startsAt DateTime
+  endsAt DateTime
+  scope Json
+  active Boolean @default(true)
+  isClearance Boolean @default(false)
+  branchId String @default("main")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Alert {
+  id String @id @default(uuid()) @db.Uuid
+  key String @unique
+  type String
+  severity String
+  entityId String
+  message String
+  status String @default("new")
+  branchId String @default("main")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model AlertRule {
+  id String @id @default(uuid()) @db.Uuid
+  type String @unique
+  threshold Json
+  active Boolean @default(true)
+  updatedAt DateTime @updatedAt
+}
+model AuditLog {
+  terminalId String? @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
+  userId String
+  action String
+  entity String
+  entityId String
+  before Json?
+  after Json?
+  ip String?
+  branchId String @default("main")
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
+model Settings {
+  id String @id @default("main")
+  data Json
+  updatedAt DateTime @updatedAt
+}
+model Counter {
+  key String @id
+  value Int @default(0)
+}
+
+model AuthAttempt {
+  key String @id
+  failedAttempts Int @default(0)
+  lockedUntil DateTime?
+}
+
+model AuthSession {
+  terminalId String? @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  lastActivityAt DateTime @default(now())
+  @@index([userId])
+}
+
+model Terminal {
+ id String @id @db.Uuid
+ name String
+ branchId String
+ revokedAt DateTime?
+ lastActivityAt DateTime @default(now())
+ createdAt DateTime @default(now())
+}
+model RealtimeEvent {
+ id BigInt @id @default(autoincrement())
+ branchId String
+ type String
+ data Json
+ createdAt DateTime @default(now())
+ @@index([branchId,id])
+}
+model MerchandiseOperation {
+ id String @id @db.Uuid
+ branchId String
+ userId String
+ terminalId String? @db.Uuid
+ requestHash String
+ result Json
+ createdAt DateTime @default(now())
+}
+model SupplierImportProfile {
+ id String @id @default(uuid()) @db.Uuid
+ supplierId String @db.Uuid
+ branchId String
+ mapping Json
+ @@unique([supplierId,branchId])
+}
+model SupplierCode {
+ id String @id @default(uuid()) @db.Uuid
+ supplierId String @db.Uuid
+ branchId String
+ code String
+ variantId String @db.Uuid
+ @@unique([supplierId,branchId,code])
+}
+model InvoiceDraft {
+ id String @id @default(uuid()) @db.Uuid
+ branchId String
+ userId String
+ supplierId String? @db.Uuid
+ lines Json
+ total Decimal? @db.Decimal(14,2)
+ attachmentId String? @db.Uuid
+ confirmedOperationId String? @unique @db.Uuid
+ createdAt DateTime @default(now())
+}
+model InvoiceAttachment {
+ id String @id @default(uuid()) @db.Uuid
+ branchId String
+ userId String
+ mime String
+ data Bytes
+ createdAt DateTime @default(now())
+}

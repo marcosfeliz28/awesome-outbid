@@ -1,0 +1,223 @@
+$ vitest run --config vitest.integration.config.ts
+
+ RUN  v3.2.7 .
+
+ ❯ tests/api.test.ts (22 tests | 9 failed) 10901ms
+   ✓ Aceptación financiera y permisos > requiere sesión y el vendedor nunca recibe costos 89ms
+   ✓ Aceptación financiera y permisos > vende proteína y legging con FEFO y pago dividido 42ms
+   ✓ Aceptación financiera y permisos > rechaza pagos y stock inválidos sin crear huecos ni movimientos 109ms
+   ✓ Aceptación financiera y permisos > es idempotente ante peticiones concurrentes y sync 45ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  618ms
+   ✓ Aceptación financiera y permisos > prorratea flete, recalcula promedio y conserva costo histórico 69ms
+   ✓ Aceptación financiera y permisos > protege devoluciones abiertas y repetidas 49ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  395ms
+   ✓ Aceptación financiera y permisos > conserva conflictos offline sin stock negativo 181ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1041ms
+   ✓ Aceptación financiera y permisos > calcula arqueo por método aunque se compensen diferencias 50ms
+   × Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia 3496ms
+     → .toMatch() expects to receive a string, but got undefined
+   × Regresiones de Claude > 3: rechaza ajustes vencidos y acepta el día dominicano vigente 30ms
+     → expected 201 to be 400 // Object.is equality
+   × Regresiones de Claude > 4: stock sin lote convive con lotes; conteo no destruye la trazabilidad 34ms
+     → expected false to be true // Object.is equality
+   × Regresiones de Claude > 5: gerente cierra caja ajena; diferencias compensadas persisten y se auditan 15ms
+     → expected 403 to be 201 // Object.is equality
+   × Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar 717ms
+     → expected 'PrismaClientInitializationError: Can\…' to contain 'JWT_SECRET'
+   × Regresiones de Claude > 7: conflicto offline devuelve español seguro 17ms
+     → expected '\nInvalid `tx.variant.findFirstOrThro…' not to match /Prisma|findFirst|Invocation|Record|\…/i
+   ✓ Regresiones de Claude > 8: pagos del reporte compras pertenecen al mismo rango 29ms
+   × Regresiones de Claude > 9: consumo agrupa por mes dominicano al cruzar medianoche UTC 58ms
+     → expected false to be true // Object.is equality
+   × Regresiones de Claude > 10: utilidad conserva costo de devolución sin reingreso 107ms
+     → expected 120 to be 160 // Object.is equality
+   × Regresiones de Claude > 11: reintentar venta aprobada no requiere de nuevo PIN 15ms
+     → expected 400 to be 201 // Object.is equality
+   ✓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal  327ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia
+TypeError: .toMatch() expects to receive a string, but got undefined
+ ❯ tests/api.test.ts:441:101
+    439|     try {
+    440|       await Promise.all(Array.from({length:10},()=>request("/auth/pin"…
+    441|       expect((await request("/auth/pin",{userId:target.id,pin:"987654"…
+       |                                                                                                     ^
+    442|       expect((await request("/auth/login",{email:target.email,password…
+    443|       expect((await request("/auth/me",undefined,sellerToken)).status)…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 3: rechaza ajustes vencidos y acepta el día dominicano vigente
+AssertionError: expected 201 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 201
+
+ ❯ tests/api.test.ts:449:22
+    447|   it("3: rechaza ajustes vencidos y acepta el día dominicano vigente",…
+    448|     const r=await request("/inventory/adjustments",{variantId:suppleme…
+    449|     expect(r.status).toBe(400);expect(r.body.message).toMatch(/vencid/…
+       |                      ^
+    450|   });
+    451|   it("4: stock sin lote convive con lotes; conteo no destruye la traza…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 4: stock sin lote convive con lotes; conteo no destruye la trazabilidad
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/api.test.ts:456:69
+    454|     await ok("/inventory/adjustments",{variantId:id,qty:1,reason:"QA c…
+    455|     const p=await ok("/products/"+clothing.id);
+    456|     expect(p.variants[0].lots.some(l=>l.lotNumber==="QA-OPTIONAL")).to…
+       |                                                                     ^
+    457|     const count=await ok("/inventory/counts",{items:[{variantId:id,cou…
+    458|     expect((await request("/inventory/counts/"+count.id+"/apply",{})).…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 5: gerente cierra caja ajena; diferencias compensadas persisten y se auditan
+AssertionError: expected 403 to be 201 // Object.is equality
+
+- Expected
++ Received
+
+- 201
++ 403
+
+ ❯ tests/api.test.ts:465:22
+    463|     const c=(await ok("/cash-sessions",undefined,sellerToken)).find(s=…
+    464|     const r=await request("/cash-sessions/"+c.id+"/close",{countedCash…
+    465|     expect(r.status).toBe(201);
+       |                      ^
+    466|     const closed=(await ok("/cash-sessions")).find(s=>s.id===c.id);
+    467|     expect(Number(closed.differenceCash)).toBe(-10);expect(Number(clos…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar
+AssertionError: expected 'PrismaClientInitializationError: Can\…' to contain 'JWT_SECRET'
+
+- Expected
++ Received
+
+- JWT_SECRET
++ PrismaClientInitializationError: Can't reach database server at `127.0.0.1:1`
++
++ Please make sure your database server is running at `127.0.0.1:1`.
++     at r (./node_modules/.pnpm/@prisma+client@6.19.0_prisma@6.19.0_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client/runtime/library.js:112:2770)
++     at async Proxy.onModuleInit (./apps/api/dist/common.js:27:9)
++     at async Promise.all (index 0)
++     at async callModuleInitHook (./node_modules/.pnpm/@nestjs+core@11.2.7_@nestjs+common@11.2.7_reflect-metadata@0.2.2_rxjs@7.8.2_supports-co_a6aeaf4f987ee681be8fff151a3d403f/node_modules/@nestjs/core/hooks/on-module-init.hook.js:43:5)
++     at async NestApplication.callInitHook (./node_modules/.pnpm/@nestjs+core@11.2.7_@nestjs+common@11.2.7_reflect-metadata@0.2.2_rxjs@7.8.2_supports-co_a6aeaf4f987ee681be8fff151a3d403f/node_modules/@nestjs/core/nest-application-context.js:245:13)
++     at async NestApplication.init (./node_modules/.pnpm/@nestjs+core@11.2.7_@nestjs+common@11.2.7_reflect-metadata@0.2.2_rxjs@7.8.2_supports-co_a6aeaf4f987ee681be8fff151a3d403f/node_modules/@nestjs/core/nest-application.js:106:9)
++     at async NestApplication.listen (./node_modules/.pnpm/@nestjs+core@11.2.7_@nestjs+common@11.2.7_reflect-metadata@0.2.2_rxjs@7.8.2_supports-co_a6aeaf4f987ee681be8fff151a3d403f/node_modules/@nestjs/core/nest-application.js:178:13)
++     at async bootstrap (./apps/api/dist/main.js:62:5) {
++   clientVersion: '6.19.0',
++   errorCode: 'P1001',
++   retryable: undefined
++ }
++
+
+ ❯ tests/api.test.ts:473:49
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 7: conflicto offline devuelve español seguro
+AssertionError: expected '\nInvalid `tx.variant.findFirstOrThro…' not to match /Prisma|findFirst|Invocation|Record|\…/i
+
+- Expected: 
+/Prisma|findFirst|Invocation|Record|\.ts:/i
+
++ Received: 
+"
+Invalid `tx.variant.findFirstOrThrow()` invocation in
+./apps/api/src/inventory.ts:36:21
+
+  33 
+  34 export async function lockVariant(tx: any, id: string, actor: Actor) {
+  35   await tx.$queryRaw`SELECT id FROM \"Variant\" WHERE id = ${id}::uuid AND \"branchId\" = ${actor.branchId} FOR UPDATE`;
+→ 36   return tx.variant.findFirstOrThrow(
+An operation failed because it depends on one or more records that were required but not found. No record was found for a query."
+
+ ❯ tests/api.test.ts:478:83
+    476|   it("7: conflicto offline devuelve español seguro",async()=>{
+    477|     const r=await ok("/sales/sync",{sales:[input(randomUUID(),118)]});
+    478|     expect(r.results[0].status).toBe("conflict");expect(r.results[0].m…
+       |                                                                                   ^
+    479|     expect(r.results[0].message).toMatch(/registro|operación|existe/i);
+    480|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 9: consumo agrupa por mes dominicano al cruzar medianoche UTC
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/api.test.ts:489:77
+    487|     await fixtureDb.sale.update({where:{id:s.id},data:{createdAt:new D…
+    488|     const r=await ok("/reports/monthly-consumption?from=2026-08-31&to=…
+    489|     expect(r.rows.some(row=>row.Mes_Producto==="2026-08 · "+clothing.n…
+       |                                                                             ^
+    490|   });
+    491|   it("10: utilidad conserva costo de devolución sin reingreso",async()…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 10: utilidad conserva costo de devolución sin reingreso
+AssertionError: expected 120 to be 160 // Object.is equality
+
+- Expected
++ Received
+
+- 160
++ 120
+
+ ❯ tests/api.test.ts:496:66
+    494|     const r=await ok("/reports/profit");
+    495|     const lines=await fixtureDb.saleItem.findMany({where:{variantId:cl…
+    496|     expect(r.rows.find(row=>row.Producto===clothing.name).Costo).toBe(…
+       |                                                                  ^
+    497|   });
+    498|   it("11: reintentar venta aprobada no requiere de nuevo PIN",async()=…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 11: reintentar venta aprobada no requiere de nuevo PIN
+AssertionError: expected 400 to be 201 // Object.is equality
+
+- Expected
++ Received
+
+- 201
++ 400
+
+ ❯ tests/api.test.ts:500:247
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  9 failed | 13 passed (22)
+   Start at  00:55:55
+   Duration  11.15s (transform 57ms, setup 0ms, collect 72ms, tests 10.90s, environment 0ms, prepare 63ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

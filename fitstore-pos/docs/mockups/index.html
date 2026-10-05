@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="es">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>FitStore · Diseño previo</title
+  ><style>
+    body {
+      font: 16px system-ui;
+      background: #f8fafc;
+      color: #0f172a;
+      margin: 32px;
+    }
+    h1 {
+      color: #7c3aed;
+    }
+    section {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 24px;
+      margin: 24px 0;
+    }
+    .row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .card {
+      padding: 24px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      flex: 1;
+      min-width: 120px;
+    }
+    .primary {
+      background: #7c3aed;
+      color: white;
+    }
+    .accent {
+      background: #ec4899;
+      color: white;
+    }
+    .energy {
+      background: #10b981;
+      color: #064e3b;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+    }
+    .button {
+      padding: 16px;
+      border-radius: 12px;
+      background: #059669;
+      color: white;
+      font-weight: bold;
+    }
+    small {
+      color: #64748b;
+    }
+    input {
+      padding: 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      width: 80%;
+    }
+    @media (max-width: 650px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <h1>FitStore POS</h1>
+  <p>Guía visual y mockups previos a implementación · 03/10/2026</p>
+  <section>
+    <h2>Sistema visual</h2>
+    <div class="row">
+      <div class="card primary">Violeta #7C3AED</div>
+      <div class="card accent">Fucsia #EC4899</div>
+      <div class="card energy">Éxito #10B981</div>
+    </div>
+    <p>
+      Inter · títulos Plus Jakarta Sans · montos tabulares · radios 12–16 px ·
+      controles de 44 px · foco visible · tema oscuro.
+    </p>
+  </section>
+  <section>
+    <h2>Dashboard</h2>
+    <div class="row">
+      <div class="card">
+        Ventas del día<br />
+        <h2>RD$ 28,450</h2>
+      </div>
+      <div class="card">
+        Ganancia bruta<br />
+        <h2>RD$ 9,870</h2>
+      </div>
+      <div class="card">
+        Facturas<br />
+        <h2>24</h2>
+      </div>
+      <div class="card">
+        Ticket promedio<br />
+        <h2>RD$ 1,185</h2>
+      </div>
+    </div>
+    <p>
+      Gráfico de ventas a la izquierda · alertas accionables a la derecha ·
+      tabla de productos destacados debajo.
+    </p>
+  </section>
+  <section>
+    <h2>Punto de venta</h2>
+    <div class="grid">
+      <div>
+        <input placeholder="Buscar por nombre, SKU o código" />
+        <p>Todos · Suplementos · Ropa · Fajas · Accesorios · Maquillaje</p>
+        <div class="row">
+          <div class="card">
+            Proteína whey<br />RD$ 2,800<br /><small
+              >Chocolate · 2 lb · 16 disponibles</small
+            >
+          </div>
+          <div class="card">
+            Legging Essential<br />RD$ 1,450<br /><small
+              >M · Negro · 12 disponibles</small
+            >
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        Venta actual · Consumidor final
+        <hr />
+        Proteína × 1<br />Legging × 1
+        <hr />
+        <h2>RD$ 4,250</h2>
+        <div class="button">Cobrar · F12</div>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h2>Cobro</h2>
+    <h1>RD$ 4,250</h1>
+    <p>Efectivo · Tarjeta · Transferencia · Dividir pago</p>
+    <div class="row">
+      <div class="card">Efectivo<br />RD$ 2,500</div>
+      <div class="card">
+        Tarjeta<br />RD$ 1,750<br /><small>Aprobación requerida</small>
+      </div>
+    </div>
+    <p>Pendiente RD$ 0 · Cambio RD$ 0</p>
+    <div class="button">Finalizar venta</div>
+  </section>
+  <section>
+    <h2>Liquidación</h2>
+    <div class="card">
+      Pre-entreno Berry · Lote LT-040<br />Vence en 45 días · Capital RD$ 12,400
+      · Margen 32%
+      <p>Descuento sugerido: 15%</p>
+      <div class="button primary">Crear oferta</div>
+    </div>
+  </section>
+</html>

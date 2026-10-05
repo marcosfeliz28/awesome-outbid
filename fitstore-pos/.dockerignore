@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+**/dist
+.env
+.git
+.local-db
+test-results
+playwright-report
+**/target
+backups
+docs/*.png

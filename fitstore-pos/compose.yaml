@@ -1,0 +1,44 @@
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: fitstore
+      POSTGRES_USER: fitstore
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD}
+    volumes:
+      - fitstore_database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U fitstore -d fitstore]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  # API interna: no publicar 3001; el cliente accede exclusivamente por nginx.
+  api:
+    build:
+      context: .
+      target: api
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://fitstore:${POSTGRES_PASSWORD}@database:5432/fitstore
+      JWT_SECRET: ${JWT_SECRET:?Configura JWT_SECRET}
+      WEB_ORIGIN: ${WEB_ORIGIN:?Configura el origen HTTPS del sitio}
+      PORT: 3001
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
+    expose:
+      - "3001"
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - "8080:80"
+    depends_on: [api]
+    restart: unless-stopped
+volumes:
+  fitstore_database:
