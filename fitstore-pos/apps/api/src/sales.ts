@@ -457,6 +457,10 @@ export class SalesController {
             branchId: actor.branchId,
           },
         });
+        // Costo registrado = suma del costo redondeado de cada línea guardada
+        // (lotes y combos incluidos): así cada devolución, que redondea por
+        // línea, deja el costo de la venta exactamente en cero.
+        let booked = d(0);
         for (const { item, variant, totals, kit, consumption, cost } of lines) {
           if (kit.length) {
             const allocations: any[] = [];
@@ -468,6 +472,8 @@ export class SalesController {
                   ...p,
                   variantId: v.id,
                   unitCost: Number(v.costAvg),
+                  // Cantidad exacta (ronda 7): su valor es el costo real.
+                  exact: true,
                 })),
               );
             }
@@ -484,6 +490,16 @@ export class SalesController {
                 stockAllocations: allocations,
               },
             });
+            booked = booked.plus(
+              money(
+                allocationCost({
+                  qty: item.qty,
+                  unitCost: money(cost),
+                  variantId: variant.id,
+                  stockAllocations: allocations,
+                }),
+              ),
+            );
           } else {
             const parts = await takeStock(
               tx,
@@ -531,9 +547,15 @@ export class SalesController {
                   ]),
                 },
               });
+              booked = booked.plus(money(d(variant.costAvg).times(part.qty)));
             }
           }
         }
+        if (!booked.eq(sale.costTotal))
+          await tx.sale.update({
+            where: { id: sale.id },
+            data: { costTotal: money(booked) },
+          });
         if (capturedAt && capturedAt < new Date())
           await audit(
             tx,

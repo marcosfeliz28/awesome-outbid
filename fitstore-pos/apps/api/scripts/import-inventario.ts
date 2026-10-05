@@ -118,6 +118,36 @@ export async function readInventory(file: string): Promise<Row[]> {
   return rows;
 }
 
+// Cada código debe identificar una sola fila: IDs únicos, y una REFERENCIA o
+// código de barras no puede repetirse ni ser el ID de otra fila (si no, una
+// fila tomaría el producto de otra y la segunda nunca se crearía).
+export function checkCodes(rows: Row[]) {
+  const problems: string[] = [];
+  const ids = new Map<string, number>();
+  rows.forEach((r) => ids.set(r.id, (ids.get(r.id) ?? 0) + 1));
+  for (const [id, n] of ids)
+    if (n > 1) problems.push("el ID " + id + " está repetido " + n + " veces");
+  const codes = new Map<string, string[]>();
+  for (const r of rows)
+    for (const code of new Set([r.ref, r.barcode].filter(Boolean) as string[]))
+      codes.set(code, [...(codes.get(code) ?? []), r.id]);
+  for (const [code, owners] of codes) {
+    if (owners.length > 1)
+      problems.push(
+        "el código " + code + " aparece en los IDs " + owners.join(", "),
+      );
+    if (ids.has(code) && !owners.includes(code))
+      problems.push(
+        "el código " +
+          code +
+          " de la fila " +
+          owners[0] +
+          " es el ID de otra fila",
+      );
+  }
+  return problems;
+}
+
 // "Producto - Marca - Presentación" → Marca (formato de Suplementos).
 export const brandOf = (row: Row) => {
   const parts = row.name.split(" - ").map((p) => p.trim());
@@ -148,9 +178,11 @@ async function main() {
   const updatePrices = process.argv.includes("--actualizar-precios");
   if (!file) throw new Error("Indica el archivo .xlsx del inventario.");
   const rows = await readInventory(resolve(process.cwd(), file));
-  const dup = rows.filter((r, i) => rows.findIndex((x) => x.id === r.id) !== i);
-  if (dup.length)
-    throw new Error("IDs repetidos: " + dup.map((r) => r.id).join(", "));
+  const problems = checkCodes(rows);
+  if (problems.length)
+    throw new Error(
+      "Corrige el Excel antes de importar:\n- " + problems.join("\n- "),
+    );
 
   const db = new PrismaClient();
   const admin = await db.user.findFirst({
@@ -220,9 +252,11 @@ async function main() {
         where: { sku: row.id },
         include: { product: true },
       })) ??
+      // El importador anterior guardaba la REFERENCIA en el sku; un código de
+      // barras igual en otro producto no identifica esta fila.
       (row.ref
-        ? await db.variant.findFirst({
-            where: { OR: [{ sku: row.ref }, { barcode: row.ref }] },
+        ? await db.variant.findUnique({
+            where: { sku: row.ref },
             include: { product: true },
           })
         : null);

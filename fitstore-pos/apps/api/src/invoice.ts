@@ -444,7 +444,18 @@ const SIZE_SPLIT: Record<string, string[]> = {
   xxxl: ["3", "xl"],
   xxxxl: ["4", "xl"],
 };
-export function tokens(text: string) {
+// Las mismas descripciones y nombres se tokenizan miles de veces al comparar
+// una factura con todo el catálogo: se guardan (sólo lectura).
+const tokenCache = new Map<string, readonly string[]>();
+export function tokens(text: string): string[] {
+  const hit = tokenCache.get(text);
+  if (hit) return hit as string[];
+  if (tokenCache.size > 50000) tokenCache.clear();
+  const out = tokenize(text);
+  tokenCache.set(text, out);
+  return out;
+}
+function tokenize(text: string) {
   // "Women's" / "Women´s" → "womens": el posesivo no debe leerse como talla S.
   return normalize(text.replace(/(\w)['’´`ʼ‘]s\b/gi, "$1s"))
     .replace(/(\d)([a-z])/g, "$1 $2")
@@ -565,6 +576,9 @@ const COLOR_EN: Record<string, string> = {
   purple: "morado",
   brown: "marron",
   yellow: "amarillo",
+  gold: "dorado",
+  silver: "plateado",
+  cream: "crema",
 };
 const NAME_COLORS = [
   "negro",
@@ -590,67 +604,133 @@ const NAME_COLORS = [
   "dorado",
   ...Object.keys(COLOR_EN),
 ];
+// Sabores de una palabra (español e inglés; el inglés se lleva al español).
+const FLAVOR_EN: Record<string, string> = {
+  vanilla: "vainilla",
+  strawberry: "fresa",
+  chocolate: "chocolate",
+  banana: "guineo",
+  caramel: "caramelo",
+  mocha: "mocha",
+  coffee: "cafe",
+  cappuccino: "cafe",
+  mango: "mango",
+  lemon: "limon",
+  orange: "naranja",
+  grape: "uva",
+  watermelon: "sandia",
+  coconut: "coco",
+  mint: "menta",
+  pineapple: "pina",
+  cherry: "cereza",
+  apple: "manzana",
+  peanut: "mani",
+  cookies: "cookies",
+  brownie: "brownie",
+  unflavored: "sin sabor",
+};
+const NAME_FLAVORS = [
+  ...FLAVORS.filter((f) => !f.includes(" ")),
+  "mani",
+  "brownie",
+  ...Object.keys(FLAVOR_EN),
+];
 const SIZES = ["xs", "s", "m", "l", "xl"];
 const SIZE_WORDS: Record<string, string> = {
   small: "s",
   medium: "m",
   large: "l",
+  pequena: "s",
+  pequeno: "s",
+  mediana: "m",
+  mediano: "m",
+  grande: "l",
 };
 const SIZE_KEYWORDS = new Set(["talla", "size", "tallas", "sizes"]);
+// Palabras de relleno que no identifican el producto.
+const FILLER = new Set([
+  "color",
+  "colour",
+  "talla",
+  "size",
+  "tono",
+  "light",
+  "dark",
+  "claro",
+  "clara",
+  "oscuro",
+  "oscura",
+]);
 // Tallas explícitas en una lista de tokens:
-// - "2XL"/"XXL" → "2xl"; "X-Large"/"Extra Large" → "xl"; "XX-Large" → "2xl".
+// - "2XL"/"XXL" → "2xl"; "X-Large"/"Extra Large"/"Extra grande" → "xl";
+//   "XX-Large"/"2X-Large" → "2xl"; "Mediana" → "m".
+// - Un número sólo se une a xs/xl si es 2–6 ("Ref 1201 XL" es talla XL).
 // - "1 l" es un litro, no talla L (salvo "talla 1 l"); s y m tras un número
 //   sí son tallas ("Leggings 7/8 M").
+// - Si la descripción dice "talla …", cuentan sólo las tallas tras esa
+//   palabra ("M&D talla XL" es XL).
 export function sizesIn(toks: string[]) {
-  const out = new Set<string>();
+  const found: { size: string; keyed: boolean }[] = [];
   toks.forEach((raw, i) => {
     const prev = toks[i - 1] ?? "",
       prev2 = toks[i - 2] ?? "";
-    const numeric = /^\d+$/.test(prev);
+    const small = /^[2-6]$/;
     const word = SIZE_WORDS[raw];
+    let size = "",
+      start = i;
     if (word) {
-      const times =
-        prev === "x" || prev === "extra"
-          ? "x"
-          : prev === "xx"
-            ? "2x"
-            : prev === "xxx"
-              ? "3x"
-              : "";
-      out.add(times && word !== "m" ? times + word : word);
-      return;
+      size = word;
+      if (word !== "m") {
+        if (prev === "x" && small.test(prev2)) {
+          size = prev2 + "x" + word;
+          start = i - 2;
+        } else if (prev === "x" || prev === "extra") {
+          size = "x" + word;
+          start = i - 1;
+        } else if (prev === "xx") {
+          size = "2x" + word;
+          start = i - 1;
+        } else if (prev === "xxx") {
+          size = "3x" + word;
+          start = i - 1;
+        }
+      }
+    } else if ((raw === "xs" || raw === "xl") && small.test(prev)) {
+      size = prev + raw;
+      start = i - 1;
+    } else if (SIZES.includes(raw)) {
+      if (raw === "l" && /^\d+$/.test(prev) && !SIZE_KEYWORDS.has(prev2))
+        return;
+      size = raw;
     }
-    if (numeric && (raw === "xs" || raw === "xl")) {
-      out.add(prev + raw);
-      return;
-    }
-    if (!SIZES.includes(raw)) return;
-    if (raw === "l" && numeric && !SIZE_KEYWORDS.has(prev2)) return;
-    out.add(raw);
+    if (!size) return;
+    found.push({ size, keyed: SIZE_KEYWORDS.has(toks[start - 1] ?? "") });
   });
-  return out;
+  const keyed = found.filter((f) => f.keyed);
+  return new Set((keyed.length ? keyed : found).map((f) => f.size));
 }
 const sizeOverlap = (a: Set<string>, b: Set<string>) =>
   [...a].some((x) => b.has(x));
-// Nombre sin talla ni color: las palabras que identifican el producto.
+// Nombre sin talla, color ni relleno: las palabras que identifican el producto.
 export function coreText(text: string) {
   const toks = tokens(text);
   const drop = new Set<number>();
   toks.forEach((t, i) => {
-    const next = toks[i + 1] ?? "";
-    if (NAME_COLORS.includes(t)) drop.add(i);
+    const prev = toks[i - 1] ?? "",
+      next = toks[i + 1] ?? "";
+    if (NAME_COLORS.includes(t) || FILLER.has(t)) drop.add(i);
     else if (SIZES.includes(t) || SIZE_WORDS[t]) {
       // "1 l" es una medida y se conserva.
-      if (t === "l" && /^\d+$/.test(toks[i - 1] ?? "")) return;
+      if (t === "l" && /^\d+$/.test(prev)) return;
       drop.add(i);
-      if ((t === "xs" || t === "xl") && /^\d+$/.test(toks[i - 1] ?? ""))
-        drop.add(i - 1);
-    } else if (["x", "xx", "xxx", "extra"].includes(t) && SIZE_WORDS[next])
+      if ((t === "xs" || t === "xl") && /^[2-6]$/.test(prev)) drop.add(i - 1);
+    } else if (["x", "xx", "xxx", "extra"].includes(t) && SIZE_WORDS[next]) {
       drop.add(i);
+      if (t === "x" && /^[2-6]$/.test(prev)) drop.add(i - 1);
+    }
   });
   return toks.filter((_, i) => !drop.has(i)).join(" ");
 }
-const UNITS = new Set(["lb", "oz", "g", "kg", "l", "ml", "caps", "tabs"]);
 const attrKind = (key: string) => {
   const k = normalize(key);
   if (/sabor|flavor/.test(k)) return FLAVORS;
@@ -658,21 +738,75 @@ const attrKind = (key: string) => {
   if (/talla|size/.test(k)) return SIZES;
   return [];
 };
-// Pares número + unidad: "5 lb", "2.5lb", "900 g".
-function measures(toks: string[]) {
-  const out: { n: number; unit: string }[] = [];
-  for (let i = 0; i < toks.length; i++) {
-    if (!/^\d+$/.test(toks[i])) continue;
-    let num = toks[i],
-      j = i + 1;
-    if (/^\d+$/.test(toks[j] ?? "") && UNITS.has(toks[j + 1] ?? "")) {
-      num += "." + toks[j];
-      j++;
-    }
-    if (UNITS.has(toks[j] ?? "")) out.push({ n: Number(num), unit: toks[j] });
+type Measure = { n: number; unit: string };
+const UNIT_CANON: Record<string, string> = {
+  lb: "lb",
+  lbs: "lb",
+  libra: "lb",
+  libras: "lb",
+  oz: "oz",
+  onza: "oz",
+  onzas: "oz",
+  g: "g",
+  gr: "g",
+  grs: "g",
+  gramos: "g",
+  kg: "kg",
+  kilo: "kg",
+  kilos: "kg",
+  ml: "ml",
+  mililitros: "ml",
+  l: "l",
+  litro: "l",
+  litros: "l",
+  caps: "caps",
+  capsulas: "caps",
+  capsules: "caps",
+  tabs: "tabs",
+  tabletas: "tabs",
+  tablets: "tabs",
+  servicios: "serv",
+  servings: "serv",
+  porciones: "serv",
+};
+const MEASURE_RE = new RegExp(
+  "(?<![\\d.,])(\\d+(?:[.,]\\d+)?)\\s*(" +
+    Object.keys(UNIT_CANON)
+      .sort((a, b) => b.length - a.length)
+      .join("|") +
+    ")(?![a-z])",
+  "g",
+);
+// Número + unidad leídos del texto, con decimales ("1.3 lb", "1,5 lb") y
+// miles ("1,000 ml"). Antes se leía de los tokens y "1.3" daba 1.3 y 3.
+export function measuresIn(text: string): Measure[] {
+  const t = text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const out: Measure[] = [];
+  for (const m of t.matchAll(MEASURE_RE)) {
+    const raw = /^\d{1,3},\d{3}$/.test(m[1])
+      ? m[1].replace(",", "")
+      : m[1].replace(",", ".");
+    out.push({ n: Number(raw), unit: UNIT_CANON[m[2]] });
   }
   return out;
 }
+// Tamaños que se contradicen: alguna unidad en común con números distintos y
+// ninguna unidad en común que coincida ("7 g … 30 servicios" no choca con
+// "30 servings 420 g": coinciden los servicios).
+// Mismo tamaño con redondeo de etiqueta: 1.3 lb y 1.34 lb (610 g) son el
+// mismo bote; 4.5 lb y 5 lb no.
+const sameAmount = (a: Measure, b: Measure) =>
+  a.unit === b.unit && Math.abs(a.n - b.n) <= 0.05 * Math.max(a.n, b.n);
+function measureConflict(declared: Measure[], own: Measure[]) {
+  const common = declared.filter((m) => own.some((o) => o.unit === m.unit));
+  if (!common.length) return false;
+  return !common.some((m) => own.some((o) => sameAmount(m, o)));
+}
+const measureAgree = (declared: Measure[], own: Measure[]) =>
+  declared.some((m) => own.some((o) => sameAmount(m, o)));
 const contains = (desc: Set<string>, value: string) => {
   const t = tokens(value);
   return t.length > 0 && t.every((x) => desc.has(x));
@@ -700,7 +834,7 @@ export function matchInvoiceLines(
   const conflicts = (description: string, v: CatalogVariant) => {
     const descToks = tokens(description),
       desc = new Set(descToks),
-      descMeasures = measures(descToks);
+      descMeasures = measuresIn(description);
     const declared = sizesIn(descToks);
     const out: string[] = [];
     for (const [k, raw] of Object.entries(
@@ -719,14 +853,7 @@ export function matchInvoiceLines(
         continue;
       }
       if (contains(desc, value)) continue;
-      const own = measures(tokens(value));
-      const sameUnit = descMeasures.filter((m) =>
-        own.some((o) => o.unit === m.unit),
-      );
-      if (
-        sameUnit.length &&
-        !sameUnit.some((m) => own.some((o) => o.unit === m.unit && o.n === m.n))
-      ) {
+      if (measureConflict(descMeasures, measuresIn(value))) {
         out.push(value);
         continue;
       }
@@ -804,7 +931,8 @@ export function matchInvoiceLines(
   type Traits = {
     sizes: Set<string>;
     colors: Set<string>;
-    measures: { n: number; unit: string }[];
+    flavors: Set<string>;
+    measures: Measure[];
   };
   const traitsOf = (text: string): Traits => {
     const toks = tokens(text),
@@ -816,12 +944,18 @@ export function matchInvoiceLines(
           (c) => COLOR_EN[c] ?? c,
         ),
       ),
-      measures: measures(toks),
+      flavors: new Set(
+        NAME_FLAVORS.filter((f) => set.has(f)).map((f) => FLAVOR_EN[f] ?? f),
+      ),
+      measures: measuresIn(text),
     };
   };
-  const nameTraits = new Map<string, Traits>();
-  for (const [productId, options] of byProduct)
+  const nameTraits = new Map<string, Traits>(),
+    nameCores = new Map<string, string>();
+  for (const [productId, options] of byProduct) {
     nameTraits.set(productId, traitsOf(options[0].product.name));
+    nameCores.set(productId, coreText(options[0].product.name));
+  }
   // Lo que la factura declara y el nombre del producto contradice.
   const nameConflicts = (productId: string, declared: Traits) => {
     const own = nameTraits.get(productId)!,
@@ -838,28 +972,47 @@ export function matchInvoiceLines(
       !sizeOverlap(own.colors, declared.colors)
     )
       out.push("color " + [...own.colors].join("/"));
-    const sameUnit = declared.measures.filter((m) =>
-      own.measures.some((o) => o.unit === m.unit),
-    );
     if (
-      sameUnit.length &&
-      !sameUnit.some((m) =>
-        own.measures.some((o) => o.unit === m.unit && o.n === m.n),
-      )
+      declared.flavors.size &&
+      own.flavors.size &&
+      !sizeOverlap(own.flavors, declared.flavors)
     )
+      out.push("sabor " + [...own.flavors].join("/"));
+    if (measureConflict(declared.measures, own.measures))
       out.push(
         "tamaño " +
           own.measures
-            .filter((o) => sameUnit.some((m) => m.unit === o.unit))
+            .filter((o) => declared.measures.some((m) => m.unit === o.unit))
             .map((o) => o.n + " " + o.unit)
             .join("/"),
       );
     return out;
   };
+  // Cuántos rasgos declarados coinciden con el nombre (desempate).
+  const agreement = (productId: string, declared: Traits) => {
+    const own = nameTraits.get(productId)!;
+    return (
+      Number(sizeOverlap(own.sizes, declared.sizes)) +
+      Number(sizeOverlap(own.colors, declared.colors)) +
+      Number(sizeOverlap(own.flavors, declared.flavors)) +
+      Number(measureAgree(declared.measures, own.measures))
+    );
+  };
+  const traitKey = (productId: string) => {
+    const t = nameTraits.get(productId)!;
+    return JSON.stringify([
+      nameCores.get(productId),
+      [...t.sizes].sort(),
+      [...t.colors].sort(),
+      [...t.flavors].sort(),
+      t.measures.map((m) => m.n + m.unit).sort(),
+    ]);
+  };
   const describe = (t: Traits) =>
     [
       t.sizes.size ? "talla " + [...t.sizes].join("/").toUpperCase() : "",
       t.colors.size ? "color " + [...t.colors].join("/") : "",
+      t.flavors.size ? "sabor " + [...t.flavors].join("/") : "",
       t.measures.length
         ? "tamaño " + t.measures.map((m) => m.n + " " + m.unit).join("/")
         : "",
@@ -868,10 +1021,11 @@ export function matchInvoiceLines(
       .join(", ");
   const traitNote = (productId: string, declared: Traits) =>
     "La factura indica " +
-    describe(declared) +
+    (describe(declared) || "otra presentación") +
     "; este producto es " +
     nameConflicts(productId, declared).join(", ") +
     ". Elige o crea el producto correcto.";
+  const round2 = (n: number) => Math.round(n * 100) / 100;
   return lines.map((l) => {
     const declared = traitsOf(l.description);
     const code = l.code?.trim();
@@ -900,35 +1054,80 @@ export function matchInvoiceLines(
             }
           : pickVariant(l, product.id, 1);
     }
-    // Por nombre: gana el mejor producto cuyo nombre no contradiga la talla,
-    // el color o el tamaño de la factura. Si sólo hay productos de otra
-    // presentación, se propone el más parecido sin variante, para que alguien
-    // elija o cree el correcto.
-    let best: { id: string; score: number } | null = null,
-      bestConflict: { id: string; score: number } | null = null;
-    for (const [productId, options] of byProduct) {
-      // Se puntúan las palabras propias del producto (sin talla ni color):
-      // "Short Broche L Negro" no debe parecerse a "Panty Negro L" sólo por
-      // compartir talla y color.
-      const name = options[0].product.name;
-      const core = coreText(name);
-      const score = core
-        ? productScore(coreText(l.description) || l.description, core)
-        : productScore(l.description, name);
-      if (nameConflicts(productId, declared).length) {
-        if (!bestConflict || score > bestConflict.score)
-          bestConflict = { id: productId, score };
-      } else if (!best || score > best.score) best = { id: productId, score };
+    // Por nombre. Se puntúan las palabras propias del producto (sin talla,
+    // color ni relleno): "Short Broche L Negro" no debe parecerse a "Panty
+    // Negro L" sólo por compartir talla y color.
+    const descCore = coreText(l.description) || l.description;
+    const scored = [...byProduct].map(([productId, options]) => {
+      const core = nameCores.get(productId)!;
+      return {
+        id: productId,
+        score: core
+          ? productScore(descCore, core)
+          : productScore(l.description, options[0].product.name),
+        conflicts: nameConflicts(productId, declared).length,
+        agree: agreement(productId, declared),
+      };
+    });
+    const fits = scored
+      .filter((c) => !c.conflicts && c.score >= MIN_PRODUCT_SCORE)
+      .sort((a, b) => b.score - a.score);
+    // Sólo hay productos de otra presentación: se propone el que menos
+    // rasgos contradice (y luego el más parecido), sin variante.
+    const nearest = scored
+      .filter((c) => c.conflicts && c.score >= MIN_PRODUCT_SCORE)
+      .sort((a, b) => a.conflicts - b.conflicts || b.score - a.score)[0];
+    if (fits.length) {
+      // Entre los parecidos (hasta 0.15 del mejor), gana el que coincide en
+      // más rasgos declarados (talla, color, sabor, tamaño) y luego el más
+      // parecido: "Gold Standard … Vanilla Ice Cream 1.5 lb" va a la bolsa
+      // de 1.5 lb y no a la versión sin tamaño en el nombre.
+      const window = fits.filter((c) => fits[0].score - c.score <= 0.15);
+      const ranked = [...window].sort(
+        (a, b) => b.agree - a.agree || b.score - a.score,
+      );
+      const chosen = ranked[0];
+      const declares =
+        declared.sizes.size +
+          declared.colors.size +
+          declared.flavors.size +
+          declared.measures.length >
+        0;
+      // La factura declara una presentación, ninguna compatible coincide en
+      // nada y el nombre exacto existe en otra presentación ("Navi Eyeliner
+      // Pencil Black" frente a "… Peacock"): la tienda no la tiene.
+      const unstocked =
+        declares &&
+        chosen.agree === 0 &&
+        !!nearest &&
+        nearest.score - chosen.score >= 0.15;
+      if (!unstocked) {
+        // Empate entre presentaciones distintas: la factura no dice cuál.
+        const tied = ranked.filter(
+          (c) =>
+            c.agree === chosen.agree && Math.abs(c.score - chosen.score) < 1e-9,
+        );
+        if (new Set(tied.map((c) => traitKey(c.id))).size > 1)
+          return {
+            ...l,
+            variantId: null,
+            productId: chosen.id,
+            confidence: round2(chosen.score),
+            note:
+              "Hay " +
+              tied.length +
+              " productos parecidos (otra talla, color, sabor o tamaño) y la factura no indica cuál. Elige el producto.",
+          };
+        return pickVariant(l, chosen.id, round2(chosen.score));
+      }
     }
-    if (best && best.score >= MIN_PRODUCT_SCORE)
-      return pickVariant(l, best.id, Math.round(best.score * 100) / 100);
-    if (bestConflict && bestConflict.score >= MIN_PRODUCT_SCORE)
+    if (nearest)
       return {
         ...l,
         variantId: null,
-        productId: bestConflict.id,
-        confidence: Math.round(bestConflict.score * 100) / 100,
-        note: traitNote(bestConflict.id, declared),
+        productId: nearest.id,
+        confidence: round2(nearest.score),
+        note: traitNote(nearest.id, declared),
       };
     return { ...l, variantId: null, productId: null, confidence: 0 };
   });

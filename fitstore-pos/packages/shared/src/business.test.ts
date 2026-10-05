@@ -7,6 +7,7 @@ import {
   weightedCost,
   derivedStockQty,
   returnShares,
+  allocationCost,
   landedCosts,
   lineTotals,
   paymentTotals,
@@ -207,5 +208,40 @@ describe("returnShares · devoluciones exactas por lote y componente", () => {
     expect(returnShares([{ variantId: "v", qty: 0 }], 0.001, 0, 0.001)).toEqual(
       [],
     );
+  });
+});
+describe("allocationCost · costo de una línea vendida", () => {
+  it("combo de la ronda 7: valor exacto de las asignaciones", () => {
+    expect(
+      allocationCost({
+        qty: 10,
+        unitCost: 5.01,
+        variantId: "combo",
+        stockAllocations: [
+          { variantId: "comp", qty: 5, unitCost: 10.01, exact: true },
+        ],
+      }).toNumber(),
+    ).toBe(50.05);
+  });
+  it("combo antiguo (cantidades redondeadas): el costo registrado", () => {
+    // 0.5 combo × 0.333 → asignación redondeada 0.167; registró 666.
+    expect(
+      allocationCost({
+        qty: 0.5,
+        unitCost: 1332,
+        variantId: "combo",
+        stockAllocations: [{ variantId: "comp", qty: 0.167, unitCost: 4000 }],
+      }).toNumber(),
+    ).toBe(666);
+  });
+  it("producto simple por lotes: cantidad × costo", () => {
+    expect(
+      allocationCost({
+        qty: 0.5,
+        unitCost: 10.01,
+        variantId: "v",
+        stockAllocations: [{ variantId: "v", qty: 0.5, unitCost: 10.01 }],
+      }).toNumber(),
+    ).toBe(5.005);
   });
 });

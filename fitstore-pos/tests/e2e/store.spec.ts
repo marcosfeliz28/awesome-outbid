@@ -557,7 +557,8 @@ test("Configuración y Equipos caben en 320 y 390 px sin desplazamiento horizont
     });
   }
 });
-// Revisión de la ronda 7: cobrar escribiendo el código del producto + Enter.
+// Revisión de la ronda 7: cobrar escribiendo el código del producto + Enter
+// (o con un lector de códigos que escribe y pulsa Enter).
 test("código + Enter agrega el producto y respeta el stock", async ({
   page,
   request,
@@ -576,51 +577,69 @@ test("código + Enter agrega el producto y respeta el stock", async ({
   const categories = await (
     await request.get("/api/categories", { headers })
   ).json();
-  const code = String(9000 + Math.floor(Math.random() * 900000));
-  const product = await (
-    await request.post("/api/products", {
+  const base = 9000 + Math.floor(Math.random() * 900000);
+  const created: any[] = [];
+  for (const code of [String(base), String(base + 1)]) {
+    const product = await (
+      await request.post("/api/products", {
+        headers,
+        data: {
+          name: "Faja E2E código " + code,
+          sku: "E2E-" + code,
+          categoryId: categories.find((c: any) => c.name === "Fajas").id,
+          variants: [
+            { sku: code, barcode: "E2E-B-" + code, price: 1500, costAvg: 700 },
+          ],
+        },
+      })
+    ).json();
+    const stocked = await request.post("/api/inventory/adjustments", {
       headers,
-      data: {
-        name: "Faja E2E código " + code,
-        sku: "E2E-" + code,
-        categoryId: categories.find((c: any) => c.name === "Fajas").id,
-        variants: [
-          { sku: code, barcode: "E2E-B-" + code, price: 1500, costAvg: 700 },
-        ],
-      },
-    })
-  ).json();
-  const stocked = await request.post("/api/inventory/adjustments", {
-    headers,
-    data: { variantId: product.variants[0].id, qty: 1, reason: "E2E código" },
-  });
-  expect(stocked.ok()).toBe(true);
+      data: { variantId: product.variants[0].id, qty: 1, reason: "E2E código" },
+    });
+    expect(stocked.ok()).toBe(true);
+    created.push({ code, product });
+  }
+  const [a, b] = created;
   await login(page);
   await ensureCash(page);
   await page
     .getByRole("button", { name: "Punto de venta", exact: true })
     .click();
   const search = page.getByLabel("Buscar productos");
-  await search.fill(code);
+  await search.fill(a.code);
   await search.press("Enter");
   await expect(page.locator(".cart-items")).toContainText(
-    "Faja E2E código " + code,
+    "Faja E2E código " + a.code,
   );
   await expect(search).toHaveValue("");
-  // Sólo había 1: el segundo Enter avisa y deja el código escrito.
-  await search.fill(code);
+  // Sólo había 1: el segundo Enter avisa y deja el código seleccionado.
+  await search.fill(a.code);
   await search.press("Enter");
   await expect(page.getByText(/No hay suficiente stock/)).toBeVisible();
-  await expect(search).toHaveValue(code);
+  await expect(search).toHaveValue(a.code);
   await expect(page.getByText(/agregado\./)).toHaveCount(0);
   await expect(
     page.locator(".cart-items .quantity-control span").first(),
   ).toHaveText("1");
-  await page
-    .getByRole("button", { name: "Reducir Faja E2E código " + code })
-    .click();
-  await request.patch("/api/products/" + product.id, {
-    headers,
-    data: { active: false },
-  });
+  // El siguiente escaneo reemplaza el código seleccionado (no se suma).
+  await page.keyboard.type(b.code);
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".cart-items")).toContainText(
+    "Faja E2E código " + b.code,
+  );
+  await expect(search).toHaveValue("");
+  // Un código que no existe se avisa.
+  await search.fill("99" + base + "77");
+  await search.press("Enter");
+  await expect(page.getByText(/Código no encontrado/)).toBeVisible();
+  for (const { code, product } of created) {
+    await page
+      .getByRole("button", { name: "Reducir Faja E2E código " + code })
+      .click();
+    await request.patch("/api/products/" + product.id, {
+      headers,
+      data: { active: false },
+    });
+  }
 });

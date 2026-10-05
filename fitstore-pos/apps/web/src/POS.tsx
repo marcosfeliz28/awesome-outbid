@@ -194,8 +194,11 @@ export function POS({ go }: { go: (page: string) => void }) {
     subtotal = money(totals.reduce((a, i) => a.plus(i.subtotal), d(0))),
     tax = money(totals.reduce((a, i) => a.plus(i.tax), d(0))),
     discount = money(totals.reduce((a, i) => a.plus(i.discount), d(0)));
-  // Devuelve true sólo si el artículo entró al carrito.
-  const choose = (variant: Variant, product: Product) => {
+  // "added" o "negative" si el artículo entró al carrito; false si no.
+  const choose = (
+    variant: Variant,
+    product: Product,
+  ): "added" | "negative" | false => {
     const existing = cart.find((i) => i.variant.id === variant.id);
     if (
       (existing?.qty || 0) + 1 > Number(variant.stock) &&
@@ -213,9 +216,14 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     add(variant, product);
     setChoosing(null);
-    if ((existing?.qty || 0) + 1 > Number(variant.stock))
-      toast("Advertencia: esta venta dejará stock negativo.", true);
-    return true;
+    if ((existing?.qty || 0) + 1 > Number(variant.stock)) {
+      toast(
+        "Advertencia: " + product.name + " quedará con stock negativo.",
+        true,
+      );
+      return "negative";
+    }
+    return "added";
   };
   const addProduct = (product: Product) =>
     product.variants.length === 1
@@ -327,10 +335,16 @@ export function POS({ go }: { go: (page: string) => void }) {
     const product = found?.product,
       variant = found?.variant;
     if (product && variant) {
-      // Sin stock: el código queda en la caja y el aviso de stock se ve.
-      if (choose(variant, product)) {
+      const result = choose(variant, product);
+      if (result) {
         setQ("");
-        toast(product.name + " agregado.");
+        // La advertencia de stock negativo ya está a la vista.
+        if (result === "added") toast(product.name + " agregado.");
+      } else {
+        // Sin stock: el código queda a la vista, pero seleccionado, para
+        // que el siguiente escaneo lo reemplace en vez de sumarse.
+        setQ(code);
+        requestAnimationFrame(() => search.current?.select());
       }
     } else {
       setQ(code);
@@ -374,6 +388,12 @@ export function POS({ go }: { go: (page: string) => void }) {
               if (e.key === "Enter") {
                 if (byCode(q)) scan(q);
                 else if (filtered.length === 1) addProduct(filtered[0]);
+                else if (!filtered.length && /^\S*\d\S*$/.test(q.trim())) {
+                  // Parece un código y no existe: se avisa y queda
+                  // seleccionado para el siguiente escaneo.
+                  toast("Código no encontrado: " + q.trim() + ".", true);
+                  search.current?.select();
+                }
               }
             }}
           />

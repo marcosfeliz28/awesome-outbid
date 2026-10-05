@@ -644,9 +644,13 @@ describe("emparejamiento · talla explícita sin vocabulario del catálogo", () 
 // fajas de la tienda (un producto por talla; la talla sólo está en el nombre,
 // como los crea scripts/import-inventario.ts).
 describe("emparejamiento · tallas en el nombre del producto (fajas reales)", () => {
-  const fajas: { id: string; name: string }[] = createRequire(import.meta.url)(
-    "./fixtures/fajas-tienda.json",
-  );
+  const fajas: { id: string; name: string }[] = (
+    createRequire(import.meta.url)("./fixtures/catalogo-tienda.json") as {
+      id: string;
+      name: string;
+      categoria: string;
+    }[]
+  ).filter((p) => p.categoria === "Fajas");
   const catalog = fajas.map((f) => ({
     id: "v-" + f.id,
     sku: f.id,
@@ -764,5 +768,93 @@ describe("emparejamiento · casos de tallas de la revisión adversarial", () => 
       expect(
         pick([variant("m", "M")], `Leggings Sculpt Women${apostrophe}s negro`),
       ).toBe("m");
+  });
+});
+
+// Segunda revisión adversarial de la ronda 7: catálogo real completo (616
+// nombres, un producto por fila, como lo crea el importador).
+describe("emparejamiento · catálogo real de la tienda", () => {
+  const products: { id: string; name: string }[] = createRequire(
+    import.meta.url,
+  )("./fixtures/catalogo-tienda.json");
+  const catalog = products.map((p) => ({
+    id: "v-" + p.id,
+    sku: p.id,
+    barcode: p.id,
+    attributes: {},
+    product: { id: "p-" + p.id, name: p.name, sku: "INV-" + p.id },
+  }));
+  const match = (description: string) =>
+    matchInvoiceLines([{ description, qty: 1, unitCost: 1 }], catalog)[0];
+  const idOf = (name: string) => products.find((p) => p.name === name)!.id;
+  const picks = (description: string, id: string) => {
+    const r = match(description);
+    expect(r.productId, description).toBe("p-" + id);
+    expect(r.variantId, description).toBe("v-" + id);
+  };
+  const flags = (description: string, note: RegExp) => {
+    const r = match(description);
+    expect(r.variantId, description).toBeNull();
+    expect(r.note, description).toMatch(note);
+  };
+  it("cada producto se encuentra por su propio nombre", { timeout: 60000 }, () => {
+    const res = matchInvoiceLines(
+      products.map((p) => ({ description: p.name, qty: 1, unitCost: 1 })),
+      catalog,
+    );
+    const misses = res
+      .map((r, i) =>
+        r.variantId === "v-" + products[i].id ? null : r.description,
+      )
+      .filter(Boolean);
+    expect(misses).toEqual([]);
+  });
+  it("tamaños con decimales y miles: el bote correcto, nunca otro tamaño", () => {
+    picks("ISO100 Hydrolyzed Dymatize Strawberry 1.3 lb", "1162");
+    picks(
+      "Optimum Nutrition Gold Standard 100% Whey Vanilla Ice Cream 1.5 lb",
+      "1181",
+    );
+    picks(
+      "Optimum Nutrition Gold Standard 100% Whey Vanilla Ice Cream 5 lb",
+      "1177",
+    );
+    picks("Carnivor Mass Chocolate Fudge 5.8 lb", "1182");
+    picks("Redken All Soft Conditioner 1000ml", "1538");
+    picks("XTEND Original BCAA Knockout Fruit Punch 30 servings 420g", "1104");
+    // La tienda no tiene Isopure Low Carb Dutch Chocolate de 5 lb.
+    flags("Isopure Low Carb Dutch Chocolate 5 lb", /tamaño/);
+    // Sabor en español frente al nombre en inglés.
+    picks("Dymatize ISO 100 Fresa 1.3 libras", "1162");
+  });
+  it("tallas 2X-Large, Mediana, 'talla XL' y referencias", () => {
+    picks("Cinturilla tipo corset 2X-Large", "1604");
+    flags("Cinturilla tipo corset 3X-Large", /talla/);
+    picks("Faja tipo chaleco Mediana", idOf("Faja tipo chaleco M"));
+    picks(
+      "Cinturilla tipo corset M&D talla XL",
+      idOf("Cinturilla tipo corset XL"),
+    );
+    picks("Faja tipo chaleco Ref 1201 XL", idOf("Faja tipo chaleco XL"));
+  });
+  it("sin talla en la factura no se elige una presentación al azar", () => {
+    flags("Cinturilla tipo corset", /no indica cuál/);
+    flags("Short Broche Negro", /no indica cuál/);
+  });
+  it("colores en español frente a nombres en inglés; un color que no hay se avisa", () => {
+    picks("Navi Eyeliner Pencil Marron Claro", "1367");
+    picks("Navi Eyeliner Pencil Verde Esmeralda", "1369");
+    picks("Navi Eyeliner Pencil Azul Oceano", "1371");
+    picks("Navi Eyeliner Pencil Dorado", "1366");
+    flags("Navi Eyeliner Pencil Black", /color/);
+  });
+  it("la propuesta con otra presentación es la que menos difiere", () => {
+    const r = match("Broche Beige M");
+    expect(r.variantId).toBeNull();
+    expect(r.productId).toBe("p-" + idOf("Broche Crema M"));
+  });
+  it("nombres cortos con color siguen encontrándose", () => {
+    picks("Shaker negro", "1153");
+    picks("Shaker Negro 700ml", "1153");
   });
 });
