@@ -509,3 +509,51 @@ test("equipo nuevo de vendedor espera aprobación y se aprueba con PIN de gerent
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
+// Auditoría R4 (ChatGPT) · R4-09: Configuración y Equipos en celular.
+test("Configuración y Equipos caben en 320 y 390 px sin desplazamiento horizontal", async ({
+  page,
+}) => {
+  await login(page);
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await page
+      .getByRole("button", { name: "Configuración", exact: true })
+      .click();
+    await expect(page.locator(".main-content .loading")).toHaveCount(0);
+    for (const label of [
+      "Negocio y reglas",
+      "Usuarios y permisos",
+      "Bitácora",
+      "Equipos",
+    ]) {
+      const tab = page.locator(".tabs.outside button", { hasText: label });
+      await expect(tab).toBeVisible();
+      const box = (await tab.boundingBox())!;
+      expect(box.x, label + " @" + width).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width, label + " @" + width).toBeLessThanOrEqual(
+        width + 1,
+      );
+    }
+    await page.locator(".tabs.outside button", { hasText: "Equipos" }).click();
+    await expect(page.locator(".equipment-item").first()).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(400);
+    const overflow = await page.evaluate(() => ({
+      page: document.documentElement.scrollWidth - window.innerWidth,
+      // Contenido recortado: ningún elemento visible sale por la derecha.
+      clipped: [...document.querySelectorAll(".main-content *")].filter(
+        (el) => {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && r.right > window.innerWidth + 1;
+        },
+      ).length,
+    }));
+    expect(overflow.page, "scrollWidth @" + width).toBeLessThanOrEqual(1);
+    expect(overflow.clipped, "recortes @" + width).toBe(0);
+    await page.screenshot({
+      // Pantalla visible: la base de pruebas acumula cientos de equipos.
+      path: `docs/validacion/ronda6-capturas/cel-equipos-${width}.png`,
+    });
+  }
+});

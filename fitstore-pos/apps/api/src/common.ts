@@ -13,8 +13,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaClient } from "@prisma/client";
-import { can } from "@fitstore/shared";
-import { z, ZodError } from "zod";
+import { can, stockQty, z, ZodError } from "@fitstore/shared";
 import type { Request, Response } from "express";
 
 @Injectable()
@@ -169,6 +168,13 @@ z.setErrorMap((issue, ctx) => {
       return { message: ctx.defaultError };
   }
 });
+// Reconoce el error de validación por su forma y no sólo por instanceof: así
+// sigue siendo 400 aunque otro paquete cargue una copia distinta de zod (R4-08).
+const isZodError = (e: any): e is ZodError =>
+  e instanceof ZodError ||
+  (e?.name === "ZodError" &&
+    Array.isArray(e.issues) &&
+    e.issues.every((i: any) => Array.isArray(i?.path)));
 export const parse = <T extends z.ZodTypeAny>(
   schema: T,
   input: unknown,
@@ -176,6 +182,8 @@ export const parse = <T extends z.ZodTypeAny>(
 export const uuid = z.string().uuid();
 export const amount = z.number().nonnegative().max(100000000);
 export const positive = z.number().positive().max(1000000);
+// Toda cantidad que mueve o reserva existencias usa esta validación (R4-03).
+export const qty = stockQty();
 export const reason = z.string().trim().min(3).max(1000);
 export const json = (value: unknown) => JSON.parse(JSON.stringify(value));
 export const scoped = (actor: Actor) => ({ branchId: actor.branchId });
@@ -300,7 +308,8 @@ export class AuthGuard implements CanActivate {
           where: { id: terminal.id },
           data: { lastActivityAt: new Date(), lastUserId: user.id },
         });
-        terminalApproved = !!terminal.approvedAt;
+        // Un equipo sin secreto (anterior a la ronda 4) nunca opera.
+        terminalApproved = !!terminal.approvedAt && !!terminal.secretHash;
       }
       req.actor = {
         sessionId: payload.sid,
@@ -365,7 +374,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
           : String((response as any).message);
       if (typeof response === "object" && (response as any).code)
         code = String((response as any).code);
-    } else if (exception instanceof ZodError) {
+    } else if (isZodError(exception)) {
       status = 400;
       message =
         "Revisa los campos: " +

@@ -1,0 +1,91 @@
+{
+  "viewports": [
+    {
+      "screen": "cel-mercancia-entrada",
+      "width": 390,
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "tabs": null
+    },
+    {
+      "screen": "cel-mercancia-salida",
+      "width": 390,
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "tabs": null
+    },
+    {
+      "screen": "cel-equipos",
+      "width": 390,
+      "scrollWidth": 401,
+      "horizontalOverflow": true,
+      "tabs": {
+        "left": 5,
+        "right": 363,
+        "clientWidth": 358,
+        "scrollWidth": 385,
+        "overflowX": "visible"
+      }
+    },
+    {
+      "screen": "cel-equipos-320",
+      "width": 320,
+      "scrollWidth": 401,
+      "horizontalOverflow": true,
+      "tabs": {
+        "left": 5,
+        "right": 293,
+        "clientWidth": 288,
+        "scrollWidth": 385,
+        "overflowX": "visible"
+      }
+    },
+    {
+      "screen": "pc-equipos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "horizontalOverflow": false,
+      "tabs": {
+        "left": 257,
+        "right": 1408,
+        "clientWidth": 1151,
+        "scrollWidth": 1151,
+        "overflowX": "visible"
+      }
+    },
+    {
+      "screen": "cel-equipo-pendiente",
+      "width": 390,
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "tabs": null
+    },
+    {
+      "screen": "pc-caja-otro-equipo",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "horizontalOverflow": false,
+      "tabs": null
+    },
+    {
+      "screen": "cel-caja-otro-equipo",
+      "width": 390,
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "tabs": null
+    }
+  ],
+  "screenshots": [
+    "cel-mercancia-entrada.png",
+    "cel-mercancia-salida.png",
+    "cel-equipos.png",
+    "cel-equipos-320.png",
+    "pc-equipos.png",
+    "cel-equipo-pendiente.png",
+    "pc-caja-otro-equipo.png",
+    "cel-caja-otro-equipo.png"
+  ],
+  "pageErrors": [],
+  "approvalWithPinRemovedPendingNotice": true,
+  "cashWarningVisible": true
+}

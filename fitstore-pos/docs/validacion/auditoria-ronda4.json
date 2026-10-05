@@ -1,32 +1,726 @@
-[
-  {
-    "prioridad": "P1",
-    "comprobado": true,
-    "causa": "Fuga de conexiones concurrentes en el hub de realtime.ts al no limpiar recursos huérfanos tras desconexiones abruptas.",
-    "correccion_pedida": "Implementar eventos de cierre/error o ping/pong para liberar clientes inactivos del hub.",
-    "prueba_exigida": "Prueba de integración simulando caída de cliente.",
-    "estado": "corregido",
-    "correccion_aplicada": "apps/api/src/realtime.ts: liberación única (stop) en close y error de solicitud y respuesta; end() destruye el socket y libera al instante; TCP keepalive de 10 s para pares caídos sin FIN; el latido de 15 s expulsa conexiones destruidas o que dejaron de leer. Nota: el canal es SSE sobre HTTP, no WebSocket.",
-    "evidencia": "tests/api.test.ts › Auditoría ronda 4 de ChatGPT › P1: una caída abrupta del cliente libera su conexión de tiempo real (2 conexiones, la 3.ª da 429, se destruyen los sockets, vuelven a abrirse 2). docs/validacion/ronda5-integracion.txt"
+{
+  "project": "FitStore POS",
+  "round": 4,
+  "recordedAtUTC": "2026-10-05T03:25:40.278Z",
+  "originalZip": {
+    "name": "fitstore-pos-ronda4.zip",
+    "sha256": "2dab7feecca84918b95443a6636e67c31b32234e98bcbc7b6f675780ea43c7c2",
+    "unchanged": true
   },
-  {
-    "prioridad": "P2",
-    "comprobado": true,
-    "causa": "Vulnerabilidad de parsing en invoice.ts si la respuesta de la IA incluye formato Markdown o texto adicional.",
-    "correccion_pedida": "Sanear la respuesta extrayendo solo el bloque JSON válido antes del JSON.parse().",
-    "prueba_exigida": "Prueba unitaria procesando JSON con texto extra.",
-    "estado": "corregido",
-    "correccion_aplicada": "apps/api/src/invoice.ts: parseModelJson toma desde el primer { o [ hasta el último } o ] y devuelve null si no es JSON; la respuesta se valida después con el esquema y con extractedSchema. Se sigue pidiendo salida estructurada al modelo.",
-    "evidencia": "tests/invoice.test.ts › Auditoría ronda 4 · respuesta del modelo con Markdown o texto extra (2 pruebas). docs/validacion/ronda5-check.txt"
+  "mandate": "Auditar la entrega de Claude. El mensaje adjunto define el alcance y sus afirmaciones se verificaron de forma independiente. No se cambió la implementación.",
+  "environment": {
+    "node": "v24.19.0",
+    "database": "PostgreSQL 18.4 en dos bases QA separadas; no es una prueba del contenedor PostgreSQL 17 de Compose",
+    "freshDatabase": "fitstore_audit_r4",
+    "upgradeDatabase": "fitstore_audit_r4_upgrade",
+    "compiledApiPort": 3002,
+    "previousApiPort": 3003,
+    "migratedApiPort": 3004,
+    "developmentApiPort": 3005,
+    "compiledWebPort": 4183
   },
-  {
-    "prioridad": "P2",
-    "comprobado": true,
-    "causa": "Ausencia de índice para la relación lotId en InventoryMovement dentro de schema.prisma.",
-    "correccion_pedida": "Agregar @@index([lotId]) en InventoryMovement y generar migración.",
-    "prueba_exigida": "Verificación del comando CREATE INDEX en la nueva migración SQL.",
-    "estado": "corregido",
-    "correccion_aplicada": "schema.prisma: @@index([lotId]); migración 202610050002_lot_index con CREATE INDEX \"InventoryMovement_lotId_idx\". prisma migrate diff no muestra diferencias de este índice.",
-    "evidencia": "tests/api.test.ts › Auditoría ronda 4 de ChatGPT › P2: el kardex tiene índice por lote (revisa el SQL y pg_indexes)."
+  "suites": {
+    "check": {
+      "passed": true,
+      "unitTests": 24,
+      "typecheck": true,
+      "eslint": true,
+      "build": true,
+      "log": "auditoria-ronda4-check.txt"
+    },
+    "integrationCompiled": {
+      "passed": 67,
+      "failed": 2,
+      "total": 69,
+      "runtime": "node dist/main.js",
+      "log": "auditoria-ronda4-integracion.txt"
+    },
+    "integrationDevelopment": {
+      "passed": 69,
+      "failed": 0,
+      "total": 69,
+      "runtime": "tsx src/main.ts",
+      "log": "auditoria-ronda4-integracion-desarrollo.txt"
+    },
+    "e2e": {
+      "passed": 7,
+      "failed": 0,
+      "browser": "Chromium, PWA compilada",
+      "log": "auditoria-ronda4-navegador.txt"
+    },
+    "externalReproductions": {
+      "passed": 4,
+      "total": 4,
+      "meaning": "Asserts de los fallos observados; no certifican la corrección.",
+      "log": "auditoria-ronda4-pruebas-dirigidas.txt"
+    }
+  },
+  "previousFindings": [
+    {
+      "priority": "P1",
+      "name": "Compras sin orden",
+      "status": "parcial",
+      "newPurchasesFixed": true,
+      "historicalPurchasesFixed": false,
+      "related": [
+        "R4-02",
+        "R4-04"
+      ]
+    },
+    {
+      "priority": "P1",
+      "name": "Mutaciones sin equipo",
+      "status": "parcial",
+      "freshEquipmentPolicyFixed": true,
+      "legacyEnrollmentSafe": false,
+      "related": [
+        "R4-01"
+      ]
+    },
+    {
+      "priority": "P2",
+      "name": "Lote inventado en entrada",
+      "status": "cerrado en los casos auditados",
+      "entryRejectsLotId": true,
+      "databaseForeignKey": true,
+      "orphanCleanupVerified": true
+    }
+  ],
+  "results": {
+    "api": {
+      "equipment": {
+        "missing": {
+          "status": 403,
+          "code": "TERMINAL_REQUIRED"
+        },
+        "initialRegistrationStatus": "pending",
+        "pending": {
+          "status": 403,
+          "code": "TERMINAL_PENDING"
+        },
+        "approved": {
+          "status": 201,
+          "auditTerminalId": "ad719e85-8c44-41cc-bcf0-85149b10ca06"
+        },
+        "secretMismatch": 403,
+        "revokedOldSession": 401,
+        "revokedRegistration": 400,
+        "newSessionWithoutTerminal": 403,
+        "replacementStatus": "pending",
+        "replacementMutation": 403
+      },
+      "purchases": {
+        "receiptTotal": 34,
+        "receipt": {
+          "id": "52512343-69b7-4986-8263-725bc19c15d7",
+          "orderId": null,
+          "supplierId": "69f3664d-feb8-48d0-b426-7ae735671401",
+          "total": "34",
+          "attachmentId": null,
+          "operationId": "6155e869-43af-4299-b687-dd7e25107783",
+          "freight": "4",
+          "otherCosts": "0",
+          "items": [
+            {
+              "qty": 2,
+              "unitCost": 15,
+              "variantId": "f24daf16-307c-4ea2-8bd2-762bdfd07544",
+              "landedCost": 17
+            }
+          ],
+          "userId": "8ea95622-8578-4764-b2c8-ccc3a8c60bb9",
+          "branchId": "main",
+          "createdAt": "2026-10-05T03:09:22.826Z"
+        },
+        "reportAfterStandalone": {
+          "Proveedor": "Proveedor auditoría audit-r4-muuo892t",
+          "Compras": 34,
+          "Pagado": 0,
+          "Pendiente": 34
+        },
+        "repeatSameReceipt": true,
+        "receiptsForOperation": 1,
+        "reportAfterOrder50": {
+          "Proveedor": "Proveedor auditoría audit-r4-muuo892t",
+          "Compras": 84,
+          "Pagado": 0,
+          "Pendiente": 84
+        },
+        "reportAfterPaying34": {
+          "Proveedor": "Proveedor auditoría audit-r4-muuo892t",
+          "Compras": 84,
+          "Pagado": 34,
+          "Pendiente": 50
+        },
+        "reportOutsideDateRange": {
+          "Proveedor": "Proveedor auditoría audit-r4-muuo892t",
+          "Compras": 0,
+          "Pagado": 0,
+          "Pendiente": 0
+        }
+      },
+      "lots": {
+        "invalidEntryStatus": 400,
+        "message": "En una entrada indica el número de lote, no un lote existente.",
+        "stockUnchanged": true,
+        "receiptCountUnchanged": true,
+        "movementCountUnchanged": true,
+        "inventedLotStored": false,
+        "directForeignKeyRejectCode": "P2003",
+        "validEntry": {
+          "status": 201,
+          "receiptId": "5eef5043-75c5-4458-96bf-2daf8933099e",
+          "lotQty": "1",
+          "movementQty": "1"
+        }
+      },
+      "precision": {
+        "qtySubmitted": 0.0004,
+        "legacyReceiveStatus": 201,
+        "stockBefore": "1",
+        "stockAfter": "1",
+        "costBefore": "10",
+        "costAfter": "409.84",
+        "receiptTotal": "400",
+        "storedMovementQty": "0",
+        "storedReceivedQty": "0",
+        "merchandiseSameQtyStatus": 400
+      },
+      "productionValidation": {
+        "status": 500,
+        "body": {
+          "statusCode": 500,
+          "message": "No se pudo completar la operación. Intenta de nuevo."
+        }
+      },
+      "source": {
+        "api": "API R4 compilada (node dist/main.js)",
+        "db": "fitstore_audit_r4",
+        "originalZipUnchanged": true
+      }
+    },
+    "migration": {
+      "source": "API y esquema originales R3 sobre base separada",
+      "before": {
+        "receipt": {
+          "id": "ce414373-e694-4cc0-aced-a13a91e23187",
+          "orderId": null,
+          "freight": "4.00",
+          "otherCosts": "0.00",
+          "items": [
+            {
+              "qty": 2,
+              "unitCost": 15,
+              "variantId": "8cba40c2-8a50-4d80-9ec5-0ba225b925b5",
+              "landedCost": 17
+            }
+          ],
+          "userId": "73f53b61-0474-4677-b43d-64531b2c6ac2",
+          "branchId": "main",
+          "createdAt": "2026-10-05T03:05:27.782Z"
+        },
+        "terminal": {
+          "id": "440f2bfe-0829-47b8-bc0b-879b72675245",
+          "name": "Equipo anterior R3",
+          "branchId": "main",
+          "revokedAt": null,
+          "lastActivityAt": "2026-10-05T03:05:27.826Z",
+          "createdAt": "2026-10-05T03:05:27.739Z"
+        },
+        "orphanReferences": 1
+      },
+      "after": {
+        "receipt": {
+          "id": "ce414373-e694-4cc0-aced-a13a91e23187",
+          "orderId": null,
+          "freight": "4.00",
+          "otherCosts": "0.00",
+          "items": [
+            {
+              "qty": 2,
+              "unitCost": 15,
+              "variantId": "8cba40c2-8a50-4d80-9ec5-0ba225b925b5",
+              "landedCost": 17
+            }
+          ],
+          "userId": "73f53b61-0474-4677-b43d-64531b2c6ac2",
+          "branchId": "main",
+          "createdAt": "2026-10-05T03:05:27.782Z",
+          "supplierId": null,
+          "total": null,
+          "attachmentId": null,
+          "operationId": null
+        },
+        "terminal": {
+          "id": "440f2bfe-0829-47b8-bc0b-879b72675245",
+          "name": "Equipo anterior R3",
+          "branchId": "main",
+          "revokedAt": null,
+          "lastActivityAt": "2026-10-05T03:05:27.826Z",
+          "createdAt": "2026-10-05T03:05:27.739Z",
+          "approvedAt": "2026-10-05T03:05:27.739Z",
+          "approvedBy": null,
+          "secretHash": null,
+          "createdBy": null,
+          "lastUserId": null
+        },
+        "orphanReferences": 0
+      },
+      "recoverableReceiptAudit": {
+        "after": {
+          "id": "ea4e1cdc-32f1-44ec-a9b1-e50a3c113047",
+          "items": [
+            {
+              "qty": 2,
+              "unitCost": 15,
+              "variantId": "8cba40c2-8a50-4d80-9ec5-0ba225b925b5"
+            }
+          ],
+          "taxes": 0,
+          "result": {
+            "id": "ea4e1cdc-32f1-44ec-a9b1-e50a3c113047",
+            "total": 34,
+            "receiptId": "ce414373-e694-4cc0-aced-a13a91e23187",
+            "variantIds": [
+              "8cba40c2-8a50-4d80-9ec5-0ba225b925b5"
+            ]
+          },
+          "freight": 4,
+          "direction": "entry",
+          "allocation": "value",
+          "supplierId": "6281ec73-8e7c-4aaf-ac25-f2d621d592c7",
+          "acknowledgeMismatch": false
+        }
+      }
+    },
+    "legacy": {
+      "unregisteredMutation": {
+        "status": 403,
+        "body": {
+          "statusCode": 403,
+          "message": "Este equipo no está registrado. Recarga la página para registrarlo.",
+          "code": "TERMINAL_REQUIRED"
+        }
+      },
+      "legacyClaim": {
+        "status": 201,
+        "terminalStatus": "approved",
+        "approvedBy": null,
+        "originalOwner": "73f53b61-0474-4677-b43d-64531b2c6ac2",
+        "claimingUser": "b9c69877-9a30-43b6-8a99-704ef4517c08",
+        "claimedTerminalId": "440f2bfe-0829-47b8-bc0b-879b72675245",
+        "hasSecretHashInResponse": false
+      },
+      "mutationWithClaimedTerminal": {
+        "status": 201
+      },
+      "originalOwnerRegistration": {
+        "status": 403,
+        "body": {
+          "statusCode": 403,
+          "message": "Este identificador de equipo pertenece a otro dispositivo."
+        }
+      },
+      "legacyPurchase": {
+        "originalOperationTotal": 34,
+        "receiptId": "ce414373-e694-4cc0-aced-a13a91e23187",
+        "reportRow": {
+          "Proveedor": "Proveedor actualización legacy-r4-muuo37c3",
+          "Compras": 0,
+          "Pagado": 0,
+          "Pendiente": 0
+        },
+        "reportAfterPaying34": {
+          "Proveedor": "Proveedor actualización legacy-r4-muuo37c3",
+          "Compras": 0,
+          "Pagado": 34,
+          "Pendiente": -34
+        }
+      }
+    },
+    "invoiceAgainstOrder": {
+      "orderTotal": 50,
+      "acceptedInvoiceTotal": 60,
+      "reportBeforePayment": {
+        "Proveedor": "invoice-r4-muuol8bn",
+        "Compras": 50,
+        "Pagado": 0,
+        "Pendiente": 50
+      },
+      "reportAfterPayingInvoice": {
+        "Proveedor": "invoice-r4-muuol8bn",
+        "Compras": 50,
+        "Pagado": 60,
+        "Pendiente": -10
+      },
+      "stockAfter": 2,
+      "averageCostAfter": 30
+    },
+    "directedTests": {
+      "hub": {
+        "simultaneousInitialQueries": 2,
+        "timersCreated": 2,
+        "timersRemainingAfterAllDisconnect": 1,
+        "eventCommittedWhileFirstListenerActive": "1",
+        "eventsReceivedByFirst": []
+      },
+      "connectionCaps": {
+        "allowedPerSession": 2,
+        "allowedPerUser": 6,
+        "concurrentAccepted": 20,
+        "nextSequentialStatus": 429
+      },
+      "disconnectDuringStartup": {
+        "cleanupCallsAfterDisconnect": 0,
+        "readyWrittenAfterDisconnect": true
+      },
+      "variantMismatch": {
+        "invoice": {
+          "code": "WHEY",
+          "description": "Proteína Whey chocolate 5 lb",
+          "qty": 1,
+          "unitCost": 50
+        },
+        "onlyCatalogAttributes": {
+          "sabor": "Vainilla",
+          "tamaño": "2 lb"
+        },
+        "matchedVariantId": "vainilla-2lb",
+        "confidence": 1,
+        "note": null
+      }
+    },
+    "sse": {
+      "capsOverHttp": {
+        "controlledStartupDelay": true,
+        "pendingAggregateQueries": 8,
+        "sessionLimit": 2,
+        "userLimit": 6,
+        "statuses": [
+          200,
+          200,
+          200,
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "accepted": 8
+      },
+      "threeSessions": {
+        "transport": "HTTP SSE (sin interfaz de navegador)",
+        "latencyFromRequestMs": [
+          23,
+          23,
+          23
+        ],
+        "events": [
+          {
+            "qtyOnHand": 5,
+            "variantId": "8cba40c2-8a50-4d80-9ec5-0ba225b925b5"
+          },
+          {
+            "qtyOnHand": 5,
+            "variantId": "8cba40c2-8a50-4d80-9ec5-0ba225b925b5"
+          },
+          {
+            "qtyOnHand": 5,
+            "variantId": "8cba40c2-8a50-4d80-9ec5-0ba225b925b5"
+          }
+        ]
+      }
+    },
+    "ui": {
+      "viewports": [
+        {
+          "screen": "cel-mercancia-entrada",
+          "width": 390,
+          "scrollWidth": 390,
+          "horizontalOverflow": false,
+          "tabs": null
+        },
+        {
+          "screen": "cel-mercancia-salida",
+          "width": 390,
+          "scrollWidth": 390,
+          "horizontalOverflow": false,
+          "tabs": null
+        },
+        {
+          "screen": "cel-equipos",
+          "width": 390,
+          "scrollWidth": 401,
+          "horizontalOverflow": true,
+          "tabs": {
+            "left": 5,
+            "right": 363,
+            "clientWidth": 358,
+            "scrollWidth": 385,
+            "overflowX": "visible"
+          }
+        },
+        {
+          "screen": "cel-equipos-320",
+          "width": 320,
+          "scrollWidth": 401,
+          "horizontalOverflow": true,
+          "tabs": {
+            "left": 5,
+            "right": 293,
+            "clientWidth": 288,
+            "scrollWidth": 385,
+            "overflowX": "visible"
+          }
+        },
+        {
+          "screen": "pc-equipos",
+          "width": 1440,
+          "scrollWidth": 1440,
+          "horizontalOverflow": false,
+          "tabs": {
+            "left": 257,
+            "right": 1408,
+            "clientWidth": 1151,
+            "scrollWidth": 1151,
+            "overflowX": "visible"
+          }
+        },
+        {
+          "screen": "cel-equipo-pendiente",
+          "width": 390,
+          "scrollWidth": 390,
+          "horizontalOverflow": false,
+          "tabs": null
+        },
+        {
+          "screen": "pc-caja-otro-equipo",
+          "width": 1440,
+          "scrollWidth": 1440,
+          "horizontalOverflow": false,
+          "tabs": null
+        },
+        {
+          "screen": "cel-caja-otro-equipo",
+          "width": 390,
+          "scrollWidth": 390,
+          "horizontalOverflow": false,
+          "tabs": null
+        }
+      ],
+      "screenshots": [
+        "cel-mercancia-entrada.png",
+        "cel-mercancia-salida.png",
+        "cel-equipos.png",
+        "cel-equipos-320.png",
+        "pc-equipos.png",
+        "cel-equipo-pendiente.png",
+        "pc-caja-otro-equipo.png",
+        "cel-caja-otro-equipo.png"
+      ],
+      "pageErrors": [],
+      "approvalWithPinRemovedPendingNotice": true,
+      "cashWarningVisible": true
+    },
+    "modules": {
+      "r4": {
+        "errorName": "ZodError",
+        "isCommonJsZodError": false,
+        "issueCount": 4,
+        "firstIssueMessage": "Required",
+        "apiModule": "@fitstore/api",
+        "sharedPackageType": "module"
+      },
+      "r3": {
+        "errorName": "ZodError",
+        "isCommonJsZodError": false,
+        "issueCount": 4,
+        "firstIssueMessage": "Required",
+        "apiModule": "@fitstore/api",
+        "sharedPackageType": "module"
+      },
+      "interpretation": "El esquema compartido ESM lanza una clase distinta del ZodError CommonJS usado por la API compilada. El patrón ya existe en R3."
+    }
+  },
+  "invoiceAi": {
+    "sdkVersion": "0.131.0",
+    "defaultModel": "claude-opus-5-5",
+    "sdkDeclaresModel": true,
+    "structuredOutputMocksPassed": true,
+    "realAnthropicRequestMade": false,
+    "reason": "No se proporcionó una clave de prueba para validar una factura real. Los mocks verifican el contrato local, no la calidad de extracción en el servicio."
+  },
+  "counts": {
+    "P1": 4,
+    "P2": 4,
+    "P3": 1,
+    "total": 9
+  },
+  "findings": [
+    {
+      "id": "R4-01",
+      "priority": "P1",
+      "title": "Se puede reclamar un equipo anterior sin aprobación del gerente",
+      "verified": "Tras crear un equipo con la API y esquema R3 y aplicar el SQL R4 exacto, otro usuario de almacén registró su ID con un secreto elegido por él. Recibió 201, status approved y approvedBy null; pudo ajustar stock (201). El usuario original recibió 403 al intentar fijar su propio secreto.",
+      "cause": "La migración aprueba todo equipo antiguo no revocado, pero deja secretHash vacío. register permite que el primer usuario autenticado de la sucursal que conoce el ID establezca ese secreto, sin prueba de posesión ni aprobación. El ID por sí solo no acredita un dispositivo.",
+      "source": [
+        "apps/api/prisma/migrations/202610050001_round4_claude/migration.sql:12",
+        "apps/api/src/realtime.ts:155"
+      ],
+      "requestedFix": "Exigir aprobación gerencial para convertir una identidad antigua sin secreto en un equipo operativo, o un mecanismo de migración que demuestre posesión. Conservar los revocados bloqueados y auditar la conversión; no aceptar automáticamente el primer secreto enviado.",
+      "requiredTest": "Migrar un equipo real R3; otro usuario/navegador con ID conocido y secreto nuevo no puede operar ni apropiarse de él. El equipo legítimo sólo queda aprobado mediante el flujo autorizado. Cubrir también una sesión heredada ya enlazada a ese ID.",
+      "evidence": [
+        "auditoria-ronda4-migracion.json",
+        "auditoria-ronda4-legado.json"
+      ]
+    },
+    {
+      "id": "R4-02",
+      "priority": "P1",
+      "title": "Las compras históricas sin orden siguen fuera del saldo del proveedor",
+      "verified": "Una entrada R3 de dos unidades a 15 y flete 4 se migró a R4. La recepción conservó supplierId y total nulos; compras y pendiente siguieron en 0. Al pagar exactamente 34, el reporte mostró Compras 0, Pagado 34 y Pendiente -34. AuditLog.after conserva el proveedor, total 34 y receiptId de esa operación.",
+      "cause": "La migración añade los campos pero no recupera las recepciones anteriores. El reporte excluye las que siguen sin supplierId. La documentación de Claude reconoce la omisión, que deja incompleta la corrección del P1 anterior.",
+      "source": [
+        "apps/api/prisma/migrations/202610050001_round4_claude/migration.sql:15",
+        "apps/api/src/reports.ts:354"
+      ],
+      "requestedFix": "Añadir una migración de datos verificable e idempotente que recupere las compras enlazables a MerchandiseOperation/AuditLog por receiptId, operación y sucursal. Los registros sin evidencia suficiente deben quedar para conciliación explícita; no inventar proveedor ni total.",
+      "requiredTest": "Crear una compra de 34 mediante R3, migrar y verificar Compras/Pendiente 34; pagarla y obtener pendiente 0. Repetir la reparación sin duplicados; cubrir comprobantes, fechas, sucursales y registros ambiguos.",
+      "evidence": [
+        "auditoria-ronda4-migracion.json",
+        "auditoria-ronda4-legado.json"
+      ]
+    },
+    {
+      "id": "R4-03",
+      "priority": "P1",
+      "title": "La recepción antigua acepta cantidades que cambian costos sin cambiar stock",
+      "verified": "Con stock 1 y costo promedio 10, recibir 0.0004 unidades de una orden a costo unitario 1000000 devolvió 201. El stock siguió en 1 y las cantidades persistidas en kardex y receivedQty fueron 0, pero el costo promedio pasó a 409.84 y se creó una recepción por 400. Mercancía rechaza esa misma cantidad con 400.",
+      "cause": "goodsQty, con mínimo 0.001 y máximo tres decimales, sólo se aplica a Mercancía. purchase-orders/:id/receive usa positive. El costo se calcula con la cantidad completa y las existencias/columnas de tres decimales la redondean.",
+      "source": [
+        "apps/api/src/inventory.ts:407",
+        "apps/api/src/merchandise.ts:64"
+      ],
+      "requestedFix": "Compartir la validación de cantidades representables y aplicarla antes de cualquier cálculo o escritura en todas las rutas de inventario, recepción, venta, devolución y conteo. Rechazar una cantidad fuera de precisión con rollback completo.",
+      "requiredTest": "0.0004 y 1.0001 deben dar 400 en recepción y no alterar costo, stock, lotes, orden, recepción ni kardex. 0.001 y cantidades válidas deben conservar todas las cantidades y su costo contable.",
+      "evidence": [
+        "auditoria-ronda4-api.json"
+      ]
+    },
+    {
+      "id": "R4-04",
+      "priority": "P1",
+      "title": "La factura aceptada contra una orden puede dejar un saldo de proveedor incorrecto",
+      "verified": "Orden de dos unidades a 25: total 50. Se confirmó una factura vinculada por dos unidades a 30, invoiceTotal 60: recepción aceptada, stock 2 y costo 30. El reporte siguió contando 50. Pagar la factura completa de 60 dejó Pendiente -10.",
+      "cause": "Mercancía admite el costo real de la factura y guarda ese total en la recepción, pero purchases suma exclusivamente el total original de la orden e ignora sus recepciones. Evita duplicados, pero también descarta diferencias reales aceptadas.",
+      "source": [
+        "apps/api/src/merchandise.ts:395",
+        "apps/api/src/reports.ts:342"
+      ],
+      "requestedFix": "Conciliar la compra facturada con la orden y calcular la deuda a partir del importe real aceptado. Distinguir los compromisos de la orden de las compras facturadas si se necesitan ambos. Definir recepciones parciales, cambios de costo, flete e impuestos sin doble conteo.",
+      "requiredTest": "Orden 50, factura aceptada 60 y pago 60 deben dejar saldo 0. Añadir casos con parcialidades, diferencias de costo, flete/impuestos, reintento del mismo UUID y filtros temporales/sucursal.",
+      "evidence": [
+        "auditoria-ronda4-compras-orden.json"
+      ]
+    },
+    {
+      "id": "R4-05",
+      "priority": "P2",
+      "title": "El inicio concurrente del hub duplica sondeos y puede saltarse eventos",
+      "verified": "Una reproducción determinista del código original con dos add simultáneos ejecutó dos consultas iniciales y creó dos intervalos. El segundo máximo avanzó el cursor por encima de un evento confirmado cuando el primer listener ya estaba activo: éste no lo recibió. Tras desconectar todos, quedó un intervalo sin limpiar.",
+      "cause": "add comprueba !timer antes de await aggregate, sin compartir una promesa de inicialización. Cada llamada pendiente puede reinicializar cursor y sobrescribir el único handle que el cleanup conoce.",
+      "source": [
+        "apps/api/src/realtime.ts:63"
+      ],
+      "requestedFix": "Hacer única la inicialización concurrente del hub y proteger el cursor contra reinicios. Gestionar el cierre de modo que al quedarse sin clientes se eliminen todos los recursos, incluidas inicializaciones pendientes.",
+      "requiredTest": "Varias altas simultáneas deben producir una consulta inicial y un intervalo. Un evento confirmado con un listener activo debe llegar una sola vez. Desconectar todos durante y después de la inicialización debe dejar cero intervalos.",
+      "evidence": [
+        "auditoria-ronda4-pruebas-dirigidas.json",
+        "auditoria-ronda4-pruebas-dirigidas.txt"
+      ]
+    },
+    {
+      "id": "R4-06",
+      "priority": "P2",
+      "title": "Las altas SSE concurrentes eluden el límite y un cierre temprano pierde la limpieza",
+      "verified": "Por HTTP, retrasando únicamente la consulta inicial mediante un bloqueo controlado en la base de auditoría, ocho altas con el mismo JWT quedaron esperando aggregate y después obtuvieron 200: superaron los límites de dos por sesión y seis por usuario. Otra reproducción cerró cliente y respuesta durante await hub.add; al resolver, se escribió ready y no se retiró el listener. La prueba determinista de cuota admitió 20 altas simultáneas.",
+      "cause": "events comprueba la cuota antes de await hub.add y la incrementa después. Los manejadores close se instalan al final, por lo que una desconexión durante ese await ocurre antes de que exista cleanup.",
+      "source": [
+        "apps/api/src/realtime.ts:367",
+        "apps/api/src/realtime.ts:401",
+        "apps/api/src/realtime.ts:443"
+      ],
+      "requestedFix": "Reservar la cuota antes del primer await, con rollback en error o desconexión. Instalar y comprobar el estado de cierre antes de registrar el listener; cancelar o retirar el resultado de un alta que llega después de cerrar. Mantener la limpieza idempotente.",
+      "requiredTest": "Una ráfaga concurrente sobre una sesión acepta como máximo dos conexiones; varias sesiones del mismo usuario, como máximo seis. Un cliente que se desconecta antes de la respuesta no deja cuota, listener, heartbeat ni intervalo pendientes.",
+      "evidence": [
+        "auditoria-ronda4-sse.json",
+        "auditoria-ronda4-pruebas-dirigidas.json"
+      ]
+    },
+    {
+      "id": "R4-07",
+      "priority": "P2",
+      "title": "Una sola variante se empareja aunque contradiga sabor y tamaño",
+      "verified": "Catálogo: producto WHEY con una única variante Vainilla, 2 lb. Factura: código del producto WHEY, descripción Proteína Whey chocolate 5 lb. matchInvoiceLines seleccionó Vainilla 2 lb, confidence 1 y ninguna nota de conflicto.",
+      "cause": "pickVariant retorna inmediatamente cuando options.length es 1 y omite comprobar atributos. Un SKU del producto no identifica una combinación de variante.",
+      "source": [
+        "apps/api/src/invoice.ts:483"
+      ],
+      "requestedFix": "No asignar automáticamente la variante única cuando la descripción declara atributos incompatibles. Diferenciar coincidencia exacta de SKU/barcode de variante y coincidencia del producto; dejar la variante sin resolver y señalar el conflicto cuando corresponda.",
+      "requiredTest": "SKU del producto + chocolate 5 lb frente a única vainilla 2 lb requiere resolución manual. Cubrir una variante única compatible, talla/color incompatibles, varias variantes y códigos exactos de variante.",
+      "evidence": [
+        "auditoria-ronda4-pruebas-dirigidas.json"
+      ]
+    },
+    {
+      "id": "R4-08",
+      "priority": "P2",
+      "title": "La API compilada devuelve 500 para ventas inválidas",
+      "verified": "Con la API compilada ejecutada como en el CMD de Docker, la integración dio 67/69. Fallaron la validación de ventas vacías en la prueba del límite por IP y la de descuento superior al importe. POST /sales con {} respondió 500. Con tsx, los mismos 69 casos pasaron. La comprobación de módulos mostró que saleSchema lanza un ZodError ESM que no es instanceof el ZodError CommonJS del filtro.",
+      "cause": "La API compila a CommonJS; @fitstore/shared se distribuye como TypeScript ESM. Zod usa clases distintas para import y require. ApiExceptionFilter depende de instanceof y el mapa global de errores tampoco cruza ambas instancias. El patrón ya estaba en R3; este hallazgo aparece al verificar el runtime compilado.",
+      "source": [
+        "apps/api/src/common.ts:368",
+        "apps/api/tsconfig.json:4",
+        "packages/shared/package.json:4",
+        "Dockerfile:20"
+      ],
+      "requestedFix": "Unificar la resolución/formato de módulos y la instancia de validación, o normalizar de forma segura sus errores en la frontera de la API. Conservar los errores de campos en español. Incorporar la API compilada al criterio de aceptación.",
+      "requiredTest": "La suite completa debe pasar ejecutando node dist/main.js, además de desarrollo. Ventas vacías y descuentos inválidos devuelven 400 con campos en español; el límite por IP sigue devolviendo 429 y no hay mutaciones.",
+      "evidence": [
+        "auditoria-ronda4-integracion.txt",
+        "auditoria-ronda4-integracion-desarrollo.txt",
+        "auditoria-ronda4-api.json",
+        "auditoria-ronda4-modulos.json"
+      ]
+    },
+    {
+      "id": "R4-09",
+      "priority": "P3",
+      "title": "Las pestañas de Configuración desbordan la pantalla móvil",
+      "verified": "Después de terminar las transiciones y cargar fuentes, Equipos produjo scrollWidth 401 en pantallas de 390 y 320 px. La fila de pestañas tenía overflow-x visible y scrollWidth 385. Hay desplazamiento horizontal y recorte del contenido; las capturas lo muestran.",
+      "cause": "Las cuatro pestañas de Configuración usan flex y texto nowrap, sin ajuste de filas ni contenedor de desplazamiento horizontal. La regla overflow de .modal .tabs no aplica a .tabs.outside.",
+      "source": [
+        "apps/web/src/styles.css:1303",
+        "apps/web/src/Management.tsx:2873"
+      ],
+      "requestedFix": "Hacer que las pestañas se adapten al ancho o se desplacen dentro de su propio contenedor, manteniendo accesibles todas las opciones y evitando desplazamiento horizontal de la página.",
+      "requiredTest": "Configuración y Equipos en 320 y 390 px: todas las pestañas alcanzables, scrollWidth del documento no mayor que innerWidth + 1 y contenido sin recortes.",
+      "evidence": [
+        "auditoria-ronda4-ui.json",
+        "auditoria-ronda4-capturas/cel-equipos.png",
+        "auditoria-ronda4-capturas/cel-equipos-320.png"
+      ]
+    }
+  ],
+  "sourceIntegrity": {
+    "archiveFilesChecked": 129,
+    "identicalOriginalFiles": 129,
+    "implementationChanged": false,
+    "originalScreenshotsRestoredAfterE2E": [
+      "fitstore-pos/docs/cobro-exitoso.png",
+      "fitstore-pos/docs/dashboard-mobile.png",
+      "fitstore-pos/docs/pos-mobile.png"
+    ],
+    "originalZipSha256VerifiedAgain": "2dab7feecca84918b95443a6636e67c31b32234e98bcbc7b6f675780ea43c7c2"
   }
-]
+}

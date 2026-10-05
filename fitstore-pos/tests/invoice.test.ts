@@ -446,3 +446,117 @@ describe("Auditoría ronda 4 · respuesta del modelo con Markdown o texto extra"
     expect(result.total).toBe(30);
   });
 });
+
+// Auditoría R4 (ChatGPT) · R4-07: una variante única no se elige si la factura
+// declara atributos incompatibles.
+describe("emparejamiento · variante única y atributos en conflicto", () => {
+  const product = { id: "p-whey", name: "Proteína Whey", sku: "WHEY" };
+  const only = {
+    id: "vainilla-2lb",
+    sku: "WHEY-V2",
+    barcode: "999",
+    product,
+    attributes: { sabor: "Vainilla", tamaño: "2 lb" },
+  };
+  const line = (description: string, code?: string) => ({
+    code,
+    description,
+    qty: 1,
+    unitCost: 50,
+  });
+  it("SKU del producto + chocolate 5 lb frente a la única vainilla 2 lb: resolución manual", () => {
+    const [r] = matchInvoiceLines(
+      [line("Proteína Whey chocolate 5 lb", "WHEY")],
+      [only],
+    );
+    expect(r.variantId).toBeNull();
+    expect(r.productId).toBe("p-whey");
+    expect(r.note).toMatch(/Vainilla/);
+    expect(r.note).toMatch(/2 lb/);
+  });
+  it("la misma contradicción sin código (por nombre) tampoco se asigna", () => {
+    const [r] = matchInvoiceLines([line("Proteína Whey chocolate")], [only]);
+    expect(r.variantId).toBeNull();
+    expect(r.note).toMatch(/Vainilla/);
+  });
+  it("variante única compatible o sin atributos en la factura: se asigna", () => {
+    for (const d of [
+      "Proteína Whey vainilla 2 lb",
+      "Proteina whey 2lb",
+      "Proteína Whey",
+    ]) {
+      const [r] = matchInvoiceLines([line(d, "WHEY")], [only]);
+      expect(r.variantId, d).toBe("vainilla-2lb");
+    }
+  });
+  it("talla o color incompatibles con la única variante de ropa", () => {
+    const legging = { id: "p-leg", name: "Leggings Sculpt", sku: "LEG" };
+    const catalog = [
+      {
+        id: "leg-negro-s",
+        sku: "LEG-N-S",
+        barcode: "111",
+        product: legging,
+        attributes: { color: "Negro", talla: "S" },
+      },
+      // Otro producto aporta "M" al vocabulario de tallas del catálogo.
+      {
+        id: "top-m",
+        sku: "TOP-M",
+        barcode: "112",
+        product: { id: "p-top", name: "Top deportivo", sku: "TOP" },
+        attributes: { color: "Negro", talla: "M" },
+      },
+    ];
+    expect(
+      matchInvoiceLines([line("Leggings Sculpt azul S", "LEG")], catalog)[0]
+        .variantId,
+    ).toBeNull();
+    expect(
+      matchInvoiceLines([line("Leggings Sculpt negro M", "LEG")], catalog)[0]
+        .variantId,
+    ).toBeNull();
+    expect(
+      matchInvoiceLines([line("Leggings Sculpt negro S", "LEG")], catalog)[0]
+        .variantId,
+    ).toBe("leg-negro-s");
+  });
+  it("varias variantes: elige sólo la combinación exacta y compatible", () => {
+    const catalog = [
+      only,
+      {
+        id: "choc-5lb",
+        sku: "WHEY-C5",
+        barcode: "998",
+        product,
+        attributes: { sabor: "Chocolate", tamaño: "5 lb" },
+      },
+      {
+        id: "choc-2lb",
+        sku: "WHEY-C2",
+        barcode: "997",
+        product,
+        attributes: { sabor: "Chocolate", tamaño: "2 lb" },
+      },
+    ];
+    expect(
+      matchInvoiceLines([line("Whey chocolate 5 lb", "WHEY")], catalog)[0]
+        .variantId,
+    ).toBe("choc-5lb");
+    expect(
+      matchInvoiceLines([line("Whey chocolate", "WHEY")], catalog)[0].variantId,
+    ).toBeNull();
+  });
+  it("el código exacto de una variante (SKU o barras) manda sobre la descripción", () => {
+    const [bySku] = matchInvoiceLines(
+      [line("Proteína Whey chocolate 5 lb", "WHEY-V2")],
+      [only],
+    );
+    const [byBarcode] = matchInvoiceLines(
+      [line("Proteína Whey chocolate 5 lb", "999")],
+      [only],
+    );
+    expect(bySku.variantId).toBe("vainilla-2lb");
+    expect(byBarcode.variantId).toBe("vainilla-2lb");
+  });
+});

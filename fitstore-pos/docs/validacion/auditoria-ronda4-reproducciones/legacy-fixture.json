@@ -1,0 +1,27 @@
+{
+  "users": [
+    {
+      "id": "73f53b61-0474-4677-b43d-64531b2c6ac2",
+      "email": "legacy-r4-muuo37c3-original@example.test"
+    },
+    {
+      "id": "b9c69877-9a30-43b6-8a99-704ef4517c08",
+      "email": "legacy-r4-muuo37c3-nuevo@example.test"
+    }
+  ],
+  "terminalId": "440f2bfe-0829-47b8-bc0b-879b72675245",
+  "productId": "abcc9b9c-37ad-4757-8027-c4496052d999",
+  "variantId": "8cba40c2-8a50-4d80-9ec5-0ba225b925b5",
+  "supplierId": "6281ec73-8e7c-4aaf-ac25-f2d621d592c7",
+  "supplierName": "Proveedor actualización legacy-r4-muuo37c3",
+  "operation": {
+    "id": "ea4e1cdc-32f1-44ec-a9b1-e50a3c113047",
+    "receiptId": "ce414373-e694-4cc0-aced-a13a91e23187",
+    "variantIds": [
+      "8cba40c2-8a50-4d80-9ec5-0ba225b925b5"
+    ],
+    "total": 34
+  },
+  "orphanLotId": "3ec78b0a-bbdf-4e95-828c-77e6763c5b5d",
+  "source": "API y esquema originales R3 sobre base separada"
+}

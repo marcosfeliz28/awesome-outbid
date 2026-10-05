@@ -10,7 +10,6 @@ import {
 } from "@nestjs/common";
 import { compare } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
-import { z } from "zod";
 import {
   expired,
   BUSINESS_TIME_ZONE,
@@ -22,6 +21,8 @@ import {
   quantity,
   d,
   can,
+  z,
+  stockQty,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -901,7 +902,7 @@ export class SalesController {
           .array(
             z.object({
               saleItemId: uuid,
-              qty: z.number().positive(),
+              qty: stockQty(10000),
               restock: z.boolean(),
               opened: z.boolean().default(false),
               damaged: z.boolean().default(false),

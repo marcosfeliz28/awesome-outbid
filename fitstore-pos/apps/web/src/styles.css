@@ -1303,6 +1303,10 @@ td strong {
 .tabs {
   display: flex;
   gap: 8px;
+  /* Nunca empuja la página: si no cabe, se desplaza dentro de su fila. */
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 .tabs button {
   padding: 10px 12px !important;
@@ -1319,6 +1323,20 @@ td strong {
 }
 .tabs.outside {
   margin-bottom: 18px;
+}
+/* Configuración en celular: las pestañas pasan a dos columnas, todas visibles
+   y sin desplazamiento horizontal (R4-09). */
+@media (max-width: 640px) {
+  .tabs.outside {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+  .tabs.outside button {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+  }
 }
 .modal .tabs {
   margin-bottom: 20px;
@@ -4332,4 +4350,11 @@ td strong {
     line-height: 1.25;
     padding: 10px 12px;
   }
+}
+
+.equipment-legacy {
+  color: #b45309 !important;
+}
+:root[data-theme="dark"] .equipment-legacy {
+  color: #fbbf24 !important;
 }

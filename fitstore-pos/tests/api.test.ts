@@ -2952,3 +2952,531 @@ describe("Auditoría ronda 4 de ChatGPT", () => {
     expect(rows.length).toBe(1);
   });
 });
+// Ronda 6: regresiones exigidas por la auditoría R4 de ChatGPT
+// (docs/AUDITORIA_RONDA4.md). Corren igual con tsx y con node dist/main.js.
+describe("Ronda 6 · auditoría R4 de ChatGPT", () => {
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Santo_Domingo",
+  });
+  let cats: any[], variant: any;
+  const newVariant = async (name: string) => {
+    const p = await ok("/products", {
+      name: name + " " + suffix,
+      sku: "R6-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [
+        {
+          sku: "R6V-" + randomUUID().slice(0, 8),
+          barcode: "R6B-" + randomUUID().slice(0, 8),
+          costAvg: 10,
+          price: 118,
+        },
+      ],
+    });
+    products.push(p);
+    return p.variants[0];
+  };
+  const newUser = async (role: string) => {
+    const roles = await ok("/roles");
+    const u = await ok("/users", {
+      name: "QA R6 " + role + " " + randomUUID().slice(0, 4),
+      email: "r6-" + role + "-" + randomUUID().slice(0, 6) + "@example.test",
+      password: "FitStore-QA-2026!",
+      pin: "612345",
+      roleId: roles.find((r: any) => r.name === role).id,
+    });
+    actors.push(u);
+    const auth = await ok(
+      "/auth/login",
+      { email: u.email, password: "FitStore-QA-2026!" },
+      "",
+    );
+    return { user: u, token: auth.accessToken as string };
+  };
+  const sessionIdOf = (jwt: string) =>
+    JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString()).sid;
+  // Ejecuta el SQL exacto de la migración de la ronda 6 (es re-ejecutable).
+  const runRound6Sql = async () => {
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync(
+      new URL(
+        "../apps/api/prisma/migrations/202610060001_round6_audit/migration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    )
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("--"))
+      .join("\n");
+    for (const statement of sql.split(/;\s*\n/).map((s) => s.trim()))
+      if (statement) await fixtureDb.$executeRawUnsafe(statement);
+  };
+  const purchases = async (supplier: string, from = today, to = today) =>
+    (await ok(`/reports/purchases?from=${from}&to=${to}`)).rows.find(
+      (r: any) => r.Proveedor === supplier,
+    );
+  const adjust = (as: string) =>
+    request(
+      "/inventory/adjustments",
+      { variantId: variant.id, qty: 1, reason: "QA equipo R6" },
+      as,
+    );
+  beforeAll(async () => {
+    cats = await ok("/categories");
+    variant = await newVariant("QA R6 base");
+  });
+
+  it("R4-01: un equipo R3 migrado no se puede reclamar ni operar sin aprobación del gerente", async () => {
+    const original = await newUser("warehouse");
+    const intruder = await newUser("warehouse");
+    // Estado exacto tras la migración R4: aprobado, sin secreto ni creador.
+    const legacyTerminal = async () => {
+      const id = randomUUID();
+      await fixtureDb.terminal.create({
+        data: {
+          id,
+          name: "Equipo R3 " + id.slice(0, 4),
+          branchId: "main",
+          approvedAt: new Date(),
+          lastUserId: original.user.id,
+        },
+      });
+      return id;
+    };
+    const legacy = await legacyTerminal(),
+      second = await legacyTerminal(),
+      unclaimed = await legacyTerminal();
+    // Sesión heredada ya enlazada a ese ID (como la dejaba la ronda 3).
+    await fixtureDb.authSession.update({
+      where: { id: sessionIdOf(original.token) },
+      data: { terminalId: legacy },
+    });
+    await runRound6Sql();
+    await runRound6Sql();
+    for (const id of [legacy, second, unclaimed]) {
+      const t = await fixtureDb.terminal.findUnique({ where: { id } });
+      expect(t).toMatchObject({ legacy: true, approvedAt: null });
+    }
+    // La sesión heredada ya no opera.
+    const heir = await adjust(original.token);
+    expect(heir.status).toBe(403);
+    expect(heir.body.code).toBe("TERMINAL_PENDING");
+    // Otro usuario con el ID conocido y un secreto nuevo: queda pendiente.
+    const claim = await ok(
+      "/terminals/register",
+      { id: legacy, name: "Intruso", secret: "intruso-secreto-" + legacy },
+      intruder.token,
+    );
+    expect(claim).toMatchObject({ status: "pending", approvedBy: null });
+    expect(claim.secretHash).toBeUndefined();
+    const blocked = await adjust(intruder.token);
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.code).toBe("TERMINAL_PENDING");
+    expect(
+      await fixtureDb.auditLog.count({
+        where: { entityId: legacy, action: "terminal_legacy_claimed" },
+      }),
+    ).toBe(1);
+    // El gerente lo ve como equipo anterior reclamado por esa persona.
+    const listed = (await ok("/terminals", undefined, ownerToken)).find(
+      (t: any) => t.id === legacy,
+    );
+    expect(listed).toMatchObject({
+      legacy: true,
+      status: "pending",
+      identified: true,
+      createdByName: intruder.user.name,
+    });
+    // Revocarlo deja fuera al intruso; un revocado no se vuelve a reclamar.
+    await ok("/terminals/" + legacy + "/revoke", {}, ownerToken);
+    expect((await adjust(intruder.token)).status).toBe(401);
+    expect(
+      (
+        await request(
+          "/terminals/register",
+          { id: legacy, name: "Otra vez", secret: "x".repeat(20) },
+          original.token,
+        )
+      ).status,
+    ).toBe(401);
+    // Flujo autorizado: el dueño reclama el segundo y el gerente lo aprueba.
+    const relog = await ok(
+      "/auth/login",
+      { email: original.user.email, password: "FitStore-QA-2026!" },
+      "",
+    );
+    const mine = await ok(
+      "/terminals/register",
+      { id: second, name: "Mi equipo", secret: "propio-secreto-" + second },
+      relog.accessToken,
+    );
+    expect(mine.status).toBe("pending");
+    expect((await adjust(relog.accessToken)).status).toBe(403);
+    await ok("/terminals/" + second + "/approve", {}, ownerToken);
+    expect((await adjust(relog.accessToken)).status).toBe(201);
+    // Un equipo anterior que nunca se identificó no se puede aprobar.
+    const early = await request(
+      "/terminals/" + unclaimed + "/approve",
+      {},
+      ownerToken,
+    );
+    expect(early.status).toBe(400);
+    expect(
+      (await fixtureDb.terminal.findUnique({ where: { id: unclaimed } }))
+        .approvedAt,
+    ).toBeNull();
+    // Un gerente que reclama un equipo anterior lo aprueba él mismo, auditado.
+    const manager = await newUser("manager");
+    const managed = await legacyTerminal();
+    await runRound6Sql();
+    const byManager = await ok(
+      "/terminals/register",
+      { id: managed, name: "Caja anterior", secret: "gerente-" + managed },
+      manager.token,
+    );
+    expect(byManager).toMatchObject({
+      status: "approved",
+      approvedBy: manager.user.id,
+    });
+  });
+
+  it("R4-02: la compra R3 sin orden se recupera de la bitácora; reparación idempotente", async () => {
+    const supplier = await ok("/suppliers", { name: "QA R6 legado " + suffix });
+    const entry = await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId: supplier.id,
+      freight: 4,
+      items: [{ variantId: variant.id, qty: 2, unitCost: 15 }],
+    });
+    const ambiguous = await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId: supplier.id,
+      items: [{ variantId: variant.id, qty: 1, unitCost: 7 }],
+    });
+    const order = await ok("/purchase-orders", {
+      supplierId: supplier.id,
+      items: [{ variantId: variant.id, qty: 1, unitCost: 50 }],
+    });
+    await ok("/purchase-orders/" + order.id + "/receive", {
+      items: [{ itemId: order.items[0].id, qty: 1 }],
+    });
+    const orderReceipt = await fixtureDb.goodsReceipt.findFirstOrThrow({
+      where: { orderId: order.id },
+    });
+    const ids = [entry.receiptId, ambiguous.receiptId, orderReceipt.id];
+    // Estado de una base R3: la recepción no guardaba proveedor ni total.
+    await fixtureDb.goodsReceipt.updateMany({
+      where: { id: { in: ids } },
+      data: {
+        supplierId: null,
+        total: null,
+        attachmentId: null,
+        operationId: null,
+      },
+    });
+    // Evidencia ambigua: dos entradas de bitácora para la misma operación.
+    const log = await fixtureDb.auditLog.findFirstOrThrow({
+      where: { entityId: ambiguous.id, action: "merchandise_entry" },
+    });
+    await fixtureDb.auditLog.create({
+      data: {
+        userId: log.userId,
+        action: log.action,
+        entity: log.entity,
+        entityId: log.entityId,
+        after: { ...(log.after as any), supplierId: randomUUID() },
+        branchId: log.branchId,
+      },
+    });
+    // Antes de reparar: la recepción de la orden no tiene total y las de
+    // Mercancía ni siquiera proveedor.
+    expect(await purchases(supplier.name)).toMatchObject({
+      Compras: 0,
+      Sin_conciliar: 1,
+    });
+    const orphans = async () =>
+      (await purchases("Recepciones sin proveedor (conciliar)"))
+        ?.Sin_conciliar ?? 0;
+    const orphanBefore = await orphans();
+    expect(orphanBefore).toBeGreaterThanOrEqual(2);
+    const count = await fixtureDb.goodsReceipt.count();
+    await runRound6Sql();
+    await runRound6Sql();
+    expect(await fixtureDb.goodsReceipt.count()).toBe(count);
+    const restored = await fixtureDb.goodsReceipt.findUnique({
+      where: { id: entry.receiptId },
+    });
+    expect(restored).toMatchObject({
+      supplierId: supplier.id,
+      operationId: entry.id,
+    });
+    expect(Number(restored.total)).toBe(34);
+    const fromOrder = await fixtureDb.goodsReceipt.findUnique({
+      where: { id: orderReceipt.id },
+    });
+    expect(fromOrder.supplierId).toBe(supplier.id);
+    expect(Number(fromOrder.total)).toBe(50);
+    // Lo ambiguo no se inventa: queda para conciliación explícita.
+    expect(
+      await fixtureDb.goodsReceipt.findUnique({
+        where: { id: ambiguous.receiptId },
+      }),
+    ).toMatchObject({ supplierId: null, total: null, operationId: null });
+    expect(await purchases(supplier.name)).toMatchObject({
+      Ordenado: 50,
+      Compras: 84,
+      Pendiente: 84,
+      Sin_conciliar: 0,
+    });
+    // La recuperada sale de "sin proveedor"; la ambigua sigue ahí.
+    expect(await orphans()).toBe(orphanBefore - 1);
+    await ok("/supplier-payments", {
+      supplierId: supplier.id,
+      amount: 84,
+      method: "transfer",
+    });
+    expect(await purchases(supplier.name)).toMatchObject({
+      Pagado: 84,
+      Pendiente: 0,
+    });
+    expect(
+      await purchases(supplier.name, "2020-01-01", "2020-01-31"),
+    ).toMatchObject({ Compras: 0, Pagado: 0, Sin_conciliar: 0 });
+  });
+
+  it("R4-03: cantidades fuera de precisión dan 400 en todas las rutas y no tocan costo, stock ni kardex", async () => {
+    const v = await newVariant("QA R6 precisión");
+    await ok("/inventory/adjustments", {
+      variantId: v.id,
+      qty: 1,
+      reason: "QA apertura R6",
+    });
+    const supplier = await ok("/suppliers", {
+      name: "QA R6 precisión " + suffix,
+    });
+    const order = await ok("/purchase-orders", {
+      supplierId: supplier.id,
+      items: [{ variantId: v.id, qty: 1, unitCost: 1000000 }],
+    });
+    const snapshot = async () => {
+      const row = await fixtureDb.variant.findUnique({ where: { id: v.id } });
+      const item = await fixtureDb.purchaseItem.findUnique({
+        where: { id: order.items[0].id },
+      });
+      return {
+        stock: Number(row.stock),
+        cost: Number(row.costAvg),
+        received: Number(item.receivedQty),
+        receipts: await fixtureDb.goodsReceipt.count({
+          where: { orderId: order.id },
+        }),
+        kardex: await fixtureDb.inventoryMovement.count({
+          where: { variantId: v.id },
+        }),
+        lots: await fixtureDb.lot.count({ where: { variantId: v.id } }),
+      };
+    };
+    const before = await snapshot();
+    expect(before).toMatchObject({ stock: 1, cost: 10 });
+    for (const qty of [0.0004, 1.0001]) {
+      const r = await request("/purchase-orders/" + order.id + "/receive", {
+        items: [{ itemId: order.items[0].id, qty, lotNumber: "R6-L" }],
+      });
+      expect(r.status, String(qty)).toBe(400);
+      expect(r.body.message).toMatch(/cantidad/);
+    }
+    expect(await snapshot()).toEqual(before);
+    const fine = [
+      () =>
+        request("/merchandise/operations", {
+          id: randomUUID(),
+          direction: "entry",
+          items: [{ variantId: v.id, qty: 0.0004, unitCost: 5 }],
+        }),
+      () =>
+        request("/inventory/adjustments", {
+          variantId: v.id,
+          qty: 0.0004,
+          reason: "QA fino",
+        }),
+      () =>
+        request("/inventory/adjustments", {
+          variantId: v.id,
+          qty: -1.0001,
+          reason: "QA fino",
+        }),
+      () =>
+        request("/inventory/counts", {
+          items: [{ variantId: v.id, counted: 1.0001 }],
+        }),
+      () =>
+        request("/purchase-orders", {
+          supplierId: supplier.id,
+          items: [{ variantId: v.id, qty: 0.0004, unitCost: 5 }],
+        }),
+      () =>
+        request("/sales", {
+          ...input(v.id, 118),
+          items: [{ variantId: v.id, qty: 0.0004 }],
+        }),
+      () =>
+        request("/returns", {
+          saleId: randomUUID(),
+          cashSessionId: session.id,
+          reason: "QA precisión",
+          refundMethod: "cash",
+          items: [{ saleItemId: randomUUID(), qty: 0.0004, restock: true }],
+        }),
+    ];
+    for (const call of fine) {
+      const r = await call();
+      expect(r.status, JSON.stringify(r.body)).toBe(400);
+    }
+    expect(await snapshot()).toEqual(before);
+    // 0.001 es válido y conserva cantidad y costo contable.
+    await ok("/purchase-orders/" + order.id + "/receive", {
+      items: [{ itemId: order.items[0].id, qty: 0.001 }],
+    });
+    const after = await snapshot();
+    expect(after.stock).toBe(1.001);
+    expect(after.received).toBe(0.001);
+    expect(after.receipts).toBe(1);
+    expect(after.kardex).toBe(before.kardex + 1);
+    // (1 × 10 + 0.001 × 1 000 000) / 1.001
+    expect(after.cost).toBeCloseTo(1008.99, 2);
+    const receipt = await fixtureDb.goodsReceipt.findFirstOrThrow({
+      where: { orderId: order.id },
+    });
+    expect(Number(receipt.total)).toBe(1000);
+  });
+
+  it("R4-04: la factura aceptada contra una orden fija la deuda; parciales, flete y reintento sin doble conteo", async () => {
+    const supplier = await ok("/suppliers", {
+      name: "QA R6 factura " + suffix,
+    });
+    const order = await ok("/purchase-orders", {
+      supplierId: supplier.id,
+      items: [{ variantId: variant.id, qty: 2, unitCost: 25 }],
+    });
+    const invoice = {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId: supplier.id,
+      orderId: order.id,
+      invoiceTotal: 60,
+      items: [
+        {
+          variantId: variant.id,
+          itemId: order.items[0].id,
+          qty: 2,
+          unitCost: 30,
+        },
+      ],
+    };
+    await ok("/merchandise/operations", invoice);
+    expect(await purchases(supplier.name)).toMatchObject({
+      Ordenado: 50,
+      Compras: 60,
+      Pendiente: 60,
+    });
+    // Reintento con el mismo UUID: misma recepción, mismo importe.
+    await ok("/merchandise/operations", invoice);
+    expect(await purchases(supplier.name)).toMatchObject({ Compras: 60 });
+    await ok("/supplier-payments", {
+      supplierId: supplier.id,
+      amount: 60,
+      method: "transfer",
+    });
+    expect(await purchases(supplier.name)).toMatchObject({
+      Pagado: 60,
+      Pendiente: 0,
+    });
+    // Parciales: 2 por la ruta de la orden (al costo de la orden) y 2 por
+    // factura con otro costo, flete e impuestos.
+    const partialSupplier = await ok("/suppliers", {
+      name: "QA R6 parcial " + suffix,
+    });
+    const partial = await ok("/purchase-orders", {
+      supplierId: partialSupplier.id,
+      items: [{ variantId: variant.id, qty: 4, unitCost: 10 }],
+    });
+    await ok("/purchase-orders/" + partial.id + "/receive", {
+      items: [{ itemId: partial.items[0].id, qty: 2 }],
+    });
+    expect(await purchases(partialSupplier.name)).toMatchObject({
+      Ordenado: 40,
+      Compras: 20,
+    });
+    await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId: partialSupplier.id,
+      orderId: partial.id,
+      freight: 3,
+      taxes: 2,
+      items: [
+        {
+          variantId: variant.id,
+          itemId: partial.items[0].id,
+          qty: 2,
+          unitCost: 12,
+        },
+      ],
+    });
+    expect(await purchases(partialSupplier.name)).toMatchObject({
+      Ordenado: 40,
+      Compras: 49,
+      Pendiente: 49,
+    });
+    expect(
+      await purchases(partialSupplier.name, "2020-01-01", "2020-01-31"),
+    ).toMatchObject({ Ordenado: 0, Compras: 0 });
+  });
+
+  it("R4-06: una ráfaga de conexiones SSE sobre una sesión acepta como máximo dos", async () => {
+    const { request: httpRequest } = await import("node:http");
+    const { token: sse } = await newUser("seller");
+    const url = new URL(base + "/events");
+    const open = () =>
+      new Promise<{ status: number; drop: () => void }>((resolve) => {
+        const req = httpRequest(
+          {
+            host: url.hostname,
+            port: url.port,
+            path: url.pathname,
+            headers: { Authorization: "Bearer " + sse },
+          },
+          (res) => {
+            res.resume();
+            resolve({ status: res.statusCode!, drop: () => req.destroy() });
+          },
+        );
+        req.on("error", () => resolve({ status: 0, drop: () => {} }));
+        req.end();
+      });
+    const burst = await Promise.all(Array.from({ length: 8 }, open));
+    const statuses = burst.map((c) => c.status);
+    expect(statuses.filter((s) => s === 200)).toHaveLength(2);
+    expect(statuses.filter((s) => s === 429)).toHaveLength(6);
+    burst.forEach((c) => c.drop());
+    await new Promise((r) => setTimeout(r, 300));
+    const again = await Promise.all([open(), open()]);
+    expect(again.map((c) => c.status)).toEqual([200, 200]);
+    again.forEach((c) => c.drop());
+  });
+
+  it("R4-08: ventas inválidas devuelven 400 con campos en español (también en la API compilada)", async () => {
+    const empty = await request("/sales", {});
+    expect(empty.status).toBe(400);
+    expect(empty.body.message).toMatch(/^Revisa los campos: /);
+    expect(empty.body.message).toMatch(/caja|línea|pago/);
+    const discount = await request("/sales", {
+      ...input(variant.id, 118),
+      items: [{ variantId: variant.id, qty: 1, discountPercent: 150 }],
+    });
+    expect(discount.status).toBe(400);
+    expect(discount.body.message).toMatch(/Revisa los campos/);
+  });
+});

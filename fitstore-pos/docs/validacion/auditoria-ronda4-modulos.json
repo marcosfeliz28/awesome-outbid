@@ -1,0 +1,19 @@
+{
+  "r4": {
+    "errorName": "ZodError",
+    "isCommonJsZodError": false,
+    "issueCount": 4,
+    "firstIssueMessage": "Required",
+    "apiModule": "@fitstore/api",
+    "sharedPackageType": "module"
+  },
+  "r3": {
+    "errorName": "ZodError",
+    "isCommonJsZodError": false,
+    "issueCount": 4,
+    "firstIssueMessage": "Required",
+    "apiModule": "@fitstore/api",
+    "sharedPackageType": "module"
+  },
+  "interpretation": "El esquema compartido ESM lanza una clase distinta del ZodError CommonJS usado por la API compilada. El patrón ya existe en R3."
+}

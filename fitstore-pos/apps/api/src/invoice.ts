@@ -1,3 +1,4 @@
+import { z } from "@fitstore/shared";
 // Lectura de facturas de proveedor: Excel/CSV con formatos dominicanos,
 // extracción de fotos/PDF con Claude y emparejamiento con el catálogo.
 // Nada de este módulo modifica inventario: sólo prepara la revisión humana.
@@ -5,7 +6,6 @@ import { Readable } from "node:stream";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import ExcelJS from "exceljs";
-import { z } from "zod";
 import * as z4 from "zod/v4";
 import { amount, bad, parse, positive } from "./common";
 
@@ -484,29 +484,173 @@ export type MatchedLine = ExtractedInvoice["lines"][number] & {
   note?: string;
 };
 const MIN_PRODUCT_SCORE = 0.6;
+// Vocabulario de atributos para detectar que la factura declara otra variante
+// (R4-07): sabor, color, talla y medidas (número + unidad).
+const FLAVORS = [
+  "chocolate",
+  "vainilla",
+  "fresa",
+  "cookies",
+  "cookies and cream",
+  "mango",
+  "limon",
+  "naranja",
+  "uva",
+  "frutas",
+  "sandia",
+  "cafe",
+  "mocha",
+  "caramelo",
+  "banana",
+  "guineo",
+  "coco",
+  "menta",
+  "pina",
+  "cereza",
+  "manzana",
+  "mantequilla de mani",
+  "sin sabor",
+  "natural",
+  "blue razz",
+  "frutos rojos",
+];
+const COLORS = [
+  "negro",
+  "blanco",
+  "rojo",
+  "azul",
+  "verde",
+  "gris",
+  "rosado",
+  "rosa",
+  "morado",
+  "lila",
+  "beige",
+  "nude",
+  "amarillo",
+  "marron",
+  "cafe",
+  "crema",
+  "vino",
+  "turquesa",
+  "fucsia",
+  "coral",
+  "plateado",
+  "dorado",
+];
+const SIZES = ["xs", "xl", "xxl", "xxxl", "2xl", "3xl", "4xl"];
+const UNITS = new Set(["lb", "oz", "g", "kg", "l", "ml", "caps", "tabs"]);
+const attrKind = (key: string) => {
+  const k = normalize(key);
+  if (/sabor|flavor/.test(k)) return FLAVORS;
+  if (/color/.test(k)) return COLORS;
+  if (/talla|size/.test(k)) return SIZES;
+  return [];
+};
+// Pares número + unidad: "5 lb", "2.5lb", "900 g".
+function measures(toks: string[]) {
+  const out: { n: number; unit: string }[] = [];
+  for (let i = 0; i < toks.length; i++) {
+    if (!/^\d+$/.test(toks[i])) continue;
+    let num = toks[i],
+      j = i + 1;
+    if (/^\d+$/.test(toks[j] ?? "") && UNITS.has(toks[j + 1] ?? "")) {
+      num += "." + toks[j];
+      j++;
+    }
+    if (UNITS.has(toks[j] ?? "")) out.push({ n: Number(num), unit: toks[j] });
+  }
+  return out;
+}
+const contains = (desc: Set<string>, value: string) => {
+  const t = tokens(value);
+  return t.length > 0 && t.every((x) => desc.has(x));
+};
 export function matchInvoiceLines(
   lines: ExtractedInvoice["lines"],
   variants: CatalogVariant[],
   equivalents: { code: string; variantId: string }[] = [],
 ): MatchedLine[] {
   const byProduct = new Map<string, CatalogVariant[]>();
-  for (const v of variants)
+  // Valores conocidos de cada atributo en todo el catálogo.
+  const known = new Map<string, Set<string>>();
+  for (const v of variants) {
     byProduct.set(v.product.id, [...(byProduct.get(v.product.id) ?? []), v]);
-  // Elige la variante sólo cuando la factura la identifica sin ambigüedad.
+    for (const [k, value] of Object.entries(
+      (v.attributes as Record<string, unknown>) ?? {},
+    )) {
+      const key = normalize(k);
+      if (!known.has(key)) known.set(key, new Set());
+      if (value != null && normalize(String(value)) !== "unica")
+        known.get(key)!.add(normalize(String(value)));
+    }
+  }
+  // Atributos de la variante que la descripción contradice.
+  const conflicts = (description: string, v: CatalogVariant) => {
+    const descToks = tokens(description),
+      desc = new Set(descToks),
+      descMeasures = measures(descToks);
+    const out: string[] = [];
+    for (const [k, raw] of Object.entries(
+      (v.attributes as Record<string, unknown>) ?? {},
+    )) {
+      const value = String(raw ?? "");
+      if (!value || normalize(value) === "unica" || contains(desc, value))
+        continue;
+      const own = measures(tokens(value));
+      const sameUnit = descMeasures.filter((m) =>
+        own.some((o) => o.unit === m.unit),
+      );
+      if (
+        sameUnit.length &&
+        !sameUnit.some((m) => own.some((o) => o.unit === m.unit && o.n === m.n))
+      ) {
+        out.push(value);
+        continue;
+      }
+      const ownToks = new Set(tokens(value));
+      const others = [...(known.get(normalize(k)) ?? []), ...attrKind(k)];
+      if (
+        others.some(
+          (o) =>
+            o !== normalize(value) &&
+            contains(desc, o) &&
+            !tokens(o).every((t) => ownToks.has(t)),
+        )
+      )
+        out.push(value);
+    }
+    return out;
+  };
+  // Elige la variante sólo cuando la factura la identifica sin ambigüedad y
+  // sin contradecir sus atributos.
   const pickVariant = (
     l: ExtractedInvoice["lines"][number],
     productId: string,
     confidence: number,
   ): MatchedLine => {
     const options = byProduct.get(productId) ?? [];
+    const desc = new Set(tokens(l.description));
+    const compatible = options.filter(
+      (v) => !conflicts(l.description, v).length,
+    );
+    if (options.length === 1 && compatible.length === 0)
+      return {
+        ...l,
+        variantId: null,
+        productId,
+        confidence,
+        note:
+          "La factura indica otra variante (" +
+          conflicts(l.description, options[0]).join(", ") +
+          " no coincide). Elige o crea la variante correcta.",
+      };
     if (options.length === 1)
       return { ...l, variantId: options[0].id, productId, confidence };
-    const desc = new Set(tokens(l.description));
-    const full = options.filter((v) => {
+    const full = compatible.filter((v) => {
       const values = attributeValues(v.attributes);
       return (
-        values.length > 0 &&
-        values.every((value) => tokens(value).every((t) => desc.has(t)))
+        values.length > 0 && values.every((value) => contains(desc, value))
       );
     });
     if (full.length === 1)

@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Inject, Param, Post } from "@nestjs/common";
 import { compare } from "bcryptjs";
-import { z } from "zod";
-import { d, money, can } from "@fitstore/shared";
+import { d, money, can, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,

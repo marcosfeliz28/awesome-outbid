@@ -10,7 +10,6 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
-import { z } from "zod";
 import {
   expiryDays,
   businessDate,
@@ -19,6 +18,7 @@ import {
   margin,
   money,
   d,
+  z,
 } from "@fitstore/shared";
 import {
   Actor,

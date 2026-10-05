@@ -76,6 +76,11 @@ El puerto 3001 de la API debe permanecer interno: no lo publiques en el host ni 
 
 Nginx sustituye X-Forwarded-For por la IP de su conexión. La API confía en un salto de proxy; permitir acceso directo invalidaría esa frontera de confianza. En desarrollo, enlaza los servicios a localhost. Antes de actualizar, respalda la base y aplica las migraciones, incluida `202610040005_round2`. Las notas existentes reciben un código único; vuelve a imprimirlas desde Ventas si se necesita ese código.
 
+**Actualización a la ronda 6** (`202610060001_round6_audit`). Respalda la base antes de actualizar. La migración se puede volver a ejecutar sin duplicar datos y hace dos cosas:
+
+- Deja **pendientes** los equipos registrados antes de la ronda 4. Ten un gerente disponible en la tienda el día de la actualización para aprobarlos con su PIN; los vendedores no podrán cobrar hasta entonces.
+- Recupera el proveedor y el total de las compras anteriores. Usa la bitácora de cada operación de Mercancía y las líneas guardadas en cada recepción de orden. Revisa la columna **Sin conciliar** del reporte de compras.
+
 ## Eventos y recepción móvil (ronda 3)
 
 Aplica las migraciones `202610040006_round3` y `202610040007_commit_events` antes de levantar la API. Los triggers diferidos guardan eventos dentro de la transacción, en orden de confirmación; una operación revertida no publica stock. Cada instancia de API consulta la tabla de eventos de su sucursal cada 100 ms mientras tiene un cliente SSE conectado. Esto funciona con varias instancias de API sobre la misma base central. Al reconectar se refresca el catálogo completo, sin depender de reproducción histórica.

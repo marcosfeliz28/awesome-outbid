@@ -1,0 +1,26 @@
+{
+  "source": "API y esquema de la ronda 3 (commit 30393fc), base separada",
+  "users": [
+    {
+      "id": "afef787d-fbbb-4223-9cae-7979b1aa163e",
+      "email": "r6-upgrade-muupmfxi-original@example.test"
+    },
+    {
+      "id": "1c290b69-2fe7-4d67-8508-5db52fc8e5cb",
+      "email": "r6-upgrade-muupmfxi-otro@example.test"
+    }
+  ],
+  "terminalId": "ed1aa5f0-23c7-4145-b617-f633f08819c2",
+  "variantId": "6dca8781-b091-4d96-907c-41e64b3f1c4c",
+  "supplierId": "e9b9fee5-0795-42a4-a6c3-ea6dfb2b0211",
+  "supplierName": "Proveedor actualización r6-upgrade-muupmfxi",
+  "entry": {
+    "id": "f0e19b51-1f4e-4f78-9706-3f6426db4344",
+    "receiptId": "2c8ef4dd-f51a-4426-abb1-7ffcebc6350e",
+    "variantIds": [
+      "6dca8781-b091-4d96-907c-41e64b3f1c4c"
+    ],
+    "total": 34
+  },
+  "orderId": "35293eb9-04dc-4489-ab2c-4844ca642439"
+}

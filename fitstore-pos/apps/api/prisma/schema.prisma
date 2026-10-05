@@ -478,6 +478,8 @@ model Terminal {
  secretHash String?
  createdBy String? @db.Uuid
  lastUserId String? @db.Uuid
+ // Registrado antes de la ronda 4 (sin secreto): requiere aprobación de un gerente.
+ legacy Boolean @default(false)
 }
 model RealtimeEvent {
  id BigInt @id @default(autoincrement())

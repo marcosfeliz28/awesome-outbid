@@ -1,0 +1,63 @@
+{
+  "source": "API y esquema de la ronda 3 (commit 30393fc), base separada",
+  "runtime": "node dist/main.js",
+  "legacySession": {
+    "status": 403,
+    "body": {
+      "statusCode": 403,
+      "message": "Este equipo espera aprobación de un gerente (Configuración › Equipos o PIN de gerente en este equipo).",
+      "code": "TERMINAL_PENDING"
+    }
+  },
+  "otherUserClaim": {
+    "status": 201,
+    "terminalStatus": "pending",
+    "approvedBy": null,
+    "secretHashInResponse": false
+  },
+  "otherUserMutation": {
+    "status": 403,
+    "body": {
+      "statusCode": 403,
+      "message": "Este equipo espera aprobación de un gerente (Configuración › Equipos o PIN de gerente en este equipo).",
+      "code": "TERMINAL_PENDING"
+    }
+  },
+  "originalOwnerRegistration": {
+    "status": 403,
+    "body": {
+      "statusCode": 403,
+      "message": "Este identificador de equipo pertenece a otro dispositivo."
+    }
+  },
+  "managerView": {
+    "legacy": true,
+    "status": "pending",
+    "claimedBy": "Actualización otro"
+  },
+  "purchasesAfterMigration": {
+    "Proveedor": "Proveedor actualización r6-upgrade-muupmfxi",
+    "Ordenado": 50,
+    "Compras": 84,
+    "Pagado": 0,
+    "Pendiente": 84,
+    "Sin_conciliar": 0
+  },
+  "purchasesAfterPaying84": {
+    "Proveedor": "Proveedor actualización r6-upgrade-muupmfxi",
+    "Ordenado": 50,
+    "Compras": 84,
+    "Pagado": 84,
+    "Pendiente": 0,
+    "Sin_conciliar": 0
+  },
+  "ownerDeviceStatus": "approved",
+  "checks": {
+    "legacySessionBlocked": true,
+    "claimLeftPending": true,
+    "claimerCannotOperate": true,
+    "managerSeesLegacyClaim": true,
+    "purchasesRecovered": true,
+    "paidToZero": true
+  }
+}

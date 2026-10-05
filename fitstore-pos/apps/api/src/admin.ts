@@ -8,7 +8,6 @@ import {
   Post,
   Put,
 } from "@nestjs/common";
-import { z } from "zod";
 import {
   Actor,
   CurrentUser,
@@ -22,7 +21,7 @@ import {
   bad,
   json,
 } from "./common";
-import { can } from "@fitstore/shared";
+import { can, z, stockQty } from "@fitstore/shared";
 import { passwordHash } from "./auth";
 
 const customerSchema = z.object({
@@ -281,7 +280,7 @@ export class AdminController {
           .array(
             z.object({
               variantId: uuid,
-              qty: z.number().positive(),
+              qty: stockQty(10000),
               discountPercent: z.number().min(0).max(100).default(0),
             }),
           )

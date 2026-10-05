@@ -325,10 +325,19 @@ export function Equipment() {
                         },
                       )
                     : "Sin caja abierta"}
-                  {t.status === "pending" && t.createdByName
+                  {t.status === "pending" && t.createdByName && !t.legacy
                     ? " · Registrado por " + t.createdByName
                     : ""}
                 </small>
+                {t.legacy && t.status === "pending" && (
+                  <small className="equipment-legacy">
+                    {t.createdByName
+                      ? "Equipo de antes de la actualización, reclamado por " +
+                        t.createdByName +
+                        ". Apruébalo sólo si es el mismo dispositivo; si no, revócalo."
+                      : "Equipo de antes de la actualización. Debe abrir FitStore para identificarse antes de aprobarlo."}
+                  </small>
+                )}
               </div>
               <Badge
                 tone={
@@ -346,7 +355,7 @@ export function Equipment() {
                     : "Revocado"}
               </Badge>
               <div className="equipment-actions">
-                {t.status === "pending" && (
+                {t.status === "pending" && t.identified !== false && (
                   <Button
                     onClick={() =>
                       act("/terminals/" + t.id + "/approve", "Equipo aprobado.")

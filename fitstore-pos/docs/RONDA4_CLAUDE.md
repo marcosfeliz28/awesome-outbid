@@ -106,8 +106,8 @@ Las pruebas de IA simulan la API con el SDK real; no se llamó a Anthropic. Los 
 
 ## 5. Decisiones y límites
 
-- **Compras con orden** se registran por el total de la orden en su fecha. **Compras sin orden**, por el total recibido en la fecha de recepción. Las recepciones sin orden anteriores a esta ronda no tienen proveedor ni total y no aparecen.
-- **Equipos anteriores** a esta ronda quedan aprobados por la migración y fijan su secreto en el siguiente registro desde el navegador.
+- ~~Compras con orden por el total de la orden~~ — **reemplazado en la ronda 6** (R4-02/R4-04): las compras se cuentan por lo recibido o facturado y las anteriores se recuperan de la bitácora.
+- ~~Equipos anteriores aprobados por la migración~~ — **reemplazado en la ronda 6** (R4-01): vuelven a pendiente y sólo un gerente los habilita.
 - **Revocar** un equipo no cambia la contraseña del usuario: si se perdió un celular con la sesión guardada, revoca el equipo y cambia la contraseña.
 - **Lectura con IA:** cada foto o PDF cuesta unos pocos centavos de dólar, según su tamaño.
 - **Deriva previa a esta ronda:** `prisma migrate diff` informa una diferencia en `GoodsReceipt_orderId_fkey` (`ON DELETE`) que ya existía en la base de la ronda 3.
@@ -115,7 +115,7 @@ Las pruebas de IA simulan la API con el SDK real; no se llamó a Anthropic. Los 
 
 ## 6. Ronda 5 · correcciones de la auditoría de ChatGPT a la ronda 4
 
-Registro: `docs/validacion/auditoria-ronda4.json`.
+Registro: `docs/validacion/auditoria-ronda4-pdf-cierre-ronda5.json` (la auditoría completa de ChatGPT y su cierre están en `docs/AUDITORIA_RONDA4.md` y `docs/RONDA6_CLAUDE.md`).
 
 - **P1 · conexiones de tiempo real huérfanas:** cada conexión SSE se libera una sola vez ante cierre, error o caída abrupta. Además, TCP keepalive y el latido de 15 s expulsan a los clientes que dejaron de responder. Prueba: caída abrupta de dos conexiones y reapertura inmediata.
 - **P2 · JSON del modelo con Markdown:** `parseModelJson` extrae el JSON aunque venga dentro de un bloque de código o con texto alrededor. Pruebas unitarias con respuestas envueltas.

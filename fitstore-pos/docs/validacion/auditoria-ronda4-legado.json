@@ -1,0 +1,45 @@
+{
+  "unregisteredMutation": {
+    "status": 403,
+    "body": {
+      "statusCode": 403,
+      "message": "Este equipo no está registrado. Recarga la página para registrarlo.",
+      "code": "TERMINAL_REQUIRED"
+    }
+  },
+  "legacyClaim": {
+    "status": 201,
+    "terminalStatus": "approved",
+    "approvedBy": null,
+    "originalOwner": "73f53b61-0474-4677-b43d-64531b2c6ac2",
+    "claimingUser": "b9c69877-9a30-43b6-8a99-704ef4517c08",
+    "claimedTerminalId": "440f2bfe-0829-47b8-bc0b-879b72675245",
+    "hasSecretHashInResponse": false
+  },
+  "mutationWithClaimedTerminal": {
+    "status": 201
+  },
+  "originalOwnerRegistration": {
+    "status": 403,
+    "body": {
+      "statusCode": 403,
+      "message": "Este identificador de equipo pertenece a otro dispositivo."
+    }
+  },
+  "legacyPurchase": {
+    "originalOperationTotal": 34,
+    "receiptId": "ce414373-e694-4cc0-aced-a13a91e23187",
+    "reportRow": {
+      "Proveedor": "Proveedor actualización legacy-r4-muuo37c3",
+      "Compras": 0,
+      "Pagado": 0,
+      "Pendiente": 0
+    },
+    "reportAfterPaying34": {
+      "Proveedor": "Proveedor actualización legacy-r4-muuo37c3",
+      "Compras": 0,
+      "Pagado": 34,
+      "Pendiente": -34
+    }
+  }
+}

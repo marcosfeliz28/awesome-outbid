@@ -1,0 +1,124 @@
+$ vitest run --config vitest.integration.config.ts
+
+ RUN  v3.2.7 /workspace/auditoria-ronda4/fitstore-pos
+
+ ❯ tests/api.test.ts (69 tests | 2 failed) 59572ms
+   ✓ Aceptación financiera y permisos > requiere sesión y el vendedor nunca recibe costos 99ms
+   ✓ Aceptación financiera y permisos > vende proteína y legging con FEFO y pago dividido 52ms
+   ✓ Aceptación financiera y permisos > rechaza pagos y stock inválidos sin crear huecos ni movimientos 144ms
+   ✓ Aceptación financiera y permisos > es idempotente ante peticiones concurrentes y sync 56ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  1270ms
+   ✓ Aceptación financiera y permisos > prorratea flete, recalcula promedio y conserva costo histórico 86ms
+   ✓ Aceptación financiera y permisos > protege devoluciones abiertas y repetidas 75ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  546ms
+   ✓ Aceptación financiera y permisos > conserva conflictos offline sin stock negativo 218ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1514ms
+   ✓ Aceptación financiera y permisos > calcula arqueo por método aunque se compensen diferencias 48ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  1920ms
+   ✓ Regresiones de Claude > 3: rechaza ajustes vencidos y acepta el día dominicano vigente 14ms
+   ✓ Regresiones de Claude > 4: stock sin lote convive con lotes; conteo no destruye la trazabilidad 99ms
+   ✓ Regresiones de Claude > 5: gerente cierra caja ajena; diferencias compensadas persisten y se auditan 51ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  1987ms
+   ✓ Regresiones de Claude > 7: conflicto offline devuelve español seguro 22ms
+   ✓ Regresiones de Claude > 8: pagos del reporte compras pertenecen al mismo rango 37ms
+   ✓ Regresiones de Claude > 9: consumo agrupa por mes dominicano al cruzar medianoche UTC 76ms
+   ✓ Regresiones de Claude > 10: utilidad conserva costo de devolución sin reingreso 163ms
+   ✓ Regresiones de Claude > 11: reintentar venta aprobada no requiere de nuevo PIN 47ms
+   ✓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal  340ms
+   ✓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco  3976ms
+   ✓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor  6217ms
+   × Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP 803ms
+     → expected false to be true // Object.is equality
+   ✓ Seguridad, offline y funciones completadas > 3 y 9: lote vencido según Santo Domingo no se vende ni se recibe 76ms
+   ✓ Seguridad, offline y funciones completadas > 4: diez unidades sin lote más una con lote permiten vender dos 73ms
+   ✓ Seguridad, offline y funciones completadas > 7: sincroniza en caja cerrada dentro de su horario y audita el reajuste 138ms
+   ✓ Seguridad, offline y funciones completadas > 8: pago actual no se resta en reporte de otro período 34ms
+   × Seguridad, offline y funciones completadas > descuento por monto recalcula impuesto y queda auditado 42ms
+     → expected 500 to be 400 // Object.is equality
+   ✓ Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido  3772ms
+   ✓ Seguridad, offline y funciones completadas > venta a crédito admite abonos idempotentes en caja posterior 170ms
+   ✓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores  2547ms
+   ✓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión  963ms
+   ✓ Seguridad, offline y funciones completadas > stock negativo optativo conserva advertencia y prohíbe saltarse lotes 262ms
+   ✓ Seguridad, offline y funciones completadas > alerta efectivo aunque tarjeta lo compense 178ms
+   ✓ Seguridad, offline y funciones completadas > NCF preparado conserva solicitud sin emitir un comprobante fiscal 67ms
+   ✓ Seguridad, offline y funciones completadas > dashboard incluye mapa dominicano y comparación del año anterior 58ms
+   ✓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios  427ms
+   ✓ Alertas de negocio y consistencia contable > devolución del período resta costo solo cuando reingresa y cuadra con dashboard 106ms
+   ✓ Ronda 2 de Claude > 1: notas requieren prueba de posesión o gerente, no se divulgan códigos y cada uso se audita  2769ms
+   ✓ Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite  3659ms
+   ✓ Ronda 2 de Claude > 3: transferencia pendiente no reduce deuda ni caja; verificación concurrente aplica una sola vez 147ms
+   ✓ Ronda 2 de Claude > 4: offline máximo 48 horas y fecha anterior auditada 62ms
+   ✓ Ronda 2 de Claude > 5: Compose sólo publica nginx y descarta IP suministrada por cliente 3ms
+   ✓ Ronda 3 · tiempo real y mercancía > SSE autentica, filtra sucursal y no comunica operaciones revertidas 183ms
+   ✓ Ronda 3 · tiempo real y mercancía > tres cajas venden stock 5 y las tres reciben el saldo confirmado en menos de 2 segundos  3246ms
+   ✓ Ronda 3 · tiempo real y mercancía > equipos muestran actividad y caja, renombrar y revocar invalida sesiones  374ms
+   ✓ Ronda 3 · tiempo real y mercancía > entradas idempotentes con promedio, kardex y usuario/equipo; vendedor bloqueado y almacén sin ganancia 129ms
+   ✓ Ronda 3 · tiempo real y mercancía > salidas requieren motivo y existencias; todos los motivos quedan auditados 225ms
+   ✓ Ronda 3 · tiempo real y mercancía > lotes y vencimiento obligatorios, salida de lote vencido y creación rápida atómica 77ms
+   ✓ Ronda 3 · tiempo real y mercancía > CSV: revisión sin stock, mapeo guardado, total validado, recepción, comprobante y equivalencia 161ms
+   ✓ Ronda 3 · tiempo real y mercancía > factura con total distinto se rechaza hasta revisión explícita; línea sin pareja exige resolución 57ms
+   ✓ Ronda 3 · tiempo real y mercancía > entrada con orden respeta cantidades pendientes y no duplica recepciones 48ms
+   ✓ Ronda 3 · tiempo real y mercancía > SSE comunica recepción, devolución, anulación y conteo confirmados  316ms
+   ✓ Ronda 3 · tiempo real y mercancía > eventos se publican en orden de commit aunque las transacciones empiecen al revés 163ms
+   ✓ Ronda 3 · tiempo real y mercancía > nginx mantiene SSE sin buffering y sólo publica el proxy 1ms
+   ✓ Ronda 4 · Claude: caja y equipos > la caja queda asignada al equipo y muestra su nombre 12ms
+   ✓ Ronda 4 · Claude: caja y equipos > vender desde otro equipo explica dónde está la caja (409, no 403) 35ms
+   ✓ Ronda 4 · Claude: caja y equipos > trasladar exige PIN de gerente al vendedor y queda en bitácora  3921ms
+   ✓ Ronda 4 · Claude: caja y equipos > otro usuario no puede trasladar una caja ajena 12ms
+   ✓ Ronda 4 · Claude: caja y equipos > el gerente cierra la caja de una vendedora desde su propio equipo 39ms
+   ✓ Ronda 4 · Claude: caja y equipos > la dueña puede cerrar su caja desde cualquier equipo 28ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > P1 compras: entrada sin orden se reporta una vez; orden no se duplica; fechas aplican 212ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo  5822ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > P2 lotes: lotId inventado, ajeno o de otra variante se rechaza sin cambios; el número de lote queda coherente 57ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido  1026ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > SSE: como máximo dos conexiones por sesión 19ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > importación: archivos grandes se rechazan sin leerlos 21ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/api.test.ts > Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/api.test.ts:794:59
+    792|     const results = [];
+    793|     for (let n = 0; n < 121; n++) results.push((await send(rateIp)).st…
+    794|     expect(results.slice(0, 120).every((n) => n === 400)).toBe(true);
+       |                                                           ^
+    795|     expect(results[120]).toBe(429);
+    796|     expect((await send("198.18.0.10")).status).toBe(400);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/api.test.ts > Seguridad, offline y funciones completadas > descuento por monto recalcula impuesto y queda auditado
+AssertionError: expected 500 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 500
+
+ ❯ tests/api.test.ts:948:7
+    946|         })
+    947|       ).status,
+    948|     ).toBe(400);
+       |       ^
+    949|   });
+    950|   it("nota de crédito se consume una sola vez con saldo protegido", as…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 67 passed (69)
+   Start at  03:02:48
+   Duration  59.90s (transform 105ms, setup 0ms, collect 139ms, tests 59.57s, environment 0ms, prepare 57ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

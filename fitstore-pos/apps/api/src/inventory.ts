@@ -7,7 +7,6 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
-import { z } from "zod";
 import {
   expired,
   weightedCost,
@@ -15,6 +14,9 @@ import {
   quantity,
   money,
   d,
+  z,
+  signedStockQty,
+  countedQty,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -31,6 +33,7 @@ import {
   bad,
   safe,
   json,
+  qty,
 } from "./common";
 
 export async function lockVariant(tx: any, id: string, actor: Actor) {
@@ -219,7 +222,7 @@ export class InventoryController {
     const data = parse(
       z.object({
         variantId: uuid,
-        qty: z.number().refine((v) => v !== 0 && Math.abs(v) <= 100000),
+        qty: signedStockQty(),
         reason,
         lotId: uuid.optional(),
         lotNumber: z.string().optional(),
@@ -347,9 +350,7 @@ export class InventoryController {
         supplierId: uuid,
         expectedDate: z.string().datetime().optional(),
         items: z
-          .array(
-            z.object({ variantId: uuid, qty: positive, unitCost: positive }),
-          )
+          .array(z.object({ variantId: uuid, qty, unitCost: positive }))
           .min(1)
           .max(200),
       }),
@@ -404,7 +405,7 @@ export class InventoryController {
           .array(
             z.object({
               itemId: uuid,
-              qty: positive,
+              qty,
               lotNumber: z.string().min(1).optional(),
               expiryDate: z.string().datetime().optional(),
             }),
@@ -554,7 +555,7 @@ export class InventoryController {
     const data = parse(
       z.object({
         items: z
-          .array(z.object({ variantId: uuid, counted: amount }))
+          .array(z.object({ variantId: uuid, counted: countedQty() }))
           .min(1)
           .max(1000),
       }),

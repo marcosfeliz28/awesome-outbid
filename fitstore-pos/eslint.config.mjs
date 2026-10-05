@@ -9,6 +9,8 @@ export default tseslint.config(
       "playwright-report/**",
       "test-results/**",
       "apps/web/src-tauri/target/**",
+      // Reproducciones externas de ChatGPT, guardadas tal cual como evidencia.
+      "docs/validacion/auditoria-ronda4-reproducciones/**",
     ],
   },
   eslint.configs.recommended,
@@ -26,7 +28,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["scripts/*.mjs", "eslint.config.mjs"],
+    files: ["scripts/*.mjs", "docs/validacion/**/*.mjs", "eslint.config.mjs"],
     languageOptions: {
       globals: {
         console: "readonly",

@@ -1,3 +1,4 @@
+import { z, stockQty } from "@fitstore/shared";
 import {
   Body,
   Controller,
@@ -14,7 +15,6 @@ import {
 import type { Response } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
 import ExcelJS from "exceljs";
-import { z } from "zod";
 import {
   Actor,
   CurrentUser,
@@ -374,9 +374,7 @@ export class CatalogController {
       z.object({
         kitVariantId: uuid,
         components: z
-          .array(
-            z.object({ componentVariantId: uuid, qty: z.number().positive() }),
-          )
+          .array(z.object({ componentVariantId: uuid, qty: stockQty(10000) }))
           .min(1),
       }),
       body,

@@ -1,5 +1,9 @@
 import Decimal from "decimal.js";
 import { z } from "zod";
+// La API usa esta misma instancia de zod. Con la API compilada (CommonJS) un
+// import directo de "zod" cargaría otra copia y sus errores no se reconocerían
+// (R4-08).
+export { z, ZodError } from "zod";
 
 Decimal.set({ precision: 28, rounding: Decimal.ROUND_HALF_UP });
 export const d = (value: Decimal.Value) => new Decimal(value);
@@ -7,6 +11,28 @@ export const money = (value: Decimal.Value) =>
   d(value).toDecimalPlaces(2).toNumber();
 export const quantity = (value: Decimal.Value) =>
   d(value).toDecimalPlaces(3).toNumber();
+// Las existencias se guardan con 3 decimales. Una cantidad más fina se
+// redondearía en el stock pero no en el costo (R4-03): se rechaza siempre.
+export const isStockQty = (value: number) =>
+  Number.isFinite(value) &&
+  Math.abs(value * 1000 - Math.round(value * 1000)) < 1e-6;
+const QTY_PRECISION = "debe tener como máximo 3 decimales";
+/** Cantidad de mercancía positiva: mínimo 0.001 y como máximo 3 decimales. */
+export const stockQty = (max = 1000000) =>
+  z
+    .number()
+    .min(0.001, "debe ser al menos 0.001")
+    .max(max)
+    .refine(isStockQty, QTY_PRECISION);
+/** Cantidad contada (puede ser 0), con como máximo 3 decimales. */
+export const countedQty = (max = 1000000) =>
+  z.number().min(0).max(max).refine(isStockQty, QTY_PRECISION);
+/** Ajuste con signo, distinto de 0 y con como máximo 3 decimales. */
+export const signedStockQty = (max = 100000) =>
+  z
+    .number()
+    .refine((v) => v !== 0 && Math.abs(v) <= max, "debe ser distinta de 0")
+    .refine((v) => Math.abs(v) >= 0.001 && isStockQty(v), QTY_PRECISION);
 export const weightedCost = (
   stock: Decimal.Value,
   cost: Decimal.Value,
@@ -142,7 +168,7 @@ export const saleSchema = z.object({
     .array(
       z.object({
         variantId: z.string().uuid(),
-        qty: z.number().positive().max(10000),
+        qty: stockQty(10000),
         discountPercent: z.number().min(0).max(100).default(0),
         discountAmount: z.number().nonnegative().max(100000000).optional(),
       }),

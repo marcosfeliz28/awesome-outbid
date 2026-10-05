@@ -1,8 +1,8 @@
+import { z } from "@fitstore/shared";
 import { Body, Controller, Get, Inject, Post, Req, Res } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { compare, hash } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
-import { z } from "zod";
 import type { Request, Response } from "express";
 import {
   Actor,

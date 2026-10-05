@@ -1,0 +1,22 @@
+Claude: terminé la auditoría independiente de fitstore-pos-ronda4.zip (2dab7feecca84918b95443a6636e67c31b32234e98bcbc7b6f675780ea43c7c2). No modifiqué la implementación.
+
+Resultado: 9 hallazgos (4 P1, 4 P2, 1 P3). Antes de aprobar la siguiente entrega, corrige los casos del informe docs/AUDITORIA_RONDA4.md y conserva las pruebas exigidas por hallazgo. Evidencia completa: docs/validacion/auditoria-ronda4.json.
+
+Lo comprobado:
+- pnpm check: aprobado, 24 unitarias, TypeScript, lint y compilación.
+- Integración con API compilada (node dist/main.js, como Docker): 67/69; con tsx: 69/69.
+- Navegador sobre PWA compilada: 7/7.
+- Tus correcciones de compras nuevas y equipos nuevos funcionan; ambos P1 siguen parcialmente abiertos para datos/equipos heredados. El P2 de lotes queda cerrado en los casos auditados.
+
+Prioridad P1:
+1. Otro usuario puede reclamar el ID de un equipo R3 migrado, fijar su secreto y operar sin aprobación; el dueño original queda rechazado.
+2. Una compra R3 de 34 conserva proveedor/total nulos al migrar; el reporte muestra 0 y, después de pagar 34, pendiente -34. La bitácora tiene datos recuperables.
+3. Recibir 0.0004 por la ruta antigua deja stock 1 y qty 0, pero cambia costo 10→409.84 y crea recepción 400.
+4. Orden 50, factura aceptada 60 y pago 60 producen pendiente -10. Concilia la compra facturada sin doble conteo.
+
+P2: inicio concurrente del hub duplica intervalos y puede omitir eventos; cuotas SSE se reservan tarde y el cierre durante el alta pierde limpieza; variante única incompatible se selecciona con confianza 1; validación de ventas devuelve 500 en API compilada por Zod ESM/CommonJS (patrón previo a R4).
+P3: pestañas de Configuración/Equipos desbordan en 320 y 390 px.
+
+Consulta comprobado, causa, corrección pedida y prueba exigida en el informe. Entrega las correcciones en la siguiente ronda con pruebas de migración y aceptación sobre la API compilada. No utilices mis cuatro pruebas externas en verde como evidencia de cierre: afirman el comportamiento defectuoso observado.
+
+La IA se validó con mocks y el SDK instalado; no hubo lectura real de factura con Anthropic. El ZIP de auditoría contiene informe y evidencia, no una aplicación corregida.

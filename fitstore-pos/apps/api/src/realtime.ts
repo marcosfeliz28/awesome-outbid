@@ -12,8 +12,7 @@ import {
 import type { Response } from "express";
 import { compare } from "bcryptjs";
 import { createHash, timingSafeEqual } from "node:crypto";
-import { z } from "zod";
-import { can } from "@fitstore/shared";
+import { can, z } from "@fitstore/shared";
 import {
   Actor,
   ActorRequest,
@@ -42,8 +41,8 @@ const terminalStatus = (t: {
 // Nunca se devuelve el hash del secreto del dispositivo.
 const publicTerminal = (t: any) => {
   const { secretHash, ...rest } = t;
-  void secretHash;
-  return { ...rest, status: terminalStatus(t) };
+  // identified: el dispositivo ya fijó su secreto y se puede aprobar.
+  return { ...rest, identified: !!secretHash, status: terminalStatus(t) };
 };
 
 // Un solo sondeo por proceso reparte los eventos a todas las conexiones SSE
@@ -58,25 +57,61 @@ export class RealtimeHub {
   private timer: ReturnType<typeof setInterval> | undefined;
   private busy = false;
   private cursor = 0n;
+  // Inicialización compartida: varias altas simultáneas esperan la misma
+  // consulta inicial y crean un único intervalo (R4-05).
+  private starting: Promise<void> | undefined;
+  private generation = 0;
   constructor(private db: Database) {}
-  async add(listener: Omit<Listener, "cursor">) {
-    if (!this.timer) {
-      const max = await this.db.realtimeEvent.aggregate({ _max: { id: true } });
-      this.cursor = max._max.id ?? 0n;
-      this.timer = setInterval(() => void this.poll(), 150);
+  private start() {
+    if (this.timer) return Promise.resolve();
+    if (!this.starting) {
+      const gen = this.generation;
+      this.starting = this.db.realtimeEvent
+        .aggregate({ _max: { id: true } })
+        .then((max) => {
+          // Si todos se desconectaron mientras tanto, no se crea el intervalo.
+          if (gen !== this.generation || this.timer) return;
+          this.cursor = max._max.id ?? 0n;
+          this.timer = setInterval(() => void this.poll(), 150);
+        })
+        .finally(() => {
+          if (gen === this.generation) this.starting = undefined;
+        });
     }
+    return this.starting;
+  }
+  async add(listener: Omit<Listener, "cursor">, isClosed?: () => boolean) {
+    await this.start();
+    // El cliente cerró durante el alta: no se registra nada.
+    if (isClosed?.()) {
+      this.stopIfIdle();
+      return () => {};
+    }
+    // Arranque cancelado por quedarse sin clientes durante la espera.
+    if (!this.timer) await this.start();
     const full: Listener = { ...listener, cursor: this.cursor };
     this.listeners.add(full);
+    let removed = false;
     return () => {
+      if (removed) return;
+      removed = true;
       this.listeners.delete(full);
-      if (!this.listeners.size && this.timer) {
-        clearInterval(this.timer);
-        this.timer = undefined;
-      }
+      this.stopIfIdle();
     };
+  }
+  private stopIfIdle() {
+    if (this.listeners.size) return;
+    if (this.timer) clearInterval(this.timer);
+    this.timer = undefined;
+    // Invalida cualquier inicialización pendiente.
+    this.generation++;
+    this.starting = undefined;
   }
   count() {
     return this.listeners.size;
+  }
+  running() {
+    return Boolean(this.timer);
   }
   private async poll() {
     if (this.busy || !this.listeners.size) return;
@@ -147,16 +182,25 @@ export class RealtimeController {
             403,
           );
       }
+      // Equipo anterior a la ronda 4 sin secreto: el ID solo no prueba que sea
+      // ese dispositivo. Quien lo reclama fija su secreto, pero el equipo queda
+      // pendiente hasta que un gerente lo apruebe (R4-01).
+      const legacyClaim = !!existing && !existing.secretHash;
       const terminal = existing
         ? await tx.terminal.update({
             where: { id: data.id },
             data: {
               lastActivityAt: new Date(),
               lastUserId: actor.id,
-              // Los equipos anteriores a la ronda 4 fijan su secreto ahora.
-              ...(existing.secretHash
-                ? {}
-                : { secretHash: hashSecret(data.secret) }),
+              ...(legacyClaim
+                ? {
+                    secretHash: hashSecret(data.secret),
+                    createdBy: actor.id,
+                    ...(manager
+                      ? { approvedAt: new Date(), approvedBy: actor.id }
+                      : { approvedAt: null, approvedBy: null }),
+                  }
+                : {}),
             },
           })
         : await tx.terminal.create({
@@ -194,14 +238,16 @@ export class RealtimeController {
         where: { id: actor.sessionId },
         data: { terminalId: terminal.id },
       });
-      if (!existing)
+      if (!existing || legacyClaim)
         await audit(
           tx,
           { ...actor, terminalId: terminal.id },
-          "terminal_registered",
+          legacyClaim ? "terminal_legacy_claimed" : "terminal_registered",
           "terminal",
           terminal.id,
-          undefined,
+          legacyClaim
+            ? { status: terminalStatus(existing), secret: false }
+            : undefined,
           { name: terminal.name, status: terminalStatus(terminal) },
         );
       return publicTerminal(terminal);
@@ -253,6 +299,12 @@ export class RealtimeController {
         where: { id, branchId: actor.branchId },
       });
       if (t.revokedAt) bad("Un equipo revocado no se puede aprobar.");
+      // Sin secreto nadie ha demostrado ser ese dispositivo: aprobarlo dejaría
+      // operar al primero que envíe su ID.
+      if (!t.secretHash)
+        bad(
+          "Este equipo todavía no se ha identificado. Abre FitStore en ese equipo y vuelve a intentarlo.",
+        );
       if (t.approvedAt) return publicTerminal(t);
       const row = await tx.terminal.update({
         where: { id },
@@ -365,6 +417,8 @@ export class RealtimeController {
   ) {
     const sessionKey = "s:" + actor.sessionId,
       userKey = "u:" + actor.id;
+    // El cupo se reserva antes del primer await: una ráfaga de altas
+    // simultáneas no puede superar el límite (R4-06).
     if (
       (openStreams.get(sessionKey) ?? 0) >= MAX_STREAMS_PER_SESSION ||
       (openStreams.get(userKey) ?? 0) >= MAX_STREAMS_PER_USER
@@ -374,10 +428,13 @@ export class RealtimeController {
         .json({ statusCode: 429, message: "Demasiadas conexiones abiertas." });
       return;
     }
+    bump(sessionKey, 1);
+    bump(userKey, 1);
     let closed = false;
     let remove: () => void = () => {};
     const timers: { check?: ReturnType<typeof setInterval> } = {};
-    // Libera la conexión una sola vez: cierre normal, error o caída abrupta.
+    // Libera la conexión una sola vez: cierre normal, error, caída abrupta o
+    // desconexión mientras el alta todavía estaba pendiente.
     const stop = () => {
       if (closed) return;
       closed = true;
@@ -392,32 +449,42 @@ export class RealtimeController {
       // destroy: si el cliente ya no responde, end() no terminaría nunca.
       res.destroy();
     };
+    // res "close" cubre fin de la respuesta y corte de la conexión; req "close"
+    // puede llegar al terminar de leer el GET y cerraría un flujo sano.
+    req.on("error", end);
+    res.on("close", stop);
+    res.on("error", end);
     try {
       // El sondeo es asíncrono: ningún evento se escribe antes de las cabeceras.
-      remove = await this.hub.add({
-        branchId: actor.branchId,
-        send: (row) => {
-          const ok = res.write(
-            `id: ${row.id}\nevent: ${row.type}\ndata: ${JSON.stringify(row.data)}\n\n`,
-          );
-          // Cliente lento: se cierra y al reconectar recarga el catálogo.
-          if (!ok) end();
-          return ok;
+      remove = await this.hub.add(
+        {
+          branchId: actor.branchId,
+          send: (row) => {
+            const ok = res.write(
+              `id: ${row.id}\nevent: ${row.type}\ndata: ${JSON.stringify(row.data)}\n\n`,
+            );
+            // Cliente lento: se cierra y al reconectar recarga el catálogo.
+            if (!ok) end();
+            return ok;
+          },
         },
-      });
+        () => closed || res.destroyed || Boolean(req.socket?.destroyed),
+      );
     } catch {
+      if (closed) return;
+      stop();
       res.status(503).json({
         statusCode: 503,
         message: "Tiempo real no disponible. Reintenta.",
       });
       return;
     }
-    bump(sessionKey, 1);
-    bump(userKey, 1);
-    req.on("close", stop);
-    req.on("error", end);
-    res.on("close", stop);
-    res.on("error", end);
+    // Cerró justo al terminar el alta: se retira el listener recién creado.
+    if (closed || res.destroyed || req.socket?.destroyed) {
+      if (closed) remove();
+      else stop();
+      return;
+    }
     // TCP keepalive detecta pares caídos sin FIN (corte de red, batería).
     req.socket?.setKeepAlive(true, 10000);
     res.setHeader("Content-Type", "text/event-stream");

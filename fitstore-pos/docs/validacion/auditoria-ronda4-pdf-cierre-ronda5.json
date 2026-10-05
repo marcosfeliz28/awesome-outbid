@@ -1,0 +1,32 @@
+[
+  {
+    "prioridad": "P1",
+    "comprobado": true,
+    "causa": "Fuga de conexiones concurrentes en el hub de realtime.ts al no limpiar recursos huérfanos tras desconexiones abruptas.",
+    "correccion_pedida": "Implementar eventos de cierre/error o ping/pong para liberar clientes inactivos del hub.",
+    "prueba_exigida": "Prueba de integración simulando caída de cliente.",
+    "estado": "corregido",
+    "correccion_aplicada": "apps/api/src/realtime.ts: liberación única (stop) en close y error de solicitud y respuesta; end() destruye el socket y libera al instante; TCP keepalive de 10 s para pares caídos sin FIN; el latido de 15 s expulsa conexiones destruidas o que dejaron de leer. Nota: el canal es SSE sobre HTTP, no WebSocket.",
+    "evidencia": "tests/api.test.ts › Auditoría ronda 4 de ChatGPT › P1: una caída abrupta del cliente libera su conexión de tiempo real (2 conexiones, la 3.ª da 429, se destruyen los sockets, vuelven a abrirse 2). docs/validacion/ronda5-integracion.txt"
+  },
+  {
+    "prioridad": "P2",
+    "comprobado": true,
+    "causa": "Vulnerabilidad de parsing en invoice.ts si la respuesta de la IA incluye formato Markdown o texto adicional.",
+    "correccion_pedida": "Sanear la respuesta extrayendo solo el bloque JSON válido antes del JSON.parse().",
+    "prueba_exigida": "Prueba unitaria procesando JSON con texto extra.",
+    "estado": "corregido",
+    "correccion_aplicada": "apps/api/src/invoice.ts: parseModelJson toma desde el primer { o [ hasta el último } o ] y devuelve null si no es JSON; la respuesta se valida después con el esquema y con extractedSchema. Se sigue pidiendo salida estructurada al modelo.",
+    "evidencia": "tests/invoice.test.ts › Auditoría ronda 4 · respuesta del modelo con Markdown o texto extra (2 pruebas). docs/validacion/ronda5-check.txt"
+  },
+  {
+    "prioridad": "P2",
+    "comprobado": true,
+    "causa": "Ausencia de índice para la relación lotId en InventoryMovement dentro de schema.prisma.",
+    "correccion_pedida": "Agregar @@index([lotId]) en InventoryMovement y generar migración.",
+    "prueba_exigida": "Verificación del comando CREATE INDEX en la nueva migración SQL.",
+    "estado": "corregido",
+    "correccion_aplicada": "schema.prisma: @@index([lotId]); migración 202610050002_lot_index con CREATE INDEX \"InventoryMovement_lotId_idx\". prisma migrate diff no muestra diferencias de este índice.",
+    "evidencia": "tests/api.test.ts › Auditoría ronda 4 de ChatGPT › P2: el kardex tiene índice por lote (revisa el SQL y pg_indexes)."
+  }
+]

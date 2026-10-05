@@ -339,20 +339,17 @@ export class ReportsController {
         { Concepto: "Ganancia neta", Monto: summary.netProfit },
       ];
     } else if (name === "purchases") {
-      // Compras con orden: total de la orden en su fecha (sus recepciones no se
-      // suman otra vez). Compras sin orden (Mercancía): total recibido —líneas,
-      // flete e impuestos— en la fecha de la recepción.
+      // Compras = lo recibido/facturado y aceptado (total de cada recepción:
+      // líneas al costo real, flete e impuestos), con o sin orden. La orden es
+      // un compromiso y se muestra aparte; nunca se suma a la deuda (R4-04).
+      // Recepciones sin proveedor o sin total quedan "sin conciliar" (R4-02).
       const [orders, receipts, payments] = await Promise.all([
         this.db.purchaseOrder.findMany({
           where: { branchId: actor.branchId, createdAt: range },
         }),
         this.db.goodsReceipt.findMany({
-          where: {
-            branchId: actor.branchId,
-            createdAt: range,
-            orderId: null,
-            supplierId: { not: null },
-          },
+          where: { branchId: actor.branchId, createdAt: range },
+          include: { order: { select: { supplierId: true } } },
         }),
         this.db.supplierPayment.findMany({
           where: { branchId: actor.branchId, createdAt: range },
@@ -361,15 +358,13 @@ export class ReportsController {
       const suppliers = await this.db.supplier.findMany({
         where: { branchId: actor.branchId },
       });
+      const supplierOf = (r: (typeof receipts)[number]) =>
+        r.supplierId ?? r.order?.supplierId ?? null;
       rows = suppliers.map((s) => {
+        const own = receipts.filter((r) => supplierOf(r) === s.id);
         const bought = d(
           sum(
-            orders.filter((o) => o.supplierId === s.id),
-            "total",
-          ),
-        ).plus(
-          sum(
-            receipts.filter((r) => r.supplierId === s.id),
+            own.filter((r) => r.total != null),
             "total",
           ),
         );
@@ -379,11 +374,26 @@ export class ReportsController {
         );
         return {
           Proveedor: s.name,
+          Ordenado: sum(
+            orders.filter((o) => o.supplierId === s.id),
+            "total",
+          ),
           Compras: money(bought),
           Pagado: paid,
           Pendiente: money(bought.minus(paid)),
+          Sin_conciliar: own.filter((r) => r.total == null).length,
         };
       });
+      const orphan = receipts.filter((r) => !supplierOf(r)).length;
+      if (orphan)
+        rows.push({
+          Proveedor: "Recepciones sin proveedor (conciliar)",
+          Ordenado: 0,
+          Compras: 0,
+          Pagado: 0,
+          Pendiente: 0,
+          Sin_conciliar: orphan,
+        });
     } else if (name === "no-movement") {
       const last = await this.db.saleItem.groupBy({
         by: ["variantId"],

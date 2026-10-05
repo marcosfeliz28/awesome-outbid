@@ -131,6 +131,27 @@ Cada computadora, laptop o celular que factura, cobra, abre o cierra caja, ajust
 
 La caja abierta pertenece a un usuario y a un equipo. Si entras desde otro equipo con tu caja abierta, Punto de venta y Caja muestran **Tu caja está abierta en «…»** y no permiten cobrar ahí. Puedes cerrarla y arquearla desde cualquier equipo, o pulsar **Trasladar caja aquí**: el vendedor necesita el PIN de un gerente y el traslado queda en la bitácora con ambos equipos. Un gerente puede cerrar la caja de un vendedor desde su propio equipo.
 
+## Actualización a la ronda 6: equipos anteriores y compras
+
+**Equipos registrados antes de la ronda 4.** Después de actualizar, aparecen como **Pendiente** con el aviso «Equipo de antes de la actualización». El identificador de un equipo antiguo no prueba que sea ese dispositivo, así que nadie opera con él hasta que un gerente lo aprueba:
+
+1. Abre FitStore en ese equipo. Se identifica solo y queda pendiente con el nombre de quien lo reclamó.
+2. Si ese es el dispositivo correcto, apruébalo con el PIN de gerente en el propio equipo o desde **Configuración › Equipos › Aprobar**. Si no reconoces a quien lo reclamó, pulsa **Revocar equipo**.
+3. Un equipo antiguo que todavía no se ha identificado no se puede aprobar; ábrelo primero en el dispositivo.
+
+Un gerente o administrador que reclama un equipo antiguo desde ese mismo dispositivo lo aprueba al hacerlo, y queda en la bitácora.
+
+**Reporte de compras y cuentas por pagar.** Columnas:
+
+- **Ordenado**: órdenes creadas en el periodo. Es un compromiso y no es deuda.
+- **Compras**: lo recibido o facturado y aceptado, a su costo real con flete e impuestos. Cuenta con o sin orden y suma cada recepción parcial una sola vez.
+- **Pagado** y **Pendiente**: Pendiente es Compras menos Pagado. Un valor negativo significa un anticipo al proveedor.
+- **Sin conciliar**: recepciones antiguas sin total comprobable.
+
+La fila **Recepciones sin proveedor (conciliar)** agrupa las recepciones que no pertenecen a ningún proveedor. Las compras de antes de la actualización se recuperaron de la bitácora; lo que no tenía evidencia suficiente quedó sin conciliar, sin inventar proveedor ni importe.
+
+**Cantidades.** Todas las rutas aceptan como mínimo 0.001 y como máximo 3 decimales: venta, devolución, entrada, recepción de orden, ajuste, conteo y cotización.
+
 ## Mercancía desde el celular
 
 Disponible para administrador, gerente y almacén. En el celular hay un botón grande **Mercancía** en la barra inferior. El vendedor no puede acceder a estos endpoints. Almacén puede registrar cantidades y costos de entrada, pero no consultar ganancias.

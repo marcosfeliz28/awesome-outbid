@@ -12,7 +12,6 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { createHash } from "node:crypto";
-import { z } from "zod";
 import {
   businessDate,
   can,
@@ -20,6 +19,7 @@ import {
   landedCosts,
   money,
   weightedCost,
+  z,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -35,6 +35,7 @@ import {
   parse,
   positive,
   uuid,
+  qty,
 } from "./common";
 import { lockVariant, stockChange } from "./inventory";
 import {
@@ -59,17 +60,11 @@ const quickSchema = z.object({
   barcode: z.string().trim().min(1).max(100),
   variant: z.string().trim().min(1).max(100),
 });
-// El inventario guarda 3 decimales: una cantidad menor o más fina cambiaría el
-// costo promedio sin cambiar las existencias.
-const goodsQty = positive.refine(
-  (v) => v >= 0.001 && Math.abs(v * 1000 - Math.round(v * 1000)) < 1e-6,
-  "debe tener como máximo 3 decimales y ser al menos 0.001",
-);
 const lineSchema = z
   .object({
     variantId: uuid.optional(),
     quick: quickSchema.optional(),
-    qty: goodsQty,
+    qty,
     unitCost: positive,
     lotId: uuid.optional(),
     lotNumber: z.string().trim().min(1).max(100).optional(),

@@ -91,3 +91,5 @@ Consulta [el manual](docs/MANUAL.md), [las decisiones](docs/DECISIONES.md) y [el
 La ronda 3 incorpora stock por SSE, Configuración > Equipos, Mercancía móvil/offline e importación de facturas con revisión. Consulta [el manual](docs/MANUAL.md) y [la revisión](docs/REVISION_CLAUDE_RONDA3.md). Para empaquetarla: `node scripts/package.mjs ../fitstore-pos-ronda3.zip`.
 
 **Ronda 4 (Claude):** corrige los hallazgos de la auditoría de ChatGPT (compras sin orden, equipos aprobados, lotes) y de la revisión propia, rediseña Mercancía y Equipos y actualiza la lectura de facturas con Claude. Detalle y evidencia en [docs/RONDA4_CLAUDE.md](docs/RONDA4_CLAUDE.md). Para empaquetarla: `node scripts/package.mjs ../fitstore-pos-ronda4.zip`.
+
+**Ronda 6 (Claude):** cierra los 9 hallazgos de la auditoría completa de ChatGPT a la ronda 4 (equipos y compras anteriores, precisión de cantidades, facturas contra orden, tiempo real concurrente, variante única, API compilada y pestañas en celular). Detalle y evidencia en [docs/RONDA6_CLAUDE.md](docs/RONDA6_CLAUDE.md). Para empaquetarla: `node scripts/package.mjs ../fitstore-pos-ronda6.zip`.
