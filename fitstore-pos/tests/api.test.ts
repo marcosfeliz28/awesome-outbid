@@ -57,6 +57,22 @@ const input = (id: string, total: number, s = session) => ({
   payments: [{ method: "cash", amount: total }],
   expectedTotal: total,
 });
+// Ronda 4: toda operación de stock o caja exige un equipo aprobado.
+const secretOf = (id: string) => "qa-secret-" + id;
+const tokenTerminal = new Map<string, string>();
+async function registerTerminal(as: string, id: string, name: string) {
+  const t = await ok(
+    "/terminals/register",
+    { id, name, secret: secretOf(id) },
+    as,
+  );
+  if (t.status === "pending")
+    await ok("/terminals/" + id + "/approve", {}, ownerToken);
+  tokenTerminal.set(as, id);
+  return id;
+}
+const enroll = (as: string, name = "QA equipo " + randomUUID().slice(0, 6)) =>
+  registerTerminal(as, randomUUID(), name);
 beforeAll(async () => {
   ownerToken = token = (
     await ok(
@@ -68,6 +84,7 @@ beforeAll(async () => {
       "",
     )
   ).accessToken;
+  await enroll(ownerToken, "QA dueño");
   const roles = await ok("/roles");
   for (const role of ["admin", "seller", "manager"]) {
     const u = await ok("/users", {
@@ -83,6 +100,7 @@ beforeAll(async () => {
       { email: u.email, password: "FitStore-QA-2026!" },
       "",
     );
+    await enroll(auth.accessToken, "QA " + role);
     if (role === "admin") token = auth.accessToken;
     if (role === "seller") sellerToken = auth.accessToken;
   }
@@ -666,6 +684,13 @@ describe("Regresiones de Claude", () => {
       "/auth/login",
       { email: manager.email, password: "FitStore-QA-2026!" },
       "",
+    );
+    // Con equipos, la caja usa el equipo de la sesión: dos usuarios en el
+    // mismo equipo no pueden tener cajas abiertas a la vez.
+    await registerTerminal(
+      auth.accessToken,
+      session.registerId,
+      "QA compartido",
     );
     expect(
       (
@@ -1367,6 +1392,7 @@ describe("Ronda 2 de Claude", () => {
         "",
       )
     ).accessToken;
+    await enroll(callerToken, "QA R2");
     callerCash = await ok(
       "/cash-sessions/open",
       { registerId: "qa-r2-" + suffix, openingAmount: 0 },
@@ -1717,8 +1743,8 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
     lotProduct: any;
   const streams: AbortController[] = [];
   beforeAll(async () => {
-    terminalId = randomUUID();
-    await ok("/terminals/register", { id: terminalId, name: "Caja QA R3" });
+    terminalId = tokenTerminal.get(token)!;
+    await registerTerminal(token, terminalId, "Caja QA R3");
     const cats = await ok("/categories");
     product = await ok("/products", {
       name: "QA Mercancía R3 " + suffix,
@@ -1765,10 +1791,10 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
       )
     ).accessToken;
     warehouseTerminal = randomUUID();
-    await ok(
-      "/terminals/register",
-      { id: warehouseTerminal, name: "Celular almacén QA" },
+    await registerTerminal(
       warehouseToken,
+      warehouseTerminal,
+      "Celular almacén QA",
     );
   });
   afterAll(() => {
@@ -1893,11 +1919,7 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
         )
       ).accessToken;
       auths.push(t);
-      await ok(
-        "/terminals/register",
-        { id: randomUUID(), name: "Caja SSE " + i },
-        t,
-      );
+      await registerTerminal(t, randomUUID(), "Caja SSE " + i);
       cashes.push(await ok("/cash-sessions/open", { openingAmount: 0 }, t));
     }
     const p = await ok("/products", {
@@ -1992,12 +2014,17 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
       )
     ).accessToken;
     const id = randomUUID();
-    await ok("/terminals/register", { id, name: "Revocar QA" }, as);
+    await registerTerminal(as, id, "Revocar QA");
     await ok("/terminals/" + id + "/revoke", {});
     expect((await request("/inventory/stock", undefined, as)).status).toBe(401);
     expect(
-      (await request("/terminals/register", { id, name: "Intento reactivar" }))
-        .status,
+      (
+        await request("/terminals/register", {
+          id,
+          name: "Intento reactivar",
+          secret: secretOf(id),
+        })
+      ).status,
     ).toBe(400);
   });
   it("entradas idempotentes con promedio, kardex y usuario/equipo; vendedor bloqueado y almacén sin ganancia", async () => {
@@ -2425,28 +2452,16 @@ describe("Ronda 4 · Claude: caja y equipos", () => {
     });
     actors.push(seller, manager);
     sellerA = await login(seller.email);
-    await ok(
-      "/terminals/register",
-      { id: terminalA, name: "Caja 1 QA" },
-      sellerA,
-    );
+    await registerTerminal(sellerA, terminalA, "Caja 1 QA");
     cash = await ok(
       "/cash-sessions/open",
       { openingAmount: 200, registerId: "Caja 1 QA" },
       sellerA,
     );
     sellerB = await login(seller.email);
-    await ok(
-      "/terminals/register",
-      { id: terminalB, name: "Laptop 2 QA" },
-      sellerB,
-    );
+    await registerTerminal(sellerB, terminalB, "Laptop 2 QA");
     managerToken = await login(manager.email);
-    await ok(
-      "/terminals/register",
-      { id: terminalM, name: "PC gerencia QA" },
-      managerToken,
-    );
+    await registerTerminal(managerToken, terminalM, "PC gerencia QA");
   });
   const sale = (as: string) =>
     request("/sales", input(product.variants[0].id, 118, cash), as);
@@ -2518,5 +2533,371 @@ describe("Ronda 4 · Claude: caja y equipos", () => {
       sellerA,
     );
     expect(r.status).toBe(201);
+  });
+});
+describe("Ronda 4 · auditoría de ChatGPT y propia", () => {
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Santo_Domingo",
+  });
+  let cats: any[], clothingVariant: any, supplementVariant: any;
+  const newProduct = async (name: string, category: string) => {
+    const p = await ok("/products", {
+      name: name + " " + suffix,
+      sku: "R4A-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === category).id,
+      variants: [
+        {
+          sku: "R4AV-" + randomUUID().slice(0, 8),
+          barcode: "R4AB-" + randomUUID().slice(0, 8),
+          costAvg: 40,
+          price: 118,
+        },
+      ],
+    });
+    products.push(p);
+    return p.variants[0];
+  };
+  const newUserToken = async (role: string, pin = "612345") => {
+    const roles = await ok("/roles");
+    const u = await ok("/users", {
+      name: "QA R4 " + role,
+      email: "r4a-" + role + "-" + randomUUID().slice(0, 6) + "@example.test",
+      password: "FitStore-QA-2026!",
+      pin,
+      roleId: roles.find((r: any) => r.name === role).id,
+    });
+    actors.push(u);
+    const auth = await ok(
+      "/auth/login",
+      { email: u.email, password: "FitStore-QA-2026!" },
+      "",
+    );
+    return { user: u, token: auth.accessToken as string };
+  };
+  const stockOf = async (variantId: string) =>
+    Number(
+      (await fixtureDb.variant.findUnique({ where: { id: variantId } })).stock,
+    );
+  beforeAll(async () => {
+    cats = await ok("/categories");
+    clothingVariant = await newProduct("QA R4 ropa", "Ropa deportiva");
+    supplementVariant = await newProduct("QA R4 suplemento", "Suplementos");
+  });
+  it("P1 compras: entrada sin orden se reporta una vez; orden no se duplica; fechas aplican", async () => {
+    const supplier = await ok("/suppliers", {
+      name: "QA Proveedor R4 " + suffix,
+    });
+    const report = async (from = today, to = today) =>
+      (await ok(`/reports/purchases?from=${from}&to=${to}`)).rows.find(
+        (r: any) => r.Proveedor === supplier.name,
+      );
+    const entry = {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId: supplier.id,
+      freight: 4,
+      items: [{ variantId: clothingVariant.id, qty: 2, unitCost: 15 }],
+    };
+    await ok("/merchandise/operations", entry);
+    expect(await report()).toMatchObject({ Compras: 34, Pendiente: 34 });
+    // Repetir el UUID no crea otra recepción ni cambia el importe.
+    await ok("/merchandise/operations", entry);
+    expect(await report()).toMatchObject({ Compras: 34 });
+    expect(
+      await fixtureDb.goodsReceipt.count({ where: { operationId: entry.id } }),
+    ).toBe(1);
+    // Una compra con orden cuenta por la orden; su recepción no se suma otra vez.
+    const order = await ok("/purchase-orders", {
+      supplierId: supplier.id,
+      items: [{ variantId: clothingVariant.id, qty: 1, unitCost: 50 }],
+    });
+    await ok("/purchase-orders/" + order.id + "/receive", {
+      items: [{ itemId: order.items[0].id, qty: 1 }],
+    });
+    expect(await report()).toMatchObject({ Compras: 84, Pendiente: 84 });
+    await ok("/supplier-payments", {
+      supplierId: supplier.id,
+      amount: 34,
+      method: "transfer",
+    });
+    expect(await report()).toMatchObject({ Pagado: 34, Pendiente: 50 });
+    expect(await report("2020-01-01", "2020-01-31")).toMatchObject({
+      Compras: 0,
+      Pagado: 0,
+    });
+  });
+  it("P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo", async () => {
+    const wh = await newUserToken("warehouse");
+    const adjust = (as: string) =>
+      request(
+        "/inventory/adjustments",
+        { variantId: clothingVariant.id, qty: 1, reason: "QA equipo R4" },
+        as,
+      );
+    const goods = (as: string) =>
+      request(
+        "/merchandise/operations",
+        {
+          id: randomUUID(),
+          direction: "entry",
+          items: [{ variantId: clothingVariant.id, qty: 1, unitCost: 10 }],
+        },
+        as,
+      );
+    const before = await stockOf(clothingVariant.id);
+    for (const r of [await adjust(wh.token), await goods(wh.token)]) {
+      expect(r.status).toBe(403);
+      expect(r.body.code).toBe("TERMINAL_REQUIRED");
+    }
+    const seller = await newUserToken("seller");
+    expect(
+      (await request("/cash-sessions/open", { openingAmount: 0 }, seller.token))
+        .body.code,
+    ).toBe("TERMINAL_REQUIRED");
+    // Equipo nuevo de almacén: queda pendiente y sigue sin operar.
+    const device = randomUUID();
+    const registered = await ok(
+      "/terminals/register",
+      { id: device, name: "Celular R4", secret: secretOf(device) },
+      wh.token,
+    );
+    expect(registered.status).toBe("pending");
+    expect((await adjust(wh.token)).body.code).toBe("TERMINAL_PENDING");
+    // Otro dispositivo no puede reclamar ese equipo sin su secreto.
+    expect(
+      (
+        await request(
+          "/terminals/register",
+          { id: device, name: "Intruso", secret: "otro-secreto-qa-0000" },
+          seller.token,
+        )
+      ).status,
+    ).toBe(403);
+    // Aprobación en el equipo con PIN de gerente.
+    expect(
+      (
+        await request(
+          "/terminals/" + device + "/approve-with-pin",
+          { managerPin: "000000" },
+          wh.token,
+        )
+      ).status,
+    ).toBe(400);
+    const approved = await ok(
+      "/terminals/" + device + "/approve-with-pin",
+      { managerPin: "987654" },
+      wh.token,
+    );
+    expect(approved.status).toBe("approved");
+    expect((await adjust(wh.token)).status).toBe(201);
+    expect(await stockOf(clothingVariant.id)).toBe(before + 1);
+    const logged = await fixtureDb.auditLog.findFirst({
+      where: { entityId: clothingVariant.id, userId: wh.user.id },
+      orderBy: { createdAt: "desc" },
+    });
+    expect(logged.terminalId).toBe(device);
+    // Revocar: la sesión cae, el mismo equipo no vuelve y uno nuevo espera aprobación.
+    await ok("/terminals/" + device + "/revoke", {}, ownerToken);
+    expect((await adjust(wh.token)).status).toBe(401);
+    const again = (
+      await ok(
+        "/auth/login",
+        { email: wh.user.email, password: "FitStore-QA-2026!" },
+        "",
+      )
+    ).accessToken;
+    expect((await adjust(again)).body.code).toBe("TERMINAL_REQUIRED");
+    expect(
+      (
+        await request(
+          "/terminals/register",
+          { id: device, name: "Reintento", secret: secretOf(device) },
+          again,
+        )
+      ).status,
+    ).toBe(400);
+    const other = randomUUID();
+    await ok(
+      "/terminals/register",
+      { id: other, name: "Otro celular", secret: secretOf(other) },
+      again,
+    );
+    expect((await adjust(again)).body.code).toBe("TERMINAL_PENDING");
+    expect(await stockOf(clothingVariant.id)).toBe(before + 1);
+  });
+  it("P2 lotes: lotId inventado, ajeno o de otra variante se rechaza sin cambios; el número de lote queda coherente", async () => {
+    const expiry = new Date(Date.now() + 200 * 86400000).toISOString();
+    const lotNumber = "R4-L-" + suffix;
+    const valid = await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      items: [
+        {
+          variantId: supplementVariant.id,
+          qty: 3,
+          unitCost: 20,
+          lotNumber,
+          expiryDate: expiry,
+        },
+      ],
+    });
+    const lot = await fixtureDb.lot.findUnique({
+      where: {
+        variantId_lotNumber: { variantId: supplementVariant.id, lotNumber },
+      },
+    });
+    expect(Number(lot.qty)).toBe(3);
+    expect(await stockOf(supplementVariant.id)).toBe(3);
+    const movement = await fixtureDb.inventoryMovement.findFirst({
+      where: { refId: valid.receiptId, variantId: supplementVariant.id },
+    });
+    expect(movement.lotId).toBe(lot.id);
+    const beforeClothing = await stockOf(clothingVariant.id);
+    const receiptsBefore = await fixtureDb.goodsReceipt.count();
+    for (const lotId of [randomUUID(), lot.id]) {
+      const r = await request("/merchandise/operations", {
+        id: randomUUID(),
+        direction: "entry",
+        items: [{ variantId: clothingVariant.id, qty: 1, unitCost: 10, lotId }],
+      });
+      expect(r.status).toBe(400);
+    }
+    expect(await stockOf(clothingVariant.id)).toBe(beforeClothing);
+    expect(await fixtureDb.goodsReceipt.count()).toBe(receiptsBefore);
+    expect(
+      Number((await fixtureDb.lot.findUnique({ where: { id: lot.id } })).qty),
+    ).toBe(3);
+    // Integridad referencial: el kardex no acepta un lote inexistente.
+    await expect(
+      fixtureDb.inventoryMovement.create({
+        data: {
+          variantId: clothingVariant.id,
+          lotId: randomUUID(),
+          type: "adjustment",
+          qty: 0,
+          unitCost: 0,
+          balanceAfter: 0,
+          reason: "QA FK",
+          userId: "qa",
+        },
+      }),
+    ).rejects.toThrow();
+  });
+  it("almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido", async () => {
+    const wh = await newUserToken("warehouse");
+    await registerTerminal(wh.token, randomUUID(), "Almacén R4");
+    const quick = await ok(
+      "/merchandise/operations",
+      {
+        id: randomUUID(),
+        direction: "entry",
+        items: [
+          {
+            quick: {
+              name: "QA rápido R4 " + suffix,
+              categoryId: cats.find((c: any) => c.name === "Accesorios de gym")
+                .id,
+              price: 1,
+              cost: 2500,
+              barcode: "R4Q-" + suffix,
+              variant: "Única",
+            },
+            qty: 1,
+            unitCost: 2500,
+          },
+        ],
+      },
+      wh.token,
+    );
+    const created = await fixtureDb.variant.findUnique({
+      where: { id: quick.variantIds[0] },
+      include: { product: true },
+    });
+    expect(created.product.active).toBe(false);
+    expect(
+      await fixtureDb.alert.count({
+        where: { key: "new-product:" + created.productId },
+      }),
+    ).toBe(1);
+    const tiny = await request(
+      "/merchandise/operations",
+      {
+        id: randomUUID(),
+        direction: "entry",
+        items: [{ variantId: clothingVariant.id, qty: 0.0004, unitCost: 1e6 }],
+      },
+      wh.token,
+    );
+    expect(tiny.status).toBe(400);
+    // 2 a 15 + flete 4 => costo recibido 17 por unidad (no el nuevo promedio).
+    const entry = await ok(
+      "/merchandise/operations",
+      {
+        id: randomUUID(),
+        direction: "entry",
+        freight: 4,
+        items: [{ variantId: clothingVariant.id, qty: 2, unitCost: 15 }],
+      },
+      wh.token,
+    );
+    const m = await fixtureDb.inventoryMovement.findFirst({
+      where: { refId: entry.receiptId },
+    });
+    expect(Number(m.unitCost)).toBe(17);
+  });
+  it("SSE: como máximo dos conexiones por sesión", async () => {
+    const controllers: AbortController[] = [];
+    const open = async () => {
+      const c = new AbortController();
+      controllers.push(c);
+      return fetch(base + "/events", {
+        headers: { Authorization: "Bearer " + token },
+        signal: c.signal,
+      });
+    };
+    try {
+      expect((await open()).status).toBe(200);
+      expect((await open()).status).toBe(200);
+      expect((await open()).status).toBe(429);
+    } finally {
+      for (const c of controllers) c.abort();
+    }
+  });
+  it("importación: archivos grandes se rechazan sin leerlos", async () => {
+    const upload = async (content: string) => {
+      const form = new FormData();
+      form.set("file", new Blob([content], { type: "text/csv" }), "f.csv");
+      form.set(
+        "mapping",
+        JSON.stringify({
+          code: "codigo",
+          description: "descripcion",
+          qty: "cantidad",
+          unitCost: "costo",
+        }),
+      );
+      const started = Date.now();
+      const r = await fetch(base + "/merchandise/import", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "X-Forwarded-For": testIp,
+        },
+        body: form,
+      });
+      return {
+        status: r.status,
+        body: await r.json(),
+        ms: Date.now() - started,
+      };
+    };
+    const header = "codigo,descripcion,cantidad,costo\n";
+    const big = await upload(header + "A,Producto,1,10\n".repeat(80000));
+    expect(big.status).toBe(400);
+    expect(big.body.message).toContain("1 MB");
+    expect(big.ms).toBeLessThan(3000);
+    const many = await upload(header + "A,Producto,1,10\n".repeat(1500));
+    expect(many.status).toBe(400);
+    expect(many.body.message).toContain("1000 filas");
   });
 });

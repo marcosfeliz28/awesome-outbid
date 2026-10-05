@@ -7,6 +7,7 @@ import {
   CurrentUser,
   Database,
   Permit,
+  RequireTerminal,
   parse,
   uuid,
   amount,
@@ -88,6 +89,7 @@ export class CashController {
     );
   }
   @Post("open")
+  @RequireTerminal()
   @Permit("cash:write")
   async open(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
@@ -117,6 +119,7 @@ export class CashController {
     });
   }
   @Post(":id/movements")
+  @RequireTerminal()
   @Permit("cash:write")
   async movement(
     @Param("id") id: string,
@@ -147,6 +150,7 @@ export class CashController {
   // (por ejemplo, si el equipo original se dañó). Un vendedor necesita el PIN
   // de un gerente; el traslado queda en la bitácora con ambos equipos.
   @Post(":id/transfer")
+  @RequireTerminal()
   @Permit("cash:write")
   async transfer(
     @Param("id") id: string,
@@ -221,6 +225,7 @@ export class CashController {
     });
   }
   @Post(":id/close")
+  @RequireTerminal()
   @Permit("cash:write")
   async close(
     @Param("id") id: string,

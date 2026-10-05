@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MonitorSmartphone } from "lucide-react";
-import { Button, Modal } from "@fitstore/ui";
+import { create } from "zustand";
+import {
+  BadgeCheck,
+  Laptop,
+  MonitorSmartphone,
+  ShieldAlert,
+  Smartphone,
+} from "lucide-react";
+import { Badge, Button, Modal } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
 import {
   api,
@@ -13,21 +20,63 @@ import {
   useStore,
 } from "./api";
 import { toast } from "./helpers";
-export function terminalIdentity() {
+type Identity = { id: string; name: string; secret: string };
+const randomSecret = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
+const defaultDeviceName = () =>
+  (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
+    ? "Celular "
+    : "Computadora ") + crypto.randomUUID().slice(0, 4).toUpperCase();
+// Identidad local del equipo: id + secreto que sólo conoce este navegador.
+export function terminalIdentity(): Identity {
   const branch = useStore.getState().user?.branchId ?? "main";
   const key = "fitstore-equipment:" + branch;
-  let value = localStorage.getItem(key);
-  if (!value) {
-    value = JSON.stringify({
-      id: crypto.randomUUID(),
-      name: "Equipo " + crypto.randomUUID().slice(0, 6),
-    });
-    localStorage.setItem(key, value);
+  let value: Partial<Identity> | null = null;
+  try {
+    value = JSON.parse(localStorage.getItem(key) ?? "null");
+  } catch {
+    value = null;
   }
-  return JSON.parse(value) as { id: string; name: string };
+  const identity: Identity = {
+    id: value?.id ?? crypto.randomUUID(),
+    name: value?.name ?? defaultDeviceName(),
+    secret: value?.secret ?? randomSecret(),
+  };
+  if (
+    !value ||
+    value.id !== identity.id ||
+    value.secret !== identity.secret ||
+    value.name !== identity.name
+  )
+    localStorage.setItem(key, JSON.stringify(identity));
+  return identity;
 }
-export const registerTerminal = () =>
-  post("/terminals/register", terminalIdentity());
+function forgetIdentity() {
+  const branch = useStore.getState().user?.branchId ?? "main";
+  localStorage.removeItem("fitstore-equipment:" + branch);
+}
+export const useTerminal = create<{
+  terminal: any | null;
+  revoked: boolean;
+  set: (terminal: any | null, revoked?: boolean) => void;
+}>((set) => ({
+  terminal: null,
+  revoked: false,
+  set: (terminal, revoked = false) => set({ terminal, revoked }),
+}));
+export async function registerTerminal() {
+  try {
+    const terminal = await post("/terminals/register", terminalIdentity());
+    useTerminal.getState().set(terminal);
+    return terminal;
+  } catch (e: any) {
+    if (/revocado|otro dispositivo/i.test(e.message))
+      useTerminal.getState().set(null, true);
+    throw e;
+  }
+}
 export function useRealtime() {
   const { user, online } = useStore();
   const client = useQueryClient();
@@ -167,83 +216,276 @@ export function useRealtime() {
 }
 export function Equipment() {
   const client = useQueryClient();
+  const user = useStore((s) => s.user)!;
+  const here = terminalIdentity();
   const query = useQuery({
     queryKey: ["terminals"],
     queryFn: () => api<any[]>("/terminals"),
     refetchInterval: 15000,
   });
-  const [name, setName] = useState(terminalIdentity().name);
+  const [name, setName] = useState(here.name);
+  const act = async (path: string, ok: string) => {
+    try {
+      await post(path, {});
+      toast(ok);
+      await query.refetch();
+    } catch (e: any) {
+      toast(e.message, true);
+    }
+  };
+  const rows = [...(query.data ?? [])].sort(
+    (a, b) =>
+      ["pending", "approved", "revoked"].indexOf(a.status) -
+      ["pending", "approved", "revoked"].indexOf(b.status),
+  );
   return (
-    <div>
-      <h2>Equipos</h2>
-      <label className="field">
-        Nombre de este equipo
-        <input
-          value={name}
-          maxLength={80}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </label>
-      <Button
-        onClick={async () => {
-          try {
-            const t = terminalIdentity();
-            await post("/terminals/" + t.id + "/rename", { name });
-            localStorage.setItem(
-              "fitstore-equipment:" + useStore.getState().user!.branchId,
-              JSON.stringify({ ...t, name }),
-            );
-            await client.invalidateQueries({ queryKey: ["terminals"] });
-          } catch (e: any) {
-            toast(e.message, true);
-          }
-        }}
-      >
-        Guardar nombre
-      </Button>
-      {query.error && <p role="alert">{query.error.message}</p>}
-      {query.data?.map((t) => (
-        <div className="panel" key={t.id}>
-          <strong>{t.name}</strong>
+    <div className="equipment">
+      <section className="panel equipment-here">
+        <div>
+          <h2>Este equipo</h2>
           <p>
-            {t.revokedAt
-              ? "Revocado"
-              : t.connected
-                ? "Conectado ahora"
-                : "Desconectado"}{" "}
-            · Última actividad:{" "}
-            {new Date(t.lastActivityAt).toLocaleString("es-DO")}
+            Cada computadora, laptop o celular que factura o mueve mercancía
+            debe estar aprobado. Los equipos nuevos de vendedores y almacén
+            esperan tu aprobación.
           </p>
-          <p>
-            {t.openCash
-              ? "Caja abierta · " + t.openCash.id
-              : "Sin caja abierta"}
-          </p>
-          {!t.revokedAt && (
-            <Button
-              variant="secondary"
-              onClick={async () => {
-                if (
-                  !window.confirm("¿Revocar este equipo y cerrar sus sesiones?")
-                )
-                  return;
-                try {
-                  await post("/terminals/" + t.id + "/revoke", {});
-                  await query.refetch();
-                } catch (e: any) {
-                  toast(e.message, true);
-                }
-              }}
-            >
-              Revocar equipo
-            </Button>
-          )}
         </div>
-      ))}
+        <form
+          className="equipment-rename"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              await post("/terminals/" + here.id + "/rename", { name });
+              localStorage.setItem(
+                "fitstore-equipment:" + user.branchId,
+                JSON.stringify({ ...terminalIdentity(), name }),
+              );
+              toast("Nombre guardado.");
+              await client.invalidateQueries({ queryKey: ["terminals"] });
+            } catch (err: any) {
+              toast(err.message, true);
+            }
+          }}
+        >
+          <label className="field">
+            Nombre de este equipo
+            <input
+              value={name}
+              maxLength={80}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <Button type="submit">Guardar nombre</Button>
+        </form>
+      </section>
+      {query.error && (
+        <p className="form-error" role="alert">
+          {query.error.message}
+        </p>
+      )}
+      <ul className="equipment-list">
+        {rows.map((t) => {
+          const Icon = /celular|tel[eé]fono|m[oó]vil/i.test(t.name)
+            ? Smartphone
+            : Laptop;
+          return (
+            <li key={t.id} className={`panel equipment-item ${t.status}`}>
+              <div className="equipment-icon">
+                <Icon size={20} aria-hidden="true" />
+                {t.connected && <span className="equipment-online" />}
+              </div>
+              <div className="equipment-info">
+                <strong>
+                  {t.name}
+                  {t.id === here.id && <em> · este equipo</em>}
+                </strong>
+                <small>
+                  {t.status === "revoked"
+                    ? "Revocado"
+                    : t.connected
+                      ? "Conectado ahora"
+                      : "Última actividad " +
+                        new Date(t.lastActivityAt).toLocaleString("es-DO", {
+                          timeZone: "America/Santo_Domingo",
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                  {t.lastUserName ? " · " + t.lastUserName : ""}
+                </small>
+                <small>
+                  {t.openCash
+                    ? "Caja abierta desde " +
+                      new Date(t.openCash.openedAt).toLocaleTimeString(
+                        "es-DO",
+                        {
+                          timeZone: "America/Santo_Domingo",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )
+                    : "Sin caja abierta"}
+                  {t.status === "pending" && t.createdByName
+                    ? " · Registrado por " + t.createdByName
+                    : ""}
+                </small>
+              </div>
+              <Badge
+                tone={
+                  t.status === "approved"
+                    ? "success"
+                    : t.status === "pending"
+                      ? "warning"
+                      : "neutral"
+                }
+              >
+                {t.status === "approved"
+                  ? "Aprobado"
+                  : t.status === "pending"
+                    ? "Pendiente"
+                    : "Revocado"}
+              </Badge>
+              <div className="equipment-actions">
+                {t.status === "pending" && (
+                  <Button
+                    onClick={() =>
+                      act("/terminals/" + t.id + "/approve", "Equipo aprobado.")
+                    }
+                  >
+                    Aprobar
+                  </Button>
+                )}
+                {t.status !== "revoked" && t.id !== here.id && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "¿Revocar este equipo? Se cerrarán sus sesiones y no podrá volver a operar.",
+                        )
+                      )
+                        void act(
+                          "/terminals/" + t.id + "/revoke",
+                          "Equipo revocado.",
+                        );
+                    }}
+                  >
+                    Revocar equipo
+                  </Button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
-
+// Aviso para un equipo que todavía no puede facturar ni mover mercancía.
+export function DeviceGate() {
+  const { terminal, revoked } = useTerminal();
+  const user = useStore((s) => s.user);
+  const [name, setName] = useState(""),
+    [pin, setPin] = useState(""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  if (!user || (!revoked && terminal?.status !== "pending")) return null;
+  if (revoked)
+    return (
+      <section className="device-gate revoked" role="alert">
+        <ShieldAlert size={22} aria-hidden="true" />
+        <div>
+          <strong>Este equipo fue revocado</strong>
+          <p>
+            No puede facturar ni mover mercancía. Si fue un error, regístralo
+            como equipo nuevo y pide a un gerente que lo apruebe.
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          onClick={async () => {
+            forgetIdentity();
+            useTerminal.getState().set(null);
+            await registerTerminal().catch((e) => toast(e.message, true));
+          }}
+        >
+          Registrar como equipo nuevo
+        </Button>
+      </section>
+    );
+  return (
+    <section className="device-gate" role="status">
+      <BadgeCheck size={22} aria-hidden="true" />
+      <div>
+        <strong>Este equipo necesita aprobación</strong>
+        <p>
+          Puedes consultar, pero para facturar o mover mercancía un gerente debe
+          aprobarlo: con su PIN aquí mismo o desde Configuración › Equipos.
+        </p>
+        <form
+          className="device-gate-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError("");
+            try {
+              const t = terminalIdentity();
+              if (name.trim() && name.trim() !== terminal.name) {
+                await post("/terminals/" + t.id + "/rename", {
+                  name: name.trim(),
+                });
+                localStorage.setItem(
+                  "fitstore-equipment:" + user.branchId,
+                  JSON.stringify({ ...t, name: name.trim() }),
+                );
+              }
+              const approved = await post(
+                "/terminals/" + t.id + "/approve-with-pin",
+                { managerPin: pin },
+              );
+              useTerminal.getState().set(approved);
+              setPin("");
+              toast("Equipo aprobado. Ya puedes operar.");
+            } catch (err: any) {
+              setError(err.message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <label className="field">
+            Nombre del equipo
+            <input
+              value={name}
+              placeholder={terminal.name}
+              maxLength={80}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            PIN del gerente
+            <input
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={6}
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+            />
+          </label>
+          <Button type="submit" disabled={busy || pin.length < 4}>
+            {busy ? "Aprobando…" : "Aprobar este equipo"}
+          </Button>
+        </form>
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
 // La caja abierta del usuario está asignada a otro equipo: sólo se puede vender,
 // cobrar abonos o mover efectivo desde ese equipo, o trasladándola aquí.
 export function cashOnOtherDevice(session: any) {

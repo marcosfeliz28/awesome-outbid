@@ -1,6 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Modal } from "@fitstore/ui";
+import {
+  Camera,
+  CircleAlert,
+  Download,
+  FileSpreadsheet,
+  Minus,
+  PackageMinus,
+  PackagePlus,
+  Plus,
+  Printer,
+  ScanBarcode,
+  Search,
+  Trash2,
+} from "lucide-react";
+import { Badge, Button, Modal } from "@fitstore/ui";
+import { can, formatMoney } from "@fitstore/shared";
 import {
   api,
   download,
@@ -9,23 +24,56 @@ import {
   post,
   syncMerchandise,
   useStore,
+  type Product,
+  type Variant,
 } from "./api";
-import { FormModal, toast } from "./helpers";
+import { FormModal, attrLabel, toast } from "./helpers";
 import { registerTerminal } from "./realtime";
 import { Barcode } from "./Management";
+
 type GoodsLine = {
   variantId?: string;
   name: string;
   qty: number;
-  unitCost: number;
+  unitCost?: number;
   lotId?: string;
   lotNumber?: string;
   expiryDate?: string;
   supplierCode?: string;
   itemId?: string;
   confidence?: number;
+  productId?: string;
+  note?: string;
   quick?: any;
 };
+type CatalogVariant = Variant & { product: Product };
+
+// Valores que acepta el servidor y su nombre para el usuario.
+const EXIT_REASONS = [
+  ["merma", "Merma"],
+  ["dañado", "Dañado"],
+  ["vencido", "Vencido"],
+  ["muestra", "Muestra o probador"],
+  ["uso interno", "Uso interno"],
+  ["devolución a proveedor", "Devolución a proveedor"],
+] as const;
+const reasonLabel = (value: string) =>
+  EXIT_REASONS.find(([v]) => v === value)?.[1] ?? value;
+const when = (value: string | number) =>
+  new Date(value).toLocaleString("es-DO", {
+    timeZone: "America/Santo_Domingo",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+const fold = (s: string) =>
+  s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const variantName = (v: CatalogVariant) => {
+  const attrs = attrLabel(v.attributes ?? {});
+  return attrs === "Única" ? v.product.name : v.product.name + " · " + attrs;
+};
+
 function ContinuousScanner({
   onCode,
   onClose,
@@ -36,12 +84,13 @@ function ContinuousScanner({
   const video = useRef<HTMLVideoElement>(null),
     callback = useRef(onCode);
   callback.current = onCode;
-  const [error, setError] = useState("");
+  const [error, setError] = useState(""),
+    [count, setCount] = useState(0);
   useEffect(() => {
     let stopped = false;
     let control: { stop: () => void } | undefined;
     let last = "",
-      when = 0;
+      at = 0;
     void (async () => {
       try {
         const { BrowserMultiFormatReader } = await import("@zxing/browser");
@@ -52,10 +101,11 @@ function ContinuousScanner({
           (result) => {
             if (!result || stopped) return;
             const code = result.getText();
-            if (code === last && Date.now() - when < 1200) return;
+            if (code === last && Date.now() - at < 1200) return;
             last = code;
-            when = Date.now();
+            at = Date.now();
             callback.current(code);
+            setCount((c) => c + 1);
             navigator.vibrate?.(50);
           },
         );
@@ -75,17 +125,110 @@ function ContinuousScanner({
   return (
     <Modal open title="Escaneo continuo" onClose={onClose}>
       {error ? (
-        <p role="alert">{error}</p>
+        <p className="form-error" role="alert">
+          {error}
+        </p>
       ) : (
         <video ref={video} muted playsInline className="scanner-video" />
       )}
-      <p>
-        Cada lectura suma una unidad. El mismo código se cuenta como máximo una
-        vez cada 1,2 segundos.
+      <p className="modal-intro">
+        Cada lectura suma una unidad ({count} leídas). El mismo código se cuenta
+        como máximo una vez cada 1,2 segundos.
       </p>
+      <Button onClick={onClose}>Listo</Button>
     </Modal>
   );
 }
+
+// Buscador por nombre, SKU, código o atributo (sabor, talla, color…).
+function ProductSearch({
+  variants,
+  onPick,
+  label = "Buscar producto",
+  only,
+  autoFocus = false,
+}: {
+  variants: CatalogVariant[];
+  onPick: (v: CatalogVariant) => void;
+  label?: string;
+  only?: string;
+  autoFocus?: boolean;
+}) {
+  const [text, setText] = useState("");
+  const pool = only ? variants.filter((v) => v.product.id === only) : variants;
+  const results = useMemo(() => {
+    const words = fold(text).split(/\s+/).filter(Boolean);
+    if (!words.length) return only ? pool.slice(0, 12) : [];
+    return pool
+      .filter((v) => {
+        const hay = fold(
+          [
+            v.product.name,
+            v.sku,
+            v.barcode,
+            attrLabel(v.attributes ?? {}),
+          ].join(" "),
+        );
+        return words.every((w) => hay.includes(w));
+      })
+      .slice(0, 8);
+  }, [text, pool, only]);
+  return (
+    <div className="goods-search">
+      <label className="field">
+        {label}
+        <span className="goods-search-input">
+          <Search size={16} aria-hidden="true" />
+          <input
+            value={text}
+            autoFocus={autoFocus}
+            placeholder="Nombre, SKU, sabor, talla o color"
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && results[0]) {
+                e.preventDefault();
+                onPick(results[0]);
+                setText("");
+              }
+            }}
+          />
+        </span>
+      </label>
+      {results.length > 0 && (
+        <ul
+          className="goods-results"
+          role="listbox"
+          aria-label={"Resultados: " + label}
+        >
+          {results.map((v) => (
+            <li key={v.id}>
+              <button
+                type="button"
+                role="option"
+                aria-selected="false"
+                onClick={() => {
+                  onPick(v);
+                  setText("");
+                }}
+              >
+                <span>
+                  <strong>{v.product.name}</strong>
+                  <small>
+                    {attrLabel(v.attributes ?? {})} · {v.sku}
+                  </small>
+                </span>
+                <Badge tone={Number(v.stock) > 0 ? "neutral" : "warning"}>
+                  {Number(v.stock)} en stock
+                </Badge>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 async function cachedReference(key: string, path: string) {
   const user = useStore.getState().user!;
   const cacheKey = "goods:" + user.branchId + ":" + key;
@@ -96,12 +239,18 @@ async function cachedReference(key: string, path: string) {
   }
   return (await localDB.cache.get(cacheKey))?.data ?? [];
 }
+
 export function Merchandise() {
   const { user, online } = useStore();
   const client = useQueryClient();
+  const seesCost = can(user!.permissions, "profit:read");
   const catalog = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
-  const variants = (catalog.data ?? []).flatMap((p) =>
-    p.variants.map((v) => ({ ...v, product: p })),
+  const variants: CatalogVariant[] = useMemo(
+    () =>
+      (catalog.data ?? []).flatMap((p) =>
+        p.variants.map((v) => ({ ...v, product: p })),
+      ),
+    [catalog.data],
   );
   const categories = useQuery({
     queryKey: ["goods-categories"],
@@ -137,6 +286,7 @@ export function Merchandise() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [importing, setImporting] = useState(false),
+    [importError, setImportError] = useState(""),
     [draft, setDraft] = useState<any>(null),
     [result, setResult] = useState<any>(null),
     [labels, setLabels] = useState(false),
@@ -185,15 +335,13 @@ export function Merchandise() {
     setItems((old) =>
       old.map((l, i) => (i === index ? { ...l, ...change } : l)),
     );
-  const scan = (value: string) => {
-    const v = variants.find((v) => v.barcode === value || v.sku === value);
-    if (!v) {
-      setCamera(false);
-      if (direction === "entry") setUnknown(value);
-      else
-        setError("Código desconocido. Una salida requiere producto existente.");
-      return;
-    }
+  // Quien no ve costos debe escribirlo: nunca se inventa un costo.
+  const knownCost = (v: CatalogVariant) =>
+    v.costAvg !== undefined && Number(v.costAvg) > 0
+      ? Number(v.costAvg)
+      : undefined;
+  const add = (v: CatalogVariant) => {
+    setResult(null);
     setItems((old) => {
       const at = old.findIndex(
         (l) => l.variantId === v.id && !l.lotId && !l.lotNumber,
@@ -203,30 +351,78 @@ export function Merchandise() {
             ...old,
             {
               variantId: v.id,
-              name: v.product.name,
+              name: variantName(v),
               qty: 1,
-              unitCost: Number(v.costAvg ?? 1),
+              unitCost: direction === "entry" ? knownCost(v) : undefined,
             },
           ]
         : old.map((l, i) => (i === at ? { ...l, qty: l.qty + 1 } : l));
     });
-    setCode("");
     navigator.vibrate?.(50);
   };
+  const scan = (value: string) => {
+    const v = variants.find((v) => v.barcode === value || v.sku === value);
+    if (!v) {
+      setCamera(false);
+      if (direction === "entry") setUnknown(value);
+      else
+        setError("Código desconocido. Una salida requiere producto existente.");
+      return;
+    }
+    setError("");
+    add(v);
+    setCode("");
+  };
+  const lineTotal = (l: GoodsLine) => l.qty * (l.unitCost ?? 0);
   const subtotal =
-    items.reduce((s, l) => s + l.qty * l.unitCost, 0) + freight + taxes;
+    items.reduce((s, l) => s + lineTotal(l), 0) + freight + taxes;
+  const units = items.reduce((s, l) => s + (Number(l.qty) || 0), 0);
+  const unresolved = items.filter((l) => !l.variantId && !l.quick).length;
+  const missingCost =
+    direction === "entry" &&
+    items.some((l) => !(Number(l.unitCost) > 0) && !l.quick);
   const mismatch = !!total && Math.abs(Number(total) - subtotal) > 0.01;
+  const resetForm = () => {
+    setItems([]);
+    setDraft(null);
+    setOrder("");
+    setTotal("");
+    setFreight(0);
+    setTaxes(0);
+    setMismatchAccepted(false);
+    operationId.current = crypto.randomUUID();
+  };
+  const switchTo = (next: "entry" | "exit") => {
+    if (next === direction) return;
+    if (
+      items.length &&
+      !window.confirm("¿Descartar las líneas al cambiar de modo?")
+    )
+      return;
+    resetForm();
+    setResult(null);
+    setError("");
+    setDirection(next);
+  };
   const confirm = async () => {
     if (!items.length || busy) return;
-    if (items.some((l) => !l.variantId && !l.quick)) {
+    if (unresolved) {
       setError("Elige o crea todos los productos antes de confirmar.");
+      return;
+    }
+    if (missingCost) {
+      setError("Escribe el costo unitario de cada producto.");
+      return;
+    }
+    if (items.some((l) => !(Number(l.qty) > 0))) {
+      setError("Cada línea necesita una cantidad mayor que 0.");
       return;
     }
     if (
       !window.confirm(
         direction === "entry"
-          ? "¿Confirmar entrada de mercancía?"
-          : "¿Confirmar salida de mercancía?",
+          ? `¿Confirmar entrada de ${units} unidad(es)?`
+          : `¿Confirmar salida de ${units} unidad(es) por ${reasonLabel(reason).toLowerCase()}?`,
       )
     )
       return;
@@ -243,16 +439,22 @@ export function Merchandise() {
       taxes,
       invoiceTotal: total ? Number(total) : undefined,
       acknowledgeMismatch: mismatchAccepted,
-      items: items.map(({ name, confidence, expiryDate, ...l }) => {
-        void name;
-        void confidence;
-        return {
-          ...l,
-          expiryDate: expiryDate
-            ? new Date(expiryDate + "T12:00:00Z").toISOString()
-            : undefined,
-        };
-      }),
+      items: items.map(
+        ({ name, confidence, expiryDate, productId, note, unitCost, ...l }) => {
+          void name;
+          void confidence;
+          void productId;
+          void note;
+          return {
+            ...l,
+            // El servidor exige costo positivo también en salidas (no se usa).
+            unitCost: Number(unitCost) > 0 ? Number(unitCost) : 1,
+            expiryDate: expiryDate
+              ? new Date(expiryDate + "T12:00:00Z").toISOString()
+              : undefined,
+          };
+        },
+      ),
     };
     try {
       await localDB.merchandise.put({
@@ -267,21 +469,14 @@ export function Merchandise() {
         await registerTerminal();
         const saved = await post("/merchandise/operations", input);
         await localDB.merchandise.delete(input.id);
-        setResult(saved);
+        setResult({ ...saved, direction, units });
         await client.invalidateQueries();
         toast("Mercancía registrada.");
       } else {
         toast("Guardado en cola. Se sincronizará al reconectar.");
         setResult(null);
       }
-      setItems([]);
-      setDraft(null);
-      setOrder("");
-      setTotal("");
-      setFreight(0);
-      setTaxes(0);
-      setMismatchAccepted(false);
-      operationId.current = crypto.randomUUID();
+      resetForm();
     } catch (e: any) {
       setError(e.message);
       await localDB.merchandise.update(input.id, {
@@ -293,180 +488,270 @@ export function Merchandise() {
       setBusy(false);
     }
   };
+  const extract = async () => {
+    if (!file) return;
+    setBusy(true);
+    setImportError("");
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      if (supplierId) form.set("supplierId", supplierId);
+      form.set("mapping", JSON.stringify(mapping));
+      const d = await api("/merchandise/import", {
+        method: "POST",
+        body: form,
+      });
+      setDraft(d);
+      setResult(null);
+      setItems(
+        d.lines.map((l: any) => ({
+          variantId: l.variantId ?? undefined,
+          productId: l.productId ?? undefined,
+          note: l.note,
+          name: l.description,
+          qty: l.qty,
+          unitCost: l.unitCost,
+          supplierCode: l.code || undefined,
+          lotNumber: l.lotNumber ?? undefined,
+          expiryDate: l.expiryDate?.slice(0, 10),
+          confidence: l.confidence,
+        })),
+      );
+      setTotal(d.total != null ? String(d.total) : "");
+      setImporting(false);
+      setFile(null);
+    } catch (e: any) {
+      setImportError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const recent = (history.data ?? []).filter((h) => h.result?.receiptId);
   return (
     <div className="merchandise">
-      <h1>Mercancía</h1>
-      <p>Entradas y salidas con revisión antes de confirmar.</p>
-      <div className="tabs">
-        <Button
-          variant={direction === "entry" ? "primary" : "secondary"}
-          onClick={() => {
-            if (
-              items.length &&
-              !window.confirm("¿Descartar las líneas al cambiar de modo?")
-            )
-              return;
-            setItems([]);
-            setDraft(null);
-            setDirection("entry");
-          }}
+      <header className="goods-header">
+        <div>
+          <h1>Mercancía</h1>
+          <p>Entradas y salidas con revisión antes de confirmar.</p>
+        </div>
+        <div
+          className="goods-mode"
+          role="tablist"
+          aria-label="Tipo de movimiento"
         >
-          ENTRADA
-        </Button>
-        <Button
-          variant={direction === "exit" ? "primary" : "secondary"}
-          onClick={() => {
-            if (
-              items.length &&
-              !window.confirm("¿Descartar las líneas al cambiar de modo?")
-            )
-              return;
-            setItems([]);
-            setDraft(null);
-            setDirection("exit");
-            setOrder("");
-          }}
-        >
-          SALIDA
-        </Button>
-      </div>
-      {direction === "entry" ? (
-        <>
+          <button
+            role="tab"
+            aria-selected={direction === "entry"}
+            className={direction === "entry" ? "active" : ""}
+            onClick={() => switchTo("entry")}
+          >
+            <PackagePlus size={18} aria-hidden="true" /> ENTRADA
+          </button>
+          <button
+            role="tab"
+            aria-selected={direction === "exit"}
+            className={direction === "exit" ? "active exit" : ""}
+            onClick={() => switchTo("exit")}
+          >
+            <PackageMinus size={18} aria-hidden="true" /> SALIDA
+          </button>
+        </div>
+      </header>
+
+      {result && (
+        <div className="goods-done" role="status">
+          <div>
+            <strong>
+              {result.direction === "exit" ? "Salida" : "Entrada"} registrada
+            </strong>
+            <span>
+              {result.units} unidad(es) · {result.variantIds?.length ?? 0}{" "}
+              producto(s)
+              {result.direction === "entry" && seesCost
+                ? " · " + formatMoney(result.total)
+                : ""}
+            </span>
+          </div>
+          {result.receiptId && (
+            <Button variant="secondary" onClick={() => setLabels(true)}>
+              <Printer size={16} aria-hidden="true" /> Imprimir etiquetas de lo
+              recibido
+            </Button>
+          )}
+        </div>
+      )}
+
+      <section className="panel goods-card">
+        {direction === "entry" ? (
+          <div className="goods-grid">
+            <label className="field">
+              Proveedor (opcional)
+              <select
+                disabled={!!draft}
+                value={supplierId}
+                onChange={(e) => {
+                  setSupplier(e.target.value);
+                  setOrder("");
+                }}
+              >
+                <option value="">Sin proveedor</option>
+                {suppliers.data?.map((s: any) => (
+                  <option value={s.id} key={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {online && (
+              <label className="field">
+                Orden de compra (opcional)
+                <select
+                  value={orderId}
+                  disabled={!supplierId || !!draft}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setOrder(id);
+                    const o = orders.data?.find((o) => o.id === id);
+                    setItems(
+                      o
+                        ? o.items
+                            .filter(
+                              (i: any) => Number(i.qty) > Number(i.receivedQty),
+                            )
+                            .map((i: any) => {
+                              const v = variants.find(
+                                (v) => v.id === i.variantId,
+                              );
+                              return {
+                                variantId: i.variantId,
+                                itemId: i.id,
+                                name: v ? variantName(v) : i.variantId,
+                                qty: Number(i.qty) - Number(i.receivedQty),
+                                unitCost:
+                                  Number(i.unitCost) > 0
+                                    ? Number(i.unitCost)
+                                    : undefined,
+                              };
+                            })
+                        : [],
+                    );
+                  }}
+                >
+                  <option value="">
+                    {supplierId ? "Sin orden" : "Elige primero el proveedor"}
+                  </option>
+                  {orders.data
+                    ?.filter(
+                      (o) =>
+                        o.supplierId === supplierId && o.status !== "received",
+                    )
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.number}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
+          </div>
+        ) : (
           <label className="field">
-            Proveedor (opcional)
-            <select
-              disabled={!!draft}
-              value={supplierId}
-              onChange={(e) => {
-                setSupplier(e.target.value);
-                setOrder("");
-              }}
-            >
-              <option value="">Sin proveedor</option>
-              {suppliers.data?.map((s: any) => (
-                <option value={s.id} key={s.id}>
-                  {s.name}
+            Motivo de la salida
+            <select value={reason} onChange={(e) => setReason(e.target.value)}>
+              {EXIT_REASONS.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
                 </option>
               ))}
             </select>
           </label>
-          {online && (
-            <label className="field">
-              Orden de compra (opcional)
-              <select
-                value={orderId}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setOrder(id);
-                  const o = orders.data?.find((o) => o.id === id);
-                  if (o)
-                    setItems(
-                      o.items
-                        .filter(
-                          (i: any) => Number(i.qty) > Number(i.receivedQty),
-                        )
-                        .map((i: any) => ({
-                          variantId: i.variantId,
-                          itemId: i.id,
-                          name:
-                            variants.find((v) => v.id === i.variantId)?.product
-                              .name ?? i.variantId,
-                          qty: Number(i.qty) - Number(i.receivedQty),
-                          unitCost: Number(i.unitCost ?? 1),
-                        })),
-                    );
-                }}
-              >
-                <option value="">Sin orden</option>
-                {orders.data
-                  ?.filter(
-                    (o) =>
-                      o.supplierId === supplierId && o.status !== "received",
-                  )
-                  .map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.number}
-                    </option>
-                  ))}
-              </select>
-            </label>
-          )}
-          <Button
-            variant="secondary"
+        )}
+        {direction === "entry" && !draft && !orderId && (
+          <button
+            type="button"
+            className="goods-import"
             disabled={!online || items.length > 0}
-            onClick={() => setImporting(true)}
+            onClick={() => {
+              setImportError("");
+              setImporting(true);
+            }}
           >
-            Importar factura del proveedor
-          </Button>
-        </>
-      ) : (
-        <label className="field">
-          Motivo
-          <select value={reason} onChange={(e) => setReason(e.target.value)}>
-            {[
-              "merma",
-              "dañado",
-              "vencido",
-              "muestra",
-              "uso interno",
-              "devolución a proveedor",
-            ].map((r) => (
-              <option key={r}>{r}</option>
-            ))}
-          </select>
-        </label>
-      )}
+            <FileSpreadsheet size={22} aria-hidden="true" />
+            <span>
+              <strong>Importar factura del proveedor</strong>
+              <small>
+                {!online
+                  ? "Necesita conexión a internet."
+                  : items.length
+                    ? "Disponible con la lista vacía."
+                    : options.data?.aiEnabled
+                      ? "Excel, CSV, foto o PDF de la factura."
+                      : "Excel o CSV de la factura."}
+              </small>
+            </span>
+          </button>
+        )}
+      </section>
+
       {!orderId && (
-        <>
+        <section className="panel goods-card">
           <form
+            className="goods-scan"
             onSubmit={(e) => {
               e.preventDefault();
-              scan(code.trim());
+              if (code.trim()) scan(code.trim());
             }}
           >
             <label className="field">
               Código de barras o SKU
-              <input
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-              />
+              <span className="goods-search-input">
+                <ScanBarcode size={16} aria-hidden="true" />
+                <input
+                  value={code}
+                  inputMode="text"
+                  autoComplete="off"
+                  onChange={(e) => setCode(e.target.value)}
+                  required
+                />
+              </span>
             </label>
-            <Button type="submit">Sumar una unidad</Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setCamera(true)}
-            >
-              Escanear continuamente
-            </Button>
+            <div className="goods-scan-actions">
+              <Button type="submit">Sumar una unidad</Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setCamera(true)}
+              >
+                <Camera size={16} aria-hidden="true" /> Escanear con la cámara
+              </Button>
+            </div>
           </form>
-          <label className="field">
-            Agregar producto
-            <select
-              value=""
-              onChange={(e) => {
-                const v = variants.find((v) => v.id === e.target.value);
-                if (v) scan(v.barcode);
-              }}
-            >
-              <option value="">Elegir…</option>
-              {variants.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.product.name} · {v.sku}
-                </option>
-              ))}
-            </select>
-          </label>
-        </>
+          <ProductSearch variants={variants} onPick={add} />
+        </section>
       )}
+
       {draft && (
-        <div className="panel">
-          <h2>REVISIÓN de factura</h2>
-          <p>
-            Nada entra al inventario hasta que confirmes. Comprueba cada
-            producto sugerido, cantidad y costo.
-          </p>
+        <section className="goods-review">
+          <div>
+            <h2>Revisión de factura</h2>
+            <p>
+              Nada entra al inventario hasta que confirmes. Comprueba cada
+              producto, cantidad y costo.
+            </p>
+            <div className="goods-review-stats">
+              <Badge tone="violet">{items.length} línea(s)</Badge>
+              {unresolved > 0 ? (
+                <Badge tone="warning">{unresolved} por resolver</Badge>
+              ) : (
+                <Badge tone="success">Todas emparejadas</Badge>
+              )}
+              {draft.skipped > 0 && (
+                <Badge tone="warning">
+                  {draft.skipped} línea(s) ilegible(s): agrégalas a mano
+                </Badge>
+              )}
+            </div>
+          </div>
           {draft.attachmentId && (
             <Button
               variant="secondary"
@@ -477,120 +762,254 @@ export function Merchandise() {
                 )
               }
             >
-              Descargar comprobante
+              <Download size={16} aria-hidden="true" /> Descargar comprobante
             </Button>
           )}
+        </section>
+      )}
+
+      {items.length === 0 && !draft && (
+        <div className="goods-empty">
+          <ScanBarcode size={28} aria-hidden="true" />
+          <p>
+            {direction === "entry"
+              ? "Escanea o busca los productos que llegaron."
+              : "Escanea o busca los productos que salen del inventario."}
+          </p>
         </div>
       )}
-      {items.map((l, index) => {
-        const v = variants.find((v) => v.id === l.variantId);
-        const category = l.quick
-          ? categories.data?.find((c: any) => c.id === l.quick.categoryId)
-          : categories.data?.find((c: any) => c.id === v?.product.categoryId);
-        return (
-          <div
-            className={`panel goods-line ${!l.variantId && !l.quick ? "unmatched" : ""}`}
-            key={index}
-          >
-            <h3>{l.name}</h3>
-            {l.confidence !== undefined && (
-              <p>
-                {l.variantId
-                  ? "Producto sugerido"
-                  : "Sin pareja · elige o crea un producto"}{" "}
-                · Confianza {Math.round(l.confidence * 100)}%
-              </p>
-            )}
-            {draft && (
-              <label className="field">
-                Producto
-                <select
-                  value={l.variantId ?? ""}
-                  onChange={(e) => {
-                    const v = variants.find((v) => v.id === e.target.value);
-                    patch(index, {
-                      variantId: e.target.value || undefined,
-                      quick: undefined,
-                      name: v?.product.name ?? l.name,
-                    });
-                  }}
-                >
-                  <option value="">Sin pareja</option>
-                  {variants.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.product.name} · {v.sku}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {!l.variantId && !l.quick && (
-              <Button
-                variant="secondary"
-                onClick={() => setUnknown("review:" + index)}
-              >
-                Crear producto rápido
-              </Button>
-            )}
-            <div className="goods-fields">
-              <label className="field">
-                Cantidad
-                <input
-                  type="number"
-                  min="0.001"
-                  step="0.001"
-                  value={l.qty}
-                  onChange={(e) =>
-                    patch(index, { qty: Number(e.target.value) })
+
+      <div className="goods-lines">
+        {items.map((l, index) => {
+          const v = variants.find((v) => v.id === l.variantId);
+          const category = l.quick
+            ? categories.data?.find((c: any) => c.id === l.quick.categoryId)
+            : categories.data?.find((c: any) => c.id === v?.product.categoryId);
+          const unmatched = !l.variantId && !l.quick;
+          const previous = v ? knownCost(v) : undefined;
+          const price = v ? Number(v.price) : 0;
+          const margin =
+            seesCost && price > 0 && Number(l.unitCost) > 0
+              ? ((price - Number(l.unitCost)) / price) * 100
+              : undefined;
+          return (
+            <article
+              className={`panel goods-line ${unmatched ? "unmatched" : ""}`}
+              key={index}
+            >
+              <div className="goods-line-head">
+                <div>
+                  <h3>
+                    {v ? variantName(v) : l.quick ? l.quick.name : l.name}
+                  </h3>
+                  <small>
+                    {v
+                      ? `${v.sku} · ${Number(v.stock)} en stock`
+                      : l.quick
+                        ? "Producto nuevo · se crea al confirmar"
+                        : l.name}
+                    {draft && v && l.name !== variantName(v)
+                      ? ` · Factura: «${l.name}»`
+                      : ""}
+                  </small>
+                </div>
+                <button
+                  className="icon-button"
+                  aria-label="Quitar línea"
+                  title="Quitar línea"
+                  onClick={() =>
+                    setItems((old) => old.filter((_, i) => i !== index))
                   }
-                />
-              </label>
-              {direction === "entry" && (
-                <label className="field">
-                  Costo unitario
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={l.unitCost}
-                    onChange={(e) =>
-                      patch(index, { unitCost: Number(e.target.value) })
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+              {l.confidence !== undefined && (
+                <p className="goods-match">
+                  {unmatched ? (
+                    <>
+                      <CircleAlert size={15} aria-hidden="true" />
+                      {l.note ?? "Sin pareja · elige o crea un producto"}
+                    </>
+                  ) : (
+                    <>
+                      Producto sugerido · Confianza{" "}
+                      {Math.round(l.confidence * 100)}%
+                    </>
+                  )}
+                </p>
+              )}
+              {draft && unmatched && (
+                <>
+                  {l.productId ? (
+                    <label className="field">
+                      Variante
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const v = variants.find(
+                            (v) => v.id === e.target.value,
+                          );
+                          if (v)
+                            patch(index, {
+                              variantId: v.id,
+                              quick: undefined,
+                            });
+                        }}
+                      >
+                        <option value="">
+                          Elegir sabor, tamaño, talla o color…
+                        </option>
+                        {variants
+                          .filter((v) => v.product.id === l.productId)
+                          .map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {variantName(v)} · {Number(v.stock)} en stock
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                  ) : null}
+                  <ProductSearch
+                    variants={variants}
+                    label={
+                      l.productId ? "O busca otro producto" : "Buscar producto"
+                    }
+                    onPick={(v) =>
+                      patch(index, { variantId: v.id, quick: undefined })
                     }
                   />
-                </label>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setUnknown("review:" + index)}
+                  >
+                    <Plus size={16} aria-hidden="true" /> Crear producto rápido
+                  </Button>
+                </>
               )}
-            </div>
-            {direction === "entry" ? (
-              <>
-                {(category?.requiresLot || l.lotNumber !== undefined) && (
-                  <label className="field">
-                    Lote
+              {draft && !unmatched && !l.quick && (
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() =>
+                    patch(index, {
+                      variantId: undefined,
+                      productId: v?.product.id,
+                      note: "Elige el producto correcto.",
+                      confidence: 0,
+                    })
+                  }
+                >
+                  Cambiar producto
+                </button>
+              )}
+              <div className="goods-fields">
+                <div className="field">
+                  {/* La etiqueta apunta al campo, no a los botones +/−. */}
+                  <label htmlFor={"goods-qty-" + index}>Cantidad</label>
+                  <span className="goods-qty">
+                    <button
+                      type="button"
+                      aria-label="Restar una unidad"
+                      onClick={() =>
+                        patch(index, { qty: Math.max(1, Number(l.qty) - 1) })
+                      }
+                    >
+                      <Minus size={16} />
+                    </button>
                     <input
-                      value={l.lotNumber ?? ""}
+                      id={"goods-qty-" + index}
+                      type="number"
+                      min="0.001"
+                      step="0.001"
+                      inputMode="decimal"
+                      value={l.qty}
                       onChange={(e) =>
-                        patch(index, { lotNumber: e.target.value || undefined })
+                        patch(index, { qty: Number(e.target.value) })
                       }
                     />
-                  </label>
-                )}
-                {(category?.requiresExpiry || l.expiryDate !== undefined) && (
+                    <button
+                      type="button"
+                      aria-label="Sumar otra unidad"
+                      onClick={() => patch(index, { qty: Number(l.qty) + 1 })}
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </span>
+                </div>
+                {direction === "entry" && (
                   <label className="field">
-                    Vencimiento
+                    Costo unitario
                     <input
-                      type="date"
-                      value={l.expiryDate ?? ""}
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      inputMode="decimal"
+                      placeholder="Escribe el costo"
+                      aria-invalid={!(Number(l.unitCost) > 0) && !l.quick}
+                      value={l.unitCost ?? ""}
                       onChange={(e) =>
                         patch(index, {
-                          expiryDate: e.target.value || undefined,
+                          unitCost:
+                            e.target.value === ""
+                              ? undefined
+                              : Number(e.target.value),
                         })
                       }
                     />
                   </label>
                 )}
-              </>
-            ) : (
-              <>
-                {(category?.requiresLot || v?.lots?.length) && (
+              </div>
+              {direction === "entry" && seesCost && previous !== undefined && (
+                <p className="goods-cost-note">
+                  Costo promedio actual {formatMoney(previous)}
+                  {Number(l.unitCost) > 0 &&
+                    Math.abs(Number(l.unitCost) - previous) / previous >
+                      0.005 &&
+                    ` · ${Number(l.unitCost) > previous ? "sube" : "baja"} ${Math.abs(
+                      ((Number(l.unitCost) - previous) / previous) * 100,
+                    ).toFixed(0)} %`}
+                  {margin !== undefined && margin < 15 && (
+                    <span className="goods-warning">
+                      {" "}
+                      · Margen con este costo: {margin.toFixed(0)} %. Revisa el
+                      precio de venta.
+                    </span>
+                  )}
+                </p>
+              )}
+              {direction === "entry" ? (
+                <div className="goods-fields">
+                  {(category?.requiresLot || l.lotNumber !== undefined) && (
+                    <label className="field">
+                      Lote
+                      <input
+                        value={l.lotNumber ?? ""}
+                        onChange={(e) =>
+                          patch(index, {
+                            lotNumber: e.target.value || undefined,
+                          })
+                        }
+                      />
+                    </label>
+                  )}
+                  {(category?.requiresExpiry || l.expiryDate !== undefined) && (
+                    <label className="field">
+                      Vencimiento
+                      <input
+                        type="date"
+                        value={l.expiryDate ?? ""}
+                        onChange={(e) =>
+                          patch(index, {
+                            expiryDate: e.target.value || undefined,
+                          })
+                        }
+                      />
+                    </label>
+                  )}
+                </div>
+              ) : (
+                (category?.requiresLot || (v?.lots?.length ?? 0) > 0) && (
                   <label className="field">
                     Lote de salida
                     <select
@@ -604,35 +1023,35 @@ export function Merchandise() {
                         ?.filter((lot: any) => Number(lot.qty) > 0)
                         .map((lot: any) => (
                           <option value={lot.id} key={lot.id}>
-                            {lot.lotNumber} · {lot.qty} ·{" "}
-                            {lot.expiryDate?.slice(0, 10)}
+                            {lot.lotNumber} · {Number(lot.qty)} u.
+                            {lot.expiryDate
+                              ? " · vence " +
+                                new Date(lot.expiryDate).toLocaleDateString(
+                                  "es-DO",
+                                  { timeZone: "America/Santo_Domingo" },
+                                )
+                              : ""}
                           </option>
                         ))}
                     </select>
                   </label>
-                )}
-              </>
-            )}
-            <Button
-              variant="secondary"
-              onClick={() =>
-                setItems((old) => old.filter((_, i) => i !== index))
-              }
-            >
-              Quitar línea
-            </Button>
-          </div>
-        );
-      })}
+                )
+              )}
+            </article>
+          );
+        })}
+      </div>
+
       {direction === "entry" && items.length > 0 && (
-        <div className="panel">
-          <div className="goods-fields">
+        <section className="panel goods-card">
+          <div className="goods-grid">
             <label className="field">
               Flete
               <input
                 type="number"
                 min="0"
                 step="0.01"
+                inputMode="decimal"
                 value={freight}
                 onChange={(e) => setFreight(Number(e.target.value))}
               />
@@ -643,32 +1062,35 @@ export function Merchandise() {
                 type="number"
                 min="0"
                 step="0.01"
+                inputMode="decimal"
                 value={taxes}
                 onChange={(e) => setTaxes(Number(e.target.value))}
               />
             </label>
+            <label className="field">
+              Total de la factura
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={total}
+                onChange={(e) => {
+                  setTotal(e.target.value);
+                  setMismatchAccepted(false);
+                }}
+              />
+            </label>
+            <div className="goods-sum">
+              <span>Total calculado</span>
+              <strong>{formatMoney(subtotal)}</strong>
+            </div>
           </div>
-          <label className="field">
-            Total de la factura
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={total}
-              onChange={(e) => {
-                setTotal(e.target.value);
-                setMismatchAccepted(false);
-              }}
-            />
-          </label>
-          <p>Total calculado: RD$ {subtotal.toFixed(2)}</p>
           {mismatch && (
-            <>
-              <p role="alert" className="form-error">
-                El total no coincide con la factura. Revisa líneas, flete e
-                impuestos.
-              </p>
-              <label>
+            <div className="form-error" role="alert">
+              El total no coincide con la factura ({formatMoney(Number(total))}
+              ). Revisa líneas, flete e impuestos.
+              <label className="goods-check">
                 <input
                   type="checkbox"
                   checked={mismatchAccepted}
@@ -676,124 +1098,153 @@ export function Merchandise() {
                 />{" "}
                 Confirmo la diferencia después de revisar
               </label>
-            </>
+            </div>
           )}
-        </div>
+        </section>
       )}
+
       {error && (
         <p className="form-error" role="alert">
           {error}
         </p>
       )}
-      <Button
-        className="goods-confirm"
-        disabled={busy || !items.length || (mismatch && !mismatchAccepted)}
-        onClick={confirm}
-      >
-        {busy
-          ? "Registrando…"
-          : direction === "entry"
-            ? "Confirmar entrada"
-            : "Confirmar salida"}
-      </Button>
-      {result?.receiptId && (
-        <Button variant="secondary" onClick={() => setLabels(true)}>
-          Imprimir etiquetas de lo recibido
+
+      <div className={`goods-actions ${items.length ? "has-items" : ""}`}>
+        <span className="goods-actions-summary">
+          {items.length
+            ? `${items.length} producto(s) · ${units} unidad(es)` +
+              (direction === "entry" && !missingCost
+                ? " · " + formatMoney(subtotal)
+                : "")
+            : "Sin productos"}
+          {unresolved > 0 && ` · ${unresolved} por resolver`}
+          {missingCost && " · faltan costos"}
+        </span>
+        <Button
+          className={`goods-confirm ${direction === "exit" ? "exit" : ""}`}
+          disabled={busy || !items.length || (mismatch && !mismatchAccepted)}
+          onClick={confirm}
+        >
+          {busy
+            ? "Registrando…"
+            : direction === "entry"
+              ? "Confirmar entrada"
+              : "Confirmar salida"}
         </Button>
-      )}
-      {history.data?.some((h) => h.result.receiptId) && (
-        <div className="panel">
-          <h2>Entradas confirmadas</h2>
-          {history.data
-            .filter((h) => h.result.receiptId)
-            .map((h) => (
-              <p key={h.id}>
-                {new Date(h.createdAt).toLocaleString("es-DO")}{" "}
+      </div>
+
+      {recent.length > 0 && (
+        <section className="panel goods-card">
+          <h2>Entradas recientes</h2>
+          <ul className="goods-history">
+            {recent.map((h) => (
+              <li key={h.id}>
+                <span>
+                  <strong>{when(h.createdAt)}</strong>
+                  <small>
+                    {h.result.variantIds?.length ?? 0} producto(s)
+                    {seesCost && h.result.total !== undefined
+                      ? " · " + formatMoney(h.result.total)
+                      : ""}
+                  </small>
+                </span>
                 <Button
                   variant="secondary"
                   onClick={() => {
-                    setResult(h.result);
+                    setResult({ ...h.result, direction: "entry" });
                     setLabels(true);
                   }}
                 >
-                  Imprimir etiquetas de lo recibido
+                  <Printer size={16} aria-hidden="true" /> Etiquetas
                 </Button>
-              </p>
+              </li>
             ))}
-        </div>
+          </ul>
+        </section>
       )}
+
       {queue.length > 0 && (
-        <div className="panel">
-          <h2>Cola de este equipo</h2>
-          {queue.map((row) => (
-            <div key={row.id}>
-              <p>
-                {row.status === "conflict" ? "Requiere revisión" : "Pendiente"}{" "}
-                · {row.input.direction === "entry" ? "Entrada" : "Salida"} ·{" "}
-                {row.message ?? new Date(row.createdAt).toLocaleString()}
-              </p>
-              {row.status === "conflict" && (
-                <>
-                  <Button
-                    variant="secondary"
-                    disabled={!online}
-                    onClick={async () => {
-                      await localDB.merchandise.update(row.id, {
-                        status: "pending",
-                        message: undefined,
-                      });
-                      await registerTerminal();
-                      await syncMerchandise();
-                      await client.invalidateQueries();
-                    }}
-                  >
-                    Reintentar
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      if (
-                        !window.confirm(
-                          "¿Cargar esta operación para corregirla? La cola conservará la original hasta confirmar la corrección.",
+        <section className="panel goods-card">
+          <h2>Pendientes de este equipo</h2>
+          <ul className="goods-history">
+            {queue.map((row) => (
+              <li key={row.id}>
+                <span>
+                  <strong>
+                    {row.status === "conflict"
+                      ? "Requiere revisión"
+                      : "Pendiente"}{" "}
+                    · {row.input.direction === "entry" ? "Entrada" : "Salida"}
+                  </strong>
+                  <small>{row.message ?? when(row.createdAt)}</small>
+                </span>
+                {row.status === "conflict" && (
+                  <span className="goods-row-actions">
+                    <Button
+                      variant="secondary"
+                      disabled={!online}
+                      onClick={async () => {
+                        await localDB.merchandise.update(row.id, {
+                          status: "pending",
+                          message: undefined,
+                        });
+                        await registerTerminal();
+                        await syncMerchandise();
+                        await client.invalidateQueries();
+                      }}
+                    >
+                      Reintentar
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            "¿Cargar esta operación para corregirla? La cola conservará la original hasta confirmar la corrección.",
+                          )
                         )
-                      )
-                        return;
-                      setItems(
-                        row.input.items.map((l: any) => ({
-                          ...l,
-                          name:
-                            variants.find((v) => v.id === l.variantId)?.product
-                              .name ??
-                            l.quick?.name ??
-                            l.variantId,
-                          expiryDate: l.expiryDate?.slice(0, 10),
-                        })),
-                      );
-                      setDraft(
-                        row.input.draftId ? { id: row.input.draftId } : null,
-                      );
-                      setDirection(row.input.direction);
-                      setSupplier(row.input.supplierId ?? "");
-                      setOrder(row.input.orderId ?? "");
-                      setReason(row.input.reason ?? "merma");
-                      setFreight(row.input.freight);
-                      setTaxes(row.input.taxes);
-                      setTotal(
-                        row.input.invoiceTotal != null
-                          ? String(row.input.invoiceTotal)
-                          : "",
-                      );
-                      operationId.current = row.id;
-                    }}
-                  >
-                    Revisar
-                  </Button>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
+                          return;
+                        setItems(
+                          row.input.items.map((l: any) => {
+                            const v = variants.find(
+                              (v) => v.id === l.variantId,
+                            );
+                            return {
+                              ...l,
+                              name: v
+                                ? variantName(v)
+                                : (l.quick?.name ?? l.variantId),
+                              expiryDate: l.expiryDate?.slice(0, 10),
+                            };
+                          }),
+                        );
+                        setDraft(
+                          row.input.draftId ? { id: row.input.draftId } : null,
+                        );
+                        setDirection(row.input.direction);
+                        setSupplier(row.input.supplierId ?? "");
+                        setOrder(row.input.orderId ?? "");
+                        setReason(row.input.reason ?? "merma");
+                        setFreight(row.input.freight);
+                        setTaxes(row.input.taxes);
+                        setTotal(
+                          row.input.invoiceTotal != null
+                            ? String(row.input.invoiceTotal)
+                            : "",
+                        );
+                        operationId.current = row.id;
+                      }}
+                    >
+                      Revisar
+                    </Button>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
+
       {camera && (
         <ContinuousScanner onCode={scan} onClose={() => setCamera(false)} />
       )}
@@ -824,7 +1275,7 @@ export function Merchandise() {
             },
             {
               key: "price",
-              label: "Precio",
+              label: "Precio de venta",
               type: "number",
               required: true,
               min: 0.01,
@@ -840,7 +1291,7 @@ export function Merchandise() {
             },
             {
               key: "variant",
-              label: "Variante",
+              label: "Variante (sabor, talla, color…)",
               required: true,
               initial: "Única",
             },
@@ -868,9 +1319,12 @@ export function Merchandise() {
         title="Importar factura del proveedor"
         onClose={() => setImporting(false)}
       >
-        <p>
-          Excel/CSV: indica los nombres exactos de las columnas. El mapeo se
-          recuerda por proveedor.
+        <p className="modal-intro">
+          Sube el Excel o CSV que te envió el proveedor
+          {options.data?.aiEnabled ? ", o una foto/PDF de la factura" : ""}.
+          Reconocemos columnas como Código, Descripción, Cantidad y Costo o
+          Precio; si tu archivo usa otros nombres, escríbelos abajo. Se
+          recuerdan por proveedor.
         </p>
         <label className="field">
           Archivo
@@ -881,70 +1335,45 @@ export function Merchandise() {
                 ? ".xlsx,.csv,.pdf,image/jpeg,image/png,image/webp"
                 : ".xlsx,.csv"
             }
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              setFile(e.target.files?.[0] ?? null);
+              setImportError("");
+            }}
           />
         </label>
-        {Object.entries(mapping).map(([k, v]) => (
-          <label className="field" key={k}>
-            {
+        <div className="goods-grid">
+          {Object.entries(mapping).map(([k, v]) => (
+            <label className="field" key={k}>
               {
-                code: "Código",
-                description: "Descripción",
-                qty: "Cantidad",
-                unitCost: "Costo unitario",
-              }[k]
-            }
-            <input
-              value={v}
-              onChange={(e) =>
-                setMapping((m) => ({ ...m, [k]: e.target.value }))
+                {
+                  code: "Columna de código",
+                  description: "Columna de descripción",
+                  qty: "Columna de cantidad",
+                  unitCost: "Columna de costo",
+                }[k]
               }
-            />
-          </label>
-        ))}
+              <input
+                value={v}
+                onChange={(e) =>
+                  setMapping((m) => ({ ...m, [k]: e.target.value }))
+                }
+              />
+            </label>
+          ))}
+        </div>
         {options.data?.aiEnabled && (
-          <p>
-            Las fotos y PDF se enviarán a Anthropic para extraer sus líneas.
-            Revisa el resultado antes de confirmar.
+          <p className="modal-intro">
+            Las fotos y PDF se envían a Anthropic (Claude) para leer sus líneas.
+            Siempre revisas el resultado antes de confirmar.
           </p>
         )}
-        <Button
-          disabled={!file || busy}
-          onClick={async () => {
-            if (!file) return;
-            setBusy(true);
-            try {
-              const form = new FormData();
-              form.set("file", file);
-              if (supplierId) form.set("supplierId", supplierId);
-              form.set("mapping", JSON.stringify(mapping));
-              const d = await api("/merchandise/import", {
-                method: "POST",
-                body: form,
-              });
-              setDraft(d);
-              setItems(
-                d.lines.map((l: any) => ({
-                  variantId: l.variantId ?? undefined,
-                  name: l.description,
-                  qty: l.qty,
-                  unitCost: l.unitCost,
-                  supplierCode: l.code || undefined,
-                  lotNumber: l.lotNumber ?? undefined,
-                  expiryDate: l.expiryDate?.slice(0, 10),
-                  confidence: l.confidence,
-                })),
-              );
-              setTotal(d.total != null ? String(d.total) : "");
-              setImporting(false);
-            } catch (e: any) {
-              toast(e.message, true);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {busy ? "Extrayendo…" : "Extraer para revisar"}
+        {importError && (
+          <p className="form-error" role="alert">
+            {importError}
+          </p>
+        )}
+        <Button disabled={!file || busy} onClick={extract}>
+          {busy ? "Leyendo la factura…" : "Extraer para revisar"}
         </Button>
       </Modal>
       <Modal
@@ -957,14 +1386,16 @@ export function Merchandise() {
             const v = variants.find((v) => v.id === id);
             return v ? (
               <div key={id} className="barcode-label">
-                <strong>{v.product.name}</strong>
+                <strong>{variantName(v)}</strong>
                 <Barcode value={v.barcode} />
                 <span>{v.barcode}</span>
               </div>
             ) : null;
           })}
         </div>
-        <Button onClick={() => window.print()}>Imprimir etiquetas</Button>
+        <Button onClick={() => window.print()}>
+          <Printer size={16} aria-hidden="true" /> Imprimir etiquetas
+        </Button>
       </Modal>
     </div>
   );

@@ -28,6 +28,7 @@ import {
   CurrentUser,
   Database,
   Permit,
+  RequireTerminal,
   parse,
   uuid,
   reason,
@@ -659,13 +660,14 @@ export class SalesController {
     );
     return safe(result, actor);
   }
-  @Post("sales") @Permit("sale:write") sale(
+  @Post("sales") @Permit("sale:write") @RequireTerminal() sale(
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
     return this.complete(actor, parse(saleSchema, body));
   }
   @Post("sales/sync")
+  @RequireTerminal()
   @Permit("sale:write")
   async sync(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const input = parse(
@@ -728,6 +730,7 @@ export class SalesController {
     );
   }
   @Post("sales/:id/void")
+  @RequireTerminal()
   @Permit("sale:manage")
   async voidSale(
     @Param("id") id: string,
@@ -806,6 +809,7 @@ export class SalesController {
     });
   }
   @Post("payments/:id/verify")
+  @RequireTerminal()
   @Permit("sale:manage")
   async verify(@Param("id") id: string, @CurrentUser() actor: Actor) {
     return this.db.$transaction(async (tx) => {
@@ -884,6 +888,7 @@ export class SalesController {
     });
   }
   @Post("returns")
+  @RequireTerminal()
   @Permit("sale:manage")
   async returnSale(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
@@ -1127,6 +1132,7 @@ export class SalesController {
     doc.end();
   }
   @Post("sales/:id/installments")
+  @RequireTerminal()
   @Permit("sale:write")
   async installment(
     @Param("id") id: string,

@@ -175,25 +175,33 @@ const blank = (v: unknown) => String(v ?? "").trim() === "";
 const SUMMARY_ROW =
   /^(sub ?total|total|itbis|impuesto|descuento|flete|envio)\b/;
 
+const MAX_ROWS = 1000;
 export async function readInvoiceTable(
   buffer: Buffer,
   format: "csv" | "xlsx",
   mapping: Record<string, string>,
 ) {
   const workbook = new ExcelJS.Workbook();
+  let tooLong = false;
   try {
     if (format === "csv") {
       const { text, delimiter } = decodeCsv(buffer);
+      if (text.split(/\r?\n/).length > MAX_ROWS) tooLong = true;
       // map identidad: conserva ceros iniciales en códigos y no convierte fechas.
-      await workbook.csv.read(Readable.from([text]), {
-        parserOptions: { delimiter },
-        map: (value: unknown) => value,
-      } as any);
+      if (!tooLong)
+        await workbook.csv.read(Readable.from([text]), {
+          parserOptions: { delimiter },
+          map: (value: unknown) => value,
+        } as any);
     } else await workbook.xlsx.load(buffer as any);
   } catch {
     bad("No pudimos abrir el archivo. Guárdalo como Excel (.xlsx) o CSV.");
   }
   const sheet = workbook.worksheets[0];
+  if (tooLong || (sheet && sheet.rowCount > MAX_ROWS))
+    bad(
+      `El archivo tiene más de ${MAX_ROWS} filas. Una factura admite hasta 200 líneas de productos.`,
+    );
   if (!sheet || sheet.rowCount === 0) bad("El archivo está vacío.");
   // La fila de encabezados puede estar debajo del membrete del proveedor.
   let headerRow = 0;

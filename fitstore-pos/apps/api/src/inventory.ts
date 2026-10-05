@@ -21,6 +21,7 @@ import {
   CurrentUser,
   Database,
   Permit,
+  RequireTerminal,
   parse,
   uuid,
   amount,
@@ -63,6 +64,8 @@ export async function stockChange(
   reasonText: string,
   refId?: string,
   lotId?: string,
+  // Entradas: costo unitario de lo recibido (con flete); salidas: costo promedio.
+  unitCost?: number,
 ) {
   const balance = quantity(d(variant.stock).plus(qty));
   if (balance < 0 && !variant.allowNegativeStock)
@@ -77,7 +80,7 @@ export async function stockChange(
       lotId,
       type,
       qty,
-      unitCost: variant.costAvg,
+      unitCost: unitCost ?? variant.costAvg,
       balanceAfter: balance,
       refId,
       reason: reasonText,
@@ -210,6 +213,7 @@ export class InventoryController {
     );
   }
   @Post("inventory/adjustments")
+  @RequireTerminal()
   @Permit("inventory:write")
   async adjustment(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
@@ -384,6 +388,7 @@ export class InventoryController {
     });
   }
   @Post("purchase-orders/:id/receive")
+  @RequireTerminal()
   @Permit("purchase:write")
   async receive(
     @Param("id") id: string,
@@ -436,6 +441,12 @@ export class InventoryController {
         const receipt = await tx.goodsReceipt.create({
           data: {
             orderId: id,
+            supplierId: order.supplierId,
+            total: money(
+              lines.reduce((sum, l) => sum + l.qty * l.cost, 0) +
+                data.freight +
+                data.otherCosts,
+            ),
             freight: data.freight,
             otherCosts: data.otherCosts,
             items: json(
@@ -505,6 +516,7 @@ export class InventoryController {
             "Recepción " + order.number,
             receipt.id,
             lotId,
+            costs[index],
           );
           await tx.purchaseItem.update({
             where: { id: line.itemId },
@@ -560,6 +572,7 @@ export class InventoryController {
     });
   }
   @Post("inventory/counts/:id/apply")
+  @RequireTerminal()
   @Permit("sale:manage")
   async applyCount(@Param("id") id: string, @CurrentUser() actor: Actor) {
     return this.db.$transaction(

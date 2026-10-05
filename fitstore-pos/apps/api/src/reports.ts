@@ -339,10 +339,20 @@ export class ReportsController {
         { Concepto: "Ganancia neta", Monto: summary.netProfit },
       ];
     } else if (name === "purchases") {
-      const [orders, payments] = await Promise.all([
+      // Compras con orden: total de la orden en su fecha (sus recepciones no se
+      // suman otra vez). Compras sin orden (Mercancía): total recibido —líneas,
+      // flete e impuestos— en la fecha de la recepción.
+      const [orders, receipts, payments] = await Promise.all([
         this.db.purchaseOrder.findMany({
           where: { branchId: actor.branchId, createdAt: range },
-          include: { receipts: true },
+        }),
+        this.db.goodsReceipt.findMany({
+          where: {
+            branchId: actor.branchId,
+            createdAt: range,
+            orderId: null,
+            supplierId: { not: null },
+          },
         }),
         this.db.supplierPayment.findMany({
           where: { branchId: actor.branchId, createdAt: range },
@@ -351,30 +361,29 @@ export class ReportsController {
       const suppliers = await this.db.supplier.findMany({
         where: { branchId: actor.branchId },
       });
-      rows = suppliers.map((s) => ({
-        Proveedor: s.name,
-        Compras: sum(
-          orders.filter((o) => o.supplierId === s.id),
-          "total",
-        ),
-        Pagado: sum(
+      rows = suppliers.map((s) => {
+        const bought = d(
+          sum(
+            orders.filter((o) => o.supplierId === s.id),
+            "total",
+          ),
+        ).plus(
+          sum(
+            receipts.filter((r) => r.supplierId === s.id),
+            "total",
+          ),
+        );
+        const paid = sum(
           payments.filter((p) => p.supplierId === s.id),
           "amount",
-        ),
-        Pendiente: money(
-          d(
-            sum(
-              orders.filter((o) => o.supplierId === s.id),
-              "total",
-            ),
-          ).minus(
-            sum(
-              payments.filter((p) => p.supplierId === s.id),
-              "amount",
-            ),
-          ),
-        ),
-      }));
+        );
+        return {
+          Proveedor: s.name,
+          Compras: money(bought),
+          Pagado: paid,
+          Pendiente: money(bought.minus(paid)),
+        };
+      });
     } else if (name === "no-movement") {
       const last = await this.db.saleItem.groupBy({
         by: ["variantId"],

@@ -30,6 +30,7 @@ export type Actor = {
   id: string;
   sessionId?: string;
   terminalId?: string;
+  terminalApproved?: boolean;
   name: string;
   email: string;
   role: string;
@@ -44,6 +45,9 @@ export const CurrentUser = createParamDecorator(
 export const Permit = (permission: string) =>
   SetMetadata("permission", permission);
 export const Public = () => SetMetadata("public", true);
+// Rutas que mueven inventario o dinero: exigen un equipo registrado, aprobado
+// por un gerente y no revocado (Configuración › Equipos).
+export const RequireTerminal = () => SetMetadata("terminal", true);
 export function bad(message: string): never {
   throw new HttpException(message, 400);
 }
@@ -281,6 +285,7 @@ export class AuthGuard implements CanActivate {
       const session = await this.db.authSession.findUnique({
         where: { id: payload.sid },
       });
+      let terminalApproved = false;
       if (session?.terminalId) {
         const terminal = await this.db.terminal.findUnique({
           where: { id: session.terminalId },
@@ -293,12 +298,14 @@ export class AuthGuard implements CanActivate {
           throw new Error();
         await this.db.terminal.update({
           where: { id: terminal.id },
-          data: { lastActivityAt: new Date() },
+          data: { lastActivityAt: new Date(), lastUserId: user.id },
         });
+        terminalApproved = !!terminal.approvedAt;
       }
       req.actor = {
         sessionId: payload.sid,
         terminalId: session?.terminalId ?? undefined,
+        terminalApproved,
         id: user.id,
         name: user.name,
         email: user.email,
@@ -314,6 +321,31 @@ export class AuthGuard implements CanActivate {
       context.getClass(),
     ]);
     if (permission && !can(req.actor.permissions, permission)) denied();
+    if (
+      this.reflector.getAllAndOverride("terminal", [
+        context.getHandler(),
+        context.getClass(),
+      ])
+    ) {
+      if (!req.actor.terminalId)
+        throw new HttpException(
+          {
+            code: "TERMINAL_REQUIRED",
+            message:
+              "Este equipo no está registrado. Recarga la página para registrarlo.",
+          },
+          403,
+        );
+      if (!req.actor.terminalApproved)
+        throw new HttpException(
+          {
+            code: "TERMINAL_PENDING",
+            message:
+              "Este equipo espera aprobación de un gerente (Configuración › Equipos o PIN de gerente en este equipo).",
+          },
+          403,
+        );
+    }
     return true;
   }
 }
@@ -322,6 +354,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
     const res = host.switchToHttp().getResponse<Response>();
     let status = 500,
+      code: string | undefined,
       message = "No se pudo completar la operación. Intenta de nuevo.";
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -330,6 +363,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
         typeof response === "string"
           ? response
           : String((response as any).message);
+      if (typeof response === "object" && (response as any).code)
+        code = String((response as any).code);
     } else if (exception instanceof ZodError) {
       status = 400;
       message =
@@ -350,7 +385,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
       message = "Otra operación modificó estos datos. Reintenta.";
     }
     if (status === 500) console.error(exception);
-    res.status(status).json({ statusCode: status, message });
+    res
+      .status(status)
+      .json({ statusCode: status, message, ...(code ? { code } : {}) });
   }
 }
 

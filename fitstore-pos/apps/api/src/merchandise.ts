@@ -15,6 +15,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import {
   businessDate,
+  can,
   expired,
   landedCosts,
   money,
@@ -25,6 +26,7 @@ import {
   CurrentUser,
   Database,
   Permit,
+  RequireTerminal,
   amount,
   audit,
   bad,
@@ -57,11 +59,17 @@ const quickSchema = z.object({
   barcode: z.string().trim().min(1).max(100),
   variant: z.string().trim().min(1).max(100),
 });
+// El inventario guarda 3 decimales: una cantidad menor o más fina cambiaría el
+// costo promedio sin cambiar las existencias.
+const goodsQty = positive.refine(
+  (v) => v >= 0.001 && Math.abs(v * 1000 - Math.round(v * 1000)) < 1e-6,
+  "debe tener como máximo 3 decimales y ser al menos 0.001",
+);
 const lineSchema = z
   .object({
     variantId: uuid.optional(),
     quick: quickSchema.optional(),
-    qty: positive,
+    qty: goodsQty,
     unitCost: positive,
     lotId: uuid.optional(),
     lotNumber: z.string().trim().min(1).max(100).optional(),
@@ -162,6 +170,23 @@ export class MerchandiseController {
       : String(file.originalname).toLowerCase().endsWith(".xlsx")
         ? "xlsx"
         : "ai";
+    // Una factura en Excel/CSV pesa pocos KB: archivos grandes se rechazan antes
+    // de leerlos para no bloquear el servidor.
+    if (format !== "ai" && file.size > 1024 * 1024)
+      bad(
+        "El Excel o CSV supera 1 MB. Revisa que sea el archivo de la factura.",
+      );
+    const dayAgo = new Date(Date.now() - 24 * 3600000);
+    const pendingDrafts = await this.db.invoiceDraft.count({
+      where: {
+        branchId: actor.branchId,
+        userId: actor.id,
+        confirmedOperationId: null,
+        createdAt: { gte: dayAgo },
+      },
+    });
+    if (pendingDrafts >= 30)
+      bad("Tienes muchas facturas sin confirmar hoy. Confirma o espera.");
     let extracted;
     let mapping: Record<string, string> | undefined;
     if (format !== "ai") {
@@ -206,6 +231,27 @@ export class MerchandiseController {
       : [];
     const lines = matchInvoiceLines(extracted.lines, variants, equivalents);
     return this.db.$transaction(async (tx) => {
+      // Los borradores sin confirmar se conservan 7 días con su archivo.
+      const stale = await tx.invoiceDraft.findMany({
+        where: {
+          branchId: actor.branchId,
+          confirmedOperationId: null,
+          createdAt: { lt: new Date(Date.now() - 7 * 24 * 3600000) },
+        },
+        select: { id: true, attachmentId: true },
+      });
+      if (stale.length) {
+        await tx.invoiceDraft.deleteMany({
+          where: { id: { in: stale.map((d) => d.id) } },
+        });
+        await tx.invoiceAttachment.deleteMany({
+          where: {
+            id: {
+              in: stale.map((d) => d.attachmentId).filter(Boolean) as string[],
+            },
+          },
+        });
+      }
       if (supplierId && mapping)
         await tx.supplierImportProfile.upsert({
           where: {
@@ -266,6 +312,7 @@ export class MerchandiseController {
     });
   }
   @Post("merchandise/operations")
+  @RequireTerminal()
   @Permit("inventory:write")
   async operation(@Body() body: unknown, @CurrentUser() actor: Actor) {
     merchandiseAccess(actor);
@@ -276,6 +323,12 @@ export class MerchandiseController {
       bad("Elige el motivo de salida.");
     if (data.direction === "exit" && data.items.some((i) => i.quick))
       bad("No puedes crear productos en una salida.");
+    // En una entrada el lote se indica por número (se crea o se incrementa);
+    // un lotId sin validar quedaría en el kardex apuntando a otro lote.
+    if (data.direction === "entry" && data.items.some((i) => i.lotId))
+      bad("En una entrada indica el número de lote, no un lote existente.");
+    if (data.direction === "exit" && data.items.some((i) => i.lotNumber))
+      bad("En una salida elige el lote de la lista.");
     const requestHash = createHash("sha256")
       .update(JSON.stringify(data))
       .digest("hex");
@@ -359,6 +412,9 @@ export class MerchandiseController {
             const cat = await tx.category.findFirstOrThrow({
               where: { id: q.categoryId, branchId: actor.branchId },
             });
+            // Quien no puede editar el catálogo (almacén) crea el producto
+            // inactivo: no se vende hasta que un gerente revise su precio.
+            const canPrice = can(actor.permissions, "catalog:write");
             const p = await tx.product.create({
               data: {
                 name: q.name,
@@ -367,6 +423,7 @@ export class MerchandiseController {
                 branchId: actor.branchId,
                 createdBy: actor.id,
                 supplierId: data.supplierId,
+                ...(canPrice ? {} : { active: false }),
                 variants: {
                   create: {
                     sku: "QV-" + data.id + "-" + lines.length,
@@ -382,6 +439,21 @@ export class MerchandiseController {
               include: { variants: true },
             });
             variantId = p.variants[0].id;
+            if (!canPrice)
+              await tx.alert.upsert({
+                where: { key: "new-product:" + p.id },
+                create: {
+                  key: "new-product:" + p.id,
+                  type: "product_review",
+                  severity: "medium",
+                  entityId: p.id,
+                  branchId: actor.branchId,
+                  message:
+                    p.name +
+                    ": producto creado al recibir mercancía. Revisa el precio y actívalo para venderlo.",
+                },
+                update: {},
+              });
           }
           if (order) {
             const item = order.items.find(
@@ -404,6 +476,10 @@ export class MerchandiseController {
             ? await tx.goodsReceipt.create({
                 data: {
                   orderId: data.orderId,
+                  supplierId: data.supplierId,
+                  total,
+                  attachmentId: draft?.attachmentId,
+                  operationId: data.id,
                   freight: data.freight,
                   otherCosts: data.taxes,
                   items: json(
@@ -513,6 +589,7 @@ export class MerchandiseController {
             data.direction === "entry" ? "Entrada de mercancía" : data.reason!,
             receipt?.id ?? data.id,
             lotId,
+            data.direction === "entry" ? costs[index] : undefined,
           );
           if (order)
             await tx.purchaseItem.update({

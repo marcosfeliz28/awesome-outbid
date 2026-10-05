@@ -132,6 +132,7 @@ model Lot {
   createdBy String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  movements InventoryMovement[]
   @@unique([variantId,lotNumber])
   @@index([expiryDate])
 }
@@ -140,6 +141,7 @@ model InventoryMovement {
   variantId String @db.Uuid
   variant Variant @relation(fields:[variantId],references:[id])
   lotId String? @db.Uuid
+  lot Lot? @relation(fields:[lotId],references:[id], onDelete: Restrict)
   type String
   qty Decimal @db.Decimal(14,3)
   unitCost Decimal @db.Decimal(14,2)
@@ -303,12 +305,18 @@ model GoodsReceipt {
   id String @id @default(uuid()) @db.Uuid
   orderId String? @db.Uuid
   order PurchaseOrder? @relation(fields:[orderId],references:[id])
+  // Compras sin orden: proveedor, total (líneas + flete + impuestos) y comprobante.
+  supplierId String? @db.Uuid
+  total Decimal? @db.Decimal(14,2)
+  attachmentId String? @db.Uuid
+  operationId String? @unique @db.Uuid
   freight Decimal @db.Decimal(14,2)
   otherCosts Decimal @db.Decimal(14,2)
   items Json
   userId String
   branchId String @default("main")
   createdAt DateTime @default(now())
+  @@index([supplierId, createdAt])
 }
 model SupplierPayment {
   id String @id @default(uuid()) @db.Uuid
@@ -462,6 +470,13 @@ model Terminal {
  revokedAt DateTime?
  lastActivityAt DateTime @default(now())
  createdAt DateTime @default(now())
+ // Enrolamiento: un equipo nuevo de vendedor/almacén espera aprobación de un gerente.
+ approvedAt DateTime?
+ approvedBy String? @db.Uuid
+ // Hash del secreto que guarda el dispositivo; impide reclamar el ID desde otro equipo.
+ secretHash String?
+ createdBy String? @db.Uuid
+ lastUserId String? @db.Uuid
 }
 model RealtimeEvent {
  id BigInt @id @default(autoincrement())

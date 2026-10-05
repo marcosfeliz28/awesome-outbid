@@ -1,4 +1,4 @@
-import { useRealtime, registerTerminal } from "./realtime";
+import { DeviceGate, useRealtime, registerTerminal } from "./realtime";
 import { Merchandise } from "./Merchandise";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -417,13 +417,15 @@ export function App() {
           onClick={() => setMenu(false)}
         />
       )}
-      {can(user.permissions, "inventory:write") && user.role !== "seller" && (
-        <nav className="goods-mobile-bar">
-          <Button onClick={() => go("merchandise")}>
-            <Truck size={24} /> Mercancía
-          </Button>
-        </nav>
-      )}
+      {can(user.permissions, "inventory:write") &&
+        user.role !== "seller" &&
+        page !== "merchandise" && (
+          <nav className="goods-mobile-bar">
+            <Button onClick={() => go("merchandise")}>
+              <Truck size={24} /> Mercancía
+            </Button>
+          </nav>
+        )}
       <aside className={`sidebar ${menu ? "open" : ""}`}>
         <a className="brand" href="#dashboard">
           <div className="brand-icon">
@@ -601,6 +603,7 @@ export function App() {
           </div>
         </header>
         <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
+          <DeviceGate />
           {pages[page] || <Dashboard go={go} />}
         </main>
         <footer className="app-footer">

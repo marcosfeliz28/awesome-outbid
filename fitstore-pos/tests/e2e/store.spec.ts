@@ -6,6 +6,13 @@ test.beforeEach(async ({ request }) => {
   });
   const { accessToken, user } = await login.json();
   const headers = { Authorization: "Bearer " + accessToken };
+  // Ronda 4: cerrar caja exige un equipo aprobado (el dueño se aprueba solo).
+  const id = crypto.randomUUID();
+  const registered = await request.post("/api/terminals/register", {
+    headers,
+    data: { id, name: "E2E limpieza", secret: "e2e-limpieza-" + id },
+  });
+  expect(registered.ok()).toBe(true);
   const sessions = await (
     await request.get("/api/cash-sessions", { headers })
   ).json();
@@ -333,12 +340,12 @@ test("Mercancía móvil: entrada offline, sincronización única y etiquetas", a
   await expect(
     page.getByRole("heading", { name: "Mercancía", exact: true }),
   ).toBeVisible();
+  // El buscador de Mercancía encuentra el producto en el catálogo local.
+  await page.getByLabel("Buscar producto", { exact: true }).fill(p.name);
   await expect(
-    page
-      .getByLabel("Agregar producto")
-      .locator("option")
-      .filter({ hasText: p.name }),
+    page.getByRole("option").filter({ hasText: p.name }),
   ).toHaveCount(1);
+  await page.getByLabel("Buscar producto", { exact: true }).fill("");
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
@@ -347,12 +354,12 @@ test("Mercancía móvil: entrada offline, sincronización única y etiquetas", a
   await expect(
     page.getByRole("heading", { name: "Mercancía", exact: true }),
   ).toBeVisible();
+  // El buscador de Mercancía encuentra el producto en el catálogo local.
+  await page.getByLabel("Buscar producto", { exact: true }).fill(p.name);
   await expect(
-    page
-      .getByLabel("Agregar producto")
-      .locator("option")
-      .filter({ hasText: p.name }),
+    page.getByRole("option").filter({ hasText: p.name }),
   ).toHaveCount(1);
+  await page.getByLabel("Buscar producto", { exact: true }).fill("");
   expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(
     true,
   );
@@ -382,7 +389,8 @@ test("Mercancía móvil: entrada offline, sincronización única y etiquetas", a
   expect(Number(fetched.variants[0].stock)).toBe(3);
   expect(Number(fetched.variants[0].costAvg)).toBe(20);
   await page
-    .getByRole("button", { name: "Imprimir etiquetas de lo recibido" })
+    .locator(".goods-history")
+    .getByRole("button", { name: /Etiquetas/ })
     .first()
     .click();
   await expect(
@@ -442,7 +450,7 @@ test("Importar CSV exige revisión antes de modificar existencias", async ({
   });
   await page.getByRole("button", { name: "Extraer para revisar" }).click();
   await expect(
-    page.getByRole("heading", { name: "REVISIÓN de factura" }),
+    page.getByRole("heading", { name: "Revisión de factura" }),
   ).toBeVisible();
   expect(
     Number(
@@ -471,4 +479,33 @@ test("Importar CSV exige revisión antes de modificar existencias", async ({
     headers,
     data: { active: false },
   });
+});
+
+test("equipo nuevo de vendedor espera aprobación y se aprueba con PIN de gerente", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/");
+  await page.getByLabel("Correo electrónico").fill("vendedor@fitstore.demo");
+  await page
+    .getByLabel("Contraseña", { exact: true })
+    .fill("FitStore-Demo-2026!");
+  await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
+  await expect(page.getByText("Este equipo necesita aprobación")).toBeVisible({
+    timeout: 15000,
+  });
+  await page.getByLabel("Nombre del equipo").fill("Caja E2E vendedor");
+  await page.getByLabel("PIN del gerente").fill("000000");
+  await page.getByRole("button", { name: "Aprobar este equipo" }).click();
+  await expect(page.getByText("PIN incorrecto.")).toBeVisible();
+  await page.getByLabel("PIN del gerente").fill("234567");
+  await page.getByRole("button", { name: "Aprobar este equipo" }).click();
+  await expect(page.getByText("Este equipo necesita aprobación")).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByText("Equipo aprobado. Ya puedes operar."),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
 });
