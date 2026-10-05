@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /workspace/auditoria-ronda7
+
+ ✓ pruebas/independientes.test.ts (7 tests) 11ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  22:22:30
+   Duration  929ms (transform 175ms, setup 0ms, collect 660ms, tests 11ms, environment 0ms, prepare 80ms)
+

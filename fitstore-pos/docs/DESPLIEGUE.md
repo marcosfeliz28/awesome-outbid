@@ -83,7 +83,7 @@ Nginx sustituye X-Forwarded-For por la IP de su conexión. La API confía en un 
 
 **Actualización a la ronda 7** (`202610070001_round7`). Corrige la recuperación de compras de la ronda 6: una recepción antigua con líneas incompletas (sin cantidad, sin costo, vacías o que no son objetos) vuelve a quedar **sin total** y aparece en **Sin conciliar**, en vez de contar sólo las líneas conocidas. El SQL de la ronda 6 también se corrigió para las bases que todavía no lo aplicaron. Ambas migraciones se pueden repetir sin cambiar nada más.
 
-**Inventario inicial de la tienda.** Después de crear el administrador, carga el Excel de inventario con `pnpm --filter @fitstore/api inventory:import archivo.xlsx`. Primero pruébalo con `--dry-run`. Ver «Cargar el inventario de la tienda» en MANUAL.md.
+**Inventario inicial de la tienda.** Después de crear el administrador, carga el Excel de inventario con `pnpm --filter @fitstore/api inventory:import archivo.xlsx --sin-lotes`. Primero pruébalo con `--dry-run`. La opción `--sin-lotes` desactiva el lote obligatorio de las categorías que lo exigen y lo deja en la bitácora; sin ella, la carga se detiene. Ver «Cargar el inventario de la tienda» en MANUAL.md.
 
 ## Eventos y recepción móvil (ronda 3)
 

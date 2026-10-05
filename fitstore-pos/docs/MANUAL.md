@@ -6,7 +6,10 @@ El inventario de la tienda (por ejemplo `INVENTARIO_2026_Actualizado.xlsx`) se c
 
 1. Crea el administrador (`pnpm --filter @fitstore/api admin:create`, ver DESPLIEGUE.md).
 2. Prueba sin guardar nada: `pnpm --filter @fitstore/api inventory:import ruta/al/INVENTARIO.xlsx --dry-run`.
-3. Carga: `pnpm --filter @fitstore/api inventory:import ruta/al/INVENTARIO.xlsx`.
+3. Carga: `pnpm --filter @fitstore/api inventory:import ruta/al/INVENTARIO.xlsx --sin-lotes`.
+   - `--sin-lotes` hace falta la primera vez: el administrador crea Suplementos y Maquillaje con lote y vencimiento obligatorios, y el Excel no los trae.
+   - Sin esa opción, la carga se detiene sin escribir nada y explica qué hacer.
+   - Con ella, se desactiva el control en esas categorías y queda en la bitácora.
 4. Abre `revision-inventario.csv` en Excel. Ahí están los productos que conviene revisar:
    - sin precio o sin costo (quedan **inactivos** y no se venden);
    - con precio igual o menor que el costo;
@@ -19,7 +22,11 @@ Qué hace la carga:
 - **Códigos:** el **ID** (1001, 1223…) es el código para cobrar. Si la REFERENCIA o la descripción ("Barcode 0815…") traen otro número, ese es el código de barras y también sirve para escanear.
 - **Existencias:** entran al kardex como "Inventario inicial", con su costo.
 - **Lotes:** el Excel no trae lotes ni vencimientos, así que esas categorías no los exigen y la caja vende sin pedir datos extra.
-- **Archivo rechazado:** si un ID, una REFERENCIA o un código de barras se repite, o una REFERENCIA es el ID de otra fila, la carga no guarda nada y explica qué corregir.
+- **Archivo rechazado:** la carga no guarda nada y explica qué corregir si:
+  - un ID, una REFERENCIA o un código de barras se repite;
+  - una REFERENCIA es el ID de otra fila;
+  - un código ya es de otro producto del sistema;
+  - un número es ambiguo ("1.250" o "1,250": escríbelo 1250 o 1,25). Se aceptan "1,5", "1.250,50" y "1,250.50".
 
 Al repetir la carga con el mismo archivo, o con uno corregido, no se duplica nada ni se pisa lo editado en la app (precio, costo promedio, mínimos, activo). Sólo:
 

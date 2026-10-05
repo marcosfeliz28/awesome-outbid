@@ -12,6 +12,7 @@ export default tseslint.config(
       // Reproducciones externas de ChatGPT, guardadas tal cual como evidencia.
       "docs/validacion/auditoria-ronda4-reproducciones/**",
       "docs/validacion/auditoria-ronda6-reproducciones/**",
+      "docs/validacion/auditoria-ronda7-reproducciones/**",
     ],
   },
   eslint.configs.recommended,

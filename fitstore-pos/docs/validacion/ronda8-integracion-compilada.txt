@@ -1,0 +1,50 @@
+Runtime: node dist/main.js (como el CMD de Docker) · base nueva fitstore_r7 (12 migraciones + semilla)
+$ vitest run --config vitest.integration.config.ts
+
+ RUN  v3.2.7 /home/user/awesome-outbid/fitstore-pos
+
+ ✓ tests/api.test.ts (84 tests) 82015ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  1397ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  953ms
+   ✓ Aceptación financiera y permisos > conserva conflictos offline sin stock negativo  311ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1655ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  2300ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  2354ms
+   ✓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal  317ms
+   ✓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco  4270ms
+   ✓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor  6509ms
+   ✓ Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP  1325ms
+   ✓ Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido  4130ms
+   ✓ Seguridad, offline y funciones completadas > venta a crédito admite abonos idempotentes en caja posterior  302ms
+   ✓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores  2652ms
+   ✓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión  1066ms
+   ✓ Seguridad, offline y funciones completadas > stock negativo optativo conserva advertencia y prohíbe saltarse lotes  515ms
+   ✓ Seguridad, offline y funciones completadas > alerta efectivo aunque tarjeta lo compense  355ms
+   ✓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios  688ms
+   ✓ Ronda 2 de Claude > 1: notas requieren prueba de posesión o gerente, no se divulgan códigos y cada uso se audita  3281ms
+   ✓ Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite  4044ms
+   ✓ Ronda 3 · tiempo real y mercancía > tres cajas venden stock 5 y las tres reciben el saldo confirmado en menos de 2 segundos  3625ms
+   ✓ Ronda 3 · tiempo real y mercancía > equipos muestran actividad y caja, renombrar y revocar invalida sesiones  467ms
+   ✓ Ronda 3 · tiempo real y mercancía > salidas requieren motivo y existencias; todos los motivos quedan auditados  364ms
+   ✓ Ronda 3 · tiempo real y mercancía > SSE comunica recepción, devolución, anulación y conteo confirmados  633ms
+   ✓ Ronda 3 · tiempo real y mercancía > eventos se publican en orden de commit aunque las transacciones empiecen al revés  324ms
+   ✓ Ronda 4 · Claude: caja y equipos > trasladar exige PIN de gerente al vendedor y queda en bitácora  4278ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > P1 compras: entrada sin orden se reporta una vez; orden no se duplica; fechas aplican  386ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo  6247ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido  1120ms
+   ✓ Auditoría ronda 4 de ChatGPT > P1: una caída abrupta del cliente libera su conexión de tiempo real  374ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-01: un equipo R3 migrado no se puede reclamar ni operar sin aprobación del gerente  3734ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-02: la compra R3 sin orden se recupera de la bitácora; reparación idempotente  423ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-04: la factura aceptada contra una orden fija la deuda; parciales, flete y reintento sin doble conteo  460ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-06: una ráfaga de conexiones SSE sobre una sesión acepta como máximo dos  1401ms
+   ✓ Ronda 7 · auditoría R6 de ChatGPT > R6-01: un combo fraccionado se rechaza sin escrituras; 1 combo consume exactamente 0.4 y su devolución lo repone  369ms
+   ✓ Ronda 7 · auditoría R6 de ChatGPT > revisión R7: costo de combos exacto en venta, devolución y reporte de utilidad  370ms
+   ✓ Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir  1616ms
+   ✓ Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo  2213ms
+   ✓ Ronda 8 · auditoría R7 de ChatGPT > R7-04: el reporte de utilidad usa el costo registrado en cada devolución parcial  388ms
+
+ Test Files  1 passed (1)
+      Tests  84 passed (84)
+   Start at  22:47:57
+   Duration  82.52s (transform 171ms, setup 0ms, collect 233ms, tests 82.02s, environment 0ms, prepare 73ms)
+

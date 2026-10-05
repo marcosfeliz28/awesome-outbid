@@ -11,6 +11,9 @@
 // - Las existencias entran como "Inventario inicial" en el kardex, con su costo.
 // - Productos sin precio o sin costo quedan inactivos (no se venden) y salen en
 //   el reporte de revisión junto con márgenes bajos y agotados.
+// - Rechaza códigos que ya son de otro producto en la base y números
+//   ambiguos. Si una categoría existente exige lote, se detiene; --sin-lotes
+//   desactiva ese control (queda en la bitácora).
 // - Repetirlo no duplica ni pisa lo editado en la app: sólo crea los nuevos,
 //   activa los que estaban inactivos por falta de precio o costo y, con
 //   --actualizar-precios, cambia precios (queda en la bitácora). Las
@@ -55,10 +58,39 @@ const text = (v: ExcelJS.CellValue): string => {
     return v.richText.map((t) => t.text).join("");
   return String(v).trim();
 };
-const num = (v: ExcelJS.CellValue) => {
-  const n = Number(text(v).replace(/[^\d.-]/g, ""));
-  return Number.isFinite(n) ? n : 0;
-};
+// Números del Excel. Una celda numérica se usa tal cual. En texto se aceptan
+// "1500", "1,5", "1.5", "1.250,50" y "1,250.50" (el último separador es el
+// decimal). "1.250" o "1,250" son ambiguos (¿mil doscientos cincuenta o uno
+// con veinticinco?) y se rechazan: nunca se cambia un número en silencio.
+export function parseNumber(v: ExcelJS.CellValue): number | string {
+  if (typeof v === "number") return v;
+  if (v && typeof v === "object" && "result" in v)
+    return parseNumber(v.result as ExcelJS.CellValue);
+  const raw = text(v)
+    .replace(/^(rd)?\$\s*/i, "")
+    .replace(/\s+/g, "");
+  if (raw === "") return 0;
+  if (/^-?\d+$/.test(raw)) return Number(raw);
+  const lastDot = raw.lastIndexOf("."),
+    lastComma = raw.lastIndexOf(",");
+  if (lastDot >= 0 && lastComma >= 0) {
+    const dec = lastDot > lastComma ? "." : ",",
+      group = dec === "." ? "," : ".";
+    const re = new RegExp(
+      "^-?\\d{1,3}(\\" + group + "\\d{3})*\\" + dec + "\\d+$",
+    );
+    if (!re.test(raw)) return "número no válido «" + raw + "»";
+    return Number(raw.split(group).join("").replace(dec, "."));
+  }
+  const sep = lastDot >= 0 ? "." : ",";
+  if (new RegExp("^-?\\d{1,3}(\\" + sep + "\\d{3})+$").test(raw))
+    return (
+      "«" + raw + "» es ambiguo; escríbelo sin separador de miles (1250 o 1,25)"
+    );
+  if (!new RegExp("^-?\\d+\\" + sep + "\\d+$").test(raw))
+    return "número no válido «" + raw + "»";
+  return Number(raw.replace(sep, "."));
+}
 const key = (s: string) =>
   s
     .normalize("NFD")
@@ -89,6 +121,38 @@ export async function readInventory(file: string): Promise<Row[]> {
       "Faltan columnas en el Excel: " + missing.map(([k]) => k).join(", "),
     );
   const rows: Row[] = [];
+  const errors: string[] = [];
+  // Existencia: no negativa, como máximo 3 decimales. Dinero: no negativo,
+  // como máximo 2 decimales.
+  const read = (
+    r: ExcelJS.Row,
+    col: number,
+    label: string,
+    id: string,
+    decimals: number,
+  ) => {
+    const v = parseNumber(r.getCell(col).value);
+    if (typeof v === "string") {
+      errors.push("fila " + id + ", " + label + ": " + v);
+      return 0;
+    }
+    const f = 10 ** decimals;
+    if (v < 0 || Math.abs(v * f - Math.round(v * f)) > 1e-6) {
+      errors.push(
+        "fila " +
+          id +
+          ", " +
+          label +
+          ": " +
+          v +
+          " (debe ser 0 o más, con como máximo " +
+          decimals +
+          " decimales)",
+      );
+      return 0;
+    }
+    return v;
+  };
   sheet.eachRow((r, n) => {
     if (n === 1) return;
     // El ID es siempre el código que la caja escribe (1001, 1223…). La
@@ -110,11 +174,17 @@ export async function readInventory(file: string): Promise<Row[]> {
         .trim(),
       barcode,
       category: text(r.getCell(need.group!).value) || "Sin categoría",
-      qty: num(r.getCell(need.qty!).value),
-      cost: num(r.getCell(need.cost!).value),
-      price: num(r.getCell(need.price!).value),
+      qty: read(r, need.qty!, "EXISTENCIA", id, 3),
+      cost: read(r, need.cost!, "COSTO", id, 2),
+      price: read(r, need.price!, "PRECIO DETALLE", id, 2),
     });
   });
+  if (errors.length)
+    throw new Error(
+      "Corrige el Excel antes de importar:\n- " +
+        errors.slice(0, 30).join("\n- ") +
+        (errors.length > 30 ? "\n- … y " + (errors.length - 30) + " más" : ""),
+    );
   return rows;
 }
 
@@ -176,6 +246,7 @@ async function main() {
   const file = process.argv.find((a) => /\.xlsx$/i.test(a));
   const dryRun = process.argv.includes("--dry-run");
   const updatePrices = process.argv.includes("--actualizar-precios");
+  const disableLots = process.argv.includes("--sin-lotes");
   if (!file) throw new Error("Indica el archivo .xlsx del inventario.");
   const rows = await readInventory(resolve(process.cwd(), file));
   const problems = checkCodes(rows);
@@ -196,7 +267,6 @@ async function main() {
     sinCambios: 0,
     activados: 0,
     precios: 0,
-    codigos: 0,
     inactivos: 0,
     unidades: 0,
   };
@@ -204,18 +274,92 @@ async function main() {
     ["ID", "Producto", "Categoría", "Existencia", "Costo", "Precio", "Revisar"],
   ];
 
+  // Códigos contra la base (R7-01): el ID, la REFERENCIA o el código de
+  // barras de una fila no pueden pertenecer ya a otro producto. Se revisa
+  // todo antes de escribir; un conflicto detiene la carga sin cambios.
+  const allCodes = [
+    ...new Set(
+      rows.flatMap((r) => [r.id, r.ref, r.barcode].filter(Boolean) as string[]),
+    ),
+  ];
+  const holders = await db.variant.findMany({
+    where: { OR: [{ sku: { in: allCodes } }, { barcode: { in: allCodes } }] },
+    include: { product: true },
+  });
+  const codeProblems: string[] = [];
+  const isNew = new Map<string, boolean>();
+  for (const row of rows) {
+    const own = holders.find((v) => v.sku === row.id);
+    isNew.set(row.id, !own);
+    for (const code of [row.id, row.ref, row.barcode].filter(
+      Boolean,
+    ) as string[]) {
+      const other = holders.find(
+        (v) => (v.sku === code || v.barcode === code) && v.id !== own?.id,
+      );
+      if (other)
+        codeProblems.push(
+          "fila " +
+            row.id +
+            ": el código " +
+            code +
+            " ya es de «" +
+            other.product.name +
+            "» (" +
+            other.sku +
+            ")",
+        );
+    }
+  }
+  if (codeProblems.length)
+    throw new Error(
+      "Corrige el Excel o el catálogo antes de importar:\n- " +
+        codeProblems.slice(0, 30).join("\n- "),
+    );
+  // Categorías (R7-03): nunca se cambian sus controles en silencio. Si una
+  // categoría existente exige lote o vencimiento y el Excel trae existencias
+  // nuevas sin lote, la carga se detiene, salvo que se pida --sin-lotes (que
+  // queda en la bitácora).
   for (const name of [...new Set(rows.map((r) => r.category))]) {
     const existing = await db.category.findUnique({ where: { name } });
+    const needsLot =
+      !!existing &&
+      (existing.requiresLot || existing.requiresExpiry) &&
+      rows.some((r) => r.category === name && r.qty > 0 && isNew.get(r.id));
+    if (needsLot && !disableLots)
+      throw new Error(
+        "La categoría «" +
+          name +
+          "» exige lote o vencimiento y el Excel no los trae. Desactívalo en " +
+          "Productos › Categorías o repite con --sin-lotes (queda en la bitácora).",
+      );
     if (dryRun) continue;
-    // El Excel no trae lotes ni vencimientos: la categoría no los exige, para
-    // que la caja venda sin pedir datos extra. Se pueden activar después en
-    // Productos › Categorías cuando se reciba mercancía con lote.
-    if (existing)
-      await db.category.update({
-        where: { name },
-        data: { requiresLot: false, requiresExpiry: false },
-      });
-    else
+    if (needsLot && existing) {
+      await db.$transaction([
+        db.category.update({
+          where: { name },
+          data: { requiresLot: false, requiresExpiry: false },
+        }),
+        db.auditLog.create({
+          data: {
+            userId: admin.id,
+            action: "category_lots_disabled_by_import",
+            entity: "category",
+            entityId: existing.id,
+            before: {
+              requiresLot: existing.requiresLot,
+              requiresExpiry: existing.requiresExpiry,
+            },
+            after: {
+              requiresLot: false,
+              requiresExpiry: false,
+              origen: file.split(/[\\/]/).pop(),
+            },
+            branchId,
+          },
+        }),
+      ]);
+    } else if (!existing)
       await db.category.create({
         data: {
           name,
@@ -247,19 +391,12 @@ async function main() {
     const barcode = row.barcode ?? row.id;
     // Ya importado: por ID, o por la clave de una carga anterior que usaba la
     // REFERENCIA (código de barras) como código. Nunca se carga dos veces.
-    const existing =
-      (await db.variant.findUnique({
-        where: { sku: row.id },
-        include: { product: true },
-      })) ??
-      // El importador anterior guardaba la REFERENCIA en el sku; un código de
-      // barras igual en otro producto no identifica esta fila.
-      (row.ref
-        ? await db.variant.findUnique({
-            where: { sku: row.ref },
-            include: { product: true },
-          })
-        : null);
+    // Ya importado: se reconoce sólo por su ID. Una REFERENCIA o código de
+    // barras que ya es de otro producto detuvo la carga antes (R7-01).
+    const existing = await db.variant.findUnique({
+      where: { sku: row.id },
+      include: { product: true },
+    });
     const productData = {
       name: row.name,
       categoryId,
@@ -271,11 +408,9 @@ async function main() {
     if (existing) {
       // Una carga repetida no pisa lo que se editó en la app (costo promedio,
       // precio, mínimos, activo). Sólo:
-      // - corrige el código si la carga anterior usó la REFERENCIA;
       // - activa productos que estaban inactivos por no tener precio o costo;
       // - con --actualizar-precios, cambia el precio y lo deja en bitácora.
       const changes: Record<string, unknown> = {};
-      if (existing.sku !== row.id) changes.sku = row.id;
       const missingData =
         !existing.product.active &&
         (Number(existing.price) <= 0 || Number(existing.costAvg) <= 0);
@@ -305,9 +440,7 @@ async function main() {
             userId: admin.id,
             action: changes.active
               ? "inventory_import_activate"
-              : changes.price !== undefined
-                ? "price_change"
-                : "inventory_import_code",
+              : "price_change",
             entity: "variant",
             entityId: existing.id,
             before: {
@@ -322,11 +455,9 @@ async function main() {
         });
       });
       if (changes.active) summary.activados++;
-      else if (changes.price !== undefined) summary.precios++;
-      else summary.codigos++;
+      else summary.precios++;
       continue;
     }
-    const clash = await db.variant.findUnique({ where: { barcode } });
     await db.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
@@ -337,8 +468,7 @@ async function main() {
           variants: {
             create: {
               sku: row.id,
-              // Si el código de barras ya existe en otro producto, se usa el ID.
-              barcode: clash ? "INV-" + row.id : barcode,
+              barcode,
               price: row.price,
               costAvg: row.cost,
               stock: row.qty > 0 ? row.qty : 0,
@@ -389,8 +519,6 @@ async function main() {
       " activados · " +
       summary.precios +
       " precios actualizados · " +
-      summary.codigos +
-      " códigos corregidos · " +
       summary.inactivos +
       " sin precio o costo en el Excel (inactivos).",
   );

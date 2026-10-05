@@ -1,0 +1,36 @@
+$ vitest run --config vitest.integration.config.ts
+
+ RUN  v3.2.7 /workspace/auditoria-ronda7/fitstore-pos
+
+ ✓ tests/api.test.ts (81 tests) 66976ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  1245ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  506ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1261ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  1982ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  1934ms
+   ✓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal  345ms
+   ✓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco  4091ms
+   ✓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor  6145ms
+   ✓ Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP  884ms
+   ✓ Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido  3847ms
+   ✓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores  2547ms
+   ✓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión  930ms
+   ✓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios  339ms
+   ✓ Ronda 2 de Claude > 1: notas requieren prueba de posesión o gerente, no se divulgan códigos y cada uso se audita  2787ms
+   ✓ Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite  3729ms
+   ✓ Ronda 3 · tiempo real y mercancía > tres cajas venden stock 5 y las tres reciben el saldo confirmado en menos de 2 segundos  3225ms
+   ✓ Ronda 3 · tiempo real y mercancía > equipos muestran actividad y caja, renombrar y revocar invalida sesiones  380ms
+   ✓ Ronda 3 · tiempo real y mercancía > SSE comunica recepción, devolución, anulación y conteo confirmados  627ms
+   ✓ Ronda 3 · tiempo real y mercancía > eventos se publican en orden de commit aunque las transacciones empiecen al revés  311ms
+   ✓ Ronda 4 · Claude: caja y equipos > trasladar exige PIN de gerente al vendedor y queda en bitácora  4010ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo  6098ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido  1058ms
+   ✓ Auditoría ronda 4 de ChatGPT > P1: una caída abrupta del cliente libera su conexión de tiempo real  344ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-01: un equipo R3 migrado no se puede reclamar ni operar sin aprobación del gerente  3352ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-06: una ráfaga de conexiones SSE sobre una sesión acepta como máximo dos  1301ms
+
+ Test Files  1 passed (1)
+      Tests  81 passed (81)
+   Start at  22:21:07
+   Duration  67.31s (transform 115ms, setup 0ms, collect 161ms, tests 66.98s, environment 0ms, prepare 52ms)
+

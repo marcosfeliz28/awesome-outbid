@@ -1,0 +1,67 @@
+{
+  "oldOrder": {
+    "id": "b9b5bc33-0439-4401-91a5-aebfcf2c4672",
+    "number": "OC-000002",
+    "supplierId": "7763042d-67eb-4069-9d33-9228a60455bf",
+    "status": "ordered",
+    "expectedDate": null,
+    "total": "50",
+    "branchId": "main",
+    "createdBy": "a566aec2-7ff1-4769-8479-67658eafe033",
+    "createdAt": "2026-10-05T22:19:21.368Z",
+    "updatedAt": "2026-10-05T22:19:21.368Z",
+    "items": [
+      {
+        "id": "906e5e49-008f-4e69-94a3-365ce58f1c61",
+        "orderId": "b9b5bc33-0439-4401-91a5-aebfcf2c4672",
+        "variantId": "b5e18148-92bd-44e9-94d4-70068b8c4e6c",
+        "qty": "2",
+        "receivedQty": "0",
+        "unitCost": "25"
+      }
+    ]
+  },
+  "oldReceive": {
+    "id": "ee739f38-1922-4163-9834-132ed075a510",
+    "orderId": "b9b5bc33-0439-4401-91a5-aebfcf2c4672",
+    "freight": "4",
+    "otherCosts": "1",
+    "items": [
+      {
+        "qty": 2,
+        "itemId": "906e5e49-008f-4e69-94a3-365ce58f1c61",
+        "variantId": "b5e18148-92bd-44e9-94d4-70068b8c4e6c"
+      }
+    ],
+    "userId": "9b73c055-b340-4ba1-bf75-26df8cdd61ff",
+    "branchId": "main",
+    "createdAt": "2026-10-05T22:19:21.386Z"
+  },
+  "users": [
+    {
+      "id": "9b73c055-b340-4ba1-bf75-26df8cdd61ff",
+      "email": "legacy-r7-muvtb481-original@example.test"
+    },
+    {
+      "id": "0d7400dc-c26d-4fb9-addf-04dc9b1aadc7",
+      "email": "legacy-r7-muvtb481-nuevo@example.test"
+    }
+  ],
+  "terminalId": "1257f992-6c2e-4cb8-85ea-3270a963b1c4",
+  "productId": "001a1237-d06f-4c14-be1d-45931342ce7d",
+  "variantId": "b5e18148-92bd-44e9-94d4-70068b8c4e6c",
+  "supplierId": "7763042d-67eb-4069-9d33-9228a60455bf",
+  "supplierName": "Proveedor actualización legacy-r7-muvtb481",
+  "operation": {
+    "id": "a46342a7-e200-4f8f-ad8a-3bc08633fa49",
+    "receiptId": "4ea5d393-00eb-433b-8d44-898054c63719",
+    "variantIds": [
+      "b5e18148-92bd-44e9-94d4-70068b8c4e6c"
+    ],
+    "total": 34
+  },
+  "orphanLotId": "6fbf3240-e26e-45d6-bc6a-deec6f63a59e",
+  "source": "API y esquema originales R3 sobre base separada",
+  "unknownReceiptId": "04b38cd9-5985-4f82-9673-b7eed0fb9a55",
+  "incompleteReceiptId": "fa000b3d-bb42-4011-9919-8b3597626491"
+}

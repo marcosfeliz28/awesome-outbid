@@ -1,0 +1,150 @@
+{
+  "dataScope": "Sólo datos QA en base separada; libros sintéticos, sin el Excel original de la tienda.",
+  "codeCollision": {
+    "run": {
+      "status": 0,
+      "stdout": "1 productos leídos · 0 nuevos (0 unidades) · 1 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 códigos corregidos · 0 sin precio o costo en el Excel (inactivos).\n0 productos para revisar en /workspace/auditoria-ronda7/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    },
+    "code": "9876500712345",
+    "existing": {
+      "id": "46275d66-c504-4e34-a678-4a0957e00bea",
+      "sku": "qa-existing-r7-v",
+      "barcode": "9876500712345",
+      "stock": 4,
+      "costAvg": 10,
+      "price": 20,
+      "productName": "QA producto existente por barras R7",
+      "active": true
+    },
+    "imported": {
+      "id": "69fc52f0-95d9-4eef-8a0d-9f5197fe96c2",
+      "sku": "9876500712345",
+      "barcode": "INV-9876500712345",
+      "stock": 2,
+      "costAvg": 10,
+      "price": 20,
+      "productName": "QA producto nuevo por ID R7",
+      "active": true
+    },
+    "expectedBehavior": "Rechazar la ambigüedad contra códigos existentes antes de escribir; el ID de cobro no debe seleccionar otro producto."
+  },
+  "localizedNumbers": {
+    "input": {
+      "qty": "1,5",
+      "cost": "1.250,50",
+      "price": "2.500,75"
+    },
+    "expected": {
+      "qty": 1.5,
+      "cost": 1250.5,
+      "price": 2500.75
+    },
+    "persisted": {
+      "id": "8fd02118-f460-47be-9889-25f29138ad4a",
+      "sku": "9876500700002",
+      "barcode": "9876500700002",
+      "stock": 15,
+      "costAvg": 1.25,
+      "price": 2.5,
+      "productName": "QA valores españoles R7",
+      "active": true
+    },
+    "run": {
+      "status": 0,
+      "stdout": "1 productos leídos · 0 nuevos (0 unidades) · 1 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 códigos corregidos · 0 sin precio o costo en el Excel (inactivos).\n0 productos para revisar en /workspace/auditoria-ronda7/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    }
+  },
+  "categoryReset": {
+    "before": {
+      "requiresLot": true,
+      "requiresExpiry": true
+    },
+    "after": {
+      "requiresLot": false,
+      "requiresExpiry": false
+    },
+    "newCategoryAuditEntries": 0,
+    "repeatRun": {
+      "status": 0,
+      "stdout": "1 productos leídos · 0 nuevos (0 unidades) · 1 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 códigos corregidos · 0 sin precio o costo en el Excel (inactivos).\n1 productos para revisar en /workspace/auditoria-ronda7/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    },
+    "entryWithoutLotBefore": {
+      "status": 400,
+      "message": "Indica lote y vencimiento."
+    },
+    "entryWithoutLotAfter": {
+      "status": 201,
+      "body": {
+        "id": "0090d708-272d-4cca-bc67-16f243773674",
+        "productId": "17062cb5-ffa7-4d99-95f9-4a4227327e90",
+        "sku": "qa-protected-r7-v",
+        "barcode": "qa-protected-r7-b",
+        "attributes": {},
+        "costAvg": "10",
+        "price": "20",
+        "wholesalePrice": null,
+        "stock": 1,
+        "active": true,
+        "branchId": "main",
+        "createdBy": "23b95922-c769-4816-b3f7-12d42e0b0809",
+        "createdAt": "2026-10-05T22:23:30.339Z",
+        "updatedAt": "2026-10-05T22:23:30.339Z",
+        "product": {
+          "id": "17062cb5-ffa7-4d99-95f9-4a4227327e90",
+          "name": "QA producto protegido R7",
+          "sku": "qa-protected-r7",
+          "categoryId": "76d3efd0-0b10-4bd9-bb1b-639614930eb4",
+          "brand": "FitStore",
+          "supplierId": null,
+          "description": "",
+          "imageUrl": null,
+          "taxRate": "0",
+          "minStock": "5",
+          "maxStock": "80",
+          "unit": "unidad",
+          "location": "",
+          "active": true,
+          "isKit": false,
+          "branchId": "main",
+          "createdBy": "23b95922-c769-4816-b3f7-12d42e0b0809",
+          "createdAt": "2026-10-05T22:23:30.339Z",
+          "updatedAt": "2026-10-05T22:23:30.339Z",
+          "category": {
+            "id": "76d3efd0-0b10-4bd9-bb1b-639614930eb4",
+            "name": "QA categoría con lotes R7",
+            "requiresLot": false,
+            "requiresExpiry": false,
+            "color": "#7C3AED",
+            "attributes": [],
+            "branchId": "main",
+            "createdBy": "23b95922-c769-4816-b3f7-12d42e0b0809",
+            "createdAt": "2026-10-05T22:23:30.328Z",
+            "updatedAt": "2026-10-05T22:23:30.845Z"
+          }
+        },
+        "lots": [],
+        "allowNegativeStock": false
+      }
+    },
+    "source": "Categoría y producto creados por API; el Excel referencia el SKU existente y la carga informa sin cambios."
+  },
+  "catalogControl": {
+    "source": "616 nombres/ID/categorías del fixture del ZIP. Stock=1, costo=10 y precio=20 son sintéticos de QA; NO representan el Excel real.",
+    "count": 616,
+    "stockTotal": 616,
+    "firstRun": {
+      "status": 0,
+      "stdout": "616 productos leídos · 616 nuevos (616 unidades) · 0 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 códigos corregidos · 0 sin precio o costo en el Excel (inactivos).\n0 productos para revisar en /workspace/auditoria-ronda7/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    },
+    "repeatRun": {
+      "status": 0,
+      "stdout": "616 productos leídos · 0 nuevos (0 unidades) · 616 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 códigos corregidos · 0 sin precio o costo en el Excel (inactivos).\n0 productos para revisar en /workspace/auditoria-ronda7/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    },
+    "stockUnchanged": true
+  }
+}

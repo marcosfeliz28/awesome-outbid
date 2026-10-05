@@ -1,0 +1,61 @@
+{
+  "project": "FitStore POS",
+  "round": 8,
+  "audit": {
+    "report": "docs/AUDITORIA_RONDA7.md",
+    "auditedZipSha256": "def23a3aed35a86bd753bcdf69bcca442103d7bd8e749a2e120cbaf2a0f1d314"
+  },
+  "suites": {
+    "check": {
+      "unitTests": 76,
+      "passed": true
+    },
+    "integrationCompiled": {
+      "passed": 84,
+      "total": 84
+    },
+    "e2e": {
+      "passed": 9,
+      "total": 9
+    }
+  },
+  "findings": [
+    {
+      "id": "R7-01",
+      "priority": "P1",
+      "status": "corregido",
+      "tests": [
+        "tests/api.test.ts › Ronda 8 › R7-01"
+      ],
+      "failsOnRound7": true
+    },
+    {
+      "id": "R7-02",
+      "priority": "P1",
+      "status": "corregido",
+      "tests": [
+        "tests/inventario.test.ts › números en texto",
+        "tests/inventario.test.ts › Excel de QA"
+      ],
+      "failsOnRound7": true
+    },
+    {
+      "id": "R7-03",
+      "priority": "P2",
+      "status": "corregido",
+      "tests": [
+        "tests/api.test.ts › Ronda 8 › R7-03"
+      ],
+      "failsOnRound7": true
+    },
+    {
+      "id": "R7-04",
+      "priority": "P2",
+      "status": "corregido",
+      "tests": [
+        "tests/api.test.ts › Ronda 8 › R7-04"
+      ],
+      "failsOnRound7": true
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "fractional": {
+    "submitted": [
+      0.001,
+      0.5
+    ],
+    "statuses": [
+      400,
+      400
+    ],
+    "message": "Los combos se venden por unidades enteras: combo kit-r7-muvtm82x.",
+    "before": {
+      "stock": "1",
+      "moves": 1,
+      "sales": 0,
+      "payments": 0,
+      "cash": {
+        "cash": 0,
+        "card": 0,
+        "transfer": 0,
+        "movements": []
+      }
+    },
+    "after": {
+      "stock": "1",
+      "moves": 1,
+      "sales": 0,
+      "payments": 0,
+      "cash": {
+        "cash": 0,
+        "card": 0,
+        "transfer": 0,
+        "movements": []
+      }
+    },
+    "noWrites": true
+  },
+  "wholeKit": {
+    "saleTotal": 5000,
+    "saleCost": 4000,
+    "stockAfter": 0.6,
+    "allocations": [
+      {
+        "qty": 0.4,
+        "exact": true,
+        "unitCost": 10000,
+        "variantId": "f44061c6-fb10-4e67-9071-41085e02e4f8"
+      }
+    ],
+    "partialReturnStatus": 400,
+    "totalReturnCost": 4000,
+    "restoredStock": 1
+  },
+  "partialCost": {
+    "saleCost": 50.05,
+    "returnedCost": 15.02,
+    "bookedRemainingCost": 35.03,
+    "reportedRemainingCost": 35.04,
+    "profitRow": {
+      "Producto": "combo-fino kit-r7-muvtm82x",
+      "Categoría": "Ropa deportiva",
+      "Ventas": 140,
+      "Costo": 35.04,
+      "Unidades": 7,
+      "Utilidad": 104.96,
+      "Margen": 74.97
+    },
+    "fullReturnCosts": [
+      15.02,
+      35.03
+    ],
+    "finalReportCost": 0
+  }
+}

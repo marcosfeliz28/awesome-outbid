@@ -3784,3 +3784,203 @@ describe("Ronda 7 · auditoría R6 de ChatGPT", () => {
     expect(await report()).toMatchObject({ Pagado: 55, Pendiente: 0 });
   });
 });
+// Ronda 8: regresiones exigidas por la auditoría R7 de ChatGPT
+// (docs/AUDITORIA_RONDA7.md).
+describe("Ronda 8 · auditoría R7 de ChatGPT", () => {
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Santo_Domingo",
+  });
+  let cats: any[];
+  beforeAll(async () => {
+    cats = await ok("/categories");
+  });
+  // Ejecuta el importador real contra la misma base que la API.
+  const runImport = async (rows: unknown[][], ...flags: string[]) => {
+    const { mkdtempSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const ExcelJS = requireApi("exceljs");
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("Inventario 2026");
+    ws.addRow([
+      "ID",
+      "DESCRIPCION",
+      "REFERENCIA",
+      "SUB-GRUPO DE ARTICULO",
+      "EXISTENCIA",
+      "COSTO",
+      "PRECIO DETALLE",
+    ]);
+    rows.forEach((r) => ws.addRow(r));
+    const file = join(mkdtempSync(join(tmpdir(), "r8-")), "inventario.xlsx");
+    await wb.xlsx.writeFile(file);
+    const run = spawnSync(
+      new URL("../apps/api/node_modules/.bin/tsx", import.meta.url).pathname,
+      ["scripts/import-inventario.ts", file, ...flags],
+      {
+        cwd: new URL("../apps/api", import.meta.url).pathname,
+        env: process.env,
+        encoding: "utf8",
+      },
+    );
+    return { status: run.status, out: run.stdout + run.stderr };
+  };
+
+  it("R7-01: un código que ya es de otro producto detiene la carga sin escribir", async () => {
+    const code = "98765" + Date.now().toString().slice(-8);
+    const a = await ok("/products", {
+      name: "QA R8 existente " + suffix,
+      sku: "R8A-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [
+        {
+          sku: "R8AV-" + randomUUID().slice(0, 8),
+          barcode: code,
+          price: 20,
+          costAvg: 10,
+        },
+      ],
+    });
+    products.push(a);
+    const before = await fixtureDb.variant.count();
+    // Como el caso de ChatGPT: ID y referencia iguales al código de barras de A.
+    const r1 = await runImport([
+      [code, "QA R8 producto B", code, "Ropa deportiva", 2, 10, 20],
+    ]);
+    expect(r1.status).not.toBe(0);
+    expect(r1.out).toMatch(new RegExp("el código " + code + " ya es de"));
+    // REFERENCIA igual al SKU de A en una fila con otro ID.
+    const r2 = await runImport([
+      [
+        "R8-" + suffix,
+        "QA R8 producto C",
+        a.variants[0].sku,
+        "Ropa deportiva",
+        1,
+        10,
+        20,
+      ],
+    ]);
+    expect(r2.status).not.toBe(0);
+    expect(r2.out).toMatch(/ya es de/);
+    expect(await fixtureDb.variant.count()).toBe(before);
+    expect(
+      await fixtureDb.variant.findFirst({ where: { sku: code } }),
+    ).toBeNull();
+  });
+
+  it("R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo", async () => {
+    const name = "QA R8 lotes " + suffix;
+    const category = await ok("/categories", {
+      name,
+      requiresLot: true,
+      requiresExpiry: true,
+    });
+    const id = "R8L-" + randomUUID().slice(0, 6);
+    const r = await runImport([[id, "QA R8 con lote", id, name, 3, 10, 20]]);
+    expect(r.status).not.toBe(0);
+    expect(r.out).toMatch(/exige lote o vencimiento/);
+    expect(
+      await fixtureDb.category.findUnique({ where: { id: category.id } }),
+    ).toMatchObject({ requiresLot: true, requiresExpiry: true });
+    expect(
+      await fixtureDb.variant.findFirst({ where: { sku: id } }),
+    ).toBeNull();
+    // Pedido explícito: se desactiva y queda en la bitácora.
+    const forced = await runImport(
+      [[id, "QA R8 con lote", id, name, 3, 10, 20]],
+      "--sin-lotes",
+    );
+    expect(forced.status, forced.out).toBe(0);
+    expect(
+      await fixtureDb.category.findUnique({ where: { id: category.id } }),
+    ).toMatchObject({ requiresLot: false, requiresExpiry: false });
+    expect(
+      await fixtureDb.auditLog.count({
+        where: {
+          entityId: category.id,
+          action: "category_lots_disabled_by_import",
+        },
+      }),
+    ).toBe(1);
+    // Una recarga de lo ya cargado no toca la categoría.
+    await fixtureDb.category.update({
+      where: { id: category.id },
+      data: { requiresLot: true, requiresExpiry: true },
+    });
+    const again = await runImport([
+      [id, "QA R8 con lote", id, name, 3, 10, 20],
+    ]);
+    expect(again.status, again.out).toBe(0);
+    expect(again.out).toMatch(/1 ya cargados sin cambios/);
+    expect(
+      await fixtureDb.category.findUnique({ where: { id: category.id } }),
+    ).toMatchObject({ requiresLot: true, requiresExpiry: true });
+    const v = await fixtureDb.variant.findFirstOrThrow({ where: { sku: id } });
+    await request(
+      "/products/" + v.productId,
+      { active: false },
+      ownerToken,
+      "PATCH",
+    );
+  });
+
+  it("R7-04: el reporte de utilidad usa el costo registrado en cada devolución parcial", async () => {
+    const product = async (label: string, price: number, costAvg: number) => {
+      const p = await ok("/products", {
+        name: "QA R8 " + label + " " + suffix,
+        sku: "R8-" + randomUUID().slice(0, 8),
+        categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+        taxRate: 0,
+        variants: [
+          {
+            sku: "R8V-" + randomUUID().slice(0, 8),
+            barcode: "R8B-" + randomUUID().slice(0, 8),
+            price,
+            costAvg,
+          },
+        ],
+      });
+      products.push(p);
+      return p.variants[0];
+    };
+    const component = await product("comp parcial", 30, 10.01);
+    const combo = await product("combo parcial", 20, 0);
+    await ok("/inventory/adjustments", {
+      variantId: component.id,
+      qty: 10,
+      reason: "QA R8 stock",
+    });
+    await ok("/kits", {
+      kitVariantId: combo.id,
+      components: [{ componentVariantId: component.id, qty: 0.5 }],
+    });
+    const sale = await ok("/sales", {
+      ...input(combo.id, 200),
+      items: [{ variantId: combo.id, qty: 10 }],
+    });
+    expect(Number(sale.costTotal)).toBe(50.05);
+    const item = await fixtureDb.saleItem.findFirstOrThrow({
+      where: { saleId: sale.id },
+    });
+    const profit = async () =>
+      (await ok(`/reports/profit?from=${today}&to=${today}`)).rows.find(
+        (r: any) => r.Producto === "QA R8 combo parcial " + suffix,
+      ).Costo;
+    const back = (qty: number) =>
+      ok("/returns", {
+        saleId: sale.id,
+        cashSessionId: session.id,
+        reason: "QA R8 devolución",
+        refundMethod: "credit_note",
+        items: [{ saleItemId: item.id, qty, restock: true }],
+      });
+    expect(await profit()).toBe(50.05);
+    const first = await back(3);
+    expect(Number(first.costTotal)).toBe(15.02);
+    // El estado intermedio: 50.05 − 15.02 = 35.03.
+    expect(await profit()).toBe(35.03);
+    await back(7);
+    expect(await profit()).toBe(0);
+  });
+});

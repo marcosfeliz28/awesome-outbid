@@ -496,7 +496,8 @@ export class ReportsController {
           row.Ventas = money(d(row.Ventas).plus(d(i.lineTotal).minus(i.tax)));
           // Sin redondear hasta el final: ventas y devoluciones parciales se
           // compensan exactamente.
-          row.Costo = d(row.Costo).plus(allocationCost(i));
+          // Lo registrado por línea (redondeado como Sale.costTotal).
+          row.Costo = d(row.Costo).plus(money(allocationCost(i)));
           row.Unidades += Number(i.qty);
           grouped.set(id, row);
         }
@@ -554,8 +555,12 @@ export class ReportsController {
               ),
             );
             if (part.restock)
+              // El costo que registró la devolución; las anteriores a la
+              // ronda 8 no lo guardaban y se estiman por proporción.
               row.Costo = d(row.Costo).minus(
-                allocationCost(line).times(part.qty).div(line.qty),
+                typeof part.cost === "number"
+                  ? part.cost
+                  : allocationCost(line).times(part.qty).div(line.qty),
               );
             row.Unidades -= Number(part.qty);
             grouped.set(id, row);

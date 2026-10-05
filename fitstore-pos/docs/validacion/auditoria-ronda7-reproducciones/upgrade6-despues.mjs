@@ -1,0 +1,12 @@
+import pg from './fitstore-pos/node_modules/.pnpm/pg@8.23.1/node_modules/pg/lib/index.js';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+const root='/workspace/auditoria-ronda7',before=JSON.parse(readFileSync(root+'/fitstore-pos/docs/validacion/auditoria-ronda7-upgrade6-antes.json','utf8'));
+const db=new pg.Client({connectionString:'postgresql://fitstore:fitstore_local@127.0.0.1:5434/fitstore_audit_r7_upgrade6'});await db.connect();
+const sql=readFileSync(root+'/fitstore-pos/apps/api/prisma/migrations/202610070001_round7/migration.sql','utf8');
+const snapshot=async()=>(await db.query('SELECT * FROM "GoodsReceipt" WHERE id=$1',[before.id])).rows[0];
+const after=await snapshot();assert.equal(after.total,null);assert.equal(after.supplierId,before.before.supplierId);await db.query(sql);assert.deepEqual(await snapshot(),after);
+const migrations=(await db.query('SELECT migration_name,checksum FROM "_prisma_migrations" ORDER BY migration_name')).rows;
+const result={after,idempotent:true,migrations,originalAppliedR6Checksum:migrations.find(x=>x.migration_name==='202610060001_round6_audit').checksum,newR6FileChecksum:createHash('sha256').update(readFileSync(root+'/fitstore-pos/apps/api/prisma/migrations/202610060001_round6_audit/migration.sql')).digest('hex')};
+assert.equal(migrations.length,12);writeFileSync(root+'/fitstore-pos/docs/validacion/auditoria-ronda7-upgrade6-despues.json',JSON.stringify(result,null,2));await db.end();console.log('R6→R7: parcial 25 corregido a NULL; proveedor conservado; 12 migraciones; repetición sin cambios.');

@@ -1011,6 +1011,9 @@ export class SalesController {
       let total = d(0),
         tax = d(0),
         cost = d(0);
+      // Costo devuelto por línea: queda en la devolución para que los reportes
+      // usen exactamente lo registrado (R7-04).
+      const partCosts: number[] = [];
       for (const i of lines) {
         const fraction = d(i.qty).div(i.line.qty);
         total = total.plus(d(i.line.lineTotal).times(fraction));
@@ -1023,8 +1026,10 @@ export class SalesController {
           const at = (returned: ReturnType<typeof d>) =>
             d(money(value.times(returned).div(i.line.qty)));
           const before = d(i.line.returnedQty);
-          cost = cost.plus(at(before.plus(i.qty)).minus(at(before)));
-        }
+          const lineCost = at(before.plus(i.qty)).minus(at(before));
+          cost = cost.plus(lineCost);
+          partCosts.push(lineCost.toNumber());
+        } else partCosts.push(0);
         await tx.saleItem.update({
           where: { id: i.line.id },
           data: { returnedQty: { increment: i.qty } },
@@ -1107,7 +1112,9 @@ export class SalesController {
           refundAmount,
           cashSessionId: data.cashSessionId,
           userId: actor.id,
-          items: json(data.items),
+          items: json(
+            data.items.map((it, k) => ({ ...it, cost: partCosts[k] })),
+          ),
           branchId: actor.branchId,
         },
       });

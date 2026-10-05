@@ -1,0 +1,25 @@
+Claude:
+
+La auditoría independiente de fitstore-pos-ronda7.zip terminó. No se modificó la implementación. Los tres casos pendientes R6-01/02/03 quedaron corregidos. Check aprobó tipos, lint, compilación y 73 unitarias; una de las 74 registradas fue omitida por faltar el Excel original en este entorno. Integración con node dist/main.js: 81/81. Navegador: 9/9. R3→R7 y R6 ya aplicada→R7 comprobados; reparación de total parcial a NULL idempotente.
+
+Hay cuatro hallazgos adicionales:
+
+R7-01, P1 · Códigos ambiguos contra la base:
+Producto A: sku qa-existing-r7-v, barcode 9876500712345, stock 4. Importar B con ID/referencia 9876500712345, stock 2, costo 10 y precio 20: acepta; B queda sku 9876500712345 y barcode INV-9876500712345. En caja, ese ID + Enter agrega A, confirmado en navegador. Validar ID/SKU/referencia/barras contra la base y el archivo antes de escribir; rechazar si señalan distintos productos. No basta checkCodes entre las filas del Excel.
+
+R7-02, P1 · Números de texto en español:
+EXISTENCIA "1,5", COSTO "1.250,50", PRECIO DETALLE "2.500,75" se guardan como stock 15, costo 1.25 y precio 2.50, con producto activo y salida 0. num() borra comas y conserva el punto de miles. Interpretar formatos admitidos o rechazar con diagnóstico; no alterar silenciosamente el número. Usar precisión/validación de cantidades y dinero antes de escribir. Es un Excel QA, no una afirmación sobre el archivo original de la tienda.
+
+R7-03, P2 · Recarga revierte políticas de categoría:
+Crear por API categoría requiresLot=true/requiresExpiry=true y producto ya existente. Ajuste sin lote/vencimiento da 400. Cargar Excel con ese SKU: dice 1 sin cambios, pero cambia ambos flags a false sin entrada de auditoría de categoría; el mismo ajuste pasa a 201. Preservar categorías existentes. Una carga de inventario no debe apagar esos controles como efecto secundario.
+
+R7-04, P2 · Costo reportado en devolución parcial:
+Combo: componente 0.5 a costo 10.01; vender 10 a 20, impuesto 0. Sale.costTotal=50.05. Devolver 3 con reposición registra costTotal=15.02. Saldo contabilizado=35.03, pero reports/profit.Costo=35.04. Al devolver los 7 restantes queda 0 y tu prueba pasa; falta el estado intermedio. Alinear el reporte con el costo por línea y el redondeo acumulado de las devoluciones. Regresión exigida: 50.05 → devolución 15.02 → reporte 35.03 → devolución restante → 0.
+
+Leer fitstore-pos/docs/AUDITORIA_RONDA7.md. Evidencia propia: auditoria-ronda7-importador.json, auditoria-ronda7-ui-importador.json y auditoria-ronda7-kit.json. El paquete incluye los Excel QA y las reproducciones externas.
+
+La carga de control usó 616 nombres/ID/categorías del fixture, con stock=1/costo=10/precio=20 inventados exclusivamente para QA. Cargó y recargó sin duplicar. No certifica las 3158 unidades ni los precios/costos del Excel real, que no fue adjuntado.
+
+Mantén las correcciones y regresiones que ya pasan. Corrige estos cuatro puntos y entrega la siguiente ronda con nuevas pruebas que fallen con la ronda 7, check, integración compilada y e2e. No conviertas una reproducción del comportamiento defectuoso en aprobación cambiando sólo su expectativa.
+
+SHA-256 auditado: def23a3aed35a86bd753bcdf69bcca442103d7bd8e749a2e120cbaf2a0f1d314

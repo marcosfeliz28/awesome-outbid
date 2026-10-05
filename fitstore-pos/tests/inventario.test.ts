@@ -7,6 +7,7 @@ import { join } from "node:path";
 import {
   brandOf,
   checkCodes,
+  parseNumber,
   readInventory,
   reviewOf,
 } from "../apps/api/scripts/import-inventario";
@@ -106,4 +107,39 @@ describe("importador de inventario · lectura del Excel", () => {
       expect(checkCodes(rows)).toEqual([]);
     },
   );
+  // Auditoría R7 (ChatGPT) · R7-02: números en texto.
+  it("números en texto: formatos admitidos y ambiguos", () => {
+    expect(parseNumber("1500")).toBe(1500);
+    expect(parseNumber("1,5")).toBe(1.5);
+    expect(parseNumber("1.5")).toBe(1.5);
+    expect(parseNumber("1.250,50")).toBe(1250.5);
+    expect(parseNumber("1,250.50")).toBe(1250.5);
+    expect(parseNumber("2.500,75")).toBe(2500.75);
+    expect(parseNumber("RD$ 1.250,50")).toBe(1250.5);
+    expect(parseNumber(12.5)).toBe(12.5);
+    expect(parseNumber("1.250")).toMatch(/ambiguo/);
+    expect(parseNumber("1,250")).toMatch(/ambiguo/);
+    expect(parseNumber("1.2.3")).toMatch(/no válido/);
+    expect(parseNumber("abc")).toMatch(/no válido/);
+  });
+  it("el Excel de QA de ChatGPT se lee bien o se rechaza con diagnóstico", async () => {
+    const ok = await readInventory(
+      await workbook([
+        [9001, "QA texto", "9001", "Fajas", "1,5", "1.250,50", "2.500,75"],
+      ]),
+    );
+    expect(ok[0]).toMatchObject({ qty: 1.5, cost: 1250.5, price: 2500.75 });
+    await expect(
+      readInventory(
+        await workbook([
+          [9002, "Ambiguo", "9002", "Fajas", "2", "1.250", "2000"],
+          [9003, "Negativo", "9003", "Fajas", "-1", "10", "20"],
+          [9004, "Fino", "9004", "Fajas", "1,0005", "10", "20"],
+          [9005, "Centavos", "9005", "Fajas", "1", "10,555", "20"],
+        ]),
+      ),
+    ).rejects.toThrow(
+      /9002, COSTO: «1\.250» es ambiguo[\s\S]*9003, EXISTENCIA[\s\S]*9004, EXISTENCIA[\s\S]*9005, COSTO/,
+    );
+  });
 });
