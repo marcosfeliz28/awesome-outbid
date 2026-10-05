@@ -72,9 +72,9 @@ export function returnShares(
 /**
  * Costo exacto de una línea vendida: lo que valían sus asignaciones de stock
  * (lotes o componentes de combo). En combos, unitCost está redondeado a
- * centavos por unidad; las asignaciones no. Los combos anteriores a la ronda 7
- * guardaron cantidades redondeadas (sin "exact"): para ellos vale el costo
- * registrado, unitCost × qty.
+ * centavos por unidad; las asignaciones no. Un combo anterior a la ronda 7
+ * vendido en fracción guardó cantidades redondeadas (sin "exact"): para él vale
+ * el costo registrado, unitCost × qty.
  */
 export function allocationCost(line: {
   qty: Decimal.Value;
@@ -98,7 +98,11 @@ export function allocationCost(line: {
     allocations.every(
       (a) => typeof a?.qty === "number" && typeof a?.unitCost === "number",
     ) &&
-    (!kit || allocations.every((a) => a?.exact === true))
+    // Combos antiguos: sus cantidades eran exactas si se vendieron enteros
+    // (componente con 3 decimales × unidades enteras).
+    (!kit ||
+      allocations.every((a) => a?.exact === true) ||
+      d(line.qty).isInteger())
   )
     return allocations.reduce(
       (s, a) => s.plus(d(a.qty as number).times(a.unitCost as number)),

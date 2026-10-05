@@ -579,6 +579,8 @@ const COLOR_EN: Record<string, string> = {
   gold: "dorado",
   silver: "plateado",
   cream: "crema",
+  // "Café" es color (marrón) y también sabor.
+  cafe: "marron",
 };
 const NAME_COLORS = [
   "negro",
@@ -627,7 +629,7 @@ const FLAVOR_EN: Record<string, string> = {
   peanut: "mani",
   cookies: "cookies",
   brownie: "brownie",
-  unflavored: "sin sabor",
+  unflavored: "natural",
 };
 const NAME_FLAVORS = [
   ...FLAVORS.filter((f) => !f.includes(" ")),
@@ -648,12 +650,10 @@ const SIZE_WORDS: Record<string, string> = {
 };
 const SIZE_KEYWORDS = new Set(["talla", "size", "tallas", "sizes"]);
 // Palabras de relleno que no identifican el producto.
-const FILLER = new Set([
-  "color",
-  "colour",
-  "talla",
-  "size",
-  "tono",
+const FILLER = new Set(["color", "colour", "talla", "size", "tono"]);
+// Claro/oscuro sólo son relleno junto a un color ("Light Brown", "marrón
+// oscuro"); solos distinguen productos ("Envase oscuro" / "Envase blanco").
+const COLOR_MODIFIERS = new Set([
   "light",
   "dark",
   "claro",
@@ -670,11 +670,11 @@ const FILLER = new Set([
 // - Si la descripción dice "talla …", cuentan sólo las tallas tras esa
 //   palabra ("M&D talla XL" es XL).
 export function sizesIn(toks: string[]) {
-  const found: { size: string; keyed: boolean }[] = [];
+  const found: { size: string; keyed: boolean; end: number }[] = [];
   toks.forEach((raw, i) => {
     const prev = toks[i - 1] ?? "",
       prev2 = toks[i - 2] ?? "";
-    const small = /^[2-6]$/;
+    const small = /^[2-9]$/;
     const word = SIZE_WORDS[raw];
     let size = "",
       start = i;
@@ -704,32 +704,142 @@ export function sizesIn(toks: string[]) {
       size = raw;
     }
     if (!size) return;
-    found.push({ size, keyed: SIZE_KEYWORDS.has(toks[start - 1] ?? "") });
+    found.push({
+      size,
+      keyed: SIZE_KEYWORDS.has(toks[start - 1] ?? ""),
+      end: i,
+    });
   });
+  // "talla L-XL": las tallas seguidas tras la palabra también cuentan.
+  for (let k = 1; k < found.length; k++)
+    if (found[k - 1].keyed && found[k].end === found[k - 1].end + 1)
+      found[k].keyed = true;
   const keyed = found.filter((f) => f.keyed);
   return new Set((keyed.length ? keyed : found).map((f) => f.size));
 }
 const sizeOverlap = (a: Set<string>, b: Set<string>) =>
   [...a].some((x) => b.has(x));
-// Nombre sin talla, color ni relleno: las palabras que identifican el producto.
-export function coreText(text: string) {
-  const toks = tokens(text);
+// Partes de un nombre "Producto - Marca - Presentación / Tamaño".
+const nameSegments = (name: string) => name.split(/\s+[/–—-]\s+/);
+// Dónde se describe la presentación (talla, color, sabor) en un nombre: tras
+// el primer separador; sin separadores, todo el nombre. Así "Gold Standard",
+// "Whey Gold" o "Shaker negro" (la línea del producto) no se leen como color.
+export const presentationOf = (name: string) => {
+  const parts = nameSegments(name);
+  return parts.length > 1 ? parts.slice(1).join(" ") : name;
+};
+// Palabras de talla, color o relleno en una lista de tokens.
+function traitTokens(toks: string[]) {
   const drop = new Set<number>();
   toks.forEach((t, i) => {
     const prev = toks[i - 1] ?? "",
       next = toks[i + 1] ?? "";
-    if (NAME_COLORS.includes(t) || FILLER.has(t)) drop.add(i);
+    if (
+      NAME_COLORS.includes(t) ||
+      FILLER.has(t) ||
+      (COLOR_MODIFIERS.has(t) &&
+        (NAME_COLORS.includes(prev) || NAME_COLORS.includes(next)))
+    )
+      drop.add(i);
     else if (SIZES.includes(t) || SIZE_WORDS[t]) {
       // "1 l" es una medida y se conserva.
       if (t === "l" && /^\d+$/.test(prev)) return;
       drop.add(i);
-      if ((t === "xs" || t === "xl") && /^[2-6]$/.test(prev)) drop.add(i - 1);
+      if ((t === "xs" || t === "xl") && /^[2-9]$/.test(prev)) drop.add(i - 1);
     } else if (["x", "xx", "xxx", "extra"].includes(t) && SIZE_WORDS[next]) {
       drop.add(i);
-      if (t === "x" && /^[2-6]$/.test(prev)) drop.add(i - 1);
+      if (t === "x" && /^[2-9]$/.test(prev)) drop.add(i - 1);
     }
   });
-  return toks.filter((_, i) => !drop.has(i)).join(" ");
+  return drop;
+}
+// Nombre sin talla, color ni relleno de la presentación: las palabras que
+// identifican el producto. La primera parte del nombre (la línea) se conserva
+// entera; sin separadores, sólo se quitan las 3 últimas palabras de rasgo
+// ("Short Broche S Negro" → "short broche").
+export function coreText(text: string) {
+  const parts = nameSegments(text);
+  if (parts.length > 1) {
+    const rest = tokens(parts.slice(1).join(" "));
+    const drop = traitTokens(rest);
+    return [...tokens(parts[0]), ...rest.filter((_, i) => !drop.has(i))].join(
+      " ",
+    );
+  }
+  const toks = tokens(text);
+  const drop = traitTokens(toks);
+  return toks.filter((_, i) => !drop.has(i) || i < toks.length - 3).join(" ");
+}
+// Palabras genéricas que no identifican un producto.
+const GENERIC = new Set([
+  "de",
+  "del",
+  "la",
+  "el",
+  "los",
+  "las",
+  "con",
+  "y",
+  "para",
+  "sin",
+  "en",
+  "the",
+  "of",
+  "and",
+  "with",
+  "for",
+  "bolsa",
+  "bag",
+  "pote",
+  "tub",
+  "frasco",
+  "bote",
+  "unidad",
+  "unidades",
+  "und",
+  "pack",
+  "nueva",
+  "new",
+  "formula",
+]);
+const UNIT_WORDS = new Set([
+  "lb",
+  "oz",
+  "g",
+  "kg",
+  "ml",
+  "l",
+  "mg",
+  "mcg",
+  "caps",
+  "tabs",
+  "capsulas",
+  "tabletas",
+  "servicios",
+  "servings",
+  "porciones",
+  "capsules",
+  "tablets",
+  "softgels",
+  "gomitas",
+]);
+// Palabras que identifican el producto: la línea y la presentación sin
+// rasgos, números, unidades ni relleno. La marca de "Producto - Marca -
+// Presentación" es opcional: las facturas a menudo la omiten.
+export function keyTokens(name: string) {
+  const parts = name.split(/\s+-\s+/);
+  const brand = parts.length >= 3 ? new Set(tokens(parts[1])) : new Set();
+  return [
+    ...new Set(
+      tokens(coreText(name)).filter(
+        (t) =>
+          !/^\d+$/.test(t) &&
+          !UNIT_WORDS.has(t) &&
+          !GENERIC.has(t) &&
+          !brand.has(t),
+      ),
+    ),
+  ];
 }
 const attrKind = (key: string) => {
   const k = normalize(key);
@@ -738,7 +848,7 @@ const attrKind = (key: string) => {
   if (/talla|size/.test(k)) return SIZES;
   return [];
 };
-type Measure = { n: number; unit: string };
+type Measure = { n: number; unit: string; dec: number };
 const UNIT_CANON: Record<string, string> = {
   lb: "lb",
   lbs: "lb",
@@ -770,7 +880,7 @@ const UNIT_CANON: Record<string, string> = {
   porciones: "serv",
 };
 const MEASURE_RE = new RegExp(
-  "(?<![\\d.,])(\\d+(?:[.,]\\d+)?)\\s*(" +
+  "(?<![\\d.,])(\\d+(?:[.,]\\d+)?)[\\s-]*(" +
     Object.keys(UNIT_CANON)
       .sort((a, b) => b.length - a.length)
       .join("|") +
@@ -786,20 +896,29 @@ export function measuresIn(text: string): Measure[] {
     .toLowerCase();
   const out: Measure[] = [];
   for (const m of t.matchAll(MEASURE_RE)) {
-    const raw = /^\d{1,3},\d{3}$/.test(m[1])
-      ? m[1].replace(",", "")
-      : m[1].replace(",", ".");
-    out.push({ n: Number(raw), unit: UNIT_CANON[m[2]] });
+    const unit = UNIT_CANON[m[2]];
+    // Miles: "1,000 ml"; y "1.000 g/ml" (estilo europeo, gramos o ml).
+    const thousands =
+      /^\d{1,3},\d{3}$/.test(m[1]) ||
+      (/^\d{1,3}\.\d{3}$/.test(m[1]) && (unit === "g" || unit === "ml"));
+    const raw = thousands ? m[1].replace(/[.,]/, "") : m[1].replace(",", ".");
+    out.push({ n: Number(raw), unit, dec: raw.split(".")[1]?.length ?? 0 });
   }
   return out;
 }
 // Tamaños que se contradicen: alguna unidad en común con números distintos y
 // ninguna unidad en común que coincida ("7 g … 30 servicios" no choca con
 // "30 servings 420 g": coinciden los servicios).
-// Mismo tamaño con redondeo de etiqueta: 1.3 lb y 1.34 lb (610 g) son el
-// mismo bote; 4.5 lb y 5 lb no.
-const sameAmount = (a: Measure, b: Measure) =>
-  a.unit === b.unit && Math.abs(a.n - b.n) <= 0.05 * Math.max(a.n, b.n);
+// Mismo tamaño: igual, o la factura lo escribe redondeado con al menos un
+// decimal (1.3 lb por 1.34 lb, 5.8 lb por 5.83 lb). 1.02 lb no es 1 lb, 4.4 lb
+// no es 4.5 lb y 5 lb no es 4.5 lb.
+const sameAmount = (declared: Measure, own: Measure) => {
+  if (declared.unit !== own.unit) return false;
+  if (declared.n === own.n) return true;
+  if (declared.dec < 1 || declared.dec >= own.dec) return false;
+  const f = 10 ** declared.dec;
+  return Math.round(own.n * f) / f === declared.n;
+};
 function measureConflict(declared: Measure[], own: Measure[]) {
   const common = declared.filter((m) => own.some((o) => o.unit === m.unit));
   if (!common.length) return false;
@@ -934,8 +1053,10 @@ export function matchInvoiceLines(
     flavors: Set<string>;
     measures: Measure[];
   };
-  const traitsOf = (text: string): Traits => {
-    const toks = tokens(text),
+  // En un nombre de producto, talla/color/sabor se leen de la presentación;
+  // el tamaño, de todo el nombre.
+  const traitsOf = (text: string, name = false): Traits => {
+    const toks = tokens(name ? presentationOf(text) : text),
       set = new Set(toks);
     return {
       sizes: sizesIn(toks),
@@ -951,10 +1072,12 @@ export function matchInvoiceLines(
     };
   };
   const nameTraits = new Map<string, Traits>(),
-    nameCores = new Map<string, string>();
+    nameCores = new Map<string, string>(),
+    nameKeys = new Map<string, string[]>();
   for (const [productId, options] of byProduct) {
-    nameTraits.set(productId, traitsOf(options[0].product.name));
+    nameTraits.set(productId, traitsOf(options[0].product.name, true));
     nameCores.set(productId, coreText(options[0].product.name));
+    nameKeys.set(productId, keyTokens(options[0].product.name));
   }
   // Lo que la factura declara y el nombre del producto contradice.
   const nameConflicts = (productId: string, declared: Traits) => {
@@ -1008,6 +1131,17 @@ export function matchInvoiceLines(
       t.measures.map((m) => m.n + m.unit).sort(),
     ]);
   };
+  // ¿Están en la factura todas las palabras que identifican el producto? Un
+  // sabor o color cuenta también por su sinónimo ("Fresa" por "Strawberry").
+  const keyPresent = (productId: string, desc: Set<string>, t: Traits) =>
+    nameKeys
+      .get(productId)!
+      .every(
+        (k) =>
+          desc.has(k) ||
+          t.flavors.has(FLAVOR_EN[k] ?? k) ||
+          t.colors.has(COLOR_EN[k] ?? k),
+      );
   const describe = (t: Traits) =>
     [
       t.sizes.size ? "talla " + [...t.sizes].join("/").toUpperCase() : "",
@@ -1057,14 +1191,11 @@ export function matchInvoiceLines(
     // Por nombre. Se puntúan las palabras propias del producto (sin talla,
     // color ni relleno): "Short Broche L Negro" no debe parecerse a "Panty
     // Negro L" sólo por compartir talla y color.
-    const descCore = coreText(l.description) || l.description;
     const scored = [...byProduct].map(([productId, options]) => {
       const core = nameCores.get(productId)!;
       return {
         id: productId,
-        score: core
-          ? productScore(descCore, core)
-          : productScore(l.description, options[0].product.name),
+        score: productScore(l.description, core || options[0].product.name),
         conflicts: nameConflicts(productId, declared).length,
         agree: agreement(productId, declared),
       };
@@ -1117,6 +1248,19 @@ export function matchInvoiceLines(
               "Hay " +
               tied.length +
               " productos parecidos (otra talla, color, sabor o tamaño) y la factura no indica cuál. Elige el producto.",
+          };
+        // Sin alguna palabra que identifica al producto (otra línea u otra
+        // marca), sólo se sugiere: alguien confirma o busca otro.
+        if (!keyPresent(chosen.id, new Set(tokens(l.description)), declared))
+          return {
+            ...l,
+            variantId: null,
+            productId: chosen.id,
+            confidence: round2(chosen.score),
+            note:
+              "Coincidencia parcial con «" +
+              byProduct.get(chosen.id)![0].product.name +
+              "»: confirma el producto o busca otro.",
           };
         return pickVariant(l, chosen.id, round2(chosen.score));
       }

@@ -234,6 +234,17 @@ describe("allocationCost · costo de una línea vendida", () => {
       }).toNumber(),
     ).toBe(666);
   });
+  it("combo antiguo vendido entero: sus asignaciones eran exactas", () => {
+    // 1000 combos × 0.001 a 4.00: se registró 4.00; unitCost redondeado 0.00.
+    expect(
+      allocationCost({
+        qty: 1000,
+        unitCost: 0,
+        variantId: "combo",
+        stockAllocations: [{ variantId: "comp", qty: 1, unitCost: 4 }],
+      }).toNumber(),
+    ).toBe(4);
+  });
   it("producto simple por lotes: cantidad × costo", () => {
     expect(
       allocationCost({

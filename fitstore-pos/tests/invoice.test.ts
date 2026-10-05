@@ -797,18 +797,22 @@ describe("emparejamiento · catálogo real de la tienda", () => {
     expect(r.variantId, description).toBeNull();
     expect(r.note, description).toMatch(note);
   };
-  it("cada producto se encuentra por su propio nombre", { timeout: 60000 }, () => {
-    const res = matchInvoiceLines(
-      products.map((p) => ({ description: p.name, qty: 1, unitCost: 1 })),
-      catalog,
-    );
-    const misses = res
-      .map((r, i) =>
-        r.variantId === "v-" + products[i].id ? null : r.description,
-      )
-      .filter(Boolean);
-    expect(misses).toEqual([]);
-  });
+  it(
+    "cada producto se encuentra por su propio nombre",
+    { timeout: 60000 },
+    () => {
+      const res = matchInvoiceLines(
+        products.map((p) => ({ description: p.name, qty: 1, unitCost: 1 })),
+        catalog,
+      );
+      const misses = res
+        .map((r, i) =>
+          r.variantId === "v-" + products[i].id ? null : r.description,
+        )
+        .filter(Boolean);
+      expect(misses).toEqual([]);
+    },
+  );
   it("tamaños con decimales y miles: el bote correcto, nunca otro tamaño", () => {
     picks("ISO100 Hydrolyzed Dymatize Strawberry 1.3 lb", "1162");
     picks(
@@ -824,8 +828,11 @@ describe("emparejamiento · catálogo real de la tienda", () => {
     picks("XTEND Original BCAA Knockout Fruit Punch 30 servings 420g", "1104");
     // La tienda no tiene Isopure Low Carb Dutch Chocolate de 5 lb.
     flags("Isopure Low Carb Dutch Chocolate 5 lb", /tamaño/);
-    // Sabor en español frente al nombre en inglés.
-    picks("Dymatize ISO 100 Fresa 1.3 libras", "1162");
+    // Sabor en español frente al nombre en inglés; falta "Hydrolyzed": se
+    // sugiere el bote correcto y alguien lo confirma.
+    const fresa = match("Dymatize ISO 100 Fresa 1.3 libras");
+    expect(fresa.productId).toBe("p-1162");
+    expect(fresa.variantId).toBeNull();
   });
   it("tallas 2X-Large, Mediana, 'talla XL' y referencias", () => {
     picks("Cinturilla tipo corset 2X-Large", "1604");
@@ -843,8 +850,16 @@ describe("emparejamiento · catálogo real de la tienda", () => {
   });
   it("colores en español frente a nombres en inglés; un color que no hay se avisa", () => {
     picks("Navi Eyeliner Pencil Marron Claro", "1367");
-    picks("Navi Eyeliner Pencil Verde Esmeralda", "1369");
-    picks("Navi Eyeliner Pencil Azul Oceano", "1371");
+    // "Esmeralda"/"Oceano" no son "Emerald"/"Ocean": se sugiere sin elegir.
+    for (const [d, id] of [
+      ["Navi Eyeliner Pencil Verde Esmeralda", "1369"],
+      ["Navi Eyeliner Pencil Azul Oceano", "1371"],
+    ]) {
+      const r = match(d);
+      expect(r.productId, d).toBe("p-" + id);
+      expect(r.variantId, d).toBeNull();
+    }
+    picks("Navi Eyeliner Pencil Emerald Green", "1369");
     picks("Navi Eyeliner Pencil Dorado", "1366");
     flags("Navi Eyeliner Pencil Black", /color/);
   });
@@ -856,5 +871,84 @@ describe("emparejamiento · catálogo real de la tienda", () => {
   it("nombres cortos con color siguen encontrándose", () => {
     picks("Shaker negro", "1153");
     picks("Shaker Negro 700ml", "1153");
+  });
+});
+
+// Tercera revisión adversarial: sólo se deja elegido un producto cuando la
+// factura nombra todo lo que lo identifica (la marca es opcional); si no, se
+// sugiere y alguien confirma. Nunca otra marca u otra línea preelegida.
+describe("emparejamiento · conservador con el catálogo real", () => {
+  const products: { id: string; name: string }[] = createRequire(
+    import.meta.url,
+  )("./fixtures/catalogo-tienda.json");
+  const catalog = products.map((p) => ({
+    id: "v-" + p.id,
+    sku: p.id,
+    barcode: p.id,
+    attributes: {},
+    product: { id: "p-" + p.id, name: p.name, sku: "INV-" + p.id },
+  }));
+  const match = (description: string) =>
+    matchInvoiceLines([{ description, qty: 1, unitCost: 1 }], catalog)[0];
+  const nameOf = (id: string | null) =>
+    products.find((p) => "p-" + p.id === id)?.name ?? null;
+  it("otra marca u otra línea nunca queda elegida", () => {
+    for (const d of [
+      "Gold Standard Whey Chocolate 2 lb",
+      "Gold Standard Casein Vanilla 2 lb",
+      "Animal Whey Cookies & Cream 2 lb",
+      "Muscle Milk Light Vanilla 2 lb",
+      "Nitro-Tech MuscleTech Fruit Punch 5 lb",
+      "Optimum Nutrition Gold Standard 100% Whey Double Rich Chocolate 5 lbs",
+      "Davines Alchemic Conditioner Silver 250 ml",
+      "IsoWhey MuscleTech Vanilla 4.4 lb",
+      "Isoflex ALLMAX Vanilla 4.4 lb",
+      "Shaker Clear 700 ml",
+      "Shaker 700 ml",
+      "Shaker",
+      "Short Broche Café M",
+      "Panty Café M",
+      "Broche Cafe L",
+      "Cinturilla tipo corset 7XL",
+    ])
+      expect(match(d).variantId, d).toBeNull();
+  });
+  it("tamaños con guion, 1.02 lb exacto y miles europeos", () => {
+    const fiveLb = match("Gold Standard 100% Whey Double Rich Chocolate 5-Lb");
+    expect(fiveLb.variantId).toBeNull();
+    expect(fiveLb.note).toMatch(/tamaño 2 lb/);
+    expect(
+      match("Super Mass Gainer Dymatize Rich Chocolate 12-lb").note,
+    ).toMatch(/tamaño 6 lb/);
+    expect(
+      nameOf(match("Isopure Zero Carb Creamy Vanilla 1.02 lb").productId),
+    ).toMatch(/1\.02 lb/);
+    expect(
+      match("Isopure Zero Carb Creamy Vanilla 1.02 lb").variantId,
+    ).not.toBeNull();
+    expect(
+      nameOf(match("Isopure Zero Carb Creamy Vanilla 1 lb").productId),
+    ).toBe("Isopure Zero Carb - Creamy Vanilla / 1 lb");
+    expect(match("Redken All Soft Conditioner 1.000 ml").variantId).toBe(
+      "v-1538",
+    );
+  });
+  it("lo que la factura sí identifica se elige", () => {
+    for (const [d, id] of [
+      ["Gold Standard 100% Whey Double Rich Chocolate 2 lb", "1180"],
+      ["Vitamin K2+D3 Bronson Basics Envase Oscuro", "1059"],
+      ["Shaker transparente", "1154"],
+      ["Navi Eyeliner Pencil Cafe", "1367"],
+    ])
+      expect(match(d).variantId, d).toBe("v-" + id);
+    // "Natural" es la creatina sin sabor ("unflavored").
+    const creatine = match("Creatine Monohydrate Nutrex Natural 60 servicios");
+    expect(nameOf(creatine.productId)).toMatch(/Creatine Monohydrate - Nutrex/);
+    expect(creatine.variantId).not.toBeNull();
+  });
+  it("talla L-XL tras 'talla' cuenta las dos", () => {
+    const r = match("Faja tipo chaleco Talla L-XL");
+    expect(r.variantId).toBeNull();
+    expect(r.note).toMatch(/no indica cuál/);
   });
 });
