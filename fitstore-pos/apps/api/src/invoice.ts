@@ -305,6 +305,18 @@ const INVOICE_SYSTEM = [
   "total: total final de la factura; 0 si no aparece.",
   "No inventes datos. No incluyas filas de subtotal, ITBIS, descuentos ni flete.",
 ].join("\n");
+// Extrae el JSON de la respuesta del modelo aunque venga dentro de ```json ...```
+// o con texto antes/después: toma desde el primer { o [ hasta el último } o ].
+export function parseModelJson(text: string): unknown {
+  const start = text.search(/[[{]/);
+  const end = Math.max(text.lastIndexOf("}"), text.lastIndexOf("]"));
+  if (start < 0 || end < start) return null;
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
 export type InvoiceFile = { buffer: Buffer; mimetype: string };
 export async function extractAnthropic(
   file: InvoiceFile,
@@ -339,7 +351,7 @@ export async function extractAnthropic(
         };
   let response;
   try {
-    response = await client.beta.messages.parse({
+    response = await client.beta.messages.create({
       model: options.model || DEFAULT_INVOICE_MODEL,
       max_tokens: 16000,
       betas: ["server-side-fallback-2026-07-01"],
@@ -377,8 +389,15 @@ export async function extractAnthropic(
     bad("No se pudo leer esta factura automáticamente. Usa Excel/CSV.");
   if (response.stop_reason === "max_tokens")
     bad("La factura es muy larga para leerla de una vez. Divídela en partes.");
-  const out = response.parsed_output;
-  if (!out) bad("No pudimos interpretar la factura. Intenta con otra foto.");
+  // Se interpreta el texto aquí (no con el parser del SDK) para tolerar
+  // bloques Markdown o texto alrededor del JSON.
+  const text = response.content
+    .map((c: any) => (c.type === "text" ? c.text : ""))
+    .join("");
+  const checked = aiInvoiceSchema.safeParse(parseModelJson(text));
+  if (!checked.success)
+    bad("No pudimos interpretar la factura. Intenta con otra foto.");
+  const out = checked.data;
   // Una línea ilegible no invalida la factura: se omite y se informa.
   const readable = out.lines.filter((l) => l.qty > 0 && l.unitCost > 0);
   if (!readable.length)

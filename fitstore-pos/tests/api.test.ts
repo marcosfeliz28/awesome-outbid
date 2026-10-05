@@ -2901,3 +2901,54 @@ describe("Ronda 4 · auditoría de ChatGPT y propia", () => {
     expect(many.body.message).toContain("1000 filas");
   });
 });
+
+describe("Auditoría ronda 4 de ChatGPT", () => {
+  it("P1: una caída abrupta del cliente libera su conexión de tiempo real", async () => {
+    const { request: httpRequest } = await import("node:http");
+    const url = new URL(base + "/events");
+    const openRaw = () =>
+      new Promise<{ status: number; drop: () => void }>((resolve, reject) => {
+        const req = httpRequest(
+          {
+            host: url.hostname,
+            port: url.port,
+            path: url.pathname,
+            headers: { Authorization: "Bearer " + token },
+          },
+          (res) =>
+            resolve({ status: res.statusCode!, drop: () => req.destroy() }),
+        );
+        req.on("error", () => {});
+        req.on("error", reject);
+        req.end();
+      });
+    const first = await openRaw();
+    const second = await openRaw();
+    expect([first.status, second.status]).toEqual([200, 200]);
+    expect((await openRaw()).status).toBe(429);
+    // Caída abrupta: se destruye el socket sin cerrar el flujo SSE.
+    first.drop();
+    second.drop();
+    await new Promise((r) => setTimeout(r, 300));
+    const again = [await openRaw(), await openRaw()];
+    expect(again.map((c) => c.status)).toEqual([200, 200]);
+    for (const c of again) c.drop();
+  });
+  it("P2: el kardex tiene índice por lote (migración y base de datos)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync(
+      new URL(
+        "../apps/api/prisma/migrations/202610050002_lot_index/migration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    expect(sql).toContain(
+      'CREATE INDEX "InventoryMovement_lotId_idx" ON "InventoryMovement"("lotId")',
+    );
+    const rows: any[] = await fixtureDb.$queryRaw`
+      SELECT indexname FROM pg_indexes
+      WHERE tablename = 'InventoryMovement' AND indexname = 'InventoryMovement_lotId_idx'`;
+    expect(rows.length).toBe(1);
+  });
+});

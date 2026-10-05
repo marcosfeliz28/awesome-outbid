@@ -105,6 +105,7 @@ export class RealtimeHub {
 const MAX_STREAMS_PER_SESSION = 2,
   MAX_STREAMS_PER_USER = 6;
 const openStreams = new Map<string, number>();
+
 const bump = (key: string, delta: number) => {
   const next = (openStreams.get(key) ?? 0) + delta;
   if (next <= 0) openStreams.delete(key);
@@ -374,10 +375,23 @@ export class RealtimeController {
       return;
     }
     let closed = false;
-    const end = () => {
-      if (!closed) res.end();
+    let remove: () => void = () => {};
+    const timers: { check?: ReturnType<typeof setInterval> } = {};
+    // Libera la conexión una sola vez: cierre normal, error o caída abrupta.
+    const stop = () => {
+      if (closed) return;
+      closed = true;
+      clearInterval(timers.check);
+      remove();
+      bump(sessionKey, -1);
+      bump(userKey, -1);
     };
-    let remove: () => void;
+    const end = () => {
+      if (closed) return;
+      stop();
+      // destroy: si el cliente ya no responde, end() no terminaría nunca.
+      res.destroy();
+    };
     try {
       // El sondeo es asíncrono: ningún evento se escribe antes de las cabeceras.
       remove = await this.hub.add({
@@ -400,13 +414,22 @@ export class RealtimeController {
     }
     bump(sessionKey, 1);
     bump(userKey, 1);
+    req.on("close", stop);
+    req.on("error", end);
+    res.on("close", stop);
+    res.on("error", end);
+    // TCP keepalive detecta pares caídos sin FIN (corte de red, batería).
+    req.socket?.setKeepAlive(true, 10000);
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
     res.write("event: ready\ndata: {}\n\n");
     // Comprobación de sesión, equipo y latido cada 15 segundos.
-    const check = setInterval(async () => {
+    timers.check = setInterval(async () => {
+      if (closed) return;
+      if (res.destroyed || res.writableEnded || req.socket?.destroyed)
+        return stop();
       try {
         const session = await this.db.authSession.findUnique({
           where: { id: actor.sessionId },
@@ -427,20 +450,11 @@ export class RealtimeController {
             where: { id: actor.terminalId },
             data: { lastActivityAt: new Date() },
           });
-        res.write(": heartbeat\n\n");
+        // Latido sin consumir: el cliente dejó de leer; se expulsa.
+        if (!res.write(": heartbeat\n\n")) end();
       } catch {
         end();
       }
     }, 15000);
-    const stop = () => {
-      if (closed) return;
-      closed = true;
-      clearInterval(check);
-      remove();
-      bump(sessionKey, -1);
-      bump(userKey, -1);
-    };
-    req.on("close", stop);
-    res.on("close", stop);
   }
 }

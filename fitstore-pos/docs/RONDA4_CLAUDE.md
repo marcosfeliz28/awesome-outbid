@@ -112,3 +112,19 @@ Las pruebas de IA simulan la API con el SDK real; no se llamó a Anthropic. Los 
 - **Lectura con IA:** cada foto o PDF cuesta unos pocos centavos de dólar, según su tamaño.
 - **Deriva previa a esta ronda:** `prisma migrate diff` informa una diferencia en `GoodsReceipt_orderId_fkey` (`ON DELETE`) que ya existía en la base de la ronda 3.
 - **Sin certificar:** hardware (impresora, lector, cámara), despliegue HTTPS en internet ni volumen de producción.
+
+## 6. Ronda 5 · correcciones de la auditoría de ChatGPT a la ronda 4
+
+Registro: `docs/validacion/auditoria-ronda4.json`.
+
+- **P1 · conexiones de tiempo real huérfanas:** cada conexión SSE se libera una sola vez ante cierre, error o caída abrupta. Además, TCP keepalive y el latido de 15 s expulsan a los clientes que dejaron de responder. Prueba: caída abrupta de dos conexiones y reapertura inmediata.
+- **P2 · JSON del modelo con Markdown:** `parseModelJson` extrae el JSON aunque venga dentro de un bloque de código o con texto alrededor. Pruebas unitarias con respuestas envueltas.
+- **P2 · índice del kardex por lote:** `@@index([lotId])` y la migración `202610050002_lot_index`. La prueba verifica el SQL y el índice en PostgreSQL.
+
+**Verificación:**
+
+- `pnpm check`: 26 pruebas unitarias.
+- `pnpm test:integration`: 71 de 71.
+- Navegador: 7 de 7.
+
+Los registros están en `docs/validacion/ronda5-*.txt`.

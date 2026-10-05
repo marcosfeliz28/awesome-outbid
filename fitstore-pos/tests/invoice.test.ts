@@ -7,6 +7,7 @@ import {
   nameConfidence,
   parseExtraction,
   parseInvoiceNumber,
+  parseModelJson,
   readInvoiceTable,
 } from "../apps/api/src/invoice";
 // exceljs es dependencia de la API; se resuelve desde su paquete.
@@ -383,5 +384,65 @@ describe("Factura proveedor · emparejamiento con sabor, tamaño y talla", () =>
   it("normaliza acentos y mayúsculas", () => {
     expect(nameConfidence("Proteína vainilla", "proteina vainilla")).toBe(1);
     expect(nameConfidence("Zapato negro", "Proteína vainilla")).toBe(0);
+  });
+});
+
+describe("Auditoría ronda 4 · respuesta del modelo con Markdown o texto extra", () => {
+  it("extrae el JSON entre el primer { o [ y el último } o ]", () => {
+    const body = { total: 25, lines: [{ code: "A", qty: 1 }] };
+    expect(
+      parseModelJson("```json\n" + JSON.stringify(body) + "\n```"),
+    ).toEqual(body);
+    expect(
+      parseModelJson(
+        "Aquí está la factura:\n" + JSON.stringify(body) + "\nRevísala.",
+      ),
+    ).toEqual(body);
+    expect(parseModelJson("Lista: [1, 2, 3] fin")).toEqual([1, 2, 3]);
+    expect(parseModelJson("sin datos")).toBeNull();
+    expect(parseModelJson("{ roto")).toBeNull();
+  });
+  it("la extracción completa acepta la respuesta envuelta en ```json", async () => {
+    const payload = {
+      total: 30,
+      lines: [
+        {
+          code: "W1",
+          description: "Whey chocolate 2 lb",
+          qty: 2,
+          unitCost: 15,
+          lotNumber: "",
+          expiryDate: "",
+        },
+      ],
+    };
+    const fenced = new Response(
+      JSON.stringify({
+        id: "msg_md",
+        type: "message",
+        role: "assistant",
+        model: "claude-opus-5-5",
+        content: [
+          {
+            type: "text",
+            text:
+              "Claro, aquí tienes:\n```json\n" +
+              JSON.stringify(payload) +
+              "\n```",
+          },
+        ],
+        stop_reason: "end_turn",
+        stop_sequence: null,
+        usage: { input_tokens: 1, output_tokens: 1 },
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+    const result = await extractAnthropic(
+      { buffer: Buffer.from("img"), mimetype: "image/jpeg" },
+      "fake",
+      { fetch: vi.fn().mockResolvedValue(fenced) as any },
+    );
+    expect(result.lines[0]).toMatchObject({ code: "W1", qty: 2, unitCost: 15 });
+    expect(result.total).toBe(30);
   });
 });
