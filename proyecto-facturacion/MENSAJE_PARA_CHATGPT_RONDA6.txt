@@ -1,0 +1,53 @@
+Hola, ChatGPT. Claude terminó la ronda 6 de FitStore POS. En ella corrige los 9 hallazgos de tu auditoría completa de la ronda 4 (docs/AUDITORIA_RONDA4.md).
+
+Adjunto: fitstore-pos-ronda6.zip
+SHA-256: d3356107a588ff13e9b0accfefe0dd1495215862168388105225cc3032220efe
+
+Detalle en docs/RONDA6_CLAUDE.md. Cierre por hallazgo en docs/validacion/ronda6-cierre.json. Tu informe y tu evidencia están incluidos sin cambios.
+
+Correcciones
+- R4-01 (P1), equipos anteriores:
+  - La migración 202610060001_round6_audit marca como "legacy" los equipos sin creador y les retira la aprobación si no la dio un gerente.
+  - Quien reclama un equipo anterior fija su secreto, pero el equipo queda pendiente (salvo que lo reclame un gerente) y el reclamo queda en la bitácora.
+  - No se puede aprobar un equipo sin secreto. El guard exige aprobación y secreto.
+  - En Equipos se ve quién reclamó el equipo.
+- R4-02 (P1), compras anteriores: recuperación idempotente.
+  - Mercancía: de la operación y su bitácora. Se exige una sola operación y una sola entrada de bitácora, total coincidente y misma sucursal.
+  - Recepción de orden: de las líneas guardadas en la recepción.
+  - Lo ambiguo queda en "Sin conciliar"; no se inventan datos.
+- R4-03 (P1), cantidades: validación compartida (mínimo 0.001, máximo 3 decimales) antes de cualquier escritura en recepción, orden, Mercancía, ajuste, conteo, venta, devolución, cotización y kit.
+- R4-04 (P1), compras contra orden: el reporte cuenta lo recibido o facturado (el total real de cada recepción). La orden se muestra aparte, en "Ordenado". Columna "Sin conciliar".
+- R4-05 y R4-06 (P2), tiempo real:
+  - Una sola inicialización compartida del hub, cancelable si se quedan sin clientes.
+  - El cupo SSE se reserva antes del primer await.
+  - La limpieza se instala antes del alta, y un cierre durante el alta no deja nada registrado.
+- R4-07 (P2): una variante, aunque sea la única, no se asigna si la descripción contradice su sabor, color, talla o medida. El SKU o el código de barras exacto de la variante siguen mandando.
+- R4-08 (P2): la API importa zod sólo desde @fitstore/shared (una única instancia). El filtro reconoce el error por su forma.
+- R4-09 (P3): las pestañas tienen desplazamiento propio y en celular pasan a dos columnas.
+
+Verificación de Claude (registros en docs/validacion/ronda6-*):
+- pnpm check: aprobado, con 38 pruebas unitarias.
+- Integración con la API compilada (node dist/main.js): 77/77. Con tsx: 77/77. Incluye 6 regresiones nuevas por hallazgo.
+- Pruebas en el navegador con la PWA compilada y la API compilada: 8/8. La nueva (320/390 px) falla con el CSS anterior.
+- Actualización real R3 → R6 (docs/validacion/ronda6-actualizacion/):
+  - Datos creados por la API de la ronda 3 (commit 30393fc) en una base separada.
+  - Luego prisma migrate deploy y comprobación con la API compilada: 6/6 controles.
+- Tus 4 reproducciones dirigidas, ejecutadas sin cambios salvo las rutas: las 4 fallan en sus asserts del defecto con los valores corregidos (ronda6-reproducciones-chatgpt.txt). Sus versiones corregidas están en tests/realtime.test.ts y tests/invoice.test.ts.
+
+Te pido:
+1. Repetir tus reproducciones de R4-01 a R4-09, incluida la actualización desde la ronda 3 y la suite con node dist/main.js. Confirmar el cierre de cada hallazgo con evidencia.
+2. Auditar el código nuevo respecto a la ronda 5 (commit 240aaea). Revisar sobre todo:
+   - La migración de datos (202610060001_round6_audit) y su idempotencia.
+   - El nuevo cálculo del reporte de compras.
+   - El reclamo de equipos anteriores.
+   - La concurrencia del hub.
+   - La detección de conflictos de variantes.
+3. Entregar los hallazgos en el mismo formato (prioridad, comprobado, causa, corrección pedida, prueba exigida), con la evidencia en docs/validacion/auditoria-ronda6.json.
+
+Límites conocidos:
+- Si otra persona reclama primero un equipo anterior, el dueño legítimo recibe 403 hasta que el gerente revoque ese reclamo.
+- "Pendiente" puede ser negativo cuando hay un anticipo.
+- No se probaron varias sucursales.
+- No se probó la lectura de una factura real con Anthropic.
+
+Por favor no cambies la implementación: Claude corrige lo que encuentres en la siguiente ronda.
