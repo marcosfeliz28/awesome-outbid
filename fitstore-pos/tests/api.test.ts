@@ -3619,6 +3619,95 @@ describe("Ronda 7 · auditoría R6 de ChatGPT", () => {
     expect(Number(back.qty)).toBe(0.4);
   });
 
+  it("revisión R7: costo de combos exacto en venta, devolución y reporte de utilidad", async () => {
+    // 0.5 × 10.01 = 5.005 por combo: el costo por unidad se redondea, el de
+    // las asignaciones no.
+    const component = await product("costo fino", 30, 10.01);
+    const combo = await product("combo costo fino", 20, 0);
+    await ok("/inventory/adjustments", {
+      variantId: component.id,
+      qty: 10,
+      reason: "QA stock combo costo",
+    });
+    await ok("/kits", {
+      kitVariantId: combo.id,
+      components: [{ componentVariantId: component.id, qty: 0.5 }],
+    });
+    const sale = await ok("/sales", {
+      ...input(combo.id, 200),
+      items: [{ variantId: combo.id, qty: 10 }],
+    });
+    expect(Number(sale.costTotal)).toBe(50.05);
+    const item = await fixtureDb.saleItem.findFirstOrThrow({
+      where: { saleId: sale.id },
+    });
+    const profit = async () =>
+      (await ok(`/reports/profit?from=${today}&to=${today}`)).rows.find(
+        (r: any) => r.Producto === "QA R7 combo costo fino " + suffix,
+      );
+    expect(await profit()).toMatchObject({ Costo: 50.05 });
+    const back = async (qty: number) =>
+      ok("/returns", {
+        saleId: sale.id,
+        cashSessionId: session.id,
+        reason: "QA devolución costo",
+        refundMethod: "credit_note",
+        items: [{ saleItemId: item.id, qty, restock: true }],
+      });
+    const r1 = await back(3);
+    const r2 = await back(7);
+    // Las devoluciones suman exactamente el costo de la venta.
+    expect(Number(r1.costTotal) + Number(r2.costTotal)).toBeCloseTo(50.05, 2);
+    expect(await profit()).toMatchObject({ Costo: 0 });
+    const restored = await fixtureDb.variant.findUnique({
+      where: { id: component.id },
+    });
+    expect(Number(restored.stock)).toBe(10);
+    expect(Number(restored.costAvg)).toBe(10.01);
+  });
+
+  it("revisión R7: una línea de combo fraccionada anterior se devuelve completa, no en partes", async () => {
+    const component = await product("legado", 30, 10);
+    const combo = await product("combo legado", 20, 0);
+    await ok("/inventory/adjustments", {
+      variantId: component.id,
+      qty: 2,
+      reason: "QA stock combo legado",
+    });
+    await ok("/kits", {
+      kitVariantId: combo.id,
+      components: [{ componentVariantId: component.id, qty: 0.4 }],
+    });
+    const sale = await ok("/sales", input(combo.id, 20));
+    const item = await fixtureDb.saleItem.findFirstOrThrow({
+      where: { saleId: sale.id },
+    });
+    // Como la dejaba una venta anterior: 0.5 combos que consumieron 0.2.
+    await fixtureDb.saleItem.update({
+      where: { id: item.id },
+      data: {
+        qty: 0.5,
+        stockAllocations: (item.stockAllocations as any[]).map((a) => ({
+          ...a,
+          qty: 0.2,
+        })),
+      },
+    });
+    const body = (qty: number) => ({
+      saleId: sale.id,
+      cashSessionId: session.id,
+      reason: "QA devolución legado",
+      refundMethod: "credit_note",
+      items: [{ saleItemId: item.id, qty, restock: true }],
+    });
+    expect((await request("/returns", body(0.3))).status).toBe(400);
+    await ok("/returns", body(0.5));
+    const move = await fixtureDb.inventoryMovement.findFirstOrThrow({
+      where: { variantId: component.id, refId: sale.id, type: "return" },
+    });
+    expect(Number(move.qty)).toBe(0.2);
+  });
+
   it("R6-03: la recuperación no concilia recepciones con líneas incompletas; la completa sigue en 55", async () => {
     const v = await product("recepción", 100, 25);
     const supplier = await ok("/suppliers", {

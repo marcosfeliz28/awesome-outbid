@@ -557,3 +557,70 @@ test("Configuración y Equipos caben en 320 y 390 px sin desplazamiento horizont
     });
   }
 });
+// Revisión de la ronda 7: cobrar escribiendo el código del producto + Enter.
+test("código + Enter agrega el producto y respeta el stock", async ({
+  page,
+  request,
+}) => {
+  const auth = await (
+    await request.post("/api/auth/login", {
+      data: { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" },
+    })
+  ).json();
+  const headers = { Authorization: "Bearer " + auth.accessToken };
+  const id = crypto.randomUUID();
+  await request.post("/api/terminals/register", {
+    headers,
+    data: { id, name: "E2E código", secret: "e2e-codigo-" + id },
+  });
+  const categories = await (
+    await request.get("/api/categories", { headers })
+  ).json();
+  const code = String(9000 + Math.floor(Math.random() * 900000));
+  const product = await (
+    await request.post("/api/products", {
+      headers,
+      data: {
+        name: "Faja E2E código " + code,
+        sku: "E2E-" + code,
+        categoryId: categories.find((c: any) => c.name === "Fajas").id,
+        variants: [
+          { sku: code, barcode: "E2E-B-" + code, price: 1500, costAvg: 700 },
+        ],
+      },
+    })
+  ).json();
+  const stocked = await request.post("/api/inventory/adjustments", {
+    headers,
+    data: { variantId: product.variants[0].id, qty: 1, reason: "E2E código" },
+  });
+  expect(stocked.ok()).toBe(true);
+  await login(page);
+  await ensureCash(page);
+  await page
+    .getByRole("button", { name: "Punto de venta", exact: true })
+    .click();
+  const search = page.getByLabel("Buscar productos");
+  await search.fill(code);
+  await search.press("Enter");
+  await expect(page.locator(".cart-items")).toContainText(
+    "Faja E2E código " + code,
+  );
+  await expect(search).toHaveValue("");
+  // Sólo había 1: el segundo Enter avisa y deja el código escrito.
+  await search.fill(code);
+  await search.press("Enter");
+  await expect(page.getByText(/No hay suficiente stock/)).toBeVisible();
+  await expect(search).toHaveValue(code);
+  await expect(page.getByText(/agregado\./)).toHaveCount(0);
+  await expect(
+    page.locator(".cart-items .quantity-control span").first(),
+  ).toHaveText("1");
+  await page
+    .getByRole("button", { name: "Reducir Faja E2E código " + code })
+    .click();
+  await request.patch("/api/products/" + product.id, {
+    headers,
+    data: { active: false },
+  });
+});

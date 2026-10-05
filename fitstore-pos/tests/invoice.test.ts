@@ -639,3 +639,130 @@ describe("emparejamiento · talla explícita sin vocabulario del catálogo", () 
     ).toBe("legging-m");
   });
 });
+
+// Revisión adversarial de la ronda 7: tallas con los nombres reales de las
+// fajas de la tienda (un producto por talla; la talla sólo está en el nombre,
+// como los crea scripts/import-inventario.ts).
+describe("emparejamiento · tallas en el nombre del producto (fajas reales)", () => {
+  const fajas: { id: string; name: string }[] = createRequire(import.meta.url)(
+    "./fixtures/fajas-tienda.json",
+  );
+  const catalog = fajas.map((f) => ({
+    id: "v-" + f.id,
+    sku: f.id,
+    barcode: f.id,
+    attributes: {},
+    product: { id: "p-" + f.id, name: f.name, sku: "INV-" + f.id },
+  }));
+  const nameOf = (productId: string | null) =>
+    fajas.find((f) => "p-" + f.id === productId)?.name ?? null;
+  const match = (description: string, code?: string) =>
+    matchInvoiceLines(
+      [{ code, description, qty: 1, unitCost: 500 }],
+      catalog,
+    )[0];
+  it("elige el producto de la talla declarada, incluidas 2XL/XXL", () => {
+    const cases: [string, string][] = [
+      ["Short Broche M Negro", "Short Broche M Negro"],
+      ["Cinturilla tipo corset XXL", "Cinturilla tipo corset 2XL"],
+      ["Cinturilla tipo corset 2XS", "Cinturilla tipo corset 2XS"],
+      ["Cinturilla tipo corset XXS", "Cinturilla tipo corset 2XS"],
+      ["Faja tipo chaleco X-Large", "Faja tipo chaleco XL"],
+      ["Broche Crema Medium", "Broche Crema M"],
+    ];
+    for (const [invoice, expected] of cases) {
+      const r = match(invoice);
+      expect(nameOf(r.productId), invoice).toBe(expected);
+      expect(r.variantId, invoice).not.toBeNull();
+    }
+  });
+  it("una talla que la tienda no tiene no se asigna a otra talla", () => {
+    for (const invoice of [
+      "Short Broche L Negro",
+      "Short Broche 3XL Negro",
+      "Panty Negro 2XL",
+      "Chaleco con Brasier M",
+      "Cinturilla tipo corset 4XL",
+    ]) {
+      const r = match(invoice);
+      expect(r.variantId, invoice).toBeNull();
+      expect(r.note, invoice).toMatch(/talla/);
+    }
+  });
+  it("con el SKU del producto y otra talla: sin variante y con nota", () => {
+    const shortS = fajas.find((f) => f.name === "Short Broche S Negro")!;
+    const r = match("Short Broche L Negro", "INV-" + shortS.id);
+    expect(r.productId).toBe("p-" + shortS.id);
+    expect(r.variantId).toBeNull();
+    expect(r.note).toMatch(/talla L.*; este producto es talla S/);
+  });
+});
+
+describe("emparejamiento · casos de tallas de la revisión adversarial", () => {
+  const product = { id: "p-leg", name: "Leggings Sculpt", sku: "LEG" };
+  const variant = (id: string, talla: string) => ({
+    id,
+    sku: "LEG-" + id,
+    barcode: "B-" + id,
+    product,
+    attributes: { talla, color: "Negro" },
+  });
+  const pick = (catalog: any[], description: string, code = "LEG") =>
+    matchInvoiceLines(
+      [{ code, description, qty: 1, unitCost: 900 }],
+      catalog,
+    )[0].variantId;
+  it("XL no pasa por 2XL/3XL ni XS por 2XS", () => {
+    expect(pick([variant("xl", "XL")], "Leggings Sculpt 2XL negro")).toBeNull();
+    expect(pick([variant("xl", "XL")], "Leggings Sculpt 3XL negro")).toBeNull();
+    expect(pick([variant("xs", "XS")], "Leggings Sculpt 2XS negro")).toBeNull();
+    expect(
+      pick(
+        [variant("l", "L"), variant("xl", "XL")],
+        "Leggings Sculpt 2XL negro",
+      ),
+    ).toBeNull();
+    expect(
+      pick(
+        [variant("l", "L"), variant("xl", "XL")],
+        "Leggings Sculpt XL negro",
+      ),
+    ).toBe("xl");
+    expect(pick([variant("2xl", "2XL")], "Leggings Sculpt XXL negro")).toBe(
+      "2xl",
+    );
+  });
+  it("tallas no estándar (32, One Size) chocan con una talla declarada", () => {
+    expect(pick([variant("32", "32")], "Leggings Sculpt XL negro")).toBeNull();
+    expect(pick([variant("32", "32")], "Leggings Sculpt talla 32 negro")).toBe(
+      "32",
+    );
+  });
+  it("X-Large / Extra Large / XX-Large / X-Small", () => {
+    expect(pick([variant("xl", "XL")], "Leggings Sculpt X-Large negro")).toBe(
+      "xl",
+    );
+    expect(pick([variant("xl", "XL")], "Leggings Sculpt Extra Large")).toBe(
+      "xl",
+    );
+    expect(
+      pick([variant("l", "L")], "Leggings Sculpt X-Large negro"),
+    ).toBeNull();
+    expect(pick([variant("2xl", "2XL")], "Leggings Sculpt XX-Large")).toBe(
+      "2xl",
+    );
+    expect(pick([variant("xs", "XS")], "Leggings Sculpt X-Small")).toBe("xs");
+  });
+  it("un número antes de la talla no la oculta; un litro no es talla L", () => {
+    expect(pick([variant("l", "L")], "Leggings Sculpt 7/8 M negro")).toBeNull();
+    expect(pick([variant("m", "M")], "Leggings Sculpt 7/8 L negro")).toBe("m");
+    expect(pick([variant("m", "M")], "Ref 1055 S Leggings Sculpt")).toBeNull();
+    expect(pick([variant("m", "M")], "Leggings Sculpt negro 1 l")).toBe("m");
+  });
+  it("posesivos con cualquier apóstrofo no son talla S", () => {
+    for (const apostrophe of ["'", "’", "´", "`"])
+      expect(
+        pick([variant("m", "M")], `Leggings Sculpt Women${apostrophe}s negro`),
+      ).toBe("m");
+  });
+});

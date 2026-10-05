@@ -69,6 +69,32 @@ export function returnShares(
   }
   return out;
 }
+/**
+ * Costo exacto de una línea vendida: lo que valían sus asignaciones de stock
+ * (lotes o componentes de combo). Sin asignaciones con costo, unitCost × qty.
+ * En combos, unitCost está redondeado a centavos por unidad; las asignaciones
+ * no, y son lo que salió del inventario.
+ */
+export function allocationCost(line: {
+  qty: Decimal.Value;
+  unitCost: Decimal.Value;
+  stockAllocations?: unknown;
+}) {
+  const allocations = Array.isArray(line.stockAllocations)
+    ? (line.stockAllocations as { qty?: unknown; unitCost?: unknown }[])
+    : [];
+  if (
+    allocations.length &&
+    allocations.every(
+      (a) => typeof a?.qty === "number" && typeof a?.unitCost === "number",
+    )
+  )
+    return allocations.reduce(
+      (s, a) => s.plus(d(a.qty as number).times(a.unitCost as number)),
+      d(0),
+    );
+  return d(line.unitCost).times(line.qty);
+}
 /** Cantidad contada (puede ser 0), con como máximo 3 decimales. */
 export const countedQty = (max = 1000000) =>
   z.number().min(0).max(max).refine(isStockQty, QTY_PRECISION);

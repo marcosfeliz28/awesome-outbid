@@ -194,19 +194,28 @@ export function POS({ go }: { go: (page: string) => void }) {
     subtotal = money(totals.reduce((a, i) => a.plus(i.subtotal), d(0))),
     tax = money(totals.reduce((a, i) => a.plus(i.tax), d(0))),
     discount = money(totals.reduce((a, i) => a.plus(i.discount), d(0)));
+  // Devuelve true sólo si el artículo entró al carrito.
   const choose = (variant: Variant, product: Product) => {
     const existing = cart.find((i) => i.variant.id === variant.id);
     if (
       (existing?.qty || 0) + 1 > Number(variant.stock) &&
       !(config.data?.allowNegativeStock && !product.category.requiresLot)
     ) {
-      toast("No hay suficiente stock de esta variante.", true);
-      return;
+      toast(
+        "No hay suficiente stock de " +
+          product.name +
+          " (quedan " +
+          Number(variant.stock) +
+          ").",
+        true,
+      );
+      return false;
     }
-    if ((existing?.qty || 0) + 1 > Number(variant.stock))
-      toast("Advertencia: esta venta dejará stock negativo.", true);
     add(variant, product);
     setChoosing(null);
+    if ((existing?.qty || 0) + 1 > Number(variant.stock))
+      toast("Advertencia: esta venta dejará stock negativo.", true);
+    return true;
   };
   const addProduct = (product: Product) =>
     product.variants.length === 1
@@ -275,8 +284,9 @@ export function POS({ go }: { go: (page: string) => void }) {
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [cart, session, online]);
-  // Búsqueda por palabras sueltas, sin acentos ni orden: "iso100 vainilla 5lb"
-  // encuentra "ISO100 Hydrolyzed - Dymatize - Gourmet Vanilla / 5 lb".
+  // Búsqueda por palabras sueltas, sin acentos, apóstrofos ni orden:
+  // "iso100 vanilla 5lb" encuentra "ISO100 Hydrolyzed - Dymatize - Gourmet
+  // Vanilla / 5 lb" y "loreal" encuentra "L'Oréal".
   const words = searchWords(q);
   const filtered =
     products.data?.filter(
@@ -300,15 +310,16 @@ export function POS({ go }: { go: (page: string) => void }) {
   // Con cientos de productos se dibujan 120 tarjetas; la búsqueda llega al resto.
   const MAX_CARDS = 120;
   const visible = filtered.slice(0, MAX_CARDS);
-  // Código exacto: código de barras o código del producto (el ID del
-  // inventario, por ejemplo 1216). Así se cobra escribiendo el número + Enter.
+  // Código exacto: primero el código de barras y, si ninguno coincide, el
+  // código del producto (el ID del inventario, por ejemplo 1216). Así se cobra
+  // escribiendo el número + Enter, sin depender del orden del catálogo.
   const byCode = (code: string) => {
     const c = code.trim().toLowerCase();
     if (!c) return undefined;
-    for (const p of products.data ?? [])
-      for (const v of p.variants)
-        if (v.barcode.toLowerCase() === c || v.sku.toLowerCase() === c)
-          return { product: p, variant: v };
+    for (const field of ["barcode", "sku"] as const)
+      for (const p of products.data ?? [])
+        for (const v of p.variants)
+          if (v[field].toLowerCase() === c) return { product: p, variant: v };
     return undefined;
   };
   const scan = (code: string) => {
@@ -316,9 +327,11 @@ export function POS({ go }: { go: (page: string) => void }) {
     const product = found?.product,
       variant = found?.variant;
     if (product && variant) {
-      choose(variant, product);
-      setQ("");
-      toast(product.name + " agregado.");
+      // Sin stock: el código queda en la caja y el aviso de stock se ve.
+      if (choose(variant, product)) {
+        setQ("");
+        toast(product.name + " agregado.");
+      }
     } else {
       setQ(code);
       toast("Código no encontrado.", true);

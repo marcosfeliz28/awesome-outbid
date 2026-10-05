@@ -267,6 +267,7 @@ export async function mutate(path: string, data: unknown, method = "POST") {
 // Búsqueda de la caja: sin acentos, sin mayúsculas y por palabras sueltas.
 const fold = (value: string) =>
   value
+    .replace(/['’´`ʼ‘]/g, "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();

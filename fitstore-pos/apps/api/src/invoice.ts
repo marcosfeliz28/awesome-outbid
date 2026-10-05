@@ -436,14 +436,23 @@ const UNIT_ALIASES: Record<string, string> = {
   litros: "l",
   mililitros: "ml",
 };
+// Tallas compuestas en forma única: "XXL" y "2XL" se leen igual.
+const SIZE_SPLIT: Record<string, string[]> = {
+  xxs: ["2", "xs"],
+  xxxs: ["3", "xs"],
+  xxl: ["2", "xl"],
+  xxxl: ["3", "xl"],
+  xxxxl: ["4", "xl"],
+};
 export function tokens(text: string) {
-  // "Women's" → "womens": el posesivo no debe leerse como talla S.
-  return normalize(text.replace(/(\w)['’]s\b/gi, "$1s"))
+  // "Women's" / "Women´s" → "womens": el posesivo no debe leerse como talla S.
+  return normalize(text.replace(/(\w)['’´`ʼ‘]s\b/gi, "$1s"))
     .replace(/(\d)([a-z])/g, "$1 $2")
     .replace(/([a-z])(\d)/g, "$1 $2")
     .split(" ")
     .filter(Boolean)
-    .map((t) => UNIT_ALIASES[t] ?? t);
+    .map((t) => UNIT_ALIASES[t] ?? t)
+    .flatMap((t) => SIZE_SPLIT[t] ?? [t]);
 }
 export function nameConfidence(a: string, b: string) {
   const aa = new Set(tokens(a)),
@@ -540,39 +549,106 @@ const COLORS = [
   "dorado",
 ];
 // Tallas reconocidas por sí mismas, aunque el catálogo no tenga otras (R6-02).
-const SIZES = [
-  "xxs",
-  "xs",
-  "s",
-  "m",
-  "l",
-  "xl",
-  "xxl",
-  "xxxl",
-  "2xs",
-  "3xs",
-  "2xl",
-  "3xl",
-  "4xl",
-  "5xl",
+// Las compuestas llegan de tokens() como número + xs/xl ("2XL" → "2","xl").
+// Colores reconocidos en nombres de producto (español e inglés; el inglés se
+// lleva al español para comparar).
+const COLOR_EN: Record<string, string> = {
+  black: "negro",
+  white: "blanco",
+  red: "rojo",
+  blue: "azul",
+  green: "verde",
+  gray: "gris",
+  grey: "gris",
+  pink: "rosado",
+  rosa: "rosado",
+  purple: "morado",
+  brown: "marron",
+  yellow: "amarillo",
+};
+const NAME_COLORS = [
+  "negro",
+  "blanco",
+  "rojo",
+  "azul",
+  "verde",
+  "gris",
+  "rosado",
+  "rosa",
+  "morado",
+  "lila",
+  "beige",
+  "nude",
+  "amarillo",
+  "marron",
+  "crema",
+  "vino",
+  "turquesa",
+  "fucsia",
+  "coral",
+  "plateado",
+  "dorado",
+  ...Object.keys(COLOR_EN),
 ];
-const SIZE_ALIASES: Record<string, string> = {
+const SIZES = ["xs", "s", "m", "l", "xl"];
+const SIZE_WORDS: Record<string, string> = {
   small: "s",
   medium: "m",
   large: "l",
 };
-// Tallas explícitas en una lista de tokens. "2XS" llega como "2","xs" y se une;
-// una letra suelta tras un número ("1 l", "5 m") es una medida, no una talla.
+const SIZE_KEYWORDS = new Set(["talla", "size", "tallas", "sizes"]);
+// Tallas explícitas en una lista de tokens:
+// - "2XL"/"XXL" → "2xl"; "X-Large"/"Extra Large" → "xl"; "XX-Large" → "2xl".
+// - "1 l" es un litro, no talla L (salvo "talla 1 l"); s y m tras un número
+//   sí son tallas ("Leggings 7/8 M").
 export function sizesIn(toks: string[]) {
   const out = new Set<string>();
   toks.forEach((raw, i) => {
-    const t = SIZE_ALIASES[raw] ?? raw;
-    const prev = toks[i - 1] ?? "";
+    const prev = toks[i - 1] ?? "",
+      prev2 = toks[i - 2] ?? "";
     const numeric = /^\d+$/.test(prev);
-    if (numeric && (t === "xs" || t === "xl")) out.add(prev + t);
-    else if (SIZES.includes(t) && !(numeric && t.length === 1)) out.add(t);
+    const word = SIZE_WORDS[raw];
+    if (word) {
+      const times =
+        prev === "x" || prev === "extra"
+          ? "x"
+          : prev === "xx"
+            ? "2x"
+            : prev === "xxx"
+              ? "3x"
+              : "";
+      out.add(times && word !== "m" ? times + word : word);
+      return;
+    }
+    if (numeric && (raw === "xs" || raw === "xl")) {
+      out.add(prev + raw);
+      return;
+    }
+    if (!SIZES.includes(raw)) return;
+    if (raw === "l" && numeric && !SIZE_KEYWORDS.has(prev2)) return;
+    out.add(raw);
   });
   return out;
+}
+const sizeOverlap = (a: Set<string>, b: Set<string>) =>
+  [...a].some((x) => b.has(x));
+// Nombre sin talla ni color: las palabras que identifican el producto.
+export function coreText(text: string) {
+  const toks = tokens(text);
+  const drop = new Set<number>();
+  toks.forEach((t, i) => {
+    const next = toks[i + 1] ?? "";
+    if (NAME_COLORS.includes(t)) drop.add(i);
+    else if (SIZES.includes(t) || SIZE_WORDS[t]) {
+      // "1 l" es una medida y se conserva.
+      if (t === "l" && /^\d+$/.test(toks[i - 1] ?? "")) return;
+      drop.add(i);
+      if ((t === "xs" || t === "xl") && /^\d+$/.test(toks[i - 1] ?? ""))
+        drop.add(i - 1);
+    } else if (["x", "xx", "xxx", "extra"].includes(t) && SIZE_WORDS[next])
+      drop.add(i);
+  });
+  return toks.filter((_, i) => !drop.has(i)).join(" ");
 }
 const UNITS = new Set(["lb", "oz", "g", "kg", "l", "ml", "caps", "tabs"]);
 const attrKind = (key: string) => {
@@ -625,13 +701,24 @@ export function matchInvoiceLines(
     const descToks = tokens(description),
       desc = new Set(descToks),
       descMeasures = measures(descToks);
+    const declared = sizesIn(descToks);
     const out: string[] = [];
     for (const [k, raw] of Object.entries(
       (v.attributes as Record<string, unknown>) ?? {},
     )) {
       const value = String(raw ?? "");
-      if (!value || normalize(value) === "unica" || contains(desc, value))
+      if (!value || normalize(value) === "unica") continue;
+      // Talla (R6-02): se compara como talla antes que como texto, para que
+      // "XL" no pase por "2XL". Si la factura declara una talla, la variante
+      // debe tenerla; una talla no estándar (32, One Size) debe aparecer tal
+      // cual en la descripción.
+      if (attrKind(k) === SIZES && declared.size) {
+        const own = sizesIn(tokens(value));
+        if (own.size ? !sizeOverlap(own, declared) : !contains(desc, value))
+          out.push(value);
         continue;
+      }
+      if (contains(desc, value)) continue;
       const own = measures(tokens(value));
       const sameUnit = descMeasures.filter((m) =>
         own.some((o) => o.unit === m.unit),
@@ -642,20 +729,6 @@ export function matchInvoiceLines(
       ) {
         out.push(value);
         continue;
-      }
-      // Talla: si la factura declara tallas y ninguna es la de la variante,
-      // hay conflicto aunque el catálogo no tenga otras tallas.
-      if (attrKind(k) === SIZES) {
-        const own = sizesIn(tokens(value)),
-          declared = sizesIn(descToks);
-        if (
-          own.size &&
-          declared.size &&
-          ![...own].some((x) => declared.has(x))
-        ) {
-          out.push(value);
-          continue;
-        }
       }
       const ownToks = new Set(tokens(value));
       const others = [
@@ -699,11 +772,21 @@ export function matchInvoiceLines(
       };
     if (options.length === 1)
       return { ...l, variantId: options[0].id, productId, confidence };
+    const declared = sizesIn(tokens(l.description));
+    // Presente en la factura: la talla como talla ("XL" no está en "2XL").
+    const present = (k: string, value: string) => {
+      const own = attrKind(k) === SIZES ? sizesIn(tokens(value)) : new Set();
+      return own.size
+        ? sizeOverlap(own as Set<string>, declared)
+        : contains(desc, value);
+    };
     const full = compatible.filter((v) => {
-      const values = attributeValues(v.attributes);
-      return (
-        values.length > 0 && values.every((value) => contains(desc, value))
-      );
+      const entries = Object.entries(
+        (v.attributes as Record<string, unknown>) ?? {},
+      )
+        .map(([k, val]) => [k, String(val ?? "")] as const)
+        .filter(([, val]) => val && normalize(val) !== "unica");
+      return entries.length > 0 && entries.every(([k, val]) => present(k, val));
     });
     if (full.length === 1)
       return { ...l, variantId: full[0].id, productId, confidence };
@@ -715,7 +798,82 @@ export function matchInvoiceLines(
       note: "Elige la variante (sabor, tamaño, talla o color): la factura no indica una combinación exacta del catálogo.",
     };
   };
+  // Talla, color y medida escritos en el nombre del producto: la tienda
+  // tiene un producto por talla, color o tamaño ("Short Broche S Negro",
+  // "Broche Crema L", "ISO100 … Gourmet Vanilla / 5 lb").
+  type Traits = {
+    sizes: Set<string>;
+    colors: Set<string>;
+    measures: { n: number; unit: string }[];
+  };
+  const traitsOf = (text: string): Traits => {
+    const toks = tokens(text),
+      set = new Set(toks);
+    return {
+      sizes: sizesIn(toks),
+      colors: new Set(
+        NAME_COLORS.filter((c) => contains(set, c)).map(
+          (c) => COLOR_EN[c] ?? c,
+        ),
+      ),
+      measures: measures(toks),
+    };
+  };
+  const nameTraits = new Map<string, Traits>();
+  for (const [productId, options] of byProduct)
+    nameTraits.set(productId, traitsOf(options[0].product.name));
+  // Lo que la factura declara y el nombre del producto contradice.
+  const nameConflicts = (productId: string, declared: Traits) => {
+    const own = nameTraits.get(productId)!,
+      out: string[] = [];
+    if (
+      declared.sizes.size &&
+      own.sizes.size &&
+      !sizeOverlap(own.sizes, declared.sizes)
+    )
+      out.push("talla " + [...own.sizes].join("/").toUpperCase());
+    if (
+      declared.colors.size &&
+      own.colors.size &&
+      !sizeOverlap(own.colors, declared.colors)
+    )
+      out.push("color " + [...own.colors].join("/"));
+    const sameUnit = declared.measures.filter((m) =>
+      own.measures.some((o) => o.unit === m.unit),
+    );
+    if (
+      sameUnit.length &&
+      !sameUnit.some((m) =>
+        own.measures.some((o) => o.unit === m.unit && o.n === m.n),
+      )
+    )
+      out.push(
+        "tamaño " +
+          own.measures
+            .filter((o) => sameUnit.some((m) => m.unit === o.unit))
+            .map((o) => o.n + " " + o.unit)
+            .join("/"),
+      );
+    return out;
+  };
+  const describe = (t: Traits) =>
+    [
+      t.sizes.size ? "talla " + [...t.sizes].join("/").toUpperCase() : "",
+      t.colors.size ? "color " + [...t.colors].join("/") : "",
+      t.measures.length
+        ? "tamaño " + t.measures.map((m) => m.n + " " + m.unit).join("/")
+        : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
+  const traitNote = (productId: string, declared: Traits) =>
+    "La factura indica " +
+    describe(declared) +
+    "; este producto es " +
+    nameConflicts(productId, declared).join(", ") +
+    ". Elige o crea el producto correcto.";
   return lines.map((l) => {
+    const declared = traitsOf(l.description);
     const code = l.code?.trim();
     if (code) {
       const exact =
@@ -731,15 +889,47 @@ export function matchInvoiceLines(
           confidence: 1,
         };
       const product = variants.find((v) => v.product.sku === code)?.product;
-      if (product) return pickVariant(l, product.id, 1);
+      if (product)
+        return nameConflicts(product.id, declared).length
+          ? {
+              ...l,
+              variantId: null,
+              productId: product.id,
+              confidence: 1,
+              note: traitNote(product.id, declared),
+            }
+          : pickVariant(l, product.id, 1);
     }
-    let best: { id: string; score: number } | null = null;
+    // Por nombre: gana el mejor producto cuyo nombre no contradiga la talla,
+    // el color o el tamaño de la factura. Si sólo hay productos de otra
+    // presentación, se propone el más parecido sin variante, para que alguien
+    // elija o cree el correcto.
+    let best: { id: string; score: number } | null = null,
+      bestConflict: { id: string; score: number } | null = null;
     for (const [productId, options] of byProduct) {
-      const score = productScore(l.description, options[0].product.name);
-      if (!best || score > best.score) best = { id: productId, score };
+      // Se puntúan las palabras propias del producto (sin talla ni color):
+      // "Short Broche L Negro" no debe parecerse a "Panty Negro L" sólo por
+      // compartir talla y color.
+      const name = options[0].product.name;
+      const core = coreText(name);
+      const score = core
+        ? productScore(coreText(l.description) || l.description, core)
+        : productScore(l.description, name);
+      if (nameConflicts(productId, declared).length) {
+        if (!bestConflict || score > bestConflict.score)
+          bestConflict = { id: productId, score };
+      } else if (!best || score > best.score) best = { id: productId, score };
     }
     if (best && best.score >= MIN_PRODUCT_SCORE)
       return pickVariant(l, best.id, Math.round(best.score * 100) / 100);
+    if (bestConflict && bestConflict.score >= MIN_PRODUCT_SCORE)
+      return {
+        ...l,
+        variantId: null,
+        productId: bestConflict.id,
+        confidence: Math.round(bestConflict.score * 100) / 100,
+        note: traitNote(bestConflict.id, declared),
+      };
     return { ...l, variantId: null, productId: null, confidence: 0 };
   });
 }

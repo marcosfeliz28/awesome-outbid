@@ -13,6 +13,7 @@ import {
   netProfit,
   averageTicket,
   can,
+  allocationCost,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -493,7 +494,9 @@ export class ReportsController {
             Unidades: 0,
           };
           row.Ventas = money(d(row.Ventas).plus(d(i.lineTotal).minus(i.tax)));
-          row.Costo = money(d(row.Costo).plus(d(i.unitCost).times(i.qty)));
+          // Sin redondear hasta el final: ventas y devoluciones parciales se
+          // compensan exactamente.
+          row.Costo = d(row.Costo).plus(allocationCost(i));
           row.Unidades += Number(i.qty);
           grouped.set(id, row);
         }
@@ -551,17 +554,21 @@ export class ReportsController {
               ),
             );
             if (part.restock)
-              row.Costo = money(
-                d(row.Costo).minus(d(line.unitCost).times(part.qty)),
+              row.Costo = d(row.Costo).minus(
+                allocationCost(line).times(part.qty).div(line.qty),
               );
             row.Unidades -= Number(part.qty);
             grouped.set(id, row);
           }
-        rows = [...grouped.values()].map((i) => ({
-          ...i,
-          Utilidad: money(d(i.Ventas).minus(i.Costo)),
-          Margen: margin(i.Ventas, i.Costo),
-        }));
+        rows = [...grouped.values()].map((i) => {
+          const Costo = money(i.Costo);
+          return {
+            ...i,
+            Costo,
+            Utilidad: money(d(i.Ventas).minus(Costo)),
+            Margen: margin(i.Ventas, Costo),
+          };
+        });
         if (name === "abc")
           rows = abc(rows.map((i) => ({ ...i, revenue: i.Ventas }))).map(
             ({ revenue: _revenue, ...i }) => ({ ...i, Clasificación: i.class }),

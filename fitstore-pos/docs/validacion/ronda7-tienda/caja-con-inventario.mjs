@@ -1,3 +1,4 @@
+/* global document, window */
 // Ronda 7 · la caja con el inventario real de la tienda (616 productos).
 // Requiere: base cargada con apps/api/scripts/import-inventario.ts, la API en
 // el puerto 3001 apuntando a esa base y la PWA compilada (vite preview, 4173).

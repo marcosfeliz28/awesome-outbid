@@ -4,14 +4,17 @@
 //
 //   pnpm --filter @fitstore/api inventory:import ../../INVENTARIO_2026.xlsx
 //   pnpm --filter @fitstore/api inventory:import archivo.xlsx --dry-run
+//   pnpm --filter @fitstore/api inventory:import archivo.xlsx --actualizar-precios
 //
 // - Un producto por fila. El ID es el código para cobrar: se escribe en la caja
 //   y Enter. Si la descripción trae "Barcode 0815…", ese es el código de barras.
 // - Las existencias entran como "Inventario inicial" en el kardex, con su costo.
 // - Productos sin precio o sin costo quedan inactivos (no se venden) y salen en
 //   el reporte de revisión junto con márgenes bajos y agotados.
-// - Repetirlo no duplica: actualiza nombre, precio, costo y categoría, y sólo
-//   toca existencias de productos nuevos.
+// - Repetirlo no duplica ni pisa lo editado en la app: sólo crea los nuevos,
+//   activa los que estaban inactivos por falta de precio o costo y, con
+//   --actualizar-precios, cambia precios (queda en la bitácora). Las
+//   existencias de productos ya cargados nunca se tocan.
 import { config } from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import ExcelJS from "exceljs";
@@ -35,6 +38,8 @@ const LOW_MARGIN = 0.15;
 
 type Row = {
   id: string;
+  /** REFERENCIA cuando no coincide con el ID (en 6 filas es un código de barras). */
+  ref: string | null;
   name: string;
   barcode: string | null;
   category: string;
@@ -86,13 +91,19 @@ export async function readInventory(file: string): Promise<Row[]> {
   const rows: Row[] = [];
   sheet.eachRow((r, n) => {
     if (n === 1) return;
-    const id =
-      text(r.getCell(need.ref!).value) || text(r.getCell(need.id!).value);
+    // El ID es siempre el código que la caja escribe (1001, 1223…). La
+    // REFERENCIA o el "Barcode …" de la descripción, si traen otro número,
+    // son el código de barras.
+    const ref = text(r.getCell(need.ref!).value);
+    const id = text(r.getCell(need.id!).value) || ref;
     const raw = text(r.getCell(need.name!).value);
     if (!id || !raw) return;
-    const barcode = raw.match(/barcode\s*[:#]?\s*(\d{6,14})/i)?.[1] ?? null;
+    const barcode =
+      raw.match(/barcode\s*[:#]?\s*(\d{6,14})/i)?.[1] ??
+      (ref && ref !== id ? ref : null);
     rows.push({
       id,
+      ref: ref && ref !== id ? ref : null,
       name: raw
         .replace(/\s*\|?\s*barcode\s*[:#]?\s*\d{6,14}/i, "")
         .replace(/\s+/g, " ")
@@ -134,6 +145,7 @@ export function reviewOf(row: Row) {
 async function main() {
   const file = process.argv.find((a) => /\.xlsx$/i.test(a));
   const dryRun = process.argv.includes("--dry-run");
+  const updatePrices = process.argv.includes("--actualizar-precios");
   if (!file) throw new Error("Indica el archivo .xlsx del inventario.");
   const rows = await readInventory(resolve(process.cwd(), file));
   const dup = rows.filter((r, i) => rows.findIndex((x) => x.id === r.id) !== i);
@@ -147,7 +159,15 @@ async function main() {
   });
   if (!admin) throw new Error("Crea primero el administrador (admin:create).");
   const branchId = admin.branchId;
-  const summary = { nuevos: 0, actualizados: 0, inactivos: 0, unidades: 0 };
+  const summary = {
+    nuevos: 0,
+    sinCambios: 0,
+    activados: 0,
+    precios: 0,
+    codigos: 0,
+    inactivos: 0,
+    unidades: 0,
+  };
   const review: string[][] = [
     ["ID", "Producto", "Categoría", "Existencia", "Costo", "Precio", "Revisar"],
   ];
@@ -193,10 +213,19 @@ async function main() {
     if (dryRun) continue;
     const categoryId = categories.find((c) => c.name === row.category)!.id;
     const barcode = row.barcode ?? row.id;
-    const existing = await db.variant.findUnique({
-      where: { sku: row.id },
-      include: { product: true },
-    });
+    // Ya importado: por ID, o por la clave de una carga anterior que usaba la
+    // REFERENCIA (código de barras) como código. Nunca se carga dos veces.
+    const existing =
+      (await db.variant.findUnique({
+        where: { sku: row.id },
+        include: { product: true },
+      })) ??
+      (row.ref
+        ? await db.variant.findFirst({
+            where: { OR: [{ sku: row.ref }, { barcode: row.ref }] },
+            include: { product: true },
+          })
+        : null);
     const productData = {
       name: row.name,
       categoryId,
@@ -206,15 +235,61 @@ async function main() {
       maxStock: Math.max(10, row.qty * 3),
     };
     if (existing) {
-      await db.product.update({
-        where: { id: existing.productId },
-        data: productData,
+      // Una carga repetida no pisa lo que se editó en la app (costo promedio,
+      // precio, mínimos, activo). Sólo:
+      // - corrige el código si la carga anterior usó la REFERENCIA;
+      // - activa productos que estaban inactivos por no tener precio o costo;
+      // - con --actualizar-precios, cambia el precio y lo deja en bitácora.
+      const changes: Record<string, unknown> = {};
+      if (existing.sku !== row.id) changes.sku = row.id;
+      const missingData =
+        !existing.product.active &&
+        (Number(existing.price) <= 0 || Number(existing.costAvg) <= 0);
+      if (missingData && active) {
+        changes.price = row.price;
+        if (Number(existing.costAvg) <= 0) changes.costAvg = row.cost;
+        changes.active = true;
+      } else if (
+        updatePrices &&
+        row.price > 0 &&
+        Number(existing.price) !== row.price
+      )
+        changes.price = row.price;
+      if (!Object.keys(changes).length) {
+        summary.sinCambios++;
+        continue;
+      }
+      await db.$transaction(async (tx) => {
+        await tx.variant.update({ where: { id: existing.id }, data: changes });
+        if (changes.active)
+          await tx.product.update({
+            where: { id: existing.productId },
+            data: { active: true },
+          });
+        await tx.auditLog.create({
+          data: {
+            userId: admin.id,
+            action: changes.active
+              ? "inventory_import_activate"
+              : changes.price !== undefined
+                ? "price_change"
+                : "inventory_import_code",
+            entity: "variant",
+            entityId: existing.id,
+            before: {
+              sku: existing.sku,
+              price: Number(existing.price),
+              costAvg: Number(existing.costAvg),
+              active: existing.product.active,
+            },
+            after: { ...changes, origen: file.split(/[\\/]/).pop() },
+            branchId,
+          },
+        });
       });
-      await db.variant.update({
-        where: { id: existing.id },
-        data: { price: row.price, costAvg: row.cost, active },
-      });
-      summary.actualizados++;
+      if (changes.active) summary.activados++;
+      else if (changes.price !== undefined) summary.precios++;
+      else summary.codigos++;
       continue;
     }
     const clash = await db.variant.findUnique({ where: { barcode } });
@@ -271,13 +346,19 @@ async function main() {
       rows.length +
       " productos leídos · " +
       summary.nuevos +
-      " nuevos · " +
-      summary.actualizados +
-      " actualizados · " +
-      summary.inactivos +
-      " inactivos por falta de precio o costo · " +
+      " nuevos (" +
       summary.unidades +
-      " unidades cargadas.",
+      " unidades) · " +
+      summary.sinCambios +
+      " ya cargados sin cambios · " +
+      summary.activados +
+      " activados · " +
+      summary.precios +
+      " precios actualizados · " +
+      summary.codigos +
+      " códigos corregidos · " +
+      summary.inactivos +
+      " sin precio o costo en el Excel (inactivos).",
   );
   console.log(
     review.length -

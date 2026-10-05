@@ -18,13 +18,13 @@ import {
   lineTotals,
   paymentTotals,
   money,
-  quantity,
   d,
   can,
   z,
   stockQty,
   derivedStockQty,
   returnShares,
+  allocationCost,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -960,7 +960,10 @@ export class SalesController {
         const isKit = (line.stockAllocations as any[]).some(
           (a) => a.variantId !== line.variantId,
         );
-        if (isKit && !Number.isInteger(i.qty))
+        // Una venta anterior a la ronda 7 pudo vender una fracción de combo:
+        // su saldo completo sí se puede devolver.
+        const remaining = d(line.qty).minus(line.returnedQty);
+        if (isKit && !Number.isInteger(i.qty) && !remaining.eq(i.qty))
           bad("Los combos se devuelven por unidades enteras.");
         if (
           i.restock &&
@@ -990,7 +993,16 @@ export class SalesController {
         const fraction = d(i.qty).div(i.line.qty);
         total = total.plus(d(i.line.lineTotal).times(fraction));
         tax = tax.plus(d(i.line.tax).times(fraction));
-        if (i.restock) cost = cost.plus(d(i.line.unitCost).times(i.qty));
+        // Costo devuelto: valor de las asignaciones (exacto en combos), con
+        // redondeo acumulado para que varias devoluciones sumen exactamente el
+        // costo de la venta.
+        if (i.restock) {
+          const value = allocationCost(i.line);
+          const at = (returned: ReturnType<typeof d>) =>
+            d(money(value.times(returned).div(i.line.qty)));
+          const before = d(i.line.returnedQty);
+          cost = cost.plus(at(before.plus(i.qty)).minus(at(before)));
+        }
         await tx.saleItem.update({
           where: { id: i.line.id },
           data: { returnedQty: { increment: i.qty } },
