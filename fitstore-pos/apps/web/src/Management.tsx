@@ -19,7 +19,6 @@ import {
   ArrowRight,
   Wallet,
   RefreshCw,
-  Trash2,
   FileText,
   ChevronRight,
   AlertTriangle,

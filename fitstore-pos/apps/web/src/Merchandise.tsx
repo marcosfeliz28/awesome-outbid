@@ -30,6 +30,13 @@ import {
 import { FormModal, attrLabel, toast } from "./helpers";
 import { registerTerminal } from "./realtime";
 import { Barcode } from "./Management";
+import {
+  DAMAGE_REASONS,
+  DocumentFields,
+  ReceiptHistory,
+  documentPayload,
+  type SupplierDocument,
+} from "./Purchases";
 
 type GoodsLine = {
   variantId?: string;
@@ -45,8 +52,17 @@ type GoodsLine = {
   productId?: string;
   note?: string;
   quick?: any;
+  // Dañadas o rechazadas al recibir: no entran al stock (paso 36).
+  damagedQty?: number;
+  damageReason?: string;
+  showDamage?: boolean;
+  // Línea de la orden: pedido, ya recibido bueno y ya dañado.
+  ordered?: { qty: number; received: number; damaged: number };
 };
-type CatalogVariant = Variant & { product: Product };
+// `stock` es lo vendible; lo de lotes vencidos llega aparte (paso 04).
+type CatalogVariant = Variant & { product: Product; expiredStock?: string };
+const expiredNote = (v: CatalogVariant) =>
+  Number(v.expiredStock) > 0 ? " · vencido: " + Number(v.expiredStock) : "";
 
 // Valores que acepta el servidor y su nombre para el usuario.
 const EXIT_REASONS = [
@@ -236,6 +252,11 @@ function ProductSearch({
                 <Badge tone={Number(v.stock) > 0 ? "neutral" : "warning"}>
                   {Number(v.stock)} en stock
                 </Badge>
+                {Number(v.expiredStock) > 0 && (
+                  <Badge tone="warning">
+                    vencido: {Number(v.expiredStock)}
+                  </Badge>
+                )}
               </button>
             </li>
           ))}
@@ -312,6 +333,7 @@ export function Merchandise() {
     [taxes, setTaxes] = useState(0),
     [total, setTotal] = useState(""),
     [mismatchAccepted, setMismatchAccepted] = useState(false),
+    [doc, setDoc] = useState<SupplierDocument>({}),
     [queue, setQueue] = useState<any[]>([]);
   const [file, setFile] = useState<File | null>(null),
     [mapping, setMapping] = useState<Record<string, string>>({
@@ -409,11 +431,22 @@ export function Merchandise() {
   const subtotal =
     items.reduce((s, l) => s + lineTotal(l), 0) + freight + taxes;
   const units = items.reduce((s, l) => s + (Number(l.qty) || 0), 0);
+  const damagedOf = (l: GoodsLine) =>
+    direction === "entry" ? Number(l.damagedQty) || 0 : 0;
+  const damaged = items.reduce((s, l) => s + damagedOf(l), 0);
+  // La factura puede cobrar también lo dañado: coincide con o sin ello.
+  const damagedTotal = items.reduce(
+    (s, l) => s + damagedOf(l) * (l.unitCost ?? 0),
+    0,
+  );
   const unresolved = items.filter((l) => !l.variantId && !l.quick).length;
   const missingCost =
     direction === "entry" &&
     items.some((l) => !(Number(l.unitCost) > 0) && !l.quick);
-  const mismatch = !!total && Math.abs(Number(total) - subtotal) > 0.01;
+  const mismatch =
+    !!total &&
+    Math.abs(Number(total) - subtotal) > 0.01 &&
+    Math.abs(Number(total) - subtotal - damagedTotal) > 0.01;
   const resetForm = () => {
     setItems([]);
     setDraft(null);
@@ -422,6 +455,7 @@ export function Merchandise() {
     setFreight(0);
     setTaxes(0);
     setMismatchAccepted(false);
+    setDoc({});
     operationId.current = crypto.randomUUID();
   };
   const switchTo = (next: "entry" | "exit") => {
@@ -446,14 +480,18 @@ export function Merchandise() {
       setError("Escribe el costo unitario de cada producto.");
       return;
     }
-    if (items.some((l) => !(Number(l.qty) > 0))) {
+    if (items.some((l) => !(Number(l.qty) > 0) && !(damagedOf(l) > 0))) {
       setError("Cada línea necesita una cantidad mayor que 0.");
+      return;
+    }
+    if (items.some((l) => damagedOf(l) > 0 && !l.damageReason)) {
+      setError("Elige el motivo de las unidades dañadas o rechazadas.");
       return;
     }
     if (
       !window.confirm(
         direction === "entry"
-          ? `¿Confirmar entrada de ${units} unidad(es)?`
+          ? `¿Confirmar entrada de ${units} unidad(es)${damaged ? ` y ${damaged} dañada(s) que no entran al stock` : ""}?`
           : `¿Confirmar salida de ${units} unidad(es) por ${reasonLabel(reason).toLowerCase()}?`,
       )
     )
@@ -471,14 +509,32 @@ export function Merchandise() {
       taxes,
       invoiceTotal: total ? Number(total) : undefined,
       acknowledgeMismatch: mismatchAccepted,
+      ...(direction === "entry" ? documentPayload(doc) : {}),
       items: items.map(
-        ({ name, confidence, expiryDate, productId, note, unitCost, ...l }) => {
+        ({
+          name,
+          confidence,
+          expiryDate,
+          productId,
+          note,
+          unitCost,
+          showDamage,
+          ordered,
+          damagedQty,
+          damageReason,
+          ...l
+        }) => {
           void name;
           void confidence;
           void productId;
           void note;
+          void showDamage;
+          void ordered;
           return {
             ...l,
+            ...(direction === "entry" && Number(damagedQty) > 0
+              ? { damagedQty: Number(damagedQty), damageReason }
+              : {}),
             // El servidor exige costo positivo también en salidas (no se usa).
             unitCost: Number(unitCost) > 0 ? Number(unitCost) : 1,
             expiryDate: expiryDate
@@ -648,17 +704,29 @@ export function Merchandise() {
                       o
                         ? o.items
                             .filter(
-                              (i: any) => Number(i.qty) > Number(i.receivedQty),
+                              (i: any) =>
+                                Number(i.qty) >
+                                Number(i.receivedQty) +
+                                  Number(i.damagedQty ?? 0),
                             )
                             .map((i: any) => {
                               const v = variants.find(
                                 (v) => v.id === i.variantId,
                               );
+                              const ordered = {
+                                qty: Number(i.qty),
+                                received: Number(i.receivedQty),
+                                damaged: Number(i.damagedQty ?? 0),
+                              };
                               return {
                                 variantId: i.variantId,
                                 itemId: i.id,
+                                ordered,
                                 name: v ? variantName(v) : i.variantId,
-                                qty: Number(i.qty) - Number(i.receivedQty),
+                                qty:
+                                  ordered.qty -
+                                  ordered.received -
+                                  ordered.damaged,
                                 unitCost:
                                   Number(i.unitCost) > 0
                                     ? Number(i.unitCost)
@@ -697,6 +765,16 @@ export function Merchandise() {
               ))}
             </select>
           </label>
+        )}
+        {direction === "entry" && (
+          <details className="goods-document">
+            <summary>Documento del proveedor (opcional)</summary>
+            <p className="goods-cost-note">
+              Factura, NCF y condición de pago para la contable. Puedes
+              completarlo después desde el historial.
+            </p>
+            <DocumentFields value={doc} onChange={setDoc} />
+          </details>
         )}
         {direction === "entry" && !draft && !orderId && (
           <button
@@ -844,7 +922,7 @@ export function Merchandise() {
                   </h3>
                   <small>
                     {v
-                      ? `${v.sku} · ${Number(v.stock)} en stock`
+                      ? `${v.sku} · ${Number(v.stock)} en stock${expiredNote(v)}`
                       : l.quick
                         ? "Producto nuevo · se crea al confirmar"
                         : l.name}
@@ -905,6 +983,7 @@ export function Merchandise() {
                           .map((v) => (
                             <option key={v.id} value={v.id}>
                               {variantName(v)} · {Number(v.stock)} en stock
+                              {expiredNote(v)}
                             </option>
                           ))}
                       </select>
@@ -952,7 +1031,12 @@ export function Merchandise() {
                       type="button"
                       aria-label="Restar una unidad"
                       onClick={() =>
-                        patch(index, { qty: Math.max(1, Number(l.qty) - 1) })
+                        patch(index, {
+                          qty: Math.max(
+                            damagedOf(l) > 0 ? 0 : 1,
+                            Number(l.qty) - 1,
+                          ),
+                        })
                       }
                     >
                       <Minus size={16} />
@@ -960,7 +1044,7 @@ export function Merchandise() {
                     <input
                       id={"goods-qty-" + index}
                       type="number"
-                      min="0.001"
+                      min={damagedOf(l) > 0 ? "0" : "0.001"}
                       step="0.001"
                       inputMode="decimal"
                       value={l.qty}
@@ -1000,6 +1084,13 @@ export function Merchandise() {
                   </label>
                 )}
               </div>
+              {direction === "entry" && (
+                <DamageFields
+                  line={l}
+                  index={index}
+                  onChange={(change) => patch(index, change)}
+                />
+              )}
               {direction === "entry" && seesCost && previous !== undefined && (
                 <p className="goods-cost-note">
                   Costo promedio actual {formatMoney(previous)}
@@ -1173,6 +1264,13 @@ export function Merchandise() {
         </Button>
       </div>
 
+      {online && (
+        <section className="panel goods-card">
+          <h2>Historial de recepciones</h2>
+          <ReceiptHistory compact />
+        </section>
+      )}
+
       {recent.length > 0 && (
         <section className="panel goods-card">
           <h2>Entradas recientes</h2>
@@ -1246,11 +1344,13 @@ export function Merchandise() {
                           return;
                         setItems(
                           row.input.items.map((l: any) => {
+                            // Al corregir, los dañados quedan a la vista.
                             const v = variants.find(
                               (v) => v.id === l.variantId,
                             );
                             return {
                               ...l,
+                              showDamage: Number(l.damagedQty) > 0,
                               name: v
                                 ? variantName(v)
                                 : (l.quick?.name ?? l.variantId),
@@ -1267,6 +1367,14 @@ export function Merchandise() {
                         setReason(row.input.reason ?? "merma");
                         setFreight(row.input.freight);
                         setTaxes(row.input.taxes);
+                        setDoc({
+                          supplierInvoice: row.input.supplierInvoice,
+                          supplierNcf: row.input.supplierNcf,
+                          invoiceDate: row.input.invoiceDate,
+                          paymentType: row.input.paymentType,
+                          creditDays: row.input.creditDays,
+                          itbis: row.input.itbis,
+                        });
                         setTotal(
                           row.input.invoiceTotal != null
                             ? String(row.input.invoiceTotal)
@@ -1470,5 +1578,85 @@ export function Merchandise() {
         </Button>
       </Modal>
     </div>
+  );
+}
+
+// Unidades dañadas o rechazadas de una línea (paso 36) y, si viene de una
+// orden, lo que queda pendiente: pedido = bueno + dañado + pendiente.
+function DamageFields({
+  line,
+  index,
+  onChange,
+}: {
+  line: GoodsLine;
+  index: number;
+  onChange: (change: Partial<GoodsLine>) => void;
+}) {
+  const damaged = Number(line.damagedQty) || 0;
+  const o = line.ordered;
+  const pending = o
+    ? Math.max(
+        0,
+        Math.round(
+          (o.qty - o.received - o.damaged - (Number(line.qty) || 0) - damaged) *
+            1000,
+        ) / 1000,
+      )
+    : undefined;
+  return (
+    <>
+      {o && (
+        <p className="goods-cost-note">
+          Pedido {o.qty} · antes: {o.received} buenas
+          {o.damaged ? `, ${o.damaged} dañadas` : ""} · Pendiente {pending}
+        </p>
+      )}
+      {line.showDamage || damaged > 0 ? (
+        <div className="goods-fields">
+          <label className="field">
+            Unidades dañadas o rechazadas
+            <input
+              id={"goods-damaged-" + index}
+              type="number"
+              min="0"
+              step="0.001"
+              inputMode="decimal"
+              value={line.damagedQty ?? ""}
+              onChange={(e) =>
+                onChange({
+                  damagedQty:
+                    e.target.value === "" ? undefined : Number(e.target.value),
+                })
+              }
+            />
+          </label>
+          <label className="field">
+            Motivo del daño o rechazo
+            <select
+              value={line.damageReason ?? ""}
+              aria-invalid={damaged > 0 && !line.damageReason}
+              onChange={(e) =>
+                onChange({ damageReason: e.target.value || undefined })
+              }
+            >
+              <option value="">Elegir motivo</option>
+              {DAMAGE_REASONS.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="link-button"
+          onClick={() => onChange({ showDamage: true })}
+        >
+          Dañados o rechazados
+        </button>
+      )}
+    </>
   );
 }
