@@ -21,6 +21,8 @@ En una terminal, inicia PostgreSQL local sin Docker:
 pnpm db:local
 ```
 
+Escucha en `127.0.0.1:5434`, en UTC, y guarda los datos en `.local-db/`; `FITSTORE_DB_PORT` y `FITSTORE_DB_DIR` los cambian (ajusta entonces `DATABASE_URL`). Se detiene con Ctrl+C o, desde otra terminal, con `node scripts/local-db.mjs --detener`.
+
 En otra terminal:
 
 ```bash
@@ -58,7 +60,7 @@ pnpm exec playwright install chromium
 pnpm verify
 ```
 
-`check`: TypeScript, ESLint, pruebas de fórmulas y compilación. `verify`: pruebas de API y navegador; inicia la API local cuando hace falta. Playwright inicia la PWA compilada en preview (4173) para verificar recargas offline; ejecuta `pnpm check` antes. `FITSTORE_WEB_URL` permite usar otro servidor de la PWA compilada. Los resultados y trazas aparecen en `test-results/` y `playwright-report/`. Los registros de la entrega están en `docs/validacion/`.
+`check`: TypeScript, ESLint, pruebas de fórmulas y compilación. `verify`: pruebas de API y navegador contra la API de `FITSTORE_API_URL` (por defecto `http://127.0.0.1:3001/api`, o el puerto de `PORT`); si no responde, inicia PostgreSQL local y la API, y los detiene al terminar. Playwright inicia la PWA compilada en preview (4173) para verificar recargas offline; ejecuta `pnpm check` antes. `FITSTORE_WEB_URL` permite usar otro servidor de la PWA compilada. Los resultados y trazas aparecen en `test-results/` y `playwright-report/`. Los registros de la entrega están en `docs/validacion/`.
 
 Para regenerar el ZIP fuente: `pnpm package:source`.
 
