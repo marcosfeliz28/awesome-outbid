@@ -1,0 +1,471 @@
+FitStore POS · ronda 9 · Windows y zona horaria · zona horaria · ANTES de la corrección (API de 4485a27 con las regresiones nuevas, rol en America/Santo_Domingo)
+
+================================================================
+== rebase-antes-zona.txt
+================================================================
+commit: 50558b240fafa9392f0213844701a227c727e612 (rama local/r9w-zona sobre 4485a27), con el código SIN la corrección:
+  git checkout 4485a27 -- apps/api/src/security.ts apps/api/src/reports.ts .env.example compose.yaml  (API recompilada y reiniciada)
+  git status --short: M  fitstore-pos/.env.example;M  fitstore-pos/apps/api/src/reports.ts;M  fitstore-pos/apps/api/src/security.ts;M  fitstore-pos/compose.yaml;
+show timezone (rol fitstore_sd, base fitstore_zona): America/Santo_Domingo
+orden: pnpm exec vitest run --config vitest.integration.config.ts -t "Windows y zona horaria|contraseñas concurrentes incrementan|R9-seguridad-1"
+  (el describe del canal más las pruebas de bloqueo ya existentes que se pueden correr aisladas)
+fecha: 2026-10-06T08:58:14Z
+
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/api.test.ts (135 tests | 7 failed | 125 skipped) 30371ms
+   × Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco 3984ms
+     → expected 201 to be 400 // Object.is equality
+   × Ronda 9 · revisión · seguridad > R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo 3081ms
+     → .toMatch() expects to receive a string, but got undefined
+   × Ronda 9 · revisión · seguridad > R9-seguridad-1: un administrador desbloquea la cuenta al cambiarle la contraseña 2092ms
+     → .toMatch() expects to receive a string, but got undefined
+   × Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar 2991ms
+     → expected -225.0007 to be greater than 13
+     → expected 201 to be 400 // Object.is equality
+     → expected 'undefined' to match /bloquead/i
+     → expected { …(3) } to match object { failedAttempts: 5, …(1) }
+(1 matching property omitted from actual)
+   × Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar 2910ms
+     → expected -225.00411666666668 to be greater than 13
+     → expected 201 to be 400 // Object.is equality
+   × Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM 1133ms
+     → expected [ …(2) ] to deeply equal [ { day: '2015-07-30', total: 300 } ]
+     → expected [ [ 'Ropa deportiva', 500 ] ] to deeply equal [ [ 'Ropa deportiva', 300 ] ]
+     → expected [ { name: 'QA zona 6aad0229', …(3) } ] to deeply equal [ { name: 'QA zona 6aad0229', …(3) } ]
+     → expected [ { name: 'QA zona 5ecb0854', …(1) } ] to deeply equal [ { name: 'QA zona 5ecb0854', …(1) } ]
+     → expected [ { day: 3, hour: 23, …(2) }, …(1) ] to deeply equal [ { day: 4, hour: +0, …(2) }, …(1) ]
+     → expected [] to deeply equal [ { day: '2015-07-29', total: 400 } ]
+     → expected [] to deeply equal [ { day: 3, hour: 23, …(2) } ]
+     → expected [ …(2) ] to deeply equal [ { day: '2015-07-31', total: 800 } ]
+     → expected [ { day: 4, hour: 23, …(2) }, …(1) ] to deeply equal [ { day: 5, hour: +0, …(2) } ]
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar  2978ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar  3146ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM  1034ms
+   × Ronda 9 · Windows y zona horaria > TZ-3: compose.yaml y .env.example fijan la sesión en UTC y PostgreSQL acepta esa opción 3ms
+     → compose.yaml: expected null to be '-c TimeZone=UTC' // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/api.test.ts > Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco
+AssertionError: expected 201 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 201
+
+ ❯ tests/api.test.ts:744:22
+    742|     );
+    743|     const r = await loginRaw(u);
+    744|     expect(r.status).toBe(400);
+       |                      ^
+    745|     expect((await r.json()).message).toMatch(/bloquead/i);
+    746|     // El contador es por cuenta y dirección IP, ya no global en User
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · revisión · seguridad > R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo
+TypeError: .toMatch() expects to receive a string, but got undefined
+ ❯ tests/api.test.ts:5586:60
+    5584|       );
+    5585|     // Desde su dirección sigue bloqueado: no puede seguir probando.
+    5586|     expect((await login(seller, attackerIp)).body.message).toMatch(/bl…
+       |                                                            ^
+    5587|     // La sesión abierta de la vendedora sigue cobrando.
+    5588|     expect(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · revisión · seguridad > R9-seguridad-1: un administrador desbloquea la cuenta al cambiarle la contraseña
+TypeError: .toMatch() expects to receive a string, but got undefined
+ ❯ tests/api.test.ts:5623:52
+    5621|     for (let n = 0; n < 5; n++)
+    5622|       expect((await login(seller, ip, "incorrecta-" + n)).status).toBe…
+    5623|     expect((await login(seller, ip)).body.message).toMatch(/bloquead/i…
+       |                                                    ^
+    5624|     await ok(
+    5625|       "/users/" + seller.id,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar
+AssertionError: expected -225.0007 to be greater than 13
+ ❯ tests/api.test.ts:7109:29
+    7107|           // horas.
+    7108|           const left = (+locked.lockedUntil - Date.now()) / MINUTE;
+    7109|           expect.soft(left).toBeGreaterThan(13);
+       |                             ^
+    7110|           expect.soft(left).toBeLessThan(17);
+    7111|           // Mientras dura el bloqueo también se rechaza la contraseña…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar
+AssertionError: expected 201 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 201
+
+ ❯ tests/api.test.ts:7113:39
+    7111|           // Mientras dura el bloqueo también se rechaza la contraseña…
+    7112|           const blocked = await login();
+    7113|           expect.soft(blocked.status).toBe(400);
+       |                                       ^
+    7114|           expect.soft(String(blocked.body.message)).toMatch(/bloquead/…
+    7115|           // Ese rechazo no toca el contador ni alarga el bloqueo.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar
+AssertionError: expected 'undefined' to match /bloquead/i
+
+- Expected: 
+/bloquead/i
+
++ Received: 
+"undefined"
+
+ ❯ tests/api.test.ts:7114:53
+    7112|           const blocked = await login();
+    7113|           expect.soft(blocked.status).toBe(400);
+    7114|           expect.soft(String(blocked.body.message)).toMatch(/bloquead/…
+       |                                                     ^
+    7115|           // Ese rechazo no toca el contador ni alarga el bloqueo.
+    7116|           expect.soft(await stored()).toMatchObject({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar
+AssertionError: expected { …(3) } to match object { failedAttempts: 5, …(1) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "failedAttempts": 5,
+-   "lockedUntil": 2026-10-06T05:13:31.368Z,
++   "failedAttempts": 0,
++   "lockedUntil": null,
+  }
+
+ ❯ tests/api.test.ts:7116:39
+    7114|           expect.soft(String(blocked.body.message)).toMatch(/bloquead/…
+    7115|           // Ese rechazo no toca el contador ni alarga el bloqueo.
+    7116|           expect.soft(await stored()).toMatchObject({
+       |                                       ^
+    7117|             failedAttempts: 5,
+    7118|             lockedUntil: locked.lockedUntil,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar
+AssertionError: expected -225.00411666666668 to be greater than 13
+ ❯ tests/api.test.ts:7174:29
+    7172|           expect(locked.failedAttempts).toBe(5);
+    7173|           const left = (+locked.lockedUntil - Date.now()) / MINUTE;
+    7174|           expect.soft(left).toBeGreaterThan(13);
+       |                             ^
+    7175|           expect.soft(left).toBeLessThan(17);
+    7176|           // Mientras dura el bloqueo también se rechaza el PIN correc…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar
+AssertionError: expected 201 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 201
+
+ ❯ tests/api.test.ts:7178:34
+    7176|           // Mientras dura el bloqueo también se rechaza el PIN correc…
+    7177|           const blocked = await pin("654321");
+    7178|           expect(blocked.status).toBe(400);
+       |                                  ^
+    7179|           expect(blocked.body.message).toMatch(/bloquead/i);
+    7180|           // El contador es del solicitante: su sesión sigue abierta.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM
+AssertionError: expected [ …(2) ] to deeply equal [ { day: '2015-07-30', total: 300 } ]
+
+- Expected
++ Received
+
+  [
+    {
++     "day": "2015-07-29",
++     "total": 400,
++   },
++   {
+      "day": "2015-07-30",
+-     "total": 300,
++     "total": 100,
+    },
+  ]
+
+ ❯ tests/api.test.ts:7309:36
+    7307|           // Paneles en SQL crudo: las mismas dos ventas, en su día y …
+    7308|           // dominicanos.
+    7309|           expect.soft(today.daily).toEqual([{ day, total: 300 }]);
+       |                                    ^
+    7310|           expect
+    7311|             .soft(today.category.map((c: any) => [c.name, c.total]))
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM
+AssertionError: expected [ [ 'Ropa deportiva', 500 ] ] to deeply equal [ [ 'Ropa deportiva', 300 ] ]
+
+- Expected
++ Received
+
+  [
+    [
+      "Ropa deportiva",
+-     300,
++     500,
+    ],
+  ]
+
+ ❯ tests/api.test.ts:7312:14
+    7310|           expect
+    7311|             .soft(today.category.map((c: any) => [c.name, c.total]))
+    7312|             .toEqual([[category.name, 300]]);
+       |              ^
+    7313|           expect.soft(today.top).toEqual([
+    7314|             {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM
+AssertionError: expected [ { name: 'QA zona 6aad0229', …(3) } ] to deeply equal [ { name: 'QA zona 6aad0229', …(3) } ]
+
+- Expected
++ Received
+
+  [
+    {
+      "category": "Ropa deportiva",
+      "name": "QA zona 6aad0229",
+-     "revenue": 300,
+-     "units": 3,
++     "revenue": 500,
++     "units": 5,
+    },
+  ]
+
+ ❯ tests/api.test.ts:7313:34
+    7311|             .soft(today.category.map((c: any) => [c.name, c.total]))
+    7312|             .toEqual([[category.name, 300]]);
+    7313|           expect.soft(today.top).toEqual([
+       |                                  ^
+    7314|             {
+    7315|               name: product.name,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM
+AssertionError: expected [ { name: 'QA zona 5ecb0854', …(1) } ] to deeply equal [ { name: 'QA zona 5ecb0854', …(1) } ]
+
+- Expected
++ Received
+
+  [
+    {
+      "name": "QA zona 5ecb0854",
+-     "total": 300,
++     "total": 500,
+    },
+  ]
+
+ ❯ tests/api.test.ts:7323:14
+    7321|           expect
+    7322|             .soft(today.sellers)
+    7323|             .toEqual([{ name: cashier.name, total: 300 }]);
+       |              ^
+    7324|           expect.soft(today.peakHours).toEqual([
+    7325|             { day: weekday(day), hour: 0, invoices: 1, total: 100 },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM
+AssertionError: expected [ { day: 3, hour: 23, …(2) }, …(1) ] to deeply equal [ { day: 4, hour: +0, …(2) }, …(1) ]
+
+- Expected
++ Received
+
+  [
+    {
+-     "day": 4,
+-     "hour": 0,
++     "day": 3,
++     "hour": 23,
+      "invoices": 1,
+-     "total": 100,
++     "total": 400,
+    },
+    {
+      "day": 4,
+-     "hour": 23,
++     "hour": 0,
+      "invoices": 1,
+-     "total": 200,
++     "total": 100,
+    },
+  ]
+
+ ❯ tests/api.test.ts:7324:40
+    7322|             .soft(today.sellers)
+    7323|             .toEqual([{ name: cashier.name, total: 300 }]);
+    7324|           expect.soft(today.peakHours).toEqual([
+       |                                        ^
+    7325|             { day: weekday(day), hour: 0, invoices: 1, total: 100 },
+    7326|             { day: weekday(day), hour: 23, invoices: 1, total: 200 },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM
+AssertionError: expected [] to deeply equal [ { day: '2015-07-29', total: 400 } ]
+
+- Expected
++ Received
+
+- [
+-   {
+-     "day": "2015-07-29",
+-     "total": 400,
+-   },
+- ]
++ []
+
+ ❯ tests/api.test.ts:7331:39
+    7329|           const previous = await summary(eve);
+    7330|           expect(previous.invoices).toBe(1);
+    7331|           expect.soft(previous.daily).toEqual([{ day: eve, total: 400 …
+       |                                       ^
+    7332|           expect
+    7333|             .soft(previous.peakHours)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM
+AssertionError: expected [] to deeply equal [ { day: 3, hour: 23, …(2) } ]
+
+- Expected
++ Received
+
+- [
+-   {
+-     "day": 3,
+-     "hour": 23,
+-     "invoices": 1,
+-     "total": 400,
+-   },
+- ]
++ []
+
+ ❯ tests/api.test.ts:7334:14
+    7332|           expect
+    7333|             .soft(previous.peakHours)
+    7334|             .toEqual([
+       |              ^
+    7335|               { day: weekday(eve), hour: 23, invoices: 1, total: 400 },
+    7336|             ]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM
+AssertionError: expected [ …(2) ] to deeply equal [ { day: '2015-07-31', total: 800 } ]
+
+- Expected
++ Received
+
+  [
+    {
++     "day": "2015-07-30",
++     "total": 200,
++   },
++   {
+      "day": "2015-07-31",
+      "total": 800,
+    },
+  ]
+
+ ❯ tests/api.test.ts:7339:40
+    7337|           const following = await summary(next);
+    7338|           expect(following.invoices).toBe(1);
+    7339|           expect.soft(following.daily).toEqual([{ day: next, total: 80…
+       |                                        ^
+    7340|           expect
+    7341|             .soft(following.peakHours)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM
+AssertionError: expected [ { day: 4, hour: 23, …(2) }, …(1) ] to deeply equal [ { day: 5, hour: +0, …(2) } ]
+
+- Expected
++ Received
+
+@@ -1,7 +1,13 @@
+  [
+    {
++     "day": 4,
++     "hour": 23,
++     "invoices": 1,
++     "total": 200,
++   },
++   {
+      "day": 5,
+      "hour": 0,
+      "invoices": 1,
+      "total": 800,
+    },
+
+ ❯ tests/api.test.ts:7342:14
+    7340|           expect
+    7341|             .soft(following.peakHours)
+    7342|             .toEqual([
+       |              ^
+    7343|               { day: weekday(next), hour: 0, invoices: 1, total: 800 },
+    7344|             ]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/19]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · Windows y zona horaria > TZ-3: compose.yaml y .env.example fijan la sesión en UTC y PostgreSQL acepta esa opción
+AssertionError: compose.yaml: expected null to be '-c TimeZone=UTC' // Object.is equality
+
+- Expected: 
+"-c TimeZone=UTC"
+
++ Received: 
+null
+
+ ❯ tests/api.test.ts:7372:63
+    7370|       );
+    7371|       const query = text.match(/DATABASE_URL[:=]\s*\S+?\?(\S+)/)?.[1] …
+    7372|       expect(new URLSearchParams(query).get("options"), file).toBe(
+       |                                                               ^
+    7373|         "-c TimeZone=UTC",
+    7374|       );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/19]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed | 3 passed | 125 skipped (135)
+   Start at  04:58:14
+   Duration  30.96s (transform 223ms, setup 0ms, collect 304ms, tests 30.37s, environment 0ms, prepare 106ms)
+
+

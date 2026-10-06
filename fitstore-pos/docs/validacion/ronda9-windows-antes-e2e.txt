@@ -1,0 +1,57 @@
+FitStore POS · ronda 9 · Windows y zona horaria · e2e ANTES de las correcciones
+Commit aa345c7, Windows 11, Chromium 153 (Playwright 1.63.0), PWA compilada en vite preview, API compilada. Orden: pnpm test:e2e
+
+  ok  1 [chromium] › tests\e2e\store.spec.ts:64:5 › venta completa desde caja hasta pagos combinados y recibo (6.4s)
+  ok  2 [chromium] › tests\e2e\store.spec.ts:120:5 › pantallas de gestión, tema oscuro y versión móvil (5.1s)
+  ok  3 [chromium] › tests\e2e\store.spec.ts:164:5 › venta offline queda guardada y se sincroniza una sola vez (4.9s)
+  ok  4 [chromium] › tests\e2e\store.spec.ts:203:5 › descuento por monto, crédito y abono en interfaz (5.0s)
+  ok  5 [chromium] › tests\e2e\store.spec.ts:304:5 › Mercancía móvil: entrada offline, sincronización única y etiquetas (5.3s)
+  ok  6 [chromium] › tests\e2e\store.spec.ts:409:5 › Importar CSV exige revisión antes de modificar existencias (3.3s)
+  ok  7 [chromium] › tests\e2e\store.spec.ts:484:5 › equipo nuevo de vendedor espera aprobación y se aprueba con PIN de gerente (4.7s)
+  x   8 [chromium] › tests\e2e\store.spec.ts:513:5 › Configuración y Equipos caben en 320 y 390 px sin desplazamiento horizontal (4.7s)
+  ok  9 [chromium] › tests\e2e\store.spec.ts:562:5 › código + Enter agrega el producto y respeta el stock (4.8s)
+  ok 10 [chromium] › tests\e2e\store.spec.ts:648:5 › código ambiguo por mayúsculas avisa y no agrega (3.2s)
+  ok 11 [chromium] › tests\e2e\store.spec.ts:788:5 › R9-caja-1: el código de un producto inactivo + Enter avisa y no agrega otro que lo contiene (3.5s)
+  ok 12 [chromium] › tests\e2e\store.spec.ts:822:5 › R9-caja-2: tras el aviso de código ambiguo, el siguiente escaneo reemplaza el código (3.5s)
+  ok 13 [chromium] › tests\e2e\store.spec.ts:875:5 › R9-caja-3: después de un clic, el lector agrega el producto escaneado y no repite el que tenía el foco (4.4s)
+  ok 14 [chromium] › tests\e2e\store.spec.ts:926:5 › R9-caja-9 y R9-caja-6: el ticket muestra los descuentos y tras «Nueva venta» el lector agrega (4.3s)
+  ok 15 [chromium] › tests\e2e\store.spec.ts:972:5 › R9-caja-6: tras elegir una variante o agregar con Enter por palabras, el siguiente escaneo no se pierde (5.2s)
+  ok 16 [chromium] › tests\e2e\store.spec.ts:1018:5 › R9-caja-4 y R9-caja-7: la venta en espera conserva descuentos y cliente (también con F8) (4.9s)
+  ok 17 [chromium] › tests\e2e\store.spec.ts:1088:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (5.2s)
+  ok 18 [chromium] › tests\e2e\store.spec.ts:1166:5 › R9-caja-8: el descuento de línea no pasa del 100 % ni del importe de la línea (4.3s)
+  ok 19 [chromium] › tests\e2e\store.spec.ts:1208:5 › R9-dinero-3-ui: un abono por transferencia que no llegó se rechaza desde la venta y la devolución pasa (5.1s)
+  ok 20 [chromium] › tests\e2e\store.spec.ts:1330:5 › R9-dinero-5-pos: un descuento por monto con 3 decimales se cobra en línea y se sincroniza sin conexión (5.6s)
+  ok 21 [chromium] › tests\e2e\store.spec.ts:1384:5 › R9-caja-3/8 revisión: un escaneo con el foco en un campo de descuento agrega el producto y no cambia el descuento (5.6s)
+  ok 22 [chromium] › tests\e2e\store.spec.ts:1445:5 › R9-caja-1 revisión: un código de modelo del nombre (como «a40» o «275n») + Enter agrega su único producto (4.0s)
+
+  1) [chromium] › tests\e2e\store.spec.ts:513:5 › Configuración y Equipos caben en 320 y 390 px sin desplazamiento horizontal 
+
+    Error: scrollWidth @320
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 1
+    Received:    3
+
+      550 |       ).length,
+      551 |     }));
+    > 552 |     expect(overflow.page, "scrollWidth @" + width).toBeLessThanOrEqual(1);
+          |                                                    ^
+      553 |     expect(overflow.clipped, "recortes @" + width).toBe(0);
+      554 |     await page.screenshot({
+      555 |       // Pantalla visible: la base de pruebas acumula cientos de equipos.
+        at <repo>\tests\e2e\store.spec.ts:552:52
+
+  1 failed
+  21 passed (1.9m)
+
+Archivos versionados que la corrida dejó modificados (git status --short):
+ M docs/cobro-exitoso.png
+ M docs/dashboard-mobile.png
+ M docs/pos-mobile.png
+ M docs/validacion/ronda6-capturas/cel-equipos-390.png
+
+Medición en el navegador (Configuración > Equipos, misma base, misma compilación):
+  320 px, con Inter cargada desde Google Fonts:  html.scrollWidth = 323, header.topbar scrollWidth = 323, span.avatar termina en x = 323.4 -> desborde de 3 px
+  320 px, con fonts.googleapis.com y fonts.gstatic.com bloqueados: html.scrollWidth = 320 -> sin desborde (por eso pasaba en la nube)
+  390 px: sin desborde en ambos casos
