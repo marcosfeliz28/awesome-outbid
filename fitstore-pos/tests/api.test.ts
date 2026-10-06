@@ -7618,3 +7618,494 @@ describe("Tienda · 4 cajas a la vez", () => {
     }
   });
 });
+
+// Ronda 9 · revisión local en Windows, con PostgreSQL en UTC-4. Prisma guarda
+// cada DateTime como «timestamp sin zona» en UTC, así que ningún SQL crudo puede
+// depender de la zona horaria de la sesión. Cada zona se prueba contra una
+// segunda API propia cuya DATABASE_URL fuerza esa zona en sus sesiones: con
+// America/Santo_Domingo las regresiones fallan con el código anterior en
+// cualquier computadora, también donde el servidor ya está en UTC; con UTC son
+// el control de que nada cambió donde ya funcionaba.
+describe("Ronda 9 · Windows y zona horaria", () => {
+  const MINUTE = 60000,
+    DAY = 86400000;
+  const password = "FitStore-QA-2026!";
+  // Añade la zona a las opciones de arranque de la sesión y conserva el resto
+  // de la cadena de conexión. La última «-c» gana, también sobre la del rol.
+  const withSessionTimeZone = (raw: string | undefined, zone: string) => {
+    if (!raw) throw new Error("Configura DATABASE_URL.");
+    const url = new URL(raw);
+    const options = [url.searchParams.get("options"), "-c TimeZone=" + zone]
+      .filter(Boolean)
+      .join(" ");
+    url.searchParams.delete("options");
+    // Pocas conexiones: estas sesiones sólo atienden a este bloque.
+    url.searchParams.set("connection_limit", "4");
+    url.search =
+      url.searchParams.toString() + "&options=" + encodeURIComponent(options);
+    return url.toString();
+  };
+  const sessionTimeZone = async (databaseUrl: string) => {
+    const db = new PrismaClient({ datasourceUrl: databaseUrl });
+    try {
+      const rows = await db.$queryRawUnsafe(
+        "SELECT setting, source FROM pg_settings WHERE name = 'TimeZone'",
+      );
+      return rows[0] as { setting: string; source: string };
+    } finally {
+      await db.$disconnect();
+    }
+  };
+  // Segunda API compilada, como en producción (node dist/main.js), en un puerto
+  // libre. Se arranca sin bloquear: el proceso de pruebas sigue atendiendo sus
+  // conexiones mientras tanto.
+  const startApi = async (databaseUrl: string) => {
+    const { spawn } = await import("node:child_process");
+    const { createServer } = await import("node:net");
+    const { fileURLToPath } = await import("node:url");
+    const port = await new Promise<number>((resolve, reject) => {
+      const probe = createServer();
+      probe.once("error", reject);
+      probe.listen(0, () => {
+        const { port } = probe.address() as { port: number };
+        probe.close(() => resolve(port));
+      });
+    });
+    const child = spawn(process.execPath, ["dist/main.js"], {
+      cwd: fileURLToPath(new URL("../apps/api", import.meta.url)),
+      env: { ...process.env, PORT: String(port), DATABASE_URL: databaseUrl },
+      stdio: ["ignore", "ignore", "pipe"],
+      windowsHide: true,
+    });
+    let errors = "",
+      running = true;
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      errors = (errors + chunk).slice(-2000);
+    });
+    const exited = new Promise<void>((resolve) => {
+      const done = (error?: unknown) => {
+        if (error) errors += String(error);
+        running = false;
+        resolve();
+      };
+      child.once("exit", () => done());
+      child.once("error", done);
+    });
+    // Si el proceso de pruebas termina sin pasar por afterAll, la API no queda
+    // huérfana.
+    const reap = () => {
+      child.kill();
+    };
+    process.once("exit", reap);
+    const stop = async () => {
+      process.off("exit", reap);
+      if (running) child.kill();
+      const forced = setTimeout(() => running && child.kill("SIGKILL"), 5000);
+      await exited;
+      clearTimeout(forced);
+    };
+    const apiBase = `http://127.0.0.1:${port}/api`;
+    const deadline = Date.now() + 40000;
+    for (;;) {
+      if (!running)
+        throw new Error("La API de la prueba terminó al arrancar: " + errors);
+      try {
+        const health = await fetch(apiBase + "/health", {
+          signal: AbortSignal.timeout(1000),
+        });
+        if (health.ok) break;
+      } catch {
+        /* Todavía no escucha. */
+      }
+      if (Date.now() > deadline) {
+        await stop();
+        throw new Error("La API de la prueba no respondió: " + errors);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return { base: apiBase, stop };
+  };
+  // Como request() y ok(), contra la API indicada y con su propia IP para el
+  // límite de intentos.
+  const clientOf = (apiBase: string, ip: string) => {
+    const call = async (
+      path: string,
+      data?: unknown,
+      as = "",
+      method = data === undefined ? "GET" : "POST",
+    ) => {
+      const response = await fetch(apiBase + path, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Forwarded-For": ip,
+          ...(as ? { Authorization: "Bearer " + as } : {}),
+        },
+        ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+      });
+      return { status: response.status, body: await response.json() };
+    };
+    const must = async (
+      path: string,
+      data?: unknown,
+      as = "",
+      method?: string,
+    ) => {
+      const r = await call(path, data, as, method);
+      if (r.status >= 400)
+        throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
+      return r.body;
+    };
+    return { call, must };
+  };
+
+  describe.each(["America/Santo_Domingo", "UTC"])(
+    "sesión de PostgreSQL en %s",
+    (zone) => {
+      let api: Awaited<ReturnType<typeof startApi>> | undefined;
+      let owner = "",
+        roles: any[] = [];
+      const lane = (n: number) => clientOf(api!.base, "198.18.7." + n);
+      const newUser = async (role: string, pin = "876543") => {
+        const user = await lane(0).must(
+          "/users",
+          {
+            name: "QA zona " + randomUUID().slice(0, 8),
+            email: "zona-" + randomUUID() + "@example.test",
+            password,
+            pin,
+            roleId: roles.find((r: any) => r.name === role).id,
+          },
+          owner,
+        );
+        actors.push(user);
+        return user;
+      };
+      beforeAll(async () => {
+        const databaseUrl = withSessionTimeZone(process.env.DATABASE_URL, zone);
+        // Sin esto las pruebas podrían pasar sin haber cambiado la zona: la fija
+        // la cadena de conexión («client») y no el rol ni el servidor.
+        expect(await sessionTimeZone(databaseUrl)).toEqual({
+          setting: zone,
+          source: "client",
+        });
+        api = await startApi(databaseUrl);
+        owner = (
+          await lane(0).must("/auth/login", {
+            email: "admin@fitstore.demo",
+            password: process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+          })
+        ).accessToken;
+        roles = await lane(0).must("/roles", undefined, owner);
+      }, 90000);
+      afterAll(async () => {
+        await api?.stop();
+      });
+
+      it("K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar", async () => {
+        const { call } = lane(1);
+        const user = await newUser("seller");
+        const login = (pass = password) =>
+          call("/auth/login", { email: user.email, password: pass });
+        // Desde R9-seguridad-1 el contador de la contraseña es el mismo
+        // AuthAttempt del PIN, con una clave por cuenta y dirección IP. Aquí
+        // todos los intentos salen de una sola dirección: hay una sola fila.
+        const where = { key: { startsWith: "login:" + user.id + ":" } };
+        const stored = async () => {
+          const rows = await fixtureDb.authAttempt.findMany({ where });
+          expect(rows).toHaveLength(1);
+          return rows[0];
+        };
+        try {
+          const open = await login();
+          expect(open.status).toBe(201);
+          const me = () => call("/auth/me", undefined, open.body.accessToken);
+          expect((await me()).status).toBe(200);
+          for (let n = 0; n < 5; n++) {
+            const wrong = await login("incorrecta");
+            expect(wrong.status).toBe(400);
+            expect(wrong.body.message).toMatch(/incorrectos/);
+          }
+          const locked = await stored();
+          expect(locked.failedAttempts).toBe(5);
+          // Leído con Prisma, en UTC: vence dentro de unos 15 minutos y no hace
+          // horas.
+          const left = (+locked.lockedUntil - Date.now()) / MINUTE;
+          expect.soft(left).toBeGreaterThan(13);
+          expect.soft(left).toBeLessThan(17);
+          // Mientras dura el bloqueo también se rechaza la contraseña correcta.
+          const blocked = await login();
+          expect.soft(blocked.status).toBe(400);
+          expect.soft(String(blocked.body.message)).toMatch(/bloquead/i);
+          // Ese rechazo no toca el contador ni alarga el bloqueo.
+          expect.soft(await stored()).toMatchObject({
+            failedAttempts: 5,
+            lockedUntil: locked.lockedUntil,
+          });
+          // El bloqueo sólo impide entrar: la sesión que ya estaba abierta
+          // sigue (R9-seguridad-1).
+          expect.soft((await me()).status).toBe(200);
+          // Bloqueo vencido hace cinco minutos: otra contraseña incorrecta
+          // empieza la cuenta de nuevo y no vuelve a bloquear...
+          const expire = () =>
+            fixtureDb.authAttempt.updateMany({
+              where,
+              data: {
+                failedAttempts: 5,
+                lockedUntil: new Date(Date.now() - 5 * MINUTE),
+              },
+            });
+          await expire();
+          expect((await login("incorrecta")).body.message).not.toMatch(
+            /bloquead/i,
+          );
+          expect.soft(await stored()).toMatchObject({
+            failedAttempts: 1,
+            lockedUntil: null,
+          });
+          // ...y la contraseña correcta entra aunque el contador siga en cinco.
+          await expire();
+          expect((await login()).status).toBe(201);
+          expect(await stored()).toMatchObject({
+            failedAttempts: 0,
+            lockedUntil: null,
+          });
+          expect((await me()).status).toBe(200);
+        } finally {
+          await fixtureDb.authAttempt.deleteMany({ where });
+        }
+      }, 60000);
+
+      it("K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar", async () => {
+        const { call, must } = lane(2);
+        const actor = await newUser("seller");
+        const target = await newUser("seller", "654321");
+        const as = (await must("/auth/login", { email: actor.email, password }))
+          .accessToken;
+        const key = "switch:" + actor.id;
+        const pin = (value: string) =>
+          call("/auth/pin", { userId: target.id, pin: value }, as);
+        const stored = () =>
+          fixtureDb.authAttempt.findUniqueOrThrow({ where: { key } });
+        try {
+          for (let n = 0; n < 5; n++) {
+            const wrong = await pin("000000");
+            expect(wrong.status).toBe(400);
+            expect(wrong.body.message).toMatch(/PIN incorrecto/);
+          }
+          const locked = await stored();
+          expect(locked.failedAttempts).toBe(5);
+          const left = (+locked.lockedUntil - Date.now()) / MINUTE;
+          expect.soft(left).toBeGreaterThan(13);
+          expect.soft(left).toBeLessThan(17);
+          // Mientras dura el bloqueo también se rechaza el PIN correcto.
+          const blocked = await pin("654321");
+          expect(blocked.status).toBe(400);
+          expect(blocked.body.message).toMatch(/bloquead/i);
+          // El contador es del solicitante: su sesión sigue abierta.
+          expect((await call("/auth/me", undefined, as)).status).toBe(200);
+          // Vencido hace cinco minutos: el PIN correcto entra y el contador se
+          // limpia.
+          await fixtureDb.authAttempt.update({
+            where: { key },
+            data: {
+              failedAttempts: 5,
+              lockedUntil: new Date(Date.now() - 5 * MINUTE),
+            },
+          });
+          expect((await pin("654321")).status).toBe(201);
+          expect(await stored()).toMatchObject({
+            failedAttempts: 0,
+            lockedUntil: null,
+          });
+        } finally {
+          await fixtureDb.authAttempt.deleteMany({ where: { key } });
+        }
+      }, 60000);
+
+      it("TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM", async () => {
+        const { must } = lane(3);
+        const cashier = await newUser("admin");
+        const as = (
+          await must("/auth/login", { email: cashier.email, password })
+        ).accessToken;
+        const terminalId = randomUUID();
+        await must(
+          "/terminals/register",
+          { id: terminalId, name: "QA zona", secret: secretOf(terminalId) },
+          as,
+        );
+        const category = (await must("/categories", undefined, as)).find(
+          (c: any) => c.name === "Ropa deportiva",
+        );
+        const product = await must(
+          "/products",
+          {
+            name: "QA zona " + randomUUID().slice(0, 8),
+            sku: "R9Z-" + randomUUID().slice(0, 8),
+            categoryId: category.id,
+            variants: [
+              {
+                sku: "R9ZV-" + randomUUID().slice(0, 8),
+                barcode: "R9ZB-" + randomUUID().slice(0, 8),
+                price: 100,
+                costAvg: 40,
+              },
+            ],
+          },
+          as,
+        );
+        products.push(product);
+        const variantId = product.variants[0].id;
+        await must(
+          "/inventory/adjustments",
+          { variantId, qty: 15, reason: "QA zona horaria" },
+          as,
+        );
+        const cash = await must(
+          "/cash-sessions/open",
+          { openingAmount: 0 },
+          as,
+        );
+        try {
+          // Un día dominicano sin ventas, tampoco de otra ejecución sobre la
+          // misma base, ni en la víspera ni al día siguiente.
+          const iso = (date: Date) => date.toISOString().slice(0, 10);
+          let day = "",
+            midnight = new Date(0);
+          do {
+            day = iso(
+              new Date(
+                Date.UTC(
+                  2003 + Math.floor(Math.random() * 15),
+                  0,
+                  1 + Math.floor(Math.random() * 365),
+                ),
+              ),
+            );
+            midnight = new Date(day + "T00:00:00-04:00");
+          } while (
+            await fixtureDb.sale.count({
+              where: {
+                createdAt: {
+                  gte: new Date(+midnight - DAY),
+                  lt: new Date(+midnight + 2 * DAY),
+                },
+              },
+            })
+          );
+          const noon = Date.parse(day + "T12:00:00Z");
+          const eve = iso(new Date(noon - DAY)),
+            next = iso(new Date(noon + DAY));
+          const weekday = (date: string) =>
+            new Date(date + "T12:00:00Z").getUTCDay() || 7;
+          const sell = async (qty: number, createdAt: Date) => {
+            const s = await must(
+              "/sales",
+              {
+                offlineUuid: randomUUID(),
+                cashSessionId: cash.id,
+                items: [{ variantId, qty }],
+                payments: [{ method: "cash", amount: 100 * qty }],
+                expectedTotal: 100 * qty,
+              },
+              as,
+            );
+            await fixtureDb.sale.update({
+              where: { id: s.id },
+              data: { createdAt },
+            });
+          };
+          // Cantidades 1, 2, 4 y 8: cada total dice qué ventas entraron. A
+          // menos de cuatro horas de cada borde del día está el desfase que
+          // antes aplicaba una sesión en UTC-4.
+          await sell(1, new Date(+midnight + 10 * MINUTE)); // 00:10 del día
+          await sell(2, new Date(+midnight + DAY - 10 * MINUTE)); // 23:50 del día
+          await sell(4, new Date(+midnight - 10 * MINUTE)); // 23:50 de la víspera
+          await sell(8, new Date(+midnight + DAY + 10 * MINUTE)); // 00:10 del siguiente
+          const summary = (date: string) =>
+            must(`/dashboard/summary?from=${date}&to=${date}`, undefined, as);
+          const today = await summary(day);
+          // Totales del ORM: correctos con cualquier sesión.
+          expect(today.invoices).toBe(2);
+          expect(today.revenue).toBe(300);
+          // Paneles en SQL crudo: las mismas dos ventas, en su día y hora
+          // dominicanos.
+          expect.soft(today.daily).toEqual([{ day, total: 300 }]);
+          expect
+            .soft(today.category.map((c: any) => [c.name, c.total]))
+            .toEqual([[category.name, 300]]);
+          expect.soft(today.top).toEqual([
+            {
+              name: product.name,
+              category: category.name,
+              units: 3,
+              revenue: 300,
+            },
+          ]);
+          expect
+            .soft(today.sellers)
+            .toEqual([{ name: cashier.name, total: 300 }]);
+          expect.soft(today.peakHours).toEqual([
+            { day: weekday(day), hour: 0, invoices: 1, total: 100 },
+            { day: weekday(day), hour: 23, invoices: 1, total: 200 },
+          ]);
+          // Las otras dos son de la víspera y del día siguiente.
+          const previous = await summary(eve);
+          expect(previous.invoices).toBe(1);
+          expect.soft(previous.daily).toEqual([{ day: eve, total: 400 }]);
+          expect
+            .soft(previous.peakHours)
+            .toEqual([
+              { day: weekday(eve), hour: 23, invoices: 1, total: 400 },
+            ]);
+          const following = await summary(next);
+          expect(following.invoices).toBe(1);
+          expect.soft(following.daily).toEqual([{ day: next, total: 800 }]);
+          expect
+            .soft(following.peakHours)
+            .toEqual([
+              { day: weekday(next), hour: 0, invoices: 1, total: 800 },
+            ]);
+        } finally {
+          const current = (await must("/cash-sessions", undefined, as)).find(
+            (c: any) => c.id === cash.id,
+          );
+          await must(
+            "/cash-sessions/" + cash.id + "/close",
+            {
+              countedCash: current.expected.cash,
+              countedCard: current.expected.card,
+              countedTransfer: current.expected.transfer,
+              notes: "Cierre de pruebas",
+            },
+            as,
+          );
+        }
+      }, 60000);
+    },
+  );
+
+  it("TZ-3: compose.yaml y .env.example fijan la sesión en UTC y PostgreSQL acepta esa opción", async () => {
+    const { readFile } = await import("node:fs/promises");
+    for (const file of ["compose.yaml", ".env.example"]) {
+      const text = await readFile(
+        new URL("../" + file, import.meta.url),
+        "utf8",
+      );
+      const query = text.match(/DATABASE_URL[:=]\s*\S+?\?(\S+)/)?.[1] ?? "";
+      expect(new URLSearchParams(query).get("options"), file).toBe(
+        "-c TimeZone=UTC",
+      );
+      // La opción, tal como está escrita en el archivo, se impone a la zona
+      // del rol o del servidor.
+      const url = new URL(process.env.DATABASE_URL!);
+      url.search = query;
+      expect(await sessionTimeZone(url.toString()), file).toEqual({
+        setting: "UTC",
+        source: "client",
+      });
+    }
+  });
+});
