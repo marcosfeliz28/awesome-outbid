@@ -30,32 +30,59 @@ function calls(source: string, name: string) {
   }
   return found;
 }
+// Capturas que una prueba dejaría en el repositorio. Una captura con ruta va
+// por screenshotPath() o a la carpeta de la prueba (testInfo.outputPath), y
+// ninguna ruta de docs/ se escribe por otro camino.
+function directScreenshots(source: string) {
+  const direct: string[] = [];
+  const allowed = /^(screenshotPath\(|[\w.()]*\boutputPath\()/;
+  for (const call of calls(source, ".screenshot")) {
+    const path = /\bpath\s*:\s*([^\n]*)/.exec(call)?.[1];
+    if (path !== undefined && !allowed.test(path))
+      direct.push(call.replace(/\s+/g, " "));
+  }
+  // Ni con la ruta guardada antes en una variable.
+  const rest = source.replace(
+    /screenshotPath\(\s*(["'`])[^"'`]*\1\s*,?\s*\)/g,
+    "",
+  );
+  for (const literal of rest.matchAll(/["'`](?:\.{0,2}\/)*docs\/[^"'`]*["'`]/g))
+    direct.push(literal[0]);
+  return direct;
+}
 
 describe("suite E2E · no ensucia el repositorio (WP-3)", () => {
   it("hay pruebas E2E que revisar", () => {
     expect(specs.length).toBeGreaterThan(0);
   });
   it("ninguna prueba escribe una captura en docs/ sin pasar por screenshotPath()", () => {
-    const direct: string[] = [];
-    // Una captura con ruta va por screenshotPath() o a la carpeta de la prueba.
-    const allowed = /^(screenshotPath\(|[\w.()]*\boutputPath\()/;
-    for (const [file, source] of specs) {
-      for (const call of calls(source, ".screenshot")) {
-        const path = /\bpath\s*:\s*([^\n]*)/.exec(call)?.[1];
-        if (path !== undefined && !allowed.test(path))
-          direct.push(file + ": " + call.replace(/\s+/g, " "));
-      }
-      // Ni con la ruta guardada antes en una variable.
-      const rest = source.replace(
-        /screenshotPath\(\s*(["'`])[^"'`]*\1\s*,?\s*\)/g,
-        "",
-      );
-      for (const literal of rest.matchAll(
-        /["'`](?:\.{0,2}\/)*docs\/[^"'`]*["'`]/g,
-      ))
-        direct.push(file + ": " + literal[0]);
-    }
-    expect(direct).toEqual([]);
+    expect(
+      specs.flatMap(([file, source]) =>
+        directScreenshots(source).map((found) => file + ": " + found),
+      ),
+    ).toEqual([]);
+  });
+  it("la revisión admite screenshotPath() y la carpeta de la prueba, y marca cualquier otra ruta", () => {
+    for (const source of [
+      "await page.screenshot();",
+      "await page.screenshot({ fullPage: true });",
+      'await page.screenshot({ path: screenshotPath("docs/cobro-exitoso.png") });',
+      "await page.screenshot({\n  path: screenshotPath(\n    `docs/validacion/cel-${width}.png`,\n  ),\n});",
+      'await page.screenshot({ path: testInfo.outputPath("menu.png") });',
+      'await page.locator("header").screenshot({\n  path: test.info().outputPath("barra.png"),\n});',
+    ])
+      expect(directScreenshots(source), source).toEqual([]);
+    for (const source of [
+      'await page.screenshot({ path: "docs/cobro-exitoso.png" });',
+      "await page.screenshot({ path: `docs/validacion/cel-${width}.png` });",
+      // Una ruta suelta cae en la carpeta desde la que se corre la suite.
+      'await page.screenshot({ path: "captura.png" });',
+      'const file = "docs/pos-mobile.png";\nawait page.screenshot({ path: file, fullPage: true });',
+      'await page.screenshot({ path: join("docs", "pos-mobile.png") });',
+      // La carpeta de la prueba no sirve para volver a docs/.
+      'await page.screenshot({ path: testInfo.outputPath("../../docs/pos-mobile.png") });',
+    ])
+      expect(directScreenshots(source), source).not.toEqual([]);
   });
   it("una corrida normal deja las capturas en la carpeta de resultados, que git ignora; sólo FITSTORE_ACTUALIZAR_CAPTURAS=1 las lleva a docs/", async () => {
     const { screenshotTarget, SCREENSHOTS_ENV } = await import("./e2e/apoyo");
