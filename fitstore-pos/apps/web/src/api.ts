@@ -271,12 +271,9 @@ export async function api<T = any>(
 export const post = <T = any>(path: string, data: unknown) =>
   api<T>(path, { method: "POST", body: JSON.stringify(data) });
 // Datos que la caja necesita para vender: se guarda una copia y, sin conexión
-// o si el servidor no responde, se usa la última (R9-offline-1).
-export async function cachedApi<T>(
-  path: string,
-  key: string,
-  fallback: T,
-): Promise<T> {
+// o si el servidor no responde, se usa la última. Sin copia se lanza el
+// error: React Query conserva lo que ya estaba en pantalla (R9-offline-1).
+export async function cachedApi<T>(path: string, key: string): Promise<T> {
   if (isOnline()) {
     try {
       const data = await api<T>(path);
@@ -286,7 +283,9 @@ export async function cachedApi<T>(
       if (!isNetworkError(e)) throw e;
     }
   }
-  return ((await localDB.cache.get(key))?.data as T | undefined) ?? fallback;
+  const cached = await localDB.cache.get(key);
+  if (!cached) throw new NetworkError();
+  return cached.data as T;
 }
 // El catálogo llega en páginas de 200 ordenadas por nombre. Si alguien crea o
 // desactiva un producto durante la descarga, las páginas se corren y un

@@ -1796,6 +1796,7 @@ test("R9-offline-4: si el catálogo cambia entre una página y otra, ningún pro
   await search.press("Enter");
   await expect(page.getByText(name + " agregado.")).toBeVisible();
   await expect(r9Qty(page, name)).toHaveText("1");
+  await search.fill(code);
   await expect(page.locator(".product-card", { hasText: name })).toHaveCount(1);
   await page.getByRole("button", { name: "Limpiar", exact: true }).click();
   await r9Retire(request, headers, [product]);

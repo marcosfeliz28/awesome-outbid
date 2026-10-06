@@ -199,22 +199,22 @@ export function POS({ go }: { go: (page: string) => void }) {
   });
   const categories = useQuery({
     queryKey: ["categories"],
-    queryFn: () => cachedApi<any[]>("/categories", "categories", []),
+    queryFn: () => cachedApi<any[]>("/categories", "categories"),
     networkMode: "offlineFirst",
   });
   const customers = useQuery({
     queryKey: ["customers"],
-    queryFn: () => cachedApi<any[]>("/customers", "customers:" + user!.id, []),
+    queryFn: () => cachedApi<any[]>("/customers", "customers:" + user!.id),
     networkMode: "offlineFirst",
   });
   const sessions = useQuery({
     queryKey: ["cash-sessions"],
-    queryFn: () => cachedApi<any[]>("/cash-sessions", "cash:" + user!.id, []),
+    queryFn: () => cachedApi<any[]>("/cash-sessions", "cash:" + user!.id),
     networkMode: "offlineFirst",
   });
   const promos = useQuery({
     queryKey: ["promotions"],
-    queryFn: () => cachedApi<any[]>("/promotions", "promotions", []),
+    queryFn: () => cachedApi<any[]>("/promotions", "promotions"),
     networkMode: "offlineFirst",
   });
   const activePromos = (promos.data || []).filter(
@@ -229,10 +229,29 @@ export function POS({ go }: { go: (page: string) => void }) {
   const elsewhere = cashOnOtherDevice(session);
   const config = useQuery({
     queryKey: ["settings"],
-    queryFn: () =>
-      cachedApi<any>("/settings", "settings", { taxIncluded: true }),
+    queryFn: () => cachedApi<any>("/settings", "settings"),
     networkMode: "offlineFirst",
   });
+  // Lo que la caja usa queda guardado en este equipo aunque lo haya leído
+  // otra pantalla (Caja, Clientes…): al recargar sin conexión se sigue
+  // vendiendo con la caja abierta (R9-offline-1).
+  useEffect(() => {
+    for (const [key, data] of [
+      ["categories", categories.data],
+      ["customers:" + user!.id, customers.data],
+      ["cash:" + user!.id, sessions.data],
+      ["promotions", promos.data],
+      ["settings", config.data],
+    ])
+      if (data !== undefined)
+        void localDB.cache.put({ key, data }).catch(() => {});
+  }, [
+    categories.data,
+    customers.data,
+    sessions.data,
+    promos.data,
+    config.data,
+  ]);
   // El carrito usa los precios del catálogo vigente: si otro equipo cambió
   // un precio, la línea se actualiza y se avisa antes de cobrar
   // (R9-offline-3).
