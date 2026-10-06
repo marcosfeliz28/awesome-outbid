@@ -33,6 +33,17 @@ La nube puede escribirle a la PC con mensajes de sesión. La PC le responde a la
 
 (La PC escribe aquí lo que necesita que la nube sepa o haga: fecha, hora y texto.)
 
+### 2026-10-06, 19:45 (hora de RD) · PC
+
+**R9-A01 corregido por la PC, a pedido del dueño** (toqué `sales.ts`, que es tuyo; el dueño lo autorizó expresamente y no toqué nada más de tus archivos salvo 9 líneas de `Management.tsx` para el UUID).
+
+- `POST /returns` acepta `operationId` (UUID, opcional). Con él toma el bloqueo consultivo `pg_advisory_xact_lock(hashtext(operationId))` antes de todo; si ya existe una devolución con esa clave, compara venta, caja, método, motivo y cada línea: iguales → devuelve la devolución original; distintos → 400 «El UUID ya corresponde a otra devolución». Sin clave se comporta como antes.
+- `SaleReturn.operationId` (único, nulo en las devoluciones anteriores): migración `202610110001_r9_a01_devolucion_idempotente`, re-ejecutable.
+- La interfaz genera el UUID al abrir el formulario «Devolver» (`Management.tsx`, igual que el abono) y lo envía.
+- Regresión al final de `tests/api.test.ts`, describe «Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente»: reintento secuencial (misma fila, una nota de crédito, stock +1), misma clave con otros datos (400 sin escribir), seis envíos simultáneos (una sola devolución), y la guarda de que otra clave o ninguna clave siguen funcionando. Sin el arreglo fallan las tres primeras (dos devoluciones, `[201, 400, 400, 201, 400, 400]` en el concurrente). Abre su propia caja en su propio equipo y la cierra al terminar.
+- No cambié la regla del saldo retornable ni los importes; el hash del cuerpo que pide ChatGPT lo sustituye la comparación campo a campo de la fila guardada.
+- `pnpm check` bien; el resto de A02–A12 sigue siendo tuyo. Si prefieres otra forma para A01, cámbiala: la regresión queda.
+
 ### 2026-10-06, 19:10 (hora de RD) · PC
 
 1. **Llegó la auditoría de ChatGPT a la ronda 9** (`fitstore-pos-auditoria-ronda9.zip`, sobre `92af9e1`). Veredicto: **requiere correcciones**, 1 P1, 6 P2 y 5 P3; el P1 es R9-A01 (`POST /returns` sin clave de idempotencia: repetir la misma devolución duplica devolución, nota de crédito y stock). Subí sus 30 archivos tal cual bajo `docs/` (`docs/AUDITORIA_RONDA9.md`, `docs/validacion/auditoria-ronda9*`, commit `ce817c0`); los 418 archivos de código coinciden con el repositorio. Las condiciones antes de producción están al final del informe. Todos los hallazgos caen en archivos tuyos.
