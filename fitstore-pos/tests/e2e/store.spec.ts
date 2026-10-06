@@ -1,4 +1,4 @@
-import { test, expect, screenshotPath } from "./apoyo";
+import { test, expect, ensureStock, screenshotPath } from "./apoyo";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 // Cada contexto representa un equipo nuevo: cerrar la caja del escenario anterior.
@@ -65,9 +65,11 @@ async function ensureCash(page: any) {
 }
 test("venta completa desde caja hasta pagos combinados y recibo", async ({
   page,
+  request,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  await ensureStock(request, { "FIT-0001-1": 1, "FIT-0013-3": 1 });
   await login(page);
   await ensureCash(page);
   await page
@@ -172,7 +174,9 @@ test("pantallas de gestión, tema oscuro y versión móvil", async ({ page }) =>
 test("venta offline queda guardada y se sincroniza una sola vez", async ({
   page,
   context,
+  request,
 }) => {
+  await ensureStock(request, { "FIT-0037-1": 1 });
   await login(page);
   await ensureCash(page);
   await page
