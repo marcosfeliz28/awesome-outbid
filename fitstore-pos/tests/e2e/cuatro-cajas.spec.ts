@@ -1,4 +1,5 @@
-import { test, expect, type Browser } from "@playwright/test";
+import type { Browser } from "@playwright/test";
+import { test, expect } from "./apoyo";
 // Tienda: 3 cajas en computadoras y Mercancía en un celular, a la vez, contra
 // la misma base. Cada pantalla ve el stock cambiar sin recargar.
 const owner = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
