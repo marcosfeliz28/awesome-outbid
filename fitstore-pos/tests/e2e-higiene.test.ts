@@ -37,10 +37,12 @@ describe("suite E2E · no ensucia el repositorio (WP-3)", () => {
   });
   it("ninguna prueba escribe una captura en docs/ sin pasar por screenshotPath()", () => {
     const direct: string[] = [];
+    // Una captura con ruta va por screenshotPath() o a la carpeta de la prueba.
+    const allowed = /^(screenshotPath\(|[\w.()]*\boutputPath\()/;
     for (const [file, source] of specs) {
       for (const call of calls(source, ".screenshot")) {
         const path = /\bpath\s*:\s*([^\n]*)/.exec(call)?.[1];
-        if (path !== undefined && !path.startsWith("screenshotPath("))
+        if (path !== undefined && !allowed.test(path))
           direct.push(file + ": " + call.replace(/\s+/g, " "));
       }
       // Ni con la ruta guardada antes en una variable.
