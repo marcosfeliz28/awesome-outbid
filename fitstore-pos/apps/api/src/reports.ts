@@ -2,6 +2,7 @@ import { Controller, Get, Inject, Param, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
+import { Prisma } from "@prisma/client";
 import {
   businessDate,
   expiryDays,
@@ -39,6 +40,13 @@ export function dateRange(query: Record<string, string>) {
     bad("Rango de fechas inválido.");
   return { gte: from, lte: to };
 }
+// Prisma guarda DateTime como «timestamp sin zona» en UTC, pero un Date de JS
+// llega al SQL crudo como timestamptz: al compararlo con la columna, PostgreSQL
+// la convertiría con la zona horaria de la sesión y, en UTC-4, el período se
+// corría cuatro horas respecto a los totales del ORM. Se compara con la hora
+// UTC, que además deja usar el índice de la columna.
+const utc = (date: Date) =>
+  Prisma.sql`(${date}::timestamptz AT TIME ZONE 'UTC')`;
 const sum = (rows: any[], field: string) =>
   money(rows.reduce((total, row) => total.plus(row[field] ?? 0), d(0)));
 const group = (
@@ -71,6 +79,9 @@ export class ReportsController {
       status: "completed",
       createdAt: range,
     };
+    // Los mismos límites para los paneles en SQL crudo.
+    const since = utc(range.gte),
+      until = utc(range.lte);
     const priorYearStart = new Date(range.gte);
     priorYearStart.setUTCFullYear(priorYearStart.getUTCFullYear() - 1);
     const priorYearEnd = new Date(range.lte);
@@ -128,10 +139,10 @@ export class ReportsController {
       }),
       this.db.$queryRaw<
         any[]
-      >`SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo','YYYY-MM-DD') AS day, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${range.gte} AND "createdAt"<=${range.lte} GROUP BY day ORDER BY day`,
+      >`SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo','YYYY-MM-DD') AS day, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day ORDER BY day`,
       this.db.$queryRaw<
         any[]
-      >`SELECT c.name,c.color,SUM(i."lineTotal") AS total FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${range.gte} AND s."createdAt"<=${range.lte} GROUP BY c.name,c.color ORDER BY total DESC`,
+      >`SELECT c.name,c.color,SUM(i."lineTotal") AS total FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY total DESC`,
       // Cómo se cobraron las ventas del período: el crédito es su propio
       // método y sus abonos no se suman otra vez (R9-dinero-9).
       this.db.payment.groupBy({
@@ -141,10 +152,10 @@ export class ReportsController {
       }),
       this.db.$queryRaw<
         any[]
-      >`SELECT p.name,c.name AS category, SUM(i.qty-i."returnedQty") AS units,SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS revenue FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${range.gte} AND s."createdAt"<=${range.lte} GROUP BY p.id,p.name,c.name ORDER BY revenue DESC LIMIT 10`,
+      >`SELECT p.name,c.name AS category, SUM(i.qty-i."returnedQty") AS units,SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS revenue FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.id,p.name,c.name ORDER BY revenue DESC LIMIT 10`,
       this.db.$queryRaw<
         any[]
-      >`SELECT u.name,SUM(s.total) AS total FROM "Sale" s JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${range.gte} AND s."createdAt"<=${range.lte} GROUP BY u.name ORDER BY total DESC`,
+      >`SELECT u.name,SUM(s.total) AS total FROM "Sale" s JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY u.name ORDER BY total DESC`,
       this.db.sale.aggregate({
         where: {
           branchId: actor.branchId,
@@ -162,7 +173,7 @@ export class ReportsController {
       }),
       this.db.$queryRaw<
         any[]
-      >`SELECT EXTRACT(ISODOW FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS day, EXTRACT(HOUR FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS hour, COUNT(*)::int AS invoices, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${range.gte} AND "createdAt"<=${range.lte} GROUP BY day,hour ORDER BY day,hour`,
+      >`SELECT EXTRACT(ISODOW FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS day, EXTRACT(HOUR FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS hour, COUNT(*)::int AS invoices, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day,hour ORDER BY day,hour`,
       // La tendencia compara ingresos netos de devoluciones (R9-dinero-10).
       this.db.saleReturn.aggregate({
         where: { branchId: actor.branchId, createdAt: previousRange },
