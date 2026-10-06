@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, screenshotPath } from "./apoyo";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 // Cada contexto representa un equipo nuevo: cerrar la caja del escenario anterior.
@@ -112,7 +112,7 @@ test("venta completa desde caja hasta pagos combinados y recibo", async ({
   await expect(
     page.getByText("Venta registrada", { exact: true }),
   ).toBeVisible();
-  await page.screenshot({ path: "docs/cobro-exitoso.png" });
+  await page.screenshot({ path: screenshotPath("docs/cobro-exitoso.png") });
   await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
   await expect(page.locator(".cart-items")).toContainText(
     "Tu próxima venta empieza aquí",
@@ -144,7 +144,10 @@ test("pantallas de gestión, tema oscuro y versión móvil", async ({ page }) =>
   await page.getByRole("button", { name: "Activar modo claro" }).click();
   await page.getByRole("button", { name: "Resumen", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: "docs/dashboard-mobile.png", fullPage: true });
+  await page.screenshot({
+    path: screenshotPath("docs/dashboard-mobile.png"),
+    fullPage: true,
+  });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
@@ -161,7 +164,10 @@ test("pantallas de gestión, tema oscuro y versión móvil", async ({ page }) =>
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
     ),
   ).toBe(true);
-  await page.screenshot({ path: "docs/pos-mobile.png", fullPage: true });
+  await page.screenshot({
+    path: screenshotPath("docs/pos-mobile.png"),
+    fullPage: true,
+  });
 });
 test("venta offline queda guardada y se sincroniza una sola vez", async ({
   page,
@@ -555,7 +561,9 @@ test("Configuración y Equipos caben en 320 y 390 px sin desplazamiento horizont
     expect(overflow.clipped, "recortes @" + width).toBe(0);
     await page.screenshot({
       // Pantalla visible: la base de pruebas acumula cientos de equipos.
-      path: `docs/validacion/ronda6-capturas/cel-equipos-${width}.png`,
+      path: screenshotPath(
+        `docs/validacion/ronda6-capturas/cel-equipos-${width}.png`,
+      ),
     });
   }
 });

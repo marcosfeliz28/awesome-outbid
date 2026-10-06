@@ -1,6 +1,80 @@
 // Higiene de la suite E2E (revisión local de la ronda 9): que una corrida no
 // ensucie el repositorio y que se pueda repetir. Comprobaciones sin navegador.
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const e2e = join(root, "tests", "e2e");
+const specs = (readdirSync(e2e, { recursive: true }) as string[])
+  .filter((file) => /\.spec\.ts$/.test(file))
+  .map((file) => [file, readFileSync(join(e2e, file), "utf8")] as const);
+const slashes = (path: string) => path.replaceAll("\\", "/");
+// Texto de cada llamada `name(…)`, hasta el paréntesis que la cierra.
+function calls(source: string, name: string) {
+  const found: string[] = [];
+  for (
+    let at = source.indexOf(name + "(");
+    at >= 0;
+    at = source.indexOf(name + "(", at + 1)
+  ) {
+    let depth = 0,
+      end = at + name.length;
+    do {
+      const c = source[end++];
+      if (c === "(") depth++;
+      else if (c === ")") depth--;
+    } while (depth > 0 && end < source.length);
+    found.push(source.slice(at, end));
+  }
+  return found;
+}
+
+describe("suite E2E · no ensucia el repositorio (WP-3)", () => {
+  it("hay pruebas E2E que revisar", () => {
+    expect(specs.length).toBeGreaterThan(0);
+  });
+  it("ninguna prueba escribe una captura en docs/ sin pasar por screenshotPath()", () => {
+    const direct: string[] = [];
+    for (const [file, source] of specs) {
+      for (const call of calls(source, ".screenshot")) {
+        const path = /\bpath\s*:\s*([^\n]*)/.exec(call)?.[1];
+        if (path !== undefined && !path.startsWith("screenshotPath("))
+          direct.push(file + ": " + call.replace(/\s+/g, " "));
+      }
+      // Ni con la ruta guardada antes en una variable.
+      const rest = source.replace(
+        /screenshotPath\(\s*(["'`])[^"'`]*\1\s*,?\s*\)/g,
+        "",
+      );
+      for (const literal of rest.matchAll(
+        /["'`](?:\.{0,2}\/)*docs\/[^"'`]*["'`]/g,
+      ))
+        direct.push(file + ": " + literal[0]);
+    }
+    expect(direct).toEqual([]);
+  });
+  it("una corrida normal deja las capturas en la carpeta de resultados, que git ignora; sólo FITSTORE_ACTUALIZAR_CAPTURAS=1 las lleva a docs/", async () => {
+    const { screenshotTarget, SCREENSHOTS_ENV } = await import("./e2e/apoyo");
+    const where = { root, outputDir: join(root, "test-results") };
+    const target = (path: string, update: boolean) =>
+      slashes(relative(root, screenshotTarget(path, { ...where, update })));
+    expect(target("docs/cobro-exitoso.png", false)).toBe(
+      "test-results/capturas/docs/cobro-exitoso.png",
+    );
+    expect(
+      readFileSync(join(root, ".gitignore"), "utf8").split(/\r?\n/),
+    ).toContain("test-results/");
+    expect(SCREENSHOTS_ENV).toBe("FITSTORE_ACTUALIZAR_CAPTURAS");
+    expect(
+      target("docs/validacion/ronda6-capturas/cel-equipos-320.png", true),
+    ).toBe("docs/validacion/ronda6-capturas/cel-equipos-320.png");
+    // Fuera de docs/ no se escribe ni a propósito.
+    for (const outside of ["../fuera.png", "docs/../fuera.png", "apps/x.png"])
+      expect(() => target(outside, true), outside).toThrow(/docs\//);
+  });
+});
 
 describe("playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3)", () => {
   afterEach(() => {
