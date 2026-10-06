@@ -203,8 +203,17 @@ describe("importador de inventario · lectura del Excel", () => {
           450,
         ],
         [2004, { error: "#REF!" }, "2004", "Fajas", 1, 900, 1800],
-        [2005, "Faja sin calcular", "2005", "Fajas", 1, 900, { formula: "F6*2" }],
-        [{ sharedFormula: "A2" }, "Sin ID calculado", "", "Fajas", 1, 1, 2],
+        [
+          { formula: "A3+1", result: 2005 },
+          "Faja sin calcular",
+          "2005",
+          "Fajas",
+          1,
+          900,
+          { formula: "F4*2" },
+        ],
+        // Fórmula compartida copiada de A4 y guardada sin calcular.
+        [{ sharedFormula: "A4" }, "Sin ID calculado", "", "Fajas", 1, 1, 2],
       ]),
     );
     await expect(bad).rejects.toThrow(

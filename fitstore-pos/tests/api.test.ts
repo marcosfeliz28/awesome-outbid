@@ -5269,7 +5269,222 @@ describe("Ronda 9 · revisión · facturas", () => {
     expect(await stock()).toBe(start + 12);
   });
 });
-// R9-REVISION: importador
+// Área importador: celdas especiales del Excel, filas incompletas, simulación,
+// máximo derivado de la existencia y datos editados en la app.
+describe("Ronda 9 · revisión · importador", () => {
+  const counts = async () => ({
+    categories: await fixtureDb.category.count(),
+    products: await fixtureDb.product.count(),
+    variants: await fixtureDb.variant.count(),
+    movements: await fixtureDb.inventoryMovement.count(),
+  });
+  const variantOf = (sku: string) =>
+    fixtureDb.variant.findFirst({ where: { sku }, include: { product: true } });
+  // Los productos de prueba no se quedan a la venta.
+  const retire = async (...skus: string[]) => {
+    for (const sku of skus) {
+      const v = await variantOf(sku);
+      if (v)
+        await request(
+          "/products/" + v.productId,
+          { active: false },
+          ownerToken,
+          "PATCH",
+        );
+    }
+  };
+
+  it("R9-importador-1: una celda con hipervínculo o con error de Excel nunca crea «[object Object]»", async () => {
+    const tag = randomUUID().slice(0, 6);
+    const link = {
+      text: "QA R9 faja con vínculo " + tag,
+      hyperlink: "https://proveedor.example/faja",
+    };
+    const before = await counts();
+    const r = await runImport([
+      ["R9H-" + tag, link, "", "Ropa deportiva", 4, 900, 1800],
+      [
+        "R9E-" + tag,
+        "QA R9 corrector",
+        "",
+        { formula: "VLOOKUP(A3,X:Y,2,0)", result: { error: "#N/A" } },
+        6,
+        200,
+        450,
+      ],
+    ]);
+    expect(r.status).not.toBe(0);
+    expect(r.out).toMatch(
+      new RegExp("fila R9E-" + tag + ", SUB-GRUPO: la celda tiene el error #N/A"),
+    );
+    expect(r.out).not.toMatch(/object/);
+    expect(await counts()).toEqual(before);
+    expect(
+      await fixtureDb.product.count({ where: { name: "[object Object]" } }),
+    ).toBe(0);
+    // Sin la fila con error, el hipervínculo se carga con su texto.
+    const loaded = await runImport([
+      ["R9H-" + tag, link, "", "Ropa deportiva", 4, 900, 1800],
+    ]);
+    expect(loaded.status, loaded.out).toBe(0);
+    expect((await variantOf("R9H-" + tag))?.product.name).toBe(link.text);
+    await retire("R9H-" + tag);
+  });
+
+  it("R9-importador-2: una fila con datos sin DESCRIPCION o sin ID detiene la carga sin escribir", async () => {
+    const tag = randomUUID().slice(0, 6);
+    const before = await counts();
+    const r = await runImport([
+      ["R9D-" + tag, "", "", "Ropa deportiva", 5, 900, 1800],
+      [null, "QA R9 faja sin código", null, "Ropa deportiva", 3, 900, 1800],
+      ["R9K-" + tag, "QA R9 faja completa", "", "Ropa deportiva", 1, 900, 1800],
+    ]);
+    expect(r.status).not.toBe(0);
+    expect(r.out).toMatch(
+      new RegExp("fila 2 del Excel \\(ID R9D-" + tag + "\\): falta DESCRIPCION"),
+    );
+    expect(r.out).toMatch(/fila 3 del Excel: falta ID/);
+    expect(await counts()).toEqual(before);
+    expect(await variantOf("R9K-" + tag)).toBeNull();
+  });
+
+  it("R9-importador-3: --dry-run da las cifras de la carga real, anuncia las categorías y no se detiene por el lote", async () => {
+    const tag = randomUUID().slice(0, 6);
+    const newCat = "QA R9 simulada " + suffix + tag;
+    const lotName = "QA R9 simulada lote " + suffix + tag;
+    const lot = await ok("/categories", {
+      name: lotName,
+      requiresLot: true,
+      requiresExpiry: true,
+    });
+    const rows = [
+      ["R9S-" + tag, "QA R9 simulada A", "", newCat, 3, 900, 1800],
+      ["R9T-" + tag, "QA R9 simulada B", "", lotName, 5, 200, 450],
+    ];
+    const before = await counts();
+    const sim = await runImport(rows, "--dry-run");
+    expect(sim.status, sim.out).toBe(0);
+    expect(sim.out).toMatch(
+      /Simulación: 2 productos leídos · 2 nuevos \(8 unidades\) · 0 ya cargados/,
+    );
+    expect(sim.out).toContain("Crearía la categoría «" + newCat + "»");
+    expect(sim.out).toContain(
+      "«" + lotName + "» exige lote o vencimiento",
+    );
+    expect(sim.out).toMatch(/--sin-lotes/);
+    expect(await counts()).toEqual(before);
+    expect(
+      await fixtureDb.category.findUnique({ where: { id: lot.id } }),
+    ).toMatchObject({ requiresLot: true, requiresExpiry: true });
+    // Con --sin-lotes la simulación anuncia el cambio; la carga real da las
+    // mismas cifras.
+    const sim2 = await runImport(rows, "--dry-run", "--sin-lotes");
+    expect(sim2.status, sim2.out).toBe(0);
+    expect(sim2.out).toContain(
+      "Desactivaría lote y vencimiento en «" + lotName + "»",
+    );
+    expect(await counts()).toEqual(before);
+    const real = await runImport(rows, "--sin-lotes");
+    expect(real.status, real.out).toBe(0);
+    expect(real.out).toMatch(
+      /(^|\n)2 productos leídos · 2 nuevos \(8 unidades\) · 0 ya cargados/,
+    );
+    // La simulación de una recarga: nada nuevo ni categorías por crear.
+    const again = await runImport(rows, "--dry-run");
+    expect(again.status, again.out).toBe(0);
+    expect(again.out).toMatch(
+      /Simulación: 2 productos leídos · 0 nuevos \(0 unidades\) · 2 ya cargados sin cambios/,
+    );
+    expect(again.out).not.toMatch(/Crearía/);
+    await retire("R9S-" + tag, "R9T-" + tag);
+  });
+
+  it("R9-importador-4: una existencia válida muy grande no hace fallar la carga real por el máximo derivado", async () => {
+    const id = "R9M-" + randomUUID().slice(0, 6);
+    const rows = [[id, "QA R9 existencia enorme", "", "Ropa deportiva", 40000000000, 0, 0]];
+    const sim = await runImport(rows, "--dry-run");
+    expect(sim.status, sim.out).toBe(0);
+    const real = await runImport(rows);
+    try {
+      expect(real.status, real.out).toBe(0);
+      expect(real.out).not.toMatch(/Invalid|overflow/);
+      const v = await variantOf(id);
+      expect(Number(v?.stock)).toBe(40000000000);
+      expect(Number(v?.product.maxStock)).toBe(99999999999.999);
+    } finally {
+      // Una existencia así no debe quedar en los reportes de las demás pruebas.
+      const v = await variantOf(id);
+      if (v) {
+        await fixtureDb.inventoryMovement.deleteMany({
+          where: { variantId: v.id },
+        });
+        await fixtureDb.variant.delete({ where: { id: v.id } });
+        await fixtureDb.product.delete({ where: { id: v.productId } });
+      }
+    }
+  });
+
+  it("R9-importador-5: al activar un producto sólo se completa lo que falta; el precio puesto en la app se respeta", async () => {
+    const tag = randomUUID().slice(0, 6);
+    const a = "R9W-" + tag,
+      b = "R9X-" + tag;
+    const first = await runImport([
+      [a, "QA R9 activar A", "", "Ropa deportiva", 2, 0, 0],
+      [b, "QA R9 activar B", "", "Ropa deportiva", 1, 0, 0],
+    ]);
+    expect(first.status, first.out).toBe(0);
+    // En la app, la dueña les pone precio sin activarlos.
+    for (const [sku, price] of [
+      [a, 2000],
+      [b, 1500],
+    ] as const)
+      await ok(
+        "/variants/" + (await variantOf(sku))!.id,
+        { price },
+        ownerToken,
+        "PATCH",
+      );
+    // El Excel corregido trae el costo (y otro precio en A; ninguno en B).
+    const second = await runImport([
+      [a, "QA R9 activar A", "", "Ropa deportiva", 2, 900, 1800],
+      [b, "QA R9 activar B", "", "Ropa deportiva", 1, 700, 0],
+    ]);
+    expect(second.status, second.out).toBe(0);
+    expect(second.out).toMatch(/2 activados · 0 precios actualizados/);
+    const va = await variantOf(a),
+      vb = await variantOf(b);
+    expect([Number(va?.price), Number(va?.costAvg), va?.product.active]).toEqual(
+      [2000, 900, true],
+    );
+    expect([Number(vb?.price), Number(vb?.costAvg), vb?.product.active]).toEqual(
+      [1500, 700, true],
+    );
+    // Con --actualizar-precios sí se cambia, y se cuenta.
+    await request(
+      "/products/" + va!.productId,
+      { active: false },
+      ownerToken,
+      "PATCH",
+    );
+    await fixtureDb.variant.update({
+      where: { id: va!.id },
+      data: { costAvg: 0 },
+    });
+    const third = await runImport(
+      [[a, "QA R9 activar A", "", "Ropa deportiva", 2, 900, 1800]],
+      "--actualizar-precios",
+    );
+    expect(third.status, third.out).toBe(0);
+    expect(third.out).toMatch(/1 activados · 1 precios actualizados/);
+    const va2 = await variantOf(a);
+    expect([
+      Number(va2?.price),
+      Number(va2?.costAvg),
+      va2?.product.active,
+    ]).toEqual([1800, 900, true]);
+    await retire(a, b);
+  });
+});
 // Área seguridad: las contraseñas erróneas cuentan por cuenta y dirección IP y
 // nunca cierran sesiones abiertas; el límite por IP no distingue mayúsculas.
 describe("Ronda 9 · revisión · seguridad", () => {

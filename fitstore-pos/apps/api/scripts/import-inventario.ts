@@ -51,21 +51,47 @@ type Row = {
   price: number;
 };
 
-const text = (v: ExcelJS.CellValue): string => {
-  if (v == null) return "";
-  if (typeof v === "object" && "result" in v) return text(v.result as any);
-  if (typeof v === "object" && "richText" in v)
-    return v.richText.map((t) => t.text).join("");
-  return String(v).trim();
-};
+// Lo que muestra una celda, sin los envoltorios de ExcelJS: el resultado de
+// una fórmula, el texto de un hipervínculo o de un texto con formato. Un error
+// de Excel (#N/A, #REF!…), una fórmula sin valor calculado (archivo guardado
+// por un programa) o un valor desconocido se informan; nunca se convierten en
+// "[object Object]" (R9-importador-1).
+type Plain = string | number | boolean | Date | null;
+type Problem = { problem: string };
+const isProblem = (v: Plain | Problem): v is Problem =>
+  typeof v === "object" && v !== null && "problem" in v;
+const NO_RESULT =
+  "fórmula sin valor calculado; abre el archivo en Excel y guárdalo";
+function plain(v: ExcelJS.CellValue): Plain | Problem {
+  if (v == null) return null;
+  if (typeof v !== "object" || v instanceof Date) return v;
+  if ("error" in v) return { problem: "la celda tiene el error " + v.error };
+  if ("formula" in v || "sharedFormula" in v)
+    return v.result === undefined
+      ? { problem: NO_RESULT }
+      : plain(v.result as ExcelJS.CellValue);
+  if ("richText" in v) return v.richText.map((t) => t.text).join("");
+  if ("hyperlink" in v) return plain(v.text as ExcelJS.CellValue);
+  return { problem: "la celda tiene un valor que no se puede leer" };
+}
+// ExcelJS quita de cell.value el resultado 0 o "" de una fórmula; cell.result
+// lo conserva.
+const cellPlain = (c: ExcelJS.Cell) =>
+  c.type === ExcelJS.ValueType.Formula
+    ? c.result === undefined
+      ? { problem: NO_RESULT }
+      : plain(c.result as ExcelJS.CellValue)
+    : plain(c.value);
+const text = (v: Plain | Problem): string =>
+  v == null || isProblem(v) ? "" : String(v).trim();
 // Números del Excel. Una celda numérica se usa tal cual. En texto se aceptan
 // "1500", "1,5", "1.5", "1.250,50" y "1,250.50" (el último separador es el
 // decimal). "1.250" o "1,250" son ambiguos (¿mil doscientos cincuenta o uno
 // con veinticinco?) y se rechazan: nunca se cambia un número en silencio.
-export function parseNumber(v: ExcelJS.CellValue): number | string {
+export const parseNumber = (v: ExcelJS.CellValue) => toNumber(plain(v));
+function toNumber(v: Plain | Problem): number | string {
   if (typeof v === "number") return v;
-  if (v && typeof v === "object" && "result" in v)
-    return parseNumber(v.result as ExcelJS.CellValue);
+  if (v != null && isProblem(v)) return v.problem;
   const raw = text(v)
     .replace(/^(rd)?\$\s*/i, "")
     .replace(/\s+/g, "");
@@ -105,7 +131,7 @@ export async function readInventory(file: string): Promise<Row[]> {
     wb.worksheets.find((s) => /inventario/i.test(s.name)) ?? wb.worksheets[0];
   const header = sheet.getRow(1);
   const col: Record<string, number> = {};
-  header.eachCell((cell, n) => (col[key(text(cell.value))] = n));
+  header.eachCell((cell, n) => (col[key(text(cellPlain(cell)))] = n));
   const need = {
     id: col.ID,
     name: col.DESCRIPCION,
@@ -125,30 +151,26 @@ export async function readInventory(file: string): Promise<Row[]> {
   // Existencia: no negativa, como máximo 3 decimales. Dinero: no negativo,
   // como máximo 2 decimales.
   const read = (
-    r: ExcelJS.Row,
-    col: number,
+    cell: Plain | Problem,
     label: string,
-    id: string,
+    who: string,
     decimals: number,
   ) => {
-    const v = parseNumber(r.getCell(col).value);
+    const v = toNumber(cell);
     if (typeof v === "string") {
-      errors.push("fila " + id + ", " + label + ": " + v);
+      errors.push(who + ", " + label + ": " + v);
       return 0;
     }
     const f = 10 ** decimals;
     // Límites de la base (R8-03): Decimal(14,2) y Decimal(14,3).
     const max = decimals === 2 ? 999999999999.99 : 99999999999.999;
     if (!Number.isFinite(v) || v > max) {
-      errors.push(
-        "fila " + id + ", " + label + ": " + v + " (máximo " + max + ")",
-      );
+      errors.push(who + ", " + label + ": " + v + " (máximo " + max + ")");
       return 0;
     }
     if (v < 0 || Math.abs(v * f - Math.round(v * f)) > 1e-6) {
       errors.push(
-        "fila " +
-          id +
+        who +
           ", " +
           label +
           ": " +
@@ -163,12 +185,58 @@ export async function readInventory(file: string): Promise<Row[]> {
   };
   sheet.eachRow((r, n) => {
     if (n === 1) return;
+    const [idCell, refCell, nameCell, group, qty, cost, price] = [
+      need.id,
+      need.ref,
+      need.name,
+      need.group,
+      need.qty,
+      need.cost,
+      need.price,
+    ].map((c) => cellPlain(r.getCell(c!)));
+    // Una fórmula sin valor puede ser una que da "" (Excel la guarda igual):
+    // sola no hace que la fila tenga datos.
+    const filled = (v: Plain | Problem) =>
+      isProblem(v) ? v.problem !== NO_RESULT : text(v) !== "";
     // El ID es siempre el código que la caja escribe (1001, 1223…). La
     // REFERENCIA o el "Barcode …" de la descripción, si traen otro número,
     // son el código de barras.
-    const ref = text(r.getCell(need.ref!).value);
-    const id = text(r.getCell(need.id!).value) || ref;
-    const raw = text(r.getCell(need.name!).value);
+    const ref = text(refCell);
+    const id = text(idCell) || ref;
+    const raw = text(nameCell);
+    // Sólo se ignoran las filas vacías y la de totales (SUB-GRUPO «TOTAL», o
+    // un ID calculado sin descripción, como el COUNTA del Excel de la tienda).
+    // Otra fila sin ID o sin DESCRIPCION detiene la carga: si no, ese producto
+    // y sus existencias se perderían sin aviso (R9-importador-2).
+    if (![idCell, refCell, nameCell, qty, cost, price].some(filled)) return;
+    if (
+      key(text(group)) === "TOTAL" ||
+      (r.getCell(need.id!).type === ExcelJS.ValueType.Formula &&
+        !filled(nameCell))
+    )
+      return;
+    const who =
+      id && !isProblem(idCell) ? "fila " + id : "fila " + n + " del Excel";
+    for (const [label, v] of [
+      ["ID", idCell],
+      ["REFERENCIA", refCell],
+      ["DESCRIPCION", nameCell],
+      ["SUB-GRUPO", group],
+    ] as const)
+      if (isProblem(v)) errors.push(who + ", " + label + ": " + v.problem);
+    const lacks = [
+      !id && !isProblem(idCell) && "ID",
+      !raw && !isProblem(nameCell) && "DESCRIPCION",
+    ].filter(Boolean);
+    if (lacks.length)
+      errors.push(
+        "fila " +
+          n +
+          " del Excel" +
+          (id ? " (ID " + id + ")" : "") +
+          ": falta " +
+          lacks.join(" y "),
+      );
     if (!id || !raw) return;
     const barcode =
       raw.match(/barcode\s*[:#]?\s*(\d{6,14})/i)?.[1] ??
@@ -181,10 +249,10 @@ export async function readInventory(file: string): Promise<Row[]> {
         .replace(/\s+/g, " ")
         .trim(),
       barcode,
-      category: text(r.getCell(need.group!).value) || "Sin categoría",
-      qty: read(r, need.qty!, "EXISTENCIA", id, 3),
-      cost: read(r, need.cost!, "COSTO", id, 2),
-      price: read(r, need.price!, "PRECIO DETALLE", id, 2),
+      category: text(group) || "Sin categoría",
+      qty: read(qty, "EXISTENCIA", who, 3),
+      cost: read(cost, "COSTO", who, 2),
+      price: read(price, "PRECIO DETALLE", who, 2),
     });
   });
   if (errors.length)
