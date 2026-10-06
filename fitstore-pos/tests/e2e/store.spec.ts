@@ -1198,3 +1198,172 @@ test("R9-caja-8: el descuento de línea se limita al 100 % y al importe de la l�
   await page.getByRole("button", { name: "Limpiar", exact: true }).click();
   await r9Retire(request, headers, [product]);
 });
+
+// Revisión R9 · dinero: abonos por transferencia pendientes y centavos.
+test("R9-dinero-3-ui: un abono por transferencia que no llegó se rechaza desde la venta y la devolución pasa", async ({
+  page,
+}) => {
+  const token = await login(page);
+  const headers = { Authorization: "Bearer " + token };
+  const call = async (
+    path: string,
+    data?: any,
+    method = data ? "POST" : "GET",
+  ) => {
+    const r = await page.request.fetch("/api" + path, {
+      method,
+      headers,
+      ...(data ? { data } : {}),
+    });
+    expect(r.ok(), path + " " + (await r.text())).toBe(true);
+    return r.json();
+  };
+  const settings = await call("/settings");
+  const code = r9Code("7");
+  let product: any;
+  try {
+    await call(
+      "/settings",
+      { ...settings, allowCreditSales: true, creditApprovalThreshold: 100000 },
+      "PUT",
+    );
+    product = await r9Product(
+      page.request,
+      headers,
+      "Faja E2E crédito " + code,
+      code,
+      { price: 500 },
+    );
+    await ensureCash(page);
+    const me = await call("/auth/me");
+    const session = (await call("/cash-sessions")).find(
+      (s: any) => !s.closedAt && s.userId === me.id,
+    );
+    const customer = await call("/customers", {
+      name: "QA E2E crédito " + code,
+      creditLimit: 5000,
+    });
+    // Venta de 1000 a crédito y abono de 600 por transferencia sin verificar.
+    const sale = await call("/sales", {
+      offlineUuid: crypto.randomUUID(),
+      cashSessionId: session.id,
+      customerId: customer.id,
+      creditDueDate: "2030-01-01T12:00:00.000Z",
+      items: [{ variantId: product.variants[0].id, qty: 2 }],
+      payments: [{ method: "credit", amount: 1000 }],
+    });
+    await call("/sales/" + sale.id + "/installments", {
+      offlineUuid: crypto.randomUUID(),
+      cashSessionId: session.id,
+      method: "transfer",
+      amount: 600,
+      bank: "E2E Banco",
+      reference: "E2E-" + code,
+    });
+    await page.getByRole("button", { name: "Ventas", exact: true }).click();
+    const row = page.getByRole("row").filter({ hasText: sale.number });
+    const giveBack = async () => {
+      await row.getByRole("button", { name: "Devolver", exact: true }).click();
+      const form = page.getByRole("dialog");
+      await form.getByLabel("Artículo a devolver").selectOption({ index: 1 });
+      await form.getByLabel("Cantidad").fill("1");
+      await form.getByLabel("Motivo").fill("E2E devuelve una faja");
+      await form.getByRole("button", { name: "Guardar", exact: true }).click();
+    };
+    // La devolución de 500 dejaría la deuda por debajo del abono pendiente.
+    await giveBack();
+    await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+      "Verifica o rechaza primero",
+    );
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Cancelar", exact: true })
+      .click();
+    // La transferencia no llegó: se rechaza desde el detalle de la venta.
+    await row.getByRole("button", { name: "Ver " + sale.number }).click();
+    const transfer = page
+      .getByRole("dialog", { name: sale.number })
+      .locator(".payment-list", { hasText: "Transferencia" });
+    await expect(transfer).toContainText("Pendiente de verificar");
+    await transfer.getByRole("button", { name: "Rechazar", exact: true }).click();
+    const confirm = page.getByRole("dialog", { name: /Rechazar transferencia/ });
+    await confirm
+      .getByLabel("Motivo obligatorio")
+      .fill("E2E la transferencia no llegó");
+    await confirm.getByRole("button", { name: "Confirmar", exact: true }).click();
+    await expect(
+      page.getByText("Transferencia rechazada.", { exact: true }),
+    ).toBeVisible();
+    // Queda como rechazada y ya no ofrece «Verificar».
+    await row.getByRole("button", { name: "Ver " + sale.number }).click();
+    await expect(transfer).toContainText("Rechazada");
+    await expect(
+      transfer.getByRole("button", { name: "Verificar" }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    // Ahora la devolución pasa y descuenta la deuda.
+    await giveBack();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const after = (await call("/sales")).find((s: any) => s.id === sale.id);
+    expect(Number(after.creditBalance)).toBe(500);
+    expect(
+      after.payments.find((p: any) => p.entryType === "installment").status,
+    ).toBe("rejected");
+  } finally {
+    await call("/settings", settings, "PUT");
+    if (product) await r9Retire(page.request, headers, [product]);
+  }
+});
+
+test("R9-dinero-5-pos: un descuento por monto con 3 decimales se cobra en línea y se sincroniza sin conexión", async ({
+  page,
+  request,
+  context,
+}) => {
+  const headers = await r9Headers(request);
+  const code = r9Code("6");
+  const name = "Faja E2E centavos " + code;
+  const product = await r9Product(request, headers, name, code);
+  const search = await r9Pos(page);
+  const sell = async () => {
+    await search.fill(code);
+    await search.press("Enter");
+    await page
+      .getByLabel("Descuento por monto de " + name, { exact: true })
+      .fill("1.005");
+    await page.getByRole("button", { name: /Cobrar/ }).click();
+    await page.getByRole("button", { name: "Agregar pago" }).click();
+    await page.getByRole("button", { name: "Finalizar venta" }).click();
+  };
+  // En línea: la API acepta el descuento con el mismo cálculo de la caja.
+  await sell();
+  await expect(
+    page.getByText("Venta registrada", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  // Sin conexión: la venta ya entregada se sincroniza, no queda en conflicto.
+  await context.setOffline(true);
+  await expect(page.locator(".connection")).toContainText("Offline");
+  await sell();
+  await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible();
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  await context.setOffline(false);
+  await expect(page.locator(".connection")).toContainText("En línea");
+  await expect(async () => {
+    const count = await page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const r = indexedDB.open("fitstore-pos-v1");
+        r.onsuccess = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+      });
+      return await new Promise<number>((resolve, reject) => {
+        const r = db.transaction("sales").objectStore("sales").count();
+        r.onsuccess = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+      });
+    });
+    expect(count).toBe(0);
+  }).toPass({ timeout: 20000 });
+  await r9Retire(request, headers, [product]);
+});

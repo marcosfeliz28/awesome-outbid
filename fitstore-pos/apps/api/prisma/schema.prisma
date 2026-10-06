@@ -274,6 +274,7 @@ model Quote {
   userId String
   items Json
   notes String @default("")
+  globalDiscount Decimal @default(0) @db.Decimal(5,2)
   status String @default("open")
   branchId String @default("main")
   createdAt DateTime @default(now())

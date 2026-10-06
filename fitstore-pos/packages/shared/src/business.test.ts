@@ -330,9 +330,7 @@ describe("R9-dinero-1/6/7 · costo contabilizado de ventas y devoluciones", () =
       items: [combo("a", 1, 1.665), combo("b", 1, 1.665)],
     };
     const booked = bookedLineCosts(sale);
-    expect([...booked.values()].map((v) => v.toNumber())).toEqual([
-      1.67, 1.66,
-    ]);
+    expect([...booked.values()].map((v) => v.toNumber())).toEqual([1.67, 1.66]);
     // Una venta nueva conserva el costo redondeado de cada línea.
     expect(
       [...bookedLineCosts({ ...sale, costTotal: 3.34 }).values()].map((v) =>

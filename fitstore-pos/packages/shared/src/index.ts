@@ -173,9 +173,7 @@ export function bookedLineCosts(sale: {
   const lines = [...sale.items].sort((a, b) => a.id.localeCompare(b.id));
   const exact = lines.map((line) => allocationCost(line));
   const rounded = exact.map((value) => d(money(value)));
-  const shares = rounded
-    .reduce((s, v) => s.plus(v), d(0))
-    .eq(sale.costTotal)
+  const shares = rounded.reduce((s, v) => s.plus(v), d(0)).eq(sale.costTotal)
     ? rounded
     : splitCents(sale.costTotal, exact);
   return new Map(lines.map((line, n) => [line.id, shares[n]]));

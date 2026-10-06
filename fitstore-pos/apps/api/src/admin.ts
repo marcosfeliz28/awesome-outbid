@@ -22,7 +22,7 @@ import {
   conflict,
   json,
 } from "./common";
-import { can, z, stockQty } from "@fitstore/shared";
+import { can, d, z, stockQty } from "@fitstore/shared";
 import { passwordHash } from "./auth";
 
 const customerSchema = z.object({
@@ -295,16 +295,21 @@ export class AdminController {
       }),
       body,
     );
-    const prices = new Map<string, number>(
+    const prices = new Map(
       (
         await this.db.variant.findMany({
           where: { id: { in: data.items.map((i) => i.variantId) } },
           select: { id: true, price: true },
         })
-      ).map((v) => [v.id, Number(v.price)]),
+      ).map((v) => [v.id, String(v.price)]),
     );
+    // Con decimales exactos: 3 × 0.70 son 2.10, no 2.0999…
     for (const i of data.items)
-      if ((i.discountAmount ?? 0) > (prices.get(i.variantId) ?? 0) * i.qty)
+      if (
+        d(i.discountAmount ?? 0).gt(
+          d(prices.get(i.variantId) ?? 0).times(i.qty),
+        )
+      )
         bad("El descuento por monto supera el importe de la línea.");
     return this.db.quote.create({
       data: {

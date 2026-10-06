@@ -4298,8 +4298,11 @@ describe("Ronda 9 · revisión · dinero", () => {
     refundMethod,
     items: items.map((i) => ({ restock: true, ...i })),
   });
-  const giveBack = (saleId: string, items: any[], refundMethod = "credit_note") =>
-    ok("/returns", returnBody(saleId, items, refundMethod));
+  const giveBack = (
+    saleId: string,
+    items: any[],
+    refundMethod = "credit_note",
+  ) => ok("/returns", returnBody(saleId, items, refundMethod));
   const profitRow = async (label: string) =>
     (await ok(`/reports/profit?from=${today}&to=${today}`)).rows.find(
       (r: any) => r.Producto === "QA R9D " + label + " " + suffix,
@@ -4307,8 +4310,8 @@ describe("Ronda 9 · revisión · dinero", () => {
   const dashboard = (from = today, to = today) =>
     ok(`/dashboard/summary?from=${from}&to=${to}`);
   const expectedCash = async () =>
-    (await ok("/cash-sessions")).find((c: any) => c.id === session.id)
-      .expected.cash;
+    (await ok("/cash-sessions")).find((c: any) => c.id === session.id).expected
+      .cash;
   // Así guardaban las devoluciones las rondas 3 a 7: sin importes por línea.
   const asLegacyReturn = async (id: string, costTotal?: number) => {
     const stored = await fixtureDb.saleReturn.findUniqueOrThrow({
@@ -4347,7 +4350,12 @@ describe("Ronda 9 · revisión · dinero", () => {
       name: "QA R9D crédito " + randomUUID().slice(0, 6),
       creditLimit: 100000,
     });
-  const creditSale = (variantId: string, qty: number, amount: number, customerId: string) =>
+  const creditSale = (
+    variantId: string,
+    qty: number,
+    amount: number,
+    customerId: string,
+  ) =>
     ok("/sales", {
       offlineUuid: randomUUID(),
       cashSessionId: session.id,
@@ -4473,10 +4481,7 @@ describe("Ronda 9 · revisión · dinero", () => {
       const customer = await creditCustomer();
       const v = await product("credito", 500, 100, 10);
       const ret = (saleId: string, saleItemId: string, qty: number) =>
-        request(
-          "/returns",
-          returnBody(saleId, [{ saleItemId, qty }], "cash"),
-        );
+        request("/returns", returnBody(saleId, [{ saleItemId, qty }], "cash"));
       // El cliente abonó todo por transferencia y devuelve todo.
       const s1 = await creditSale(v.id, 2, 1000, customer.id);
       const t1 = (await installment(s1.id, "transfer", 1000)).body;
@@ -4496,9 +4501,9 @@ describe("Ronda 9 · revisión · dinero", () => {
       await ok("/payments/" + t2.id + "/reject", {
         reason: "QA no llegó la transferencia",
       });
-      expect(
-        (await request("/payments/" + t2.id + "/verify", {})).status,
-      ).toBe(400);
+      expect((await request("/payments/" + t2.id + "/verify", {})).status).toBe(
+        400,
+      );
       const r2 = await ret(s2.id, s2.items[0].id, 1);
       expect(r2.status).toBe(201);
       expect(Number(r2.body.refundAmount)).toBe(0);
@@ -4686,7 +4691,9 @@ describe("Ronda 9 · revisión · dinero", () => {
       const customer = await creditCustomer();
       const v = await product("metodo", 500, 100, 10);
       const snapshot = async () => {
-        const { rows } = await ok(`/reports/by-payment?from=${today}&to=${today}`);
+        const { rows } = await ok(
+          `/reports/by-payment?from=${today}&to=${today}`,
+        );
         const at = (method: string, column: string) =>
           rows.find((r: any) => r.Método === method)?.[column] ?? 0;
         const summary = await dashboard();
@@ -4695,7 +4702,10 @@ describe("Ronda 9 · revisión · dinero", () => {
           cashSales: at("cash", "Ventas"),
           cashCollected: at("cash", "Cobros_de_crédito"),
           cardCollected: at("card", "Cobros_de_crédito"),
-          salesColumn: rows.reduce((s: number, r: any) => s + (r.Ventas ?? 0), 0),
+          salesColumn: rows.reduce(
+            (s: number, r: any) => s + (r.Ventas ?? 0),
+            0,
+          ),
           dashboardCash:
             summary.payments.find((p: any) => p.name === "cash")?.amount ?? 0,
           fees: summary.fees,

@@ -38,6 +38,7 @@ import {
   loadCatalog,
   localDB,
   download,
+  type CartItem,
   type Product,
   type Variant,
 } from "./api";
@@ -81,6 +82,41 @@ function discountFor(
     return ((Math.floor(qty / 2) * 0.5) / qty) * 100;
   return 0;
 }
+// Descuento manual efectivo de una línea (la línea combinada con el global).
+// Se limita a 0-100 %: un valor fuera de rango (de una venta en espera o de
+// una versión anterior) nunca deja un total negativo en pantalla (R9-caja-8).
+const manualDiscount = (i: CartItem, globalDiscount: number) => {
+  const line = Math.min(
+    100,
+    Math.max(
+      0,
+      i.discountPercent,
+      ((i.discountAmount ?? 0) /
+        Math.max(0.01, i.qty * Number(i.variant.price))) *
+        100,
+    ),
+  );
+  const global = Math.min(100, Math.max(0, globalDiscount));
+  return 100 - ((100 - line) * (100 - global)) / 100;
+};
+const lineGross = (i: CartItem, qty = i.qty) =>
+  money(d(qty).times(Number(i.variant.price)));
+// Parece un código (sólo dígitos, o dígitos con letras sueltas como
+// «e2e-1600») y no palabras de un nombre como «iso100» o «tribulus 1400».
+const looksLikeCode = (text: string) => {
+  const words = searchWords(text);
+  return (
+    /^\d+$/.test(text) ||
+    (words.length > 0 &&
+      words.every((w) => /\d/.test(w) && !/[a-z]{3,}/.test(w)))
+  );
+};
+// Un elemento donde se escribe: ahí el teclado no se desvía al buscador.
+const isEditable = (el: Element | null) =>
+  el instanceof HTMLInputElement ||
+  el instanceof HTMLTextAreaElement ||
+  el instanceof HTMLSelectElement ||
+  (el instanceof HTMLElement && el.isContentEditable);
 export function POS({ go }: { go: (page: string) => void }) {
   const {
     cart,
@@ -103,6 +139,9 @@ export function POS({ go }: { go: (page: string) => void }) {
     [clientPicker, setClientPicker] = useState(false),
     [camera, setCamera] = useState(false);
   const search = useRef<HTMLInputElement>(null);
+  // La ventana de variantes se abrió con Enter desde el buscador: al elegir,
+  // el buscador queda vacío como tras un escaneo (R9-caja-6).
+  const clearOnChoose = useRef(false);
   const client = useQueryClient();
   const products = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
   const categories = useQuery({
@@ -172,16 +211,7 @@ export function POS({ go }: { go: (page: string) => void }) {
       i.qty,
       Number(i.variant.price),
       Math.max(
-        100 -
-          ((100 -
-            Math.max(
-              i.discountPercent,
-              ((i.discountAmount ?? 0) /
-                Math.max(0.01, i.qty * Number(i.variant.price))) *
-                100,
-            )) *
-            (100 - globalDiscount)) /
-            100,
+        manualDiscount(i, globalDiscount),
         ...activePromos.map((p: any) =>
           discountFor(p, i.variant, i.product, i.qty),
         ),
@@ -225,32 +255,64 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     return "added";
   };
-  const addProduct = (product: Product) =>
-    product.variants.length === 1
+  const addProduct = (product: Product) => {
+    clearOnChoose.current = false;
+    return product.variants.length === 1
       ? choose(product.variants[0], product)
       : setChoosing(product);
+  };
+  // Línea del carrito con descuentos dentro de rango (R9-caja-8).
+  const setLine = (id: string, change: Partial<CartItem>) =>
+    setCart(
+      cart.map((item) =>
+        item.variant.id === id ? { ...item, ...change } : item,
+      ),
+    );
+  const changeQty = (i: CartItem, qty: number) => {
+    // Al bajar la cantidad, el descuento por monto se ajusta al nuevo
+    // importe de la línea en vez de dejar el total negativo (R9-caja-8).
+    if (qty > 0 && (i.discountAmount ?? 0) > lineGross(i, qty))
+      setLine(i.variant.id, { qty, discountAmount: lineGross(i, qty) });
+    else updateQty(i.variant.id, qty);
+  };
+  // true si la venta quedó guardada (también la usa «Ventas en espera» para
+  // guardar el carrito actual antes de recuperar otra).
   const saveHeld = async (type = "held") => {
-    if (!cart.length) return;
+    // El estado se lee al momento: el atajo F8 no usa el cliente de antes de
+    // F4 (R9-caja-7).
+    const state = useStore.getState();
+    if (!state.cart.length) return false;
     try {
-      if (!online)
+      if (!state.online)
         throw new Error("Conéctate para guardar una venta en espera.");
       await post("/quotes", {
         type,
-        customerId,
-        items: cart.map((i) => ({
-          variantId: i.variant.id,
-          qty: i.qty,
-          discountPercent: i.discountPercent,
-          discountAmount: i.discountAmount,
-        })),
+        customerId: state.customerId,
+        // La venta en espera conserva todos sus descuentos (R9-caja-4).
+        globalDiscount: state.globalDiscount,
+        items: state.cart.map((i) => {
+          const label = attrLabel(i.variant.attributes || {});
+          return {
+            variantId: i.variant.id,
+            qty: i.qty,
+            discountPercent: i.discountPercent,
+            discountAmount: i.discountAmount,
+            name: (label === "Única"
+              ? i.product.name
+              : i.product.name + " · " + label
+            ).slice(0, 300),
+          };
+        }),
       });
       clearCart();
       await client.invalidateQueries({ queryKey: ["quotes"] });
       toast(
         type === "held" ? "Venta guardada en espera." : "Cotización guardada.",
       );
+      return true;
     } catch (e: any) {
       toast(e.message, true);
+      return false;
     }
   };
   const charge = () => {
@@ -270,28 +332,51 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     setCheckout(true);
   };
+  // El atajo usa siempre la versión de este render: con el efecto atado a
+  // [cart, session, online], F8 guardaba el cliente anterior (R9-caja-7).
+  const onKey = useRef<(e: KeyboardEvent) => void>(() => {});
+  onKey.current = (e) => {
+    if (e.key === "F2") {
+      e.preventDefault();
+      search.current?.focus();
+    }
+    if (e.key === "F4") {
+      e.preventDefault();
+      setClientPicker(true);
+    }
+    if (e.key === "F8") {
+      e.preventDefault();
+      saveHeld();
+    }
+    if (e.key === "F12") {
+      e.preventDefault();
+      charge();
+    }
+    // El lector escribe como un teclado. Si el foco quedó en una tarjeta, en
+    // un botón +/− o en ninguna parte (tras cerrar una ventana o «Nueva
+    // venta»), los dígitos se perdían y el Enter volvía a pulsar el botón:
+    // se agregaba otra unidad del producto anterior (R9-caja-3, R9-caja-6).
+    // Lo que se escribe fuera de un campo va al buscador y reemplaza la
+    // búsqueda anterior. Con una ventana abierta no se toca nada.
+    if (
+      e.key.length === 1 &&
+      e.key !== " " &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      search.current &&
+      !isEditable(document.activeElement) &&
+      !document.querySelector('[role="dialog"]')
+    ) {
+      search.current.focus();
+      search.current.select();
+    }
+  };
   useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "F2") {
-        e.preventDefault();
-        search.current?.focus();
-      }
-      if (e.key === "F4") {
-        e.preventDefault();
-        setClientPicker(true);
-      }
-      if (e.key === "F8") {
-        e.preventDefault();
-        saveHeld();
-      }
-      if (e.key === "F12") {
-        e.preventDefault();
-        charge();
-      }
-    };
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
-  }, [cart, session, online]);
+    const key = (e: KeyboardEvent) => onKey.current(e);
+    window.addEventListener("keydown", key, true);
+    return () => window.removeEventListener("keydown", key, true);
+  }, []);
   // Búsqueda por palabras sueltas, sin acentos, apóstrofos ni orden:
   // "iso100 vanilla 5lb" encuentra "ISO100 Hydrolyzed - Dymatize - Gourmet
   // Vanilla / 5 lb" y "loreal" encuentra "L'Oréal".
@@ -353,6 +438,9 @@ export function POS({ go }: { go: (page: string) => void }) {
     const found = byCode(code);
     if (found && "ambiguous" in found) {
       setQ(code);
+      // Seleccionado, para que el siguiente escaneo lo reemplace en vez de
+      // pegarse al código anterior (R9-caja-2).
+      requestAnimationFrame(() => search.current?.select());
       toast(
         "El código " +
           code.trim() +
@@ -379,8 +467,47 @@ export function POS({ go }: { go: (page: string) => void }) {
       }
     } else {
       setQ(code);
-      toast("Código no encontrado.", true);
+      requestAnimationFrame(() => search.current?.select());
+      toast("Código no encontrado: " + code.trim() + ".", true);
     }
+  };
+  // Enter en el buscador (teclado o lector).
+  const enter = () => {
+    const text = q.trim();
+    if (!text) return;
+    if (byCode(text)) return scan(q);
+    const warn = (message: string) => {
+      toast(message, true);
+      search.current?.select();
+    };
+    // Un código que no es de ningún producto activo (por ejemplo, el de uno
+    // desactivado) no agrega otro que sólo lo contiene en el nombre o en las
+    // barras: «1600» no es «Longjack … 1600 mg» (R9-caja-1). La lista queda
+    // a la vista por si se quiere elegir a mano.
+    if (looksLikeCode(text) || (!filtered.length && /^\S*\d\S*$/.test(text)))
+      return warn("Código no encontrado: " + text + ".");
+    if (filtered.length === 1 && !approximate) {
+      const product = filtered[0];
+      if (product.variants.length > 1) {
+        clearOnChoose.current = true;
+        setChoosing(product);
+        return;
+      }
+      const result = choose(product.variants[0], product);
+      if (result) {
+        // Como al escanear: aviso y buscador vacío, para que el siguiente
+        // escaneo no se pegue a las palabras (R9-caja-6).
+        setQ("");
+        if (result === "added") toast(product.name + " agregado.");
+      } else search.current?.select();
+      return;
+    }
+    // Ningún producto o varios: no se agregó nada y se dice (R9-caja-6).
+    warn(
+      filtered.length
+        ? "No se agregó nada: elige el producto en la lista."
+        : "No se agregó nada: no hay productos con esas palabras.",
+    );
   };
   return (
     <div className="pos-layout">
@@ -416,17 +543,11 @@ export function POS({ go }: { go: (page: string) => void }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                if (byCode(q)) scan(q);
-                else if (filtered.length === 1 && !approximate)
-                  addProduct(filtered[0]);
-                else if (!filtered.length && /^\S*\d\S*$/.test(q.trim())) {
-                  // Parece un código y no existe: se avisa y queda
-                  // seleccionado para el siguiente escaneo.
-                  toast("Código no encontrado: " + q.trim() + ".", true);
-                  search.current?.select();
-                }
-              }
+              if (e.key !== "Enter") return;
+              // Sin esto, el mismo Enter pulsaba «Cerrar» en la ventana de
+              // variantes que acababa de abrir (R9-caja-6).
+              e.preventDefault();
+              enter();
             }}
           />
           <kbd>F2</kbd>
@@ -595,7 +716,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                     <div className="quantity-control">
                       <button
                         aria-label={"Reducir " + i.product.name}
-                        onClick={() => updateQty(i.variant.id, i.qty - 1)}
+                        onClick={() => changeQty(i, i.qty - 1)}
                       >
                         <Minus size={12} />
                       </button>
@@ -623,18 +744,18 @@ export function POS({ go }: { go: (page: string) => void }) {
                         step="1"
                         aria-label={"Descuento de " + i.product.name}
                         value={i.discountPercent}
-                        onChange={(e) =>
-                          setCart(
-                            cart.map((item) =>
-                              item.variant.id === i.variant.id
-                                ? {
-                                    ...item,
-                                    discountPercent: Number(e.target.value),
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
+                        onChange={(e) => {
+                          // Entre 0 y 100 % (R9-caja-8).
+                          const value = Number(e.target.value) || 0;
+                          if (value > 100)
+                            toast(
+                              "El descuento de una línea llega hasta el 100 %.",
+                              true,
+                            );
+                          setLine(i.variant.id, {
+                            discountPercent: Math.min(100, Math.max(0, value)),
+                          });
+                        }}
                       />
                       %
                     </label>
@@ -647,18 +768,21 @@ export function POS({ go }: { go: (page: string) => void }) {
                         step="0.01"
                         aria-label={"Descuento por monto de " + i.product.name}
                         value={i.discountAmount ?? 0}
-                        onChange={(e) =>
-                          setCart(
-                            cart.map((item) =>
-                              item.variant.id === i.variant.id
-                                ? {
-                                    ...item,
-                                    discountAmount: Number(e.target.value),
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
+                        onChange={(e) => {
+                          // Entre 0 y el importe de la línea (R9-caja-8).
+                          const value = Number(e.target.value) || 0,
+                            max = lineGross(i);
+                          if (value > max)
+                            toast(
+                              "El descuento no puede pasar del importe de la línea (" +
+                                formatMoney(max) +
+                                ").",
+                              true,
+                            );
+                          setLine(i.variant.id, {
+                            discountAmount: Math.min(max, Math.max(0, value)),
+                          });
+                        }}
                       />
                     </label>
                   </div>
@@ -767,7 +891,9 @@ export function POS({ go }: { go: (page: string) => void }) {
                   !choosing.category.requiresLot
                 )
               }
-              onClick={() => choose(v, choosing)}
+              onClick={() => {
+                if (choose(v, choosing) && clearOnChoose.current) setQ("");
+              }}
             >
               <strong>{attrLabel(v.attributes)}</strong>
               <span>{formatMoney(v.price)}</span>
@@ -823,6 +949,7 @@ export function POS({ go }: { go: (page: string) => void }) {
         <Checkout
           total={total}
           tax={tax}
+          lines={totals}
           session={session}
           onClose={() => setCheckout(false)}
           config={config.data}
@@ -832,6 +959,8 @@ export function POS({ go }: { go: (page: string) => void }) {
       {held && (
         <HeldSales
           products={products.data || []}
+          ready={products.isSuccess}
+          holdCurrent={() => saveHeld()}
           onClose={() => setHeld(false)}
         />
       )}
@@ -850,17 +979,100 @@ export function POS({ go }: { go: (page: string) => void }) {
 
 function HeldSales({
   products,
+  ready,
+  holdCurrent,
   onClose,
 }: {
   products: Product[];
+  ready: boolean;
+  holdCurrent: () => Promise<boolean>;
   onClose: () => void;
 }) {
-  const { setCart, setCustomer } = useStore();
+  const { setCart, setCustomer, setDiscount } = useStore();
+  const [busy, setBusy] = useState(false);
   const client = useQueryClient();
   const query = useQuery({
     queryKey: ["quotes"],
     queryFn: () => api("/quotes"),
   });
+  const recover = async (quote: any) => {
+    if (busy) return;
+    // El carrito se arma antes de consumir la venta en espera: si falta un
+    // producto, se avisa cuál y no se pierde nada (R9-caja-5).
+    if (!ready) {
+      toast(
+        "El catálogo todavía se está cargando. Intenta en un momento.",
+        true,
+      );
+      return;
+    }
+    const lines: CartItem[] = [],
+      missing: string[] = [];
+    for (const i of quote.items) {
+      const product = products.find((p) =>
+        p.variants.some((v) => v.id === i.variantId),
+      );
+      const variant = product?.variants.find((v) => v.id === i.variantId);
+      if (product && variant)
+        lines.push({
+          product,
+          variant,
+          qty: Number(i.qty),
+          discountPercent: Number(i.discountPercent ?? 0),
+          ...(i.discountAmount
+            ? { discountAmount: Number(i.discountAmount) }
+            : {}),
+        });
+      else missing.push(i.name || "un artículo");
+    }
+    if (!lines.length) {
+      toast(
+        "Ningún artículo de esta venta sigue a la venta: " +
+          missing.join(", ") +
+          ".",
+        true,
+      );
+      return;
+    }
+    const current = useStore.getState().cart;
+    const notes = [
+      ...(missing.length
+        ? [
+            "Ya no están a la venta y no se recuperarán: " +
+              missing.join(", ") +
+              ".",
+          ]
+        : []),
+      // El carrito actual no se reemplaza en silencio: queda en espera.
+      ...(current.length
+        ? [
+            "La venta actual (" +
+              current.reduce((a, i) => a + i.qty, 0) +
+              " artículos) quedará en espera.",
+          ]
+        : []),
+    ];
+    if (
+      notes.length &&
+      !window.confirm(notes.join("\n") + "\n¿Recuperar esta venta?")
+    )
+      return;
+    setBusy(true);
+    try {
+      if (current.length && !(await holdCurrent())) return;
+      await post("/quotes/" + quote.id + "/convert", {});
+      setCart(lines);
+      setCustomer(quote.customerId ?? null);
+      // Su propio descuento global, no el del carrito anterior (R9-caja-4).
+      setDiscount(Number(quote.globalDiscount ?? 0));
+      onClose();
+    } catch (e: any) {
+      toast(e.message, true);
+    } finally {
+      setBusy(false);
+      await client.invalidateQueries({ queryKey: ["quotes"] });
+    }
+  };
   return (
     <Modal open onClose={onClose} title="Ventas en espera y cotizaciones">
       <QueryState query={query}>
@@ -869,28 +1081,8 @@ function HeldSales({
             <button
               className="held-row"
               key={quote.id}
-              onClick={async () => {
-                try {
-                  await post("/quotes/" + quote.id + "/convert", {});
-                  const cart = quote.items.map((i: any) => {
-                    const product = products.find((p) =>
-                      p.variants.some((v) => v.id === i.variantId),
-                    );
-                    const variant = product?.variants.find(
-                      (v) => v.id === i.variantId,
-                    );
-                    if (!product || !variant)
-                      throw new Error("Una variante ya no está disponible.");
-                    return { ...i, product, variant };
-                  });
-                  setCart(cart);
-                  setCustomer(quote.customerId);
-                  await client.invalidateQueries({ queryKey: ["quotes"] });
-                  onClose();
-                } catch (e: any) {
-                  toast(e.message, true);
-                }
-              }}
+              disabled={busy}
+              onClick={() => recover(quote)}
             >
               <Pause size={18} />
               <span>
@@ -901,6 +1093,14 @@ function HeldSales({
                     timeZone: "America/Santo_Domingo",
                   })}
                 </small>
+                {quote.items.some((i: any) => i.name) && (
+                  <small>
+                    {quote.items
+                      .map((i: any) => i.name)
+                      .filter(Boolean)
+                      .join(", ")}
+                  </small>
+                )}
               </span>
               <ChevronRight />
             </button>
@@ -919,6 +1119,7 @@ function HeldSales({
 function Checkout({
   total,
   tax,
+  lines,
   session,
   onClose,
   config,
@@ -926,6 +1127,7 @@ function Checkout({
 }: {
   total: number;
   tax: number;
+  lines: ReturnType<typeof lineTotals>[];
   session: any;
   onClose: () => void;
   config: any;
@@ -988,16 +1190,7 @@ function Checkout({
     (!can(user!.permissions, "sale:manage") &&
       cart.some(
         (i) =>
-          100 -
-            ((100 -
-              Math.max(
-                i.discountPercent,
-                ((i.discountAmount ?? 0) /
-                  Math.max(0.01, i.qty * Number(i.variant.price))) *
-                  100,
-              )) *
-              (100 - globalDiscount)) /
-              100 >
+          manualDiscount(i, globalDiscount) >
           (config?.sellerDiscountLimit ?? 10),
       ));
   const addPayment = (e: React.FormEvent) => {
@@ -1080,11 +1273,16 @@ function Checkout({
       payments,
       ...(pin ? { managerPin: pin } : {}),
     };
-    const snapshot = cart.map((i) => ({
+    // El ticket lleva el descuento de cada línea para que cuadre con el total
+    // cobrado (R9-caja-9).
+    const snapshot = cart.map((i, index) => ({
+      variantId: i.variant.id,
       name: i.product.name,
       sku: i.variant.sku,
       qty: i.qty,
       unitPrice: Number(i.variant.price),
+      discount: lines[index]?.discount ?? 0,
+      lineTotal: lines[index]?.total ?? 0,
     }));
     try {
       let sale: any;
@@ -1166,7 +1364,23 @@ function Checkout({
           } else throw e;
         }
       }
-      setReceipt({ ...sale, snapshot, change: payment.change });
+      // En línea, el ticket usa los importes que guardó el servidor (una
+      // línea puede repartirse en varios lotes); sin conexión, los de la caja.
+      const sum = (rows: any[], key: string) =>
+        money(rows.reduce((a, r) => a.plus(r[key] ?? 0), d(0)));
+      const printed = snapshot.map((line) => {
+        const rows = (sale.items ?? []).filter(
+          (r: any) => r.variantId === line.variantId,
+        );
+        return rows.length
+          ? {
+              ...line,
+              discount: sum(rows, "discount"),
+              lineTotal: sum(rows, "lineTotal"),
+            }
+          : line;
+      });
+      setReceipt({ ...sale, snapshot: printed, change: payment.change });
       clearCart();
       await client.invalidateQueries();
     } catch (e: any) {
@@ -1176,6 +1390,19 @@ function Checkout({
     }
   };
   if (receipt) {
+    // Subtotal y descuentos del ticket: las líneas suman el total (R9-caja-9).
+    const receiptGross = money(
+      receipt.snapshot.reduce(
+        (a: any, i: any) => a.plus(d(i.qty).times(i.unitPrice)),
+        d(0),
+      ),
+    );
+    const receiptDiscount = money(
+      receipt.snapshot.reduce(
+        (a: any, i: any) => a.plus(i.discount ?? 0),
+        d(0),
+      ),
+    );
     const text = `FitStore · ${receipt.number}\nTotal: ${formatMoney(receipt.total)}\nGracias por tu compra. Documento interno, no fiscal.`;
     const customer = customers.find((c) => c.id === customerId);
     return (
@@ -1266,9 +1493,21 @@ function Checkout({
               {i.name}
               <br />
               {i.qty} × {formatMoney(i.unitPrice)}
+              {Number(i.discount) > 0 && (
+                <>
+                  <br />
+                  Descuento −{formatMoney(i.discount)}
+                </>
+              )}
             </p>
           ))}
           <hr />
+          {receiptDiscount > 0 && (
+            <>
+              <p>Subtotal {formatMoney(receiptGross)}</p>
+              <p>Descuentos −{formatMoney(receiptDiscount)}</p>
+            </>
+          )}
           <h3>Total {formatMoney(receipt.total)}</h3>
           <p>ITBIS {formatMoney(receipt.taxTotal)}</p>
           {Number(receipt.creditBalance) > 0 && (
