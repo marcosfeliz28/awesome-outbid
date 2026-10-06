@@ -24,6 +24,17 @@ export const stockQty = (max = 1000000) =>
     .min(0.001, "debe ser al menos 0.001")
     .max(max)
     .refine(isStockQty, QTY_PRECISION);
+// Los importes de dinero se guardan con 2 decimales. Uno más fino se
+// redondearía en el pago pero no en la deuda que descuenta, ni en la
+// comparación de un reintento (R9-dinero-5): se rechaza siempre.
+export const isMoneyAmount = (value: number) =>
+  Number.isFinite(value) &&
+  Math.abs(value * 100 - Math.round(value * 100)) < 1e-6;
+/** Importe de dinero positivo (o desde 0) con como máximo 2 decimales. */
+export const moneyAmount = (max = 100000000, allowZero = false) =>
+  (allowZero ? z.number().nonnegative() : z.number().positive())
+    .max(max)
+    .refine(isMoneyAmount, "debe tener como máximo 2 decimales");
 /**
  * Cantidad derivada exacta, por ejemplo componente × combos vendidos (R6-01).
  * Devuelve null si el resultado no cabe en el stock: menor que 0.001 o con más
@@ -109,6 +120,162 @@ export function allocationCost(line: {
       d(0),
     );
   return d(line.unitCost).times(line.qty);
+}
+/**
+ * Importe acumulado de lo devuelto de una línea, redondeado a centavos:
+ * money(valor × devuelto / cantidad). Cada devolución toma la diferencia entre
+ * el acumulado después y antes, así varias devoluciones parciales suman
+ * exactamente el importe de la línea (total, ITBIS o costo).
+ */
+export const returnedAt = (
+  value: Decimal.Value,
+  lineQty: Decimal.Value,
+  returned: Decimal.Value,
+) => d(money(d(value).times(returned).div(lineQty)));
+/** Reparte un importe en centavos según los pesos, con el resto en el último. */
+export function splitCents(total: Decimal.Value, weights: Decimal.Value[]) {
+  const sum = weights.reduce<Decimal>((s, w) => s.plus(w), d(0));
+  let given = d(0);
+  return weights.map((w, n) => {
+    const share =
+      n === weights.length - 1
+        ? d(total).minus(given)
+        : d(
+            money(
+              sum.isZero()
+                ? d(total).div(weights.length)
+                : d(total).times(w).div(sum),
+            ),
+          );
+    given = given.plus(share);
+    return share;
+  });
+}
+type BookedLine = {
+  id: string;
+  qty: Decimal.Value;
+  unitCost: Decimal.Value;
+  variantId?: string;
+  stockAllocations?: unknown;
+};
+/**
+ * Costo contabilizado de cada línea de una venta (R9-dinero-7). Desde la ronda
+ * 7 final Sale.costTotal es la suma del costo redondeado de cada línea; antes
+ * era el redondeo de la suma. Si no coinciden, Sale.costTotal se reparte en
+ * proporción al costo de cada línea (resto en la última, por id) para que el
+ * reporte de utilidad y las devoluciones cuadren con el dashboard. Se calcula
+ * al leer: la contabilidad ya cerrada no se reescribe.
+ */
+export function bookedLineCosts(sale: {
+  costTotal: Decimal.Value;
+  items: BookedLine[];
+}) {
+  const lines = [...sale.items].sort((a, b) => a.id.localeCompare(b.id));
+  const exact = lines.map((line) => allocationCost(line));
+  const rounded = exact.map((value) => d(money(value)));
+  const shares = rounded
+    .reduce((s, v) => s.plus(v), d(0))
+    .eq(sale.costTotal)
+    ? rounded
+    : splitCents(sale.costTotal, exact);
+  return new Map(lines.map((line, n) => [line.id, shares[n]]));
+}
+/**
+ * Recorre las devoluciones de una venta en orden y devuelve, por cada parte
+ * (clave "idDevolución#posición"), lo devuelto antes en su línea y el costo que
+ * contabilizó (R9-dinero-1, R9-dinero-6). Desde la ronda 8 cada parte guarda su
+ * costo. Antes no: se reconstruye con el redondeo acumulado de la ronda 7 y, si
+ * esa reconstrucción no suma SaleReturn.costTotal (rondas 3 a 6 redondeaban la
+ * suma de unitCost × qty), se reparte costTotal en proporción al costo
+ * contabilizado de cada línea. Por línea resume lo devuelto, el costo repuesto
+ * y el costo que quedó como pérdida (partes no repuestas).
+ */
+export function replayReturns(
+  sale: { costTotal: Decimal.Value; items: BookedLine[] },
+  returns: {
+    id: string;
+    number?: string;
+    createdAt?: Date | string;
+    costTotal: Decimal.Value;
+    items: unknown;
+  }[],
+) {
+  const booked = bookedLineCosts(sale);
+  const byId = new Map(sale.items.map((line) => [line.id, line]));
+  const parts = new Map<
+    string,
+    { line: BookedLine; before: Decimal; restock: boolean; cost: Decimal }
+  >();
+  const lines = new Map<
+    string,
+    { returned: Decimal; restocked: Decimal; waste: Decimal }
+  >();
+  const ordered = [...returns].sort(
+    (a, b) =>
+      +new Date(a.createdAt ?? 0) - +new Date(b.createdAt ?? 0) ||
+      String(a.number ?? "").localeCompare(String(b.number ?? "")),
+  );
+  for (const row of ordered) {
+    const list = (Array.isArray(row.items) ? row.items : []) as {
+      saleItemId?: string;
+      qty?: number;
+      restock?: boolean;
+      cost?: unknown;
+    }[];
+    const unknown: { key: string; candidate: Decimal; weight: Decimal }[] = [];
+    let known = d(0);
+    list.forEach((part, n) => {
+      const line = byId.get(part?.saleItemId ?? "");
+      if (!line || !(Number(part.qty) > 0)) return;
+      const state = lines.get(line.id) ?? {
+        returned: d(0),
+        restocked: d(0),
+        waste: d(0),
+      };
+      const before = state.returned,
+        after = before.plus(part.qty!);
+      const value = allocationCost(line);
+      const estimate = returnedAt(value, line.qty, after).minus(
+        returnedAt(value, line.qty, before),
+      );
+      const restock = part.restock === true;
+      const key = row.id + "#" + n;
+      const stored = typeof part.cost === "number" ? d(part.cost) : null;
+      parts.set(key, {
+        line,
+        before,
+        restock,
+        cost: restock ? (stored ?? estimate) : d(0),
+      });
+      state.returned = after;
+      if (!restock) state.waste = state.waste.plus(estimate);
+      else if (stored) known = known.plus(stored);
+      else
+        unknown.push({
+          key,
+          candidate: estimate,
+          weight: booked.get(line.id)!.times(part.qty!).div(line.qty),
+        });
+      lines.set(line.id, state);
+    });
+    const pending = d(row.costTotal).minus(known);
+    if (
+      unknown.length &&
+      !unknown.reduce((s, u) => s.plus(u.candidate), d(0)).eq(pending)
+    ) {
+      const shares = splitCents(
+        pending,
+        unknown.map((u) => u.weight),
+      );
+      unknown.forEach((u, n) => (parts.get(u.key)!.cost = shares[n]));
+    }
+  }
+  // El costo repuesto de cada línea, ya conciliado.
+  for (const part of parts.values()) {
+    const state = lines.get(part.line.id)!;
+    if (part.restock) state.restocked = state.restocked.plus(part.cost);
+  }
+  return { booked, parts, lines };
 }
 /** Cantidad contada (puede ser 0), con como máximo 3 decimales. */
 export const countedQty = (max = 1000000) =>
@@ -262,7 +429,7 @@ export const saleSchema = z.object({
         variantId: z.string().uuid(),
         qty: stockQty(10000),
         discountPercent: z.number().min(0).max(100).default(0),
-        discountAmount: z.number().nonnegative().max(100000000).optional(),
+        discountAmount: moneyAmount(100000000, true).optional(),
       }),
     )
     .min(1)
@@ -288,7 +455,7 @@ export const saleSchema = z.object({
           .toUpperCase()
           .regex(/^[0-9A-F]{32}$/)
           .optional(),
-        amount: z.number().positive().max(100000000),
+        amount: moneyAmount(),
         bank: z.string().max(100).optional(),
         reference: z.string().max(100).optional(),
         cardBrand: z.string().max(40).optional(),

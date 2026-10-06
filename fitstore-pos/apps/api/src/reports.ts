@@ -13,7 +13,9 @@ import {
   netProfit,
   averageTicket,
   can,
-  allocationCost,
+  bookedLineCosts,
+  replayReturns,
+  returnedAt,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -91,6 +93,8 @@ export class ReportsController {
       priorYear,
       priorYearReturns,
       peakHours,
+      previousReturns,
+      collected,
     ] = await Promise.all([
       this.db.sale.aggregate({
         where,
@@ -127,9 +131,11 @@ export class ReportsController {
       this.db.$queryRaw<
         any[]
       >`SELECT c.name,c.color,SUM(i."lineTotal") AS total FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${range.gte} AND s."createdAt"<=${range.lte} GROUP BY c.name,c.color ORDER BY total DESC`,
+      // Cómo se cobraron las ventas del período: el crédito es su propio
+      // método y sus abonos no se suman otra vez (R9-dinero-9).
       this.db.payment.groupBy({
         by: ["method"],
-        where: { sale: where },
+        where: { sale: where, entryType: { not: "installment" } },
         _sum: { amount: true, feeAmount: true },
       }),
       this.db.$queryRaw<
@@ -156,6 +162,22 @@ export class ReportsController {
       this.db.$queryRaw<
         any[]
       >`SELECT EXTRACT(ISODOW FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS day, EXTRACT(HOUR FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS hour, COUNT(*)::int AS invoices, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${range.gte} AND "createdAt"<=${range.lte} GROUP BY day,hour ORDER BY day,hour`,
+      // La tendencia compara ingresos netos de devoluciones (R9-dinero-10).
+      this.db.saleReturn.aggregate({
+        where: { branchId: actor.branchId, createdAt: previousRange },
+        _sum: { total: true },
+      }),
+      // Abonos cobrados en el período (fecha del abono, no de la venta): su
+      // comisión bancaria es gasto del período en que entró (R9-dinero-9).
+      this.db.payment.aggregate({
+        where: {
+          entryType: "installment",
+          status: "ok",
+          createdAt: range,
+          sale: { branchId: actor.branchId, status: "completed" },
+        },
+        _sum: { feeAmount: true },
+      }),
     ]);
     const revenue = money(
         d(sales._sum.total ?? 0).minus(returns._sum.total ?? 0),
@@ -169,9 +191,14 @@ export class ReportsController {
       ),
       expense = Number(expenses._sum.amount ?? 0),
       fees = money(
-        payments.reduce((a, p) => a.plus(p._sum.feeAmount ?? 0), d(0)),
+        payments.reduce(
+          (a, p) => a.plus(p._sum.feeAmount ?? 0),
+          d(collected._sum.feeAmount ?? 0),
+        ),
       ),
-      prior = Number(previous._sum.total ?? 0);
+      prior = money(
+        d(previous._sum.total ?? 0).minus(previousReturns._sum.total ?? 0),
+      );
     return safe(
       {
         revenue,
@@ -204,7 +231,8 @@ export class ReportsController {
         fees,
         invoices: sales._count,
         ticketAverage: averageTicket(revenue, sales._count),
-        trend: prior ? money(((revenue - prior) / prior) * 100) : 0,
+        // Con un neto anterior en cero o negativo no hay base de comparación.
+        trend: prior > 0 ? money(((revenue - prior) / prior) * 100) : 0,
         inventoryCost: Number(variants[0]?.cost ?? 0),
         inventoryRetail: Number(variants[0]?.retail ?? 0),
         daily: daily.map((i) => ({ day: i.day, total: Number(i.total) })),
@@ -476,13 +504,51 @@ export class ReportsController {
           (s) => users.find((u) => u.id === s.sellerId)?.name || s.sellerId,
           (s) => Number(s.total),
         ).map((g) => ({ Vendedor: g.name, Ventas: g.amount }));
-      } else if (name === "by-payment")
-        rows = group(
-          sales.flatMap((s) => s.payments),
-          (p) => p.method,
-          (p) => Number(p.amount),
-        ).map((g) => ({ Método: g.name, Monto: g.amount }));
-      else if (name === "profit" || name === "abc") {
+      } else if (name === "by-payment") {
+        // Dos columnas que no se suman entre sí (R9-dinero-9). Ventas: cómo se
+        // cobraron las facturas del período, con el crédito como método
+        // propio; su suma es lo vendido. Cobros de crédito: abonos verificados
+        // por la fecha en que entraron, aunque la venta sea de otro período.
+        const collected = await this.db.payment.findMany({
+          where: {
+            entryType: "installment",
+            status: "ok",
+            createdAt: range,
+            ...(query.method ? { method: query.method } : {}),
+            sale: {
+              branchId: actor.branchId,
+              status: "completed",
+              ...(query.sellerId
+                ? { sellerId: parse(uuid, query.sellerId) }
+                : {}),
+            },
+          },
+        });
+        const methods = new Map<
+          string,
+          { sold: ReturnType<typeof d>; collected: ReturnType<typeof d> }
+        >();
+        const of = (method: string) => {
+          if (!methods.has(method))
+            methods.set(method, { sold: d(0), collected: d(0) });
+          return methods.get(method)!;
+        };
+        for (const p of sales.flatMap((s) => s.payments))
+          if (p.entryType !== "installment")
+            of(p.method).sold = of(p.method).sold.plus(p.amount);
+        for (const p of collected)
+          of(p.method).collected = of(p.method).collected.plus(p.amount);
+        rows = [...methods]
+          .map(([method, m]) => ({
+            Método: method,
+            Ventas: money(m.sold),
+            Cobros_de_crédito: money(m.collected),
+          }))
+          .sort(
+            (a, b) =>
+              b.Ventas + b.Cobros_de_crédito - (a.Ventas + a.Cobros_de_crédito),
+          );
+      } else if (name === "profit" || name === "abc") {
         const grouped = new Map<string, any>();
         for (const i of items) {
           const id = i.variant.productId;

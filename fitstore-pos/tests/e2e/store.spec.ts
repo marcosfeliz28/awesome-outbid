@@ -701,3 +701,500 @@ test("código ambiguo por mayúsculas avisa y no agrega", async ({
       data: { active: false },
     });
 });
+
+// Revisión R9 · caja: escaneo, foco, ventas en espera, descuentos y ticket.
+// Cada escenario crea sus productos con códigos al azar y los desactiva al final.
+const r9Code = (first: string) =>
+  first + String(Math.floor(Math.random() * 9000000) + 1000000);
+async function r9Headers(request: any) {
+  const auth = await (
+    await request.post("/api/auth/login", {
+      data: { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" },
+    })
+  ).json();
+  const headers = { Authorization: "Bearer " + auth.accessToken };
+  // El stock sólo se mueve desde un equipo aprobado (el dueño se aprueba solo).
+  const id = crypto.randomUUID();
+  const registered = await request.post("/api/terminals/register", {
+    headers,
+    data: { id, name: "E2E R9 caja", secret: "e2e-r9-caja-" + id },
+  });
+  expect(registered.ok()).toBe(true);
+  return headers;
+}
+async function r9Product(
+  request: any,
+  headers: any,
+  name: string,
+  code: string,
+  { price = 1500, sizes }: { price?: number; sizes?: string[] } = {},
+) {
+  const categories = await (
+    await request.get("/api/categories", { headers })
+  ).json();
+  const product = await (
+    await request.post("/api/products", {
+      headers,
+      data: {
+        name,
+        sku: "R9C-" + code,
+        categoryId: categories.find((c: any) => c.name === "Fajas").id,
+        variants: sizes
+          ? sizes.map((talla) => ({
+              sku: code + "-" + talla,
+              barcode: "R9CB-" + code + "-" + talla,
+              attributes: { talla },
+              price,
+              costAvg: 700,
+            }))
+          : [{ sku: code, barcode: "R9CB-" + code, price, costAvg: 700 }],
+      },
+    })
+  ).json();
+  expect(product.id, JSON.stringify(product)).toBeTruthy();
+  for (const v of product.variants) {
+    const stocked = await request.post("/api/inventory/adjustments", {
+      headers,
+      data: { variantId: v.id, qty: 5, reason: "E2E R9 caja" },
+    });
+    expect(stocked.ok()).toBe(true);
+  }
+  return product;
+}
+async function r9Pos(page: any) {
+  await login(page);
+  await ensureCash(page);
+  await page
+    .getByRole("button", { name: "Punto de venta", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Punto de venta" }),
+  ).toBeVisible();
+  await expect(page.locator(".product-card").first()).toBeVisible();
+  return page.getByLabel("Buscar productos");
+}
+async function r9Retire(request: any, headers: any, products: any[]) {
+  for (const p of products)
+    await request.patch("/api/products/" + p.id, {
+      headers,
+      data: { active: false },
+    });
+}
+const r9Qty = (page: any, name: string) =>
+  page
+    .locator(".cart-item", { hasText: name })
+    .locator(".quantity-control span");
+
+test("R9-caja-1: el código de un producto inactivo + Enter avisa y no agrega otro que lo contiene", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const code = r9Code("4");
+  const inactive = await r9Product(
+    request,
+    headers,
+    "Chaleco E2E inactivo " + code,
+    code,
+  );
+  await r9Retire(request, headers, [inactive]);
+  const name = "Tribulus E2E " + code + " - 90 cápsulas";
+  const other = await r9Product(request, headers, name, r9Code("5"));
+  const search = await r9Pos(page);
+  await search.fill(code);
+  await search.press("Enter");
+  await expect(
+    page.getByText("Código no encontrado: " + code + "."),
+  ).toBeVisible();
+  await expect(page.locator(".cart-items")).not.toContainText(name);
+  await expect(search).toHaveValue(code);
+  // La lista sigue a la vista para elegirlo a mano si era ése.
+  await expect(page.locator(".product-grid")).toContainText(name);
+  // Por palabras del nombre, Enter sí agrega el único resultado y limpia.
+  await search.fill("tribulus e2e " + code);
+  await search.press("Enter");
+  await expect(page.getByText(name + " agregado.")).toBeVisible();
+  await expect(r9Qty(page, name)).toHaveText("1");
+  await expect(search).toHaveValue("");
+  await r9Retire(request, headers, [other]);
+});
+
+test("R9-caja-2: tras el aviso de código ambiguo, el siguiente escaneo reemplaza el código", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const dup = r9Code("6"),
+    nextCode = r9Code("6");
+  const a = await r9Product(request, headers, "Faja E2E duplicada " + dup, dup);
+  const next = await r9Product(
+    request,
+    headers,
+    "Faja E2E siguiente " + nextCode,
+    nextCode,
+  );
+  // Un dato heredado con el mismo código en otro producto (la API ya no lo
+  // deja crear): se simula en la respuesta del catálogo.
+  await page.route(
+    (url: URL) => url.pathname === "/api/products",
+    async (route: any) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      const original = body.items?.find((p: any) => p.id === a.id);
+      if (original) {
+        body.items.push({
+          ...original,
+          id: crypto.randomUUID(),
+          name: "Faja E2E copia " + dup,
+          variants: original.variants.map((v: any) => ({
+            ...v,
+            id: crypto.randomUUID(),
+            sku: "copia-" + v.sku,
+            barcode: v.sku,
+          })),
+        });
+        body.total += 1;
+      }
+      await route.fulfill({ response, json: body });
+    },
+  );
+  const search = await r9Pos(page);
+  await search.fill(dup);
+  await search.press("Enter");
+  await expect(page.getByText(/es de 2 productos/)).toBeVisible();
+  await expect(search).toHaveValue(dup);
+  // El lector escribe el siguiente código y Enter: reemplaza al anterior.
+  await page.keyboard.type(nextCode);
+  await page.keyboard.press("Enter");
+  await expect(r9Qty(page, "Faja E2E siguiente " + nextCode)).toHaveText("1");
+  await expect(search).toHaveValue("");
+  await expect(page.locator(".cart-items")).not.toContainText("duplicada");
+  await r9Retire(request, headers, [a, next]);
+});
+
+test("R9-caja-3: después de un clic, el lector agrega el producto escaneado y no repite el que tenía el foco", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const tag = r9Code("7");
+  const names = ["uno", "dos", "tres"].map(
+    (n) => "Faja E2E foco " + n + " " + tag,
+  );
+  const codes = names.map(() => r9Code("7"));
+  const created: any[] = [];
+  for (const [i, name] of names.entries())
+    created.push(await r9Product(request, headers, name, codes[i]));
+  const sized = "Faja E2E foco tallas " + tag;
+  created.push(
+    await r9Product(request, headers, sized, r9Code("7"), {
+      sizes: ["S", "M"],
+    }),
+  );
+  const search = await r9Pos(page);
+  // Clic en la tarjeta y luego el lector (teclas + Enter, sin fill).
+  await search.fill("foco uno " + tag);
+  await page.locator(".product-card", { hasText: names[0] }).click();
+  await expect(r9Qty(page, names[0])).toHaveText("1");
+  await page.keyboard.type(codes[1]);
+  await page.keyboard.press("Enter");
+  await expect(r9Qty(page, names[1])).toHaveText("1");
+  await expect(r9Qty(page, names[0])).toHaveText("1");
+  // Botón + del carrito y luego el lector.
+  await page.getByRole("button", { name: "Aumentar " + names[0] }).click();
+  await expect(r9Qty(page, names[0])).toHaveText("2");
+  await page.keyboard.type(codes[2]);
+  await page.keyboard.press("Enter");
+  await expect(r9Qty(page, names[2])).toHaveText("1");
+  await expect(r9Qty(page, names[0])).toHaveText("2");
+  // Cerrar la ventana de variantes y luego el lector.
+  await search.fill("foco tallas " + tag);
+  await page.locator(".product-card", { hasText: sized }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cerrar" })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.keyboard.type(codes[1]);
+  await page.keyboard.press("Enter");
+  await expect(r9Qty(page, names[1])).toHaveText("2");
+  await expect(page.locator(".cart-items")).not.toContainText(sized);
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await r9Retire(request, headers, created);
+});
+
+test("R9-caja-9 y R9-caja-6: el ticket muestra los descuentos y tras «Nueva venta» el lector agrega", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const [c1, c2, c3] = [r9Code("8"), r9Code("8"), r9Code("8")];
+  const one = "Faja E2E ticket uno " + c1,
+    two = "Faja E2E ticket dos " + c2,
+    three = "Faja E2E ticket tres " + c3;
+  const created = [
+    await r9Product(request, headers, one, c1),
+    await r9Product(request, headers, two, c2, { price: 1000 }),
+    await r9Product(request, headers, three, c3, { price: 500 }),
+  ];
+  const search = await r9Pos(page);
+  for (const code of [c1, c2]) {
+    await search.fill(code);
+    await search.press("Enter");
+  }
+  await page.getByLabel("Descuento por monto de " + two).fill("100");
+  await page.getByLabel("Descuento global").fill("10");
+  // 1,500 − 10 % = 1,350 (−150); 1,000 con RD$ 100 y 10 % global = 810 (−190).
+  await expect(page.locator(".cart-total")).toContainText("RD$ 2,160.00");
+  await page.getByRole("button", { name: /Cobrar/ }).click();
+  await page.getByRole("button", { name: "Agregar pago" }).click();
+  await page.getByRole("button", { name: "Finalizar venta" }).click();
+  await expect(
+    page.getByText("Venta registrada", { exact: true }),
+  ).toBeVisible();
+  const ticket = page.locator(".receipt-only");
+  await expect(ticket).toContainText("1 × RD$ 1,500.00");
+  await expect(ticket).toContainText("Descuento −RD$ 150.00");
+  await expect(ticket).toContainText("Descuento −RD$ 190.00");
+  await expect(ticket).toContainText("Subtotal RD$ 2,500.00");
+  await expect(ticket).toContainText("Descuentos −RD$ 340.00");
+  await expect(ticket).toContainText("Total RD$ 2,160.00");
+  // R9-caja-6 A: tras «Nueva venta» el foco no queda perdido.
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.keyboard.type(c3);
+  await page.keyboard.press("Enter");
+  await expect(r9Qty(page, three)).toHaveText("1");
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await r9Retire(request, headers, created);
+});
+
+test("R9-caja-6: tras elegir una variante o agregar con Enter por palabras, el siguiente escaneo no se pierde", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const tag = r9Code("3");
+  const one = "Faja E2E palabras uno " + tag,
+    two = "Faja E2E palabras dos " + tag,
+    sized = "Faja E2E palabras tallas " + tag;
+  const [c1, c2] = [r9Code("3"), r9Code("3")];
+  const created = [
+    await r9Product(request, headers, one, c1),
+    await r9Product(request, headers, two, c2),
+    await r9Product(request, headers, sized, r9Code("3"), {
+      sizes: ["S", "M"],
+    }),
+  ];
+  const search = await r9Pos(page);
+  // B) Enter por palabras abre la ventana de variantes; se elige con el ratón.
+  await search.fill("palabras tallas " + tag);
+  await search.press("Enter");
+  await page.getByRole("dialog").getByRole("button", { name: /^S / }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(r9Qty(page, sized)).toHaveText("1");
+  await page.keyboard.type(c1);
+  await page.keyboard.press("Enter");
+  await expect(r9Qty(page, one)).toHaveText("1");
+  // C) Enter por palabras agrega el único resultado y limpia el buscador.
+  await search.fill("palabras dos " + tag);
+  await search.press("Enter");
+  await expect(r9Qty(page, two)).toHaveText("1");
+  await expect(search).toHaveValue("");
+  await page.keyboard.type(c1);
+  await page.keyboard.press("Enter");
+  await expect(r9Qty(page, one)).toHaveText("2");
+  // D) Un Enter que no agrega nada lo avisa y deja el texto seleccionado.
+  await search.fill("palabras " + tag);
+  await search.press("Enter");
+  await expect(page.getByText(/No se agregó nada/)).toBeVisible();
+  await page.keyboard.type(c2);
+  await page.keyboard.press("Enter");
+  await expect(r9Qty(page, two)).toHaveText("2");
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await r9Retire(request, headers, created);
+});
+
+test("R9-caja-4 y R9-caja-7: la venta en espera conserva descuentos y cliente (también con F8)", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const [c1, c2] = [r9Code("2"), r9Code("2")];
+  const one = "Faja E2E espera uno " + c1,
+    two = "Faja E2E espera dos " + c2;
+  const created = [
+    await r9Product(request, headers, one, c1),
+    await r9Product(request, headers, two, c2, { price: 1000 }),
+  ];
+  const customerName = "Cliente E2E espera " + c1;
+  const customer = await (
+    await request.post("/api/customers", {
+      headers,
+      data: { name: customerName, phone: "8095550000" },
+    })
+  ).json();
+  expect(customer.id, JSON.stringify(customer)).toBeTruthy();
+  const search = await r9Pos(page);
+  await search.fill(c1);
+  await search.press("Enter");
+  await page.getByLabel("Descuento por monto de " + one).fill("100");
+  await page.getByLabel("Descuento global").fill("5");
+  await expect(page.locator(".cart-total")).toContainText("RD$ 1,330.00");
+  await page.keyboard.press("F4");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: new RegExp(customerName) })
+    .click();
+  await expect(page.locator(".customer-selector")).toContainText(customerName);
+  await page.keyboard.press("F8");
+  await expect(page.getByText("Venta guardada en espera.")).toBeVisible();
+  await expect(page.locator(".cart-items")).not.toContainText(one);
+  // Otra clienta con 10 % global. Al recuperar la venta en espera, la actual
+  // queda en espera y la recuperada vuelve con sus descuentos y su cliente.
+  await search.fill(c2);
+  await search.press("Enter");
+  await page.getByLabel("Descuento global").fill("10");
+  await expect(page.locator(".cart-total")).toContainText("RD$ 900.00");
+  page.once("dialog", (d: any) => d.accept());
+  await page
+    .locator(".heading-actions")
+    .getByRole("button", { name: "En espera" })
+    .click();
+  await page.locator(".held-row").first().click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".cart-items")).toContainText(one);
+  await expect(page.locator(".cart-items")).not.toContainText(two);
+  await expect(page.getByLabel("Descuento global")).toHaveValue("5");
+  await expect(page.getByLabel("Descuento por monto de " + one)).toHaveValue(
+    "100",
+  );
+  await expect(page.locator(".cart-total")).toContainText("RD$ 1,330.00");
+  await expect(page.locator(".customer-selector")).toContainText(customerName);
+  // La venta de la otra clienta no se perdió: quedó en espera con su 10 %.
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await page
+    .locator(".heading-actions")
+    .getByRole("button", { name: "En espera" })
+    .click();
+  await page.locator(".held-row").first().click();
+  await expect(page.locator(".cart-items")).toContainText(two);
+  await expect(page.getByLabel("Descuento global")).toHaveValue("10");
+  await expect(page.locator(".cart-total")).toContainText("RD$ 900.00");
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await r9Retire(request, headers, created);
+});
+
+test("R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const [c1, c2, c3] = [r9Code("1"), r9Code("1"), r9Code("1")];
+  const keep = "Faja E2E recuperar sigue " + c1,
+    gone = "Faja E2E recuperar inactiva " + c2,
+    current = "Faja E2E recuperar actual " + c3;
+  const created = [
+    await r9Product(request, headers, keep, c1),
+    await r9Product(request, headers, gone, c2),
+    await r9Product(request, headers, current, c3),
+  ];
+  const heldWith = async (product: any) =>
+    ((await (await request.get("/api/quotes", { headers })).json()) as any[])
+      .filter((q) =>
+        q.items.some((i: any) => i.variantId === product.variants[0].id),
+      )
+      .map((q) => q.id);
+  let search = await r9Pos(page);
+  for (const code of [c1, c2]) {
+    await search.fill(code);
+    await search.press("Enter");
+  }
+  await page
+    .locator(".cart-bottom-actions")
+    .getByRole("button", { name: "En espera" })
+    .click();
+  await expect(page.getByText("Venta guardada en espera.")).toBeVisible();
+  expect(await heldWith(created[1])).toHaveLength(1);
+  // El gerente desactiva uno de los productos y la caja recarga su catálogo.
+  await request.patch("/api/products/" + created[1].id, {
+    headers,
+    data: { active: false },
+  });
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Punto de venta", exact: true })
+    .click();
+  search = page.getByLabel("Buscar productos");
+  await search.fill(c3);
+  await search.press("Enter");
+  await expect(r9Qty(page, current)).toHaveText("1");
+  // Primero se cancela el aviso: no cambia nada.
+  const messages: string[] = [];
+  page.once("dialog", (d: any) => {
+    messages.push(d.message());
+    d.dismiss();
+  });
+  await page
+    .locator(".heading-actions")
+    .getByRole("button", { name: "En espera" })
+    .click();
+  await page.locator(".held-row").first().click();
+  await expect.poll(() => messages.length).toBe(1);
+  expect(messages[0]).toContain(gone);
+  expect(messages[0]).toContain("venta actual");
+  await expect(r9Qty(page, current)).toHaveText("1");
+  expect(await heldWith(created[1])).toHaveLength(1);
+  // Al aceptar, la venta actual queda en espera y se recupera lo disponible.
+  page.once("dialog", (d: any) => d.accept());
+  await page.locator(".held-row").first().click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(r9Qty(page, keep)).toHaveText("1");
+  await expect(page.locator(".cart-items")).not.toContainText(gone);
+  await expect(page.locator(".cart-items")).not.toContainText(current);
+  expect(await heldWith(created[1])).toHaveLength(0);
+  const saved = await heldWith(created[2]);
+  expect(saved).toHaveLength(1);
+  await request.post("/api/quotes/" + saved[0] + "/convert", {
+    headers,
+    data: {},
+  });
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await r9Retire(request, headers, created);
+});
+
+test("R9-caja-8: el descuento de línea se limita al 100 % y al importe de la línea", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const code = r9Code("9");
+  const name = "Faja E2E límite " + code;
+  const product = await r9Product(request, headers, name, code);
+  const search = await r9Pos(page);
+  await search.fill(code);
+  await search.press("Enter");
+  const percent = page.getByLabel("Descuento de " + name, { exact: true });
+  const amount = page.getByLabel("Descuento por monto de " + name, {
+    exact: true,
+  });
+  const total = page.locator(".cart-total");
+  await percent.fill("150");
+  await expect(percent).toHaveValue("100");
+  await expect(total).toContainText("RD$ 0.00");
+  await percent.fill("0");
+  await amount.fill("2000");
+  await expect(amount).toHaveValue("1500");
+  await expect(total).toContainText("RD$ 0.00");
+  await amount.fill("0");
+  await page.getByRole("button", { name: "Aumentar " + name }).click();
+  await amount.fill("2500");
+  await expect(total).toContainText("RD$ 500.00");
+  // Al bajar la cantidad, el monto se ajusta al nuevo importe de la línea.
+  await page.getByRole("button", { name: "Reducir " + name }).click();
+  await expect(amount).toHaveValue("1500");
+  await expect(total).toContainText("RD$ 0.00");
+  await expect(total).not.toContainText("-");
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await r9Retire(request, headers, [product]);
+});

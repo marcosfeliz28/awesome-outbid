@@ -26,6 +26,9 @@ import {
   saleSchema,
   money,
   d,
+  moneyAmount,
+  bookedLineCosts,
+  replayReturns,
 } from "./index";
 describe("Fórmulas financieras", () => {
   it("costo promedio ponderado", () => {
@@ -281,6 +284,104 @@ describe("R9-dinero-11 · el resumen de cada línea cuadra", () => {
       discount: 10,
       total: 90.05,
       tax: 13.74,
+    });
+  });
+});
+
+describe("R9-dinero-5 · importes con 2 decimales", () => {
+  it("rechaza fracciones de centavo y tolera el ruido de coma flotante", () => {
+    expect(moneyAmount().safeParse(1.005).success).toBe(false);
+    expect(moneyAmount().safeParse(1.01).success).toBe(true);
+    expect(moneyAmount().safeParse(0.1 + 0.2).success).toBe(true);
+    expect(moneyAmount().safeParse(0).success).toBe(false);
+    expect(moneyAmount(100, true).safeParse(0).success).toBe(true);
+    const sale = (payment: number, discountAmount?: number) =>
+      saleSchema.safeParse({
+        offlineUuid: "11111111-1111-4111-8111-111111111111",
+        cashSessionId: "11111111-1111-4111-8111-111111111111",
+        items: [
+          {
+            variantId: "11111111-1111-4111-8111-111111111111",
+            qty: 1,
+            discountAmount,
+          },
+        ],
+        payments: [{ method: "cash", amount: payment }],
+      }).success;
+    expect(sale(100)).toBe(true);
+    expect(sale(100.005)).toBe(false);
+    expect(sale(100, 0.005)).toBe(false);
+  });
+});
+
+describe("R9-dinero-1/6/7 · costo contabilizado de ventas y devoluciones", () => {
+  const combo = (id: string, qty: number, cost: number, exact = true) => ({
+    id,
+    qty,
+    unitCost: money(cost),
+    variantId: "kit-" + id,
+    stockAllocations: [
+      { variantId: "comp", qty: qty / 2, unitCost: cost * 2, exact },
+    ],
+  });
+  it("una venta antigua reparte Sale.costTotal entre sus líneas", () => {
+    const sale = {
+      costTotal: 3.33,
+      items: [combo("a", 1, 1.665), combo("b", 1, 1.665)],
+    };
+    const booked = bookedLineCosts(sale);
+    expect([...booked.values()].map((v) => v.toNumber())).toEqual([
+      1.67, 1.66,
+    ]);
+    // Una venta nueva conserva el costo redondeado de cada línea.
+    expect(
+      [...bookedLineCosts({ ...sale, costTotal: 3.34 }).values()].map((v) =>
+        v.toNumber(),
+      ),
+    ).toEqual([1.67, 1.67]);
+  });
+  it("reconstruye por línea la devolución de la ronda 7", () => {
+    const line = (id: string, cost: number) => ({
+      id,
+      qty: 1,
+      unitCost: cost,
+      variantId: "v" + id,
+      stockAllocations: [{ variantId: "v" + id, qty: 1, unitCost: cost }],
+    });
+    const sale = {
+      costTotal: 1.67,
+      items: [line("a", 0.49), line("b", 0.59), line("c", 0.59)],
+    };
+    const { parts, lines } = replayReturns(sale, [
+      {
+        id: "r1",
+        costTotal: 0.02,
+        items: ["a", "b", "c"].map((saleItemId) => ({
+          saleItemId,
+          qty: 0.01,
+          restock: true,
+        })),
+      },
+    ]);
+    expect([0, 1, 2].map((n) => parts.get("r1#" + n)!.cost.toNumber())).toEqual(
+      [0, 0.01, 0.01],
+    );
+    expect(lines.get("a")!.returned.toNumber()).toBe(0.01);
+  });
+  it("concilia con costTotal la devolución de las rondas 3 a 6", () => {
+    const sale = { costTotal: 16.65, items: [combo("k", 10, 1.665, false)] };
+    const { parts, lines } = replayReturns(sale, [
+      {
+        id: "r1",
+        costTotal: 8.35,
+        items: [{ saleItemId: "k", qty: 5, restock: true }],
+      },
+    ]);
+    expect(parts.get("r1#0")!.cost.toNumber()).toBe(8.35);
+    expect(lines.get("k")).toMatchObject({
+      returned: d(5),
+      restocked: d(8.35),
+      waste: d(0),
     });
   });
 });
