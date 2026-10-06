@@ -21,6 +21,7 @@ import {
   X,
   FileText,
   Camera,
+  Truck,
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import {
@@ -56,6 +57,7 @@ import {
   searchWords,
   toast,
 } from "./helpers";
+import { InvoicePrint, METHOD_LABEL, PrintSheet, printSoon } from "./Prints";
 import {
   announcePriceChanges,
   CashElsewhere,
@@ -1343,6 +1345,15 @@ function Checkout({
       setError("Selecciona un cliente y fecha de vencimiento.");
       return;
     }
+    // El servidor no acepta crédito y contraentrega en la misma venta.
+    const other =
+      method === "cod" ? "credit" : method === "credit" ? "cod" : "";
+    if (other && payments.some((p) => p.method === other)) {
+      setError(
+        "Crédito y contraentrega no se combinan en una venta. Usa una de las dos con efectivo, tarjeta o transferencia.",
+      );
+      return;
+    }
     const next = [
       ...payments,
       {
@@ -1425,8 +1436,12 @@ function Checkout({
       // seguro aunque la venta haya llegado: la sincronización la reconoce
       // por offlineUuid (R9-offline-1/2).
       const saveLocal = async (fallback: boolean) => {
+        // Contraentrega: queda un saldo pendiente en el servidor, como el crédito.
         const credit = payments.some(
-          (p) => p.method === "credit" || p.method === "credit_note",
+          (p) =>
+            p.method === "credit" ||
+            p.method === "credit_note" ||
+            p.method === "cod",
         );
         // Sin respuesta (504 o conexión cortada tras enviar), un crédito o
         // una venta con PIN pudo quedar registrada: decir que requería
@@ -1444,7 +1459,7 @@ function Checkout({
         }
         if (credit)
           throw new Error(
-            "Las ventas a crédito y notas de crédito requieren conexión.",
+            "Las ventas a crédito, contraentrega y notas de crédito requieren conexión.",
           );
         if (needsPin)
           throw new Error(
@@ -1506,7 +1521,15 @@ function Checkout({
             }
           : line;
       });
-      setReceipt({ ...sale, snapshot: printed, change: payment.change });
+      setReceipt({
+        ...sale,
+        snapshot: printed,
+        change: payment.change,
+        tendered: payments,
+        createdAt: sale.createdAt ?? new Date().toISOString(),
+      });
+      // Impresión automática de la factura (Ajustes).
+      if (config?.autoPrintReceipt) printSoon();
       clearCart();
       await client.invalidateQueries();
     } catch (e: any) {
@@ -1554,19 +1577,6 @@ function Checkout({
     );
   };
   if (receipt) {
-    // Subtotal y descuentos del ticket: las líneas suman el total (R9-caja-9).
-    const receiptGross = money(
-      receipt.snapshot.reduce(
-        (a: any, i: any) => a.plus(d(i.qty).times(i.unitPrice)),
-        d(0),
-      ),
-    );
-    const receiptDiscount = money(
-      receipt.snapshot.reduce(
-        (a: any, i: any) => a.plus(i.discount ?? 0),
-        d(0),
-      ),
-    );
     const text = `FitStore · ${receipt.number}\nTotal: ${formatMoney(receipt.total)}\nGracias por tu compra. Documento interno, no fiscal.`;
     const customer = customers.find((c) => c.id === customerId);
     return (
@@ -1595,9 +1605,9 @@ function Checkout({
           </p>
         </div>
         <div className="receipt-actions">
-          <Button variant="secondary" onClick={() => window.print()}>
-            <Printer size={17} />
-            Ticket {config?.receiptWidth || 80} mm
+          <Button className="print-big" onClick={() => window.print()}>
+            <Printer size={20} />
+            Imprimir factura
           </Button>
           {!receipt.offline && (
             <Button
@@ -1645,47 +1655,9 @@ function Checkout({
         <Button className="full-width" onClick={onClose}>
           Nueva venta <Plus size={18} />
         </Button>
-        <div
-          className="receipt-only"
-          style={{ width: (config?.receiptWidth || 80) + "mm" }}
-        >
-          <h2>FitStore</h2>
-          <p>{receipt.number}</p>
-          <p>Documento interno — no fiscal</p>
-          {receipt.snapshot.map((i: any) => (
-            <p key={i.sku}>
-              {i.name}
-              <br />
-              {i.qty} × {formatMoney(i.unitPrice)}
-              {Number(i.discount) > 0 && (
-                <>
-                  <br />
-                  Descuento −{formatMoney(i.discount)}
-                </>
-              )}
-            </p>
-          ))}
-          <hr />
-          {receiptDiscount > 0 && (
-            <>
-              <p>Subtotal {formatMoney(receiptGross)}</p>
-              <p>Descuentos −{formatMoney(receiptDiscount)}</p>
-            </>
-          )}
-          <h3>Total {formatMoney(receipt.total)}</h3>
-          <p>ITBIS {formatMoney(receipt.taxTotal)}</p>
-          {Number(receipt.creditBalance) > 0 && (
-            <p>Saldo a crédito {formatMoney(receipt.creditBalance)}</p>
-          )}
-          {receipt.ncfType && (
-            <p>Solicitud NCF {receipt.ncfType} · pendiente de emisión fiscal</p>
-          )}
-          <p>Cambio {formatMoney(receipt.change)}</p>
-          {receipt.offline && (
-            <p>RECIBO PROVISIONAL · PENDIENTE DE SINCRONIZAR</p>
-          )}
-          <p>¡Gracias por tu compra!</p>
-        </div>
+        <PrintSheet width={config?.receiptWidth}>
+          <InvoicePrint sale={receipt} config={config} customer={customer} />
+        </PrintSheet>
       </Modal>
     );
   }
@@ -1706,6 +1678,7 @@ function Checkout({
           { id: "transfer", label: "Transferencia", icon: Landmark },
           { id: "credit_note", label: "Nota de crédito", icon: FileText },
           { id: "credit", label: "A crédito", icon: CreditCard },
+          { id: "cod", label: "Contraentrega", icon: Truck },
         ]
           .filter((m) => m.id !== "credit" || config?.allowCreditSales)
           .map((m) => (
@@ -1789,6 +1762,13 @@ function Checkout({
                 ))}
             </select>
           </label>
+        )}
+        {method === "cod" && (
+          <p className="cod-hint">
+            Contraentrega: la venta sale del inventario y este importe queda
+            pendiente hasta que el mensajero traiga el dinero. Regístralo luego
+            en Caja › Contraentregas pendientes.
+          </p>
         )}
         {method === "credit" && (
           <label className="field">
@@ -1922,15 +1902,7 @@ function Checkout({
         {payments.map((p, index) => (
           <div key={index}>
             <span>
-              {p.method === "cash"
-                ? "Efectivo"
-                : p.method === "card"
-                  ? "Tarjeta"
-                  : p.method === "transfer"
-                    ? "Transferencia"
-                    : p.method === "credit_note"
-                      ? "Nota de crédito"
-                      : "A crédito"}
+              {METHOD_LABEL[p.method] ?? p.method}
               <small>{p.approvalCode || p.reference || ""}</small>
             </span>
             <strong>{formatMoney(p.amount)}</strong>

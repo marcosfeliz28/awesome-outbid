@@ -1076,13 +1076,14 @@ test("R9-caja-9 y R9-caja-6: el ticket muestra los descuentos y tras «Nueva ven
   await expect(
     page.getByText("Venta registrada", { exact: true }),
   ).toBeVisible();
-  const ticket = page.locator(".receipt-only");
-  await expect(ticket).toContainText("1 × RD$ 1,500.00");
+  // Factura con el formato de la tienda (docs/tienda/CUADRE_REPORTES_FACTURA.md).
+  const ticket = page.locator(".thermal-print");
+  await expect(ticket).toContainText("1 X RD$ 1,500.00");
   await expect(ticket).toContainText("Descuento −RD$ 150.00");
   await expect(ticket).toContainText("Descuento −RD$ 190.00");
-  await expect(ticket).toContainText("Subtotal RD$ 2,500.00");
-  await expect(ticket).toContainText("Descuentos −RD$ 340.00");
-  await expect(ticket).toContainText("Total RD$ 2,160.00");
+  await expect(ticket).toContainText("Sub-Total RD$ 2,500.00");
+  await expect(ticket).toContainText("Descuento −RD$ 340.00");
+  await expect(ticket).toContainText("Total a pagar RD$ 2,160.00");
   // R9-caja-6 A: tras «Nueva venta» el foco no queda perdido.
   await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -2246,7 +2247,9 @@ test("Aceptación 35-37 en el celular: Mercancía recibe una orden con documento
   await expect(row).toContainText(supplier.name);
   await expect(row).toContainText("1 dañada");
   await row.getByRole("button", { name: "Ver" }).click();
-  const receipt = page.getByRole("dialog", { name: "Comprobante de recepción" });
+  const receipt = page.getByRole("dialog", {
+    name: "Comprobante de recepción",
+  });
   await expect(receipt).toContainText(p.name);
   await expect(receipt).toContainText("FAC-E2E");
   await expect(receipt).toContainText(ncf);
@@ -2385,5 +2388,168 @@ test("Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible
   await request.patch("/api/products/" + p.id, {
     headers,
     data: { active: false },
+  });
+});
+
+// ── Tienda: impresos de la impresora térmica, contraentrega y atajos ──
+test.describe("Tienda-pantallas", () => {
+  // window.print abre el diálogo del navegador: se cuenta en vez de abrirlo.
+  const stubPrint = (page: any) =>
+    page.addInitScript(() => {
+      (window as any).__prints = 0;
+      window.print = () => {
+        (window as any).__prints++;
+      };
+    });
+  const prints = (page: any) => page.evaluate(() => (window as any).__prints);
+
+  test("Tienda-pantallas: cierre por denominaciones con entregado/dejado imprime el cuadre y se reimprime con sus reportes", async ({
+    page,
+  }) => {
+    await stubPrint(page);
+    await login(page);
+    await ensureCash(page);
+    await page
+      .getByRole("button", { name: "Cerrar y arquear" })
+      .first()
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: "Cuadre y cierre de caja",
+    });
+    await expect(dialog).toBeVisible();
+    // 3 × 100 + 4 × 50 = 500, el fondo de la caja.
+    await dialog.getByLabel("Cantidad de 100", { exact: true }).fill("3");
+    await dialog.getByLabel("Cantidad de 50", { exact: true }).fill("4");
+    await expect(dialog.locator(".count-subtotal")).toContainText("RD$ 500.00");
+    await dialog.getByLabel("Entregado").fill("300");
+    await expect(dialog.locator(".count-left")).toContainText("RD$ 200.00");
+    await dialog
+      .getByRole("button", { name: "Cerrar caja e imprimir cuadre" })
+      .click();
+    const sheet = page.locator(".thermal-print");
+    await expect(sheet).toContainText("Cuadre de Caja");
+    await expect(sheet).toContainText("Detalles de monedas");
+    await expect(sheet).toContainText("100 × 3 = 300.00");
+    await expect(sheet).toContainText("Sub-total 500.00");
+    await expect(sheet).toContainText("2-Efectivo RD$ 500.00");
+    await expect(sheet).toContainText("18-Fondo Caja inicial 500.00");
+    await expect(sheet).toContainText(
+      "12-Diferencias = (2-Efectivo introducido + 5-Vale de caja) − 10-Total venta efectivo − 18-Total fondo",
+    );
+    await expect(sheet).toContainText("Entregado 300.00");
+    await expect(sheet).toContainText("Dejado en caja 200.00");
+    await expect(sheet).toContainText("Firma cajera");
+    await expect(sheet).toContainText("FIN DEL CUADRE");
+    await expect.poll(() => prints(page)).toBeGreaterThan(0);
+    // Desde el historial: reimprimir el cuadre y los dos reportes.
+    await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+    const row = page.locator(".cash-history-actions").first();
+    await row.getByRole("button", { name: "Venta diaria" }).click();
+    await expect(sheet).toContainText("REPORTE DE LA VENTA DIARIA DE USUARIO");
+    await expect(sheet).toContainText(
+      "Verificar si los totales tienen descuentos aplicados",
+    );
+    await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+    await row.getByRole("button", { name: "Por forma de pago" }).click();
+    await expect(sheet).toContainText("REPORTE DE VENTA USUARIO");
+    await expect(sheet).toContainText("Sub-Total por Fact.");
+    await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+    await row.getByRole("button", { name: "Cuadre" }).click();
+    await expect(sheet).toContainText("FIN DEL CUADRE");
+  });
+
+  test("Tienda-pantallas: venta con contraentrega + efectivo, factura impresa con su formato y cobro de la contraentrega", async ({
+    page,
+    request,
+  }) => {
+    await stubPrint(page);
+    const headers = await r9Headers(request);
+    const code = r9Code("7");
+    const name = "Faja E2E contraentrega " + code;
+    const product = await r9Product(request, headers, name, code, {
+      price: 1500,
+    });
+    const search = await r9Pos(page);
+    await search.fill(code);
+    await search.press("Enter");
+    await page.getByRole("button", { name: /Cobrar/ }).click();
+    await page.getByLabel("Monto del pago").fill("500");
+    await page.getByRole("button", { name: "Agregar pago" }).click();
+    await page
+      .getByRole("button", { name: "Contraentrega", exact: true })
+      .click();
+    await expect(page.getByLabel("Monto del pago")).toHaveValue("1000");
+    await page.getByRole("button", { name: "Agregar pago" }).click();
+    await page.getByRole("button", { name: "Finalizar venta" }).click();
+    await expect(
+      page.getByText("Venta registrada", { exact: true }),
+    ).toBeVisible();
+    const sheet = page.locator(".thermal-print");
+    await expect(sheet).toContainText("FACTURA");
+    await expect(sheet).toContainText("Secuencia No.");
+    await expect(sheet).toContainText("NCF");
+    await expect(sheet).toContainText("Cod. " + code);
+    await expect(sheet).toContainText("1 X RD$ 1,500.00");
+    await expect(sheet).toContainText("Total a pagar RD$ 1,500.00");
+    await expect(sheet).toContainText("Efectivo RD$ 500.00");
+    await expect(sheet).toContainText("Contraentrega RD$ 1,000.00");
+    await expect(sheet).toContainText("Cantidad de Productos 1");
+    await page.getByRole("button", { name: "Imprimir factura" }).click();
+    await expect.poll(() => prints(page)).toBeGreaterThan(0);
+    const number = (await page
+      .locator(".sale-success p")
+      .first()
+      .textContent())!.trim();
+    await page
+      .getByRole("button", { name: "Nueva venta", exact: true })
+      .click();
+    // La cajera registra el cobro cuando el mensajero trae el dinero.
+    await page.getByRole("button", { name: "Caja", exact: true }).click();
+    const pending = page.locator(".cod-row", { hasText: number });
+    await expect(pending).toContainText("RD$ 1,000.00");
+    await pending.getByRole("button", { name: "Registrar cobro" }).click();
+    const dialog = page.getByRole("dialog", { name: /Cobro de contraentrega/ });
+    await expect(dialog.getByLabel("Monto cobrado")).toHaveValue("1000");
+    await dialog.getByRole("button", { name: "Registrar cobro" }).click();
+    await expect(page.locator(".cod-row", { hasText: number })).toHaveCount(0);
+    await r9Retire(request, headers, [product]);
+  });
+
+  test("Tienda-pantallas: F9 abre Entrada de mercancía", async ({ page }) => {
+    await login(page);
+    await page.keyboard.press("F9");
+    await expect(
+      page.getByRole("heading", { name: "Mercancía", exact: true }),
+    ).toBeVisible();
+    await page.keyboard.press("F10");
+    await expect(page).toHaveURL(/#products/);
+  });
+
+  test("Tienda-pantallas: en el celular el cierre y la contraentrega no se desbordan", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await login(page);
+    // En el celular el menú está plegado: se entra a Caja por la dirección.
+    await page.evaluate(() => (location.hash = "cash"));
+    const open = page.getByRole("button", { name: "Abrir caja", exact: true });
+    await expect(
+      open.or(page.getByText("Caja abierta", { exact: true })),
+    ).toBeVisible();
+    if (await open.isVisible()) {
+      await open.click();
+      await page.getByLabel("Efectivo inicial").fill("500");
+      await page.getByRole("button", { name: "Guardar", exact: true }).click();
+    }
+    await page
+      .getByRole("button", { name: "Cerrar y arquear" })
+      .first()
+      .click();
+    await expect(page.getByLabel("Cantidad de 2000")).toBeVisible();
+    await expect(page.getByLabel("Entregado")).toBeVisible();
+    const wide = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    expect(wide).toBe(false);
   });
 });

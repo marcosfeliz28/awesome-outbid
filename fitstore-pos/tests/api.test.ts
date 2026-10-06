@@ -6892,3 +6892,226 @@ describe("Aceptación · mercancía", () => {
     expect(await stockOf(variantId)).toBe(start + 3);
   });
 });
+
+describe("Tienda · 4 cajas a la vez", () => {
+  // Cada caja es un equipo distinto (su IP) con su propia cajera.
+  const n = Date.now();
+  const ipOf = (k: number) => "198.19." + ((n % 200) + k) + "." + ((n % 250) + 1);
+  const password = "FitStore-QA-2026!";
+  async function call(path: string, data: unknown, as: string, ip: string) {
+    const r = await fetch(base + path, {
+      method: data === undefined ? "GET" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": ip,
+        Authorization: "Bearer " + as,
+      },
+      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    });
+    return { status: r.status, body: await r.json() };
+  }
+  async function must(path: string, data: unknown, as: string, ip: string) {
+    const r = await call(path, data, as, ip);
+    if (r.status >= 400)
+      throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
+    return r.body;
+  }
+  const stockOf = async (variantId: string) =>
+    Number(
+      (await fixtureDb.variant.findUniqueOrThrow({ where: { id: variantId } }))
+        .stock,
+    );
+  async function product(label: string, price: number, stock: number) {
+    const cats = await ok("/categories");
+    const p = await ok("/products", {
+      name: "QA 4cajas " + label + " " + suffix,
+      sku: "4C-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      taxRate: 0,
+      variants: [
+        {
+          sku: "4CV-" + randomUUID().slice(0, 8),
+          barcode: "4CB-" + randomUUID().slice(0, 8),
+          price,
+          costAvg: 50,
+        },
+      ],
+    });
+    products.push(p);
+    await ok("/inventory/adjustments", {
+      variantId: p.variants[0].id,
+      qty: stock,
+      reason: "QA 4 cajas",
+    });
+    return p.variants[0];
+  }
+  const cajas: any[] = [];
+  let phone = "";
+  afterAll(async () => {
+    for (const c of cajas)
+      if (c.session && !c.closed)
+        await call(
+          "/cash-sessions/" + c.session.id + "/close",
+          { countedCash: c.expectedCash ?? 0 },
+          c.token,
+          c.ip,
+        );
+  });
+
+  it("Tienda-4cajas: 4 cajas venden a la vez el mismo producto escaso mientras entra mercancía desde el celular", async () => {
+    const settings = await ok("/settings");
+    expect(settings.allowNegativeStock === true).toBe(false);
+    const roles = await ok("/roles");
+    for (let k = 1; k <= 4; k++) {
+      const email = `qa-4cajas-${k}-${randomUUID().slice(0, 8)}@example.test`;
+      const user = await ok("/users", {
+        name: "QA Cajera " + k + " " + suffix,
+        email,
+        password,
+        pin: "246813",
+        roleId: roles.find((r: any) => r.name === "seller").id,
+      });
+      actors.push(user);
+      const ip = ipOf(k);
+      const auth = await must("/auth/login", { email, password }, "", ip);
+      await enroll(auth.accessToken, "QA Caja " + k);
+      cajas.push({ k, user, ip, token: auth.accessToken });
+    }
+    // Celular de Mercancía: usuario de almacén con su propio equipo.
+    const wh = await ok("/users", {
+      name: "QA Almacén 4cajas " + suffix,
+      email: `qa-4cajas-alm-${randomUUID().slice(0, 8)}@example.test`,
+      password,
+      pin: "357913",
+      roleId: roles.find((r: any) => r.name === "warehouse").id,
+    });
+    actors.push(wh);
+    phone = (await must("/auth/login", { email: wh.email, password }, "", ipOf(9)))
+      .accessToken;
+    await enroll(phone, "QA celular mercancía");
+
+    const scarce = await product("Escaso", 100, 10);
+    const own = await Promise.all(cajas.map((c) => product("Caja " + c.k, 200, 50)));
+    // Las 4 cajas abiertas a la vez, cada una con su fondo.
+    const opened = await Promise.all(
+      cajas.map((c) =>
+        must("/cash-sessions/open", { openingAmount: 1000 * c.k }, c.token, c.ip),
+      ),
+    );
+    opened.forEach((s, i) => (cajas[i].session = s));
+    expect(new Set(opened.map((s) => s.id)).size).toBe(4);
+    for (const c of cajas) {
+      c.sales = new Set<string>();
+      c.cash = 0;
+      c.scarce = 0;
+      c.rejected = 0;
+    }
+    let received = 0;
+    const rounds = 5;
+    for (let round = 0; round < rounds; round++) {
+      const work: Promise<unknown>[] = cajas.map(async (c, i) => {
+        const items = [
+          { variantId: scarce.id, qty: 1 },
+          { variantId: own[i].id, qty: 1 },
+        ];
+        const body = {
+          offlineUuid: randomUUID(),
+          cashSessionId: c.session.id,
+          items,
+          payments: [{ method: "cash", amount: 300 }],
+          expectedTotal: 300,
+        };
+        // Reintento: la misma venta se envía dos veces a la vez.
+        const [a, b] = await Promise.all([
+          call("/sales", body, c.token, c.ip),
+          call("/sales", body, c.token, c.ip),
+        ]);
+        for (const r of [a, b])
+          expect([201, 400, 409], JSON.stringify(r.body)).toContain(r.status);
+        expect(a.status).toBe(b.status);
+        if (a.status === 201) {
+          expect(b.body.id).toBe(a.body.id);
+          c.sales.add(a.body.id);
+          c.cash += 300;
+          c.scarce += 1;
+        } else c.rejected += 1;
+      });
+      if (round % 2 === 1) {
+        // Entrada de 3 unidades del producto escaso desde el celular (con reintento).
+        const entry = {
+          id: randomUUID(),
+          direction: "entry",
+          items: [{ variantId: scarce.id, qty: 3, unitCost: 50 }],
+        };
+        work.push(
+          Promise.all([
+            must("/merchandise/operations", entry, phone, ipOf(9)),
+            must("/merchandise/operations", entry, phone, ipOf(9)),
+          ]).then(([x, y]) => {
+            expect(y.receiptId).toBe(x.receiptId);
+            received += 3;
+          }),
+        );
+      }
+      await Promise.all(work);
+      expect(await stockOf(scarce.id)).toBeGreaterThanOrEqual(0);
+    }
+    const sold = cajas.reduce((t, c) => t + c.scarce, 0);
+    expect(received).toBe(6);
+    // 20 intentos y sólo 16 unidades en total: se vendió todo lo que había, ni una más.
+    expect(sold).toBeLessThanOrEqual(16);
+    expect(sold + cajas.reduce((t, c) => t + c.rejected, 0)).toBe(20);
+    expect(await stockOf(scarce.id)).toBe(10 + received - sold);
+    // Una venta rechazada no descuenta nada: cada producto propio = 50 − sus ventas.
+    for (const [i, c] of cajas.entries())
+      expect(await stockOf(own[i].id)).toBe(50 - c.sales.size);
+    // Ningún duplicado: en la base hay exactamente las ventas aceptadas.
+    for (const c of cajas) {
+      const rows = await fixtureDb.sale.findMany({
+        where: { cashSessionId: c.session.id },
+        select: { id: true },
+      });
+      expect(new Set(rows.map((r: any) => r.id))).toEqual(c.sales);
+    }
+    // Cada caja cierra a la vez con su cuadre propio.
+    const closed = await Promise.all(
+      cajas.map((c) => {
+        c.expectedCash = 1000 * c.k + c.cash;
+        return must(
+          "/cash-sessions/" + c.session.id + "/close",
+          { countedCash: c.expectedCash },
+          c.token,
+          c.ip,
+        );
+      }),
+    );
+    closed.forEach((x, i) => {
+      cajas[i].closed = true;
+      expect(x.differences.cash).toBe(0);
+    });
+    for (const c of cajas) {
+      const cuadre = await must(
+        "/cash-sessions/" + c.session.id + "/cuadre",
+        undefined,
+        c.token,
+        c.ip,
+      );
+      const v = Object.fromEntries(cuadre.lines.map((l: any) => [l.key, l.value]));
+      expect(cuadre.cashier.id).toBe(c.user.id);
+      expect(v).toMatchObject({
+        cash: 1000 * c.k + c.cash,
+        tickets: c.sales.size,
+        cashSales: c.cash,
+        differenceDop: 0,
+        total: c.cash,
+        openingAmount: 1000 * c.k,
+      });
+      // Una cajera no ve el cuadre de otra caja.
+      const other = cajas[c.k % 4];
+      expect(
+        (await call("/cash-sessions/" + c.session.id + "/cuadre", undefined, other.token, other.ip))
+          .status,
+      ).toBe(403);
+    }
+  });
+});

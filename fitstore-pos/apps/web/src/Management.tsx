@@ -49,6 +49,16 @@ import {
   mutate,
 } from "./helpers";
 import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
+import {
+  CloseCashModal,
+  CodPending,
+  DayReports,
+  PrintModal,
+  SessionPrintButtons,
+  StoreSettings,
+  type Printing,
+} from "./Tienda";
+import { printSoon } from "./Prints";
 
 type Column = {
   label: string;
@@ -1352,7 +1362,14 @@ export function Cash() {
   });
   const [open, setOpen] = useState(false),
     [movement, setMovement] = useState(false),
-    [closing, setClosing] = useState<any>(null);
+    [closing, setClosing] = useState<any>(null),
+    [printing, setPrinting] = useState<Printing>(null);
+  // Fondo sugerido: lo dejado en el último cierre de esta caja.
+  const suggestion = useQuery({
+    queryKey: ["opening-suggestion"],
+    queryFn: () => api("/cash-sessions/opening-suggestion"),
+    enabled: open,
+  });
   const active = query.data?.find(
     (s: any) => !s.closedAt && s.userId === user.id,
   );
@@ -1432,6 +1449,7 @@ export function Cash() {
           />
         </div>
       )}
+      {can(user.permissions, "sale:write") && <CodPending session={active} />}
       {!!pending.data?.length && (
         <section className="panel pending-panel">
           <div className="panel-heading">
@@ -1502,11 +1520,8 @@ export function Cash() {
             <h2>Historial de cajas</h2>
             <p>Un registro claro de cada jornada.</p>
           </div>
-          <Button variant="ghost" onClick={() => window.print()}>
-            <Printer size={16} />
-            Imprimir
-          </Button>
         </div>
+        <DayReports onPrint={setPrinting} />
         <QueryState query={query}>
           <DataTable
             rows={query.data || []}
@@ -1552,23 +1567,36 @@ export function Cash() {
               },
               {
                 label: "Acciones",
-                render: (s) =>
-                  !s.closedAt && can(user.permissions, "sale:manage") ? (
-                    <Button variant="secondary" onClick={() => setClosing(s)}>
-                      Cerrar y arquear
-                    </Button>
-                  ) : (
-                    "—"
-                  ),
+                render: (s) => (
+                  <>
+                    {!s.closedAt && can(user.permissions, "sale:manage") && (
+                      <Button variant="secondary" onClick={() => setClosing(s)}>
+                        Cerrar y arquear
+                      </Button>
+                    )}
+                    <SessionPrintButtons session={s} onPrint={setPrinting} />
+                  </>
+                ),
               },
             ]}
           />
         </QueryState>
       </section>
-      {open && (
+      {open && !suggestion.isLoading && (
         <FormModal
           title="Abrir mi caja"
-          fields={[requiredNumber("openingAmount", "Efectivo inicial")]}
+          fields={[
+            {
+              ...requiredNumber(
+                "openingAmount",
+                "Efectivo inicial",
+                suggestion.data?.amount ?? undefined,
+              ),
+              ...(suggestion.data?.amount != null
+                ? { help: "Sugerido: lo dejado en el último cierre." }
+                : {}),
+            },
+          ]}
           onClose={() => setOpen(false)}
           onSubmit={async (data) => {
             // La caja queda asignada a este equipo (el servidor usa su registro).
@@ -1610,39 +1638,17 @@ export function Cash() {
         />
       )}
       {closing && (
-        <FormModal
-          title="Arqueo y cierre de caja"
-          fields={[
-            {
-              ...requiredNumber("countedCash", "Efectivo contado"),
-              help: "Esperado: " + formatMoney(closing.expected.cash),
-            },
-            {
-              ...requiredNumber("countedCard", "Total declarado en tarjeta"),
-              help: "Esperado: " + formatMoney(closing.expected.card),
-            },
-            {
-              ...requiredNumber(
-                "countedTransfer",
-                "Total declarado en transferencia",
-              ),
-              help: "Esperado: " + formatMoney(closing.expected.transfer),
-            },
-            { key: "notes", label: "Notas del cierre", type: "textarea" },
-          ]}
+        <CloseCashModal
+          session={closing}
           onClose={() => setClosing(null)}
-          onSubmit={async (data) => {
-            const pending = await localDB.sales
-              .filter((s) => s.input.cashSessionId === closing.id)
-              .count();
-            if (pending)
-              throw new Error(
-                "Sincroniza o resuelve las ventas pendientes de este dispositivo antes de cerrar la caja.",
-              );
-            return post("/cash-sessions/" + closing.id + "/close", data);
+          onClosed={(cuadre) => {
+            setClosing(null);
+            setPrinting({ kind: "cuadre", data: cuadre });
+            printSoon();
           }}
         />
       )}
+      <PrintModal printing={printing} onClose={() => setPrinting(null)} />
     </>
   );
 }
@@ -2661,6 +2667,24 @@ export function Configuration() {
     { key: "legalId", label: "RNC" },
     { key: "address", label: "Dirección" },
     { key: "phone", label: "Teléfono" },
+    // Encabezado de lo impreso (tienda).
+    { key: "branchName", label: "Sucursal" },
+    { key: "phone2", label: "Teléfono 2 / WhatsApp" },
+    {
+      key: "autoPrintReceipt",
+      label: "Imprimir la factura automáticamente al cobrar",
+      type: "checkbox",
+    },
+    {
+      key: "usdRate",
+      label: "Tasa del dólar (RD$ por US$)",
+      help: "Vacío: no se cuentan dólares.",
+    },
+    {
+      key: "eurRate",
+      label: "Tasa del euro (RD$ por €)",
+      help: "Vacío: el cuadre no muestra euros.",
+    },
     requiredNumber("sellerDiscountLimit", "Descuento máximo del vendedor (%)"),
     requiredNumber("cardFeePercent", "Comisión bancaria (%)"),
     requiredNumber("returnDays", "Plazo de devolución (días)"),
@@ -2787,6 +2811,7 @@ export function Configuration() {
                 </div>
               ))}
             </div>
+            <StoreSettings />
           </QueryState>
         ) : tab === "users" ? (
           <>
@@ -2883,11 +2908,30 @@ export function Configuration() {
         <FormModal
           title="Configuración del negocio"
           fields={fields}
-          initial={query.data}
+          initial={{
+            ...query.data,
+            branchName: query.data?.branchName ?? "",
+            phone2: query.data?.phone2 ?? "",
+            autoPrintReceipt: !!query.data?.autoPrintReceipt,
+            usdRate: query.data?.usdRate ?? "",
+            eurRate: query.data?.eurRate ?? "",
+          }}
           onClose={() => setEditing(false)}
-          onSubmit={(data) =>
-            mutate("/settings", { ...data, currency: "DOP" }, "PUT")
-          }
+          onSubmit={(data) => {
+            // Tasa vacía = sin divisa.
+            const rate = (v: unknown) =>
+              v === "" || v === null || v === undefined ? null : Number(v);
+            return mutate(
+              "/settings",
+              {
+                ...data,
+                usdRate: rate(data.usdRate),
+                eurRate: rate(data.eurRate),
+                currency: "DOP",
+              },
+              "PUT",
+            );
+          }}
         />
       )}
       {newUser && (

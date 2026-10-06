@@ -384,6 +384,25 @@ function Shell() {
         setCommands(false);
         setMenu(false);
       }
+      // Atajos del sistema anterior: F9 Entrada de mercancía, F7 Etiquetas,
+      // F10 Precios (F2, F4, F8 y F12 son de la caja).
+      const target = (
+        { F9: "merchandise", F7: "products", F10: "products" } as Record<
+          string,
+          string
+        >
+      )[e.key];
+      const page = navigation.find((n) => n.id === target);
+      const current = useStore.getState().user;
+      if (page && current && can(current.permissions, page.permission)) {
+        e.preventDefault();
+        location.hash = page.id;
+        setPage(page.id);
+        setMenu(false);
+        setCommands(false);
+        if (e.key === "F7")
+          toast("Busca el producto y pulsa su botón de etiquetas.");
+      }
     };
     window.addEventListener("keydown", keyboard);
     return () => window.removeEventListener("keydown", keyboard);
@@ -695,6 +714,15 @@ function Shell() {
           </span>
           <span>
             <kbd>F12</kbd> Cobrar
+          </span>
+          <span>
+            <kbd>F9</kbd> Entrada de mercancía
+          </span>
+          <span>
+            <kbd>F7</kbd> Etiquetas
+          </span>
+          <span>
+            <kbd>F10</kbd> Precios
           </span>
           <span>
             <kbd>Ctrl + K</kbd> Cambiar pantalla
