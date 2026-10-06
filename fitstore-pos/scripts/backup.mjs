@@ -12,8 +12,9 @@ const output = resolve(root, "backups");
 await mkdir(output, { recursive: true });
 const filename =
   "fitstore-" + new Date().toISOString().replace(/[:.]/g, "-") + ".dump";
+const bin = process.env.PG_DUMP_BIN || "pg_dump";
 const child = spawn(
-  process.env.PG_DUMP_BIN || "pg_dump",
+  bin,
   ["--format=custom", "--file", resolve(output, filename)],
   {
     stdio: "inherit",
@@ -28,7 +29,16 @@ const child = spawn(
   },
 );
 await new Promise((done, fail) => {
-  child.on("error", fail);
+  // El instalador de PostgreSQL para Windows no agrega pg_dump al PATH.
+  child.on("error", (error) =>
+    fail(
+      error.code === "ENOENT"
+        ? new Error(
+            `No se encontró ${bin}. Agrega la carpeta bin de PostgreSQL al PATH o indica la ruta completa de pg_dump en PG_DUMP_BIN.`,
+          )
+        : error,
+    ),
+  );
   child.on("exit", (code) =>
     code === 0
       ? done()
