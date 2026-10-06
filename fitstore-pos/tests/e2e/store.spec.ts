@@ -2160,3 +2160,227 @@ test("R9-offline-1 revisión: si el servidor no responde (paquetes perdidos), la
   expect(await r9Stock(request, headers, product)).toBe(4);
   await r9Retire(request, headers, [product]);
 });
+
+// Prueba de aceptación de la caja, pasos 04, 35, 36 y 37 (mercancía).
+async function mercProduct(request: any, headers: any, category: string) {
+  const cats = await (await request.get("/api/categories", { headers })).json();
+  const suffix = Date.now().toString(36) + crypto.randomUUID().slice(0, 4);
+  const created = await request.post("/api/products", {
+    headers,
+    data: {
+      name: "E2E Merc " + suffix,
+      sku: "E2E-AM-" + suffix,
+      categoryId: cats.find((c: any) => c.name === category).id,
+      variants: [
+        {
+          sku: "E2E-AMV-" + suffix,
+          barcode: "E2E-AMB-" + suffix,
+          costAvg: 100,
+          price: 1500,
+        },
+      ],
+    },
+  });
+  expect(created.ok()).toBe(true);
+  return created.json();
+}
+const mercNcf = () =>
+  "B01" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
+test("Aceptación 35-37 en el celular: Mercancía recibe una orden con documento y dañados, y el historial abre su comprobante", async ({
+  page,
+  request,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("dialog", (d) => d.accept());
+  await page.setViewportSize({ width: 390, height: 844 });
+  const token = await login(page);
+  const headers = { Authorization: "Bearer " + token };
+  const p = await mercProduct(request, headers, "Ropa deportiva");
+  const supplier = (
+    await (await request.get("/api/suppliers", { headers })).json()
+  )[0];
+  const order = await (
+    await request.post("/api/purchase-orders", {
+      headers,
+      data: {
+        supplierId: supplier.id,
+        items: [{ variantId: p.variants[0].id, qty: 5, unitCost: 100 }],
+      },
+    })
+  ).json();
+  await page
+    .locator(".goods-mobile-bar")
+    .getByRole("button", { name: "Mercancía", exact: true })
+    .click();
+  await page.getByLabel("Proveedor (opcional)").selectOption(supplier.id);
+  await page.getByLabel("Orden de compra (opcional)").selectOption(order.id);
+  // Llegaron 3 buenas y 1 dañada de 5: queda 1 pendiente.
+  await page.getByLabel("Cantidad", { exact: true }).fill("3");
+  await page.getByRole("button", { name: "Dañados o rechazados" }).click();
+  await page.getByLabel("Unidades dañadas o rechazadas").fill("1");
+  await page.getByLabel("Motivo del daño o rechazo").selectOption("Dañado");
+  await expect(page.locator(".goods-line")).toContainText("Pendiente 1");
+  const ncf = mercNcf();
+  await page.getByText("Documento del proveedor (opcional)").click();
+  await page.getByLabel("Número de factura").fill("FAC-E2E");
+  await page.getByLabel("NCF del proveedor").fill(ncf);
+  await page.getByLabel("Condición de pago").selectOption("credit");
+  await page.getByLabel("Días de crédito").fill("15");
+  await page
+    .getByRole("button", { name: "Confirmar entrada", exact: true })
+    .click();
+  await expect(page.getByText("Mercancía registrada.")).toBeVisible();
+  // El stock sube sólo por lo bueno; lo dañado cierra lo pendiente.
+  const orders = await (
+    await request.get("/api/purchase-orders", { headers })
+  ).json();
+  const item = orders.find((o: any) => o.id === order.id).items[0];
+  expect([Number(item.receivedQty), Number(item.damagedQty)]).toEqual([3, 1]);
+  const fetched = await (
+    await request.get("/api/products/" + p.id, { headers })
+  ).json();
+  expect(Number(fetched.variants[0].stock)).toBe(3);
+  // Historial en el celular y su comprobante.
+  const row = page.locator(".receipt-history li").filter({ hasText: ncf });
+  await expect(row).toContainText(supplier.name);
+  await expect(row).toContainText("1 dañada");
+  await row.getByRole("button", { name: "Ver" }).click();
+  const receipt = page.getByRole("dialog", { name: "Comprobante de recepción" });
+  await expect(receipt).toContainText(p.name);
+  await expect(receipt).toContainText("FAC-E2E");
+  await expect(receipt).toContainText(ncf);
+  await expect(receipt).toContainText("Crédito 15 días");
+  await expect(receipt).toContainText("Dañado");
+  await expect(receipt).toContainText(order.number);
+  await expect(receipt).toContainText("Valeria Rivera");
+  // Sin desplazamiento horizontal en 390 px.
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  expect(errors).toEqual([]);
+  await request.patch("/api/products/" + p.id, {
+    headers,
+    data: { active: false },
+  });
+});
+test("Aceptación 35 y 37 en la laptop: Compras › Recepciones completa el documento después y descarga el Excel", async ({
+  page,
+  request,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const token = await login(page);
+  const headers = { Authorization: "Bearer " + token };
+  const p = await mercProduct(request, headers, "Ropa deportiva");
+  const supplier = (
+    await (await request.get("/api/suppliers", { headers })).json()
+  )[0];
+  // Se recibe por la API sin documento (no frena la recepción).
+  const id = crypto.randomUUID();
+  const terminal = await request.post("/api/terminals/register", {
+    headers,
+    data: { id, name: "E2E recepción", secret: "e2e-recepcion-" + id },
+  });
+  expect(terminal.ok()).toBe(true);
+  const order = await (
+    await request.post("/api/purchase-orders", {
+      headers,
+      data: {
+        supplierId: supplier.id,
+        items: [{ variantId: p.variants[0].id, qty: 2, unitCost: 100 }],
+      },
+    })
+  ).json();
+  const received = await request.post(
+    "/api/purchase-orders/" + order.id + "/receive",
+    {
+      headers,
+      data: {
+        operationId: crypto.randomUUID(),
+        items: [{ itemId: order.items[0].id, qty: 2 }],
+      },
+    },
+  );
+  expect(received.ok()).toBe(true);
+  await page.getByRole("button", { name: "Compras", exact: true }).click();
+  await page.getByRole("button", { name: "Recepciones", exact: true }).click();
+  const row = page
+    .locator(".receipt-history li")
+    .filter({ hasText: order.number });
+  await expect(row).toContainText("Sin documento");
+  await row.getByRole("button", { name: "Ver" }).click();
+  const dialog = page.getByRole("dialog", { name: "Comprobante de recepción" });
+  await expect(dialog).toContainText(p.name);
+  await dialog.getByRole("button", { name: "Completar documento" }).click();
+  const ncf = mercNcf();
+  await dialog.getByLabel("NCF del proveedor").fill(ncf);
+  await dialog.getByLabel("Número de factura").fill("FAC-LAPTOP");
+  await dialog.getByRole("button", { name: "Guardar documento" }).click();
+  await expect(dialog).toContainText(ncf);
+  await dialog.getByRole("button", { name: "Cerrar" }).click();
+  await expect(row).toContainText(ncf);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Excel para la contable" }).click();
+  expect((await download).suggestedFilename()).toMatch(/^compras-.*\.xlsx$/);
+  expect(errors).toEqual([]);
+  await request.patch("/api/products/" + p.id, {
+    headers,
+    data: { active: false },
+  });
+});
+test("Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible y lo vencido aparte", async ({
+  page,
+  request,
+}) => {
+  const token = await login(page);
+  const headers = { Authorization: "Bearer " + token };
+  const p = await mercProduct(request, headers, "Suplementos");
+  const id = crypto.randomUUID();
+  await request.post("/api/terminals/register", {
+    headers,
+    data: { id, name: "E2E vencidos", secret: "e2e-vencidos-" + id },
+  });
+  for (const [lotNumber, qty] of [
+    ["E2E-VIGENTE", 3],
+    ["E2E-VENCIDO", 2],
+  ] as const) {
+    const r = await request.post("/api/inventory/adjustments", {
+      headers,
+      data: {
+        variantId: p.variants[0].id,
+        qty,
+        reason: "E2E lote",
+        lotNumber,
+        expiryDate: "2030-01-01T12:00:00.000Z",
+      },
+    });
+    expect(r.ok()).toBe(true);
+  }
+  const db = legacyDb();
+  await db.lot.updateMany({
+    where: { variantId: p.variants[0].id, lotNumber: "E2E-VENCIDO" },
+    data: { expiryDate: new Date("2020-01-01T12:00:00Z") },
+  });
+  await db.$disconnect();
+  await page.getByRole("button", { name: "Mercancía", exact: true }).click();
+  await page.getByLabel("Buscar producto", { exact: true }).fill(p.name);
+  const option = page.getByRole("option").filter({ hasText: p.name });
+  await expect(option).toContainText("3 en stock");
+  await expect(option).toContainText("vencido: 2");
+  // La caja recibe el mismo catálogo: 3 disponibles.
+  await ensureCash(page);
+  await page
+    .getByRole("button", { name: "Punto de venta", exact: true })
+    .click();
+  await page.getByLabel("Buscar productos").fill(p.name);
+  await expect(
+    page.locator(".product-card").filter({ hasText: p.name }),
+  ).toContainText("3 en stock");
+  await request.patch("/api/products/" + p.id, {
+    headers,
+    data: { active: false },
+  });
+});
