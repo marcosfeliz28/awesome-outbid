@@ -49,6 +49,7 @@ import {
   toast,
   mutate,
 } from "./helpers";
+import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 
 type Column = {
   label: string;
@@ -1004,9 +1005,17 @@ export function Purchases() {
             >
               Proveedores
             </button>
+            <button
+              className={tab === "receipts" ? "active" : ""}
+              onClick={() => setTab("receipts")}
+            >
+              Recepciones
+            </button>
           </div>
         </div>
-        {tab === "orders" ? (
+        {tab === "receipts" ? (
+          <ReceiptHistory />
+        ) : tab === "orders" ? (
           <QueryState query={orders}>
             <DataTable
               rows={orders.data || []}
@@ -1141,209 +1150,6 @@ export function Purchases() {
     </>
   );
 }
-function PurchaseEditor({
-  suppliers,
-  variants,
-  onClose,
-}: {
-  suppliers: any[];
-  variants: any[];
-  onClose: () => void;
-}) {
-  const [supplierId, setSupplier] = useState(""),
-    [lines, setLines] = useState([{ variantId: "", qty: 1, unitCost: 0 }]),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
-  const client = useQueryClient();
-  return (
-    <Modal open onClose={onClose} title="Nueva orden de compra" wide>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          try {
-            await post("/purchase-orders", { supplierId, items: lines });
-            await client.invalidateQueries();
-            toast("Orden de compra creada.");
-            onClose();
-          } catch (e: any) {
-            setError(e.message);
-            setBusy(false);
-          }
-        }}
-      >
-        <label className="field">
-          <span>Proveedor</span>
-          <select
-            required
-            value={supplierId}
-            onChange={(e) => setSupplier(e.target.value)}
-          >
-            <option value="">Seleccionar…</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="purchase-lines">
-          {lines.map((line, index) => (
-            <div key={index}>
-              <label className="field">
-                <span>Producto / variante</span>
-                <select
-                  required
-                  value={line.variantId}
-                  onChange={(e) => {
-                    const v = variants.find((v) => v.id === e.target.value);
-                    setLines(
-                      lines.map((l, i) =>
-                        i === index
-                          ? {
-                              ...l,
-                              variantId: e.target.value,
-                              unitCost: Number(v?.costAvg || 0),
-                            }
-                          : l,
-                      ),
-                    );
-                  }}
-                >
-                  <option value="">Seleccionar…</option>
-                  {variants.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name} · {attrLabel(v.attributes)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                <span>Cantidad</span>
-                <input
-                  type="number"
-                  min="0.001"
-                  step="0.001"
-                  required
-                  value={line.qty}
-                  onChange={(e) =>
-                    setLines(
-                      lines.map((l, i) =>
-                        i === index ? { ...l, qty: Number(e.target.value) } : l,
-                      ),
-                    )
-                  }
-                />
-              </label>
-              <label className="field">
-                <span>Costo unitario</span>
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  required
-                  value={line.unitCost}
-                  onChange={(e) =>
-                    setLines(
-                      lines.map((l, i) =>
-                        i === index
-                          ? { ...l, unitCost: Number(e.target.value) }
-                          : l,
-                      ),
-                    )
-                  }
-                />
-              </label>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="Quitar línea"
-                disabled={lines.length === 1}
-                onClick={() => setLines(lines.filter((_, i) => i !== index))}
-              >
-                <Trash2 size={17} />
-              </button>
-            </div>
-          ))}
-        </div>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() =>
-            setLines([...lines, { variantId: "", qty: 1, unitCost: 0 }])
-          }
-        >
-          <Plus size={16} />
-          Agregar producto
-        </Button>
-        {error && <p className="form-error">{error}</p>}
-        <div className="modal-footer">
-          <Button disabled={busy}>Crear orden</Button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-function ReceiptEditor({
-  order,
-  variants,
-  onClose,
-}: {
-  order: any;
-  variants: any[];
-  onClose: () => void;
-}) {
-  const pending = order.items.filter(
-    (i: any) => Number(i.receivedQty) < Number(i.qty),
-  );
-  // Un id por recepción, creado al abrir el formulario: si se pierde la
-  // respuesta y se pulsa Guardar otra vez, la API devuelve la misma
-  // recepción en vez de recibir la mercancía dos veces (R9-facturas-8).
-  const [operationId] = useState(() => crypto.randomUUID());
-  const fields: Field[] = [
-    requiredNumber("freight", "Flete"),
-    requiredNumber("otherCosts", "Otros costos"),
-    ...pending.flatMap((i: any) => {
-      const variant = variants.find((v) => v.id === i.variantId);
-      return [
-        requiredNumber(
-          "qty_" + i.id,
-          (variant?.name || i.variantId) + " · Cantidad pendiente",
-          Number(i.qty) - Number(i.receivedQty),
-        ),
-        { key: "lot_" + i.id, label: "Número de lote" },
-        { key: "expiry_" + i.id, label: "Vencimiento", type: "date" as const },
-      ];
-    }),
-  ];
-  return (
-    <FormModal
-      title={"Recibir mercancía · " + order.number}
-      fields={fields}
-      onClose={onClose}
-      onSubmit={(data) =>
-        post("/purchase-orders/" + order.id + "/receive", {
-          operationId,
-          freight: data.freight,
-          otherCosts: data.otherCosts,
-          items: pending
-            .filter((i: any) => data["qty_" + i.id] > 0)
-            .map((i: any) => ({
-              itemId: i.id,
-              qty: data["qty_" + i.id],
-              lotNumber: data["lot_" + i.id] || undefined,
-              expiryDate: data["expiry_" + i.id]
-                ? new Date(
-                    data["expiry_" + i.id] + "T23:59:59-04:00",
-                  ).toISOString()
-                : undefined,
-            })),
-        })
-      }
-    />
-  );
-}
-
 export function Expenses() {
   const query = useQuery({
     queryKey: ["expenses"],
