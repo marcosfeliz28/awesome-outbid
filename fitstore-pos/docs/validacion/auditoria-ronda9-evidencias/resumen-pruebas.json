@@ -1,0 +1,54 @@
+{
+  "auditDate": "2026-10-06",
+  "environment": {
+    "os": "Linux",
+    "node": {
+      "integrationAndBrowser": "22.22.0",
+      "finalCheck": "24.19.0"
+    },
+    "pnpm": "11.19.0",
+    "postgresql": "18.4",
+    "api": "compiled",
+    "database": "isolated"
+  },
+  "check": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "unitPassed": 128,
+    "unitSkipped": 1,
+    "unitRegistered": 129,
+    "build": "passed",
+    "evidence": "check-final.txt"
+  },
+  "integration": {
+    "fullRuns": 5,
+    "passedPerRun": 137,
+    "totalExecutions": 685,
+    "failedRuns": 0,
+    "evidence": [
+      "Corrida inicial observada durante la sesión de auditoría",
+      "integracion-corrida-2.txt",
+      "integracion-corrida-3.txt",
+      "integracion-corrida-4.txt",
+      "integracion-corrida-5.txt"
+    ]
+  },
+  "browser": {
+    "fullChromiumPassed": 55,
+    "fullChromiumTotal": 55,
+    "r9Caja5Repeated": 10,
+    "r9Caja5Passed": 10,
+    "repeatEvidence": "e2e-r9-caja-5-repetido.txt"
+  },
+  "portability": {
+    "passed": 31,
+    "total": 31,
+    "evidence": "portabilidad-windows.txt"
+  },
+  "migrations": {
+    "freshMigrations": 15,
+    "freshSeed": "passed",
+    "r7ToR9": "passed",
+    "evidence": "../auditoria-ronda9-actualizacion-r7-r9.json"
+  }
+}

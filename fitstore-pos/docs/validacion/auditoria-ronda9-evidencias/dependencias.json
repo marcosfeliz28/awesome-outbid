@@ -1,0 +1,105 @@
+{
+  "advisories": {
+    "1115356": {
+      "findings": [
+        {
+          "version": "3.18.4",
+          "paths": [
+            "apps__api>@prisma/client>prisma>@prisma/config>effect"
+          ],
+          "dev": false,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1115356,
+      "title": "Effect `AsyncLocalStorage` context lost/contaminated inside Effect fibers under concurrent load with RPC",
+      "module_name": "effect",
+      "vulnerable_versions": "<3.20.0",
+      "patched_versions": ">=3.20.0",
+      "severity": "high",
+      "cwe": "CWE-362",
+      "github_advisory_id": "GHSA-38f7-945m-qr2g",
+      "url": "https://github.com/advisories/GHSA-38f7-945m-qr2g"
+    },
+    "1119441": {
+      "findings": [
+        {
+          "version": "8.3.2",
+          "paths": [
+            "apps__api>exceljs>uuid"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1119441,
+      "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+      "module_name": "uuid",
+      "vulnerable_versions": "<11.1.1",
+      "patched_versions": ">=11.1.1",
+      "severity": "moderate",
+      "cwe": "CWE-787, CWE-1285",
+      "github_advisory_id": "GHSA-w5hq-g745-h8pq",
+      "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq"
+    },
+    "1145093": {
+      "findings": [
+        {
+          "version": "7.1.5",
+          "paths": [
+            "apps__api>@prisma/client>prisma>@prisma/config>deepmerge-ts"
+          ],
+          "dev": false,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1145093,
+      "title": "DeepmergeTS has stack exhaustion when merging recursive object graphs",
+      "module_name": "deepmerge-ts",
+      "vulnerable_versions": "<8.0.0",
+      "patched_versions": ">=8.0.0",
+      "severity": "high",
+      "cwe": "CWE-674",
+      "github_advisory_id": "GHSA-ggr8-5vv4-36mx",
+      "url": "https://github.com/advisories/GHSA-ggr8-5vv4-36mx"
+    },
+    "1239991": {
+      "findings": [
+        {
+          "version": "5.3.0",
+          "paths": [
+            "apps__api>@nestjs/swagger>js-yaml"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1239991,
+      "title": "js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources",
+      "module_name": "js-yaml",
+      "vulnerable_versions": ">=5.0.0 <=5.4.0",
+      "patched_versions": ">=5.4.1",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-r3ph-w7gj-g6xm",
+      "url": "https://github.com/advisories/GHSA-r3ph-w7gj-g6xm"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 2,
+      "high": 2,
+      "critical": 0
+    },
+    "dependencies": 315,
+    "devDependencies": 0,
+    "optionalDependencies": 41,
+    "totalDependencies": 356
+  }
+}

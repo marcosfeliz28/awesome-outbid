@@ -1,0 +1,39 @@
+[WebServer] (node:82434) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:82448) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 10 tests using 1 worker
+
+(node:82472) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium] › tests/e2e/store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (7.0s)
+(node:82558) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 [chromium] › tests/e2e/store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (5.7s)
+(node:82633) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   3 [chromium] › tests/e2e/store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (6.2s)
+(node:82709) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   4 [chromium] › tests/e2e/store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (5.0s)
+(node:82783) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   5 [chromium] › tests/e2e/store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (5.4s)
+(node:82856) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   6 [chromium] › tests/e2e/store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (5.4s)
+(node:82931) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 [chromium] › tests/e2e/store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (5.0s)
+(node:83008) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   8 [chromium] › tests/e2e/store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (6.4s)
+(node:83082) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   9 [chromium] › tests/e2e/store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (6.8s)
+(node:83158) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  10 [chromium] › tests/e2e/store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (5.2s)
+
+  10 passed (1.1m)

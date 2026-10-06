@@ -1,0 +1,307 @@
+{
+  "source": "docs/PRUEBA_ACEPTACION_CAJA.md",
+  "auditDate": "2026-10-06",
+  "method": "Lectura independiente, API compilada, PostgreSQL aislado, Playwright y reproducciones propias. La emisión e-CF permanece fuera del alcance de la ronda 9.",
+  "summary": {
+    "total": 40,
+    "softwarePass": 21,
+    "partial": 13,
+    "fail": 1,
+    "fiscalOutOfScope": 4,
+    "hardwareDependent": 1,
+    "productionAcceptancePossibleNow": false,
+    "blockingStep": "31"
+  },
+  "steps": [
+    {
+      "step": "01",
+      "status": "cumple",
+      "result": "La cajera vende con identidad propia; editar costos, anular y devolver requieren permisos superiores. Las respuestas para vendedor ocultan costos y rentabilidad.",
+      "evidence": [
+        "tests/api.test.ts:191",
+        "apps/api/src/common.ts:211",
+        "packages/shared/src/index.ts:497"
+      ]
+    },
+    {
+      "step": "02",
+      "status": "fuera_alcance_fiscal",
+      "result": "La fecha dominicana, DOP e ITBIS incluido funcionan. No existe selección operativa B/E ni emisión fiscal; ncfMode sólo prepara una solicitud interna.",
+      "evidence": [
+        "apps/api/src/admin.ts:45",
+        "apps/api/src/sales.ts:383",
+        "docs/fiscal/"
+      ]
+    },
+    {
+      "step": "03",
+      "status": "cumple",
+      "result": "Una caja abierta queda ligada al usuario y equipo; código e índices impiden una segunda apertura activa. El fondo no se cuenta como venta.",
+      "evidence": ["apps/api/src/cash.ts:403", "tests/api.test.ts:681"]
+    },
+    {
+      "step": "04",
+      "status": "cumple_software",
+      "result": "Caja y Mercancía muestran stock vendible separado del vencido. Precio, variante y costo según rol están disponibles. Falta cotejar físicamente el catálogo de producción.",
+      "evidence": ["tests/api.test.ts:6905", "tests/e2e/store.spec.ts:2349"]
+    },
+    {
+      "step": "05",
+      "status": "cumple_software_pendiente_hardware",
+      "result": "Código + Enter agrega una unidad exacta, conserva cadenas y bloquea códigos ambiguos. El lector físico debe probarse en la tienda.",
+      "evidence": [
+        "tests/e2e/store.spec.ts:576",
+        "docs/validacion/auditoria-ronda9-regresiones-r8.json"
+      ]
+    },
+    {
+      "step": "06",
+      "status": "cumple",
+      "result": "La búsqueda por palabras permite identificar y añadir el resultado sin duplicar el carrito.",
+      "evidence": ["tests/e2e/store.spec.ts:66", "apps/web/src/POS.tsx:488"]
+    },
+    {
+      "step": "07",
+      "status": "cumple",
+      "result": "La variante elegida conserva talla/color y el servidor descuenta su variantId exacto.",
+      "evidence": ["tests/e2e/store.spec.ts:66", "apps/api/src/sales.ts:279"]
+    },
+    {
+      "step": "08",
+      "status": "cumple",
+      "result": "Un código desconocido o ambiguo no añade ningún producto ni crea una venta.",
+      "evidence": ["tests/e2e/store.spec.ts:576", "tests/e2e/store.spec.ts:677"]
+    },
+    {
+      "step": "09",
+      "status": "cumple",
+      "result": "Escanear otra vez suma, los controles recalculan y quitar una línea sólo cambia el carrito local.",
+      "evidence": ["tests/e2e/store.spec.ts:576", "apps/web/src/api.ts:121"]
+    },
+    {
+      "step": "10",
+      "status": "cumple",
+      "result": "La política normal impide completar stock negativo y permite corregir el carrito; una excepción global requiere configuración administrativa.",
+      "evidence": ["tests/api.test.ts:240", "tests/e2e/store.spec.ts:576"]
+    },
+    {
+      "step": "11",
+      "status": "cumple",
+      "result": "Venta en efectivo exacto, stock, caja y reintento idempotente concilian al centavo.",
+      "evidence": ["tests/api.test.ts:281", "tests/api.test.ts:4691"]
+    },
+    {
+      "step": "12",
+      "status": "parcial",
+      "result": "El sistema guarda entregado y cambio y el ticket térmico usa el importe entregado. El PDF y el detalle histórico muestran el efectivo neto más el cambio, pero no identifican explícitamente el importe entregado.",
+      "gap": "Mostrar tendered en PDF y detalle/reimpresión, con las mismas cifras del ticket térmico.",
+      "evidence": ["apps/web/src/Prints.tsx:305", "apps/api/src/sales.ts:1620"]
+    },
+    {
+      "step": "13",
+      "status": "cumple_software_pendiente_hardware",
+      "result": "Tarjeta exige últimos cuatro y aprobación y se separa del efectivo. La integración con el adquirente es manual y debe validarse con el terminal real.",
+      "evidence": ["tests/api.test.ts:206", "apps/api/src/sales.ts:351"]
+    },
+    {
+      "step": "14",
+      "status": "depende_hardware",
+      "result": "Cancelar el formulario antes de finalizar no escribe nada. FitStore no recibe el rechazo del adquirente: la cajera debe confirmar el terminal separado y no registrar el pago.",
+      "evidence": ["apps/web/src/POS.tsx:1380", "docs/DESPLIEGUE.md"]
+    },
+    {
+      "step": "15",
+      "status": "cumple",
+      "result": "Pago combinado crea una sola venta, separa efectivo/tarjeta, registra aprobación y descuenta stock una vez.",
+      "evidence": ["tests/api.test.ts:206", "tests/e2e/store.spec.ts:66"]
+    },
+    {
+      "step": "16",
+      "status": "cumple",
+      "result": "Faltantes y excesos no válidos se bloquean sin mover dinero, número ni inventario; sólo el exceso de efectivo produce cambio.",
+      "evidence": ["tests/api.test.ts:240", "packages/shared/src/index.ts:348"]
+    },
+    {
+      "step": "17",
+      "status": "parcial",
+      "result": "Porcentaje, total, ITBIS y PIN por límite funcionan. La venta/ticket no conserva de forma legible quién autorizó; el reporte sólo tiene un UUID dentro de la bitácora y omite descuentos dentro del límite.",
+      "gap": "Guardar y reportar aprobador y motivo del descuento, incluso dentro del límite de cajera.",
+      "evidence": ["apps/api/src/sales.ts:134", "apps/api/src/reports.ts:690"]
+    },
+    {
+      "step": "18",
+      "status": "cumple",
+      "result": "El descuento fijo por línea se limita al importe; nunca deja total negativo y pide PIN cuando supera el permiso.",
+      "evidence": ["tests/api.test.ts:928", "tests/e2e/store.spec.ts:1303"]
+    },
+    {
+      "step": "19",
+      "status": "fuera_alcance_fiscal",
+      "result": "No emite B02/E32 ni QR DGII. El recibo declara correctamente que es interno y no fiscal.",
+      "evidence": ["apps/api/src/sales.ts:1590", "docs/fiscal/"]
+    },
+    {
+      "step": "20",
+      "status": "fuera_alcance_fiscal",
+      "result": "Guarda solicitud B01 y RNC, pero no emite B01/E31 ni valida el RNC con DGII.",
+      "evidence": ["apps/api/src/sales.ts:385", "docs/fiscal/"]
+    },
+    {
+      "step": "21",
+      "status": "fuera_alcance_fiscal",
+      "result": "Bloquea la ausencia de RNC para crédito fiscal preparado; no valida existencia/estado del RNC ni administra secuencias fiscales.",
+      "evidence": ["tests/api.test.ts:1209", "docs/fiscal/"]
+    },
+    {
+      "step": "22",
+      "status": "cumple",
+      "result": "Crédito exige cliente/condiciones, respeta límite atómico y no incrementa efectivo o tarjeta.",
+      "evidence": ["tests/api.test.ts:1070", "tests/e2e/store.spec.ts:215"]
+    },
+    {
+      "step": "23",
+      "status": "cumple",
+      "result": "El abono reduce deuda, aumenta su caja, no mueve stock ni crea venta y es idempotente por UUID.",
+      "evidence": ["tests/api.test.ts:1041", "tests/e2e/store.spec.ts:215"]
+    },
+    {
+      "step": "24",
+      "status": "cumple",
+      "result": "Rechaza abono mayor al saldo o sin una venta/deuda válida, sin movimientos parciales.",
+      "evidence": ["apps/api/src/sales.ts:1491", "tests/api.test.ts:1041"]
+    },
+    {
+      "step": "25",
+      "status": "cumple_software",
+      "result": "Con catálogo precargado, la PWA distingue desconexión, conserva búsqueda y permite preparar la venta.",
+      "evidence": ["tests/e2e/store.spec.ts:1658", "docs/DESPLIEGUE.md"]
+    },
+    {
+      "step": "26",
+      "status": "parcial",
+      "result": "La venta offline queda durable, visible, descuenta stock local y conserva un UUID. No genera ni enlaza el comprobante fiscal de contingencia.",
+      "gap": "Resolver con la contable/PSFE el e-CF offline o la secuencia B y su regularización.",
+      "evidence": [
+        "tests/e2e/store.spec.ts:174",
+        "tests/e2e/store.spec.ts:1763"
+      ]
+    },
+    {
+      "step": "27",
+      "status": "cumple",
+      "result": "Recargar offline conserva la sesión local y la venta pendiente, sin cobrar ni liberar stock otra vez.",
+      "evidence": [
+        "tests/e2e/store.spec.ts:1658",
+        "tests/e2e/store.spec.ts:2140"
+      ]
+    },
+    {
+      "step": "28",
+      "status": "parcial",
+      "result": "La sincronización interna ocurre una vez y conserva conflictos para revisión. No existe envío/estado DGII ni enlace B→E.",
+      "gap": "Integración fiscal fuera del alcance de esta ronda.",
+      "evidence": ["tests/e2e/store.spec.ts:174", "tests/api.test.ts:281"]
+    },
+    {
+      "step": "29",
+      "status": "cumple",
+      "result": "La devolución parcial usa valor, impuesto y costo históricos; repone sólo la unidad vendible y afecta efectivo sólo si se elige ese reembolso.",
+      "evidence": ["tests/api.test.ts:4719", "tests/api.test.ts:6373"]
+    },
+    {
+      "step": "30",
+      "status": "parcial",
+      "result": "Conserva original, saldo retornable, nota interna, motivo y ajuste neto. No emite B04/E34 ni referencia fiscal.",
+      "gap": "Documento fiscal fuera del alcance; además corregir R9-A02 para asignar el ajuste al cierre correcto.",
+      "evidence": [
+        "apps/api/src/sales.ts:1200",
+        "docs/validacion/auditoria-ronda9-riesgos-contables.json"
+      ]
+    },
+    {
+      "step": "31",
+      "status": "falla",
+      "result": "Bloquea devolver más que el saldo, pero reenviar exactamente la misma devolución de una venta con dos unidades crea dos devoluciones, dos notas y dos entradas de stock.",
+      "gap": "R9-A01: añadir UUID idempotente y comparar el cuerpo bajo bloqueo/transacción.",
+      "evidence": ["docs/validacion/auditoria-ronda9-riesgos-contables.json"]
+    },
+    {
+      "step": "32",
+      "status": "parcial",
+      "result": "La unidad dañada no vuelve al stock y el motivo queda. El movimiento return_waste guarda qty=0 y la devolución cost=0, por lo que el kardex no informa la unidad ni su costo total como merma.",
+      "gap": "R9-A05: conservar cantidad física devuelta/no vendible y costo contabilizado sin mover stock vendible dos veces.",
+      "evidence": ["docs/validacion/auditoria-ronda9-devolucion-danada.json"]
+    },
+    {
+      "step": "33",
+      "status": "cumple",
+      "result": "Descartar un carrito local no crea venta, cobro, nota, NCF ni movimiento de stock.",
+      "evidence": ["apps/web/src/api.ts:121", "apps/web/src/POS.tsx"]
+    },
+    {
+      "step": "34",
+      "status": "parcial",
+      "result": "La anulación autorizada conserva la venta, motivo y usuario, resta sus pagos del esperado y repone stock/costo una vez. No crea reversión fiscal.",
+      "gap": "La reversión B/E corresponde al flujo fiscal pendiente.",
+      "evidence": ["apps/api/src/sales.ts:779", "tests/api.test.ts:4798"]
+    },
+    {
+      "step": "35",
+      "status": "parcial",
+      "result": "Orden, proveedor, NCF, fecha, ITBIS, condición y pagos se registran/exportan. El total declarado de la factura se valida pero no se conserva; una factura de 400 con 100 dañados queda almacenada/exportada como 300 + dañado 100.",
+      "gap": "R9-A03: almacenar el total documental original y la diferencia/conciliación.",
+      "evidence": [
+        "tests/api.test.ts:6956",
+        "docs/validacion/auditoria-ronda9-riesgos-contables.json"
+      ]
+    },
+    {
+      "step": "36",
+      "status": "parcial",
+      "result": "Recepción parcial, lotes, vencidos, dañados, responsable y costo promedio funcionan. unitCost admite más de dos decimales: una orden 2×100.005 queda 200.01 y su recepción 200.02.",
+      "gap": "R9-A04: aplicar moneyAmount a todo campo Decimal(14,2) antes de calcular o escribir.",
+      "evidence": [
+        "tests/api.test.ts:7155",
+        "docs/validacion/auditoria-ronda9-riesgos-contables.json"
+      ]
+    },
+    {
+      "step": "37",
+      "status": "parcial",
+      "result": "Historial, comprobante, exceso y reintento secuencial funcionan. En cinco envíos concurrentes idénticos hubo siempre un 201 y un 500, aunque quedó una sola recepción.",
+      "gap": "R9-A06: manejar/reintentar SQLSTATE 40001 y exigir operationId.",
+      "evidence": [
+        "tests/e2e/store.spec.ts:2202",
+        "docs/validacion/auditoria-ronda9-riesgos-contables.json"
+      ]
+    },
+    {
+      "step": "38",
+      "status": "parcial",
+      "result": "Ventas, medios, abonos, descuentos, devoluciones y cuadre al centavo tienen reportes. Una devolución en caja posterior reduce retroactivamente la rentabilidad del cierre original y no figura en la caja que la procesa.",
+      "gap": "R9-A02: contabilizar ajustes por sesión/fecha de devolución y congelar el cierre histórico.",
+      "evidence": [
+        "tests/api.test.ts:6373",
+        "docs/validacion/auditoria-ronda9-riesgos-contables.json"
+      ]
+    },
+    {
+      "step": "39",
+      "status": "parcial",
+      "result": "Denominaciones y diferencias por método se calculan e imprimen. El formulario muestra el esperado antes del conteo, permite tarjeta/transferencia vacías copiando el esperado y no exige explicación ante diferencias.",
+      "gap": "Hacer conteo ciego, exigir valores conciliados y notas cuando exista diferencia; guardar vouchers/comisiones por separado.",
+      "evidence": ["apps/web/src/Tienda.tsx:181", "tests/api.test.ts:6646"]
+    },
+    {
+      "step": "40",
+      "status": "parcial",
+      "result": "Cierre, reimpresión, tres reportes, bloqueo de venta cerrada y actualización R7→R9 funcionan. La rentabilidad de un cuadre cerrado sí cambia después de una devolución posterior; respaldo/restauración no se verificó contra almacenamiento externo.",
+      "gap": "R9-A02 y prueba operativa de copia/restauración antes de producción.",
+      "evidence": [
+        "tests/e2e/store.spec.ts:2418",
+        "docs/validacion/auditoria-ronda9-riesgos-contables.json",
+        "docs/validacion/auditoria-ronda9-actualizacion-r7-r9.json"
+      ]
+    }
+  ]
+}

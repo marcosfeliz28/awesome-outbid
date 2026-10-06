@@ -1,0 +1,380 @@
+{
+  "project": "FitStore POS",
+  "round": 9,
+  "auditDate": "2026-10-06",
+  "executionTimezone": "UTC",
+  "businessTimezone": "America/Santo_Domingo",
+  "verdict": "REQUIERE_CORRECCIONES",
+  "productionAcceptance": false,
+  "blockingReason": "El paso 31 de la prueba de aceptación falla: reenviar exactamente la misma devolución puede crear un segundo reembolso, una segunda nota de crédito y una segunda entrada de inventario.",
+  "scope": {
+    "included": [
+      "Regresiones independientes R8-01, R8-02 y R8-03, incluidas rutas fuera del importador",
+      "Caja, lector, búsqueda, descuentos, efectivo, tarjeta, pago combinado, crédito, contraentrega y operación sin conexión",
+      "Devoluciones, anulaciones, cuatro cajas, arqueo, cierre y reportes",
+      "Mercancía, órdenes, recepciones, facturas, importador, roles, seguridad y dependencias",
+      "PostgreSQL local, migraciones nuevas y actualización real R7→R9",
+      "Comparación de los 40 pasos de aceptación con el sistema y con las brechas previas de Claude",
+      "Portabilidad estática y pruebas específicas para Windows"
+    ],
+    "excluded": [
+      "Emisión e-CF y comunicación real con DGII",
+      "Prueba de lector, impresora, gaveta y terminal adquirente físicos",
+      "Prueba de carga prolongada en hardware Android de gama baja",
+      "Restauración desde un respaldo externo de producción"
+    ]
+  },
+  "archive": {
+    "name": "fitstore-pos-ronda9.zip",
+    "bytes": 6849378,
+    "sha256": "6de8b75d1c9e055fc678f13011c1be13a8f966b30f250d5a276eb0e47d4201d1"
+  },
+  "priorFindings": {
+    "R8-01": {
+      "status": "CERRADO",
+      "independentResult": "Las colisiones de código sin distinguir mayúsculas se rechazan por API de catálogo, edición de variante, producto rápido e importador; la CLI sale con código 1 y no deja escrituras."
+    },
+    "R8-02": {
+      "status": "CERRADO",
+      "independentResult": "Una venta histórica sin costo por línea concilia 50.05 → 35.03 → 0 después de devoluciones parciales y el reporte termina en 0."
+    },
+    "R8-03": {
+      "status": "CERRADO",
+      "independentResult": "Una regla de categoría o un importe fuera de rango en la segunda fila abortan toda la importación sin categorías, productos, variantes ni movimientos parciales."
+    },
+    "evidence": "docs/validacion/auditoria-ronda9-regresiones-r8.json"
+  },
+  "validation": {
+    "freshDatabase": {
+      "postgresql": "18.4",
+      "migrationsApplied": 15,
+      "seed": "passed",
+      "seedCounts": {
+        "users": 4,
+        "products": 60,
+        "variants": 228,
+        "sales": 846
+      }
+    },
+    "check": {
+      "typecheck": "passed",
+      "lint": "passed",
+      "unit": {
+        "passed": 128,
+        "skipped": 1,
+        "registered": 129,
+        "skipReason": "No se suministró el Excel original de la tienda para esa prueba."
+      },
+      "build": "passed"
+    },
+    "integrationCompiled": {
+      "fullRuns": 5,
+      "passedPerRun": 137,
+      "failedRuns": 0,
+      "totalTestExecutions": 685,
+      "managerPinConcurrentStableRuns": 5
+    },
+    "browserChromium": {
+      "passed": 55,
+      "total": 55,
+      "previouslyFlakyR9Caja5Repeated": 10,
+      "previouslyFlakyR9Caja5Passed": 10
+    },
+    "portabilityTests": {
+      "passed": 31,
+      "total": 31,
+      "files": 2
+    },
+    "upgradeR7toR9": {
+      "status": "passed",
+      "migrationsBefore": 12,
+      "migrationsAfter": 15,
+      "countsPreserved": {
+        "users": 4,
+        "categories": 5,
+        "products": 60,
+        "variants": 228,
+        "sales": 847
+      },
+      "newColumnsPresent": 9,
+      "newIndexesPresent": 2,
+      "compiledApiHealthLoginCatalog": "passed"
+    },
+    "fourRegisters": "La prueba integrada de cuatro cajas y entrada simultánea de mercancía pasó en las cinco corridas completas.",
+    "windows": {
+      "independentExecutionOnWindows": false,
+      "staticPortabilityTestsOnLinux": "31/31",
+      "authorEvidenceIncludedInArchive": {
+        "integration": "136/136",
+        "browserBeforeLastSelectorFix": "54/55"
+      },
+      "limitation": "El código exacto entregado no se ejecutó de nuevo en una máquina Windows durante esta auditoría."
+    }
+  },
+  "acceptanceChecklist": {
+    "source": "docs/PRUEBA_ACEPTACION_CAJA.md",
+    "detail": "docs/validacion/auditoria-ronda9-aceptacion.json",
+    "total": 40,
+    "softwarePass": 21,
+    "partial": 13,
+    "fail": 1,
+    "fiscalOutOfScope": 4,
+    "hardwareDependent": 1,
+    "blockingStep": "31"
+  },
+  "comparisonWithClaudeGapJson": {
+    "source": "docs/validacion/aceptacion-caja-brechas.json",
+    "confirmedStillOpen": {
+      "12": "El importe entregado no aparece en el PDF ni en el detalle histórico.",
+      "17": "El autorizador del descuento no queda legible y los descuentos dentro del límite no entran en el reporte de autorizaciones.",
+      "31": "La devolución no tiene UUID idempotente.",
+      "32": "La merma de una devolución guarda cantidad cero y costo devuelto cero.",
+      "39": "El cierre muestra el esperado, completa tarjeta/transferencia con el esperado y no exige explicación de diferencias.",
+      "40": "El cierre histórico puede cambiar por una devolución posterior y la restauración externa no está comprobada."
+    },
+    "improvedButPartial": {
+      "04": "Se separó stock vendible de vencido; falta cotejo físico del catálogo real.",
+      "35": "Se añadieron documento, NCF, condición y exportación; el total documental aceptado puede perderse.",
+      "36": "Se añadieron parciales y dañados; queda la precisión monetaria de costos.",
+      "37": "Se añadieron historial e idempotencia secuencial; la concurrencia devuelve 500.",
+      "38": "Se ampliaron reportes; una devolución posterior se atribuye al margen del cierre original.",
+      "40": "Se añadieron impresión, reimpresión y reportes; queda mutable la rentabilidad histórica."
+    },
+    "newIndependentEvidence": [
+      "Desfase de un centavo entre orden y recepción por unitCost con tres decimales",
+      "Pérdida del total documental de una factura que incluye mercancía dañada",
+      "Carga máxima teórica de aproximadamente 280 MB en GET /sales por imágenes base64",
+      "Respuesta 500 sistemática en recepción concurrente con una sola escritura",
+      "Riesgo de IP compartida al seguir la topología de proxy documentada"
+    ]
+  },
+  "findingSummary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 6,
+    "P3": 5,
+    "total": 12
+  },
+  "openFindings": [
+    {
+      "id": "R9-A01",
+      "priority": "P1",
+      "domain": "Devoluciones",
+      "title": "Reenviar una devolución idéntica crea otro reembolso, otra nota y otra entrada de stock",
+      "observed": "Sobre una venta de dos unidades, el mismo cuerpo se envió dos veces. Ambas respuestas fueron exitosas, con NC-000134 y NC-000135; quedaron dos SaleReturn y el stock subió de 2 a 4.",
+      "impact": "Un doble clic, reintento tras perder la respuesta o repetición del cliente puede devolver dinero o crédito dos veces mientras todavía exista saldo retornable. Es un bloqueo explícito del paso 31.",
+      "locations": [
+        "apps/api/src/sales.ts:966",
+        "apps/api/prisma/schema.prisma:246"
+      ],
+      "evidence": "docs/validacion/auditoria-ronda9-riesgos-contables.json#returnRetry",
+      "expected": "Cada intento debe llevar un operationId único; repetir el mismo ID y cuerpo devuelve el primer resultado, y repetirlo con otro cuerpo se rechaza.",
+      "recommendedFix": "Agregar operationId único y requestHash a SaleReturn, bloquear por ID dentro de la transacción antes de validar el saldo y enviar ese ID estable desde la interfaz.",
+      "regression": "Repetir secuencial y concurrentemente una devolución de 1 sobre una venta de 2; debe persistir una sola devolución, nota, reembolso y reposición."
+    },
+    {
+      "id": "R9-A02",
+      "priority": "P2",
+      "domain": "Caja y reportes",
+      "title": "Una devolución posterior reescribe la rentabilidad del cierre original y no se atribuye al cierre que la procesa",
+      "observed": "Una venta cerrada mostraba utilidad 60. Después de devolverla desde otra caja, el cierre original pasó a utilidad 0 y el cierre de la devolución quedó en 0.",
+      "impact": "Los cierres y períodos históricos cambian retroactivamente y la caja o fecha donde ocurrió el ajuste no muestra su efecto en margen.",
+      "locations": [
+        "apps/api/src/cash.ts:127",
+        "apps/api/src/cash.ts:142",
+        "apps/api/src/cash.ts:239"
+      ],
+      "evidence": "docs/validacion/auditoria-ronda9-riesgos-contables.json#crossSessionReturn",
+      "expected": "El cierre histórico conserva sus cifras aprobadas y la devolución aparece como ajuste en la sesión y fecha de devolución, con referencia a la venta original.",
+      "recommendedFix": "Definir una política contable explícita, guardar el resumen congelado del cierre y calcular ajustes por SaleReturn.cashSessionId/createdAt en reportes de período.",
+      "regression": "Cerrar caja A, devolver en caja B y comprobar que el impreso de A no cambia y que B o el reporte de su fecha contiene el ajuste una sola vez."
+    },
+    {
+      "id": "R9-A03",
+      "priority": "P2",
+      "domain": "Compras y facturas",
+      "title": "El total documental aceptado de una factura se valida y luego se descarta",
+      "observed": "Una factura declarada por 400, con 300 recibidos en buen estado y 100 dañados, fue aceptada; la API y GoodsReceipt guardaron total 300 y damagedCost 100, sin campo invoiceTotal.",
+      "impact": "La exportación y conciliación no pueden demostrar el total de la factura del proveedor ni explicar por qué difiere del importe operativo por pagar.",
+      "locations": [
+        "apps/api/src/merchandise.ts:417",
+        "apps/api/src/merchandise.ts:516",
+        "apps/api/prisma/schema.prisma:317"
+      ],
+      "evidence": "docs/validacion/auditoria-ronda9-riesgos-contables.json#damagedInvoiceTotal",
+      "expected": "Conservar por separado total documental, total aceptado/pagadero, costo dañado y diferencia reconocida.",
+      "recommendedFix": "Agregar invoiceTotal y, si corresponde, mismatchAmount/claimAmount a la recepción o a una entidad de factura de compra; incluirlos en comprobante y 606/exportación.",
+      "regression": "Registrar 400 = 300 bueno + 100 dañado y comprobar que ambos totales y su conciliación sobreviven consulta, PDF y exportación."
+    },
+    {
+      "id": "R9-A04",
+      "priority": "P2",
+      "domain": "Precisión monetaria",
+      "title": "Campos monetarios generales aceptan más de dos decimales y producen totales distintos entre etapas",
+      "observed": "Una orden de 2 × 100.005 guardó unitCost 100.01 y total 200.01; al recibirla, el total se recalculó como 200.02.",
+      "impact": "Orden, recepción, deuda al proveedor y costo pueden diferir al centavo. Los validadores amount y positive se reutilizan en precios, costos, fletes y otros importes sin comprobar centavos.",
+      "locations": [
+        "apps/api/src/common.ts:183",
+        "apps/api/src/inventory.ts:635",
+        "apps/api/src/inventory.ts:658",
+        "apps/api/src/inventory.ts:820"
+      ],
+      "evidence": "docs/validacion/auditoria-ronda9-riesgos-contables.json#unitCostPrecision",
+      "expected": "Todo importe que se guarda en Decimal(14,2) se rechaza si tiene más de dos decimales antes de calcular totales.",
+      "recommendedFix": "Usar moneyAmount en cada entrada monetaria y mantener validadores separados para cantidades físicas.",
+      "regression": "Enviar 100.005 por cada ruta monetaria; todas deben responder 400 sin escrituras. Con 100.01, orden y recepción deben conciliar."
+    },
+    {
+      "id": "R9-A05",
+      "priority": "P2",
+      "domain": "Inventario y mermas",
+      "title": "Una devolución dañada no conserva su cantidad ni costo total en el kardex",
+      "observed": "La devolución de una unidad con costo 20 quedó con costTotal 0; el único movimiento return_waste guardó qty 0 y unitCost 20. El stock vendible quedó correctamente en 0, pero la cantidad de merma recuperable del kardex es 0.",
+      "impact": "El reporte de merma no puede conciliar unidades ni valor perdido y obliga a reconstruirlos desde JSON de devoluciones.",
+      "locations": ["apps/api/src/sales.ts:1077", "apps/api/src/sales.ts:1142"],
+      "evidence": "docs/validacion/auditoria-ronda9-devolucion-danada.json",
+      "expected": "La unidad devuelta como no vendible queda trazada con cantidad y costo, sin aumentar stock vendible ni contar la pérdida dos veces.",
+      "recommendedFix": "Modelar el movimiento físico no vendible o una entidad de merma con qty positiva y costo total; separar ese valor del costo repuesto usado para utilidad.",
+      "regression": "Devolver una unidad dañada y conciliar cantidad 1, costo 20, stock vendible sin cambio y una sola pérdida."
+    },
+    {
+      "id": "R9-A07",
+      "priority": "P2",
+      "domain": "Arqueo y cierre",
+      "title": "El cierre no es ciego y puede autoconciliar tarjeta y transferencia sin contarlas",
+      "observed": "El formulario muestra el efectivo esperado antes del conteo. Si tarjeta o transferencia quedan vacías, la API copia el esperado. Las notas son opcionales aun cuando haya diferencia.",
+      "impact": "La cajera puede copiar o aceptar el valor teórico y cerrar sin una conciliación independiente; las diferencias pueden quedar sin explicación.",
+      "locations": [
+        "apps/web/src/Tienda.tsx:181",
+        "apps/web/src/Tienda.tsx:225",
+        "packages/shared/src/index.ts:547",
+        "apps/api/src/cash.ts:577"
+      ],
+      "evidence": "docs/validacion/auditoria-ronda9-aceptacion.json#39",
+      "expected": "Ocultar el esperado hasta confirmar el conteo, exigir importes declarados por método y pedir explicación ante cualquier diferencia según política.",
+      "recommendedFix": "Separar captura y comparación, hacer obligatorios countedCard/countedTransfer y validar notes cuando las diferencias no sean cero; conservar vouchers/comisiones por separado.",
+      "regression": "Cerrar con campos vacíos y con diferencia conocida; la primera debe rechazarse y la segunda debe exigir nota antes de revelar/completar el cuadre."
+    },
+    {
+      "id": "R9-A08",
+      "priority": "P2",
+      "domain": "Rendimiento y datos",
+      "title": "Las listas devuelven imágenes completas base64 de comprobantes y pueden generar respuestas de cientos de MB",
+      "observed": "Con una sola imagen cercana a 2 MB, GET /sales devolvió 3,117,415 bytes y proofUrl ocupó 2,796,226 caracteres. El límite de 100 ventas permite aproximadamente 279,620,400 bytes sólo en base64; /cod/pending admite 500 ventas y también incluye proofUrl.",
+      "impact": "La respuesta puede agotar memoria, datos móviles o bloquear teléfonos Android sencillos y el proceso API.",
+      "locations": [
+        "apps/api/src/sales.ts:757",
+        "apps/api/src/sales.ts:1312",
+        "apps/api/src/sales.ts:1372",
+        "apps/api/src/sales.ts:1430"
+      ],
+      "evidence": "docs/validacion/auditoria-ronda9-peso-comprobantes.json",
+      "expected": "Las listas devuelven metadatos/indicador y la imagen se obtiene por un endpoint autenticado sólo al abrirla.",
+      "recommendedFix": "Excluir proofUrl de consultas de lista, paginar y mover archivos a almacenamiento privado con autorización y límites.",
+      "regression": "Crear 100 comprobantes grandes y comprobar que la lista permanece pequeña y que sólo el endpoint individual transmite una imagen."
+    },
+    {
+      "id": "R9-A06",
+      "priority": "P3",
+      "domain": "Concurrencia de recepciones",
+      "title": "Dos confirmaciones concurrentes idénticas guardan una vez pero una respuesta es 500",
+      "observed": "En cinco intentos, cada par produjo siempre un 201, un 500 y exactamente una recepción. PostgreSQL devolvió SQLSTATE 40001 envuelto por Prisma como P2010; el filtro sólo traduce P2034.",
+      "impact": "No duplica stock, pero el cliente ve un error técnico y puede abrir una incidencia o repetir sin saber si la recepción quedó guardada.",
+      "locations": [
+        "apps/api/src/inventory.ts:766",
+        "apps/api/src/common.ts:402"
+      ],
+      "evidence": "docs/validacion/auditoria-ronda9-riesgos-contables.json#concurrentOrderReceipt",
+      "expected": "Ambos clientes reciben la misma recepción o uno recibe un 409 reintentable sin error 500.",
+      "recommendedFix": "Reintentar transacciones serializadas por SQLSTATE 40001/P2034 y, después del conflicto, leer operationId y comparar el cuerpo.",
+      "regression": "Enviar el mismo operationId de forma simultánea muchas veces; ninguna respuesta debe ser 500 y debe existir una sola recepción."
+    },
+    {
+      "id": "R9-A09",
+      "priority": "P3",
+      "domain": "Despliegue y seguridad",
+      "title": "La topología HTTPS documentada hace que todos los clientes compartan la IP del proxy exterior",
+      "observed": "DESPLIEGUE.md coloca Nginx detrás de un proxy HTTPS. Nginx sustituye X-Forwarded-For por $remote_addr y la API confía en un salto; por ello req.ip pasa a ser la IP del proxy exterior, no la del equipo de tienda.",
+      "impact": "El límite por IP de autenticación/ventas se comparte entre empleados y los intentos de una misma cuenta desde distintos equipos usan el mismo origen de bloqueo.",
+      "locations": [
+        "deploy/nginx.conf:12",
+        "deploy/nginx.conf:22",
+        "apps/api/src/main.ts:20",
+        "apps/api/src/main.ts:37",
+        "docs/DESPLIEGUE.md:22"
+      ],
+      "evidence": "Revisión estática de la cadena proxy documentada.",
+      "expected": "La cadena conserva la IP original y sólo confía en proxies conocidos, sin aceptar cabeceras de clientes directos.",
+      "recommendedFix": "Definir explícitamente los proxies de confianza y hacer que Nginx preserve la cadena validada del proxy exterior; añadir una prueba con dos IP cliente a través de ambos saltos.",
+      "regression": "Dos clientes tras el proxy exterior deben producir req.ip distintas y límites independientes; una conexión directa no debe poder falsificar X-Forwarded-For."
+    },
+    {
+      "id": "R9-A10",
+      "priority": "P3",
+      "domain": "Dependencias",
+      "title": "La instalación de producción conserva dos avisos altos y dos moderados",
+      "observed": "pnpm audit --prod informa effect 3.18.4 y deepmerge-ts 7.1.5 como altos, uuid 8.3.2 y js-yaml 5.3.0 como moderados.",
+      "impact": "Existe deuda de actualización. Esta auditoría no demostró una ruta explotable en las solicitudes normales de FitStore; dos paquetes altos llegan por la configuración de Prisma.",
+      "locations": ["pnpm-lock.yaml", "package.json"],
+      "evidence": "docs/validacion/auditoria-ronda9-evidencias/dependencias.json",
+      "expected": "La imagen de producción no contiene avisos conocidos alcanzables y las excepciones quedan documentadas.",
+      "recommendedFix": "Actualizar dependencias directas/transitivas, volver a ejecutar check e integración y documentar temporalmente cualquier advisory no alcanzable.",
+      "regression": "pnpm audit --prod y las suites completas después de actualizar."
+    },
+    {
+      "id": "R9-A11",
+      "priority": "P3",
+      "domain": "Comprobantes internos",
+      "title": "El efectivo entregado se guarda pero no aparece en PDF ni detalle histórico",
+      "observed": "El ticket térmico local usa sale.tendered. El PDF del servidor y el historial muestran el efectivo neto y el cambio, sin identificar el importe entregado.",
+      "impact": "Una reimpresión desde historial no permite reconstruir claramente R, T y R−T del paso 12.",
+      "locations": [
+        "apps/web/src/Prints.tsx:304",
+        "apps/api/src/sales.ts:1619"
+      ],
+      "evidence": "docs/validacion/auditoria-ronda9-aceptacion.json#12",
+      "expected": "Ticket, PDF e historial muestran total, importe entregado, efectivo neto y cambio con las mismas cifras.",
+      "recommendedFix": "Usar Payment.tendered en PDF y detalle/reimpresión, con etiquetas no ambiguas.",
+      "regression": "Cobrar 150 por una venta de 100 y comprobar 150 entregado, 50 cambio y 100 ingreso en todas las representaciones."
+    },
+    {
+      "id": "R9-A12",
+      "priority": "P3",
+      "domain": "Descuentos y auditoría",
+      "title": "La autorización de descuentos no queda completa ni legible",
+      "observed": "El reporte returns-discounts sólo incluye discount_approved cuando hubo PIN o vendió un gerente, y muestra el aprobador como UUID dentro de JSON. Un descuento de cajera dentro de su límite no genera ese evento ni conserva motivo/aprobador explícito en la venta o ticket.",
+      "impact": "La dueña no puede revisar de forma directa quién autorizó cada descuento solicitado por el paso 17.",
+      "locations": [
+        "apps/api/src/sales.ts:665",
+        "apps/api/src/sales.ts:670",
+        "apps/api/src/reports.ts:689"
+      ],
+      "evidence": "docs/validacion/auditoria-ronda9-aceptacion.json#17",
+      "expected": "Cada descuento conserva actor, regla/alcance, autorización aplicable y motivo legible; el reporte resuelve nombres.",
+      "recommendedFix": "Guardar metadatos de descuento en la venta o un evento para todos los descuentos y mostrar nombre/rol del autorizador en ticket y reporte.",
+      "regression": "Probar descuento dentro y fuera del límite y como gerente; los tres deben aparecer una vez con actor y autorización correctos."
+    }
+  ],
+  "operationalPrerequisites": [
+    "Ejecutar los 40 pasos con catálogo, stock, lector, impresora y terminal adquirente reales después de corregir R9-A01.",
+    "Definir con contador/PSFE la emisión B/E y contingencia antes de producir comprobantes fiscales.",
+    "Configurar respaldo automático fuera de la PC y comprobar una restauración completa en otra máquina.",
+    "Ejecutar el ZIP final corregido en Windows con Node >=24, PostgreSQL y el instalador/despliegue que se usará en la tienda."
+  ],
+  "integrity": {
+    "originalFilesCompared": 418,
+    "originalFilesIdentical": 418,
+    "missingOriginalFiles": 0,
+    "modifiedOriginalFiles": 0,
+    "additionalAuditFiles": 30,
+    "evidence": "docs/validacion/auditoria-ronda9-integridad.json"
+  },
+  "limits": [
+    "Las corridas de integración y navegador se hicieron inicialmente con Node 22.22.0; el check final completo se repitió con Node 24.19.0, que cumple package.json.",
+    "PostgreSQL 18.4 local valida SQL y migraciones, pero no sustituye una prueba final con la versión y Compose de producción.",
+    "No se suministró el Excel original; no se certifican los 616 productos, 3158 unidades, costos ni precios reales.",
+    "Las evidencias de Windows incluidas son del autor; el código exacto entregado no se ejecutó de nuevo en Windows.",
+    "No se hizo una llamada fiscal ni se emitió un e-CF real, por alcance expreso de la ronda."
+  ],
+  "implementationModified": false
+}

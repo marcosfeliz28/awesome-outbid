@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-10-06T15:45:14.191Z",
+  "sale": {
+    "id": "07ed0f3e-81ba-4803-a170-5b7dad03502b",
+    "quantity": 1,
+    "costTotal": 20
+  },
+  "returned": {
+    "id": "e7ea1ce8-9ed3-48cd-b6a2-3fb6d0fd7397",
+    "total": 100,
+    "costTotal": 0,
+    "items": [
+      {
+        "qty": 1,
+        "tax": 0,
+        "cost": 0,
+        "total": 100,
+        "opened": false,
+        "damaged": true,
+        "restock": false,
+        "saleItemId": "fee18211-4d56-4c62-a711-59b6933de63d"
+      }
+    ]
+  },
+  "wasteMovements": [
+    {
+      "id": "2d796848-d720-4cf0-b649-bb87e861a71f",
+      "qty": 0,
+      "unitCost": 20,
+      "balanceAfter": 0,
+      "reason": "Producto roto al regresar (no vendible)"
+    }
+  ],
+  "stockAfter": 0,
+  "quantityOfDamagedReturnRecoverableFromKardex": 0,
+  "reproduced": true
+}

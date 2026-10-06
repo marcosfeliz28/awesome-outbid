@@ -1,0 +1,83 @@
+FITSTORE POS — REPRODUCCIONES INDEPENDIENTES DE AUDITORÍA RONDA 9
+Fecha: 2026-10-06
+
+ADVERTENCIA
+Todos estos scripts escriben datos sintéticos y algunos recrean una base temporal.
+Ejecutarlos únicamente contra una base aislada de auditoría. No usarlos en producción.
+
+ENTORNO UTILIZADO
+- Raíz: /workspace/auditoria-fitstore-ronda9/fitstore-pos
+- PostgreSQL 18.4: 127.0.0.1:55439
+- Base principal de auditoría: fitstore
+- API compilada: http://127.0.0.1:3109/api
+- DATABASE_URL:
+  postgresql://fitstore:fitstore_local@127.0.0.1:55439/fitstore?options=-c%20TimeZone%3DUTC
+- SEED_DEMO_PASSWORD: contraseña de demostración incluida con el proyecto
+
+PREPARACIÓN RESUMIDA
+1. Instalar dependencias con pnpm install --frozen-lockfile.
+2. Iniciar PostgreSQL aislado.
+3. Definir DATABASE_URL, JWT_SECRET, SEED_DEMO_PASSWORD y WEB_ORIGIN.
+4. Aplicar las 15 migraciones y el seed.
+5. Compilar con pnpm build.
+6. Iniciar apps/api/dist/main.js en PORT=3109 con NODE_ENV=test.
+
+COMANDOS PRINCIPALES
+Desde la raíz del proyecto y con DATABASE_URL exportada:
+
+  node docs/validacion/auditoria-ronda9-reproducciones/regresiones-r8.mjs
+  node docs/validacion/auditoria-ronda9-reproducciones/riesgos-contables.mjs
+  node docs/validacion/auditoria-ronda9-reproducciones/devolucion-danada.mjs
+  node docs/validacion/auditoria-ronda9-reproducciones/peso-comprobantes.mjs
+
+La actualización R7→R9 usa otra base temporal y necesita una copia instalada de R7.
+El script conserva las rutas exactas del entorno de auditoría para hacer transparente
+la reproducción original:
+
+  node docs/validacion/auditoria-ronda9-reproducciones/actualizacion-r7-r9.mjs
+
+RESULTADOS GENERADOS
+- ../auditoria-ronda9-regresiones-r8.json
+- ../auditoria-ronda9-riesgos-contables.json
+- ../auditoria-ronda9-devolucion-danada.json
+- ../auditoria-ronda9-peso-comprobantes.json
+- ../auditoria-ronda9-actualizacion-r7-r9.json
+- ../auditoria-ronda9-evidencias/*.txt
+
+QUÉ COMPRUEBA CADA SCRIPT
+
+regresiones-r8.mjs
+- R8-01 por API, edición, producto rápido e importador/CLI.
+- R8-03 con error en segunda fila y aborto sin escrituras.
+- R8-02 con venta histórica sin costo por línea y conciliación total.
+
+riesgos-contables.mjs
+- Devolución hecha en una caja posterior que cambia la utilidad del cierre original.
+- Reenvío idéntico de devolución que crea dos notas/devoluciones.
+- Costo 100.005 que deja orden 200.01 y recepción 200.02.
+- Factura 400 con 300 buenos + 100 dañados cuyo total documental se pierde.
+- Cinco pares de recepción concurrente: una escritura, pero una respuesta 500.
+
+devolucion-danada.mjs
+- La unidad no vuelve al stock vendible.
+- SaleReturn queda con costo 0.
+- return_waste queda con qty 0 y unitCost 20.
+
+peso-comprobantes.mjs
+- Mide el tamaño real de GET /sales con una evidencia base64 ya cargada.
+- Calcula el máximo teórico para 100 pruebas de 2 MiB.
+
+actualizacion-r7-r9.mjs
+- Crea fitstore_audit_r9_upgrade7.
+- Aplica/siembra R7, aplica las migraciones R9 y compara conteos/esquema.
+- Inicia temporalmente la API R9 y prueba salud, login y catálogo.
+
+SUITES REPETIDAS
+- pnpm check: TypeScript, ESLint, 128 pruebas aprobadas, 1 omitida y builds.
+- Integración compilada: 137/137 en cinco corridas completas (685/685).
+- Chromium: 55/55.
+- R9-caja-5: 10/10 repeticiones adicionales.
+- Portabilidad/Windows estática: 31/31.
+
+Los archivos XLSX de archivos-r8/ fueron creados sólo para la auditoría. Ningún
+script contiene inventario, cliente, proveedor ni credencial de producción.
