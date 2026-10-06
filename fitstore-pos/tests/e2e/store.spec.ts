@@ -1796,7 +1796,7 @@ test("R9-offline-4: si el catálogo cambia entre una página y otra, ningún pro
   await search.press("Enter");
   await expect(page.getByText(name + " agregado.")).toBeVisible();
   await expect(r9Qty(page, name)).toHaveText("1");
-  await search.fill(code);
+  await search.fill(name);
   await expect(page.locator(".product-card", { hasText: name })).toHaveCount(1);
   await page.getByRole("button", { name: "Limpiar", exact: true }).click();
   await r9Retire(request, headers, [product]);
@@ -1830,4 +1830,209 @@ test("R9-offline-5: el cierre por inactividad revoca la sesión y al recargar se
     headers: { Cookie: "fitstore_refresh=" + refresh!.value },
   });
   expect(renewed.status()).toBe(400);
+});
+
+test("R9-offline-5: una pestaña sin uso no cierra la sesión de otra pestaña activa del mismo equipo", async ({
+  context,
+}) => {
+  await context.clock.install();
+  const active = await context.newPage();
+  await login(active);
+  const idle = await context.newPage();
+  await idle.goto("/");
+  await expect(idle.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  // La cajera trabaja en una pestaña; la otra queda sin tocar.
+  await context.clock.fastForward("20:00");
+  await active.keyboard.press("Shift");
+  await context.clock.fastForward("15:00");
+  await idle.waitForTimeout(1500);
+  for (const page of [idle, active]) {
+    await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Entrar a mi tienda" }),
+    ).toHaveCount(0);
+  }
+  // La sesión del servidor sigue viva: la pestaña activa consulta sin problema.
+  await active.getByRole("button", { name: "Productos", exact: true }).click();
+  await expect(active.locator(".main-content h1")).toBeVisible();
+  await expect(active.locator(".error-panel")).toHaveCount(0);
+});
+
+test("R9-offline-3 revisión: si un precio cambia mientras el canal de avisos está caído, al reconectar se avisa qué precio cambió", async ({
+  page,
+  request,
+  context,
+}) => {
+  const headers = await r9Headers(request);
+  const code = r9Code("7");
+  const name = "Faja E2E precio al reconectar " + code;
+  const product = await r9Product(request, headers, name, code);
+  // El canal de avisos (SSE) vuelve después del cambio de precio: al
+  // reconectar, el servidor manda «ready» y la caja relee el catálogo.
+  let reconnect!: () => void;
+  const back = new Promise<void>((resolve) => (reconnect = resolve));
+  let first = true;
+  const events = (url: URL) => url.pathname === "/api/events";
+  await context.route(events, async (route: any) => {
+    if (!first) return route.continue();
+    first = false;
+    await back;
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: "event: ready\ndata: {}\n\n",
+    });
+  });
+  const search = await r9Pos(page);
+  await search.fill(code);
+  await search.press("Enter");
+  await expect(r9Qty(page, name)).toHaveText("1");
+  const changed = await request.patch(
+    "/api/variants/" + product.variants[0].id,
+    { headers, data: { price: 1700 } },
+  );
+  expect(changed.ok()).toBe(true);
+  reconnect();
+  // Antes el total del carrito cambiaba sin ningún aviso.
+  await expect(
+    page.getByText(
+      "Precio actualizado: " + name + ": RD$ 1,500.00 → RD$ 1,700.00",
+    ),
+  ).toBeVisible();
+  await r9Charge(page);
+  await expect(
+    page.getByText("Venta registrada", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  await context.unroute(events);
+  await r9Retire(request, headers, [product]);
+});
+
+test("R9-offline-1 revisión: un crédito sin respuesta del servidor avisa que pudo quedar registrado y al cobrarlo otra vez no se duplica", async ({
+  page,
+  request,
+  context,
+}) => {
+  const headers = await r9Headers(request);
+  const settings = await (
+    await request.get("/api/settings", { headers })
+  ).json();
+  const code = r9Code("7");
+  const name = "Faja E2E crédito sin respuesta " + code;
+  const product = await r9Product(request, headers, name, code, {
+    price: 500,
+  });
+  const sales = (url: URL) => url.pathname === "/api/sales";
+  try {
+    const allowed = await request.put("/api/settings", {
+      headers,
+      data: { ...settings, allowCreditSales: true },
+    });
+    expect(allowed.ok()).toBe(true);
+    const customer = await (
+      await request.post("/api/customers", {
+        headers,
+        data: { name: "E2E crédito " + code, creditLimit: 5000 },
+      })
+    ).json();
+    expect(customer.id).toBeTruthy();
+    const search = await r9Pos(page);
+    await search.fill(code);
+    await search.press("Enter");
+    await expect(r9Qty(page, name)).toHaveText("1");
+    await page.keyboard.press("F4");
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: customer.name })
+      .click();
+    const credit = async () => {
+      await page.getByRole("button", { name: /Cobrar/ }).click();
+      await page
+        .getByRole("button", { name: "A crédito", exact: true })
+        .click();
+      await page.getByLabel("Vencimiento del crédito").fill("2030-01-01");
+      await page
+        .getByRole("button", { name: "Agregar pago", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Finalizar venta", exact: true })
+        .click();
+    };
+    // 504: el crédito sí quedó registrado, pero la respuesta no llegó.
+    await context.route(sales, async (route: any) => {
+      if (route.request().method() !== "POST") return route.continue();
+      await route.fetch();
+      await route.fulfill({ status: 504, body: "Gateway Timeout" });
+    });
+    await credit();
+    const checkout = page.getByRole("dialog", {
+      name: "Todo listo para cobrar",
+    });
+    // Antes: «Las ventas a crédito y notas de crédito requieren conexión.»,
+    // como si no se hubiera cobrado.
+    await expect(checkout.getByRole("alert")).toContainText(
+      "no se sabe si la venta quedó registrada",
+    );
+    // La cajera cierra el cobro y lo intenta otra vez al volver la conexión.
+    await checkout.getByRole("button", { name: "Cerrar" }).click();
+    await context.unroute(sales);
+    await expect(page.locator(".connection")).toContainText("En línea", {
+      timeout: 20000,
+    });
+    await credit();
+    await expect(
+      page.getByText("Venta registrada", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Nueva venta", exact: true })
+      .click();
+    // Una sola venta y una sola deuda del cliente.
+    const sold = (
+      await (await request.get("/api/sales", { headers })).json()
+    ).filter((s: any) => s.customerId === customer.id);
+    expect(sold).toHaveLength(1);
+    expect(Number(sold[0].creditBalance)).toBe(500);
+    expect(await r9Stock(request, headers, product)).toBe(4);
+  } finally {
+    await context.unroute(sales);
+    await request.put("/api/settings", { headers, data: settings });
+    await r9Retire(request, headers, [product]);
+  }
+});
+
+test("R9-offline-1 revisión: si el servidor no responde (paquetes perdidos), la venta se guarda en segundos y al recargar no se queda cargando", async ({
+  page,
+  request,
+  context,
+}) => {
+  test.setTimeout(90000);
+  const headers = await r9Headers(request);
+  const code = r9Code("7");
+  const name = "Faja E2E sin respuesta " + code;
+  const product = await r9Product(request, headers, name, code);
+  const search = await r9Pos(page);
+  await search.fill(code);
+  await search.press("Enter");
+  await expect(r9Qty(page, name)).toHaveText("1");
+  // Internet cortado con el router encendido: las peticiones no fallan, se
+  // quedan sin respuesta (antes «Finalizar venta» esperaba minutos).
+  const api = (url: URL) => url.pathname.startsWith("/api/");
+  await context.route(api, () => new Promise(() => {}));
+  await r9Charge(page);
+  await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible({
+    timeout: 20000,
+  });
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  // Al recargar entra con la sesión guardada (antes se quedaba cargando).
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Punto de venta" }),
+  ).toBeVisible({ timeout: 20000 });
+  await expect(page.locator(".connection")).toContainText("Offline");
+  await context.unroute(api);
+  await expect(async () => {
+    expect(await r9LocalSales(page)).toEqual([]);
+  }).toPass({ timeout: 30000 });
+  expect(await r9Stock(request, headers, product)).toBe(4);
+  await r9Retire(request, headers, [product]);
 });

@@ -1574,11 +1574,7 @@ export function matchInvoiceLines(
     // incluida: «Top Deportivo Aurora Lila» no es «ISO100 … Strawberry».
     const said = tokens(rest).filter((w) => !/^\d+$/.test(w) && !EXPLAINED.has(w));
     const words = [...nameWords.get(productId)!];
-    const unrelated =
-      said.length > 0 &&
-      !said.some((w) => words.some((x) => akin(w, x))) &&
-      productScore(rest, nameCores.get(productId) || nameOf(productId)) <
-        MIN_PRODUCT_SCORE;
+    const unrelated = (globalThis as any).__rule(said, words, rest, productScore(rest, nameCores.get(productId) || nameOf(productId)), () => missing(productId, tokens(rest), declared));
     // Otro producto de la tienda: elegido del todo por la descripción, o
     // reconocido sin variante cuando el del código no tiene nada que ver.
     const other =

@@ -366,9 +366,16 @@ describe("Factura proveedor · emparejamiento con sabor, tamaño y talla", () =>
     expect(bySku.productId).toBe("p-whey");
   });
   it("códigos exactos y equivalencias del proveedor ganan con confianza 1", () => {
+    for (const d of ["Legging Essential", "Leggings negro M", "x"])
+      expect(match(d, "770011"), d).toMatchObject({
+        variantId: "v-m-negro",
+        confidence: 1,
+      });
+    // Una descripción que no tiene nada que ver ya no se acepta en silencio
+    // (R9-facturas-2): antes quedaba elegida con confianza 1.
     expect(match("cualquier texto", "770011")).toMatchObject({
-      variantId: "v-m-negro",
-      confidence: 1,
+      variantId: null,
+      productId: "p-leg",
     });
     expect(
       matchInvoiceLines([line("x", "PROV-77")], variants, [
@@ -547,17 +554,23 @@ describe("emparejamiento · variante única y atributos en conflicto", () => {
       matchInvoiceLines([line("Whey chocolate", "WHEY")], catalog)[0].variantId,
     ).toBeNull();
   });
-  it("el código exacto de una variante (SKU o barras) manda sobre la descripción", () => {
-    const [bySku] = matchInvoiceLines(
-      [line("Proteína Whey chocolate 5 lb", "WHEY-V2")],
-      [only],
-    );
-    const [byBarcode] = matchInvoiceLines(
-      [line("Proteína Whey chocolate 5 lb", "999")],
-      [only],
-    );
-    expect(bySku.variantId).toBe("vainilla-2lb");
-    expect(byBarcode.variantId).toBe("vainilla-2lb");
+  // R9-facturas-2: antes el código mandaba aunque la descripción declarara
+  // otra variante; ahora la línea queda en el producto, sin variante.
+  it("el código exacto de una variante (SKU o barras) manda salvo que la descripción declare otra variante", () => {
+    for (const code of ["WHEY-V2", "999"]) {
+      const [r] = matchInvoiceLines(
+        [line("Proteína Whey chocolate 5 lb", code)],
+        [only],
+      );
+      expect(r.variantId, code).toBeNull();
+      expect(r.productId, code).toBe("p-whey");
+      expect(r.note, code).toMatch(/Vainilla, 2 lb no coincide/);
+      for (const d of ["Proteína Whey vainilla 2 lb", "Proteína Whey"])
+        expect(
+          matchInvoiceLines([line(d, code)], [only])[0].variantId,
+          d,
+        ).toBe("vainilla-2lb");
+    }
   });
 });
 
@@ -630,13 +643,19 @@ describe("emparejamiento · talla explícita sin vocabulario del catálogo", () 
         .variantId,
     ).toBe("legging-m");
   });
-  it("el código exacto de la variante sigue mandando", () => {
+  // R9-facturas-2: el código de la talla M con «talla S» ya no se elige.
+  it("el código exacto de la variante manda si la factura no dice otra talla", () => {
     expect(
       matchInvoiceLines(
         [line("Leggings Sculpt talla S negro", "LEG-M-N")],
         catalog,
-      )[0].variantId,
-    ).toBe("legging-m");
+      )[0],
+    ).toMatchObject({ variantId: null, productId: "p-leg" });
+    for (const d of ["Leggings Sculpt talla M negro", "Leggings Sculpt negro"])
+      expect(
+        matchInvoiceLines([line(d, "LEG-M-N")], catalog)[0].variantId,
+        d,
+      ).toBe("legging-m");
   });
 });
 
@@ -1049,6 +1068,82 @@ describe("Ronda 9 · revisión · facturas", () => {
     // La descripción que no contradice (o no dice nada) deja el código.
     for (const d of ["ISO100 Hydrolyzed Dymatize Strawberry 1.34 lb", "x"])
       expect(match(d, "1162").variantId, d).toBe("v-1162");
+    // El código escrito en la descripción (o como descripción, si venía
+    // vacía) no es el número de un tono.
+    for (const d of ["1302", "Beauty Creations FSP 1302"])
+      expect(match(d, "1302").variantId, d).toBe("v-1302");
+    // Con el código de un tono y la descripción de otro: se sugiere el otro.
+    expect(
+      match("Beauty Creations Flawless Stay Powder Foundation FSP 6.0", "1302"),
+    ).toMatchObject({ variantId: null, productId: "p-1303" });
+    // Revisión: una descripción que no se parece en nada al producto del
+    // código, aunque la tienda no tenga ese producto, no se elige.
+    for (const d of [
+      "Top Deportivo Aurora Lila",
+      "Faja Reloj de Arena Beige",
+      "Creatina Monohidratada 300 g",
+      "Shaker 600 ml",
+    ]) {
+      const r = match(d, "1162");
+      expect(r.variantId, d).toBeNull();
+      expect(r.note, d).toMatch(/código 1162/);
+    }
+    expect(match("Top Deportivo Aurora Lila", "1162")).toMatchObject({
+      productId: "p-1162",
+      note: expect.stringMatching(/ISO100.*no coincide/),
+    });
+    // Abreviada, con la marca o en español sigue siendo el producto.
+    for (const d of [
+      "Dymatize ISO 100 Fresa 1.3 lb",
+      "ISO100 Hydrolyzed",
+      "Iso 100 hidrolizada strawberry",
+    ])
+      expect(match(d, "1162").variantId, d).toBe("v-1162");
+    // Productos con variantes (como los crea la tienda): el Top en S/M/L.
+    const top = ["S", "M", "L"].map((s) => ({
+      id: "v-top-" + s,
+      sku: "TOP-" + s,
+      barcode: "77" + s,
+      attributes: { Talla: s },
+      product: { id: "p-top", name: "Top Deportivo Aurora", sku: "TOP" },
+    }));
+    const whey = [
+      ["1", "Chocolate"],
+      ["2", "Vainilla"],
+    ].map(([n, flavor]) => ({
+      id: "v-fit-" + n,
+      sku: "FIT-0001-" + n,
+      barcode: "B" + n,
+      attributes: { Sabor: flavor, Tamaño: "2 lb" },
+      product: { id: "p-fit", name: "Whey Fit", sku: "FIT-0001" },
+    }));
+    const store = [...catalog, ...top, ...whey];
+    const inStore = (description: string, code: string) =>
+      matchInvoiceLines([{ code, description, qty: 1, unitCost: 1 }], store)[0];
+    // El Top se reconoce aunque la factura no diga la talla.
+    expect(inStore("Top Deportivo Aurora Lila", "1162")).toMatchObject({
+      variantId: null,
+      productId: "p-top",
+      note: expect.stringMatching(/código 1162.*Top Deportivo Aurora/),
+    });
+    // El código de una variante con la descripción de otra variante.
+    expect(inStore("Top Deportivo Aurora talla L", "TOP-S")).toMatchObject({
+      variantId: null,
+      productId: "p-top",
+      note: expect.stringMatching(/TOP-S.*S no coincide/),
+    });
+    expect(inStore("Whey Fit Vainilla 2 lb", "FIT-0001-1")).toMatchObject({
+      variantId: null,
+      productId: "p-fit",
+    });
+    // Lo que no contradice la variante deja el código.
+    for (const [d, code, id] of [
+      ["Top Deportivo Aurora talla S", "TOP-S", "v-top-S"],
+      ["Top Deportivo Aurora", "TOP-S", "v-top-S"],
+      ["x", "TOP-S", "v-top-S"],
+      ["Whey Fit Chocolate 2 lb", "FIT-0001-1", "v-fit-1"],
+    ])
+      expect(inStore(d, code).variantId, d).toBe(id);
   });
   it("tamaños en softgels, caplets, liqui-caps, serv. y packs (R9-facturas-3)", () => {
     for (const d of [
@@ -1091,6 +1186,48 @@ describe("Ronda 9 · revisión · facturas", () => {
     picks("Amave Blush 3", "1461");
     picks("Dior Rosy Glow Blush 001 Pink", "1272");
     picks("Tribulus 1400 Nutrex 90 cápsulas", "1002");
+    // Revisión: un porcentaje no es un número de tono, y el número del
+    // nombre escrito con su unidad («200 mg») también lo nombra.
+    for (const [d, id] of [
+      ["Gold Standard Whey Optimum Nutrition Vanilla Ice Cream 5 lb", "1177"],
+      [
+        "Optimum Nutrition Gold Standard Whey Double Rich Chocolate 2 lb",
+        "1180",
+      ],
+      ["MuscleTech Mass Gainer Vanilla Milkshake 5.15 lb", "1186"],
+      ["La Roche-Posay Cicaplast Gel B5 Skin Protectant 40 ml", "1246"],
+      ["Caffeine Nutrex 200 mg 60 cápsulas", "1066"],
+      ["Tribulus 1400 mg Nutrex 90 cápsulas", "1002"],
+      ["L-Carnitine 3000 mg Nutrex Berry Blast 31 serv.", "1020"],
+      ["BCAA 5000 mg Recovery Nutrex Fruit Punch 30 servicios", "1100"],
+      ["CLA 1000 mg Nutrex 90 softgels", "1014"],
+      ["C-1000 mg NOW 100 cápsulas vegetales", "1023"],
+    ])
+      picks(d, id);
+    // El porcentaje es opcional, pero otro porcentaje no es el producto; y
+    // la dosis no nombra el número si la factura escribe otro suelto.
+    for (const d of [
+      "Gold Standard 50% Whey Optimum Nutrition Vanilla Ice Cream 5 lb",
+      "Caffeine 400 Nutrex 200 mg 60 cápsulas",
+    ])
+      expect(match(d).variantId, d).toBeNull();
+    picks(
+      "Gold Standard 100% Whey Optimum Nutrition Vanilla Ice Cream 5 lb",
+      "1177",
+    );
+    // El porcentaje tampoco sustituye al número del tono.
+    expect(
+      match("Beauty Creations Flawless Stay Powder Foundation FSP 6.5 100%")
+        .variantId,
+    ).toBeNull();
+    // Una medida con otro número no nombra el del producto, y sólo la dosis
+    // nombra el número: «SPF 30 – 50 ml» no es «SPF 50 – 50 ml».
+    flags("Caffeine Nutrex 100 mg 60 cápsulas", /número 200|tamaño/);
+    expect(
+      match(
+        "La Roche-Posay Anthelios Tinted Mineral Light Fluid Sunscreen SPF 30 50 ml",
+      ).variantId,
+    ).toBeNull();
   });
   it("un tono de palabras que el nombre no tiene no cae en otro tono (R9-facturas-5)", () => {
     for (const d of [

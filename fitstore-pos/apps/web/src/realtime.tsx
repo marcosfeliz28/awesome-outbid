@@ -9,9 +9,10 @@ import {
   Smartphone,
 } from "lucide-react";
 import { Badge, Button, Modal } from "@fitstore/ui";
-import { can } from "@fitstore/shared";
+import { can, formatMoney } from "@fitstore/shared";
 import {
   api,
+  CartItem,
   loadCatalog,
   localDB,
   post,
@@ -20,7 +21,38 @@ import {
   refreshSession,
   useStore,
 } from "./api";
-import { toast } from "./helpers";
+import { attrLabel, toast } from "./helpers";
+// «Producto · talla: RD$ 1,500.00 → RD$ 1,700.00» (R9-offline-3).
+export const priceChanges = (changes: { item: CartItem; before: number }[]) =>
+  changes
+    .map(({ item, before }) => {
+      const label = attrLabel(item.variant.attributes || {});
+      return (
+        (label === "Única"
+          ? item.product.name
+          : item.product.name + " · " + label) +
+        ": " +
+        formatMoney(before) +
+        " → " +
+        formatMoney(item.variant.price)
+      );
+    })
+    .join("; ");
+// Aviso de las líneas del carrito que cambiaron de precio. Lo usan el POS y
+// el canal de avisos al reconectar: ese llega antes que el efecto del POS y,
+// sin el aviso aquí, el total cambiaba sin que la cajera lo supiera
+// (R9-offline-3).
+export function announcePriceChanges(
+  changes: { item: CartItem; before: number }[],
+) {
+  if (changes.length)
+    toast(
+      "Precio actualizado: " +
+        priceChanges(changes) +
+        ". Revisa el total antes de cobrar.",
+      true,
+    );
+}
 type Identity = { id: string; name: string; secret: string };
 const randomSecret = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) =>
@@ -115,8 +147,10 @@ export function useRealtime() {
         for (const p of catalog)
           for (const v of p.variants) apply(v.id, Number(v.stock));
         // El carrito toma también precios y datos vigentes, no sólo el
-        // stock (R9-offline-3).
-        refreshCart(client.getQueryData<Product[]>(["catalog"]) ?? catalog);
+        // stock, y se avisa qué precio cambió (R9-offline-3).
+        announcePriceChanges(
+          refreshCart(client.getQueryData<Product[]>(["catalog"]) ?? catalog),
+        );
         void client.invalidateQueries();
       } else if (type === "stock.changed") {
         const known = client

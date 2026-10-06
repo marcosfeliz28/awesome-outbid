@@ -167,12 +167,37 @@ export const isNetworkError = (e: unknown): e is NetworkError =>
   e instanceof NetworkError;
 // Hay red y el servidor respondió la última vez.
 export const isOnline = () => navigator.onLine && useStore.getState().online;
-async function send(url: string, init: RequestInit) {
+// Plazo para que el servidor conteste al cobrar o al abrir la aplicación. En
+// un corte real con el router encendido los paquetes se pierden y fetch
+// esperaba el plazo del sistema (de 20 s a más de 2 min): «Finalizar venta»
+// seguía ocupado y al recargar la app se quedaba cargando. Vencido el plazo
+// es sin conexión; es seguro para las ventas porque la sincronización las
+// reconoce por offlineUuid (R9-offline-1).
+export const ANSWER_TIMEOUT = 12000;
+async function send(url: string, init: RequestInit, timeout = 0) {
+  let expired = false,
+    signal = init.signal;
+  if (timeout) {
+    // A mano y no con AbortSignal.any/timeout, que faltan en Safari viejos.
+    const controller = new AbortController(),
+      caller = init.signal;
+    setTimeout(() => {
+      expired = true;
+      controller.abort();
+    }, timeout);
+    if (caller?.aborted) controller.abort();
+    else
+      caller?.addEventListener("abort", () => controller.abort(), {
+        once: true,
+      });
+    signal = controller.signal;
+  }
   let response: Response;
   try {
-    response = await fetch(url, init);
+    response = await fetch(url, { ...init, signal });
   } catch (e) {
-    if (e instanceof DOMException && e.name === "AbortError") throw e;
+    if (!expired && e instanceof DOMException && e.name === "AbortError")
+      throw e;
     useStore.getState().setOnline(false);
     throw new NetworkError();
   }
@@ -182,16 +207,28 @@ async function send(url: string, init: RequestInit) {
   }
   return response;
 }
+// La conexión se cortó, o venció el plazo, mientras llegaba la respuesta: es
+// sin conexión, no un error del servidor (R9-offline-1).
+async function readJson(response: Response) {
+  try {
+    return await response.json();
+  } catch (e) {
+    if (e instanceof SyntaxError) throw e;
+    useStore.getState().setOnline(false);
+    throw new NetworkError();
+  }
+}
 let refreshPromise: Promise<void> | null = null;
 export async function refreshSession() {
   if (!refreshPromise)
     refreshPromise = (async () => {
-      const response = await send("/api/auth/refresh", {
-        method: "POST",
-        credentials: "include",
-      });
+      const response = await send(
+        "/api/auth/refresh",
+        { method: "POST", credentials: "include" },
+        ANSWER_TIMEOUT,
+      );
       if (!response.ok) throw new Error("Inicia sesión para continuar.");
-      const result = await response.json();
+      const result = await readJson(response);
       await saveSession(result.user, result.accessToken, false);
     })().finally(() => {
       refreshPromise = null;
@@ -229,11 +266,7 @@ export async function saveSession(
 export async function endSession() {
   let revoked = true;
   try {
-    await api("/auth/logout", {
-      method: "POST",
-      body: "{}",
-      signal: AbortSignal.timeout(8000),
-    });
+    await api("/auth/logout", { method: "POST", body: "{}", timeout: 8000 });
   } catch (e) {
     revoked = !isNetworkError(e);
   }
@@ -241,21 +274,23 @@ export async function endSession() {
   if (revoked) await localDB.cache.delete("session");
   else await localDB.cache.update("session", { "data.expiresAt": 0 });
 }
+// timeout: milisegundos sin respuesta para tratarlo como sin conexión.
 export async function api<T = any>(
   path: string,
-  options: RequestInit = {},
+  options: RequestInit & { timeout?: number } = {},
   retry = true,
 ): Promise<T> {
   const token = useStore.getState().token;
-  const headers = new Headers(options.headers);
-  if (!(options.body instanceof FormData))
+  const { timeout, ...init } = options;
+  const headers = new Headers(init.headers);
+  if (!(init.body instanceof FormData))
     headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", "Bearer " + token);
-  const response = await send("/api" + path, {
-    ...options,
-    headers,
-    credentials: "include",
-  });
+  const response = await send(
+    "/api" + path,
+    { ...init, headers, credentials: "include" },
+    timeout,
+  );
   if (response.status === 401 && retry) {
     await refreshSession();
     return api(path, options, false);
@@ -266,7 +301,7 @@ export async function api<T = any>(
       .catch(() => ({ message: "No se pudo completar la operación." }));
     throw new Error(result.message);
   }
-  return response.json();
+  return readJson(response);
 }
 export const post = <T = any>(path: string, data: unknown) =>
   api<T>(path, { method: "POST", body: JSON.stringify(data) });

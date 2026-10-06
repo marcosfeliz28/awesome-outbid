@@ -4915,8 +4915,11 @@ describe("Ronda 9 · revisión · facturas", () => {
     const variantId = p.variants[0].id;
     const stock = async () =>
       Number(
-        (await fixtureDb.variant.findUniqueOrThrow({ where: { id: variantId } }))
-          .stock,
+        (
+          await fixtureDb.variant.findUniqueOrThrow({
+            where: { id: variantId },
+          })
+        ).stock,
       );
     const start = await stock();
     const order = await ok("/purchase-orders", {

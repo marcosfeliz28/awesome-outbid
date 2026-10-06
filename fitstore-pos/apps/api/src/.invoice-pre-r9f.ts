@@ -1052,12 +1052,14 @@ const measureAgree = (declared: Measure[], own: Measure[]) =>
 // sus decimales: "5.5" no es "6.5" ni "5"; "05" sí es "5" y "6.0" es "6".
 // En un nombre cuentan los sueltos y los códigos de una letra ("M715", "K2",
 // "B5"), no los que son parte de una palabra ("ISO100", "24H"); en la
-// factura cuentan todos ("FSP6.5"). Los porcentajes van aparte.
-const PERCENT_RE = /(?<![\d.,])(\d+(?:[.,]\d+)?)\s*%/g;
-const plain = (text: string) =>
-  text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+// factura cuentan todos ("FSP6.5"). Un porcentaje («100% Whey», «21%») es
+// una concentración, no un tono: las facturas suelen omitirlo.
 export function numbersIn(text: string, glued = false) {
-  const t = plain(text).replace(MEASURE_RE, " ").replace(PERCENT_RE, " ");
+  const t = text
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(MEASURE_RE, " ");
   const re = glued
     ? /(?<![\d.,])\d+(?:[.,]\d+)*(?!\d|[.,]\d)/g
     : /(?<![\d.,])(?<![a-z\d][a-z])\d+(?:[.,]\d+)*(?![a-z\d]|[.,]\d)/g;
@@ -1075,15 +1077,6 @@ export function numbersIn(text: string, glued = false) {
     ),
   ];
 }
-// Porcentajes («100% Whey», «21%»): una concentración, no un tono. Las
-// facturas suelen omitirlos; sólo cuentan si dicen otro (R9-facturas-4).
-const percentsIn = (text: string) => [
-  ...new Set(
-    [...plain(text).matchAll(PERCENT_RE)].map((m) =>
-      String(Number(m[1].replace(",", "."))),
-    ),
-  ),
-];
 const contains = (desc: Set<string>, value: string) => {
   const t = tokens(value);
   return t.length > 0 && t.every((x) => desc.has(x));
@@ -1212,7 +1205,6 @@ export function matchInvoiceLines(
     measures: Measure[];
     // Números sin unidad: tono o línea (R9-facturas-4).
     numbers: string[];
-    percents: string[];
   };
   // En un nombre de producto, talla/color/sabor se leen de la presentación;
   // el tamaño y los números, de todo el nombre.
@@ -1231,7 +1223,6 @@ export function matchInvoiceLines(
       ),
       measures: measuresIn(text),
       numbers: numbersIn(text, !name),
-      percents: percentsIn(text),
     };
   };
   const nameTraits = new Map<string, Traits>(),
@@ -1265,14 +1256,12 @@ export function matchInvoiceLines(
   }
   const nameOf = (productId: string) =>
     byProduct.get(productId)![0].product.name;
-  // El número del nombre está en la factura, suelto o, si la factura no trae
-  // números sueltos, como dosis: «Caffeine 200» en «Caffeine 200 mg»
-  // (R9-facturas-4). Otra medida no lo nombra («SPF 51 – 50 ml» no es «SPF
-  // 50») ni la dosis gana a otro número escrito («Caffeine 400 … 200 mg»).
+  // El número del nombre está en la factura, suelto o como dosis: «Caffeine
+  // 200» en «Caffeine 200 mg» (R9-facturas-4). Otra medida no lo nombra:
+  // «SPF 51 – 50 ml» no es «SPF 50».
   const numberNamed = (n: string, t: Traits) =>
     t.numbers.includes(n) ||
-    (!t.numbers.length &&
-      t.measures.some((m) => DOSE_UNITS.has(m.unit) && String(m.n) === n));
+    t.measures.some((m) => DOSE_UNITS.has(m.unit) && String(m.n) === n);
   // Lo que la factura declara y el nombre del producto contradice.
   const nameConflicts = (productId: string, declared: Traits) => {
     const own = nameTraits.get(productId)!,
@@ -1302,14 +1291,9 @@ export function matchInvoiceLines(
     // 5.5» (R9-facturas-4). Números de más («Ref 1201») no contradicen.
     if (
       declared.numbers.length &&
-      own.numbers.some((n) => !numberNamed(n, declared))
+      own.numbers.some((n) => !declared.numbers.includes(n))
     )
       out.push("número " + own.numbers.join("/"));
-    if (
-      declared.percents.length &&
-      own.percents.some((n) => !declared.percents.includes(n))
-    )
-      out.push("porcentaje " + own.percents.map((n) => n + "%").join("/"));
     return out;
   };
   // Cuántos rasgos declarados coinciden con el nombre (desempate).
@@ -1331,7 +1315,6 @@ export function matchInvoiceLines(
       [...t.flavors].sort(),
       t.measures.map((m) => m.n + m.unit).sort(),
       [...t.numbers].sort(),
-      [...t.percents].sort(),
     ]);
   };
   // Otro producto de la misma línea con el mismo color ("Neutral Beige"
@@ -1392,7 +1375,7 @@ export function matchInvoiceLines(
           t.colors.has(COLOR_EN[k] ?? k),
       );
     // El número del tono o de la línea también identifica (R9-facturas-4).
-    if (!keysPresent || !own.numbers.every((n) => numberNamed(n, t)))
+    if (!keysPresent || !own.numbers.every((n) => t.numbers.includes(n)))
       return "";
     // Palabras de la factura que el nombre no explica.
     const words = nameWords.get(productId)!;
@@ -1437,9 +1420,6 @@ export function matchInvoiceLines(
         ? "tamaño " + t.measures.map((m) => m.n + " " + m.unit).join("/")
         : "",
       t.numbers.length ? "número " + t.numbers.join("/") : "",
-      t.percents.length
-        ? "porcentaje " + t.percents.map((n) => n + "%").join("/")
-        : "",
     ]
       .filter(Boolean)
       .join(", ");
@@ -1544,21 +1524,13 @@ export function matchInvoiceLines(
       };
     return { ...l, variantId: null, productId: null, confidence: 0 };
   };
-  // Palabras parecidas: iguales o con el mismo comienzo de 4–5 letras
-  // («fajas»/«faja», «leggings»/«legging», «creatina»/«creatine»).
-  const akin = (a: string, b: string) => {
-    const n = Math.min(a.length, b.length, 5);
-    return a === b || (n >= 4 && a.slice(0, n) === b.slice(0, n));
-  };
   // Un código de la tienda se respeta salvo que la descripción lo contradiga
-  // (R9-facturas-2): que sea otro producto de la tienda, que no tenga nada
-  // que ver con el producto del código, o que declare otro tamaño, sabor,
-  // color, talla o número que el nombre o la variante del código.
+  // (R9-facturas-2): que sea claramente otro producto de la tienda, o que
+  // declare otro tamaño, sabor, color, talla o número que el del nombre.
   const doubtful = (
     l: ExtractedInvoice["lines"][number],
     code: string,
     productId: string,
-    variant: CatalogVariant | null,
   ): MatchedLine | null => {
     // El código escrito en la descripción (o la descripción vacía, que se
     // llena con el código) no es un número del producto.
@@ -1569,42 +1541,13 @@ export function matchInvoiceLines(
     if (!rest.trim()) return null;
     const declared = traitsOf(rest);
     const guess = byName({ ...l, description: rest }, declared);
-    // Ninguna palabra propia de la descripción (sin unidades, colores,
-    // sabores ni relleno) se parece a las del nombre del código, marca
-    // incluida: «Top Deportivo Aurora Lila» no es «ISO100 … Strawberry».
-    const said = tokens(rest).filter((w) => !/^\d+$/.test(w) && !EXPLAINED.has(w));
-    const words = [...nameWords.get(productId)!];
-    const unrelated =
-      said.length > 0 &&
-      !said.some((w) => words.some((x) => akin(w, x))) &&
-      productScore(rest, nameCores.get(productId) || nameOf(productId)) <
-        MIN_PRODUCT_SCORE;
-    // Otro producto de la tienda: elegido del todo por la descripción, o
-    // reconocido sin variante cuando el del código no tiene nada que ver.
-    const other =
-      guess.productId &&
-      guess.productId !== productId &&
-      (guess.variantId ||
-        (unrelated &&
-          guess.confidence >= MIN_PRODUCT_SCORE &&
-          !nameConflicts(guess.productId, declared).length))
-        ? guess.productId
-        : null;
-    if (other)
+    if (guess.variantId && guess.productId && guess.productId !== productId)
       return {
         ...l,
         variantId: null,
-        productId: other,
+        productId: guess.productId,
         confidence: guess.confidence,
-        note: `El código ${code} es de «${nameOf(productId)}» en la tienda, pero la descripción corresponde a «${nameOf(other)}». Confirma el producto.`,
-      };
-    if (unrelated)
-      return {
-        ...l,
-        variantId: null,
-        productId,
-        confidence: 0,
-        note: `El código ${code} es de «${nameOf(productId)}» en la tienda; la descripción no coincide. Confirma o elige el producto.`,
+        note: `El código ${code} es de «${nameOf(productId)}» en la tienda, pero la descripción corresponde a «${nameOf(guess.productId)}». Confirma el producto.`,
       };
     // Talla, color y sabor se leen sin las palabras de la línea del propio
     // producto: «Gold Standard» no declara el color dorado.
@@ -1630,16 +1573,6 @@ export function matchInvoiceLines(
         note:
           `El código ${code} es de «${nameOf(productId)}» en la tienda. ` +
           traitNote(productId, stated),
-      };
-    // La variante del código frente a la descripción: «TOP-S» con «talla L».
-    const mismatch = variant ? conflicts(rest, variant) : [];
-    if (mismatch.length)
-      return {
-        ...l,
-        variantId: null,
-        productId,
-        confidence: 1,
-        note: `El código ${code} es de «${variantLabel(variant!)}» en la tienda; la factura indica otra variante (${mismatch.join(", ")} no coincide). Elige la variante.`,
       };
     return null;
   };
@@ -1684,7 +1617,7 @@ export function matchInvoiceLines(
             : `El código ${code} es de ${found.length} variantes de «${nameOf(productIds[0])}»; elige la correcta y corrige el código en Productos.`,
       };
     const productId = productIds[0];
-    const doubt = doubtful(l, code, productId, byProductSku ? null : found[0]);
+    const doubt = doubtful(l, code, productId);
     if (doubt) return doubt;
     return byProductSku
       ? pickVariant(l, productId, 1)

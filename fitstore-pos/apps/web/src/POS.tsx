@@ -35,6 +35,7 @@ import type { SaleInput } from "@fitstore/shared";
 import {
   useStore,
   api,
+  ANSWER_TIMEOUT,
   post,
   loadCatalog,
   localDB,
@@ -55,7 +56,12 @@ import {
   searchWords,
   toast,
 } from "./helpers";
-import { CashElsewhere, cashOnOtherDevice } from "./realtime";
+import {
+  announcePriceChanges,
+  CashElsewhere,
+  cashOnOtherDevice,
+  priceChanges,
+} from "./realtime";
 
 function discountFor(
   promo: any,
@@ -104,22 +110,6 @@ const manualDiscount = (i: CartItem, globalDiscount: number) => {
   const global = Math.min(100, Math.max(0, globalDiscount));
   return 100 - ((100 - line) * (100 - global)) / 100;
 };
-// «Producto · talla: RD$ 1,500.00 → RD$ 1,700.00» (R9-offline-3).
-const priceChanges = (changes: { item: CartItem; before: number }[]) =>
-  changes
-    .map(({ item, before }) => {
-      const label = attrLabel(item.variant.attributes || {});
-      return (
-        (label === "Única"
-          ? item.product.name
-          : item.product.name + " · " + label) +
-        ": " +
-        formatMoney(before) +
-        " → " +
-        formatMoney(item.variant.price)
-      );
-    })
-    .join("; ");
 const lineGross = (i: CartItem, qty = i.qty) =>
   money(d(qty).times(Number(i.variant.price)));
 // Parece un código: un solo bloque de dígitos (con «-» o «.», como 1600) o
@@ -256,15 +246,7 @@ export function POS({ go }: { go: (page: string) => void }) {
   // un precio, la línea se actualiza y se avisa antes de cobrar
   // (R9-offline-3).
   useEffect(() => {
-    if (!products.data) return;
-    const changes = refreshCart(products.data);
-    if (changes.length)
-      toast(
-        "Precio actualizado: " +
-          priceChanges(changes) +
-          ". Revisa el total antes de cobrar.",
-        true,
-      );
+    if (products.data) announcePriceChanges(refreshCart(products.data));
   }, [products.data]);
   const totals = cart.map((i) =>
     lineTotals(
@@ -1249,6 +1231,10 @@ function HeldSales({
   );
 }
 
+// Cobro con crédito, nota de crédito o PIN que el servidor no contestó: no se
+// guarda en este equipo y pudo quedar registrado. Se conserva su offlineUuid
+// para que cobrarlo otra vez no registre la venta dos veces (R9-offline-1).
+let unanswered: { key: string; uuid: string; capturedAt: string } | null = null;
 function Checkout({
   total,
   tax,
@@ -1305,8 +1291,23 @@ function Checkout({
         !!customerId ||
         creditNoteCode.length === 32),
   });
-  const uuid = useRef(crypto.randomUUID());
-  const captured = useRef<string | null>(null);
+  // Un cobro sin respuesta del servidor se repite con el mismo offlineUuid
+  // mientras el carrito sea el mismo, aunque se haya cerrado la ventana
+  // (R9-offline-1).
+  const attempt = JSON.stringify([
+    session?.id,
+    customerId,
+    globalDiscount,
+    cart.map((i) => [
+      i.variant.id,
+      i.qty,
+      i.discountPercent,
+      i.discountAmount ?? 0,
+    ]),
+  ]);
+  const previous = unanswered?.key === attempt ? unanswered : null;
+  const uuid = useRef(previous?.uuid ?? crypto.randomUUID());
+  const captured = useRef<string | null>(previous?.capturedAt ?? null);
   const client = useQueryClient();
   let payment = { paid: 0, pending: total, change: 0 };
   try {
@@ -1424,19 +1425,30 @@ function Checkout({
       // seguro aunque la venta haya llegado: la sincronización la reconoce
       // por offlineUuid (R9-offline-1/2).
       const saveLocal = async (fallback: boolean) => {
-        if (
-          payments.some(
-            (p) => p.method === "credit" || p.method === "credit_note",
-          )
-        )
+        const credit = payments.some(
+          (p) => p.method === "credit" || p.method === "credit_note",
+        );
+        // Sin respuesta (504 o conexión cortada tras enviar), un crédito o
+        // una venta con PIN pudo quedar registrada: decir que requería
+        // conexión llevaba a cobrarla otra vez con otro offlineUuid y a
+        // duplicar la deuda del cliente (R9-offline-1).
+        if (fallback && (credit || needsPin)) {
+          unanswered = {
+            key: attempt,
+            uuid: uuid.current,
+            capturedAt: captured.current!,
+          };
+          throw new Error(
+            "No hubo respuesta del servidor: no se sabe si la venta quedó registrada. Cuando vuelva la conexión pulsa «Finalizar venta» otra vez con los mismos pagos; si ya quedó registrada, no se cobra dos veces.",
+          );
+        }
+        if (credit)
           throw new Error(
             "Las ventas a crédito y notas de crédito requieren conexión.",
           );
         if (needsPin)
           throw new Error(
-            fallback
-              ? "Reconecta para verificar la aprobación del gerente."
-              : "Un gerente debe aprobar descuentos superiores al límite en línea.",
+            "Un gerente debe aprobar descuentos superiores al límite en línea.",
           );
         const local = {
           number: "LOCAL-" + uuid.current.slice(0, 8),
@@ -1464,12 +1476,20 @@ function Checkout({
       if (!online) sale = await saveLocal(false);
       else {
         try {
-          sale = await post("/sales", input);
+          // Con plazo: en un corte con el router encendido la petición se
+          // quedaba sin respuesta minutos, con la venta en «ocupado»
+          // (R9-offline-1).
+          sale = await api("/sales", {
+            method: "POST",
+            body: JSON.stringify(input),
+            timeout: ANSWER_TIMEOUT,
+          });
         } catch (e: any) {
           if (!isNetworkError(e)) throw e;
           sale = await saveLocal(true);
         }
       }
+      unanswered = null;
       // En línea, el ticket usa los importes que guardó el servidor (una
       // línea puede repartirse en varios lotes); sin conexión, los de la caja.
       const sum = (rows: any[], key: string) =>
@@ -1495,8 +1515,15 @@ function Checkout({
       // promociones y ajustes, el carrito toma los precios nuevos y se dice
       // cuáles cambiaron; el cobro ya muestra el total nuevo (R9-offline-3).
       if (/precios o promociones cambiaron/i.test(e.message))
-        setError(await reprice());
-      else setError(e.message);
+        setError(await reprice().catch(() => e.message));
+      // El cobro sin respuesta sí quedó registrado, pero con otros pagos: en
+      // esta ventana no se vuelve a cobrar (R9-offline-1).
+      else if (/UUID ya corresponde/i.test(e.message)) {
+        unanswered = null;
+        setError(
+          "El cobro anterior sí quedó registrado, con otros pagos. Revísalo en Ventas antes de cobrar otra vez.",
+        );
+      } else setError(e.message);
     } finally {
       setBusy(false);
     }

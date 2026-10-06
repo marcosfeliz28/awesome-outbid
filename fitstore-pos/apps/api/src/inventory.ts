@@ -421,10 +421,10 @@ export class InventoryController {
       bad("No repitas líneas de recepción.");
     // ¿La recepción guardada es este mismo envío? Se comparan las líneas, el
     // flete y el costo final de cada línea (que depende del reparto).
-    const sameRequest = (prior: any) => {
+    const sameRequest = (prior: any, orderId: string) => {
       const stored = prior.items as any[];
       if (
-        prior.orderId !== id ||
+        prior.orderId !== orderId ||
         prior.branchId !== actor.branchId ||
         prior.userId !== actor.id ||
         Number(prior.freight) !== data.freight ||
@@ -462,7 +462,8 @@ export class InventoryController {
             where: { operationId: data.operationId },
           });
           if (prior) {
-            if (!sameRequest(prior)) bad("UUID usado con datos distintos.");
+            if (!sameRequest(prior, order.id))
+              bad("UUID usado con datos distintos.");
             return safe(prior, actor);
           }
         }
