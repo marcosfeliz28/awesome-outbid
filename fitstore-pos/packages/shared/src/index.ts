@@ -166,12 +166,18 @@ export const lineTotals = (
   const tax = taxIncluded
     ? amount.minus(amount.div(d(1).plus(d(taxRate).div(100))))
     : amount.times(taxRate).div(100);
+  // Se redondean el bruto, el importe y el ITBIS; descuento y neto (o total)
+  // salen por diferencia para que el resumen cuadre al centavo:
+  // subtotal − descuento = total (o neto) y neto + ITBIS = total (R9-dinero-11).
+  const subtotal = d(money(gross)),
+    charged = d(money(amount)),
+    taxed = d(money(tax));
   return {
-    subtotal: money(gross),
-    discount: money(discount),
-    tax: money(tax),
-    net: money(taxIncluded ? amount.minus(tax) : amount),
-    total: money(taxIncluded ? amount : amount.plus(tax)),
+    subtotal: subtotal.toNumber(),
+    discount: money(subtotal.minus(charged)),
+    tax: taxed.toNumber(),
+    net: money(taxIncluded ? charged.minus(taxed) : charged),
+    total: money(taxIncluded ? charged : charged.plus(taxed)),
   };
 };
 export const paymentTotals = (

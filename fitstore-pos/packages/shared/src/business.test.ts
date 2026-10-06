@@ -25,6 +25,7 @@ import {
   safeDiscount,
   saleSchema,
   money,
+  d,
 } from "./index";
 describe("Fórmulas financieras", () => {
   it("costo promedio ponderado", () => {
@@ -254,5 +255,32 @@ describe("allocationCost · costo de una línea vendida", () => {
         stockAllocations: [{ variantId: "v", qty: 0.5, unitCost: 10.01 }],
       }).toNumber(),
     ).toBe(5.005);
+  });
+});
+
+// Revisión R9 · área dinero.
+describe("R9-dinero-11 · el resumen de cada línea cuadra", () => {
+  it("subtotal − descuento = total (ITBIS incluido) o = neto (ITBIS adicional)", () => {
+    for (const [qty, price, discount] of [
+      [3, 33.35, 10],
+      [1, 1001, 12.5],
+      [7, 0.15, 33.3],
+    ]) {
+      const included = lineTotals(qty, price, discount, 18, true);
+      expect(money(d(included.subtotal).minus(included.discount))).toBe(
+        included.total,
+      );
+      expect(money(d(included.net).plus(included.tax))).toBe(included.total);
+      const added = lineTotals(qty, price, discount, 18, false);
+      expect(money(d(added.subtotal).minus(added.discount))).toBe(added.net);
+      expect(money(d(added.net).plus(added.tax))).toBe(added.total);
+    }
+    // 3 × 33.35 con 10 %: 100.05 − 10.00 = 90.05 (antes 10.01 de descuento).
+    expect(lineTotals(3, 33.35, 10)).toMatchObject({
+      subtotal: 100.05,
+      discount: 10,
+      total: 90.05,
+      tax: 13.74,
+    });
   });
 });

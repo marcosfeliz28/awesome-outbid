@@ -4177,7 +4177,534 @@ describe("Ronda 9 · auditoría R8 de ChatGPT", () => {
 // R9-REVISION: caja
 // R9-REVISION: offline
 // R9-REVISION: codigos
-// R9-REVISION: dinero
+// Área dinero: devoluciones, costo contabilizado, abonos y reportes.
+describe("Ronda 9 · revisión · dinero", () => {
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Santo_Domingo",
+  });
+  const cents = (value: number) => Math.round(value * 100) / 100;
+  let cats: any[];
+  beforeAll(async () => {
+    cats = await ok("/categories");
+  });
+  const product = async (
+    label: string,
+    price: number,
+    costAvg: number,
+    stock = 0,
+    taxRate = 0,
+  ) => {
+    const p = await ok("/products", {
+      name: "QA R9D " + label + " " + suffix,
+      sku: "R9D-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      taxRate,
+      variants: [
+        {
+          sku: "R9DV-" + randomUUID().slice(0, 8),
+          barcode: "R9DB-" + randomUUID().slice(0, 8),
+          price,
+          costAvg,
+        },
+      ],
+    });
+    products.push(p);
+    if (stock)
+      await ok("/inventory/adjustments", {
+        variantId: p.variants[0].id,
+        qty: stock,
+        reason: "QA R9 dinero stock",
+      });
+    return p.variants[0];
+  };
+  const kit = async (label: string, componentId: string, qty: number) => {
+    const v = await product(label, 20, 0);
+    await ok("/kits", {
+      kitVariantId: v.id,
+      components: [{ componentVariantId: componentId, qty }],
+    });
+    return v;
+  };
+  // Se paga de más en efectivo: el cambio no afecta lo que se prueba.
+  const sell = (items: { variantId: string; qty: number }[]) =>
+    ok("/sales", {
+      offlineUuid: randomUUID(),
+      cashSessionId: session.id,
+      items,
+      payments: [{ method: "cash", amount: 10000 }],
+    });
+  const lineOf = (saleId: string, variantId: string) =>
+    fixtureDb.saleItem.findFirstOrThrow({ where: { saleId, variantId } });
+  const returnBody = (saleId: string, items: any[], refundMethod: string) => ({
+    saleId,
+    cashSessionId: session.id,
+    reason: "QA R9 dinero devolución",
+    refundMethod,
+    items: items.map((i) => ({ restock: true, ...i })),
+  });
+  const giveBack = (saleId: string, items: any[], refundMethod = "credit_note") =>
+    ok("/returns", returnBody(saleId, items, refundMethod));
+  const profitRow = async (label: string) =>
+    (await ok(`/reports/profit?from=${today}&to=${today}`)).rows.find(
+      (r: any) => r.Producto === "QA R9D " + label + " " + suffix,
+    );
+  const dashboard = (from = today, to = today) =>
+    ok(`/dashboard/summary?from=${from}&to=${to}`);
+  const expectedCash = async () =>
+    (await ok("/cash-sessions")).find((c: any) => c.id === session.id)
+      .expected.cash;
+  // Así guardaban las devoluciones las rondas 3 a 7: sin importes por línea.
+  const asLegacyReturn = async (id: string, costTotal?: number) => {
+    const stored = await fixtureDb.saleReturn.findUniqueOrThrow({
+      where: { id },
+    });
+    await fixtureDb.saleReturn.update({
+      where: { id },
+      data: {
+        items: (stored.items as any[]).map(
+          ({ cost: _c, total: _t, tax: _x, ...p }) => p,
+        ),
+        ...(costTotal === undefined ? {} : { costTotal }),
+      },
+    });
+  };
+  const withCredit = async (run: () => Promise<void>) => {
+    const settings = await ok("/settings");
+    await ok(
+      "/settings",
+      {
+        ...settings,
+        allowCreditSales: true,
+        creditApprovalThreshold: 100000,
+      },
+      token,
+      "PUT",
+    );
+    try {
+      await run();
+    } finally {
+      await ok("/settings", settings, token, "PUT");
+    }
+  };
+  const creditCustomer = () =>
+    ok("/customers", {
+      name: "QA R9D crédito " + randomUUID().slice(0, 6),
+      creditLimit: 100000,
+    });
+  const creditSale = (variantId: string, qty: number, amount: number, customerId: string) =>
+    ok("/sales", {
+      offlineUuid: randomUUID(),
+      cashSessionId: session.id,
+      items: [{ variantId, qty }],
+      customerId,
+      creditDueDate: "2030-01-01T12:00:00.000Z",
+      payments: [{ method: "credit", amount }],
+      expectedTotal: amount,
+    });
+  const installment = (saleId: string, method: string, amount: number) =>
+    request("/sales/" + saleId + "/installments", {
+      offlineUuid: randomUUID(),
+      cashSessionId: session.id,
+      method,
+      amount,
+      ...(method === "transfer"
+        ? { bank: "QA Banco", reference: "QA-" + randomUUID().slice(0, 8) }
+        : {}),
+      ...(method === "card"
+        ? { cardLast4: "4242", approvalCode: "QA-" + randomUUID().slice(0, 6) }
+        : {}),
+    });
+  const balance = async (saleId: string) =>
+    Number(
+      (await fixtureDb.sale.findUniqueOrThrow({ where: { id: saleId } }))
+        .creditBalance,
+    );
+
+  it("R9-dinero-1: la devolución que completa la línea descuenta el costo de la devolución histórica", async () => {
+    const component = await product("comp hist", 30, 3.33, 10);
+    const combo = await kit("combo hist", component.id, 0.5);
+    const base = (await dashboard()).costTotal;
+    const sale = await sell([{ variantId: combo.id, qty: 10 }]);
+    expect(Number(sale.costTotal)).toBe(16.65);
+    const line = await lineOf(sale.id, combo.id);
+    expect(Number(line.unitCost)).toBe(1.67);
+    // Venta anterior a la ronda 7: asignaciones sin "exact".
+    await fixtureDb.saleItem.update({
+      where: { id: line.id },
+      data: {
+        stockAllocations: (line.stockAllocations as any[]).map(
+          ({ exact: _e, ...a }) => a,
+        ),
+      },
+    });
+    const first = await giveBack(sale.id, [{ saleItemId: line.id, qty: 5 }]);
+    // Las rondas 3 a 7 contabilizaban unitCost × qty = 1.67 × 5.
+    await asLegacyReturn(first.id, 8.35);
+    const second = await giveBack(sale.id, [{ saleItemId: line.id, qty: 5 }]);
+    expect(Number(second.costTotal)).toBe(8.3);
+    expect(await profitRow("combo hist")).toMatchObject({
+      Ventas: 0,
+      Costo: 0,
+      Unidades: 0,
+      Utilidad: 0,
+    });
+    expect(cents((await dashboard()).costTotal - base)).toBe(0);
+
+    // Varias líneas fraccionarias: las rondas 3 a 6 redondeaban la suma.
+    const a = await product("frac A", 10, 0.49, 5);
+    const b = await product("frac B", 10, 0.49, 5);
+    const base2 = (await dashboard()).costTotal;
+    const sale2 = await sell([
+      { variantId: a.id, qty: 0.5 },
+      { variantId: b.id, qty: 0.5 },
+    ]);
+    expect(Number(sale2.costTotal)).toBe(0.5);
+    const la = await lineOf(sale2.id, a.id),
+      lb = await lineOf(sale2.id, b.id);
+    const old = await giveBack(sale2.id, [
+      { saleItemId: la.id, qty: 0.25 },
+      { saleItemId: lb.id, qty: 0.25 },
+    ]);
+    // money(0.49 × 0.25 × 2) = 0.25, no 0.12 + 0.12.
+    await asLegacyReturn(old.id, 0.25);
+    await giveBack(sale2.id, [
+      { saleItemId: la.id, qty: 0.25 },
+      { saleItemId: lb.id, qty: 0.25 },
+    ]);
+    expect(cents((await dashboard()).costTotal - base2)).toBe(0);
+    expect((await profitRow("frac A")).Costo).toBe(0);
+    expect((await profitRow("frac B")).Costo).toBe(0);
+  });
+
+  it("R9-dinero-2: devolver de una en una reembolsa exactamente lo cobrado y su ITBIS", async () => {
+    const v = await product("parcial", 33.35, 10, 10, 18);
+    const cashBefore = await expectedCash();
+    const sale = await ok("/sales", {
+      offlineUuid: randomUUID(),
+      cashSessionId: session.id,
+      items: [{ variantId: v.id, qty: 3 }],
+      globalDiscount: 10,
+      payments: [{ method: "cash", amount: 90.05 }],
+      expectedTotal: 90.05,
+    });
+    expect(Number(sale.total)).toBe(90.05);
+    expect(Number(sale.taxTotal)).toBe(13.74);
+    // R9-dinero-11: el resumen de la venta cuadra.
+    expect(cents(Number(sale.subtotal) - Number(sale.discountTotal))).toBe(
+      90.05,
+    );
+    const line = await lineOf(sale.id, v.id);
+    const back = [];
+    for (let n = 0; n < 3; n++)
+      back.push(
+        await giveBack(sale.id, [{ saleItemId: line.id, qty: 1 }], "cash"),
+      );
+    const add = (field: string) =>
+      cents(back.reduce((s, r) => s + Number(r[field]), 0));
+    expect(add("refundAmount")).toBe(90.05);
+    expect(add("total")).toBe(90.05);
+    expect(add("taxTotal")).toBe(13.74);
+    expect(await expectedCash()).toBe(cashBefore);
+    expect(await profitRow("parcial")).toMatchObject({
+      Ventas: 0,
+      Costo: 0,
+      Unidades: 0,
+    });
+  });
+
+  it("R9-dinero-3: una venta a crédito con un abono por transferencia pendiente no se devuelve sin resolverlo", async () => {
+    await withCredit(async () => {
+      const customer = await creditCustomer();
+      const v = await product("credito", 500, 100, 10);
+      const ret = (saleId: string, saleItemId: string, qty: number) =>
+        request(
+          "/returns",
+          returnBody(saleId, [{ saleItemId, qty }], "cash"),
+        );
+      // El cliente abonó todo por transferencia y devuelve todo.
+      const s1 = await creditSale(v.id, 2, 1000, customer.id);
+      const t1 = (await installment(s1.id, "transfer", 1000)).body;
+      expect(t1.status).toBe("pending_verification");
+      const blocked = await ret(s1.id, s1.items[0].id, 2);
+      expect(blocked.status).toBe(400);
+      expect(blocked.body.message).toMatch(/transferencia pendientes/);
+      await ok("/payments/" + t1.id + "/verify", {});
+      const r1 = await ret(s1.id, s1.items[0].id, 2);
+      expect(r1.status).toBe(201);
+      expect(Number(r1.body.refundAmount)).toBe(1000);
+      // Abono pendiente de 600 y devolución de 500: el saldo quedaría en 500.
+      const s2 = await creditSale(v.id, 2, 1000, customer.id);
+      const t2 = (await installment(s2.id, "transfer", 600)).body;
+      expect((await ret(s2.id, s2.items[0].id, 1)).status).toBe(400);
+      // Una transferencia que no llegó se rechaza y deja de bloquear.
+      await ok("/payments/" + t2.id + "/reject", {
+        reason: "QA no llegó la transferencia",
+      });
+      expect(
+        (await request("/payments/" + t2.id + "/verify", {})).status,
+      ).toBe(400);
+      const r2 = await ret(s2.id, s2.items[0].id, 1);
+      expect(r2.status).toBe(201);
+      expect(Number(r2.body.refundAmount)).toBe(0);
+      expect(await balance(s2.id)).toBe(500);
+      // Un abono pendiente que cabe en el saldo restante no bloquea.
+      const s3 = await creditSale(v.id, 2, 1000, customer.id);
+      const t3 = (await installment(s3.id, "transfer", 300)).body;
+      const r3 = await ret(s3.id, s3.items[0].id, 1);
+      expect(r3.status).toBe(201);
+      expect(Number(r3.body.refundAmount)).toBe(0);
+      await ok("/payments/" + t3.id + "/verify", {});
+      expect(await balance(s3.id)).toBe(200);
+    });
+  });
+
+  it("R9-dinero-4: anular una venta recalcula el costo promedio igual que una devolución", async () => {
+    for (const direct of [true, false]) {
+      const v = await product(direct ? "anula" : "anula comp", 150, 100, 10);
+      const sold = direct ? v : await kit("anula combo", v.id, 1);
+      const sale = await sell([{ variantId: sold.id, qty: 10 }]);
+      const order = await ok("/purchase-orders", {
+        supplierId,
+        items: [{ variantId: v.id, qty: 10, unitCost: 200 }],
+      });
+      await ok("/purchase-orders/" + order.id + "/receive", {
+        items: [{ itemId: order.items[0].id, qty: 10 }],
+      });
+      const variant = () =>
+        fixtureDb.variant.findUniqueOrThrow({ where: { id: v.id } });
+      expect(Number((await variant()).costAvg)).toBe(200);
+      await ok("/sales/" + sale.id + "/void", {
+        cashSessionId: session.id,
+        reason: "QA R9 dinero anulación",
+      });
+      const after = await variant();
+      expect(Number(after.stock)).toBe(20);
+      expect(Number(after.costAvg)).toBe(150);
+      const movement = await fixtureDb.inventoryMovement.findFirstOrThrow({
+        where: { variantId: v.id, type: "void", refId: sale.id },
+      });
+      expect(Number(movement.unitCost)).toBe(100);
+    }
+  });
+
+  it("R9-dinero-5: los importes de dinero aceptan como máximo 2 decimales", async () => {
+    await withCredit(async () => {
+      const customer = await creditCustomer();
+      const v = await product("decimales", 100, 10, 10);
+      const sold = await creditSale(v.id, 1, 100, customer.id);
+      expect((await installment(sold.id, "cash", 1.005)).status).toBe(400);
+      expect(await balance(sold.id)).toBe(100);
+      const paid = await installment(sold.id, "cash", 1.01);
+      expect(paid.status).toBe(201);
+      expect(Number(paid.body.amount)).toBe(1.01);
+      expect(await balance(sold.id)).toBe(98.99);
+      expect(
+        (
+          await request("/sales", {
+            ...input(v.id, 100),
+            payments: [{ method: "cash", amount: 100.005 }],
+          })
+        ).status,
+      ).toBe(400);
+      expect(
+        (
+          await request("/sales", {
+            ...input(v.id, 100),
+            items: [{ variantId: v.id, qty: 1, discountAmount: 0.005 }],
+          })
+        ).status,
+      ).toBe(400);
+    });
+  });
+
+  it("R9-dinero-6: el costo de una devolución de la ronda 7 se reconstruye por línea", async () => {
+    const labels = ["r7 A", "r7 B", "r7 C"];
+    const variants = [
+      await product(labels[0], 10, 0.49, 2),
+      await product(labels[1], 10, 0.59, 2),
+      await product(labels[2], 10, 0.59, 2),
+    ];
+    const sale = await sell(variants.map((v) => ({ variantId: v.id, qty: 1 })));
+    const lines = await Promise.all(variants.map((v) => lineOf(sale.id, v.id)));
+    const first = await giveBack(
+      sale.id,
+      lines.map((l) => ({ saleItemId: l.id, qty: 0.01 })),
+    );
+    // La ronda 7 contabilizaba cada línea: 0.00 / 0.01 / 0.01.
+    expect((first.items as any[]).map((p) => p.cost)).toEqual([0, 0.01, 0.01]);
+    await asLegacyReturn(first.id);
+    await giveBack(
+      sale.id,
+      lines.map((l) => ({ saleItemId: l.id, qty: 0.99 })),
+    );
+    for (const label of labels)
+      expect(await profitRow(label)).toMatchObject({
+        Ventas: 0,
+        Costo: 0,
+        Utilidad: 0,
+      });
+  });
+
+  it("R9-dinero-7: el costo de una venta anterior a la ronda 7 final coincide en utilidad y dashboard", async () => {
+    const component = await product("comp 7", 30, 3.33, 10);
+    const k1 = await kit("kit7 A", component.id, 0.5);
+    const k2 = await kit("kit7 B", component.id, 0.5);
+    const base = (await dashboard()).costTotal;
+    const sale = await sell([
+      { variantId: k1.id, qty: 1 },
+      { variantId: k2.id, qty: 1 },
+    ]);
+    expect(Number(sale.costTotal)).toBe(3.34);
+    // Hasta la ronda 7 en curso: money(Σ costo exacto × qty).
+    await fixtureDb.sale.update({
+      where: { id: sale.id },
+      data: { costTotal: 3.33 },
+    });
+    const reported = async () =>
+      cents(
+        (await profitRow("kit7 A")).Costo + (await profitRow("kit7 B")).Costo,
+      );
+    expect(await reported()).toBe(3.33);
+    expect(cents((await dashboard()).costTotal - base)).toBe(3.33);
+    const lines = [await lineOf(sale.id, k1.id), await lineOf(sale.id, k2.id)];
+    const back = await giveBack(
+      sale.id,
+      lines.map((l) => ({ saleItemId: l.id, qty: 1 })),
+    );
+    expect(Number(back.costTotal)).toBe(3.33);
+    expect((await profitRow("kit7 A")).Costo).toBe(0);
+    expect((await profitRow("kit7 B")).Costo).toBe(0);
+    expect(cents((await dashboard()).costTotal - base)).toBe(0);
+  });
+
+  it("R9-dinero-8: devoluciones y descuentos no muestra costos a quien no tiene profit:read", async () => {
+    const role = await fixtureDb.role.create({
+      data: { name: "qa-reportes-" + suffix, permissions: ["reports:read"] },
+    });
+    const u = await ok("/users", {
+      name: "QA reportes " + suffix,
+      email: `qa-reportes-${suffix}@example.test`,
+      password: "FitStore-QA-2026!",
+      pin: "765432",
+      roleId: role.id,
+    });
+    actors.push(u);
+    const viewer = (
+      await ok(
+        "/auth/login",
+        { email: u.email, password: "FitStore-QA-2026!" },
+        "",
+      )
+    ).accessToken;
+    const v = await product("sin costo", 50, 20, 2);
+    const sale = await sell([{ variantId: v.id, qty: 1 }]);
+    await giveBack(sale.id, [
+      { saleItemId: (await lineOf(sale.id, v.id)).id, qty: 1 },
+    ]);
+    expect(
+      (
+        await request(
+          `/reports/profit?from=${today}&to=${today}`,
+          undefined,
+          viewer,
+        )
+      ).status,
+    ).toBe(403);
+    const { rows } = await ok(
+      `/reports/returns-discounts?from=${today}&to=${today}`,
+      undefined,
+      viewer,
+    );
+    const returns = rows.filter(
+      (r: any) => r.Evento === "return" && r.Referencia === sale.id,
+    );
+    expect(returns.length).toBe(1);
+    expect(returns[0].Detalle).toMatch(/NC-/);
+    expect(rows.map((r: any) => r.Detalle).join("\n")).not.toMatch(
+      /"(cost|costTotal|unitCost|costAvg)"/,
+    );
+  });
+
+  it("R9-dinero-9: ventas por método no cuenta dos veces el crédito y muestra los cobros el día que entran", async () => {
+    await withCredit(async () => {
+      const customer = await creditCustomer();
+      const v = await product("metodo", 500, 100, 10);
+      const snapshot = async () => {
+        const { rows } = await ok(`/reports/by-payment?from=${today}&to=${today}`);
+        const at = (method: string, column: string) =>
+          rows.find((r: any) => r.Método === method)?.[column] ?? 0;
+        const summary = await dashboard();
+        return {
+          creditSales: at("credit", "Ventas"),
+          cashSales: at("cash", "Ventas"),
+          cashCollected: at("cash", "Cobros_de_crédito"),
+          cardCollected: at("card", "Cobros_de_crédito"),
+          salesColumn: rows.reduce((s: number, r: any) => s + (r.Ventas ?? 0), 0),
+          dashboardCash:
+            summary.payments.find((p: any) => p.name === "cash")?.amount ?? 0,
+          fees: summary.fees,
+        };
+      };
+      const before = await snapshot();
+      // Venta a crédito y abono en efectivo el mismo día.
+      const sold = await creditSale(v.id, 1, 500, customer.id);
+      expect((await installment(sold.id, "cash", 500)).status).toBe(201);
+      // Abono con tarjeta hoy de una venta del mes pasado.
+      const older = await creditSale(v.id, 1, 500, customer.id);
+      await fixtureDb.sale.update({
+        where: { id: older.id },
+        data: { createdAt: new Date(Date.now() - 40 * 86400000) },
+      });
+      expect((await installment(older.id, "card", 200)).status).toBe(201);
+      // Una transferencia sin verificar todavía no es un cobro.
+      expect((await installment(older.id, "transfer", 100)).status).toBe(201);
+      const after = await snapshot();
+      const delta = (key: keyof typeof before) =>
+        cents(after[key] - before[key]);
+      expect(delta("creditSales")).toBe(500);
+      expect(delta("cashSales")).toBe(0);
+      expect(delta("salesColumn")).toBe(500);
+      expect(delta("cashCollected")).toBe(500);
+      expect(delta("cardCollected")).toBe(200);
+      expect(delta("dashboardCash")).toBe(0);
+      // Comisión de tarjeta del 2.5 % en el período del cobro.
+      expect(delta("fees")).toBe(5);
+    });
+  });
+
+  it("R9-dinero-10: la tendencia compara ingresos netos de devoluciones en ambos períodos", async () => {
+    const v = await product("tendencia", 1000, 100, 10);
+    // Un día sin otros datos (año 2000 a 2008, al azar para repetir la suite).
+    const day = new Date(
+      Date.UTC(2000, 0, 2) + Math.floor(Math.random() * 3000) * 86400000,
+    )
+      .toISOString()
+      .slice(0, 10);
+    const previous = new Date(Date.parse(day + "T12:00:00-04:00") - 86400000);
+    const current = new Date(day + "T12:00:00-04:00");
+    const past = await sell([{ variantId: v.id, qty: 1 }]);
+    const back = await giveBack(past.id, [
+      { saleItemId: (await lineOf(past.id, v.id)).id, qty: 0.5 },
+    ]);
+    const now = await sell([{ variantId: v.id, qty: 0.5 }]);
+    await fixtureDb.sale.update({
+      where: { id: past.id },
+      data: { createdAt: previous },
+    });
+    await fixtureDb.saleReturn.update({
+      where: { id: back.id },
+      data: { createdAt: previous },
+    });
+    await fixtureDb.sale.update({
+      where: { id: now.id },
+      data: { createdAt: current },
+    });
+    const summary = await dashboard(day, day);
+    expect(summary.revenue).toBe(500);
+    // Antes: 1000 − 500 = 500 de neto; ahora 500: sin variación.
+    expect(summary.trend).toBe(0);
+  });
+});
 // R9-REVISION: facturas
 // R9-REVISION: importador
 // R9-REVISION: seguridad
