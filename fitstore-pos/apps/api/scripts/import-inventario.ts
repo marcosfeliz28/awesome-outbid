@@ -11,13 +11,16 @@
 // - Las existencias entran como "Inventario inicial" en el kardex, con su costo.
 // - Productos sin precio o sin costo quedan inactivos (no se venden) y salen en
 //   el reporte de revisión junto con márgenes bajos y agotados.
-// - Rechaza códigos que ya son de otro producto en la base y números
-//   ambiguos. Si una categoría existente exige lote, se detiene; --sin-lotes
-//   desactiva ese control (queda en la bitácora).
+// - Rechaza códigos que ya son de otro producto en la base, números
+//   ambiguos, celdas con error de Excel o fórmulas sin calcular, y filas con
+//   datos sin ID o sin DESCRIPCION. Si una categoría existente exige lote, se
+//   detiene; --sin-lotes desactiva ese control (queda en la bitácora).
+// - --dry-run da las mismas cifras que la carga real y avisa qué categorías
+//   crearía o cambiaría, sin escribir nada.
 // - Repetirlo no duplica ni pisa lo editado en la app: sólo crea los nuevos,
-//   activa los que estaban inactivos por falta de precio o costo y, con
-//   --actualizar-precios, cambia precios (queda en la bitácora). Las
-//   existencias de productos ya cargados nunca se tocan.
+//   activa los que estaban inactivos por falta de precio o costo (completando
+//   sólo lo que falta) y, con --actualizar-precios, cambia precios (queda en
+//   la bitácora). Las existencias de productos ya cargados nunca se tocan.
 import { config } from "dotenv";
 import { Prisma, PrismaClient } from "@prisma/client";
 import ExcelJS from "exceljs";
@@ -64,8 +67,10 @@ type Plain = string | number | boolean | Date | null;
 type Problem = { problem: string };
 const isProblem = (v: Plain | Problem): v is Problem =>
   typeof v === "object" && v !== null && "problem" in v;
+// ExcelJS no distingue una fórmula sin calcular de una que da "": el mensaje
+// sirve para las dos.
 const NO_RESULT =
-  "fórmula sin valor calculado; abre el archivo en Excel y guárdalo";
+  "fórmula sin valor calculado; abre el archivo en Excel y guárdalo, o escribe el valor en lugar de la fórmula";
 function plain(v: ExcelJS.CellValue): Plain | Problem {
   if (v == null) return null;
   if (typeof v !== "object" || v instanceof Date) return v;

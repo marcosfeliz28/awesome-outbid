@@ -26,6 +26,8 @@ model User {
   failedAttempts Int @default(0)
   lockedUntil DateTime?
   branchId String @default("main")
+  // Número de cajero visible en el cuadre y los reportes (p. ej. 1031).
+  cashierNumber Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -357,6 +359,8 @@ model CashSession {
   differenceTransfer Decimal? @db.Decimal(14,2)
   difference Decimal? @db.Decimal(14,2)
   notes String @default("")
+  // Cuadre de la tienda: denominaciones, vales, US$/€ y entregado/dejado.
+  closeDetails Json?
   branchId String @default("main")
   @@index([userId,closedAt])
 }
@@ -481,6 +485,9 @@ model Terminal {
  lastUserId String? @db.Uuid
  // Registrado antes de la ronda 4 (sin secreto): requiere aprobación de un gerente.
  legacy Boolean @default(false)
+ // Caja que se imprime en el cuadre y los reportes (p. ej. 4012 «GPRO STORE RD»).
+ registerNumber Int?
+ registerName String?
 }
 model RealtimeEvent {
  id BigInt @id @default(autoincrement())

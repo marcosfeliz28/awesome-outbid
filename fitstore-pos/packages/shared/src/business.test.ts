@@ -29,6 +29,13 @@ import {
   moneyAmount,
   bookedLineCosts,
   replayReturns,
+  CASH_DENOMINATIONS,
+  countDenominations,
+  cashDifference,
+  deliveredSplit,
+  cashCloseSchema,
+  PAYMENT_GROUPS,
+  isImageDataUrl,
 } from "./index";
 describe("Fórmulas financieras", () => {
   it("costo promedio ponderado", () => {
@@ -393,5 +400,109 @@ describe("R9-dinero-1/6/7 · costo contabilizado de ventas y devoluciones", () =
       restocked: d(8.35),
       waste: d(0),
     });
+  });
+});
+
+describe("Tienda · cuadre de caja y contraentrega", () => {
+  it("denominaciones de RD$ en el orden del impreso y subtotal exacto", () => {
+    expect(CASH_DENOMINATIONS).toEqual([
+      1, 5, 10, 20, 25, 50, 100, 200, 500, 1000, 2000,
+    ]);
+    const counted = countDenominations({ "2000": 4, "1000": 1, "25": 3, "1": 2 });
+    expect(counted.total).toBe(9077);
+    expect(counted.lines).toHaveLength(11);
+    expect(counted.lines.find((l) => l.value === 25)).toEqual({
+      value: 25,
+      qty: 3,
+      total: 75,
+    });
+    expect(countDenominations().total).toBe(0);
+  });
+  it("12-Diferencias = (2-Efectivo + 5-Vale) − 10-Total venta efectivo − 18-Fondo, al centavo", () => {
+    expect(
+      cashDifference({
+        counted: 2175,
+        vouchers: 149.75,
+        cashSales: 1830,
+        opening: 500,
+      }),
+    ).toBe(-5.25);
+    expect(
+      cashDifference({ counted: 0.3, vouchers: 0, cashSales: 0.1, opening: 0.2 }),
+    ).toBe(0);
+  });
+  it("entregado + dejado = efectivo contado; lo entregado no supera lo contado", () => {
+    expect(deliveredSplit(9825, 9000)).toEqual({ delivered: 9000, left: 825 });
+    expect(deliveredSplit(100.5, 100.25)).toEqual({
+      delivered: 100.25,
+      left: 0.25,
+    });
+    expect(deliveredSplit(500, undefined)).toEqual({
+      delivered: null,
+      left: null,
+    });
+    expect(() => deliveredSplit(500, 500.01)).toThrow(/entregado/i);
+  });
+  it("cierre: acepta sólo countedCash (clientes anteriores) o el conteo por denominaciones", () => {
+    expect(cashCloseSchema.parse({ countedCash: 100 })).toMatchObject({
+      countedCash: 100,
+      vouchers: 0,
+      countedUsd: 0,
+      countedEur: 0,
+    });
+    expect(
+      cashCloseSchema.parse({ denominations: { "100": 2 }, delivered: 150 }),
+    ).toMatchObject({ denominations: { "100": 2 }, delivered: 150 });
+    expect(() => cashCloseSchema.parse({})).toThrow();
+    // Denominación inexistente, cantidad fraccionaria o vale con fracción de centavo.
+    expect(() => cashCloseSchema.parse({ denominations: { "3": 1 } })).toThrow();
+    expect(() =>
+      cashCloseSchema.parse({ denominations: { "100": 1.5 } }),
+    ).toThrow();
+    expect(() =>
+      cashCloseSchema.parse({ countedCash: 10, vouchers: 0.001 }),
+    ).toThrow();
+  });
+  it("contraentrega: forma de pago propia, combinable y sin cambio", () => {
+    const sale = {
+      offlineUuid: "2f1c8f8e-8d4f-4b8e-9d47-6a1c3f9b1a11",
+      cashSessionId: "2f1c8f8e-8d4f-4b8e-9d47-6a1c3f9b1a12",
+      items: [{ variantId: "2f1c8f8e-8d4f-4b8e-9d47-6a1c3f9b1a13", qty: 1 }],
+      payments: [
+        { method: "transfer", amount: 180, bank: "BHD", reference: "1" },
+        { method: "cod", amount: 1000 },
+      ],
+    };
+    expect(saleSchema.parse(sale).payments[1].method).toBe("cod");
+    expect(
+      paymentTotals(1180, [
+        { method: "transfer", amount: 180 },
+        { method: "cod", amount: 1000 },
+      ]),
+    ).toEqual({ paid: 1180, pending: 0, change: 0 });
+    expect(() => paymentTotals(1000, [{ method: "cod", amount: 1200 }])).toThrow(
+      /cambio/,
+    );
+  });
+  it("formas de pago del reporte en el orden de la tienda", () => {
+    expect(PAYMENT_GROUPS.slice(0, 5)).toEqual([
+      { method: "cash", label: "EFECTIVO" },
+      { method: "transfer", label: "CHEQUES/TRANSFERENCIA" },
+      { method: "credit", label: "COMPRA A CRÉDITO" },
+      { method: "card", label: "TARJETA CRÉDITO/DÉBITO" },
+      { method: "cod", label: "CONTRAENTREGA" },
+    ]);
+  });
+  it("logo: sólo imágenes como data URL y de hasta 200 KB", () => {
+    const png = "data:image/png;base64," + Buffer.alloc(1000).toString("base64");
+    expect(isImageDataUrl(png)).toBe(true);
+    expect(
+      isImageDataUrl(
+        "data:image/png;base64," + Buffer.alloc(201 * 1024).toString("base64"),
+      ),
+    ).toBe(false);
+    expect(isImageDataUrl("data:text/html;base64,PHA+")).toBe(false);
+    expect(isImageDataUrl("data:image/png;base64,***")).toBe(false);
+    expect(isImageDataUrl("https://example.com/logo.png")).toBe(false);
   });
 });
