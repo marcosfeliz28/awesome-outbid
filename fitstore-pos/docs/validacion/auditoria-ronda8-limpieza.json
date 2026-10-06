@@ -1,0 +1,61 @@
+{
+  "auditRoots": [
+    55384,
+    55385,
+    55387,
+    55388,
+    56394
+  ],
+  "signalled": [
+    56401,
+    55455,
+    55450,
+    55441,
+    55424,
+    56394,
+    55388,
+    55387,
+    55385,
+    55384
+  ],
+  "auditPorts": [
+    {
+      "port": 3038,
+      "responding": false
+    },
+    {
+      "port": 3040,
+      "responding": false
+    },
+    {
+      "port": 3042,
+      "responding": false
+    },
+    {
+      "port": 3043,
+      "responding": false
+    },
+    {
+      "port": 4208,
+      "responding": false
+    },
+    {
+      "port": 4210,
+      "responding": false
+    }
+  ],
+  "originalServices": [
+    {
+      "pid": 2258,
+      "running": true
+    },
+    {
+      "pid": 5998,
+      "running": true
+    },
+    {
+      "pid": 6058,
+      "running": true
+    }
+  ]
+}

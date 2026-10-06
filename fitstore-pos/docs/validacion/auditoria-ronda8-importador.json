@@ -1,0 +1,226 @@
+{
+  "dataScope": "Sólo libros y valores sintéticos de QA; base aislada. Excel original no suministrado.",
+  "originalCodeCollision": {
+    "run": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "Corrige el Excel o el catálogo antes de importar:\n- fila 9876500812345: el código 9876500812345 ya es de «QA existente numérico R8» (qa-existing-r8-v)\n"
+    },
+    "before": {
+      "categories": 5,
+      "products": 61,
+      "variants": 229,
+      "movements": 1931,
+      "auditEntries": 4
+    },
+    "after": {
+      "categories": 5,
+      "products": 61,
+      "variants": 229,
+      "movements": 1931,
+      "auditEntries": 4
+    },
+    "rejectedWithoutWrites": true
+  },
+  "referenceCollision": {
+    "run": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "Corrige el Excel o el catálogo antes de importar:\n- fila qa-ref-r8: el código qa-existing-r8-v ya es de «QA existente numérico R8» (qa-existing-r8-v)\n- fila qa-ref-r8: el código qa-existing-r8-v ya es de «QA existente numérico R8» (qa-existing-r8-v)\n"
+    },
+    "noWrites": true
+  },
+  "localizedNumbers": {
+    "input": {
+      "qty": "1,5",
+      "cost": "1.250,50",
+      "price": "2.500,75"
+    },
+    "persisted": {
+      "id": "2e66cb57-2f0a-4170-b6ac-5468d6185d92",
+      "sku": "9876500800002",
+      "barcode": "9876500800002",
+      "stock": 1.5,
+      "costAvg": 1250.5,
+      "price": 2500.75,
+      "productName": "QA números españoles R8",
+      "active": true
+    },
+    "run": {
+      "status": 0,
+      "stdout": "1 productos leídos · 1 nuevos (1.5 unidades) · 0 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 sin precio o costo en el Excel (inactivos).\n0 productos para revisar en /workspace/auditoria-ronda8/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    }
+  },
+  "numericErrors": {
+    "run": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "Corrige el Excel antes de importar:\n- fila qa-ambiguous, COSTO: «1.250» es ambiguo; escríbelo sin separador de miles (1250 o 1,25)\n- fila qa-negative, EXISTENCIA: -1 (debe ser 0 o más, con como máximo 3 decimales)\n- fila qa-precision, PRECIO DETALLE: 20.001 (debe ser 0 o más, con como máximo 2 decimales)\n"
+    },
+    "rejectedWithoutWrites": true,
+    "before": {
+      "categories": 5,
+      "products": 62,
+      "variants": 230,
+      "movements": 1932,
+      "auditEntries": 4
+    },
+    "after": {
+      "categories": 5,
+      "products": 62,
+      "variants": 230,
+      "movements": 1932,
+      "auditEntries": 4
+    }
+  },
+  "originalCategoryReload": {
+    "run": {
+      "status": 0,
+      "stdout": "1 productos leídos · 0 nuevos (0 unidades) · 1 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 sin precio o costo en el Excel (inactivos).\n1 productos para revisar en /workspace/auditoria-ronda8/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    },
+    "requiresLot": true,
+    "requiresExpiry": true,
+    "statuses": [
+      400,
+      400
+    ]
+  },
+  "explicitCategoryConversion": {
+    "rejectedRun": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "La categoría «QA categoría protegida R8» exige lote o vencimiento y el Excel no los trae. Desactívalo en Productos › Categorías o repite con --sin-lotes (queda en la bitácora).\n"
+    },
+    "rejectedWithoutWrites": true,
+    "explicitRun": {
+      "status": 0,
+      "stdout": "1 productos leídos · 1 nuevos (1 unidades) · 0 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 sin precio o costo en el Excel (inactivos).\n0 productos para revisar en /workspace/auditoria-ronda8/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    },
+    "after": {
+      "requiresLot": false,
+      "requiresExpiry": false
+    },
+    "audit": [
+      {
+        "action": "category_lots_disabled_by_import",
+        "before": {
+          "requiresLot": true,
+          "requiresExpiry": true
+        },
+        "after": {
+          "origen": "stock-categoria-protegida.xlsx",
+          "requiresLot": false,
+          "requiresExpiry": false
+        }
+      }
+    ]
+  },
+  "partialCategoryAbort": {
+    "run": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "La categoría «QA bloqueo segunda categoría R8» exige lote o vencimiento y el Excel no los trae. Desactívalo en Productos › Categorías o repite con --sin-lotes (queda en la bitácora).\n"
+    },
+    "before": {
+      "categories": 7,
+      "products": 64,
+      "variants": 232,
+      "movements": 1933,
+      "auditEntries": 8
+    },
+    "after": {
+      "categories": 8,
+      "products": 64,
+      "variants": 232,
+      "movements": 1933,
+      "auditEntries": 8
+    },
+    "persistedCategory": {
+      "id": "e89b31c8-c729-4f10-a093-563c7e4c3535",
+      "name": "QA categoría creada antes de abortar R8"
+    },
+    "productsNotWritten": true
+  },
+  "partialNumericAbort": {
+    "run": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "\nInvalid `tx.product.create()` invocation in\n/workspace/auditoria-ronda8/fitstore-pos/apps/api/scripts/import-inventario.ts:462:40\n\n  459   continue;\n  460 }\n  461 await db.$transaction(async (tx) => {\n→ 462   const product = await tx.product.create(\nError occurred during query execution:\nConnectorError(ConnectorError { user_facing_error: None, kind: QueryError(PostgresError { code: \"22003\", message: \"numeric field overflow\", severity: \"ERROR\", detail: Some(\"A field with precision 14, scale 2 must round to an absolute value less than 10^12.\"), column: None, hint: None }), transient: false })\n"
+    },
+    "before": {
+      "categories": 8,
+      "products": 64,
+      "variants": 232,
+      "movements": 1933,
+      "auditEntries": 8
+    },
+    "after": {
+      "categories": 8,
+      "products": 65,
+      "variants": 233,
+      "movements": 1934,
+      "auditEntries": 8
+    },
+    "earlierRowPersisted": {
+      "id": "f41ca8f2-cbd0-4a69-b6fd-fb865ab27e14",
+      "sku": "qa-range-first-r8",
+      "barcode": "qa-range-first-r8",
+      "stock": 1,
+      "costAvg": 10,
+      "price": 20,
+      "productName": "QA válido antes del rango R8",
+      "active": true
+    },
+    "failingRowCreated": false,
+    "inputPrice": 1000000000000,
+    "schemaPriceType": "Decimal(14,2)"
+  },
+  "caseCollision": {
+    "run": {
+      "status": 0,
+      "stdout": "1 productos leídos · 1 nuevos (2 unidades) · 0 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 sin precio o costo en el Excel (inactivos).\n0 productos para revisar en /workspace/auditoria-ronda8/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    },
+    "code": "qa-r8-case123",
+    "existing": {
+      "id": "ff65cb66-3e46-41bf-a638-40610b36af9b",
+      "sku": "qa-case-owner-r8",
+      "barcode": "QA-R8-CASE123",
+      "stock": 4,
+      "costAvg": 10,
+      "price": 20,
+      "productName": "AAA QA existente MAYÚSCULAS R8",
+      "active": true
+    },
+    "imported": {
+      "id": "2521c4cb-3c1e-4a83-8b05-97c1d110447d",
+      "sku": "qa-r8-case123",
+      "barcode": "qa-r8-case123",
+      "stock": 2,
+      "costAvg": 10,
+      "price": 20,
+      "productName": "ZZZ QA importado minúsculas R8",
+      "active": true
+    },
+    "normalizedCollision": true
+  },
+  "catalogControl": {
+    "count": 616,
+    "stockTotal": 616,
+    "firstRun": {
+      "status": 0,
+      "stdout": "616 productos leídos · 616 nuevos (616 unidades) · 0 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 sin precio o costo en el Excel (inactivos).\n0 productos para revisar en /workspace/auditoria-ronda8/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    },
+    "repeatRun": {
+      "status": 0,
+      "stdout": "616 productos leídos · 0 nuevos (0 unidades) · 616 ya cargados sin cambios · 0 activados · 0 precios actualizados · 0 sin precio o costo en el Excel (inactivos).\n0 productos para revisar en /workspace/auditoria-ronda8/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).\n",
+      "stderr": ""
+    },
+    "stockUnchanged": true,
+    "scope": "Nombres/ID del fixture del ZIP; stock 1, costo 10 y precio 20 son ficticios de QA."
+  }
+}

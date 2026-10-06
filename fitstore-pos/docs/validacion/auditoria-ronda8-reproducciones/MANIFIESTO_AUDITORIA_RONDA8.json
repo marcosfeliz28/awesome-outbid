@@ -1,0 +1,281 @@
+{
+  "audit": "FitStore POS R8",
+  "uploadedSourceSha256": "b5a802fce919829f6e72774397e772bec236ddc6976009e82478abe4f145948c",
+  "files": [
+    {
+      "path": "LEEME_AUDITORIA_RONDA8.txt",
+      "bytes": 1620,
+      "sha256": "e465e66e3b8d0f1fba106c2042211615481cd04aa45df06df0ec1a4d5e2ce3fa"
+    },
+    {
+      "path": "MENSAJE_PARA_CLAUDE_AUDITORIA_RONDA8.txt",
+      "bytes": 3634,
+      "sha256": "e7e282ea1af1a1658832da6cc48031838089ea56a495976d5dcf36035253faa7"
+    },
+    {
+      "path": "api-listas.log",
+      "bytes": 81,
+      "sha256": "6019e356dace5612fc9a35d7897a35a9e1cd43e1f4b1b274223964462cf73a21"
+    },
+    {
+      "path": "bases.log",
+      "bytes": 52,
+      "sha256": "cb9f135a87716f61fa48d6d47fc6c49ec2a0f1d725ba1b4daa665dec292a5c53"
+    },
+    {
+      "path": "entregar.py",
+      "bytes": 8520,
+      "sha256": "88a2c91ef7c99c2d20b33c2a51457c919765b9ea4e5c7f9936f858e5133b4ee8"
+    },
+    {
+      "path": "esperar-api.mjs",
+      "bytes": 343,
+      "sha256": "6523358a959605441e11f3f0c7f4a2b6114a5c539e3d31b05416720ebb52a6d8"
+    },
+    {
+      "path": "fitstore-pos/docs/AUDITORIA_RONDA8.md",
+      "bytes": 13431,
+      "sha256": "e85658c54d12a27f3243ab112757e9f77f56780d72914811bbfd85df45b3c99f"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-capturas/cel-carrito-mayusculas-codigo-ambiguo.png",
+      "bytes": 44332,
+      "sha256": "63545a4ee554d7a41380a84b7dc6dd8acd156b2298a30102c4ca2f4ff8082b78"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-capturas/cel-catalogo-moira.png",
+      "bytes": 45003,
+      "sha256": "64f549155f20e6bb21ab0a43e94f6d2c94f2b8b5a28b41f3b3c6a8da4236c435"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-capturas/pc-mayusculas-codigo-selecciona-otro-producto.png",
+      "bytes": 187938,
+      "sha256": "a3724e242468ee85375e0920fb0f88fc5a6c4bb3d341044962688a8923563440"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-capturas-oficiales/cel-equipos-320.png",
+      "bytes": 44914,
+      "sha256": "964cbdfdf52b61627633722bf9c10377fe814a2264a7f1df4f381cf0599ea05b"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-capturas-oficiales/cel-equipos-390.png",
+      "bytes": 50279,
+      "sha256": "cb343d3b384913134bc6e68777f9a36951fc601a453faa7d4f3d735030da53a9"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-capturas-oficiales/cobro-exitoso.png",
+      "bytes": 185768,
+      "sha256": "947f7a279840330a4a4c1f2fc09d48200a028dd83f583bdffb2c515a5c44cfc6"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-capturas-oficiales/dashboard-mobile.png",
+      "bytes": 165782,
+      "sha256": "f50b82eb472633972db94d0d4a23a9f6e92bb1c5e65900c8459729dc5c123fb2"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-capturas-oficiales/pos-mobile.png",
+      "bytes": 67439,
+      "sha256": "e4f1fb78370021abd9697a4fe36414d3e1fd57d5cbe1df67bfe59fdeb916d6d3"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-check.txt",
+      "bytes": 2353,
+      "sha256": "a50d99072a01033d48a894e42c25517f5f73f5e0e48ee82699fe1c3ea9f050e5"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador/catalogo-616-datos-qa.xlsx",
+      "bytes": 35088,
+      "sha256": "3ff7908a9d72329e8b12603eb5e138fa5df69ff73939c4056fa7d0a107252a32"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador/colision-mayusculas.xlsx",
+      "bytes": 6606,
+      "sha256": "3ef09d0b10b84d3bcb865ff86205522fb1ed0db2507ae6224cf23ae9d8e7c46b"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador/colision-numerica.xlsx",
+      "bytes": 6605,
+      "sha256": "676900e9ed12a8c82f1849bbc305683511099717b565b363ce9063ed8684e4a6"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador/colision-referencia.xlsx",
+      "bytes": 6605,
+      "sha256": "a1202e4d8e916dabc54565d42ac3b6e87bcddfa7fa170e7906d395be5b7cde01"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador/numeros-espanol.xlsx",
+      "bytes": 6624,
+      "sha256": "a5f5726030f0d2ca8a1af4e53e10f1046578afbb8c444d3c0a9a516e0cce1d53"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador/numeros-rechazados.xlsx",
+      "bytes": 6751,
+      "sha256": "19af97569cefbe41ae8c926261d6d3a0199b8260e555bccd70a5bb5ba93ebb72"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador/rango-monetario-fuera-bd.xlsx",
+      "bytes": 6654,
+      "sha256": "7e7641896c308f5c4421d2460719ac5db218721f7964e5a92d4860a2ef7013dd"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador/recarga-protegida.xlsx",
+      "bytes": 6601,
+      "sha256": "4c9d53778c25517aa5f926384a856310315494416d97bae6a431c8b072748e87"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador/rechazo-deja-categoria.xlsx",
+      "bytes": 6679,
+      "sha256": "1351fd4a83d740c473175671ab63535681c0b1a78a732999b432ca8f9f1f6f22"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador/stock-categoria-protegida.xlsx",
+      "bytes": 6600,
+      "sha256": "619fe75cd830eb7657cb6c0477d22b9dab29678764803d74f82a01968de06a2e"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-importador.json",
+      "bytes": 8341,
+      "sha256": "95ccf1d458e8d77e74d4593012654aba8ff1a3984477545e71fb7e707e8d998b"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-integracion-compilada.txt",
+      "bytes": 3866,
+      "sha256": "7193c594771f87772b51abcbfe3a9cde9029d9aa7b86177f1226762029665a65"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-integridad.json",
+      "bytes": 534,
+      "sha256": "b0c5f07a1826f151e79050965b515c7af10173f3bea97398b1bf32712d3557cf"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-kit.json",
+      "bytes": 1468,
+      "sha256": "6b0bf0ac06bd0410662277cdec271824eecb65c846e7d4fcdee6c0cd522b25f7"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-legado-antes.json",
+      "bytes": 706,
+      "sha256": "5b9803404f090bde316a8a9b08f3cf59edb34d98b7aa3172aa2adb2fa50218b6"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-legado-despues.json",
+      "bytes": 2206,
+      "sha256": "b85bffc7d3387dceb31f0c7b13a1d72c2f9b7777c85fa207e710467cee7ef7e1"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-limpieza.json",
+      "bytes": 776,
+      "sha256": "d7176f44fa486dc4ad0544a04b5104429a81c0c250b362bc06ceac4bfc10109f"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-navegador.txt",
+      "bytes": 1474,
+      "sha256": "094a76d77edbbd8d8cc999e0d04045aa8748936ce654bdee66ae76303d15908c"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8-ui-importador.json",
+      "bytes": 1567,
+      "sha256": "1e63e3ca300c5be9cfea9158ad1fd7acdda4302b2ccf9052a1013e8f0c237ccc"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda8.json",
+      "bytes": 4936,
+      "sha256": "838fb076d8999d34a5bbe497c0a005018c147c0c3e020c24286168d4bffb6b70"
+    },
+    {
+      "path": "importador-comprobar.mjs",
+      "bytes": 10999,
+      "sha256": "8159a95436c2a64d63939beff5f151a53a79bea08cba7327c3d20099acef031a"
+    },
+    {
+      "path": "instalacion.log",
+      "bytes": 940,
+      "sha256": "3c90b0d88532e685096c5921100f46cebe9009a07fbeb5466f3dce6869a67f17"
+    },
+    {
+      "path": "kit-comprobar.mjs",
+      "bytes": 6167,
+      "sha256": "d417adfc9cb9124d7dd1a1d05839f17235a5891c6b3725182c9d9ebbba52d68b"
+    },
+    {
+      "path": "legado-comprobar.mjs",
+      "bytes": 5594,
+      "sha256": "35f43d185c1d4b19450884ef37fbf08cd7e182a0b1bb520ed387fc77c2e36cae"
+    },
+    {
+      "path": "legado-fixture.json",
+      "bytes": 352,
+      "sha256": "6b62275bbb08c5636c52b2e3ae1d9ac84f9447dfbd52c435806fde95552f17df"
+    },
+    {
+      "path": "limpiar.mjs",
+      "bytes": 1623,
+      "sha256": "62dde532aed3d0308c13cd847780c8b808ca7ae5f85a8ace8f86ea7fce7abec2"
+    },
+    {
+      "path": "limpieza.log",
+      "bytes": 67,
+      "sha256": "658ded37867c97e161a77dc685e468666f570ff835563a5c2e94a240f779623b"
+    },
+    {
+      "path": "migraciones-import.log",
+      "bytes": 1719,
+      "sha256": "62bd306206568aaf64639596219f076da5429c59ff35d7a070f7432856224978"
+    },
+    {
+      "path": "migraciones-upgrade7.log",
+      "bytes": 420,
+      "sha256": "7abd68c14411176026f7b3407ebd60b689172e0c2ef2c0acdfd1db2e6084202c"
+    },
+    {
+      "path": "migraciones.log",
+      "bytes": 1723,
+      "sha256": "564c422dc4be0f6eaf3a5f7624cbb96c12dd943312895f68b95402a364112979"
+    },
+    {
+      "path": "preparar-db.mjs",
+      "bytes": 596,
+      "sha256": "863e029bc94e1f469ecff3dfc7b82daaffba908a1ebefda27ad1bb1e64208bb6"
+    },
+    {
+      "path": "preview.mjs",
+      "bytes": 581,
+      "sha256": "8888043efb14f88f0454fc1c5ce27efee963e2be276b92adf45226af60f9912d"
+    },
+    {
+      "path": "prisma-generate.log",
+      "bytes": 633,
+      "sha256": "c04bd5a4dfd5cea09fb31e20a4f63bb4963d6b927c66a962cf482602f33297e9"
+    },
+    {
+      "path": "restaurar-originales.py",
+      "bytes": 1604,
+      "sha256": "ed291e24ef589ad149ce8fe69d6045a01095db720597ab45ece026af23790eb9"
+    },
+    {
+      "path": "runtime.mjs",
+      "bytes": 931,
+      "sha256": "38e49dc9b6e029e3f362f9732ea06cbec85950c73be16f47a4818b96e7c741b6"
+    },
+    {
+      "path": "semilla-import.log",
+      "bytes": 233,
+      "sha256": "0707db813561ad9f39078b0e7042a0ce32c90edf33ca4c9f20953c7b8100bdc9"
+    },
+    {
+      "path": "semilla.log",
+      "bytes": 230,
+      "sha256": "bd957cb808442b5d8a1218903cb9ff502c08cab7be7f1d6818f45ae948481f96"
+    },
+    {
+      "path": "source-baseline.json",
+      "bytes": 43450,
+      "sha256": "b06b968c01e85e2d75de8f49d1f5ef072e14202607aa44633095d2077d530cc8"
+    },
+    {
+      "path": "ui-importador-comprobar.mjs",
+      "bytes": 3709,
+      "sha256": "63586126f53c1cc8ecb2f5ac9bf28a1c2d884f3dfe1da616b57ee25bd0f9d819"
+    }
+  ]
+}

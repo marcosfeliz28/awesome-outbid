@@ -1,0 +1,97 @@
+{
+  "mode": "R8 después de actualizar",
+  "source": "Devolución creada realmente por API compilada R7; sin quitar ni inyectar campos de costo por SQL.",
+  "after": {
+    "saleCost": 50.05,
+    "oldReturnCost": 15.02,
+    "oldReturnItems": [
+      {
+        "qty": 3,
+        "opened": false,
+        "damaged": false,
+        "restock": true,
+        "saleItemId": "abd0d566-62ab-47d1-87ae-80e98cac360b"
+      }
+    ],
+    "reportBeforeNewReturn": {
+      "Producto": "QA-legado-combo muvusbp1",
+      "Categoría": "Ropa deportiva",
+      "Ventas": 140,
+      "Costo": 35.04,
+      "Unidades": 7,
+      "Utilidad": 104.96,
+      "Margen": 74.97
+    },
+    "newReturnCost": 35.03,
+    "newReturnItems": [
+      {
+        "qty": 7,
+        "cost": 35.03,
+        "opened": false,
+        "damaged": false,
+        "restock": true,
+        "saleItemId": "abd0d566-62ab-47d1-87ae-80e98cac360b"
+      }
+    ],
+    "bookedRemainingCostAfter": 0,
+    "reportAfterFullReturn": {
+      "Producto": "QA-legado-combo muvusbp1",
+      "Categoría": "Ropa deportiva",
+      "Ventas": 0,
+      "Costo": 0.01,
+      "Unidades": 0,
+      "Utilidad": -0.01,
+      "Margen": 0
+    },
+    "migrations": [
+      {
+        "name": "202610030001_initial",
+        "finished": true
+      },
+      {
+        "name": "202610040001_review",
+        "finished": true
+      },
+      {
+        "name": "202610040002_sessions",
+        "finished": true
+      },
+      {
+        "name": "202610040003_finance",
+        "finished": true
+      },
+      {
+        "name": "202610040004_negative_stock",
+        "finished": true
+      },
+      {
+        "name": "202610040005_round2",
+        "finished": true
+      },
+      {
+        "name": "202610040006_round3",
+        "finished": true
+      },
+      {
+        "name": "202610040007_commit_events",
+        "finished": true
+      },
+      {
+        "name": "202610050001_round4_claude",
+        "finished": true
+      },
+      {
+        "name": "202610050002_lot_index",
+        "finished": true
+      },
+      {
+        "name": "202610060001_round6_audit",
+        "finished": true
+      },
+      {
+        "name": "202610070001_round7",
+        "finished": true
+      }
+    ]
+  }
+}

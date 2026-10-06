@@ -1,0 +1,15 @@
+FITSTORE POS · AUDITORÍA RONDA 8
+
+1. Enviar a Claude MENSAJE_PARA_CLAUDE_AUDITORIA_RONDA8.txt y este ZIP de auditoría.
+2. Consultar fitstore-pos/docs/AUDITORIA_RONDA8.md para el dictamen y las reproducciones.
+3. fitstore-pos/docs/validacion/auditoria-ronda8.json resume resultados. El resto de auditoria-ronda8-* contiene evidencias propias; los XLSX son datos sintéticos de QA.
+
+Este paquete contiene auditoría y herramientas de reproducción. No reemplaza el ZIP de la aplicación y no se instala como actualización. No contiene dependencias, .env, bases de datos ni credenciales privadas.
+
+Para repetir los scripts, ajustar la ruta base de /workspace/auditoria-ronda8, preparar exclusivamente bases de QA con el código de R7 y R8, instalar dependencias y generar Prisma. Las pruebas modifican datos de esas bases de QA y ejecutan el importador real. No ejecutar sobre el inventario operativo.
+
+Oficiales: pnpm check; FITSTORE_API_URL con API compilada para pnpm test:integration; FITSTORE_API_URL y FITSTORE_WEB_URL para pnpm test:e2e. Los logs guardan la ejecución final completa.
+Reproducciones: importador-comprobar.mjs; kit-comprobar.mjs; ui-importador-comprobar.mjs; legado-comprobar.mjs prepare contra R7 y después sin prepare contra R8. La fixture histórica incluida sólo contiene identificadores de QA.
+limpiar.mjs y restaurar-originales.py documentan la limpieza de esta ejecución; sus PID/rutas corresponden a este entorno y no son instrucciones para otro servidor.
+
+Manifestación de integridad: MANIFIESTO_AUDITORIA_RONDA8.json, con SHA-256 de cada archivo incluido y del ZIP fuente recibido.

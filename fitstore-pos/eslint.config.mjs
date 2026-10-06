@@ -13,6 +13,7 @@ export default tseslint.config(
       "docs/validacion/auditoria-ronda4-reproducciones/**",
       "docs/validacion/auditoria-ronda6-reproducciones/**",
       "docs/validacion/auditoria-ronda7-reproducciones/**",
+      "docs/validacion/auditoria-ronda8-reproducciones/**",
     ],
   },
   eslint.configs.recommended,

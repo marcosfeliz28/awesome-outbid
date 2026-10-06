@@ -1,0 +1,75 @@
+{
+  "fractional": {
+    "submitted": [
+      0.001,
+      0.5
+    ],
+    "statuses": [
+      400,
+      400
+    ],
+    "message": "Los combos se venden por unidades enteras: combo kit-r8-muvuug55.",
+    "before": {
+      "stock": "1",
+      "moves": 1,
+      "sales": 0,
+      "payments": 0,
+      "cash": {
+        "cash": 0,
+        "card": 0,
+        "transfer": 0,
+        "movements": []
+      }
+    },
+    "after": {
+      "stock": "1",
+      "moves": 1,
+      "sales": 0,
+      "payments": 0,
+      "cash": {
+        "cash": 0,
+        "card": 0,
+        "transfer": 0,
+        "movements": []
+      }
+    },
+    "noWrites": true
+  },
+  "wholeKit": {
+    "saleTotal": 5000,
+    "saleCost": 4000,
+    "stockAfter": 0.6,
+    "allocations": [
+      {
+        "qty": 0.4,
+        "exact": true,
+        "unitCost": 10000,
+        "variantId": "ad224543-efa7-4b3c-b0a3-4b7b7ae4bea6"
+      }
+    ],
+    "partialReturnStatus": 400,
+    "totalReturnCost": 4000,
+    "restoredStock": 1
+  },
+  "partialCost": {
+    "saleCost": 50.05,
+    "returnedCost": 15.02,
+    "bookedRemainingCost": 35.03,
+    "reportedRemainingCost": 35.03,
+    "profitRow": {
+      "Producto": "combo-fino kit-r8-muvuug55",
+      "Categoría": "Ropa deportiva",
+      "Ventas": 140,
+      "Costo": 35.03,
+      "Unidades": 7,
+      "Utilidad": 104.97,
+      "Margen": 74.98
+    },
+    "storedLineCost": 15.02,
+    "fullReturnCosts": [
+      15.02,
+      35.03
+    ],
+    "finalReportCost": 0
+  }
+}
