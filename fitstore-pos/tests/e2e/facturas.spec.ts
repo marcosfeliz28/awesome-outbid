@@ -62,7 +62,7 @@ test("R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción
     .getByRole("row", { name: new RegExp(order.number) })
     .getByRole("button", { name: "Recibir" })
     .click();
-  await page.getByLabel(/Cantidad pendiente/).fill("4");
+  await page.getByLabel(/Unidades buenas/).fill("4");
 
   // La primera vez la API recibe la mercancía, pero la respuesta no llega.
   const bodies: any[] = [];

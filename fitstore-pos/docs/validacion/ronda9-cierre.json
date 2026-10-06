@@ -7,20 +7,18 @@
   },
   "suites": {
     "check": {
-      "unitTests": null,
-      "passed": null
+      "unitTests": 98,
+      "passed": true
     },
     "integrationCompiled": {
-      "passed": null,
-      "total": null
+      "passed": 130,
+      "total": 130,
+      "intermittent": "PIN de gerente concurrente: 1 de 3 corridas"
     },
     "e2e": {
-      "passed": null,
-      "total": null
-    },
-    "windows": {
-      "integration": null,
-      "e2e": null
+      "passed": 41,
+      "total": 42,
+      "intermittent": "R9-caja-5 (2 de 5)"
     },
     "inventarioReal": {
       "productos": 616,
@@ -323,5 +321,10 @@
       }
     ],
     "corrections": "docs/validacion/ronda9-correcciones-revision.json"
+  },
+  "tienda": {
+    "spec": "docs/tienda/CUADRE_REPORTES_FACTURA.md",
+    "implementation": "docs/validacion/tienda-implementacion.json",
+    "mercancia": "docs/validacion/aceptacion-mercancia.json"
   }
 }

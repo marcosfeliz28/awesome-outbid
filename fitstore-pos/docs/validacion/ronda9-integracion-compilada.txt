@@ -1,0 +1,81 @@
+Runtime: node dist/main.js · base nueva fitstore_r7 (migraciones + semilla)
+[WARN] Unsupported engine: wanted: {"node":">=24"} (current: {"node":"v22.22.0","pnpm":"11.19.0"})
+
+ RUN  v3.2.7 /home/user/awesome-outbid/fitstore-pos
+
+ ✓ tests/api.test.ts (130 tests) 180220ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  2012ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  1415ms
+   ✓ Aceptación financiera y permisos > conserva conflictos offline sin stock negativo  301ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  2442ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  2939ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  3334ms
+   ✓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal  529ms
+   ✓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco  5999ms
+   ✓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor  9438ms
+   ✓ Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP  1700ms
+   ✓ Seguridad, offline y funciones completadas > 7: sincroniza en caja cerrada dentro de su horario y audita el reajuste  338ms
+   ✓ Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido  5581ms
+   ✓ Seguridad, offline y funciones completadas > venta a crédito admite abonos idempotentes en caja posterior  302ms
+   ✓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores  3927ms
+   ✓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión  1615ms
+   ✓ Seguridad, offline y funciones completadas > stock negativo optativo conserva advertencia y prohíbe saltarse lotes  735ms
+   ✓ Seguridad, offline y funciones completadas > alerta efectivo aunque tarjeta lo compense  459ms
+   ✓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios  940ms
+   ✓ Ronda 2 de Claude > 1: notas requieren prueba de posesión o gerente, no se divulgan códigos y cada uso se audita  4502ms
+   ✓ Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite  6019ms
+   ✓ Ronda 2 de Claude > 3: transferencia pendiente no reduce deuda ni caja; verificación concurrente aplica una sola vez  346ms
+   ✓ Ronda 3 · tiempo real y mercancía > tres cajas venden stock 5 y las tres reciben el saldo confirmado en menos de 2 segundos  5147ms
+   ✓ Ronda 3 · tiempo real y mercancía > equipos muestran actividad y caja, renombrar y revocar invalida sesiones  621ms
+   ✓ Ronda 3 · tiempo real y mercancía > salidas requieren motivo y existencias; todos los motivos quedan auditados  491ms
+   ✓ Ronda 3 · tiempo real y mercancía > CSV: revisión sin stock, mapeo guardado, total validado, recepción, comprobante y equivalencia  388ms
+   ✓ Ronda 3 · tiempo real y mercancía > SSE comunica recepción, devolución, anulación y conteo confirmados  633ms
+   ✓ Ronda 3 · tiempo real y mercancía > eventos se publican en orden de commit aunque las transacciones empiecen al revés  332ms
+   ✓ Ronda 4 · Claude: caja y equipos > trasladar exige PIN de gerente al vendedor y queda en bitácora  7315ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > P1 compras: entrada sin orden se reporta una vez; orden no se duplica; fechas aplican  499ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo  9374ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido  1608ms
+   ✓ Auditoría ronda 4 de ChatGPT > P1: una caída abrupta del cliente libera su conexión de tiempo real  405ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-01: un equipo R3 migrado no se puede reclamar ni operar sin aprobación del gerente  5003ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-02: la compra R3 sin orden se recupera de la bitácora; reparación idempotente  519ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-03: cantidades fuera de precisión dan 400 en todas las rutas y no tocan costo, stock ni kardex  322ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-04: la factura aceptada contra una orden fija la deuda; parciales, flete y reintento sin doble conteo  607ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-06: una ráfaga de conexiones SSE sobre una sesión acepta como máximo dos  1756ms
+   ✓ Ronda 7 · auditoría R6 de ChatGPT > R6-01: un combo fraccionado se rechaza sin escrituras; 1 combo consume exactamente 0.4 y su devolución lo repone  437ms
+   ✓ Ronda 7 · auditoría R6 de ChatGPT > revisión R7: costo de combos exacto en venta, devolución y reporte de utilidad  503ms
+   ✓ Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir  2434ms
+   ✓ Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo  3371ms
+   ✓ Ronda 8 · auditoría R7 de ChatGPT > R7-04: el reporte de utilidad usa el costo registrado en cada devolución parcial  503ms
+   ✓ Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga  2943ms
+   ✓ Ronda 9 · auditoría R8 de ChatGPT > R8-02: una devolución anterior a la ronda 8 se concilia con su costo contabilizado  612ms
+   ✓ Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios  2156ms
+   ✓ Ronda 9 · revisión · códigos > R9-codigos-1: crear, editar, la matriz y la importación rechazan un código que la caja confundiría con otro producto  377ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-1: la devolución que completa la línea descuenta el costo de la devolución histórica  1016ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-2: devolver de una en una reembolsa exactamente lo cobrado y su ITBIS  464ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-3: una venta a crédito con un abono por transferencia pendiente no se devuelve sin resolverlo  785ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-4: anular una venta recalcula el costo promedio igual que una devolución  496ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-6: el costo de una devolución de la ronda 7 se reconstruye por línea  715ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-7: el costo de una venta anterior a la ronda 7 final coincide en utilidad y dashboard  882ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-8: devoluciones y descuentos no muestra costos a quien no tiene profit:read  1785ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-9: ventas por método no cuenta dos veces el crédito y muestra los cobros el día que entran  694ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-10: la tendencia compara ingresos netos de devoluciones en ambos períodos  313ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-1: una celda con hipervínculo o con error de Excel nunca crea «[object Object]»  1917ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-2: una fila con datos sin DESCRIPCION o sin ID detiene la carga sin escribir  986ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-3: --dry-run da las cifras de la carga real, anuncia las categorías y no se detiene por el lote  4262ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-4: una existencia válida muy grande no hace fallar la carga real por el máximo derivado  2094ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-5: al activar un producto sólo se completa lo que falta; el precio puesto en la app se respeta  3257ms
+   ✓ Ronda 9 · revisión · seguridad > R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo  7007ms
+   ✓ Ronda 9 · revisión · seguridad > R9-seguridad-1: un administrador desbloquea la cuenta al cambiarle la contraseña  4842ms
+   ✓ Ronda 9 · revisión · seguridad > R9-seguridad-2: el límite por IP de /auth y /sales no se evita cambiando mayúsculas en la ruta  1734ms
+   ✓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-ajustes: número y nombre de cada caja (equipo) y número de cada cajero  1128ms
+   ✓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-contraentrega: se combina con crédito, se cobra con tarjeta (referencia) y guarda la foto de la evidencia  2641ms
+   ✓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-cuadre: cierre por denominaciones, vale, dólares y entregado/dejado con el cuadre completo al centavo  1001ms
+   ✓ Aceptación · mercancía > 35: la orden y la recepción guardan factura, NCF, fecha y condición de pago; se completan después  339ms
+   ✓ Aceptación · mercancía > 36: los dañados o rechazados por línea no entran al stock, quedan con motivo y costo, y pedido = bueno + dañado + pendiente  338ms
+   ✓ Tienda · 4 cajas a la vez > Tienda-4cajas: 4 cajas venden a la vez el mismo producto escaso mientras entra mercancía desde el celular  8862ms
+
+ Test Files  1 passed (1)
+      Tests  130 passed (130)
+   Start at  10:03:16
+   Duration  181.16s (transform 475ms, setup 0ms, collect 567ms, tests 180.22s, environment 0ms, prepare 101ms)
+

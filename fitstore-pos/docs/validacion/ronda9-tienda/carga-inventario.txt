@@ -18,3 +18,4 @@ Después: productos=676 variantes=844 movimientos=2521 categorias=5
 Fajas|40|186.000
 Maquillaje|355|2062.000
 Suplementos|221|910.000
+Inventario real con el código final de la ronda 9, base nueva: sin --sin-lotes se detiene sin cambios; con --sin-lotes 616 productos y 3158 unidades; la recarga da 616 sin cambios.

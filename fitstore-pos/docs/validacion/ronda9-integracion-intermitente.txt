@@ -1,0 +1,3 @@
+Corrida anterior (1 fallo intermitente en «PIN de gerente tiene contador propio», 10 solicitudes concurrentes):
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  1 failed | 129 passed (130)

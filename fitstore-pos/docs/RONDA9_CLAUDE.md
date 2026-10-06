@@ -96,17 +96,103 @@ Después de corregir R8, Claude revisó todo el sistema con **7 buscadores**, un
 
 **Efecto en R8-02:** la conciliación de las devoluciones anteriores a la ronda 8 pasó de `reports.ts` a `replayReturns()` en shared. Ahora la usan el reporte y la creación de devoluciones nuevas. Para cada parte sin costo guardado, primero reconstruye el redondeo acumulado de la ronda 7. Si eso no suma lo que la devolución contabilizó, reparte `costTotal` en proporción, con el resto en la última línea.
 
-<!-- R9-AREAS-PENDIENTES: offline, facturas, códigos, importador, seguridad -->
+### Venta sin conexión y sesión
 
-## Verificación
+Todos corregidos con su regresión; detalle en `docs/validacion/ronda9-correcciones-revision.json`.
 
-| Comprobación                                         | Resultado                                                                   | Registro (`docs/validacion/`)        |
-| ---------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------ |
-| `pnpm check`                                         | TypeScript, ESLint, **76** unitarias y compilación aprobadas.               | `ronda9-check.txt`                   |
-| Integración con la API compilada, base nueva         | **87/87** (84 anteriores y 3 nuevas).                                       | `ronda9-integracion-compilada.txt`   |
-| Navegador (PWA y API compiladas)                     | **10/10**, incluido el código ambiguo.                                      | `ronda9-navegador.txt`               |
-| Las 3 regresiones nuevas con el código de la ronda 8 | Fallan las 3.                                                               | `ronda9-regresiones-con-ronda8.txt`  |
-| Inventario real                                      | Bloqueo sin cambios, carga de 616 en una transacción y recarga sin cambios. | `ronda9-tienda/carga-inventario.txt` |
+- **R9-offline-1** (P1): Sin internet pero con la red local activa (navigator.onLine = true), la caja no puede vender: al recargar pide iniciar sesión y la lista de productos se sustituye por 'Failed to fetch'
+- **R9-offline-2** (P2): Una venta sin conexión no actualiza el stock que usa la caja: se pueden vender otra vez las mismas unidades y la venta queda en conflicto después de cobrar
+- **R9-offline-3** (P2): Cambiar un precio o una promoción con el producto ya en el carrito bloquea el cobro; volver a escanearlo no actualiza el precio
+- **R9-offline-4** (P3): Si se crea un producto mientras la caja descarga el catálogo por páginas, otro producto queda duplicado y su código da un falso 'es de 2 productos'
+- **R9-offline-5** (P2): El cierre por inactividad sólo ocurre en el navegador; al recargar la página vuelve la sesión del usuario anterior (por ejemplo, la del gerente)
+
+### Facturas de proveedor
+
+Todos corregidos con su regresión; detalle en `docs/validacion/ronda9-correcciones-revision.json`.
+
+- **R9-facturas-1** (P3): Factura del proveedor: «el código exacto manda» toma en silencio la primera de varias variantes con ese código (confianza 1)
+- **R9-facturas-2** (P2): El código exacto de la tienda gana a la equivalencia ya corregida del proveedor y a la descripción: con los IDs numéricos reales (1001–1616) la línea vuelve al producto equivocado con 100 % de confianza
+- **R9-facturas-3** (P2): No se comparan tamaños en softgels, caplets, liqui-caps, «serv.», packs ni unidades: la factura queda preelegida en el envase de otro tamaño
+- **R9-facturas-4** (P2): Los números de tono se ignoran: «FSP 6.5» queda preelegido como «FSP 5.5» y «Polvo compacto 120» como «370»
+- **R9-facturas-5** (P2): Un tono hecho de palabras de color desaparece del nombre: cualquier tono desconocido cae en ese producto («Color Base Primer Lemon Drop» queda como «Purple Cream»)
+- **R9-facturas-6** (P2): Una factura que nombra otra marca queda preelegida en el producto de la marca que tiene la tienda («Melatonin Natrol» queda como «Melatonin Nutrex»)
+- **R9-facturas-7** (P2): Formato español: «1.250» se lee como 1,25 y en el mismo archivo «1,250» se lee como 1250; el costo promedio se corrompe
+- **R9-facturas-8** (P3): La recepción de una orden de compra no es idempotente: reenviar el mismo formulario recibe la mercancía dos veces
+
+### Códigos en catálogo y Mercancía
+
+Todos corregidos con su regresión; detalle en `docs/validacion/ronda9-correcciones-revision.json`.
+
+- **R9-codigos-1** (P2): La API de catálogo y Mercancía aceptan un código que la caja trata como el mismo código de otro producto (R8-01 sigue abierto fuera de la CLI)
+- **R9-codigos-2** (P2): Recepción de mercancía compara el código exacto: la etiqueta impresa (Code 39 en MAYÚSCULAS) de un código en minúsculas abre «Crear producto rápido» y duplica el producto
+- **R9-codigos-3** (P2): R8-01 por Mercancía: el escaneo distingue mayúsculas y «Crear producto rápido» acepta un código que ya existe con otras mayúsculas; el stock va a un duplicado y la caja deja de agregar los dos por código
+
+### Importador
+
+Todos corregidos con su regresión; detalle en `docs/validacion/ronda9-correcciones-revision.json`.
+
+- **R9-importador-1** (P2): Celdas con hipervínculo, error (#N/A, #REF!) o fórmula sin valor calculado se importan en silencio como «[object Object]» (nombre, categoría, ID o REFERENCIA)
+- **R9-importador-2** (P3): Filas con ID pero sin DESCRIPCION, o con DESCRIPCION pero sin ID ni REFERENCIA, se descartan sin avisar
+- **R9-importador-3** (P3): --dry-run siempre informa '0 nuevos (0 unidades) · 0 ya cargados · 0 activados · 0 precios' y no anuncia las categorías que crearía; el paso 2 del MANUAL falla en una base nueva
+- **R9-importador-4** (P3): maxStock = qty*3 desborda Decimal(14,3) con existencias que el lector acepta; la simulación pasa y la carga real falla con un volcado técnico de Prisma
+- **R9-importador-5** (P3): Al activar un producto inactivo, el precio que la dueña editó en la app se sobrescribe sin --actualizar-precios
+
+### Seguridad
+
+Todos corregidos con su regresión; detalle en `docs/validacion/ronda9-correcciones-revision.json`.
+
+- **R9-seguridad-1** (P2): Cinco contraseñas erróneas enviadas por cualquiera expulsan al usuario de las sesiones que ya tenía abiertas y bloquean su caja 15 minutos, una y otra vez
+- **R9-seguridad-2** (P3): El límite de intentos por IP en /api/auth y /api/sales se evita cambiando mayúsculas en la ruta
+
+## Lo que pidió la tienda (después de la revisión)
+
+Especificación: `docs/tienda/CUADRE_REPORTES_FACTURA.md`, tomada de los impresos del sistema anterior de la tienda. Detalle de la implementación y del contrato de la API: `docs/validacion/tienda-implementacion.json`.
+
+- **Cuadre de caja** con el formato de la tienda:
+  - conteo por denominaciones, las líneas 1 a 18, resumen con la fórmula, «Entregado» / «Dejado en caja» y «FIN DEL CUADRE»;
+  - la rentabilidad sólo se muestra con `profit:read`;
+  - el fondo sugerido al abrir es lo dejado en el último cierre de ese equipo.
+  - Rutas: `GET /cash-sessions/:id/cuadre` y `GET /cash-sessions/opening-suggestion`.
+- **Reportes del día:** `venta-diaria-usuario` (por producto) y `venta-por-forma-pago`, con filtros por fecha, caja y usuario, en JSON, XLSX y PDF.
+- **Impresos térmicos de 80 mm** (58 mm opcional) en `apps/web/src/Prints.tsx`: cuadre, los dos reportes y factura. La factura puede imprimirse automáticamente al cobrar.
+- **Contraentrega:**
+  - forma de pago combinable, también con crédito;
+  - cobro en efectivo, tarjeta (con referencia) o transferencia (pendiente hasta que la dueña la verifica);
+  - foto de evidencia en `POST /payments/:id/proof`: jpg, png o webp de hasta 2 MB, con el tipo verificado por bytes;
+  - lista de pendientes.
+- **Ajustes:** sucursal, segundo teléfono, logo, impresión automática, tasas de US$ y €, número y nombre de caja, número de cajero.
+- **Cuatro cajas a la vez:** prueba de integración y e2e (`tests/e2e/cuatro-cajas.spec.ts`). Stock final exacto, sin ventas sin stock ni duplicados, y cada cuadre correcto.
+- **Mercancía** (pasos 04, 35, 36 y 37 de `docs/PRUEBA_ACEPTACION_CAJA.md`; detalle en `docs/validacion/aceptacion-mercancia.json`):
+  - el stock vendible no cuenta lotes vencidos;
+  - la compra y la recepción guardan la factura y el NCF del proveedor, la condición de pago y el ITBIS, con exportación a Excel para la contable;
+  - las unidades dañadas o rechazadas se registran sin entrar al stock;
+  - hay historial de recepciones en la laptop y en el celular.
+- **Pendiente para la ronda 10:**
+  - lo que encuentre la auditoría de ChatGPT;
+  - las brechas de devoluciones y caja de `docs/validacion/aceptacion-caja-brechas.json`: pasos 12, 17, 18, 23, 27, 29/34, 31, 32, 38 y 39;
+  - tres observaciones menores del revisor de mercancía:
+    - un lote existente recibido por `/receive` con otro vencimiento;
+    - aviso en tiempo real al vencer un lote;
+    - producto rápido creado con todo dañado;
+  - en el cuadre, las devoluciones cuentan distinto que en los reportes;
+  - la emisión fiscal (e-CF), que decide la contable (`docs/fiscal/`).
+
+## Verificación final (código completo de la ronda 9, base nueva, API y PWA compiladas)
+
+| Comprobación                                        | Resultado                                                                                                               | Registro (`docs/validacion/`)        |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `pnpm check`                                        | TypeScript, ESLint, **98** unitarias y compilación aprobadas.                                                           | `ronda9-check.txt`                   |
+| Integración con la API compilada                    | **130/130**.                                                                                                            | `ronda9-integracion-compilada.txt`   |
+| Navegador                                           | **41/42**. Falla de forma intermitente R9-caja-5 (recuperar una venta en espera): repetida 5 veces, pasó 2.             | `ronda9-navegador.txt`               |
+| Las 3 regresiones de R8 con el código de la ronda 8 | Fallan.                                                                                                                 | `ronda9-regresiones-con-ronda8.txt`  |
+| Inventario real                                     | Sin `--sin-lotes` se detiene sin cambios. Con la opción carga 616 productos y 3158 unidades. La recarga no cambia nada. | `ronda9-tienda/carga-inventario.txt` |
+
+**Intermitencias conocidas (sin resolver):**
+
+- R9-caja-5 en el navegador.
+- «PIN de gerente tiene contador propio» en integración: 10 solicitudes concurrentes; falló 1 de 3 corridas completas, con un estado distinto de 400 (`ronda9-integracion-intermitente.txt`).
+
+**Windows y zona horaria:** lo corrige la sesión de la PC. Cuando lo suba, se agrega en una sección propia; en este ZIP queda lo que esté subido al momento de armarlo.
 
 Se conservan todas las regresiones anteriores.
 
