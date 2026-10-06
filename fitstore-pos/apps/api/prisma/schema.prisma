@@ -258,6 +258,8 @@ model SaleReturn {
   userId String
   items Json
   branchId String @default("main")
+  // Clave de la operación que envía la interfaz: un reintento devuelve esta fila (R9-A01).
+  operationId String? @unique @db.Uuid
   createdAt DateTime @default(now())
 }
 model CreditNote {

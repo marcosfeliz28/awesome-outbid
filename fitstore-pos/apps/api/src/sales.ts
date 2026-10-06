@@ -969,6 +969,9 @@ export class SalesController {
   async returnSale(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
       z.object({
+        // Clave que la interfaz genera una vez por formulario: con ella un
+        // reintento no duplica la devolución (R9-A01).
+        operationId: uuid.optional(),
         saleId: uuid,
         cashSessionId: uuid,
         reason,
@@ -990,6 +993,21 @@ export class SalesController {
     if (new Set(data.items.map((i) => i.saleItemId)).size !== data.items.length)
       bad("No repitas artículos en la devolución.");
     return this.db.$transaction(async (tx) => {
+      // Dos envíos con la misma clave se atienden uno detrás del otro: el
+      // segundo encuentra la devolución del primero y la devuelve tal cual.
+      // Misma clave con otros datos es un error, no otra devolución.
+      if (data.operationId) {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))::text AS locked`;
+        const prior = await tx.saleReturn.findUnique({
+          where: { operationId: data.operationId },
+        });
+        if (prior) {
+          if (prior.branchId !== actor.branchId) denied();
+          if (!sameReturnRequest(prior, data))
+            bad("El UUID ya corresponde a otra devolución.");
+          return safe(prior, actor);
+        }
+      }
       await cashLock(tx, actor, data.cashSessionId, true);
       await tx.$queryRaw`SELECT id FROM "Sale" WHERE id = ${data.saleId}::uuid FOR UPDATE`;
       const sale = await tx.sale.findFirstOrThrow({
@@ -1204,6 +1222,7 @@ export class SalesController {
           userId: actor.id,
           items: json(data.items.map((it, k) => ({ ...it, ...parts[k] }))),
           branchId: actor.branchId,
+          operationId: data.operationId ?? null,
         },
       });
       await tx.creditNote.create({
@@ -1644,5 +1663,26 @@ function weightedReturn(variant: any, qty: number, cost: number) {
       .times(variant.costAvg)
       .plus(d(qty).times(cost))
       .div(d(variant.stock).plus(qty)),
+  );
+}
+// La devolución guardada con esa clave de operación, ¿pide lo mismo que este
+// envío? Se compara lo que decide el resultado: venta, caja, método y cada
+// línea; el motivo y los importes calculados ya quedaron en la fila (R9-A01).
+function sameReturnRequest(prior: any, data: any) {
+  const stored = (prior.items as any[]) ?? [];
+  return (
+    prior.saleId === data.saleId &&
+    prior.cashSessionId === data.cashSessionId &&
+    prior.refundMethod === data.refundMethod &&
+    prior.reason === data.reason &&
+    stored.length === data.items.length &&
+    data.items.every(
+      (item: any, k: number) =>
+        stored[k].saleItemId === item.saleItemId &&
+        Number(stored[k].qty) === Number(item.qty) &&
+        !!stored[k].restock === !!item.restock &&
+        !!stored[k].opened === !!item.opened &&
+        !!stored[k].damaged === !!item.damaged,
+    )
   );
 }

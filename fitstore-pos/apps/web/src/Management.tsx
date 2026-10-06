@@ -2359,7 +2359,13 @@ export function SalesHistory() {
                                 );
                                 return;
                               }
-                              setReturning(s);
+                              // Un UUID por formulario: si la respuesta se pierde y
+                              // se vuelve a guardar, la API devuelve la misma
+                              // devolución en vez de repetirla (R9-A01).
+                              setReturning({
+                                ...s,
+                                operationId: crypto.randomUUID(),
+                              });
                             }}
                           >
                             Devolver
@@ -2598,6 +2604,7 @@ export function SalesHistory() {
           onClose={() => setReturning(null)}
           onSubmit={(data) =>
             post("/returns", {
+              operationId: returning.operationId,
               saleId: returning.id,
               cashSessionId: session.id,
               reason: data.reason,

@@ -8137,3 +8137,199 @@ describe("Ronda 9 · Windows y zona horaria", () => {
     }
   });
 });
+
+// R9-A01 (auditoría de ChatGPT a la ronda 9): repetir exactamente la misma
+// devolución —el reintento de un formulario cuya respuesta se perdió— creaba
+// otra devolución, otra nota de crédito y reponía el stock dos veces. Ahora la
+// interfaz envía un UUID por formulario y la API devuelve la devolución
+// original cuando lo vuelve a recibir con los mismos datos.
+describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", () => {
+  let owner = "",
+    cashId = "",
+    variant: any;
+  const ip = "198.18.9." + ((Date.now() % 250) + 1);
+  const call = async (
+    path: string,
+    data?: unknown,
+    method = data === undefined ? "GET" : "POST",
+  ) => {
+    const response = await fetch(base + path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": ip,
+        Authorization: "Bearer " + owner,
+      },
+      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    });
+    return { status: response.status, body: await response.json() };
+  };
+  const must = async (path: string, data?: unknown, method?: string) => {
+    const r = await call(path, data, method);
+    if (r.status >= 400)
+      throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
+    return r.body;
+  };
+  const stockOf = async () =>
+    Number(
+      (await fixtureDb.variant.findUniqueOrThrow({ where: { id: variant.id } }))
+        .stock,
+    );
+  // Una venta de dos unidades, lista para devolver una.
+  const sellTwo = async () =>
+    must("/sales", {
+      offlineUuid: randomUUID(),
+      cashSessionId: cashId,
+      items: [{ variantId: variant.id, qty: 2 }],
+      payments: [{ method: "cash", amount: 200 }],
+      expectedTotal: 200,
+    });
+  const returnOne = (sale: any, operationId?: string, extra = {}) => ({
+    ...(operationId ? { operationId } : {}),
+    saleId: sale.id,
+    cashSessionId: cashId,
+    reason: "Reenvío idéntico por respuesta perdida",
+    refundMethod: "credit_note",
+    items: [{ saleItemId: sale.items[0].id, qty: 1, restock: true }],
+    ...extra,
+  });
+  const returnsOf = (sale: any) =>
+    fixtureDb.saleReturn.findMany({ where: { saleId: sale.id } });
+  const closeOwnerCash = async () => {
+    const me = await must("/auth/me");
+    for (const s of (await must("/cash-sessions")).filter(
+      (c: any) => !c.closedAt && c.userId === me.id,
+    ))
+      await must("/cash-sessions/" + s.id + "/close", {
+        countedCash: Math.max(0, s.expected.cash),
+        countedCard: Math.max(0, s.expected.card),
+        countedTransfer: Math.max(0, s.expected.transfer),
+        notes: "Cierre QA R9-A01",
+      });
+  };
+  afterAll(async () => {
+    if (owner) await closeOwnerCash();
+  });
+  beforeAll(async () => {
+    owner = (
+      await must("/auth/login", {
+        email: "admin@fitstore.demo",
+        password: process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+      })
+    ).accessToken;
+    const terminalId = randomUUID();
+    const terminal = await must("/terminals/register", {
+      id: terminalId,
+      name: "QA R9-A01",
+      secret: "qa-a01-" + terminalId,
+    });
+    if (terminal.status === "pending")
+      await must("/terminals/" + terminalId + "/approve", {});
+    // La caja va con el equipo que la abre: se cierra la que el dueño tuviera
+    // abierta en otro equipo y se abre una en este.
+    await closeOwnerCash();
+    cashId = (
+      await must("/cash-sessions/open", {
+        registerId: "qa-a01-" + suffix,
+        openingAmount: 500,
+      })
+    ).id;
+    const categories = await must("/categories");
+    const category =
+      categories.find((c: any) => c.name === "Ropa deportiva") ?? categories[0];
+    const product = await must("/products", {
+      name: "QA R9-A01 reintento " + suffix,
+      sku: "R9A01-" + randomUUID().slice(0, 8),
+      categoryId: category.id,
+      variants: [
+        {
+          sku: "R9A01V-" + randomUUID().slice(0, 8),
+          barcode: "R9A01B" + Date.now().toString().slice(-8),
+          price: 100,
+          costAvg: 50,
+        },
+      ],
+    });
+    variant = product.variants[0];
+    products.push(product);
+    await must("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 20,
+      reason: "QA R9-A01 existencias",
+    });
+  }, 60000);
+
+  it("el mismo envío repetido devuelve la devolución original: una sola nota de crédito y el stock sube una vez", async () => {
+    const sale = await sellTwo();
+    const before = await stockOf();
+    const body = returnOne(sale, randomUUID());
+    const first = await must("/returns", body);
+    const second = await must("/returns", body);
+    expect(second.id).toBe(first.id);
+    expect(second.number).toBe(first.number);
+    expect(await returnsOf(sale)).toHaveLength(1);
+    expect(
+      await fixtureDb.creditNote.count({ where: { returnId: first.id } }),
+    ).toBe(1);
+    expect(await stockOf()).toBe(before + 1);
+    expect(
+      Number(
+        (
+          await fixtureDb.saleItem.findUniqueOrThrow({
+            where: { id: sale.items[0].id },
+          })
+        ).returnedQty,
+      ),
+    ).toBe(1);
+  });
+
+  it("la misma clave con otros datos se rechaza sin escribir nada", async () => {
+    const sale = await sellTwo();
+    const before = await stockOf();
+    const operationId = randomUUID();
+    await must("/returns", returnOne(sale, operationId));
+    const other = await call(
+      "/returns",
+      returnOne(sale, operationId, { refundMethod: "cash" }),
+    );
+    expect(other.status).toBe(400);
+    expect(other.body.message).toMatch(/UUID/);
+    const different = await call("/returns", {
+      ...returnOne(sale, operationId),
+      items: [{ saleItemId: sale.items[0].id, qty: 2, restock: true }],
+    });
+    expect(different.status).toBe(400);
+    expect(await returnsOf(sale)).toHaveLength(1);
+    expect(await stockOf()).toBe(before + 1);
+  });
+
+  it("seis envíos simultáneos con la misma clave producen una sola devolución", async () => {
+    const sale = await sellTwo();
+    const before = await stockOf();
+    const body = returnOne(sale, randomUUID());
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () => call("/returns", body)),
+    );
+    expect(results.map((r) => r.status)).toEqual(Array(6).fill(201));
+    expect(new Set(results.map((r) => r.body.id)).size).toBe(1);
+    expect(await returnsOf(sale)).toHaveLength(1);
+    expect(await stockOf()).toBe(before + 1);
+  });
+
+  it("otra clave sí es otra devolución, y sin clave la devolución sigue funcionando", async () => {
+    const sale = await sellTwo();
+    const before = await stockOf();
+    const first = await must("/returns", returnOne(sale, randomUUID()));
+    const second = await must("/returns", returnOne(sale, randomUUID()));
+    expect(second.id).not.toBe(first.id);
+    expect(await returnsOf(sale)).toHaveLength(2);
+    expect(await stockOf()).toBe(before + 2);
+    // Ya no queda nada que devolver: la tercera, con o sin clave, se rechaza.
+    expect((await call("/returns", returnOne(sale, randomUUID()))).status).toBe(
+      400,
+    );
+    const legacy = await sellTwo();
+    expect((await call("/returns", returnOne(legacy))).status).toBe(201);
+    expect(await returnsOf(legacy)).toHaveLength(1);
+  });
+});
