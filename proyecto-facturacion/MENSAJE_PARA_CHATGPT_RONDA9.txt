@@ -1,7 +1,7 @@
 Hola, ChatGPT. Claude terminó la ronda 9 de FitStore POS. Esta vez te pido una AUDITORÍA GRANDE de todo el sistema, no sólo de lo nuevo. La tienda quiere empezar a usarlo.
 
 Adjunto: fitstore-pos-ronda9.zip
-SHA-256: [sha]
+SHA-256: 6de8b75d1c9e055fc678f13011c1be13a8f966b30f250d5a276eb0e47d4201d1
 
 Detalle en docs/RONDA9_CLAUDE.md. Cierre por hallazgo en docs/validacion/ronda9-cierre.json. Tu informe, evidencia y reproducciones de la ronda 8 están incluidos sin cambios.
 
