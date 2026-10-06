@@ -1,6 +1,6 @@
 # Cuadre de caja, reportes del día y factura: formato de la tienda
 
-Especificación tomada de los documentos impresos que usa hoy la tienda (sistema anterior), enviados por la dueña el 6/10/2026. Las fotos no se guardan en el repositorio porque tienen datos de clientes y ventas reales. Todo se imprime en la **impresora térmica pequeña conectada a la laptop**, desde el navegador (ancho de 80 mm por defecto y de 58 mm opcional, según `receiptWidth` en Ajustes).
+Especificación tomada de los documentos impresos que usa hoy la tienda (sistema anterior), enviados por la dueña el 6/10/2026. Las fotos no se guardan en el repositorio porque tienen datos de clientes y ventas reales. Todo se imprime en la **impresora térmica pequeña conectada a la laptop**, desde el navegador (la impresora de la tienda es de **80 mm**, el valor por defecto; 58 mm queda opcional, según `receiptWidth` en Ajustes).
 
 ## Datos del negocio, en el encabezado de todo lo impreso
 
@@ -121,9 +121,17 @@ Entregado + Dejado = Efectivo contado. Las dos líneas se imprimen debajo del re
 ## 5. Formas de pago
 
 - **Formas que ya existen:** efectivo, tarjeta, transferencia, crédito (fiado) y nota de crédito.
-- **Contraentrega (nueva):** la venta se registra, sale de inventario y el importe queda **pendiente de contraentrega**. Cuando el mensajero trae el dinero, se registra el cobro (efectivo o transferencia) en la caja que lo recibe, como un abono. El cuadre y los reportes lo muestran aparte. Combina con cualquier otra forma, por ejemplo una parte por transferencia y el resto contraentrega.
+- **Contraentrega (nueva), confirmada por la dueña el 6/10/2026.** El cliente paga cuando le entregan el pedido. No es fiado: es un cobro pendiente de una venta ya hecha.
+  - **Al vender:** la venta se registra y sale de inventario. El importe de contraentrega queda **pendiente de contraentrega**, con cliente, teléfono, dirección y mensajero opcionales. Se puede combinar con otras formas, por ejemplo un adelanto por transferencia y el resto contraentrega.
+  - **Al entregar,** el cliente paga de una de tres formas. Cada cobro guarda la forma, el importe, quién lo registró y la **foto de la evidencia**, subida desde el celular o la laptop:
+    - **Efectivo:** el mensajero le devuelve el dinero a la cajera. Ella registra el cobro en **su caja abierta**, sube la foto que recibió por WhatsApp y el efectivo entra en el cuadre de esa caja.
+    - **Tarjeta:** el mensajero cobra con un terminal o enlace de pago. Se registra con la foto del voucher y su referencia; cuenta como tarjeta.
+    - **Transferencia:** se registra con la foto del comprobante. Queda **pendiente de verificación** hasta que la dueña confirma, a mano, que el dinero cayó en el banco, igual que los abonos por transferencia que ya existen (verificar o rechazar). Sólo cuenta como cobrado cuando se verifica.
+  - **Lista de contraentregas:** pendientes de cobro, cobradas pendientes de verificar, y verificadas o rechazadas, con su evidencia. La dueña la ve desde el celular.
+  - **Cuadre y reportes:** las muestran aparte. En el cuadre de la caja que las cobra: contraentregas cobradas por forma de pago, como los recibos CxC. En el reporte por forma de pago: el grupo CONTRAENTREGA con su estado.
+  - **Si la API ya implementada no cubre la tarjeta, la foto o la verificación de la transferencia,** hay que agregarlo en sales.ts/cash.ts reutilizando el mecanismo de abonos y verificación de transferencias.
 - **Cualquier combinación de formas en una misma venta:** efectivo + tarjeta, tarjeta + transferencia, transferencia + efectivo, etc. Los abonos de crédito también eligen cómo pagó el cliente.
-- **Dólares y euros (opcional):** efectivo en moneda extranjera con la tasa del día configurada en Ajustes. El cuadre los cuenta aparte (líneas 6, 7, 13 y 14).
+- **Dólares (opcional):** la tienda trabaja en pesos, pero a veces recibe dólares. Se aceptan como forma de pago con la tasa del día de Ajustes y el cuadre los cuenta aparte (líneas 6 y 13). **Euros:** las líneas 7 y 14 sólo se muestran si se configura una tasa en euros; por defecto no.
 
 ## 6. Atajos de teclado del sistema anterior (referencia)
 

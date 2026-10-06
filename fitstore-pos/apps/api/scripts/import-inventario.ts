@@ -38,6 +38,10 @@ const ATTRIBUTES: Record<string, string[]> = {
   Fajas: ["talla", "color"],
 };
 const LOW_MARGIN = 0.15;
+// Límites de la base (R8-03): Decimal(14,3) para cantidades y Decimal(14,2)
+// para dinero.
+const MAX_QTY = 99999999999.999;
+const MAX_MONEY = 999999999999.99;
 
 type Row = {
   id: string;
@@ -162,8 +166,7 @@ export async function readInventory(file: string): Promise<Row[]> {
       return 0;
     }
     const f = 10 ** decimals;
-    // Límites de la base (R8-03): Decimal(14,2) y Decimal(14,3).
-    const max = decimals === 2 ? 999999999999.99 : 99999999999.999;
+    const max = decimals === 2 ? MAX_MONEY : MAX_QTY;
     if (!Number.isFinite(v) || v > max) {
       errors.push(who + ", " + label + ": " + v + " (máximo " + max + ")");
       return 0;
@@ -408,6 +411,9 @@ async function main() {
         codeProblems.slice(0, 30).join("\n- "),
     );
   // Categorías (R7-03): se revisan todas antes de escribir nada (R8-03).
+  // La simulación dice qué haría y, si la carga real se detendría por el
+  // lote, lo avisa y sigue para mostrarse completa (R9-importador-3).
+  const notices: string[] = [];
   const plan: {
     name: string;
     existing: Awaited<ReturnType<typeof db.category.findUnique>>;
@@ -419,17 +425,51 @@ async function main() {
       !!existing &&
       (existing.requiresLot || existing.requiresExpiry) &&
       rows.some((r) => r.category === name && r.qty > 0 && !ownOf.get(r.id));
-    if (disable && !disableLots)
-      throw new Error(
+    if (disable && !disableLots) {
+      const stop =
         "La categoría «" +
-          name +
-          "» exige lote o vencimiento y el Excel no los trae. Desactívalo en " +
-          "Productos › Categorías o repite con --sin-lotes (queda en la bitácora).",
-      );
+        name +
+        "» exige lote o vencimiento y el Excel no los trae. Desactívalo en " +
+        "Productos › Categorías o repite con --sin-lotes (queda en la bitácora).";
+      if (!dryRun) throw new Error(stop);
+      notices.push("Aviso: la carga real se detendría. " + stop);
+    } else if (dryRun && disable)
+      notices.push("Desactivaría lote y vencimiento en «" + name + "».");
+    if (dryRun && !existing)
+      notices.push("Crearía la categoría «" + name + "».");
     plan.push({ name, existing, disable });
   }
+  // Una carga repetida no pisa lo que se editó en la app. Sólo activa
+  // productos que estaban inactivos por no tener precio o costo y, con
+  // --actualizar-precios, cambia el precio (queda en la bitácora).
+  // Al activar se completa sólo lo que falta: un precio puesto en la app se
+  // respeta, y se activa si con lo completado tiene precio y costo
+  // (R9-importador-5).
+  const changesFor = (
+    existing: (typeof holders)[number],
+    row: Row,
+  ): { price?: number; costAvg?: number; active?: true } => {
+    const price = Number(existing.price),
+      costAvg = Number(existing.costAvg);
+    const changes: { price?: number; costAvg?: number; active?: true } = {};
+    if (updatePrices && row.price > 0 && price !== row.price)
+      changes.price = row.price;
+    if (!existing.product.active && (price <= 0 || costAvg <= 0)) {
+      const fill = {
+        price: price > 0 ? (changes.price ?? price) : row.price,
+        costAvg: costAvg > 0 ? costAvg : row.cost,
+      };
+      if (fill.price > 0 && fill.costAvg > 0) {
+        if (fill.price !== price) changes.price = fill.price;
+        if (fill.costAvg !== costAvg) changes.costAvg = fill.costAvg;
+        changes.active = true;
+      }
+    }
+    return changes;
+  };
   const origen = file.split(/[\\/]/).pop();
-  // Una sola transacción (R8-03): o se carga todo, o nada.
+  // Una sola transacción (R8-03): o se carga todo, o nada. La simulación
+  // recorre lo mismo y cuenta igual, sólo que no escribe (R9-importador-3).
   const load = async (tx: Prisma.TransactionClient | PrismaClient) => {
     for (const { name, existing, disable } of plan) {
       if (dryRun) continue;
@@ -463,48 +503,47 @@ async function main() {
           },
         });
     }
-    const categories = await tx.category.findMany();
+    const categories = dryRun ? [] : await tx.category.findMany();
     for (const row of rows) {
-      const notes = reviewOf(row);
+      // Ya importado: se reconoce sólo por su ID.
+      const existing = ownOf.get(row.id);
+      const changes = existing ? changesFor(existing, row) : {};
+      // Se revisa lo que queda: al activar con datos de la app, esos datos.
+      const final =
+        existing && changes.active
+          ? {
+              ...row,
+              price: changes.price ?? Number(existing.price),
+              cost: changes.costAvg ?? Number(existing.costAvg),
+            }
+          : row;
+      const notes = reviewOf(final);
       if (notes.length)
         review.push([
           row.id,
           row.name,
           row.category,
           String(row.qty),
-          String(row.cost),
-          String(row.price),
+          String(final.cost),
+          String(final.price),
           notes.join("; "),
         ]);
-      const active = row.price > 0 && row.cost > 0;
+      const active = final.price > 0 && final.cost > 0;
       if (!active) summary.inactivos++;
-      if (dryRun) continue;
-      const categoryId = categories.find((c) => c.name === row.category)!.id;
-      const barcode = row.barcode ?? row.id;
-      // Ya importado: se reconoce sólo por su ID.
-      const existing = ownOf.get(row.id);
       if (existing) {
-        // Una carga repetida no pisa lo que se editó en la app. Sólo activa
-        // productos que estaban inactivos por no tener precio o costo y, con
-        // --actualizar-precios, cambia el precio (queda en la bitácora).
-        const changes: Record<string, unknown> = {};
-        const missingData =
-          !existing.product.active &&
-          (Number(existing.price) <= 0 || Number(existing.costAvg) <= 0);
-        if (missingData && active) {
-          changes.price = row.price;
-          if (Number(existing.costAvg) <= 0) changes.costAvg = row.cost;
-          changes.active = true;
-        } else if (
-          updatePrices &&
-          row.price > 0 &&
-          Number(existing.price) !== row.price
-        )
-          changes.price = row.price;
         if (!Object.keys(changes).length) {
           summary.sinCambios++;
           continue;
         }
+        if (changes.active) summary.activados++;
+        // Un precio que se cambia se cuenta aunque además se active; completar
+        // uno que faltaba no.
+        if (
+          changes.price !== undefined &&
+          (!changes.active || Number(existing.price) > 0)
+        )
+          summary.precios++;
+        if (dryRun) continue;
         await tx.variant.update({ where: { id: existing.id }, data: changes });
         if (changes.active)
           await tx.product.update({
@@ -529,10 +568,13 @@ async function main() {
             branchId,
           },
         });
-        if (changes.active) summary.activados++;
-        else summary.precios++;
         continue;
       }
+      summary.nuevos++;
+      summary.unidades += Math.max(0, row.qty);
+      if (dryRun) continue;
+      const categoryId = categories.find((c) => c.name === row.category)!.id;
+      const barcode = row.barcode ?? row.id;
       const product = await tx.product.create({
         data: {
           name: row.name,
@@ -540,7 +582,10 @@ async function main() {
           brand: brandOf(row) || "",
           active,
           minStock: 1,
-          maxStock: Math.max(10, row.qty * 3),
+          // Tres veces la existencia, sin pasar del límite de la columna: una
+          // existencia válida no puede hacer fallar la carga real cuando la
+          // simulación pasó (R9-importador-4).
+          maxStock: Math.min(MAX_QTY, Math.max(10, row.qty * 3)),
           sku: "INV-" + row.id,
           branchId,
           createdBy: admin.id,
@@ -572,8 +617,6 @@ async function main() {
             branchId,
           },
         });
-      summary.nuevos++;
-      summary.unidades += Math.max(0, row.qty);
     }
   };
   if (dryRun) await load(db);
@@ -590,6 +633,7 @@ async function main() {
         .map((r) => r.map((c) => '"' + c.replace(/"/g, '""') + '"').join(";"))
         .join("\r\n"),
   );
+  for (const notice of notices) console.log(notice);
   console.log(
     (dryRun ? "Simulación: " : "") +
       rows.length +

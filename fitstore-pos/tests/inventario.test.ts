@@ -177,7 +177,7 @@ describe("importador de inventario · lectura del Excel", () => {
             text: { richText: [{ text: "Corrector " }, { text: "Fawn" }] },
             hyperlink: "https://proveedor.example/fawn",
           },
-          { formula: "A3&\"\"", result: "2002" },
+          { formula: 'A3&""', result: "2002" },
           { formula: 'IF(1,"Maquillaje")', result: "Maquillaje" },
           { formula: "E2*0", result: 0 },
           { formula: "F2/3", result: 300 },

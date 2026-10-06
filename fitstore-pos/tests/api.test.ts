@@ -5315,7 +5315,9 @@ describe("Ronda 9 · revisión · importador", () => {
     ]);
     expect(r.status).not.toBe(0);
     expect(r.out).toMatch(
-      new RegExp("fila R9E-" + tag + ", SUB-GRUPO: la celda tiene el error #N/A"),
+      new RegExp(
+        "fila R9E-" + tag + ", SUB-GRUPO: la celda tiene el error #N/A",
+      ),
     );
     expect(r.out).not.toMatch(/object/);
     expect(await counts()).toEqual(before);
@@ -5341,7 +5343,9 @@ describe("Ronda 9 · revisión · importador", () => {
     ]);
     expect(r.status).not.toBe(0);
     expect(r.out).toMatch(
-      new RegExp("fila 2 del Excel \\(ID R9D-" + tag + "\\): falta DESCRIPCION"),
+      new RegExp(
+        "fila 2 del Excel \\(ID R9D-" + tag + "\\): falta DESCRIPCION",
+      ),
     );
     expect(r.out).toMatch(/fila 3 del Excel: falta ID/);
     expect(await counts()).toEqual(before);
@@ -5368,9 +5372,7 @@ describe("Ronda 9 · revisión · importador", () => {
       /Simulación: 2 productos leídos · 2 nuevos \(8 unidades\) · 0 ya cargados/,
     );
     expect(sim.out).toContain("Crearía la categoría «" + newCat + "»");
-    expect(sim.out).toContain(
-      "«" + lotName + "» exige lote o vencimiento",
-    );
+    expect(sim.out).toContain("«" + lotName + "» exige lote o vencimiento");
     expect(sim.out).toMatch(/--sin-lotes/);
     expect(await counts()).toEqual(before);
     expect(
@@ -5401,7 +5403,9 @@ describe("Ronda 9 · revisión · importador", () => {
 
   it("R9-importador-4: una existencia válida muy grande no hace fallar la carga real por el máximo derivado", async () => {
     const id = "R9M-" + randomUUID().slice(0, 6);
-    const rows = [[id, "QA R9 existencia enorme", "", "Ropa deportiva", 40000000000, 0, 0]];
+    const rows = [
+      [id, "QA R9 existencia enorme", "", "Ropa deportiva", 40000000000, 0, 0],
+    ];
     const sim = await runImport(rows, "--dry-run");
     expect(sim.status, sim.out).toBe(0);
     const real = await runImport(rows);
@@ -5453,12 +5457,16 @@ describe("Ronda 9 · revisión · importador", () => {
     expect(second.out).toMatch(/2 activados · 0 precios actualizados/);
     const va = await variantOf(a),
       vb = await variantOf(b);
-    expect([Number(va?.price), Number(va?.costAvg), va?.product.active]).toEqual(
-      [2000, 900, true],
-    );
-    expect([Number(vb?.price), Number(vb?.costAvg), vb?.product.active]).toEqual(
-      [1500, 700, true],
-    );
+    expect([
+      Number(va?.price),
+      Number(va?.costAvg),
+      va?.product.active,
+    ]).toEqual([2000, 900, true]);
+    expect([
+      Number(vb?.price),
+      Number(vb?.costAvg),
+      vb?.product.active,
+    ]).toEqual([1500, 700, true]);
     // Con --actualizar-precios sí se cambia, y se cuenta.
     await request(
       "/products/" + va!.productId,
