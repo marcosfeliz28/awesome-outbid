@@ -289,6 +289,13 @@ model PurchaseOrder {
   status String @default("ordered")
   expectedDate DateTime?
   total Decimal @db.Decimal(14,2)
+  // Documento del proveedor y condición de pago (opcionales; se completan después).
+  supplierInvoice String?
+  supplierNcf String?
+  invoiceDate DateTime?
+  paymentType String?
+  creditDays Int?
+  itbis Decimal? @db.Decimal(14,2)
   items PurchaseItem[]
   receipts GoodsReceipt[]
   branchId String @default("main")
@@ -303,6 +310,8 @@ model PurchaseItem {
   variantId String @db.Uuid
   qty Decimal @db.Decimal(14,3)
   receivedQty Decimal @default(0) @db.Decimal(14,3)
+  // Dañadas o rechazadas al recibir: no entran al stock y cierran lo pendiente.
+  damagedQty Decimal @default(0) @db.Decimal(14,3)
   unitCost Decimal @db.Decimal(14,2)
 }
 model GoodsReceipt {
@@ -317,6 +326,15 @@ model GoodsReceipt {
   freight Decimal @db.Decimal(14,2)
   otherCosts Decimal @db.Decimal(14,2)
   items Json
+  // Documento del proveedor y condición de pago (para la contable y el 606).
+  supplierInvoice String?
+  supplierNcf String?
+  invoiceDate DateTime?
+  paymentType String?
+  creditDays Int?
+  itbis Decimal? @db.Decimal(14,2)
+  // Costo de lo dañado o rechazado (fuera del total que se debe).
+  damagedCost Decimal @default(0) @db.Decimal(14,2)
   userId String
   branchId String @default("main")
   createdAt DateTime @default(now())

@@ -6341,3 +6341,554 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     expect((await call("/reports/venta-por-forma-pago", undefined, cashier.token)).status).toBe(403);
   });
 });
+
+// Prueba de aceptación de la caja, pasos 04, 35, 36 y 37: stock vendible sin
+// lotes vencidos, documento del proveedor y condición de pago, unidades
+// dañadas o rechazadas al recibir e historial de recepciones.
+describe("Aceptación · mercancía", () => {
+  let cats: any[], supplier: any, warehouse: string;
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Santo_Domingo",
+  });
+  // NCF de comprobante de crédito fiscal: B01 + 8 dígitos (único por prueba).
+  const ncf = () =>
+    "B01" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
+  beforeAll(async () => {
+    cats = await ok("/categories");
+    supplier = (await ok("/suppliers")).find((s: any) => s.id === supplierId);
+    const role = (await ok("/roles")).find((r: any) => r.name === "warehouse");
+    const u = await ok("/users", {
+      name: "QA almacén mercancía " + suffix,
+      email: "am-warehouse-" + suffix + "@example.test",
+      password: "FitStore-QA-2026!",
+      pin: "834529",
+      roleId: role.id,
+    });
+    actors.push(u);
+    warehouse = (
+      await ok(
+        "/auth/login",
+        { email: u.email, password: "FitStore-QA-2026!" },
+        "",
+      )
+    ).accessToken;
+    await enroll(warehouse, "QA almacén mercancía");
+  });
+  const product = async (label: string, category = "Ropa deportiva") => {
+    const p = await ok("/products", {
+      name: "QA Merc " + label + " " + suffix,
+      sku: "AM-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === category).id,
+      variants: [
+        {
+          sku: "AMV-" + randomUUID().slice(0, 8),
+          barcode: "AMB-" + randomUUID().slice(0, 8),
+          price: 1500,
+          costAvg: 100,
+        },
+      ],
+    });
+    products.push(p);
+    return p;
+  };
+  const stockOf = async (variantId: string) =>
+    Number(
+      (await fixtureDb.variant.findUniqueOrThrow({ where: { id: variantId } }))
+        .stock,
+    );
+  const itemOf = (id: string) =>
+    fixtureDb.purchaseItem.findUniqueOrThrow({ where: { id } });
+
+  it("04: la caja y Mercancía ven como vendible sólo lo de lotes vigentes y lo vencido aparte", async () => {
+    const p = await product("Lote vencido", "Suplementos");
+    const v = p.variants[0];
+    for (const [lotNumber, qty] of [
+      ["AM-VIGENTE", 3],
+      ["AM-VENCIDO", 2],
+    ] as const)
+      await ok("/inventory/adjustments", {
+        variantId: v.id,
+        qty,
+        reason: "QA lote",
+        lotNumber,
+        expiryDate: "2030-01-01T12:00:00.000Z",
+      });
+    // El lote venció (así quedan los datos al pasar la fecha).
+    await fixtureDb.lot.updateMany({
+      where: { variantId: v.id, lotNumber: "AM-VENCIDO" },
+      data: { expiryDate: new Date("2020-01-01T12:00:00Z") },
+    });
+    // El catálogo que cargan la caja y Mercancía.
+    const listed = (await ok("/products?q=" + p.sku)).items
+      .find((i: any) => i.id === p.id)
+      .variants.find((i: any) => i.id === v.id);
+    expect(Number(listed.stock)).toBe(3);
+    expect(Number(listed.expiredStock)).toBe(2);
+    expect(Number(listed.physicalStock)).toBe(5);
+    // Inventario conserva lo físico (para contar) y muestra lo vencido aparte.
+    const inventory = (await ok("/inventory/stock")).find(
+      (i: any) => i.id === v.id,
+    );
+    expect(Number(inventory.stock)).toBe(5);
+    expect(Number(inventory.expiredStock)).toBe(2);
+    expect(Number(inventory.sellableStock)).toBe(3);
+    // El aviso en tiempo real (que actualiza la caja) también lleva lo vendible.
+    await ok("/inventory/adjustments", {
+      variantId: v.id,
+      qty: 1,
+      reason: "QA lote",
+      lotNumber: "AM-VIGENTE",
+      expiryDate: "2030-01-01T12:00:00.000Z",
+    });
+    const event = await fixtureDb.realtimeEvent.findFirst({
+      where: {
+        type: "stock.changed",
+        data: { path: ["variantId"], equals: v.id },
+      },
+      orderBy: { id: "desc" },
+    });
+    expect(event?.data).toMatchObject({ qtyOnHand: 4, expired: 2 });
+  });
+
+  it("35: la orden y la recepción guardan factura, NCF, fecha y condición de pago; se completan después", async () => {
+    const p = await product("Documento");
+    const order = await ok("/purchase-orders", {
+      supplierId,
+      supplierInvoice: "FAC-778",
+      paymentType: "credit",
+      creditDays: 45,
+      items: [{ variantId: p.variants[0].id, qty: 4, unitCost: 250 }],
+    });
+    expect(order).toMatchObject({
+      supplierInvoice: "FAC-778",
+      paymentType: "credit",
+      creditDays: 45,
+      supplierNcf: null,
+    });
+    // Recibir no exige el documento; la condición de pago viene de la orden.
+    const receipt = await ok("/purchase-orders/" + order.id + "/receive", {
+      operationId: randomUUID(),
+      items: [{ itemId: order.items[0].id, qty: 4 }],
+    });
+    expect(receipt).toMatchObject({
+      supplierNcf: null,
+      paymentType: "credit",
+      creditDays: 45,
+    });
+    const path = "/goods-receipts/" + receipt.id + "/document";
+    const wrong = await request(path, { supplierNcf: "123" }, token, "PATCH");
+    expect(wrong.status).toBe(400);
+    expect(wrong.body.message).toMatch(/NCF/);
+    const future = await request(
+      path,
+      { invoiceDate: "2999-01-01" },
+      token,
+      "PATCH",
+    );
+    expect(future.status).toBe(400);
+    const stock = await stockOf(p.variants[0].id);
+    const done = await ok(
+      path,
+      {
+        supplierInvoice: "FAC-778",
+        supplierNcf: "b01-0000 0123",
+        invoiceDate: today,
+        itbis: 180,
+        paymentType: "credit",
+        creditDays: 30,
+      },
+      token,
+      "PATCH",
+    );
+    expect(done).toMatchObject({
+      supplierInvoice: "FAC-778",
+      supplierNcf: "B0100000123",
+      paymentType: "credit",
+      creditDays: 30,
+    });
+    expect(Number(done.itbis)).toBe(180);
+    expect(done.invoiceDate.slice(0, 10)).toBe(today);
+    // Completar el documento no mueve stock y queda auditado.
+    expect(await stockOf(p.variants[0].id)).toBe(stock);
+    expect(
+      await fixtureDb.auditLog.count({
+        where: { entityId: receipt.id, action: "receipt_document" },
+      }),
+    ).toBe(1);
+    // Contado no lleva días; un texto vacío borra el dato.
+    const cash = await ok(
+      path,
+      { paymentType: "cash", supplierInvoice: "" },
+      token,
+      "PATCH",
+    );
+    expect(cash).toMatchObject({
+      paymentType: "cash",
+      creditDays: null,
+      supplierInvoice: null,
+      supplierNcf: "B0100000123",
+    });
+    // La orden también se completa después (e-CF: E31 + 10 dígitos).
+    const od = await ok(
+      "/purchase-orders/" + order.id + "/document",
+      { supplierNcf: "E310000000123" },
+      token,
+      "PATCH",
+    );
+    expect(od.supplierNcf).toBe("E310000000123");
+    // Desde Mercancía (celular) la entrada lleva el documento.
+    const number = ncf();
+    const entry = await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId,
+      supplierInvoice: "F-1",
+      supplierNcf: number,
+      invoiceDate: today,
+      paymentType: "cash",
+      itbis: 36,
+      items: [{ variantId: p.variants[0].id, qty: 2, unitCost: 100 }],
+    });
+    const row = await fixtureDb.goodsReceipt.findUniqueOrThrow({
+      where: { id: entry.receiptId },
+    });
+    expect(row).toMatchObject({
+      supplierInvoice: "F-1",
+      supplierNcf: number,
+      paymentType: "cash",
+    });
+    expect(Number(row.itbis)).toBe(36);
+    // Sin condición de pago, la del proveedor (plazo en días).
+    const plain = await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId,
+      items: [{ variantId: p.variants[0].id, qty: 1, unitCost: 100 }],
+    });
+    expect(
+      await fixtureDb.goodsReceipt.findUniqueOrThrow({
+        where: { id: plain.receiptId },
+      }),
+    ).toMatchObject({
+      paymentType: supplier.paymentTermsDays > 0 ? "credit" : "cash",
+      supplierNcf: null,
+    });
+  });
+
+  it("35: exporta a Excel las compras del período con proveedor, RNC, NCF, montos e ITBIS", async () => {
+    const p = await product("Excel 606");
+    const number = ncf(),
+      old = ncf();
+    await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId,
+      supplierInvoice: "XL-1",
+      supplierNcf: number,
+      invoiceDate: today,
+      paymentType: "credit",
+      creditDays: 30,
+      itbis: 54,
+      freight: 20,
+      items: [{ variantId: p.variants[0].id, qty: 3, unitCost: 100 }],
+    });
+    // Factura de un mes anterior recibida hoy: cuenta en el período de su fecha.
+    await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId,
+      supplierNcf: old,
+      invoiceDate: "2001-02-03",
+      items: [{ variantId: p.variants[0].id, qty: 1, unitCost: 100 }],
+    });
+    const ExcelJS = requireApi("exceljs");
+    const sheetOf = async (query: string, as = token) => {
+      const r = await fetch(base + "/goods-receipts/export" + query, {
+        headers: { Authorization: "Bearer " + as },
+      });
+      expect(r.status).toBe(200);
+      expect(r.headers.get("content-type")).toMatch(/spreadsheetml/);
+      const book = new ExcelJS.Workbook();
+      await book.xlsx.load(Buffer.from(await r.arrayBuffer()));
+      const sheet = book.worksheets[0];
+      const header = (sheet.getRow(1).values as any[]).slice(1);
+      const rows: Record<string, any>[] = [];
+      sheet.eachRow((row: any, n: number) => {
+        if (n > 1)
+          rows.push(
+            Object.fromEntries(
+              header.map((h: string, i: number) => [h, row.getCell(i + 1).value]),
+            ),
+          );
+      });
+      return rows;
+    };
+    const rows = await sheetOf("?from=" + today + "&to=" + today);
+    const row = rows.find((r) => r.NCF === number);
+    expect(row).toMatchObject({
+      Proveedor: supplier.name,
+      RNC: supplier.legalId,
+      Factura: "XL-1",
+      Condición: "Crédito 30 días",
+      Mercancía: 300,
+      Flete: 20,
+      ITBIS: 54,
+      Total: 320,
+    });
+    expect(rows.some((r) => r.NCF === old)).toBe(false);
+    const february = await sheetOf("?from=2001-02-01&to=2001-02-28");
+    expect(february.map((r) => r.NCF)).toContain(old);
+    expect(february.map((r) => r.NCF)).not.toContain(number);
+    // La cajera no exporta compras.
+    const seller = await fetch(base + "/goods-receipts/export", {
+      headers: { Authorization: "Bearer " + sellerToken },
+    });
+    expect(seller.status).toBe(403);
+  });
+
+  it("36: los dañados o rechazados por línea no entran al stock, quedan con motivo y costo, y pedido = bueno + dañado + pendiente", async () => {
+    const p = await product("Dañados");
+    const variantId = p.variants[0].id;
+    const start = await stockOf(variantId);
+    const order = await ok("/purchase-orders", {
+      supplierId,
+      items: [{ variantId, qty: 10, unitCost: 100 }],
+    });
+    const itemId = order.items[0].id;
+    const path = "/purchase-orders/" + order.id + "/receive";
+    // Sin motivo no se registran dañados.
+    const noReason = await request(path, {
+      operationId: randomUUID(),
+      items: [{ itemId, qty: 6, damagedQty: 2 }],
+    });
+    expect(noReason.status).toBe(400);
+    expect(noReason.body.message).toMatch(/motivo/i);
+    const first = await ok(path, {
+      operationId: randomUUID(),
+      freight: 60,
+      items: [{ itemId, qty: 6, damagedQty: 2, damageReason: "Caja rota" }],
+    });
+    expect(await stockOf(variantId)).toBe(start + 6);
+    expect(first.items[0]).toMatchObject({
+      qty: 6,
+      damagedQty: 2,
+      damageReason: "Caja rota",
+      damagedCost: 200,
+    });
+    // Lo que se debe: sólo lo bueno más el flete; lo dañado aparte.
+    expect(Number(first.total)).toBe(660);
+    expect(Number(first.damagedCost)).toBe(200);
+    // El flete se reparte sólo entre las unidades buenas: 100 + 60/6.
+    expect(
+      Number(
+        (await fixtureDb.variant.findUniqueOrThrow({ where: { id: variantId } }))
+          .costAvg,
+      ),
+    ).toBe(110);
+    let item = await itemOf(itemId);
+    expect([
+      Number(item.qty),
+      Number(item.receivedQty),
+      Number(item.damagedQty),
+    ]).toEqual([10, 6, 2]);
+    // Pedido 10 = 6 buenas + 2 dañadas + 2 pendientes: no admite 3 más.
+    const over = await request(path, {
+      operationId: randomUUID(),
+      items: [{ itemId, qty: 2, damagedQty: 1, damageReason: "Vencido" }],
+    });
+    expect(over.status).toBe(400);
+    expect(over.body.message).toMatch(/pendiente/);
+    // Una línea sin unidades buenas ni dañadas no es una recepción.
+    expect(
+      (
+        await request(path, {
+          operationId: randomUUID(),
+          items: [{ itemId, qty: 0 }],
+        })
+      ).status,
+    ).toBe(400);
+    // Las 2 restantes llegan rechazadas: la orden queda completa sin sumar stock.
+    await ok(path, {
+      operationId: randomUUID(),
+      items: [
+        { itemId, qty: 0, damagedQty: 2, damageReason: "Producto equivocado" },
+      ],
+    });
+    expect(await stockOf(variantId)).toBe(start + 6);
+    item = await itemOf(itemId);
+    expect(Number(item.damagedQty)).toBe(4);
+    expect(
+      (
+        await fixtureDb.purchaseOrder.findUniqueOrThrow({
+          where: { id: order.id },
+        })
+      ).status,
+    ).toBe("received");
+    const purchased = await fixtureDb.inventoryMovement.findMany({
+      where: { variantId, type: "purchase" },
+    });
+    expect(purchased.reduce((s: number, m: any) => s + Number(m.qty), 0)).toBe(
+      6,
+    );
+    // Desde Mercancía (celular), con orden: lo mismo.
+    const o2 = await ok("/purchase-orders", {
+      supplierId,
+      items: [{ variantId, qty: 5, unitCost: 100 }],
+    });
+    const goods = (qty: number, damagedQty: number) => ({
+      id: randomUUID(),
+      direction: "entry",
+      supplierId,
+      orderId: o2.id,
+      items: [
+        {
+          variantId,
+          itemId: o2.items[0].id,
+          qty,
+          unitCost: 100,
+          damagedQty,
+          damageReason: "Golpeado",
+        },
+      ],
+    });
+    const viaGoods = await ok("/merchandise/operations", goods(3, 1));
+    expect(await stockOf(variantId)).toBe(start + 9);
+    item = await itemOf(o2.items[0].id);
+    expect([Number(item.receivedQty), Number(item.damagedQty)]).toEqual([3, 1]);
+    const stored = await fixtureDb.goodsReceipt.findUniqueOrThrow({
+      where: { id: viaGoods.receiptId },
+    });
+    expect((stored.items as any[])[0]).toMatchObject({
+      qty: 3,
+      damagedQty: 1,
+      damageReason: "Golpeado",
+    });
+    expect(Number(stored.damagedCost)).toBe(100);
+    const overGoods = await request("/merchandise/operations", goods(1, 1));
+    expect(overGoods.status).toBe(400);
+    // Sin orden: lo dañado queda registrado y no entra.
+    const loose = await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId,
+      items: [
+        {
+          variantId,
+          qty: 0,
+          unitCost: 100,
+          damagedQty: 2,
+          damageReason: "Mojado",
+        },
+      ],
+    });
+    expect(await stockOf(variantId)).toBe(start + 9);
+    expect(
+      Number(
+        (
+          await fixtureDb.goodsReceipt.findUniqueOrThrow({
+            where: { id: loose.receiptId },
+          })
+        ).damagedCost,
+      ),
+    ).toBe(200);
+    // En una salida no hay dañados de recepción.
+    expect(
+      (
+        await request("/merchandise/operations", {
+          id: randomUUID(),
+          direction: "exit",
+          reason: "merma",
+          items: [
+            {
+              variantId,
+              qty: 1,
+              unitCost: 1,
+              damagedQty: 1,
+              damageReason: "Roto",
+            },
+          ],
+        })
+      ).status,
+    ).toBe(400);
+  });
+
+  it("37: historial de recepciones con proveedor, documento, quién recibió, líneas y dañados; reenviar no duplica", async () => {
+    const p = await product("Historial");
+    const variantId = p.variants[0].id;
+    const start = await stockOf(variantId);
+    const order = await ok("/purchase-orders", {
+      supplierId,
+      items: [{ variantId, qty: 3, unitCost: 100 }],
+    });
+    const path = "/purchase-orders/" + order.id + "/receive";
+    const number = ncf();
+    const body = {
+      operationId: randomUUID(),
+      supplierInvoice: "H-1",
+      supplierNcf: number,
+      items: [
+        { itemId: order.items[0].id, qty: 2, damagedQty: 1, damageReason: "Roto" },
+      ],
+    };
+    const receipt = await ok(path, body);
+    // Se perdió la respuesta y se confirma otra vez: la misma recepción.
+    expect((await ok(path, body)).id).toBe(receipt.id);
+    expect(await stockOf(variantId)).toBe(start + 2);
+    // La orden quedó completa (2 + 1): otra recepción se rechaza.
+    const again = await request(path, { ...body, operationId: randomUUID() });
+    expect(again.status).toBe(400);
+    const list = await ok("/goods-receipts?from=" + today + "&to=" + today);
+    const row = list.find((r: any) => r.id === receipt.id);
+    expect(row).toMatchObject({
+      orderNumber: order.number,
+      supplierName: supplier.name,
+      supplierLegalId: supplier.legalId,
+      supplierInvoice: "H-1",
+      supplierNcf: number,
+      userName: "QA admin " + suffix,
+      units: 2,
+      damagedUnits: 1,
+    });
+    expect(row.lines).toEqual([
+      expect.objectContaining({
+        variantId,
+        name: p.name,
+        sku: p.variants[0].sku,
+        qty: 2,
+        damagedQty: 1,
+        damageReason: "Roto",
+      }),
+    ]);
+    // Abrir la recepción: su comprobante.
+    const detail = await ok("/goods-receipts/" + receipt.id);
+    expect(detail).toMatchObject({ id: receipt.id, supplierNcf: number });
+    expect(detail.lines[0]).toMatchObject({ qty: 2, damagedQty: 1 });
+    // Mercancía en el celular (almacén): ve el historial sin costos.
+    const fromPhone = await ok("/goods-receipts", undefined, warehouse);
+    const seen = fromPhone.find((r: any) => r.id === receipt.id);
+    expect(seen.lines[0]).toMatchObject({ qty: 2, damagedQty: 1 });
+    expect(JSON.stringify(seen)).not.toMatch(/unitCost|landedCost|damagedCost/);
+    expect((await request("/goods-receipts", undefined, sellerToken)).status).toBe(
+      403,
+    );
+    // Mercancía: reenviar la misma entrada con dañados no duplica.
+    const entry = {
+      id: randomUUID(),
+      direction: "entry",
+      items: [
+        {
+          variantId,
+          qty: 1,
+          unitCost: 100,
+          damagedQty: 1,
+          damageReason: "Roto",
+        },
+      ],
+    };
+    const once = await ok("/merchandise/operations", entry);
+    expect((await ok("/merchandise/operations", entry)).receiptId).toBe(
+      once.receiptId,
+    );
+    expect(await stockOf(variantId)).toBe(start + 3);
+  });
+});
