@@ -453,7 +453,16 @@ export const saleSchema = z.object({
   payments: z
     .array(
       z.object({
-        method: z.enum(["cash", "card", "transfer", "credit_note", "credit"]),
+        // cod: contraentrega. La venta sale de inventario y ese importe queda
+        // pendiente hasta que el mensajero trae el dinero.
+        method: z.enum([
+          "cash",
+          "card",
+          "transfer",
+          "credit_note",
+          "credit",
+          "cod",
+        ]),
         creditNoteId: z.string().uuid().optional(),
         creditNoteCode: z
           .string()

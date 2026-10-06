@@ -121,79 +121,79 @@
         "id": "R9-offline-1",
         "priority": "P1",
         "title": "Sin internet pero con la red local activa (navigator.onLine = true), la caja no puede vender: al recargar pide iniciar sesión y la lista de productos se sustituye por 'Failed to fetch'",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-offline-2",
         "priority": "P2",
         "title": "Una venta sin conexión no actualiza el stock que usa la caja: se pueden vender otra vez las mismas unidades y la venta queda en conflicto después de cobrar",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-offline-3",
         "priority": "P2",
         "title": "Cambiar un precio o una promoción con el producto ya en el carrito bloquea el cobro; volver a escanearlo no actualiza el precio",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-offline-4",
         "priority": "P3",
         "title": "Si se crea un producto mientras la caja descarga el catálogo por páginas, otro producto queda duplicado y su código da un falso 'es de 2 productos'",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-offline-5",
         "priority": "P2",
         "title": "El cierre por inactividad sólo ocurre en el navegador; al recargar la página vuelve la sesión del usuario anterior (por ejemplo, la del gerente)",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-codigos-1",
         "priority": "P2",
         "title": "La API de catálogo y Mercancía aceptan un código que la caja trata como el mismo código de otro producto (R8-01 sigue abierto fuera de la CLI)",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-codigos-2",
         "priority": "P2",
         "title": "Recepción de mercancía compara el código exacto: la etiqueta impresa (Code 39 en MAYÚSCULAS) de un código en minúsculas abre «Crear producto rápido» y duplica el producto",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-codigos-3",
         "priority": "P2",
         "title": "R8-01 por Mercancía: el escaneo distingue mayúsculas y «Crear producto rápido» acepta un código que ya existe con otras mayúsculas; el stock va a un duplicado y la caja deja de agregar los dos por código",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-importador-1",
         "priority": "P2",
         "title": "Celdas con hipervínculo, error (#N/A, #REF!) o fórmula sin valor calculado se importan en silencio como «[object Object]» (nombre, categoría, ID o REFERENCIA)",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-importador-2",
         "priority": "P3",
         "title": "Filas con ID pero sin DESCRIPCION, o con DESCRIPCION pero sin ID ni REFERENCIA, se descartan sin avisar",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-importador-3",
         "priority": "P3",
         "title": "--dry-run siempre informa '0 nuevos (0 unidades) · 0 ya cargados · 0 activados · 0 precios' y no anuncia las categorías que crearía; el paso 2 del MANUAL falla en una base nueva",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-importador-4",
         "priority": "P3",
         "title": "maxStock = qty*3 desborda Decimal(14,3) con existencias que el lector acepta; la simulación pasa y la carga real falla con un volcado técnico de Prisma",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-importador-5",
         "priority": "P3",
         "title": "Al activar un producto inactivo, el precio que la dueña editó en la app se sobrescribe sin --actualizar-precios",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-dinero-1",
@@ -265,62 +265,63 @@
         "id": "R9-facturas-1",
         "priority": "P3",
         "title": "Factura del proveedor: «el código exacto manda» toma en silencio la primera de varias variantes con ese código (confianza 1)",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-facturas-2",
         "priority": "P2",
         "title": "El código exacto de la tienda gana a la equivalencia ya corregida del proveedor y a la descripción: con los IDs numéricos reales (1001–1616) la línea vuelve al producto equivocado con 100 % de confianza",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-facturas-3",
         "priority": "P2",
         "title": "No se comparan tamaños en softgels, caplets, liqui-caps, «serv.», packs ni unidades: la factura queda preelegida en el envase de otro tamaño",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-facturas-4",
         "priority": "P2",
         "title": "Los números de tono se ignoran: «FSP 6.5» queda preelegido como «FSP 5.5» y «Polvo compacto 120» como «370»",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-facturas-5",
         "priority": "P2",
         "title": "Un tono hecho de palabras de color desaparece del nombre: cualquier tono desconocido cae en ese producto («Color Base Primer Lemon Drop» queda como «Purple Cream»)",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-facturas-6",
         "priority": "P2",
         "title": "Una factura que nombra otra marca queda preelegida en el producto de la marca que tiene la tienda («Melatonin Natrol» queda como «Melatonin Nutrex»)",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-facturas-7",
         "priority": "P2",
         "title": "Formato español: «1.250» se lee como 1,25 y en el mismo archivo «1,250» se lee como 1250; el costo promedio se corrompe",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-facturas-8",
         "priority": "P3",
         "title": "La recepción de una orden de compra no es idempotente: reenviar el mismo formulario recibe la mercancía dos veces",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-seguridad-1",
         "priority": "P2",
         "title": "Cinco contraseñas erróneas enviadas por cualquiera expulsan al usuario de las sesiones que ya tenía abiertas y bloquean su caja 15 minutos, una y otra vez",
-        "status": "pendiente"
+        "status": "corregido"
       },
       {
         "id": "R9-seguridad-2",
         "priority": "P3",
         "title": "El límite de intentos por IP en /api/auth y /api/sales se evita cambiando mayúsculas en la ruta",
-        "status": "pendiente"
+        "status": "corregido"
       }
-    ]
+    ],
+    "corrections": "docs/validacion/ronda9-correcciones-revision.json"
   }
 }
