@@ -3784,6 +3784,38 @@ describe("Ronda 7 · auditoría R6 de ChatGPT", () => {
     expect(await report()).toMatchObject({ Pagado: 55, Pendiente: 0 });
   });
 });
+// Ejecuta el importador real contra la misma base que la API.
+const runImport = async (rows: unknown[][], ...flags: string[]) => {
+  const { mkdtempSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const ExcelJS = requireApi("exceljs");
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Inventario 2026");
+  ws.addRow([
+    "ID",
+    "DESCRIPCION",
+    "REFERENCIA",
+    "SUB-GRUPO DE ARTICULO",
+    "EXISTENCIA",
+    "COSTO",
+    "PRECIO DETALLE",
+  ]);
+  rows.forEach((r) => ws.addRow(r));
+  const file = join(mkdtempSync(join(tmpdir(), "r8-")), "inventario.xlsx");
+  await wb.xlsx.writeFile(file);
+  const run = spawnSync(
+    new URL("../apps/api/node_modules/.bin/tsx", import.meta.url).pathname,
+    ["scripts/import-inventario.ts", file, ...flags],
+    {
+      cwd: new URL("../apps/api", import.meta.url).pathname,
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+  return { status: run.status, out: run.stdout + run.stderr };
+};
+
 // Ronda 8: regresiones exigidas por la auditoría R7 de ChatGPT
 // (docs/AUDITORIA_RONDA7.md).
 describe("Ronda 8 · auditoría R7 de ChatGPT", () => {
@@ -3794,38 +3826,6 @@ describe("Ronda 8 · auditoría R7 de ChatGPT", () => {
   beforeAll(async () => {
     cats = await ok("/categories");
   });
-  // Ejecuta el importador real contra la misma base que la API.
-  const runImport = async (rows: unknown[][], ...flags: string[]) => {
-    const { mkdtempSync } = await import("node:fs");
-    const { tmpdir } = await import("node:os");
-    const { join } = await import("node:path");
-    const ExcelJS = requireApi("exceljs");
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet("Inventario 2026");
-    ws.addRow([
-      "ID",
-      "DESCRIPCION",
-      "REFERENCIA",
-      "SUB-GRUPO DE ARTICULO",
-      "EXISTENCIA",
-      "COSTO",
-      "PRECIO DETALLE",
-    ]);
-    rows.forEach((r) => ws.addRow(r));
-    const file = join(mkdtempSync(join(tmpdir(), "r8-")), "inventario.xlsx");
-    await wb.xlsx.writeFile(file);
-    const run = spawnSync(
-      new URL("../apps/api/node_modules/.bin/tsx", import.meta.url).pathname,
-      ["scripts/import-inventario.ts", file, ...flags],
-      {
-        cwd: new URL("../apps/api", import.meta.url).pathname,
-        env: process.env,
-        encoding: "utf8",
-      },
-    );
-    return { status: run.status, out: run.stdout + run.stderr };
-  };
-
   it("R7-01: un código que ya es de otro producto detiene la carga sin escribir", async () => {
     const code = "98765" + Date.now().toString().slice(-8);
     const a = await ok("/products", {
@@ -3982,5 +3982,192 @@ describe("Ronda 8 · auditoría R7 de ChatGPT", () => {
     expect(await profit()).toBe(35.03);
     await back(7);
     expect(await profit()).toBe(0);
+  });
+});
+
+// Ronda 9: regresiones exigidas por la auditoría R8 de ChatGPT
+// (docs/AUDITORIA_RONDA8.md).
+describe("Ronda 9 · auditoría R8 de ChatGPT", () => {
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Santo_Domingo",
+  });
+  let cats: any[];
+  beforeAll(async () => {
+    cats = await ok("/categories");
+  });
+  const counts = async () => ({
+    categories: await fixtureDb.category.count(),
+    products: await fixtureDb.product.count(),
+    variants: await fixtureDb.variant.count(),
+    movements: await fixtureDb.inventoryMovement.count(),
+  });
+
+  it("R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga", async () => {
+    const tag = randomUUID().slice(0, 6).toUpperCase();
+    const a = await ok("/products", {
+      name: "QA R9 dueño " + suffix,
+      sku: "R9A-" + tag,
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [
+        {
+          sku: "qa-case-owner-" + tag.toLowerCase(),
+          barcode: "QA-R9-CASE" + tag,
+          price: 20,
+          costAvg: 10,
+        },
+      ],
+    });
+    products.push(a);
+    const before = await counts();
+    // Contra la base: el ID en minúsculas es el código de barras de A.
+    const lower = "qa-r9-case" + tag.toLowerCase();
+    const r1 = await runImport([
+      [lower, "QA R9 producto B", lower, "Ropa deportiva", 2, 10, 20],
+    ]);
+    expect(r1.status).not.toBe(0);
+    expect(r1.out).toMatch(/ya es de/);
+    // Entre filas: la REFERENCIA de una fila es el ID de otra en mayúsculas.
+    const r2 = await runImport([
+      [
+        "R9X-" + tag,
+        "QA R9 fila A",
+        "QA-R9-ROW" + tag,
+        "Ropa deportiva",
+        1,
+        10,
+        20,
+      ],
+      [
+        "qa-r9-row" + tag.toLowerCase(),
+        "QA R9 fila B",
+        "",
+        "Ropa deportiva",
+        1,
+        10,
+        20,
+      ],
+    ]);
+    expect(r2.status).not.toBe(0);
+    expect(r2.out).toMatch(/es el ID de otra fila/);
+    // IDs repetidos salvo mayúsculas.
+    const r3 = await runImport([
+      ["R9Y-" + tag, "QA R9 Y1", "", "Ropa deportiva", 1, 10, 20],
+      ["r9y-" + tag.toLowerCase(), "QA R9 Y2", "", "Ropa deportiva", 1, 10, 20],
+    ]);
+    expect(r3.status).not.toBe(0);
+    expect(r3.out).toMatch(/repetido/);
+    expect(await counts()).toEqual(before);
+  });
+
+  it("R8-02: una devolución anterior a la ronda 8 se concilia con su costo contabilizado", async () => {
+    const product = async (label: string, price: number, costAvg: number) => {
+      const p = await ok("/products", {
+        name: "QA R9 " + label + " " + suffix,
+        sku: "R9-" + randomUUID().slice(0, 8),
+        categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+        taxRate: 0,
+        variants: [
+          {
+            sku: "R9V-" + randomUUID().slice(0, 8),
+            barcode: "R9B-" + randomUUID().slice(0, 8),
+            price,
+            costAvg,
+          },
+        ],
+      });
+      products.push(p);
+      return p.variants[0];
+    };
+    const component = await product("comp hist", 30, 10.01);
+    const combo = await product("combo hist", 20, 0);
+    await ok("/inventory/adjustments", {
+      variantId: component.id,
+      qty: 10,
+      reason: "QA R9 stock",
+    });
+    await ok("/kits", {
+      kitVariantId: combo.id,
+      components: [{ componentVariantId: component.id, qty: 0.5 }],
+    });
+    const sale = await ok("/sales", {
+      ...input(combo.id, 200),
+      items: [{ variantId: combo.id, qty: 10 }],
+    });
+    expect(Number(sale.costTotal)).toBe(50.05);
+    const item = await fixtureDb.saleItem.findFirstOrThrow({
+      where: { saleId: sale.id },
+    });
+    const row = async () =>
+      (await ok(`/reports/profit?from=${today}&to=${today}`)).rows.find(
+        (r: any) => r.Producto === "QA R9 combo hist " + suffix,
+      );
+    const back = (qty: number) =>
+      ok("/returns", {
+        saleId: sale.id,
+        cashSessionId: session.id,
+        reason: "QA R9 devolución",
+        refundMethod: "credit_note",
+        items: [{ saleItemId: item.id, qty, restock: true }],
+      });
+    const first = await back(3);
+    expect(Number(first.costTotal)).toBe(15.02);
+    // Como la guardaba la ronda 7: líneas sin costo.
+    const stored = await fixtureDb.saleReturn.findUniqueOrThrow({
+      where: { id: first.id },
+    });
+    await fixtureDb.saleReturn.update({
+      where: { id: first.id },
+      data: {
+        items: (stored.items as any[]).map(({ cost: _cost, ...p }) => p),
+      },
+    });
+    expect((await row()).Costo).toBe(35.03);
+    // Repetir la lectura no cambia nada.
+    expect((await row()).Costo).toBe(35.03);
+    await back(7);
+    expect(await row()).toMatchObject({
+      Ventas: 0,
+      Costo: 0,
+      Unidades: 0,
+      Utilidad: 0,
+    });
+  });
+
+  it("R8-03: una carga que se detiene en la validación no deja cambios", async () => {
+    const lotName = "QA R9 lotes " + suffix;
+    await ok("/categories", {
+      name: lotName,
+      requiresLot: true,
+      requiresExpiry: true,
+    });
+    const tag = randomUUID().slice(0, 6);
+    const before = await counts();
+    const newCat = "QA R9 nueva " + suffix;
+    const r1 = await runImport([
+      ["R9N-" + tag, "QA R9 nueva", "", newCat, 1, 10, 20],
+      ["R9L-" + tag, "QA R9 con lote", "", lotName, 1, 10, 20],
+    ]);
+    expect(r1.status).not.toBe(0);
+    expect(r1.out).toMatch(/exige lote o vencimiento/);
+    expect(
+      await fixtureDb.category.findUnique({ where: { name: newCat } }),
+    ).toBeNull();
+    expect(await counts()).toEqual(before);
+    // Precio fuera del límite de Decimal(14,2) en la segunda fila.
+    const r2 = await runImport([
+      ["R9P-" + tag, "QA R9 válido", "", "Ropa deportiva", 1, 10, 20],
+      [
+        "R9Q-" + tag,
+        "QA R9 enorme",
+        "",
+        "Ropa deportiva",
+        1,
+        10,
+        1000000000000,
+      ],
+    ]);
+    expect(r2.status).not.toBe(0);
+    expect(r2.out).toMatch(/máximo/);
+    expect(await counts()).toEqual(before);
   });
 });

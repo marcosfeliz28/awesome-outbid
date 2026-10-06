@@ -337,14 +337,32 @@ export function POS({ go }: { go: (page: string) => void }) {
   const byCode = (code: string) => {
     const c = code.trim().toLowerCase();
     if (!c) return undefined;
-    for (const field of ["barcode", "sku"] as const)
-      for (const p of products.data ?? [])
-        for (const v of p.variants)
-          if (v[field].toLowerCase() === c) return { product: p, variant: v };
-    return undefined;
+    // Sin distinguir mayúsculas (R8-01). Si el código es de más de un
+    // producto, no se elige ninguno en silencio.
+    const hits = (products.data ?? []).flatMap((p) =>
+      p.variants
+        .filter(
+          (v) => v.barcode.toLowerCase() === c || v.sku.toLowerCase() === c,
+        )
+        .map((v) => ({ product: p, variant: v })),
+    );
+    if (hits.length > 1) return { ambiguous: hits.length } as const;
+    return hits[0];
   };
   const scan = (code: string) => {
     const found = byCode(code);
+    if (found && "ambiguous" in found) {
+      setQ(code);
+      toast(
+        "El código " +
+          code.trim() +
+          " es de " +
+          found.ambiguous +
+          " productos. Elige el producto en la lista y corrige el código en Productos.",
+        true,
+      );
+      return;
+    }
     const product = found?.product,
       variant = found?.variant;
     if (product && variant) {

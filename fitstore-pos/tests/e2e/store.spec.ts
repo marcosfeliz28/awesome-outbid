@@ -643,3 +643,61 @@ test("código + Enter agrega el producto y respeta el stock", async ({
     });
   }
 });
+// Auditoría R8 (ChatGPT) · R8-01: un código que, sin distinguir mayúsculas,
+// es de dos productos no agrega ninguno en silencio.
+test("código ambiguo por mayúsculas avisa y no agrega", async ({
+  page,
+  request,
+}) => {
+  const auth = await (
+    await request.post("/api/auth/login", {
+      data: { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" },
+    })
+  ).json();
+  const headers = { Authorization: "Bearer " + auth.accessToken };
+  const categories = await (
+    await request.get("/api/categories", { headers })
+  ).json();
+  const tag = String(Math.floor(Math.random() * 900000) + 100000);
+  const created: any[] = [];
+  for (const [label, sku, barcode] of [
+    ["A", "e2e-owner-" + tag, "E2E-CASE-" + tag],
+    ["B", "e2e-case-" + tag, "E2E-OTHER-" + tag],
+  ]) {
+    const product = await (
+      await request.post("/api/products", {
+        headers,
+        data: {
+          name: "Faja E2E ambiguo " + label + " " + tag,
+          sku: "E2E-AMB-" + label + tag,
+          categoryId: categories.find((c: any) => c.name === "Fajas").id,
+          variants: [{ sku, barcode, price: 1500, costAvg: 700 }],
+        },
+      })
+    ).json();
+    expect(product.id, JSON.stringify(product)).toBeTruthy();
+    await request.post("/api/inventory/adjustments", {
+      headers,
+      data: { variantId: product.variants[0].id, qty: 2, reason: "E2E" },
+    });
+    created.push(product);
+  }
+  await login(page);
+  await ensureCash(page);
+  await page
+    .getByRole("button", { name: "Punto de venta", exact: true })
+    .click();
+  const search = page.getByLabel("Buscar productos");
+  await search.fill("e2e-case-" + tag);
+  await search.press("Enter");
+  await expect(page.getByText(/es de 2 productos/)).toBeVisible();
+  await expect(page.locator(".cart-items")).not.toContainText(
+    "Faja E2E ambiguo",
+  );
+  await expect(page.getByText(/agregado\./)).toHaveCount(0);
+  for (const product of created)
+    await request.patch("/api/products/" + product.id, {
+      headers,
+      data: { active: false },
+    });
+});

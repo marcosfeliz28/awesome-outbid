@@ -19,7 +19,7 @@
 //   --actualizar-precios, cambia precios (queda en la bitácora). Las
 //   existencias de productos ya cargados nunca se tocan.
 import { config } from "dotenv";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import ExcelJS from "exceljs";
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -137,6 +137,14 @@ export async function readInventory(file: string): Promise<Row[]> {
       return 0;
     }
     const f = 10 ** decimals;
+    // Límites de la base (R8-03): Decimal(14,2) y Decimal(14,3).
+    const max = decimals === 2 ? 999999999999.99 : 99999999999.999;
+    if (!Number.isFinite(v) || v > max) {
+      errors.push(
+        "fila " + id + ", " + label + ": " + v + " (máximo " + max + ")",
+      );
+      return 0;
+    }
     if (v < 0 || Math.abs(v * f - Math.round(v * f)) > 1e-6) {
       errors.push(
         "fila " +
@@ -193,20 +201,24 @@ export async function readInventory(file: string): Promise<Row[]> {
 // fila tomaría el producto de otra y la segunda nunca se crearía).
 export function checkCodes(rows: Row[]) {
   const problems: string[] = [];
+  // Sin distinguir mayúsculas, como la caja (R8-01).
+  const k = (c: string) => c.toLowerCase();
   const ids = new Map<string, number>();
-  rows.forEach((r) => ids.set(r.id, (ids.get(r.id) ?? 0) + 1));
+  rows.forEach((r) => ids.set(k(r.id), (ids.get(k(r.id)) ?? 0) + 1));
   for (const [id, n] of ids)
     if (n > 1) problems.push("el ID " + id + " está repetido " + n + " veces");
   const codes = new Map<string, string[]>();
   for (const r of rows)
-    for (const code of new Set([r.ref, r.barcode].filter(Boolean) as string[]))
+    for (const code of new Set(
+      ([r.ref, r.barcode].filter(Boolean) as string[]).map(k),
+    ))
       codes.set(code, [...(codes.get(code) ?? []), r.id]);
   for (const [code, owners] of codes) {
     if (owners.length > 1)
       problems.push(
         "el código " + code + " aparece en los IDs " + owners.join(", "),
       );
-    if (ids.has(code) && !owners.includes(code))
+    if (ids.has(code) && !owners.some((o) => k(o) === code))
       problems.push(
         "el código " +
           code +
@@ -274,28 +286,39 @@ async function main() {
     ["ID", "Producto", "Categoría", "Existencia", "Costo", "Precio", "Revisar"],
   ];
 
-  // Códigos contra la base (R7-01): el ID, la REFERENCIA o el código de
-  // barras de una fila no pueden pertenecer ya a otro producto. Se revisa
-  // todo antes de escribir; un conflicto detiene la carga sin cambios.
+  // Códigos contra la base (R7-01, R8-01): el ID, la REFERENCIA o el código
+  // de barras de una fila no pueden pertenecer ya a otro producto. La caja
+  // compara sin distinguir mayúsculas, así que aquí también. Todo se revisa
+  // antes de escribir; un conflicto detiene la carga sin cambios.
+  const low = (c: string) => c.toLowerCase();
   const allCodes = [
     ...new Set(
-      rows.flatMap((r) => [r.id, r.ref, r.barcode].filter(Boolean) as string[]),
+      rows.flatMap((r) =>
+        ([r.id, r.ref, r.barcode].filter(Boolean) as string[]).map(low),
+      ),
     ),
   ];
+  const holderIds = allCodes.length
+    ? await db.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "Variant"
+        WHERE lower(sku) = ANY(${allCodes}) OR lower(barcode) = ANY(${allCodes})`
+    : [];
   const holders = await db.variant.findMany({
-    where: { OR: [{ sku: { in: allCodes } }, { barcode: { in: allCodes } }] },
+    where: { id: { in: holderIds.map((h) => h.id) } },
     include: { product: true },
   });
   const codeProblems: string[] = [];
-  const isNew = new Map<string, boolean>();
+  const ownOf = new Map<string, (typeof holders)[number] | undefined>();
   for (const row of rows) {
     const own = holders.find((v) => v.sku === row.id);
-    isNew.set(row.id, !own);
+    ownOf.set(row.id, own);
     for (const code of [row.id, row.ref, row.barcode].filter(
       Boolean,
     ) as string[]) {
       const other = holders.find(
-        (v) => (v.sku === code || v.barcode === code) && v.id !== own?.id,
+        (v) =>
+          (low(v.sku) === low(code) || low(v.barcode) === low(code)) &&
+          v.id !== own?.id,
       );
       if (other)
         codeProblems.push(
@@ -316,31 +339,38 @@ async function main() {
       "Corrige el Excel o el catálogo antes de importar:\n- " +
         codeProblems.slice(0, 30).join("\n- "),
     );
-  // Categorías (R7-03): nunca se cambian sus controles en silencio. Si una
-  // categoría existente exige lote o vencimiento y el Excel trae existencias
-  // nuevas sin lote, la carga se detiene, salvo que se pida --sin-lotes (que
-  // queda en la bitácora).
+  // Categorías (R7-03): se revisan todas antes de escribir nada (R8-03).
+  const plan: {
+    name: string;
+    existing: Awaited<ReturnType<typeof db.category.findUnique>>;
+    disable: boolean;
+  }[] = [];
   for (const name of [...new Set(rows.map((r) => r.category))]) {
     const existing = await db.category.findUnique({ where: { name } });
-    const needsLot =
+    const disable =
       !!existing &&
       (existing.requiresLot || existing.requiresExpiry) &&
-      rows.some((r) => r.category === name && r.qty > 0 && isNew.get(r.id));
-    if (needsLot && !disableLots)
+      rows.some((r) => r.category === name && r.qty > 0 && !ownOf.get(r.id));
+    if (disable && !disableLots)
       throw new Error(
         "La categoría «" +
           name +
           "» exige lote o vencimiento y el Excel no los trae. Desactívalo en " +
           "Productos › Categorías o repite con --sin-lotes (queda en la bitácora).",
       );
-    if (dryRun) continue;
-    if (needsLot && existing) {
-      await db.$transaction([
-        db.category.update({
+    plan.push({ name, existing, disable });
+  }
+  const origen = file.split(/[\\/]/).pop();
+  // Una sola transacción (R8-03): o se carga todo, o nada.
+  const load = async (tx: Prisma.TransactionClient | PrismaClient) => {
+    for (const { name, existing, disable } of plan) {
+      if (dryRun) continue;
+      if (disable && existing) {
+        await tx.category.update({
           where: { name },
           data: { requiresLot: false, requiresExpiry: false },
-        }),
-        db.auditLog.create({
+        });
+        await tx.auditLog.create({
           data: {
             userId: admin.id,
             action: "category_lots_disabled_by_import",
@@ -350,85 +380,63 @@ async function main() {
               requiresLot: existing.requiresLot,
               requiresExpiry: existing.requiresExpiry,
             },
-            after: {
-              requiresLot: false,
-              requiresExpiry: false,
-              origen: file.split(/[\\/]/).pop(),
-            },
+            after: { requiresLot: false, requiresExpiry: false, origen },
             branchId,
           },
-        }),
-      ]);
-    } else if (!existing)
-      await db.category.create({
-        data: {
-          name,
-          branchId,
-          createdBy: admin.id,
-          color: COLORS[name] ?? "#7C3AED",
-          attributes: ATTRIBUTES[name] ?? [],
-        },
-      });
-  }
-  const categories = await db.category.findMany();
-
-  for (const row of rows) {
-    const notes = reviewOf(row);
-    if (notes.length)
-      review.push([
-        row.id,
-        row.name,
-        row.category,
-        String(row.qty),
-        String(row.cost),
-        String(row.price),
-        notes.join("; "),
-      ]);
-    const active = row.price > 0 && row.cost > 0;
-    if (!active) summary.inactivos++;
-    if (dryRun) continue;
-    const categoryId = categories.find((c) => c.name === row.category)!.id;
-    const barcode = row.barcode ?? row.id;
-    // Ya importado: por ID, o por la clave de una carga anterior que usaba la
-    // REFERENCIA (código de barras) como código. Nunca se carga dos veces.
-    // Ya importado: se reconoce sólo por su ID. Una REFERENCIA o código de
-    // barras que ya es de otro producto detuvo la carga antes (R7-01).
-    const existing = await db.variant.findUnique({
-      where: { sku: row.id },
-      include: { product: true },
-    });
-    const productData = {
-      name: row.name,
-      categoryId,
-      brand: brandOf(row) || "",
-      active,
-      minStock: 1,
-      maxStock: Math.max(10, row.qty * 3),
-    };
-    if (existing) {
-      // Una carga repetida no pisa lo que se editó en la app (costo promedio,
-      // precio, mínimos, activo). Sólo:
-      // - activa productos que estaban inactivos por no tener precio o costo;
-      // - con --actualizar-precios, cambia el precio y lo deja en bitácora.
-      const changes: Record<string, unknown> = {};
-      const missingData =
-        !existing.product.active &&
-        (Number(existing.price) <= 0 || Number(existing.costAvg) <= 0);
-      if (missingData && active) {
-        changes.price = row.price;
-        if (Number(existing.costAvg) <= 0) changes.costAvg = row.cost;
-        changes.active = true;
-      } else if (
-        updatePrices &&
-        row.price > 0 &&
-        Number(existing.price) !== row.price
-      )
-        changes.price = row.price;
-      if (!Object.keys(changes).length) {
-        summary.sinCambios++;
-        continue;
-      }
-      await db.$transaction(async (tx) => {
+        });
+      } else if (!existing)
+        await tx.category.create({
+          data: {
+            name,
+            branchId,
+            createdBy: admin.id,
+            color: COLORS[name] ?? "#7C3AED",
+            attributes: ATTRIBUTES[name] ?? [],
+          },
+        });
+    }
+    const categories = await tx.category.findMany();
+    for (const row of rows) {
+      const notes = reviewOf(row);
+      if (notes.length)
+        review.push([
+          row.id,
+          row.name,
+          row.category,
+          String(row.qty),
+          String(row.cost),
+          String(row.price),
+          notes.join("; "),
+        ]);
+      const active = row.price > 0 && row.cost > 0;
+      if (!active) summary.inactivos++;
+      if (dryRun) continue;
+      const categoryId = categories.find((c) => c.name === row.category)!.id;
+      const barcode = row.barcode ?? row.id;
+      // Ya importado: se reconoce sólo por su ID.
+      const existing = ownOf.get(row.id);
+      if (existing) {
+        // Una carga repetida no pisa lo que se editó en la app. Sólo activa
+        // productos que estaban inactivos por no tener precio o costo y, con
+        // --actualizar-precios, cambia el precio (queda en la bitácora).
+        const changes: Record<string, unknown> = {};
+        const missingData =
+          !existing.product.active &&
+          (Number(existing.price) <= 0 || Number(existing.costAvg) <= 0);
+        if (missingData && active) {
+          changes.price = row.price;
+          if (Number(existing.costAvg) <= 0) changes.costAvg = row.cost;
+          changes.active = true;
+        } else if (
+          updatePrices &&
+          row.price > 0 &&
+          Number(existing.price) !== row.price
+        )
+          changes.price = row.price;
+        if (!Object.keys(changes).length) {
+          summary.sinCambios++;
+          continue;
+        }
         await tx.variant.update({ where: { id: existing.id }, data: changes });
         if (changes.active)
           await tx.product.update({
@@ -449,19 +457,22 @@ async function main() {
               costAvg: Number(existing.costAvg),
               active: existing.product.active,
             },
-            after: { ...changes, origen: file.split(/[\\/]/).pop() },
+            after: { ...changes, origen },
             branchId,
           },
         });
-      });
-      if (changes.active) summary.activados++;
-      else summary.precios++;
-      continue;
-    }
-    await db.$transaction(async (tx) => {
+        if (changes.active) summary.activados++;
+        else summary.precios++;
+        continue;
+      }
       const product = await tx.product.create({
         data: {
-          ...productData,
+          name: row.name,
+          categoryId,
+          brand: brandOf(row) || "",
+          active,
+          minStock: 1,
+          maxStock: Math.max(10, row.qty * 3),
           sku: "INV-" + row.id,
           branchId,
           createdBy: admin.id,
@@ -488,15 +499,21 @@ async function main() {
             qty: row.qty,
             unitCost: row.cost,
             balanceAfter: row.qty,
-            reason: "Inventario inicial (" + file.split(/[\\/]/).pop() + ")",
+            reason: "Inventario inicial (" + origen + ")",
             userId: admin.id,
             branchId,
           },
         });
+      summary.nuevos++;
+      summary.unidades += Math.max(0, row.qty);
+    }
+  };
+  if (dryRun) await load(db);
+  else
+    await db.$transaction((tx) => load(tx), {
+      maxWait: 20000,
+      timeout: 600000,
     });
-    summary.nuevos++;
-    summary.unidades += Math.max(0, row.qty);
-  }
   const out = resolve(process.cwd(), "revision-inventario.csv");
   writeFileSync(
     out,

@@ -530,8 +530,51 @@ export class ReportsController {
             },
           },
         });
-        for (const returned of periodReturns)
-          for (const part of returned.items as any[]) {
+        for (const returned of periodReturns) {
+          // Costo de cada línea repuesta (R8-02). Desde la ronda 8 cada línea
+          // guarda el suyo. Las anteriores no: se concilian con lo que la
+          // devolución contabilizó (SaleReturn.costTotal), repartido en
+          // proporción y con el resto en la última línea, para que la suma
+          // sea exacta. Se calcula al leer, así que es idempotente.
+          const parts = returned.items as any[];
+          const lineOf = (part: any) =>
+            returned.sale.items.find((i) => i.id === part.saleItemId);
+          const partCost = new Map<any, ReturnType<typeof d>>();
+          const unknown = parts.filter(
+            (p) => p.restock && typeof p.cost !== "number" && lineOf(p),
+          );
+          for (const p of parts)
+            if (p.restock && typeof p.cost === "number")
+              partCost.set(p, d(p.cost));
+          if (unknown.length) {
+            const estimate = (p: any) => {
+              const line = lineOf(p)!;
+              return allocationCost(line).times(p.qty).div(line.qty);
+            };
+            const known = [...partCost.values()].reduce(
+              (t, c) => t.plus(c),
+              d(0),
+            );
+            const pending = d(returned.costTotal).minus(known);
+            const weights = unknown.map(estimate);
+            const total = weights.reduce((t, w) => t.plus(w), d(0));
+            let given = d(0);
+            unknown.forEach((p, n) => {
+              const share =
+                n === unknown.length - 1
+                  ? pending.minus(given)
+                  : d(
+                      money(
+                        total.isZero()
+                          ? pending.div(unknown.length)
+                          : pending.times(weights[n]).div(total),
+                      ),
+                    );
+              given = given.plus(share);
+              partCost.set(p, share);
+            });
+          }
+          for (const part of parts) {
             const line = returned.sale.items.find(
               (i) => i.id === part.saleItemId,
             );
@@ -555,16 +598,11 @@ export class ReportsController {
               ),
             );
             if (part.restock)
-              // El costo que registró la devolución; las anteriores a la
-              // ronda 8 no lo guardaban y se estiman por proporción.
-              row.Costo = d(row.Costo).minus(
-                typeof part.cost === "number"
-                  ? part.cost
-                  : allocationCost(line).times(part.qty).div(line.qty),
-              );
+              row.Costo = d(row.Costo).minus(partCost.get(part) ?? 0);
             row.Unidades -= Number(part.qty);
             grouped.set(id, row);
           }
+        }
         rows = [...grouped.values()].map((i) => {
           const Costo = money(i.Costo);
           return {
