@@ -19,6 +19,7 @@ import {
   reason,
   audit,
   bad,
+  conflict,
   json,
 } from "./common";
 import { can, z, stockQty } from "@fitstore/shared";
@@ -267,27 +268,44 @@ export class AdminController {
       orderBy: { createdAt: "desc" },
     });
   }
-  @Post("quotes") @Permit("sale:write") quote(
+  @Post("quotes") @Permit("sale:write") async quote(
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
+    // La venta en espera guarda los mismos descuentos que la venta: por monto
+    // en cada línea y el global (R9-caja-4). El nombre sólo sirve para avisar
+    // qué artículo falta si luego se desactiva (R9-caja-5).
     const data = parse(
       z.object({
         type: z.enum(["quote", "held"]).default("quote"),
         customerId: uuid.nullable().optional(),
         notes: z.string().max(1000).default(""),
+        globalDiscount: z.number().min(0).max(100).default(0),
         items: z
           .array(
             z.object({
               variantId: uuid,
               qty: stockQty(10000),
               discountPercent: z.number().min(0).max(100).default(0),
+              discountAmount: amount.optional(),
+              name: z.string().max(300).optional(),
             }),
           )
           .min(1),
       }),
       body,
     );
+    const prices = new Map<string, number>(
+      (
+        await this.db.variant.findMany({
+          where: { id: { in: data.items.map((i) => i.variantId) } },
+          select: { id: true, price: true },
+        })
+      ).map((v) => [v.id, Number(v.price)]),
+    );
+    for (const i of data.items)
+      if ((i.discountAmount ?? 0) > (prices.get(i.variantId) ?? 0) * i.qty)
+        bad("El descuento por monto supera el importe de la línea.");
     return this.db.quote.create({
       data: {
         ...data,
@@ -300,18 +318,20 @@ export class AdminController {
   @Post("quotes/:id/convert")
   @Permit("sale:write")
   async convert(@Param("id") id: string, @CurrentUser() actor: Actor) {
-    const row = await this.db.quote.findFirstOrThrow({
-      where: {
-        id: parse(uuid, id),
-        userId: actor.id,
-        branchId: actor.branchId,
-        status: "open",
-      },
-    });
-    await this.db.quote.update({
-      where: { id },
+    const where = {
+      id: parse(uuid, id),
+      userId: actor.id,
+      branchId: actor.branchId,
+      status: "open",
+    };
+    const row = await this.db.quote.findFirstOrThrow({ where });
+    // Sólo se recupera una vez: dos clics a la vez no cargan la misma venta
+    // en dos carritos (R9-caja-5).
+    const { count } = await this.db.quote.updateMany({
+      where,
       data: { status: "converted" },
     });
+    if (!count) conflict("Esta venta ya se recuperó.");
     return row;
   }
   @Get("settings") @Permit("catalog:read") async settings(

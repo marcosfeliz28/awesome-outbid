@@ -4174,7 +4174,63 @@ describe("Ronda 9 · auditoría R8 de ChatGPT", () => {
 
 // Ronda 9: hallazgos confirmados de la revisión adversarial de Claude
 // (docs/validacion/ronda9-revision-adversarial.json). Un bloque por área.
-// R9-REVISION: caja
+// Área caja: ventas en espera (el resto de la caja se prueba en el navegador).
+describe("Ronda 9 · revisión · caja", () => {
+  it("R9-caja-4: la venta en espera guarda el descuento por monto, el global y el nombre, y sólo se recupera una vez", async () => {
+    const cats = await ok("/categories");
+    const p = await ok("/products", {
+      name: "QA R9 caja espera " + suffix,
+      sku: "R9CJ-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [
+        {
+          sku: "R9CJV-" + randomUUID().slice(0, 8),
+          barcode: "R9CJB-" + randomUUID().slice(0, 8),
+          price: 1500,
+          costAvg: 700,
+        },
+      ],
+    });
+    products.push(p);
+    const variantId = p.variants[0].id;
+    // Más que el importe de la línea (2 × 1,500): se rechaza como en la venta.
+    const tooMuch = await request("/quotes", {
+      type: "held",
+      items: [{ variantId, qty: 2, discountAmount: 3000.01 }],
+    });
+    expect(tooMuch.status).toBe(400);
+    const held = await ok("/quotes", {
+      type: "held",
+      globalDiscount: 5,
+      items: [
+        {
+          variantId,
+          qty: 2,
+          discountPercent: 0,
+          discountAmount: 200,
+          name: "QA R9 caja espera",
+        },
+      ],
+    });
+    const listed = (await ok("/quotes")).find((q: any) => q.id === held.id);
+    expect(Number(listed.globalDiscount)).toBe(5);
+    expect(listed.items[0]).toMatchObject({
+      variantId,
+      qty: 2,
+      discountAmount: 200,
+      name: "QA R9 caja espera",
+    });
+    // Dos clics a la vez: sólo uno recupera la venta (R9-caja-5).
+    const both = await Promise.all([
+      request("/quotes/" + held.id + "/convert", {}),
+      request("/quotes/" + held.id + "/convert", {}),
+    ]);
+    expect(both.filter((r) => r.status < 400)).toHaveLength(1);
+    expect((await ok("/quotes")).some((q: any) => q.id === held.id)).toBe(
+      false,
+    );
+  });
+});
 // R9-REVISION: offline
 // R9-REVISION: codigos
 // Área dinero: devoluciones, costo contabilizado, abonos y reportes.

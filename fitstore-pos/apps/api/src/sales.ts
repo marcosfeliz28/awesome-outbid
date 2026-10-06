@@ -25,9 +25,6 @@ import {
   derivedStockQty,
   returnShares,
   allocationCost,
-  returnedAt,
-  replayReturns,
-  moneyAmount,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -823,19 +820,6 @@ export class SalesController {
             where: { id: allocation.lotId },
             data: { qty: { increment: allocation.qty } },
           });
-        // Lo anulado vuelve a su costo, igual que en una devolución: si entre
-        // la venta y la anulación se recibió mercancía a otro costo, el
-        // promedio debe ponderar ambas (R9-dinero-4).
-        const newCost = weightedReturn(
-          variant,
-          allocation.qty,
-          allocation.unitCost,
-        );
-        await tx.variant.update({
-          where: { id: variant.id },
-          data: { costAvg: newCost },
-        });
-        variant.costAvg = newCost;
         await stockChange(
           tx,
           actor,
@@ -845,7 +829,6 @@ export class SalesController {
           data.reason,
           id,
           allocation.lotId,
-          allocation.unitCost,
         );
       }
       await tx.sale.update({
@@ -879,8 +862,6 @@ export class SalesController {
       await tx.$queryRaw`SELECT id FROM "Payment" WHERE id=${id}::uuid FOR UPDATE`;
       const payment = await tx.payment.findUniqueOrThrow({ where: { id } });
       if (payment.status === "ok") return { ok: true };
-      if (payment.status === "rejected")
-        bad("La transferencia fue rechazada; registra un abono nuevo.");
       const sale = await tx.sale.findUniqueOrThrow({
         where: { id: payment.saleId },
       });
@@ -942,44 +923,6 @@ export class SalesController {
       return { ok: true };
     });
   }
-  // Un abono por transferencia que nunca llegó se rechaza: no descuenta la
-  // deuda ni entra a la caja, y deja de bloquear devoluciones y abonos de la
-  // venta (R9-dinero-3).
-  @Post("payments/:id/reject")
-  @RequireTerminal()
-  @Permit("sale:manage")
-  async reject(
-    @Param("id") id: string,
-    @Body() body: unknown,
-    @CurrentUser() actor: Actor,
-  ) {
-    const data = parse(z.object({ reason }), body);
-    return this.db.$transaction(async (tx) => {
-      const found = await tx.payment.findFirstOrThrow({
-        where: {
-          id: parse(uuid, id),
-          sale: { branchId: actor.branchId },
-          method: "transfer",
-          entryType: "installment",
-        },
-      });
-      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${found.saleId}::uuid FOR UPDATE`;
-      await tx.$queryRaw`SELECT id FROM "Payment" WHERE id=${id}::uuid FOR UPDATE`;
-      const payment = await tx.payment.findUniqueOrThrow({ where: { id } });
-      if (payment.status === "rejected") return { ok: true };
-      if (payment.status !== "pending_verification")
-        bad("Sólo se rechaza un abono pendiente de verificar.");
-      await tx.payment.update({
-        where: { id },
-        data: { status: "rejected" },
-      });
-      await audit(tx, actor, "reject", "payment", id, payment, {
-        status: "rejected",
-        reason: data.reason,
-      });
-      return { ok: true };
-    });
-  }
   @Post("returns")
   @RequireTerminal()
   @Permit("sale:manage")
@@ -1019,7 +962,6 @@ export class SalesController {
               },
             },
           },
-          returns: true,
         },
       });
       if (sale.status !== "completed")
@@ -1069,53 +1011,25 @@ export class SalesController {
       let total = d(0),
         tax = d(0),
         cost = d(0);
-      // Importes devueltos por línea: quedan en la devolución para que los
-      // reportes usen exactamente lo registrado (R7-04).
-      const parts: { cost: number; total: number; tax: number }[] = [];
-      // Lo que ya contabilizaron las devoluciones anteriores, línea por línea.
-      const history = replayReturns(sale, sale.returns);
+      // Costo devuelto por línea: queda en la devolución para que los reportes
+      // usen exactamente lo registrado (R7-04).
+      const partCosts: number[] = [];
       for (const i of lines) {
-        const before = d(i.line.returnedQty),
-          after = before.plus(i.qty);
-        const back = (value: ReturnType<typeof d>) =>
-          returnedAt(value, i.line.qty, after).minus(
-            returnedAt(value, i.line.qty, before),
-          );
-        // Total e ITBIS con redondeo acumulado, como el costo: devolver de a
-        // una unidad suma exactamente lo cobrado (R9-dinero-2).
-        const lineTotal = back(d(i.line.lineTotal)),
-          lineTax = back(d(i.line.tax));
-        total = total.plus(lineTotal);
-        tax = tax.plus(lineTax);
+        const fraction = d(i.qty).div(i.line.qty);
+        total = total.plus(d(i.line.lineTotal).times(fraction));
+        tax = tax.plus(d(i.line.tax).times(fraction));
         // Costo devuelto: valor de las asignaciones (exacto en combos), con
         // redondeo acumulado para que varias devoluciones sumen exactamente el
         // costo de la venta.
-        let lineCost = d(0);
         if (i.restock) {
-          lineCost = back(allocationCost(i.line));
-          // La devolución que completa la línea cierra contra lo contabilizado
-          // de verdad: el costo registrado de la línea en la venta, menos lo
-          // que ya repusieron las devoluciones anteriores y lo que quedó como
-          // pérdida. Con devoluciones o ventas antiguas (rondas 3 a 7) eso
-          // difiere del redondeo acumulado; con datos nuevos es lo mismo
-          // (R9-dinero-1, R9-dinero-7).
-          const past = history.lines.get(i.line.id) ?? {
-            returned: d(0),
-            restocked: d(0),
-            waste: d(0),
-          };
-          if (after.eq(i.line.qty) && past.returned.eq(before))
-            lineCost = history.booked
-              .get(i.line.id)!
-              .minus(past.restocked)
-              .minus(past.waste);
+          const value = allocationCost(i.line);
+          const at = (returned: ReturnType<typeof d>) =>
+            d(money(value.times(returned).div(i.line.qty)));
+          const before = d(i.line.returnedQty);
+          const lineCost = at(before.plus(i.qty)).minus(at(before));
           cost = cost.plus(lineCost);
-        }
-        parts.push({
-          cost: lineCost.toNumber(),
-          total: lineTotal.toNumber(),
-          tax: lineTax.toNumber(),
-        });
+          partCosts.push(lineCost.toNumber());
+        } else partCosts.push(0);
         await tx.saleItem.update({
           where: { id: i.line.id },
           data: { returnedQty: { increment: i.qty } },
@@ -1180,27 +1094,6 @@ export class SalesController {
       const debtReduction = money(
         d(sale.creditBalance).lt(total) ? sale.creditBalance : total,
       );
-      // Un abono por transferencia pendiente todavía no descontó la deuda. Si
-      // la devolución la deja por debajo de ese abono, al verificarlo no
-      // cabría y el cliente no recibiría su dinero: primero se verifica o se
-      // rechaza (R9-dinero-3).
-      const pending = await tx.payment.aggregate({
-        where: {
-          saleId: sale.id,
-          entryType: "installment",
-          status: "pending_verification",
-        },
-        _sum: { amount: true },
-      });
-      if (
-        d(pending._sum.amount ?? 0).gt(0) &&
-        d(sale.creditBalance)
-          .minus(debtReduction)
-          .lt(pending._sum.amount ?? 0)
-      )
-        bad(
-          "Verifica o rechaza primero los abonos por transferencia pendientes de esta venta.",
-        );
       const refundAmount = money(total.minus(debtReduction));
       if (debtReduction)
         await tx.sale.update({
@@ -1219,7 +1112,9 @@ export class SalesController {
           refundAmount,
           cashSessionId: data.cashSessionId,
           userId: actor.id,
-          items: json(data.items.map((it, k) => ({ ...it, ...parts[k] }))),
+          items: json(
+            data.items.map((it, k) => ({ ...it, cost: partCosts[k] })),
+          ),
           branchId: actor.branchId,
         },
       });
@@ -1313,9 +1208,7 @@ export class SalesController {
       z.object({
         offlineUuid: uuid,
         cashSessionId: uuid,
-        // Centavos exactos (R9-dinero-5): lo guardado en el pago es lo que
-        // descuenta la deuda y lo que compara un reintento.
-        amount: moneyAmount().transform((v) => money(v)),
+        amount: z.number().positive().max(100000000),
         method: z.enum(["cash", "card", "transfer"]),
         bank: z.string().max(100).optional(),
         reference: z.string().max(100).optional(),
