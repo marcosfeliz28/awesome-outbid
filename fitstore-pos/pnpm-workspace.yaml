@@ -8,6 +8,9 @@ allowBuilds:
   "@prisma/client": true
   "@prisma/engines": true
   "@embedded-postgres/linux-x64": true
+  "@embedded-postgres/windows-x64": true
+  "@embedded-postgres/darwin-arm64": true
+  "@embedded-postgres/darwin-x64": true
   esbuild: true
   prisma: true
   "@scarf/scarf": false
