@@ -177,22 +177,22 @@ Especificación: `docs/tienda/CUADRE_REPORTES_FACTURA.md`, tomada de los impreso
   - en el cuadre, las devoluciones cuentan distinto que en los reportes;
   - la emisión fiscal (e-CF), que decide la contable (`docs/fiscal/`).
 
-## Verificación final (código completo de la ronda 9, base nueva, API y PWA compiladas)
+## Verificación final (código combinado: nube y PC)
+
+Base nueva, con la API y la PWA compiladas, en Linux con PostgreSQL 16. La PC corrió las mismas suites en Windows con PostgreSQL 18 en UTC-4: integración 136/136 y navegador 54/55. Su único fallo, el selector renombrado de recepción, está corregido aquí.
 
 | Comprobación                                        | Resultado                                                                                                               | Registro (`docs/validacion/`)        |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| `pnpm check`                                        | TypeScript, ESLint, **98** unitarias y compilación aprobadas.                                                           | `ronda9-check.txt`                   |
-| Integración con la API compilada                    | **130/130**.                                                                                                            | `ronda9-integracion-compilada.txt`   |
-| Navegador                                           | **41/42**. Falla de forma intermitente R9-caja-5 (recuperar una venta en espera): repetida 5 veces, pasó 2.             | `ronda9-navegador.txt`               |
+| `pnpm check`                                        | TypeScript, ESLint, **129** unitarias y compilación aprobadas.                                                          | `ronda9-check.txt`                   |
+| Integración con la API compilada                    | **137/137**.                                                                                                            | `ronda9-integracion-compilada.txt`   |
+| Navegador                                           | **55/55**.                                                                                                              | `ronda9-navegador.txt`               |
 | Las 3 regresiones de R8 con el código de la ronda 8 | Fallan.                                                                                                                 | `ronda9-regresiones-con-ronda8.txt`  |
 | Inventario real                                     | Sin `--sin-lotes` se detiene sin cambios. Con la opción carga 616 productos y 3158 unidades. La recarga no cambia nada. | `ronda9-tienda/carga-inventario.txt` |
 
-**Intermitencias conocidas (sin resolver):**
+**Intermitencias vistas antes de combinar** (en estas corridas finales pasaron):
 
-- R9-caja-5 en el navegador.
-- «PIN de gerente tiene contador propio» en integración: 10 solicitudes concurrentes; falló 1 de 3 corridas completas, con un estado distinto de 400 (`ronda9-integracion-intermitente.txt`).
-
-**Windows y zona horaria:** lo corrige la sesión de la PC. Cuando lo suba, se agrega en una sección propia; en este ZIP queda lo que esté subido al momento de armarlo.
+- R9-caja-5 (recuperar una venta en espera): 2 de 5 repeticiones.
+- «PIN de gerente tiene contador propio» (10 solicitudes concurrentes): 1 de 3 corridas. Ver `ronda9-integracion-intermitente.txt`.
 
 Se conservan todas las regresiones anteriores.
 

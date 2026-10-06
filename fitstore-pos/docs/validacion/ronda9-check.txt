@@ -19,21 +19,31 @@ $ vitest run
 
  RUN  v3.2.7 /home/user/awesome-outbid/fitstore-pos
 
- ✓ packages/shared/src/business.test.ts (34 tests) 96ms
- ✓ tests/inventario.test.ts (8 tests) 631ms
- ✓ tests/realtime.test.ts (6 tests) 19ms
- ✓ tests/invoice.test.ts (50 tests) 6455ms
-   ✓ emparejamiento · catálogo real de la tienda > cada producto se encuentra por su propio nombre  1526ms
-   ✓ emparejamiento · conservador con el catálogo real > otra marca u otra línea nunca queda elegida  466ms
-   ✓ Ronda 9 · revisión · facturas > la equivalencia del proveedor gana al código de la tienda; una descripción que contradice el código no se elige (R9-facturas-2)  798ms
-   ✓ Ronda 9 · revisión · facturas > tamaños en softgels, caplets, liqui-caps, serv. y packs (R9-facturas-3)  391ms
-   ✓ Ronda 9 · revisión · facturas > el número del tono identifica el producto (R9-facturas-4)  1114ms
-   ✓ Ronda 9 · revisión · facturas > un tono de palabras que el nombre no tiene no cae en otro tono (R9-facturas-5)  484ms
+ ✓ tests/inventario.test.ts (8 tests) 532ms
+ ✓ packages/shared/src/business.test.ts (34 tests) 74ms
+ ✓ tests/e2e-higiene.test.ts (11 tests) 653ms
+   ✓ suite E2E · no ensucia el repositorio (WP-3) > una corrida normal deja las capturas en la carpeta de resultados, que git ignora; sólo FITSTORE_ACTUALIZAR_CAPTURAS=1 las lleva a docs/  601ms
+stderr | tests/portabilidad.test.ts > Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol
+No se pudo iniciar ausente: spawn orden-fitstore-que-no-existe ENOENT
 
- Test Files  4 passed (4)
-      Tests  98 passed (98)
-   Start at  09:56:24
-   Duration  8.72s (transform 672ms, setup 0ms, collect 3.48s, tests 7.20s, environment 1ms, prepare 535ms)
+ ✓ tests/realtime.test.ts (6 tests) 13ms
+ ✓ tests/portabilidad.test.ts (20 tests) 6143ms
+   ✓ Portabilidad · instalación y finales de línea > ningún archivo de código o configuración tiene finales CRLF  706ms
+   ✓ Portabilidad · verificación (scripts/verify.mjs) > ejecuta pnpm en esta plataforma y devuelve el código de salida  2057ms
+   ✓ Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol  2857ms
+ ✓ tests/invoice.test.ts (50 tests) 7005ms
+   ✓ emparejamiento · catálogo real de la tienda > cada producto se encuentra por su propio nombre  1819ms
+   ✓ emparejamiento · catálogo real de la tienda > tamaños con decimales y miles: el bote correcto, nunca otro tamaño  315ms
+   ✓ emparejamiento · conservador con el catálogo real > otra marca u otra línea nunca queda elegida  472ms
+   ✓ Ronda 9 · revisión · facturas > la equivalencia del proveedor gana al código de la tienda; una descripción que contradice el código no se elige (R9-facturas-2)  883ms
+   ✓ Ronda 9 · revisión · facturas > tamaños en softgels, caplets, liqui-caps, serv. y packs (R9-facturas-3)  514ms
+   ✓ Ronda 9 · revisión · facturas > el número del tono identifica el producto (R9-facturas-4)  1026ms
+   ✓ Ronda 9 · revisión · facturas > un tono de palabras que el nombre no tiene no cae en otro tono (R9-facturas-5)  486ms
+
+ Test Files  6 passed (6)
+      Tests  129 passed (129)
+   Start at  10:27:35
+   Duration  8.91s (transform 994ms, setup 0ms, collect 3.03s, tests 14.42s, environment 2ms, prepare 893ms)
 
 [WARN] Unsupported engine: wanted: {"node":">=24"} (current: {"node":"v22.22.0","pnpm":"11.19.0"})
 $ pnpm --filter @fitstore/web build && pnpm --filter @fitstore/api build
@@ -41,28 +51,36 @@ $ pnpm --filter @fitstore/web build && pnpm --filter @fitstore/api build
 $ tsc --noEmit && vite build
 vite v7.3.6 building client environment for production...
 transforming...
+
+@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2 referenced in @fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+@fontsource-variable/inter/files/inter-latin-wght-normal.woff2 referenced in @fontsource-variable/inter/files/inter-latin-wght-normal.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-ext-wght-normal.woff2 referenced in @fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-ext-wght-normal.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2 referenced in @fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2 didn't resolve at build time, it will remain unchanged to be resolved at runtime
 ✓ 2523 modules transformed.
 Generated an empty chunk: "react-vendor".
 rendering chunks...
 computing gzip size...
 dist/manifest.webmanifest                          0.30 kB
 dist/index.html                                    0.66 kB │ gzip:   0.38 kB
-dist/assets/index-CQG5PkKm.css                    72.01 kB │ gzip:  15.10 kB
+dist/assets/index-OefmHWlm.css                    73.52 kB │ gzip:  15.40 kB
 dist/assets/react-vendor-l0sNRNKZ.js               0.00 kB │ gzip:   0.02 kB
 dist/assets/workbox-window.prod.es5-BBnX5xw4.js    5.75 kB │ gzip:   2.36 kB
 dist/assets/charts-B7PvsTqR.js                   373.94 kB │ gzip: 110.30 kB
 dist/assets/index-iPjrJSYw.js                    415.98 kB │ gzip: 108.68 kB
-dist/assets/index-DTAKb2Pn.js                    682.88 kB │ gzip: 211.83 kB
+dist/assets/index-CnfuHXyN.js                    682.88 kB │ gzip: 211.83 kB
 
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 11.54s
+✓ built in 12.10s
 
 PWA v1.3.0
 mode      generateSW
-precache  20 entries (1520.25 KiB)
+precache  20 entries (1521.72 KiB)
 files generated
   dist/sw.js
   dist/workbox-2fbc6a65.js

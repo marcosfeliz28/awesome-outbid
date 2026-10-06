@@ -7,24 +7,28 @@
   },
   "suites": {
     "check": {
-      "unitTests": 98,
+      "unitTests": 129,
       "passed": true
     },
     "integrationCompiled": {
-      "passed": 130,
-      "total": 130,
-      "intermittent": "PIN de gerente concurrente: 1 de 3 corridas"
+      "passed": 137,
+      "total": 137,
+      "intermittentBefore": "PIN de gerente concurrente: 1 de 3 corridas"
     },
     "e2e": {
-      "passed": 41,
-      "total": 42,
-      "intermittent": "R9-caja-5 (2 de 5)"
+      "passed": 55,
+      "total": 55,
+      "intermittentBefore": "R9-caja-5: 2 de 5"
     },
     "inventarioReal": {
       "productos": 616,
       "unidades": 3158,
       "recargaSinCambios": true,
       "evidence": "docs/validacion/ronda9-tienda/carga-inventario.txt"
+    },
+    "windows": {
+      "integration": "136/136",
+      "e2e": "54/55 (selector corregido en la nube)"
     }
   },
   "findings": [
