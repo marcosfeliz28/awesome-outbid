@@ -1,14 +1,39 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
+// fileURLToPath y no URL.pathname: en Windows pathname es "/C:/…", una ruta
+// que no existe, y .env no se cargaba.
 requireApi("dotenv").config({
-  path: new URL("../.env", import.meta.url).pathname,
+  path: fileURLToPath(new URL("../.env", import.meta.url)),
   quiet: true,
 });
+const apiDir = fileURLToPath(new URL("../apps/api", import.meta.url));
+// Ejecuta node en apps/api sin bloquear este proceso. Con spawnSync el bucle
+// de eventos se detiene: si pasan más de 5 s, la API cierra las conexiones
+// inactivas sin que la prueba lo vea y la petición siguiente falla con
+// ECONNRESET.
+function runNode(args: string[], env: NodeJS.ProcessEnv, timeout?: number) {
+  return new Promise<{ status: number | null; stdout: string; stderr: string }>(
+    (resolve, reject) => {
+      const child = spawn(process.execPath, args, {
+        cwd: apiDir,
+        env,
+        timeout,
+      });
+      let stdout = "",
+        stderr = "";
+      child.stdout.setEncoding("utf8").on("data", (d) => (stdout += d));
+      child.stderr.setEncoding("utf8").on("data", (d) => (stderr += d));
+      child.on("error", reject);
+      child.on("close", (status) => resolve({ status, stdout, stderr }));
+    },
+  );
+}
 const { PrismaClient } = requireApi("@prisma/client");
 const fixtureDb = new PrismaClient();
 const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
@@ -578,28 +603,29 @@ describe("Regresiones de Claude", () => {
       ),
     ).toBe(true);
   });
-  it("6: producción rechaza secretos de ejemplo o repetidos antes de conectar", () => {
+  it("6: producción rechaza secretos de ejemplo o repetidos antes de conectar", async () => {
     for (const secret of [
       "replace-with-a-random-secret-of-at-least-32-characters",
       "a".repeat(64),
       "0123456789abcdef".repeat(4),
     ]) {
-      const c = spawnSync(process.execPath, ["dist/main.js"], {
-        cwd: new URL("../apps/api", import.meta.url),
-        env: {
+      // Cada arranque tarda unos 2 s en Windows sin carga: 4 s de límite no
+      // dejaban margen con el equipo ocupado.
+      const c = await runNode(
+        ["dist/main.js"],
+        {
           ...process.env,
           NODE_ENV: "production",
           JWT_SECRET: secret,
           DATABASE_URL: "postgresql://invalid:invalid@127.0.0.1:1/invalid",
         },
-        timeout: 4000,
-        encoding: "utf8",
-      });
+        20000,
+      );
       expect(c.status).toBe(1);
       expect(c.stderr).toContain("JWT_SECRET");
       expect(c.stderr).not.toContain("Prisma");
     }
-  });
+  }, 70000);
   it("7: conflicto offline devuelve español seguro", async () => {
     const r = await ok("/sales/sync", { sales: [input(randomUUID(), 118)] });
     expect(r.results[0].status).toBe("conflict");
@@ -3810,14 +3836,16 @@ const runImport = async (rows: unknown[][], ...flags: string[]) => {
   rows.forEach((r) => ws.addRow(r));
   const file = join(mkdtempSync(join(tmpdir(), "r8-")), "inventario.xlsx");
   await wb.xlsx.writeFile(file);
-  const run = spawnSync(
-    new URL("../apps/api/node_modules/.bin/tsx", import.meta.url).pathname,
-    ["scripts/import-inventario.ts", file, ...flags],
-    {
-      cwd: new URL("../apps/api", import.meta.url).pathname,
-      env: process.env,
-      encoding: "utf8",
-    },
+  // tsx se lanza con node y su entrada resuelta: el atajo de .bin es un guion
+  // de sh y en Windows spawn responde ENOENT.
+  const run = await runNode(
+    [
+      requireApi.resolve("tsx/cli"),
+      "scripts/import-inventario.ts",
+      file,
+      ...flags,
+    ],
+    process.env,
   );
   return { status: run.status, out: run.stdout + run.stderr };
 };
