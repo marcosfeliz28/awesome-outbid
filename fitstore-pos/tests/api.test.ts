@@ -5652,7 +5652,8 @@ describe("Ronda 9 · revisión · seguridad", () => {
 // denominaciones y los dos reportes del día, según los impresos de la tienda
 // (docs/tienda/CUADRE_REPORTES_FACTURA.md).
 describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
-  const ip = "198.18." + ((Date.now() % 200) + 1) + "." + ((Date.now() % 250) + 1);
+  const ip =
+    "198.18." + ((Date.now() % 200) + 1) + "." + ((Date.now() % 250) + 1);
   const password = "FitStore-QA-2026!";
   async function call(
     path: string,
@@ -5678,7 +5679,12 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     }
     return { status: r.status, body, type: r.headers.get("content-type") };
   }
-  async function must(path: string, data?: unknown, as = token, method?: string) {
+  async function must(
+    path: string,
+    data?: unknown,
+    as = token,
+    method?: string,
+  ) {
     const r = await call(path, data, as, method);
     if (r.status >= 400)
       throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
@@ -5708,7 +5714,13 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     const terminalId = await enroll(auth.accessToken, "QA Tienda " + label);
     return { ...user, token: auth.accessToken, terminalId };
   }
-  async function product(label: string, price: number, costAvg: number, taxRate: number, stock: number) {
+  async function product(
+    label: string,
+    price: number,
+    costAvg: number,
+    taxRate: number,
+    stock: number,
+  ) {
     const cats = await must("/categories");
     const p = await must("/products", {
       name: "QA Tienda " + label + " " + suffix,
@@ -5756,7 +5768,11 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     settingsBefore = await must("/settings");
     await must(
       "/settings",
-      { ...settingsBefore, allowCreditSales: true, creditApprovalThreshold: 100000 },
+      {
+        ...settingsBefore,
+        allowCreditSales: true,
+        creditApprovalThreshold: 100000,
+      },
       token,
       "PUT",
     );
@@ -5774,7 +5790,11 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       { openingAmount: 500 },
       cashier.token,
     );
-    s2 = await must("/cash-sessions/open", { openingAmount: 0 }, cashier2.token);
+    s2 = await must(
+      "/cash-sessions/open",
+      { openingAmount: 0 },
+      cashier2.token,
+    );
   });
   afterAll(async () => {
     if (settingsBefore)
@@ -5784,9 +5804,9 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       [s2, cashier2],
     ])
       if (s && who) {
-        const current = (await must("/cash-sessions", undefined, who.token)).find(
-          (i: any) => i.id === s.id,
-        );
+        const current = (
+          await must("/cash-sessions", undefined, who.token)
+        ).find((i: any) => i.id === s.id);
         if (current && !current.closedAt)
           await call(
             "/cash-sessions/" + s.id + "/close",
@@ -5833,8 +5853,16 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     expect((await must("/settings", undefined, cashier.token)).logo).toBe(png);
     // Guardar sin enviar el logo lo conserva (el formulario no tiene que reenviarlo).
     const { logo: _logo, ...withoutLogo } = saved;
-    await must("/settings", { ...withoutLogo, phone2: "809-555-0103" }, token, "PUT");
-    expect(await must("/settings")).toMatchObject({ logo: png, phone2: "809-555-0103" });
+    await must(
+      "/settings",
+      { ...withoutLogo, phone2: "809-555-0103" },
+      token,
+      "PUT",
+    );
+    expect(await must("/settings")).toMatchObject({
+      logo: png,
+      phone2: "809-555-0103",
+    });
     // Sólo imágenes.
     const html = await call(
       "/settings",
@@ -5870,7 +5898,11 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     });
     expect(tooBig.status).toBe(400);
     const fake = new FormData();
-    fake.append("file", new Blob([Buffer.from("<svg onload=alert(1)>")], { type: "image/png" }), "x.png");
+    fake.append(
+      "file",
+      new Blob([Buffer.from("<svg onload=alert(1)>")], { type: "image/png" }),
+      "x.png",
+    );
     expect(
       (
         await fetch(base + "/settings/logo", {
@@ -5882,12 +5914,19 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     ).toBe(400);
     // La cajera no cambia el logo.
     const sellerForm = new FormData();
-    sellerForm.append("file", new Blob([pngBytes(100)], { type: "image/png" }), "l.png");
+    sellerForm.append(
+      "file",
+      new Blob([pngBytes(100)], { type: "image/png" }),
+      "l.png",
+    );
     expect(
       (
         await fetch(base + "/settings/logo", {
           method: "POST",
-          headers: { Authorization: "Bearer " + cashier.token, "X-Forwarded-For": ip },
+          headers: {
+            Authorization: "Bearer " + cashier.token,
+            "X-Forwarded-For": ip,
+          },
           body: sellerForm,
         })
       ).status,
@@ -5897,7 +5936,8 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     expect((await must("/settings")).logo).toBeUndefined();
     // Tasa inválida.
     expect(
-      (await call("/settings", { ...withoutLogo, usdRate: -1 }, token, "PUT")).status,
+      (await call("/settings", { ...withoutLogo, usdRate: -1 }, token, "PUT"))
+        .status,
     ).toBe(400);
   });
 
@@ -5908,9 +5948,17 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       token,
       "PATCH",
     );
-    expect(saved).toMatchObject({ registerNumber, registerName: "GPRO STORE RD" });
-    const listed = (await must("/terminals")).find((t: any) => t.id === cashier.terminalId);
-    expect(listed).toMatchObject({ registerNumber, registerName: "GPRO STORE RD" });
+    expect(saved).toMatchObject({
+      registerNumber,
+      registerName: "GPRO STORE RD",
+    });
+    const listed = (await must("/terminals")).find(
+      (t: any) => t.id === cashier.terminalId,
+    );
+    expect(listed).toMatchObject({
+      registerNumber,
+      registerName: "GPRO STORE RD",
+    });
     // Dos cajas no comparten número.
     const dup = await call(
       "/terminals/" + cashier2.terminalId + "/register",
@@ -5937,12 +5985,19 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       ).status,
     ).toBe(403);
     await must("/users/" + cashier.id, { cashierNumber }, token, "PATCH");
-    await must("/users/" + cashier2.id, { cashierNumber: cashierNumber + 1 }, token, "PATCH");
-    expect((await must("/users")).find((u: any) => u.id === cashier.id).cashierNumber).toBe(
-      cashierNumber,
+    await must(
+      "/users/" + cashier2.id,
+      { cashierNumber: cashierNumber + 1 },
+      token,
+      "PATCH",
     );
     expect(
-      (await call("/users/" + cashier2.id, { cashierNumber }, token, "PATCH")).status,
+      (await must("/users")).find((u: any) => u.id === cashier.id)
+        .cashierNumber,
+    ).toBe(cashierNumber);
+    expect(
+      (await call("/users/" + cashier2.id, { cashierNumber }, token, "PATCH"))
+        .status,
     ).toBe(400);
     // Al crear un usuario también se puede indicar.
     const roles = await must("/roles");
@@ -5959,11 +6014,18 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
   });
 
   it("Tienda-contraentrega: se vende, descuenta stock, queda pendiente y se cobra una sola vez en otra caja", async () => {
-    const stockBefore = (await fixtureDb.variant.findUniqueOrThrow({ where: { id: p1.id } })).stock;
-    const r = await sell(cashier, s1, [{ variantId: p1.id, qty: 1 }], [
-      { method: "transfer", amount: 180, bank: "BHD", reference: "QA-T2" },
-      { method: "cod", amount: 1000 },
-    ]);
+    const stockBefore = (
+      await fixtureDb.variant.findUniqueOrThrow({ where: { id: p1.id } })
+    ).stock;
+    const r = await sell(
+      cashier,
+      s1,
+      [{ variantId: p1.id, qty: 1 }],
+      [
+        { method: "transfer", amount: 180, bank: "BHD", reference: "QA-T2" },
+        { method: "cod", amount: 1000 },
+      ],
+    );
     expect(r.status).toBe(201);
     sold.f = r.body;
     expect(Number(sold.f.creditBalance)).toBe(1000);
@@ -5971,20 +6033,10 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       amount: "1000",
       status: "pending",
     });
-    const stockAfter = (await fixtureDb.variant.findUniqueOrThrow({ where: { id: p1.id } })).stock;
+    const stockAfter = (
+      await fixtureDb.variant.findUniqueOrThrow({ where: { id: p1.id } })
+    ).stock;
     expect(Number(stockBefore) - Number(stockAfter)).toBe(1);
-    // Contraentrega y crédito no se mezclan en una venta.
-    const mixed = await sell(
-      cashier,
-      s1,
-      [{ variantId: p2.id, qty: 1 }],
-      [
-        { method: "credit", amount: 250 },
-        { method: "cod", amount: 250 },
-      ],
-      { customerId: customer.id, creditDueDate: "2030-01-01T12:00:00.000Z" },
-    );
-    expect(mixed.status).toBe(400);
     // La lista de pendientes la ve cualquier cajera de la sucursal.
     const pending = await must("/cod/pending", undefined, cashier2.token);
     expect(pending.find((p: any) => p.saleId === sold.f.id)).toMatchObject({
@@ -5993,17 +6045,35 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       pending: 1000,
       pendingVerification: 0,
     });
-    // Sólo efectivo o transferencia.
+    // Con tarjeta hace falta la referencia del voucher.
     const byCard = await call(
       "/sales/" + sold.f.id + "/cod-collections",
-      { offlineUuid: randomUUID(), cashSessionId: s2.id, amount: 1000, method: "card" },
+      {
+        offlineUuid: randomUUID(),
+        cashSessionId: s2.id,
+        amount: 1000,
+        method: "card",
+      },
       cashier2.token,
     );
     expect(byCard.status).toBe(400);
     const key = randomUUID();
-    const body = { offlineUuid: key, cashSessionId: s2.id, amount: 1000, method: "cash" };
-    const first = await must("/sales/" + sold.f.id + "/cod-collections", body, cashier2.token);
-    const again = await must("/sales/" + sold.f.id + "/cod-collections", body, cashier2.token);
+    const body = {
+      offlineUuid: key,
+      cashSessionId: s2.id,
+      amount: 1000,
+      method: "cash",
+    };
+    const first = await must(
+      "/sales/" + sold.f.id + "/cod-collections",
+      body,
+      cashier2.token,
+    );
+    const again = await must(
+      "/sales/" + sold.f.id + "/cod-collections",
+      body,
+      cashier2.token,
+    );
     expect(again.id).toBe(first.id);
     expect(
       (
@@ -6015,10 +6085,15 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       ).status,
     ).toBe(400);
     expect(
-      Number((await fixtureDb.sale.findUniqueOrThrow({ where: { id: sold.f.id } })).creditBalance),
+      Number(
+        (await fixtureDb.sale.findUniqueOrThrow({ where: { id: sold.f.id } }))
+          .creditBalance,
+      ),
     ).toBe(0);
     expect(
-      await fixtureDb.payment.count({ where: { saleId: sold.f.id, entryType: "installment" } }),
+      await fixtureDb.payment.count({
+        where: { saleId: sold.f.id, entryType: "installment" },
+      }),
     ).toBe(1);
     // Ya cobrada: no aparece y no admite otro cobro.
     expect(
@@ -6041,16 +6116,20 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     expect(log?.userId).toBe(cashier2.id);
     // La caja que recibió el dinero lo espera en efectivo.
     expect(
-      (await must("/cash-sessions", undefined, cashier2.token)).find((c: any) => c.id === s2.id)
-        .expected.cash,
+      (await must("/cash-sessions", undefined, cashier2.token)).find(
+        (c: any) => c.id === s2.id,
+      ).expected.cash,
     ).toBe(1000);
   });
 
   it("Tienda-contraentrega: el cobro por transferencia queda por verificar y un gerente lo confirma", async () => {
     // La vende y la cobra la caja 2 (su cuadre lo comprueba más abajo).
-    const r = await sell(cashier2, s2, [{ variantId: p2.id, qty: 1 }], [
-      { method: "cod", amount: 500 },
-    ]);
+    const r = await sell(
+      cashier2,
+      s2,
+      [{ variantId: p2.id, qty: 1 }],
+      [{ method: "cod", amount: 500 }],
+    );
     expect(r.status).toBe(201);
     // Venta sin cliente: la contraentrega no lo exige.
     expect(r.body.customerId ?? null).toBeNull();
@@ -6081,31 +6160,265 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     sold.codTransfer = r.body;
   });
 
+  it("Tienda-contraentrega: se combina con crédito, se cobra con tarjeta (referencia) y guarda la foto de la evidencia", async () => {
+    // Caja propia para no alterar los cuadres de las cajas 1 y 2.
+    const cashier3 = await newCashier("caja3");
+    const s3 = await must(
+      "/cash-sessions/open",
+      { openingAmount: 0 },
+      cashier3.token,
+    );
+    const upload = async (
+      paymentId: string,
+      bytes: Buffer,
+      type: string,
+      as = cashier3.token,
+    ) => {
+      const form = new FormData();
+      form.append(
+        "file",
+        new Blob([bytes], { type }),
+        "evidencia." + type.split("/")[1],
+      );
+      const r = await fetch(base + "/payments/" + paymentId + "/proof", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + as, "X-Forwarded-For": ip },
+        body: form,
+      });
+      let body: any = await r.text();
+      try {
+        body = JSON.parse(body);
+      } catch {
+        // texto plano
+      }
+      return { status: r.status, body };
+    };
+    const png = (size: number) =>
+      Buffer.concat([
+        Buffer.from("89504e470d0a1a0a", "hex"),
+        Buffer.alloc(size - 8, 1),
+      ]);
+    const jpeg = (size: number) =>
+      Buffer.concat([Buffer.from("ffd8ff", "hex"), Buffer.alloc(size - 3, 1)]);
+    try {
+      // Adelanto a crédito y el resto contraentrega en la misma venta.
+      const r = await sell(
+        cashier3,
+        s3,
+        [{ variantId: p2.id, qty: 1 }],
+        [
+          { method: "credit", amount: 250 },
+          { method: "cod", amount: 250 },
+        ],
+        { customerId: customer.id, creditDueDate: "2030-01-01T12:00:00.000Z" },
+      );
+      expect(r.status).toBe(201);
+      expect(Number(r.body.creditBalance)).toBe(500);
+      // Pendiente de contraentrega: sólo la parte de contraentrega.
+      expect(
+        (await must("/cod/pending", undefined, cashier3.token)).find(
+          (p: any) => p.saleId === r.body.id,
+        ),
+      ).toMatchObject({ codAmount: 250, pending: 250, collections: [] });
+      const path = "/sales/" + r.body.id + "/cod-collections";
+      // Tarjeta sin referencia: 400.
+      expect(
+        (
+          await call(
+            path,
+            {
+              offlineUuid: randomUUID(),
+              cashSessionId: s3.id,
+              amount: 250,
+              method: "card",
+            },
+            cashier3.token,
+          )
+        ).status,
+      ).toBe(400);
+      const body = {
+        offlineUuid: randomUUID(),
+        cashSessionId: s3.id,
+        amount: 250,
+        method: "card",
+        reference: "VOUCHER-QA-77",
+      };
+      const paid = await must(path, body, cashier3.token);
+      expect(paid).toMatchObject({
+        method: "card",
+        status: "ok",
+        reference: "VOUCHER-QA-77",
+      });
+      expect(paid.proofUrl ?? null).toBeNull();
+      // Mismo UUID: el mismo cobro.
+      expect((await must(path, body, cashier3.token)).id).toBe(paid.id);
+      // Cobrada la contraentrega: sale de la lista; el crédito sigue pendiente.
+      expect(
+        (await must("/cod/pending", undefined, cashier3.token)).some(
+          (p: any) => p.saleId === r.body.id,
+        ),
+      ).toBe(false);
+      expect(
+        Number(
+          (await fixtureDb.sale.findUniqueOrThrow({ where: { id: r.body.id } }))
+            .creditBalance,
+        ),
+      ).toBe(250);
+      // Foto de evidencia: jpg/png/webp de hasta 2 MB; no cualquier archivo.
+      expect(
+        (
+          await upload(
+            paid.id,
+            Buffer.from("<svg onload=alert(1)>"),
+            "image/png",
+          )
+        ).status,
+      ).toBe(400);
+      expect(
+        (await upload(paid.id, png(2 * 1024 * 1024 + 1), "image/png")).status,
+      ).toBe(400);
+      // Otra cajera (sin sale:manage) no sube la evidencia de un cobro ajeno.
+      expect(
+        (await upload(paid.id, jpeg(2048), "image/jpeg", cashier.token)).status,
+      ).toBe(403);
+      const saved = await upload(paid.id, jpeg(2048), "image/jpeg");
+      expect(saved.status).toBe(201);
+      expect(saved.body.proofUrl).toMatch(/^data:image\/jpeg;base64,/);
+      // Se puede reemplazar (p. ej. foto borrosa) y queda en el pago de la venta.
+      const replaced = await upload(paid.id, png(2 * 1024 * 1024), "image/png");
+      expect(replaced.status).toBe(201);
+      expect(replaced.body.proofUrl).toMatch(/^data:image\/png;base64,/);
+      const stored = await fixtureDb.payment.findUniqueOrThrow({
+        where: { id: paid.id },
+      });
+      expect(stored.proofUrl).toBe(replaced.body.proofUrl);
+      const detail = (await must("/sales", undefined, ownerToken)).find(
+        (s: any) => s.id === r.body.id,
+      );
+      expect(detail.payments.find((p: any) => p.id === paid.id).proofUrl).toBe(
+        replaced.body.proofUrl,
+      );
+      // La foto también acompaña al cobro en el cuadre de la caja que lo recibió.
+      const closed = await must(
+        "/cash-sessions/" + s3.id + "/close",
+        { countedCash: 0 },
+        cashier3.token,
+      );
+      expect(closed.differences).toEqual({ cash: 0, card: 0, transfer: 0 });
+      const cuadre = await must(
+        "/cash-sessions/" + s3.id + "/cuadre",
+        undefined,
+        ownerToken,
+      );
+      expect(cuadre.cod.collected).toMatchObject({
+        cash: 0,
+        card: 250,
+        transfer: 0,
+        total: 250,
+      });
+      expect(cuadre.cod.rows).toEqual([
+        expect.objectContaining({
+          paymentId: paid.id,
+          method: "card",
+          amount: 250,
+          reference: "VOUCHER-QA-77",
+          proofUrl: replaced.body.proofUrl,
+        }),
+      ]);
+      // La evidencia de un abono que no existe: 404.
+      expect((await upload(randomUUID(), jpeg(64), "image/jpeg")).status).toBe(
+        404,
+      );
+    } finally {
+      const current = (
+        await must("/cash-sessions", undefined, cashier3.token)
+      ).find((i: any) => i.id === s3.id);
+      if (current && !current.closedAt)
+        await call(
+          "/cash-sessions/" + s3.id + "/close",
+          { countedCash: 0 },
+          cashier3.token,
+        );
+    }
+  });
+
   it("Tienda-cuadre: cierre por denominaciones, vale, dólares y entregado/dejado con el cuadre completo al centavo", async () => {
     const card = { cardLast4: "4242", approvalCode: "QA-A1" };
     // a) efectivo con cambio: paga 1,500 por 1,180.
-    sold.a = (await sell(cashier, s1, [{ variantId: p1.id, qty: 1 }], [{ method: "cash", amount: 1500 }])).body;
+    sold.a = (
+      await sell(
+        cashier,
+        s1,
+        [{ variantId: p1.id, qty: 1 }],
+        [{ method: "cash", amount: 1500 }],
+      )
+    ).body;
     expect(sold.a.payments[0]).toMatchObject({ amount: "1180", change: "320" });
     // b) tarjeta, 2 unidades.
-    sold.b = (await sell(cashier, s1, [{ variantId: p2.id, qty: 2 }], [{ method: "card", amount: 1000, ...card }])).body;
+    sold.b = (
+      await sell(
+        cashier,
+        s1,
+        [{ variantId: p2.id, qty: 2 }],
+        [{ method: "card", amount: 1000, ...card }],
+      )
+    ).body;
     // c) transferencia.
-    sold.c = (await sell(cashier, s1, [{ variantId: p2.id, qty: 1 }], [{ method: "transfer", amount: 500, bank: "BHD", reference: "QA-T1" }])).body;
+    sold.c = (
+      await sell(
+        cashier,
+        s1,
+        [{ variantId: p2.id, qty: 1 }],
+        [{ method: "transfer", amount: 500, bank: "BHD", reference: "QA-T1" }],
+      )
+    ).body;
     // d) crédito.
     sold.d = (
-      await sell(cashier, s1, [{ variantId: p1.id, qty: 1 }], [{ method: "credit", amount: 1180 }], {
-        customerId: customer.id,
-        creditDueDate: "2030-01-01T12:00:00.000Z",
-      })
+      await sell(
+        cashier,
+        s1,
+        [{ variantId: p1.id, qty: 1 }],
+        [{ method: "credit", amount: 1180 }],
+        {
+          customerId: customer.id,
+          creditDueDate: "2030-01-01T12:00:00.000Z",
+        },
+      )
     ).body;
     expect(sold.d.number).toBeTruthy();
     // e) descuento de 10 %: 450 en efectivo.
-    sold.e = (await sell(cashier, s1, [{ variantId: p2.id, qty: 1, discountPercent: 10 }], [{ method: "cash", amount: 450 }])).body;
+    sold.e = (
+      await sell(
+        cashier,
+        s1,
+        [{ variantId: p2.id, qty: 1, discountPercent: 10 }],
+        [{ method: "cash", amount: 450 }],
+      )
+    ).body;
     expect(Number(sold.e.discountTotal)).toBe(50);
     // g) venta anulada (ticket nulo).
-    sold.g = (await sell(cashier, s1, [{ variantId: p2.id, qty: 1 }], [{ method: "cash", amount: 500 }])).body;
-    await must("/sales/" + sold.g.id + "/void", { reason: "QA ticket nulo", cashSessionId: s1.id }, ownerToken);
+    sold.g = (
+      await sell(
+        cashier,
+        s1,
+        [{ variantId: p2.id, qty: 1 }],
+        [{ method: "cash", amount: 500 }],
+      )
+    ).body;
+    await must(
+      "/sales/" + sold.g.id + "/void",
+      { reason: "QA ticket nulo", cashSessionId: s1.id },
+      ownerToken,
+    );
     // j) venta devuelta en efectivo.
-    sold.j = (await sell(cashier, s1, [{ variantId: p2.id, qty: 1 }], [{ method: "cash", amount: 500 }])).body;
+    sold.j = (
+      await sell(
+        cashier,
+        s1,
+        [{ variantId: p2.id, qty: 1 }],
+        [{ method: "cash", amount: 500 }],
+      )
+    ).body;
     await must(
       "/returns",
       {
@@ -6120,23 +6433,41 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     // h) abono en efectivo al crédito.
     await must(
       "/sales/" + sold.d.id + "/installments",
-      { offlineUuid: randomUUID(), cashSessionId: s1.id, amount: 300, method: "cash" },
+      {
+        offlineUuid: randomUUID(),
+        cashSessionId: s1.id,
+        amount: 300,
+        method: "cash",
+      },
       cashier.token,
     );
     // k) entrada y retiro registrados.
-    await must("/cash-sessions/" + s1.id + "/movements", { type: "in", amount: 100, reason: "QA cambio adicional" }, cashier.token);
-    await must("/cash-sessions/" + s1.id + "/movements", { type: "out", amount: 200, reason: "QA pago mensajero" }, cashier.token);
+    await must(
+      "/cash-sessions/" + s1.id + "/movements",
+      { type: "in", amount: 100, reason: "QA cambio adicional" },
+      cashier.token,
+    );
+    await must(
+      "/cash-sessions/" + s1.id + "/movements",
+      { type: "out", amount: 200, reason: "QA pago mensajero" },
+      cashier.token,
+    );
 
     // Esperado: 500 + 1,180 + 450 + 500 + 300 + 100 − 200 − 500 = 2,330.
-    const open = (await must("/cash-sessions", undefined, cashier.token)).find((c: any) => c.id === s1.id);
+    const open = (await must("/cash-sessions", undefined, cashier.token)).find(
+      (c: any) => c.id === s1.id,
+    );
     expect(open.expected.cash).toBe(2330);
 
-    const close = (data: any) => call("/cash-sessions/" + s1.id + "/close", data, cashier.token);
+    const close = (data: any) =>
+      call("/cash-sessions/" + s1.id + "/close", data, cashier.token);
     const denominations = { "1000": 2, "100": 1, "50": 1, "20": 1, "5": 1 };
     // Lo entregado no supera lo contado.
     expect((await close({ denominations, delivered: 3000 })).status).toBe(400);
     // Si se envía también countedCash, debe coincidir con las denominaciones.
-    expect((await close({ denominations, countedCash: 2000 })).status).toBe(400);
+    expect((await close({ denominations, countedCash: 2000 })).status).toBe(
+      400,
+    );
     expect((await close({ denominations: { "3": 1 } })).status).toBe(400);
     const closed = await close({
       denominations,
@@ -6158,22 +6489,43 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       usdRate: 59.5,
     });
 
-    const cuadre = await must("/cash-sessions/" + s1.id + "/cuadre", undefined, ownerToken);
+    const cuadre = await must(
+      "/cash-sessions/" + s1.id + "/cuadre",
+      undefined,
+      ownerToken,
+    );
     expect(cuadre.title).toBe("Cuadre de Caja");
     expect(cuadre.footer).toBe("FIN DEL CUADRE");
-    expect(cuadre.business).toMatchObject({ branchName: "Plaza Lope de Vega 2do nivel" });
-    expect(cuadre.register).toMatchObject({ number: registerNumber, name: "GPRO STORE RD" });
-    expect(cuadre.cashier).toMatchObject({ id: cashier.id, number: cashierNumber, name: cashier.name });
+    expect(cuadre.business).toMatchObject({
+      branchName: "Plaza Lope de Vega 2do nivel",
+    });
+    expect(cuadre.register).toMatchObject({
+      number: registerNumber,
+      name: "GPRO STORE RD",
+    });
+    expect(cuadre.cashier).toMatchObject({
+      id: cashier.id,
+      number: cashierNumber,
+      name: cashier.name,
+    });
     expect(cuadre.openedAt).toBe(s1.openedAt);
-    expect(new Date(cuadre.closedAt).getTime()).toBeGreaterThanOrEqual(new Date(s1.openedAt).getTime());
+    expect(new Date(cuadre.closedAt).getTime()).toBeGreaterThanOrEqual(
+      new Date(s1.openedAt).getTime(),
+    );
     expect(cuadre.denominations).toHaveLength(11);
-    expect(cuadre.denominations.find((x: any) => x.value === 1000)).toEqual({ value: 1000, qty: 2, total: 2000 });
+    expect(cuadre.denominations.find((x: any) => x.value === 1000)).toEqual({
+      value: 1000,
+      qty: 2,
+      total: 2000,
+    });
     expect(cuadre.denominationsSubtotal).toBe(2175);
     // Las 18 líneas del impreso, en orden.
     expect(cuadre.lines.map((l: any) => l.line)).toEqual(
       Array.from({ length: 18 }, (_, n) => n + 1),
     );
-    expect(Object.fromEntries(cuadre.lines.map((l: any) => [l.key, l.value]))).toEqual({
+    expect(
+      Object.fromEntries(cuadre.lines.map((l: any) => [l.key, l.value])),
+    ).toEqual({
       credit: 1180,
       cash: 2175,
       cards: 1000,
@@ -6204,13 +6556,28 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       cashOut: 200,
       total: 1830,
     });
-    expect(cuadre.receipts).toEqual({ cash: 300, card: 0, transfer: 0, total: 300, pendingVerification: 0 });
+    expect(cuadre.receipts).toEqual({
+      cash: 300,
+      card: 0,
+      transfer: 0,
+      total: 300,
+      pendingVerification: 0,
+    });
     expect(cuadre.receiptsNote).toBe(
       "RD$ 300.00 de recibos CxC del mismo día ya están incluidos en Ventas Efectivo",
     );
-    expect(cuadre.cod).toMatchObject({ sold: 1000, collected: { cash: 0, transfer: 0, total: 0 } });
+    expect(cuadre.cod).toMatchObject({
+      sold: 1000,
+      collected: { cash: 0, transfer: 0, total: 0 },
+    });
     expect(cuadre.voided).toMatchObject({ count: 1, total: 500 });
-    expect(cuadre.salesByMethod).toMatchObject({ cash: 2130, card: 1000, transfer: 680, credit: 1180, cod: 1000 });
+    expect(cuadre.salesByMethod).toMatchObject({
+      cash: 2130,
+      card: 1000,
+      transfer: 680,
+      credit: 1180,
+      cod: 1000,
+    });
     expect(cuadre.summary).toMatchObject({
       formula:
         "12-Diferencias = (2-Efectivo introducido + 5-Vale de caja) − 10-Total venta efectivo − 18-Total fondo",
@@ -6222,13 +6589,27 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       eur: { counted: 0, expected: 0, difference: 0, rate: 64.25, dop: 0 },
     });
     // La cajera imprime su cuadre sin rentabilidad; otra cajera no puede.
-    const own = await must("/cash-sessions/" + s1.id + "/cuadre", undefined, cashier.token);
+    const own = await must(
+      "/cash-sessions/" + s1.id + "/cuadre",
+      undefined,
+      cashier.token,
+    );
     expect(line(own, "profit")).toBeNull();
     expect(line(own, "differenceDop")).toBe(-5.25);
     expect(JSON.stringify(own)).not.toMatch(/costTotal|"cost"/);
-    expect((await call("/cash-sessions/" + s1.id + "/cuadre", undefined, cashier2.token)).status).toBe(403);
+    expect(
+      (
+        await call(
+          "/cash-sessions/" + s1.id + "/cuadre",
+          undefined,
+          cashier2.token,
+        )
+      ).status,
+    ).toBe(403);
     // La siguiente apertura de esa caja sugiere lo dejado.
-    expect(await must("/cash-sessions/opening-suggestion", undefined, cashier.token)).toMatchObject({
+    expect(
+      await must("/cash-sessions/opening-suggestion", undefined, cashier.token),
+    ).toMatchObject({
       amount: 175,
       fromSessionId: s1.id,
     });
@@ -6238,18 +6619,33 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     // Caja 2: vendió una contraentrega de 500 (cobrada por transferencia y
     // verificada) y recibió en efectivo los 1,000 de la venta de la caja 1.
     // Sin countedCard ni countedTransfer se toman los esperados.
-    const closed = await must("/cash-sessions/" + s2.id + "/close", { countedCash: 1000 }, cashier2.token);
+    const closed = await must(
+      "/cash-sessions/" + s2.id + "/close",
+      { countedCash: 1000 },
+      cashier2.token,
+    );
     expect(closed.differences).toEqual({ cash: 0, card: 0, transfer: 0 });
     expect(Number(closed.countedTransfer)).toBe(500);
-    const cuadre = await must("/cash-sessions/" + s2.id + "/cuadre", undefined, ownerToken);
+    const cuadre = await must(
+      "/cash-sessions/" + s2.id + "/cuadre",
+      undefined,
+      ownerToken,
+    );
     expect(line(cuadre, "cashSales")).toBe(1000);
     expect(line(cuadre, "differenceDop")).toBe(0);
     expect(line(cuadre, "receipts")).toBe(0);
     expect(line(cuadre, "tickets")).toBe(1);
     expect(line(cuadre, "total")).toBe(500);
     expect(cuadre.cod.sold).toBe(500);
-    expect(cuadre.register).toMatchObject({ number: registerNumber + 1, name: "CAJA 2" });
-    expect(cuadre.cod.collected).toMatchObject({ cash: 1000, transfer: 500, total: 1500 });
+    expect(cuadre.register).toMatchObject({
+      number: registerNumber + 1,
+      name: "CAJA 2",
+    });
+    expect(cuadre.cod.collected).toMatchObject({
+      cash: 1000,
+      transfer: 500,
+      total: 1500,
+    });
     expect(cuadre.cod.rows.map((r: any) => r.number).sort()).toEqual(
       [sold.f.number, sold.codTransfer.number].sort(),
     );
@@ -6263,15 +6659,40 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       undefined,
       ownerToken,
     );
-    const row = (v: any) => report.rows.find((r: any) => r.Descripción.startsWith(v.name));
+    const row = (v: any) =>
+      report.rows.find((r: any) => r.Descripción.startsWith(v.name));
     // P1: a, d y f. P2: b (2), c, e (con descuento) y j; la anulada no cuenta.
-    expect(row(p1)).toMatchObject({ Cant: 3, ITBIS: 540, Desc: 0, Precio: 3540 });
-    expect(row(p2)).toMatchObject({ Cant: 5, ITBIS: 0, Desc: 50, Precio: 2500 });
-    expect(report.totals).toEqual({ Cant: 8, ITBIS: 540, Desc: 50, Precio: 6040 });
-    expect(report.rows.at(-1)).toMatchObject({ Descripción: "TOTAL", Cant: 8, Precio: 6040 });
+    expect(row(p1)).toMatchObject({
+      Cant: 3,
+      ITBIS: 540,
+      Desc: 0,
+      Precio: 3540,
+    });
+    expect(row(p2)).toMatchObject({
+      Cant: 5,
+      ITBIS: 0,
+      Desc: 50,
+      Precio: 2500,
+    });
+    expect(report.totals).toEqual({
+      Cant: 8,
+      ITBIS: 540,
+      Desc: 50,
+      Precio: 6040,
+    });
+    expect(report.rows.at(-1)).toMatchObject({
+      Descripción: "TOTAL",
+      Cant: 8,
+      Precio: 6040,
+    });
     expect(report.title).toBe("REPORTE DE LA VENTA DIARIA DE USUARIO");
-    expect(report.note).toBe("Verificar si los totales tienen descuentos aplicados");
-    expect(report.user).toMatchObject({ id: cashier.id, number: cashierNumber });
+    expect(report.note).toBe(
+      "Verificar si los totales tienen descuentos aplicados",
+    );
+    expect(report.user).toMatchObject({
+      id: cashier.id,
+      number: cashierNumber,
+    });
     expect(report.register).toMatchObject({ number: registerNumber });
     // Por usuario y fecha da lo mismo (la cajera sólo vendió en su caja).
     const byUser = await must(
@@ -6280,10 +6701,18 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       ownerToken,
     );
     expect(byUser.totals).toEqual(report.totals);
-    const xlsx = await call("/reports/venta-diaria-usuario?format=xlsx&cashSessionId=" + s1.id, undefined, ownerToken);
+    const xlsx = await call(
+      "/reports/venta-diaria-usuario?format=xlsx&cashSessionId=" + s1.id,
+      undefined,
+      ownerToken,
+    );
     expect(xlsx.status).toBe(200);
     expect(xlsx.type).toMatch(/spreadsheetml/);
-    const pdf = await call("/reports/venta-diaria-usuario?format=pdf&cashSessionId=" + s1.id, undefined, ownerToken);
+    const pdf = await call(
+      "/reports/venta-diaria-usuario?format=pdf&cashSessionId=" + s1.id,
+      undefined,
+      ownerToken,
+    );
     expect(pdf.status).toBe(200);
     expect(pdf.type).toMatch(/pdf/);
   });
@@ -6302,8 +6731,11 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       "TARJETA CRÉDITO/DÉBITO",
       "CONTRAENTREGA",
     ]);
-    const group = (label: string) => report.groups.find((g: any) => g.label === label);
-    expect(group("EFECTIVO").rows.map((r: any) => [r.number, r.units, r.amount])).toEqual(
+    const group = (label: string) =>
+      report.groups.find((g: any) => g.label === label);
+    expect(
+      group("EFECTIVO").rows.map((r: any) => [r.number, r.units, r.amount]),
+    ).toEqual(
       expect.arrayContaining([
         [sold.a.number, 1, 1180],
         [sold.e.number, 1, 450],
@@ -6312,33 +6744,76 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     );
     expect(group("EFECTIVO").subtotal).toEqual({ units: 3, amount: 2130 });
     // La venta combinada aparece en dos grupos con el importe de cada parte.
-    expect(group("CHEQUES/TRANSFERENCIA").rows.find((r: any) => r.number === sold.f.number)).toMatchObject({
+    expect(
+      group("CHEQUES/TRANSFERENCIA").rows.find(
+        (r: any) => r.number === sold.f.number,
+      ),
+    ).toMatchObject({
       description: "Factura",
       amount: 180,
     });
     expect(group("CONTRAENTREGA").rows).toEqual([
-      expect.objectContaining({ number: sold.f.number, amount: 1000, units: 1 }),
+      expect.objectContaining({
+        number: sold.f.number,
+        amount: 1000,
+        units: 1,
+      }),
     ]);
-    expect(group("CHEQUES/TRANSFERENCIA").subtotal).toEqual({ units: 2, amount: 680 });
-    expect(group("COMPRA A CRÉDITO").subtotal).toEqual({ units: 1, amount: 1180 });
-    expect(group("TARJETA CRÉDITO/DÉBITO").subtotal).toEqual({ units: 2, amount: 1000 });
+    expect(group("CHEQUES/TRANSFERENCIA").subtotal).toEqual({
+      units: 2,
+      amount: 680,
+    });
+    expect(group("COMPRA A CRÉDITO").subtotal).toEqual({
+      units: 1,
+      amount: 1180,
+    });
+    expect(group("TARJETA CRÉDITO/DÉBITO").subtotal).toEqual({
+      units: 2,
+      amount: 1000,
+    });
     expect(report.byInvoice).toEqual({ invoices: 7, units: 8, amount: 5990 });
     expect(report.total).toBe(5990);
     // Filas planas para Excel/PDF: cada grupo cierra con su subtotal.
-    expect(report.rows.filter((r: any) => r.Descripción === "Sub-Total por Pago")).toHaveLength(5);
-    expect(report.rows.at(-1)).toMatchObject({ Descripción: "TOTAL", T_Venta: 5990 });
-    const xlsx = await call("/reports/venta-por-forma-pago?format=xlsx&cashSessionId=" + s1.id, undefined, ownerToken);
+    expect(
+      report.rows.filter((r: any) => r.Descripción === "Sub-Total por Pago"),
+    ).toHaveLength(5);
+    expect(report.rows.at(-1)).toMatchObject({
+      Descripción: "TOTAL",
+      T_Venta: 5990,
+    });
+    const xlsx = await call(
+      "/reports/venta-por-forma-pago?format=xlsx&cashSessionId=" + s1.id,
+      undefined,
+      ownerToken,
+    );
     expect(xlsx.status).toBe(200);
     // La cajera imprime los dos reportes de su propia caja, no los de otra.
-    const own = await must("/cash-sessions/" + s1.id + "/reports/venta-por-forma-pago", undefined, cashier.token);
+    const own = await must(
+      "/cash-sessions/" + s1.id + "/reports/venta-por-forma-pago",
+      undefined,
+      cashier.token,
+    );
     expect(own.total).toBe(5990);
-    const ownDaily = await must("/cash-sessions/" + s1.id + "/reports/venta-diaria-usuario", undefined, cashier.token);
+    const ownDaily = await must(
+      "/cash-sessions/" + s1.id + "/reports/venta-diaria-usuario",
+      undefined,
+      cashier.token,
+    );
     expect(ownDaily.totals.Precio).toBe(6040);
     expect(
-      (await call("/cash-sessions/" + s1.id + "/reports/venta-por-forma-pago", undefined, cashier2.token)).status,
+      (
+        await call(
+          "/cash-sessions/" + s1.id + "/reports/venta-por-forma-pago",
+          undefined,
+          cashier2.token,
+        )
+      ).status,
     ).toBe(403);
     // Sin permiso de reportes, la cajera no usa la ruta general.
-    expect((await call("/reports/venta-por-forma-pago", undefined, cashier.token)).status).toBe(403);
+    expect(
+      (await call("/reports/venta-por-forma-pago", undefined, cashier.token))
+        .status,
+    ).toBe(403);
   });
 });
 
@@ -6617,7 +7092,10 @@ describe("Aceptación · mercancía", () => {
         if (n > 1)
           rows.push(
             Object.fromEntries(
-              header.map((h: string, i: number) => [h, row.getCell(i + 1).value]),
+              header.map((h: string, i: number) => [
+                h,
+                row.getCell(i + 1).value,
+              ]),
             ),
           );
       });
@@ -6681,8 +7159,11 @@ describe("Aceptación · mercancía", () => {
     // El flete se reparte sólo entre las unidades buenas: 100 + 60/6.
     expect(
       Number(
-        (await fixtureDb.variant.findUniqueOrThrow({ where: { id: variantId } }))
-          .costAvg,
+        (
+          await fixtureDb.variant.findUniqueOrThrow({
+            where: { id: variantId },
+          })
+        ).costAvg,
       ),
     ).toBe(110);
     let item = await itemOf(itemId);
@@ -6827,7 +7308,12 @@ describe("Aceptación · mercancía", () => {
       supplierInvoice: "H-1",
       supplierNcf: number,
       items: [
-        { itemId: order.items[0].id, qty: 2, damagedQty: 1, damageReason: "Roto" },
+        {
+          itemId: order.items[0].id,
+          qty: 2,
+          damagedQty: 1,
+          damageReason: "Roto",
+        },
       ],
     };
     const receipt = await ok(path, body);
@@ -6868,9 +7354,9 @@ describe("Aceptación · mercancía", () => {
     const seen = fromPhone.find((r: any) => r.id === receipt.id);
     expect(seen.lines[0]).toMatchObject({ qty: 2, damagedQty: 1 });
     expect(JSON.stringify(seen)).not.toMatch(/unitCost|landedCost|damagedCost/);
-    expect((await request("/goods-receipts", undefined, sellerToken)).status).toBe(
-      403,
-    );
+    expect(
+      (await request("/goods-receipts", undefined, sellerToken)).status,
+    ).toBe(403);
     // Mercancía: reenviar la misma entrada con dañados no duplica.
     const entry = {
       id: randomUUID(),
@@ -6896,7 +7382,8 @@ describe("Aceptación · mercancía", () => {
 describe("Tienda · 4 cajas a la vez", () => {
   // Cada caja es un equipo distinto (su IP) con su propia cajera.
   const n = Date.now();
-  const ipOf = (k: number) => "198.19." + ((n % 200) + k) + "." + ((n % 250) + 1);
+  const ipOf = (k: number) =>
+    "198.19." + ((n % 200) + k) + "." + ((n % 250) + 1);
   const password = "FitStore-QA-2026!";
   async function call(path: string, data: unknown, as: string, ip: string) {
     const r = await fetch(base + path, {
@@ -6986,16 +7473,24 @@ describe("Tienda · 4 cajas a la vez", () => {
       roleId: roles.find((r: any) => r.name === "warehouse").id,
     });
     actors.push(wh);
-    phone = (await must("/auth/login", { email: wh.email, password }, "", ipOf(9)))
-      .accessToken;
+    phone = (
+      await must("/auth/login", { email: wh.email, password }, "", ipOf(9))
+    ).accessToken;
     await enroll(phone, "QA celular mercancía");
 
     const scarce = await product("Escaso", 100, 10);
-    const own = await Promise.all(cajas.map((c) => product("Caja " + c.k, 200, 50)));
+    const own = await Promise.all(
+      cajas.map((c) => product("Caja " + c.k, 200, 50)),
+    );
     // Las 4 cajas abiertas a la vez, cada una con su fondo.
     const opened = await Promise.all(
       cajas.map((c) =>
-        must("/cash-sessions/open", { openingAmount: 1000 * c.k }, c.token, c.ip),
+        must(
+          "/cash-sessions/open",
+          { openingAmount: 1000 * c.k },
+          c.token,
+          c.ip,
+        ),
       ),
     );
     opened.forEach((s, i) => (cajas[i].session = s));
@@ -7096,7 +7591,9 @@ describe("Tienda · 4 cajas a la vez", () => {
         c.token,
         c.ip,
       );
-      const v = Object.fromEntries(cuadre.lines.map((l: any) => [l.key, l.value]));
+      const v = Object.fromEntries(
+        cuadre.lines.map((l: any) => [l.key, l.value]),
+      );
       expect(cuadre.cashier.id).toBe(c.user.id);
       expect(v).toMatchObject({
         cash: 1000 * c.k + c.cash,
@@ -7109,8 +7606,14 @@ describe("Tienda · 4 cajas a la vez", () => {
       // Una cajera no ve el cuadre de otra caja.
       const other = cajas[c.k % 4];
       expect(
-        (await call("/cash-sessions/" + c.session.id + "/cuadre", undefined, other.token, other.ip))
-          .status,
+        (
+          await call(
+            "/cash-sessions/" + c.session.id + "/cuadre",
+            undefined,
+            other.token,
+            other.ip,
+          )
+        ).status,
       ).toBe(403);
     }
   });

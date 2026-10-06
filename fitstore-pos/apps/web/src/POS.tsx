@@ -1345,15 +1345,6 @@ function Checkout({
       setError("Selecciona un cliente y fecha de vencimiento.");
       return;
     }
-    // El servidor no acepta crédito y contraentrega en la misma venta.
-    const other =
-      method === "cod" ? "credit" : method === "credit" ? "cod" : "";
-    if (other && payments.some((p) => p.method === other)) {
-      setError(
-        "Crédito y contraentrega no se combinan en una venta. Usa una de las dos con efectivo, tarjeta o transferencia.",
-      );
-      return;
-    }
     const next = [
       ...payments,
       {
@@ -1767,7 +1758,9 @@ function Checkout({
           <p className="cod-hint">
             Contraentrega: la venta sale del inventario y este importe queda
             pendiente hasta que el mensajero traiga el dinero. Regístralo luego
-            en Caja › Contraentregas pendientes.
+            en Caja › Contraentregas pendientes (efectivo, tarjeta o
+            transferencia, con la foto de la evidencia). Se combina con
+            cualquier otra forma, incluido el crédito.
           </p>
         )}
         {method === "credit" && (

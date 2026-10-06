@@ -344,6 +344,8 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         method: p.method,
         amount: Number(p.amount),
         status: p.status,
+        reference: p.reference,
+        proofUrl: p.proofUrl,
         createdAt: p.createdAt,
       })),
     },

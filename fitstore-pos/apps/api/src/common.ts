@@ -208,6 +208,20 @@ export const audit = (
       ...(after === undefined ? {} : { after: json(after) }),
     },
   });
+// Tipo real de una imagen por sus primeros bytes: no se guarda otra cosa
+// como logo ni como foto de evidencia.
+export function imageType(bytes: Buffer) {
+  if (bytes.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex")))
+    return "png";
+  if (bytes.subarray(0, 3).equals(Buffer.from("ffd8ff", "hex"))) return "jpeg";
+  if (bytes.subarray(0, 4).toString("latin1") === "GIF8") return "gif";
+  if (
+    bytes.subarray(0, 4).toString("latin1") === "RIFF" &&
+    bytes.subarray(8, 12).toString("latin1") === "WEBP"
+  )
+    return "webp";
+  return null;
+}
 export function safe<T>(value: T, actor: Actor): T {
   if (actor.role !== "seller" && can(actor.permissions, "profit:read"))
     return json(value);

@@ -7,7 +7,10 @@ import {
   Post,
   Query,
   Res,
+  UploadedFile,
+  UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { compare } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import {
@@ -46,8 +49,12 @@ import {
   json,
   safeErrorMessage,
   fieldLabel,
+  imageType,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
+
+// Foto de evidencia de un cobro: hasta 2 MB.
+const PROOF_MAX_BYTES = 2 * 1024 * 1024;
 import PDFDocument from "pdfkit";
 import type { Response } from "express";
 
@@ -365,8 +372,6 @@ export class SalesController {
             .filter((p) => p.method === "cod")
             .reduce((sum, p) => sum + p.amount, 0),
         );
-        if (credit && cod)
-          bad("Una venta no puede ser a crédito y contraentrega a la vez.");
         if (credit && customer) {
           // La deuda del cliente es la de sus ventas a crédito, no las
           // contraentregas pendientes.
@@ -1291,7 +1296,9 @@ export class SalesController {
   }
   // Cobro de una contraentrega cuando el mensajero trae el dinero: es un abono
   // de la venta (idempotente por offlineUuid) en la caja abierta de quien lo
-  // recibe, en efectivo o por transferencia (ésta, pendiente de verificar).
+  // recibe, en efectivo, con tarjeta (con la referencia del voucher) o por
+  // transferencia (ésta, pendiente de verificar). La foto de la evidencia se
+  // sube después con POST /payments/:id/proof.
   @Post("sales/:id/cod-collections")
   @RequireTerminal()
   @Permit("sale:write")
@@ -1300,11 +1307,65 @@ export class SalesController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(
-      installmentSchema.extend({ method: z.enum(["cash", "transfer"]) }),
-      body,
-    );
-    return this.collect(actor, id, data, true);
+    return this.collect(actor, id, parse(installmentSchema, body), true);
+  }
+  // Foto de la evidencia de un cobro (voucher, comprobante o el efectivo
+  // recibido por WhatsApp): jpg, png o webp de hasta 2 MB, guardada como data
+  // URL en el pago, igual que el logo. La sube quien registró el cobro en su
+  // caja o quien gestiona ventas; se puede reemplazar.
+  @Post("payments/:id/proof")
+  @Permit("sale:write")
+  @UseInterceptors(
+    FileInterceptor("file", {
+      limits: { fileSize: PROOF_MAX_BYTES + 1, files: 1 },
+    }),
+  )
+  async paymentProof(
+    @Param("id") id: string,
+    @UploadedFile() file: any,
+    @CurrentUser() actor: Actor,
+  ) {
+    if (!file?.buffer?.length) bad("Adjunta la foto de la evidencia.");
+    if (file.size > PROOF_MAX_BYTES)
+      bad("La foto debe pesar como máximo 2 MB.");
+    const type = imageType(file.buffer);
+    if (!type || type === "gif")
+      bad("La evidencia debe ser una imagen JPG, PNG o WebP.");
+    const payment = await this.db.payment.findFirstOrThrow({
+      where: {
+        id: parse(uuid, id),
+        entryType: "installment",
+        sale: { branchId: actor.branchId },
+      },
+    });
+    if (!can(actor.permissions, "sale:manage")) {
+      const own = payment.cashSessionId
+        ? await this.db.cashSession.findFirst({
+            where: { id: payment.cashSessionId, userId: actor.id },
+          })
+        : null;
+      if (!own) denied();
+    }
+    const proofUrl = `data:image/${type};base64,${file.buffer.toString("base64")}`;
+    return this.db.$transaction(async (tx) => {
+      const row = await tx.payment.update({
+        where: { id: payment.id },
+        data: { proofUrl },
+      });
+      await audit(
+        tx,
+        actor,
+        "payment_proof",
+        "sale",
+        payment.saleId,
+        { paymentId: payment.id, proof: !!payment.proofUrl },
+        {
+          paymentId: payment.id,
+          proof: `(imagen de ${Math.round(file.size / 1024)} KB)`,
+        },
+      );
+      return safe(row, actor);
+    });
   }
   // Contraentregas pendientes de cobro de la sucursal: cualquier cajera puede
   // recibir el dinero de una venta de otra caja.
@@ -1325,7 +1386,9 @@ export class SalesController {
     const [customers, sellers] = await Promise.all([
       this.db.customer.findMany({
         where: {
-          id: { in: sales.flatMap((s) => (s.customerId ? [s.customerId] : [])) },
+          id: {
+            in: sales.flatMap((s) => (s.customerId ? [s.customerId] : [])),
+          },
         },
         select: { id: true, name: true, phone: true },
       }),
@@ -1336,28 +1399,50 @@ export class SalesController {
     ]);
     const sum = (rows: { amount: unknown }[]) =>
       money(rows.reduce((a, p) => a.plus(p.amount as any), d(0)));
-    return sales.map((s) => ({
-      saleId: s.id,
-      number: s.number,
-      createdAt: s.createdAt,
-      cashSessionId: s.cashSessionId,
-      total: Number(s.total),
-      codAmount: sum(
+    return sales.flatMap((s) => {
+      const collections = s.payments.filter(
+        (p) => p.entryType === "installment",
+      );
+      const codAmount = sum(
         s.payments.filter((p) => p.method === "cod" && p.entryType === "sale"),
-      ),
-      pending: Number(s.creditBalance),
-      // Transferencias del mensajero registradas que falta verificar.
-      pendingVerification: sum(
-        s.payments.filter(
-          (p) =>
-            p.entryType === "installment" &&
-            p.status === "pending_verification",
-        ),
-      ),
-      customer: customers.find((c) => c.id === s.customerId) ?? null,
-      seller: sellers.find((u) => u.id === s.sellerId) ?? null,
-      notes: s.notes,
-    }));
+      );
+      // Si la venta también fue a crédito, lo cobrado se aplica primero a la
+      // contraentrega (se paga al entregar); el crédito vence después.
+      const collected = sum(collections.filter((p) => p.status === "ok"));
+      const pending = Math.min(
+        Number(s.creditBalance),
+        money(d(codAmount).minus(collected)),
+      );
+      if (pending <= 0) return [];
+      return [
+        {
+          saleId: s.id,
+          number: s.number,
+          createdAt: s.createdAt,
+          cashSessionId: s.cashSessionId,
+          total: Number(s.total),
+          codAmount,
+          pending,
+          // Transferencias del mensajero registradas que falta verificar.
+          pendingVerification: sum(
+            collections.filter((p) => p.status === "pending_verification"),
+          ),
+          collections: collections.map((p) => ({
+            paymentId: p.id,
+            method: p.method,
+            amount: Number(p.amount),
+            status: p.status,
+            reference: p.reference,
+            bank: p.bank,
+            proofUrl: p.proofUrl,
+            createdAt: p.createdAt,
+          })),
+          customer: customers.find((c) => c.id === s.customerId) ?? null,
+          seller: sellers.find((u) => u.id === s.sellerId) ?? null,
+          notes: s.notes,
+        },
+      ];
+    });
   }
   private async collect(
     actor: Actor,
@@ -1415,7 +1500,15 @@ export class SalesController {
             ? "El cobro supera lo pendiente de la contraentrega."
             : "El abono supera el saldo pendiente.",
         );
-      if (data.method === "card" && (!data.cardLast4 || !data.approvalCode))
+      // El mensajero cobra con un terminal o enlace de pago: basta la
+      // referencia del voucher.
+      if (codOnly && data.method === "card" && !data.reference?.trim())
+        bad("Indica la referencia del voucher de la tarjeta.");
+      if (
+        !codOnly &&
+        data.method === "card" &&
+        (!data.cardLast4 || !data.approvalCode)
+      )
         bad("Indica los últimos 4 dígitos y la aprobación de tarjeta.");
       if (data.method === "transfer" && (!data.bank || !data.reference))
         bad("Indica banco y referencia de transferencia.");

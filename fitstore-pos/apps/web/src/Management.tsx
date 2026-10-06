@@ -52,13 +52,15 @@ import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import {
   CloseCashModal,
   CodPending,
+  ProofThumb,
+  uploadProof,
   DayReports,
   PrintModal,
   SessionPrintButtons,
   StoreSettings,
   type Printing,
 } from "./Tienda";
-import { printSoon } from "./Prints";
+import { METHOD_LABEL, printSoon } from "./Prints";
 
 type Column = {
   label: string;
@@ -2424,10 +2426,37 @@ export function SalesHistory() {
               <div className="payment-list" key={p.id}>
                 <div>
                   <span>
-                    {paymentOptions.find((o) => o.value === p.method)?.label} ·{" "}
-                    {formatMoney(p.amount)}
+                    {METHOD_LABEL[p.method] ??
+                      paymentOptions.find((o) => o.value === p.method)?.label ??
+                      p.method}{" "}
+                    · {formatMoney(p.amount)}
                     <small>{p.reference || p.approvalCode}</small>
                   </span>
+                  <ProofThumb url={p.proofUrl} />
+                  {p.entryType === "installment" &&
+                    can(user.permissions, "sale:write") && (
+                      <label className="text-link proof-upload">
+                        {p.proofUrl ? "Cambiar foto" : "Subir foto"}
+                        <input
+                          type="file"
+                          hidden
+                          accept="image/jpeg,image/png,image/webp"
+                          capture="environment"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              await uploadProof(p.id, file);
+                              setSelected(null);
+                              await client.invalidateQueries();
+                              toast("Foto de la evidencia guardada.");
+                            } catch (err: any) {
+                              toast(err.message, true);
+                            }
+                          }}
+                        />
+                      </label>
+                    )}
                   <Badge
                     tone={
                       p.status === "ok"

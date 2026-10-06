@@ -1,8 +1,8 @@
 // Pantallas de la tienda: cierre por denominaciones, impresión del cuadre y
 // de los reportes, contraentregas pendientes y ajustes de caja/cajero.
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Printer, Truck, Upload } from "lucide-react";
+import { Camera, Printer, Truck, Upload } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import { CASH_DENOMINATIONS, can, formatMoney } from "@fitstore/shared";
 import { api, post, localDB, useStore } from "./api";
@@ -403,6 +403,25 @@ export function CodPending({ session }: { session: any }) {
                       {formatMoney(r.pendingVerification)} por verificar
                     </Badge>
                   )}
+                  {r.collections?.length > 0 && (
+                    <ul className="cod-collections">
+                      {r.collections.map((c: any) => (
+                        <li key={c.paymentId}>
+                          <ProofThumb url={c.proofUrl} />
+                          <span>
+                            {COD_METHOD_LABEL[c.method] ?? c.method}{" "}
+                            {formatMoney(c.amount)}
+                            {c.reference ? " · " + c.reference : ""}
+                            {c.status === "pending_verification"
+                              ? " · por verificar"
+                              : c.status === "rejected"
+                                ? " · rechazada"
+                                : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
                 <strong className="cod-amount">{formatMoney(r.pending)}</strong>
                 <Button
@@ -433,6 +452,113 @@ export function CodPending({ session }: { session: any }) {
   );
 }
 
+const COD_METHOD_LABEL: Record<string, string> = {
+  cash: "Efectivo",
+  card: "Tarjeta",
+  transfer: "Transferencia",
+};
+export const PROOF_MAX_BYTES = 2 * 1024 * 1024;
+const PROOF_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+/** Foto de la evidencia de un cobro: miniatura que abre la imagen completa. */
+export function ProofThumb({ url }: { url?: string | null }) {
+  if (!url) return null;
+  return (
+    <a
+      className="proof-thumb"
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      title="Ver la foto de la evidencia"
+    >
+      <img src={url} alt="Evidencia del cobro" />
+    </a>
+  );
+}
+
+/** Sube la foto de la evidencia (jpg/png/webp, 2 MB) a un pago. */
+export async function uploadProof(paymentId: string, file: File) {
+  if (!PROOF_TYPES.includes(file.type))
+    throw new Error("La evidencia debe ser una imagen JPG, PNG o WebP.");
+  if (file.size > PROOF_MAX_BYTES)
+    throw new Error("La foto debe pesar como máximo 2 MB.");
+  const body = new FormData();
+  body.append("file", file);
+  return api<{ proofUrl: string }>("/payments/" + paymentId + "/proof", {
+    method: "POST",
+    body,
+  });
+}
+
+/** Botón para tomar o elegir la foto desde el celular o la laptop. */
+export function ProofPicker({
+  file,
+  onChange,
+  disabled,
+}: {
+  file: File | null;
+  onChange: (file: File | null) => void;
+  disabled?: boolean;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState("");
+  const pick = (next: File | null) => {
+    if (next && !PROOF_TYPES.includes(next.type)) {
+      toast("La evidencia debe ser una imagen JPG, PNG o WebP.", true);
+      return;
+    }
+    if (next && next.size > PROOF_MAX_BYTES) {
+      toast("La foto debe pesar como máximo 2 MB.", true);
+      return;
+    }
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(next ? URL.createObjectURL(next) : "");
+    onChange(next);
+  };
+  return (
+    <div className="proof-picker full">
+      <input
+        ref={input}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
+        hidden
+        aria-label="Foto de la evidencia"
+        onChange={(e) => pick(e.target.files?.[0] ?? null)}
+      />
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={disabled}
+        onClick={() => input.current?.click()}
+      >
+        <Camera size={18} />{" "}
+        {file ? "Cambiar foto" : "Subir foto de la evidencia"}
+      </Button>
+      {file ? (
+        <span className="proof-preview">
+          {preview && <img src={preview} alt="" />}
+          <small>
+            {file.name} · {Math.max(1, Math.round(file.size / 1024))} KB
+          </small>
+          <button
+            type="button"
+            className="text-link"
+            onClick={() => pick(null)}
+          >
+            Quitar
+          </button>
+        </span>
+      ) : (
+        <small>
+          Voucher, comprobante o el efectivo recibido (JPG, PNG o WebP, hasta 2
+          MB). Opcional.
+        </small>
+      )}
+    </div>
+  );
+}
+
 function CodCollect({
   row,
   session,
@@ -444,9 +570,10 @@ function CodCollect({
 }) {
   const client = useQueryClient();
   const [amount, setAmount] = useState(String(row.pending)),
-    [method, setMethod] = useState<"cash" | "transfer">("cash"),
+    [method, setMethod] = useState<"cash" | "card" | "transfer">("cash"),
     [bank, setBank] = useState(""),
     [reference, setReference] = useState(""),
+    [proof, setProof] = useState<File | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   // Un reintento usa el mismo identificador: no se cobra dos veces.
@@ -456,19 +583,38 @@ function CodCollect({
     setBusy(true);
     setError("");
     try {
-      await post("/sales/" + row.saleId + "/cod-collections", {
+      const payment = await post("/sales/" + row.saleId + "/cod-collections", {
         offlineUuid: uuid,
         cashSessionId: session.id,
         amount: Number(amount),
         method,
         ...(method === "transfer" ? { bank, reference } : {}),
+        ...(method === "card" ? { reference } : {}),
       });
+      let proofFailed = "";
+      if (proof) {
+        try {
+          await uploadProof(payment.id, proof);
+        } catch (err: any) {
+          // El cobro ya quedó registrado; la foto se puede subir después
+          // desde el detalle de la venta.
+          proofFailed = err.message;
+        }
+      }
       await client.invalidateQueries();
-      toast(
-        method === "transfer"
-          ? "Cobro registrado: queda por verificar en el banco."
-          : "Cobro registrado en tu caja.",
-      );
+      if (proofFailed)
+        toast(
+          "Cobro registrado, pero la foto no se guardó: " + proofFailed,
+          true,
+        );
+      else
+        toast(
+          method === "transfer"
+            ? "Cobro registrado: queda por verificar en el banco."
+            : method === "card"
+              ? "Cobro con tarjeta registrado en tu caja."
+              : "Cobro registrado en tu caja.",
+        );
       onClose();
     } catch (e: any) {
       setError(e.message);
@@ -502,9 +648,21 @@ function CodCollect({
             onChange={(e) => setMethod(e.target.value as any)}
           >
             <option value="cash">Efectivo</option>
+            <option value="card">Tarjeta</option>
             <option value="transfer">Transferencia</option>
           </select>
         </label>
+        {method === "card" && (
+          <label className="field full">
+            <span>Referencia del voucher</span>
+            <input
+              required
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              placeholder="Número de aprobación o del enlace de pago"
+            />
+          </label>
+        )}
         {method === "transfer" && (
           <>
             <label className="field">
@@ -525,6 +683,14 @@ function CodCollect({
             </label>
           </>
         )}
+        <ProofPicker file={proof} onChange={setProof} disabled={busy} />
+        <p className="cod-hint full">
+          {method === "cash"
+            ? "El efectivo entra en el cuadre de tu caja."
+            : method === "card"
+              ? "Cuenta como tarjeta en el cuadre de tu caja."
+              : "Queda pendiente hasta que se verifique en el banco."}
+        </p>
         {error && (
           <p className="form-error full" role="alert">
             {error}

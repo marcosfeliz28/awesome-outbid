@@ -24,6 +24,7 @@ import {
   bad,
   conflict,
   json,
+  imageType,
 } from "./common";
 import {
   can,
@@ -94,19 +95,6 @@ const configSchema = z.object({
   usdRate: z.number().positive().max(10000).nullable().optional(),
   eurRate: z.number().positive().max(10000).nullable().optional(),
 });
-// Tipo real de la imagen por sus primeros bytes: no se guarda otra cosa como logo.
-function imageType(bytes: Buffer) {
-  if (bytes.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex")))
-    return "png";
-  if (bytes.subarray(0, 3).equals(Buffer.from("ffd8ff", "hex"))) return "jpeg";
-  if (bytes.subarray(0, 4).toString("latin1") === "GIF8") return "gif";
-  if (
-    bytes.subarray(0, 4).toString("latin1") === "RIFF" &&
-    bytes.subarray(8, 12).toString("latin1") === "WEBP"
-  )
-    return "webp";
-  return null;
-}
 function checkLogo(logo: string) {
   const [head, data] = logo.split(",");
   if (imageType(Buffer.from(data, "base64")) !== head.slice(11, -7))
@@ -452,9 +440,17 @@ export class AdminController {
         where: { id: actor.branchId },
         data: { data: { ...(row.data as any), logo } },
       });
-      await audit(tx, actor, "settings_logo", "settings", actor.branchId, {
-        logo: !!(row.data as any)?.logo,
-      }, { logo: auditSettings({ logo }).logo });
+      await audit(
+        tx,
+        actor,
+        "settings_logo",
+        "settings",
+        actor.branchId,
+        {
+          logo: !!(row.data as any)?.logo,
+        },
+        { logo: auditSettings({ logo }).logo },
+      );
       return { logo };
     });
   }
@@ -469,7 +465,13 @@ export class AdminController {
   ) {
     const data = parse(
       z.object({
-        registerNumber: z.number().int().min(1).max(999999).nullable().optional(),
+        registerNumber: z
+          .number()
+          .int()
+          .min(1)
+          .max(999999)
+          .nullable()
+          .optional(),
         registerName: z.string().trim().max(80).nullable().optional(),
       }),
       body,
