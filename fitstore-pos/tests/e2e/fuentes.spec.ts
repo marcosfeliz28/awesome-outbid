@@ -114,6 +114,42 @@ async function familiasCargadas(page: any) {
     };
   });
 }
+// Desbordes horizontales de la pantalla actual, medidos con Inter ya cargada.
+async function desbordes(page: any, pantalla: string) {
+  const m = await page.evaluate(async () => {
+    await document.fonts.ready;
+    const barra = document.querySelector("header.topbar")!;
+    const ruta = barra.querySelector(".breadcrumb")!;
+    return {
+      inter: [...document.fonts].some(
+        (f) => f.status === "loaded" && /Inter/.test(f.family),
+      ),
+      pagina: document.documentElement.scrollWidth - window.innerWidth,
+      barra: barra.scrollWidth - barra.clientWidth,
+      // Ruta recortada con puntos suspensivos: la pantalla actual no se leería.
+      ruta: ruta.scrollWidth - ruta.clientWidth,
+      fuera: [barra, ...barra.querySelectorAll("*")]
+        .filter((el) => {
+          const r = el.getBoundingClientRect();
+          return (
+            r.width > 0 && (r.left < -1 || r.right > window.innerWidth + 1)
+          );
+        })
+        .map((el) => el.getAttribute("class") || el.tagName),
+    };
+  });
+  expect(m.inter, "Inter cargada en " + pantalla).toBe(true);
+  const problemas: string[] = [];
+  if (m.pagina > 1)
+    problemas.push(`${pantalla}: la página desborda ${m.pagina} px`);
+  if (m.barra > 1)
+    problemas.push(`${pantalla}: la barra desborda ${m.barra} px`);
+  if (m.ruta > 1)
+    problemas.push(`${pantalla}: la ruta se recorta ${m.ruta} px`);
+  if (m.fuera.length)
+    problemas.push(`${pantalla}: fuera de la vista ${m.fuera}`);
+  return problemas;
+}
 function cubre(caras: any[], familia: string, pesos: number[]) {
   return caras.some((c) => {
     const [desde, hasta = desde] = String(c.peso).split(" ").map(Number);
@@ -327,3 +363,32 @@ test("el contenedor de escritorio sólo admite fuentes y estilos propios, y con 
     ).toBe(true);
   expect(await page.evaluate(() => (window as any).__bloqueos)).toEqual([]);
 });
+
+// La barra superior (menú, ruta, conexión, tema y cuenta) entra completa en un
+// celular angosto, y ninguna pantalla del menú se desplaza hacia los lados.
+for (const ancho of [320, 390])
+  for (const tema of ["claro", "oscuro"])
+    test(`la barra superior cabe a ${ancho} px con las fuentes cargadas (tema ${tema})`, async ({
+      page,
+    }) => {
+      await login(page);
+      if (tema === "oscuro") {
+        await page.getByRole("button", { name: "Activar modo oscuro" }).click();
+        await expect(page.locator("html")).toHaveAttribute(
+          "data-theme",
+          "dark",
+        );
+      }
+      await page.setViewportSize({ width: ancho, height: 800 });
+      const problemas: string[] = [];
+      for (const label of PANTALLAS) {
+        await abrir(page, label);
+        problemas.push(...(await desbordes(page, label)));
+      }
+      for (const label of PESTANAS) {
+        await page.locator(".tabs.outside button", { hasText: label }).click();
+        await listo(page);
+        problemas.push(...(await desbordes(page, "Configuración › " + label)));
+      }
+      expect(problemas).toEqual([]);
+    });

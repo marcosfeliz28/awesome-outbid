@@ -574,10 +574,21 @@ kbd {
   align-items: center;
   gap: 12px;
 }
+/* Si la barra no alcanza, cede la ruta (con puntos suspensivos) y nunca los
+   controles de la derecha: la cuenta no puede salirse de la pantalla. */
+.topbar-left {
+  min-width: 0;
+}
+.topbar-right {
+  flex-shrink: 0;
+}
 .breadcrumb {
   font-size: 10px;
   color: var(--muted);
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .breadcrumb span {
   margin: 0 10px;
@@ -3560,6 +3571,20 @@ td strong {
   }
   .rank-product {
     min-width: 160px;
+  }
+}
+/* Celulares angostos (320 px): con Inter cargada, «Mi tienda / Punto de
+   venta» y «Mi tienda / Configuración» no cabían junto a los controles de la
+   derecha y empujaban la cuenta fuera de la pantalla. Se cierran los huecos
+   para que la ruta entre completa; el ícono del menú queda alineado con el
+   contenido y la cuenta conserva su margen derecho. */
+@media (max-width: 360px) {
+  .topbar {
+    padding: 0 17px 0 7px;
+    gap: 8px;
+  }
+  .breadcrumb span {
+    margin: 0 5px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
