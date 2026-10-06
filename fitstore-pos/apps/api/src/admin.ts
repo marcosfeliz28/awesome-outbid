@@ -7,7 +7,10 @@ import {
   Patch,
   Post,
   Put,
+  UploadedFile,
+  UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import {
   Actor,
   CurrentUser,
@@ -22,7 +25,14 @@ import {
   conflict,
   json,
 } from "./common";
-import { can, d, z, stockQty } from "@fitstore/shared";
+import {
+  can,
+  d,
+  z,
+  stockQty,
+  isImageDataUrl,
+  LOGO_MAX_BYTES,
+} from "@fitstore/shared";
 import { passwordHash } from "./auth";
 
 const customerSchema = z.object({
@@ -65,7 +75,49 @@ const configSchema = z.object({
   unusualDiscountPercent: z.number().min(0).max(100).default(25),
   lowSalesDropPercent: z.number().min(0).max(100).default(50),
   ncfMode: z.enum(["disabled", "prepared"]).default("disabled"),
+  // Encabezado de lo impreso (tienda): sucursal, WhatsApp y logo.
+  branchName: z.string().max(100).default(""),
+  phone2: z.string().max(30).default(""),
+  // Data URL de una imagen de hasta 200 KB. Si no se envía se conserva el
+  // logo guardado; "" o null lo quita.
+  logo: z
+    .string()
+    .max(300000)
+    .refine(
+      (v) => v === "" || isImageDataUrl(v),
+      "debe ser una imagen PNG, JPEG, WebP o GIF de hasta 200 KB",
+    )
+    .nullable()
+    .optional(),
+  autoPrintReceipt: z.boolean().default(false),
+  // Tasa del día (RD$ por unidad) para el efectivo en dólares y euros.
+  usdRate: z.number().positive().max(10000).nullable().optional(),
+  eurRate: z.number().positive().max(10000).nullable().optional(),
 });
+// Tipo real de la imagen por sus primeros bytes: no se guarda otra cosa como logo.
+function imageType(bytes: Buffer) {
+  if (bytes.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex")))
+    return "png";
+  if (bytes.subarray(0, 3).equals(Buffer.from("ffd8ff", "hex"))) return "jpeg";
+  if (bytes.subarray(0, 4).toString("latin1") === "GIF8") return "gif";
+  if (
+    bytes.subarray(0, 4).toString("latin1") === "RIFF" &&
+    bytes.subarray(8, 12).toString("latin1") === "WEBP"
+  )
+    return "webp";
+  return null;
+}
+function checkLogo(logo: string) {
+  const [head, data] = logo.split(",");
+  if (imageType(Buffer.from(data, "base64")) !== head.slice(11, -7))
+    bad("El logo debe ser una imagen PNG, JPEG, WebP o GIF.");
+}
+// La bitácora no guarda la imagen completa, sólo que cambió.
+const auditSettings = (data: any) =>
+  data?.logo
+    ? { ...data, logo: `(imagen de ${Math.round(data.logo.length / 1365)} KB)` }
+    : data;
+const cashierNumber = z.number().int().min(1).max(999999);
 
 @Controller()
 export class AdminController {
@@ -351,11 +403,16 @@ export class AdminController {
   @Put("settings")
   @Permit("*")
   async setSettings(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    const data = parse(configSchema, body);
+    const { logo, ...config } = parse(configSchema, body);
+    if (logo) checkLogo(logo);
     return this.db.$transaction(async (tx) => {
       const before = await tx.settings.findUnique({
         where: { id: actor.branchId },
       });
+      // El formulario puede omitir el logo (pesa mucho para reenviarlo).
+      const kept =
+        logo === undefined ? (before?.data as any)?.logo : logo || undefined;
+      const data = { ...config, ...(kept ? { logo: kept } : {}) };
       const row = await tx.settings.upsert({
         where: { id: actor.branchId },
         create: { id: actor.branchId, data },
@@ -367,16 +424,114 @@ export class AdminController {
         "settings",
         "settings",
         actor.branchId,
-        before?.data,
-        data,
+        auditSettings(before?.data),
+        auditSettings(data),
       );
       return row.data;
+    });
+  }
+  // Subida del logo como archivo: un JSON con una imagen de 200 KB superaría
+  // el límite de 100 KB del cuerpo de la API.
+  @Post("settings/logo")
+  @Permit("*")
+  @UseInterceptors(
+    FileInterceptor("file", { limits: { fileSize: 1024 * 1024, files: 1 } }),
+  )
+  async setLogo(@UploadedFile() file: any, @CurrentUser() actor: Actor) {
+    if (!file?.buffer?.length) bad("Adjunta la imagen del logo.");
+    if (file.size > LOGO_MAX_BYTES)
+      bad("El logo debe pesar como máximo 200 KB.");
+    const type = imageType(file.buffer);
+    if (!type) bad("El logo debe ser una imagen PNG, JPEG, WebP o GIF.");
+    const logo = `data:image/${type};base64,${file.buffer.toString("base64")}`;
+    return this.db.$transaction(async (tx) => {
+      const row = await tx.settings.findUniqueOrThrow({
+        where: { id: actor.branchId },
+      });
+      await tx.settings.update({
+        where: { id: actor.branchId },
+        data: { data: { ...(row.data as any), logo } },
+      });
+      await audit(tx, actor, "settings_logo", "settings", actor.branchId, {
+        logo: !!(row.data as any)?.logo,
+      }, { logo: auditSettings({ logo }).logo });
+      return { logo };
+    });
+  }
+  // Número y nombre de la caja que se imprimen en el cuadre (p. ej. 4012
+  // «GPRO STORE RD»). El nombre del equipo sigue siendo el del dispositivo.
+  @Patch("terminals/:id/register")
+  @Permit("*")
+  async registerInfo(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const data = parse(
+      z.object({
+        registerNumber: z.number().int().min(1).max(999999).nullable().optional(),
+        registerName: z.string().trim().max(80).nullable().optional(),
+      }),
+      body,
+    );
+    return this.db.$transaction(async (tx) => {
+      const terminal = await tx.terminal.findFirstOrThrow({
+        where: { id: parse(uuid, id), branchId: actor.branchId },
+      });
+      if (data.registerNumber) {
+        const used = await tx.terminal.findFirst({
+          where: {
+            branchId: actor.branchId,
+            registerNumber: data.registerNumber,
+            revokedAt: null,
+            id: { not: terminal.id },
+          },
+        });
+        if (used)
+          bad(
+            `El número de caja ${data.registerNumber} ya lo usa «${used.registerName || used.name}».`,
+          );
+      }
+      const row = await tx.terminal.update({
+        where: { id: terminal.id },
+        data: {
+          ...(data.registerNumber !== undefined
+            ? { registerNumber: data.registerNumber }
+            : {}),
+          ...(data.registerName !== undefined
+            ? { registerName: data.registerName || null }
+            : {}),
+        },
+      });
+      await audit(
+        tx,
+        actor,
+        "register_info",
+        "terminal",
+        terminal.id,
+        {
+          registerNumber: terminal.registerNumber,
+          registerName: terminal.registerName,
+        },
+        data,
+      );
+      return {
+        id: row.id,
+        name: row.name,
+        registerNumber: row.registerNumber,
+        registerName: row.registerName,
+      };
     });
   }
   @Get("staff") @Permit("sale:write") staff(@CurrentUser() actor: Actor) {
     return this.db.user.findMany({
       where: { branchId: actor.branchId, active: true },
-      select: { id: true, name: true, role: { select: { name: true } } },
+      select: {
+        id: true,
+        name: true,
+        cashierNumber: true,
+        role: { select: { name: true } },
+      },
     });
   }
   @Get("users") @Permit("*") users(@CurrentUser() actor: Actor) {
@@ -389,8 +544,26 @@ export class AdminController {
         active: true,
         roleId: true,
         role: true,
+        cashierNumber: true,
       },
     });
+  }
+  // Dos cajeros activos de la sucursal no comparten número.
+  private async freeCashierNumber(
+    actor: Actor,
+    value: number | null | undefined,
+    self?: string,
+  ) {
+    if (!value) return;
+    const used = await this.db.user.findFirst({
+      where: {
+        branchId: actor.branchId,
+        active: true,
+        cashierNumber: value,
+        ...(self ? { id: { not: self } } : {}),
+      },
+    });
+    if (used) bad(`El número de cajero ${value} ya lo tiene ${used.name}.`);
   }
   @Post("users")
   @Permit("*")
@@ -402,9 +575,11 @@ export class AdminController {
         password: z.string().min(12).max(128),
         pin: z.string().regex(/^\d{4,6}$/),
         roleId: uuid,
+        cashierNumber: cashierNumber.optional(),
       }),
       body,
     );
+    await this.freeCashierNumber(actor, data.cashierNumber);
     const row = await this.db.user.create({
       data: {
         name: data.name,
@@ -413,13 +588,20 @@ export class AdminController {
         pinHash: await passwordHash(data.pin),
         roleId: data.roleId,
         branchId: actor.branchId,
+        cashierNumber: data.cashierNumber,
       },
     });
     await audit(this.db, actor, "create", "user", row.id, undefined, {
       name: row.name,
       roleId: row.roleId,
+      cashierNumber: row.cashierNumber,
     });
-    return { id: row.id, name: row.name, email: row.email };
+    return {
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      cashierNumber: row.cashierNumber,
+    };
   }
   @Patch("users/:id")
   @Permit("*")
@@ -438,6 +620,7 @@ export class AdminController {
           .string()
           .regex(/^\d{4,6}$/)
           .optional(),
+        cashierNumber: cashierNumber.nullable().optional(),
       }),
       body,
     );
@@ -447,6 +630,7 @@ export class AdminController {
     await this.db.user.findFirstOrThrow({
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
+    await this.freeCashierNumber(actor, data.cashierNumber, id);
     const passwordValue = password ? await passwordHash(password) : undefined;
     const pinValue = pin ? await passwordHash(pin) : undefined;
     const row = await this.db.$transaction(async (tx) => {
@@ -468,7 +652,12 @@ export class AdminController {
       return row;
     });
     await audit(this.db, actor, "access_change", "user", id, undefined, rest);
-    return { id: row.id, name: row.name, active: row.active };
+    return {
+      id: row.id,
+      name: row.name,
+      active: row.active,
+      cashierNumber: row.cashierNumber,
+    };
   }
   @Get("roles") @Permit("*") roles() {
     return this.db.role.findMany();

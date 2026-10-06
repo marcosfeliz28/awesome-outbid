@@ -5797,7 +5797,14 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
   });
 
   it("Tienda-ajustes: sucursal, segundo teléfono, logo, impresión automática y tasas del día", async () => {
-    const png = "data:image/png;base64," + Buffer.alloc(600, 7).toString("base64");
+    // PNG real de 1×1: la API comprueba la firma de la imagen.
+    const png =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+    const pngBytes = (size: number) =>
+      Buffer.concat([
+        Buffer.from("89504e470d0a1a0a", "hex"),
+        Buffer.alloc(size - 8, 1),
+      ]);
     const saved = await must(
       "/settings",
       {
@@ -5840,7 +5847,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     const form = new FormData();
     form.append(
       "file",
-      new Blob([Buffer.alloc(150 * 1024, 1)], { type: "image/png" }),
+      new Blob([pngBytes(150 * 1024)], { type: "image/png" }),
       "logo.png",
     );
     const upload = await fetch(base + "/settings/logo", {
@@ -5853,7 +5860,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     const big = new FormData();
     big.append(
       "file",
-      new Blob([Buffer.alloc(201 * 1024, 1)], { type: "image/png" }),
+      new Blob([pngBytes(201 * 1024)], { type: "image/png" }),
       "logo.png",
     );
     const tooBig = await fetch(base + "/settings/logo", {
@@ -5862,9 +5869,20 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       body: big,
     });
     expect(tooBig.status).toBe(400);
+    const fake = new FormData();
+    fake.append("file", new Blob([Buffer.from("<svg onload=alert(1)>")], { type: "image/png" }), "x.png");
+    expect(
+      (
+        await fetch(base + "/settings/logo", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token, "X-Forwarded-For": ip },
+          body: fake,
+        })
+      ).status,
+    ).toBe(400);
     // La cajera no cambia el logo.
     const sellerForm = new FormData();
-    sellerForm.append("file", new Blob([Buffer.alloc(10, 1)], { type: "image/png" }), "l.png");
+    sellerForm.append("file", new Blob([pngBytes(100)], { type: "image/png" }), "l.png");
     expect(
       (
         await fetch(base + "/settings/logo", {
