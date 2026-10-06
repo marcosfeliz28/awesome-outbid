@@ -396,10 +396,11 @@ export function POS({ go }: { go: (page: string) => void }) {
     // lector envía las teclas casi juntas; una persona, no. Tres teclas
     // seguidas a menos de SCAN_GAP_MS son un escaneo: los descuentos vuelven
     // a su valor de antes y el código sigue en el buscador, donde su Enter
-    // agrega el producto.
+    // agrega el producto. Una tecla sostenida (repetición) no cuenta.
     const field = document.activeElement;
     if (
       printable &&
+      !e.repeat &&
       field instanceof HTMLInputElement &&
       field.matches(DISCOUNT_FIELDS) &&
       search.current

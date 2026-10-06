@@ -40,21 +40,16 @@ export function parseExtraction(value: unknown): ExtractedInvoice {
 
 // ---------------------------------------------------------------------------
 // Números como vienen en facturas: "1,200.00", "RD$ 450", "1.200,50", "0,75".
-// `decimal` es el separador decimal del archivo cuando se conoce: "," en un
-// CSV con «;» (Excel en español), donde «1.250» son mil doscientos cincuenta.
 // ---------------------------------------------------------------------------
-function readInvoiceNumber(
-  raw: unknown,
-  decimal?: "," | ".",
-): { n: number; ambiguous?: string } {
-  if (typeof raw === "number") return { n: Number.isFinite(raw) ? raw : NaN };
+export function parseInvoiceNumber(raw: unknown): number {
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : NaN;
   let s = String(raw ?? "")
     .replace(/\u00a0/g, " ")
     .trim()
     .replace(/^(rd\$|us\$|dop|usd|\$)\s*/i, "")
     .replace(/\s*(rd\$|dop|usd)$/i, "")
     .replace(/\s+/g, "");
-  if (!s || !/^-?[\d.,]+$/.test(s)) return { n: NaN };
+  if (!s || !/^-?[\d.,]+$/.test(s)) return NaN;
   const lastDot = s.lastIndexOf("."),
     lastComma = s.lastIndexOf(",");
   if (lastDot >= 0 && lastComma >= 0) {
@@ -63,30 +58,16 @@ function readInvoiceNumber(
       lastComma > lastDot
         ? s.replace(/\./g, "").replace(",", ".")
         : s.replace(/,/g, "");
-  } else if (lastComma >= 0 || lastDot >= 0) {
-    const sep = lastComma >= 0 ? "," : ".";
-    const parts = s.split(sep);
-    if (parts.length > 2) s = parts.join("");
-    else if (parts[1].length !== 3 || /^-?0?$/.test(parts[0]))
-      s = parts.join(".");
-    else {
-      // Un solo separador y 3 dígitos (R9-facturas-7): «1,250» son miles en
-      // estilo dominicano y «1.250» en estilo español. Si el archivo no
-      // indica cuál, se rechaza en vez de leer 1.25 en silencio.
-      const thousands = sep === "," ? decimal !== "," : decimal === ",";
-      if (!thousands)
-        return {
-          n: NaN,
-          ambiguous: `¿${parts.join("")} o ${parts[0]}${sep}${parts[1].replace(/0+$/, "")}?`,
-        };
-      s = parts.join("");
-    }
+  } else if (lastComma >= 0) {
+    const parts = s.split(",");
+    const decimal =
+      parts.length === 2 && (parts[1].length !== 3 || /^-?0$/.test(parts[0]));
+    s = decimal ? parts.join(".") : parts.join("");
+  } else if ((s.match(/\./g) ?? []).length > 1) {
+    s = s.replace(/\./g, "");
   }
   const n = Number(s);
-  return { n: Number.isFinite(n) ? n : NaN };
-}
-export function parseInvoiceNumber(raw: unknown, decimal?: "," | "."): number {
-  return readInvoiceNumber(raw, decimal).n;
+  return Number.isFinite(n) ? n : NaN;
 }
 
 // Excel en español guarda CSV en Windows-1252 y con punto y coma.
@@ -202,12 +183,9 @@ export async function readInvoiceTable(
 ) {
   const workbook = new ExcelJS.Workbook();
   let tooLong = false;
-  let decimal: "," | undefined;
   try {
     if (format === "csv") {
       const { text, delimiter } = decodeCsv(buffer);
-      // Excel en español guarda «;» y usa la coma decimal (R9-facturas-7).
-      if (delimiter === ";") decimal = ",";
       if (text.split(/\r?\n/).length > MAX_ROWS) tooLong = true;
       // map identidad: conserva ceros iniciales en códigos y no convierte fechas.
       if (!tooLong)
@@ -274,23 +252,13 @@ export async function readInvoiceTable(
       (blank(costRaw) || SUMMARY_ROW.test(normalize(description)))
     )
       return; // encabezado de sección o fila de totales
-    const qtyRead = readInvoiceNumber(qtyRaw, decimal),
-      costRead = readInvoiceNumber(costRaw, decimal);
-    const qty = qtyRead.n,
-      unitCost = costRead.n;
-    if (qtyRead.ambiguous)
-      errors.push(
-        `Fila ${index}: la cantidad «${String(qtyRaw)}» es ambigua (${qtyRead.ambiguous}). Escríbela sin separador de miles.`,
-      );
-    else if (!(qty > 0))
+    const qty = parseInvoiceNumber(qtyRaw),
+      unitCost = parseInvoiceNumber(costRaw);
+    if (!(qty > 0))
       errors.push(
         `Fila ${index}: la cantidad «${String(qtyRaw)}» no es un número mayor que 0.`,
       );
-    if (costRead.ambiguous)
-      errors.push(
-        `Fila ${index}: el costo «${String(costRaw)}» es ambiguo (${costRead.ambiguous}). Escríbelo sin separador de miles o con dos decimales.`,
-      );
-    else if (!(unitCost > 0))
+    if (!(unitCost > 0))
       errors.push(
         `Fila ${index}: el costo «${String(costRaw)}» no es un número mayor que 0.`,
       );
@@ -693,29 +661,6 @@ const COLOR_MODIFIERS = new Set([
   "oscuro",
   "oscura",
 ]);
-// Claro/oscuro en los dos idiomas ("Light Brown" es "Marrón claro"). En un
-// nombre sólo cuentan junto a un color (R9-facturas-5).
-const SHADE: Record<string, string> = {
-  light: "claro",
-  claro: "claro",
-  clara: "claro",
-  dark: "oscuro",
-  oscuro: "oscuro",
-  oscura: "oscuro",
-};
-function shadesIn(toks: string[], nextToColor = false) {
-  return new Set(
-    toks
-      .filter(
-        (t, i) =>
-          SHADE[t] &&
-          (!nextToColor ||
-            NAME_COLORS.includes(toks[i - 1] ?? "") ||
-            NAME_COLORS.includes(toks[i + 1] ?? "")),
-      )
-      .map((t) => SHADE[t]),
-  );
-}
 // Tallas explícitas en una lista de tokens:
 // - "2XL"/"XXL" → "2xl"; "X-Large"/"Extra Large"/"Extra grande" → "xl";
 //   "XX-Large"/"2X-Large" → "2xl"; "Mediana" → "m".
@@ -877,18 +822,6 @@ const UNIT_WORDS = new Set([
   "tablets",
   "softgels",
   "gomitas",
-  // Unidades de conteo que ahora se comparan como tamaño (R9-facturas-3):
-  // "31 serv." y "31 servings" son lo mismo.
-  "serv",
-  "softgel",
-  "caplet",
-  "caplets",
-  "liqui",
-  "liquicaps",
-  "packs",
-  "gummies",
-  "iu",
-  "ui",
 ]);
 // Palabras que identifican el producto: la línea y la presentación sin
 // rasgos, números, unidades ni relleno. La marca de "Producto - Marca -
@@ -945,26 +878,6 @@ const UNIT_CANON: Record<string, string> = {
   servicios: "serv",
   servings: "serv",
   porciones: "serv",
-  // Unidades de conteo propias (R9-facturas-3): 100 softgels no son 50, y no
-  // se mezclan con "caps" porque son otro envase. "serv." es "servicios".
-  serv: "serv",
-  softgel: "softgel",
-  softgels: "softgel",
-  caplet: "caplet",
-  caplets: "caplet",
-  "liqui-caps": "liquicap",
-  liquicaps: "liquicap",
-  pack: "pack",
-  packs: "pack",
-  gomitas: "gomita",
-  gummies: "gomita",
-  unidades: "und",
-  und: "und",
-  // Dosis: 25 mg no es 50 mg; así tampoco se leen como número de tono.
-  mg: "mg",
-  mcg: "mcg",
-  iu: "iu",
-  ui: "iu",
 };
 const MEASURE_RE = new RegExp(
   "(?<![\\d.,])(\\d+(?:[.,]\\d+)?)[\\s-]*(" +
@@ -974,22 +887,6 @@ const MEASURE_RE = new RegExp(
     ")(?![a-z])",
   "g",
 );
-// Palabras de una factura que no hace falta encontrar en el nombre del
-// producto: unidades, relleno, talla, color, sabor y referencias. Las demás
-// son palabras que el nombre no explica, como otra marca (R9-facturas-6).
-const EXPLAINED = new Set([
-  ...UNIT_WORDS,
-  ...GENERIC,
-  ...FILLER,
-  ...SIZES,
-  ...Object.keys(SIZE_WORDS),
-  ...SIZE_KEYWORDS,
-  ...NAME_COLORS,
-  ...COLOR_MODIFIERS,
-  ...NAME_FLAVORS,
-  ...Object.keys(UNIT_CANON).flatMap((u) => tokens(u)),
-  ...["x", "xx", "xxx", "extra", "sabor", "flavor", "ref", "codigo", "cod"],
-]);
 // Número + unidad leídos del texto, con decimales ("1.3 lb", "1,5 lb") y
 // miles ("1,000 ml"). Antes se leía de los tokens y "1.3" daba 1.3 y 3.
 export function measuresIn(text: string): Measure[] {
@@ -1022,58 +919,13 @@ const sameAmount = (declared: Measure, own: Measure) => {
   const f = 10 ** declared.dec;
   return Math.round(own.n * f) / f === declared.n;
 };
-// La dosis por unidad (mg, mcg, UI) se compara aparte (R9-facturas-3): que
-// coincidan los 450 mg no hace iguales 100 softgels y 50 softgels.
-const DOSE_UNITS = new Set(["mg", "mcg", "iu"]);
-// Medidas propias en conflicto (vacío si no hay contradicción).
-function measureConflicts(declared: Measure[], own: Measure[]) {
-  const out: Measure[] = [];
-  for (const dose of [true, false]) {
-    const group = (m: Measure) => DOSE_UNITS.has(m.unit) === dose;
-    const mine = own.filter(group);
-    const common = declared.filter(
-      (m) => group(m) && mine.some((o) => o.unit === m.unit),
-    );
-    if (
-      common.length &&
-      !common.some((m) => mine.some((o) => sameAmount(m, o)))
-    )
-      out.push(...mine.filter((o) => common.some((m) => m.unit === o.unit)));
-  }
-  return out;
+function measureConflict(declared: Measure[], own: Measure[]) {
+  const common = declared.filter((m) => own.some((o) => o.unit === m.unit));
+  if (!common.length) return false;
+  return !common.some((m) => own.some((o) => sameAmount(m, o)));
 }
-const measureConflict = (declared: Measure[], own: Measure[]) =>
-  measureConflicts(declared, own).length > 0;
 const measureAgree = (declared: Measure[], own: Measure[]) =>
   declared.some((m) => own.some((o) => sameAmount(m, o)));
-// Números sin unidad ("FSP 5.5", "Polvo compacto 370", "L-Carnitine 3000"):
-// identifican el tono o la línea (R9-facturas-4). Se comparan enteros, con
-// sus decimales: "5.5" no es "6.5" ni "5"; "05" sí es "5" y "6.0" es "6".
-// En un nombre sólo cuentan los sueltos ("ISO100", "24H" o "K2" son parte de
-// una palabra); en la factura también los pegados ("FSP6.5").
-export function numbersIn(text: string, glued = false) {
-  const t = text
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(MEASURE_RE, " ");
-  const re = glued
-    ? /(?<![\d.,])\d+(?:[.,]\d+)*(?!\d|[.,]\d)/g
-    : /(?<![a-z\d.,])\d+(?:[.,]\d+)*(?![a-z\d]|[.,]\d)/g;
-  return [
-    ...new Set(
-      [...t.matchAll(re)].map((m) =>
-        String(
-          Number(
-            /^\d{1,3}(,\d{3})+$/.test(m[0])
-              ? m[0].replace(/,/g, "")
-              : m[0].replace(",", "."),
-          ),
-        ),
-      ),
-    ),
-  ];
-}
 const contains = (desc: Set<string>, value: string) => {
   const t = tokens(value);
   return t.length > 0 && t.every((x) => desc.has(x));
@@ -1200,11 +1052,9 @@ export function matchInvoiceLines(
     colors: Set<string>;
     flavors: Set<string>;
     measures: Measure[];
-    // Números sin unidad: tono o línea (R9-facturas-4).
-    numbers: string[];
   };
   // En un nombre de producto, talla/color/sabor se leen de la presentación;
-  // el tamaño y los números, de todo el nombre.
+  // el tamaño, de todo el nombre.
   const traitsOf = (text: string, name = false): Traits => {
     const toks = tokens(name ? presentationOf(text) : text),
       set = new Set(toks);
@@ -1219,30 +1069,16 @@ export function matchInvoiceLines(
         NAME_FLAVORS.filter((f) => set.has(f)).map((f) => FLAVOR_EN[f] ?? f),
       ),
       measures: measuresIn(text),
-      numbers: numbersIn(text, !name),
     };
   };
   const nameTraits = new Map<string, Traits>(),
     nameCores = new Map<string, string>(),
-    nameKeys = new Map<string, string[]>(),
-    // Todas las palabras del nombre, su marca y el claro/oscuro de su color
-    // (R9-facturas-5 y R9-facturas-6).
-    nameWords = new Map<string, Set<string>>(),
-    nameBrands = new Map<string, { label: string; words: string[] }>(),
-    nameShades = new Map<string, Set<string>>();
+    nameKeys = new Map<string, string[]>();
   for (const [productId, options] of byProduct) {
-    const name = options[0].product.name;
-    nameTraits.set(productId, traitsOf(name, true));
-    nameCores.set(productId, coreText(name));
-    nameKeys.set(productId, keyTokens(name));
-    nameWords.set(productId, new Set(tokens(name)));
-    const parts = name.split(/\s+-\s+/);
-    if (parts.length >= 3)
-      nameBrands.set(productId, { label: parts[1], words: tokens(parts[1]) });
-    nameShades.set(productId, shadesIn(tokens(presentationOf(name)), true));
+    nameTraits.set(productId, traitsOf(options[0].product.name, true));
+    nameCores.set(productId, coreText(options[0].product.name));
+    nameKeys.set(productId, keyTokens(options[0].product.name));
   }
-  const nameOf = (productId: string) =>
-    byProduct.get(productId)![0].product.name;
   // Lo que la factura declara y el nombre del producto contradice.
   const nameConflicts = (productId: string, declared: Traits) => {
     const own = nameTraits.get(productId)!,
@@ -1265,16 +1101,14 @@ export function matchInvoiceLines(
       !sizeOverlap(own.flavors, declared.flavors)
     )
       out.push("sabor " + [...own.flavors].join("/"));
-    const sizes = measureConflicts(declared.measures, own.measures);
-    if (sizes.length)
-      out.push("tamaño " + sizes.map((o) => o.n + " " + o.unit).join("/"));
-    // La factura trae números y no el del producto: «FSP 6.5» no es «FSP
-    // 5.5» (R9-facturas-4). Números de más («Ref 1201») no contradicen.
-    if (
-      declared.numbers.length &&
-      own.numbers.some((n) => !declared.numbers.includes(n))
-    )
-      out.push("número " + own.numbers.join("/"));
+    if (measureConflict(declared.measures, own.measures))
+      out.push(
+        "tamaño " +
+          own.measures
+            .filter((o) => declared.measures.some((m) => m.unit === o.unit))
+            .map((o) => o.n + " " + o.unit)
+            .join("/"),
+      );
     return out;
   };
   // Cuántos rasgos declarados coinciden con el nombre (desempate).
@@ -1295,36 +1129,12 @@ export function matchInvoiceLines(
       [...t.colors].sort(),
       [...t.flavors].sort(),
       t.measures.map((m) => m.n + m.unit).sort(),
-      [...t.numbers].sort(),
     ]);
   };
-  // Otro producto de la misma línea con el mismo color ("Neutral Beige"
-  // junto a "Light Beige"): el claro/oscuro es lo que los distingue.
-  const siblings = new Map<string, boolean>();
-  const hasSibling = (productId: string) => {
-    if (!siblings.has(productId)) {
-      const own = nameTraits.get(productId)!,
-        keys = nameKeys.get(productId)!;
-      siblings.set(
-        productId,
-        [...byProduct.keys()].some(
-          (other) =>
-            other !== productId &&
-            sizeOverlap(nameTraits.get(other)!.colors, own.colors) &&
-            keys.every((k) => nameWords.get(other)!.has(k)),
-        ),
-      );
-    }
-    return siblings.get(productId)!;
-  };
-  // ¿Nombra la factura todo lo que identifica al producto? null si sí; si
-  // no, un detalle (quizá vacío) para la nota. Sólo se elige con todo.
-  const missing = (productId: string, descToks: string[], t: Traits) => {
-    const desc = new Set(descToks),
-      own = nameTraits.get(productId)!;
-    // Un sabor o color cuenta también por su sinónimo ("Fresa" por
-    // "Strawberry").
-    const keysPresent = nameKeys
+  // ¿Están en la factura todas las palabras que identifican el producto? Un
+  // sabor o color cuenta también por su sinónimo ("Fresa" por "Strawberry").
+  const keyPresent = (productId: string, desc: Set<string>, t: Traits) =>
+    nameKeys
       .get(productId)!
       .every(
         (k) =>
@@ -1332,34 +1142,6 @@ export function matchInvoiceLines(
           t.flavors.has(FLAVOR_EN[k] ?? k) ||
           t.colors.has(COLOR_EN[k] ?? k),
       );
-    // El número del tono o de la línea también identifica (R9-facturas-4).
-    if (!keysPresent || !own.numbers.every((n) => t.numbers.includes(n)))
-      return "";
-    // Palabras de la factura que el nombre no explica.
-    const words = nameWords.get(productId)!;
-    const extra = descToks.filter(
-      (w) => !words.has(w) && !/^\d+$/.test(w) && !EXPLAINED.has(w),
-    );
-    // Sin número, el color del nombre es el tono (R9-facturas-5): la factura
-    // debe nombrarlo («Lemon Drop» no es «Purple Cream»), y también el
-    // claro/oscuro si trae otras palabras («Golden Beige») o si otro
-    // producto de la línea tiene ese color («Neutral Beige»).
-    if (own.colors.size && !own.numbers.length) {
-      if (!sizeOverlap(own.colors, t.colors)) return "";
-      const said = shadesIn(descToks);
-      if (
-        [...nameShades.get(productId)!].some((s) => !said.has(s)) &&
-        (extra.length || hasSibling(productId))
-      )
-        return "";
-    }
-    // La marca es opcional sólo si la factura no nombra otra cosa:
-    // «Melatonin Natrol» no es «Melatonin - Nutrex» (R9-facturas-6).
-    const brand = nameBrands.get(productId);
-    if (brand && !brand.words.every((w) => desc.has(w)) && extra.length)
-      return ` (la factura dice «${[...new Set(extra)].join(" ")}» y no ${brand.label})`;
-    return null;
-  };
   const describe = (t: Traits) =>
     [
       t.sizes.size ? "talla " + [...t.sizes].join("/").toUpperCase() : "",
@@ -1368,7 +1150,6 @@ export function matchInvoiceLines(
       t.measures.length
         ? "tamaño " + t.measures.map((m) => m.n + " " + m.unit).join("/")
         : "",
-      t.numbers.length ? "número " + t.numbers.join("/") : "",
     ]
       .filter(Boolean)
       .join(", ");
@@ -1379,13 +1160,37 @@ export function matchInvoiceLines(
     nameConflicts(productId, declared).join(", ") +
     ". Elige o crea el producto correcto.";
   const round2 = (n: number) => Math.round(n * 100) / 100;
-  // Por nombre. Se puntúan las palabras propias del producto (sin talla,
-  // color ni relleno): "Short Broche L Negro" no debe parecerse a "Panty
-  // Negro L" sólo por compartir talla y color.
-  const byName = (
-    l: ExtractedInvoice["lines"][number],
-    declared: Traits,
-  ): MatchedLine => {
+  return lines.map((l) => {
+    const declared = traitsOf(l.description);
+    const code = l.code?.trim();
+    if (code) {
+      const exact =
+        variants.find((v) => v.barcode === code || v.sku === code) ??
+        variants.find((v) =>
+          equivalents.some((e) => e.code === code && e.variantId === v.id),
+        );
+      if (exact)
+        return {
+          ...l,
+          variantId: exact.id,
+          productId: exact.product.id,
+          confidence: 1,
+        };
+      const product = variants.find((v) => v.product.sku === code)?.product;
+      if (product)
+        return nameConflicts(product.id, declared).length
+          ? {
+              ...l,
+              variantId: null,
+              productId: product.id,
+              confidence: 1,
+              note: traitNote(product.id, declared),
+            }
+          : pickVariant(l, product.id, 1);
+    }
+    // Por nombre. Se puntúan las palabras propias del producto (sin talla,
+    // color ni relleno): "Short Broche L Negro" no debe parecerse a "Panty
+    // Negro L" sólo por compartir talla y color.
     const scored = [...byProduct].map(([productId, options]) => {
       const core = nameCores.get(productId)!;
       return {
@@ -1444,10 +1249,9 @@ export function matchInvoiceLines(
               tied.length +
               " productos parecidos (otra talla, color, sabor o tamaño) y la factura no indica cuál. Elige el producto.",
           };
-        // Sin alguna palabra que identifica al producto (otra línea, otra
-        // marca u otro tono), sólo se sugiere: alguien confirma o busca otro.
-        const lacking = missing(chosen.id, tokens(l.description), declared);
-        if (lacking !== null)
+        // Sin alguna palabra que identifica al producto (otra línea u otra
+        // marca), sólo se sugiere: alguien confirma o busca otro.
+        if (!keyPresent(chosen.id, new Set(tokens(l.description)), declared))
           return {
             ...l,
             variantId: null,
@@ -1455,10 +1259,8 @@ export function matchInvoiceLines(
             confidence: round2(chosen.score),
             note:
               "Coincidencia parcial con «" +
-              nameOf(chosen.id) +
-              "»" +
-              lacking +
-              ": confirma el producto o busca otro.",
+              byProduct.get(chosen.id)![0].product.name +
+              "»: confirma el producto o busca otro.",
           };
         return pickVariant(l, chosen.id, round2(chosen.score));
       }
@@ -1472,88 +1274,5 @@ export function matchInvoiceLines(
         note: traitNote(nearest.id, declared),
       };
     return { ...l, variantId: null, productId: null, confidence: 0 };
-  };
-  // Un código de la tienda se respeta salvo que la descripción lo contradiga
-  // (R9-facturas-2): que sea claramente otro producto de la tienda, o que
-  // declare otro tamaño, sabor, color, talla o número que el del nombre.
-  const doubtful = (
-    l: ExtractedInvoice["lines"][number],
-    declared: Traits,
-    code: string,
-    productId: string,
-  ): MatchedLine | null => {
-    const guess = byName(l, declared);
-    if (guess.variantId && guess.productId && guess.productId !== productId)
-      return {
-        ...l,
-        variantId: null,
-        productId: guess.productId,
-        confidence: guess.confidence,
-        note: `El código ${code} es de «${nameOf(productId)}» en la tienda, pero la descripción corresponde a «${nameOf(guess.productId)}». Confirma el producto.`,
-      };
-    if (nameConflicts(productId, declared).length)
-      return {
-        ...l,
-        variantId: null,
-        productId,
-        confidence: 1,
-        note:
-          `El código ${code} es de «${nameOf(productId)}» en la tienda. ` +
-          traitNote(productId, declared),
-      };
-    return null;
-  };
-  const byCode = (
-    l: ExtractedInvoice["lines"][number],
-    declared: Traits,
-    code: string,
-  ): MatchedLine | null => {
-    const lower = code.toLowerCase();
-    // La equivalencia del proveedor va primero (R9-facturas-2): la guardó
-    // una persona al corregir este código de este proveedor.
-    const learned =
-      equivalents.find((e) => e.code === code) ??
-      equivalents.find((e) => e.code.toLowerCase() === lower);
-    const own = learned && variants.find((v) => v.id === learned.variantId);
-    if (own)
-      return {
-        ...l,
-        variantId: own.id,
-        productId: own.product.id,
-        confidence: 1,
-      };
-    // Todas las variantes con ese código, sin distinguir mayúsculas como la
-    // caja (R9-facturas-1): si el código es de varias, nadie elige en
-    // silencio la primera que devuelve la base.
-    let found = variants.filter(
-      (v) => v.sku.toLowerCase() === lower || v.barcode.toLowerCase() === lower,
-    );
-    const byProductSku = !found.length;
-    if (byProductSku)
-      found = variants.filter((v) => v.product.sku.toLowerCase() === lower);
-    if (!found.length) return null;
-    const productIds = [...new Set(found.map((v) => v.product.id))];
-    if (productIds.length > 1 || (!byProductSku && found.length > 1))
-      return {
-        ...l,
-        variantId: null,
-        productId: productIds.length === 1 ? productIds[0] : null,
-        confidence: 0,
-        note:
-          productIds.length > 1
-            ? `El código ${code} es de ${productIds.length} productos; elige el correcto y corrige el código en Productos.`
-            : `El código ${code} es de ${found.length} variantes de «${nameOf(productIds[0])}»; elige la correcta y corrige el código en Productos.`,
-      };
-    const productId = productIds[0];
-    const doubt = doubtful(l, declared, code, productId);
-    if (doubt) return doubt;
-    return byProductSku
-      ? pickVariant(l, productId, 1)
-      : { ...l, variantId: found[0].id, productId, confidence: 1 };
-  };
-  return lines.map((l) => {
-    const declared = traitsOf(l.description);
-    const code = l.code?.trim();
-    return (code && byCode(l, declared, code)) || byName(l, declared);
   });
 }

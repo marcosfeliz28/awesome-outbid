@@ -952,3 +952,223 @@ describe("emparejamiento · conservador con el catálogo real", () => {
     expect(r.note).toMatch(/no indica cuál/);
   });
 });
+
+// Ronda 9 · revisión adversarial · área facturas.
+describe("Ronda 9 · revisión · facturas", () => {
+  const products: { id: string; name: string }[] = createRequire(
+    import.meta.url,
+  )("./fixtures/catalogo-tienda.json");
+  const catalog = products.map((p) => ({
+    id: "v-" + p.id,
+    sku: p.id,
+    barcode: p.id,
+    attributes: {},
+    product: { id: "p-" + p.id, name: p.name, sku: "INV-" + p.id },
+  }));
+  const match = (
+    description: string,
+    code?: string,
+    equivalents: { code: string; variantId: string }[] = [],
+  ) =>
+    matchInvoiceLines(
+      [{ code, description, qty: 1, unitCost: 1 }],
+      catalog,
+      equivalents,
+    )[0];
+  const picks = (description: string, id: string) => {
+    const r = match(description);
+    expect(r.productId, description).toBe("p-" + id);
+    expect(r.variantId, description).toBe("v-" + id);
+  };
+  const flags = (description: string, note: RegExp) => {
+    const r = match(description);
+    expect(r.variantId, description).toBeNull();
+    expect(r.note, description).toMatch(note);
+  };
+  it("un código de varias variantes no se elige en silencio (R9-facturas-1)", () => {
+    const a = {
+      id: "v-a",
+      sku: "WF-A",
+      barcode: "WF-CODE-X",
+      attributes: {},
+      product: { id: "p-a", name: "Faja chaleco", sku: "PA" },
+    };
+    const c = {
+      id: "v-c",
+      sku: "WF-CODE-X",
+      barcode: "WF-C",
+      attributes: {},
+      product: { id: "p-c", name: "Faja chaleco premium", sku: "PC" },
+    };
+    for (const variants of [
+      [a, c],
+      [c, a],
+    ])
+      for (const code of ["WF-CODE-X", "wf-code-x"]) {
+        const [r] = matchInvoiceLines(
+          [{ code, description: "Faja chaleco", qty: 2, unitCost: 700 }],
+          variants,
+        );
+        expect(r.variantId, code).toBeNull();
+        expect(r.productId, code).toBeNull();
+        expect(r.confidence, code).toBe(0);
+        expect(r.note, code).toMatch(/El código .* es de 2 productos/);
+      }
+    // Sin distinguir mayúsculas, como la caja.
+    expect(
+      matchInvoiceLines(
+        [{ code: "wf-a", description: "x", qty: 1, unitCost: 1 }],
+        [a, c],
+      )[0],
+    ).toMatchObject({ variantId: "v-a", confidence: 1 });
+  });
+  it("la equivalencia del proveedor gana al código de la tienda; una descripción que contradice el código no se elige (R9-facturas-2)", () => {
+    // La persona ya corrigió «1162» de este proveedor a otro producto.
+    expect(
+      match("Top Deportivo Aurora Lila", "1162", [
+        { code: "1162", variantId: "v-1177" },
+      ]),
+    ).toMatchObject({
+      variantId: "v-1177",
+      productId: "p-1177",
+      confidence: 1,
+    });
+    // Sin equivalencia: la descripción es de otro producto de la tienda.
+    const other = match(
+      "Optimum Nutrition Gold Standard 100% Whey Vanilla Ice Cream 5 lb",
+      "1162",
+    );
+    expect(other.variantId).toBeNull();
+    expect(other.productId).toBe("p-1177");
+    expect(other.note).toMatch(/código 1162.*ISO100/);
+    // Mismo producto con otro tamaño: se avisa del tamaño.
+    const size = match("ISO100 Hydrolyzed Dymatize Strawberry 5 lb", "1162");
+    expect(size.variantId).toBeNull();
+    expect(size.productId).toBe("p-1162");
+    expect(size.note).toMatch(/código 1162.*tamaño 1\.34 lb/);
+    // La descripción que no contradice (o no dice nada) deja el código.
+    for (const d of ["ISO100 Hydrolyzed Dymatize Strawberry 1.34 lb", "x"])
+      expect(match(d, "1162").variantId, d).toBe("v-1162");
+  });
+  it("tamaños en softgels, caplets, liqui-caps, serv. y packs (R9-facturas-3)", () => {
+    for (const d of [
+      "Vitamin E Puritan's Pride 450 mg / 100 softgels",
+      "Zinc Picolinate Puritan's Pride 25 mg / 200 caplets",
+      "L-Carnitine 3000 Nutrex Berry Blast 62 serv.",
+      "Anabol Hardcore Nutrex 120 liqui-caps",
+      "Animal Pak 30 packs",
+      "CLA 1000 Nutrex 1,000 mg / 180 softgels",
+      "Ultra Mega Biotin Puritan's Pride 10,000 mcg / 50 softgels",
+      "Testosterone Booster Six Star 120 caplets",
+    ])
+      flags(d, /tamaño/);
+    picks("Vitamin E Puritan's Pride 450 mg / 50 softgels", "1051");
+    picks("Zinc Picolinate Puritan's Pride 25 mg / 100 caplets", "1025");
+    picks("L-Carnitine 3000 Nutrex Berry Blast 31 servings", "1020");
+    picks("Anabol Hardcore Nutrex 60 liqui-caps", "1015");
+    picks("Animal Pak 44 packs", "1150");
+  });
+  it("el número del tono identifica el producto (R9-facturas-4)", () => {
+    for (const d of [
+      "Beauty Creations Flawless Stay Powder Foundation FSP 6.5",
+      "Beauty Creations Flawless Stay Powder Foundation FSP 5.0",
+      "Beauty Creations Flawless Stay Powder Foundation FSP6.5",
+      "Maybelline Super Stay 24H Polvo compacto 120",
+      "Amave Blush 05",
+      "Dior Rosy Glow Blush 012 Rosewood",
+      "Pudair Lip Contour 3.0",
+      "SHCOETY Cosmetics Lápiz delineador de labios 05",
+    ])
+      flags(d, /número/);
+    // Sin número no se elige ningún tono.
+    expect(
+      match("Beauty Creations Flawless Stay Powder Foundation FSP").variantId,
+    ).toBeNull();
+    picks("Beauty Creations Flawless Stay Powder Foundation FSP 6.0", "1303");
+    picks("Beauty Creations Flawless Stay Powder Foundation FSP 6", "1303");
+    picks("Beauty Creations Flawless Stay Powder Foundation FSP 5.5", "1302");
+    picks("Maybelline Super Stay 24H Polvo compacto 370", "1299");
+    picks("Amave Blush 3", "1461");
+    picks("Dior Rosy Glow Blush 001 Pink", "1272");
+    picks("Tribulus 1400 Nutrex 90 cápsulas", "1002");
+  });
+  it("un tono de palabras que el nombre no tiene no cae en otro tono (R9-facturas-5)", () => {
+    for (const d of [
+      "Beauty Creations Color Base Primer Lemon Drop",
+      "Beauty Creations Color Base Primer Mint Chip",
+      "Beauty Creations Color Base Primer",
+      "Too Faced Born This Way Soft Matte Oil Control Foundation Warm Sand",
+      "Too Faced Born This Way Soft Matte Oil Control Foundation Golden Beige",
+      "L.A. Girl Eyeliner Pencil Burgundy",
+      "SHEGLAM On-Line Long-Wear Multi-Function Eyeliner Navy",
+      "L.A. Colors Auto Lip Liner Mauve",
+      "MAC Labial en barra Velvet Teddy",
+      "Short Broche S Cocoa",
+    ])
+      expect(match(d).variantId, d).toBeNull();
+    picks("Beauty Creations Color Base Primer Purple Cream", "1568");
+    picks(
+      "Too Faced Born This Way Soft Matte Oil Control Foundation Light Beige",
+      "1512",
+    );
+    picks("L.A. Girl Eyeliner Pencil Black", "1363");
+    picks("Short Broche S Negro", "1579");
+    picks("Navi Eyeliner Pencil Cafe", "1367");
+  });
+  it("una factura que nombra otra marca no queda elegida (R9-facturas-6)", () => {
+    for (const d of [
+      "Melatonin Natrol 100 tabletas",
+      "Forskolin NOW 60 cápsulas",
+      "Caffeine 200 Jarrow 60 cápsulas",
+      "Magnesium Citrate Natrol 120 cápsulas vegetales",
+      "GABA Natrol 500 mg / 100 cápsulas vegetales",
+      "Creatine Monohydrate Natrol 60 servicios; unflavored",
+    ]) {
+      const r = match(d);
+      expect(r.variantId, d).toBeNull();
+      expect(r.note, d).toMatch(/Coincidencia parcial/);
+    }
+    picks("Melatonin 100 tabletas", "1065");
+    picks("Melatonin Nutrex 100 tabletas", "1065");
+    picks("Magnesium Citrate NOW 120 cápsulas vegetales", "1022");
+  });
+  it("CSV en español: «1.250» con «;» son 1250; un separador con 3 dígitos sin estilo claro se rechaza (R9-facturas-7)", async () => {
+    const map = {
+      code: "codigo",
+      description: "descripcion",
+      qty: "cantidad",
+      unitCost: "costo",
+    };
+    const semicolon = await readInvoiceTable(
+      Buffer.from(
+        'codigo;descripcion;cantidad;costo\nWF-Z-1;Faja Reloj de Arena Beige;2;"1.250"\nWF-Z-2;Faja;1;"1.250,50"\nWF-Z-3;Faja;1;"0,75"\n',
+      ),
+      "csv",
+      map,
+    );
+    expect(semicolon.lines.map((l) => l.unitCost)).toEqual([
+      1250, 1250.5, 0.75,
+    ]);
+    expect(parseInvoiceNumber("1.250", ",")).toBe(1250);
+    // «1,250» en un archivo con «;» y «1.250» en uno con «,»: ambiguos.
+    await expect(
+      readInvoiceTable(
+        Buffer.from('codigo;descripcion;cantidad;costo\nA;Faja;2;"1,250"\n'),
+        "csv",
+        map,
+      ),
+    ).rejects.toThrow(/Fila 2: el costo «1,250» es ambiguo/);
+    await expect(
+      readInvoiceTable(
+        Buffer.from('codigo,descripcion,cantidad,costo\nA,Faja,2,"1.250"\n'),
+        "csv",
+        map,
+      ),
+    ).rejects.toThrow(/Fila 2: el costo «1.250» es ambiguo/);
+    expect(parseInvoiceNumber("1.250")).toBeNaN();
+    // Lo que no es ambiguo sigue igual.
+    expect(parseInvoiceNumber("1,250")).toBe(1250);
+    expect(parseInvoiceNumber("1.25")).toBe(1.25);
+    expect(parseInvoiceNumber("0.125")).toBe(0.125);
+  });
+});

@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import { create } from "zustand";
+import type { QueryClient } from "@tanstack/react-query";
 import type { SaleInput } from "@fitstore/shared";
 
 export type User = {
@@ -123,7 +124,11 @@ export const useStore = create<{
       return {
         cart: existing
           ? state.cart.map((i) =>
-              i.variant.id === variant.id ? { ...i, qty: i.qty + 1 } : i,
+              // La línea toma la variante recién elegida: si el precio
+              // cambió, se cobra el vigente (R9-offline-3).
+              i.variant.id === variant.id
+                ? { ...i, variant, product, qty: i.qty + 1 }
+                : i,
             )
           : [...state.cart, { variant, product, qty: 1, discountPercent: 0 }],
       };
@@ -147,31 +152,94 @@ export const useStore = create<{
       return { theme };
     }),
 }));
+// El servidor no responde: fetch sin red (TypeError) o el proxy sin la API
+// (502/503/504). Con el router encendido y sin internet, navigator.onLine
+// sigue en true: la caja se marca sin conexión al primer fallo y vende con
+// sus copias locales. Hereda de TypeError, lo que lanza fetch sin red, para
+// que todos los respaldos sin conexión lo traten igual (R9-offline-1).
+export class NetworkError extends TypeError {
+  constructor() {
+    super("Sin conexión con el servidor.");
+    this.name = "NetworkError";
+  }
+}
+export const isNetworkError = (e: unknown): e is NetworkError =>
+  e instanceof NetworkError;
+// Hay red y el servidor respondió la última vez.
+export const isOnline = () => navigator.onLine && useStore.getState().online;
+async function send(url: string, init: RequestInit) {
+  let response: Response;
+  try {
+    response = await fetch(url, init);
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") throw e;
+    useStore.getState().setOnline(false);
+    throw new NetworkError();
+  }
+  if ([502, 503, 504].includes(response.status)) {
+    useStore.getState().setOnline(false);
+    throw new NetworkError();
+  }
+  return response;
+}
 let refreshPromise: Promise<void> | null = null;
 export async function refreshSession() {
   if (!refreshPromise)
     refreshPromise = (async () => {
-      const response = await fetch("/api/auth/refresh", {
+      const response = await send("/api/auth/refresh", {
         method: "POST",
         credentials: "include",
       });
       if (!response.ok) throw new Error("Inicia sesión para continuar.");
       const result = await response.json();
-      await saveSession(result.user, result.accessToken);
+      await saveSession(result.user, result.accessToken, false);
     })().finally(() => {
       refreshPromise = null;
     });
   return refreshPromise;
 }
-export async function saveSession(user: User, token: string | null) {
+export const sessionDeadline = (user: User) =>
+  Date.now() + (user.sessionTimeoutMinutes ?? 30) * 60000;
+// activity = false al renovar el token: una consulta automática no es
+// actividad de la persona y no alarga el plazo de inactividad (R9-offline-5).
+export async function saveSession(
+  user: User,
+  token: string | null,
+  activity = true,
+) {
   useStore.getState().setSession(user, token);
+  const saved = activity ? undefined : await localDB.cache.get("session");
   await localDB.cache.put({
     key: "session",
     data: {
       user,
-      expiresAt: Date.now() + (user.sessionTimeoutMinutes ?? 30) * 60000,
+      expiresAt:
+        saved?.data?.user?.id === user.id &&
+        typeof saved.data.expiresAt === "number"
+          ? saved.data.expiresAt
+          : sessionDeadline(user),
     },
   });
+}
+// Cierra la sesión también en el servidor: sólo borrar el estado del
+// navegador dejaba viva la cookie de renovación y al recargar volvía a entrar
+// el usuario anterior. Si el servidor no responde, la sesión guardada queda
+// vencida para pedir la contraseña e intentarlo otra vez al abrir
+// (R9-offline-5).
+export async function endSession() {
+  let revoked = true;
+  try {
+    await api("/auth/logout", {
+      method: "POST",
+      body: "{}",
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch (e) {
+    revoked = !isNetworkError(e);
+  }
+  useStore.getState().clearSession();
+  if (revoked) await localDB.cache.delete("session");
+  else await localDB.cache.update("session", { "data.expiresAt": 0 });
 }
 export async function api<T = any>(
   path: string,
@@ -183,7 +251,7 @@ export async function api<T = any>(
   if (!(options.body instanceof FormData))
     headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", "Bearer " + token);
-  const response = await fetch("/api" + path, {
+  const response = await send("/api" + path, {
     ...options,
     headers,
     credentials: "include",
@@ -202,40 +270,139 @@ export async function api<T = any>(
 }
 export const post = <T = any>(path: string, data: unknown) =>
   api<T>(path, { method: "POST", body: JSON.stringify(data) });
+// Datos que la caja necesita para vender: se guarda una copia y, sin conexión
+// o si el servidor no responde, se usa la última (R9-offline-1).
+export async function cachedApi<T>(
+  path: string,
+  key: string,
+  fallback: T,
+): Promise<T> {
+  if (isOnline()) {
+    try {
+      const data = await api<T>(path);
+      await localDB.cache.put({ key, data });
+      return data;
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+    }
+  }
+  return ((await localDB.cache.get(key))?.data as T | undefined) ?? fallback;
+}
+// El catálogo llega en páginas de 200 ordenadas por nombre. Si alguien crea o
+// desactiva un producto durante la descarga, las páginas se corren y un
+// producto llegaba dos veces («el código es de 2 productos»). Se junta por
+// id, se corta con una página incompleta y, si el total cambió entre páginas,
+// se descarga otra vez (R9-offline-4).
+async function fetchCatalog() {
+  const limit = 200;
+  for (let attempt = 1; ; attempt++) {
+    const byId = new Map<string, Product>();
+    let total: number | undefined,
+      stable = true;
+    for (let page = 1; ; page++) {
+      const result = await api<{ items: Product[]; total: number }>(
+        "/products?limit=" + limit + "&page=" + page,
+      );
+      if (total !== undefined && result.total !== total) stable = false;
+      total = result.total;
+      for (const p of result.items) byId.set(p.id, p);
+      if (result.items.length < limit || page * limit >= result.total) break;
+    }
+    if (stable || attempt === 3) return [...byId.values()];
+  }
+}
 export async function loadCatalog() {
   const user = useStore.getState().user;
   if (!user) throw new Error("Inicia sesión.");
   const key = "catalog:" + user.branchId;
-  if (navigator.onLine) {
-    const products: Product[] = [];
-    let page = 1,
-      total = 0;
-    do {
-      const result = await api<{ items: Product[]; total: number }>(
-        "/products?limit=200&page=" + page++,
-      );
-      products.push(...result.items);
-      total = result.total;
-    } while (products.length < total);
-    const cached = products.map((p) => ({
-      ...p,
-      variants: p.variants.map(({ costAvg: removed, lots, ...v }) => {
-        void removed;
-        return {
-          ...v,
-          lots: lots?.map(({ cost: unused, ...l }) => {
-            void unused;
-            return l;
-          }),
-        };
-      }),
-    }));
-    await localDB.cache.put({ key, data: cached });
-    return products;
+  if (isOnline()) {
+    try {
+      const products = await fetchCatalog();
+      const cached = products.map((p) => ({
+        ...p,
+        variants: p.variants.map(({ costAvg: removed, lots, ...v }) => {
+          void removed;
+          return {
+            ...v,
+            lots: lots?.map(({ cost: unused, ...l }) => {
+              void unused;
+              return l;
+            }),
+          };
+        }),
+      }));
+      await localDB.cache.put({ key, data: cached });
+      return products;
+    } catch (e) {
+      // Sin respuesta del servidor se vende con la copia local (R9-offline-1).
+      if (!isNetworkError(e)) throw e;
+    }
   }
   const cached = await localDB.cache.get(key);
   if (!cached) throw new Error("Conéctate una vez para descargar el catálogo.");
   return cached.data as Product[];
+}
+// Lo vendido sin conexión se descuenta del catálogo de la pantalla y del de
+// este equipo: sin esto la caja volvía a vender las mismas unidades y la
+// segunda venta quedaba en conflicto con el dinero ya cobrado (R9-offline-2).
+export async function discountLocalStock(
+  client: QueryClient,
+  lines: { variantId: string; qty: number }[],
+) {
+  const sold = new Map<string, number>();
+  for (const l of lines)
+    sold.set(l.variantId, (sold.get(l.variantId) ?? 0) + l.qty);
+  const discount = (products: Product[]) =>
+    products.map((p) =>
+      p.variants.some((v) => sold.has(v.id))
+        ? {
+            ...p,
+            variants: p.variants.map((v) =>
+              sold.has(v.id)
+                ? {
+                    ...v,
+                    stock: String(
+                      Math.max(0, Number(v.stock) - sold.get(v.id)!),
+                    ),
+                  }
+                : v,
+            ),
+          }
+        : p,
+    );
+  client.setQueryData<Product[]>(["catalog"], (old) => old && discount(old));
+  const user = useStore.getState().user;
+  const cached = user && (await localDB.cache.get("catalog:" + user.branchId));
+  if (cached)
+    await localDB.cache.put({ key: cached.key, data: discount(cached.data) });
+}
+// Las líneas del carrito toman la variante y el producto vigentes del
+// catálogo: un precio cambiado en otro equipo bloqueaba el cobro y volver a
+// escanear sumaba unidades al precio viejo. Devuelve las líneas cuyo precio
+// cambió con el precio anterior (R9-offline-3).
+export function refreshCart(products: Product[]) {
+  const fresh = new Map<string, { variant: Variant; product: Product }>();
+  for (const product of products)
+    for (const variant of product.variants)
+      fresh.set(variant.id, { variant, product });
+  const state = useStore.getState();
+  const changes: { item: CartItem; before: number }[] = [];
+  let changed = false;
+  const cart = state.cart.map((i) => {
+    const current = fresh.get(i.variant.id);
+    if (
+      !current ||
+      (current.variant === i.variant && current.product === i.product)
+    )
+      return i;
+    changed = true;
+    const item = { ...i, ...current };
+    if (Number(current.variant.price) !== Number(i.variant.price))
+      changes.push({ item, before: Number(i.variant.price) });
+    return item;
+  });
+  if (changed) state.setCart(cart);
+  return changes;
 }
 export async function syncSales() {
   const user = useStore.getState().user;

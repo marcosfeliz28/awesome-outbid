@@ -16,6 +16,7 @@ import {
   localDB,
   post,
   Product,
+  refreshCart,
   refreshSession,
   useStore,
 } from "./api";
@@ -113,6 +114,9 @@ export function useRealtime() {
         client.setQueryData(["catalog"], catalog);
         for (const p of catalog)
           for (const v of p.variants) apply(v.id, Number(v.stock));
+        // El carrito toma también precios y datos vigentes, no sólo el
+        // stock (R9-offline-3).
+        refreshCart(client.getQueryData<Product[]>(["catalog"]) ?? catalog);
         void client.invalidateQueries();
       } else if (type === "stock.changed") {
         const known = client

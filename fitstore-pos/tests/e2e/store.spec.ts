@@ -1486,3 +1486,347 @@ test("R9-caja-1 revisión: un código de modelo del nombre (como «a40» o «275
   await page.getByRole("button", { name: "Limpiar", exact: true }).click();
   await r9Retire(request, headers, created);
 });
+
+// Revisión R9 · offline: venta sin internet, stock local, precios cambiados,
+// catálogo por páginas y cierre por inactividad.
+async function r9LocalSales(page: any) {
+  return page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const r = indexedDB.open("fitstore-pos-v1");
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+    return await new Promise<any[]>((resolve, reject) => {
+      const r = db.transaction("sales").objectStore("sales").getAll();
+      r.onsuccess = () =>
+        resolve(
+          r.result.map((s: any) => ({ status: s.status, message: s.message })),
+        );
+      r.onerror = () => reject(r.error);
+    });
+  });
+}
+async function r9Charge(page: any) {
+  await page.getByRole("button", { name: /Cobrar/ }).click();
+  await page.getByRole("button", { name: "Agregar pago" }).click();
+  await page.getByRole("button", { name: "Finalizar venta" }).click();
+}
+async function r9Stock(request: any, headers: any, product: any) {
+  const row = await (
+    await request.get("/api/products/" + product.id, { headers })
+  ).json();
+  return Number(row.variants[0].stock);
+}
+
+test("R9-offline-1: sin internet pero con la red local activa, la caja sigue vendiendo y al recargar no pide la contraseña", async ({
+  page,
+  request,
+  context,
+}) => {
+  const headers = await r9Headers(request);
+  const code = r9Code("7");
+  const name = "Faja E2E sin internet " + code;
+  const product = await r9Product(request, headers, name, code);
+  const search = await r9Pos(page);
+  await search.fill(code);
+  await search.press("Enter");
+  await expect(r9Qty(page, name)).toHaveText("1");
+  // Se cae internet: el router sigue encendido y navigator.onLine sigue en true.
+  const api = (url: URL) => url.pathname.startsWith("/api/");
+  await context.route(api, (route: any) => route.abort("internetdisconnected"));
+  expect(await page.evaluate(() => navigator.onLine)).toBe(true);
+  await r9Charge(page);
+  await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible();
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  await expect(page.locator(".connection")).toContainText("Offline");
+  // La lista sigue a la vista con el stock ya descontado (antes: «Failed to
+  // fetch · Reintentar» en lugar de las tarjetas).
+  await expect(page.locator(".error-panel")).toHaveCount(0);
+  await search.fill(code);
+  await expect(page.locator(".product-card", { hasText: name })).toContainText(
+    "4 en stock",
+  );
+  // Al recargar entra con la sesión guardada y vende con el catálogo local.
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Punto de venta" }),
+  ).toBeVisible();
+  await expect(page.locator(".connection")).toContainText("Offline");
+  await search.fill(code);
+  await expect(page.locator(".product-card", { hasText: name })).toContainText(
+    "4 en stock",
+  );
+  await search.press("Enter");
+  await expect(r9Qty(page, name)).toHaveText("1");
+  await r9Charge(page);
+  await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible();
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  expect(await r9LocalSales(page)).toHaveLength(2);
+  // Vuelve internet: la caja lo nota sola y sincroniza las dos ventas una vez.
+  await context.unroute(api);
+  await expect(page.locator(".connection")).toContainText("En línea", {
+    timeout: 20000,
+  });
+  await expect(async () => {
+    expect(await r9LocalSales(page)).toEqual([]);
+  }).toPass({ timeout: 20000 });
+  expect(await r9Stock(request, headers, product)).toBe(3);
+  await r9Retire(request, headers, [product]);
+});
+
+test("R9-offline-1: si la API responde 502 o 504 al cobrar, la venta queda guardada y se sincroniza una sola vez", async ({
+  page,
+  request,
+  context,
+}) => {
+  const headers = await r9Headers(request);
+  const code = r9Code("7");
+  const name = "Faja E2E proxy caído " + code;
+  const product = await r9Product(request, headers, name, code);
+  const search = await r9Pos(page);
+  const sales = (url: URL) => url.pathname === "/api/sales";
+  // 502: Nginx no llega a la API; la venta no se registró.
+  await context.route(sales, (route: any) =>
+    route.request().method() === "POST"
+      ? route.fulfill({ status: 502, body: "<html>502 Bad Gateway</html>" })
+      : route.continue(),
+  );
+  await search.fill(code);
+  await search.press("Enter");
+  await r9Charge(page);
+  await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible();
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  await context.unroute(sales);
+  await expect(async () => {
+    expect(await r9LocalSales(page)).toEqual([]);
+  }).toPass({ timeout: 20000 });
+  expect(await r9Stock(request, headers, product)).toBe(4);
+  // 504: la venta sí llegó, pero la respuesta no. Al sincronizar no se repite.
+  await expect(page.locator(".connection")).toContainText("En línea", {
+    timeout: 20000,
+  });
+  await context.route(sales, async (route: any) => {
+    if (route.request().method() !== "POST") return route.continue();
+    await route.fetch();
+    await route.fulfill({ status: 504, body: "Gateway Timeout" });
+  });
+  await search.fill(code);
+  await search.press("Enter");
+  await r9Charge(page);
+  await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible();
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  await context.unroute(sales);
+  await expect(async () => {
+    expect(await r9LocalSales(page)).toEqual([]);
+  }).toPass({ timeout: 20000 });
+  expect(await r9Stock(request, headers, product)).toBe(3);
+  await r9Retire(request, headers, [product]);
+});
+
+test("R9-offline-2: una venta sin conexión descuenta el stock local y no deja vender otra vez las mismas unidades", async ({
+  page,
+  request,
+  context,
+}) => {
+  const headers = await r9Headers(request);
+  const code = r9Code("7");
+  const name = "Faja E2E stock local " + code;
+  const product = await r9Product(request, headers, name, code);
+  const search = await r9Pos(page);
+  await context.setOffline(true);
+  await expect(page.locator(".connection")).toContainText("Offline");
+  // Las 5 unidades del producto, sin conexión.
+  for (let i = 0; i < 5; i++) {
+    await search.fill(code);
+    await search.press("Enter");
+    await expect(r9Qty(page, name)).toHaveText(String(i + 1));
+  }
+  await r9Charge(page);
+  await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible();
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  // El catálogo de la caja ya no las tiene: no se pueden cobrar dos veces.
+  await search.fill(code);
+  await expect(page.locator(".product-card", { hasText: name })).toContainText(
+    "0 en stock",
+  );
+  await search.press("Enter");
+  await expect(
+    page.getByText("No hay suficiente stock de " + name + " (quedan 0)."),
+  ).toBeVisible();
+  await expect(page.locator(".cart-item")).toHaveCount(0);
+  await context.setOffline(false);
+  await expect(page.locator(".connection")).toContainText("En línea");
+  await expect(async () => {
+    expect(await r9LocalSales(page)).toEqual([]);
+  }).toPass({ timeout: 20000 });
+  expect(await r9Stock(request, headers, product)).toBe(0);
+  await r9Retire(request, headers, [product]);
+});
+
+test("R9-offline-3: si el precio o una promoción cambian con el producto en el carrito, la caja toma el nuevo y deja cobrar", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const code = r9Code("7");
+  const name = "Faja E2E precio nuevo " + code;
+  const product = await r9Product(request, headers, name, code);
+  const search = await r9Pos(page);
+  await search.fill(code);
+  await search.press("Enter");
+  await expect(r9Qty(page, name)).toHaveText("1");
+  // El gerente cambia el precio desde otro equipo.
+  const changed = await request.patch(
+    "/api/variants/" + product.variants[0].id,
+    { headers, data: { price: 1700 } },
+  );
+  expect(changed.ok()).toBe(true);
+  await r9Charge(page);
+  const checkout = page.getByRole("dialog", { name: "Todo listo para cobrar" });
+  // Se dice qué cambió y el cobro ya muestra el total nuevo.
+  await expect(checkout.getByRole("alert")).toContainText(
+    name + ": RD$ 1,500.00 → RD$ 1,700.00",
+  );
+  await expect(checkout.locator(".payment-total h2")).toContainText(
+    "RD$ 1,700.00",
+  );
+  await page.getByLabel("Monto del pago").fill("200");
+  await page.getByRole("button", { name: "Agregar pago" }).click();
+  await page.getByRole("button", { name: "Finalizar venta" }).click();
+  await expect(
+    page.getByText("Venta registrada", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+  // Una promoción creada en otro equipo con el producto en el carrito.
+  await search.fill(code);
+  await search.press("Enter");
+  await expect(r9Qty(page, name)).toHaveText("1");
+  const promotion = await (
+    await request.post("/api/promotions", {
+      headers,
+      data: {
+        name: "E2E R9 offline " + code,
+        type: "percent",
+        value: 10,
+        startsAt: new Date(Date.now() - 60000).toISOString(),
+        endsAt: new Date(Date.now() + 86400000).toISOString(),
+        scope: { productId: product.id },
+      },
+    })
+  ).json();
+  expect(promotion.id).toBeTruthy();
+  try {
+    await r9Charge(page);
+    await expect(checkout.getByRole("alert")).toContainText(
+      /promociones cambiaron/,
+    );
+    await expect(checkout.locator(".payment-total h2")).toContainText(
+      "RD$ 1,530.00",
+    );
+    await page.getByRole("button", { name: "Finalizar venta" }).click();
+    await expect(
+      page.getByText("Venta registrada", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Nueva venta", exact: true })
+      .click();
+  } finally {
+    await request.patch("/api/promotions/" + promotion.id, {
+      headers,
+      data: { active: false },
+    });
+    await r9Retire(request, headers, [product]);
+  }
+});
+
+test("R9-offline-4: si el catálogo cambia entre una página y otra, ningún producto queda repetido", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const code = r9Code("7");
+  const name = "Faja E2E página " + code;
+  const product = await r9Product(request, headers, name, code);
+  const mine = (
+    await (
+      await request.get("/api/products?limit=200&q=" + code, { headers })
+    ).json()
+  ).items.find((p: any) => p.id === product.id);
+  expect(mine).toBeTruthy();
+  // Entre la página 1 y la 2 se crea un producto que ordena antes: el último
+  // de la página 1 vuelve a llegar al comienzo de la 2.
+  await page.route(
+    (url: URL) =>
+      url.pathname === "/api/products" &&
+      url.searchParams.get("limit") === "200",
+    async (route: any) => {
+      // Siempre se parte de la página 1 real (con el catálogo de prueba
+      // cabe en una sola página).
+      const url = new URL(route.request().url());
+      const pageNo = Number(url.searchParams.get("page"));
+      url.searchParams.set("page", "1");
+      const response = await route.fetch({ url: url.toString() });
+      const body = await response.json();
+      const others = body.items
+        .filter((p: any) => p.id !== product.id)
+        .slice(0, 199);
+      const fillers = Array.from({ length: 199 - others.length }, (_, i) => ({
+        ...others[0],
+        id: crypto.randomUUID(),
+        name: "Relleno E2E " + code + " " + i,
+        sku: "R9F-" + code + "-" + i,
+        variants: others[0].variants.map((v: any, j: number) => ({
+          ...v,
+          id: crypto.randomUUID(),
+          sku: "r9f-" + code + "-" + i + "-" + j,
+          barcode: "R9FB-" + code + "-" + i + "-" + j,
+        })),
+      }));
+      const items =
+        pageNo === 1
+          ? [...others, ...fillers, mine]
+          : pageNo === 2
+            ? [mine]
+            : [];
+      await route.fulfill({ response, json: { ...body, items, total: 201 } });
+    },
+  );
+  const search = await r9Pos(page);
+  await search.fill(code);
+  await search.press("Enter");
+  await expect(page.getByText(name + " agregado.")).toBeVisible();
+  await expect(r9Qty(page, name)).toHaveText("1");
+  await expect(page.locator(".product-card", { hasText: name })).toHaveCount(1);
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await r9Retire(request, headers, [product]);
+});
+
+test("R9-offline-5: el cierre por inactividad revoca la sesión y al recargar se pide la contraseña", async ({
+  page,
+  context,
+  request,
+}) => {
+  await page.clock.install();
+  await login(page);
+  const refresh = (await context.cookies()).find(
+    (c: any) => c.name === "fitstore_refresh",
+  );
+  expect(refresh).toBeTruthy();
+  // Pasan más de 30 minutos sin tocar el teclado ni el ratón. En el servidor
+  // la sesión sigue activa (otra pantalla la consultaba en segundo plano).
+  await page.clock.fastForward("31:00");
+  await expect(
+    page.getByRole("button", { name: "Entrar a mi tienda" }),
+  ).toBeVisible();
+  await expect(page.getByText("Sesión cerrada por inactividad.")).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Entrar a mi tienda" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Hola,/ })).toHaveCount(0);
+  // La cookie de renovación de esa sesión ya no sirve en el servidor.
+  const renewed = await request.post("/api/auth/refresh", {
+    headers: { Cookie: "fitstore_refresh=" + refresh!.value },
+  });
+  expect(renewed.status()).toBe(400);
+});

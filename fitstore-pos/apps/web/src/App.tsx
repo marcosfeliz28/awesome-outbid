@@ -39,6 +39,9 @@ import {
   syncSales,
   syncMerchandise,
   api,
+  endSession,
+  isNetworkError,
+  sessionDeadline,
 } from "./api";
 import { Toasts, toast } from "./helpers";
 import { Dashboard } from "./Dashboard";
@@ -233,9 +236,8 @@ function Login() {
   );
 }
 
-export function App() {
-  const { user, online, theme, toggleTheme, clearSession, setOnline } =
-    useStore();
+function Shell() {
+  const { user, online, theme, toggleTheme, setOnline } = useStore();
   const alertBell = useQuery({
     queryKey: ["alert-bell"],
     queryFn: () => api<any[]>("/alerts?status=new"),
@@ -272,14 +274,29 @@ export function App() {
   }, [theme]);
   useEffect(() => {
     (async () => {
+      const saved = await localDB.cache.get("session").catch(() => undefined);
+      const valid = saved?.data?.expiresAt > Date.now();
       try {
-        await refreshSession();
-      } catch {
-        if (!navigator.onLine) {
-          const cache = await localDB.cache.get("session");
-          if (cache && cache.data.expiresAt > Date.now())
-            useStore.getState().setSession(cache.data.user, null);
+        // La sesión de este equipo venció por inactividad (o no se pudo
+        // cerrar en el servidor): se pide la contraseña aunque la cookie de
+        // renovación siga viva (R9-offline-5).
+        if (saved && !valid) {
+          await endSession();
+          return;
         }
+        await refreshSession();
+        // Abrir o recargar la aplicación es actividad.
+        const current = useStore.getState().user;
+        if (current)
+          await localDB.cache.update("session", {
+            "data.expiresAt": sessionDeadline(current),
+          });
+      } catch (e) {
+        // Sin red, o sin internet con la red local activa (navigator.onLine
+        // sigue en true), se entra con la sesión guardada. Si el servidor
+        // rechaza la sesión, se pide la contraseña (R9-offline-1).
+        if (isNetworkError(e) && valid)
+          useStore.getState().setSession(saved!.data.user, null);
       } finally {
         setReady(true);
       }
@@ -296,6 +313,25 @@ export function App() {
       window.removeEventListener("offline", disconnected);
     };
   }, [setOnline]);
+  // Sin internet pero con la red local activa nunca llega el evento «online»:
+  // mientras la caja esté sin conexión se prueba el servidor cada 5 s
+  // (R9-offline-1).
+  useEffect(() => {
+    if (online) return;
+    const timer = setInterval(async () => {
+      if (!navigator.onLine) return;
+      try {
+        const response = await fetch("/api/health", {
+          cache: "no-store",
+          signal: AbortSignal.timeout(4000),
+        });
+        if (response.ok) setOnline(true);
+      } catch {
+        /* Sigue sin conexión. */
+      }
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [online, setOnline]);
   useEffect(() => {
     if (
       user &&
@@ -354,20 +390,29 @@ export function App() {
   }, []);
   useEffect(() => {
     if (!user) return;
-    let last = Date.now();
+    const timeout = (user.sessionTimeoutMinutes ?? 30) * 60000;
+    let last = Date.now(),
+      closing = false;
     const active = () => {
       last = Date.now();
-      localDB.cache.update("session", {
-        "data.expiresAt": last + (user.sessionTimeoutMinutes ?? 30) * 60000,
-      });
+      localDB.cache.update("session", { "data.expiresAt": last + timeout });
     };
-    const interval = setInterval(() => {
-      if (Date.now() - last > (user.sessionTimeoutMinutes ?? 30) * 60000) {
-        clearSession();
-        client.clear();
-        localDB.cache.delete("session");
-        toast("Sesión cerrada por inactividad.");
+    const interval = setInterval(async () => {
+      if (closing || Date.now() - last <= timeout) return;
+      // Otra pestaña de este equipo pudo tener actividad: el plazo guardado
+      // es el de todo el equipo.
+      const saved = await localDB.cache.get("session").catch(() => undefined);
+      if (saved?.data?.expiresAt > Date.now()) {
+        last = saved!.data.expiresAt - timeout;
+        return;
       }
+      // Antes sólo se borraba el estado del navegador: la cookie y la sesión
+      // del servidor seguían vivas y al recargar volvía a entrar el usuario
+      // anterior (R9-offline-5).
+      closing = true;
+      await endSession();
+      client.clear();
+      toast("Sesión cerrada por inactividad.");
     }, 30000);
     window.addEventListener("pointerdown", active);
     window.addEventListener("keydown", active);
@@ -378,13 +423,7 @@ export function App() {
     };
   }, [user?.id]);
   if (!ready) return <Loading />;
-  if (!user)
-    return (
-      <>
-        <Login />
-        <Toasts />
-      </>
-    );
+  if (!user) return <Login />;
   const current = navigation.find((n) => n.id === page);
   const initials = user.name
     .split(" ")
@@ -584,14 +623,11 @@ export function App() {
                 )}
                 <button
                   onClick={async () => {
-                    try {
-                      await post("/auth/logout", {});
-                    } catch {
-                      /* La cola local permanece hasta que su dueño vuelva a entrar. */
-                    }
-                    clearSession();
+                    // La cola local permanece hasta que su dueño vuelva a
+                    // entrar. Sin conexión, la sesión queda vencida en este
+                    // equipo (R9-offline-5).
+                    await endSession();
                     client.clear();
-                    await localDB.cache.delete("session");
                     setAccount(false);
                   }}
                 >
@@ -686,7 +722,10 @@ export function App() {
           onSubmit={async (e) => {
             e.preventDefault();
             try {
-              const result = await post("/auth/pin", { userId: switchId, pin });
+              const result = await post("/auth/pin", {
+                userId: switchId,
+                pin,
+              });
               useStore.getState().clearCart();
               client.clear();
               await saveSession(result.user, result.accessToken);
@@ -726,7 +765,17 @@ export function App() {
           <Button>Entrar</Button>
         </form>
       </Modal>
-      <Toasts />
     </div>
+  );
+}
+// Los avisos quedan fuera de las pantallas, en el mismo lugar con y sin
+// sesión: así «Sesión cerrada por inactividad» sigue a la vista en el inicio
+// de sesión (R9-offline-5).
+export function App() {
+  return (
+    <>
+      <Shell />
+      <Toasts />
+    </>
   );
 }

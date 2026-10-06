@@ -4807,6 +4807,180 @@ describe("Ronda 9 · revisión · dinero", () => {
     expect(summary.trend).toBe(0);
   });
 });
-// R9-REVISION: facturas
+// Área facturas: factura del proveedor (códigos, equivalencias, números) y
+// recepción de órdenes de compra.
+describe("Ronda 9 · revisión · facturas", () => {
+  let cats: any[];
+  beforeAll(async () => {
+    cats = await ok("/categories");
+  });
+  const product = async (label: string) => {
+    const p = await ok("/products", {
+      name: "QA R9F " + label + " " + suffix,
+      sku: "R9F-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [
+        {
+          sku: "R9FV-" + randomUUID().slice(0, 8),
+          barcode: "R9FB-" + randomUUID().slice(0, 8),
+          price: 1500,
+          costAvg: 1200,
+        },
+      ],
+    });
+    products.push(p);
+    return p;
+  };
+  async function upload(csv: string) {
+    const form = new FormData();
+    form.set("file", new Blob([csv], { type: "text/csv" }), "factura.csv");
+    form.set("supplierId", supplierId);
+    form.set(
+      "mapping",
+      JSON.stringify({
+        code: "codigo",
+        description: "descripcion",
+        qty: "cantidad",
+        unitCost: "costo",
+      }),
+    );
+    const r = await fetch(base + "/merchandise/import", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      body: form,
+    });
+    const body = await r.json();
+    if (r.status >= 400) throw new Error(r.status + " " + JSON.stringify(body));
+    return body;
+  }
+  it("un código que tienen dos productos queda sin elegir (R9-facturas-1)", async () => {
+    const a = await product("Faja chaleco");
+    const c = await product("Faja chaleco premium");
+    // La API de productos podría rechazar este cruce; se fuerza en la base,
+    // como quedaron datos de rondas anteriores.
+    await fixtureDb.variant.update({
+      where: { id: c.variants[0].id },
+      data: { sku: a.variants[0].barcode },
+    });
+    const draft = await upload(
+      `codigo,descripcion,cantidad,costo\n${a.variants[0].barcode},Faja chaleco,2,700\n`,
+    );
+    expect(draft.lines[0]).toMatchObject({ variantId: null, confidence: 0 });
+    expect(draft.lines[0].note).toMatch(/es de 2 productos/);
+  });
+  it("la equivalencia corregida del proveedor gana al código de la tienda (R9-facturas-2)", async () => {
+    const iso = await product("ISO Fresa");
+    const top = await product("Top Aurora Lila");
+    const code = iso.variants[0].sku;
+    const first = await upload(
+      `codigo,descripcion,cantidad,costo\n${code},${top.name},1,5\n`,
+    );
+    // La descripción es de otro producto: no se elige el del código.
+    expect(first.lines[0].variantId).toBeNull();
+    expect(first.lines[0].productId).toBe(top.id);
+    // La persona confirma el Top: se guarda la equivalencia del proveedor.
+    await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId,
+      items: [
+        {
+          variantId: top.variants[0].id,
+          qty: 1,
+          unitCost: 5,
+          supplierCode: code,
+        },
+      ],
+    });
+    const second = await upload(
+      `codigo,descripcion,cantidad,costo\n${code},Sin parecido,1,5\n`,
+    );
+    expect(second.lines[0]).toMatchObject({
+      variantId: top.variants[0].id,
+      confidence: 1,
+    });
+  });
+  it("CSV con «;»: «1.250» son 1250 y no 1.25 (R9-facturas-7)", async () => {
+    const faja = await product("Faja Reloj de Arena Beige");
+    const draft = await upload(
+      `codigo;descripcion;cantidad;costo\n${faja.variants[0].sku};Faja Reloj de Arena Beige;2;"1.250"\n`,
+    );
+    expect(draft.lines[0]).toMatchObject({
+      variantId: faja.variants[0].id,
+      unitCost: 1250,
+    });
+  });
+  it("reenviar la misma recepción de una orden no la duplica (R9-facturas-8)", async () => {
+    const p = await product("Recepción idempotente");
+    const variantId = p.variants[0].id;
+    const stock = async () =>
+      Number(
+        (await fixtureDb.variant.findUniqueOrThrow({ where: { id: variantId } }))
+          .stock,
+      );
+    const start = await stock();
+    const order = await ok("/purchase-orders", {
+      supplierId,
+      items: [{ variantId, qty: 10, unitCost: 1000 }],
+    });
+    const body = {
+      operationId: randomUUID(),
+      freight: 40,
+      items: [{ itemId: order.items[0].id, qty: 4 }],
+    };
+    const path = "/purchase-orders/" + order.id + "/receive";
+    const once = await ok(path, body);
+    // Se perdió la respuesta y la persona vuelve a pulsar Guardar.
+    const again = await ok(path, body);
+    expect(again.id).toBe(once.id);
+    expect(await stock()).toBe(start + 4);
+    const receipts = () =>
+      fixtureDb.goodsReceipt.findMany({ where: { orderId: order.id } });
+    expect(await receipts()).toHaveLength(1);
+    expect(
+      Number(
+        (
+          await fixtureDb.purchaseItem.findUniqueOrThrow({
+            where: { id: order.items[0].id },
+          })
+        ).receivedQty,
+      ),
+    ).toBe(4);
+    // El mismo id con otros datos se rechaza.
+    const changed = await request(path, {
+      ...body,
+      items: [{ itemId: order.items[0].id, qty: 3 }],
+    });
+    expect(changed.status).toBe(400);
+    expect(changed.body.message).toMatch(/datos distintos/);
+    // Recibir el resto y reintentar: devuelve la misma recepción en vez de
+    // «La orden ya fue recibida».
+    const rest = {
+      operationId: randomUUID(),
+      items: [{ itemId: order.items[0].id, qty: 6 }],
+    };
+    const last = await ok(path, rest);
+    expect((await ok(path, rest)).id).toBe(last.id);
+    expect(await receipts()).toHaveLength(2);
+    expect(await stock()).toBe(start + 10);
+    // Dos envíos a la vez con el mismo id: una sola recepción.
+    const other = await ok("/purchase-orders", {
+      supplierId,
+      items: [{ variantId, qty: 5, unitCost: 1000 }],
+    });
+    const twice = {
+      operationId: randomUUID(),
+      items: [{ itemId: other.items[0].id, qty: 2 }],
+    };
+    await Promise.all([
+      request("/purchase-orders/" + other.id + "/receive", twice),
+      request("/purchase-orders/" + other.id + "/receive", twice),
+    ]);
+    expect(
+      await fixtureDb.goodsReceipt.findMany({ where: { orderId: other.id } }),
+    ).toHaveLength(1);
+    expect(await stock()).toBe(start + 12);
+  });
+});
 // R9-REVISION: importador
 // R9-REVISION: seguridad
