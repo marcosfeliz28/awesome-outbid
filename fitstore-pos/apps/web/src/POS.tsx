@@ -39,6 +39,10 @@ import {
   loadCatalog,
   localDB,
   download,
+  cachedApi,
+  discountLocalStock,
+  isNetworkError,
+  refreshCart,
   type CartItem,
   type Product,
   type Variant,
@@ -100,6 +104,22 @@ const manualDiscount = (i: CartItem, globalDiscount: number) => {
   const global = Math.min(100, Math.max(0, globalDiscount));
   return 100 - ((100 - line) * (100 - global)) / 100;
 };
+// «Producto · talla: RD$ 1,500.00 → RD$ 1,700.00» (R9-offline-3).
+const priceChanges = (changes: { item: CartItem; before: number }[]) =>
+  changes
+    .map(({ item, before }) => {
+      const label = attrLabel(item.variant.attributes || {});
+      return (
+        (label === "Única"
+          ? item.product.name
+          : item.product.name + " · " + label) +
+        ": " +
+        formatMoney(before) +
+        " → " +
+        formatMoney(item.variant.price)
+      );
+    })
+    .join("; ");
 const lineGross = (i: CartItem, qty = i.qty) =>
   money(d(qty).times(Number(i.variant.price)));
 // Parece un código: un solo bloque de dígitos (con «-» o «.», como 1600) o
@@ -168,46 +188,34 @@ export function POS({ go }: { go: (page: string) => void }) {
     }, 150);
   };
   const client = useQueryClient();
-  const products = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
+  // Lo que la caja necesita para vender sale de la copia local si no hay
+  // conexión o el servidor no responde. offlineFirst: sin red, React Query
+  // pausaba las consultas y tras una venta seguía el stock viejo
+  // (R9-offline-1/2).
+  const products = useQuery({
+    queryKey: ["catalog"],
+    queryFn: loadCatalog,
+    networkMode: "offlineFirst",
+  });
   const categories = useQuery({
     queryKey: ["categories"],
-    queryFn: async () => {
-      if (!navigator.onLine)
-        return (await localDB.cache.get("categories"))?.data || [];
-      const data = await api("/categories");
-      await localDB.cache.put({ key: "categories", data });
-      return data;
-    },
+    queryFn: () => cachedApi<any[]>("/categories", "categories", []),
+    networkMode: "offlineFirst",
   });
   const customers = useQuery({
     queryKey: ["customers"],
-    queryFn: async () => {
-      if (!navigator.onLine)
-        return (await localDB.cache.get("customers:" + user!.id))?.data || [];
-      const data = await api("/customers");
-      await localDB.cache.put({ key: "customers:" + user!.id, data });
-      return data;
-    },
+    queryFn: () => cachedApi<any[]>("/customers", "customers:" + user!.id, []),
+    networkMode: "offlineFirst",
   });
   const sessions = useQuery({
     queryKey: ["cash-sessions"],
-    queryFn: async () => {
-      if (!navigator.onLine)
-        return (await localDB.cache.get("cash:" + user!.id))?.data || [];
-      const data = await api("/cash-sessions");
-      await localDB.cache.put({ key: "cash:" + user!.id, data });
-      return data;
-    },
+    queryFn: () => cachedApi<any[]>("/cash-sessions", "cash:" + user!.id, []),
+    networkMode: "offlineFirst",
   });
   const promos = useQuery({
     queryKey: ["promotions"],
-    queryFn: async () => {
-      if (!navigator.onLine)
-        return (await localDB.cache.get("promotions"))?.data || [];
-      const data = await api("/promotions");
-      await localDB.cache.put({ key: "promotions", data });
-      return data;
-    },
+    queryFn: () => cachedApi<any[]>("/promotions", "promotions", []),
+    networkMode: "offlineFirst",
   });
   const activePromos = (promos.data || []).filter(
     (p: any) =>
@@ -221,16 +229,24 @@ export function POS({ go }: { go: (page: string) => void }) {
   const elsewhere = cashOnOtherDevice(session);
   const config = useQuery({
     queryKey: ["settings"],
-    queryFn: async () => {
-      if (!navigator.onLine)
-        return (
-          (await localDB.cache.get("settings"))?.data || { taxIncluded: true }
-        );
-      const data = await api("/settings");
-      await localDB.cache.put({ key: "settings", data });
-      return data;
-    },
+    queryFn: () =>
+      cachedApi<any>("/settings", "settings", { taxIncluded: true }),
+    networkMode: "offlineFirst",
   });
+  // El carrito usa los precios del catálogo vigente: si otro equipo cambió
+  // un precio, la línea se actualiza y se avisa antes de cobrar
+  // (R9-offline-3).
+  useEffect(() => {
+    if (!products.data) return;
+    const changes = refreshCart(products.data);
+    if (changes.length)
+      toast(
+        "Precio actualizado: " +
+          priceChanges(changes) +
+          ". Revisa el total antes de cobrar.",
+        true,
+      );
+  }, [products.data]);
   const totals = cart.map((i) =>
     lineTotals(
       i.qty,
@@ -519,7 +535,10 @@ export function POS({ go }: { go: (page: string) => void }) {
         )
         .map((v) => ({ product: p, variant: v })),
     );
-    if (hits.length > 1) return { ambiguous: hits.length } as const;
+    // Se cuentan variantes distintas: si el catálogo trajo dos veces la
+    // misma, no es un código repetido (R9-offline-4).
+    const distinct = new Set(hits.map((h) => h.variant.id)).size;
+    if (distinct > 1) return { ambiguous: distinct } as const;
     return hits[0];
   };
   const scan = (code: string) => {
@@ -1380,8 +1399,12 @@ function Checkout({
       lineTotal: lines[index]?.total ?? 0,
     }));
     try {
-      let sale: any;
-      if (!online) {
+      // La venta queda en este equipo y su stock se descuenta del catálogo
+      // local, por las dos rutas: sin conexión y cuando el servidor no
+      // responde (sin internet con la red local activa, o 502/503/504). Es
+      // seguro aunque la venta haya llegado: la sincronización la reconoce
+      // por offlineUuid (R9-offline-1/2).
+      const saveLocal = async (fallback: boolean) => {
         if (
           payments.some(
             (p) => p.method === "credit" || p.method === "credit_note",
@@ -1392,9 +1415,11 @@ function Checkout({
           );
         if (needsPin)
           throw new Error(
-            "Un gerente debe aprobar descuentos superiores al límite en línea.",
+            fallback
+              ? "Reconecta para verificar la aprobación del gerente."
+              : "Un gerente debe aprobar descuentos superiores al límite en línea.",
           );
-        sale = {
+        const local = {
           number: "LOCAL-" + uuid.current.slice(0, 8),
           total,
           taxTotal: tax,
@@ -1404,59 +1429,26 @@ function Checkout({
           })),
           offline: true,
         };
-        await localDB.sales.add({
+        await localDB.sales.put({
           id: uuid.current,
           userId: user!.id,
           branchId: user!.branchId,
           input,
           status: "pending",
           createdAt: Date.now(),
-          receipt: { ...sale, snapshot },
+          receipt: { ...local, snapshot },
         });
-        const cached = await localDB.cache.get("catalog:" + user!.branchId);
-        if (cached)
-          await localDB.cache.put({
-            key: cached.key,
-            data: cached.data.map((p: Product) => ({
-              ...p,
-              variants: p.variants.map((v) => ({
-                ...v,
-                stock: String(
-                  Math.max(
-                    0,
-                    Number(v.stock) -
-                      (cart.find((i) => i.variant.id === v.id)?.qty || 0),
-                  ),
-                ),
-              })),
-            })),
-          });
-      } else {
+        await discountLocalStock(client, input.items);
+        return local;
+      };
+      let sale: any;
+      if (!online) sale = await saveLocal(false);
+      else {
         try {
           sale = await post("/sales", input);
         } catch (e: any) {
-          if (e instanceof TypeError) {
-            if (needsPin)
-              throw new Error(
-                "Reconecta para verificar la aprobación del gerente.",
-              );
-            sale = {
-              number: "LOCAL-" + uuid.current.slice(0, 8),
-              total,
-              taxTotal: tax,
-              payments,
-              offline: true,
-            };
-            await localDB.sales.put({
-              id: uuid.current,
-              userId: user!.id,
-              branchId: user!.branchId,
-              input,
-              status: "pending",
-              createdAt: Date.now(),
-              receipt: { ...sale, snapshot },
-            });
-          } else throw e;
+          if (!isNetworkError(e)) throw e;
+          sale = await saveLocal(true);
         }
       }
       // En línea, el ticket usa los importes que guardó el servidor (una
@@ -1479,10 +1471,41 @@ function Checkout({
       clearCart();
       await client.invalidateQueries();
     } catch (e: any) {
-      setError(e.message);
+      // Un precio o una promoción cambiaron en otro equipo: antes la única
+      // salida era quitar y volver a agregar la línea. Se leen catálogo,
+      // promociones y ajustes, el carrito toma los precios nuevos y se dice
+      // cuáles cambiaron; el cobro ya muestra el total nuevo (R9-offline-3).
+      if (/precios o promociones cambiaron/i.test(e.message))
+        setError(await reprice());
+      else setError(e.message);
     } finally {
       setBusy(false);
     }
+  };
+  const reprice = async () => {
+    const before = new Map(
+      cart.map((i) => [i.variant.id, Number(i.variant.price)]),
+    );
+    await Promise.all(
+      ["catalog", "promotions", "settings"].map((key) =>
+        client.refetchQueries({ queryKey: [key] }),
+      ),
+    );
+    refreshCart(client.getQueryData<Product[]>(["catalog"]) ?? []);
+    const changes = useStore
+      .getState()
+      .cart.filter(
+        (i) =>
+          before.has(i.variant.id) &&
+          before.get(i.variant.id) !== Number(i.variant.price),
+      )
+      .map((item) => ({ item, before: before.get(item.variant.id)! }));
+    return (
+      (changes.length
+        ? "Los precios cambiaron: " + priceChanges(changes) + "."
+        : "Las promociones cambiaron.") +
+      " El total ya está actualizado: revisa los pagos y finaliza otra vez."
+    );
   };
   if (receipt) {
     // Subtotal y descuentos del ticket: las líneas suman el total (R9-caja-9).

@@ -1049,8 +1049,9 @@ const measureAgree = (declared: Measure[], own: Measure[]) =>
 // Números sin unidad ("FSP 5.5", "Polvo compacto 370", "L-Carnitine 3000"):
 // identifican el tono o la línea (R9-facturas-4). Se comparan enteros, con
 // sus decimales: "5.5" no es "6.5" ni "5"; "05" sí es "5" y "6.0" es "6".
-// En un nombre sólo cuentan los sueltos ("ISO100", "24H" o "K2" son parte de
-// una palabra); en la factura también los pegados ("FSP6.5").
+// En un nombre cuentan los sueltos y los códigos de una letra ("M715", "K2",
+// "B5"), no los que son parte de una palabra ("ISO100", "24H"); en la
+// factura cuentan todos ("FSP6.5").
 export function numbersIn(text: string, glued = false) {
   const t = text
     .normalize("NFD")
@@ -1059,7 +1060,7 @@ export function numbersIn(text: string, glued = false) {
     .replace(MEASURE_RE, " ");
   const re = glued
     ? /(?<![\d.,])\d+(?:[.,]\d+)*(?!\d|[.,]\d)/g
-    : /(?<![a-z\d.,])\d+(?:[.,]\d+)*(?![a-z\d]|[.,]\d)/g;
+    : /(?<![\d.,])(?<![a-z\d][a-z])\d+(?:[.,]\d+)*(?![a-z\d]|[.,]\d)/g;
   return [
     ...new Set(
       [...t.matchAll(re)].map((m) =>
@@ -1225,10 +1226,11 @@ export function matchInvoiceLines(
   const nameTraits = new Map<string, Traits>(),
     nameCores = new Map<string, string>(),
     nameKeys = new Map<string, string[]>(),
-    // Todas las palabras del nombre, su marca y el claro/oscuro de su color
-    // (R9-facturas-5 y R9-facturas-6).
+    // Todas las palabras del nombre, su marca, y el color del tono con su
+    // claro/oscuro (R9-facturas-5 y R9-facturas-6).
     nameWords = new Map<string, Set<string>>(),
     nameBrands = new Map<string, { label: string; words: string[] }>(),
+    nameTones = new Map<string, Set<string>>(),
     nameShades = new Map<string, Set<string>>();
   for (const [productId, options] of byProduct) {
     const name = options[0].product.name;
@@ -1237,9 +1239,18 @@ export function matchInvoiceLines(
     nameKeys.set(productId, keyTokens(name));
     nameWords.set(productId, new Set(tokens(name)));
     const parts = name.split(/\s+-\s+/);
+    // Las palabras de la marca que ya están en la línea ("The Jinx Hydra -
+    // JINX!") no sirven para saber si la factura nombra la marca.
     if (parts.length >= 3)
-      nameBrands.set(productId, { label: parts[1], words: tokens(parts[1]) });
-    nameShades.set(productId, shadesIn(tokens(presentationOf(name)), true));
+      nameBrands.set(productId, {
+        label: parts[1],
+        words: tokens(parts[1]).filter((w) => !tokens(parts[0]).includes(w)),
+      });
+    // El tono se lee sin la marca: "California Gold Nutrition" no es dorado.
+    const tone =
+      parts.length >= 3 ? [parts[0], ...parts.slice(2)].join(" - ") : name;
+    nameTones.set(productId, traitsOf(tone, true).colors);
+    nameShades.set(productId, shadesIn(tokens(presentationOf(tone)), true));
   }
   const nameOf = (productId: string) =>
     byProduct.get(productId)![0].product.name;
@@ -1303,19 +1314,42 @@ export function matchInvoiceLines(
   const siblings = new Map<string, boolean>();
   const hasSibling = (productId: string) => {
     if (!siblings.has(productId)) {
-      const own = nameTraits.get(productId)!,
+      const tone = nameTones.get(productId)!,
         keys = nameKeys.get(productId)!;
       siblings.set(
         productId,
         [...byProduct.keys()].some(
           (other) =>
             other !== productId &&
-            sizeOverlap(nameTraits.get(other)!.colors, own.colors) &&
+            sizeOverlap(nameTones.get(other)!, tone) &&
             keys.every((k) => nameWords.get(other)!.has(k)),
         ),
       );
     }
     return siblings.get(productId)!;
+  };
+  // Palabras clave de los productos cuyo nombre contiene todas las del
+  // producto y alguna más (sus líneas más específicas).
+  const narrowers = new Map<string, Set<string>>();
+  const narrower = (productId: string) => {
+    if (!narrowers.has(productId)) {
+      const keys = nameKeys.get(productId)!,
+        words = nameWords.get(productId)!;
+      narrowers.set(
+        productId,
+        new Set(
+          [...byProduct.keys()]
+            .filter(
+              (other) =>
+                other !== productId &&
+                keys.every((k) => nameWords.get(other)!.has(k)),
+            )
+            .flatMap((other) => nameKeys.get(other)!)
+            .filter((k) => !words.has(k)),
+        ),
+      );
+    }
+    return narrowers.get(productId)!;
   };
   // ¿Nombra la factura todo lo que identifica al producto? null si sí; si
   // no, un detalle (quizá vacío) para la nota. Sólo se elige con todo.
@@ -1344,19 +1378,28 @@ export function matchInvoiceLines(
     // debe nombrarlo («Lemon Drop» no es «Purple Cream»), y también el
     // claro/oscuro si trae otras palabras («Golden Beige») o si otro
     // producto de la línea tiene ese color («Neutral Beige»).
-    if (own.colors.size && !own.numbers.length) {
-      if (!sizeOverlap(own.colors, t.colors)) return "";
+    const tone = nameTones.get(productId)!;
+    if (tone.size && !own.numbers.length) {
+      if (!sizeOverlap(tone, t.colors)) return "";
       const said = shadesIn(descToks);
       if (
-        [...nameShades.get(productId)!].some((s) => !said.has(s)) &&
+        ([...tone].some((c) => !t.colors.has(c)) ||
+          [...nameShades.get(productId)!].some((s) => !said.has(s))) &&
         (extra.length || hasSibling(productId))
       )
         return "";
     }
+    // Palabras de una línea más específica de la tienda («Flush-Free
+    // Niacin» frente a «Niacin», «Vanilla Ice Cream» frente a «Vanilla»).
+    if (extra.some((w) => narrower(productId).has(w))) return "";
     // La marca es opcional sólo si la factura no nombra otra cosa:
     // «Melatonin Natrol» no es «Melatonin - Nutrex» (R9-facturas-6).
     const brand = nameBrands.get(productId);
-    if (brand && !brand.words.every((w) => desc.has(w)) && extra.length)
+    if (
+      brand &&
+      !(brand.words.length && brand.words.every((w) => desc.has(w))) &&
+      extra.length
+    )
       return ` (la factura dice «${[...new Set(extra)].join(" ")}» y no ${brand.label})`;
     return null;
   };

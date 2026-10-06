@@ -398,6 +398,9 @@ export class InventoryController {
   ) {
     const data = parse(
       z.object({
+        // Id de la recepción, creado al abrir el formulario: si se pierde la
+        // respuesta y se reenvía, no se recibe dos veces (R9-facturas-8).
+        operationId: uuid.optional(),
         freight: amount.default(0),
         otherCosts: amount.default(0),
         allocation: z.enum(["value", "units"]).default("value"),
@@ -416,13 +419,53 @@ export class InventoryController {
     );
     if (new Set(data.items.map((i) => i.itemId)).size !== data.items.length)
       bad("No repitas líneas de recepción.");
+    // ¿La recepción guardada es este mismo envío? Se comparan las líneas, el
+    // flete y el costo final de cada línea (que depende del reparto).
+    const sameRequest = (prior: any) => {
+      const stored = prior.items as any[];
+      if (
+        prior.orderId !== id ||
+        prior.branchId !== actor.branchId ||
+        prior.userId !== actor.id ||
+        Number(prior.freight) !== data.freight ||
+        Number(prior.otherCosts) !== data.otherCosts ||
+        stored.length !== data.items.length
+      )
+        return false;
+      const costs = landedCosts(
+        stored,
+        money(d(data.freight).plus(data.otherCosts)),
+        data.allocation,
+      );
+      return data.items.every(
+        (item, i) =>
+          stored[i].itemId === item.itemId &&
+          Number(stored[i].qty) === item.qty &&
+          (stored[i].lotNumber ?? null) === (item.lotNumber ?? null) &&
+          (stored[i].expiryDate ?? null) === (item.expiryDate ?? null) &&
+          Number(stored[i].landedCost) === costs[i],
+      );
+    };
     return this.db.$transaction(
       async (tx) => {
+        if (data.operationId)
+          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))::text`;
         await tx.$queryRaw`SELECT id FROM "PurchaseOrder" WHERE id = ${parse(uuid, id)}::uuid FOR UPDATE`;
         const order = await tx.purchaseOrder.findFirstOrThrow({
           where: { id, branchId: actor.branchId },
           include: { items: true },
         });
+        // Antes de revisar lo pendiente: el reintento de una recepción que
+        // completó la orden devuelve esa recepción, no «ya fue recibida».
+        if (data.operationId) {
+          const prior = await tx.goodsReceipt.findUnique({
+            where: { operationId: data.operationId },
+          });
+          if (prior) {
+            if (!sameRequest(prior)) bad("UUID usado con datos distintos.");
+            return safe(prior, actor);
+          }
+        }
         if (order.status === "received") bad("La orden ya fue recibida.");
         const lines = data.items.map((item) => {
           const ordered = order.items.find((i) => i.id === item.itemId);
@@ -442,6 +485,7 @@ export class InventoryController {
         const receipt = await tx.goodsReceipt.create({
           data: {
             orderId: id,
+            operationId: data.operationId,
             supplierId: order.supplierId,
             total: money(
               lines.reduce((sum, l) => sum + l.qty * l.cost, 0) +

@@ -57,6 +57,47 @@ Esta ronda corrige los 3 hallazgos de la auditoría de ChatGPT a la ronda 8 (`do
 
 Los totales por categoría coinciden con la ronda 7: Fajas 40/186, Maquillaje 355/2062, Suplementos 221/910.
 
+## Revisión adversarial de Claude
+
+Después de corregir R8, Claude revisó todo el sistema con **7 buscadores**, uno por área: códigos, devoluciones, importador, caja, dinero, facturas y seguridad. Cada hallazgo propuesto lo intentaron refutar **dos verificadores independientes**, uno leyendo el código y otro reproduciéndolo. Sólo cuenta si ambos lo confirman.
+
+- **Resultado:** de 47 propuestos se confirmaron **43**: 2 P1, 22 P2 y 19 P3. Lista completa en `docs/validacion/ronda9-revision-adversarial.json`.
+- **Corrección por área:** un agente escribe primero la regresión y comprueba que falla, después corrige y corre las suites completas. Luego un revisor adversarial revisa el área, y lo que encuentra se repara con el mismo método.
+
+### Caja (`apps/web/src/POS.tsx`)
+
+| Id        | Prioridad | Problema                                                                                    | Corrección                                                                                                                                                                                                          |
+| --------- | --------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R9-caja-3 | **P1**    | Tras un clic, el Enter del lector volvía a pulsar la tarjeta o el botón + con foco.         | Un solo manejador de teclado: una tecla imprimible fuera de un campo lleva el foco a la búsqueda. Un escaneo dentro del campo de descuento también se recupera.                                                     |
+| R9-caja-1 | P2        | Código + Enter agregaba otro producto si el código exacto no estaba en el catálogo cargado. | Un código que no existe avisa y no agrega. Sólo cuenta como código un token sin espacios, todo dígitos o con 5 o más dígitos. Los códigos de modelo o tono del nombre («275n», «a40») siguen buscando por palabras. |
+| R9-caja-4 | P2        | La venta en espera perdía el descuento RD$ por línea y el global.                           | `POST /quotes` guarda `globalDiscount`, `discountAmount` y el nombre de cada línea. Migración idempotente `202610090001_r9_caja`.                                                                                   |
+| R9-caja-5 | P2        | Recuperar una venta en espera reemplazaba el carrito sin aviso o la perdía.                 | Pide confirmación si el carrito tiene productos o faltan productos y los nombra. Si se cancela, no se consume nada.                                                                                                 |
+| R9-caja-6 | P2        | Escaneos perdidos tras «Nueva venta», tras elegir una variante o tras Enter por palabras.   | El foco vuelve a la búsqueda. El Enter no cierra la ventana de variantes recién abierta.                                                                                                                            |
+| R9-caja-2 | P3        | Tras el aviso de código ambiguo, el siguiente escaneo se pegaba al anterior.                | El código queda seleccionado.                                                                                                                                                                                       |
+| R9-caja-7 | P3        | F8 guardaba la venta en espera sin el cliente recién elegido.                               | Los atajos leen el estado actual.                                                                                                                                                                                   |
+| R9-caja-8 | P3        | Descuento de línea sin límite (150 %, monto mayor que la línea).                            | Límite de 0–100 % y del importe de la línea. Un valor fuera de rango se marca y no se cobra.                                                                                                                        |
+| R9-caja-9 | P3        | El ticket no mostraba descuentos.                                                           | Descuento por línea, subtotal y descuentos antes del total; con conexión usa los importes del servidor.                                                                                                             |
+
+### Dinero y devoluciones (`sales.ts`, `reports.ts`, `packages/shared`)
+
+| Id           | Prioridad | Problema                                                                                             | Corrección                                                                                                                                                                     |
+| ------------ | --------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| R9-dinero-1  | P2        | Una devolución nueva ignoraba el costo contabilizado por una devolución histórica de la misma línea. | `replayReturns()` (shared) repite todas las devoluciones de la venta en orden y usa lo que cada una contabilizó. La que completa la línea deja el costo neto exactamente en 0. |
+| R9-dinero-2  | P2        | Las devoluciones parciales reembolsaban más de lo cobrado (total e ITBIS redondeados por separado).  | Redondeo acumulado también para el total y el ITBIS. Cada parte guarda su total e ITBIS.                                                                                       |
+| R9-dinero-3  | P2        | Devolver una venta a crédito con un abono por transferencia pendiente dejaba el abono sin resolver.  | La devolución pide verificar o rechazar antes. Nueva ruta `POST /payments/:id/reject` (auditada) y botón «Rechazar» en el detalle de la venta.                                 |
+| R9-dinero-4  | P2        | Anular una venta no recalculaba el costo promedio.                                                   | Mismo cálculo que la devolución.                                                                                                                                               |
+| R9-dinero-5  | P3        | Abonos y pagos con más de 2 decimales.                                                               | `moneyAmount()` en shared: 2 decimales en pagos y abonos. Una venta sin conexión con un descuento de 3 decimales se sincroniza igual.                                          |
+| R9-dinero-6  | P3        | Una devolución histórica de varias líneas, repartida en proporción, dejaba ±0.01 por producto.       | Se reconstruye por línea el redondeo acumulado de la ronda 7. Si no suma `costTotal`, se reparte en proporción.                                                                |
+| R9-dinero-7  | P3        | En ventas antiguas, la suma de líneas no coincidía con `Sale.costTotal`.                             | `bookedLineCosts()` reparte `Sale.costTotal` entre las líneas cuando no coinciden.                                                                                             |
+| R9-dinero-8  | P3        | «Devoluciones y descuentos» mostraba costos a roles sin `profit:read`.                               | El detalle pasa por `safe()` en JSON, XLSX y PDF.                                                                                                                              |
+| R9-dinero-9  | P3        | «Ventas por método de pago» contaba dos veces el crédito.                                            | Columnas «Ventas» (suma = lo vendido) y «Cobros de crédito» (por fecha del abono, sólo verificados).                                                                           |
+| R9-dinero-10 | P3        | La tendencia del dashboard comparaba neto contra bruto.                                              | Ambos períodos netos de devoluciones.                                                                                                                                          |
+| R9-dinero-11 | P3        | Subtotal − descuento ≠ total por redondeos separados.                                                | Se redondean bruto, cobrado e ITBIS; descuento y neto salen por diferencia.                                                                                                    |
+
+**Efecto en R8-02:** la conciliación de las devoluciones anteriores a la ronda 8 pasó de `reports.ts` a `replayReturns()` en shared. Ahora la usan el reporte y la creación de devoluciones nuevas. Para cada parte sin costo guardado, primero reconstruye el redondeo acumulado de la ronda 7. Si eso no suma lo que la devolución contabilizó, reparte `costTotal` en proporción, con el resto en la última línea.
+
+<!-- R9-AREAS-PENDIENTES: offline, facturas, códigos, importador, seguridad -->
+
 ## Verificación
 
 | Comprobación                                         | Resultado                                                                   | Registro (`docs/validacion/`)        |
