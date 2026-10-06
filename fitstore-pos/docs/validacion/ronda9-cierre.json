@@ -1,0 +1,326 @@
+{
+  "project": "FitStore POS",
+  "round": 9,
+  "audit": {
+    "report": "docs/AUDITORIA_RONDA8.md",
+    "auditedZipSha256": "b5a802fce919829f6e72774397e772bec236ddc6976009e82478abe4f145948c"
+  },
+  "suites": {
+    "check": {
+      "unitTests": null,
+      "passed": null
+    },
+    "integrationCompiled": {
+      "passed": null,
+      "total": null
+    },
+    "e2e": {
+      "passed": null,
+      "total": null
+    },
+    "windows": {
+      "integration": null,
+      "e2e": null
+    },
+    "inventarioReal": {
+      "productos": 616,
+      "unidades": 3158,
+      "recargaSinCambios": true,
+      "evidence": "docs/validacion/ronda9-tienda/carga-inventario.txt"
+    }
+  },
+  "findings": [
+    {
+      "id": "R8-01",
+      "priority": "P1",
+      "status": "corregido",
+      "tests": [
+        "tests/api.test.ts › Ronda 9 · auditoría R8 › R8-01",
+        "tests/e2e/store.spec.ts › código ambiguo por mayúsculas avisa y no agrega"
+      ],
+      "failsOnRound8": true
+    },
+    {
+      "id": "R8-02",
+      "priority": "P2",
+      "status": "corregido",
+      "tests": [
+        "tests/api.test.ts › Ronda 9 · auditoría R8 › R8-02",
+        "tests/api.test.ts › Ronda 9 · revisión · dinero › R9-dinero-1 y R9-dinero-6"
+      ],
+      "failsOnRound8": true
+    },
+    {
+      "id": "R8-03",
+      "priority": "P2",
+      "status": "corregido",
+      "tests": ["tests/api.test.ts › Ronda 9 · auditoría R8 › R8-03"],
+      "failsOnRound8": true
+    }
+  ],
+  "ownReview": {
+    "report": "docs/validacion/ronda9-revision-adversarial.json",
+    "proposed": 47,
+    "confirmed": 43,
+    "findings": [
+      {
+        "id": "R9-caja-1",
+        "priority": "P2",
+        "title": "Caja: código + Enter agrega otro producto cuando el código exacto no está en el catálogo cargado (por ejemplo, un producto inactivo)",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-caja-2",
+        "priority": "P3",
+        "title": "Tras el aviso de código ambiguo el texto no queda seleccionado: el siguiente escaneo se pega al código anterior y se pierde",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-caja-3",
+        "priority": "P1",
+        "title": "Tras hacer clic con el mouse, el lector agrega el producto equivocado: el Enter del escáner vuelve a pulsar la tarjeta o el botón + que tiene el foco",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-caja-4",
+        "priority": "P2",
+        "title": "Una venta en espera o cotización pierde el descuento RD$ por línea y el descuento global, y al recuperarla toma el descuento global del carrito que reemplaza",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-caja-5",
+        "priority": "P2",
+        "title": "Recuperar una venta en espera reemplaza el carrito actual sin aviso; si un producto ya no está activo, la venta en espera se pierde",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-caja-6",
+        "priority": "P2",
+        "title": "Escaneos que se pierden sin aviso después de 'Nueva venta', después de elegir una variante o después de agregar con Enter una búsqueda por palabras",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-caja-7",
+        "priority": "P3",
+        "title": "F8 guarda la venta en espera sin el cliente elegido después del último cambio del carrito",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-caja-8",
+        "priority": "P3",
+        "title": "El descuento de línea no tiene límites: 150% o un monto mayor que la línea dejan el total negativo en pantalla",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-caja-9",
+        "priority": "P3",
+        "title": "El ticket impreso no muestra descuentos: las líneas suman más que el total",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-offline-1",
+        "priority": "P1",
+        "title": "Sin internet pero con la red local activa (navigator.onLine = true), la caja no puede vender: al recargar pide iniciar sesión y la lista de productos se sustituye por 'Failed to fetch'",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-offline-2",
+        "priority": "P2",
+        "title": "Una venta sin conexión no actualiza el stock que usa la caja: se pueden vender otra vez las mismas unidades y la venta queda en conflicto después de cobrar",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-offline-3",
+        "priority": "P2",
+        "title": "Cambiar un precio o una promoción con el producto ya en el carrito bloquea el cobro; volver a escanearlo no actualiza el precio",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-offline-4",
+        "priority": "P3",
+        "title": "Si se crea un producto mientras la caja descarga el catálogo por páginas, otro producto queda duplicado y su código da un falso 'es de 2 productos'",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-offline-5",
+        "priority": "P2",
+        "title": "El cierre por inactividad sólo ocurre en el navegador; al recargar la página vuelve la sesión del usuario anterior (por ejemplo, la del gerente)",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-codigos-1",
+        "priority": "P2",
+        "title": "La API de catálogo y Mercancía aceptan un código que la caja trata como el mismo código de otro producto (R8-01 sigue abierto fuera de la CLI)",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-codigos-2",
+        "priority": "P2",
+        "title": "Recepción de mercancía compara el código exacto: la etiqueta impresa (Code 39 en MAYÚSCULAS) de un código en minúsculas abre «Crear producto rápido» y duplica el producto",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-codigos-3",
+        "priority": "P2",
+        "title": "R8-01 por Mercancía: el escaneo distingue mayúsculas y «Crear producto rápido» acepta un código que ya existe con otras mayúsculas; el stock va a un duplicado y la caja deja de agregar los dos por código",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-importador-1",
+        "priority": "P2",
+        "title": "Celdas con hipervínculo, error (#N/A, #REF!) o fórmula sin valor calculado se importan en silencio como «[object Object]» (nombre, categoría, ID o REFERENCIA)",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-importador-2",
+        "priority": "P3",
+        "title": "Filas con ID pero sin DESCRIPCION, o con DESCRIPCION pero sin ID ni REFERENCIA, se descartan sin avisar",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-importador-3",
+        "priority": "P3",
+        "title": "--dry-run siempre informa '0 nuevos (0 unidades) · 0 ya cargados · 0 activados · 0 precios' y no anuncia las categorías que crearía; el paso 2 del MANUAL falla en una base nueva",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-importador-4",
+        "priority": "P3",
+        "title": "maxStock = qty*3 desborda Decimal(14,3) con existencias que el lector acepta; la simulación pasa y la carga real falla con un volcado técnico de Prisma",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-importador-5",
+        "priority": "P3",
+        "title": "Al activar un producto inactivo, el precio que la dueña editó en la app se sobrescribe sin --actualizar-precios",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-dinero-1",
+        "priority": "P2",
+        "title": "Una devolución nueva no tiene en cuenta el costo que contabilizó la devolución histórica (rondas 3 a 7) de la misma línea, así que la venta devuelta del todo queda con costo negativo",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-dinero-2",
+        "priority": "P2",
+        "title": "Las devoluciones parciales reembolsan más de lo cobrado: el total y el ITBIS de cada devolución se redondean por separado, no de forma acumulada",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-dinero-3",
+        "priority": "P2",
+        "title": "Devolver una venta a crédito con un abono por transferencia pendiente deja el abono sin poder verificarse y no reembolsa al cliente",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-dinero-4",
+        "priority": "P2",
+        "title": "Anular una venta devuelve el stock sin recalcular el costo promedio (la devolución sí lo recalcula)",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-dinero-5",
+        "priority": "P3",
+        "title": "Los abonos aceptan más de 2 decimales: el pago se registra con un importe y la deuda baja otro",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-dinero-6",
+        "priority": "P3",
+        "title": "El reparto proporcional de una devolución histórica de varias líneas no coincide con lo que la ronda 7 contabilizó por línea: después de devolver todo, unos productos quedan en −0.01 y otros en +0.01",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-dinero-7",
+        "priority": "P3",
+        "title": "En ventas anteriores a la ronda 7 final, el costo del reporte de utilidad (suma de líneas redondeadas) no coincide con Sale.costTotal del dashboard y del estado de resultados",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-dinero-8",
+        "priority": "P3",
+        "title": "El reporte returns-discounts muestra costTotal y el costo por línea de cada devolución a roles sin profit:read",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-dinero-9",
+        "priority": "P3",
+        "title": "El reporte 'Ventas por método de pago' cuenta dos veces las ventas a crédito: el crédito y además sus abonos",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-dinero-10",
+        "priority": "P3",
+        "title": "La tendencia del dashboard compara ingresos netos de devoluciones con las ventas brutas del período anterior",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-dinero-11",
+        "priority": "P3",
+        "title": "Subtotal − descuento no coincide con el total: descuento y total se redondean hacia arriba por separado",
+        "status": "corregido"
+      },
+      {
+        "id": "R9-facturas-1",
+        "priority": "P3",
+        "title": "Factura del proveedor: «el código exacto manda» toma en silencio la primera de varias variantes con ese código (confianza 1)",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-facturas-2",
+        "priority": "P2",
+        "title": "El código exacto de la tienda gana a la equivalencia ya corregida del proveedor y a la descripción: con los IDs numéricos reales (1001–1616) la línea vuelve al producto equivocado con 100 % de confianza",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-facturas-3",
+        "priority": "P2",
+        "title": "No se comparan tamaños en softgels, caplets, liqui-caps, «serv.», packs ni unidades: la factura queda preelegida en el envase de otro tamaño",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-facturas-4",
+        "priority": "P2",
+        "title": "Los números de tono se ignoran: «FSP 6.5» queda preelegido como «FSP 5.5» y «Polvo compacto 120» como «370»",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-facturas-5",
+        "priority": "P2",
+        "title": "Un tono hecho de palabras de color desaparece del nombre: cualquier tono desconocido cae en ese producto («Color Base Primer Lemon Drop» queda como «Purple Cream»)",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-facturas-6",
+        "priority": "P2",
+        "title": "Una factura que nombra otra marca queda preelegida en el producto de la marca que tiene la tienda («Melatonin Natrol» queda como «Melatonin Nutrex»)",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-facturas-7",
+        "priority": "P2",
+        "title": "Formato español: «1.250» se lee como 1,25 y en el mismo archivo «1,250» se lee como 1250; el costo promedio se corrompe",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-facturas-8",
+        "priority": "P3",
+        "title": "La recepción de una orden de compra no es idempotente: reenviar el mismo formulario recibe la mercancía dos veces",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-seguridad-1",
+        "priority": "P2",
+        "title": "Cinco contraseñas erróneas enviadas por cualquiera expulsan al usuario de las sesiones que ya tenía abiertas y bloquean su caja 15 minutos, una y otra vez",
+        "status": "pendiente"
+      },
+      {
+        "id": "R9-seguridad-2",
+        "priority": "P3",
+        "title": "El límite de intentos por IP en /api/auth y /api/sales se evita cambiando mayúsculas en la ruta",
+        "status": "pendiente"
+      }
+    ]
+  }
+}

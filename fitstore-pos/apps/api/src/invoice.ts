@@ -1544,12 +1544,13 @@ export function matchInvoiceLines(
       };
     return { ...l, variantId: null, productId: null, confidence: 0 };
   };
-  // Palabras parecidas: iguales o con el mismo comienzo de 4–5 letras
-  // («fajas»/«faja», «leggings»/«legging», «creatina»/«creatine»).
-  const akin = (a: string, b: string) => {
-    const n = Math.min(a.length, b.length, 5);
-    return a === b || (n >= 4 && a.slice(0, n) === b.slice(0, n));
-  };
+  // La palabra de la factura es la del nombre, su plural o su abreviatura
+  // («leggings» por «legging», «hydrol» por «hydrolyzed»).
+  const akin = (w: string, name: string) =>
+    w === name ||
+    w === name + "s" ||
+    w === name + "es" ||
+    (w.length >= 4 && name.startsWith(w));
   // Un código de la tienda se respeta salvo que la descripción lo contradiga
   // (R9-facturas-2): que sea otro producto de la tienda, que no tenga nada
   // que ver con el producto del código, o que declare otro tamaño, sabor,
@@ -1562,23 +1563,31 @@ export function matchInvoiceLines(
   ): MatchedLine | null => {
     // El código escrito en la descripción (o la descripción vacía, que se
     // llena con el código) no es un número del producto.
+    // Sólo como palabra entera: «LEG» no se quita de «Leggings».
     const rest = l.description.replace(
-      new RegExp(code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+      new RegExp(
+        "(?<![\\p{L}\\p{N}])" +
+          code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+          "(?![\\p{L}\\p{N}])",
+        "giu",
+      ),
       " ",
     );
     if (!rest.trim()) return null;
     const declared = traitsOf(rest);
     const guess = byName({ ...l, description: rest }, declared);
-    // Ninguna palabra propia de la descripción (sin unidades, colores,
-    // sabores ni relleno) se parece a las del nombre del código, marca
-    // incluida: «Top Deportivo Aurora Lila» no es «ISO100 … Strawberry».
-    const said = tokens(rest).filter((w) => !/^\d+$/.test(w) && !EXPLAINED.has(w));
+    // La descripción nombra algo que el producto del código no tiene: una
+    // palabra propia (sin unidades, colores, sabores ni relleno) que no está
+    // en su nombre, y tampoco lo identifica como se exige por nombre. Así
+    // «Top Deportivo Aurora Lila» o «Faja tipo body» no quedan en «ISO100 …
+    // Strawberry» ni en «Faja tipo chaleco M».
+    const said = tokens(rest).filter(
+      (w) => !/^\d+$/.test(w) && !EXPLAINED.has(w),
+    );
     const words = [...nameWords.get(productId)!];
     const unrelated =
-      said.length > 0 &&
-      !said.some((w) => words.some((x) => akin(w, x))) &&
-      productScore(rest, nameCores.get(productId) || nameOf(productId)) <
-        MIN_PRODUCT_SCORE;
+      !said.every((w) => words.some((x) => akin(w, x))) &&
+      missing(productId, tokens(rest), declared) !== null;
     // Otro producto de la tienda: elegido del todo por la descripción, o
     // reconocido sin variante cuando el del código no tiene nada que ver.
     const other =

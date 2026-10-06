@@ -1092,13 +1092,22 @@ describe("Ronda 9 · revisión · facturas", () => {
       productId: "p-1162",
       note: expect.stringMatching(/ISO100.*no coincide/),
     });
-    // Abreviada, con la marca o en español sigue siendo el producto.
+    // Abreviada, con la marca, con el sabor en español o con palabras de
+    // más que no cambian el producto, sigue siendo el producto.
     for (const d of [
       "Dymatize ISO 100 Fresa 1.3 lb",
       "ISO100 Hydrolyzed",
-      "Iso 100 hidrolizada strawberry",
+      "ISO100 Hydrol. Strawberry 1.3 lb",
+      "Proteína ISO100 Hydrolyzed Dymatize Strawberry 1.34 lb",
     ])
       expect(match(d, "1162").variantId, d).toBe("v-1162");
+    // Una palabra que el nombre no tiene y sin identificarlo del todo: se
+    // sugiere el producto del código y alguien confirma (una sola vez: al
+    // confirmar se guarda la equivalencia del proveedor).
+    expect(match("Iso 100 hidrolizada strawberry", "1162")).toMatchObject({
+      variantId: null,
+      productId: "p-1162",
+    });
     // Productos con variantes (como los crea la tienda): el Top en S/M/L.
     const top = ["S", "M", "L"].map((s) => ({
       id: "v-top-" + s,

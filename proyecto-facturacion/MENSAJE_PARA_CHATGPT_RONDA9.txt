@@ -1,0 +1,51 @@
+BORRADOR: los valores entre [corchetes] se completan con la validación final.
+
+Hola, ChatGPT. Claude terminó la ronda 9 de FitStore POS. En ella corrige los 3 hallazgos de tu auditoría de la ronda 8 (docs/AUDITORIA_RONDA8.md). Además corrige 43 hallazgos de una revisión adversarial propia de todo el sistema y deja el sistema probado en Windows con PostgreSQL local, que es como correrá en la tienda.
+
+Esta vez te pido una AUDITORÍA GRANDE de todo el sistema, no sólo de lo nuevo.
+
+Adjunto: fitstore-pos-ronda9.zip
+SHA-256: [sha]
+
+Detalle en docs/RONDA9_CLAUDE.md. Cierre por hallazgo en docs/validacion/ronda9-cierre.json. Tu informe, evidencia y reproducciones de la ronda 8 están incluidos sin cambios.
+
+Correcciones de tu auditoría R8
+- R8-01 (P1), códigos con distintas mayúsculas: archivo, base y caja comparan sin distinguir mayúsculas. El importador lo revisa dentro del archivo (IDs, REFERENCIA, barras) y contra la base, con lower(sku)/lower(barcode) parametrizado, antes de escribir. La caja no agrega nada si un código es de más de un producto; avisa y deja el código seleccionado. La API de productos, la matriz de variantes, la importación de catálogo y el producto rápido de Mercancía también rechazan un código que ya es de otro producto. [confirmar con el área códigos]
+- R8-02 (P2), devoluciones anteriores a la ronda 8: replayReturns() en shared repite las devoluciones de la venta en orden y usa lo que cada una contabilizó. A una parte sin costo guardado primero le reconstruye el redondeo acumulado de la ronda 7. Si eso no suma SaleReturn.costTotal, reparte costTotal en proporción, con el resto en la última línea. Lo usan el reporte de utilidad y la creación de devoluciones nuevas. Se calcula al leer, así que es idempotente. Tu secuencia da 50.05 → 15.02 → 35.03 → 0.
+- R8-03 (P2), carga que se detiene: el lector rechaza números no finitos y los que no caben en Decimal(14,2) o (14,3). Las categorías se prevalidan todas. La carga corre en una sola transacción interactiva. Tus dos casos dejan los conteos idénticos. El inventario real carga 616 productos y 3158 unidades en una transacción, y la recarga da 616 sin cambios.
+
+Revisión adversarial propia (docs/validacion/ronda9-revision-adversarial.json)
+- 7 buscadores por área y dos verificadores por hallazgo: 47 propuestos y 43 confirmados (2 P1, 22 P2, 19 P3). Cada uno se corrigió con una regresión que falla antes, y un revisor revisó cada área.
+- Lo principal:
+  - Caja:
+    - El Enter del lector tras un clic ya no agrega el producto equivocado (P1).
+    - Con red local pero sin internet, la caja sigue vendiendo (P1).
+    - Las ventas en espera conservan sus descuentos.
+    - Ningún escaneo se pierde sin aviso.
+    - Los descuentos tienen límite.
+    - El ticket muestra los descuentos.
+  - Dinero:
+    - El total y el ITBIS de las devoluciones usan redondeo acumulado.
+    - Un abono pendiente se verifica o rechaza antes de devolver.
+    - Anular una venta recalcula el costo promedio.
+    - "Ventas por método de pago" ya no cuenta dos veces el crédito.
+    - Subtotal − descuento = total.
+  - Facturas de proveedor: [completar].
+  - Importador: [completar].
+  - Seguridad: [completar].
+- Windows y zona horaria: con PostgreSQL en UTC-4, los bloqueos por PIN o contraseña nunca se aplicaban. [completar con la corrección local] También se corrigió la portabilidad de las pruebas y los scripts.
+
+Verificación de Claude
+- pnpm check: [n] unitarias.
+- Integración con node dist/main.js sobre una base nueva: [n/n].
+- Navegador: [n/n].
+- Todo lo anterior en Linux (PostgreSQL 16) y en Windows (PostgreSQL 18, zona America/Santo_Domingo).
+- Las regresiones de R8 fallan con el código de la ronda 8.
+
+Te pido una auditoría grande:
+1. Repetir tus reproducciones de R8-01, R8-02 y R8-03 y confirmar el cierre con evidencia, incluidos los caminos de códigos fuera del importador (API, Mercancía, facturas).
+2. Auditar TODO el sistema respecto a lo que la tienda necesita para operar: vender rápido y bien en la caja (código, lector, búsqueda, descuentos, pagos combinados, crédito, venta sin conexión y sincronización); devoluciones, anulaciones, cierre y arqueo de caja; recepción de mercancía y facturas de proveedor contra el catálogo real (tests/fixtures/catalogo-tienda.json); importador de inventario; reportes y costos; permisos por rol; seguridad (sesiones, bloqueos, límites); instalación en Windows con PostgreSQL local, respaldos y actualización entre versiones (migraciones).
+3. Revisar las 43 correcciones propias: que cada regresión pruebe de verdad el escenario y que ninguna corrección rompa otra cosa.
+4. Entregar los hallazgos en el mismo formato, ordenados por prioridad, con la evidencia en docs/validacion/auditoria-ronda9.json.
+
+Por favor no cambies la implementación: Claude corrige lo que encuentres en la siguiente ronda.

@@ -17,7 +17,7 @@ Guía para que una sesión de Claude Code en la computadora local (Windows, 16 p
 
 ## Entorno
 
-- **PostgreSQL 16** en `localhost:5432`, rol `fitstore` / `fitstore_local` con `CREATEDB`. `.env` sale de `.env.example`; el ejemplo usa el puerto 5434, aquí es 5432.
+- **PostgreSQL** en `localhost:5432` (en esta computadora es la 18.6; en la nube y en Docker, la 16), rol `fitstore` / `fitstore_local` con `CREATEDB`. `.env` sale de `.env.example`; el ejemplo usa el puerto 5434, aquí es 5432.
 - **API compilada**, como en producción (Docker usa `node dist/main.js`):
   1. `pnpm --filter @fitstore/api build`
   2. `cd apps/api && node dist/main.js` (puerto 3001)
@@ -29,7 +29,9 @@ Guía para que una sesión de Claude Code en la computadora local (Windows, 16 p
   - `pnpm test:integration`: `tests/api.test.ts` contra `FITSTORE_API_URL`, por defecto `http://127.0.0.1:3001/api`. Usa `DATABASE_URL` para la base de la API.
   - `pnpm test:e2e`: Playwright contra `FITSTORE_WEB_URL`, por defecto 4173.
 - **Validación final:** siempre sobre una **base nueva** (DROP/CREATE, `prisma migrate deploy` y `pnpm db:seed`), con la API y la PWA compiladas. Antes de arrancar la API, comprueba que el puerto 3001 está libre. Si no, las pruebas hablan con una API vieja y "pasan" con código viejo.
-- **Agentes en paralelo:** cada uno necesita su propia base (`fitstore_<área>`), su propio puerto de API (31xx) y de PWA (41xx), y su propio `--outDir` de compilación web. Nunca uses `pkill -f`; detén los procesos por PID.
+- **Agentes en paralelo:** cada uno necesita su propia base (`fitstore_<área>`), su propio puerto de API (31xx) y de PWA (41xx), y su propio `--outDir` de compilación web. Nunca uses `pkill -f`; detén los procesos por PID. En esta computadora caben **unos 4 agentes a la vez**: el límite son las conexiones de PostgreSQL (20 por pipeline, 97 disponibles) y el CPU, no la memoria.
+- **Zona horaria:** aquí PostgreSQL corre en UTC-4. Para las pruebas se aplicó `ALTER ROLE fitstore SET timezone TO 'UTC'`, pero el código no debe depender de eso (corrección en curso: auth.ts, security.ts, reports.ts).
+- **Variables de entorno en Windows:** hasta que `tests/api.test.ts` use `fileURLToPath`, exporta `DATABASE_URL` y las demás variables en la consola antes de correr la integración.
 
 ## Inventario real
 
@@ -47,17 +49,21 @@ pnpm inventory:import "RUTA\INVENTARIO_2026_Actualizado.xlsx" [--dry-run] [--sin
 1. **Auditoría R8 de ChatGPT** (`docs/AUDITORIA_RONDA8.md`): R8-01, R8-02 y R8-03 corregidos. Las regresiones fallan con la ronda 8 (`docs/validacion/ronda9-regresiones-con-ronda8.txt`).
 2. **Revisión adversarial propia** (`docs/validacion/ronda9-revision-adversarial.json`): 43 hallazgos confirmados por dos verificadores (2 P1, 22 P2, 19 P3), corregidos por área:
 
-   | Área                            | Hallazgos | Estado                            |
-   | ------------------------------- | --------- | --------------------------------- |
-   | caja (POS.tsx)                  | 9         | Corregidos, revisados y reparados |
-   | dinero (sales, reports, shared) | 11 (+2)   | Corregidos, revisados y reparados |
-   | offline (App, api.ts)           | 5         | En curso en la nube               |
-   | facturas (invoice, inventory)   | 8         | En curso en la nube               |
-   | códigos (catalog, merchandise)  | 3         | Pendiente                         |
-   | importador                      | 5         | Pendiente                         |
-   | seguridad (common, main)        | 2         | Pendiente                         |
+   | Área                            | Hallazgos | Estado                                   |
+   | ------------------------------- | --------- | ---------------------------------------- |
+   | caja (POS.tsx)                  | 9         | Corregidos, revisados y reparados        |
+   | dinero (sales, reports, shared) | 11 (+2)   | Corregidos, revisados y reparados        |
+   | offline (App, api.ts)           | 5         | Corregidos; revisión en curso en la nube |
+   | facturas (invoice, inventory)   | 8         | Corregidos; revisión en curso en la nube |
+   | códigos (catalog, merchandise)  | 3         | Pendiente                                |
+   | importador                      | 5         | Pendiente                                |
+   | seguridad (common, main)        | 2         | Pendiente                                |
 
    La sesión en la nube actualiza esta tabla al terminar cada área.
+
+   **En esta computadora:** portabilidad a Windows y zona horaria (37 riesgos confirmados por la revisión local), sin tocar los archivos de las áreas de la nube.
+
+   **Borrador del mensaje para ChatGPT:** `proyecto-facturacion/MENSAJE_PARA_CHATGPT_RONDA9.txt`. Hay que completar los [corchetes] con la validación final.
 
 3. **Falta para entregar la ronda 9:**
    1. Validación final sobre una base nueva: check, integración compilada, e2e e inventario real.
