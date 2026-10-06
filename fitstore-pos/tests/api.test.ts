@@ -4900,6 +4900,42 @@ describe("Ronda 9 · revisión · facturas", () => {
       confidence: 1,
     });
   });
+  it("un código de la tienda con la descripción de otra cosa o de otra variante no se elige (R9-facturas-2)", async () => {
+    const iso = await product("ISO Fresa");
+    // Un producto que la tienda no tiene, con un código que choca.
+    const first = await upload(
+      `codigo,descripcion,cantidad,costo\n${iso.variants[0].sku},Top Deportivo Zafiro Lila,1,5\n`,
+    );
+    expect(first.lines[0]).toMatchObject({
+      variantId: null,
+      productId: iso.id,
+    });
+    expect(first.lines[0].note).toMatch(/la descripción no coincide/);
+    // El código de la talla S con una factura que dice talla L.
+    const top = await ok("/products", {
+      name: "QA R9F Top Tallas " + suffix,
+      sku: "R9F-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: ["S", "M", "L"].map((talla) => ({
+        sku: "R9FT-" + talla + "-" + randomUUID().slice(0, 8),
+        barcode: "R9FTB-" + talla + "-" + randomUUID().slice(0, 8),
+        price: 900,
+        costAvg: 500,
+        attributes: { talla },
+      })),
+    });
+    products.push(top);
+    const small = top.variants.find((v: any) => v.attributes.talla === "S");
+    const second = await upload(
+      `codigo,descripcion,cantidad,costo\n${small.sku},${top.name} talla L,1,5\n${small.sku},${top.name} talla S,1,5\n`,
+    );
+    expect(second.lines[0]).toMatchObject({
+      variantId: null,
+      productId: top.id,
+    });
+    expect(second.lines[0].note).toMatch(/S no coincide/);
+    expect(second.lines[1].variantId).toBe(small.id);
+  });
   it("CSV con «;»: «1.250» son 1250 y no 1.25 (R9-facturas-7)", async () => {
     const faja = await product("Faja Reloj de Arena Beige");
     const draft = await upload(
