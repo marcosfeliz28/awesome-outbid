@@ -8,3 +8,6 @@ coverage/
 apps/web/src-tauri/target/
 backups/
 .local-db/
+
+# Reporte del importador: puede tener costos reales de la tienda
+revision-inventario.csv
