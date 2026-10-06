@@ -20,7 +20,10 @@ services:
       target: api
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://fitstore:${POSTGRES_PASSWORD}@database:5432/fitstore
+      # «options» fija la sesión de PostgreSQL en UTC, que es como Prisma guarda
+      # las fechas. Es una defensa adicional: el código no depende de la zona
+      # horaria del servidor ni del rol.
+      DATABASE_URL: postgresql://fitstore:${POSTGRES_PASSWORD}@database:5432/fitstore?options=-c%20TimeZone%3DUTC
       JWT_SECRET: ${JWT_SECRET:?Configura JWT_SECRET}
       WEB_ORIGIN: ${WEB_ORIGIN:?Configura el origen HTTPS del sitio}
       PORT: 3001
