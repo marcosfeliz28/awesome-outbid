@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
@@ -101,16 +102,22 @@ const manualDiscount = (i: CartItem, globalDiscount: number) => {
 };
 const lineGross = (i: CartItem, qty = i.qty) =>
   money(d(qty).times(Number(i.variant.price)));
-// Parece un código (sólo dígitos, o dígitos con letras sueltas como
-// «e2e-1600») y no palabras de un nombre como «iso100» o «tribulus 1400».
+// Parece un código: un solo bloque de dígitos (con «-» o «.», como 1600) o
+// un solo bloque con 5 dígitos o más (barras o IDs como «e2e-16000»). Los
+// modelos y tonos del nombre («a40», «275n», «m158») y las palabras
+// («iso100», «tribulus 1400») son búsquedas: Enter agrega el único
+// resultado (R9-caja-1).
 const looksLikeCode = (text: string) => {
-  const words = searchWords(text);
+  const t = text.trim();
   return (
-    /^\d+$/.test(text) ||
-    (words.length > 0 &&
-      words.every((w) => /\d/.test(w) && !/[a-z]{3,}/.test(w)))
+    !/\s/.test(t) &&
+    (/^[\d.-]*\d[\d.-]*$/.test(t) || (t.match(/\d/g)?.length ?? 0) >= 5)
   );
 };
+// Campos de descuento de la caja y separación máxima entre teclas de un
+// lector (una persona tarda bastante más entre una tecla y otra).
+const DISCOUNT_FIELDS = ".line-discount input, #global-discount";
+const SCAN_GAP_MS = 50;
 // Un elemento donde se escribe: ahí el teclado no se desvía al buscador.
 const isEditable = (el: Element | null) =>
   el instanceof HTMLInputElement ||
@@ -142,6 +149,24 @@ export function POS({ go }: { go: (page: string) => void }) {
   // La ventana de variantes se abrió con Enter desde el buscador: al elegir,
   // el buscador queda vacío como tras un escaneo (R9-caja-6).
   const clearOnChoose = useRef(false);
+  // Teclas seguidas en un campo de descuento, por si son de un lector, y
+  // cuántas de esas ráfagas se pasaron al buscador (R9-caja-3/8).
+  const burst = useRef<{
+    field: Element;
+    chars: string;
+    last: number;
+    cart: CartItem[];
+    globalDiscount: number;
+  } | null>(null);
+  const scans = useRef(0);
+  // Aviso de un descuento fuera de límite. Espera un instante: si era el
+  // comienzo de un escaneo, no se muestra (R9-caja-3/8).
+  const limitWarning = (message: string) => {
+    const seen = scans.current;
+    setTimeout(() => {
+      if (scans.current === seen) toast(message, true);
+    }, 150);
+  };
   const client = useQueryClient();
   const products = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
   const categories = useQuery({
@@ -271,9 +296,17 @@ export function POS({ go }: { go: (page: string) => void }) {
   const changeQty = (i: CartItem, qty: number) => {
     // Al bajar la cantidad, el descuento por monto se ajusta al nuevo
     // importe de la línea en vez de dejar el total negativo (R9-caja-8).
-    if (qty > 0 && (i.discountAmount ?? 0) > lineGross(i, qty))
+    if (qty > 0 && (i.discountAmount ?? 0) > lineGross(i, qty)) {
       setLine(i.variant.id, { qty, discountAmount: lineGross(i, qty) });
-    else updateQty(i.variant.id, qty);
+      toast(
+        "El descuento por monto de " +
+          i.product.name +
+          " bajó a " +
+          formatMoney(lineGross(i, qty)) +
+          ", el importe de la línea.",
+        true,
+      );
+    } else updateQty(i.variant.id, qty);
   };
   // true si la venta quedó guardada (también la usa «Ventas en espera» para
   // guardar el carrito actual antes de recuperar otra).
@@ -352,6 +385,64 @@ export function POS({ go }: { go: (page: string) => void }) {
       e.preventDefault();
       charge();
     }
+    const printable =
+      e.key.length === 1 &&
+      e.key !== " " &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey;
+    // Con el foco en un descuento, los dígitos de un escaneo se tomaban como
+    // descuento (101 %, 1001 %…) y el producto no entraba (R9-caja-3/8). Un
+    // lector envía las teclas casi juntas; una persona, no. Tres teclas
+    // seguidas a menos de SCAN_GAP_MS son un escaneo: los descuentos vuelven
+    // a su valor de antes y el código sigue en el buscador, donde su Enter
+    // agrega el producto.
+    const field = document.activeElement;
+    if (
+      printable &&
+      field instanceof HTMLInputElement &&
+      field.matches(DISCOUNT_FIELDS) &&
+      search.current
+    ) {
+      const b = burst.current;
+      if (!b || b.field !== field || e.timeStamp - b.last >= SCAN_GAP_MS) {
+        const { cart, globalDiscount } = useStore.getState();
+        burst.current = {
+          field,
+          chars: e.key,
+          last: e.timeStamp,
+          cart,
+          globalDiscount,
+        };
+        return;
+      }
+      b.chars += e.key;
+      b.last = e.timeStamp;
+      if (b.chars.length < 3) return;
+      e.preventDefault();
+      burst.current = null;
+      scans.current++;
+      const before = new Map(b.cart.map((i) => [i.variant.id, i]));
+      flushSync(() => {
+        setCart(
+          useStore.getState().cart.map((item) => {
+            const old = before.get(item.variant.id);
+            return old
+              ? {
+                  ...item,
+                  discountPercent: old.discountPercent,
+                  discountAmount: old.discountAmount,
+                }
+              : item;
+          }),
+        );
+        setDiscount(b.globalDiscount);
+        setQ(b.chars);
+      });
+      search.current.focus();
+      search.current.setSelectionRange(b.chars.length, b.chars.length);
+      return;
+    }
     // El lector escribe como un teclado. Si el foco quedó en una tarjeta, en
     // un botón +/− o en ninguna parte (tras cerrar una ventana o «Nueva
     // venta»), los dígitos se perdían y el Enter volvía a pulsar el botón:
@@ -359,11 +450,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     // Lo que se escribe fuera de un campo va al buscador y reemplaza la
     // búsqueda anterior. Con una ventana abierta no se toca nada.
     if (
-      e.key.length === 1 &&
-      e.key !== " " &&
-      !e.ctrlKey &&
-      !e.metaKey &&
-      !e.altKey &&
+      printable &&
       search.current &&
       !isEditable(document.activeElement) &&
       !document.querySelector('[role="dialog"]')
@@ -745,16 +832,18 @@ export function POS({ go }: { go: (page: string) => void }) {
                         aria-label={"Descuento de " + i.product.name}
                         value={i.discountPercent}
                         onChange={(e) => {
-                          // Entre 0 y 100 % (R9-caja-8).
-                          const value = Number(e.target.value) || 0;
+                          // Hasta 100 %. Un valor mayor no se aplica (queda
+                          // el anterior y se avisa): llevarlo al 100 % dejaba
+                          // la línea gratis sin que se notara (R9-caja-8).
+                          const value = Math.max(
+                            0,
+                            Number(e.target.value) || 0,
+                          );
                           if (value > 100)
-                            toast(
+                            return limitWarning(
                               "El descuento de una línea llega hasta el 100 %.",
-                              true,
                             );
-                          setLine(i.variant.id, {
-                            discountPercent: Math.min(100, Math.max(0, value)),
-                          });
+                          setLine(i.variant.id, { discountPercent: value });
                         }}
                       />
                       %
@@ -769,19 +858,20 @@ export function POS({ go }: { go: (page: string) => void }) {
                         aria-label={"Descuento por monto de " + i.product.name}
                         value={i.discountAmount ?? 0}
                         onChange={(e) => {
-                          // Entre 0 y el importe de la línea (R9-caja-8).
-                          const value = Number(e.target.value) || 0,
+                          // Hasta el importe de la línea; un valor mayor no
+                          // se aplica y se avisa (R9-caja-8).
+                          const value = Math.max(
+                              0,
+                              Number(e.target.value) || 0,
+                            ),
                             max = lineGross(i);
                           if (value > max)
-                            toast(
+                            return limitWarning(
                               "El descuento no puede pasar del importe de la línea (" +
                                 formatMoney(max) +
                                 ").",
-                              true,
                             );
-                          setLine(i.variant.id, {
-                            discountAmount: Math.min(max, Math.max(0, value)),
-                          });
+                          setLine(i.variant.id, { discountAmount: value });
                         }}
                       />
                     </label>
@@ -819,11 +909,15 @@ export function POS({ go }: { go: (page: string) => void }) {
                 min="0"
                 max="100"
                 value={globalDiscount}
-                onChange={(e) =>
-                  setDiscount(
-                    Math.min(100, Math.max(0, Number(e.target.value))),
-                  )
-                }
+                onChange={(e) => {
+                  // Como en las líneas: más de 100 % no se aplica (R9-caja-8).
+                  const value = Math.max(0, Number(e.target.value) || 0);
+                  if (value > 100)
+                    return limitWarning(
+                      "El descuento global llega hasta el 100 %.",
+                    );
+                  setDiscount(value);
+                }}
               />
               % <small>−{formatMoney(discount)}</small>
             </span>

@@ -1163,7 +1163,7 @@ test("R9-caja-5: recuperar una venta en espera avisa si falta un producto y no p
   await r9Retire(request, headers, created);
 });
 
-test("R9-caja-8: el descuento de línea se limita al 100 % y al importe de la línea", async ({
+test("R9-caja-8: el descuento de línea no pasa del 100 % ni del importe de la línea", async ({
   page,
   request,
 }) => {
@@ -1179,19 +1179,24 @@ test("R9-caja-8: el descuento de línea se limita al 100 % y al importe de la l�
     exact: true,
   });
   const total = page.locator(".cart-total");
+  // Un valor imposible no se aplica: queda el anterior y se avisa (antes se
+  // llevaba al 100 % y la línea quedaba gratis; revisión de R9-caja-8).
+  await percent.fill("15");
   await percent.fill("150");
-  await expect(percent).toHaveValue("100");
-  await expect(total).toContainText("RD$ 0.00");
+  await expect(page.getByText("llega hasta el 100 %")).toBeVisible();
+  await expect(percent).toHaveValue("15");
+  await expect(total).toContainText("RD$ 1,275.00");
   await percent.fill("0");
   await amount.fill("2000");
-  await expect(amount).toHaveValue("1500");
-  await expect(total).toContainText("RD$ 0.00");
-  await amount.fill("0");
+  await expect(page.getByText(/no puede pasar del importe/)).toBeVisible();
+  await expect(amount).toHaveValue("0");
+  await expect(total).toContainText("RD$ 1,500.00");
   await page.getByRole("button", { name: "Aumentar " + name }).click();
   await amount.fill("2500");
   await expect(total).toContainText("RD$ 500.00");
   // Al bajar la cantidad, el monto se ajusta al nuevo importe de la línea.
   await page.getByRole("button", { name: "Reducir " + name }).click();
+  await expect(page.getByText(/bajó a RD\$ 1,500.00/)).toBeVisible();
   await expect(amount).toHaveValue("1500");
   await expect(total).toContainText("RD$ 0.00");
   await expect(total).not.toContainText("-");
