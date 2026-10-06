@@ -550,22 +550,27 @@ export class ReportsController {
           );
       } else if (name === "profit" || name === "abc") {
         const grouped = new Map<string, any>();
-        for (const i of items) {
-          const id = i.variant.productId;
-          const row = grouped.get(id) || {
-            Producto: i.variant.product.name,
-            Categoría: i.variant.product.category.name,
+        const rowOf = (variant: (typeof items)[number]["variant"]) =>
+          grouped.get(variant.productId) ?? {
+            Producto: variant.product.name,
+            Categoría: variant.product.category.name,
             Ventas: 0,
             Costo: 0,
             Unidades: 0,
           };
-          row.Ventas = money(d(row.Ventas).plus(d(i.lineTotal).minus(i.tax)));
+        // Lo contabilizado por línea: el costo redondeado de cada una o, en
+        // ventas anteriores a la ronda 7 final, Sale.costTotal repartido. Se
+        // reparte sobre todas las líneas de la venta, antes de filtrar por
+        // categoría, para que cuadre con el dashboard (R9-dinero-7).
+        const booked = new Map(sales.map((s) => [s.id, bookedLineCosts(s)]));
+        for (const i of items) {
+          const row = rowOf(i.variant);
           // Sin redondear hasta el final: ventas y devoluciones parciales se
           // compensan exactamente.
-          // Lo registrado por línea (redondeado como Sale.costTotal).
-          row.Costo = d(row.Costo).plus(money(allocationCost(i)));
+          row.Ventas = d(row.Ventas).plus(d(i.lineTotal).minus(i.tax));
+          row.Costo = d(row.Costo).plus(booked.get(i.sale.id)!.get(i.id)!);
           row.Unidades += Number(i.qty);
-          grouped.set(id, row);
+          grouped.set(i.variant.productId, row);
         }
         const periodReturns = await this.db.saleReturn.findMany({
           where: {
@@ -592,90 +597,60 @@ export class ReportsController {
                     },
                   },
                 },
+                returns: true,
               },
             },
           },
         });
+        // Lo que contabilizó cada parte de cada devolución (R8-02, R9-dinero-1,
+        // R9-dinero-6): el costo guardado desde la ronda 8 o, antes, el
+        // reconstruido con todas las devoluciones de la venta, también las de
+        // otros períodos. Se calcula al leer, así que es idempotente.
+        const histories = new Map<string, ReturnType<typeof replayReturns>>();
         for (const returned of periodReturns) {
-          // Costo de cada línea repuesta (R8-02). Desde la ronda 8 cada línea
-          // guarda el suyo. Las anteriores no: se concilian con lo que la
-          // devolución contabilizó (SaleReturn.costTotal), repartido en
-          // proporción y con el resto en la última línea, para que la suma
-          // sea exacta. Se calcula al leer, así que es idempotente.
-          const parts = returned.items as any[];
-          const lineOf = (part: any) =>
-            returned.sale.items.find((i) => i.id === part.saleItemId);
-          const partCost = new Map<any, ReturnType<typeof d>>();
-          const unknown = parts.filter(
-            (p) => p.restock && typeof p.cost !== "number" && lineOf(p),
-          );
-          for (const p of parts)
-            if (p.restock && typeof p.cost === "number")
-              partCost.set(p, d(p.cost));
-          if (unknown.length) {
-            const estimate = (p: any) => {
-              const line = lineOf(p)!;
-              return allocationCost(line).times(p.qty).div(line.qty);
-            };
-            const known = [...partCost.values()].reduce(
-              (t, c) => t.plus(c),
-              d(0),
-            );
-            const pending = d(returned.costTotal).minus(known);
-            const weights = unknown.map(estimate);
-            const total = weights.reduce((t, w) => t.plus(w), d(0));
-            let given = d(0);
-            unknown.forEach((p, n) => {
-              const share =
-                n === unknown.length - 1
-                  ? pending.minus(given)
-                  : d(
-                      money(
-                        total.isZero()
-                          ? pending.div(unknown.length)
-                          : pending.times(weights[n]).div(total),
-                      ),
-                    );
-              given = given.plus(share);
-              partCost.set(p, share);
-            });
-          }
-          for (const part of parts) {
-            const line = returned.sale.items.find(
-              (i) => i.id === part.saleItemId,
-            );
+          const history =
+            histories.get(returned.saleId) ??
+            replayReturns(returned.sale, returned.sale.returns);
+          histories.set(returned.saleId, history);
+          (returned.items as any[]).forEach((part, n) => {
+            const found = history.parts.get(returned.id + "#" + n);
+            const line = found
+              ? returned.sale.items.find((i) => i.id === found.line.id)
+              : undefined;
             if (
+              !found ||
               !line ||
               (query.categoryId &&
                 line.variant.product.categoryId !== query.categoryId)
             )
-              continue;
-            const id = line.variant.productId;
-            const row = grouped.get(id) ?? {
-              Producto: line.variant.product.name,
-              Categoría: line.variant.product.category.name,
-              Ventas: 0,
-              Costo: 0,
-              Unidades: 0,
-            };
-            row.Ventas = money(
-              d(row.Ventas).minus(
-                d(line.lineTotal).minus(line.tax).times(part.qty).div(line.qty),
-              ),
-            );
-            if (part.restock)
-              row.Costo = d(row.Costo).minus(partCost.get(part) ?? 0);
+              return;
+            const row = rowOf(line.variant);
+            // Venta devuelta sin ITBIS: lo registrado en la parte desde
+            // R9-dinero-2; antes, el mismo redondeo acumulado de la línea.
+            const after = found.before.plus(part.qty);
+            const back = (value: ReturnType<typeof d>) =>
+              returnedAt(value, line.qty, after).minus(
+                returnedAt(value, line.qty, found.before),
+              );
+            const net =
+              typeof part.total === "number" && typeof part.tax === "number"
+                ? d(part.total).minus(part.tax)
+                : back(d(line.lineTotal)).minus(back(d(line.tax)));
+            row.Ventas = d(row.Ventas).minus(net);
+            if (found.restock) row.Costo = d(row.Costo).minus(found.cost);
             row.Unidades -= Number(part.qty);
-            grouped.set(id, row);
-          }
+            grouped.set(line.variant.productId, row);
+          });
         }
         rows = [...grouped.values()].map((i) => {
-          const Costo = money(i.Costo);
+          const Ventas = money(i.Ventas),
+            Costo = money(i.Costo);
           return {
             ...i,
+            Ventas,
             Costo,
-            Utilidad: money(d(i.Ventas).minus(Costo)),
-            Margen: margin(i.Ventas, Costo),
+            Utilidad: money(d(Ventas).minus(Costo)),
+            Margen: margin(Ventas, Costo),
           };
         });
         if (name === "abc")
@@ -709,7 +684,9 @@ export class ReportsController {
           Evento: e.action,
           Usuario: e.userId,
           Referencia: e.entityId,
-          Detalle: JSON.stringify(e.after),
+          // Sin costos para quien no tiene profit:read: el safe() final no
+          // limpia dentro de un texto (R9-dinero-8).
+          Detalle: JSON.stringify(safe(e.after, actor)),
         }));
       } else if (name === "kardex")
         rows = (
