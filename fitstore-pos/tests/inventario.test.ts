@@ -142,4 +142,108 @@ describe("importador de inventario · lectura del Excel", () => {
       /9002, COSTO: «1\.250» es ambiguo[\s\S]*9003, EXISTENCIA[\s\S]*9004, EXISTENCIA[\s\S]*9005, COSTO/,
     );
   });
+  // Revisión adversarial R9 (docs/validacion/ronda9-revision-adversarial.json).
+  it("R9-importador-1: hipervínculos, errores de Excel y fórmulas se leen o se rechazan con diagnóstico, nunca como «[object Object]»", async () => {
+    expect(parseNumber({ error: "#N/A" } as any)).toMatch(/error #N\/A/);
+    expect(
+      parseNumber({ formula: "1/0", result: { error: "#DIV/0!" } } as any),
+    ).toMatch(/error #DIV\/0!/);
+    expect(parseNumber({ formula: "F2*2" } as any)).toMatch(
+      /fórmula sin valor calculado/,
+    );
+    expect(parseNumber({ sharedFormula: "E2" } as any)).toMatch(
+      /fórmula sin valor calculado/,
+    );
+    expect(parseNumber({ formula: "E2*2", result: 8 } as any)).toBe(8);
+    // Hipervínculo (también con texto con formato) y fórmulas con resultado,
+    // incluido 0, que ExcelJS quita de cell.value.
+    const ok = await readInventory(
+      await workbook([
+        [
+          2001,
+          {
+            text: "Faja Colombiana Talla M",
+            hyperlink: "https://proveedor.example/faja",
+          },
+          "2001",
+          "Fajas",
+          4,
+          900,
+          1800,
+        ],
+        [
+          { formula: "1001+1001", result: 2002 },
+          {
+            text: { richText: [{ text: "Corrector " }, { text: "Fawn" }] },
+            hyperlink: "https://proveedor.example/fawn",
+          },
+          { formula: "A3&\"\"", result: "2002" },
+          { formula: 'IF(1,"Maquillaje")', result: "Maquillaje" },
+          { formula: "E2*0", result: 0 },
+          { formula: "F2/3", result: 300 },
+          450,
+        ],
+      ]),
+    );
+    expect(
+      ok.map((r) => [r.id, r.name, r.category, r.qty, r.cost, r.price]),
+    ).toEqual([
+      ["2001", "Faja Colombiana Talla M", "Fajas", 4, 900, 1800],
+      ["2002", "Corrector Fawn", "Maquillaje", 0, 300, 450],
+    ]);
+    const bad = readInventory(
+      await workbook([
+        [
+          2003,
+          "Corrector Fawn",
+          "2003",
+          { formula: "VLOOKUP(A4,X:Y,2,0)", result: { error: "#N/A" } },
+          6,
+          200,
+          450,
+        ],
+        [2004, { error: "#REF!" }, "2004", "Fajas", 1, 900, 1800],
+        [2005, "Faja sin calcular", "2005", "Fajas", 1, 900, { formula: "F6*2" }],
+        [{ sharedFormula: "A2" }, "Sin ID calculado", "", "Fajas", 1, 1, 2],
+      ]),
+    );
+    await expect(bad).rejects.toThrow(
+      /fila 2003, SUB-GRUPO: la celda tiene el error #N\/A[\s\S]*fila 2004, DESCRIPCION: la celda tiene el error #REF![\s\S]*fila 2005, PRECIO DETALLE: fórmula sin valor calculado; abre el archivo en Excel y guárdalo[\s\S]*fila 5 del Excel, ID: fórmula sin valor calculado/,
+    );
+    await expect(bad).rejects.not.toThrow(/object/);
+  });
+  it("R9-importador-2: una fila con datos sin ID o sin DESCRIPCION detiene la carga; la fila TOTAL y las vacías se ignoran", async () => {
+    const total = [
+      { formula: "COUNTA(A2:A4)", result: 2 },
+      null,
+      null,
+      "TOTAL",
+      { formula: "SUM(E2:E4)", result: 9 },
+      null,
+      null,
+    ];
+    await expect(
+      readInventory(
+        await workbook([
+          [1700, "", "1700", "Fajas", 5, 900, 1800],
+          [null, "Faja sin código", null, "Fajas", 3, 900, 1800],
+          [1701, "Faja ok", "1701", "Fajas", 1, 900, 1800],
+          [null, null, null, "Fajas", 2, null, null],
+          total,
+        ]),
+      ),
+    ).rejects.toThrow(
+      /fila 2 del Excel \(ID 1700\): falta DESCRIPCION[\s\S]*fila 3 del Excel: falta ID[\s\S]*fila 5 del Excel: falta ID y DESCRIPCION/,
+    );
+    const rows = await readInventory(
+      await workbook([
+        [1701, "Faja ok", "1701", "Fajas", 1, 900, 1800],
+        ["", "", "", "", "", "", ""],
+        [null, null, null, "Fajas", null, null, null],
+        [1702, "Faja ok 2", "1702", "Fajas", 8, 900, 1800],
+        total,
+      ]),
+    );
+    expect(rows.map((r) => r.id)).toEqual(["1701", "1702"]);
+  });
 });
