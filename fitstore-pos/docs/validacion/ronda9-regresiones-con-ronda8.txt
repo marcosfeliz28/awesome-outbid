@@ -1,0 +1,168 @@
+Regresiones de la ronda 9 con el código de la ronda 8 (apps/ en ab829a5, pruebas de ba678ca) · API compilada · base nueva fitstore_r7
+[WARN] Unsupported engine: wanted: {"node":">=24"} (current: {"node":"v22.22.0","pnpm":"11.19.0"})
+$ vitest run --config vitest.integration.config.ts -t 'Ronda 9'
+
+ RUN  v3.2.7 /home/user/awesome-outbid/fitstore-pos
+
+ ❯ tests/api.test.ts (87 tests | 3 failed | 84 skipped) 6040ms
+   ↓ Aceptación financiera y permisos > requiere sesión y el vendedor nunca recibe costos
+   ↓ Aceptación financiera y permisos > vende proteína y legging con FEFO y pago dividido
+   ↓ Aceptación financiera y permisos > rechaza pagos y stock inválidos sin crear huecos ni movimientos
+   ↓ Aceptación financiera y permisos > es idempotente ante peticiones concurrentes y sync
+   ↓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado
+   ↓ Aceptación financiera y permisos > prorratea flete, recalcula promedio y conserva costo histórico
+   ↓ Aceptación financiera y permisos > protege devoluciones abiertas y repetidas
+   ↓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto
+   ↓ Aceptación financiera y permisos > conserva conflictos offline sin stock negativo
+   ↓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel
+   ↓ Aceptación financiera y permisos > calcula arqueo por método aunque se compensen diferencias
+   ↓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia
+   ↓ Regresiones de Claude > 3: rechaza ajustes vencidos y acepta el día dominicano vigente
+   ↓ Regresiones de Claude > 4: stock sin lote convive con lotes; conteo no destruye la trazabilidad
+   ↓ Regresiones de Claude > 5: gerente cierra caja ajena; diferencias compensadas persisten y se auditan
+   ↓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar
+   ↓ Regresiones de Claude > 7: conflicto offline devuelve español seguro
+   ↓ Regresiones de Claude > 8: pagos del reporte compras pertenecen al mismo rango
+   ↓ Regresiones de Claude > 9: consumo agrupa por mes dominicano al cruzar medianoche UTC
+   ↓ Regresiones de Claude > 10: utilidad conserva costo de devolución sin reingreso
+   ↓ Regresiones de Claude > 11: reintentar venta aprobada no requiere de nuevo PIN
+   ↓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal
+   ↓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco
+   ↓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor
+   ↓ Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP
+   ↓ Seguridad, offline y funciones completadas > 3 y 9: lote vencido según Santo Domingo no se vende ni se recibe
+   ↓ Seguridad, offline y funciones completadas > 4: diez unidades sin lote más una con lote permiten vender dos
+   ↓ Seguridad, offline y funciones completadas > 7: sincroniza en caja cerrada dentro de su horario y audita el reajuste
+   ↓ Seguridad, offline y funciones completadas > 8: pago actual no se resta en reporte de otro período
+   ↓ Seguridad, offline y funciones completadas > descuento por monto recalcula impuesto y queda auditado
+   ↓ Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido
+   ↓ Seguridad, offline y funciones completadas > venta a crédito admite abonos idempotentes en caja posterior
+   ↓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores
+   ↓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión
+   ↓ Seguridad, offline y funciones completadas > stock negativo optativo conserva advertencia y prohíbe saltarse lotes
+   ↓ Seguridad, offline y funciones completadas > alerta efectivo aunque tarjeta lo compense
+   ↓ Seguridad, offline y funciones completadas > NCF preparado conserva solicitud sin emitir un comprobante fiscal
+   ↓ Seguridad, offline y funciones completadas > dashboard incluye mapa dominicano y comparación del año anterior
+   ↓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios
+   ↓ Alertas de negocio y consistencia contable > devolución del período resta costo solo cuando reingresa y cuadra con dashboard
+   ↓ Ronda 2 de Claude > 1: notas requieren prueba de posesión o gerente, no se divulgan códigos y cada uso se audita
+   ↓ Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite
+   ↓ Ronda 2 de Claude > 3: transferencia pendiente no reduce deuda ni caja; verificación concurrente aplica una sola vez
+   ↓ Ronda 2 de Claude > 4: offline máximo 48 horas y fecha anterior auditada
+   ↓ Ronda 2 de Claude > 5: Compose sólo publica nginx y descarta IP suministrada por cliente
+   ↓ Ronda 3 · tiempo real y mercancía > SSE autentica, filtra sucursal y no comunica operaciones revertidas
+   ↓ Ronda 3 · tiempo real y mercancía > tres cajas venden stock 5 y las tres reciben el saldo confirmado en menos de 2 segundos
+   ↓ Ronda 3 · tiempo real y mercancía > equipos muestran actividad y caja, renombrar y revocar invalida sesiones
+   ↓ Ronda 3 · tiempo real y mercancía > entradas idempotentes con promedio, kardex y usuario/equipo; vendedor bloqueado y almacén sin ganancia
+   ↓ Ronda 3 · tiempo real y mercancía > salidas requieren motivo y existencias; todos los motivos quedan auditados
+   ↓ Ronda 3 · tiempo real y mercancía > lotes y vencimiento obligatorios, salida de lote vencido y creación rápida atómica
+   ↓ Ronda 3 · tiempo real y mercancía > CSV: revisión sin stock, mapeo guardado, total validado, recepción, comprobante y equivalencia
+   ↓ Ronda 3 · tiempo real y mercancía > factura con total distinto se rechaza hasta revisión explícita; línea sin pareja exige resolución
+   ↓ Ronda 3 · tiempo real y mercancía > entrada con orden respeta cantidades pendientes y no duplica recepciones
+   ↓ Ronda 3 · tiempo real y mercancía > SSE comunica recepción, devolución, anulación y conteo confirmados
+   ↓ Ronda 3 · tiempo real y mercancía > eventos se publican en orden de commit aunque las transacciones empiecen al revés
+   ↓ Ronda 3 · tiempo real y mercancía > nginx mantiene SSE sin buffering y sólo publica el proxy
+   ↓ Ronda 4 · Claude: caja y equipos > la caja queda asignada al equipo y muestra su nombre
+   ↓ Ronda 4 · Claude: caja y equipos > vender desde otro equipo explica dónde está la caja (409, no 403)
+   ↓ Ronda 4 · Claude: caja y equipos > trasladar exige PIN de gerente al vendedor y queda en bitácora
+   ↓ Ronda 4 · Claude: caja y equipos > otro usuario no puede trasladar una caja ajena
+   ↓ Ronda 4 · Claude: caja y equipos > el gerente cierra la caja de una vendedora desde su propio equipo
+   ↓ Ronda 4 · Claude: caja y equipos > la dueña puede cerrar su caja desde cualquier equipo
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P1 compras: entrada sin orden se reporta una vez; orden no se duplica; fechas aplican
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P2 lotes: lotId inventado, ajeno o de otra variante se rechaza sin cambios; el número de lote queda coherente
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > SSE: como máximo dos conexiones por sesión
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > importación: archivos grandes se rechazan sin leerlos
+   ↓ Auditoría ronda 4 de ChatGPT > P1: una caída abrupta del cliente libera su conexión de tiempo real
+   ↓ Auditoría ronda 4 de ChatGPT > P2: el kardex tiene índice por lote (migración y base de datos)
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-01: un equipo R3 migrado no se puede reclamar ni operar sin aprobación del gerente
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-02: la compra R3 sin orden se recupera de la bitácora; reparación idempotente
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-03: cantidades fuera de precisión dan 400 en todas las rutas y no tocan costo, stock ni kardex
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-04: la factura aceptada contra una orden fija la deuda; parciales, flete y reintento sin doble conteo
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-06: una ráfaga de conexiones SSE sobre una sesión acepta como máximo dos
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-08: ventas inválidas devuelven 400 con campos en español (también en la API compilada)
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > R6-01: un combo fraccionado se rechaza sin escrituras; 1 combo consume exactamente 0.4 y su devolución lo repone
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > revisión R7: costo de combos exacto en venta, devolución y reporte de utilidad
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > revisión R7: una línea de combo fraccionada anterior se devuelve completa, no en partes
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > R6-03: la recuperación no concilia recepciones con líneas incompletas; la completa sigue en 55
+   ↓ Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir
+   ↓ Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo
+   ↓ Ronda 8 · auditoría R7 de ChatGPT > R7-04: el reporte de utilidad usa el costo registrado en cada devolución parcial
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga 986ms
+     → expected +0 not to be +0 // Object.is equality
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-02: una devolución anterior a la ronda 8 se concilia con su costo contabilizado 262ms
+     → expected 35.04 to be 35.03 // Object.is equality
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios 736ms
+     → expected { …(10) } to be null
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga
+AssertionError: expected +0 not to be +0 // Object.is equality
+ ❯ tests/api.test.ts:4027:27
+    4025|       [lower, "QA R9 producto B", lower, "Ropa deportiva", 2, 10, 20],
+    4026|     ]);
+    4027|     expect(r1.status).not.toBe(0);
+       |                           ^
+    4028|     expect(r1.out).toMatch(/ya es de/);
+    4029|     // Entre filas: la REFERENCIA de una fila es el ID de otra en mayú…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · auditoría R8 de ChatGPT > R8-02: una devolución anterior a la ronda 8 se concilia con su costo contabilizado
+AssertionError: expected 35.04 to be 35.03 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 35.03[39m
+[31m+ 35.04[39m
+
+ ❯ tests/api.test.ts:4124:33
+    4122|       },
+    4123|     });
+    4124|     expect((await row()).Costo).toBe(35.03);
+       |                                 ^
+    4125|     // Repetir la lectura no cambia nada.
+    4126|     expect((await row()).Costo).toBe(35.03);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios
+AssertionError: expected { …(10) } to be null
+
+[32m- Expected:[39m 
+null
+
+[31m+ Received:[39m 
+{
+  "attributes": [],
+  "branchId": "main",
+  "color": "#7C3AED",
+  "createdAt": 2026-10-06T00:10:24.823Z,
+  "createdBy": "a1eb24e0-67a3-4f7a-9840-f90b6649758b",
+  "id": "bb8d64a1-ca49-44f9-938a-fcaec93830f5",
+  "name": "QA R9 nueva muvx9v10",
+  "requiresExpiry": false,
+  "requiresLot": false,
+  "updatedAt": 2026-10-06T00:10:24.823Z,
+}
+
+ ❯ tests/api.test.ts:4154:7
+    4152|     expect(
+    4153|       await fixtureDb.category.findUnique({ where: { name: newCat } }),
+    4154|     ).toBeNull();
+       |       ^
+    4155|     expect(await counts()).toEqual(before);
+    4156|     // Precio fuera del límite de Decimal(14,2) en la segunda fila.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 84 skipped (87)
+   Start at  00:10:18
+   Duration  6.59s (transform 265ms, setup 0ms, collect 303ms, tests 6.04s, environment 0ms, prepare 66ms)
+
+[ELIFECYCLE] Command failed with exit code 1.

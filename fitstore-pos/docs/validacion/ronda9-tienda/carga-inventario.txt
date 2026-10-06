@@ -1,0 +1,20 @@
+Inventario real (INVENTARIO_2026_Actualizado.xlsx) en una base nueva (migraciones + semilla), con el código de la ronda 9.
+Antes: productos=60 variantes=228 movimientos=1920 categorias=5
+== 1. Carga sin --sin-lotes: la semilla tiene categorías con lote obligatorio, así que debe detenerse sin escribir nada
+La categoría «Suplementos» exige lote o vencimiento y el Excel no los trae. Desactívalo en Productos › Categorías o repite con --sin-lotes (queda en la bitácora).
+salida: 1
+Después: productos=60 variantes=228 movimientos=1920 categorias=5
+== 2. Carga con --sin-lotes (una sola transacción)
+616 productos leídos · 616 nuevos (3158 unidades) · 0 ya cargados sin cambios · 0 activados · 0 precios actualizados · 30 sin precio o costo en el Excel (inactivos).
+94 productos para revisar en /home/user/awesome-outbid/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).
+salida: 0 · 3.471 s
+Después: productos=676 variantes=844 movimientos=2521 categorias=5
+== 3. Segunda carga del mismo archivo
+616 productos leídos · 0 nuevos (0 unidades) · 616 ya cargados sin cambios · 0 activados · 0 precios actualizados · 30 sin precio o costo en el Excel (inactivos).
+94 productos para revisar en /home/user/awesome-outbid/fitstore-pos/apps/api/revision-inventario.csv (ábrelo en Excel).
+salida: 0
+Después: productos=676 variantes=844 movimientos=2521 categorias=5
+== Totales por categoría (productos | unidades)
+Fajas|40|186.000
+Maquillaje|355|2062.000
+Suplementos|221|910.000
