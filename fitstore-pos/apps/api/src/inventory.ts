@@ -923,6 +923,148 @@ export class InventoryController {
       { isolationLevel: "Serializable", timeout: 15000 },
     );
   }
+  // Historial de recepciones (paso 37): las últimas 50 o las de un período.
+  @Get("goods-receipts")
+  @Permit("catalog:read")
+  async receipts(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+  ) {
+    receiptAccess(actor);
+    const period = receiptPeriod(query);
+    const rows = await this.db.goodsReceipt.findMany({
+      where: {
+        branchId: actor.branchId,
+        ...period,
+        ...(query.supplierId ? { supplierId: parse(uuid, query.supplierId) } : {}),
+      },
+      include: { order: { select: { number: true, supplierId: true } } },
+      orderBy: { createdAt: "desc" },
+      take: "OR" in period ? 2000 : 50,
+    });
+    return safe(await describeReceipts(this.db, rows, actor), actor);
+  }
+  // Compras del período en Excel para la contable (prepara el 606).
+  @Get("goods-receipts/export")
+  @Permit("reports:read")
+  async exportReceipts(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+    @Res() res: Response,
+  ) {
+    const rows = await describeReceipts(
+      this.db,
+      await this.db.goodsReceipt.findMany({
+        where: { branchId: actor.branchId, ...receiptPeriod(query) },
+        include: { order: { select: { number: true, supplierId: true } } },
+        orderBy: { createdAt: "asc" },
+        take: 5000,
+      }),
+      actor,
+    );
+    const book = new ExcelJS.Workbook();
+    const sheet = book.addWorksheet("Compras");
+    sheet.columns = [
+      ["Fecha factura", 14],
+      ["Fecha recepción", 16],
+      ["Proveedor", 30],
+      ["RNC", 14],
+      ["Factura", 14],
+      ["NCF", 16],
+      ["Condición", 16],
+      ["Orden", 12],
+      ["Mercancía", 13],
+      ["Flete", 11],
+      ["Otros cargos", 13],
+      ["ITBIS", 11],
+      ["Total", 13],
+      ["Dañado o rechazado", 18],
+      ["Recibió", 20],
+      ["Observación", 24],
+    ].map(([header, width]) => ({ header: String(header), width: Number(width) }));
+    sheet.getRow(1).font = { bold: true };
+    for (const r of rows)
+      sheet.addRow([
+        r.invoiceDate ? businessDate(r.invoiceDate) : null,
+        businessDate(r.createdAt),
+        r.supplierName,
+        r.supplierLegalId,
+        r.supplierInvoice,
+        r.supplierNcf,
+        paymentLabel(r) || null,
+        r.orderNumber,
+        r.goods,
+        r.freight,
+        r.otherCosts,
+        r.itbis,
+        r.total,
+        (r as any).damagedCost || null,
+        r.userName,
+        [
+          !r.supplierName && "Sin proveedor",
+          !r.supplierNcf && "Falta NCF",
+          !r.invoiceDate && "Falta fecha de factura",
+        ]
+          .filter(Boolean)
+          .join(" · ") || null,
+      ]);
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="compras-${query.from || "inicio"}-${query.to || businessDate()}.xlsx"`,
+    );
+    res.end(Buffer.from(await book.xlsx.writeBuffer()));
+  }
+  // Abrir una recepción: su comprobante.
+  @Get("goods-receipts/:id")
+  @Permit("catalog:read")
+  async receiptDetail(@Param("id") id: string, @CurrentUser() actor: Actor) {
+    receiptAccess(actor);
+    const row = await this.db.goodsReceipt.findFirstOrThrow({
+      where: { id: parse(uuid, id), branchId: actor.branchId },
+      include: { order: { select: { number: true, supplierId: true } } },
+    });
+    return safe((await describeReceipts(this.db, [row], actor))[0], actor);
+  }
+  // Completar después el documento del proveedor de una recepción.
+  @Patch("goods-receipts/:id/document")
+  @Permit("catalog:read")
+  async receiptDocument(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    receiptAccess(actor);
+    const input = parse(documentSchema, body);
+    return this.db.$transaction(async (tx) => {
+      const before = await tx.goodsReceipt.findFirstOrThrow({
+        where: { id: parse(uuid, id), branchId: actor.branchId },
+        include: { order: { select: { number: true, supplierId: true } } },
+      });
+      const supplierId = before.supplierId ?? before.order?.supplierId;
+      const supplier = supplierId
+        ? await tx.supplier.findUnique({ where: { id: supplierId } })
+        : null;
+      const row = await tx.goodsReceipt.update({
+        where: { id: before.id },
+        data: documentData(input, before, supplier?.paymentTermsDays),
+        include: { order: { select: { number: true, supplierId: true } } },
+      });
+      await audit(
+        tx,
+        actor,
+        "receipt_document",
+        "goods_receipt",
+        row.id,
+        documentData({}, before),
+        documentData({}, row),
+      );
+      return safe((await describeReceipts(tx, [row], actor))[0], actor);
+    });
+  }
   @Get("inventory/counts") @Permit("inventory:write") counts(
     @CurrentUser() actor: Actor,
   ) {

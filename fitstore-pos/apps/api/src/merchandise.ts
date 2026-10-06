@@ -15,8 +15,9 @@ import { createHash } from "node:crypto";
 import {
   businessDate,
   can,
+  countedQty,
+  d,
   expired,
-  landedCosts,
   money,
   weightedCost,
   z,
@@ -35,10 +36,18 @@ import {
   parse,
   positive,
   uuid,
-  qty,
 } from "./common";
 import { assertCodesFree } from "./catalog";
-import { lockVariant, stockChange } from "./inventory";
+import {
+  checkDamage,
+  damageFields,
+  damagedCostOf,
+  documentData,
+  documentSchema,
+  lockVariant,
+  receiptCosts,
+  stockChange,
+} from "./inventory";
 import {
   DEFAULT_INVOICE_MODEL,
   extractAnthropic,
@@ -65,7 +74,9 @@ const lineSchema = z
   .object({
     variantId: uuid.optional(),
     quick: quickSchema.optional(),
-    qty,
+    // En una entrada, 0 si toda la línea llegó dañada o rechazada.
+    qty: countedQty(),
+    ...damageFields,
     unitCost: positive,
     lotId: uuid.optional(),
     lotNumber: z.string().trim().min(1).max(100).optional(),
@@ -77,7 +88,8 @@ const lineSchema = z
     (l) => !!l.variantId !== !!l.quick,
     "Elige un producto o crea uno rápido.",
   );
-const operationSchema = z.object({
+// Documento del proveedor y condición de pago en la entrada (opcionales).
+const operationSchema = documentSchema.extend({
   id: uuid,
   direction: z.enum(["entry", "exit"]),
   supplierId: uuid.optional(),
@@ -325,6 +337,12 @@ export class MerchandiseController {
       bad("En una entrada indica el número de lote, no un lote existente.");
     if (data.direction === "exit" && data.items.some((i) => i.lotNumber))
       bad("En una salida elige el lote de la lista.");
+    if (data.direction === "exit") {
+      if (data.items.some((i) => i.damagedQty > 0))
+        bad("Las unidades dañadas se registran al recibir; usa el motivo de salida.");
+      if (data.items.some((i) => !(i.qty > 0)))
+        bad("Cada línea necesita una cantidad mayor que 0.");
+    } else data.items.forEach(checkDamage);
     const requestHash = createHash("sha256")
       .update(JSON.stringify(data))
       .digest("hex");
@@ -358,14 +376,15 @@ export class MerchandiseController {
             revokedAt: null,
           },
         });
-        if (data.supplierId)
-          await tx.supplier.findFirstOrThrow({
-            where: {
-              id: data.supplierId,
-              branchId: actor.branchId,
-              active: true,
-            },
-          });
+        const supplier = data.supplierId
+          ? await tx.supplier.findFirstOrThrow({
+              where: {
+                id: data.supplierId,
+                branchId: actor.branchId,
+                active: true,
+              },
+            })
+          : null;
         let draft: any;
         if (data.draftId) {
           if (data.direction !== "entry")
@@ -387,12 +406,20 @@ export class MerchandiseController {
             data.freight +
             data.taxes,
         );
+        const damagedCost = money(
+          data.items.reduce(
+            (s, l) => s.plus(damagedCostOf({ ...l, cost: l.unitCost })),
+            d(0),
+          ),
+        );
         const invoiceTotal =
           data.invoiceTotal ??
           (draft?.total != null ? Number(draft.total) : undefined);
+        // La factura puede cobrar también lo dañado: coincide con o sin ello.
         if (
           invoiceTotal !== undefined &&
           Math.abs(invoiceTotal - total) > 0.01 &&
+          Math.abs(invoiceTotal - (total + damagedCost)) > 0.01 &&
           !data.acknowledgeMismatch
         )
           bad(
@@ -466,17 +493,24 @@ export class MerchandiseController {
               (i: any) => i.id === line.itemId && i.variantId === variantId,
             );
             if (!item) bad("Línea ajena a la orden.");
+            // Pedido = recibido bueno + dañado/rechazado + pendiente.
             item.receivedQty = Number(item.receivedQty) + line.qty;
-            if (item.receivedQty > Number(item.qty))
+            item.damagedQty = Number(item.damagedQty) + line.damagedQty;
+            if (
+              d(item.receivedQty).plus(item.damagedQty).gt(Number(item.qty))
+            )
               bad("Cantidad superior a lo pendiente.");
           }
           lines.push({ ...line, variantId });
         }
-        const costs = landedCosts(
-          lines.map((l) => ({ qty: l.qty, cost: l.unitCost })),
-          data.freight + data.taxes,
-          data.allocation,
-        );
+        const costs =
+          data.direction === "entry"
+            ? receiptCosts(
+                lines.map((l) => ({ qty: l.qty, cost: l.unitCost })),
+                money(d(data.freight).plus(data.taxes)),
+                data.allocation,
+              )
+            : [];
         const receipt =
           data.direction === "entry"
             ? await tx.goodsReceipt.create({
@@ -488,10 +522,23 @@ export class MerchandiseController {
                   operationId: data.id,
                   freight: data.freight,
                   otherCosts: data.taxes,
+                  damagedCost,
+                  // Sin condición propia, la de la orden o el plazo del proveedor.
+                  ...documentData(
+                    data,
+                    order
+                      ? {
+                          paymentType: order.paymentType,
+                          creditDays: order.creditDays,
+                        }
+                      : {},
+                    supplier?.paymentTermsDays,
+                  ),
                   items: json(
                     lines.map((l, i) => ({
                       ...l,
                       landedCost: costs[i],
+                      damagedCost: damagedCostOf({ ...l, cost: l.unitCost }),
                       attachmentId: draft?.attachmentId,
                     })),
                   ),
@@ -503,6 +550,15 @@ export class MerchandiseController {
         for (const [index, line] of lines
           .map((l, i) => [i, l] as const)
           .sort((a, b) => a[1].variantId.localeCompare(b[1].variantId))) {
+          // Una línea sólo con dañados no entra al stock: cierra lo pendiente.
+          if (data.direction === "entry" && !(line.qty > 0)) {
+            if (order)
+              await tx.purchaseItem.update({
+                where: { id: line.itemId },
+                data: { damagedQty: { increment: line.damagedQty } },
+              });
+            continue;
+          }
           const v = await lockVariant(tx, line.variantId, actor);
           let lotId = line.lotId;
           if (data.direction === "entry") {
@@ -600,7 +656,10 @@ export class MerchandiseController {
           if (order)
             await tx.purchaseItem.update({
               where: { id: line.itemId },
-              data: { receivedQty: { increment: line.qty } },
+              data: {
+                receivedQty: { increment: line.qty },
+                damagedQty: { increment: line.damagedQty },
+              },
             });
           if (data.supplierId && line.supplierCode)
             await tx.supplierCode.upsert({
@@ -624,8 +683,8 @@ export class MerchandiseController {
           await tx.purchaseOrder.update({
             where: { id: order.id },
             data: {
-              status: order.items.every(
-                (i: any) => Number(i.receivedQty) >= Number(i.qty),
+              status: order.items.every((i: any) =>
+                d(i.receivedQty).plus(i.damagedQty).gte(Number(i.qty)),
               )
                 ? "received"
                 : "partial",

@@ -1,4 +1,4 @@
-import { z, stockQty } from "@fitstore/shared";
+import { d, quantity, z, stockQty } from "@fitstore/shared";
 import {
   Body,
   Controller,
@@ -29,6 +29,22 @@ import {
   amount,
   json,
 } from "./common";
+import { expiredQty } from "./inventory";
+
+// Paso 04: el catálogo que cargan la caja y Mercancía da como `stock` lo
+// vendible (sin lotes vencidos, que la venta no toma); lo físico y lo vencido
+// van aparte para mostrar "vencido: N".
+function sellable<
+  V extends { stock: unknown; lots: { qty: unknown; expiryDate: Date | null }[] },
+>(variant: V, category: { requiresExpiry: boolean }) {
+  const blocked = expiredQty(variant.lots, category);
+  return {
+    ...variant,
+    stock: String(quantity(d(String(variant.stock)).minus(blocked))),
+    physicalStock: String(variant.stock),
+    expiredStock: String(blocked),
+  };
+}
 
 // Un código (SKU o código de barras) es de una sola variante (R9-codigos-1).
 // La caja y Mercancía lo buscan sin distinguir mayúsculas y en los dos
@@ -245,7 +261,18 @@ export class CatalogController {
       }),
       this.db.product.count({ where }),
     ]);
-    return safe({ items, total, page, limit }, actor);
+    return safe(
+      {
+        items: items.map((p) => ({
+          ...p,
+          variants: p.variants.map((v) => sellable(v, p.category)),
+        })),
+        total,
+        page,
+        limit,
+      },
+      actor,
+    );
   }
   @Get("products/:id")
   @Permit("catalog:read")
@@ -262,7 +289,21 @@ export class CatalogController {
         },
       },
     });
-    return safe(row, actor);
+    // El detalle conserva `stock` físico y agrega lo vencido y lo vendible.
+    return safe(
+      {
+        ...row,
+        variants: row.variants.map((v) => {
+          const s = sellable(v, row.category);
+          return {
+            ...v,
+            expiredStock: s.expiredStock,
+            sellableStock: s.stock,
+          };
+        }),
+      },
+      actor,
+    );
   }
   @Post("products")
   @Permit("catalog:write")
