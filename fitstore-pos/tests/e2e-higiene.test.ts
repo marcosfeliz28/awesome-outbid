@@ -76,6 +76,20 @@ describe("suite E2E · no ensucia el repositorio (WP-3)", () => {
   });
 });
 
+describe("suite E2E · se puede repetir (TS-2)", () => {
+  it("todas las pruebas toman `test` de apoyo.ts: así cada una llega a la API con su propia dirección", () => {
+    const own =
+      /import\s*\{[^}]*\btest\b[^}]*\}\s*from\s*["'](?:\.\.?\/)+apoyo["']/;
+    const bare =
+      /import\s*\{[^}]*\btest\b[^}]*\}\s*from\s*["']@playwright\/test["']/;
+    expect(
+      specs
+        .filter(([, source]) => !own.test(source) || bare.test(source))
+        .map(([file]) => file),
+    ).toEqual([]);
+  });
+});
+
 describe("playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();

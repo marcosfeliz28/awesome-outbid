@@ -2,11 +2,78 @@
 // para que la suite se pueda repetir sobre la misma base y no ensucie el repositorio.
 import { test as base, expect } from "@playwright/test";
 import type { APIRequestContext } from "@playwright/test";
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
+import http from "node:http";
+import type { AddressInfo } from "node:net";
 import { dirname, join, normalize } from "node:path";
 
 export { expect };
-export const test = base;
+
+// --- Una dirección de cliente por prueba -----------------------------------
+// La API limita por dirección de cliente las peticiones a /api/auth/* (60 por
+// minuto) y los cobros. La vista previa de Vite reenvía /api sin decir de quién
+// es cada petición, así que todas las pruebas llegaban como 127.0.0.1 y el
+// límite de unas hacía fallar a otras (al repetir la suite, o en una máquina
+// rápida). Cada prueba habla con la PWA a través de un intermediario propio que
+// pone su dirección en X-Forwarded-For, como hace nginx en producción: la
+// página y `request` son el mismo equipo, y el límite sigue activo para cada
+// prueba. No sirve `extraHTTPHeaders`: el navegador la enviaría también a
+// Google Fonts, que la rechaza por CORS, y la página se quedaría sin fuentes.
+const clientAddress = () =>
+  `10.${randomInt(256)}.${randomInt(256)}.${randomInt(1, 255)}`;
+async function clientProxy(target: URL, address: string) {
+  const agent = new http.Agent({ keepAlive: true });
+  const server = http.createServer((incoming, outgoing) => {
+    const headers: http.OutgoingHttpHeaders = {
+      ...incoming.headers,
+      host: target.host,
+    };
+    // Una prueba puede presentarse con otra dirección si la envía ella misma.
+    headers["x-forwarded-for"] ??= address;
+    const forwarded = http.request(
+      {
+        hostname: target.hostname,
+        port: target.port || 80,
+        method: incoming.method,
+        path: incoming.url,
+        headers,
+        agent,
+      },
+      (response) => {
+        response.on("error", () => outgoing.destroy());
+        outgoing.writeHead(response.statusCode ?? 502, response.headers);
+        // Los avisos en vivo (/api/events) no terminan: las cabeceras salen ya.
+        outgoing.flushHeaders();
+        response.pipe(outgoing);
+      },
+    );
+    // Si un lado se corta, se corta el otro: el cliente ve el mismo fallo de red.
+    forwarded.on("error", () => outgoing.destroy());
+    incoming.on("error", () => forwarded.destroy());
+    outgoing.on("error", () => forwarded.destroy());
+    outgoing.on("close", () => forwarded.destroy());
+    incoming.pipe(forwarded);
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const origin = "http://127.0.0.1:" + (server.address() as AddressInfo).port;
+  return {
+    url: origin + (target.pathname === "/" ? "" : target.pathname),
+    async close() {
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+      agent.destroy();
+    },
+  };
+}
+export const test = base.extend({
+  baseURL: async ({ baseURL }, use) => {
+    // Detrás de HTTPS ya hay un servidor que dice de quién es cada petición.
+    if (!baseURL?.startsWith("http://")) return use(baseURL);
+    const proxy = await clientProxy(new URL(baseURL), clientAddress());
+    await use(proxy.url);
+    await proxy.close();
+  },
+});
 
 // --- Capturas de pantalla -------------------------------------------------
 // Las capturas de docs/ están en el repositorio. Una corrida normal las deja en

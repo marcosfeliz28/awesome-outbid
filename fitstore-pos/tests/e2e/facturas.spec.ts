@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./apoyo";
 // Revisión R9 · facturas: recibir una orden de compra desde Compras.
 // R9-facturas-8: si la API ya recibió la mercancía pero la respuesta se
 // pierde, volver a pulsar Guardar no la recibe dos veces.
