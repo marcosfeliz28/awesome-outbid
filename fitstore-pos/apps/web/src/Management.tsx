@@ -1296,6 +1296,10 @@ function ReceiptEditor({
   const pending = order.items.filter(
     (i: any) => Number(i.receivedQty) < Number(i.qty),
   );
+  // Un id por recepción, creado al abrir el formulario: si se pierde la
+  // respuesta y se pulsa Guardar otra vez, la API devuelve la misma
+  // recepción en vez de recibir la mercancía dos veces (R9-facturas-8).
+  const [operationId] = useState(() => crypto.randomUUID());
   const fields: Field[] = [
     requiredNumber("freight", "Flete"),
     requiredNumber("otherCosts", "Otros costos"),
@@ -1319,6 +1323,7 @@ function ReceiptEditor({
       onClose={onClose}
       onSubmit={(data) =>
         post("/purchase-orders/" + order.id + "/receive", {
+          operationId,
           freight: data.freight,
           otherCosts: data.otherCosts,
           items: pending
