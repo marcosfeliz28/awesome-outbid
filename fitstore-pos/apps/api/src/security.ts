@@ -84,8 +84,10 @@ export async function verifyAttempt(
         });
         return { matched };
       }
+      // lockedUntil se guarda en UTC, como lo lee Prisma, y no en la zona
+      // horaria de la sesión.
       await tx.$queryRaw`UPDATE "AuthAttempt" SET "failedAttempts"="failedAttempts"+1,
-      "lockedUntil"=CASE WHEN "failedAttempts"+1 >= 5 THEN NOW()+INTERVAL '15 minutes' ELSE NULL END
+      "lockedUntil"=CASE WHEN "failedAttempts"+1 >= 5 THEN (NOW() AT TIME ZONE 'UTC')+INTERVAL '15 minutes' ELSE NULL END
       WHERE key=${key} RETURNING "failedAttempts"`;
       return { matched: null };
     },
