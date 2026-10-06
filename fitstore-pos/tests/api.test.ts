@@ -4171,3 +4171,13 @@ describe("Ronda 9 · auditoría R8 de ChatGPT", () => {
     expect(await counts()).toEqual(before);
   });
 });
+
+// Ronda 9: hallazgos confirmados de la revisión adversarial de Claude
+// (docs/validacion/ronda9-revision-adversarial.json). Un bloque por área.
+// R9-REVISION: caja
+// R9-REVISION: offline
+// R9-REVISION: codigos
+// R9-REVISION: dinero
+// R9-REVISION: facturas
+// R9-REVISION: importador
+// R9-REVISION: seguridad
