@@ -14,7 +14,7 @@ import {
   audit,
 } from "./common";
 
-import { verifyPinAttempt } from "./security";
+import { verifyAttempt, verifyPinAttempt } from "./security";
 
 @Controller("auth")
 export class AuthController {
@@ -93,6 +93,7 @@ export class AuthController {
   @Post("login")
   async login(
     @Body() body: unknown,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     const data = parse(
@@ -109,28 +110,26 @@ export class AuthController {
     if (!user) bad("Correo o contraseña incorrectos.");
     const matches =
       user.active && (await compare(data.password, user.passwordHash));
-    const result = await this.db.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "User" WHERE id=${user.id}::uuid FOR UPDATE`;
-      const current = await tx.user.findUniqueOrThrow({
-        where: { id: user.id },
-      });
-      if (current.lockedUntil && current.lockedUntil > new Date())
-        return "locked";
-      if (!matches || current.passwordHash !== user.passwordHash) {
-        await tx.$queryRaw`UPDATE "User" SET "failedAttempts"=CASE WHEN "lockedUntil" < NOW() THEN 1 ELSE "failedAttempts"+1 END,
-          "lockedUntil"=CASE WHEN (CASE WHEN "lockedUntil" < NOW() THEN 1 ELSE "failedAttempts"+1 END)>=5 THEN NOW()+INTERVAL '15 minutes' ELSE NULL END
-          WHERE id=${user.id}::uuid RETURNING "failedAttempts"`;
-        return "wrong";
-      }
-      await tx.user.update({
-        where: { id: user.id },
-        data: { failedAttempts: 0, lockedUntil: null },
-      });
-      return "ok";
-    });
-    if (result === "locked")
-      bad("Cuenta bloqueada temporalmente. Espera 15 minutos.");
-    if (result !== "ok") bad("Correo o contraseña incorrectos.");
+    // Los fallos se cuentan por cuenta y dirección IP, como los PIN por
+    // solicitante: quien prueba contraseñas ajenas sólo se bloquea a sí mismo,
+    // no a la vendedora en su caja. La clave lleva authVersion para que un
+    // administrador desbloquee la cuenta al cambiarle la contraseña (R9-seguridad-1).
+    await verifyAttempt(
+      this.db,
+      `login:${user.id}:${user.authVersion}:${req.ip ?? ""}`,
+      async (tx) => {
+        // Con la transacción del contador: no ocupa otra conexión del pool.
+        const current = await tx.user.findUnique({ where: { id: user.id } });
+        return matches && current?.passwordHash === user.passwordHash
+          ? user.id
+          : null;
+      },
+      {
+        blocked:
+          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a un administrador que te cambie la contraseña.",
+        wrong: "Correo o contraseña incorrectos.",
+      },
+    );
     await audit(this.db, this.actor(user), "login", "user", user.id);
     return this.issue(user, res);
   }

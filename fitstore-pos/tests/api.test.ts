@@ -743,8 +743,12 @@ describe("Seguridad, offline y funciones completadas", () => {
     const r = await loginRaw(u);
     expect(r.status).toBe(400);
     expect((await r.json()).message).toMatch(/bloquead/i);
-    const stored = await fixtureDb.user.findUnique({ where: { id: u.id } });
-    expect(stored.failedAttempts).toBe(5);
+    // El contador es por cuenta y dirección IP, ya no global en User
+    // (R9-seguridad-1).
+    const stored = await fixtureDb.authAttempt.findMany({
+      where: { key: { startsWith: "login:" + u.id + ":" } },
+    });
+    expect(stored.map((a: any) => a.failedAttempts)).toEqual([5]);
   });
   it("1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor", async () => {
     sellerSession = await ok(
@@ -2199,8 +2203,10 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
     const before = Number(
       (await ok("/products/" + product.id)).variants[0].stock,
     );
+    // R9-facturas-2: el código de la tienda se acepta con una descripción del
+    // producto; con una que no se le parece («Producto reconocido») ya no.
     const imported = await upload(
-      `codigo,descripcion,cantidad,costo\nR3-B-${suffix},Producto reconocido,2,15\nCOD-PROV-R3,${product.name},1,2\n`,
+      `codigo,descripcion,cantidad,costo\nR3-B-${suffix},${product.name},2,15\nCOD-PROV-R3,${product.name},1,2\n`,
     );
     expect(imported.status).toBe(201);
     const d = imported.body;
@@ -4232,7 +4238,249 @@ describe("Ronda 9 · revisión · caja", () => {
   });
 });
 // R9-REVISION: offline
-// R9-REVISION: codigos
+// Área códigos: un SKU o código de barras identifica un solo producto sin
+// distinguir mayúsculas ni campo, como lo busca la caja.
+describe("Ronda 9 · revisión · códigos", () => {
+  let cats: any[];
+  beforeAll(async () => {
+    cats = await ok("/categories");
+  });
+  const ropa = () => cats.find((c: any) => c.name === "Ropa deportiva").id;
+  // Cuántas variantes encuentra la caja con este código.
+  const holders = async (code: string) =>
+    Number(
+      (
+        await fixtureDb.$queryRaw`SELECT count(*)::int AS n FROM "Variant"
+          WHERE lower(sku) = lower(${code}) OR lower(barcode) = lower(${code})`
+      )[0].n,
+    );
+  const productBody = (label: string, variants: any[], sku?: string) => ({
+    name: "QA R9 códigos " + label + " " + suffix,
+    sku: sku ?? "R9COD-" + randomUUID().slice(0, 8),
+    categoryId: ropa(),
+    variants: variants.map((v) => ({ price: 20, costAvg: 10, ...v })),
+  });
+  const owner = async (label: string, sku: string, barcode: string) => {
+    const p = await ok("/products", productBody(label, [{ sku, barcode }]));
+    products.push(p);
+    return p;
+  };
+  const importRows = async (rows: unknown[][]) => {
+    const ExcelJS = requireApi("exceljs");
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("Productos");
+    ws.addRow(["Nombre", "SKU", "ID categoría", "Código", "Precio", "Costo"]);
+    rows.forEach((r) => ws.addRow(r));
+    const form = new FormData();
+    form.set("file", new Blob([await wb.xlsx.writeBuffer()]), "productos.xlsx");
+    const r = await fetch(base + "/products/import", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      body: form,
+    });
+    return { status: r.status, body: await r.json() };
+  };
+  const quickLine = (barcode: string, qty = 5) => ({
+    quick: {
+      name: "QA R9 códigos rápido " + suffix,
+      categoryId: ropa(),
+      price: 20,
+      cost: 10,
+      barcode,
+      variant: "Única",
+    },
+    qty,
+    unitCost: 10,
+  });
+
+  it("R9-codigos-1: crear, editar, la matriz y la importación rechazan un código que la caja confundiría con otro producto", async () => {
+    const tag = randomUUID().slice(0, 8).toUpperCase();
+    const a = await owner(
+      "A",
+      "r9cod-a-" + tag.toLowerCase(),
+      "R9COD-X-" + tag,
+    );
+    const { sku: aSku, barcode: aBarcode } = a.variants[0];
+    // (1) SKU = barras de A en minúsculas; (2) SKU = barras de A (otro campo).
+    for (const sku of [aBarcode.toLowerCase(), aBarcode]) {
+      const r = await request(
+        "/products",
+        productBody("B", [{ sku, barcode: "R9COD-B-" + randomUUID() }]),
+      );
+      expect(r.status, JSON.stringify(r.body)).toBe(400);
+      expect(r.body.message).toContain("ya es de «" + a.name + "»");
+    }
+    // Dos variantes del mismo producto con un código que sólo cambia en
+    // mayúsculas.
+    const twins = await request(
+      "/products",
+      productBody("gemelas", [
+        { sku: "R9COD-T1-" + tag, barcode: "R9COD-T-" + tag },
+        { sku: "R9COD-T2-" + tag, barcode: "r9cod-t-" + tag.toLowerCase() },
+      ]),
+    );
+    expect(twins.status, JSON.stringify(twins.body)).toBe(400);
+    expect(twins.body.message).toMatch(/más de una variante/);
+    // SKU igual al código de barras de la misma variante sí se permite
+    // (así entra el ID del inventario).
+    const d = await owner("D", "R9COD-D-" + tag, "R9COD-D-" + tag);
+    const dv = d.variants[0];
+    // (3) PATCH: barras de D = SKU de A en mayúsculas.
+    const patched = await request(
+      "/variants/" + dv.id,
+      { barcode: aSku.toUpperCase() },
+      token,
+      "PATCH",
+    );
+    expect(patched.status, JSON.stringify(patched.body)).toBe(400);
+    expect(patched.body.message).toContain("ya es de «" + a.name + "»");
+    // Reenviar sus propios códigos (aun en otras mayúsculas) no es conflicto.
+    await ok(
+      "/variants/" + dv.id,
+      { sku: dv.sku, barcode: dv.barcode.toLowerCase(), price: 25 },
+      token,
+      "PATCH",
+    );
+    // Matriz: el código generado (SKU del producto + "-2") ya es, en
+    // minúsculas, el de otro producto.
+    const m = await ok(
+      "/products",
+      productBody(
+        "M",
+        [{ sku: "R9COD-M1-" + tag, barcode: "R9COD-M1-" + tag }],
+        "R9COD-M-" + tag,
+      ),
+    );
+    products.push(m);
+    await owner(
+      "MB",
+      "R9COD-MB-" + tag,
+      ("R9COD-M-" + tag + "-2").toLowerCase(),
+    );
+    const matrix = await request("/products/" + m.id + "/variants", {
+      attributes: { talla: ["S"] },
+      price: 20,
+      costAvg: 10,
+    });
+    expect(matrix.status, JSON.stringify(matrix.body)).toBe(400);
+    expect(matrix.body.message).toContain("ya es de «QA R9 códigos MB");
+    // Importación: una fila con las barras de A en minúsculas, o dos filas
+    // que comparten código; no se escribe ninguna (tampoco la fila válida).
+    const before = await fixtureDb.product.count();
+    const fromFile = await importRows([
+      [
+        "QA R9 códigos fila ok " + suffix,
+        "R9COD-OK-" + tag,
+        ropa(),
+        "R9COD-OKB-" + tag,
+        20,
+        10,
+      ],
+      [
+        "QA R9 códigos fila A " + suffix,
+        "R9COD-F-" + tag,
+        ropa(),
+        aBarcode.toLowerCase(),
+        20,
+        10,
+      ],
+    ]);
+    expect(fromFile.status, JSON.stringify(fromFile.body)).toBe(400);
+    expect(fromFile.body.message).toContain("ya es de «" + a.name + "»");
+    const betweenRows = await importRows([
+      [
+        "QA R9 códigos fila 1 " + suffix,
+        "R9COD-R1-" + tag,
+        ropa(),
+        "R9COD-RB-" + tag,
+        20,
+        10,
+      ],
+      [
+        "QA R9 códigos fila 2 " + suffix,
+        "r9cod-rb-" + tag.toLowerCase(),
+        ropa(),
+        "R9COD-R2-" + tag,
+        20,
+        10,
+      ],
+    ]);
+    expect(betweenRows.status, JSON.stringify(betweenRows.body)).toBe(400);
+    expect(betweenRows.body.message).toMatch(/más de una variante/);
+    expect(await fixtureDb.product.count()).toBe(before);
+    // Cada código sigue siendo de un solo producto en la caja.
+    for (const code of [
+      aSku,
+      aBarcode,
+      dv.sku,
+      "R9COD-T-" + tag,
+      "R9COD-RB-" + tag,
+    ])
+      expect(await holders(code), code).toBeLessThanOrEqual(1);
+    expect(await holders(aBarcode)).toBe(1);
+    expect(await holders("R9COD-M-" + tag + "-2")).toBe(1);
+  });
+
+  it("R9-codigos-1: dos altas a la vez con el mismo código en otras mayúsculas dejan sólo una", async () => {
+    const tag = randomUUID().slice(0, 8).toUpperCase();
+    const both = await Promise.all(
+      ["R9COD-RACE-" + tag, "r9cod-race-" + tag.toLowerCase()].map(
+        (barcode, i) =>
+          request(
+            "/products",
+            productBody("carrera " + i, [
+              { sku: "R9COD-RACE" + i + "-" + tag, barcode },
+            ]),
+          ),
+      ),
+    );
+    for (const r of both) if (r.status < 400) products.push(r.body);
+    expect(both.filter((r) => r.status < 400)).toHaveLength(1);
+    expect(both.filter((r) => r.status === 400)).toHaveLength(1);
+    expect(await holders("R9COD-RACE-" + tag)).toBe(1);
+  });
+
+  it("R9-codigos-2 y R9-codigos-3: el producto rápido de Mercancía rechaza un código que ya existe con otras mayúsculas", async () => {
+    const tag = randomUUID().slice(0, 8).toUpperCase();
+    const a = await owner("A rápido", "R9COD-QS-" + tag, "QA-R9-CASE" + tag);
+    const { sku: aSku, barcode: aBarcode } = a.variants[0];
+    // Las barras de A en minúsculas (lo que se escribió a mano) o su SKU.
+    for (const barcode of [aBarcode.toLowerCase(), aSku.toLowerCase()]) {
+      const r = await request("/merchandise/operations", {
+        id: randomUUID(),
+        direction: "entry",
+        items: [quickLine(barcode)],
+      });
+      expect(r.status, JSON.stringify(r.body)).toBe(400);
+      expect(r.body.message).toContain("ya es de «" + a.name + "»");
+    }
+    // Dos productos rápidos con el mismo código en una misma entrada.
+    const twice = await request("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      items: [
+        quickLine("R9COD-NEW-" + tag),
+        quickLine("r9cod-new-" + tag.toLowerCase()),
+      ],
+    });
+    expect(twice.status, JSON.stringify(twice.body)).toBe(400);
+    expect(await holders(aBarcode)).toBe(1);
+    expect(await holders("R9COD-NEW-" + tag)).toBe(0);
+    expect(Number((await ok("/products/" + a.id)).variants[0].stock)).toBe(0);
+    // Con un código nuevo, el producto rápido se crea.
+    const created = await ok("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      items: [quickLine("R9COD-NEW-" + tag)],
+    });
+    const v = await fixtureDb.variant.findUnique({
+      where: { id: created.variantIds[0] },
+      include: { product: true },
+    });
+    products.push(v.product);
+    expect(Number(v.stock)).toBe(5);
+  });
+});
 // Área dinero: devoluciones, costo contabilizado, abonos y reportes.
 describe("Ronda 9 · revisión · dinero", () => {
   const today = new Date().toLocaleDateString("en-CA", {
@@ -5022,4 +5270,157 @@ describe("Ronda 9 · revisión · facturas", () => {
   });
 });
 // R9-REVISION: importador
-// R9-REVISION: seguridad
+// Área seguridad: las contraseñas erróneas cuentan por cuenta y dirección IP y
+// nunca cierran sesiones abiertas; el límite por IP no distingue mayúsculas.
+describe("Ronda 9 · revisión · seguridad", () => {
+  const password = "FitStore-QA-2026!";
+  // Cada prueba usa direcciones propias para no gastar el límite de las demás.
+  const randomIp = () =>
+    [100, 64 + Math.floor(Math.random() * 64), 0, 0]
+      .map((n, i) => (i < 2 ? n : 1 + Math.floor(Math.random() * 254)))
+      .join(".");
+  async function call(
+    path: string,
+    ip: string,
+    data?: unknown,
+    as = "",
+    extra: Record<string, string> = {},
+  ) {
+    const r = await fetch(base + path, {
+      method: data === undefined ? "GET" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": ip,
+        ...(as ? { Authorization: "Bearer " + as } : {}),
+        ...extra,
+      },
+      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    });
+    return {
+      status: r.status,
+      body: await r.json(),
+      cookie: r.headers.get("set-cookie")?.split(";")[0] ?? "",
+    };
+  }
+  async function newUser(role: string) {
+    const roles = await ok("/roles");
+    const user = await ok("/users", {
+      name: "QA R9 seguridad " + role,
+      email: `qa-r9-seg-${role}-${randomUUID().slice(0, 8)}@example.test`,
+      password,
+      pin: "246813",
+      roleId: roles.find((r: any) => r.name === role).id,
+    });
+    actors.push(user);
+    return user;
+  }
+  const login = (user: any, ip: string, pass = password) =>
+    call("/auth/login", ip, { email: user.email, password: pass });
+
+  it("R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo", async () => {
+    const seller = await newUser("seller");
+    const manager = await newUser("manager");
+    const sellerIp = randomIp();
+    const attackerIp = randomIp();
+    const logged = await login(seller, sellerIp);
+    expect(logged.status).toBe(201);
+    const sellerToken = logged.body.accessToken;
+    await enroll(sellerToken, "QA R9 seguridad caja");
+    const cash = await ok(
+      "/cash-sessions/open",
+      { registerId: "qa-r9-seg-" + randomUUID(), openingAmount: 0 },
+      sellerToken,
+    );
+    const cats = await ok("/categories");
+    const p = await ok("/products", {
+      name: "QA R9 seguridad " + suffix,
+      sku: "R9SEG-" + randomUUID().slice(0, 8),
+      categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [
+        {
+          sku: "R9SEGV-" + randomUUID().slice(0, 8),
+          barcode: "R9SEGB-" + randomUUID().slice(0, 8),
+          price: 100,
+          costAvg: 40,
+        },
+      ],
+    });
+    products.push(p);
+    await ok("/inventory/adjustments", {
+      variantId: p.variants[0].id,
+      qty: 5,
+      reason: "QA R9 seguridad",
+    });
+    const sell = () =>
+      call("/sales", sellerIp, input(p.variants[0].id, 100, cash), sellerToken);
+    expect((await sell()).status).toBe(201);
+    // Un tercero, sin sesión, prueba cinco contraseñas con su correo.
+    for (let n = 0; n < 5; n++)
+      expect((await login(seller, attackerIp, "incorrecta-" + n)).status).toBe(
+        400,
+      );
+    // Desde su dirección sigue bloqueado: no puede seguir probando.
+    expect((await login(seller, attackerIp)).body.message).toMatch(/bloquead/i);
+    // La sesión abierta de la vendedora sigue cobrando.
+    expect(
+      (await call("/auth/me", sellerIp, undefined, sellerToken)).status,
+    ).toBe(200);
+    expect((await sell()).status).toBe(201);
+    // Renovar el acceso emite un token que sí sirve.
+    const renewed = await call("/auth/refresh", sellerIp, {}, "", {
+      Cookie: logged.cookie,
+    });
+    expect(renewed.status).toBe(201);
+    expect(
+      (await call("/auth/me", sellerIp, undefined, renewed.body.accessToken))
+        .status,
+    ).toBe(200);
+    // «Cambiar vendedor» con su PIN desde la sesión del gerente funciona.
+    const managerToken = (await login(manager, randomIp())).body.accessToken;
+    const switched = await call(
+      "/auth/pin",
+      sellerIp,
+      { userId: seller.id, pin: "246813" },
+      managerToken,
+    );
+    expect(switched.status).toBe(201);
+    expect(
+      (await call("/auth/me", sellerIp, undefined, switched.body.accessToken))
+        .status,
+    ).toBe(200);
+    // Y puede volver a entrar con su contraseña desde su propio equipo.
+    expect((await login(seller, sellerIp)).status).toBe(201);
+  });
+
+  it("R9-seguridad-1: un administrador desbloquea la cuenta al cambiarle la contraseña", async () => {
+    const seller = await newUser("seller");
+    const ip = randomIp();
+    for (let n = 0; n < 5; n++)
+      expect((await login(seller, ip, "incorrecta-" + n)).status).toBe(400);
+    expect((await login(seller, ip)).body.message).toMatch(/bloquead/i);
+    await ok(
+      "/users/" + seller.id,
+      { password: "FitStore-R9-Nueva!" },
+      token,
+      "PATCH",
+    );
+    expect((await login(seller, ip, "FitStore-R9-Nueva!")).status).toBe(201);
+  });
+
+  it("R9-seguridad-2: el límite por IP de /auth y /sales no se evita cambiando mayúsculas en la ruta", async () => {
+    const authIp = randomIp();
+    const auth: number[] = [];
+    for (let n = 0; n < 60; n++)
+      auth.push((await call("/Auth/login", authIp, {})).status);
+    expect(auth.every((s) => s === 400)).toBe(true);
+    expect((await call("/auth/login", authIp, {})).status).toBe(429);
+    expect((await call("/AUTH/login", authIp, {})).status).toBe(429);
+    const salesIp = randomIp();
+    const sales: number[] = [];
+    for (let n = 0; n < 120; n++)
+      sales.push((await call("/Sales", salesIp, {}, token)).status);
+    expect(sales.every((s) => s === 400)).toBe(true);
+    expect((await call("/sales", salesIp, {}, token)).status).toBe(429);
+    expect((await call("/SALES", salesIp, {}, token)).status).toBe(429);
+  });
+});

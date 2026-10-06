@@ -15,6 +15,7 @@ import {
 import type { Response } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
 import ExcelJS from "exceljs";
+import type { Prisma } from "@prisma/client";
 import {
   Actor,
   CurrentUser,
@@ -28,6 +29,65 @@ import {
   amount,
   json,
 } from "./common";
+
+// Un código (SKU o código de barras) es de una sola variante (R9-codigos-1).
+// La caja y Mercancía lo buscan sin distinguir mayúsculas y en los dos
+// campos, pero los índices únicos de la base distinguen mayúsculas y van cada
+// uno por su lado: «ABC-1» en las barras de un producto y «abc-1» en el SKU de
+// otro entraban, y la caja dejaba de agregar los dos por código. Cada elemento
+// es una variante; sus propios códigos pueden coincidir entre sí (el SKU igual
+// a las barras, como el ID del inventario) e `id` es la variante que se edita.
+export async function assertCodesFree(
+  tx: Prisma.TransactionClient,
+  branchId: string,
+  variants: { id?: string; codes: (string | undefined)[] }[],
+) {
+  const owners = new Map<string, { code: string; index: number }>();
+  variants.forEach((v, index) => {
+    for (const code of v.codes) {
+      if (!code?.trim()) continue;
+      const key = code.trim().toLowerCase();
+      const seen = owners.get(key);
+      if (seen && seen.index !== index)
+        bad(
+          "El código " +
+            code.trim() +
+            " se repite en más de una variante (sin distinguir mayúsculas). Cada código debe ser de un solo producto.",
+        );
+      owners.set(key, { code: code.trim(), index });
+    }
+  });
+  if (!owners.size) return;
+  const keys = [...owners.keys()].sort();
+  const codes = keys.map((k) => owners.get(k)!.code);
+  const except = variants.flatMap((v) => (v.id ? [v.id] : []));
+  // Un bloqueo por código, siempre en el mismo orden: dos altas a la vez con
+  // el mismo código en otras mayúsculas no pasan las dos la revisión.
+  await tx.$queryRaw`SELECT count(pg_advisory_xact_lock(hashtext('variant-code'), hashtext(k))::text)::int AS locked FROM unnest(${keys}::text[]) AS k`;
+  const [taken] = await tx.$queryRaw<
+    { code: string; name: string; branchId: string }[]
+  >`WITH wanted AS (SELECT code, lower(code) AS k FROM unnest(${codes}::text[]) AS code)
+    SELECT w.code, p.name, v."branchId" FROM wanted w
+      JOIN "Variant" v ON lower(v.sku) = w.k
+      JOIN "Product" p ON p.id = v."productId"
+      WHERE v.id <> ALL(${except}::uuid[])
+    UNION ALL
+    SELECT w.code, p.name, v."branchId" FROM wanted w
+      JOIN "Variant" v ON lower(v.barcode) = w.k
+      JOIN "Product" p ON p.id = v."productId"
+      WHERE v.id <> ALL(${except}::uuid[])
+    LIMIT 1`;
+  if (taken)
+    bad(
+      taken.branchId === branchId
+        ? "El código " +
+            taken.code +
+            " ya es de «" +
+            taken.name +
+            "». Usa otro código o corrige el de ese producto en Productos."
+        : "El código " + taken.code + " ya se usa en otra sucursal.",
+    );
+}
 
 const variantSchema = z.object({
   sku: z.string().trim().min(1).max(80),
@@ -209,6 +269,11 @@ export class CatalogController {
   async create(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const { variants, ...data } = parse(productSchema, body);
     return this.db.$transaction(async (tx) => {
+      await assertCodesFree(
+        tx,
+        actor.branchId,
+        variants.map((v) => ({ codes: [v.sku, v.barcode] })),
+      );
       const row = await tx.product.create({
         data: {
           ...data,
@@ -278,14 +343,22 @@ export class CatalogController {
       bad("La matriz no puede exceder 500 variantes.");
     return this.db.$transaction(async (tx) => {
       const count = await tx.variant.count({ where: { productId: id } });
+      const codes = combinations.map(
+        (_, i) => product.sku + "-" + (count + i + 1),
+      );
+      await assertCodesFree(
+        tx,
+        actor.branchId,
+        codes.map((code) => ({ codes: [code] })),
+      );
       const rows = [];
       for (let i = 0; i < combinations.length; i++)
         rows.push(
           await tx.variant.create({
             data: {
               productId: id,
-              sku: product.sku + "-" + (count + i + 1),
-              barcode: product.sku + "-" + (count + i + 1),
+              sku: codes[i],
+              barcode: codes[i],
               attributes: combinations[i],
               price: data.price,
               costAvg: data.costAvg,
@@ -315,6 +388,17 @@ export class CatalogController {
       const before = await tx.variant.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
       });
+      // Sólo los códigos que cambian: reenviar los mismos al editar el precio
+      // no se bloquea por un choque heredado (R9-codigos-1).
+      await assertCodesFree(tx, actor.branchId, [
+        {
+          id: before.id,
+          codes: [
+            data.sku !== before.sku ? data.sku : undefined,
+            data.barcode !== before.barcode ? data.barcode : undefined,
+          ],
+        },
+      ]);
       const row = await tx.variant.update({ where: { id }, data });
       await audit(tx, actor, "price_change", "variant", id, before, row);
       return safe(row, actor);
@@ -350,6 +434,15 @@ export class CatalogController {
     });
     const validated = rows.map((row) => parse(productSchema, row));
     await this.db.$transaction(async (tx) => {
+      // Todas las filas a la vez, contra la base y entre ellas: un choque
+      // detiene la carga sin escribir ninguna (R9-codigos-1).
+      await assertCodesFree(
+        tx,
+        actor.branchId,
+        validated.flatMap((row) =>
+          row.variants.map((v) => ({ codes: [v.sku, v.barcode] })),
+        ),
+      );
       for (const { variants, ...data } of validated)
         await tx.product.create({
           data: {

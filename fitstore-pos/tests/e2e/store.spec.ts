@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
 // Cada contexto representa un equipo nuevo: cerrar la caja del escenario anterior.
 test.beforeEach(async ({ request }) => {
   const login = await request.post("/api/auth/login", {
@@ -643,6 +645,21 @@ test("código + Enter agrega el producto y respeta el stock", async ({
     });
   }
 });
+// Datos heredados: la API ya no deja guardar un código que la caja confundiría
+// con el de otro producto (R9-codigos-1), así que un choque anterior a esa
+// regla se escribe directo en la base que usa la API (DATABASE_URL o el .env
+// de la raíz, como las pruebas de integración).
+function legacyDb() {
+  const requireApi = createRequire(
+    resolve(__dirname, "../../apps/api/package.json"),
+  );
+  requireApi("dotenv").config({
+    path: resolve(__dirname, "../../.env"),
+    quiet: true,
+  });
+  const { PrismaClient } = requireApi("@prisma/client");
+  return new PrismaClient();
+}
 // Auditoría R8 (ChatGPT) · R8-01: un código que, sin distinguir mayúsculas,
 // es de dos productos no agrega ninguno en silencio.
 test("código ambiguo por mayúsculas avisa y no agrega", async ({
@@ -659,29 +676,46 @@ test("código ambiguo por mayúsculas avisa y no agrega", async ({
     await request.get("/api/categories", { headers })
   ).json();
   const tag = String(Math.floor(Math.random() * 900000) + 100000);
-  const created: any[] = [];
-  for (const [label, sku, barcode] of [
-    ["A", "e2e-owner-" + tag, "E2E-CASE-" + tag],
-    ["B", "e2e-case-" + tag, "E2E-OTHER-" + tag],
-  ]) {
-    const product = await (
-      await request.post("/api/products", {
-        headers,
-        data: {
-          name: "Faja E2E ambiguo " + label + " " + tag,
-          sku: "E2E-AMB-" + label + tag,
-          categoryId: categories.find((c: any) => c.name === "Fajas").id,
-          variants: [{ sku, barcode, price: 1500, costAvg: 700 }],
-        },
-      })
-    ).json();
-    expect(product.id, JSON.stringify(product)).toBeTruthy();
+  const body = (label: string, sku: string, barcode: string) => ({
+    name: "Faja E2E ambiguo " + label + " " + tag,
+    sku: "E2E-AMB-" + label + tag,
+    categoryId: categories.find((c: any) => c.name === "Fajas").id,
+    variants: [{ sku, barcode, price: 1500, costAvg: 700 }],
+  });
+  // La API rechaza el SKU de B igual a las barras de A en minúsculas.
+  const owner = await (
+    await request.post("/api/products", {
+      headers,
+      data: body("A", "e2e-owner-" + tag, "E2E-CASE-" + tag),
+    })
+  ).json();
+  expect(owner.id, JSON.stringify(owner)).toBeTruthy();
+  const rejected = await request.post("/api/products", {
+    headers,
+    data: body("B", "e2e-case-" + tag, "E2E-OTHER-" + tag),
+  });
+  expect(rejected.status()).toBe(400);
+  expect((await rejected.json()).message).toContain("ya es de «");
+  const other = await (
+    await request.post("/api/products", {
+      headers,
+      data: body("B", "e2e-legacy-" + tag, "E2E-OTHER-" + tag),
+    })
+  ).json();
+  expect(other.id, JSON.stringify(other)).toBeTruthy();
+  const created = [owner, other];
+  for (const product of created)
     await request.post("/api/inventory/adjustments", {
       headers,
       data: { variantId: product.variants[0].id, qty: 2, reason: "E2E" },
     });
-    created.push(product);
-  }
+  // Si la base ya traía el choque, la caja sigue avisando y no agrega.
+  const db = legacyDb();
+  await db.variant.update({
+    where: { id: other.variants[0].id },
+    data: { sku: "e2e-case-" + tag },
+  });
+  await db.$disconnect();
   await login(page);
   await ensureCash(page);
   await page
@@ -700,6 +734,96 @@ test("código ambiguo por mayúsculas avisa y no agrega", async ({
       headers,
       data: { active: false },
     });
+});
+// Revisión R9 · códigos (R9-codigos-2 y R9-codigos-3): la etiqueta impresa
+// (Code 39, en MAYÚSCULAS) de un código guardado en minúsculas se reconoce en
+// Mercancía como en la caja; un código de dos productos avisa sin agregar, y
+// «Crear producto rápido» no acepta un código que ya es de otro producto.
+test("R9-codigos-2 y R9-codigos-3: Mercancía reconoce el código sin distinguir mayúsculas y no crea un duplicado", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const tag = r9Code("R9M"),
+    lower = tag.toLowerCase();
+  const categories = await (
+    await request.get("/api/categories", { headers })
+  ).json();
+  const make = async (label: string, sku: string, barcode: string) => {
+    const response = await request.post("/api/products", {
+      headers,
+      data: {
+        name: "Faja E2E Mercancía " + label + " " + tag,
+        sku: "R9MP-" + label + "-" + tag,
+        categoryId: categories.find((c: any) => c.name === "Fajas").id,
+        variants: [{ sku, barcode, price: 1500, costAvg: 700 }],
+      },
+    });
+    const product = await response.json();
+    expect(product.id, JSON.stringify(product)).toBeTruthy();
+    return product;
+  };
+  const e = await make("E", "R9M-ES-" + tag, "r9m-e-" + lower);
+  const f = await make("F", "R9M-FS-" + tag, "R9M-AMB-" + tag);
+  const g = await make("G", "R9M-GS-" + tag, "R9M-GB-" + tag);
+  // Dato heredado: el SKU de G es el código de barras de F en minúsculas.
+  const db = legacyDb();
+  await db.variant.update({
+    where: { id: g.variants[0].id },
+    data: { sku: "r9m-amb-" + lower },
+  });
+  await db.$disconnect();
+  page.on("dialog", (d) => d.accept());
+  await login(page);
+  await page
+    .getByRole("button", { name: "Mercancía", exact: true })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Mercancía", exact: true }),
+  ).toBeVisible();
+  const quick = page.getByRole("dialog", { name: "Crear producto rápido" });
+  const scan = async (code: string) => {
+    await page.getByLabel("Código de barras o SKU").fill(code);
+    await page.getByRole("button", { name: "Sumar una unidad" }).click();
+  };
+  const lines = page.locator(".goods-lines");
+  // Entrada: la etiqueta de E (R9M-E-…) suma a E, no abre el producto rápido.
+  await scan("R9M-E-" + tag);
+  await expect(lines).toContainText("Faja E2E Mercancía E " + tag);
+  await expect(quick).toHaveCount(0);
+  // Un código de dos productos no agrega ninguno ni ofrece crear otro: avisa
+  // y deja los dos en el buscador para elegir.
+  await scan("R9M-AMB-" + tag);
+  await expect(page.getByText(/es de 2 productos/)).toBeVisible();
+  await expect(quick).toHaveCount(0);
+  await expect(lines).not.toContainText("Faja E2E Mercancía F");
+  await expect(lines).not.toContainText("Faja E2E Mercancía G");
+  const results = page.getByRole("listbox", {
+    name: "Resultados: Buscar producto",
+  });
+  await expect(results.getByRole("option")).toHaveCount(2);
+  // «Crear producto rápido» con el código de E en otras mayúsculas: no se
+  // agrega la línea y se dice de quién es el código.
+  await scan("R9M-NEW-" + tag);
+  await expect(quick).toBeVisible();
+  await quick.getByLabel("Nombre").fill("Faja E2E duplicada " + tag);
+  await quick.getByLabel("Categoría").selectOption({ label: "Fajas" });
+  await quick.getByLabel("Código de barras").fill("R9M-E-" + tag);
+  await quick.getByLabel("Precio de venta").fill("1500");
+  await quick.getByLabel("Costo").fill("700");
+  await quick.getByRole("button", { name: "Guardar" }).click();
+  await expect(quick.getByRole("alert")).toContainText(
+    "ya es de «Faja E2E Mercancía E " + tag + "»",
+  );
+  await quick.getByRole("button", { name: "Cancelar" }).click();
+  await expect(lines).not.toContainText("Faja E2E duplicada");
+  // Salida: la etiqueta también se reconoce (antes: «Código desconocido»).
+  await page.getByRole("tab", { name: /SALIDA/ }).click();
+  await scan("R9M-E-" + tag);
+  await expect(lines).toContainText("Faja E2E Mercancía E " + tag);
+  await expect(page.getByText(/Código desconocido/)).toHaveCount(0);
+  await r9Retire(request, headers, [e, f, g]);
 });
 
 // Revisión R9 · caja: escaneo, foco, ventas en espera, descuentos y ticket.

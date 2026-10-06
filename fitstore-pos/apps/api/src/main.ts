@@ -29,11 +29,11 @@ async function bootstrap() {
   // Límite por IP en rutas de autenticación y PIN. Los bloqueos de usuario persisten en PostgreSQL.
   const attempts = new Map<string, { count: number; until: number }>();
   app.use((req: any, res: any, next: () => void) => {
-    if (
-      req.url.startsWith("/api/auth/") ||
-      (req.method === "POST" && req.url.startsWith("/api/sales"))
-    ) {
-      const auth = req.url.startsWith("/api/auth/");
+    // El enrutador no distingue mayúsculas: /api/Auth/login llega al mismo
+    // controlador, así que se compara la ruta en minúsculas (R9-seguridad-2).
+    const path = String(req.path ?? req.url.split("?")[0]).toLowerCase();
+    const auth = path.startsWith("/api/auth/");
+    if (auth || (req.method === "POST" && path.startsWith("/api/sales"))) {
       const key = (auth ? "auth:" : "sales:") + req.ip;
       const now = Date.now();
       const item = attempts.get(key);

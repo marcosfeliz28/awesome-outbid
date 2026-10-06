@@ -566,10 +566,9 @@ describe("emparejamiento · variante única y atributos en conflicto", () => {
       expect(r.productId, code).toBe("p-whey");
       expect(r.note, code).toMatch(/Vainilla, 2 lb no coincide/);
       for (const d of ["Proteína Whey vainilla 2 lb", "Proteína Whey"])
-        expect(
-          matchInvoiceLines([line(d, code)], [only])[0].variantId,
-          d,
-        ).toBe("vainilla-2lb");
+        expect(matchInvoiceLines([line(d, code)], [only])[0].variantId, d).toBe(
+          "vainilla-2lb",
+        );
     }
   });
 });

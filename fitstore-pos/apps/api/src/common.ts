@@ -270,8 +270,10 @@ export class AuthGuard implements CanActivate {
         where: { id: payload.sub },
         include: { role: true },
       });
-      if (!user?.active || (user.lockedUntil && user.lockedUntil > new Date()))
-        throw new Error();
+      // El bloqueo por contraseñas erróneas sólo impide iniciar sesión: si
+      // cerrara las sesiones abiertas, cualquiera que conozca el correo
+      // dejaría la caja sin cobrar (R9-seguridad-1).
+      if (!user?.active) throw new Error();
       if (payload.version !== user.authVersion || !payload.sid)
         throw new Error();
       const settings = await this.db.settings.findUnique({

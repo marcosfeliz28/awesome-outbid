@@ -1392,8 +1392,7 @@ export function matchInvoiceLines(
           t.colors.has(COLOR_EN[k] ?? k),
       );
     // El número del tono o de la línea también identifica (R9-facturas-4).
-    if (!keysPresent || !own.numbers.every((n) => numberNamed(n, t)))
-      return "";
+    if (!keysPresent || !own.numbers.every((n) => numberNamed(n, t))) return "";
     // Palabras de la factura que el nombre no explica.
     const words = nameWords.get(productId)!;
     const extra = descToks.filter(
@@ -1562,8 +1561,8 @@ export function matchInvoiceLines(
     variant: CatalogVariant | null,
   ): MatchedLine | null => {
     // El código escrito en la descripción (o la descripción vacía, que se
-    // llena con el código) no es un número del producto.
-    // Sólo como palabra entera: «LEG» no se quita de «Leggings».
+    // llena con el código) no es un número del producto. Se quita sólo como
+    // palabra entera: «LEG» no se quita de «Leggings».
     const rest = l.description.replace(
       new RegExp(
         "(?<![\\p{L}\\p{N}])" +

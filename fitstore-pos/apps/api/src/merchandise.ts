@@ -37,6 +37,7 @@ import {
   uuid,
   qty,
 } from "./common";
+import { assertCodesFree } from "./catalog";
 import { lockVariant, stockChange } from "./inventory";
 import {
   DEFAULT_INVOICE_MODEL,
@@ -340,6 +341,16 @@ export class MerchandiseController {
             bad("UUID usado con datos distintos.");
           return prior.result;
         }
+        // El código del producto rápido no puede ser ya de otro producto con
+        // otras mayúsculas o en el SKU: la mercancía entraría a un duplicado y
+        // la caja dejaría de agregar los dos por código (R9-codigos-3).
+        await assertCodesFree(
+          tx,
+          actor.branchId,
+          data.items.flatMap((l) =>
+            l.quick ? [{ codes: [l.quick.barcode] }] : [],
+          ),
+        );
         const terminal = await tx.terminal.findFirstOrThrow({
           where: {
             id: actor.terminalId,

@@ -73,6 +73,20 @@ const variantName = (v: CatalogVariant) => {
   const attrs = attrLabel(v.attributes ?? {});
   return attrs === "Única" ? v.product.name : v.product.name + " · " + attrs;
 };
+// Misma regla que la caja (R9-codigos-2): el código se compara sin distinguir
+// mayúsculas, en el código de barras y en el SKU. La etiqueta impresa (Code 39)
+// sale en MAYÚSCULAS aunque el código se guardara en minúsculas, y un código
+// de dos productos no elige ninguno en silencio.
+function findByCode(variants: CatalogVariant[], code: string) {
+  const c = code.trim().toLowerCase();
+  if (!c) return undefined;
+  const hits = variants.filter(
+    (v) => v.barcode?.toLowerCase() === c || v.sku?.toLowerCase() === c,
+  );
+  const distinct = new Set(hits.map((v) => v.id)).size;
+  if (distinct > 1) return { ambiguous: distinct } as const;
+  return hits[0] ? ({ variant: hits[0] } as const) : undefined;
+}
 
 function ContinuousScanner({
   onCode,
@@ -147,14 +161,16 @@ function ProductSearch({
   label = "Buscar producto",
   only,
   autoFocus = false,
+  initialText = "",
 }: {
   variants: CatalogVariant[];
   onPick: (v: CatalogVariant) => void;
   label?: string;
   only?: string;
   autoFocus?: boolean;
+  initialText?: string;
 }) {
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText);
   const pool = only ? variants.filter((v) => v.product.id === only) : variants;
   const results = useMemo(() => {
     const words = fold(text).split(/\s+/).filter(Boolean);
@@ -283,6 +299,8 @@ export function Merchandise() {
     [code, setCode] = useState(""),
     [camera, setCamera] = useState(false),
     [unknown, setUnknown] = useState<string | null>(null),
+    // Texto del buscador tras un código ambiguo; `key` lo reinicia.
+    [lookup, setLookup] = useState({ text: "", key: 0 }),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [importing, setImporting] = useState(false),
@@ -361,8 +379,22 @@ export function Merchandise() {
     navigator.vibrate?.(50);
   };
   const scan = (value: string) => {
-    const v = variants.find((v) => v.barcode === value || v.sku === value);
-    if (!v) {
+    const found = findByCode(variants, value);
+    if (found && "ambiguous" in found) {
+      // No se agrega ninguno ni se ofrece crear otro: los productos quedan en
+      // el buscador para elegir el correcto (R9-codigos-2).
+      setCamera(false);
+      setLookup((old) => ({ text: value.trim(), key: old.key + 1 }));
+      setError(
+        "El código " +
+          value.trim() +
+          " es de " +
+          found.ambiguous +
+          " productos. Elige el producto en el buscador y corrige el código en Productos.",
+      );
+      return;
+    }
+    if (!found) {
       setCamera(false);
       if (direction === "entry") setUnknown(value);
       else
@@ -370,7 +402,7 @@ export function Merchandise() {
       return;
     }
     setError("");
-    add(v);
+    add(found.variant);
     setCode("");
   };
   const lineTotal = (l: GoodsLine) => l.qty * (l.unitCost ?? 0);
@@ -726,7 +758,15 @@ export function Merchandise() {
               </Button>
             </div>
           </form>
-          <ProductSearch variants={variants} onPick={add} />
+          <ProductSearch
+            key={lookup.key}
+            initialText={lookup.text}
+            variants={variants}
+            onPick={(v) => {
+              setError("");
+              add(v);
+            }}
+          />
         </section>
       )}
 
@@ -1297,6 +1337,38 @@ export function Merchandise() {
             },
           ]}
           onSubmit={async (q) => {
+            // Un código que ya es de un producto (con otras mayúsculas o en
+            // su SKU) no crea otro: la mercancía iría a un duplicado y la
+            // caja dejaría de agregar los dos (R9-codigos-3).
+            const code = String(q.barcode ?? "").trim();
+            const existing = findByCode(variants, code);
+            if (existing)
+              throw new Error(
+                "El código " +
+                  code +
+                  ("ambiguous" in existing
+                    ? " ya es de " + existing.ambiguous + " productos."
+                    : " ya es de «" +
+                      variantName(existing.variant) +
+                      "». Búscalo y agrégalo en vez de crear otro."),
+              );
+            const replacing = unknown.startsWith("review:")
+              ? Number(unknown.split(":")[1])
+              : -1;
+            if (
+              items.some(
+                (l, i) =>
+                  i !== replacing &&
+                  String(l.quick?.barcode ?? "")
+                    .trim()
+                    .toLowerCase() === code.toLowerCase(),
+              )
+            )
+              throw new Error(
+                "El código " +
+                  code +
+                  " ya es de otro producto nuevo de esta lista.",
+              );
             if (unknown.startsWith("review:")) {
               const index = Number(unknown.split(":")[1]);
               patch(index, {

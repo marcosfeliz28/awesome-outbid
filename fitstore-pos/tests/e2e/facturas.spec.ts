@@ -67,17 +67,18 @@ test("R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción
   // La primera vez la API recibe la mercancía, pero la respuesta no llega.
   const bodies: any[] = [];
   let lost = false;
-  await page.route("**/api/purchase-orders/" + order.id + "/receive", (route) => {
-    bodies.push(route.request().postDataJSON());
-    if (lost) return route.continue();
-    lost = true;
-    return route
-      .fetch()
-      .then((response) => {
+  await page.route(
+    "**/api/purchase-orders/" + order.id + "/receive",
+    (route) => {
+      bodies.push(route.request().postDataJSON());
+      if (lost) return route.continue();
+      lost = true;
+      return route.fetch().then((response) => {
         expect(response.ok()).toBe(true);
         return route.abort("connectionreset");
       });
-  });
+    },
+  );
   const save = page.getByRole("button", { name: "Guardar", exact: true });
   await save.click();
   await expect(page.locator(".form-error")).toBeVisible();

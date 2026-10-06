@@ -42,10 +42,24 @@ export function validateSecret(
 
 // El contador pertenece al solicitante, nunca bloquea la cuenta de otro usuario.
 // Se serializan comprobación, decisión y actualización; un rechazo se devuelve después del COMMIT.
-export async function verifyPinAttempt(
+export const verifyPinAttempt = (
   db: any,
   key: string,
   verify: () => Promise<string | null>,
+) =>
+  verifyAttempt(db, key, verify, {
+    blocked:
+      "PIN bloqueado temporalmente para este usuario. Espera 15 minutos.",
+    wrong: "PIN incorrecto.",
+  });
+
+// Cinco fallos con la misma clave la bloquean 15 minutos. La contraseña usa
+// el mismo contador, con su propia clave y mensajes (R9-seguridad-1).
+export async function verifyAttempt(
+  db: any,
+  key: string,
+  verify: (tx: any) => Promise<string | null>,
+  messages: { blocked: string; wrong: string },
 ) {
   const result = await db.$transaction(
     async (tx: any) => {
@@ -62,7 +76,7 @@ export async function verifyPinAttempt(
           where: { key },
           data: { failedAttempts: 0, lockedUntil: null },
         });
-      const matched = await verify();
+      const matched = await verify(tx);
       if (matched) {
         await tx.authAttempt.update({
           where: { key },
@@ -77,8 +91,7 @@ export async function verifyPinAttempt(
     },
     { timeout: 20000 },
   );
-  if (result.blocked)
-    bad("PIN bloqueado temporalmente para este usuario. Espera 15 minutos.");
-  if (!result.matched) bad("PIN incorrecto.");
+  if (result.blocked) bad(messages.blocked);
+  if (!result.matched) bad(messages.wrong);
   return result.matched as string;
 }
