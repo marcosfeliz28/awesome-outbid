@@ -1,0 +1,388 @@
+{
+  "fuente": "docs/PRUEBA_ACEPTACION_CAJA.md",
+  "fecha": "2026-10-06",
+  "metodo": "3 agentes de solo lectura contra el código de la ronda 9 en curso",
+  "pasos": [
+    {
+      "step": "01",
+      "status": "cumple",
+      "evidence": "Rol vendedor = catalog:read, sale:write, cash:write, customers:write (packages/shared/src/index.ts:497). AuthGuard identifica al usuario por su propio token/sesión y equipo (apps/api/src/common.ts:255-334) y rechaza con 403 lo que no permite el rol (common.ts:334). Editar costo: PATCH variants exige catalog:write (apps/api/src/catalog.ts:376-377); devoluciones exigen sale:manage (apps/api/src/sales.ts:999-1001); anular, sale:manage (sales.ts:787-789). El vendedor no recibe costos (common.ts:211-247). La caja queda a nombre del usuario y del equipo (apps/api/src/cash.ts:101,113-114). En la interfaz, la edición se oculta sin catalog:write (apps/web/src/Management.tsx:196) y Devolver/Anular sin sale:manage (Management.tsx:2536-2564). Pruebas: tests/api.test.ts:191 (sin costos; 403 en /users y /dashboard), :2034 (vendedor 403 en mercancía), :2474-2530 (caja ligada al equipo). Ninguna prueba hace directamente que la vendedora intente POST /returns o PATCH /variants/:id (costo).",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "02",
+      "status": "parcial",
+      "evidence": "Ajustes: name, legalId (RNC), address, currency fija en 'DOP', taxIncluded y ncfMode (apps/api/src/admin.ts:45-68). Con ITBIS incluido, el impuesto se extrae del precio y no se suma (packages/shared/src/index.ts:315-347; apps/api/src/sales.ts:294-300). Cada producto tiene su tasa (taxRate, por defecto 18; apps/api/src/catalog.ts:108). La fecha usa America/Santo_Domingo (index.ts:516-523). Prueba de que 118 incluye 18 de ITBIS: tests/api.test.ts:206 (total 354, ITBIS 54) y :928.",
+      "gap": "No existe la modalidad B o E. ncfMode solo admite 'disabled' o 'prepared' (admin.ts:67). En 'prepared', la API acepta B01, B02, B14, B15, E31 y E32 sin limitarse a la modalidad autorizada (index.ts:450; sales.ts:383-389), y la caja ofrece B01/B02 aunque la tienda fuera E (apps/web/src/POS.tsx:1725-1736). No se emite ningún NCF: ncf queda en null y fiscalStatus en not_issued (prueba tests/api.test.ts:1212). El RNC del emisor no se valida ni se imprime: el PDF solo pone el nombre (sales.ts:1455) y el ticket térmico tiene escrito «FitStore» fijo, sin usar el nombre configurado (POS.tsx:1652).",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "03",
+      "status": "cumple",
+      "evidence": "POST cash-sessions/open guarda userId, registerId (el equipo, cash.ts:101), openingAmount y openedAt. Rechaza una segunda apertura activa del mismo usuario o del mismo equipo (apps/api/src/cash.ts:90-118), con advisory lock por usuario. Además hay índices únicos parciales one_open_cash_per_user y one_open_cash_per_register (apps/api/prisma/migrations/202610030001_initial/migration.sql:633-634). El fondo solo entra en el efectivo esperado (cash.ts:35-36), no en Sale, que es de donde salen los reportes de ventas. La pantalla Caja muestra equipo, hora y fondo (apps/web/src/Management.tsx:1590-1603). Prueba: tests/api.test.ts:681 (otro usuario en el mismo equipo se rechaza y queda una sola caja abierta). No hay prueba de que el mismo usuario intente abrir dos veces; lo impiden el código y el índice.",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "04",
+      "status": "parcial",
+      "evidence": "Las tarjetas de la caja muestran nombre, código, atributos, precio y stock = suma de variant.stock (apps/web/src/POS.tsx:705-764). La ventana de variantes muestra precio y 'N disponibles' (POS.tsx:991-1021). Los costos solo los ve quien tiene profit:read (apps/api/src/common.ts:211-247): la dueña los anota desde Productos o Mercancía. El importador crea un producto de una sola variante por cada fila del Excel (apps/api/scripts/import-inventario.ts:466-487), así que tono, talla y color van en el nombre.",
+      "gap": "La caja muestra como stock vendible variant.stock completo, que incluye unidades de lotes vencidos. takeStock salta esos lotes al vender (apps/api/src/inventory.ts:138-144) y ningún proceso los saca del stock (alerts.ts solo genera alertas). En un suplemento con lote vencido, la cantidad que ve la cajera no es la vendible y la venta falla en el servidor con 'No hay lotes vigentes suficientes'. Ninguna prueba compara el stock mostrado con el vendible.",
+      "fixSize": "pequeño"
+    },
+    {
+      "step": "05",
+      "status": "cumple",
+      "evidence": "Variant.barcode es String @unique (apps/api/prisma/schema.prisma:101). byCode compara la cadena exacta de barcode o sku, sin distinguir mayúsculas, sin convertir a número (se conservan los ceros iniciales), y si el código es de más de un producto no elige ninguno (apps/web/src/POS.tsx:527-544). scan/enter añade una unidad de esa variante al carrito local (POS.tsx:545-581, 583-586; apps/web/src/api.ts:121-135). No cobra ni toca el stock hasta finalizar. Las teclas del lector que caen fuera del buscador se redirigen a él (POS.tsx:464-478). Si el precio cambió, se toma el vigente (api.ts:417-445; sales.ts:334-340). Pruebas e2e: tests/e2e/store.spec.ts:564 (código + Enter añade 1 y limpia), :999 y :1508 (ráfagas del lector), :665 (código ambiguo). Ninguna prueba usa en la caja un código con cero inicial. El importador conserva '081555969837' solo si la celda es texto (tests/inventario.test.ts:52-71); con una celda numérica, text() hace String(v) y perdería el cero (import-inventario.ts:54-60). No se puede saber leyendo el código cómo están guardados los códigos reales; el lector físico es hardware.",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "06",
+      "status": "cumple",
+      "evidence": "La búsqueda por palabras sueltas cubre nombre, sku, marca, barcode y atributos, y si ninguna coincidencia es completa propone resultados aproximados (apps/web/src/POS.tsx:488-520). Las tarjetas muestran categoría, nombre, código, precio y stock (POS.tsx:705-764). Un clic añade una vez la única variante o abre el selector (POS.tsx:300-305). Enter con un único resultado lo añade y con varios no añade nada y lo avisa (POS.tsx:597-618). Buscar no modifica las líneas ya escaneadas (api.ts:121-135). Pruebas e2e: tests/e2e/store.spec.ts:66 (busca y elige variante), :1096 (Enter por palabras y elegir variante), :1569 (códigos de modelo en el nombre).",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "07",
+      "status": "cumple",
+      "evidence": "El selector de variantes muestra los atributos (talla/color), el precio y el stock de cada variante, y desactiva las que no tienen existencias (apps/web/src/POS.tsx:991-1021). La venta descuenta exactamente el variantId elegido (apps/api/src/sales.ts:279-280, 508-515; inventory.ts:120-181). Prueba e2e: tests/e2e/store.spec.ts:66 (elige 'M · Negro' de Legging). En el catálogo real importado cada talla o color es un producto distinto con su propio código y stock (import-inventario.ts:466-487), así que se distingue por nombre y código.",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "08",
+      "status": "cumple",
+      "evidence": "Un código desconocido muestra 'Código no encontrado', no añade nada y deja el código seleccionado para corregirlo o seguir buscando (apps/web/src/POS.tsx:576-580). Un texto con forma de código que no existe no añade un producto que solo lo contenga en el nombre (POS.tsx:591-596). Un código ambiguo no elige ninguno (POS.tsx:547-560). No hay ninguna ruta que añada con precio 0 o cobre automáticamente. Pruebas e2e: tests/e2e/store.spec.ts:564 (código inexistente, ~l.645-648), :912 (R9-caja-1, código inactivo), :665 y :946 (ambiguo).",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "09",
+      "status": "cumple",
+      "evidence": "Volver a escanear suma 1 a la línea existente (apps/web/src/api.ts:121-135). Los botones +/- cambian la cantidad (apps/web/src/POS.tsx:825-845) y el botón X quita la línea (POS.tsx:902-907); updateQty con 0 también la elimina (api.ts:137-143). Los totales se recalculan con lineTotals en cada render (POS.tsx:251-268) y, al bajar la cantidad, el descuento por monto se ajusta (POS.tsx:313-327). El carrito es solo local: no toca el servidor, el stock ni las notas de crédito. Pruebas e2e: tests/e2e/store.spec.ts:1290 (Aumentar/Reducir recalcula el total), :564 (Reducir a 0 quita la línea). El botón 'Quitar' no tiene prueba propia.",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "10",
+      "status": "cumple",
+      "evidence": "En la interfaz, añadir o aumentar por encima del stock se bloquea con el aviso 'No hay suficiente stock de X (quedan N)' (apps/web/src/POS.tsx:270-299, 834-842). En la API, takeStock y stockChange rechazan con 'Stock insuficiente' dentro de la transacción, sin escribir nada (apps/api/src/inventory.ts:73-75, 128-130). El carrito se puede corregir sin duplicar. La excepción depende del ajuste allowNegativeStock (admin.ts:61), que solo puede cambiar el administrador (admin.ts:351-352). Pruebas: tests/e2e/store.spec.ts:564 ('No hay suficiente stock', cantidad sigue en 1); tests/api.test.ts:240 (qty 1000 da 400 sin venta ni movimiento), :1133 (stock negativo optativo), :1905 (tres cajas con stock 5). Nota: la excepción es un ajuste global de la tienda, no una autorización por venta; con el ajuste activado, cualquier cajera vende en negativo con solo un aviso.",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "11",
+      "status": "cumple",
+      "evidence": "Idempotencia por offlineUuid con advisory lock (apps/api/src/sales.ts:195-232). Rechaza si falta pago (sales.ts:347). Payment guarda amount = entregado − cambio (sales.ts:587-634). El efectivo esperado suma amount (apps/api/src/cash.ts:40-44). El stock baja una vez por línea (sales.ts:468-557). El ticket imprime líneas y total cobrado (apps/web/src/POS.tsx:1648-1688). Pruebas: tests/api.test.ts:281 (dos peticiones simultáneas y sync dan la misma venta y el stock baja 1), :4691 (R9-dinero-2: efectivo exacto 90.05 con ITBIS 13.74; tras devolver todo, el efectivo esperado vuelve al inicial), :206 (stock). El comprobante es interno 'no fiscal'; la parte fiscal corresponde al paso 19.",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "12",
+      "status": "parcial",
+      "evidence": "La API guarda tendered = R, change = R − T y amount = T (apps/api/src/sales.ts:587-617). La caja suma amount, es decir T y no R (apps/api/src/cash.ts:40-44). En pantalla aparecen Pendiente y Cambio (apps/web/src/POS.tsx:1948-1957). Prueba: tests/api.test.ts:206 (efectivo 250 + tarjeta 150 sobre 354 da cambio 46).",
+      "gap": "El dinero entregado (R) no aparece en ningún comprobante. El ticket térmico solo muestra 'Cambio' (POS.tsx:1683), igual que la ventana de éxito (POS.tsx:1593-1595). El PDF imprime 'cash: RD$ {amount} · Cambio', es decir T, no R (sales.ts:1484-1485). El detalle en Ventas solo muestra amount (Management.tsx:2611-2619). tendered se guarda pero nunca se muestra. Ninguna prueba comprueba que el efectivo esperado sube T y no R.",
+      "fixSize": "pequeño"
+    },
+    {
+      "step": "13",
+      "status": "cumple",
+      "evidence": "Funciona con terminal separado: la API exige últimos 4 dígitos y número de aprobación para tarjeta (apps/api/src/sales.ts:351-352), y la caja tiene campos para últimos 4, aprobación, marca y tipo (apps/web/src/POS.tsx:1836-1886). El importe va al bloque card, no a cash (apps/api/src/cash.ts:40-44), y el detalle muestra la aprobación (Management.tsx:2616-2618). El stock baja una vez gracias a la idempotencia (sales.ts:195-232). Pruebas: tests/api.test.ts:206 (tarjeta en pago dividido; stock), :240 (tarjeta mayor que el total da 400), e2e tests/e2e/store.spec.ts:66. No hay prueba de una venta solo con tarjeta que confirme que el efectivo esperado no cambia. No hay integración con el adquirente: approvalCode es texto libre sin verificar (packages/shared/src/index.ts:473).",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "14",
+      "status": "depende_hardware_o_fiscal",
+      "evidence": "Nada se registra hasta 'Finalizar venta' (apps/web/src/POS.tsx:1380-1491). Un pago de tarjeta añadido se puede quitar (POS.tsx:1937-1943). Al cerrar la ventana de cobro el carrito sigue intacto (POS.tsx:1063-1073). Si la API rechaza, no queda venta, stock ni caja y el reintento usa el mismo offlineUuid (POS.tsx:1309; sales.ts:216-232), sin duplicar.",
+      "gap": "El POS no se comunica con el terminal ni con el adquirente, así que no puede saber de un rechazo o una cancelación: depende de que la cajera no registre el pago. approvalCode acepta cualquier texto (packages/shared/src/index.ts:473), así que nada impide registrar como aprobada una tarjeta rechazada. Ninguna prueba cubre quitar un pago de tarjeta y reintentar. En modo manual el código no necesita cambios; integrar el adquirente sería un trabajo grande.",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "15",
+      "status": "cumple",
+      "evidence": "paymentTotals admite efectivo y tarjeta juntos y solo el efectivo puede dar cambio (packages/shared/src/index.ts:348-369). Una sola transacción crea una venta y un Payment por medio (apps/api/src/sales.ts:216-700, 587-634). La caja suma solo el efectivo neto (E) en cash y C en card (apps/api/src/cash.ts:40-44). El detalle de Ventas lista los dos importes con su aprobación (apps/web/src/Management.tsx:2611-2619) y el PDF también los lista (sales.ts:1484-1485). Pruebas: tests/api.test.ts:206 (efectivo 250 + tarjeta 150, cambio 46, stock 9), e2e tests/e2e/store.spec.ts:66 (efectivo 1000 + tarjeta por el resto). Las pruebas no comprueban expected.cash/expected.card tras el pago combinado. El ticket térmico no desglosa los medios de pago (POS.tsx:1648-1688).",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "16",
+      "status": "cumple",
+      "evidence": "La caja muestra el Pendiente (apps/web/src/POS.tsx:1948-1957) y desactiva 'Finalizar venta' si pending > 0 (POS.tsx:1975-1981). La API rechaza con 'Falta completar el pago de la factura' (apps/api/src/sales.ts:347). Un pago no en efectivo no puede pasar del total (packages/shared/src/index.ts:360-363; error mostrado en POS.tsx:1366-1378). El exceso en efectivo se vuelve cambio y solo T entra a caja (sales.ts:587-617). Pruebas: tests/api.test.ts:240 (efectivo 1 da 400; tarjeta 200 sobre 118 da 400; no gasta número de venta ni mueve stock), :4799 (importes con más de 2 decimales).",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "17",
+      "status": "parcial",
+      "evidence": "Hay descuento % por línea y % global combinados (apps/web/src/POS.tsx:99-112; apps/api/src/sales.ts:279-300). lineTotals recalcula base e ITBIS después del descuento (packages/shared/src/index.ts:315-347). Por encima del límite de la vendedora se exige PIN de gerente (sales.ts:134-194) y queda auditoría discount_approved (sales.ts:678-693). El ticket térmico muestra el descuento de cada línea y el total (POS.tsx:1655-1674). Pruebas: tests/api.test.ts:4691 (global 10 %: total 90.05, ITBIS 13.74), :303 (25 % exige PIN y queda auditado), e2e tests/e2e/store.spec.ts:1050 (ticket con descuentos).",
+      "gap": "No queda claro quién autorizó el descuento. Sale no guarda autorizador (schema.prisma:172-203) y el ticket no lo imprime. discount_approved solo se registra si hubo PIN o si vendió un gerente (sales.ts:678-693): el descuento de la cajera dentro de su límite no queda en el reporte 'returns-discounts', y ese reporte muestra el aprobador como UUID dentro del JSON (reports.ts:671-690). El reporte 'sales' no tiene columna de descuento (reports.ts:474-487). El PDF del recibo no muestra el descuento (sales.ts:1468-1476).",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "18",
+      "status": "parcial",
+      "evidence": "Hay descuento RD$ por línea (apps/web/src/POS.tsx:872-898). La API lo convierte a % y rechaza un monto mayor que la línea (apps/api/src/sales.ts:281-287). El % está limitado a 0-100, así que el total nunca queda negativo (packages/shared/src/index.ts:433,438,443; POS.tsx:99-112). Por encima del límite de la vendedora se pide PIN y no se puede finalizar sin él (POS.tsx:1318-1329, 1958-1968, 1979; sales.ts:147-193); un PIN erróneo da 400 sin crear la venta (apps/api/src/security.ts:45-96). Pruebas: tests/api.test.ts:928 (RD$18 sobre 118: total 100, ITBIS 15.25; RD$119 da 400), e2e tests/e2e/store.spec.ts:1290 (la interfaz no pasa del importe de la línea ni deja negativos), api :303 (PIN).",
+      "gap": "No hay descuento de importe fijo para la venta completa: D solo se aplica por línea. En una venta de varias líneas la cajera tiene que repartirlo a mano o convertirlo a % global. Además arrastra la misma falta de trazabilidad del autorizador del paso 17 (no queda en Sale, ni en el ticket, ni en el reporte de ventas).",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "19",
+      "status": "no_implementado",
+      "evidence": "Lo fiscal que existe hoy: Settings.ncfMode solo admite \"disabled\" | \"prepared\" (apps/api/src/admin.ts:67; en la interfaz, apps/web/src/Management.tsx:2907-2916, con la etiqueta \"Preparar solicitud (sin emisión fiscal)\"). No hay forma de elegir entre B y E. Sale tiene los campos ncf (String? @unique), ncfType, recipientLegalId y fiscalStatus, este último con default \"not_issued\" (apps/api/prisma/schema.prisma:188-191). En apps/api/src nadie escribe ncf ni fiscalStatus: solo se leen al exportar (reports.ts:484-486). La venta guarda únicamente ncfType (sales.ts:454) y lo exige con ncfMode=\"prepared\" (sales.ts:383-384). El esquema acepta B01/B02/B14/B15/E31/E32 (packages/shared/src/index.ts:450), pero el POS solo ofrece B01/B02 (POS.tsx:1733-1735). El ticket térmico (POS.tsx:1648-1688) y el PDF (sales.ts:1455-1486) dicen \"Documento interno — no fiscal\" y \"Solicitud NCF X · pendiente de emisión fiscal\". Prueba que existe: api.test.ts:1209-1235, que comprueba precisamente ncf=null y fiscalStatus=\"not_issued\". Los descuentos del ticket se prueban en tests/e2e/store.spec.ts:1050-1094, y que el PDF se genera en api.test.ts:431.",
+      "gap": "No se emite ningún B02 ni E32. Faltan: secuencias NCF/e-NCF autorizadas con su vencimiento (no hay modelo; Counter solo numera FS-/NC-), la asignación de ncf, XML firmado, envío o RFCE, estados DGII, QR y contingencia. La reimpresión mantiene el número interno FS-xxxx, no un NCF. El ticket térmico pone \"FitStore\" fijo (POS.tsx:1652), sin nombre ni RNC del emisor, sin fecha y sin base imponible. El PDF no muestra el RNC del emisor ni el desglose de descuentos. Tampoco hay un ticket térmico que se pueda reimprimir desde Ventas: allí solo se descarga el PDF A4 (Management.tsx:2497-2509). Ninguna prueba cubre una emisión fiscal. Además depende de decisiones del contador y de la DGII (autorización, certificado o PSFE).",
+      "fixSize": "grande"
+    },
+    {
+      "step": "20",
+      "status": "no_implementado",
+      "evidence": "Existe la solicitud: si ncfType es B01 o E31 y falta recipientLegalId, la API rechaza la venta con \"Indica el RNC o cédula del cliente.\" (sales.ts:385-389). Guarda ncfType y recipientLegalId (sales.ts:454-455). El tipo de comprobante no depende de la forma de pago, así que B01 con efectivo no se convierte en fiado (sales.ts:356-389). El POS muestra el campo RNC solo para B01 (POS.tsx:1738-1746). Prueba: api.test.ts:1209-1235, que rechaza B01 sin RNC y luego acepta B01 con RNC \"123456789\", dejando ncf=null y not_issued.",
+      "gap": "No se emite B01 ni E31: ncf nunca se asigna y fiscalStatus nunca cambia. Ni el ticket ni el PDF imprimen el RNC del comprador. No se registra la razón social (no hay campo en Sale) y recipientLegalId no se cruza con Customer.legalId. E31 no se puede elegir en el POS. No hay resultado DGII, representación impresa ni QR, y soporte no tiene una vista de evidencia fiscal. recipientLegalId tampoco sale en la exportación de ventas (reports.ts:476-487).",
+      "fixSize": "grande"
+    },
+    {
+      "step": "21",
+      "status": "parcial",
+      "evidence": "Si falta el RNC en B01/E31, la venta se rechaza antes de crearla (sales.ts:385-389), dentro de la transacción: no queda venta y no hay comprobantes que gastar. El formato se valida con z.string().min(9).max(11).regex(/^\\d+$/) (packages/shared/src/index.ts:451). Si falla, el cobro se reintenta con el mismo offlineUuid sin duplicar (POS.tsx:1309; sales.ts:201-232) y se puede cambiar a B02. Prueba: api.test.ts:1213-1222, solo para el RNC ausente.",
+      "gap": "No se detecta un RNC inventado o inválido. Se aceptan 10 dígitos (no es RNC de 9 ni cédula de 11), no se comprueba el dígito verificador y no se consulta el padrón DGII. La propia prueba usa \"123456789\", cuyo dígito verificador correcto sería 6, y lo da por bueno. No se exige razón social. recipientLegalId no está en FIELD_NAMES (common.ts:95-116), así que el error muestra el nombre técnico del campo. El pattern del input (POS.tsx:1742) no se aplica porque el campo está fuera del <form>, y finish() no valida en el cliente. Sin conexión, una venta B01 con RNC faltante o inválido se guarda en el equipo (POS.tsx:1453-1471) y al sincronizar queda en conflicto, sin forma de corregirla: \"Reintentar\" reenvía lo mismo (Management.tsx:1677-1686) y el dinero ya se cobró. Ninguna prueba cubre el RNC con formato inválido.",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "22",
+      "status": "parcial",
+      "evidence": "Para vender a crédito hay que activar allowCreditSales (sales.ts:377-378) e indicar cliente y vencimiento (sales.ts:379-382). El límite del cliente se valida bloqueando su registro con FOR UPDATE (sales.ts:244-245 y 361-376), y solo un gerente puede cambiar el límite (admin.ts:97-105 y 121-125). Por encima de creditApprovalThreshold se pide PIN de gerente y se audita credit_approved (sales.ts:170-171 y 577-586). Se guardan creditBalance y creditDueDate (sales.ts:449-453) y el pago queda como method credit, status pending (sales.ts:630-631). El crédito no entra en el efectivo ni en la tarjeta esperados, porque cash.ts:40-44 solo suma cash, card y transfer. El inventario se mueve una sola vez por offlineUuid. Pruebas: api.test.ts:1007-1026, api.test.ts:1552-1612 (límite atómico y PIN) y tests/e2e/store.spec.ts:205-282 (crédito sin pago inicial desde la interfaz).",
+      "gap": "La parte comercial cumple. Lo que falta es lo fiscal: ninguna venta, fiada o no, recibe un comprobante de consumo o de crédito fiscal real (ver pasos 19-20). Las condiciones solo incluyen la fecha de vencimiento, sin texto de condiciones ni plazo pactado. Ninguna prueba afirma explícitamente que la venta a crédito no sube el efectivo esperado (sí está garantizado por el código).",
+      "fixSize": "pequeño"
+    },
+    {
+      "step": "23",
+      "status": "parcial",
+      "evidence": "POST /sales/:id/installments (sales.ts:1320-1424) bloquea la venta, exige un saldo mayor o igual al abono más las transferencias pendientes (1374-1387), crea un Payment con entryType=installment vinculado a la venta y con idempotencyKey (1396-1415), descuenta creditBalance (1416-1420) y lo audita (1421). No toca el stock ni crea otra venta. El efectivo esperado lo incluye (cash.ts:21-27). Los reportes no cuentan los abonos como ventas (reports.ts:136-139, 168-178 y 503-540). Pruebas: api.test.ts:1007-1049 (abono concurrente idempotente: saldo 118→68 y efectivo +50), api.test.ts:4973 y siguientes (R9-dinero-9, los abonos no se cuentan dos veces) y tests/e2e/store.spec.ts:283-299 (abono desde la interfaz).",
+      "gap": "No hay una constancia de abono imprimible o PDF para el cliente: receipt.pdf lista todos los pagos sin distinguir el abono (sales.ts:1484-1485). El historial del detalle de venta no marca qué pago es un abono ni muestra su fecha (Management.tsx:2607-2630). No hay estado de cuenta por cliente: Clientes no muestra la deuda (Management.tsx:1882-1918). GET /sales devuelve solo las últimas 100 ventas y, a quien no tiene sale:manage, solo las propias (sales.ts:765-783). Por eso la cajera no puede registrar abonos de deudas que vendió otra persona ni de deudas antiguas.",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "24",
+      "status": "cumple",
+      "evidence": "Un abono mayor que el saldo (descontadas las transferencias pendientes) se rechaza con \"El abono supera el saldo pendiente.\" (sales.ts:1382-1387) antes de crear el pago, dentro de la transacción: no se mueve caja ni se crea venta. El saldo no puede quedar negativo. El abono exige la venta concreta (/sales/:id, con uuid validado en sales.ts:1370) y venta completed de la sucursal (1371-1373). En la interfaz solo se llega desde la fila de la venta, con max igual al saldo (Management.tsx:2512-2531 y 2782-2785). Un idempotencyKey reutilizado con otros datos se rechaza (1351-1358). Pruebas: api.test.ts:1050-1059 (69 sobre saldo 68 → 400) y api.test.ts:1655-1665 (abono de 69 con 50 pendientes por transferencia → 400).",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "25",
+      "status": "cumple",
+      "evidence": "El indicador muestra Offline o En línea (App.tsx:553-575), alimentado por los eventos online/offline (App.tsx:305-314), por los fallos de petición que llaman a setOnline(false) (api.ts:186-199) y por un chequeo de /api/health cada 5 s (App.tsx:319-336). Sin conexión se usan las copias en IndexedDB del catálogo con precios (api.ts:383-412), de las promociones, de los ajustes y de la caja (cachedApi, api.ts:311-324; POS.tsx:192-222). No se muestra ninguna aprobación fiscal: los recibos dicen \"no fiscal\". Pruebas: tests/e2e/store.spec.ts:166-180 (setOffline → \"Offline\"), 1645-1677 (sin internet con la red local activa, escaneo y recarga con el catálogo local) y 2127-2162.",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "26",
+      "status": "parcial",
+      "evidence": "La venta se guarda en IndexedDB (localDB.sales) con su input completo y el ticket (POS.tsx:1453-1471), y el stock local baja (POS.tsx:1472; api.ts:383-412). La pendiente se ve en la barra (App.tsx:344-357 y 570-573) y en Caja, en \"Ventas guardadas en este dispositivo\" (Management.tsx:1621-1690). El identificador es LOCAL-<8 caracteres del uuid> (POS.tsx:1454). El ticket dice \"Documento interno — no fiscal\" y \"RECIBO PROVISIONAL · PENDIENTE DE SINCRONIZAR\" (POS.tsx:1654 y 1684-1686), así que no se presenta como fiscal. El crédito y las notas de crédito se bloquean sin conexión (POS.tsx:1445-1452). Pruebas: tests/e2e/store.spec.ts:166-203, 1645-1699 y 1750-1788 (stock local sin reventa).",
+      "gap": "No hay contingencia fiscal: no se genera ni firma un e-CF offline, no hay leyenda de contingencia, no hay secuencias B de contingencia, no se registra el inicio o fin de la contingencia y no hay vinculación B→E. Sin conexión, la pantalla Caja no muestra el efectivo esperado porque usa api, no cachedApi (Management.tsx:1538-1541). La durabilidad depende de IndexedDB sin navigator.storage.persist(), que no se usa en ningún sitio: el navegador puede desalojar los datos o se pierden al borrar los datos del sitio. Además se permite cobrar con tarjeta sin conexión con aprobación tecleada a mano.",
+      "fixSize": "grande"
+    },
+    {
+      "step": "27",
+      "status": "parcial",
+      "evidence": "Tras recargar sin conexión, la venta sigue en IndexedDB, la sesión guardada permite entrar (App.tsx:275-302) y el catálogo local conserva el stock descontado. La sincronización no duplica (offlineUuid, sales.ts:201-232). Prueba: tests/e2e/store.spec.ts:1678-1688, donde tras page.reload() sin conexión se ve \"4 en stock\" y hay 2 ventas locales. También 2143-2156: recarga sin respuesta del servidor sin quedarse cargando.",
+      "gap": "Sin conexión, la venta solo puede consultarse en el panel de Caja, que muestra número, monto y estado (Management.tsx:1655-1671). No muestra artículos ni forma de pago, y el ticket provisional no se puede reimprimir aunque está guardado en receipt.snapshot. El resumen (Dashboard.tsx:43-45, que usa api y no la caché) y el historial de Ventas no funcionan sin conexión y no incluyen la venta pendiente. No hay documento ni estado fiscal pendiente: incluso con ncfType, el ticket local no lo muestra (POS.tsx:1453-1462). Ninguna prueba cubre el panel de pendientes ni el texto del recibo provisional.",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "28",
+      "status": "parcial",
+      "evidence": "La sincronización es exactamente-una-vez: offlineUuid único, pg_advisory_xact_lock y requestHash (sales.ts:195-232). Cada venta se valida por separado y lo sincronizado se borra del equipo (api.ts:441-470). Los conflictos quedan como \"Requiere revisión\" con su mensaje (Management.tsx:1660-1688) y generan la alerta offline_conflict (sales.ts:740-761). Una venta que llega con la caja ya cerrada recalcula y audita el arqueo (sales.ts:636-672). Cerrar la caja exige sincronizar antes (Management.tsx:1829-1836). Pruebas: api.test.ts:281-293, 391-405, 875-910 y 1689-1720 (límite de 48 h); tests/e2e/store.spec.ts:166-203, 1689-1699 y 1701-1748 (502/504 sin duplicar stock).",
+      "gap": "No hay estados fiscales: falta distinguir \"recibido/aceptado por DGII\", el paso de pendiente a aceptado o rechazado y la vinculación B→E. Los plazos de 72 h y 15/30 días no se controlan. Un conflicto no se puede resolver: \"Reintentar\" reenvía la misma venta, y el servidor no guarda el contenido de la venta, solo la alerta. Al sincronizar se recalcula con precios y promociones actuales y se exige expectedTotal (sales.ts:271-278 y 334-340), así que si el precio o la promoción cambiaron después de una venta offline, esa venta, ya cobrada, queda en conflicto para siempre. Lo mismo pasa con una venta de más de 48 h (sales.ts:235) o sin stock (api.test.ts:391-405). Ninguna prueba cubre el caso de precio cambiado. En Ventas no hay relación visible entre el LOCAL-xxxx del ticket provisional y el número FS- final: la tabla no muestra offlineUuid (Management.tsx:2465-2500).",
+      "fixSize": "grande"
+    },
+    {
+      "step": "29",
+      "status": "parcial",
+      "evidence": "API POST /returns apps/api/src/sales.ts:999-1253. Devuelve por línea y cantidad (1051-1054). El importe sale de lineTotal/tax históricos, con el descuento ya aplicado y redondeo acumulado (1092-1106). Con restock, el stock sube con un movimiento 'return' (1158-1175). En una venta a crédito, primero se reduce la deuda (1196-1225). La caja solo baja según el método de reembolso: cash.ts:49-53 resta refundAmount del método elegido; credit_note no toca la caja. Interfaz: Management.tsx:2722-2778. Pruebas: api.test.ts:4691-4725 (R9-dinero-2: venta de 3 con 10 % global devuelta de una en una; reembolso e ITBIS suman exacto y el efectivo esperado vuelve al inicial), api.test.ts:1007-1084 (la devolución de una venta a crédito reduce la deuda primero), api.test.ts:3533+ (un combo devuelto repone stock).",
+      "gap": "La interfaz usa solo la caja abierta del propio usuario gerente (Management.tsx:2455-2457 y 2537-2546). La cajera no tiene sale:manage (packages/shared/src/index.ts:497). Un equipo con la caja de la cajera abierta no admite otra caja (cash.ts:104-112). Por eso la dueña tiene que devolver desde su propia caja en otro equipo, y el reembolso en efectivo se descuenta de una sesión distinta del cajón que cuenta la cajera: el arqueo descuadra en ambas cajas. La API sí permitiría a un gerente usar la caja ajena (sales.ts:75), pero la interfaz no lo ofrece. Tampoco se comprueba que haya efectivo suficiente para el reembolso (a diferencia de cash.ts:139-140), y el reembolso con tarjeta no guarda referencia ni aprobación. No hay prueba de una devolución parcial simple (1 de 2) que verifique stock +1, ni de un gerente devolviendo sobre la caja de la cajera.",
+      "fixSize": "pequeño"
+    },
+    {
+      "step": "30",
+      "status": "parcial",
+      "evidence": "La devolución crea SaleReturn con número interno 'NC-000001' (sales.ts:1226-1240) y CreditNote (1242-1250). Se conserva la venta original y returnedQty (1141-1144). El PDF de la nota (sales.ts:1289-1318) dice 'Nota interna de crédito · no fiscal'. Venta neta = ventas − devoluciones (reports.ts:182-200). El reporte 'sales' tiene columna Devoluciones por venta (reports.ts:474-488). El detalle de la venta muestra 'Devuelta' (Management.tsx:2603-2604) y el selector solo ofrece líneas con saldo retornable (Management.tsx:2729-2731). La deuda se ajusta antes que el efectivo (sales.ts:1196-1225; cash.ts:49-53). Pruebas: api.test.ts:4691-4725, 1327-1359 (devolución de una venta del día anterior cuenta en el día de la devolución) y 1007-1084.",
+      "gap": "No existe B04/E34 ni ninguna referencia al comprobante original. El sistema no emite comprobantes fiscales: Sale.ncf nunca se asigna, fiscalStatus queda en 'not_issued' (schema.prisma:188-191) y el recibo dice 'Documento interno — no fiscal' (sales.ts:1457). Además, el PDF interno de la nota solo muestra número, importe, saldo y código de canje. No muestra la venta original, fecha, motivo, artículos/cantidades ni ITBIS. No aplica la regla de ITBIS a 30 días y el reembolso con tarjeta no guarda referencia del adquirente. La parte fiscal depende de integrar la emisión B/E.",
+      "fixSize": "grande"
+    },
+    {
+      "step": "31",
+      "status": "parcial",
+      "evidence": "El exceso se bloquea: qty + returnedQty > qty da 'Cantidad de devolución inválida' (sales.ts:1051-1054), con la venta bloqueada FOR UPDATE (sales.ts:1027). Se rechazan líneas repetidas en la misma petición (sales.ts:1022-1023). La interfaz desactiva Guardar mientras envía (helpers.tsx:116-137). Prueba: api.test.ts:351-377 (repetir la devolución de una línea ya devuelta por completo da 400; anular después de una devolución da 400).",
+      "gap": "POST /returns no tiene clave de idempotencia: SaleReturn no tiene operationId (schema.prisma:244-260; sales.ts:1003-1021). Si se vendieron 2, se devolvió 1 y se repite la misma petición (respuesta perdida y otra pulsación de Guardar, o doble envío), el servidor la acepta como segunda devolución porque cabe en lo retornable. Resultado: segundo reembolso, segunda NC y segunda entrada de stock. No hay prueba de reintento ni de concurrencia. Se puede copiar el patrón operationId de la recepción (inventory.ts:400-462; Management.tsx:1302).",
+      "fixSize": "pequeño"
+    },
+    {
+      "step": "32",
+      "status": "parcial",
+      "evidence": "Un producto dañado o abierto (si la categoría lleva lote) no puede volver al stock vendible (sales.ts:1063-1070). Sin restock se crea un InventoryMovement 'return_waste' con unitCost y el motivo + ' (no vendible)', sin tocar el stock (sales.ts:1176-1189). El costo de lo no repuesto queda una sola vez en el costo de ventas: costTotal de la devolución solo incluye lo repuesto (sales.ts:1110-1132) y la merma se replica en replayReturns (packages/shared/src/index.ts:191-277). La merma de inventario tiene salida aparte con motivos merma/dañado/vencido (merchandise.ts:85-93 y 595-612). Pruebas: api.test.ts:630-654 (la utilidad conserva el costo de una devolución dañada sin reingreso) y 1327-1359.",
+      "gap": "El movimiento 'return_waste' guarda qty: 0 (sales.ts:1183), así que el kardex y los reportes no muestran la cantidad ni el valor de la merma. La cantidad solo queda en el JSON SaleReturn.items. El destino se reduce a un booleano restock más la casilla 'dañado'. El motivo es el texto libre de la devolución, sin categoría de merma. La parte no repuesta guarda costo 0 y no hay reporte de mermas con su costo. Ninguna prueba verifica que el stock no sube y que se crea el movimiento de merma.",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "33",
+      "status": "cumple",
+      "evidence": "El botón 'Limpiar' (POS.tsx:981) llama a clearCart (apps/web/src/api.ts:144), que solo vacía el carrito local, el descuento y el cliente, sin llamar a la API. El stock solo se toma al completar la venta (takeStock, inventory.ts:120-185, invocado desde complete en sales.ts) y el esquema no tiene modelo de reservas, así que descartar no crea venta, pago, nota ni NCF. Sin prueba dedicada: en las e2e 'Limpiar' solo se usa para limpiar (store.spec.ts:1046, 1199, 1286), sin comprobar que no cambien las ventas ni el stock.",
+      "gap": "",
+      "fixSize": "ninguno"
+    },
+    {
+      "step": "34",
+      "status": "parcial",
+      "evidence": "POST /sales/:id/void (sales.ts:787-878) exige sale:manage y motivo. Marca la venta status 'voided' con voidedReason y voidedBy y la conserva (867-875), con auditoría (876). Repone el stock una vez con un movimiento 'void' y el costo ponderado (832-866). Restaura el saldo de las notas de crédito usadas (807-823) y pone creditBalance en 0. Los cobros dejan de contar en la caja porque cashExpected filtra sale.status 'completed' (cash.ts:22-28). Se bloquea si hay devoluciones o abonos (803-806) y solo se permite en la misma caja abierta (825-826). Interfaz: Management.tsx:2678-2691. Pruebas: api.test.ts:4770-4797 (stock y costo tras anular), 954-1005 (nota restaurada), 351-377 y 1061-1068 (bloqueos).",
+      "gap": "La interfaz envía la caja propia del gerente (Management.tsx:2455-2457 y 2684-2687), así que anular una venta hecha en la caja de la cajera siempre falla con 'Usa una devolución para ventas de cajas anteriores' (sales.ts:825-826). Desde la interfaz solo se anulan ventas de la propia caja de la dueña. No genera documento fiscal de reversión (B04/E34): solo cambia el estado. La mercancía siempre vuelve a stock vendible, sin opción de destino dañado o merma. La venta anulada desaparece de los reportes de ventas (filtro status completed, reports.ts:276-283) en vez de aparecer como ajuste; solo figura en la bitácora 'returns-discounts' (reports.ts:671-688). No hay prueba de que el efectivo o la tarjeta esperados bajen tras anular.",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "35",
+      "status": "parcial",
+      "evidence": "POST /purchase-orders (inventory.ts:345-390) crea la orden 'OC-' con proveedor, artículos, cantidades y costo unitario, sin mover stock. PurchaseOrder/PurchaseItem: schema.prisma:283-305. El pago a proveedor va aparte (SupplierPayment, admin.ts:159-186). El reporte 'purchases' separa Ordenado, Compras (recepciones), Pagado y Pendiente (reports.ts:370-436). Interfaz: Management.tsx:958-1165. Pruebas: api.test.ts:2592-2633 (orden vs compras vs pagos), 3361-3442 (R4-04) y 5197-5272 (el stock solo sube al recibir).",
+      "gap": "Ni la orden ni la recepción guardan el documento del proveedor (factura/NCF) ni la condición de pago: solo existe Supplier.paymentTermsDays (schema.prisma:64), y GoodsReceipt solo tiene attachmentId cuando viene de la importación de factura. 'Compras' es la suma de las recepciones, así que cada entrega cuenta como compra y no hay una entidad de factura de compra distinta de la recepción física. Faltan los datos de 606 (NCF del proveedor, ITBIS facturado).",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "36",
+      "status": "parcial",
+      "evidence": "POST /purchase-orders/:id/receive (inventory.ts:391-587): la cantidad debe ser ≤ lo pendiente (465-468) y el stock sube solo por lo recibido ('purchase', 558-568). receivedQty aumenta y el estado pasa a partial o received (569-583). Costo con flete prorrateado y promedio ponderado (474-478, 531-540). Lote y vencimiento son obligatorios según la categoría y se rechazan los vencidos (525-529, 541-553). GoodsReceipt.userId y auditoría registran al responsable (480-500, 584). Interfaz ReceiptEditor: Management.tsx:1289-1345. Pruebas: api.test.ts:5197-5272 (parcial 4 de 10: stock +4 y receivedQty 4), 324-350 (flete y promedio 115), 802-852 (lote vencido no se recibe) y 2134 (lote y vencimiento obligatorios).",
+      "gap": "No se pueden registrar unidades dañadas o rechazadas en la recepción ni segregarlas en cuarentena. Solo se ingresa lo recibido, y lo no aceptado queda como pendiente de la orden, indistinguible de lo no entregado. La recepción por orden no guarda el número de documento del proveedor. Fuera del formulario de recepción, la interfaz no muestra lo pendiente por línea.",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "37",
+      "status": "parcial",
+      "evidence": "Idempotencia por operationId: inventory.ts:400-462. La interfaz lo crea al abrir el formulario (Management.tsx:1302 y 1326), y Mercancía usa el id de operación (merchandise.ts:330-340). El exceso se bloquea con 'Cantidad mayor que lo pendiente' (inventory.ts:465-468; merchandise.ts:499-505) y una orden completa con 'ya fue recibida'. Pruebas: api.test.ts:5197-5272 (mismo operationId no duplica stock ni recepción, incluso en concurrencia; con otros datos da 400), 2280-2306 (no duplica la recepción de una orden completa) y 2592-2633 (repetir el UUID no cambia el importe).",
+      "gap": "No hay interfaz para reabrir una recepción ni consultar su comprobante. La tabla de Compras solo lista órdenes: GET /purchase-orders incluye las recepciones, pero la interfaz no las muestra. El comprobante solo se descarga durante la revisión del borrador (Merchandise.tsx:796-806) y el historial de Mercancía solo muestra las últimas 30 operaciones propias. No hay flujo para modificar la orden. operationId es opcional en la API (inventory.ts:400), así que un cliente que lo omita puede recibir dos veces dentro de lo pendiente. El exceso en la ruta /receive no tiene prueba.",
+      "fixSize": "pequeño"
+    },
+    {
+      "step": "38",
+      "status": "parcial",
+      "evidence": "El resumen del dashboard (reports.ts:61-255) calcula ingresos = ventas completadas − devoluciones del período (182-200), ITBIS neto, cobros por método sin abonos (138), comisiones y valor de inventario. El fondo inicial no se cuenta como ingreso. Reportes: 'by-payment' separa Ventas de Cobros_de_crédito (reports.ts:507-557), 'sales' tiene Estado_fiscal, Saldo_crédito y Devoluciones (474-488), además de 'returns-discounts' y 'kardex'. La pantalla 'Hoy' (Dashboard.tsx:35-82) muestra ventas, ganancia, facturas y ticket promedio. La caja muestra las ventas offline pendientes (Management.tsx:1621-1688). Pruebas: api.test.ts:4973-5023 (R9-dinero-9: el crédito no se cuenta doble y los abonos van al día del cobro), 5025-5058, 1327-1359 y 409-446.",
+      "gap": "No hay un reporte del día que se pueda comparar con la hoja manual. Los descuentos no se totalizan en ningún reporte (Sale.discountTotal no se agrega). El desglose por método no aparece en la interfaz y no descuenta los reembolsos por método, así que los métodos no suman la venta neta. No hay reporte de deuda pendiente ni saldo por cliente (admin.ts:73-95 solo da el total comprado). Los abonos solo aparecen en by-payment. Pendiente fiscal es solo una columna que siempre dice 'not_issued', sin cola fiscal. Las anulaciones desaparecen en vez de mostrarse como ajuste. No hay conciliación de existencias por SKU; solo el kardex crudo.",
+      "fixSize": "mediano"
+    },
+    {
+      "step": "39",
+      "status": "parcial",
+      "evidence": "El cierre (cash.ts:226-311) calcula la diferencia por método como contado − esperado, con signo, y la guarda (253-273). Audita 'close_difference' (276-277) y crea una alerta si |diferencia en efectivo| > límite (278-301). Efectivo esperado = FI + cobros netos del cambio + movimientos − reembolsos (cash.ts:21-60; el importe se guarda neto del cambio en sales.ts:617). La tarjeta se compara aparte (differenceCard). Pruebas: api.test.ts:447-463 (diferencias +10 y −10 por método aunque se compensen), 562-580 (cierre de caja ajena auditado) y 1185-1211 (alerta de efectivo).",
+      "gap": "No es un conteo a ciegas: el formulario muestra 'Esperado: RD$…' junto a cada campo contado (Management.tsx:1811-1825) y la pantalla de caja muestra el efectivo esperado (Management.tsx:1597-1598). Las notas son opcionales (cash.ts:239), así que una diferencia no exige explicación. Al confirmar no se muestra la diferencia, solo el aviso 'Cambios guardados.' (helpers.tsx:128-130). La tarjeta se declara como un único total, sin lista de vouchers ni comisión o retención en el arqueo: feeAmount existe (sales.ts:620-626) pero no se muestra al cerrar. No hay conteo por denominación.",
+      "fixSize": "pequeño"
+    },
+    {
+      "step": "40",
+      "status": "parcial",
+      "evidence": "CashSession (schema.prisma:342-362) guarda equipo, usuario, FI, apertura, cierre, esperado, contado y diferencia por método, y notas. Una venta en línea sobre una caja cerrada se rechaza: cashLock exige closedAt null (sales.ts:66-72). Devoluciones, anulaciones y abonos también exigen caja abierta, y las recepciones no tocan la caja (inventory.ts:391-587). Exportación xlsx/pdf: reports.ts:713-770. Respaldo: scripts/backup.mjs (pg_dump) y restauración manual documentada en docs/DESPLIEGUE.md:59-67. Pruebas: api.test.ts:459-462 (vender tras el cierre da 404), 875-910 y 409-446 (17 reportes, PDF y Excel).",
+      "gap": "No hay ticket ni reporte de cierre: 'Imprimir' es window.print() de toda la página (Management.tsx:1700). El historial no muestra cajera, FI, hora de cierre ni tarjeta o transferencia contadas (Management.tsx:1704-1760). El reporte 'cash' muestra el usuario como UUID y no incluye FI, cierre ni tarjeta esperada o contada (reports.ts:343-358). El cierre histórico se reescribe después: una venta offline sincronizada (sales.ts:636-668, probado en api.test.ts:875-910) o una transferencia verificada (sales.ts:898-950) recalculan expected y difference de la caja cerrada, con auditoría. Cerrar no requiere aprobación de la dueña. El respaldo no está cifrado y su restauración se verifica a mano.",
+      "fixSize": "mediano"
+    }
+  ],
+  "verificacionFechasDGII": {
+    "networkAvailable": false,
+    "claims": [
+      {
+        "claim": "(1a) El Aviso DGII 06-26 concede a Pequeños, Micro y no clasificados una prórroga automática de seis meses, sin solicitud, y el plazo pasa del 15/5/2026 al 15/11/2026. Nota de acceso: no pude abrir ninguna fuente directamente. WebFetch y curl devolvieron EGRESS_BLOCKED / CONNECT 403 para dgii.gov.do, ayuda.dgii.gov.do, presidencia.gob.do, ey.com, kpmg.com, timbro.do y alanube.co. Solo funcionó WebSearch. La confirmación es indirecta: viene del índice de búsqueda, con la búsqueda limitada a dgii.gov.do. No leí el PDF 06-26.",
+        "verdict": "confirmada",
+        "source": "https://dgii.gov.do/noticias/Paginas/DGII-otorga-prorroga-seis-meses-Peque%C3%B1os-Micros-y-no-clasificados.aspx (título indexado). PDF citado S03 https://dgii.gov.do/publicacionesOficiales/avisosInformativos/Documents/2026/06-26.pdf : NO abre (EGRESS_BLOCKED)",
+        "quote": "Título indexado (literal): \"DGII otorga prórroga de seis meses a contribuyentes identificados como Pequeños, Micros y no clasificados para la implementación de Facturación Electrónica\". Resumen del buscador, en inglés y no literal: \"According to Aviso 06-26, taxpayers identified as Small, Micro and unclassified, whose implementation deadline was May 15, 2026, were granted a six (6) month extension\"; \"The extension applies automatically, without requiring a request\"; \"The new implementation date is November 15, 2026.\""
+      },
+      {
+        "claim": "(1b) El Aviso 06-26 tiene fecha 6/5/2026 (tabla de fuentes, S03).",
+        "verdict": "no_confirmada",
+        "source": "Solo resumen de búsqueda sin restricción de dominio. Los resultados mezclaban ey.com, siemprealdia.co y dgii.gov.do. El PDF S03 no abre (EGRESS_BLOCKED).",
+        "quote": "Resumen del buscador, no literal y sin página atribuible: \"On May 6, 2026, the DGII issued an official notice extending the deadline automatically until November 15, 2026\". Es coherente con S03, pero no vi la fecha en la fuente primaria."
+      },
+      {
+        "claim": "(1c) El aviso remite a las infracciones y sanciones de los artículos 26 y 27 de la Ley 32-23 para quien incumpla después del plazo prorrogado.",
+        "verdict": "no_confirmada",
+        "source": "Resumen de búsqueda (resultados de ey.com, siemprealdia.co y la noticia de dgii.gov.do). El PDF S03 no abre.",
+        "quote": "Resumen del buscador, no literal: \"will incur tax infractions established in items 1, 2, 8, 9, 10, 13, 14, 15, and 16 of article 26 of Law 32-23, subject to the sanctions provided in articles 27, 28, and 29\". Si esto es correcto, el documento sería incompleto: menciona solo los arts. 26 y 27 y omite los 28 y 29. Hay que comprobarlo contra el PDF."
+      },
+      {
+        "claim": "(2a) La comunicación DGII sobre emisión exclusiva establece que Grandes Locales y Medianos emitirán solo e-CF tipo E desde el 1/11/2026, que sus secuencias B valen hasta el 31/10/2026 (después solo en contingencia declarada) y que reitera el 15/11/2026 como límite para Pequeños, Micros y No Clasificados. Confirmación indirecta por índice de búsqueda: la página no abre.",
+        "verdict": "confirmada",
+        "source": "https://dgii.gov.do/noticias/Paginas/DGII-informa-emision-exclusiva-de-facturas-electronicas-para-Grandes-Locales-y-Medianos-contribuyentes-desde-noviembre.aspx (S04, EGRESS_BLOCKED). Hay una réplica en https://presidencia.gob.do/noticias/dgii-informa-emision-exclusiva-de-facturas-electronicas-para-grandes-locales-y-medianos , también bloqueada.",
+        "quote": "Fragmentos del índice, en español y aparentemente casi literales pero no verificados: \"A partir del 1 de noviembre de 2026, los contribuyentes clasificados como Grandes Locales y Medianos deberán emitir exclusivamente Facturas Electrónicas mediante secuencias de Comprobantes fiscales electrónicos (e-CF) tipo \\\"E\\\".\" / \"Las secuencias de comprobantes fiscales no electrónicos tipo \\\"B\\\", asignadas a los contribuyentes alcanzados por la medida, solo serán consideradas válidas hasta el 31 de octubre de 2026. Después de ese plazo, estos comprobantes únicamente podrán utilizarse en casos de contingencia declarada y bajo las condiciones dispuestas en el capítulo IX del Reglamento núm. 587-24.\" / \"se dispuso de una prórroga a los contribuyentes identificados como Pequeños, Micros y No Clasificados, cuya fecha límite concluye el próximo 15 de noviembre del 2026.\""
+      },
+      {
+        "claim": "(2b) La comunicación tiene fecha 26/8/2026.",
+        "verdict": "no_confirmada",
+        "source": "S04 no abre (EGRESS_BLOCKED). La fecha solo aparece en resúmenes del buscador.",
+        "quote": "Resumen del buscador sin atribución: \"Este aviso fue emitido el 26 de agosto de 2026.\" En la búsqueda limitada a dgii.gov.do también salió \"on August 26\", pero yo había puesto \"26 de agosto\" en la consulta, así que el resumen pudo repetir mi propio término. No vi la fecha publicada en la página."
+      },
+      {
+        "claim": "(3) Regla de 120 días: un contribuyente inscrito después del vencimiento de su grupo tiene 120 días desde la inscripción. Si se inscribió antes, pero sin tiempo suficiente, el documento dice que 'debe extenderse' el plazo hasta completar 120 días. Confirmación indirecta: no abrí S05 ni el hilo S06.",
+        "verdict": "confirmada",
+        "source": "Búsqueda limitada a dgii.gov.do y ayuda.dgii.gov.do. S05 https://dgii.gov.do/cicloContribuyente/facturacion/comprobantesFiscalesElectronicosE-CF/Preguntas%20frecuentes/Generales/Preguntas%20Frecuentes%20e-CF%20Generales.pdf y S06 https://ayuda.dgii.gov.do/conversations/discusiones/facturacin-electrnica-para-nuevos-contribuyentes/6aaebd9b402cf9d321471f7f : ambos EGRESS_BLOCKED",
+        "quote": "Resumen del buscador, en inglés y no literal: \"Contributors who register in the RNC ... after the deadline has passed have a period of 120 days, counted from the date of their registration, to incorporate into the electronic invoicing model.\" / \"when registration in the RNC is carried out before the deadline expires, but the contributor does not have a reasonable amount of time ..., the DGII can extend the deadline to complete the 120 days provided.\" Matiz: el resumen dice 'puede extender', no 'debe extenderse'. Otra búsqueda sin restricción atribuye la regla al Reglamento 587-24."
+      },
+      {
+        "claim": "(4a) Contingencia por falta de conectividad, cuando el e-CF sí puede generarse: se genera offline, se entrega con la leyenda oficial y se envía en un máximo de 72 horas desde que vuelve la conexión.",
+        "verdict": "confirmada",
+        "source": "S19 https://ayuda.dgii.gov.do/conversations/facturacin-electrnica/ca4283-en-la-facturacin-electrnica-qu-significa-el-estado-en-contingencia/5f3c17ca8cd858ce87aad7ff (EGRESS_BLOCKED). Instructivo indexado: https://dgii.gov.do/cicloContribuyente/facturacion/comprobantesFiscalesElectronicosE-CF/Documentacin%20sobre%20eCF/Instructivos%20sobre%20Facturaci%C3%B3n%20Electr%C3%B3nica/Instructivo-Contingencia-FE.pdf . Confirmación indirecta, con búsqueda limitada a dgii.gov.do y ayuda.dgii.gov.do.",
+        "quote": "Leyenda en español devuelta por el buscador, no verificada contra la fuente: \"e-CF emitido en modalidad de Contingencia, el cual podrá ser consultado para su validez fiscal, a partir de las setenta y dos (72) horas\". Resumen: \"they must generate e-CF offline and send them when the connection is reestablished, in no more than 72 hours.\""
+      },
+      {
+        "claim": "(4b) Cuando la falla técnica impide generar el e-CF, se usan secuencias B autorizadas con contingencia notificada, y esta modalidad no puede pasar de 15 días calendario.",
+        "verdict": "confirmada",
+        "source": "S19 CA4283 (título indexado en ayuda.dgii.gov.do; la página no abre, EGRESS_BLOCKED). Búsqueda limitada a dgii.gov.do y ayuda.dgii.gov.do.",
+        "quote": "Fragmento del índice en español, no verificado: \"Este tipo de contingencia debe ser notificada a la DGII a través de la opción Contingencia FE en el menú Facturación Electrónica y el contribuyente no podrá exceder más de quince (15) días calendario en ella.\" Otro resumen: \"the taxpayer must use authorized sequences of Non-Electronic Fiscal Comprobantes, and this type of contingency cannot exceed a maximum period of fifteen (15) calendar days.\""
+      },
+      {
+        "claim": "(4c) Al terminar la contingencia con serie B, hay 30 días calendario para enviar a la DGII los e-CF que reemplazan esos B. Se envían solo a la DGII, no al receptor.",
+        "verdict": "confirmada",
+        "source": "https://ayuda.dgii.gov.do/conversations/discusiones/comprobantes-en-periodo-de-contingencia-en-la-facturacin-electrnica/688a4844c49cb609138d727d y S19 CA4283, ambos EGRESS_BLOCKED. Búsqueda limitada a dgii.gov.do y ayuda.dgii.gov.do. Una búsqueda sin restricción lo atribuye al art. 40 del Decreto 587-24.",
+        "quote": "Resumen del buscador, no literal: \"must be referenced (replaced) with electronic fiscal comprobantes (e-CF) and sent only to DGII for validation within a maximum period of 30 calendar days after the contingency state ends.\" / \"These e-CF are sent only to DGII, not to the receptor\"."
+      },
+      {
+        "claim": "(5) Un emisor con facturación 100 % electrónica no tiene que remitir los formatos 607 ni 608. El 606 se mantiene.",
+        "verdict": "confirmada",
+        "source": "S26 https://dgii.gov.do/publicacionesOficiales/bibliotecaVirtual/Infografias/Beneficios%20de%20la%20Facturacion%20Electronica.pdf (EGRESS_BLOCKED; confirmación indirecta, búsqueda limitada a dgii.gov.do). No abrí S27.",
+        "quote": "Resumen del buscador en español, no verificado: \"no tienen la obligación de remitir los formatos 607 y 608 ni los Libros de Ventas, siempre que su facturación sea 100% electrónica.\" Que el 606 se mantiene sale solo de un resumen sin restricción de dominio (alegra.com y siemprealdia.co): \"sí debe continuar enviando el formato 606\"."
+      },
+      {
+        "claim": "(6a) INDEXA SRL figura en el listado DGII de PSFE autorizados.",
+        "verdict": "no_confirmada",
+        "source": "S20 https://dgii.gov.do/cicloContribuyente/facturacion/comprobantesFiscalesElectronicosE-CF/Paginas/Proveedores-servicios-FE-autorizados.aspx : EGRESS_BLOCKED. Ni con búsqueda limitada a dgii.gov.do apareció el contenido del listado.",
+        "quote": "Ninguna cita oficial disponible. Solo hay una mención de terceros (resumen del buscador): \"Se menciona a Indexa entre los proveedores de facturación electrónica más reconocidos.\" Eso no prueba que esté en el listado."
+      },
+      {
+        "claim": "(6b) Alanube Soluciones SRL figura en el listado DGII de PSFE autorizados.",
+        "verdict": "no_confirmada",
+        "source": "S20 (EGRESS_BLOCKED). Solo hay fuentes no oficiales en el índice: blog.alanube.co, revistamercado.do, siemprealdia.co.",
+        "quote": "Resumen del buscador basado en fuentes no oficiales: \"Alanube es un proveedor autorizado por la DGII y Alanube Soluciones SRL aparece autorizado desde 2021.\" No pude ver el listado oficial."
+      },
+      {
+        "claim": "(6c) Timbro es un producto de INDEXA SRL (el documento escribe 'Timbro / INDEXA SRL').",
+        "verdict": "confirmada",
+        "source": "https://indexa.do/ (fuente comercial, por índice de búsqueda; no la abrí)",
+        "quote": "Resumen del buscador: \"INDEXA ofrece un producto llamado Timbro que conecta comercio, pagos y facturación para que el negocio y la persona sepan qué ocurrió.\""
+      },
+      {
+        "claim": "(6d) Campaña Timbro 2026: emisión estándar sin cuota ni cargo por emisión hasta el 31/12/2026, 11:59 p. m., hora dominicana.",
+        "verdict": "no_confirmada",
+        "source": "S21 https://timbro.do/politicas/comercios/ : EGRESS_BLOCKED (CONNECT 403). WebSearch con allowed_domains=timbro.do: 'No links found'.",
+        "quote": "Sin cita: la fuente no abre y el buscador no tiene timbro.do indexado."
+      },
+      {
+        "claim": "(6e) Tarifas de Timbro desde el 1/1/2027: Inicio RD$0/mes con 500 facturas y RD$0.75 por adicional; Negocio RD$1,790/mes con 10,000 facturas y RD$0.14 por adicional; por RNC y con ITBIS.",
+        "verdict": "no_confirmada",
+        "source": "S21 https://timbro.do/politicas/comercios/ : EGRESS_BLOCKED. La búsqueda de \"Timbro\" \"RD$1,790\" no dio resultados relevantes.",
+        "quote": "Sin cita: ninguna fuente accesible muestra estas cifras."
+      },
+      {
+        "claim": "(6f) Alanube no publica un precio verificable en su página.",
+        "verdict": "no_confirmada",
+        "source": "S23 https://www.alanube.co/rd/ : EGRESS_BLOCKED (CONNECT 403)",
+        "quote": "Sin cita: la página no abre."
+      }
+    ]
+  }
+}

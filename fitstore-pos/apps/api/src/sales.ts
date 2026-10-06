@@ -125,7 +125,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
   return 0;
 }
 
-import { cashExpected } from "./cash";
+import { refreshClosedCash } from "./cash";
 import { verifyPinAttempt } from "./security";
 
 @Controller()
@@ -358,12 +358,24 @@ export class SalesController {
             .filter((p) => p.method === "credit")
             .reduce((sum, p) => sum + p.amount, 0),
         );
+        // Contraentrega: queda por cobrar en la venta (como un crédito), con
+        // el cliente opcional; se cobra después como un abono.
+        const cod = money(
+          input.payments
+            .filter((p) => p.method === "cod")
+            .reduce((sum, p) => sum + p.amount, 0),
+        );
+        if (credit && cod)
+          bad("Una venta no puede ser a crédito y contraentrega a la vez.");
         if (credit && customer) {
+          // La deuda del cliente es la de sus ventas a crédito, no las
+          // contraentregas pendientes.
           const debt = await tx.sale.aggregate({
             where: {
               customerId: customer.id,
               branchId: actor.branchId,
               status: "completed",
+              payments: { some: { method: "credit", entryType: "sale" } },
             },
             _sum: { creditBalance: true },
           });
@@ -446,7 +458,7 @@ export class SalesController {
             ),
             taxTotal: money(lines.reduce((a, l) => a.plus(l.totals.tax), d(0))),
             total,
-            creditBalance: credit,
+            creditBalance: money(d(credit).plus(cod)),
             creditDueDate:
               credit && input.creditDueDate
                 ? new Date(input.creditDueDate)
@@ -627,39 +639,14 @@ export class SalesController {
               status:
                 p.method === "transfer"
                   ? "pending_verification"
-                  : p.method === "credit"
+                  : p.method === "credit" || p.method === "cod"
                     ? "pending"
                     : "ok",
             },
           });
         }
         if (cashSession.closedAt) {
-          const expected = await cashExpected(tx, cashSession);
-          const differences = {
-            differenceCash: money(
-              d(cashSession.countedCash ?? 0).minus(expected.cash),
-            ),
-            differenceCard: money(
-              d(cashSession.countedCard ?? 0).minus(expected.card),
-            ),
-            differenceTransfer: money(
-              d(cashSession.countedTransfer ?? 0).minus(expected.transfer),
-            ),
-          };
-          await tx.cashSession.update({
-            where: { id: cashSession.id },
-            data: {
-              expectedCash: expected.cash,
-              expectedCard: expected.card,
-              expectedTransfer: expected.transfer,
-              ...differences,
-              difference: money(
-                d(differences.differenceCash)
-                  .plus(differences.differenceCard)
-                  .plus(differences.differenceTransfer),
-              ),
-            },
-          });
+          const differences = await refreshClosedCash(tx, cashSession);
           await audit(
             tx,
             actor,
@@ -915,32 +902,7 @@ export class SalesController {
           where: { id: payment.cashSessionId },
         });
         if (cash?.closedAt) {
-          const expected = await cashExpected(tx, cash);
-          const differences = {
-            differenceCash: money(
-              d(cash.countedCash ?? 0).minus(expected.cash),
-            ),
-            differenceCard: money(
-              d(cash.countedCard ?? 0).minus(expected.card),
-            ),
-            differenceTransfer: money(
-              d(cash.countedTransfer ?? 0).minus(expected.transfer),
-            ),
-          };
-          await tx.cashSession.update({
-            where: { id: cash.id },
-            data: {
-              expectedCash: expected.cash,
-              expectedCard: expected.card,
-              expectedTransfer: expected.transfer,
-              ...differences,
-              difference: money(
-                d(differences.differenceCash)
-                  .plus(differences.differenceCard)
-                  .plus(differences.differenceTransfer),
-              ),
-            },
-          });
+          const differences = await refreshClosedCash(tx, cash);
           await audit(
             tx,
             actor,
@@ -1325,24 +1287,84 @@ export class SalesController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
+    return this.collect(actor, id, parse(installmentSchema, body), false);
+  }
+  // Cobro de una contraentrega cuando el mensajero trae el dinero: es un abono
+  // de la venta (idempotente por offlineUuid) en la caja abierta de quien lo
+  // recibe, en efectivo o por transferencia (ésta, pendiente de verificar).
+  @Post("sales/:id/cod-collections")
+  @RequireTerminal()
+  @Permit("sale:write")
+  async codCollection(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
     const data = parse(
-      z.object({
-        offlineUuid: uuid,
-        cashSessionId: uuid,
-        // Centavos exactos (R9-dinero-5): lo guardado en el pago es lo que
-        // descuenta la deuda y lo que compara un reintento.
-        amount: moneyAmount().transform((v) => money(v)),
-        method: z.enum(["cash", "card", "transfer"]),
-        bank: z.string().max(100).optional(),
-        reference: z.string().max(100).optional(),
-        cardLast4: z
-          .string()
-          .regex(/^\d{4}$/)
-          .optional(),
-        approvalCode: z.string().max(100).optional(),
-      }),
+      installmentSchema.extend({ method: z.enum(["cash", "transfer"]) }),
       body,
     );
+    return this.collect(actor, id, data, true);
+  }
+  // Contraentregas pendientes de cobro de la sucursal: cualquier cajera puede
+  // recibir el dinero de una venta de otra caja.
+  @Get("cod/pending")
+  @Permit("sale:write")
+  async codPending(@CurrentUser() actor: Actor) {
+    const sales = await this.db.sale.findMany({
+      where: {
+        branchId: actor.branchId,
+        status: "completed",
+        creditBalance: { gt: 0 },
+        payments: { some: { method: "cod", entryType: "sale" } },
+      },
+      include: { payments: true },
+      orderBy: { createdAt: "asc" },
+      take: 500,
+    });
+    const [customers, sellers] = await Promise.all([
+      this.db.customer.findMany({
+        where: {
+          id: { in: sales.flatMap((s) => (s.customerId ? [s.customerId] : [])) },
+        },
+        select: { id: true, name: true, phone: true },
+      }),
+      this.db.user.findMany({
+        where: { id: { in: sales.map((s) => s.sellerId) } },
+        select: { id: true, name: true },
+      }),
+    ]);
+    const sum = (rows: { amount: unknown }[]) =>
+      money(rows.reduce((a, p) => a.plus(p.amount as any), d(0)));
+    return sales.map((s) => ({
+      saleId: s.id,
+      number: s.number,
+      createdAt: s.createdAt,
+      cashSessionId: s.cashSessionId,
+      total: Number(s.total),
+      codAmount: sum(
+        s.payments.filter((p) => p.method === "cod" && p.entryType === "sale"),
+      ),
+      pending: Number(s.creditBalance),
+      // Transferencias del mensajero registradas que falta verificar.
+      pendingVerification: sum(
+        s.payments.filter(
+          (p) =>
+            p.entryType === "installment" &&
+            p.status === "pending_verification",
+        ),
+      ),
+      customer: customers.find((c) => c.id === s.customerId) ?? null,
+      seller: sellers.find((u) => u.id === s.sellerId) ?? null,
+      notes: s.notes,
+    }));
+  }
+  private async collect(
+    actor: Actor,
+    id: string,
+    data: z.infer<typeof installmentSchema>,
+    codOnly: boolean,
+  ) {
     return this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.offlineUuid}))::text AS locked`;
       const existing = await tx.payment.findUnique({
@@ -1371,6 +1393,10 @@ export class SalesController {
       const sale = await tx.sale.findFirstOrThrow({
         where: { id, branchId: actor.branchId, status: "completed" },
       });
+      const cod = !!(await tx.payment.count({
+        where: { saleId: id, method: "cod", entryType: "sale" },
+      }));
+      if (codOnly && !cod) bad("Esta venta no es contraentrega.");
       const pending = await tx.payment.aggregate({
         where: {
           saleId: id,
@@ -1384,7 +1410,11 @@ export class SalesController {
           .minus(pending._sum.amount ?? 0)
           .lt(data.amount)
       )
-        bad("El abono supera el saldo pendiente.");
+        bad(
+          cod
+            ? "El cobro supera lo pendiente de la contraentrega."
+            : "El abono supera el saldo pendiente.",
+        );
       if (data.method === "card" && (!data.cardLast4 || !data.approvalCode))
         bad("Indica los últimos 4 dígitos y la aprobación de tarjeta.");
       if (data.method === "transfer" && (!data.bank || !data.reference))
@@ -1418,7 +1448,15 @@ export class SalesController {
           where: { id },
           data: { creditBalance: { decrement: data.amount } },
         });
-      await audit(tx, actor, "installment", "sale", id, undefined, row);
+      await audit(
+        tx,
+        actor,
+        cod ? "cod_collected" : "installment",
+        "sale",
+        id,
+        undefined,
+        row,
+      );
       return row;
     });
   }
@@ -1480,13 +1518,32 @@ export class SalesController {
         "Solicitud NCF: " + sale.ncfType + " · pendiente de emisión fiscal",
       );
     if (Number(sale.creditBalance) > 0)
-      doc.text("Saldo a crédito: RD$ " + sale.creditBalance);
+      doc.text(
+        (sale.payments.some((p) => p.method === "cod")
+          ? "Pendiente contraentrega: RD$ "
+          : "Saldo a crédito: RD$ ") + sale.creditBalance,
+      );
     for (const p of sale.payments)
       doc.text(`${p.method}: RD$ ${p.amount} · Cambio: RD$ ${p.change}`);
     doc.moveDown().text("Gracias por elegirnos.");
     doc.end();
   }
 }
+const installmentSchema = z.object({
+  offlineUuid: uuid,
+  cashSessionId: uuid,
+  // Centavos exactos (R9-dinero-5): lo guardado en el pago es lo que
+  // descuenta la deuda y lo que compara un reintento.
+  amount: moneyAmount().transform((v) => money(v)),
+  method: z.enum(["cash", "card", "transfer"]),
+  bank: z.string().max(100).optional(),
+  reference: z.string().max(100).optional(),
+  cardLast4: z
+    .string()
+    .regex(/^\d{4}$/)
+    .optional(),
+  approvalCode: z.string().max(100).optional(),
+});
 function weightedReturn(variant: any, qty: number, cost: number) {
   if (Number(variant.stock) <= 0) return money(cost);
   return money(
