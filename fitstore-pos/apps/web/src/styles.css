@@ -2946,10 +2946,14 @@ td strong {
   }
 }
 @media (max-width: 780px) {
+  /* El menú abierto y su fondo van por encima de las barras fijas de abajo
+     (Mercancía y la confirmación de entrada, 40 y 41): antes tapaban las
+     últimas opciones del menú. Siguen por debajo de los diálogos (100). */
   .sidebar {
     transform: translateX(-100%);
     transition: transform 0.2s;
     width: 235px;
+    z-index: 50;
   }
   .sidebar.open {
     transform: translateX(0);
@@ -2959,7 +2963,7 @@ td strong {
     position: fixed;
     inset: 0;
     background: #0f172a50 !important;
-    z-index: 29;
+    z-index: 49;
   }
   .main-shell {
     margin-left: 0;

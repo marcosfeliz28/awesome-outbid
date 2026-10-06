@@ -392,3 +392,54 @@ for (const ancho of [320, 390])
       }
       expect(problemas).toEqual([]);
     });
+
+// En celular, la barra fija de «Mercancía» quedaba encima del menú abierto:
+// tapaba las opciones que caían debajo y la última («Guía de estilos») no se
+// podía tocar ni desplazando el menú hasta el final.
+test("en celular el menú abierto queda por encima de la barra de Mercancía y todas sus opciones se pueden tocar", async ({
+  page,
+}) => {
+  await login(page);
+  // Opciones a la vista cuyo centro queda debajo de otra capa.
+  const tapadas = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll(".sidebar button")]
+        .filter((el) => {
+          const r = el.getBoundingClientRect();
+          const y = r.top + r.height / 2;
+          if (y < 0 || y > window.innerHeight) return false;
+          return !el.contains(
+            document.elementFromPoint(r.left + r.width / 2, y),
+          );
+        })
+        .map((el) => el.textContent!.trim()),
+    );
+  for (const ancho of [390, 320]) {
+    await page.setViewportSize({ width: ancho, height: 700 });
+    await page.getByRole("button", { name: "Abrir menú" }).click();
+    await expect(page.locator(".goods-mobile-bar")).toBeVisible();
+    // El menú se desliza al abrir: esperar a que termine.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.querySelector(".sidebar")!.getBoundingClientRect().x,
+        ),
+      )
+      .toBe(0);
+    expect(await tapadas(), "al abrir @" + ancho).toEqual([]);
+    await page.evaluate(() => {
+      const menu = document.querySelector(".sidebar")!;
+      menu.scrollTop = menu.scrollHeight;
+    });
+    expect(await tapadas(), "al final del menú @" + ancho).toEqual([]);
+    await page
+      .locator(".sidebar")
+      .getByRole("button", { name: "Guía de estilos", exact: true })
+      .click();
+    await expect(page.locator(".breadcrumb strong")).toHaveText(
+      "Guía de estilos",
+    );
+    await listo(page);
+    expect(await desbordes(page, "Guía de estilos @" + ancho)).toEqual([]);
+  }
+});
