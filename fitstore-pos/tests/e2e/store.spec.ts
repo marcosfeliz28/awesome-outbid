@@ -1285,12 +1285,18 @@ test("R9-dinero-3-ui: un abono por transferencia que no llegó se rechaza desde 
       .getByRole("dialog", { name: sale.number })
       .locator(".payment-list", { hasText: "Transferencia" });
     await expect(transfer).toContainText("Pendiente de verificar");
-    await transfer.getByRole("button", { name: "Rechazar", exact: true }).click();
-    const confirm = page.getByRole("dialog", { name: /Rechazar transferencia/ });
+    await transfer
+      .getByRole("button", { name: "Rechazar", exact: true })
+      .click();
+    const confirm = page.getByRole("dialog", {
+      name: /Rechazar transferencia/,
+    });
     await confirm
       .getByLabel("Motivo obligatorio")
       .fill("E2E la transferencia no llegó");
-    await confirm.getByRole("button", { name: "Confirmar", exact: true }).click();
+    await confirm
+      .getByRole("button", { name: "Confirmar", exact: true })
+      .click();
     await expect(
       page.getByText("Transferencia rechazada.", { exact: true }),
     ).toBeVisible();

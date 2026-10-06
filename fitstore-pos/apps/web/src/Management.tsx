@@ -2444,7 +2444,8 @@ export function SalesHistory() {
   const [selected, setSelected] = useState<any>(null),
     [voiding, setVoiding] = useState<any>(null),
     [returning, setReturning] = useState<any>(null),
-    [installment, setInstallment] = useState<any>(null);
+    [installment, setInstallment] = useState<any>(null),
+    [rejecting, setRejecting] = useState<any>(null);
   const client = useQueryClient();
   const session = sessions.data?.find(
     (s: any) => !s.closedAt && s.userId === user.id,
@@ -2611,24 +2612,55 @@ export function SalesHistory() {
                     {formatMoney(p.amount)}
                     <small>{p.reference || p.approvalCode}</small>
                   </span>
-                  <Badge tone={p.status === "ok" ? "success" : "warning"}>
+                  <Badge
+                    tone={
+                      p.status === "ok"
+                        ? "success"
+                        : p.status === "rejected"
+                          ? "danger"
+                          : "warning"
+                    }
+                  >
                     {p.status === "ok"
                       ? "Verificado"
-                      : "Pendiente de verificar"}
+                      : p.status === "rejected"
+                        ? "Rechazada"
+                        : "Pendiente de verificar"}
                   </Badge>
                   {p.method === "transfer" &&
-                    p.status !== "ok" &&
+                    p.status === "pending_verification" &&
                     can(user.permissions, "sale:manage") && (
                       <button
                         className="text-link"
                         onClick={async () => {
-                          await post("/payments/" + p.id + "/verify", {});
-                          setSelected(null);
-                          await client.invalidateQueries();
-                          toast("Transferencia verificada.");
+                          try {
+                            await post("/payments/" + p.id + "/verify", {});
+                            setSelected(null);
+                            await client.invalidateQueries();
+                            toast("Transferencia verificada.");
+                          } catch (e: any) {
+                            toast(e.message, true);
+                          }
                         }}
                       >
                         Verificar
+                      </button>
+                    )}
+                  {/* Un abono por transferencia que no llegó se rechaza: si no,
+                      bloquea para siempre la devolución de la venta
+                      (R9-dinero-3-ui). */}
+                  {p.method === "transfer" &&
+                    p.entryType === "installment" &&
+                    p.status === "pending_verification" &&
+                    can(user.permissions, "sale:manage") && (
+                      <button
+                        className="text-link danger-text"
+                        onClick={() => {
+                          setSelected(null);
+                          setRejecting(p);
+                        }}
+                      >
+                        Rechazar
                       </button>
                     )}
                 </div>
@@ -2653,6 +2685,18 @@ export function SalesHistory() {
           }}
         />
       )}
+      {rejecting && (
+        <ConfirmModal
+          title={"Rechazar transferencia de " + formatMoney(rejecting.amount)}
+          description="Úsalo cuando el dinero no llegó al banco. El abono no descuenta la deuda ni entra a la caja; si el cliente vuelve a pagar, registra un abono nuevo."
+          onClose={() => setRejecting(null)}
+          onConfirm={async (reason) => {
+            await post("/payments/" + rejecting.id + "/reject", { reason });
+            await client.invalidateQueries();
+            toast("Transferencia rechazada.");
+          }}
+        />
+      )}
       {returning && (
         <FormModal
           title={"Devolución · " + returning.number}
@@ -2672,7 +2716,14 @@ export function SalesHistory() {
                   value: i.id,
                 })),
             },
-            { ...requiredNumber("qty", "Cantidad", 1), min: 0.001 },
+            // Paso de 0.001 como las existencias: con el paso de 0.01 y el
+            // mínimo de 0.001, el navegador rechazaba devolver 1 unidad
+            // («valores válidos: 0.991 y 1.001») (R9-dinero-3-ui).
+            {
+              ...requiredNumber("qty", "Cantidad", 1),
+              min: 0.001,
+              step: "0.001",
+            },
             {
               key: "reason",
               label: "Motivo",
