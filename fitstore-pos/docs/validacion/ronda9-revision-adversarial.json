@@ -1,0 +1,370 @@
+{
+  "round": 9,
+  "method": "7 buscadores por área (códigos, devoluciones, importador, caja, dinero, facturas, seguridad); cada hallazgo propuesto lo intentan refutar dos verificadores independientes (lectura del código y reproducción ejecutable); sólo cuenta si ambos lo confirman.",
+  "proposed": 47,
+  "confirmed": 43,
+  "findings": [
+    {
+      "id": "R9-caja-1",
+      "severity": "P2",
+      "title": "Caja: código + Enter agrega otro producto cuando el código exacto no está en el catálogo cargado (por ejemplo, un producto inactivo)",
+      "file": "apps/web/src/POS.tsx",
+      "line": 421,
+      "scenario": "onKeyDown con Enter: si byCode(q) no encuentra nada, pasa a `filtered.length === 1 && !approximate → addProduct(filtered[0])`. filtered es una búsqueda por subcadena en nombre, SKU y barras. Si se teclea el ID de un producto inactivo (el catálogo de la caja sólo trae productos y variantes activos), se agrega en silencio cualquier otro producto que contenga esos dígitos. Con el Excel real (INVENTARIO_2026): si 1600 «Chaleco con Brasier XS» (RD$3,500) está desactivado, «1600»+Enter agrega 1068 «Longjack Tongkat Ali … 1600 mg» (RD$1,700). Si 1400 «Vizzela Gotas Fix» lo está, agrega 1002 «Tribulus 1400 - Nutrex». Si 1555 «Revolution Haircare» lo está, agrega 1223 L.A. Girl (sus barras 081555969837 contienen 1555). No sale ningún aviso y el código queda en el buscador, así que otro Enter agrega una segunda unidad. Lo esperado: «Código no encontrado: 1600»."
+    },
+    {
+      "id": "R9-caja-2",
+      "severity": "P3",
+      "title": "Tras el aviso de código ambiguo el texto no queda seleccionado: el siguiente escaneo se pega al código anterior y se pierde",
+      "file": "apps/web/src/POS.tsx",
+      "line": 355,
+      "scenario": "Con un lector tipo teclado, se escanea un código ambiguo y se oye el Enter. scan() hace setQ(code) y muestra el aviso, pero no selecciona el texto. La rama de «sin stock» sí lo hace, justamente «para que el siguiente escaneo lo reemplace en vez de sumarse». El siguiente producto escaneado se escribe al final del código anterior. Con códigos alfanuméricos queda «WF-AMB-…WFTB-…7»: no se agrega nada, aparece la lista aproximada y no hay aviso nuevo. Con códigos numéricos («1223» ambiguo y luego «1216») queda «12231216» y la caja dice «Código no encontrado: 12231216.» para un producto que sí existe. El cajero tiene que borrar el buscador a mano y el producto escaneado no entra."
+    },
+    {
+      "id": "R9-caja-3",
+      "severity": "P1",
+      "title": "Tras hacer clic con el mouse, el lector agrega el producto equivocado: el Enter del escáner vuelve a pulsar la tarjeta o el botón + que tiene el foco",
+      "file": "apps/web/src/POS.tsx",
+      "line": 484,
+      "scenario": "Inventario real (616 productos) y caja abierta. 1) Escribe 'tribulus 1400' en el buscador y haz clic en la tarjeta (Tribulus 1400, cód. 1002). 2) Escanea con el lector el código 1001 (D3 K2): el lector envía las teclas '1001' seguidas de Enter. Resultado: el carrito queda con 'Tribulus 1400 ×2 · RD$ 3,000.00' y el 1001 nunca entra. El foco sigue en el <button class=product-card>; los dígitos se pierden y el Enter vuelve a hacer clic en la tarjeta. 3) Lo mismo con el botón '+' del carrito: después de pulsar '+' en Tribulus, escanear 1003 sube Tribulus a ×4 y el 1003 no se agrega. Esperado: se agrega el producto escaneado (1001 o 1003). Como en este caso los dos precios son iguales (1500), el total no delata el error: se cobra y se descuenta del stock el producto equivocado. Es el mismo tipo de consecuencia que R8-01, ahora por el foco."
+    },
+    {
+      "id": "R9-caja-4",
+      "severity": "P2",
+      "title": "Una venta en espera o cotización pierde el descuento RD$ por línea y el descuento global, y al recuperarla toma el descuento global del carrito que reemplaza",
+      "file": "apps/web/src/POS.tsx",
+      "line": 237,
+      "scenario": "A) Agregar 1001 (RD$ 1,500), poner RD$ 100 de descuento en la línea y 5% de descuento global: total RD$ 1,330.00. Pulsar 'En espera' y luego recuperarla desde 'Ventas en espera': el carrito vuelve a RD$ 1,500.00 con global 0, sin ningún aviso. B) Poner en espera 1001 sin descuento. Atender a otra clienta con 1002 y 10% global. Recuperar la venta en espera: el 1001 queda en RD$ 1,350.00 porque hereda el 10% de la otra clienta. Causas: el esquema de POST /quotes (apps/api/src/admin.ts L279-287) no incluye discountAmount y zod lo descarta. saveHeld (L237-246) no envía globalDiscount. Al recuperar (L886-887) no se toca globalDiscount. Esperado: la venta vuelve con sus descuentos exactos y sin heredar los del carrito anterior."
+    },
+    {
+      "id": "R9-caja-5",
+      "severity": "P2",
+      "title": "Recuperar una venta en espera reemplaza el carrito actual sin aviso; si un producto ya no está activo, la venta en espera se pierde",
+      "file": "apps/web/src/POS.tsx",
+      "line": 874,
+      "scenario": "A) Con un carrito en curso (Tribulus 1400, RD$ 1,500), abrir 'En espera' y hacer clic en una venta guardada: el carrito actual desaparece sin confirmación (setCart). B) Poner en espera 1006 + 1007. El gerente desactiva el 1007. Al hacer clic en esa venta en espera, sale el aviso 'Una variante ya no está disponible.' y no se carga nada. Aun así, POST /quotes/:id/convert ya se ejecutó antes de validar (L874), la venta queda 'converted' y desaparece de la lista (GET /quotes = 0). También se pierde el 1006. Esperado: avisar o conservar el carrito actual, y no consumir la venta en espera si no se pudo cargar."
+    },
+    {
+      "id": "R9-caja-6",
+      "severity": "P2",
+      "title": "Escaneos que se pierden sin aviso después de 'Nueva venta', después de elegir una variante o después de agregar con Enter una búsqueda por palabras",
+      "file": "apps/web/src/POS.tsx",
+      "line": 421,
+      "scenario": "A) Después de cobrar, al pulsar 'Nueva venta' el foco queda en BODY. El siguiente escaneo (1002 + Enter) no hace nada: carrito vacío, sin aviso. B) Después de elegir una variante en el modal (Proteína Whey Isolate › Chocolate), el foco queda en el contenedor de la app y el escaneo de 1001 se pierde. C) Escribir 'tribulus 1400' + Enter agrega el producto por la rama filtered.length === 1 (L421-422), pero no limpia el buscador. El escaneo siguiente se concatena ('tribulus 14001001'), cae en el modo aproximado y no muestra ningún aviso, porque el regex de 'Código no encontrado' exige texto sin espacios. En los tres casos la cajera cree que escaneó, el producto no entra y puede salir de la tienda sin cobrarse."
+    },
+    {
+      "id": "R9-caja-7",
+      "severity": "P3",
+      "title": "F8 guarda la venta en espera sin el cliente elegido después del último cambio del carrito",
+      "file": "apps/web/src/POS.tsx",
+      "line": 294,
+      "scenario": "Agregar 1003; pulsar F4 y elegir 'Adriana Torres' (aparece en pantalla); pulsar F8. La venta en espera se guarda con customerId null. El efecto de teclado sólo se vuelve a registrar cuando cambian [cart, session, online], así que saveHeld usa el customerId viejo. Al recuperarla aparece 'Consumidor final'. Con el botón 'En espera' sí se guarda el cliente."
+    },
+    {
+      "id": "R9-caja-8",
+      "severity": "P3",
+      "title": "El descuento de línea no tiene límites: 150% o un monto mayor que la línea dejan el total negativo en pantalla",
+      "file": "apps/web/src/POS.tsx",
+      "line": 632,
+      "scenario": "Agregar 1001 (RD$ 1,500) y escribir 150 en el % de la línea: 'Total a cobrar' muestra RD$ -750.00. Lo mismo con un descuento RD$ mayor que la línea, o con un descuento RD$ válido si luego se baja la cantidad. Al abrir el cobro no se puede agregar ningún pago y el servidor rechazaría la venta, pero la cajera ve totales negativos sin ninguna explicación. El descuento global sí se limita (L700)."
+    },
+    {
+      "id": "R9-caja-9",
+      "severity": "P3",
+      "title": "El ticket impreso no muestra descuentos: las líneas suman más que el total",
+      "file": "apps/web/src/POS.tsx",
+      "line": 1264,
+      "scenario": "Vender 1001 (RD$ 1,500) con 10% global. El ticket de 80 mm imprime '1 × RD$ 1,500.00' y luego 'Total RD$ 1,350.00', sin ninguna línea de descuento ni promoción. El snapshot sólo guarda name, sku, qty y unitPrice (L1083-1088). El cliente ve que las líneas no cuadran con lo cobrado."
+    },
+    {
+      "id": "R9-offline-1",
+      "severity": "P1",
+      "title": "Sin internet pero con la red local activa (navigator.onLine = true), la caja no puede vender: al recargar pide iniciar sesión y la lista de productos se sustituye por 'Failed to fetch'",
+      "file": "apps/web/src/App.tsx",
+      "line": 278,
+      "scenario": "Corte habitual de internet: el router sigue encendido, así que Chrome mantiene navigator.onLine = true. La app está publicada en un servidor HTTPS (DESPLIEGUE.md). Pasos: iniciar sesión, abrir la caja, entrar al POS y luego cortar el acceso a la API (Playwright route.abort('internetdisconnected') sobre /api/**). a) Al recargar o abrir la PWA aparece la pantalla de login y no se puede entrar, porque la sesión en caché sólo se usa si !navigator.onLine (App.tsx L278). Con context.setOffline(true), la misma recarga sí abre la app. b) Sin recargar, después de una venta guardada por la ruta de respaldo, invalidateQueries vuelve a pedir el catálogo; loadCatalog (api.ts L209) no recurre al caché cuando navigator.onLine es true y QueryState (helpers.tsx L63) muestra el panel 'Failed to fetch · Reintentar' en lugar de las tarjetas (0 tarjetas visibles). c) Si la API cae detrás de Nginx (502), api() lanza Error y no TypeError, así que finish (POS.tsx L1145) no guarda la venta offline y muestra un error. Esperado, según MANUAL 'Trabajar sin conexión': la caja sigue vendiendo con el catálogo en caché."
+    },
+    {
+      "id": "R9-offline-2",
+      "severity": "P2",
+      "title": "Una venta sin conexión no actualiza el stock que usa la caja: se pueden vender otra vez las mismas unidades y la venta queda en conflicto después de cobrar",
+      "file": "apps/web/src/POS.tsx",
+      "line": 1123,
+      "scenario": "1) Con el equipo sin conexión (context.setOffline(true)), vender las 3 unidades del 1007 (Horny Goat Weed, stock 3) en efectivo; sale el recibo LOCAL. 2) Escanear de nuevo 1007 dos veces: la caja lo permite ('agregado') y emite un segundo recibo LOCAL por RD$ 3,200.00. 3) Al reconectar, la segunda venta queda como 'conflict: Stock insuficiente para Horny Goat Weed', con el dinero ya cobrado. Causa: el descuento se escribe en IndexedDB (L1123-1140), pero React Query v5 pausa las consultas sin conexión (networkMode 'online' por defecto en main.tsx). client.invalidateQueries() no vuelve a ejecutar loadCatalog y el catálogo en memoria que revisa choose() conserva el stock viejo. En la ruta de respaldo por TypeError (L1150-1165) ni siquiera se descuenta IndexedDB. Esperado: después de la primera venta, 1007 aparece 'Agotado' y choose() avisa 'No hay suficiente stock'."
+    },
+    {
+      "id": "R9-offline-3",
+      "severity": "P2",
+      "title": "Cambiar un precio o una promoción con el producto ya en el carrito bloquea el cobro; volver a escanearlo no actualiza el precio",
+      "file": "apps/web/src/api.ts",
+      "line": 120,
+      "scenario": "1) La cajera agrega 1005 (Opti-Men 240, RD$ 2,900). 2) Desde otro equipo, el gerente cambia el precio a 3,100 en 'Editar variante y precio' (PATCH /variants/:id). 3) Al cobrar: 'Los precios o promociones cambiaron. Revisa el total antes de cobrar.' 4) La cajera vuelve a escanear 1005: add() encuentra la línea y sólo suma cantidad, con el objeto variant viejo, así que el carrito muestra 2 × 2,900 = RD$ 5,800.00. 5) Ir a Caja y volver al POS no cambia nada y el cobro se rechaza otra vez. El cambio de precio no emite evento SSE y realtime.apply sólo actualiza el stock. Lo mismo ocurre con una promoción creada o desactivada en otro equipo: la consulta 'promotions' no se refresca (staleTime 30 s, refetchOnWindowFocus false). La única salida es quitar la línea y agregarla de nuevo, y el mensaje no lo dice."
+    },
+    {
+      "id": "R9-offline-4",
+      "severity": "P3",
+      "title": "Si se crea un producto mientras la caja descarga el catálogo por páginas, otro producto queda duplicado y su código da un falso 'es de 2 productos'",
+      "file": "apps/web/src/api.ts",
+      "line": 213,
+      "scenario": "loadCatalog pide /products?limit=200&page=N ordenado por nombre y sin cursor. El catálogo se recarga después de cada venta. Si entre la página 1 y la 2 alguien de almacén crea o activa un producto que ordena antes, todo se corre una posición: el último de la página 1 (1533 Davines LOVE Curl Shampoo) entra dos veces y el nuevo falta. Al escanear 1533 sale 'El código 1533 es de 2 productos. Elige el producto en la lista y corrige el código en Productos.' y no se agrega, aunque en la base no hay ningún código repetido. Además, si el conteo de la última página cambia, el do/while puede seguir pidiendo páginas vacías sin parar."
+    },
+    {
+      "id": "R9-offline-5",
+      "severity": "P2",
+      "title": "El cierre por inactividad sólo ocurre en el navegador; al recargar la página vuelve la sesión del usuario anterior (por ejemplo, la del gerente)",
+      "file": "apps/web/src/App.tsx",
+      "line": 364,
+      "scenario": "1) El gerente deja abierta en la caja una pantalla que consulta la API en segundo plano. Configuración › Equipos consulta /terminals cada 15 s (realtime.tsx:224). El Dashboard se recarga con cada evento stock.changed del SSE mientras otras cajas venden. 2) Pasan sessionTimeoutMinutes sin teclado ni ratón. El cliente muestra 'Sesión cerrada por inactividad' y borra su estado, pero no llama a /auth/logout, así que la cookie de renovación (7 días) y la AuthSession siguen vivas. En el servidor, lastActivityAt se renovó con cada consulta automática (el AuthGuard la actualiza en cada petición). 3) Una vendedora pulsa F5. Al arrancar, App llama a refreshSession() (App.tsx:276), el servidor acepta /auth/refresh porque la sesión tuvo 'actividad' hace segundos, y la vendedora queda dentro como gerente sin contraseña. Puede ver costos y utilidad, anular ventas o devolver efectivo. Lo esperado: después del cierre por inactividad, la sesión debe exigir credenciales."
+    },
+    {
+      "id": "R9-codigos-1",
+      "severity": "P2",
+      "title": "La API de catálogo y Mercancía aceptan un código que la caja trata como el mismo código de otro producto (R8-01 sigue abierto fuera de la CLI)",
+      "file": "apps/api/src/catalog.ts",
+      "line": 207,
+      "scenario": "Base propia fitstore_wf_codes9, API compilada en el puerto 3157. Se crea A con variante sku wf-a-X y barras WF-CODE-X. Después: (1) POST /products B con sku wf-code-x (las barras de A en minúsculas) → 201. (2) POST /products C con sku WF-CODE-X (igual exacto a las barras de A, en otro campo) → 201. (3) PATCH /variants/D con barcode WF-A-X (el SKU de A en mayúsculas) → 200. (4) POST /merchandise/operations con quick.barcode wf-code-x → 201. Es el caso de R8-01 (A con barras QA-R8-CASE123 y B con qa-r8-case123), pero entrando por Productos, la API, la importación de catálogo o la recepción en vez de la CLI. Resultado: en la caja, escanear la etiqueta de A dice «El código … es de 4 productos» y no agrega nada (A ya no se vende por código), mientras Mercancía y la factura eligen una variante en silencio (ver los otros hallazgos). Lo esperado: rechazar con «el código … ya es de «A»», como hace el importador desde R7-01/R8-01."
+    },
+    {
+      "id": "R9-codigos-2",
+      "severity": "P2",
+      "title": "Recepción de mercancía compara el código exacto: la etiqueta impresa (Code 39 en MAYÚSCULAS) de un código en minúsculas abre «Crear producto rápido» y duplica el producto",
+      "file": "apps/web/src/Merchandise.tsx",
+      "line": 364,
+      "scenario": "El producto E tiene barras wf-e-<tag>; pasa con cualquier código en minúsculas creado en Productos o con la matriz si el SKU del producto se escribió en minúsculas. Las etiquetas se imprimen con el componente Barcode, que codifica `value.toUpperCase()` en Code 39, así que el lector o la cámara devuelven WF-E-<TAG>. En Mercancía (entrada) se escribe o escanea WF-E-<TAG>: scan() hace `variants.find(v => v.barcode === value || v.sku === value)`, no lo encuentra y abre «Crear producto rápido» con el código WF-E-<TAG> ya puesto. El servidor lo acepta (el índice único distingue mayúsculas), así que la mercancía entra a un producto duplicado y el original no sube su stock. Desde entonces la caja ve dos productos con ese código y avisa de ambigüedad, sin agregar ninguno. En salida (merma, etc.) se bloquea con «Código desconocido». Además, si un código es las barras de un producto y el SKU de otro, se elige el primero en silencio. La caja (POS.tsx byCode) sí compara sin mayúsculas y detecta ambigüedad, así que las dos pantallas no son coherentes."
+    },
+    {
+      "id": "R9-codigos-3",
+      "severity": "P2",
+      "title": "R8-01 por Mercancía: el escaneo distingue mayúsculas y «Crear producto rápido» acepta un código que ya existe con otras mayúsculas; el stock va a un duplicado y la caja deja de agregar los dos por código",
+      "file": "fitstore-pos/apps/web/src/Merchandise.tsx",
+      "line": 364,
+      "scenario": "El producto A tiene barcode QA-R9-CASE777. En Mercancía › Entrada se escribe qa-r9-case777. scan() no lo encuentra porque compara con ===, así que abre «Crear producto rápido» con el código ya escrito. Se completa el formulario y se confirma. Lo mismo pasa al revisar una factura cuyo código viene en otras mayúsculas: la línea no se empareja por código y el modal rellena el barcode con ese código. El servidor crea el producto B con barcode qa-r9-case777 sin rechazarlo. Resultado: las 5 unidades recibidas quedan en B y no en A. En la caja, byCode, que ya no distingue mayúsculas, encuentra 2 productos, muestra «El código … es de 2 productos» y no agrega ninguno. Lo esperado era que Mercancía reconociera A, como hace la caja, y que el servidor rechazara el código duplicado."
+    },
+    {
+      "id": "R9-importador-1",
+      "severity": "P2",
+      "title": "Celdas con hipervínculo, error (#N/A, #REF!) o fórmula sin valor calculado se importan en silencio como «[object Object]» (nombre, categoría, ID o REFERENCIA)",
+      "file": "apps/api/scripts/import-inventario.ts",
+      "line": 54,
+      "scenario": "text() sólo reconoce {result} y {richText}. Para los objetos de ExcelJS {text,hyperlink} (nombre pegado desde la web del proveedor o URL que Excel autovincula), {error:'#N/A'} (por ejemplo, un BUSCARV de la categoría) o {formula} sin result (archivo guardado por un script; el Excel real de la tienda ya tiene 45 filas así, 204-613, en VALOR COSTO/VALOR VENTA) devuelve String(v) = '[object Object]'. Un DESCRIPCION con hipervínculo crea el producto llamado '[object Object]', que sale así en el ticket y la factura y no se encuentra por nombre. Un SUB-GRUPO con #N/A crea la categoría '[object Object]'. En las columnas numéricas la carga se detiene, pero con el mensaje 'número no válido «[objectObject]»', que no le dice a la dueña que la celda tiene un error de fórmula o un valor sin calcular."
+    },
+    {
+      "id": "R9-importador-2",
+      "severity": "P3",
+      "title": "Filas con ID pero sin DESCRIPCION, o con DESCRIPCION pero sin ID ni REFERENCIA, se descartan sin avisar",
+      "file": "apps/api/scripts/import-inventario.ts",
+      "line": 172,
+      "scenario": "La dueña agrega la fila [1700, '', '1700', 'Fajas', 5, 900, 1800] (olvidó la descripción) o ['', 'Faja sin código', '', 'Fajas', 3, 900, 1800]. `if (!id || !raw) return;` las salta sin error ni aviso. El resumen dice 'N productos leídos' contando sólo las filas válidas, termina con exit 0 y la revisión CSV no las menciona. Esos productos y sus existencias (5 y 3 unidades) nunca entran, y la caja no los encuentra. Lo esperado es rechazar la fila o al menos listarla. La fila TOTAL del Excel real (ID=COUNTA, sin descripción, SUB-GRUPO 'TOTAL') sí debe seguir ignorándose."
+    },
+    {
+      "id": "R9-importador-3",
+      "severity": "P3",
+      "title": "--dry-run siempre informa '0 nuevos (0 unidades) · 0 ya cargados · 0 activados · 0 precios' y no anuncia las categorías que crearía; el paso 2 del MANUAL falla en una base nueva",
+      "file": "apps/api/scripts/import-inventario.ts",
+      "line": 413,
+      "scenario": "En load(), `if (dryRun) continue;` se ejecuta antes de clasificar la fila, y summary.nuevos/unidades/sinCambios/activados/precios sólo se incrementan después. La simulación del mismo archivo que en real crea 2 productos con 8 unidades dice 'Simulación: 2 productos leídos · 0 nuevos (0 unidades) · 0 ya cargados sin cambios · 0 activados · 0 precios actualizados'. Tampoco dice que crearía las categorías 'suplementos'/'MAQUILLAJE', ni que con --sin-lotes desactivaría el lote de una categoría. Además, MANUAL.md paso 2 indica '--dry-run' sin '--sin-lotes'. En una base de producción, admin:create crea Suplementos/Maquillaje con lote, así que la simulación del Excel real termina con 'La categoría «Suplementos» exige lote…' y exit 1, y la dueña nunca ve la simulación. Lo mismo pasaba en R8; no es una regresión, pero la simulación no cumple su propósito."
+    },
+    {
+      "id": "R9-importador-4",
+      "severity": "P3",
+      "title": "maxStock = qty*3 desborda Decimal(14,3) con existencias que el lector acepta; la simulación pasa y la carga real falla con un volcado técnico de Prisma",
+      "file": "apps/api/scripts/import-inventario.ts",
+      "line": 475,
+      "scenario": "El lector acepta EXISTENCIA hasta 99,999,999,999.999. Para qty > 33,333,333,333.333, Math.max(10, row.qty*3) supera el máximo de Product.maxStock Decimal(14,3). La simulación no escribe, así que no lo detecta (exit 0). La carga real aborta dentro de la transacción: la base queda intacta, pero el mensaje es un volcado de Prisma ('Invalid `tx.product.create()` invocation… numeric field overflow… precision 14, scale 3'). La cantidad no es realista: el límite anunciado por R8-03 no es el real para productos nuevos."
+    },
+    {
+      "id": "R9-importador-5",
+      "severity": "P3",
+      "title": "Al activar un producto inactivo, el precio que la dueña editó en la app se sobrescribe sin --actualizar-precios",
+      "file": "apps/api/scripts/import-inventario.ts",
+      "line": 427,
+      "scenario": "El producto WF9-201 se carga con costo 0 y queda inactivo. La dueña le pone precio 2000 en la app (Productos) sin activarlo. Luego corrige el costo en el Excel (900, precio 1800) y repite la carga sin --actualizar-precios. Como costAvg <= 0, missingData es true y `changes.price = row.price` pone 1800, aunque Number(existing.price) > 0. El MANUAL promete que al repetir la carga 'no se pisa lo editado en la app (precio…)'. Lo esperado es completar sólo el dato que falta (costAvg) y activar, manteniendo 2000."
+    },
+    {
+      "id": "R9-dinero-1",
+      "severity": "P2",
+      "title": "Una devolución nueva no tiene en cuenta el costo que contabilizó la devolución histórica (rondas 3 a 7) de la misma línea, así que la venta devuelta del todo queda con costo negativo",
+      "file": "apps/api/src/sales.ts",
+      "line": 1029,
+      "scenario": "Venta anterior a la ronda 7 (asignaciones sin \"exact\"): combo K = 0.5 × componente de costo 3.33, es decir 1.665 por unidad. Se venden 10 combos: Sale.costTotal = 16.65 y SaleItem.unitCost = money(1.665) = 1.67. Antes de la ronda 8 se devolvieron 5 con reposición. La ronda 3 a 6 calculaba unitCost×qty y la ronda 7 final (f35b0cd) usaba allocationCost sin \"exact\" = unitCost×qty; en ambos casos se contabilizan 1.67×5 = 8.35. Ya en la ronda 9 se devuelven los 5 restantes. returnSale calcula at(10) − at(5) = 16.65 − money(8.325) = 8.32, porque supone que las devoluciones anteriores contabilizaron at(before) = 8.33. En total se devuelve un costo de 8.35 + 8.32 = 16.67 contra una venta de 16.65. Con la venta totalmente devuelta, el reporte de utilidad muestra Ventas 0, Costo −0.02 y Utilidad +0.02, y el dashboard y el estado de resultados muestran costo −0.02. Lo esperado es 0, que es justo la invariante que R8-02 y su prueba prometen (\"devolución de los restantes → 0\"). El error llega a 0.005 por unidad devuelta en la devolución histórica: 100 combos de 0.125 dejan −0.25. También ocurre con devoluciones históricas de varias líneas con cantidades fraccionarias, porque las rondas 3 a 6 redondeaban la suma y no cada línea. La condición previa es la misma que ChatGPT calificó como P2 en R8-02: combo con componente fraccionario y devolución anterior a la ronda 8."
+    },
+    {
+      "id": "R9-dinero-2",
+      "severity": "P2",
+      "title": "Las devoluciones parciales reembolsan más de lo cobrado: el total y el ITBIS de cada devolución se redondean por separado, no de forma acumulada",
+      "file": "apps/api/src/sales.ts",
+      "line": 1019,
+      "scenario": "Base propia fitstore_wf_money9, API compilada en el puerto 3147. Producto a 33.35, venta de 3 unidades con descuento global del 10%: total cobrado 90.05 en efectivo. Se devuelven las 3 unidades de una en una con refundMethod=cash. Cada devolución calcula 90.05 × 1/3 = 30.0167, que se redondea a 30.02, así que se reembolsan 90.06 de una venta de 90.05. El efectivo esperado de la caja abierta con 1000.00 queda en 999.99, y el ingreso del dashboard (ventas − devoluciones) queda en −0.01. Con 10 unidades a 33.35 y 10% de descuento (cobrado 300.15, ITBIS 45.79), devolviendo de una en una se reembolsan 300.20 y se devuelven 45.80 de ITBIS: 0.05 de más en dinero y 0.01 de más en impuesto. Lo esperado es que la suma de las devoluciones sea igual a lineTotal y a tax de la línea. El costo ya se calcula de forma acumulada (at(before+qty) − at(before)); el total y el ITBIS no."
+    },
+    {
+      "id": "R9-dinero-3",
+      "severity": "P2",
+      "title": "Devolver una venta a crédito con un abono por transferencia pendiente deja el abono sin poder verificarse y no reembolsa al cliente",
+      "file": "apps/api/src/sales.ts",
+      "line": 1094,
+      "scenario": "allowCreditSales=true. Venta de 1000 a crédito con cliente. El cliente abona 1000 por transferencia (POST /sales/:id/installments, method=transfer): el abono queda en pending_verification y creditBalance sigue en 1000. Luego se devuelve la venta completa con refundMethod=cash. Como debtReduction = min(creditBalance=1000, total=1000) = 1000, refundAmount = 0 y creditBalance pasa a 0. Al verificar la transferencia, POST /payments/:id/verify responde 400 \"El abono requiere revisión: supera la deuda pendiente.\" y no hay ninguna ruta para rechazarla o reembolsarla. El cliente pagó 1000 y devolvió la mercancía, pero recibe 0 y el abono queda pendiente para siempre. Lo esperado es reembolsar los 1000, o impedir la devolución hasta verificar el abono. En el caso parcial (abono de 600 pendiente y devolución de 500) el abono también se bloquea, porque 500 < 600."
+    },
+    {
+      "id": "R9-dinero-4",
+      "severity": "P2",
+      "title": "Anular una venta devuelve el stock sin recalcular el costo promedio (la devolución sí lo recalcula)",
+      "file": "apps/api/src/sales.ts",
+      "line": 816,
+      "scenario": "Producto con costo 100 y stock 10. Se venden las 10 unidades (costTotal 1000) y en el mismo turno se reciben 10 a 200 por orden de compra. Con stock en 0, costAvg pasa a 200. Después se anula la venta. Resultado: stock 20 con costAvg 200, inventario valorado en 4000. Lo esperado es costAvg (10×200 + 10×100)/20 = 150, valor 3000. Haciendo lo mismo con una devolución total en lugar de la anulación, el costo queda en 150. La anulación infla el valor del inventario en 500 y el costo de lo que se venda después. Con una recepción a menor costo pasa lo contrario. Afecta igual a los componentes de combo."
+    },
+    {
+      "id": "R9-dinero-5",
+      "severity": "P3",
+      "title": "Los abonos aceptan más de 2 decimales: el pago se registra con un importe y la deuda baja otro",
+      "file": "apps/api/src/sales.ts",
+      "line": 1211,
+      "scenario": "POST /sales/:id/installments con amount 1.005 en efectivo sobre una deuda de 100. Postgres redondea Payment.amount (Decimal 14,2) a 1.01, y la caja espera 1.01. creditBalance se decrementa en 1.005, 100 − 1.005 = 98.995, que se guarda como 99.00: la deuda sólo baja 1.00. Además, un reintento con el mismo offlineUuid falla con \"El UUID ya corresponde a otro abono\", porque Number(existing.amount) es 1.01 y no 1.005. La interfaz web lo impide (step 0.01); sólo ocurre por API. Los importes de pagos de venta (saleSchema.payments.amount) y discountAmount tampoco limitan los decimales."
+    },
+    {
+      "id": "R9-dinero-6",
+      "severity": "P3",
+      "title": "El reparto proporcional de una devolución histórica de varias líneas no coincide con lo que la ronda 7 contabilizó por línea: después de devolver todo, unos productos quedan en −0.01 y otros en +0.01",
+      "file": "apps/api/src/reports.ts",
+      "line": 562,
+      "scenario": "La ronda 7 contabilizaba cada línea de forma exacta y determinista: at(before+q) − at(before). En la ronda 9, en lugar de reconstruir ese valor, el reporte reparte costTotal en proporción a allocationCost×q/qty y redondea cada parte. Caso: venta de A (costo 0.49), B (0.59) y C (0.59), 1 unidad de cada una. Una devolución de la ronda 7 de 0.01 de cada producto contabilizó 0.00 / 0.01 / 0.01 (costTotal 0.02). El reporte asigna A = money(0.02×0.0049/0.0167) = 0.01, B = 0.01 y C = 0.00, con el resto en la última línea. Al devolver después el 0.99 restante, el código nuevo calcula 0.49 / 0.58 / 0.58. Resultado: A queda con Costo −0.01 y C con +0.01 aunque las dos están devueltas del todo. El total del reporte cuadra, pero la utilidad por producto y la clasificación ABC no. Hace falta que la estimación por línea tenga fracciones de centavo: cantidades fraccionarias o combos con componente fraccionario."
+    },
+    {
+      "id": "R9-dinero-7",
+      "severity": "P3",
+      "title": "En ventas anteriores a la ronda 7 final, el costo del reporte de utilidad (suma de líneas redondeadas) no coincide con Sale.costTotal del dashboard y del estado de resultados",
+      "file": "apps/api/src/reports.ts",
+      "line": 500,
+      "scenario": "Hasta la ronda 7 en curso, Sale.costTotal se guardaba como money(Σ costo exacto × qty); el cálculo \"booked\" por línea redondeada llegó en f35b0cd. Desde la ronda 8, el reporte de utilidad suma money(allocationCost(línea)) por línea. Venta antigua con dos combos de 1.665 (0.5 × 3.33), una unidad de cada uno: el dashboard y el estado de resultados muestran costo 3.33, mientras el reporte de utilidad muestra 1.67 + 1.67 = 3.34. Los dos reportes dan una ganancia bruta distinta para el mismo período. Es la misma incoherencia que R8-02 corrigió en las devoluciones, pero del lado de la venta."
+    },
+    {
+      "id": "R9-dinero-8",
+      "severity": "P3",
+      "title": "El reporte returns-discounts muestra costTotal y el costo por línea de cada devolución a roles sin profit:read",
+      "file": "apps/api/src/reports.ts",
+      "line": 646,
+      "scenario": "La lista de reportes protegidos por profit:read (líneas 237-247) no incluye returns-discounts. Su columna Detalle es JSON.stringify(e.after). Para los eventos \"return\", ese after es la fila SaleReturn completa, con costTotal y, desde la ronda 8, items[].cost. safe() sólo filtra claves de objetos y no puede limpiar un string. Un administrador quita profit:read al rol gerente, algo que PUT /roles/:id permite y que el sistema contempla como permiso separado. Ese gerente recibe 403 en /reports/profit y el dashboard le oculta costTotal, pero en /reports/returns-discounts (y en sus versiones XLSX y PDF) lee el costo de cada devolución por línea. Con ese costo y el total puede calcular el margen."
+    },
+    {
+      "id": "R9-dinero-9",
+      "severity": "P3",
+      "title": "El reporte 'Ventas por método de pago' cuenta dos veces las ventas a crédito: el crédito y además sus abonos",
+      "file": "apps/api/src/reports.ts",
+      "line": 479,
+      "scenario": "Venta de 500 a crédito y un abono de 500 en efectivo el mismo día. En /reports/by-payment del día, la venta añade credit +500 y cash +500: 1000 por métodos para una venta de 500. Además, los abonos se asignan al período de la venta (filtro por Sale.createdAt) y no al día en que se cobraron. Por eso un abono cobrado hoy de una venta del mes pasado no aparece en el reporte de hoy. Se incluyen también transferencias pendientes sin verificar. La agregación payments del dashboard (reports.ts:130-134) tiene el mismo criterio y de ahí salen las comisiones (fees) que se restan a la utilidad neta."
+    },
+    {
+      "id": "R9-dinero-10",
+      "severity": "P3",
+      "title": "La tendencia del dashboard compara ingresos netos de devoluciones con las ventas brutas del período anterior",
+      "file": "apps/api/src/reports.ts",
+      "line": 207,
+      "scenario": "Período anterior: ventas 1000 y devoluciones 500 (neto 500). Período actual: ventas 500 sin devoluciones (neto 500). El dashboard muestra una tendencia de −50% aunque el ingreso neto es el mismo. revenue resta las devoluciones del rango y prior es la suma bruta de Sale.total del rango anterior. yearOverYear, en cambio, sí resta las devoluciones del año anterior, así que los dos indicadores no son coherentes. La tendencia se muestra en Dashboard.tsx:175-184."
+    },
+    {
+      "id": "R9-dinero-11",
+      "severity": "P3",
+      "title": "Subtotal − descuento no coincide con el total: descuento y total se redondean hacia arriba por separado",
+      "file": "packages/shared/src/index.ts",
+      "line": 171,
+      "scenario": "3 unidades a 33.35 con 10% de descuento global: bruto 100.05, descuento exacto 10.005 y neto 90.045. lineTotals redondea con ROUND_HALF_UP cada valor por separado: descuento 10.01 y total 90.05. La venta guardada y la caja (POS.tsx muestra Subtotal y −descuento) dicen Subtotal 100.05, Descuento 10.01, Total 90.05, pero 100.05 − 10.01 = 90.04. El cliente ve un resumen que no cuadra por 0.01, y Sale.discountTotal no cuadra con subtotal − total."
+    },
+    {
+      "id": "R9-facturas-1",
+      "severity": "P3",
+      "title": "Factura del proveedor: «el código exacto manda» toma en silencio la primera de varias variantes con ese código (confianza 1)",
+      "file": "apps/api/src/invoice.ts",
+      "line": 1168,
+      "scenario": "A tiene barras WF-CODE-X y C tiene sku WF-CODE-X; la API acepta ese estado (ver el hallazgo de la API). Al importar un CSV de factura con la línea «WF-CODE-X, Faja chaleco, 2, 700», matchInvoiceLines usa `variants.find(v => v.barcode === code || v.sku === code)`. Devuelve la primera según el orden de findMany, que no tiene orderBy (merchandise.ts:213), y la marca con confidence 1 y sin nota. La revisión muestra «Todas emparejadas» y la mercancía y el costo entran al producto equivocado. La caja, en cambio, avisa de ambigüedad para ese mismo código. Lo esperado: que la línea quede sin variante, con la nota «el código es de N productos»."
+    },
+    {
+      "id": "R9-facturas-2",
+      "severity": "P2",
+      "title": "El código exacto de la tienda gana a la equivalencia ya corregida del proveedor y a la descripción: con los IDs numéricos reales (1001–1616) la línea vuelve al producto equivocado con 100 % de confianza",
+      "file": "fitstore-pos/apps/api/src/invoice.ts",
+      "line": 1167,
+      "scenario": "Un proveedor usa su propio código «1162» para «Top Deportivo Aurora Lila». En la tienda, 1162 es el SKU y barcode de otro producto (en el catálogo real, ISO100 Strawberry 1.34 lb). 1) Se importa la factura: la línea queda en el producto 1162 con confianza 1, sin nota, aunque la descripción no se parece en nada. 2) La persona usa «Cambiar producto», elige el Top y confirma; se guarda la equivalencia proveedor+1162 → Top. 3) La siguiente factura del mismo proveedor vuelve a quedar en el producto 1162 con confianza 1. La equivalencia aprendida nunca se usa, y si nadie lo nota, el stock y el costo van al producto equivocado."
+    },
+    {
+      "id": "R9-facturas-3",
+      "severity": "P2",
+      "title": "No se comparan tamaños en softgels, caplets, liqui-caps, «serv.», packs ni unidades: la factura queda preelegida en el envase de otro tamaño",
+      "file": "fitstore-pos/apps/api/src/invoice.ts",
+      "line": 852,
+      "scenario": "Catálogo real (tests/fixtures/catalogo-tienda.json). Se importa una factura con la línea «Vitamin E Puritan's Pride 450 mg / 100 softgels». La tienda sólo tiene el envase de 50 softgels (1051). Resultado: queda preelegido 1051 con 88 % de confianza y la revisión marca «Todas emparejadas». Lo esperado era no asignar variante y avisar del tamaño, como ya ocurre con cápsulas y tabletas. Al confirmar, las unidades y el costo del frasco de 100 se cargan al frasco de 50: cambian el stock y el costo promedio de los dos productos. Lo mismo pasa con «Zinc Picolinate … 25 mg / 200 caplets» (queda el de 100 caplets), «L-Carnitine 3000 Nutrex Berry Blast 62 serv.» (queda el de 31 serv.), «Anabol Hardcore Nutrex 120 liqui-caps» (queda el de 60), «Animal Pak 30 packs» (queda el de 44 packs) y «CLA 1000 Nutrex 1,000 mg / 180 softgels» (queda el de 90)."
+    },
+    {
+      "id": "R9-facturas-4",
+      "severity": "P2",
+      "title": "Los números de tono se ignoran: «FSP 6.5» queda preelegido como «FSP 5.5» y «Polvo compacto 120» como «370»",
+      "file": "fitstore-pos/apps/api/src/invoice.ts",
+      "line": 836,
+      "scenario": "La factura trae «Beauty Creations Flawless Stay Powder Foundation FSP 6.5». La tienda tiene FSP 3.0, 4.0, 5.5, 6.0 y 7.0, pero no 6.5. Resultado: queda preelegido FSP 5.5 con 98 % de confianza. Lo mismo pasa con FSP 3.5, 4.5, 5.0 y 7.5, que también caen en 5.5. Otros casos: «Maybelline Super Stay 24H Polvo compacto 120» queda en el tono 370, «Amave Blush 05» en «Amave Blush 03», «Dior Rosy Glow Blush 012 Rosewood» en «001 Pink», «Pudair Lip Contour 3.0» en «2.0» y «SHCOETY … Lápiz delineador de labios 05» en «02». Al confirmar, el stock y el costo entran a un tono equivocado. Lo esperado era una sugerencia sin variante elegida."
+    },
+    {
+      "id": "R9-facturas-5",
+      "severity": "P2",
+      "title": "Un tono hecho de palabras de color desaparece del nombre: cualquier tono desconocido cae en ese producto («Color Base Primer Lemon Drop» queda como «Purple Cream»)",
+      "file": "fitstore-pos/apps/api/src/invoice.ts",
+      "line": 771,
+      "scenario": "La factura trae «Beauty Creations Color Base Primer Lemon Drop», un tono que la tienda no tiene. La tienda tiene 8 tonos. Resultado: queda preelegido «Beauty Creations Color Base Primer Purple Cream» con 95 % de confianza; también pasa con «Mint Chip». Otros casos con el catálogo real: «Too Faced Born This Way Soft Matte Oil Control Foundation Warm Sand» (y «Golden Beige») quedan en «Light Beige» al 97 %. «L.A. Girl Eyeliner Pencil Burgundy» queda en «… Black», «SHEGLAM … Eyeliner Navy» en «… Black», «L.A. Colors Auto Lip Liner Mauve» en «… Nude», «MAC Labial en barra Velvet Teddy» en «… Rojo» y «Short Broche S Cocoa» en «Short Broche S Negro». Lo esperado era no elegir el producto, como ya pasa con «Navi Eyeliner Pencil Black»."
+    },
+    {
+      "id": "R9-facturas-6",
+      "severity": "P2",
+      "title": "Una factura que nombra otra marca queda preelegida en el producto de la marca que tiene la tienda («Melatonin Natrol» queda como «Melatonin Nutrex»)",
+      "file": "fitstore-pos/apps/api/src/invoice.ts",
+      "line": 831,
+      "scenario": "La factura trae «Melatonin Natrol 100 tabletas». La tienda sólo tiene «Melatonin - Nutrex - 100 tabletas». Resultado: queda preelegido el Nutrex con 75 % de confianza y la revisión cuenta la línea como emparejada. Lo mismo pasa con «Forskolin NOW 60 cápsulas» (queda Cadane Organic), «Caffeine 200 Jarrow 60 cápsulas» (queda Nutrex), «Magnesium Citrate Natrol 120 cápsulas vegetales» (queda NOW), «GABA Natrol 500 mg / 100 cápsulas vegetales» (queda NOW) y «Creatine Monohydrate Natrol 60 servicios; unflavored» (queda Nutrex). Esto contradice la regla que las pruebas declaran («otra marca u otra línea nunca queda elegida»). Al confirmar, el stock y el costo de otra marca se mezclan con el producto de la tienda."
+    },
+    {
+      "id": "R9-facturas-7",
+      "severity": "P2",
+      "title": "Formato español: «1.250» se lee como 1,25 y en el mismo archivo «1,250» se lee como 1250; el costo promedio se corrompe",
+      "file": "fitstore-pos/apps/api/src/invoice.ts",
+      "line": 66,
+      "scenario": "Un CSV de Excel en español (separado por «;», formato que el módulo dice soportar) trae la columna de costo con separador de miles y sin decimales: «WF-Z-1;Faja Reloj de Arena Beige;2;\"1.250\"». El producto tiene 10 unidades a RD$1,200. Resultado: unitCost = 1.25. Al confirmar, el costo promedio queda en 1000.21; lo correcto es 1208.33. El rol warehouse (sin profit:read) no ve el aviso de «Costo promedio actual … baja», así que confirma sin ninguna señal."
+    },
+    {
+      "id": "R9-facturas-8",
+      "severity": "P3",
+      "title": "La recepción de una orden de compra no es idempotente: reenviar el mismo formulario recibe la mercancía dos veces",
+      "file": "fitstore-pos/apps/api/src/inventory.ts",
+      "line": 394,
+      "scenario": "Orden de compra de 10 unidades. En Productos › Órdenes › Recibir se reciben 4. Se pierde la respuesta, la API ya había confirmado, y la persona vuelve a pulsar Guardar. Resultado: se crea una segunda recepción de 4, la orden queda con 8 recibidas y el stock sube 8. Lo correcto eran 4. A diferencia de /merchandise/operations, que tiene UUID y requestHash, este endpoint no tiene clave de operación."
+    },
+    {
+      "id": "R9-seguridad-1",
+      "severity": "P2",
+      "title": "Cinco contraseñas erróneas enviadas por cualquiera expulsan al usuario de las sesiones que ya tenía abiertas y bloquean su caja 15 minutos, una y otra vez",
+      "file": "apps/api/src/common.ts",
+      "line": 273,
+      "scenario": "1) La vendedora inicia sesión en un equipo aprobado y cobra (POST /sales → 201). 2) Otra persona, sin sesión, envía 5 POST /api/auth/login con su correo y una contraseña incorrecta. Basta con conocer el correo y la ruta es pública. 3) A partir de ahí, toda petición con el token válido de la vendedora devuelve 401, incluido POST /sales. /auth/refresh emite un token que el guard vuelve a rechazar. El gerente tampoco puede pasarle la caja con 'Cambiar vendedor' (/auth/pin responde 201, pero /auth/me da 401). Ningún administrador puede desbloquearla: PATCH /users/:id no toca lockedUntil ni failedAttempts, ni siquiera al cambiar la contraseña. El ataque se repite cada 15 minutos, así que la caja puede quedar inutilizable de forma indefinida. Lo esperado: el bloqueo por intentos fallidos sólo debe impedir nuevos inicios de sesión con contraseña, no cerrar sesiones ya autenticadas."
+    },
+    {
+      "id": "R9-seguridad-2",
+      "severity": "P3",
+      "title": "El límite de intentos por IP en /api/auth y /api/sales se evita cambiando mayúsculas en la ruta",
+      "file": "apps/api/src/main.ts",
+      "line": 33,
+      "scenario": "El middleware compara `req.url.startsWith(\"/api/auth/\")` distinguiendo mayúsculas, pero el router de Express/Nest no las distingue. POST /api/Auth/login (o /api/Auth/pin, /api/Sales) llega al mismo controlador sin pasar por el contador de 60 (o 120) peticiones por minuto. Nginx reenvía /api/Auth/... porque coincide con `location /api/`. Lo esperado: 429 a partir de la petición 61 por minuto desde la misma IP."
+    }
+  ],
+  "rejected": [
+    {
+      "dimension": "importador",
+      "title": "Una categoría que difiere sólo en mayúsculas o espacios crea un duplicado y se salta el lote obligatorio (R7-03) sin dejar nada en la bitácora"
+    },
+    {
+      "dimension": "importador",
+      "title": "Dos cargas a la vez: las validaciones se hacen fuera de la transacción y sin bloqueo; la segunda falla con 'Unique constraint failed on the fields: (`name`)'"
+    },
+    {
+      "dimension": "facturas",
+      "title": "La misma factura se puede importar y confirmar dos veces sin aviso: el stock se duplica"
+    },
+    {
+      "dimension": "seguridad",
+      "title": "Los PIN de gerente admiten 15 intentos por cada 15 minutos en lugar de 5, y approve-with-pin delata si un PIN es correcto aunque el equipo ya esté aprobado"
+    }
+  ]
+}
