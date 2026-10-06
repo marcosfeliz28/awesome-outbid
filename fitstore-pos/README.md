@@ -60,7 +60,7 @@ pnpm exec playwright install chromium
 pnpm verify
 ```
 
-`check`: TypeScript, ESLint, pruebas de fórmulas y compilación. `verify`: pruebas de API y navegador contra la API de `FITSTORE_API_URL` (por defecto `http://127.0.0.1:3001/api`, o el puerto de `PORT`); si no responde, inicia PostgreSQL local y la API, y los detiene al terminar. Playwright inicia la PWA compilada en preview (4173) para verificar recargas offline; ejecuta `pnpm check` antes. `FITSTORE_WEB_URL` permite usar otro servidor de la PWA compilada. Los resultados y trazas aparecen en `test-results/` y `playwright-report/`. Los registros de la entrega están en `docs/validacion/`.
+`check`: TypeScript, ESLint, pruebas de fórmulas y compilación. `verify`: pruebas de API y navegador contra la API de `FITSTORE_API_URL` (por defecto `http://127.0.0.1:3001/api`, o el puerto de `PORT`); si no responde, inicia PostgreSQL local y la API, y los detiene al terminar. Playwright inicia la PWA compilada en preview (4173) para verificar recargas offline; ejecuta `pnpm check` antes. `FITSTORE_WEB_URL` permite usar otro servidor de la PWA compilada. `FITSTORE_WEB_PORT` cambia el puerto de ese preview cuando hay varias copias del proyecto probándose a la vez (con un puerto propio no se reutiliza un servidor ya abierto). Las capturas de las pruebas se guardan en `test-results/capturas/`; sólo con `FITSTORE_ACTUALIZAR_CAPTURAS=1` se reescriben las imágenes de `docs/` (usa una base nueva). Los resultados y trazas aparecen en `test-results/` y `playwright-report/`. Los registros de la entrega están en `docs/validacion/`.
 
 Para regenerar el ZIP fuente: `pnpm package:source`.
 

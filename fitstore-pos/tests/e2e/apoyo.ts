@@ -17,8 +17,9 @@ export { expect };
 // rápida). Cada prueba habla con la PWA a través de un intermediario propio que
 // pone su dirección en X-Forwarded-For, como hace nginx en producción: la
 // página y `request` son el mismo equipo, y el límite sigue activo para cada
-// prueba. No sirve `extraHTTPHeaders`: el navegador la enviaría también a
-// Google Fonts, que la rechaza por CORS, y la página se quedaría sin fuentes.
+// prueba. No sirve `extraHTTPHeaders`: el navegador la enviaría también a los
+// demás orígenes que pida la página (cuando las fuentes venían de Google Fonts,
+// este la rechazaba por CORS y la página se quedaba sin fuentes).
 const clientAddress = () =>
   `10.${randomInt(256)}.${randomInt(256)}.${randomInt(1, 255)}`;
 async function clientProxy(target: URL, address: string) {

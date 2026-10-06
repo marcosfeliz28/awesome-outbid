@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./apoyo";
 // Ronda 9 · Windows: las fuentes viajan con la aplicación. Antes se pedían a
 // Google Fonts al abrir: sin internet (la tienda sin conexión, un entorno
 // aislado) la interfaz caía en la fuente genérica del sistema, y con internet
