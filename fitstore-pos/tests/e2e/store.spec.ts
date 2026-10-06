@@ -2365,6 +2365,9 @@ test("Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible
     data: { expiryDate: new Date("2020-01-01T12:00:00Z") },
   });
   await db.$disconnect();
+  // Un lote vence al cambiar el día, sin movimiento de stock: se ve al abrir.
+  await page.reload();
+  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
   await page.getByRole("button", { name: "Mercancía", exact: true }).click();
   await page.getByLabel("Buscar producto", { exact: true }).fill(p.name);
   const option = page.getByRole("option").filter({ hasText: p.name });

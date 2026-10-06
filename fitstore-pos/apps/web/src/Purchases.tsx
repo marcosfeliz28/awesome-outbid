@@ -473,7 +473,11 @@ export function ReceiptHistory({ compact = false }: { compact?: boolean }) {
                 onClick={() =>
                   download(
                     "/goods-receipts/export" + (period || "?to=" + today()),
-                    "compras.xlsx",
+                    "compras-" +
+                      (from || to || "inicio") +
+                      "-" +
+                      (to || today()) +
+                      ".xlsx",
                   ).catch((e) => toast(e.message, true))
                 }
               >
