@@ -45,6 +45,7 @@ import {
   denied,
   json,
   safeErrorMessage,
+  fieldLabel,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
 import PDFDocument from "pdfkit";
@@ -709,17 +710,32 @@ export class SalesController {
   @RequireTerminal()
   @Permit("sale:write")
   async sync(@Body() body: unknown, @CurrentUser() actor: Actor) {
+    // Cada venta se valida por separado: una con datos inválidos queda como
+    // conflicto, con su alerta, y no impide sincronizar las demás ventas que
+    // la caja ya entregó (R9-dinero-5-pos).
     const input = parse(
-      z.object({ sales: z.array(saleSchema).max(100) }),
+      z.object({
+        sales: z.array(z.object({ offlineUuid: uuid }).passthrough()).max(100),
+      }),
       body,
     );
     const results = [];
     for (const sale of input.sales)
       try {
+        const valid = saleSchema.safeParse(sale);
+        if (!valid.success)
+          bad(
+            "Revisa los campos: " +
+              valid.error.issues
+                .slice(0, 5)
+                .map((i) => fieldLabel(i.path) + " " + i.message)
+                .join("; ") +
+              ".",
+          );
         results.push({
           offlineUuid: sale.offlineUuid,
           status: "synced",
-          sale: await this.complete(actor, sale, true),
+          sale: await this.complete(actor, valid.data, true),
         });
       } catch (e: any) {
         const message = safeErrorMessage(e);

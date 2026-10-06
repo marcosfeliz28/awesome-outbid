@@ -349,6 +349,10 @@ export const paymentTotals = (
   total: number,
   payments: { method: string; amount: number }[],
 ) => {
+  // La caja no agrega un pago que la API rechazaría al cobrar o al
+  // sincronizar (R9-dinero-5-pos).
+  if (payments.some((p) => !isMoneyAmount(p.amount)))
+    throw new Error("El monto del pago debe tener como máximo 2 decimales.");
   const paid = payments.reduce((a, p) => a.plus(p.amount), d(0));
   const nonCash = payments
     .filter((p) => p.method !== "cash")
@@ -427,7 +431,11 @@ export const saleSchema = z.object({
         variantId: z.string().uuid(),
         qty: stockQty(10000),
         discountPercent: z.number().min(0).max(100).default(0),
-        discountAmount: moneyAmount(100000000, true).optional(),
+        // El descuento por monto no se guarda: se vuelve porcentaje y la línea
+        // se cobra redondeada, igual en la caja y en la API. Rechazar sus
+        // decimales dejaba en conflicto una venta sin conexión ya entregada
+        // (R9-dinero-5-pos).
+        discountAmount: z.number().nonnegative().max(100000000).optional(),
       }),
     )
     .min(1)

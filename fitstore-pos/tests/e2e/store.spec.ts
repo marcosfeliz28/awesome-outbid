@@ -1373,3 +1373,111 @@ test("R9-dinero-5-pos: un descuento por monto con 3 decimales se cobra en línea
   }).toPass({ timeout: 20000 });
   await r9Retire(request, headers, [product]);
 });
+
+// Revisión R9 · caja (segunda vuelta): escaneo con el foco en un descuento y
+// códigos de modelo que forman parte del nombre.
+test("R9-caja-3/8 revisión: un escaneo con el foco en un campo de descuento agrega el producto y no cambia el descuento", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const codes = [r9Code("5"), r9Code("5"), r9Code("5"), r9Code("5")];
+  const names = ["uno", "dos", "tres", "cuatro"].map(
+    (n, i) => "Faja E2E ráfaga " + n + " " + codes[i],
+  );
+  const created: any[] = [];
+  for (const [i, name] of names.entries())
+    created.push(await r9Product(request, headers, name, codes[i]));
+  const search = await r9Pos(page);
+  await search.fill(codes[0]);
+  await search.press("Enter");
+  await expect(r9Qty(page, names[0])).toHaveText("1");
+  // La cajera escribe el descuento a mano (el foco queda en el campo) y
+  // luego el lector envía otro código: teclas seguidas + Enter.
+  const typeByHand = async (field: any, value: string) => {
+    await field.click();
+    await page.keyboard.press("Control+A");
+    await page.keyboard.type(value, { delay: 150 });
+    await expect(field).toHaveValue(value);
+  };
+  const scanner = async (code: string) => {
+    await page.keyboard.type(code);
+    await page.keyboard.press("Enter");
+  };
+  const percent = page.getByLabel("Descuento de " + names[0], { exact: true });
+  await typeByHand(percent, "10");
+  await scanner(codes[1]);
+  await expect(r9Qty(page, names[1])).toHaveText("1");
+  await expect(percent).toHaveValue("10");
+  await expect(search).toHaveValue("");
+  // Lo mismo en el descuento por monto (RD$) de otra línea.
+  const amount = page.getByLabel("Descuento por monto de " + names[1], {
+    exact: true,
+  });
+  await typeByHand(amount, "100");
+  await scanner(codes[2]);
+  await expect(r9Qty(page, names[2])).toHaveText("1");
+  await expect(amount).toHaveValue("100");
+  // Y en el descuento global.
+  const global = page.getByLabel("Descuento global");
+  await typeByHand(global, "5");
+  await scanner(codes[3]);
+  await expect(r9Qty(page, names[3])).toHaveText("1");
+  await expect(global).toHaveValue("5");
+  await expect(percent).toHaveValue("10");
+  await expect(amount).toHaveValue("100");
+  // 1,500 con 10 % y 5 % = 1,282.50; 1,500 − 100 con 5 % = 1,330;
+  // 1,500 con 5 % = 1,425 (dos veces).
+  await expect(page.locator(".cart-total")).toContainText("RD$ 5,462.50");
+  // Ningún aviso de límite: los dígitos del código no se tomaron como descuento.
+  await expect(page.getByText(/llega hasta el 100|no puede pasar/)).toHaveCount(
+    0,
+  );
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await r9Retire(request, headers, created);
+});
+
+test("R9-caja-1 revisión: un código de modelo del nombre (como «a40» o «275n») + Enter agrega su único producto", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const pick = (n: number) => Math.floor(Math.random() * n);
+  const letter = () => "ABCDEFGHJKLMNPRSTUVWXYZ"[pick(23)];
+  // Como «Macrilan A40» o «MOIRA … 275N»: letras y menos de 5 dígitos.
+  const model = "Q" + letter() + String(100 + pick(900)),
+    shade = String(100 + pick(900)) + "N" + letter();
+  const brush = "Pincel E2E " + model,
+    base = "Base E2E tono " + shade;
+  const created = [
+    await r9Product(request, headers, brush, r9Code("4")),
+    await r9Product(request, headers, base, r9Code("4")),
+  ];
+  const inactiveCode = r9Code("4");
+  const inactive = await r9Product(
+    request,
+    headers,
+    "Chaleco E2E inactivo " + inactiveCode,
+    inactiveCode,
+  );
+  await r9Retire(request, headers, [inactive]);
+  const search = await r9Pos(page);
+  await search.fill(model.toLowerCase());
+  await search.press("Enter");
+  await expect(page.getByText(brush + " agregado.")).toBeVisible();
+  await expect(r9Qty(page, brush)).toHaveText("1");
+  await expect(search).toHaveValue("");
+  await search.fill(shade.toLowerCase());
+  await search.press("Enter");
+  await expect(page.getByText(base + " agregado.")).toBeVisible();
+  await expect(r9Qty(page, base)).toHaveText("1");
+  // Un número (el código de un producto desactivado) sigue avisando.
+  await search.fill(inactiveCode);
+  await search.press("Enter");
+  await expect(
+    page.getByText("Código no encontrado: " + inactiveCode + "."),
+  ).toBeVisible();
+  await expect(page.locator(".cart-item")).toHaveCount(2);
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await r9Retire(request, headers, created);
+});

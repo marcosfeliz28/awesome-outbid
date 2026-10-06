@@ -310,7 +310,19 @@ describe("R9-dinero-5 · importes con 2 decimales", () => {
       }).success;
     expect(sale(100)).toBe(true);
     expect(sale(100.005)).toBe(false);
-    expect(sale(100, 0.005)).toBe(false);
+    // El descuento por monto sólo se vuelve porcentaje y la línea se cobra
+    // redondeada: rechazarlo dejaba en conflicto la venta sin conexión que la
+    // caja ya entregó (R9-dinero-5-pos).
+    expect(sale(100, 0.005)).toBe(true);
+    expect(sale(100, -1)).toBe(false);
+  });
+  it("R9-dinero-5-pos: la caja no agrega un pago con fracción de centavo", () => {
+    expect(() =>
+      paymentTotals(100, [{ method: "cash", amount: 1.005 }]),
+    ).toThrow(/2 decimales/);
+    expect(
+      paymentTotals(0.3, [{ method: "cash", amount: 0.1 + 0.2 }]).pending,
+    ).toBe(0);
   });
 });
 
