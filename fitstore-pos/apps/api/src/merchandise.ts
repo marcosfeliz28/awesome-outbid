@@ -339,7 +339,9 @@ export class MerchandiseController {
       bad("En una salida elige el lote de la lista.");
     if (data.direction === "exit") {
       if (data.items.some((i) => i.damagedQty > 0))
-        bad("Las unidades dañadas se registran al recibir; usa el motivo de salida.");
+        bad(
+          "Las unidades dañadas se registran al recibir; usa el motivo de salida.",
+        );
       if (data.items.some((i) => !(i.qty > 0)))
         bad("Cada línea necesita una cantidad mayor que 0.");
     } else data.items.forEach(checkDamage);
@@ -496,9 +498,7 @@ export class MerchandiseController {
             // Pedido = recibido bueno + dañado/rechazado + pendiente.
             item.receivedQty = Number(item.receivedQty) + line.qty;
             item.damagedQty = Number(item.damagedQty) + line.damagedQty;
-            if (
-              d(item.receivedQty).plus(item.damagedQty).gt(Number(item.qty))
-            )
+            if (d(item.receivedQty).plus(item.damagedQty).gt(Number(item.qty)))
               bad("Cantidad superior a lo pendiente.");
           }
           lines.push({ ...line, variantId });

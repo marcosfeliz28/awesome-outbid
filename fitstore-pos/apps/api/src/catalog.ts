@@ -35,7 +35,10 @@ import { expiredQty } from "./inventory";
 // vendible (sin lotes vencidos, que la venta no toma); lo físico y lo vencido
 // van aparte para mostrar "vencido: N".
 function sellable<
-  V extends { stock: unknown; lots: { qty: unknown; expiryDate: Date | null }[] },
+  V extends {
+    stock: unknown;
+    lots: { qty: unknown; expiryDate: Date | null }[];
+  },
 >(variant: V, category: { requiresExpiry: boolean }) {
   const blocked = expiredQty(variant.lots, category);
   return {

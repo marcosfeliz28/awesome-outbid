@@ -4,7 +4,14 @@ import { Download, FileSpreadsheet, Plus, Printer, Trash2 } from "lucide-react";
 import { Badge, Button, Modal } from "@fitstore/ui";
 import { can, formatMoney } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
-import { FormModal, attrLabel, dateLabel, toast, today, type Field } from "./helpers";
+import {
+  FormModal,
+  attrLabel,
+  dateLabel,
+  toast,
+  today,
+  type Field,
+} from "./helpers";
 
 // Documento del proveedor y condición de pago (paso 35): todo opcional.
 export type SupplierDocument = {
@@ -111,7 +118,9 @@ export function DocumentFields({
         <select
           value={value.paymentType ?? ""}
           onChange={(e) =>
-            set({ paymentType: e.target.value as SupplierDocument["paymentType"] })
+            set({
+              paymentType: e.target.value as SupplierDocument["paymentType"],
+            })
           }
         >
           <option value="">Según el proveedor</option>
@@ -306,7 +315,9 @@ export function PurchaseEditor({
           Agregar producto
         </Button>
         <details className="panel goods-card" style={{ marginTop: 12 }}>
-          <summary>Documento del proveedor y condición de pago (opcional)</summary>
+          <summary>
+            Documento del proveedor y condición de pago (opcional)
+          </summary>
           <DocumentFields value={doc} onChange={setDoc} />
         </details>
         {error && <p className="form-error">{error}</p>}
@@ -342,7 +353,11 @@ export function ReceiptEditor({
       const name = variant?.name || i.variantId;
       return [
         {
-          ...numberField("qty_" + i.id, name + " · Unidades buenas", pendingOf(i)),
+          ...numberField(
+            "qty_" + i.id,
+            name + " · Unidades buenas",
+            pendingOf(i),
+          ),
           step: "0.001",
           help: `Pedido ${Number(i.qty)} · recibido ${Number(i.receivedQty)} · dañado ${Number(i.damagedQty ?? 0)} · pendiente ${pendingOf(i)}`,
         },
@@ -375,7 +390,10 @@ export function ReceiptEditor({
       help: "Vacío: la de la orden o el plazo del proveedor.",
     },
     numberField("creditDays", "Días de crédito"),
-    { ...numberField("itbis", "ITBIS de la factura"), help: "Para la contable." },
+    {
+      ...numberField("itbis", "ITBIS de la factura"),
+      help: "Para la contable.",
+    },
   ];
   return (
     <FormModal
@@ -390,7 +408,8 @@ export function ReceiptEditor({
           ...documentPayload(data),
           items: pending
             .filter(
-              (i: any) => data["qty_" + i.id] > 0 || data["damaged_" + i.id] > 0,
+              (i: any) =>
+                data["qty_" + i.id] > 0 || data["damaged_" + i.id] > 0,
             )
             .map((i: any) => ({
               itemId: i.id,
@@ -612,7 +631,9 @@ function ReceiptDetail({ id, onClose }: { id: string; onClose: () => void }) {
                     <small style={{ display: "block" }}>
                       {l.sku ? l.sku + " · " : ""}Recibido bueno {l.qty}
                       {l.lotNumber ? " · Lote " + l.lotNumber : ""}
-                      {l.expiryDate ? " · vence " + dateLabel(l.expiryDate) : ""}
+                      {l.expiryDate
+                        ? " · vence " + dateLabel(l.expiryDate)
+                        : ""}
                       {seesCost && l.unitCost !== undefined
                         ? " · " + formatMoney(l.unitCost) + " c/u"
                         : ""}

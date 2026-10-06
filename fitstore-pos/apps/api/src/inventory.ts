@@ -160,7 +160,9 @@ export function receiptCosts(
 ) {
   const good = lines.flatMap((l, i) => (l.qty > 0 ? [i] : []));
   if (!good.length && additional > 0)
-    bad("No hay unidades buenas entre las que repartir el flete y otros costos.");
+    bad(
+      "No hay unidades buenas entre las que repartir el flete y otros costos.",
+    );
   const costs = good.length
     ? landedCosts(
         good.map((i) => lines[i]),
@@ -189,7 +191,10 @@ const seesCost = (actor: Actor) =>
 // Período por la fecha de la factura (como el 606) o, si falta, la de recepción.
 function receiptPeriod(query: Record<string, string>) {
   const day = /^\d{4}-\d{2}-\d{2}$/;
-  if ((query.from && !day.test(query.from)) || (query.to && !day.test(query.to)))
+  if (
+    (query.from && !day.test(query.from)) ||
+    (query.to && !day.test(query.to))
+  )
     bad("Usa fechas AAAA-MM-DD.");
   if (!query.from && !query.to) return {};
   const range = {
@@ -206,7 +211,9 @@ const UUID_RE =
 async function describeReceipts(db: any, rows: any[], actor: Actor) {
   const ids = (values: unknown[]) => [
     ...new Set(
-      values.filter((v): v is string => typeof v === "string" && UUID_RE.test(v)),
+      values.filter(
+        (v): v is string => typeof v === "string" && UUID_RE.test(v),
+      ),
     ),
   ];
   const supplierOf = (r: any) => r.supplierId ?? r.order?.supplierId ?? null;
@@ -219,7 +226,9 @@ async function describeReceipts(db: any, rows: any[], actor: Actor) {
     db.variant.findMany({
       where: {
         id: {
-          in: ids(rows.flatMap((r) => (r.items as any[]).map((l) => l.variantId))),
+          in: ids(
+            rows.flatMap((r) => (r.items as any[]).map((l) => l.variantId)),
+          ),
         },
       },
       include: { product: true },
@@ -253,7 +262,11 @@ async function describeReceipts(db: any, rows: any[], actor: Actor) {
     const goods = money(
       lines.reduce(
         (s, l, i) =>
-          s.plus(d(l.qty).times((r.items as any[])[i].unitCost ?? (r.items as any[])[i].cost ?? 0)),
+          s.plus(
+            d(l.qty).times(
+              (r.items as any[])[i].unitCost ?? (r.items as any[])[i].cost ?? 0,
+            ),
+          ),
         d(0),
       ),
     );
@@ -283,12 +296,17 @@ async function describeReceipts(db: any, rows: any[], actor: Actor) {
       userId: r.userId,
       userName: users.find((u: any) => u.id === r.userId)?.name ?? null,
       units: quantity(lines.reduce((s, l) => s.plus(l.qty), d(0))),
-      damagedUnits: quantity(lines.reduce((s, l) => s.plus(l.damagedQty), d(0))),
+      damagedUnits: quantity(
+        lines.reduce((s, l) => s.plus(l.damagedQty), d(0)),
+      ),
       lines,
     };
   });
 }
-const paymentLabel = (r: { paymentType: string | null; creditDays: number | null }) =>
+const paymentLabel = (r: {
+  paymentType: string | null;
+  creditDays: number | null;
+}) =>
   r.paymentType === "cash"
     ? "Contado"
     : r.paymentType === "credit"
@@ -936,7 +954,9 @@ export class InventoryController {
       where: {
         branchId: actor.branchId,
         ...period,
-        ...(query.supplierId ? { supplierId: parse(uuid, query.supplierId) } : {}),
+        ...(query.supplierId
+          ? { supplierId: parse(uuid, query.supplierId) }
+          : {}),
       },
       include: { order: { select: { number: true, supplierId: true } } },
       orderBy: { createdAt: "desc" },
@@ -981,7 +1001,10 @@ export class InventoryController {
       ["Dañado o rechazado", 18],
       ["Recibió", 20],
       ["Observación", 24],
-    ].map(([header, width]) => ({ header: String(header), width: Number(width) }));
+    ].map(([header, width]) => ({
+      header: String(header),
+      width: Number(width),
+    }));
     sheet.getRow(1).font = { bold: true };
     for (const r of rows)
       sheet.addRow([

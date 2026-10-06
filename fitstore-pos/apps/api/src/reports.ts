@@ -16,6 +16,7 @@ import {
   bookedLineCosts,
   replayReturns,
   returnedAt,
+  PAYMENT_GROUPS,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -273,6 +274,12 @@ export class ReportsController {
       (actor.role === "seller" || !can(actor.permissions, "profit:read"))
     )
       denied();
+    if (STORE_REPORTS.includes(name))
+      return sendStoreReport(
+        res,
+        await storeReport(this.db, actor, name, query),
+        query.format,
+      );
     const range = dateRange(query);
     const saleWhere: any = {
       branchId: actor.branchId,
@@ -770,4 +777,273 @@ export class ReportsController {
     }
     return res.json({ name, rows, from: range.gte, to: range.lte });
   }
+}
+
+// ── Reportes del día de la tienda (docs/tienda/CUADRE_REPORTES_FACTURA.md) ──
+export const STORE_REPORTS = ["venta-diaria-usuario", "venta-por-forma-pago"];
+const NOTE = "Verificar si los totales tienen descuentos aplicados";
+// Filtros: fechas (from/to), caja (cashSessionId) y usuario (userId). Con
+// caja y sin fechas, se toma la caja completa.
+export async function storeReport(
+  db: any,
+  actor: Actor,
+  name: string,
+  query: Record<string, string | undefined>,
+) {
+  const session = query.cashSessionId
+    ? await db.cashSession.findFirstOrThrow({
+        where: {
+          id: parse(uuid, query.cashSessionId),
+          branchId: actor.branchId,
+        },
+      })
+    : null;
+  const range =
+    session && !query.from && !query.to
+      ? null
+      : dateRange(query as Record<string, string>);
+  const userId = query.userId
+    ? parse(uuid, query.userId)
+    : (session?.userId ?? null);
+  const sales = await db.sale.findMany({
+    where: {
+      branchId: actor.branchId,
+      status: "completed",
+      ...(session ? { cashSessionId: session.id } : {}),
+      ...(query.userId ? { sellerId: userId } : {}),
+      ...(range ? { createdAt: range } : {}),
+    },
+    include: {
+      items: { include: { variant: { include: { product: true } } } },
+      payments: true,
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  const [user, terminal] = await Promise.all([
+    userId ? db.user.findUnique({ where: { id: userId } }) : null,
+    session && /^[0-9a-f-]{36}$/i.test(session.registerId)
+      ? db.terminal.findUnique({ where: { id: session.registerId } })
+      : null,
+  ]);
+  const settings = ((
+    await db.settings.findUnique({ where: { id: actor.branchId } })
+  )?.data ?? {}) as any;
+  const header = {
+    name,
+    business: {
+      name: settings.name ?? "",
+      branchName: settings.branchName ?? "",
+      address: settings.address ?? "",
+      legalId: settings.legalId ?? "",
+    },
+    from: range?.gte ?? session?.openedAt ?? null,
+    to: range?.lte ?? session?.closedAt ?? null,
+    printedAt: new Date(),
+    user: user
+      ? { id: user.id, number: user.cashierNumber ?? null, name: user.name }
+      : null,
+    register: session
+      ? {
+          id: session.registerId,
+          number: terminal?.registerNumber ?? null,
+          name: terminal?.registerName || terminal?.name || session.registerId,
+        }
+      : null,
+    cashSessionId: session?.id ?? null,
+    note: NOTE,
+  };
+  const units = (s: any) =>
+    s.items.reduce((a: any, i: any) => a.plus(i.qty), d(0)).toNumber();
+  if (name === "venta-diaria-usuario") {
+    // Una fila por producto (variante); PRECIO es el bruto antes del descuento.
+    const byVariant = new Map<string, any>();
+    for (const s of sales)
+      for (const i of s.items) {
+        const row = byVariant.get(i.variantId) ?? {
+          Descripción: i.variant.product.name,
+          SKU: i.variant.sku,
+          Cant: d(0),
+          ITBIS: d(0),
+          Desc: d(0),
+          Precio: d(0),
+        };
+        row.Cant = row.Cant.plus(i.qty);
+        row.ITBIS = row.ITBIS.plus(i.tax);
+        row.Desc = row.Desc.plus(i.discount);
+        row.Precio = row.Precio.plus(i.lineTotal).plus(i.discount);
+        byVariant.set(i.variantId, row);
+      }
+    const rows = [...byVariant.values()]
+      .map((r) => ({
+        ...r,
+        Cant: r.Cant.toNumber(),
+        ITBIS: money(r.ITBIS),
+        Desc: money(r.Desc),
+        Precio: money(r.Precio),
+      }))
+      .sort((a, b) => a.Descripción.localeCompare(b.Descripción, "es"));
+    const totals = {
+      Cant: d(rows.reduce((a, r) => a.plus(r.Cant), d(0))).toNumber(),
+      ITBIS: money(rows.reduce((a, r) => a.plus(r.ITBIS), d(0))),
+      Desc: money(rows.reduce((a, r) => a.plus(r.Desc), d(0))),
+      Precio: money(rows.reduce((a, r) => a.plus(r.Precio), d(0))),
+    };
+    return {
+      ...header,
+      title: "REPORTE DE LA VENTA DIARIA DE USUARIO",
+      totals,
+      rows: [...rows, { Descripción: "TOTAL", SKU: "", ...totals }],
+    };
+  }
+  // Por forma de pago: una venta combinada aparece en cada grupo con su parte.
+  const groups = PAYMENT_GROUPS.map((g) => {
+    const rows = sales.flatMap((s: any) => {
+      const parts = s.payments.filter(
+        (p: any) => p.entryType === "sale" && p.method === g.method,
+      );
+      if (!parts.length) return [];
+      return [
+        {
+          saleId: s.id,
+          number: s.number,
+          description: "Factura",
+          units: units(s),
+          amount: money(
+            parts.reduce((a: any, p: any) => a.plus(p.amount), d(0)),
+          ),
+          ...(g.method === "cod"
+            ? {
+                status: Number(s.creditBalance) > 0 ? "pendiente" : "cobrada",
+              }
+            : {}),
+        },
+      ];
+    });
+    return {
+      method: g.method,
+      label: g.label,
+      rows,
+      subtotal: {
+        units: d(
+          rows.reduce((a: any, r: any) => a.plus(r.units), d(0)),
+        ).toNumber(),
+        amount: money(rows.reduce((a: any, r: any) => a.plus(r.amount), d(0))),
+      },
+    };
+  }).filter((g) => g.method !== "credit_note" || g.rows.length);
+  const byInvoice = {
+    invoices: sales.length,
+    units: d(
+      sales.reduce((a: any, s: any) => a.plus(units(s)), d(0)),
+    ).toNumber(),
+    amount: money(sales.reduce((a: any, s: any) => a.plus(s.total), d(0))),
+  };
+  const rows: any[] = [];
+  for (const g of groups) {
+    rows.push({ COD: "", Descripción: g.label, Cant: "", T_Venta: "" });
+    for (const r of g.rows)
+      rows.push({
+        COD: r.number,
+        Descripción:
+          r.description + ((r as any).status ? " · " + (r as any).status : ""),
+        Cant: r.units,
+        T_Venta: r.amount,
+      });
+    rows.push({
+      COD: "",
+      Descripción: "Sub-Total por Pago",
+      Cant: g.subtotal.units,
+      T_Venta: g.subtotal.amount,
+    });
+  }
+  rows.push(
+    {
+      COD: "",
+      Descripción: "Sub-Total por Fact.",
+      Cant: byInvoice.units,
+      T_Venta: byInvoice.amount,
+    },
+    {
+      COD: "",
+      Descripción: "TOTAL",
+      Cant: byInvoice.units,
+      T_Venta: byInvoice.amount,
+    },
+  );
+  return {
+    ...header,
+    title: "REPORTE DE VENTA USUARIO",
+    groups,
+    byInvoice,
+    total: byInvoice.amount,
+    rows,
+  };
+}
+// Envía un reporte de la tienda como JSON, Excel o PDF (filas planas).
+export async function sendStoreReport(
+  res: Response,
+  report: any,
+  format?: string,
+) {
+  const rows: any[] = report.rows;
+  if (format === "xlsx") {
+    const book = new ExcelJS.Workbook();
+    const sheet = book.addWorksheet(report.name.slice(0, 31));
+    const keys = Object.keys(rows[0] || { Resultado: "" });
+    sheet.columns = keys.map((k) => ({ header: k, key: k, width: 24 }));
+    sheet.addRows(rows);
+    sheet.getRow(1).font = { bold: true };
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="fitstore-${report.name}.xlsx"`,
+    );
+    res.end(Buffer.from(await book.xlsx.writeBuffer()));
+    return;
+  }
+  if (format === "pdf") {
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="fitstore-${report.name}.pdf"`,
+    );
+    const doc = new PDFDocument({ size: "A4", margin: 32 });
+    doc.pipe(res);
+    const date = (v: any) =>
+      v
+        ? new Date(v).toLocaleString("es-DO", { timeZone: BUSINESS_TIME_ZONE })
+        : "";
+    doc
+      .fontSize(14)
+      .text(report.business.name || "FitStore")
+      .fontSize(12)
+      .text(report.title)
+      .fontSize(9)
+      .text("Desde: " + date(report.from) + "  Hasta: " + date(report.to))
+      .text(
+        (report.user
+          ? "Usuario: " + (report.user.number ?? "") + " " + report.user.name
+          : "") +
+          (report.register
+            ? "   Caja: " +
+              (report.register.number ?? "") +
+              " " +
+              report.register.name
+            : ""),
+      )
+      .moveDown();
+    for (const row of rows)
+      doc.text(
+        Object.values(row)
+          .map((v) => String(v ?? ""))
+          .join("  |  "),
+      );
+    doc.moveDown().text(report.note);
+    doc.end();
+    return;
+  }
+  res.json(report);
 }
