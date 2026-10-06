@@ -486,6 +486,117 @@ export const saleSchema = z.object({
     .max(20),
 });
 export type SaleInput = z.infer<typeof saleSchema>;
+
+// ── Cuadre de caja de la tienda (docs/tienda/CUADRE_REPORTES_FACTURA.md) ──
+
+/** Denominaciones de RD$ del impreso «Detalles de monedas», en su orden. */
+export const CASH_DENOMINATIONS = [
+  1, 5, 10, 20, 25, 50, 100, 200, 500, 1000, 2000,
+] as const;
+/** Conteo por denominación: { "100": 3, "2000": 1 }. Sólo las del impreso. */
+export const denominationCountsSchema = z
+  .object(
+    Object.fromEntries(
+      CASH_DENOMINATIONS.map((value) => [
+        String(value),
+        z.number().int().min(0).max(1000000).optional(),
+      ]),
+    ) as Record<string, z.ZodOptional<z.ZodNumber>>,
+  )
+  .strict();
+export type DenominationCounts = Partial<Record<string, number>>;
+/** Moneda × cantidad = total por denominación, y el subtotal contado. */
+export function countDenominations(counts: DenominationCounts = {}) {
+  const lines = CASH_DENOMINATIONS.map((value) => {
+    const qty = counts[String(value)] ?? 0;
+    return { value, qty, total: money(d(value).times(qty)) };
+  });
+  return {
+    lines,
+    total: money(lines.reduce((sum, l) => sum.plus(l.total), d(0))),
+  };
+}
+/**
+ * Resumen del impreso: 12-Diferencias = (2-Efectivo introducido + 5-Vale de
+ * caja) − 10-Total venta efectivo − 18-Fondo. En FitStore el punto 10 es todo
+ * lo que entra en efectivo menos lo que sale, así la diferencia es real.
+ */
+export const cashDifference = (v: {
+  counted: Decimal.Value;
+  vouchers: Decimal.Value;
+  cashSales: Decimal.Value;
+  opening: Decimal.Value;
+}) =>
+  money(d(v.counted).plus(v.vouchers).minus(v.cashSales).minus(v.opening));
+/** Entregado (a la dueña) + dejado en caja = efectivo contado. */
+export function deliveredSplit(
+  counted: Decimal.Value,
+  delivered?: Decimal.Value | null,
+) {
+  if (delivered === undefined || delivered === null)
+    return { delivered: null, left: null };
+  if (d(delivered).gt(counted))
+    throw new Error("Lo entregado no puede superar el efectivo contado.");
+  return {
+    delivered: money(delivered),
+    left: money(d(counted).minus(delivered)),
+  };
+}
+const cashAmount = moneyAmount(100000000, true);
+/**
+ * Cierre de caja. Basta countedCash (clientes anteriores) o el conteo por
+ * denominaciones; tarjeta y transferencia, si no se declaran, son las
+ * esperadas. Vales: salidas con comprobante no registradas como retiro.
+ */
+export const cashCloseSchema = z
+  .object({
+    countedCash: cashAmount.optional(),
+    countedCard: cashAmount.optional(),
+    countedTransfer: cashAmount.optional(),
+    denominations: denominationCountsSchema.optional(),
+    vouchers: cashAmount.default(0),
+    countedUsd: cashAmount.default(0),
+    countedEur: cashAmount.default(0),
+    delivered: cashAmount.optional(),
+    notes: z.string().max(1000).default(""),
+  })
+  .refine(
+    (v) => v.countedCash !== undefined || v.denominations !== undefined,
+    {
+      message: "indica el efectivo contado o el conteo por denominaciones",
+      path: ["countedCash"],
+    },
+  );
+export type CashCloseInput = z.infer<typeof cashCloseSchema>;
+/** Formas de pago del «Reporte de venta usuario», en el orden de la tienda. */
+export const PAYMENT_GROUPS = [
+  { method: "cash", label: "EFECTIVO" },
+  { method: "transfer", label: "CHEQUES/TRANSFERENCIA" },
+  { method: "credit", label: "COMPRA A CRÉDITO" },
+  { method: "card", label: "TARJETA CRÉDITO/DÉBITO" },
+  { method: "cod", label: "CONTRAENTREGA" },
+  { method: "credit_note", label: "NOTA DE CRÉDITO" },
+] as const;
+/** Importe con separador de miles y 2 decimales: 9,825.00 y -5.25. */
+export const formatAmount = (value: Decimal.Value) =>
+  Number(value).toLocaleString("es-DO", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+export const LOGO_MAX_BYTES = 200 * 1024;
+/** Logo de Ajustes: imagen PNG, JPEG, WebP o GIF en data URL de hasta 200 KB. */
+export function isImageDataUrl(value: string, maxBytes = LOGO_MAX_BYTES) {
+  const match =
+    /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/.exec(
+      value,
+    );
+  if (!match || match[2].length % 4) return false;
+  const data = match[2];
+  const bytes =
+    (data.length / 4) * 3 -
+    (data.endsWith("==") ? 2 : data.endsWith("=") ? 1 : 0);
+  return bytes > 0 && bytes <= maxBytes;
+}
 export const permissions: Record<string, string[]> = {
   admin: ["*"],
   manager: [
