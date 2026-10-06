@@ -4567,15 +4567,51 @@ describe("Ronda 9 · revisión · dinero", () => {
           })
         ).status,
       ).toBe(400);
-      expect(
-        (
-          await request("/sales", {
-            ...input(v.id, 100),
-            items: [{ variantId: v.id, qty: 1, discountAmount: 0.005 }],
-          })
-        ).status,
-      ).toBe(400);
+      // El descuento por monto no se guarda: sólo se vuelve porcentaje y la
+      // línea se cobra redondeada; ver R9-dinero-5-pos.
     });
+  });
+
+  it("R9-dinero-5-pos: una venta sin conexión con un descuento de 3 decimales se sincroniza y una inválida no bloquea las demás", async () => {
+    const v = await product("centavos caja", 100, 10, 10);
+    const offline = (items: any[], amount: number, expectedTotal?: number) => ({
+      offlineUuid: randomUUID(),
+      capturedAt: new Date().toISOString(),
+      cashSessionId: session.id,
+      items,
+      payments: [{ method: "cash", amount }],
+      ...(expectedTotal === undefined ? {} : { expectedTotal }),
+    });
+    // La caja convierte el descuento por monto en porcentaje y redondea la
+    // línea igual que la API: 100 − 1.004 = 98.996 → 99.00.
+    const discounted = offline(
+      [{ variantId: v.id, qty: 1, discountAmount: 1.004 }],
+      99,
+      99,
+    );
+    const wrongPayment = offline([{ variantId: v.id, qty: 1 }], 100.005);
+    const plain = offline([{ variantId: v.id, qty: 1 }], 100, 100);
+    const synced = await request("/sales/sync", {
+      sales: [discounted, wrongPayment, plain],
+    });
+    expect(synced.status).toBe(201);
+    expect(synced.body.results.map((r: any) => r.status)).toEqual([
+      "synced",
+      "conflict",
+      "synced",
+    ]);
+    expect(synced.body.results[1].message).toMatch(/2 decimales/);
+    expect(Number(synced.body.results[0].sale.total)).toBe(99);
+    // El reintento de la misma venta devuelve la ya registrada.
+    const again = await ok("/sales/sync", { sales: [discounted] });
+    expect(again.results[0].sale.id).toBe(synced.body.results[0].sale.id);
+    // En línea también se cobra.
+    const online = await request("/sales", {
+      ...input(v.id, 100),
+      items: [{ variantId: v.id, qty: 1, discountAmount: 0.005 }],
+    });
+    expect(online.status).toBe(201);
+    expect(Number(online.body.total)).toBe(100);
   });
 
   it("R9-dinero-6: el costo de una devolución de la ronda 7 se reconstruye por línea", async () => {
