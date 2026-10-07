@@ -40,25 +40,59 @@ test.beforeEach(async ({ request }) => {
   }
 });
 
-// La primera dirección IPv4 de la computadora que no sea la de loopback: la
-// misma que escribiría el celular. El intermediario de apoyo.ts escucha en
-// 127.0.0.1, así que la prueba va directo a la PWA con FITSTORE_WEB_URL (o el
-// preview de 4173) y se presenta con su propia dirección de cliente.
-async function direccionDeRed() {
+// La PWA se sirve a sí misma por una dirección de red de esta computadora,
+// como la ve el celular: un intermediario escucha en esa dirección y reenvía a
+// la vista previa (que puede estar sólo en 127.0.0.1). Si la computadora no
+// tiene ninguna dirección de red, la prueba se omite.
+async function servirPorLaRed(target: URL) {
   const { networkInterfaces } = await import("node:os");
-  for (const nics of Object.values(networkInterfaces()))
-    for (const nic of nics ?? [])
-      if (nic.family === "IPv4" && !nic.internal) return nic.address;
+  const http = await import("node:http");
+  const ips = Object.values(networkInterfaces())
+    .flatMap((nics) => nics ?? [])
+    .filter((nic) => nic.family === "IPv4" && !nic.internal)
+    .map((nic) => nic.address);
+  for (const ip of ips) {
+    const server = http.createServer((incoming, outgoing) => {
+      const forwarded = http.request(
+        {
+          hostname: target.hostname,
+          port: target.port || 80,
+          method: incoming.method,
+          path: incoming.url,
+          headers: { ...incoming.headers, host: target.host },
+        },
+        (response) => {
+          outgoing.writeHead(response.statusCode ?? 502, response.headers);
+          response.pipe(outgoing);
+        },
+      );
+      forwarded.on("error", () => outgoing.destroy());
+      incoming.pipe(forwarded);
+    });
+    const ok = await new Promise<boolean>((resolve) => {
+      server.once("error", () => resolve(false));
+      server.listen(0, ip, () => resolve(true));
+    });
+    if (!ok) continue;
+    const { port } = server.address() as { port: number };
+    return {
+      url: "http://" + ip + ":" + port + "/",
+      close: () =>
+        new Promise<void>((resolve) => server.close(() => resolve())),
+    };
+  }
   return null;
 }
 
 test("desde un celular por http (dirección de red, sin https) se abre la caja", async ({
   browser,
 }) => {
-  const ip = await direccionDeRed();
-  test.skip(!ip, "Esta computadora no tiene una dirección de red.");
-  const base = new URL(process.env.FITSTORE_WEB_URL || "http://127.0.0.1:4173");
-  base.hostname = ip!;
+  const target = new URL(
+    process.env.FITSTORE_WEB_URL || "http://127.0.0.1:4173",
+  );
+  const red = await servirPorLaRed(target);
+  test.skip(!red, "Esta computadora no tiene una dirección de red.");
+  const base = new URL(red!.url);
   const context = await browser.newContext({
     baseURL: base.toString(),
     viewport: { width: 390, height: 844 },
@@ -99,4 +133,5 @@ test("desde un celular por http (dirección de red, sin https) se abre la caja",
   await expect(page.getByText("Caja abierta")).toBeVisible();
   expect(errores.filter((e) => /randomUUID/.test(e))).toEqual([]);
   await context.close();
+  await red!.close();
 });

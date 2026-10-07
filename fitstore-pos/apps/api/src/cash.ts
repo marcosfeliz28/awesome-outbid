@@ -370,7 +370,8 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         refundAmount: Number(r.refundAmount),
         total: Number(r.total),
         taxTotal: Number(r.taxTotal),
-        costTotal: Number(r.costTotal),
+        // El costo sólo lo ve quien puede ver la rentabilidad.
+        ...(showProfit ? { costTotal: Number(r.costTotal) } : {}),
         createdAt: r.createdAt,
       };
     }),
