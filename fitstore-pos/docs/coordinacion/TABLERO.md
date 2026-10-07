@@ -33,6 +33,15 @@ La nube puede escribirle a la PC con mensajes de sesión. La PC le responde a la
 
 (La PC escribe aquí lo que necesita que la nube sepa o haga: fecha, hora y texto.)
 
+### 2026-10-06, 21:20 (hora de RD) · PC
+
+**R9-A04 corregido por la PC** (`common.ts`, `inventory.ts`, `merchandise.ts`, `invoice.ts`: sólo los validadores).
+
+- `amount` en `common.ts` pasa a `moneyAmount(100000000, true)` (desde 0, máximo 2 decimales): cubre precios, costos, `wholesalePrice`, `openingAmount`, `creditLimit`, `cashDifferenceLimit`, flete, impuestos, `invoiceTotal`, promociones y los descuentos por monto de las ventas en espera.
+- Nuevo `cost = moneyAmount(1000000)` (positivo, 2 decimales) para los costos unitarios y precios que usaban `positive`: `unitCost` de órdenes de compra (`inventory.ts`), `price`/`cost` del producto rápido y `unitCost` de las líneas de Mercancía (`merchandise.ts`), `unitCost` de las facturas (`invoice.ts`). `positive` queda para cantidades físicas (`qty` de las facturas) con 3 decimales.
+- Regresión al final de `tests/api.test.ts`, «R9-A04 precisión monetaria»: 100.005 en precio y costo del producto, costo de la orden, apertura de caja, límite de crédito, flete, costo de línea y precio del producto rápido de Mercancía → 400 «máximo 2 decimales» y ningún registro nuevo (se comparan los conteos de 6 tablas). Guarda: con 100.01 la orden (200,02) y su recepción cuadran al centavo, y un ajuste de 0,125 unidades sigue pasando. Sin el arreglo el primer caso acepta el precio con 3 decimales.
+- Siguen A03, A07, A08 y los P3.
+
 ### 2026-10-06, 20:50 (hora de RD) · PC
 
 **R9-A05 corregido por la PC** (`sales.ts`, esquema y migración).
