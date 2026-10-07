@@ -1,0 +1,29 @@
+Hola, ChatGPT. Cambio de papel hasta el jueves 8 de octubre: Claude agotó su límite semanal de uso, así que TÚ CONSTRUYES las correcciones pendientes de FitStore POS y Gemini las auditará. El jueves Claude retoma, integra lo tuyo y valida todo. Trabaja sobre el ZIP adjunto, que es el código actual completo (ronda 9 + correcciones A01 a A05 ya hechas).
+
+Adjunto: fitstore-pos-traspaso-chatgpt.zip (SHA-256: 0a47148731cbe54af553c6413f195787f15d894eebd10a7ff8a968020feac3f0)
+
+ESTADO ACTUAL
+- Tu auditoría de la ronda 9 (docs/AUDITORIA_RONDA9.md) encontró 12 hallazgos. Ya están corregidos, con regresión y pruebas en verde: A01 (devolución duplicada), A02 (cierre histórico), A03 (total de factura con dañados), A04 (2 decimales en dinero), A05 (merma en kardex). El detalle de cada corrección está en docs/coordinacion/TABLERO.md, sección «Mensajes de la PC para la nube».
+- También está corregido el fallo del celular por http (crypto.randomUUID) en apps/web/src/polyfills.ts.
+- Suites con todo junto: pnpm check en verde; integración 146/147 y navegador 55/56, con los dos fallos ya corregidos en el último commit.
+- Además te pedí aparte el instalador de Windows (MENSAJE_PARA_CHATGPT_INSTALADOR.txt); sigue siendo válido y puedes hacerlo en el mismo hilo o en otro.
+
+LO QUE TE PIDO CONSTRUIR, EN ESTE ORDEN
+1. R9-A08 (P2, rendimiento): las listas devuelven las fotos de evidencia en base64 completas. Cambiar a `hasProof: boolean` en las listas (ventas, contraentregas, cuadre.cod.rows) y servir la imagen aparte en `GET /payments/:id/proof` autenticado (misma regla de acceso que `POST /payments/:id/proof`: quien registró el cobro en su caja o quien tiene sale:manage). En la interfaz (apps/web/src/Tienda.tsx `ProofThumb`, Management.tsx) la miniatura carga esa URL con el token (fetch + blob URL). Mantener `logo` del negocio como está.
+2. R9-A07 (P2, control): arqueo a ciegas. En el cierre de caja (Management.tsx, formulario «Arqueo y cierre de caja») la cajera NO ve el esperado de efectivo, tarjeta ni transferencia; los campos vacíos cuentan como 0 y se exige confirmar antes de cerrar; si la diferencia supera `cashDifferenceLimit` de Ajustes, se exige una nota escrita. El gerente o la dueña (permiso profit:read o sale:manage) sí ve esperado y diferencia al revisar el historial y el cuadre impreso. La API (apps/api/src/cash.ts) no debe autocompletar campos vacíos con el esperado.
+3. P3: A06 (recepción concurrente devuelve 500 en vez de 409 o la misma recepción), A11 (el PDF y el historial de la venta deben mostrar el efectivo entregado y el cambio), A12 (el autorizador del descuento completo y legible en ticket y reporte), A09 (documentar en docs/DESPLIEGUE.md la cadena de proxy para conservar la IP real del cliente). A10 (pnpm audit) sólo si la actualización es menor y pnpm check sigue en verde.
+4. Si te queda tiempo: las brechas de docs/validacion/aceptacion-caja-brechas.json que siguen abiertas (pasos 12, 17, 18, 23, 27, 32, 38, 39 y parte del 40).
+
+REGLAS DE TRABAJO (las mismas de Claude; están en docs/CONTINUAR_EN_LOCAL.md)
+- Cada corrección lleva una regresión que FALLA con el código anterior y pasa con el nuevo. Las de la API van al FINAL de tests/api.test.ts en un describe propio «Ronda 10 · ChatGPT · R9-Axx»; las de navegador en tests/e2e/ en un archivo propio que importe `test` y `expect` desde ./apoyo (lo exige tests/e2e-higiene.test.ts).
+- Comentarios y textos en español. Sin datos del negocio. Sin contraseñas fijas.
+- Migraciones Prisma nuevas en apps/api/prisma/migrations/2026101100NN_r10_<nombre>, idempotentes, sin romper datos existentes.
+- No cambies dependencias salvo lo imprescindible para A10.
+- Al final: pnpm check, integración completa con la API compilada (node dist/main.js) sobre una base nueva, y e2e completa. Anota los resultados.
+
+ENTREGA
+- Un ZIP con el código completo corregido (misma estructura) y otro ZIP sólo con los archivos cambiados.
+- docs/RONDA10_CHATGPT.md: qué corregiste, cómo, la regresión de cada uno, la salida que muestra que fallaba antes, y los resultados de las suites.
+- Una nota de lo que NO pudiste probar en tu entorno.
+
+Para Gemini: pídele que audite tu ZIP con el mismo método de tus auditorías (reproducir cada hallazgo, evidencia, formato de docs/AUDITORIA_RONDA9.md) y que entregue docs/AUDITORIA_RONDA10_GEMINI.md. El jueves Claude integra todo, lo valida en Linux y en la PC de la tienda, y entrega la ronda 10.
