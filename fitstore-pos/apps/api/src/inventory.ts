@@ -284,6 +284,9 @@ async function describeReceipts(db: any, rows: any[], actor: Actor) {
       paymentType: r.paymentType,
       creditDays: r.creditDays,
       itbis: r.itbis == null ? null : Number(r.itbis),
+      // Documento del proveedor frente a lo aceptado (R9-A03).
+      invoiceTotal: r.invoiceTotal == null ? null : Number(r.invoiceTotal),
+      invoiceDifference: Number(r.invoiceDifference ?? 0),
       goods,
       freight: Number(r.freight),
       otherCosts: Number(r.otherCosts),
@@ -999,6 +1002,8 @@ export class InventoryController {
       ["ITBIS", 11],
       ["Total", 13],
       ["Dañado o rechazado", 18],
+      ["Total factura", 14],
+      ["Diferencia reconocida", 20],
       ["Recibió", 20],
       ["Observación", 24],
     ].map(([header, width]) => ({
@@ -1022,6 +1027,8 @@ export class InventoryController {
         r.itbis,
         r.total,
         (r as any).damagedCost || null,
+        r.invoiceTotal,
+        r.invoiceDifference || null,
         r.userName,
         [
           !r.supplierName && "Sin proveedor",

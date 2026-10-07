@@ -8857,3 +8857,153 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A04 precisión monetaria", () =
     expect(fine.status).toBe(201);
   });
 });
+
+// R9-A03 (auditoría de ChatGPT a la ronda 9): la entrada de mercancía
+// validaba el total de la factura del proveedor (con o sin lo dañado) y luego
+// lo descartaba: la recepción sólo guardaba lo aceptado y lo dañado, así que
+// el valor documental que se comprobó no se podía recuperar ni exportar.
+describe("Ronda 9 · auditoría de ChatGPT · R9-A03 total de la factura conservado", () => {
+  let owner = "",
+    supplierId = "",
+    variant: any;
+  const ip = "198.18.9." + (((Date.now() + 23) % 250) + 1);
+  const call = async (
+    path: string,
+    data?: unknown,
+    method = data === undefined ? "GET" : "POST",
+  ) => {
+    const response = await fetch(base + path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": ip,
+        Authorization: "Bearer " + owner,
+      },
+      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    });
+    return { status: response.status, body: await response.json() };
+  };
+  const must = async (path: string, data?: unknown, method?: string) => {
+    const r = await call(path, data, method);
+    if (r.status >= 400)
+      throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
+    return r.body;
+  };
+  beforeAll(async () => {
+    owner = (
+      await must("/auth/login", {
+        email: "admin@fitstore.demo",
+        password: process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+      })
+    ).accessToken;
+    const terminalId = randomUUID();
+    const terminal = await must("/terminals/register", {
+      id: terminalId,
+      name: "QA R9-A03",
+      secret: "qa-a03-" + terminalId,
+    });
+    if (terminal.status === "pending")
+      await must("/terminals/" + terminalId + "/approve", {});
+    supplierId = (
+      await must("/suppliers", { name: "QA R9-A03 proveedor " + suffix })
+    ).id;
+    const categories = await must("/categories");
+    const category =
+      categories.find((c: any) => c.name === "Ropa deportiva") ?? categories[0];
+    const product = await must("/products", {
+      name: "QA R9-A03 factura " + suffix,
+      sku: "R9A03-" + randomUUID().slice(0, 8),
+      categoryId: category.id,
+      variants: [
+        {
+          sku: "R9A03V-" + randomUUID().slice(0, 8),
+          barcode: "R9A03B" + Date.now().toString().slice(-8),
+          price: 200,
+          costAvg: 100,
+        },
+      ],
+    });
+    variant = product.variants[0];
+    products.push(product);
+  }, 60000);
+
+  it("una factura de 400 con 300 buenos y 100 dañados conserva el 400, lo aceptado, lo dañado y la diferencia, en consulta y exportación", async () => {
+    const entry = await must("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId,
+      invoiceTotal: 400,
+      supplierInvoice: "F-A03-" + suffix,
+      items: [
+        {
+          variantId: variant.id,
+          qty: 3,
+          damagedQty: 1,
+          damageReason: "Caja golpeada",
+          unitCost: 100,
+        },
+      ],
+    });
+    const receipt = await fixtureDb.goodsReceipt.findFirstOrThrow({
+      where: { supplierId, supplierInvoice: "F-A03-" + suffix },
+    });
+    expect(Number(receipt.total)).toBe(300);
+    expect(Number(receipt.damagedCost)).toBe(100);
+    expect(Number(receipt.invoiceTotal)).toBe(400);
+    expect(Number(receipt.invoiceDifference)).toBe(0);
+    expect(entry).toMatchObject({
+      total: 300,
+      invoiceTotal: 400,
+      invoiceDifference: 0,
+    });
+    const listed = (
+      await must("/goods-receipts?supplierId=" + supplierId)
+    ).find((r: any) => r.id === receipt.id);
+    expect(listed).toMatchObject({
+      total: 300,
+      invoiceTotal: 400,
+      invoiceDifference: 0,
+    });
+    // La exportación contable lleva el total del documento.
+    const response = await fetch(base + "/goods-receipts/export", {
+      headers: { Authorization: "Bearer " + owner, "X-Forwarded-For": ip },
+    });
+    expect(response.status).toBe(200);
+    const ExcelJS = requireApi("exceljs");
+    const book = new ExcelJS.Workbook();
+    await book.xlsx.load(Buffer.from(await response.arrayBuffer()));
+    const sheet = book.getWorksheet("Compras");
+    const headers = (sheet.getRow(1).values as any[]).slice(1);
+    const col = headers.indexOf("Total factura") + 1;
+    const diff = headers.indexOf("Diferencia reconocida") + 1;
+    expect(col).toBeGreaterThan(0);
+    expect(diff).toBeGreaterThan(0);
+    const row = [...Array(sheet.rowCount).keys()]
+      .map((i) => sheet.getRow(i + 1))
+      .find(
+        (r) =>
+          r.getCell(headers.indexOf("Factura") + 1).value === "F-A03-" + suffix,
+      );
+    expect(row).toBeDefined();
+    expect(Number(row!.getCell(col).value)).toBe(400);
+    expect(Number(row!.getCell(headers.indexOf("Total") + 1).value)).toBe(300);
+  });
+
+  it("una diferencia confirmada queda reconocida con su importe", async () => {
+    await must("/merchandise/operations", {
+      id: randomUUID(),
+      direction: "entry",
+      supplierId,
+      invoiceTotal: 250,
+      acknowledgeMismatch: true,
+      supplierInvoice: "F-A03-dif-" + suffix,
+      items: [{ variantId: variant.id, qty: 2, unitCost: 100 }],
+    });
+    const receipt = await fixtureDb.goodsReceipt.findFirstOrThrow({
+      where: { supplierId, supplierInvoice: "F-A03-dif-" + suffix },
+    });
+    expect(Number(receipt.total)).toBe(200);
+    expect(Number(receipt.invoiceTotal)).toBe(250);
+    expect(Number(receipt.invoiceDifference)).toBe(50);
+  });
+});

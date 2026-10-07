@@ -341,6 +341,10 @@ model GoodsReceipt {
   itbis Decimal? @db.Decimal(14,2)
   // Costo de lo dañado o rechazado (fuera del total que se debe).
   damagedCost Decimal @default(0) @db.Decimal(14,2)
+  // Total del documento del proveedor tal como se presentó, y la diferencia
+  // reconocida: factura − aceptado (total) − dañado (R9-A03).
+  invoiceTotal Decimal? @db.Decimal(14,2)
+  invoiceDifference Decimal @default(0) @db.Decimal(14,2)
   userId String
   branchId String @default("main")
   createdAt DateTime @default(now())

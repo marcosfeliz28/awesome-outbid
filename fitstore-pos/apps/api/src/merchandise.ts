@@ -523,6 +523,14 @@ export class MerchandiseController {
                   freight: data.freight,
                   otherCosts: data.taxes,
                   damagedCost,
+                  // El total del documento se conserva aparte de lo aceptado y
+                  // lo dañado; la diferencia reconocida es lo que no explica
+                  // ninguno de los dos (R9-A03).
+                  invoiceTotal: invoiceTotal ?? null,
+                  invoiceDifference:
+                    invoiceTotal === undefined
+                      ? 0
+                      : money(d(invoiceTotal).minus(total).minus(damagedCost)),
                   // Sin condición propia, la de la orden o el plazo del proveedor.
                   ...documentData(
                     data,
@@ -700,6 +708,9 @@ export class MerchandiseController {
           receiptId: receipt?.id,
           variantIds: lines.map((l) => l.variantId),
           total,
+          // Total del documento y diferencia reconocida (R9-A03).
+          invoiceTotal: receipt ? (invoiceTotal ?? null) : null,
+          invoiceDifference: receipt ? Number(receipt.invoiceDifference) : 0,
           attachmentId: draft?.attachmentId,
         };
         await audit(
