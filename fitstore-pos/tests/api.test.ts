@@ -8482,3 +8482,172 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A02 cierre histórico intacto",
     expect(await profitOf(a)).toBe(profitA);
   });
 });
+
+// R9-A05 (auditoría de ChatGPT a la ronda 9): una devolución dañada o abierta,
+// que no vuelve al stock vendible, quedaba sin cantidad ni valor: el
+// movimiento «return_waste» tenía cantidad 0 y la devolución costo 0, así que
+// el kardex no podía recuperar que se recibió una unidad. Ahora la merma se
+// cuenta y se valora aparte; el costo contable sigue en cero para no descontar
+// la utilidad dos veces, y el stock vendible no cambia.
+describe("Ronda 9 · auditoría de ChatGPT · R9-A05 merma de devoluciones", () => {
+  let owner = "",
+    cashId = "",
+    variant: any;
+  const ip = "198.18.9." + (((Date.now() + 13) % 250) + 1);
+  const call = async (
+    path: string,
+    data?: unknown,
+    method = data === undefined ? "GET" : "POST",
+  ) => {
+    const response = await fetch(base + path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": ip,
+        Authorization: "Bearer " + owner,
+      },
+      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    });
+    return { status: response.status, body: await response.json() };
+  };
+  const must = async (path: string, data?: unknown, method?: string) => {
+    const r = await call(path, data, method);
+    if (r.status >= 400)
+      throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
+    return r.body;
+  };
+  const closeOwnerCash = async () => {
+    const me = await must("/auth/me");
+    for (const s of (await must("/cash-sessions")).filter(
+      (c: any) => !c.closedAt && c.userId === me.id,
+    ))
+      await must("/cash-sessions/" + s.id + "/close", {
+        countedCash: Math.max(0, s.expected.cash),
+        countedCard: Math.max(0, s.expected.card),
+        countedTransfer: Math.max(0, s.expected.transfer),
+        notes: "Cierre QA R9-A05",
+      });
+  };
+  afterAll(async () => {
+    if (owner) await closeOwnerCash();
+  });
+  beforeAll(async () => {
+    owner = (
+      await must("/auth/login", {
+        email: "admin@fitstore.demo",
+        password: process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+      })
+    ).accessToken;
+    const terminalId = randomUUID();
+    const terminal = await must("/terminals/register", {
+      id: terminalId,
+      name: "QA R9-A05",
+      secret: "qa-a05-" + terminalId,
+    });
+    if (terminal.status === "pending")
+      await must("/terminals/" + terminalId + "/approve", {});
+    await closeOwnerCash();
+    cashId = (
+      await must("/cash-sessions/open", {
+        registerId: "qa-a05-" + suffix,
+        openingAmount: 500,
+      })
+    ).id;
+    const categories = await must("/categories");
+    const category =
+      categories.find((c: any) => c.name === "Ropa deportiva") ?? categories[0];
+    const product = await must("/products", {
+      name: "QA R9-A05 merma " + suffix,
+      sku: "R9A05-" + randomUUID().slice(0, 8),
+      categoryId: category.id,
+      variants: [
+        {
+          sku: "R9A05V-" + randomUUID().slice(0, 8),
+          barcode: "R9A05B" + Date.now().toString().slice(-8),
+          price: 100,
+          costAvg: 20,
+        },
+      ],
+    });
+    variant = product.variants[0];
+    products.push(product);
+    await must("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 5,
+      reason: "QA R9-A05 existencias",
+    });
+  }, 60000);
+
+  it("una unidad devuelta dañada queda contada y valorada como merma, sin tocar el stock vendible ni el costo contable", async () => {
+    const sale = await must("/sales", {
+      offlineUuid: randomUUID(),
+      cashSessionId: cashId,
+      items: [{ variantId: variant.id, qty: 1 }],
+      payments: [{ method: "cash", amount: 100 }],
+      expectedTotal: 100,
+    });
+    const stockBefore = Number(
+      (await fixtureDb.variant.findUniqueOrThrow({ where: { id: variant.id } }))
+        .stock,
+    );
+    const returned = await must("/returns", {
+      operationId: randomUUID(),
+      saleId: sale.id,
+      cashSessionId: cashId,
+      reason: "Producto roto al regresar",
+      refundMethod: "cash",
+      items: [
+        { saleItemId: sale.items[0].id, qty: 1, restock: false, damaged: true },
+      ],
+    });
+    // Stock vendible intacto y costo contable en cero, como antes...
+    expect(
+      Number(
+        (
+          await fixtureDb.variant.findUniqueOrThrow({
+            where: { id: variant.id },
+          })
+        ).stock,
+      ),
+    ).toBe(stockBefore);
+    const row = await fixtureDb.saleReturn.findUniqueOrThrow({
+      where: { id: returned.id },
+    });
+    expect(Number(row.costTotal)).toBe(0);
+    // ...pero la merma queda contada y valorada al costo de la venta.
+    expect(Number(row.wasteQty)).toBe(1);
+    expect(Number(row.wasteCostTotal)).toBe(20);
+    expect((row.items as any[])[0]).toMatchObject({
+      wasteQty: 1,
+      wasteCost: 20,
+      cost: 0,
+    });
+    const waste = await fixtureDb.inventoryMovement.findMany({
+      where: { variantId: variant.id, type: "return_waste", refId: sale.id },
+    });
+    expect(waste).toHaveLength(1);
+    expect(Number(waste[0].qty)).toBe(1);
+    expect(Number(waste[0].unitCost)).toBe(20);
+    expect(Number(waste[0].balanceAfter)).toBe(stockBefore);
+    // El kardex del día lo muestra con su cantidad.
+    const today = new Date().toLocaleDateString("en-CA", {
+      timeZone: "America/Santo_Domingo",
+    });
+    const kardex = (
+      await must(`/reports/kardex?from=${today}&to=${today}`)
+    ).rows.filter(
+      (r: any) => r.SKU === variant.sku && r.Tipo === "return_waste",
+    );
+    expect(kardex).toHaveLength(1);
+    expect(kardex[0]).toMatchObject({
+      Cantidad: 1,
+      Saldo: stockBefore,
+      Costo: 20,
+    });
+    // La utilidad sigue cargando el costo de la unidad perdida una sola vez.
+    const profit = (
+      await must(`/reports/profit?from=${today}&to=${today}`)
+    ).rows.find((r: any) => r.Producto === "QA R9-A05 merma " + suffix);
+    expect(profit.Costo).toBe(20);
+  });
+});

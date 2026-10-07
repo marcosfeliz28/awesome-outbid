@@ -252,6 +252,10 @@ model SaleReturn {
   total Decimal @db.Decimal(14,2)
   taxTotal Decimal @db.Decimal(14,2)
   costTotal Decimal @db.Decimal(14,2)
+  // Unidades que no volvieron al stock vendible y su costo (merma): se
+  // registran aparte para no descontar la utilidad dos veces (R9-A05).
+  wasteQty Decimal @default(0) @db.Decimal(14,3)
+  wasteCostTotal Decimal @default(0) @db.Decimal(14,2)
   refundAmount Decimal @default(0) @db.Decimal(14,2)
   refundMethod String
   cashSessionId String? @db.Uuid

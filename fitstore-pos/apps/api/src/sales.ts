@@ -31,6 +31,7 @@ import {
   returnedAt,
   replayReturns,
   moneyAmount,
+  quantity,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -1069,10 +1070,18 @@ export class SalesController {
         variants.set(variantId, await lockVariant(tx, variantId, actor));
       let total = d(0),
         tax = d(0),
-        cost = d(0);
+        cost = d(0),
+        wasteQty = d(0),
+        wasteCost = d(0);
       // Importes devueltos por línea: quedan en la devolución para que los
       // reportes usen exactamente lo registrado (R7-04).
-      const parts: { cost: number; total: number; tax: number }[] = [];
+      const parts: {
+        cost: number;
+        total: number;
+        tax: number;
+        wasteQty: number;
+        wasteCost: number;
+      }[] = [];
       // Lo que ya contabilizaron las devoluciones anteriores, línea por línea.
       const history = replayReturns(sale, sale.returns);
       for (const i of lines) {
@@ -1112,10 +1121,18 @@ export class SalesController {
               .minus(past.waste);
           cost = cost.plus(lineCost);
         }
+        // Merma: lo que no vuelve al stock vendible queda contado y valorado
+        // aparte; el costo contable de la devolución sigue en cero (R9-A05).
+        const lineWasteQty = i.restock ? d(0) : d(i.qty),
+          lineWasteCost = i.restock ? d(0) : back(allocationCost(i.line));
+        wasteQty = wasteQty.plus(lineWasteQty);
+        wasteCost = wasteCost.plus(lineWasteCost);
         parts.push({
           cost: lineCost.toNumber(),
           total: lineTotal.toNumber(),
           tax: lineTax.toNumber(),
+          wasteQty: lineWasteQty.toNumber(),
+          wasteCost: lineWasteCost.toNumber(),
         });
         await tx.saleItem.update({
           where: { id: i.line.id },
@@ -1161,8 +1178,10 @@ export class SalesController {
               data: {
                 variantId: variant.id,
                 lotId: allocation.lotId,
+                // Cantidad física recibida como merma; el saldo vendible no
+                // cambia (R9-A05).
                 type: "return_waste",
-                qty: 0,
+                qty,
                 unitCost: allocation.unitCost,
                 balanceAfter: variant.stock,
                 refId: sale.id,
@@ -1216,6 +1235,8 @@ export class SalesController {
           total: money(total),
           taxTotal: money(tax),
           costTotal: money(cost),
+          wasteQty: quantity(wasteQty),
+          wasteCostTotal: money(wasteCost),
           refundMethod: data.refundMethod,
           refundAmount,
           cashSessionId: data.cashSessionId,
