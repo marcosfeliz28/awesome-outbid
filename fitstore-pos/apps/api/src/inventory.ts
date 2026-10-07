@@ -34,7 +34,7 @@ import {
   parse,
   uuid,
   amount,
-  positive,
+  cost,
   reason,
   audit,
   bad,
@@ -632,7 +632,7 @@ export class InventoryController {
         supplierId: uuid,
         expectedDate: z.string().datetime().optional(),
         items: z
-          .array(z.object({ variantId: uuid, qty, unitCost: positive }))
+          .array(z.object({ variantId: uuid, qty, unitCost: cost }))
           .min(1)
           .max(200),
       }),

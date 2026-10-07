@@ -8651,3 +8651,209 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A05 merma de devoluciones", () 
     expect(profit.Costo).toBe(20);
   });
 });
+
+// R9-A04 (auditoría de ChatGPT a la ronda 9): los validadores generales de
+// dinero aceptaban cualquier decimal, PostgreSQL redondeaba al guardar y la
+// orden (2 × 100.005 = 200.01) no cuadraba con su recepción (2 × 100.01 =
+// 200.02). Todo importe que termina en Decimal(14,2) exige como máximo 2
+// decimales; las cantidades físicas siguen admitiendo 3.
+describe("Ronda 9 · auditoría de ChatGPT · R9-A04 precisión monetaria", () => {
+  let owner = "",
+    supplierId = "",
+    categoryId = "",
+    variant: any;
+  const ip = "198.18.9." + (((Date.now() + 19) % 250) + 1);
+  const call = async (
+    path: string,
+    data?: unknown,
+    method = data === undefined ? "GET" : "POST",
+  ) => {
+    const response = await fetch(base + path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": ip,
+        Authorization: "Bearer " + owner,
+      },
+      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    });
+    return { status: response.status, body: await response.json() };
+  };
+  const must = async (path: string, data?: unknown, method?: string) => {
+    const r = await call(path, data, method);
+    if (r.status >= 400)
+      throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
+    return r.body;
+  };
+  const closeOwnerCash = async () => {
+    const me = await must("/auth/me");
+    for (const s of (await must("/cash-sessions")).filter(
+      (c: any) => !c.closedAt && c.userId === me.id,
+    ))
+      await must("/cash-sessions/" + s.id + "/close", {
+        countedCash: Math.max(0, s.expected.cash),
+        countedCard: Math.max(0, s.expected.card),
+        countedTransfer: Math.max(0, s.expected.transfer),
+        notes: "Cierre QA R9-A04",
+      });
+  };
+  const counts = async () => ({
+    products: await fixtureDb.product.count(),
+    orders: await fixtureDb.purchaseOrder.count(),
+    customers: await fixtureDb.customer.count(),
+    sessions: await fixtureDb.cashSession.count(),
+    receipts: await fixtureDb.goodsReceipt.count(),
+    movements: await fixtureDb.inventoryMovement.count(),
+  });
+  afterAll(async () => {
+    if (owner) await closeOwnerCash();
+  });
+  beforeAll(async () => {
+    owner = (
+      await must("/auth/login", {
+        email: "admin@fitstore.demo",
+        password: process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+      })
+    ).accessToken;
+    const terminalId = randomUUID();
+    const terminal = await must("/terminals/register", {
+      id: terminalId,
+      name: "QA R9-A04",
+      secret: "qa-a04-" + terminalId,
+    });
+    if (terminal.status === "pending")
+      await must("/terminals/" + terminalId + "/approve", {});
+    await closeOwnerCash();
+    supplierId = (await must("/suppliers"))[0].id;
+    const categories = await must("/categories");
+    categoryId = (
+      categories.find((c: any) => c.name === "Ropa deportiva") ?? categories[0]
+    ).id;
+    const product = await must("/products", {
+      name: "QA R9-A04 centavos " + suffix,
+      sku: "R9A04-" + randomUUID().slice(0, 8),
+      categoryId,
+      variants: [
+        {
+          sku: "R9A04V-" + randomUUID().slice(0, 8),
+          barcode: "R9A04B" + Date.now().toString().slice(-8),
+          price: 100,
+          costAvg: 50,
+        },
+      ],
+    });
+    variant = product.variants[0];
+    products.push(product);
+  }, 60000);
+
+  it("un importe con 3 decimales se rechaza con 400 en precios, costos, flete, apertura, límites y documentos, sin escribir nada", async () => {
+    const before = await counts();
+    const sku = () => "R9A04X-" + randomUUID().slice(0, 8);
+    const attempts: [string, unknown][] = [
+      [
+        "/products",
+        {
+          name: "QA R9-A04 precio " + suffix,
+          sku: sku(),
+          categoryId,
+          variants: [
+            { sku: sku(), barcode: sku(), price: 100.005, costAvg: 50 },
+          ],
+        },
+      ],
+      [
+        "/products",
+        {
+          name: "QA R9-A04 costo " + suffix,
+          sku: sku(),
+          categoryId,
+          variants: [
+            { sku: sku(), barcode: sku(), price: 100, costAvg: 50.005 },
+          ],
+        },
+      ],
+      [
+        "/purchase-orders",
+        {
+          supplierId,
+          items: [{ variantId: variant.id, qty: 2, unitCost: 100.005 }],
+        },
+      ],
+      [
+        "/cash-sessions/open",
+        { registerId: "qa-a04-" + suffix, openingAmount: 500.005 },
+      ],
+      [
+        "/customers",
+        { name: "QA R9-A04 cliente " + suffix, creditLimit: 1000.005 },
+      ],
+      [
+        "/merchandise/operations",
+        {
+          id: randomUUID(),
+          direction: "entry",
+          supplierId,
+          freight: 1.005,
+          items: [{ variantId: variant.id, qty: 1, unitCost: 10 }],
+        },
+      ],
+      [
+        "/merchandise/operations",
+        {
+          id: randomUUID(),
+          direction: "entry",
+          supplierId,
+          items: [{ variantId: variant.id, qty: 1, unitCost: 10.005 }],
+        },
+      ],
+      [
+        "/merchandise/operations",
+        {
+          id: randomUUID(),
+          direction: "entry",
+          supplierId,
+          items: [
+            {
+              quick: {
+                name: "QA R9-A04 rápido " + suffix,
+                categoryId,
+                price: 20.005,
+                cost: 10,
+                barcode: sku(),
+                variant: "Única",
+              },
+              qty: 1,
+              unitCost: 10,
+            },
+          ],
+        },
+      ],
+    ];
+    for (const [path, body] of attempts) {
+      const r = await call(path, body);
+      expect(r.status, path + " " + JSON.stringify(body)).toBe(400);
+      expect(r.body.message, path).toMatch(/2 decimales/);
+    }
+    expect(await counts()).toEqual(before);
+  });
+
+  it("con 2 decimales la orden y su recepción cuadran al centavo", async () => {
+    const order = await must("/purchase-orders", {
+      supplierId,
+      items: [{ variantId: variant.id, qty: 2, unitCost: 100.01 }],
+    });
+    expect(Number(order.total)).toBe(200.02);
+    const receipt = await must("/purchase-orders/" + order.id + "/receive", {
+      operationId: randomUUID(),
+      items: [{ itemId: order.items[0].id, qty: 2 }],
+    });
+    expect(Number(receipt.total)).toBe(Number(order.total));
+    // Las cantidades físicas siguen admitiendo 3 decimales.
+    const fine = await call("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 0.125,
+      reason: "QA R9-A04 cantidad fina",
+    });
+    expect(fine.status).toBe(201);
+  });
+});

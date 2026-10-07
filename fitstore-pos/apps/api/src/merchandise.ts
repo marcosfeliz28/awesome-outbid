@@ -31,10 +31,10 @@ import {
   amount,
   audit,
   bad,
+  cost,
   denied,
   json,
   parse,
-  positive,
   uuid,
 } from "./common";
 import { assertCodesFree } from "./catalog";
@@ -65,8 +65,8 @@ export {
 const quickSchema = z.object({
   name: z.string().trim().min(2).max(200),
   categoryId: uuid,
-  price: positive,
-  cost: positive,
+  price: cost,
+  cost,
   barcode: z.string().trim().min(1).max(100),
   variant: z.string().trim().min(1).max(100),
 });
@@ -77,7 +77,7 @@ const lineSchema = z
     // En una entrada, 0 si toda la línea llegó dañada o rechazada.
     qty: countedQty(),
     ...damageFields,
-    unitCost: positive,
+    unitCost: cost,
     lotId: uuid.optional(),
     lotNumber: z.string().trim().min(1).max(100).optional(),
     expiryDate: z.string().datetime().optional(),

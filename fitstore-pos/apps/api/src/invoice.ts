@@ -7,7 +7,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import ExcelJS from "exceljs";
 import * as z4 from "zod/v4";
-import { amount, bad, parse, positive } from "./common";
+import { amount, bad, cost, parse, positive } from "./common";
 
 export const extractedSchema = z.object({
   total: amount.nullable().optional(),
@@ -17,7 +17,7 @@ export const extractedSchema = z.object({
         code: z.string().max(100).default(""),
         description: z.string().max(300),
         qty: positive,
-        unitCost: positive,
+        unitCost: cost,
         lotNumber: z.string().max(100).nullable().optional(),
         expiryDate: z
           .string()

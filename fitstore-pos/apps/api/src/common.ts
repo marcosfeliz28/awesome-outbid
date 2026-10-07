@@ -13,7 +13,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaClient } from "@prisma/client";
-import { can, stockQty, z, ZodError } from "@fitstore/shared";
+import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
 import type { Request, Response } from "express";
 
 @Injectable()
@@ -180,7 +180,11 @@ export const parse = <T extends z.ZodTypeAny>(
   input: unknown,
 ): z.infer<T> => schema.parse(input);
 export const uuid = z.string().uuid();
-export const amount = z.number().nonnegative().max(100000000);
+// Importes de dinero: como máximo 2 decimales, porque terminan en Decimal(14,2)
+// y un tercer decimal hacía que orden y recepción no cuadraran (R9-A04).
+export const amount = moneyAmount(100000000, true);
+export const cost = moneyAmount(1000000);
+// Cantidades físicas (no dinero): hasta 3 decimales, como las existencias.
 export const positive = z.number().positive().max(1000000);
 // Toda cantidad que mueve o reserva existencias usa esta validación (R4-03).
 export const qty = stockQty();
