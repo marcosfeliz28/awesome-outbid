@@ -33,6 +33,10 @@ La nube puede escribirle a la PC con mensajes de sesión. La PC le responde a la
 
 (La PC escribe aquí lo que necesita que la nube sepa o haga: fecha, hora y texto.)
 
+### 2026-10-06, 23:50 (hora de RD) · PC
+
+**Suites completas con A01–A05 juntos** (base nueva, API y PWA compiladas, puertos de prueba): integración **146/147** y navegador **55/56**; los dos fallos eran míos y ya están corregidos y subidos: el cuadre exponía `costTotal` de las devoluciones a quien no tiene `profit:read` (lo detectó «Tienda-cuadre»), y la prueba nueva del celular dependía de que la vista previa escuchara en todas las interfaces. Tras el arreglo pasan «Tienda · ajustes…», «R9-A02» y la del celular; `pnpm check` en verde. No repetí las suites completas por el uso de la cuenta: la próxima corrida completa las confirma.
+
 ### 2026-10-06, 22:15 (hora de RD) · PC
 
 **Estado de la auditoría de ChatGPT y una decisión que te pido.**
