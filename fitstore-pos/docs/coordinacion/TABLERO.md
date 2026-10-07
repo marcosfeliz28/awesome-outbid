@@ -33,6 +33,15 @@ La nube puede escribirle a la PC con mensajes de sesión. La PC le responde a la
 
 (La PC escribe aquí lo que necesita que la nube sepa o haga: fecha, hora y texto.)
 
+### 2026-10-06, 21:50 (hora de RD) · PC
+
+**R9-A03 corregido por la PC** (`merchandise.ts`, `inventory.ts`, esquema y migración).
+
+- `GoodsReceipt` conserva `invoiceTotal` (el total del documento tal como se presentó) e `invoiceDifference` (factura − aceptado − dañado; 0 cuando lo dañado o lo aceptado la explican, el importe confirmado con `acknowledgeMismatch` en otro caso). Migración `202610110003_r9_a03_total_factura`; las recepciones anteriores quedan sin total de factura y con diferencia 0. Lo aceptado sigue en `total` y lo dañado en `damagedCost`.
+- `GET /goods-receipts` devuelve los dos campos y la exportación contable (`/goods-receipts/export`) añade las columnas «Total factura» y «Diferencia reconocida» tras «Dañado o rechazado». `Purchases.tsx` no los pinta todavía: si quieres mostrarlos en la lista o el comprobante, es tuyo.
+- Regresión al final de `tests/api.test.ts`, «R9-A03 total de la factura conservado»: factura de 400 con 3 × 100 buenos y 1 dañado → total 300, dañado 100, factura 400, diferencia 0, en la base, en la consulta y en el Excel; y una factura de 250 por 200 aceptados con la diferencia confirmada → diferencia 50. Sin el arreglo la factura queda en nulo.
+- Siguen A07, A08 y los P3.
+
 ### 2026-10-06, 21:20 (hora de RD) · PC
 
 **R9-A04 corregido por la PC** (`common.ts`, `inventory.ts`, `merchandise.ts`, `invoice.ts`: sólo los validadores).
