@@ -126,7 +126,7 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
       db.user.findUnique({ where: { id: session.userId } }),
       db.sale.findMany({
         where: { cashSessionId: session.id, branchId: session.branchId },
-        include: { payments: true, returns: true },
+        include: { payments: true },
       }),
       db.payment.findMany({
         where: {
@@ -142,6 +142,14 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   const returns = await db.saleReturn.findMany({
     where: { cashSessionId: session.id },
   });
+  // Las ventas devueltas en esta caja, aunque se vendieran en otra: el cuadre
+  // nombra cada devolución con su venta original (R9-A02).
+  const returnedSales = returns.length
+    ? await db.sale.findMany({
+        where: { id: { in: returns.map((r: any) => r.saleId) } },
+        select: { id: true, number: true, cashSessionId: true },
+      })
+    : [];
   const settings = (settingsRow?.data ?? {}) as any;
   const details = (session.closeDetails ?? {}) as any;
   const completed = sales.filter((s: any) => s.status === "completed");
@@ -236,25 +244,26 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   });
   const countedUsd = Number(details.countedUsd ?? 0);
   const countedEur = Number(details.countedEur ?? 0);
-  // Rentabilidad: ventas sin ITBIS menos costo, neto de devoluciones.
+  // Rentabilidad: ventas sin ITBIS menos costo, neto de las devoluciones que
+  // se registraron EN ESTA caja. Una devolución hecha después desde otra caja
+  // ajusta el cuadre de esa otra caja, con referencia a la venta original; el
+  // cierre ya aprobado no se reescribe (R9-A02).
   const showProfit = can(actor.permissions, "profit:read");
   const profit = showProfit
     ? money(
-        completed.reduce(
-          (a: any, s: any) =>
-            a
-              .plus(s.total)
-              .minus(s.taxTotal)
-              .minus(s.costTotal)
-              .minus(
-                s.returns.reduce(
-                  (b: any, r: any) =>
-                    b.plus(r.total).minus(r.taxTotal).minus(r.costTotal),
-                  d(0),
-                ),
-              ),
-          d(0),
-        ),
+        completed
+          .reduce(
+            (a: any, s: any) =>
+              a.plus(s.total).minus(s.taxTotal).minus(s.costTotal),
+            d(0),
+          )
+          .minus(
+            returns.reduce(
+              (b: any, r: any) =>
+                b.plus(r.total).minus(r.taxTotal).minus(r.costTotal),
+              d(0),
+            ),
+          ),
       )
     : null;
   const total = money(
@@ -349,6 +358,22 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         createdAt: p.createdAt,
       })),
     },
+    returns: returns.map((r: any) => {
+      const sold = returnedSales.find((x: any) => x.id === r.saleId);
+      return {
+        id: r.id,
+        number: r.number,
+        saleId: r.saleId,
+        saleNumber: sold?.number ?? null,
+        fromOtherSession: !!sold && sold.cashSessionId !== session.id,
+        refundMethod: r.refundMethod,
+        refundAmount: Number(r.refundAmount),
+        total: Number(r.total),
+        taxTotal: Number(r.taxTotal),
+        costTotal: Number(r.costTotal),
+        createdAt: r.createdAt,
+      };
+    }),
     voided: {
       count: voided.length,
       total: money(voided.reduce((a: any, s: any) => a.plus(s.total), d(0))),

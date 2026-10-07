@@ -8333,3 +8333,152 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", (
     expect(await returnsOf(legacy)).toHaveLength(1);
   });
 });
+
+// R9-A02 (auditoría de ChatGPT a la ronda 9): el cuadre de una caja ya
+// cerrada restaba las devoluciones de sus ventas aunque se hicieran días
+// después desde otra caja, y la caja de la devolución no las reflejaba. Un
+// cierre aprobado no se reescribe: la devolución ajusta la rentabilidad de la
+// caja donde se registró, una sola vez.
+describe("Ronda 9 · auditoría de ChatGPT · R9-A02 cierre histórico intacto", () => {
+  let owner = "",
+    variant: any;
+  const ip = "198.18.9." + (((Date.now() + 7) % 250) + 1);
+  const call = async (
+    path: string,
+    data?: unknown,
+    method = data === undefined ? "GET" : "POST",
+  ) => {
+    const response = await fetch(base + path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": ip,
+        Authorization: "Bearer " + owner,
+      },
+      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    });
+    return { status: response.status, body: await response.json() };
+  };
+  const must = async (path: string, data?: unknown, method?: string) => {
+    const r = await call(path, data, method);
+    if (r.status >= 400)
+      throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
+    return r.body;
+  };
+  const closeOwnerCash = async () => {
+    const me = await must("/auth/me");
+    for (const s of (await must("/cash-sessions")).filter(
+      (c: any) => !c.closedAt && c.userId === me.id,
+    ))
+      await closeCash(s.id);
+  };
+  const closeCash = async (id: string) => {
+    const s = (await must("/cash-sessions")).find((c: any) => c.id === id);
+    await must("/cash-sessions/" + id + "/close", {
+      countedCash: Math.max(0, s.expected.cash),
+      countedCard: Math.max(0, s.expected.card),
+      countedTransfer: Math.max(0, s.expected.transfer),
+      notes: "Cierre QA R9-A02",
+    });
+  };
+  const openCash = async () =>
+    (
+      await must("/cash-sessions/open", {
+        registerId: "qa-a02-" + suffix,
+        openingAmount: 500,
+      })
+    ).id;
+  const profitOf = async (id: string) =>
+    Number(
+      (await must("/cash-sessions/" + id + "/cuadre")).lines.find(
+        (l: any) => l.key === "profit",
+      ).value,
+    );
+  afterAll(async () => {
+    if (owner) await closeOwnerCash();
+  });
+  beforeAll(async () => {
+    owner = (
+      await must("/auth/login", {
+        email: "admin@fitstore.demo",
+        password: process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+      })
+    ).accessToken;
+    const terminalId = randomUUID();
+    const terminal = await must("/terminals/register", {
+      id: terminalId,
+      name: "QA R9-A02",
+      secret: "qa-a02-" + terminalId,
+    });
+    if (terminal.status === "pending")
+      await must("/terminals/" + terminalId + "/approve", {});
+    await closeOwnerCash();
+    const categories = await must("/categories");
+    const category =
+      categories.find((c: any) => c.name === "Ropa deportiva") ?? categories[0];
+    const product = await must("/products", {
+      name: "QA R9-A02 cierre " + suffix,
+      sku: "R9A02-" + randomUUID().slice(0, 8),
+      categoryId: category.id,
+      variants: [
+        {
+          sku: "R9A02V-" + randomUUID().slice(0, 8),
+          barcode: "R9A02B" + Date.now().toString().slice(-8),
+          price: 100,
+          costAvg: 40,
+        },
+      ],
+    });
+    variant = product.variants[0];
+    products.push(product);
+    await must("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 10,
+      reason: "QA R9-A02 existencias",
+    });
+  }, 60000);
+
+  it("una devolución desde otra caja no cambia el cierre original y ajusta la caja donde se registró, una sola vez", async () => {
+    // Caja A: vende y cierra.
+    const a = await openCash();
+    const sale = await must("/sales", {
+      offlineUuid: randomUUID(),
+      cashSessionId: a,
+      items: [{ variantId: variant.id, qty: 1 }],
+      payments: [{ method: "cash", amount: 100 }],
+      expectedTotal: 100,
+    });
+    const profitA = await profitOf(a);
+    expect(profitA).toBeGreaterThan(0);
+    await closeCash(a);
+    expect(await profitOf(a)).toBe(profitA);
+    // Caja B, otro día de trabajo: devuelve la venta de A.
+    const b = await openCash();
+    expect(await profitOf(b)).toBe(0);
+    const returned = await must("/returns", {
+      operationId: randomUUID(),
+      saleId: sale.id,
+      cashSessionId: b,
+      reason: "QA R9-A02 devolución desde otra caja",
+      refundMethod: "cash",
+      items: [{ saleItemId: sale.items[0].id, qty: 1, restock: true }],
+    });
+    const adjustment =
+      Math.round(
+        (Number(returned.total) -
+          Number(returned.taxTotal) -
+          Number(returned.costTotal)) *
+          100,
+      ) / 100;
+    expect(adjustment).toBeGreaterThan(0);
+    // El cierre de A queda como se aprobó...
+    expect(await profitOf(a)).toBe(profitA);
+    // ...y B refleja la devolución, con referencia a la venta original.
+    expect(await profitOf(b)).toBe(-adjustment);
+    const cuadreB = await must("/cash-sessions/" + b + "/cuadre");
+    expect(JSON.stringify(cuadreB)).toContain(returned.id);
+    await closeCash(b);
+    expect(await profitOf(b)).toBe(-adjustment);
+    expect(await profitOf(a)).toBe(profitA);
+  });
+});
