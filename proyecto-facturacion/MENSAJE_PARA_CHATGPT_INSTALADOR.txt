@@ -1,0 +1,45 @@
+Hola, ChatGPT. Esta vez no es una auditoría: te pido CONSTRUIR una pieza separada de FitStore POS, el instalador para Windows. Claude sigue en paralelo corrigiendo la ronda 9 en el resto del código, así que trabaja SOLO en los archivos indicados abajo para que no choquemos.
+
+Adjunto: fitstore-pos-instalador-base.zip (código actual completo; SHA-256: 56941c29bed66d62bc1e69233083b0166c39412dbd3fa894a08ff77ed8f7fb7c)
+
+CONTEXTO
+- FitStore POS es el sistema de caja e inventario de una tienda en República Dominicana: monorepo pnpm, API NestJS + Prisma + PostgreSQL, PWA React/Vite.
+- La tienda usa UNA laptop Windows 11 como servidor: PostgreSQL local, la API en el puerto 3001 y la PWA en el 4173. Hasta 4 cajas más celulares se conectan por la red local.
+- Hoy se instala a mano con Node 24, pnpm, PostgreSQL y comandos. Ver README.md, docs/DESPLIEGUE.md y docs/CONTINUAR_EN_LOCAL.md.
+- Ya existe una base de Tauri en apps/web/src-tauri (sin construir ni probar).
+- Para la cámara y el modo sin conexión en los celulares hace falta https en la red local.
+
+OBJETIVO DE ESTA PRIMERA FASE
+Que la dueña instale y arranque FitStore en la laptop de la tienda sin comandos, con un instalador y un ícono. Que al encender la laptop todo quede funcionando para las cajas y los celulares de la red.
+
+ENTREGABLES
+1. Instalador de Windows (.exe o .msi). Elige y justifica: Tauri, o un instalador clásico (Inno Setup o NSIS) que instale Node y la aplicación compilada. Debe:
+   - instalar o verificar PostgreSQL;
+   - crear la base y el rol;
+   - generar .env con secretos aleatorios;
+   - aplicar las migraciones (prisma migrate deploy);
+   - crear el usuario dueño con contraseña elegida en el asistente: NO usar la contraseña de demostración;
+   - registrar la API y la PWA como servicios de Windows que arrancan solos;
+   - abrir el firewall sólo para la red local;
+   - poner un acceso directo «FitStore POS» en el escritorio.
+2. HTTPS en la red local: certificado propio (por ejemplo mkcert, o una CA local generada por el instalador), con instrucciones paso a paso para confirmarlo en Android e iPhone.
+3. Respaldo automático diario de la base (pg_dump) a una carpeta configurable, de preferencia fuera de la PC (OneDrive o USB), conservando los últimos 30 días. Incluye una herramienta de RESTAURAR probada.
+4. Actualización: cómo instalar una versión nueva sin perder datos, con respaldo previo y migraciones.
+5. Desinstalación que NO borre la base ni los respaldos salvo que se pida expresamente.
+6. Documento docs/INSTALADOR.md en español, pensado para la dueña (no técnica), con capturas o pasos numerados, y una sección técnica aparte.
+7. Lista de pruebas que hiciste y que faltan en una Windows 11 real.
+
+ARCHIVOS QUE PUEDES CREAR O CAMBIAR (sólo estos)
+- apps/web/src-tauri/** (si usas Tauri)
+- instalador/** (carpeta nueva, para scripts y configuración del instalador)
+- docs/INSTALADOR.md (nuevo)
+- package.json de la raíz: SOLO para agregar scripts nuevos con prefijo «instalador:». No cambies dependencias existentes.
+NO toques apps/api/src, apps/web/src, packages/, prisma/schema.prisma, migraciones ni tests/. Si necesitas algo de ellos (por ejemplo un comando para crear el usuario dueño), descríbelo en docs/INSTALADOR.md, sección «Pedidos a Claude», y Claude lo agrega.
+
+ENTREGA
+Un ZIP sólo con los archivos nuevos o cambiados, con las mismas rutas, más un resumen de qué hace cada uno y cómo construir el instalador. Si no puedes compilar el .exe en tu entorno, entrega todo listo para compilarlo en Windows con un solo comando y di exactamente qué falta probar.
+
+Restricciones:
+- Nada de datos del negocio en el paquete.
+- Sin contraseñas fijas.
+- Todo en español para la dueña.
