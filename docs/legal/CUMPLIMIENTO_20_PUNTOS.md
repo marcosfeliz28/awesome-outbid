@@ -7,7 +7,7 @@ Nexora es un sistema **interno** de caja de una tienda en República Dominicana.
 | # | Punto | Aplica | Estado | Acción | Borrador |
 |---|---|---|---|---|---|
 | 1 | Política de privacidad | Sí | Falta | Revisar con abogado, publicar en la app (enlace en login y pie) y en el negocio | POLITICA_PRIVACIDAD.md |
-| 2 | Términos de uso | Sí (interno) | Falta | Aceptación por empleados al crear la cuenta | TERMINOS_DE_USO.md |
+| 2 | Términos de uso | **No para clientes** | Opcional | La dueña acuerda las condiciones en persona con cada cliente. Sólo queda un borrador interno para empleados, opcional | TERMINOS_DE_USO.md |
 | 3 | Política de reembolso | Sí | Falta en ticket | Texto en el pie del ticket y en Ajustes (días y condiciones) | POLITICA_DEVOLUCIONES.md, TEXTO_PIE_TICKET.md |
 | 4 | Política de cookies | Mínima | Falta | Sólo hay una cookie de sesión; se declara en la política de privacidad | POLITICA_PRIVACIDAD.md |
 | 5 | Banner de cookies | **No** | n/a | Sin analítica ni publicidad no hace falta banner | — |
