@@ -3,7 +3,6 @@ import { flushSync } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
-  ScanLine,
   Plus,
   Minus,
   Trash2,
@@ -22,6 +21,7 @@ import {
   FileText,
   Camera,
   Truck,
+  ShoppingCart,
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import {
@@ -638,13 +638,23 @@ export function POS({ go }: { go: (page: string) => void }) {
   return (
     <div className="pos-layout">
       <section className="pos-catalog">
-        <div className="page-heading">
-          <div>
-            <span className="eyebrow">CADA VENTA, UNA NUEVA META</span>
-            <h1>
-              Punto de venta <span className="title-dot" />
-            </h1>
-            <p>Encuentra, agrega y listo. Así de simple.</p>
+        <div className="pos-topbar">
+          <h1>Punto de venta <span className="title-dot" /></h1>
+          <div className="pos-search">
+            <Search size={20} aria-hidden="true" />
+            <input
+              ref={search}
+              aria-label="Buscar productos"
+              placeholder="Código o nombre del producto"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                enter();
+              }}
+            />
+            <kbd>F2</kbd>
           </div>
           <div className="heading-actions">
             <Button variant="secondary" onClick={() => setHeld(true)}>
@@ -659,25 +669,6 @@ export function POS({ go }: { go: (page: string) => void }) {
               <Camera size={18} />
             </Button>
           </div>
-        </div>
-        <div className="pos-search">
-          <Search size={21} />
-          <input
-            ref={search}
-            aria-label="Buscar productos"
-            placeholder="Escribe el código (ej. 1216) o palabras del producto…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key !== "Enter") return;
-              // Sin esto, el mismo Enter pulsaba «Cerrar» en la ventana de
-              // variantes que acababa de abrir (R9-caja-6).
-              e.preventDefault();
-              enter();
-            }}
-          />
-          <kbd>F2</kbd>
-          <ScanLine size={20} />
         </div>
         <div className="category-tabs">
           <button
@@ -928,10 +919,11 @@ export function POS({ go }: { go: (page: string) => void }) {
               </div>
             ))
           ) : (
-            <Empty
-              title="Tu próxima venta empieza aquí"
-              description="Agrega un producto para comenzar."
-            />
+            <div className="cart-empty-state">
+              <ShoppingCart size={34} aria-hidden="true" />
+              <strong>Carrito vacío</strong>
+              <span>Escanea o busca un artículo</span>
+            </div>
           )}
         </div>
         <div className="cart-summary">
