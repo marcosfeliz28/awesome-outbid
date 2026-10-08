@@ -18,16 +18,17 @@ if [ "$api_port" -lt 1 ] || [ "$api_port" -gt 65535 ]; then
 fi
 
 # `fromService.hostport` entrega la dirección corta mostrada por Render
-# (por ejemplo, nexora-pos-api:10000). El resolvedor asíncrono de Nginx no
-# aplica los dominios de búsqueda de /etc/resolv.conf, así que para volver a
-# resolver cambios de instancia debe consultar el hostname de descubrimiento
-# explícito que Render publica para cada servicio.
+# (por ejemplo, nexora-pos-api:10000). Render requiere resolver esos nombres
+# con el resolvedor del sistema para aplicar su configuración privada. Nginx
+# consulta DNS directamente y no puede resolver ese nombre corto, por lo que
+# lo convertimos a la IPv4 privada antes de generar su configuración.
 api_host=${API_UPSTREAM%:*}
-case "$api_host" in
-  *-discovery) ;;
-  *) api_host="${api_host}-discovery" ;;
-esac
-API_UPSTREAM="${api_host}:${api_port}"
+api_ip=$(getent hosts "$api_host" 2>/dev/null | awk 'NR == 1 { print $1 }')
+if ! printf '%s' "$api_ip" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+  echo "No se pudo resolver la IPv4 privada de API_UPSTREAM." >&2
+  exit 1
+fi
+API_UPSTREAM="${api_ip}:${api_port}"
 
 if ! printf '%s' "$PORT" | grep -Eq '^[0-9]{1,5}$' \
   || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
