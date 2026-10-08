@@ -594,7 +594,7 @@ export class AdminController {
       z.object({
         name: z.string().min(2),
         email: z.string().email(),
-        password: z.string().min(4).max(128),
+        password: z.string().min(12).max(128),
         pin: z.string().regex(/^\d{4,6}$/),
         roleId: uuid,
         cashierNumber: cashierNumber.optional(),
@@ -637,7 +637,7 @@ export class AdminController {
         name: z.string().min(2).optional(),
         roleId: uuid.optional(),
         active: z.boolean().optional(),
-        password: z.string().min(4).max(128).optional(),
+        password: z.string().min(12).max(128).optional(),
         pin: z
           .string()
           .regex(/^\d{4,6}$/)
