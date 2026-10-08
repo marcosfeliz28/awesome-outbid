@@ -1,0 +1,14 @@
+== Antes (esquema R3)
+equipo|ed1aa5f0-23c7-4145-b617-f633f08819c2
+recepcion|2c8ef4dd-f51a-4426-abb1-7ffcebc6350e|
+== prisma migrate deploy (código ronda 6)
+11 migrations found in prisma/migrations
+Applying migration `202610050001_round4_claude`
+Applying migration `202610050002_lot_index`
+Applying migration `202610060001_round6_audit`
+The following migration(s) have been applied:
+All migrations have been successfully applied.
+== Después
+equipo|t|f|f
+recepcion|t|34.00|t
+recepcion_orden|50.00

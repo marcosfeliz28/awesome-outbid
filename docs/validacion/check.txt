@@ -1,0 +1,53 @@
+$ pnpm typecheck && pnpm lint && pnpm test && pnpm build
+$ pnpm -r typecheck
+Scope: 4 of 5 workspace projects
+packages/shared typecheck$ tsc --noEmit
+packages/ui typecheck$ tsc --noEmit
+packages/ui typecheck: Done
+packages/shared typecheck: Done
+apps/api typecheck$ tsc --noEmit
+apps/web typecheck$ tsc --noEmit
+apps/api typecheck: Done
+apps/web typecheck: Done
+$ eslint .
+$ vitest run
+
+ RUN  v3.2.7 .
+
+ ✓ packages/shared/src/business.test.ts (12 tests) 21ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  04:51:23
+   Duration  258ms (transform 44ms, setup 0ms, collect 63ms, tests 21ms, environment 0ms, prepare 49ms)
+
+$ pnpm --filter @fitstore/web build && pnpm --filter @fitstore/api build
+$ tsc --noEmit && vite build
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 2518 modules transformed.
+Generated an empty chunk: "react-vendor".
+rendering chunks...
+computing gzip size...
+dist/manifest.webmanifest                          0.30 kB
+dist/index.html                                    0.66 kB │ gzip:   0.38 kB
+dist/assets/index-DzkJh7w2.css                    56.04 kB │ gzip:  12.07 kB
+dist/assets/react-vendor-l0sNRNKZ.js               0.00 kB │ gzip:   0.02 kB
+dist/assets/workbox-window.prod.es5-BBnX5xw4.js    5.75 kB │ gzip:   2.36 kB
+dist/assets/charts-CXp-q8OE.js                   373.94 kB │ gzip: 110.30 kB
+dist/assets/index-iPjrJSYw.js                    415.98 kB │ gzip: 108.68 kB
+dist/assets/index-BI8QcmB5.js                    594.31 kB │ gzip: 184.93 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 5.39s
+
+PWA v1.3.0
+mode      generateSW
+precache  20 entries (1418.15 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-2fbc6a65.js
+$ tsc -p tsconfig.json

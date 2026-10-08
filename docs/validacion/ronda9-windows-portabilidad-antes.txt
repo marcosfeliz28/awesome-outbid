@@ -1,0 +1,1188 @@
+FitStore POS · ronda 9 · Windows y zona horaria · portabilidad · ANTES de la corrección
+
+================================================================
+== rebase-antes-porta.txt
+================================================================
+# ANTES: tests/api.test.ts de 4485a27 (sin las correcciones del canal) sobre el resto del arbol rebasado (HEAD 9445398)
+# orden: pnpm exec vitest run --config vitest.integration.config.ts -t "financiera y permisos|Regresiones de Claude|R7-01:|R7-03:|R8-01:|R8-03:|R9-importador-"
+# 'Regresiones de Claude' abre caja en su beforeAll: necesita que el primer describe ('Aceptacion financiera y permisos') corra entero y cierre la suya.
+# Intentos anteriores con patrones mas estrechos: rebase-antes-porta-intento1.txt y -intento2.txt (mismo ENOENT en las 9 pruebas del importador).
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/api.test.ts (128 tests | 9 failed | 97 skipped) 12748ms
+   ✓ Aceptación financiera y permisos > requiere sesión y el vendedor nunca recibe costos 109ms
+   ✓ Aceptación financiera y permisos > vende proteína y legging con FEFO y pago dividido 56ms
+   ✓ Aceptación financiera y permisos > rechaza pagos y stock inválidos sin crear huecos ni movimientos 157ms
+   ✓ Aceptación financiera y permisos > es idempotente ante peticiones concurrentes y sync 62ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  1008ms
+   ✓ Aceptación financiera y permisos > prorratea flete, recalcula promedio y conserva costo histórico 96ms
+   ✓ Aceptación financiera y permisos > protege devoluciones abiertas y repetidas 81ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  536ms
+   ✓ Aceptación financiera y permisos > conserva conflictos offline sin stock negativo 164ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1346ms
+   ✓ Aceptación financiera y permisos > calcula arqueo por método aunque se compensen diferencias 51ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  1600ms
+   ✓ Regresiones de Claude > 3: rechaza ajustes vencidos y acepta el día dominicano vigente 15ms
+   ✓ Regresiones de Claude > 4: stock sin lote convive con lotes; conteo no destruye la trazabilidad 103ms
+   ✓ Regresiones de Claude > 5: gerente cierra caja ajena; diferencias compensadas persisten y se auditan 56ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  3485ms
+   ✓ Regresiones de Claude > 7: conflicto offline devuelve español seguro 24ms
+   ✓ Regresiones de Claude > 8: pagos del reporte compras pertenecen al mismo rango 30ms
+   ✓ Regresiones de Claude > 9: consumo agrupa por mes dominicano al cruzar medianoche UTC 69ms
+   ✓ Regresiones de Claude > 10: utilidad conserva costo de devolución sin reingreso 135ms
+   ✓ Regresiones de Claude > 11: reintentar venta aprobada no requiere de nuevo PIN 20ms
+   ✓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal 284ms
+   ↓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco
+   ↓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor
+   ↓ Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP
+   ↓ Seguridad, offline y funciones completadas > 3 y 9: lote vencido según Santo Domingo no se vende ni se recibe
+   ↓ Seguridad, offline y funciones completadas > 4: diez unidades sin lote más una con lote permiten vender dos
+   ↓ Seguridad, offline y funciones completadas > 7: sincroniza en caja cerrada dentro de su horario y audita el reajuste
+   ↓ Seguridad, offline y funciones completadas > 8: pago actual no se resta en reporte de otro período
+   ↓ Seguridad, offline y funciones completadas > descuento por monto recalcula impuesto y queda auditado
+   ↓ Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido
+   ↓ Seguridad, offline y funciones completadas > venta a crédito admite abonos idempotentes en caja posterior
+   ↓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores
+   ↓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión
+   ↓ Seguridad, offline y funciones completadas > stock negativo optativo conserva advertencia y prohíbe saltarse lotes
+   ↓ Seguridad, offline y funciones completadas > alerta efectivo aunque tarjeta lo compense
+   ↓ Seguridad, offline y funciones completadas > NCF preparado conserva solicitud sin emitir un comprobante fiscal
+   ↓ Seguridad, offline y funciones completadas > dashboard incluye mapa dominicano y comparación del año anterior
+   ↓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios
+   ↓ Alertas de negocio y consistencia contable > devolución del período resta costo solo cuando reingresa y cuadra con dashboard
+   ↓ Ronda 2 de Claude > 1: notas requieren prueba de posesión o gerente, no se divulgan códigos y cada uso se audita
+   ↓ Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite
+   ↓ Ronda 2 de Claude > 3: transferencia pendiente no reduce deuda ni caja; verificación concurrente aplica una sola vez
+   ↓ Ronda 2 de Claude > 4: offline máximo 48 horas y fecha anterior auditada
+   ↓ Ronda 2 de Claude > 5: Compose sólo publica nginx y descarta IP suministrada por cliente
+   ↓ Ronda 3 · tiempo real y mercancía > SSE autentica, filtra sucursal y no comunica operaciones revertidas
+   ↓ Ronda 3 · tiempo real y mercancía > tres cajas venden stock 5 y las tres reciben el saldo confirmado en menos de 2 segundos
+   ↓ Ronda 3 · tiempo real y mercancía > equipos muestran actividad y caja, renombrar y revocar invalida sesiones
+   ↓ Ronda 3 · tiempo real y mercancía > entradas idempotentes con promedio, kardex y usuario/equipo; vendedor bloqueado y almacén sin ganancia
+   ↓ Ronda 3 · tiempo real y mercancía > salidas requieren motivo y existencias; todos los motivos quedan auditados
+   ↓ Ronda 3 · tiempo real y mercancía > lotes y vencimiento obligatorios, salida de lote vencido y creación rápida atómica
+   ↓ Ronda 3 · tiempo real y mercancía > CSV: revisión sin stock, mapeo guardado, total validado, recepción, comprobante y equivalencia
+   ↓ Ronda 3 · tiempo real y mercancía > factura con total distinto se rechaza hasta revisión explícita; línea sin pareja exige resolución
+   ↓ Ronda 3 · tiempo real y mercancía > entrada con orden respeta cantidades pendientes y no duplica recepciones
+   ↓ Ronda 3 · tiempo real y mercancía > SSE comunica recepción, devolución, anulación y conteo confirmados
+   ↓ Ronda 3 · tiempo real y mercancía > eventos se publican en orden de commit aunque las transacciones empiecen al revés
+   ↓ Ronda 3 · tiempo real y mercancía > nginx mantiene SSE sin buffering y sólo publica el proxy
+   ↓ Ronda 4 · Claude: caja y equipos > la caja queda asignada al equipo y muestra su nombre
+   ↓ Ronda 4 · Claude: caja y equipos > vender desde otro equipo explica dónde está la caja (409, no 403)
+   ↓ Ronda 4 · Claude: caja y equipos > trasladar exige PIN de gerente al vendedor y queda en bitácora
+   ↓ Ronda 4 · Claude: caja y equipos > otro usuario no puede trasladar una caja ajena
+   ↓ Ronda 4 · Claude: caja y equipos > el gerente cierra la caja de una vendedora desde su propio equipo
+   ↓ Ronda 4 · Claude: caja y equipos > la dueña puede cerrar su caja desde cualquier equipo
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P1 compras: entrada sin orden se reporta una vez; orden no se duplica; fechas aplican
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P2 lotes: lotId inventado, ajeno o de otra variante se rechaza sin cambios; el número de lote queda coherente
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > SSE: como máximo dos conexiones por sesión
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > importación: archivos grandes se rechazan sin leerlos
+   ↓ Auditoría ronda 4 de ChatGPT > P1: una caída abrupta del cliente libera su conexión de tiempo real
+   ↓ Auditoría ronda 4 de ChatGPT > P2: el kardex tiene índice por lote (migración y base de datos)
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-01: un equipo R3 migrado no se puede reclamar ni operar sin aprobación del gerente
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-02: la compra R3 sin orden se recupera de la bitácora; reparación idempotente
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-03: cantidades fuera de precisión dan 400 en todas las rutas y no tocan costo, stock ni kardex
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-04: la factura aceptada contra una orden fija la deuda; parciales, flete y reintento sin doble conteo
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-06: una ráfaga de conexiones SSE sobre una sesión acepta como máximo dos
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-08: ventas inválidas devuelven 400 con campos en español (también en la API compilada)
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > R6-01: un combo fraccionado se rechaza sin escrituras; 1 combo consume exactamente 0.4 y su devolución lo repone
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > revisión R7: costo de combos exacto en venta, devolución y reporte de utilidad
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > revisión R7: una línea de combo fraccionada anterior se devuelve completa, no en partes
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > R6-03: la recuperación no concilia recepciones con líneas incompletas; la completa sigue en 55
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir 344ms
+     → .toMatch() expects to receive a string, but got number
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo 24ms
+     → .toMatch() expects to receive a string, but got number
+   ↓ Ronda 8 · auditoría R7 de ChatGPT > R7-04: el reporte de utilidad usa el costo registrado en cada devolución parcial
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga 28ms
+     → .toMatch() expects to receive a string, but got number
+   ↓ Ronda 9 · auditoría R8 de ChatGPT > R8-02: una devolución anterior a la ronda 8 se concilia con su costo contabilizado
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios 24ms
+     → .toMatch() expects to receive a string, but got number
+   ↓ Ronda 9 · revisión · caja > R9-caja-4: la venta en espera guarda el descuento por monto, el global y el nombre, y sólo se recupera una vez
+   ↓ Ronda 9 · revisión · códigos > R9-codigos-1: crear, editar, la matriz y la importación rechazan un código que la caja confundiría con otro producto
+   ↓ Ronda 9 · revisión · códigos > R9-codigos-1: dos altas a la vez con el mismo código en otras mayúsculas dejan sólo una
+   ↓ Ronda 9 · revisión · códigos > R9-codigos-2 y R9-codigos-3: el producto rápido de Mercancía rechaza un código que ya existe con otras mayúsculas
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-1: la devolución que completa la línea descuenta el costo de la devolución histórica
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-2: devolver de una en una reembolsa exactamente lo cobrado y su ITBIS
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-3: una venta a crédito con un abono por transferencia pendiente no se devuelve sin resolverlo
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-4: anular una venta recalcula el costo promedio igual que una devolución
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-5: los importes de dinero aceptan como máximo 2 decimales
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-5-pos: una venta sin conexión con un descuento de 3 decimales se sincroniza y una inválida no bloquea las demás
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-6: el costo de una devolución de la ronda 7 se reconstruye por línea
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-7: el costo de una venta anterior a la ronda 7 final coincide en utilidad y dashboard
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-8: devoluciones y descuentos no muestra costos a quien no tiene profit:read
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-9: ventas por método no cuenta dos veces el crédito y muestra los cobros el día que entran
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-10: la tendencia compara ingresos netos de devoluciones en ambos períodos
+   ↓ Ronda 9 · revisión · facturas > un código que tienen dos productos queda sin elegir (R9-facturas-1)
+   ↓ Ronda 9 · revisión · facturas > la equivalencia corregida del proveedor gana al código de la tienda (R9-facturas-2)
+   ↓ Ronda 9 · revisión · facturas > un código de la tienda con la descripción de otra cosa o de otra variante no se elige (R9-facturas-2)
+   ↓ Ronda 9 · revisión · facturas > CSV con «;»: «1.250» son 1250 y no 1.25 (R9-facturas-7)
+   ↓ Ronda 9 · revisión · facturas > reenviar la misma recepción de una orden no la duplica (R9-facturas-8)
+   × Ronda 9 · revisión · importador > R9-importador-1: una celda con hipervínculo o con error de Excel nunca crea «[object Object]» 13ms
+     → .toMatch() expects to receive a string, but got number
+   × Ronda 9 · revisión · importador > R9-importador-2: una fila con datos sin DESCRIPCION o sin ID detiene la carga sin escribir 9ms
+     → .toMatch() expects to receive a string, but got number
+   × Ronda 9 · revisión · importador > R9-importador-3: --dry-run da las cifras de la carga real, anuncia las categorías y no se detiene por el lote 22ms
+     → expected null to be +0 // Object.is equality
+   × Ronda 9 · revisión · importador > R9-importador-4: una existencia válida muy grande no hace fallar la carga real por el máximo derivado 5ms
+     → expected null to be +0 // Object.is equality
+   × Ronda 9 · revisión · importador > R9-importador-5: al activar un producto sólo se completa lo que falta; el precio puesto en la app se respeta 6ms
+     → expected null to be +0 // Object.is equality
+   ↓ Ronda 9 · revisión · seguridad > R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo
+   ↓ Ronda 9 · revisión · seguridad > R9-seguridad-1: un administrador desbloquea la cuenta al cambiarle la contraseña
+   ↓ Ronda 9 · revisión · seguridad > R9-seguridad-2: el límite por IP de /auth y /sales no se evita cambiando mayúsculas en la ruta
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-ajustes: sucursal, segundo teléfono, logo, impresión automática y tasas del día
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-ajustes: número y nombre de cada caja (equipo) y número de cada cajero
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-contraentrega: se vende, descuenta stock, queda pendiente y se cobra una sola vez en otra caja
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-contraentrega: el cobro por transferencia queda por verificar y un gerente lo confirma
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-cuadre: cierre por denominaciones, vale, dólares y entregado/dejado con el cuadre completo al centavo
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-cuadre: un cliente que envía sólo countedCash sigue cerrando; la contraentrega cobrada aparece en la caja que la recibió
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-reportes: venta diaria de usuario por producto
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-reportes: venta de usuario por forma de pago, en el orden de la tienda y con pagos combinados repartidos
+   ↓ Aceptación · mercancía > 04: la caja y Mercancía ven como vendible sólo lo de lotes vigentes y lo vencido aparte
+   ↓ Aceptación · mercancía > 35: la orden y la recepción guardan factura, NCF, fecha y condición de pago; se completan después
+   ↓ Aceptación · mercancía > 35: exporta a Excel las compras del período con proveedor, RNC, NCF, montos e ITBIS
+   ↓ Aceptación · mercancía > 36: los dañados o rechazados por línea no entran al stock, quedan con motivo y costo, y pedido = bueno + dañado + pendiente
+   ↓ Aceptación · mercancía > 37: historial de recepciones con proveedor, documento, quién recibió, líneas y dañados; reenviar no duplica
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/api.test.ts > Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir
+TypeError: .toMatch() expects to receive a string, but got number
+ ❯ tests/api.test.ts:3857:20
+    3855|     ]);
+    3856|     expect(r1.status).not.toBe(0);
+    3857|     expect(r1.out).toMatch(new RegExp("el código " + code + " ya es de…
+       |                    ^
+    3858|     // REFERENCIA igual al SKU de A en una fila con otro ID.
+    3859|     const r2 = await runImport([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  tests/api.test.ts > Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo
+TypeError: .toMatch() expects to receive a string, but got number
+ ❯ tests/api.test.ts:3888:19
+    3886|     const r = await runImport([[id, "QA R8 con lote", id, name, 3, 10,…
+    3887|     expect(r.status).not.toBe(0);
+    3888|     expect(r.out).toMatch(/exige lote o vencimiento/);
+       |                   ^
+    3889|     expect(
+    3890|       await fixtureDb.category.findUnique({ where: { id: category.id }…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga
+TypeError: .toMatch() expects to receive a string, but got number
+ ❯ tests/api.test.ts:4034:20
+    4032|     ]);
+    4033|     expect(r1.status).not.toBe(0);
+    4034|     expect(r1.out).toMatch(/ya es de/);
+       |                    ^
+    4035|     // Entre filas: la REFERENCIA de una fila es el ID de otra en mayú…
+    4036|     const r2 = await runImport([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios
+TypeError: .toMatch() expects to receive a string, but got number
+ ❯ tests/api.test.ts:4157:20
+    4155|     ]);
+    4156|     expect(r1.status).not.toBe(0);
+    4157|     expect(r1.out).toMatch(/exige lote o vencimiento/);
+       |                    ^
+    4158|     expect(
+    4159|       await fixtureDb.category.findUnique({ where: { name: newCat } }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · revisión · importador > R9-importador-1: una celda con hipervínculo o con error de Excel nunca crea «[object Object]»
+TypeError: .toMatch() expects to receive a string, but got number
+ ❯ tests/api.test.ts:5317:19
+    5315|     ]);
+    5316|     expect(r.status).not.toBe(0);
+    5317|     expect(r.out).toMatch(
+       |                   ^
+    5318|       new RegExp(
+    5319|         "fila R9E-" + tag + ", SUB-GRUPO: la celda tiene el error #N/A…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · revisión · importador > R9-importador-2: una fila con datos sin DESCRIPCION o sin ID detiene la carga sin escribir
+TypeError: .toMatch() expects to receive a string, but got number
+ ❯ tests/api.test.ts:5345:19
+    5343|     ]);
+    5344|     expect(r.status).not.toBe(0);
+    5345|     expect(r.out).toMatch(
+       |                   ^
+    5346|       new RegExp(
+    5347|         "fila 2 del Excel \\(ID R9D-" + tag + "\\): falta DESCRIPCION",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · revisión · importador > R9-importador-3: --dry-run da las cifras de la carga real, anuncia las categorías y no se detiene por el lote
+AssertionError: expected null to be +0 // Object.is equality
+
+- Expected: 
+0
+
++ Received: 
+null
+
+ ❯ tests/api.test.ts:5370:33
+    5368|     const before = await counts();
+    5369|     const sim = await runImport(rows, "--dry-run");
+    5370|     expect(sim.status, sim.out).toBe(0);
+       |                                 ^
+    5371|     expect(sim.out).toMatch(
+    5372|       /Simulación: 2 productos leídos · 2 nuevos \(8 unidades\) · 0 ya…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · revisión · importador > R9-importador-4: una existencia válida muy grande no hace fallar la carga real por el máximo derivado
+AssertionError: expected null to be +0 // Object.is equality
+
+- Expected: 
+0
+
++ Received: 
+null
+
+ ❯ tests/api.test.ts:5410:33
+    5408|     ];
+    5409|     const sim = await runImport(rows, "--dry-run");
+    5410|     expect(sim.status, sim.out).toBe(0);
+       |                                 ^
+    5411|     const real = await runImport(rows);
+    5412|     try {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯
+
+ FAIL  tests/api.test.ts > Ronda 9 · revisión · importador > R9-importador-5: al activar un producto sólo se completa lo que falta; el precio puesto en la app se respeta
+AssertionError: expected null to be +0 // Object.is equality
+
+- Expected: 
+0
+
++ Received: 
+null
+
+ ❯ tests/api.test.ts:5439:37
+    5437|       [b, "QA R9 activar B", "", "Ropa deportiva", 1, 0, 0],
+    5438|     ]);
+    5439|     expect(first.status, first.out).toBe(0);
+       |                                     ^
+    5440|     // En la app, la dueña les pone precio sin activarlos.
+    5441|     for (const [sku, price] of [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  9 failed | 22 passed | 97 skipped (128)
+   Start at  04:53:44
+   Duration  13.23s (transform 164ms, setup 0ms, collect 226ms, tests 12.75s, environment 0ms, prepare 95ms)
+
+exit=1
+
+# ANTES (estaticas): pnpm exec vitest run tests/portabilidad.test.ts -t "rutas y procesos"  con tests/api.test.ts de 4485a27
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/portabilidad.test.ts (20 tests | 3 failed | 17 skipped) 22ms
+   × Portabilidad · rutas y procesos de las pruebas > ningún script ni prueba usa URL.pathname como ruta de archivo 13ms
+     → expected [ 'tests/api.test.ts:9', …(2) ] to deeply equal []
+   × Portabilidad · rutas y procesos de las pruebas > ningún script ni prueba ejecuta los atajos POSIX de node_modules/.bin 4ms
+     → expected [ 'tests/api.test.ts' ] to deeply equal []
+   × Portabilidad · rutas y procesos de las pruebas > las pruebas de la API no bloquean el proceso con órdenes síncronas 3ms
+     → expected [ 'spawnSync:587', 'spawnSync:3813' ] to deeply equal []
+   ↓ Portabilidad · instalación y finales de línea > .gitattributes fija LF para el texto y declara los binarios
+   ↓ Portabilidad · instalación y finales de línea > ningún archivo de código o configuración tiene finales CRLF
+   ↓ Portabilidad · instalación y finales de línea > pnpm tiene decidida la compilación de los binarios de PostgreSQL local
+   ↓ Portabilidad · instalación y finales de línea > el reporte que escribe el importador no ensucia el repositorio
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > la carpeta de datos es una ruta nativa y los valores por defecto no cambian
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > el puerto y la carpeta de datos se pueden cambiar por entorno
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > arranca en UTC y sólo pide socket Unix donde existe
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > un clúster nuevo se crea en UTF-8 y no en la codificación del equipo
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > --detener termina bien cuando no hay nada en marcha
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > la API y sus puertos salen de FITSTORE_API_URL y PORT, con 3001 por defecto
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > ejecuta pnpm en esta plataforma y devuelve el código de salida
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > una orden que no arranca no tumba la verificación
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > a la base local se le pide un apagado limpio antes de matarla
+   ↓ Portabilidad · respaldo (scripts/backup.mjs) > explica cómo indicar pg_dump cuando no está en el PATH
+   ↓ Portabilidad · ZIP fuente (scripts/package.mjs) > se genera sin Python y es reproducible, sin secretos ni datos locales
+   ↓ Portabilidad · ZIP fuente (scripts/package.mjs) > la orden empaqueta la carpeta actual en la ruta indicada
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/portabilidad.test.ts > Portabilidad · rutas y procesos de las pruebas > ningún script ni prueba usa URL.pathname como ruta de archivo
+AssertionError: expected [ 'tests/api.test.ts:9', …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "tests/api.test.ts:9",
++   "tests/api.test.ts:3814",
++   "tests/api.test.ts:3817",
++ ]
+
+ ❯ tests/portabilidad.test.ts:115:18
+    113|         uses.push(rel(file) + ":" + lineOf(text, m.index));
+    114|     }
+    115|     expect(uses).toEqual([]);
+       |                  ^
+    116|   });
+    117|   it("ningún script ni prueba ejecuta los atajos POSIX de node_modules…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/portabilidad.test.ts > Portabilidad · rutas y procesos de las pruebas > ningún script ni prueba ejecuta los atajos POSIX de node_modules/.bin
+AssertionError: expected [ 'tests/api.test.ts' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "tests/api.test.ts",
++ ]
+
+ ❯ tests/portabilidad.test.ts:123:18
+    121|       .filter((f) => readFileSync(f, "utf8").includes("node_modules/.b…
+    122|       .map(rel);
+    123|     expect(uses).toEqual([]);
+       |                  ^
+    124|   });
+    125|   it("las pruebas de la API no bloquean el proceso con órdenes síncron…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/portabilidad.test.ts > Portabilidad · rutas y procesos de las pruebas > las pruebas de la API no bloquean el proceso con órdenes síncronas
+AssertionError: expected [ 'spawnSync:587', 'spawnSync:3813' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "spawnSync:587",
++   "spawnSync:3813",
++ ]
+
+ ❯ tests/portabilidad.test.ts:132:65
+    130|     const text = read("tests/api.test.ts");
+    131|     const uses = [...text.matchAll(/\b(spawnSync|execSync|execFileSync…
+    132|     expect(uses.map((m) => m[1] + ":" + lineOf(text, m.index))).toEqua…
+       |                                                                 ^
+    133|   });
+    134| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 17 skipped (20)
+   Start at  04:54:22
+   Duration  543ms (transform 64ms, setup 0ms, collect 72ms, tests 22ms, environment 0ms, prepare 184ms)
+
+exit=1
+
+# ANTES (K5 con el equipo ocupado, simulado): mismo tests/api.test.ts de 4485a27;
+# NODE_OPTIONS=--require=<logs>/util/porta-arranque-lento.cjs retrasa 1,5 s cada arranque de dist/main.js de la prueba 6 (3 x ~2,7 s con spawnSync = bucle de eventos bloqueado mas de 5 s).
+# orden: pnpm exec vitest run --config vitest.integration.config.ts -t "financiera y permisos|Regresiones de Claude"
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/api.test.ts (128 tests | 1 failed | 106 skipped) 16565ms
+   ✓ Aceptación financiera y permisos > requiere sesión y el vendedor nunca recibe costos 101ms
+   ✓ Aceptación financiera y permisos > vende proteína y legging con FEFO y pago dividido 60ms
+   ✓ Aceptación financiera y permisos > rechaza pagos y stock inválidos sin crear huecos ni movimientos 140ms
+   ✓ Aceptación financiera y permisos > es idempotente ante peticiones concurrentes y sync 60ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  1008ms
+   ✓ Aceptación financiera y permisos > prorratea flete, recalcula promedio y conserva costo histórico 99ms
+   ✓ Aceptación financiera y permisos > protege devoluciones abiertas y repetidas 77ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  408ms
+   ✓ Aceptación financiera y permisos > conserva conflictos offline sin stock negativo 175ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1206ms
+   ✓ Aceptación financiera y permisos > calcula arqueo por método aunque se compensen diferencias 47ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  1602ms
+   ✓ Regresiones de Claude > 3: rechaza ajustes vencidos y acepta el día dominicano vigente 11ms
+   ✓ Regresiones de Claude > 4: stock sin lote convive con lotes; conteo no destruye la trazabilidad 104ms
+   ✓ Regresiones de Claude > 5: gerente cierra caja ajena; diferencias compensadas persisten y se auditan 55ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  8034ms
+   × Regresiones de Claude > 7: conflicto offline devuelve español seguro 4ms
+     → fetch failed
+   ✓ Regresiones de Claude > 8: pagos del reporte compras pertenecen al mismo rango 38ms
+   ✓ Regresiones de Claude > 9: consumo agrupa por mes dominicano al cruzar medianoche UTC 85ms
+   ✓ Regresiones de Claude > 10: utilidad conserva costo de devolución sin reingreso 153ms
+   ✓ Regresiones de Claude > 11: reintentar venta aprobada no requiere de nuevo PIN 20ms
+   ✓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal 270ms
+   ↓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco
+   ↓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor
+   ↓ Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP
+   ↓ Seguridad, offline y funciones completadas > 3 y 9: lote vencido según Santo Domingo no se vende ni se recibe
+   ↓ Seguridad, offline y funciones completadas > 4: diez unidades sin lote más una con lote permiten vender dos
+   ↓ Seguridad, offline y funciones completadas > 7: sincroniza en caja cerrada dentro de su horario y audita el reajuste
+   ↓ Seguridad, offline y funciones completadas > 8: pago actual no se resta en reporte de otro período
+   ↓ Seguridad, offline y funciones completadas > descuento por monto recalcula impuesto y queda auditado
+   ↓ Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido
+   ↓ Seguridad, offline y funciones completadas > venta a crédito admite abonos idempotentes en caja posterior
+   ↓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores
+   ↓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión
+   ↓ Seguridad, offline y funciones completadas > stock negativo optativo conserva advertencia y prohíbe saltarse lotes
+   ↓ Seguridad, offline y funciones completadas > alerta efectivo aunque tarjeta lo compense
+   ↓ Seguridad, offline y funciones completadas > NCF preparado conserva solicitud sin emitir un comprobante fiscal
+   ↓ Seguridad, offline y funciones completadas > dashboard incluye mapa dominicano y comparación del año anterior
+   ↓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios
+   ↓ Alertas de negocio y consistencia contable > devolución del período resta costo solo cuando reingresa y cuadra con dashboard
+   ↓ Ronda 2 de Claude > 1: notas requieren prueba de posesión o gerente, no se divulgan códigos y cada uso se audita
+   ↓ Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite
+   ↓ Ronda 2 de Claude > 3: transferencia pendiente no reduce deuda ni caja; verificación concurrente aplica una sola vez
+   ↓ Ronda 2 de Claude > 4: offline máximo 48 horas y fecha anterior auditada
+   ↓ Ronda 2 de Claude > 5: Compose sólo publica nginx y descarta IP suministrada por cliente
+   ↓ Ronda 3 · tiempo real y mercancía > SSE autentica, filtra sucursal y no comunica operaciones revertidas
+   ↓ Ronda 3 · tiempo real y mercancía > tres cajas venden stock 5 y las tres reciben el saldo confirmado en menos de 2 segundos
+   ↓ Ronda 3 · tiempo real y mercancía > equipos muestran actividad y caja, renombrar y revocar invalida sesiones
+   ↓ Ronda 3 · tiempo real y mercancía > entradas idempotentes con promedio, kardex y usuario/equipo; vendedor bloqueado y almacén sin ganancia
+   ↓ Ronda 3 · tiempo real y mercancía > salidas requieren motivo y existencias; todos los motivos quedan auditados
+   ↓ Ronda 3 · tiempo real y mercancía > lotes y vencimiento obligatorios, salida de lote vencido y creación rápida atómica
+   ↓ Ronda 3 · tiempo real y mercancía > CSV: revisión sin stock, mapeo guardado, total validado, recepción, comprobante y equivalencia
+   ↓ Ronda 3 · tiempo real y mercancía > factura con total distinto se rechaza hasta revisión explícita; línea sin pareja exige resolución
+   ↓ Ronda 3 · tiempo real y mercancía > entrada con orden respeta cantidades pendientes y no duplica recepciones
+   ↓ Ronda 3 · tiempo real y mercancía > SSE comunica recepción, devolución, anulación y conteo confirmados
+   ↓ Ronda 3 · tiempo real y mercancía > eventos se publican en orden de commit aunque las transacciones empiecen al revés
+   ↓ Ronda 3 · tiempo real y mercancía > nginx mantiene SSE sin buffering y sólo publica el proxy
+   ↓ Ronda 4 · Claude: caja y equipos > la caja queda asignada al equipo y muestra su nombre
+   ↓ Ronda 4 · Claude: caja y equipos > vender desde otro equipo explica dónde está la caja (409, no 403)
+   ↓ Ronda 4 · Claude: caja y equipos > trasladar exige PIN de gerente al vendedor y queda en bitácora
+   ↓ Ronda 4 · Claude: caja y equipos > otro usuario no puede trasladar una caja ajena
+   ↓ Ronda 4 · Claude: caja y equipos > el gerente cierra la caja de una vendedora desde su propio equipo
+   ↓ Ronda 4 · Claude: caja y equipos > la dueña puede cerrar su caja desde cualquier equipo
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P1 compras: entrada sin orden se reporta una vez; orden no se duplica; fechas aplican
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P2 lotes: lotId inventado, ajeno o de otra variante se rechaza sin cambios; el número de lote queda coherente
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > SSE: como máximo dos conexiones por sesión
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > importación: archivos grandes se rechazan sin leerlos
+   ↓ Auditoría ronda 4 de ChatGPT > P1: una caída abrupta del cliente libera su conexión de tiempo real
+   ↓ Auditoría ronda 4 de ChatGPT > P2: el kardex tiene índice por lote (migración y base de datos)
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-01: un equipo R3 migrado no se puede reclamar ni operar sin aprobación del gerente
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-02: la compra R3 sin orden se recupera de la bitácora; reparación idempotente
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-03: cantidades fuera de precisión dan 400 en todas las rutas y no tocan costo, stock ni kardex
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-04: la factura aceptada contra una orden fija la deuda; parciales, flete y reintento sin doble conteo
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-06: una ráfaga de conexiones SSE sobre una sesión acepta como máximo dos
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-08: ventas inválidas devuelven 400 con campos en español (también en la API compilada)
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > R6-01: un combo fraccionado se rechaza sin escrituras; 1 combo consume exactamente 0.4 y su devolución lo repone
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > revisión R7: costo de combos exacto en venta, devolución y reporte de utilidad
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > revisión R7: una línea de combo fraccionada anterior se devuelve completa, no en partes
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > R6-03: la recuperación no concilia recepciones con líneas incompletas; la completa sigue en 55
+   ↓ Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir
+   ↓ Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo
+   ↓ Ronda 8 · auditoría R7 de ChatGPT > R7-04: el reporte de utilidad usa el costo registrado en cada devolución parcial
+   ↓ Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga
+   ↓ Ronda 9 · auditoría R8 de ChatGPT > R8-02: una devolución anterior a la ronda 8 se concilia con su costo contabilizado
+   ↓ Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios
+   ↓ Ronda 9 · revisión · caja > R9-caja-4: la venta en espera guarda el descuento por monto, el global y el nombre, y sólo se recupera una vez
+   ↓ Ronda 9 · revisión · códigos > R9-codigos-1: crear, editar, la matriz y la importación rechazan un código que la caja confundiría con otro producto
+   ↓ Ronda 9 · revisión · códigos > R9-codigos-1: dos altas a la vez con el mismo código en otras mayúsculas dejan sólo una
+   ↓ Ronda 9 · revisión · códigos > R9-codigos-2 y R9-codigos-3: el producto rápido de Mercancía rechaza un código que ya existe con otras mayúsculas
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-1: la devolución que completa la línea descuenta el costo de la devolución histórica
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-2: devolver de una en una reembolsa exactamente lo cobrado y su ITBIS
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-3: una venta a crédito con un abono por transferencia pendiente no se devuelve sin resolverlo
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-4: anular una venta recalcula el costo promedio igual que una devolución
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-5: los importes de dinero aceptan como máximo 2 decimales
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-5-pos: una venta sin conexión con un descuento de 3 decimales se sincroniza y una inválida no bloquea las demás
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-6: el costo de una devolución de la ronda 7 se reconstruye por línea
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-7: el costo de una venta anterior a la ronda 7 final coincide en utilidad y dashboard
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-8: devoluciones y descuentos no muestra costos a quien no tiene profit:read
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-9: ventas por método no cuenta dos veces el crédito y muestra los cobros el día que entran
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-10: la tendencia compara ingresos netos de devoluciones en ambos períodos
+   ↓ Ronda 9 · revisión · facturas > un código que tienen dos productos queda sin elegir (R9-facturas-1)
+   ↓ Ronda 9 · revisión · facturas > la equivalencia corregida del proveedor gana al código de la tienda (R9-facturas-2)
+   ↓ Ronda 9 · revisión · facturas > un código de la tienda con la descripción de otra cosa o de otra variante no se elige (R9-facturas-2)
+   ↓ Ronda 9 · revisión · facturas > CSV con «;»: «1.250» son 1250 y no 1.25 (R9-facturas-7)
+   ↓ Ronda 9 · revisión · facturas > reenviar la misma recepción de una orden no la duplica (R9-facturas-8)
+   ↓ Ronda 9 · revisión · importador > R9-importador-1: una celda con hipervínculo o con error de Excel nunca crea «[object Object]»
+   ↓ Ronda 9 · revisión · importador > R9-importador-2: una fila con datos sin DESCRIPCION o sin ID detiene la carga sin escribir
+   ↓ Ronda 9 · revisión · importador > R9-importador-3: --dry-run da las cifras de la carga real, anuncia las categorías y no se detiene por el lote
+   ↓ Ronda 9 · revisión · importador > R9-importador-4: una existencia válida muy grande no hace fallar la carga real por el máximo derivado
+   ↓ Ronda 9 · revisión · importador > R9-importador-5: al activar un producto sólo se completa lo que falta; el precio puesto en la app se respeta
+   ↓ Ronda 9 · revisión · seguridad > R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo
+   ↓ Ronda 9 · revisión · seguridad > R9-seguridad-1: un administrador desbloquea la cuenta al cambiarle la contraseña
+   ↓ Ronda 9 · revisión · seguridad > R9-seguridad-2: el límite por IP de /auth y /sales no se evita cambiando mayúsculas en la ruta
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-ajustes: sucursal, segundo teléfono, logo, impresión automática y tasas del día
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-ajustes: número y nombre de cada caja (equipo) y número de cada cajero
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-contraentrega: se vende, descuenta stock, queda pendiente y se cobra una sola vez en otra caja
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-contraentrega: el cobro por transferencia queda por verificar y un gerente lo confirma
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-cuadre: cierre por denominaciones, vale, dólares y entregado/dejado con el cuadre completo al centavo
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-cuadre: un cliente que envía sólo countedCash sigue cerrando; la contraentrega cobrada aparece en la caja que la recibió
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-reportes: venta diaria de usuario por producto
+   ↓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-reportes: venta de usuario por forma de pago, en el orden de la tienda y con pagos combinados repartidos
+   ↓ Aceptación · mercancía > 04: la caja y Mercancía ven como vendible sólo lo de lotes vigentes y lo vencido aparte
+   ↓ Aceptación · mercancía > 35: la orden y la recepción guardan factura, NCF, fecha y condición de pago; se completan después
+   ↓ Aceptación · mercancía > 35: exporta a Excel las compras del período con proveedor, RNC, NCF, montos e ITBIS
+   ↓ Aceptación · mercancía > 36: los dañados o rechazados por línea no entran al stock, quedan con motivo y costo, y pedido = bueno + dañado + pendiente
+   ↓ Aceptación · mercancía > 37: historial de recepciones con proveedor, documento, quién recibió, líneas y dañados; reenviar no duplica
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 7: conflicto offline devuelve español seguro
+TypeError: fetch failed
+Caused by: Error: read ECONNRESET
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { errno: -4077, code: 'ECONNRESET', syscall: 'read' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 21 passed | 106 skipped (128)
+   Start at  04:54:35
+   Duration  17.04s (transform 158ms, setup 0ms, collect 222ms, tests 16.57s, environment 0ms, prepare 92ms)
+
+exit=1
+
+================================================================
+== antes-k1.txt
+================================================================
+### K1 en 77c4d33: DATABASE_URL solo esta en un .env temporal de la raiz (no exportada); FITSTORE_API_URL si se exporta.
+### orden: env -u DATABASE_URL vitest run --config vitest.integration.config.ts -t 'financiera y permisos|Regresiones de Claude'
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/api.test.ts (104 tests | 5 failed | 82 skipped) 19668ms
+   ✓ Aceptación financiera y permisos > requiere sesión y el vendedor nunca recibe costos 98ms
+   ✓ Aceptación financiera y permisos > vende proteína y legging con FEFO y pago dividido 63ms
+   ✓ Aceptación financiera y permisos > rechaza pagos y stock inválidos sin crear huecos ni movimientos 191ms
+   ✓ Aceptación financiera y permisos > es idempotente ante peticiones concurrentes y sync 72ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  1417ms
+   ✓ Aceptación financiera y permisos > prorratea flete, recalcula promedio y conserva costo histórico 113ms
+   ✓ Aceptación financiera y permisos > protege devoluciones abiertas y repetidas 106ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  802ms
+   ✓ Aceptación financiera y permisos > conserva conflictos offline sin stock negativo 232ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1625ms
+   ✓ Aceptación financiera y permisos > calcula arqueo por método aunque se compensen diferencias 71ms
+   × Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia 2200ms
+     → 
+Invalid `fixtureDb.user.update()` invocation in
+<repo>\tests\api.test.ts:515:28
+
+  512     ).body.message,
+  513   ).toMatch(/bloquead/i);
+  514 } finally {
+→ 515   await fixtureDb.user.update(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:7
+   | 
+ 6 |   provider = "postgresql"
+ 7 |   url      = env("DATABASE_URL")
+   | 
+
+Validation Error Count: 1
+   ✓ Regresiones de Claude > 3: rechaza ajustes vencidos y acepta el día dominicano vigente 26ms
+   ✓ Regresiones de Claude > 4: stock sin lote convive con lotes; conteo no destruye la trazabilidad 153ms
+   ✓ Regresiones de Claude > 5: gerente cierra caja ajena; diferencias compensadas persisten y se auditan 74ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  7771ms
+   × Regresiones de Claude > 7: conflicto offline devuelve español seguro 5ms
+     → fetch failed
+   ✓ Regresiones de Claude > 8: pagos del reporte compras pertenecen al mismo rango 48ms
+   × Regresiones de Claude > 9: consumo agrupa por mes dominicano al cruzar medianoche UTC 63ms
+     → 
+Invalid `fixtureDb.sale.update()` invocation in
+<repo>\tests\api.test.ts:619:26
+
+  616 });
+  617 it("9: consumo agrupa por mes dominicano al cruzar medianoche UTC", async () => {
+  618   const s = await ok("/sales", input(clothing.variants[0].id, 118));
+→ 619   await fixtureDb.sale.update(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:7
+   | 
+ 6 |   provider = "postgresql"
+ 7 |   url      = env("DATABASE_URL")
+   | 
+
+Validation Error Count: 1
+   × Regresiones de Claude > 10: utilidad conserva costo de devolución sin reingreso 197ms
+     → 
+Invalid `fixtureDb.saleItem.findMany()` invocation in
+<repo>\tests\api.test.ts:642:44
+
+  639   ],
+  640 });
+  641 const r = await ok("/reports/profit");
+→ 642 const lines = await fixtureDb.saleItem.findMany(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:7
+   | 
+ 6 |   provider = "postgresql"
+ 7 |   url      = env("DATABASE_URL")
+   | 
+
+Validation Error Count: 1
+   ✓ Regresiones de Claude > 11: reintentar venta aprobada no requiere de nuevo PIN 24ms
+   × Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal 403ms
+     → 
+Invalid `fixtureDb.cashSession.count()` invocation in
+<repo>\tests\api.test.ts:705:35
+
+  702   ).status,
+  703 ).toBeGreaterThanOrEqual(400);
+  704 expect(
+→ 705   await fixtureDb.cashSession.count(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:7
+   | 
+ 6 |   provider = "postgresql"
+ 7 |   url      = env("DATABASE_URL")
+   | 
+
+Validation Error Count: 1
+   ↓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco
+   ↓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor
+   ↓ Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP
+   ↓ Seguridad, offline y funciones completadas > 3 y 9: lote vencido según Santo Domingo no se vende ni se recibe
+   ↓ Seguridad, offline y funciones completadas > 4: diez unidades sin lote más una con lote permiten vender dos
+   ↓ Seguridad, offline y funciones completadas > 7: sincroniza en caja cerrada dentro de su horario y audita el reajuste
+   ↓ Seguridad, offline y funciones completadas > 8: pago actual no se resta en reporte de otro período
+   ↓ Seguridad, offline y funciones completadas > descuento por monto recalcula impuesto y queda auditado
+   ↓ Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido
+   ↓ Seguridad, offline y funciones completadas > venta a crédito admite abonos idempotentes en caja posterior
+   ↓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores
+   ↓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión
+   ↓ Seguridad, offline y funciones completadas > stock negativo optativo conserva advertencia y prohíbe saltarse lotes
+   ↓ Seguridad, offline y funciones completadas > alerta efectivo aunque tarjeta lo compense
+   ↓ Seguridad, offline y funciones completadas > NCF preparado conserva solicitud sin emitir un comprobante fiscal
+   ↓ Seguridad, offline y funciones completadas > dashboard incluye mapa dominicano y comparación del año anterior
+   ↓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios
+   ↓ Alertas de negocio y consistencia contable > devolución del período resta costo solo cuando reingresa y cuadra con dashboard
+   ↓ Ronda 2 de Claude > 1: notas requieren prueba de posesión o gerente, no se divulgan códigos y cada uso se audita
+   ↓ Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite
+   ↓ Ronda 2 de Claude > 3: transferencia pendiente no reduce deuda ni caja; verificación concurrente aplica una sola vez
+   ↓ Ronda 2 de Claude > 4: offline máximo 48 horas y fecha anterior auditada
+   ↓ Ronda 2 de Claude > 5: Compose sólo publica nginx y descarta IP suministrada por cliente
+   ↓ Ronda 3 · tiempo real y mercancía > SSE autentica, filtra sucursal y no comunica operaciones revertidas
+   ↓ Ronda 3 · tiempo real y mercancía > tres cajas venden stock 5 y las tres reciben el saldo confirmado en menos de 2 segundos
+   ↓ Ronda 3 · tiempo real y mercancía > equipos muestran actividad y caja, renombrar y revocar invalida sesiones
+   ↓ Ronda 3 · tiempo real y mercancía > entradas idempotentes con promedio, kardex y usuario/equipo; vendedor bloqueado y almacén sin ganancia
+   ↓ Ronda 3 · tiempo real y mercancía > salidas requieren motivo y existencias; todos los motivos quedan auditados
+   ↓ Ronda 3 · tiempo real y mercancía > lotes y vencimiento obligatorios, salida de lote vencido y creación rápida atómica
+   ↓ Ronda 3 · tiempo real y mercancía > CSV: revisión sin stock, mapeo guardado, total validado, recepción, comprobante y equivalencia
+   ↓ Ronda 3 · tiempo real y mercancía > factura con total distinto se rechaza hasta revisión explícita; línea sin pareja exige resolución
+   ↓ Ronda 3 · tiempo real y mercancía > entrada con orden respeta cantidades pendientes y no duplica recepciones
+   ↓ Ronda 3 · tiempo real y mercancía > SSE comunica recepción, devolución, anulación y conteo confirmados
+   ↓ Ronda 3 · tiempo real y mercancía > eventos se publican en orden de commit aunque las transacciones empiecen al revés
+   ↓ Ronda 3 · tiempo real y mercancía > nginx mantiene SSE sin buffering y sólo publica el proxy
+   ↓ Ronda 4 · Claude: caja y equipos > la caja queda asignada al equipo y muestra su nombre
+   ↓ Ronda 4 · Claude: caja y equipos > vender desde otro equipo explica dónde está la caja (409, no 403)
+   ↓ Ronda 4 · Claude: caja y equipos > trasladar exige PIN de gerente al vendedor y queda en bitácora
+   ↓ Ronda 4 · Claude: caja y equipos > otro usuario no puede trasladar una caja ajena
+   ↓ Ronda 4 · Claude: caja y equipos > el gerente cierra la caja de una vendedora desde su propio equipo
+   ↓ Ronda 4 · Claude: caja y equipos > la dueña puede cerrar su caja desde cualquier equipo
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P1 compras: entrada sin orden se reporta una vez; orden no se duplica; fechas aplican
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > P2 lotes: lotId inventado, ajeno o de otra variante se rechaza sin cambios; el número de lote queda coherente
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > SSE: como máximo dos conexiones por sesión
+   ↓ Ronda 4 · auditoría de ChatGPT y propia > importación: archivos grandes se rechazan sin leerlos
+   ↓ Auditoría ronda 4 de ChatGPT > P1: una caída abrupta del cliente libera su conexión de tiempo real
+   ↓ Auditoría ronda 4 de ChatGPT > P2: el kardex tiene índice por lote (migración y base de datos)
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-01: un equipo R3 migrado no se puede reclamar ni operar sin aprobación del gerente
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-02: la compra R3 sin orden se recupera de la bitácora; reparación idempotente
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-03: cantidades fuera de precisión dan 400 en todas las rutas y no tocan costo, stock ni kardex
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-04: la factura aceptada contra una orden fija la deuda; parciales, flete y reintento sin doble conteo
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-06: una ráfaga de conexiones SSE sobre una sesión acepta como máximo dos
+   ↓ Ronda 6 · auditoría R4 de ChatGPT > R4-08: ventas inválidas devuelven 400 con campos en español (también en la API compilada)
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > R6-01: un combo fraccionado se rechaza sin escrituras; 1 combo consume exactamente 0.4 y su devolución lo repone
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > revisión R7: costo de combos exacto en venta, devolución y reporte de utilidad
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > revisión R7: una línea de combo fraccionada anterior se devuelve completa, no en partes
+   ↓ Ronda 7 · auditoría R6 de ChatGPT > R6-03: la recuperación no concilia recepciones con líneas incompletas; la completa sigue en 55
+   ↓ Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir
+   ↓ Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo
+   ↓ Ronda 8 · auditoría R7 de ChatGPT > R7-04: el reporte de utilidad usa el costo registrado en cada devolución parcial
+   ↓ Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga
+   ↓ Ronda 9 · auditoría R8 de ChatGPT > R8-02: una devolución anterior a la ronda 8 se concilia con su costo contabilizado
+   ↓ Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios
+   ↓ Ronda 9 · revisión · caja > R9-caja-4: la venta en espera guarda el descuento por monto, el global y el nombre, y sólo se recupera una vez
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-1: la devolución que completa la línea descuenta el costo de la devolución histórica
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-2: devolver de una en una reembolsa exactamente lo cobrado y su ITBIS
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-3: una venta a crédito con un abono por transferencia pendiente no se devuelve sin resolverlo
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-4: anular una venta recalcula el costo promedio igual que una devolución
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-5: los importes de dinero aceptan como máximo 2 decimales
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-5-pos: una venta sin conexión con un descuento de 3 decimales se sincroniza y una inválida no bloquea las demás
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-6: el costo de una devolución de la ronda 7 se reconstruye por línea
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-7: el costo de una venta anterior a la ronda 7 final coincide en utilidad y dashboard
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-8: devoluciones y descuentos no muestra costos a quien no tiene profit:read
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-9: ventas por método no cuenta dos veces el crédito y muestra los cobros el día que entran
+   ↓ Ronda 9 · revisión · dinero > R9-dinero-10: la tendencia compara ingresos netos de devoluciones en ambos períodos
+   ↓ Ronda 9 · revisión · facturas > un código que tienen dos productos queda sin elegir (R9-facturas-1)
+   ↓ Ronda 9 · revisión · facturas > la equivalencia corregida del proveedor gana al código de la tienda (R9-facturas-2)
+   ↓ Ronda 9 · revisión · facturas > un código de la tienda con la descripción de otra cosa o de otra variante no se elige (R9-facturas-2)
+   ↓ Ronda 9 · revisión · facturas > CSV con «;»: «1.250» son 1250 y no 1.25 (R9-facturas-7)
+   ↓ Ronda 9 · revisión · facturas > reenviar la misma recepción de una orden no la duplica (R9-facturas-8)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia
+PrismaClientInitializationError: 
+Invalid `fixtureDb.user.update()` invocation in
+<repo>\tests\api.test.ts:515:28
+
+  512     ).body.message,
+  513   ).toMatch(/bloquead/i);
+  514 } finally {
+→ 515   await fixtureDb.user.update(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:7
+   | 
+ 6 |   provider = "postgresql"
+ 7 |   url      = env("DATABASE_URL")
+   | 
+
+Validation Error Count: 1
+ ❯ ei.handleRequestError node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:242:13
+ ❯ ei.handleAndLogRequestError node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:174:12
+ ❯ ei.request node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:143:12
+ ❯ a node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:833:24
+ ❯ tests/api.test.ts:515:7
+    513|       ).toMatch(/bloquead/i);
+    514|     } finally {
+    515|       await fixtureDb.user.update({
+       |       ^
+    516|         where: { id: target.id },
+    517|         data: { failedAttempts: 0, lockedUntil: null },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 7: conflicto offline devuelve español seguro
+TypeError: fetch failed
+Caused by: Error: read ECONNRESET
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { errno: -4077, code: 'ECONNRESET', syscall: 'read' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 9: consumo agrupa por mes dominicano al cruzar medianoche UTC
+PrismaClientInitializationError: 
+Invalid `fixtureDb.sale.update()` invocation in
+<repo>\tests\api.test.ts:619:26
+
+  616 });
+  617 it("9: consumo agrupa por mes dominicano al cruzar medianoche UTC", async () => {
+  618   const s = await ok("/sales", input(clothing.variants[0].id, 118));
+→ 619   await fixtureDb.sale.update(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:7
+   | 
+ 6 |   provider = "postgresql"
+ 7 |   url      = env("DATABASE_URL")
+   | 
+
+Validation Error Count: 1
+ ❯ ei.handleRequestError node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:242:13
+ ❯ ei.handleAndLogRequestError node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:174:12
+ ❯ ei.request node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:143:12
+ ❯ a node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:833:24
+ ❯ tests/api.test.ts:619:5
+    617|   it("9: consumo agrupa por mes dominicano al cruzar medianoche UTC", …
+    618|     const s = await ok("/sales", input(clothing.variants[0].id, 118));
+    619|     await fixtureDb.sale.update({
+       |     ^
+    620|       where: { id: s.id },
+    621|       data: { createdAt: new Date("2026-09-01T02:00:00Z") },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 10: utilidad conserva costo de devolución sin reingreso
+PrismaClientInitializationError: 
+Invalid `fixtureDb.saleItem.findMany()` invocation in
+<repo>\tests\api.test.ts:642:44
+
+  639   ],
+  640 });
+  641 const r = await ok("/reports/profit");
+→ 642 const lines = await fixtureDb.saleItem.findMany(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:7
+   | 
+ 6 |   provider = "postgresql"
+ 7 |   url      = env("DATABASE_URL")
+   | 
+
+Validation Error Count: 1
+ ❯ ei.handleRequestError node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:242:13
+ ❯ ei.handleAndLogRequestError node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:174:12
+ ❯ ei.request node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:143:12
+ ❯ a node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:833:24
+ ❯ tests/api.test.ts:642:19
+    640|     });
+    641|     const r = await ok("/reports/profit");
+    642|     const lines = await fixtureDb.saleItem.findMany({
+       |                   ^
+    643|       where: {
+    644|         variantId: clothing.variants[0].id,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  tests/api.test.ts > Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal
+PrismaClientInitializationError: 
+Invalid `fixtureDb.cashSession.count()` invocation in
+<repo>\tests\api.test.ts:705:35
+
+  702   ).status,
+  703 ).toBeGreaterThanOrEqual(400);
+  704 expect(
+→ 705   await fixtureDb.cashSession.count(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:7
+   | 
+ 6 |   provider = "postgresql"
+ 7 |   url      = env("DATABASE_URL")
+   | 
+
+Validation Error Count: 1
+ ❯ ei.handleRequestError node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:242:13
+ ❯ ei.handleAndLogRequestError node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:174:12
+ ❯ ei.request node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/RequestHandler.ts:143:12
+ ❯ a node_modules/.pnpm/@prisma+client@6.19.0_prism_0ade0c2032e7f19289902b884120cfab/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:833:24
+ ❯ tests/api.test.ts:705:7
+    703|     ).toBeGreaterThanOrEqual(400);
+    704|     expect(
+    705|       await fixtureDb.cashSession.count({
+       |       ^
+    706|         where: { registerId: session.registerId, closedAt: null },
+    707|       }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 17 passed | 82 skipped (104)
+   Start at  01:41:34
+   Duration  21.91s (transform 160ms, setup 0ms, collect 241ms, tests 19.67s, environment 0ms, prepare 111ms)
+
+exit=1
+
+================================================================
+== antes-local-db.txt
+================================================================
+### scripts/local-db.mjs en 77c4d33 (Windows): node scripts/local-db.mjs
+const dbDir = new URL("../.local-db", import.meta.url).pathname;
+file:///<repo>/node_modules/.pnpm/embedded-postgres@18.4.0-beta.17/node_modules/embedded-postgres/dist/index.js:176
+                            reject(new Error(`Postgres init script failed (code: ${code !== null && code !== void 0 ? code : 'null'}, signal: ${signal !== null && signal !== void 0 ? signal : 'null'}). ERROR OUTPUT: ${stderrOutput}`));
+                                   ^
+
+Error: Postgres init script failed (code: 1, signal: null). ERROR OUTPUT: initdb: error: could not create directory "/C:": Invalid argument
+
+    at ChildProcess.<anonymous> (file:///<repo>/node_modules/.pnpm/embedded-postgres@18.4.0-beta.17/node_modules/embedded-postgres/dist/index.js:176:36)
+    at ChildProcess.emit (node:events:514:28)
+    at maybeClose (node:internal/child_process:1141:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:306:5)
+
+Node.js v24.21.0
+exit=1
+
+================================================================
+== antes-verify.txt
+================================================================
+### scripts/verify.mjs en 77c4d33 (Windows), con la API del canal en marcha: node scripts/verify.mjs
+node:events:505
+    throw er; // Unhandled 'error' event
+    ^
+
+Error: spawn pnpm ENOENT
+    at ChildProcess._handle.onexit (node:internal/child_process:287:19)
+    at onErrorNT (node:internal/child_process:525:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Emitted 'error' event on ChildProcess instance at:
+    at ChildProcess._handle.onexit (node:internal/child_process:293:12)
+    at onErrorNT (node:internal/child_process:525:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'spawn pnpm',
+  path: 'pnpm',
+  spawnargs: [ '--filter', '@fitstore/api', 'dev' ]
+}
+
+Node.js v24.21.0
+exit=1
+
+================================================================
+== antes-verify-arbol.txt
+================================================================
+### Mutación: stop() de verify.mjs con child.kill("SIGTERM") también en Windows (lo que hacía 77c4d33), contra la regresión del árbol
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/portabilidad.test.ts (20 tests | 1 failed | 19 skipped) 10804ms
+   ↓ Portabilidad · rutas y procesos de las pruebas > ningún script ni prueba usa URL.pathname como ruta de archivo
+   ↓ Portabilidad · rutas y procesos de las pruebas > ningún script ni prueba ejecuta los atajos POSIX de node_modules/.bin
+   ↓ Portabilidad · rutas y procesos de las pruebas > las pruebas de la API no bloquean el proceso con órdenes síncronas
+   ↓ Portabilidad · instalación y finales de línea > .gitattributes fija LF para el texto y declara los binarios
+   ↓ Portabilidad · instalación y finales de línea > ningún archivo de código o configuración tiene finales CRLF
+   ↓ Portabilidad · instalación y finales de línea > pnpm tiene decidida la compilación de los binarios de PostgreSQL local
+   ↓ Portabilidad · instalación y finales de línea > el reporte que escribe el importador no ensucia el repositorio
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > la carpeta de datos es una ruta nativa y los valores por defecto no cambian
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > el puerto y la carpeta de datos se pueden cambiar por entorno
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > arranca en UTC y sólo pide socket Unix donde existe
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > un clúster nuevo se crea en UTF-8 y no en la codificación del equipo
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > --detener termina bien cuando no hay nada en marcha
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > la API y sus puertos salen de FITSTORE_API_URL y PORT, con 3001 por defecto
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > ejecuta pnpm en esta plataforma y devuelve el código de salida
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > una orden que no arranca no tumba la verificación
+   × Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol 10802ms
+     → expected false to be true // Object.is equality
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > a la base local se le pide un apagado limpio antes de matarla
+   ↓ Portabilidad · respaldo (scripts/backup.mjs) > explica cómo indicar pg_dump cuando no está en el PATH
+   ↓ Portabilidad · ZIP fuente (scripts/package.mjs) > se genera sin Python y es reproducible, sin secretos ni datos locales
+   ↓ Portabilidad · ZIP fuente (scripts/package.mjs) > la orden empaqueta la carpeta actual en la ruta indicada
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/portabilidad.test.ts > Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/portabilidad.test.ts:362:62
+    360|       await stop(child);
+    361|       expect(await until(() => !alive(child.pid))).toBe(true);
+    362|       if (WINDOWS) expect(await until(() => !alive(server))).toBe(true…
+       |                                                              ^
+    363|     } finally {
+    364|       if (server && alive(server)) process.kill(server, "SIGKILL");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 skipped (20)
+   Start at  01:55:52
+   Duration  11.41s (transform 85ms, setup 0ms, collect 77ms, tests 10.80s, environment 0ms, prepare 206ms)
+
+exit=1
+
+================================================================
+== antes-package.txt
+================================================================
+### scripts/package.mjs en 77c4d33 (Windows sin Python; python3 y python son el alias de Microsoft Store)
+### orden: node scripts/package.mjs <temporal>/antes.zip
+Python was not found; run without arguments to install from the Microsoft Store, or disable this shortcut from Settings > Apps > Advanced app settings > App execution aliases.
+exit=49
+antes.zip': No such file or directory
+### nota: 49 es 9009 mod 256 (Git Bash trunca el codigo de salida a 8 bits); en PowerShell y cmd el codigo es 9009.
+
+================================================================
+== antes-backup.txt
+================================================================
+### Regresión del respaldo contra scripts/backup.mjs de 77c4d33
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/portabilidad.test.ts (20 tests | 1 failed | 19 skipped) 970ms
+   ↓ Portabilidad · rutas y procesos de las pruebas > ningún script ni prueba usa URL.pathname como ruta de archivo
+   ↓ Portabilidad · rutas y procesos de las pruebas > ningún script ni prueba ejecuta los atajos POSIX de node_modules/.bin
+   ↓ Portabilidad · rutas y procesos de las pruebas > las pruebas de la API no bloquean el proceso con órdenes síncronas
+   ↓ Portabilidad · instalación y finales de línea > .gitattributes fija LF para el texto y declara los binarios
+   ↓ Portabilidad · instalación y finales de línea > ningún archivo de código o configuración tiene finales CRLF
+   ↓ Portabilidad · instalación y finales de línea > pnpm tiene decidida la compilación de los binarios de PostgreSQL local
+   ↓ Portabilidad · instalación y finales de línea > el reporte que escribe el importador no ensucia el repositorio
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > la carpeta de datos es una ruta nativa y los valores por defecto no cambian
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > el puerto y la carpeta de datos se pueden cambiar por entorno
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > arranca en UTC y sólo pide socket Unix donde existe
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > un clúster nuevo se crea en UTF-8 y no en la codificación del equipo
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > --detener termina bien cuando no hay nada en marcha
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > la API y sus puertos salen de FITSTORE_API_URL y PORT, con 3001 por defecto
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > ejecuta pnpm en esta plataforma y devuelve el código de salida
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > una orden que no arranca no tumba la verificación
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > a la base local se le pide un apagado limpio antes de matarla
+   × Portabilidad · respaldo (scripts/backup.mjs) > explica cómo indicar pg_dump cuando no está en el PATH 968ms
+     → expected 'node:internal/child_process:287\r\n  …' to contain 'No se encontró pg_dump-fitstore-que-n…'
+   ↓ Portabilidad · ZIP fuente (scripts/package.mjs) > se genera sin Python y es reproducible, sin secretos ni datos locales
+   ↓ Portabilidad · ZIP fuente (scripts/package.mjs) > la orden empaqueta la carpeta actual en la ruta indicada
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/portabilidad.test.ts > Portabilidad · respaldo (scripts/backup.mjs) > explica cómo indicar pg_dump cuando no está en el PATH
+AssertionError: expected 'node:internal/child_process:287\r\n  …' to contain 'No se encontró pg_dump-fitstore-que-n…'
+
+- Expected
++ Received
+
+- No se encontró pg_dump-fitstore-que-no-existe
++ node:internal/child_process:287
++       const err = new ErrnoException(exitCode, syscall);
++                   ^
++ 
++ Error: spawn pg_dump-fitstore-que-no-existe ENOENT
++     at ChildProcess._handle.onexit (node:internal/child_process:287:19)
++     at onErrorNT (node:internal/child_process:525:16)
++     at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
++   errno: -4058,
++   code: 'ENOENT',
++   syscall: 'spawn pg_dump-fitstore-que-no-existe',
++   path: 'pg_dump-fitstore-que-no-existe',
++   spawnargs: [
++     '--format=custom',
++     '--file',
++     '<repo>\\backups\\fitstore-2026-10-06T05-50-09-219Z.dump'
++   ]
++ }
++ 
++ Node.js v24.21.0
++
+
+ ❯ tests/portabilidad.test.ts:418:21
+    416|         },
+    417|       });
+    418|       expect(r.out).toContain("No se encontró pg_dump-fitstore-que-no-…
+       |                     ^
+    419|       expect(r.out).toContain("PG_DUMP_BIN");
+    420|       expect(r.code).toBe(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 skipped (20)
+   Start at  01:49:55
+   Duration  15.04s (transform 51ms, setup 0ms, collect 58ms, tests 970ms, environment 1ms, prepare 113ms)
+
+exit=1
+
+================================================================
+== antes-portabilidad-3b8d44b.txt
+================================================================
+### 1) Checkout de 3b8d44b (sin .gitattributes) con core.autocrlf=true, en una carpeta temporal y con un índice aparte
+  CRLF fitstore-pos/compose.yaml
+  CRLF fitstore-pos/deploy/nginx.conf
+  CRLF fitstore-pos/package.json
+  CRLF fitstore-pos/scripts/backup.mjs
+  CRLF fitstore-pos/scripts/local-db.mjs
+  CRLF fitstore-pos/scripts/package.mjs
+  CRLF fitstore-pos/scripts/verify.mjs
+  CRLF fitstore-pos/tests/api.test.ts
+archivos extraídos: 8 · con CRLF: 8
+
+### 2) El árbol de trabajo en el estado de 3b8d44b: sin .gitattributes, pnpm-workspace.yaml anterior y compose.yaml con CRLF (el archivo que bajó Git en el paso 1)
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/portabilidad.test.ts (18 tests | 4 failed | 14 skipped) 50ms
+   ↓ Portabilidad · rutas y procesos de las pruebas > ningún script ni prueba usa URL.pathname como ruta de archivo
+   ↓ Portabilidad · rutas y procesos de las pruebas > ningún script ni prueba ejecuta los atajos POSIX de node_modules/.bin
+   ↓ Portabilidad · rutas y procesos de las pruebas > las pruebas de la API no bloquean el proceso con órdenes síncronas
+   × Portabilidad · instalación y finales de línea > .gitattributes fija LF para el texto y declara los binarios 9ms
+     → expected false to be true // Object.is equality
+   × Portabilidad · instalación y finales de línea > ningún archivo de código o configuración tiene finales CRLF 34ms
+     → expected [ 'compose.yaml' ] to deeply equal []
+   × Portabilidad · instalación y finales de línea > pnpm tiene decidida la compilación de los binarios de PostgreSQL local 3ms
+     → expected [ …(2) ] to deeply equal [ …(2) ]
+   × Portabilidad · instalación y finales de línea > el reporte que escribe el importador no ensucia el repositorio 3ms
+     → expected [ 'node_modules/', 'dist/', …(9) ] to include 'revision-inventario.csv'
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > la carpeta de datos es una ruta nativa y los valores por defecto no cambian
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > el puerto y la carpeta de datos se pueden cambiar por entorno
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > arranca en UTC y sólo pide socket Unix donde existe
+   ↓ Portabilidad · PostgreSQL local (scripts/local-db.mjs) > --detener termina bien cuando no hay nada en marcha
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > la API y sus puertos salen de FITSTORE_API_URL y PORT, con 3001 por defecto
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > ejecuta pnpm en esta plataforma y devuelve el código de salida
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > una orden que no arranca no tumba la verificación
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol
+   ↓ Portabilidad · verificación (scripts/verify.mjs) > a la base local se le pide un apagado limpio antes de matarla
+   ↓ Portabilidad · ZIP fuente (scripts/package.mjs) > se genera sin Python y es reproducible, sin secretos ni datos locales
+   ↓ Portabilidad · ZIP fuente (scripts/package.mjs) > la orden empaqueta la carpeta actual en la ruta indicada
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/portabilidad.test.ts > Portabilidad · instalación y finales de línea > .gitattributes fija LF para el texto y declara los binarios
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/portabilidad.test.ts:139:57
+    137|     // Sin él, core.autocrlf=true (lo habitual en Git para Windows) ba…
+    138|     // código con CRLF.
+    139|     expect(existsSync(resolve(root, ".gitattributes"))).toBe(true);
+       |                                                         ^
+    140|     const lines = read(".gitattributes").split("\n");
+    141|     expect(lines).toContain("* text=auto eol=lf");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/portabilidad.test.ts > Portabilidad · instalación y finales de línea > ningún archivo de código o configuración tiene finales CRLF
+AssertionError: expected [ 'compose.yaml' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "compose.yaml",
++ ]
+
+ ❯ tests/portabilidad.test.ts:163:22
+    161|       .filter((file) => readFileSync(file).includes("\r\n"))
+    162|       .map(rel);
+    163|     expect(withCrlf).toEqual([]);
+       |                      ^
+    164|   });
+    165|   it("pnpm tiene decidida la compilación de los binarios de PostgreSQL…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/portabilidad.test.ts > Portabilidad · instalación y finales de línea > pnpm tiene decidida la compilación de los binarios de PostgreSQL local
+AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+  [
+    "@embedded-postgres/darwin-arm64",
+-   StringMatching /^(true|false)$/,
++   undefined,
+  ]
+
+ ❯ tests/portabilidad.test.ts:190:41
+    188|     expect(required.length).toBeGreaterThanOrEqual(4);
+    189|     for (const name of required)
+    190|       expect([name, decided.get(name)]).toEqual([
+       |                                         ^
+    191|         name,
+    192|         expect.stringMatching(/^(true|false)$/),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/portabilidad.test.ts > Portabilidad · instalación y finales de línea > el reporte que escribe el importador no ensucia el repositorio
+AssertionError: expected [ 'node_modules/', 'dist/', …(9) ] to include 'revision-inventario.csv'
+ ❯ tests/portabilidad.test.ts:199:44
+    197|     // se ejecuta, y la suite de integración lo ejecuta en apps/api. C…
+    198|     // inventario real lleva costos: no debe versionarse.
+    199|     expect(read(".gitignore").split("\n")).toContain("revision-inventa…
+       |                                            ^
+    200|     // A Git sólo se le puede preguntar dentro de un repositorio (el Z…
+    201|     const git = (...args: string[]) =>
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 14 skipped (18)
+   Start at  01:37:53
+   Duration  14.09s (transform 51ms, setup 0ms, collect 60ms, tests 50ms, environment 0ms, prepare 116ms)
+
+exit=1
+

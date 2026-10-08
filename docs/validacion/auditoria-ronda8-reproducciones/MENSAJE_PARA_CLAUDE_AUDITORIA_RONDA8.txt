@@ -1,0 +1,26 @@
+Claude:
+
+Audité fitstore-pos-ronda8.zip sin modificar tu implementación. Los cuatro casos originales de R7 pasan con operaciones nuevas. Tipos, lint y compilación aprobados; 75 unitarias aprobadas + 1 omitida por falta del Excel original (76 registradas), integración compilada 84/84 y navegador 9/9.
+
+Dictamen: requiere correcciones. Quedan 3 hallazgos, 1 P1 y 2 P2:
+
+R8-01 · P1 · Comparación de códigos inconsistente.
+Crear A por API: barras QA-R8-CASE123, SKU qa-case-owner-r8, stock 4. Importar B: ID/ref qa-r8-case123, stock 2. La CLI acepta B, pero ID + Enter en navegador agrega A. El importador compara con mayúsculas y la caja baja todos los códigos a minúsculas. Normalizar la comparación entre archivo, base y POS; rechazar ambigüedades antes de escribir y no elegir silenciosamente el primer producto de un catálogo ambiguo. Añadir regresiones contra la base y entre filas. El conflicto numérico original sí quedó corregido.
+
+R8-02 · P2 · Histórico R7→R8 sin conciliar.
+Prueba con devolución realmente creada por API compilada R7 en una base clonada, sin eliminar campos por SQL: venta de costo 50.05, primera devolución 3 de 10 contabiliza 15.02. Tras actualizar, el reporte sigue dando 35.04 en lugar de 35.03. La devolución de los 7 restantes en R8 contabiliza 35.03, pero el reporte final queda en costo 0.01/utilidad -0.01 con ventas y unidades 0. La primera devolución tiene una sola línea y SaleReturn.costTotal permite recuperar 15.02. Conciliar históricos con los importes ya contabilizados, reparación idempotente y tratamiento explícito de casos no determinables. Tu estimación histórica está declarada en las notas, pero deja pendiente ese cierre. Todo creado en R8 sí cuadra 50.05→15.02→35.03→0.
+
+R8-03 · P2 · Abortar importación deja cambios parciales.
+Caso normal: archivo de dos filas, primera categoría nueva y segunda categoría existente con lote/vencimiento obligatorios, stock 1. Sin --sin-lotes, la CLI sale 1, pero ya creó la primera categoría (7→8).
+Caso de límite: primera fila válida, segunda con precio 1000000000000. El lector no valida el máximo Decimal(14,2); PostgreSQL rechaza la segunda con numeric field overflow, pero primera fila, stock 1 y movimiento quedan guardados (productos 64→65, variantes 232→233, movimientos 1933→1934). Valor extremo sólo de QA, no del inventario real.
+Prevalidar todas las categorías y límites/finitud antes de escribir. Garantizar consistencia del lote o informar con precisión una carga parcial y su recuperación; los errores detectables en la prevalidación deben dejar la base intacta. Añadir ambas regresiones y conservar carga/recarga de 616 filas.
+
+Informe completo: fitstore-pos/docs/AUDITORIA_RONDA8.md.
+Resumen verificable: fitstore-pos/docs/validacion/auditoria-ronda8.json.
+Evidencias: JSON de importador, kit, legado antes/después, UI, logs oficiales, libros XLSX sintéticos y capturas propias. Scripts externos incluidos para repetir los casos.
+
+Los 327 archivos originales quedaron idénticos al ZIP recibido. Servicios temporales detenidos; servicios originales preservados. No adjunto un software modificado: el ZIP de auditoría contiene resultados y reproducciones.
+
+Falta el Excel original; los 616 nombres vienen del fixture y se probaron con stock 1, costo 10 y precio 20 ficticios. No certifico las 3158 unidades ni los valores reales, ni llamadas reales a Anthropic, hardware o producción.
+
+Por favor, entrega la siguiente ronda con las tres correcciones y sus regresiones, sin dar por cerrado el histórico ni la ambigüedad de códigos hasta comprobar estos casos.

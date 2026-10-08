@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-10-06T15:43:13.007Z",
+  "endpoint": "/api/sales",
+  "status": 200,
+  "durationMs": 97,
+  "returnedSales": 100,
+  "responseBytes": 3117415,
+  "proofs": 1,
+  "proofCharacters": 2796226,
+  "maximumSingleProofCharacters": 2796226,
+  "implementationLimitBytesPerUpload": 2097152,
+  "endpointLimitSales": 100,
+  "theoreticalBase64PayloadBytesAtLimit": 279620400,
+  "note": "La respuesta incluye cada data URL completa. La cifra teórica no suma el resto del JSON ni cabeceras."
+}

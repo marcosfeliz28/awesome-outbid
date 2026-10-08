@@ -1,0 +1,72 @@
+{
+  "source": "Clon de la base R6 auditada, historial Prisma y SQL R6 original ya aplicados; nueva recepción sintética reproduce total parcial 25",
+  "id": "bc6a24ed-f3f5-4fb0-8c7e-ebc8ad291545",
+  "before": {
+    "id": "bc6a24ed-f3f5-4fb0-8c7e-ebc8ad291545",
+    "orderId": "29da3c2a-75ca-422f-a2e2-5561d2246765",
+    "freight": "0.00",
+    "otherCosts": "0.00",
+    "items": [
+      {
+        "qty": 1,
+        "cost": 25
+      },
+      {
+        "qty": 1
+      }
+    ],
+    "userId": "310ddd21-e0b7-4313-a994-f8910eaebdad",
+    "branchId": "main",
+    "createdAt": "2026-10-05T22:19:57.339Z",
+    "supplierId": "b46b888f-e21b-41ad-93b6-643343f3ef63",
+    "total": "25.00",
+    "attachmentId": null,
+    "operationId": null
+  },
+  "migrationBefore": [
+    {
+      "migration_name": "202610030001_initial",
+      "checksum": "d6fea0ad6eb6ac32a5afbb35cb6e49a1cc50b8a61eb81304281c99b82d94407c"
+    },
+    {
+      "migration_name": "202610040001_review",
+      "checksum": "3480c5d6373ad897b9ae58cd4739abaf3b267f4b7c258d7e27ea401079e5c36c"
+    },
+    {
+      "migration_name": "202610040002_sessions",
+      "checksum": "20b420eec00f632c8db34ed63cfdb34c98a437f4b897c701d6b6fd5a891cc91b"
+    },
+    {
+      "migration_name": "202610040003_finance",
+      "checksum": "2a4850f97af8c079a32a7fb0d935a7b0da6dfafc877ba1ebd864ccb042d54d1f"
+    },
+    {
+      "migration_name": "202610040004_negative_stock",
+      "checksum": "affcbe68e93ea2d310373a9ad1b307a00ae77a89ff3f12790bc11909211f9fff"
+    },
+    {
+      "migration_name": "202610040005_round2",
+      "checksum": "15a1823b5b970198d9752e72ca6357bd26497e7a9641ddaabc578b9fd644305b"
+    },
+    {
+      "migration_name": "202610040006_round3",
+      "checksum": "b9ca1fac26663bd199f7c9f0383cf3deedcf6c22dfa331277d924d0c8df91d0b"
+    },
+    {
+      "migration_name": "202610040007_commit_events",
+      "checksum": "51dc75af86daca84e94b94df4c3238295a2b32c4eb175f86c3b198d0d1a41c08"
+    },
+    {
+      "migration_name": "202610050001_round4_claude",
+      "checksum": "a6a760ae262c2511de6f982a65abce206947002871105f1a9425daae943d3157"
+    },
+    {
+      "migration_name": "202610050002_lot_index",
+      "checksum": "63406c1d64159d1c2ee055cecbec881a2dc75b958a8c52c3c3bb652f6d6d5f75"
+    },
+    {
+      "migration_name": "202610060001_round6_audit",
+      "checksum": "126c814367179d7e9301464631697d42e9213319920b9e168922622204d9ddf8"
+    }
+  ]
+}

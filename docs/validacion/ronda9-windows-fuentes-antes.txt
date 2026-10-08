@@ -1,0 +1,376 @@
+FitStore POS · ronda 9 · Windows y zona horaria · fuentes y barra superior · ANTES de la corrección
+
+================================================================
+== rebase-antes-ui.txt
+================================================================
+# ANTES · base 4485a27 sin el arreglo: styles.css y tauri.conf.json de 4485a27, pruebas de 5799a43 · 2026-10-06T08:53:58Z
+# pnpm exec playwright test tests/e2e/fuentes.spec.ts
+
+Running 9 tests using 1 worker
+
+  x  1 [chromium] › tests\e2e\fuentes.spec.ts:165:5 › sin Google Fonts: ninguna petición sale a fonts.googleapis.com ni a fonts.gstatic.com (4.2s)
+  x  2 [chromium] › tests\e2e\fuentes.spec.ts:198:5 › fuentes disponibles sin red externa: Inter y Plus Jakarta Sans cargan con todos sus pesos (1.5s)
+  x  3 [chromium] › tests\e2e\fuentes.spec.ts:275:5 › las fuentes quedan en la precarga del service worker y se ven sin conexión (1.9s)
+  x  4 [chromium] › tests\e2e\fuentes.spec.ts:317:5 › el contenedor de escritorio sólo admite fuentes y estilos propios, y con esa política la aplicación carga sus fuentes (449ms)
+  x  5 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema claro) (8.3s)
+  x  6 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema oscuro) (9.0s)
+  ok 7 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 390 px con las fuentes cargadas (tema claro) (8.4s)
+  ok 8 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 390 px con las fuentes cargadas (tema oscuro) (8.5s)
+  x  9 [chromium] › tests\e2e\fuentes.spec.ts:399:5 › en celular el menú abierto queda por encima de la barra de Mercancía y todas sus opciones se pueden tocar (2.2s)
+
+
+  1) [chromium] › tests\e2e\fuentes.spec.ts:165:5 › sin Google Fonts: ninguna petición sale a fonts.googleapis.com ni a fonts.gstatic.com 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 5
+
+    - Array []
+    + Array [
+    +   "https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700;750;800&family=Plus+Jakarta+Sans:wght@500;600;650;700;750;800&display=swap",
+    +   "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+    +   "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+    + ]
+
+      186 |   expect(
+      187 |     peticiones.filter((p) => GOOGLE_FONTS.test(p.url)).map((p) => p.url),
+    > 188 |   ).toEqual([]);
+          |     ^
+      189 |   // Las fuentes sí se piden, y sólo a la propia aplicación.
+      190 |   const origen = new URL(page.url()).origin;
+      191 |   const fuentes = peticiones.filter((p) => p.tipo === "font");
+        at <repo>\tests\e2e\fuentes.spec.ts:188:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\fuentes-sin-Google-Fonts-n-fa223--com-ni-a-fonts-gstatic-com-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\fuentes-sin-Google-Fonts-n-fa223--com-ni-a-fonts-gstatic-com-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\fuentes-sin-Google-Fonts-n-fa223--com-ni-a-fonts-gstatic-com-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\fuentes-sin-Google-Fonts-n-fa223--com-ni-a-fonts-gstatic-com-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests\e2e\fuentes.spec.ts:198:5 › fuentes disponibles sin red externa: Inter y Plus Jakarta Sans cargan con todos sus pesos 
+
+    Error: Inter · caras cargadas: []
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      211 |       cubre(estado.caras, familia, pesos),
+      212 |       familia + " · caras cargadas: " + JSON.stringify(estado.caras),
+    > 213 |     ).toBe(true);
+          |       ^
+      214 |   expect(estado.caras.map((c: any) => c.display)).toEqual(
+      215 |     estado.caras.map(() => "swap"),
+      216 |   );
+        at <repo>\tests\e2e\fuentes.spec.ts:213:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\fuentes-fuentes-disponible-ce3de--cargan-con-todos-sus-pesos-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\fuentes-fuentes-disponible-ce3de--cargan-con-todos-sus-pesos-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\fuentes-fuentes-disponible-ce3de--cargan-con-todos-sus-pesos-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\fuentes-fuentes-disponible-ce3de--cargan-con-todos-sus-pesos-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › tests\e2e\fuentes.spec.ts:275:5 › las fuentes quedan en la precarga del service worker y se ven sin conexión 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 4
+
+    - Array []
+    + Array [
+    +   "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+    +   "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+    + ]
+
+      296 |     [...fuentes],
+      297 |   );
+    > 298 |   expect(sinPrecarga).toEqual([]);
+          |                       ^
+      299 |   // La primera instalación empieza a controlar la página en la próxima navegación.
+      300 |   await page.reload();
+      301 |   await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+        at <repo>\tests\e2e\fuentes.spec.ts:298:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\fuentes-las-fuentes-quedan-3a34c-orker-y-se-ven-sin-conexión-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\fuentes-las-fuentes-quedan-3a34c-orker-y-se-ven-sin-conexión-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\fuentes-las-fuentes-quedan-3a34c-orker-y-se-ven-sin-conexión-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\fuentes-las-fuentes-quedan-3a34c-orker-y-se-ven-sin-conexión-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › tests\e2e\fuentes.spec.ts:317:5 › el contenedor de escritorio sólo admite fuentes y estilos propios, y con esa política la aplicación carga sus fuentes 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 1
+
+      Array [
+        "'self'",
+    +   "https://fonts.gstatic.com",
+      ]
+
+      334 |       .find((d) => d[0] === nombre)
+      335 |       ?.slice(1);
+    > 336 |   expect(directiva("font-src")).toEqual(["'self'"]);
+          |                                 ^
+      337 |   expect(directiva("style-src")).toEqual(["'self'", "'unsafe-inline'"]);
+      338 |   // La misma política, puesta a la PWA compilada: nada queda bloqueado.
+      339 |   await page.addInitScript(() => {
+        at <repo>\tests\e2e\fuentes.spec.ts:336:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\fuentes-el-contenedor-de-e-f1689-plicación-carga-sus-fuentes-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\fuentes-el-contenedor-de-e-f1689-plicación-carga-sus-fuentes-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\fuentes-el-contenedor-de-e-f1689-plicación-carga-sus-fuentes-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\fuentes-el-contenedor-de-e-f1689-plicación-carga-sus-fuentes-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema claro) 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  1
+    + Received  + 20
+
+    - Array []
+    + Array [
+    +   "Punto de venta: la página desborda 7 px",
+    +   "Punto de venta: la barra desborda 7 px",
+    +   "Punto de venta: fuera de la vista topbar-right,account,avatar",
+    +   "Configuración: la página desborda 3 px",
+    +   "Configuración: la barra desborda 3 px",
+    +   "Configuración: fuera de la vista topbar-right,account,avatar",
+    +   "Configuración › Negocio y reglas: la página desborda 3 px",
+    +   "Configuración › Negocio y reglas: la barra desborda 3 px",
+    +   "Configuración › Negocio y reglas: fuera de la vista topbar-right,account,avatar",
+    +   "Configuración › Usuarios y permisos: la página desborda 3 px",
+    +   "Configuración › Usuarios y permisos: la barra desborda 3 px",
+    +   "Configuración › Usuarios y permisos: fuera de la vista topbar-right,account,avatar",
+    +   "Configuración › Bitácora: la página desborda 3 px",
+    +   "Configuración › Bitácora: la barra desborda 3 px",
+    +   "Configuración › Bitácora: fuera de la vista topbar-right,account,avatar",
+    +   "Configuración › Equipos: la página desborda 3 px",
+    +   "Configuración › Equipos: la barra desborda 3 px",
+    +   "Configuración › Equipos: fuera de la vista topbar-right,account,avatar",
+    + ]
+
+      391 |         problemas.push(...(await desbordes(page, "Configuración › " + label)));
+      392 |       }
+    > 393 |       expect(problemas).toEqual([]);
+          |                         ^
+      394 |     });
+      395 |
+      396 | // En celular, la barra fija de «Mercancía» quedaba encima del menú abierto:
+        at <repo>\tests\e2e\fuentes.spec.ts:393:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\fuentes-la-barra-superior--12192-uentes-cargadas-tema-claro--chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\fuentes-la-barra-superior--12192-uentes-cargadas-tema-claro--chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\fuentes-la-barra-superior--12192-uentes-cargadas-tema-claro--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\fuentes-la-barra-superior--12192-uentes-cargadas-tema-claro--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema oscuro) 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  1
+    + Received  + 20
+
+    - Array []
+    + Array [
+    +   "Punto de venta: la página desborda 7 px",
+    +   "Punto de venta: la barra desborda 7 px",
+    +   "Punto de venta: fuera de la vista topbar-right,account,avatar",
+    +   "Configuración: la página desborda 3 px",
+    +   "Configuración: la barra desborda 3 px",
+    +   "Configuración: fuera de la vista topbar-right,account,avatar",
+    +   "Configuración › Negocio y reglas: la página desborda 3 px",
+    +   "Configuración › Negocio y reglas: la barra desborda 3 px",
+    +   "Configuración › Negocio y reglas: fuera de la vista topbar-right,account,avatar",
+    +   "Configuración › Usuarios y permisos: la página desborda 3 px",
+    +   "Configuración › Usuarios y permisos: la barra desborda 3 px",
+    +   "Configuración › Usuarios y permisos: fuera de la vista topbar-right,account,avatar",
+    +   "Configuración › Bitácora: la página desborda 3 px",
+    +   "Configuración › Bitácora: la barra desborda 3 px",
+    +   "Configuración › Bitácora: fuera de la vista topbar-right,account,avatar",
+    +   "Configuración › Equipos: la página desborda 3 px",
+    +   "Configuración › Equipos: la barra desborda 3 px",
+    +   "Configuración › Equipos: fuera de la vista topbar-right,account,avatar",
+    + ]
+
+      391 |         problemas.push(...(await desbordes(page, "Configuración › " + label)));
+      392 |       }
+    > 393 |       expect(problemas).toEqual([]);
+          |                         ^
+      394 |     });
+      395 |
+      396 | // En celular, la barra fija de «Mercancía» quedaba encima del menú abierto:
+        at <repo>\tests\e2e\fuentes.spec.ts:393:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\fuentes-la-barra-superior--85cf1-entes-cargadas-tema-oscuro--chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\fuentes-la-barra-superior--85cf1-entes-cargadas-tema-oscuro--chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\fuentes-la-barra-superior--85cf1-entes-cargadas-tema-oscuro--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\fuentes-la-barra-superior--85cf1-entes-cargadas-tema-oscuro--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium] › tests\e2e\fuentes.spec.ts:399:5 › en celular el menú abierto queda por encima de la barra de Mercancía y todas sus opciones se pueden tocar 
+
+    Error: al abrir @390
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 4
+
+    - Array []
+    + Array [
+    +   "Clientes",
+    +   "Promociones",
+    + ]
+
+      427 |       )
+      428 |       .toBe(0);
+    > 429 |     expect(await tapadas(), "al abrir @" + ancho).toEqual([]);
+          |                                                   ^
+      430 |     await page.evaluate(() => {
+      431 |       const menu = document.querySelector(".sidebar")!;
+      432 |       menu.scrollTop = menu.scrollHeight;
+        at <repo>\tests\e2e\fuentes.spec.ts:429:51
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\fuentes-en-celular-el-menú-33904-us-opciones-se-pueden-tocar-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\fuentes-en-celular-el-menú-33904-us-opciones-se-pueden-tocar-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\fuentes-en-celular-el-menú-33904-us-opciones-se-pueden-tocar-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\fuentes-en-celular-el-menú-33904-us-opciones-se-pueden-tocar-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7 failed
+    [chromium] › tests\e2e\fuentes.spec.ts:165:5 › sin Google Fonts: ninguna petición sale a fonts.googleapis.com ni a fonts.gstatic.com 
+    [chromium] › tests\e2e\fuentes.spec.ts:198:5 › fuentes disponibles sin red externa: Inter y Plus Jakarta Sans cargan con todos sus pesos 
+    [chromium] › tests\e2e\fuentes.spec.ts:275:5 › las fuentes quedan en la precarga del service worker y se ven sin conexión 
+    [chromium] › tests\e2e\fuentes.spec.ts:317:5 › el contenedor de escritorio sólo admite fuentes y estilos propios, y con esa política la aplicación carga sus fuentes 
+    [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema claro) 
+    [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema oscuro) 
+    [chromium] › tests\e2e\fuentes.spec.ts:399:5 › en celular el menú abierto queda por encima de la barra de Mercancía y todas sus opciones se pueden tocar 
+  2 passed (50.1s)
+
+================================================================
+== antes-menu-movil.txt
+================================================================
+### Extracto de antes-fuentes.txt: la regresión del menú en celular con el código de 77c4d33
+  x  9 [chromium] › tests\e2e\fuentes.spec.ts:399:5 › en celular el menú abierto queda por encima de la barra de Mercancía y todas sus opciones se pueden tocar (3.3s)
+  7) [chromium] › tests\e2e\fuentes.spec.ts:399:5 › en celular el menú abierto queda por encima de la barra de Mercancía y todas sus opciones se pueden tocar 
+
+    Error: al abrir @390
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 4
+
+    - Array []
+    + Array [
+    +   "Clientes",
+    +   "Promociones",
+    + ]
+
+      427 |       )
+      428 |       .toBe(0);
+    > 429 |     expect(await tapadas(), "al abrir @" + ancho).toEqual([]);
+          |                                                   ^
+      430 |     await page.evaluate(() => {
+      431 |       const menu = document.querySelector(".sidebar")!;
+      432 |       menu.scrollTop = menu.scrollHeight;
+        at <repo>\tests\e2e\fuentes.spec.ts:429:51
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\fuentes-en-celular-el-menú-33904-us-opciones-se-pueden-tocar-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\fuentes-en-celular-el-menú-33904-us-opciones-se-pueden-tocar-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\fuentes-en-celular-el-menú-33904-us-opciones-se-pueden-tocar-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\fuentes-en-celular-el-menú-33904-us-opciones-se-pueden-tocar-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+================================================================
+== tamanos-antes.txt
+================================================================
+== ANTES (77c4d33): fuentes desde fonts.googleapis.com / fonts.gstatic.com, nada empaquetado ==
+dist total (bytes, du -sb): 1531116
+dist total (archivos): 16
+archivos de fuente en dist: 0
+-- dist/assets --
+373940	dist/assets/charts-B7PvsTqR.js
+644704	dist/assets/index-BpiUguSs.js
+67071	dist/assets/index-CelWyEco.css
+415979	dist/assets/index-iPjrJSYw.js
+1	dist/assets/react-vendor-l0sNRNKZ.js
+5748	dist/assets/workbox-window.prod.es5-BBnX5xw4.js
+-- resumen de vite-plugin-pwa --
+dist/assets/index-CelWyEco.css                    67.07 kB │ gzip:  14.06 kB
+precache  20 entries (1478.14 KiB)
+entradas en el precache de sw.js: 20
+referencias a fonts.googleapis.com en el CSS: 1
+

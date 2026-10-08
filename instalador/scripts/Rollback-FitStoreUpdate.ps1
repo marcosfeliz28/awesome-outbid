@@ -1,0 +1,176 @@
+param([Parameter(Mandatory = $true)][string]$InstallDir)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "FitStore.Common.ps1")
+
+function Assert-UpdateManifest {
+  param(
+    [Parameter(Mandatory = $true)][string]$Manifest,
+    [Parameter(Mandatory = $true)][string]$ExpectedManifestHash,
+    [Parameter(Mandatory = $true)][string]$Root
+  )
+  if (-not (Test-Path -LiteralPath $Manifest -PathType Leaf)) { throw "Falta el manifiesto de la versión anterior." }
+  $manifestHash = (Get-FileHash -LiteralPath $Manifest -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($manifestHash -ne $ExpectedManifestHash.ToLowerInvariant()) { throw "El manifiesto de rollback fue modificado." }
+  $rootPath = [IO.Path]::GetFullPath($Root).TrimEnd("\")
+  $count = 0
+  foreach ($line in Get-Content -LiteralPath $Manifest -Encoding ASCII) {
+    if ($line -notmatch "^([0-9a-fA-F]{64}) \*(.+)$") { throw "El manifiesto de rollback contiene una línea inválida." }
+    $target = [IO.Path]::GetFullPath((Join-Path $rootPath $Matches[2].Replace("/", "\")))
+    if (-not $target.StartsWith($rootPath + "\", [StringComparison]::OrdinalIgnoreCase)) { throw "El manifiesto intenta salir de la instalación." }
+    if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { throw "Falta un archivo de la versión anterior: $($Matches[2])" }
+    $actualHash = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actualHash -ne $Matches[1].ToLowerInvariant()) { throw "No coincide el hash restaurado de $($Matches[2])." }
+    $count++
+  }
+  if ($count -eq 0) { throw "El manifiesto de rollback está vacío." }
+}
+
+function Restore-PreviousDataFiles {
+  param($Paths, [string]$PreviousDataPath)
+  if (-not (Test-Path -LiteralPath $PreviousDataPath -PathType Container)) { return }
+  $mapping = @{
+    "state.json" = $Paths.State
+    ".env" = $Paths.Env
+    "work.env" = (Join-Path $Paths.Work ".env")
+    "server.json" = $Paths.ServerConfig
+  }
+  foreach ($name in $mapping.Keys) {
+    $source = Join-Path $PreviousDataPath $name
+    if (Test-Path -LiteralPath $source -PathType Leaf) {
+      Copy-Item -LiteralPath $source -Destination $mapping[$name] -Force
+      Protect-FitStoreFile -Path $mapping[$name]
+    }
+  }
+  $previousPki = Join-Path $PreviousDataPath "pki"
+  if (Test-Path -LiteralPath $previousPki -PathType Container) {
+    $expectedPki = [IO.Path]::GetFullPath((Join-Path $env:ProgramData "FitStore POS\pki")).TrimEnd("\")
+    $actualPki = [IO.Path]::GetFullPath($Paths.Pki).TrimEnd("\")
+    if ($actualPki -ne $expectedPki) { throw "La ruta PKI no pasó la comprobación de seguridad." }
+    if (Test-Path -LiteralPath $actualPki) { Remove-Item -LiteralPath $actualPki -Recurse -Force }
+    Copy-Item -LiteralPath $previousPki -Destination $actualPki -Recurse -Force
+  }
+}
+
+function Restore-DatabaseFromUpdateBackup {
+  param($Paths, $Secrets, [string]$Archive, [string]$ExpectedHash)
+  if (-not (Test-Path -LiteralPath $Archive -PathType Leaf)) { throw "Falta el respaldo previo a la actualización: $Archive" }
+  $actualHash = (Get-FileHash -LiteralPath $Archive -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($actualHash -ne $ExpectedHash.ToLowerInvariant()) { throw "El respaldo previo a la actualización no conserva su SHA-256." }
+  $pgRestore = Join-Path $Paths.PgBin "pg_restore.exe"
+  Invoke-FitStorePg -Tool $pgRestore -Password ([string]$Secrets.databasePassword) -Arguments @("--list", $Archive) -FailureMessage "El respaldo previo no pasó la verificación de PostgreSQL"
+  Start-FitStoreService -Name $script:PostgresService -TimeoutSeconds 90
+  Wait-FitStorePostgres -Paths $Paths -TimeoutSeconds 90
+  Invoke-FitStorePg `
+    -Tool (Join-Path $Paths.PgBin "psql.exe") `
+    -Password ([string]$Secrets.postgresPassword) `
+    -Arguments @("--host=127.0.0.1", "--port=5434", "--username=postgres", "--dbname=postgres", "--no-password", "--command=SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'fitstore' AND pid <> pg_backend_pid();") `
+    -FailureMessage "No se pudieron cerrar las conexiones antes del rollback"
+  Invoke-FitStorePg `
+    -Tool $pgRestore `
+    -Password ([string]$Secrets.databasePassword) `
+    -Arguments @(
+      "--host=127.0.0.1",
+      "--port=5434",
+      "--username=fitstore",
+      "--dbname=fitstore",
+      "--no-owner",
+      "--no-privileges",
+      "--clean",
+      "--if-exists",
+      "--single-transaction",
+      "--exit-on-error",
+      $Archive
+    ) `
+    -FailureMessage "No se pudo revertir la base dentro de una transacción"
+}
+
+function Ensure-RestoredApplicationService {
+  param($Paths, [Parameter(Mandatory = $true)][string]$Name)
+  $config = Join-Path $Paths.Services "$Name.xml"
+  $dedicatedWrapper = Join-Path $Paths.Services "$Name.exe"
+  if (-not (Get-Service -Name $Name -ErrorAction SilentlyContinue)) {
+    if (-not (Test-Path -LiteralPath $config -PathType Leaf)) { throw "Falta la configuración restaurada del servicio $Name." }
+    if (Test-Path -LiteralPath $dedicatedWrapper -PathType Leaf) {
+      Invoke-FitStoreProcess -FilePath $dedicatedWrapper -Arguments @("install") -FailureMessage "No se pudo volver a registrar el servicio restaurado $Name"
+    } elseif (Test-Path -LiteralPath $Paths.WinSW -PathType Leaf) {
+      # Compatibilidad con instalaciones antiguas que usaban un WinSW global y
+      # recibían el XML como argumento.
+      Invoke-FitStoreProcess -FilePath $Paths.WinSW -Arguments @("install", $config) -FailureMessage "No se pudo volver a registrar el servicio restaurado $Name"
+    } else {
+      throw "Falta el ejecutable WinSW restaurado para $Name."
+    }
+  }
+  Set-FitStoreServiceStartMode -Name $Name -Mode "delayed-auto"
+}
+
+Assert-FitStoreAdministrator
+$paths = Get-FitStorePaths -InstallDir $InstallDir
+$marker = Get-FitStoreUpdateMarker -Paths $paths
+if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) {
+  Write-Host "No existe una transacción de actualización que revertir."
+  exit 0
+}
+$transaction = Read-FitStoreJson -Path $marker
+foreach ($property in @("installDir", "transactionPath", "snapshotPath", "manifestPath", "manifestSha256", "backup", "backupSha256")) {
+  if (-not ($transaction.PSObject.Properties.Name -contains $property) -or -not [string]$transaction.$property) {
+    throw "La transacción de actualización está incompleta: falta $property."
+  }
+}
+$expectedInstall = [IO.Path]::GetFullPath((Join-Path $env:ProgramFiles "FitStore POS")).TrimEnd("\")
+$actualInstall = [IO.Path]::GetFullPath($paths.Install).TrimEnd("\")
+$recordedInstall = [IO.Path]::GetFullPath([string]$transaction.installDir).TrimEnd("\")
+if ($actualInstall -ne $expectedInstall -or $recordedInstall -ne $actualInstall) { throw "La ruta del rollback no pasó la comprobación de seguridad." }
+$transactionPath = Assert-FitStoreSafeUpdatePath -Paths $paths -Path ([string]$transaction.transactionPath)
+$snapshotPath = [IO.Path]::GetFullPath([string]$transaction.snapshotPath).TrimEnd("\")
+if (-not $snapshotPath.StartsWith($transactionPath + "\", [StringComparison]::OrdinalIgnoreCase)) { throw "La copia anterior está fuera de la transacción permitida." }
+$previousDataPath = if ($transaction.PSObject.Properties.Name -contains "previousDataPath") { [string]$transaction.previousDataPath } else { "" }
+$failedInstall = Join-Path $transactionPath "failed-install"
+$phase = if ($transaction.PSObject.Properties.Name -contains "phase") { [string]$transaction.phase } else { "desconocida" }
+$recoveryAction = Get-FitStoreUpdateRecoveryAction -InstallPath $actualInstall -SnapshotPath $snapshotPath -Phase $phase
+$hadSnapshot = $recoveryAction -in @("restore-snapshot", "resume-rollback")
+
+try {
+  Stop-FitStoreApplication
+  Stop-FitStoreService -Name $script:PostgresService -TimeoutSeconds 90
+
+  if ($recoveryAction -eq "restore-snapshot") {
+    Assert-UpdateManifest -Manifest ([string]$transaction.manifestPath) -ExpectedManifestHash ([string]$transaction.manifestSha256) -Root $snapshotPath
+    Set-FitStoreUpdatePhase -Paths $paths -Phase "rollback-files-moving"
+    if (Test-Path -LiteralPath $actualInstall) {
+      if (Test-Path -LiteralPath $failedInstall) { throw "Ya existe una instalación fallida preservada; no se sobrescribió." }
+      $activeItem = Get-Item -LiteralPath $actualInstall -Force
+      if (($activeItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw "La instalación activa es un punto de reanálisis; no se movió." }
+      Move-Item -LiteralPath $actualInstall -Destination $failedInstall
+    }
+    Move-Item -LiteralPath $snapshotPath -Destination $actualInstall
+    Assert-UpdateManifest -Manifest ([string]$transaction.manifestPath) -ExpectedManifestHash ([string]$transaction.manifestSha256) -Root $actualInstall
+    Set-FitStoreUpdatePhase -Paths $paths -Phase "rollback-files-restored"
+  }
+  if ($recoveryAction -in @("restore-snapshot", "resume-rollback")) {
+    Assert-UpdateManifest -Manifest ([string]$transaction.manifestPath) -ExpectedManifestHash ([string]$transaction.manifestSha256) -Root $actualInstall
+    if ($previousDataPath) { Restore-PreviousDataFiles -Paths $paths -PreviousDataPath $previousDataPath }
+
+    $secrets = Read-FitStoreJson -Path $paths.Secrets
+    Restore-DatabaseFromUpdateBackup -Paths $paths -Secrets $secrets -Archive ([string]$transaction.backup) -ExpectedHash ([string]$transaction.backupSha256)
+  }
+
+  Ensure-RestoredApplicationService -Paths $paths -Name $script:ApiService
+  Ensure-RestoredApplicationService -Paths $paths -Name $script:WebService
+  Start-FitStoreApplication
+  Wait-FitStoreHttp -Url "http://127.0.0.1:3001/api/health" -TimeoutSeconds 120
+  Wait-FitStoreHttp -Url "https://localhost:4173/__fitstore/health" -TimeoutSeconds 120
+  if ($hadSnapshot -and $transaction.PSObject.Properties.Name -contains "previousVersion") {
+    New-Item -Path $script:FitStoreRegistry -Force | Out-Null
+    New-ItemProperty -Path $script:FitStoreRegistry -Name Version -Value ([string]$transaction.previousVersion) -PropertyType String -Force | Out-Null
+  }
+  Write-FitStoreLog -InstallDir $actualInstall -Level "AVISO" -Message "La actualización fallida fue revertida y la versión anterior respondió correctamente."
+  Remove-Item -LiteralPath $marker -Force
+  if (Test-Path -LiteralPath $transactionPath) { Remove-Item -LiteralPath $transactionPath -Recurse -Force }
+  Write-Host "ROLLBACK CORRECTO: la versión anterior y su base fueron restauradas y verificadas."
+} catch {
+  try { Stop-FitStoreApplication } catch {}
+  Write-FitStoreLog -InstallDir $actualInstall -Level "ERROR" -Message ("El rollback automático no terminó; se conservaron la transacción y el respaldo. " + $_.Exception.Message)
+  throw
+}

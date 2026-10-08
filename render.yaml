@@ -1,0 +1,71 @@
+# Blueprint del piloto Nexora. Este archivo describe recursos, pero no crea
+# nada por sí solo: Render sólo lo aplica cuando una persona conecta el repo.
+services:
+  - type: web
+    name: nexora-pos-web
+    runtime: docker
+    region: virginia
+    plan: 0.5c-512mb
+    numInstances: 1
+    dockerContext: .
+    dockerfilePath: ./deploy/render/Dockerfile.web
+    healthCheckPath: /healthz
+    autoDeployTrigger: off
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: API_UPSTREAM
+        fromService:
+          type: pserv
+          name: nexora-pos-api
+          property: hostport
+
+  - type: pserv
+    name: nexora-pos-api
+    runtime: docker
+    region: virginia
+    plan: 0.5c-512mb
+    numInstances: 1
+    dockerContext: .
+    dockerfilePath: ./deploy/render/Dockerfile.api
+    # Render sólo admite comprobación TCP para servicios privados. La
+    # preparación HTTP completa se verifica por la web en /api/health.
+    autoDeployTrigger: off
+    maxShutdownDelaySeconds: 60
+    preDeployCommand: node deploy/render/with-cloud-env.mjs node apps/api/node_modules/prisma/build/index.js migrate deploy --schema apps/api/prisma/schema.prisma
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: ENABLE_SWAGGER
+        value: "false"
+      - key: RENDER_DATABASE_URL
+        fromDatabase:
+          name: nexora-pos-db
+          property: connectionString
+      - key: WEB_ORIGIN
+        # La API recibe la URL pública generada por Render sin fijar un nombre
+        # que pudiera cambiar. Al añadir dominio propio, sustituir esta entrada
+        # por un value HTTPS explícito; ver docs/DEPLOY-RENDER.md.
+        fromService:
+          type: web
+          name: nexora-pos-web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ANTHROPIC_MODEL
+        value: claude-opus-5-5
+
+databases:
+  - name: nexora-pos-db
+    region: virginia
+    plan: 0.1c-256mb
+    postgresMajorVersion: "17"
+    databaseName: fitstore
+    user: fitstore
+    diskSizeGB: 1
+    storageAutoscalingEnabled: false
+    connectionPool: none
+    ipAllowList: []

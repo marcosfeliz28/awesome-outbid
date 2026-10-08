@@ -1,0 +1,156 @@
+FitStore POS · ronda 9 · Windows y zona horaria · zona horaria · DESPUÉS de la corrección
+
+================================================================
+== rebase-despues-zona-sd.txt
+================================================================
+commit: 50558b240fafa9392f0213844701a227c727e612 (rama local/r9w-zona sobre 4485a27), con la corrección (API recompilada y reiniciada)
+  git status --short: (vacío = árbol limpio)
+show timezone (rol fitstore_sd, base fitstore_zona): America/Santo_Domingo
+orden: pnpm exec vitest run --config vitest.integration.config.ts -t "Windows y zona horaria|contraseñas concurrentes incrementan|R9-seguridad-1"
+  (el describe del canal más las pruebas de bloqueo ya existentes que se pueden correr aisladas)
+fecha: 2026-10-06T08:59:08Z
+
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/api.test.ts (135 tests | 125 skipped) 28522ms
+   ✓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco  3176ms
+   ✓ Ronda 9 · revisión · seguridad > R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo  3459ms
+   ✓ Ronda 9 · revisión · seguridad > R9-seguridad-1: un administrador desbloquea la cuenta al cambiarle la contraseña  2438ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar  2820ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar  2687ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM  1045ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar  2651ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar  2597ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM  1030ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed | 125 skipped (135)
+   Start at  04:59:09
+   Duration  29.09s (transform 208ms, setup 0ms, collect 286ms, tests 28.52s, environment 0ms, prepare 98ms)
+
+
+================================================================
+== rebase-despues-zona-sd-pin-existentes.txt
+================================================================
+commit: 50558b240fafa9392f0213844701a227c727e612 (rama local/r9w-zona sobre 4485a27), con la corrección
+show timezone (rol fitstore_sd, base fitstore_zona): America/Santo_Domingo
+orden: pnpm exec vitest run --config vitest.integration.config.ts -t "Aceptación financiera y permisos|Regresiones de Claude|PIN de gerente tiene contador propio"
+  Las dos pruebas de bloqueo por PIN ya existentes («1 y 2: diez PIN concurrentes…» y «1–2: PIN de gerente…») dependen
+  del orden del archivo: el beforeAll global abre las cajas que cierran las pruebas anteriores. Se corren con sus dos
+  describes previos, que son su preparación.
+fecha: 2026-10-06T08:59:57Z
+
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/api.test.ts (135 tests | 112 skipped) 16708ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  959ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  568ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1431ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  1583ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  3242ms
+   ✓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor  4559ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed | 112 skipped (135)
+   Start at  04:59:58
+   Duration  17.22s (transform 180ms, setup 0ms, collect 248ms, tests 16.71s, environment 0ms, prepare 99ms)
+
+
+================================================================
+== rebase-despues-zona-utc.txt
+================================================================
+commit: 50558b240fafa9392f0213844701a227c727e612 (rama local/r9w-zona sobre 4485a27), con la corrección
+  git status --short: (vacío = árbol limpio)
+show timezone (rol fitstore, base fitstore_zona_utc): UTC
+orden: FS_ROLE=fitstore FS_DB=fitstore_zona_utc … pnpm exec vitest run --config vitest.integration.config.ts -t "Windows y zona horaria"
+fecha: 2026-10-06T09:00:33Z
+
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/api.test.ts (135 tests | 128 skipped) 19955ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar  2743ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar  2645ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM  1012ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar  3032ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar  3096ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM  1145ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed | 128 skipped (135)
+   Start at  05:00:34
+   Duration  20.44s (transform 174ms, setup 0ms, collect 252ms, tests 19.96s, environment 0ms, prepare 80ms)
+
+
+================================================================
+== despues-otras-zonas-manual.txt
+================================================================
+commit: 1c9f3a4 + correccion sin confirmar (comprobacion manual, no forma parte de la suite)
+rol: fitstore_sd; show timezone = America/Santo_Domingo
+orden: mismas pruebas del bloque con describe.each cambiado temporalmente a Asia/Tokyo, America/New_York y Pacific/Kiritimati
+ RUN  v3.2.7 <repo>
+ ✓ tests/api.test.ts (114 tests | 104 skipped) 42731ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en Asia/Tokyo > K4: cinco contraseñas incorrectas bloquean la cuenta 15 minutos y un bloqueo vencido deja de aplicar  4021ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en Asia/Tokyo > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar  3932ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en Asia/Tokyo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM  1548ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/New_York > K4: cinco contraseñas incorrectas bloquean la cuenta 15 minutos y un bloqueo vencido deja de aplicar  3908ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/New_York > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar  3915ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/New_York > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM  1487ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en Pacific/Kiritimati > K4: cinco contraseñas incorrectas bloquean la cuenta 15 minutos y un bloqueo vencido deja de aplicar  4222ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en Pacific/Kiritimati > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar  3889ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en Pacific/Kiritimati > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM  1576ms
+ Test Files  1 passed (1)
+      Tests  10 passed | 104 skipped (114)
+   Start at  01:46:52
+   Duration  45.13s (transform 185ms, setup 0ms, collect 286ms, tests 42.73s, environment 0ms, prepare 133ms)
+
+================================================================
+== rebase-barrido.txt
+================================================================
+Barrido de 4485a27 (apps/api/src completo y migraciones 202610100001_tienda_caja, 202610100101_mercancia_recepciones)
+commit: 50558b240fafa9392f0213844701a227c727e612
+
+1) SQL con NOW()/CURRENT_TIMESTAMP/CURRENT_DATE en apps/api/src:
+apps/api/src/alerts.ts:97:      const daysIdle = Math.floor((Date.now() - +new Date(last)) / 86400000);
+apps/api/src/auth.ts:57:        Date.now() - session.lastActivityAt.getTime() >
+apps/api/src/auth.ts:67:          expiresAt: new Date(Date.now() + 7 * 86400000),
+apps/api/src/common.ts:283:        Date.now() -
+apps/api/src/main.ts:38:      const now = Date.now();
+apps/api/src/merchandise.ts:187:    const dayAgo = new Date(Date.now() - 24 * 3600000);
+apps/api/src/merchandise.ts:247:          createdAt: { lt: new Date(Date.now() - 7 * 24 * 3600000) },
+apps/api/src/realtime.ts:386:        !t.revokedAt && Date.now() - t.lastActivityAt.getTime() < 45000,
+apps/api/src/realtime.ts:511:          Date.now() - session.lastActivityAt.getTime() >
+apps/api/src/reports.ts:36:    : new Date(Date.now() - 30 * 86400000);
+apps/api/src/reports.ts:445:              gte: new Date(Date.now() - Number(query.days ?? 60) * 86400000),
+apps/api/src/sales.ts:235:        if (capturedAt && Date.now() - capturedAt.getTime() > 48 * 3600000)
+apps/api/src/sales.ts:1009:        Date.now() - sale.createdAt.getTime() >
+apps/api/src/security.ts:90:      "lockedUntil"=CASE WHEN "failedAttempts"+1 >= 5 THEN (NOW() AT TIME ZONE 'UTC')+INTERVAL '15 minutes' ELSE NULL END
+
+2) $queryRaw/$executeRaw que no son candados (FOR UPDATE, pg_advisory):
+apps/api/src/alerts.ts:58:        this.db.$queryRaw<
+apps/api/src/catalog.ts:83:  const [taken] = await tx.$queryRaw<
+apps/api/src/reports.ts:131:      this.db.$queryRaw<
+apps/api/src/reports.ts:139:      this.db.$queryRaw<
+apps/api/src/reports.ts:142:      this.db.$queryRaw<
+apps/api/src/reports.ts:152:      this.db.$queryRaw<
+apps/api/src/reports.ts:155:      this.db.$queryRaw<
+apps/api/src/reports.ts:173:      this.db.$queryRaw<
+apps/api/src/security.ts:89:      await tx.$queryRaw`UPDATE "AuthAttempt" SET "failedAttempts"="failedAttempts"+1,
+apps/api/scripts/import-inventario.ts:378:    ? await db.$queryRaw<{ id: string }[]>`
+   -> sólo reports.ts 139-175 comparan fechas (corregidas con utc()); alerts.ts:58 devuelve MAX("createdAt"), timestamp sin zona que Prisma lee como UTC.
+
+3) Migraciones nuevas: 202610100001 no toca fechas. 202610100101 redefine fitstore_stock_event() con
+   ((l."expiryDate" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo')::date < (now() AT TIME ZONE 'America/Santo_Domingo')::date
+   La expresión no depende de la sesión (misma salida con tres zonas):
+     UTC -> vence 2026-10-06, hoy 2026-10-06
+     America/Santo_Domingo -> vence 2026-10-06, hoy 2026-10-06
+     Asia/Tokyo -> vence 2026-10-06, hoy 2026-10-06
+   El INSERT del disparador deja RealtimeEvent.createdAt con DEFAULT CURRENT_TIMESTAMP (hora de la sesión), pero
+   nadie lo lee: realtime.ts sigue el id (sin cambios en 77c4d33..4485a27: 0 archivos cambiados).
+
+4) schema.prisma: sin dbgenerated ni @db.Timestamptz/@db.Date: 0 coincidencias.
+
+Resultado: en los archivos de la nube no queda SQL que dependa de la zona de la sesión.
+

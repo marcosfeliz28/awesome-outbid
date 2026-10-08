@@ -1,0 +1,164 @@
+FitStore POS · ronda 9 · Windows y zona horaria · integración ANTES de las correcciones
+Commit aa345c7, Windows 11, Node 24.21, pnpm 11.19, PostgreSQL 18.6 local (TimeZone del servidor: America/La_Paz, UTC-4), API compilada (node dist/main.js).
+Orden: pnpm test:integration (vitest run --config vitest.integration.config.ts). Base nueva en cada corrida (DROP/CREATE, migrate deploy, seed).
+
+================================================================
+A) Tal cual, con .env en la raíz y sin exportar variables: la prueba no carga .env (URL.pathname = /C:/...)
+================================================================
+   × Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia
+   × Regresiones de Claude > 7: conflicto offline devuelve español seguro
+   × Regresiones de Claude > 9: consumo agrupa por mes dominicano al cruzar medianoche UTC
+   × Regresiones de Claude > 10: utilidad conserva costo de devolución sin reingreso
+   × Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal
+   × Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco
+   × Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor
+   × Seguridad, offline y funciones completadas > 3 y 9: lote vencido según Santo Domingo no se vende ni se recibe
+   × Seguridad, offline y funciones completadas > 8: pago actual no se resta en reporte de otro período
+   × Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido
+   × Seguridad, offline y funciones completadas > venta a crédito admite abonos idempotentes en caja posterior
+   × Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores
+   × Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión
+   × Seguridad, offline y funciones completadas > dashboard incluye mapa dominicano y comparación del año anterior
+   × Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios
+   × Alertas de negocio y consistencia contable > devolución del período resta costo solo cuando reingresa y cuadra con dashboard
+   × Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite
+   × Ronda 2 de Claude > 3: transferencia pendiente no reduce deuda ni caja; verificación concurrente aplica una sola vez
+   × Ronda 2 de Claude > 4: offline máximo 48 horas y fecha anterior auditada
+   × Ronda 2 de Claude > 5: Compose sólo publica nginx y descarta IP suministrada por cliente
+   × Ronda 3 · tiempo real y mercancía > SSE autentica, filtra sucursal y no comunica operaciones revertidas
+   × Ronda 3 · tiempo real y mercancía > lotes y vencimiento obligatorios, salida de lote vencido y creación rápida atómica
+   × Ronda 3 · tiempo real y mercancía > factura con total distinto se rechaza hasta revisión explícita; línea sin pareja exige resolución
+   × Ronda 3 · tiempo real y mercancía > entrada con orden respeta cantidades pendientes y no duplica recepciones
+   × Ronda 3 · tiempo real y mercancía > SSE comunica recepción, devolución, anulación y conteo confirmados
+   × Ronda 3 · tiempo real y mercancía > eventos se publican en orden de commit aunque las transacciones empiecen al revés
+   × Ronda 4 · auditoría de ChatGPT y propia > P1 compras: entrada sin orden se reporta una vez; orden no se duplica; fechas aplican
+   × Ronda 4 · auditoría de ChatGPT y propia > P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo
+   × Ronda 4 · auditoría de ChatGPT y propia > P2 lotes: lotId inventado, ajeno o de otra variante se rechaza sin cambios; el número de lote queda coherente
+   × Ronda 4 · auditoría de ChatGPT y propia > almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido
+   × Auditoría ronda 4 de ChatGPT > P2: el kardex tiene índice por lote (migración y base de datos)
+   × Ronda 6 · auditoría R4 de ChatGPT > R4-01: un equipo R3 migrado no se puede reclamar ni operar sin aprobación del gerente
+   × Ronda 6 · auditoría R4 de ChatGPT > R4-02: la compra R3 sin orden se recupera de la bitácora; reparación idempotente
+   × Ronda 6 · auditoría R4 de ChatGPT > R4-03: cantidades fuera de precisión dan 400 en todas las rutas y no tocan costo, stock ni kardex
+   × Ronda 7 · auditoría R6 de ChatGPT > R6-01: un combo fraccionado se rechaza sin escrituras; 1 combo consume exactamente 0.4 y su devolución lo repone
+   × Ronda 7 · auditoría R6 de ChatGPT > revisión R7: costo de combos exacto en venta, devolución y reporte de utilidad
+   × Ronda 7 · auditoría R6 de ChatGPT > revisión R7: una línea de combo fraccionada anterior se devuelve completa, no en partes
+   × Ronda 7 · auditoría R6 de ChatGPT > R6-03: la recuperación no concilia recepciones con líneas incompletas; la completa sigue en 55
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-04: el reporte de utilidad usa el costo registrado en cada devolución parcial
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-02: una devolución anterior a la ronda 8 se concilia con su costo contabilizado
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios
+   × Ronda 9 · revisión · dinero > R9-dinero-1: la devolución que completa la línea descuenta el costo de la devolución histórica
+   × Ronda 9 · revisión · dinero > R9-dinero-2: devolver de una en una reembolsa exactamente lo cobrado y su ITBIS
+   × Ronda 9 · revisión · dinero > R9-dinero-3: una venta a crédito con un abono por transferencia pendiente no se devuelve sin resolverlo
+   × Ronda 9 · revisión · dinero > R9-dinero-4: anular una venta recalcula el costo promedio igual que una devolución
+   × Ronda 9 · revisión · dinero > R9-dinero-5: los importes de dinero aceptan como máximo 2 decimales
+   × Ronda 9 · revisión · dinero > R9-dinero-6: el costo de una devolución de la ronda 7 se reconstruye por línea
+   × Ronda 9 · revisión · dinero > R9-dinero-7: el costo de una venta anterior a la ronda 7 final coincide en utilidad y dashboard
+   × Ronda 9 · revisión · dinero > R9-dinero-8: devoluciones y descuentos no muestra costos a quien no tiene profit:read
+   × Ronda 9 · revisión · dinero > R9-dinero-9: ventas por método no cuenta dos veces el crédito y muestra los cobros el día que entran
+   × Ronda 9 · revisión · dinero > R9-dinero-10: la tendencia compara ingresos netos de devoluciones en ambos períodos
+
+Errores por tipo:
+     48 PrismaClientInitializationError: 
+      1 TypeError: fetch failed
+      1 TypeError: Cannot read properties of undefined (reading 'split')
+      1 TypeError: .toMatch() expects to receive a string, but got undefined
+      1 TypeError: .toMatch() expects to receive a string, but got number
+      1 AssertionError: expected 429 to be 200 // Object.is equality
+      1 AssertionError: expected 201 to be 400 // Object.is equality
+     96 error: Environment variable not found: DATABASE_URL.
+
+ Test Files  1 failed (1)
+      Tests  54 failed | 45 passed (99)
+   Start at  23:48:31
+   Duration  96.22s (transform 203ms, setup 0ms, collect 282ms, tests 93.92s, environment 0ms, prepare 125ms)
+
+================================================================
+B) Variables exportadas en la consola; sesión de PostgreSQL en UTC-4 (valor por defecto del servidor): los bloqueos por PIN y contraseña no se aplican
+================================================================
+   × Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia
+   × Regresiones de Claude > 7: conflicto offline devuelve español seguro
+   × Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco
+   × Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor
+   × Ronda 2 de Claude > 5: Compose sólo publica nginx y descarta IP suministrada por cliente
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios
+
+Errores por tipo:
+      4 TypeError: .toMatch() expects to receive a string, but got number
+      2 TypeError: .toMatch() expects to receive a string, but got undefined
+      1 TypeError: fetch failed
+      1 TypeError: Cannot read properties of undefined (reading 'split')
+      1 AssertionError: expected 201 to be 400 // Object.is equality
+
+ Test Files  1 failed (1)
+      Tests  9 failed | 90 passed (99)
+   Start at  23:53:59
+   Duration  98.30s (transform 166ms, setup 0ms, collect 240ms, tests 96.14s, environment 0ms, prepare 101ms)
+
+================================================================
+C) Variables exportadas y rol con timezone UTC: quedan los fallos propios de Windows (runImport x4, compose.yaml con CRLF, ECONNRESET tras la prueba 6)
+================================================================
+   × Regresiones de Claude > 7: conflicto offline devuelve español seguro
+   × Ronda 2 de Claude > 5: Compose sólo publica nginx y descarta IP suministrada por cliente
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios
+
+Errores por tipo:
+      4 TypeError: .toMatch() expects to receive a string, but got number
+      1 TypeError: fetch failed
+      1 TypeError: Cannot read properties of undefined (reading 'split')
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 93 passed (99)
+   Start at  00:03:32
+   Duration  88.77s (transform 182ms, setup 0ms, collect 260ms, tests 86.58s, environment 0ms, prepare 110ms)
+
+================================================================
+D) Igual que C, pero la corrida empezó a las 23:59:12 y cruzó la medianoche local ("today" se calcula al cargar el archivo)
+================================================================
+   × Regresiones de Claude > 7: conflicto offline devuelve español seguro
+   × Ronda 2 de Claude > 5: Compose sólo publica nginx y descarta IP suministrada por cliente
+   × Ronda 4 · auditoría de ChatGPT y propia > P1 compras: entrada sin orden se reporta una vez; orden no se duplica; fechas aplican
+   × Ronda 6 · auditoría R4 de ChatGPT > R4-02: la compra R3 sin orden se recupera de la bitácora; reparación idempotente
+   × Ronda 6 · auditoría R4 de ChatGPT > R4-04: la factura aceptada contra una orden fija la deuda; parciales, flete y reintento sin doble conteo
+   × Ronda 7 · auditoría R6 de ChatGPT > revisión R7: costo de combos exacto en venta, devolución y reporte de utilidad
+   × Ronda 7 · auditoría R6 de ChatGPT > R6-03: la recuperación no concilia recepciones con líneas incompletas; la completa sigue en 55
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo
+   × Ronda 8 · auditoría R7 de ChatGPT > R7-04: el reporte de utilidad usa el costo registrado en cada devolución parcial
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-02: una devolución anterior a la ronda 8 se concilia con su costo contabilizado
+   × Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios
+   × Ronda 9 · revisión · dinero > R9-dinero-1: la devolución que completa la línea descuenta el costo de la devolución histórica
+   × Ronda 9 · revisión · dinero > R9-dinero-2: devolver de una en una reembolsa exactamente lo cobrado y su ITBIS
+   × Ronda 9 · revisión · dinero > R9-dinero-6: el costo de una devolución de la ronda 7 se reconstruye por línea
+   × Ronda 9 · revisión · dinero > R9-dinero-7: el costo de una venta anterior a la ronda 7 final coincide en utilidad y dashboard
+   × Ronda 9 · revisión · dinero > R9-dinero-8: devoluciones y descuentos no muestra costos a quien no tiene profit:read
+   × Ronda 9 · revisión · dinero > R9-dinero-9: ventas por método no cuenta dos veces el crédito y muestra los cobros el día que entran
+
+Errores por tipo:
+      4 TypeError: .toMatch() expects to receive a string, but got number
+      3 TypeError: Cannot read properties of undefined (reading 'Costo')
+      1 TypeError: fetch failed
+      1 TypeError: Cannot read properties of undefined (reading 'split')
+      1 AssertionError: expected { …(6) } to match object { Ordenado: 50, Compras: 60, …(1) }
+      1 AssertionError: expected { …(6) } to match object { Compras: 55, Pendiente: 55, …(1) }
+      1 AssertionError: expected { …(6) } to match object { Compras: 34, Pendiente: 34 }
+      1 AssertionError: expected { …(6) } to match object { Compras: +0, Sin_conciliar: 1 }
+      1 AssertionError: expected undefined to match object { Ventas: +0, Costo: +0, …(2) }
+      1 AssertionError: expected undefined to match object { Ventas: +0, Costo: +0, Utilidad: +0 }
+      1 AssertionError: expected undefined to match object { Ventas: +0, Costo: +0, Unidades: +0 }
+      1 AssertionError: expected undefined to match object { Costo: 50.05 }
+
+ Test Files  1 failed (1)
+      Tests  19 failed | 80 passed (99)
+   Start at  23:59:12
+   Duration  85.29s (transform 162ms, setup 0ms, collect 236ms, tests 83.09s, environment 0ms, prepare 99ms)
+

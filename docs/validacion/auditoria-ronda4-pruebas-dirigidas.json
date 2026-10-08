@@ -1,0 +1,34 @@
+{
+  "hub": {
+    "simultaneousInitialQueries": 2,
+    "timersCreated": 2,
+    "timersRemainingAfterAllDisconnect": 1,
+    "eventCommittedWhileFirstListenerActive": "1",
+    "eventsReceivedByFirst": []
+  },
+  "connectionCaps": {
+    "allowedPerSession": 2,
+    "allowedPerUser": 6,
+    "concurrentAccepted": 20,
+    "nextSequentialStatus": 429
+  },
+  "disconnectDuringStartup": {
+    "cleanupCallsAfterDisconnect": 0,
+    "readyWrittenAfterDisconnect": true
+  },
+  "variantMismatch": {
+    "invoice": {
+      "code": "WHEY",
+      "description": "Proteína Whey chocolate 5 lb",
+      "qty": 1,
+      "unitCost": 50
+    },
+    "onlyCatalogAttributes": {
+      "sabor": "Vainilla",
+      "tamaño": "2 lb"
+    },
+    "matchedVariantId": "vainilla-2lb",
+    "confidence": 1,
+    "note": null
+  }
+}

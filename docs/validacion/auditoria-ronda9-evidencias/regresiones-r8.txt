@@ -1,0 +1,104 @@
+{
+  "generatedAt": "2026-10-06T15:37:17.248Z",
+  "scope": "Reproducción independiente con datos sintéticos; API compilada y base aislada.",
+  "r8_01": {
+    "ownerCode": "R8-BAR-4A2C90F7",
+    "apiCreate": {
+      "status": 400,
+      "message": "El código r8-bar-4a2c90f7 ya es de «QA dueño código R8 muwudy9s». Usa otro código o corrige el de ese producto en Productos."
+    },
+    "apiEdit": {
+      "status": 400,
+      "message": "El código r8-bar-4a2c90f7 ya es de «QA dueño código R8 muwudy9s». Usa otro código o corrige el de ese producto en Productos."
+    },
+    "merchandiseQuick": {
+      "status": 400,
+      "message": "El código r8-bar-4a2c90f7 ya es de «QA dueño código R8 muwudy9s». Usa otro código o corrige el de ese producto en Productos."
+    },
+    "importer": {
+      "status": 1,
+      "output": "Corrige el Excel o el catálogo antes de importar:\n- fila r8-bar-4a2c90f7: el código r8-bar-4a2c90f7 ya es de «QA dueño código R8 muwudy9s» (R8-SKU-4A2C90F7)"
+    },
+    "editableBarcodeBefore": "r8-edit-b-muwudy9s-833965",
+    "editableBarcodeAfter": "r8-edit-b-muwudy9s-833965",
+    "countsBefore": {
+      "categories": 21,
+      "products": 445,
+      "variants": 621,
+      "movements": 3029
+    },
+    "countsAfter": {
+      "categories": 21,
+      "products": 446,
+      "variants": 622,
+      "movements": 3029
+    },
+    "reproducedFixed": true
+  },
+  "r8_03": {
+    "protectedCategoryRun": {
+      "status": 1,
+      "output": "La categoría «QA lotes R8 muwudy9s» exige lote o vencimiento y el Excel no los trae. Desactívalo en Productos › Categorías o repite con --sin-lotes (queda en la bitácora)."
+    },
+    "numericRangeRun": {
+      "status": 1,
+      "output": "Corrige el Excel antes de importar:\n- fila R8-RANGE-2-4A2C90F7, PRECIO DETALLE: 1000000000000 (máximo 999999999999.99)"
+    },
+    "baseline": {
+      "categories": 22,
+      "products": 446,
+      "variants": 622,
+      "movements": 3029
+    },
+    "afterProtectedCategoryFailure": {
+      "categories": 22,
+      "products": 446,
+      "variants": 622,
+      "movements": 3029
+    },
+    "afterNumericRangeFailure": {
+      "categories": 22,
+      "products": 446,
+      "variants": 622,
+      "movements": 3029
+    },
+    "newCategoryPersisted": false,
+    "firstRangeProductPersisted": false,
+    "reproducedFixed": true
+  },
+  "r8_02": {
+    "saleCost": 50.05,
+    "legacyReturnCost": 15.02,
+    "legacyReturnItemsAfterSimulation": [
+      {
+        "qty": 3,
+        "tax": 0,
+        "total": 60,
+        "opened": false,
+        "damaged": false,
+        "restock": true,
+        "saleItemId": "bb92f5a8-a628-4c4a-b7af-264ea5f539aa"
+      }
+    ],
+    "reportAfterLegacyPartialReturn": {
+      "Producto": "r8-combo muwudy9s",
+      "Categoría": "Ropa deportiva",
+      "Ventas": 140,
+      "Costo": 35.03,
+      "Unidades": 7,
+      "Utilidad": 104.97,
+      "Margen": 74.98
+    },
+    "finalReturnCost": 35.03,
+    "reportAfterFullReturn": {
+      "Producto": "r8-combo muwudy9s",
+      "Categoría": "Ropa deportiva",
+      "Ventas": 0,
+      "Costo": 0,
+      "Unidades": 0,
+      "Utilidad": 0,
+      "Margen": 0
+    },
+    "reproducedFixed": true
+  }
+}

@@ -1,0 +1,22 @@
+$ playwright test
+
+Running 9 tests using 1 worker
+
+(node:56453) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/e2e/store.spec.ts:64:5 › venta completa desde caja hasta pagos combinados y recibo (3.6s)
+  ✓  2 [chromium] › tests/e2e/store.spec.ts:120:5 › pantallas de gestión, tema oscuro y versión móvil (3.7s)
+  ✓  3 [chromium] › tests/e2e/store.spec.ts:164:5 › venta offline queda guardada y se sincroniza una sola vez (3.3s)
+  ✓  4 [chromium] › tests/e2e/store.spec.ts:203:5 › descuento por monto, crédito y abono en interfaz (3.5s)
+  ✓  5 [chromium] › tests/e2e/store.spec.ts:304:5 › Mercancía móvil: entrada offline, sincronización única y etiquetas (4.5s)
+  ✓  6 [chromium] › tests/e2e/store.spec.ts:409:5 › Importar CSV exige revisión antes de modificar existencias (2.2s)
+  ✓  7 [chromium] › tests/e2e/store.spec.ts:484:5 › equipo nuevo de vendedor espera aprobación y se aprueba con PIN de gerente (3.8s)
+  ✓  8 [chromium] › tests/e2e/store.spec.ts:513:5 › Configuración y Equipos caben en 320 y 390 px sin desplazamiento horizontal (3.2s)
+  ✓  9 [chromium] › tests/e2e/store.spec.ts:562:5 › código + Enter agrega el producto y respeta el stock (2.9s)
+
+  9 passed (31.6s)
+
+To open last HTML report run:
+[36m[39m
+[36m  pnpm exec playwright show-report[39m
+[36m[39m

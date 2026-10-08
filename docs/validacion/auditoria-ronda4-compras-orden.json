@@ -1,0 +1,18 @@
+{
+  "orderTotal": 50,
+  "acceptedInvoiceTotal": 60,
+  "reportBeforePayment": {
+    "Proveedor": "invoice-r4-muuol8bn",
+    "Compras": 50,
+    "Pagado": 0,
+    "Pendiente": 50
+  },
+  "reportAfterPayingInvoice": {
+    "Proveedor": "invoice-r4-muuol8bn",
+    "Compras": 50,
+    "Pagado": 60,
+    "Pendiente": -10
+  },
+  "stockAfter": 2,
+  "averageCostAfter": 30
+}

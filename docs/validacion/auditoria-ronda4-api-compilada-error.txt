@@ -1,0 +1,78 @@
+ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "offlineUuid"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "cashSessionId"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "array",
+    "received": "undefined",
+    "path": [
+      "items"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "array",
+    "received": "undefined",
+    "path": [
+      "payments"
+    ],
+    "message": "Required"
+  }
+]
+    at get error (file:///workspace/auditoria-ronda4/fitstore-pos/node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/types.js:39:31)
+    at ZodObject.parse (file:///workspace/auditoria-ronda4/fitstore-pos/node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/types.js:114:22)
+    at parse (/workspace/auditoria-ronda4/fitstore-pos/apps/api/dist/common.js:171:41)
+    at SalesController.sale (/workspace/auditoria-ronda4/fitstore-pos/apps/api/dist/sales.js:492:56)
+    at /workspace/auditoria-ronda4/fitstore-pos/node_modules/.pnpm/@nestjs+core@11.2.7_@nestjs+common@11.2.7_reflect-metadata@0.2.2_rxjs@7.8.2_supports-co_a6aeaf4f987ee681be8fff151a3d403f/node_modules/@nestjs/core/router/router-execution-context.js:39:29
+    at async /workspace/auditoria-ronda4/fitstore-pos/node_modules/.pnpm/@nestjs+core@11.2.7_@nestjs+common@11.2.7_reflect-metadata@0.2.2_rxjs@7.8.2_supports-co_a6aeaf4f987ee681be8fff151a3d403f/node_modules/@nestjs/core/router/router-execution-context.js:55:62
+    at async /workspace/auditoria-ronda4/fitstore-pos/node_modules/.pnpm/@nestjs+core@11.2.7_@nestjs+common@11.2.7_reflect-metadata@0.2.2_rxjs@7.8.2_supports-co_a6aeaf4f987ee681be8fff151a3d403f/node_modules/@nestjs/core/router/router-proxy.js:9:17 {
+  issues: [
+    {
+      code: 'invalid_type',
+      expected: 'string',
+      received: 'undefined',
+      path: [Array],
+      message: 'Required'
+    },
+    {
+      code: 'invalid_type',
+      expected: 'string',
+      received: 'undefined',
+      path: [Array],
+      message: 'Required'
+    },
+    {
+      code: 'invalid_type',
+      expected: 'array',
+      received: 'undefined',
+      path: [Array],
+      message: 'Required'
+    },
+    {
+      code: 'invalid_type',
+      expected: 'array',
+      received: 'undefined',
+      path: [Array],
+      message: 'Required'
+    }
+  ],
+  addIssue: [Function (anonymous)],
+  addIssues: [Function (anonymous)]
+}

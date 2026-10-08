@@ -1,0 +1,269 @@
+{
+  "summary": "Implementa el cuadre de caja, los reportes del día, la factura de la tienda, la contraentrega y la impresión térmica; prueba 4 cajas a la vez",
+  "agentCount": 4,
+  "logs": [],
+  "result": {
+    "api": {
+      "done": [
+        {
+          "requirement": "1. Ajustes del negocio: branchName, phone2, logo (data URL de hasta 200 KB o subida de archivo), autoPrintReceipt, usdRate y eurRate; número y nombre de caja (Terminal.registerNumber/registerName); número de cajero (User.cashierNumber)",
+          "how": "Ya estaba hecho en el árbol de un avance anterior: configSchema en admin.ts, PATCH /terminals/:id/register, cashierNumber en POST y PATCH /users con unicidad, y la migración 202610100001_tienda_caja (idempotente, con índices únicos parciales). Lo verifiqué; no hizo falta cambiarlo.",
+          "test": "tests/api.test.ts 'Tienda-ajustes: sucursal, segundo teléfono, logo…' y 'Tienda-ajustes: número y nombre de cada caja…' pasan"
+        },
+        {
+          "requirement": "2. Contraentrega: forma de pago 'cod' combinable, descuenta stock, queda pendiente en creditBalance; cobro idempotente con auditoría en la caja abierta de quien recibe el dinero; lista de pendientes",
+          "how": "Ya estaba en sales.ts: POST /sales/:id/cod-collections, que reutiliza el mecanismo de abonos (efectivo o transferencia; la transferencia queda pending_verification y se confirma con /payments/:id/verify), y GET /cod/pending. La auditoría se registra como 'cod_collected'.",
+          "test": "'Tienda-contraentrega: se vende, descuenta stock…' y 'Tienda-contraentrega: el cobro por transferencia queda por verificar…' pasan"
+        },
+        {
+          "requirement": "3. Cierre por denominaciones, vales, US$/€, entregado/dejado, compatible con countedCash; GET /cash-sessions/:id/cuadre con las líneas 1 a 18; rentabilidad sólo con profit:read; diferencias al centavo",
+          "how": "cash.ts: close usa cashCloseSchema de shared. Si llegan denominaciones, el subtotal es el contado; si además llega countedCash debe coincidir. Lo entregado no puede superar lo contado. Tarjeta y transferencia no declaradas se toman como las esperadas. Todo se guarda en closeDetails, junto con las tasas del día. La diferencia de efectivo es contado + vales − esperado. Se agregaron refreshClosedCash (sales.ts la importaba y faltaba: la API no compilaba), buildCuadre, GET :id/cuadre (la cajera sólo ve su propia caja), GET opening-suggestion (sugiere como fondo lo dejado en el último cierre de ese equipo) y GET :id/reports/:name.",
+          "test": "'Tienda-cuadre: cierre por denominaciones, vale, dólares y entregado/dejado…' (escenario completo con números exactos: diferencia −5.25, punto 10 = 1,830, rentabilidad 2,350) y 'Tienda-cuadre: un cliente que envía sólo countedCash…' pasan"
+        },
+        {
+          "requirement": "4. Reportes venta-diaria-usuario y venta-por-forma-pago con filtros de fecha, caja y usuario, y exportación JSON/XLSX/PDF",
+          "how": "reports.ts: STORE_REPORTS, storeReport y sendStoreReport, conectados al inicio de GET /reports/:name (reports:read) y reutilizados por la ruta de la caja.",
+          "test": "'Tienda-reportes: venta diaria de usuario por producto' y 'Tienda-reportes: venta de usuario por forma de pago…' pasan"
+        },
+        {
+          "requirement": "5. Pruebas de integración de cada punto e integración completa",
+          "how": "Las pruebas estaban escritas antes y fallaban (faltaban las rutas y la API no compilaba). Ahora pasan.",
+          "test": "Integración completa contra la API en el puerto 3171 con una base nueva: 128/128. Unitarias de shared: 34/34. pnpm -r typecheck y pnpm lint sin errores."
+        },
+        {
+          "requirement": "6. Contraentrega (sección 5): cobro con tarjeta (referencia del voucher), foto de evidencia en cada cobro y combinación con crédito en la misma venta",
+          "how": "sales.ts: POST /sales/:id/cod-collections acepta cash|card|transfer; con tarjeta exige reference (los abonos de crédito siguen pidiendo cardLast4 + approvalCode). Nueva ruta POST /payments/:id/proof (multipart 'file', jpg/png/webp, máx. 2 MB, guardada como data URL en Payment.proofUrl, igual que el logo; la sube quien registró el cobro en su caja o sale:manage; reemplazable; auditoría 'payment_proof'). imageType pasó a common.ts. Se quitó el 400 de crédito + contraentrega: creditBalance = crédito + contraentrega; GET /cod/pending calcula pending = min(creditBalance, codAmount − cobros ok) y devuelve collections[{paymentId,method,amount,status,reference,bank,proofUrl,createdAt}]. cash.ts: cod.rows del cuadre incluyen reference y proofUrl. GET /sales ya devuelve payments con proofUrl.",
+          "test": "'Tienda-contraentrega: se combina con crédito, se cobra con tarjeta (referencia) y guarda la foto de la evidencia' (falló primero contra el código anterior: 400 en la venta mixta; ahora pasa). La prueba anterior que exigía 400 con tarjeta ahora documenta que es por falta de referencia."
+        }
+      ],
+      "notDone": [
+        {
+          "requirement": "Commit de los cambios propios",
+          "reason": "No hice commits. Otro agente incluyó mis cambios de cash.ts y reports.ts en su commit 9c93751 («Mercancía: …»), así que git status sale limpio."
+        }
+      ],
+      "apiContract": "POST /api/cash-sessions/:id/close body {countedCash?, countedCard?, countedTransfer?, denominations?: {\"1\"|\"5\"|\"10\"|\"20\"|\"25\"|\"50\"|\"100\"|\"200\"|\"500\"|\"1000\"|\"2000\": int}, vouchers=0, countedUsd=0, countedEur=0, delivered?, notes} (countedCash o denominations obligatorio; si vienen los dos deben coincidir; delivered ≤ contado, si no 400) -> fila de la caja + closeDetails {denominations, denominationsTotal, vouchers, countedUsd, countedEur, delivered, left, usdRate, eurRate} + differences {cash, card, transfer}.\nGET /api/cash-sessions/opening-suggestion -> {amount: number|null, fromSessionId: string|null}.\nGET /api/cash-sessions/:id/cuadre (cash:write; la propia caja o sale:manage, si no 403) -> {sessionId, title:\"Cuadre de Caja\", footer:\"FIN DEL CUADRE\", business{name,branchName,address,legalId,phone,phone2,logo}, register{id,number,name}, cashier{id,number,name}, openedAt, closedAt, denominations[{value,qty,total}]×11, denominationsSubtotal, lines[{line:1..18,key,label,value}] con keys credit,cash,cards,transfers,vouchers,usd,eur,tickets,voidedTickets,cashSales,receipts,differenceDop,differenceUsd,differenceEur,discounts,total,profit(null sin profit:read),openingAmount, salesByMethod{cash,card,transfer,credit,cod,credit_note}, cashSalesDetail{sales,receipts,cod,cashIn,refunds,cashOut,total}, receipts{cash,card,transfer,total,pendingVerification}, receiptsNote, cod{sold, collected{cash,card,transfer,total,pendingVerification}, rows[{paymentId,saleId,number,method,amount,status,createdAt}]}, voided{count,total,numbers}, foreign{usd|eur:{counted,expected,difference,rate,dop}}, summary{formula,text}, delivered{delivered,left}, notes}.\nGET /api/reports/venta-diaria-usuario y /api/reports/venta-por-forma-pago (reports:read) ?from&to&cashSessionId&userId&format=xlsx|pdf. Las mismas sin permiso de reportes en GET /api/cash-sessions/:id/reports/:name (la propia caja). Diaria -> {name,title,business,from,to,printedAt,user{id,number,name},register{id,number,name},cashSessionId,note,totals{Cant,ITBIS,Desc,Precio},rows[{Descripción,SKU,Cant,ITBIS,Desc,Precio}…,TOTAL]}. Por forma de pago -> {…encabezado igual, title:\"REPORTE DE VENTA USUARIO\", groups[{method,label,rows[{saleId,number,description:\"Factura\",units,amount,status? (cod: pendiente|cobrada)}],subtotal{units,amount}}] en el orden EFECTIVO, CHEQUES/TRANSFERENCIA, COMPRA A CRÉDITO, TARJETA CRÉDITO/DÉBITO, CONTRAENTREGA (NOTA DE CRÉDITO sólo si hay), byInvoice{invoices,units,amount}, total, rows planas {COD,Descripción,Cant,T_Venta} con 'Sub-Total por Pago', 'Sub-Total por Fact.' y 'TOTAL'}.\nSin cambios, ya existentes: POST /api/sales/:id/cod-collections {offlineUuid,cashSessionId,amount,method:cash|card|transfer,bank?,reference? (obligatoria con card y transfer)} -> Payment; POST /api/payments/:id/proof multipart file (jpg/png/webp ≤ 2 MB; 400 si no, 403 si el cobro no es de la caja del usuario y no tiene sale:manage, 404 si no existe) -> Payment con proofUrl data URL; GET /api/cod/pending -> [{saleId,number,createdAt,cashSessionId,total,codAmount,pending (sólo la parte de contraentrega),pendingVerification,collections[{paymentId,method,amount,status,reference,bank,proofUrl,createdAt}],customer,seller,notes}]; GET /api/cod/pending; PATCH /api/terminals/:id/register {registerNumber,registerName}; cashierNumber en /users; ajustes branchName, phone2, logo, autoPrintReceipt, usdRate, eurRate.",
+      "filesChanged": [
+        "/home/user/awesome-outbid/fitstore-pos/apps/api/src/cash.ts",
+        "/home/user/awesome-outbid/fitstore-pos/apps/api/src/reports.ts",
+        "/home/user/awesome-outbid/fitstore-pos/apps/api/src/sales.ts",
+        "/home/user/awesome-outbid/fitstore-pos/apps/api/src/common.ts",
+        "/home/user/awesome-outbid/fitstore-pos/apps/api/src/admin.ts",
+        "/home/user/awesome-outbid/fitstore-pos/tests/api.test.ts"
+      ],
+      "suites": "Integración completa (tests/api.test.ts) contra la API en 3171 con base nueva (migrate deploy + seed): 128 passed / 0 failed. 'Tienda' (8 pruebas): todas pasan. Unitarias packages/shared/src/business.test.ts: 34/34. pnpm -r typecheck: sin errores. pnpm lint: sin errores. Prettier aplicado a cash.ts y reports.ts. La base fitstore_tienda_api fue borrada y el proceso de la API detenido por PID. No hice commits; otro agente metió mis dos archivos en su commit 9c93751."
+    },
+    "ui": {
+      "done": [
+        {
+          "requirement": "1. Impresos térmicos (80/58 mm según receiptWidth): Cuadre de Caja, Venta diaria de usuario, Venta usuario por forma de pago y Factura, con botones grandes Imprimir e impresión automática de la factura si autoPrintReceipt",
+          "how": "Archivo nuevo apps/web/src/Prints.tsx. PrintSheet abre un portal .thermal-print en body. Con @media print se oculta todo lo demás, y @page con nombre (thermal80/thermal58) da 80 o 58 mm de ancho, márgenes de 2 mm y letra monoespaciada de 12 px. CuadrePrint sigue el orden de la especificación: encabezado con logo, sucursal, RNC y teléfonos; fechas; caja y cajero; detalles de monedas con «Sub-total»; líneas 1 a 18 (las de € sólo si hay tasa en euros, la 11 desglosada por forma de pago con su nota); contraentregas; resumen con la fórmula; Efectivo, Entregado y Dejado en caja; firmas; «FIN DEL CUADRE». DailyUserReportPrint y PaymentMethodReportPrint muestran sus columnas, los Sub-Total por Pago y por Fact., el TOTAL y la nota de descuentos. InvoicePrint: logo, Sucursal No., RNC, NCF, teléfono y WhatsApp, FACTURA, Secuencia No., Vendido a, «Cod.» por línea, «cant X RD$ precio», Sub-Total, Descuento, ITBIS, Total a pagar, pagos según lo recibido, cambio y Cantidad de Productos. En POS.tsx la factura sustituye al ticket anterior, con un botón grande «Imprimir factura» y printSoon() si autoPrintReceipt está activo. PrintModal muestra una vista previa en pantalla y el botón grande «Imprimir».",
+          "test": "e2e 'Tienda-pantallas: cierre por denominaciones…' (revisa el texto del cuadre y de los dos reportes en .thermal-print) y 'Tienda-pantallas: venta con contraentrega…' (revisa el formato de la factura). Además revisé a mano una captura con @media print a 80 mm."
+        },
+        {
+          "requirement": "2. Cierre por denominaciones, vales, US$/€, Entregado y Dejado en caja; al confirmar imprime el cuadre; reimpresión del cuadre y los reportes desde el historial; reportes por fecha y usuario",
+          "how": "Archivo nuevo apps/web/src/Tienda.tsx, CloseCashModal: una cantidad por cada denominación con su total al lado; subtotal automático; Vale de caja; dólares y euros sólo si hay tasa; tarjeta y transferencia declaradas (vacío = lo esperado); Entregado; «Dejado en caja» calculado; notas. Envía denominations + countedCash. Si lo entregado supera lo contado, avisa sin cerrar. Luego trae /cuadre, lo muestra y lo imprime. En el historial de cajas, SessionPrintButtons ofrece Cuadre, Venta diaria y Por forma de pago (/cash-sessions/:id/cuadre y /reports/:name). DayReports, para quien tiene reports:read, imprime los reportes del día por fecha y usuario. Al abrir la caja se propone como fondo lo dejado en el último cierre (opening-suggestion).",
+          "test": "e2e 'Tienda-pantallas: cierre por denominaciones con entregado/dejado imprime el cuadre y se reimprime con sus reportes' pasa"
+        },
+        {
+          "requirement": "3. Contraentrega en la caja, lista de pendientes con su cobro, y forma de pago en los abonos",
+          "how": "POS.tsx: botón «Contraentrega» que se combina con efectivo, tarjeta, transferencia y nota de crédito, con un texto de ayuda. Exige conexión, igual que el crédito. Las etiquetas de los pagos salen de METHOD_LABEL. En Caja, el panel CodPending usa GET /cod/pending; «Registrar cobro» abre una ventana con monto y forma de pago (efectivo o transferencia, con banco y referencia) y llama a POST /sales/:id/cod-collections con un offlineUuid fijo, para que un reintento no cobre dos veces. Los abonos de crédito ya permitían elegir la forma de pago.",
+          "test": "e2e 'Tienda-pantallas: venta con contraentrega + efectivo, factura impresa con su formato y cobro de la contraentrega' pasa"
+        },
+        {
+          "requirement": "4. Ajustes: sucursal, teléfono 2, logo, impresión automática, tasas US$ y €, número y nombre de caja, número de cajero",
+          "how": "Management.tsx Configuration: campos branchName, phone2, autoPrintReceipt, usdRate y eurRate (vacío = null). StoreSettings (Tienda.tsx) en la pestaña Negocio: subida de logo (POST /settings/logo, hasta 200 KB), lista de cajas con PATCH /terminals/:id/register y lista de cajeros con PATCH /users/:id {cashierNumber}.",
+          "test": "Revisado con pnpm -r typecheck y el build. Sin prueba e2e propia: la API ya tiene pruebas de integración de estas rutas."
+        },
+        {
+          "requirement": "5. Atajos F9, F7 y F10",
+          "how": "App.tsx, en el manejador global de teclado: F9 abre Mercancía, F10 abre Productos (precios) y F7 abre Productos con un aviso para elegir el producto de la etiqueta. Respetan los permisos y no chocan con F2, F4, F8 ni F12. Agregados también a la ayuda.",
+          "test": "e2e 'Tienda-pantallas: F9 abre Entrada de mercancía' (también comprueba F10) pasa"
+        },
+        {
+          "requirement": "6. Celular (390 px) y laptop",
+          "how": "styles.css, bloque propio al final: rejilla de denominaciones en 2 columnas que pasa a 1 en el celular, filas de contraentrega que se acomodan, botones grandes de impresión y vista previa del papel que no pasa del ancho de la pantalla.",
+          "test": "e2e 'Tienda-pantallas: en el celular el cierre y la contraentrega no se desbordan' (sin desborde horizontal a 390 px) pasa; también revisé una captura"
+        },
+        {
+          "requirement": "7. Cobro de contraentrega en efectivo, tarjeta o transferencia con foto de la evidencia desde el celular; evidencia visible en la lista y en el detalle de la venta; contraentrega + crédito en la misma venta",
+          "how": "Tienda.tsx: CodCollect ofrece Efectivo, Tarjeta (referencia del voucher) y Transferencia (banco y referencia) y ProofPicker (input file oculto con accept jpg/png/webp y capture=environment, vista previa, 2 MB) que sube la foto con uploadProof a POST /payments/:id/proof tras registrar el cobro (si la foto falla, el cobro queda y se avisa). La lista de contraentregas muestra cada cobro con su miniatura (ProofThumb). Management.tsx: en el detalle de la venta cada abono muestra la miniatura y un enlace Subir/Cambiar foto. POS.tsx: se quitó el bloqueo crédito + contraentrega. styles.css: estilos .cod-collections, .proof-*.",
+          "test": "pnpm -r typecheck y pnpm lint sin errores; la e2e existente del cobro (método por defecto Efectivo, botón «Registrar cobro») conserva sus selectores."
+        }
+      ],
+      "notDone": [
+        {
+          "requirement": "F7 abre directamente la ventana de etiquetas",
+          "reason": "Las etiquetas se imprimen por producto en Catalog (Management.tsx). F7 lleva a Productos y avisa que hay que elegir el producto."
+        },
+        {
+          "requirement": "Suite e2e completa",
+          "reason": "Corrí mis 4 pruebas e2e y las de venta y recibo afectadas ('venta completa desde caja…' y R9-caja-9): 6/6 pasan. No corrí las otras ~60 pruebas e2e."
+        }
+      ],
+      "apiContract": "No agregué rutas. La web usa: POST /cash-sessions/:id/close {denominations, countedCash (= subtotal), vouchers, countedUsd, countedEur, countedCard?, countedTransfer?, delivered?, notes}; GET /cash-sessions/:id/cuadre; GET /cash-sessions/:id/reports/venta-diaria-usuario|venta-por-forma-pago; GET /reports/<name>?from&to&userId; GET /cash-sessions/opening-suggestion; GET /cod/pending; POST /sales/:id/cod-collections; POST /settings/logo (multipart file); PATCH /terminals/:id/register; PATCH /users/:id {cashierNumber}; PUT /settings con branchName, phone2, autoPrintReceipt, usdRate|null, eurRate|null. Cambio en la web: el ticket ahora es .thermal-print (antes .receipt-only), y actualicé en consecuencia la prueba R9-caja-9 de store.spec.ts.",
+      "filesChanged": [
+        "/home/user/awesome-outbid/fitstore-pos/apps/web/src/Prints.tsx",
+        "/home/user/awesome-outbid/fitstore-pos/apps/web/src/Tienda.tsx",
+        "/home/user/awesome-outbid/fitstore-pos/apps/web/src/POS.tsx",
+        "/home/user/awesome-outbid/fitstore-pos/apps/web/src/Management.tsx",
+        "/home/user/awesome-outbid/fitstore-pos/apps/web/src/App.tsx",
+        "/home/user/awesome-outbid/fitstore-pos/apps/web/src/styles.css",
+        "/home/user/awesome-outbid/fitstore-pos/tests/e2e/store.spec.ts"
+      ],
+      "suites": "Integración completa contra mi API en 3172 con una base nueva (migrate deploy + seed): 128 passed / 0 failed. E2E: 'Tienda-pantallas' (4 pruebas), 'R9-caja-9' y 'venta completa desde caja…': 6/6 pasan. pnpm -r typecheck y pnpm lint sin errores; vite build correcto; Prettier aplicado. La prueba previa 'venta completa…' escribe docs/cobro-exitoso.png: lo restauré con git checkout. Borré la base fitstore_tienda_web y detuve por PID la API (3172) y vite preview (4192). Sin commits."
+    },
+    "four": {
+      "done": [
+        {
+          "requirement": "4 cajas abiertas a la vez, cada una con su cajera y su equipo aprobado, vendiendo en paralelo mientras entra mercancía desde el celular",
+          "how": "Nueva prueba de integración en un describe propio al final de tests/api.test.ts. Crea 4 cajeras con rol seller, cada una con su equipo aprobado y su propia IP, y un usuario de almacén con su equipo para el celular. Las 4 cajas se abren a la vez con fondos de 1000, 2000, 3000 y 4000. Son 5 rondas con Promise.all: cada caja vende 1 unidad del producto escaso (stock inicial 10) y 1 de su producto propio (stock 50). Cada venta se envía dos veces a la vez con el mismo offlineUuid para simular un reintento. En las rondas 2 y 4 el celular registra una entrada de 3 unidades del producto escaso por /merchandise/operations, también enviada dos veces. Se comprueba: allowNegativeStock está apagado; el stock nunca baja de 0; el stock final es exactamente 10 + 6 − vendido; vendido ≤ 16 y vendidas + rechazadas = 20; el reintento devuelve la misma venta y la misma recepción; una venta rechazada no descuenta su otro producto; en la base cada caja tiene exactamente las ventas aceptadas. Al final las 4 cajas cierran a la vez con diferencia 0, y el cuadre de cada una (GET /cash-sessions/:id/cuadre) tiene las líneas cash, tickets, cashSales, differenceDop, total y openingAmount correctas y la cajera correcta. Una cajera recibe 403 al pedir el cuadre de otra caja.",
+          "test": "Integración: -t \"4cajas\". Pasó a la primera; ver la nota de abajo."
+        },
+        {
+          "requirement": "E2E con 4 navegadores que ven el stock en tiempo real (uno con viewport de celular en Mercancía)",
+          "how": "Nuevo archivo tests/e2e/cuatro-cajas.spec.ts con 4 contextos de navegador. Hay 3 cajas de escritorio (sellers): cada una entra desde la pantalla de login, abre su caja y busca el producto en el punto de venta. El cuarto contexto es un celular de 390x844 con usuario de almacén, que entra directo a Mercancía. Los 4 equipos se pre-aprueban por API y la identidad del equipo se carga en localStorage. La caja 1 vende 2 unidades desde la pantalla: las otras cajas y el celular pasan de «5 en stock» a «3 en stock» sin recargar. Luego las cajas 2 y 3 venden a la vez: todos ven «1 en stock». Después entra mercancía desde el celular (+4): todos ven «5 en stock». Cada caja cierra con el efectivo esperado (su fondo más lo que vendió) y su cuadre da diferencia 0. Se comprueba que no hay errores de página. La prueba no escribe capturas.",
+          "test": "FITSTORE_WEB_URL=http://127.0.0.1:4193 pnpm exec playwright test -g \"Tienda-4cajas\": 1 passed"
+        }
+      ],
+      "notDone": [
+        {
+          "requirement": "Escenario con allowNegativeStock activo",
+          "reason": "No se probó. Cambiarlo afecta los ajustes de toda la tienda, que comparten las demás pruebas. La prueba sólo verifica que está apagado y que con eso nunca se vende sin stock."
+        },
+        {
+          "requirement": "Primero una prueba que falle y luego corregir",
+          "reason": "Las dos pruebas pasaron a la primera, así que no hubo nada que corregir en la API ni en la web. La venta bloquea las filas de Variant con SELECT … FOR UPDATE en orden. Venta y entrada de mercancía usan un candado por offlineUuid o id. La caja usa cashLock. El log de la API no mostró deadlocks ni errores 500. Los únicos ajustes fueron en la prueba e2e: la cajera no aterriza en el Resumen («Hola,»), entra directo al punto de venta, y el usuario de almacén en el celular ya abre directo en Mercancía."
+        }
+      ],
+      "apiContract": "Sin cambios en la API.",
+      "filesChanged": [
+        "/home/user/awesome-outbid/fitstore-pos/tests/api.test.ts (describe nuevo al final: «Tienda · 4 cajas a la vez»)",
+        "/home/user/awesome-outbid/fitstore-pos/tests/e2e/cuatro-cajas.spec.ts (nuevo)"
+      ],
+      "suites": "Integración completa contra la API en el puerto 3173 (base fitstore_tienda_4cajas): 129/129 passed. E2E Tienda-4cajas: 1 passed (23.7s). pnpm -r typecheck: OK. ESLint sobre mis archivos: sin errores. Prettier aplicado sólo a cuatro-cajas.spec.ts, porque api.test.ts lo editan otros agentes. Limpieza hecha: la API y el vite preview se detuvieron por PID, la base fitstore_tienda_4cajas se borró y se borró el build en /tmp. No se hicieron commits."
+    },
+    "review": {
+      "ok": true,
+      "problems": [
+        {
+          "severity": "P3",
+          "problem": "Returns are handled differently across the cuadre and the reports. In apps/api/src/cash.ts buildCuadre, line 16 'Total' and line 15 'Total Desc.' add up s.total and s.discountTotal of completed sales without subtracting returns. Line 17 'Rentabilidad' and line 10 (cash refunds) do subtract them. The venta-diaria-usuario report in apps/api/src/reports.ts (storeReport) also counts i.qty and lineTotal while ignoring returnedQty. So after a return in the same session, the total sold on the cuadre and in the report does not match the cash that came in or the profit.",
+          "fix": "Choose one rule and use it everywhere. Either show net totals (subtract SaleReturn.total and returnedQty in line 16, in the daily report and in the by-payment-method report), or add a 'Devoluciones' line or row so the figures add up."
+        }
+      ]
+    },
+    "repair": null
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "API"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Pantallas"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 3,
+      "title": "Cuatro cajas"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 4,
+      "title": "Revisar"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "api",
+      "phaseIndex": 1,
+      "phaseTitle": "API",
+      "agentId": "ae718bc7e9e0153de",
+      "model": "claude-opus-5-5",
+      "state": "done",
+      "startedAt": 1791276726817,
+      "queuedAt": 1791276726758,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "POST /api/cash-sessions/:id/close body {countedCash?, count…",
+      "promptPreview": "Proyecto: /home/user/awesome-outbid/fitstore-pos (pnpm monorepo: apps/api NestJS+Prisma+PostgreSQL, apps/web React/Vite PWA, packages/shared). Es el sistema de caja de una tienda real en República Dominicana. La dueña quiere usarlo HOY: prioriza que funcione bien y sea fácil para la cajera.\nLee primero la especificación /home/user/awesome-outbid/fitstore-pos/docs/tienda/CUADRE_REPORTES_FACTURA.md …",
+      "promptFramed": true,
+      "lastProgressAt": 1791277275823,
+      "tokens": 133538,
+      "toolCalls": 31,
+      "durationMs": 549005,
+      "resultPreview": "{\"done\":[{\"requirement\":\"1. Ajustes del negocio: branchName, phone2, logo (data URL de hasta 200 KB o subida de archivo), autoPrintReceipt, usdRate y eurRate; número y nombre de caja (Terminal.registerNumber/registerName); número de cajero (User.cashierNumber)\",\"how\":\"Ya estaba hecho en el árbol de un avance anterior: configSchema en admin.ts, PATCH /terminals/:id/register, cashierNumber en POST y…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "pantallas",
+      "phaseIndex": 2,
+      "phaseTitle": "Pantallas",
+      "agentId": "ada38f47f3b684e2f",
+      "model": "claude-opus-5-5",
+      "state": "done",
+      "startedAt": 1791277278188,
+      "queuedAt": 1791277278176,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "No agregué rutas. La web usa: POST /cash-sessions/:id/close…",
+      "promptPreview": "Proyecto: /home/user/awesome-outbid/fitstore-pos (pnpm monorepo: apps/api NestJS+Prisma+PostgreSQL, apps/web React/Vite PWA, packages/shared). Es el sistema de caja de una tienda real en República Dominicana. La dueña quiere usarlo HOY: prioriza que funcione bien y sea fácil para la cajera.\nLee primero la especificación /home/user/awesome-outbid/fitstore-pos/docs/tienda/CUADRE_REPORTES_FACTURA.md …",
+      "promptFramed": true,
+      "lastProgressAt": 1791278126170,
+      "tokens": 188287,
+      "toolCalls": 66,
+      "durationMs": 847980,
+      "resultPreview": "{\"done\":[{\"requirement\":\"1. Impresos térmicos (80/58 mm según receiptWidth): Cuadre de Caja, Venta diaria de usuario, Venta usuario por forma de pago y Factura, con botones grandes Imprimir e impresión automática de la factura si autoPrintReceipt\",\"how\":\"Archivo nuevo apps/web/src/Prints.tsx. PrintSheet abre un portal .thermal-print en body. Con @media print se oculta todo lo demás, y @page con no…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "cuatro-cajas",
+      "phaseIndex": 3,
+      "phaseTitle": "Cuatro cajas",
+      "agentId": "aba0245dca90cc20f",
+      "model": "claude-opus-5-5",
+      "state": "done",
+      "startedAt": 1791278128405,
+      "queuedAt": 1791278128391,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Sin cambios en la API.",
+      "promptPreview": "Proyecto: /home/user/awesome-outbid/fitstore-pos (pnpm monorepo: apps/api NestJS+Prisma+PostgreSQL, apps/web React/Vite PWA, packages/shared). Es el sistema de caja de una tienda real en República Dominicana. La dueña quiere usarlo HOY: prioriza que funcione bien y sea fácil para la cajera.\nLee primero la especificación /home/user/awesome-outbid/fitstore-pos/docs/tienda/CUADRE_REPORTES_FACTURA.md …",
+      "promptFramed": true,
+      "lastProgressAt": 1791279076901,
+      "tokens": 109186,
+      "toolCalls": 35,
+      "durationMs": 948494,
+      "resultPreview": "{\"done\":[{\"requirement\":\"4 cajas abiertas a la vez, cada una con su cajera y su equipo aprobado, vendiendo en paralelo mientras entra mercancía desde el celular\",\"how\":\"Nueva prueba de integración en un describe propio al final de tests/api.test.ts. Crea 4 cajeras con rol seller, cada una con su equipo aprobado y su propia IP, y un usuario de almacén con su equipo para el celular. Las 4 cajas se a…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "revisar",
+      "phaseIndex": 4,
+      "phaseTitle": "Revisar",
+      "agentId": "a2ef3e800f3f58f53",
+      "model": "claude-opus-5-5",
+      "state": "done",
+      "startedAt": 1791279079327,
+      "queuedAt": 1791279079281,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "Proyecto /home/user/awesome-outbid/fitstore-pos. Revisor adversarial. Se implementó la especificación /home/user/awesome-outbid/fitstore-pos/docs/tienda/CUADRE_REPORTES_FACTURA.md (cuadre de caja, reportes, factura, contraentrega, impresión térmica, 4 cajas). Informes:\nAPI: {\"done\":[{\"requirement\":\"1. Ajustes del negocio: branchName, phone2, logo (data URL de hasta 200 KB o subida de archivo), aut…",
+      "promptFramed": true,
+      "lastProgressAt": 1791279109654,
+      "tokens": 68585,
+      "toolCalls": 6,
+      "durationMs": 30326,
+      "resultPreview": "{\"ok\":true,\"problems\":[{\"severity\":\"P3\",\"problem\":\"Returns are handled differently across the cuadre and the reports. In apps/api/src/cash.ts buildCuadre, line 16 'Total' and line 15 'Total Desc.' add up s.total and s.discountTotal of completed sales without subtracting returns. Line 17 'Rentabilidad' and line 10 (cash refunds) do subtract them. The venta-diaria-usuario report in apps/api/src/repo…"
+    }
+  ],
+  "totalTokens": 499596,
+  "totalToolCalls": 138
+}

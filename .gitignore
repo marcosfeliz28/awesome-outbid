@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+**/secrets.json
+*.pem
+*.key
+*.pfx
+*.log
+playwright-report/
+test-results/
+coverage/
+apps/web/src-tauri/target/
+backups/
+.local-db/
+instalador/build/
+instalador/dist/
+outputs/
+
+# Reporte del importador: puede tener costos reales de la tienda
+revision-inventario.csv

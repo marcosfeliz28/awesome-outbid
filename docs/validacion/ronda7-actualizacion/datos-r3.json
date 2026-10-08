@@ -1,0 +1,26 @@
+{
+  "source": "API y esquema de la ronda 3 (commit 30393fc), base separada",
+  "users": [
+    {
+      "id": "107c3d9f-e8d2-4a70-b062-7bab70a1bf7a",
+      "email": "r7-upgrade-muvmruvg-original@example.test"
+    },
+    {
+      "id": "09eee180-d1e2-4759-b832-c29a1fd7241a",
+      "email": "r7-upgrade-muvmruvg-otro@example.test"
+    }
+  ],
+  "terminalId": "cfb18860-4aea-431a-91d2-1b728856a95f",
+  "variantId": "c3b05585-bf7b-4f07-bce2-1217c5677877",
+  "supplierId": "01a10992-b4c1-4ae6-9d66-46185f9e13e2",
+  "supplierName": "Proveedor actualización r7-upgrade-muvmruvg",
+  "entry": {
+    "id": "4db024a8-fb6e-4051-815c-e41147248d1e",
+    "receiptId": "48e2d085-434f-4aa5-8952-a465435357c3",
+    "variantIds": [
+      "c3b05585-bf7b-4f07-bce2-1217c5677877"
+    ],
+    "total": 34
+  },
+  "orderId": "51eb39d1-6b5c-4b44-9006-97e4f11b186b"
+}

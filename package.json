@@ -1,0 +1,46 @@
+{
+  "name": "fitstore-pos",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "dev": "concurrently -n api,web -c magenta,cyan \"pnpm --filter @fitstore/api dev\" \"pnpm --filter @fitstore/web dev\"",
+    "build": "pnpm --filter @fitstore/web build && pnpm --filter @fitstore/api build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:generate": "pnpm --filter @fitstore/api db:generate",
+    "db:migrate": "pnpm --filter @fitstore/api db:migrate",
+    "db:seed": "pnpm --filter @fitstore/api db:seed",
+    "format": "prettier --write .",
+    "lint": "eslint .",
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "db:local": "node scripts/local-db.mjs",
+    "verify": "node scripts/verify.mjs",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "cloud:validate": "vitest run tests/cloud-deploy.test.ts",
+    "backup": "node scripts/backup.mjs",
+    "admin:create": "pnpm --filter @fitstore/api admin:create",
+    "package:source": "node scripts/package.mjs",
+    "instalador:validar": "node --test instalador/tests/web-server.test.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/PowerShell-Parse.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Transaction-FaultInjection.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Restore-FaultInjection.ps1 && node instalador/tests/validar.mjs",
+    "instalador:preparar": "powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1 -SoloPreparar",
+    "instalador:compilar": "powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^6.0.0",
+    "concurrently": "^9.2.0",
+    "embedded-postgres": "18.4.0-beta.17",
+    "eslint": "^9.39.0",
+    "prettier": "^3.6.0",
+    "supertest": "^7.1.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=11"
+  }
+}

@@ -1,0 +1,12 @@
+import {createRequire} from 'node:module';
+import {spawn} from 'node:child_process';
+const root='/workspace/auditoria-ronda8/fitstore-pos';
+createRequire(root+'/apps/api/package.json')('dotenv').config({path:root+'/.env',quiet:true});
+const kind=process.argv[2],legacy=kind==='legacy';
+const origin=legacy?'/workspace/auditoria-ronda7/fitstore-pos':root;
+if(legacy||kind==='upgrade')process.env.DATABASE_URL='postgresql://fitstore:fitstore_local@127.0.0.1:5434/fitstore_audit_r8_upgrade7';
+if(kind==='import')process.env.DATABASE_URL='postgresql://fitstore:fitstore_local@127.0.0.1:5434/fitstore_audit_r8_import';
+process.env.PORT=legacy?'3043':kind==='upgrade'?'3042':kind==='import'?'3040':'3038';
+const child=spawn('node',['dist/main.js'],{cwd:origin+'/apps/api',env:process.env,stdio:'inherit'});
+for(const signal of ['SIGTERM','SIGINT'])process.on(signal,()=>child.kill(signal));
+child.on('exit',code=>process.exit(code??0));

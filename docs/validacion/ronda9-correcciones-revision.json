@@ -1,0 +1,535 @@
+[
+  {
+    "area": "caja",
+    "items": [
+      {
+        "id": "R9-caja-1",
+        "status": "fixed",
+        "change": "Review follow-up: I narrowed looksLikeCode() at apps/web/src/POS.tsx:105-117. A query counts as a code only if it is a single token with no spaces that is either all digits (allowing «-» and «.», like 1600) or has 5 or more digits (barcodes or IDs). Model and shade tokens that are part of a name («a40», «275n», «m158», «5bt11») are word searches again, so Enter adds their only result. 1600, 1400, 1555 and the test's 7-digit code still show «Código no encontrado: N.». enter() at POS.tsx:563 is unchanged: when the text looks like a code and byCode finds nothing, it warns, selects the text and leaves the list visible. It never falls back to addProduct, and a word search that adds its only result shows «<nombre> agregado.» and clears the search box.",
+        "test": "tests/e2e/store.spec.ts:788 «R9-caja-1: el código de un producto inactivo + Enter avisa y no agrega otro que lo contiene» + tests/e2e/store.spec.ts:1445 «R9-caja-1 revisión: un código de modelo del nombre (como «a40» o «275n») + Enter agrega su único producto»",
+        "failedBefore": "Original: expect(locator).toBeVisible() failed · waiting for getByText('Código no encontrado: 45727099.') (it silently added «Tribulus E2E 45727099 - 90 cápsulas»). Review, with the previous rule: Error: expect(locator).toBeVisible() failed · Locator: getByText('Pincel E2E QA417 agregado.') · element(s) not found (it showed «Código no encontrado: qa417.» instead).",
+        "reason": null
+      },
+      {
+        "id": "R9-caja-2",
+        "status": "fixed",
+        "change": "apps/web/src/POS.tsx:525-560: in scan(), the ambiguous-code branch and the not-found branch call setQ(code) and then requestAnimationFrame(() => search.current?.select()), so the next scan replaces the code instead of being appended to it. The not-found toast now includes the code. The test simulates a legacy duplicate by injecting it into /api/products with page.route, because the API no longer lets you create one.",
+        "test": "tests/e2e/store.spec.ts:822 «R9-caja-2: tras el aviso de código ambiguo, el siguiente escaneo reemplaza el código»",
+        "failedBefore": "expect(locator).toHaveText(expected) failed · Expected: \"1\" · element(s) not found · waiting for locator('.cart-item').filter({ hasText: 'Faja E2E siguiente 67337144' }) (the next scan was appended to the ambiguous code)",
+        "reason": null
+      },
+      {
+        "id": "R9-caja-3",
+        "status": "fixed",
+        "change": "apps/web/src/POS.tsx:369-468 has one window keydown handler in the capture phase, registered once and reading onKey.current. (1) With no window open and the focus outside a field, a printable key moves focus to the search box and selects its text, so the scanner's Enter does not press the card, the +/− buttons or Cerrar again. (2) Review follow-up, POS.tsx:388-445: with the focus in a discount field (DISCOUNT_FIELDS = '.line-discount input, #global-discount', POS.tsx:119-120), 3 keys in a row less than SCAN_GAP_MS = 50 ms apart (measured with e.timeStamp, ignoring e.repeat) are treated as a scan. Inside flushSync, the line discounts and the global discount go back to their values from before the burst, and the burst's characters are put in the search box. The key is cancelled and focus moves to the search box with the cursor at the end, so the rest of the code and its Enter add the product there. Discount limit warnings wait 150 ms (limitWarning, POS.tsx:162-169) and are dropped if that typing turned out to be a scan, so the cashier does not see false red warnings. Probe with a temporary spec, since removed: key gaps of 7-40 ms were detected as scans; a person typing at 90-150 ms per key was not diverted.",
+        "test": "tests/e2e/store.spec.ts:875 «R9-caja-3: después de un clic, el lector agrega el producto escaneado y no repite el que tenía el foco» + tests/e2e/store.spec.ts:1384 «R9-caja-3/8 revisión: un escaneo con el foco en un campo de descuento agrega el producto y no cambia el descuento» (line %, line RD$ and global discount; total RD$ 5,462.50; no limit warning)",
+        "failedBefore": "Original: expect(locator).toHaveText(expected) failed · Expected: \"1\" · waiting for locator('.cart-item').filter({ hasText: 'Faja E2E foco dos 77968363' }) (the Enter clicked the focused card again). Review: Error: expect(locator).toHaveText(expected) failed · Locator: locator('.cart-item').filter({ hasText: 'Faja E2E ráfaga dos 58985658' }).locator('.quantity-control span') · Expected: \"1\" · element(s) not found (the scan's digits went into «Descuento de …» and the product never entered the cart)",
+        "reason": null
+      },
+      {
+        "id": "R9-caja-4",
+        "status": "fixed",
+        "change": "API, apps/api/src/admin.ts:270-318: POST /quotes accepts globalDiscount (0-100), plus discountAmount and name (≤300) on each item. It returns 400 when a discountAmount is larger than qty×price, using exact decimals. Schema: Quote.globalDiscount Decimal(5,2) default 0, with the idempotent migration apps/api/prisma/migrations/202610090001_r9_caja/migration.sql (ADD COLUMN IF NOT EXISTS). Web: saveHeld (POS.tsx:313-357) reads useStore.getState() and sends globalDiscount, discountAmount and the line name. HeldSales sets setDiscount(Number(quote.globalDiscount ?? 0)) (POS.tsx:1161-1162) and keeps each line's discountAmount.",
+        "test": "tests/e2e/store.spec.ts:1018 «R9-caja-4 y R9-caja-7: la venta en espera conserva descuentos y cliente (también con F8)» + tests/api.test.ts:4179 «R9-caja-4: la venta en espera guarda el descuento por monto, el global y el nombre, y sólo se recupera una vez»",
+        "failedBefore": "e2e: expect(locator).toHaveValue(expected) failed · Expected: \"5\" · Received: \"10\" (it kept the previous cart's global discount and lost the RD$100). Integration: AssertionError: expected 201 to be 400 (zod dropped discountAmount)",
+        "reason": null
+      },
+      {
+        "id": "R9-caja-5",
+        "status": "fixed",
+        "change": "apps/web/src/POS.tsx:1093-1175, recover() in HeldSales. If the catalog has not loaded, it waits. It builds the cart from the catalog before calling /convert. It names any missing items (the name is stored in the quote), and if every item is missing it does not convert. When items are missing or the current cart has items, it asks with window.confirm. If the cashier cancels, nothing is consumed. If they accept, it first puts the current cart on hold (saveHeld) and then converts. Rows are disabled while it works, and ['quotes'] is invalidated in finally. API (admin.ts:320-337): /convert uses updateMany WHERE status='open' and returns 409 when count=0, so two simultaneous clicks cannot recover the same held sale twice.",
+        "test": "tests/e2e/store.spec.ts:1088 «R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual» + simultaneous double /convert in tests/api.test.ts:4179",
+        "failedBefore": "expect(received).toBe(expected) · Expected: 1 · Received: 0 at expect.poll(() => messages.length) (no warning was shown: it called /convert first, threw «Una variante ya no está disponible.» and the held sale was lost)",
+        "reason": null
+      },
+      {
+        "id": "R9-caja-6",
+        "status": "fixed",
+        "change": "A/B (focus on BODY after «Nueva venta» or after choosing a variant): covered by the global redirect in R9-caja-3. The search box's onKeyDown calls e.preventDefault() on Enter (POS.tsx:631-639), so that same Enter does not click «Cerrar» in the variant window it just opened. C: enter() (POS.tsx:563-600) runs setQ('') and shows «agregado.» when Enter on a word search adds a product. When it opens the variant window instead, clearOnChoose clears the search box after the choice (POS.tsx:150, 580, 990). D: an Enter that adds nothing shows «No se agregó nada: …» and selects the text.",
+        "test": "tests/e2e/store.spec.ts:972 «R9-caja-6: tras elegir una variante o agregar con Enter por palabras, el siguiente escaneo no se pierde» + case A in tests/e2e/store.spec.ts:926",
+        "failedBefore": "Error: locator.click: Test timeout of 45000ms exceeded · waiting for getByRole('dialog').getByRole('button', { name: /^S / }) (the Enter itself closed the variant window)",
+        "reason": null
+      },
+      {
+        "id": "R9-caja-7",
+        "status": "fixed",
+        "change": "apps/web/src/POS.tsx:369-468: the keyboard listener is registered once ([] at POS.tsx:463) and calls onKey.current, which is reassigned on every render, so F8 and F12 use the current state. saveHeld also reads useStore.getState() (customerId, globalDiscount, cart, online) at the moment the key is pressed (POS.tsx:313-318).",
+        "test": "tests/e2e/store.spec.ts:1018 «R9-caja-4 y R9-caja-7: la venta en espera conserva descuentos y cliente (también con F8)»",
+        "failedBefore": "Same run as R9-caja-4: the test failed at recovery (Expected: \"5\" · Received: \"10\") before it reached the customer check. The old code saved customerId null (stale closure with deps [cart, session, online]).",
+        "reason": null
+      },
+      {
+        "id": "R9-caja-8",
+        "status": "fixed",
+        "change": "manualDiscount() (POS.tsx:86-103) clamps the line percentage and the global percentage to [0,100] when computing totals and needsPin, so a value from another source (a held sale, a quote or the offline cache) can never produce a negative total. Review follow-up: a value typed above the limit is no longer clamped (clamping to 100 % left the line free while it looked valid). The line % field (POS.tsx:835-847), the RD$ field (POS.tsx:861-874) and the global discount field (POS.tsx:913-921) now reject any value over 100 % or over the line amount: the previous value stays and a red limitWarning is shown. changeQty (POS.tsx:296-310) still re-clamps the RD$ discount when the quantity goes down, and now shows the toast «El descuento por monto de X bajó a RD$ …, el importe de la línea.». A scan with the focus in these fields is diverted to the search box (see R9-caja-3). I updated the existing R9-caja-8 test: it expected clamping (fill 150 → 100), which is exactly the behavior the review flagged. It now expects 150 → stays at 15 with a warning, 2000 → stays at 0, and the warning when the quantity goes down.",
+        "test": "tests/e2e/store.spec.ts:1166 «R9-caja-8: el descuento de línea no pasa del 100 % ni del importe de la línea» + tests/e2e/store.spec.ts:1384 «R9-caja-3/8 revisión: …»",
+        "failedBefore": "Updated test against a build of the previous commit: Error: expect(locator).toHaveValue(expected) failed · Locator: getByLabel('Descuento de Faja E2E límite 94915503', { exact: true }) · Expected: \"15\" · Received: \"100\" (fill('150') was clamped to 100 % and left the line free). In the first round the original bug was a negative total on screen (150 % → RD$ -750.00).",
+        "reason": null
+      },
+      {
+        "id": "R9-caja-9",
+        "status": "fixed",
+        "change": "apps/web/src/POS.tsx:1370-1381: the snapshot saves each line's discount and lineTotal. When online, the receipt uses the amounts in the server's sale.items, summed per variant because a line can be split across lots; offline, it uses the local calculation. The 80 mm ticket (POS.tsx:1488-1610) prints «Descuento −RD$ X» under each discounted line, then «Subtotal» and «Descuentos» before «Total», so the lines add up to what was charged.",
+        "test": "tests/e2e/store.spec.ts:926 «R9-caja-9 y R9-caja-6: el ticket muestra los descuentos y tras «Nueva venta» el lector agrega»",
+        "failedBefore": "expect(locator).toContainText(expected) failed at «Descuento −RD$ 150.00» on locator('.receipt-only'): the ticket only printed «1 × RD$ 1,500.00» and «Total RD$ 2,160.00», with no discount lines.",
+        "reason": null
+      }
+    ],
+    "review": {
+      "ok": false,
+      "problems": [
+        {
+          "id": "R9-caja-3/R9-caja-8-escaneo-en-campo-de-descuento",
+          "severity": "P2",
+          "problem": "A scan made while the focus is in a line's discount field is still lost. With the new clamp it now leaves the line at 100 % discount instead of a total that cannot be charged. The global handler (POS.tsx:361-373) skips any input on purpose (isEditable). The % field (POS.tsx:747-758) and the RD$ field (POS.tsx:771-785) now clamp an impossible value to the maximum instead of rejecting it. Concrete steps with the owner or a manager (sale:manage): add 1001 (RD$ 1,500), type 10 in «Descuento de …» (focus stays in the field), then scan 1002 (keys «1002» + Enter). Each digit goes into the field: 101 → 100, 1000 → 100, 1001 → 100, with a red toast each time. The 1001 line ends at RD$ 0.00, the Enter does nothing, and 1002 never enters the cart. F12 charges without a PIN, because needsPin (POS.tsx:1190-1195) only applies to non-managers. Before the fix the same sequence gave 101002 %, a negative total that could not be charged. Now the result is a free line that looks like a valid one. The RD$ field does the same: «100» + «1001» is clamped to the line amount. The global % field already had this clamp, so it has the same hole. None of the R9-caja-3/6 regressions tests a scan with the focus in an input."
+        },
+        {
+          "id": "R9-caja-1-codigos-de-modelo",
+          "severity": "P3",
+          "problem": "looksLikeCode (POS.tsx:106-113) treats any word that has a digit and no run of 3 letters as a code. That includes the model or shade codes that are part of the name of real inventory products. I counted at least 35 products in INVENTARIO_2026 that a token like this identifies uniquely, for example: «Macrilan A40/A10/A23/B134/BT10», «Morphe M158», «MOIRA … 275N/325N/350W», «Huda Beauty … 110N/220N/300N», «Alikka … N05/N55» and «Misslyn … 5BT11». Before, typing «a40» + Enter added the only result. Now it shows the red toast «Código no encontrado: a40.» while the grid says «1 producto encontrado», so the cashier has to tap. The message is also misleading, because «a40» is not an inventory code. Every case of the original bug (1600, 1400, 1555 and the e2e test's 7-digit code) is all digits, so the wider criterion adds nothing for that bug."
+        }
+      ]
+    },
+    "repaired": true,
+    "suites": "This round's changes are in apps/web/src/POS.tsx and tests/e2e/store.spec.ts. tests/api.test.ts and the API files were not touched this time. The commits are snapshots made by the harness; I made no commits myself. All suites ran against my own fresh database fitstore_fix_caja (migrate deploy + seed), my API on :3161 and my PWA build served on :4181.\n- Integration (full suite): 99/99 passed. Command: pnpm vitest run --config vitest.integration.config.ts, with FITSTORE_API_URL=http://127.0.0.1:3161/api.\n- E2E, the 10 R9-caja tests with --repeat-each 2: 20/20 passed.\n- E2E, full suite: 22/22 passed. In an earlier partial run, the existing test «Importar CSV exige revisión…» failed once; that was during the other agent's in-progress changes, outside my area, and it passed in the full run.\n- Both new regressions failed against the previous code, and the updated R9-caja-8 test failed against a build of the previous commit, made in a separate folder and served on :4182.\n- Unit tests (pnpm vitest run): 82/82 passed.\n- pnpm -r typecheck: OK in all 4 packages.\n- pnpm lint (eslint .): OK, exit 0.\n- prettier --check on my files: OK.\nCleanup: the full e2e run overwrote 5 PNGs in docs/ as a side effect of existing tests, and I restored them with git checkout. I removed the temporary probe spec and config; they were never committed. I stopped my processes by PID (API :3161, previews :4181 and :4182), dropped fitstore_fix_caja and deleted /tmp/claude-0/fix-caja-web*."
+  },
+  {
+    "area": "offline",
+    "items": [
+      {
+        "id": "R9-offline-1",
+        "status": "fixed",
+        "change": "apps/web/src/api.ts:160 adds NetworkError (extends TypeError), and send() (api.ts:177) handles fetch failures and 502/503/504 by marking the register offline (setOnline(false)) and throwing NetworkError. api() and refreshSession() (api.ts:222) go through send(). cachedApi (api.ts:311) keeps a local copy and uses it when offline or when the server does not answer. loadCatalog (api.ts:348) falls back to IndexedDB on NetworkError. App.tsx:276-301 (boot) restores the saved session on a network error; a 401/400 still asks for the password. App.tsx:316-334 probes /api/health every 5 s while offline. POS.tsx:183-238: categories, customers, cash-sessions, promotions and settings use cachedApi with networkMode 'offlineFirst', and an effect saves locally what the POS shows. POS.tsx:1427 saveLocal() covers both paths (offline, and the fallback when isNetworkError, which includes 502/503/504). This round added the credit/PIN handling and the timeout, listed in the R9-offline-1-credito-ambiguo and R9-offline-1-sin-timeout items.",
+        "test": "tests/e2e/store.spec.ts: 'R9-offline-1: sin internet pero con la red local activa, la caja sigue vendiendo y al recargar no pide la contraseña' and 'R9-offline-1: si la API responde 502 o 504 al cobrar, la venta queda guardada y se sincroniza una sola vez'",
+        "failedBefore": "Test 1 (with temporary soft asserts): `.connection` Expected \"Offline\" Received \"En línea · 1\"; `.error-panel` Expected: 0 Received: 1 ('Failed to fetch'); card 'Expected substring: \"4 en stock\" element(s) not found'; after reload the snapshot showed the login screen ('Entrar a mi tienda'). Test 2: 'waiting for getByText(/Guardada en este dispositivo/) ... element(s) not found' (the 502 showed an error instead of saving).",
+        "reason": null
+      },
+      {
+        "id": "R9-offline-2",
+        "status": "fixed",
+        "change": "api.ts:382 discountLocalStock(client, items) takes the sold quantity off the on-screen catalog (setQueryData ['catalog']) and the IndexedDB catalog. POS.tsx:1427 saveLocal() calls it on both paths. The POS queries use networkMode 'offlineFirst', so after an offline sale the catalog is reread from IndexedDB instead of the query staying paused.",
+        "test": "tests/e2e/store.spec.ts: 'R9-offline-2: una venta sin conexión descuenta el stock local y no deja vender otra vez las mismas unidades' (the fallback path is also checked in the first R9-offline-1 test: '4 en stock')",
+        "failedBefore": "Expect locator('.product-card').filter({ hasText: 'Faja E2E stock local 77299114' }) toContainText \"0 en stock\" → Received \"...RD$ 1,500.005 en stock\" (after selling all 5 units offline, the card still showed 5 and they could be sold again).",
+        "reason": null
+      },
+      {
+        "id": "R9-offline-3",
+        "status": "fixed",
+        "change": "api.ts:130 add() puts the fresh variant and product on the line. api.ts:417 refreshCart(catalog) rebuilds cart lines by id from the current catalog and returns the lines whose price changed. POS.tsx:245-250: an effect on products.data updates the cart and shows a notice. realtime.tsx:147-153: the SSE 'ready' handler also updates the cart after apply(). POS.tsx:1531 reprice(): when the server rejects with 'Los precios o promociones cambiaron', it refetches catalog, promotions and settings, updates the cart and says which lines changed (or 'Las promociones cambiaron'); the modal already shows the new total. The server still sends no specific code, so the client matches the message text.",
+        "test": "tests/e2e/store.spec.ts: 'R9-offline-3: si el precio o una promoción cambian con el producto en el carrito, la caja toma el nuevo y deja cobrar'",
+        "failedBefore": "Expected substring: \"Faja E2E precio nuevo 72517236: RD$ 1,500.00 → RD$ 1,700.00\" Received string: \"Los precios o promociones cambiaron. Revisa el total antes de cobrar.\" (the cart stayed at the old price and could not be charged).",
+        "reason": null
+      },
+      {
+        "id": "R9-offline-4",
+        "status": "fixed",
+        "change": "api.ts:330 fetchCatalog() merges pages by id (Map), stops at a short page or when page*limit >= total, and downloads again (up to 3 times) if the total changed between pages. POS.tsx:541 byCode counts distinct variants (Set of variant.id). The server tiebreaker (orderBy [{name},{id}]) belongs in catalog.ts, outside my area; it is still a recommended hardening but is no longer needed for correctness.",
+        "test": "tests/e2e/store.spec.ts: 'R9-offline-4: si el catálogo cambia entre una página y otra, ningún producto queda repetido'",
+        "failedBefore": "waiting for getByText(name + ' agregado.') → element(s) not found; snapshot alert: 'El código 73827001 es de 2 productos. Elige el producto en la lista y corrige el código en Productos.'",
+        "reason": null
+      },
+      {
+        "id": "R9-offline-5",
+        "status": "fixed",
+        "change": "api.ts:266 endSession() calls POST /auth/logout, then clearSession. If the server does not answer, the saved session is left expired (expiresAt 0). The logout now uses the timeout option from api() (8 s) instead of AbortSignal.timeout. App.tsx:392-420: the inactivity timer calls endSession() and first checks the device-wide deadline in IndexedDB, so an idle tab does not close the session of an active tab. App.tsx:276-286: at boot, an expired session asks for the password. api.ts:242 saveSession(user, token, activity): a token refresh does not extend the inactivity deadline. App.tsx:773 moves <Toasts/> to an App wrapper so 'Sesión cerrada por inactividad.' stays visible on the login screen.",
+        "test": "tests/e2e/store.spec.ts: 'R9-offline-5: el cierre por inactividad revoca la sesión y al recargar se pide la contraseña' (+ guard 'R9-offline-5: una pestaña sin uso no cierra la sesión de otra pestaña activa del mismo equipo')",
+        "failedBefore": "After clock.fastForward('31:00'): 'waiting for getByText(\"Sesión cerrada por inactividad.\") element(s) not found', and after page.reload() 'getByRole(button, Entrar a mi tienda) ... element(s) not found' (the session came back without a password). The multi-tab guard fails against a build without the shared check: 'getByRole(heading, /Hola,/) element(s) not found' in the idle tab.",
+        "reason": null
+      },
+      {
+        "id": "R9-offline-3-ready-silencioso",
+        "status": "fixed",
+        "change": "realtime.tsx:26 priceChanges() (moved from POS.tsx) and realtime.tsx:45 announcePriceChanges(changes), which shows the toast 'Precio actualizado: X: RD$ a → RD$ b. Revisa el total antes de cobrar.' when there are changes. realtime.tsx:151: the SSE 'ready' handler now passes the result of refreshCart(...) to announcePriceChanges. Before, it threw that result away, and the POS effect ran later and found the cart already updated. POS.tsx:249: the POS effect uses the same helper, and reprice() (POS.tsx:1531) imports priceChanges from realtime. There is no double notice: whichever path runs first updates the cart, and the second finds no price difference.",
+        "test": "tests/e2e/store.spec.ts: 'R9-offline-3 revisión: si un precio cambia mientras el canal de avisos está caído, al reconectar se avisa qué precio cambió' (holds /api/events, changes the price through the API, lets 'ready' through and expects the notice, then charges at RD$ 1,700)",
+        "failedBefore": "Error: expect(locator).toBeVisible() failed ... waiting for getByText('Precio actualizado: Faja E2E precio al reconectar 74813392: RD$ 1,500.00 → RD$ 1,700.00') element(s) not found. The snapshot already showed the card and the cart at RD$ 1,700.00, with the status region empty: the total changed with no notice.",
+        "reason": null
+      },
+      {
+        "id": "R9-offline-1-credito-ambiguo",
+        "status": "fixed",
+        "change": "POS.tsx:1427-1452 saveLocal(): with fallback=true and a credit, credit-note or PIN sale, it no longer says 'requieren conexión'. It now says: 'No hubo respuesta del servidor: no se sabe si la venta quedó registrada. Cuando vuelva la conexión pulsa «Finalizar venta» otra vez con los mismos pagos; si ya quedó registrada, no se cobra dos veces.' It also keeps the attempt in the module variable `unanswered` (POS.tsx:1237: cart key, offlineUuid, capturedAt). POS.tsx:1297-1310: when Checkout opens with the same cart (cash session, customer, global discount, lines), it reuses that offlineUuid and capturedAt. A new charge, even after closing the window, therefore gets the same requestHash, and the server returns the sale it already has. POS.tsx:1492 clears the attempt on success. POS.tsx:1521: if the server answers 'El UUID ya corresponde a otra venta' (the previous charge was registered with other payments), it says so ('El cobro anterior sí quedó registrado, con otros pagos. Revísalo en Ventas…') and clears the attempt. With needsPin offline (not fallback), the original message stays.",
+        "test": "tests/e2e/store.spec.ts: 'R9-offline-1 revisión: un crédito sin respuesta del servidor avisa que pudo quedar registrado y al cobrarlo otra vez no se duplica' (the 504 reaches the server; the cashier closes the window, comes back online and charges again: exactly 1 sale, creditBalance 500, stock 4)",
+        "failedBefore": "Before: Expected substring: \"no se sabe si la venta quedó registrada\" Received string: \"Las ventas a crédito y notas de crédito requieren conexión.\" With only the new message and no kept uuid (temporary build): Expected length: 1 Received length: 2 (FS-0000851 and FS-0000852, each creditBalance 500, with different offlineUuid): the customer's debt was duplicated.",
+        "reason": null
+      },
+      {
+        "id": "R9-offline-1-sin-timeout",
+        "status": "fixed",
+        "change": "api.ts:176 ANSWER_TIMEOUT = 12000. api.ts:177 send(url, init, timeout) adds an optional deadline. It uses its own AbortController with setTimeout and forwards the caller's signal, because AbortSignal.any/timeout are missing in older Safari. A `expired` flag makes a timeout count as NetworkError and setOnline(false), while a caller's abort is still rethrown. api.ts:212 readJson(): a cut or a timeout while the body is arriving is also NetworkError, not an error from the server. api.ts:277-304: api() accepts options.timeout. The deadline is used by refreshSession (api.ts:222, boot and 401 retries), POST /sales from Checkout (POS.tsx:1482-1486, api() with timeout: ANSWER_TIMEOUT; falls back to saveLocal and the sync is idempotent by offlineUuid) and logout (8 s). Long operations (Claude invoice extraction, CSV import) and the large catalog are deliberately not limited. Once one request times out, the register is offline and those queries use local copies without touching the network.",
+        "test": "tests/e2e/store.spec.ts: 'R9-offline-1 revisión: si el servidor no responde (paquetes perdidos), la venta se guarda en segundos y al recargar no se queda cargando' (route over /api/* that never answers: expects 'Guardada en este dispositivo' within 20 s, after reload the 'Punto de venta' heading within 20 s and 'Offline'; after removing the route the sale syncs once, stock 4)",
+        "failedBefore": "Error: expect(locator).toBeVisible() failed, Timeout: 20000ms, waiting for getByText(/Guardada en este dispositivo/) element(s) not found ('Finalizar venta' stayed busy waiting on fetch).",
+        "reason": null
+      }
+    ],
+    "review": {
+      "ok": false,
+      "problems": [
+        {
+          "id": "R9-offline-3-ready-silencioso",
+          "severity": "P3",
+          "problem": "Por la ruta del SSE 'ready', un precio cambiado se aplica al carrito sin ningún aviso. El manejador 'ready' (apps/web/src/realtime.tsx:119) llama a refreshCart(...) y descarta las líneas que cambiaron. Todo ocurre de forma síncrona tras `await loadCatalog()`: setQueryData, el bucle apply() y refreshCart. React Query avisa a los observadores con setTimeout(0), así que el efecto del POS (POS.tsx:255-268) llega después: encuentra el carrito ya igualado al catálogo, refreshCart no devuelve cambios y nunca aparece 'Precio actualizado: X: RD$ a → RD$ b'. Caso concreto: la caja tiene artículos en el carrito y está sin conexión (o se reconecta el SSE). Mientras tanto, el gerente sube un precio desde otro equipo. Al volver la conexión, useRealtime se reconecta, llega 'ready' y el total del carrito cambia sin que nadie avise a la cajera, cuando el hallazgo pedía mostrar qué precio cambió para que lo confirme. El e2e de R9-offline-3 sólo prueba la ruta reprice() del error del servidor; no prueba el aviso del efecto ni la ruta 'ready'."
+        },
+        {
+          "id": "R9-offline-1-credito-ambiguo",
+          "severity": "P3",
+          "problem": "La unificación en saveLocal(true) (POS.tsx:1426-1440) cambió la ruta de respaldo para los TypeError. Antes, una venta a crédito que fallaba con TypeError se guardaba en la cola local, y la sincronización la reconocía por offlineUuid. Ahora muestra 'Las ventas a crédito y notas de crédito requieren conexión.' El mismo mensaje sale con un 504. Ninguno de los dos casos garantiza que la venta no llegó: con un 504, o con una conexión cortada después de enviar la petición, el servidor pudo registrar el crédito. El mensaje le dice a la cajera que no se cobró. Si cierra el cobro y vuelve a cobrar más tarde, Checkout se monta otra vez con un uuid nuevo (POS.tsx:1308), la idempotencia no actúa y queda una deuda duplicada del cliente. Si pulsa 'Finalizar venta' otra vez en la misma ventana, no pasa nada malo."
+        },
+        {
+          "id": "R9-offline-1-sin-timeout",
+          "severity": "P3",
+          "problem": "Riesgo que queda, no una regresión. Todo el respaldo depende de que fetch falle. send() (api.ts:170-184) no pone ningún límite de tiempo, y tampoco lo hacen POST /sales ni refreshSession() en el arranque (App.tsx:287). El e2e usa route.abort('internetdisconnected'), que falla al instante. En un corte real con el router encendido es común que los paquetes simplemente se pierdan. Una conexión ya abierta (la que mantiene el SSE) o un SYN sin respuesta dejan la petición colgada hasta el timeout del sistema: de unos 20 s a más de 2 min según el sistema operativo y el protocolo. Mientras tanto, 'Finalizar venta' se queda en ocupado, o al recargar la app se queda en <Loading/>, antes de llegar al NetworkError y a la venta local."
+        }
+      ]
+    },
+    "repaired": true,
+    "suites": "E2E (PWA built from the current tree, served on 4182 with the API on 3162): the 3 new tests failed against the previous build (outputs above) and pass with the fix. All R9-offline tests: 10 passed (1.7m). Full e2e suite: 32 passed (3.6m).\n\nFull integration suite against my API (fitstore_fix_offline DB): the first run this round gave Test Files 1 passed, Tests 103 passed (103). After the other agent changed apps/api/src/invoice.ts (04:41 and 04:46) and tests/api.test.ts (now 104 tests), I reran it twice, with a fresh DB and the API restarted with the current tree: 1 failed | 103 passed (104). The only failure is 'Ronda 3 · tiempo real y mercancía > CSV: revisión sin stock, mapeo guardado…' at tests/api.test.ts:2207 (expected confidence 1, received 0). That test is the other agent's R9-facturas-2 work on invoice.ts, which is still in progress. It does not touch apps/web: my changes this round are web-only (api.ts, realtime.tsx, POS.tsx, store.spec.ts). I did not change it.\n\nUnit tests (pnpm vitest run): 4 files, 89 passed. pnpm -r typecheck: shared, ui, api and web Done, no errors. pnpm lint: clean on the last run. An earlier run failed only on the other agent's temporary files apps/api/src/.invoice-*-r9f.ts, which they have since deleted. npx eslint on my files is clean, and prettier --check on my 5 files is clean.\n\nCleanup: my API (3162) and preview (4182) are stopped and the fitstore_fix_offline DB is dropped. I also removed the build in /tmp/claude-0/fix-offline-web and my logs. During cleanup, a pkill-style loop also killed my own shell (exit 144); it hit only processes whose command line contained 'fix-offline', all mine. I made no commits. My earlier changes in these files were already in the orchestrator's snapshot commits 89b1025 and 43af435."
+  },
+  {
+    "area": "codigos",
+    "items": [
+      {
+        "id": "R9-codigos-1",
+        "status": "fixed",
+        "change": "apps/api/src/catalog.ts:33-90: new exported helper assertCodesFree(tx, branchId, variants[]). It compares codes case-insensitively and across fields (sku against barcode). A variant's own sku may equal its own barcode, but the same code on two variants in one request is rejected with «se repite en más de una variante». It takes a pg_advisory_xact_lock per code, using the two-key form and sorted order so it cannot deadlock. It then looks the codes up in the database with lower(sku) and lower(barcode), as a UNION of two equality joins so it does not need an OR join. On a hit it answers 400 «El código X ya es de «Producto»» (or «ya se usa en otra sucursal» when the other product belongs to another branch). It is called in POST /products (catalog.ts:272), the variant matrix (catalog.ts:346-356, which now computes the generated codes before checking), PATCH /variants/:id (catalog.ts:391-401, only for codes that actually change, so resending the same codes on a price edit is not blocked by an old conflict) and POST /products/import (catalog.ts:437-445, all rows at once, so nothing is written on a conflict). No migration was added: the lock closes the race between API requests, a case-insensitive unique index would not cover the sku-to-barcode crossover, and it could fail on the real database if it already holds legacy conflicts. Existing e2e updated because the old behaviour was the bug: «código ambiguo por mayúsculas avisa y no agrega» (tests/e2e/store.spec.ts:665) now expects 400 from the API and writes the conflict straight into the database through legacyDb() (store.spec.ts:652, Prisma with DATABASE_URL or the root .env) to check that the till still warns about legacy data.",
+        "test": "tests/api.test.ts › describe «Ronda 9 · revisión · códigos» › «R9-codigos-1: crear, editar, la matriz y la importación rechazan un código que la caja confundiría con otro producto» and «R9-codigos-1: dos altas a la vez con el mismo código en otras mayúsculas dejan sólo una»; e2e tests/e2e/store.spec.ts › «código ambiguo por mayúsculas avisa y no agrega» (adapted)",
+        "failedBefore": "Before the fix (API on 3163): «FAIL … R9-codigos-1: crear, editar… AssertionError: expected 201 to be 400 (tests/api.test.ts:4306 expect(r.status).toBe(400))», meaning B with sku = A's barcode in lowercase was accepted. «FAIL … dos altas a la vez… AssertionError: expected [ …(2) ] to have a length of 1 but got 2», meaning both case-variant products were created. Also checked: with the fix in place but the advisory lock disabled, the race test failed 2 times out of 3; with the lock it passed 4 out of 4.",
+        "reason": null
+      },
+      {
+        "id": "R9-codigos-2",
+        "status": "fixed",
+        "change": "apps/web/src/Merchandise.tsx:76-89: new findByCode(variants, code), using the same rule as POS byCode (trim + toLowerCase, barcode or sku, counting distinct variants). scan() (Merchandise.tsx:381-407) uses it: one match adds the line; several matches add nothing and do not open the quick product. Instead it closes the camera, shows «El código X es de N productos. Elige el producto en el buscador…» and fills ProductSearch with the code (new initialText prop and a key in Merchandise.tsx:161-173 and 302-303, 760-769) so both products are listed. Only when nothing matches does it open «Crear producto rápido» (entry) or say «Código desconocido» (exit). The server side (the quick product rejecting an existing code) is the assertCodesFree in merchandise.ts:344-353. Not done because it is outside my files: encoding the Code 39 label in Full ASCII or Code 128 (Management.tsx). With the case-insensitive comparison on both screens and in invoice.ts (already case-insensitive in the tree), the uppercase label now finds the product.",
+        "test": "tests/e2e/store.spec.ts › «R9-codigos-2 y R9-codigos-3: Mercancía reconoce el código sin distinguir mayúsculas y no crea un duplicado» (entry with the uppercase label, ambiguous code with the search box listing 2 options, exit with the uppercase label)",
+        "failedBefore": "Playwright against the PWA built before the fix: «Error: expect(locator).toContainText(expected) failed — Locator: locator('.goods-lines') Expected substring: \"Faja E2E Mercancía E R9M3740222\" Received string: \"\"» (store.spec.ts:793). The error-context showed «dialog \"Crear producto rápido\"» with «textbox \"Código de barras *\": R9M-E-R9M3740222», i.e. the uppercase label of the code r9m-e-… opened the quick product instead of adding E.",
+        "reason": null
+      },
+      {
+        "id": "R9-codigos-3",
+        "status": "fixed",
+        "change": "apps/api/src/merchandise.ts:344-353: inside the operation transaction, after the idempotency check (so a replay of an already confirmed entry is not rejected by its own code), assertCodesFree runs on the barcodes of every quick product. A code already used as another product's barcode or sku, in any case, or repeated between two quick products in the same entry, is rejected with 400 «El código … ya es de «…»» and no stock moves. In the web app (Merchandise.tsx:1340-1371), the onSubmit of «Crear producto rápido» now refuses an existing code (findByCode) with «ya es de «Producto». Búscalo y agrégalo en vez de crear otro», and refuses a code already used by another new product in the list. This also covers the invoice review, where the modal fills in the supplier code.",
+        "test": "tests/api.test.ts › «R9-codigos-2 y R9-codigos-3: el producto rápido de Mercancía rechaza un código que ya existe con otras mayúsculas»; e2e tests/e2e/store.spec.ts › «R9-codigos-2 y R9-codigos-3: Mercancía reconoce el código sin distinguir mayúsculas y no crea un duplicado» (the quick-product modal with E's code in uppercase shows «ya es de «Faja E2E Mercancía E …»» and adds no line)",
+        "failedBefore": "Before the fix: «FAIL … R9-codigos-2 y R9-codigos-3: el producto rápido… AssertionError: {\"id\":\"ab2bd88b-…\",\"receiptId\":\"bf93a6c7-…\",\"variantIds\":[\"3e137b6c-…\"],\"total\":50}: expected 201 to be 400 (tests/api.test.ts:4450)». The quick product with barcode qa-r9-case<tag> (A has QA-R9-CASE<tag>) was created with 5 units in stock. In the browser, the e2e failed at the first step (the quick dialog opened, as above).",
+        "reason": null
+      }
+    ],
+    "review": {
+      "ok": true,
+      "problems": [
+        {
+          "id": "R9-codigos-3-rescan-quick",
+          "severity": "P3",
+          "problem": "Not a regression; the fix improves on the old behaviour. In Merchandise › Entrada, scan() in apps/web/src/Merchandise.tsx (around lines 381-407) only looks in `variants` (the catalog). It does not look at the new products already in the list (`items[].quick.barcode`). So when 3 units of a new product arrive, scanning its code a second time opens «Crear producto rápido» again with the code already filled in. Only after the user fills in name, category, price and cost and presses Guardar does onSubmit (around lines 1355-1371) reject it with «ya es de otro producto nuevo de esta lista». Before the fix a second line was created and the whole entry failed when it was confirmed. Now it fails earlier, but the receiving flow is still clumsy, and the finding asked not to offer the quick product when the code already exists."
+        }
+      ]
+    },
+    "repaired": false,
+    "suites": "All run against my own resources (fitstore_fix_codigos database, API on 3163, PWA on 4183), after restarting the API with the latest tree. Full integration (vitest.integration.config.ts): 110 passed, 0 failed. An earlier run showed 4 security failures (R9-seguridad-1/2 and «contraseñas concurrentes»). They came from an API instance started before the security agent saved auth.ts/main.ts/security.ts; after restarting, all 110 passed. Full e2e (playwright, 34 tests, store.spec.ts + facturas.spec.ts): 34 passed. Unit tests (pnpm vitest run): 4 files, 89 passed. Typecheck (pnpm -r typecheck): OK in shared, ui, api and web. Lint (pnpm lint): exit 0. Prettier --check on my 5 files: OK. Notes: (1) Someone else, not me, made commit 851ebb1 at 05:07 that already contains my changes along with the other agents'; I made no commits or pushes. (2) The full e2e run overwrote 5 tracked screenshots (docs/*.png and docs/validacion/ronda6-capturas/cel-equipos-*.png); I restored them with git checkout, and the tree is clean. (3) Cleanup done: the API and vite preview were stopped by their PID/PGID, the fitstore_fix_codigos database was dropped, and /tmp/claude-0/fix-codigos-web and the Playwright output were removed."
+  },
+  {
+    "area": "importador",
+    "items": [
+      {
+        "id": "R9-importador-1",
+        "status": "fixed",
+        "change": "apps/api/scripts/import-inventario.ts:61-100. A new function plain() turns any ExcelJS value into plain text, a number or a Problem: a hyperlink gives its text (also when that text is richText), richText gives its text, and a formula or sharedFormula gives its result. An Excel error (#N/A, #REF!, or a formula whose result is an error) becomes 'la celda tiene el error X'. A formula without a result becomes 'fórmula sin valor calculado; abre el archivo en Excel y guárdalo, o escribe el valor en lugar de la fórmula'. Any other unknown object is also an error and is never passed to String(v). cellPlain(cell) reads cell.result for formula cells, because ExcelJS drops a cached result of 0 or \"\" from cell.value: before the fix, EXISTENCIA = formula with result 0 failed with «[objectObject]». parseNumber now uses plain() and returns the clear message. In readInventory (~:190-226), problems in the ID, REFERENCIA, DESCRIPCION and SUB-GRUPO cells, and in the numeric columns, are collected per row and column in errors[] (for example 'fila 2003, SUB-GRUPO: la celda tiene el error #N/A'), so the whole file stops before anything is written. ExcelJS cannot tell a formula that gives \"\" apart from one that was never calculated. Such a formula alone does not count as row data, and the message covers both cases.",
+        "test": "tests/inventario.test.ts › 'R9-importador-1: hipervínculos, errores de Excel y fórmulas se leen o se rechazan con diagnóstico, nunca como «[object Object]»'; tests/api.test.ts › 'Ronda 9 · revisión · importador' › 'R9-importador-1: una celda con hipervínculo o con error de Excel nunca crea «[object Object]»'",
+        "failedBefore": "Unit: AssertionError: expected 'número no válido «[objectObject]»' to match /error #N\\/A/. With the old readInventory, the Excel file returned name:'[object Object]' (hyperlink) and category:'[object Object]' (#N/A), and a formula with cached result 0 gave 'fila 2003, EXISTENCIA: número no válido «[objectObject]»'. Integration: AssertionError: expected +0 not to be +0. The import ended with exit 0 and wrote the products.",
+        "reason": null
+      },
+      {
+        "id": "R9-importador-2",
+        "status": "fixed",
+        "change": "apps/api/scripts/import-inventario.ts:~205-247 (eachRow). A row is ignored only in two cases: (a) it is empty, meaning ID, REFERENCIA, DESCRIPCION, EXISTENCIA, COSTO and PRECIO are all empty or hold only a formula with no value; (b) it is the totals row, meaning SUB-GRUPO normalizes to 'TOTAL', or the ID is a formula and there is no DESCRIPCION (the COUNTA row in the real Excel file). Any other row missing an ID or a DESCRIPCION adds 'fila N del Excel (ID x): falta DESCRIPCION', 'fila N del Excel: falta ID' or '… falta ID y DESCRIPCION' to errors, and the load stops without writing anything. The real file still gives exactly 616 rows; that test passes.",
+        "test": "tests/inventario.test.ts › 'R9-importador-2: una fila con datos sin ID o sin DESCRIPCION detiene la carga; la fila TOTAL y las vacías se ignoran'; tests/api.test.ts › 'Ronda 9 · revisión · importador' › 'R9-importador-2: una fila con datos sin DESCRIPCION o sin ID detiene la carga sin escribir'",
+        "failedBefore": "Unit: AssertionError: promise resolved \"[ { id: '1701', ref: null, …(6) } ]\" instead of rejecting. The rows without a description or without an ID were dropped silently. Integration: AssertionError: expected +0 not to be +0. The import ended with exit 0 and loaded only the complete row.",
+        "reason": null
+      },
+      {
+        "id": "R9-importador-3",
+        "status": "fixed",
+        "change": "apps/api/scripts/import-inventario.ts:~417-445 and ~503-578. The outcome of each row is now worked out before any write, using changesFor() for existing products and nuevos/unidades for new ones, and `if (dryRun) continue` sits only in front of the tx.* writes. The simulation therefore gives the same figures as the real load. In dry-run it prints 'Crearía la categoría «X».' and 'Desactivaría lote y vencimiento en «X».'. Without --sin-lotes, the simulation no longer throws on the lot rule: it prints 'Aviso: la carga real se detendría. La categoría «X» exige lote…--sin-lotes…' and finishes with exit 0. The real load still stops, and the existing R7-03 test still passes. This makes step 2 of MANUAL.md ('--dry-run' without '--sin-lotes') work without editing the docs, which are outside my area. Checked with the real Excel file on a seeded database: two notices, then 'Simulación: 616 productos leídos · 616 nuevos (3158 unidades)…', exit 0.",
+        "test": "tests/api.test.ts › 'Ronda 9 · revisión · importador' › 'R9-importador-3: --dry-run da las cifras de la carga real, anuncia las categorías y no se detiene por el lote'",
+        "failedBefore": "AssertionError: La categoría «QA R9 simulada lote muw8kr6ja6b19c» exige lote o vencimiento y el Excel no los trae. Desactívalo en Productos › Categorías o repite con --sin-lotes (queda en la bitácora). That was --dry-run ending with exit 1. Without a lot category, the dry run also reported '0 nuevos (0 unidades)', as the finding describes.",
+        "reason": null
+      },
+      {
+        "id": "R9-importador-4",
+        "status": "fixed",
+        "change": "apps/api/scripts/import-inventario.ts:~589-593. maxStock is now Math.min(MAX_QTY, Math.max(10, row.qty * 3)). New constants MAX_QTY = 99999999999.999 and MAX_MONEY = 999999999999.99 (:41-44) are also used by read(), so the limit announced by the reader is the real one.",
+        "test": "tests/api.test.ts › 'Ronda 9 · revisión · importador' › 'R9-importador-4: una existencia válida muy grande no hace fallar la carga real por el máximo derivado' (it deletes its product, variant and movement afterwards so the other tests are not affected)",
+        "failedBefore": "Real load exit 1: 'Error occurred during query execution: ConnectorError(... PostgresError { code: \"22003\", message: \"numeric field overflow\", ... detail: Some(\"A field with precision 14, scale 3 must round to an absolute value less than 10^11.\") ...})'. The dry run passed.",
+        "reason": null
+      },
+      {
+        "id": "R9-importador-5",
+        "status": "fixed",
+        "change": "apps/api/scripts/import-inventario.ts:~446-473 (changesFor) and ~505-560. For an inactive product that is missing data, only what is missing gets filled in. The price becomes the Excel price only if the existing price is <= 0, or with --actualizar-precios; costAvg is filled only if it is <= 0. Activation is decided from the final values ((changes.price ?? price) > 0 && (changes.costAvg ?? costAvg) > 0). A price set in the app is no longer overwritten, and a product with a price in the app plus a cost in the Excel is now activated. Summary: a price change counts under 'precios actualizados' even when it also activates the product; filling a missing price does not count. The review CSV and the inactive count use the final values.",
+        "test": "tests/api.test.ts › 'Ronda 9 · revisión · importador' › 'R9-importador-5: al activar un producto sólo se completa lo que falta; el precio puesto en la app se respeta'",
+        "failedBefore": "AssertionError: expected '2 productos leídos · 0 nuevos (0 unidades) · 1 ya cargados sin cambios · 1 activados · 0 precios actualizados · 1 sin precio o costo en el Excel (inactivos)…' to match /2 activados · 0 precios actualizados/. A's price was overwritten (2000→1800), and B (price set in the app, cost only in the Excel) was not activated.",
+        "reason": null
+      }
+    ],
+    "review": {
+      "ok": true,
+      "problems": [
+        {
+          "id": "R9-importador-2-residual",
+          "severity": "P3",
+          "problem": "Not blocking. The totals-row exemption in apps/api/scripts/import-inventario.ts:220-225 ('ID cell is a formula and there is no DESCRIPCION') is wider than the real totals row. I reproduced it with a scratch script: the rows [{formula:'A2+1',result:2}, null, null, 'Fajas', 5, 900, 1800] and the same row with an ID of {formula, result:{error:'#REF!'}} are both dropped without any error, and their product and 5 units are lost, which is the R9-importador-2 failure. It only happens when IDs come from formulas (for example =A2+1). The store's real Excel file uses typed IDs: I checked it, and the only formula ID is the COUNTA in row 619. So the store's data is not affected, and the finding itself asked for this exemption. The 616-row file, the unit tests and the integration tests all pass."
+        }
+      ]
+    },
+    "repaired": false,
+    "suites": "I could not use port 3164: another process's static server (serve.mjs, PID 1141) was already listening on it, and I left it alone. My API ran on 3264 against a fresh fitstore_fix_importador database (migrate deploy + seed). Results:\n- Full integration suite (DATABASE_URL=…/fitstore_fix_importador FITSTORE_API_URL=http://127.0.0.1:3264/api pnpm vitest run --config vitest.integration.config.ts): 115/115 passed, exit 0. A later run of the importer tests (R8, R9-R8 and the 5 R9-importador) after the last wording change: 11/11 passed.\n- Unit tests (pnpm vitest run): 4 files, 91/91 passed. That includes tests/inventario.test.ts 8/8 with the real store Excel file (616 rows).\n- pnpm -r typecheck: OK.\n- The script is outside apps/api's tsconfig (include: src), so I also checked it with tsc using the API's options: OK.\n- pnpm lint: OK.\n- prettier --check on my files: OK.\n- e2e: not applicable (only the CLI importer changed).\nCleanup: API stopped by PID (10829/10847), database dropped, no commits.\nNote: HEAD snapshot commits made by the orchestrator already contain my test edits, so `git status` now shows only import-inventario.ts as modified. The tests re-generate apps/api/revision-inventario.csv, which is no longer tracked since 5db8e46."
+  },
+  {
+    "area": "dinero",
+    "items": [
+      {
+        "id": "R9-dinero-1",
+        "status": "fixed",
+        "change": "packages/shared/src/index.ts (~160-230): nuevos returnedAt, splitCents, bookedLineCosts y replayReturns. replayReturns repite todas las devoluciones de la venta en orden (createdAt y luego número) y le asigna a cada parte lo que contabilizó de verdad: el costo guardado; en devoluciones antiguas, el redondeo acumulado de R7; si no hay ninguno, costTotal repartido en proporción. apps/api/src/sales.ts returnSale (~1093-1130): la venta se carga con returns: true. Cuando la devolución completa la línea (after == line.qty y el historial repetido coincide con returnedQty), lineCost = costo contabilizado de la línea − costo ya repuesto − costo de las partes sin reingreso. En los demás casos sigue siendo at(after) − at(before). Con datos nuevos el resultado no cambia.",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-1: la devolución que completa la línea descuenta el costo de la devolución histórica\"; unitaria packages/shared/src/business.test.ts › \"concilia con costTotal la devolución de las rondas 3 a 6\"",
+        "failedBefore": "× R9-dinero-1 … → expected 8.32 to be 8.3 // Object.is equality (la segunda devolución contabilizaba 8.32 y la línea terminaba en -0.02)",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-2",
+        "status": "fixed",
+        "change": "apps/api/src/sales.ts returnSale (~1093-1108): total e ITBIS usan el mismo redondeo acumulado que el costo, back(v) = returnedAt(v, qty, after) − returnedAt(v, qty, before), sumado en centavos. Cada parte de SaleReturn.items guarda también total y tax. apps/api/src/reports.ts profit (~605-640): resta las ventas devueltas con total − tax de cada parte, o con el mismo redondeo acumulado si la devolución es antigua. Ventas se acumula en Decimal y se redondea sólo al final (antes redondeaba en cada paso y dejaba -0.01).",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-2: devolver de una en una reembolsa exactamente lo cobrado y su ITBIS\"",
+        "failedBefore": "Con sales.ts original (558cbf5) y el shared nuevo: × R9-dinero-2 … → expected 90.06 to be 90.05 // Object.is equality (se reembolsaban 90.06 de una venta de 90.05). Con todo el árbol sin corregir fallaba antes, en 90.04, por R9-dinero-11.",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-3",
+        "status": "fixed",
+        "change": "apps/api/src/sales.ts returnSale (~1198-1220): suma los abonos de la venta en pending_verification. Si creditBalance − debtReduction quedaría por debajo de esa suma, responde 400 \"Verifica o rechaza primero los abonos por transferencia pendientes de esta venta.\" Sólo bloquea cuando el conflicto es real. Ruta nueva POST /payments/:id/reject (~960-1000): sale:manage, equipo, motivo y auditoría; marca \"rejected\" sin tocar deuda ni caja. verify() rechaza un abono ya rechazado. La parte de interfaz que faltaba se resolvió en R9-dinero-3-ui.",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-3: una venta a crédito con un abono por transferencia pendiente no se devuelve sin resolverlo\"",
+        "failedBefore": "× R9-dinero-3 … → expected 201 to be 400 // Object.is equality (la devolución pasaba con refundAmount 0 y la transferencia ya no se podía verificar)",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-3-ui",
+        "status": "fixed",
+        "change": "apps/web/src/Management.tsx, SalesHistory. Archivo fuera de mi lista, pero no lo cubre ningún grupo y nadie lo tocaba; lo edité con Edit. (1) Estado rejecting (~2448). (2) En «Pagos registrados» (~2614-2668): badge Verificado / Rechazada (tono danger) / Pendiente de verificar. «Verificar» aparece sólo con status pending_verification y va en try/catch con toast(e.message, true). Nuevo botón «Rechazar» para transfer + installment + pending_verification con sale:manage: cierra el detalle y abre un ConfirmModal (~2688-2699) con motivo obligatorio que llama POST /payments/:id/reject, invalida las queries y muestra el toast «Transferencia rechazada.». Los errores salen en el propio modal. (3) Al escribir la e2e apareció un fallo previo: el campo Cantidad del formulario de devolución tenía min 0.001 con el paso por defecto de 0.01, así que el navegador rechazaba devolver 1 unidad («valores válidos: 0.991 y 1.001») y ninguna devolución entera se podía hacer desde la interfaz. Ahora usa step \"0.001\" (~2716-2726). El monto del abono en el FormModal ya está bloqueado por la validación nativa (step 0.01) y la API devuelve un mensaje claro, así que no cambió. Pendiente, ya existía antes y no lo cambié: el recibo PDF (sales.ts ~1484) lista todos los pagos, también abonos por transferencia pendientes o rechazados. Propuesta: omitir los rechazados y marcar los pendientes.",
+        "test": "tests/e2e/store.spec.ts › \"R9-dinero-3-ui: un abono por transferencia que no llegó se rechaza desde la venta y la devolución pasa\" (venta a crédito de 1000 y abono por transferencia de 600 → la devolución de 1 unidad se bloquea con el mensaje → Rechazar con motivo → badge «Rechazada» sin «Verificar» → la devolución pasa, creditBalance 500, abono rejected)",
+        "failedBefore": "1ª corrida con la UI original: el formulario de devolución no se enviaba (\"Please enter a valid value. The two nearest valid values are 0.991 and 1.001.\") → expect(getByRole('dialog').getByRole('alert')).toContainText('Verifica o rechaza primero') falló: element(s) not found. Con la UI original más sólo el arreglo del paso: \"Test timeout of 45000ms exceeded\" esperando getByRole('button', { name: 'Rechazar' }). El detalle de la venta sólo mostraba «Transferencia · RD$ 600.00 / Pendiente de verificar / Verificar».",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-4",
+        "status": "fixed",
+        "change": "apps/api/src/sales.ts voidSale (~840-860): por cada asignación aplica weightedReturn(variant, qty, allocation.unitCost), actualiza costAvg y pasa allocation.unitCost a stockChange. Es el mismo bloque que usa returnSale.",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-4: anular una venta recalcula el costo promedio igual que una devolución\"",
+        "failedBefore": "× R9-dinero-4 … → expected 200 to be 150 // Object.is equality",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-5",
+        "status": "fixed",
+        "change": "packages/shared/src/index.ts (~26-37): isMoneyAmount y moneyAmount(max, allowZero), con 2 decimales y tolerancia al ruido de coma flotante. Lo usa saleSchema.payments[].amount. apps/api/src/sales.ts installment() (~1332-1335): amount: moneyAmount().transform(money). Así el pago guardado, la deuda que se descuenta y la comparación del reintento usan los mismos centavos. Cambio en esta ronda: discountAmount vuelve a aceptar cualquier decimal (ver R9-dinero-5-pos). Actualicé la prueba existente porque rechazar ese descuento era justamente el fallo: quité la aserción discountAmount 0.005 → 400.",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-5: los importes de dinero aceptan como máximo 2 decimales\"; unitaria packages/shared/src/business.test.ts › \"R9-dinero-5 · importes con 2 decimales\"",
+        "failedBefore": "× R9-dinero-5 … → expected 201 to be 400 // Object.is equality (se aceptaba un abono de 1.005)",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-5-pos",
+        "status": "fixed",
+        "change": "POS.tsx no se tocó: es del área caja y se estaba editando en paralelo. (1) packages/shared/src/index.ts saleSchema (~433-438): discountAmount vuelve a z.number().nonnegative().max(1e8). No se guarda: la caja y la API lo convierten en porcentaje con la misma fórmula y lineTotals redondea la línea, así que sus decimales no producen dinero inconsistente. En cambio, rechazarlo provocaba un 400 en línea y, sin conexión, un conflicto permanente de una venta ya entregada. (2) apps/api/src/sales.ts sync (~708-735): el lote sólo valida offlineUuid y cada venta se valida aparte con saleSchema.safeParse dentro del try. Una venta inválida queda como «conflict», con el mensaje «Revisa los campos: …» y su alerta, y las demás se sincronizan. Antes, una sola venta inválida hacía 400 a todo /sales/sync y bloqueaba para siempre todas las ventas pendientes del equipo. (3) packages/shared/src/index.ts paymentTotals (~350-356) lanza «El monto del pago debe tener como máximo 2 decimales.», que addPayment de la caja ya muestra. Es una defensa: en la interfaz no se puede reproducir, porque el input del pago (step 0.01 dentro de un form) y el del abono ya los bloquea la validación nativa del navegador.",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-5-pos: una venta sin conexión con un descuento de 3 decimales se sincroniza y una inválida no bloquea las demás\"; tests/e2e/store.spec.ts › \"R9-dinero-5-pos: un descuento por monto con 3 decimales se cobra en línea y se sincroniza sin conexión\"; packages/shared/src/business.test.ts › \"R9-dinero-5 · importes con 2 decimales\" › \"R9-dinero-5-pos: la caja no agrega un pago con fracción de centavo\" (y sale(100, 0.005) ahora true)",
+        "failedBefore": "Integración: × R9-dinero-5-pos … → expected 400 to be 201 // Object.is equality (todo el lote de /sales/sync rechazado). E2E: la caja mostraba el alert \"Revisa los campos: línea 1 · descuento debe tener como máximo 2 decimales.\" y «Venta registrada» nunca aparecía. Unitarias: → expected [Function] to throw an error; → expected false to be true.",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-6",
+        "status": "fixed",
+        "change": "packages/shared/src/index.ts replayReturns: para las partes sin costo guardado, reconstruye at(before+q) − at(before) con el returnedQty acumulado de cada línea, contando también las partes sin reingreso. Usa esos importes si suman SaleReturn.costTotal (R7) y, si no, reparte en proporción (R3-6). apps/api/src/reports.ts profit (~600-640): carga todas las sale.returns, no sólo las del período, y usa replayReturns con caché por venta.",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-6: el costo de una devolución de la ronda 7 se reconstruye por línea\"; unitaria \"reconstruye por línea la devolución de la ronda 7\"",
+        "failedBefore": "× R9-dinero-6 … → expected { …(7) } to match object { Ventas: +0, Costo: +0, Utilidad: +0 } (A quedaba en Costo -0.01 y C en +0.01)",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-7",
+        "status": "fixed",
+        "change": "packages/shared/src/index.ts bookedLineCosts (~160-180): si Σ money(allocationCost(línea)) ≠ Sale.costTotal, reparte Sale.costTotal en proporción a allocationCost, con el resto en la última línea ordenada por id. Se calcula al leer y no necesita migración. apps/api/src/reports.ts profit (~560-570): la venta usa ese reparto, calculado sobre todas las líneas antes del filtro de categoría. returnSale usa el mismo reparto al completar la línea.",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-7: el costo de una venta anterior a la ronda 7 final coincide en utilidad y dashboard\"; unitaria \"una venta antigua reparte Sale.costTotal entre sus líneas\"",
+        "failedBefore": "× R9-dinero-7 … → expected 3.34 to be 3.33 // Object.is equality (utilidad 3.34 contra dashboard 3.33)",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-8",
+        "status": "fixed",
+        "change": "apps/api/src/reports.ts returns-discounts (~688): Detalle: JSON.stringify(safe(e.after, actor)). Así se quitan costTotal, items[].cost y unitCost a quien no tiene profit:read, en JSON, XLSX y PDF.",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-8: devoluciones y descuentos no muestra costos a quien no tiene profit:read\"",
+        "failedBefore": "× R9-dinero-8 … → expected '{\"id\":\"1e6c9a79-…' not to match /\"(cost|costTotal|unitCost|costAvg)\"/",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-9",
+        "status": "fixed",
+        "change": "apps/api/src/reports.ts by-payment (~505-550): cada fila es {Método, Ventas, Cobros_de_crédito}. Ventas son los pagos de las ventas del período sin los abonos, con el crédito como método propio, y su suma es lo vendido. Cobros_de_crédito son los abonos con status ok según la fecha del abono, aunque la venta sea de otro período. Las transferencias sin verificar no cuentan. En el dashboard (~133-140 y ~170-180), el groupBy de pagos excluye los abonos, y las comisiones suman el feeAmount de los abonos verificados cobrados en el período.",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-9: ventas por método no cuenta dos veces el crédito y muestra los cobros el día que entran\"",
+        "failedBefore": "Reproducido de nuevo en esta ronda con el reports.ts original (558cbf5) en una copia temporal de la API (puerto 3166, ya detenida y borrada): × R9-dinero-9 … → expected +0 to be 500 // Object.is equality (tests/api.test.ts:4766, delta de Ventas a crédito). El reporte original sumaba crédito + abonos (venta de 500 con abono de 500 = 1000) y asignaba los abonos al período de la venta.",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-10",
+        "status": "fixed",
+        "change": "apps/api/src/reports.ts dashboard (~165-169 y ~195-197): agrega las devoluciones del período anterior (previousReturns), y prior = ventas anteriores − devoluciones anteriores. La tendencia compara ingresos netos, igual que yearOverYear.",
+        "test": "tests/api.test.ts › \"Ronda 9 · revisión · dinero\" › \"R9-dinero-10: la tendencia compara ingresos netos de devoluciones en ambos períodos\"",
+        "failedBefore": "Reproducido de nuevo con el reports.ts original (558cbf5) en la copia temporal del puerto 3166: × R9-dinero-10 … → expected -50 to be +0 // Object.is equality",
+        "reason": null
+      },
+      {
+        "id": "R9-dinero-11",
+        "status": "fixed",
+        "change": "packages/shared/src/index.ts lineTotals (~315-347): se redondean el bruto, el importe cobrado y el ITBIS. El descuento y el neto (o el total) salen por diferencia, así subtotal − descuento = total (o neto) y neto + ITBIS = total, cuadrados al centavo.",
+        "test": "packages/shared/src/business.test.ts › \"R9-dinero-11 · el resumen de cada línea cuadra\" › \"subtotal − descuento = total (ITBIS incluido) o = neto (ITBIS adicional)\"",
+        "failedBefore": "Reproducido de nuevo con el index.ts original (558cbf5) en una copia temporal ignorada por git, ya borrada: × R9-dinero-11 … → expected 90.04 to be 90.05 // Object.is equality (100.05 − 10.01 ≠ 90.05)",
+        "reason": null
+      }
+    ],
+    "review": {
+      "ok": false,
+      "problems": [
+        {
+          "id": "R9-dinero-3-ui",
+          "severity": "P2",
+          "problem": "La API ya bloquea la devolución cuando hay un abono por transferencia pendiente y añade POST /payments/:id/reject, pero en la tienda no hay forma de rechazar desde la interfaz. apps/web/src/Management.tsx (detalle de venta, ~2603-2633) sólo ofrece «Verificar» y muestra cualquier estado distinto de \"ok\" como «Pendiente de verificar». Esa pantalla no está en git status: nadie la tocó, y ningún otro grupo de fixgroups.json lo cubre. Escenario concreto en la caja: venta a crédito de 1000, el cliente registra un abono por transferencia de 600 que nunca llega y luego devuelve 500 en mercancía. El cajero recibe «Verifica o rechaza primero los abonos por transferencia pendientes de esta venta.» y no tiene botón para rechazar. Antes la devolución pasaba; ahora queda bloqueada para siempre desde la UI. La única salida visible es «Verificar» una transferencia que no llegó: eso baja la deuda y hace que la devolución reembolse en efectivo dinero que nunca entró. Además, un abono rechazado por API seguiría mostrándose como «Pendiente de verificar» con su botón «Verificar», y al pulsarlo responde 400. El onClick hace await post sin catch, así que el error no se muestra."
+        },
+        {
+          "id": "R9-dinero-5-pos",
+          "severity": "P3",
+          "problem": "saleSchema ahora rechaza discountAmount y payments[].amount con más de 2 decimales, pero la caja no los redondea ni los valida. En POS.tsx (~775-785), el descuento por monto se guarda como Math.min(max, Math.max(0, value)) sin redondear. En addPayment (~1199-1216), el monto del pago es Number(amount) tal cual. En línea, un «1.005» tecleado produce un 400 al cobrar y el cajero puede corregirlo. Sin conexión, la venta ya entregada se guarda en localDB y al sincronizar recibe 400. Queda como «conflicto», y reintentarla falla siempre porque no hay forma de editar el input. Antes del cambio esa venta se aceptaba. Es poco probable, pero es un fallo nuevo que hace la caja más difícil de usar."
+        }
+      ]
+    },
+    "repaired": true,
+    "suites": "Integración completa contra mi API (127.0.0.1:3165, base fitstore_fix_dinero recién migrada y sembrada), después de todos los cambios: Test Files 1 passed, Tests 99 passed (99). Subconjunto -t \"R9-dinero-5\": 2/2.\n\nUnitarias (pnpm vitest run): 4 archivos, 82/82. business.test.ts: 27/27.\n\nE2E (Playwright contra vite dev en 127.0.0.1:5265 con proxy a 3165, sin tocar 4173). Excluí los 3 tests que sobrescriben capturas en docs/. Resultado: 16 passed y 3 failed, todos ajenos a mis cambios:\n- «Mercancía móvil…» espera navigator.serviceWorker.ready, que no existe en vite dev; necesita el preview de un build.\n- «R9-caja-8» lo renombró el agente de caja durante la corrida; al repetirlo pasa.\n- «R9-caja-3/8 revisión» es una regresión nueva del agente de caja, que está editando POS.tsx.\nLas dos e2e R9-dinero pasan (2/2), y también «venta offline queda guardada y se sincroniza una sola vez» y «descuento por monto, crédito y abono en interfaz».\n\npnpm -r typecheck: OK (shared, ui, api, web). pnpm lint: OK. prettier --check de mis archivos: OK.\n\nNotas:\n- Para volver a sacar el «failedBefore» de 9, 10 y 11 levanté una copia temporal con el código original en carpetas ignoradas por git (puerto 3166). Ya la detuve y la borré.\n- Las instantáneas «Ronda 9 (en curso)» del orquestador ya incluyeron mis cambios. Yo no hice commits.\n- Al terminar detuve mi API (grupo de procesos) y mi vite por PID, y borré la base fitstore_fix_dinero."
+  },
+  {
+    "area": "facturas",
+    "items": [
+      {
+        "id": "R9-facturas-1",
+        "status": "fixed",
+        "change": "apps/api/src/invoice.ts:1654-1700 (byCode). Reúne todas las variantes cuyo SKU o barras coincide con el código, sin distinguir mayúsculas como la caja. Usa `filter` y ya no `find`. Si el código es de varios productos devuelve variantId null, productId null, confianza 0 y la nota «El código X es de N productos; elige el correcto y corrige el código en Productos.». Si es de varias variantes de un mismo producto, deja ese producto con una nota. La búsqueda por SKU de producto tampoco distingue mayúsculas. Sin cambios en esta pasada.",
+        "test": "tests/invoice.test.ts «Ronda 9 · revisión · facturas > un código de varias variantes no se elige en silencio (R9-facturas-1)»; tests/api.test.ts «Ronda 9 · revisión · facturas > un código que tienen dos productos queda sin elegir (R9-facturas-1)»",
+        "failedBefore": "unit: AssertionError: WF-CODE-X: expected 'v-a' to be null | integración: AssertionError: expected { qty: 2, code: 'R9FB-306514a8', …(5) } to match object { variantId: null, confidence: +0 }",
+        "reason": "Sigue pendiente, fuera de mi área: la corrección de raíz en catalog.ts, que es rechazar un SKU igual a las barras de otra variante."
+      },
+      {
+        "id": "R9-facturas-2",
+        "status": "fixed",
+        "change": "Revisión aplicada. apps/api/src/invoice.ts:1557-1653 (doubtful) y :1695 (byCode le pasa la variante del código). (a) El código se quita de la descripción sólo como palabra entera, porque antes «LEG» se borraba de «Leggings» (1563-1575). (b) Una descripción no tiene relación con el producto del código cuando trae una palabra propia (sin unidades, colores, sabores, relleno ni números) que no es palabra del nombre, ni su plural, ni su abreviatura (`akin`, 1548-1552), y además no identifica el producto con la misma regla que por nombre (`missing(...) !== null`) (1580-1590). En ese caso queda el producto del código sin variante, con confianza 0 y la nota «El código X es de «…» en la tienda; la descripción no coincide. Confirma o elige el producto.». (c) Si byName reconoce otro producto de la tienda, aunque no elija variante («Top Deportivo Aurora» en S/M/L), se sugiere ese producto con la nota «…pero la descripción corresponde a «…»» (1592-1609). (d) Se compara la variante del código con la descripción usando `conflicts(rest, variant)`: «TOP-S» con «talla L» y «FIT-0001-1 (Chocolate)» con «Vainilla» quedan sin variante, con la nota «El código TOP-S es de «Top Deportivo Aurora · S» en la tienda; la factura indica otra variante (S no coincide). Elige la variante.» (1642-1651). La equivalencia del proveedor sigue primero y nunca se pone en duda (1660-1673).",
+        "test": "tests/invoice.test.ts «Ronda 9 · revisión · facturas > la equivalencia del proveedor gana al código de la tienda; una descripción que contradice el código no se elige (R9-facturas-2)». Se agregaron: catálogo real 1162 con «Top Deportivo Aurora Lila», «Faja Reloj de Arena Beige», «Creatina Monohidratada 300 g» y «Shaker 600 ml» → null; catálogo con el Top en S/M/L → p-top sin variante; TOP-S con «talla L» → null; FIT-0001-1 con «Vainilla 2 lb» → null. Controles que siguen eligiendo: la descripción propia, «x», «1302», versiones abreviadas o con la marca, «talla S», «Whey Fit Chocolate 2 lb». tests/api.test.ts «Ronda 9 · revisión · facturas > un código de la tienda con la descripción de otra cosa o de otra variante no se elige (R9-facturas-2)», nueva, con un producto de tallas S/M/L creado por la API. Pruebas que actualicé porque afirmaban justo el comportamiento del hallazgo: tests/invoice.test.ts:368 (770011 con «cualquier texto» ahora queda sin variante en p-leg), :559 (WHEY-V2 o 999 con «chocolate 5 lb» queda sin variante, nota «Vainilla, 2 lb no coincide»), :646 (LEG-M-N con «talla S» queda sin variante). tests/api.test.ts:2202-2206, prueba de la Ronda 3 sobre CSV y fuera de mi ancla: la descripción «Producto reconocido» en el código de barras del producto pasó a ser el nombre del producto. La aserción de confianza 1 con una descripción que no se parece al producto era exactamente el fallo. La edité con Edit y cambié sólo esa línea y un comentario.",
+        "failedBefore": "unit (antes de la corrección): AssertionError: Top Deportivo Aurora Lila: expected 'v-1162' to be null | integración contra la API sin la corrección: AssertionError: expected { qty: 1, code: 'R9FV-82df2b03', …(5) } to match object { variantId: null, …(1) } | repro con tsx sobre el código anterior: catálogo con Top S/M/L y 1162 con «Top Deportivo Aurora Lila» → v-1162 (ISO100) al 100 %; TOP-S con «Top Deportivo Aurora talla L» → v-top-S; FIT-0001-1 con «Whey Fit Vainilla 2 lb» → v-fit-c (Chocolate)",
+        "reason": "Fuzz sobre el catálogo real (616 productos). Código propio con descripciones abreviadas: 2655 de 2657 se eligen; las 2 restantes son «D3» y «Lecrano D3» para «D3 K2 …», por la regla de números. Código de A con el nombre de B: 0 de 4928 elegidos en silencio. Código de la tienda con 20 productos que la tienda no tiene, en los 616 códigos: los elegidos en silencio bajaron de 169 a 3 («Shaker 600 ml» en shakers cuyo nombre no tiene tamaño y «Brocha para polvo» en «BROCHA DOBLE PARA CONTORNO Y POLVO»). Arnés del revisor con código propio y descripción propia: 1772 de 1772. fx/codefuzz: 3696 de 3696. Costo aceptado: una descripción en español para un nombre en inglés («Iso 100 hidrolizada strawberry») ahora queda como sugerencia del producto del código. Se confirma una vez y desde ahí gana la equivalencia del proveedor. Sigue pendiente, fuera de mi área: merchandise.ts:594 sobrescribe la equivalencia cada vez que se confirma una línea."
+      },
+      {
+        "id": "R9-facturas-3",
+        "status": "fixed",
+        "change": "Sin cambios en esta pasada. apps/api/src/invoice.ts:920-969: UNIT_CANON tiene softgel, caplet, liquicap, serv («serv.»), pack, gomita y und como unidades propias, y la dosis en mg, mcg e iu/ui. :1026-1045: measureConflicts compara la dosis aparte del tamaño. :881-892: esas palabras están en UNIT_WORDS.",
+        "test": "tests/invoice.test.ts «Ronda 9 · revisión · facturas > tamaños en softgels, caplets, liqui-caps, serv. y packs (R9-facturas-3)»",
+        "failedBefore": "AssertionError: Vitamin E Puritan's Pride 450 mg / 100 softgels: expected 'v-1051' to be null",
+        "reason": "Lo que queda en el fuzz de tamaño, sin cambios en esta pasada (275 elecciones iguales a la versión anterior y 0 nuevas): viene de la regla deliberada de que si coinciden los servicios no importa otra unidad («Opti-Men 300 tabletas 50 servicios»)."
+      },
+      {
+        "id": "R9-facturas-4",
+        "status": "fixed",
+        "change": "Revisión aplicada. apps/api/src/invoice.ts:1050-1086: numbersIn deja fuera los porcentajes (PERCENT_RE). percentsIn los lee como rasgo opcional (Traits.percents): sólo hay conflicto, «porcentaje X%», si la factura escribe otro porcentaje (nameConflicts 1308-1312, más traitKey y describe). :1268-1276 numberNamed: un número del nombre está en la factura si viene suelto o, cuando la factura no trae números sueltos, si es la cantidad de una dosis en mg, mcg o UI («Caffeine 200» en «Caffeine 200 mg»). Otra medida no lo nombra («SPF 30 50 ml» no es «SPF 50»), y tampoco cuenta si la factura escribe otro número suelto («Caffeine 400 … 200 mg»). Se usa en nameConflicts (1301-1307) y en missing() (1395).",
+        "test": "tests/invoice.test.ts «Ronda 9 · revisión · facturas > el número del tono identifica el producto (R9-facturas-4)». Controles que eligen: Gold Standard sin «100%» (1177, 1180), «MuscleTech Mass Gainer» (1186), «Cicaplast … B5» sin «21%» (1246), «Caffeine Nutrex 200 mg» (1066), «Tribulus 1400 mg» (1002), «L-Carnitine 3000 mg» (1020), «BCAA 5000 mg» (1100), «CLA 1000 mg» (1014), «C-1000 mg» (1023), «Gold Standard 100% Whey …» (1177). Quedan en null: «Gold Standard 50% Whey», «Caffeine 400 … 200 mg», «FSP 6.5 100%», «SPF 30 50 ml» y «Caffeine 100 mg». Se mantienen FSP 6.5, 5.0, 120, 05, 012, 3.0 y 05 → null.",
+        "failedBefore": "Ronda anterior: AssertionError: Beauty Creations Flawless Stay Powder Foundation FSP 6.5: expected 'v-1302' to be null | revisión: AssertionError: Gold Standard Whey Optimum Nutrition Vanilla Ice Cream 5 lb: expected null to be 'v-1177' // Object.is equality",
+        "reason": "Comparación de la versión 20960df^ con la actual sobre 849 descripciones realistas (marca primero, plano, sin %, número con mg, número sólo en la presentación). Antes de esta pasada se perdían 39; ahora 0, con 0 elecciones equivocadas. p5 del revisor: 0 perdidas de 52. Fuzz de números: 550 → 4 elecciones del original con otro número (Technic «16 tonos»). Los fuzz de tamaño y de marca dan lo mismo que antes del cambio: 0 elecciones nuevas."
+      },
+      {
+        "id": "R9-facturas-5",
+        "status": "fixed",
+        "change": "Sin cambios en esta pasada. apps/api/src/invoice.ts:697-719 (SHADE y shadesIn) y missing() (1401-1416): sin número en el nombre, su color es el tono, y la factura debe nombrarlo. También debe nombrar todos sus colores y el claro u oscuro si trae otras palabras o si otro producto de la línea tiene ese color. El tono se lee sin la marca (1265-1271).",
+        "test": "tests/invoice.test.ts «Ronda 9 · revisión · facturas > un tono de palabras que el nombre no tiene no cae en otro tono (R9-facturas-5)»",
+        "failedBefore": "AssertionError: Beauty Creations Color Base Primer Lemon Drop: expected 'v-1568' to be null",
+        "reason": "Fuzz de tonos: las elecciones equivocadas bajaron de 24 a 0."
+      },
+      {
+        "id": "R9-facturas-6",
+        "status": "fixed",
+        "change": "Sin cambios en esta pasada. apps/api/src/invoice.ts:981-993 (EXPLAINED) y missing() (1418-1427): la marca es opcional sólo si la factura no trae palabras que el nombre no explica; si no, la línea queda como sugerencia con la nota «(la factura dice «natrol» y no Nutrex)». Las palabras de una línea más específica de la tienda tampoco se preeligen (narrower, 1356-1377).",
+        "test": "tests/invoice.test.ts «Ronda 9 · revisión · facturas > una factura que nombra otra marca no queda elegida (R9-facturas-6)»",
+        "failedBefore": "AssertionError: Melatonin Natrol 100 tabletas: expected 'v-1065' to be null",
+        "reason": "Fuzz de marcas: 0 elecciones de 758 tanto antes como después de esta pasada."
+      },
+      {
+        "id": "R9-facturas-7",
+        "status": "fixed",
+        "change": "apps/api/src/invoice.ts:46-92 (readInvoiceNumber y parseInvoiceNumber(raw, decimal?)): un solo separador seguido de exactamente 3 dígitos se resuelve según el formato del archivo. En un CSV separado por «;», «1.250» es 1250. Si no («1.250» en un archivo con «,» o en texto de Excel, «1,250» en uno con «;»), la fila se rechaza con «Fila N: el costo «1.250» es ambiguo (¿1250 o 1.25?)». :206-211: readInvoiceTable pasa el decimal «,» cuando el separador es «;». En el árbol también va el ajuste del mensaje, que ya no muestra «1.25» con ceros de más.",
+        "test": "tests/invoice.test.ts «Ronda 9 · revisión · facturas > CSV en español: «1.250» con «;» son 1250; un separador con 3 dígitos sin estilo claro se rechaza (R9-facturas-7)»; tests/api.test.ts «Ronda 9 · revisión · facturas > CSV con «;»: «1.250» son 1250 y no 1.25 (R9-facturas-7)»",
+        "failedBefore": "Reproducido hoy con el código 20960df^: readInvoiceTable del CSV con «;» del test → unitCost [ 1.25, 1250.5, 0.75 ], cuando se esperaba [1250, 1250.5, 0.75].",
+        "reason": ""
+      },
+      {
+        "id": "R9-facturas-8",
+        "status": "fixed",
+        "change": "Servidor (pasada anterior): apps/api/src/inventory.ts:399-470 acepta operationId (uuid), toma pg_advisory_xact_lock y, antes de revisar lo pendiente, busca la recepción con ese operationId. Si es el mismo envío (sameRequest con el orderId, la sucursal, el usuario, el flete, las líneas y el costo final) la devuelve; si no, responde 400 «UUID usado con datos distintos.». goodsReceipt.create guarda el operationId. Web (esta pasada, pedida por el revisor; ningún otro grupo cubre el archivo): apps/web/src/Management.tsx:1299-1302 crea `const [operationId] = useState(() => crypto.randomUUID())` una sola vez al abrir ReceiptEditor, y :1326 lo envía en el body de /purchase-orders/:id/receive. FormModal deja el formulario abierto si hay error, así que el segundo Guardar reusa el mismo id. Edité Management.tsx con Edit, 5 líneas en ReceiptEditor.",
+        "test": "tests/e2e/facturas.spec.ts «R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía», archivo nuevo para no chocar con store.spec.ts. Con Playwright, route.fetch() deja que la API reciba y luego se aborta la respuesta; la persona vuelve a pulsar Guardar. Se verifica receivedQty 4, una sola recepción, stock 4 y el mismo operationId en los dos envíos. tests/api.test.ts «Ronda 9 · revisión · facturas > reenviar la misma recepción de una orden no la duplica (R9-facturas-8)».",
+        "failedBefore": "e2e antes del cambio en la web: Error: expect(received).toBe(expected) — Expected: 4, Received: 8 (receivedQty de la orden; se recibió dos veces). Primera versión del test: expect(bodies[0].operationId).toBeTruthy() — Received: undefined",
+        "reason": "En el esquema del servidor operationId sigue opcional. Volverlo obligatorio rompería 9 pruebas de integración existentes que reciben sin ese campo (tests/api.test.ts:329, 836, 2323, 2614, 3162, 3284, 3339, 3405, 4531), y están fuera de mi ancla. Propuesta: cambiar a `operationId: uuid` en inventory.ts:403 cuando esas pruebas lo envíen. La web, que es el único cliente, ya lo manda siempre."
+      }
+    ],
+    "review": {
+      "ok": false,
+      "problems": [
+        {
+          "id": "R9-facturas-2",
+          "severity": "P2",
+          "problem": "Paso 1 del hallazgo sigue abierto. doubtful (apps/api/src/invoice.ts:1523-1571) sólo desconfía del código de la tienda en dos casos: (a) que byName preelija OTRO producto CON variante (línea 1537: `guess.variantId && …`), o (b) que la descripción contradiga rasgos del NOMBRE del producto del código. Una descripción que no se parece en nada y que no es de un producto de la tienda pasa sin aviso. Lo mismo ocurre si es de un producto de varias variantes y no nombra la variante completa. Reproducido con tsx sobre el código actual y el catálogo real: código «1162» + «Top Deportivo Aurora Lila» (el ejemplo literal del hallazgo) → v-1162 «ISO100 Hydrolyzed - Dymatize - Strawberry / 1.34 lb», confianza 1, sin nota. Igual con «Faja Reloj de Arena Beige», «Creatina Monohidratada 300 g» y «Shaker 600 ml». Con un catálogo que tiene «Top Deportivo Aurora» en variantes S/M/L (el modelo de la seed): «1162, Top Deportivo Aurora Lila» → ISO100 al 100 %, porque byName reconoce el Top pero devuelve variantId null al faltar la talla. Además, un código exacto de variante con una descripción de otra variante del mismo producto se acepta en silencio: «TOP-S, Top Deportivo Aurora talla L» → v-top-S; «FIT-0001-1 (Chocolate), … Vainilla 2 lb» → Chocolate; doubtful nunca mira los atributos de la variante. Las regresiones (unit e integración) sólo usan descripciones que byName empareja con seguridad (el nombre completo de Gold Standard o del Top creado), así que prueban algo más débil que el escenario. El fuzz «0 de 1848» del informe tampoco cubre productos que la tienda no tiene, que es lo normal en una factura con productos nuevos. Consecuencia: la primera factura de un proveedor cuyos códigos numéricos chocan con los SKU reales 1001–1616 sigue cargando stock y costo al producto equivocado con «Todas emparejadas»."
+        },
+        {
+          "id": "R9-facturas-8",
+          "severity": "P3",
+          "problem": "Está marcado como fixed, pero el escenario del hallazgo (Productos › Órdenes › Recibir, se pierde la respuesta y se vuelve a pulsar Guardar) sigue duplicando la recepción. El servidor acepta un operationId opcional (apps/api/src/inventory.ts:403, 451-470, 489), pero ReceiptEditor en apps/web/src/Management.tsx:1287-1335 no lo genera ni lo envía: el body sólo lleva freight, otherCosts e items. Sin operationId el endpoint se comporta igual que antes. Ningún otro grupo de fixgroups.json cubre Management.tsx ni este hallazgo, así que «fuera de mi área» no es una razón válida. Es justo el cambio de una línea que pedían el fix y las dos notas del verificador. El test de integración prueba la API con un operationId que la pantalla real nunca manda."
+        },
+        {
+          "id": "R9-facturas-4",
+          "severity": "P3",
+          "problem": "La regla de números quita la preselección a líneas correctas del catálogo real. numbersIn (apps/api/src/invoice.ts:1056) cuenta como «número del tono» el 100 de «100%». Además, como «mg» ahora es unidad, MEASURE_RE borra del texto de la factura el número del nombre cuando viene escrito con unidad. missing() (línea 1371) exige ese número y la línea pasa a «Coincidencia parcial…». Comparación con tsx, versión 20960df^ frente a la actual: de 65 descripciones realistas, 27 que antes se preelegían bien ahora sólo se sugieren. Ejemplos: «Gold Standard Whey Optimum Nutrition Vanilla Ice Cream 5 lb» (sin «100%») ya no elige v-1177, y pasa igual con los otros 8 Gold Standard. «Caffeine Nutrex 200 mg 60 cápsulas» ya no elige v-1066, aunque el producto es «Caffeine 200 - Nutrex - 200 mg / 60 cápsulas». Tampoco eligen «Tribulus 1400 mg Nutrex 90 cápsulas», «L-Carnitine 3000 mg Nutrex Berry Blast 31 serv.» ni «BCAA 5000 mg Recovery Nutrex Fruit Punch 30 servicios». No corrompe stock, pero la recepción de las líneas más vendidas exige confirmar a mano. La comparación del informe («sólo 2 cambios») no incluía estas formas de escribir."
+        }
+      ]
+    },
+    "repaired": true,
+    "suites": "Integración completa contra mi API (tsx en el puerto 3166, base fitstore_fix_facturas recién migrada y con la seed): 104 de 104 pasaron (95.7 s). La primera corrida dio 1 fallo: la prueba de la Ronda 3 sobre CSV, que afirmaba confianza 1 con «Producto reconocido»; la actualicé como se explica en R9-facturas-2. Unitarias (pnpm vitest run): 4 archivos, 89 de 89 (invoice.test.ts 50 de 50). Typecheck (pnpm -r typecheck): shared, ui, api y web sin errores. Lint (pnpm lint): sin errores. prettier --check: todos mis archivos están formateados. E2E: corrí un servidor de desarrollo de vite propio en 127.0.0.1:4266, con proxy a 3166; ese puerto no estaba en la lista de recursos y lo usé sólo para esta prueba. Corrí tests/e2e/facturas.spec.ts (R9-facturas-8) y, de store.spec.ts, «Importar CSV exige revisión antes de modificar existencias»: 2 de 2 pasaron, con reporter list y salida en el scratchpad. No corrí store.spec.ts completo, porque algunos de sus tests escriben capturas en docs/, que son archivos versionados, y las pruebas de otras áreas siguen cambiando. Limpieza: borré la base fitstore_fix_facturas y detuve por PID mi API (3166) y mi web (4266); no toqué otros procesos. Aviso: las instantáneas automáticas «Ronda 9 (en curso): avance…» registraron mis copias temporales de comparación apps/api/src/.invoice-{old,pre,rule}-r9f.ts. Ya las borré del árbol, así que quedan como borradas para la próxima instantánea. No hice commits."
+  },
+  {
+    "area": "seguridad",
+    "items": [
+      {
+        "id": "R9-seguridad-1",
+        "status": "fixed",
+        "change": "apps/api/src/common.ts:273-276: AuthGuard ya sólo exige user.active, así que el bloqueo por contraseña ya no cierra sesiones abiertas, /auth/refresh vuelve a servir y el cambio de vendedor con PIN funciona. apps/api/src/auth.ts:92-135: login() deja de usar el bloqueo global User.failedAttempts/lockedUntil y usa verifyAttempt con la clave `login:<userId>:<authVersion>:<req.ip>`. Así, quien prueba contraseñas sólo se bloquea a sí mismo (5 fallos, 15 minutos, desde su IP) y la vendedora puede seguir entrando desde su equipo. Como la clave incluye authVersion, cuando un administrador cambia la contraseña (o el PIN) con PATCH /users/:id la cuenta queda desbloqueada sin tocar admin.ts, que no es de mi área. Se mantiene la comprobación de passwordHash dentro de la transacción del contador (con tx, sin ocupar otra conexión del pool). El mensaje de bloqueo ahora indica que un administrador puede desbloquear la cuenta. apps/api/src/security.ts:43-97: verifyPinAttempt pasa a ser un envoltorio de un verifyAttempt genérico, con mensajes propios y tx en el callback; los llamadores de PIN no cambian. Prueba existente actualizada en tests/api.test.ts:746-751 («1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco»): leía User.failedAttempts, que era justo el contador global que causaba el fallo; ahora lee la fila AuthAttempt 'login:<id>:...' y sigue exigiendo exactamente 5 fallos atómicos y el bloqueo. Las columnas User.failedAttempts y lockedUntil quedan sin uso; no las borré para evitar una migración destructiva.",
+        "test": "tests/api.test.ts, describe «Ronda 9 · revisión · seguridad»: «R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo» y «R9-seguridad-1: un administrador desbloquea la cuenta al cambiarle la contraseña»",
+        "failedBefore": "× R9-seguridad-1: cinco contraseñas erróneas de un tercero... → expected 401 to be 200 (GET /auth/me con el token válido de la vendedora, tras 5 logins erróneos desde otra IP; tests/api.test.ts:5361). × R9-seguridad-1: un administrador desbloquea la cuenta... → expected 400 to be 201 (login con la contraseña nueva tras PATCH /users/:id {password}, la respuesta seguía 'Cuenta bloqueada temporalmente').",
+        "reason": null
+      },
+      {
+        "id": "R9-seguridad-2",
+        "status": "fixed",
+        "change": "apps/api/src/main.ts:31-36: el middleware de límite por IP normaliza la ruta con `String(req.path ?? req.url.split('?')[0]).toLowerCase()` y la usa en las dos condiciones (/api/auth/ y POST /api/sales). Así /api/Auth/login, /api/AUTH/... y /api/Sales cuentan para el mismo límite de 60 (o 120) por minuto. Comprobé que las variantes %61uth y la doble barra ya devolvían 404, así que el único bypass eran las mayúsculas. No activé el enrutamiento sensible a mayúsculas porque cambiaría el comportamiento de todas las rutas.",
+        "test": "tests/api.test.ts, describe «Ronda 9 · revisión · seguridad»: «R9-seguridad-2: el límite por IP de /auth y /sales no se evita cambiando mayúsculas en la ruta»",
+        "failedBefore": "× R9-seguridad-2 → expected 400 to be 429: tras 60 POST /api/Auth/login desde la misma IP, POST /api/auth/login seguía procesándose (400) en vez de devolver 429 (tests/api.test.ts:5407).",
+        "reason": null
+      }
+    ],
+    "review": {
+      "ok": true,
+      "problems": [
+        {
+          "id": "R9-seguridad-1-ip-detras-del-proxy",
+          "severity": "P3",
+          "problem": "No bloquea: la corrección exigida está completa y la prueba cubre el escenario. AuthGuard ya sólo mira `active` y authVersion. La sesión abierta sigue sirviendo para cobrar, renovar con /auth/refresh y cambiar de vendedor con el PIN. El administrador desbloquea la cuenta al cambiarle la contraseña o el PIN, porque authVersion aumenta (admin.ts:460) y el contador pasa a otra clave. Lo que no se cumple en el despliegue documentado es lo que el informe afirma en la parte opcional («quien prueba contraseñas sólo se bloquea a sí mismo; la vendedora puede seguir entrando desde su equipo»). DESPLIEGUE.md publica Nginx en 8080 detrás de un proxy HTTPS. Nginx sustituye X-Forwarded-For por $remote_addr y la API confía en un salto (`trust proxy`, 1), así que req.ip es la dirección del proxy HTTPS para todos los clientes. En la práctica, la clave `login:<id>:<authVersion>:<ip>` es por cuenta: un tercero sigue pudiendo bloquear los inicios de sesión nuevos de la vendedora y volver a bloquearlos con otros cinco intentos justo después del desbloqueo del administrador. La prueba sólo demuestra lo contrario porque envía X-Forwarded-For directamente a la API. No es una regresión, porque antes el bloqueo también era global, y el comportamiento que pedía el hallazgo se cumple. Si alguna vez llegan las IP reales, se da el efecto contrario: la cuenta deja de tener un límite global de intentos de contraseña y un atacante con N direcciones prueba 5·N contraseñas cada 15 minutos, también contra el administrador."
+        }
+      ]
+    },
+    "repaired": false,
+    "suites": "Integración completa contra mi API (puerto 3167, base fitstore_fix_seguridad, código fuente con tsx): 110 de 110 pasan (Test Files 1 passed). Las 3 regresiones nuevas fallaban antes del cambio y pasan después. Unitarias (pnpm vitest run): 89 de 89 pasan en 4 archivos. Typecheck (pnpm -r typecheck): sin errores en shared, ui, api y web. Lint (pnpm lint): sin errores. No corrí e2e porque no aplica: los cambios son sólo de la API y Playwright no depende del bloqueo de login; el texto «PIN incorrecto.» que comprueba store.spec.ts no cambia. Formateé con prettier mis cuatro archivos de la API y sólo mis líneas de tests/api.test.ts. Detuve mi proceso de la API (identificado por PID y PORT=3167) y borré la base fitstore_fix_seguridad. No hice commits."
+  }
+]

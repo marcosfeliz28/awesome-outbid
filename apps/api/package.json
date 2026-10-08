@@ -1,0 +1,43 @@
+{
+  "name": "@fitstore/api",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "start": "node dist/main.js",
+    "admin:create": "tsx scripts/create-admin.ts",
+    "inventory:import": "tsx scripts/import-inventario.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@fitstore/shared": "workspace:*",
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/platform-express": "^11.1.0",
+    "@nestjs/swagger": "^11.2.0",
+    "@prisma/client": "6.19.0",
+    "bcryptjs": "^3.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.0",
+    "exceljs": "^4.4.0",
+    "helmet": "^8.1.0",
+    "pdfkit": "^0.17.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/cookie-parser": "^1.4.0",
+    "@types/express": "^5.0.0",
+    "@types/pdfkit": "^0.17.0",
+    "prisma": "6.19.0",
+    "tsx": "^4.20.0",
+    "typescript": "~5.9.3"
+  }
+}

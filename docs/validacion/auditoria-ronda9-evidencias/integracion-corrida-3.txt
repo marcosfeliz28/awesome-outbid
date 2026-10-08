@@ -1,0 +1,10 @@
+
+ RUN  v3.2.7 /workspace/auditoria-fitstore-ronda9/fitstore-pos
+
+·········································································································································
+
+ Test Files  1 passed (1)
+      Tests  137 passed (137)
+   Start at  14:27:14
+   Duration  138.24s (transform 231ms, setup 0ms, collect 302ms, tests 137.73s, environment 0ms, prepare 60ms)
+

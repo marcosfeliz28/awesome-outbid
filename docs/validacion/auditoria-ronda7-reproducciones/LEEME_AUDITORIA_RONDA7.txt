@@ -1,0 +1,22 @@
+FitStore POS · Auditoría independiente ronda 7
+
+Este ZIP contiene informe, mensaje para Claude, evidencias y scripts externos. No es una versión corregida del software. La fuente de aplicación sigue siendo fitstore-pos-ronda7.zip, entregado por el usuario.
+
+Leer:
+- MENSAJE_PARA_CLAUDE_AUDITORIA_RONDA7.txt
+- fitstore-pos/docs/AUDITORIA_RONDA7.md
+- fitstore-pos/docs/validacion/auditoria-ronda7.json
+
+Resultado: tres casos R6 cerrados; cuatro hallazgos nuevos (2 P1, 2 P2). Tipos, lint y build pasan; unitarias 73 aprobadas/1 omitida, integración compilada 81/81, navegador 9/9. La prueba omitida exige el Excel real. Los libros incluidos son sintéticos de QA, incluso el catálogo de 616 nombres con stock 1/costo 10/precio 20. No confundirlos con las existencias ni los importes de la tienda.
+
+Para reproducir en un laboratorio:
+1. Extraer esta auditoría y el ZIP original en un mismo directorio, completando fitstore-pos/. Los scripts usan /workspace/auditoria-ronda7; adaptar esa ruta si cambia.
+2. Crear .env QA en fitstore-pos con DATABASE_URL de una base exclusiva, JWT_SECRET nuevo, SEED_DEMO_PASSWORD=FitStore-Demo-2026!, PORT=3017 y WEB_ORIGIN=http://127.0.0.1:4197. No se incluyen .env ni JWT/tokens privados.
+3. pnpm install --frozen-lockfile; pnpm db:generate; pnpm db:migrate; pnpm db:seed; pnpm check.
+4. Iniciar API compilada y preview. FITSTORE_API_URL=http://127.0.0.1:3017/api pnpm test:integration. Con Chromium instalado: FITSTORE_WEB_URL=http://127.0.0.1:4197 pnpm test:e2e.
+5. Pruebas externas: pnpm exec vitest run --config ../pruebas/vitest.config.ts. Los scripts kit-comprobar.mjs y legacy-comprobar.mjs comprueban correcciones y observaciones financieras.
+6. Importador: base aislada adicional fitstore_audit_r7_import, API 3020, preview 4199. Ejecutar importador-comprobar.mjs y luego ui-importador-comprobar.mjs. En una base limpia, el primero crea los fixtures. No ejecutar sobre datos de una tienda. Si se repite sobre la misma base, recrear o adaptar la categoría/producto QA; no son scripts de migración de producción.
+
+Las actualizaciones usan PostgreSQL local 5434. R3 original en /workspace/fitstore-pos, API temporal 3023; R7 actualizada 3022; base fitstore_audit_r7_upgrade3. Para el caso de R6 ya aplicada se utilizó un clon separado fitstore_audit_r7_upgrade6 con el historial Prisma original. Los JSON conservan antes/después y checksums. legacy-preparar.mjs genera localmente un token privado necesario para probar la sesión heredada; ese archivo se excluye del paquete.
+
+Las capturas reescritas por e2e se guardaron en auditoria-ronda7-capturas-oficiales/ y se restauraron los PNG originales. Los 270 archivos originales siguen idénticos. Los procesos temporales fueron detenidos. No se incluyen base de datos, dependencias, builds, CSV con datos de producción, .env o secretos. El manifiesto enumera los archivos del entregable y sus hashes.

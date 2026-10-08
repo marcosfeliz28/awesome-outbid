@@ -1,0 +1,185 @@
+{
+  "project": "FitStore POS",
+  "round": 8,
+  "auditDate": "2026-10-05",
+  "timezone": "America/La_Paz",
+  "verdict": "REQUIERE_CORRECCIONES",
+  "originalR7ReproductionsCorrected": [
+    "R7-01",
+    "R7-02",
+    "R7-03",
+    "R7-04"
+  ],
+  "previousFindingScope": {
+    "R7-01": "Caso exacto corregido; ambigüedad por mayúsculas pendiente R8-01",
+    "R7-02": "Formatos corregidos; rango máximo pendiente R8-03",
+    "R7-03": "Reglas preservadas y cambio explícito auditado; aborto mult categoría pendiente R8-03",
+    "R7-04": "Nuevas devoluciones corregidas; histórico pendiente R8-02"
+  },
+  "officialTests": {
+    "unit": {
+      "passed": 75,
+      "skipped": 1,
+      "registered": 76,
+      "skipReason": "Excel original de la tienda no suministrado"
+    },
+    "types": "passed",
+    "lint": "passed",
+    "build": "passed",
+    "integrationCompiled": {
+      "passed": 84,
+      "total": 84
+    },
+    "browser": {
+      "passed": 9,
+      "total": 9
+    }
+  },
+  "independentChecks": {
+    "importCatalogNames": 616,
+    "catalogStockTotal": 616,
+    "catalogFinancialValues": "Sólo QA: stock 1, costo 10, precio 20",
+    "catalogReloadStockUnchanged": true,
+    "codeExactConflictRejectedWithoutWrites": true,
+    "localizedNumbers": {
+      "stock": 1.5,
+      "cost": 1250.5,
+      "price": 2500.75
+    },
+    "categoryReloadStillRequiresLot": true,
+    "explicitCategoryConversionAudited": true,
+    "newReturnCostSequence": [
+      50.05,
+      15.02,
+      35.03,
+      0
+    ],
+    "upgradeR7toR8": {
+      "oldReturnCreatedByRealR7Api": true,
+      "migrations": 12,
+      "pendingMigrations": 0,
+      "bookedCostAfterFullReturn": 0,
+      "reportedCostAfterFullReturn": 0.01
+    },
+    "ownBrowserScreenshots": 3,
+    "browserJsErrors": 0
+  },
+  "openFindings": [
+    {
+      "id": "R8-01",
+      "priority": "P1",
+      "title": "Importador sensible a mayúsculas, caja insensible: código agrega otro producto",
+      "evidence": [
+        "auditoria-ronda8-importador.json",
+        "auditoria-ronda8-ui-importador.json"
+      ]
+    },
+    {
+      "id": "R8-02",
+      "priority": "P2",
+      "title": "Devolución histórica sin costo de línea deja residuo en actualización R7→R8",
+      "evidence": [
+        "auditoria-ronda8-legado-antes.json",
+        "auditoria-ronda8-legado-despues.json"
+      ],
+      "remainingCostAfterFullReturn": 0.01
+    },
+    {
+      "id": "R8-03",
+      "priority": "P2",
+      "title": "Importación rechazada deja categorías o filas previas guardadas",
+      "evidence": [
+        "auditoria-ronda8-importador.json"
+      ],
+      "cases": [
+        "Reglas de categoría en segunda fila",
+        "Precio fuera del rango Decimal(14,2) en segunda fila"
+      ]
+    }
+  ],
+  "integrity": {
+    "archive": "fitstore-pos-ronda8.zip",
+    "archiveBytes": 5561534,
+    "sha256": "b5a802fce919829f6e72774397e772bec236ddc6976009e82478abe4f145948c",
+    "originalFilesIdenticalAfterAudit": 327,
+    "restoredOriginalFiles": [
+      "fitstore-pos/docs/cobro-exitoso.png",
+      "fitstore-pos/docs/dashboard-mobile.png",
+      "fitstore-pos/docs/pos-mobile.png",
+      "fitstore-pos/docs/validacion/ronda6-capturas/cel-equipos-320.png",
+      "fitstore-pos/docs/validacion/ronda6-capturas/cel-equipos-390.png"
+    ],
+    "implementationModified": false
+  },
+  "implementationModified": false,
+  "cleanup": {
+    "auditRoots": [
+      55384,
+      55385,
+      55387,
+      55388,
+      56394
+    ],
+    "signalled": [
+      56401,
+      55455,
+      55450,
+      55441,
+      55424,
+      56394,
+      55388,
+      55387,
+      55385,
+      55384
+    ],
+    "auditPorts": [
+      {
+        "port": 3038,
+        "responding": false
+      },
+      {
+        "port": 3040,
+        "responding": false
+      },
+      {
+        "port": 3042,
+        "responding": false
+      },
+      {
+        "port": 3043,
+        "responding": false
+      },
+      {
+        "port": 4208,
+        "responding": false
+      },
+      {
+        "port": 4210,
+        "responding": false
+      }
+    ],
+    "originalServices": [
+      {
+        "pid": 2258,
+        "running": true
+      },
+      {
+        "pid": 5998,
+        "running": true
+      },
+      {
+        "pid": 6058,
+        "running": true
+      }
+    ]
+  },
+  "limits": [
+    "Sin Excel original: no se certifican costos/precios/existencias reales ni 3158 unidades",
+    "Anthropic simulado, sin llamada real al proveedor",
+    "PostgreSQL 18.4 local: no se certifica Compose/PostgreSQL 17",
+    "Sin hardware, carga de producción o múltiples sucursales",
+    "Suite completa sobre API compilada: no se repitió con tsx",
+    "No se repitieron todas las migraciones de R3/R6, sin cambios de migraciones en R8"
+  ],
+  "setupNote": "Prueba histórica: nueva sesión de QA requirió registrar terminal y trasladar caja; intentos iniciales 403/409 corregidos antes de la reproducción final, sin clasificación como defectos."
+}

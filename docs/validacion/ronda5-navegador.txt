@@ -1,0 +1,12 @@
+
+Running 7 tests using 1 worker
+
+  ✓  1 [chromium] › tests/e2e/store.spec.ts:64:5 › venta completa desde caja hasta pagos combinados y recibo (4.8s)
+  ✓  2 [chromium] › tests/e2e/store.spec.ts:120:5 › pantallas de gestión, tema oscuro y versión móvil (4.8s)
+  ✓  3 [chromium] › tests/e2e/store.spec.ts:164:5 › venta offline queda guardada y se sincroniza una sola vez (5.0s)
+  ✓  4 [chromium] › tests/e2e/store.spec.ts:203:5 › descuento por monto, crédito y abono en interfaz (5.6s)
+  ✓  5 [chromium] › tests/e2e/store.spec.ts:304:5 › Mercancía móvil: entrada offline, sincronización única y etiquetas (5.5s)
+  ✓  6 [chromium] › tests/e2e/store.spec.ts:409:5 › Importar CSV exige revisión antes de modificar existencias (2.9s)
+  ✓  7 [chromium] › tests/e2e/store.spec.ts:484:5 › equipo nuevo de vendedor espera aprobación y se aprueba con PIN de gerente (4.1s)
+
+  7 passed (35.6s)

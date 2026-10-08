@@ -1,0 +1,21 @@
+import {randomUUID} from 'node:crypto';
+import {writeFileSync} from 'node:fs';
+const base='http://127.0.0.1:3008/api',suffix='legacy-r6-'+Date.now().toString(36);
+async function req(path,data,token){const r=await fetch(base+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-Forwarded-For':'192.0.2.211',...(token?{Authorization:'Bearer '+token}:{})},...(data===undefined?{}:{body:JSON.stringify(data)})});const body=await r.json();if(!r.ok)throw new Error(path+' '+r.status+' '+JSON.stringify(body));return body;}
+const owner=await req('/auth/login',{email:'admin@fitstore.demo',password:'FitStore-Demo-2026!'}),token=owner.accessToken;
+const roles=await req('/roles',undefined,token),categories=await req('/categories',undefined,token);
+const warehouse=roles.find(r=>r.name==='warehouse');
+const users=[];
+for(const name of ['original','nuevo'])users.push(await req('/users',{name:'Auditoría migración '+name,email:suffix+'-'+name+'@example.test',password:'FitStore-QA-2026!',pin:'456789',roleId:warehouse.id},token));
+const auth=await req('/auth/login',{email:users[0].email,password:'FitStore-QA-2026!'});
+const terminalId=randomUUID();await req('/terminals/register',{id:terminalId,name:'Equipo anterior R3'},auth.accessToken);
+const product=await req('/products',{name:suffix,sku:suffix,categoryId:categories.find(c=>c.name==='Ropa deportiva').id,variants:[{sku:suffix+'-v',barcode:suffix+'-b',price:118,costAvg:10}]},token);
+const supplier=await req('/suppliers',{name:'Proveedor actualización '+suffix},token);
+const operation=await req('/merchandise/operations',{id:randomUUID(),direction:'entry',supplierId:supplier.id,freight:4,items:[{variantId:product.variants[0].id,qty:2,unitCost:15}]},auth.accessToken);
+const orphanLotId=randomUUID();await req('/merchandise/operations',{id:randomUUID(),direction:'entry',items:[{variantId:product.variants[0].id,qty:1,unitCost:1,lotId:orphanLotId}]},auth.accessToken);
+const oldOrder=await req('/purchase-orders',{supplierId:supplier.id,items:[{variantId:product.variants[0].id,qty:2,unitCost:25}]},token);
+const oldReceive=await req('/purchase-orders/'+oldOrder.id+'/receive',{items:[{itemId:oldOrder.items[0].id,qty:2}],freight:4,otherCosts:1},auth.accessToken);
+const legacy={oldOrder,oldReceive,users:users.map(u=>({id:u.id,email:u.email})),terminalId,productId:product.id,variantId:product.variants[0].id,supplierId:supplier.id,supplierName:supplier.name,operation,orphanLotId,source:'API y esquema originales R3 sobre base separada'};
+writeFileSync('/workspace/auditoria-ronda6/legacy-token.private.json',JSON.stringify({token:auth.accessToken}),{mode:0o600});
+writeFileSync('/workspace/auditoria-ronda6/legacy-fixture.json',JSON.stringify(legacy,null,2));
+console.log('Datos anteriores creados por la API R3: recepción '+operation.total+', equipo sin secreto y referencia huérfana.');

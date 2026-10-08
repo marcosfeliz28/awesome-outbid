@@ -1,0 +1,141 @@
+{
+  "generatedAt": "2026-10-06T15:36:11.546Z",
+  "api": "http://127.0.0.1:3109/api",
+  "scope": "Datos sintéticos de auditoría en una base aislada.",
+  "crossSessionReturn": {
+    "originalCashSessionId": "411409b6-d1da-4bbc-a48d-3634665eeb48",
+    "returnCashSessionId": "81ee92cc-a154-4b20-9f27-97ba8c0c39da",
+    "returnId": "ba6ca6a8-5a7d-42ac-bc9e-d7aa9c0ded47",
+    "originalProfitBeforeReturn": 60,
+    "originalProfitAfterReturn": 0,
+    "returnSessionProfit": 0,
+    "reproduced": true
+  },
+  "returnRetry": {
+    "submittedBody": {
+      "saleId": "199be1a3-d9c9-4922-84e8-a68202d0133a",
+      "cashSessionId": "81ee92cc-a154-4b20-9f27-97ba8c0c39da",
+      "reason": "Reenvío idéntico por respuesta perdida",
+      "refundMethod": "credit_note",
+      "items": [
+        {
+          "saleItemId": "0a34d8ca-ba91-4f3a-bfcd-2ace907910b6",
+          "qty": 1,
+          "restock": true
+        }
+      ]
+    },
+    "first": {
+      "id": "cdc309c4-40c2-4a01-ab67-ec57de476cc2",
+      "number": "NC-000134",
+      "total": 50
+    },
+    "second": {
+      "id": "c7df31a4-593e-42ac-8ab1-a0abc74e3000",
+      "number": "NC-000135",
+      "total": 50
+    },
+    "stockBefore": 2,
+    "stockAfter": 4,
+    "persistedReturns": 2,
+    "reproduced": true
+  },
+  "unitCostPrecision": {
+    "submittedUnitCost": 100.005,
+    "quantity": 2,
+    "orderStoredUnitCost": 100.01,
+    "orderTotal": 200.01,
+    "receiptTotal": 200.02,
+    "difference": 0.010000000000019327,
+    "reproduced": true
+  },
+  "damagedInvoiceTotal": {
+    "submittedInvoiceTotal": 400,
+    "apiResultTotal": 300,
+    "storedReceiptTotal": 300,
+    "storedDamagedCost": 100,
+    "invoiceTotalFieldExistsInReceipt": false,
+    "reproduced": true
+  },
+  "concurrentOrderReceipt": {
+    "attempts": [
+      {
+        "attempt": 1,
+        "statuses": [
+          500,
+          201
+        ],
+        "messages": [
+          "No se pudo completar la operación. Intenta de nuevo.",
+          null
+        ],
+        "receiptIds": [
+          "6cd5416a-528b-46ac-ba7a-3d845699f947"
+        ],
+        "receiptCount": 1
+      },
+      {
+        "attempt": 2,
+        "statuses": [
+          201,
+          500
+        ],
+        "messages": [
+          null,
+          "No se pudo completar la operación. Intenta de nuevo."
+        ],
+        "receiptIds": [
+          "beb709de-07cf-487b-bd5b-5b475a133ecc"
+        ],
+        "receiptCount": 1
+      },
+      {
+        "attempt": 3,
+        "statuses": [
+          201,
+          500
+        ],
+        "messages": [
+          null,
+          "No se pudo completar la operación. Intenta de nuevo."
+        ],
+        "receiptIds": [
+          "da54536c-91d3-4ce1-b1d3-17c724dcb45e"
+        ],
+        "receiptCount": 1
+      },
+      {
+        "attempt": 4,
+        "statuses": [
+          500,
+          201
+        ],
+        "messages": [
+          "No se pudo completar la operación. Intenta de nuevo.",
+          null
+        ],
+        "receiptIds": [
+          "35c52de6-ba15-418d-89d1-90204f7ef8a4"
+        ],
+        "receiptCount": 1
+      },
+      {
+        "attempt": 5,
+        "statuses": [
+          201,
+          500
+        ],
+        "messages": [
+          null,
+          "No se pudo completar la operación. Intenta de nuevo."
+        ],
+        "receiptIds": [
+          "60fe8bb7-c476-47df-8f29-fe249633c78c"
+        ],
+        "receiptCount": 1
+      }
+    ],
+    "anyServerError": true,
+    "everyAttemptPersistedOnce": true
+  }
+}

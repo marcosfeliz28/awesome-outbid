@@ -1,0 +1,281 @@
+{
+  "audit": "FitStore POS R7",
+  "uploadedSourceSha256": "def23a3aed35a86bd753bcdf69bcca442103d7bd8e749a2e120cbaf2a0f1d314",
+  "files": [
+    {
+      "path": "LEEME_AUDITORIA_RONDA7.txt",
+      "bytes": 2901,
+      "sha256": "723530260b682e960cb747495e39603b9bd4f5de3226c3fcd176bea47bdb7629"
+    },
+    {
+      "path": "MENSAJE_PARA_CLAUDE_AUDITORIA_RONDA7.txt",
+      "bytes": 3286,
+      "sha256": "defef5575bde52d18c8817dc382e9ee7c44e5ad7b9feabd6533d8fabb2516dc3"
+    },
+    {
+      "path": "api-listas.log",
+      "bytes": 48,
+      "sha256": "aa066cc0333a64b74c7fc7307b9d15345c798e56d7ed675dc0c759c4279eda90"
+    },
+    {
+      "path": "entregar.py",
+      "bytes": 6480,
+      "sha256": "9307f60dae908f84f3fad08277115c334cef387f37cb037076fb94ed7313d797"
+    },
+    {
+      "path": "esperar-api.mjs",
+      "bytes": 365,
+      "sha256": "5fbc5e3b06586a92776cf1a01fa285ef40e25de9bf3f5ceb24c71db60766dc06"
+    },
+    {
+      "path": "fitstore-pos/docs/AUDITORIA_RONDA7.md",
+      "bytes": 13908,
+      "sha256": "1266a1857561eccdbc108b3cda24ffd86e7bc36f8ec25fdc4443a094ba6cfcc1"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-capturas/cel-carrito-codigo-ambiguo.png",
+      "bytes": 44441,
+      "sha256": "0527facbac9d62afd99861b55645e23749e3698d232d197ff24c93ba3ce83a89"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-capturas/cel-catalogo-moira.png",
+      "bytes": 45179,
+      "sha256": "e5fb0abef714b5e6c249ef20797e77fba73d6f33ef1449c28422b830d086fc81"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-capturas/pc-codigo-selecciona-otro-producto.png",
+      "bytes": 180589,
+      "sha256": "b79f93e76ccf3501fe98f910b0542eda59e11a887fea02c7cefa04207d029764"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-capturas-oficiales/cobro-exitoso.png",
+      "bytes": 185915,
+      "sha256": "04cc3538b5b0c644f165a07d66d75ed6d954d83c416a8accae4460ec5b04d5ae"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-capturas-oficiales/dashboard-mobile.png",
+      "bytes": 164857,
+      "sha256": "d59e6e1b01929cbbee3f2c9a3db3a4288ad43c72c8cc75b568361bd4820a97bf"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-capturas-oficiales/pos-mobile.png",
+      "bytes": 66945,
+      "sha256": "364b82d119cea86f1a863bdf22a0833a68e408d7d15b3d1b3618ce359c895277"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-capturas-oficiales/validacion/ronda6-capturas/cel-equipos-320.png",
+      "bytes": 45135,
+      "sha256": "ca3972dfd46d0b7e4bd6e6a7f4d72ef5e0b5d165d786c67381932a08ccf4b798"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-capturas-oficiales/validacion/ronda6-capturas/cel-equipos-390.png",
+      "bytes": 50508,
+      "sha256": "0a4f80807114b4d67fd43a301170de5cdea1dbb227514ed98252f2166ef8706a"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-check.txt",
+      "bytes": 2354,
+      "sha256": "7ff46e47d0735b1add91ce3c26b9d2b2eb0a8233b89cf716ce44c012ca3806e1"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-dirigidas.json",
+      "bytes": 1625,
+      "sha256": "22fba29a28970aefddf5296eb49427e683bd1e212af06ef9a7f24630ed1ec1ff"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-dirigidas.txt",
+      "bytes": 276,
+      "sha256": "89d9e76a41608ba47fa1c79ebea527312783f0f062541e70f8a64088bfa46a67"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-importador/catalogo-616-datos-qa.xlsx",
+      "bytes": 35087,
+      "sha256": "05a159d3498d698117ce03f3386e632980b7dd212b0ba15c1f737d5d866bb12b"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-importador/codigo-ambiguo-base.xlsx",
+      "bytes": 6604,
+      "sha256": "dd000c4d90dfd526c658e07bee7c4f429757760a49eb1a7dcb2d7ffc2dd4dd5f"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-importador/numeros-espanol.xlsx",
+      "bytes": 6620,
+      "sha256": "12edea31a1b0a482044d2106920967008883d89d0492c5ff2ec353ca2131c504"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-importador/recarga-categoria-protegida.xlsx",
+      "bytes": 6604,
+      "sha256": "5ddfe9be786d4834bf8ed303b1e9faf7bff5b8b358301e6e1eb80d5b7cd87538"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-importador.json",
+      "bytes": 5905,
+      "sha256": "ec23b88e39be4a82b5de70496516aa7df145ee7a80b9ef6bd9884226ee55d873"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-integracion-compilada.txt",
+      "bytes": 3478,
+      "sha256": "a5a56775a43e735f086e98c22fdb387e2a3abe3955df37d8738a79ce63143604"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-integridad.json",
+      "bytes": 640,
+      "sha256": "db2cc3fd7173515c3d6238e42b135a24accb20ab2fdbedbce3a948034fddf6ee"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-kit.json",
+      "bytes": 1439,
+      "sha256": "4fd48dba45894dd19eed833d9f5362cad883c7fc6e518a65010412fa909e2b46"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-legado.json",
+      "bytes": 1308,
+      "sha256": "cd690f2a255bbfb52d8c1100b24e3bfe1b98abae2fe5b399bb5292de20961a34"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-limpieza.json",
+      "bytes": 400,
+      "sha256": "9e73ad56ad33bb5b5357b6b28e0178bda973b32cd3365f572c731d4cf25ebe2e"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-migracion-antes.json",
+      "bytes": 2194,
+      "sha256": "f98fa0f8ff3b2d121ffadb9ff126820df4301281772d7060c015201c03b2ddff"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-migracion-r3.json",
+      "bytes": 4433,
+      "sha256": "70b8ff9bcb25b4ff7fdc132f16d25aff89946dd49e029c110e56f47f4b5569fb"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-navegador.txt",
+      "bytes": 1376,
+      "sha256": "39f554801988e0c8baa0c195eea992f3b627ae2455c3e94763d711133a329fb7"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-ui-importador.json",
+      "bytes": 1545,
+      "sha256": "5ddab940586c23c5646f02598dd5124c29e8841575e5dfc15c981e2e5208f45b"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-upgrade6-antes.json",
+      "bytes": 2390,
+      "sha256": "a59396f5f7af139bd33dafe11fc452327e79b85de94090edebdede696e3169e0"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7-upgrade6-despues.json",
+      "bytes": 2542,
+      "sha256": "08eec6c39b83c1d76b6e3246ac3861c8f4b215fd282ac00dd9d1d4a8d9949e5f"
+    },
+    {
+      "path": "fitstore-pos/docs/validacion/auditoria-ronda7.json",
+      "bytes": 3501,
+      "sha256": "048db6ef31cc3222861605aa98cc1664eff72436d68c537be0002387b80e1fb9"
+    },
+    {
+      "path": "generar.log",
+      "bytes": 631,
+      "sha256": "520fdb1566c5931e3e094365777ca249e74933a6315ce5c2075b9ca672fa4305"
+    },
+    {
+      "path": "importador-comprobar.mjs",
+      "bytes": 7718,
+      "sha256": "6c9d3f596aea0a2927537324fbf09cd778b346826ff118b9fd08ab7200b93524"
+    },
+    {
+      "path": "kit-comprobar.mjs",
+      "bytes": 6021,
+      "sha256": "1c152cce176c9bdfd433bc48ebdfb3631db44db28f8b85019f70cb70444d0d5a"
+    },
+    {
+      "path": "legacy-antes.mjs",
+      "bytes": 1960,
+      "sha256": "0422c10c8b1c8549f4527e9f52799e8ae3abd3f98e426400dff787ecf0470a2d"
+    },
+    {
+      "path": "legacy-comprobar.mjs",
+      "bytes": 3241,
+      "sha256": "d511d5db9654528d00a3275a6e0ef294dd2f9d1ea7a55c26c2e4799ca38c26be"
+    },
+    {
+      "path": "legacy-fixture.json",
+      "bytes": 2161,
+      "sha256": "94f79d5802f17399d4d21b032e02d3f8619da0ca9aac4ddc82df64fa5b92e4dd"
+    },
+    {
+      "path": "legacy-preparar.mjs",
+      "bytes": 2886,
+      "sha256": "676196fa0a92dfaa1d929291cb148c4e176b56d634d0ef9f87a0a1d7024411d1"
+    },
+    {
+      "path": "limpiar.mjs",
+      "bytes": 1413,
+      "sha256": "572853134c08ee7886ffae657676055a575628236a9ba5860e17b05c3624d441"
+    },
+    {
+      "path": "migracion-comprobar.mjs",
+      "bytes": 1838,
+      "sha256": "4374aca00d6abc0f30ef385608637486d0ccdbd073e38e8b3caf7934b419b523"
+    },
+    {
+      "path": "migrar-upgrade3.log",
+      "bytes": 978,
+      "sha256": "d6563dd407a4e3b6a12758ff7a76f91f7b6277e5ccb7e8df1b3b593fc60a081d"
+    },
+    {
+      "path": "migrar-upgrade6.log",
+      "bytes": 660,
+      "sha256": "3ffcdc871ccc70026333ad981e7d2a4ab049a3ad55cb383f92b9f10ace3f4d56"
+    },
+    {
+      "path": "migrar.log",
+      "bytes": 1779,
+      "sha256": "4ce3576b8400ba9f9302a9c50a9b7f06d72b1d7630c0775670006de600a5d0e9"
+    },
+    {
+      "path": "preparar-db.mjs",
+      "bytes": 654,
+      "sha256": "51838c80cba7680c982b28b885165049599033bbb0240535c3676398c4eabed6"
+    },
+    {
+      "path": "preview.mjs",
+      "bytes": 595,
+      "sha256": "d20c91d58642ab93df3a60b83be13585e6de9e78e7cf6b2c1620cf8e6e59a290"
+    },
+    {
+      "path": "pruebas/independientes.test.ts",
+      "bytes": 5465,
+      "sha256": "d7fc7c1a4fda3705b99d8816b02ad9eac5a342356645c69d22304e5c89fd06ce"
+    },
+    {
+      "path": "pruebas/vitest.config.ts",
+      "bytes": 108,
+      "sha256": "aadbedfb60a13be3ff20de0bbbfda5d218eff40db17dbc63ffd0325b4737f4e8"
+    },
+    {
+      "path": "runtime.mjs",
+      "bytes": 1073,
+      "sha256": "c0893e62c45eb7d0d83904b6b3703f5bb24c68d7a463109b3dba641cda88c538"
+    },
+    {
+      "path": "source-baseline.json",
+      "bytes": 35099,
+      "sha256": "c4e5559f79f8da3710914859ada785f0a702070ad34568db8a91e9f3f167ba6e"
+    },
+    {
+      "path": "ui-importador-comprobar.mjs",
+      "bytes": 3687,
+      "sha256": "234ea8f03c7c37571733939ebadcd1f7a829ec7a8c760655ecb578eb8f65db5c"
+    },
+    {
+      "path": "upgrade6-antes.mjs",
+      "bytes": 1309,
+      "sha256": "7c8554f411d422c8304b153cd069a807c9eccd89214cfbed58123c4f7d535202"
+    },
+    {
+      "path": "upgrade6-despues.mjs",
+      "bytes": 1648,
+      "sha256": "306c2a45f4a3c15c8b45766c5d3cd8803d61c4c634cc41bf70af94f9742b0263"
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+FitStore POS · ronda 9 · Windows y zona horaria · fuentes y barra superior · DESPUÉS de la corrección
+
+================================================================
+== rebase-despues-ui.txt
+================================================================
+# DESPUÉS · rama local/r9w-ui rebasada sobre 4485a27 · 5799a43 · 2026-10-06T08:52:27Z
+# pnpm exec playwright test tests/e2e/fuentes.spec.ts
+
+Running 9 tests using 1 worker
+
+  ok 1 [chromium] › tests\e2e\fuentes.spec.ts:165:5 › sin Google Fonts: ninguna petición sale a fonts.googleapis.com ni a fonts.gstatic.com (7.6s)
+  ok 2 [chromium] › tests\e2e\fuentes.spec.ts:198:5 › fuentes disponibles sin red externa: Inter y Plus Jakarta Sans cargan con todos sus pesos (1.2s)
+  ok 3 [chromium] › tests\e2e\fuentes.spec.ts:275:5 › las fuentes quedan en la precarga del service worker y se ven sin conexión (1.4s)
+  ok 4 [chromium] › tests\e2e\fuentes.spec.ts:317:5 › el contenedor de escritorio sólo admite fuentes y estilos propios, y con esa política la aplicación carga sus fuentes (1.1s)
+  ok 5 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema claro) (7.7s)
+  ok 6 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema oscuro) (7.9s)
+  ok 7 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 390 px con las fuentes cargadas (tema claro) (7.5s)
+  ok 8 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 390 px con las fuentes cargadas (tema oscuro) (7.7s)
+  ok 9 [chromium] › tests\e2e\fuentes.spec.ts:399:5 › en celular el menú abierto queda por encima de la barra de Mercancía y todas sus opciones se pueden tocar (2.2s)
+
+  9 passed (45.2s)
+
+# pnpm exec playwright test tests/e2e/store.spec.ts -g "caben en 320"
+
+Running 1 test using 1 worker
+
+  ok 1 [chromium] › tests\e2e\store.spec.ts:515:5 › Configuración y Equipos caben en 320 y 390 px sin desplazamiento horizontal (3.1s)
+
+  1 passed (3.9s)
+
+# Tras la prueba de fallo (rebase-antes-ui.txt): styles.css y tauri.conf.json restaurados, PWA recompilada · 2026-10-06T09:00:47Z
+# (las otras tres que fallaban antes se repitieron tras restaurar en rebase-proxy-ui.txt)
+# pnpm exec playwright test tests/e2e/fuentes.spec.ts -g "sin red externa|cabe a 320|menú abierto"
+
+Running 4 tests using 1 worker
+
+  ok 1 [chromium] › tests\e2e\fuentes.spec.ts:198:5 › fuentes disponibles sin red externa: Inter y Plus Jakarta Sans cargan con todos sus pesos (1.4s)
+  ok 2 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema claro) (8.0s)
+  ok 3 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema oscuro) (8.0s)
+  ok 4 [chromium] › tests\e2e\fuentes.spec.ts:399:5 › en celular el menú abierto queda por encima de la barra de Mercancía y todas sus opciones se pueden tocar (2.2s)
+
+  4 passed (20.3s)
+
+================================================================
+== tamanos.txt
+================================================================
+== ANTES (77c4d33): fuentes desde fonts.googleapis.com / fonts.gstatic.com, nada empaquetado ==
+dist total (bytes, du -sb): 1531116
+dist total (archivos): 16
+archivos de fuente en dist: 0
+-- dist/assets --
+373940	dist/assets/charts-B7PvsTqR.js
+644704	dist/assets/index-BpiUguSs.js
+67071	dist/assets/index-CelWyEco.css
+415979	dist/assets/index-iPjrJSYw.js
+1	dist/assets/react-vendor-l0sNRNKZ.js
+5748	dist/assets/workbox-window.prod.es5-BBnX5xw4.js
+-- resumen de vite-plugin-pwa --
+dist/assets/index-CelWyEco.css                    67.07 kB │ gzip:  14.06 kB
+precache  20 entries (1478.14 KiB)
+entradas en el precache de sw.js: 20
+referencias a fonts.googleapis.com en el CSS: 1
+
+== DESPUÉS (1d27c52): fuentes empaquetadas (latin + latin-ext, una cara variable por familia) ==
+dist total (bytes, du -sb): 1715245
+dist total (archivos): 20
+archivos de fuente en dist: 4 (182400 bytes)
+-- dist/assets --
+373940	dist/assets/charts-B7PvsTqR.js
+644704	dist/assets/index-BAGwG6RZ.js
+68496	dist/assets/index-BwPKOycQ.css
+415979	dist/assets/index-iPjrJSYw.js
+85068	dist/assets/inter-latin-ext-wght-normal-DO1Apj_S.woff2
+48256	dist/assets/inter-latin-wght-normal-Dx4kXJAl.woff2
+21728	dist/assets/plus-jakarta-sans-latin-ext-wght-normal-DmpS2jIq.woff2
+27348	dist/assets/plus-jakarta-sans-latin-wght-normal-eXO_dkmS.woff2
+1	dist/assets/react-vendor-l0sNRNKZ.js
+5748	dist/assets/workbox-window.prod.es5-BBnX5xw4.js
+-- resumen de vite-plugin-pwa --
+dist/assets/index-BwPKOycQ.css                                       68.50 kB │ gzip:  14.39 kB
+precache  24 entries (1657.65 KiB)
+entradas en el precache de sw.js: 24 (de ellas woff2: 4)
+referencias a fonts.googleapis.com / fonts.gstatic.com en dist: 0
+mayor archivo precargado: 644704 dist/assets/index-BAGwG6RZ.js (límite por archivo de workbox: 2097152)
+
+== Paquetes instalados (node_modules, no van a dist salvo los 4 woff2) ==
+@fontsource-variable/inter 5.3.0 (Inter v20) y @fontsource-variable/plus-jakarta-sans 5.3.0 (Plus Jakarta Sans v12)
+
+================================================================
+== rebase-medicion-pantallas-nuevas.txt
+================================================================
+Compras · Órdenes                              inter=true página=0 barra=0 ruta=0 
+Compras · Proveedores                          inter=true página=0 barra=0 ruta=0 
+Compras · Recepciones                          inter=true página=0 barra=0 ruta=0 
+Compras · Recepciones · Ver                    NO SE PUDO ABRIR: TimeoutError: locator.click: Timeout 3000ms exceeded.
+Compras · Nueva orden de compra                inter=true página=0 barra=0 ruta=0 
+Compras · Nueva orden · documento              inter=true página=0 barra=0 ruta=0 
+Compras · Nuevo proveedor                      inter=true página=0 barra=0 ruta=0 
+Compras · Recibir orden                        inter=true página=0 barra=0 ruta=0 
+Mercancía · Entrada                            inter=true página=0 barra=0 ruta=0 
+Mercancía · Entrada · documento                inter=true página=0 barra=0 ruta=0 
+Mercancía · Historial · Ver                    NO SE PUDO ABRIR: TimeoutError: locator.click: Timeout 3000ms exceeded.
+Mercancía · Salida                             inter=true página=0 barra=0 ruta=0 
+hosts externos: []
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+  - waiting for locator('.modal') to be detached
+    23 × locator resolved to visible <div role="dialog" tabindex="-1" class="modal " id="radix-_r_e_" data-state="open" aria-labelledby="radix-_r_f_">…</div>
+
+    at <repo>\scripts\recepcion-320.mjs:111:32 {
+  log: [
+    "  - waiting for locator('.modal') to be detached",
+    '    23 × locator resolved to visible <div role="dialog" tabindex="-1" class="modal " id="radix-_r_e_" data-state="open" aria-labelledby="radix-_r_f_">…</div>'
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0
+orden recibida desde la pantalla
+Compras · Recepciones con datos              inter=true página=0 barra=0 ruta=0  
+Compras · Comprobante de recepción           inter=true página=0 barra=0 ruta=0  
+Compras · Comprobante · editar documento     inter=true página=0 barra=0 ruta=0  
+Mercancía · Historial con datos              inter=true página=0 barra=0 ruta=0  
+Mercancía · Comprobante de recepción         inter=true página=0 barra=0 ruta=0  
+
+================================================================
+== rebase-proxy-ui.txt
+================================================================
+# Tras un proxy de reenvío en otro puerto (origen distinto del de la PWA, con X-Forwarded-For) · 2026-10-06T09:00:18Z
+# FITSTORE_WEB_URL=<proxy> pnpm exec playwright test tests/e2e/fuentes.spec.ts -g "sin Google Fonts|service worker|contenedor de escritorio"
+
+Running 3 tests using 1 worker
+
+  ok 1 [chromium] › tests\e2e\fuentes.spec.ts:165:5 › sin Google Fonts: ninguna petición sale a fonts.googleapis.com ni a fonts.gstatic.com (3.6s)
+  ok 2 [chromium] › tests\e2e\fuentes.spec.ts:275:5 › las fuentes quedan en la precarga del service worker y se ven sin conexión (1.6s)
+  ok 3 [chromium] › tests\e2e\fuentes.spec.ts:317:5 › el contenedor de escritorio sólo admite fuentes y estilos propios, y con esa política la aplicación carga sus fuentes (1.2s)
+
+  3 passed (7.1s)
+

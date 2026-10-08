@@ -1,0 +1,223 @@
+FitStore POS · ronda 9 · Windows y zona horaria · portabilidad · DESPUÉS de la corrección
+
+================================================================
+== rebase-despues-porta.txt
+================================================================
+# DESPUES: arbol rebasado completo (HEAD 9445398, base 4485a27)
+# orden: pnpm exec vitest run --config vitest.integration.config.ts -t "financiera y permisos|Regresiones de Claude|R7-01:|R7-03:|R8-01:|R8-03:|R9-importador-"
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/api.test.ts (128 tests | 97 skipped) 27270ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  1036ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  407ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1276ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  1622ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  3359ms
+   ✓ Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir  1877ms
+   ✓ Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo  2208ms
+   ✓ Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga  1806ms
+   ✓ Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios  1231ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-1: una celda con hipervínculo o con error de Excel nunca crea «[object Object]»  1281ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-2: una fila con datos sin DESCRIPCION o sin ID detiene la carga sin escribir  557ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-3: --dry-run da las cifras de la carga real, anuncia las categorías y no se detiene por el lote  2765ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-4: una existencia válida muy grande no hace fallar la carga real por el máximo derivado  1389ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-5: al activar un producto sólo se completa lo que falta; el precio puesto en la app se respeta  2201ms
+
+ Test Files  1 passed (1)
+      Tests  31 passed | 97 skipped (128)
+   Start at  04:55:01
+   Duration  27.76s (transform 159ms, setup 0ms, collect 229ms, tests 27.27s, environment 0ms, prepare 93ms)
+
+exit=0
+
+# DESPUES (K5 con el equipo ocupado, simulado): mismo retraso de 1,5 s por arranque de dist/main.js (NODE_OPTIONS=--require=<logs>/util/porta-arranque-lento.cjs)
+# orden: pnpm exec vitest run --config vitest.integration.config.ts -t "financiera y permisos|Regresiones de Claude"
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/api.test.ts (128 tests | 106 skipped) 15946ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  753ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  400ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1371ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  1490ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  7726ms
+
+ Test Files  1 passed (1)
+      Tests  22 passed | 106 skipped (128)
+   Start at  04:55:39
+   Duration  16.44s (transform 171ms, setup 0ms, collect 247ms, tests 15.95s, environment 0ms, prepare 86ms)
+
+exit=0
+
+# DESPUES (estaticas y scripts): pnpm exec vitest run tests/portabilidad.test.ts
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/portabilidad.test.ts (20 tests) 2615ms
+   ✓ Portabilidad · verificación (scripts/verify.mjs) > ejecuta pnpm en esta plataforma y devuelve el código de salida  1192ms
+   ✓ Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol  727ms
+
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+   Start at  04:55:56
+   Duration  3.11s (transform 67ms, setup 0ms, collect 51ms, tests 2.62s, environment 0ms, prepare 186ms)
+
+exit=0
+
+================================================================
+== despues-k1.txt
+================================================================
+### K1 corregido: DATABASE_URL solo esta en un .env temporal de la raiz (no exportada); FITSTORE_API_URL si se exporta.
+### orden: env -u DATABASE_URL vitest run --config vitest.integration.config.ts -t 'financiera y permisos|Regresiones de Claude'
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/api.test.ts (104 tests | 82 skipped) 17489ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  1071ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  745ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  2284ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  2462ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  4743ms
+   ✓ Regresiones de Claude > 12: índice parcial impide apertura concurrente de terminal  537ms
+
+ Test Files  1 passed (1)
+      Tests  22 passed | 82 skipped (104)
+   Start at  01:56:44
+   Duration  18.09s (transform 165ms, setup 0ms, collect 257ms, tests 17.49s, environment 0ms, prepare 127ms)
+
+exit=0
+
+================================================================
+== despues-local-db.txt
+================================================================
+### scripts/local-db.mjs corregido, en Windows. FITSTORE_DB_PORT=5441 y FITSTORE_DB_DIR=<datos> (carpeta nueva fuera del repositorio)
+
+## 1. Primer arranque (initdb + servidor)
+salida: PostgreSQL listo en 127.0.0.1:5441 (zona horaria UTC). Ctrl+C para detener.
+proceso de node: PID 17904 · postmaster: PID 20088 ("postgres.exe")
+show timezone -> UTC · select now() -> 2026-10-06 05:56:23.435632+00
+zona que initdb dejó en postgresql.conf (la del equipo) -> timezone = 'America/La_Paz'
+show server_encoding -> UTF8 · show unix_socket_directories -> ''
+texto fuera de WIN1252 -> → ✓ 日本|6
+
+## 2. Otro arranque sobre la misma carpeta no arranca, lo explica y no toca al primero
+salida: 2026-10-06 05:56:23.996 UTC [43800] FATAL:  lock file "postmaster.pid" already exists
+        2026-10-06 05:56:23.996 UTC [43800] HINT:  Is another postmaster (PID 20088) running in data directory "<datos>"?
+        PostgreSQL no arrancó en 127.0.0.1:5441. Ya hay un servidor usando <datos> (PID 20088); detenlo con: node scripts/local-db.mjs --detener
+código de salida: 1 · el primero sigue vivo: node true, postmaster true · select 1 -> 1
+
+## 3. Parada con --detener desde otra consola
+orden: PostgreSQL local detenido (PID 20088). [código 0]
+el primero termina con: «PostgreSQL local se detuvo.» · código 0
+node vivo: false · postmaster PID 20088: ya no existe · postmaster.pid existe: false
+--detener otra vez -> No hay PostgreSQL local en marcha en <datos>. [código 0]
+
+## 4. Segundo arranque: reutiliza la carpeta (sin initdb) y conserva los datos. Lo inicia y lo detiene verify.mjs (launch y stop, por IPC)
+mensaje IPC: {"ready":true,"port":5441} a los 501 ms
+proceso de node: PID 39960 · postmaster: PID 17740 ("postgres.exe")
+select t from prueba -> → ✓ 日本 · show timezone -> UTC
+verify.stop(): 445 ms · código de salida de node: 0
+node vivo: false · postmaster PID 17740: ya no existe · postmaster.pid existe: false
+
+## 5. Lo que pasaba antes: verify.mjs terminaba el proceso de node con child.kill (TerminateProcess en Windows)
+proceso de node: PID 43412 · postmaster: PID 9128
+tras child.kill("SIGTERM"): node vivo false · postmaster PID 9128: ya no existe (Windows lo mata junto con su padre) · postmaster.pid existe: true  <- la base no se cerró
+el arranque siguiente se recupera solo: PostgreSQL listo en 127.0.0.1:5441 (zona horaria UTC). Ctrl+C para detener. · datos: → ✓ 日本
+orden --detener: PostgreSQL local detenido (PID 38016). [código 0]
+node: código 0 · postmaster PID 38016: ya no existe · postmaster.pid existe: false
+
+## 6. Al final no queda ningún postgres.exe de esta carpeta
+postgres.exe con la carpeta de prueba en su línea de órdenes: 0
+carpeta de datos de prueba borrada: true
+
+================================================================
+== despues-verify.txt
+================================================================
+### scripts/verify.mjs corregido, en Windows. pnpm real: encontrado (.cmd)
+### entorno del canal: FITSTORE_API_URL=http://127.0.0.1:3102/api · PORT=3102
+
+## A. API del canal en marcha; las dos suites terminan con 0 -> no inicia nada, lanza integración y luego e2e contra esa API
+  pnpm <- {"args":"exec vitest run --config vitest.integration.config.ts","FITSTORE_API_URL":"http://127.0.0.1:3102/api","FITSTORE_API_PROXY":"http://127.0.0.1:3102","PORT":"3102","salud":200}
+  pnpm <- {"args":"test:e2e","FITSTORE_API_URL":"http://127.0.0.1:3102/api","FITSTORE_API_PROXY":"http://127.0.0.1:3102","PORT":"3102","salud":200}
+  código de salida de verify.mjs: 0 (611 ms)
+
+## B. La integración termina con 3 -> verify devuelve 3 y no lanza e2e
+  pnpm <- {"args":"exec vitest run --config vitest.integration.config.ts","FITSTORE_API_URL":"http://127.0.0.1:3102/api","FITSTORE_API_PROXY":"http://127.0.0.1:3102","PORT":"3102","salud":200}
+  | Fallaron las pruebas de la API; no se ejecutan las de navegador.
+  código de salida de verify.mjs: 3 (292 ms)
+
+## C. La integración pasa y e2e termina con 5 -> verify devuelve 5
+  pnpm <- {"args":"exec vitest run --config vitest.integration.config.ts","FITSTORE_API_URL":"http://127.0.0.1:3102/api","FITSTORE_API_PROXY":"http://127.0.0.1:3102","PORT":"3102","salud":200}
+  pnpm <- {"args":"test:e2e","FITSTORE_API_URL":"http://127.0.0.1:3102/api","FITSTORE_API_PROXY":"http://127.0.0.1:3102","PORT":"3102","salud":200}
+  código de salida de verify.mjs: 5 (602 ms)
+
+## D. Sin FITSTORE_API_URL, sólo PORT -> la API sale de PORT
+  pnpm <- {"args":"exec vitest run --config vitest.integration.config.ts","FITSTORE_API_URL":"http://127.0.0.1:3102/api","FITSTORE_API_PROXY":"http://127.0.0.1:3102","PORT":"3102","salud":200}
+  pnpm <- {"args":"test:e2e","FITSTORE_API_URL":"http://127.0.0.1:3102/api","FITSTORE_API_PROXY":"http://127.0.0.1:3102","PORT":"3102","salud":200}
+  código de salida de verify.mjs: 0 (787 ms)
+
+## E. API ajena que no responde -> no intenta iniciarla aquí y termina con 1
+  | Error: La API https://pos.example.test/api no responde y no es de este equipo: no se puede iniciar desde aquí.
+  código de salida de verify.mjs: 1 (379 ms)
+
+## F. Rama que inicia la base y la API: puertos reservados 5441 (PostgreSQL) y 3121 (API), carpeta de datos temporal
+  preparación: clúster creado -> PostgreSQL listo en 127.0.0.1:5441 (zona horaria UTC). Ctrl+C para detener. · migraciones: código 0
+  preparación: PostgreSQL local detenido . · 5441 escucha: false · 3121 escucha: false
+
+## F (cont.). verify.mjs con PORT=3121 y DATABASE_URL en 5441, nada en marcha -> inicia local-db y «pnpm --filter @fitstore/api dev», espera la salud y lanza las suites
+  pnpm <- {"args":"--filter @fitstore/api dev","FITSTORE_API_URL":"http://127.0.0.1:3121/api","FITSTORE_API_PROXY":"http://127.0.0.1:3121","PORT":"3121","salud":null}
+  pnpm <- {"args":"exec vitest run --config vitest.integration.config.ts","FITSTORE_API_URL":"http://127.0.0.1:3121/api","FITSTORE_API_PROXY":"http://127.0.0.1:3121","PORT":"3121","salud":200}
+  pnpm <- {"args":"test:e2e","FITSTORE_API_URL":"http://127.0.0.1:3121/api","FITSTORE_API_PROXY":"http://127.0.0.1:3121","PORT":"3121","salud":200}
+  código de salida de verify.mjs: 0 (7339 ms)
+  después: 3121 escucha: false · 5441 escucha: false · postmaster.pid existe: false
+  postgres.exe de la carpeta de prueba: 0 · procesos node de la API de desarrollo de este worktree (src/main.ts): 0
+  test-results/database.log: (no existe)
+  test-results/api.log: (no existe)
+  carpeta de datos de prueba borrada: true · código F: 0
+
+### nota: test-results/database.log y api.log "no existe" porque a las 02:08:03 otra corrida de Playwright (ajena a este canal) inició en este worktree y Playwright vacía test-results al empezar; verify.mjs sí los escribió (antes-verify.txt los lista).
+
+================================================================
+== despues-package.txt
+================================================================
+### scripts/package.mjs corregido (sólo Node), en Windows sin Python: node scripts/package.mjs <registros>/porta-fuente.zip
+ZIP: <registros>/porta-fuente.zip (385 archivos)
+exit=0
+
+### segunda ejecución: el archivo es idéntico byte a byte
+idénticos
+
+### comprobación independiente con unzip -t (Info-ZIP)
+No errors detected in compressed data of <registros>/porta-fuente.zip.
+-rw-r--r--  2.0 unx      117 b-       90 defN 26-Oct-05 00:00 fitstore-pos/.dockerignore
+-rw-r--r--  2.0 unx      351 b-      278 defN 26-Oct-05 00:00 fitstore-pos/.env.example
+-rw-r--r--  2.0 unx      387 b-      224 defN 26-Oct-05 00:00 fitstore-pos/.gitattributes
+-rw-r--r--  2.0 unx     1315 b-      565 defN 26-Oct-05 00:00 fitstore-pos/.github/workflows/ci.yml
+
+### contenido (WP-CRLF-3: finales de línea; nada local)
+sha256 del ZIP: b2cdea726c021511aef57d64cdf86e417de1e89a4f3ee6826fe9ecb21d5d8e44 · 6618103 bytes · 385 entradas (CRC de todas verificado)
+entradas de texto: 306 · con CRLF: 0 
+entradas que no deberían estar (dependencias, compilados, .env, registros, respaldos, reporte del importador): 0 
+archivos versionados: 384 · faltan en el ZIP: 0 
+en el ZIP sin estar versionados: 1 tests/portabilidad.test.ts
+versionados cuyo contenido difiere del árbol de trabajo: 0
+
+================================================================
+== despues-portabilidad.txt
+================================================================
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/portabilidad.test.ts (20 tests) 3544ms
+   ✓ Portabilidad · verificación (scripts/verify.mjs) > ejecuta pnpm en esta plataforma y devuelve el código de salida  1520ms
+   ✓ Portabilidad · verificación (scripts/verify.mjs) > una orden que no arranca no tumba la verificación  350ms
+   ✓ Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol  1016ms
+
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+   Start at  01:56:15
+   Duration  4.05s (transform 76ms, setup 0ms, collect 57ms, tests 3.54s, environment 0ms, prepare 160ms)
+
+exit=0
+

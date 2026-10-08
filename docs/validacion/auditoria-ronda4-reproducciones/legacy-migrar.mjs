@@ -1,0 +1,17 @@
+import pg from './fitstore-pos/node_modules/.pnpm/pg@8.23.1/node_modules/pg/lib/index.js';
+import {readFileSync,writeFileSync} from 'node:fs';
+const fixture=JSON.parse(readFileSync('/workspace/auditoria-ronda4/legacy-fixture.json','utf8'));
+const client=new pg.Client({connectionString:'postgresql://fitstore:fitstore_local@127.0.0.1:5434/fitstore_audit_r4_upgrade'});await client.connect();
+const beforeReceipt=(await client.query('SELECT * FROM "GoodsReceipt" WHERE id=$1',[fixture.operation.receiptId])).rows[0];
+const beforeTerminal=(await client.query('SELECT * FROM "Terminal" WHERE id=$1',[fixture.terminalId])).rows[0];
+const legacyAudit=(await client.query('SELECT after FROM "AuditLog" WHERE "entityId"=$1',[fixture.operation.id])).rows[0];
+const orphanBefore=(await client.query('SELECT "lotId" FROM "InventoryMovement" WHERE "lotId"=$1',[fixture.orphanLotId])).rows;
+await client.query('BEGIN');
+await client.query(readFileSync('/workspace/auditoria-ronda4/fitstore-pos/apps/api/prisma/migrations/202610050001_round4_claude/migration.sql','utf8'));
+await client.query('COMMIT');
+const afterReceipt=(await client.query('SELECT * FROM "GoodsReceipt" WHERE id=$1',[fixture.operation.receiptId])).rows[0];
+const afterTerminal=(await client.query('SELECT * FROM "Terminal" WHERE id=$1',[fixture.terminalId])).rows[0];
+const orphanAfter=(await client.query('SELECT "lotId" FROM "InventoryMovement" WHERE "lotId"=$1',[fixture.orphanLotId])).rows;
+const result={source:fixture.source,before:{receipt:beforeReceipt,terminal:beforeTerminal,orphanReferences:orphanBefore.length},after:{receipt:afterReceipt,terminal:{...afterTerminal,secretHash:afterTerminal.secretHash? '[hash]':null},orphanReferences:orphanAfter.length},recoverableReceiptAudit:legacyAudit};
+writeFileSync('/workspace/auditoria-ronda4/fitstore-pos/docs/validacion/auditoria-ronda4-migracion.json',JSON.stringify(result,null,2));
+await client.end();console.log('Migración SQL exacta aplicada; evidencia anterior/posterior guardada.');

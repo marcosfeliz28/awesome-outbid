@@ -1,0 +1,41 @@
+{
+  "capsOverHttp": {
+    "controlledStartupDelay": true,
+    "pendingAggregateQueries": 1,
+    "sessionLimit": 2,
+    "userLimit": 6,
+    "statuses": [
+      200,
+      429,
+      429,
+      200,
+      429,
+      429,
+      429,
+      429
+    ],
+    "accepted": 2
+  },
+  "threeSessions": {
+    "transport": "HTTP SSE (sin interfaz de navegador)",
+    "latencyFromRequestMs": [
+      98,
+      98,
+      98
+    ],
+    "events": [
+      {
+        "qtyOnHand": 7,
+        "variantId": "20559650-5b42-46fe-a6cc-535e1dc54c05"
+      },
+      {
+        "qtyOnHand": 7,
+        "variantId": "20559650-5b42-46fe-a6cc-535e1dc54c05"
+      },
+      {
+        "qtyOnHand": 7,
+        "variantId": "20559650-5b42-46fe-a6cc-535e1dc54c05"
+      }
+    ]
+  }
+}

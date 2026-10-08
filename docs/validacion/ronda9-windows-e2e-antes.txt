@@ -1,0 +1,667 @@
+FitStore POS · ronda 9 · Windows y zona horaria · pruebas E2E repetibles · ANTES de la corrección
+
+================================================================
+== rebase-antes-e2e.txt
+================================================================
+# Canal e2e · ANTES sobre la base nueva 4485a27 (rama en 22d0272) · 2026-10-06T04:53:54-04:00
+# Se ponen las versiones de 4485a27 de: fitstore-pos/tests/e2e/store.spec.ts fitstore-pos/tests/e2e/facturas.spec.ts fitstore-pos/playwright.config.ts
+# (apoyo.ts, repetible.spec.ts y e2e-higiene.test.ts quedan como en la rama: son las regresiones)
+
+## git status --short con las versiones de la base
+M  fitstore-pos/playwright.config.ts
+M  fitstore-pos/tests/e2e/facturas.spec.ts
+M  fitstore-pos/tests/e2e/store.spec.ts
+
+## 1. pnpm exec vitest run tests/e2e-higiene.test.ts  (debe FALLAR)
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/e2e-higiene.test.ts (10 tests | 6 failed) 319ms
+   ✓ suite E2E · no ensucia el repositorio (WP-3) > hay pruebas E2E que revisar 1ms
+   × suite E2E · no ensucia el repositorio (WP-3) > ninguna prueba escribe una captura en docs/ sin pasar por screenshotPath() 7ms
+     → expected [ …(8) ] to deeply equal []
+   ✓ suite E2E · no ensucia el repositorio (WP-3) > una corrida normal deja las capturas en la carpeta de resultados, que git ignora; sólo FITSTORE_ACTUALIZAR_CAPTURAS=1 las lleva a docs/ 277ms
+   × suite E2E · se puede repetir (TS-2) > todas las pruebas toman `test` de apoyo.ts: así cada una llega a la API con su propia dirección 2ms
+     → expected [ 'facturas.spec.ts', 'store.spec.ts' ] to deeply equal []
+   ✓ playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > sin variables todo sigue como estaba: puerto 4173 y se reutiliza la vista previa que ya esté abierta 14ms
+   × playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > FITSTORE_WEB_PORT cambia a la vez el puerto de la vista previa, la URL que Playwright espera y la de las pruebas 4ms
+     → expected 'pnpm --filter @fitstore/web exec vite…' to contain '--port 4199 --strictPort'
+   × playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > con un puerto propio no se reutiliza lo que ya escuche ahí: si está ocupado, la corrida falla en vez de probar otra compilación 3ms
+     → expected true to be false // Object.is equality
+   × playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > la vista previa que arranca Playwright recibe FITSTORE_API_PROXY 2ms
+     → Cannot read properties of undefined (reading 'FITSTORE_API_PROXY')
+   ✓ playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > FITSTORE_WEB_URL sigue teniendo prioridad: no se arranca ninguna vista previa 2ms
+   × playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > un FITSTORE_WEB_PORT que no es un puerto se rechaza con un mensaje claro 5ms
+     → promise resolved "{ testDir: 'tests/e2e', …(8), …(1) }" instead of rejecting
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/e2e-higiene.test.ts > suite E2E · no ensucia el repositorio (WP-3) > ninguna prueba escribe una captura en docs/ sin pasar por screenshotPath()
+AssertionError: expected [ …(8) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "store.spec.ts: .screenshot({ path: \"docs/cobro-exitoso.png\" })",
++   "store.spec.ts: .screenshot({ path: \"docs/dashboard-mobile.png\", fullPage: true })",
++   "store.spec.ts: .screenshot({ path: \"docs/pos-mobile.png\", fullPage: true })",
++   "store.spec.ts: .screenshot({ // Pantalla visible: la base de pruebas acumula cientos de equipos. path: `docs/validacion/ronda6-capturas/cel-equipos-${width}.png`, })",
++   "store.spec.ts: \"docs/cobro-exitoso.png\"",
++   "store.spec.ts: \"docs/dashboard-mobile.png\"",
++   "store.spec.ts: \"docs/pos-mobile.png\"",
++   "store.spec.ts: `docs/validacion/ronda6-capturas/cel-equipos-${width}.png`",
++ ]
+
+ ❯ tests/e2e-higiene.test.ts:58:20
+     56|         direct.push(file + ": " + literal[0]);
+     57|     }
+     58|     expect(direct).toEqual([]);
+       |                    ^
+     59|   });
+     60|   it("una corrida normal deja las capturas en la carpeta de resultados…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  tests/e2e-higiene.test.ts > suite E2E · se puede repetir (TS-2) > todas las pruebas toman `test` de apoyo.ts: así cada una llega a la API con su propia dirección
+AssertionError: expected [ 'facturas.spec.ts', 'store.spec.ts' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "facturas.spec.ts",
++   "store.spec.ts",
++ ]
+
+ ❯ tests/e2e-higiene.test.ts:91:7
+     89|         .filter(([, source]) => !own.test(source) || bare.test(source))
+     90|         .map(([file]) => file),
+     91|     ).toEqual([]);
+       |       ^
+     92|   });
+     93| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  tests/e2e-higiene.test.ts > playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > FITSTORE_WEB_PORT cambia a la vez el puerto de la vista previa, la URL que Playwright espera y la de las pruebas
+AssertionError: expected 'pnpm --filter @fitstore/web exec vite…' to contain '--port 4199 --strictPort'
+
+Expected: "--port 4199 --strictPort"
+Received: "pnpm --filter @fitstore/web exec vite preview --host 127.0.0.1 --port 4173 --strictPort"
+
+ ❯ tests/e2e-higiene.test.ts:123:33
+    121|   it("FITSTORE_WEB_PORT cambia a la vez el puerto de la vista previa, …
+    122|     const c = await config({ FITSTORE_WEB_PORT: "4199" });
+    123|     expect(c.webServer.command).toContain("--port 4199 --strictPort");
+       |                                 ^
+    124|     expect(c.webServer.command).not.toContain("4173");
+    125|     expect(c.webServer.url).toBe("http://127.0.0.1:4199");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  tests/e2e-higiene.test.ts > playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > con un puerto propio no se reutiliza lo que ya escuche ahí: si está ocupado, la corrida falla en vez de probar otra compilación
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ tests/e2e-higiene.test.ts:130:45
+    128|   it("con un puerto propio no se reutiliza lo que ya escuche ahí: si e…
+    129|     const c = await config({ FITSTORE_WEB_PORT: "4199" });
+    130|     expect(c.webServer.reuseExistingServer).toBe(false);
+       |                                             ^
+    131|   });
+    132|   it("la vista previa que arranca Playwright recibe FITSTORE_API_PROXY…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  tests/e2e-higiene.test.ts > playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > la vista previa que arranca Playwright recibe FITSTORE_API_PROXY
+TypeError: Cannot read properties of undefined (reading 'FITSTORE_API_PROXY')
+ ❯ tests/e2e-higiene.test.ts:137:28
+    135|       FITSTORE_API_PROXY: "http://127.0.0.1:3999",
+    136|     });
+    137|     expect(c.webServer.env.FITSTORE_API_PROXY).toBe("http://127.0.0.1:…
+       |                            ^
+    138|   });
+    139|   it("FITSTORE_WEB_URL sigue teniendo prioridad: no se arranca ninguna…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  tests/e2e-higiene.test.ts > playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > un FITSTORE_WEB_PORT que no es un puerto se rechaza con un mensaje claro
+AssertionError: promise resolved "{ testDir: 'tests/e2e', …(8), …(1) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "fullyParallel": false,
++   "projects": [
++     {
++       "name": "chromium",
++       "use": {
++         "defaultBrowserType": "chromium",
++         "deviceScaleFactor": 1,
++         "hasTouch": false,
++         "isMobile": false,
++         "screen": {
++           "height": 1080,
++           "width": 1920,
++         },
++         "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.8010.12 Safari/537.36",
++         "viewport": {
++           "height": 1000,
++           "width": 1440,
++         },
++       },
++     },
++   ],
++   "reporter": [
++     [
++       "list",
++     ],
++     [
++       "html",
++       {
++         "open": "never",
++       },
++     ],
++   ],
++   "retries": 0,
++   "testDir": "tests/e2e",
++   "timeout": 45000,
++   "use": {
++     "baseURL": "http://127.0.0.1:4173",
++     "screenshot": "only-on-failure",
++     "trace": "retain-on-failure",
++   },
++   "webServer": {
++     "command": "pnpm --filter @fitstore/web exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
++     "reuseExistingServer": true,
++     "timeout": 30000,
++     "url": "http://127.0.0.1:4173",
++   },
++   "workers": 1,
++   Symbol(defineConfigWasUsed): true,
+  }
+
+ ❯ tests/e2e-higiene.test.ts:149:59
+    147|   it("un FITSTORE_WEB_PORT que no es un puerto se rechaza con un mensa…
+    148|     for (const bad of ["abc", "0", "70000", "41.5"])
+    149|       await expect(config({ FITSTORE_WEB_PORT: bad }), bad).rejects.to…
+       |                                                           ^
+    150|         /FITSTORE_WEB_PORT/,
+    151|       );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 4 passed (10)
+   Start at  04:53:55
+   Duration  843ms (transform 55ms, setup 0ms, collect 39ms, tests 319ms, environment 0ms, prepare 173ms)
+
+# exit=1
+
+## 2. Regresión de existencias: repetible.spec.ts agota la semilla y luego corren las dos ventas de store.spec.ts de la base (deben FALLAR)
+
+Running 3 tests using 1 worker
+
+(node:30412) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\e2e\repetible.spec.ts:65:5 › TS-1: las ventas de store.spec.ts no cuentan con las existencias de la semilla (aquí se agotan antes de que corran) (608ms)
+  x  2 [chromium] › tests\e2e\store.spec.ts:66:5 › venta completa desde caja hasta pagos combinados y recibo (45.3s)
+(node:44116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  3 [chromium] › tests\e2e\store.spec.ts:166:5 › venta offline queda guardada y se sincroniza una sola vez (45.3s)
+
+
+  1) [chromium] › tests\e2e\store.spec.ts:66:5 › venta completa desde caja hasta pagos combinados y recibo 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('dialog').getByRole('button', { name: /Chocolate/ })
+        - locator resolved to <button disabled class="variant-option">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+          - waiting 100ms
+        82 × waiting for element to be visible, enabled and stable
+           - element is not enabled
+         - retrying click action
+           - waiting 500ms
+
+
+      82 |     .getByRole("dialog")
+      83 |     .getByRole("button", { name: /Chocolate/ })
+    > 84 |     .click();
+         |      ^
+      85 |   await page.getByLabel("Buscar productos").fill("Legging Essential");
+      86 |   await page.locator(".product-card").first().click();
+      87 |   await page
+        at <repo>\tests\e2e\store.spec.ts:84:6
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\store-venta-completa-desde-8c105-a-pagos-combinados-y-recibo-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\store-venta-completa-desde-8c105-a-pagos-combinados-y-recibo-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\store-venta-completa-desde-8c105-a-pagos-combinados-y-recibo-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\store-venta-completa-desde-8c105-a-pagos-combinados-y-recibo-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests\e2e\store.spec.ts:166:5 › venta offline queda guardada y se sincroniza una sola vez 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('dialog').getByRole('button', { name: /Lila/ })
+        - locator resolved to <button disabled class="variant-option">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+          - waiting 100ms
+        82 × waiting for element to be visible, enabled and stable
+           - element is not enabled
+         - retrying click action
+           - waiting 500ms
+
+
+      176 |   await page.getByLabel("Buscar productos").fill("Shaker FitStore");
+      177 |   await page.locator(".product-card").click();
+    > 178 |   await page.getByRole("dialog").getByRole("button", { name: /Lila/ }).click();
+          |                                                                        ^
+      179 |   await context.setOffline(true);
+      180 |   await expect(page.locator(".connection")).toContainText("Offline");
+      181 |   await page.getByRole("button", { name: /Cobrar/ }).click();
+        at <repo>\tests\e2e\store.spec.ts:178:72
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\store-venta-offline-queda--baa64--se-sincroniza-una-sola-vez-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\store-venta-offline-queda--baa64--se-sincroniza-una-sola-vez-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\store-venta-offline-queda--baa64--se-sincroniza-una-sola-vez-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\store-venta-offline-queda--baa64--se-sincroniza-una-sola-vez-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [chromium] › tests\e2e\store.spec.ts:66:5 › venta completa desde caja hasta pagos combinados y recibo 
+    [chromium] › tests\e2e\store.spec.ts:166:5 › venta offline queda guardada y se sincroniza una sola vez 
+  1 passed (1.6m)
+# exit=1
+
+## git status --short tras la corrida (lo que ensució la versión de la base, además de los tres archivos)
+M  fitstore-pos/playwright.config.ts
+M  fitstore-pos/tests/e2e/facturas.spec.ts
+M  fitstore-pos/tests/e2e/store.spec.ts
+
+## restaurado: git status --short
+# fin 2026-10-06T04:55:31-04:00
+
+================================================================
+== rebase-antes-ts2.txt
+================================================================
+# ANTES sobre la base nueva · TS-2 con el test de @playwright/test (copia temporal de repetible.spec.ts con sólo el import cambiado; no se confirma) · 2026-10-06T05:05:29-04:00
+# sin intermediario todas las pruebas llegan a la API como 127.0.0.1: la primera agota el límite y la siguiente ya no puede iniciar sesión
+
+Running 2 tests using 1 worker
+
+(node:20328) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\e2e\zz-temporal-ts2.spec.ts:98:7 › TS-2: cada prueba llega a la API con su propia dirección › una prueba que agota el límite de autenticación sólo se bloquea a sí misma, en la API y en la página (2.6s)
+  x  2 [chromium] › tests\e2e\zz-temporal-ts2.spec.ts:113:7 › TS-2: cada prueba llega a la API con su propia dirección › la prueba siguiente inicia sesión, en la API y en la página, aunque la anterior acaba de agotar el límite (136ms)
+
+
+  1) [chromium] › tests\e2e\zz-temporal-ts2.spec.ts:113:7 › TS-2: cada prueba llega a la API con su propia dirección › la prueba siguiente inicia sesión, en la API y en la página, aunque la anterior acaba de agotar el límite 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      116 |   }) => {
+      117 |     const login = await request.post("/api/auth/login", { data: credentials });
+    > 118 |     expect(login.ok()).toBe(true);
+          |                        ^
+      119 |     expect((await signIn(page)).ok()).toBe(true);
+      120 |     await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+      121 |   });
+        at <repo>\tests\e2e\zz-temporal-ts2.spec.ts:118:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\zz-temporal-ts2-TS-2-cada--28682-r-acaba-de-agotar-el-límite-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\zz-temporal-ts2-TS-2-cada--28682-r-acaba-de-agotar-el-límite-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\zz-temporal-ts2-TS-2-cada--28682-r-acaba-de-agotar-el-límite-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\zz-temporal-ts2-TS-2-cada--28682-r-acaba-de-agotar-el-límite-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests\e2e\zz-temporal-ts2.spec.ts:113:7 › TS-2: cada prueba llega a la API con su propia dirección › la prueba siguiente inicia sesión, en la API y en la página, aunque la anterior acaba de agotar el límite 
+  1 passed (3.4s)
+# exit=1
+
+================================================================
+== rebase-antes-higiene-ejemplos.txt
+================================================================
+# ANTES · la revisión de capturas con la condición anterior (sólo screenshotPath, como antes de «admite la carpeta de la prueba») · 2026-10-06T05:04:20-04:00
+38:  const allowed = /^screenshotPath\(/;
+
+ RUN  v3.2.7 <repo>
+
+ ❯ tests/e2e-higiene.test.ts (11 tests | 1 failed) 334ms
+   ✓ suite E2E · no ensucia el repositorio (WP-3) > hay pruebas E2E que revisar 1ms
+   ✓ suite E2E · no ensucia el repositorio (WP-3) > ninguna prueba escribe una captura en docs/ sin pasar por screenshotPath() 1ms
+   × suite E2E · no ensucia el repositorio (WP-3) > la revisión admite screenshotPath() y la carpeta de la prueba, y marca cualquier otra ruta 6ms
+     → await page.screenshot({ path: testInfo.outputPath("menu.png") });: expected [ Array(1) ] to deeply equal []
+   ✓ suite E2E · no ensucia el repositorio (WP-3) > una corrida normal deja las capturas en la carpeta de resultados, que git ignora; sólo FITSTORE_ACTUALIZAR_CAPTURAS=1 las lleva a docs/ 295ms
+   ✓ suite E2E · se puede repetir (TS-2) > todas las pruebas toman `test` de apoyo.ts: así cada una llega a la API con su propia dirección 0ms
+   ✓ playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > sin variables todo sigue como estaba: puerto 4173 y se reutiliza la vista previa que ya esté abierta 14ms
+   ✓ playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > FITSTORE_WEB_PORT cambia a la vez el puerto de la vista previa, la URL que Playwright espera y la de las pruebas 2ms
+   ✓ playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > con un puerto propio no se reutiliza lo que ya escuche ahí: si está ocupado, la corrida falla en vez de probar otra compilación 2ms
+   ✓ playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > la vista previa que arranca Playwright recibe FITSTORE_API_PROXY 2ms
+   ✓ playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > FITSTORE_WEB_URL sigue teniendo prioridad: no se arranca ninguna vista previa 2ms
+   ✓ playwright.config.ts · cada copia del proyecto prueba su propia compilación (PI-3) > un FITSTORE_WEB_PORT que no es un puerto se rechaza con un mensaje claro 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/e2e-higiene.test.ts > suite E2E · no ensucia el repositorio (WP-3) > la revisión admite screenshotPath() y la carpeta de la prueba, y marca cualquier otra ruta
+AssertionError: await page.screenshot({ path: testInfo.outputPath("menu.png") });: expected [ Array(1) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   ".screenshot({ path: testInfo.outputPath(\"menu.png\") })",
++ ]
+
+ ❯ tests/e2e-higiene.test.ts:74:49
+     72|       'await page.locator("header").screenshot({\n  path: test.info().…
+     73|     ])
+     74|       expect(directScreenshots(source), source).toEqual([]);
+       |                                                 ^
+     75|     for (const source of [
+     76|       'await page.screenshot({ path: "docs/cobro-exitoso.png" });',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 10 passed (11)
+   Start at  05:04:21
+   Duration  818ms (transform 55ms, setup 0ms, collect 39ms, tests 334ms, environment 0ms, prepare 190ms)
+
+# exit=1
+
+================================================================
+== antes-429.txt
+================================================================
+# TS-2 · ANTES (77c4d33): todas las pruebas E2E llegan a la API como 127.0.0.1
+# El contador (herramientas/contador.mjs) es un proxy transparente entre Playwright y la vista previa:
+# anota cada petición que vigila el limitador de la API (apps/api/src/main.ts: 60 /api/auth/* y 120 POST /api/sales por minuto y dirección).
+
+## 1. Dos corridas completas seguidas (antes-429-corrida-1.txt y -2.txt; la segunda empieza al terminar la primera)
+# corrida 1 · HEAD 77c4d33 · PWA http://127.0.0.1:4131 · inicio 2026-10-06T01:26:03-04:00
+  1 failed
+  32 passed (3.7m)
+# exit=1 · fin 2026-10-06T01:29:51-04:00
+# corrida 2 · HEAD 77c4d33 · PWA http://127.0.0.1:4131 · inicio 2026-10-06T01:29:51-04:00
+  1 failed
+  32 passed (3.6m)
+# exit=1 · fin 2026-10-06T01:33:30-04:00
+-- resumen del contador (las dos corridas):
+peticiones /api/auth/*: 260 · POST /api/sales: 44
+direcciones distintas vistas por la API: 1
+máximo de /api/auth/* en una ventana de 60 s de una misma dirección: 50 (límite 60)
+máximo de POST /api/sales en una ventana de 60 s de una misma dirección: 11 (límite 120)
+respuestas 429: 0
+duración registrada: 441 s
+por ruta: {"POST /api/auth/login":174,"POST /api/auth/refresh":82,"GET /api/auth/me":2,"POST /api/auth/logout":2}
+=> En esta máquina, con otras tres suites corriendo a la vez, una corrida hace 130 peticiones de autenticación y llega a 50 de 60 en un minuto: no alcanza el límite, pero queda a 10 peticiones.
+
+## 2. Bucle enfocado A: «código ambiguo por mayúsculas…» con --repeat-each=25 (antes-429-bucle.txt)
+# bucle enfocado en 77c4d33: una prueba corta repetida 25 veces (--repeat-each=25) · inicio 2026-10-06T01:36:07-04:00
+  25 passed (2.3m)
+# exit=0 · fin 2026-10-06T01:38:28-04:00
+peticiones /api/auth/*: 100 · POST /api/sales: 0
+direcciones distintas vistas por la API: 1
+máximo de /api/auth/* en una ventana de 60 s de una misma dirección: 44 (límite 60)
+máximo de POST /api/sales en una ventana de 60 s de una misma dirección: 0 (límite 120)
+respuestas 429: 0
+duración registrada: 134 s
+por ruta: {"POST /api/auth/login":75,"POST /api/auth/refresh":25}
+
+## 3. Bucle enfocado B: «R9-offline-5: el cierre por inactividad revoca la sesión…» con --repeat-each=20 (antes-429-bucle2.txt) — REPRODUCIDO
+# bucle enfocado en 77c4d33: una prueba corta con varias peticiones de autenticación, repetida 20 veces (--repeat-each=20) · inicio 2026-10-06T01:38:58-04:00
+  ok  1 [chromium] (2.9s)
+  ok  2 [chromium] (2.9s)
+  ok  3 [chromium] (2.6s)
+  ok  4 [chromium] (2.6s)
+  ok  5 [chromium] (2.8s)
+  ok  6 [chromium] (2.9s)
+  ok  7 [chromium] (2.2s)
+  ok  8 [chromium] (2.3s)
+  ok  9 [chromium] (2.9s)
+  ok 10 [chromium] (2.6s)
+  ok 11 [chromium] (3.1s)
+  x  12 [chromium] (2.4s)
+  x  13 [chromium] (73ms)
+  x  14 [chromium] (67ms)
+  x  15 [chromium] (60ms)
+  x  16 [chromium] (78ms)
+  x  17 [chromium] (78ms)
+  x  18 [chromium] (63ms)
+  x  19 [chromium] (88ms)
+  x  20 [chromium] (71ms)
+  9 failed
+  11 passed (1.1m)
+# exit=1 · fin 2026-10-06T01:40:05-04:00
+-- primer fallo (la API responde 429 donde la prueba espera 400) y los siguientes (el beforeEach ya no puede iniciar sesión):
+30:    Error: expect(received).toBe(expected) // Object.is equality
+31-
+32-    Expected: 400
+33-    Received: 429
+34-
+35-      1830 |     headers: { Cookie: "fitstore_refresh=" + refresh!.value },
+36-      1831 |   });
+37-    > 1832 |   expect(renewed.status()).toBe(400);
+38-           |                            ^
+--
+60:    Error: expect(received).toBe(expected) // Object.is equality
+61-
+62-    Expected: true
+63-    Received: false
+64-
+65-      13 |     data: { id, name: "E2E limpieza", secret: "e2e-limpieza-" + id },
+66-      14 |   });
+67-    > 15 |   expect(registered.ok()).toBe(true);
+68-         |                           ^
+-- resumen del contador:
+peticiones /api/auth/*: 83 · POST /api/sales: 0
+direcciones distintas vistas por la API: 1
+máximo de /api/auth/* en una ventana de 60 s de una misma dirección: 81 (límite 60)
+máximo de POST /api/sales en una ventana de 60 s de una misma dirección: 0 (límite 120)
+respuestas 429: 9 · primera: 2026-10-06T05:39:52.651Z POST /api/auth/refresh
+duración registrada: 63 s
+por ruta: {"POST /api/auth/login":32,"POST /api/auth/refresh":39,"POST /api/auth/logout":12}
+
+## 4. Regresión nueva (tests/e2e/repetible.spec.ts, TS-2) con el `test` de Playwright sin corregir (antes-429-regresion.txt)
+# TS-2 sin corregir (las pruebas llegan todas como 127.0.0.1): regresión de repetible.spec.ts tras la prueba de facturas.spec.ts · 2026-10-06T01:47:20-04:00
+  ok 1 [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía (3.8s)
+  x  2 [chromium] › tests\e2e\repetible.spec.ts:90:7 › TS-2: cada prueba llega a la API con su propia dirección › una prueba que agota el límite de autenticación sólo se bloquea a sí misma, en la API y en la página (485ms)
+  x  3 [chromium] › tests\e2e\repetible.spec.ts:105:7 › TS-2: cada prueba llega a la API con su propia dirección › la prueba siguiente inicia sesión, en la API y en la página, aunque la anterior acaba de agotar el límite (271ms)
+    Expected: 60
+    Received: 57
+    Expected: true
+    Received: false
+  2 failed
+  1 passed (8.1s)
+# exit=1 · fin 2026-10-06T01:47:32-04:00
+
+## 5. La misma orden repetida 13 s después, dentro del mismo minuto (antes-429-regresion-inmediata.txt): falla también la prueba de facturas
+# TS-2 sin corregir (las pruebas llegan todas como 127.0.0.1): regresión de repetible.spec.ts tras la prueba de facturas.spec.ts · 2026-10-06T01:46:21-04:00
+  x  1 [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía (267ms)
+  x  2 [chromium] › tests\e2e\repetible.spec.ts:90:7 › TS-2: cada prueba llega a la API con su propia dirección › una prueba que agota el límite de autenticación sólo se bloquea a sí misma, en la API y en la página (524ms)
+  x  3 [chromium] › tests\e2e\repetible.spec.ts:105:7 › TS-2: cada prueba llega a la API con su propia dirección › la prueba siguiente inicia sesión, en la API y en la página, aunque la anterior acaba de agotar el límite (246ms)
+  3 failed
+# exit=1 · fin 2026-10-06T01:46:31-04:00
+
+================================================================
+== antes-stock.txt
+================================================================
+# TS-1 sin corregir: store.spec.ts de 77c4d33 (no repone nada) con las existencias de la semilla agotadas por la API (pruebas TS-1 de repetible.spec.ts) · 2026-10-06T01:44:07-04:00
+# existencias antes:
+FIT-0001-1|10.000|10.000
+FIT-0013-3|24.000|0
+FIT-0037-1|10.000|0
+$ playwright test "-g" "TS-1|venta completa desde caja|venta offline queda guardada"
+
+Running 4 tests using 1 worker
+
+  ok 1 [chromium] › tests\e2e\repetible.spec.ts:40:5 › TS-1: ensureStock repone sólo lo que falta, con lote y vencimiento donde la categoría lo exige (3.1s)
+  ok 2 [chromium] › tests\e2e\repetible.spec.ts:57:5 › TS-1: las ventas de store.spec.ts no cuentan con las existencias de la semilla (aquí se agotan antes de que corran) (582ms)
+  x  3 [chromium] › tests\e2e\store.spec.ts:64:5 › venta completa desde caja hasta pagos combinados y recibo (45.4s)
+  x  4 [chromium] › tests\e2e\store.spec.ts:164:5 › venta offline queda guardada y se sincroniza una sola vez (45.4s)
+
+
+  1) [chromium] › tests\e2e\store.spec.ts:64:5 › venta completa desde caja hasta pagos combinados y recibo 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('dialog').getByRole('button', { name: /Chocolate/ })
+        - locator resolved to <button disabled class="variant-option">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+          - waiting 100ms
+        80 × waiting for element to be visible, enabled and stable
+           - element is not enabled
+         - retrying click action
+           - waiting 500ms
+
+
+      80 |     .getByRole("dialog")
+      81 |     .getByRole("button", { name: /Chocolate/ })
+    > 82 |     .click();
+         |      ^
+      83 |   await page.getByLabel("Buscar productos").fill("Legging Essential");
+      84 |   await page.locator(".product-card").first().click();
+      85 |   await page
+        at <repo>\tests\e2e\store.spec.ts:82:6
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\store-venta-completa-desde-8c105-a-pagos-combinados-y-recibo-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\store-venta-completa-desde-8c105-a-pagos-combinados-y-recibo-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\store-venta-completa-desde-8c105-a-pagos-combinados-y-recibo-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\store-venta-completa-desde-8c105-a-pagos-combinados-y-recibo-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests\e2e\store.spec.ts:164:5 › venta offline queda guardada y se sincroniza una sola vez 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('dialog').getByRole('button', { name: /Lila/ })
+        - locator resolved to <button disabled class="variant-option">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+          - waiting 100ms
+        80 × waiting for element to be visible, enabled and stable
+           - element is not enabled
+         - retrying click action
+           - waiting 500ms
+
+
+      174 |   await page.getByLabel("Buscar productos").fill("Shaker FitStore");
+      175 |   await page.locator(".product-card").click();
+    > 176 |   await page.getByRole("dialog").getByRole("button", { name: /Lila/ }).click();
+          |                                                                        ^
+      177 |   await context.setOffline(true);
+      178 |   await expect(page.locator(".connection")).toContainText("Offline");
+      179 |   await page.getByRole("button", { name: /Cobrar/ }).click();
+        at <repo>\tests\e2e\store.spec.ts:176:72
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\store-venta-offline-queda--baa64--se-sincroniza-una-sola-vez-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\store-venta-offline-queda--baa64--se-sincroniza-una-sola-vez-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\store-venta-offline-queda--baa64--se-sincroniza-una-sola-vez-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\store-venta-offline-queda--baa64--se-sincroniza-una-sola-vez-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [chromium] › tests\e2e\store.spec.ts:64:5 › venta completa desde caja hasta pagos combinados y recibo 
+    [chromium] › tests\e2e\store.spec.ts:164:5 › venta offline queda guardada y se sincroniza una sola vez 
+  2 passed (1.6m)
+[ELIFECYCLE] Command failed with exit code 1.
+# exit=1 · fin 2026-10-06T01:45:49-04:00
+# existencias después:
+FIT-0001-1|0.000|0.000
+FIT-0013-3|0.000|0
+FIT-0037-1|0.000|0
+

@@ -1,0 +1,69 @@
+Commit: 76d73d9 · Windows 11 · Node v24.21.0 · pnpm 11.19.0 · PostgreSQL 18.6 local
+Rol fitstore sin ajustes · TimeZone de la sesión: America/La_Paz (origen: configuration file) · base nueva (DROP/CREATE, migrate deploy, seed)
+Orden: pnpm test:integration   (API compilada: node dist/main.js en 3001; variables sólo en .env, sin exportar)
+
+$ vitest run --config vitest.integration.config.ts
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/api.test.ts (136 tests) 106491ms
+   ✓ Aceptación financiera y permisos > 25% requiere PIN del gerente y queda auditado  974ms
+   ✓ Aceptación financiera y permisos > evalúa vencimiento, rotación y presupuesto  616ms
+   ✓ Aceptación financiera y permisos > exporta los 17 reportes, PDF y Excel  1439ms
+   ✓ Regresiones de Claude > 1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia  1506ms
+   ✓ Regresiones de Claude > 6: producción rechaza secretos de ejemplo o repetidos antes de conectar  2825ms
+   ✓ Seguridad, offline y funciones completadas > 1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco  2961ms
+   ✓ Seguridad, offline y funciones completadas > 1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor  4546ms
+   ✓ Seguridad, offline y funciones completadas > 1: limita ventas detrás del proxy y separa direcciones IP  781ms
+   ✓ Seguridad, offline y funciones completadas > nota de crédito se consume una sola vez con saldo protegido  2870ms
+   ✓ Seguridad, offline y funciones completadas > cambiar PIN o contraseña revoca refresh y acceso anteriores  1937ms
+   ✓ Seguridad, offline y funciones completadas > sessionTimeoutMinutes se aplica en API y respuesta de sesión  732ms
+   ✓ Alertas de negocio y consistencia contable > baja venta compara mes anterior con promedio de tres meses y cuenta descuentos diarios  416ms
+   ✓ Ronda 2 de Claude > 1: notas requieren prueba de posesión o gerente, no se divulgan códigos y cada uso se audita  2191ms
+   ✓ Ronda 2 de Claude > 2: límite del cliente atómico y PIN por umbral, sólo gerente puede cambiar el límite  2828ms
+   ✓ Ronda 3 · tiempo real y mercancía > tres cajas venden stock 5 y las tres reciben el saldo confirmado en menos de 2 segundos  2445ms
+   ✓ Ronda 3 · tiempo real y mercancía > equipos muestran actividad y caja, renombrar y revocar invalida sesiones  310ms
+   ✓ Ronda 3 · tiempo real y mercancía > SSE comunica recepción, devolución, anulación y conteo confirmados  644ms
+   ✓ Ronda 3 · tiempo real y mercancía > eventos se publican en orden de commit aunque las transacciones empiecen al revés  342ms
+   ✓ Ronda 4 · Claude: caja y equipos > trasladar exige PIN de gerente al vendedor y queda en bitácora  3742ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > P1 equipos: sin equipo, pendiente o revocado no mueve stock ni caja; aprobado sí y la bitácora guarda el equipo  4421ms
+   ✓ Ronda 4 · auditoría de ChatGPT y propia > almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido  772ms
+   ✓ Auditoría ronda 4 de ChatGPT > P1: una caída abrupta del cliente libera su conexión de tiempo real  350ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-01: un equipo R3 migrado no se puede reclamar ni operar sin aprobación del gerente  2478ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-02: la compra R3 sin orden se recupera de la bitácora; reparación idempotente  316ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-04: la factura aceptada contra una orden fija la deuda; parciales, flete y reintento sin doble conteo  332ms
+   ✓ Ronda 6 · auditoría R4 de ChatGPT > R4-06: una ráfaga de conexiones SSE sobre una sesión acepta como máximo dos  1031ms
+   ✓ Ronda 8 · auditoría R7 de ChatGPT > R7-01: un código que ya es de otro producto detiene la carga sin escribir  1494ms
+   ✓ Ronda 8 · auditoría R7 de ChatGPT > R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo  2126ms
+   ✓ Ronda 9 · auditoría R8 de ChatGPT > R8-01: un código igual salvo mayúsculas al de otro producto detiene la carga  1763ms
+   ✓ Ronda 9 · auditoría R8 de ChatGPT > R8-03: una carga que se detiene en la validación no deja cambios  1191ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-1: la devolución que completa la línea descuenta el costo de la devolución histórica  493ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-3: una venta a crédito con un abono por transferencia pendiente no se devuelve sin resolverlo  375ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-6: el costo de una devolución de la ronda 7 se reconstruye por línea  408ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-7: el costo de una venta anterior a la ronda 7 final coincide en utilidad y dashboard  416ms
+   ✓ Ronda 9 · revisión · dinero > R9-dinero-8: devoluciones y descuentos no muestra costos a quien no tiene profit:read  866ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-1: una celda con hipervínculo o con error de Excel nunca crea «[object Object]»  1234ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-2: una fila con datos sin DESCRIPCION o sin ID detiene la carga sin escribir  555ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-3: --dry-run da las cifras de la carga real, anuncia las categorías y no se detiene por el lote  2463ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-4: una existencia válida muy grande no hace fallar la carga real por el máximo derivado  1325ms
+   ✓ Ronda 9 · revisión · importador > R9-importador-5: al activar un producto sólo se completa lo que falta; el precio puesto en la app se respeta  1874ms
+   ✓ Ronda 9 · revisión · seguridad > R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo  3424ms
+   ✓ Ronda 9 · revisión · seguridad > R9-seguridad-1: un administrador desbloquea la cuenta al cambiarle la contraseña  2312ms
+   ✓ Ronda 9 · revisión · seguridad > R9-seguridad-2: el límite por IP de /auth y /sales no se evita cambiando mayúsculas en la ruta  824ms
+   ✓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-ajustes: número y nombre de cada caja (equipo) y número de cada cajero  566ms
+   ✓ Tienda · ajustes, contraentrega, cuadre y reportes > Tienda-cuadre: cierre por denominaciones, vale, dólares y entregado/dejado con el cuadre completo al centavo  367ms
+   ✓ Tienda · 4 cajas a la vez > Tienda-4cajas: 4 cajas venden a la vez el mismo producto escaso mientras entra mercancía desde el celular  4280ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar  2583ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar  2568ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en America/Santo_Domingo > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM  1009ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar  2592ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar  2675ms
+   ✓ Ronda 9 · Windows y zona horaria > sesión de PostgreSQL en UTC > TZ-1 y TZ-6: los paneles del tablero en SQL crudo cubren el mismo día dominicano que los totales del ORM  1046ms
+
+ Test Files  1 passed (1)
+      Tests  136 passed (136)
+   Start at  05:38:17
+   Duration  107.00s (transform 185ms, setup 0ms, collect 251ms, tests 106.49s, environment 0ms, prepare 87ms)
+
+
+Código de salida: 0

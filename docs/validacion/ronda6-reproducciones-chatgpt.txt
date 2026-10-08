@@ -1,0 +1,13 @@
+Reproducciones de ChatGPT (asserts del defecto) ejecutadas sin cambios sobre el código de la ronda 6; sólo se adaptaron las rutas de import.
+Que fallen es lo esperado: cada valor recibido es el comportamiento corregido.
+
+   × Reproducciones independientes R4 (asserts de lo observado) > dos altas simultáneas duplican el temporizador y pueden saltarse un evento 14ms
+     → expected [ [Function] ] to have a length of 2 but got 1
+   × Reproducciones independientes R4 (asserts de lo observado) > el límite acepta 20 conexiones simultáneas mientras el alta espera 3ms
+     → expected [ [Function], [Function] ] to have a length of 20 but got 2
+   × Reproducciones independientes R4 (asserts de lo observado) > un cierre durante el alta deja el listener registrado después de desconectarse 3ms
+     → expected 1 to be +0 // Object.is equality
+   × Reproducciones independientes R4 (asserts de lo observado) > el SKU del producto selecciona la única variante pese al sabor/tamaño contrario 4ms
+     → expected null to be 'vainilla-2lb' // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  4 failed (4)

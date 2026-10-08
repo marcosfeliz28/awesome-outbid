@@ -1,0 +1,12 @@
+$ playwright test
+
+Running 4 tests using 1 worker
+
+(node:17744) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [chromium] › tests/e2e/store.spec.ts:30:5 › venta completa desde caja hasta pagos combinados y recibo (3.2s)
+  ✓  2 [chromium] › tests/e2e/store.spec.ts:86:5 › pantallas de gestión, tema oscuro y versión móvil (5.2s)
+  ✓  3 [chromium] › tests/e2e/store.spec.ts:130:5 › venta offline queda guardada y se sincroniza una sola vez (2.5s)
+  ✓  4 [chromium] › tests/e2e/store.spec.ts:169:5 › descuento por monto, crédito y abono en interfaz (3.0s)
+
+  4 passed (14.6s)

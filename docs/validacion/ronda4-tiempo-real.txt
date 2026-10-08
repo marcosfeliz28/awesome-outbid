@@ -1,0 +1,25 @@
+Ronda 4 · prueba de varias cajas en tiempo real (Claude, 5 de octubre de 2026)
+
+Entorno: API local (NestJS + PostgreSQL 16), PWA compilada servida con `vite preview`,
+Chromium sin interfaz. Tres equipos simultáneos con usuarios distintos:
+- PC "Caja 1" (administradora) en Punto de venta, con caja abierta.
+- Laptop "Caja 2" (gerente) en Punto de venta.
+- Celular de almacén (390x844) en Mercancía; equipo nuevo aprobado con PIN de gerente.
+
+Producto nuevo con 0 unidades, visible en ambos puntos de venta.
+
+Resultado (tiempo desde el toque/clic hasta que la otra pantalla muestra el stock nuevo):
+- Entrada de 5 unidades desde el celular  -> PC Caja 1: 215 ms · Laptop Caja 2: 211 ms
+- Venta de 1 unidad en PC Caja 1          -> Laptop Caja 2 ve 4: 214 ms
+- Salida de 4 unidades (dañado) celular   -> Laptop Caja 2 ve 0: 207 ms
+- La laptop tenía el producto en el carrito: mostró "se agotó en otra caja".
+- Errores JavaScript: ninguno.
+
+Medición directa en la API (sin navegador): operación de Mercancía respondida en 31 ms;
+evento stock.changed recibido por SSE 101 ms después de iniciar la solicitud.
+
+Hallazgo corregido durante esta prueba: en el celular, un aviso emergente tapaba el botón
+fijo "Confirmar entrada" durante ~2 s (la primera medición dio 2.0 s). Los avisos se muestran
+ahora arriba en pantallas angostas.
+
+No certifica la latencia de la red Wi-Fi de la tienda ni de un servidor en internet.

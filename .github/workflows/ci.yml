@@ -1,0 +1,60 @@
+name: FitStore checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: fitstore
+          POSTGRES_PASSWORD: fitstore_ci
+          POSTGRES_DB: fitstore
+        ports: ["5434:5432"]
+        options: >-
+          --health-cmd "pg_isready -U fitstore"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://fitstore:fitstore_ci@localhost:5434/fitstore
+      JWT_SECRET: fitstore-ci-secret-for-isolated-tests-only-2026
+      SEED_DEMO_PASSWORD: FitStore-Demo-2026!
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm check
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: node scripts/verify.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fitstore-test-evidence
+          path: |
+            playwright-report
+            test-results
+  windows-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node -e "if(process.platform!=='win32') process.exit(1)"
+      - run: pnpm exec vitest run tests/portabilidad.test.ts --reporter=verbose
+      - run: pnpm instalador:validar

@@ -1,0 +1,17 @@
+# Finales de línea LF en todos los sistemas. Las pruebas que leen archivos del
+# repositorio, los scripts y los sha256 de docs/validacion suponen LF; en Windows,
+# core.autocrlf=true los bajaba con CRLF.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.xlsx binary
+*.zip binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary

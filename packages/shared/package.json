@@ -1,0 +1,14 @@
+{
+  "name": "@fitstore/shared",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "decimal.js": "^10.6.0",
+    "zod": "^3.25.0"
+  }
+}

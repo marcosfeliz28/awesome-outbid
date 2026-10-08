@@ -1,0 +1,11 @@
+import pg from './fitstore-pos/node_modules/.pnpm/pg@8.23.1/node_modules/pg/lib/index.js';
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+const root='/workspace/auditoria-ronda7',fixture=JSON.parse(readFileSync(root+'/legacy-fixture.json','utf8'));
+const db=new pg.Client({connectionString:'postgresql://fitstore:fitstore_local@127.0.0.1:5434/fitstore_audit_r7_upgrade3'});await db.connect();
+const row=(name,id)=>db.query('SELECT * FROM "'+name+'" WHERE id=$1',[id]).then(r=>r.rows[0]);
+const snapshot=async()=>({terminal:await row('Terminal',fixture.terminalId),standalone:await row('GoodsReceipt',fixture.operation.receiptId),ordered:await row('GoodsReceipt',fixture.oldReceive.id),incomplete:await row('GoodsReceipt',fixture.incompleteReceiptId),unknown:await row('GoodsReceipt',fixture.unknownReceiptId)});
+const first=await snapshot();assert.equal(Number(first.standalone.total),34);assert.equal(first.standalone.supplierId,fixture.supplierId);assert.equal(Number(first.ordered.total),55);assert.equal(first.incomplete.total,null);assert.equal(first.unknown.total,null);assert.equal(first.terminal.approvedAt,null);
+for(const name of ['202610060001_round6_audit','202610070001_round7'])await db.query(readFileSync(root+'/fitstore-pos/apps/api/prisma/migrations/'+name+'/migration.sql','utf8'));
+assert.deepEqual(await snapshot(),first);
+writeFileSync(root+'/fitstore-pos/docs/validacion/auditoria-ronda7-migracion-r3.json',JSON.stringify({...first,idempotent:true,migrations:(await db.query('SELECT migration_name,checksum FROM "_prisma_migrations" ORDER BY migration_name')).rows,version:(await db.query('SHOW server_version')).rows[0]},null,2));await db.end();console.log('R3→R7: compra 34, orden recibida 55, incompleta NULL, terminal pendiente; ambas migraciones idempotentes.');

@@ -1,0 +1,22 @@
+{
+  "orderTotal": 50,
+  "acceptedInvoiceTotal": 60,
+  "reportBeforePayment": {
+    "Proveedor": "invoice-r6-muvevxse",
+    "Ordenado": 50,
+    "Compras": 60,
+    "Pagado": 0,
+    "Pendiente": 60,
+    "Sin_conciliar": 0
+  },
+  "reportAfterPayingInvoice": {
+    "Proveedor": "invoice-r6-muvevxse",
+    "Ordenado": 50,
+    "Compras": 60,
+    "Pagado": 60,
+    "Pendiente": 0,
+    "Sin_conciliar": 0
+  },
+  "stockAfter": 2,
+  "averageCostAfter": 30
+}

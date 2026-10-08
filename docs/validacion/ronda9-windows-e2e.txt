@@ -1,0 +1,106 @@
+Commit: 76d73d9 · Windows 11 · Node v24.21.0 · pnpm 11.19.0 · PostgreSQL 18.6 local
+Rol fitstore sin ajustes · TimeZone de la sesión: America/La_Paz (origen: configuration file) · base nueva (DROP/CREATE, migrate deploy, seed)
+Orden: pnpm test:e2e   (PWA compilada en vite preview 4173, Chromium de Playwright)
+
+$ playwright test
+
+Running 55 tests using 1 worker
+
+  ok  1 [chromium] › tests\e2e\cuatro-cajas.spec.ts:8:5 › Tienda-4cajas: 3 cajas y el celular de Mercancía ven el stock en tiempo real (10.1s)
+  x   2 [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía (45.3s)
+  ok  3 [chromium] › tests\e2e\fuentes.spec.ts:165:5 › sin Google Fonts: ninguna petición sale a fonts.googleapis.com ni a fonts.gstatic.com (3.8s)
+  ok  4 [chromium] › tests\e2e\fuentes.spec.ts:198:5 › fuentes disponibles sin red externa: Inter y Plus Jakarta Sans cargan con todos sus pesos (1.3s)
+  ok  5 [chromium] › tests\e2e\fuentes.spec.ts:275:5 › las fuentes quedan en la precarga del service worker y se ven sin conexión (1.5s)
+  ok  6 [chromium] › tests\e2e\fuentes.spec.ts:317:5 › el contenedor de escritorio sólo admite fuentes y estilos propios, y con esa política la aplicación carga sus fuentes (1.1s)
+  ok  7 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema claro) (8.0s)
+  ok  8 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 320 px con las fuentes cargadas (tema oscuro) (8.0s)
+  ok  9 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 390 px con las fuentes cargadas (tema claro) (7.7s)
+  ok 10 [chromium] › tests\e2e\fuentes.spec.ts:371:9 › la barra superior cabe a 390 px con las fuentes cargadas (tema oscuro) (7.9s)
+  ok 11 [chromium] › tests\e2e\fuentes.spec.ts:399:5 › en celular el menú abierto queda por encima de la barra de Mercancía y todas sus opciones se pueden tocar (2.3s)
+  ok 12 [chromium] › tests\e2e\repetible.spec.ts:47:5 › TS-1: ensureStock repone sólo lo que falta, con lote y vencimiento donde la categoría lo exige (2.1s)
+  ok 13 [chromium] › tests\e2e\repetible.spec.ts:65:5 › TS-1: las ventas de store.spec.ts no cuentan con las existencias de la semilla (aquí se agotan antes de que corran) (433ms)
+  ok 14 [chromium] › tests\e2e\repetible.spec.ts:99:7 › TS-2: cada prueba llega a la API con su propia dirección › una prueba que agota el límite de autenticación sólo se bloquea a sí misma, en la API y en la página (703ms)
+  ok 15 [chromium] › tests\e2e\repetible.spec.ts:114:7 › TS-2: cada prueba llega a la API con su propia dirección › la prueba siguiente inicia sesión, en la API y en la página, aunque la anterior acaba de agotar el límite (1.0s)
+  ok 16 [chromium] › tests\e2e\store.spec.ts:66:5 › venta completa desde caja hasta pagos combinados y recibo (3.3s)
+  ok 17 [chromium] › tests\e2e\store.spec.ts:124:5 › pantallas de gestión, tema oscuro y versión móvil (3.6s)
+  ok 18 [chromium] › tests\e2e\store.spec.ts:174:5 › venta offline queda guardada y se sincroniza una sola vez (3.4s)
+  ok 19 [chromium] › tests\e2e\store.spec.ts:215:5 › descuento por monto, crédito y abono en interfaz (3.7s)
+  ok 20 [chromium] › tests\e2e\store.spec.ts:316:5 › Mercancía móvil: entrada offline, sincronización única y etiquetas (4.3s)
+  ok 21 [chromium] › tests\e2e\store.spec.ts:421:5 › Importar CSV exige revisión antes de modificar existencias (2.0s)
+  ok 22 [chromium] › tests\e2e\store.spec.ts:496:5 › equipo nuevo de vendedor espera aprobación y se aprueba con PIN de gerente (3.4s)
+  ok 23 [chromium] › tests\e2e\store.spec.ts:525:5 › Configuración y Equipos caben en 320 y 390 px sin desplazamiento horizontal (3.1s)
+  ok 24 [chromium] › tests\e2e\store.spec.ts:576:5 › código + Enter agrega el producto y respeta el stock (3.3s)
+  ok 25 [chromium] › tests\e2e\store.spec.ts:677:5 › código ambiguo por mayúsculas avisa y no agrega (3.0s)
+  ok 26 [chromium] › tests\e2e\store.spec.ts:754:5 › R9-codigos-2 y R9-codigos-3: Mercancía reconoce el código sin distinguir mayúsculas y no crea un duplicado (2.6s)
+  ok 27 [chromium] › tests\e2e\store.spec.ts:924:5 › R9-caja-1: el código de un producto inactivo + Enter avisa y no agrega otro que lo contiene (2.5s)
+  ok 28 [chromium] › tests\e2e\store.spec.ts:958:5 › R9-caja-2: tras el aviso de código ambiguo, el siguiente escaneo reemplaza el código (2.5s)
+  ok 29 [chromium] › tests\e2e\store.spec.ts:1011:5 › R9-caja-3: después de un clic, el lector agrega el producto escaneado y no repite el que tenía el foco (4.4s)
+  ok 30 [chromium] › tests\e2e\store.spec.ts:1062:5 › R9-caja-9 y R9-caja-6: el ticket muestra los descuentos y tras «Nueva venta» el lector agrega (3.3s)
+  ok 31 [chromium] › tests\e2e\store.spec.ts:1109:5 › R9-caja-6: tras elegir una variante o agregar con Enter por palabras, el siguiente escaneo no se pierde (3.7s)
+  ok 32 [chromium] › tests\e2e\store.spec.ts:1155:5 › R9-caja-4 y R9-caja-7: la venta en espera conserva descuentos y cliente (también con F8) (3.8s)
+  ok 33 [chromium] › tests\e2e\store.spec.ts:1225:5 › R9-caja-5: recuperar una venta en espera avisa si falta un producto y no pierde el carrito actual (4.2s)
+  ok 34 [chromium] › tests\e2e\store.spec.ts:1303:5 › R9-caja-8: el descuento de línea no pasa del 100 % ni del importe de la línea (3.1s)
+  ok 35 [chromium] › tests\e2e\store.spec.ts:1345:5 › R9-dinero-3-ui: un abono por transferencia que no llegó se rechaza desde la venta y la devolución pasa (3.5s)
+  ok 36 [chromium] › tests\e2e\store.spec.ts:1467:5 › R9-dinero-5-pos: un descuento por monto con 3 decimales se cobra en línea y se sincroniza sin conexión (4.4s)
+  ok 37 [chromium] › tests\e2e\store.spec.ts:1521:5 › R9-caja-3/8 revisión: un escaneo con el foco en un campo de descuento agrega el producto y no cambia el descuento (4.8s)
+  ok 38 [chromium] › tests\e2e\store.spec.ts:1582:5 › R9-caja-1 revisión: un código de modelo del nombre (como «a40» o «275n») + Enter agrega su único producto (2.9s)
+  ok 39 [chromium] › tests\e2e\store.spec.ts:1658:5 › R9-offline-1: sin internet pero con la red local activa, la caja sigue vendiendo y al recargar no pide la contraseña (8.3s)
+  ok 40 [chromium] › tests\e2e\store.spec.ts:1714:5 › R9-offline-1: si la API responde 502 o 504 al cobrar, la venta queda guardada y se sincroniza una sola vez (14.3s)
+  ok 41 [chromium] › tests\e2e\store.spec.ts:1763:5 › R9-offline-2: una venta sin conexión descuenta el stock local y no deja vender otra vez las mismas unidades (4.0s)
+  ok 42 [chromium] › tests\e2e\store.spec.ts:1803:5 › R9-offline-3: si el precio o una promoción cambian con el producto en el carrito, la caja toma el nuevo y deja cobrar (3.8s)
+  ok 43 [chromium] › tests\e2e\store.spec.ts:1879:5 › R9-offline-4: si el catálogo cambia entre una página y otra, ningún producto queda repetido (2.8s)
+  ok 44 [chromium] › tests\e2e\store.spec.ts:1942:5 › R9-offline-5: el cierre por inactividad revoca la sesión y al recargar se pide la contraseña (1.4s)
+  ok 45 [chromium] › tests\e2e\store.spec.ts:1972:5 › R9-offline-5: una pestaña sin uso no cierra la sesión de otra pestaña activa del mismo equipo (3.2s)
+  ok 46 [chromium] › tests\e2e\store.spec.ts:1998:5 › R9-offline-3 revisión: si un precio cambia mientras el canal de avisos está caído, al reconectar se avisa qué precio cambió (3.1s)
+  ok 47 [chromium] › tests\e2e\store.spec.ts:2048:5 › R9-offline-1 revisión: un crédito sin respuesta del servidor avisa que pudo quedar registrado y al cobrarlo otra vez no se duplica (9.4s)
+  ok 48 [chromium] › tests\e2e\store.spec.ts:2140:5 › R9-offline-1 revisión: si el servidor no responde (paquetes perdidos), la venta se guarda en segundos y al recargar no se queda cargando (33.2s)
+  ok 49 [chromium] › tests\e2e\store.spec.ts:2202:5 › Aceptación 35-37 en el celular: Mercancía recibe una orden con documento y dañados, y el historial abre su comprobante (2.0s)
+  ok 50 [chromium] › tests\e2e\store.spec.ts:2284:5 › Aceptación 35 y 37 en la laptop: Compras › Recepciones completa el documento después y descarga el Excel (2.1s)
+  ok 51 [chromium] › tests\e2e\store.spec.ts:2349:5 › Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible y lo vencido aparte (2.5s)
+  ok 52 [chromium] › tests\e2e\store.spec.ts:2418:7 › Tienda-pantallas › Tienda-pantallas: cierre por denominaciones con entregado/dejado imprime el cuadre y se reimprime con sus reportes (3.1s)
+  ok 53 [chromium] › tests\e2e\store.spec.ts:2473:7 › Tienda-pantallas › Tienda-pantallas: venta con contraentrega + efectivo, factura impresa con su formato y cobro de la contraentrega (3.7s)
+  ok 54 [chromium] › tests\e2e\store.spec.ts:2530:7 › Tienda-pantallas › Tienda-pantallas: F9 abre Entrada de mercancía (1.3s)
+  ok 55 [chromium] › tests\e2e\store.spec.ts:2540:7 › Tienda-pantallas › Tienda-pantallas: en el celular el cierre y la contraentrega no se desbordan (1.6s)
+
+
+  1) [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel(/Cantidad pendiente/)
+
+
+      63 |     .getByRole("button", { name: "Recibir" })
+      64 |     .click();
+    > 65 |   await page.getByLabel(/Cantidad pendiente/).fill("4");
+         |                                               ^
+      66 |
+      67 |   // La primera vez la API recibe la mercancía, pero la respuesta no llega.
+      68 |   const bodies: any[] = [];
+        at <repo>\tests\e2e\facturas.spec.ts:65:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía 
+  54 passed (4.7m)
+[ELIFECYCLE] Command failed with exit code 1.
+
+Código de salida: 1
+
+git status --porcelain después de la corrida (vacío = las pruebas no ensuciaron el repositorio):
+(fin de git status)

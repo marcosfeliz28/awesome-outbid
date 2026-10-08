@@ -1,0 +1,482 @@
+FitStore POS · ronda 9 · Windows y zona horaria · pruebas E2E repetibles · DESPUÉS de la corrección
+
+================================================================
+== rebase-despues-e2e.txt
+================================================================
+# Canal e2e · DESPUÉS sobre la base nueva 4485a27 (rama en 22d0272, merge-base 4485a27) · 2026-10-06T04:55:52-04:00
+
+## git status --porcelain antes de correr
+
+## 1. pnpm exec vitest run tests/e2e-higiene.test.ts
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/e2e-higiene.test.ts (10 tests) 332ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  04:55:53
+   Duration  803ms (transform 53ms, setup 0ms, collect 40ms, tests 332ms, environment 0ms, prepare 189ms)
+
+# exit=0
+
+## 2. repetible.spec.ts completo (agota la semilla; límite por prueba), las dos ventas de la semilla y pruebas nuevas de la nube que ahora pasan por apoyo.ts
+
+Running 9 tests using 1 worker
+
+(node:25464) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía (45.3s)
+(node:43508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 [chromium] › tests\e2e\repetible.spec.ts:47:5 › TS-1: ensureStock repone sólo lo que falta, con lote y vencimiento donde la categoría lo exige (2.2s)
+  ok 3 [chromium] › tests\e2e\repetible.spec.ts:65:5 › TS-1: las ventas de store.spec.ts no cuentan con las existencias de la semilla (aquí se agotan antes de que corran) (392ms)
+  ok 4 [chromium] › tests\e2e\repetible.spec.ts:99:7 › TS-2: cada prueba llega a la API con su propia dirección › una prueba que agota el límite de autenticación sólo se bloquea a sí misma, en la API y en la página (1.4s)
+  ok 5 [chromium] › tests\e2e\repetible.spec.ts:114:7 › TS-2: cada prueba llega a la API con su propia dirección › la prueba siguiente inicia sesión, en la API y en la página, aunque la anterior acaba de agotar el límite (1.4s)
+  ok 6 [chromium] › tests\e2e\store.spec.ts:66:5 › venta completa desde caja hasta pagos combinados y recibo (3.6s)
+  ok 7 [chromium] › tests\e2e\store.spec.ts:174:5 › venta offline queda guardada y se sincroniza una sola vez (3.1s)
+  x  8 [chromium] › tests\e2e\store.spec.ts:2281:5 › Aceptación 35 y 37 en la laptop: Compras › Recepciones completa el documento después y descarga el Excel (2.5s)
+(node:35904) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  9 [chromium] › tests\e2e\store.spec.ts:2346:5 › Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible y lo vencido aparte (6.9s)
+
+
+  1) [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel(/Cantidad pendiente/)
+
+
+      63 |     .getByRole("button", { name: "Recibir" })
+      64 |     .click();
+    > 65 |   await page.getByLabel(/Cantidad pendiente/).fill("4");
+         |                                               ^
+      66 |
+      67 |   // La primera vez la API recibe la mercancía, pero la respuesta no llega.
+      68 |   const bodies: any[] = [];
+        at <repo>\tests\e2e\facturas.spec.ts:65:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests\e2e\store.spec.ts:2281:5 › Aceptación 35 y 37 en la laptop: Compras › Recepciones completa el documento después y descarga el Excel 
+
+    Error: expect(received).toMatch(expected)
+
+    Expected pattern: /^compras-.*\.xlsx$/
+    Received string:  "compras.xlsx"
+
+      2337 |   const download = page.waitForEvent("download");
+      2338 |   await page.getByRole("button", { name: "Excel para la contable" }).click();
+    > 2339 |   expect((await download).suggestedFilename()).toMatch(/^compras-.*\.xlsx$/);
+           |                                                ^
+      2340 |   expect(errors).toEqual([]);
+      2341 |   await request.patch("/api/products/" + p.id, {
+      2342 |     headers,
+        at <repo>\tests\e2e\store.spec.ts:2339:48
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\store-Aceptación-35-y-37-e-4f42c-después-y-descarga-el-Excel-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\store-Aceptación-35-y-37-e-4f42c-después-y-descarga-el-Excel-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\store-Aceptación-35-y-37-e-4f42c-después-y-descarga-el-Excel-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\store-Aceptación-35-y-37-e-4f42c-después-y-descarga-el-Excel-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › tests\e2e\store.spec.ts:2346:5 › Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible y lo vencido aparte 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('option').filter({ hasText: 'E2E Merc muwg35rz4449' })
+    Expected substring: "3 en stock"
+    Received string:    "E2E Merc muwg35rz4449Única · E2E-AMV-muwg35rz44495 en stock"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('option').filter({ hasText: 'E2E Merc muwg35rz4449' }) with timeout 5000ms
+      - waiting for getByRole('option').filter({ hasText: 'E2E Merc muwg35rz4449' })
+        14 × locator resolved to <button type="button" role="option" aria-selected="false">…</button>
+           - unexpected value "E2E Merc muwg35rz4449Única · E2E-AMV-muwg35rz44495 en stock"
+
+
+      2381 |   await page.getByLabel("Buscar producto", { exact: true }).fill(p.name);
+      2382 |   const option = page.getByRole("option").filter({ hasText: p.name });
+    > 2383 |   await expect(option).toContainText("3 en stock");
+           |                        ^
+      2384 |   await expect(option).toContainText("vencido: 2");
+      2385 |   // La caja recibe el mismo catálogo: 3 disponibles.
+      2386 |   await ensureCash(page);
+        at <repo>\tests\e2e\store.spec.ts:2383:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\store-Aceptación-04-Mercan-4f624-endible-y-lo-vencido-aparte-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\store-Aceptación-04-Mercan-4f624-endible-y-lo-vencido-aparte-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\store-Aceptación-04-Mercan-4f624-endible-y-lo-vencido-aparte-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\store-Aceptación-04-Mercan-4f624-endible-y-lo-vencido-aparte-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía 
+    [chromium] › tests\e2e\store.spec.ts:2281:5 › Aceptación 35 y 37 en la laptop: Compras › Recepciones completa el documento después y descarga el Excel 
+    [chromium] › tests\e2e\store.spec.ts:2346:5 › Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible y lo vencido aparte 
+  6 passed (1.2m)
+# exit=1
+
+## git status --porcelain después de correr (debe salir vacío)
+# capturas de la corrida:
+test-results/capturas/docs/cobro-exitoso.png
+# fin 2026-10-06T04:57:05-04:00
+
+## 3. Otras pruebas nuevas de la nube a través de apoyo.ts (legacyDb, Mercancía en el celular) · rama en 22d0272 · 2026-10-06T04:59:41-04:00
+# playwright test tests/e2e/store.spec.ts -g "código ambiguo por mayúsculas|R9-codigos-2 y R9-codigos-3|Aceptación 35-37 en el celular"
+
+Running 3 tests using 1 worker
+
+(node:8896) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\e2e\store.spec.ts:677:5 › código ambiguo por mayúsculas avisa y no agrega (3.0s)
+  ok 2 [chromium] › tests\e2e\store.spec.ts:754:5 › R9-codigos-2 y R9-codigos-3: Mercancía reconoce el código sin distinguir mayúsculas y no crea un duplicado (2.9s)
+  ok 3 [chromium] › tests\e2e\store.spec.ts:2201:5 › Aceptación 35-37 en el celular: Mercancía recibe una orden con documento y dañados, y el historial abre su comprobante (2.9s)
+
+  3 passed (9.7s)
+# exit=0
+## git status --porcelain después (debe salir vacío)
+# fin 2026-10-06T04:59:52-04:00
+
+## 4. Segunda corrida seguida sobre la misma base: repetible.spec.ts completo y las dos ventas de la semilla · rama en f51794a · 2026-10-06T05:04:53-04:00
+# playwright test tests/e2e/repetible.spec.ts tests/e2e/store.spec.ts -g "TS-1|TS-2|venta completa desde caja|venta offline queda guardada"
+
+Running 6 tests using 1 worker
+
+(node:35184) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\e2e\repetible.spec.ts:47:5 › TS-1: ensureStock repone sólo lo que falta, con lote y vencimiento donde la categoría lo exige (2.4s)
+  ok 2 [chromium] › tests\e2e\repetible.spec.ts:65:5 › TS-1: las ventas de store.spec.ts no cuentan con las existencias de la semilla (aquí se agotan antes de que corran) (405ms)
+  ok 3 [chromium] › tests\e2e\repetible.spec.ts:99:7 › TS-2: cada prueba llega a la API con su propia dirección › una prueba que agota el límite de autenticación sólo se bloquea a sí misma, en la API y en la página (2.4s)
+  ok 4 [chromium] › tests\e2e\repetible.spec.ts:114:7 › TS-2: cada prueba llega a la API con su propia dirección › la prueba siguiente inicia sesión, en la API y en la página, aunque la anterior acaba de agotar el límite (1.9s)
+  ok 5 [chromium] › tests\e2e\store.spec.ts:66:5 › venta completa desde caja hasta pagos combinados y recibo (4.0s)
+  ok 6 [chromium] › tests\e2e\store.spec.ts:174:5 › venta offline queda guardada y se sincroniza una sola vez (4.5s)
+
+  6 passed (16.3s)
+# exit=0
+## git status --porcelain después (debe salir vacío)
+# fin 2026-10-06T05:05:11-04:00
+
+## Nota · tres pruebas de la nube fallan igual sin este canal
+«R9-facturas-8», «Aceptación 35 y 37 en la laptop» y «Aceptación 04» fallan en la sección 2, y fallan IGUAL con
+store.spec.ts / facturas.spec.ts / playwright.config.ts de 4485a27 tal cual (test de @playwright/test, sin
+intermediario): ver rebase-base-nube-3-pruebas.txt. No son de este canal (archivos de la nube, trabajo en curso).
+
+================================================================
+== rebase-despues-higiene-ejemplos.txt
+================================================================
+# DESPUÉS · la revisión de capturas de la rama · 2026-10-06T05:04:30-04:00
+38:  const allowed = /^(screenshotPath\(|[\w.()]*\boutputPath\()/;
+
+ RUN  v3.2.7 <repo>
+
+ ✓ tests/e2e-higiene.test.ts (11 tests) 306ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  05:04:31
+   Duration  771ms (transform 56ms, setup 0ms, collect 40ms, tests 306ms, environment 0ms, prepare 181ms)
+
+# exit=0
+
+================================================================
+== despues-429.txt
+================================================================
+# TS-2 · DESPUÉS: cada prueba E2E llega a la API con su propia dirección (tests/e2e/apoyo.ts)
+
+## 1. El mismo bucle enfocado B: «R9-offline-5: el cierre por inactividad revoca la sesión…» con --repeat-each=20 (despues-429-bucle2.txt)
+# el mismo bucle con la corrección: prueba corta repetida 20 veces (--repeat-each=20) · inicio 2026-10-06T01:52:21-04:00
+  20 passed (1.5m)
+# exit=0 · fin 2026-10-06T01:53:54-04:00
+-- resumen del contador:
+peticiones /api/auth/*: 123 · POST /api/sales: 0
+direcciones distintas vistas por la API: 20
+máximo de /api/auth/* en una ventana de 60 s de una misma dirección: 7 (límite 60)
+máximo de POST /api/sales en una ventana de 60 s de una misma dirección: 0 (límite 120)
+respuestas 429: 0
+duración registrada: 87 s
+por ruta: {"POST /api/auth/login":40,"POST /api/auth/refresh":63,"POST /api/auth/logout":20}
+direcciones con alguna 429 en /api/auth/*: 0 de 20
+peticiones /api/auth/* de las 5 direcciones más activas: 7, 7, 7, 6, 6
+
+## 2. Regresión (tests/e2e/repetible.spec.ts, TS-2), dos veces seguidas dentro del mismo minuto (despues-429-regresion.txt)
+# TS-2 corregido · corrida 1 (la segunda, justo después de la primera) · 2026-10-06T01:49:41-04:00
+  ok 1 [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía (2.8s)
+  ok 2 [chromium] › tests\e2e\repetible.spec.ts:90:7 › TS-2: cada prueba llega a la API con su propia dirección › una prueba que agota el límite de autenticación sólo se bloquea a sí misma, en la API y en la página (2.7s)
+  ok 3 [chromium] › tests\e2e\repetible.spec.ts:105:7 › TS-2: cada prueba llega a la API con su propia dirección › la prueba siguiente inicia sesión, en la API y en la página, aunque la anterior acaba de agotar el límite (2.3s)
+  3 passed (9.6s)
+# exit=0 · fin 2026-10-06T01:49:54-04:00
+# TS-2 corregido · corrida 2 (la segunda, justo después de la primera) · 2026-10-06T01:49:54-04:00
+  ok 1 [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía (3.6s)
+  ok 2 [chromium] › tests\e2e\repetible.spec.ts:90:7 › TS-2: cada prueba llega a la API con su propia dirección › una prueba que agota el límite de autenticación sólo se bloquea a sí misma, en la API y en la página (2.7s)
+  ok 3 [chromium] › tests\e2e\repetible.spec.ts:105:7 › TS-2: cada prueba llega a la API con su propia dirección › la prueba siguiente inicia sesión, en la API y en la página, aunque la anterior acaba de agotar el límite (1.8s)
+  3 passed (9.6s)
+# exit=0 · fin 2026-10-06T01:50:07-04:00
+
+================================================================
+== despues-stock.txt
+================================================================
+# TS-1 corregido: las mismas pruebas, con las existencias de la semilla agotadas por la API · 2026-10-06T01:49:13-04:00
+# existencias antes:
+FIT-0001-1|0.000|0.000
+FIT-0013-3|0.000|0
+FIT-0037-1|0.000|0
+$ playwright test "-g" "TS-1|venta completa desde caja|venta offline queda guardada"
+
+Running 4 tests using 1 worker
+
+  ok 1 [chromium] › tests\e2e\repetible.spec.ts:40:5 › TS-1: ensureStock repone sólo lo que falta, con lote y vencimiento donde la categoría lo exige (3.3s)
+  ok 2 [chromium] › tests\e2e\repetible.spec.ts:57:5 › TS-1: las ventas de store.spec.ts no cuentan con las existencias de la semilla (aquí se agotan antes de que corran) (579ms)
+  ok 3 [chromium] › tests\e2e\store.spec.ts:64:5 › venta completa desde caja hasta pagos combinados y recibo (5.1s)
+  ok 4 [chromium] › tests\e2e\store.spec.ts:172:5 › venta offline queda guardada y se sincroniza una sola vez (4.9s)
+
+  4 passed (16.1s)
+# exit=0 · fin 2026-10-06T01:49:33-04:00
+# existencias después:
+FIT-0001-1|0.000|0.000
+FIT-0013-3|0.000|0
+FIT-0037-1|0.000|0
+# git status --porcelain:
+ M fitstore-pos/playwright.config.ts
+ M fitstore-pos/tests/e2e/facturas.spec.ts
+ M fitstore-pos/tests/e2e/store.spec.ts
+ M fitstore-pos/vitest.config.ts
+?? fitstore-pos/tests/e2e-higiene.test.ts
+?? fitstore-pos/tests/e2e/apoyo.ts
+?? fitstore-pos/tests/e2e/repetible.spec.ts
+
+================================================================
+== despues-puerto.txt
+================================================================
+# PI-3 · Playwright arranca su propia vista previa en el puerto pedido (FITSTORE_WEB_PORT=4132, sin FITSTORE_WEB_URL) y le pasa FITSTORE_API_PROXY · 2026-10-06T01:54:54-04:00
+# antes: escucha en 4132 = []
+$ playwright test "-g" "R9-facturas-8|venta completa desde caja"
+
+Running 2 tests using 1 worker
+
+  ok 1 [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía (3.4s)
+  ok 2 [chromium] › tests\e2e\store.spec.ts:64:5 › venta completa desde caja hasta pagos combinados y recibo (5.6s)
+
+  2 passed (16.3s)
+# exit=0 · fin 2026-10-06T01:55:14-04:00
+# después: escucha en 4132 = []
+
+# Con un puerto propio que ya está ocupado (4103, la vista previa del canal) la corrida falla en vez de reutilizarlo:
+$ playwright test "-g" "R9-facturas-8"
+Error: http://127.0.0.1:4103 is already used, make sure that nothing is running on the port/url or set reuseExistingServer:true in config.webServer.
+
+[ELIFECYCLE] Command failed with exit code 1.
+# exit=1 · fin 2026-10-06T01:55:17-04:00
+
+================================================================
+== despues-capturas-optin.txt
+================================================================
+# WP-3 · opt-in: FITSTORE_ACTUALIZAR_CAPTURAS=1 con -g 'pantallas de gestión' · 2026-10-06T02:08:28-04:00
+$ playwright test "-g" "pantallas de gestión"
+
+Running 1 test using 1 worker
+
+  ok 1 [chromium] › tests\e2e\store.spec.ts:122:5 › pantallas de gestión, tema oscuro y versión móvil (4.8s)
+
+  1 passed (5.7s)
+# exit=0
+# git status --porcelain con el opt-in (se esperan los dos PNG de docs/):
+ M fitstore-pos/docs/dashboard-mobile.png
+ M fitstore-pos/docs/pos-mobile.png
+ M fitstore-pos/tests/e2e-higiene.test.ts
+# tras restaurar docs/:
+ M fitstore-pos/tests/e2e-higiene.test.ts
+# (fin)
+
+================================================================
+== rebase-intermediario-sw-offline.txt
+================================================================
+# Canal e2e · mecanismos de fuentes.spec.ts (canal ui) a través del intermediario por prueba · 2026-10-06T05:02:03-04:00
+# 1) guion temporal herramientas/intermediario-temporal.spec.ts (no se confirma; el primer intento falló por un filtro mal escrito del propio guion: contaba la hoja de Google Fonts como propia)
+
+Running 2 tests using 1 worker
+
+(node:47700) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\e2e\zz-temporal-intermediario.spec.ts:15:5 › intermediario: host externo bloqueado con context.route, precarga del service worker en el origen de la prueba y recarga sin conexión (3.6s)
+  ok 2 [chromium] › tests\e2e\zz-temporal-intermediario.spec.ts:95:5 › intermediario: page.route con route.fetch() y route.fulfill() sobre el documento (política del contenedor de escritorio) (1.4s)
+
+  2 passed (5.8s)
+# exit=0
+
+## 2) pruebas existentes de la suite con service worker, modo sin conexión y context.route, a través del intermediario · rama en 22d0272 · 2026-10-06T05:02:18-04:00
+# playwright test tests/e2e/store.spec.ts -g "Mercancía móvil: entrada offline|R9-offline-1: sin internet pero con la red local activa"
+
+Running 2 tests using 1 worker
+
+(node:50508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\e2e\store.spec.ts:316:5 › Mercancía móvil: entrada offline, sincronización única y etiquetas (5.0s)
+  ok 2 [chromium] › tests\e2e\store.spec.ts:1657:5 › R9-offline-1: sin internet pero con la red local activa, la caja sigue vendiendo y al recargar no pide la contraseña (9.7s)
+
+  2 passed (15.4s)
+# exit=0
+## git status --porcelain después (debe salir vacío)
+# fin 2026-10-06T05:02:35-04:00
+
+================================================================
+== rebase-base-nube-3-pruebas.txt
+================================================================
+# Canal e2e · pruebas de la nube con los archivos de 4485a27 tal cual (test de @playwright/test, sin intermediario) · 2026-10-06T04:57:50-04:00
+# patrón: Aceptación 04|Aceptación 35 y 37 en la laptop|R9-facturas-8
+
+Running 3 tests using 1 worker
+
+(node:31008) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía (45.3s)
+(node:12744) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 [chromium] › tests\e2e\store.spec.ts:2269:5 › Aceptación 35 y 37 en la laptop: Compras › Recepciones completa el documento después y descarga el Excel (3.3s)
+(node:30044) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  3 [chromium] › tests\e2e\store.spec.ts:2334:5 › Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible y lo vencido aparte (7.3s)
+
+
+  1) [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía 
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.fill: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByLabel(/Cantidad pendiente/)
+
+
+      63 |     .getByRole("button", { name: "Recibir" })
+      64 |     .click();
+    > 65 |   await page.getByLabel(/Cantidad pendiente/).fill("4");
+         |                                               ^
+      66 |
+      67 |   // La primera vez la API recibe la mercancía, pero la respuesta no llega.
+      68 |   const bodies: any[] = [];
+        at <repo>\tests\e2e\facturas.spec.ts:65:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\facturas-R9-facturas-8-Gua-37b5c-ión-no-duplica-la-mercancía-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › tests\e2e\store.spec.ts:2269:5 › Aceptación 35 y 37 en la laptop: Compras › Recepciones completa el documento después y descarga el Excel 
+
+    Error: expect(received).toMatch(expected)
+
+    Expected pattern: /^compras-.*\.xlsx$/
+    Received string:  "compras.xlsx"
+
+      2325 |   const download = page.waitForEvent("download");
+      2326 |   await page.getByRole("button", { name: "Excel para la contable" }).click();
+    > 2327 |   expect((await download).suggestedFilename()).toMatch(/^compras-.*\.xlsx$/);
+           |                                                ^
+      2328 |   expect(errors).toEqual([]);
+      2329 |   await request.patch("/api/products/" + p.id, {
+      2330 |     headers,
+        at <repo>\tests\e2e\store.spec.ts:2327:48
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\store-Aceptación-35-y-37-e-4f42c-después-y-descarga-el-Excel-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\store-Aceptación-35-y-37-e-4f42c-después-y-descarga-el-Excel-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\store-Aceptación-35-y-37-e-4f42c-después-y-descarga-el-Excel-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\store-Aceptación-35-y-37-e-4f42c-después-y-descarga-el-Excel-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › tests\e2e\store.spec.ts:2334:5 › Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible y lo vencido aparte 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('option').filter({ hasText: 'E2E Merc muwg5emz2557' })
+    Expected substring: "3 en stock"
+    Received string:    "E2E Merc muwg5emz2557Única · E2E-AMV-muwg5emz25575 en stock"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('option').filter({ hasText: 'E2E Merc muwg5emz2557' }) with timeout 5000ms
+      - waiting for getByRole('option').filter({ hasText: 'E2E Merc muwg5emz2557' })
+        14 × locator resolved to <button type="button" role="option" aria-selected="false">…</button>
+           - unexpected value "E2E Merc muwg5emz2557Única · E2E-AMV-muwg5emz25575 en stock"
+
+
+      2369 |   await page.getByLabel("Buscar producto", { exact: true }).fill(p.name);
+      2370 |   const option = page.getByRole("option").filter({ hasText: p.name });
+    > 2371 |   await expect(option).toContainText("3 en stock");
+           |                        ^
+      2372 |   await expect(option).toContainText("vencido: 2");
+      2373 |   // La caja recibe el mismo catálogo: 3 disponibles.
+      2374 |   await ensureCash(page);
+        at <repo>\tests\e2e\store.spec.ts:2371:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\store-Aceptación-04-Mercan-4f624-endible-y-lo-vencido-aparte-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\store-Aceptación-04-Mercan-4f624-endible-y-lo-vencido-aparte-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\store-Aceptación-04-Mercan-4f624-endible-y-lo-vencido-aparte-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\store-Aceptación-04-Mercan-4f624-endible-y-lo-vencido-aparte-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    [chromium] › tests\e2e\facturas.spec.ts:5:5 › R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción no duplica la mercancía 
+    [chromium] › tests\e2e\store.spec.ts:2269:5 › Aceptación 35 y 37 en la laptop: Compras › Recepciones completa el documento después y descarga el Excel 
+    [chromium] › tests\e2e\store.spec.ts:2334:5 › Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible y lo vencido aparte 
+# exit=1
+
+## restaurado: git status --short
+# fin 2026-10-06T04:58:50-04:00
+

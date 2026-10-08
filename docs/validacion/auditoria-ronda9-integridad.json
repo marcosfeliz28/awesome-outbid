@@ -1,0 +1,53 @@
+{
+  "auditDate": "2026-10-06",
+  "archive": {
+    "name": "fitstore-pos-ronda9.zip",
+    "bytes": 6849378,
+    "sha256": "6de8b75d1c9e055fc678f13011c1be13a8f966b30f250d5a276eb0e47d4201d1",
+    "fileEntries": 418
+  },
+  "comparison": {
+    "originalFilesCompared": 418,
+    "originalFilesIdentical": 418,
+    "missingOriginalFiles": [],
+    "modifiedOriginalFiles": [],
+    "allOriginalFilesIdentical": true
+  },
+  "additionalAuditFiles": {
+    "count": 30,
+    "paths": [
+      "docs/AUDITORIA_RONDA9.md",
+      "docs/validacion/auditoria-ronda9-aceptacion.json",
+      "docs/validacion/auditoria-ronda9-actualizacion-r7-r9.json",
+      "docs/validacion/auditoria-ronda9-devolucion-danada.json",
+      "docs/validacion/auditoria-ronda9-evidencias/actualizacion-r7-r9.txt",
+      "docs/validacion/auditoria-ronda9-evidencias/check-final.txt",
+      "docs/validacion/auditoria-ronda9-evidencias/dependencias.json",
+      "docs/validacion/auditoria-ronda9-evidencias/e2e-r9-caja-5-repetido.txt",
+      "docs/validacion/auditoria-ronda9-evidencias/integracion-corrida-2.txt",
+      "docs/validacion/auditoria-ronda9-evidencias/integracion-corrida-3.txt",
+      "docs/validacion/auditoria-ronda9-evidencias/integracion-corrida-4.txt",
+      "docs/validacion/auditoria-ronda9-evidencias/integracion-corrida-5.txt",
+      "docs/validacion/auditoria-ronda9-evidencias/portabilidad-windows.txt",
+      "docs/validacion/auditoria-ronda9-evidencias/regresiones-r8.txt",
+      "docs/validacion/auditoria-ronda9-evidencias/resumen-pruebas.json",
+      "docs/validacion/auditoria-ronda9-evidencias/riesgos-contables.txt",
+      "docs/validacion/auditoria-ronda9-integridad.json",
+      "docs/validacion/auditoria-ronda9-peso-comprobantes.json",
+      "docs/validacion/auditoria-ronda9-regresiones-r8.json",
+      "docs/validacion/auditoria-ronda9-reproducciones/LEEME_AUDITORIA_RONDA9.txt",
+      "docs/validacion/auditoria-ronda9-reproducciones/actualizacion-r7-r9.mjs",
+      "docs/validacion/auditoria-ronda9-reproducciones/archivos-r8/r8-01-colision-mayusculas.xlsx",
+      "docs/validacion/auditoria-ronda9-reproducciones/archivos-r8/r8-03-politica-atomica.xlsx",
+      "docs/validacion/auditoria-ronda9-reproducciones/archivos-r8/r8-03-rango-atomico.xlsx",
+      "docs/validacion/auditoria-ronda9-reproducciones/devolucion-danada.mjs",
+      "docs/validacion/auditoria-ronda9-reproducciones/peso-comprobantes.mjs",
+      "docs/validacion/auditoria-ronda9-reproducciones/regresiones-r8.mjs",
+      "docs/validacion/auditoria-ronda9-reproducciones/riesgos-contables.mjs",
+      "docs/validacion/auditoria-ronda9-riesgos-contables.json",
+      "docs/validacion/auditoria-ronda9.json"
+    ]
+  },
+  "generatedFilesRemoved": ["apps/api/revision-inventario.csv"],
+  "implementationModified": false
+}

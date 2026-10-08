@@ -1,0 +1,136 @@
+{
+  "project": "FitStore POS",
+  "round": 7,
+  "auditDate": "2026-10-05",
+  "verdict": "REQUIERE_CORRECCIONES",
+  "closedPreviousFindings": [
+    "R6-01",
+    "R6-02",
+    "R6-03"
+  ],
+  "officialTests": {
+    "unit": {
+      "passed": 73,
+      "skipped": 1,
+      "registered": 74,
+      "skipReason": "Excel original de la tienda no incluido"
+    },
+    "types": "passed",
+    "lint": "passed",
+    "build": "passed",
+    "integrationCompiled": {
+      "passed": 81,
+      "total": 81
+    },
+    "browser": {
+      "passed": 9,
+      "total": 9
+    }
+  },
+  "independentTests": {
+    "vitestCorrectionControls": 7,
+    "r3UpgradeMigrations": 12,
+    "r6UpgradeMigrations": 12,
+    "importCatalogNames": 616,
+    "importCatalogFinancialValues": "synthetic QA only",
+    "ownBrowserScreenshots": 3,
+    "browserJsErrors": 0
+  },
+  "openFindings": [
+    {
+      "id": "R7-01",
+      "priority": "P1",
+      "title": "ID importado selecciona otro producto por colisión con barras existentes",
+      "evidence": [
+        "auditoria-ronda7-importador.json",
+        "auditoria-ronda7-ui-importador.json"
+      ]
+    },
+    {
+      "id": "R7-02",
+      "priority": "P1",
+      "title": "Lector del inventario altera números de texto con coma decimal",
+      "evidence": [
+        "auditoria-ronda7-importador.json"
+      ]
+    },
+    {
+      "id": "R7-03",
+      "priority": "P2",
+      "title": "Recarga desactiva controles de categorías existentes",
+      "evidence": [
+        "auditoria-ronda7-importador.json"
+      ]
+    },
+    {
+      "id": "R7-04",
+      "priority": "P2",
+      "title": "Reporte de utilidad difiere del costo contabilizado tras devolución parcial",
+      "evidence": [
+        "auditoria-ronda7-kit.json"
+      ],
+      "observedDifference": 0.01
+    }
+  ],
+  "integrity": {
+    "uploadedFile": "fitstore-pos-ronda7.zip",
+    "uploadedBytes": 4677254,
+    "sha256": "def23a3aed35a86bd753bcdf69bcca442103d7bd8e749a2e120cbaf2a0f1d314",
+    "zipIntegrity": "ok",
+    "originalFiles": 270,
+    "originalFilesIdenticalAfterAudit": 270,
+    "implementationModified": false,
+    "officialScreenshotsCopiedAndRestored": [
+      "fitstore-pos/docs/cobro-exitoso.png",
+      "fitstore-pos/docs/dashboard-mobile.png",
+      "fitstore-pos/docs/pos-mobile.png",
+      "fitstore-pos/docs/validacion/ronda6-capturas/cel-equipos-320.png",
+      "fitstore-pos/docs/validacion/ronda6-capturas/cel-equipos-390.png"
+    ],
+    "newQaCsvRemovedAfterTests": true
+  },
+  "implementationModified": false,
+  "cleanup": {
+    "auditRoots": [
+      52624,
+      52626,
+      52625,
+      52236,
+      52235
+    ],
+    "signalled": [
+      52654,
+      52653,
+      52652,
+      52306,
+      52300,
+      52235,
+      52236,
+      52625,
+      52626,
+      52624
+    ],
+    "originalServices": [
+      {
+        "pid": 2258,
+        "running": true
+      },
+      {
+        "pid": 5998,
+        "running": true
+      },
+      {
+        "pid": 6058,
+        "running": true
+      }
+    ]
+  },
+  "limits": [
+    "Sin Excel original: no se certifican costos/precios/existencias reales",
+    "Anthropic simulado con SDK; sin llamada real",
+    "PostgreSQL 18.4 local; sin Compose/PostgreSQL 17",
+    "Sin hardware, carga de producción ni múltiples sucursales",
+    "Suite completa sobre API compilada; no se repitió toda la integración con tsx"
+  ],
+  "setupNote": "Primer arranque anterior a fin de compilación falló; se corrigió el entorno y se ejecutaron 81/81 sobre API compilada disponible."
+}

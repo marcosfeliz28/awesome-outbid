@@ -1,0 +1,205 @@
+{
+  "generatedAt": "2026-10-06T15:40:17.058Z",
+  "source": "Base nueva R7 sembrada, luego migrada in situ con las migraciones R9.",
+  "before": {
+    "migrations": [
+      {
+        "migration_name": "202610030001_initial",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040001_review",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040002_sessions",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040003_finance",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040004_negative_stock",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040005_round2",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040006_round3",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040007_commit_events",
+        "finished": true
+      },
+      {
+        "migration_name": "202610050001_round4_claude",
+        "finished": true
+      },
+      {
+        "migration_name": "202610050002_lot_index",
+        "finished": true
+      },
+      {
+        "migration_name": "202610060001_round6_audit",
+        "finished": true
+      },
+      {
+        "migration_name": "202610070001_round7",
+        "finished": true
+      }
+    ],
+    "counts": {
+      "User": 4,
+      "Category": 5,
+      "Product": 60,
+      "Variant": 228,
+      "Sale": 847
+    }
+  },
+  "after": {
+    "migrations": [
+      {
+        "migration_name": "202610030001_initial",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040001_review",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040002_sessions",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040003_finance",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040004_negative_stock",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040005_round2",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040006_round3",
+        "finished": true
+      },
+      {
+        "migration_name": "202610040007_commit_events",
+        "finished": true
+      },
+      {
+        "migration_name": "202610050001_round4_claude",
+        "finished": true
+      },
+      {
+        "migration_name": "202610050002_lot_index",
+        "finished": true
+      },
+      {
+        "migration_name": "202610060001_round6_audit",
+        "finished": true
+      },
+      {
+        "migration_name": "202610070001_round7",
+        "finished": true
+      },
+      {
+        "migration_name": "202610090001_r9_caja",
+        "finished": true
+      },
+      {
+        "migration_name": "202610100001_tienda_caja",
+        "finished": true
+      },
+      {
+        "migration_name": "202610100101_mercancia_recepciones",
+        "finished": true
+      }
+    ],
+    "counts": {
+      "User": 4,
+      "Category": 5,
+      "Product": 60,
+      "Variant": 228,
+      "Sale": 847
+    }
+  },
+  "legacyQuote": {
+    "id": "17c26a62-f955-404d-80db-b9ecdb5ac949",
+    "globalDiscountAfterUpgrade": 0
+  },
+  "newColumns": [
+    {
+      "table_name": "CashSession",
+      "column_name": "closeDetails",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "GoodsReceipt",
+      "column_name": "damagedCost",
+      "is_nullable": "NO",
+      "column_default": "0"
+    },
+    {
+      "table_name": "GoodsReceipt",
+      "column_name": "supplierNcf",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "PurchaseItem",
+      "column_name": "damagedQty",
+      "is_nullable": "NO",
+      "column_default": "0"
+    },
+    {
+      "table_name": "PurchaseOrder",
+      "column_name": "supplierNcf",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Quote",
+      "column_name": "globalDiscount",
+      "is_nullable": "NO",
+      "column_default": "0"
+    },
+    {
+      "table_name": "Terminal",
+      "column_name": "registerName",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "Terminal",
+      "column_name": "registerNumber",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_name": "User",
+      "column_name": "cashierNumber",
+      "is_nullable": "YES",
+      "column_default": null
+    }
+  ],
+  "newIndexes": [
+    "Terminal_branch_registerNumber_active_key",
+    "User_branch_cashierNumber_active_key"
+  ],
+  "currentCompiledApi": {
+    "health": true,
+    "loginStatus": 201,
+    "catalogStatus": 200,
+    "catalogItems": 1
+  },
+  "passed": true
+}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Nexora POS</title>
+  <rect width="512" height="512" rx="120" fill="#7c3aed"/>
+  <path d="M117 394V118h66l142 176V118h70v276h-66L187 218v176z" fill="#fff"/>
+  <circle cx="397" cy="397" r="36" fill="#ec4899"/>
+</svg>

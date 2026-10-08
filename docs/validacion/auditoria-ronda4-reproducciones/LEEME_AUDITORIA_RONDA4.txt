@@ -1,0 +1,22 @@
+PAQUETE DE AUDITORÍA FITSTORE POS · RONDA 4
+
+Este paquete contiene el informe, la evidencia propia y el mensaje para Claude. No contiene una aplicación corregida ni dependencias ni secretos.
+
+Leer primero MENSAJE_PARA_CLAUDE_AUDITORIA_RONDA4.txt y docs/AUDITORIA_RONDA4.md. La evidencia consolidada es docs/validacion/auditoria-ronda4.json. Los archivos de validación de Claude del ZIP original no se presentan como resultados propios.
+
+Se compararon los 129 archivos originales del ZIP: todos permanecen idénticos. Tres imágenes que la suite E2E sobrescribió se copiaron a la evidencia propia y se restauraron desde el ZIP original. No hubo cambios de implementación.
+
+Los scripts de reproducciones documentan el entorno aislado usado aquí. Contienen únicamente cuentas y contraseñas de la semilla/demo y QA. Sus rutas /workspace/auditoria-ronda4 y puertos corresponden a este entorno; adaptarlos antes de reutilizarlos. Usar siempre bases separadas de producción.
+
+Orden de reproducción empleado:
+1. Crear una copia del ZIP original e instalar su lockfile; generar Prisma y migrar/sembrar la base nueva.
+2. pnpm check. Ejecutar API compilada y PWA compilada; FITSTORE_API_URL y FITSTORE_WEB_URL seleccionan sus puertos. PLAYWRIGHT_BROWSERS_PATH selecciona el Chromium instalado.
+3. pnpm test:integration y pnpm test:e2e. Contrastar integración contra tsx, manteniendo el mismo esquema y datos QA.
+4. api-comprobar.mjs: casos originales, precisión y respuesta de validación compilada.
+5. Base de actualización: aplicar las migraciones anteriores a R4; sembrar con R3; arrancar API R3. legacy-preparar.mjs crea equipo, compra y referencia huérfana por esa API. Detener esa API, ejecutar legacy-migrar.mjs (SQL exacto R4), arrancar API R4 y ejecutar legacy-comprobar.mjs.
+6. compras-orden-comprobar.mjs y sse-comprobar.mjs sobre la base migrada. SSE fuerza una espera inicial con un bloqueo temporal de tabla exclusivamente en QA y lo libera.
+7. pruebas/concurrencia-y-facturas.test.ts: cuatro reproducciones controladas que afirman el fallo observado. Deben cambiar sus expectativas al implementar las correcciones.
+8. ui-comprobar.mjs: Chromium, PWA compilada, capturas y medidas en 320/390/1440 px; espera fuentes y transiciones.
+9. modulos-comprobar.mjs: clases de Zod ESM/CommonJS; no necesita API.
+
+La extracción real de Anthropic no se invocó. La migración se probó sobre PostgreSQL 18.4 local; el contenedor PostgreSQL 17 de Compose no se ejecutó.

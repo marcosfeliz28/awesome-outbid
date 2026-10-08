@@ -1,0 +1,28 @@
+{
+  "mode": "R7 antes de actualizar",
+  "source": "Devolución creada realmente por API compilada R7; sin quitar ni inyectar campos de costo por SQL.",
+  "before": {
+    "saleCost": 50.05,
+    "returnCost": 15.02,
+    "returnItems": [
+      {
+        "qty": 3,
+        "opened": false,
+        "damaged": false,
+        "restock": true,
+        "saleItemId": "abd0d566-62ab-47d1-87ae-80e98cac360b"
+      }
+    ],
+    "reportedRemainingCost": 35.04,
+    "bookedRemainingCost": 35.03,
+    "profit": {
+      "Producto": "QA-legado-combo muvusbp1",
+      "Categoría": "Ropa deportiva",
+      "Ventas": 140,
+      "Costo": 35.04,
+      "Unidades": 7,
+      "Utilidad": 104.96,
+      "Margen": 74.97
+    }
+  }
+}

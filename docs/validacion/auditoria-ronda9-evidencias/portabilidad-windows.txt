@@ -1,0 +1,17 @@
+
+ RUN  v3.2.7 /workspace/auditoria-fitstore-ronda9/fitstore-pos
+
+ ✓ tests/e2e-higiene.test.ts (11 tests) 423ms
+   ✓ suite E2E · no ensucia el repositorio (WP-3) > una corrida normal deja las capturas en la carpeta de resultados, que git ignora; sólo FITSTORE_ACTUALIZAR_CAPTURAS=1 las lleva a docs/  371ms
+stderr | tests/portabilidad.test.ts > Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol
+No se pudo iniciar ausente: spawn orden-fitstore-que-no-existe ENOENT
+
+ ✓ tests/portabilidad.test.ts (20 tests) 11742ms
+   ✓ Portabilidad · verificación (scripts/verify.mjs) > ejecuta pnpm en esta plataforma y devuelve el código de salida  1018ms
+   ✓ Portabilidad · verificación (scripts/verify.mjs) > detener acaba con el proceso iniciado y, en Windows, con todo su árbol  10491ms
+
+ Test Files  2 passed (2)
+      Tests  31 passed (31)
+   Start at  15:47:20
+   Duration  12.03s (transform 134ms, setup 0ms, collect 119ms, tests 12.17s, environment 0ms, prepare 149ms)
+

@@ -1,0 +1,194 @@
+{
+  "project": "FitStore POS",
+  "round": 6,
+  "author": "Claude",
+  "audit": {
+    "report": "docs/AUDITORIA_RONDA4.md",
+    "evidence": "docs/validacion/auditoria-ronda4.json",
+    "auditedZipSha256": "2dab7feecca84918b95443a6636e67c31b32234e98bcbc7b6f675780ea43c7c2"
+  },
+  "suites": {
+    "check": {
+      "passed": true,
+      "unitTests": 38,
+      "log": "ronda6-check.txt"
+    },
+    "integrationCompiled": {
+      "passed": 77,
+      "total": 77,
+      "runtime": "node dist/main.js",
+      "log": "ronda6-integracion-compilada.txt"
+    },
+    "integrationDevelopment": {
+      "passed": 77,
+      "total": 77,
+      "runtime": "tsx src/main.ts",
+      "log": "ronda6-integracion-desarrollo.txt"
+    },
+    "e2e": {
+      "passed": 8,
+      "total": 8,
+      "runtime": "PWA compilada + API compilada, Chromium",
+      "log": "ronda6-navegador.txt"
+    },
+    "upgradeFromR3": {
+      "passed": 6,
+      "total": 6,
+      "how": "Datos creados por la API R3 (30393fc) en base separada; prisma migrate deploy; API R6 compilada",
+      "dir": "ronda6-actualizacion/"
+    },
+    "auditorReproductions": {
+      "failingAsExpected": 4,
+      "total": 4,
+      "meaning": "Afirman el defecto; ahora reciben el comportamiento corregido",
+      "log": "ronda6-reproducciones-chatgpt.txt"
+    }
+  },
+  "findings": [
+    {
+      "id": "R4-01",
+      "priority": "P1",
+      "title": "Equipo anterior reclamado sin aprobación",
+      "status": "corregido",
+      "fix": [
+        "Migración 202610060001: legacy=true y aprobación retirada a equipos sin creador ni aprobación de gerente",
+        "register: reclamo de equipo sin secreto queda pendiente (salvo gerente) y se audita terminal_legacy_claimed",
+        "approve rechaza equipos sin secreto; guard exige aprobación y secreto",
+        "Equipos muestra quién reclamó el equipo anterior"
+      ],
+      "tests": [
+        "tests/api.test.ts › Ronda 6 › R4-01"
+      ],
+      "evidence": [
+        "ronda6-actualizacion/3-comprobacion.json"
+      ]
+    },
+    {
+      "id": "R4-02",
+      "priority": "P1",
+      "title": "Compras históricas fuera del saldo",
+      "status": "corregido",
+      "fix": [
+        "Recuperación idempotente desde MerchandiseOperation + AuditLog (operación y bitácora únicas, total coincidente, misma sucursal) y desde las líneas de la recepción de orden",
+        "Lo ambiguo queda en Sin conciliar; no se inventa proveedor ni total"
+      ],
+      "tests": [
+        "tests/api.test.ts › Ronda 6 › R4-02"
+      ],
+      "evidence": [
+        "ronda6-actualizacion/2-migracion.txt",
+        "ronda6-actualizacion/3-comprobacion.json"
+      ]
+    },
+    {
+      "id": "R4-03",
+      "priority": "P1",
+      "title": "Cantidades fuera de precisión cambian costos",
+      "status": "corregido",
+      "fix": [
+        "stockQty/countedQty/signedStockQty en @fitstore/shared aplicados en recepción, orden, Mercancía, ajuste, conteo, venta, devolución, cotización y kit"
+      ],
+      "tests": [
+        "tests/api.test.ts › Ronda 6 › R4-03"
+      ],
+      "evidence": [
+        "ronda6-integracion-compilada.txt"
+      ]
+    },
+    {
+      "id": "R4-04",
+      "priority": "P1",
+      "title": "Factura aceptada contra orden deja saldo incorrecto",
+      "status": "corregido",
+      "fix": [
+        "Reporte de compras: Compras = total de recepciones (costo real, flete, impuestos); Ordenado aparte; Sin conciliar"
+      ],
+      "tests": [
+        "tests/api.test.ts › Ronda 6 › R4-04"
+      ],
+      "evidence": [
+        "ronda6-integracion-compilada.txt"
+      ]
+    },
+    {
+      "id": "R4-05",
+      "priority": "P2",
+      "title": "Inicio concurrente del hub",
+      "status": "corregido",
+      "fix": [
+        "Promesa de inicialización compartida; generación invalida inicios pendientes al quedar sin clientes; remove idempotente"
+      ],
+      "tests": [
+        "tests/realtime.test.ts › R4-05"
+      ],
+      "evidence": [
+        "ronda6-check.txt",
+        "ronda6-reproducciones-chatgpt.txt"
+      ]
+    },
+    {
+      "id": "R4-06",
+      "priority": "P2",
+      "title": "Cupos SSE tardíos y cierre durante el alta",
+      "status": "corregido",
+      "fix": [
+        "Cupo reservado antes del primer await con devolución; cierre instalado antes del alta; isClosed en hub.add; sin req close"
+      ],
+      "tests": [
+        "tests/realtime.test.ts › R4-06",
+        "tests/api.test.ts › Ronda 6 › R4-06"
+      ],
+      "evidence": [
+        "ronda6-integracion-compilada.txt"
+      ]
+    },
+    {
+      "id": "R4-07",
+      "priority": "P2",
+      "title": "Variante única incompatible",
+      "status": "corregido",
+      "fix": [
+        "Detección de conflictos por vocabulario del catálogo, sabores, colores, tallas y medidas número+unidad; nota con el atributo en conflicto"
+      ],
+      "tests": [
+        "tests/invoice.test.ts › variante única y atributos en conflicto"
+      ],
+      "evidence": [
+        "ronda6-check.txt"
+      ]
+    },
+    {
+      "id": "R4-08",
+      "priority": "P2",
+      "title": "API compilada devuelve 500",
+      "status": "corregido",
+      "fix": [
+        "Una sola instancia de zod reexportada por @fitstore/shared; filtro reconoce ZodError por su forma"
+      ],
+      "tests": [
+        "Suite completa con node dist/main.js",
+        "tests/api.test.ts › Ronda 6 › R4-08"
+      ],
+      "evidence": [
+        "ronda6-integracion-compilada.txt"
+      ]
+    },
+    {
+      "id": "R4-09",
+      "priority": "P3",
+      "title": "Pestañas desbordan en celular",
+      "status": "corregido",
+      "fix": [
+        ".tabs con desplazamiento propio; Configuración en dos columnas hasta 640 px"
+      ],
+      "tests": [
+        "tests/e2e/store.spec.ts › Configuración y Equipos caben en 320 y 390 px"
+      ],
+      "evidence": [
+        "ronda6-navegador.txt",
+        "ronda6-capturas/cel-equipos-320.png",
+        "ronda6-capturas/cel-equipos-390.png"
+      ]
+    }
+  ]
+}

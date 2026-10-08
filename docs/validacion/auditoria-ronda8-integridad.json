@@ -1,0 +1,14 @@
+{
+  "archive": "fitstore-pos-ronda8.zip",
+  "archiveBytes": 5561534,
+  "sha256": "b5a802fce919829f6e72774397e772bec236ddc6976009e82478abe4f145948c",
+  "originalFilesIdenticalAfterAudit": 327,
+  "restoredOriginalFiles": [
+    "fitstore-pos/docs/cobro-exitoso.png",
+    "fitstore-pos/docs/dashboard-mobile.png",
+    "fitstore-pos/docs/pos-mobile.png",
+    "fitstore-pos/docs/validacion/ronda6-capturas/cel-equipos-320.png",
+    "fitstore-pos/docs/validacion/ronda6-capturas/cel-equipos-390.png"
+  ],
+  "implementationModified": false
+}
