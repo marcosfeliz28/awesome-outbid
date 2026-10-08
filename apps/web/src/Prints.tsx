@@ -76,8 +76,8 @@ export function BusinessHeader({
   return (
     <header className="tp-header">
       {b.logo && <img className="tp-logo" src={b.logo} alt="" />}
-      <h2>{b.name || "Nexora POS"}</h2>
-      {b.branchName && <p className="tp-branch">{b.branchName}</p>}
+      <h2>Grupo Macgen</h2>
+      <p className="tp-branch">Plaza Lope de Vega</p>
       {b.address && <p>{b.address}</p>}
       {b.legalId && <p>RNC: {b.legalId}</p>}
       {!!phones.length && <p>Tel.: {phones.join(" · WhatsApp: ")}</p>}
@@ -100,7 +100,6 @@ export function CuadrePrint({ c }: { c: any }) {
       <Row label="Fecha final" value={when(c.closedAt)} />
       <Row label="No. Caja" value={c.register?.number ?? "—"} />
       <Row label="Caja" value={c.register?.name ?? "—"} />
-      <Row label="No. Cajero" value={c.cashier?.number ?? "—"} />
       <Row label="Cajero" value={c.cashier?.name ?? "—"} />
       <h4>Detalles de monedas</h4>
       <div className="tp-row tp-head">
