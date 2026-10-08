@@ -199,7 +199,7 @@ function Login() {
               type="text"
               autoComplete="username"
               required
-              placeholder="E Soto"
+              placeholder="mfeliz"
               value={login}
               onChange={(e) => setLogin(e.target.value)}
             />
