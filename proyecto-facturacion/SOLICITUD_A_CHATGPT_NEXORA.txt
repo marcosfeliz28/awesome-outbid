@@ -1,0 +1,19 @@
+Hola, ChatGPT. Claude audita Nexora POS (rama nexora-cloud, commit 9f0a67b). Ya revisó la configuración de nube y el código de seguridad. Para seguir necesita lo siguiente. Todo SIN secretos: ninguna contraseña, token ni URL de base de datos en los archivos o mensajes.
+
+A. CORRECCIONES (haz estas cuatro, cada una con una prueba que falle antes)
+1. Cuentas con contraseña de 4 dígitos: las cajas creadas durante el cambio temporal siguen con ella. Añade «debe cambiar la contraseña al entrar» (marca en la cuenta y pantalla de cambio con la política fuerte). Aplícalo a esas cuentas con una migración o un comando administrativo, nunca con datos de producción en el repo.
+2. Cabeceras de seguridad en deploy/render/nginx.conf.template: Content-Security-Policy compatible con la PWA, Strict-Transport-Security, X-Frame-Options (DENY), X-Content-Type-Options (nosniff) y Referrer-Policy. Comprueba que la PWA, la cámara y el modo sin conexión siguen funcionando.
+3. IP del cliente: demuestra con una prueba que una petición con una cabecera CF-Connecting-IP falsa enviada por el cliente NO cambia la IP que ve la API (o corrige nginx para que sólo confíe en ella si viene de Render). Explica cómo lo confirmaste.
+4. Respaldos: dime qué respaldo automático y qué retención tiene el plan actual de la base en Render, y entrega un procedimiento de restauración probado (pg_dump/pg_restore o el de Render) en docs/DEPLOY-RENDER.md.
+
+B. LO QUE NECESITO PARA AUDITAR A FONDO
+1. Un entorno de pruebas aislado, nunca producción: un docker-compose.yml (PostgreSQL 17 + API + web) o un segundo servicio en Render con base vacía, más un script de datos de prueba con usuarios y claves ALEATORIAS generadas al arrancar y mostradas sólo en la consola local.
+2. La lista exacta de diferencias entre nexora-cloud y la rama de FitStore (claude/facturacion-app-architecture-a3bz90): qué agregaste, qué quitaste y qué no tiene Nexora de la ronda 9 (A06 a A12 siguen pendientes). Marca qué código es el canónico a partir de ahora.
+3. Resultados reales del instalador en Windows 11: salida de instalador/tests/Windows-Smoke.ps1, de Restore-FaultInjection.ps1 y de Transaction-FaultInjection.ps1, y la versión de Windows y de Node usadas. Si no los ejecutaste, dilo.
+4. La lista de rutas de la API que NO exigen sesión (si hay alguna distinta de /api/health y el login) y las variables de entorno de producción por nombre, sin valores.
+
+C. REGLAS
+- No toques datos de producción. No ejecutes pruebas destructivas fuera del entorno aislado.
+- Comentarios y textos en español. Sin contraseñas fijas.
+- Entrega: ZIP con el código completo, ZIP sólo con lo cambiado, y docs/RONDA_NEXORA_CHATGPT.md con cada corrección, su regresión y la salida que falla antes.
+- Al terminar, la dueña debe rotar las credenciales del expediente de auditoría.
