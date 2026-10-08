@@ -58,11 +58,35 @@ La cámara requiere HTTPS o localhost y permiso del usuario. Las fotografías y 
 
 ## Respaldos
 
-```bash
-pnpm backup
-```
+`pnpm backup` crea un dump PostgreSQL en formato custom de la base indicada por
+`DATABASE_URL`. Antes de publicarlo como respaldo final, exige que `pg_restore
+--list` lo pueda leer; luego genera SHA-256 y un manifiesto JSON. Sólo después
+de completar una copia verificada aplica la retención de 30 días. En caso de
+error conserva los respaldos anteriores y elimina el archivo temporal.
 
-Requiere `pg_dump` de versión igual o posterior al servidor; se puede indicar `PG_DUMP_BIN`. Escribe un archivo de formato custom en `backups/` y retiene 30 días. Programa el comando diariamente con cron/scheduler del proveedor y copia el resultado a un almacenamiento separado. La programación y la copia externa no están activadas automáticamente.
+Requiere `pg_dump` y `pg_restore` de versión igual o posterior al servidor; se
+puede indicar `PG_DUMP_BIN` y `PG_RESTORE_BIN`. `NEXORA_BACKUP_DIR` permite
+escribir a una carpeta persistente local (por ejemplo, una carpeta sincronizada
+con OneDrive); si se omite, se usa `backups/` dentro del proyecto. El script
+respalda sólo la URL suministrada: no crea snapshots administrados en Render,
+no sube archivos a la nube y no instala por sí solo una tarea programada.
+
+Para descargar una copia de la base cloud a una laptop, ejecuta el script desde
+esa laptop con el `DATABASE_URL` externo de Render disponible únicamente en el
+entorno protegido del proceso, y elige una carpeta local persistente mediante
+`NEXORA_BACKUP_DIR`. No pegues esa URL en el comando, repositorio, ticket,
+captura, historial de shell ni archivo compartido. Si se requiere habilitar el
+endpoint externo de Render, limita su acceso a una IP de salida confiable o a
+un canal VPN; no lo abras a todas las IP sin necesidad.
+La programación actual del instalador Windows copia su PostgreSQL local; no
+significa que ya esté descargando la base de Render.
+
+Las copias deben guardarse también fuera de la laptop (OneDrive, USB guardado
+separadamente u otro almacenamiento) para cubrir robo o daño. La política y
+retención de snapshots del servicio PostgreSQL en Render se administran aparte
+en Render y no quedan verificadas ni modificadas por este script. Programa el
+proceso externo sólo después de proteger el secreto y probar una restauración;
+la restauración destructiva nunca se ejecuta automáticamente.
 
 Restauración: detén el tráfico, restaura en una base nueva con `pg_restore`, verifica saldos/ventas y cambia `DATABASE_URL`. Prueba una restauración periódicamente. La restauración destructiva nunca se ejecuta automáticamente.
 

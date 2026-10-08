@@ -18,6 +18,7 @@ import { arch, platform, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { crc32, inflateRawSync } from "node:zlib";
+import { getDatabaseConfig } from "../scripts/backup.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WINDOWS = process.platform === "win32";
@@ -684,6 +685,33 @@ setInterval(() => {}, 1000);
 });
 
 describe("Portabilidad · respaldo (scripts/backup.mjs)", () => {
+  it("prepara una conexión Render sin propagar otros secretos del entorno", () => {
+    const { database, env } = getDatabaseConfig(
+      "postgresql://backup%40user:p%40ss%3Aword@db.example.test:5432/nexora%20pos?sslmode=require",
+    );
+    expect(database).toBe("nexora pos");
+    expect(env).toMatchObject({
+      PGHOST: "db.example.test",
+      PGPORT: "5432",
+      PGUSER: "backup@user",
+      PGPASSWORD: "p@ss:word",
+      PGDATABASE: "nexora pos",
+      PGSSLMODE: "require",
+      PGAPPNAME: "nexora-pos-backup",
+    });
+    expect(env).not.toHaveProperty("DATABASE_URL");
+    expect(env).not.toHaveProperty("JWT_SECRET");
+  });
+
+  it("rechaza URLs que no identifican una base de datos PostgreSQL", () => {
+    expect(() => getDatabaseConfig("https://example.test/db")).toThrow(
+      "DATABASE_URL debe usar el protocolo PostgreSQL.",
+    );
+    expect(() => getDatabaseConfig("postgresql://db.example.test")).toThrow(
+      "DATABASE_URL debe incluir servidor, usuario y base de datos.",
+    );
+  });
+
   it("explica cómo indicar pg_dump cuando no está en el PATH", async () => {
     // El instalador de PostgreSQL para Windows no lo agrega al PATH: el
     // respaldo terminaba con «spawn pg_dump ENOENT» y ninguna pista.

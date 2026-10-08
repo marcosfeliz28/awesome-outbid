@@ -188,7 +188,9 @@ Esta preparación no incluye ni autoriza:
 
 - compra, cuenta, repositorio, dominio o despliegue;
 - importación del inventario real;
-- bucket S3 y cron nocturno para el respaldo externo;
+- almacenamiento externo y programación para respaldos cloud; `pnpm backup`
+  puede crear/verificar una copia desde una laptop cuando se le proporciona de
+  forma protegida la URL PostgreSQL, pero no se ha programado esa ejecución;
 - monitor externo y alertas operativas;
 - ensayo de restauración;
 - pruebas reales con dos laptops, celular, impresora, lector y cortes de red;
