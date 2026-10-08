@@ -335,7 +335,7 @@ export class SalesController {
           where: { id: actor.branchId },
         });
         const config = settings?.data as any;
-        if (config?.requireCustomer === true && !customer)
+        if (!customer)
           bad("Selecciona o crea un cliente antes de vender.");
         const components = await tx.kitComponent.findMany({
           where: { kitVariantId: { in: input.items.map((i) => i.variantId) } },

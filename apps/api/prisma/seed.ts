@@ -539,12 +539,9 @@ async function main() {
             receiptWidth: "80",
             sessionTimeoutMinutes: 30,
             branchName: "Plaza Lope de Vega",
-            // La demostración y sus pruebas conservan ventas anónimas. Las
-            // instalaciones reales y Grupo Mac Hen activan la exigencia.
-            requireCustomer: false,
-            // La demostración conserva las pruebas del flujo offline. Las
-            // tiendas nuevas que no tengan esta clave quedan protegidas por
-            // el valor predeterminado false del API.
+            // Todas las ventas deben quedar asociadas a un cliente.
+            requireCustomer: true,
+            // Se conserva la configuración del flujo de ventas offline.
             allowOfflineSales: true,
           },
         },

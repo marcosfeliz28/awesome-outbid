@@ -380,7 +380,7 @@ export function POS({ go }: { go: (page: string) => void }) {
   };
   const charge = () => {
     if (!cart.length) return;
-    if (config.data?.requireCustomer && !customerId) {
+    if (!customerId) {
       setClientPicker(true);
       toast("Selecciona o crea el cliente antes de cobrar.", true);
       return;
@@ -818,9 +818,7 @@ export function POS({ go }: { go: (page: string) => void }) {
           <div>
             <strong>
               {customers.data?.find((c: any) => c.id === customerId)?.name ||
-                (config.data?.requireCustomer
-                  ? "Selecciona el cliente"
-                  : "Consumidor final")}
+                "Selecciona el cliente"}
             </strong>
             <small>Elegir cliente · F4</small>
           </div>
@@ -1132,17 +1130,6 @@ export function POS({ go }: { go: (page: string) => void }) {
         ) : (
           <>
             <div className="customer-list">
-              {!config.data?.requireCustomer && (
-                <button
-                  onClick={() => {
-                    setCustomer(null);
-                    setClientPicker(false);
-                  }}
-                >
-                  <UserRound />
-                  Consumidor final
-                </button>
-              )}
               {customers.data?.map((c: any) => (
                 <button
                   key={c.id}
@@ -1489,7 +1476,7 @@ function Checkout({
     }
   };
   const finish = async () => {
-    if (config?.requireCustomer && !customerId) {
+    if (!customerId) {
       setError("Selecciona o crea el cliente antes de vender.");
       return;
     }

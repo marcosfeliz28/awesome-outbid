@@ -2741,11 +2741,6 @@ export function Configuration() {
       type: "checkbox",
     },
     {
-      key: "requireCustomer",
-      label: "Exigir un cliente identificado en todas las ventas",
-      type: "checkbox",
-    },
-    {
       key: "usdRate",
       label: "Tasa del dólar (RD$ por US$)",
       help: "Vacío: no se cuentan dólares.",

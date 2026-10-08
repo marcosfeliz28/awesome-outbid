@@ -94,9 +94,9 @@ const configSchema = z.object({
     .nullable()
     .optional(),
   autoPrintReceipt: z.boolean().default(false),
-  // Cuando está activo, ninguna factura puede guardarse sin una persona o
-  // empresa identificada. La caja también permite crearla sin salir del POS.
-  requireCustomer: z.boolean().default(false),
+  // Toda factura debe identificar a una persona o empresa; puede crearse
+  // desde el selector de clientes del POS.
+  requireCustomer: z.boolean().default(true),
   // Tasa del día (RD$ por unidad) para el efectivo en dólares y euros.
   usdRate: z.number().positive().max(10000).nullable().optional(),
   eurRate: z.number().positive().max(10000).nullable().optional(),
@@ -398,7 +398,7 @@ export class AdminController {
     return {
       ...data,
       allowOfflineSales: data.allowOfflineSales === true,
-      requireCustomer: data.requireCustomer === true,
+      requireCustomer: true,
     };
   }
   @Put("settings")
@@ -411,10 +411,6 @@ export class AdminController {
       typeof body === "object" &&
       body !== null &&
       Object.prototype.hasOwnProperty.call(body, "allowOfflineSales");
-    const hasRequireCustomer =
-      typeof body === "object" &&
-      body !== null &&
-      Object.prototype.hasOwnProperty.call(body, "requireCustomer");
     const { logo, ...config } = parse(configSchema, body);
     if (logo) checkLogo(logo);
     return this.db.$transaction(async (tx) => {
@@ -430,9 +426,9 @@ export class AdminController {
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
           : previous?.allowOfflineSales === true,
-        requireCustomer: hasRequireCustomer
-          ? config.requireCustomer
-          : previous?.requireCustomer === true,
+        // Compatibilidad con clientes anteriores, pero la regla comercial es
+        // invariable: toda venta se guarda a nombre de un cliente.
+        requireCustomer: true,
         ...(kept ? { logo: kept } : {}),
       };
       const row = await tx.settings.upsert({
