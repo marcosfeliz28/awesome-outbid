@@ -26,4 +26,22 @@ describe("Cumplimiento legal y accesibilidad", () => {
     expect(source).toContain("b.legalId");
     expect(source).toContain('b.logo || "/logo-grupo-macgen.png"');
   });
+
+  it("G5: los PDF incluyen contacto, hora, tratamiento del ITBIS y condiciones de la nota", () => {
+    const source = readFileSync("apps/api/src/sales.ts", "utf8");
+    const salePdf = source.slice(source.indexOf('@Get("sales/:id/receipt.pdf")'));
+    const noteStart = source.indexOf('@Get("returns/:id/credit-note.pdf")');
+    const notePdf = source.slice(
+      noteStart,
+      source.indexOf('@Post("sales/:id/installments")', noteStart),
+    );
+    expect(salePdf).toContain("business.phone");
+    expect(salePdf).toContain("Fecha y hora:");
+    expect(salePdf).toContain("ITBIS adicional:");
+    expect(salePdf).toContain("business.taxIncluded");
+    expect(notePdf).toContain("this.db.settings.findUnique");
+    expect(notePdf).toContain("business.address");
+    expect(notePdf).toContain("Fecha:");
+    expect(notePdf).toContain("Condiciones de uso:");
+  });
 });

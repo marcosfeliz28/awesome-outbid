@@ -1671,25 +1671,54 @@ export class SalesController {
     const returned = await this.db.saleReturn.findFirstOrThrow({
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
-    const note = await this.db.creditNote.findUniqueOrThrow({
-      where: { returnId: returned.id },
-    });
+    const [note, settings] = await Promise.all([
+      this.db.creditNote.findUniqueOrThrow({
+        where: { returnId: returned.id },
+      }),
+      this.db.settings.findUnique({ where: { id: actor.branchId } }),
+    ]);
+    const business = (settings?.data as any) ?? {};
     res.setHeader("Content-Type", "application/pdf");
     const doc = new PDFDocument({ size: "A4", margin: 48 });
     doc.pipe(res);
     doc
       .fontSize(22)
-      .text("Nexora POS · " + returned.number)
+      .text(business.name || "Nexora POS", { align: "center" });
+    if (business.branchName)
+      doc.fontSize(11).text(business.branchName, { align: "center" });
+    if (business.address)
+      doc.fontSize(10).text(business.address, { align: "center" });
+    if (business.phone)
+      doc.fontSize(10).text("Tel.: " + business.phone, { align: "center" });
+    if (business.legalId)
+      doc.fontSize(10).text("RNC: " + business.legalId, { align: "center" });
+    doc
+      .moveDown()
+      .fontSize(16)
+      .text("Nota de crédito · " + returned.number)
       .fontSize(12)
       .text("Nota interna de crédito · no fiscal")
+      .text(
+        "Fecha: " +
+          note.createdAt.toLocaleString("es-DO", {
+            timeZone: BUSINESS_TIME_ZONE,
+            dateStyle: "short",
+            timeStyle: "short",
+          }),
+      )
       .text("Importe: RD$ " + note.amount)
       .text("Saldo: RD$ " + note.balance)
+      .text("Motivo de la devolución: " + returned.reason)
       .moveDown()
       .text("Código para presentar en caja:")
       .fontSize(14)
       .text(note.redemptionCode)
       .fontSize(10)
-      .text("Conserva este código. Permite usar el saldo de la nota.");
+      .moveDown()
+      .text("Condiciones de uso:")
+      .text(
+        "Presenta este código en caja. El saldo se aplica a compras en esta sucursal, se descuenta una sola vez por operación y está sujeto a verificación. No es efectivo ni comprobante fiscal.",
+      );
     doc.end();
   }
   @Post("sales/:id/installments")
@@ -2026,16 +2055,20 @@ export class SalesController {
       doc.fontSize(10).text(business.branchName, { align: "center" });
     if (business.address)
       doc.fontSize(9).text(business.address, { align: "center" });
+    if (business.phone)
+      doc.fontSize(9).text("Tel.: " + business.phone, { align: "center" });
     if (business.legalId)
       doc.fontSize(9).text("RNC: " + business.legalId, { align: "center" });
     doc
       .fontSize(10)
       .text("Documento interno — no fiscal")
+      .text(sale.number)
       .text(
-        sale.number +
-          " · " +
-          sale.createdAt.toLocaleDateString("es-DO", {
+        "Fecha y hora: " +
+          sale.createdAt.toLocaleString("es-DO", {
             timeZone: BUSINESS_TIME_ZONE,
+            dateStyle: "short",
+            timeStyle: "short",
           }),
       )
       .moveDown();
@@ -2054,7 +2087,11 @@ export class SalesController {
       );
     doc
       .moveDown()
-      .text("ITBIS incluido: RD$ " + sale.taxTotal)
+      .text(
+        (business.taxIncluded === false
+          ? "ITBIS adicional: RD$ "
+          : "ITBIS incluido: RD$ ") + sale.taxTotal,
+      )
       .fontSize(18)
       .text("Total: RD$ " + sale.total);
     doc.fontSize(10);
