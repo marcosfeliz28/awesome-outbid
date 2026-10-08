@@ -613,6 +613,7 @@ export const permissions: Record<string, string[]> = {
     "reports:read",
     "profit:read",
     "customers:write",
+    "customers:erase",
     "promotions:write",
     "alerts:write",
   ],

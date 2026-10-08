@@ -17,6 +17,7 @@ export default defineConfig({
       "tests/rate-limit-l1.test.ts",
       "tests/cash-privacy.test.ts",
       "tests/compliance.test.ts",
+      "tests/customer-privacy.test.ts",
     ],
   },
 });

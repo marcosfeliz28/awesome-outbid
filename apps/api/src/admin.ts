@@ -46,6 +46,10 @@ const customerSchema = z.object({
   birthday: z.string().datetime().optional(),
   notes: z.string().max(1000).default(""),
 });
+const anonymizeCustomerSchema = z.object({
+  reason,
+  requestRef: z.string().trim().min(3).max(100),
+});
 const supplierSchema = z.object({
   name: z.string().min(2).max(120),
   legalId: z.string().max(30).optional(),
@@ -173,15 +177,105 @@ export class AdminController {
       !can(actor.permissions, "sale:manage")
     )
       bad("Sólo un gerente puede cambiar el límite de crédito.");
-    await this.db.customer.findFirstOrThrow({
+    const before = await this.db.customer.findFirstOrThrow({
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
-    return this.db.customer.update({
+    const row = await this.db.customer.update({
       where: { id },
       data: {
         ...data,
         ...(data.birthday ? { birthday: new Date(data.birthday) } : {}),
       },
+    });
+    const changedFields = Object.keys(data).filter(
+      (field) =>
+        JSON.stringify((before as any)[field]) !==
+        JSON.stringify((row as any)[field]),
+    );
+    await audit(
+      this.db,
+      actor,
+      "update",
+      "customer",
+      id,
+      { changedFields },
+      { changedFields },
+    );
+    return row;
+  }
+
+  @Post("customers/:id/anonymize")
+  @Permit("customers:erase")
+  async anonymizeCustomer(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const customerId = parse(uuid, id);
+    const request = parse(anonymizeCustomerSchema, body);
+    return this.db.$transaction(async (tx) => {
+      await tx.customer.findFirstOrThrow({
+        where: { id: customerId, branchId: actor.branchId },
+      });
+      const [debt, creditNotes] = await Promise.all([
+        tx.sale.aggregate({
+          where: {
+            customerId,
+            branchId: actor.branchId,
+            status: "completed",
+            creditBalance: { gt: 0 },
+          },
+          _sum: { creditBalance: true },
+        }),
+        tx.creditNote.aggregate({
+          where: { customerId, balance: { gt: 0 } },
+          _sum: { balance: true },
+        }),
+      ]);
+      if (
+        Number(debt._sum.creditBalance ?? 0) > 0 ||
+        Number(creditNotes._sum.balance ?? 0) > 0
+      )
+        conflict(
+          "No se puede anonimizar: el cliente tiene crédito, contraentrega o una nota de crédito pendiente.",
+        );
+
+      const marker = { customerId, anonymized: true };
+      await tx.auditLog.updateMany({
+        where: {
+          branchId: actor.branchId,
+          entity: "customer",
+          entityId: customerId,
+        },
+        data: { before: marker, after: marker },
+      });
+      await tx.quote.updateMany({
+        where: { branchId: actor.branchId, customerId },
+        data: { notes: "" },
+      });
+      const row = await tx.customer.update({
+        where: { id: customerId },
+        data: {
+          name: `Cliente anonimizado ${customerId.slice(0, 8)}`,
+          phone: null,
+          email: null,
+          legalId: null,
+          birthday: null,
+          notes: "",
+          creditLimit: 0,
+          active: false,
+        },
+      });
+      await audit(
+        tx,
+        actor,
+        "anonymize",
+        "customer",
+        customerId,
+        undefined,
+        { reason: request.reason, requestRef: request.requestRef },
+      );
+      return row;
     });
   }
   @Get("suppliers") @Permit("purchase:write") suppliers(

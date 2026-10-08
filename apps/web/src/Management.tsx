@@ -1797,13 +1797,16 @@ export function Cash() {
 }
 
 export function Customers() {
+  const user = useStore((state) => state.user)!;
+  const client = useQueryClient();
   const query = useQuery({
     queryKey: ["customers"],
     queryFn: () => api("/customers"),
   });
   const [create, setCreate] = useState(false),
     [search, setSearch] = useState(""),
-    [editing, setEditing] = useState<any>(null);
+    [editing, setEditing] = useState<any>(null),
+    [anonymizing, setAnonymizing] = useState<any>(null);
   const fields: Field[] = [
     { key: "name", label: "Nombre", required: true },
     { key: "phone", label: "Teléfono" },
@@ -1867,9 +1870,22 @@ export function Customers() {
               {
                 label: "Acción",
                 render: (c) => (
-                  <button className="text-link" onClick={() => setEditing(c)}>
-                    Editar
-                  </button>
+                  <div className="table-actions">
+                    <button
+                      className="text-link"
+                      onClick={() => setEditing(c)}
+                    >
+                      Editar
+                    </button>
+                    {can(user.permissions, "customers:erase") && (
+                      <button
+                        className="text-link danger-text"
+                        onClick={() => setAnonymizing(c)}
+                      >
+                        Anonimizar
+                      </button>
+                    )}
+                  </div>
                 ),
               },
             ]}
@@ -1891,6 +1907,22 @@ export function Customers() {
           initial={editing}
           onClose={() => setEditing(null)}
           onSubmit={(data) => mutate("/customers/" + editing.id, data, "PATCH")}
+        />
+      )}
+      {anonymizing && (
+        <ConfirmModal
+          title="Anonimizar cliente"
+          description={`Se eliminarán los datos personales de ${anonymizing.name}. Las ventas y sus montos se conservarán. Esta acción no se puede deshacer.`}
+          confirmLabel="Anonimizar"
+          onClose={() => setAnonymizing(null)}
+          onConfirm={async (reason) => {
+            await post(`/customers/${anonymizing.id}/anonymize`, {
+              reason,
+              requestRef: `APP-${new Date().toISOString()}`,
+            });
+            await client.invalidateQueries({ queryKey: ["customers"] });
+            toast("Cliente anonimizado.");
+          }}
         />
       )}
     </>
