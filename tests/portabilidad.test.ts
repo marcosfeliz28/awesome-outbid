@@ -19,6 +19,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { crc32, inflateRawSync } from "node:zlib";
 import { getDatabaseConfig } from "../scripts/backup.mjs";
+import { databaseConfig } from "../deploy/render/backup/render-backup.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WINDOWS = process.platform === "win32";
@@ -685,6 +686,33 @@ setInterval(() => {}, 1000);
 });
 
 describe("Portabilidad · respaldo (scripts/backup.mjs)", () => {
+  it("prepara el backup cloud con variables PostgreSQL mínimas", () => {
+    const { database, env } = databaseConfig(
+      "postgresql://backup%40user:p%40ss%3Aword@internal-db:5432/nexora?sslmode=require",
+    );
+    expect(database).toBe("nexora");
+    expect(env).toMatchObject({
+      PGHOST: "internal-db",
+      PGPORT: "5432",
+      PGUSER: "backup@user",
+      PGPASSWORD: "p@ss:word",
+      PGDATABASE: "nexora",
+      PGSSLMODE: "require",
+      PGAPPNAME: "nexora-daily-backup",
+    });
+    expect(env).not.toHaveProperty("BACKUP_DATABASE_URL");
+    expect(env).not.toHaveProperty("AWS_SECRET_ACCESS_KEY");
+  });
+
+  it("rechaza URLs incompletas o que no usan PostgreSQL para el backup cloud", () => {
+    expect(() => databaseConfig("https://example.test/db")).toThrow(
+      "BACKUP_DATABASE_URL debe usar PostgreSQL.",
+    );
+    expect(() => databaseConfig("postgresql://internal-db")).toThrow(
+      "BACKUP_DATABASE_URL debe incluir host, usuario y base de datos.",
+    );
+  });
+
   it("prepara una conexión Render sin propagar otros secretos del entorno", () => {
     const { database, env } = getDatabaseConfig(
       "postgresql://backup%40user:p%40ss%3Aword@db.example.test:5432/nexora%20pos?sslmode=require",
