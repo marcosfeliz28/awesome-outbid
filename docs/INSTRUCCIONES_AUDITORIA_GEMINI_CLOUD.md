@@ -1,6 +1,6 @@
 # Instrucciones para auditoría independiente de Nexora POS
 
-Adjunta a este documento el archivo `Nexora-POS-Codigo-Auditoria.zip` y su manifiesto `.sha256.txt`. La versión fuente corresponde al commit `63aa297` del repositorio `marcosfeliz28/awesome-outbid`, rama `nexora-cloud`, publicado en Render el 8 de octubre de 2026.
+Adjunta a este documento el archivo `Nexora-POS-Codigo-Auditoria-6c31cf5.zip` y su manifiesto `.sha256.txt`. La versión fuente corresponde al commit `6c31cf5` del repositorio `marcosfeliz28/awesome-outbid`, rama `nexora-cloud`. Ese commit contiene el ejemplo de usuario `mfeliz`; al preparar este paquete, ese último commit aún estaba pendiente de desplegar en Render.
 
 ## Prompt para Gemini o Cloud
 
