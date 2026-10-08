@@ -1,0 +1,25 @@
+# Ejemplo intencionalmente separado del render.yaml activo: agregar un cron a
+# un Blueprint y sincronizarlo crea un recurso facturable en Render.
+services:
+  - type: cron
+    name: nexora-pos-cloud-backup
+    runtime: docker
+    region: virginia # Debe coincidir con nexora-pos-db.
+    plan: 0.5c-512mb
+    dockerContext: .
+    dockerfilePath: ./deploy/render/backup/Dockerfile
+    autoDeployTrigger: off
+    schedule: "0 7 * * *" # Diario a las 07:00 UTC.
+    envVars:
+      - key: BACKUP_DATABASE_URL
+        sync: false # URL interna del rol de backup, nunca la URL externa/superuser.
+      - key: AWS_REGION
+        sync: false
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: BACKUP_PREFIX
+        value: nexora/postgres
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false

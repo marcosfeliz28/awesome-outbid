@@ -188,9 +188,9 @@ Esta preparación no incluye ni autoriza:
 
 - compra, cuenta, repositorio, dominio o despliegue;
 - importación del inventario real;
-- almacenamiento externo y programación para respaldos cloud; `pnpm backup`
-  puede crear/verificar una copia desde una laptop cuando se le proporciona de
-  forma protegida la URL PostgreSQL, pero no se ha programado esa ejecución;
+- activar y programar el pipeline privado de Render a S3 y de S3 a la laptop.
+  Diseño, fragmento de cron no activo, cliente local y límites: [Respaldo cloud
+  de Render](./RESPALDO_CLOUD_RENDER.md);
 - monitor externo y alertas operativas;
 - ensayo de restauración;
 - pruebas reales con dos laptops, celular, impresora, lector y cortes de red;
