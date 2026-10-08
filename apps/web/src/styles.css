@@ -67,6 +67,11 @@
   --primary-soft: #f2ecfe;
   --pink: #ec4899;
   --green: #059669;
+  --focus: #6d28d9;
+  --input-border: #7b8498;
+  --success-strong: #047857;
+  --danger-text: #c92e43;
+  --warning-text: #92400e;
   --shadow: 0 4px 22px #29315b04;
   color-scheme: light;
   font-family: "Inter", sans-serif;
@@ -86,6 +91,11 @@
   --primary: #a78bfa;
   --primary-soft: #2c2246;
   --green: #34d399;
+  --focus: #a78bfa;
+  --input-border: #6b7894;
+  --success-strong: #047857;
+  --danger-text: #f87171;
+  --warning-text: #fbbf24;
   --shadow: none;
   color-scheme: dark;
 }
@@ -173,7 +183,7 @@ textarea {
   font: inherit;
   color: var(--text);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--input-border);
   border-radius: 9px;
   min-height: 44px;
   padding: 11px 13px;
@@ -199,6 +209,11 @@ input[type="checkbox"] {
   min-height: 20px;
   accent-color: var(--primary);
 }
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
 input[type="number"] {
   font-variant-numeric: tabular-nums;
 }
@@ -207,7 +222,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid #a78bfa;
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 kbd {
@@ -247,7 +262,7 @@ kbd {
   color: var(--muted);
 }
 .button.success {
-  background: #059669;
+  background: var(--success-strong);
   color: #fff;
 }
 .button.danger {
@@ -301,7 +316,7 @@ kbd {
 .metric-icon.orange,
 .alert-symbol.orange {
   background: #fff5e6;
-  color: #b96c0b;
+  color: var(--warning-text);
 }
 .badge.danger {
   background: #fff0f0;
@@ -327,6 +342,10 @@ kbd {
   background: #422230;
   color: #fda4af;
 }
+[data-theme="dark"] .green-text,
+[data-theme="dark"] .trend.positive {
+  color: var(--green) !important;
+}
 .eyebrow {
   font-size: 9px;
   font-weight: 750;
@@ -335,19 +354,19 @@ kbd {
   margin-bottom: 8px;
 }
 .eyebrow.light {
-  color: #dacbff;
+  color: #ffffff;
 }
 .full-width {
   width: 100%;
 }
 .green-text {
-  color: var(--green) !important;
+  color: var(--success-strong) !important;
 }
 .violet-text {
   color: var(--primary) !important;
 }
 .danger-text {
-  color: #e04556 !important;
+  color: var(--danger-text) !important;
 }
 .right {
   text-align: right;
@@ -475,7 +494,7 @@ kbd {
 }
 .nav-caption {
   font-size: 8px;
-  color: #a6aab8;
+  color: var(--muted);
   font-weight: 700;
   letter-spacing: 1.5px;
   padding: 0 12px;
@@ -592,7 +611,7 @@ kbd {
 }
 .breadcrumb span {
   margin: 0 10px;
-  color: #cbd0df;
+  color: #8a93a6;
 }
 .breadcrumb strong {
   color: var(--text);
@@ -626,7 +645,7 @@ kbd {
   white-space: nowrap;
 }
 .connection.offline {
-  color: #b96c0b;
+  color: var(--warning-text);
 }
 .notification-bell {
   position: relative;
@@ -751,7 +770,7 @@ kbd {
   gap: 15px;
   padding: 14px 32px 20px;
   font-size: 9px;
-  color: #a6aab8;
+  color: var(--muted);
 }
 .panel {
   background: var(--surface);
@@ -815,7 +834,7 @@ kbd {
 }
 .welcome-banner p {
   font-size: 10px;
-  color: #90809f;
+  color: #6b5b7d;
   margin: 7px 0 10px;
 }
 .welcome-banner button {
@@ -1037,10 +1056,10 @@ kbd {
   gap: 1px;
 }
 .trend.positive {
-  color: #059669;
+  color: var(--success-strong);
 }
 .trend.negative {
-  color: #dc4f60;
+  color: var(--danger-text);
 }
 .dashboard-main-grid {
   display: grid;
@@ -1083,7 +1102,7 @@ kbd {
   font-size: 10px;
   font-weight: 650;
   background: #fff5e6;
-  color: #b96c0b;
+  color: var(--warning-text);
   border: 1px solid #ffebcc;
   height: 23px;
   min-width: 23px;
@@ -1131,7 +1150,7 @@ kbd {
 .dashboard-alert > svg {
   margin-left: auto;
   margin-top: 7px;
-  color: #bcc0ce;
+  color: #8a93a6;
 }
 .empty-small {
   padding: 30px 0;
@@ -1287,7 +1306,7 @@ td strong {
   width: 27px;
   border-radius: 7px;
   font-size: 9px;
-  color: #a6aab8;
+  color: var(--muted);
   background: var(--surface-soft);
 }
 .rank.first {
@@ -1545,7 +1564,7 @@ td strong {
   flex-wrap: wrap;
 }
 .error-panel > svg {
-  color: #dc4f60;
+  color: var(--danger-text);
 }
 .error-panel p {
   font-size: 12px;
@@ -1952,7 +1971,7 @@ td strong {
   align-items: flex-end;
 }
 .cart-line-total button {
-  color: #c1c4d1;
+  color: #8a93a6;
   padding: 0;
 }
 .cart-line-total strong {
@@ -2020,7 +2039,7 @@ td strong {
   height: 49px;
   width: 100%;
   font-size: 13px;
-  background: #059669;
+  background: var(--success-strong);
 }
 .charge-button span {
   flex: 1;
@@ -2329,7 +2348,7 @@ td strong {
   margin-top: 16px;
 }
 .cash-main p {
-  color: #dac4fb;
+  color: #ffffff;
   font-size: 11px;
 }
 .cash-main > strong {
@@ -2341,7 +2360,7 @@ td strong {
 }
 .cash-main > span:last-child {
   font-size: 11px;
-  color: #dac4fb;
+  color: #ffffff;
 }
 .cash-methods {
   padding: 25px;
@@ -2629,7 +2648,7 @@ td strong {
   margin: 20px 0;
 }
 .login-art p {
-  color: #dac4fb;
+  color: #ffffff;
   font-size: 14px;
   max-width: 320px;
   line-height: 1.8;
@@ -2648,7 +2667,7 @@ td strong {
   align-items: center;
   gap: 14px;
   font-size: 12px;
-  color: #e5d6fc;
+  color: #ffffff;
 }
 .login-stats svg {
   width: 17px;
@@ -3792,8 +3811,14 @@ td strong {
   box-shadow: 0 3px 8px #7c3aed22;
 }
 .goods-mode button.active.exit {
-  background: #db2777;
+  background: #be185d;
   box-shadow: 0 3px 8px #db277722;
+}
+:root[data-theme="dark"] .goods-mode button.active {
+  color: #0b0f19;
+}
+:root[data-theme="dark"] .goods-mode button.active.exit {
+  color: #ffffff;
 }
 .goods-card {
   padding: 18px;
@@ -3975,7 +4000,7 @@ td strong {
   margin: 0 0 10px;
 }
 .goods-line.unmatched .goods-match {
-  color: #92400e;
+  color: var(--warning-text);
   font-weight: 550;
 }
 .goods-fields {
@@ -4019,7 +4044,7 @@ td strong {
   margin: -4px 0 10px;
 }
 .goods-warning {
-  color: #b45309;
+  color: var(--warning-text);
   font-weight: 600;
 }
 .goods-sum {
@@ -4438,7 +4463,7 @@ td strong {
 }
 
 .equipment-legacy {
-  color: #b45309 !important;
+  color: var(--warning-text) !important;
 }
 :root[data-theme="dark"] .equipment-legacy {
   color: #fbbf24 !important;
