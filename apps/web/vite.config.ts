@@ -2,7 +2,13 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+const sentryRelease = process.env.RENDER_GIT_COMMIT
+  ? `nexora-pos@${process.env.RENDER_GIT_COMMIT}`
+  : process.env.VITE_SENTRY_RELEASE || "";
 export default defineConfig({
+  define: {
+    __NEXORA_SENTRY_RELEASE__: JSON.stringify(sentryRelease),
+  },
   build: {
     rollupOptions: {
       output: {

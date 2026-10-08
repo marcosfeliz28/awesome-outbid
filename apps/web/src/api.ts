@@ -2,6 +2,10 @@ import Dexie, { type Table } from "dexie";
 import { create } from "zustand";
 import type { QueryClient } from "@tanstack/react-query";
 import type { SaleInput } from "@fitstore/shared";
+import {
+  businessOperationName,
+  traceBusinessOperation,
+} from "./monitoring";
 
 export type User = {
   id: string;
@@ -281,28 +285,35 @@ export async function api<T = any>(
   options: RequestInit & { timeout?: number } = {},
   retry = true,
 ): Promise<T> {
-  const token = useStore.getState().token;
-  const { timeout, ...init } = options;
-  const headers = new Headers(init.headers);
-  if (!(init.body instanceof FormData))
-    headers.set("Content-Type", "application/json");
-  if (token) headers.set("Authorization", "Bearer " + token);
-  const response = await send(
-    "/api" + path,
-    { ...init, headers, credentials: "include" },
-    timeout,
+  const request = async () => {
+    const token = useStore.getState().token;
+    const { timeout, ...init } = options;
+    const headers = new Headers(init.headers);
+    if (!(init.body instanceof FormData))
+      headers.set("Content-Type", "application/json");
+    if (token) headers.set("Authorization", "Bearer " + token);
+    const response = await send(
+      "/api" + path,
+      { ...init, headers, credentials: "include" },
+      timeout,
+    );
+    if (response.status === 401 && retry) {
+      await refreshSession();
+      return api(path, options, false);
+    }
+    if (!response.ok) {
+      const result = await response
+        .json()
+        .catch(() => ({ message: "No se pudo completar la operación." }));
+      throw new Error(result.message);
+    }
+    return readJson(response);
+  };
+
+  return traceBusinessOperation(
+    businessOperationName(path, options.method),
+    request,
   );
-  if (response.status === 401 && retry) {
-    await refreshSession();
-    return api(path, options, false);
-  }
-  if (!response.ok) {
-    const result = await response
-      .json()
-      .catch(() => ({ message: "No se pudo completar la operación." }));
-    throw new Error(result.message);
-  }
-  return readJson(response);
 }
 export const post = <T = any>(path: string, data: unknown) =>
   api<T>(path, { method: "POST", body: JSON.stringify(data) });
