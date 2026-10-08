@@ -46,3 +46,25 @@ Recepción/ajustes: merma con cantidad positiva suma stock (inventory.ts:510); i
 
 ## Pendiente de recibir
 - Suite de integración y navegador sobre PostgreSQL real (agente en curso).
+
+## Cumplimiento (lista de 20 puntos; ver docs/legal/CUMPLIMIENTO_20_PUNTOS.md)
+
+Prioridad P1 = antes de imprimir tickets reales a clientes.
+
+| ID | Pri | Hallazgo | Dónde | Corrección | Prueba |
+|---|---|---|---|---|---|
+| G1 | P1 | **El ticket de 80 mm se titula «FACTURA», tiene «NCF:» vacío y no dice que no es fiscal.** | Prints.tsx:308-309 | Quitar «FACTURA»; imprimir «DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL» si no hay NCF; ocultar la fila NCF vacía. | Render del ticket sin NCF contiene la leyenda y no contiene «FACTURA». |
+| G2 | P1 | Nombre y dirección fijos («Grupo Macgen», «Plaza Lope de Vega»); ignora Ajustes. | Prints.tsx:79-80 | Usar `name`, `branchName`, `address`, `phone`, `legalId` de Ajustes. | Cambiar el nombre en Ajustes cambia el ticket. |
+| G3 | P2 | `legalId`, `address`, `phone` pueden guardarse vacíos. | admin.ts:58-61 | Obligatorios en Ajustes (DECIDE LA DUEÑA: confirmar datos). | PUT settings sin RNC → 400. |
+| G4 | P2 | Sin política de devoluciones/garantía en ticket; `returnDays` sólo valida. | sales.ts:1263 | Campos `returnPolicyText` y `warrantyDays` en Ajustes e impresión en el pie. DECIDE LA DUEÑA: texto y días. | El ticket imprime la política configurada. |
+| G5 | P2 | PDF de venta: sin teléfono ni hora; siempre «ITBIS incluido» aunque `taxIncluded` sea falso. PDF de nota de crédito: sin datos del negocio, fecha ni condiciones. | sales.ts:1527-1558, 1852-1938 | Completar encabezados y condiciones. | PDF contiene teléfono, hora y la leyenda de ITBIS correcta. |
+| G6 | P2 | No hay forma de anonimizar un cliente; `editCustomer` sin auditoría; el audit-log guarda la ficha completa (teléfono, correo, RNC). | admin.ts:160-186 | `POST /customers/:id/anonymize` con permiso `customers:erase`; rechaza con deuda; conserva ventas y montos; depura AuditLog.before/after. | 403 vendedor; 409 con crédito pendiente; venta conserva total y número; audit-log sin el teléfono. |
+| G7 | P2 | `Customer.birthday` y `email` sin uso; `AuditLog.ip` nunca se llena. | schema.prisma, admin.ts | Quitar `birthday` de esquema, API y migración; decidir `email`. | — |
+| G8 | P2 | Sentry web siempre activo, DSN fijo, sin interruptor; mensajes de excepción sin sanear. | apps/web/src/monitoring.ts | Interruptor en Ajustes o variable; sanear mensajes. DECIDE LA DUEÑA. | Con el interruptor apagado no hay peticiones a Sentry. |
+| G9 | P2 | Al cerrar sesión quedan en el navegador catálogo, ventas offline y datos de pago. | api.ts `endSession` | Limpiar tablas de clientes y caché cuando no haya ventas pendientes. | Tras cerrar sesión, IndexedDB no contiene datos de clientes. |
+| G10 | P2 | Contraste bajo AA: botón Cobrar `#059669` (3.77), foco `#a78bfa` en claro (2.72), bordes de campo (1.20/1.34), avisos `#b96c0b`, rojos, gris `#a6aab8`. | styles.css | Valores propuestos en docs/legal/ACCESIBILIDAD.md. | Prueba de contraste (script) y axe en ambos temas. |
+| G11 | P2 | F4/F8/F12 se disparan con un modal abierto (junto con S4). | POS.tsx:405-422 | Ignorar atajos si hay `[role=dialog]`. | E2E: F8 con el cobro abierto no vacía el carrito. |
+| G12 | P3 | Subida de archivos sólo con mouse; buscador Ctrl+K sin nombre accesible; `listbox` inválido; menú lateral cerrado recibe foco; avisos a 6 s sin pausa; sesión por inactividad sin aviso previo. | Management.tsx:2559, Tienda.tsx:824, App.tsx:741, Merchandise.tsx:~233 | Ver ACCESIBILIDAD.md. | axe sin violaciones críticas. |
+| G13 | P3 | Frases sin respaldo: «Lo más seguro», «Anulación auditada», «Respaldos cifrados», docs `AUDITORIA_*` presentados como auditoría independiente, «Facturación» en el manifest, título «Monitoreo seguro». | Management.tsx, docs/ENTREGA.md, SENTRY-API.md, vite manifest | Reescribir según docs/legal/LICENCIAS_Y_AFIRMACIONES.md. | grep de frases prohibidas en CI. |
+| G14 | P3 | Faltan avisos de licencia (Inter y Plus Jakarta Sans OFL, lucide ISC, MIT/BSD en el JS compilado); THIRD_PARTY_NOTICES.txt sólo cubre 5 binarios; origen del ícono y de las SVG sin documentar. | public/, instalador/THIRD_PARTY_NOTICES.txt | Añadir avisos y página «Acerca de» con enlace legal. | La app expone /licencias con los avisos. |
+| G15 | P3 | Mostrar qué promoción automática se aplicó; promoción sin regla guardada. | sales.ts:370-397 | Guardar y imprimir el nombre de la promoción. | Ticket con promoción la nombra. |

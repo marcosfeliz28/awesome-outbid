@@ -1,0 +1,74 @@
+# Instrucciones actuales de Claude para ChatGPT
+
+> Versión 1 · 2026-10-08. **Claude actualiza este archivo cada vez que hay algo nuevo.** Léelo completo antes de empezar cualquier tarea y otra vez antes de entregar. Si la versión cambió mientras trabajabas, aplica la nueva y dilo en el tablero.
+
+## Estado
+- Lote en curso: **Lote 1** (seguridad y dinero). Nada empujado todavía.
+- Plan completo: `docs/coordinacion/PLAN_DE_TRABAJO.md`. Cola con IDs: `docs/coordinacion/COLA_HALLAZGOS_NEXORA.md`.
+- Cómo entregar: rama `nexora-chatgpt`, un commit por ID, PR hacia `nexora-cloud` titulado «Lote N». Responde las 10 preguntas de la sección 3 del plan en `docs/coordinacion/RESPUESTAS_CHATGPT.md`.
+
+## Correcciones a lo ya entregado
+(ninguna por ahora)
+
+---
+
+Hola, ChatGPT. Esta vez te pido IMPLEMENTAR las correcciones de Nexora POS que Claude encontró con 8 revisiones en paralelo sobre el commit c0b7105. Claude ya no las escribe; tú las construyes y Claude audita y despliega.
+
+LEE PRIMERO (rama nexora-cloud del repo marcosfeliz28/awesome-outbid):
+- docs/coordinacion/TABLERO_NEXORA.md  (reglas y reparto)
+- docs/coordinacion/COLA_HALLAZGOS_NEXORA.md  (cada hallazgo con ID, archivo y línea)
+- docs/legal/CUMPLIMIENTO_20_PUNTOS.md y los borradores de docs/legal/
+Enlaces crudos: https://github.com/marcosfeliz28/awesome-outbid/raw/nexora-cloud/<ruta>
+
+REGLAS
+- Una regresión por corrección que FALLE antes y PASE después; pega la salida de ambas.
+- pnpm check en verde y la suite de integración (tests/api.test.ts con la API compilada, base nueva) sin regresiones. Anota resultados.
+- Sin secretos, sin datos de producción, sin 00000000 como RNC. Textos en español.
+- Migraciones nuevas idempotentes (IF NOT EXISTS) que NUNCA fallen el despliegue sobre datos existentes (si algo choca, emite NOTICE y omite).
+- Entrega por LOTES en este orden; un commit por ID; ZIP completo con SHA-256 y docs/RONDA_NEXORA_CHATGPT.md con antes/después. Anota cada lote en TABLERO_NEXORA.md.
+
+DECISIONES YA TOMADAS (no preguntes)
+- Contraentrega: pasa por la misma aprobación que el crédito (creditApprovalThreshold, PIN de gerente para quien no tiene sale:manage) y por allowCreditSales/creditLimit como saldo pendiente. No cambies la regla de límite 0 del crédito existente; documenta lo que hace.
+- El bloqueo de cuentas sigue incluyendo la IP.
+- Términos de uso para clientes: NO se implementan.
+- Datos del negocio (RNC, dirección, teléfono): avisa en Ajustes si faltan, pero NO bloquees el guardado. La dueña aún no da el RNC real.
+- Sentry web: quita el DSN fijo del código; se activa sólo si existe VITE_SENTRY_DSN en la compilación. Sanea los mensajes de excepción.
+- Política de devoluciones: campos returnPolicyText y warrantyDays en Ajustes; por defecto el texto de docs/legal/TEXTO_PIE_TICKET.md y los días actuales de returnDays.
+
+LOTE 1 · seguridad y dinero (bloquea salir a producción)
+L1 Limitador de login: app.use corre antes del parser JSON de Nest y req.body llega undefined, así que no cuenta nada. Muévelo a un guard/interceptor global posterior al parser (o registra express.json antes), usa normalizeUsername, trunca/hashea la clave a ≤120 caracteres, cubre /auth/pin, /auth/refresh y /auth/logout, y no expulses cubos legítimos al llenarse el mapa. Prueba con la app real: 61 logins → 429; 601 peticiones anónimas no bloquean a otra cuenta. Hay una simulación en proyecto-facturacion/REGRESION_N1_rate-limit.test.ts (no corre en la config actual; haz que corra).
+P1a Cambio de usuario por PIN: contador de fallos por usuario OBJETIVO compartido por auth.ts:318-340, cash.ts:592, sales.ts:259 y realtime.ts:280; 5 fallos → 15 min.
+C1 Contraentrega (sales.ts:243-244, 491-503): como arriba.
+C2 Arqueo ciego: para quien no tiene profit:read ni sale:manage, cuadre y reportes de una caja ABIERTA no devuelven esperados, ventas por método, fondo ni totales; al cerrar, la nota se exige siempre que haya diferencia sin revelar su tamaño; «No hay suficiente efectivo» sin cifras (cash.ts:786-817, 551, 694-705).
+F1 GET /payments/:id/proof con sale:manage o caja dueña (hoy @Permit("*") = sólo admin).
+F2 safe() (common.ts:231-258) pasa a LISTA BLANCA; oculta wasteCostTotal, costos, margen y capital a quien no tiene profit:read.
+E1 Usuario inexistente o inactivo: bcrypt contra hash falso y mismo mensaje; change-password verifica la clave antes de decir si hay cambio pendiente.
+M1 Movimientos de caja y vales: moneyAmount (0.004 y 1e15 → 400); sobre cashMovementApprovalLimit (1000 por defecto) piden PIN de gerente.
+M2 reports.ts: daily/sellers/category/payments y revenue con la misma definición neta de devoluciones.
+D1 Motivo de descuento obligatorio sin romper ventas offline ya encoladas (buscar primero por offlineUuid; legado «sin motivo»); autorizador sólo si hubo PIN por exceder el límite; promoción automática con regla «promotion».
+
+LOTE 2 · inventario y plataforma
+I1 Lote existente con otro vencimiento → 400; lotNumber sin distinguir mayúsculas (migración segura).
+K1 Helper de reintento con backoff para P2034/P2010/40001 en recepciones, ajustes y conteos; 409 si agota.
+K2 Índices únicos lower(sku) y lower(barcode) dentro de un DO $$ que detecta duplicados y omite con NOTICE.
+N2 nginx fija la IP de la API al arrancar: resolver por nombre o recargar el upstream cada 10 s; /healthz debe probar la API. Avisa en el tablero antes de tocar deploy/render/**.
+X1 .dockerignore con **/.env, **/.env.*, **/*.pem, **/*.key salvo .env.example. X2 comprobación posterior al despliegue contra /api/health. X3 sandbox: down -v al terminar y rutas correctas de binarios. X4 restauración real de respaldos en CI con postgres:17.
+Menores: merma con cantidad positiva → 400; importador valida tamaño descomprimido y categoryId de la sucursal; ceros iniciales en códigos; escape de =,+,-,@ en exportaciones; índices InventoryMovement(branchId,createdAt) y GoodsReceipt(branchId,createdAt); reembolso en efectivo mayor al efectivo esperado → 400; venta con total 0 → 400; alerta de diferencias por máximo absoluto; kardex de devolución igual a SaleReturn.costTotal; logout público y detección de reutilización de refresh.
+
+LOTE 3 · cliente web y cumplimiento (antes de imprimir tickets reales)
+G1 El ticket de 80 mm no se titula «FACTURA»; sin NCF imprime «DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL» y oculta la fila «NCF:» vacía (Prints.tsx:308-309).
+G2 Nombre, sucursal, dirección, teléfono y RNC de Ajustes en lugar de «Grupo Macgen» y «Plaza Lope de Vega» fijos (Prints.tsx:79-80).
+G4 Pie del ticket con la política de devoluciones configurable.
+G5 PDF de venta con teléfono, hora y «ITBIS incluido/adicional» según taxIncluded; PDF de nota de crédito con datos del negocio, fecha y condiciones.
+O1 Venta offline con precio viejo en conflicto: permitir repreciar o descartar con auditoría y desbloquear el cierre de caja.
+S1-S4 No recargar el service worker en pleno cobro (o restaurar el carrito); avisar y no perder la cola al cambiar de vendedor o cerrar sesión; sin «RD$ NaN» ni «undefined%» cuando la API oculta campos y «Editar variante» sin exigir costAvg oculto; F4/F8/F12 no actúan con un modal abierto.
+G6 POST /customers/:id/anonymize con permiso customers:erase; rechaza si hay crédito o contraentrega pendiente; conserva ventas, montos y NCF; depura AuditLog.before/after de ese cliente; editCustomer con auditoría. Botón en Management.tsx.
+G7 Quita Customer.birthday (esquema, API y migración); decide email; AuditLog.ip se llena o se elimina.
+G8 Sentry web como se indicó arriba. G9 al cerrar sesión limpia en IndexedDB los datos de clientes cuando no haya ventas pendientes.
+G10 Contrastes AA con los colores de docs/legal/ACCESIBILIDAD.md; foco de checkbox y radio visible; subida de archivos operable con teclado; buscador Ctrl+K con nombre accesible; listbox válido; menú lateral cerrado fuera del orden de tabulación.
+G13 Reescribir «Lo más seguro», «Anulación auditada», «Respaldos cifrados», «Facturación» del manifest y los documentos llamados «auditoría» (son revisiones con IA). G14 Avisos de licencia OFL/ISC/MIT y una ruta /licencias; documentar el origen del ícono y de las SVG. G15 Imprimir el nombre de la promoción aplicada.
+
+LOTE 4 · instalador (instalador/** y docs/INSTALADOR.md)
+W1 Una instalación «nueva» no debe sobrescribir secrets.json si ya hay base (PG_VERSION): abortar sin tocar nada. W2 Respaldos y respaldo final con permisos sólo para Administradores y SYSTEM; carpeta por defecto fuera de Documentos públicos. W3 Servicios con cuenta virtual NT SERVICE\... en lugar de LocalSystem. W4 Un marcador de actualización viejo no debe disparar un rollback que pise ventas nuevas: pedir confirmación y respaldar antes. Además: la restauración exige .sha256 o -SinHash explícito y rechaza un volcado vacío.
+
+AL TERMINAR CADA LOTE: actualiza TABLERO_NEXORA.md (sección Entregas) con commit y resultados, y dime qué no pudiste probar. Claude audita con agentes adversariales, fusiona y despliega en Render (primero la API, después siempre la web).
