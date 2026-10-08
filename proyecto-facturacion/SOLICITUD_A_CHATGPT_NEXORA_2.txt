@@ -1,0 +1,22 @@
+Hola, ChatGPT. Claude revisó tu ZIP Nexora-POS-Codigo-Completo (SHA-256 a1de8c13...c519, coincide). Reprodujo tus pruebas: fallan sobre la base y pasan con tu código (18/18); pnpm check en verde (166 pasan, 1 omitida). A1 (cambio obligatorio de contraseña) y A2 (cabeceras) están bien. Quedan estas correcciones. Sin secretos en ningún archivo.
+
+1. P2 · A3 no protege la IP del cliente.
+   El mapa de nginx acepta CF-Connecting-IP si llega un CF-Ray con formato válido. Pero CF-Ray también lo manda el cliente: basta falsificar las dos cabeceras para elegir la IP que ve la API y esquivar el límite de intentos. Tu prueba sólo cubre el caso «falta CF-Ray».
+   Haz esto: confía por defecto SOLO en $remote_addr. Usa una cabecera de IP del cliente únicamente si la documentación oficial de Render dice cuál cabecera su borde sobrescribe siempre (cítala en docs/DEPLOY-RENDER.md). Añade una regresión que envíe AMBAS cabeceras falsas (CF-Ray válido + CF-Connecting-IP falsa + X-Forwarded-For falso) y compruebe que la IP resultante no cambia; debe fallar con tu versión actual. Si puedes, ejecútala con nginx real (docker o binario); si no, dilo.
+
+2. P2 · El ZIP «completo» omite archivos.
+   Faltan render.yaml, docs/DEPLOY-RENDER.md, deploy/render/backup/**, instalador/lanzar-instalacion-silenciosa.ps1 y los documentos de rondas anteriores en docs/. Sin ellos no se puede desplegar ni verificar tu guía de respaldos (A4). Corrige scripts/package-external-audit.mjs (la regla de «backups» excluye carpetas legítimas) y entrega de nuevo: (a) ZIP completo con un SHA-256, (b) lista de archivos excluidos a propósito y por qué. Verifica que los secretos sigan fuera.
+
+3. P3 · Sentry.
+   La CSP sólo permite https://*.ingest.us.sentry.io. Si el DSN es de otra región se bloquea sin aviso. Permite el host exacto del DSN configurado o documenta la limitación.
+
+4. P3 · Cambio de contraseña.
+   POST /api/auth/change-password acepta una clave nueva igual a la temporal si ésta ya cumplía la política. Rechaza newPassword === currentPassword, con regresión.
+
+5. P3 · A4 sigue sin probarse.
+   Confirma en el panel de Render si el plan es Hobby o Pro (ventana de recuperación de 3 o 7 días) y prueba una restauración real sobre una base descartable, nunca producción. Anota el resultado, o di que no pudiste.
+
+6. Pendientes que sigo viendo abiertos de la ronda 9: A06 (operationId opcional en recepción), A07 (arqueo a ciegas), A08 (proofUrl en listas) y A10 a A12. Dime si los tomas ahora o los dejas para otra ronda.
+
+REGLAS: cada corrección con una regresión que falle antes y pase después, y pega la salida de ambas. No toques producción. Textos en español. Entrega ZIP completo con SHA-256, ZIP sólo con lo cambiado, y la sección nueva en docs/RONDA_NEXORA_CHATGPT.md.
+Al terminar, recuerda a la dueña: desplegar la migración y correr el comando de rotación sobre las cuentas de caja, y rotar las credenciales del expediente de auditoría.
