@@ -4,6 +4,13 @@ set -eu
 : "${API_UPSTREAM:?Render debe inyectar API_UPSTREAM desde nexora-pos-api}"
 : "${PORT:=10000}"
 
+# El identificador del commit se inyecta en tiempo de ejecución para que la
+# app del navegador informe a Sentry qué versión está usando cada deploy.
+if printf '%s' "${RENDER_GIT_COMMIT:-}" | grep -Eq '^[a-fA-F0-9]{7,64}$'; then
+  printf 'window.__NEXORA_SENTRY_RELEASE__ = "nexora-pos@%s";\n' \
+    "$RENDER_GIT_COMMIT" > /usr/share/nginx/html/runtime-config.js
+fi
+
 # API_UPSTREAM proviene de `fromService.hostport`. La validación impide que un
 # valor accidental termine convertido en una directiva de Nginx.
 if ! printf '%s' "$API_UPSTREAM" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9.-]*:[0-9]{1,5}$'; then
