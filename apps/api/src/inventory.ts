@@ -713,7 +713,7 @@ export class InventoryController {
         documentSchema.extend({
           // Id de la recepción, creado al abrir el formulario: si se pierde la
           // respuesta y se reenvía, no se recibe dos veces (R9-facturas-8).
-          operationId: uuid.optional(),
+          operationId: uuid,
           freight: amount.default(0),
           otherCosts: amount.default(0),
           allocation: z.enum(["value", "units"]).default("value"),
@@ -766,183 +766,214 @@ export class InventoryController {
           Number(stored[i].landedCost) === costs[i],
       );
     };
-    return this.db.$transaction(
-      async (tx) => {
-        if (data.operationId)
-          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))::text`;
-        await tx.$queryRaw`SELECT id FROM "PurchaseOrder" WHERE id = ${parse(uuid, id)}::uuid FOR UPDATE`;
-        const order = await tx.purchaseOrder.findFirstOrThrow({
-          where: { id, branchId: actor.branchId },
-          include: { items: true },
-        });
-        // Antes de revisar lo pendiente: el reintento de una recepción que
-        // completó la orden devuelve esa recepción, no «ya fue recibida».
-        if (data.operationId) {
-          const prior = await tx.goodsReceipt.findUnique({
-            where: { operationId: data.operationId },
+    const execute = () =>
+      this.db.$transaction(
+        async (tx) => {
+          if (data.operationId)
+            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))::text`;
+          await tx.$queryRaw`SELECT id FROM "PurchaseOrder" WHERE id = ${parse(uuid, id)}::uuid FOR UPDATE`;
+          const order = await tx.purchaseOrder.findFirstOrThrow({
+            where: { id, branchId: actor.branchId },
+            include: { items: true },
           });
-          if (prior) {
-            if (!sameRequest(prior, order.id))
-              bad("UUID usado con datos distintos.");
-            return safe(prior, actor);
-          }
-        }
-        if (order.status === "received") bad("La orden ya fue recibida.");
-        // Pedido = recibido bueno + dañado/rechazado + pendiente.
-        const lines = data.items.map((item) => {
-          const ordered = order.items.find((i) => i.id === item.itemId);
-          if (
-            !ordered ||
-            d(ordered.receivedQty)
-              .plus(ordered.damagedQty)
-              .plus(item.qty)
-              .plus(item.damagedQty)
-              .gt(ordered.qty)
-          )
-            bad("Cantidad mayor que lo pendiente.");
-          return {
-            ...item,
-            variantId: ordered.variantId,
-            cost: Number(ordered.unitCost),
-          };
-        });
-        const costs = receiptCosts(
-          lines,
-          money(d(data.freight).plus(data.otherCosts)),
-          data.allocation,
-        );
-        const supplier = await tx.supplier.findUnique({
-          where: { id: order.supplierId },
-        });
-        const receipt = await tx.goodsReceipt.create({
-          data: {
-            orderId: id,
-            operationId: data.operationId,
-            supplierId: order.supplierId,
-            // Lo que se debe: unidades buenas, flete y otros costos.
-            total: money(
-              lines.reduce((sum, l) => sum + l.qty * l.cost, 0) +
-                data.freight +
-                data.otherCosts,
-            ),
-            freight: data.freight,
-            otherCosts: data.otherCosts,
-            damagedCost: money(
-              lines.reduce((sum, l) => sum.plus(damagedCostOf(l)), d(0)),
-            ),
-            // Sin condición propia, la de la orden (o el plazo del proveedor).
-            ...documentData(
-              document,
-              { paymentType: order.paymentType, creditDays: order.creditDays },
-              supplier?.paymentTermsDays,
-            ),
-            items: json(
-              lines.map((line, i) => ({
-                ...line,
-                landedCost: costs[i],
-                damagedCost: damagedCostOf(line),
-              })),
-            ),
-            userId: actor.id,
-            branchId: actor.branchId,
-          },
-        });
-        for (const [index, line] of [...lines]
-          .sort((a, b) => a.variantId.localeCompare(b.variantId))
-          .map((line) => [lines.indexOf(line), line] as const)) {
-          // Lo dañado no entra al stock: sólo cierra lo pendiente de la orden.
-          if (!(line.qty > 0)) {
-            await tx.purchaseItem.update({
-              where: { id: line.itemId },
-              data: { damagedQty: { increment: line.damagedQty } },
+          // Antes de revisar lo pendiente: el reintento de una recepción que
+          // completó la orden devuelve esa recepción, no «ya fue recibida».
+          if (data.operationId) {
+            const prior = await tx.goodsReceipt.findUnique({
+              where: { operationId: data.operationId },
             });
-            continue;
+            if (prior) {
+              if (!sameRequest(prior, order.id))
+                bad("UUID usado con datos distintos.");
+              return safe(prior, actor);
+            }
           }
-          const variant = await lockVariant(tx, line.variantId, actor);
-          let lotId: string | undefined;
-          if (variant.product.category.requiresLot && !line.lotNumber)
-            bad("El producto requiere un lote.");
-          if (variant.product.category.requiresExpiry && !line.expiryDate)
-            bad("El producto requiere vencimiento.");
-          if (expired(line.expiryDate))
-            bad("No puedes recibir un lote vencido.");
-          const newCost = weightedCost(
-            Math.max(0, Number(variant.stock)),
-            Number(variant.costAvg),
-            line.qty,
-            costs[index],
-          );
-          await tx.variant.update({
-            where: { id: variant.id },
-            data: { costAvg: newCost },
+          if (order.status === "received") bad("La orden ya fue recibida.");
+          // Pedido = recibido bueno + dañado/rechazado + pendiente.
+          const lines = data.items.map((item) => {
+            const ordered = order.items.find((i) => i.id === item.itemId);
+            if (
+              !ordered ||
+              d(ordered.receivedQty)
+                .plus(ordered.damagedQty)
+                .plus(item.qty)
+                .plus(item.damagedQty)
+                .gt(ordered.qty)
+            )
+              bad("Cantidad mayor que lo pendiente.");
+            return {
+              ...item,
+              variantId: ordered.variantId,
+              cost: Number(ordered.unitCost),
+            };
           });
-          if (line.lotNumber) {
-            const existingLot = await tx.lot.findUnique({
-              where: {
-                variantId_lotNumber: {
-                  variantId: variant.id,
-                  lotNumber: line.lotNumber,
-                },
-              },
-            });
-            if (existingLot && expired(existingLot.expiryDate))
-              bad("No puedes recibir existencias en un lote vencido.");
-            const lot = await tx.lot.upsert({
-              where: {
-                variantId_lotNumber: {
-                  variantId: variant.id,
-                  lotNumber: line.lotNumber,
-                },
-              },
-              create: {
-                variantId: variant.id,
-                lotNumber: line.lotNumber,
-                expiryDate: line.expiryDate ? new Date(line.expiryDate) : null,
-                qty: line.qty,
-                cost: costs[index],
-                branchId: actor.branchId,
-              },
-              update: { qty: { increment: line.qty } },
-            });
-            lotId = lot.id;
-          }
-          await stockChange(
-            tx,
-            actor,
-            variant,
-            line.qty,
-            "purchase",
-            "Recepción " + order.number,
-            receipt.id,
-            lotId,
-            costs[index],
+          const costs = receiptCosts(
+            lines,
+            money(d(data.freight).plus(data.otherCosts)),
+            data.allocation,
           );
-          await tx.purchaseItem.update({
-            where: { id: line.itemId },
+          const supplier = await tx.supplier.findUnique({
+            where: { id: order.supplierId },
+          });
+          const receipt = await tx.goodsReceipt.create({
             data: {
-              receivedQty: { increment: line.qty },
-              damagedQty: { increment: line.damagedQty },
+              orderId: id,
+              operationId: data.operationId,
+              supplierId: order.supplierId,
+              // Lo que se debe: unidades buenas, flete y otros costos.
+              total: money(
+                lines.reduce((sum, l) => sum + l.qty * l.cost, 0) +
+                  data.freight +
+                  data.otherCosts,
+              ),
+              freight: data.freight,
+              otherCosts: data.otherCosts,
+              damagedCost: money(
+                lines.reduce((sum, l) => sum.plus(damagedCostOf(l)), d(0)),
+              ),
+              // Sin condición propia, la de la orden (o el plazo del proveedor).
+              ...documentData(
+                document,
+                {
+                  paymentType: order.paymentType,
+                  creditDays: order.creditDays,
+                },
+                supplier?.paymentTermsDays,
+              ),
+              items: json(
+                lines.map((line, i) => ({
+                  ...line,
+                  landedCost: costs[i],
+                  damagedCost: damagedCostOf(line),
+                })),
+              ),
+              userId: actor.id,
+              branchId: actor.branchId,
             },
           });
+          for (const [index, line] of [...lines]
+            .sort((a, b) => a.variantId.localeCompare(b.variantId))
+            .map((line) => [lines.indexOf(line), line] as const)) {
+            // Lo dañado no entra al stock: sólo cierra lo pendiente de la orden.
+            if (!(line.qty > 0)) {
+              await tx.purchaseItem.update({
+                where: { id: line.itemId },
+                data: { damagedQty: { increment: line.damagedQty } },
+              });
+              continue;
+            }
+            const variant = await lockVariant(tx, line.variantId, actor);
+            let lotId: string | undefined;
+            if (variant.product.category.requiresLot && !line.lotNumber)
+              bad("El producto requiere un lote.");
+            if (variant.product.category.requiresExpiry && !line.expiryDate)
+              bad("El producto requiere vencimiento.");
+            if (expired(line.expiryDate))
+              bad("No puedes recibir un lote vencido.");
+            const newCost = weightedCost(
+              Math.max(0, Number(variant.stock)),
+              Number(variant.costAvg),
+              line.qty,
+              costs[index],
+            );
+            await tx.variant.update({
+              where: { id: variant.id },
+              data: { costAvg: newCost },
+            });
+            if (line.lotNumber) {
+              const existingLot = await tx.lot.findUnique({
+                where: {
+                  variantId_lotNumber: {
+                    variantId: variant.id,
+                    lotNumber: line.lotNumber,
+                  },
+                },
+              });
+              if (existingLot && expired(existingLot.expiryDate))
+                bad("No puedes recibir existencias en un lote vencido.");
+              const lot = await tx.lot.upsert({
+                where: {
+                  variantId_lotNumber: {
+                    variantId: variant.id,
+                    lotNumber: line.lotNumber,
+                  },
+                },
+                create: {
+                  variantId: variant.id,
+                  lotNumber: line.lotNumber,
+                  expiryDate: line.expiryDate
+                    ? new Date(line.expiryDate)
+                    : null,
+                  qty: line.qty,
+                  cost: costs[index],
+                  branchId: actor.branchId,
+                },
+                update: { qty: { increment: line.qty } },
+              });
+              lotId = lot.id;
+            }
+            await stockChange(
+              tx,
+              actor,
+              variant,
+              line.qty,
+              "purchase",
+              "Recepción " + order.number,
+              receipt.id,
+              lotId,
+              costs[index],
+            );
+            await tx.purchaseItem.update({
+              where: { id: line.itemId },
+              data: {
+                receivedQty: { increment: line.qty },
+                damagedQty: { increment: line.damagedQty },
+              },
+            });
+          }
+          const items = await tx.purchaseItem.findMany({
+            where: { orderId: id },
+          });
+          await tx.purchaseOrder.update({
+            where: { id },
+            data: {
+              status: items.every((i) =>
+                d(i.receivedQty).plus(i.damagedQty).gte(i.qty),
+              )
+                ? "received"
+                : "partial",
+            },
+          });
+          await audit(tx, actor, "receive", "purchase", id, undefined, receipt);
+          return safe(receipt, actor);
+        },
+        { isolationLevel: "Serializable", timeout: 15000 },
+      );
+    // PostgreSQL puede abortar una de dos transacciones serializables aunque
+    // ambas representen exactamente la misma recepción. La segunda petición
+    // debe recuperar el resultado confirmado, no exponer P2010/40001 como 500.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await execute();
+      } catch (error: any) {
+        const serialization =
+          error?.code === "P2034" ||
+          (error?.code === "P2010" &&
+            String(error?.meta?.code ?? error?.meta?.message ?? "").includes(
+              "40001",
+            ));
+        if (!serialization) throw error;
+        const prior = await this.db.goodsReceipt.findUnique({
+          where: { operationId: data.operationId },
+        });
+        if (prior) {
+          if (!sameRequest(prior, parse(uuid, id)))
+            bad("UUID usado con datos distintos.");
+          return safe(prior, actor);
         }
-        const items = await tx.purchaseItem.findMany({
-          where: { orderId: id },
-        });
-        await tx.purchaseOrder.update({
-          where: { id },
-          data: {
-            status: items.every((i) =>
-              d(i.receivedQty).plus(i.damagedQty).gte(i.qty),
-            )
-              ? "received"
-              : "partial",
-          },
-        });
-        await audit(tx, actor, "receive", "purchase", id, undefined, receipt);
-        return safe(receipt, actor);
-      },
-      { isolationLevel: "Serializable", timeout: 15000 },
-    );
+        if (attempt >= 2) throw error;
+      }
+    }
   }
   // Historial de recepciones (paso 37): las últimas 50 o las de un período.
   @Get("goods-receipts")

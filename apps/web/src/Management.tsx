@@ -1379,6 +1379,9 @@ export function Cash() {
   const active = query.data?.find(
     (s: any) => !s.closedAt && s.userId === user.id,
   );
+  const canSeeExpected =
+    can(user.permissions, "profit:read") ||
+    can(user.permissions, "sale:manage");
   const elsewhere = cashOnOtherDevice(active);
   return (
     <>
@@ -1411,7 +1414,7 @@ export function Cash() {
         )}
       </Heading>
       {elsewhere && <CashElsewhere session={active} />}
-      {active ? (
+      {active && canSeeExpected ? (
         <div className="cash-overview">
           <div className="cash-main">
             <Badge tone="success">Caja abierta</Badge>
@@ -1443,6 +1446,15 @@ export function Cash() {
               <strong>{active.expected.movements.length}</strong>
             </div>
           </div>
+        </div>
+      ) : active ? (
+        <div className="panel">
+          <Badge tone="success">Caja abierta</Badge>
+          <h2>{active.registerName ?? active.registerId}</h2>
+          <p>
+            Arqueo ciego activo: los montos esperados y las diferencias se
+            mostrarán únicamente a administración.
+          </p>
         </div>
       ) : (
         <div className="panel">
@@ -1521,7 +1533,9 @@ export function Cash() {
                             await client.invalidateQueries({
                               queryKey: ["pending-sales"],
                             });
-                            toast("Cliente asociado. Venta lista para sincronizar.");
+                            toast(
+                              "Cliente asociado. Venta lista para sincronizar.",
+                            );
                           }}
                         >
                           <option value="">Asociar cliente…</option>
@@ -1585,7 +1599,10 @@ export function Cash() {
               },
               {
                 label: "Efectivo esperado",
-                render: (s) => formatMoney(s.expectedCash ?? s.expected.cash),
+                render: (s) => {
+                  const expected = s.expectedCash ?? s.expected?.cash;
+                  return expected == null ? "—" : formatMoney(expected);
+                },
               },
               {
                 label: "Contado",
@@ -1595,12 +1612,30 @@ export function Cash() {
               {
                 label: "Diferencias por método",
                 render: (s) =>
-                  s.closedAt ? (
+                  s.closedAt &&
+                  [
+                    s.differenceCash,
+                    s.differenceCard,
+                    s.differenceTransfer,
+                  ].some((value) => value != null) ? (
                     <div>
-                      <div>Efectivo: {formatMoney(s.differenceCash ?? 0)}</div>
-                      <div>Tarjeta: {formatMoney(s.differenceCard ?? 0)}</div>
                       <div>
-                        Transferencia: {formatMoney(s.differenceTransfer ?? 0)}
+                        Efectivo:{" "}
+                        {s.differenceCash == null
+                          ? "—"
+                          : formatMoney(s.differenceCash)}
+                      </div>
+                      <div>
+                        Tarjeta:{" "}
+                        {s.differenceCard == null
+                          ? "—"
+                          : formatMoney(s.differenceCard)}
+                      </div>
+                      <div>
+                        Transferencia:{" "}
+                        {s.differenceTransfer == null
+                          ? "—"
+                          : formatMoney(s.differenceTransfer)}
                       </div>
                     </div>
                   ) : (
@@ -2494,6 +2529,15 @@ export function SalesHistory() {
               ]}
             />
             <h3>Pagos registrados</h3>
+            {Number(selected.discountTotal) > 0 && (
+              <p>
+                Descuento: {formatMoney(selected.discountTotal)} · Motivo:{" "}
+                {selected.discountReason}
+                {selected.discountApprovedName
+                  ? ` · Autorizó: ${selected.discountApprovedName}`
+                  : ""}
+              </p>
+            )}
             {selected.payments.map((p: any) => (
               <div className="payment-list" key={p.id}>
                 <div>
@@ -2501,14 +2545,16 @@ export function SalesHistory() {
                     {METHOD_LABEL[p.method] ??
                       paymentOptions.find((o) => o.value === p.method)?.label ??
                       p.method}{" "}
-                    · {formatMoney(p.amount)}
+                    · Recibido: {formatMoney(p.tendered ?? p.amount)} ·
+                    Aplicado: {formatMoney(p.amount)} · Cambio:{" "}
+                    {formatMoney(p.change ?? 0)}
                     <small>{p.reference || p.approvalCode}</small>
                   </span>
-                  <ProofThumb url={p.proofUrl} />
+                  <ProofThumb paymentId={p.id} hasProof={p.hasProof} />
                   {p.entryType === "installment" &&
                     can(user.permissions, "*") && (
                       <label className="text-link proof-upload">
-                        {p.proofUrl ? "Cambiar foto" : "Subir foto"}
+                        {p.hasProof ? "Cambiar foto" : "Subir foto"}
                         <input
                           type="file"
                           hidden
@@ -2961,23 +3007,23 @@ export function Configuration() {
                           Editar
                         </button>
                         {u.id !== user.id && (
-                        <button
-                          className="text-link"
-                          onClick={async () => {
-                            try {
-                              await mutate(
-                                "/users/" + u.id,
-                                { active: !u.active },
-                                "PATCH",
-                              );
-                              await client.invalidateQueries();
-                            } catch (e: any) {
-                              toast(e.message, true);
-                            }
-                          }}
-                        >
-                          {u.active ? "Desactivar" : "Activar"}
-                        </button>
+                          <button
+                            className="text-link"
+                            onClick={async () => {
+                              try {
+                                await mutate(
+                                  "/users/" + u.id,
+                                  { active: !u.active },
+                                  "PATCH",
+                                );
+                                await client.invalidateQueries();
+                              } catch (e: any) {
+                                toast(e.message, true);
+                              }
+                            }}
+                          >
+                            {u.active ? "Desactivar" : "Activar"}
+                          </button>
                         )}
                       </div>
                     ),
@@ -3071,7 +3117,8 @@ export function Configuration() {
             },
             {
               key: "password",
-              label: "Contraseña (mínimo 12 caracteres)",
+              label:
+                "Contraseña temporal (12+; mayúscula, minúscula, número y símbolo)",
               type: "password",
               required: true,
             },

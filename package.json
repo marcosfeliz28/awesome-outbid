@@ -21,6 +21,7 @@
     "backup": "node scripts/backup.mjs",
     "admin:create": "pnpm --filter @fitstore/api admin:create",
     "package:source": "node scripts/package.mjs",
+    "package:changes": "node scripts/package-changes.mjs",
     "instalador:validar": "node --test instalador/tests/web-server.test.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/PowerShell-Parse.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Transaction-FaultInjection.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Restore-FaultInjection.ps1 && node instalador/tests/validar.mjs",
     "instalador:preparar": "powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1 -SoloPreparar",
     "instalador:compilar": "powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1"

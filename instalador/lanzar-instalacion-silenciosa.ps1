@@ -15,7 +15,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $ownerName = 'Marco'
-$ownerEmail = 'marco@fitstore.local'
+$ownerEmail = 'propietario@example.invalid'
 $seedDir = $null
 $seedFile = $null
 $credentialFile = $null

@@ -355,7 +355,15 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         amount: Number(p.amount),
         status: p.status,
         reference: p.reference,
-        proofUrl: p.proofUrl,
+        hasProof: !!p.proofUrl,
+        proofContentType:
+          /^data:([^;,]+);base64,/.exec(p.proofUrl ?? "")?.[1] ?? null,
+        proofBytes: p.proofUrl
+          ? Math.max(
+              0,
+              Math.floor(((p.proofUrl.split(",", 2)[1] ?? "").length * 3) / 4),
+            )
+          : 0,
         createdAt: p.createdAt,
       })),
     },
@@ -404,6 +412,9 @@ export class CashController {
   @Get()
   @Permit("cash:write")
   async sessions(@CurrentUser() actor: Actor) {
+    const showExpected =
+      can(actor.permissions, "profit:read") ||
+      can(actor.permissions, "sale:manage");
     const sessions = await this.db.cashSession.findMany({
       where: {
         branchId: actor.branchId,
@@ -413,18 +424,41 @@ export class CashController {
       take: 100,
     });
     return Promise.all(
-      sessions.map(async (s) => ({
-        ...s,
-        registerName: await terminalName(this.db, s.registerId),
-        expected: await cashExpected(this.db, s),
-        differences: s.closedAt
-          ? {
-              cash: Number(s.differenceCash),
-              card: Number(s.differenceCard),
-              transfer: Number(s.differenceTransfer),
-            }
-          : null,
-      })),
+      sessions.map(async (s) => {
+        const {
+          expectedCash,
+          expectedCard,
+          expectedTransfer,
+          difference,
+          differenceCash,
+          differenceCard,
+          differenceTransfer,
+          ...visible
+        } = s;
+        return {
+          ...visible,
+          registerName: await terminalName(this.db, s.registerId),
+          ...(showExpected
+            ? {
+                expectedCash,
+                expectedCard,
+                expectedTransfer,
+                difference,
+                differenceCash,
+                differenceCard,
+                differenceTransfer,
+                expected: await cashExpected(this.db, s),
+                differences: s.closedAt
+                  ? {
+                      cash: Number(s.differenceCash),
+                      card: Number(s.differenceCard),
+                      transfer: Number(s.differenceTransfer),
+                    }
+                  : null,
+              }
+            : {}),
+        };
+      }),
     );
   }
   @Post("open")
@@ -639,11 +673,10 @@ export class CashController {
       const settings = (
         await tx.settings.findUnique({ where: { id: actor.branchId } })
       )?.data as any;
-      // Tarjeta y transferencia no declaradas: se toman las esperadas.
       const data = {
         countedCash: counted,
-        countedCard: input.countedCard ?? expected.card,
-        countedTransfer: input.countedTransfer ?? expected.transfer,
+        countedCard: input.countedCard,
+        countedTransfer: input.countedTransfer,
         notes: input.notes,
         closeDetails: {
           denominations: input.denominations ?? null,
@@ -658,6 +691,18 @@ export class CashController {
         },
       };
       const differences = closeDifferences(data, expected);
+      const differenceLimit = Number(settings?.cashDifferenceLimit ?? 100);
+      if (
+        Math.max(
+          Math.abs(Number(differences.cash)),
+          Math.abs(Number(differences.card)),
+          Math.abs(Number(differences.transfer)),
+        ) > differenceLimit &&
+        !input.notes.trim()
+      )
+        bad(
+          "Para cerrar con estos conteos, agrega una nota que explique la situación.",
+        );
       const row = await tx.cashSession.update({
         where: { id },
         data: {
@@ -680,8 +725,11 @@ export class CashController {
       if (row.differenceCash || row.differenceCard || row.differenceTransfer)
         await audit(tx, actor, "close_difference", "cash", id, session, row);
       if (
-        Math.abs(Number(row.differenceCash)) >
-        Number(settings?.cashDifferenceLimit ?? 100)
+        Math.max(
+          Math.abs(Number(row.differenceCash)),
+          Math.abs(Number(row.differenceCard)),
+          Math.abs(Number(row.differenceTransfer)),
+        ) > differenceLimit
       )
         await tx.alert.upsert({
           where: { key: "cash:" + id },
@@ -691,16 +739,19 @@ export class CashController {
             severity: "high",
             entityId: id,
             branchId: actor.branchId,
-            message:
-              "Diferencia de efectivo en caja: RD$ " + row.differenceCash,
+            message: `Diferencias de caja: efectivo RD$ ${row.differenceCash}, tarjeta RD$ ${row.differenceCard}, transferencia RD$ ${row.differenceTransfer}`,
           },
           update: {
             status: "new",
-            message:
-              "Diferencia de efectivo en caja: RD$ " + row.differenceCash,
+            message: `Diferencias de caja: efectivo RD$ ${row.differenceCash}, tarjeta RD$ ${row.differenceCard}, transferencia RD$ ${row.differenceTransfer}`,
           },
         });
-      return { ...row, differences };
+      const showExpected =
+        can(actor.permissions, "profit:read") ||
+        can(actor.permissions, "sale:manage");
+      return showExpected
+        ? { ...row, differences }
+        : { id: row.id, closedAt: row.closedAt };
     });
   }
   // Fondo sugerido para abrir: lo dejado en el último cierre de este equipo
@@ -735,7 +786,32 @@ export class CashController {
   @Get(":id/cuadre")
   @Permit("cash:write")
   async cuadre(@Param("id") id: string, @CurrentUser() actor: Actor) {
-    return buildCuadre(this.db, actor, await this.ownSession(actor, id));
+    const report = await buildCuadre(
+      this.db,
+      actor,
+      await this.ownSession(actor, id),
+    );
+    const showExpected =
+      can(actor.permissions, "profit:read") ||
+      can(actor.permissions, "sale:manage");
+    if (showExpected) return report;
+    const publicForeign = (currency: any) => {
+      const { expected, difference, ...visible } = currency;
+      void expected;
+      void difference;
+      return visible;
+    };
+    return {
+      ...report,
+      lines: report.lines.filter(
+        (line: any) => !String(line.key).startsWith("difference"),
+      ),
+      foreign: {
+        usd: publicForeign(report.foreign.usd),
+        eur: publicForeign(report.foreign.eur),
+      },
+      summary: { formula: null, text: null },
+    };
   }
   // Reportes del día de una caja, para imprimir al cerrar.
   @Get(":id/reports/:name")

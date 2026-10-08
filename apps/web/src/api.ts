@@ -2,10 +2,7 @@ import Dexie, { type Table } from "dexie";
 import { create } from "zustand";
 import type { QueryClient } from "@tanstack/react-query";
 import type { SaleInput } from "@fitstore/shared";
-import {
-  businessOperationName,
-  traceBusinessOperation,
-} from "./monitoring";
+import { businessOperationName, traceBusinessOperation } from "./monitoring";
 
 export type User = {
   id: string;
@@ -314,6 +311,32 @@ export async function api<T = any>(
     businessOperationName(path, options.method),
     request,
   );
+}
+
+/** Descarga autenticada para evidencias y otros archivos binarios. */
+export async function apiBlob(path: string, retry = true): Promise<Blob> {
+  const request = async (): Promise<Blob> => {
+    const token = useStore.getState().token;
+    const headers = new Headers();
+    if (token) headers.set("Authorization", "Bearer " + token);
+    const response = await send(
+      "/api" + path,
+      { headers, credentials: "include" },
+      20_000,
+    );
+    if (response.status === 401 && retry) {
+      await refreshSession();
+      return apiBlob(path, false);
+    }
+    if (!response.ok) {
+      const result = await response
+        .json()
+        .catch(() => ({ message: "No se pudo descargar el archivo." }));
+      throw new Error(result.message);
+    }
+    return response.blob();
+  };
+  return traceBusinessOperation("GET " + path, request);
 }
 export const post = <T = any>(path: string, data: unknown) =>
   api<T>(path, { method: "POST", body: JSON.stringify(data) });

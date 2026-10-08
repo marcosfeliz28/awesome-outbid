@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import { crc32, inflateRawSync } from "node:zlib";
 import { getDatabaseConfig } from "../scripts/backup.mjs";
 import { databaseConfig } from "../deploy/render/backup/render-backup.mjs";
+import { includeAuditFile } from "../scripts/package-external-audit.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WINDOWS = process.platform === "win32";
@@ -455,13 +456,13 @@ function Invoke-FitStorePg {
         );
         expect(state.droppedDatabases).toContain(state.createdTempDatabase);
         expect(state.droppedDatabases).toEqual([state.createdTempDatabase]);
-        const events = readFileSync(eventLog, "utf8")
-          .trim()
-          .split(/\r?\n/);
+        const events = readFileSync(eventLog, "utf8").trim().split(/\r?\n/);
         const event = (prefix: string) =>
           events.findIndex((item) => item.startsWith(prefix));
         expect(event("list-archive")).toBeGreaterThanOrEqual(0);
-        expect(event("stop-application")).toBeGreaterThan(event("list-archive"));
+        expect(event("stop-application")).toBeGreaterThan(
+          event("list-archive"),
+        );
         expect(event("safety-backup")).toBeGreaterThan(
           event("stop-application"),
         );
@@ -472,10 +473,12 @@ function Invoke-FitStorePg {
         expect(event("start-application")).toBeGreaterThan(
           event("restore-temp-failed:"),
         );
-        expect(event("drop-temp:")).toBeGreaterThan(
-          event("start-application"),
-        );
-        expect(events.some((item) => /migrate|validate|dump-validated|active-restore/.test(item))).toBe(false);
+        expect(event("drop-temp:")).toBeGreaterThan(event("start-application"));
+        expect(
+          events.some((item) =>
+            /migrate|validate|dump-validated|active-restore/.test(item),
+          ),
+        ).toBe(false);
         expect(readFileSync(safetyBackup, "utf8")).toBe("respaldo-intacto");
         const restoreWork = join(work, "restore");
         expect(existsSync(restoreWork) ? readdirSync(restoreWork) : []).toEqual(
@@ -911,5 +914,24 @@ describe("Portabilidad · ZIP fuente (scripts/package.mjs)", () => {
     } finally {
       remove(dir);
     }
+  });
+});
+
+describe("Paquete de auditoría externa", () => {
+  it("incluye artefactos de despliegue y backup, conservando exclusiones de datos", () => {
+    for (const path of [
+      "render.yaml",
+      "docs/DEPLOY-RENDER.md",
+      "deploy/render/backup/Dockerfile",
+      "deploy/render/backup/render-backup.mjs",
+      "instalador/lanzar-instalacion-silenciosa.ps1",
+      "docs/AUDITORIA_RONDA9.md",
+      "docs/RONDA9_CLAUDE.md",
+    ])
+      expect(includeAuditFile(path), path).toBe(true);
+    expect(includeAuditFile("backups/produccion.dump")).toBe(false);
+    expect(includeAuditFile("deploy/render/backup/produccion.dump")).toBe(
+      false,
+    );
   });
 });

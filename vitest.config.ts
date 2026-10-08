@@ -12,6 +12,7 @@ export default defineConfig({
       "tests/cloud-deploy.test.ts",
       "tests/auth-username.test.ts",
       "tests/api-monitoring.test.ts",
+      "tests/claude-round2.test.ts",
     ],
   },
 });

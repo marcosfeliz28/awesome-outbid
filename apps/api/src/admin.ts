@@ -35,6 +35,7 @@ import {
   LOGO_MAX_BYTES,
 } from "@fitstore/shared";
 import { normalizeUsername, passwordHash } from "./auth";
+import { strongPasswordSchema } from "./password-policy";
 
 const customerSchema = z.object({
   creditLimit: amount.optional(),
@@ -606,7 +607,7 @@ export class AdminController {
         name: z.string().min(2),
         username: z.string().trim().min(2).max(80).optional(),
         email: z.string().email().optional(),
-        password: z.string().min(12).max(128),
+        password: strongPasswordSchema,
         pin: z.string().regex(/^\d{4,6}$/),
         roleId: uuid,
         cashierNumber: cashierNumber.optional(),
@@ -627,6 +628,7 @@ export class AdminController {
         usernameKey,
         email: (data.email || generatedEmail).toLowerCase(),
         passwordHash: await passwordHash(data.password),
+        mustChangePassword: true,
         pinHash: await passwordHash(data.pin),
         roleId: data.roleId,
         branchId: actor.branchId,
@@ -659,7 +661,7 @@ export class AdminController {
         username: z.string().trim().min(2).max(80).optional(),
         roleId: uuid.optional(),
         active: z.boolean().optional(),
-        password: z.string().min(12).max(128).optional(),
+        password: strongPasswordSchema.optional(),
         pin: z
           .string()
           .regex(/^\d{4,6}$/)
@@ -689,6 +691,7 @@ export class AdminController {
               }
             : {}),
           ...(passwordValue ? { passwordHash: passwordValue } : {}),
+          ...(passwordValue ? { mustChangePassword: true } : {}),
           ...(pinValue ? { pinHash: pinValue } : {}),
           ...(password || pin || data.active === false
             ? { authVersion: { increment: 1 } }

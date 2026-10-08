@@ -293,7 +293,7 @@ export class AuthGuard implements CanActivate {
       // El bloqueo por contraseñas erróneas sólo impide iniciar sesión: si
       // cerrara las sesiones abiertas, cualquiera que conozca el correo
       // dejaría la caja sin cobrar (R9-seguridad-1).
-      if (!user?.active) throw new Error();
+      if (!user?.active || user.mustChangePassword) throw new Error();
       if (payload.version !== user.authVersion || !payload.sid)
         throw new Error();
       const settings = await this.db.settings.findUnique({
@@ -422,11 +422,12 @@ export class ApiExceptionFilter implements ExceptionFilter {
         .split(/[?#]/, 1)[0]
         .replace(/^\/api(?=\/)/i, "")
         .toLowerCase();
-      const area = path.startsWith("/sales/") || path === "/sales"
-        ? "sales"
-        : path.startsWith("/cash-sessions/") || path === "/cash-sessions"
-          ? "cash"
-          : "api";
+      const area =
+        path.startsWith("/sales/") || path === "/sales"
+          ? "sales"
+          : path.startsWith("/cash-sessions/") || path === "/cash-sessions"
+            ? "cash"
+            : "api";
       captureApiException(exception, area);
     }
     if (status === 500) console.error(exception);

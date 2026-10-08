@@ -15,6 +15,7 @@ import {
 } from "./common";
 
 import { verifyAttempt, verifyPinAttempt } from "./security";
+import { isDifferentPassword, strongPasswordSchema } from "./password-policy";
 
 export function normalizeUsername(value: string) {
   return value
@@ -55,7 +56,11 @@ export class AuthController {
       const current = await tx.user.findUniqueOrThrow({
         where: { id: user.id },
       });
-      if (!current.active || current.authVersion !== user.authVersion)
+      if (
+        !current.active ||
+        current.mustChangePassword ||
+        current.authVersion !== user.authVersion
+      )
         bad("Las credenciales cambiaron. Inicia sesión otra vez.");
       const session = sessionId
         ? await tx.authSession.findFirst({
@@ -96,7 +101,11 @@ export class AuthController {
         },
         { expiresIn: "15m" },
       ),
-      user: { ...this.actor(user), sessionTimeoutMinutes },
+      user: {
+        ...this.actor(user),
+        sessionTimeoutMinutes,
+        mustChangePassword: user.mustChangePassword,
+      },
     };
   }
   @Public()
@@ -151,7 +160,105 @@ export class AuthController {
       },
     );
     await audit(this.db, this.actor(user), "login", "user", user.id);
+    if (user.mustChangePassword) return { requiresPasswordChange: true };
     return this.issue(user, res);
+  }
+  @Public()
+  @Post("change-password")
+  async changePassword(
+    @Body() body: unknown,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = parse(
+      z
+        .object({
+          login: z.string().trim().min(1).max(120),
+          currentPassword: z.string().min(1).max(128),
+          newPassword: strongPasswordSchema,
+          confirmPassword: z.string().min(1).max(128),
+        })
+        .refine((value) => value.newPassword === value.confirmPassword, {
+          message: "Las contraseñas nuevas no coinciden.",
+          path: ["confirmPassword"],
+        })
+        .refine(
+          (value) =>
+            isDifferentPassword(value.currentPassword, value.newPassword),
+          {
+            message: "La contraseña nueva debe ser distinta de la temporal.",
+            path: ["newPassword"],
+          },
+        ),
+      body,
+    );
+    const identifier = data.login.trim();
+    const user = await this.db.user.findFirst({
+      where: identifier.includes("@")
+        ? { email: identifier.toLowerCase() }
+        : { usernameKey: normalizeUsername(identifier) },
+      include: { role: true },
+    });
+    if (!user?.active || !user.mustChangePassword)
+      bad("No hay un cambio de contraseña pendiente para esta cuenta.");
+    await verifyAttempt(
+      this.db,
+      `login:${user.id}:${user.authVersion}:${req.ip ?? ""}`,
+      async (tx) => {
+        const current = await tx.user.findUnique({ where: { id: user.id } });
+        return current?.mustChangePassword &&
+          current?.passwordHash === user.passwordHash &&
+          (await compare(data.currentPassword, user.passwordHash))
+          ? user.id
+          : null;
+      },
+      {
+        blocked:
+          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a un administrador que te cambie la contraseña.",
+        wrong: "Usuario o contraseña incorrectos.",
+      },
+    );
+    const passwordHashValue = await passwordHash(data.newPassword);
+    const updated = await this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id=${user.id}::uuid FOR UPDATE`;
+      const current = await tx.user.findUniqueOrThrow({
+        where: { id: user.id },
+      });
+      if (
+        !current.active ||
+        !current.mustChangePassword ||
+        current.passwordHash !== user.passwordHash
+      )
+        bad(
+          "La cuenta cambió mientras actualizabas la contraseña. Inicia sesión otra vez.",
+        );
+      const row = await tx.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: passwordHashValue,
+          mustChangePassword: false,
+          authVersion: { increment: 1 },
+        },
+      });
+      await tx.refreshToken.deleteMany({ where: { userId: user.id } });
+      await tx.authSession.deleteMany({ where: { userId: user.id } });
+      await tx.authAttempt.deleteMany({
+        where: { key: { startsWith: `login:${user.id}:` } },
+      });
+      return row;
+    });
+    const freshUser = await this.db.user.findUniqueOrThrow({
+      where: { id: updated.id },
+      include: { role: true },
+    });
+    await audit(
+      this.db,
+      this.actor(freshUser),
+      "password_changed",
+      "user",
+      user.id,
+    );
+    return this.issue(freshUser, res);
   }
   @Public()
   @Post("refresh")
@@ -177,6 +284,7 @@ export class AuthController {
     });
     if (
       !user?.active ||
+      user.mustChangePassword ||
       user.authVersion !== saved.authVersion ||
       !saved.sessionId
     )

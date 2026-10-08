@@ -82,6 +82,7 @@ const input = (id: string, total: number, s = session) => ({
   customerId: defaultCustomerId,
   cashSessionId: s.id,
   items: [{ variantId: id, qty: 1 }],
+  discountReason: "Descuento autorizado en pruebas",
   payments: [{ method: "cash", amount: total }],
   expectedTotal: total,
 });
@@ -123,11 +124,22 @@ beforeAll(async () => {
       roleId: roles.find((r: any) => r.name === role).id,
     });
     actors.push(u);
-    const auth = await ok(
+    let auth = await ok(
       "/auth/login",
       { email: u.email, password: "FitStore-QA-2026!" },
       "",
     );
+    if (auth.requiresPasswordChange)
+      auth = await ok(
+        "/auth/change-password",
+        {
+          login: u.email,
+          currentPassword: "FitStore-QA-2026!",
+          newPassword: "FitStore-QA-Nueva-2026!",
+          confirmPassword: "FitStore-QA-Nueva-2026!",
+        },
+        "",
+      );
     await enroll(auth.accessToken, "QA " + role);
     if (role === "admin") token = auth.accessToken;
     if (role === "seller") sellerToken = auth.accessToken;
@@ -504,6 +516,7 @@ describe("Aceptación financiera y permisos", () => {
       items: [{ variantId: supplement.variants[0].id, qty: 3, unitCost: 150 }],
     });
     await ok("/purchase-orders/" + po.id + "/receive", {
+      operationId: randomUUID(),
       freight: 30,
       items: [
         {
@@ -850,6 +863,7 @@ describe("Regresiones de Claude", () => {
             ],
             payments: [{ method: "cash", amount: 88.5 }],
             expectedTotal: 88.5,
+            discountReason: "Descuento autorizado en pruebas",
           },
           sellerToken,
         )
@@ -934,7 +948,11 @@ describe("Regresiones de Claude", () => {
     expect(JSON.stringify(rejected[0].body)).not.toMatch(/Prisma|P2002/i);
     await ok(
       "/cash-sessions/" + created[0].body.id + "/close",
-      { countedCash: Number(created[0].body.openingAmount) },
+      {
+        countedCash: Number(created[0].body.openingAmount),
+        countedCard: 0,
+        countedTransfer: 0,
+      },
       temporaryUsers.find((entry) => entry.user.id === created[0].body.userId)!
         .token,
     );
@@ -1084,6 +1102,7 @@ describe("Seguridad, offline y funciones completadas", () => {
     expect(
       (
         await request("/purchase-orders/" + order.id + "/receive", {
+          operationId: randomUUID(),
           items: [
             {
               itemId: order.items[0].id,
@@ -1181,11 +1200,15 @@ describe("Seguridad, offline y funciones completadas", () => {
     expect(Number(s.total)).toBe(100);
     expect(Number(s.discountTotal)).toBe(18);
     expect(Number(s.taxTotal)).toBe(15.25);
-    expect(
-      (await ok("/audit-log")).some(
-        (a) => a.action === "discount_approved" && a.entityId === s.id,
-      ),
-    ).toBe(true);
+    expect(s.discountReason).toBe("Descuento autorizado en pruebas");
+    expect(s.discountRule).toBe("administrator");
+    expect(s.discountApprovedBy).toBeTruthy();
+    expect(s.discountApprovedName).toBeTruthy();
+    const discountAudit = (await ok("/audit-log")).find(
+      (a) => a.action === "discount_approved" && a.entityId === s.id,
+    );
+    expect(discountAudit?.after.reason).toBe("Descuento autorizado en pruebas");
+    expect(discountAudit?.after.authorizer?.name).toBeTruthy();
     expect(
       (
         await request("/sales", {
@@ -1444,6 +1467,7 @@ describe("Seguridad, offline y funciones completadas", () => {
         countedCash: current.expected.cash + 10,
         countedCard: current.expected.card,
         countedTransfer: current.expected.transfer,
+        notes: "Diferencia de prueba explicada",
       });
       expect(Number(closed.differenceCash)).toBe(10);
       expect(
@@ -2671,6 +2695,7 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
     let from = s.events.length;
     let qty = Number((await current()).stock) + 2;
     await ok("/purchase-orders/" + order.id + "/receive", {
+      operationId: randomUUID(),
       items: [{ itemId: order.items[0].id, qty: 2 }],
     });
     await waitStock(from, qty);
@@ -2962,6 +2987,7 @@ describe("Ronda 4 · auditoría de ChatGPT y propia", () => {
       items: [{ variantId: clothingVariant.id, qty: 1, unitCost: 50 }],
     });
     await ok("/purchase-orders/" + order.id + "/receive", {
+      operationId: randomUUID(),
       items: [{ itemId: order.items[0].id, qty: 1 }],
     });
     expect(await report()).toMatchObject({ Compras: 84, Pendiente: 84 });
@@ -3510,6 +3536,7 @@ describe("Ronda 6 · auditoría R4 de ChatGPT", () => {
       items: [{ variantId: variant.id, qty: 1, unitCost: 50 }],
     });
     await ok("/purchase-orders/" + order.id + "/receive", {
+      operationId: randomUUID(),
       items: [{ itemId: order.items[0].id, qty: 1 }],
     });
     const orderReceipt = await fixtureDb.goodsReceipt.findFirstOrThrow({
@@ -3632,6 +3659,7 @@ describe("Ronda 6 · auditoría R4 de ChatGPT", () => {
     expect(before).toMatchObject({ stock: 1, cost: 10 });
     for (const qty of [0.0004, 1.0001]) {
       const r = await request("/purchase-orders/" + order.id + "/receive", {
+        operationId: randomUUID(),
         items: [{ itemId: order.items[0].id, qty, lotNumber: "R6-L" }],
       });
       expect(r.status, String(qty)).toBe(400);
@@ -3687,6 +3715,7 @@ describe("Ronda 6 · auditoría R4 de ChatGPT", () => {
     expect(await snapshot()).toEqual(before);
     // 0.001 es válido y conserva cantidad y costo contable.
     await ok("/purchase-orders/" + order.id + "/receive", {
+      operationId: randomUUID(),
       items: [{ itemId: order.items[0].id, qty: 0.001 }],
     });
     const after = await snapshot();
@@ -3753,6 +3782,7 @@ describe("Ronda 6 · auditoría R4 de ChatGPT", () => {
       items: [{ variantId: variant.id, qty: 4, unitCost: 10 }],
     });
     await ok("/purchase-orders/" + partial.id + "/receive", {
+      operationId: randomUUID(),
       items: [{ itemId: partial.items[0].id, qty: 2 }],
     });
     expect(await purchases(partialSupplier.name)).toMatchObject({
@@ -5042,6 +5072,7 @@ describe("Ronda 9 · revisión · dinero", () => {
       cashSessionId: session.id,
       items: [{ variantId: v.id, qty: 3 }],
       globalDiscount: 10,
+      discountReason: "Descuento autorizado en pruebas",
       payments: [{ method: "cash", amount: 90.05 }],
       expectedTotal: 90.05,
     });
@@ -5123,6 +5154,7 @@ describe("Ronda 9 · revisión · dinero", () => {
         items: [{ variantId: v.id, qty: 10, unitCost: 200 }],
       });
       await ok("/purchase-orders/" + order.id + "/receive", {
+        operationId: randomUUID(),
         items: [{ itemId: order.items[0].id, qty: 10 }],
       });
       const variant = () =>
@@ -5174,6 +5206,7 @@ describe("Ronda 9 · revisión · dinero", () => {
       capturedAt: new Date().toISOString(),
       cashSessionId: session.id,
       items,
+      discountReason: "Descuento autorizado en pruebas",
       payments: [{ method: "cash", amount }],
       ...(expectedTotal === undefined ? {} : { expectedTotal }),
     });
@@ -5608,10 +5641,12 @@ describe("Ronda 9 · revisión · facturas", () => {
       operationId: randomUUID(),
       items: [{ itemId: other.items[0].id, qty: 2 }],
     };
-    await Promise.all([
+    const concurrent = await Promise.all([
       request("/purchase-orders/" + other.id + "/receive", twice),
       request("/purchase-orders/" + other.id + "/receive", twice),
     ]);
+    expect(concurrent.map((r) => r.status)).toEqual([201, 201]);
+    expect(new Set(concurrent.map((r) => r.body.id)).size).toBe(1);
     expect(
       await fixtureDb.goodsReceipt.findMany({ where: { orderId: other.id } }),
     ).toHaveLength(1);
@@ -6178,6 +6213,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
         offlineUuid: randomUUID(),
         cashSessionId: session.id,
         items,
+        discountReason: "Descuento autorizado en pruebas",
         payments,
         ...extra,
       },
@@ -6735,21 +6771,36 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       ).toBe(403);
       const saved = await upload(paid.id, jpeg(2048), "image/jpeg");
       expect(saved.status).toBe(201);
-      expect(saved.body.proofUrl).toMatch(/^data:image\/jpeg;base64,/);
+      expect(saved.body).toMatchObject({ hasProof: true });
+      expect(saved.body.proofUrl).toBeUndefined();
       // Se puede reemplazar (p. ej. foto borrosa) y queda en el pago de la venta.
       const replaced = await upload(paid.id, png(2 * 1024 * 1024), "image/png");
       expect(replaced.status).toBe(201);
-      expect(replaced.body.proofUrl).toMatch(/^data:image\/png;base64,/);
+      expect(replaced.body).toMatchObject({ hasProof: true });
+      expect(replaced.body.proofUrl).toBeUndefined();
       const stored = await fixtureDb.payment.findUniqueOrThrow({
         where: { id: paid.id },
       });
-      expect(stored.proofUrl).toBe(replaced.body.proofUrl);
+      expect(stored.proofUrl).toMatch(/^data:image\/png;base64,/);
       const detail = (await must("/sales", undefined, ownerToken)).find(
         (s: any) => s.id === r.body.id,
       );
-      expect(detail.payments.find((p: any) => p.id === paid.id).proofUrl).toBe(
-        replaced.body.proofUrl,
+      const listedPayment = detail.payments.find((p: any) => p.id === paid.id);
+      expect(listedPayment.proofUrl).toBeUndefined();
+      expect(listedPayment.hasProof).toBe(true);
+      const proof = await fetch(base + "/payments/" + paid.id + "/proof", {
+        headers: { Authorization: "Bearer " + ownerToken },
+      });
+      expect(proof.status).toBe(200);
+      expect(proof.headers.get("content-type")).toMatch(/^image\/png/);
+      expect(Buffer.from(await proof.arrayBuffer())).toEqual(
+        png(2 * 1024 * 1024),
       );
+      const foreignProof = await fetch(
+        base + "/payments/" + paid.id + "/proof",
+        { headers: { Authorization: "Bearer " + cashier.token } },
+      );
+      expect(foreignProof.status).toBe(403);
       // Completar con otro método cierra la cuenta y resuelve la alerta.
       await must(
         path,
@@ -6774,10 +6825,10 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       // La caja vendedora no recibió el dinero; puede cerrar sin ese cobro.
       const closed = await must(
         "/cash-sessions/" + s3.id + "/close",
-        { countedCash: 0 },
+        { countedCash: 0, countedCard: 250, countedTransfer: 0 },
         cashier3.token,
       );
-      expect(closed.differences).toEqual({ cash: 0, card: 0, transfer: 0 });
+      expect(closed.differences).toBeUndefined();
       const cuadre = await must(
         "/cash-sessions/" + session.id + "/cuadre",
         undefined,
@@ -6790,7 +6841,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
             method: "card",
             amount: 250,
             reference: "VOUCHER-QA-77",
-            proofUrl: replaced.body.proofUrl,
+            hasProof: true,
           }),
         ]),
       );
@@ -6805,7 +6856,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       if (current && !current.closedAt)
         await call(
           "/cash-sessions/" + s3.id + "/close",
-          { countedCash: 0 },
+          { countedCash: 0, countedCard: 250, countedTransfer: 0 },
           cashier3.token,
         );
     }
@@ -7092,12 +7143,18 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     });
   });
 
-  it("Tienda-cuadre: un cliente que envía sólo countedCash sigue cerrando; la contraentrega cobrada aparece en la caja que la recibió", async () => {
+  it("Tienda-cuadre: el cierre ciego exige todas las formas; la contraentrega cobrada aparece en la caja que la recibió", async () => {
     // Caja 2 despachó las ventas; los cobros los registró la administración en
     // su propia caja. Por eso la caja vendedora cierra sin dinero recibido.
-    const closed = await must(
+    const incomplete = await call(
       "/cash-sessions/" + s2.id + "/close",
       { countedCash: 0 },
+      cashier2.token,
+    );
+    expect(incomplete.status).toBe(400);
+    const closed = await must(
+      "/cash-sessions/" + s2.id + "/close",
+      { countedCash: 0, countedCard: 0, countedTransfer: 0 },
       cashier2.token,
     );
     expect(closed.differences).toEqual({ cash: 0, card: 0, transfer: 0 });

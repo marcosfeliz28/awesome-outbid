@@ -1,11 +1,11 @@
 // Pantallas de la tienda: cierre por denominaciones, impresión del cuadre y
 // de los reportes, contraentregas pendientes y ajustes de caja/cajero.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Printer, Truck, Upload } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import { CASH_DENOMINATIONS, can, formatMoney } from "@fitstore/shared";
-import { api, post, localDB, useStore } from "./api";
+import { api, apiBlob, post, localDB, useStore } from "./api";
 import { FormModal, QueryState, toast, mutate, today } from "./helpers";
 import {
   CuadrePrint,
@@ -108,7 +108,8 @@ export function CloseCashModal({
     notes: "",
   });
   const [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [confirmBlindClose, setConfirmBlindClose] = useState(false);
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [key]: e.target.value });
   const subtotal =
@@ -127,6 +128,12 @@ export function CloseCashModal({
       setError("Lo entregado no puede superar el efectivo contado.");
       return;
     }
+    if (!confirmBlindClose) {
+      setError(
+        "Confirma que contaste todos los medios de pago antes de cerrar.",
+      );
+      return;
+    }
     setBusy(true);
     try {
       const pending = await localDB.sales
@@ -141,16 +148,14 @@ export function CloseCashModal({
           .map(([k, v]) => [k, Math.floor(parse(v))] as const)
           .filter(([, v]) => v > 0),
       );
-      const optional = (key: "countedCard" | "countedTransfer") =>
-        form[key].trim() === "" ? {} : { [key]: parse(form[key]) };
       await post("/cash-sessions/" + session.id + "/close", {
         denominations,
         countedCash: subtotal,
         vouchers: parse(form.vouchers),
         countedUsd: parse(form.countedUsd),
         countedEur: parse(form.countedEur),
-        ...optional("countedCard"),
-        ...optional("countedTransfer"),
+        countedCard: parse(form.countedCard),
+        countedTransfer: parse(form.countedTransfer),
         ...(delivered === null ? {} : { delivered }),
         notes: form.notes,
       });
@@ -163,7 +168,12 @@ export function CloseCashModal({
       setBusy(false);
     }
   };
-  const money = (label: string, key: keyof typeof form, help?: string) => (
+  const money = (
+    label: string,
+    key: keyof typeof form,
+    help?: string,
+    required = false,
+  ) => (
     <label className="field">
       <span>{label}</span>
       <input
@@ -173,6 +183,7 @@ export function CloseCashModal({
         inputMode="decimal"
         value={form[key]}
         onChange={set(key)}
+        required={required}
       />
       {help && <small>{help}</small>}
     </label>
@@ -181,8 +192,8 @@ export function CloseCashModal({
     <Modal open onClose={onClose} title="Cuadre y cierre de caja">
       <form onSubmit={submit} className="close-cash">
         <p className="close-expected">
-          Efectivo esperado:{" "}
-          <strong>{formatMoney(session.expected?.cash ?? 0)}</strong>
+          Conteo ciego: declara lo que realmente tienes. La comparación aparece
+          después de cerrar.
         </p>
         <h3>Detalles de monedas</h3>
         <div className="count-grid">
@@ -225,12 +236,14 @@ export function CloseCashModal({
           {money(
             "Tarjeta declarada",
             "countedCard",
-            "Vacío = esperado " + formatMoney(session.expected?.card ?? 0),
+            "Escribe 0 si no hubo cobros con tarjeta.",
+            true,
           )}
           {money(
             "Transferencia declarada",
             "countedTransfer",
-            "Vacío = esperado " + formatMoney(session.expected?.transfer ?? 0),
+            "Escribe 0 si no hubo transferencias.",
+            true,
           )}
           {money(
             "Entregado",
@@ -247,6 +260,17 @@ export function CloseCashModal({
           <label className="field full">
             <span>Notas del cierre</span>
             <textarea value={form.notes} onChange={set("notes")} />
+          </label>
+          <label className="field full checkbox-field">
+            <input
+              type="checkbox"
+              checked={confirmBlindClose}
+              onChange={(event) => setConfirmBlindClose(event.target.checked)}
+            />
+            <span>
+              Confirmo que conté efectivo, tarjeta y transferencia. Los campos
+              vacíos representan RD$ 0.00.
+            </span>
           </label>
         </div>
         {error && (
@@ -410,7 +434,10 @@ export function CodPending({ session }: { session: any }) {
                     <ul className="cod-collections">
                       {r.collections.map((c: any) => (
                         <li key={c.paymentId}>
-                          <ProofThumb url={c.proofUrl} />
+                          <ProofThumb
+                            paymentId={c.paymentId}
+                            hasProof={c.hasProof}
+                          />
                           <span>
                             {COD_METHOD_LABEL[c.method] ?? c.method}{" "}
                             {formatMoney(c.amount)}
@@ -463,19 +490,52 @@ const COD_METHOD_LABEL: Record<string, string> = {
 export const PROOF_MAX_BYTES = 2 * 1024 * 1024;
 const PROOF_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-/** Foto de la evidencia de un cobro: miniatura que abre la imagen completa. */
-export function ProofThumb({ url }: { url?: string | null }) {
-  if (!url) return null;
+/** Carga la evidencia sólo cuando el usuario la solicita; las listas nunca
+ * transportan imágenes base64 completas. */
+export function ProofThumb({
+  paymentId,
+  hasProof,
+}: {
+  paymentId: string;
+  hasProof?: boolean;
+}) {
+  const [blobUrl, setBlobUrl] = useState("");
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!hasProof) return;
+    let current = true;
+    let url = "";
+    apiBlob("/payments/" + paymentId + "/proof")
+      .then((blob) => {
+        if (!current) return;
+        url = URL.createObjectURL(blob);
+        setBlobUrl(url);
+      })
+      .catch(() => current && setFailed(true));
+    return () => {
+      current = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [hasProof, paymentId]);
+  if (!hasProof) return null;
   return (
-    <a
+    <button
+      type="button"
       className="proof-thumb"
-      href={url}
-      target="_blank"
-      rel="noreferrer"
+      onClick={() =>
+        blobUrl && window.open(blobUrl, "_blank", "noopener,noreferrer")
+      }
       title="Ver la foto de la evidencia"
+      disabled={!blobUrl}
     >
-      <img src={url} alt="Evidencia del cobro" />
-    </a>
+      {blobUrl ? (
+        <img src={blobUrl} alt="Evidencia del pago" />
+      ) : failed ? (
+        "No disponible"
+      ) : (
+        "Cargando evidencia…"
+      )}
+    </button>
   );
 }
 
@@ -487,7 +547,7 @@ export async function uploadProof(paymentId: string, file: File) {
     throw new Error("La foto debe pesar como máximo 2 MB.");
   const body = new FormData();
   body.append("file", file);
-  return api<{ proofUrl: string }>("/payments/" + paymentId + "/proof", {
+  return api<{ hasProof: boolean }>("/payments/" + paymentId + "/proof", {
     method: "POST",
     body,
   });

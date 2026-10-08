@@ -121,6 +121,30 @@ describe("Respaldo cloud · tarea Windows", () => {
 });
 
 describe("Render · proxy público", () => {
+  it("agrega cabeceras de seguridad sin bloquear PWA, cámara ni Sentry", () => {
+    const nginx = read("deploy/render/nginx.conf.template");
+    const headers = read("deploy/render/security-headers.conf");
+    const monitoring = read("apps/web/src/monitoring.ts");
+    const dsn = monitoring.match(/const SENTRY_DSN\s*=\s*"([^"]+)"/)?.[1];
+    expect(dsn).toBeTruthy();
+    for (const name of [
+      "Content-Security-Policy",
+      "Strict-Transport-Security",
+      "X-Frame-Options",
+      "X-Content-Type-Options",
+      "Referrer-Policy",
+    ])
+      expect(headers).toContain(name);
+    expect(headers).toContain("worker-src 'self' blob:");
+    expect(headers).toContain("camera=(self)");
+    expect(headers).toContain(new URL(dsn!).origin);
+    expect(
+      nginx.match(
+        /include \/etc\/nginx\/snippets\/nexora-security-headers.conf;/g,
+      ),
+    ).toHaveLength(6);
+  });
+
   it("resuelve de nuevo la API privada y conserva SSE sin buffering", () => {
     const nginx = read("deploy/render/nginx.conf.template");
     expect(nginx).toContain("resolver ${NGINX_RESOLVER} valid=10s ipv6=off;");
@@ -132,14 +156,43 @@ describe("Render · proxy público", () => {
     expect(nginx).toContain("return 204;");
   });
 
-  it("reemplaza X-Forwarded-For por la IP confiable de la capa pública", () => {
+  it("reemplaza X-Forwarded-For usando sólo la IP de conexión confiable", () => {
     const nginx = read("deploy/render/nginx.conf.template");
-    expect(nginx).toContain("$http_cf_connecting_ip $nexora_client_ip");
+    expect(nginx).toContain("map $remote_addr $nexora_client_ip {");
+    expect(nginx).toContain("default $remote_addr;");
+    expect(nginx).not.toMatch(
+      /\$http_(?:cf_ray|cf_connecting_ip|x_forwarded_for)/,
+    );
     expect(
       nginx.match(/proxy_set_header X-Forwarded-For \$nexora_client_ip;/g),
     ).toHaveLength(2);
     expect(nginx).not.toContain("$proxy_add_x_forwarded_for");
+    expect(nginx).not.toContain("$http_x_forwarded_for");
     expect(nginx).toContain("proxy_set_header X-Forwarded-Proto https;");
+  });
+
+  it("ignora CF-Ray, CF-Connecting-IP y X-Forwarded-For falsificados juntos", () => {
+    const nginx = read("deploy/render/nginx.conf.template");
+    const map = nginx.match(
+      /map \$remote_addr \$nexora_client_ip \{([\s\S]*?)\n\}/,
+    )?.[1];
+    expect(map).toBeTruthy();
+    expect(map).toContain("default $remote_addr;");
+    expect(map).not.toMatch(
+      /\$http_(?:cf_ray|cf_connecting_ip|x_forwarded_for)/,
+    );
+
+    // El cliente falsifica las tres cabeceras; Nginx conserva la IP del socket.
+    const request = {
+      socketIp: "10.20.30.40",
+      cfRay: "a1b2c3d4e5f67890-IAD",
+      forgedCfConnectingIp: "198.51.100.77",
+      forgedXForwardedFor: "203.0.113.99",
+    };
+    const apiIp = request.socketIp;
+    expect(apiIp).toBe("10.20.30.40");
+    expect(apiIp).not.toBe(request.forgedCfConnectingIp);
+    expect(apiIp).not.toBe(request.forgedXForwardedFor);
   });
 
   it("fija una versión de Nginx compatible y valida valores antes de sustituirlos", () => {

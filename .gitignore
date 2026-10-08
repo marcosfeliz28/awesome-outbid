@@ -3,6 +3,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.audit.example
 **/secrets.json
 *.pem
 *.key

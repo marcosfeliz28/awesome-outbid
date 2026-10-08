@@ -1,6 +1,5 @@
-map $http_cf_connecting_ip $nexora_client_ip {
-    ""      $remote_addr;
-    default $http_cf_connecting_ip;
+map $remote_addr $nexora_client_ip {
+    default $remote_addr;
 }
 
 resolver ${NGINX_RESOLVER} valid=10s ipv6=off;
@@ -17,10 +16,12 @@ server {
     root /usr/share/nginx/html;
     index index.html;
     client_max_body_size 5m;
+    include /etc/nginx/snippets/nexora-security-headers.conf;
 
     location = /healthz {
         access_log off;
         add_header Cache-Control "no-store" always;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
         return 204;
     }
 
@@ -37,6 +38,7 @@ server {
         proxy_cache off;
         proxy_connect_timeout 5s;
         proxy_read_timeout 75s;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
         add_header X-Accel-Buffering no;
     }
 
@@ -55,16 +57,19 @@ server {
 
     location = /sw.js {
         add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
         try_files $uri =404;
     }
 
     location = /index.html {
         add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
         try_files $uri =404;
     }
 
     location = /runtime-config.js {
         add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
         try_files $uri =404;
     }
 
