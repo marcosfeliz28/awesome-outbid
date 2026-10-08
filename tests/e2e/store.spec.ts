@@ -38,7 +38,7 @@ test.beforeEach(async ({ request }) => {
 });
 async function login(page: any) {
   await page.goto("/");
-  await page.getByLabel("Correo electrónico").fill("admin@fitstore.demo");
+  await page.getByLabel("Usuario").fill("admin@fitstore.demo");
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
@@ -62,6 +62,14 @@ async function ensureCash(page: any) {
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
   }
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();
+}
+async function selectNamedCustomer(page: any) {
+  const selected =
+    (await page.locator(".customer-selector strong").textContent()) || "";
+  if (!selected.includes("Selecciona")) return;
+  await page.locator(".customer-selector").click();
+  await expect(page.locator(".customer-list button").first()).toBeVisible();
+  await page.locator(".customer-list button").first().click();
 }
 test("venta completa desde caja hasta pagos combinados y recibo", async ({
   page,
@@ -90,6 +98,7 @@ test("venta completa desde caja hasta pagos combinados y recibo", async ({
     .getByRole("dialog")
     .getByRole("button", { name: /M · Negro/ })
     .click();
+  await selectNamedCustomer(page);
   await page.getByRole("button", { name: /Cobrar/ }).click();
   await expect(
     page.getByRole("dialog", { name: "Todo listo para cobrar" }),
@@ -186,6 +195,7 @@ test("venta offline queda guardada y se sincroniza una sola vez", async ({
   await page.getByLabel("Buscar productos").fill("Shaker FitStore");
   await page.locator(".product-card").click();
   await page.getByRole("dialog").getByRole("button", { name: /Lila/ }).click();
+  await selectNamedCustomer(page);
   await context.setOffline(true);
   await expect(page.locator(".connection")).toContainText("Offline");
   await page.getByRole("button", { name: /Cobrar/ }).click();
@@ -1082,6 +1092,7 @@ test("R9-caja-9 y R9-caja-6: el ticket muestra los descuentos y tras «Nueva ven
   await page.getByLabel("Descuento global").fill("10");
   // 1,500 − 10 % = 1,350 (−150); 1,000 con RD$ 100 y 10 % global = 810 (−190).
   await expect(page.locator(".cart-total")).toContainText("RD$ 2,160.00");
+  await selectNamedCustomer(page);
   await page.getByRole("button", { name: /Cobrar/ }).click();
   await page.getByRole("button", { name: "Agregar pago" }).click();
   await page.getByRole("button", { name: "Finalizar venta" }).click();
@@ -1475,6 +1486,7 @@ test("R9-dinero-5-pos: un descuento por monto con 3 decimales se cobra en línea
   const product = await r9Product(request, headers, name, code);
   const search = await r9Pos(page);
   const sell = async () => {
+    await selectNamedCustomer(page);
     await search.fill(code);
     await search.press("Enter");
     await page
@@ -1644,6 +1656,7 @@ async function r9LocalSales(page: any) {
   });
 }
 async function r9Charge(page: any) {
+  await selectNamedCustomer(page);
   await page.getByRole("button", { name: /Cobrar/ }).click();
   await page.getByRole("button", { name: "Agregar pago" }).click();
   await page.getByRole("button", { name: "Finalizar venta" }).click();
@@ -2483,6 +2496,7 @@ test.describe("Tienda-pantallas", () => {
     const search = await r9Pos(page);
     await search.fill(code);
     await search.press("Enter");
+    await selectNamedCustomer(page);
     await page.getByRole("button", { name: /Cobrar/ }).click();
     await page.getByLabel("Monto del pago").fill("500");
     await page.getByRole("button", { name: "Agregar pago" }).click();

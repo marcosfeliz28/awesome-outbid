@@ -1362,6 +1362,10 @@ export function Cash() {
     queryFn: () => localDB.sales.where("userId").equals(user.id).toArray(),
     refetchInterval: 5000,
   });
+  const customers = useQuery({
+    queryKey: ["customers"],
+    queryFn: () => api("/customers"),
+  });
   const [open, setOpen] = useState(false),
     [movement, setMovement] = useState(false),
     [closing, setClosing] = useState<any>(null),
@@ -1500,16 +1504,52 @@ export function Cash() {
                 label: "Acción",
                 render: (s) =>
                   s.status === "conflict" && (
-                    <Button
-                      variant="secondary"
-                      onClick={async () => {
-                        await localDB.sales.update(s.id, { status: "pending" });
-                        await client.invalidateQueries();
-                        toast("Lista para reintentar.");
-                      }}
-                    >
-                      Reintentar
-                    </Button>
+                    <div className="pending-sale-actions">
+                      {!s.input.customerId && (
+                        <select
+                          aria-label={`Cliente para el recibo ${s.receipt.number}`}
+                          defaultValue=""
+                          onChange={async (event) => {
+                            const customerId = event.target.value;
+                            if (!customerId) return;
+                            const input = { ...s.input, customerId };
+                            await localDB.sales.update(s.id, {
+                              input,
+                              status: "pending",
+                              message: undefined,
+                            });
+                            await client.invalidateQueries({
+                              queryKey: ["pending-sales"],
+                            });
+                            toast("Cliente asociado. Venta lista para sincronizar.");
+                          }}
+                        >
+                          <option value="">Asociar cliente…</option>
+                          {(customers.data || []).map((customer: any) => (
+                            <option key={customer.id} value={customer.id}>
+                              {customer.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {s.input.customerId && (
+                        <Button
+                          variant="secondary"
+                          onClick={async () => {
+                            await localDB.sales.update(s.id, {
+                              status: "pending",
+                              message: undefined,
+                            });
+                            await client.invalidateQueries({
+                              queryKey: ["pending-sales"],
+                            });
+                            toast("Lista para reintentar.");
+                          }}
+                        >
+                          Reintentar
+                        </Button>
+                      )}
+                    </div>
                   ),
               },
             ]}

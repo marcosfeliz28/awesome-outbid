@@ -42,6 +42,7 @@ let token = "",
   sellerToken = "",
   managerToken = "";
 let supplierId = "",
+  defaultCustomerId = "",
   session: any,
   sellerSession: any,
   supplement: any,
@@ -78,6 +79,7 @@ async function ok(path: string, data?: unknown, as = token, method?: string) {
 }
 const input = (id: string, total: number, s = session) => ({
   offlineUuid: randomUUID(),
+  customerId: defaultCustomerId,
   cashSessionId: s.id,
   items: [{ variantId: id, qty: 1 }],
   payments: [{ method: "cash", amount: total }],
@@ -131,6 +133,9 @@ beforeAll(async () => {
     if (role === "seller") sellerToken = auth.accessToken;
     if (role === "manager") managerToken = auth.accessToken;
   }
+  defaultCustomerId = (
+    await ok("/customers", { name: "QA Cliente ventas " + suffix })
+  ).id;
   const cats = await ok("/categories");
   supplierId = (await ok("/suppliers"))[0].id;
   supplement = await ok("/products", {
@@ -215,6 +220,22 @@ afterAll(async () => {
     await request("/users/" + u.id, { active: false }, ownerToken, "PATCH");
 });
 describe("Aceptación financiera y permisos", () => {
+  it("rechaza una venta sin cliente identificado antes de modificar inventario", async () => {
+    const before = Number(
+      (await ok("/products/" + clothing.id)).variants[0].stock,
+    );
+    const response = await request("/sales", {
+      ...input(clothing.variants[0].id, 118),
+      customerId: null,
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.message).toContain(
+      "Selecciona o crea un cliente antes de vender",
+    );
+    expect(
+      Number((await ok("/products/" + clothing.id)).variants[0].stock),
+    ).toBe(before);
+  });
   it("requiere sesión y el vendedor nunca recibe costos", async () => {
     expect((await request("/products", undefined, "")).status).toBe(401);
     const catalog = JSON.stringify(
@@ -361,6 +382,7 @@ describe("Aceptación financiera y permisos", () => {
   it("vende proteína y legging con FEFO y pago dividido", async () => {
     sale = await ok("/sales", {
       offlineUuid: randomUUID(),
+      customerId: defaultCustomerId,
       cashSessionId: session.id,
       items: [
         { variantId: supplement.variants[0].id, qty: 1 },
@@ -5094,6 +5116,7 @@ describe("Ronda 9 · revisión · dinero", () => {
     const v = await product("centavos caja", 100, 10, 10);
     const offline = (items: any[], amount: number, expectedTotal?: number) => ({
       offlineUuid: randomUUID(),
+      customerId: defaultCustomerId,
       capturedAt: new Date().toISOString(),
       cashSessionId: session.id,
       items,

@@ -320,9 +320,7 @@ export class SalesController {
           false,
           capturedAt,
         );
-        if (input.customerId)
-          await tx.$queryRaw`SELECT id FROM "Customer" WHERE id=${input.customerId}::uuid FOR UPDATE`;
-        const customer = input.customerId
+        let customer = input.customerId
           ? await tx.customer.findFirstOrThrow({
               where: {
                 id: input.customerId,
@@ -449,6 +447,12 @@ export class SalesController {
         if ((credit || cod) && !customer)
           bad("El crédito / contraentrega requiere seleccionar un cliente.");
         if ((credit || cod) && customer) {
+          // Serializar sólo operaciones que consumen límite de crédito. Las
+          // ventas pagadas no deben bloquear entre sí por compartir cliente.
+          await tx.$queryRaw`SELECT id FROM "Customer" WHERE id=${customer.id}::uuid FOR UPDATE`;
+          customer = await tx.customer.findFirstOrThrow({
+            where: { id: customer.id, branchId: actor.branchId, active: true },
+          });
           // Toda mercancía despachada pendiente de cobro cuenta en la deuda.
           const debt = await tx.sale.aggregate({
             where: {

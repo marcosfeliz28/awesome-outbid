@@ -482,7 +482,8 @@ function Shell() {
       )}
       {can(user.permissions, "inventory:write") &&
         user.role !== "seller" &&
-        page !== "merchandise" && (
+        page !== "merchandise" &&
+        page !== "pos" && (
           <nav className="goods-mobile-bar">
             <Button onClick={() => go("merchandise")}>
               <Truck size={24} /> Mercancía

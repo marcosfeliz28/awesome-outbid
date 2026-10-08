@@ -1692,7 +1692,7 @@ td strong {
   display: flex;
   gap: 6px;
   align-items: center;
-  min-height: 37px;
+  min-height: 44px;
 }
 .category-tabs button.active {
   border-color: #7c3aed !important;
@@ -4822,6 +4822,21 @@ td strong {
 .pos-content {
   padding: 16px 0 0 20px;
 }
+.pos-skip-to-cart {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  z-index: 90;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.pos-skip-to-cart:focus {
+  left: 12px;
+  top: 12px;
+}
 .pos-layout {
   grid-template-columns: minmax(0, 1fr) 390px;
   gap: 16px;
@@ -4849,7 +4864,7 @@ td strong {
 .pos-topbar .pos-search input {
   min-width: 0;
   padding: 10px 0;
-  font-size: 12px;
+  font-size: 16px;
 }
 .pos-topbar .pos-search kbd {
   flex: 0 0 auto;
@@ -4923,6 +4938,20 @@ td strong {
 .cart-empty-state span {
   font-size: 11px;
 }
+.pending-sale-actions {
+  display: grid;
+  gap: 6px;
+  min-width: 150px;
+}
+.pending-sale-actions select {
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 10px;
+}
 .cart-summary > .cart-total strong {
   font-family: "Plus Jakarta Sans", sans-serif;
   font-size: 30px;
@@ -4937,6 +4966,9 @@ td strong {
   gap: 12px;
   background: var(--green, #059669);
 }
+.pos-mobile-charge {
+  display: none;
+}
 @media (max-width: 1180px) {
   .pos-layout {
     grid-template-columns: minmax(0, 1fr) 350px;
@@ -4950,6 +4982,16 @@ td strong {
   }
   .pos-topbar h1 {
     font-size: 18px;
+  }
+  .pos-topbar {
+    flex-wrap: wrap;
+  }
+  .pos-topbar h1 {
+    flex: 1 1 auto;
+  }
+  .pos-topbar .pos-search {
+    order: 3;
+    flex-basis: 100%;
   }
 }
 @media (max-width: 900px) {
@@ -4977,6 +5019,22 @@ td strong {
     border-radius: 12px;
     overflow: hidden;
   }
+  .pos-mobile-charge {
+    display: flex;
+    position: fixed;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 70;
+    width: min(390px, calc(100vw - 24px));
+    min-height: 56px;
+    box-shadow: 0 8px 24px #0003;
+  }
+  .cart-summary > .charge-button:not(.pos-mobile-charge) {
+    display: none;
+  }
+  .app-shell:has(.pos-mobile-charge) .main-content {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
 }
 @media (max-width: 560px) {
   .pos-content {
@@ -4992,7 +5050,7 @@ td strong {
     flex-direction: row;
   }
   .pos-topbar .heading-actions .button {
-    min-height: 40px;
+    min-height: 44px;
   }
   .pos-topbar .pos-search {
     min-width: 100%;

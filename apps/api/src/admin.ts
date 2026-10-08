@@ -38,7 +38,7 @@ import { normalizeUsername, passwordHash } from "./auth";
 
 const customerSchema = z.object({
   creditLimit: amount.optional(),
-  name: z.string().min(2).max(120),
+  name: z.string().trim().min(2).max(120),
   phone: z.string().max(30).optional(),
   email: z.string().email().or(z.literal("")).optional(),
   legalId: z.string().max(30).optional(),

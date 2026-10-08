@@ -638,6 +638,9 @@ export function POS({ go }: { go: (page: string) => void }) {
   return (
     <div className="pos-layout">
       <section className="pos-catalog">
+        <a className="pos-skip-to-cart" href="#pos-cart">
+          Ir al carrito y cobrar
+        </a>
         <div className="pos-topbar">
           <h1>Punto de venta <span className="title-dot" /></h1>
           <div className="pos-search">
@@ -674,6 +677,7 @@ export function POS({ go }: { go: (page: string) => void }) {
           <button
             onClick={() => setCategory("all")}
             className={category === "all" ? "active" : ""}
+            aria-pressed={category === "all"}
           >
             Todos los productos
           </button>
@@ -687,6 +691,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                 key={c.id}
                 onClick={() => setCategory(c.id)}
                 className={category === c.id ? "active" : ""}
+                aria-pressed={category === c.id}
               >
                 <i style={{ background: c.color }} />
                 {c.name}
@@ -694,7 +699,7 @@ export function POS({ go }: { go: (page: string) => void }) {
             ))}
         </div>
         <div className="catalog-caption">
-          <span>
+          <span role="status" aria-live="polite" aria-atomic="true">
             {approximate && filtered.length
               ? `Ninguno tiene todas esas palabras · ${filtered.length} parecidos`
               : filtered.length > MAX_CARDS
@@ -782,7 +787,7 @@ export function POS({ go }: { go: (page: string) => void }) {
           )}
         </QueryState>
       </section>
-      <aside className="cart-panel">
+      <aside className="cart-panel" id="pos-cart" tabIndex={-1} aria-label="Carrito y cobro">
         <div className="cart-heading">
           <div>
             <h2>Venta actual</h2>
@@ -959,7 +964,7 @@ export function POS({ go }: { go: (page: string) => void }) {
             </span>
             <strong>{formatMoney(tax)}</strong>
           </div>
-          <div className="cart-total">
+          <div className="cart-total" aria-live="polite">
             <span>Total a cobrar</span>
             <strong>{formatMoney(total)}</strong>
           </div>
@@ -974,6 +979,7 @@ export function POS({ go }: { go: (page: string) => void }) {
             className="charge-button"
             disabled={!cart.length}
             onClick={charge}
+            aria-label={`Cobrar ${formatMoney(total)}`}
           >
             <CreditCard size={20} />
             <span>Cobrar</span>
@@ -998,6 +1004,21 @@ export function POS({ go }: { go: (page: string) => void }) {
           </small>
         </div>
       </aside>
+      <Button
+        variant="success"
+        className="charge-button pos-mobile-charge"
+        disabled={!cart.length}
+        onClick={charge}
+        aria-label={`Cobrar ${formatMoney(total)}`}
+      >
+        <CreditCard size={20} />
+        {cart.length ? (
+          <>
+            <span>Cobrar · {formatMoney(total)}</span>
+            <kbd>F12</kbd>
+          </>
+        ) : <span>Carrito vacío · Busca un artículo</span>}
+      </Button>
       <Modal
         open={!!choosing}
         onClose={() => setChoosing(null)}
