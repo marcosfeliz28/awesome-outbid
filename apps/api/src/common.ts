@@ -15,6 +15,7 @@ import { JwtService } from "@nestjs/jwt";
 import { PrismaClient } from "@prisma/client";
 import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
 import type { Request, Response } from "express";
+import { captureApiException } from "./monitoring";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -382,7 +383,9 @@ export class AuthGuard implements CanActivate {
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
-    const res = host.switchToHttp().getResponse<Response>();
+    const http = host.switchToHttp();
+    const res = http.getResponse<Response>();
+    const req = http.getRequest<Request>();
     let status = 500,
       code: string | undefined,
       message = "No se pudo completar la operación. Intenta de nuevo.";
@@ -413,6 +416,18 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (exception?.code === "P2034") {
       status = 409;
       message = "Otra operación modificó estos datos. Reintenta.";
+    }
+    if (status >= 500) {
+      const path = String(req.path ?? "")
+        .split(/[?#]/, 1)[0]
+        .replace(/^\/api(?=\/)/i, "")
+        .toLowerCase();
+      const area = path.startsWith("/sales/") || path === "/sales"
+        ? "sales"
+        : path.startsWith("/cash-sessions/") || path === "/cash-sessions"
+          ? "cash"
+          : "api";
+      captureApiException(exception, area);
     }
     if (status === 500) console.error(exception);
     res

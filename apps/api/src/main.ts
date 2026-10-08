@@ -8,10 +8,12 @@ import cookieParser from "cookie-parser";
 import { createAppModule } from "./app";
 import { validateSecret } from "./security";
 import { ApiExceptionFilter } from "./common";
+import { captureApiException, initializeApiMonitoring } from "./monitoring";
 
 config({ path: resolve(process.cwd(), "../../.env") });
 config();
 async function bootstrap() {
+  initializeApiMonitoring();
   const production = process.env.NODE_ENV === "production";
   const webOrigin = process.env.WEB_ORIGIN?.trim();
   if (production && !webOrigin)
@@ -72,6 +74,7 @@ async function bootstrap() {
   await app.listen(Number(process.env.PORT || 3001), "0.0.0.0");
 }
 bootstrap().catch((error) => {
+  captureApiException(error, "startup");
   console.error(error);
   process.exit(1);
 });
