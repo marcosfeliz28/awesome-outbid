@@ -404,6 +404,12 @@ export function POS({ go }: { go: (page: string) => void }) {
   // [cart, session, online], F8 guardaba el cliente anterior (R9-caja-7).
   const onKey = useRef<(e: KeyboardEvent) => void>(() => {});
   onKey.current = (e) => {
+    const modalOpen = document.querySelector('[role="dialog"]');
+    const blockedByModal = ["F4", "F8", "F12"].includes(e.key);
+    if (modalOpen && blockedByModal) {
+      e.preventDefault();
+      return;
+    }
     if (e.key === "F2") {
       e.preventDefault();
       search.current?.focus();
