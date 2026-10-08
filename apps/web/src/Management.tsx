@@ -2714,6 +2714,7 @@ export function Configuration() {
   });
   const [editing, setEditing] = useState(false),
     [newUser, setNewUser] = useState(false),
+    [userEdit, setUserEdit] = useState<any>(null),
     [roleEdit, setRoleEdit] = useState<any>(null),
     [tab, setTab] = useState("business");
   const client = useQueryClient();
@@ -2916,8 +2917,15 @@ export function Configuration() {
                   },
                   {
                     label: "Acción",
-                    render: (u) =>
-                      u.id !== user.id && (
+                    render: (u) => (
+                      <div className="inline-actions">
+                        <button
+                          className="text-link"
+                          onClick={() => setUserEdit(u)}
+                        >
+                          Editar
+                        </button>
+                        {u.id !== user.id && (
                         <button
                           className="text-link"
                           onClick={async () => {
@@ -2935,7 +2943,9 @@ export function Configuration() {
                         >
                           {u.active ? "Desactivar" : "Activar"}
                         </button>
-                      ),
+                        )}
+                      </div>
+                    ),
                   },
                 ]}
               />
@@ -3049,6 +3059,22 @@ export function Configuration() {
           ]}
           onClose={() => setNewUser(false)}
           onSubmit={(data) => post("/users", data)}
+        />
+      )}
+      {userEdit && (
+        <FormModal
+          title={"Editar usuario · " + userEdit.name}
+          fields={[
+            { key: "name", label: "Nombre", required: true },
+            {
+              key: "username",
+              label: "Usuario para entrar",
+              required: true,
+            },
+          ]}
+          initial={{ name: userEdit.name, username: userEdit.username || "" }}
+          onClose={() => setUserEdit(null)}
+          onSubmit={(data) => mutate("/users/" + userEdit.id, data, "PATCH")}
         />
       )}
       {roleEdit && (
