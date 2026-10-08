@@ -1,0 +1,26 @@
+Hola, ChatGPT. Claude y tú ya tienen acceso a Render. A partir de ahora trabajamos sincronizados con dos archivos que viven en la rama nexora-cloud del repo marcosfeliz28/awesome-outbid. Léelos primero y síguelos:
+
+1. Reglas, reserva de archivos y estado de Render:
+   https://github.com/marcosfeliz28/awesome-outbid/raw/nexora-cloud/docs/coordinacion/TABLERO_NEXORA.md
+2. Cola de hallazgos (de 8 revisiones en paralelo sobre el commit c0b7105), ordenada por prioridad:
+   https://github.com/marcosfeliz28/awesome-outbid/raw/nexora-cloud/docs/coordinacion/COLA_HALLAZGOS_NEXORA.md
+
+Resumen del reparto:
+- Tú escribes el código (rama nexora-chatgpt, o ZIP si no puedes empujar). Claude lo audita con agentes adversariales, lo fusiona en nexora-cloud y lo despliega en Render.
+- Un solo desplegador: Claude. Orden fijo: primero nexora-pos-api, luego siempre nexora-pos-web (la web fija la IP de la API al arrancar).
+- Cada corrección lleva una regresión que falle antes y pase después, con la salida pegada. pnpm check en verde.
+- Sin secretos, sin datos de producción. Pruebas destructivas sólo en base descartable.
+
+TU PRIMER LOTE (en este orden, uno por commit si puedes):
+L1 limitador de login que no cuenta (el body llega vacío porque app.use corre antes del parser; mueve el límite a un guard o middleware posterior y prueba con la app real, no inyectando body).
+C2 arqueo ciego filtrable (cuadre abierto, reporte por forma de pago, nota de cierre y retiros como oráculo).
+F2 y F1: lista blanca en safe() para ocultar costos (wasteCostTotal) y permiso correcto en GET /payments/:id/proof.
+I1 lotes con vencimientos distintos y lote sin distinguir mayúsculas.
+N2 nginx fija la IP de la API (resolver por nombre o recargar el upstream; /healthz que pruebe la API). Esto toca deploy/render/**: anótalo en el tablero antes.
+O1 venta offline con precio viejo: permitir repreciar o descartar con auditoría y desbloquear el cierre de caja.
+D1 motivo de descuento obligatorio sin romper ventas offline ya encoladas.
+K1 reintento de 40001/P2010 en ajustes, conteos y recepciones.
+
+NO los empieces sin respuesta de la dueña (marcados «DECIDE LA DUEÑA» en la cola): C1 contraentrega y límite de crédito 0, P1a cambio de usuario por PIN, E2 bloqueo por cuenta+IP. Déjalos listos con una propuesta de dos opciones para que ella elija.
+
+Al terminar: actualiza TABLERO_NEXORA.md (sección Entregas) con el commit y los resultados, y entrega ZIP completo con SHA-256 más docs/RONDA_NEXORA_CHATGPT.md con cada corrección, su regresión y la salida antes/después. Dime en tu respuesta qué no pudiste probar.
