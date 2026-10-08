@@ -99,6 +99,27 @@ describe("Render · operación inicial", () => {
   });
 });
 
+describe("Respaldo cloud · tarea Windows", () => {
+  it("se ejecuta como usuario limitado al iniciar sesión y diariamente, sin guardar claves", () => {
+    const task = read("scripts/Register-NexoraCloudBackupTask.ps1");
+    const runner = read("scripts/Invoke-NexoraCloudBackupTask.ps1");
+    expect(task).toContain("SupportsShouldProcess = $true");
+    expect(task).toContain("New-ScheduledTaskTrigger -AtLogOn");
+    expect(task).toContain("New-ScheduledTaskTrigger -Daily");
+    expect(task).toContain("-StartWhenAvailable");
+    expect(task).toContain("-LogonType Interactive -RunLevel Limited");
+    expect(task).toContain("configure list-profiles");
+    expect(task).not.toMatch(
+      /AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|SecretAccessKey/i,
+    );
+    expect(task).toContain("pull-cloud-backup.ps1");
+    expect(runner).toContain("& $backupScript");
+    expect(read("docs/RESPALDO_CLOUD_RENDER.md")).toContain(
+      "Register-NexoraCloudBackupTask.ps1",
+    );
+  });
+});
+
 describe("Render · proxy público", () => {
   it("resuelve de nuevo la API privada y conserva SSE sin buffering", () => {
     const nginx = read("deploy/render/nginx.conf.template");

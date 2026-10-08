@@ -5,6 +5,7 @@ $installerRoot = Split-Path -Parent $PSScriptRoot
 $files = @(
   Get-ChildItem -LiteralPath $installerRoot -File -Filter "*.ps1"
   Get-ChildItem -LiteralPath (Join-Path $installerRoot "scripts"), (Join-Path $installerRoot "tests") -Recurse -File -Filter "*.ps1"
+  Get-ChildItem -LiteralPath (Join-Path $installerRoot "..\scripts") -Recurse -File -Filter "*.ps1"
 )
 $failures = New-Object Collections.Generic.List[string]
 foreach ($file in $files) {

@@ -21,6 +21,14 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ["apps/web/public/*.js"],
+    languageOptions: {
+      globals: {
+        window: "readonly",
+      },
+    },
+  },
+  {
     files: ["**/*.ts", "**/*.tsx"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
@@ -35,7 +43,7 @@ export default tseslint.config(
   {
     files: [
       "scripts/*.mjs",
-      "deploy/render/*.mjs",
+      "deploy/render/**/*.mjs",
       "docs/validacion/**/*.mjs",
       "eslint.config.mjs",
     ],

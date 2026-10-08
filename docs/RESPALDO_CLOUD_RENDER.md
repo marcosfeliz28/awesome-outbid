@@ -71,13 +71,24 @@ cuenta o regla de red se añadió ni se configuró.
 5. Ejecutar una prueba manual desde Runs, comprobar en bucket que haya `.dump`,
    `.sha256` y `.json`, luego probar restauración en una base vacía/no productiva.
    No probar mediante restauración sobre `fitstore` de producción.
-6. Configurar en Windows una tarea del usuario que posee el perfil AWS (no la
-   tarea existente que corre como SYSTEM) para ejecutar el script de descarga
-   cuando el equipo esté disponible. La tarea existente **FitStore POS -
-   Respaldo diario** conserva la base PostgreSQL local y no realiza esta
-   descarga cloud. Si el equipo está apagado, `StartWhenAvailable` permite
-   recuperar al volver a encenderlo; no promete una copia física en la laptop
-   mientras ésta permanece apagada.
+6. En la laptop, instalar AWS CLI, configurar un perfil AWS de sólo lectura y
+   verificar `pg_restore`. Luego, desde la raíz del repositorio, ejecutar:
+
+   ```powershell
+   .\scripts\Register-NexoraCloudBackupTask.ps1 -Bucket NOMBRE-DEL-BUCKET -PerfilAws nexora-backup-readonly
+   ```
+
+   La tarea se registra para el usuario conectado, sin elevar privilegios ni
+   guardar claves AWS en su configuración. Descarga al iniciar sesión y a la
+   hora diaria indicada (por defecto 3:00 a. m.); usa `StartWhenAvailable` si
+   la laptop estaba apagada. `-RunNow` inicia una primera descarga y
+   `-WhatIf` muestra la operación sin escribir la configuración ni registrar
+   la tarea. La tarea existente **FitStore POS - Respaldo diario** conserva la
+   base PostgreSQL local y no realiza esta descarga cloud. Antes de estar
+   disponible el bucket y el perfil, la tarea no puede producir una copia
+   cloud; si la laptop está apagada, no habrá archivo físico nuevo en ella hasta
+   el siguiente inicio de sesión.
+
 7. Verificar semanalmente fechas, manifiestos y una restauración controlada.
    El cron se considera fallido si el comando falla; configura una alerta sobre
    las ejecuciones fallidas antes de depender del sistema para recuperación.
