@@ -1,0 +1,30 @@
+PASOS EN RENDER (solo tú puedes hacerlos: requieren tu cuenta de Render)
+Tiempo: unos 20 minutos. No pegues claves en ningún chat.
+
+1. SUBIR EL CÓDIGO NUEVO
+   - Entra a https://dashboard.render.com y abre el servicio «nexora-pos-api».
+   - Arriba mira «Branch»: es la rama de la que despliega (debe ser nexora-cloud).
+   - Pide a ChatGPT que suba a esa rama el ZIP corregido (el último, SHA 220e002e...83b5) con un commit.
+   - Como el despliegue automático está apagado, nada cambia hasta el paso 2.
+
+2. DESPLEGAR (primero la API, luego la web)
+   - nexora-pos-api > «Manual Deploy» > «Deploy latest commit». Espera «Live».
+     Esto aplica solo las migraciones nuevas (se corre antes de publicar). Si falla, la versión anterior sigue sirviendo.
+   - nexora-pos-web > «Manual Deploy» > «Deploy latest commit». Espera «Live».
+   - Comprueba: abre https://nexora-pos-web.onrender.com y entra con tu cuenta.
+
+3. FORZAR EL CAMBIO DE CLAVE DE LAS CAJAS (las de 4 dígitos)
+   - nexora-pos-api > pestaña «Shell».
+   - Escribe, cambiando los nombres de usuario de las cajas, separados por coma, en minúsculas:
+     PASSWORD_CHANGE_CONFIRM=ROTATE_TEMPORARY_PASSWORDS PASSWORD_CHANGE_USERNAMES=caja1,caja2,caja3,caja4 node deploy/render/with-cloud-env.mjs node apps/api/node_modules/tsx/dist/cli.mjs apps/api/scripts/require-password-change.ts
+   - Si algún nombre no existe, el comando no cambia nada y te lo dice. Corrígelo y repite.
+   - Cada cajera, al entrar, escribirá su clave temporal y elegirá una nueva (12 caracteres con mayúscula, minúscula, número y símbolo).
+
+4. RESPALDOS
+   - Panel > «nexora-pos-db» > pestaña «Recovery» (o «Backups»).
+   - Anota qué plan tienes (Hobby o Pro) y cuántos días de recuperación muestra (3 o 7).
+   - Pulsa «Create export» (copia manual) y guárdala.
+   - Prueba de restauración: sigue la sección de respaldos de docs/DEPLOY-RENDER.md, en una base NUEVA y descartable, nunca sobre la real.
+
+5. CREDENCIALES DEL EXPEDIENTE DE AUDITORÍA
+   - Cambia las contraseñas de las cuentas que aparecen en el documento «Expediente de auditoría» (admin y cajas) y elimina ese documento de donde lo hayas compartido.
