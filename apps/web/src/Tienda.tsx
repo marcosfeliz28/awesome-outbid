@@ -362,7 +362,7 @@ export function DayReports({ onPrint }: { onPrint: (p: Printing) => void }) {
   );
 }
 
-/** Contraentregas pendientes: la cajera registra el cobro en su caja. */
+/** Créditos y contraentregas: sólo la administración registra los cobros. */
 export function CodPending({ session }: { session: any }) {
   const query = useQuery({
     queryKey: ["cod-pending"],
@@ -376,9 +376,12 @@ export function CodPending({ session }: { session: any }) {
       <div className="panel-heading">
         <div>
           <h2>
-            <Truck size={20} /> Contraentregas pendientes
+            <Truck size={20} /> Créditos y contraentregas pendientes
           </h2>
-          <p>Registra el cobro cuando el mensajero traiga el dinero.</p>
+          <p>
+            Seguimiento administrativo de mercancía entregada y todavía no
+            cobrada.
+          </p>
         </div>
       </div>
       <QueryState query={query}>
@@ -429,15 +432,15 @@ export function CodPending({ session }: { session: any }) {
                   title={session ? undefined : "Abre tu caja para cobrar."}
                   onClick={() => setCollecting(r)}
                 >
-                  Registrar cobro
+                  Registrar pago
                 </Button>
               </div>
             ))}
           </div>
         ) : (
           <Empty
-            title="Sin contraentregas pendientes"
-            description="Las ventas con contraentrega aparecerán aquí hasta cobrarlas."
+            title="Sin créditos ni contraentregas pendientes"
+            description="Las ventas pendientes aparecerán aquí, con el nombre del cliente, hasta completar el pago."
           />
         )}
       </QueryState>
@@ -626,7 +629,7 @@ function CodCollect({
     <Modal
       open
       onClose={onClose}
-      title={"Cobro de contraentrega · " + row.number}
+      title={"Pago de crédito / contraentrega · " + row.number}
     >
       <form className="form-grid" onSubmit={submit}>
         <label className="field">
@@ -689,7 +692,9 @@ function CodCollect({
             ? "El efectivo entra en el cuadre de tu caja."
             : method === "card"
               ? "Cuenta como tarjeta en el cuadre de tu caja."
-              : "Queda pendiente hasta que se verifique en el banco."}
+              : "Queda pendiente hasta que se verifique en el banco."}{" "}
+          Puedes registrar una parte ahora y otra después, incluso con métodos
+          diferentes. La cuenta sólo se cierra cuando el saldo llega a cero.
         </p>
         {error && (
           <p className="form-error full" role="alert">

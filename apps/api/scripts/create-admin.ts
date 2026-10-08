@@ -156,7 +156,7 @@ async function main() {
         create: {
           id: "main",
           data: {
-            name: "Nexora POS",
+            name: "Grupo Mac Hen",
             legalId: "",
             address: "",
             phone: "",
@@ -171,6 +171,8 @@ async function main() {
             cashDifferenceLimit: 100,
             receiptWidth: "80",
             sessionTimeoutMinutes: 30,
+            branchName: "Plaza Lope de Vega",
+            requireCustomer: true,
           },
         },
         update: {},

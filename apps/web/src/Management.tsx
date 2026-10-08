@@ -1451,7 +1451,7 @@ export function Cash() {
           />
         </div>
       )}
-      {can(user.permissions, "sale:write") && <CodPending session={active} />}
+      {can(user.permissions, "*") && <CodPending session={active} />}
       {!!pending.data?.length && (
         <section className="panel pending-panel">
           <div className="panel-heading">
@@ -2254,16 +2254,24 @@ export function Alerts() {
 
 export function SalesHistory() {
   const user = useStore((s) => s.user)!;
-  const query = useQuery({ queryKey: ["sales"], queryFn: () => api("/sales") });
-  const sessions = useQuery({
-    queryKey: ["cash-sessions"],
-    queryFn: () => api("/cash-sessions"),
-  });
   const [selected, setSelected] = useState<any>(null),
     [voiding, setVoiding] = useState<any>(null),
     [returning, setReturning] = useState<any>(null),
     [installment, setInstallment] = useState<any>(null),
-    [rejecting, setRejecting] = useState<any>(null);
+    [rejecting, setRejecting] = useState<any>(null),
+    [search, setSearch] = useState(""),
+    [saleDate, setSaleDate] = useState("");
+  const params = new URLSearchParams();
+  if (search.trim()) params.set("q", search.trim());
+  if (saleDate) params.set("date", saleDate);
+  const query = useQuery({
+    queryKey: ["sales", search.trim(), saleDate],
+    queryFn: () => api("/sales" + (params.size ? "?" + params : "")),
+  });
+  const sessions = useQuery({
+    queryKey: ["cash-sessions"],
+    queryFn: () => api("/cash-sessions"),
+  });
   const client = useQueryClient();
   const session = sessions.data?.find(
     (s: any) => !s.closedAt && s.userId === user.id,
@@ -2275,6 +2283,22 @@ export function SalesHistory() {
         caption="Consulta recibos, pagos y movimientos sin perder el detalle."
       />
       <div className="panel">
+        <div className="table-toolbar">
+          <Filter
+            value={search}
+            onChange={setSearch}
+            placeholder="Buscar número de factura"
+          />
+          <label className="table-search">
+            <span>Fecha</span>
+            <input
+              type="date"
+              value={saleDate}
+              onChange={(event) => setSaleDate(event.target.value)}
+              aria-label="Buscar ventas de una fecha"
+            />
+          </label>
+        </div>
         <QueryState query={query}>
           <DataTable
             rows={query.data || []}
@@ -2291,7 +2315,7 @@ export function SalesHistory() {
               },
               { label: "Total", render: (s) => formatMoney(s.total) },
               {
-                label: "Saldo a crédito",
+                label: "Saldo pendiente",
                 render: (s) => formatMoney(s.creditBalance ?? 0),
               },
               {
@@ -2325,7 +2349,8 @@ export function SalesHistory() {
                     >
                       <Download size={18} />
                     </button>
-                    {s.status === "completed" &&
+                    {can(user.permissions, "*") &&
+                      s.status === "completed" &&
                       Number(s.creditBalance) > 0 && (
                         <button
                           className="text-link"
@@ -2348,41 +2373,42 @@ export function SalesHistory() {
                       )}
                     {can(user.permissions, "sale:manage") &&
                       s.status === "completed" && (
-                        <>
-                          <button
-                            className="text-link"
-                            onClick={() => {
-                              if (!session) {
-                                toast(
-                                  "Abre tu caja para procesar devoluciones.",
-                                  true,
-                                );
-                                return;
-                              }
-                              // Un UUID por formulario: si la respuesta se pierde y
-                              // se vuelve a guardar, la API devuelve la misma
-                              // devolución en vez de repetirla (R9-A01).
-                              setReturning({
-                                ...s,
-                                operationId: crypto.randomUUID(),
-                              });
-                            }}
-                          >
-                            Devolver
-                          </button>
-                          <button
-                            className="text-link danger-text"
-                            onClick={() => {
-                              if (!session) {
-                                toast("Abre tu caja.", true);
-                                return;
-                              }
-                              setVoiding(s);
-                            }}
-                          >
-                            Anular
-                          </button>
-                        </>
+                        <button
+                          className="text-link"
+                          onClick={() => {
+                            if (!session) {
+                              toast(
+                                "Abre tu caja para procesar devoluciones.",
+                                true,
+                              );
+                              return;
+                            }
+                            // Un UUID por formulario: si la respuesta se pierde y
+                            // se vuelve a guardar, la API devuelve la misma
+                            // devolución en vez de repetirla (R9-A01).
+                            setReturning({
+                              ...s,
+                              operationId: crypto.randomUUID(),
+                            });
+                          }}
+                        >
+                          Devolver
+                        </button>
+                      )}
+                    {can(user.permissions, "*") &&
+                      s.status === "completed" &&
+                      !s.returns?.length &&
+                      !s.payments?.some(
+                        (p: any) =>
+                          p.entryType === "installment" &&
+                          p.status !== "rejected",
+                      ) && (
+                        <button
+                          className="text-link danger-text"
+                          onClick={() => setVoiding(s)}
+                        >
+                          Anular
+                        </button>
                       )}
                   </div>
                 ),
@@ -2440,7 +2466,7 @@ export function SalesHistory() {
                   </span>
                   <ProofThumb url={p.proofUrl} />
                   {p.entryType === "installment" &&
-                    can(user.permissions, "sale:write") && (
+                    can(user.permissions, "*") && (
                       <label className="text-link proof-upload">
                         {p.proofUrl ? "Cambiar foto" : "Subir foto"}
                         <input
@@ -2480,7 +2506,7 @@ export function SalesHistory() {
                   </Badge>
                   {p.method === "transfer" &&
                     p.status === "pending_verification" &&
-                    can(user.permissions, "sale:manage") && (
+                    can(user.permissions, "*") && (
                       <button
                         className="text-link"
                         onClick={async () => {
@@ -2503,7 +2529,7 @@ export function SalesHistory() {
                   {p.method === "transfer" &&
                     p.entryType === "installment" &&
                     p.status === "pending_verification" &&
-                    can(user.permissions, "sale:manage") && (
+                    can(user.permissions, "*") && (
                       <button
                         className="text-link danger-text"
                         onClick={() => {
@@ -2524,12 +2550,12 @@ export function SalesHistory() {
       {voiding && (
         <ConfirmModal
           title={"Anular " + voiding.number}
-          description="La factura se conserva con su motivo, se revierte el inventario y deja de contar en ventas."
+          description="Solo un administrador puede hacerlo. La factura se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas; no necesitas abrir caja."
+          confirmLabel="Sí, anular factura"
           onClose={() => setVoiding(null)}
           onConfirm={async (reason) => {
             await post("/sales/" + voiding.id + "/void", {
               reason,
-              cashSessionId: session.id,
             });
             await client.invalidateQueries();
             toast("Factura anulada.");
@@ -2624,7 +2650,9 @@ export function SalesHistory() {
       )}
       {installment && (
         <FormModal
-          title={"Registrar abono · " + installment.number}
+          title={
+            "Registrar pago de crédito / contraentrega · " + installment.number
+          }
           fields={[
             {
               ...requiredNumber("amount", "Monto del abono"),
@@ -2709,6 +2737,11 @@ export function Configuration() {
     {
       key: "autoPrintReceipt",
       label: "Imprimir la factura automáticamente al cobrar",
+      type: "checkbox",
+    },
+    {
+      key: "requireCustomer",
+      label: "Exigir un cliente identificado en todas las ventas",
       type: "checkbox",
     },
     {
@@ -2958,6 +2991,7 @@ export function Configuration() {
             branchName: query.data?.branchName ?? "",
             phone2: query.data?.phone2 ?? "",
             autoPrintReceipt: !!query.data?.autoPrintReceipt,
+            requireCustomer: query.data?.requireCustomer === true,
             allowOfflineSales: query.data?.allowOfflineSales === true,
             usdRate: query.data?.usdRate ?? "",
             eurRate: query.data?.eurRate ?? "",

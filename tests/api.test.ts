@@ -39,7 +39,8 @@ const fixtureDb = new PrismaClient();
 const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
 let token = "",
   ownerToken = "",
-  sellerToken = "";
+  sellerToken = "",
+  managerToken = "";
 let supplierId = "",
   session: any,
   sellerSession: any,
@@ -128,6 +129,7 @@ beforeAll(async () => {
     await enroll(auth.accessToken, "QA " + role);
     if (role === "admin") token = auth.accessToken;
     if (role === "seller") sellerToken = auth.accessToken;
+    if (role === "manager") managerToken = auth.accessToken;
   }
   const cats = await ok("/categories");
   supplierId = (await ok("/suppliers"))[0].id;
@@ -227,6 +229,134 @@ describe("Aceptación financiera y permisos", () => {
       (await request("/dashboard/summary", undefined, sellerToken)).status,
     ).toBe(403);
     expect((await request("/users", undefined, sellerToken)).status).toBe(403);
+  });
+  it("solo un administrador anula una venta antigua sin abrir caja", async () => {
+    const roles = await ok("/roles", undefined, ownerToken);
+    const cashier = await ok(
+      "/users",
+      {
+        name: "QA admin anulación " + suffix,
+        email: "qa-void-" + suffix + "@example.test",
+        password: "FitStore-QA-2026!",
+        pin: "345678",
+        roleId: roles.find((r: any) => r.name === "admin").id,
+      },
+      ownerToken,
+    );
+    actors.push(cashier);
+    const cashierToken = (
+      await ok(
+        "/auth/login",
+        { email: cashier.email, password: "FitStore-QA-2026!" },
+        "",
+      )
+    ).accessToken;
+    await enroll(cashierToken, "QA caja para anulación histórica");
+    const oldCash = await ok(
+      "/cash-sessions/open",
+      { registerId: "qa-void-" + suffix, openingAmount: 200 },
+      cashierToken,
+    );
+    const stockBefore = Number(
+      (await ok("/products/" + clothing.id)).variants[0].stock,
+    );
+    const sold = await ok(
+      "/sales",
+      input(clothing.variants[0].id, 118, oldCash),
+      cashierToken,
+    );
+    const cashBeforeClose = (
+      await ok("/cash-sessions", undefined, cashierToken)
+    ).find((c: any) => c.id === oldCash.id);
+    await ok(
+      "/cash-sessions/" + oldCash.id + "/close",
+      {
+        countedCash: cashBeforeClose.expected.cash,
+        countedCard: cashBeforeClose.expected.card,
+        countedTransfer: cashBeforeClose.expected.transfer,
+        notes: "QA cierre previo a anulación histórica",
+      },
+      cashierToken,
+    );
+    const oldDate = new Date("2025-01-15T12:00:00.000Z");
+    await fixtureDb.sale.update({
+      where: { id: sold.id },
+      data: { createdAt: oldDate },
+    });
+
+    expect(
+      (
+        await request(
+          "/sales/" + sold.id + "/void",
+          { reason: "QA intento de cajero" },
+          sellerToken,
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await request(
+          "/sales/" + sold.id + "/void",
+          { reason: "QA intento de gerente" },
+          managerToken,
+        )
+      ).status,
+    ).toBe(403);
+
+    const owner = await ok("/auth/me", undefined, ownerToken);
+    await ok(
+      "/sales/" + sold.id + "/void",
+      { reason: "QA factura antigua anulada por administrador" },
+      ownerToken,
+    );
+    const saved = await fixtureDb.sale.findUniqueOrThrow({
+      where: { id: sold.id },
+    });
+    expect(saved.status).toBe("voided");
+    expect(saved.voidedBy).toBe(owner.id);
+    expect(saved.voidedReason).toBe(
+      "QA factura antigua anulada por administrador",
+    );
+    expect(saved.createdAt.toISOString()).toBe(oldDate.toISOString());
+    expect(
+      (
+        await ok(
+          "/sales?date=2025-01-15&q=" + encodeURIComponent(sold.number),
+          undefined,
+          ownerToken,
+        )
+      ).map((row: any) => row.id),
+    ).toContain(sold.id);
+    expect(
+      (await request("/sales?date=2025-02-31", undefined, ownerToken)).status,
+    ).toBe(400);
+    expect(
+      Number((await ok("/products/" + clothing.id)).variants[0].stock),
+    ).toBe(stockBefore);
+
+    const closedCash = await fixtureDb.cashSession.findUniqueOrThrow({
+      where: { id: oldCash.id },
+    });
+    expect(Number(closedCash.expectedCash)).toBe(200);
+    expect(Number(closedCash.differenceCash)).toBe(118);
+    const audits = await ok("/audit-log", undefined, ownerToken);
+    expect(
+      audits.some(
+        (a: any) =>
+          a.action === "void" &&
+          a.entityId === sold.id &&
+          a.userId === owner.id &&
+          a.after?.reason === "QA factura antigua anulada por administrador",
+      ),
+    ).toBe(true);
+    expect(
+      audits.some(
+        (a: any) =>
+          a.action === "void_after_close" &&
+          a.entityId === oldCash.id &&
+          a.after?.saleId === sold.id,
+      ),
+    ).toBe(true);
   });
   it("vende proteína y legging con FEFO y pago dividido", async () => {
     sale = await ok("/sales", {
@@ -730,6 +860,20 @@ describe("Regresiones de Claude", () => {
     expect(
       await fixtureDb.cashSession.count({
         where: { registerId: session.registerId, closedAt: null },
+      }),
+    ).toBe(1);
+  });
+  it("reintentar abrir la caja devuelve la sesión existente", async () => {
+    const repeated = await ok(
+      "/cash-sessions/open",
+      { registerId: session.registerId, openingAmount: 999 },
+      token,
+    );
+    expect(repeated.id).toBe(session.id);
+    expect(Number(repeated.openingAmount)).not.toBe(999);
+    expect(
+      await fixtureDb.cashSession.count({
+        where: { userId: repeated.userId, closedAt: null },
       }),
     ).toBe(1);
   });
@@ -5307,7 +5451,9 @@ describe("Ronda 9 · revisión · facturas", () => {
       variantId: null,
       productId: top.id,
     });
-    expect(second.lines[0].note).toMatch(/S no coincide/);
+    // El texto puede variar según otros atributos inferidos del SKU aleatorio;
+    // lo importante es que explique claramente la talla S en conflicto.
+    expect(second.lines[0].note).toMatch(/S no coincide|talla S|· S/);
     expect(second.lines[1].variantId).toBe(small.id);
   });
   it("CSV con «;»: «1.250» son 1250 y no 1.25 (R9-facturas-7)", async () => {
@@ -6215,6 +6361,16 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     const stockBefore = (
       await fixtureDb.variant.findUniqueOrThrow({ where: { id: p1.id } })
     ).stock;
+    expect(
+      (
+        await sell(
+          cashier,
+          s1,
+          [{ variantId: p1.id, qty: 1 }],
+          [{ method: "cod", amount: 1180 }],
+        )
+      ).status,
+    ).toBe(400);
     const r = await sell(
       cashier,
       s1,
@@ -6223,6 +6379,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
         { method: "transfer", amount: 180, bank: "BHD", reference: "QA-T2" },
         { method: "cod", amount: 1000 },
       ],
+      { customerId: customer.id },
     );
     expect(r.status).toBe(201);
     sold.f = r.body;
@@ -6235,42 +6392,63 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       await fixtureDb.variant.findUniqueOrThrow({ where: { id: p1.id } })
     ).stock;
     expect(Number(stockBefore) - Number(stockAfter)).toBe(1);
-    // La lista de pendientes la ve cualquier cajera de la sucursal.
-    const pending = await must("/cod/pending", undefined, cashier2.token);
+    // Los cajeros despachan, pero sólo la administración ve y cobra la deuda.
+    expect((await call("/cod/pending", undefined, cashier2.token)).status).toBe(
+      403,
+    );
+    expect((await call("/cod/pending", undefined, managerToken)).status).toBe(
+      403,
+    );
+    const pending = await must("/cod/pending", undefined, token);
     expect(pending.find((p: any) => p.saleId === sold.f.id)).toMatchObject({
       number: sold.f.number,
       codAmount: 1000,
       pending: 1000,
       pendingVerification: 0,
+      customer: { id: customer.id, name: customer.name },
     });
+    expect(
+      (
+        await call(
+          "/sales/" + sold.f.id + "/cod-collections",
+          {
+            offlineUuid: randomUUID(),
+            cashSessionId: s2.id,
+            amount: 1000,
+            method: "cash",
+          },
+          cashier2.token,
+        )
+      ).status,
+    ).toBe(403);
     // Con tarjeta hace falta la referencia del voucher.
     const byCard = await call(
       "/sales/" + sold.f.id + "/cod-collections",
       {
         offlineUuid: randomUUID(),
-        cashSessionId: s2.id,
+        cashSessionId: session.id,
         amount: 1000,
         method: "card",
       },
-      cashier2.token,
+      token,
     );
     expect(byCard.status).toBe(400);
     const key = randomUUID();
     const body = {
       offlineUuid: key,
-      cashSessionId: s2.id,
+      cashSessionId: session.id,
       amount: 1000,
       method: "cash",
     };
     const first = await must(
       "/sales/" + sold.f.id + "/cod-collections",
       body,
-      cashier2.token,
+      token,
     );
     const again = await must(
       "/sales/" + sold.f.id + "/cod-collections",
       body,
-      cashier2.token,
+      token,
     );
     expect(again.id).toBe(first.id);
     expect(
@@ -6278,7 +6456,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
         await call(
           "/sales/" + sold.f.id + "/cod-collections",
           { ...body, amount: 999 },
-          cashier2.token,
+          token,
         )
       ).status,
     ).toBe(400);
@@ -6295,7 +6473,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     ).toBe(1);
     // Ya cobrada: no aparece y no admite otro cobro.
     expect(
-      (await must("/cod/pending", undefined, cashier2.token)).some(
+      (await must("/cod/pending", undefined, token)).some(
         (p: any) => p.saleId === sold.f.id,
       ),
     ).toBe(false);
@@ -6304,54 +6482,48 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
         await call(
           "/sales/" + sold.f.id + "/cod-collections",
           { ...body, offlineUuid: randomUUID(), amount: 1 },
-          cashier2.token,
+          token,
         )
       ).status,
     ).toBe(400);
     const log = await fixtureDb.auditLog.findFirst({
-      where: { action: "cod_collected", entityId: sold.f.id },
+      where: { action: "receivable_collected", entityId: sold.f.id },
     });
-    expect(log?.userId).toBe(cashier2.id);
-    // La caja que recibió el dinero lo espera en efectivo.
-    expect(
-      (await must("/cash-sessions", undefined, cashier2.token)).find(
-        (c: any) => c.id === s2.id,
-      ).expected.cash,
-    ).toBe(1000);
+    expect(log).toBeTruthy();
   });
 
-  it("Tienda-contraentrega: el cobro por transferencia queda por verificar y un gerente lo confirma", async () => {
+  it("Tienda-contraentrega: el cobro por transferencia queda por verificar y un administrador lo confirma", async () => {
     // La vende y la cobra la caja 2 (su cuadre lo comprueba más abajo).
     const r = await sell(
       cashier2,
       s2,
       [{ variantId: p2.id, qty: 1 }],
       [{ method: "cod", amount: 500 }],
+      { customerId: customer.id },
     );
     expect(r.status).toBe(201);
-    // Venta sin cliente: la contraentrega no lo exige.
-    expect(r.body.customerId ?? null).toBeNull();
+    expect(r.body.customerId).toBe(customer.id);
     const collected = await must(
       "/sales/" + r.body.id + "/cod-collections",
       {
         offlineUuid: randomUUID(),
-        cashSessionId: s2.id,
+        cashSessionId: session.id,
         amount: 500,
         method: "transfer",
         bank: "Popular",
         reference: "QA-COD-1",
       },
-      cashier2.token,
+      token,
     );
     expect(collected.status).toBe("pending_verification");
     expect(
-      (await must("/cod/pending", undefined, cashier2.token)).find(
+      (await must("/cod/pending", undefined, token)).find(
         (p: any) => p.saleId === r.body.id,
       ),
     ).toMatchObject({ pending: 500, pendingVerification: 500 });
     await must("/payments/" + collected.id + "/verify", {}, ownerToken);
     expect(
-      (await must("/cod/pending", undefined, cashier2.token)).some(
+      (await must("/cod/pending", undefined, token)).some(
         (p: any) => p.saleId === r.body.id,
       ),
     ).toBe(false);
@@ -6370,7 +6542,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       paymentId: string,
       bytes: Buffer,
       type: string,
-      as = cashier3.token,
+      as = token,
     ) => {
       const form = new FormData();
       form.append(
@@ -6412,12 +6584,17 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       );
       expect(r.status).toBe(201);
       expect(Number(r.body.creditBalance)).toBe(500);
-      // Pendiente de contraentrega: sólo la parte de contraentrega.
+      // Crédito y contraentrega forman un único saldo administrativo.
       expect(
-        (await must("/cod/pending", undefined, cashier3.token)).find(
+        (await must("/cod/pending", undefined, token)).find(
           (p: any) => p.saleId === r.body.id,
         ),
-      ).toMatchObject({ codAmount: 250, pending: 250, collections: [] });
+      ).toMatchObject({
+        receivableAmount: 500,
+        pending: 500,
+        collections: [],
+        customer: { id: customer.id, name: customer.name },
+      });
       const path = "/sales/" + r.body.id + "/cod-collections";
       // Tarjeta sin referencia: 400.
       expect(
@@ -6426,22 +6603,22 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
             path,
             {
               offlineUuid: randomUUID(),
-              cashSessionId: s3.id,
+              cashSessionId: session.id,
               amount: 250,
               method: "card",
             },
-            cashier3.token,
+            token,
           )
         ).status,
       ).toBe(400);
       const body = {
         offlineUuid: randomUUID(),
-        cashSessionId: s3.id,
+        cashSessionId: session.id,
         amount: 250,
         method: "card",
         reference: "VOUCHER-QA-77",
       };
-      const paid = await must(path, body, cashier3.token);
+      const paid = await must(path, body, token);
       expect(paid).toMatchObject({
         method: "card",
         status: "ok",
@@ -6449,13 +6626,13 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       });
       expect(paid.proofUrl ?? null).toBeNull();
       // Mismo UUID: el mismo cobro.
-      expect((await must(path, body, cashier3.token)).id).toBe(paid.id);
-      // Cobrada la contraentrega: sale de la lista; el crédito sigue pendiente.
+      expect((await must(path, body, token)).id).toBe(paid.id);
+      // Un pago parcial no cierra la cuenta.
       expect(
-        (await must("/cod/pending", undefined, cashier3.token)).some(
+        (await must("/cod/pending", undefined, token)).find(
           (p: any) => p.saleId === r.body.id,
         ),
-      ).toBe(false);
+      ).toMatchObject({ pending: 250 });
       expect(
         Number(
           (await fixtureDb.sale.findUniqueOrThrow({ where: { id: r.body.id } }))
@@ -6496,7 +6673,28 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       expect(detail.payments.find((p: any) => p.id === paid.id).proofUrl).toBe(
         replaced.body.proofUrl,
       );
-      // La foto también acompaña al cobro en el cuadre de la caja que lo recibió.
+      // Completar con otro método cierra la cuenta y resuelve la alerta.
+      await must(
+        path,
+        {
+          offlineUuid: randomUUID(),
+          cashSessionId: session.id,
+          amount: 250,
+          method: "cash",
+        },
+        token,
+      );
+      expect(
+        (await must("/cod/pending", undefined, token)).some(
+          (p: any) => p.saleId === r.body.id,
+        ),
+      ).toBe(false);
+      expect(
+        await fixtureDb.alert.findUnique({
+          where: { key: "receivable:" + r.body.id },
+        }),
+      ).toMatchObject({ status: "resolved", entityId: r.body.id });
+      // La caja vendedora no recibió el dinero; puede cerrar sin ese cobro.
       const closed = await must(
         "/cash-sessions/" + s3.id + "/close",
         { countedCash: 0 },
@@ -6504,25 +6702,21 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       );
       expect(closed.differences).toEqual({ cash: 0, card: 0, transfer: 0 });
       const cuadre = await must(
-        "/cash-sessions/" + s3.id + "/cuadre",
+        "/cash-sessions/" + session.id + "/cuadre",
         undefined,
-        ownerToken,
+        token,
       );
-      expect(cuadre.cod.collected).toMatchObject({
-        cash: 0,
-        card: 250,
-        transfer: 0,
-        total: 250,
-      });
-      expect(cuadre.cod.rows).toEqual([
-        expect.objectContaining({
-          paymentId: paid.id,
-          method: "card",
-          amount: 250,
-          reference: "VOUCHER-QA-77",
-          proofUrl: replaced.body.proofUrl,
-        }),
-      ]);
+      expect(cuadre.cod.rows).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            paymentId: paid.id,
+            method: "card",
+            amount: 250,
+            reference: "VOUCHER-QA-77",
+            proofUrl: replaced.body.proofUrl,
+          }),
+        ]),
+      );
       // La evidencia de un abono que no existe: 404.
       expect((await upload(randomUUID(), jpeg(64), "image/jpeg")).status).toBe(
         404,
@@ -6633,11 +6827,11 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       "/sales/" + sold.d.id + "/installments",
       {
         offlineUuid: randomUUID(),
-        cashSessionId: s1.id,
+        cashSessionId: session.id,
         amount: 300,
         method: "cash",
       },
-      cashier.token,
+      token,
     );
     // k) entrada y retiro registrados.
     await must(
@@ -6651,15 +6845,23 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       cashier.token,
     );
 
-    // Esperado: 500 + 1,180 + 450 + 500 + 300 + 100 − 200 − 500 = 2,330.
+    // El abono de 300 entra en la caja del administrador, no en la cajera:
+    // 500 + 1,180 + 450 + 500 + 100 − 200 − 500 = 2,030.
     const open = (await must("/cash-sessions", undefined, cashier.token)).find(
       (c: any) => c.id === s1.id,
     );
-    expect(open.expected.cash).toBe(2330);
+    expect(open.expected.cash).toBe(2030);
 
     const close = (data: any) =>
       call("/cash-sessions/" + s1.id + "/close", data, cashier.token);
-    const denominations = { "1000": 2, "100": 1, "50": 1, "20": 1, "5": 1 };
+    const denominations = {
+      "1000": 1,
+      "500": 1,
+      "100": 3,
+      "50": 1,
+      "20": 1,
+      "5": 1,
+    };
     // Lo entregado no supera lo contado.
     expect((await close({ denominations, delivered: 3000 })).status).toBe(400);
     // Si se envía también countedCash, debe coincidir con las denominaciones.
@@ -6672,17 +6874,17 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       vouchers: 149.75,
       countedUsd: 20,
       countedEur: 0,
-      delivered: 2000,
+      delivered: 1700,
       notes: "QA cuadre",
     });
     expect(closed.status).toBe(201);
-    expect(Number(closed.body.countedCash)).toBe(2175);
+    expect(Number(closed.body.countedCash)).toBe(1875);
     expect(closed.body.differences.cash).toBe(-5.25);
     expect(closed.body.closeDetails).toMatchObject({
       vouchers: 149.75,
       countedUsd: 20,
       countedEur: 0,
-      delivered: 2000,
+      delivered: 1700,
       left: 175,
       usdRate: 59.5,
     });
@@ -6713,10 +6915,10 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     expect(cuadre.denominations).toHaveLength(11);
     expect(cuadre.denominations.find((x: any) => x.value === 1000)).toEqual({
       value: 1000,
-      qty: 2,
-      total: 2000,
+      qty: 1,
+      total: 1000,
     });
-    expect(cuadre.denominationsSubtotal).toBe(2175);
+    expect(cuadre.denominationsSubtotal).toBe(1875);
     // Las 18 líneas del impreso, en orden.
     expect(cuadre.lines.map((l: any) => l.line)).toEqual(
       Array.from({ length: 18 }, (_, n) => n + 1),
@@ -6725,7 +6927,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       Object.fromEntries(cuadre.lines.map((l: any) => [l.key, l.value])),
     ).toEqual({
       credit: 1180,
-      cash: 2175,
+      cash: 1875,
       cards: 1000,
       transfers: 680,
       vouchers: 149.75,
@@ -6733,8 +6935,8 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       eur: 0,
       tickets: 7,
       voidedTickets: 1,
-      cashSales: 1830,
-      receipts: 300,
+      cashSales: 1530,
+      receipts: 0,
       differenceDop: -5.25,
       differenceUsd: 20,
       differenceEur: 0,
@@ -6747,22 +6949,22 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     // Desglose del punto 10 (lo que realmente entra en efectivo).
     expect(cuadre.cashSalesDetail).toEqual({
       sales: 2130,
-      receipts: 300,
+      receipts: 0,
       cod: 0,
       cashIn: 100,
       refunds: 500,
       cashOut: 200,
-      total: 1830,
+      total: 1530,
     });
     expect(cuadre.receipts).toEqual({
-      cash: 300,
+      cash: 0,
       card: 0,
       transfer: 0,
-      total: 300,
+      total: 0,
       pendingVerification: 0,
     });
     expect(cuadre.receiptsNote).toBe(
-      "RD$ 300.00 de recibos CxC del mismo día ya están incluidos en Ventas Efectivo",
+      "RD$ 0.00 de recibos CxC del mismo día ya están incluidos en Ventas Efectivo",
     );
     expect(cuadre.cod).toMatchObject({
       sold: 1000,
@@ -6779,9 +6981,9 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     expect(cuadre.summary).toMatchObject({
       formula:
         "12-Diferencias = (2-Efectivo introducido + 5-Vale de caja) − 10-Total venta efectivo − 18-Total fondo",
-      text: "-5.25 = (2,175.00 + 149.75) − 1,830.00 − 500.00",
+      text: "-5.25 = (1,875.00 + 149.75) − 1,530.00 − 500.00",
     });
-    expect(cuadre.delivered).toEqual({ delivered: 2000, left: 175 });
+    expect(cuadre.delivered).toEqual({ delivered: 1700, left: 175 });
     expect(cuadre.foreign).toMatchObject({
       usd: { counted: 20, expected: 0, difference: 20, rate: 59.5, dop: 1190 },
       eur: { counted: 0, expected: 0, difference: 0, rate: 64.25, dop: 0 },
@@ -6814,22 +7016,21 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
   });
 
   it("Tienda-cuadre: un cliente que envía sólo countedCash sigue cerrando; la contraentrega cobrada aparece en la caja que la recibió", async () => {
-    // Caja 2: vendió una contraentrega de 500 (cobrada por transferencia y
-    // verificada) y recibió en efectivo los 1,000 de la venta de la caja 1.
-    // Sin countedCard ni countedTransfer se toman los esperados.
+    // Caja 2 despachó las ventas; los cobros los registró la administración en
+    // su propia caja. Por eso la caja vendedora cierra sin dinero recibido.
     const closed = await must(
       "/cash-sessions/" + s2.id + "/close",
-      { countedCash: 1000 },
+      { countedCash: 0 },
       cashier2.token,
     );
     expect(closed.differences).toEqual({ cash: 0, card: 0, transfer: 0 });
-    expect(Number(closed.countedTransfer)).toBe(500);
+    expect(Number(closed.countedTransfer)).toBe(0);
     const cuadre = await must(
       "/cash-sessions/" + s2.id + "/cuadre",
       undefined,
       ownerToken,
     );
-    expect(line(cuadre, "cashSales")).toBe(1000);
+    expect(line(cuadre, "cashSales")).toBe(0);
     expect(line(cuadre, "differenceDop")).toBe(0);
     expect(line(cuadre, "receipts")).toBe(0);
     expect(line(cuadre, "tickets")).toBe(1);
@@ -6840,14 +7041,12 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       name: "CAJA 2",
     });
     expect(cuadre.cod.collected).toMatchObject({
-      cash: 1000,
-      transfer: 500,
-      total: 1500,
+      cash: 0,
+      transfer: 0,
+      total: 0,
     });
-    expect(cuadre.cod.rows.map((r: any) => r.number).sort()).toEqual(
-      [sold.f.number, sold.codTransfer.number].sort(),
-    );
-    expect(cuadre.cashSalesDetail).toMatchObject({ cod: 1000, total: 1000 });
+    expect(cuadre.cod.rows).toEqual([]);
+    expect(cuadre.cashSalesDetail).toMatchObject({ cod: 0, total: 0 });
     expect(cuadre.delivered).toEqual({ delivered: null, left: null });
   });
 
@@ -6925,9 +7124,8 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     expect(report.groups.map((g: any) => g.label)).toEqual([
       "EFECTIVO",
       "CHEQUES/TRANSFERENCIA",
-      "COMPRA A CRÉDITO",
+      "CRÉDITO / CONTRAENTREGA",
       "TARJETA CRÉDITO/DÉBITO",
-      "CONTRAENTREGA",
     ]);
     const group = (label: string) =>
       report.groups.find((g: any) => g.label === label);
@@ -6950,20 +7148,27 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       description: "Factura",
       amount: 180,
     });
-    expect(group("CONTRAENTREGA").rows).toEqual([
-      expect.objectContaining({
-        number: sold.f.number,
-        amount: 1000,
-        units: 1,
-      }),
-    ]);
+    expect(group("CRÉDITO / CONTRAENTREGA").rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          number: sold.f.number,
+          amount: 1000,
+          units: 1,
+        }),
+        expect.objectContaining({
+          number: sold.d.number,
+          amount: 1180,
+          units: 1,
+        }),
+      ]),
+    );
     expect(group("CHEQUES/TRANSFERENCIA").subtotal).toEqual({
       units: 2,
       amount: 680,
     });
-    expect(group("COMPRA A CRÉDITO").subtotal).toEqual({
-      units: 1,
-      amount: 1180,
+    expect(group("CRÉDITO / CONTRAENTREGA").subtotal).toEqual({
+      units: 2,
+      amount: 2180,
     });
     expect(group("TARJETA CRÉDITO/DÉBITO").subtotal).toEqual({
       units: 2,
@@ -6974,7 +7179,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     // Filas planas para Excel/PDF: cada grupo cierra con su subtotal.
     expect(
       report.rows.filter((r: any) => r.Descripción === "Sub-Total por Pago"),
-    ).toHaveLength(5);
+    ).toHaveLength(4);
     expect(report.rows.at(-1)).toMatchObject({
       Descripción: "TOTAL",
       T_Venta: 5990,

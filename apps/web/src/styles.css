@@ -4489,8 +4489,12 @@ td strong {
   margin-bottom: 6px;
 }
 .tp-header h2 {
-  font-size: 15px;
+  font-size: 13px;
   margin: 2px 0;
+}
+.tp-header .tp-branch {
+  font-size: 11px;
+  font-weight: 700;
 }
 .tp-header h3,
 .thermal-print h3,

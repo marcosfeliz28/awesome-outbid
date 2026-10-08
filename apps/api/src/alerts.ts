@@ -345,11 +345,12 @@ export class AlertEngine {
           v.id,
           v.product.name + ": stock negativo. Revisa el inventario.",
         );
-    // Resolver sólo reglas evaluadas; los conflictos offline permanecen para revisión humana.
+    // Resolver sólo reglas evaluadas; los conflictos offline y las cuentas por
+    // cobrar permanecen hasta que su propio flujo las cierre.
     await this.db.alert.updateMany({
       where: {
         branchId,
-        type: { not: "offline_conflict" },
+        type: { notIn: ["offline_conflict", "receivable"] },
         key: { notIn: events.map((e) => e.key) },
         status: { not: "resolved" },
       },

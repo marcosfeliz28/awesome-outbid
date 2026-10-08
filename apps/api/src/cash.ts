@@ -440,15 +440,26 @@ export class CashController {
     if (actor.terminalId) data.registerId = actor.terminalId;
     return this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${actor.branchId + ":cash:" + actor.id}))::text AS locked`;
-      const existing = await tx.cashSession.findFirst({
+      // Repetir "Abrir caja" (doble clic, respuesta perdida o una pantalla
+      // desactualizada) no debe crear otra caja ni dejar al usuario bloqueado.
+      // Si la persona ya tiene una abierta, devolvemos esa misma sesión; la
+      // interfaz indicará si pertenece a otro equipo y permitirá trasladarla.
+      const own = await tx.cashSession.findFirst({
         where: {
           branchId: actor.branchId,
           closedAt: null,
-          OR: [{ userId: actor.id }, { registerId: data.registerId }],
+          userId: actor.id,
         },
       });
-      if (existing)
-        bad("Ya existe una caja abierta para este usuario o terminal.");
+      if (own) return own;
+      const busy = await tx.cashSession.findFirst({
+        where: {
+          branchId: actor.branchId,
+          closedAt: null,
+          registerId: data.registerId,
+        },
+      });
+      if (busy) bad("Este equipo ya tiene otra caja abierta.");
       const row = await tx.cashSession.create({
         data: { ...data, userId: actor.id, branchId: actor.branchId },
       });

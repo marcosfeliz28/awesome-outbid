@@ -211,11 +211,13 @@ export function FormModal({
 export function ConfirmModal({
   title,
   description,
+  confirmLabel = "Confirmar",
   onConfirm,
   onClose,
 }: {
   title: string;
   description: string;
+  confirmLabel?: string;
   onConfirm: (reason: string) => Promise<void>;
   onClose: () => void;
 }) {
@@ -253,7 +255,7 @@ export function ConfirmModal({
             Cancelar
           </Button>
           <Button variant="danger" disabled={busy}>
-            Confirmar
+            {busy ? "Procesando…" : confirmLabel}
           </Button>
         </div>
       </form>

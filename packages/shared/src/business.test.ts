@@ -408,7 +408,12 @@ describe("Tienda · cuadre de caja y contraentrega", () => {
     expect(CASH_DENOMINATIONS).toEqual([
       1, 5, 10, 20, 25, 50, 100, 200, 500, 1000, 2000,
     ]);
-    const counted = countDenominations({ "2000": 4, "1000": 1, "25": 3, "1": 2 });
+    const counted = countDenominations({
+      "2000": 4,
+      "1000": 1,
+      "25": 3,
+      "1": 2,
+    });
     expect(counted.total).toBe(9077);
     expect(counted.lines).toHaveLength(11);
     expect(counted.lines.find((l) => l.value === 25)).toEqual({
@@ -428,7 +433,12 @@ describe("Tienda · cuadre de caja y contraentrega", () => {
       }),
     ).toBe(-5.25);
     expect(
-      cashDifference({ counted: 0.3, vouchers: 0, cashSales: 0.1, opening: 0.2 }),
+      cashDifference({
+        counted: 0.3,
+        vouchers: 0,
+        cashSales: 0.1,
+        opening: 0.2,
+      }),
     ).toBe(0);
   });
   it("entregado + dejado = efectivo contado; lo entregado no supera lo contado", () => {
@@ -455,7 +465,9 @@ describe("Tienda · cuadre de caja y contraentrega", () => {
     ).toMatchObject({ denominations: { "100": 2 }, delivered: 150 });
     expect(() => cashCloseSchema.parse({})).toThrow();
     // Denominación inexistente, cantidad fraccionaria o vale con fracción de centavo.
-    expect(() => cashCloseSchema.parse({ denominations: { "3": 1 } })).toThrow();
+    expect(() =>
+      cashCloseSchema.parse({ denominations: { "3": 1 } }),
+    ).toThrow();
     expect(() =>
       cashCloseSchema.parse({ denominations: { "100": 1.5 } }),
     ).toThrow();
@@ -480,21 +492,22 @@ describe("Tienda · cuadre de caja y contraentrega", () => {
         { method: "cod", amount: 1000 },
       ]),
     ).toEqual({ paid: 1180, pending: 0, change: 0 });
-    expect(() => paymentTotals(1000, [{ method: "cod", amount: 1200 }])).toThrow(
-      /cambio/,
-    );
+    expect(() =>
+      paymentTotals(1000, [{ method: "cod", amount: 1200 }]),
+    ).toThrow(/cambio/);
   });
   it("formas de pago del reporte en el orden de la tienda", () => {
     expect(PAYMENT_GROUPS.slice(0, 5)).toEqual([
       { method: "cash", label: "EFECTIVO" },
       { method: "transfer", label: "CHEQUES/TRANSFERENCIA" },
-      { method: "credit", label: "COMPRA A CRÉDITO" },
+      { method: "receivable", label: "CRÉDITO / CONTRAENTREGA" },
       { method: "card", label: "TARJETA CRÉDITO/DÉBITO" },
-      { method: "cod", label: "CONTRAENTREGA" },
+      { method: "credit_note", label: "NOTA DE CRÉDITO" },
     ]);
   });
   it("logo: sólo imágenes como data URL y de hasta 200 KB", () => {
-    const png = "data:image/png;base64," + Buffer.alloc(1000).toString("base64");
+    const png =
+      "data:image/png;base64," + Buffer.alloc(1000).toString("base64");
     expect(isImageDataUrl(png)).toBe(true);
     expect(
       isImageDataUrl(

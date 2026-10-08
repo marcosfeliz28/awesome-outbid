@@ -157,6 +157,15 @@ export function POS({ go }: { go: (page: string) => void }) {
     [checkout, setCheckout] = useState(false),
     [held, setHeld] = useState(false),
     [clientPicker, setClientPicker] = useState(false),
+    [creatingClient, setCreatingClient] = useState(false),
+    [clientBusy, setClientBusy] = useState(false),
+    [clientError, setClientError] = useState(""),
+    [clientDraft, setClientDraft] = useState({
+      name: "",
+      phone: "",
+      email: "",
+      legalId: "",
+    }),
     [camera, setCamera] = useState(false);
   const search = useRef<HTMLInputElement>(null);
   // La ventana de variantes se abrió con Enter desde el buscador: al elegir,
@@ -371,6 +380,11 @@ export function POS({ go }: { go: (page: string) => void }) {
   };
   const charge = () => {
     if (!cart.length) return;
+    if (config.data?.requireCustomer && !customerId) {
+      setClientPicker(true);
+      toast("Selecciona o crea el cliente antes de cobrar.", true);
+      return;
+    }
     if (!session) {
       toast("Abre tu caja antes de cobrar.", true);
       return;
@@ -804,7 +818,9 @@ export function POS({ go }: { go: (page: string) => void }) {
           <div>
             <strong>
               {customers.data?.find((c: any) => c.id === customerId)?.name ||
-                "Consumidor final"}
+                (config.data?.requireCustomer
+                  ? "Selecciona el cliente"
+                  : "Consumidor final")}
             </strong>
             <small>Elegir cliente · F4</small>
           </div>
@@ -1028,41 +1044,127 @@ export function POS({ go }: { go: (page: string) => void }) {
         onClose={() => setClientPicker(false)}
         title="¿Para quién es esta venta?"
       >
-        <div className="customer-list">
-          <button
-            onClick={() => {
-              setCustomer(null);
-              setClientPicker(false);
+        {creatingClient ? (
+          <form
+            className="form-stack"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setClientBusy(true);
+              setClientError("");
+              try {
+                const created = await post("/customers", {
+                  ...clientDraft,
+                  notes: "",
+                });
+                client.setQueryData<any[]>(["customers"], (current = []) =>
+                  [...current, created].sort((a, b) =>
+                    a.name.localeCompare(b.name, "es"),
+                  ),
+                );
+                setCustomer(created.id);
+                setClientDraft({ name: "", phone: "", email: "", legalId: "" });
+                setCreatingClient(false);
+                setClientPicker(false);
+                toast("Cliente guardado y seleccionado.");
+              } catch (error: any) {
+                setClientError(error.message);
+              } finally {
+                setClientBusy(false);
+              }
             }}
           >
-            <UserRound />
-            Consumidor final
-          </button>
-          {customers.data?.map((c: any) => (
-            <button
-              key={c.id}
-              onClick={() => {
-                setCustomer(c.id);
-                setClientPicker(false);
-              }}
-            >
-              <UserRound />
-              <span>
-                {c.name}
-                <small>{c.phone}</small>
-              </span>
-            </button>
-          ))}
-        </div>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            setClientPicker(false);
-            go("customers");
-          }}
-        >
-          Crear un cliente
-        </Button>
+            <label className="field">
+              <span>Nombre del cliente *</span>
+              <input
+                autoFocus
+                required
+                minLength={2}
+                value={clientDraft.name}
+                onChange={(e) =>
+                  setClientDraft({ ...clientDraft, name: e.target.value })
+                }
+              />
+            </label>
+            <div className="form-grid">
+              <label className="field">
+                <span>Teléfono</span>
+                <input
+                  value={clientDraft.phone}
+                  onChange={(e) =>
+                    setClientDraft({ ...clientDraft, phone: e.target.value })
+                  }
+                />
+              </label>
+              <label className="field">
+                <span>RNC o cédula</span>
+                <input
+                  value={clientDraft.legalId}
+                  onChange={(e) =>
+                    setClientDraft({ ...clientDraft, legalId: e.target.value })
+                  }
+                />
+              </label>
+            </div>
+            <label className="field">
+              <span>Correo electrónico</span>
+              <input
+                type="email"
+                value={clientDraft.email}
+                onChange={(e) =>
+                  setClientDraft({ ...clientDraft, email: e.target.value })
+                }
+              />
+            </label>
+            {clientError && <p className="form-error">{clientError}</p>}
+            <div className="form-actions">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setCreatingClient(false)}
+              >
+                Volver
+              </Button>
+              <Button disabled={clientBusy}>
+                {clientBusy ? "Guardando…" : "Guardar y usar cliente"}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div className="customer-list">
+              {!config.data?.requireCustomer && (
+                <button
+                  onClick={() => {
+                    setCustomer(null);
+                    setClientPicker(false);
+                  }}
+                >
+                  <UserRound />
+                  Consumidor final
+                </button>
+              )}
+              {customers.data?.map((c: any) => (
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    setCustomer(c.id);
+                    setClientPicker(false);
+                  }}
+                >
+                  <UserRound />
+                  <span>
+                    {c.name}
+                    <small>{c.phone}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <Button variant="secondary" onClick={() => setCreatingClient(true)}>
+              <Plus size={17} />
+              Nuevo cliente aquí mismo
+            </Button>
+          </>
+        )}
       </Modal>
       {checkout && (
         <Checkout
@@ -1344,8 +1446,12 @@ function Checkout({
       setError("Selecciona una nota de crédito.");
       return;
     }
-    if (method === "credit" && (!customerId || !creditDueDate)) {
-      setError("Selecciona un cliente y fecha de vencimiento.");
+    if ((method === "credit" || method === "cod") && !customerId) {
+      setError("Selecciona el cliente para el crédito / contraentrega.");
+      return;
+    }
+    if (method === "credit" && !creditDueDate) {
+      setError("Indica la fecha de vencimiento.");
       return;
     }
     const next = [
@@ -1383,6 +1489,10 @@ function Checkout({
     }
   };
   const finish = async () => {
+    if (config?.requireCustomer && !customerId) {
+      setError("Selecciona o crea el cliente antes de vender.");
+      return;
+    }
     setBusy(true);
     setError("");
     const input: SaleInput = {
@@ -1571,6 +1681,7 @@ function Checkout({
       setReceipt({
         ...sale,
         snapshot: printed,
+        cashierName: user!.name,
         change: payment.change,
         tendered: payments,
         createdAt: sale.createdAt ?? new Date().toISOString(),
@@ -1652,7 +1763,7 @@ function Checkout({
           )}
           {Number(receipt.creditBalance) > 0 && (
             <p>
-              Saldo a crédito:{" "}
+              Crédito / contraentrega pendiente:{" "}
               <strong>{formatMoney(receipt.creditBalance)}</strong>
             </p>
           )}
@@ -1733,23 +1844,20 @@ function Checkout({
           { id: "card", label: "Tarjeta", icon: CreditCard },
           { id: "transfer", label: "Transferencia", icon: Landmark },
           { id: "credit_note", label: "Nota de crédito", icon: FileText },
-          { id: "credit", label: "A crédito", icon: CreditCard },
-          { id: "cod", label: "Contraentrega", icon: Truck },
-        ]
-          .filter((m) => m.id !== "credit" || config?.allowCreditSales)
-          .map((m) => (
-            <button
-              className={method === m.id ? "active" : ""}
-              key={m.id}
-              onClick={() => {
-                setMethod(m.id as any);
-                setAmount(String(payment.pending));
-              }}
-            >
-              <m.icon size={22} />
-              {m.label}
-            </button>
-          ))}
+          { id: "cod", label: "Crédito / contraentrega", icon: Truck },
+        ].map((m) => (
+          <button
+            className={method === m.id ? "active" : ""}
+            key={m.id}
+            onClick={() => {
+              setMethod(m.id as any);
+              setAmount(String(payment.pending));
+            }}
+          >
+            <m.icon size={22} />
+            {m.label}
+          </button>
+        ))}
       </div>
       {config?.ncfMode === "prepared" && (
         <div className="form-grid">
@@ -1821,11 +1929,9 @@ function Checkout({
         )}
         {method === "cod" && (
           <p className="cod-hint">
-            Contraentrega: la venta sale del inventario y este importe queda
-            pendiente hasta que el mensajero traiga el dinero. Regístralo luego
-            en Caja › Contraentregas pendientes (efectivo, tarjeta o
-            transferencia, con la foto de la evidencia). Se combina con
-            cualquier otra forma, incluido el crédito.
+            Crédito / contraentrega: la mercancía sale ahora y el saldo queda a
+            nombre del cliente. Sólo Marcos o Genesis podrán registrar después
+            pagos parciales o completos por efectivo, tarjeta o transferencia.
           </p>
         )}
         {method === "credit" && (

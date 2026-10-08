@@ -523,7 +523,7 @@ async function main() {
         data: {
           id: "main",
           data: {
-            name: "Nexora POS",
+            name: "Grupo Mac Hen",
             legalId: "",
             address: "Santo Domingo, República Dominicana",
             phone: "",
@@ -538,6 +538,10 @@ async function main() {
             cashDifferenceLimit: 100,
             receiptWidth: "80",
             sessionTimeoutMinutes: 30,
+            branchName: "Plaza Lope de Vega",
+            // La demostración y sus pruebas conservan ventas anónimas. Las
+            // instalaciones reales y Grupo Mac Hen activan la exigencia.
+            requireCustomer: false,
             // La demostración conserva las pruebas del flujo offline. Las
             // tiendas nuevas que no tengan esta clave quedan protegidas por
             // el valor predeterminado false del API.

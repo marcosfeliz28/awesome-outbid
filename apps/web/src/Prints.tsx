@@ -77,7 +77,7 @@ export function BusinessHeader({
     <header className="tp-header">
       {b.logo && <img className="tp-logo" src={b.logo} alt="" />}
       <h2>{b.name || "Nexora POS"}</h2>
-      {b.branchName && <p>Sucursal No. {b.branchName}</p>}
+      {b.branchName && <p className="tp-branch">{b.branchName}</p>}
       {b.address && <p>{b.address}</p>}
       {b.legalId && <p>RNC: {b.legalId}</p>}
       {!!phones.length && <p>Tel.: {phones.join(" · WhatsApp: ")}</p>}
@@ -139,7 +139,7 @@ export function CuadrePrint({ c }: { c: any }) {
       ))}
       {Number(c.cod?.sold) > 0 || Number(c.cod?.collected?.total) > 0 ? (
         <>
-          <h4>Contraentregas</h4>
+          <h4>Créditos / contraentregas</h4>
           <Row label="Vendidas" value={num(c.cod?.sold)} />
           <Row label="Cobradas efectivo" value={num(c.cod?.collected?.cash)} />
           <Row
@@ -277,8 +277,8 @@ export const METHOD_LABEL: Record<string, string> = {
   card: "Tarjeta",
   transfer: "Transferencia",
   credit_note: "Nota de crédito",
-  credit: "A crédito",
-  cod: "Contraentrega",
+  credit: "Crédito / contraentrega",
+  cod: "Crédito / contraentrega",
 };
 
 /** 4. Factura (ticket de venta). */
@@ -310,6 +310,7 @@ export function InvoicePrint({
       <h3 className="tp-center">FACTURA</h3>
       <Row label="Secuencia No." value={sale.number} />
       <Row label="Fecha" value={when(sale.createdAt ?? new Date())} />
+      <Row label="Cajero" value={sale.cashierName ?? ""} />
       <p>
         Vendido a: {customer?.name ?? "Consumidor final"}
         {customer?.legalId ? " · RNC " + customer.legalId : ""}

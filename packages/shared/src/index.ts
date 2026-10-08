@@ -526,8 +526,7 @@ export const cashDifference = (v: {
   vouchers: Decimal.Value;
   cashSales: Decimal.Value;
   opening: Decimal.Value;
-}) =>
-  money(d(v.counted).plus(v.vouchers).minus(v.cashSales).minus(v.opening));
+}) => money(d(v.counted).plus(v.vouchers).minus(v.cashSales).minus(v.opening));
 /** Entregado (a la dueña) + dejado en caja = efectivo contado. */
 export function deliveredSplit(
   counted: Decimal.Value,
@@ -560,21 +559,17 @@ export const cashCloseSchema = z
     delivered: cashAmount.optional(),
     notes: z.string().max(1000).default(""),
   })
-  .refine(
-    (v) => v.countedCash !== undefined || v.denominations !== undefined,
-    {
-      message: "indica el efectivo contado o el conteo por denominaciones",
-      path: ["countedCash"],
-    },
-  );
+  .refine((v) => v.countedCash !== undefined || v.denominations !== undefined, {
+    message: "indica el efectivo contado o el conteo por denominaciones",
+    path: ["countedCash"],
+  });
 export type CashCloseInput = z.infer<typeof cashCloseSchema>;
 /** Formas de pago del «Reporte de venta usuario», en el orden de la tienda. */
 export const PAYMENT_GROUPS = [
   { method: "cash", label: "EFECTIVO" },
   { method: "transfer", label: "CHEQUES/TRANSFERENCIA" },
-  { method: "credit", label: "COMPRA A CRÉDITO" },
+  { method: "receivable", label: "CRÉDITO / CONTRAENTREGA" },
   { method: "card", label: "TARJETA CRÉDITO/DÉBITO" },
-  { method: "cod", label: "CONTRAENTREGA" },
   { method: "credit_note", label: "NOTA DE CRÉDITO" },
 ] as const;
 /** Importe con separador de miles y 2 decimales: 9,825.00 y -5.25. */

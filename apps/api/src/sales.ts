@@ -59,6 +59,57 @@ const PROOF_MAX_BYTES = 2 * 1024 * 1024;
 import PDFDocument from "pdfkit";
 import type { Response } from "express";
 
+// Una venta pendiente se mantiene como una sola cuenta por cobrar hasta que
+// un administrador confirma todos sus abonos.
+async function refreshReceivableAlert(
+  tx: any,
+  saleId: string,
+  branchId: string,
+) {
+  const sale = await tx.sale.findFirst({
+    where: { id: saleId, branchId },
+    select: {
+      id: true,
+      number: true,
+      status: true,
+      customerId: true,
+      creditBalance: true,
+    },
+  });
+  if (!sale) return;
+  const key = "receivable:" + sale.id;
+  const balance = Number(sale.creditBalance);
+  if (sale.status !== "completed" || balance <= 0) {
+    await tx.alert.updateMany({
+      where: { key, status: { not: "resolved" } },
+      data: { status: "resolved" },
+    });
+    return;
+  }
+  const customer = sale.customerId
+    ? await tx.customer.findUnique({
+        where: { id: sale.customerId },
+        select: { name: true },
+      })
+    : null;
+  const message =
+    `Crédito / contraentrega ${sale.number} · ` +
+    `${customer?.name ?? "cliente sin identificar"} · ` +
+    `saldo pendiente RD$ ${balance.toFixed(2)}.`;
+  await tx.alert.upsert({
+    where: { key },
+    create: {
+      key,
+      type: "receivable",
+      severity: "high",
+      entityId: sale.id,
+      message,
+      branchId,
+    },
+    update: { message, severity: "high", status: "new" },
+  });
+}
+
 // Una caja abierta pertenece a un usuario y a un equipo. El dinero (ventas,
 // abonos, movimientos) sólo se registra desde el equipo donde está la caja;
 // cerrar y arquear se permite desde cualquier equipo del dueño, y un gerente
@@ -284,6 +335,8 @@ export class SalesController {
           where: { id: actor.branchId },
         });
         const config = settings?.data as any;
+        if (config?.requireCustomer === true && !customer)
+          bad("Selecciona o crea un cliente antes de vender.");
         const components = await tx.kitComponent.findMany({
           where: { kitVariantId: { in: input.items.map((i) => i.variantId) } },
         });
@@ -386,28 +439,36 @@ export class SalesController {
             .filter((p) => p.method === "credit")
             .reduce((sum, p) => sum + p.amount, 0),
         );
-        // Contraentrega: queda por cobrar en la venta (como un crédito), con
-        // el cliente opcional; se cobra después como un abono.
+        // Crédito y contraentrega son una misma cuenta por cobrar: la
+        // mercancía sale ahora y la administración registra los abonos.
         const cod = money(
           input.payments
             .filter((p) => p.method === "cod")
             .reduce((sum, p) => sum + p.amount, 0),
         );
-        if (credit && customer) {
-          // La deuda del cliente es la de sus ventas a crédito, no las
-          // contraentregas pendientes.
+        if ((credit || cod) && !customer)
+          bad("El crédito / contraentrega requiere seleccionar un cliente.");
+        if ((credit || cod) && customer) {
+          // Toda mercancía despachada pendiente de cobro cuenta en la deuda.
           const debt = await tx.sale.aggregate({
             where: {
               customerId: customer.id,
               branchId: actor.branchId,
               status: "completed",
-              payments: { some: { method: "credit", entryType: "sale" } },
+              payments: {
+                some: {
+                  method: { in: ["credit", "cod"] },
+                  entryType: "sale",
+                },
+              },
             },
             _sum: { creditBalance: true },
           });
           if (
+            Number(customer.creditLimit) > 0 &&
             d(debt._sum.creditBalance ?? 0)
               .plus(credit)
+              .plus(cod)
               .gt(customer.creditLimit)
           )
             bad("La venta supera el límite de crédito del cliente.");
@@ -688,6 +749,8 @@ export class SalesController {
           total,
           approvedBy,
         });
+        if (credit || cod)
+          await refreshReceivableAlert(tx, sale.id, actor.branchId);
         if (
           Number(sale.discountTotal) > 0 &&
           (approvedBy || can(actor.permissions, "sale:manage"))
@@ -785,7 +848,36 @@ export class SalesController {
   }
   @Get("sales")
   @Permit("sale:write")
-  async list(@CurrentUser() actor: Actor) {
+  async list(
+    @CurrentUser() actor: Actor,
+    @Query() query: Record<string, string>,
+  ) {
+    const filters = parse(
+      z.object({
+        q: z.string().trim().max(80).optional(),
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+      }),
+      query,
+    );
+    let createdAt: { gte: Date; lte: Date } | undefined;
+    if (filters.date) {
+      // República Dominicana no cambia de horario: estos límites representan
+      // exactamente el día que el administrador eligió en la tienda.
+      const gte = new Date(filters.date + "T00:00:00-04:00");
+      const lte = new Date(filters.date + "T23:59:59.999-04:00");
+      if (
+        !Number.isFinite(+gte) ||
+        !Number.isFinite(+lte) ||
+        gte.toLocaleDateString("en-CA", {
+          timeZone: BUSINESS_TIME_ZONE,
+        }) !== filters.date
+      )
+        bad("Fecha inválida.");
+      createdAt = { gte, lte };
+    }
     return safe(
       await this.db.sale.findMany({
         where: {
@@ -793,6 +885,10 @@ export class SalesController {
           ...(can(actor.permissions, "sale:manage")
             ? {}
             : { sellerId: actor.id }),
+          ...(filters.q
+            ? { number: { contains: filters.q, mode: "insensitive" as const } }
+            : {}),
+          ...(createdAt ? { createdAt } : {}),
         },
         include: {
           items: { include: { variant: { include: { product: true } } } },
@@ -800,22 +896,37 @@ export class SalesController {
           returns: true,
         },
         orderBy: { createdAt: "desc" },
-        take: 100,
+        // La búsqueda por número o fecha alcanza todo el historial sin enviar
+        // cada artículo de todas las ventas en una sola respuesta.
+        take: filters.q || filters.date ? 500 : 100,
       }),
       actor,
     );
   }
   @Post("sales/:id/void")
   @RequireTerminal()
-  @Permit("sale:manage")
+  @Permit("*")
   async voidSale(
     @Param("id") id: string,
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(z.object({ reason, cashSessionId: uuid }), body);
+    // La anulación es una decisión administrativa y puede hacerse sobre una
+    // factura de cualquier día. No depende de que la caja original siga
+    // abierta; el motivo, el usuario y cada movimiento quedan auditados.
+    const data = parse(z.object({ reason }), body);
     return this.db.$transaction(async (tx) => {
-      const session = await cashLock(tx, actor, data.cashSessionId, true);
+      const saleRef = await tx.sale.findFirstOrThrow({
+        where: { id: parse(uuid, id), branchId: actor.branchId },
+        select: { cashSessionId: true },
+      });
+      let originalCash: any = null;
+      if (saleRef.cashSessionId) {
+        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${saleRef.cashSessionId}::uuid FOR UPDATE`;
+        originalCash = await tx.cashSession.findUnique({
+          where: { id: saleRef.cashSessionId },
+        });
+      }
       await tx.$queryRaw`SELECT id FROM "Sale" WHERE id = ${parse(uuid, id)}::uuid FOR UPDATE`;
       const sale = await tx.sale.findFirstOrThrow({
         where: { id, branchId: actor.branchId },
@@ -823,8 +934,22 @@ export class SalesController {
       });
       if (sale.status !== "completed" || sale.returns.length)
         bad("La venta ya está anulada o tiene devoluciones.");
-      if (sale.payments.some((p) => p.entryType === "installment"))
+      if (
+        sale.payments.some(
+          (p) => p.entryType === "installment" && p.status !== "rejected",
+        )
+      )
         bad("La venta tiene abonos. Usa una devolución.");
+      if (
+        sale.items.some(
+          (item) =>
+            !Array.isArray(item.stockAllocations) ||
+            item.stockAllocations.length === 0,
+        )
+      )
+        bad(
+          "Esta venta antigua no conserva el detalle necesario para reponer el inventario automáticamente. Usa una devolución o revisión manual.",
+        );
       const notes = await tx.creditNote.findMany({
         where: {
           id: {
@@ -843,8 +968,6 @@ export class SalesController {
           data: { balance: { increment: restored } },
         });
       }
-      if (sale.cashSessionId !== session.id)
-        bad("Usa una devolución para ventas de cajas anteriores.");
       const allocations = sale.items.flatMap(
         (i) => i.stockAllocations as any[],
       );
@@ -894,13 +1017,33 @@ export class SalesController {
           voidedBy: actor.id,
         },
       });
-      await audit(tx, actor, "void", "sale", id, sale, { reason: data.reason });
+      await refreshReceivableAlert(tx, id, actor.branchId);
+      let cashDifferences: Record<string, number> | undefined;
+      if (originalCash?.closedAt) {
+        cashDifferences = await refreshClosedCash(tx, originalCash);
+        await audit(
+          tx,
+          actor,
+          "void_after_close",
+          "cash",
+          originalCash.id,
+          originalCash,
+          { saleId: id, ...cashDifferences },
+        );
+      }
+      await audit(tx, actor, "void", "sale", id, sale, {
+        status: "voided",
+        reason: data.reason,
+        cashSessionId: sale.cashSessionId,
+        afterCashClose: Boolean(originalCash?.closedAt),
+        ...(cashDifferences ? { cashDifferences } : {}),
+      });
       return { ok: true };
     });
   }
   @Post("payments/:id/verify")
   @RequireTerminal()
-  @Permit("sale:manage")
+  @Permit("*")
   async verify(@Param("id") id: string, @CurrentUser() actor: Actor) {
     return this.db.$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
@@ -929,6 +1072,7 @@ export class SalesController {
           where: { id: sale.id },
           data: { creditBalance: { decrement: payment.amount } },
         });
+        await refreshReceivableAlert(tx, sale.id, actor.branchId);
       }
       await tx.payment.update({ where: { id }, data: { status: "ok" } });
       if (payment.cashSessionId) {
@@ -959,7 +1103,7 @@ export class SalesController {
   // venta (R9-dinero-3).
   @Post("payments/:id/reject")
   @RequireTerminal()
-  @Permit("sale:manage")
+  @Permit("*")
   async reject(
     @Param("id") id: string,
     @Body() body: unknown,
@@ -1255,6 +1399,8 @@ export class SalesController {
           where: { id: sale.id },
           data: { creditBalance: { decrement: debtReduction } },
         });
+      if (debtReduction)
+        await refreshReceivableAlert(tx, sale.id, actor.branchId);
       const row = await tx.saleReturn.create({
         data: {
           saleId: sale.id,
@@ -1354,7 +1500,7 @@ export class SalesController {
   }
   @Post("sales/:id/installments")
   @RequireTerminal()
-  @Permit("sale:write")
+  @Permit("*")
   async installment(
     @Param("id") id: string,
     @Body() body: unknown,
@@ -1369,7 +1515,7 @@ export class SalesController {
   // sube después con POST /payments/:id/proof.
   @Post("sales/:id/cod-collections")
   @RequireTerminal()
-  @Permit("sale:write")
+  @Permit("*")
   async codCollection(
     @Param("id") id: string,
     @Body() body: unknown,
@@ -1382,7 +1528,7 @@ export class SalesController {
   // URL en el pago, igual que el logo. La sube quien registró el cobro en su
   // caja o quien gestiona ventas; se puede reemplazar.
   @Post("payments/:id/proof")
-  @Permit("sale:write")
+  @Permit("*")
   @UseInterceptors(
     FileInterceptor("file", {
       limits: { fileSize: PROOF_MAX_BYTES + 1, files: 1 },
@@ -1435,17 +1581,22 @@ export class SalesController {
       return safe(row, actor);
     });
   }
-  // Contraentregas pendientes de cobro de la sucursal: cualquier cajera puede
-  // recibir el dinero de una venta de otra caja.
+  // Créditos y contraentregas pendientes: sólo la administración puede verlos
+  // y registrar cómo entró el dinero.
   @Get("cod/pending")
-  @Permit("sale:write")
+  @Permit("*")
   async codPending(@CurrentUser() actor: Actor) {
     const sales = await this.db.sale.findMany({
       where: {
         branchId: actor.branchId,
         status: "completed",
         creditBalance: { gt: 0 },
-        payments: { some: { method: "cod", entryType: "sale" } },
+        payments: {
+          some: {
+            method: { in: ["credit", "cod"] },
+            entryType: "sale",
+          },
+        },
       },
       include: { payments: true },
       orderBy: { createdAt: "asc" },
@@ -1471,16 +1622,12 @@ export class SalesController {
       const collections = s.payments.filter(
         (p) => p.entryType === "installment",
       );
-      const codAmount = sum(
-        s.payments.filter((p) => p.method === "cod" && p.entryType === "sale"),
+      const receivableAmount = sum(
+        s.payments.filter(
+          (p) => ["credit", "cod"].includes(p.method) && p.entryType === "sale",
+        ),
       );
-      // Si la venta también fue a crédito, lo cobrado se aplica primero a la
-      // contraentrega (se paga al entregar); el crédito vence después.
-      const collected = sum(collections.filter((p) => p.status === "ok"));
-      const pending = Math.min(
-        Number(s.creditBalance),
-        money(d(codAmount).minus(collected)),
-      );
+      const pending = Number(s.creditBalance);
       if (pending <= 0) return [];
       return [
         {
@@ -1489,7 +1636,8 @@ export class SalesController {
           createdAt: s.createdAt,
           cashSessionId: s.cashSessionId,
           total: Number(s.total),
-          codAmount,
+          codAmount: receivableAmount,
+          receivableAmount,
           pending,
           // Transferencias del mensajero registradas que falta verificar.
           pendingVerification: sum(
@@ -1546,10 +1694,15 @@ export class SalesController {
       const sale = await tx.sale.findFirstOrThrow({
         where: { id, branchId: actor.branchId, status: "completed" },
       });
-      const cod = !!(await tx.payment.count({
-        where: { saleId: id, method: "cod", entryType: "sale" },
+      const receivable = !!(await tx.payment.count({
+        where: {
+          saleId: id,
+          method: { in: ["credit", "cod"] },
+          entryType: "sale",
+        },
       }));
-      if (codOnly && !cod) bad("Esta venta no es contraentrega.");
+      if (codOnly && !receivable)
+        bad("Esta venta no tiene crédito / contraentrega pendiente.");
       const pending = await tx.payment.aggregate({
         where: {
           saleId: id,
@@ -1564,8 +1717,8 @@ export class SalesController {
           .lt(data.amount)
       )
         bad(
-          cod
-            ? "El cobro supera lo pendiente de la contraentrega."
+          receivable
+            ? "El cobro supera el saldo pendiente."
             : "El abono supera el saldo pendiente.",
         );
       // El mensajero cobra con un terminal o enlace de pago: basta la
@@ -1609,10 +1762,12 @@ export class SalesController {
           where: { id },
           data: { creditBalance: { decrement: data.amount } },
         });
+      if (data.method !== "transfer")
+        await refreshReceivableAlert(tx, id, actor.branchId);
       await audit(
         tx,
         actor,
-        cod ? "cod_collected" : "installment",
+        receivable ? "receivable_collected" : "installment",
         "sale",
         id,
         undefined,
@@ -1644,6 +1799,13 @@ export class SalesController {
     const settings = await this.db.settings.findUnique({
       where: { id: actor.branchId },
     });
+    const [customer, seller] = await Promise.all([
+      sale.customerId
+        ? this.db.customer.findUnique({ where: { id: sale.customerId } })
+        : null,
+      this.db.user.findUnique({ where: { id: sale.sellerId } }),
+    ]);
+    const business = (settings?.data as any) ?? {};
     const doc = new PDFDocument({ size: "A4", margin: 48 });
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
@@ -1651,7 +1813,13 @@ export class SalesController {
       `inline; filename="${sale.number}.pdf"`,
     );
     doc.pipe(res);
-    doc.fontSize(24).text((settings?.data as any)?.name || "Nexora POS");
+    doc.fontSize(18).text(business.name || "Nexora POS", { align: "center" });
+    if (business.branchName)
+      doc.fontSize(10).text(business.branchName, { align: "center" });
+    if (business.address)
+      doc.fontSize(9).text(business.address, { align: "center" });
+    if (business.legalId)
+      doc.fontSize(9).text("RNC: " + business.legalId, { align: "center" });
     doc
       .fontSize(10)
       .text("Documento interno — no fiscal")
@@ -1663,6 +1831,14 @@ export class SalesController {
           }),
       )
       .moveDown();
+    doc.text("Cajero: " + (seller?.name || ""));
+    doc.text(
+      "Vendido a: " +
+        (customer?.name || "Consumidor final") +
+        (customer?.legalId ? " · RNC/Cédula " + customer.legalId : "") +
+        (customer?.phone ? " · Tel. " + customer.phone : ""),
+    );
+    doc.moveDown();
     if (sale.status === "voided") doc.text("ANULADA · " + sale.voidedReason);
     for (const item of sale.items)
       doc.text(
@@ -1679,11 +1855,7 @@ export class SalesController {
         "Solicitud NCF: " + sale.ncfType + " · pendiente de emisión fiscal",
       );
     if (Number(sale.creditBalance) > 0)
-      doc.text(
-        (sale.payments.some((p) => p.method === "cod")
-          ? "Pendiente contraentrega: RD$ "
-          : "Saldo a crédito: RD$ ") + sale.creditBalance,
-      );
+      doc.text("Crédito / contraentrega pendiente: RD$ " + sale.creditBalance);
     for (const p of sale.payments)
       doc.text(`${p.method}: RD$ ${p.amount} · Cambio: RD$ ${p.change}`);
     doc.moveDown().text("Gracias por elegirnos.");

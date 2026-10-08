@@ -94,6 +94,9 @@ const configSchema = z.object({
     .nullable()
     .optional(),
   autoPrintReceipt: z.boolean().default(false),
+  // Cuando está activo, ninguna factura puede guardarse sin una persona o
+  // empresa identificada. La caja también permite crearla sin salir del POS.
+  requireCustomer: z.boolean().default(false),
   // Tasa del día (RD$ por unidad) para el efectivo en dólares y euros.
   usdRate: z.number().positive().max(10000).nullable().optional(),
   eurRate: z.number().positive().max(10000).nullable().optional(),
@@ -392,7 +395,11 @@ export class AdminController {
     ).data as Record<string, unknown>;
     // Instalaciones anteriores no tienen esta clave. El cliente y cualquier
     // integración reciben siempre el valor efectivo seguro, no undefined.
-    return { ...data, allowOfflineSales: data.allowOfflineSales === true };
+    return {
+      ...data,
+      allowOfflineSales: data.allowOfflineSales === true,
+      requireCustomer: data.requireCustomer === true,
+    };
   }
   @Put("settings")
   @Permit("*")
@@ -404,6 +411,10 @@ export class AdminController {
       typeof body === "object" &&
       body !== null &&
       Object.prototype.hasOwnProperty.call(body, "allowOfflineSales");
+    const hasRequireCustomer =
+      typeof body === "object" &&
+      body !== null &&
+      Object.prototype.hasOwnProperty.call(body, "requireCustomer");
     const { logo, ...config } = parse(configSchema, body);
     if (logo) checkLogo(logo);
     return this.db.$transaction(async (tx) => {
@@ -419,6 +430,9 @@ export class AdminController {
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
           : previous?.allowOfflineSales === true,
+        requireCustomer: hasRequireCustomer
+          ? config.requireCustomer
+          : previous?.requireCustomer === true,
         ...(kept ? { logo: kept } : {}),
       };
       const row = await tx.settings.upsert({

@@ -910,7 +910,11 @@ export async function storeReport(
   const groups = PAYMENT_GROUPS.map((g) => {
     const rows = sales.flatMap((s: any) => {
       const parts = s.payments.filter(
-        (p: any) => p.entryType === "sale" && p.method === g.method,
+        (p: any) =>
+          p.entryType === "sale" &&
+          (g.method === "receivable"
+            ? ["credit", "cod"].includes(p.method)
+            : p.method === g.method),
       );
       if (!parts.length) return [];
       return [
@@ -922,7 +926,7 @@ export async function storeReport(
           amount: money(
             parts.reduce((a: any, p: any) => a.plus(p.amount), d(0)),
           ),
-          ...(g.method === "cod"
+          ...(g.method === "receivable"
             ? {
                 status: Number(s.creditBalance) > 0 ? "pendiente" : "cobrada",
               }
