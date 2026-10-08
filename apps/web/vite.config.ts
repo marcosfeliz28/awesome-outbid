@@ -17,7 +17,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "prompt",
+      // Las cajas no deben quedarse usando una versión anterior después de
+      // publicar un cambio. La actualización se instala y toma control sola.
+      registerType: "autoUpdate",
       includeAssets: ["icon.svg", "products/*.svg"],
       manifest: {
         name: "Nexora POS",
