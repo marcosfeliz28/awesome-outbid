@@ -16,10 +16,6 @@ import type { Response } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
 import ExcelJS from "exceljs";
 import type { Prisma } from "@prisma/client";
-import { spawn } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
 import {
   Actor,
   CurrentUser,
@@ -507,67 +503,6 @@ export class CatalogController {
       });
     });
     return { imported: validated.length };
-  }
-  @Post("products/import-inventory-workbook")
-  @Permit("catalog:write")
-  @UseInterceptors(
-    FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }),
-  )
-  async importInventoryWorkbook(
-    @UploadedFile() file: any,
-    @Query("dryRun") dryRun: string | undefined,
-  ) {
-    if (!file) bad("Selecciona el Excel de inventario.");
-    const folder = await mkdtemp(join(tmpdir(), "nexora-inventory-"));
-    const workbook = join(folder, "inventario.xlsx");
-    const root = process.cwd();
-    const tsx = resolve(root, "apps/api/node_modules/tsx/dist/cli.mjs");
-    const importer = resolve(root, "apps/api/scripts/import-inventario.ts");
-    await writeFile(workbook, file.buffer);
-    try {
-      const args = [
-        tsx,
-        importer,
-        workbook,
-        "--sin-lotes",
-        "--inactivar-precio-menor-o-igual-costo",
-        ...(dryRun === "true" ? ["--dry-run"] : []),
-      ];
-      const result = await new Promise<{
-        code: number;
-        stdout: string;
-        stderr: string;
-      }>((done, reject) => {
-        const child = spawn(process.execPath, args, {
-          cwd: folder,
-          env: process.env,
-          stdio: ["ignore", "pipe", "pipe"],
-        });
-        let stdout = "",
-          stderr = "";
-        child.stdout.setEncoding("utf8");
-        child.stderr.setEncoding("utf8");
-        child.stdout.on("data", (chunk) => (stdout += chunk));
-        child.stderr.on("data", (chunk) => (stderr += chunk));
-        child.on("error", reject);
-        child.on("close", (code) =>
-          done({ code: code ?? 1, stdout, stderr }),
-        );
-      });
-      if (result.code !== 0)
-        bad(
-          (result.stderr || result.stdout || "La importación falló.").trim(),
-        );
-      return {
-        dryRun: dryRun === "true",
-        output: result.stdout
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .filter(Boolean),
-      };
-    } finally {
-      await rm(folder, { recursive: true, force: true });
-    }
   }
   @Post("kits")
   @Permit("catalog:write")
