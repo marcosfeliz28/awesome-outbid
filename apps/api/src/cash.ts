@@ -35,6 +35,7 @@ import {
   bad,
   conflict,
   denied,
+  canViewCashExpected,
 } from "./common";
 import { cashLock, terminalName } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
@@ -92,6 +93,25 @@ function closeDifferences(session: any, expected: any) {
     card: money(d(session.countedCard ?? 0).minus(expected.card)),
     transfer: money(d(session.countedTransfer ?? 0).minus(expected.transfer)),
   };
+}
+export { canViewCashExpected } from "./common";
+
+// El cierre de una cajera es realmente ciego: cualquier diferencia exige una
+// explicación, sin comunicar si está cerca o lejos del monto esperado. Quien
+// gestiona ventas conserva el umbral configurable para cierres supervisados.
+export function cashCloseRequiresNote(
+  actor: Actor,
+  differences: { cash: unknown; card: unknown; transfer: unknown },
+  differenceLimit: number,
+) {
+  const values = [
+    Math.abs(Number(differences.cash)),
+    Math.abs(Number(differences.card)),
+    Math.abs(Number(differences.transfer)),
+  ];
+  return canViewCashExpected(actor)
+    ? Math.max(...values) > differenceLimit
+    : values.some((value) => value > 0);
 }
 // Recalcula lo esperado de una caja ya cerrada (venta offline sincronizada o
 // transferencia verificada después del cierre) y guarda las diferencias.
@@ -412,9 +432,7 @@ export class CashController {
   @Get()
   @Permit("cash:write")
   async sessions(@CurrentUser() actor: Actor) {
-    const showExpected =
-      can(actor.permissions, "profit:read") ||
-      can(actor.permissions, "sale:manage");
+    const showExpected = canViewCashExpected(actor);
     const sessions = await this.db.cashSession.findMany({
       where: {
         branchId: actor.branchId,
@@ -546,10 +564,11 @@ export class CashController {
       body,
     );
     return this.db.$transaction(async (tx) => {
-      const session = await cashLock(tx, actor, parse(uuid, id));
-      const expected = await cashExpected(tx, session);
-      if (data.type === "out" && data.amount > expected.cash)
-        bad("No hay suficiente efectivo en caja.");
+      const _session = await cashLock(tx, actor, parse(uuid, id));
+      // No comparar el retiro con el esperado: aceptar/rechazar importes
+      // convierte esta ruta en un oráculo que permite calcular el arqueo por
+      // búsqueda. El movimiento registra lo que físicamente entró o salió; la
+      // diferencia se determina una sola vez durante el cierre ciego.
       const row = await tx.cashMovement.create({
         data: { ...data, sessionId: id, userId: actor.id },
       });
@@ -693,11 +712,7 @@ export class CashController {
       const differences = closeDifferences(data, expected);
       const differenceLimit = Number(settings?.cashDifferenceLimit ?? 100);
       if (
-        Math.max(
-          Math.abs(Number(differences.cash)),
-          Math.abs(Number(differences.card)),
-          Math.abs(Number(differences.transfer)),
-        ) > differenceLimit &&
+        cashCloseRequiresNote(actor, differences, differenceLimit) &&
         !input.notes.trim()
       )
         bad(
@@ -746,9 +761,7 @@ export class CashController {
             message: `Diferencias de caja: efectivo RD$ ${row.differenceCash}, tarjeta RD$ ${row.differenceCard}, transferencia RD$ ${row.differenceTransfer}`,
           },
         });
-      const showExpected =
-        can(actor.permissions, "profit:read") ||
-        can(actor.permissions, "sale:manage");
+      const showExpected = canViewCashExpected(actor);
       return showExpected
         ? { ...row, differences }
         : { id: row.id, closedAt: row.closedAt };
@@ -786,14 +799,11 @@ export class CashController {
   @Get(":id/cuadre")
   @Permit("cash:write")
   async cuadre(@Param("id") id: string, @CurrentUser() actor: Actor) {
-    const report = await buildCuadre(
-      this.db,
-      actor,
-      await this.ownSession(actor, id),
-    );
-    const showExpected =
-      can(actor.permissions, "profit:read") ||
-      can(actor.permissions, "sale:manage");
+    const session = await this.ownSession(actor, id);
+    if (!session.closedAt && !canViewCashExpected(actor))
+      bad("Cierra la caja para consultar el cuadre.");
+    const report = await buildCuadre(this.db, actor, session);
+    const showExpected = canViewCashExpected(actor);
     if (showExpected) return report;
     const publicForeign = (currency: any) => {
       const { expected, difference, ...visible } = currency;
@@ -825,6 +835,8 @@ export class CashController {
   ) {
     if (!STORE_REPORTS.includes(name)) bad("Reporte no disponible.");
     const session = await this.ownSession(actor, id);
+    if (!session.closedAt && !canViewCashExpected(actor))
+      bad("Cierra la caja para consultar sus reportes.");
     const report = await storeReport(this.db, actor, name, {
       cashSessionId: session.id,
     });

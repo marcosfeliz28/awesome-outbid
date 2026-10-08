@@ -18,6 +18,11 @@ import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
 import { AlertEngine, AlertsController } from "./alerts";
+import { OfflineSalesController } from "./offline-sales";
+import {
+  AuthenticatedRateLimitGuard,
+  RequestRateLimitService,
+} from "./rate-limit";
 
 @Controller()
 class HealthController {
@@ -53,11 +58,14 @@ export function createAppModule(secret: string) {
       CashController,
       ReportsController,
       AlertsController,
+      OfflineSalesController,
     ],
     providers: [
       Database,
       AlertEngine,
+      RequestRateLimitService,
       { provide: APP_GUARD, useClass: AuthGuard },
+      { provide: APP_GUARD, useClass: AuthenticatedRateLimitGuard },
     ],
   })
   class AppModule {}

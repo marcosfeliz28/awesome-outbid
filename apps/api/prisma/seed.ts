@@ -2,7 +2,12 @@ import { config } from "dotenv";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
-import { permissions, lineTotals, d, money } from "@fitstore/shared";
+import {
+  permissions,
+  lineTotals,
+  d,
+  money,
+} from "@fitstore/shared";
 config({ path: "../../.env" });
 const db = new PrismaClient();
 const id = () => randomUUID();
@@ -480,7 +485,16 @@ async function main() {
           return variant;
         }),
       });
-      await tx.lot.createMany({ data: lots });
+      await tx.lot.createMany({
+        data: lots.map((lot) => ({
+          ...lot,
+          lotNumberNormalized: lot.lotNumber
+            .normalize("NFKC")
+            .trim()
+            .replace(/\s+/g, " ")
+            .toUpperCase(),
+        })),
+      });
       await tx.sale.createMany({ data: saleRows });
       await tx.saleItem.createMany({ data: saleItems });
       await tx.payment.createMany({ data: paymentRows });

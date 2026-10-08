@@ -12,6 +12,7 @@ requireApi("dotenv").config({
   path: fileURLToPath(new URL("../.env", import.meta.url)),
   quiet: true,
 });
+
 const apiDir = fileURLToPath(new URL("../apps/api", import.meta.url));
 // Ejecuta node en apps/api sin bloquear este proceso. Con spawnSync el bucle
 // de eventos se detiene: si pasan más de 5 s, la API cierra las conexiones
@@ -218,9 +219,11 @@ afterAll(async () => {
         await ok(
           "/cash-sessions/" + s.id + "/close",
           {
-            countedCash: Math.max(0, current.expected.cash),
-            countedCard: Math.max(0, current.expected.card),
-            countedTransfer: Math.max(0, current.expected.transfer),
+            // El arqueo es ciego para la cajera; la limpieza tampoco debe
+            // depender de importes que la API oculta correctamente.
+            countedCash: Math.max(0, current.expected?.cash ?? 0),
+            countedCard: Math.max(0, current.expected?.card ?? 0),
+            countedTransfer: Math.max(0, current.expected?.transfer ?? 0),
             notes: "Cierre de pruebas",
           },
           t,
@@ -1046,13 +1049,26 @@ describe("Seguridad, offline y funciones completadas", () => {
       200,
     );
   });
-  it("1: limita ventas detrás del proxy y separa direcciones IP", async () => {
-    const send = (ip: string) =>
+  it("1: limita ventas por sesión aunque cambie la IP y no bloquea otra sesión", async () => {
+    const login = async () => {
+      const response = await fetch(base + "/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "admin@fitstore.demo",
+          password: process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+        }),
+      });
+      return (await response.json()).accessToken as string;
+    };
+    const limitedToken = await login();
+    await enroll(limitedToken, "QA límite sesión A");
+    const send = (ip: string, as = limitedToken) =>
       fetch(base + "/sales", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
+          Authorization: "Bearer " + as,
           "X-Forwarded-For": ip,
         },
         body: "{}",
@@ -1061,7 +1077,10 @@ describe("Seguridad, offline y funciones completadas", () => {
     for (let n = 0; n < 121; n++) results.push((await send(rateIp)).status);
     expect(results.slice(0, 120).every((n) => n === 400)).toBe(true);
     expect(results[120]).toBe(429);
-    expect((await send("198.18.0.10")).status).toBe(400);
+    expect((await send("198.18.0.10")).status).toBe(429);
+    const otherToken = await login();
+    await enroll(otherToken, "QA límite sesión B");
+    expect((await send("198.18.0.10", otherToken)).status).toBe(400);
   });
   it("3 y 9: lote vencido según Santo Domingo no se vende ni se recibe", async () => {
     const p = await ok("/products", {
@@ -3119,7 +3138,10 @@ describe("Ronda 4 · auditoría de ChatGPT y propia", () => {
     });
     const lot = await fixtureDb.lot.findUnique({
       where: {
-        variantId_lotNumber: { variantId: supplementVariant.id, lotNumber },
+        variantId_lotNumberNormalized: {
+          variantId: supplementVariant.id,
+          lotNumberNormalized: lotNumber.toUpperCase(),
+        },
       },
     });
     expect(Number(lot.qty)).toBe(3);
@@ -5990,10 +6012,25 @@ describe("Ronda 9 · revisión · seguridad", () => {
       pin: "246813",
       roleId: roles.find((r: any) => r.name === role).id,
     });
+    const activePassword = "FitStore-R9-Activa-2026!";
+    const changed = await call("/auth/change-password", randomIp(), {
+      login: user.email,
+      currentPassword: password,
+      newPassword: activePassword,
+      confirmPassword: activePassword,
+    });
+    if (changed.status !== 201)
+      throw new Error(
+        "/auth/change-password: " +
+          changed.status +
+          " " +
+          JSON.stringify(changed.body),
+      );
+    user.testPassword = activePassword;
     actors.push(user);
     return user;
   }
-  const login = (user: any, ip: string, pass = password) =>
+  const login = (user: any, ip: string, pass = user.testPassword ?? password) =>
     call("/auth/login", ip, { email: user.email, password: pass });
 
   it("R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo", async () => {
@@ -6086,21 +6123,35 @@ describe("Ronda 9 · revisión · seguridad", () => {
     expect((await login(seller, ip, "FitStore-R9-Nueva!")).status).toBe(201);
   });
 
-  it("R9-seguridad-2: el límite por IP de /auth y /sales no se evita cambiando mayúsculas en la ruta", async () => {
+  it("R9-seguridad-2: los límites por cuenta y sesión no se evitan cambiando mayúsculas o IP", async () => {
     const authIp = randomIp();
+    const limitedUser = await newUser("seller");
     const auth: number[] = [];
     for (let n = 0; n < 60; n++)
-      auth.push((await call("/Auth/login", authIp, {})).status);
+      auth.push(
+        (
+          await call("/Auth/login", authIp, {
+            email: limitedUser.email,
+            password: "contraseña-incorrecta",
+          })
+        ).status,
+      );
     expect(auth.every((s) => s === 400)).toBe(true);
-    expect((await call("/auth/login", authIp, {})).status).toBe(429);
-    expect((await call("/AUTH/login", authIp, {})).status).toBe(429);
+    const invalidLogin = { email: limitedUser.email, password: "incorrecta" };
+    expect((await call("/auth/login", authIp, invalidLogin)).status).toBe(429);
+    expect((await call("/AUTH/login", randomIp(), invalidLogin)).status).toBe(
+      400,
+    );
+    const salesUser = await newUser("admin");
+    const salesToken = (await login(salesUser, randomIp())).body.accessToken;
+    await enroll(salesToken, "QA límite R9");
     const salesIp = randomIp();
     const sales: number[] = [];
     for (let n = 0; n < 120; n++)
-      sales.push((await call("/Sales", salesIp, {}, token)).status);
+      sales.push((await call("/Sales", salesIp, {}, salesToken)).status);
     expect(sales.every((s) => s === 400)).toBe(true);
-    expect((await call("/sales", salesIp, {}, token)).status).toBe(429);
-    expect((await call("/SALES", salesIp, {}, token)).status).toBe(429);
+    expect((await call("/sales", randomIp(), {}, salesToken)).status).toBe(429);
+    expect((await call("/SALES", salesIp, {}, salesToken)).status).toBe(429);
   });
 });
 
@@ -9514,5 +9565,272 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A03 total de la factura conserv
     expect(Number(receipt.total)).toBe(200);
     expect(Number(receipt.invoiceTotal)).toBe(250);
     expect(Number(receipt.invoiceDifference)).toBe(50);
+  });
+});
+
+describe("I1 + K1 · lotes y concurrencia de inventario", () => {
+  let variant: any;
+
+  beforeAll(async () => {
+    const category = (await ok("/categories")).find(
+      (row: any) => !row.requiresLot && !row.requiresExpiry,
+    );
+    const product = await ok("/products", {
+      name: "QA identidad lote " + suffix,
+      sku: "QA-I1-" + suffix,
+      categoryId: category.id,
+      variants: [
+        {
+          sku: "QA-I1V-" + suffix,
+          barcode: "QA-I1B-" + suffix,
+          costAvg: 10,
+          price: 20,
+        },
+      ],
+    });
+    products.push(product);
+    variant = product.variants[0];
+  });
+
+  it("I1: código sin distinguir caso converge, NULL recibe fecha y otro vencimiento se rechaza", async () => {
+    const codes = [" lote   i1 ", "LOTE I1", "Lote I1", "lote i1"];
+    const responses = await Promise.all(
+      codes.map((lotNumber) =>
+        request("/inventory/adjustments", {
+          variantId: variant.id,
+          qty: 1,
+          reason: "QA identidad concurrente",
+          lotNumber,
+        }),
+      ),
+    );
+    expect(responses.map((response) => response.status)).toEqual([
+      201, 201, 201, 201,
+    ]);
+    let lots = await fixtureDb.lot.findMany({
+      where: { variantId: variant.id },
+    });
+    expect(lots).toHaveLength(1);
+    expect(lots[0]).toMatchObject({
+      lotNumber: "LOTE I1",
+      lotNumberNormalized: "LOTE I1",
+      expiryDate: null,
+    });
+    expect(Number(lots[0].qty)).toBe(4);
+
+    await ok("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 1,
+      reason: "QA completa vencimiento",
+      lotNumber: "lote i1",
+      expiryDate: "2030-01-01T04:00:00.000Z",
+    });
+    await ok("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 1,
+      reason: "QA mismo día dominicano",
+      lotNumber: "LOTE   I1",
+      expiryDate: "2030-01-01T12:00:00.000Z",
+    });
+    const rejected = await request("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 1,
+      reason: "QA vencimiento contradictorio",
+      lotNumber: "Lote I1",
+      expiryDate: "2030-01-02T04:00:00.000Z",
+    });
+    expect(rejected.status).toBe(400);
+    expect(rejected.body.message).toMatch(/vencimiento diferente/i);
+    lots = await fixtureDb.lot.findMany({ where: { variantId: variant.id } });
+    expect(lots).toHaveLength(1);
+    expect(lots[0].expiryDate?.toISOString()).toBe("2030-01-01T04:00:00.000Z");
+    expect(Number(lots[0].qty)).toBe(6);
+  });
+
+  it("K1: aplicar el mismo conteo en paralelo no duplica el movimiento", async () => {
+    const product = await ok("/products", {
+      name: "QA conteo K1 " + suffix,
+      sku: "QA-K1-" + suffix,
+      categoryId: clothing.categoryId,
+      variants: [
+        {
+          sku: "QA-K1V-" + suffix,
+          barcode: "QA-K1B-" + suffix,
+          costAvg: 10,
+          price: 20,
+        },
+      ],
+    });
+    products.push(product);
+    const id = product.variants[0].id;
+    const count = await ok("/inventory/counts", {
+      items: [{ variantId: id, counted: 7 }],
+    });
+    const results = await Promise.all([
+      request("/inventory/counts/" + count.id + "/apply", {}),
+      request("/inventory/counts/" + count.id + "/apply", {}),
+    ]);
+    expect(results.map((result) => result.status).sort()).toEqual([201, 400]);
+    expect(
+      await fixtureDb.inventoryMovement.count({
+        where: { refId: count.id, type: "count" },
+      }),
+    ).toBe(1);
+    expect(
+      Number(
+        (await fixtureDb.variant.findUniqueOrThrow({ where: { id } })).stock,
+      ),
+    ).toBe(7);
+  });
+});
+
+describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
+  let variant: any;
+
+  beforeAll(async () => {
+    const category = await ok("/categories", {
+      name: "QA D1 sin promociones " + suffix,
+    });
+    const product = await ok("/products", {
+      name: "QA venta offline heredada " + suffix,
+      sku: "QA-D1-" + suffix,
+      categoryId: category.id,
+      taxRate: 0,
+      variants: [
+        {
+          sku: "QA-D1V-" + suffix,
+          barcode: "QA-D1B-" + suffix,
+          costAvg: 40,
+          price: 100,
+        },
+      ],
+    });
+    products.push(product);
+    variant = product.variants[0];
+    await ok("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 5,
+      reason: "QA stock para compatibilidad offline",
+    });
+  });
+
+  it("D1: sincroniza el descuento heredado, conserva idempotencia y exige motivo a una venta online nueva", async () => {
+    const settings = await ok("/settings");
+    const originalCash = await fixtureDb.cashSession.findUniqueOrThrow({
+      where: { id: session.id },
+      select: { openedAt: true },
+    });
+    const offlineUuid = randomUUID();
+    const legacyReason = "Venta offline heredada (sin motivo registrado)";
+    const legacy = {
+      offlineUuid,
+      capturedAt: "2026-10-08T12:00:00.000Z",
+      customerId: defaultCustomerId,
+      cashSessionId: session.id,
+      items: [{ variantId: variant.id, qty: 1, discountPercent: 10 }],
+      globalDiscount: 0,
+      payments: [{ method: "cash", amount: 90 }],
+      expectedTotal: 90,
+    };
+    try {
+      await fixtureDb.cashSession.update({
+        where: { id: session.id },
+        data: { openedAt: new Date("2026-10-08T11:00:00.000Z") },
+      });
+      await ok(
+        "/settings",
+        { ...settings, allowOfflineSales: true },
+        token,
+        "PUT",
+      );
+
+      const first = await ok("/sales/sync", { sales: [legacy] });
+      expect(first.results[0].status, JSON.stringify(first.results[0])).toBe(
+        "synced",
+      );
+      expect(first.results[0].sale.discountReason).toBe(legacyReason);
+      const saleId = first.results[0].sale.id;
+      const stored = await fixtureDb.sale.findUniqueOrThrow({
+        where: { offlineUuid },
+      });
+      expect(stored.id).toBe(saleId);
+      expect(stored.discountReason).toBe(legacyReason);
+
+      const discountAudit = await fixtureDb.auditLog.findFirstOrThrow({
+        where: {
+          action: "discount_approved",
+          entity: "sale",
+          entityId: saleId,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      expect((discountAudit.after as any)?.reason).toBe(legacyReason);
+
+      const second = await ok("/sales/sync", { sales: [legacy] });
+      expect(second.results[0]).toMatchObject({
+        status: "synced",
+        sale: { id: saleId, discountReason: legacyReason },
+      });
+      expect(await fixtureDb.sale.count({ where: { offlineUuid } })).toBe(1);
+      expect(
+        await fixtureDb.auditLog.count({
+          where: { action: "discount_approved", entityId: saleId },
+        }),
+      ).toBe(1);
+
+      const online = await request("/sales", {
+        ...legacy,
+        offlineUuid: randomUUID(),
+        capturedAt: undefined,
+      });
+      expect(online.status).toBe(400);
+      expect(online.body.message).toMatch(/motivo del descuento/i);
+    } finally {
+      await fixtureDb.cashSession.update({
+        where: { id: session.id },
+        data: { openedAt: originalCash.openedAt },
+      });
+      await ok("/settings", settings, token, "PUT");
+    }
+  });
+
+  it("O1: registra cada resolución autenticada en AuditLog", async () => {
+    for (const resolution of [
+      {
+        offlineUuid: randomUUID(),
+        action: "reprice",
+        previousTotal: 100,
+        currentTotal: 90,
+        reason: "Catálogo vigente confirmado por la cajera",
+      },
+      {
+        offlineUuid: randomUUID(),
+        action: "discard",
+        previousTotal: 125,
+        reason: "Cliente canceló la operación pendiente",
+      },
+    ]) {
+      expect(await ok("/sales/offline-resolution", resolution, token)).toEqual({
+        ok: true,
+      });
+      const logged = await fixtureDb.auditLog.findFirstOrThrow({
+        where: {
+          action:
+            resolution.action === "discard"
+              ? "offline_sale_discarded"
+              : "offline_sale_repriced",
+          entity: "offline_sale",
+          entityId: resolution.offlineUuid,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      expect(logged.userId).toBe(actors[0].id);
+      expect(logged.terminalId).toBe(tokenTerminal.get(token));
+      expect(logged.before).toEqual({ total: resolution.previousTotal });
+      expect(logged.after).toMatchObject({ reason: resolution.reason });
+      if (resolution.currentTotal !== undefined)
+        expect((logged.after as any).total).toBe(resolution.currentTotal);
+      else expect(logged.after).not.toHaveProperty("total");
+    }
   });
 });

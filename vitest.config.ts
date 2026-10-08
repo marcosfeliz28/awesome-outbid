@@ -6,6 +6,7 @@ export default defineConfig({
       "tests/invoice.test.ts",
       "tests/realtime.test.ts",
       "tests/inventario.test.ts",
+      "tests/inventory-resilience.test.ts",
       "tests/portabilidad.test.ts",
       "tests/e2e-higiene.test.ts",
       "tests/offline-policy.test.ts",
@@ -13,6 +14,8 @@ export default defineConfig({
       "tests/auth-username.test.ts",
       "tests/api-monitoring.test.ts",
       "tests/claude-round2.test.ts",
+      "tests/rate-limit-l1.test.ts",
+      "tests/cash-privacy.test.ts",
     ],
   },
 });

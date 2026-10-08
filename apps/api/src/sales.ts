@@ -70,8 +70,133 @@ const paymentSummary = (payment: any) => {
       : 0,
   };
 };
+
+// `/sales` alimenta el historial operativo, no es una representación directa
+// de Prisma. Mantener una lista blanca evita que una columna nueva de costos o
+// un objeto JSON sensible aparezca automáticamente en la respuesta.
+export function saleHistoryDto(sale: any, actor: Actor) {
+  const showProfit = can(actor.permissions, "profit:read");
+  const item = (row: any) => ({
+    id: row.id,
+    variantId: row.variantId,
+    lotId: row.lotId,
+    qty: row.qty,
+    returnedQty: row.returnedQty,
+    unitPrice: row.unitPrice,
+    discount: row.discount,
+    tax: row.tax,
+    lineTotal: row.lineTotal,
+    ...(showProfit ? { unitCost: row.unitCost } : {}),
+    variant: row.variant
+      ? {
+          id: row.variant.id,
+          productId: row.variant.productId,
+          sku: row.variant.sku,
+          barcode: row.variant.barcode,
+          attributes: row.variant.attributes,
+          product: row.variant.product
+            ? { id: row.variant.product.id, name: row.variant.product.name }
+            : null,
+        }
+      : null,
+  });
+  const payment = (row: any) => {
+    const summary = paymentSummary(row);
+    return {
+      id: summary.id,
+      createdAt: summary.createdAt,
+      method: summary.method,
+      amount: summary.amount,
+      tendered: summary.tendered,
+      change: summary.change,
+      bank: summary.bank,
+      reference: summary.reference,
+      cardBrand: summary.cardBrand,
+      cardLast4: summary.cardLast4,
+      approvalCode: summary.approvalCode,
+      cardType: summary.cardType,
+      status: summary.status,
+      entryType: summary.entryType,
+      hasProof: summary.hasProof,
+      proofContentType: summary.proofContentType,
+      proofBytes: summary.proofBytes,
+      ...(showProfit ? { feeAmount: summary.feeAmount } : {}),
+    };
+  };
+  const returned = (row: any) => ({
+    id: row.id,
+    number: row.number,
+    reason: row.reason,
+    total: row.total,
+    taxTotal: row.taxTotal,
+    refundAmount: row.refundAmount,
+    refundMethod: row.refundMethod,
+    createdAt: row.createdAt,
+    ...(showProfit
+      ? {
+          costTotal: row.costTotal,
+          wasteQty: row.wasteQty,
+          wasteCostTotal: row.wasteCostTotal,
+          items: row.items,
+        }
+      : {}),
+  });
+  return {
+    id: sale.id,
+    number: sale.number,
+    status: sale.status,
+    customerId: sale.customerId,
+    sellerId: sale.sellerId,
+    cashSessionId: sale.cashSessionId,
+    subtotal: sale.subtotal,
+    discountTotal: sale.discountTotal,
+    discountReason: sale.discountReason,
+    discountRule: sale.discountRule,
+    discountApprovedBy: sale.discountApprovedBy,
+    discountApprovedName: sale.discountApprovedName,
+    discountApprovedRole: sale.discountApprovedRole,
+    taxTotal: sale.taxTotal,
+    total: sale.total,
+    creditBalance: sale.creditBalance,
+    creditDueDate: sale.creditDueDate,
+    ncf: sale.ncf,
+    ncfType: sale.ncfType,
+    recipientLegalId: sale.recipientLegalId,
+    fiscalStatus: sale.fiscalStatus,
+    notes: sale.notes,
+    voidedReason: sale.voidedReason,
+    voidedBy: sale.voidedBy,
+    createdAt: sale.createdAt,
+    updatedAt: sale.updatedAt,
+    items: (sale.items ?? []).map(item),
+    payments: (sale.payments ?? []).map(payment),
+    returns: (sale.returns ?? []).map(returned),
+    ...(showProfit ? { costTotal: sale.costTotal } : {}),
+  };
+}
 import PDFDocument from "pdfkit";
 import type { Response } from "express";
+
+export function normalizeLegacyOfflineDiscount(
+  input: SaleInput,
+  offline: boolean,
+  requestsDiscount: boolean,
+  cutoff = Date.parse("2026-10-09T04:00:00.000Z"),
+) {
+  const capturedAt = input.capturedAt ? Date.parse(input.capturedAt) : NaN;
+  if (
+    !requestsDiscount ||
+    input.discountReason ||
+    !offline ||
+    !Number.isFinite(capturedAt) ||
+    capturedAt > cutoff
+  )
+    return input;
+  return {
+    ...input,
+    discountReason: "Venta offline heredada (sin motivo registrado)",
+  };
+}
 
 // Una venta pendiente se mantiene como una sola cuenta por cobrar hasta que
 // un administrador confirma todos sus abonos.
@@ -271,12 +396,21 @@ export class SalesController {
       input.items.some(
         (item) => item.discountPercent > 0 || (item.discountAmount ?? 0) > 0,
       );
-    if (requestsDiscount && !input.discountReason)
-      bad("Indica el motivo del descuento.");
     const { managerPin: ignored, ...fingerprint } = input;
     void ignored;
-    const requestHash = createHash("sha256")
+    const originalRequestHash = createHash("sha256")
       .update(JSON.stringify(fingerprint))
+      .digest("hex");
+    const normalizedInput = normalizeLegacyOfflineDiscount(
+      input,
+      offline,
+      requestsDiscount,
+    );
+    const { managerPin: normalizedPin, ...normalizedFingerprint } =
+      normalizedInput;
+    void normalizedPin;
+    const requestHash = createHash("sha256")
+      .update(JSON.stringify(normalizedFingerprint))
       .digest("hex");
     const completed = await this.db.sale.findUnique({
       where: { offlineUuid: input.offlineUuid },
@@ -288,10 +422,19 @@ export class SalesController {
         completed.branchId !== actor.branchId
       )
         denied();
-      if (completed.requestHash && completed.requestHash !== requestHash)
+      // Una venta heredada pudo quedar en IndexedDB antes de que el motivo
+      // fuese obligatorio. Su UUID sigue siendo la autoridad idempotente.
+      if (
+        completed.requestHash &&
+        completed.requestHash !== originalRequestHash &&
+        completed.requestHash !== requestHash
+      )
         bad("El UUID ya corresponde a otra venta.");
       return safe(completed, actor);
     }
+    if (requestsDiscount && !normalizedInput.discountReason)
+      bad("Indica el motivo del descuento.");
+    input = normalizedInput;
     if (offline) {
       const settings = await this.db.settings.findUnique({
         where: { id: actor.branchId },
@@ -953,13 +1096,7 @@ export class SalesController {
       // cada artículo de todas las ventas en una sola respuesta.
       take: filters.q || filters.date ? 500 : 100,
     });
-    return safe(
-      rows.map((sale) => ({
-        ...sale,
-        payments: sale.payments.map(paymentSummary),
-      })),
-      actor,
-    );
+    return rows.map((sale) => saleHistoryDto(sale, actor));
   }
   @Post("sales/:id/void")
   @Permit("*")
@@ -1585,7 +1722,6 @@ export class SalesController {
   // URL en el pago, igual que el logo. La sube quien registró el cobro en su
   // caja o quien gestiona ventas; se puede reemplazar.
   @Post("payments/:id/proof")
-  @Permit("*")
   @UseInterceptors(
     FileInterceptor("file", {
       limits: { fileSize: PROOF_MAX_BYTES + 1, files: 1 },
@@ -1625,7 +1761,6 @@ export class SalesController {
     });
   }
   @Get("payments/:id/proof")
-  @Permit("*")
   async getPaymentProof(
     @Param("id") id: string,
     @CurrentUser() actor: Actor,

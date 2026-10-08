@@ -39,6 +39,12 @@ export type Actor = {
   branchId: string;
 };
 export type ActorRequest = Request & { actor: Actor };
+// Una misma política protege todos los caminos que pueden revelar el arqueo:
+// caja, reportes genéricos y alertas. `reports:read`/`alerts:write` por sí solos
+// no autorizan a conocer los importes esperados ni sus diferencias.
+export const canViewCashExpected = (actor: Actor) =>
+  can(actor.permissions, "profit:read") ||
+  can(actor.permissions, "sale:manage");
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext) =>
     ctx.switchToHttp().getRequest<ActorRequest>().actor,
@@ -237,6 +243,8 @@ export function safe<T>(value: T, actor: Actor): T {
     "unitCost",
     "landedCost",
     "costTotal",
+    "wasteCost",
+    "wasteCostTotal",
     "wholesalePrice",
     "grossProfit",
     "netProfit",

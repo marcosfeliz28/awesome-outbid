@@ -16,6 +16,7 @@ import {
 
 import { verifyAttempt, verifyPinAttempt } from "./security";
 import { isDifferentPassword, strongPasswordSchema } from "./password-policy";
+import { REQUEST_RATE_LIMITS, RequestRateLimitService } from "./rate-limit";
 
 export function normalizeUsername(value: string) {
   return value
@@ -31,6 +32,8 @@ export class AuthController {
   constructor(
     @Inject(Database) private db: Database,
     @Inject(JwtService) private jwt: JwtService,
+    @Inject(RequestRateLimitService)
+    private requestLimits: RequestRateLimitService,
   ) {}
   private actor(user: any): Actor {
     return {
@@ -137,6 +140,11 @@ export class AuthController {
       include: { role: true },
     });
     if (!user) bad("Usuario o contraseña incorrectos.");
+    this.requestLimits.assert(
+      "auth-account",
+      [req.ip ?? "", user.id],
+      REQUEST_RATE_LIMITS.authAccount,
+    );
     const matches =
       user.active && (await compare(data.password, user.passwordHash));
     // Los fallos se cuentan por cuenta y dirección IP, como los PIN por
@@ -201,6 +209,11 @@ export class AuthController {
     });
     if (!user?.active || !user.mustChangePassword)
       bad("No hay un cambio de contraseña pendiente para esta cuenta.");
+    this.requestLimits.assert(
+      "auth-account",
+      [req.ip ?? "", user.id],
+      REQUEST_RATE_LIMITS.authAccount,
+    );
     await verifyAttempt(
       this.db,
       `login:${user.id}:${user.authVersion}:${req.ip ?? ""}`,
@@ -273,6 +286,11 @@ export class AuthController {
       where: { hash: tokenHash },
     });
     if (!saved || saved.expiresAt < new Date()) bad("La sesión ha expirado.");
+    this.requestLimits.assert(
+      "auth-refresh-session",
+      [req.ip ?? "", saved.sessionId ?? saved.id],
+      REQUEST_RATE_LIMITS.refreshSession,
+    );
     // deleteMany hace la rotación de uso único incluso con peticiones concurrentes.
     const consumed = await this.db.refreshToken.deleteMany({
       where: { id: saved.id },

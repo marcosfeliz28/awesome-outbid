@@ -5,11 +5,11 @@ import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import { json as jsonBodyParser } from "express";
 import { createAppModule } from "./app";
 import { validateSecret } from "./security";
 import { ApiExceptionFilter } from "./common";
 import { captureApiException, initializeApiMonitoring } from "./monitoring";
-import { createRequestRateLimiter } from "./rate-limit";
 
 config({ path: resolve(process.cwd(), "../../.env") });
 config();
@@ -20,17 +20,21 @@ async function bootstrap() {
   if (production && !webOrigin)
     throw new Error("WEB_ORIGIN es obligatorio en producción.");
   const secret = validateSecret(process.env.JWT_SECRET, production);
-  const app = await NestFactory.create(createAppModule(secret));
+  // Nest no registra su parser interno: instalamos exactamente uno. Los
+  // limitadores públicos se aplican después de resolver una cuenta real.
+  const app = await NestFactory.create(createAppModule(secret), {
+    bodyParser: false,
+  });
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
   app.setGlobalPrefix("api");
   app.use(helmet());
+  app.use(jsonBodyParser({ limit: "100kb" }));
   app.use(cookieParser());
   app.enableCors({
     origin: webOrigin || "http://localhost:5173",
     credentials: true,
   });
   app.useGlobalFilters(new ApiExceptionFilter());
-  app.use(createRequestRateLimiter());
   if (!production || process.env.ENABLE_SWAGGER === "true") {
     const document = SwaggerModule.createDocument(
       app,

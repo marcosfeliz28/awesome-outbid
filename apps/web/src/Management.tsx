@@ -61,6 +61,11 @@ import {
   type Printing,
 } from "./Tienda";
 import { METHOD_LABEL, printSoon } from "./Prints";
+import {
+  applyPendingSaleReprice,
+  discardPendingSale,
+  isPendingPriceConflict,
+} from "./pendingSales";
 
 type Column = {
   label: string;
@@ -1369,6 +1374,7 @@ export function Cash() {
   const [open, setOpen] = useState(false),
     [movement, setMovement] = useState(false),
     [closing, setClosing] = useState<any>(null),
+    [discarding, setDiscarding] = useState<any>(null),
     [printing, setPrinting] = useState<Printing>(null);
   // Fondo sugerido: lo dejado en el último cierre de esta caja.
   const suggestion = useQuery({
@@ -1383,6 +1389,31 @@ export function Cash() {
     can(user.permissions, "profit:read") ||
     can(user.permissions, "sale:manage");
   const elsewhere = cashOnOtherDevice(active);
+  const repricePending = async (sale: any) => {
+    const [products, promotions, settings] = await Promise.all([
+      loadCatalog(),
+      api<any[]>("/promotions"),
+      api<any>("/settings"),
+    ]);
+    await applyPendingSaleReprice(
+      sale,
+      products,
+      promotions,
+      settings.taxIncluded !== false,
+      {
+        recordResolution: (body) => post("/sales/offline-resolution", body),
+        updateLocal: (id, changes) => localDB.sales.update(id, changes),
+      },
+    );
+    const result = await syncSales();
+    await client.invalidateQueries({ queryKey: ["pending-sales"] });
+    toast(
+      result.synced
+        ? "Precios actualizados y venta sincronizada."
+        : "Precios actualizados. La venta sigue pendiente de revisión.",
+      !result.synced,
+    );
+  };
   return (
     <>
       <Heading
@@ -1514,8 +1545,10 @@ export function Cash() {
               },
               {
                 label: "Acción",
-                render: (s) =>
-                  s.status === "conflict" && (
+                render: (s) => {
+                  if (s.status !== "conflict") return null;
+                  const priceConflict = isPendingPriceConflict(s.message);
+                  return (
                     <div className="pending-sale-actions">
                       {!s.input.customerId && (
                         <select
@@ -1546,7 +1579,19 @@ export function Cash() {
                           ))}
                         </select>
                       )}
-                      {s.input.customerId && (
+                      {priceConflict && (
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            repricePending(s).catch((error: any) =>
+                              toast(error.message, true),
+                            )
+                          }
+                        >
+                          Actualizar precios y reintentar
+                        </Button>
+                      )}
+                      {s.input.customerId && !priceConflict && (
                         <Button
                           variant="secondary"
                           onClick={async () => {
@@ -1563,8 +1608,12 @@ export function Cash() {
                           Reintentar
                         </Button>
                       )}
+                      <Button variant="danger" onClick={() => setDiscarding(s)}>
+                        Descartar
+                      </Button>
                     </div>
-                  ),
+                  );
+                },
               },
             ]}
           />
@@ -1722,6 +1771,23 @@ export function Cash() {
             setClosing(null);
             setPrinting({ kind: "cuadre", data: cuadre });
             printSoon();
+          }}
+        />
+      )}
+      {discarding && (
+        <ConfirmModal
+          title="Descartar venta pendiente"
+          description={`Se eliminará ${discarding.receipt?.number ?? "esta venta"} de este dispositivo. La decisión y el motivo quedarán en la bitácora.`}
+          confirmLabel="Descartar"
+          onClose={() => setDiscarding(null)}
+          onConfirm={async (reason) => {
+            await discardPendingSale(discarding, reason, {
+              recordResolution: (body) =>
+                post("/sales/offline-resolution", body),
+              deleteLocal: (id) => localDB.sales.delete(id),
+            });
+            await client.invalidateQueries({ queryKey: ["pending-sales"] });
+            toast("Venta pendiente descartada.");
           }}
         />
       )}

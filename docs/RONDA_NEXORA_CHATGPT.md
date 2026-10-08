@@ -1,10 +1,14 @@
 # Ronda de correcciones y verificación Nexora
 
 **Fecha de revisión:** 8 de octubre de 2026  
-**Rama y base de trabajo:** `main` con cambios locales de la ronda en progreso, sobre `origin/nexora-cloud`.  
+**Rama y base de trabajo:** `nexora-chatgpt` con cambios locales de la ronda en progreso, sobre `origin/nexora-cloud` (`7b29966`).
 **Alcance:** sólo código local y datos ficticios. No se conectó ni modificó producción, Render, S3 o cuentas de negocio.
 
-## A. Correcciones
+## A. Antecedentes históricos de correcciones
+
+Esta sección conserva evidencia de rondas anteriores. No atribuye al diff actual
+cambios en `deploy/render`, `render.yaml`, el empaquetador o las rutas de
+coordinación que ya formaban parte de la base recibida.
 
 ### A1. Forzar la rotación de contraseñas temporales
 
@@ -26,7 +30,7 @@
 
 Pruebas: `tests/auth-username.test.ts` cubre claves cortas/débiles, longitud,
 política, endpoint, migración, bloqueo del guard y pantalla. Resultado:
-**4 pruebas pasan**. Antes, en el commit base, una comprobación de sus fuentes
+**5 pruebas pasan**. Antes, en el commit base, una comprobación de sus fuentes
 mostró: `FALLO ANTES A1: User.mustChangePassword y POST /auth/change-password no existen.`
 
 La migración y la marca no se han aplicado a Render. Para afectar cuentas ya
@@ -98,7 +102,7 @@ contraseña temporal, además de validar su fortaleza y confirmación. Se añade
 una regresión unitaria para igualdad/desigualdad y para asegurar que el endpoint
 usa esa validación. La prueba nueva falló antes porque la función de validación
 y la regla no existían; ahora la regresión pasa. Resultado del conjunto:
-`pnpm check` — 174 pruebas pasan y 1 queda omitida; typecheck, lint y build
+`pnpm check` — 203 pruebas pasan y 1 queda omitida; typecheck, lint y build
 también pasan.
 
 ### A6. CSP de Sentry por host exacto
@@ -139,7 +143,11 @@ Test Files  3 passed (3)
 Tests       46 passed (46)
 ```
 
-## B. Paquete de auditoría y límites de validación
+## B. Antecedentes históricos del paquete y límites de validación
+
+Los datos de esta sección describen el paquete y las validaciones acumuladas de
+rondas anteriores. El alcance y la evidencia específicos del diff congelado se
+documentan en la sección C.
 
 ### B1. Ambiente separado
 
@@ -160,12 +168,12 @@ mostraron credenciales de auditoría.
 
 El SHA solicitado `9f0a67bc3d50dde10d358a00d8c6d8e464f38854` sí existe y forma
 parte de la historia de `origin/nexora-cloud`; no es el HEAD actual. La rama
-Nexora comprobada está en `c28cb8c`. La otra punta comprobada es
+Nexora comprobada está en `7b29966`. La otra punta comprobada es
 `origin/claude/facturacion-app-architecture-a3bz90` en
 `5073599c8aface24cb2f6f635b0f87abe9afbcd9`. Los dos historiales no tienen
 ancestro común en las referencias locales; por eso no se presenta una falsa
 comparación de commits “ahead/behind”. La comparación de árboles con Git
-detectó **446 renombres/movimientos**, **60 archivos nuevos**, **68 retirados y
+detectó **444 renombres/movimientos**, **62 archivos nuevos**, **85 retirados y
 2 modificados**. La mayoría de los movimientos son el código que el otro árbol
 vuelve a agrupar bajo `fitstore-pos/`; además allí aparecen archivos de
 comunidad/website (por ejemplo `.github/ISSUE_TEMPLATE/`, `best-practices/`,
@@ -224,19 +232,22 @@ de esta máquina; el dato de ProductName no dice Windows 11.
 ### B4. Validación final de esta entrega
 
 - `pnpm typecheck`, `pnpm lint`, `pnpm test` y `pnpm build`: pasan.
-- Pruebas unitarias/locales: **174 pasan y 1 queda omitida**.
+- Pruebas unitarias/locales: **203 pasan y 1 queda omitida**.
 - `pnpm audit --prod --json`: **0 vulnerabilidades**.
-- Las 21 migraciones, incluida la versión final de `discountApprovedBy`, se
+- Las 22 migraciones, incluida la versión final de `discountApprovedBy` y la
+  identidad canónica de lotes, se
   aplicaron correctamente en una base PostgreSQL 18 nueva, descartable y
   aislada. La base temporal se detuvo y eliminó. No se tocó la base instalada
   ni Render.
 - La regresión focal A06 contra esa base pasó.
 - La corrida integral de integración no constituye todavía un resultado de
-  aceptación: arrojó 75 pases, 72 fallos y 6 omisiones porque su preparación
-  compartida no completa la nueva rotación obligatoria de contraseña y luego
-  propaga fallos de usuario, equipo y sesión. Debe repararse esa preparación y
-  repetirse toda la integración antes de publicar en producción. No se oculta ni
-  se presenta esa corrida como aprobada.
+  aceptación: arrojó **74 pases y 83 fallos de 157 pruebas en 107.30 s**. Ya no
+  hubo contaminación por hot reload ni `ECONNREFUSED`; los fallos restantes se
+  concentran en fixtures antiguos de contraseña temporal y expectativas
+  históricas sobre cliente obligatorio, arqueo ciego y orden de validaciones.
+  La focal aislada `R9-seguridad-2 | D1 + O1` sí terminó con **3 pases y 154
+  omisiones**. La integración completa debe sanearse y repetirse antes de
+  publicar; no se presenta como aprobada.
 
 ### B4. Accesos y variables
 
@@ -268,12 +279,12 @@ Variables por **nombre únicamente** declaradas/consumidas para producción:
 
 ```text
 pnpm exec vitest run tests/auth-username.test.ts tests/cloud-deploy.test.ts
-Test Files  3 passed (3)
-Tests       46 passed (46)
+Test Files  2 passed (2)
+Tests       19 passed (19)
 
 pnpm check
 Typecheck y ESLint: pasan
-Vitest: 174 pasan, 1 omitida (175)
+Vitest: 203 pasan, 1 omitida (204)
 Build web/PWA y API: pasan
 
 pnpm exec vitest run tests/auth-username.test.ts tests/cloud-deploy.test.ts tests/portabilidad.test.ts
@@ -301,5 +312,183 @@ Pruebas restantes antes de aceptar para producción: Docker/Compose del sandbox,
 build Nginx y prueba de cámara/offline, restauración real sobre base descartable
 en Render, Smoke del instalador sobre Windows 11 limpio, y rotación de cualquier
 credencial temporal compartida por medios externos. El build de Vite conserva
-una advertencia de chunk JavaScript de aproximadamente 982 kB. No se subió,
+una advertencia de chunk JavaScript de 988.56 kB (313.42 kB gzip). No se subió,
 desplegó ni envió nada a Sentry.
+
+## C. Lote actual: L1, C2, F1, F2, I1, K1, D1 y O1; N2 sólo propuesta
+
+Esta sección registra únicamente resultados observados en la rama
+`nexora-chatgpt`. No reemplaza los resultados históricos de las secciones
+anteriores ni declara que la suite integral o el despliegue de producción estén
+aprobados. No se tocó Render ni ninguna base de producción.
+
+### C1. Estado resumido
+
+| Hallazgo | Estado de esta ronda                 | Evidencia disponible                                                                                                                            | Límite de la evidencia                                                                                           |
+| -------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| L1       | Implementado y verificado            | Las pruebas cubren separación por cuenta, cardinalidad hostil, límites por sesión y rotación de IP sin reiniciar el contador.                   | La integración completa se ejecutó, pero aún no es una aceptación verde; véase B4.                               |
+| C2       | Implementado y verificado            | Se verifican la denegación de reportes financieros, la restricción a reportes propios cerrados y la redacción de montos en alertas.             | La integración completa se ejecutó, pero aún no es una aceptación verde; véase B4.                               |
+| F1       | Implementado y verificado            | POST y GET de evidencia aplican propietario de caja o permiso `sale:manage`.                                                                    | La integración completa se ejecutó, pero aún no es una aceptación verde; véase B4.                               |
+| F2       | Implementado y verificado            | El historial de cajera usa una lista blanca y no expone costos ni datos internos de merma.                                                      | La integración completa se ejecutó, pero aún no es una aceptación verde; véase B4.                               |
+| I1       | Implementado y verificado focalmente | Dos pruebas de integración focales pasan; seis pruebas unitarias de normalización y reintento pasan; migración ensayada sobre base descartable. | No sustituye una prueba prolongada de carga y concurrencia productiva.                                           |
+| K1       | Implementado y verificado focalmente | Reintentos acotados de conflictos de serialización ejercitados en pruebas unitarias e integración.                                              | No sustituye una prueba de carga prolongada.                                                                     |
+| D1       | Implementado y verificado focalmente | La corrida aislada de R9-seguridad-2, D1 y O1 terminó con 3 pruebas aprobadas y 154 omitidas.                                                   | No se atribuye aquí un resultado de suite completa.                                                              |
+| O1       | Implementado y verificado focalmente | La focal aislada pasó y `offline-policy` aporta 23 pruebas sobre resolución y reprecificación contable.                                         | No se atribuye aquí un resultado de suite completa.                                                              |
+| N2       | Propuesta, no implementada           | Se documentó el enfoque, pero no se modificó Nginx.                                                                                             | `deploy/render` estaba reservado por otro frente de trabajo; no existe prueba ni despliegue de N2 en esta ronda. |
+
+### C2. I1 — identidad canónica de lote
+
+La identidad comercial quedó definida por variante y código de lote
+normalizado; el vencimiento no crea una identidad distinta. El código se
+normaliza con compatibilidad Unicode, espacios exteriores/interiores
+normalizados y comparación sin distinguir mayúsculas de minúsculas.
+
+Reglas cubiertas:
+
+- un segundo vencimiento comercial distinto para la misma identidad devuelve
+  `400`;
+- un lote existente sin vencimiento puede completar su fecha en una recepción
+  posterior;
+- variantes del mismo código por mayúsculas o espacios convergen en el mismo
+  lote;
+- la comparación de fechas conserva el día comercial dominicano.
+
+Evidencia antes de la corrección, en un worktree temporal basado en
+`origin/nexora-cloud` en `7b299668771065bf7b8e63e47bb9c98cc9ca24e4`, con
+solamente las pruebas nuevas aplicadas:
+
+```text
+I1: estados observados [201, 500, 201, 500]; se esperaban recepciones válidas
+    y el rechazo comercial explícito correspondiente.
+K1: estados observados [201, 500]; se esperaba [201, 400].
+Resultado focal: 2 pruebas fallaron.
+```
+
+El `afterAll` antiguo también falló al consultar `current.expected.cash`; ese
+fallo pertenecía a una limpieza preexistente y no se contabilizó como evidencia
+de I1 o K1. El worktree y la base temporal se eliminaron después de capturar la
+salida.
+
+Evidencia después de la corrección:
+
+```text
+pnpm exec vitest run --config vitest.integration.config.ts -t "I1 \+ K1"
+Test Files  1 passed
+Tests       2 passed | 155 skipped
+
+tests/inventory-resilience.test.ts
+Tests       6 passed
+
+Prisma validate: pasa
+Typecheck API: pasa
+ESLint: pasa
+git diff --check: pasa
+```
+
+La prueba manual de migración en una base descartable confirmó que un registro
+sin fecha y otro con una única fecha se fusionan conservando la fecha, cantidad
+total `5` y costo ponderado `16`. También confirmó que se reescriben tanto
+`InventoryMovement.lotId` como los `lotId` contenidos en el JSONB
+`SaleItem.stockAllocations` antes de eliminar duplicados. Dos fechas comerciales
+no nulas distintas abortaron con el mensaje esperado:
+
+```text
+No se pueden fusionar lotes con el mismo código y vencimientos distintos
+```
+
+La transacción se revirtió por completo en ese caso: no quedó la columna nueva
+y se conservó el índice anterior. Las 22 migraciones y el seed también se
+aplicaron sobre una base nueva y descartable.
+
+### C3. K1 — reintentos acotados de inventario
+
+Los ajustes, conteos y recepciones usan un helper común con un máximo de cinco
+intentos y espera aleatoria inferior a 150 ms para conflictos de serialización
+identificados como SQLSTATE `40001` o errores Prisma equivalentes `P2010` y
+`P2034`. Los errores ajenos a concurrencia no se reintentan. La evidencia focal
+es la misma corrida de I1 + K1 y las seis pruebas unitarias descritas en C2.
+
+### C4. L1 — límites de autenticación, PIN y ventas
+
+Las pruebas focales existentes verifican:
+
+- instalación única del parser JSON;
+- que 61 intentos sobre una cuenta no bloqueen otra;
+- que 10,001 identificadores o usuarios inexistentes no creen cubos sin límite;
+- separación de los límites de PIN y ventas entre sesiones autenticadas.
+
+Una revisión adversarial intermedia encontró que PIN y ventas combinaban sesión
+e IP, por lo que rotar la IP podía reiniciar el contador. La identidad se
+corrigió para depender de la sesión validada, y la prueba final confirmó que la
+misma sesión continúa limitada aunque cambie la IP, sin afectar a otra sesión.
+
+La salida final congelada del frente fue:
+
+```text
+pnpm check
+Exit code   0
+Vitest      14 archivos, 203 passed, 1 skipped
+Typecheck   pasa
+ESLint      pasa
+Build web   pasa
+Build API   pasa
+
+Pruebas focales L1/C2/I1-K1/offline/Claude 2
+Tests       46 passed (46)
+```
+
+### C5. C2, F1 y F2 — privacidad y autorización
+
+C2 cubre tres rutas de fuga indirecta del arqueo: reporte financiero genérico,
+consulta de reportes de caja y alertas por diferencia. Para una cajera, la
+respuesta queda restringida a sus reportes cerrados permitidos y las alertas no
+revelan el monto de la diferencia.
+
+F1 exige la misma regla de acceso para subir y descargar evidencia de pago: ser
+propietario de la caja correspondiente o tener `sale:manage`. F2 construye el
+historial de venta para cajera mediante campos permitidos en vez de serializar
+el registro interno completo, evitando costos y datos de merma.
+
+Estas validaciones forman parte de las 46 pruebas focales aprobadas descritas en
+C4. La revisión adversarial final no encontró regresiones en F1 o F2. Para C2,
+confirmó además que un rol sin `profit:read` o `sale:manage` no recibe montos
+`expected` ni `difference` en reportes o alertas.
+
+### C6. D1 y O1 — compatibilidad y resolución offline
+
+La prueba focal aislada conjunta con la regresión de seguridad terminó así:
+
+```text
+R9-seguridad-2 | D1 + O1
+Tests     3 passed | 154 skipped (157)
+Duration  22.05 s
+```
+
+D1 conserva la compatibilidad de una venta offline heredada mediante un motivo
+de descuento controlado y mantiene la resincronización idempotente, sin relajar
+la obligación de motivo para ventas online nuevas. O1 registra de forma
+auditable la decisión de reprecificar o descartar. Durante esta validación se
+reprodujo un error 500 y se corrigió la inyección de `Database` en
+`offline-sales.ts`.
+
+La revisión adversarial final corrigió además la contabilidad de la
+reprecificación: no se inventa ni se retira efectivo ya recibido. Una subida de
+precio sólo puede cubrirse con crédito o contraentrega ya existentes; de lo
+contrario exige volver a cobrar. Una bajada conserva el efectivo recibido y
+calcula el cambio correspondiente. `tests/offline-policy.test.ts` contiene
+**23 pruebas** para estas reglas y la resolución de la cola.
+
+### C7. N2 — resolución DNS del upstream Nginx
+
+N2 quedó únicamente como propuesta debido a la reserva de archivos de
+`deploy/render` por otro frente de trabajo. No se modificó la configuración de
+Nginx, no se construyó su imagen y no se ejecutó una prueba de cambio de IP del
+upstream. Por tanto, N2 no debe figurar como implementado ni validado en esta
+ronda.
+
+### C8. Seguridad y alcance del lote
+
+Este apartado no contiene contraseñas, claves, DSN, tokens, encabezados de
+autorización ni valores de variables de entorno. No se ejecutaron migraciones
+contra producción, no se alteró Render y no se modificaron las rutas reservadas
+`docs/coordinacion` o `deploy/render`.

@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { createRequestRateLimiter } from "../apps/api/src/rate-limit";
+import { ValidatedRateLimitStore } from "../apps/api/src/rate-limit";
+import {
+  CashController,
+  canViewCashExpected,
+  cashCloseRequiresNote,
+} from "../apps/api/src/cash";
+import { SalesController, saleHistoryDto } from "../apps/api/src/sales";
 import { paymentReceiptLine } from "../packages/shared/src";
 
 const source = (path: string) => readFileSync(path, "utf8");
@@ -9,59 +15,22 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
   it("N1: separa el límite compartido del límite por cuenta e IP", () => {
     const main = source("apps/api/src/main.ts");
     const limiter = source("apps/api/src/rate-limit.ts");
-    expect(main).toContain("createRequestRateLimiter");
+    expect(main).not.toContain("createRequestRateLimiter");
     expect(limiter).not.toContain("auth-shared:");
     expect(limiter).not.toContain("sales-shared:");
-    expect(limiter).toContain("loginIdentifier");
+    expect(limiter).toContain("actor?.sessionId");
 
-    const middleware = createRequestRateLimiter();
-    const call = ({
-      path = "/api/auth/login",
-      login,
-      authorization,
-    }: {
-      path?: string;
-      login?: string;
-      authorization?: string;
-    }) => {
-      let status = 200;
-      let continued = false;
-      middleware(
-        {
-          method: "POST",
-          path,
-          ip: "10.0.0.1",
-          body: login ? { login } : {},
-          headers: authorization ? { authorization } : {},
-        },
-        {
-          status(code: number) {
-            status = code;
-            return this;
-          },
-          json() {},
-        },
-        () => {
-          continued = true;
-        },
+    const store = new ValidatedRateLimitStore();
+    for (let attempt = 0; attempt < 60; attempt++)
+      expect(store.exceeds("auth-account", ["10.0.0.1", "cuenta-a"], 60)).toBe(
+        false,
       );
-      return { status, continued };
-    };
-    for (let attempt = 0; attempt < 601; attempt++)
-      call({ login: "nombre-aleatorio-" + attempt });
-    expect(call({ login: "cuenta-legitima" })).toEqual({
-      status: 200,
-      continued: true,
-    });
-
-    for (let attempt = 0; attempt < 601; attempt++)
-      call({ path: "/api/sales" });
-    expect(
-      call({
-        path: "/api/sales",
-        authorization: "Bearer sesion-valida-de-cajera",
-      }),
-    ).toEqual({ status: 200, continued: true });
+    expect(store.exceeds("auth-account", ["10.0.0.1", "cuenta-a"], 60)).toBe(
+      true,
+    );
+    expect(store.exceeds("auth-account", ["10.0.0.1", "cuenta-b"], 60)).toBe(
+      false,
+    );
   });
 
   it("A07: oculta esperado y diferencias, y exige confirmar el conteo ciego", () => {
@@ -119,5 +88,192 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
     ).toBe("Efectivo: Recibido RD$ 2000 · Aplicado RD$ 1750 · Cambio RD$ 250");
     expect(management).toContain("Recibido:");
     expect(management).toContain("Cambio:");
+  });
+
+  it("C2: la cajera no obtiene el arqueo abierto ni usa retiros o el umbral como oráculo", async () => {
+    const seller = {
+      role: "seller",
+      permissions: ["cash:write"],
+    } as any;
+    const manager = {
+      role: "manager",
+      permissions: ["cash:write", "sale:manage"],
+    } as any;
+    expect(canViewCashExpected(seller)).toBe(false);
+    expect(canViewCashExpected(manager)).toBe(true);
+    expect(
+      cashCloseRequiresNote(seller, { cash: 0.01, card: 0, transfer: 0 }, 100),
+    ).toBe(true);
+    expect(
+      cashCloseRequiresNote(manager, { cash: 0.01, card: 0, transfer: 0 }, 100),
+    ).toBe(false);
+
+    const cash = source("apps/api/src/cash.ts");
+    expect(cash).toContain("Cierra la caja para consultar el cuadre.");
+    expect(cash).toContain("Cierra la caja para consultar sus reportes.");
+    expect(cash).not.toContain("data.amount > expected.cash");
+    expect(cash).not.toContain('bad("No hay suficiente efectivo en caja.")');
+
+    const controller = new CashController({
+      cashSession: {
+        findFirstOrThrow: async () => ({
+          id: "3e6b82b5-bb56-45ca-9f5a-d19f4955fc84",
+          branchId: "main",
+          userId: "seller-1",
+          closedAt: null,
+        }),
+      },
+    } as any);
+    const actor = {
+      id: "seller-1",
+      branchId: "main",
+      role: "seller",
+      permissions: ["cash:write"],
+    } as any;
+    await expect(
+      controller.cuadre("3e6b82b5-bb56-45ca-9f5a-d19f4955fc84", actor),
+    ).rejects.toMatchObject({ status: 400 });
+    await expect(
+      controller.sessionReport(
+        "3e6b82b5-bb56-45ca-9f5a-d19f4955fc84",
+        "venta-por-forma-pago",
+        {},
+        actor,
+        {} as any,
+      ),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("F1: POST y GET de evidencia comparten propietario de caja o sale:manage", async () => {
+    const payment = {
+      id: "b05b9bc2-7bd3-4c22-8c88-2e598bb42869",
+      saleId: "2d57851f-646e-40de-a571-ab4576651c6f",
+      cashSessionId: "owner-session",
+      entryType: "installment",
+      proofUrl: "data:image/png;base64,iVBORw0KGgo=",
+    };
+    const db = {
+      payment: { findFirstOrThrow: async () => payment },
+      cashSession: {
+        findFirst: async ({ where }: any) =>
+          where.userId === "owner" ? { id: payment.cashSessionId } : null,
+      },
+    };
+    const controller = new SalesController(db as any);
+    const authorize = (actor: any) =>
+      (controller as any).proofPayment(actor, payment.id);
+    await expect(
+      authorize({
+        id: "owner",
+        branchId: "main",
+        permissions: ["sale:write"],
+      }),
+    ).resolves.toBe(payment);
+    await expect(
+      authorize({
+        id: "manager",
+        branchId: "main",
+        permissions: ["sale:manage"],
+      }),
+    ).resolves.toBe(payment);
+    await expect(
+      authorize({
+        id: "other",
+        branchId: "main",
+        permissions: ["sale:write"],
+      }),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(
+      Reflect.getMetadata("permission", SalesController.prototype.paymentProof),
+    ).toBeUndefined();
+    expect(
+      Reflect.getMetadata(
+        "permission",
+        SalesController.prototype.getPaymentProof,
+      ),
+    ).toBeUndefined();
+  });
+
+  it("F2: el historial usa lista blanca y no entrega costos de merma a la cajera", () => {
+    const sale = {
+      id: "sale-1",
+      number: "N-1",
+      status: "completed",
+      total: 100,
+      costTotal: 40,
+      requestHash: "no-debe-salir",
+      items: [
+        {
+          id: "item-1",
+          variantId: "variant-1",
+          qty: 1,
+          returnedQty: 1,
+          unitPrice: 100,
+          unitCost: 40,
+          discount: 0,
+          tax: 0,
+          lineTotal: 100,
+          stockAllocations: [{ cost: 40 }],
+          variant: {
+            id: "variant-1",
+            productId: "product-1",
+            sku: "SKU-1",
+            attributes: {},
+            costAvg: 40,
+            product: { id: "product-1", name: "Producto", secret: "x" },
+          },
+        },
+      ],
+      payments: [
+        {
+          id: "payment-1",
+          method: "cash",
+          amount: 100,
+          tendered: 100,
+          change: 0,
+          entryType: "sale",
+          status: "ok",
+          feeAmount: 9,
+          proofUrl: null,
+        },
+      ],
+      returns: [
+        {
+          id: "return-1",
+          number: "NC-1",
+          reason: "Dañado",
+          total: 100,
+          taxTotal: 0,
+          costTotal: 0,
+          wasteQty: 1,
+          wasteCostTotal: 40,
+          refundAmount: 100,
+          refundMethod: "cash",
+          items: [{ wasteCost: 40 }],
+        },
+      ],
+    };
+    const seller = saleHistoryDto(sale, {
+      role: "seller",
+      permissions: ["sale:write"],
+    } as any) as any;
+    expect(seller.number).toBe("N-1");
+    expect(seller.items[0].variant.product.name).toBe("Producto");
+    expect(seller).not.toHaveProperty("requestHash");
+    expect(seller).not.toHaveProperty("costTotal");
+    expect(seller.items[0]).not.toHaveProperty("unitCost");
+    expect(seller.items[0]).not.toHaveProperty("stockAllocations");
+    expect(seller.items[0].variant).not.toHaveProperty("costAvg");
+    expect(seller.payments[0]).not.toHaveProperty("feeAmount");
+    expect(seller.returns[0]).not.toHaveProperty("costTotal");
+    expect(seller.returns[0]).not.toHaveProperty("wasteCostTotal");
+    expect(seller.returns[0]).not.toHaveProperty("items");
+
+    const manager = saleHistoryDto(sale, {
+      role: "manager",
+      permissions: ["profit:read"],
+    } as any) as any;
+    expect(manager.costTotal).toBe(40);
+    expect(manager.returns[0].wasteCostTotal).toBe(40);
   });
 });

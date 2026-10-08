@@ -29,6 +29,7 @@ import {
   uuid,
   safe,
   denied,
+  canViewCashExpected,
 } from "./common";
 
 export function dateRange(query: Record<string, string>) {
@@ -285,6 +286,7 @@ export class ReportsController {
       (actor.role === "seller" || !can(actor.permissions, "profit:read"))
     )
       denied();
+    if (name === "cash" && !canViewCashExpected(actor)) denied();
     if (STORE_REPORTS.includes(name))
       return sendStoreReport(
         res,
@@ -809,6 +811,14 @@ export async function storeReport(
         },
       })
     : null;
+  if (!canViewCashExpected(actor)) {
+    // Un reporte por fecha o por otra caja permite reconstruir el arqueo de
+    // una jornada abierta. Sin privilegio financiero sólo se admite la caja
+    // propia y después de cerrarla.
+    if (!session || session.userId !== actor.id) denied();
+    if (!session.closedAt)
+      bad("Cierra la caja para consultar sus reportes.");
+  }
   const range =
     session && !query.from && !query.to
       ? null
