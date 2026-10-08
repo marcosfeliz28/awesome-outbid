@@ -21,9 +21,3 @@ Sentry.init({
     return event;
   },
 });
-
-// Activador temporal para verificar la conexión con Sentry en producción.
-const searchParams = new URLSearchParams(window.location.search);
-if (searchParams.get("sentry-test") === "1") {
-  Sentry.captureException(new Error("Nexora Sentry verification"));
-}
