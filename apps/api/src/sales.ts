@@ -904,7 +904,6 @@ export class SalesController {
     );
   }
   @Post("sales/:id/void")
-  @RequireTerminal()
   @Permit("*")
   async voidSale(
     @Param("id") id: string,
