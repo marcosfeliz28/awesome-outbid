@@ -885,6 +885,60 @@ describe("Regresiones de Claude", () => {
       }),
     ).toBe(1);
   });
+  it("aperturas simultáneas en el mismo equipo devuelven un conflicto claro", async () => {
+    const sellerRole = (await ok("/roles")).find(
+      (role: any) => role.name === "seller",
+    );
+    const temporaryUsers = await Promise.all(
+      ["A", "B"].map(async (suffixLetter) => {
+        const user = await ok("/users", {
+          name: `QA caja simultánea ${suffixLetter} ${suffix}`,
+          email: `qa-cash-race-${suffixLetter}-${suffix}@example.test`,
+          password: "FitStore-QA-2026!",
+          pin: "876543",
+          roleId: sellerRole.id,
+        });
+        actors.push(user);
+        const auth = await ok(
+          "/auth/login",
+          { email: user.email, password: "FitStore-QA-2026!" },
+          "",
+        );
+        return { user, token: auth.accessToken };
+      }),
+    );
+    const registerId = randomUUID();
+    await Promise.all(
+      temporaryUsers.map(({ token: userToken }) =>
+        registerTerminal(userToken, registerId, "QA apertura simultánea"),
+      ),
+    );
+
+    const results = await Promise.all(
+      temporaryUsers.map(({ token: userToken }, index) =>
+        request(
+          "/cash-sessions/open",
+          { openingAmount: 100 + index },
+          userToken,
+        ),
+      ),
+    );
+    const created = results.filter((result) => result.status === 201);
+    const rejected = results.filter((result) => result.status >= 400);
+    expect(created).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0].status).toBe(409);
+    expect(rejected[0].body.message).toContain(
+      "Este equipo ya tiene otra caja abierta.",
+    );
+    expect(JSON.stringify(rejected[0].body)).not.toMatch(/Prisma|P2002/i);
+    await ok(
+      "/cash-sessions/" + created[0].body.id + "/close",
+      { countedCash: Number(created[0].body.openingAmount) },
+      temporaryUsers.find((entry) => entry.user.id === created[0].body.userId)!
+        .token,
+    );
+  });
   it("reintentar abrir la caja devuelve la sesión existente", async () => {
     const repeated = await ok(
       "/cash-sessions/open",

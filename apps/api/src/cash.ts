@@ -33,6 +33,7 @@ import {
   reason,
   audit,
   bad,
+  conflict,
   denied,
 } from "./common";
 import { cashLock, terminalName } from "./sales";
@@ -438,13 +439,44 @@ export class CashController {
       body,
     );
     if (actor.terminalId) data.registerId = actor.terminalId;
-    return this.db.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${actor.branchId + ":cash:" + actor.id}))::text AS locked`;
-      // Repetir "Abrir caja" (doble clic, respuesta perdida o una pantalla
-      // desactualizada) no debe crear otra caja ni dejar al usuario bloqueado.
-      // Si la persona ya tiene una abierta, devolvemos esa misma sesión; la
-      // interfaz indicará si pertenece a otro equipo y permitirá trasladarla.
-      const own = await tx.cashSession.findFirst({
+    try {
+      return await this.db.$transaction(async (tx) => {
+        // Una apertura es poco frecuente. Serializar las aperturas de la sucursal
+        // evita que dos usuarios distintos compitan por el mismo terminal y que
+        // el índice único parcial termine mostrando un error Prisma al cajero.
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${actor.branchId + ":cash-open"}))::text AS locked`;
+        // Repetir "Abrir caja" (doble clic, respuesta perdida o una pantalla
+        // desactualizada) no debe crear otra caja ni dejar al usuario bloqueado.
+        // Si la persona ya tiene una abierta, devolvemos esa misma sesión; la
+        // interfaz indicará si pertenece a otro equipo y permitirá trasladarla.
+        const own = await tx.cashSession.findFirst({
+          where: {
+            branchId: actor.branchId,
+            closedAt: null,
+            userId: actor.id,
+          },
+        });
+        if (own) return own;
+        const busy = await tx.cashSession.findFirst({
+          where: {
+            branchId: actor.branchId,
+            closedAt: null,
+            registerId: data.registerId,
+          },
+        });
+        if (busy) conflict("Este equipo ya tiene otra caja abierta.");
+        const row = await tx.cashSession.create({
+          data: { ...data, userId: actor.id, branchId: actor.branchId },
+        });
+        await audit(tx, actor, "open", "cash", row.id, undefined, row);
+        return row;
+      });
+    } catch (error: any) {
+      // Durante un despliegue gradual puede responder otra instancia que aún
+      // no usa el advisory lock. Recuperar el conflicto de los índices únicos
+      // parciales y devolver la sesión del usuario o un mensaje accionable.
+      if (error?.code !== "P2002") throw error;
+      const own = await this.db.cashSession.findFirst({
         where: {
           branchId: actor.branchId,
           closedAt: null,
@@ -452,20 +484,16 @@ export class CashController {
         },
       });
       if (own) return own;
-      const busy = await tx.cashSession.findFirst({
+      const busy = await this.db.cashSession.findFirst({
         where: {
           branchId: actor.branchId,
           closedAt: null,
           registerId: data.registerId,
         },
       });
-      if (busy) bad("Este equipo ya tiene otra caja abierta.");
-      const row = await tx.cashSession.create({
-        data: { ...data, userId: actor.id, branchId: actor.branchId },
-      });
-      await audit(tx, actor, "open", "cash", row.id, undefined, row);
-      return row;
-    });
+      if (busy) conflict("Este equipo ya tiene otra caja abierta.");
+      throw error;
+    }
   }
   @Post(":id/movements")
   @RequireTerminal()
