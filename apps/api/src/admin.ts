@@ -43,7 +43,6 @@ const customerSchema = z.object({
   phone: z.string().max(30).optional(),
   email: z.string().email().or(z.literal("")).optional(),
   legalId: z.string().max(30).optional(),
-  birthday: z.string().datetime().optional(),
   notes: z.string().max(1000).default(""),
 });
 const anonymizeCustomerSchema = z.object({
@@ -156,7 +155,6 @@ export class AdminController {
     const row = await this.db.customer.create({
       data: {
         ...data,
-        birthday: data.birthday ? new Date(data.birthday) : null,
         createdBy: actor.id,
         branchId: actor.branchId,
       },
@@ -184,7 +182,6 @@ export class AdminController {
       where: { id },
       data: {
         ...data,
-        ...(data.birthday ? { birthday: new Date(data.birthday) } : {}),
       },
     });
     const changedFields = Object.keys(data).filter(
@@ -260,7 +257,6 @@ export class AdminController {
           phone: null,
           email: null,
           legalId: null,
-          birthday: null,
           notes: "",
           creditLimit: 0,
           active: false,

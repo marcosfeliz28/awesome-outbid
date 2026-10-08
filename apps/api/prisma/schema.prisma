@@ -185,7 +185,6 @@ model Customer {
   phone       String?
   email       String?
   legalId     String?
-  birthday    DateTime?
   notes       String    @default("")
   active      Boolean   @default(true)
   branchId    String    @default("main")

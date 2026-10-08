@@ -83,4 +83,16 @@ describe("Cumplimiento legal y accesibilidad", () => {
     expect(source).toContain('["F4", "F8", "F12"].includes(e.key)');
     expect(source).toContain("if (modalOpen && blockedByModal)");
   });
+
+  it("G7: el sistema no solicita ni almacena la fecha de nacimiento", () => {
+    const schema = readFileSync("apps/api/prisma/schema.prisma", "utf8");
+    const admin = readFileSync("apps/api/src/admin.ts", "utf8");
+    const migration = readFileSync(
+      "apps/api/prisma/migrations/202610150002_remove_customer_birthday/migration.sql",
+      "utf8",
+    );
+    expect(schema).not.toMatch(/\bbirthday\b/);
+    expect(admin).not.toMatch(/\bbirthday\b/);
+    expect(migration).toContain('DROP COLUMN IF EXISTS "birthday"');
+  });
 });
