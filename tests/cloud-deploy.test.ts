@@ -135,6 +135,8 @@ describe("Render · proxy público", () => {
     );
     expect(entrypoint).toContain("/etc/resolv.conf");
     expect(entrypoint).toContain("API_UPSTREAM no tiene el formato");
+    expect(entrypoint).toContain('api_host="${api_host}-discovery"');
+    expect(entrypoint).toContain('API_UPSTREAM="${api_host}:${api_port}"');
     expect(entrypoint).toContain('exec /docker-entrypoint.sh "$@"');
   });
 

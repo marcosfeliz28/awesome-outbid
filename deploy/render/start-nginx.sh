@@ -17,6 +17,18 @@ if [ "$api_port" -lt 1 ] || [ "$api_port" -gt 65535 ]; then
   exit 1
 fi
 
+# `fromService.hostport` entrega la dirección corta mostrada por Render
+# (por ejemplo, nexora-pos-api:10000). El resolvedor asíncrono de Nginx no
+# aplica los dominios de búsqueda de /etc/resolv.conf, así que para volver a
+# resolver cambios de instancia debe consultar el hostname de descubrimiento
+# explícito que Render publica para cada servicio.
+api_host=${API_UPSTREAM%:*}
+case "$api_host" in
+  *-discovery) ;;
+  *) api_host="${api_host}-discovery" ;;
+esac
+API_UPSTREAM="${api_host}:${api_port}"
+
 if ! printf '%s' "$PORT" | grep -Eq '^[0-9]{1,5}$' \
   || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
   echo "PORT no contiene un puerto válido." >&2
