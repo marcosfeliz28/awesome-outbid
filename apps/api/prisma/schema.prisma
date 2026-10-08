@@ -16,6 +16,10 @@ model Role {
 model User {
   id String @id @default(uuid()) @db.Uuid
   name String
+  // Nombre corto que la persona escribe para entrar (por ejemplo, "E Soto").
+  username String?
+  // Versión normalizada, sin acentos y en minúsculas, para buscar sin errores.
+  usernameKey String? @unique
   email String @unique
   passwordHash String
   pinHash String

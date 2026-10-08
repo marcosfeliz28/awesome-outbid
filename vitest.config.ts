@@ -10,6 +10,7 @@ export default defineConfig({
       "tests/e2e-higiene.test.ts",
       "tests/offline-policy.test.ts",
       "tests/cloud-deploy.test.ts",
+      "tests/auth-username.test.ts",
     ],
   },
 });

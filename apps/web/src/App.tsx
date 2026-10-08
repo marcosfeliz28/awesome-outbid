@@ -130,7 +130,7 @@ const navigation = [
   { id: "alerts", label: "Alertas", icon: Bell, permission: "alerts:write" },
 ];
 function Login() {
-  const [email, setEmail] = useState(""),
+  const [login, setLogin] = useState(""),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -181,7 +181,7 @@ function Login() {
             setBusy(true);
             setError("");
             try {
-              const data = await post("/auth/login", { email, password });
+              const data = await post("/auth/login", { login, password });
               await saveSession(data.user, data.accessToken);
             } catch (e: any) {
               setError(e.message);
@@ -194,14 +194,14 @@ function Login() {
           <h2>Un nuevo día para crecer.</h2>
           <p>Inicia sesión para entrar a tu tienda.</p>
           <label className="field">
-            <span>Correo electrónico</span>
+            <span>Usuario</span>
             <input
-              type="email"
+              type="text"
               autoComplete="username"
               required
-              placeholder="tu@tienda.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="E Soto"
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
             />
           </label>
           <label className="field">

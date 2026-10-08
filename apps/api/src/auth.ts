@@ -16,6 +16,15 @@ import {
 
 import { verifyAttempt, verifyPinAttempt } from "./security";
 
+export function normalizeUsername(value: string) {
+  return value
+    .trim()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
 @Controller("auth")
 export class AuthController {
   constructor(
@@ -26,6 +35,7 @@ export class AuthController {
     return {
       id: user.id,
       name: user.name,
+      username: user.username,
       email: user.email,
       role: user.role.name,
       permissions: user.role.permissions,
@@ -97,17 +107,27 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const data = parse(
-      z.object({
-        email: z.string().email(),
-        password: z.string().min(1).max(128),
-      }),
+      z
+        .object({
+          login: z.string().trim().min(1).max(120).optional(),
+          // Compatibilidad con instaladores y sesiones anteriores.
+          email: z.string().email().optional(),
+          password: z.string().min(1).max(128),
+        })
+        .refine((value) => !!(value.login || value.email), {
+          message: "Escribe tu usuario.",
+          path: ["login"],
+        }),
       body,
     );
-    const user = await this.db.user.findUnique({
-      where: { email: data.email.toLowerCase() },
+    const identifier = (data.login ?? data.email ?? "").trim();
+    const user = await this.db.user.findFirst({
+      where: identifier.includes("@")
+        ? { email: identifier.toLowerCase() }
+        : { usernameKey: normalizeUsername(identifier) },
       include: { role: true },
     });
-    if (!user) bad("Correo o contraseña incorrectos.");
+    if (!user) bad("Usuario o contraseña incorrectos.");
     const matches =
       user.active && (await compare(data.password, user.passwordHash));
     // Los fallos se cuentan por cuenta y dirección IP, como los PIN por
@@ -127,7 +147,7 @@ export class AuthController {
       {
         blocked:
           "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a un administrador que te cambie la contraseña.",
-        wrong: "Correo o contraseña incorrectos.",
+        wrong: "Usuario o contraseña incorrectos.",
       },
     );
     await audit(this.db, this.actor(user), "login", "user", user.id);

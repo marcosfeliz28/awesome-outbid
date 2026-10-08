@@ -2869,7 +2869,10 @@ export function Configuration() {
                 rows={users.data || []}
                 columns={[
                   { label: "Nombre", render: (u) => <strong>{u.name}</strong> },
-                  { label: "Correo", render: (u) => u.email },
+                  {
+                    label: "Usuario",
+                    render: (u) => u.username || "Pendiente",
+                  },
                   {
                     label: "Rol",
                     render: (u) => <Badge tone="violet">{u.role.name}</Badge>,
@@ -2982,7 +2985,11 @@ export function Configuration() {
           title="Crear usuario"
           fields={[
             { key: "name", label: "Nombre", required: true },
-            { key: "email", label: "Correo", type: "email", required: true },
+            {
+              key: "username",
+              label: "Usuario para entrar",
+              required: true,
+            },
             {
               key: "password",
               label: "Contraseña (mínimo 12 caracteres)",

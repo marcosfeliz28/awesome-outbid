@@ -31,6 +31,7 @@ export type Actor = {
   terminalId?: string;
   terminalApproved?: boolean;
   name: string;
+  username?: string | null;
   email: string;
   role: string;
   permissions: string[];

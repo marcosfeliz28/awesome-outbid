@@ -6,6 +6,7 @@ import type { SaleInput } from "@fitstore/shared";
 export type User = {
   id: string;
   name: string;
+  username?: string;
   email: string;
   role: string;
   permissions: string[];

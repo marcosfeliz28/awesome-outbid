@@ -34,7 +34,7 @@ import {
   isImageDataUrl,
   LOGO_MAX_BYTES,
 } from "@fitstore/shared";
-import { passwordHash } from "./auth";
+import { normalizeUsername, passwordHash } from "./auth";
 
 const customerSchema = z.object({
   creditLimit: amount.optional(),
@@ -562,6 +562,7 @@ export class AdminController {
       select: {
         id: true,
         name: true,
+        username: true,
         email: true,
         active: true,
         roleId: true,
@@ -593,8 +594,9 @@ export class AdminController {
     const data = parse(
       z.object({
         name: z.string().min(2),
-        email: z.string().email(),
-        password: z.string().min(12).max(128),
+        username: z.string().trim().min(2).max(80).optional(),
+        email: z.string().email().optional(),
+        password: z.string().min(4).max(128),
         pin: z.string().regex(/^\d{4,6}$/),
         roleId: uuid,
         cashierNumber: cashierNumber.optional(),
@@ -602,10 +604,18 @@ export class AdminController {
       body,
     );
     await this.freeCashierNumber(actor, data.cashierNumber);
+    const requestedUsername =
+      data.username?.trim() || data.email?.split("@")[0] || data.name;
+    const usernameKey = normalizeUsername(requestedUsername);
+    const generatedEmail =
+      usernameKey.replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") +
+      "@nexora.local";
     const row = await this.db.user.create({
       data: {
         name: data.name,
-        email: data.email.toLowerCase(),
+        username: requestedUsername,
+        usernameKey,
+        email: (data.email || generatedEmail).toLowerCase(),
         passwordHash: await passwordHash(data.password),
         pinHash: await passwordHash(data.pin),
         roleId: data.roleId,
@@ -621,6 +631,7 @@ export class AdminController {
     return {
       id: row.id,
       name: row.name,
+      username: row.username,
       email: row.email,
       cashierNumber: row.cashierNumber,
     };
@@ -635,9 +646,10 @@ export class AdminController {
     const data = parse(
       z.object({
         name: z.string().min(2).optional(),
+        username: z.string().trim().min(2).max(80).optional(),
         roleId: uuid.optional(),
         active: z.boolean().optional(),
-        password: z.string().min(12).max(128).optional(),
+        password: z.string().min(4).max(128).optional(),
         pin: z
           .string()
           .regex(/^\d{4,6}$/)
@@ -648,7 +660,7 @@ export class AdminController {
     );
     if (id === actor.id && (data.active === false || data.roleId))
       bad("Otro administrador debe cambiar tu acceso.");
-    const { password, pin, ...rest } = data;
+    const { password, pin, username, ...rest } = data;
     await this.db.user.findFirstOrThrow({
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
@@ -660,6 +672,12 @@ export class AdminController {
         where: { id },
         data: {
           ...rest,
+          ...(username
+            ? {
+                username: username.trim(),
+                usernameKey: normalizeUsername(username),
+              }
+            : {}),
           ...(passwordValue ? { passwordHash: passwordValue } : {}),
           ...(pinValue ? { pinHash: pinValue } : {}),
           ...(password || pin || data.active === false
@@ -677,6 +695,7 @@ export class AdminController {
     return {
       id: row.id,
       name: row.name,
+      username: row.username,
       active: row.active,
       cashierNumber: row.cashierNumber,
     };
