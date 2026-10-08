@@ -26,25 +26,25 @@ SetDatablockOptimize on
   !define OUTPUT_DIR "."
 !endif
 
-!define PRODUCT_NAME "FitStore POS"
-!define PRODUCT_PUBLISHER "FitStore POS"
+!define PRODUCT_NAME "Nexora POS"
+!define PRODUCT_PUBLISHER "Grupo Macgen"
 !define PRODUCT_KEY "Software\FitStore POS"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\FitStorePOS"
 
 Name "${PRODUCT_NAME}"
 Caption "Instalar ${PRODUCT_NAME}"
-OutFile "${OUTPUT_DIR}\FitStore-POS-Setup-${VERSION}.exe"
+OutFile "${OUTPUT_DIR}\Nexora-POS-Setup-${VERSION}.exe"
 InstallDir "$PROGRAMFILES64\FitStore POS"
 InstallDirRegKey HKLM "${PRODUCT_KEY}" "InstallLocation"
-BrandingText "FitStore POS"
+BrandingText "Nexora POS"
 Icon "${PAYLOAD_DIR}\assets\fitstore.ico"
 UninstallIcon "${PAYLOAD_DIR}\assets\fitstore.ico"
 VIProductVersion "${PRODUCT_VERSION}"
-VIAddVersionKey /LANG=1034 "ProductName" "FitStore POS"
-VIAddVersionKey /LANG=1034 "CompanyName" "FitStore POS"
-VIAddVersionKey /LANG=1034 "FileDescription" "Instalador de FitStore POS"
+VIAddVersionKey /LANG=1034 "ProductName" "Nexora POS"
+VIAddVersionKey /LANG=1034 "CompanyName" "Grupo Macgen"
+VIAddVersionKey /LANG=1034 "FileDescription" "Instalador de Nexora POS"
 VIAddVersionKey /LANG=1034 "FileVersion" "${VERSION}"
-VIAddVersionKey /LANG=1034 "LegalCopyright" "Copyright FitStore POS"
+VIAddVersionKey /LANG=1034 "LegalCopyright" "Copyright Grupo Macgen"
 
 Var UpdateMode
 Var OwnerDialog
@@ -77,7 +77,7 @@ Var InstallerOwnsMutex
 !define MUI_UNICON "${PAYLOAD_DIR}\assets\fitstore.ico"
 !define MUI_FINISHPAGE_RUN "$WINDIR\explorer.exe"
 !define MUI_FINISHPAGE_RUN_PARAMETERS "https://localhost:4173"
-!define MUI_FINISHPAGE_RUN_TEXT "Abrir FitStore POS"
+!define MUI_FINISHPAGE_RUN_TEXT "Abrir Nexora POS"
 
 !insertmacro MUI_PAGE_WELCOME
 Page custom OwnerPageCreate OwnerPageLeave
@@ -96,11 +96,11 @@ Function .onInit
   Pop $0
   StrCpy $InstallerMutex $9
   ${If} $InstallerMutex == 0
-    MessageBox MB_ICONSTOP "Windows no pudo crear el bloqueo exclusivo del instalador. No se modificó FitStore POS."
+    MessageBox MB_ICONSTOP "Windows no pudo crear el bloqueo exclusivo del instalador de Nexora POS. No se modificó la aplicación."
     SetErrorLevel 3
     Abort
   ${ElseIf} $0 == 183
-    MessageBox MB_ICONSTOP "Ya hay otra instalación, actualización o desinstalación de FitStore POS en curso. Espera a que termine antes de volver a intentarlo."
+    MessageBox MB_ICONSTOP "Ya hay otra instalación, actualización o desinstalación de Nexora POS en curso. Espera a que termine antes de volver a intentarlo."
     SetErrorLevel 3
     Abort
   ${EndIf}
@@ -125,11 +125,11 @@ Function .onInit
     StrCpy $1 ""
   ${EndIf}
   ${IfNot} ${RunningX64}
-    MessageBox MB_ICONSTOP "FitStore POS requiere Windows de 64 bits."
+    MessageBox MB_ICONSTOP "Nexora POS requiere Windows de 64 bits."
     Abort
   ${EndIf}
   ${IfNot} ${AtLeastWin10}
-    MessageBox MB_ICONSTOP "FitStore POS requiere Windows 10 o Windows 11. Se recomienda Windows 11."
+    MessageBox MB_ICONSTOP "Nexora POS requiere Windows 10 o Windows 11. Se recomienda Windows 11."
     Abort
   ${EndIf}
   StrCpy $UpdateMode "nuevo"
@@ -275,7 +275,7 @@ Function BackupPageLeave
   ${EndIf}
 FunctionEnd
 
-Section "FitStore POS" SecMain
+Section "Nexora POS" SecMain
   SetRegView 64
   SetShellVarContext all
   InitPluginsDir
@@ -331,7 +331,7 @@ Section "FitStore POS" SecMain
     ${ElseIf} $UpdateMode == "actualizar"
       MessageBox MB_ICONSTOP "La actualización no terminó y el rollback automático necesita revisión. No continúes usando la aplicación hasta revisar: $ProgramDataDir\FitStore POS\logs\instalador.log"
     ${Else}
-      MessageBox MB_ICONSTOP "La configuración de FitStore no terminó. Los datos existentes no se borraron. Revisa: $ProgramDataDir\FitStore POS\logs\instalador.log"
+      MessageBox MB_ICONSTOP "La configuración de Nexora POS no terminó. Los datos existentes no se borraron. Revisa: $ProgramDataDir\FitStore POS\logs\instalador.log"
     ${EndIf}
     SetErrorLevel 1
     Abort

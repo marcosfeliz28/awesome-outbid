@@ -1,9 +1,15 @@
-# Instalador de FitStore POS para Windows
+# Instalador de Nexora POS para Windows
 
 Esta carpeta construye un instalador clásico NSIS de 64 bits. Se eligió NSIS en
 lugar de Tauri porque el producto que se instala es un servidor local completo:
 PostgreSQL, API, PWA HTTPS, servicios, firewall, certificados y tareas de
 respaldo. Tauri no sustituye esas tareas de aprovisionamiento.
+
+**Importante:** este instalador configura una base local para un servidor único;
+no lo instales en cada laptop si todas las cajas deben compartir la base cloud de
+Render. Para el uso cloud compartido, cada equipo debe abrir la PWA publicada y
+añadirla como aplicación desde su navegador. La versión nativa de escritorio
+conectada a la cloud no está empaquetada aquí.
 
 ## Construir en Windows 11
 
@@ -19,7 +25,10 @@ la API y la PWA, descarga Node, PostgreSQL, WinSW y Microsoft Visual C++ Runtime
 comprobando SHA-256 y, donde corresponde, la firma Authenticode. Incluye los
 binarios oficiales completos de PostgreSQL 18 para Windows e instala NSIS con
 `winget` si hace falta. El resultado queda en
-`instalador/dist/FitStore-POS-Setup-<versión>.exe`.
+`instalador/dist/Nexora-POS-Setup-<versión>.exe`. El nombre y la identidad
+visibles son Nexora POS / Grupo Macgen. La ruta interna heredada `FitStore POS`
+se conserva para que las instalaciones existentes puedan actualizarse sin mover
+ni perder datos.
 
 Para preparar el contenido sin invocar NSIS:
 

@@ -257,21 +257,22 @@ function New-FitStoreShortcuts {
   param($Paths)
   $shell = New-Object -ComObject WScript.Shell
   $desktop = [Environment]::GetFolderPath("CommonDesktopDirectory")
-  $programs = Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "FitStore POS"
+  $programs = Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "Nexora POS"
   New-FitStoreDirectory -Path $programs
-  $open = $shell.CreateShortcut((Join-Path $desktop "FitStore POS.lnk"))
+  $open = $shell.CreateShortcut((Join-Path $desktop "Nexora POS.lnk"))
   $open.TargetPath = "$env:SystemRoot\explorer.exe"
   $open.Arguments = "https://localhost:4173"
   $open.IconLocation = (Join-Path $Paths.Install "assets\fitstore.ico")
-  $open.Description = "Abrir FitStore POS"
+  $open.Description = "Abrir Nexora POS"
   $open.Save()
-  Copy-Item -LiteralPath (Join-Path $desktop "FitStore POS.lnk") -Destination (Join-Path $programs "FitStore POS.lnk") -Force
+  Copy-Item -LiteralPath (Join-Path $desktop "Nexora POS.lnk") -Destination (Join-Path $programs "Nexora POS.lnk") -Force
   $restore = $shell.CreateShortcut((Join-Path $programs "Restaurar un respaldo.lnk"))
   $restore.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
   $restore.Arguments = ("-STA -NoProfile -ExecutionPolicy Bypass -File `"{0}`" -InstallDir `"{1}`"" -f (Join-Path $Paths.Scripts "Restore-FitStore.ps1"), $Paths.Install)
   $restore.IconLocation = (Join-Path $Paths.Install "assets\fitstore.ico")
-  $restore.Description = "Restaurar una copia de FitStore POS"
+  $restore.Description = "Restaurar una copia de Nexora POS"
   $restore.Save()
+  Remove-Item -LiteralPath (Join-Path $desktop "FitStore POS.lnk") -Force -ErrorAction SilentlyContinue
   Copy-Item -LiteralPath (Join-Path $Paths.Pki "FitStore-CA.cer") -Destination (Join-Path $desktop "Certificado FitStore para celulares.cer") -Force
   Copy-Item -LiteralPath (Join-Path $Paths.Data "RED_LOCAL.txt") -Destination (Join-Path $desktop "FitStore - acceso en celulares.txt") -Force
 }

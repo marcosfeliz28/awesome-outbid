@@ -11,6 +11,7 @@ export default defineConfig({
       "tests/offline-policy.test.ts",
       "tests/cloud-deploy.test.ts",
       "tests/auth-username.test.ts",
+      "tests/api-monitoring.test.ts",
     ],
   },
 });

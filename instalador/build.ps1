@@ -309,7 +309,7 @@ Invoke-Checked -File $makeNsisPath -Arguments @(
   "/DOUTPUT_DIR=$dist",
   $nsisScript
 ) -Message "NSIS no pudo construir el instalador"
-$setup = Join-Path $dist "FitStore-POS-Setup-$version.exe"
+$setup = Join-Path $dist "Nexora-POS-Setup-$version.exe"
 if (-not (Test-Path -LiteralPath $setup)) { throw "NSIS terminó sin crear $setup." }
 $setupHash = Get-Sha256 -Path $setup
 "$setupHash *$(Split-Path -Leaf $setup)" | Set-Content -LiteralPath "$setup.sha256" -Encoding ASCII

@@ -1,8 +1,11 @@
-# Instalador de FitStore POS para Windows 11
+# Instalador de Nexora POS para Windows 11
 
-Esta guía está pensada para la dueña de la tienda. El instalador deja una laptop
-Windows 11 funcionando como servidor de FitStore POS sin escribir comandos. Las
-cajas y los celulares entran por la red privada de la tienda.
+Esta guía es para instalar un servidor local independiente en una laptop Windows
+11. **No instales este servidor en cada laptop de cajero:** cada instalación
+crearía una base local separada, distinta de la base compartida en Render. Para
+que todos usen los mismos datos cloud, abre `https://nexora-pos-web.onrender.com/`
+en cada equipo e instala la PWA desde Edge, Chrome o Safari. El cliente nativo
+de escritorio conectado a la cloud no está empaquetado en este instalador.
 
 ## Antes de empezar
 
@@ -10,7 +13,7 @@ Necesitas:
 
 1. La laptop Windows 11 conectada al router de la tienda.
 2. Una cuenta de Windows con permiso de administrador.
-3. El archivo `FitStore-POS-Setup-<versión>.exe`.
+3. El archivo `Nexora-POS-Setup-<versión>.exe`.
 4. Un correo, una contraseña nueva de al menos 12 caracteres y un PIN de 4 a 6
    dígitos para la persona dueña. El paquete no trae contraseña de demostración.
 5. De preferencia, una carpeta de OneDrive o una memoria USB con espacio para
@@ -33,7 +36,10 @@ No desconectes ni apagues la laptop durante la instalación o una actualización
    no tienes una, elige una carpeta local y cámbiala después con asistencia.
 6. Pulsa **Instalar** y espera el mensaje de finalización. El primer arranque
    puede tardar varios minutos.
-7. Abre el acceso directo **FitStore POS** del escritorio.
+7. Abre el acceso directo **Nexora POS** del escritorio.
+   La ruta interna del programa y sus datos todavía conserva el nombre heredado
+   `FitStore POS` para que instalaciones previas puedan actualizarse sin mover
+   ni perder la base existente.
 8. Inicia sesión con el correo y la contraseña que acabas de elegir.
 9. En Configuración, completa los datos reales del negocio antes de vender.
 
@@ -139,7 +145,7 @@ de la misma laptop no protege frente a daño, robo o pérdida de esa laptop.
 La restauración reemplaza la base activa; debe hacerse sin ventas en curso.
 
 1. Cierra FitStore en todas las cajas y celulares.
-2. En la laptop abre **Inicio › FitStore POS › Restaurar un respaldo**.
+2. En la laptop abre **Inicio › Nexora POS › Restaurar un respaldo**.
 3. Selecciona el archivo `FitStore_*.dump`.
 4. La herramienta cierra la entrada web y la API, comprueba el SHA-256, abre el
    archivo con `pg_restore` y crea un respaldo de seguridad de la base actual.
@@ -161,7 +167,7 @@ no borres el respaldo indicado y entrega el registro a soporte.
 1. Espera a que terminen las ventas y sincroniza las cajas que trabajaron sin
    internet.
 2. Conecta el destino habitual de respaldos.
-3. Ejecuta el nuevo `FitStore-POS-Setup-<versión>.exe` como administrador.
+3. Ejecuta el nuevo `Nexora-POS-Setup-<versión>.exe` como administrador.
 4. El asistente detecta FitStore. No vuelve a pedir el usuario dueño ni cambia
    sus credenciales.
 5. Antes de reemplazar archivos, cierra la web y la API para impedir ventas
@@ -187,7 +193,7 @@ otra versión.
 ## Desinstalar
 
 Usa **Configuración de Windows › Aplicaciones › Aplicaciones instaladas ›
-FitStore POS › Desinstalar**.
+Nexora POS › Desinstalar**.
 
 La opción recomendada conserva en `%ProgramData%\FitStore POS` la base, los
 secretos, certificados y respaldos para una reinstalación. Retira los servicios,
@@ -313,8 +319,8 @@ El comando:
 7. instala NSIS con `winget` si falta y crea:
 
    ```text
-   instalador\dist\FitStore-POS-Setup-<versión>.exe
-   instalador\dist\FitStore-POS-Setup-<versión>.exe.sha256
+   instalador\dist\Nexora-POS-Setup-<versión>.exe
+   instalador\dist\Nexora-POS-Setup-<versión>.exe.sha256
    ```
 
 Las versiones externas están en `instalador/dependencias.lock.json`. Para
