@@ -110,7 +110,11 @@ siguen pendientes porque Docker no está disponible en el equipo de revisión.
 
 - Render consulta `GET /healthz` en la web. Devuelve `204` aunque PostgreSQL
   esté temporalmente caído, por lo que una avería de datos no reinicia una web
-  sana.
+  sana. Es liveness sólo de Nginx y no depende de la API, para que redesplegar
+  la API no reinicie la web en bucle.
+- `GET /healthz/deep` comprueba además que la API responde (`204` o `503`, sin
+  detalles). Es para uso manual o externo; Render no debe usarlo como
+  `healthCheckPath`.
 - Render sólo realiza comprobación TCP nativa al servicio privado.
 - `GET /api/health/live` confirma que el proceso de la API vive.
 - `GET /api/health` y `GET /api/health/ready` consultan PostgreSQL y devuelven

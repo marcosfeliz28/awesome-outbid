@@ -16,12 +16,22 @@ server {
     client_max_body_size 5m;
     include /etc/nginx/snippets/nexora-security-headers.conf;
 
+    # Liveness sólo de Nginx: Render lo usa como healthCheckPath de la web y no
+    # debe fallar mientras la API se redespliega (reiniciaría la web en bucle).
     location = /healthz {
         access_log off;
         add_header Cache-Control "no-store" always;
         include /etc/nginx/snippets/nexora-security-headers.conf;
-        # La web sólo es sana si la API responde; el cuerpo de la API no se
-        # expone: auth_request descarta la respuesta y sólo se devuelve 204/503.
+        return 204;
+    }
+
+    # Comprobación profunda, para uso manual o externo (NO para Render): la web
+    # sólo es sana si la API responde. auth_request descarta el cuerpo de la
+    # API y sólo se devuelve 204/503, sin detalles.
+    location = /healthz/deep {
+        access_log off;
+        add_header Cache-Control "no-store" always;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
         auth_request /_nexora_api_live;
         error_page 500 502 503 504 =503 @nexora_api_down;
         # `return` se evalúa antes de auth_request; try_files, después.
