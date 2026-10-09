@@ -274,4 +274,28 @@ describe("Menores de la cola", () => {
     });
     expect((await expectedCash()).cash).toBe(before.cash);
   });
+
+  it("6: una venta con total 0 es un 400 claro", async () => {
+    const v = await product("total cero", 100);
+    const r = await request("/sales", {
+      offlineUuid: randomUUID(),
+      customerId,
+      cashSessionId: cash.id,
+      items: [{ variantId: v.id, qty: 1, discountPercent: 100 }],
+      discountReason: "QA cortesía sin regla",
+      payments: [{ method: "cash", amount: 1 }],
+      expectedTotal: 0,
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.message).toMatch(/total/i);
+    const free = await product("precio cero", 0);
+    const z = await request("/sales", {
+      offlineUuid: randomUUID(),
+      customerId,
+      cashSessionId: cash.id,
+      items: [{ variantId: free.id, qty: 1 }],
+      payments: [{ method: "cash", amount: 1 }],
+    });
+    expect(z.status).toBe(400);
+  });
 });

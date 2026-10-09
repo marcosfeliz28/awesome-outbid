@@ -590,6 +590,12 @@ export class SalesController {
           bad(
             "Los precios o promociones cambiaron. Revisa el total antes de cobrar.",
           );
+        // No hay regla de cortesías: una venta sin cobro (descuento del 100 %
+        // o precio 0) sacaba mercancía y daba «cambio» de la caja.
+        if (!(total > 0))
+          bad(
+            "El total de la venta es RD$ 0. Revisa los precios y descuentos: no se registran ventas sin cobro.",
+          );
         let payment: ReturnType<typeof paymentTotals>;
         try {
           payment = paymentTotals(total, input.payments);
