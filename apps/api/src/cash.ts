@@ -483,14 +483,71 @@ export class CashController {
   @RequireTerminal()
   @Permit("cash:write")
   async open(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    const data = parse(
+    const { openingNote, managerPin, ...data } = parse(
       z.object({
         openingAmount: amount,
         registerId: z.string().min(1).max(80).default("terminal-1"),
+        // Solo si el fondo es menor que lo dejado en el último cierre (D-03).
+        openingNote: reason.optional(),
+        managerPin: z
+          .string()
+          .regex(/^\d{4,6}$/)
+          .optional(),
       }),
       body,
     );
     if (actor.terminalId) data.registerId = actor.terminalId;
+    // D-03: el fondo que se declara al abrir no puede ser menor que lo que el
+    // último cierre de este equipo dejó en la gaveta sin que quede explicado.
+    // Menor exige nota y, a quien no gestiona ventas, el PIN de un gerente; la
+    // diferencia queda en la bitácora. Igual o mayor abre como siempre.
+    let shortfall: {
+      suggested: number;
+      fromSessionId: string;
+      approvedBy: string | null;
+    } | null = null;
+    const alreadyOpen = await this.db.cashSession.findFirst({
+      where: { branchId: actor.branchId, closedAt: null, userId: actor.id },
+      select: { id: true },
+    });
+    const suggestion = alreadyOpen ? null : await this.openingSuggestion(actor);
+    if (
+      suggestion?.amount != null &&
+      d(data.openingAmount).lt(suggestion.amount)
+    ) {
+      if (!openingNote)
+        bad(
+          `El fondo es menor que lo dejado en el último cierre (RD$ ${formatAmount(suggestion.amount)}). Agrega una nota que explique la diferencia.`,
+        );
+      let approvedBy: string | null = null;
+      if (!can(actor.permissions, "sale:manage")) {
+        if (!managerPin)
+          bad(
+            "Abrir con un fondo menor que lo dejado en el último cierre requiere el PIN de un gerente.",
+          );
+        const managers = await this.db.user.findMany({
+          where: { active: true, branchId: actor.branchId },
+          include: { role: true },
+        });
+        approvedBy = await verifyPinAttempt(
+          this.db,
+          "approval:" + actor.id,
+          async () => {
+            for (const manager of managers.filter((m) =>
+              can(m.role.permissions, "sale:manage"),
+            ))
+              if (await compare(managerPin!, manager.pinHash))
+                return manager.id;
+            return null;
+          },
+        );
+      }
+      shortfall = {
+        suggested: suggestion.amount,
+        fromSessionId: suggestion.fromSessionId!,
+        approvedBy,
+      };
+    }
     try {
       return await this.db.$transaction(async (tx) => {
         // Una apertura es poco frecuente. Serializar las aperturas de la sucursal
@@ -521,6 +578,26 @@ export class CashController {
           data: { ...data, userId: actor.id, branchId: actor.branchId },
         });
         await audit(tx, actor, "open", "cash", row.id, undefined, row);
+        if (shortfall)
+          await audit(
+            tx,
+            actor,
+            "opening_difference",
+            "cash",
+            row.id,
+            {
+              suggested: shortfall.suggested,
+              fromSessionId: shortfall.fromSessionId,
+            },
+            {
+              declared: Number(row.openingAmount),
+              difference: money(
+                d(row.openingAmount).minus(shortfall.suggested),
+              ),
+              note: openingNote,
+              approvedBy: shortfall.approvedBy,
+            },
+          );
         return row;
       });
     } catch (error: any) {

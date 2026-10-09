@@ -10582,6 +10582,91 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
     return p.variants[0];
   };
 
+  it("D-03: un fondo menor que lo dejado en el último cierre exige nota y PIN de gerente, y queda en la bitácora", async () => {
+    const cashier = await newActor("seller", "cajera D-03");
+    const manager = (await ok("/auth/me", undefined, managerToken)) as any;
+    // Día 1: abre con 1000 y deja todo el efectivo en la gaveta.
+    const day1 = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 1000 },
+      cashier.token,
+    );
+    await closeBlind(day1.id, cashier.token, {
+      countedCash: 1000,
+      delivered: 0,
+    });
+    expect(
+      await ok("/cash-sessions/opening-suggestion", undefined, cashier.token),
+    ).toMatchObject({ amount: 1000, fromSessionId: day1.id });
+    // Igual a lo sugerido: abre como siempre, sin nota ni PIN.
+    const day2 = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 1000 },
+      cashier.token,
+    );
+    expect(Number(day2.openingAmount)).toBe(1000);
+    await closeBlind(day2.id, cashier.token, {
+      countedCash: 1000,
+      delivered: 0,
+    });
+    // Menor: sin nota, sin PIN o con un PIN incorrecto no abre.
+    const short = (extra: any = {}) =>
+      request(
+        "/cash-sessions/open",
+        { openingAmount: 0, ...extra },
+        cashier.token,
+      );
+    const noNote = await short();
+    expect(noNote.status).toBe(400);
+    expect(noNote.body.message).toMatch(/nota/);
+    const noPin = await short({ openingNote: "Se llevó el fondo al banco" });
+    expect(noPin.status).toBe(400);
+    expect(noPin.body.message).toMatch(/PIN de un gerente/);
+    expect(
+      (
+        await short({
+          openingNote: "Se llevó el fondo al banco",
+          managerPin: "000000",
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await ok("/cash-sessions", undefined, cashier.token)).some(
+        (c: any) => !c.closedAt,
+      ),
+    ).toBe(false);
+    // Con nota y PIN de gerente abre, y la diferencia queda en la bitácora.
+    const day3 = await ok(
+      "/cash-sessions/open",
+      {
+        openingAmount: 0,
+        openingNote: "Se llevó el fondo al banco",
+        managerPin: "987654",
+      },
+      cashier.token,
+    );
+    expect(Number(day3.openingAmount)).toBe(0);
+    const audits = await ok("/audit-log", undefined, ownerToken);
+    const logged = audits.filter(
+      (a: any) =>
+        a.action === "opening_difference" &&
+        [day2.id, day3.id].includes(a.entityId),
+    );
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toMatchObject({
+      entityId: day3.id,
+      userId: cashier.user.id,
+      before: { suggested: 1000, fromSessionId: day2.id },
+      after: {
+        declared: 0,
+        difference: -1000,
+        note: "Se llevó el fondo al banco",
+        approvedBy: manager.id,
+      },
+    });
+    await closeBlind(day3.id, cashier.token);
+  });
+
   it("D-02: anular una venta en efectivo de una caja cerrada no cambia su cuadre y el reembolso sale de la caja abierta de quien anula", async () => {
     const variant = await product("anulación", "Ropa deportiva", 118);
     const cashier = await newActor("seller", "cajera D-02");

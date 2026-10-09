@@ -1731,13 +1731,37 @@ export function Cash() {
                 ? { help: "Sugerido: lo dejado en el último cierre." }
                 : {}),
             },
+            // Un fondo menor que lo dejado en el último cierre se explica y,
+            // para quien no gestiona ventas, lo aprueba un gerente (D-03).
+            ...(suggestion.data?.amount != null
+              ? [
+                  {
+                    key: "openingNote",
+                    label: "Nota si el fondo es menor que el sugerido",
+                    type: "textarea" as const,
+                  },
+                  ...(can(user.permissions, "sale:manage")
+                    ? []
+                    : [
+                        {
+                          key: "managerPin",
+                          label: "PIN de gerente si el fondo es menor",
+                          type: "password" as const,
+                        },
+                      ]),
+                ]
+              : []),
           ]}
           onClose={() => setOpen(false)}
-          onSubmit={async (data) => {
+          onSubmit={async ({ openingNote, managerPin, ...data }) => {
             // La caja queda asignada a este equipo (el servidor usa su registro).
             await registerTerminal().catch(() => undefined);
             return post("/cash-sessions/open", {
               ...data,
+              ...(String(openingNote ?? "").trim()
+                ? { openingNote: String(openingNote).trim() }
+                : {}),
+              ...(managerPin ? { managerPin } : {}),
               registerId: terminalIdentity().name,
             });
           }}
@@ -1880,10 +1904,7 @@ export function Customers() {
                 label: "Acción",
                 render: (c) => (
                   <div className="table-actions">
-                    <button
-                      className="text-link"
-                      onClick={() => setEditing(c)}
-                    >
+                    <button className="text-link" onClick={() => setEditing(c)}>
                       Editar
                     </button>
                     {can(user.permissions, "customers:erase") && (
