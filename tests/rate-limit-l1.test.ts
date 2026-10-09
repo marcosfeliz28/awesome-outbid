@@ -155,6 +155,45 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
     ).toBe(true);
   });
 
+  it("SEC-01: las importaciones de Excel quedan limitadas por sesión, sumando todos los */import", () => {
+    const service = new RequestRateLimitService();
+    const guard = new AuthenticatedRateLimitGuard(service);
+    const as = (path: string, sessionId = "sesion-importa") =>
+      context({ method: "POST", path, actor: { sessionId } });
+    const paths = [
+      "/api/merchandise/import",
+      "/api/products/import",
+      "/API/Products/Import/",
+    ];
+    for (let attempt = 0; attempt < 30; attempt++)
+      expect(guard.canActivate(as(paths[attempt % paths.length]))).toBe(true);
+    for (const path of paths)
+      expect(() => guard.canActivate(as(path))).toThrowError(
+        "Demasiados intentos",
+      );
+    // Otra sesión conserva su propio cupo y las lecturas no cuentan.
+    expect(guard.canActivate(as("/api/products/import", "otra"))).toBe(true);
+    expect(
+      guard.canActivate(
+        context({
+          method: "GET",
+          path: "/api/products/import",
+          actor: { sessionId: "sesion-importa" },
+        }),
+      ),
+    ).toBe(true);
+    // Rutas que solo terminan parecido no se confunden con una importación.
+    expect(
+      guard.canActivate(
+        context({
+          method: "POST",
+          path: "/api/products/important",
+          actor: { sessionId: "sesion-importa" },
+        }),
+      ),
+    ).toBe(true);
+  });
+
   it("normaliza mayúsculas, querystring y barra final antes de contar la ruta", () => {
     const service = new RequestRateLimitService();
     const guard = new AuthenticatedRateLimitGuard(service);

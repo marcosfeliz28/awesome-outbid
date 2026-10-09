@@ -22,6 +22,7 @@ import {
   reason,
   audit,
   bad,
+  canSwitchUserTo,
   conflict,
   json,
   imageType,
@@ -750,16 +751,21 @@ export class AdminController {
       };
     });
   }
-  @Get("staff") @Permit("sale:write") staff(@CurrentUser() actor: Actor) {
-    return this.db.user.findMany({
+  @Get("staff") @Permit("sale:write") async staff(@CurrentUser() actor: Actor) {
+    const users = await this.db.user.findMany({
       where: { branchId: actor.branchId, active: true },
       select: {
         id: true,
         name: true,
         cashierNumber: true,
-        role: { select: { name: true } },
+        role: { select: { name: true, permissions: true } },
       },
     });
+    // SEC-03: la lista del cambio con PIN no expone a quien tiene más
+    // permisos (gerencia, administración) a una vendedora o cajera.
+    return users
+      .filter((u) => canSwitchUserTo(actor.permissions, u.role.permissions))
+      .map(({ role, ...u }) => ({ ...u, role: { name: role.name } }));
   }
   @Get("users") @Permit("*") users(@CurrentUser() actor: Actor) {
     return this.db.user.findMany({

@@ -30,6 +30,7 @@ import {
   json,
 } from "./common";
 import { expiredQty } from "./inventory";
+import { assertSafeXlsx, assertSheetCells } from "./xlsx-guard";
 
 // Paso 04: el catálogo que cargan la caja y Mercancía da como `stock` lo
 // vendible (sin lotes vencidos, que la venta no toma); lo físico y lo vencido
@@ -455,10 +456,13 @@ export class CatalogController {
   )
   async import(@UploadedFile() file: any, @CurrentUser() actor: Actor) {
     if (!file) bad("Selecciona un archivo Excel.");
+    // SEC-01: valida el ZIP antes de que ExcelJS lo descomprima en memoria.
+    assertSafeXlsx(file.buffer);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(file.buffer);
     const sheet = workbook.worksheets[0];
     if (!sheet || sheet.rowCount > 501) bad("Máximo 500 filas por archivo.");
+    assertSheetCells(sheet);
     const rows: any[] = [];
     sheet.eachRow((row, n) => {
       if (n === 1) return;
