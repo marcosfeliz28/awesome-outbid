@@ -2,6 +2,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: [
+      "tests/management-messages.test.ts",
       "tests/u-credit-cleanup.test.ts",
       "packages/shared/**/*.test.ts",
       "tests/invoice.test.ts",
