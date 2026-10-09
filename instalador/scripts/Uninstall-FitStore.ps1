@@ -81,11 +81,17 @@ if ($PurgeData) {
     }
   }
   if ($lastBackup -and (Test-Path -LiteralPath $lastBackup) -and [IO.Path]::GetFullPath($lastBackup).StartsWith($actual, [StringComparison]::OrdinalIgnoreCase)) {
-    $finalBackupDir = Join-Path $env:PUBLIC "Documents\FitStore POS - respaldo final"
+    $finalBackupRoot = Join-Path $env:ProgramData "Nexora POS - respaldo final"
+    $finalBackupDir = Join-Path $finalBackupRoot ([Guid]::NewGuid().ToString("N"))
     New-FitStoreDirectory -Path $finalBackupDir
+    Protect-FitStoreBackupDirectory -Path $finalBackupDir
     Copy-Item -LiteralPath $lastBackup -Destination $finalBackupDir -Force
+    Protect-FitStoreBackupFile -Path (Join-Path $finalBackupDir (Split-Path -Leaf $lastBackup))
     foreach ($suffix in @(".sha256", ".json")) {
-      if (Test-Path -LiteralPath ($lastBackup + $suffix)) { Copy-Item -LiteralPath ($lastBackup + $suffix) -Destination $finalBackupDir -Force }
+      if (Test-Path -LiteralPath ($lastBackup + $suffix)) {
+        Copy-Item -LiteralPath ($lastBackup + $suffix) -Destination $finalBackupDir -Force
+        Protect-FitStoreBackupFile -Path (Join-Path $finalBackupDir ((Split-Path -Leaf $lastBackup) + $suffix))
+      }
     }
   }
   Remove-Item -LiteralPath $actual -Recurse -Force

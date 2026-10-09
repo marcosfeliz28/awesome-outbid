@@ -114,6 +114,43 @@ function Grant-FitStoreSystemAccess {
   if ($LASTEXITCODE -ne 0) { throw "No se pudo dar acceso al servicio de respaldo en $Path." }
 }
 
+function Protect-FitStoreBackupFile {
+  param([Parameter(Mandatory = $true)][string]$Path)
+  # DACL nueva: /grant:r no elimina permisos explicitos de Everyone/Users.
+  $acl = [Security.AccessControl.FileSecurity]::new()
+  $acl.SetAccessRuleProtection($true, $false)
+  # Incluye la identidad real que ejecuta el respaldo, también con servicio dedicado (W3).
+  $creator = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+  foreach ($sid in @("S-1-5-18", "S-1-5-32-544", $creator) | Select-Object -Unique) {
+    $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+      [Security.Principal.SecurityIdentifier]::new($sid), "FullControl", "Allow"
+    ))
+  }
+  Set-Acl -LiteralPath $Path -AclObject $acl -ErrorAction Stop
+}
+
+function New-FitStoreBackupFile {
+  param([Parameter(Mandatory = $true)][string]$Path)
+  # CreateNew evita sobrescribir una copia existente; proteger antes de escribir datos.
+  $stream = [IO.File]::Open($Path, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write)
+  $stream.Dispose()
+  Protect-FitStoreBackupFile -Path $Path
+}
+
+function Protect-FitStoreBackupDirectory {
+  param([Parameter(Mandatory = $true)][string]$Path)
+  $acl = [Security.AccessControl.DirectorySecurity]::new()
+  $acl.SetAccessRuleProtection($true, $false)
+  $creator = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+  foreach ($sid in @("S-1-5-18", "S-1-5-32-544", $creator) | Select-Object -Unique) {
+    $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+      [Security.Principal.SecurityIdentifier]::new($sid), "FullControl",
+      "ContainerInherit, ObjectInherit", "None", "Allow"
+    ))
+  }
+  Set-Acl -LiteralPath $Path -AclObject $acl -ErrorAction Stop
+}
+
 function Invoke-FitStoreProcess {
   param(
     [Parameter(Mandatory = $true)][string]$FilePath,

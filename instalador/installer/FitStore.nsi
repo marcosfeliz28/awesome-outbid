@@ -240,7 +240,7 @@ Function BackupPageCreate
   ${EndIf}
   ${NSD_CreateLabel} 0 0 100% 40u "Elige dónde guardar el respaldo diario. Recomendado: una carpeta de OneDrive o una memoria USB que normalmente esté conectada. Se conservarán 30 días."
   ${If} $UpdateMode == "nuevo"
-    StrCpy $BackupPath "$DOCUMENTS\FitStore Backups"
+    StrCpy $BackupPath "$ProgramDataDir\FitStore POS\Backups"
   ${Else}
     StrCpy $BackupPath ""
   ${EndIf}

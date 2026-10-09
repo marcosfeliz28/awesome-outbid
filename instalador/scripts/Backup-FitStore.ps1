@@ -57,6 +57,7 @@ $pgDump = Join-Path $paths.PgBin "pg_dump.exe"
 $pgRestore = Join-Path $paths.PgBin "pg_restore.exe"
 
 try {
+  New-FitStoreBackupFile -Path $temporary
   Invoke-FitStorePg `
     -Tool $pgDump `
     -Password ([string]$secrets.databasePassword) `
@@ -73,8 +74,11 @@ try {
     -FailureMessage "No se pudo crear el respaldo"
   Test-BackupArchive -PgRestore $pgRestore -Archive $temporary
   Move-Item -LiteralPath $temporary -Destination $final -Force
+  Protect-FitStoreBackupFile -Path $final
   $hash = (Get-FileHash -LiteralPath $final -Algorithm SHA256).Hash.ToLowerInvariant()
+  New-FitStoreBackupFile -Path "$final.sha256"
   "$hash *$fileName" | Set-Content -LiteralPath "$final.sha256" -Encoding ASCII
+  New-FitStoreBackupFile -Path "$final.json"
   [ordered]@{
     schemaVersion = 1
     createdAt = (Get-Date).ToUniversalTime().ToString("o")
