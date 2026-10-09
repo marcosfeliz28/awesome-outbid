@@ -95,3 +95,70 @@ describe("Menor-categoria · importación acotada a sucursal", () => {
       });
   });
 });
+
+describe("Menor-ceros · códigos Excel", () => {
+  it.each([
+    [Number.MAX_SAFE_INTEGER + 1, "000000"],
+    [1.25, "000000"],
+    [123, "0".repeat(81)],
+  ] as const)(
+    "rechaza código numérico no representable exactamente (%s)",
+    async (value, format) => {
+      const book = new ExcelJS.Workbook();
+      const sheet = book.addWorksheet("Productos");
+      sheet.addRow(["Nombre", "SKU", "Categoría", "Barras", "Precio", "Costo"]);
+      const row = sheet.addRow([
+        "Producto QA",
+        value,
+        categoryId,
+        "000987",
+        100,
+        50,
+      ]);
+      row.getCell(2).numFmt = format;
+      const { controller, tx } = fixture(true);
+      await expect(
+        controller.import(
+          { buffer: Buffer.from(await book.xlsx.writeBuffer()) },
+          actor,
+        ),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(tx.product.create).not.toHaveBeenCalled();
+    },
+  );
+  it.each(["texto", "formato numérico"])(
+    "preserva ceros iniciales desde %s",
+    async (kind) => {
+      const book = new ExcelJS.Workbook();
+      const sheet = book.addWorksheet("Productos");
+      sheet.addRow(["Nombre", "SKU", "Categoría", "Barras", "Precio", "Costo"]);
+      const row = sheet.addRow([
+        "Producto QA",
+        kind === "texto" ? "000123" : 123,
+        categoryId,
+        kind === "texto" ? "000987" : 987,
+        100,
+        50,
+      ]);
+      row.getCell(2).numFmt = "000000";
+      row.getCell(4).numFmt = "000000";
+      const { controller, tx } = fixture(true);
+      await controller.import(
+        { buffer: Buffer.from(await book.xlsx.writeBuffer()) },
+        actor,
+      );
+      expect(tx.product.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            sku: "000123",
+            variants: {
+              create: [
+                expect.objectContaining({ sku: "000123", barcode: "000987" }),
+              ],
+            },
+          }),
+        }),
+      );
+    },
+  );
+});
