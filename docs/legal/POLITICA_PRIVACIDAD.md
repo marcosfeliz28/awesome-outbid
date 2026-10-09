@@ -37,6 +37,7 @@ Para registrar la venta pedimos un nombre que identifique al cliente en el recib
 - Proveedores tecnológicos que alojan el sistema y las copias de seguridad ([PROVEEDOR DE ALOJAMIENTO], [PROVEEDOR DE COPIAS]) y el servicio de monitoreo de errores (Sentry), algunos con servidores fuera de la República Dominicana. [ABOGADO: revisar transferencias internacionales.]
 - Autoridades, como la DGII, cuando la ley lo exija.
 - Procesadores de tarjeta o bancos, solo con la información propia de la operación de cobro (no pasan por nuestro sistema).
+- Telegram, si la Tienda activa los avisos de ventas: cada factura, anulación, devolución, cobro o cierre de caja se envía como mensaje a un grupo privado de Telegram de la administración. El aviso lleva el nombre del cliente y el detalle de la venta, sin cédula/RNC, teléfono, correo ni dirección; Telegram es un tercero que procesa y almacena ese contenido en sus servidores, algunos fuera de la República Dominicana.
 No vendemos sus datos.
 
 ### Lectura automática de facturas de proveedor
