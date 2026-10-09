@@ -68,3 +68,10 @@ Prioridad P1 = antes de imprimir tickets reales a clientes.
 | G13 | P3 | Frases sin respaldo: «Lo más seguro», «Anulación auditada», «Respaldos cifrados», docs `AUDITORIA_*` presentados como auditoría independiente, «Facturación» en el manifest, título «Monitoreo seguro». | Management.tsx, docs/ENTREGA.md, SENTRY-API.md, vite manifest | Reescribir según docs/legal/LICENCIAS_Y_AFIRMACIONES.md. | grep de frases prohibidas en CI. |
 | G14 | P3 | Faltan avisos de licencia (Inter y Plus Jakarta Sans OFL, lucide ISC, MIT/BSD en el JS compilado); THIRD_PARTY_NOTICES.txt sólo cubre 5 binarios; origen del ícono y de las SVG sin documentar. | public/, instalador/THIRD_PARTY_NOTICES.txt | Añadir avisos y página «Acerca de» con enlace legal. | La app expone /licencias con los avisos. |
 | G15 | P3 | Mostrar qué promoción automática se aplicó; promoción sin regla guardada. | sales.ts:370-397 | Guardar y imprimir el nombre de la promoción. | Ticket con promoción la nombra. |
+
+
+## Mejoras de interfaz (no bloquean producción)
+
+| ID | Pri | Tarea | Condición |
+|---|---|---|---|
+| U1 | P3 | Rediseño de la pantalla de caja según `docs/coordinacion/PROMPT_UI_POS.md` (versión corregida del prompt de Gemini). | Sólo después de integración 157/157 y CI en verde, y de fusionar B0–B6 y O1/S1–S4. |
