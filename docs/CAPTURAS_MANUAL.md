@@ -24,10 +24,10 @@ El manual conserva ocho tareas y siete saltos de página. Las capturas antiguas 
 | Cobrar y autorizar | Pago normal, crédito/contraentrega y descuento con PIN, sin revelar uno real |
 | Retirar efectivo | Salida con motivo y autorización por acumulado del turno |
 | Devolver | Formulario de persona autorizada, caja propia abierta; no solo la lista de ventas |
-| Anular | Confirmación con motivo en administrador; sin exigir apertura de caja |
+| Anular | Administrador: cubrir caja original abierta; original cerrada sin efectivo; original cerrada con efectivo sin caja propia (rechazo), con caja propia sin saldo (rechazo), y con efectivo suficiente |
 | Cerrar caja | Conteo ciego, tarjeta/transferencia vacías = 0 y confirmación obligatoria |
 | Sin internet | Pendientes/revisión y aviso de no repetir cobros |
 
-La base actual verifica en `Management.tsx` que **Devolver** exige sesión de caja y `sale:manage`, mientras **Anular** exige `*` y no abre caja. El manual se corrigió respecto de esa distinción. Estos controles deben revisarse otra vez en la base final.
+La fuente de autorización y dinero es el servidor: `sales.ts`, `voidSale`, exige `*` y motivo; si `originalCash?.closedAt && cashCollected(saleRef.payments) > 0`, exige caja abierta propia y efectivo suficiente. `returnSale` exige `sale:manage` y una caja abierta mediante `cashLock`. Una pantalla que no pida caja antes de enviar no elimina estos controles. Véase [VERIFICACION_MANUAL.md](VERIFICACION_MANUAL.md).
 
 No hay despliegue, cambios en archivos de interfaz reservados ni nuevas capturas en esta preparación.

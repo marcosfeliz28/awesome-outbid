@@ -78,7 +78,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 2. Con su cuenta autorizada, ellos buscan la venta en **Ventas**, pulsan **Anular** y confirman el motivo.
 3. No borres ni repitas la operación mientras se revisa. La anulación conserva la historia y revierte inventario según corresponda.
 4. Si ya tiene devoluciones o abonos, administración determina el procedimiento correcto; no fuerces la anulación. El rol gerente no ve **Anular**: no es una falla.
-5. La anulación no requiere abrir caja: el dinero original y el registro del cierre se conservan según las reglas del sistema. No la confundas con **Devolver**, que sí necesita una caja abierta para procesar el reembolso.
+5. Si la caja original ya cerró y la venta tuvo efectivo, el administrador necesita su propia caja abierta, con efectivo suficiente, para entregar el reembolso y anular. Si el sistema pide abrir caja, no es un error: registra esa salida en el turno que reembolsa y conserva el cierre anterior. Cuando no coinciden esas dos condiciones, la anulación no exige esa caja de reembolso. **Devolver** también requiere caja abierta.
 
 ![Historial para comunicar el número de venta](capturas/manual/05-ventas.png)
 
@@ -112,3 +112,5 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 ![Caja sin conexión](capturas/manual/08-sin-internet.png)
 
 **Regla de oro:** si no sabes si se registró una venta, consúltala; nunca la cobres otra vez por intuición.
+
+Las reglas de dinero y permisos de estas ocho tareas se contrastaron con el servidor, no solo con la pantalla: [VERIFICACION_MANUAL.md](VERIFICACION_MANUAL.md). Los nombres de botones y atajos son orientación de interfaz, no garantías de autorización.

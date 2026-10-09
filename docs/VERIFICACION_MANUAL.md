@@ -1,0 +1,20 @@
+# A2 — reglas del manual contrastadas con el servidor
+
+Base de código: `f2600e7`; revisión documental conforme a la sección 3g de las órdenes remotas `f63f3f8`. No se cambió ninguna regla ni endpoint. Referencias relativas a esta base; después de nuevos cambios deben verificarse otra vez.
+
+| Tarea del manual | Evidencia del servidor y alcance |
+|---|---|
+| 1. Entrar / abrir caja | `apps/api/src/auth.ts:270` y `password-policy.ts`: cambio obligatorio y validación de contraseña; `cash.ts:487-569`: `cash:write`, fondo menor exige nota y PIN a quien no tiene `sale:manage`; apertura repetida devuelve la sesión propia, no otra. |
+| 2. Preparar venta | `sales.ts:507-518`: `cashLock` y cliente activo obligatorio; `sales.ts:999`: `sale:write` y terminal requerido. Los botones de búsqueda/nuevo cliente son instrucciones de interfaz; no prueban el permiso del servidor. |
+| 3. Cobrar / PIN | `sales.ts:352-415`: descuento y aprobación por PIN; `sales.ts:459`: motivo de descuento; `sales.ts:607-670`: pago completo, últimos cuatro dígitos/aprobación, banco/referencia, cliente y límite de deuda. `packages/shared/src/index.ts:389`, `receivableNeedsApproval`: umbral de crédito/contraentrega. El botón combinado usa contraentrega; el método API `credit` sí requiere fecha (`sales.ts:666`); no confundir el botón sin fecha con todos los métodos de API. Abonos: `sales.ts:1367`/`:1427`, permiso `*`. |
+| 4. Retirar efectivo | `cash.ts:632-712`: `cash:write`, importe positivo acotado, motivo, caja abierta, acumulado de salidas exige PIN para cajera al superar límite; rechaza si no hay suficiente efectivo. |
+| 5. Devolver | `sales.ts:1460-1553`: terminal, `sale:manage`, motivo, caja abierta por `cashLock(..., true)`, plazo configurado, cantidades pendientes; no vuelve al stock lo dañado ni lo abierto de categoría que requiere lote. Gerencia puede gestionar una caja ajena según `cashLock` (`sales.ts:275-292`); usar caja propia es la recomendación operativa del manual, no prohibición adicional del servidor. |
+| 6. Anular | `sales.ts:1170-1238`: `*`, motivo; solo completada, sin devoluciones ni abonos aceptados; ventas antiguas sin asignaciones requieren revisión. `cashCollected` (`:266-274`) suma pagos de efectivo que no sean abonos. Con caja original cerrada y suma > 0, busca caja abierta del administrador en la misma sucursal; sin ella rechaza. Con ella compara contra `cashExpected` y rechaza efectivo insuficiente. `:1312-1351` registra entrada compensatoria en original y salida de reembolso en actual; no borra el cierre. |
+| 7. Cerrar caja | `cash.ts:797-898`: `cash:write`, `cashLock`, conteos, denominaciones coherentes, entregado/dejado y nota según diferencias; `packages/shared/src/index.ts:587-602` exige tarjeta/transferencia declaradas: la API no rellena lo esperado ni acepta omisión como sustituto del conteo. El formulario convierte un campo vacío a 0 y pide confirmación; son instrucciones de interfaz, no una confirmación recibida por esta API. `cash.ts:105`, `cashCloseRequiresNote`, y serialización ciega aplican permisos; esperado/diferencia solo para `profit:read` o `sale:manage`. |
+| 8. Sin internet | `admin.ts:87`: offline desactivado por defecto; `sales.ts:467,495` lo verifica, `:432-458` protege reintentos con `offlineUuid`, `cashLock :295-299` valida horario. Conservar equipo/no cobrar otra vez es un procedimiento conservador, no promesa de recuperación automática. Los pasos de cola requieren renovar capturas tras integración de Claude. |
+
+Los nombres Marcos/Génesis identifican a la administración solicitada por la dueña: los permisos efectivos dependen del rol, no del nombre. Ropa, maquillaje y suplementos abiertos se someten a política de tienda; el rechazo automático de abierto depende de `requiresLot`, no del nombre comercial de categoría.
+
+## Límite de esta evidencia
+
+Revisión estática documental; no sustituye integración monetaria ni impresión real. Las capturas pendientes no demuestran un reembolso ejecutado. Regresión documental: `node scripts/verify-cashier-manual.mjs`; comprueba la condición que el manual anterior omitía y los ocho apartados sin ejecutar producción.
