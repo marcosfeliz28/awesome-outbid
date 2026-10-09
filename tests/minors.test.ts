@@ -235,4 +235,43 @@ describe("Menores de la cola", () => {
         ),
       ).toBe(true);
   });
+
+  it("5 (D-06): un reembolso en efectivo mayor que el efectivo de la caja es un 400; con efectivo sí se devuelve", async () => {
+    const v = await product("reembolso", 800);
+    const card = await sale(v.id, 800, [
+      { method: "card", amount: 800, cardLast4: "4242", approvalCode: "QA1" },
+    ]);
+    const before = await expectedCash();
+    const r = await request("/returns", {
+      operationId: randomUUID(),
+      saleId: card.id,
+      cashSessionId: cash.id,
+      reason: "QA reembolso sin efectivo",
+      refundMethod: "cash",
+      items: [{ saleItemId: card.items[0].id, qty: 1, restock: true }],
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.message).toMatch(/efectivo/);
+    expect((await expectedCash()).cash).toBe(before.cash);
+    // Por el medio original sí procede.
+    await ok("/returns", {
+      operationId: randomUUID(),
+      saleId: card.id,
+      cashSessionId: cash.id,
+      reason: "QA reembolso a la tarjeta",
+      refundMethod: "card",
+      items: [{ saleItemId: card.items[0].id, qty: 1, restock: true }],
+    });
+    // Con efectivo en la caja, la devolución en efectivo no se rompe.
+    const paid = await sale(v.id, 800, [{ method: "cash", amount: 800 }]);
+    await ok("/returns", {
+      operationId: randomUUID(),
+      saleId: paid.id,
+      cashSessionId: cash.id,
+      reason: "QA reembolso con efectivo",
+      refundMethod: "cash",
+      items: [{ saleItemId: paid.items[0].id, qty: 1, restock: true }],
+    });
+    expect((await expectedCash()).cash).toBe(before.cash);
+  });
 });

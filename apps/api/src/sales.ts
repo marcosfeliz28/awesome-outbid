@@ -1485,7 +1485,7 @@ export class SalesController {
           return safe(prior, actor);
         }
       }
-      await cashLock(tx, actor, data.cashSessionId, true);
+      const refundCash = await cashLock(tx, actor, data.cashSessionId, true);
       await tx.$queryRaw`SELECT id FROM "Sale" WHERE id = ${data.saleId}::uuid FOR UPDATE`;
       const sale = await tx.sale.findFirstOrThrow({
         where: { id: data.saleId, branchId: actor.branchId },
@@ -1698,6 +1698,22 @@ export class SalesController {
           "Verifica o rechaza primero los abonos por transferencia pendientes de esta venta.",
         );
       const refundAmount = money(total.minus(debtReduction));
+      // D-06: el efectivo que se entrega tiene que estar en la caja que
+      // reembolsa (la caja ya está bloqueada arriba). Sin este control, una
+      // venta cobrada con tarjeta devuelta en efectivo dejaba el esperado en
+      // negativo. Regla: devolver por el medio original (tarjeta,
+      // transferencia) o como nota de crédito siempre procede; en efectivo,
+      // sólo hasta el efectivo esperado de la caja. Cambiar el medio ya exige
+      // sale:manage (gerente o administrador), que es quien registra
+      // devoluciones.
+      if (
+        data.refundMethod === "cash" &&
+        d(refundAmount).gt(0) &&
+        d(refundAmount).gt((await cashExpected(tx, refundCash)).cash)
+      )
+        bad(
+          "No hay suficiente efectivo en la caja para este reembolso. Reembolsa por el medio del pago original o como nota de crédito.",
+        );
       if (debtReduction)
         await tx.sale.update({
           where: { id: sale.id },
