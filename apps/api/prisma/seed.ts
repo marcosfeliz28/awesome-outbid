@@ -2,12 +2,7 @@ import { config } from "dotenv";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
-import {
-  permissions,
-  lineTotals,
-  d,
-  money,
-} from "@fitstore/shared";
+import { permissions, lineTotals, d, money } from "@fitstore/shared";
 config({ path: "../../.env" });
 const db = new PrismaClient();
 const id = () => randomUUID();
@@ -489,7 +484,7 @@ async function main() {
         data: lots.map((lot) => ({
           ...lot,
           lotNumberNormalized: lot.lotNumber
-            .normalize("NFKC")
+            .normalize("NFC")
             .trim()
             .replace(/\s+/g, " ")
             .toUpperCase(),

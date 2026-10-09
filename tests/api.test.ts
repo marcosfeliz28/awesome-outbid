@@ -3396,7 +3396,8 @@ describe("Ronda 4 · auditoría de ChatGPT y propia", () => {
     expect(
       Number((await fixtureDb.lot.findUnique({ where: { id: lot.id } })).qty),
     ).toBe(3);
-    // Integridad referencial: el kardex no acepta un lote inexistente.
+    // Prueba negativa intencional: PostgreSQL registra
+    // InventoryMovement_lotId_fkey en su log al rechazar este lote inexistente.
     await expect(
       fixtureDb.inventoryMovement.create({
         data: {
@@ -3410,7 +3411,7 @@ describe("Ronda 4 · auditoría de ChatGPT y propia", () => {
           userId: "qa",
         },
       }),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({ code: "P2003" });
   });
   it("almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido", async () => {
     const wh = await newUserToken("warehouse");

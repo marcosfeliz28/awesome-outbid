@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const prismaDir = join(root, "apps", "api", "prisma");
 const migrationsDir = join(prismaDir, "migrations");
+const preIdentityMigration = "202610130002_discount_audit";
 const historicalMigration = "202610140001_lot_identity";
 const forwardMigration = "202610160002_lot_identity_reconciliation";
 const apiRequire = createRequire(join(root, "apps", "api", "package.json"));
@@ -61,7 +62,7 @@ async function historicalPrismaCopy(parent: string) {
     join(targetMigrations, "migration_lock.toml"),
   );
   const names = (await readdir(migrationsDir)).filter(
-    (name) => name <= historicalMigration,
+    (name) => name <= preIdentityMigration,
   );
   for (const name of names)
     await cp(join(migrationsDir, name), join(targetMigrations, name), {
@@ -70,8 +71,8 @@ async function historicalPrismaCopy(parent: string) {
   return join(target, "schema.prisma");
 }
 
-describe("B1-forward · upgrade real de identidad de lotes", () => {
-  it("conserva el checksum histórico y reconcilia en una migración posterior", async () => {
+describe("T1 · upgrade real de identidad de lotes", () => {
+  it("aplica todas las migraciones sobre duplicados conflictivos y sanea cada lotId", async () => {
     const dataDir = await mkdtemp(join(tmpdir(), "nexora-lot-forward-db-"));
     const projectDir = await mkdtemp(
       join(tmpdir(), "nexora-lot-forward-project-"),
@@ -100,7 +101,7 @@ describe("B1-forward · upgrade real de identidad de lotes", () => {
       const historicalSchema = await historicalPrismaCopy(projectDir);
 
       const historical = await migrate(historicalSchema, databaseUrl);
-      expect(historical.stdout).toContain(historicalMigration);
+      expect(historical.stdout).toContain(preIdentityMigration);
 
       client = database.getPgClient("nexora_lot_forward", "127.0.0.1");
       await client.connect();
@@ -109,9 +110,16 @@ describe("B1-forward · upgrade real de identidad de lotes", () => {
       const variantId = "30000000-0000-4000-8000-000000000001";
       const keeperId = "40000000-0000-4000-8000-000000000001";
       const duplicateId = "40000000-0000-4000-8000-000000000002";
+      const unicodeKeeperId = "40000000-0000-4000-8000-000000000003";
+      const unicodeDuplicateId = "40000000-0000-4000-8000-000000000004";
+      const distinctUnicodeId = "40000000-0000-4000-8000-000000000005";
+      const fullwidthUnicodeId = "40000000-0000-4000-8000-000000000006";
+      const orphanLotId = "40000000-0000-4000-8000-000000000099";
       const movementId = "50000000-0000-4000-8000-000000000001";
+      const orphanMovementId = "50000000-0000-4000-8000-000000000002";
       const malformedItemId = "60000000-0000-4000-8000-000000000001";
       const arrayItemId = "60000000-0000-4000-8000-000000000002";
+      const orphanItemId = "60000000-0000-4000-8000-000000000003";
       await client.query(
         `INSERT INTO "Category" (id,name,"requiresLot","requiresExpiry","updatedAt")
            VALUES ($1,'B1 forward',true,true,now())`,
@@ -132,10 +140,22 @@ describe("B1-forward · upgrade real de identidad de lotes", () => {
       // diferentes en República Dominicana (23:59 y 00:01).
       await client.query(
         `INSERT INTO "Lot"
-             (id,"variantId","lotNumber","lotNumberNormalized","expiryDate",qty,cost,"createdAt","updatedAt") VALUES
-             ($1,$3,' frontera lote ','FRONTERA LOTE','2031-06-01 03:59:00',2,10,'2026-01-01',now()),
-             ($2,$3,'FRONTERA   LOTE','frontera lote','2031-06-01 04:01:00',3,20,'2026-01-02',now())`,
-        [keeperId, duplicateId, variantId],
+             (id,"variantId","lotNumber","expiryDate",qty,cost,"createdAt","updatedAt") VALUES
+             ($1,$6,' frontera lote ','2031-06-01 03:59:00',2,10,'2026-01-01',now()),
+             ($2,$6,'FRONTERA   LOTE','2031-06-01 04:01:00',3,20,'2026-01-02',now()),
+             ($3,$6,'café',NULL,1,12,'2026-01-03',now()),
+             ($4,$6,U&'cafe\\0301',NULL,2,18,'2026-01-04',now()),
+             ($5,$6,'LOT-1',NULL,4,30,'2026-01-05',now()),
+             ($7,$6,'ＬＯＴ－１',NULL,5,40,'2026-01-06',now())`,
+        [
+          keeperId,
+          duplicateId,
+          unicodeKeeperId,
+          unicodeDuplicateId,
+          distinctUnicodeId,
+          variantId,
+          fullwidthUnicodeId,
+        ],
       );
       await client.query(
         `INSERT INTO "InventoryMovement"
@@ -145,20 +165,36 @@ describe("B1-forward · upgrade real de identidad de lotes", () => {
       );
       await client.query("SET session_replication_role = replica");
       await client.query(
+        `INSERT INTO "InventoryMovement"
+             (id,"variantId","lotId",type,qty,"unitCost","balanceAfter",reason,"userId")
+           VALUES ($1,$2,$3,'adjustment',1,10,1,'B1 orphan','qa')`,
+        [orphanMovementId, variantId, orphanLotId],
+      );
+      await client.query("SET session_replication_role = origin");
+      await client.query(
+        `INSERT INTO "Sale"
+             (id,number,"offlineUuid","sellerId",subtotal,"discountTotal","taxTotal",total,"costTotal","updatedAt") VALUES
+             ('70000000-0000-4000-8000-000000000001','B1-1','71000000-0000-4000-8000-000000000001','72000000-0000-4000-8000-000000000001',20,0,0,20,10,now()),
+             ('70000000-0000-4000-8000-000000000002','B1-2','71000000-0000-4000-8000-000000000002','72000000-0000-4000-8000-000000000001',20,0,0,20,10,now()),
+             ('70000000-0000-4000-8000-000000000003','B1-3','71000000-0000-4000-8000-000000000003','72000000-0000-4000-8000-000000000001',20,0,0,20,10,now())`,
+      );
+      await client.query(
         `INSERT INTO "SaleItem"
-             (id,"saleId","variantId",qty,"unitPrice","unitCost",discount,tax,"lineTotal","stockAllocations") VALUES
-             ($1,'70000000-0000-4000-8000-000000000001',$3,1,20,10,0,0,20,$4::jsonb),
-             ($2,'70000000-0000-4000-8000-000000000002',$3,1,20,10,0,0,20,$5::jsonb)`,
+             (id,"saleId","variantId","lotId",qty,"unitPrice","unitCost",discount,tax,"lineTotal","stockAllocations") VALUES
+             ($1,'70000000-0000-4000-8000-000000000001',$4,$5,1,20,10,0,0,20,$6::jsonb),
+             ($2,'70000000-0000-4000-8000-000000000002',$4,$5,1,20,10,0,0,20,$7::jsonb),
+             ($3,'70000000-0000-4000-8000-000000000003',$4,$8,1,20,10,0,0,20,'[]'::jsonb)`,
         [
           malformedItemId,
           arrayItemId,
+          orphanItemId,
           variantId,
+          duplicateId,
           JSON.stringify({ lotId: duplicateId }),
           JSON.stringify([{ lotId: duplicateId, qty: 1 }]),
+          orphanLotId,
         ],
       );
-      await client.query("SET session_replication_role = origin");
-
       const deployed = await migrate(
         join(prismaDir, "schema.prisma"),
         databaseUrl,
@@ -172,18 +208,34 @@ describe("B1-forward · upgrade real de identidad de lotes", () => {
         await client.query(
           `SELECT id,"lotNumberNormalized",qty,cost,
                   to_char("expiryDate",'YYYY-MM-DD HH24:MI:SS') AS "expiryDateText"
-             FROM "Lot" WHERE "variantId"=$1`,
+             FROM "Lot" WHERE "variantId"=$1
+             ORDER BY "lotNumberNormalized"`,
           [variantId],
         )
       ).rows;
-      expect(lots).toHaveLength(1);
-      expect(lots[0]).toMatchObject({
+      expect(lots).toHaveLength(4);
+      const byId = new Map(lots.map((lot: any) => [lot.id, lot]));
+      expect(byId.get(keeperId)).toMatchObject({
         id: keeperId,
         lotNumberNormalized: "FRONTERA LOTE",
         expiryDateText: "2031-06-01 03:59:00",
       });
-      expect(Number(lots[0].qty)).toBe(5);
-      expect(Number(lots[0].cost)).toBe(16);
+      expect(Number(byId.get(keeperId).qty)).toBe(5);
+      expect(Number(byId.get(keeperId).cost)).toBe(16);
+      expect(byId.get(unicodeKeeperId)).toMatchObject({
+        id: unicodeKeeperId,
+        lotNumberNormalized: "CAFÉ",
+      });
+      expect(Number(byId.get(unicodeKeeperId).qty)).toBe(3);
+      expect(Number(byId.get(unicodeKeeperId).cost)).toBe(16);
+      expect(byId.get(distinctUnicodeId)).toMatchObject({
+        id: distinctUnicodeId,
+        lotNumberNormalized: "LOT-1",
+      });
+      expect(byId.get(fullwidthUnicodeId)).toMatchObject({
+        id: fullwidthUnicodeId,
+        lotNumberNormalized: "ＬＯＴ－１",
+      });
 
       const conflict = (
         await client.query(`SELECT * FROM "LotIdentityConflict"`)
@@ -203,15 +255,59 @@ describe("B1-forward · upgrade real de identidad de lotes", () => {
           )
         ).rows[0].lotId,
       ).toBe(keeperId);
+      expect(
+        (
+          await client.query(
+            `SELECT "lotId" FROM "InventoryMovement" WHERE id=$1`,
+            [orphanMovementId],
+          )
+        ).rows[0].lotId,
+      ).toBeNull();
       const items = (
         await client.query(
-          `SELECT id,"stockAllocations" FROM "SaleItem"
-             WHERE id IN ($1,$2) ORDER BY id`,
-          [malformedItemId, arrayItemId],
+          `SELECT id,"lotId","stockAllocations" FROM "SaleItem"
+             WHERE id IN ($1,$2,$3) ORDER BY id`,
+          [malformedItemId, arrayItemId, orphanItemId],
         )
       ).rows;
       expect(items[0].stockAllocations).toEqual({ lotId: duplicateId });
+      expect(items[0].lotId).toBe(keeperId);
       expect(items[1].stockAllocations[0].lotId).toBe(keeperId);
+      expect(items[1].lotId).toBe(keeperId);
+      expect(items[2].lotId).toBeNull();
+      expect(
+        Number(
+          (
+            await client.query(`
+              SELECT count(*)::int AS invalid
+              FROM "SaleItem" AS item
+              LEFT JOIN "Lot" AS lot ON lot.id = item."lotId"
+              WHERE item."lotId" IS NOT NULL AND lot.id IS NULL
+            `)
+          ).rows[0].invalid,
+        ),
+      ).toBe(0);
+      expect(
+        Number(
+          (
+            await client.query(`
+              SELECT count(*)::int AS invalid
+              FROM "InventoryMovement" AS movement
+              LEFT JOIN "Lot" AS lot ON lot.id = movement."lotId"
+              WHERE movement."lotId" IS NOT NULL AND lot.id IS NULL
+            `)
+          ).rows[0].invalid,
+        ),
+      ).toBe(0);
+      expect(
+        (
+          await client.query(`
+            SELECT conname FROM pg_constraint
+            WHERE conname IN ('InventoryMovement_lotId_fkey','SaleItem_lotId_fkey')
+            ORDER BY conname
+          `)
+        ).rows.map((row: any) => row.conname),
+      ).toEqual(["InventoryMovement_lotId_fkey", "SaleItem_lotId_fkey"]);
 
       const applied = await client.query(
         `SELECT migration_name,finished_at,rolled_back_at

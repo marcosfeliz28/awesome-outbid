@@ -13,9 +13,12 @@ CREATE TABLE IF NOT EXISTS "LotIdentityConflict" (
   CONSTRAINT "LotIdentityConflict_pkey" PRIMARY KEY ("conflictKey")
 );
 
--- Postgres toma upper() de la configuración regional. COLLATE "C" evita que
--- la normalización cambie al mover la base. translate() enumera el conjunto
--- WhiteSpace/LineTerminator que trim()/\s reconocen en la aplicación.
+-- La aplicación usa NFC + espacios + toUpperCase Unicode. NFC une formas
+-- canónicamente equivalentes sin fusionar identificadores compatibles pero
+-- distintos, como LOT-1 y ＬＯＴ－１. La colación ICU
+-- raíz reproduce esa conversión también fuera de ASCII (p. ej. ñandú/STRASSE)
+-- sin volver equivalentes cadenas cuyos caracteres realmente son distintos.
+-- translate() enumera WhiteSpace/LineTerminator de trim()/\s en JavaScript.
 CREATE OR REPLACE FUNCTION pg_temp.normalize_lot_number(value TEXT)
 RETURNS TEXT
 LANGUAGE SQL
@@ -27,7 +30,7 @@ AS $$
     regexp_replace(
       btrim(
         translate(
-          normalize(value, NFKC),
+          normalize(value, NFC),
           U&'\0009\000A\000B\000C\000D\0020\00A0\1680\2000\2001\2002\2003\2004\2005\2006\2007\2008\2009\200A\2028\2029\202F\205F\3000\FEFF',
           repeat(' ', 25)
         )
@@ -35,7 +38,7 @@ AS $$
       ' +',
       ' ',
       'g'
-    ) COLLATE "C"
+    ) COLLATE "und-x-icu"
   )
 $$;
 
@@ -45,6 +48,16 @@ DROP INDEX IF EXISTS "Lot_variantId_lotNumberNormalized_key";
 
 UPDATE "Lot"
 SET "lotNumberNormalized" = pg_temp.normalize_lot_number("lotNumber");
+
+UPDATE "InventoryMovement" AS movement
+SET "lotId" = NULL
+WHERE movement."lotId" IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM "Lot" AS lot WHERE lot.id = movement."lotId");
+
+UPDATE "SaleItem" AS item
+SET "lotId" = NULL
+WHERE item."lotId" IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM "Lot" AS lot WHERE lot.id = item."lotId");
 
 CREATE TEMP TABLE "_LotIdentityForwardMerge" ON COMMIT DROP AS
 SELECT id,
@@ -108,6 +121,11 @@ FROM "_LotIdentityForwardMerge" AS mapping
 WHERE movement."lotId" = mapping.id AND mapping.id <> mapping.keeper;
 
 UPDATE "SaleItem" AS item
+SET "lotId" = mapping.keeper
+FROM "_LotIdentityForwardMerge" AS mapping
+WHERE item."lotId" = mapping.id AND mapping.id <> mapping.keeper;
+
+UPDATE "SaleItem" AS item
 SET "stockAllocations" = (
   SELECT coalesce(
     jsonb_agg(
@@ -168,5 +186,21 @@ ALTER TABLE "Lot" ALTER COLUMN "lotNumberNormalized" SET NOT NULL;
 DROP INDEX IF EXISTS "Lot_variantId_lotNumber_key";
 CREATE UNIQUE INDEX IF NOT EXISTS "Lot_variantId_lotNumberNormalized_key"
 ON "Lot"("variantId", "lotNumberNormalized");
+
+CREATE INDEX IF NOT EXISTS "SaleItem_lotId_idx" ON "SaleItem"("lotId");
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'SaleItem_lotId_fkey'
+      AND conrelid = '"SaleItem"'::regclass
+  ) THEN
+    ALTER TABLE "SaleItem"
+      ADD CONSTRAINT "SaleItem_lotId_fkey"
+      FOREIGN KEY ("lotId") REFERENCES "Lot"("id")
+      ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 DROP FUNCTION pg_temp.normalize_lot_number(TEXT);

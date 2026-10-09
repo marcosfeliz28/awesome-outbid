@@ -3,7 +3,7 @@ import { HttpException } from "@nestjs/common";
 
 /** Código canónico para identificar un lote sin depender de mayúsculas o espacios. */
 export function normalizeLotNumber(value: string) {
-  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toUpperCase();
+  return value.normalize("NFC").trim().replace(/\s+/g, " ").toUpperCase();
 }
 
 /**

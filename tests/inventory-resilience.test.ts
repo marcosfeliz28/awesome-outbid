@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isSerializationConflict,
   lotIdentity,
+  normalizeLotNumber,
   reconcileLotExpiry,
   retrySerializable,
 } from "../apps/api/src/inventory-resilience";
@@ -29,6 +30,13 @@ describe("I1 · identidad canónica de lote", () => {
     );
     expect(lotIdentity(" lote abc ", null).lotNumberNormalized).toBe(
       "LOTE ABC",
+    );
+  });
+
+  it("unifica Unicode canónico sin confundir identificadores compatibles distintos", () => {
+    expect(normalizeLotNumber("café")).toBe(normalizeLotNumber("cafe\u0301"));
+    expect(normalizeLotNumber("LOT-1")).not.toBe(
+      normalizeLotNumber("ＬＯＴ－１"),
     );
   });
 
