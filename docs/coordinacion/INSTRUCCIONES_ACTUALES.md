@@ -21,6 +21,11 @@ Claude está corrigiendo las 15 pruebas Playwright rotas (login «Usuario», fue
 - Explica y arregla el error `InventoryMovement_lotId_fkey` (lotId inexistente en `Lot`) que sale en cada corrida del CI. Si es una prueba negativa intencional, déjalo documentado en la prueba.
 - Aceptación: prueba que aplica todas las migraciones sobre una base con lotes duplicados/huérfanos y termina sin error; prueba de que `SaleItem.lotId` ∈ `Lot` o NULL tras migrar.
 
+## T5 · Forzar cambio de clave sin Shell (la dueña no tiene acceso a Shell)
+- Al arrancar la API (antes de aceptar tráfico), si existe la variable `FORCE_PASSWORD_CHANGE_USERNAMES` (usuarios separados por coma) Y `FORCE_PASSWORD_CHANGE_CONFIRM=ROTATE_TEMPORARY_PASSWORDS`, marca `mustChangePassword=true` solo a esos usuarios, con la misma lógica de `apps/api/scripts/require-password-change.ts` (reutiliza esa función, no la dupliques). Idempotente, registra en el log cuántos cambió y nunca imprime claves. Si falta alguna variable no hace nada.
+- Aceptación: prueba de integración con variables puestas (usuario marcado, otros no) y sin ellas (nadie cambia).
+- Sube T5 justo después de T1 (prioridad sobre T2–T4: Claude lo necesita para cerrar la seguridad de las cajas).
+
 ## T2 · B5 limitador (`apps/api/src/rate-limit.ts`)
 - Normaliza la ruta (barra final, mayúsculas, querystring) antes de comparar (`===` en ~121/129). `/auth/login/` cuenta igual que `/auth/login`.
 - Normaliza IPv6 (`::ffff:1.2.3.4` = `1.2.3.4`).
