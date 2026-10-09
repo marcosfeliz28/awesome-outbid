@@ -29,6 +29,7 @@ export default defineConfig({
       "tests/customer-anonymization-postgres.test.ts",
       "tests/accessibility-contract.test.ts",
       "tests/variant-code-unique-postgres.test.ts",
+      "tests/telegram-render.test.ts",
     ],
   },
 });
