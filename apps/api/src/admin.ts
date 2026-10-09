@@ -169,38 +169,43 @@ export class AdminController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
+    const customerId = parse(uuid, id);
     const data = parse(customerSchema.partial(), body);
     if (
       data.creditLimit !== undefined &&
       !can(actor.permissions, "sale:manage")
     )
       bad("Sólo un gerente puede cambiar el límite de crédito.");
-    const before = await this.db.customer.findFirstOrThrow({
-      where: { id: parse(uuid, id), branchId: actor.branchId },
+    return this.db.$transaction(async (tx) => {
+      // PATCH y anonimización comparten el mismo bloqueo. Si PATCH entra
+      // primero, la anonimización limpia después; si entra segundo, ve el
+      // marcador irreversible y jamás puede reidentificar al cliente.
+      await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
+      const before = await tx.customer.findFirstOrThrow({
+        where: { id: customerId, branchId: actor.branchId },
+      });
+      if (before.anonymizedAt)
+        conflict("El cliente ya fue anonimizado y no puede modificarse.");
+      const row = await tx.customer.update({
+        where: { id: customerId },
+        data,
+      });
+      const changedFields = Object.keys(data).filter(
+        (field) =>
+          JSON.stringify((before as any)[field]) !==
+          JSON.stringify((row as any)[field]),
+      );
+      await audit(
+        tx,
+        actor,
+        "update",
+        "customer",
+        customerId,
+        { changedFields },
+        { changedFields },
+      );
+      return row;
     });
-    if (!before.active && before.name.startsWith("Cliente anonimizado "))
-      conflict("El cliente ya fue anonimizado y no puede modificarse.");
-    const row = await this.db.customer.update({
-      where: { id },
-      data: {
-        ...data,
-      },
-    });
-    const changedFields = Object.keys(data).filter(
-      (field) =>
-        JSON.stringify((before as any)[field]) !==
-        JSON.stringify((row as any)[field]),
-    );
-    await audit(
-      this.db,
-      actor,
-      "update",
-      "customer",
-      id,
-      { changedFields },
-      { changedFields },
-    );
-    return row;
   }
 
   @Post("customers/:id/anonymize")
@@ -213,11 +218,11 @@ export class AdminController {
     const customerId = parse(uuid, id);
     const request = parse(anonymizeCustomerSchema, body);
     return this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
       const customer = await tx.customer.findFirstOrThrow({
         where: { id: customerId, branchId: actor.branchId },
       });
-      if (!customer.active && customer.name.startsWith("Cliente anonimizado "))
-        conflict("El cliente ya fue anonimizado.");
+      if (customer.anonymizedAt) conflict("El cliente ya fue anonimizado.");
       const [debt, creditNotes] = await Promise.all([
         tx.sale.aggregate({
           where: {
@@ -284,6 +289,7 @@ export class AdminController {
           notes: "",
           creditLimit: 0,
           active: false,
+          anonymizedAt: new Date(),
         },
       });
       await audit(tx, actor, "anonymize", "customer", customerId, undefined, {

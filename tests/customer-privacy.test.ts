@@ -21,6 +21,7 @@ function fixture(debt = 0, creditNoteBalance = 0) {
     legalId: "00100000001",
     notes: "Dato privado",
     active: true,
+    anonymizedAt: null as Date | null,
   };
   const sale = {
     id: "22222222-2222-4222-8222-222222222222",
@@ -29,6 +30,7 @@ function fixture(debt = 0, creditNoteBalance = 0) {
     ncf: "B0200000042",
   };
   const tx = {
+    $queryRaw: vi.fn(async () => [{ id: customerId }]),
     customer: {
       findFirstOrThrow: vi.fn(async () => customer),
       update: vi.fn(async ({ data }: any) => {

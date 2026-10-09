@@ -144,6 +144,56 @@ describe("G6 · anonimización contra PostgreSQL real", () => {
         },
       });
 
+      const waitForCustomerLockWaiters = async (expected: number) => {
+        const deadline = Date.now() + 10_000;
+        while (Date.now() < deadline) {
+          const result = await sqlClient.query(`
+            SELECT count(*)::int AS waiting
+            FROM pg_stat_activity
+            WHERE datname = current_database()
+              AND pid <> pg_backend_pid()
+              AND wait_event_type = 'Lock'
+          `);
+          if (Number(result.rows[0]?.waiting ?? 0) >= expected) return;
+          await new Promise((resolveWait) => setTimeout(resolveWait, 20));
+        }
+        throw new Error(
+          `No aparecieron ${expected} operaciones de Customer esperando el bloqueo.`,
+        );
+      };
+      const raceBehindCustomerUpdateLock = async (
+        first: () => Promise<unknown>,
+        second: () => Promise<unknown>,
+      ) => {
+        await sqlClient.query("BEGIN");
+        let released = false;
+        try {
+          // SHARE deja pasar SELECT ... FOR UPDATE, pero detiene el UPDATE. Así
+          // ambas peticiones alcanzan la barrera y reproducen la ventana que
+          // antes permitía anonimizar y después reidentificar con PATCH.
+          await sqlClient.query('LOCK TABLE "Customer" IN SHARE MODE');
+          const firstOutcome = first().then(
+            (value) => ({ status: "fulfilled" as const, value }),
+            (reason) => ({ status: "rejected" as const, reason }),
+          );
+          await waitForCustomerLockWaiters(1);
+          const secondOutcome = second().then(
+            (value) => ({ status: "fulfilled" as const, value }),
+            (reason) => ({ status: "rejected" as const, reason }),
+          );
+          // El segundo queda esperando el bloqueo de fila de la primera
+          // transacción. Prisma no expone ese waiter de forma uniforme entre
+          // versiones, por lo que la barrera le da tiempo de alcanzar el lock.
+          await new Promise((resolveWait) => setTimeout(resolveWait, 150));
+          await sqlClient.query("COMMIT");
+          released = true;
+          return Promise.all([firstOutcome, secondOutcome]);
+        } finally {
+          if (!released)
+            await sqlClient.query("ROLLBACK").catch(() => undefined);
+        }
+      };
+
       const actor = {
         id: "privacy-owner",
         name: "Dueña",
@@ -153,11 +203,27 @@ describe("G6 · anonimización contra PostgreSQL real", () => {
         branchId: "main",
       } as any;
       const api = new AdminController(prisma);
-      await (api as any).anonymizeCustomer(
-        customerId,
-        { reason: "Solicitud verificada", requestRef: "PRIVACY-REAL-1" },
-        actor,
+      const doubleAnonymize = await raceBehindCustomerUpdateLock(
+        () =>
+          (api as any).anonymizeCustomer(
+            customerId,
+            { reason: "Solicitud verificada", requestRef: "PRIVACY-REAL-1" },
+            actor,
+          ),
+        () =>
+          (api as any).anonymizeCustomer(
+            customerId,
+            { reason: "Solicitud repetida", requestRef: "PRIVACY-REAL-2" },
+            actor,
+          ),
       );
+      expect(doubleAnonymize.map(({ status }) => status).sort()).toEqual([
+        "fulfilled",
+        "rejected",
+      ]);
+      expect(
+        doubleAnonymize.find(({ status }) => status === "rejected"),
+      ).toMatchObject({ reason: { status: 409 } });
 
       const sale = await prisma.sale.findUniqueOrThrow({
         where: { id: saleId },
@@ -190,6 +256,7 @@ describe("G6 · anonimización contra PostgreSQL real", () => {
       const firstAudit = await prisma.auditLog.findMany({
         where: { action: "anonymize", entityId: customerId },
       });
+      expect(firstAudit).toHaveLength(1);
       await expect(
         (api as any).anonymizeCustomer(
           customerId,
@@ -205,6 +272,67 @@ describe("G6 · anonimización contra PostgreSQL real", () => {
       await expect(
         (api as any).editCustomer(customerId, { name: customerName }, actor),
       ).rejects.toMatchObject({ status: 409 });
+
+      const raceCustomerId = randomUUID();
+      const racePii = {
+        name: "Cliente Carrera Privacidad",
+        phone: "809-555-0111",
+        email: "race-privacy@example.test",
+        legalId: "00111111111",
+        notes: "PII que debe desaparecer",
+      };
+      await prisma.customer.create({
+        data: {
+          id: raceCustomerId,
+          ...racePii,
+          branchId: "main",
+          createdBy: actor.id,
+        },
+      });
+      const anonymizeVsPatch = await raceBehindCustomerUpdateLock(
+        () =>
+          (api as any).anonymizeCustomer(
+            raceCustomerId,
+            { reason: "Solicitud verificada", requestRef: "PRIVACY-RACE-1" },
+            actor,
+          ),
+        () =>
+          (api as any).editCustomer(
+            raceCustomerId,
+            {
+              name: racePii.name,
+              phone: racePii.phone,
+              email: racePii.email,
+              legalId: racePii.legalId,
+              notes: racePii.notes,
+            },
+            actor,
+          ),
+      );
+      expect(anonymizeVsPatch[0].status).toBe("fulfilled");
+      expect(anonymizeVsPatch[1]).toMatchObject({
+        status: "rejected",
+        reason: { status: 409 },
+      });
+      const protectedCustomer = await prisma.customer.findUniqueOrThrow({
+        where: { id: raceCustomerId },
+      });
+      expect(protectedCustomer).toMatchObject({
+        phone: null,
+        email: null,
+        legalId: null,
+        notes: "",
+        active: false,
+      });
+      expect(protectedCustomer.name).toBe(
+        `Cliente anonimizado ${raceCustomerId.slice(0, 8)}`,
+      );
+      expect(protectedCustomer.anonymizedAt).toBeInstanceOf(Date);
+      expect(
+        await prisma.auditLog.count({
+          where: { action: "anonymize", entityId: raceCustomerId },
+        }),
+      ).toBe(1);
     } finally {
       if (prisma) await prisma.$disconnect().catch(() => undefined);
       if (sqlClient) await sqlClient.end().catch(() => undefined);
