@@ -33,6 +33,10 @@ Esta guía explica cómo iniciar sesión, cobrar y cerrar la caja. Los recibos q
 - La contraentrega pide el **PIN de un gerente** cuando supera el monto definido en Ajustes (RD$ 1,000 si no se cambió) o, si las ventas a crédito no están habilitadas, por cualquier monto. Escríbelo en el campo **PIN del gerente para aprobar la venta** antes de pulsar **Finalizar venta**. No pidas el PIN para repartir una contraentrega en varias facturas.
 - El cajero no debe marcar ese saldo como pagado. Marcos o Génesis, como administradores, registran luego los pagos o abonos desde **Ventas** y verifican la evidencia de pago. No cierres la caja contando un saldo pendiente como efectivo cobrado.
 
+## Salidas de efectivo (vales y retiros)
+
+En **Caja**, **Movimiento de efectivo** registra entradas y salidas con su motivo. Si las salidas de tu turno superan el monto de Ajustes (RD$ 1,000 si no se cambió), un gerente debe escribir su PIN en **PIN del gerente**. Si el sistema indica que no hay suficiente efectivo, no muestra cifras: revisa la salida con la persona encargada.
+
 ## 5. Cerrar e imprimir el cuadre
 
 1. Al terminar tu turno, entra en **Caja** y pulsa **Cerrar y arquear** en tu caja abierta. Antes de cerrar, conecta el equipo y resuelve/sincroniza las ventas pendientes; mientras haya ventas locales sin confirmar, el sistema no permite cerrar.

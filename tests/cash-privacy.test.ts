@@ -28,8 +28,11 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
       $queryRaw: async () => [],
       cashSession: { findFirstOrThrow: async () => session },
       payment: { findMany: async () => [] },
+      // D-04: la cajera está bajo el límite de salidas sin PIN (RD$ 1,000).
+      settings: { findUnique: async () => null },
       cashMovement: {
         findMany: async () => [],
+        aggregate: async () => ({ _sum: { amount: null } }),
         create: async () => {
           created = true;
           return {};

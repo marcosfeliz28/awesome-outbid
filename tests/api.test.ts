@@ -10894,4 +10894,144 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
       "La venta supera el límite de crédito del cliente.",
     );
   });
+
+  it("D-04: las salidas de la cajera sobre el límite exigen el PIN de un gerente y los importes se validan", async () => {
+    await setSettings({});
+    const move = (who: any, data: Record<string, unknown>) =>
+      call("/cash-sessions/" + who.cash.id + "/movements", data, who.token);
+    const before = await fixtureDb.cashMovement.count({
+      where: { sessionId: cajera.cash.id },
+    });
+    // Importes inválidos: 400, nunca 500 ni un movimiento de 0.00.
+    for (const amount of [0.004, 1e15, 10.123, 0, -5])
+      expect(
+        (await move(cajera, { type: "out", amount, reason: "QA importe" }))
+          .status,
+        String(amount),
+      ).toBe(400);
+    expect(
+      (await move(cajera, { type: "in", amount: 1e15, reason: "QA importe" }))
+        .status,
+    ).toBe(400);
+    // El caso de la auditoría: todo el fondo sin PIN.
+    for (const who of [cajera, vendedor]) {
+      const drained = await move(who, {
+        type: "out",
+        amount: 2999.99,
+        reason: "pago mensajero",
+      });
+      expect(drained.status).toBe(400);
+      expect(drained.body.message).toBe(
+        "Las salidas de efectivo de este turno superan RD$ 1,000.00: se requiere el PIN de un gerente.",
+      );
+    }
+    // Bajo el límite pasa sin PIN.
+    expect(
+      (await move(cajera, { type: "out", amount: 600, reason: "QA vale" }))
+        .status,
+    ).toBe(201);
+    // El límite cuenta todas las salidas del turno: partir el retiro en
+    // varios vales no lo evita.
+    const split = await move(cajera, {
+      type: "out",
+      amount: 600,
+      reason: "QA vale partido",
+    });
+    expect(split.status).toBe(400);
+    expect(
+      (
+        await move(cajera, {
+          type: "out",
+          amount: 600,
+          reason: "QA vale partido",
+          managerPin: "000000",
+        })
+      ).body.message,
+    ).toBe("PIN incorrecto.");
+    const approved = await move(cajera, {
+      type: "out",
+      amount: 600,
+      reason: "QA vale aprobado",
+      managerPin,
+    });
+    expect(approved.status).toBe(201);
+    expect(approved.body.managerPin).toBeUndefined();
+    const log = await fixtureDb.auditLog.findFirst({
+      where: { action: "movement", entityId: cajera.cash.id },
+      orderBy: { createdAt: "desc" },
+    });
+    expect(log?.after).toMatchObject({ approvedBy: gerente.user.id });
+    // Las entradas no necesitan PIN.
+    expect(
+      (await move(cajera, { type: "in", amount: 5000, reason: "QA cambio" }))
+        .status,
+    ).toBe(201);
+    // Sin efectivo suficiente: el mensaje no revela cifras a la cajera, que
+    // trabaja con arqueo ciego (ni el esperado ni lo que falta).
+    const short = await move(cajera, {
+      type: "out",
+      amount: 50000,
+      reason: "QA retiro grande",
+      managerPin,
+    });
+    expect(short.status).toBe(400);
+    expect(short.body.message).toBe("No hay suficiente efectivo en caja.");
+    expect(short.body.message).not.toMatch(/\d/);
+    expect(
+      await fixtureDb.cashMovement.count({
+        where: { sessionId: cajera.cash.id },
+      }),
+    ).toBe(before + 3);
+  });
+
+  it("D-04: quien gestiona ventas no necesita PIN y el límite se ajusta en Ajustes", async () => {
+    await setSettings({});
+    const move = (who: any, data: Record<string, unknown>) =>
+      call("/cash-sessions/" + who.cash.id + "/movements", data, who.token);
+    for (const who of [admin, gerente])
+      expect(
+        (
+          await move(who, {
+            type: "out",
+            amount: 1500,
+            reason: "QA retiro de gerencia",
+          })
+        ).status,
+      ).toBe(201);
+    // El ajuste existe con 1,000 por defecto y se puede cambiar.
+    expect(
+      (await must("/settings", undefined, ownerToken))
+        .cashMovementApprovalLimit ?? 1000,
+    ).toBe(1000);
+    const saved = await setSettings({ cashMovementApprovalLimit: 2500 });
+    expect(saved.cashMovementApprovalLimit).toBe(2500);
+    expect(
+      (
+        await call(
+          "/settings",
+          { ...settingsBefore, cashMovementApprovalLimit: 0.001 },
+          ownerToken,
+          "PUT",
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await move(vendedor, {
+          type: "out",
+          amount: 2000,
+          reason: "QA vale con límite mayor",
+        })
+      ).status,
+    ).toBe(201);
+    expect(
+      (
+        await move(vendedor, {
+          type: "out",
+          amount: 600,
+          reason: "QA vale sobre el límite",
+        })
+      ).status,
+    ).toBe(400);
+  });
 });

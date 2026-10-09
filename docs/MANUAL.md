@@ -97,7 +97,7 @@ La anulación exige motivo, conserva la factura y restaura inventario. Sólo se 
 
 Registra un gasto con categoría, monto, método y fecha. Las tarjetas de presupuesto muestran el consumo del mes. La marca **recurrente** identifica gastos mensuales; la generación automática mensual todavía está pendiente.
 
-En **Caja**, registra entradas/salidas con motivo. Para cerrar, declara efectivo, tarjeta y transferencia contados. El reporte mantiene esperado, contado y diferencias. Una diferencia total cero puede esconder diferencias compensadas entre métodos; revisa cada método.
+En **Caja**, registra entradas/salidas con motivo. Las salidas (retiros y vales) de quien no gestiona ventas necesitan el PIN de un gerente cuando, sumadas a las anteriores del mismo turno, superan el límite de Ajustes (**Salidas de efectivo por turno sin PIN de gerente**, RD$ 1,000 si no se cambia); el gerente y el administrador no lo necesitan. Los importes admiten hasta 2 decimales y RD$ 10,000,000 por movimiento. Si no hay efectivo suficiente, el aviso no muestra cifras, para no revelar el esperado del arqueo ciego. Para cerrar, declara efectivo, tarjeta y transferencia contados. El reporte mantiene esperado, contado y diferencias. Una diferencia total cero puede esconder diferencias compensadas entre métodos; revisa cada método.
 
 ## Reportes y promociones
 
