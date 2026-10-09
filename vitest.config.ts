@@ -4,6 +4,7 @@ export default defineConfig({
     include: [
       "packages/shared/**/*.test.ts",
       "tests/invoice.test.ts",
+      "tests/xlsx-bomb.test.ts",
       "tests/realtime.test.ts",
       "tests/inventario.test.ts",
       "tests/inventory-resilience.test.ts",

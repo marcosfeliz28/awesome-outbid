@@ -1731,13 +1731,37 @@ export function Cash() {
                 ? { help: "Sugerido: lo dejado en el último cierre." }
                 : {}),
             },
+            // Un fondo menor que lo dejado en el último cierre se explica y,
+            // para quien no gestiona ventas, lo aprueba un gerente (D-03).
+            ...(suggestion.data?.amount != null
+              ? [
+                  {
+                    key: "openingNote",
+                    label: "Nota si el fondo es menor que el sugerido",
+                    type: "textarea" as const,
+                  },
+                  ...(can(user.permissions, "sale:manage")
+                    ? []
+                    : [
+                        {
+                          key: "managerPin",
+                          label: "PIN de gerente si el fondo es menor",
+                          type: "password" as const,
+                        },
+                      ]),
+                ]
+              : []),
           ]}
           onClose={() => setOpen(false)}
-          onSubmit={async (data) => {
+          onSubmit={async ({ openingNote, managerPin, ...data }) => {
             // La caja queda asignada a este equipo (el servidor usa su registro).
             await registerTerminal().catch(() => undefined);
             return post("/cash-sessions/open", {
               ...data,
+              ...(String(openingNote ?? "").trim()
+                ? { openingNote: String(openingNote).trim() }
+                : {}),
+              ...(managerPin ? { managerPin } : {}),
               registerId: terminalIdentity().name,
             });
           }}
@@ -1765,10 +1789,25 @@ export function Cash() {
               required: true,
               type: "textarea",
             },
+            // D-04: las salidas del turno sobre el límite de Ajustes
+            // necesitan el PIN de un gerente (no el de la cajera).
+            ...(can(user.permissions, "sale:manage")
+              ? []
+              : [
+                  {
+                    key: "managerPin",
+                    label: "PIN del gerente",
+                    type: "password" as const,
+                    help: "Sólo para salidas que superen el límite del turno.",
+                  },
+                ]),
           ]}
           onClose={() => setMovement(false)}
-          onSubmit={(data) =>
-            post("/cash-sessions/" + active.id + "/movements", data)
+          onSubmit={({ managerPin, ...data }) =>
+            post("/cash-sessions/" + active.id + "/movements", {
+              ...data,
+              ...(managerPin ? { managerPin } : {}),
+            })
           }
         />
       )}
@@ -1880,10 +1919,7 @@ export function Customers() {
                 label: "Acción",
                 render: (c) => (
                   <div className="table-actions">
-                    <button
-                      className="text-link"
-                      onClick={() => setEditing(c)}
-                    >
+                    <button className="text-link" onClick={() => setEditing(c)}>
                       Editar
                     </button>
                     {can(user.permissions, "customers:erase") && (
@@ -2965,6 +3001,14 @@ export function Configuration() {
       "Crédito por venta que requiere gerente (RD$)",
       1000,
     ),
+    {
+      ...requiredNumber(
+        "cashMovementApprovalLimit",
+        "Salidas de efectivo por turno sin PIN de gerente (RD$)",
+        1000,
+      ),
+      help: "Retiros y vales de la cajera. Por encima, se pide el PIN de un gerente.",
+    },
     {
       key: "allowNegativeStock",
       label:

@@ -22,6 +22,7 @@ import {
   reason,
   audit,
   bad,
+  canSwitchUserTo,
   conflict,
   json,
   imageType,
@@ -80,6 +81,9 @@ const configSchema = z.object({
   allowOfflineSales: z.boolean().default(false),
   allowCreditSales: z.boolean().default(false),
   creditApprovalThreshold: amount.default(1000),
+  // Salidas de efectivo del turno que una cajera registra sin PIN de gerente
+  // (D-04). Sin la clave se conserva el valor guardado (RD$ 1,000 si no hay).
+  cashMovementApprovalLimit: amount.optional(),
   unusualDiscountCount: z.number().int().min(1).max(1000).default(10),
   unusualDiscountPercent: z.number().min(0).max(100).default(25),
   lowSalesDropPercent: z.number().min(0).max(100).default(50),
@@ -106,6 +110,10 @@ const configSchema = z.object({
   usdRate: z.number().positive().max(10000).nullable().optional(),
   eurRate: z.number().positive().max(10000).nullable().optional(),
 });
+const cashMovementLimit = (data: Record<string, unknown> | undefined) =>
+  typeof data?.cashMovementApprovalLimit === "number"
+    ? data.cashMovementApprovalLimit
+    : 1000;
 function checkLogo(logo: string) {
   const [head, data] = logo.split(",");
   if (imageType(Buffer.from(data, "base64")) !== head.slice(11, -7))
@@ -582,6 +590,7 @@ export class AdminController {
     return {
       ...data,
       allowOfflineSales: data.allowOfflineSales === true,
+      cashMovementApprovalLimit: cashMovementLimit(data),
       requireCustomer: true,
     };
   }
@@ -610,6 +619,9 @@ export class AdminController {
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
           : previous?.allowOfflineSales === true,
+        // Una PWA anterior no envía el límite: no se afloja ni se endurece.
+        cashMovementApprovalLimit:
+          config.cashMovementApprovalLimit ?? cashMovementLimit(previous),
         // Compatibilidad con clientes anteriores, pero la regla comercial es
         // invariable: toda venta se guarda a nombre de un cliente.
         requireCustomer: true,
@@ -739,16 +751,21 @@ export class AdminController {
       };
     });
   }
-  @Get("staff") @Permit("sale:write") staff(@CurrentUser() actor: Actor) {
-    return this.db.user.findMany({
+  @Get("staff") @Permit("sale:write") async staff(@CurrentUser() actor: Actor) {
+    const users = await this.db.user.findMany({
       where: { branchId: actor.branchId, active: true },
       select: {
         id: true,
         name: true,
         cashierNumber: true,
-        role: { select: { name: true } },
+        role: { select: { name: true, permissions: true } },
       },
     });
+    // SEC-03: la lista del cambio con PIN no expone a quien tiene más
+    // permisos (gerencia, administración) a una vendedora o cajera.
+    return users
+      .filter((u) => canSwitchUserTo(actor.permissions, u.role.permissions))
+      .map(({ role, ...u }) => ({ ...u, role: { name: role.name } }));
   }
   @Get("users") @Permit("*") users(@CurrentUser() actor: Actor) {
     return this.db.user.findMany({

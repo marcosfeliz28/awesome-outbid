@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
+import { xlsxBomb } from "./fixtures/xlsx-zip";
 import {
   PASSWORD_CHANGE_CONFIRMATION,
   forcePasswordChangeAtStartup,
@@ -621,7 +623,11 @@ describe("Aceptación financiera y permisos", () => {
     ).toBe(403);
     expect((await request("/users", undefined, sellerToken)).status).toBe(403);
   });
-  it("solo un administrador anula una venta antigua sin abrir caja", async () => {
+  // Contrato cambiado a propósito por D-02: antes el administrador anulaba sin
+  // caja abierta y la caja cerrada quedaba con un sobrante de 118 (esperado
+  // 200, diferencia +118) sin que ninguna caja registrara el reembolso. Ahora
+  // el efectivo sale de su caja abierta y el cierre anterior no cambia.
+  it("solo un administrador anula una venta antigua; con la caja cerrada, el reembolso en efectivo sale de su caja abierta", async () => {
     const roles = await ok("/roles", undefined, ownerToken);
     const cashier = await ok(
       "/users",
@@ -695,6 +701,18 @@ describe("Aceptación financiera y permisos", () => {
     ).toBe(403);
 
     const owner = await ok("/auth/me", undefined, ownerToken);
+    const withoutCash = await request(
+      "/sales/" + sold.id + "/void",
+      { reason: "QA factura antigua anulada por administrador" },
+      ownerToken,
+    );
+    expect(withoutCash.status).toBe(400);
+    expect(withoutCash.body.message).toMatch(/Abre tu caja/);
+    const refundCash = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 200 },
+      ownerToken,
+    );
     await ok(
       "/sales/" + sold.id + "/void",
       { reason: "QA factura antigua anulada por administrador" },
@@ -728,8 +746,19 @@ describe("Aceptación financiera y permisos", () => {
     const closedCash = await fixtureDb.cashSession.findUniqueOrThrow({
       where: { id: oldCash.id },
     });
-    expect(Number(closedCash.expectedCash)).toBe(200);
-    expect(Number(closedCash.differenceCash)).toBe(118);
+    expect(Number(closedCash.expectedCash)).toBe(318);
+    expect(Number(closedCash.differenceCash)).toBe(0);
+    expect((await expectedForCash(refundCash.id)).cash).toBe(82);
+    await ok(
+      "/cash-sessions/" + refundCash.id + "/close",
+      {
+        countedCash: 82,
+        countedCard: 0,
+        countedTransfer: 0,
+        notes: "QA cierre de la caja que reembolsó",
+      },
+      ownerToken,
+    );
     const audits = await ok("/audit-log", undefined, ownerToken);
     expect(
       audits.some(
@@ -1018,7 +1047,21 @@ describe("Regresiones de Claude", () => {
     });
   });
   it("1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia", async () => {
-    const target = actors.find((u) => u.email.includes("qa-manager"));
+    // SEC-03: el destino es una compañera del mismo rol; hacia la gerencia el
+    // cambio por PIN ya se rechaza antes de comprobar el PIN.
+    const target = await ok("/users", {
+      name: "QA compañera " + suffix,
+      email: `qa-companera-${suffix}@example.test`,
+      password: "FitStore-QA-2026!",
+      pin: "987654",
+      roleId: (await ok("/roles")).find((r: any) => r.name === "seller").id,
+    });
+    actors.push(target);
+    await ok(
+      "/auth/login",
+      { email: target.email, password: "FitStore-QA-2026!" },
+      "",
+    );
     try {
       await Promise.all(
         Array.from({ length: 10 }, () =>
@@ -10533,5 +10576,1124 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
     } finally {
       await ok("/settings", settings, token, "PUT");
     }
+  });
+});
+
+// Auditoría final de dinero (docs/AUDITORIA_FINAL_DINERO.md, rama
+// claude/audit-money). D-01: la contraentrega es una cuenta por cobrar y pasa
+// por la misma aprobación que el crédito. D-04: las salidas de efectivo de
+// quien no gestiona ventas exigen el PIN de un gerente por encima del límite.
+// Se usan los usuarios reales del seed (vendedor, gerente y administrador) y
+// una cajera creada con el rol seller, como hace la tienda.
+describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
+  const ip =
+    "198.19." + ((Date.now() % 200) + 1) + "." + ((Date.now() % 250) + 1);
+  const demoPassword = process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!";
+  // PIN del gerente del seed (apps/api/prisma/seed.ts).
+  const managerPin = "234567";
+  async function call(
+    path: string,
+    data?: unknown,
+    as = token,
+    method = data === undefined ? "GET" : "POST",
+  ) {
+    data = prepareTestPayload(path, data);
+    const r = await fetch(base + path, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": ip,
+        ...(as ? { Authorization: "Bearer " + as } : {}),
+      },
+      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    });
+    return { status: r.status, body: await r.json() };
+  }
+  async function must(
+    path: string,
+    data?: unknown,
+    as = token,
+    method?: string,
+  ) {
+    let r = await call(path, data, as, method);
+    r = await completeRequiredPasswordChange(path, data, r, (next, payload) =>
+      call(next, payload, ""),
+    );
+    if (r.status >= 400)
+      throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
+    return r.body;
+  }
+  async function seedUser(email: string) {
+    const auth = await must(
+      "/auth/login",
+      { email, password: demoPassword },
+      "",
+    );
+    const terminalId = await enroll(
+      auth.accessToken,
+      "QA dinero " + email.split("@")[0],
+    );
+    let cash = await must(
+      "/cash-sessions/open",
+      { openingAmount: 3000 },
+      auth.accessToken,
+    );
+    // Si la persona ya tenía una caja abierta en otro equipo, se trae a este.
+    if (cash.registerId !== terminalId)
+      cash = await must(
+        "/cash-sessions/" + cash.id + "/transfer",
+        { managerPin },
+        auth.accessToken,
+      );
+    return { token: auth.accessToken as string, user: auth.user, cash };
+  }
+  let settingsBefore: any;
+  let vendedor: any, gerente: any, admin: any, cajera: any;
+  let variant: any, customer: any;
+  const codSale = (
+    who: any,
+    qty: number,
+    payments: any[],
+    extra: Record<string, unknown> = {},
+  ) => ({
+    offlineUuid: randomUUID(),
+    customerId: customer.id,
+    cashSessionId: who.cash.id,
+    items: [{ variantId: variant.id, qty }],
+    payments,
+    ...extra,
+  });
+  const setSettings = (changes: Record<string, unknown>) =>
+    must("/settings", { ...settingsBefore, ...changes }, ownerToken, "PUT");
+  beforeAll(async () => {
+    settingsBefore = await must("/settings", undefined, ownerToken);
+    vendedor = await seedUser("vendedor@fitstore.demo");
+    gerente = await seedUser("gerente@fitstore.demo");
+    admin = await seedUser("admin@fitstore.demo");
+    const roles = await must("/roles", undefined, ownerToken);
+    const email = `qa-dinero-cajera-${randomUUID().slice(0, 8)}@example.test`;
+    const created = await must(
+      "/users",
+      {
+        name: "QA Dinero cajera " + suffix,
+        email,
+        password: "FitStore-QA-2026!",
+        pin: "135793",
+        roleId: roles.find((r: any) => r.name === "seller").id,
+      },
+      ownerToken,
+    );
+    actors.push(created);
+    const auth = await must(
+      "/auth/login",
+      { email, password: "FitStore-QA-2026!" },
+      "",
+    );
+    await enroll(auth.accessToken, "QA dinero cajera");
+    cajera = {
+      token: auth.accessToken,
+      user: created,
+      cash: await must(
+        "/cash-sessions/open",
+        { openingAmount: 3000 },
+        auth.accessToken,
+      ),
+    };
+    const cats = await must("/categories", undefined, ownerToken);
+    const p = await must(
+      "/products",
+      {
+        name: "QA Dinero faja " + suffix,
+        sku: "QA-DIN-" + randomUUID().slice(0, 8),
+        categoryId: cats.find((c: any) => c.name === "Fajas").id,
+        taxRate: 0,
+        variants: [
+          {
+            sku: "QA-DINV-" + randomUUID().slice(0, 8),
+            barcode: "QA-DINB-" + randomUUID().slice(0, 8),
+            price: 800,
+            costAvg: 300,
+          },
+        ],
+      },
+      ownerToken,
+    );
+    products.push(p);
+    variant = p.variants[0];
+    await must(
+      "/inventory/adjustments",
+      { variantId: variant.id, qty: 200, reason: "QA dinero stock" },
+      ownerToken,
+    );
+    // Cliente nuevo creado por la cajera: su límite de crédito queda en 0.
+    customer = await must(
+      "/customers",
+      {
+        name: "QA Cliente Fantasma " + suffix,
+        phone: "809555" + String(Date.now() % 10000).padStart(4, "0"),
+      },
+      cajera.token,
+    );
+    expect(Number(customer.creditLimit ?? 0)).toBe(0);
+  });
+  afterAll(async () => {
+    if (settingsBefore)
+      await call(
+        "/settings",
+        { ...settingsBefore, logo: "" },
+        ownerToken,
+        "PUT",
+      );
+    for (const who of [vendedor, gerente, admin, cajera])
+      if (who?.cash) {
+        const expected = await expectedForCash(who.cash.id).catch(() => null);
+        if (expected)
+          await call(
+            "/cash-sessions/" + who.cash.id + "/close",
+            {
+              countedCash: Math.max(0, expected.cash),
+              countedCard: Math.max(0, expected.card),
+              countedTransfer: Math.max(0, expected.transfer),
+              notes: "Cierre de pruebas de dinero",
+            },
+            who.token,
+          );
+      }
+  });
+
+  it("D-01: la contraentrega de RD$ 12,000 de cajera o vendedor exige el PIN de un gerente", async () => {
+    await setSettings({
+      allowCreditSales: true,
+      creditApprovalThreshold: 1000,
+      allowOfflineSales: true,
+    });
+    for (const who of [cajera, vendedor]) {
+      const denied = await call(
+        "/sales",
+        codSale(who, 15, [{ method: "cod", amount: 12000 }]),
+        who.token,
+      );
+      expect(denied.status).toBe(400);
+      expect(denied.body.message).toBe(
+        "Esta operación requiere el PIN de un gerente.",
+      );
+    }
+    // PIN incorrecto: rechazado y sin venta.
+    const wrongPin = codSale(cajera, 15, [{ method: "cod", amount: 12000 }], {
+      managerPin: "000000",
+    });
+    expect((await call("/sales", wrongPin, cajera.token)).status).toBe(400);
+    expect(
+      await fixtureDb.sale.count({
+        where: { offlineUuid: wrongPin.offlineUuid },
+      }),
+    ).toBe(0);
+    // Con el PIN del gerente pasa y queda auditado quién aprobó.
+    const approved = codSale(cajera, 15, [{ method: "cod", amount: 12000 }], {
+      managerPin,
+    });
+    const sold = await must("/sales", approved, cajera.token);
+    expect(Number(sold.total)).toBe(12000);
+    expect(Number(sold.creditBalance)).toBe(12000);
+    const log = await fixtureDb.auditLog.findFirst({
+      where: { action: "credit_approved", entityId: sold.id },
+    });
+    expect(log?.after).toMatchObject({
+      approvedBy: gerente.user.id,
+      cod: 12000,
+    });
+    // El UUID sigue siendo idempotente: reintentar sin el PIN (la caja nunca
+    // lo guarda) devuelve la misma venta, en línea y por sincronización.
+    const { managerPin: _pin, ...retry } = approved;
+    const again = await must("/sales", retry, cajera.token);
+    expect(again.id).toBe(sold.id);
+    const synced = await must("/sales/sync", { sales: [retry] }, cajera.token);
+    expect(synced.results[0]).toMatchObject({ status: "synced" });
+    expect(synced.results[0].sale.id).toBe(sold.id);
+    expect(
+      await fixtureDb.sale.count({
+        where: { offlineUuid: approved.offlineUuid },
+      }),
+    ).toBe(1);
+    // Una contraentrega nueva sin PIN que llega por sincronización queda en
+    // conflicto (con su alerta), no se registra.
+    const offline = codSale(cajera, 15, [{ method: "cod", amount: 12000 }], {
+      capturedAt: new Date().toISOString(),
+    });
+    const conflict = await must(
+      "/sales/sync",
+      { sales: [offline] },
+      cajera.token,
+    );
+    expect(conflict.results[0]).toMatchObject({
+      status: "conflict",
+      message: "Esta operación requiere el PIN de un gerente.",
+    });
+    expect(
+      await fixtureDb.sale.count({
+        where: { offlineUuid: offline.offlineUuid },
+      }),
+    ).toBe(0);
+  });
+
+  it("D-01: bajo el umbral pasa sin PIN; quien gestiona ventas no necesita PIN", async () => {
+    await setSettings({
+      allowCreditSales: true,
+      creditApprovalThreshold: 1000,
+    });
+    const small = await call(
+      "/sales",
+      codSale(cajera, 1, [{ method: "cod", amount: 800 }]),
+      cajera.token,
+    );
+    expect(small.status).toBe(201);
+    // Justo en el umbral (no lo supera) también pasa.
+    await setSettings({ allowCreditSales: true, creditApprovalThreshold: 800 });
+    expect(
+      (
+        await call(
+          "/sales",
+          codSale(vendedor, 1, [{ method: "cod", amount: 800 }]),
+          vendedor.token,
+        )
+      ).status,
+    ).toBe(201);
+    // Administrador y gerente (sale:manage) despachan sin PIN, aunque las
+    // ventas a crédito estén desactivadas.
+    await setSettings({
+      allowCreditSales: false,
+      creditApprovalThreshold: 1000,
+    });
+    for (const who of [admin, gerente])
+      expect(
+        (
+          await call(
+            "/sales",
+            codSale(who, 15, [{ method: "cod", amount: 12000 }]),
+            who.token,
+          )
+        ).status,
+      ).toBe(201);
+  });
+
+  it("D-01: con las ventas a crédito desactivadas, toda contraentrega de la cajera exige PIN", async () => {
+    await setSettings({
+      allowCreditSales: false,
+      creditApprovalThreshold: 1000,
+    });
+    const denied = await call(
+      "/sales",
+      codSale(cajera, 1, [{ method: "cod", amount: 800 }]),
+      cajera.token,
+    );
+    expect(denied.status).toBe(400);
+    expect(denied.body.message).toBe(
+      "Esta operación requiere el PIN de un gerente.",
+    );
+    expect(
+      (
+        await call(
+          "/sales",
+          codSale(cajera, 1, [{ method: "cod", amount: 800 }], { managerPin }),
+          cajera.token,
+        )
+      ).status,
+    ).toBe(201);
+  });
+
+  it("D-01: el crédito sigue igual y el límite del cliente cuenta la contraentrega pendiente", async () => {
+    const due = { creditDueDate: "2030-01-01T12:00:00.000Z" };
+    // Desactivado: rechazado para todos, también con PIN.
+    await setSettings({
+      allowCreditSales: false,
+      creditApprovalThreshold: 1000,
+    });
+    const off = await call(
+      "/sales",
+      codSale(admin, 1, [{ method: "credit", amount: 800 }], {
+        ...due,
+        managerPin,
+      }),
+      admin.token,
+    );
+    expect(off.status).toBe(400);
+    expect(off.body.message).toBe(
+      "Las ventas a crédito están desactivadas en Ajustes.",
+    );
+    await setSettings({
+      allowCreditSales: true,
+      creditApprovalThreshold: 1000,
+    });
+    // Bajo el umbral, sin PIN; sobre el umbral exige PIN incluso al administrador.
+    expect(
+      (
+        await call(
+          "/sales",
+          codSale(cajera, 1, [{ method: "credit", amount: 800 }], due),
+          cajera.token,
+        )
+      ).status,
+    ).toBe(201);
+    for (const who of [cajera, admin])
+      expect(
+        (
+          await call(
+            "/sales",
+            codSale(who, 2, [{ method: "credit", amount: 1600 }], due),
+            who.token,
+          )
+        ).status,
+      ).toBe(400);
+    expect(
+      (
+        await call(
+          "/sales",
+          codSale(admin, 2, [{ method: "credit", amount: 1600 }], {
+            ...due,
+            managerPin,
+          }),
+          admin.token,
+        )
+      ).status,
+    ).toBe(201);
+    // Límite 1,600: la deuda pendiente (crédito o contraentrega) más la venta
+    // nueva no puede superarlo, también con PIN.
+    const limited = await must(
+      "/customers",
+      { name: "QA Dinero límite " + suffix, creditLimit: 1600 },
+      ownerToken,
+    );
+    const forLimited = (payments: any[], qty: number, extra = {}) => ({
+      ...codSale(cajera, qty, payments, extra),
+      customerId: limited.id,
+    });
+    expect(
+      (
+        await call(
+          "/sales",
+          forLimited([{ method: "cod", amount: 800 }], 1),
+          cajera.token,
+        )
+      ).status,
+    ).toBe(201);
+    expect(
+      (
+        await call(
+          "/sales",
+          forLimited([{ method: "credit", amount: 800 }], 1, due),
+          cajera.token,
+        )
+      ).status,
+    ).toBe(201);
+    const over = await call(
+      "/sales",
+      forLimited([{ method: "cod", amount: 800 }], 1, { managerPin }),
+      cajera.token,
+    );
+    expect(over.status).toBe(400);
+    expect(over.body.message).toBe(
+      "La venta supera el límite de crédito del cliente.",
+    );
+  });
+
+  it("D-04: las salidas de la cajera sobre el límite exigen el PIN de un gerente y los importes se validan", async () => {
+    await setSettings({});
+    const move = (who: any, data: Record<string, unknown>) =>
+      call("/cash-sessions/" + who.cash.id + "/movements", data, who.token);
+    const before = await fixtureDb.cashMovement.count({
+      where: { sessionId: cajera.cash.id },
+    });
+    // Importes inválidos: 400, nunca 500 ni un movimiento de 0.00.
+    for (const amount of [0.004, 1e15, 10.123, 0, -5])
+      expect(
+        (await move(cajera, { type: "out", amount, reason: "QA importe" }))
+          .status,
+        String(amount),
+      ).toBe(400);
+    expect(
+      (await move(cajera, { type: "in", amount: 1e15, reason: "QA importe" }))
+        .status,
+    ).toBe(400);
+    // El caso de la auditoría: todo el fondo sin PIN.
+    for (const who of [cajera, vendedor]) {
+      const drained = await move(who, {
+        type: "out",
+        amount: 2999.99,
+        reason: "pago mensajero",
+      });
+      expect(drained.status).toBe(400);
+      expect(drained.body.message).toBe(
+        "Las salidas de efectivo de este turno superan RD$ 1,000.00: se requiere el PIN de un gerente.",
+      );
+    }
+    // Bajo el límite pasa sin PIN.
+    expect(
+      (await move(cajera, { type: "out", amount: 600, reason: "QA vale" }))
+        .status,
+    ).toBe(201);
+    // El límite cuenta todas las salidas del turno: partir el retiro en
+    // varios vales no lo evita.
+    const split = await move(cajera, {
+      type: "out",
+      amount: 600,
+      reason: "QA vale partido",
+    });
+    expect(split.status).toBe(400);
+    expect(
+      (
+        await move(cajera, {
+          type: "out",
+          amount: 600,
+          reason: "QA vale partido",
+          managerPin: "000000",
+        })
+      ).body.message,
+    ).toBe("PIN incorrecto.");
+    const approved = await move(cajera, {
+      type: "out",
+      amount: 600,
+      reason: "QA vale aprobado",
+      managerPin,
+    });
+    expect(approved.status).toBe(201);
+    expect(approved.body.managerPin).toBeUndefined();
+    const log = await fixtureDb.auditLog.findFirst({
+      where: { action: "movement", entityId: cajera.cash.id },
+      orderBy: { createdAt: "desc" },
+    });
+    expect(log?.after).toMatchObject({ approvedBy: gerente.user.id });
+    // Las entradas no necesitan PIN.
+    expect(
+      (await move(cajera, { type: "in", amount: 5000, reason: "QA cambio" }))
+        .status,
+    ).toBe(201);
+    // Sin efectivo suficiente: el mensaje no revela cifras a la cajera, que
+    // trabaja con arqueo ciego (ni el esperado ni lo que falta).
+    const short = await move(cajera, {
+      type: "out",
+      amount: 50000,
+      reason: "QA retiro grande",
+      managerPin,
+    });
+    expect(short.status).toBe(400);
+    expect(short.body.message).toBe("No hay suficiente efectivo en caja.");
+    expect(short.body.message).not.toMatch(/\d/);
+    expect(
+      await fixtureDb.cashMovement.count({
+        where: { sessionId: cajera.cash.id },
+      }),
+    ).toBe(before + 3);
+  });
+
+  it("D-04: quien gestiona ventas no necesita PIN y el límite se ajusta en Ajustes", async () => {
+    await setSettings({});
+    const move = (who: any, data: Record<string, unknown>) =>
+      call("/cash-sessions/" + who.cash.id + "/movements", data, who.token);
+    for (const who of [admin, gerente])
+      expect(
+        (
+          await move(who, {
+            type: "out",
+            amount: 1500,
+            reason: "QA retiro de gerencia",
+          })
+        ).status,
+      ).toBe(201);
+    // El ajuste existe con 1,000 por defecto y se puede cambiar.
+    expect(
+      (await must("/settings", undefined, ownerToken))
+        .cashMovementApprovalLimit ?? 1000,
+    ).toBe(1000);
+    const saved = await setSettings({ cashMovementApprovalLimit: 2500 });
+    expect(saved.cashMovementApprovalLimit).toBe(2500);
+    expect(
+      (
+        await call(
+          "/settings",
+          { ...settingsBefore, cashMovementApprovalLimit: 0.001 },
+          ownerToken,
+          "PUT",
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await move(vendedor, {
+          type: "out",
+          amount: 2000,
+          reason: "QA vale con límite mayor",
+        })
+      ).status,
+    ).toBe(201);
+    expect(
+      (
+        await move(vendedor, {
+          type: "out",
+          amount: 600,
+          reason: "QA vale sobre el límite",
+        })
+      ).status,
+    ).toBe(400);
+  });
+});
+
+describe("SEC-01 · bomba XLSX en los importadores", () => {
+  // RSS real del proceso de la API cuando la prueba conoce su PID (Linux).
+  const apiRss = () => {
+    const pid = process.env.FITSTORE_API_PID;
+    if (!pid) return undefined;
+    const m = /VmRSS:\s+(\d+) kB/.exec(
+      readFileSync(`/proc/${pid}/status`, "utf8"),
+    );
+    return m ? Number(m[1]) * 1024 : undefined;
+  };
+  it("una bomba de ~300 KB (>100 MB descomprimida) da 400 rápido en facturas y catálogo sin subir la memoria de la API", async () => {
+    const { file, uncompressed } = await xlsxBomb();
+    expect(file.length).toBeLessThan(1024 * 1024);
+    expect(uncompressed).toBeGreaterThan(100 * 1024 * 1024);
+    const before = apiRss();
+    for (const path of ["/merchandise/import", "/products/import"]) {
+      const form = new FormData();
+      form.set("file", new Blob([file]), "factura.xlsx");
+      form.set(
+        "mapping",
+        JSON.stringify({
+          code: "codigo",
+          description: "descripcion",
+          qty: "cantidad",
+          unitCost: "costo",
+        }),
+      );
+      const started = Date.now();
+      const r = await fetch(base + path, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "X-Forwarded-For": testIp,
+        },
+        body: form,
+      });
+      const body = await r.json();
+      const ms = Date.now() - started;
+      console.info(`[SEC-01] ${path}: ${r.status} en ${ms} ms`);
+      expect(r.status, JSON.stringify(body)).toBe(400);
+      expect(body.message).toMatch(/demasiado grande al descomprimirse/);
+      expect(ms).toBeLessThan(3000);
+    }
+    const after = apiRss();
+    if (before !== undefined && after !== undefined) {
+      console.info(
+        `[SEC-01] RSS de la API: ${Math.round(before / 1048576)} MB → ${Math.round(after / 1048576)} MB`,
+      );
+      expect(after - before).toBeLessThan(64 * 1024 * 1024);
+    }
+  }, 60000);
+});
+
+describe("SEC-03 · cambio de usuario con PIN sin escalar privilegios", () => {
+  let vendedora: any,
+    cajera: any,
+    vendedoraToken = "";
+  let admin: any, manager: any, seedAdmin: any;
+  const pin = (userId: string, value: string, as: string) =>
+    request("/auth/pin", { userId, pin: value }, as);
+  beforeAll(async () => {
+    const roles = await ok("/roles");
+    const make = async (label: string, role: string, userPin: string) => {
+      const user = await ok("/users", {
+        name: "QA SEC-03 " + label + " " + suffix,
+        email: `sec03-${label}-${randomUUID().slice(0, 8)}@example.test`,
+        password: "FitStore-QA-2026!",
+        pin: userPin,
+        roleId: roles.find((r: any) => r.name === role).id,
+      });
+      actors.push(user);
+      const auth = await ok(
+        "/auth/login",
+        { email: user.email, password: "FitStore-QA-2026!" },
+        "",
+      );
+      return { user, token: auth.accessToken as string };
+    };
+    // La vendedora usa el mismo PIN que el admin de pruebas (876543).
+    ({ user: vendedora, token: vendedoraToken } = await make(
+      "vendedora",
+      "seller",
+      "876543",
+    ));
+    ({ user: cajera } = await make("cajera", "seller", "135792"));
+    admin = actors.find((u) => u.email.startsWith("qa-admin-"));
+    manager = actors.find((u) => u.email.startsWith("qa-manager-"));
+    seedAdmin = await fixtureDb.user.findFirstOrThrow({
+      where: { email: "admin@fitstore.demo" },
+    });
+  });
+
+  it("/staff no lista gerencia ni administración a la vendedora; la administración sí los ve", async () => {
+    const staff = await ok("/staff", undefined, vendedoraToken);
+    const ids = staff.map((u: any) => u.id);
+    expect(ids).not.toContain(seedAdmin.id);
+    expect(ids).not.toContain(admin.id);
+    expect(ids).not.toContain(manager.id);
+    expect(staff.map((u: any) => u.role.name)).not.toContain("admin");
+    expect(staff.map((u: any) => u.role.name)).not.toContain("manager");
+    expect(ids).toContain(cajera.id);
+    expect(ids).toContain(vendedora.id);
+    const all = (await ok("/staff", undefined, ownerToken)).map(
+      (u: any) => u.id,
+    );
+    expect(all).toEqual(
+      expect.arrayContaining([seedAdmin.id, admin.id, manager.id, cajera.id]),
+    );
+  });
+
+  it("vendedora → admin con el PIN correcto: rechazado, sin sesión nueva y queda en la auditoría", async () => {
+    const since = new Date(Date.now() - 1000);
+    for (const [target, value] of [
+      [admin, "876543"], // PIN correcto del admin de pruebas
+      [seedAdmin, "123456"], // PIN de la semilla (reproducción de la auditoría)
+      [manager, "987654"], // gerente: también tiene más permisos
+      [admin, "000000"], // PIN incorrecto: misma respuesta, sin oráculo
+    ] as const) {
+      const r = await pin(target.id, value, vendedoraToken);
+      expect(r.status, JSON.stringify(r.body)).toBe(403);
+      expect(r.body.message).toMatch(/más permisos/);
+      expect(r.body.accessToken).toBeUndefined();
+    }
+    // La vendedora sigue siendo ella misma.
+    const me = await ok("/auth/me", undefined, vendedoraToken);
+    expect(me.id).toBe(vendedora.id);
+    expect(me.role).toBe("seller");
+    const logs = await fixtureDb.auditLog.findMany({
+      where: {
+        userId: vendedora.id,
+        action: "pin_switch_denied",
+        createdAt: { gte: since },
+      },
+    });
+    expect(logs.map((l: any) => l.entityId)).toEqual(
+      expect.arrayContaining([admin.id, seedAdmin.id, manager.id]),
+    );
+    expect(logs[0].entity).toBe("user");
+  });
+
+  it("vendedora → cajera (mismo rol) sigue funcionando para el cambio de turno", async () => {
+    const r = await pin(cajera.id, "135792", vendedoraToken);
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(r.body.user.id).toBe(cajera.id);
+    const me = await ok("/auth/me", undefined, r.body.accessToken);
+    expect(me.id).toBe(cajera.id);
+  });
+
+  it("admin → vendedora (bajar privilegios) funciona", async () => {
+    const r = await pin(vendedora.id, "876543", token);
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(r.body.user.id).toBe(vendedora.id);
+    expect(r.body.user.permissions).not.toContain("*");
+  });
+});
+
+// Auditoría final de dinero (docs/AUDITORIA_FINAL_DINERO.md en
+// claude/audit-money): D-03 fondo de apertura, D-02 anulación con la caja
+// cerrada y D-05 una sola definición de venta neta en los informes.
+describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
+  const roleId = async (name: string) =>
+    (await ok("/roles", undefined, ownerToken)).find(
+      (r: any) => r.name === name,
+    ).id;
+  // Usuario nuevo con su equipo aprobado.
+  const newActor = async (role: string, label: string) => {
+    const tag = randomUUID().slice(0, 8);
+    const user = await ok(
+      "/users",
+      {
+        name: "QA " + label + " " + tag,
+        email: `qa-dinero-${tag}@example.test`,
+        password: "FitStore-QA-2026!",
+        pin: "246813",
+        roleId: await roleId(role),
+      },
+      ownerToken,
+    );
+    actors.push(user);
+    const auth = await ok(
+      "/auth/login",
+      { email: user.email, password: "FitStore-QA-2026!" },
+      "",
+    );
+    await enroll(auth.accessToken, "QA " + label);
+    return { user, token: auth.accessToken as string };
+  };
+  const closeBlind = (id: string, as: string, extra: any = {}) =>
+    ok(
+      "/cash-sessions/" + id + "/close",
+      { countedCash: 0, countedCard: 0, countedTransfer: 0, ...extra },
+      as,
+    );
+  const product = async (label: string, category: string, price: number) => {
+    const cats = await ok("/categories", undefined, ownerToken);
+    const tag = randomUUID().slice(0, 8);
+    const p = await ok(
+      "/products",
+      {
+        name: "QA dinero " + label + " " + tag,
+        sku: "QA-DIN-" + tag,
+        categoryId: cats.find((c: any) => c.name === category).id,
+        variants: [
+          {
+            sku: "QA-DINV-" + tag,
+            barcode: "QA-DINB-" + tag,
+            costAvg: Math.round(price * 0.4),
+            price,
+          },
+        ],
+      },
+      ownerToken,
+    );
+    products.push(p);
+    await ok(
+      "/inventory/adjustments",
+      {
+        variantId: p.variants[0].id,
+        qty: 20,
+        reason: "QA dinero existencias",
+        // Los suplementos exigen lote y vencimiento.
+        ...(category === "Suplementos"
+          ? {
+              lotNumber: "QA-DIN-" + tag,
+              expiryDate: new Date(Date.now() + 200 * 86400000).toISOString(),
+            }
+          : {}),
+      },
+      ownerToken,
+    );
+    return p.variants[0];
+  };
+
+  it("D-03: un fondo menor que lo dejado en el último cierre exige nota y PIN de gerente, y queda en la bitácora", async () => {
+    const cashier = await newActor("seller", "cajera D-03");
+    const manager = (await ok("/auth/me", undefined, managerToken)) as any;
+    // Día 1: abre con 1000 y deja todo el efectivo en la gaveta.
+    const day1 = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 1000 },
+      cashier.token,
+    );
+    await closeBlind(day1.id, cashier.token, {
+      countedCash: 1000,
+      delivered: 0,
+    });
+    expect(
+      await ok("/cash-sessions/opening-suggestion", undefined, cashier.token),
+    ).toMatchObject({ amount: 1000, fromSessionId: day1.id });
+    // Igual a lo sugerido: abre como siempre, sin nota ni PIN.
+    const day2 = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 1000 },
+      cashier.token,
+    );
+    expect(Number(day2.openingAmount)).toBe(1000);
+    await closeBlind(day2.id, cashier.token, {
+      countedCash: 1000,
+      delivered: 0,
+    });
+    // Menor: sin nota, sin PIN o con un PIN incorrecto no abre.
+    const short = (extra: any = {}) =>
+      request(
+        "/cash-sessions/open",
+        { openingAmount: 0, ...extra },
+        cashier.token,
+      );
+    const noNote = await short();
+    expect(noNote.status).toBe(400);
+    expect(noNote.body.message).toMatch(/nota/);
+    const noPin = await short({ openingNote: "Se llevó el fondo al banco" });
+    expect(noPin.status).toBe(400);
+    expect(noPin.body.message).toMatch(/PIN de un gerente/);
+    expect(
+      (
+        await short({
+          openingNote: "Se llevó el fondo al banco",
+          managerPin: "000000",
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await ok("/cash-sessions", undefined, cashier.token)).some(
+        (c: any) => !c.closedAt,
+      ),
+    ).toBe(false);
+    // Con nota y PIN de gerente abre, y la diferencia queda en la bitácora.
+    const day3 = await ok(
+      "/cash-sessions/open",
+      {
+        openingAmount: 0,
+        openingNote: "Se llevó el fondo al banco",
+        managerPin: "987654",
+      },
+      cashier.token,
+    );
+    expect(Number(day3.openingAmount)).toBe(0);
+    const audits = await ok("/audit-log", undefined, ownerToken);
+    const logged = audits.filter(
+      (a: any) =>
+        a.action === "opening_difference" &&
+        [day2.id, day3.id].includes(a.entityId),
+    );
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toMatchObject({
+      entityId: day3.id,
+      userId: cashier.user.id,
+      before: { suggested: 1000, fromSessionId: day2.id },
+      after: {
+        declared: 0,
+        difference: -1000,
+        note: "Se llevó el fondo al banco",
+        approvedBy: manager.id,
+      },
+    });
+    await closeBlind(day3.id, cashier.token);
+  });
+
+  it("D-02: anular una venta en efectivo de una caja cerrada no cambia su cuadre y el reembolso sale de la caja abierta de quien anula", async () => {
+    const variant = await product("anulación", "Ropa deportiva", 118);
+    const cashier = await newActor("seller", "cajera D-02");
+    const admin = await newActor("admin", "admin D-02");
+    // Caja A: vende 118 en efectivo y cierra cuadrada.
+    const a = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 200 },
+      cashier.token,
+    );
+    const sold = await ok("/sales", input(variant.id, 118, a), cashier.token);
+    await closeBlind(a.id, cashier.token, { countedCash: 318 });
+    const closedA = await fixtureDb.cashSession.findUniqueOrThrow({
+      where: { id: a.id },
+    });
+    expect(Number(closedA.expectedCash)).toBe(318);
+    expect(Number(closedA.differenceCash)).toBe(0);
+    // Sin caja abierta, quien anula no tiene de dónde entregar el efectivo.
+    const noCash = await request(
+      "/sales/" + sold.id + "/void",
+      { reason: "QA cliente devolvió al día siguiente" },
+      admin.token,
+    );
+    expect(noCash.status).toBe(400);
+    expect(noCash.body.message).toMatch(/Abre tu caja/);
+    expect(
+      (await fixtureDb.sale.findUniqueOrThrow({ where: { id: sold.id } }))
+        .status,
+    ).toBe("completed");
+    // Caja B, otro turno: el reembolso sale de aquí.
+    const b = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 500 },
+      admin.token,
+    );
+    await ok(
+      "/sales/" + sold.id + "/void",
+      { reason: "QA cliente devolvió al día siguiente" },
+      admin.token,
+    );
+    // A: el cierre aprobado no cambia; ningún sobrante después del cierre.
+    const afterA = await fixtureDb.cashSession.findUniqueOrThrow({
+      where: { id: a.id },
+    });
+    expect(Number(afterA.expectedCash)).toBe(318);
+    expect(Number(afterA.differenceCash)).toBe(0);
+    expect((await expectedForCash(a.id)).cash).toBe(318);
+    const cuadreA = await ok(
+      "/cash-sessions/" + a.id + "/cuadre",
+      undefined,
+      ownerToken,
+    );
+    expect(
+      cuadreA.lines.find((l: any) => l.key === "differenceDop").value,
+    ).toBe(0);
+    // B: el esperado baja exactamente lo reembolsado y cierra cuadrada.
+    expect((await expectedForCash(b.id)).cash).toBe(382);
+    // Los dos movimientos nombran la venta original.
+    const movements = await fixtureDb.cashMovement.findMany({
+      where: { sessionId: { in: [a.id, b.id] } },
+    });
+    expect(
+      movements.map((m: any) => [m.sessionId, m.type, Number(m.amount)]).sort(),
+    ).toEqual(
+      [
+        [a.id, "in", 118],
+        [b.id, "out", 118],
+      ].sort(),
+    );
+    for (const m of movements) expect(m.reason).toContain(sold.number);
+    const closedB = await ok(
+      "/cash-sessions/" + b.id + "/close",
+      { countedCash: 382, countedCard: 0, countedTransfer: 0 },
+      admin.token,
+    );
+    expect(closedB.differences).toMatchObject({
+      cash: 0,
+      card: 0,
+      transfer: 0,
+    });
+    const audits = await ok("/audit-log", undefined, ownerToken);
+    expect(
+      audits.find(
+        (l: any) => l.action === "void_after_close" && l.entityId === a.id,
+      ).after,
+    ).toMatchObject({
+      saleId: sold.id,
+      cash: 0,
+      refundCashSessionId: b.id,
+      refundAmount: 118,
+    });
+  });
+
+  it("D-05: dashboard, informes por vendedor y por forma de pago usan la misma venta neta con devoluciones parciales", async () => {
+    const day = "2023-03-15";
+    const at = new Date(day + "T15:00:00.000Z");
+    const ropa = await product("neto ropa", "Ropa deportiva", 100);
+    const supl = await product("neto suplemento", "Suplementos", 300);
+    // Actores y cajas propios: las cajas globales pueden haberse cerrado.
+    const admin = await newActor("admin", "admin D-05");
+    const seller = await newActor("seller", "vendedor D-05");
+    const adminCash = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 500 },
+      admin.token,
+    );
+    const sellerCash = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 0 },
+      seller.token,
+    );
+    const sell = (as: string, s: any, items: any[], payments: any[]) =>
+      ok(
+        "/sales",
+        {
+          offlineUuid: randomUUID(),
+          customerId: defaultCustomerId,
+          cashSessionId: s.id,
+          items,
+          payments,
+          expectedTotal: payments.reduce((t, p) => t + p.amount, 0),
+        },
+        as,
+      );
+    // 900 vendidos: 200 + 300 + 400.
+    const s1 = await sell(
+      admin.token,
+      adminCash,
+      [{ variantId: ropa.id, qty: 2 }],
+      [{ method: "cash", amount: 200 }],
+    );
+    const s2 = await sell(
+      seller.token,
+      sellerCash,
+      [{ variantId: supl.id, qty: 1 }],
+      [
+        {
+          method: "card",
+          amount: 300,
+          cardLast4: "4242",
+          approvalCode: "QA-D05",
+        },
+      ],
+    );
+    const s3 = await sell(
+      admin.token,
+      adminCash,
+      [
+        { variantId: ropa.id, qty: 1 },
+        { variantId: supl.id, qty: 1 },
+      ],
+      [{ method: "transfer", amount: 400, bank: "BHD", reference: "QA-D05" }],
+    );
+    // 400 devueltos, ambas devoluciones parciales: 1 de 2 unidades de s1 en
+    // efectivo y la línea de suplemento de s3 por transferencia.
+    const giveBack = (
+      sale: any,
+      line: any,
+      qty: number,
+      refundMethod: string,
+    ) =>
+      ok(
+        "/returns",
+        {
+          operationId: randomUUID(),
+          saleId: sale.id,
+          cashSessionId: adminCash.id,
+          reason: "QA D-05 devolución parcial",
+          refundMethod,
+          items: [{ saleItemId: line.id, qty, restock: true }],
+        },
+        admin.token,
+      );
+    const r1 = await giveBack(s1, s1.items[0], 1, "cash");
+    const r2 = await giveBack(
+      s3,
+      s3.items.find((i: any) => i.variantId === supl.id),
+      1,
+      "transfer",
+    );
+    expect(Number(r1.total) + Number(r2.total)).toBe(400);
+    await fixtureDb.sale.updateMany({
+      where: { id: { in: [s1.id, s2.id, s3.id] } },
+      data: { createdAt: at },
+    });
+    await fixtureDb.saleReturn.updateMany({
+      where: { id: { in: [r1.id, r2.id] } },
+      data: { createdAt: at },
+    });
+    const range = `?from=${day}&to=${day}`;
+    const total = (rows: any[], field: string) =>
+      Math.round(rows.reduce((t, r) => t + Number(r[field]), 0) * 100) / 100;
+    const summary = await ok(
+      "/dashboard/summary" + range,
+      undefined,
+      ownerToken,
+    );
+    expect(summary.revenue).toBe(500);
+    expect(summary.daily).toEqual([{ day, total: 500 }]);
+    expect(total(summary.sellers, "total")).toBe(500);
+    expect(
+      Object.fromEntries(summary.sellers.map((s: any) => [s.name, s.total])),
+    ).toEqual({ [admin.user.name]: 200, [seller.user.name]: 300 });
+    expect(total(summary.category, "total")).toBe(500);
+    expect(
+      Object.fromEntries(summary.category.map((c: any) => [c.name, c.total])),
+    ).toEqual({ "Ropa deportiva": 200, Suplementos: 300 });
+    expect(total(summary.payments, "amount")).toBe(500);
+    expect(
+      Object.fromEntries(summary.payments.map((p: any) => [p.name, p.amount])),
+    ).toEqual({ cash: 100, card: 300, transfer: 100 });
+    const bySeller = await ok(
+      "/reports/by-seller" + range,
+      undefined,
+      ownerToken,
+    );
+    expect(total(bySeller.rows, "Ventas")).toBe(500);
+    expect(
+      Object.fromEntries(bySeller.rows.map((r: any) => [r.Vendedor, r.Ventas])),
+    ).toEqual({ [admin.user.name]: 200, [seller.user.name]: 300 });
+    const byPayment = await ok(
+      "/reports/by-payment" + range,
+      undefined,
+      ownerToken,
+    );
+    expect(total(byPayment.rows, "Ventas")).toBe(500);
+    expect(
+      Object.fromEntries(byPayment.rows.map((r: any) => [r.Método, r.Ventas])),
+    ).toEqual({ cash: 100, card: 300, transfer: 100 });
+    const sales = await ok("/reports/sales" + range, undefined, ownerToken);
+    expect(total(sales.rows, "Total") - total(sales.rows, "Devoluciones")).toBe(
+      500,
+    );
+    // Las cajas cuadran: 500 + 200 − 100 en efectivo y 400 − 300 en
+    // transferencia; la tarjeta del vendedor, 300.
+    await closeBlind(adminCash.id, admin.token, {
+      countedCash: 600,
+      countedTransfer: 100,
+    });
+    await closeBlind(sellerCash.id, seller.token, { countedCard: 300 });
   });
 });

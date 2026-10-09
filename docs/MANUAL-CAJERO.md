@@ -5,7 +5,7 @@ Esta guía explica cómo iniciar sesión, cobrar y cerrar la caja. Los recibos q
 ## 1. Entrar y preparar la caja
 
 1. En la pantalla de acceso, escribe tu **usuario** (por ejemplo, `mfeliz`) y tu contraseña. No escribas un correo electrónico si tu cuenta está configurada con nombre de usuario.
-2. En el menú, abre **Caja** y pulsa **Abrir mi caja**. Introduce el efectivo que queda como fondo inicial y guarda. Cada persona y equipo debe usar su propia caja; no intentes abrirla varias veces si ya tienes una sesión abierta.
+2. En el menú, abre **Caja** y pulsa **Abrir mi caja**. Introduce el efectivo que queda como fondo inicial y guarda. Si el fondo es menor que lo que dejó el último cierre (el monto sugerido), escribe una nota que explique la diferencia y pide el PIN a un gerente; la diferencia queda en la bitácora. Cada persona y equipo debe usar su propia caja; no intentes abrirla varias veces si ya tienes una sesión abierta.
 3. Si aparece que el equipo necesita aprobación, pide a Marcos o Génesis que lo apruebe en **Configuración > Equipos**. Si dice que ya existe una caja para el usuario o terminal, revisa primero **Caja** y pide a un administrador que compruebe las sesiones abiertas.
 4. Vuelve a **Punto de venta**. Si el sistema dice que abras la caja, no podrás terminar una venta hasta abrirla.
 
@@ -30,7 +30,12 @@ Esta guía explica cómo iniciar sesión, cobrar y cerrar la caja. Los recibos q
 
 - La opción **Crédito / contraentrega** permite entregar la mercancía y dejar el saldo asociado al cliente. La contraentrega equivale a un saldo pendiente que debe cobrarse después; no la uses sin identificar al cliente y confirmar el acuerdo.
 - Las ventas a crédito requieren que estén habilitadas por la administración; el crédito también puede exigir vencimiento y aprobación de gerente. Crédito, contraentrega y nota de crédito requieren conexión a internet.
+- La contraentrega pide el **PIN de un gerente** cuando supera el monto definido en Ajustes (RD$ 1,000 si no se cambió) o, si las ventas a crédito no están habilitadas, por cualquier monto. Escríbelo en el campo **PIN del gerente para aprobar la venta** antes de pulsar **Finalizar venta**. No pidas el PIN para repartir una contraentrega en varias facturas.
 - El cajero no debe marcar ese saldo como pagado. Marcos o Génesis, como administradores, registran luego los pagos o abonos desde **Ventas** y verifican la evidencia de pago. No cierres la caja contando un saldo pendiente como efectivo cobrado.
+
+## Salidas de efectivo (vales y retiros)
+
+En **Caja**, **Movimiento de efectivo** registra entradas y salidas con su motivo. Si las salidas de tu turno superan el monto de Ajustes (RD$ 1,000 si no se cambió), un gerente debe escribir su PIN en **PIN del gerente**. Si el sistema indica que no hay suficiente efectivo, no muestra cifras: revisa la salida con la persona encargada.
 
 ## 5. Cerrar e imprimir el cuadre
 
@@ -41,7 +46,7 @@ Esta guía explica cómo iniciar sesión, cobrar y cerrar la caja. Los recibos q
 
 ## 6. Anular una venta por error
 
-No anules la venta desde el usuario de cajero. Avisa a Marcos o Génesis con el número de factura y el motivo. Un administrador puede entrar en **Ventas**, buscar la factura y pulsar **Anular** sin abrir caja; debe confirmar el motivo. La factura no se borra: queda registrada como anulada, se revierte el inventario y deja de contar en ventas. La anulación no está disponible si la venta ya tiene devoluciones o abonos registrados; en ese caso, pide al administrador que revise el caso y use el procedimiento correcto.
+No anules la venta desde el usuario de cajero. Avisa a Marcos o Génesis con el número de factura y el motivo. Un administrador puede entrar en **Ventas**, buscar la factura y pulsar **Anular**; debe confirmar el motivo. Si la caja de esa venta ya cerró y se cobró en efectivo, el administrador necesita su propia caja abierta: el reembolso sale de ella y queda como salida con el número de la factura. La factura no se borra: queda registrada como anulada, se revierte el inventario y deja de contar en ventas. La anulación no está disponible si la venta ya tiene devoluciones o abonos registrados; en ese caso, pide al administrador que revise el caso y use el procedimiento correcto.
 
 ## Si algo falla
 

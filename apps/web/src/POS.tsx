@@ -31,6 +31,7 @@ import {
   money,
   d,
   paymentTotals,
+  receivableNeedsApproval,
 } from "@fitstore/shared";
 import type { SaleInput } from "@fitstore/shared";
 import {
@@ -1434,11 +1435,15 @@ function Checkout({
   } catch {
     /* El formulario evita el exceso de pagos sin efectivo. */
   }
+  // Crédito y contraentrega usan la misma regla que la API (D-01): la
+  // contraentrega de quien no gestiona ventas pide el PIN sobre el umbral, o
+  // siempre si las ventas a crédito no están habilitadas.
   const needsPin =
-    payments
-      .filter((p) => p.method === "credit")
-      .reduce((sum, p) => sum + p.amount, 0) >
-      Number(config?.creditApprovalThreshold ?? 1000) ||
+    receivableNeedsApproval(
+      payments,
+      config,
+      can(user!.permissions, "sale:manage"),
+    ) ||
     payments.some((p) => p.method === "credit_note" && !p.creditNoteCode) ||
     (!can(user!.permissions, "sale:manage") &&
       cart.some(
@@ -2112,7 +2117,7 @@ function Checkout({
       </div>
       {needsPin && (
         <label className="field">
-          <span>PIN del gerente para aprobar el descuento</span>
+          <span>PIN del gerente para aprobar la venta</span>
           <input
             type="password"
             inputMode="numeric"
