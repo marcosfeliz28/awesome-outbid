@@ -191,15 +191,39 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
         permissions: ["sale:write"],
       }),
     ).rejects.toMatchObject({ status: 403 });
+    const response = {
+      setHeader: () => undefined,
+      type: () => response,
+      send: (bytes: Buffer) => bytes,
+    } as any;
+    for (const identity of [
+      { id: "owner", permissions: [] },
+      { id: "manager", permissions: ["sale:manage"] },
+    ]) {
+      await expect(
+        controller.getPaymentProof(
+          payment.id,
+          { ...identity, branchId: "main" } as any,
+          response,
+        ),
+      ).resolves.toEqual(Buffer.from("iVBORw0KGgo=", "base64"));
+    }
+    await expect(
+      controller.getPaymentProof(
+        payment.id,
+        { id: "other", permissions: [], branchId: "main" } as any,
+        response,
+      ),
+    ).rejects.toMatchObject({ status: 403 });
     expect(
       Reflect.getMetadata("permission", SalesController.prototype.paymentProof),
-    ).toBeUndefined();
+    ).toBe("authenticated");
     expect(
       Reflect.getMetadata(
         "permission",
         SalesController.prototype.getPaymentProof,
       ),
-    ).toBeUndefined();
+    ).toBe("authenticated");
   });
 
   it("F2: el historial usa lista blanca y no entrega costos de merma a la cajera", () => {

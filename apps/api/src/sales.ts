@@ -1055,7 +1055,10 @@ export class SalesController {
           if (!ownership) {
             const attempted = sale as any;
             const paymentTotal = money(
-              (Array.isArray(attempted.payments) ? attempted.payments : []).reduce(
+              (Array.isArray(attempted.payments)
+                ? attempted.payments
+                : []
+              ).reduce(
                 (sum: number, payment: any) =>
                   sum +
                   (Number.isFinite(Number(payment?.amount))
@@ -1725,9 +1728,7 @@ export class SalesController {
     res.setHeader("Content-Type", "application/pdf");
     const doc = new PDFDocument({ size: "A4", margin: 48 });
     doc.pipe(res);
-    doc
-      .fontSize(22)
-      .text(business.name || "Nexora POS", { align: "center" });
+    doc.fontSize(22).text(business.name || "Nexora POS", { align: "center" });
     if (business.branchName)
       doc.fontSize(11).text(business.branchName, { align: "center" });
     if (business.address)
@@ -1795,6 +1796,7 @@ export class SalesController {
   // URL en el pago, igual que el logo. La sube quien registró el cobro en su
   // caja o quien gestiona ventas; se puede reemplazar.
   @Post("payments/:id/proof")
+  @Permit("authenticated")
   @UseInterceptors(
     FileInterceptor("file", {
       limits: { fileSize: PROOF_MAX_BYTES + 1, files: 1 },
@@ -1834,6 +1836,7 @@ export class SalesController {
     });
   }
   @Get("payments/:id/proof")
+  @Permit("authenticated")
   async getPaymentProof(
     @Param("id") id: string,
     @CurrentUser() actor: Actor,

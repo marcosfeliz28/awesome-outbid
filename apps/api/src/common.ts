@@ -50,6 +50,8 @@ export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext) =>
     ctx.switchToHttp().getRequest<ActorRequest>().actor,
 );
+// "authenticated" declara rutas cuya autorización por recurso se comprueba
+// dentro del controlador (por ejemplo, caja dueña o gerente).
 export const Permit = (permission: string) =>
   SetMetadata("permission", permission);
 export const Public = () => SetMetadata("public", true);
@@ -589,7 +591,12 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (permission && !can(req.actor.permissions, permission)) denied();
+    if (
+      permission &&
+      permission !== "authenticated" &&
+      !can(req.actor.permissions, permission)
+    )
+      denied();
     if (
       this.reflector.getAllAndOverride("terminal", [
         context.getHandler(),
