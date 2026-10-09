@@ -41,6 +41,8 @@ jobs:
           sudo apt-get install -y -qq postgresql-common
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y -qq postgresql-client-17
+          # También para los pasos siguientes (tests/backup-restore.test.ts usa pg_dump del PATH).
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
           export PATH="/usr/lib/postgresql/17/bin:$PATH"
           pg_dump --version
           B="$RUNNER_TEMP/backup"
