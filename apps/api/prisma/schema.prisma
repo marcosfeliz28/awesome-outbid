@@ -158,6 +158,21 @@ model Lot {
   @@index([expiryDate])
 }
 
+// Evidencia de duplicados históricos resueltos por la migración I1. No tiene
+// relaciones deliberadamente: conserva los identificadores aunque el lote sea
+// eliminado años después.
+model LotIdentityConflict {
+  conflictKey         String    @id
+  variantId           String    @db.Uuid
+  lotNumberNormalized String
+  keeperLotId         String    @db.Uuid
+  sourceLotIds        Json
+  expiryDates         Json
+  chosenExpiryDate    DateTime?
+  resolution          String
+  createdAt           DateTime  @default(now())
+}
+
 model InventoryMovement {
   id           String   @id @default(uuid()) @db.Uuid
   variantId    String   @db.Uuid
