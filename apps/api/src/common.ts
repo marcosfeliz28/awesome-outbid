@@ -200,6 +200,28 @@ export const qty = stockQty();
 export const reason = z.string().trim().min(3).max(1000);
 export const json = (value: unknown) => JSON.parse(JSON.stringify(value));
 export const scoped = (actor: Actor) => ({ branchId: actor.branchId });
+// Toda operación que vaya a asociar una venta o cotización a un cliente toma
+// el mismo bloqueo que la anonimización. El segundo en llegar relee el estado:
+// así nunca puede recrear PII después de que el borrado fue confirmado.
+export async function lockActiveCustomer(
+  tx: any,
+  actor: Actor,
+  customerId: string,
+) {
+  await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
+  const customer = await tx.customer.findFirst({
+    where: {
+      id: customerId,
+      branchId: actor.branchId,
+      active: true,
+      anonymizedAt: null,
+    },
+  });
+  if (!customer)
+    conflict("El cliente fue anonimizado o ya no está disponible.");
+  return customer;
+}
+
 export const audit = (
   db: any,
   actor: Actor,

@@ -25,6 +25,7 @@ import {
   conflict,
   json,
   imageType,
+  lockActiveCustomer,
 } from "./common";
 import {
   can,
@@ -115,6 +116,47 @@ const auditSettings = (data: any) =>
   data?.logo
     ? { ...data, logo: `(imagen de ${Math.round(data.logo.length / 1365)} KB)` }
     : data;
+const literalPattern = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function redactKnownCustomerPii(value: unknown, customer: any): unknown {
+  const known = [
+    { value: customer.name, tokenBoundaries: true },
+    { value: customer.phone, tokenBoundaries: false },
+    { value: customer.email, tokenBoundaries: false },
+    { value: customer.legalId, tokenBoundaries: false },
+    { value: customer.notes, tokenBoundaries: false },
+  ]
+    .filter(
+      (item): item is { value: string; tokenBoundaries: boolean } =>
+        typeof item.value === "string" && Boolean(item.value.trim()),
+    )
+    .map((item) => ({ ...item, value: item.value.trim() }))
+    .sort((a, b) => b.value.length - a.value.length);
+  const sensitiveDigits = [customer.phone, customer.legalId]
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.replace(/\D/g, ""))
+    .filter((item) => item.length >= 6);
+  const redact = (current: unknown): unknown => {
+    if (Array.isArray(current)) return current.map(redact);
+    if (!current || typeof current !== "object") {
+      if (typeof current !== "string") return current;
+      const compact = current.replace(/\D/g, "");
+      if (sensitiveDigits.some((digits) => compact.includes(digits)))
+        return "[dato anonimizado]";
+      return known.reduce((text, item) => {
+        const literal = literalPattern(item.value);
+        const pattern = item.tokenBoundaries
+          ? `(?<![\\p{L}\\p{N}])${literal}(?![\\p{L}\\p{N}])`
+          : literal;
+        return text.replace(new RegExp(pattern, "giu"), "[dato anonimizado]");
+      }, current);
+    }
+    return Object.fromEntries(
+      Object.entries(current).map(([key, nested]) => [key, redact(nested)]),
+    );
+  };
+  return redact(json(value));
+}
 const cashierNumber = z.number().int().min(1).max(999999);
 
 @Controller()
@@ -217,87 +259,110 @@ export class AdminController {
   ) {
     const customerId = parse(uuid, id);
     const request = parse(anonymizeCustomerSchema, body);
-    return this.db.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
-      const customer = await tx.customer.findFirstOrThrow({
-        where: { id: customerId, branchId: actor.branchId },
-      });
-      if (customer.anonymizedAt) conflict("El cliente ya fue anonimizado.");
-      const [debt, creditNotes] = await Promise.all([
-        tx.sale.aggregate({
-          where: {
-            customerId,
-            branchId: actor.branchId,
-            status: "completed",
-            creditBalance: { gt: 0 },
-          },
-          _sum: { creditBalance: true },
-        }),
-        tx.creditNote.aggregate({
-          where: { customerId, balance: { gt: 0 } },
-          _sum: { balance: true },
-        }),
-      ]);
-      if (
-        Number(debt._sum.creditBalance ?? 0) > 0 ||
-        Number(creditNotes._sum.balance ?? 0) > 0
-      )
-        conflict(
-          "No se puede anonimizar: el cliente tiene crédito, contraentrega o una nota de crédito pendiente.",
-        );
+    return this.db.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
+        const customer = await tx.customer.findFirstOrThrow({
+          where: { id: customerId, branchId: actor.branchId },
+        });
+        if (customer.anonymizedAt) conflict("El cliente ya fue anonimizado.");
+        const [debt, creditNotes] = await Promise.all([
+          tx.sale.aggregate({
+            where: {
+              customerId,
+              branchId: actor.branchId,
+              status: "completed",
+              creditBalance: { gt: 0 },
+            },
+            _sum: { creditBalance: true },
+          }),
+          tx.creditNote.aggregate({
+            where: { customerId, balance: { gt: 0 } },
+            _sum: { balance: true },
+          }),
+        ]);
+        if (
+          Number(debt._sum.creditBalance ?? 0) > 0 ||
+          Number(creditNotes._sum.balance ?? 0) > 0
+        )
+          conflict(
+            "No se puede anonimizar: el cliente tiene crédito, contraentrega o una nota de crédito pendiente.",
+          );
 
-      const marker = { customerId, anonymized: true };
-      await tx.auditLog.updateMany({
-        where: {
-          branchId: actor.branchId,
-          entity: "customer",
-          entityId: customerId,
-        },
-        data: { before: marker, after: marker },
-      });
-      await tx.quote.updateMany({
-        where: { branchId: actor.branchId, customerId },
-        data: { notes: "" },
-      });
-      const sales = await tx.sale.findMany({
-        where: { branchId: actor.branchId, customerId },
-        select: { id: true },
-      });
-      const saleIds = sales.map((sale) => sale.id);
-      if (saleIds.length) {
-        // Los números, fechas, NCF e importes se conservan para la trazabilidad
-        // contable. Sólo se eliminan campos libres o identificadores personales.
-        await tx.sale.updateMany({
-          where: { id: { in: saleIds } },
-          data: { recipientLegalId: null, notes: "" },
+        const marker = { customerId, anonymized: true };
+        await tx.auditLog.updateMany({
+          where: {
+            branchId: actor.branchId,
+            entity: "customer",
+            entityId: customerId,
+          },
+          data: { before: marker, after: marker },
         });
-        await tx.alert.updateMany({
-          where: { branchId: actor.branchId, entityId: { in: saleIds } },
+        await tx.quote.updateMany({
+          where: { branchId: actor.branchId, customerId },
+          data: { notes: "" },
+        });
+        const sales = await tx.sale.findMany({
+          where: { branchId: actor.branchId, customerId },
+          select: { id: true },
+        });
+        const saleIds = sales.map((sale) => sale.id);
+        if (saleIds.length) {
+          // Los números, fechas, NCF e importes se conservan para la trazabilidad
+          // contable. Sólo se eliminan campos libres o identificadores personales.
+          await tx.sale.updateMany({
+            where: { id: { in: saleIds } },
+            data: { recipientLegalId: null, notes: "" },
+          });
+          const saleAudits = await tx.auditLog.findMany({
+            where: {
+              branchId: actor.branchId,
+              entity: "sale",
+              entityId: { in: saleIds },
+            },
+            select: { id: true, before: true, after: true },
+          });
+          for (const entry of saleAudits) {
+            const cleaned: Record<string, unknown> = {};
+            if (entry.before != null)
+              cleaned.before = redactKnownCustomerPii(entry.before, customer);
+            if (entry.after != null)
+              cleaned.after = redactKnownCustomerPii(entry.after, customer);
+            if (Object.keys(cleaned).length)
+              await tx.auditLog.update({
+                where: { id: entry.id },
+                data: cleaned,
+              });
+          }
+          await tx.alert.updateMany({
+            where: { branchId: actor.branchId, entityId: { in: saleIds } },
+            data: {
+              message: "Cuenta por cobrar cerrada de cliente anonimizado.",
+              status: "resolved",
+            },
+          });
+        }
+        const row = await tx.customer.update({
+          where: { id: customerId },
           data: {
-            message: "Cuenta por cobrar cerrada de cliente anonimizado.",
-            status: "resolved",
+            name: `Cliente anonimizado ${customerId.slice(0, 8)}`,
+            phone: null,
+            email: null,
+            legalId: null,
+            notes: "",
+            creditLimit: 0,
+            active: false,
+            anonymizedAt: new Date(),
           },
         });
-      }
-      const row = await tx.customer.update({
-        where: { id: customerId },
-        data: {
-          name: `Cliente anonimizado ${customerId.slice(0, 8)}`,
-          phone: null,
-          email: null,
-          legalId: null,
-          notes: "",
-          creditLimit: 0,
-          active: false,
-          anonymizedAt: new Date(),
-        },
-      });
-      await audit(tx, actor, "anonymize", "customer", customerId, undefined, {
-        reason: request.reason,
-        requestRef: request.requestRef,
-      });
-      return row;
-    });
+        await audit(tx, actor, "anonymize", "customer", customerId, undefined, {
+          reasonRecorded: true,
+          requestReferenceRecorded: Boolean(request.requestRef),
+        });
+        return row;
+      },
+      { timeout: 20_000 },
+    );
   }
   @Get("suppliers") @Permit("purchase:write") suppliers(
     @CurrentUser() actor: Actor,
@@ -473,13 +538,16 @@ export class AdminController {
         )
       )
         bad("El descuento por monto supera el importe de la línea.");
-    return this.db.quote.create({
-      data: {
-        ...data,
-        items: json(data.items),
-        userId: actor.id,
-        branchId: actor.branchId,
-      },
+    return this.db.$transaction(async (tx) => {
+      if (data.customerId) await lockActiveCustomer(tx, actor, data.customerId);
+      return tx.quote.create({
+        data: {
+          ...data,
+          items: json(data.items),
+          userId: actor.id,
+          branchId: actor.branchId,
+        },
+      });
     });
   }
   @Post("quotes/:id/convert")

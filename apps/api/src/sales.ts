@@ -52,6 +52,7 @@ import {
   safeErrorMessage,
   fieldLabel,
   imageType,
+  lockActiveCustomer,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
 
@@ -484,14 +485,8 @@ export class SalesController {
           false,
           capturedAt,
         );
-        let customer = input.customerId
-          ? await tx.customer.findFirstOrThrow({
-              where: {
-                id: input.customerId,
-                branchId: actor.branchId,
-                active: true,
-              },
-            })
+        const customer = input.customerId
+          ? await lockActiveCustomer(tx, actor, input.customerId)
           : null;
         const settings = await tx.settings.findUnique({
           where: { id: actor.branchId },
@@ -610,12 +605,6 @@ export class SalesController {
         if ((credit || cod) && !customer)
           bad("El crédito / contraentrega requiere seleccionar un cliente.");
         if ((credit || cod) && customer) {
-          // Serializar sólo operaciones que consumen límite de crédito. Las
-          // ventas pagadas no deben bloquear entre sí por compartir cliente.
-          await tx.$queryRaw`SELECT id FROM "Customer" WHERE id=${customer.id}::uuid FOR UPDATE`;
-          customer = await tx.customer.findFirstOrThrow({
-            where: { id: customer.id, branchId: actor.branchId, active: true },
-          });
           // Toda mercancía despachada pendiente de cobro cuenta en la deuda.
           const debt = await tx.sale.aggregate({
             where: {
