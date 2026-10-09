@@ -550,3 +550,120 @@ No se implementaron términos para clientes, reseñas, correos masivos,
 controles para menores ni banner de cookies. El correo del cliente se conserva
 porque sigue siendo un dato de contacto; esta entrega sólo debía quitar la
 fecha de nacimiento.
+
+## E. Ejecución real independiente del PR #1
+
+**Fecha local:** 2026-10-08. **Commit probado:**
+`561e752553e8153a67afab833c2d2f0018d174b2`, obtenido de
+`refs/pull/1/head` y coincidente con `origin/nexora-chatgpt`. Las pruebas se
+ejecutaron en un worktree temporal separado, no sobre un ZIP.
+
+### E1. Entorno y preparación
+
+- Windows, Node.js `v24.21.0` y pnpm `11.19.0`.
+- `pnpm install --frozen-lockfile`: salida 0. Hubo reintentos de red; el paquete
+  opcional de PostgreSQL embebido no se materializó y, sólo para la prueba, se
+  reutilizó la misma versión `18.4.0-beta.17` ya instalada en el checkout de
+  desarrollo. No se modificó el código fuente.
+- Un primer `pnpm check`, antes de generar Prisma, falló porque el cliente no
+  existía. `pnpm db:generate` generó Prisma Client `6.19` y la repetición fue
+  satisfactoria.
+
+```text
+pnpm db:generate
+Exit code   0
+
+pnpm check
+Exit code   0
+Vitest      16 archivos, 212 passed, 1 skipped, 0 failed
+Typecheck   pasa
+ESLint      pasa
+Build web   pasa
+Build API   pasa
+```
+
+El build web emitió una advertencia no fatal por un fragmento de
+`989.52 kB` mayor que `500 kB`; la PWA generó 25 entradas de precache
+(aproximadamente `2003.88 KiB`).
+
+### E2. Regresiones focales y base descartable
+
+```text
+pnpm exec vitest run tests/rate-limit-l1.test.ts tests/cash-privacy.test.ts tests/inventory-resilience.test.ts tests/offline-policy.test.ts tests/claude-round2.test.ts
+Exit code   0
+Test Files  5 passed (5)
+Tests       46 passed (46)
+```
+
+En PostgreSQL descartable, puerto local 55432:
+
+```text
+pnpm db:migrate
+Exit code   0
+Migraciones 24/24 aplicadas
+
+pnpm db:seed
+Exit code   0
+Semilla     60 productos, 228 variantes, 4 usuarios, 3 proveedores, 846 ventas
+```
+
+La API compilada arrancó en `http://127.0.0.1:3101/api` y
+`GET /api/health` respondió `ok`.
+
+La regresión L1 también se ejecutó por HTTP con un proceso nuevo y contadores
+vacíos: 61 intentos inválidos contra la misma cuenta/origen produjeron
+60 respuestas 400 y una 429; otra cuenta inició sesión con 201. Luego, 601
+usuarios inexistentes produjeron 601 respuestas 400 y otra cuenta legítima
+volvió a iniciar sesión con 201. No hubo bloqueo cruzado en esos escenarios.
+
+### E3. Integración completa: resultado no verde
+
+```text
+pnpm exec vitest run --config vitest.integration.config.ts --reporter=json --outputFile=test-results/pr1-integration.json
+Exit code    1
+Duración     ~171 s
+Suites       33 total; 9 sin fallos y 24 con fallos
+Tests        157 total; 76 passed, 81 failed, 0 skipped
+```
+
+No se declara la integración como aprobada. Las primeras causas observadas
+fueron:
+
+- cascada dominante de `/sales` con 409 porque la caja quedó abierta en el
+  equipo `QA admin`, distinto del terminal usado por los casos posteriores;
+- aserciones de estado o valor, entre ellas costo esperado 12 frente a 13;
+- accesos a `undefined`/`null` después de fallar fixtures anteriores;
+- cierre de caja rechazado porque `countedCard` resultó negativo;
+- la prueba de producción esperaba el error de `JWT_SECRET`, pero
+  `WEB_ORIGIN` falló primero;
+- apertura concurrente de caja: se esperó una operación exitosa y hubo dos;
+- umbral de crédito: se esperaba 400 y se recibió 200;
+- la regresión O1 de auditoría de cada resolución autenticada falló.
+
+I1, K1 y D1 sí pasaron dentro de la integración.
+
+### E4. Estado del CI de GitHub
+
+Los dos jobs `windows-installer` del commit probado pasaron. Los dos jobs
+`verify` fallaron antes de ejecutar integración: el log de la API muestra
+`Nest application successfully started`, pero `scripts/verify.mjs` agotó
+90 segundos esperando `http://127.0.0.1:3001/api/health` y terminó el proceso.
+Por ese motivo Playwright no se ejecutó en CI. Este resultado no debe
+confundirse con la corrida local anterior, donde la API compilada y su health
+sí respondieron y la integración alcanzó 157 pruebas.
+
+### E5. Controles no ejecutados
+
+- E2: Docker/Compose dos veces y reinicio de API; Docker no está instalado.
+- E3: Nginx real, CSP, cámara y flujo offline dentro del sandbox; sin
+  Docker/Nginx y Playwright quedó bloqueado por la integración roja.
+- E4: restauración real de una exportación; no se confirmó un artefacto
+  exportado utilizable para esta corrida.
+- E5: instalador y fallos inyectados en una Windows 11 limpia; el equipo no es
+  una VM limpia.
+- E6: impresión física de ticket, cuadre y PDF en impresora de 80 mm; no se
+  dispuso del hardware.
+- E7: migración sobre una copia histórica con datos; sólo se probaron las
+  24 migraciones y la semilla sobre una base nueva descartable.
+
+No se usaron credenciales ni datos de producción, y no se modificó Render.
