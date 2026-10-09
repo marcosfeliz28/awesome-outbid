@@ -62,6 +62,7 @@ import {
 } from "./Tienda";
 import { METHOD_LABEL, printSoon } from "./Prints";
 import { managementQueryError } from "./managementMessages";
+import { customerPrivateDisplay } from "./customer-display";
 import {
   applyPendingSaleReprice,
   discardPendingSale,
@@ -1952,12 +1953,18 @@ export function Customers() {
                 label: "Contacto",
                 render: (c) => (
                   <span>
-                    {c.phone || "—"}
+                    {customerPrivateDisplay(c.phone, fullCustomer)}
                     <small>{c.email}</small>
                   </span>
                 ),
               },
-              { label: "Cédula / RNC", render: (c) => c.legalId || "—" },
+              {
+                label: "Cédula / RNC",
+                // P5 + SEC-05: la API ya envía el dato enmascarado a la caja;
+                // la vista lo acorta igual («•••123») con el mismo criterio
+                // de acceso que la API (fullCustomer).
+                render: (c) => customerPrivateDisplay(c.legalId, fullCustomer),
+              },
               ...(fullCustomer
                 ? [
                     { label: "Compras", render: (c: any) => c.purchases },

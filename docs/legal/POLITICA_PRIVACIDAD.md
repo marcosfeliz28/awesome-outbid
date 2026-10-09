@@ -39,6 +39,11 @@ Puede comprar como "consumidor final" sin dar nombre, teléfono ni correo. Solo 
 - Procesadores de tarjeta o bancos, solo con la información propia de la operación de cobro (no pasan por nuestro sistema).
 No vendemos sus datos.
 
+### Lectura automática de facturas de proveedor
+Si se utiliza esta función, la imagen o PDF de la factura se envía a Anthropic, proveedor de inteligencia artificial, para extraer los datos y permitir su revisión humana. No es necesario utilizarla: puede registrar la factura manualmente o mediante Excel/CSV. Evite enviar información personal que no sea necesaria.
+
+La aplicación no crea un archivo de la factura en la cuenta de Anthropic. Esto no equivale a garantizar retención cero por parte del proveedor: antes de publicar este texto, la gerencia debe confirmar las condiciones de conservación y el acuerdo de tratamiento aplicables a su cuenta. No se afirma que el proveedor elimine inmediatamente el documento sin evidencia contractual.
+
 ## 7. Sus derechos
 Puede pedir en cualquier momento acceso a sus datos, rectificar los que estén errados, actualizarlos, cancelarlos (eliminarlos) u oponerse a su uso, y retirar su consentimiento. Escriba a [CORREO DE CONTACTO] o pregunte en caja; le pediremos verificar su identidad. Responderemos en un plazo de [10] días hábiles [ABOGADO: confirmar plazo legal]. Algunos datos no pueden eliminarse mientras exista una obligación legal de conservarlos; en ese caso los anonimizaremos y se lo explicaremos. Si cree que sus derechos no fueron atendidos, puede acudir a la autoridad competente [ABOGADO: indicar].
 
