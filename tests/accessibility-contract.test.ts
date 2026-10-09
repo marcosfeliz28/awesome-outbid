@@ -106,6 +106,16 @@ describe("G10 · contrato de contraste WCAG AA", () => {
       palette["--surface-soft"],
       3,
     );
+    expect(
+      palette["--alert-counter-bg"],
+      `${theme} fondo semántico del contador de alertas`,
+    ).toMatch(/^#[0-9a-f]{6}$/i);
+    meets(
+      `${theme} contador de alertas`,
+      palette["--warning-text"],
+      palette["--alert-counter-bg"],
+      4.5,
+    );
   });
 
   it("valida todos los pares literales señalados por la auditoría", () => {

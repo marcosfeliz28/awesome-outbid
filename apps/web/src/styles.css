@@ -73,6 +73,8 @@
   --positive-text: #047857;
   --danger-text: #c92e43;
   --warning-text: #92400e;
+  --alert-counter-bg: #fff5e6;
+  --alert-counter-border: #e8c181;
   --muted-on-soft: #586274;
   --shadow: 0 4px 22px #29315b04;
   color-scheme: light;
@@ -99,6 +101,8 @@
   --positive-text: #34d399;
   --danger-text: #f87171;
   --warning-text: #fbbf24;
+  --alert-counter-bg: #402b17;
+  --alert-counter-border: #8b642f;
   --muted-on-soft: #b5bfd1;
   --shadow: none;
   color-scheme: dark;
@@ -1106,9 +1110,9 @@ kbd {
 .alert-counter {
   font-size: 10px;
   font-weight: 650;
-  background: #fff5e6;
+  background: var(--alert-counter-bg);
   color: var(--warning-text);
-  border: 1px solid #ffebcc;
+  border: 1px solid var(--alert-counter-border);
   height: 23px;
   min-width: 23px;
   display: flex;

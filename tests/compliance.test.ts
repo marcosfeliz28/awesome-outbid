@@ -28,6 +28,16 @@ const contrast = (a: string, b: string) => {
 };
 const cssVariable = (css: string, name: string) =>
   new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`).exec(css)?.[1] ?? "";
+const cssVariables = (css: string, selector: string) => {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const block =
+    new RegExp(`${escaped}\\s*\\{([\\s\\S]*?)\\}`).exec(css)?.[1] ?? "";
+  return Object.fromEntries(
+    [...block.matchAll(/(--[\w-]+):\s*(#[0-9a-fA-F]{6})\b/g)].map(
+      ([, name, value]) => [name, value],
+    ),
+  );
+};
 
 describe("Cumplimiento legal y accesibilidad", () => {
   it("G1: el ticket sin NCF se identifica como no fiscal y no imprime una fila NCF vacía", () => {
@@ -90,11 +100,23 @@ describe("Cumplimiento legal y accesibilidad", () => {
 
   it("G10: los colores funcionales alcanzan contraste AA y los controles conservan foco visible", () => {
     const css = readFileSync("apps/web/src/styles.css", "utf8");
+    const light = cssVariables(css, ":root");
+    const dark = {
+      ...light,
+      ...cssVariables(css, ':root[data-theme="dark"]'),
+    };
     expect(contrast(cssVariable(css, "--success-strong"), "#ffffff")).toBeGreaterThanOrEqual(4.5);
     expect(contrast(cssVariable(css, "--warning-text"), "#fff5e6")).toBeGreaterThanOrEqual(4.5);
     expect(contrast(cssVariable(css, "--danger-text"), "#ffffff")).toBeGreaterThanOrEqual(4.5);
     expect(contrast(cssVariable(css, "--focus"), "#ffffff")).toBeGreaterThanOrEqual(3);
     expect(contrast(cssVariable(css, "--input-border"), "#ffffff")).toBeGreaterThanOrEqual(3);
+    for (const palette of [light, dark])
+      expect(
+        contrast(palette["--warning-text"], palette["--alert-counter-bg"]),
+      ).toBeGreaterThanOrEqual(4.5);
+    expect(css).toMatch(
+      /\.alert-counter\s*\{[^}]*background:\s*var\(--alert-counter-bg\)/s,
+    );
     expect(css).toContain('input[type="checkbox"]:focus-visible');
     expect(css).toContain('input[type="radio"]:focus-visible');
     expect(css).toContain("background: var(--success-strong)");
