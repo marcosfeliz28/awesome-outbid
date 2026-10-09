@@ -5055,11 +5055,17 @@ td strong {
 .cart-panel {
   width: 390px;
 }
+/* U1: barra fina (no oculta): con ratón es la señal de que hay más artículos. */
 .cart-items {
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 .cart-items::-webkit-scrollbar {
-  display: none;
+  width: 6px;
+}
+.cart-items::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
 }
 .cart-empty-state {
   min-height: 190px;
