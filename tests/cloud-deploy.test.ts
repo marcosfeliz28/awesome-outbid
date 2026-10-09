@@ -142,18 +142,36 @@ describe("Render · proxy público", () => {
       nginx.match(
         /include \/etc\/nginx\/snippets\/nexora-security-headers.conf;/g,
       ),
-    ).toHaveLength(6);
+    ).toHaveLength(8);
   });
 
-  it("resuelve de nuevo la API privada y conserva SSE sin buffering", () => {
+  it("actualiza el upstream de la API, conserva SSE sin buffering y separa la salud", () => {
     const nginx = read("deploy/render/nginx.conf.template");
-    expect(nginx).toContain("resolver ${NGINX_RESOLVER} valid=10s ipv6=off;");
-    expect(nginx).toContain("server ${API_UPSTREAM} resolve;");
-    expect(nginx).toContain("zone nexora_api 64k;");
+    // El upstream lo mantiene start-nginx.sh; ya no hay DNS propio de Nginx.
+    expect(nginx).toContain(
+      "include /etc/nginx/snippets/nexora-api-upstream.conf;",
+    );
+    expect(nginx).not.toMatch(/^\s*resolver\s/m);
+    expect(nginx).not.toMatch(/\bresolve;/);
+    expect(nginx).not.toContain("zone nexora_api");
+    expect(nginx).not.toContain("${API_UPSTREAM}");
     expect(nginx).toContain("location = /api/events");
     expect(nginx).toContain("proxy_buffering off;");
-    expect(nginx).toContain("location = /healthz");
-    expect(nginx).toContain("return 204;");
+    // /healthz es liveness de Nginx: nunca depende de la API.
+    const healthz = nginx.match(/location = \/healthz \{[^}]*\}/)?.[0] ?? "";
+    expect(healthz).toContain("return 204;");
+    expect(healthz).not.toContain("auth_request");
+    expect(healthz).not.toContain("proxy_pass");
+    // /healthz/deep sí comprueba la API, sin exponer su cuerpo.
+    const deep = nginx.match(/location = \/healthz\/deep \{[^}]*\}/)?.[0] ?? "";
+    expect(deep).toContain("auth_request /_nexora_api_live;");
+    expect(deep).toContain("=503");
+    expect(deep).not.toContain("return 204;");
+    const live = nginx.match(/location = \/_nexora_api_live \{[^}]*\}/)?.[0];
+    expect(live).toContain("internal;");
+    expect(live).toContain("proxy_pass http://nexora_api/api/health/live;");
+    expect(live).toContain("proxy_pass_request_body off;");
+    expect(read("render.yaml")).toContain("healthCheckPath: /healthz\n");
   });
 
   it("reemplaza X-Forwarded-For usando sólo la IP de conexión confiable", () => {
@@ -205,13 +223,18 @@ describe("Render · proxy público", () => {
     const entrypoint = read("deploy/render/start-nginx.sh");
     expect(dockerfile).toContain("FROM nginx:1.30.5-alpine3.24");
     expect(dockerfile).toContain(
-      'NGINX_ENVSUBST_FILTER="^(API_UPSTREAM|NGINX_RESOLVER|PORT)$"',
+      'NGINX_ENVSUBST_FILTER="^(API_UPSTREAM|PORT)$"',
     );
     expect(dockerfile).toContain("apk add --no-cache musl-utils");
-    expect(entrypoint).toContain("/etc/resolv.conf");
+    expect(entrypoint).not.toContain("NGINX_RESOLVER");
     expect(entrypoint).toContain("API_UPSTREAM no tiene el formato");
     expect(entrypoint).toContain('getent hosts "$api_host"');
-    expect(entrypoint).toContain('API_UPSTREAM="${api_ip}:${api_port}"');
+    // Bucle de refresco: resuelve con el sistema cada 10 s, reescribe el
+    // upstream y recarga Nginx sólo si la IP cambió.
+    expect(entrypoint).toContain("nexora-api-upstream.conf");
+    expect(entrypoint).toContain("NEXORA_UPSTREAM_REFRESH_SECONDS:-10");
+    expect(entrypoint).toContain('"$new_ip" != "$current_ip"');
+    expect(entrypoint).toContain("nginx -s reload");
     expect(entrypoint).toContain('exec /docker-entrypoint.sh "$@"');
   });
 

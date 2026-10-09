@@ -27,8 +27,8 @@ services:
       WEB_ORIGIN: http://localhost:4173
       ENABLE_SWAGGER: "false"
     command: >-
-      sh -c "./node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma &&
-      ./node_modules/.bin/tsx apps/api/scripts/seed-audit-sandbox.ts &&
+      sh -c "node apps/api/node_modules/prisma/build/index.js migrate deploy --schema apps/api/prisma/schema.prisma &&
+      apps/api/node_modules/.bin/tsx apps/api/scripts/seed-audit-sandbox.ts &&
       node apps/api/dist/main.js"
     depends_on:
       db:
@@ -53,7 +53,6 @@ services:
     environment:
       PORT: 10000
       API_UPSTREAM: api:10000
-      NGINX_RESOLVER: 127.0.0.11
     ports:
       - "127.0.0.1:4173:10000"
     depends_on:

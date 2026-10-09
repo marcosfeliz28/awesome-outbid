@@ -2,11 +2,9 @@ map $remote_addr $nexora_client_ip {
     default $remote_addr;
 }
 
-resolver ${NGINX_RESOLVER} valid=10s ipv6=off;
-
+# La IP de la API la mantiene start-nginx.sh (re-resuelve cada 10 s y recarga).
 upstream nexora_api {
-    zone nexora_api 64k;
-    server ${API_UPSTREAM} resolve;
+    include /etc/nginx/snippets/nexora-api-upstream.conf;
     keepalive 16;
 }
 
@@ -18,11 +16,48 @@ server {
     client_max_body_size 5m;
     include /etc/nginx/snippets/nexora-security-headers.conf;
 
+    # Liveness sólo de Nginx: Render lo usa como healthCheckPath de la web y no
+    # debe fallar mientras la API se redespliega (reiniciaría la web en bucle).
     location = /healthz {
         access_log off;
         add_header Cache-Control "no-store" always;
         include /etc/nginx/snippets/nexora-security-headers.conf;
         return 204;
+    }
+
+    # Comprobación profunda, para uso manual o externo (NO para Render): la web
+    # sólo es sana si la API responde. auth_request descarta el cuerpo de la
+    # API y sólo se devuelve 204/503, sin detalles.
+    location = /healthz/deep {
+        access_log off;
+        add_header Cache-Control "no-store" always;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
+        auth_request /_nexora_api_live;
+        error_page 500 502 503 504 =503 @nexora_api_down;
+        # `return` se evalúa antes de auth_request; try_files, después.
+        try_files /nexora-inexistente @nexora_healthy;
+    }
+
+    location @nexora_healthy {
+        add_header Cache-Control "no-store" always;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
+        return 204;
+    }
+
+    location = /_nexora_api_live {
+        internal;
+        proxy_pass http://nexora_api/api/health/live;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_connect_timeout 2s;
+        proxy_read_timeout 3s;
+    }
+
+    location @nexora_api_down {
+        add_header Cache-Control "no-store" always;
+        return 503;
     }
 
     location = /api/events {

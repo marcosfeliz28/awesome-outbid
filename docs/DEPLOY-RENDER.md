@@ -32,16 +32,17 @@ Internet -> HTTPS de Render -> nexora-pos-web (Nginx + PWA)
 
 ## Archivos de despliegue
 
-| Archivo                               | Función                                                                   |
-| ------------------------------------- | ------------------------------------------------------------------------- |
-| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados. |
-| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                             |
-| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.         |
-| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                              |
-| `deploy/render/start-nginx.sh`        | Valida el destino privado y toma el DNS efectivo de `/etc/resolv.conf`.   |
-| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                |
-| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales.              |
-| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.           |
+| Archivo                               | Función                                                                                                                     |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados.                                                   |
+| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                                                                               |
+| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.                                                           |
+| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                                                                                |
+| `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx).                                                   |
+| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                  |
+| `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `database: ok`. |
+| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales.                                                                |
+| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                             |
 
 ## Variables y secretos
 
@@ -109,7 +110,11 @@ siguen pendientes porque Docker no está disponible en el equipo de revisión.
 
 - Render consulta `GET /healthz` en la web. Devuelve `204` aunque PostgreSQL
   esté temporalmente caído, por lo que una avería de datos no reinicia una web
-  sana.
+  sana. Es liveness sólo de Nginx y no depende de la API, para que redesplegar
+  la API no reinicie la web en bucle.
+- `GET /healthz/deep` comprueba además que la API responde (`204` o `503`, sin
+  detalles). Es para uso manual o externo; Render no debe usarlo como
+  `healthCheckPath`.
 - Render sólo realiza comprobación TCP nativa al servicio privado.
 - `GET /api/health/live` confirma que el proceso de la API vive.
 - `GET /api/health` y `GET /api/health/ready` consultan PostgreSQL y devuelven
