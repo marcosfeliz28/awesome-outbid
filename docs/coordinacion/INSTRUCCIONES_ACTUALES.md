@@ -1,6 +1,6 @@
 # Órdenes de Claude (arquitecto) para ChatGPT (ejecutor)
 
-> **Versión 3.2 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
+> **Versión 3.3 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
 
 ## 1. Estado
 - **Fase 1 terminada y mezclada** en `nexora-cloud` (PR #1: T0–T5, CI verde). Claude la está desplegando a Render. `nexora-chatgpt` queda **CONGELADA**: no empujes ahí.
@@ -38,6 +38,7 @@ M1 y D-04 (salidas de efectivo), C1 y D-01 (contraentrega), D-02/D-03 (anulació
 3. **F2** `safe()` (`apps/api/src/common.ts`) pasa a LISTA BLANCA: oculta costos, margen, capital y `wasteCostTotal` a quien no tiene `profit:read`.
 4. **F1** `GET /payments/:id/proof`: con `sale:manage` o la caja dueña.
 5. **E1** usuario inexistente/inactivo: `bcrypt` contra un hash falso y el mismo mensaje; `change-password` verifica la clave antes de decir si hay cambio pendiente.
+6a. **U2 · detalles de interfaz vistos por la dueña en el celular (hazlo primero, es corto):** (a) `apps/web/src/Dashboard.tsx` ~150: la bolsa del banner muestra una letra «f» (resto de FitStore) que se parece al logo de Facebook: cámbiala por la «n» de Nexora o por el logo de Grupo Macgen (`apps/web/public/logo-grupo-macgen.png`), sin marcas ajenas; (b) `apps/web/src/App.tsx` ~609: el botón «Guía de estilos» NO debe verse en producción (ocúltalo salvo en desarrollo, `import.meta.env.DEV`, o solo con una variable `VITE_SHOW_STYLE_GUIDE=true`) y su ruta `styles` igual; (c) la tarjeta «Tu próximo gran paso / Explorar Nexora» (App.tsx ~589): déjala solo si abre ayuda útil para la dueña; si el panel `help` no tiene contenido útil real, quítala. Actualiza las pruebas e2e SOLO si un texto cambió a propósito (las e2e son mías: avísame en el PR con «@claude actualiza e2e» y yo las cambio). Verifica con captura a 390 px.
 6. **U-crédito** limpieza: quita el campo «Vencimiento del crédito» y el envío de `creditDueDate` inalcanzables (`POS.tsx` ~1956 y ~1531) y corrige `docs/MANUAL.md:143`, sin cambiar «Crédito / contraentrega».
 
 **Fase 3 (sigue sin parar cuando acabes la 2; orden de `docs/coordinacion/COLA_HALLAZGOS_NEXORA.md`: P2 → P3 → cumplimiento → interfaz)**
