@@ -380,6 +380,8 @@ if ($isUpdate -or $isResume) {
   Initialize-PostgresCluster -Paths $paths -Secrets $secrets
 }
 
+$installerUserSid = [Security.Principal.WindowsIdentity]::GetCurrent().User
+if ($installerUserSid.IsAccountSid()) { $state | Add-Member -NotePropertyName backupReaderSid -NotePropertyValue $installerUserSid.Value -Force }
 Initialize-FitStoreBackupStorage -Paths $paths -State $state | Out-Null
 Write-FitStoreJson -Path $paths.State -Value $state -Protect
 Write-EnvironmentFile -Paths $paths -Secrets $secrets

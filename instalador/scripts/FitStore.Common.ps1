@@ -7,6 +7,7 @@ $script:ApiService = "FitStoreAPI"
 $script:WebService = "FitStoreWeb"
 $script:BackupTask = "FitStore POS - Respaldo diario"
 $script:NetworkTask = "FitStore POS - Actualizar HTTPS"
+$script:BackupReaderSid = ""
 
 function Assert-FitStoreAdministrator {
   $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -140,26 +141,25 @@ function Protect-FitStoreBackupFile {
   # DACL nueva: /grant:r no elimina permisos explicitos de Everyone/Users.
   $acl = [Security.AccessControl.FileSecurity]::new()
   $acl.SetAccessRuleProtection($true, $false)
-  # Incluye la identidad real que ejecuta el respaldo, también con servicio dedicado (W3).
-  $creator = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-  foreach ($sid in @("S-1-5-18", "S-1-5-32-544", $creator) | Select-Object -Unique) {
+  foreach ($sid in @("S-1-5-18", "S-1-5-32-544")) {
     $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
       [Security.Principal.SecurityIdentifier]::new($sid), "FullControl", "Allow"
     ))
   }
-  Set-Acl -LiteralPath $Path -AclObject $acl -ErrorAction Stop
+  if ($script:BackupReaderSid) { $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($script:BackupReaderSid), "Read", "Allow")) }
+  [IO.File]::SetAccessControl($Path, $acl)
 }
 
 function New-FitStoreBackupFile {
   param([Parameter(Mandatory = $true)][string]$Path)
-  # CreateNew evita sobrescribir una copia existente; proteger antes de escribir datos.
+  # Crear con DACL privada desde el primer instante, antes de escribir datos.
   if (Test-Path -LiteralPath $Path) { throw "Ya existe el respaldo: $Path" }
   $acl = [Security.AccessControl.FileSecurity]::new()
   $acl.SetAccessRuleProtection($true, $false)
-  $creator = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-  foreach ($sid in @("S-1-5-18", "S-1-5-32-544", $creator) | Select-Object -Unique) {
+  foreach ($sid in @("S-1-5-18", "S-1-5-32-544")) {
     $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($sid), "FullControl", "Allow"))
   }
+  if ($script:BackupReaderSid) { $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($script:BackupReaderSid), "Read", "Allow")) }
   $stream = [IO.File]::Create($Path, 4096, [IO.FileOptions]::None, $acl)
   $stream.Dispose()
 }
@@ -167,6 +167,12 @@ function New-FitStoreBackupFile {
 function Initialize-FitStoreBackupStorage {
   param([Parameter(Mandatory = $true)]$Paths, [Parameter(Mandatory = $true)]$State)
   $previous = if ($State.PSObject.Properties.Name -contains "backupPath") { [string]$State.backupPath } else { "" }
+  $script:BackupReaderSid = ""
+  if ($State.PSObject.Properties.Name -contains "backupReaderSid" -and $State.backupReaderSid) {
+    $sid = [Security.Principal.SecurityIdentifier]::new([string]$State.backupReaderSid)
+    if (-not $sid.IsAccountSid()) { throw "El lector de respaldos debe ser el SID real de una cuenta de Windows." }
+    $script:BackupReaderSid = $sid.Value
+  }
   New-FitStoreDirectory -Path $Paths.LocalBackups
   Protect-FitStoreBackupDirectory -Path $Paths.LocalBackups
   foreach ($directory in @($previous, $Paths.LocalBackups) | Select-Object -Unique) {
@@ -181,14 +187,14 @@ function Protect-FitStoreBackupDirectory {
   param([Parameter(Mandatory = $true)][string]$Path)
   $acl = [Security.AccessControl.DirectorySecurity]::new()
   $acl.SetAccessRuleProtection($true, $false)
-  $creator = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-  foreach ($sid in @("S-1-5-18", "S-1-5-32-544", $creator) | Select-Object -Unique) {
+  foreach ($sid in @("S-1-5-18", "S-1-5-32-544")) {
     $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
       [Security.Principal.SecurityIdentifier]::new($sid), "FullControl",
       "ContainerInherit, ObjectInherit", "None", "Allow"
     ))
   }
-  Set-Acl -LiteralPath $Path -AclObject $acl -ErrorAction Stop
+  if ($script:BackupReaderSid) { $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($script:BackupReaderSid), "ReadAndExecute", "ContainerInherit, ObjectInherit", "None", "Allow")) }
+  [IO.Directory]::SetAccessControl($Path, $acl)
 }
 
 function Invoke-FitStoreProcess {

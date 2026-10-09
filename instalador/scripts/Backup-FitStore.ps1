@@ -91,7 +91,7 @@ try {
       Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) } |
       Remove-Item -Force -ErrorAction SilentlyContinue
   }
-  Write-FitStoreLog -InstallDir $paths.Install -Message "Respaldo verificado: $final"
+  Write-FitStoreLog -InstallDir $paths.Install -Message "Archivo de respaldo local validado por PostgreSQL: $final. No se ha verificado una copia fuera de este equipo."
   Write-Output $final
 } catch {
   Remove-Item -LiteralPath $temporary -Force -ErrorAction SilentlyContinue
