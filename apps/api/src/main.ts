@@ -10,6 +10,8 @@ import { createAppModule } from "./app";
 import { validateSecret } from "./security";
 import { ApiExceptionFilter } from "./common";
 import { captureApiException, initializeApiMonitoring } from "./monitoring";
+import { PrismaClient } from "@prisma/client";
+import { forcePasswordChangeAtStartup } from "./require-password-change";
 
 config({ path: resolve(process.cwd(), "../../.env") });
 config();
@@ -20,6 +22,12 @@ async function bootstrap() {
   if (production && !webOrigin)
     throw new Error("WEB_ORIGIN es obligatorio en producción.");
   const secret = validateSecret(process.env.JWT_SECRET, production);
+  const startupDb = new PrismaClient();
+  try {
+    await forcePasswordChangeAtStartup(startupDb);
+  } finally {
+    await startupDb.$disconnect();
+  }
   // Nest no registra su parser interno: instalamos exactamente uno. Los
   // limitadores públicos se aplican después de resolver una cuenta real.
   const app = await NestFactory.create(createAppModule(secret), {

@@ -10,7 +10,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "start": "node dist/main.js",
     "admin:create": "tsx scripts/create-admin.ts",
-    "admin:require-password-change": "tsx scripts/require-password-change.ts",
+    "admin:require-password-change": "tsx --tsconfig tsconfig.json scripts/require-password-change.ts",
     "inventory:import": "tsx scripts/import-inventario.ts"
   },
   "dependencies": {

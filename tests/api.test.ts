@@ -3,6 +3,10 @@ import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import {
+  PASSWORD_CHANGE_CONFIRMATION,
+  forcePasswordChangeAtStartup,
+} from "../apps/api/src/require-password-change";
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
@@ -285,6 +289,166 @@ afterAll(async () => {
     await request("/users/" + u.id, { active: false }, ownerToken, "PATCH");
 });
 describe("Aceptación financiera y permisos", () => {
+  it("T5: el arranque marca sólo las cuentas configuradas y sin variables no cambia ninguna", async () => {
+    const role = await fixtureDb.role.findUniqueOrThrow({
+      where: { name: "seller" },
+    });
+    const prefix = `t5-${randomUUID()}`;
+    const created = await Promise.all(
+      [
+        { username: null, key: "correo", mustChangePassword: false },
+        {
+          username: `${prefix}-usuario`,
+          key: "usuario",
+          mustChangePassword: false,
+        },
+        { username: null, key: "marcado", mustChangePassword: true },
+        { username: null, key: "intacto", mustChangePassword: false },
+        { username: null, key: "concurrente", mustChangePassword: false },
+        {
+          username: `${prefix}-ambiguo@example.invalid`,
+          key: "ambiguo-usuario",
+          email: `${prefix}-otro@example.invalid`,
+          mustChangePassword: false,
+        },
+        {
+          username: null,
+          key: "ambiguo-correo",
+          email: `${prefix}-ambiguo@example.invalid`,
+          mustChangePassword: false,
+        },
+      ].map((entry) =>
+        fixtureDb.user.create({
+          data: {
+            name: "T5 arranque",
+            username: entry.username,
+            usernameKey: entry.username,
+            email: entry.email ?? `${prefix}-${entry.key}@example.invalid`,
+            passwordHash: "no-se-usa-en-esta-prueba",
+            pinHash: "no-se-usa-en-esta-prueba",
+            roleId: role.id,
+            mustChangePassword: entry.mustChangePassword,
+          },
+        }),
+      ),
+    );
+    const [
+      emailTarget,
+      usernameTarget,
+      alreadyMarked,
+      untouched,
+      concurrentTarget,
+      ambiguousUsername,
+      ambiguousEmail,
+    ] = created;
+    const logs: string[] = [];
+
+    try {
+      expect(
+        await forcePasswordChangeAtStartup(fixtureDb, {}, (line) =>
+          logs.push(line),
+        ),
+      ).toBe(0);
+      expect(
+        await fixtureDb.user.findUniqueOrThrow({
+          where: { id: emailTarget.id },
+        }),
+      ).toMatchObject({ mustChangePassword: false, authVersion: 0 });
+
+      expect(
+        await forcePasswordChangeAtStartup(
+          fixtureDb,
+          {
+            FORCE_PASSWORD_CHANGE_USERNAMES: `${emailTarget.email}, ${usernameTarget.username}, ${alreadyMarked.email}`,
+            FORCE_PASSWORD_CHANGE_CONFIRM: PASSWORD_CHANGE_CONFIRMATION,
+          },
+          (line) => logs.push(line),
+        ),
+      ).toBe(2);
+
+      const users = await fixtureDb.user.findMany({
+        where: { id: { in: created.map((user) => user.id) } },
+        orderBy: { username: "asc" },
+      });
+      for (const target of [emailTarget, usernameTarget])
+        expect(users.find((user: any) => user.id === target.id)).toMatchObject({
+          mustChangePassword: true,
+          authVersion: 1,
+        });
+      expect(
+        users.find((user: any) => user.id === alreadyMarked.id),
+      ).toMatchObject({ mustChangePassword: true, authVersion: 0 });
+      expect(users.find((user: any) => user.id === untouched.id)).toMatchObject(
+        { mustChangePassword: false, authVersion: 0 },
+      );
+      expect(logs).toEqual([
+        "2 cuenta(s) requieren cambio de contraseña al iniciar.",
+      ]);
+      expect(logs.join(" ")).not.toContain(emailTarget.email);
+      expect(logs.join(" ")).not.toContain(usernameTarget.username);
+
+      expect(
+        await forcePasswordChangeAtStartup(
+          fixtureDb,
+          {
+            FORCE_PASSWORD_CHANGE_USERNAMES: `${emailTarget.email},${usernameTarget.username},${alreadyMarked.email}`,
+            FORCE_PASSWORD_CHANGE_CONFIRM: PASSWORD_CHANGE_CONFIRMATION,
+          },
+          () => undefined,
+        ),
+      ).toBe(0);
+
+      const concurrent = await Promise.all(
+        [1, 2].map(() =>
+          forcePasswordChangeAtStartup(
+            fixtureDb,
+            {
+              FORCE_PASSWORD_CHANGE_USERNAMES: concurrentTarget.email,
+              FORCE_PASSWORD_CHANGE_CONFIRM: PASSWORD_CHANGE_CONFIRMATION,
+            },
+            () => undefined,
+          ),
+        ),
+      );
+      expect(concurrent.sort()).toEqual([0, 1]);
+      expect(
+        await fixtureDb.user.findUniqueOrThrow({
+          where: { id: concurrentTarget.id },
+        }),
+      ).toMatchObject({ mustChangePassword: true, authVersion: 1 });
+      expect(
+        await fixtureDb.auditLog.count({
+          where: {
+            action: "require_password_change",
+            entityId: concurrentTarget.id,
+          },
+        }),
+      ).toBe(1);
+
+      await expect(
+        forcePasswordChangeAtStartup(
+          fixtureDb,
+          {
+            FORCE_PASSWORD_CHANGE_USERNAMES: ambiguousEmail.email,
+            FORCE_PASSWORD_CHANGE_CONFIRM: PASSWORD_CHANGE_CONFIRMATION,
+          },
+          () => undefined,
+        ),
+      ).rejects.toThrow(/exactamente.*sin cuentas repetidas/i);
+      for (const user of [ambiguousUsername, ambiguousEmail])
+        expect(
+          await fixtureDb.user.findUniqueOrThrow({ where: { id: user.id } }),
+        ).toMatchObject({ mustChangePassword: false, authVersion: 0 });
+    } finally {
+      await fixtureDb.auditLog.deleteMany({
+        where: { entity: "user", entityId: { in: created.map((u) => u.id) } },
+      });
+      await fixtureDb.user.deleteMany({
+        where: { id: { in: created.map((user) => user.id) } },
+      });
+    }
+  });
+
   it("la contraseña temporal no abre sesión hasta que el usuario la reemplaza", async () => {
     const email = `qa-temporal-${randomUUID()}@example.test`;
     const initial = "FitStore-QA-Temporal-2026!";
