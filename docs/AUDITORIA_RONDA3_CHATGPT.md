@@ -1,4 +1,6 @@
-# Auditoría de Fit Store · ronda 3
+# Revisión con IA de Fit Store · ronda 3
+
+> **Nota (G13):** revisión automatizada hecha con un modelo de IA. No es una auditoría independiente ni una certificación; no la cites como respaldo ante terceros.
 
 Fecha: 5 de octubre de 2026. Base: fuente de la ronda 3 en `/workspace/fitstore-pos`. ZIP de referencia: `fitstore-pos-ronda3.zip`.
 

@@ -370,7 +370,10 @@ test("Mercancía móvil: entrada offline, sincronización única y etiquetas", a
   // El buscador de Mercancía encuentra el producto en el catálogo local.
   await page.getByLabel("Buscar producto", { exact: true }).fill(p.name);
   await expect(
-    page.getByRole("option").filter({ hasText: p.name }),
+    page
+      .getByRole("list", { name: "Resultados: Buscar producto" })
+      .getByRole("button")
+      .filter({ hasText: p.name }),
   ).toHaveCount(1);
   await page.getByLabel("Buscar producto", { exact: true }).fill("");
   await page.evaluate(async () => {
@@ -384,7 +387,10 @@ test("Mercancía móvil: entrada offline, sincronización única y etiquetas", a
   // El buscador de Mercancía encuentra el producto en el catálogo local.
   await page.getByLabel("Buscar producto", { exact: true }).fill(p.name);
   await expect(
-    page.getByRole("option").filter({ hasText: p.name }),
+    page
+      .getByRole("list", { name: "Resultados: Buscar producto" })
+      .getByRole("button")
+      .filter({ hasText: p.name }),
   ).toHaveCount(1);
   await page.getByLabel("Buscar producto", { exact: true }).fill("");
   expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(
@@ -854,10 +860,10 @@ test("R9-codigos-2 y R9-codigos-3: Mercancía reconoce el código sin distinguir
   await expect(quick).toHaveCount(0);
   await expect(lines).not.toContainText("Faja E2E Mercancía F");
   await expect(lines).not.toContainText("Faja E2E Mercancía G");
-  const results = page.getByRole("listbox", {
+  const results = page.getByRole("list", {
     name: "Resultados: Buscar producto",
   });
-  await expect(results.getByRole("option")).toHaveCount(2);
+  await expect(results.getByRole("listitem")).toHaveCount(2);
   // «Crear producto rápido» con el código de E en otras mayúsculas: no se
   // agrega la línea y se dice de quién es el código.
   await scan("R9M-NEW-" + tag);
@@ -2436,7 +2442,10 @@ test("Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible
   await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
   await page.getByRole("button", { name: "Mercancía", exact: true }).click();
   await page.getByLabel("Buscar producto", { exact: true }).fill(p.name);
-  const option = page.getByRole("option").filter({ hasText: p.name });
+  const option = page
+    .getByRole("list", { name: "Resultados: Buscar producto" })
+    .getByRole("button")
+    .filter({ hasText: p.name });
   await expect(option).toContainText("3 en stock");
   await expect(option).toContainText("vencido: 2");
   // La caja recibe el mismo catálogo: 3 disponibles.

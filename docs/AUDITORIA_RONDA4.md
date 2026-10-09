@@ -1,4 +1,6 @@
-# Auditoría de FitStore POS · ronda 4
+# Revisión con IA de FitStore POS · ronda 4
+
+> **Nota (G13):** revisión automatizada hecha con un modelo de IA. No es una auditoría independiente ni una certificación; no la cites como respaldo ante terceros.
 
 **Resultado: requiere otra revisión antes de aprobar la entrega para pruebas en tienda.** Hay cuatro hallazgos P1, cuatro P2 y uno P3. Las correcciones de compras nuevas, equipos nuevos y lotes se comprobaron; las dos primeras siguen incompletas al migrar datos anteriores.
 

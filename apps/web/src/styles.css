@@ -237,6 +237,52 @@ a:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
+/* G12: oculto a la vista pero enfocable y legible por el lector de pantalla
+   (subir archivos con teclado: Tab hasta la etiqueta y Enter o Espacio). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* G14: Acerca de. */
+.about p {
+  margin: 0 0 12px;
+}
+.about-fiscal {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+}
+.about summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.about-licenses {
+  max-height: 50vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 12px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+label:has(> input[type="file"].sr-only:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
 kbd {
   font-family: inherit;
   font-size: 10px;
@@ -943,7 +989,8 @@ kbd {
 }
 .floating-tag span {
   font-size: 7px;
-  color: #b1a8bd;
+  /* G12: contraste AA sobre blanco (antes #b1a8bd, 2.28:1). */
+  color: #6b5b7d;
 }
 .floating-tag strong {
   display: block;
@@ -2991,14 +3038,25 @@ td strong {
   /* El menú abierto y su fondo van por encima de las barras fijas de abajo
      (Mercancía y la confirmación de entrada, 40 y 41): antes tapaban las
      últimas opciones del menú. Siguen por debajo de los diálogos (100). */
+  /* G12: cerrado, el menú no recibe foco ni lo lee el lector de pantalla
+     (además de `inert`/`aria-hidden` desde App.tsx). */
   .sidebar {
     transform: translateX(-100%);
-    transition: transform 0.2s;
+    /* Al cerrar se oculta cuando termina el deslizamiento; al abrir se ve
+       (y recibe foco) de inmediato. */
+    transition:
+      transform 0.2s,
+      visibility 0s linear 0.2s;
+    visibility: hidden;
     width: 235px;
     z-index: 50;
   }
   .sidebar.open {
     transform: translateX(0);
+    transition:
+      transform 0.2s,
+      visibility 0s;
+    visibility: visible;
   }
   .sidebar-backdrop {
     display: block;
@@ -4997,11 +5055,17 @@ td strong {
 .cart-panel {
   width: 390px;
 }
+/* U1: barra fina (no oculta): con ratón es la señal de que hay más artículos. */
 .cart-items {
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 .cart-items::-webkit-scrollbar {
-  display: none;
+  width: 6px;
+}
+.cart-items::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
 }
 .cart-empty-state {
   min-height: 190px;

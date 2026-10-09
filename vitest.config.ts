@@ -34,6 +34,8 @@ export default defineConfig({
       "tests/web-monitoring.test.ts",
       "tests/promotion-ticket.test.ts",
       "tests/incentives-calc.test.ts",
+      "tests/afirmaciones.test.ts",
+      "tests/licencias.test.ts",
     ],
   },
 });

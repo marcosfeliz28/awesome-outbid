@@ -1,4 +1,4 @@
-# Monitoreo seguro de la API en Sentry
+# Monitoreo de errores de la API en Sentry, con datos saneados
 
 La API NestJS solo envía errores internos (HTTP 5xx) cuando se configura
 `SENTRY_DSN` en el entorno del servicio API. Sin esa variable, el SDK queda

@@ -1,4 +1,6 @@
-# FitStore POS · Auditoría independiente de la ronda 7
+# FitStore POS · Revisión con IA de la ronda 7
+
+> **Nota (G13):** revisión automatizada hecha con un modelo de IA. No es una auditoría independiente ni una certificación; no la cites como respaldo ante terceros.
 
 Fecha: 5 de octubre de 2026. Fuente: `fitstore-pos-ronda7.zip`.
 

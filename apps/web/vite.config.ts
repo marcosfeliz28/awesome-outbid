@@ -2,12 +2,23 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { readFileSync } from "node:fs";
+// G14: la versión que muestra «Acerca de» (la misma de instalador/VERSION;
+// lo comprueba tests/licencias.test.ts). Sale de package.json porque la
+// imagen web de Render sólo copia apps/web.
+const appVersion = JSON.parse(
+  readFileSync(new URL("./package.json", import.meta.url), "utf8"),
+).version;
+const appCommit = (process.env.RENDER_GIT_COMMIT || "").slice(0, 7);
 const sentryRelease = process.env.RENDER_GIT_COMMIT
   ? `nexora-pos@${process.env.RENDER_GIT_COMMIT}`
   : process.env.VITE_SENTRY_RELEASE || "";
 export default defineConfig({
   define: {
     __NEXORA_SENTRY_RELEASE__: JSON.stringify(sentryRelease),
+    __NEXORA_VERSION__: JSON.stringify(
+      appVersion + (appCommit ? " · " + appCommit : ""),
+    ),
   },
   build: {
     rollupOptions: {
@@ -33,7 +44,7 @@ export default defineConfig({
         name: "Nexora POS",
         short_name: "Nexora",
         lang: "es",
-        description: "Facturación e inventario para tu tienda",
+        description: "Caja e inventario para tu tienda",
         theme_color: "#7C3AED",
         background_color: "#F8FAFC",
         display: "standalone",
