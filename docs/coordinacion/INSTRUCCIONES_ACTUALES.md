@@ -1,6 +1,6 @@
 # Órdenes de Claude (arquitecto) para ChatGPT (ejecutor)
 
-> **Versión 3.5 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
+> **Versión 3.6 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
 
 ## 1. Estado
 - **Fase 1 terminada y mezclada** en `nexora-cloud` (PR #1: T0–T5, CI verde). Claude la está desplegando a Render. `nexora-chatgpt` queda **CONGELADA**: no empujes ahí.
@@ -36,6 +36,14 @@ M1 y D-04 (salidas de efectivo), C1 y D-01 (contraentrega), D-02/D-03 (anulació
 - **Menores** (merma con signo, `categoryId` del importador, ceros iniciales, índices de rendimiento, reembolso en efectivo, venta con total 0, devolución duplicada, importes sin `moneyAmount`): rama `claude/minors`.
 - **Integración de tu lote U2–P6 con SEC-05, F2/F1/E1 revisados y ajustes de la auditoría (P3 rechazado y reemplazado)**: rama `claude/fase2-integration`. Informe: `docs/AUDITORIA_LOTE_CHATGPT.md` en `claude/audit-batch`.
 **Cuando recuperes internet:** `git fetch origin && git merge origin/nexora-cloud` y sigue con lo que quede en tu cola **que no esté en esta lista ni en 3b**: W1–W4 y G3/G4/G8/G9/G12–G15 (cumplimiento y tickets), accesibilidad y capturas U1 restantes. Evita `sales.ts`, `cash.ts`, `reports.ts`, `auth.ts`, `common.ts`, `admin.ts`, `Management.tsx`, `POS.tsx` y `api.ts` hasta que yo avise que mezclé la integración.
+
+## 3e. MENSAJE PARA CUANDO TE CONECTES (la dueña te lo manda; léelo primero)
+Mientras estuviste sin internet, Claude avanzó. **Todo esto YA ESTÁ EN PRODUCCIÓN (`nexora-cloud` `14dbea6`) y NO lo rehagas:** SEC-05 (PII de clientes en la API), F2/F1/E1 revisados, tu lote U2/U-crédito/P1/P2/P4/P5/P6 integrado (P3 reemplazado por una versión corregida: la tuya ocultaba errores de negocio como «Código no encontrado»; ver `docs/AUDITORIA_LOTE_CHATGPT.md` en `claude/audit-batch`), K2, menores, D-08 y los **avisos por Telegram** (`apps/api/src/notifications.ts`).
+**Claude se quedó, para no perder tiempo, con estos IDs de tu cola (NO los hagas):** G9 (limpiar el navegador al cerrar sesión), G8 (Sentry), G15 (nombre de la promoción) → rama `claude/g-privacy`; G12 (accesibilidad), G13 (frases sin respaldo), G14 (licencias y «Acerca de»), U1 (total, scroll y capturas) → rama `claude/g-ui`. **Tampoco G3 ni G4** (la dueña dijo que RNC y días de devolución no aplican por ahora).
+**Lo que SÍ puedes hacer (en `nexora-chatgpt-fase2`, tras `git fetch origin && git merge origin/nexora-cloud`, merge sin rebase):**
+1. **W1–W4, instalador de Windows** (`instalador/**`, `Install-FitStore.ps1`, `FitStore.nsi`, `service/*.xml.template`): W1 instalación «nueva» no debe sobrescribir `secrets.json` si hay base; W2 respaldos en carpeta legible por todos → carpeta con ACL restringida; W3 API y web como LocalSystem → cuenta de servicio de menor privilegio; W4 marcador de actualización viejo dispara rollback que pisa ventas nuevas. Claude NO puede probar Windows: haz los cambios con pruebas de contenido/contrato y marca cada uno «@claude: probar con Windows-Smoke.ps1 en la PC de la dueña».
+2. **Manual de la cajera con capturas reales** cuando ya esté lo anterior mezclado; **plantilla de Excel** (lote y vencimiento) en `docs/plantillas/`.
+3. Nada en `sales.ts`, `cash.ts`, `reports.ts`, `auth.ts`, `common.ts`, `admin.ts`, `notifications.ts`, `api.ts`, `monitoring.ts`, `Management.tsx`, `App.tsx`, `Tienda.tsx`, `Merchandise.tsx` ni `POS.tsx` hasta que Claude avise que mezcló `claude/g-privacy` y `claude/g-ui`.
 
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
