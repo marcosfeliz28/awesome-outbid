@@ -255,6 +255,16 @@ async function refreshReceivableAlert(
 // abonos, movimientos) sólo se registra desde el equipo donde está la caja;
 // cerrar y arquear se permite desde cualquier equipo del dueño, y un gerente
 // puede actuar sobre la caja de otro usuario desde su propio equipo.
+// Efectivo neto cobrado al vender (los abonos van aparte).
+function cashCollected(
+  payments: { method: string; entryType: string; amount: unknown }[],
+) {
+  return money(
+    payments
+      .filter((p) => p.method === "cash" && p.entryType !== "installment")
+      .reduce((sum, p) => sum.plus(p.amount as any), d(0)),
+  );
+}
 export async function cashLock(
   tx: any,
   actor: Actor,
@@ -325,7 +335,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
   return 0;
 }
 
-import { refreshClosedCash } from "./cash";
+import { cashExpected, refreshClosedCash } from "./cash";
 import { verifyPinAttempt } from "./security";
 
 @Controller()
@@ -1051,7 +1061,10 @@ export class SalesController {
           if (!ownership) {
             const attempted = sale as any;
             const paymentTotal = money(
-              (Array.isArray(attempted.payments) ? attempted.payments : []).reduce(
+              (Array.isArray(attempted.payments)
+                ? attempted.payments
+                : []
+              ).reduce(
                 (sum: number, payment: any) =>
                   sum +
                   (Number.isFinite(Number(payment?.amount))
@@ -1148,11 +1161,13 @@ export class SalesController {
     // La anulación es una decisión administrativa y puede hacerse sobre una
     // factura de cualquier día. No depende de que la caja original siga
     // abierta; el motivo, el usuario y cada movimiento quedan auditados.
+    // Si esa caja ya cerró y la venta se cobró en efectivo, el reembolso sale
+    // de la caja abierta de quien anula (D-02, docs/DECISIONES.md, punto 9).
     const data = parse(z.object({ reason }), body);
     return this.db.$transaction(async (tx) => {
       const saleRef = await tx.sale.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
-        select: { cashSessionId: true },
+        select: { cashSessionId: true, payments: true },
       });
       let originalCash: any = null;
       if (saleRef.cashSessionId) {
@@ -1161,6 +1176,25 @@ export class SalesController {
           where: { id: saleRef.cashSessionId },
         });
       }
+      // D-02: si la caja de la venta ya cerró, el efectivo del reembolso sale
+      // de la caja abierta de quien anula. Se bloquea antes que la venta, en el
+      // mismo orden que una devolución (caja que reembolsa y luego venta).
+      let refundCash: any = null;
+      if (originalCash?.closedAt && cashCollected(saleRef.payments) > 0) {
+        const own = await tx.cashSession.findFirst({
+          where: {
+            branchId: actor.branchId,
+            userId: actor.id,
+            closedAt: null,
+          },
+          select: { id: true },
+        });
+        if (!own)
+          bad(
+            "La caja de esta venta ya cerró. Abre tu caja para entregar el reembolso en efectivo y vuelve a anular.",
+          );
+        refundCash = await cashLock(tx, actor, own!.id);
+      }
       await tx.$queryRaw`SELECT id FROM "Sale" WHERE id = ${parse(uuid, id)}::uuid FOR UPDATE`;
       const sale = await tx.sale.findFirstOrThrow({
         where: { id, branchId: actor.branchId },
@@ -1168,6 +1202,12 @@ export class SalesController {
       });
       if (sale.status !== "completed" || sale.returns.length)
         bad("La venta ya está anulada o tiene devoluciones.");
+      const refundAmount = refundCash ? cashCollected(sale.payments) : 0;
+      if (
+        refundCash &&
+        d(refundAmount).gt((await cashExpected(tx, refundCash)).cash)
+      )
+        bad("No hay suficiente efectivo en tu caja para este reembolso.");
       if (
         sale.payments.some(
           (p) => p.entryType === "installment" && p.status !== "rejected",
@@ -1253,6 +1293,30 @@ export class SalesController {
       });
       await refreshReceivableAlert(tx, id, actor.branchId);
       let cashDifferences: Record<string, number> | undefined;
+      if (refundCash && refundAmount > 0) {
+        // D-02: el cierre aprobado no se reescribe. La caja cerrada recibió ese
+        // efectivo y lo entregó: la entrada compensa la venta que ya no cuenta
+        // y su esperado sigue igual. La caja abierta registra la salida del
+        // reembolso. Ambos movimientos nombran la venta original.
+        await tx.cashMovement.create({
+          data: {
+            sessionId: originalCash.id,
+            type: "in",
+            amount: refundAmount,
+            reason: `Venta ${sale.number} anulada después del cierre: su efectivo entró en este turno y se reembolsó desde otra caja.`,
+            userId: actor.id,
+          },
+        });
+        await tx.cashMovement.create({
+          data: {
+            sessionId: refundCash.id,
+            type: "out",
+            amount: refundAmount,
+            reason: `Reembolso de la venta ${sale.number} anulada (su caja ya cerró).`,
+            userId: actor.id,
+          },
+        });
+      }
       if (originalCash?.closedAt) {
         cashDifferences = await refreshClosedCash(tx, originalCash);
         await audit(
@@ -1262,7 +1326,13 @@ export class SalesController {
           "cash",
           originalCash.id,
           originalCash,
-          { saleId: id, ...cashDifferences },
+          {
+            saleId: id,
+            ...cashDifferences,
+            ...(refundCash
+              ? { refundCashSessionId: refundCash.id, refundAmount }
+              : {}),
+          },
         );
       }
       await audit(tx, actor, "void", "sale", id, sale, {
@@ -1721,9 +1791,7 @@ export class SalesController {
     res.setHeader("Content-Type", "application/pdf");
     const doc = new PDFDocument({ size: "A4", margin: 48 });
     doc.pipe(res);
-    doc
-      .fontSize(22)
-      .text(business.name || "Nexora POS", { align: "center" });
+    doc.fontSize(22).text(business.name || "Nexora POS", { align: "center" });
     if (business.branchName)
       doc.fontSize(11).text(business.branchName, { align: "center" });
     if (business.address)
