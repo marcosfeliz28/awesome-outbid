@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdirSync } from "node:fs";
+import { chromium } from "@playwright/test";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -42,6 +43,90 @@ const cssVariables = (css: string, selector: string) => {
 };
 
 describe("Cumplimiento legal y accesibilidad", () => {
+  it("P4: captura reproducible del render térmico a 80 mm", async () => {
+    if (process.env.NEXORA_CAPTURE_THERMAL !== "1") return;
+    mkdirSync("docs/capturas", { recursive: true });
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({
+        viewport: { width: 303, height: 1400 },
+      });
+      await page.emulateMedia({ media: "print" });
+      const business = {
+        name: "Grupo Macgen (prueba)",
+        branchName: "Sucursal de prueba",
+        address: "Dirección de prueba",
+        phone: "809-555-0100",
+        legalId: "",
+        logo:
+          "data:image/png;base64," +
+          readFileSync("apps/web/public/logo-grupo-macgen.png").toString(
+            "base64",
+          ),
+      };
+      const samples = [
+        [
+          "ticket",
+          createElement(InvoicePrint, {
+            config: business,
+            customer: { name: "Cliente de prueba" },
+            sale: {
+              number: "QA-1",
+              createdAt: "2026-10-09T12:00:00Z",
+              cashierName: "Cajera de prueba",
+              snapshot: [
+                {
+                  sku: "QA",
+                  name: "Producto de prueba",
+                  qty: 1,
+                  unitPrice: 100,
+                  discount: 0,
+                },
+              ],
+              total: 100,
+              taxTotal: 0,
+              payments: [{ method: "cash", amount: 100 }],
+              change: 0,
+            },
+          }),
+        ],
+        [
+          "cuadre",
+          createElement(CuadrePrint, {
+            c: {
+              business,
+              title: "Cuadre de Caja",
+              cashier: { name: "Cajera de prueba" },
+              openedAt: "2026-10-09T12:00:00Z",
+              closedAt: "2026-10-09T22:00:00Z",
+              register: { number: 1, name: "Caja de prueba" },
+              denominations: [{ value: 100, qty: 2, total: 200 }],
+              denominationsSubtotal: 200,
+              lines: [
+                { key: "cash", line: 2, label: "Efectivo RD$", value: 200 },
+              ],
+              summary: { text: "Cuadre de prueba" },
+            },
+          }),
+        ],
+      ] as const;
+      for (const [name, component] of samples) {
+        await page.setContent(
+          `<style>${readFileSync("apps/web/src/styles.css", "utf8")}</style><div class="thermal-print w80">${renderToStaticMarkup(component)}</div>`,
+        );
+        await page.locator("img").evaluateAll(async (images) => {
+          await Promise.all(
+            images.map((image) => (image as HTMLImageElement).decode()),
+          );
+        });
+        await page
+          .locator(".thermal-print")
+          .screenshot({ path: `docs/capturas/P4-${name}-80mm.png` });
+      }
+    } finally {
+      await browser.close();
+    }
+  });
   it("P4: render real del ticket no fiscal y cuadre conserva datos y nombre de cajera", () => {
     const business = {
       name: "Negocio de prueba",
