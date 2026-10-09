@@ -668,7 +668,7 @@ sí respondieron y la integración alcanzó 157 pruebas.
 
 No se usaron credenciales ni datos de producción, y no se modificó Render.
 
-## F. Cierre de B0 y correcciones adversariales posteriores
+## F. Evidencia local inicial de B0 y correcciones adversariales posteriores
 
 **Fecha local:** 2026-10-08. **Commit final probado:** `4856bc6`.
 No se modificó Render ni se usaron datos de producción.
@@ -732,3 +732,75 @@ Se leyó `docs/coordinacion/PROMPT_UI_POS.md` desde `nexora-cloud`. El propio
 documento mantiene el Lote 5 **EN COLA** hasta que este PR tenga CI verde, los
 cambios de lógica estén fusionados en `nexora-cloud` y exista un PR separado.
 Por ello no se mezclaron cambios visuales en esta entrega.
+
+## G. Cierre de los bloqueos v5 y v6 antes del CI final
+
+**Fecha local:** 2026-10-08. **Código de API probado:** `b51e8a9`.
+No se modificó Render ni se usaron datos de producción. B0 no se declara
+cerrado en este documento hasta que el commit final del PR complete `verify`
+en GitHub; esta sección registra la evidencia local reproducible.
+
+### G1. PIN concurrente y estabilidad de integración
+
+El diagnóstico explícito de las diez respuestas confirmó que dos intentos de
+PIN podían devolver 500 en Linux. La causa era la apertura simultánea de varias
+transacciones para la misma clave mientras esperaban el mismo advisory lock.
+`verifyAttempt` conserva el lock y el contador atómico de PostgreSQL, y ahora
+añade una cola FIFO por clave dentro de cada proceso antes de abrir la
+transacción. Así no se ocupa el pool local con transacciones redundantes; el
+fast-path bloqueado sigue evitando bcrypt y el lock de PostgreSQL mantiene la
+coordinación entre instancias.
+
+La regresión conserva diez solicitudes simultáneas y exige para cada una 400
+con `PIN incorrecto` o `PIN bloqueado`; cualquier 429 o 500 continúa fallando
+con su código y mensaje visibles. También comprueba `failedAttempts=5`,
+`lockedUntil` futuro, rechazo del PIN correcto durante el bloqueo y sesión del
+vendedor todavía válida.
+
+```text
+PostgreSQL descartable exclusivo, 27 migraciones y semilla
+pnpm test:integration
+Tests        158 passed, 0 failed, 0 skipped
+Duración     179.63 s
+PIN x10      passed (1.554 s)
+```
+
+La comparación de la foto límite de 2 MiB sigue verificando longitud y cada
+byte, pero usa `Buffer.compare` en vez de pedir a Vitest que construya un diff
+recursivo de dos buffers gigantes. Además, el nombre del fixture R9 de tallas
+dejó de incluir un sufijo aleatorio que podía parecer número de tono o talla;
+la unicidad permanece en SKU y barcode.
+
+### G2. Navegador actualizado al contrato vigente
+
+Se reprodujeron los ocho fallos de `store.spec.ts` en PostgreSQL, API y preview
+aislados. Las pruebas ahora usan el estado vacío real, la etiqueta `Usuario`,
+`Crédito / contraentrega`, el motivo obligatorio del descuento, el arqueo
+ciego completo y la leyenda no fiscal. Resultado focal final: **8/8**.
+
+Durante esa corrida apareció un hallazgo separado, no ocultado ni corregido en
+este lote: después de limpiar el carrito, el ticket puede mostrar `Consumidor
+final` aunque la venta contraentrega haya quedado asociada al cliente elegido.
+Debe recibir su propia regresión y corrección después de B0.
+
+### G3. Por qué cambiaron aserciones históricas
+
+- **Límite de ventas:** la identidad vigente es la sesión autenticada. La
+  sesión agotada sigue en 429 aunque cambie la IP; otra sesión conserva su
+  propio cupo. La expectativa anterior validaba la evasión ya corregida.
+- **R9 seguridad:** 400 es la validación normal antes del umbral y 429 aparece
+  al agotarlo. El timeout de 60 s pertenece sólo a Vitest para las comparaciones
+  bcrypt y peticiones deliberadas; no alarga ningún timeout del producto.
+- **Arqueo ciego:** una cajera ya no recibe `expected`, `counted` ni
+  `differences`. Los importes continúan verificándose como administración o
+  directamente en PostgreSQL, por lo que privacidad y exactitud contable se
+  prueban a la vez.
+- **Contraseña temporal:** antes de cambiarla no se emite `accessToken`; tras
+  la rotación se exige un token real y se valida con `/auth/me`. `toBeTruthy`
+  no sustituye esa prueba funcional ni compara un secreto con un literal.
+- **B4, retiro:** `cash-privacy.test.ts` intenta retirar RD$51 con RD$50,
+  exige 400 sin revelar el saldo y confirma que no se creó movimiento. Los
+  retiros válidos siguen cubiertos por integración.
+
+La verificación global posterior a estos cambios quedó en 242 aprobadas, una
+omitida, con typecheck, ESLint y builds de web/API en verde.
