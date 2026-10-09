@@ -5796,7 +5796,10 @@ describe("Ronda 9 · revisión · facturas", () => {
     expect(first.lines[0].note).toMatch(/la descripción no coincide/);
     // El código de la talla S con una factura que dice talla L.
     const top = await ok("/products", {
-      name: "QA R9F Top Tallas " + suffix,
+      // La unicidad pertenece al SKU/barcode. Un sufijo aleatorio en el nombre
+      // puede parecer una talla o número de tono y contaminar el parser que
+      // precisamente se está verificando aquí.
+      name: "QA R9F Top Tallas",
       sku: "R9F-" + randomUUID().slice(0, 8),
       categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
       variants: ["S", "M", "L"].map((talla) => ({
@@ -5816,8 +5819,6 @@ describe("Ronda 9 · revisión · facturas", () => {
       variantId: null,
       productId: top.id,
     });
-    // El texto puede variar según otros atributos inferidos del SKU aleatorio;
-    // lo importante es que explique claramente la talla S en conflicto.
     expect(second.lines[0].note).toMatch(/S no coincide|talla S|· S/);
     expect(second.lines[1].variantId).toBe(small.id);
   });
@@ -7071,7 +7072,8 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       expect(saved.body).toMatchObject({ hasProof: true });
       expect(saved.body.proofUrl).toBeUndefined();
       // Se puede reemplazar (p. ej. foto borrosa) y queda en el pago de la venta.
-      const replaced = await upload(paid.id, png(2 * 1024 * 1024), "image/png");
+      const maxPng = png(2 * 1024 * 1024);
+      const replaced = await upload(paid.id, maxPng, "image/png");
       expect(replaced.status).toBe(201);
       expect(replaced.body).toMatchObject({ hasProof: true });
       expect(replaced.body.proofUrl).toBeUndefined();
@@ -7090,9 +7092,9 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       });
       expect(proof.status).toBe(200);
       expect(proof.headers.get("content-type")).toMatch(/^image\/png/);
-      expect(Buffer.from(await proof.arrayBuffer())).toEqual(
-        png(2 * 1024 * 1024),
-      );
+      const proofBytes = Buffer.from(await proof.arrayBuffer());
+      expect(proofBytes.byteLength).toBe(maxPng.byteLength);
+      expect(Buffer.compare(proofBytes, maxPng)).toBe(0);
       const foreignProof = await fetch(
         base + "/payments/" + paid.id + "/proof",
         { headers: { Authorization: "Bearer " + cashier.token } },
