@@ -40,6 +40,16 @@ export function normalizeUsername(value: string) {
     .replace(/\s+/g, " ");
 }
 
+// Hash de una entrada aleatoria descartada, coste 12 igual que passwordHash.
+// Nunca identifica una cuenta ni permite emitir una sesión.
+const DUMMY_PASSWORD_HASH =
+  "$2b$12$58blABr79s5ElPAz9aGMQ.z83oBrpFCsoq.7/lRZrXGesMASQql72";
+const ABSENT_USER_ID = "00000000-0000-0000-0000-000000000000";
+const credentialAttemptIdentity = (user: any, normalized: string) =>
+  user
+    ? `${user.id}:${user.authVersion}`
+    : `missing:${createHash("sha256").update(normalized).digest("hex")}`;
+
 @Controller("auth")
 export class AuthController implements OnModuleInit {
   constructor(
@@ -194,10 +204,13 @@ export class AuthController implements OnModuleInit {
         : { usernameKey: normalizeUsername(identifier) },
       include: { role: true },
     });
-    if (!user) bad("Usuario o contraseña incorrectos.");
-    this.requestLimits.rememberAuthIdentity(credentialLimit.normalized);
-    const matches =
-      user.active && (await compare(data.password, user.passwordHash));
+    const passwordMatches = await compare(
+      data.password,
+      user?.active ? user.passwordHash : DUMMY_PASSWORD_HASH,
+    );
+    if (user)
+      this.requestLimits.rememberAuthIdentity(credentialLimit.normalized);
+    const matches = !!user?.active && passwordMatches;
     // Cuando una IP esta barriendo nombres, una clave incorrecta de una cuenta
     // real conserva el mismo 429 que una identidad inventada. Una clave
     // correcta si puede entrar: no hay bloqueo cruzado ni enumeracion.
@@ -213,12 +226,16 @@ export class AuthController implements OnModuleInit {
     // administrador desbloquee la cuenta al cambiarle la contraseña (R9-seguridad-1).
     await verifyAttempt(
       this.db,
-      `login:${user.id}:${user.authVersion}:${credentialLimit.ip}`,
+      `login:${credentialAttemptIdentity(user, credentialLimit.normalized)}:${credentialLimit.ip}`,
       async (tx) => {
         // Con la transacción del contador: no ocupa otra conexión del pool.
-        const current = await tx.user.findUnique({ where: { id: user.id } });
-        return matches && current?.passwordHash === user.passwordHash
-          ? user.id
+        const current = await tx.user.findUnique({
+          where: { id: user?.id ?? ABSENT_USER_ID },
+        });
+        return matches &&
+          current?.active &&
+          current?.passwordHash === user?.passwordHash
+          ? (user?.id ?? null)
           : null;
       },
       {
@@ -227,6 +244,7 @@ export class AuthController implements OnModuleInit {
         wrong: "Usuario o contraseña incorrectos.",
       },
     );
+    if (!user?.active) bad("Usuario o contraseña incorrectos.");
     await audit(this.db, this.actor(user), "login", "user", user.id);
     if (user.mustChangePassword) return { requiresPasswordChange: true };
     return this.issue(user, res);
@@ -270,18 +288,9 @@ export class AuthController implements OnModuleInit {
     });
     if (user)
       this.requestLimits.rememberAuthIdentity(credentialLimit.normalized);
-    if (!user?.active || !user.mustChangePassword) {
-      if (credentialLimit.unknownFlooded)
-        this.requestLimits.assert(
-          "auth-unknown-ip",
-          [credentialLimit.ip],
-          REQUEST_RATE_LIMITS.authIp,
-        );
-      bad("No hay un cambio de contraseña pendiente para esta cuenta.");
-    }
     const currentPasswordMatches = await compare(
       data.currentPassword,
-      user.passwordHash,
+      user?.active ? user.passwordHash : DUMMY_PASSWORD_HASH,
     );
     if (credentialLimit.unknownFlooded && !currentPasswordMatches)
       this.requestLimits.assert(
@@ -291,13 +300,15 @@ export class AuthController implements OnModuleInit {
       );
     await verifyAttempt(
       this.db,
-      `login:${user.id}:${user.authVersion}:${credentialLimit.ip}`,
+      `login:${credentialAttemptIdentity(user, credentialLimit.normalized)}:${credentialLimit.ip}`,
       async (tx) => {
-        const current = await tx.user.findUnique({ where: { id: user.id } });
-        return current?.mustChangePassword &&
-          current?.passwordHash === user.passwordHash &&
+        const current = await tx.user.findUnique({
+          where: { id: user?.id ?? ABSENT_USER_ID },
+        });
+        return current?.active &&
+          current?.passwordHash === user?.passwordHash &&
           currentPasswordMatches
-          ? user.id
+          ? (user?.id ?? null)
           : null;
       },
       {
@@ -306,6 +317,10 @@ export class AuthController implements OnModuleInit {
         wrong: "Usuario o contraseña incorrectos.",
       },
     );
+    if (!user?.active) bad("Usuario o contraseña incorrectos.");
+    // Sólo la contraseña válida autoriza revelar el estado del cambio.
+    if (!user.mustChangePassword)
+      bad("No hay un cambio de contraseña pendiente para esta cuenta.");
     const passwordHashValue = await passwordHash(data.newPassword);
     const updated = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id=${user.id}::uuid FOR UPDATE`;
