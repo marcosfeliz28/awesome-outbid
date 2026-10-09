@@ -380,13 +380,7 @@ if ($isUpdate -or $isResume) {
   Initialize-PostgresCluster -Paths $paths -Secrets $secrets
 }
 
-if ($answer.ContainsKey("BackupPath") -and [string]$answer.BackupPath) {
-  $state | Add-Member -NotePropertyName backupPath -NotePropertyValue ([IO.Path]::GetFullPath([string]$answer.BackupPath)) -Force
-}
-if (-not (Get-OptionalProperty -Object $state -Name "backupPath" -Default "")) {
-  $state | Add-Member -NotePropertyName backupPath -NotePropertyValue $paths.LocalBackups -Force
-}
-Grant-FitStoreSystemAccess -Path ([string]$state.backupPath)
+Initialize-FitStoreBackupStorage -Paths $paths -State $state | Out-Null
 Write-FitStoreJson -Path $paths.State -Value $state -Protect
 Write-EnvironmentFile -Paths $paths -Secrets $secrets
 

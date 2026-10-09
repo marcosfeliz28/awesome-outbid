@@ -11,22 +11,10 @@ $ErrorActionPreference = "Stop"
 
 function Resolve-BackupDirectory {
   param($Paths, $State, [string]$Requested)
-  $preferred = $Requested
-  if (-not $preferred -and ($State.PSObject.Properties.Name -contains "backupPath") -and $State.backupPath) { $preferred = [string]$State.backupPath }
-  if ($preferred) {
-    try {
-      New-FitStoreDirectory -Path $preferred
-      Grant-FitStoreSystemAccess -Path $preferred
-      $probe = Join-Path $preferred (".fitstore-prueba-{0}.tmp" -f [Guid]::NewGuid().ToString("N"))
-      [IO.File]::WriteAllText($probe, "ok")
-      Remove-Item -LiteralPath $probe -Force
-      return [IO.Path]::GetFullPath($preferred)
-    } catch {
-      Write-FitStoreLog -InstallDir $Paths.Install -Level "AVISO" -Message "El destino externo no está disponible; el respaldo se guardará localmente."
-    }
-  }
-  New-FitStoreDirectory -Path $Paths.LocalBackups
-  return $Paths.LocalBackups
+  if ($Requested) { $State | Add-Member -NotePropertyName backupPath -NotePropertyValue ([IO.Path]::GetFullPath($Requested)) -Force }
+  $target = Initialize-FitStoreBackupStorage -Paths $Paths -State $State
+  Write-FitStoreJson -Path $Paths.State -Value $State -Protect
+  return $target
 }
 
 function Test-BackupArchive {

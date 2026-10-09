@@ -153,9 +153,28 @@ function Protect-FitStoreBackupFile {
 function New-FitStoreBackupFile {
   param([Parameter(Mandatory = $true)][string]$Path)
   # CreateNew evita sobrescribir una copia existente; proteger antes de escribir datos.
-  $stream = [IO.File]::Open($Path, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write)
+  if (Test-Path -LiteralPath $Path) { throw "Ya existe el respaldo: $Path" }
+  $acl = [Security.AccessControl.FileSecurity]::new()
+  $acl.SetAccessRuleProtection($true, $false)
+  $creator = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+  foreach ($sid in @("S-1-5-18", "S-1-5-32-544", $creator) | Select-Object -Unique) {
+    $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($sid), "FullControl", "Allow"))
+  }
+  $stream = [IO.File]::Create($Path, 4096, [IO.FileOptions]::None, $acl)
   $stream.Dispose()
-  Protect-FitStoreBackupFile -Path $Path
+}
+
+function Initialize-FitStoreBackupStorage {
+  param([Parameter(Mandatory = $true)]$Paths, [Parameter(Mandatory = $true)]$State)
+  $previous = if ($State.PSObject.Properties.Name -contains "backupPath") { [string]$State.backupPath } else { "" }
+  New-FitStoreDirectory -Path $Paths.LocalBackups
+  Protect-FitStoreBackupDirectory -Path $Paths.LocalBackups
+  foreach ($directory in @($previous, $Paths.LocalBackups) | Select-Object -Unique) {
+    if (-not $directory -or -not (Test-Path -LiteralPath $directory -PathType Container)) { continue }
+    foreach ($file in Get-ChildItem -LiteralPath $directory -Filter "FitStore_*" -File) { Protect-FitStoreBackupFile -Path $file.FullName }
+  }
+  $State | Add-Member -NotePropertyName backupPath -NotePropertyValue $Paths.LocalBackups -Force
+  return $Paths.LocalBackups
 }
 
 function Protect-FitStoreBackupDirectory {

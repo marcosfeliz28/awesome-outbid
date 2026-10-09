@@ -34,6 +34,26 @@ try {
   try { New-FitStoreBackupFile -Path $private } catch { $duplicateRejected = $true }
   if (-not $duplicateRejected -or [IO.File]::ReadAllText($private) -cne "new-local-fixture") { throw "W2: sobrescribio una copia existente." }
   Write-Host "PASS W2: archivo nuevo privado y rechazo de sobrescritura."
+  $creation = (Get-Command New-FitStoreBackupFile).Definition
+  if ($creation -notmatch '\[IO.File\]::Create\(.*\$acl' -or $creation -match 'Protect-FitStoreBackupFile') { throw "A4: archivo creado antes de aplicar su ACL." }
+  $old = Join-Path $root "legacy"
+  $target = Join-Path $root "private"
+  [IO.Directory]::CreateDirectory($old) | Out-Null
+  [IO.Directory]::CreateDirectory($target) | Out-Null
+  $legacy = Join-Path $old "FitStore_old.dump"
+  [IO.File]::WriteAllText($legacy, "original-old-copy")
+  $acl = Get-Acl $legacy
+  $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($everyone, "FullControl", "Allow"))
+  Set-Acl -LiteralPath $legacy -AclObject $acl
+  $state = [pscustomobject]@{ backupPath=$old }
+  $paths = [pscustomobject]@{ LocalBackups=$target }
+  $chosen = Initialize-FitStoreBackupStorage -Paths $paths -State $state
+  if ($chosen -ne $target -or $state.backupPath -ne $target) { throw "A4: destino antiguo permanece activo." }
+  if ([IO.File]::ReadAllText($legacy) -cne "original-old-copy") { throw "A4: respaldo antiguo alterado." }
+  foreach ($rule in (Get-Acl $legacy).Access) {
+    if ($rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value -notin $allowed) { throw "A4: respaldo antiguo sigue publico." }
+  }
+  Write-Host "PASS A4: destino privado migrado, copia antigua intacta y reprotegida."
 } finally {
   if ([IO.Directory]::Exists($root)) { [IO.Directory]::Delete($root, $true) }
 }
