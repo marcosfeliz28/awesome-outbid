@@ -1187,7 +1187,14 @@ describe("Seguridad, offline y funciones completadas", () => {
           request("/sales", payload(), pinSellerToken),
         ),
       );
-      expect(errors.every((r) => r.status === 400)).toBe(true);
+      expect(
+        errors.map((r) => ({ status: r.status, message: r.body?.message })),
+      ).toEqual(
+        Array.from({ length: 10 }, () => ({
+          status: 400,
+          message: expect.stringMatching(/PIN (incorrecto|bloqueado)/i),
+        })),
+      );
       const attempt = await fixtureDb.authAttempt.findUniqueOrThrow({
         where: { key: "approval:" + pinSeller.id },
       });
