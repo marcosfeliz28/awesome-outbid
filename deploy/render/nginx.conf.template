@@ -2,6 +2,14 @@ map $remote_addr $nexora_client_ip {
     default $remote_addr;
 }
 
+# Referrer-Policy por ruta (lo consume security-headers.conf): la API conserva
+# la política más estricta que ya enviaba (`no-referrer`) y la web usa la
+# habitual para una SPA. Así hay una sola cabecera por respuesta.
+map $uri $nexora_referrer_policy {
+    default "strict-origin-when-cross-origin";
+    ~^/api/ "no-referrer";
+}
+
 # La IP de la API la mantiene start-nginx.sh (re-resuelve cada 10 s y recarga).
 upstream nexora_api {
     include /etc/nginx/snippets/nexora-api-upstream.conf;
@@ -11,6 +19,7 @@ upstream nexora_api {
 server {
     listen ${PORT};
     server_name _;
+    server_tokens off;
     root /usr/share/nginx/html;
     index index.html;
     client_max_body_size 5m;
@@ -62,6 +71,15 @@ server {
 
     location = /api/events {
         proxy_pass http://nexora_api;
+        # Nginx es la única fuente de las cabeceras de seguridad también en /api:
+        # se descartan las que ya añade Helmet (valores distintos o duplicados)
+        # y se aplican las de security-headers.conf, heredadas del server.
+        proxy_hide_header Content-Security-Policy;
+        proxy_hide_header Strict-Transport-Security;
+        proxy_hide_header X-Frame-Options;
+        proxy_hide_header X-Content-Type-Options;
+        proxy_hide_header Referrer-Policy;
+        proxy_hide_header Permissions-Policy;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_set_header Host $host;
@@ -77,8 +95,18 @@ server {
         add_header X-Accel-Buffering no;
     }
 
-    location /api/ {
+    # `^~` evita que las reglas de archivos estáticos (más abajo) afecten a /api.
+    location ^~ /api/ {
         proxy_pass http://nexora_api;
+        # Nginx es la única fuente de las cabeceras de seguridad también en /api:
+        # se descartan las que ya añade Helmet (valores distintos o duplicados)
+        # y se aplican las de security-headers.conf, heredadas del server.
+        proxy_hide_header Content-Security-Policy;
+        proxy_hide_header Strict-Transport-Security;
+        proxy_hide_header X-Frame-Options;
+        proxy_hide_header X-Content-Type-Options;
+        proxy_hide_header Referrer-Policy;
+        proxy_hide_header Permissions-Policy;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_set_header Host $host;
@@ -108,7 +136,48 @@ server {
         try_files $uri =404;
     }
 
+    # `types {}` vacía la tabla de tipos de esta ubicación para que el tipo
+    # no dependa de la versión de mime.types de la imagen.
+    location = /manifest.webmanifest {
+        types {}
+        default_type application/manifest+json;
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
+        try_files $uri =404;
+    }
+
+    # Archivos ocultos (/.env, /.git/config...) y mapas de código: nunca se
+    # sirven ni caen en el fallback de la SPA.
+    location ~ /\. {
+        access_log off;
+        return 404;
+    }
+
+    location ~* \.map$ {
+        access_log off;
+        return 404;
+    }
+
+    # Vite genera /assets/* con hash en el nombre: son inmutables. La cabecera
+    # va sin `always` para que un 404 nunca quede cacheado como inmutable.
+    location ~ ^/assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        include /etc/nginx/snippets/nexora-security-headers.conf;
+        try_files $uri =404;
+    }
+
+    # Resto de archivos con extensión (icon.svg, registerSW.js, workbox-*.js,
+    # products/*.svg...): se sirven si existen y revalidan siempre; si no
+    # existen, 404 y no el HTML de la SPA.
+    location ~ \.[A-Za-z0-9]+$ {
+        add_header Cache-Control "no-cache";
+        include /etc/nginx/snippets/nexora-security-headers.conf;
+        try_files $uri =404;
+    }
+
+    # Rutas de la SPA (sin extensión): fallback a index.html, que se sirve por
+    # redirección interna con su Cache-Control no-store.
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files $uri /index.html;
     }
 }

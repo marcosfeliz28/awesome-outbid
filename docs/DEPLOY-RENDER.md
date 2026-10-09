@@ -73,10 +73,10 @@ provisional se reinstala desde el dominio definitivo.
 
 ## DNS privado y cabeceras del cliente
 
-Render inyecta `API_UPSTREAM` mediante `fromService.hostport`. Nginx usa un
-upstream con zona compartida, la opción `resolve` y el servidor DNS que el
-contenedor recibió en `/etc/resolv.conf`; vuelve a resolver el nombre cada diez
-segundos. Esto evita conservar una IP antigua cuando Render reemplaza la API.
+Render inyecta `API_UPSTREAM` mediante `fromService.hostport`. `start-nginx.sh`
+resuelve el nombre con el resolvedor del sistema, guarda la IP en un snippet
+incluido por Nginx y la vuelve a resolver cada diez segundos (recarga Nginx sólo
+si cambió). Esto evita conservar una IP antigua cuando Render reemplaza la API.
 
 El Nginx cloud no usa como fuente de identidad ninguna cabecera de IP que pueda
 mandar el cliente. El mapa toma únicamente `$remote_addr` y reemplaza
@@ -98,13 +98,49 @@ Fuente: [Render, How Render handles DDoS attacks](https://render.com/articles/ho
 declara que el borde lo sobrescriba siempre ante valores enviados por el
 cliente.
 
-El snippet de seguridad instala CSP, HSTS, `X-Frame-Options: DENY`,
-`X-Content-Type-Options: nosniff` y `Referrer-Policy`. La CSP permite módulos
+El snippet de seguridad instala CSP, HSTS (`max-age=31536000;
+includeSubDomains`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`
+y `Referrer-Policy`. La CSP permite módulos
 locales, workers `blob:` usados por la PWA, peticiones al mismo origen y
 ingesta de Sentry; la política de permisos conserva cámara sólo en el mismo
-origen para el lector. La cámara requiere HTTPS (o localhost). Pruebas de
-cabeceras en un Nginx ejecutándose y recorrido visual/offline de la cámara
-siguen pendientes porque Docker no está disponible en el equipo de revisión.
+origen para el lector. La cámara requiere HTTPS (o localhost). Las cabeceras y
+reglas de rutas se comprobaron con un Nginx 1.24 real (no con la imagen
+`nginx:1.30.5-alpine3.24`); el recorrido visual/offline de la cámara y la
+imagen Docker siguen pendientes porque Docker no está disponible en el equipo
+de revisión.
+
+### Cabeceras en `/api`
+
+Nginx es la única fuente de cabeceras de seguridad también para `/api`. La API
+usa Helmet, cuyos valores chocaban con los de Nginx (`X-Frame-Options`
+`SAMEORIGIN` frente a `DENY`, `Referrer-Policy` distinta, dos CSP y dos HSTS),
+así que `/api/` y `/api/events` descartan con `proxy_hide_header` las cabeceras
+de seguridad de la API y aplican las del snippet. Para no debilitar nada, en
+`/api` el `Referrer-Policy` sigue siendo `no-referrer` (la política más estricta
+que ya enviaba la API; la web usa `strict-origin-when-cross-origin`) mediante un
+`map` por ruta. Las cabeceras de Helmet sin equivalente en Nginx
+(`Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, etc.) siguen
+llegando tal cual. La CSP de Nginx es la de la web; si algún día se activa
+Swagger en producción (`ENABLE_SWAGGER=true`), su interfaz queda sujeta a ella.
+
+### Archivos estáticos y caché
+
+- `/assets/*` (Vite los nombra con hash) se sirve con
+  `Cache-Control: public, max-age=31536000, immutable`. La cabecera no lleva
+  `always`, así que un 404 (hash antiguo tras un despliegue) no se cachea.
+- `index.html`, `sw.js` y `runtime-config.js` siguen con
+  `no-cache, no-store, must-revalidate`: el navegador revalida siempre el
+  service worker y por tanto detecta versiones nuevas. El fallback de la SPA
+  llega a `index.html` por redirección interna, con esa misma cabecera.
+- `/manifest.webmanifest` se sirve como `application/manifest+json`
+  (`types {}` + `default_type`, sin depender del `mime.types` de la imagen) con
+  `no-cache`. El resto de archivos con extensión (`icon.svg`, `registerSW.js`,
+  `workbox-*.js`, `products/*.svg`) llevan `no-cache` (revalidan).
+- Dotfiles (`/.env`, `/.git/config`...), `*.map` y cualquier ruta con extensión
+  que no exista devuelven `404`; sólo las rutas sin extensión caen en
+  `index.html` (SPA). Una ruta de la SPA no debe terminar en `.algo`. Un
+  directorio como `/products/` ya no devuelve 403 sino la SPA.
+- `server_tokens off` oculta la versión de Nginx.
 
 ## Salud y preparación
 

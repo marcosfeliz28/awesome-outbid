@@ -142,7 +142,83 @@ describe("Render · proxy público", () => {
       nginx.match(
         /include \/etc\/nginx\/snippets\/nexora-security-headers.conf;/g,
       ),
-    ).toHaveLength(8);
+    ).toHaveLength(11);
+    // HSTS cubre subdominios.
+    expect(headers).toContain(
+      'Strict-Transport-Security "max-age=31536000; includeSubDomains"',
+    );
+  });
+
+  it("deja una sola fuente de cabeceras de seguridad también en /api", () => {
+    const nginx = read("deploy/render/nginx.conf.template");
+    const headers = read("deploy/render/security-headers.conf");
+    // Las cabeceras que Helmet añade en la API se descartan (en /api/ y en
+    // /api/events) para que no lleguen duplicadas ni contradictorias.
+    for (const name of [
+      "Content-Security-Policy",
+      "Strict-Transport-Security",
+      "X-Frame-Options",
+      "X-Content-Type-Options",
+      "Referrer-Policy",
+      "Permissions-Policy",
+    ])
+      expect(nginx.split(`proxy_hide_header ${name};`)).toHaveLength(3);
+    expect(nginx).toContain("location ^~ /api/ {");
+    // /api conserva `no-referrer`, más estricto que lo que usa la web.
+    expect(nginx).toContain('~^/api/ "no-referrer";');
+    expect(headers).toContain(
+      "add_header Referrer-Policy $nexora_referrer_policy always;",
+    );
+    expect(headers).toContain('add_header X-Frame-Options "DENY" always;');
+    expect(headers).toContain("frame-ancestors 'none'");
+    expect(headers).toContain("object-src 'none'");
+    expect(nginx).toContain("server_tokens off;");
+  });
+
+  it("responde 404 a dotfiles, mapas y archivos inexistentes sin romper la SPA", () => {
+    const nginx = read("deploy/render/nginx.conf.template");
+    const block = (head: string) => {
+      const start = nginx.indexOf(head);
+      expect(start, head).toBeGreaterThan(-1);
+      return nginx.slice(start, nginx.indexOf("\n    }", start));
+    };
+    expect(block("location ~ /\\. {")).toContain("return 404;");
+    expect(block("location ~* \\.map$ {")).toContain("return 404;");
+    // Extensión desconocida: 404 y nunca el HTML de la SPA.
+    expect(block("location ~ \\.[A-Za-z0-9]+$ {")).toContain(
+      "try_files $uri =404;",
+    );
+    expect(block("location ~ ^/assets/ {")).toContain("try_files $uri =404;");
+    // Rutas sin extensión: fallback a index.html (que sigue sin caché).
+    expect(block("location / {")).toContain("try_files $uri /index.html;");
+    // Las reglas de archivos van antes del fallback de la SPA.
+    expect(nginx.indexOf("location ~ /\\. {")).toBeLessThan(
+      nginx.indexOf("location / {"),
+    );
+  });
+
+  it("sirve el manifest con su tipo y cachea inmutable sólo /assets con hash", () => {
+    const nginx = read("deploy/render/nginx.conf.template");
+    const block = (head: string) => {
+      const start = nginx.indexOf(head);
+      expect(start, head).toBeGreaterThan(-1);
+      return nginx.slice(start, nginx.indexOf("\n    }", start));
+    };
+    const manifest = block("location = /manifest.webmanifest {");
+    expect(manifest).toContain("types {}");
+    expect(manifest).toContain("default_type application/manifest+json;");
+    const assets = block("location ~ ^/assets/ {");
+    expect(assets).toContain(
+      'add_header Cache-Control "public, max-age=31536000, immutable";',
+    );
+    // Sin `always`: un 404 de un hash viejo nunca queda cacheado como inmutable.
+    expect(assets).not.toMatch(/Cache-Control[^;]*always/);
+    // El service worker, el HTML y la config en runtime siguen sin caché.
+    for (const file of ["sw.js", "index.html", "runtime-config.js"]) {
+      const loc = block(`location = /${file} {`);
+      expect(loc).toContain("no-cache, no-store, must-revalidate");
+      expect(loc).not.toContain("immutable");
+    }
   });
 
   it("actualiza el upstream de la API, conserva SSE sin buffering y separa la salud", () => {
