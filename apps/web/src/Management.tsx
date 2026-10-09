@@ -61,6 +61,7 @@ import {
   type Printing,
 } from "./Tienda";
 import { METHOD_LABEL, printSoon } from "./Prints";
+import { customerPrivateDisplay } from "./customer-display";
 import {
   applyPendingSaleReprice,
   discardPendingSale,
@@ -1897,12 +1898,22 @@ export function Customers() {
                 label: "Contacto",
                 render: (c) => (
                   <span>
-                    {c.phone || "—"}
+                    {customerPrivateDisplay(
+                      c.phone,
+                      can(user.permissions, "sale:manage"),
+                    )}
                     <small>{c.email}</small>
                   </span>
                 ),
               },
-              { label: "Cédula / RNC", render: (c) => c.legalId || "—" },
+              {
+                label: "Cédula / RNC",
+                render: (c) =>
+                  customerPrivateDisplay(
+                    c.legalId,
+                    can(user.permissions, "sale:manage"),
+                  ),
+              },
               { label: "Compras", render: (c) => c.purchases },
               {
                 label: "Total gastado",

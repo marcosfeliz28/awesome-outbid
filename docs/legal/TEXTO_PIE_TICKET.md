@@ -43,3 +43,6 @@ Info: [TELEFONO]
 ```
 
 Notas: la leyenda de "NO FISCAL" debe ir siempre mientras no exista NCF; si el sistema emite NCF/e-CF, la leyenda debe cambiar según indique la contable. Evitar la palabra "FACTURA" como título cuando no hay NCF.
+
+## Aviso de lectura automática (privacidad)
+Si se usa lectura automática de facturas de proveedor, el documento se envía a Anthropic (IA) para extraer sus datos. Hay alternativa manual. La aplicación no crea un archivo en la cuenta del proveedor; la retención del servicio requiere confirmación contractual antes de prometer que no se guarda allí. Este aviso no significa que la compra del cliente se envíe a IA.
