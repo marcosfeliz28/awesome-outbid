@@ -133,10 +133,16 @@ export class OfflineSalesController {
         string,
         unknown
       >;
-      const attemptedPaymentTotal = Number(conflictEvidence.paymentTotal);
+      // paymentTotal is the amount tendered and may legitimately exceed the
+      // sale total. New conflict records keep the expected sale total apart;
+      // paymentTotal remains as a backward-compatible fallback.
+      const attemptedExpectedTotal = Number(
+        conflictEvidence.attemptedExpectedTotal ??
+          conflictEvidence.paymentTotal,
+      );
       if (
-        Number.isFinite(attemptedPaymentTotal) &&
-        Math.abs(attemptedPaymentTotal - data.previousTotal) > 0.01
+        Number.isFinite(attemptedExpectedTotal) &&
+        Math.abs(attemptedExpectedTotal - data.previousTotal) > 0.01
       )
         conflict("El total anterior no coincide con el conflicto registrado.");
       if (Math.abs(Number(sale.total) - data.currentTotal) > 0.01)
@@ -173,9 +179,9 @@ export class OfflineSalesController {
           .filter((payment: any) => payment.entryType === "sale")
           .every((payment: any) => payment.method === "cash");
       if (onlyCash && data.previousTotal > data.currentTotal) {
-        const expectedChange = money(data.previousTotal - data.currentTotal);
+        const expectedChange = money(cashTendered - data.currentTotal);
         if (
-          Math.abs(cashTendered - data.previousTotal) > 0.01 ||
+          Math.abs(cashApplied - data.currentTotal) > 0.01 ||
           Math.abs(cashChange - expectedChange) > 0.01
         )
           conflict(

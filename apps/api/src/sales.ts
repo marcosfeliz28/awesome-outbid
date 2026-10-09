@@ -1063,6 +1063,11 @@ export class SalesController {
                 0,
               ),
             );
+            const attemptedExpectedTotal = Number.isFinite(
+              Number(attempted.expectedTotal),
+            )
+              ? money(Number(attempted.expectedTotal))
+              : paymentTotal;
             await audit(
               tx,
               actor,
@@ -1072,6 +1077,7 @@ export class SalesController {
               undefined,
               {
                 paymentTotal,
+                attemptedExpectedTotal,
                 cashSessionId: attempted.cashSessionId ?? null,
               },
             );

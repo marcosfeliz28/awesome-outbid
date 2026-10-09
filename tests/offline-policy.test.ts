@@ -188,6 +188,63 @@ describe("resolución de precios viejos en la cola offline", () => {
     });
   });
 
+  it("sincroniza y elimina una venta con efectivo mayor al total anterior", async () => {
+    const order: string[] = [];
+    let resolution: any;
+    const sale: any = {
+      id: input.offlineUuid,
+      input: {
+        ...input,
+        expectedTotal: 150,
+        payments: [{ method: "cash", amount: 200 }],
+      },
+      receipt: { number: "LOCAL-11111111", total: 150, snapshot: [] },
+      status: "conflict",
+      message: "Los precios o promociones cambiaron.",
+    };
+    const cheaperProducts = products.map((product) => ({
+      ...product,
+      variants: product.variants.map((variant: any) => ({
+        ...variant,
+        price: "50",
+      })),
+    }));
+
+    const result = await applyPendingSaleReprice(
+      sale,
+      cheaperProducts,
+      [],
+      true,
+      {
+        recordResolution: async (body) => {
+          order.push("audit");
+          resolution = body;
+        },
+        updateLocal: async () => {
+          order.push("update");
+        },
+        syncOne: async (repriced) => {
+          order.push("sync");
+          expect(repriced.payments).toEqual([
+            { method: "cash", amount: 200 },
+          ]);
+          return { status: "synced" as const, sale: { id: "sale-1" } };
+        },
+        deleteLocal: async () => {
+          order.push("delete");
+        },
+      },
+    );
+
+    expect(result.synced.status).toBe("synced");
+    expect(resolution).toMatchObject({
+      action: "reprice",
+      previousTotal: 150,
+      currentTotal: 100,
+    });
+    expect(order).toEqual(["update", "sync", "audit", "delete"]);
+  });
+
   it("distribuye una rebaja entre varios pagos editables sin tocar la tarjeta", () => {
     const result = repricePendingSale(
       {
@@ -447,6 +504,81 @@ describe("descarte protegido de ventas offline", () => {
       "resolve-alert",
       "audit:offline_sale_discarded",
     ]);
+  });
+});
+
+describe("auditoría de reprecio offline con efectivo sobrante", () => {
+  const offlineUuid = "11111111-1111-4111-8111-111111111111";
+  const actor = {
+    id: "cashier",
+    name: "Cajera",
+    email: "cashier@example.invalid",
+    role: "seller",
+    permissions: ["sale:write"],
+    branchId: "main",
+    terminalId: "terminal",
+  } as any;
+
+  it("separa el total esperado del efectivo recibido y acepta el cambio real", async () => {
+    const audits: any[] = [];
+    let lookup = 0;
+    const tx = {
+      $queryRaw: async () => [{ locked: "1" }],
+      auditLog: {
+        findFirst: async () => {
+          lookup += 1;
+          return lookup === 1
+            ? { after: { paymentTotal: 200, attemptedExpectedTotal: 150 } }
+            : null;
+        },
+        create: async ({ data }: any) => {
+          audits.push(data);
+          return data;
+        },
+      },
+      sale: {
+        findUnique: async () => ({
+          id: "sale-1",
+          offlineUuid,
+          sellerId: actor.id,
+          branchId: actor.branchId,
+          total: 100,
+          payments: [
+            {
+              method: "cash",
+              entryType: "sale",
+              tendered: 200,
+              amount: 100,
+              change: 100,
+            },
+          ],
+        }),
+      },
+    };
+    const api = new OfflineSalesController({
+      $transaction: async (operation: (client: typeof tx) => unknown) =>
+        operation(tx),
+    } as any);
+
+    await expect(
+      api.record(
+        {
+          offlineUuid,
+          action: "reprice",
+          previousTotal: 150,
+          currentTotal: 100,
+          reason: "Precio actualizado durante la sincronización",
+        },
+        actor,
+      ),
+    ).resolves.toEqual({ ok: true, saleId: "sale-1" });
+    expect(audits).toHaveLength(1);
+    expect(audits[0].after).toMatchObject({
+      total: 100,
+      cashTendered: 200,
+      cashApplied: 100,
+      cashChange: 100,
+    });
   });
 });
 
