@@ -8,6 +8,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import ExcelJS from "exceljs";
 import * as z4 from "zod/v4";
 import { amount, bad, cost, parse, positive } from "./common";
+import { assertSafeXlsx, assertSheetCells } from "./xlsx-guard";
 
 export const extractedSchema = z.object({
   total: amount.nullable().optional(),
@@ -204,6 +205,8 @@ export async function readInvoiceTable(
   const workbook = new ExcelJS.Workbook();
   let tooLong = false;
   let decimal: "," | undefined;
+  // SEC-01: fuera del try, para que el 400 explique el motivo real.
+  if (format === "xlsx") assertSafeXlsx(buffer);
   try {
     if (format === "csv") {
       const { text, delimiter } = decodeCsv(buffer);
@@ -226,6 +229,7 @@ export async function readInvoiceTable(
       `El archivo tiene más de ${MAX_ROWS} filas. Una factura admite hasta 200 líneas de productos.`,
     );
   if (!sheet || sheet.rowCount === 0) bad("El archivo está vacío.");
+  assertSheetCells(sheet);
   // La fila de encabezados puede estar debajo del membrete del proveedor.
   let headerRow = 0;
   let columns: Partial<Record<ColumnKey, number>> = {};

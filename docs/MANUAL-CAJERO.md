@@ -5,7 +5,7 @@ Esta guía explica cómo iniciar sesión, cobrar y cerrar la caja. Los recibos q
 ## 1. Entrar y preparar la caja
 
 1. En la pantalla de acceso, escribe tu **usuario** (por ejemplo, `mfeliz`) y tu contraseña. No escribas un correo electrónico si tu cuenta está configurada con nombre de usuario.
-2. En el menú, abre **Caja** y pulsa **Abrir mi caja**. Introduce el efectivo que queda como fondo inicial y guarda. Cada persona y equipo debe usar su propia caja; no intentes abrirla varias veces si ya tienes una sesión abierta.
+2. En el menú, abre **Caja** y pulsa **Abrir mi caja**. Introduce el efectivo que queda como fondo inicial y guarda. Si el fondo es menor que lo que dejó el último cierre (el monto sugerido), escribe una nota que explique la diferencia y pide el PIN a un gerente; la diferencia queda en la bitácora. Cada persona y equipo debe usar su propia caja; no intentes abrirla varias veces si ya tienes una sesión abierta.
 3. Si aparece que el equipo necesita aprobación, pide a Marcos o Génesis que lo apruebe en **Configuración > Equipos**. Si dice que ya existe una caja para el usuario o terminal, revisa primero **Caja** y pide a un administrador que compruebe las sesiones abiertas.
 4. Vuelve a **Punto de venta**. Si el sistema dice que abras la caja, no podrás terminar una venta hasta abrirla.
 
@@ -46,7 +46,7 @@ En **Caja**, **Movimiento de efectivo** registra entradas y salidas con su motiv
 
 ## 6. Anular una venta por error
 
-No anules la venta desde el usuario de cajero. Avisa a Marcos o Génesis con el número de factura y el motivo. Un administrador puede entrar en **Ventas**, buscar la factura y pulsar **Anular** sin abrir caja; debe confirmar el motivo. La factura no se borra: queda registrada como anulada, se revierte el inventario y deja de contar en ventas. La anulación no está disponible si la venta ya tiene devoluciones o abonos registrados; en ese caso, pide al administrador que revise el caso y use el procedimiento correcto.
+No anules la venta desde el usuario de cajero. Avisa a Marcos o Génesis con el número de factura y el motivo. Un administrador puede entrar en **Ventas**, buscar la factura y pulsar **Anular**; debe confirmar el motivo. Si la caja de esa venta ya cerró y se cobró en efectivo, el administrador necesita su propia caja abierta: el reembolso sale de ella y queda como salida con el número de la factura. La factura no se borra: queda registrada como anulada, se revierte el inventario y deja de contar en ventas. La anulación no está disponible si la venta ya tiene devoluciones o abonos registrados; en ese caso, pide al administrador que revise el caso y use el procedimiento correcto.
 
 ## Si algo falla
 

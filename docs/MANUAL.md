@@ -91,7 +91,7 @@ Gerente y administrador pueden hacerlo desde **Ventas**, con una caja abierta. U
 
 La demostración configura 30 días de devolución; el negocio debe confirmar ese plazo antes de utilizar datos reales. Las devoluciones repetidas no pueden superar la cantidad comprada.
 
-La anulación exige motivo, conserva la factura y restaura inventario. Sólo se anulan ventas de la caja actual sin devoluciones previas. Para cajas anteriores, registra una devolución. Los cambios de talla se realizan como devolución y una nueva venta.
+La anulación exige motivo, conserva la factura y restaura inventario. Sólo se anulan ventas sin devoluciones ni abonos previos. Si la caja de la venta ya cerró y se cobró en efectivo, quien anula necesita su caja abierta: el reembolso sale de ella y el cierre anterior no cambia (ver `docs/DECISIONES.md`, punto 9). Los cambios de talla se realizan como devolución y una nueva venta.
 
 ## Gastos y cierre
 
