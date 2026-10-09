@@ -28,6 +28,9 @@ import {
   json,
   imageType,
   lockActiveCustomer,
+  canViewCustomerPii,
+  customerForActor,
+  isMaskedPii,
 } from "./common";
 import {
   can,
@@ -194,6 +197,9 @@ export class AdminController {
       where: { branchId: actor.branchId, active: true },
       orderBy: { name: "asc" },
     });
+    // SEC-05: la caja recibe el cliente enmascarado y sin gasto histórico.
+    if (!canViewCustomerPii(actor))
+      return customers.map((c) => customerForActor(c, actor));
     const sales = await this.db.sale.groupBy({
       by: ["customerId"],
       where: { branchId: actor.branchId, status: "completed" },
@@ -227,7 +233,7 @@ export class AdminController {
       },
     });
     await audit(this.db, actor, "create", "customer", row.id, undefined, row);
-    return row;
+    return customerForActor(row, actor);
   }
   @Patch("customers/:id")
   @Permit("customers:write")
@@ -237,6 +243,16 @@ export class AdminController {
     @CurrentUser() actor: Actor,
   ) {
     const customerId = parse(uuid, id);
+    // SEC-05: el formulario de la caja devuelve el teléfono, la cédula/RNC o
+    // el correo enmascarados tal como los recibió; eso no es un dato nuevo y
+    // no debe sobrescribir el guardado.
+    if (body && typeof body === "object" && !Array.isArray(body))
+      body = Object.fromEntries(
+        Object.entries(body).filter(
+          ([key, value]) =>
+            !["phone", "legalId", "email"].includes(key) || !isMaskedPii(value),
+        ),
+      );
     const data = parse(customerSchema.partial(), body);
     if (
       data.creditLimit !== undefined &&
@@ -271,7 +287,7 @@ export class AdminController {
         { changedFields },
         { changedFields },
       );
-      return row;
+      return customerForActor(row, actor);
     });
   }
 
