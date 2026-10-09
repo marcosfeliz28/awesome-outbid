@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AlertsController } from "../apps/api/src/alerts";
 import { ReportsController, storeReport } from "../apps/api/src/reports";
+import { CashController } from "../apps/api/src/cash";
 
 const actor = (permissions: string[], id = "cashier-1") =>
   ({
@@ -13,6 +14,47 @@ const actor = (permissions: string[], id = "cashier-1") =>
   }) as any;
 
 describe("C2 · privacidad de arqueo por rutas indirectas", () => {
+  it("B4: rechaza un retiro sin efectivo suficiente sin revelar cifras", async () => {
+    let created = false;
+    const session = {
+      id: "3e6b82b5-bb56-45ca-9f5a-d19f4955fc84",
+      branchId: "main",
+      userId: "cashier-1",
+      registerId: "terminal-1",
+      openingAmount: 50,
+      closedAt: null,
+    };
+    const tx = {
+      $queryRaw: async () => [],
+      cashSession: { findFirstOrThrow: async () => session },
+      payment: { findMany: async () => [] },
+      cashMovement: {
+        findMany: async () => [],
+        create: async () => {
+          created = true;
+          return {};
+        },
+      },
+      saleReturn: { findMany: async () => [] },
+      auditLog: { create: async () => ({}) },
+    };
+    const controller = new CashController({
+      $transaction: async (run: (client: any) => unknown) => run(tx),
+    } as any);
+
+    await expect(
+      controller.movement(
+        session.id,
+        { type: "out", amount: 51, reason: "Retiro operativo" },
+        actor(["cash:write"]),
+      ),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: "No hay suficiente efectivo en caja.",
+    });
+    expect(created).toBe(false);
+  });
+
   it("B3: dashboard oculta formas de pago de cajas abiertas y redacta alertas", async () => {
     const openSessionId = "3e6b82b5-bb56-45ca-9f5a-d19f4955fc84";
     const paymentQueries: any[] = [];

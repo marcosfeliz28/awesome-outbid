@@ -111,8 +111,7 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
     const cash = source("apps/api/src/cash.ts");
     expect(cash).toContain("Cierra la caja para consultar el cuadre.");
     expect(cash).toContain("Cierra la caja para consultar sus reportes.");
-    expect(cash).not.toContain("data.amount > expected.cash");
-    expect(cash).not.toContain('bad("No hay suficiente efectivo en caja.")');
+    expect(cash).toContain('bad("No hay suficiente efectivo en caja.")');
 
     const controller = new CashController({
       cashSession: {

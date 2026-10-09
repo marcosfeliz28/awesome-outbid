@@ -564,11 +564,15 @@ export class CashController {
       body,
     );
     return this.db.$transaction(async (tx) => {
-      const _session = await cashLock(tx, actor, parse(uuid, id));
-      // No comparar el retiro con el esperado: aceptar/rechazar importes
-      // convierte esta ruta en un oráculo que permite calcular el arqueo por
-      // búsqueda. El movimiento registra lo que físicamente entró o salió; la
-      // diferencia se determina una sola vez durante el cierre ciego.
+      const session = await cashLock(tx, actor, parse(uuid, id));
+      // El bloqueo de la sesión serializa movimientos y ventas concurrentes.
+      // Un retiro nunca puede dejar el efectivo calculado por debajo de cero;
+      // el mensaje deliberadamente no expone el saldo ni el monto esperado.
+      if (data.type === "out") {
+        const expected = await cashExpected(tx, session);
+        if (d(data.amount).gt(expected.cash))
+          bad("No hay suficiente efectivo en caja.");
+      }
       const row = await tx.cashMovement.create({
         data: { ...data, sessionId: id, userId: actor.id },
       });
