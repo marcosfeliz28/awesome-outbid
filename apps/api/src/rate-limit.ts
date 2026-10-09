@@ -9,7 +9,11 @@ import {
 } from "@nestjs/common";
 
 type Bucket = { count: number; until: number };
-export type RequestRateLimitOptions = { windowMs?: number; now?: () => number };
+export type RequestRateLimitOptions = {
+  windowMs?: number;
+  now?: () => number;
+  maxBuckets?: number;
+};
 const digest = (...parts: string[]) =>
   createHash("sha256").update(parts.join("\u0000")).digest("hex");
 const positiveLimit = (value: string | undefined, fallback: number) => {
@@ -19,8 +23,10 @@ const positiveLimit = (value: string | undefined, fallback: number) => {
 
 export const REQUEST_RATE_LIMITS = {
   authAccount: positiveLimit(process.env.AUTH_ACCOUNT_RATE_LIMIT, 60),
+  authIp: positiveLimit(process.env.AUTH_IP_RATE_LIMIT, 600),
   pinSession: positiveLimit(process.env.PIN_SESSION_RATE_LIMIT, 60),
   refreshSession: positiveLimit(process.env.REFRESH_SESSION_RATE_LIMIT, 60),
+  logoutSession: positiveLimit(process.env.LOGOUT_SESSION_RATE_LIMIT, 60),
   salesSession: positiveLimit(process.env.SALES_SESSION_RATE_LIMIT, 120),
 };
 
@@ -28,19 +34,18 @@ export const REQUEST_RATE_LIMITS = {
 export class ValidatedRateLimitStore {
   private readonly windowMs: number;
   private readonly now: () => number;
+  private readonly maxBuckets: number;
   private readonly buckets = new Map<string, Bucket>();
-  private nextPurgeAt = 0;
   constructor(options: RequestRateLimitOptions = {}) {
     this.windowMs = options.windowMs ?? 60_000;
     this.now = options.now ?? Date.now;
+    this.maxBuckets = positiveLimit(
+      options.maxBuckets === undefined ? undefined : String(options.maxBuckets),
+      10_000,
+    );
   }
   exceeds(scope: string, identity: string[], limit: number) {
     const at = this.now();
-    if (at >= this.nextPurgeAt) {
-      for (const [key, value] of this.buckets)
-        if (value.until <= at) this.buckets.delete(key);
-      this.nextPurgeAt = at + Math.max(1_000, Math.min(this.windowMs, 60_000));
-    }
     const key = digest(scope, ...identity);
     const item = this.buckets.get(key);
     if (item?.until && item.until > at) {
@@ -48,8 +53,24 @@ export class ValidatedRateLimitStore {
       item.count += 1;
       return false;
     }
+    if (item) this.buckets.delete(key);
+    if (this.buckets.size >= this.maxBuckets) {
+      // Map conserva orden de insercion. Como todos los cubos comparten la
+      // misma ventana, el primero tambien es el primero que vence. Mirar y
+      // retirar solo ese elemento mantiene la admision O(1). Un cubo activo
+      // nunca se expulsa para admitir una identidad nueva controlada por un
+      // atacante: la identidad nueva recibe 429 y la cuenta activa se conserva.
+      const oldest = this.buckets.entries().next().value as
+        [string, Bucket] | undefined;
+      if (oldest && oldest[1].until <= at) this.buckets.delete(oldest[0]);
+      if (this.buckets.size >= this.maxBuckets) return true;
+    }
     this.buckets.set(key, { count: 1, until: at + this.windowMs });
     return false;
+  }
+  limited(scope: string, identity: string[], limit: number) {
+    const item = this.buckets.get(digest(scope, ...identity));
+    return !!item && item.until > this.now() && item.count >= limit;
   }
   size() {
     return this.buckets.size;
@@ -59,12 +80,22 @@ export class ValidatedRateLimitStore {
 @Injectable()
 export class RequestRateLimitService {
   private readonly store = new ValidatedRateLimitStore();
+  private readonly knownAuthIdentities = new Set<string>();
   assert(scope: string, identity: string[], limit: number) {
     if (this.store.exceeds(scope, identity, limit))
       throw new HttpException(
         "Demasiados intentos. Espera un minuto.",
         HttpStatus.TOO_MANY_REQUESTS,
       );
+  }
+  limited(scope: string, identity: string[], limit: number) {
+    return this.store.limited(scope, identity, limit);
+  }
+  rememberAuthIdentity(identity: string) {
+    this.knownAuthIdentities.add(identity);
+  }
+  knowsAuthIdentity(identity: string) {
+    return this.knownAuthIdentities.has(identity);
   }
 }
 
@@ -92,6 +123,15 @@ export class AuthenticatedRateLimitGuard implements CanActivate {
         "auth-pin-session",
         identity,
         REQUEST_RATE_LIMITS.pinSession,
+      );
+    else if (
+      method === "POST" &&
+      (path === "/api/auth/logout" || path === "/auth/logout")
+    )
+      this.limits.assert(
+        "auth-logout-session",
+        identity,
+        REQUEST_RATE_LIMITS.logoutSession,
       );
     else if (
       method === "POST" &&

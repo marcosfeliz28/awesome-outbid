@@ -1,5 +1,14 @@
 import { z } from "@fitstore/shared";
-import { Body, Controller, Get, Inject, Post, Req, Res } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  OnModuleInit,
+  Post,
+  Req,
+  Res,
+} from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { compare, hash } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
@@ -28,7 +37,7 @@ export function normalizeUsername(value: string) {
 }
 
 @Controller("auth")
-export class AuthController {
+export class AuthController implements OnModuleInit {
   constructor(
     @Inject(Database) private db: Database,
     @Inject(JwtService) private jwt: JwtService,
@@ -45,6 +54,47 @@ export class AuthController {
       permissions: user.role.permissions,
       branchId: user.branchId,
     };
+  }
+  async onModuleInit() {
+    // Una sola lectura acotada al iniciar permite que el freno de barridos
+    // rechace identidades desconocidas antes de findFirst sin impedir que una
+    // cuenta real inicie sesion desde la misma IP durante el ataque.
+    const users = await this.db.user.findMany({
+      select: { usernameKey: true, email: true },
+    });
+    for (const user of users) {
+      if (user.usernameKey)
+        this.requestLimits.rememberAuthIdentity(
+          normalizeUsername(user.usernameKey),
+        );
+      if (user.email)
+        this.requestLimits.rememberAuthIdentity(normalizeUsername(user.email));
+    }
+  }
+  private limitPublicCredentials(req: Request, identifier: string) {
+    const ip = req.ip ?? "";
+    const normalized = normalizeUsername(identifier);
+    // Ambas comprobaciones ocurren antes de consultar User. El cubo compartido
+    // sólo recibe identidades que no existen; cuando se llena, se comprueba
+    // antes de crear otro cubo por nombre. Así el barrido no crea miles de
+    // consultas ni entradas. Las cuentas precargadas conservan su cubo propio.
+    const unknownFlooded = this.requestLimits.limited(
+      "auth-unknown-ip",
+      [ip],
+      REQUEST_RATE_LIMITS.authIp,
+    );
+    if (!this.requestLimits.knowsAuthIdentity(normalized))
+      this.requestLimits.assert(
+        "auth-unknown-ip",
+        [ip],
+        REQUEST_RATE_LIMITS.authIp,
+      );
+    this.requestLimits.assert(
+      "auth-identifier",
+      [ip, normalized],
+      REQUEST_RATE_LIMITS.authAccount,
+    );
+    return { ip, normalized, unknownFlooded };
   }
   private async issue(user: any, res: Response, sessionId?: string | null) {
     const refresh = randomBytes(48).toString("hex");
@@ -133,6 +183,7 @@ export class AuthController {
       body,
     );
     const identifier = (data.login ?? data.email ?? "").trim();
+    const credentialLimit = this.limitPublicCredentials(req, identifier);
     const user = await this.db.user.findFirst({
       where: identifier.includes("@")
         ? { email: identifier.toLowerCase() }
@@ -140,13 +191,18 @@ export class AuthController {
       include: { role: true },
     });
     if (!user) bad("Usuario o contraseña incorrectos.");
-    this.requestLimits.assert(
-      "auth-account",
-      [req.ip ?? "", user.id],
-      REQUEST_RATE_LIMITS.authAccount,
-    );
+    this.requestLimits.rememberAuthIdentity(credentialLimit.normalized);
     const matches =
       user.active && (await compare(data.password, user.passwordHash));
+    // Cuando una IP esta barriendo nombres, una clave incorrecta de una cuenta
+    // real conserva el mismo 429 que una identidad inventada. Una clave
+    // correcta si puede entrar: no hay bloqueo cruzado ni enumeracion.
+    if (credentialLimit.unknownFlooded && !matches)
+      this.requestLimits.assert(
+        "auth-unknown-ip",
+        [credentialLimit.ip],
+        REQUEST_RATE_LIMITS.authIp,
+      );
     // Los fallos se cuentan por cuenta y dirección IP, como los PIN por
     // solicitante: quien prueba contraseñas ajenas sólo se bloquea a sí mismo,
     // no a la vendedora en su caja. La clave lleva authVersion para que un
@@ -201,19 +257,34 @@ export class AuthController {
       body,
     );
     const identifier = data.login.trim();
+    const credentialLimit = this.limitPublicCredentials(req, identifier);
     const user = await this.db.user.findFirst({
       where: identifier.includes("@")
         ? { email: identifier.toLowerCase() }
         : { usernameKey: normalizeUsername(identifier) },
       include: { role: true },
     });
-    if (!user?.active || !user.mustChangePassword)
+    if (user)
+      this.requestLimits.rememberAuthIdentity(credentialLimit.normalized);
+    if (!user?.active || !user.mustChangePassword) {
+      if (credentialLimit.unknownFlooded)
+        this.requestLimits.assert(
+          "auth-unknown-ip",
+          [credentialLimit.ip],
+          REQUEST_RATE_LIMITS.authIp,
+        );
       bad("No hay un cambio de contraseña pendiente para esta cuenta.");
-    this.requestLimits.assert(
-      "auth-account",
-      [req.ip ?? "", user.id],
-      REQUEST_RATE_LIMITS.authAccount,
+    }
+    const currentPasswordMatches = await compare(
+      data.currentPassword,
+      user.passwordHash,
     );
+    if (credentialLimit.unknownFlooded && !currentPasswordMatches)
+      this.requestLimits.assert(
+        "auth-unknown-ip",
+        [credentialLimit.ip],
+        REQUEST_RATE_LIMITS.authIp,
+      );
     await verifyAttempt(
       this.db,
       `login:${user.id}:${user.authVersion}:${req.ip ?? ""}`,
@@ -221,7 +292,7 @@ export class AuthController {
         const current = await tx.user.findUnique({ where: { id: user.id } });
         return current?.mustChangePassword &&
           current?.passwordHash === user.passwordHash &&
-          (await compare(data.currentPassword, user.passwordHash))
+          currentPasswordMatches
           ? user.id
           : null;
       },
