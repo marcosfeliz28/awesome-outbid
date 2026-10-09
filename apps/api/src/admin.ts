@@ -37,6 +37,7 @@ import {
   d,
   z,
   stockQty,
+  moneyAmount,
   isImageDataUrl,
   LOGO_MAX_BYTES,
 } from "@fitstore/shared";
@@ -430,7 +431,9 @@ export class AdminController {
     const data = parse(
       z.object({
         supplierId: uuid,
-        amount: z.number().positive(),
+        // 2 decimales y un tope (D-08): 1e15 es un 400, no un error 500 de
+        // Decimal(14,2) en la base.
+        amount: moneyAmount(10000000),
         method: z.enum(["cash", "card", "transfer"]),
         reference: z.string().optional(),
       }),
@@ -491,7 +494,8 @@ export class AdminController {
     const data = parse(
       z.object({
         categoryId: uuid,
-        amount: z.number().positive(),
+        // Igual que el pago a proveedor (D-08).
+        amount: moneyAmount(10000000),
         description: reason,
         date: z.string().datetime().optional(),
         method: z.enum(["cash", "card", "transfer"]),

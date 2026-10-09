@@ -26,6 +26,7 @@ let categoryId = "";
 let cash: any;
 const productIds: string[] = [];
 const foreignCategoryIds: string[] = [];
+const expenseCategoryIds: string[] = [];
 
 async function request(path: string, data?: unknown, method?: string) {
   const r = await fetch(base + path, {
@@ -129,6 +130,14 @@ afterAll(async () => {
     await request("/products/" + id, { active: false }, "PATCH");
   if (foreignCategoryIds.length)
     await db.category.deleteMany({ where: { id: { in: foreignCategoryIds } } });
+  if (expenseCategoryIds.length) {
+    await db.expense.deleteMany({
+      where: { categoryId: { in: expenseCategoryIds } },
+    });
+    await db.expenseCategory.deleteMany({
+      where: { id: { in: expenseCategoryIds } },
+    });
+  }
   await db.$disconnect();
 });
 
@@ -297,5 +306,57 @@ describe("Menores de la cola", () => {
       payments: [{ method: "cash", amount: 1 }],
     });
     expect(z.status).toBe(400);
+  });
+
+  it("7 (D-08): gasto y pago a proveedor con importe enorme o de 3 decimales son un 400 claro, no un 500", async () => {
+    const supplier = await ok("/suppliers", { name: "QA D-08 " + suffix });
+    const category = await ok("/expense-categories", {
+      name: "QA D-08 " + suffix,
+      monthlyBudget: 0,
+    });
+    expenseCategoryIds.push(category.id);
+    const payments = () =>
+      db.supplierPayment.count({ where: { supplierId: supplier.id } });
+    const expenses = () =>
+      db.expense.count({ where: { categoryId: category.id } });
+    for (const amount of [1e15, 10000000.01, 0.004]) {
+      const pay = await request("/supplier-payments", {
+        supplierId: supplier.id,
+        amount,
+        method: "transfer",
+      });
+      expect(pay.status, "pago " + amount).toBe(400);
+      expect(pay.body.message).toMatch(/Revisa los campos/);
+      const exp = await request("/expenses", {
+        categoryId: category.id,
+        amount,
+        description: "QA gasto D-08",
+        method: "transfer",
+      });
+      expect(exp.status, "gasto " + amount).toBe(400);
+      expect(exp.body.message).toMatch(/Revisa los campos/);
+    }
+    expect(await payments()).toBe(0);
+    expect(await expenses()).toBe(0);
+    // En el tope sigue funcionando.
+    await ok("/supplier-payments", {
+      supplierId: supplier.id,
+      amount: 10000000,
+      method: "transfer",
+    });
+    const e = await ok("/expenses", {
+      categoryId: category.id,
+      amount: 10000000,
+      description: "QA gasto D-08 tope",
+      method: "transfer",
+    });
+    await ok("/expenses/" + e.id + "/void", { reason: "QA limpieza D-08" });
+    expect(await payments()).toBe(1);
+    // No deja un pago de 10 millones en los reportes de la sucursal.
+    await db.supplierPayment.deleteMany({ where: { supplierId: supplier.id } });
+    await db.supplier.update({
+      where: { id: supplier.id },
+      data: { active: false },
+    });
   });
 });
