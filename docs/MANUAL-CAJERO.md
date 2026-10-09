@@ -1,61 +1,112 @@
-# Manual breve del cajero — Nexora POS
+# Manual de la cajera — Nexora POS
 
-Esta guía explica cómo iniciar sesión, cobrar y cerrar la caja. Los recibos que genera hoy Nexora son comprobantes internos; no son comprobantes fiscales ni emiten NCF.
+Una tarea por página. **Datos ficticios** en las capturas de la aplicación local; no muestran cuentas ni ventas reales. Los importes de ejemplo no son límites del negocio. Sin NCF, el ticket dice **DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL**.
 
-## 1. Entrar y preparar la caja
+## 1. Entrar y abrir caja
 
-1. En la pantalla de acceso, escribe tu **usuario** (por ejemplo, `mfeliz`) y tu contraseña. No escribas un correo electrónico si tu cuenta está configurada con nombre de usuario.
-2. En el menú, abre **Caja** y pulsa **Abrir mi caja**. Introduce el efectivo que queda como fondo inicial y guarda. Si el fondo es menor que lo que dejó el último cierre (el monto sugerido), escribe una nota que explique la diferencia y pide el PIN a un gerente; la diferencia queda en la bitácora. Cada persona y equipo debe usar su propia caja; no intentes abrirla varias veces si ya tienes una sesión abierta.
-3. Si aparece que el equipo necesita aprobación, pide a Marcos o Génesis que lo apruebe en **Configuración > Equipos**. Si dice que ya existe una caja para el usuario o terminal, revisa primero **Caja** y pide a un administrador que compruebe las sesiones abiertas.
-4. Vuelve a **Punto de venta**. Si el sistema dice que abras la caja, no podrás terminar una venta hasta abrirla.
+1. Escribe tu usuario y contraseña. Si pide cambiarla, completa las cinco reglas y confirma tu nueva clave; no la compartas.
+2. En **Caja**, pulsa **Abrir mi caja** y cuenta el efectivo físico que recibes como fondo inicial.
+3. Escribe el monto y **Guardar**. Si es menor que el fondo sugerido, explica la diferencia y pide al gerente su PIN cuando se solicite.
+4. Si ya existe caja abierta, no la abras otra vez: revisa Caja y llama a gerencia. Cada persona usa su usuario y equipo aprobado.
+
+![Abrir caja y registrar el fondo](capturas/manual/01-abrir-caja.png)
+
+**Comprueba:** Caja abierta y tu nombre. Si el equipo requiere aprobación, gerencia lo aprueba en Configuración > Equipos. No abras caja solo para consultar.
+
+<div class="manual-page-break" style="break-after: page; page-break-after: always;"></div>
 
 ## 2. Preparar una venta
 
-1. Selecciona al cliente en el panel derecho, donde dice **Selecciona el cliente** (también puedes usar **F4**). Toda venta nueva requiere un cliente identificado; no existe la opción de vender como “consumidor final”.
-2. Si no está en la lista, pulsa **Nuevo cliente aquí mismo**. Escribe su nombre; teléfono, RNC/cédula y correo son opcionales. Pulsa **Guardar y usar cliente**. Se seleccionará para esta venta.
-3. Busca el artículo por nombre, SKU o código en la barra de búsqueda; también puedes escanear el código de barras y pulsar Enter. El artículo se agrega al carrito. Si tiene talla, color, tono u otra variante, elige la correcta. Revisa el precio, la variante y el stock antes de seguir.
-4. En el carrito, usa **− / +** para cambiar la cantidad. El sistema no permitirá superar el stock disponible salvo que la tienda tenga habilitado stock negativo para ese producto.
-5. Si tu rol tiene permiso, escribe un descuento en la línea o usa **Descuento global**. Un descuento que supere tu límite pedirá el PIN de una persona gerente autorizada. Verifica el total antes de cobrar.
+1. En **Punto de venta**, busca nombre/código o escanea; confirma talla, color o tono.
+2. Toca el artículo para agregarlo. Revisa cantidad con **− / +**, precio y existencia.
+3. Selecciona al cliente (F4). Si no existe, usa **Nuevo cliente aquí mismo**, escribe el nombre y **Guardar y usar cliente**. Los demás datos son opcionales.
+4. Revisa el total. No uses otro cliente o producto para saltar un error de stock.
 
-## 3. Cobrar y completar el comprobante
+![Catálogo y carrito](capturas/manual/02-vender.png)
 
-1. Pulsa **Cobrar** o la tecla **F12**.
-2. Elige **Efectivo**, **Tarjeta** o **Transferencia**, indica el monto y pulsa **Agregar pago**. Para dividir el pago, agrega los métodos uno por uno hasta que **Pendiente** sea RD$0.00. Puedes retirar un método agregado con la **X** antes de finalizar.
-   - En efectivo, registra lo recibido. El sistema calcula el cambio; el cambio sólo se entrega en efectivo.
-   - En tarjeta, registra los últimos cuatro dígitos y el código de aprobación del datáfono. Nunca escribas ni guardes el número completo de la tarjeta.
-   - En transferencia, registra el banco y la referencia de la operación.
-3. Cuando el pendiente llegue a cero, pulsa **Finalizar venta** una sola vez y espera la confirmación. Imprime el recibo o descarga el PDF desde la confirmación. Si se perdió la conexión o la respuesta, consulta primero la sección de problemas antes de volver a cobrar.
+**Si falta el artículo:** prueba menos palabras o su código. Si no aparece, avisa a gerencia; no sustituyas por otro producto.
 
-## 4. Crédito y contraentrega
+<div class="manual-page-break" style="break-after: page; page-break-after: always;"></div>
 
-- La opción **Crédito / contraentrega** permite entregar la mercancía y dejar el saldo asociado al cliente. La contraentrega equivale a un saldo pendiente que debe cobrarse después; no la uses sin identificar al cliente y confirmar el acuerdo.
-- Las ventas a crédito requieren que estén habilitadas por la administración; el crédito también puede exigir vencimiento y aprobación de gerente. Crédito, contraentrega y nota de crédito requieren conexión a internet.
-- La contraentrega pide el **PIN de un gerente** cuando supera el monto definido en Ajustes (RD$ 1,000 si no se cambió) o, si las ventas a crédito no están habilitadas, por cualquier monto. Escríbelo en el campo **PIN del gerente para aprobar la venta** antes de pulsar **Finalizar venta**. No pidas el PIN para repartir una contraentrega en varias facturas.
-- El cajero no debe marcar ese saldo como pagado. Marcos o Génesis, como administradores, registran luego los pagos o abonos desde **Ventas** y verifican la evidencia de pago. No cierres la caja contando un saldo pendiente como efectivo cobrado.
+## 3. Cobrar, descuento y PIN
 
-## Salidas de efectivo (vales y retiros)
+1. Pulsa **Cobrar** (F12). Elige **Efectivo**, **Tarjeta** o **Transferencia**, indica monto y **Agregar pago**.
+2. En efectivo escribe lo recibido y entrega el cambio indicado. En tarjeta, solo últimos cuatro dígitos y aprobación; en transferencia, banco y referencia.
+3. Para pago mixto, agrega cada método hasta que Pendiente sea RD$ 0.00. Pulsa **Finalizar venta** una sola vez y espera confirmación.
+4. En **Crédito / contraentrega**, identifica al cliente y confirma el acuerdo con gerencia. El saldo pendiente no es efectivo cobrado. Si pide **PIN del gerente para aprobar la venta**, el gerente lo escribe personalmente.
+5. Un descuento sobre tu autorización requiere motivo y PIN de gerente. No dividas facturas para evitar controles. Gerencia registra y verifica luego los abonos del crédito.
+6. Si rechaza límite o autorización, consulta a gerencia. Esta pantalla no pide vencimiento del crédito.
 
-En **Caja**, **Movimiento de efectivo** registra entradas y salidas con su motivo. Si las salidas de tu turno superan el monto de Ajustes (RD$ 1,000 si no se cambió), un gerente debe escribir su PIN en **PIN del gerente**. Si el sistema indica que no hay suficiente efectivo, no muestra cifras: revisa la salida con la persona encargada.
+![Crédito y contraentrega](capturas/manual/03-credito.png)
 
-## 5. Cerrar e imprimir el cuadre
+**Importante:** crédito y autorizaciones requieren internet. Nunca guardes ni compartas el PIN. Si se pierde la respuesta, sigue la página 8.
 
-1. Al terminar tu turno, entra en **Caja** y pulsa **Cerrar y arquear** en tu caja abierta. Antes de cerrar, conecta el equipo y resuelve/sincroniza las ventas pendientes; mientras haya ventas locales sin confirmar, el sistema no permite cerrar.
-2. Cuenta el efectivo por denominación y escribe cuántas monedas o billetes tienes en cada fila. Revisa el subtotal. Registra los vales de caja y, si corresponde, los dólares o euros.
-3. Escribe lo contado de tarjeta y transferencia (si el campo queda vacío, se toma el monto esperado). Si entregas efectivo a la dueña, registra **Entregado**; revisa **Dejado en caja**. Añade una nota si hay una diferencia o explicación.
-4. Pulsa **Cerrar caja e imprimir cuadre**. El cierre se guarda y se abre la impresión con el detalle y las diferencias por método. Conserva el papel y entrégalo junto con el efectivo y los comprobantes según el procedimiento de la tienda.
+<div class="manual-page-break" style="break-after: page; page-break-after: always;"></div>
 
-## 6. Anular una venta por error
+## 4. Retirar efectivo
 
-No anules la venta desde el usuario de cajero. Avisa a Marcos o Génesis con el número de factura y el motivo. Un administrador puede entrar en **Ventas**, buscar la factura y pulsar **Anular**; debe confirmar el motivo. Si la caja de esa venta ya cerró y se cobró en efectivo, el administrador necesita su propia caja abierta: el reembolso sale de ella y queda como salida con el número de la factura. La factura no se borra: queda registrada como anulada, se revierte el inventario y deja de contar en ventas. La anulación no está disponible si la venta ya tiene devoluciones o abonos registrados; en ese caso, pide al administrador que revise el caso y use el procedimiento correcto.
+1. En **Caja**, con tu caja abierta, pulsa **Movimiento**.
+2. En Tipo elige **Salida de efectivo**. Escribe monto positivo y motivo claro.
+3. Pide al gerente que escriba su PIN si las salidas acumuladas del turno superan el límite configurado.
+4. Pulsa **Guardar** una sola vez. Entrega solo lo autorizado y conserva el comprobante según el procedimiento de la tienda.
 
-## Si algo falla
+![Movimiento de efectivo y autorización](capturas/manual/04-retiro.png)
 
-- **No aparece el cliente:** abre el selector del carrito y usa **Nuevo cliente aquí mismo**. El nombre es obligatorio. No cobres a nombre de otra persona para saltar el requisito.
-- **No encuentra el producto:** prueba el código/SKU o menos palabras del nombre; confirma la talla o variante. Si sigue sin aparecer, no lo sustituyas por otro artículo: avisa a administración para revisar el catálogo.
-- **Stock insuficiente o variante equivocada:** reduce la cantidad o elige la variante correcta. Si el inventario parece incorrecto, detén esa línea y pide que revisen el producto; no fuerces el cobro.
-- **Sin conexión antes de cobrar:** las ventas offline están desactivadas normalmente. Espera a que vuelva **En línea** y reintenta sólo cuando el POS indique que no se registró la operación.
-- **La respuesta se perdió durante el cobro / venta Pendiente:** no pulses Cobrar de nuevo ni vuelvas a capturar la misma venta. Conéctate, abre **Caja > Ventas guardadas en este dispositivo** y pulsa **Sincronizar**; comprueba el resultado antes de continuar. Una venta offline confirmada puede tener recibo provisional hasta sincronizar.
-- **“Requiere revisión”:** no borres datos del navegador, no reinstales la app y no vuelvas a vender esa misma operación. En **Caja**, revisa el detalle; si el sistema solicita asociar un cliente, selecciónalo y luego pulsa **Reintentar**. Si el conflicto sigue, llama a un administrador.
-- **No permite cerrar caja:** revisa si hay ventas Pendientes o Requiere revisión y sincronízalas primero. Si no puedes resolverlas, informa al administrador; no cierres otra caja para reemplazarla.
+**No confundas:** retirar dinero no anula una venta. Si falta efectivo o falla el PIN, no alteres el monto para saltar controles; avisa a gerencia.
 
-**Regla práctica:** si no estás seguro de si una venta quedó registrada, no la repitas. Comprueba el estado con un administrador para evitar un cobro duplicado.
+<div class="manual-page-break" style="break-after: page; page-break-after: always;"></div>
+
+## 5. Recibir una devolución
+
+1. Pide el comprobante y localiza la operación en **Ventas**. No crees una venta negativa.
+2. Llama a gerencia para comprobar plazo y condiciones configurados por la tienda.
+3. La persona autorizada pulsa **Devolver** y selecciona artículo, cantidad, estado, motivo y método de reembolso.
+4. No devuelvas más unidades que las vendidas. Suplementos/maquillaje abiertos y artículos dañados no vuelven al stock vendible.
+5. Conserva la nota de crédito interna. Entrega un reembolso solo cuando gerencia y sistema lo confirmen; la deuda pendiente se reduce primero.
+
+![Consulta de ventas para hablar con gerencia](capturas/manual/05-ventas.png)
+
+**Acceso:** la captura es de una cajera. Los botones de devolución dependen del permiso de gerencia; si no aparecen, no es una falla.
+
+<div class="manual-page-break" style="break-after: page; page-break-after: always;"></div>
+
+## 6. Anular: solo gerencia
+
+1. Avisa a Marcos o Génesis con número de comprobante y motivo del error.
+2. Con su cuenta autorizada, ellos buscan la venta en **Ventas**, pulsan **Anular** y confirman el motivo.
+3. No borres ni repitas la operación mientras se revisa. La anulación conserva la historia y revierte inventario según corresponda.
+4. Si ya tiene devoluciones o abonos, gerencia determina el procedimiento correcto; no fuerces la anulación.
+5. Si la caja original cerró y hay reembolso en efectivo, la persona autorizada necesita su propia caja abierta para registrar esa salida. El cierre anterior no cambia.
+
+![Historial para comunicar el número de venta](capturas/manual/05-ventas.png)
+
+**Tu usuario de cajera no anula ventas.** No pidas ni uses la contraseña de un administrador.
+
+<div class="manual-page-break" style="break-after: page; page-break-after: always;"></div>
+
+## 7. Cerrar caja ciega e imprimir
+
+1. Conecta internet y sincroniza pendientes antes de cerrar. En **Caja**, pulsa **Cerrar y arquear**.
+2. Cuenta físicamente monedas y billetes; escribe cantidades por denominación. No copies un monto esperado: la cajera no debe verlo.
+3. Escribe **Tarjeta declarada** y **Transferencia declarada** según comprobantes; escribe 0 si no hubo. **Los campos vacíos representan RD$ 0.00**: nunca se rellenan con lo esperado.
+4. Registra vales, efectivo **Entregado** a la dueña y revisa **Dejado en caja**. Explica incidencias en Notas; si pide nota adicional, describe lo ocurrido sin inventar cifras.
+5. Marca **Confirmo que conté efectivo, tarjeta y transferencia**. Revisa todo y pulsa **Cerrar caja e imprimir cuadre** una sola vez.
+6. Entrega efectivo y comprobantes. Esperados y diferencias solo los revisa gerencia; no cambies conteos para hacerlos coincidir.
+
+![Conteo ciego y confirmación](capturas/manual/07-cierre-ciego.png)
+
+**Si no cierra:** sincroniza pendientes y pide ayuda. No abras otra caja para esconder el problema.
+
+<div class="manual-page-break" style="break-after: page; page-break-after: always;"></div>
+
+## 8. Sin internet o respuesta perdida
+
+1. Si aparece **Sin conexión** antes del cobro, espera En línea. Las ventas offline están desactivadas por defecto; solo gerencia puede habilitarlas y asumir revisión posterior.
+2. Si ya pulsaste Finalizar y no llegó respuesta, **no vuelvas a cobrar**: la operación puede estar registrada.
+3. Recupera internet; en **Caja > Ventas guardadas en este dispositivo**, revisa Pendiente y **Sincronizar**. Confirma el resultado con gerencia antes de repetir algo.
+4. Si dice **Requiere revisión**, conserva el dispositivo y sus datos. No borres el navegador ni reinstales la app. Gerencia revisa cliente, stock, precio y pago antes de reintentar.
+5. No tramites crédito ni autorizaciones con PIN sin conexión. No cierres caja con operaciones locales por resolver.
+
+![Caja sin conexión](capturas/manual/08-sin-internet.png)
+
+**Regla de oro:** si no sabes si se registró una venta, consúltala; nunca la cobres otra vez por intuición.

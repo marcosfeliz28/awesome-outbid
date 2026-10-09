@@ -1,10 +1,30 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BusinessHeader } from "../apps/web/src/Prints";
 
 const webRequire = createRequire(resolve("apps/web/package.json"));
+
+describe("P2 · manual operativo de cajera", () => {
+  it("documenta arqueo ciego sin inventar esperado y separa ocho tareas", () => {
+    const manual = readFileSync("docs/MANUAL-CAJERO.md", "utf8");
+    expect(manual).toContain("Los campos vacíos representan RD$ 0.00");
+    expect(manual).not.toContain("se toma el monto esperado");
+    expect(manual).not.toContain("puede exigir vencimiento");
+    expect(manual.match(/<div class="manual-page-break"/g)).toHaveLength(7);
+    expect(manual).toContain("Datos ficticios");
+    expect(manual).toContain(
+      "Confirmo que conté efectivo, tarjeta y transferencia",
+    );
+    const images = [
+      ...manual.matchAll(/!\[[^\]]*\]\((capturas\/manual\/[^)]+)\)/g),
+    ];
+    expect(images).toHaveLength(8);
+    for (const image of images)
+      expect(existsSync(resolve("docs", image[1]))).toBe(true);
+  });
+});
 const { createElement } = webRequire("react") as typeof import("react");
 const { renderToStaticMarkup } = webRequire(
   "react-dom/server",
