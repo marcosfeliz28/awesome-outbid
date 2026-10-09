@@ -7,6 +7,7 @@ export default defineConfig({
       "tests/u-credit-cleanup.test.ts",
       "packages/shared/**/*.test.ts",
       "tests/invoice.test.ts",
+      "tests/merchandise-template.test.ts",
       "tests/xlsx-bomb.test.ts",
       "tests/import-codes.test.ts",
       "tests/realtime.test.ts",
