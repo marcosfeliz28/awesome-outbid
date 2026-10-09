@@ -61,7 +61,11 @@ import {
   type Printing,
 } from "./Tienda";
 import { METHOD_LABEL, printSoon } from "./Prints";
-import { customerPrivateDisplay } from "./customer-display";
+import {
+  customerEditValue,
+  customerPrivateDisplay,
+  seesCustomerPii,
+} from "./customer-display";
 import { managementQueryError } from "./managementMessages";
 import {
   applyPendingSaleReprice,
@@ -1902,9 +1906,7 @@ export function Customers() {
   // SEC-05: sin gerencia, la API envía teléfono, correo y cédula/RNC
   // enmascarados («•••••••123») y sin gasto histórico. El correo enmascarado
   // no es un correo válido para el navegador; la API lo valida al guardar.
-  const fullCustomer =
-    can(user.permissions, "sale:manage") ||
-    can(user.permissions, "customers:erase");
+  const fullCustomer = seesCustomerPii(user.permissions);
   const fields: Field[] = [
     { key: "name", label: "Nombre", required: true },
     { key: "phone", label: "Teléfono" },
@@ -1941,7 +1943,9 @@ export function Customers() {
         <QueryState query={query}>
           <DataTable
             rows={(query.data || []).filter((c: any) =>
-              (c.name + " " + c.phone)
+              // P5: sin acceso completo la búsqueda no usa el teléfono, para
+              // no servir de oráculo de los dígitos ocultos.
+              (c.name + " " + (fullCustomer ? c.phone : ""))
                 .toLowerCase()
                 .includes(search.toLowerCase()),
             )}
@@ -2015,7 +2019,12 @@ export function Customers() {
         <FormModal
           title="Editar cliente"
           fields={fields}
-          initial={editing}
+          // P5: «Editar» tampoco muestra teléfono ni cédula/RNC completos.
+          initial={{
+            ...editing,
+            phone: customerEditValue(editing.phone, fullCustomer),
+            legalId: customerEditValue(editing.legalId, fullCustomer),
+          }}
           onClose={() => setEditing(null)}
           onSubmit={(data) => mutate("/customers/" + editing.id, data, "PATCH")}
         />

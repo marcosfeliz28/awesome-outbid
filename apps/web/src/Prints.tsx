@@ -374,10 +374,6 @@ export function InvoicePrint({
       <hr />
       <Row label="Cantidad de Productos" value={units} strong />
       <p className="tp-center">¡Gracias por su compra!</p>
-      <small className="tp-center">
-        Privacidad: si se usa lectura automática de facturas de proveedor, el
-        documento se envía a Anthropic (IA). Hay alternativa manual.
-      </small>
     </>
   );
 }

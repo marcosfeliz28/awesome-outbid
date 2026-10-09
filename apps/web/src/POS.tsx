@@ -66,6 +66,7 @@ import {
   priceChanges,
 } from "./realtime";
 import { offlineSaleAction } from "./offlinePolicy";
+import { customerPrivateDisplay, seesCustomerPii } from "./customer-display";
 import { blockPosShortcutWithModal } from "./posKeyboard";
 
 function discountFor(
@@ -1163,7 +1164,15 @@ export function POS({ go }: { go: (page: string) => void }) {
                   <UserRound />
                   <span>
                     {c.name}
-                    <small>{c.phone}</small>
+                    {/* P5 + SEC-05: el selector no muestra el teléfono completo. */}
+                    <small>
+                      {c.phone
+                        ? customerPrivateDisplay(
+                            c.phone,
+                            seesCustomerPii(user!.permissions),
+                          )
+                        : null}
+                    </small>
                   </span>
                 </button>
               ))}
