@@ -13,6 +13,22 @@ import {
 import { AuthController } from "../apps/api/src/auth";
 import { Database } from "../apps/api/src/common";
 
+// Estas pruebas ejercitan 10.000 peticiones HTTP y todos los límites, no
+// benchmarkean bcrypt. Los usuarios de esta fixture usan coste 4; el hash
+// ficticio de coste 12 se sustituye aquí por una comparación negativa.
+// E1 en tests/api.test.ts comprueba el camino completo con bcrypt real.
+vi.mock("../apps/api/node_modules/bcryptjs/index.js", async (original) => {
+  const actual =
+    await original<
+      typeof import("../apps/api/node_modules/bcryptjs/index.js")
+    >();
+  return {
+    ...actual,
+    compare: async (password: string, hash: string) =>
+      /^\$2[aby]\$12\$/.test(hash) ? false : actual.compare(password, hash),
+  };
+});
+
 const context = (request: any) =>
   ({ switchToHttp: () => ({ getRequest: () => request }) }) as any;
 
@@ -72,7 +88,19 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
   });
 
   it("limita identidades inexistentes antes de consultar la base", async () => {
-    const db = { user: { findFirst: vi.fn(async () => null) } };
+    const db = {
+      user: {
+        findFirst: vi.fn(async () => null),
+        findUnique: vi.fn(async () => null),
+      },
+      $queryRaw: vi.fn(async () => []),
+      authAttempt: {
+        upsert: vi.fn(async () => ({ failedAttempts: 0, lockedUntil: null })),
+        update: vi.fn(async () => ({})),
+      },
+      $transaction: async (run: (tx: any) => unknown): Promise<unknown> =>
+        run(db),
+    };
     const limits = new RequestRateLimitService();
     const controller = new AuthController(db as any, {} as any, limits as any);
     for (let i = 0; i < 60; i++)

@@ -13,6 +13,64 @@ import {
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
+describe("E1 · credenciales indistinguibles contra API real", () => {
+  it("cuentas ausentes, inactivas y activas fallan y bloquean con el mismo mensaje", async () => {
+    const role = await fixtureDb.role.findFirstOrThrow({
+      where: { name: "seller" },
+    });
+    const branchId = "main";
+    const passwordHash = await requireApi("bcryptjs").hash(randomUUID(), 12);
+    const prefix = "e1-" + randomUUID();
+    const users = await Promise.all(
+      [false, true].map((active, index) =>
+        fixtureDb.user.create({
+          data: {
+            name: "QA E1",
+            username: prefix + index,
+            usernameKey: prefix + index,
+            email: prefix + index + "@example.test",
+            passwordHash,
+            pinHash: passwordHash,
+            active,
+          branchId,
+            roleId: role.id,
+          },
+        }),
+      ),
+    );
+    try {
+      const identifiers = [
+        prefix + "ausente",
+        ...users.map((user: any) => user.username),
+      ];
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const responses = await Promise.all(
+          identifiers.map((login) =>
+            request(
+              "/auth/login",
+              { login, password: "Incorrecta-QA-2026!" },
+              "",
+            ),
+          ),
+        );
+        expect(responses.every((response) => response.status === 400)).toBe(
+          true,
+        );
+        expect(responses[1].body).toEqual(responses[0].body);
+        expect(responses[2].body).toEqual(responses[0].body);
+        expect(JSON.stringify(responses[0].body)).toContain(
+          attempt < 5
+            ? "Usuario o contraseña incorrectos."
+            : "Cuenta bloqueada temporalmente.",
+        );
+      }
+    } finally {
+      await fixtureDb.user.deleteMany({
+        where: { id: { in: users.map((user: any) => user.id) } },
+      });
+    }
+  });
+});
 // fileURLToPath y no URL.pathname: en Windows pathname es "/C:/…", una ruta
 // que no existe, y .env no se cargaba.
 requireApi("dotenv").config({
