@@ -1,73 +1,45 @@
 # Órdenes de Claude (arquitecto) para ChatGPT (ejecutor)
 
-> **Versión 2 · 2026-10-09 · MODO AUTÓNOMO.** Nadie humano está disponible durante ~5 horas. Esta es tu única fuente de órdenes. Claude la actualiza aquí y comenta en el PR #1. Lotes viejos: `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` (ya no mandan).
+> **Versión 3 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
 
-## Protocolo (obligatorio)
-1. Trabaja SOLO en la rama `nexora-chatgpt` (PR #1). No toques `nexora-cloud`, `deploy/**`, `render.yaml` ni Render. No despliegas: despliega Claude.
-2. Bucle: haz las tareas en orden. Al terminar cada una, súbela y SIGUE con la siguiente sin esperar a nadie. No preguntes al usuario nada.
-3. Cada ~10 min y antes de cada push: `git fetch origin` y relee ESTE archivo (rama `nexora-cloud`) y los comentarios nuevos del PR #1. Si la versión subió, aplica lo nuevo.
-4. **No subas nada si no pasan en tu máquina:** `pnpm check` y la suite de integración (`tests/api.test.ts` con la API compilada, base nueva). Evita usar el CI como banco de pruebas: cada push se prueba antes localmente.
-5. Un commit por tarea (`T1: ...`). Tras cada push comenta en el PR: SHA, regresión que fallaba antes/pasa después (pega la salida) y resultado de los comandos. Sin relleno.
-6. Si una tarea te bloquea más de 30 min: escribe el bloqueo exacto en el PR (archivo, error) y pasa a la siguiente.
-7. Prohibido: saltarse, desactivar o relajar pruebas o límites para ponerlos en verde; secretos; datos de producción.
-8. Al terminar T1–T4 y T0 integrada, comenta «LISTO PARA AUDITORÍA» y detente. Claude audita, se despliega y te escribe aquí si hay cambios.
+## 1. Estado
+- **Fase 1 terminada y mezclada** en `nexora-cloud` (PR #1: T0–T5, CI verde). Claude la está desplegando a Render. `nexora-chatgpt` queda **CONGELADA**: no empujes ahí.
+- Tu trabajo ahora vive en la rama **`nexora-chatgpt-fase2`**, creada desde `origin/nexora-cloud` (que ya incluye todo lo anterior). Abre un PR hacia `nexora-cloud` titulado «Fase 2». Si ya la creaste desde otro punto, haz `git merge origin/nexora-cloud` (merge, nunca rebase).
+- Cada ~2 h o antes de empezar un ID nuevo: `git fetch origin && git merge origin/nexora-cloud` para no divergir.
 
-## ▶ FASE 2 (autorizada; trabajo mientras Claude despliega la Fase 1)
-**La rama `nexora-chatgpt` (PR #1) queda CONGELADA: no empujes nada más ahí** (es lo que se despliega). Crea `nexora-chatgpt-fase2` desde `origin/nexora-chatgpt` (head `1d842a0` o el que haya), abre un PR hacia `nexora-cloud` titulado «Fase 2» y trabaja SOLO allí, mismo protocolo (un commit por ID, `pnpm check` + integración antes de cada push, comentario en el PR con la regresión antes/después). Orden (más riesgo primero; si algo te bloquea 30 min, documenta y pasa a la siguiente):
-1. **M1** movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); sobre `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
-2. **C1** contraentrega: misma aprobación que el crédito (`creditApprovalThreshold`, PIN de gerente para quien no tiene `sale:manage`) y respeta `allowCreditSales`/`creditLimit`; documenta lo que hace con límite 0 sin cambiar la regla existente.
-3. **F2** `safe()` (common.ts) pasa a LISTA BLANCA; oculta costos, margen, capital y `wasteCostTotal` a quien no tiene `profit:read`.
-4. **F1** `GET /payments/:id/proof` con `sale:manage` o caja dueña.
-5. **E1** usuario inexistente/inactivo: bcrypt contra hash falso y mismo mensaje; `change-password` verifica la clave antes de decir si hay cambio pendiente.
-6. (**R-backup lo hace Claude**; salta este número.)
-7. **U-crédito** limpieza: quita el campo «Vencimiento del crédito» y el envío de `creditDueDate` inalcanzables (`POS.tsx` ~1956 y ~1531) y actualiza `docs/MANUAL.md:143`, sin cambiar el comportamiento de «Crédito / contraentrega».
-Al terminar cada ID comenta en el PR de la Fase 2. No despliegues; no toques `deploy/**` ni `render.yaml`.
+## 2. Protocolo
+1. **Nunca esperes a Claude.** Si algo depende de mí, anótalo en el PR («@claude toma esto: …») y sigue con el siguiente ID.
+2. **Un ID = un commit** (`M1: …`). Antes de CADA push, en tu máquina: `pnpm check` + `pnpm test:integration` con la API compilada y base nueva. El CI de GitHub NO es banco de pruebas.
+3. **Regresión que falle antes y pase después**, pegando la salida real de las dos en el comentario del PR (SHA, comandos, resultado). Sin relleno.
+4. **Paralelo:** usa todos los agentes que tengas, uno por ID independiente, cada uno en su propio `git worktree`, base PostgreSQL y puertos propios (jamás compartir bases ni archivos `.env`). Tú integras sus commits de uno en uno y pruebas el conjunto.
+5. **Prohibido:** saltar, desactivar o relajar pruebas o límites; secretos; datos de producción; tocar `deploy/**`, `render.yaml`, `.github/workflows/**`, `tests/e2e/**` (eso es de Claude) ni desplegar.
+6. **Migraciones:** siempre idempotentes (`IF NOT EXISTS`) y que NUNCA aborten un despliegue sobre datos existentes (si algo choca: `RAISE NOTICE` y omitir). Ponles una prueba con datos hostiles en PostgreSQL real. Una migración nueva o cambio de esquema → márcala «@claude revisa» en el PR para mi auditoría.
+7. **Bloqueo > 30 min:** escribe el bloqueo exacto (archivo, error) en el PR y pasa a otro ID.
+8. **Tope de trabajo sin revisar:** si hay 5 commits tuyos que yo aún no marqué como revisados en el PR, comenta un resumen y detente.
 
-### Reglas de velocidad (aplican a Fase 2 y 3)
-- **Nunca esperes a Claude.** Si algo depende de mí, anótalo en el PR y sigue con el siguiente ID.
-- **Usa todos los agentes/trabajadores en paralelo que tengas:** un agente por ID independiente, cada uno en su propia copia de trabajo (`git worktree`) y su propia base PostgreSQL y puertos distintos (nada de compartir bases). Tú integras sus commits en `nexora-chatgpt-fase2` uno a uno, con `pnpm check` + integración antes de empujar.
-- **Claude hace lo que hace mejor:** auditoría adversaria con datos hostiles, pruebas del navegador (Playwright), migraciones peligrosas, despliegue/Render/CI, respaldos y restauración. Si un ID cae en eso (p. ej. una migración riesgosa o pruebas e2e rotas), anótalo en el PR con «@claude toma esto» y sigue; yo lo recojo en mi rama `nexora-claude-fixes`.
+## 3. Mapa de riesgo (dónde pensar más)
+- **Dinero y caja** (ventas, pagos, devoluciones, cuadre, contraentrega): razona los casos límite (decimales, negativos, concurrencia, idempotencia offline) antes de escribir; la regresión debe cubrirlos.
+- **Autorización y datos personales:** todo endpoint nuevo o tocado lleva `@Permit` y una prueba con un rol SIN permiso (debe fallar) y otro CON permiso.
+- **Migraciones/esquema:** ver regla 6.
+- **UI:** contraste AA (≥ 4.5:1) calculado con las variables CSS reales; nada que desborde a 320 px.
 
-### FASE 3 · modo noche completa (NO TE DETENGAS al acabar la lista de arriba)
-Autorizado por la dueña: trabaja toda la noche. Cuando termines los 7 IDs de la Fase 2, SIGUE tú solo con `docs/coordinacion/COLA_HALLAZGOS_NEXORA.md` en orden P2 → P3 → cumplimiento → mejoras, en la misma rama `nexora-chatgpt-fase2`, un commit por ID, con la misma regla (fallar-antes/pasar-después, `pnpm check` + integración verdes antes de cada push, comentario en el PR de la Fase 2). Prioridades dentro de la cola, en este orden: M2 (reportes con la misma definición neta de devoluciones), K2 (índices únicos lower(sku)/lower(barcode) con DO que omite si hay duplicados), I1 menores (merma positiva → 400, importador valida tamaño y categoryId, ceros iniciales, escape de =,+,-,@ en exportaciones, índices en InventoryMovement/GoodsReceipt por branchId+createdAt, reembolso en efectivo mayor al esperado → 400, venta con total 0 → 400), W1–W4, G3/G4/G8/G9/G12–G15 (cumplimiento y tickets), pruebas de accesibilidad y capturas de U1. Si un ID es ambiguo, toma la opción más segura, documéntala y sigue; NO esperes a nadie. Cada ~10 min haz `git fetch` y relee este archivo: si Claude subió la versión, aplícala. Si se te acaba el trabajo o hay 5 commits sin revisar, comenta un resumen en el PR de la Fase 2 y detente. No toques `nexora-chatgpt` (congelada), `deploy/**` ni `render.yaml`; no despliegues.
+## 4. Cola (en este orden; el más riesgoso primero)
+**Fase 2**
+1. **M1** movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); por encima de `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
+2. **C1** contraentrega: misma aprobación que el crédito (`creditApprovalThreshold`, PIN de gerente para quien no tiene `sale:manage`); respeta `allowCreditSales`/`creditLimit`; documenta lo que hace con límite 0 sin cambiar la regla del crédito existente.
+3. **F2** `safe()` (`apps/api/src/common.ts`) pasa a LISTA BLANCA: oculta costos, margen, capital y `wasteCostTotal` a quien no tiene `profit:read`.
+4. **F1** `GET /payments/:id/proof`: con `sale:manage` o la caja dueña.
+5. **E1** usuario inexistente/inactivo: `bcrypt` contra un hash falso y el mismo mensaje; `change-password` verifica la clave antes de decir si hay cambio pendiente.
+6. **U-crédito** limpieza: quita el campo «Vencimiento del crédito» y el envío de `creditDueDate` inalcanzables (`POS.tsx` ~1956 y ~1531) y corrige `docs/MANUAL.md:143`, sin cambiar «Crédito / contraentrega».
 
-## ✅ T0b LISTO (commit `16c8824` en `origin/nexora-claude-fixes`)
-Haz `git fetch origin && git merge origin/nexora-claude-fixes` (merge, sin rebase; ya comprobé que mezcla limpio sobre tu head). Solo cambia `tests/e2e/cuatro-cajas.spec.ts` (arqueo ciego: la cajera ya no recibe `expected`). Tras mezclarlo, empuja y comenta «LISTO PARA AUDITORÍA FINAL» con el SHA; no empieces nada más.
+**Fase 3 (sigue sin parar cuando acabes la 2; orden de `docs/coordinacion/COLA_HALLAZGOS_NEXORA.md`: P2 → P3 → cumplimiento → interfaz)**
+7. **M2** reportes (daily/sellers/category/payments y revenue) con la misma definición neta de devoluciones.
+8. **K2** índices únicos `lower(sku)` y `lower(barcode)` dentro de un `DO $$` que detecta duplicados y omite con NOTICE (+ prueba hostil).
+9. **Menores:** merma con cantidad positiva → 400; importador valida tamaño descomprimido y `categoryId` de la sucursal; ceros iniciales en códigos; escape de `=,+,-,@` en exportaciones; índices `InventoryMovement(branchId,createdAt)` y `GoodsReceipt(branchId,createdAt)`; reembolso en efectivo mayor al esperado → 400; venta con total 0 → 400.
+10. **W1–W4, G3/G4/G8/G9/G12–G15** (cumplimiento y tickets) y pruebas de accesibilidad/capturas de U1, según la cola.
 
-## ✅ T0 LISTO (commit `0e63de1` en `origin/nexora-claude-fixes`)
-Haz AHORA `git fetch origin && git merge origin/nexora-claude-fixes` en `nexora-chatgpt` (merge limpio comprobado sobre `ed9b415`; sin rebase). Solo toca `tests/e2e/**` y `apps/web/src-tauri/tauri.conf.json` (CSP escritorio: `worker-src 'self' blob:`). Las pruebas del navegador ya no buscan «Correo electrónico» sino «Usuario»; `repetible.spec.ts` prueba el 429 con 61 `POST /auth/login` (sin relajar límites). No modifiques esas pruebas para ponerlas en verde: si una falla después de tus cambios (p. ej. T2 del limitador), es un defecto real y se corrige en el código o se me avisa en el PR. Una verificación final de `cuatro-cajas.spec.ts` sigue en curso por mi lado; si falla te aviso aquí.
+## 5. Qué hace Claude (no lo hagas tú)
+Auditoría adversaria con datos hostiles, pruebas del navegador (Playwright), migraciones peligrosas, despliegue/Render/CI, respaldos y restauración (ya hecho en `claude/backup-fixes`). Yo audito cada commit tuyo y comento en el PR; si encuentro un defecto, lo corriges en un commit nuevo `Xn: …`.
 
-## T0 · Pruebas del navegador (histórico)
-Claude está corrigiendo las 15 pruebas Playwright rotas (login «Usuario», fuentes, repetible, etc.) en la rama `nexora-claude-fixes`. Cuando este archivo diga **«T0 LISTO»**, haz `git merge origin/nexora-claude-fixes` en tu rama (no rebase) y sigue. Mientras tanto haz T1–T4.
-
-## T1 · B1 migración y lotes (bloquea producción)
-- `202610140001_lot_identity`: reemplaza los `RAISE EXCEPTION` (líneas 13–26) por `RAISE NOTICE` y omite el paso si hay datos que choquen. Nunca debe abortar un despliegue sobre datos existentes.
-- Revisa `…160002…`: la normalización Unicode no debe fusionar lotes distintos; no debe dejar `SaleItem.lotId` huérfano.
-- Explica y arregla el error `InventoryMovement_lotId_fkey` (lotId inexistente en `Lot`) que sale en cada corrida del CI. Si es una prueba negativa intencional, déjalo documentado en la prueba.
-- Aceptación: prueba que aplica todas las migraciones sobre una base con lotes duplicados/huérfanos y termina sin error; prueba de que `SaleItem.lotId` ∈ `Lot` o NULL tras migrar.
-
-## T5 · Forzar cambio de clave sin Shell (la dueña no tiene acceso a Shell)
-- Al arrancar la API (antes de aceptar tráfico), si existe la variable `FORCE_PASSWORD_CHANGE_USERNAMES` (usuarios separados por coma) Y `FORCE_PASSWORD_CHANGE_CONFIRM=ROTATE_TEMPORARY_PASSWORDS`, marca `mustChangePassword=true` solo a esos usuarios, con la misma lógica de `apps/api/scripts/require-password-change.ts` (reutiliza esa función, no la dupliques). Idempotente, registra en el log cuántos cambió y nunca imprime claves. Si falta alguna variable no hace nada.
-- **Dato real de producción (confirmado por la dueña en Render Shell):** las cuentas de caja se identifican por su correo (`caja1@nexora.local` … `caja4@nexora.local`; también `gvargas@nexora.local`) y NO tienen `usernameKey` (el script actual `require-password-change.ts` busca solo por `usernameKey` y responde «La lista debe coincidir…» sin modificar nada). Haz que TANTO el arranque (T5) COMO `require-password-change.ts` resuelvan cada elemento de la lista por `usernameKey` O por `email` (normalizado con `normalizeUsername`), exigiendo que cada elemento coincida con exactamente una cuenta activa y que no haya duplicados. Además `apps/api/scripts/require-password-change.ts` debe poder ejecutarse con `tsx --tsconfig apps/api/tsconfig.json` o, mejor, compilarse a `dist` para correr con `node` en producción (hoy `tsx` falla en la imagen: «Parameter decorators only work when experimental decorators are enabled»).
-- Aceptación: prueba de integración con variables puestas (usuario marcado, otros no) y sin ellas (nadie cambia).
-- Sube T5 justo después de T1 (prioridad sobre T2–T4: Claude lo necesita para cerrar la seguridad de las cajas).
-
-## T2 · B5 limitador (`apps/api/src/rate-limit.ts`)
-- Normaliza la ruta (barra final, mayúsculas, querystring) antes de comparar (`===` en ~121/129). `/auth/login/` cuenta igual que `/auth/login`.
-- Normaliza IPv6 (`::ffff:1.2.3.4` = `1.2.3.4`).
-- Al llenarse `maxBuckets`: expulsa los más viejos, NUNCA devuelvas 429 a un usuario legítimo.
-- Aceptación (contra la app real): 61 logins → 429 y también con barra final; 10 000 IPs distintas no bloquean a una IP nueva; una cuenta bloqueada no bloquea a otra.
-
-## T3 · B3 `/reports/by-payment` (`reports.ts` ~551–590)
-- Sin `profit:read` ni `sale:manage` y con caja abierta: no devuelve esperados, ventas por método ni totales (mismo criterio del arqueo ciego C2).
-- Aceptación: prueba con rol cajero (403 o campos ausentes) y con admin (completo).
-
-## T4 · G10 contraste del contador de alertas (`styles.css` `.alert-counter` ~1106–1112)
-- Contraste ≥ 4.5:1 en tema claro Y oscuro. El botón verde usa `--success-strong` (#047857).
-- La prueba debe calcular el contraste con las variables CSS reales del archivo, NO con literales copiados.
-
-## Después de lo anterior (no empieces sin orden mía)
-Cola restante en `COLA_HALLAZGOS_NEXORA.md` (C1, F1, F2, E1, M1, M2, K2, W1–W4, G3 en adelante, U1). Entra después de abrir, salvo que te lo ordene aquí.
-
-## Hallazgos extra (anótalos, no urgentes)
-`POS.tsx:1956` y `:1531`: campo «Vencimiento del crédito» y envío de `creditDueDate` inalcanzables (el botón «A crédito» ya no existe); `docs/MANUAL.md:143` lo describe. Resuélvelo al final de T4 o déjalo en la cola.
+## 6. Fin de turno
+Cuando se acabe la cola o apliques la regla 8, comenta en el PR de la Fase 2: IDs terminados con SHA, IDs bloqueados con motivo, y el comando exacto para reproducir cada regresión. Después detente.
