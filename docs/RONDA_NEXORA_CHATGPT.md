@@ -492,3 +492,61 @@ Este apartado no contiene contraseñas, claves, DSN, tokens, encabezados de
 autorización ni valores de variables de entorno. No se ejecutaron migraciones
 contra producción, no se alteró Render y no se modificaron las rutas reservadas
 `docs/coordinacion` o `deploy/render`.
+
+## D. Cumplimiento G1, G2, G5, G6, G7, G10 y G11
+
+**Fecha:** 2026-10-08. **Rama:** `nexora-chatgpt`. **Base sincronizada:**
+`origin/nexora-cloud` en `8a9e34a`.
+
+### D1. Cambios y commits
+
+| ID | Commit | Resultado |
+|---|---|---|
+| G1 | `2e04cd7` | Ticket sin NCF con leyenda no fiscal; sin título «FACTURA» ni fila NCF vacía. |
+| G2 | `dadcbc5` | Encabezado térmico desde Ajustes, sin RNC ficticio. |
+| G5 | `99e2657` | PDF de venta con teléfono/hora/ITBIS y nota de crédito con negocio, fecha y condiciones. |
+| G10 | `5cd7538` | Colores AA propuestos, foco y bordes accesibles. |
+| G11 | `e383f5a` | F4/F8/F12 ignoradas mientras haya un diálogo abierto. |
+| G6 | `56bce04` | Anonimización con permiso, bloqueo por saldos, depuración de PII y conservación contable. |
+| G7 | `760e715` | `Customer.birthday` eliminado de esquema, API y migración. |
+
+### D2. Regresiones en rojo y en verde
+
+- G1: antes faltaba la leyenda no fiscal; después pasó la prueba focal.
+- G2: antes se encontró `<h2>Grupo Macgen</h2>`; después pasaron 2/2.
+- G5: antes el PDF no contenía `business.phone`; después pasaron 3/3.
+- G10: antes no existían las variables AA; después pasaron 4/4 y el typecheck web.
+- G11: antes: `expected ... to contain 'const modalOpen = document.querySelector...'`; después pasaron 5/5 y el typecheck web.
+- G6: antes fallaron 3/3 porque `anonymizeCustomer` y su permiso no existían; después pasaron 3/3 y los typechecks API/web/shared.
+- G7: antes: `ENOENT ... 202610150002_remove_customer_birthday/migration.sql`; después pasaron 6/6 de cumplimiento y 3/3 de privacidad.
+
+### D3. Verificación final
+
+- `pnpm check`: correcto; 212 pruebas aprobadas y 1 omitida; typecheck,
+  ESLint y builds API/web/PWA correctos.
+- `pnpm audit --prod`: 0 vulnerabilidades conocidas.
+- Prisma: esquema válido, cliente generado y 24 migraciones aplicadas sobre
+  PostgreSQL descartable, incluidas G6 y G7.
+- La API compilada inició y expuso `POST /api/customers/:id/anonymize`.
+- La suite histórica `tests/api.test.ts` no quedó verde: 77 pasaron, 74
+  fallaron y 6 se omitieron. Los primeros fallos fueron conflictos de
+  terminal/caja y estado compartido de fixtures, que encadenaron otros. No se
+  afirma una integración exitosa ni se mezclan arreglos ajenos a este lote.
+- No se usaron datos ni credenciales de producción; no se modificó Render.
+
+### D4. Propuestas pendientes de la dueña, sin implementar
+
+- **G3:** advertencia visible cuando falten nombre legal, dirección, teléfono
+  o RNC, sin bloquear el guardado hasta recibir el RNC real. Nunca usar
+  un valor ficticio.
+- **G4:** `returnPolicyText` y `warrantyDays` configurables; resumen corto en
+  el ticket y política completa en la aplicación. Falta confirmar texto y
+  días después de revisión legal.
+- **G8:** recomendado: Sentry sólo si existe `VITE_SENTRY_DSN` y un interruptor
+  de Ajustes está activo, con saneamiento de contraseñas, tokens, contactos,
+  RNC y pagos. Alternativa: activación sólo por variable de compilación.
+
+No se implementaron términos para clientes, reseñas, correos masivos,
+controles para menores ni banner de cookies. El correo del cliente se conserva
+porque sigue siendo un dato de contacto; esta entrega sólo debía quitar la
+fecha de nacimiento.
