@@ -28,6 +28,9 @@ export const REQUEST_RATE_LIMITS = {
   refreshSession: positiveLimit(process.env.REFRESH_SESSION_RATE_LIMIT, 60),
   logoutSession: positiveLimit(process.env.LOGOUT_SESSION_RATE_LIMIT, 60),
   salesSession: positiveLimit(process.env.SALES_SESSION_RATE_LIMIT, 120),
+  // SEC-01: cada importación descomprime y analiza un Excel; una sesión no
+  // necesita más de unas pocas por minuto.
+  importSession: positiveLimit(process.env.IMPORT_SESSION_RATE_LIMIT, 30),
 };
 
 /** Sólo recibe identidades ya verificadas contra la base de datos. */
@@ -154,6 +157,14 @@ export class AuthenticatedRateLimitGuard implements CanActivate {
         "sales-session",
         identity,
         REQUEST_RATE_LIMITS.salesSession,
+      );
+    // Un solo cubo para todos los */import (catálogo y facturas): alternar
+    // entre importadores no multiplica el cupo.
+    else if (method === "POST" && /^(\/api)?\/[^/]+\/import$/.test(path))
+      this.limits.assert(
+        "import-session",
+        identity,
+        REQUEST_RATE_LIMITS.importSession,
       );
     return true;
   }

@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
+import { xlsxBomb } from "./fixtures/xlsx-zip";
 import {
   PASSWORD_CHANGE_CONFIRMATION,
   forcePasswordChangeAtStartup,
@@ -10476,4 +10478,57 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
       await ok("/settings", settings, token, "PUT");
     }
   });
+});
+
+describe("SEC-01 · bomba XLSX en los importadores", () => {
+  // RSS real del proceso de la API cuando la prueba conoce su PID (Linux).
+  const apiRss = () => {
+    const pid = process.env.FITSTORE_API_PID;
+    if (!pid) return undefined;
+    const m = /VmRSS:\s+(\d+) kB/.exec(
+      readFileSync(`/proc/${pid}/status`, "utf8"),
+    );
+    return m ? Number(m[1]) * 1024 : undefined;
+  };
+  it("una bomba de ~300 KB (>100 MB descomprimida) da 400 rápido en facturas y catálogo sin subir la memoria de la API", async () => {
+    const { file, uncompressed } = await xlsxBomb();
+    expect(file.length).toBeLessThan(1024 * 1024);
+    expect(uncompressed).toBeGreaterThan(100 * 1024 * 1024);
+    const before = apiRss();
+    for (const path of ["/merchandise/import", "/products/import"]) {
+      const form = new FormData();
+      form.set("file", new Blob([file]), "factura.xlsx");
+      form.set(
+        "mapping",
+        JSON.stringify({
+          code: "codigo",
+          description: "descripcion",
+          qty: "cantidad",
+          unitCost: "costo",
+        }),
+      );
+      const started = Date.now();
+      const r = await fetch(base + path, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "X-Forwarded-For": testIp,
+        },
+        body: form,
+      });
+      const body = await r.json();
+      const ms = Date.now() - started;
+      console.info(`[SEC-01] ${path}: ${r.status} en ${ms} ms`);
+      expect(r.status, JSON.stringify(body)).toBe(400);
+      expect(body.message).toMatch(/demasiado grande al descomprimirse/);
+      expect(ms).toBeLessThan(3000);
+    }
+    const after = apiRss();
+    if (before !== undefined && after !== undefined) {
+      console.info(
+        `[SEC-01] RSS de la API: ${Math.round(before / 1048576)} MB → ${Math.round(after / 1048576)} MB`,
+      );
+      expect(after - before).toBeLessThan(64 * 1024 * 1024);
+    }
+  }, 60000);
 });
