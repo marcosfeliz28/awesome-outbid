@@ -2,7 +2,11 @@ import { readFileSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { BusinessHeader } from "../apps/web/src/Prints";
+import {
+  BusinessHeader,
+  InvoicePrint,
+  CuadrePrint,
+} from "../apps/web/src/Prints";
 
 const webRequire = createRequire(resolve("apps/web/package.json"));
 
@@ -36,9 +40,7 @@ const luminance = (hex: string) => {
     .match(/.{2}/g)!
     .map((part) => parseInt(part, 16) / 255)
     .map((value) =>
-      value <= 0.04045
-        ? value / 12.92
-        : Math.pow((value + 0.055) / 1.055, 2.4),
+      value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4),
     );
   return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
 };
@@ -60,18 +62,69 @@ const cssVariables = (css: string, selector: string) => {
 };
 
 describe("Cumplimiento legal y accesibilidad", () => {
+  it("P4: render real del ticket no fiscal y cuadre conserva datos y nombre de cajera", () => {
+    const business = {
+      name: "Negocio de prueba",
+      branchName: "Sucursal de prueba",
+      address: "Dirección de prueba",
+      phone: "809-555-0100",
+      legalId: "",
+    };
+    const ticket = renderToStaticMarkup(
+      createElement(InvoicePrint, {
+        config: business,
+        sale: {
+          number: "QA-1",
+          createdAt: "2026-10-09T12:00:00Z",
+          cashierName: "Cajera de prueba",
+          snapshot: [],
+          total: 0,
+        },
+      }),
+    );
+    expect(ticket).toContain("DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL");
+    expect(ticket).not.toContain("NCF:");
+    expect(ticket).not.toContain("RNC:");
+    for (const text of [
+      business.name,
+      business.branchName,
+      business.address,
+      business.phone,
+      "Cajera de prueba",
+    ])
+      expect(ticket).toContain(text);
+    const cuadre = renderToStaticMarkup(
+      createElement(CuadrePrint, {
+        c: {
+          business,
+          title: "Cuadre de Caja",
+          cashier: { name: "Cajera de prueba", number: 12345 },
+          denominations: [{ value: 100, qty: 2, total: 200 }],
+          denominationsSubtotal: 200,
+          lines: [{ key: "cash", line: 2, label: "Efectivo RD$", value: 200 }],
+        },
+      }),
+    );
+    for (const text of [
+      "Cuadre de Caja",
+      "Cajera de prueba",
+      "Detalles de monedas",
+      "100 × 2",
+      "Descripción / Totales",
+      "200.00",
+      "FIN DEL CUADRE",
+    ])
+      expect(cuadre).toContain(text);
+    expect(cuadre).not.toContain("12345");
+  });
   it("G1: el ticket sin NCF se identifica como no fiscal y no imprime una fila NCF vacía", () => {
     const source = readFileSync("apps/web/src/Prints.tsx", "utf8");
-    expect(source).toContain(
-      "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL",
-    );
+    expect(source).toContain("DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL");
     expect(source).not.toContain('<h3 className="tp-center">FACTURA</h3>');
-    expect(source).not.toContain(
-      '<Row label="NCF:" value={sale.ncf ?? ""} />',
-    );
+    expect(source).not.toContain('<Row label="NCF:" value={sale.ncf ?? ""} />');
   });
 
-  it("G2: el HTML térmico usa Ajustes y sólo incluye img cuando hay logo", () => {
+  it("G2/P4: el HTML térmico usa Ajustes y el logo predeterminado o configurado", () => {
     const settings = {
       name: "Negocio configurado",
       branchName: "Sucursal configurada",
@@ -82,7 +135,7 @@ describe("Cumplimiento legal y accesibilidad", () => {
     const withoutLogo = renderToStaticMarkup(
       createElement(BusinessHeader, { business: settings }),
     );
-    expect(withoutLogo).not.toContain("<img");
+    expect(withoutLogo).toContain('src="/logo-grupo-macgen.png"');
     for (const value of Object.values(settings))
       expect(withoutLogo).toContain(value);
 
@@ -102,7 +155,9 @@ describe("Cumplimiento legal y accesibilidad", () => {
 
   it("G5: los PDF incluyen contacto, hora, tratamiento del ITBIS y condiciones de la nota", () => {
     const source = readFileSync("apps/api/src/sales.ts", "utf8");
-    const salePdf = source.slice(source.indexOf('@Get("sales/:id/receipt.pdf")'));
+    const salePdf = source.slice(
+      source.indexOf('@Get("sales/:id/receipt.pdf")'),
+    );
     const noteStart = source.indexOf('@Get("returns/:id/credit-note.pdf")');
     const notePdf = source.slice(
       noteStart,
@@ -125,11 +180,21 @@ describe("Cumplimiento legal y accesibilidad", () => {
       ...light,
       ...cssVariables(css, ':root[data-theme="dark"]'),
     };
-    expect(contrast(cssVariable(css, "--success-strong"), "#ffffff")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(cssVariable(css, "--warning-text"), "#fff5e6")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(cssVariable(css, "--danger-text"), "#ffffff")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(cssVariable(css, "--focus"), "#ffffff")).toBeGreaterThanOrEqual(3);
-    expect(contrast(cssVariable(css, "--input-border"), "#ffffff")).toBeGreaterThanOrEqual(3);
+    expect(
+      contrast(cssVariable(css, "--success-strong"), "#ffffff"),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(cssVariable(css, "--warning-text"), "#fff5e6"),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(cssVariable(css, "--danger-text"), "#ffffff"),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(cssVariable(css, "--focus"), "#ffffff"),
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      contrast(cssVariable(css, "--input-border"), "#ffffff"),
+    ).toBeGreaterThanOrEqual(3);
     for (const palette of [light, dark])
       expect(
         contrast(palette["--warning-text"], palette["--alert-counter-bg"]),
