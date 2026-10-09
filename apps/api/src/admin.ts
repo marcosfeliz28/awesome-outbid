@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Inject,
+  Optional,
   Param,
   Patch,
   Post,
@@ -38,6 +39,7 @@ import {
 } from "@fitstore/shared";
 import { normalizeUsername, passwordHash } from "./auth";
 import { strongPasswordSchema } from "./password-policy";
+import { RequestRateLimitService } from "./rate-limit";
 
 const customerSchema = z.object({
   creditLimit: amount.optional(),
@@ -169,7 +171,22 @@ const cashierNumber = z.number().int().min(1).max(999999);
 
 @Controller()
 export class AdminController {
-  constructor(@Inject(Database) private db: Database) {}
+  constructor(
+    @Inject(Database) private db: Database,
+    @Optional()
+    @Inject(RequestRateLimitService)
+    private requestLimits?: RequestRateLimitService,
+  ) {}
+  // Una cuenta creada o renombrada después de arrancar entra como conocida:
+  // su primer inicio de sesión no gasta el cupo de identidades desconocidas.
+  private rememberLogin(user: {
+    usernameKey?: string | null;
+    email?: string | null;
+  }) {
+    for (const value of [user.usernameKey, user.email])
+      if (value)
+        this.requestLimits?.rememberAuthIdentity(normalizeUsername(value));
+  }
   @Get("customers")
   @Permit("customers:write")
   async customers(@CurrentUser() actor: Actor) {
@@ -835,6 +852,7 @@ export class AdminController {
         cashierNumber: data.cashierNumber,
       },
     });
+    this.rememberLogin(row);
     await audit(this.db, actor, "create", "user", row.id, undefined, {
       name: row.name,
       roleId: row.roleId,
@@ -904,6 +922,7 @@ export class AdminController {
       }
       return row;
     });
+    this.rememberLogin(row);
     await audit(this.db, actor, "access_change", "user", id, undefined, rest);
     return {
       id: row.id,
