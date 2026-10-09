@@ -22,7 +22,7 @@
     "admin:create": "pnpm --filter @fitstore/api admin:create",
     "package:source": "node scripts/package.mjs",
     "package:changes": "node scripts/package-changes.mjs",
-    "instalador:validar": "node --test instalador/tests/web-server.test.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/PowerShell-Parse.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Transaction-FaultInjection.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Restore-FaultInjection.ps1 && node instalador/tests/validar.mjs",
+    "instalador:validar": "node --test instalador/tests/web-server.test.mjs && node --test instalador/tests/validation-command.test.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/PowerShell-Parse.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Transaction-FaultInjection.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Restore-FaultInjection.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Application-Service-Privacy.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Backup-Privacy.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/FreshInstall-FaultInjection.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Stale-Update-FaultInjection.ps1 && node instalador/tests/validar.mjs",
     "instalador:preparar": "powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1 -SoloPreparar",
     "instalador:compilar": "powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1"
   },
