@@ -21,6 +21,8 @@ import { crc32, inflateRawSync } from "node:zlib";
 import { getDatabaseConfig } from "../scripts/backup.mjs";
 import { databaseConfig } from "../deploy/render/backup/render-backup.mjs";
 import { includeAuditFile } from "../scripts/package-external-audit.mjs";
+import { HealthController } from "../apps/api/src/app";
+import { Database } from "../apps/api/src/common";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WINDOWS = process.platform === "win32";
@@ -560,6 +562,14 @@ describe("Portabilidad · PostgreSQL local (scripts/local-db.mjs)", () => {
 });
 
 describe("Portabilidad · verificación (scripts/verify.mjs)", () => {
+  it("declara Database explícitamente para el health bajo tsx", () => {
+    // `tsx` no emite design:paramtypes aunque TypeScript tenga
+    // emitDecoratorMetadata. Sin @Inject, Nest arranca el controlador con
+    // `db` undefined y /api/health responde 503 hasta que verify expira.
+    expect(
+      Reflect.getMetadata("self:paramtypes", HealthController),
+    ).toContainEqual({ index: 0, param: Database });
+  });
   it("la API y sus puertos salen de FITSTORE_API_URL y PORT, con 3001 por defecto", async () => {
     const { targets } = await load("verify.mjs");
     expect(targets({})).toEqual({

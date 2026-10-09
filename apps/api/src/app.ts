@@ -4,6 +4,7 @@ import { MerchandiseController } from "./merchandise";
 import {
   Controller,
   Get,
+  Inject,
   Module,
   ServiceUnavailableException,
 } from "@nestjs/common";
@@ -25,8 +26,8 @@ import {
 } from "./rate-limit";
 
 @Controller()
-class HealthController {
-  constructor(private readonly db: Database) {}
+export class HealthController {
+  constructor(@Inject(Database) private readonly db: Database) {}
 
   @Public() @Get("health/live") live() {
     return { status: "ok", service: "Nexora POS" };
