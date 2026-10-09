@@ -344,7 +344,7 @@ function Shell() {
         // cerrar en el servidor): se pide la contraseña aunque la cookie de
         // renovación siga viva (R9-offline-5).
         if (saved && !valid) {
-          await endSession({ allowPendingLock: true });
+          await endSession();
           return;
         }
         await refreshSession();
@@ -493,7 +493,7 @@ function Shell() {
       // del servidor seguían vivas y al recargar volvía a entrar el usuario
       // anterior (R9-offline-5).
       closing = true;
-      await endSession({ allowPendingLock: true });
+      await endSession();
       client.clear();
       toast("Sesión cerrada por inactividad.");
     }, 30000);
@@ -711,13 +711,9 @@ function Shell() {
                     // La cola local permanece hasta que su dueño vuelva a
                     // entrar. Sin conexión, la sesión queda vencida en este
                     // equipo (R9-offline-5).
-                    try {
-                      await endSession();
-                      client.clear();
-                      setAccount(false);
-                    } catch {
-                      toast("Revisa las operaciones pendientes y sincronízalas antes de cerrar sesión.", true);
-                    }
+                    await endSession();
+                    client.clear();
+                    setAccount(false);
                   }}
                 >
                   <LogOut size={16} />

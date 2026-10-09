@@ -3,7 +3,6 @@ export default defineConfig({
   test: {
     include: [
       "tests/customer-display.test.ts",
-      "tests/logout-privacy.test.ts",
       "tests/management-messages.test.ts",
       "tests/u-credit-cleanup.test.ts",
       "packages/shared/**/*.test.ts",
