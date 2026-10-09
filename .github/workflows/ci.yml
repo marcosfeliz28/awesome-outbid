@@ -37,6 +37,11 @@ jobs:
       - name: Respaldo y restauración real (PostgreSQL 17)
         run: |
           set -euo pipefail
+          # El runner trae el cliente 16 y pg_dump se niega a respaldar un servidor 17.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
+          pg_dump --version
           B="$RUNNER_TEMP/backup"
           NEXORA_BACKUP_DIR="$B" node scripts/backup.mjs
           createdb -h localhost -p 5434 -U fitstore restore_check
