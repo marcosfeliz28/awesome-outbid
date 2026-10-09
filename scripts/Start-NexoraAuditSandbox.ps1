@@ -13,9 +13,13 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 $env:NEXORA_AUDIT_DB_PASSWORD = New-RandomSecret
 $env:NEXORA_AUDIT_JWT_SECRET = New-RandomSecret
 try {
+  # Cada ejecución genera una contraseña nueva; un volumen anterior conservaría
+  # la vieja y PostgreSQL rechazaría a la API. Se parte siempre de cero.
+  docker compose -f compose.audit.yaml down -v --remove-orphans
   docker compose -f compose.audit.yaml up --build
   if ($LASTEXITCODE -ne 0) { throw "Docker Compose terminó con código $LASTEXITCODE." }
 } finally {
+  docker compose -f compose.audit.yaml down -v --remove-orphans
   Remove-Item Env:NEXORA_AUDIT_DB_PASSWORD -ErrorAction SilentlyContinue
   Remove-Item Env:NEXORA_AUDIT_JWT_SECRET -ErrorAction SilentlyContinue
 }
