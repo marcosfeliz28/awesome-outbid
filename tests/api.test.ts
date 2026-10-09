@@ -1162,36 +1162,57 @@ describe("Seguridad, offline y funciones completadas", () => {
     expect(stored.map((a: any) => a.failedAttempts)).toEqual([5]);
   });
   it("1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor", async () => {
-    sellerSession = await ok(
+    // Usa sesión propia: el objetivo es medir exclusivamente el contador de
+    // PIN, no heredar el límite HTTP acumulado por sellerToken en otros casos.
+    const pinSeller = await newUser("seller");
+    const pinAuth = await loginRaw(pinSeller);
+    expect(pinAuth.status).toBe(201);
+    const pinSellerToken = (await pinAuth.json()).accessToken as string;
+    await enroll(pinSellerToken, "QA vendedor contador PIN");
+    const pinSession = await ok(
       "/cash-sessions/open",
       { registerId: "qa-approval-" + suffix, openingAmount: 0 },
-      sellerToken,
+      pinSellerToken,
     );
     const payload = () => ({
-      ...input(clothing.variants[0].id, 88.5, sellerSession),
+      ...input(clothing.variants[0].id, 88.5, pinSession),
       items: [
         { variantId: clothing.variants[0].id, qty: 1, discountPercent: 25 },
       ],
       managerPin: "000000",
     });
-    const errors = await Promise.all(
-      Array.from({ length: 10 }, () =>
-        request("/sales", payload(), sellerToken),
-      ),
-    );
-    expect(errors.every((r) => r.status === 400)).toBe(true);
-    expect(
-      (
-        await request(
-          "/sales",
-          { ...payload(), managerPin: "987654" },
-          sellerToken,
-        )
-      ).body.message,
-    ).toMatch(/bloquead/i);
-    expect((await request("/auth/me", undefined, sellerToken)).status).toBe(
-      200,
-    );
+    try {
+      const errors = await Promise.all(
+        Array.from({ length: 10 }, () =>
+          request("/sales", payload(), pinSellerToken),
+        ),
+      );
+      expect(errors.every((r) => r.status === 400)).toBe(true);
+      const attempt = await fixtureDb.authAttempt.findUniqueOrThrow({
+        where: { key: "approval:" + pinSeller.id },
+      });
+      expect(attempt.failedAttempts).toBe(5);
+      expect(attempt.lockedUntil?.getTime()).toBeGreaterThan(Date.now());
+      const blocked = await request(
+        "/sales",
+        { ...payload(), managerPin: "987654" },
+        pinSellerToken,
+      );
+      expect(blocked.status).toBe(400);
+      expect(blocked.body.message).toMatch(/bloquead/i);
+      expect(
+        (await request("/auth/me", undefined, pinSellerToken)).status,
+      ).toBe(200);
+    } finally {
+      await request(
+        "/cash-sessions/" + pinSession.id + "/close",
+        { countedCash: 0, countedCard: 0, countedTransfer: 0 },
+        pinSellerToken,
+      );
+      await fixtureDb.authAttempt.deleteMany({
+        where: { key: "approval:" + pinSeller.id },
+      });
+    }
   });
   it("1: limita ventas por sesión aunque cambie la IP y no bloquea otra sesión", async () => {
     const login = async () => {
@@ -1616,6 +1637,8 @@ describe("Seguridad, offline y funciones completadas", () => {
   });
   it("alerta efectivo aunque tarjeta lo compense", async () => {
     const settings = await ok("/settings");
+    let alertCash: any;
+    let alertToken = "";
     try {
       await ok(
         "/settings",
@@ -1623,22 +1646,56 @@ describe("Seguridad, offline y funciones completadas", () => {
         token,
         "PUT",
       );
-      const current = (await ok("/cash-sessions")).find(
-        (c) => c.id === sellerSession.id,
+      const alertSeller = await newUser("seller");
+      const alertAuth = await loginRaw(alertSeller);
+      expect(alertAuth.status).toBe(201);
+      alertToken = (await alertAuth.json()).accessToken as string;
+      await enroll(alertToken, "QA alerta diferencia efectivo");
+      alertCash = await ok(
+        "/cash-sessions/open",
+        { registerId: "qa-cash-alert-" + suffix, openingAmount: 100 },
+        alertToken,
       );
-      const closed = await ok("/cash-sessions/" + current.id + "/close", {
-        countedCash: current.expected.cash + 10,
-        countedCard: current.expected.card,
-        countedTransfer: current.expected.transfer,
-        notes: "Diferencia de prueba explicada",
+      const expected = await expectedForCash(alertCash.id);
+      const closed = await ok(
+        "/cash-sessions/" + alertCash.id + "/close",
+        {
+          countedCash: expected.cash - 10,
+          countedCard: expected.card + 10,
+          countedTransfer: expected.transfer,
+          notes: "Diferencia de prueba explicada",
+        },
+        alertToken,
+      );
+      expect(closed).not.toHaveProperty("differenceCash");
+      expect(closed).not.toHaveProperty("expectedCash");
+      const stored = await fixtureDb.cashSession.findUniqueOrThrow({
+        where: { id: alertCash.id },
       });
-      expect(Number(closed.differenceCash)).toBe(10);
-      expect(
-        (await ok("/alerts")).some(
-          (a) => a.type === "cash_difference" && a.entityId === closed.id,
-        ),
-      ).toBe(true);
+      expect(Number(stored.differenceCash)).toBe(-10);
+      expect(Number(stored.differenceCard)).toBe(10);
+      expect(Number(stored.difference)).toBe(0);
+      const alert = await fixtureDb.alert.findUniqueOrThrow({
+        where: { key: "cash:" + alertCash.id },
+      });
+      expect(alert).toMatchObject({
+        type: "cash_difference",
+        severity: "high",
+        entityId: alertCash.id,
+        status: "new",
+      });
     } finally {
+      if (alertCash?.id && alertToken) {
+        const stored = await fixtureDb.cashSession.findUnique({
+          where: { id: alertCash.id },
+        });
+        if (stored && !stored.closedAt)
+          await request(
+            "/cash-sessions/" + alertCash.id + "/close",
+            { countedCash: 100, countedCard: 0, countedTransfer: 0 },
+            alertToken,
+          );
+      }
       await ok("/settings", settings, token, "PUT");
     }
   });
