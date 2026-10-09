@@ -482,6 +482,15 @@ export class CatalogController {
     });
     const validated = rows.map((row) => parse(productSchema, row));
     await this.db.$transaction(async (tx) => {
+      const categoryIds = [...new Set(validated.map((row) => row.categoryId))];
+      const categories = await tx.category.findMany({
+        where: { id: { in: categoryIds }, branchId: actor.branchId },
+        select: { id: true },
+      });
+      if (categories.length !== categoryIds.length)
+        bad(
+          "El Excel incluye una categoría que no está disponible en esta sucursal. Corrige la categoría antes de importar.",
+        );
       // Todas las filas a la vez, contra la base y entre ellas: un choque
       // detiene la carga sin escribir ninguna (R9-codigos-1).
       await assertCodesFree(
