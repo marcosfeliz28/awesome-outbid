@@ -25,6 +25,48 @@ describe("P3 · estados de administración", () => {
     ])
       expect(businessErrorMessage({ message })).toContain("Revisa los datos");
   });
+  it("Int P3: los mensajes de negocio de caja, lector y dinero SE VEN", () => {
+    // Textos reales del POS y de la API que el filtro en lista blanca
+    // ocultaba (auditoría del lote, P3-1).
+    for (const message of [
+      "Código no encontrado: 7501234567890.",
+      "No hay suficiente stock de Camiseta Dry-Fit M (quedan 2).",
+      "El código 123 es de 2 productos. Búscalo por nombre.",
+      "No se agregó nada: el producto no tiene existencia.",
+      "Abre tu caja antes de cobrar.",
+      "Las salidas de efectivo de este turno superan RD$ 1,000.00: se requiere el PIN de un gerente.",
+      "El fondo es menor que lo dejado en el último cierre (RD$ 500.00). Agrega una nota y el PIN de un gerente.",
+      "No hay suficiente efectivo en tu caja para este reembolso.",
+      "Verifica o rechaza primero los abonos por transferencia pendientes de esta venta.",
+      "La venta tiene abonos. Usa una devolución.",
+      "La venta excede el plazo de devolución.",
+      "El código 7501 ya es de «Proteína Whey». Usa otro código o búscalo.",
+    ])
+      expect(businessErrorMessage({ message })).toBe(message);
+  });
+  it("Int P3: con el código de estado, 401/403 y los 4xx de negocio se explican", () => {
+    expect(
+      managementQueryError({ status: 404, message: "Venta no encontrada." }),
+    ).toBe("Venta no encontrada.");
+    expect(
+      managementQueryError({ status: 400, message: "Prisma P2025 SELECT" }),
+    ).toContain("Revisa los datos");
+    expect(managementQueryError({ status: 500, message: "Boom" })).toContain(
+      "Revisa tu conexión",
+    );
+    // api() adjunta el código de estado; sin él las ramas 401/403 no corrían.
+    const api = readFileSync("apps/web/src/api.ts", "utf8");
+    expect(api).toMatch(
+      /Object\.assign\(new Error\(result\.message\),\s*\{\s*status: response\.status/,
+    );
+  });
+  it("Int P3: los avisos (toast) no pasan por el filtro", () => {
+    const helpers = readFileSync("apps/web/src/helpers.tsx", "utf8");
+    expect(helpers).toContain("toastHandler(message, error);");
+    expect(helpers).not.toMatch(
+      /toastHandler\(\s*error \? businessErrorMessage/,
+    );
+  });
   it.each([
     new Error("PrismaClientKnownRequestError P2025"),
     new TypeError("Failed to fetch"),

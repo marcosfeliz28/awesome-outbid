@@ -128,6 +128,14 @@ model Variant {
   createdBy      String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+
+  // K2 (migración 202610170001_variant_code_unique): además de los @unique
+  // exactos, la base impone índices únicos de expresión que Prisma no
+  // representa, globales como los anteriores:
+  //   "Variant_sku_ci_key"     ON (lower(btrim(sku)))     WHERE btrim(sku) <> ''
+  //   "Variant_barcode_ci_key" ON (lower(btrim(barcode))) WHERE btrim(barcode) <> ''
+  // Si al migrar ya había repetidos, el índice se omite (NOTICE + AuditLog
+  // k2_code_index_skipped) hasta corregirlos y volver a ejecutar la migración.
 }
 
 model KitComponent {
@@ -192,6 +200,7 @@ model InventoryMovement {
 
   @@index([lotId])
   @@index([variantId, createdAt])
+  @@index([branchId, createdAt])
 }
 
 model Customer {
@@ -407,6 +416,7 @@ model GoodsReceipt {
   createdAt         DateTime       @default(now())
 
   @@index([supplierId, createdAt])
+  @@index([branchId, createdAt])
 }
 
 model SupplierPayment {
@@ -650,4 +660,24 @@ model InvoiceAttachment {
   mime      String
   data      Bytes
   createdAt DateTime @default(now())
+}
+
+// Cola durable de avisos por Telegram (apps/api/src/notifications.ts). El
+// texto se guarda ya renderizado y sin datos personales sensibles; el token y
+// el chat sólo viven en las variables de entorno.
+model NotificationOutbox {
+  id            String    @id @db.Uuid
+  eventType     String
+  refId         String
+  payload       Json
+  status        String    @default("pending")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  sentAt        DateTime?
+  branchId      String    @default("main")
+
+  @@unique([eventType, refId])
+  @@index([status, nextAttemptAt])
 }

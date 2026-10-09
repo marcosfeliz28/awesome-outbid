@@ -8,7 +8,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import ExcelJS from "exceljs";
 import * as z4 from "zod/v4";
 import { amount, bad, cost, parse, positive } from "./common";
-import { assertSafeXlsx, assertSheetCells } from "./xlsx-guard";
+import { assertSafeXlsx, assertSheetCells, cellCodeText } from "./xlsx-guard";
 
 export const extractedSchema = z.object({
   total: amount.nullable().optional(),
@@ -269,7 +269,13 @@ export async function readInvoiceTable(
     if (index <= headerRow) return;
     const at = (key: ColumnKey) =>
       columns[key] ? row.getCell(columns[key]!) : undefined;
-    const code = cellText(at("code")).slice(0, 100);
+    const codeCell = at("code");
+    // Un código numérico conserva sus ceros iniciales (ver cellCodeText).
+    const code = (
+      typeof codeCell?.value === "number"
+        ? cellCodeText(codeCell)
+        : cellText(codeCell)
+    ).slice(0, 100);
     const description = cellText(at("description")).slice(0, 300);
     const qtyRaw = cellValue(at("qty")),
       costRaw = cellValue(at("unitCost"));

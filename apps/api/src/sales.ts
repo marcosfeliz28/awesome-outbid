@@ -54,6 +54,9 @@ import {
   fieldLabel,
   imageType,
   lockActiveCustomer,
+  canViewCustomerPii,
+  customerForActor,
+  maskTail,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
 
@@ -163,7 +166,11 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     creditDueDate: sale.creditDueDate,
     ncf: sale.ncf,
     ncfType: sale.ncfType,
-    recipientLegalId: sale.recipientLegalId,
+    // SEC-05: el historial de la caja no vuelve a mostrar el RNC del
+    // receptor fiscal; gerencia lo ve completo para emitir el comprobante.
+    recipientLegalId: canViewCustomerPii(actor)
+      ? sale.recipientLegalId
+      : maskTail(sale.recipientLegalId),
     fiscalStatus: sale.fiscalStatus,
     notes: sale.notes,
     voidedReason: sale.voidedReason,
@@ -336,6 +343,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 }
 
 import { cashExpected, refreshClosedCash } from "./cash";
+import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
 
 @Controller()
@@ -589,6 +597,12 @@ export class SalesController {
         )
           bad(
             "Los precios o promociones cambiaron. Revisa el total antes de cobrar.",
+          );
+        // No hay regla de cortesías: una venta sin cobro (descuento del 100 %
+        // o precio 0) sacaba mercancía y daba «cambio» de la caja.
+        if (!(total > 0))
+          bad(
+            "El total de la venta es RD$ 0. Revisa los precios y descuentos: no se registran ventas sin cobro.",
           );
         let payment: ReturnType<typeof paymentTotals>;
         try {
@@ -979,6 +993,7 @@ export class SalesController {
       },
       { timeout: 20000 },
     );
+    notify(this.db, "sale", result.id);
     return safe(result, actor);
   }
   @Post("sales") @Permit("sale:write") @RequireTerminal() sale(
@@ -1164,7 +1179,7 @@ export class SalesController {
     // Si esa caja ya cerró y la venta se cobró en efectivo, el reembolso sale
     // de la caja abierta de quien anula (D-02, docs/DECISIONES.md, punto 9).
     const data = parse(z.object({ reason }), body);
-    return this.db.$transaction(async (tx) => {
+    const voided = await this.db.$transaction(async (tx) => {
       const saleRef = await tx.sale.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
         select: { cashSessionId: true, payments: true },
@@ -1344,6 +1359,8 @@ export class SalesController {
       });
       return { ok: true };
     });
+    notify(this.db, "sale_voided", id);
+    return voided;
   }
   @Post("payments/:id/verify")
   @RequireTerminal()
@@ -1469,7 +1486,7 @@ export class SalesController {
     );
     if (new Set(data.items.map((i) => i.saleItemId)).size !== data.items.length)
       bad("No repitas artículos en la devolución.");
-    return this.db.$transaction(async (tx) => {
+    const done = await this.db.$transaction(async (tx) => {
       // Dos envíos con la misma clave se atienden uno detrás del otro: el
       // segundo encuentra la devolución del primero y la devuelve tal cual.
       // Misma clave con otros datos es un error, no otra devolución.
@@ -1485,7 +1502,7 @@ export class SalesController {
           return safe(prior, actor);
         }
       }
-      await cashLock(tx, actor, data.cashSessionId, true);
+      const refundCash = await cashLock(tx, actor, data.cashSessionId, true);
       await tx.$queryRaw`SELECT id FROM "Sale" WHERE id = ${data.saleId}::uuid FOR UPDATE`;
       const sale = await tx.sale.findFirstOrThrow({
         where: { id: data.saleId, branchId: actor.branchId },
@@ -1698,6 +1715,22 @@ export class SalesController {
           "Verifica o rechaza primero los abonos por transferencia pendientes de esta venta.",
         );
       const refundAmount = money(total.minus(debtReduction));
+      // D-06: el efectivo que se entrega tiene que estar en la caja que
+      // reembolsa (la caja ya está bloqueada arriba). Sin este control, una
+      // venta cobrada con tarjeta devuelta en efectivo dejaba el esperado en
+      // negativo. Regla: devolver por el medio original (tarjeta,
+      // transferencia) o como nota de crédito siempre procede; en efectivo,
+      // sólo hasta el efectivo esperado de la caja. Cambiar el medio ya exige
+      // sale:manage (gerente o administrador), que es quien registra
+      // devoluciones.
+      if (
+        data.refundMethod === "cash" &&
+        d(refundAmount).gt(0) &&
+        d(refundAmount).gt((await cashExpected(tx, refundCash)).cash)
+      )
+        bad(
+          "No hay suficiente efectivo en la caja para este reembolso. Reembolsa por el medio del pago original o como nota de crédito.",
+        );
       if (debtReduction)
         await tx.sale.update({
           where: { id: sale.id },
@@ -1736,6 +1769,8 @@ export class SalesController {
       await audit(tx, actor, "return", "sale", sale.id, undefined, row);
       return safe(row, actor);
     });
+    if (done?.id) notify(this.db, "return", done.id);
+    return done;
   }
   @Get("credit-notes")
   @Permit("sale:write")
@@ -2000,7 +2035,10 @@ export class SalesController {
             paymentId: p.id,
             amount: Number(p.amount),
           })),
-          customer: customers.find((c) => c.id === s.customerId) ?? null,
+          customer: customerForActor(
+            customers.find((c) => c.id === s.customerId) ?? null,
+            actor,
+          ),
           seller: sellers.find((u) => u.id === s.sellerId) ?? null,
           notes: s.notes,
         },
@@ -2013,7 +2051,7 @@ export class SalesController {
     data: z.infer<typeof installmentSchema>,
     codOnly: boolean,
   ) {
-    return this.db.$transaction(async (tx) => {
+    const row = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.offlineUuid}))::text AS locked`;
       const existing = await tx.payment.findUnique({
         where: { idempotencyKey: data.offlineUuid },
@@ -2122,6 +2160,8 @@ export class SalesController {
       );
       return row;
     });
+    notify(this.db, "collection", row.id);
+    return row;
   }
   @Get("sales/:id/receipt.pdf")
   @Permit("sale:write")
@@ -2146,9 +2186,13 @@ export class SalesController {
     const settings = await this.db.settings.findUnique({
       where: { id: actor.branchId },
     });
+    // SEC-05: este recibo es interno y no fiscal; la vendedora lo descarga
+    // con la cédula/RNC y el teléfono del cliente enmascarados.
     const [customer, seller] = await Promise.all([
       sale.customerId
-        ? this.db.customer.findUnique({ where: { id: sale.customerId } })
+        ? this.db.customer
+            .findUnique({ where: { id: sale.customerId } })
+            .then((c) => customerForActor(c, actor))
         : null,
       this.db.user.findUnique({ where: { id: sale.sellerId } }),
     ]);

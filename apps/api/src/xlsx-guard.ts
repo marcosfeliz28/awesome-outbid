@@ -185,3 +185,25 @@ export function assertSheetCells(
       `La hoja tiene demasiadas celdas (${sheet.rowCount} filas × ${sheet.columnCount} columnas). El máximo es ${max}: borra las columnas o filas sobrantes.`,
     );
 }
+
+/**
+ * Texto de una celda que guarda un código (SKU o código de barras). Excel
+ * guarda «00123» escrito en una columna con formato «00000» como el número
+ * 123: `cell.text` perdía los ceros y el código ya no coincidía con el del
+ * producto. Un entero con formato de solo ceros se rellena hasta su ancho; el
+ * resto de celdas se lee como texto, tal cual.
+ */
+export function cellCodeText(cell: {
+  value: unknown;
+  numFmt?: string;
+  text: string;
+}) {
+  const value = cell.value;
+  const format = String(cell.numFmt ?? "").replace(/[\\"]/g, "");
+  if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) {
+    return /^0+$/.test(format)
+      ? String(value).padStart(format.length, "0")
+      : String(value);
+  }
+  return String(cell.text ?? "").trim();
+}

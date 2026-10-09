@@ -413,4 +413,49 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
     } as any);
     expect(finance).toEqual(payload);
   });
+
+  it("Rev F2: vendedora con profit:read sin costos; dañados y arqueo autorizado visibles", () => {
+    expect(
+      safe({ id: "v", price: 100, costAvg: 40 }, {
+        role: "seller",
+        permissions: ["catalog:read", "profit:read"],
+      } as any),
+    ).toEqual({ id: "v", price: 100 });
+    expect(
+      safe(
+        {
+          id: "receipt-1",
+          supplierId: "supplier-1",
+          orderId: null,
+          units: 2,
+          damagedUnits: 1,
+          itbis: 54,
+          total: 200,
+        },
+        { role: "warehouse", permissions: ["purchase:write"] } as any,
+      ),
+    ).toEqual({
+      id: "receipt-1",
+      supplierId: "supplier-1",
+      orderId: null,
+      units: 2,
+      damagedUnits: 1,
+    });
+    const cash = {
+      Fecha: "hoy",
+      Usuario: "u",
+      Estado: "Cerrada",
+      Esperado: 100,
+      Contado: 90,
+      Diferencia_efectivo: -10,
+      Diferencia_tarjeta: 0,
+      Diferencia_transferencia: 0,
+    };
+    expect(
+      safe([cash], {
+        role: "supervisor",
+        permissions: ["reports:read", "sale:manage"],
+      } as any),
+    ).toEqual([cash]);
+  });
 });

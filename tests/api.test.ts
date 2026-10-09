@@ -32,7 +32,7 @@ describe("E1 · credenciales indistinguibles contra API real", () => {
             passwordHash,
             pinHash: passwordHash,
             active,
-          branchId,
+            branchId,
             roleId: role.id,
           },
         }),
@@ -5398,6 +5398,128 @@ describe("Ronda 9 · revisión · códigos", () => {
     });
     products.push(v.product);
     expect(Number(v.stock)).toBe(5);
+  });
+
+  // K2 (prueba hostil): otra conexión guarda el código en otras mayúsculas y
+  // con espacios SIN confirmar. La revisión de la API no la ve, su INSERT
+  // espera al índice único lower(btrim(...)) y, al confirmarse la otra, la
+  // base lo rechaza (23505/P2002). La API responde con el mensaje de R9 (400),
+  // no un 500 ni el 409 genérico, y no queda un duplicado.
+  it("K2: si la base rechaza un código por mayúsculas o espacios, crear, editar, la matriz, la importación y Mercancía dan el mensaje de R9", async () => {
+    const tag = randomUUID().slice(0, 8).toUpperCase();
+    const holder = await owner("K2 dueño", "K2-OWN-" + tag, "K2-OWN-B-" + tag);
+    const lockWaits = async () =>
+      Number(
+        (
+          await fixtureDb.$queryRaw`SELECT count(*)::int AS n FROM pg_stat_activity
+            WHERE datname = current_database() AND wait_event_type = 'Lock'`
+        )[0].n,
+      );
+    const raced = async (
+      held: { sku?: string; barcode?: string },
+      call: () => Promise<{ status: number; body: any }>,
+    ) => {
+      let response!: Promise<{ status: number; body: any }>;
+      let settled = false;
+      await fixtureDb.$transaction(
+        async (tx: any) => {
+          await tx.$executeRaw`INSERT INTO "Variant"
+              (id,"productId",sku,barcode,"costAvg",price,"updatedAt")
+            VALUES (gen_random_uuid(), ${holder.id}::uuid,
+              ${held.sku ?? "K2-HS-" + randomUUID()},
+              ${held.barcode ?? "K2-HB-" + randomUUID()}, 10, 20, now())`;
+          response = call().finally(() => (settled = true));
+          // Espera a que el INSERT de la API quede bloqueado por esta fila.
+          for (let i = 0; i < 200 && !settled; i++) {
+            if ((await lockWaits()) > 0) break;
+            await new Promise((r) => setTimeout(r, 50));
+          }
+        },
+        { timeout: 20000, maxWait: 10000 },
+      );
+      return response;
+    };
+    const expectR9 = (r: { status: number; body: any }, label: string) => {
+      expect(r.status, label + " " + JSON.stringify(r.body)).toBe(400);
+      expect(r.body.message, label).toContain("ya es de «" + holder.name + "»");
+    };
+    // Crear producto: el SKU ya está (sin confirmar) en minúsculas y con
+    // espacios a los lados.
+    const created = await raced(
+      { sku: " k2-c-" + tag.toLowerCase() + " " },
+      () =>
+        request(
+          "/products",
+          productBody("K2 crear", [
+            { sku: "K2-C-" + tag, barcode: "K2-CB-" + randomUUID() },
+          ]),
+        ),
+    );
+    expectR9(created, "crear");
+    // Editar variante: las barras nuevas ya están en minúsculas.
+    const d = await owner("K2 editar", "K2-E-" + tag, "K2-EB-" + tag);
+    const edited = await raced({ barcode: "k2-e2-" + tag.toLowerCase() }, () =>
+      request(
+        "/variants/" + d.variants[0].id,
+        { barcode: "K2-E2-" + tag },
+        token,
+        "PATCH",
+      ),
+    );
+    expectR9(edited, "editar");
+    // Matriz: el código generado (SKU del producto + "-2").
+    const m = await owner("K2 matriz", "K2-M1-" + tag, "K2-M1B-" + tag);
+    const matrix = await raced({ barcode: (m.sku + "-2").toLowerCase() }, () =>
+      request("/products/" + m.id + "/variants", {
+        attributes: { talla: ["S"] },
+        price: 20,
+        costAvg: 10,
+      }),
+    );
+    expectR9(matrix, "matriz");
+    // Importar catálogo: no se escribe ninguna fila.
+    const before = await fixtureDb.product.count();
+    const imported = await raced(
+      { barcode: " k2-i-" + tag.toLowerCase() },
+      () =>
+        importRows([
+          [
+            "QA K2 importa " + suffix,
+            "K2-I-SKU-" + tag,
+            ropa(),
+            "K2-I-" + tag,
+            20,
+            10,
+          ],
+        ]),
+    );
+    expectR9(imported, "importar");
+    expect(await fixtureDb.product.count()).toBe(before);
+    // Recepción de mercancía con producto rápido.
+    const received = await raced({ barcode: "k2-q-" + tag.toLowerCase() }, () =>
+      request("/merchandise/operations", {
+        id: randomUUID(),
+        direction: "entry",
+        items: [quickLine("K2-Q-" + tag)],
+      }),
+    );
+    expectR9(received, "mercancía");
+    // Cada código quedó en una sola variante: la que confirmó primero.
+    for (const code of [
+      "K2-C-" + tag,
+      "K2-E2-" + tag,
+      m.sku + "-2",
+      "K2-I-" + tag,
+      "K2-Q-" + tag,
+    ]) {
+      const { n } = (
+        await fixtureDb.$queryRaw`SELECT count(*)::int AS n FROM "Variant"
+          WHERE lower(btrim(sku)) = lower(${code}) OR lower(btrim(barcode)) = lower(${code})`
+      )[0];
+      expect(n, code).toBe(1);
+    }
+    // Las filas de la prueba no se venden: se desactiva el dueño.
+    await ok("/products/" + holder.id, { active: false }, token, "PATCH");
   });
 });
 // Área dinero: devoluciones, costo contabilizado, abonos y reportes.
@@ -11695,5 +11817,381 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
       countedTransfer: 100,
     });
     await closeBlind(sellerCash.id, seller.token, { countedCard: 300 });
+  });
+});
+
+describe("Revisión F2 · costos por rol contra la API real", () => {
+  it("gerente y admin ven costos; vendedora y almacén no; el almacén no borra el ITBIS oculto", async () => {
+    const roles = await ok("/roles");
+    const warehouse = await ok("/users", {
+      name: "QA almacén F2",
+      email: "f2-warehouse-" + suffix + "@example.test",
+      password: "FitStore-QA-2026!",
+      pin: "834529",
+      roleId: roles.find((r: any) => r.name === "warehouse").id,
+    });
+    actors.push(warehouse);
+    const warehouseToken = (
+      await ok(
+        "/auth/login",
+        { email: warehouse.email, password: "FitStore-QA-2026!" },
+        "",
+      )
+    ).accessToken;
+    const variantId = clothing.variants[0].id;
+    const order = await ok("/purchase-orders", {
+      supplierId,
+      itbis: 54,
+      items: [{ variantId, qty: 3, unitCost: 100 }],
+    });
+    const received = await ok("/purchase-orders/" + order.id + "/receive", {
+      operationId: randomUUID(),
+      itbis: 54,
+      items: [
+        {
+          itemId: order.items[0].id,
+          qty: 2,
+          damagedQty: 1,
+          damageReason: "Caja rota QA F2",
+        },
+      ],
+    });
+    const orderOf = async (as: string) =>
+      (await ok("/purchase-orders", undefined, as)).find(
+        (o: any) => o.id === order.id,
+      );
+    const receiptOf = (as: string) =>
+      ok("/goods-receipts/" + received.id, undefined, as);
+    const variantOf = async (as: string) =>
+      (await ok("/products/" + clothing.id, undefined, as)).variants.find(
+        (v: any) => v.id === variantId,
+      );
+
+    for (const as of [token, managerToken]) {
+      expect(Number((await variantOf(as)).costAvg)).toBeGreaterThan(0);
+      expect(Number((await orderOf(as)).total)).toBe(300);
+      const receipt = await receiptOf(as);
+      expect(receipt.total).toBe(200);
+      expect(receipt.itbis).toBe(54);
+      expect(receipt.lines[0].unitCost).toBe(100);
+      expect(receipt.damagedUnits).toBe(1);
+      const kardex = await ok("/reports/kardex", undefined, as);
+      expect(kardex.rows.some((r: any) => "Costo" in r)).toBe(true);
+    }
+
+    // Vendedora: catálogo sin costos y sin historial de recepciones.
+    expect((await variantOf(sellerToken)).costAvg).toBeUndefined();
+    expect(
+      (await request("/goods-receipts/" + received.id, undefined, sellerToken))
+        .status,
+    ).toBe(403);
+
+    // Almacén: cantidades sí, importes de compra no.
+    expect((await variantOf(warehouseToken)).costAvg).toBeUndefined();
+    const hiddenOrder = await orderOf(warehouseToken);
+    expect(hiddenOrder.total).toBeUndefined();
+    expect(hiddenOrder.itbis).toBeUndefined();
+    const hidden = await receiptOf(warehouseToken);
+    expect(hidden).toMatchObject({ units: 2, damagedUnits: 1 });
+    expect(hidden.lines[0]).toMatchObject({ qty: 2, damagedQty: 1 });
+    for (const key of ["total", "goods", "freight", "itbis", "invoiceTotal"])
+      expect(hidden[key]).toBeUndefined();
+    expect(hidden.lines[0].unitCost).toBeUndefined();
+
+    // «Completar documento» reenvía el ITBIS que no vio como vacío (null).
+    await ok(
+      "/goods-receipts/" + received.id + "/document",
+      { supplierInvoice: "F2-" + suffix, itbis: null },
+      warehouseToken,
+      "PATCH",
+    );
+    expect(await receiptOf(token)).toMatchObject({
+      supplierInvoice: "F2-" + suffix,
+      itbis: 54,
+    });
+    await ok(
+      "/purchase-orders/" + order.id + "/document",
+      { supplierInvoice: "F2-OC-" + suffix, itbis: null },
+      warehouseToken,
+      "PATCH",
+    );
+    expect(Number((await orderOf(token)).itbis)).toBe(54);
+    // Quien sí ve el ITBIS puede seguir borrándolo.
+    await ok(
+      "/goods-receipts/" + received.id + "/document",
+      { itbis: null },
+      token,
+      "PATCH",
+    );
+    expect((await receiptOf(token)).itbis).toBeNull();
+
+    // Aunque la administración dé profit:read al rol vendedora, la caja no
+    // recibe costos (misma regla que seesCost y los informes de utilidad).
+    const sellerRole = roles.find((r: any) => r.name === "seller");
+    try {
+      await ok(
+        "/roles/" + sellerRole.id,
+        { permissions: [...sellerRole.permissions, "profit:read"] },
+        ownerToken,
+        "PUT",
+      );
+      expect((await variantOf(sellerToken)).costAvg).toBeUndefined();
+    } finally {
+      await ok(
+        "/roles/" + sellerRole.id,
+        { permissions: sellerRole.permissions },
+        ownerToken,
+        "PUT",
+      );
+    }
+  });
+});
+
+describe("Revisión E1 · cupo de identidades inventadas", () => {
+  it("el intento 21 con usuarios inventados desde una IP recibe 429 y una cajera real sigue entrando", async () => {
+    const ip = "198.51.100." + ((Date.now() % 200) + 30);
+    const login = async (loginName: string, password: string) => {
+      const r = await fetch(base + "/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Forwarded-For": ip },
+        body: JSON.stringify({ login: loginName, password }),
+      });
+      return { status: r.status, body: await r.json() };
+    };
+    // Cajera creada con la API ya en marcha: cuenta como identidad conocida.
+    const roles = await ok("/roles");
+    const cashier = await ok("/users", {
+      name: "QA cajera E1 " + suffix,
+      email: "e1-cajera-" + suffix + "@example.test",
+      password: "FitStore-QA-2026!",
+      pin: "741963",
+      roleId: roles.find((r: any) => r.name === "seller").id,
+    });
+    actors.push(cashier);
+    await ok(
+      "/auth/login",
+      { email: cashier.email, password: "FitStore-QA-2026!" },
+      "",
+    );
+    const password = qaPasswords.get(
+      loginKey({ email: cashier.email }),
+    )!.active;
+
+    const statuses: number[] = [];
+    for (let n = 0; n < 21; n++)
+      statuses.push(
+        (await login("inventado-e1-" + suffix + "-" + n, "Incorrecta-2026!"))
+          .status,
+      );
+    expect(statuses.slice(0, 20).every((s) => s === 400)).toBe(true);
+    expect(statuses[20]).toBe(429);
+    // Misma IP: lo inventado y una clave mala de la cajera dan el mismo 429.
+    expect((await login("otro-inventado-" + suffix, "x")).status).toBe(429);
+    expect((await login(cashier.email, "Incorrecta-2026!")).status).toBe(429);
+    // Con su clave, la cajera nueva y la de la semilla entran desde esa IP.
+    const entered = await login(cashier.email, password);
+    expect(entered.status).toBe(201);
+    expect(entered.body.accessToken).toEqual(expect.any(String));
+    const seeded = await login(
+      "vendedor@fitstore.demo",
+      process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+    );
+    expect(seeded.status).toBe(201);
+  });
+});
+
+describe("SEC-05: datos personales del cliente según el rol (Ley 172-13)", () => {
+  // Texto real del PDF: PDFKit comprime los streams y guarda el texto en hex.
+  const pdfText = async (path: string, as: string) => {
+    const r = await fetch(base + path, {
+      headers: { Authorization: "Bearer " + as, "X-Forwarded-For": testIp },
+    });
+    expect(r.status).toBe(200);
+    const raw = Buffer.from(await r.arrayBuffer()).toString("latin1");
+    const { inflateSync } = await import("node:zlib");
+    const text: string[] = [];
+    for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+      let content = Buffer.from(m[1], "latin1");
+      try {
+        content = inflateSync(content);
+      } catch {
+        /* stream sin comprimir */
+      }
+      for (const hex of content.toString("latin1").matchAll(/<([0-9a-f]+)>/gi))
+        text.push(Buffer.from(hex[1], "hex").toString("latin1"));
+    }
+    return text.join("");
+  };
+  it("la vendedora y la cajera ven cédula/RNC, teléfono y correo enmascarados y sin gasto; gerencia y administración, completos; la venta sigue funcionando", async () => {
+    const tag = randomUUID().slice(0, 6);
+    const roles = await ok("/roles", undefined, ownerToken);
+    // Cajera creada con el rol seller, como en la tienda.
+    const cajeraUser = await ok(
+      "/users",
+      {
+        name: "QA cajera SEC05 " + tag,
+        email: `qa-cajera-sec05-${tag}@example.test`,
+        password: "FitStore-QA-2026!",
+        pin: "876543",
+        roleId: roles.find((r: any) => r.name === "seller").id,
+      },
+      ownerToken,
+    );
+    actors.push(cajeraUser);
+    const cajeraToken = (
+      await ok(
+        "/auth/login",
+        { email: cajeraUser.email, password: "FitStore-QA-2026!" },
+        "",
+      )
+    ).accessToken;
+    expect(cajeraToken).toBeTruthy();
+    // La cajera vende con su propio equipo y su propia caja.
+    await enroll(cajeraToken, "QA caja SEC05 " + tag);
+    const cajeraCash = await ok(
+      "/cash-sessions/open",
+      { registerId: "qa-sec05-" + tag, openingAmount: 0 },
+      cajeraToken,
+    );
+    const product = await ok(
+      "/products",
+      {
+        name: "QA SEC05 " + tag,
+        sku: "QA-SEC05-" + tag,
+        categoryId: (await ok("/categories", undefined, ownerToken)).find(
+          (c: any) => c.name === "Ropa deportiva",
+        ).id,
+        variants: [
+          {
+            sku: "QA-SEC05-V-" + tag,
+            barcode: "QA-SEC05-B-" + tag,
+            costAvg: 40,
+            price: 118,
+          },
+        ],
+      },
+      ownerToken,
+    );
+    products.push(product);
+    const variantId = product.variants[0].id;
+    await ok(
+      "/inventory/adjustments",
+      { variantId, qty: 5, reason: "QA SEC05" },
+      ownerToken,
+    );
+    const legalId = "00112345678",
+      phone = "809-555-0123",
+      email = `sec05-${tag}@example.test`;
+    // Cliente existente con todos sus datos (lo registra la gerencia).
+    const existing = await ok(
+      "/customers",
+      { name: "QA SEC05 existente " + tag, phone, legalId, email },
+      managerToken,
+    );
+    expect(existing.legalId).toBe(legalId);
+    // Venta de la cajera con el cliente existente.
+    const soldExisting = await ok(
+      "/sales",
+      { ...input(variantId, 118, cajeraCash), customerId: existing.id },
+      cajeraToken,
+    );
+    expect(soldExisting.customerId).toBe(existing.id);
+
+    for (const as of [sellerToken, cajeraToken]) {
+      const list = await ok("/customers", undefined, as);
+      const row = list.find((c: any) => c.id === existing.id);
+      expect(row.name).toBe(existing.name);
+      expect(row.legalId).toBe("•••••••678");
+      expect(row.phone).toBe("•••••••123");
+      expect(row.email).toBe("s•••@example.test");
+      for (const key of ["totalSpent", "purchases", "lastPurchase"])
+        expect(row).not.toHaveProperty(key);
+      const raw = JSON.stringify(list);
+      expect(raw).not.toContain(legalId);
+      expect(raw).not.toContain(phone);
+      expect(raw).not.toContain(email);
+    }
+    for (const as of [managerToken, token, ownerToken]) {
+      const row = (await ok("/customers", undefined, as)).find(
+        (c: any) => c.id === existing.id,
+      );
+      expect(row.legalId).toBe(legalId);
+      expect(row.phone).toBe(phone);
+      expect(row.email).toBe(email);
+      expect(row.totalSpent).toBe(118);
+      expect(row.purchases).toBe(1);
+      expect(row.lastPurchase).toBeTruthy();
+    }
+
+    // Cliente nuevo creado en la caja por la vendedora y venta con él.
+    const fresh = await ok(
+      "/customers",
+      {
+        name: "QA SEC05 nuevo " + tag,
+        phone: "8095550456",
+        legalId: "40212345999",
+        notes: "",
+      },
+      sellerToken,
+    );
+    expect(fresh.id).toBeTruthy();
+    expect(fresh.name).toBe("QA SEC05 nuevo " + tag);
+    expect(fresh.legalId).toBe("•••••••999");
+    expect(fresh.phone).toBe("•••••••456");
+    const soldFresh = await ok(
+      "/sales",
+      { ...input(variantId, 118, cajeraCash), customerId: fresh.id },
+      cajeraToken,
+    );
+    expect(soldFresh.customerId).toBe(fresh.id);
+
+    // Editar desde la caja devolviendo los datos enmascarados no borra ni
+    // sustituye los verdaderos.
+    const edited = await ok(
+      "/customers/" + fresh.id,
+      {
+        name: fresh.name + " editado",
+        phone: fresh.phone,
+        legalId: fresh.legalId,
+        email: "",
+        notes: "",
+      },
+      sellerToken,
+      "PATCH",
+    );
+    expect(edited.legalId).toBe("•••••••999");
+    const stored = (await ok("/customers", undefined, managerToken)).find(
+      (c: any) => c.id === fresh.id,
+    );
+    expect(stored.name).toBe(fresh.name + " editado");
+    expect(stored.legalId).toBe("40212345999");
+    expect(stored.phone).toBe("8095550456");
+
+    // Recibo PDF (interno, no fiscal): la cajera que vendió no recibe la
+    // cédula completa; la gerencia sí.
+    const sellerPdf = await pdfText(
+      "/sales/" + soldExisting.id + "/receipt.pdf",
+      cajeraToken,
+    );
+    expect(sellerPdf).toContain(existing.name);
+    expect(sellerPdf).toContain("678");
+    expect(sellerPdf).not.toContain(legalId);
+    expect(sellerPdf).not.toContain(phone);
+    const managerPdf = await pdfText(
+      "/sales/" + soldExisting.id + "/receipt.pdf",
+      managerToken,
+    );
+    expect(managerPdf).toContain(legalId);
+    expect(managerPdf).toContain(phone);
+    await ok(
+      "/cash-sessions/" + cajeraCash.id + "/close",
+      {
+        countedCash: 236,
+        countedCard: 0,
+        countedTransfer: 0,
+        notes: "Cierre QA SEC05",
+      },
+      cajeraToken,
+    );
   });
 });

@@ -30,6 +30,7 @@ import { isDifferentPassword, strongPasswordSchema } from "./password-policy";
 import {
   REQUEST_RATE_LIMITS,
   RequestRateLimitService,
+  tooManyAttempts,
   normalizeRequestIp,
 } from "./rate-limit";
 
@@ -47,6 +48,10 @@ export function normalizeUsername(value: string) {
 const DUMMY_PASSWORD_HASH =
   "$2b$12$58blABr79s5ElPAz9aGMQ.z83oBrpFCsoq.7/lRZrXGesMASQql72";
 const ABSENT_USER_ID = "00000000-0000-0000-0000-000000000000";
+// Pendiente: las filas `login:missing:%` de AuthAttempt no se purgan porque la
+// tabla no tiene fecha de creación ni de último intento (sólo lockedUntil, que
+// es nulo por debajo de 5 fallos). Su crecimiento queda acotado por los cupos
+// authIp y authUnknownGlobal; purgarlas requiere añadir esa columna.
 const credentialAttemptIdentity = (user: any, normalized: string) =>
   user
     ? `${user.id}:${user.authVersion}`
@@ -94,17 +99,32 @@ export class AuthController implements OnModuleInit {
     // sólo recibe identidades que no existen; cuando se llena, se comprueba
     // antes de crear otro cubo por nombre. Así el barrido no crea miles de
     // consultas ni entradas. Las cuentas precargadas conservan su cubo propio.
-    const unknownFlooded = this.requestLimits.limited(
-      "auth-unknown-ip",
-      [ip],
-      REQUEST_RATE_LIMITS.authIp,
-    );
-    if (!this.requestLimits.knowsAuthIdentity(normalized))
+    // Con el cupo de desconocidos lleno (de esta IP o de todo el servidor),
+    // una cuenta real con clave incorrecta también recibe 429: así el 429 no
+    // distingue cuentas. Con la clave correcta entra igual.
+    const unknownFlooded =
+      this.requestLimits.limited(
+        "auth-unknown-ip",
+        [ip],
+        REQUEST_RATE_LIMITS.authIp,
+      ) ||
+      this.requestLimits.limitedShared(
+        "auth-unknown",
+        REQUEST_RATE_LIMITS.authUnknownGlobal,
+      );
+    if (!this.requestLimits.knowsAuthIdentity(normalized)) {
+      // Primero el cupo de la IP: lo que ella rechaza no gasta el global, y
+      // una sola dirección no puede agotarlo para todas.
       this.requestLimits.assert(
         "auth-unknown-ip",
         [ip],
         REQUEST_RATE_LIMITS.authIp,
       );
+      this.requestLimits.assertShared(
+        "auth-unknown",
+        REQUEST_RATE_LIMITS.authUnknownGlobal,
+      );
+    }
     this.requestLimits.assert(
       "auth-identifier",
       [ip, normalized],
@@ -216,12 +236,7 @@ export class AuthController implements OnModuleInit {
     // Cuando una IP esta barriendo nombres, una clave incorrecta de una cuenta
     // real conserva el mismo 429 que una identidad inventada. Una clave
     // correcta si puede entrar: no hay bloqueo cruzado ni enumeracion.
-    if (credentialLimit.unknownFlooded && !matches)
-      this.requestLimits.assert(
-        "auth-unknown-ip",
-        [credentialLimit.ip],
-        REQUEST_RATE_LIMITS.authIp,
-      );
+    if (credentialLimit.unknownFlooded && !matches) tooManyAttempts();
     // Los fallos se cuentan por cuenta y dirección IP, como los PIN por
     // solicitante: quien prueba contraseñas ajenas sólo se bloquea a sí mismo,
     // no a la vendedora en su caja. La clave lleva authVersion para que un
@@ -295,11 +310,7 @@ export class AuthController implements OnModuleInit {
       user?.active ? user.passwordHash : DUMMY_PASSWORD_HASH,
     );
     if (credentialLimit.unknownFlooded && !currentPasswordMatches)
-      this.requestLimits.assert(
-        "auth-unknown-ip",
-        [credentialLimit.ip],
-        REQUEST_RATE_LIMITS.authIp,
-      );
+      tooManyAttempts();
     await verifyAttempt(
       this.db,
       `login:${credentialAttemptIdentity(user, credentialLimit.normalized)}:${credentialLimit.ip}`,

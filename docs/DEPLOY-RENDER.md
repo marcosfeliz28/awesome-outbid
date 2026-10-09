@@ -71,6 +71,36 @@ Cuando se apruebe un dominio propio, cambiar en `render.yaml` la entrada de
 Ese cambio y el dominio se deben aplicar juntos. La PWA instalada desde la URL
 provisional se reinstala desde el dominio definitivo.
 
+## Avisos por Telegram
+
+Opcional. Cada factura (efectivo, tarjeta, transferencia, crédito,
+contraentrega), anulación, devolución, cobro de contraentrega o abono y cada
+cierre de caja llega como mensaje a un grupo privado de Telegram. El aviso
+lleva número, fecha y hora, caja, cajera, formas de pago, total, ITBIS, el
+nombre del cliente (nunca su cédula/RNC, teléfono, correo ni dirección) y los
+primeros artículos; sin costos ni márgenes. El esperado y lo contado sólo van
+en el aviso de cierre.
+
+1. En Telegram, habla con **@BotFather**, envía `/newbot` y guarda el token.
+2. Crea el grupo privado de la administración y agrega el bot. Escribe un
+   mensaje en el grupo y abre
+   `https://api.telegram.org/bot<TOKEN>/getUpdates`: el `chat.id` del grupo
+   (empieza con `-100…` en supergrupos) es el chat.
+3. En Render, servicio `nexora-pos-api` › _Environment_, añade como secretos
+   `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` y vuelve a desplegar. En la web,
+   Configuración › Negocio y reglas › «Avisos de facturas por Telegram» ›
+   «Enviar mensaje de prueba».
+
+Sin las dos variables la función queda apagada: no se guarda ni se envía nada
+y las ventas no cambian. Con ellas, la venta nunca espera a Telegram: el texto
+se guarda en la tabla `NotificationOutbox` y un trabajador de la API lo envía
+(un mensaje por segundo, 8 s de espera máxima, reintentos a los 30 s, 1, 2, 5,
+15 min… hasta 12 intentos, respeta los 429). Al reiniciar retoma lo pendiente;
+los enviados se borran a los 30 días. El estado (pendientes, enviados,
+fallidos y último error, sin el token) está en `GET /api/notifications/status`.
+`TELEGRAM_API_BASE` sólo se usa en pruebas; no se declara en Render. Si el
+token se filtra, revócalo con `/revoke` en @BotFather y cambia la variable.
+
 ## DNS privado y cabeceras del cliente
 
 Render inyecta `API_UPSTREAM` mediante `fromService.hostport`. `start-nginx.sh`

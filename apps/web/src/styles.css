@@ -4832,6 +4832,25 @@ td strong {
 .proof-upload {
   cursor: pointer;
 }
+.telegram-card {
+  padding: 25px 30px;
+  border-top: 1px solid var(--border);
+}
+.telegram-card .panel-heading {
+  padding: 0;
+}
+.telegram-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.telegram-card p,
+.telegram-card ol {
+  font-size: 12px;
+  margin: 8px 0 12px;
+}
+.telegram-card ol {
+  padding-left: 18px;
+}
 .store-settings h3 {
   margin: 18px 0 8px;
   font-size: 15px;

@@ -1,0 +1,362 @@
+// Regresiones de los «menores» de la cola (COLA_HALLAZGOS_NEXORA y
+// AUDITORIA_FINAL_DINERO D-06 a D-08). Corre contra la API compilada, como
+// tests/api.test.ts, con su propia caja, equipo y productos.
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+
+const requireApi = createRequire(
+  new URL("../apps/api/package.json", import.meta.url),
+);
+requireApi("dotenv").config({
+  path: fileURLToPath(new URL("../.env", import.meta.url)),
+  quiet: true,
+});
+const { PrismaClient } = requireApi("@prisma/client");
+const ExcelJS = requireApi("exceljs");
+const db = new PrismaClient();
+
+const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
+const suffix = Date.now().toString(36);
+const ip = "192.0.2." + ((Date.now() % 250) + 1);
+let token = "";
+let customerId = "";
+let categoryId = "";
+let cash: any;
+const productIds: string[] = [];
+const foreignCategoryIds: string[] = [];
+const expenseCategoryIds: string[] = [];
+
+async function request(path: string, data?: unknown, method?: string) {
+  const r = await fetch(base + path, {
+    method: method ?? (data === undefined ? "GET" : "POST"),
+    headers: {
+      "Content-Type": "application/json",
+      "X-Forwarded-For": ip,
+      ...(token ? { Authorization: "Bearer " + token } : {}),
+    },
+    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+  });
+  return { status: r.status, body: await r.json().catch(() => null) };
+}
+async function ok(path: string, data?: unknown, method?: string) {
+  const r = await request(path, data, method);
+  if (r.status >= 400)
+    throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
+  return r.body;
+}
+async function product(label: string, price = 100, stock = 20) {
+  const tag = randomUUID().slice(0, 8);
+  const p = await ok("/products", {
+    name: "QA menores " + label + " " + suffix,
+    sku: "QAM-" + tag,
+    categoryId,
+    variants: [
+      { sku: "QAM-V-" + tag, barcode: "QAM-B-" + tag, price, costAvg: 10 },
+    ],
+  });
+  productIds.push(p.id);
+  if (stock)
+    await ok("/inventory/adjustments", {
+      variantId: p.variants[0].id,
+      qty: stock,
+      reason: "QA apertura menores",
+    });
+  return p.variants[0];
+}
+const sale = (variantId: string, total: number, payments: any[], extra = {}) =>
+  ok("/sales", {
+    offlineUuid: randomUUID(),
+    customerId,
+    cashSessionId: cash.id,
+    items: [{ variantId, qty: 1 }],
+    payments,
+    expectedTotal: total,
+    ...extra,
+  });
+const expectedCash = async () =>
+  (await ok("/cash-sessions")).find((s: any) => s.id === cash.id).expected;
+async function importCatalog(rows: unknown[][], format?: (ws: any) => void) {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Productos");
+  ws.addRow(["Nombre", "SKU", "ID categoría", "Código", "Precio", "Costo"]);
+  rows.forEach((r) => ws.addRow(r));
+  format?.(ws);
+  const form = new FormData();
+  form.set("file", new Blob([await wb.xlsx.writeBuffer()]), "productos.xlsx");
+  const r = await fetch(base + "/products/import", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token, "X-Forwarded-For": ip },
+    body: form,
+  });
+  return { status: r.status, body: await r.json() };
+}
+
+beforeAll(async () => {
+  token = (
+    await ok("/auth/login", {
+      email: "admin@fitstore.demo",
+      password: process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+    })
+  ).accessToken;
+  const id = randomUUID();
+  const t = await ok("/terminals/register", {
+    id,
+    name: "QA menores " + suffix,
+    secret: "qa-secret-" + id,
+  });
+  if (t.status === "pending") await ok("/terminals/" + id + "/approve", {});
+  customerId = (await ok("/customers", { name: "QA menores " + suffix })).id;
+  categoryId = (await ok("/categories")).find(
+    (c: any) => c.name === "Ropa deportiva",
+  ).id;
+  cash = await ok("/cash-sessions/open", {
+    registerId: "qa-menores-" + suffix,
+    openingAmount: 0,
+  });
+});
+afterAll(async () => {
+  if (cash) {
+    const e = await expectedCash();
+    await request("/cash-sessions/" + cash.id + "/close", {
+      countedCash: Math.max(0, e.cash),
+      countedCard: Math.max(0, e.card),
+      countedTransfer: Math.max(0, e.transfer),
+      notes: "Cierre de pruebas menores",
+    });
+  }
+  for (const id of productIds)
+    await request("/products/" + id, { active: false }, "PATCH");
+  if (foreignCategoryIds.length)
+    await db.category.deleteMany({ where: { id: { in: foreignCategoryIds } } });
+  if (expenseCategoryIds.length) {
+    await db.expense.deleteMany({
+      where: { categoryId: { in: expenseCategoryIds } },
+    });
+    await db.expenseCategory.deleteMany({
+      where: { id: { in: expenseCategoryIds } },
+    });
+  }
+  await db.$disconnect();
+});
+
+describe("Menores de la cola", () => {
+  it("1: una merma o devolución a proveedor con cantidad positiva es un 400 y no suma stock", async () => {
+    const v = await product("merma", 100, 10);
+    for (const type of ["waste", "supplier_return"]) {
+      const r = await request("/inventory/adjustments", {
+        variantId: v.id,
+        qty: 3,
+        reason: "QA merma con signo equivocado",
+        type,
+      });
+      expect(r.status).toBe(400);
+      expect(r.body.message).toMatch(/negativa/);
+    }
+    expect(
+      Number((await ok("/products/" + v.productId)).variants[0].stock),
+    ).toBe(10);
+    // Con el signo correcto sigue funcionando; el ajuste libre admite ambos.
+    await ok("/inventory/adjustments", {
+      variantId: v.id,
+      qty: -2,
+      reason: "QA merma correcta",
+      type: "waste",
+    });
+    await ok("/inventory/adjustments", {
+      variantId: v.id,
+      qty: 1,
+      reason: "QA ajuste positivo",
+    });
+    expect(
+      Number((await ok("/products/" + v.productId)).variants[0].stock),
+    ).toBe(9);
+  });
+
+  it("2: el importador rechaza una categoría de otra sucursal o inexistente", async () => {
+    const foreign = await db.category.create({
+      data: { name: "QA otra sucursal " + suffix, branchId: "otra-" + suffix },
+    });
+    foreignCategoryIds.push(foreign.id);
+    for (const cat of [foreign.id, randomUUID()]) {
+      const tag = randomUUID().slice(0, 8);
+      const r = await importCatalog([
+        [
+          "QA importado ajeno " + tag,
+          "QAI-" + tag,
+          cat,
+          "QAI-B-" + tag,
+          50,
+          20,
+        ],
+      ]);
+      expect(r.status).toBe(400);
+      expect(r.body.message).toMatch(/categoría/i);
+      expect(await db.product.count({ where: { sku: "QAI-" + tag } })).toBe(0);
+    }
+    // POST /products aplica la misma regla.
+    const tag = randomUUID().slice(0, 8);
+    const r = await request("/products", {
+      name: "QA ajeno " + tag,
+      sku: "QAJ-" + tag,
+      categoryId: foreign.id,
+      variants: [
+        { sku: "QAJ-V-" + tag, barcode: "QAJ-B-" + tag, price: 1, costAvg: 1 },
+      ],
+    });
+    expect(r.status).toBe(400);
+  });
+
+  it("3: el importador conserva los ceros iniciales de SKU y código de barras", async () => {
+    const n = 100000 + Math.floor(Math.random() * 800000);
+    const name = "QA ceros " + suffix + " " + n;
+    const r = await importCatalog(
+      [[name, n, categoryId, n + 1, 50, 20]],
+      (ws) => {
+        // Celdas numéricas con formato de relleno, como las deja Excel al
+        // escribir 00123456 en una columna con formato «00000000».
+        ws.getCell("B2").numFmt = "00000000";
+        ws.getCell("D2").numFmt = "0000000000000";
+      },
+    );
+    expect(r.status).toBe(201);
+    const row = await db.product.findFirst({
+      where: { name },
+      include: { variants: true },
+    });
+    productIds.push(row.id);
+    expect(row.sku).toBe("00" + n);
+    expect(row.variants[0].sku).toBe("00" + n);
+    expect(row.variants[0].barcode).toBe("0000000" + (n + 1));
+  });
+
+  it("4: InventoryMovement y GoodsReceipt tienen índice (branchId, createdAt)", async () => {
+    const rows: { indexname: string; indexdef: string }[] =
+      await db.$queryRaw`SELECT indexname, indexdef FROM pg_indexes
+        WHERE tablename IN ('InventoryMovement', 'GoodsReceipt')`;
+    for (const table of ["InventoryMovement", "GoodsReceipt"])
+      expect(
+        rows.some((r) =>
+          r.indexdef.includes(
+            `ON public."${table}" USING btree ("branchId", "createdAt")`,
+          ),
+        ),
+      ).toBe(true);
+  });
+
+  it("5 (D-06): un reembolso en efectivo mayor que el efectivo de la caja es un 400; con efectivo sí se devuelve", async () => {
+    const v = await product("reembolso", 800);
+    const card = await sale(v.id, 800, [
+      { method: "card", amount: 800, cardLast4: "4242", approvalCode: "QA1" },
+    ]);
+    const before = await expectedCash();
+    const r = await request("/returns", {
+      operationId: randomUUID(),
+      saleId: card.id,
+      cashSessionId: cash.id,
+      reason: "QA reembolso sin efectivo",
+      refundMethod: "cash",
+      items: [{ saleItemId: card.items[0].id, qty: 1, restock: true }],
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.message).toMatch(/efectivo/);
+    expect((await expectedCash()).cash).toBe(before.cash);
+    // Por el medio original sí procede.
+    await ok("/returns", {
+      operationId: randomUUID(),
+      saleId: card.id,
+      cashSessionId: cash.id,
+      reason: "QA reembolso a la tarjeta",
+      refundMethod: "card",
+      items: [{ saleItemId: card.items[0].id, qty: 1, restock: true }],
+    });
+    // Con efectivo en la caja, la devolución en efectivo no se rompe.
+    const paid = await sale(v.id, 800, [{ method: "cash", amount: 800 }]);
+    await ok("/returns", {
+      operationId: randomUUID(),
+      saleId: paid.id,
+      cashSessionId: cash.id,
+      reason: "QA reembolso con efectivo",
+      refundMethod: "cash",
+      items: [{ saleItemId: paid.items[0].id, qty: 1, restock: true }],
+    });
+    expect((await expectedCash()).cash).toBe(before.cash);
+  });
+
+  it("6: una venta con total 0 es un 400 claro", async () => {
+    const v = await product("total cero", 100);
+    const r = await request("/sales", {
+      offlineUuid: randomUUID(),
+      customerId,
+      cashSessionId: cash.id,
+      items: [{ variantId: v.id, qty: 1, discountPercent: 100 }],
+      discountReason: "QA cortesía sin regla",
+      payments: [{ method: "cash", amount: 1 }],
+      expectedTotal: 0,
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.message).toMatch(/total/i);
+    const free = await product("precio cero", 0);
+    const z = await request("/sales", {
+      offlineUuid: randomUUID(),
+      customerId,
+      cashSessionId: cash.id,
+      items: [{ variantId: free.id, qty: 1 }],
+      payments: [{ method: "cash", amount: 1 }],
+    });
+    expect(z.status).toBe(400);
+  });
+
+  it("7 (D-08): gasto y pago a proveedor con importe enorme o de 3 decimales son un 400 claro, no un 500", async () => {
+    const supplier = await ok("/suppliers", { name: "QA D-08 " + suffix });
+    const category = await ok("/expense-categories", {
+      name: "QA D-08 " + suffix,
+      monthlyBudget: 0,
+    });
+    expenseCategoryIds.push(category.id);
+    const payments = () =>
+      db.supplierPayment.count({ where: { supplierId: supplier.id } });
+    const expenses = () =>
+      db.expense.count({ where: { categoryId: category.id } });
+    for (const amount of [1e15, 10000000.01, 0.004]) {
+      const pay = await request("/supplier-payments", {
+        supplierId: supplier.id,
+        amount,
+        method: "transfer",
+      });
+      expect(pay.status, "pago " + amount).toBe(400);
+      expect(pay.body.message).toMatch(/Revisa los campos/);
+      const exp = await request("/expenses", {
+        categoryId: category.id,
+        amount,
+        description: "QA gasto D-08",
+        method: "transfer",
+      });
+      expect(exp.status, "gasto " + amount).toBe(400);
+      expect(exp.body.message).toMatch(/Revisa los campos/);
+    }
+    expect(await payments()).toBe(0);
+    expect(await expenses()).toBe(0);
+    // En el tope sigue funcionando.
+    await ok("/supplier-payments", {
+      supplierId: supplier.id,
+      amount: 10000000,
+      method: "transfer",
+    });
+    const e = await ok("/expenses", {
+      categoryId: category.id,
+      amount: 10000000,
+      description: "QA gasto D-08 tope",
+      method: "transfer",
+    });
+    await ok("/expenses/" + e.id + "/void", { reason: "QA limpieza D-08" });
+    expect(await payments()).toBe(1);
+    // No deja un pago de 10 millones en los reportes de la sucursal.
+    await db.supplierPayment.deleteMany({ where: { supplierId: supplier.id } });
+    await db.supplier.update({
+      where: { id: supplier.id },
+      data: { active: false },
+    });
+  });
+});

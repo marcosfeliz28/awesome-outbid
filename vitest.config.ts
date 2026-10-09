@@ -8,6 +8,7 @@ export default defineConfig({
       "packages/shared/**/*.test.ts",
       "tests/invoice.test.ts",
       "tests/xlsx-bomb.test.ts",
+      "tests/import-codes.test.ts",
       "tests/realtime.test.ts",
       "tests/inventario.test.ts",
       "tests/inventory-resilience.test.ts",
@@ -27,6 +28,8 @@ export default defineConfig({
       "tests/sales-pdf.test.ts",
       "tests/customer-anonymization-postgres.test.ts",
       "tests/accessibility-contract.test.ts",
+      "tests/variant-code-unique-postgres.test.ts",
+      "tests/telegram-render.test.ts",
     ],
   },
 });

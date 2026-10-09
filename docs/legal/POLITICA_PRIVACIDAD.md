@@ -23,7 +23,7 @@ A (a) clientes que compran o a quienes se les registra en nuestro sistema de caj
 No recolectamos números completos de tarjeta ni códigos de seguridad. No tomamos fecha de nacimiento ni datos de menores. No usamos sus datos para publicidad de terceros ni para decisiones automatizadas. [Si la Tienda enviará promociones, deberá pedir un consentimiento separado y hoy no lo hace.]
 
 ## 4. Si no entrega los datos
-Puede comprar como "consumidor final" sin dar nombre, teléfono ni correo. Solo necesitamos cédula/RNC si usted pide comprobante fiscal con sus datos, y datos de contacto si compra a crédito o contraentrega.
+Para registrar la venta pedimos un nombre que identifique al cliente en el recibo; teléfono, correo y cédula/RNC son opcionales. Solo necesitamos cédula/RNC si usted pide comprobante fiscal con sus datos, y datos de contacto si compra a crédito o contraentrega.
 
 ## 5. Cuánto tiempo los conservamos
 - Registros de venta, pagos, comprobantes (NCF) y documentos contables: el plazo exigido por la normativa fiscal y contable dominicana [ABOGADO/CONTADOR: confirmar, normalmente varios años].
@@ -37,12 +37,13 @@ Puede comprar como "consumidor final" sin dar nombre, teléfono ni correo. Solo 
 - Proveedores tecnológicos que alojan el sistema y las copias de seguridad ([PROVEEDOR DE ALOJAMIENTO], [PROVEEDOR DE COPIAS]) y el servicio de monitoreo de errores (Sentry), algunos con servidores fuera de la República Dominicana. [ABOGADO: revisar transferencias internacionales.]
 - Autoridades, como la DGII, cuando la ley lo exija.
 - Procesadores de tarjeta o bancos, solo con la información propia de la operación de cobro (no pasan por nuestro sistema).
+- Telegram, si la Tienda activa los avisos de ventas: cada factura, anulación, devolución, cobro o cierre de caja se envía como mensaje a un grupo privado de Telegram de la administración. El aviso lleva el nombre del cliente y el detalle de la venta, sin cédula/RNC, teléfono, correo ni dirección; Telegram es un tercero que procesa y almacena ese contenido en sus servidores, algunos fuera de la República Dominicana.
 No vendemos sus datos.
 
 ### Lectura automática de facturas de proveedor
 Si se utiliza esta función, la imagen o PDF de la factura se envía a Anthropic, proveedor de inteligencia artificial, para extraer los datos y permitir su revisión humana. No es necesario utilizarla: puede registrar la factura manualmente o mediante Excel/CSV. Evite enviar información personal que no sea necesaria.
 
-La aplicación no crea un archivo de la factura en la cuenta de Anthropic. Esto no equivale a garantizar retención cero por parte del proveedor: antes de publicar este texto, la gerencia debe confirmar las condiciones de conservación y el acuerdo de tratamiento aplicables a su cuenta. No se afirma que el proveedor elimine inmediatamente el documento sin evidencia contractual.
+La aplicación no crea un archivo de la factura en la cuenta del proveedor. Las condiciones de conservación del proveedor son las de su acuerdo de tratamiento de datos. [GERENCIA/ABOGADO: confirmar plazo de conservación antes de publicar.]
 
 ## 7. Sus derechos
 Puede pedir en cualquier momento acceso a sus datos, rectificar los que estén errados, actualizarlos, cancelarlos (eliminarlos) u oponerse a su uso, y retirar su consentimiento. Escriba a [CORREO DE CONTACTO] o pregunte en caja; le pediremos verificar su identidad. Responderemos en un plazo de [10] días hábiles [ABOGADO: confirmar plazo legal]. Algunos datos no pueden eliminarse mientras exista una obligación legal de conservarlos; en ese caso los anonimizaremos y se lo explicaremos. Si cree que sus derechos no fueron atendidos, puede acudir a la autoridad competente [ABOGADO: indicar].

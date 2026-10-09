@@ -36,7 +36,7 @@ import {
   parse,
   uuid,
 } from "./common";
-import { assertCodesFree } from "./catalog";
+import { assertCodesFree, explainCodeConflict } from "./catalog";
 import {
   checkDamage,
   damageFields,
@@ -784,7 +784,16 @@ export class MerchandiseController {
       const prior = await this.db.merchandiseOperation.findUnique({
         where: { id: data.id },
       });
-      if (!prior) throw error;
+      // K2: sin operación previa, un P2002 puede ser el índice de códigos.
+      if (!prior)
+        return explainCodeConflict(
+          this.db,
+          actor.branchId,
+          data.items.flatMap((l) =>
+            l.quick ? [{ codes: [l.quick.barcode] }] : [],
+          ),
+          error,
+        );
       if (prior.userId !== actor.id || prior.branchId !== actor.branchId)
         denied();
       if (prior.requestHash !== requestHash)

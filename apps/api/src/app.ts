@@ -20,6 +20,7 @@ import { CashController } from "./cash";
 import { ReportsController } from "./reports";
 import { AlertEngine, AlertsController } from "./alerts";
 import { OfflineSalesController } from "./offline-sales";
+import { NotificationsController, NotificationWorker } from "./notifications";
 import {
   AuthenticatedRateLimitGuard,
   RequestRateLimitService,
@@ -60,10 +61,12 @@ export function createAppModule(secret: string) {
       ReportsController,
       AlertsController,
       OfflineSalesController,
+      NotificationsController,
     ],
     providers: [
       Database,
       AlertEngine,
+      NotificationWorker,
       RequestRateLimitService,
       { provide: APP_GUARD, useClass: AuthGuard },
       { provide: APP_GUARD, useClass: AuthenticatedRateLimitGuard },

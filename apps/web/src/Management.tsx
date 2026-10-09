@@ -61,7 +61,11 @@ import {
   type Printing,
 } from "./Tienda";
 import { METHOD_LABEL, printSoon } from "./Prints";
-import { customerPrivateDisplay } from "./customer-display";
+import {
+  customerEditValue,
+  customerPrivateDisplay,
+  seesCustomerPii,
+} from "./customer-display";
 import { managementQueryError } from "./managementMessages";
 import {
   applyPendingSaleReprice,
@@ -1004,6 +1008,8 @@ export function Inventory() {
 }
 
 export function Purchases() {
+  // La API no envía el total de la orden a quien no ve costos (F2).
+  const seesCost = can(useStore((s) => s.user)!.permissions, "profit:read");
   const orders = useQuery({
     queryKey: ["orders"],
     queryFn: () => api("/purchase-orders"),
@@ -1078,7 +1084,14 @@ export function Purchases() {
                 },
                 { label: "Fecha", render: (o) => dateLabel(o.createdAt) },
                 { label: "Artículos", render: (o) => o.items.length },
-                { label: "Total", render: (o) => formatMoney(o.total) },
+                ...(seesCost
+                  ? [
+                      {
+                        label: "Total",
+                        render: (o: any) => formatMoney(o.total),
+                      },
+                    ]
+                  : []),
                 {
                   label: "Estado",
                   render: (o) => (
@@ -1890,10 +1903,18 @@ export function Customers() {
     [search, setSearch] = useState(""),
     [editing, setEditing] = useState<any>(null),
     [anonymizing, setAnonymizing] = useState<any>(null);
+  // SEC-05: sin gerencia, la API envía teléfono, correo y cédula/RNC
+  // enmascarados («•••••••123») y sin gasto histórico. El correo enmascarado
+  // no es un correo válido para el navegador; la API lo valida al guardar.
+  const fullCustomer = seesCustomerPii(user.permissions);
   const fields: Field[] = [
     { key: "name", label: "Nombre", required: true },
     { key: "phone", label: "Teléfono" },
-    { key: "email", label: "Correo", type: "email" },
+    {
+      key: "email",
+      label: "Correo",
+      ...(fullCustomer ? { type: "email" } : {}),
+    },
     { key: "legalId", label: "Cédula / RNC" },
     ...(can(useStore.getState().user!.permissions, "sale:manage")
       ? [requiredNumber("creditLimit", "Límite de crédito (RD$)", 0)]
@@ -1922,7 +1943,9 @@ export function Customers() {
         <QueryState query={query}>
           <DataTable
             rows={(query.data || []).filter((c: any) =>
-              (c.name + " " + c.phone)
+              // P5: sin acceso completo la búsqueda no usa el teléfono, para
+              // no servir de oráculo de los dígitos ocultos.
+              (c.name + " " + (fullCustomer ? c.phone : ""))
                 .toLowerCase()
                 .includes(search.toLowerCase()),
             )}
@@ -1934,34 +1957,34 @@ export function Customers() {
                 label: "Contacto",
                 render: (c) => (
                   <span>
-                    {customerPrivateDisplay(
-                      c.phone,
-                      can(user.permissions, "sale:manage"),
-                    )}
+                    {customerPrivateDisplay(c.phone, fullCustomer)}
                     <small>{c.email}</small>
                   </span>
                 ),
               },
               {
                 label: "Cédula / RNC",
-                render: (c) =>
-                  customerPrivateDisplay(
-                    c.legalId,
-                    can(user.permissions, "sale:manage"),
-                  ),
+                // P5 + SEC-05: la API ya envía el dato enmascarado a la caja;
+                // la vista lo acorta igual («•••123») con el mismo criterio
+                // de acceso que la API (fullCustomer).
+                render: (c) => customerPrivateDisplay(c.legalId, fullCustomer),
               },
-              { label: "Compras", render: (c) => c.purchases },
-              {
-                label: "Total gastado",
-                render: (c) => formatMoney(c.totalSpent),
-              },
-              {
-                label: "Última compra",
-                render: (c) =>
-                  c.lastPurchase
-                    ? dateLabel(c.lastPurchase)
-                    : "Aún sin compras",
-              },
+              ...(fullCustomer
+                ? [
+                    { label: "Compras", render: (c: any) => c.purchases },
+                    {
+                      label: "Total gastado",
+                      render: (c: any) => formatMoney(c.totalSpent),
+                    },
+                    {
+                      label: "Última compra",
+                      render: (c: any) =>
+                        c.lastPurchase
+                          ? dateLabel(c.lastPurchase)
+                          : "Aún sin compras",
+                    },
+                  ]
+                : []),
               {
                 label: "Acción",
                 render: (c) => (
@@ -1996,7 +2019,12 @@ export function Customers() {
         <FormModal
           title="Editar cliente"
           fields={fields}
-          initial={editing}
+          // P5: «Editar» tampoco muestra teléfono ni cédula/RNC completos.
+          initial={{
+            ...editing,
+            phone: customerEditValue(editing.phone, fullCustomer),
+            legalId: customerEditValue(editing.legalId, fullCustomer),
+          }}
           onClose={() => setEditing(null)}
           onSubmit={(data) => mutate("/customers/" + editing.id, data, "PATCH")}
         />
@@ -2973,6 +3001,86 @@ export function SalesHistory() {
   );
 }
 
+// Avisos de facturas por Telegram: estado de la cola y prueba de conexión.
+// El token y el chat sólo viven en las variables del servidor.
+function TelegramNotices() {
+  const user = useStore((s) => s.user)!;
+  const admin = can(user.permissions, "*");
+  const client = useQueryClient();
+  const [sending, setSending] = useState(false);
+  const status = useQuery({
+    queryKey: ["notifications-status"],
+    queryFn: () => api("/notifications/status"),
+    enabled: admin,
+    refetchInterval: 15000,
+  });
+  const data = status.data as
+    | {
+        enabled: boolean;
+        pending: number;
+        sent: number;
+        failed: number;
+        lastError: { message: string } | null;
+      }
+    | undefined;
+  const test = async () => {
+    setSending(true);
+    try {
+      const r = await post("/notifications/telegram/test", {});
+      toast(r.message, !r.queued);
+      await client.invalidateQueries({ queryKey: ["notifications-status"] });
+    } catch (e: any) {
+      toast(e.message, true);
+    } finally {
+      setSending(false);
+    }
+  };
+  return (
+    <section className="telegram-card" aria-labelledby="telegram-title">
+      <div className="panel-heading">
+        <h3 id="telegram-title">Avisos de facturas por Telegram</h3>
+        {data && (
+          <Badge tone={data.enabled ? "success" : "neutral"}>
+            {data.enabled ? "Activados" : "Desactivados"}
+          </Badge>
+        )}
+      </div>
+      <p>
+        Cada factura, anulación, devolución, cobro y cierre de caja llega al
+        grupo de Telegram de la administración. Sin cédula, teléfono, correo ni
+        dirección del cliente.
+      </p>
+      {data?.enabled ? (
+        <p>
+          Enviados: <strong>{data.sent}</strong> · Pendientes:{" "}
+          <strong>{data.pending}</strong> · Fallidos:{" "}
+          <strong>{data.failed}</strong>
+          {data.lastError && (
+            <>
+              <br />
+              <small>Último error: {data.lastError.message}</small>
+            </>
+          )}
+        </p>
+      ) : (
+        <ol>
+          <li>En Telegram, crea el bot con @BotFather (/newbot).</li>
+          <li>Agrega el bot al grupo privado de la administración.</li>
+          <li>
+            En Render (API), pon TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID y vuelve
+            a desplegar.
+          </li>
+        </ol>
+      )}
+      {admin && (
+        <Button variant="secondary" onClick={test} disabled={sending}>
+          {sending ? "Enviando…" : "Enviar mensaje de prueba"}
+        </Button>
+      )}
+    </section>
+  );
+}
+
 export function Configuration() {
   const user = useStore((s) => s.user)!;
   const query = useQuery({
@@ -3173,6 +3281,7 @@ export function Configuration() {
               ))}
             </div>
             <StoreSettings />
+            <TelegramNotices />
           </QueryState>
         ) : tab === "users" ? (
           <>

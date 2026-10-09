@@ -29,6 +29,25 @@ describe("P2 · manual operativo de cajera", () => {
     for (const image of images)
       expect(existsSync(resolve("docs", image[1]))).toBe(true);
   });
+  it("Int P2-1: anular, abonos y ventas sin internet son de administración, no del rol gerente", () => {
+    // sales.ts: anular y abonos con @Permit("*"); admin.ts: PUT /settings «*».
+    const manual = readFileSync("docs/MANUAL-CAJERO.md", "utf8");
+    expect(manual).not.toContain("## 6. Anular: solo gerencia");
+    expect(manual).toContain(
+      "## 6. Anular: solo administración (Marcos o Génesis)",
+    );
+    expect(manual).toContain(
+      "Administración (Marcos o Génesis) registra y verifica luego los abonos",
+    );
+    expect(manual).not.toContain("solo gerencia puede habilitarlas");
+    expect(manual).toContain("solo administración puede habilitarlas");
+  });
+  it("Int P4-1: el logo predeterminado del ticket queda precacheado sin conexión", () => {
+    const vite = readFileSync("apps/web/vite.config.ts", "utf8");
+    expect(vite).toMatch(/includeAssets:\s*\[[^\]]*"logo-grupo-macgen\.png"/);
+    const prints = readFileSync("apps/web/src/Prints.tsx", "utf8");
+    expect(prints).toContain('"/logo-grupo-macgen.png"');
+  });
 });
 const { createElement } = webRequire("react") as typeof import("react");
 const { renderToStaticMarkup } = webRequire(

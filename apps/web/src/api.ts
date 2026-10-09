@@ -302,7 +302,11 @@ export async function api<T = any>(
       const result = await response
         .json()
         .catch(() => ({ message: "No se pudo completar la operación." }));
-      throw new Error(result.message);
+      // El código de estado permite distinguir sesión vencida (401) y falta
+      // de permiso (403) de una caída de red (managementMessages.ts).
+      throw Object.assign(new Error(result.message), {
+        status: response.status,
+      });
     }
     return readJson(response);
   };

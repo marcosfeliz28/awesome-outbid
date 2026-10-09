@@ -33,7 +33,7 @@ export const attrLabel = (attributes: Record<string, string>) =>
     .join(" · ") || "Única";
 let toastHandler: (message: string, error?: boolean) => void = () => {};
 export const toast = (message: string, error = false) =>
-  toastHandler(error ? businessErrorMessage({ message }) : message, error);
+  toastHandler(message, error);
 export function Toasts() {
   const [notice, setNotice] = useState<{
     message: string;

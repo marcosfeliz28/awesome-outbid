@@ -1,3 +1,11 @@
+const GENERIC =
+  "No pudimos completar la operación. Revisa los datos y tu conexión e inténtalo de nuevo. Si continúa, pide ayuda a gerencia.";
+// Lista NEGRA: la API ya responde en español de negocio («Código no
+// encontrado…», «Abre tu caja…», «…se requiere el PIN de un gerente»); sólo
+// se oculta lo que parece técnico (SQL, Prisma, trazas, JSON, rutas, red).
+const TECHNICAL =
+  /prisma|sql|select\s|insert\s|update\s|delete\s|exception|stack|constraint|token|secret|password|\/api\/|[{}<>\r\n]|\bP\d{4}\b|failed to fetch|networkerror|internal server error/i;
+
 /** Lecturas: no mostramos detalles internos del servidor a la persona usuaria. */
 export function managementQueryError(error: unknown): string {
   const status = (error as { status?: number } | null)?.status;
@@ -5,22 +13,17 @@ export function managementQueryError(error: unknown): string {
     return "Tu sesión terminó. Vuelve a entrar para continuar.";
   if (status === 403)
     return "No tienes acceso a esta información. Pide ayuda a gerencia.";
+  if (status && status < 500) return businessErrorMessage(error);
   return "No pudimos cargar la información. Revisa tu conexión y pulsa Reintentar.";
 }
 
-/** Conserva indicaciones breves de negocio; nunca trazas, SQL ni claves internas. */
+/** Conserva los mensajes de negocio; nunca trazas, SQL ni claves internas. */
 export function businessErrorMessage(error: unknown): string {
   const message = (error as { message?: unknown } | null)?.message;
-  if (
-    typeof message === "string" &&
-    message.length <= 240 &&
-    /^(Indica|Selecciona|Ingresa|Revisa|Confirma|Debes|El monto|La cantidad|El saldo|No puedes|No hay stock|Stock insuficiente|PIN incorrecto|Ya existe|Falta|El cliente|El proveedor|La fecha|La devolución)\b/.test(
-      message,
-    ) &&
-    !/prisma|sql|select\s|insert\s|update\s|delete\s|exception|stack|constraint|\bat\b|token|secret|password|\/api\/|[{}<>\r\n]|\bP\d{4}\b/i.test(
-      message,
-    )
-  )
-    return message;
-  return "No pudimos completar la operación. Revisa los datos y tu conexión e inténtalo de nuevo. Si continúa, pide ayuda a gerencia.";
+  return typeof message === "string" &&
+    message.trim() &&
+    message.length <= 300 &&
+    !TECHNICAL.test(message)
+    ? message
+    : GENERIC;
 }

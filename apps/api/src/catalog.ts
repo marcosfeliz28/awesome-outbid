@@ -30,7 +30,7 @@ import {
   json,
 } from "./common";
 import { expiredQty } from "./inventory";
-import { assertSafeXlsx, assertSheetCells } from "./xlsx-guard";
+import { assertSafeXlsx, assertSheetCells, cellCodeText } from "./xlsx-guard";
 
 // Paso 04: el catálogo que cargan la caja y Mercancía da como `stock` lo
 // vendible (sin lotes vencidos, que la venta no toma); lo físico y lo vencido
@@ -84,16 +84,19 @@ export async function assertCodesFree(
   // Un bloqueo por código, siempre en el mismo orden: dos altas a la vez con
   // el mismo código en otras mayúsculas no pasan las dos la revisión.
   await tx.$queryRaw`SELECT count(pg_advisory_xact_lock(hashtext('variant-code'), hashtext(k))::text)::int AS locked FROM unnest(${keys}::text[]) AS k`;
+  // Misma expresión que los índices únicos de K2 (lower(btrim(...)) con su
+  // condición): la búsqueda usa el índice y ve también un código heredado con
+  // espacios a los lados.
   const [taken] = await tx.$queryRaw<
     { code: string; name: string; branchId: string }[]
   >`WITH wanted AS (SELECT code, lower(code) AS k FROM unnest(${codes}::text[]) AS code)
     SELECT w.code, p.name, v."branchId" FROM wanted w
-      JOIN "Variant" v ON lower(v.sku) = w.k
+      JOIN "Variant" v ON lower(btrim(v.sku)) = w.k AND btrim(v.sku) <> ''
       JOIN "Product" p ON p.id = v."productId"
       WHERE v.id <> ALL(${except}::uuid[])
     UNION ALL
     SELECT w.code, p.name, v."branchId" FROM wanted w
-      JOIN "Variant" v ON lower(v.barcode) = w.k
+      JOIN "Variant" v ON lower(btrim(v.barcode)) = w.k AND btrim(v.barcode) <> ''
       JOIN "Product" p ON p.id = v."productId"
       WHERE v.id <> ALL(${except}::uuid[])
     LIMIT 1`;
@@ -106,6 +109,49 @@ export async function assertCodesFree(
             taken.name +
             "». Usa otro código o corrige el de ese producto en Productos."
         : "El código " + taken.code + " ya se usa en otra sucursal.",
+    );
+}
+
+// K2: la base también impone los códigos (índices únicos lower(btrim(...)) de
+// la migración 202610170001). Si otra escritura confirma el mismo código en
+// otras mayúsculas entre la revisión y el INSERT, el índice responde 23505
+// (P2002). Tras el rollback se revisa de nuevo con una consulta nueva para dar
+// el mismo mensaje de R9-codigos; si no es un código, sigue el error original
+// (409 genérico del filtro global).
+export async function explainCodeConflict(
+  db: Prisma.TransactionClient,
+  branchId: string,
+  variants: { id?: string; codes: (string | undefined)[] }[],
+  error: any,
+): Promise<never> {
+  if (
+    error?.code === "P2002" ||
+    error?.code === "23505" ||
+    (error?.code === "P2010" && String(error?.meta?.code) === "23505")
+  )
+    await assertCodesFree(db, branchId, variants);
+  throw error;
+}
+
+// La categoría de un producto debe ser de la sucursal de quien lo crea: el
+// importador y el formulario aceptaban cualquier ID (o uno inexistente, que
+// terminaba en un error 500 de la base).
+async function assertCategoriesInBranch(
+  tx: any,
+  branchId: string,
+  ids: (string | undefined)[],
+) {
+  const wanted = [...new Set(ids.filter(Boolean))] as string[];
+  if (!wanted.length) return;
+  const found = await tx.category.findMany({
+    where: { id: { in: wanted }, branchId },
+    select: { id: true },
+  });
+  if (found.length !== wanted.length)
+    bad(
+      "La categoría " +
+        wanted.find((id) => !found.some((c: any) => c.id === id)) +
+        " no existe en tu sucursal. Copia el ID de la hoja «Categorías» de la plantilla.",
     );
 }
 
@@ -313,12 +359,10 @@ export class CatalogController {
   @Permit("catalog:write")
   async create(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const { variants, ...data } = parse(productSchema, body);
-    return this.db.$transaction(async (tx) => {
-      await assertCodesFree(
-        tx,
-        actor.branchId,
-        variants.map((v) => ({ codes: [v.sku, v.barcode] })),
-      );
+    const codes = variants.map((v) => ({ codes: [v.sku, v.barcode] }));
+    const write = this.db.$transaction(async (tx) => {
+      await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
+      await assertCodesFree(tx, actor.branchId, codes);
       const row = await tx.product.create({
         data: {
           ...data,
@@ -337,6 +381,9 @@ export class CatalogController {
       await audit(tx, actor, "create", "product", row.id, undefined, row);
       return safe(row, actor);
     });
+    return write.catch((error) =>
+      explainCodeConflict(this.db, actor.branchId, codes, error),
+    );
   }
   @Patch("products/:id")
   @Permit("catalog:write")
@@ -356,6 +403,7 @@ export class CatalogController {
       const before = await tx.product.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
       });
+      await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
       const row = await tx.product.update({ where: { id }, data });
       await audit(tx, actor, "update", "product", id, before, row);
       return safe(row, actor);
@@ -386,11 +434,10 @@ export class CatalogController {
       );
     if (combinations.length > 500)
       bad("La matriz no puede exceder 500 variantes.");
-    return this.db.$transaction(async (tx) => {
+    let codes: string[] = [];
+    const write = this.db.$transaction(async (tx) => {
       const count = await tx.variant.count({ where: { productId: id } });
-      const codes = combinations.map(
-        (_, i) => product.sku + "-" + (count + i + 1),
-      );
+      codes = combinations.map((_, i) => product.sku + "-" + (count + i + 1));
       await assertCodesFree(
         tx,
         actor.branchId,
@@ -417,6 +464,14 @@ export class CatalogController {
       });
       return safe(rows, actor);
     });
+    return write.catch((error) =>
+      explainCodeConflict(
+        this.db,
+        actor.branchId,
+        codes.map((code) => ({ codes: [code] })),
+        error,
+      ),
+    );
   }
   @Patch("variants/:id")
   @Permit("catalog:write")
@@ -429,7 +484,7 @@ export class CatalogController {
       variantSchema.partial().extend({ active: z.boolean().optional() }),
       body,
     );
-    return this.db.$transaction(async (tx) => {
+    const write = this.db.$transaction(async (tx) => {
       const before = await tx.variant.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
       });
@@ -448,6 +503,14 @@ export class CatalogController {
       await audit(tx, actor, "price_change", "variant", id, before, row);
       return safe(row, actor);
     });
+    return write.catch((error) =>
+      explainCodeConflict(
+        this.db,
+        actor.branchId,
+        [{ id, codes: [data.sku, data.barcode] }],
+        error,
+      ),
+    );
   }
   @Post("products/import")
   @Permit("catalog:write")
@@ -468,12 +531,12 @@ export class CatalogController {
       if (n === 1) return;
       rows.push({
         name: String(row.getCell(1).text),
-        sku: String(row.getCell(2).text),
+        sku: cellCodeText(row.getCell(2)),
         categoryId: String(row.getCell(3).text),
         variants: [
           {
-            sku: String(row.getCell(2).text),
-            barcode: String(row.getCell(4).text),
+            sku: cellCodeText(row.getCell(2)),
+            barcode: cellCodeText(row.getCell(4)),
             price: Number(row.getCell(5).value),
             costAvg: Number(row.getCell(6).value),
           },
@@ -481,16 +544,18 @@ export class CatalogController {
       });
     });
     const validated = rows.map((row) => parse(productSchema, row));
-    await this.db.$transaction(async (tx) => {
-      // Todas las filas a la vez, contra la base y entre ellas: un choque
-      // detiene la carga sin escribir ninguna (R9-codigos-1).
-      await assertCodesFree(
+    const codes = validated.flatMap((row) =>
+      row.variants.map((v) => ({ codes: [v.sku, v.barcode] })),
+    );
+    const write = this.db.$transaction(async (tx) => {
+      await assertCategoriesInBranch(
         tx,
         actor.branchId,
-        validated.flatMap((row) =>
-          row.variants.map((v) => ({ codes: [v.sku, v.barcode] })),
-        ),
+        validated.map((row) => row.categoryId),
       );
+      // Todas las filas a la vez, contra la base y entre ellas: un choque
+      // detiene la carga sin escribir ninguna (R9-codigos-1).
+      await assertCodesFree(tx, actor.branchId, codes);
       for (const { variants, ...data } of validated)
         await tx.product.create({
           data: {
@@ -506,6 +571,9 @@ export class CatalogController {
         count: validated.length,
       });
     });
+    await write.catch((error) =>
+      explainCodeConflict(this.db, actor.branchId, codes, error),
+    );
     return { imported: validated.length };
   }
   @Post("kits")

@@ -394,8 +394,9 @@ for (const ancho of [320, 390])
     });
 
 // En celular, la barra fija de «Mercancía» quedaba encima del menú abierto:
-// tapaba las opciones que caían debajo y la última («Guía de estilos») no se
-// podía tocar ni desplazando el menú hasta el final.
+// tapaba las opciones que caían debajo y la última (entonces «Guía de
+// estilos»; desde U2, «Configuración») no se podía tocar ni desplazando el
+// menú hasta el final.
 test("en celular el menú abierto queda por encima de la barra de Mercancía y todas sus opciones se pueden tocar", async ({
   page,
 }) => {
@@ -432,14 +433,34 @@ test("en celular el menú abierto queda por encima de la barra de Mercancía y t
       menu.scrollTop = menu.scrollHeight;
     });
     expect(await tapadas(), "al final del menú @" + ancho).toEqual([]);
-    await page
-      .locator(".sidebar")
-      .getByRole("button", { name: "Guía de estilos", exact: true })
+    // U2: la «Guía de estilos» es sólo de desarrollo; en la compilación de
+    // producción (vite preview) el menú ya no la tiene y la última opción del
+    // menú del administrador es «Configuración».
+    const menu = page.locator(".sidebar");
+    await expect(
+      menu.getByRole("button", { name: "Guía de estilos", exact: true }),
+    ).toHaveCount(0);
+    await menu
+      .getByRole("button", { name: "Configuración", exact: true })
       .click();
     await expect(page.locator(".breadcrumb strong")).toHaveText(
-      "Guía de estilos",
+      "Configuración",
     );
     await listo(page);
-    expect(await desbordes(page, "Guía de estilos @" + ancho)).toEqual([]);
+    expect(await desbordes(page, "Configuración @" + ancho)).toEqual([]);
   }
+  // U2: entrar con #styles en producción lleva a la primera pantalla
+  // permitida, como cualquier dirección desconocida.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const primera = (
+    await page.locator(".sidebar nav .nav-item").first().innerText()
+  ).trim();
+  await page.goto("/#styles");
+  await expect
+    .poll(() => page.evaluate(() => location.hash))
+    .not.toBe("#styles");
+  await expect(page.locator(".breadcrumb strong")).toHaveText(primera);
+  await expect(page.getByText("Guía de estilos", { exact: true })).toHaveCount(
+    0,
+  );
 });
