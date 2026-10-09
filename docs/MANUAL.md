@@ -97,7 +97,7 @@ La anulación exige motivo, conserva la factura y restaura inventario. Sólo se 
 
 Registra un gasto con categoría, monto, método y fecha. Las tarjetas de presupuesto muestran el consumo del mes. La marca **recurrente** identifica gastos mensuales; la generación automática mensual todavía está pendiente.
 
-En **Caja**, registra entradas/salidas con motivo. Para cerrar, declara efectivo, tarjeta y transferencia contados. El reporte mantiene esperado, contado y diferencias. Una diferencia total cero puede esconder diferencias compensadas entre métodos; revisa cada método.
+En **Caja**, registra entradas/salidas con motivo. Las salidas (retiros y vales) de quien no gestiona ventas necesitan el PIN de un gerente cuando, sumadas a las anteriores del mismo turno, superan el límite de Ajustes (**Salidas de efectivo por turno sin PIN de gerente**, RD$ 1,000 si no se cambia); el gerente y el administrador no lo necesitan. Los importes admiten hasta 2 decimales y RD$ 10,000,000 por movimiento. Si no hay efectivo suficiente, el aviso no muestra cifras, para no revelar el esperado del arqueo ciego. Para cerrar, declara efectivo, tarjeta y transferencia contados. El reporte mantiene esperado, contado y diferencias. Una diferencia total cero puede esconder diferencias compensadas entre métodos; revisa cada método.
 
 ## Reportes y promociones
 
@@ -159,6 +159,8 @@ Ajustes permite preparar una solicitud de NCF. El cobro registra tipo y, para cr
 ## Controles de crédito y notas (revisión 2)
 
 El gerente configura el límite de crédito de cada cliente; por defecto es cero. La deuda pendiente más la venta nueva no puede superar ese límite. Ajustes permite definir el monto de crédito que exige PIN de gerente, inicialmente RD$1,000; superar ese monto exige PIN incluso al gerente.
+
+**Contraentrega (auditoría de dinero, D-01).** La contraentrega es la misma cuenta por cobrar que el crédito y cuenta en la deuda del cliente. Quien no tiene permiso para gestionar ventas (cajera o vendedor) necesita el PIN de un gerente cuando la contraentrega de la venta supera el monto de Ajustes, o para cualquier monto si las ventas a crédito no están habilitadas. Gerente y administrador la despachan sin PIN. Un límite de cliente en cero sigue significando «sin límite» para el crédito, como hasta ahora; para la contraentrega, el monto que exige PIN se aplica siempre, también a clientes nuevos con límite cero. Si el cliente tiene un límite mayor que cero, la deuda pendiente más la venta no puede superarlo, aunque haya PIN.
 
 Para pagar con una nota, selecciona el cliente o introduce su código impreso. El vendedor sólo puede consultar notas del cliente seleccionado o buscar por código. Una nota asignada a un cliente requiere ese mismo cliente en la venta y su código o un PIN de gerente. Una nota sin cliente requiere siempre su código. Desde Ventas, el gerente imprime el PDF de la nota con su código. Cada uso queda auditado y no genera cambio.
 

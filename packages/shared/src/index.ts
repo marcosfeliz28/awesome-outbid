@@ -374,6 +374,36 @@ export const paymentTotals = (
     change: money(Decimal.max(0, paid.minus(total))),
   };
 };
+/**
+ * ¿La parte por cobrar de una venta necesita el PIN de un gerente? (D-01)
+ * La caja y la API usan esta misma regla.
+ *
+ * - Crédito: sin cambios. Si supera `creditApprovalThreshold` (RD$ 1,000 por
+ *   defecto) exige PIN a todos, también a la administración.
+ * - Contraentrega: es la misma cuenta por cobrar (la mercancía sale sin
+ *   cobrar). Quien no tiene `sale:manage` necesita el PIN si la contraentrega
+ *   supera el umbral, o por cualquier monto si las ventas a crédito no están
+ *   habilitadas (`allowCreditSales`). El umbral se aplica siempre, también al
+ *   cliente con límite 0, que para el crédito sigue significando «sin límite».
+ */
+export const receivableNeedsApproval = (
+  payments: { method: string; amount: number }[],
+  settings:
+    | { creditApprovalThreshold?: unknown; allowCreditSales?: unknown }
+    | null
+    | undefined,
+  canManageSales: boolean,
+) => {
+  const threshold = Number(settings?.creditApprovalThreshold ?? 1000);
+  const sum = (method: string) =>
+    payments
+      .filter((p) => p.method === method)
+      .reduce((a, p) => a.plus(p.amount), d(0));
+  if (sum("credit").gt(threshold)) return true;
+  const cod = sum("cod");
+  if (canManageSales || !cod.gt(0)) return false;
+  return settings?.allowCreditSales !== true || cod.gt(threshold);
+};
 export const grossProfit = (net: number, cost: number) =>
   money(d(net).minus(cost));
 export const margin = (net: number, cost: number) =>

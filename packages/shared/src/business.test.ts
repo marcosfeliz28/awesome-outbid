@@ -36,6 +36,7 @@ import {
   cashCloseSchema,
   PAYMENT_GROUPS,
   isImageDataUrl,
+  receivableNeedsApproval,
 } from "./index";
 describe("Fórmulas financieras", () => {
   it("costo promedio ponderado", () => {
@@ -543,5 +544,42 @@ describe("Tienda · cuadre de caja y contraentrega", () => {
     expect(isImageDataUrl("data:text/html;base64,PHA+")).toBe(false);
     expect(isImageDataUrl("data:image/png;base64,***")).toBe(false);
     expect(isImageDataUrl("https://example.com/logo.png")).toBe(false);
+  });
+});
+
+describe("D-01 · la contraentrega pasa por la aprobación del crédito", () => {
+  const on = { allowCreditSales: true, creditApprovalThreshold: 1000 };
+  const cod = (amount: number) => [{ method: "cod", amount }];
+  const credit = (amount: number) => [{ method: "credit", amount }];
+  it("la cajera necesita PIN sobre el umbral; en el umbral o por debajo, no", () => {
+    expect(receivableNeedsApproval(cod(12000), on, false)).toBe(true);
+    expect(receivableNeedsApproval(cod(1000.01), on, false)).toBe(true);
+    expect(receivableNeedsApproval(cod(1000), on, false)).toBe(false);
+    expect(receivableNeedsApproval(cod(800), on, false)).toBe(false);
+    // Varios pagos de contraentrega en la misma venta se suman.
+    expect(receivableNeedsApproval([...cod(600), ...cod(600)], on, false)).toBe(
+      true,
+    );
+    // Sin ajuste guardado, el umbral es RD$ 1,000.
+    expect(
+      receivableNeedsApproval(cod(1200), { allowCreditSales: true }, false),
+    ).toBe(true);
+  });
+  it("con las ventas a crédito desactivadas, toda contraentrega de la cajera pide PIN", () => {
+    expect(receivableNeedsApproval(cod(1), {}, false)).toBe(true);
+    expect(receivableNeedsApproval(cod(800), null, false)).toBe(true);
+    expect(
+      receivableNeedsApproval([{ method: "cash", amount: 800 }], {}, false),
+    ).toBe(false);
+  });
+  it("quien gestiona ventas despacha contraentrega sin PIN", () => {
+    expect(receivableNeedsApproval(cod(12000), on, true)).toBe(false);
+    expect(receivableNeedsApproval(cod(12000), {}, true)).toBe(false);
+  });
+  it("el crédito no cambia: sobre el umbral pide PIN a todos", () => {
+    expect(receivableNeedsApproval(credit(1600), on, true)).toBe(true);
+    expect(receivableNeedsApproval(credit(1600), on, false)).toBe(true);
+    expect(receivableNeedsApproval(credit(800), on, false)).toBe(false);
+    expect(receivableNeedsApproval(credit(800), {}, false)).toBe(false);
   });
 });

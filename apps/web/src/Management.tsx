@@ -1765,10 +1765,25 @@ export function Cash() {
               required: true,
               type: "textarea",
             },
+            // D-04: las salidas del turno sobre el límite de Ajustes
+            // necesitan el PIN de un gerente (no el de la cajera).
+            ...(can(user.permissions, "sale:manage")
+              ? []
+              : [
+                  {
+                    key: "managerPin",
+                    label: "PIN del gerente",
+                    type: "password" as const,
+                    help: "Sólo para salidas que superen el límite del turno.",
+                  },
+                ]),
           ]}
           onClose={() => setMovement(false)}
-          onSubmit={(data) =>
-            post("/cash-sessions/" + active.id + "/movements", data)
+          onSubmit={({ managerPin, ...data }) =>
+            post("/cash-sessions/" + active.id + "/movements", {
+              ...data,
+              ...(managerPin ? { managerPin } : {}),
+            })
           }
         />
       )}
@@ -2965,6 +2980,14 @@ export function Configuration() {
       "Crédito por venta que requiere gerente (RD$)",
       1000,
     ),
+    {
+      ...requiredNumber(
+        "cashMovementApprovalLimit",
+        "Salidas de efectivo por turno sin PIN de gerente (RD$)",
+        1000,
+      ),
+      help: "Retiros y vales de la cajera. Por encima, se pide el PIN de un gerente.",
+    },
     {
       key: "allowNegativeStock",
       label:

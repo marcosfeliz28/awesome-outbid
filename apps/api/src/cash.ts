@@ -20,6 +20,8 @@ import {
   cashDifference,
   deliveredSplit,
   formatAmount,
+  formatMoney,
+  moneyAmount,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -555,19 +557,70 @@ export class CashController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(
+    const { managerPin, ...data } = parse(
       z.object({
         type: z.enum(["in", "out"]),
-        amount: z.number().positive(),
+        // 2 decimales y un tope (D-04/D-08): 0.004 o 1e15 son un 400, no un
+        // movimiento de 0.00 ni un error 500 de la base.
+        amount: moneyAmount(10000000),
         reason,
+        managerPin: z
+          .string()
+          .regex(/^\d{4,6}$/)
+          .optional(),
       }),
       body,
     );
+    // Salidas (retiros y vales) de quien no gestiona ventas (D-04): si las
+    // salidas del turno superan cashMovementApprovalLimit (RD$ 1,000 por
+    // defecto) hace falta el PIN de un gerente. Se suman todas las salidas de
+    // la caja para que partir un retiro en varios vales no evite el control.
+    const needsApproval =
+      data.type === "out" && !can(actor.permissions, "sale:manage");
+    let approvedBy: string | null = null;
+    if (needsApproval && managerPin) {
+      const managers = await this.db.user.findMany({
+        where: { active: true, branchId: actor.branchId },
+        include: { role: true },
+      });
+      approvedBy = await verifyPinAttempt(
+        this.db,
+        "approval:" + actor.id,
+        async () => {
+          for (const manager of managers.filter((m) =>
+            can(m.role.permissions, "sale:manage"),
+          ))
+            if (await compare(managerPin, manager.pinHash)) return manager.id;
+          return null;
+        },
+      );
+    }
     return this.db.$transaction(async (tx) => {
       const session = await cashLock(tx, actor, parse(uuid, id));
       // El bloqueo de la sesión serializa movimientos y ventas concurrentes.
+      if (needsApproval && !approvedBy) {
+        const settings = await tx.settings.findUnique({
+          where: { id: actor.branchId },
+        });
+        const limit = Number(
+          (settings?.data as any)?.cashMovementApprovalLimit ?? 1000,
+        );
+        const outs = await tx.cashMovement.aggregate({
+          where: { sessionId: session.id, type: "out" },
+          _sum: { amount: true },
+        });
+        if (
+          d(outs._sum.amount ?? 0)
+            .plus(data.amount)
+            .gt(limit)
+        )
+          bad(
+            `Las salidas de efectivo de este turno superan ${formatMoney(limit)}: se requiere el PIN de un gerente.`,
+          );
+      }
       // Un retiro nunca puede dejar el efectivo calculado por debajo de cero;
-      // el mensaje deliberadamente no expone el saldo ni el monto esperado.
+      // el mensaje deliberadamente no expone el saldo ni el monto esperado
+      // (arqueo ciego): ninguna cifra, tampoco lo que falta.
       if (data.type === "out") {
         const expected = await cashExpected(tx, session);
         if (d(data.amount).gt(expected.cash))
@@ -576,7 +629,10 @@ export class CashController {
       const row = await tx.cashMovement.create({
         data: { ...data, sessionId: id, userId: actor.id },
       });
-      await audit(tx, actor, "movement", "cash", id, undefined, row);
+      await audit(tx, actor, "movement", "cash", id, undefined, {
+        ...row,
+        ...(approvedBy ? { approvedBy } : {}),
+      });
       return row;
     });
   }
