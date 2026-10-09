@@ -34,7 +34,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 2. En efectivo escribe lo recibido y entrega el cambio indicado. En tarjeta, solo últimos cuatro dígitos y aprobación; en transferencia, banco y referencia.
 3. Para pago mixto, agrega cada método hasta que Pendiente sea RD$ 0.00. Pulsa **Finalizar venta** una sola vez y espera confirmación.
 4. En **Crédito / contraentrega**, identifica al cliente y confirma el acuerdo con gerencia. El saldo pendiente no es efectivo cobrado. Si pide **PIN del gerente para aprobar la venta**, el gerente lo escribe personalmente.
-5. Un descuento sobre tu autorización requiere motivo y PIN de gerente. No dividas facturas para evitar controles. Gerencia registra y verifica luego los abonos del crédito.
+5. Un descuento sobre tu autorización requiere motivo y PIN de gerente. No dividas facturas para evitar controles. Administración (Marcos o Génesis) registra y verifica luego los abonos del crédito.
 6. Si rechaza límite o autorización, consulta a gerencia. Esta pantalla no pide vencimiento del crédito.
 
 ![Crédito y contraentrega](capturas/manual/03-credito.png)
@@ -70,12 +70,12 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 
 <div class="manual-page-break" style="break-after: page; page-break-after: always;"></div>
 
-## 6. Anular: solo gerencia
+## 6. Anular: solo administración (Marcos o Génesis)
 
 1. Avisa a Marcos o Génesis con número de comprobante y motivo del error.
 2. Con su cuenta autorizada, ellos buscan la venta en **Ventas**, pulsan **Anular** y confirman el motivo.
 3. No borres ni repitas la operación mientras se revisa. La anulación conserva la historia y revierte inventario según corresponda.
-4. Si ya tiene devoluciones o abonos, gerencia determina el procedimiento correcto; no fuerces la anulación.
+4. Si ya tiene devoluciones o abonos, administración determina el procedimiento correcto; no fuerces la anulación. El rol gerente no ve **Anular**: no es una falla.
 5. Si la caja original cerró y hay reembolso en efectivo, la persona autorizada necesita su propia caja abierta para registrar esa salida. El cierre anterior no cambia.
 
 ![Historial para comunicar el número de venta](capturas/manual/05-ventas.png)
@@ -101,7 +101,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 
 ## 8. Sin internet o respuesta perdida
 
-1. Si aparece **Sin conexión** antes del cobro, espera En línea. Las ventas offline están desactivadas por defecto; solo gerencia puede habilitarlas y asumir revisión posterior.
+1. Si aparece **Sin conexión** antes del cobro, espera En línea. Las ventas offline están desactivadas por defecto; solo administración puede habilitarlas en Ajustes y asumir revisión posterior.
 2. Si ya pulsaste Finalizar y no llegó respuesta, **no vuelvas a cobrar**: la operación puede estar registrada.
 3. Recupera internet; en **Caja > Ventas guardadas en este dispositivo**, revisa Pendiente y **Sincronizar**. Confirma el resultado con gerencia antes de repetir algo.
 4. Si dice **Requiere revisión**, conserva el dispositivo y sus datos. No borres el navegador ni reinstales la app. Gerencia revisa cliente, stock, precio y pago antes de reintentar.

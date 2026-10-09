@@ -24,4 +24,15 @@ describe("U-crédito · contrato del cobro y manual", () => {
     expect(manual).not.toContain("agrega **A crédito** y su vencimiento");
     expect(manual).toContain("selecciona **Crédito / contraentrega**");
   });
+
+  it("Int UC-1: el interruptor de Ajustes no habilita la contraentrega, sólo exige PIN", () => {
+    // La contraentrega funciona con «Ventas a crédito» apagado; lo que cambia
+    // es que pide el PIN del gerente (receivableNeedsApproval).
+    expect(manual).not.toContain(
+      "El administrador puede habilitar **Ventas a crédito** en Ajustes. Selecciona",
+    );
+    expect(manual).toContain(
+      "Si **Ventas a crédito** está desactivado en Ajustes, o el monto supera el umbral de aprobación, el gerente debe escribir su PIN.",
+    );
+  });
 });
