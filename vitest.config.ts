@@ -33,6 +33,7 @@ export default defineConfig({
       "tests/web-privacy.test.ts",
       "tests/web-monitoring.test.ts",
       "tests/promotion-ticket.test.ts",
+      "tests/incentives-calc.test.ts",
     ],
   },
 });

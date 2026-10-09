@@ -553,6 +553,8 @@ export class AdminController {
         customerId: uuid.nullable().optional(),
         notes: z.string().max(1000).default(""),
         globalDiscount: z.number().min(0).max(100).default(0),
+        // «Venta al por mayor» (INC): la venta en espera la conserva.
+        wholesale: z.boolean().default(false),
         items: z
           .array(
             z.object({

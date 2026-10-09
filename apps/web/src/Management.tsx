@@ -67,6 +67,7 @@ import {
   seesCustomerPii,
 } from "./customer-display";
 import { managementQueryError } from "./managementMessages";
+import { IncentiveRates, MyIncentives } from "./Incentives";
 import {
   applyPendingSaleReprice,
   discardPendingSale,
@@ -1550,6 +1551,7 @@ export function Cash() {
           />
         </div>
       )}
+      <MyIncentives />
       {can(user.permissions, "*") && <CodPending session={active} />}
       {!!pending.data?.length && (
         <section className="panel pending-panel">
@@ -3282,6 +3284,7 @@ export function Configuration() {
             </div>
             <StoreSettings />
             <TelegramNotices />
+            <IncentiveRates />
           </QueryState>
         ) : tab === "users" ? (
           <>

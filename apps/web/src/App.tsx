@@ -51,6 +51,7 @@ import {
 import { Toasts, toast } from "./helpers";
 import { Dashboard } from "./Dashboard";
 import { POS } from "./POS";
+import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import {
   Catalog,
   Inventory,
@@ -135,6 +136,12 @@ const navigation = [
     permission: "reports:read",
   },
   { id: "alerts", label: "Alertas", icon: Bell, permission: "alerts:write" },
+  {
+    id: "incentives",
+    label: "Incentivos",
+    icon: IncentivesIcon,
+    permission: "sale:manage",
+  },
 ];
 function Login() {
   const [login, setLogin] = useState(""),
@@ -529,6 +536,7 @@ function Shell() {
     ...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {}),
     sales: <SalesHistory />,
     merchandise: <Merchandise />,
+    incentives: <IncentivesPage />,
   };
   return (
     <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>

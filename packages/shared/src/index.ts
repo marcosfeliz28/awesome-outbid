@@ -488,6 +488,10 @@ export const saleSchema = z.object({
   ncfType: z.enum(["B01", "B02", "B14", "B15", "E31", "E32"]).optional(),
   recipientLegalId: z.string().min(9).max(11).regex(/^\d+$/).optional(),
   notes: z.string().max(1000).optional(),
+  // «Venta al por mayor» (INC): sólo reduce el incentivo de la cajera a la
+  // mitad. Opcional y sin valor por defecto: la huella de una venta offline
+  // anterior (requestHash) no cambia.
+  wholesale: z.boolean().optional(),
   payments: z
     .array(
       z.object({
