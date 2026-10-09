@@ -3001,6 +3001,86 @@ export function SalesHistory() {
   );
 }
 
+// Avisos de facturas por Telegram: estado de la cola y prueba de conexión.
+// El token y el chat sólo viven en las variables del servidor.
+function TelegramNotices() {
+  const user = useStore((s) => s.user)!;
+  const admin = can(user.permissions, "*");
+  const client = useQueryClient();
+  const [sending, setSending] = useState(false);
+  const status = useQuery({
+    queryKey: ["notifications-status"],
+    queryFn: () => api("/notifications/status"),
+    enabled: admin,
+    refetchInterval: 15000,
+  });
+  const data = status.data as
+    | {
+        enabled: boolean;
+        pending: number;
+        sent: number;
+        failed: number;
+        lastError: { message: string } | null;
+      }
+    | undefined;
+  const test = async () => {
+    setSending(true);
+    try {
+      const r = await post("/notifications/telegram/test", {});
+      toast(r.message, !r.queued);
+      await client.invalidateQueries({ queryKey: ["notifications-status"] });
+    } catch (e: any) {
+      toast(e.message, true);
+    } finally {
+      setSending(false);
+    }
+  };
+  return (
+    <section className="telegram-card" aria-labelledby="telegram-title">
+      <div className="panel-heading">
+        <h3 id="telegram-title">Avisos de facturas por Telegram</h3>
+        {data && (
+          <Badge tone={data.enabled ? "success" : "neutral"}>
+            {data.enabled ? "Activados" : "Desactivados"}
+          </Badge>
+        )}
+      </div>
+      <p>
+        Cada factura, anulación, devolución, cobro y cierre de caja llega al
+        grupo de Telegram de la administración. Sin cédula, teléfono, correo ni
+        dirección del cliente.
+      </p>
+      {data?.enabled ? (
+        <p>
+          Enviados: <strong>{data.sent}</strong> · Pendientes:{" "}
+          <strong>{data.pending}</strong> · Fallidos:{" "}
+          <strong>{data.failed}</strong>
+          {data.lastError && (
+            <>
+              <br />
+              <small>Último error: {data.lastError.message}</small>
+            </>
+          )}
+        </p>
+      ) : (
+        <ol>
+          <li>En Telegram, crea el bot con @BotFather (/newbot).</li>
+          <li>Agrega el bot al grupo privado de la administración.</li>
+          <li>
+            En Render (API), pon TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID y vuelve
+            a desplegar.
+          </li>
+        </ol>
+      )}
+      {admin && (
+        <Button variant="secondary" onClick={test} disabled={sending}>
+          {sending ? "Enviando…" : "Enviar mensaje de prueba"}
+        </Button>
+      )}
+    </section>
+  );
+}
+
 export function Configuration() {
   const user = useStore((s) => s.user)!;
   const query = useQuery({
@@ -3201,6 +3281,7 @@ export function Configuration() {
               ))}
             </div>
             <StoreSettings />
+            <TelegramNotices />
           </QueryState>
         ) : tab === "users" ? (
           <>
