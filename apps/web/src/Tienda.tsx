@@ -106,6 +106,7 @@ export function CloseCashModal({
     countedTransfer: "",
     delivered: "",
     notes: "",
+    managerPin: "",
   });
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -148,16 +149,22 @@ export function CloseCashModal({
           .map(([k, v]) => [k, Math.floor(parse(v))] as const)
           .filter(([, v]) => v > 0),
       );
+      const vouchers = parse(form.vouchers);
+      const voucherNeedsApproval =
+        vouchers > Number(config.data?.cashMovementApprovalLimit ?? 1000);
       await post("/cash-sessions/" + session.id + "/close", {
         denominations,
         countedCash: subtotal,
-        vouchers: parse(form.vouchers),
+        vouchers,
         countedUsd: parse(form.countedUsd),
         countedEur: parse(form.countedEur),
         countedCard: parse(form.countedCard),
         countedTransfer: parse(form.countedTransfer),
         ...(delivered === null ? {} : { delivered }),
         notes: form.notes,
+        ...(voucherNeedsApproval && form.managerPin
+          ? { managerPin: form.managerPin }
+          : {}),
       });
       const cuadre = await api("/cash-sessions/" + session.id + "/cuadre");
       await client.invalidateQueries();
@@ -228,6 +235,24 @@ export function CloseCashModal({
             "Vale de caja",
             "vouchers",
             "Comprobantes de salida que están en la gaveta.",
+          )}
+          {parse(form.vouchers) >
+            Number(config.data?.cashMovementApprovalLimit ?? 1000) && (
+            <label className="field">
+              <span>PIN del gerente</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]{4,6}"
+                minLength={4}
+                maxLength={6}
+                autoComplete="off"
+                value={form.managerPin}
+                onChange={set("managerPin")}
+                required
+              />
+              <small>Este vale supera el límite configurado.</small>
+            </label>
           )}
           {!!config.data?.usdRate &&
             money("Dólares US$", "countedUsd", "Tasa " + config.data.usdRate)}

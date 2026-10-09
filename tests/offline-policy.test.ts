@@ -650,4 +650,16 @@ describe("compatibilidad de ajustes offline", () => {
     const fixture = controller({ ...base });
     expect((await fixture.api.settings(actor)).allowOfflineSales).toBe(false);
   });
+
+  it("una PWA anterior conserva el límite de aprobación de caja", async () => {
+    const fixture = controller({
+      ...base,
+      cashMovementApprovalLimit: 2500,
+    });
+    const { cashMovementApprovalLimit: omitted, ...legacyBody } =
+      fixture.stored();
+    void omitted;
+    await fixture.api.setSettings(legacyBody, actor);
+    expect(fixture.stored().cashMovementApprovalLimit).toBe(2500);
+  });
 });

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { AlertsController } from "../apps/api/src/alerts";
 import { ReportsController, storeReport } from "../apps/api/src/reports";
@@ -14,6 +15,23 @@ const actor = (permissions: string[], id = "cashier-1") =>
   }) as any;
 
 describe("C2 · privacidad de arqueo por rutas indirectas", () => {
+  it("M1: envía el PIN sólo desde movimientos y no lo solicita en inventario", () => {
+    const source = readFileSync("apps/web/src/Management.tsx", "utf8");
+    const inventory = source.slice(
+      source.indexOf("{adjust && ("),
+      source.indexOf("{count && ("),
+    );
+    const movement = source.slice(
+      source.indexOf("{movement && ("),
+      source.indexOf("{closing && ("),
+    );
+
+    expect(inventory).not.toContain('key: "managerPin"');
+    expect(movement).toContain('key: "managerPin"');
+    expect(movement).toContain('...(managerPin ? { managerPin } : {})');
+    expect(movement).toContain('"/movements"');
+  });
+
   it("B4: rechaza un retiro sin efectivo suficiente sin revelar cifras", async () => {
     let created = false;
     const session = {
@@ -39,6 +57,7 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
       auditLog: { create: async () => ({}) },
     };
     const controller = new CashController({
+      settings: { findUnique: async () => null },
       $transaction: async (run: (client: any) => unknown) => run(tx),
     } as any);
 

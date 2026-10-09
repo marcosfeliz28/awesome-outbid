@@ -545,6 +545,7 @@ async function main() {
             expiryDays: 60,
             lowMargin: 15,
             cashDifferenceLimit: 100,
+              cashMovementApprovalLimit: 1000,
             receiptWidth: "80",
             sessionTimeoutMinutes: 30,
             branchName: "",
