@@ -166,6 +166,18 @@ try {
     Restore-DatabaseFromUpdateBackup -Paths $paths -Secrets $secrets -Archive ([string]$transaction.backup) -ExpectedHash ([string]$transaction.backupSha256)
   }
 
+  # Restore-PreviousDataFiles protege de nuevo .env/TLS y elimina sus grants.
+  # Solo restituir acceso de LocalService si la versión restaurada lo usa.
+  $usesLocalService = $false
+  foreach ($service in @($script:ApiService, $script:WebService)) {
+    $serviceConfig = Join-Path $paths.Services ($service + ".xml")
+    if (Test-Path -LiteralPath $serviceConfig -PathType Leaf) {
+      [xml]$serviceXml = Get-Content -LiteralPath $serviceConfig -Raw -Encoding UTF8
+      $account = $serviceXml.SelectSingleNode("/service/serviceaccount/user")
+      if ($account -and $account.InnerText -eq "LocalService") { $usesLocalService = $true }
+    }
+  }
+  if ($usesLocalService) { Grant-FitStoreApplicationAccess -Paths $paths }
   Ensure-RestoredApplicationService -Paths $paths -Name $script:ApiService
   Ensure-RestoredApplicationService -Paths $paths -Name $script:WebService
   Start-FitStoreApplication

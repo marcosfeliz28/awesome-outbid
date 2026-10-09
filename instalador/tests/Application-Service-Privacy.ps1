@@ -27,4 +27,21 @@ try {
     if ($rules) { throw "W3: LocalService accede a $file." }
   }
   Write-Host "PASS W3: configuracion/TLS solo lectura; secretos administrativos/CA excluidos."
+  # Rollback restaura y vuelve a proteger archivos: eso elimina el permiso de servicio.
+  $rollback = Get-Content -LiteralPath (Join-Path $installerRoot "scripts\Rollback-FitStoreUpdate.ps1") -Raw
+  $grant = $rollback.IndexOf('Grant-FitStoreApplicationAccess -Paths $paths')
+  $restart = $rollback.IndexOf('Ensure-RestoredApplicationService -Paths $paths -Name $script:ApiService')
+  if ($grant -lt 0 -or $grant -gt $restart) { throw "W3-R: rollback no restablece permisos antes de iniciar LocalService." }
+  foreach ($file in @("work\.env", "server.json", "pki\FitStore-server.pfx")) {
+    $path = Join-Path $root $file
+    $acl = [IO.File]::GetAccessControl($path, [Security.AccessControl.AccessControlSections]::Access)
+    $acl.PurgeAccessRules([Security.Principal.SecurityIdentifier]::new("S-1-5-19"))
+    [IO.File]::SetAccessControl($path, $acl)
+  }
+  Grant-FitStoreApplicationAccess -Paths $paths
+  foreach ($file in @("work\.env", "server.json", "pki\FitStore-server.pfx")) {
+    $rules = (Get-Acl -LiteralPath (Join-Path $root $file)).Access | Where-Object { $_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value -eq "S-1-5-19" }
+    if (-not $rules) { throw "W3-R: rollback dejó inaccesible $file." }
+  }
+  Write-Host "PASS W3-R: rollback reaplica lectura antes del reinicio y conserva secretos administrativos privados."
 } finally { if ([IO.Directory]::Exists($root)) { [IO.Directory]::Delete($root, $true) } }
