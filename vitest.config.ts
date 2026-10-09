@@ -30,6 +30,7 @@ export default defineConfig({
       "tests/accessibility-contract.test.ts",
       "tests/variant-code-unique-postgres.test.ts",
       "tests/telegram-render.test.ts",
+      "tests/web-privacy.test.ts",
     ],
   },
 });

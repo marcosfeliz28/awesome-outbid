@@ -273,9 +273,41 @@ export async function endSession() {
     revoked = !isNetworkError(e);
   }
   useStore.getState().clearSession();
-  if (revoked) await localDB.cache.delete("session");
-  else await localDB.cache.update("session", { "data.expiresAt": 0 });
+  await forgetSessionData(revoked);
 }
+// Privacidad al salir (G9). Se borra lo que el servidor puede volver a dar al
+// iniciar sesión: la tabla `cache` completa (catálogo, clientes, caja,
+// categorías, promociones, ajustes y listas de Mercancía) y las cachés del
+// navegador que no son las de la aplicación (Workbox sólo precachea los
+// archivos de la PWA; ninguna respuesta de /api se guarda allí).
+// Se conserva, a propósito:
+// - `sales` y `merchandise`: ventas y entradas hechas sin conexión (pendientes
+//   o en conflicto). Son la única copia hasta que el servidor las acepte; al
+//   volver a entrar su dueño se sincronizan por su offlineUuid, sin duplicar.
+//   Borrarlas perdería dinero cobrado o mercancía recibida.
+// - Si el servidor no respondió al cerrar, un registro «session» vencido y sin
+//   datos de la persona: al abrir la app se pide la contraseña y se reintenta
+//   revocar la cookie de renovación (R9-offline-5).
+// - localStorage: el tema y la identidad de este equipo, que no son datos de
+//   clientes ni de la sesión.
+export async function forgetSessionData(revoked = true) {
+  await localDB.transaction("rw", localDB.cache, async () => {
+    await localDB.cache.clear();
+    if (!revoked)
+      await localDB.cache.put({ key: "session", data: { expiresAt: 0 } });
+  });
+  if (typeof caches === "undefined") return;
+  try {
+    for (const name of await caches.keys())
+      if (!/precache/i.test(name)) await caches.delete(name);
+  } catch {
+    /* Sin Cache Storage (modo privado): no hay nada que borrar. */
+  }
+}
+// Una respuesta que llega después de cerrar la sesión no se guarda: si no, una
+// consulta en curso volvería a dejar clientes o catálogo en el equipo (G9).
+const stillSignedIn = (userId?: string) =>
+  !!userId && useStore.getState().user?.id === userId;
 // timeout: milisegundos sin respuesta para tratarlo como sin conexión.
 export async function api<T = any>(
   path: string,
@@ -350,8 +382,9 @@ export const post = <T = any>(path: string, data: unknown) =>
 export async function cachedApi<T>(path: string, key: string): Promise<T> {
   if (isOnline()) {
     try {
+      const owner = useStore.getState().user?.id;
       const data = await api<T>(path);
-      await localDB.cache.put({ key, data });
+      if (stillSignedIn(owner)) await localDB.cache.put({ key, data });
       return data;
     } catch (e) {
       if (!isNetworkError(e)) throw e;
@@ -404,7 +437,8 @@ export async function loadCatalog() {
           };
         }),
       }));
-      await localDB.cache.put({ key, data: cached });
+      if (stillSignedIn(user.id))
+        await localDB.cache.put({ key, data: cached });
       return products;
     } catch (e) {
       // Sin respuesta del servidor se vende con la copia local (R9-offline-1).
