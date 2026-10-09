@@ -70,8 +70,10 @@
   --focus: #6d28d9;
   --input-border: #7b8498;
   --success-strong: #047857;
+  --positive-text: #047857;
   --danger-text: #c92e43;
   --warning-text: #92400e;
+  --muted-on-soft: #586274;
   --shadow: 0 4px 22px #29315b04;
   color-scheme: light;
   font-family: "Inter", sans-serif;
@@ -94,8 +96,10 @@
   --focus: #a78bfa;
   --input-border: #6b7894;
   --success-strong: #047857;
+  --positive-text: #34d399;
   --danger-text: #f87171;
   --warning-text: #fbbf24;
+  --muted-on-soft: #b5bfd1;
   --shadow: none;
   color-scheme: dark;
 }
@@ -344,7 +348,7 @@ kbd {
 }
 [data-theme="dark"] .green-text,
 [data-theme="dark"] .trend.positive {
-  color: var(--green) !important;
+  color: var(--positive-text) !important;
 }
 .eyebrow {
   font-size: 9px;
@@ -360,7 +364,7 @@ kbd {
   width: 100%;
 }
 .green-text {
-  color: var(--success-strong) !important;
+  color: var(--positive-text) !important;
 }
 .violet-text {
   color: var(--primary) !important;
@@ -558,6 +562,7 @@ kbd {
   font-size: 10px;
   line-height: 1.7;
   margin: 7px 0 10px;
+  color: var(--muted-on-soft);
 }
 .help-card button {
   font-size: 10px;
@@ -641,7 +646,7 @@ kbd {
   align-items: center;
   gap: 6px;
   font-size: 9px;
-  color: var(--green);
+  color: var(--positive-text);
   white-space: nowrap;
 }
 .connection.offline {
@@ -1614,6 +1619,10 @@ td strong {
 .customer-list button:hover {
   background: var(--primary-soft) !important;
 }
+.command-list button:hover svg:last-child,
+.customer-list button:hover small {
+  color: var(--muted-on-soft);
+}
 .command-list button svg:last-child {
   margin-left: auto;
   color: var(--muted);
@@ -2069,7 +2078,7 @@ td strong {
   text-align: center;
   font-size: 8px;
   margin-top: 9px;
-  color: #b4b8c7;
+  color: var(--muted);
 }
 .open-cash-link {
   font-size: 10px;
@@ -2405,6 +2414,9 @@ td strong {
   font-size: 17px;
 }
 .clearance-intro p {
+  color: var(--muted-on-soft);
+}
+.clearance-intro p {
   font-size: 11px;
   margin: 5px 0;
 }
@@ -2654,7 +2666,7 @@ td strong {
   line-height: 1.8;
 }
 .login-art > small {
-  color: #cab5ee;
+  color: #ffffff;
 }
 .login-stats {
   display: flex;
@@ -3854,7 +3866,7 @@ td strong {
   font-size: 13px;
 }
 .goods-import small {
-  color: var(--muted);
+  color: var(--muted-on-soft);
   font-size: 11px;
 }
 .goods-scan {
@@ -3929,6 +3941,10 @@ td strong {
   color: var(--muted);
   font-size: 11px;
   margin-top: 3px;
+}
+.goods-results button:hover small,
+.goods-results button:focus-visible small {
+  color: var(--muted-on-soft);
 }
 .goods-review {
   display: flex;
@@ -4990,7 +5006,7 @@ td strong {
   width: 100%;
   justify-content: center;
   gap: 12px;
-  background: var(--green, #059669);
+  background: var(--success-strong);
 }
 .pos-mobile-charge {
   display: none;

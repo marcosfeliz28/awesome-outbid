@@ -103,9 +103,7 @@ describe("Cumplimiento legal y accesibilidad", () => {
 
   it("G11: F4, F8 y F12 no ejecutan acciones detrás de un modal", () => {
     const source = readFileSync("apps/web/src/POS.tsx", "utf8");
-    expect(source).toContain("const modalOpen = document.querySelector");
-    expect(source).toContain('["F4", "F8", "F12"].includes(e.key)');
-    expect(source).toContain("if (modalOpen && blockedByModal)");
+    expect(source).toContain("blockPosShortcutWithModal(e, document)");
   });
 
   it("G7: el sistema no solicita ni almacena la fecha de nacimiento", () => {
