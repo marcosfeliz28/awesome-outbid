@@ -30,7 +30,7 @@ import {
   json,
 } from "./common";
 import { expiredQty } from "./inventory";
-import { assertSafeXlsx, assertSheetCells } from "./xlsx-guard";
+import { assertSafeXlsx, assertSheetCells, cellCodeText } from "./xlsx-guard";
 
 // Paso 04: el catálogo que cargan la caja y Mercancía da como `stock` lo
 // vendible (sin lotes vencidos, que la venta no toma); lo físico y lo vencido
@@ -131,6 +131,28 @@ export async function explainCodeConflict(
   )
     await assertCodesFree(db, branchId, variants);
   throw error;
+}
+
+// La categoría de un producto debe ser de la sucursal de quien lo crea: el
+// importador y el formulario aceptaban cualquier ID (o uno inexistente, que
+// terminaba en un error 500 de la base).
+async function assertCategoriesInBranch(
+  tx: any,
+  branchId: string,
+  ids: (string | undefined)[],
+) {
+  const wanted = [...new Set(ids.filter(Boolean))] as string[];
+  if (!wanted.length) return;
+  const found = await tx.category.findMany({
+    where: { id: { in: wanted }, branchId },
+    select: { id: true },
+  });
+  if (found.length !== wanted.length)
+    bad(
+      "La categoría " +
+        wanted.find((id) => !found.some((c: any) => c.id === id)) +
+        " no existe en tu sucursal. Copia el ID de la hoja «Categorías» de la plantilla.",
+    );
 }
 
 const variantSchema = z.object({
@@ -339,6 +361,7 @@ export class CatalogController {
     const { variants, ...data } = parse(productSchema, body);
     const codes = variants.map((v) => ({ codes: [v.sku, v.barcode] }));
     const write = this.db.$transaction(async (tx) => {
+      await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
       await assertCodesFree(tx, actor.branchId, codes);
       const row = await tx.product.create({
         data: {
@@ -380,6 +403,7 @@ export class CatalogController {
       const before = await tx.product.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
       });
+      await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
       const row = await tx.product.update({ where: { id }, data });
       await audit(tx, actor, "update", "product", id, before, row);
       return safe(row, actor);
@@ -507,12 +531,12 @@ export class CatalogController {
       if (n === 1) return;
       rows.push({
         name: String(row.getCell(1).text),
-        sku: String(row.getCell(2).text),
+        sku: cellCodeText(row.getCell(2)),
         categoryId: String(row.getCell(3).text),
         variants: [
           {
-            sku: String(row.getCell(2).text),
-            barcode: String(row.getCell(4).text),
+            sku: cellCodeText(row.getCell(2)),
+            barcode: cellCodeText(row.getCell(4)),
             price: Number(row.getCell(5).value),
             costAvg: Number(row.getCell(6).value),
           },
@@ -524,6 +548,11 @@ export class CatalogController {
       row.variants.map((v) => ({ codes: [v.sku, v.barcode] })),
     );
     const write = this.db.$transaction(async (tx) => {
+      await assertCategoriesInBranch(
+        tx,
+        actor.branchId,
+        validated.map((row) => row.categoryId),
+      );
       // Todas las filas a la vez, contra la base y entre ellas: un choque
       // detiene la carga sin escribir ninguna (R9-codigos-1).
       await assertCodesFree(tx, actor.branchId, codes);
