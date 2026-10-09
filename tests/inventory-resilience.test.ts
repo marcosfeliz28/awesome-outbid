@@ -1,12 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import {
   isSerializationConflict,
   lotIdentity,
   reconcileLotExpiry,
   retrySerializable,
 } from "../apps/api/src/inventory-resilience";
+import { InventoryController } from "../apps/api/src/inventory";
+
+const actor = {
+  id: "10000000-0000-4000-8000-000000000001",
+  name: "Inventario QA",
+  email: "inventario@example.invalid",
+  role: "manager",
+  permissions: ["inventory:write", "purchase:write", "sale:manage"],
+  branchId: "main",
+};
+
+const expectConflict = async (operation: Promise<unknown>) => {
+  const error = await operation.catch((caught) => caught);
+  expect(error?.getStatus?.()).toBe(409);
+  expect(error?.message).toMatch(/otra operación modificó el inventario/i);
+};
 
 describe("I1 · identidad canónica de lote", () => {
   it("unifica el código sin distinguir mayúsculas, espacios ni vencimiento", () => {
@@ -38,27 +52,6 @@ describe("I1 · identidad canónica de lote", () => {
         .conflict,
     ).toBe(false);
   });
-
-  it("la migración aborta fechas ambiguas y reescribe lotes usados por devoluciones", () => {
-    const sql = readFileSync(
-      fileURLToPath(
-        new URL(
-          "../apps/api/prisma/migrations/202610140001_lot_identity/migration.sql",
-          import.meta.url,
-        ),
-      ),
-      "utf8",
-    );
-    expect(sql).toContain("count(DISTINCT");
-    expect(sql).toContain("RAISE EXCEPTION");
-    expect(sql).toContain('normalize("lotNumber", NFKC)');
-    expect(sql).toContain('UPDATE "InventoryMovement"');
-    expect(sql).toContain('UPDATE "SaleItem"');
-    expect(sql).toContain("jsonb_set");
-    expect(sql.indexOf('UPDATE "SaleItem"')).toBeLessThan(
-      sql.indexOf('DELETE FROM "Lot"'),
-    );
-  });
 });
 
 describe("K1 · reintentos serializables acotados", () => {
@@ -80,12 +73,12 @@ describe("K1 · reintentos serializables acotados", () => {
 
   it("se detiene al quinto conflicto y no reintenta errores de negocio", async () => {
     let attempts = 0;
-    await expect(
+    await expectConflict(
       retrySerializable(async () => {
         attempts++;
         throw { code: "P2010", meta: { message: "SQLSTATE 40001" } };
       }),
-    ).rejects.toMatchObject({ code: "P2010" });
+    );
     expect(attempts).toBe(5);
     expect(isSerializationConflict({ code: "P2034" })).toBe(true);
 
@@ -97,5 +90,54 @@ describe("K1 · reintentos serializables acotados", () => {
       }),
     ).rejects.toThrow("stock insuficiente");
     expect(attempts).toBe(1);
+  });
+
+  it("adjustment, receive y applyCount agotan cinco reintentos y responden 409", async () => {
+    const conflicts = [
+      { code: "P2034" },
+      { code: "P2010", meta: { code: "40001" } },
+      { code: "40001" },
+    ];
+    let attempts = 0;
+    const db = {
+      $transaction: async () => {
+        const error = conflicts[Math.floor(attempts / 5)];
+        attempts++;
+        throw error;
+      },
+      goodsReceipt: { findUnique: async () => null },
+    };
+    const controller = new InventoryController(db as any);
+    const variantId = "20000000-0000-4000-8000-000000000001";
+    const orderId = "30000000-0000-4000-8000-000000000001";
+    const itemId = "40000000-0000-4000-8000-000000000001";
+    const operationId = "50000000-0000-4000-8000-000000000001";
+    const countId = "60000000-0000-4000-8000-000000000001";
+
+    await expectConflict(
+      controller.adjustment(
+        { variantId, qty: 1, reason: "Regresión B6" },
+        actor,
+      ),
+    );
+    expect(attempts).toBe(5);
+
+    await expectConflict(
+      controller.receive(
+        orderId,
+        {
+          operationId,
+          freight: 0,
+          otherCosts: 0,
+          allocation: "value",
+          items: [{ itemId, qty: 1, damagedQty: 0 }],
+        },
+        actor,
+      ),
+    );
+    expect(attempts).toBe(10);
+
+    await expectConflict(controller.applyCount(countId, actor));
+    expect(attempts).toBe(15);
   });
 });

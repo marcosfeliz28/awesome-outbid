@@ -16,6 +16,7 @@ import { PrismaClient } from "@prisma/client";
 import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
 import type { Request, Response } from "express";
 import { captureApiException } from "./monitoring";
+import { isSerializationConflict } from "./inventory-resilience";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -421,7 +422,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (exception?.code === "P2025") {
       status = 404;
       message = "El registro no existe.";
-    } else if (exception?.code === "P2034") {
+    } else if (isSerializationConflict(exception)) {
       status = 409;
       message = "Otra operación modificó estos datos. Reintenta.";
     }
@@ -455,7 +456,7 @@ export function safeErrorMessage(error: any): string {
   if (error?.code === "P2025")
     return "El registro no existe o ya no está disponible.";
   if (error?.code === "P2002") return "Ya existe un registro con esos datos.";
-  if (error?.code === "P2034")
+  if (isSerializationConflict(error))
     return "Otra operación modificó estos datos. Reintenta.";
   return "No se pudo completar la operación. Revisa la venta e intenta de nuevo.";
 }

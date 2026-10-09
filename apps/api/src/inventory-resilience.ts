@@ -1,4 +1,5 @@
 import { businessDate } from "@fitstore/shared";
+import { HttpException } from "@nestjs/common";
 
 /** Código canónico para identificar un lote sin depender de mayúsculas o espacios. */
 export function normalizeLotNumber(value: string) {
@@ -60,8 +61,13 @@ export async function retrySerializable<T>(
     try {
       return await operation();
     } catch (error) {
-      if (!isSerializationConflict(error) || attempt >= maxAttempts)
-        throw error;
+      if (!isSerializationConflict(error)) throw error;
+      if (attempt >= maxAttempts)
+        throw new HttpException(
+          "Otra operación modificó el inventario. Reintenta.",
+          409,
+          { cause: error },
+        );
       // Cede el turno y evita que dos solicitudes vuelvan a chocar en el mismo
       // instante. El jitter evita que una ráfaga completa se resincronice; aun
       // así el plazo total de espera sigue acotado a menos de 150 ms.
