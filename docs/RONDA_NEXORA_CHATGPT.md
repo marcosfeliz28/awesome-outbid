@@ -667,3 +667,68 @@ sí respondieron y la integración alcanzó 157 pruebas.
   24 migraciones y la semilla sobre una base nueva descartable.
 
 No se usaron credenciales ni datos de producción, y no se modificó Render.
+
+## F. Cierre de B0 y correcciones adversariales posteriores
+
+**Fecha local:** 2026-10-08. **Commit final probado:** `4856bc6`.
+No se modificó Render ni se usaron datos de producción.
+
+### F1. Integración completa
+
+Se corrigió el arnés para completar el cambio obligatorio de contraseña
+temporal sin relajar la API, se eliminaron clientes implícitos que ocultaban
+casos negativos y se aislaron las sesiones de caja de cada prueba. La
+idempotencia concurrente de mercancía recupera el resultado confirmado en una
+consulta nueva después del rollback y valida usuario, sucursal y hash.
+
+La corrida final utilizó PostgreSQL descartable exclusivo, esquema recreado,
+27 migraciones, semilla completa y la API compilada desde `dist`:
+
+```text
+pnpm test:integration
+Exit code    0
+Suites       1 passed
+Tests        158 passed, 0 failed, 0 skipped
+Duración     169.74 s
+Semilla      60 productos, 228 variantes, 4 usuarios, 846 ventas
+```
+
+La ejecución incluye cuatro cajas concurrentes, I1/K1, D1/O1, la regresión de
+contraseña temporal y seis escenarios de zona horaria. Una corrida previa de
+152 pruebas y 6 omitidas se descartó porque el secreto JWT del proceso auxiliar
+no cumplía la política endurecida; se corrigió exclusivamente el arnés de
+ejecución y se repitió desde cero, sin cambiar código.
+
+### F2. Verificación global y privacidad G6
+
+Después del cierre B0 se reforzó la anonimización contra carreras con ventas,
+cotizaciones y ediciones. La depuración de auditoría sustituye valores PII
+conocidos sin borrar importes, estados ni notas financieras no personales; el
+motivo y la referencia libres de la solicitud no se almacenan.
+
+```text
+pnpm check
+Exit code    0
+Vitest       20 archivos, 242 passed, 1 skipped, 0 failed
+Typecheck    pasa
+ESLint       pasa
+Build web    pasa
+Build API    pasa
+
+Focal G6     9/9 passed (incluye PostgreSQL real y 100 AuditLog)
+Prisma       generate y validate pasan
+```
+
+La migración histórica `202610140001_lot_identity` quedó restaurada sin
+reescritura; la reconciliación se mueve a la migración nueva
+`202610160002_lot_identity_reconciliation`, probada desde una base donde la
+migración histórica ya estaba aplicada. El marcador irreversible de cliente
+anonimizado se añade en `202610160003_customer_anonymized_at` con un backfill
+restringido al patrón exacto y a campos previamente depurados.
+
+### F3. Lote 5
+
+Se leyó `docs/coordinacion/PROMPT_UI_POS.md` desde `nexora-cloud`. El propio
+documento mantiene el Lote 5 **EN COLA** hasta que este PR tenga CI verde, los
+cambios de lógica estén fusionados en `nexora-cloud` y exista un PR separado.
+Por ello no se mezclaron cambios visuales en esta entrega.
