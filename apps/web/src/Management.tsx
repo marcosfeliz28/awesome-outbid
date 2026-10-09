@@ -3180,7 +3180,7 @@ export function Configuration() {
     {
       key: "allowOfflineSales",
       label: "Permitir ventas sin conexión (riesgo entre varias cajas)",
-      help: "Desactivado es lo más seguro: dos laptops offline no pueden reservar entre sí la última unidad. Actívalo sólo si aceptas revisar conflictos al reconectar.",
+      help: "Desactivado evita vender la misma última unidad desde dos equipos sin conexión: dos laptops offline no pueden reservarla entre sí. Actívalo sólo si aceptas revisar conflictos al reconectar.",
       type: "checkbox",
     },
     requiredNumber(
