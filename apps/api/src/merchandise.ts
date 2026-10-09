@@ -48,6 +48,7 @@ import {
   stockChange,
 } from "./inventory";
 import {
+  isSerializationConflict,
   lotIdentity,
   reconcileLotExpiry,
   retrySerializable,
@@ -364,7 +365,7 @@ export class MerchandiseController {
     const requestHash = createHash("sha256")
       .update(JSON.stringify(data))
       .digest("hex");
-    return retrySerializable(() =>
+    const execute = () =>
       this.db.$transaction(
         async (tx) => {
           await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.id}))::text`;
@@ -764,7 +765,31 @@ export class MerchandiseController {
           return result;
         },
         { isolationLevel: "Serializable", timeout: 30000 },
-      ),
-    );
+      );
+    try {
+      return await retrySerializable(execute);
+    } catch (error: any) {
+      // La transacción perdedora puede conservar una instantánea anterior al
+      // advisory lock y chocar con el UUID ya confirmado. La recuperación se
+      // hace después del rollback, mediante una consulta nueva: nunca dentro de
+      // la instantánea serializable que produjo P2002/40001.
+      const exhaustedSerialization =
+        error?.getStatus?.() === 409 && isSerializationConflict(error?.cause);
+      if (
+        error?.code !== "P2002" &&
+        !isSerializationConflict(error) &&
+        !exhaustedSerialization
+      )
+        throw error;
+      const prior = await this.db.merchandiseOperation.findUnique({
+        where: { id: data.id },
+      });
+      if (!prior) throw error;
+      if (prior.userId !== actor.id || prior.branchId !== actor.branchId)
+        denied();
+      if (prior.requestHash !== requestHash)
+        bad("UUID usado con datos distintos.");
+      return prior.result;
+    }
   }
 }
