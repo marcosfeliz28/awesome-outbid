@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { blockPosShortcutWithModal } from "../apps/web/src/posKeyboard";
+import {
+  passwordChangeError,
+  passwordRules,
+  friendlyPasswordChangeError,
+} from "../apps/web/src/passwordChange";
 
 const css = readFileSync("apps/web/src/styles.css", "utf8");
 
@@ -23,6 +28,61 @@ describe("U2 · identidad y ayuda de producción", () => {
     expect(app).toContain("Ayuda para trabajar");
     expect(app).toContain("Si tu tienda permite ventas sin internet");
     expect(app).toContain("Ir al punto de venta");
+  });
+});
+describe("P1 · cambio obligatorio de contraseña", () => {
+  it("bloquea claves débiles, repetidas, largas y confirmación distinta", () => {
+    const good = "ClaveNueva!2026";
+    for (const weak of [
+      "1234",
+      "claveconnumero12!",
+      "CLAVECONNUMERO12!",
+      "ClaveSinNumeros!",
+      "ClaveSinSimbolo2026",
+    ])
+      expect(passwordChangeError(weak, weak, "temporal")).not.toBe("");
+    expect(passwordChangeError(good, good, "temporal")).toBe("");
+    expect(passwordChangeError(good, "otra", "temporal")).toContain(
+      "no coinciden",
+    );
+    expect(passwordChangeError(good, good, good)).toContain("diferente");
+    const tooLong = "Á".repeat(40) + "a1!";
+    expect(passwordChangeError(tooLong, tooLong, "temporal")).toContain(
+      "demasiado larga",
+    );
+    expect(passwordRules(good).filter((rule) => rule.met)).toHaveLength(5);
+  });
+  it("no muestra detalles técnicos del servidor", () => {
+    expect(
+      friendlyPasswordChangeError(
+        new Error("Prisma: internal object {} stack trace"),
+      ),
+    ).not.toMatch(/Prisma|stack|\{\}/);
+    expect(
+      friendlyPasswordChangeError(new TypeError("Failed to fetch")),
+    ).toContain("internet");
+    expect(friendlyPasswordChangeError(new Error("429"))).toContain("Espera");
+  });
+  it("expone reglas y fortaleza accesibles antes de enviar", () => {
+    const source = readFileSync("apps/web/src/App.tsx", "utf8");
+    expect(source).toContain("PasswordChangeFields");
+    const component = readFileSync(
+      "apps/web/src/PasswordChangeFields.tsx",
+      "utf8",
+    );
+    expect(component).toContain('role="status"');
+    expect(component).toContain(
+      'aria-describedby="password-rules password-strength"',
+    );
+    expect(component).toContain('autoCapitalize="none"');
+    expect(component).toContain("passwordRules(password)");
+    expect(
+      passwordRules("")
+        .map((rule) => rule.label)
+        .join(" "),
+    ).toMatch(/Mayúscula.*Minúscula.*Número.*Símbolo/);
+    expect(source).toMatch(/passwordChangeError\(\s*newPassword,\s*confirmPassword,\s*password,?\s*\)/);
+    expect(source).toContain("friendlyPasswordChangeError(e)");
   });
 });
 
