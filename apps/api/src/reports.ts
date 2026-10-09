@@ -66,6 +66,83 @@ const group = (
     .sort((a, b) => b.amount - a.amount);
 };
 
+// D-05: una sola definición de venta neta en todos los informes de ventas.
+// Lo vendido en el período (por la fecha de la venta) menos lo devuelto en el
+// período (por la fecha de la devolución), igual que «ingresos» del dashboard.
+// Cada desglose descuenta la devolución en su propia dimensión: día de la
+// devolución, vendedor y categoría de la venta original, y forma de pago (lo
+// reembolsado con su método; lo que redujo la deuda, con el crédito o la
+// contraentrega de la venta).
+async function periodReturns(
+  db: Database,
+  actor: Actor,
+  range: { gte: Date; lte: Date },
+  sale?: Record<string, unknown>,
+) {
+  return db.saleReturn.findMany({
+    where: {
+      branchId: actor.branchId,
+      createdAt: range,
+      ...(sale ? { sale } : {}),
+    },
+    include: {
+      sale: {
+        select: {
+          sellerId: true,
+          payments: { select: { method: true, entryType: true } },
+          items: {
+            select: {
+              id: true,
+              qty: true,
+              lineTotal: true,
+              variant: {
+                select: {
+                  product: {
+                    select: {
+                      category: { select: { name: true, color: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+type PeriodReturn = Awaited<ReturnType<typeof periodReturns>>[number];
+// Importe devuelto de cada forma de pago.
+function returnedByMethod(r: PeriodReturn, includeRefund = true) {
+  const parts: { method: string; amount: ReturnType<typeof d> }[] = [];
+  if (includeRefund && d(r.refundAmount).gt(0))
+    parts.push({ method: r.refundMethod, amount: d(r.refundAmount) });
+  const debt = d(r.total).minus(r.refundAmount);
+  if (debt.gt(0))
+    parts.push({
+      method:
+        r.sale.payments.find(
+          (p) =>
+            p.entryType !== "installment" &&
+            (p.method === "credit" || p.method === "cod"),
+        )?.method ?? "credit",
+      amount: debt,
+    });
+  return parts;
+}
+// Importe devuelto de cada categoría: lo registrado en cada parte o, en
+// devoluciones antiguas sin ese dato, la proporción de la línea.
+function returnedByCategory(r: PeriodReturn) {
+  return (r.items as any[]).flatMap((part) => {
+    const line = r.sale.items.find((i) => i.id === part.saleItemId);
+    if (!line) return [];
+    const amount =
+      typeof part.total === "number"
+        ? d(part.total)
+        : d(line.lineTotal).times(part.qty).dividedBy(line.qty);
+    return [{ category: line.variant.product.category, amount }];
+  });
+}
 @Controller()
 export class ReportsController {
   constructor(@Inject(Database) private db: Database) {}
@@ -121,6 +198,7 @@ export class ReportsController {
       peakHours,
       previousReturns,
       collected,
+      returned,
     ] = await Promise.all([
       this.db.sale.aggregate({
         where,
@@ -215,7 +293,78 @@ export class ReportsController {
         },
         _sum: { feeAmount: true },
       }),
+      periodReturns(this.db, actor, range),
     ]);
+    // D-05: los desgloses descuentan las mismas devoluciones que «revenue».
+    const netOf = <T>(
+      rows: T[],
+      key: (row: T) => string,
+      value: (row: T) => unknown,
+      returns: { key: string; amount: unknown }[],
+    ) => {
+      const out = new Map<string, ReturnType<typeof d>>();
+      for (const row of rows)
+        out.set(key(row), (out.get(key(row)) ?? d(0)).plus(value(row) as any));
+      for (const r of returns)
+        out.set(r.key, (out.get(r.key) ?? d(0)).minus(r.amount as any));
+      return out;
+    };
+    const dailyNet = netOf(
+      daily,
+      (i) => i.day,
+      (i) => i.total,
+      returned.map((r) => ({
+        key: businessDate(r.createdAt),
+        amount: r.total,
+      })),
+    );
+    const colors = new Map<string, string>();
+    for (const c of category) colors.set(c.name, c.color);
+    const returnedCategories = returned.flatMap(returnedByCategory);
+    for (const { category: c } of returnedCategories)
+      if (!colors.has(c.name)) colors.set(c.name, c.color);
+    const categoryNet = netOf(
+      category,
+      (i) => i.name,
+      (i) => i.total,
+      returnedCategories.map((r) => ({
+        key: r.category.name,
+        amount: r.amount,
+      })),
+    );
+    const paymentsNet = netOf(
+      payments,
+      (p) => p.method,
+      (p) => p._sum.amount ?? 0,
+      returned.flatMap((r) =>
+        returnedByMethod(
+          r,
+          !r.cashSessionId ||
+            !hiddenOpenCashSessionIds.includes(r.cashSessionId),
+        ).map((m) => ({ key: m.method, amount: m.amount })),
+      ),
+    );
+    const sellerIds = [...new Set(returned.map((r) => r.sale.sellerId))];
+    const sellerNames = new Map(
+      (sellerIds.length
+        ? await this.db.user.findMany({
+            where: { id: { in: sellerIds } },
+            select: { id: true, name: true },
+          })
+        : []
+      ).map((u) => [u.id, u.name]),
+    );
+    const sellersNet = netOf(
+      sellers,
+      (i) => i.name,
+      (i) => i.total,
+      returned.map((r) => ({
+        key: sellerNames.get(r.sale.sellerId) ?? r.sale.sellerId,
+        amount: r.total,
+      })),
+    );
+    const byAmount = (a: { total: number }, b: { total: number }) =>
+      b.total - a.total;
     const revenue = money(
         d(sales._sum.total ?? 0).minus(returns._sum.total ?? 0),
       ),
@@ -272,18 +421,28 @@ export class ReportsController {
         trend: prior > 0 ? money(((revenue - prior) / prior) * 100) : 0,
         inventoryCost: Number(variants[0]?.cost ?? 0),
         inventoryRetail: Number(variants[0]?.retail ?? 0),
-        daily: daily.map((i) => ({ day: i.day, total: Number(i.total) })),
-        category: category.map((i) => ({ ...i, total: Number(i.total) })),
-        payments: payments.map((p) => ({
-          name: p.method,
-          amount: Number(p._sum.amount ?? 0),
+        daily: [...dailyNet]
+          .map(([day, total]) => ({ day, total: money(total) }))
+          .sort((a, b) => a.day.localeCompare(b.day)),
+        category: [...categoryNet]
+          .map(([name, total]) => ({
+            name,
+            color: colors.get(name),
+            total: money(total),
+          }))
+          .sort(byAmount),
+        payments: [...paymentsNet].map(([name, amount]) => ({
+          name,
+          amount: money(amount),
         })),
         top: top.map((i) => ({
           ...i,
           units: Number(i.units),
           revenue: Number(i.revenue),
         })),
-        sellers: sellers.map((i) => ({ ...i, total: Number(i.total) })),
+        sellers: [...sellersNet]
+          .map(([name, total]) => ({ name, total: money(total) }))
+          .sort(byAmount),
         alerts: alerts.map((alert) => alertForActor(alert, actor)),
         from: range.gte,
         to: range.lte,
@@ -332,6 +491,8 @@ export class ReportsController {
       ...(query.sellerId ? { sellerId: parse(uuid, query.sellerId) } : {}),
       ...(query.method ? { payments: { some: { method: query.method } } } : {}),
     };
+    // Las devoluciones del período de esas mismas ventas (de cualquier fecha).
+    const { createdAt: _saleDate, ...returnSaleWhere } = saleWhere;
     const variants = await this.db.variant.findMany({
       where: {
         branchId: actor.branchId,
@@ -550,15 +711,30 @@ export class ReportsController {
         const users = await this.db.user.findMany({
           select: { id: true, name: true },
         });
+        // D-05: neto de las devoluciones del período, como el dashboard.
+        const returns = await periodReturns(
+          this.db,
+          actor,
+          range,
+          returnSaleWhere,
+        );
+        const nameOf = (id: string) =>
+          users.find((u) => u.id === id)?.name || id;
         rows = group(
-          sales,
-          (s) => users.find((u) => u.id === s.sellerId)?.name || s.sellerId,
+          [
+            ...sales.map((s) => ({ seller: s.sellerId, total: s.total })),
+            ...returns.map((r) => ({
+              seller: r.sale.sellerId,
+              total: d(r.total).negated(),
+            })),
+          ],
+          (s) => nameOf(s.seller),
           (s) => Number(s.total),
         ).map((g) => ({ Vendedor: g.name, Ventas: g.amount }));
       } else if (name === "by-payment") {
         // Dos columnas que no se suman entre sí (R9-dinero-9). Ventas: cómo se
         // cobraron las facturas del período, con el crédito como método
-        // propio; su suma es lo vendido. Cobros de crédito: abonos verificados
+        // propio; su suma es la venta neta (D-05). Cobros de crédito: abonos verificados
         // por la fecha en que entraron, aunque la venta sea de otro período.
         const collected = await this.db.payment.findMany({
           where: {
@@ -587,6 +763,16 @@ export class ReportsController {
         for (const p of sales.flatMap((s) => s.payments))
           if (p.entryType !== "installment")
             of(p.method).sold = of(p.method).sold.plus(p.amount);
+        // D-05: Ventas es neto de las devoluciones del período, como el
+        // dashboard: lo reembolsado se descuenta de su método.
+        for (const r of await periodReturns(
+          this.db,
+          actor,
+          range,
+          returnSaleWhere,
+        ))
+          for (const m of returnedByMethod(r))
+            of(m.method).sold = of(m.method).sold.minus(m.amount);
         for (const p of collected)
           of(p.method).collected = of(p.method).collected.plus(p.amount);
         rows = [...methods]

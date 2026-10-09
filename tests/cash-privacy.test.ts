@@ -67,7 +67,11 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
         findMany: async () => [{ id: openSessionId }],
       },
       sale: { aggregate: async () => zeroAggregate },
-      saleReturn: { aggregate: async () => zeroAggregate },
+      // D-05: los desgloses descuentan las devoluciones del período.
+      saleReturn: {
+        aggregate: async () => zeroAggregate,
+        findMany: async () => [],
+      },
       expense: { aggregate: async () => zeroAggregate },
       payment: {
         aggregate: async () => zeroAggregate,

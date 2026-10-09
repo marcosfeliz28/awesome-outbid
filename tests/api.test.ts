@@ -10759,4 +10759,153 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
       refundAmount: 118,
     });
   });
+
+  it("D-05: dashboard, informes por vendedor y por forma de pago usan la misma venta neta con devoluciones parciales", async () => {
+    const day = "2023-03-15";
+    const at = new Date(day + "T15:00:00.000Z");
+    const ropa = await product("neto ropa", "Ropa deportiva", 100);
+    const supl = await product("neto suplemento", "Suplementos", 300);
+    // Actores y cajas propios: las cajas globales pueden haberse cerrado.
+    const admin = await newActor("admin", "admin D-05");
+    const seller = await newActor("seller", "vendedor D-05");
+    const adminCash = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 500 },
+      admin.token,
+    );
+    const sellerCash = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 0 },
+      seller.token,
+    );
+    const sell = (as: string, s: any, items: any[], payments: any[]) =>
+      ok(
+        "/sales",
+        {
+          offlineUuid: randomUUID(),
+          customerId: defaultCustomerId,
+          cashSessionId: s.id,
+          items,
+          payments,
+          expectedTotal: payments.reduce((t, p) => t + p.amount, 0),
+        },
+        as,
+      );
+    // 900 vendidos: 200 + 300 + 400.
+    const s1 = await sell(
+      admin.token,
+      adminCash,
+      [{ variantId: ropa.id, qty: 2 }],
+      [{ method: "cash", amount: 200 }],
+    );
+    const s2 = await sell(
+      seller.token,
+      sellerCash,
+      [{ variantId: supl.id, qty: 1 }],
+      [
+        {
+          method: "card",
+          amount: 300,
+          cardLast4: "4242",
+          approvalCode: "QA-D05",
+        },
+      ],
+    );
+    const s3 = await sell(
+      admin.token,
+      adminCash,
+      [
+        { variantId: ropa.id, qty: 1 },
+        { variantId: supl.id, qty: 1 },
+      ],
+      [{ method: "transfer", amount: 400, bank: "BHD", reference: "QA-D05" }],
+    );
+    // 400 devueltos, ambas devoluciones parciales: 1 de 2 unidades de s1 en
+    // efectivo y la línea de suplemento de s3 por transferencia.
+    const giveBack = (
+      sale: any,
+      line: any,
+      qty: number,
+      refundMethod: string,
+    ) =>
+      ok(
+        "/returns",
+        {
+          operationId: randomUUID(),
+          saleId: sale.id,
+          cashSessionId: adminCash.id,
+          reason: "QA D-05 devolución parcial",
+          refundMethod,
+          items: [{ saleItemId: line.id, qty, restock: true }],
+        },
+        admin.token,
+      );
+    const r1 = await giveBack(s1, s1.items[0], 1, "cash");
+    const r2 = await giveBack(
+      s3,
+      s3.items.find((i: any) => i.variantId === supl.id),
+      1,
+      "transfer",
+    );
+    expect(Number(r1.total) + Number(r2.total)).toBe(400);
+    await fixtureDb.sale.updateMany({
+      where: { id: { in: [s1.id, s2.id, s3.id] } },
+      data: { createdAt: at },
+    });
+    await fixtureDb.saleReturn.updateMany({
+      where: { id: { in: [r1.id, r2.id] } },
+      data: { createdAt: at },
+    });
+    const range = `?from=${day}&to=${day}`;
+    const total = (rows: any[], field: string) =>
+      Math.round(rows.reduce((t, r) => t + Number(r[field]), 0) * 100) / 100;
+    const summary = await ok(
+      "/dashboard/summary" + range,
+      undefined,
+      ownerToken,
+    );
+    expect(summary.revenue).toBe(500);
+    expect(summary.daily).toEqual([{ day, total: 500 }]);
+    expect(total(summary.sellers, "total")).toBe(500);
+    expect(
+      Object.fromEntries(summary.sellers.map((s: any) => [s.name, s.total])),
+    ).toEqual({ [admin.user.name]: 200, [seller.user.name]: 300 });
+    expect(total(summary.category, "total")).toBe(500);
+    expect(
+      Object.fromEntries(summary.category.map((c: any) => [c.name, c.total])),
+    ).toEqual({ "Ropa deportiva": 200, Suplementos: 300 });
+    expect(total(summary.payments, "amount")).toBe(500);
+    expect(
+      Object.fromEntries(summary.payments.map((p: any) => [p.name, p.amount])),
+    ).toEqual({ cash: 100, card: 300, transfer: 100 });
+    const bySeller = await ok(
+      "/reports/by-seller" + range,
+      undefined,
+      ownerToken,
+    );
+    expect(total(bySeller.rows, "Ventas")).toBe(500);
+    expect(
+      Object.fromEntries(bySeller.rows.map((r: any) => [r.Vendedor, r.Ventas])),
+    ).toEqual({ [admin.user.name]: 200, [seller.user.name]: 300 });
+    const byPayment = await ok(
+      "/reports/by-payment" + range,
+      undefined,
+      ownerToken,
+    );
+    expect(total(byPayment.rows, "Ventas")).toBe(500);
+    expect(
+      Object.fromEntries(byPayment.rows.map((r: any) => [r.Método, r.Ventas])),
+    ).toEqual({ cash: 100, card: 300, transfer: 100 });
+    const sales = await ok("/reports/sales" + range, undefined, ownerToken);
+    expect(total(sales.rows, "Total") - total(sales.rows, "Devoluciones")).toBe(
+      500,
+    );
+    // Las cajas cuadran: 500 + 200 − 100 en efectivo y 400 − 300 en
+    // transferencia; la tarjeta del vendedor, 300.
+    await closeBlind(adminCash.id, admin.token, {
+      countedCash: 600,
+      countedTransfer: 100,
+    });
+    await closeBlind(sellerCash.id, seller.token, { countedCard: 300 });
+  });
 });
