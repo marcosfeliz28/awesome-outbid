@@ -184,6 +184,31 @@ no borres el respaldo indicado y entrega el registro a soporte.
    anterior y el respaldo previo hasta completar la prueba de aceptación.
 
 Sólo puede ejecutarse una instalación, actualización o desinstalación a la vez.
+### Recuperar después de un corte de luz
+
+No vuelva a ejecutar el instalador ni borre `actualizacion-preparada.json`.
+Desde los scripts de la versión nueva (o su paquete extraído), ejecute como
+administrador:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Recover-FitStoreUpdate.ps1 -InstallDir "C:\Program Files\FitStore POS"
+```
+
+La recuperación explícita verifica el SHA-256 del respaldo y exige que API y
+Web sigan **deshabilitados y detenidos**, como los dejó Preflight. Consulta la
+base para rechazar ventas desde el instante anterior al respaldo. Si la ruta
+instalada fue apartada, usa PostgreSQL de la copia anterior temporalmente para
+esa consulta; no crea ni restaura una base durante la comprobación. Después
+restaura archivos y base mediante el rollback verificado, incluidas sus fases
+`rollback-files-moving` y `rollback-files-restored` interrumpidas.
+
+Si hay ventas posteriores, servicios habilitados, respaldo alterado, consulta
+fallida o marcador antiguo sin estos controles, **no restaura datos**: conserve
+el respaldo, marcador y carpetas y solicite recuperación asistida. Una fase
+`verified` nunca restaura la base anterior; requiere limpieza manual del
+marcador preservando la versión activa. No cambie servicios para forzar este
+procedimiento. La prueba Windows-Smoke en una máquina limpia sigue pendiente.
+
 Un segundo asistente se detiene antes de tocar archivos o activar un rollback.
 
 Una actualización mayor de PostgreSQL se detiene expresamente: requiere una

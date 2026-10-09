@@ -17,7 +17,9 @@ try {
 
   [IO.Directory]::CreateDirectory($snapshot) | Out-Null
   Assert-Equal "restore-snapshot" (Get-FitStoreUpdateRecoveryAction -InstallPath $active -SnapshotPath $snapshot -Phase "snapshot-ready") "fallo durante la extracción"
-  Assert-Equal "keep-verified" (Get-FitStoreUpdateRecoveryAction -InstallPath $active -SnapshotPath $snapshot -Phase "verified") "corte después de verificar y antes de limpiar el snapshot"
+  $verifiedRejected = $false
+  try { Get-FitStoreUpdateRecoveryAction -InstallPath $active -SnapshotPath $snapshot -Phase "verified" } catch { $verifiedRejected = $true }
+  if (-not $verifiedRejected) { throw "Una version verificada autoriza restaurar una base antigua." }
 
   [IO.Directory]::Move($active, $failed)
   Assert-Equal "restore-snapshot" (Get-FitStoreUpdateRecoveryAction -InstallPath $active -SnapshotPath $snapshot -Phase "rollback-files-moving") "corte después de preservar la instalación fallida"
@@ -30,7 +32,9 @@ try {
   if (-not $rejected) { throw "La ausencia de snapshot durante migrating no fue rechazada." }
 
   Assert-Equal "resume-rollback" (Get-FitStoreUpdateRecoveryAction -InstallPath $active -SnapshotPath $snapshot -Phase "rollback-files-restored") "fallo durante rollback"
-  Assert-Equal "keep-verified" (Get-FitStoreUpdateRecoveryAction -InstallPath $active -SnapshotPath $snapshot -Phase "verified") "fallo durante limpieza"
+  $verifiedRejected = $false
+  try { Get-FitStoreUpdateRecoveryAction -InstallPath $active -SnapshotPath $snapshot -Phase "verified" } catch { $verifiedRejected = $true }
+  if (-not $verifiedRejected) { throw "La limpieza incompleta autoriza rollback destructivo." }
 
   [IO.Directory]::Delete($active, $true)
   $missingBothRejected = $false

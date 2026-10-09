@@ -1,6 +1,7 @@
 param(
   [Parameter(Mandatory = $true)][string]$InstallDir,
-  [Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()][string]$InstallerSession
+  [Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()][string]$InstallerSession,
+  [switch]$RecoverInterrupted
 )
 
 Set-StrictMode -Version Latest
@@ -150,6 +151,10 @@ $failedInstall = Join-Path $transactionPath "failed-install"
 $phase = if ($transaction.PSObject.Properties.Name -contains "phase") { [string]$transaction.phase } else { "desconocida" }
 $recoveryAction = Get-FitStoreUpdateRecoveryAction -InstallPath $actualInstall -SnapshotPath $snapshotPath -Phase $phase
 $hadSnapshot = $recoveryAction -in @("restore-snapshot", "resume-rollback")
+if ($RecoverInterrupted) {
+  . (Join-Path $PSScriptRoot 'Recover-FitStoreUpdate.ps1') -DefinitionsOnly
+  Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $transaction
+}
 
 try {
   Stop-FitStoreApplication

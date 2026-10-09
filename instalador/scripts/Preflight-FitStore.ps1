@@ -71,6 +71,7 @@ try {
   Start-FitStoreService -Name $script:PostgresService -TimeoutSeconds 90
   Wait-FitStorePostgres -Paths $paths -TimeoutSeconds 90
 
+  $backupCutoffAt = (Get-Date).ToUniversalTime().ToString('o')
   $output = @(& "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File $backupScript -InstallDir $paths.Install -Motivo "antes-de-actualizar")
   if ($LASTEXITCODE -ne 0) { throw "No se creó el respaldo previo. La actualización fue cancelada." }
   $backup = $output | Select-Object -Last 1
@@ -117,6 +118,8 @@ try {
 
   $transaction = [ordered]@{
     schemaVersion = 2
+    backupCutoffAt = $backupCutoffAt
+    applicationAutostartDisabled = $applicationAutostartDisabled
     transactionId = $transactionId
     installerSession = $InstallerSession
     preparedAt = (Get-Date).ToUniversalTime().ToString("o")

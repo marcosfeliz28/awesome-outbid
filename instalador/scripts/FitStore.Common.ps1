@@ -270,7 +270,7 @@ function Get-FitStoreUpdateRecoveryAction {
   # Una versión sólo llega a verified después de responder en API y HTTPS.
   # Priorizarla evita restaurar la base previa y perder ventas si Windows se
   # corta entre esa verificación y la limpieza de la copia anterior.
-  if ($hasInstall -and $Phase -eq "verified") { return "keep-verified" }
+  if ($hasInstall -and $Phase -eq "verified") { throw "La actualizacion ya fue verificada; no se permite restaurar una base anterior. Conserve la version activa y solicite limpiar el marcador sin rollback." }
   if ($hasSnapshot) { return "restore-snapshot" }
   if ($hasInstall -and $Phase -eq "prepared-copy-pending") { return "restart-previous" }
   if ($hasInstall -and $Phase -eq "rollback-files-moving") { return "resume-rollback" }
