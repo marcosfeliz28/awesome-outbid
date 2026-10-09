@@ -132,23 +132,6 @@ const productSchema = z.object({
   variants: z.array(variantSchema).min(1).max(500),
 });
 
-// ExcelJS .text no aplica la máscara 000000: un código visible como 000123
-// llegaba como 123. Los códigos ya guardados como texto no se convierten.
-function excelCode(cell: ExcelJS.Cell) {
-  if (typeof cell.value === "number" && /^0+$/.test(cell.numFmt || "")) {
-    if (
-      !Number.isSafeInteger(cell.value) ||
-      cell.value < 0 ||
-      cell.numFmt.length > 80
-    )
-      bad(
-        "Guarda los códigos del Excel como texto para conservar todos sus dígitos.",
-      );
-    return String(cell.value).padStart(cell.numFmt.length, "0");
-  }
-  return String(cell.text);
-}
-
 @Controller()
 export class CatalogController {
   constructor(@Inject(Database) private db: Database) {}
@@ -485,12 +468,12 @@ export class CatalogController {
       if (n === 1) return;
       rows.push({
         name: String(row.getCell(1).text),
-        sku: excelCode(row.getCell(2)),
+        sku: String(row.getCell(2).text),
         categoryId: String(row.getCell(3).text),
         variants: [
           {
-            sku: excelCode(row.getCell(2)),
-            barcode: excelCode(row.getCell(4)),
+            sku: String(row.getCell(2).text),
+            barcode: String(row.getCell(4).text),
             price: Number(row.getCell(5).value),
             costAvg: Number(row.getCell(6).value),
           },
