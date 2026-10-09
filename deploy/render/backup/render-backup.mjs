@@ -1,6 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { chmod, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -43,9 +50,9 @@ function required(name) {
   return value;
 }
 
-function run(tool, args, env = process.env) {
+function run(tool, args, env = process.env, stdio = "ignore") {
   return new Promise((resolve, reject) => {
-    const child = spawn(tool, args, { env, stdio: "ignore" });
+    const child = spawn(tool, args, { env, stdio });
     child.once("error", reject);
     child.once("exit", (code) =>
       code === 0
@@ -59,6 +66,25 @@ async function sha256(path) {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(path)) hash.update(chunk);
   return hash.digest("hex");
+}
+
+// Compara el dump con el manifiesto y el .sha256 ya escritos; lanza si difieren.
+// (pg_restore --list no detecta un dump truncado: el índice va al inicio.)
+export async function verifyDump(archive, manifestPath, checksumPath) {
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  const sidecar = (await readFile(checksumPath, "utf8")).trim().split(/\s+/)[0];
+  if (
+    !/^[0-9a-f]{64}$/.test(manifest.sha256 ?? "") ||
+    sidecar !== manifest.sha256
+  ) {
+    throw new Error("El manifiesto y el .sha256 no coinciden.");
+  }
+  if ((await stat(archive)).size !== manifest.bytes) {
+    throw new Error("El tamaño del dump no coincide con su manifiesto.");
+  }
+  if ((await sha256(archive)) !== manifest.sha256) {
+    throw new Error("El SHA-256 del dump no coincide con su manifiesto.");
+  }
 }
 
 export async function createCloudBackup() {
@@ -104,7 +130,12 @@ export async function createCloudBackup() {
     await chmod(archive, 0o600);
     const bytes = (await stat(archive)).size;
     if (!bytes) throw new Error("pg_dump produjo una copia vacía.");
-    await run("pg_restore", ["--list", archive], pgEnv);
+    // Solo errores por stderr; no se vuelca el índice.
+    await run("pg_restore", ["--list", archive], pgEnv, [
+      "ignore",
+      "ignore",
+      "inherit",
+    ]);
     const digest = await sha256(archive);
     const manifest = {
       schemaVersion: 1,
@@ -122,6 +153,8 @@ export async function createCloudBackup() {
       mode: 0o600,
       flag: "wx",
     });
+
+    await verifyDump(archive, manifestPath, checksumPath);
 
     const destination = `s3://${bucket}/${key}`;
     await run(

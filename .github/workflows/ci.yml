@@ -20,6 +20,7 @@ jobs:
       DATABASE_URL: postgresql://fitstore:fitstore_ci@localhost:5434/fitstore
       JWT_SECRET: fitstore-ci-secret-for-isolated-tests-only-2026
       SEED_DEMO_PASSWORD: FitStore-Demo-2026!
+      BACKUP_TEST_ADMIN_URL: postgresql://fitstore:fitstore_ci@localhost:5434/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -33,6 +34,22 @@ jobs:
       - run: pnpm db:generate
       - run: pnpm db:migrate
       - run: pnpm db:seed
+      - name: Respaldo y restauración real (PostgreSQL 17)
+        run: |
+          set -euo pipefail
+          B="$RUNNER_TEMP/backup"
+          NEXORA_BACKUP_DIR="$B" node scripts/backup.mjs
+          createdb -h localhost -p 5434 -U fitstore restore_check
+          RESTORE_DATABASE_URL=postgresql://fitstore:fitstore_ci@localhost:5434/restore_check \
+            node scripts/restore.mjs "$B"/nexora-fitstore-*.dump
+          q="select table_name||':'||(xpath('/row/c/text()', query_to_xml('select count(*) c from public.'||quote_ident(table_name), false, true, '')))[1]::text from information_schema.tables where table_schema='public' and table_type='BASE TABLE' order by 1"
+          psql "$DATABASE_URL" -At -c "$q" > "$RUNNER_TEMP/a.txt"
+          psql postgresql://fitstore:fitstore_ci@localhost:5434/restore_check -At -c "$q" > "$RUNNER_TEMP/b.txt"
+          test -s "$RUNNER_TEMP/a.txt"
+          diff "$RUNNER_TEMP/a.txt" "$RUNNER_TEMP/b.txt"
+          echo "Tablas restauradas: $(wc -l < "$RUNNER_TEMP/a.txt"), conteos idénticos."
+        env:
+          PGPASSWORD: fitstore_ci
       - run: pnpm check
       - run: pnpm exec playwright install --with-deps chromium
       - run: node scripts/verify.mjs

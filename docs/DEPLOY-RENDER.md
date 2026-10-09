@@ -296,9 +296,28 @@ fuente):**
 3. Si se usa un export lógico `.dir.tar.gz`, descargarlo y extraerlo en un
    equipo controlado. Crear una base vacía aislada, y usar PostgreSQL 17:
 
+   Antes de restaurar, comprobar la integridad. Para un respaldo propio
+   (`.dump` con su `.sha256` y `.json`; `pg_restore --list` no detecta un dump
+   truncado, el SHA-256 sí), desde el directorio del respaldo:
+
    ```text
-   pg_restore --format=directory --no-owner --no-privileges --exit-on-error --dbname=<URL_DE_BASE_NUEVA_VACIA> <directorio_extraido>
+   sha256sum -c <archivo>.dump.sha256
    ```
+
+   Si no devuelve `OK`, no restaurar. Con un export de Render (`.dir.tar.gz`),
+   comparar el SHA-256 del archivo descargado con el que se anotó al
+   descargarlo. Después, restaurar de forma atómica:
+
+   ```text
+   pg_restore --format=directory --single-transaction --exit-on-error --no-owner --no-privileges --dbname=<URL_DE_BASE_NUEVA_VACIA> <directorio_extraido>
+   ```
+
+   `--single-transaction` hace que un fallo no deje tablas parciales en la
+   base. No es compatible con `--jobs`: usar `--jobs N` (sin
+   `--single-transaction`) sólo para bases grandes y siempre en una base nueva
+   que se elimina si falla. Para un `.dump` propio, `scripts/restore.mjs`
+   (`RESTORE_DATABASE_URL=... node scripts/restore.mjs <archivo>.dump`) verifica
+   el SHA-256 y aplica estas opciones.
 
    El procedimiento de Render documenta este formato y recomienda no restaurar
    sobre un esquema con datos importantes. La contraseña/URL se proporciona
