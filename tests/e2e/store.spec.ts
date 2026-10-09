@@ -586,6 +586,34 @@ test("Configuración y Equipos caben en 320 y 390 px sin desplazamiento horizont
     });
   }
 });
+// Avisos de facturas por Telegram: la tarjeta de Configuración muestra el
+// estado y los pasos, y la prueba de conexión avisa si faltan las variables
+// (la API de las pruebas corre sin TELEGRAM_BOT_TOKEN ni TELEGRAM_CHAT_ID).
+test("Configuración › Negocio y reglas: tarjeta de avisos por Telegram", async ({
+  page,
+}) => {
+  await login(page);
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page
+    .getByRole("button", { name: "Configuración", exact: true })
+    .click();
+  const card = page.locator(".telegram-card");
+  await expect(
+    card.getByRole("heading", { name: "Avisos de facturas por Telegram" }),
+  ).toBeVisible();
+  await expect(card.getByText("Desactivados")).toBeVisible();
+  await expect(card.getByText(/@BotFather/)).toBeVisible();
+  await expect(
+    card.getByText(/TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID/),
+  ).toBeVisible();
+  await card.getByRole("button", { name: "Enviar mensaje de prueba" }).click();
+  await expect(page.getByText(/no están activados/)).toBeVisible();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
 // Revisión de la ronda 7: cobrar escribiendo el código del producto + Enter
 // (o con un lector de códigos que escribe y pulsa Enter).
 test("código + Enter agrega el producto y respeta el stock", async ({
