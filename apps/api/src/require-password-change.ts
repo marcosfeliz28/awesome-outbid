@@ -132,3 +132,24 @@ export async function forcePasswordChangeAtStartup(
   log(`${changed} cuenta(s) requieren cambio de contraseña al iniciar.`);
   return changed;
 }
+
+/**
+ * El arranque no queda fuera de servicio por una lista administrativa mal
+ * escrita. El mensaje es deliberadamente genérico: no incluye cuentas,
+ * claves, hashes ni el contenido de las variables.
+ */
+export async function safelyForcePasswordChangeAtStartup(
+  db: PrismaClient,
+  env: NodeJS.ProcessEnv = process.env,
+  log: (message: string) => void = console.log,
+  warn: (message: string) => void = console.error,
+) {
+  try {
+    return await forcePasswordChangeAtStartup(db, env, log);
+  } catch {
+    warn(
+      "No se pudo aplicar el cambio obligatorio de contraseña; revisa la lista configurada.",
+    );
+    return 0;
+  }
+}

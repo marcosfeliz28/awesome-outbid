@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   PASSWORD_CHANGE_CONFIRMATION,
   forcePasswordChangeAtStartup,
+  safelyForcePasswordChangeAtStartup,
 } from "../apps/api/src/require-password-change";
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -439,6 +440,29 @@ describe("Aceptación financiera y permisos", () => {
         expect(
           await fixtureDb.user.findUniqueOrThrow({ where: { id: user.id } }),
         ).toMatchObject({ mustChangePassword: false, authVersion: 0 });
+
+      const configuredSecret = "clave-que-no-debe-aparecer";
+      const warnings: string[] = [];
+      const invalidEnv = {
+        FORCE_PASSWORD_CHANGE_USERNAMES: `inexistente-${configuredSecret}`,
+        FORCE_PASSWORD_CHANGE_CONFIRM: PASSWORD_CHANGE_CONFIRMATION,
+      };
+      await expect(
+        forcePasswordChangeAtStartup(fixtureDb, invalidEnv, () => undefined),
+      ).rejects.toThrow(/exactamente/i);
+      expect(
+        await safelyForcePasswordChangeAtStartup(
+          fixtureDb,
+          invalidEnv,
+          () => undefined,
+          (line) => warnings.push(line),
+        ),
+      ).toBe(0);
+      expect(warnings).toEqual([
+        "No se pudo aplicar el cambio obligatorio de contraseña; revisa la lista configurada.",
+      ]);
+      expect(warnings.join(" ")).not.toContain(configuredSecret);
+      expect(warnings.join(" ")).not.toMatch(/hash/i);
     } finally {
       await fixtureDb.auditLog.deleteMany({
         where: { entity: "user", entityId: { in: created.map((u) => u.id) } },

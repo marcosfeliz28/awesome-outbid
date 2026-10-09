@@ -11,7 +11,7 @@ import { validateSecret } from "./security";
 import { ApiExceptionFilter } from "./common";
 import { captureApiException, initializeApiMonitoring } from "./monitoring";
 import { PrismaClient } from "@prisma/client";
-import { forcePasswordChangeAtStartup } from "./require-password-change";
+import { safelyForcePasswordChangeAtStartup } from "./require-password-change";
 
 config({ path: resolve(process.cwd(), "../../.env") });
 config();
@@ -24,7 +24,7 @@ async function bootstrap() {
   const secret = validateSecret(process.env.JWT_SECRET, production);
   const startupDb = new PrismaClient();
   try {
-    await forcePasswordChangeAtStartup(startupDb);
+    await safelyForcePasswordChangeAtStartup(startupDb);
   } finally {
     await startupDb.$disconnect();
   }
