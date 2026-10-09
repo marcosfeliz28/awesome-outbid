@@ -20,7 +20,6 @@ import {
   cashDifference,
   deliveredSplit,
   formatAmount,
-  moneyAmount,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -427,40 +426,6 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   };
 }
 const UUID_RE = /^[0-9a-f-]{36}$/i;
-
-/**
- * Entradas, salidas y vales grandes siempre requieren autorización de gerente.
- * El PIN se verifica fuera de la transacción que bloquea la caja para no
- * mantener ese bloqueo durante el cálculo de bcrypt.
- */
-async function approveLargeCashAmount(
-  db: any,
-  actor: Actor,
-  value: number,
-  managerPin: string | undefined,
-) {
-  const setting = await db.settings.findUnique({
-    where: { id: actor.branchId },
-  });
-  const limit = Number(
-    (setting?.data as any)?.cashMovementApprovalLimit ?? 1000,
-  );
-  if (d(value).lte(limit)) return null;
-  if (!managerPin)
-    bad("Esta operación requiere el PIN de un gerente por su monto.");
-  const managers = await db.user.findMany({
-    where: { active: true, branchId: actor.branchId },
-    include: { role: true },
-  });
-  return verifyPinAttempt(db, "approval:" + actor.id, async () => {
-    for (const manager of managers.filter((candidate: any) =>
-      can(candidate.role.permissions, "sale:manage"),
-    ))
-      if (await compare(managerPin!, manager.pinHash)) return manager.id;
-    return null;
-  });
-}
-
 @Controller("cash-sessions")
 export class CashController {
   constructor(@Inject(Database) private db: Database) {}
@@ -593,40 +558,25 @@ export class CashController {
     const data = parse(
       z.object({
         type: z.enum(["in", "out"]),
-        amount: moneyAmount(),
+        amount: z.number().positive(),
         reason,
-        managerPin: z
-          .string()
-          .regex(/^\d{4,6}$/)
-          .optional(),
       }),
       body,
     );
-    const approvedBy = await approveLargeCashAmount(
-      this.db,
-      actor,
-      data.amount,
-      data.managerPin,
-    );
-    const { managerPin: ignoredPin, ...movement } = data;
-    void ignoredPin;
     return this.db.$transaction(async (tx) => {
       const session = await cashLock(tx, actor, parse(uuid, id));
       // El bloqueo de la sesión serializa movimientos y ventas concurrentes.
       // Un retiro nunca puede dejar el efectivo calculado por debajo de cero;
       // el mensaje deliberadamente no expone el saldo ni el monto esperado.
-      if (movement.type === "out") {
+      if (data.type === "out") {
         const expected = await cashExpected(tx, session);
-        if (d(movement.amount).gt(expected.cash))
+        if (d(data.amount).gt(expected.cash))
           bad("No hay suficiente efectivo en caja.");
       }
       const row = await tx.cashMovement.create({
-        data: { ...movement, sessionId: id, userId: actor.id },
+        data: { ...data, sessionId: id, userId: actor.id },
       });
-      await audit(tx, actor, "movement", "cash", id, undefined, {
-        ...row,
-        ...(approvedBy ? { approvedBy } : {}),
-      });
+      await audit(tx, actor, "movement", "cash", id, undefined, row);
       return row;
     });
   }
@@ -717,12 +667,6 @@ export class CashController {
     @CurrentUser() actor: Actor,
   ) {
     const input = parse(cashCloseSchema, body);
-    const approvedBy = await approveLargeCashAmount(
-      this.db,
-      actor,
-      input.vouchers,
-      input.managerPin,
-    );
     // Conteo por denominaciones: el subtotal es el efectivo contado.
     const counted = input.denominations
       ? countDenominations(input.denominations).total
@@ -797,16 +741,6 @@ export class CashController {
         },
       });
       await audit(tx, actor, "close", "cash", id, session, row);
-      if (approvedBy)
-        await audit(
-          tx,
-          actor,
-          "cash_voucher_approved",
-          "cash",
-          id,
-          undefined,
-          { amount: input.vouchers, approvedBy },
-        );
       if (row.differenceCash || row.differenceCard || row.differenceTransfer)
         await audit(tx, actor, "close_difference", "cash", id, session, row);
       if (

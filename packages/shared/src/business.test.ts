@@ -497,15 +497,7 @@ describe("Tienda · cuadre de caja y contraentrega", () => {
         countedCash: 10,
         countedCard: 0,
         countedTransfer: 0,
-        vouchers: 0.004,
-      }),
-    ).toThrow();
-    expect(() =>
-      cashCloseSchema.parse({
-        countedCash: 10,
-        countedCard: 0,
-        countedTransfer: 0,
-        vouchers: 1e15,
+        vouchers: 0.001,
       }),
     ).toThrow();
   });

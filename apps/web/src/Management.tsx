@@ -1765,21 +1765,11 @@ export function Cash() {
               required: true,
               type: "textarea",
             },
-            {
-              key: "managerPin",
-              label: "PIN del gerente (si supera el límite)",
-              type: "password",
-              help: "Se exige cuando el monto supera el límite configurado.",
-            },
           ]}
           onClose={() => setMovement(false)}
-          onSubmit={(data) => {
-            const { managerPin, ...movementData } = data;
-            return post("/cash-sessions/" + active.id + "/movements", {
-              ...movementData,
-              ...(managerPin ? { managerPin } : {}),
-            });
-          }}
+          onSubmit={(data) =>
+            post("/cash-sessions/" + active.id + "/movements", data)
+          }
         />
       )}
       {closing && (
@@ -2960,11 +2950,6 @@ export function Configuration() {
     requiredNumber("expiryDays", "Alerta de vencimiento (días)"),
     requiredNumber("lowMargin", "Margen bajo (%)"),
     requiredNumber("cashDifferenceLimit", "Alerta de diferencia en caja"),
-    requiredNumber(
-      "cashMovementApprovalLimit",
-      "Movimiento o vale que requiere gerente (RD$)",
-      1000,
-    ),
     {
       key: "receiptWidth",
       label: "Ancho de ticket",

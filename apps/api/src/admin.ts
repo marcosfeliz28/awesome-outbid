@@ -72,7 +72,6 @@ const configSchema = z.object({
   expiryDays: z.number().int().min(1).max(365),
   lowMargin: z.number().min(0).max(100),
   cashDifferenceLimit: amount,
-  cashMovementApprovalLimit: amount.default(1000),
   receiptWidth: z.enum(["58", "80"]),
   sessionTimeoutMinutes: z.number().min(1).max(480),
   allowNegativeStock: z.boolean().default(false),
@@ -583,9 +582,6 @@ export class AdminController {
     return {
       ...data,
       allowOfflineSales: data.allowOfflineSales === true,
-      cashMovementApprovalLimit: Number(
-        data.cashMovementApprovalLimit ?? 1000,
-      ),
       requireCustomer: true,
     };
   }
@@ -599,10 +595,6 @@ export class AdminController {
       typeof body === "object" &&
       body !== null &&
       Object.prototype.hasOwnProperty.call(body, "allowOfflineSales");
-    const hasCashMovementApprovalLimit =
-      typeof body === "object" &&
-      body !== null &&
-      Object.prototype.hasOwnProperty.call(body, "cashMovementApprovalLimit");
     const { logo, ...config } = parse(configSchema, body);
     if (logo) checkLogo(logo);
     return this.db.$transaction(async (tx) => {
@@ -618,9 +610,6 @@ export class AdminController {
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
           : previous?.allowOfflineSales === true,
-        cashMovementApprovalLimit: hasCashMovementApprovalLimit
-          ? config.cashMovementApprovalLimit
-          : Number(previous?.cashMovementApprovalLimit ?? 1000),
         // Compatibilidad con clientes anteriores, pero la regla comercial es
         // invariable: toda venta se guarda a nombre de un cliente.
         requireCustomer: true,
