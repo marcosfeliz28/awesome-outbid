@@ -198,4 +198,27 @@ describe("Menores de la cola", () => {
     });
     expect(r.status).toBe(400);
   });
+
+  it("3: el importador conserva los ceros iniciales de SKU y código de barras", async () => {
+    const n = 100000 + Math.floor(Math.random() * 800000);
+    const name = "QA ceros " + suffix + " " + n;
+    const r = await importCatalog(
+      [[name, n, categoryId, n + 1, 50, 20]],
+      (ws) => {
+        // Celdas numéricas con formato de relleno, como las deja Excel al
+        // escribir 00123456 en una columna con formato «00000000».
+        ws.getCell("B2").numFmt = "00000000";
+        ws.getCell("D2").numFmt = "0000000000000";
+      },
+    );
+    expect(r.status).toBe(201);
+    const row = await db.product.findFirst({
+      where: { name },
+      include: { variants: true },
+    });
+    productIds.push(row.id);
+    expect(row.sku).toBe("00" + n);
+    expect(row.variants[0].sku).toBe("00" + n);
+    expect(row.variants[0].barcode).toBe("0000000" + (n + 1));
+  });
 });

@@ -30,7 +30,7 @@ import {
   json,
 } from "./common";
 import { expiredQty } from "./inventory";
-import { assertSafeXlsx, assertSheetCells } from "./xlsx-guard";
+import { assertSafeXlsx, assertSheetCells, cellCodeText } from "./xlsx-guard";
 
 // Paso 04: el catálogo que cargan la caja y Mercancía da como `stock` lo
 // vendible (sin lotes vencidos, que la venta no toma); lo físico y lo vencido
@@ -492,12 +492,12 @@ export class CatalogController {
       if (n === 1) return;
       rows.push({
         name: String(row.getCell(1).text),
-        sku: String(row.getCell(2).text),
+        sku: cellCodeText(row.getCell(2)),
         categoryId: String(row.getCell(3).text),
         variants: [
           {
-            sku: String(row.getCell(2).text),
-            barcode: String(row.getCell(4).text),
+            sku: cellCodeText(row.getCell(2)),
+            barcode: cellCodeText(row.getCell(4)),
             price: Number(row.getCell(5).value),
             costAvg: Number(row.getCell(6).value),
           },
