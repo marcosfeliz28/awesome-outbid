@@ -345,6 +345,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 import { cashExpected, refreshClosedCash } from "./cash";
 import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
+import { recordSaleIncentives, reverseIncentives } from "./incentives";
 
 @Controller()
 export class SalesController {
@@ -768,6 +769,7 @@ export class SalesController {
               lines.reduce((a, l) => a.plus(l.cost.times(l.item.qty)), d(0)),
             ),
             notes: input.notes || "",
+            wholesale: input.wholesale === true,
             ...(capturedAt ? { createdAt: capturedAt } : {}),
             branchId: actor.branchId,
           },
@@ -956,6 +958,7 @@ export class SalesController {
             { saleId: sale.id, ...differences },
           );
         }
+        await recordSaleIncentives(tx, actor, sale.id);
         await audit(tx, actor, "complete", "sale", sale.id, undefined, {
           number: sale.number,
           total,
@@ -1307,6 +1310,7 @@ export class SalesController {
         },
       });
       await refreshReceivableAlert(tx, id, actor.branchId);
+      await reverseIncentives(tx, actor, "void", id, id);
       let cashDifferences: Record<string, number> | undefined;
       if (refundCash && refundAmount > 0) {
         // D-02: el cierre aprobado no se reescribe. La caja cerrada recibió ese
@@ -1766,6 +1770,7 @@ export class SalesController {
           balance: data.refundMethod === "credit_note" ? refundAmount : 0,
         },
       });
+      await reverseIncentives(tx, actor, "return", sale.id, row.id, data.items);
       await audit(tx, actor, "return", "sale", sale.id, undefined, row);
       return safe(row, actor);
     });
