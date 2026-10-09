@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
   Inject,
   OnModuleInit,
   Post,
@@ -19,6 +20,7 @@ import {
   Database,
   Public,
   bad,
+  canSwitchUserTo,
   parse,
   audit,
 } from "./common";
@@ -425,6 +427,24 @@ export class AuthController implements OnModuleInit {
       where: { id: data.userId, branchId: actor.branchId, active: true },
       include: { role: true },
     });
+    // SEC-03: el PIN solo mantiene o baja privilegios. Se rechaza ANTES de
+    // comparar el PIN (sin oráculo para adivinar el del administrador) y el
+    // intento queda en la auditoría.
+    if (user && !canSwitchUserTo(actor.permissions, user.role.permissions)) {
+      await audit(
+        this.db,
+        actor,
+        "pin_switch_denied",
+        "user",
+        user.id,
+        undefined,
+        { reason: "privilegios superiores", targetRole: user.role.name },
+      );
+      throw new HttpException(
+        "No puedes cambiar con PIN a un usuario con más permisos que los tuyos. Esa persona debe entrar con su contraseña.",
+        403,
+      );
+    }
     await verifyPinAttempt(this.db, "switch:" + actor.id, async () =>
       user && (await compare(data.pin, user.pinHash)) ? user.id : null,
     );

@@ -962,7 +962,21 @@ describe("Regresiones de Claude", () => {
     });
   });
   it("1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia", async () => {
-    const target = actors.find((u) => u.email.includes("qa-manager"));
+    // SEC-03: el destino es una compañera del mismo rol; hacia la gerencia el
+    // cambio por PIN ya se rechaza antes de comprobar el PIN.
+    const target = await ok("/users", {
+      name: "QA compañera " + suffix,
+      email: `qa-companera-${suffix}@example.test`,
+      password: "FitStore-QA-2026!",
+      pin: "987654",
+      roleId: (await ok("/roles")).find((r: any) => r.name === "seller").id,
+    });
+    actors.push(target);
+    await ok(
+      "/auth/login",
+      { email: target.email, password: "FitStore-QA-2026!" },
+      "",
+    );
     try {
       await Promise.all(
         Array.from({ length: 10 }, () =>
@@ -10531,4 +10545,107 @@ describe("SEC-01 · bomba XLSX en los importadores", () => {
       expect(after - before).toBeLessThan(64 * 1024 * 1024);
     }
   }, 60000);
+});
+
+describe("SEC-03 · cambio de usuario con PIN sin escalar privilegios", () => {
+  let vendedora: any,
+    cajera: any,
+    vendedoraToken = "";
+  let admin: any, manager: any, seedAdmin: any;
+  const pin = (userId: string, value: string, as: string) =>
+    request("/auth/pin", { userId, pin: value }, as);
+  beforeAll(async () => {
+    const roles = await ok("/roles");
+    const make = async (label: string, role: string, userPin: string) => {
+      const user = await ok("/users", {
+        name: "QA SEC-03 " + label + " " + suffix,
+        email: `sec03-${label}-${randomUUID().slice(0, 8)}@example.test`,
+        password: "FitStore-QA-2026!",
+        pin: userPin,
+        roleId: roles.find((r: any) => r.name === role).id,
+      });
+      actors.push(user);
+      const auth = await ok(
+        "/auth/login",
+        { email: user.email, password: "FitStore-QA-2026!" },
+        "",
+      );
+      return { user, token: auth.accessToken as string };
+    };
+    // La vendedora usa el mismo PIN que el admin de pruebas (876543).
+    ({ user: vendedora, token: vendedoraToken } = await make(
+      "vendedora",
+      "seller",
+      "876543",
+    ));
+    ({ user: cajera } = await make("cajera", "seller", "135792"));
+    admin = actors.find((u) => u.email.startsWith("qa-admin-"));
+    manager = actors.find((u) => u.email.startsWith("qa-manager-"));
+    seedAdmin = await fixtureDb.user.findFirstOrThrow({
+      where: { email: "admin@fitstore.demo" },
+    });
+  });
+
+  it("/staff no lista gerencia ni administración a la vendedora; la administración sí los ve", async () => {
+    const staff = await ok("/staff", undefined, vendedoraToken);
+    const ids = staff.map((u: any) => u.id);
+    expect(ids).not.toContain(seedAdmin.id);
+    expect(ids).not.toContain(admin.id);
+    expect(ids).not.toContain(manager.id);
+    expect(staff.map((u: any) => u.role.name)).not.toContain("admin");
+    expect(staff.map((u: any) => u.role.name)).not.toContain("manager");
+    expect(ids).toContain(cajera.id);
+    expect(ids).toContain(vendedora.id);
+    const all = (await ok("/staff", undefined, ownerToken)).map(
+      (u: any) => u.id,
+    );
+    expect(all).toEqual(
+      expect.arrayContaining([seedAdmin.id, admin.id, manager.id, cajera.id]),
+    );
+  });
+
+  it("vendedora → admin con el PIN correcto: rechazado, sin sesión nueva y queda en la auditoría", async () => {
+    const since = new Date(Date.now() - 1000);
+    for (const [target, value] of [
+      [admin, "876543"], // PIN correcto del admin de pruebas
+      [seedAdmin, "123456"], // PIN de la semilla (reproducción de la auditoría)
+      [manager, "987654"], // gerente: también tiene más permisos
+      [admin, "000000"], // PIN incorrecto: misma respuesta, sin oráculo
+    ] as const) {
+      const r = await pin(target.id, value, vendedoraToken);
+      expect(r.status, JSON.stringify(r.body)).toBe(403);
+      expect(r.body.message).toMatch(/más permisos/);
+      expect(r.body.accessToken).toBeUndefined();
+    }
+    // La vendedora sigue siendo ella misma.
+    const me = await ok("/auth/me", undefined, vendedoraToken);
+    expect(me.id).toBe(vendedora.id);
+    expect(me.role).toBe("seller");
+    const logs = await fixtureDb.auditLog.findMany({
+      where: {
+        userId: vendedora.id,
+        action: "pin_switch_denied",
+        createdAt: { gte: since },
+      },
+    });
+    expect(logs.map((l: any) => l.entityId)).toEqual(
+      expect.arrayContaining([admin.id, seedAdmin.id, manager.id]),
+    );
+    expect(logs[0].entity).toBe("user");
+  });
+
+  it("vendedora → cajera (mismo rol) sigue funcionando para el cambio de turno", async () => {
+    const r = await pin(cajera.id, "135792", vendedoraToken);
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(r.body.user.id).toBe(cajera.id);
+    const me = await ok("/auth/me", undefined, r.body.accessToken);
+    expect(me.id).toBe(cajera.id);
+  });
+
+  it("admin → vendedora (bajar privilegios) funciona", async () => {
+    const r = await pin(vendedora.id, "876543", token);
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(r.body.user.id).toBe(vendedora.id);
+    expect(r.body.user.permissions).not.toContain("*");
+  });
 });
