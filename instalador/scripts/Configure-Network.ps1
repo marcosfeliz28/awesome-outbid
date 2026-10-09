@@ -145,6 +145,7 @@ $serverConfig = [ordered]@{
   pfxPassword = [string]$secrets.pfxPassword
 }
 Write-FitStoreJson -Path $paths.ServerConfig -Value $serverConfig -Protect
+Grant-FitStoreApplicationAccess -Paths $paths
 
 Get-NetFirewallRule -DisplayName "FitStore POS - HTTPS red local" -ErrorAction SilentlyContinue | Remove-NetFirewallRule
 New-NetFirewallRule `

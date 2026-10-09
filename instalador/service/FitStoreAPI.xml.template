@@ -1,4 +1,8 @@
 <service>
+  <serviceaccount>
+    <domain>NT AUTHORITY</domain>
+    <user>LocalService</user>
+  </serviceaccount>
   <id>FitStoreAPI</id>
   <name>FitStore POS - API</name>
   <description>Servidor privado de datos de FitStore POS.</description>

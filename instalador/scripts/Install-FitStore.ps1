@@ -423,6 +423,7 @@ if (-not $isUpdate) {
 }
 
 & (Join-Path $paths.Scripts "Configure-Network.ps1") -InstallDir $paths.Install -Force:(!$isUpdate)
+Grant-FitStoreApplicationAccess -Paths $paths
 
 $applicationServiceStartMode = if ($isUpdate) { "demand" } else { "delayed-auto" }
 $serviceValues = @{

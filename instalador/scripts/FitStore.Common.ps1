@@ -114,6 +114,27 @@ function Grant-FitStoreSystemAccess {
   if ($LASTEXITCODE -ne 0) { throw "No se pudo dar acceso al servicio de respaldo en $Path." }
 }
 
+function Grant-FitStoreApplicationAccess {
+  param([Parameter(Mandatory = $true)]$Paths)
+  $identity = [Security.Principal.SecurityIdentifier]::new("S-1-5-19")
+  # No grants recursivos sobre Data: base, respaldos, CA y secrets son administrativos.
+  foreach ($path in @($Paths.Data, $Paths.Work, (Join-Path $Paths.Work "app"), (Join-Path $Paths.Work "app\api"), $Paths.Pki)) {
+    $acl = [IO.Directory]::GetAccessControl($path, [Security.AccessControl.AccessControlSections]::Access)
+    $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, "ReadAndExecute", "None", "None", "Allow"))
+    [IO.Directory]::SetAccessControl($path, $acl)
+  }
+  foreach ($entry in @(@($Paths.Install, "ReadAndExecute"), @($Paths.Logs, "Modify"))) {
+    $acl = [IO.Directory]::GetAccessControl($entry[0], [Security.AccessControl.AccessControlSections]::Access)
+    $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, $entry[1], "ContainerInherit, ObjectInherit", "None", "Allow"))
+    [IO.Directory]::SetAccessControl($entry[0], $acl)
+  }
+  foreach ($path in @((Join-Path $Paths.Work ".env"), $Paths.ServerConfig, (Join-Path $Paths.Pki "FitStore-server.pfx"))) {
+    $acl = [IO.File]::GetAccessControl($path, [Security.AccessControl.AccessControlSections]::Access)
+    $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, "Read", "Allow"))
+    [IO.File]::SetAccessControl($path, $acl)
+  }
+}
+
 function Protect-FitStoreBackupFile {
   param([Parameter(Mandatory = $true)][string]$Path)
   # DACL nueva: /grant:r no elimina permisos explicitos de Everyone/Users.

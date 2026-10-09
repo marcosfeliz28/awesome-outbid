@@ -1,4 +1,8 @@
 <service>
+  <serviceaccount>
+    <domain>NT AUTHORITY</domain>
+    <user>LocalService</user>
+  </serviceaccount>
   <id>FitStoreWeb</id>
   <name>FitStore POS - Web HTTPS</name>
   <description>Interfaz HTTPS y proxy local de FitStore POS.</description>
