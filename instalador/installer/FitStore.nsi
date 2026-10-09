@@ -288,14 +288,16 @@ Section "Nexora POS" SecMain
     File /oname=FitStore.Common.ps1 "${PAYLOAD_DIR}\scripts\FitStore.Common.ps1"
     File /oname=Preflight-FitStore.ps1 "${PAYLOAD_DIR}\scripts\Preflight-FitStore.ps1"
     File /oname=Rollback-FitStoreUpdate.ps1 "${PAYLOAD_DIR}\scripts\Rollback-FitStoreUpdate.ps1"
+    ; Preflight puede detener servicios o escribir el marcador antes de fallar.
+    ; El rollback valida la sesion: habilitarlo ahora no autoriza marcadores viejos.
+    StrCpy $UpdatePrepared "1"
     nsExec::ExecToLog '"$PowerShellExe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\Preflight-FitStore.ps1" -ExistingInstallDir "$INSTDIR" -ExpectedPostgresMajor "${POSTGRES_MAJOR}" -InstallerSession "$PLUGINSDIR"'
     Pop $0
     ${If} $0 != 0
-    MessageBox MB_ICONSTOP "No se pudo crear y verificar el respaldo previo. La actualización fue cancelada sin reemplazar archivos. Revisa el registro de FitStore."
+    MessageBox MB_ICONSTOP "No se pudo completar la preparación de la actualización. Se intentará recuperar la instalación anterior si existe una transacción válida de esta ejecución. Revisa el registro de FitStore."
       SetErrorLevel 1
       Abort
     ${EndIf}
-    StrCpy $UpdatePrepared "1"
   ${EndIf}
 
   SetOutPath "$INSTDIR"
