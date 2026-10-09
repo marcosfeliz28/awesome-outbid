@@ -3071,7 +3071,7 @@ export function Configuration() {
     {
       key: "allowOfflineSales",
       label: "Permitir ventas sin conexión (riesgo entre varias cajas)",
-      help: "Desactivado es lo más seguro: dos laptops offline no pueden reservar entre sí la última unidad. Actívalo sólo si aceptas revisar conflictos al reconectar.",
+      help: "Desactivado evita vender la misma última unidad desde dos equipos sin conexión. Actívalo sólo si aceptas revisar conflictos al reconectar.",
       type: "checkbox",
     },
     requiredNumber(
@@ -3146,7 +3146,7 @@ export function Configuration() {
                 </p>
                 <p>
                   ITBIS 18% {query.data?.taxIncluded ? "incluido" : "adicional"}{" "}
-                  · Ticket {query.data?.receiptWidth} mm
+                  según tu configuración · Ticket {query.data?.receiptWidth} mm
                 </p>
                 <p>
                   NCF/e-CF reservado para integración futura. Los recibos son

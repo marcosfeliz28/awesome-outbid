@@ -1,8 +1,10 @@
-# FitStore POS
+# Nexora POS
 
-Aplicación de demostración de facturación e inventario para República Dominicana. React/TypeScript/Vite, NestJS, Prisma y PostgreSQL, con paquetes compartidos, PWA y cola de ventas en IndexedDB.
+Sistema interno de caja e inventario para República Dominicana, con datos de demostración para pruebas. React/TypeScript/Vite, NestJS, Prisma y PostgreSQL, con paquetes compartidos, PWA y cola de ventas en IndexedDB.
 
-**Estado:** funciona localmente y compila para producción. La matriz de cobertura y las funciones todavía pendientes están en [docs/ENTREGA.md](docs/ENTREGA.md). No se ha publicado un servidor externo ni emitido un comprobante fiscal oficial.
+**Estado:** funciona localmente y compila para producción. La matriz de cobertura y las funciones todavía pendientes están en [docs/ENTREGA.md](docs/ENTREGA.md). Esta versión no emite comprobantes fiscales (NCF/e-CF) válidos ante la DGII; sus recibos y notas son documentos internos. La emisión fiscal requiere un mecanismo autorizado.
+
+**Alcance de las revisiones:** la revisión automatizada con IA de este repositorio no es una auditoría independiente ni una certificación profesional de seguridad, cumplimiento o integridad contable. Los informes y pruebas describen escenarios y versiones concretos, no garantizan ausencia de fallos. Cuando el código habla de registro de auditoría, significa la bitácora de usuario, motivo y operación, no una aprobación externa.
 
 ## Ejecutar
 

@@ -16,7 +16,7 @@ El inventario de la tienda (por ejemplo `INVENTARIO_2026_Actualizado.xlsx`) se c
 4. Abre `revision-inventario.csv` en Excel. Ahí están los productos que conviene revisar:
    - sin precio o sin costo (quedan **inactivos** y no se venden);
    - con precio igual o menor que el costo (quedan **inactivos** al usar la
-     política segura);
+     opción `--inactivar-precio-menor-o-igual-costo`);
    - con margen menor que 15% sin ITBIS;
    - sin existencia.
 
@@ -109,7 +109,7 @@ En **Caja**, registra entradas/salidas con motivo. Las salidas (retiros y vales)
 
 Primero abre la app en línea y entra al POS para descargar catálogo, categorías, clientes, promociones y la caja actual. En producción, instala la PWA desde el navegador y espera a que cargue completamente antes de desconectarte.
 
-**Las ventas sin conexión están desactivadas por defecto.** Es la opción más segura cuando varias cajas comparten inventario: dos laptops desconectadas no pueden reservar entre sí la última unidad. En ese estado, la caja permite consultar su copia local, pero exige conexión para finalizar una venta. Sólo el administrador puede habilitarlas en **Ajustes > Permitir ventas sin conexión**, después de aceptar que tendrá que revisar posibles conflictos al reconectar. Un equipo que ya está desconectado no puede recibir un cambio de configuración: después de activar o desactivar esta opción, conecta y actualiza todas las cajas antes de depender del nuevo valor.
+**Las ventas sin conexión están desactivadas por defecto.** Desactivado evita vender la misma última unidad desde dos equipos sin conexión: dos laptops desconectadas no pueden reservar entre sí el inventario. En ese estado, la caja permite consultar su copia local, pero exige conexión para finalizar una venta. Sólo el administrador puede habilitarlas en **Ajustes > Permitir ventas sin conexión**, después de aceptar que tendrá que revisar posibles conflictos al reconectar. Un equipo que ya está desconectado no puede recibir un cambio de configuración: después de activar o desactivar esta opción, conecta y actualiza todas las cajas antes de depender del nuevo valor.
 
 Con esa opción habilitada, una venta iniciada sin conexión conserva un UUID y un número provisional en este dispositivo, y descuenta únicamente la copia local del stock de esa caja. Al volver la conexión se reintenta con el mismo UUID. El servidor crea una sola factura y asigna su número definitivo. Si cambiaron los precios, se cerró la caja o falta stock, queda **Requiere revisión** en Caja; la venta local no se borra. Habilitar esta función no garantiza que dos cajas offline no vendan la misma última unidad.
 
