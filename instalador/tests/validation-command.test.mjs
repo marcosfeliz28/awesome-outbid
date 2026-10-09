@@ -3,7 +3,7 @@ import { URL } from "node:url";
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-test("instalador:validar ejecuta las cuatro regresiones Windows, sin omitir las existentes", () => {
+test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir las existentes", () => {
   const scripts = JSON.parse(
     readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
   ).scripts;
@@ -16,6 +16,10 @@ test("instalador:validar ejecuta las cuatro regresiones Windows, sin omitir las 
     "Backup-Privacy",
     "FreshInstall-FaultInjection",
     "Stale-Update-FaultInjection",
+    "Rollback-ServiceAccount-FaultInjection",
+    "Recovery-FaultInjection",
+    "Backup-Reader-Privacy",
+    "Preflight-Rollback-Contract",
   ]) {
     assert.ok(
       command.includes(
