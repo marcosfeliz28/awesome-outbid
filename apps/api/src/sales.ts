@@ -1859,6 +1859,7 @@ export class SalesController {
   // URL en el pago, igual que el logo. La sube quien registró el cobro en su
   // caja o quien gestiona ventas; se puede reemplazar.
   @Post("payments/:id/proof")
+  @Permit("authenticated")
   @UseInterceptors(
     FileInterceptor("file", {
       limits: { fileSize: PROOF_MAX_BYTES + 1, files: 1 },
@@ -1898,6 +1899,7 @@ export class SalesController {
     });
   }
   @Get("payments/:id/proof")
+  @Permit("authenticated")
   async getPaymentProof(
     @Param("id") id: string,
     @CurrentUser() actor: Actor,
