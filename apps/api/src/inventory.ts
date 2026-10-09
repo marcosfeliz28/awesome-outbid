@@ -194,6 +194,14 @@ function receiptAccess(actor: Actor) {
 }
 const seesCost = (actor: Actor) =>
   actor.role !== "seller" && can(actor.permissions, "profit:read");
+// Quien no ve costos recibe la orden o la recepción sin ITBIS (safe). Su
+// formulario reenvía ese campo vacío: no debe borrar el ITBIS ya registrado.
+function keepHiddenItbis(input: DocumentInput, actor: Actor): DocumentInput {
+  if (seesCost(actor) || input.itbis !== null) return input;
+  const rest = { ...input };
+  delete rest.itbis;
+  return rest;
+}
 // Período por la fecha de la factura (como el 606) o, si falta, la de recepción.
 function receiptPeriod(query: Record<string, string>) {
   const day = /^\d{4}-\d{2}-\d{2}$/;
@@ -703,7 +711,7 @@ export class InventoryController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const input = parse(documentSchema, body);
+    const input = keepHiddenItbis(parse(documentSchema, body), actor);
     return this.db.$transaction(async (tx) => {
       const before = await tx.purchaseOrder.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
@@ -1139,7 +1147,7 @@ export class InventoryController {
     @CurrentUser() actor: Actor,
   ) {
     receiptAccess(actor);
-    const input = parse(documentSchema, body);
+    const input = keepHiddenItbis(parse(documentSchema, body), actor);
     return this.db.$transaction(async (tx) => {
       const before = await tx.goodsReceipt.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },

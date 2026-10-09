@@ -32,7 +32,7 @@ describe("E1 · credenciales indistinguibles contra API real", () => {
             passwordHash,
             pinHash: passwordHash,
             active,
-          branchId,
+            branchId,
             roleId: role.id,
           },
         }),
@@ -11695,5 +11695,132 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
       countedTransfer: 100,
     });
     await closeBlind(sellerCash.id, seller.token, { countedCard: 300 });
+  });
+});
+
+describe("Revisión F2 · costos por rol contra la API real", () => {
+  it("gerente y admin ven costos; vendedora y almacén no; el almacén no borra el ITBIS oculto", async () => {
+    const roles = await ok("/roles");
+    const warehouse = await ok("/users", {
+      name: "QA almacén F2",
+      email: "f2-warehouse-" + suffix + "@example.test",
+      password: "FitStore-QA-2026!",
+      pin: "834529",
+      roleId: roles.find((r: any) => r.name === "warehouse").id,
+    });
+    actors.push(warehouse);
+    const warehouseToken = (
+      await ok(
+        "/auth/login",
+        { email: warehouse.email, password: "FitStore-QA-2026!" },
+        "",
+      )
+    ).accessToken;
+    const variantId = clothing.variants[0].id;
+    const order = await ok("/purchase-orders", {
+      supplierId,
+      itbis: 54,
+      items: [{ variantId, qty: 3, unitCost: 100 }],
+    });
+    const received = await ok("/purchase-orders/" + order.id + "/receive", {
+      operationId: randomUUID(),
+      itbis: 54,
+      items: [
+        {
+          itemId: order.items[0].id,
+          qty: 2,
+          damagedQty: 1,
+          damageReason: "Caja rota QA F2",
+        },
+      ],
+    });
+    const orderOf = async (as: string) =>
+      (await ok("/purchase-orders", undefined, as)).find(
+        (o: any) => o.id === order.id,
+      );
+    const receiptOf = (as: string) =>
+      ok("/goods-receipts/" + received.id, undefined, as);
+    const variantOf = async (as: string) =>
+      (await ok("/products/" + clothing.id, undefined, as)).variants.find(
+        (v: any) => v.id === variantId,
+      );
+
+    for (const as of [token, managerToken]) {
+      expect(Number((await variantOf(as)).costAvg)).toBeGreaterThan(0);
+      expect(Number((await orderOf(as)).total)).toBe(300);
+      const receipt = await receiptOf(as);
+      expect(receipt.total).toBe(200);
+      expect(receipt.itbis).toBe(54);
+      expect(receipt.lines[0].unitCost).toBe(100);
+      expect(receipt.damagedUnits).toBe(1);
+      const kardex = await ok("/reports/kardex", undefined, as);
+      expect(kardex.rows.some((r: any) => "Costo" in r)).toBe(true);
+    }
+
+    // Vendedora: catálogo sin costos y sin historial de recepciones.
+    expect((await variantOf(sellerToken)).costAvg).toBeUndefined();
+    expect(
+      (await request("/goods-receipts/" + received.id, undefined, sellerToken))
+        .status,
+    ).toBe(403);
+
+    // Almacén: cantidades sí, importes de compra no.
+    expect((await variantOf(warehouseToken)).costAvg).toBeUndefined();
+    const hiddenOrder = await orderOf(warehouseToken);
+    expect(hiddenOrder.total).toBeUndefined();
+    expect(hiddenOrder.itbis).toBeUndefined();
+    const hidden = await receiptOf(warehouseToken);
+    expect(hidden).toMatchObject({ units: 2, damagedUnits: 1 });
+    expect(hidden.lines[0]).toMatchObject({ qty: 2, damagedQty: 1 });
+    for (const key of ["total", "goods", "freight", "itbis", "invoiceTotal"])
+      expect(hidden[key]).toBeUndefined();
+    expect(hidden.lines[0].unitCost).toBeUndefined();
+
+    // «Completar documento» reenvía el ITBIS que no vio como vacío (null).
+    await ok(
+      "/goods-receipts/" + received.id + "/document",
+      { supplierInvoice: "F2-" + suffix, itbis: null },
+      warehouseToken,
+      "PATCH",
+    );
+    expect(await receiptOf(token)).toMatchObject({
+      supplierInvoice: "F2-" + suffix,
+      itbis: 54,
+    });
+    await ok(
+      "/purchase-orders/" + order.id + "/document",
+      { supplierInvoice: "F2-OC-" + suffix, itbis: null },
+      warehouseToken,
+      "PATCH",
+    );
+    expect(Number((await orderOf(token)).itbis)).toBe(54);
+    // Quien sí ve el ITBIS puede seguir borrándolo.
+    await ok(
+      "/goods-receipts/" + received.id + "/document",
+      { itbis: null },
+      token,
+      "PATCH",
+    );
+    expect((await receiptOf(token)).itbis).toBeNull();
+
+    // Aunque la administración dé profit:read al rol vendedora, la caja no
+    // recibe costos (misma regla que seesCost y los informes de utilidad).
+    const sellerRole = roles.find((r: any) => r.name === "seller");
+    try {
+      await ok(
+        "/roles/" + sellerRole.id,
+        { permissions: [...sellerRole.permissions, "profit:read"] },
+        ownerToken,
+        "PUT",
+      );
+      expect((await variantOf(sellerToken)).costAvg).toBeUndefined();
+    } finally {
+      await ok(
+        "/roles/" + sellerRole.id,
+        { permissions: sellerRole.permissions },
+        ownerToken,
+        "PUT",
+      );
+    }
   });
 });

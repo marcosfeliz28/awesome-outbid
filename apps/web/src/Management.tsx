@@ -973,6 +973,8 @@ export function Inventory() {
 }
 
 export function Purchases() {
+  // La API no envía el total de la orden a quien no ve costos (F2).
+  const seesCost = can(useStore((s) => s.user)!.permissions, "profit:read");
   const orders = useQuery({
     queryKey: ["orders"],
     queryFn: () => api("/purchase-orders"),
@@ -1045,7 +1047,14 @@ export function Purchases() {
                 },
                 { label: "Fecha", render: (o) => dateLabel(o.createdAt) },
                 { label: "Artículos", render: (o) => o.items.length },
-                { label: "Total", render: (o) => formatMoney(o.total) },
+                ...(seesCost
+                  ? [
+                      {
+                        label: "Total",
+                        render: (o: any) => formatMoney(o.total),
+                      },
+                    ]
+                  : []),
                 {
                   label: "Estado",
                   render: (o) => (

@@ -266,7 +266,10 @@ export function imageType(bytes: Buffer) {
   return null;
 }
 export function safe<T>(value: T, actor: Actor): T {
-  if (can(actor.permissions, "profit:read")) return json(value);
+  // La vendedora nunca ve costos aunque su rol reciba profit:read, igual que
+  // seesCost (inventory.ts) y los informes de utilidad (reports.ts).
+  if (actor.role !== "seller" && can(actor.permissions, "profit:read"))
+    return json(value);
 
   // Lista blanca deliberada para respuestas operativas. Antes se eliminaban
   // sólo nombres conocidos de costos; una columna nueva (por ejemplo,
@@ -431,6 +434,8 @@ export function safe<T>(value: T, actor: Actor): T {
     "day",
     "hour",
     "units",
+    // Unidades dañadas de una recepción: cantidad, no costo (Compras).
+    "damagedUnits",
     "value",
     "severity",
     "message",
@@ -474,6 +479,13 @@ export function safe<T>(value: T, actor: Actor): T {
     "Clasificación",
     "Evento",
     "Saldo",
+    // Informe «cash»: sólo llega a quien canViewCashExpected autoriza
+    // (profit:read o sale:manage); sin estas columnas quedaba vacío.
+    "Esperado",
+    "Contado",
+    "Diferencia_efectivo",
+    "Diferencia_tarjeta",
+    "Diferencia_transferencia",
   ]);
   const publicKey = (key: string) => publicFields.has(key);
   const financialKey = (key: string) =>
