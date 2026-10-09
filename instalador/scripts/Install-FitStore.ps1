@@ -281,6 +281,21 @@ Assert-FitStoreAdministrator
 $answer = Read-SetupIni -Path $RespuestaPath
 $paths = Get-FitStorePaths -InstallDir $InstallDir
 $stateExists = Test-Path -LiteralPath $paths.State
+# Sin estado no se puede distinguir una instalación nueva de datos huérfanos.
+# Rechazar antes de instalar runtimes, cambiar ACL o generar nuevas credenciales.
+if (-not $stateExists) {
+  $hasPreviousSecrets = Test-Path -LiteralPath $paths.Secrets
+  $hasPreviousDatabase = Test-Path -LiteralPath (Join-Path $paths.Database "PG_VERSION")
+  if (-not $hasPreviousDatabase -and (Test-Path -LiteralPath $paths.Database)) {
+    $hasPreviousDatabase = @(
+      Get-ChildItem -LiteralPath $paths.Database -Force -ErrorAction Stop |
+        Select-Object -First 1
+    ).Count -gt 0
+  }
+  if ($hasPreviousSecrets -or $hasPreviousDatabase) {
+    throw "Se encontraron datos anteriores sin el estado de instalación. No se modificaron los datos ni las credenciales. Recupera el estado original y su respaldo antes de reinstalar; no borres secrets.json ni la carpeta PostgreSQL."
+  }
+}
 $isUpdate = $false
 $isResume = $false
 $isReinstall = $false
