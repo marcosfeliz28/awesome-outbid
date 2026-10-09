@@ -76,8 +76,8 @@ export function BusinessHeader({
   return (
     <header className="tp-header">
       {b.logo && <img className="tp-logo" src={b.logo} alt="" />}
-      <h2>Grupo Macgen</h2>
-      <p className="tp-branch">Plaza Lope de Vega</p>
+      <h2>{b.name || "Nexora POS"}</h2>
+      {b.branchName && <p className="tp-branch">{b.branchName}</p>}
       {b.address && <p>{b.address}</p>}
       {b.legalId && <p>RNC: {b.legalId}</p>}
       {!!phones.length && <p>Tel.: {phones.join(" · WhatsApp: ")}</p>}
@@ -305,8 +305,16 @@ export function InvoicePrint({
   return (
     <>
       <BusinessHeader business={config} />
-      <Row label="NCF:" value={sale.ncf ?? ""} />
-      <h3 className="tp-center">FACTURA</h3>
+      {sale.ncf ? (
+        <>
+          <Row label="NCF:" value={sale.ncf} />
+          <h3 className="tp-center">COMPROBANTE FISCAL</h3>
+        </>
+      ) : (
+        <h3 className="tp-center">
+          DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL
+        </h3>
+      )}
       <Row label="Secuencia No." value={sale.number} />
       <Row label="Fecha" value={when(sale.createdAt ?? new Date())} />
       <Row label="Cajero" value={sale.cashierName ?? ""} />

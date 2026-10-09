@@ -69,7 +69,7 @@ test.beforeEach(async ({ request }) => {
 });
 async function login(page: any) {
   await page.goto("/");
-  await page.getByLabel("Correo electrónico").fill("admin@fitstore.demo");
+  await page.getByLabel("Usuario").fill("admin@fitstore.demo");
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");

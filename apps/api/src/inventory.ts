@@ -43,6 +43,12 @@ import {
   json,
   qty,
 } from "./common";
+import {
+  isSerializationConflict,
+  lotIdentity,
+  reconcileLotExpiry,
+  retrySerializable,
+} from "./inventory-resilience";
 
 // Unidades que la venta no toma (paso 04): lotes vencidos según la fecha de
 // Santo Domingo, o sin vencimiento cuando la categoría lo exige.
@@ -504,13 +510,13 @@ export class InventoryController {
   @RequireTerminal()
   @Permit("inventory:write")
   async adjustment(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    const data = parse(
+    const parsed = parse(
       z.object({
         variantId: uuid,
         qty: signedStockQty(),
         reason,
         lotId: uuid.optional(),
-        lotNumber: z.string().optional(),
+        lotNumber: z.string().trim().min(1).max(120).optional(),
         expiryDate: z.string().datetime().optional(),
         type: z
           .enum(["adjustment", "waste", "supplier_return"])
@@ -518,101 +524,115 @@ export class InventoryController {
       }),
       body,
     );
-    return this.db.$transaction(
-      async (tx) => {
-        const variant = await lockVariant(tx, data.variantId, actor);
-        let lotId = data.lotId;
-        if (
-          data.qty < 0 &&
-          !data.lotId &&
-          !variant.product.category.requiresLot &&
-          !variant.allowNegativeStock
-        ) {
-          const untracked =
-            Number(variant.stock) -
-            variant.lots.reduce(
-              (sum: number, l: any) => sum + Number(l.qty),
-              0,
-            );
-          if (untracked + data.qty < 0)
-            bad("Stock insuficiente sin lote. Selecciona el lote de salida.");
-        }
-        if (data.expiryDate && expired(data.expiryDate))
-          bad("No puedes ajustar un lote vencido.");
-        if (
-          variant.product.category.requiresLot ||
-          data.lotId ||
-          data.lotNumber
-        ) {
-          if (data.qty < 0) {
-            if (!lotId) bad("Selecciona el lote de salida.");
-            const lot = await tx.lot.findFirstOrThrow({
-              where: { id: lotId, variantId: variant.id },
-            });
-            if (Number(lot.qty) + data.qty < 0)
-              bad("Stock insuficiente en el lote.");
-            await tx.lot.update({
-              where: { id: lot.id },
-              data: { qty: { increment: data.qty } },
-            });
-          } else {
-            if (
-              !data.lotNumber ||
-              (variant.product.category.requiresExpiry && !data.expiryDate)
-            )
-              bad("Indica lote y vencimiento.");
-            const existingLot = await tx.lot.findUnique({
-              where: {
-                variantId_lotNumber: {
-                  variantId: variant.id,
-                  lotNumber: data.lotNumber,
-                },
-              },
-            });
-            if (existingLot && expired(existingLot.expiryDate))
-              bad("No puedes aumentar un lote vencido.");
-            const lot = await tx.lot.upsert({
-              where: {
-                variantId_lotNumber: {
-                  variantId: variant.id,
-                  lotNumber: data.lotNumber,
-                },
-              },
-              create: {
-                variantId: variant.id,
-                lotNumber: data.lotNumber,
-                expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
-                qty: data.qty,
-                cost: variant.costAvg,
-                branchId: actor.branchId,
-              },
-              update: { qty: { increment: data.qty } },
-            });
-            lotId = lot.id;
+    const data = parsed.lotNumber
+      ? { ...parsed, ...lotIdentity(parsed.lotNumber, parsed.expiryDate) }
+      : parsed;
+    return retrySerializable(() =>
+      this.db.$transaction(
+        async (tx) => {
+          const variant = await lockVariant(tx, data.variantId, actor);
+          let lotId = data.lotId;
+          if (
+            data.qty < 0 &&
+            !data.lotId &&
+            !variant.product.category.requiresLot &&
+            !variant.allowNegativeStock
+          ) {
+            const untracked =
+              Number(variant.stock) -
+              variant.lots.reduce(
+                (sum: number, l: any) => sum + Number(l.qty),
+                0,
+              );
+            if (untracked + data.qty < 0)
+              bad("Stock insuficiente sin lote. Selecciona el lote de salida.");
           }
-        }
-        await stockChange(
-          tx,
-          actor,
-          variant,
-          data.qty,
-          data.type,
-          data.reason,
-          undefined,
-          lotId,
-        );
-        await audit(
-          tx,
-          actor,
-          data.type,
-          "variant",
-          variant.id,
-          undefined,
-          data,
-        );
-        return safe(variant, actor);
-      },
-      { isolationLevel: "Serializable" },
+          if (data.expiryDate && expired(data.expiryDate))
+            bad("No puedes ajustar un lote vencido.");
+          if (
+            variant.product.category.requiresLot ||
+            data.lotId ||
+            data.lotNumber
+          ) {
+            if (data.qty < 0) {
+              if (!lotId) bad("Selecciona el lote de salida.");
+              const lot = await tx.lot.findFirstOrThrow({
+                where: { id: lotId, variantId: variant.id },
+              });
+              if (Number(lot.qty) + data.qty < 0)
+                bad("Stock insuficiente en el lote.");
+              await tx.lot.update({
+                where: { id: lot.id },
+                data: { qty: { increment: data.qty } },
+              });
+            } else {
+              if (
+                !data.lotNumber ||
+                (variant.product.category.requiresExpiry && !data.expiryDate)
+              )
+                bad("Indica lote y vencimiento.");
+              const identity = lotIdentity(data.lotNumber, data.expiryDate);
+              const existingLot = await tx.lot.findUnique({
+                where: {
+                  variantId_lotNumberNormalized: {
+                    variantId: variant.id,
+                    lotNumberNormalized: identity.lotNumberNormalized,
+                  },
+                },
+              });
+              const reconciled = reconcileLotExpiry(
+                existingLot?.expiryDate,
+                identity.expiryDate,
+              );
+              if (reconciled.conflict)
+                bad("Ese lote ya tiene un vencimiento diferente.");
+              if (existingLot && expired(reconciled.expiryDate))
+                bad("No puedes aumentar un lote vencido.");
+              const lot = await tx.lot.upsert({
+                where: {
+                  variantId_lotNumberNormalized: {
+                    variantId: variant.id,
+                    lotNumberNormalized: identity.lotNumberNormalized,
+                  },
+                },
+                create: {
+                  variantId: variant.id,
+                  ...identity,
+                  qty: data.qty,
+                  cost: variant.costAvg,
+                  branchId: actor.branchId,
+                },
+                update: {
+                  qty: { increment: data.qty },
+                  expiryDate: reconciled.expiryDate,
+                },
+              });
+              lotId = lot.id;
+            }
+          }
+          await stockChange(
+            tx,
+            actor,
+            variant,
+            data.qty,
+            data.type,
+            data.reason,
+            undefined,
+            lotId,
+          );
+          await audit(
+            tx,
+            actor,
+            data.type,
+            "variant",
+            variant.id,
+            undefined,
+            data,
+          );
+          return safe(variant, actor);
+        },
+        { isolationLevel: "Serializable" },
+      ),
     );
   }
   @Get("purchase-orders")
@@ -724,7 +744,7 @@ export class InventoryController {
                 // Unidades buenas: 0 si toda la línea llegó dañada.
                 qty: countedQty(),
                 ...damageFields,
-                lotNumber: z.string().min(1).optional(),
+                lotNumber: z.string().trim().min(1).max(120).optional(),
                 expiryDate: z.string().datetime().optional(),
               }),
             )
@@ -732,7 +752,26 @@ export class InventoryController {
         }),
         body,
       );
-    const data = { operationId, freight, otherCosts, allocation, items };
+    const data = {
+      operationId,
+      freight,
+      otherCosts,
+      allocation,
+      items: items.map((item) =>
+        item.lotNumber
+          ? {
+              ...item,
+              ...lotIdentity(item.lotNumber, item.expiryDate),
+              expiryDate: lotIdentity(
+                item.lotNumber,
+                item.expiryDate,
+              ).expiryDate?.toISOString(),
+            }
+          : item.expiryDate
+            ? { ...item, expiryDate: new Date(item.expiryDate).toISOString() }
+            : item,
+      ),
+    };
     if (new Set(data.items.map((i) => i.itemId)).size !== data.items.length)
       bad("No repitas líneas de recepción.");
     data.items.forEach(checkDamage);
@@ -881,34 +920,41 @@ export class InventoryController {
               data: { costAvg: newCost },
             });
             if (line.lotNumber) {
+              const identity = lotIdentity(line.lotNumber, line.expiryDate);
               const existingLot = await tx.lot.findUnique({
                 where: {
-                  variantId_lotNumber: {
+                  variantId_lotNumberNormalized: {
                     variantId: variant.id,
-                    lotNumber: line.lotNumber,
+                    lotNumberNormalized: identity.lotNumberNormalized,
                   },
                 },
               });
-              if (existingLot && expired(existingLot.expiryDate))
+              const reconciled = reconcileLotExpiry(
+                existingLot?.expiryDate,
+                identity.expiryDate,
+              );
+              if (reconciled.conflict)
+                bad("Ese lote ya tiene un vencimiento diferente.");
+              if (existingLot && expired(reconciled.expiryDate))
                 bad("No puedes recibir existencias en un lote vencido.");
               const lot = await tx.lot.upsert({
                 where: {
-                  variantId_lotNumber: {
+                  variantId_lotNumberNormalized: {
                     variantId: variant.id,
-                    lotNumber: line.lotNumber,
+                    lotNumberNormalized: identity.lotNumberNormalized,
                   },
                 },
                 create: {
                   variantId: variant.id,
-                  lotNumber: line.lotNumber,
-                  expiryDate: line.expiryDate
-                    ? new Date(line.expiryDate)
-                    : null,
+                  ...identity,
                   qty: line.qty,
                   cost: costs[index],
                   branchId: actor.branchId,
                 },
-                update: { qty: { increment: line.qty } },
+                update: {
+                  qty: { increment: line.qty },
+                  expiryDate: reconciled.expiryDate,
+                },
               });
               lotId = lot.id;
             }
@@ -952,17 +998,11 @@ export class InventoryController {
     // PostgreSQL puede abortar una de dos transacciones serializables aunque
     // ambas representen exactamente la misma recepción. La segunda petición
     // debe recuperar el resultado confirmado, no exponer P2010/40001 como 500.
-    for (let attempt = 0; ; attempt++) {
+    return retrySerializable(async () => {
       try {
         return await execute();
-      } catch (error: any) {
-        const serialization =
-          error?.code === "P2034" ||
-          (error?.code === "P2010" &&
-            String(error?.meta?.code ?? error?.meta?.message ?? "").includes(
-              "40001",
-            ));
-        if (!serialization) throw error;
+      } catch (error) {
+        if (!isSerializationConflict(error)) throw error;
         const prior = await this.db.goodsReceipt.findUnique({
           where: { operationId: data.operationId },
         });
@@ -971,9 +1011,9 @@ export class InventoryController {
             bad("UUID usado con datos distintos.");
           return safe(prior, actor);
         }
-        if (attempt >= 2) throw error;
+        throw error;
       }
-    }
+    });
   }
   // Historial de recepciones (paso 37): las últimas 50 o las de un período.
   @Get("goods-receipts")
@@ -1161,49 +1201,51 @@ export class InventoryController {
   @RequireTerminal()
   @Permit("sale:manage")
   async applyCount(@Param("id") id: string, @CurrentUser() actor: Actor) {
-    return this.db.$transaction(
-      async (tx) => {
-        await tx.$queryRaw`SELECT id FROM "InventoryCount" WHERE id=${parse(uuid, id)}::uuid FOR UPDATE`;
-        const count = await tx.inventoryCount.findFirstOrThrow({
-          where: { id: parse(uuid, id), branchId: actor.branchId },
-        });
-        if (count.status !== "pending") bad("El conteo ya fue aplicado.");
-        for (const item of (count.items as any[]).sort((a, b) =>
-          a.variantId.localeCompare(b.variantId),
-        )) {
-          const variant = await lockVariant(tx, item.variantId, actor);
-          if (Number(variant.stock) !== item.expected)
-            bad("El stock cambió. Repite el conteo.");
-          if (variant.product.category.requiresLot)
-            bad("Ajusta productos con lote desde su lote específico.");
-          const lotStock = variant.lots.reduce(
-            (sum: number, l: any) => sum + Number(l.qty),
-            0,
-          );
-          if (item.counted < lotStock)
-            bad(
-              "El conteo no puede quedar por debajo del stock con lote. Ajusta el lote específico.",
+    return retrySerializable(() =>
+      this.db.$transaction(
+        async (tx) => {
+          await tx.$queryRaw`SELECT id FROM "InventoryCount" WHERE id=${parse(uuid, id)}::uuid FOR UPDATE`;
+          const count = await tx.inventoryCount.findFirstOrThrow({
+            where: { id: parse(uuid, id), branchId: actor.branchId },
+          });
+          if (count.status !== "pending") bad("El conteo ya fue aplicado.");
+          for (const item of (count.items as any[]).sort((a, b) =>
+            a.variantId.localeCompare(b.variantId),
+          )) {
+            const variant = await lockVariant(tx, item.variantId, actor);
+            if (Number(variant.stock) !== item.expected)
+              bad("El stock cambió. Repite el conteo.");
+            if (variant.product.category.requiresLot)
+              bad("Ajusta productos con lote desde su lote específico.");
+            const lotStock = variant.lots.reduce(
+              (sum: number, l: any) => sum + Number(l.qty),
+              0,
             );
-          const delta = quantity(d(item.counted).minus(variant.stock));
-          if (delta)
-            await stockChange(
-              tx,
-              actor,
-              variant,
-              delta,
-              "count",
-              "Conteo físico aprobado",
-              id,
-            );
-        }
-        await tx.inventoryCount.update({
-          where: { id },
-          data: { status: "applied", appliedBy: actor.id },
-        });
-        await audit(tx, actor, "count_apply", "count", id);
-        return { ok: true };
-      },
-      { isolationLevel: "Serializable" },
+            if (item.counted < lotStock)
+              bad(
+                "El conteo no puede quedar por debajo del stock con lote. Ajusta el lote específico.",
+              );
+            const delta = quantity(d(item.counted).minus(variant.stock));
+            if (delta)
+              await stockChange(
+                tx,
+                actor,
+                variant,
+                delta,
+                "count",
+                "Conteo físico aprobado",
+                id,
+              );
+          }
+          await tx.inventoryCount.update({
+            where: { id },
+            data: { status: "applied", appliedBy: actor.id },
+          });
+          await audit(tx, actor, "count_apply", "count", id);
+          return { ok: true };
+        },
+        { isolationLevel: "Serializable" },
+      ),
     );
   }
 }

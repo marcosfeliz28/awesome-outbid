@@ -88,7 +88,8 @@ test("desde un celular por http (dirección de red, sin https) se abre la caja",
   browser,
 }) => {
   const target = new URL(
-    process.env.FITSTORE_WEB_URL || "http://127.0.0.1:4173",
+    process.env.FITSTORE_WEB_URL ||
+      "http://127.0.0.1:" + (process.env.FITSTORE_WEB_PORT || 4173),
   );
   const red = await servirPorLaRed(target);
   test.skip(!red, "Esta computadora no tiene una dirección de red.");
@@ -109,7 +110,7 @@ test("desde un celular por http (dirección de red, sin https) se abre la caja",
   // La condición que reproduce el celular: la página NO es segura.
   expect(await page.evaluate(() => window.isSecureContext)).toBe(false);
 
-  await page.getByLabel("Correo electrónico").fill("admin@fitstore.demo");
+  await page.getByLabel("Usuario").fill("admin@fitstore.demo");
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");

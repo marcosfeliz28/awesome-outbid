@@ -61,6 +61,11 @@ import {
   type Printing,
 } from "./Tienda";
 import { METHOD_LABEL, printSoon } from "./Prints";
+import {
+  applyPendingSaleReprice,
+  discardPendingSale,
+  isPendingPriceConflict,
+} from "./pendingSales";
 
 type Column = {
   label: string;
@@ -1369,6 +1374,7 @@ export function Cash() {
   const [open, setOpen] = useState(false),
     [movement, setMovement] = useState(false),
     [closing, setClosing] = useState<any>(null),
+    [discarding, setDiscarding] = useState<any>(null),
     [printing, setPrinting] = useState<Printing>(null);
   // Fondo sugerido: lo dejado en el último cierre de esta caja.
   const suggestion = useQuery({
@@ -1383,6 +1389,35 @@ export function Cash() {
     can(user.permissions, "profit:read") ||
     can(user.permissions, "sale:manage");
   const elsewhere = cashOnOtherDevice(active);
+  const repricePending = async (sale: any) => {
+    const [products, promotions, settings] = await Promise.all([
+      loadCatalog(),
+      api<any[]>("/promotions"),
+      api<any>("/settings"),
+    ]);
+    const applied = await applyPendingSaleReprice(
+      sale,
+      products,
+      promotions,
+      settings.taxIncluded !== false,
+      {
+        recordResolution: (body) => post("/sales/offline-resolution", body),
+        updateLocal: (id, changes) => localDB.sales.update(id, changes),
+        syncOne: async (input) => {
+          const result = await post("/sales/sync", { sales: [input] });
+          return result.results[0];
+        },
+        deleteLocal: (id) => localDB.sales.delete(id),
+      },
+    );
+    await client.invalidateQueries({ queryKey: ["pending-sales"] });
+    toast(
+      applied.synced.status === "synced"
+        ? "Precios actualizados y venta sincronizada."
+        : "Precios actualizados. La venta sigue pendiente de revisión.",
+      applied.synced.status !== "synced",
+    );
+  };
   return (
     <>
       <Heading
@@ -1514,8 +1549,10 @@ export function Cash() {
               },
               {
                 label: "Acción",
-                render: (s) =>
-                  s.status === "conflict" && (
+                render: (s) => {
+                  if (s.status !== "conflict") return null;
+                  const priceConflict = isPendingPriceConflict(s.message);
+                  return (
                     <div className="pending-sale-actions">
                       {!s.input.customerId && (
                         <select
@@ -1546,7 +1583,19 @@ export function Cash() {
                           ))}
                         </select>
                       )}
-                      {s.input.customerId && (
+                      {priceConflict && (
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            repricePending(s).catch((error: any) =>
+                              toast(error.message, true),
+                            )
+                          }
+                        >
+                          Actualizar precios y reintentar
+                        </Button>
+                      )}
+                      {s.input.customerId && !priceConflict && (
                         <Button
                           variant="secondary"
                           onClick={async () => {
@@ -1563,8 +1612,17 @@ export function Cash() {
                           Reintentar
                         </Button>
                       )}
+                      {can(user.permissions, "sale:manage") && (
+                        <Button
+                          variant="danger"
+                          onClick={() => setDiscarding(s)}
+                        >
+                          Descartar
+                        </Button>
+                      )}
                     </div>
-                  ),
+                  );
+                },
               },
             ]}
           />
@@ -1725,19 +1783,39 @@ export function Cash() {
           }}
         />
       )}
+      {discarding && (
+        <ConfirmModal
+          title="Descartar venta pendiente"
+          description={`Se eliminará ${discarding.receipt?.number ?? "esta venta"} de este dispositivo. La decisión y el motivo quedarán en la bitácora.`}
+          confirmLabel="Descartar"
+          onClose={() => setDiscarding(null)}
+          onConfirm={async (reason) => {
+            await discardPendingSale(discarding, reason, {
+              recordResolution: (body) =>
+                post("/sales/offline-resolution", body),
+              deleteLocal: (id) => localDB.sales.delete(id),
+            });
+            await client.invalidateQueries({ queryKey: ["pending-sales"] });
+            toast("Venta pendiente descartada.");
+          }}
+        />
+      )}
       <PrintModal printing={printing} onClose={() => setPrinting(null)} />
     </>
   );
 }
 
 export function Customers() {
+  const user = useStore((state) => state.user)!;
+  const client = useQueryClient();
   const query = useQuery({
     queryKey: ["customers"],
     queryFn: () => api("/customers"),
   });
   const [create, setCreate] = useState(false),
     [search, setSearch] = useState(""),
-    [editing, setEditing] = useState<any>(null);
+    [editing, setEditing] = useState<any>(null),
+    [anonymizing, setAnonymizing] = useState<any>(null);
   const fields: Field[] = [
     { key: "name", label: "Nombre", required: true },
     { key: "phone", label: "Teléfono" },
@@ -1801,9 +1879,22 @@ export function Customers() {
               {
                 label: "Acción",
                 render: (c) => (
-                  <button className="text-link" onClick={() => setEditing(c)}>
-                    Editar
-                  </button>
+                  <div className="table-actions">
+                    <button
+                      className="text-link"
+                      onClick={() => setEditing(c)}
+                    >
+                      Editar
+                    </button>
+                    {can(user.permissions, "customers:erase") && (
+                      <button
+                        className="text-link danger-text"
+                        onClick={() => setAnonymizing(c)}
+                      >
+                        Anonimizar
+                      </button>
+                    )}
+                  </div>
                 ),
               },
             ]}
@@ -1825,6 +1916,22 @@ export function Customers() {
           initial={editing}
           onClose={() => setEditing(null)}
           onSubmit={(data) => mutate("/customers/" + editing.id, data, "PATCH")}
+        />
+      )}
+      {anonymizing && (
+        <ConfirmModal
+          title="Anonimizar cliente"
+          description={`Se eliminarán los datos personales de ${anonymizing.name}. Las ventas y sus montos se conservarán. Esta acción no se puede deshacer.`}
+          confirmLabel="Anonimizar"
+          onClose={() => setAnonymizing(null)}
+          onConfirm={async (reason) => {
+            await post(`/customers/${anonymizing.id}/anonymize`, {
+              reason,
+              requestRef: `APP-${new Date().toISOString()}`,
+            });
+            await client.invalidateQueries({ queryKey: ["customers"] });
+            toast("Cliente anonimizado.");
+          }}
         />
       )}
     </>

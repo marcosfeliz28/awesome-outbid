@@ -1,4 +1,10 @@
-import { test, expect, ensureStock, screenshotPath } from "./apoyo";
+import {
+  test,
+  expect,
+  ensureStock,
+  screenshotPath,
+  selectNamedCustomer,
+} from "./apoyo";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 // Cada contexto representa un equipo nuevo: cerrar la caja del escenario anterior.
@@ -63,14 +69,6 @@ async function ensureCash(page: any) {
   }
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();
 }
-async function selectNamedCustomer(page: any) {
-  const selected =
-    (await page.locator(".customer-selector strong").textContent()) || "";
-  if (!selected.includes("Selecciona")) return;
-  await page.locator(".customer-selector").click();
-  await expect(page.locator(".customer-list button").first()).toBeVisible();
-  await page.locator(".customer-list button").first().click();
-}
 test("venta completa desde caja hasta pagos combinados y recibo", async ({
   page,
   request,
@@ -125,9 +123,9 @@ test("venta completa desde caja hasta pagos combinados y recibo", async ({
   ).toBeVisible();
   await page.screenshot({ path: screenshotPath("docs/cobro-exitoso.png") });
   await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
-  await expect(page.locator(".cart-items")).toContainText(
-    "Tu próxima venta empieza aquí",
-  );
+  const emptyCart = page.locator(".cart-empty-state");
+  await expect(emptyCart).toContainText("Carrito vacío");
+  await expect(emptyCart).toContainText("Escanea o busca un artículo");
   expect(errors).toEqual([]);
 });
 test("pantallas de gestión, tema oscuro y versión móvil", async ({ page }) => {
@@ -280,11 +278,18 @@ test("descuento por monto, crédito y abono en interfaz", async ({ page }) => {
       .getByRole("button", { name: customer.name })
       .click();
     await page.getByRole("button", { name: /Cobrar/ }).click();
-    await page.getByRole("button", { name: "A crédito", exact: true }).click();
-    await page.getByLabel("Vencimiento del crédito").fill("2030-01-01");
+    await page
+      .getByRole("button", {
+        name: "Crédito / contraentrega",
+        exact: true,
+      })
+      .click();
     await page
       .getByRole("button", { name: "Agregar pago", exact: true })
       .click();
+    await page
+      .getByLabel("Motivo del descuento")
+      .fill("Descuento de prueba E2E");
     await page
       .getByRole("button", { name: "Finalizar venta", exact: true })
       .click();
@@ -509,7 +514,7 @@ test("equipo nuevo de vendedor espera aprobación y se aprueba con PIN de gerent
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await page.getByLabel("Correo electrónico").fill("vendedor@fitstore.demo");
+  await page.getByLabel("Usuario").fill("vendedor@fitstore.demo");
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
@@ -1095,6 +1100,9 @@ test("R9-caja-9 y R9-caja-6: el ticket muestra los descuentos y tras «Nueva ven
   await selectNamedCustomer(page);
   await page.getByRole("button", { name: /Cobrar/ }).click();
   await page.getByRole("button", { name: "Agregar pago" }).click();
+  await page
+    .getByLabel("Motivo del descuento")
+    .fill("Descuentos del ticket E2E");
   await page.getByRole("button", { name: "Finalizar venta" }).click();
   await expect(
     page.getByText("Venta registrada", { exact: true }),
@@ -1494,6 +1502,7 @@ test("R9-dinero-5-pos: un descuento por monto con 3 decimales se cobra en línea
       .fill("1.005");
     await page.getByRole("button", { name: /Cobrar/ }).click();
     await page.getByRole("button", { name: "Agregar pago" }).click();
+    await page.getByLabel("Motivo del descuento").fill("Precisión decimal E2E");
     await page.getByRole("button", { name: "Finalizar venta" }).click();
   };
   // En línea: la API acepta el descuento con el mismo cálculo de la caja.
@@ -2098,9 +2107,11 @@ test("R9-offline-1 revisión: un crédito sin respuesta queda pendiente y se con
     const credit = async () => {
       await page.getByRole("button", { name: /Cobrar/ }).click();
       await page
-        .getByRole("button", { name: "A crédito", exact: true })
+        .getByRole("button", {
+          name: "Crédito / contraentrega",
+          exact: true,
+        })
         .click();
-      await page.getByLabel("Vencimiento del crédito").fill("2030-01-01");
       await page
         .getByRole("button", { name: "Agregar pago", exact: true })
         .click();
@@ -2445,8 +2456,13 @@ test.describe("Tienda-pantallas", () => {
     await dialog.getByLabel("Cantidad de 100", { exact: true }).fill("3");
     await dialog.getByLabel("Cantidad de 50", { exact: true }).fill("4");
     await expect(dialog.locator(".count-subtotal")).toContainText("RD$ 500.00");
+    await dialog.getByLabel(/Tarjeta declarada/).fill("0");
+    await dialog.getByLabel(/Transferencia declarada/).fill("0");
     await dialog.getByLabel("Entregado").fill("300");
     await expect(dialog.locator(".count-left")).toContainText("RD$ 200.00");
+    await dialog
+      .getByRole("checkbox", { name: /Confirmo que conté efectivo/ })
+      .check();
     await dialog
       .getByRole("button", { name: "Cerrar caja e imprimir cuadre" })
       .click();
@@ -2501,7 +2517,10 @@ test.describe("Tienda-pantallas", () => {
     await page.getByLabel("Monto del pago").fill("500");
     await page.getByRole("button", { name: "Agregar pago" }).click();
     await page
-      .getByRole("button", { name: "Contraentrega", exact: true })
+      .getByRole("button", {
+        name: "Crédito / contraentrega",
+        exact: true,
+      })
       .click();
     await expect(page.getByLabel("Monto del pago")).toHaveValue("1000");
     await page.getByRole("button", { name: "Agregar pago" }).click();
@@ -2510,14 +2529,15 @@ test.describe("Tienda-pantallas", () => {
       page.getByText("Venta registrada", { exact: true }),
     ).toBeVisible();
     const sheet = page.locator(".thermal-print");
-    await expect(sheet).toContainText("FACTURA");
+    await expect(sheet).toContainText(
+      "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL",
+    );
     await expect(sheet).toContainText("Secuencia No.");
-    await expect(sheet).toContainText("NCF");
     await expect(sheet).toContainText("Cod. " + code);
     await expect(sheet).toContainText("1 X RD$ 1,500.00");
     await expect(sheet).toContainText("Total a pagar RD$ 1,500.00");
     await expect(sheet).toContainText("Efectivo RD$ 500.00");
-    await expect(sheet).toContainText("Contraentrega RD$ 1,000.00");
+    await expect(sheet).toContainText("Crédito / contraentrega RD$ 1,000.00");
     await expect(sheet).toContainText("Cantidad de Productos 1");
     await page.getByRole("button", { name: "Imprimir factura" }).click();
     await expect.poll(() => prints(page)).toBeGreaterThan(0);
@@ -2532,8 +2552,10 @@ test.describe("Tienda-pantallas", () => {
     await page.getByRole("button", { name: "Caja", exact: true }).click();
     const pending = page.locator(".cod-row", { hasText: number });
     await expect(pending).toContainText("RD$ 1,000.00");
-    await pending.getByRole("button", { name: "Registrar cobro" }).click();
-    const dialog = page.getByRole("dialog", { name: /Cobro de contraentrega/ });
+    await pending.getByRole("button", { name: "Registrar pago" }).click();
+    const dialog = page.getByRole("dialog", {
+      name: /Pago de crédito \/ contraentrega/,
+    });
     await expect(dialog.getByLabel("Monto cobrado")).toHaveValue("1000");
     await dialog.getByRole("button", { name: "Registrar cobro" }).click();
     await expect(page.locator(".cod-row", { hasText: number })).toHaveCount(0);

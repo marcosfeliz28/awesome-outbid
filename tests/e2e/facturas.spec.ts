@@ -51,7 +51,7 @@ test("R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción
   const order = await created.json();
 
   await page.goto("/");
-  await page.getByLabel("Correo electrónico").fill("admin@fitstore.demo");
+  await page.getByLabel("Usuario").fill("admin@fitstore.demo");
   await page
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");

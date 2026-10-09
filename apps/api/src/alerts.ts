@@ -28,7 +28,20 @@ import {
   parse,
   uuid,
   audit,
+  canViewCashExpected,
 } from "./common";
+
+const CASH_DIFFERENCE_PRIVATE_MESSAGE =
+  "Se detectó una diferencia en una caja cerrada. Administración debe revisarla.";
+
+export function alertForActor<T extends { type?: string; message?: string }>(
+  alert: T,
+  actor: Actor,
+): T {
+  return alert.type === "cash_difference" && !canViewCashExpected(actor)
+    ? { ...alert, message: CASH_DIFFERENCE_PRIVATE_MESSAGE }
+    : alert;
+}
 
 @Injectable()
 export class AlertEngine {
@@ -403,7 +416,7 @@ export class AlertsController {
       query,
     );
     await this.engine.evaluate(actor.branchId);
-    return this.db.alert.findMany({
+    const rows = await this.db.alert.findMany({
       where: {
         branchId: actor.branchId,
         ...(filter.status !== "all" ? { status: filter.status } : {}),
@@ -413,6 +426,7 @@ export class AlertsController {
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       take: 200,
     });
+    return rows.map((row) => alertForActor(row, actor));
   }
   @Patch("alerts/:id") @Permit("alerts:write") async state(
     @Param("id") id: string,
@@ -427,7 +441,10 @@ export class AlertsController {
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
     await audit(this.db, actor, "state", "alert", id, undefined, data);
-    return this.db.alert.update({ where: { id }, data });
+    return alertForActor(
+      await this.db.alert.update({ where: { id }, data }),
+      actor,
+    );
   }
   @Get("promotions/clearance-candidates")
   @Permit("promotions:write")

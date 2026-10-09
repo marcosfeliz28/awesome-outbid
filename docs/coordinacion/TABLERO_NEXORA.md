@@ -40,3 +40,4 @@ Sirve para que dos asistentes trabajen sin pisarse. Se actualiza en cada entrega
 | Fecha | Quién | Qué | Commit | Auditado por | Resultado |
 |---|---|---|---|---|---|
 | 2026-10-08 | ChatGPT | Correcciones de la auditoría 2 (N1, A06–A12) | c0b7105 | Claude | N1 mal: ver L1 |
+| 2026-10-08 | ChatGPT | Cumplimiento G1, G2, G5, G6, G7, G10 y G11; G3/G4/G8 quedan a decisión | `2e04cd7..760e715` dentro de PR #1 `561e752` | Pendiente Claude | Ejecución real: `pnpm check` 212/1; focales 46/46; 24 migraciones y seed en base nueva; integración no verde 76/81/0; CI `verify` no alcanzó integración y Playwright no corrió. Ver sección E de `docs/RONDA_NEXORA_CHATGPT.md`. |

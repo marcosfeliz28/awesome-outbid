@@ -52,6 +52,7 @@ import {
   safeErrorMessage,
   fieldLabel,
   imageType,
+  lockActiveCustomer,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
 
@@ -70,8 +71,133 @@ const paymentSummary = (payment: any) => {
       : 0,
   };
 };
+
+// `/sales` alimenta el historial operativo, no es una representación directa
+// de Prisma. Mantener una lista blanca evita que una columna nueva de costos o
+// un objeto JSON sensible aparezca automáticamente en la respuesta.
+export function saleHistoryDto(sale: any, actor: Actor) {
+  const showProfit = can(actor.permissions, "profit:read");
+  const item = (row: any) => ({
+    id: row.id,
+    variantId: row.variantId,
+    lotId: row.lotId,
+    qty: row.qty,
+    returnedQty: row.returnedQty,
+    unitPrice: row.unitPrice,
+    discount: row.discount,
+    tax: row.tax,
+    lineTotal: row.lineTotal,
+    ...(showProfit ? { unitCost: row.unitCost } : {}),
+    variant: row.variant
+      ? {
+          id: row.variant.id,
+          productId: row.variant.productId,
+          sku: row.variant.sku,
+          barcode: row.variant.barcode,
+          attributes: row.variant.attributes,
+          product: row.variant.product
+            ? { id: row.variant.product.id, name: row.variant.product.name }
+            : null,
+        }
+      : null,
+  });
+  const payment = (row: any) => {
+    const summary = paymentSummary(row);
+    return {
+      id: summary.id,
+      createdAt: summary.createdAt,
+      method: summary.method,
+      amount: summary.amount,
+      tendered: summary.tendered,
+      change: summary.change,
+      bank: summary.bank,
+      reference: summary.reference,
+      cardBrand: summary.cardBrand,
+      cardLast4: summary.cardLast4,
+      approvalCode: summary.approvalCode,
+      cardType: summary.cardType,
+      status: summary.status,
+      entryType: summary.entryType,
+      hasProof: summary.hasProof,
+      proofContentType: summary.proofContentType,
+      proofBytes: summary.proofBytes,
+      ...(showProfit ? { feeAmount: summary.feeAmount } : {}),
+    };
+  };
+  const returned = (row: any) => ({
+    id: row.id,
+    number: row.number,
+    reason: row.reason,
+    total: row.total,
+    taxTotal: row.taxTotal,
+    refundAmount: row.refundAmount,
+    refundMethod: row.refundMethod,
+    createdAt: row.createdAt,
+    ...(showProfit
+      ? {
+          costTotal: row.costTotal,
+          wasteQty: row.wasteQty,
+          wasteCostTotal: row.wasteCostTotal,
+          items: row.items,
+        }
+      : {}),
+  });
+  return {
+    id: sale.id,
+    number: sale.number,
+    status: sale.status,
+    customerId: sale.customerId,
+    sellerId: sale.sellerId,
+    cashSessionId: sale.cashSessionId,
+    subtotal: sale.subtotal,
+    discountTotal: sale.discountTotal,
+    discountReason: sale.discountReason,
+    discountRule: sale.discountRule,
+    discountApprovedBy: sale.discountApprovedBy,
+    discountApprovedName: sale.discountApprovedName,
+    discountApprovedRole: sale.discountApprovedRole,
+    taxTotal: sale.taxTotal,
+    total: sale.total,
+    creditBalance: sale.creditBalance,
+    creditDueDate: sale.creditDueDate,
+    ncf: sale.ncf,
+    ncfType: sale.ncfType,
+    recipientLegalId: sale.recipientLegalId,
+    fiscalStatus: sale.fiscalStatus,
+    notes: sale.notes,
+    voidedReason: sale.voidedReason,
+    voidedBy: sale.voidedBy,
+    createdAt: sale.createdAt,
+    updatedAt: sale.updatedAt,
+    items: (sale.items ?? []).map(item),
+    payments: (sale.payments ?? []).map(payment),
+    returns: (sale.returns ?? []).map(returned),
+    ...(showProfit ? { costTotal: sale.costTotal } : {}),
+  };
+}
 import PDFDocument from "pdfkit";
 import type { Response } from "express";
+
+export function normalizeLegacyOfflineDiscount(
+  input: SaleInput,
+  offline: boolean,
+  requestsDiscount: boolean,
+  cutoff = Date.parse("2026-10-09T04:00:00.000Z"),
+) {
+  const capturedAt = input.capturedAt ? Date.parse(input.capturedAt) : NaN;
+  if (
+    !requestsDiscount ||
+    input.discountReason ||
+    !offline ||
+    !Number.isFinite(capturedAt) ||
+    capturedAt > cutoff
+  )
+    return input;
+  return {
+    ...input,
+    discountReason: "Venta offline heredada (sin motivo registrado)",
+  };
+}
 
 // Una venta pendiente se mantiene como una sola cuenta por cobrar hasta que
 // un administrador confirma todos sus abonos.
@@ -271,12 +397,21 @@ export class SalesController {
       input.items.some(
         (item) => item.discountPercent > 0 || (item.discountAmount ?? 0) > 0,
       );
-    if (requestsDiscount && !input.discountReason)
-      bad("Indica el motivo del descuento.");
     const { managerPin: ignored, ...fingerprint } = input;
     void ignored;
-    const requestHash = createHash("sha256")
+    const originalRequestHash = createHash("sha256")
       .update(JSON.stringify(fingerprint))
+      .digest("hex");
+    const normalizedInput = normalizeLegacyOfflineDiscount(
+      input,
+      offline,
+      requestsDiscount,
+    );
+    const { managerPin: normalizedPin, ...normalizedFingerprint } =
+      normalizedInput;
+    void normalizedPin;
+    const requestHash = createHash("sha256")
+      .update(JSON.stringify(normalizedFingerprint))
       .digest("hex");
     const completed = await this.db.sale.findUnique({
       where: { offlineUuid: input.offlineUuid },
@@ -288,10 +423,19 @@ export class SalesController {
         completed.branchId !== actor.branchId
       )
         denied();
-      if (completed.requestHash && completed.requestHash !== requestHash)
+      // Una venta heredada pudo quedar en IndexedDB antes de que el motivo
+      // fuese obligatorio. Su UUID sigue siendo la autoridad idempotente.
+      if (
+        completed.requestHash &&
+        completed.requestHash !== originalRequestHash &&
+        completed.requestHash !== requestHash
+      )
         bad("El UUID ya corresponde a otra venta.");
       return safe(completed, actor);
     }
+    if (requestsDiscount && !normalizedInput.discountReason)
+      bad("Indica el motivo del descuento.");
+    input = normalizedInput;
     if (offline) {
       const settings = await this.db.settings.findUnique({
         where: { id: actor.branchId },
@@ -341,14 +485,8 @@ export class SalesController {
           false,
           capturedAt,
         );
-        let customer = input.customerId
-          ? await tx.customer.findFirstOrThrow({
-              where: {
-                id: input.customerId,
-                branchId: actor.branchId,
-                active: true,
-              },
-            })
+        const customer = input.customerId
+          ? await lockActiveCustomer(tx, actor, input.customerId)
           : null;
         const settings = await tx.settings.findUnique({
           where: { id: actor.branchId },
@@ -467,12 +605,6 @@ export class SalesController {
         if ((credit || cod) && !customer)
           bad("El crédito / contraentrega requiere seleccionar un cliente.");
         if ((credit || cod) && customer) {
-          // Serializar sólo operaciones que consumen límite de crédito. Las
-          // ventas pagadas no deben bloquear entre sí por compartir cliente.
-          await tx.$queryRaw`SELECT id FROM "Customer" WHERE id=${customer.id}::uuid FOR UPDATE`;
-          customer = await tx.customer.findFirstOrThrow({
-            where: { id: customer.id, branchId: actor.branchId, active: true },
-          });
           // Toda mercancía despachada pendiente de cobro cuenta en la deuda.
           const debt = await tx.sale.aggregate({
             where: {
@@ -591,6 +723,7 @@ export class SalesController {
               ? (discountAuthorizer?.role.name ?? actor.role)
               : null,
             taxTotal: money(lines.reduce((a, l) => a.plus(l.totals.tax), d(0))),
+            taxIncluded: config?.taxIncluded !== false,
             total,
             creditBalance: money(d(credit).plus(cod)),
             creditDueDate:
@@ -882,20 +1015,62 @@ export class SalesController {
           status: "conflict",
           message,
         });
-        await this.db.alert.upsert({
-          where: { key: "offline:" + sale.offlineUuid },
-          create: {
-            key: "offline:" + sale.offlineUuid,
-            type: "offline_conflict",
-            severity: "high",
-            entityId: sale.offlineUuid,
-            message: "Venta offline pendiente: " + message,
-            branchId: actor.branchId,
-          },
-          update: {
-            message: "Venta offline pendiente: " + message,
-            status: "new",
-          },
+        await this.db.$transaction(async (tx) => {
+          await tx.alert.upsert({
+            where: { key: "offline:" + sale.offlineUuid },
+            create: {
+              key: "offline:" + sale.offlineUuid,
+              type: "offline_conflict",
+              severity: "high",
+              entityId: sale.offlineUuid,
+              message: "Venta offline pendiente: " + message,
+              branchId: actor.branchId,
+            },
+            update: {
+              message: "Venta offline pendiente: " + message,
+              status: "new",
+            },
+          });
+          const ownership = await tx.auditLog.findFirst({
+            where: {
+              action: "offline_sale_conflict",
+              entity: "offline_sale",
+              entityId: sale.offlineUuid,
+              userId: actor.id,
+              branchId: actor.branchId,
+            },
+          });
+          if (!ownership) {
+            const attempted = sale as any;
+            const paymentTotal = money(
+              (Array.isArray(attempted.payments) ? attempted.payments : []).reduce(
+                (sum: number, payment: any) =>
+                  sum +
+                  (Number.isFinite(Number(payment?.amount))
+                    ? Number(payment.amount)
+                    : 0),
+                0,
+              ),
+            );
+            const attemptedExpectedTotal = Number.isFinite(
+              Number(attempted.expectedTotal),
+            )
+              ? money(Number(attempted.expectedTotal))
+              : paymentTotal;
+            await audit(
+              tx,
+              actor,
+              "offline_sale_conflict",
+              "offline_sale",
+              sale.offlineUuid,
+              undefined,
+              {
+                paymentTotal,
+                attemptedExpectedTotal,
+                cashSessionId: attempted.cashSessionId ?? null,
+              },
+            );
+          }
         });
       }
     return { results };
@@ -953,13 +1128,7 @@ export class SalesController {
       // cada artículo de todas las ventas en una sola respuesta.
       take: filters.q || filters.date ? 500 : 100,
     });
-    return safe(
-      rows.map((sale) => ({
-        ...sale,
-        payments: sale.payments.map(paymentSummary),
-      })),
-      actor,
-    );
+    return rows.map((sale) => saleHistoryDto(sale, actor));
   }
   @Post("sales/:id/void")
   @Permit("*")
@@ -1534,25 +1703,54 @@ export class SalesController {
     const returned = await this.db.saleReturn.findFirstOrThrow({
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
-    const note = await this.db.creditNote.findUniqueOrThrow({
-      where: { returnId: returned.id },
-    });
+    const [note, settings] = await Promise.all([
+      this.db.creditNote.findUniqueOrThrow({
+        where: { returnId: returned.id },
+      }),
+      this.db.settings.findUnique({ where: { id: actor.branchId } }),
+    ]);
+    const business = (settings?.data as any) ?? {};
     res.setHeader("Content-Type", "application/pdf");
     const doc = new PDFDocument({ size: "A4", margin: 48 });
     doc.pipe(res);
     doc
       .fontSize(22)
-      .text("Nexora POS · " + returned.number)
+      .text(business.name || "Nexora POS", { align: "center" });
+    if (business.branchName)
+      doc.fontSize(11).text(business.branchName, { align: "center" });
+    if (business.address)
+      doc.fontSize(10).text(business.address, { align: "center" });
+    if (business.phone)
+      doc.fontSize(10).text("Tel.: " + business.phone, { align: "center" });
+    if (business.legalId)
+      doc.fontSize(10).text("RNC: " + business.legalId, { align: "center" });
+    doc
+      .moveDown()
+      .fontSize(16)
+      .text("Nota de crédito · " + returned.number)
       .fontSize(12)
       .text("Nota interna de crédito · no fiscal")
+      .text(
+        "Fecha: " +
+          note.createdAt.toLocaleString("es-DO", {
+            timeZone: BUSINESS_TIME_ZONE,
+            dateStyle: "short",
+            timeStyle: "short",
+          }),
+      )
       .text("Importe: RD$ " + note.amount)
       .text("Saldo: RD$ " + note.balance)
+      .text("Motivo de la devolución: " + returned.reason)
       .moveDown()
       .text("Código para presentar en caja:")
       .fontSize(14)
       .text(note.redemptionCode)
       .fontSize(10)
-      .text("Conserva este código. Permite usar el saldo de la nota.");
+      .moveDown()
+      .text("Condiciones de uso:")
+      .text(
+        "Presenta este código en caja. El saldo se aplica a compras en esta sucursal, se descuenta una sola vez por operación y está sujeto a verificación. No es efectivo ni comprobante fiscal.",
+      );
     doc.end();
   }
   @Post("sales/:id/installments")
@@ -1585,7 +1783,6 @@ export class SalesController {
   // URL en el pago, igual que el logo. La sube quien registró el cobro en su
   // caja o quien gestiona ventas; se puede reemplazar.
   @Post("payments/:id/proof")
-  @Permit("*")
   @UseInterceptors(
     FileInterceptor("file", {
       limits: { fileSize: PROOF_MAX_BYTES + 1, files: 1 },
@@ -1625,7 +1822,6 @@ export class SalesController {
     });
   }
   @Get("payments/:id/proof")
-  @Permit("*")
   async getPaymentProof(
     @Param("id") id: string,
     @CurrentUser() actor: Actor,
@@ -1891,16 +2087,20 @@ export class SalesController {
       doc.fontSize(10).text(business.branchName, { align: "center" });
     if (business.address)
       doc.fontSize(9).text(business.address, { align: "center" });
+    if (business.phone)
+      doc.fontSize(9).text("Tel.: " + business.phone, { align: "center" });
     if (business.legalId)
       doc.fontSize(9).text("RNC: " + business.legalId, { align: "center" });
     doc
       .fontSize(10)
       .text("Documento interno — no fiscal")
+      .text(sale.number)
       .text(
-        sale.number +
-          " · " +
-          sale.createdAt.toLocaleDateString("es-DO", {
+        "Fecha y hora: " +
+          sale.createdAt.toLocaleString("es-DO", {
             timeZone: BUSINESS_TIME_ZONE,
+            dateStyle: "short",
+            timeStyle: "short",
           }),
       )
       .moveDown();
@@ -1919,7 +2119,11 @@ export class SalesController {
       );
     doc
       .moveDown()
-      .text("ITBIS incluido: RD$ " + sale.taxTotal)
+      .text(
+        (sale.taxIncluded === false
+          ? "ITBIS adicional: RD$ "
+          : "ITBIS incluido: RD$ ") + sale.taxTotal,
+      )
       .fontSize(18)
       .text("Total: RD$ " + sale.total);
     doc.fontSize(10);

@@ -480,7 +480,16 @@ async function main() {
           return variant;
         }),
       });
-      await tx.lot.createMany({ data: lots });
+      await tx.lot.createMany({
+        data: lots.map((lot) => ({
+          ...lot,
+          lotNumberNormalized: lot.lotNumber
+            .normalize("NFC")
+            .trim()
+            .replace(/\s+/g, " ")
+            .toUpperCase(),
+        })),
+      });
       await tx.sale.createMany({ data: saleRows });
       await tx.saleItem.createMany({ data: saleItems });
       await tx.payment.createMany({ data: paymentRows });
@@ -523,9 +532,9 @@ async function main() {
         data: {
           id: "main",
           data: {
-            name: "Grupo Mac Hen",
+            name: "Nexora POS",
             legalId: "",
-            address: "Santo Domingo, República Dominicana",
+            address: "",
             phone: "",
             currency: "DOP",
             taxIncluded: true,
@@ -538,7 +547,7 @@ async function main() {
             cashDifferenceLimit: 100,
             receiptWidth: "80",
             sessionTimeoutMinutes: 30,
-            branchName: "Plaza Lope de Vega",
+            branchName: "",
             // Todas las ventas deben quedar asociadas a un cliente.
             requireCustomer: true,
             // Se conserva la configuración del flujo de ventas offline.

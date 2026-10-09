@@ -53,6 +53,28 @@ export const verifyPinAttempt = (
     wrong: "PIN incorrecto.",
   });
 
+// Evita que una ráfaga con la misma identidad consuma todas las conexiones de
+// Prisma mientras espera el advisory lock. PostgreSQL conserva el bloqueo
+// entre procesos; esta cola sólo impide abrir transacciones redundantes dentro
+// de una misma instancia y se elimina al vaciarse.
+const attemptQueues = new Map<string, Promise<void>>();
+async function serializeAttempt<T>(key: string, work: () => Promise<T>) {
+  const previous = attemptQueues.get(key) ?? Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const tail = previous.then(() => current);
+  attemptQueues.set(key, tail);
+  await previous;
+  try {
+    return await work();
+  } finally {
+    release();
+    if (attemptQueues.get(key) === tail) attemptQueues.delete(key);
+  }
+}
+
 // Cinco fallos con la misma clave la bloquean 15 minutos. La contraseña usa
 // el mismo contador, con su propia clave y mensajes (R9-seguridad-1).
 export async function verifyAttempt(
@@ -61,39 +83,41 @@ export async function verifyAttempt(
   verify: (tx: any) => Promise<string | null>,
   messages: { blocked: string; wrong: string },
 ) {
-  const result = await db.$transaction(
-    async (tx: any) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))::text AS locked`;
-      const row = await tx.authAttempt.upsert({
-        where: { key },
-        create: { key },
-        update: {},
-      });
-      if (row.lockedUntil && row.lockedUntil > new Date())
-        return { blocked: true };
-      if (row.lockedUntil)
-        await tx.authAttempt.update({
+  return serializeAttempt(key, async () => {
+    const result = await db.$transaction(
+      async (tx: any) => {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))::text AS locked`;
+        const row = await tx.authAttempt.upsert({
           where: { key },
-          data: { failedAttempts: 0, lockedUntil: null },
+          create: { key },
+          update: {},
         });
-      const matched = await verify(tx);
-      if (matched) {
-        await tx.authAttempt.update({
-          where: { key },
-          data: { failedAttempts: 0, lockedUntil: null },
-        });
-        return { matched };
-      }
-      // lockedUntil se guarda en UTC, como lo lee Prisma, y no en la zona
-      // horaria de la sesión.
-      await tx.$queryRaw`UPDATE "AuthAttempt" SET "failedAttempts"="failedAttempts"+1,
-      "lockedUntil"=CASE WHEN "failedAttempts"+1 >= 5 THEN (NOW() AT TIME ZONE 'UTC')+INTERVAL '15 minutes' ELSE NULL END
-      WHERE key=${key} RETURNING "failedAttempts"`;
-      return { matched: null };
-    },
-    { timeout: 20000 },
-  );
-  if (result.blocked) bad(messages.blocked);
-  if (!result.matched) bad(messages.wrong);
-  return result.matched as string;
+        if (row.lockedUntil && row.lockedUntil > new Date())
+          return { blocked: true };
+        if (row.lockedUntil)
+          await tx.authAttempt.update({
+            where: { key },
+            data: { failedAttempts: 0, lockedUntil: null },
+          });
+        const matched = await verify(tx);
+        if (matched) {
+          await tx.authAttempt.update({
+            where: { key },
+            data: { failedAttempts: 0, lockedUntil: null },
+          });
+          return { matched };
+        }
+        // lockedUntil se guarda en UTC, como lo lee Prisma, y no en la zona
+        // horaria de la sesión.
+        await tx.$queryRaw`UPDATE "AuthAttempt" SET "failedAttempts"="failedAttempts"+1,
+        "lockedUntil"=CASE WHEN "failedAttempts"+1 >= 5 THEN (NOW() AT TIME ZONE 'UTC')+INTERVAL '15 minutes' ELSE NULL END
+        WHERE key=${key} RETURNING "failedAttempts"`;
+        return { matched: null };
+      },
+      { timeout: 20000 },
+    );
+    if (result.blocked) bad(messages.blocked);
+    if (!result.matched) bad(messages.wrong);
+    return result.matched as string;
+  });
 }

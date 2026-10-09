@@ -4,6 +4,7 @@ import { MerchandiseController } from "./merchandise";
 import {
   Controller,
   Get,
+  Inject,
   Module,
   ServiceUnavailableException,
 } from "@nestjs/common";
@@ -18,10 +19,15 @@ import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
 import { AlertEngine, AlertsController } from "./alerts";
+import { OfflineSalesController } from "./offline-sales";
+import {
+  AuthenticatedRateLimitGuard,
+  RequestRateLimitService,
+} from "./rate-limit";
 
 @Controller()
-class HealthController {
-  constructor(private readonly db: Database) {}
+export class HealthController {
+  constructor(@Inject(Database) private readonly db: Database) {}
 
   @Public() @Get("health/live") live() {
     return { status: "ok", service: "Nexora POS" };
@@ -53,11 +59,14 @@ export function createAppModule(secret: string) {
       CashController,
       ReportsController,
       AlertsController,
+      OfflineSalesController,
     ],
     providers: [
       Database,
       AlertEngine,
+      RequestRateLimitService,
       { provide: APP_GUARD, useClass: AuthGuard },
+      { provide: APP_GUARD, useClass: AuthenticatedRateLimitGuard },
     ],
   })
   class AppModule {}

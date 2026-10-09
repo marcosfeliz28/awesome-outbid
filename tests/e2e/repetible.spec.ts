@@ -85,7 +85,7 @@ test.describe("TS-2: cada prueba llega a la API con su propia dirección", () =>
   };
   async function signIn(page: any) {
     await page.goto("/");
-    await page.getByLabel("Correo electrónico").fill(credentials.email);
+    await page.getByLabel("Usuario").fill(credentials.email);
     await page
       .getByLabel("Contraseña", { exact: true })
       .fill(credentials.password);
@@ -100,13 +100,19 @@ test.describe("TS-2: cada prueba llega a la API con su propia dirección", () =>
     page,
     request,
   }) => {
+    // El límite de autenticación es por dirección y por identificador de
+    // cuenta (REQUEST_RATE_LIMITS.authAccount = 60 por minuto), y se aplica a
+    // los inicios de sesión; /api/auth/me ya no cuenta. Se usa la cuenta con
+    // contraseña correcta para no activar el bloqueo por contraseñas fallidas.
     const statuses: number[] = [];
     for (let i = 0; i < 61; i++)
-      statuses.push((await request.get("/api/auth/me")).status());
-    // Nadie más usó la dirección de esta prueba: pasan justo 60 (401, sin
-    // sesión) y la 61 se rechaza.
+      statuses.push(
+        (await request.post("/api/auth/login", { data: credentials })).status(),
+      );
+    // Nadie más usó la dirección de esta prueba: pasan justo 60 y la 61 se
+    // rechaza.
     expect(statuses.indexOf(429)).toBe(60);
-    expect(new Set(statuses.slice(0, 60))).toEqual(new Set([401]));
+    expect(new Set(statuses.slice(0, 60))).toEqual(new Set([201]));
     // La página de esta prueba es el mismo equipo: también queda bloqueada.
     expect((await signIn(page)).status()).toBe(429);
     await expect(page.getByRole("alert")).toContainText("Demasiados intentos");

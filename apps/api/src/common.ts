@@ -16,6 +16,7 @@ import { PrismaClient } from "@prisma/client";
 import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
 import type { Request, Response } from "express";
 import { captureApiException } from "./monitoring";
+import { isSerializationConflict } from "./inventory-resilience";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -39,6 +40,12 @@ export type Actor = {
   branchId: string;
 };
 export type ActorRequest = Request & { actor: Actor };
+// Una misma política protege todos los caminos que pueden revelar el arqueo:
+// caja, reportes genéricos y alertas. `reports:read`/`alerts:write` por sí solos
+// no autorizan a conocer los importes esperados ni sus diferencias.
+export const canViewCashExpected = (actor: Actor) =>
+  can(actor.permissions, "profit:read") ||
+  can(actor.permissions, "sale:manage");
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext) =>
     ctx.switchToHttp().getRequest<ActorRequest>().actor,
@@ -193,6 +200,28 @@ export const qty = stockQty();
 export const reason = z.string().trim().min(3).max(1000);
 export const json = (value: unknown) => JSON.parse(JSON.stringify(value));
 export const scoped = (actor: Actor) => ({ branchId: actor.branchId });
+// Toda operación que vaya a asociar una venta o cotización a un cliente toma
+// el mismo bloqueo que la anonimización. El segundo en llegar relee el estado:
+// así nunca puede recrear PII después de que el borrado fue confirmado.
+export async function lockActiveCustomer(
+  tx: any,
+  actor: Actor,
+  customerId: string,
+) {
+  await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
+  const customer = await tx.customer.findFirst({
+    where: {
+      id: customerId,
+      branchId: actor.branchId,
+      active: true,
+      anonymizedAt: null,
+    },
+  });
+  if (!customer)
+    conflict("El cliente fue anonimizado o ya no está disponible.");
+  return customer;
+}
+
 export const audit = (
   db: any,
   actor: Actor,
@@ -237,6 +266,8 @@ export function safe<T>(value: T, actor: Actor): T {
     "unitCost",
     "landedCost",
     "costTotal",
+    "wasteCost",
+    "wasteCostTotal",
     "wholesalePrice",
     "grossProfit",
     "netProfit",
@@ -413,7 +444,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (exception?.code === "P2025") {
       status = 404;
       message = "El registro no existe.";
-    } else if (exception?.code === "P2034") {
+    } else if (isSerializationConflict(exception)) {
       status = 409;
       message = "Otra operación modificó estos datos. Reintenta.";
     }
@@ -447,7 +478,7 @@ export function safeErrorMessage(error: any): string {
   if (error?.code === "P2025")
     return "El registro no existe o ya no está disponible.";
   if (error?.code === "P2002") return "Ya existe un registro con esos datos.";
-  if (error?.code === "P2034")
+  if (isSerializationConflict(error))
     return "Otra operación modificó estos datos. Reintenta.";
   return "No se pudo completar la operación. Revisa la venta e intenta de nuevo.";
 }

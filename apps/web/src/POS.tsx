@@ -65,6 +65,7 @@ import {
   priceChanges,
 } from "./realtime";
 import { offlineSaleAction } from "./offlinePolicy";
+import { blockPosShortcutWithModal } from "./posKeyboard";
 
 function discountFor(
   promo: any,
@@ -404,6 +405,7 @@ export function POS({ go }: { go: (page: string) => void }) {
   // [cart, session, online], F8 guardaba el cliente anterior (R9-caja-7).
   const onKey = useRef<(e: KeyboardEvent) => void>(() => {});
   onKey.current = (e) => {
+    if (blockPosShortcutWithModal(e, document)) return;
     if (e.key === "F2") {
       e.preventDefault();
       search.current?.focus();

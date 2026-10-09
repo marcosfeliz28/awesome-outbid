@@ -3,6 +3,11 @@ import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import {
+  PASSWORD_CHANGE_CONFIRMATION,
+  forcePasswordChangeAtStartup,
+  safelyForcePasswordChangeAtStartup,
+} from "../apps/api/src/require-password-change";
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
@@ -12,6 +17,7 @@ requireApi("dotenv").config({
   path: fileURLToPath(new URL("../.env", import.meta.url)),
   quiet: true,
 });
+
 const apiDir = fileURLToPath(new URL("../apps/api", import.meta.url));
 // Ejecuta node en apps/api sin bloquear este proceso. Con spawnSync el bucle
 // de eventos se detiene: si pasan más de 5 s, la API cierra las conexiones
@@ -36,6 +42,16 @@ function runNode(args: string[], env: NodeJS.ProcessEnv, timeout?: number) {
 }
 const { PrismaClient } = requireApi("@prisma/client");
 const fixtureDb = new PrismaClient();
+const expectedForCash = async (id: string) => {
+  const cash = (await ok("/cash-sessions", undefined, ownerToken)).find(
+    (session: any) => session.id === id,
+  );
+  if (!cash?.expected)
+    throw new Error(
+      "La administración no recibió el esperado de la caja " + id,
+    );
+  return cash.expected as { cash: number; card: number; transfer: number };
+};
 const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
 let token = "",
   ownerToken = "",
@@ -54,12 +70,49 @@ const suffix = Date.now().toString(36);
 const testIp = "192.0.2." + ((Date.now() % 250) + 1);
 const authIp = "203.0.113." + ((Date.now() % 250) + 1);
 const rateIp = "198.51.100." + ((Date.now() % 250) + 1);
+const QA_ACTIVE_PASSWORD = "FitStore-QA-Activa-2026!";
+const qaPasswords = new Map<string, { initial: string; active: string }>();
+const loginKey = (data: any) =>
+  String(data?.login ?? data?.email ?? "")
+    .trim()
+    .toLocaleLowerCase("es");
+const withActiveTestPassword = (path: string, data: any) => {
+  if (path !== "/auth/login" || !data || typeof data !== "object") return data;
+  const known = qaPasswords.get(loginKey(data));
+  return known && data.password === known.initial
+    ? { ...data, password: known.active }
+    : data;
+};
+const prepareTestPayload = (path: string, data: any) => {
+  return withActiveTestPassword(path, data);
+};
+async function completeRequiredPasswordChange(
+  path: string,
+  data: any,
+  response: { status: number; body: any },
+  send: (path: string, data: unknown) => Promise<{ status: number; body: any }>,
+) {
+  if (path !== "/auth/login" || !response.body?.requiresPasswordChange)
+    return response;
+  const key = loginKey(data);
+  const initial = String(data?.password ?? "");
+  const changed = await send("/auth/change-password", {
+    login: String(data?.login ?? data?.email ?? ""),
+    currentPassword: initial,
+    newPassword: QA_ACTIVE_PASSWORD,
+    confirmPassword: QA_ACTIVE_PASSWORD,
+  });
+  if (changed.status < 400)
+    qaPasswords.set(key, { initial, active: QA_ACTIVE_PASSWORD });
+  return changed;
+}
 async function request(
   path: string,
   data?: unknown,
   as = token,
   method = data === undefined ? "GET" : "POST",
 ) {
+  data = prepareTestPayload(path, data);
   const response = await fetch(base + path, {
     method,
     headers: {
@@ -72,7 +125,10 @@ async function request(
   return { status: response.status, body: await response.json() };
 }
 async function ok(path: string, data?: unknown, as = token, method?: string) {
-  const r = await request(path, data, as, method);
+  let r = await request(path, data, as, method);
+  r = await completeRequiredPasswordChange(path, data, r, (next, payload) =>
+    request(next, payload, ""),
+  );
   if (r.status >= 400)
     throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
   return r.body;
@@ -218,9 +274,11 @@ afterAll(async () => {
         await ok(
           "/cash-sessions/" + s.id + "/close",
           {
-            countedCash: Math.max(0, current.expected.cash),
-            countedCard: Math.max(0, current.expected.card),
-            countedTransfer: Math.max(0, current.expected.transfer),
+            // El arqueo es ciego para la cajera; la limpieza tampoco debe
+            // depender de importes que la API oculta correctamente.
+            countedCash: Math.max(0, current.expected?.cash ?? 0),
+            countedCard: Math.max(0, current.expected?.card ?? 0),
+            countedTransfer: Math.max(0, current.expected?.transfer ?? 0),
             notes: "Cierre de pruebas",
           },
           t,
@@ -232,6 +290,248 @@ afterAll(async () => {
     await request("/users/" + u.id, { active: false }, ownerToken, "PATCH");
 });
 describe("Aceptación financiera y permisos", () => {
+  it("T5: el arranque marca sólo las cuentas configuradas y sin variables no cambia ninguna", async () => {
+    const role = await fixtureDb.role.findUniqueOrThrow({
+      where: { name: "seller" },
+    });
+    const prefix = `t5-${randomUUID()}`;
+    const created = await Promise.all(
+      [
+        { username: null, key: "correo", mustChangePassword: false },
+        {
+          username: `${prefix}-usuario`,
+          key: "usuario",
+          mustChangePassword: false,
+        },
+        { username: null, key: "marcado", mustChangePassword: true },
+        { username: null, key: "intacto", mustChangePassword: false },
+        { username: null, key: "concurrente", mustChangePassword: false },
+        {
+          username: `${prefix}-ambiguo@example.invalid`,
+          key: "ambiguo-usuario",
+          email: `${prefix}-otro@example.invalid`,
+          mustChangePassword: false,
+        },
+        {
+          username: null,
+          key: "ambiguo-correo",
+          email: `${prefix}-ambiguo@example.invalid`,
+          mustChangePassword: false,
+        },
+      ].map((entry) =>
+        fixtureDb.user.create({
+          data: {
+            name: "T5 arranque",
+            username: entry.username,
+            usernameKey: entry.username,
+            email: entry.email ?? `${prefix}-${entry.key}@example.invalid`,
+            passwordHash: "no-se-usa-en-esta-prueba",
+            pinHash: "no-se-usa-en-esta-prueba",
+            roleId: role.id,
+            mustChangePassword: entry.mustChangePassword,
+          },
+        }),
+      ),
+    );
+    const [
+      emailTarget,
+      usernameTarget,
+      alreadyMarked,
+      untouched,
+      concurrentTarget,
+      ambiguousUsername,
+      ambiguousEmail,
+    ] = created;
+    const logs: string[] = [];
+
+    try {
+      expect(
+        await forcePasswordChangeAtStartup(fixtureDb, {}, (line) =>
+          logs.push(line),
+        ),
+      ).toBe(0);
+      expect(
+        await fixtureDb.user.findUniqueOrThrow({
+          where: { id: emailTarget.id },
+        }),
+      ).toMatchObject({ mustChangePassword: false, authVersion: 0 });
+
+      expect(
+        await forcePasswordChangeAtStartup(
+          fixtureDb,
+          {
+            FORCE_PASSWORD_CHANGE_USERNAMES: `${emailTarget.email}, ${usernameTarget.username}, ${alreadyMarked.email}`,
+            FORCE_PASSWORD_CHANGE_CONFIRM: PASSWORD_CHANGE_CONFIRMATION,
+          },
+          (line) => logs.push(line),
+        ),
+      ).toBe(2);
+
+      const users = await fixtureDb.user.findMany({
+        where: { id: { in: created.map((user) => user.id) } },
+        orderBy: { username: "asc" },
+      });
+      for (const target of [emailTarget, usernameTarget])
+        expect(users.find((user: any) => user.id === target.id)).toMatchObject({
+          mustChangePassword: true,
+          authVersion: 1,
+        });
+      expect(
+        users.find((user: any) => user.id === alreadyMarked.id),
+      ).toMatchObject({ mustChangePassword: true, authVersion: 0 });
+      expect(users.find((user: any) => user.id === untouched.id)).toMatchObject(
+        { mustChangePassword: false, authVersion: 0 },
+      );
+      expect(logs).toEqual([
+        "2 cuenta(s) requieren cambio de contraseña al iniciar.",
+      ]);
+      expect(logs.join(" ")).not.toContain(emailTarget.email);
+      expect(logs.join(" ")).not.toContain(usernameTarget.username);
+
+      expect(
+        await forcePasswordChangeAtStartup(
+          fixtureDb,
+          {
+            FORCE_PASSWORD_CHANGE_USERNAMES: `${emailTarget.email},${usernameTarget.username},${alreadyMarked.email}`,
+            FORCE_PASSWORD_CHANGE_CONFIRM: PASSWORD_CHANGE_CONFIRMATION,
+          },
+          () => undefined,
+        ),
+      ).toBe(0);
+
+      const concurrent = await Promise.all(
+        [1, 2].map(() =>
+          forcePasswordChangeAtStartup(
+            fixtureDb,
+            {
+              FORCE_PASSWORD_CHANGE_USERNAMES: concurrentTarget.email,
+              FORCE_PASSWORD_CHANGE_CONFIRM: PASSWORD_CHANGE_CONFIRMATION,
+            },
+            () => undefined,
+          ),
+        ),
+      );
+      expect(concurrent.sort()).toEqual([0, 1]);
+      expect(
+        await fixtureDb.user.findUniqueOrThrow({
+          where: { id: concurrentTarget.id },
+        }),
+      ).toMatchObject({ mustChangePassword: true, authVersion: 1 });
+      expect(
+        await fixtureDb.auditLog.count({
+          where: {
+            action: "require_password_change",
+            entityId: concurrentTarget.id,
+          },
+        }),
+      ).toBe(1);
+
+      await expect(
+        forcePasswordChangeAtStartup(
+          fixtureDb,
+          {
+            FORCE_PASSWORD_CHANGE_USERNAMES: ambiguousEmail.email,
+            FORCE_PASSWORD_CHANGE_CONFIRM: PASSWORD_CHANGE_CONFIRMATION,
+          },
+          () => undefined,
+        ),
+      ).rejects.toThrow(/exactamente.*sin cuentas repetidas/i);
+      for (const user of [ambiguousUsername, ambiguousEmail])
+        expect(
+          await fixtureDb.user.findUniqueOrThrow({ where: { id: user.id } }),
+        ).toMatchObject({ mustChangePassword: false, authVersion: 0 });
+
+      const configuredSecret = "clave-que-no-debe-aparecer";
+      const warnings: string[] = [];
+      const invalidEnv = {
+        FORCE_PASSWORD_CHANGE_USERNAMES: `inexistente-${configuredSecret}`,
+        FORCE_PASSWORD_CHANGE_CONFIRM: PASSWORD_CHANGE_CONFIRMATION,
+      };
+      await expect(
+        forcePasswordChangeAtStartup(fixtureDb, invalidEnv, () => undefined),
+      ).rejects.toThrow(/exactamente/i);
+      expect(
+        await safelyForcePasswordChangeAtStartup(
+          fixtureDb,
+          invalidEnv,
+          () => undefined,
+          (line) => warnings.push(line),
+        ),
+      ).toBe(0);
+      expect(warnings).toEqual([
+        "No se pudo aplicar el cambio obligatorio de contraseña; revisa la lista configurada.",
+      ]);
+      expect(warnings.join(" ")).not.toContain(configuredSecret);
+      expect(warnings.join(" ")).not.toMatch(/hash/i);
+    } finally {
+      await fixtureDb.auditLog.deleteMany({
+        where: { entity: "user", entityId: { in: created.map((u) => u.id) } },
+      });
+      await fixtureDb.user.deleteMany({
+        where: { id: { in: created.map((user) => user.id) } },
+      });
+    }
+  });
+
+  it("la contraseña temporal no abre sesión hasta que el usuario la reemplaza", async () => {
+    const email = `qa-temporal-${randomUUID()}@example.test`;
+    const initial = "FitStore-QA-Temporal-2026!";
+    const active = "FitStore-QA-Definitiva-2026!";
+    const roles = await ok("/roles");
+    const user = await ok("/users", {
+      name: "QA contraseña temporal " + suffix,
+      email,
+      password: initial,
+      pin: "246810",
+      roleId: roles.find((role: any) => role.name === "seller").id,
+    });
+    actors.push(user);
+
+    const first = await request(
+      "/auth/login",
+      { email, password: initial },
+      "",
+    );
+    expect(first.status).toBe(201);
+    expect(first.body).toMatchObject({ requiresPasswordChange: true });
+    expect(first.body.accessToken).toBeUndefined();
+    expect(
+      (
+        await request(
+          "/auth/me",
+          undefined,
+          first.body.accessToken ?? "token-temporal-inutilizable",
+        )
+      ).status,
+    ).toBe(401);
+
+    const changed = await request(
+      "/auth/change-password",
+      {
+        login: email,
+        currentPassword: initial,
+        newPassword: active,
+        confirmPassword: active,
+      },
+      "",
+    );
+    expect(changed.status).toBe(201);
+    expect(changed.body.accessToken).toBeTruthy();
+    expect(
+      (await request("/auth/me", undefined, changed.body.accessToken)).status,
+    ).toBe(200);
+    expect(
+      (await request("/auth/login", { email, password: initial }, "")).status,
+    ).toBe(400);
+    const second = await request(
+      "/auth/login",
+      { email, password: active },
+      "",
+    );
+    expect(second.status).toBe(201);
+    expect(second.body.accessToken).toBeTruthy();
+  });
+
   it("rechaza una venta sin cliente identificado antes de modificar inventario", async () => {
     const before = Number(
       (await ok("/products/" + clothing.id)).variants[0].stock,
@@ -753,10 +1053,13 @@ describe("Regresiones de Claude", () => {
     const c = (await ok("/cash-sessions", undefined, sellerToken)).find(
       (s) => s.id === sellerSession.id,
     );
+    expect(c.expected).toBeUndefined();
+    const expected = await expectedForCash(c.id);
     const r = await request("/cash-sessions/" + c.id + "/close", {
-      countedCash: c.expected.cash - 10,
-      countedCard: c.expected.card + 10,
-      countedTransfer: c.expected.transfer,
+      countedCash: expected.cash - 10,
+      countedCard: expected.card + 10,
+      countedTransfer: expected.transfer,
+      notes: "Diferencias compensadas verificadas en QA",
     });
     expect(r.status).toBe(201);
     const closed = (await ok("/cash-sessions")).find((s) => s.id === c.id);
@@ -781,6 +1084,7 @@ describe("Regresiones de Claude", () => {
         {
           ...process.env,
           NODE_ENV: "production",
+          WEB_ORIGIN: "https://qa.example.test",
           JWT_SECRET: secret,
           DATABASE_URL: "postgresql://invalid:invalid@127.0.0.1:1/invalid",
         },
@@ -844,31 +1148,51 @@ describe("Regresiones de Claude", () => {
     );
   });
   it("11: reintentar venta aprobada no requiere de nuevo PIN", async () => {
-    const prev = (await ok("/sales", undefined, sellerToken)).find(
-      (s) => Number(s.discountTotal) > 0,
+    // La regresión 5 ya cerró la caja original de la vendedora. Esta prueba
+    // abre una propia para no depender del orden ni reutilizar una caja cerrada.
+    const retryCash = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 0 },
+      sellerToken,
     );
-    expect(
-      (
-        await request(
-          "/sales",
-          {
-            offlineUuid: prev.offlineUuid,
-            cashSessionId: sellerSession.id,
-            items: [
-              {
-                variantId: clothing.variants[0].id,
-                qty: 1,
-                discountPercent: 25,
-              },
-            ],
-            payments: [{ method: "cash", amount: 88.5 }],
-            expectedTotal: 88.5,
-            discountReason: "Descuento autorizado en pruebas",
-          },
-          sellerToken,
-        )
-      ).status,
-    ).toBe(201);
+    const approved = {
+      offlineUuid: randomUUID(),
+      customerId: defaultCustomerId,
+      cashSessionId: retryCash.id,
+      items: [
+        {
+          variantId: clothing.variants[0].id,
+          qty: 1,
+          discountPercent: 25,
+        },
+      ],
+      payments: [{ method: "cash", amount: 88.5 }],
+      expectedTotal: 88.5,
+      discountReason: "Descuento autorizado en pruebas",
+    };
+    try {
+      expect(
+        (
+          await request(
+            "/sales",
+            { ...approved, managerPin: "987654" },
+            sellerToken,
+          )
+        ).status,
+      ).toBe(201);
+      expect((await request("/sales", approved, sellerToken)).status).toBe(201);
+    } finally {
+      const expected = await expectedForCash(retryCash.id);
+      await ok(
+        "/cash-sessions/" + retryCash.id + "/close",
+        {
+          countedCash: expected.cash,
+          countedCard: expected.card,
+          countedTransfer: expected.transfer,
+        },
+        sellerToken,
+      );
+    }
   });
   it("12: índice parcial impide apertura concurrente de terminal", async () => {
     const manager = actors.find((u) => u.email.includes("qa-manager"));
@@ -978,13 +1302,17 @@ afterAll(async () => {
 
 describe("Seguridad, offline y funciones completadas", () => {
   async function loginRaw(user: any, password = "FitStore-QA-2026!") {
+    const credentials = prepareTestPayload("/auth/login", {
+      email: user.email,
+      password,
+    });
     return fetch(base + "/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Forwarded-For": authIp,
       },
-      body: JSON.stringify({ email: user.email, password }),
+      body: JSON.stringify(credentials),
     });
   }
   async function newUser(role = "seller") {
@@ -997,6 +1325,13 @@ describe("Seguridad, offline y funciones completadas", () => {
       roleId: roles.find((r) => r.name === role).id,
     });
     actors.push(user);
+    // Activa la contraseña temporal una sola vez. Las pruebas posteriores usan
+    // loginRaw, que resuelve la contraseña activa mediante qaPasswords.
+    await ok(
+      "/auth/login",
+      { email: user.email, password: "FitStore-QA-2026!" },
+      "",
+    );
     return user;
   }
   it("1: contraseñas concurrentes incrementan atómicamente y bloquean tras cinco", async () => {
@@ -1015,44 +1350,85 @@ describe("Seguridad, offline y funciones completadas", () => {
     expect(stored.map((a: any) => a.failedAttempts)).toEqual([5]);
   });
   it("1–2: PIN de gerente tiene contador propio sin cerrar sesión del vendedor", async () => {
-    sellerSession = await ok(
+    // Usa sesión propia: el objetivo es medir exclusivamente el contador de
+    // PIN, no heredar el límite HTTP acumulado por sellerToken en otros casos.
+    const pinSeller = await newUser("seller");
+    const pinAuth = await loginRaw(pinSeller);
+    expect(pinAuth.status).toBe(201);
+    const pinSellerToken = (await pinAuth.json()).accessToken as string;
+    await enroll(pinSellerToken, "QA vendedor contador PIN");
+    const pinSession = await ok(
       "/cash-sessions/open",
       { registerId: "qa-approval-" + suffix, openingAmount: 0 },
-      sellerToken,
+      pinSellerToken,
     );
     const payload = () => ({
-      ...input(clothing.variants[0].id, 88.5, sellerSession),
+      ...input(clothing.variants[0].id, 88.5, pinSession),
       items: [
         { variantId: clothing.variants[0].id, qty: 1, discountPercent: 25 },
       ],
       managerPin: "000000",
     });
-    const errors = await Promise.all(
-      Array.from({ length: 10 }, () =>
-        request("/sales", payload(), sellerToken),
-      ),
-    );
-    expect(errors.every((r) => r.status === 400)).toBe(true);
-    expect(
-      (
-        await request(
-          "/sales",
-          { ...payload(), managerPin: "987654" },
-          sellerToken,
-        )
-      ).body.message,
-    ).toMatch(/bloquead/i);
-    expect((await request("/auth/me", undefined, sellerToken)).status).toBe(
-      200,
-    );
+    try {
+      const errors = await Promise.all(
+        Array.from({ length: 10 }, () =>
+          request("/sales", payload(), pinSellerToken),
+        ),
+      );
+      expect(
+        errors.map((r) => ({ status: r.status, message: r.body?.message })),
+      ).toEqual(
+        Array.from({ length: 10 }, () => ({
+          status: 400,
+          message: expect.stringMatching(/PIN (incorrecto|bloqueado)/i),
+        })),
+      );
+      const attempt = await fixtureDb.authAttempt.findUniqueOrThrow({
+        where: { key: "approval:" + pinSeller.id },
+      });
+      expect(attempt.failedAttempts).toBe(5);
+      expect(attempt.lockedUntil?.getTime()).toBeGreaterThan(Date.now());
+      const blocked = await request(
+        "/sales",
+        { ...payload(), managerPin: "987654" },
+        pinSellerToken,
+      );
+      expect(blocked.status).toBe(400);
+      expect(blocked.body.message).toMatch(/bloquead/i);
+      expect(
+        (await request("/auth/me", undefined, pinSellerToken)).status,
+      ).toBe(200);
+    } finally {
+      await request(
+        "/cash-sessions/" + pinSession.id + "/close",
+        { countedCash: 0, countedCard: 0, countedTransfer: 0 },
+        pinSellerToken,
+      );
+      await fixtureDb.authAttempt.deleteMany({
+        where: { key: "approval:" + pinSeller.id },
+      });
+    }
   });
-  it("1: limita ventas detrás del proxy y separa direcciones IP", async () => {
-    const send = (ip: string) =>
+  it("1: limita ventas por sesión aunque cambie la IP y no bloquea otra sesión", async () => {
+    const login = async () => {
+      const response = await fetch(base + "/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "admin@fitstore.demo",
+          password: process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+        }),
+      });
+      return (await response.json()).accessToken as string;
+    };
+    const limitedToken = await login();
+    await enroll(limitedToken, "QA límite sesión A");
+    const send = (ip: string, as = limitedToken) =>
       fetch(base + "/sales", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
+          Authorization: "Bearer " + as,
           "X-Forwarded-For": ip,
         },
         body: "{}",
@@ -1061,7 +1437,10 @@ describe("Seguridad, offline y funciones completadas", () => {
     for (let n = 0; n < 121; n++) results.push((await send(rateIp)).status);
     expect(results.slice(0, 120).every((n) => n === 400)).toBe(true);
     expect(results[120]).toBe(429);
-    expect((await send("198.18.0.10")).status).toBe(400);
+    expect((await send("198.18.0.10")).status).toBe(429);
+    const otherToken = await login();
+    await enroll(otherToken, "QA límite sesión B");
+    expect((await send("198.18.0.10", otherToken)).status).toBe(400);
   });
   it("3 y 9: lote vencido según Santo Domingo no se vende ni se recibe", async () => {
     const p = await ok("/products", {
@@ -1453,6 +1832,8 @@ describe("Seguridad, offline y funciones completadas", () => {
   });
   it("alerta efectivo aunque tarjeta lo compense", async () => {
     const settings = await ok("/settings");
+    let alertCash: any;
+    let alertToken = "";
     try {
       await ok(
         "/settings",
@@ -1460,22 +1841,56 @@ describe("Seguridad, offline y funciones completadas", () => {
         token,
         "PUT",
       );
-      const current = (await ok("/cash-sessions")).find(
-        (c) => c.id === sellerSession.id,
+      const alertSeller = await newUser("seller");
+      const alertAuth = await loginRaw(alertSeller);
+      expect(alertAuth.status).toBe(201);
+      alertToken = (await alertAuth.json()).accessToken as string;
+      await enroll(alertToken, "QA alerta diferencia efectivo");
+      alertCash = await ok(
+        "/cash-sessions/open",
+        { registerId: "qa-cash-alert-" + suffix, openingAmount: 100 },
+        alertToken,
       );
-      const closed = await ok("/cash-sessions/" + current.id + "/close", {
-        countedCash: current.expected.cash + 10,
-        countedCard: current.expected.card,
-        countedTransfer: current.expected.transfer,
-        notes: "Diferencia de prueba explicada",
+      const expected = await expectedForCash(alertCash.id);
+      const closed = await ok(
+        "/cash-sessions/" + alertCash.id + "/close",
+        {
+          countedCash: expected.cash - 10,
+          countedCard: expected.card + 10,
+          countedTransfer: expected.transfer,
+          notes: "Diferencia de prueba explicada",
+        },
+        alertToken,
+      );
+      expect(closed).not.toHaveProperty("differenceCash");
+      expect(closed).not.toHaveProperty("expectedCash");
+      const stored = await fixtureDb.cashSession.findUniqueOrThrow({
+        where: { id: alertCash.id },
       });
-      expect(Number(closed.differenceCash)).toBe(10);
-      expect(
-        (await ok("/alerts")).some(
-          (a) => a.type === "cash_difference" && a.entityId === closed.id,
-        ),
-      ).toBe(true);
+      expect(Number(stored.differenceCash)).toBe(-10);
+      expect(Number(stored.differenceCard)).toBe(10);
+      expect(Number(stored.difference)).toBe(0);
+      const alert = await fixtureDb.alert.findUniqueOrThrow({
+        where: { key: "cash:" + alertCash.id },
+      });
+      expect(alert).toMatchObject({
+        type: "cash_difference",
+        severity: "high",
+        entityId: alertCash.id,
+        status: "new",
+      });
     } finally {
+      if (alertCash?.id && alertToken) {
+        const stored = await fixtureDb.cashSession.findUnique({
+          where: { id: alertCash.id },
+        });
+        if (stored && !stored.closedAt)
+          await request(
+            "/cash-sessions/" + alertCash.id + "/close",
+            { countedCash: 100, countedCard: 0, countedTransfer: 0 },
+            alertToken,
+          );
+      }
       await ok("/settings", settings, token, "PUT");
     }
   });
@@ -1678,16 +2093,18 @@ describe("Ronda 2 de Claude", () => {
       const c = (await ok("/cash-sessions", undefined, callerToken)).find(
         (c) => c.id === callerCash.id,
       );
-      if (!c.closedAt)
+      if (!c.closedAt) {
+        const expected = await expectedForCash(c.id);
         await ok(
           "/cash-sessions/" + c.id + "/close",
           {
-            countedCash: c.expected.cash,
-            countedCard: c.expected.card,
-            countedTransfer: c.expected.transfer,
+            countedCash: expected.cash,
+            countedCard: expected.card,
+            countedTransfer: expected.transfer,
           },
           callerToken,
         );
+      }
     }
   });
   const payload = (s = session) => input(variant.variants[0].id, 118, s);
@@ -1865,18 +2282,27 @@ describe("Ronda 2 de Claude", () => {
       },
       callerToken,
     );
-    const anonymous = await note();
-    const anonPay = {
-      ...payload(callerCash),
+    const codeProtectedNote = await note(customer.id);
+    // Datos heredados podían contener notas sin cliente. Recreamos ese estado
+    // de forma explícita sin permitir crear hoy una venta anónima.
+    await fixtureDb.creditNote.update({
+      where: { id: codeProtectedNote.id },
+      data: { customerId: null },
+    });
+    const legacyPay = {
+      ...pay,
       payments: [
-        { method: "credit_note", amount: 118, creditNoteId: anonymous.id },
+        {
+          ...pay.payments[0],
+          creditNoteId: codeProtectedNote.id,
+        },
       ],
     };
     expect(
       (
         await request(
           "/sales",
-          { ...anonPay, managerPin: "987654" },
+          { ...legacyPay, offlineUuid: randomUUID() },
           callerToken,
         )
       ).status,
@@ -1888,26 +2314,31 @@ describe("Ronda 2 de Claude", () => {
           undefined,
           callerToken,
         )
-      ).some((n) => n.id === anonymous.id),
+      ).some((n) => n.id === codeProtectedNote.id),
     ).toBe(false);
     const found = await ok(
-      "/credit-notes?code=" + anonymous.redemptionCode,
+      "/credit-notes?code=" + codeProtectedNote.redemptionCode,
       undefined,
       callerToken,
     );
-    expect(found.map((n) => n.id)).toEqual([anonymous.id]);
+    expect(found.map((n) => n.id)).toEqual([codeProtectedNote.id]);
     await ok(
       "/sales",
       {
-        ...anonPay,
+        ...legacyPay,
+        offlineUuid: randomUUID(),
         payments: [
-          { ...anonPay.payments[0], creditNoteCode: anonymous.redemptionCode },
+          {
+            ...legacyPay.payments[0],
+            creditNoteId: codeProtectedNote.id,
+            creditNoteCode: codeProtectedNote.redemptionCode,
+          },
         ],
       },
       callerToken,
     );
     const pdf = await fetch(
-      base + "/returns/" + anonymous.returnId + "/credit-note.pdf",
+      base + "/returns/" + codeProtectedNote.returnId + "/credit-note.pdf",
       { headers: { Authorization: "Bearer " + token } },
     );
     expect(pdf.ok).toBe(true);
@@ -2321,6 +2752,7 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
           "/sales",
           {
             offlineUuid: randomUUID(),
+            customerId: defaultCustomerId,
             cashSessionId: cashes[i].id,
             items: [{ variantId: p.variants[0].id, qty: 2 }],
             payments: [{ method: "cash", amount: 236 }],
@@ -2410,6 +2842,12 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
     ]);
     expect(a.id).toBe(b.id);
     expect(a.receiptId).toBeTruthy();
+    expect(
+      await fixtureDb.merchandiseOperation.count({ where: { id: op.id } }),
+    ).toBe(1);
+    expect(
+      await fixtureDb.goodsReceipt.count({ where: { operationId: op.id } }),
+    ).toBe(1);
     const v = (await ok("/products/" + product.id)).variants[0];
     expect(Number(v.stock)).toBe(before + 2);
     expect(Number(v.costAvg)).toBe(12);
@@ -2511,7 +2949,7 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
       goods({ items: [{ ...item, lotNumber: "R3 lote", expiryDate: date }] }),
     );
     const lot = (await ok("/products/" + lotProduct.id)).variants[0].lots.find(
-      (l: any) => l.lotNumber === "R3 lote",
+      (l: any) => l.lotNumberNormalized === "R3 LOTE",
     );
     await fixtureDb.lot.update({
       where: { id: lot.id },
@@ -3119,7 +3557,10 @@ describe("Ronda 4 · auditoría de ChatGPT y propia", () => {
     });
     const lot = await fixtureDb.lot.findUnique({
       where: {
-        variantId_lotNumber: { variantId: supplementVariant.id, lotNumber },
+        variantId_lotNumberNormalized: {
+          variantId: supplementVariant.id,
+          lotNumberNormalized: lotNumber.toUpperCase(),
+        },
       },
     });
     expect(Number(lot.qty)).toBe(3);
@@ -3143,7 +3584,8 @@ describe("Ronda 4 · auditoría de ChatGPT y propia", () => {
     expect(
       Number((await fixtureDb.lot.findUnique({ where: { id: lot.id } })).qty),
     ).toBe(3);
-    // Integridad referencial: el kardex no acepta un lote inexistente.
+    // Prueba negativa intencional: PostgreSQL registra
+    // InventoryMovement_lotId_fkey en su log al rechazar este lote inexistente.
     await expect(
       fixtureDb.inventoryMovement.create({
         data: {
@@ -3157,7 +3599,7 @@ describe("Ronda 4 · auditoría de ChatGPT y propia", () => {
           userId: "qa",
         },
       }),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({ code: "P2003" });
   });
   it("almacén: producto rápido queda inactivo con alerta; cantidades finas se rechazan; kardex usa el costo recibido", async () => {
     const wh = await newUserToken("warehouse");
@@ -4909,6 +5351,7 @@ describe("Ronda 9 · revisión · dinero", () => {
   const sell = (items: { variantId: string; qty: number }[]) =>
     ok("/sales", {
       offlineUuid: randomUUID(),
+      customerId: defaultCustomerId,
       cashSessionId: session.id,
       items,
       payments: [{ method: "cash", amount: 10000 }],
@@ -5069,6 +5512,7 @@ describe("Ronda 9 · revisión · dinero", () => {
     const cashBefore = await expectedCash();
     const sale = await ok("/sales", {
       offlineUuid: randomUUID(),
+      customerId: defaultCustomerId,
       cashSessionId: session.id,
       items: [{ variantId: v.id, qty: 3 }],
       globalDiscount: 10,
@@ -5350,6 +5794,62 @@ describe("Ronda 9 · revisión · dinero", () => {
     );
   });
 
+  it("T3: ventas por método exige permiso financiero mientras hay caja abierta", async () => {
+    const role = await fixtureDb.role.create({
+      data: {
+        name: "qa-reporte-ciego-" + suffix,
+        permissions: ["reports:read"],
+      },
+    });
+    const user = await ok("/users", {
+      name: "QA reporte ciego " + suffix,
+      email: `qa-reporte-ciego-${suffix}@example.test`,
+      password: "FitStore-QA-2026!",
+      pin: "654321",
+      roleId: role.id,
+    });
+    actors.push(user);
+    const viewer = (
+      await ok(
+        "/auth/login",
+        { email: user.email, password: "FitStore-QA-2026!" },
+        "",
+      )
+    ).accessToken;
+    const endpoint = `/reports/by-payment?from=${today}&to=${today}`;
+    const rowsFor = async (as: string) =>
+      (await ok(endpoint, undefined, as)).rows as any[];
+    const amount = (rows: any[], method: string, column: string) =>
+      Number(rows.find((row) => row.Método === method)?.[column] ?? 0);
+    const adminBefore = await rowsFor(token);
+    const variant = await product("reporte ciego", 731, 200, 2);
+    await ok("/sales", {
+      offlineUuid: randomUUID(),
+      customerId: defaultCustomerId,
+      cashSessionId: session.id,
+      items: [{ variantId: variant.id, qty: 1 }],
+      payments: [{ method: "cash", amount: 731 }],
+      expectedTotal: 731,
+    });
+
+    const [openSession, restrictedUser] = await Promise.all([
+      fixtureDb.cashSession.findUniqueOrThrow({ where: { id: session.id } }),
+      fixtureDb.user.findUniqueOrThrow({ where: { id: user.id } }),
+    ]);
+    expect(openSession.closedAt).toBeNull();
+    expect(openSession.branchId).toBe(restrictedUser.branchId);
+
+    const restricted = await request(endpoint, undefined, viewer);
+    const adminAfter = await rowsFor(token);
+    expect(restricted.status).toBe(403);
+    expect(
+      cents(
+        amount(adminAfter, "cash", "Ventas") -
+          amount(adminBefore, "cash", "Ventas"),
+      ),
+    ).toBe(731);
+  });
+
   it("R9-dinero-9: ventas por método no cuenta dos veces el crédito y muestra los cobros el día que entran", async () => {
     await withCredit(async () => {
       const customer = await creditCustomer();
@@ -5541,7 +6041,10 @@ describe("Ronda 9 · revisión · facturas", () => {
     expect(first.lines[0].note).toMatch(/la descripción no coincide/);
     // El código de la talla S con una factura que dice talla L.
     const top = await ok("/products", {
-      name: "QA R9F Top Tallas " + suffix,
+      // La unicidad pertenece al SKU/barcode. Un sufijo aleatorio en el nombre
+      // puede parecer una talla o número de tono y contaminar el parser que
+      // precisamente se está verificando aquí.
+      name: "QA R9F Top Tallas",
       sku: "R9F-" + randomUUID().slice(0, 8),
       categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
       variants: ["S", "M", "L"].map((talla) => ({
@@ -5561,8 +6064,6 @@ describe("Ronda 9 · revisión · facturas", () => {
       variantId: null,
       productId: top.id,
     });
-    // El texto puede variar según otros atributos inferidos del SKU aleatorio;
-    // lo importante es que explique claramente la talla S en conflicto.
     expect(second.lines[0].note).toMatch(/S no coincide|talla S|· S/);
     expect(second.lines[1].variantId).toBe(small.id);
   });
@@ -5965,6 +6466,7 @@ describe("Ronda 9 · revisión · seguridad", () => {
     as = "",
     extra: Record<string, string> = {},
   ) {
+    data = prepareTestPayload(path, data);
     const r = await fetch(base + path, {
       method: data === undefined ? "GET" : "POST",
       headers: {
@@ -5990,10 +6492,25 @@ describe("Ronda 9 · revisión · seguridad", () => {
       pin: "246813",
       roleId: roles.find((r: any) => r.name === role).id,
     });
+    const activePassword = "FitStore-R9-Activa-2026!";
+    const changed = await call("/auth/change-password", randomIp(), {
+      login: user.email,
+      currentPassword: password,
+      newPassword: activePassword,
+      confirmPassword: activePassword,
+    });
+    if (changed.status !== 201)
+      throw new Error(
+        "/auth/change-password: " +
+          changed.status +
+          " " +
+          JSON.stringify(changed.body),
+      );
+    user.testPassword = activePassword;
     actors.push(user);
     return user;
   }
-  const login = (user: any, ip: string, pass = password) =>
+  const login = (user: any, ip: string, pass = user.testPassword ?? password) =>
     call("/auth/login", ip, { email: user.email, password: pass });
 
   it("R9-seguridad-1: cinco contraseñas erróneas de un tercero no cierran la sesión de la vendedora ni le impiden entrar desde su equipo", async () => {
@@ -6086,22 +6603,36 @@ describe("Ronda 9 · revisión · seguridad", () => {
     expect((await login(seller, ip, "FitStore-R9-Nueva!")).status).toBe(201);
   });
 
-  it("R9-seguridad-2: el límite por IP de /auth y /sales no se evita cambiando mayúsculas en la ruta", async () => {
+  it("R9-seguridad-2: los límites por cuenta y sesión no se evitan cambiando mayúsculas o IP", async () => {
     const authIp = randomIp();
+    const limitedUser = await newUser("seller");
     const auth: number[] = [];
     for (let n = 0; n < 60; n++)
-      auth.push((await call("/Auth/login", authIp, {})).status);
+      auth.push(
+        (
+          await call("/Auth/login", authIp, {
+            email: limitedUser.email,
+            password: "contraseña-incorrecta",
+          })
+        ).status,
+      );
     expect(auth.every((s) => s === 400)).toBe(true);
-    expect((await call("/auth/login", authIp, {})).status).toBe(429);
-    expect((await call("/AUTH/login", authIp, {})).status).toBe(429);
+    const invalidLogin = { email: limitedUser.email, password: "incorrecta" };
+    expect((await call("/auth/login", authIp, invalidLogin)).status).toBe(429);
+    expect((await call("/AUTH/login", randomIp(), invalidLogin)).status).toBe(
+      400,
+    );
+    const salesUser = await newUser("admin");
+    const salesToken = (await login(salesUser, randomIp())).body.accessToken;
+    await enroll(salesToken, "QA límite R9");
     const salesIp = randomIp();
     const sales: number[] = [];
     for (let n = 0; n < 120; n++)
-      sales.push((await call("/Sales", salesIp, {}, token)).status);
+      sales.push((await call("/Sales", salesIp, {}, salesToken)).status);
     expect(sales.every((s) => s === 400)).toBe(true);
-    expect((await call("/sales", salesIp, {}, token)).status).toBe(429);
-    expect((await call("/SALES", salesIp, {}, token)).status).toBe(429);
-  });
+    expect((await call("/sales", randomIp(), {}, salesToken)).status).toBe(429);
+    expect((await call("/SALES", salesIp, {}, salesToken)).status).toBe(429);
+  }, 60000);
 });
 
 // Tienda (6/10/2026): ajustes del negocio, contraentrega, cuadre de caja con
@@ -6117,6 +6648,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     as = token,
     method = data === undefined ? "GET" : "POST",
   ) {
+    data = prepareTestPayload(path, data);
     const r = await fetch(base + path, {
       method,
       headers: {
@@ -6141,7 +6673,10 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     as = token,
     method?: string,
   ) {
-    const r = await call(path, data, as, method);
+    let r = await call(path, data, as, method);
+    r = await completeRequiredPasswordChange(path, data, r, (next, payload) =>
+      call(next, payload, ""),
+    );
     if (r.status >= 400)
       throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
     return r.body;
@@ -6211,6 +6746,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       "/sales",
       {
         offlineUuid: randomUUID(),
+        customerId: defaultCustomerId,
         cashSessionId: session.id,
         items,
         discountReason: "Descuento autorizado en pruebas",
@@ -6264,12 +6800,18 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
         const current = (
           await must("/cash-sessions", undefined, who.token)
         ).find((i: any) => i.id === s.id);
-        if (current && !current.closedAt)
+        if (current && !current.closedAt) {
+          const expected = await expectedForCash(s.id);
           await call(
             "/cash-sessions/" + s.id + "/close",
-            { countedCash: Math.max(0, current.expected.cash) },
+            {
+              countedCash: Math.max(0, expected.cash),
+              countedCard: Math.max(0, expected.card),
+              countedTransfer: Math.max(0, expected.transfer),
+            },
             who.token,
           );
+        }
       }
   });
 
@@ -6481,6 +7023,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
           s1,
           [{ variantId: p1.id, qty: 1 }],
           [{ method: "cod", amount: 1180 }],
+          { customerId: null },
         )
       ).status,
     ).toBe(400);
@@ -6774,7 +7317,8 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       expect(saved.body).toMatchObject({ hasProof: true });
       expect(saved.body.proofUrl).toBeUndefined();
       // Se puede reemplazar (p. ej. foto borrosa) y queda en el pago de la venta.
-      const replaced = await upload(paid.id, png(2 * 1024 * 1024), "image/png");
+      const maxPng = png(2 * 1024 * 1024);
+      const replaced = await upload(paid.id, maxPng, "image/png");
       expect(replaced.status).toBe(201);
       expect(replaced.body).toMatchObject({ hasProof: true });
       expect(replaced.body.proofUrl).toBeUndefined();
@@ -6793,9 +7337,9 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       });
       expect(proof.status).toBe(200);
       expect(proof.headers.get("content-type")).toMatch(/^image\/png/);
-      expect(Buffer.from(await proof.arrayBuffer())).toEqual(
-        png(2 * 1024 * 1024),
-      );
+      const proofBytes = Buffer.from(await proof.arrayBuffer());
+      expect(proofBytes.byteLength).toBe(maxPng.byteLength);
+      expect(Buffer.compare(proofBytes, maxPng)).toBe(0);
       const foreignProof = await fetch(
         base + "/payments/" + paid.id + "/proof",
         { headers: { Authorization: "Bearer " + cashier.token } },
@@ -6825,7 +7369,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       // La caja vendedora no recibió el dinero; puede cerrar sin ese cobro.
       const closed = await must(
         "/cash-sessions/" + s3.id + "/close",
-        { countedCash: 0, countedCard: 250, countedTransfer: 0 },
+        { countedCash: 0, countedCard: 0, countedTransfer: 0 },
         cashier3.token,
       );
       expect(closed.differences).toBeUndefined();
@@ -6856,7 +7400,12 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       if (current && !current.closedAt)
         await call(
           "/cash-sessions/" + s3.id + "/close",
-          { countedCash: 0, countedCard: 250, countedTransfer: 0 },
+          {
+            countedCash: 0,
+            countedCard: 0,
+            countedTransfer: 0,
+            notes: "Cierre de limpieza QA",
+          },
           cashier3.token,
         );
     }
@@ -6978,7 +7527,9 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     const open = (await must("/cash-sessions", undefined, cashier.token)).find(
       (c: any) => c.id === s1.id,
     );
-    expect(open.expected.cash).toBe(2030);
+    expect(open.expected).toBeUndefined();
+    const expected = await expectedForCash(s1.id);
+    expect(expected.cash).toBe(2030);
 
     const close = (data: any) =>
       call("/cash-sessions/" + s1.id + "/close", data, cashier.token);
@@ -7002,13 +7553,20 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       vouchers: 149.75,
       countedUsd: 20,
       countedEur: 0,
+      countedCard: expected.card,
+      countedTransfer: expected.transfer,
       delivered: 1700,
       notes: "QA cuadre",
     });
     expect(closed.status).toBe(201);
-    expect(Number(closed.body.countedCash)).toBe(1875);
-    expect(closed.body.differences.cash).toBe(-5.25);
-    expect(closed.body.closeDetails).toMatchObject({
+    expect(closed.body.countedCash).toBeUndefined();
+    expect(closed.body.differences).toBeUndefined();
+    const storedClose = await fixtureDb.cashSession.findUniqueOrThrow({
+      where: { id: s1.id },
+    });
+    expect(Number(storedClose.countedCash)).toBe(1875);
+    expect(Number(storedClose.differenceCash)).toBe(-5.25);
+    expect(storedClose.closeDetails).toMatchObject({
       vouchers: 149.75,
       countedUsd: 20,
       countedEur: 0,
@@ -7123,7 +7681,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       cashier.token,
     );
     expect(line(own, "profit")).toBeNull();
-    expect(line(own, "differenceDop")).toBe(-5.25);
+    expect(line(own, "differenceDop")).toBeUndefined();
     expect(JSON.stringify(own)).not.toMatch(/costTotal|"cost"/);
     expect(
       (
@@ -7157,8 +7715,12 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       { countedCash: 0, countedCard: 0, countedTransfer: 0 },
       cashier2.token,
     );
-    expect(closed.differences).toEqual({ cash: 0, card: 0, transfer: 0 });
-    expect(Number(closed.countedTransfer)).toBe(0);
+    expect(closed.differences).toBeUndefined();
+    const privileged = (
+      await must("/cash-sessions", undefined, ownerToken)
+    ).find((cash: any) => cash.id === s2.id);
+    expect(privileged.differences).toEqual({ cash: 0, card: 0, transfer: 0 });
+    expect(Number(privileged.countedTransfer)).toBe(0);
     const cuadre = await must(
       "/cash-sessions/" + s2.id + "/cuadre",
       undefined,
@@ -7923,6 +8485,7 @@ describe("Tienda · 4 cajas a la vez", () => {
     "198.19." + ((n % 200) + k) + "." + ((n % 250) + 1);
   const password = "FitStore-QA-2026!";
   async function call(path: string, data: unknown, as: string, ip: string) {
+    data = prepareTestPayload(path, data);
     const r = await fetch(base + path, {
       method: data === undefined ? "GET" : "POST",
       headers: {
@@ -7935,7 +8498,10 @@ describe("Tienda · 4 cajas a la vez", () => {
     return { status: r.status, body: await r.json() };
   }
   async function must(path: string, data: unknown, as: string, ip: string) {
-    const r = await call(path, data, as, ip);
+    let r = await call(path, data, as, ip);
+    r = await completeRequiredPasswordChange(path, data, r, (next, payload) =>
+      call(next, payload, "", ip),
+    );
     if (r.status >= 400)
       throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
     return r.body;
@@ -8048,6 +8614,7 @@ describe("Tienda · 4 cajas a la vez", () => {
         ];
         const body = {
           offlineUuid: randomUUID(),
+          customerId: defaultCustomerId,
           cashSessionId: c.session.id,
           items,
           payments: [{ method: "cash", amount: 300 }],
@@ -8079,8 +8646,19 @@ describe("Tienda · 4 cajas a la vez", () => {
           Promise.all([
             must("/merchandise/operations", entry, phone, ipOf(9)),
             must("/merchandise/operations", entry, phone, ipOf(9)),
-          ]).then(([x, y]) => {
+          ]).then(async ([x, y]) => {
+            expect(y.id).toBe(x.id);
             expect(y.receiptId).toBe(x.receiptId);
+            expect(
+              await fixtureDb.merchandiseOperation.count({
+                where: { id: entry.id },
+              }),
+            ).toBe(1);
+            expect(
+              await fixtureDb.goodsReceipt.count({
+                where: { operationId: entry.id },
+              }),
+            ).toBe(1);
             received += 3;
           }),
         );
@@ -8111,16 +8689,29 @@ describe("Tienda · 4 cajas a la vez", () => {
         c.expectedCash = 1000 * c.k + c.cash;
         return must(
           "/cash-sessions/" + c.session.id + "/close",
-          { countedCash: c.expectedCash },
+          {
+            countedCash: c.expectedCash,
+            countedCard: 0,
+            countedTransfer: 0,
+          },
           c.token,
           c.ip,
         );
       }),
     );
-    closed.forEach((x, i) => {
+    for (const [i, x] of closed.entries()) {
       cajas[i].closed = true;
-      expect(x.differences.cash).toBe(0);
-    });
+      expect(x.differences).toBeUndefined();
+      expect(
+        Number(
+          (
+            await fixtureDb.cashSession.findUniqueOrThrow({
+              where: { id: cajas[i].session.id },
+            })
+          ).differenceCash,
+        ),
+      ).toBe(0);
+    }
     for (const c of cajas) {
       const cuadre = await must(
         "/cash-sessions/" + c.session.id + "/cuadre",
@@ -8136,10 +8727,10 @@ describe("Tienda · 4 cajas a la vez", () => {
         cash: 1000 * c.k + c.cash,
         tickets: c.sales.size,
         cashSales: c.cash,
-        differenceDop: 0,
         total: c.cash,
         openingAmount: 1000 * c.k,
       });
+      expect(v.differenceDop).toBeUndefined();
       // Una cajera no ve el cuadre de otra caja.
       const other = cajas[c.k % 4];
       expect(
@@ -8261,7 +8852,7 @@ describe("Ronda 9 · Windows y zona horaria", () => {
       }
       await new Promise((resolve) => setTimeout(resolve, 150));
     }
-    return { base: apiBase, stop };
+    return { base: apiBase, stop, errors: () => errors };
   };
   // Como request() y ok(), contra la API indicada y con su propia IP para el
   // límite de intentos.
@@ -8272,6 +8863,7 @@ describe("Ronda 9 · Windows y zona horaria", () => {
       as = "",
       method = data === undefined ? "GET" : "POST",
     ) => {
+      data = prepareTestPayload(path, data);
       const response = await fetch(apiBase + path, {
         method,
         headers: {
@@ -8289,7 +8881,10 @@ describe("Ronda 9 · Windows y zona horaria", () => {
       as = "",
       method?: string,
     ) => {
-      const r = await call(path, data, as, method);
+      let r = await call(path, data, as, method);
+      r = await completeRequiredPasswordChange(path, data, r, (next, payload) =>
+        call(next, payload, ""),
+      );
       if (r.status >= 400)
         throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
       return r.body;
@@ -8304,6 +8899,21 @@ describe("Ronda 9 · Windows y zona horaria", () => {
       let owner = "",
         roles: any[] = [];
       const lane = (n: number) => clientOf(api!.base, "198.18.7." + n);
+      const enrollLocal = async (
+        client: ReturnType<typeof clientOf>,
+        accessToken: string,
+        label: string,
+      ) => {
+        const id = randomUUID();
+        const terminal = await client.must(
+          "/terminals/register",
+          { id, name: label, secret: secretOf(id) },
+          accessToken,
+        );
+        if (terminal.status === "pending")
+          await lane(0).must("/terminals/" + id + "/approve", {}, owner);
+        return id;
+      };
       const newUser = async (role: string, pin = "876543") => {
         const user = await lane(0).must(
           "/users",
@@ -8317,6 +8927,14 @@ describe("Ronda 9 · Windows y zona horaria", () => {
           owner,
         );
         actors.push(user);
+        // Todo usuario creado por un administrador debe reemplazar su clave
+        // temporal antes de obtener una sesión utilizable. La ayuda global
+        // completa ese flujo y recuerda la clave activa para los logins que
+        // siguen dentro de esta matriz de zonas horarias.
+        await lane(0).must("/auth/login", {
+          email: user.email,
+          password,
+        });
         return user;
       };
       beforeAll(async () => {
@@ -8341,7 +8959,8 @@ describe("Ronda 9 · Windows y zona horaria", () => {
       });
 
       it("K4: cinco contraseñas incorrectas bloquean el ingreso 15 minutos desde esa dirección (AuthAttempt) y un bloqueo vencido deja de aplicar", async () => {
-        const { call } = lane(1);
+        const client = lane(1);
+        const { call } = client;
         const user = await newUser("seller");
         const login = (pass = password) =>
           call("/auth/login", { email: user.email, password: pass });
@@ -8357,6 +8976,7 @@ describe("Ronda 9 · Windows y zona horaria", () => {
         try {
           const open = await login();
           expect(open.status).toBe(201);
+          await enrollLocal(client, open.body.accessToken, "QA K4 contraseña");
           const me = () => call("/auth/me", undefined, open.body.accessToken);
           expect((await me()).status).toBe(200);
           for (let n = 0; n < 5; n++) {
@@ -8415,11 +9035,13 @@ describe("Ronda 9 · Windows y zona horaria", () => {
       }, 60000);
 
       it("K4: cinco PIN incorrectos bloquean al solicitante 15 minutos (AuthAttempt) y un bloqueo vencido deja de aplicar", async () => {
-        const { call, must } = lane(2);
+        const client = lane(2);
+        const { call, must } = client;
         const actor = await newUser("seller");
         const target = await newUser("seller", "654321");
         const as = (await must("/auth/login", { email: actor.email, password }))
           .accessToken;
+        await enrollLocal(client, as, "QA K4 PIN");
         const key = "switch:" + actor.id;
         const pin = (value: string) =>
           call("/auth/pin", { userId: target.id, pin: value }, as);
@@ -8467,12 +9089,7 @@ describe("Ronda 9 · Windows y zona horaria", () => {
         const as = (
           await must("/auth/login", { email: cashier.email, password })
         ).accessToken;
-        const terminalId = randomUUID();
-        await must(
-          "/terminals/register",
-          { id: terminalId, name: "QA zona", secret: secretOf(terminalId) },
-          as,
-        );
+        await enrollLocal(lane(3), as, "QA zona");
         const category = (await must("/categories", undefined, as)).find(
           (c: any) => c.name === "Ropa deportiva",
         );
@@ -8538,17 +9155,25 @@ describe("Ronda 9 · Windows y zona horaria", () => {
           const weekday = (date: string) =>
             new Date(date + "T12:00:00Z").getUTCDay() || 7;
           const sell = async (qty: number, createdAt: Date) => {
-            const s = await must(
-              "/sales",
-              {
-                offlineUuid: randomUUID(),
-                cashSessionId: cash.id,
-                items: [{ variantId, qty }],
-                payments: [{ method: "cash", amount: 100 * qty }],
-                expectedTotal: 100 * qty,
-              },
-              as,
-            );
+            let s: any;
+            try {
+              s = await must(
+                "/sales",
+                {
+                  offlineUuid: randomUUID(),
+                  customerId: defaultCustomerId,
+                  cashSessionId: cash.id,
+                  items: [{ variantId, qty }],
+                  payments: [{ method: "cash", amount: 100 * qty }],
+                  expectedTotal: 100 * qty,
+                },
+                as,
+              );
+            } catch (error) {
+              throw new Error(
+                String(error) + "\nAPI secundaria: " + api?.errors(),
+              );
+            }
             await fixtureDb.sale.update({
               where: { id: s.id },
               data: { createdAt },
@@ -8669,7 +9294,9 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", (
         "X-Forwarded-For": ip,
         Authorization: "Bearer " + owner,
       },
-      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+      ...(data === undefined
+        ? {}
+        : { body: JSON.stringify(prepareTestPayload(path, data)) }),
     });
     return { status: response.status, body: await response.json() };
   };
@@ -8688,6 +9315,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", (
   const sellTwo = async () =>
     must("/sales", {
       offlineUuid: randomUUID(),
+      customerId: defaultCustomerId,
       cashSessionId: cashId,
       items: [{ variantId: variant.id, qty: 2 }],
       payments: [{ method: "cash", amount: 200 }],
@@ -8864,7 +9492,9 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A02 cierre histórico intacto",
         "X-Forwarded-For": ip,
         Authorization: "Bearer " + owner,
       },
-      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+      ...(data === undefined
+        ? {}
+        : { body: JSON.stringify(prepareTestPayload(path, data)) }),
     });
     return { status: response.status, body: await response.json() };
   };
@@ -8952,6 +9582,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A02 cierre histórico intacto",
     const a = await openCash();
     const sale = await must("/sales", {
       offlineUuid: randomUUID(),
+      customerId: defaultCustomerId,
       cashSessionId: a,
       items: [{ variantId: variant.id, qty: 1 }],
       payments: [{ method: "cash", amount: 100 }],
@@ -9015,7 +9646,9 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A05 merma de devoluciones", () 
         "X-Forwarded-For": ip,
         Authorization: "Bearer " + owner,
       },
-      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+      ...(data === undefined
+        ? {}
+        : { body: JSON.stringify(prepareTestPayload(path, data)) }),
     });
     return { status: response.status, body: await response.json() };
   };
@@ -9090,6 +9723,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A05 merma de devoluciones", () 
   it("una unidad devuelta dañada queda contada y valorada como merma, sin tocar el stock vendible ni el costo contable", async () => {
     const sale = await must("/sales", {
       offlineUuid: randomUUID(),
+      customerId: defaultCustomerId,
       cashSessionId: cashId,
       items: [{ variantId: variant.id, qty: 1 }],
       payments: [{ method: "cash", amount: 100 }],
@@ -9184,7 +9818,9 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A04 precisión monetaria", () =
         "X-Forwarded-For": ip,
         Authorization: "Bearer " + owner,
       },
-      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+      ...(data === undefined
+        ? {}
+        : { body: JSON.stringify(prepareTestPayload(path, data)) }),
     });
     return { status: response.status, body: await response.json() };
   };
@@ -9388,7 +10024,9 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A03 total de la factura conserv
         "X-Forwarded-For": ip,
         Authorization: "Bearer " + owner,
       },
-      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+      ...(data === undefined
+        ? {}
+        : { body: JSON.stringify(prepareTestPayload(path, data)) }),
     });
     return { status: response.status, body: await response.json() };
   };
@@ -9514,5 +10152,328 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A03 total de la factura conserv
     expect(Number(receipt.total)).toBe(200);
     expect(Number(receipt.invoiceTotal)).toBe(250);
     expect(Number(receipt.invoiceDifference)).toBe(50);
+  });
+});
+
+describe("I1 + K1 · lotes y concurrencia de inventario", () => {
+  let variant: any;
+
+  beforeAll(async () => {
+    const category = (await ok("/categories")).find(
+      (row: any) => !row.requiresLot && !row.requiresExpiry,
+    );
+    const product = await ok("/products", {
+      name: "QA identidad lote " + suffix,
+      sku: "QA-I1-" + suffix,
+      categoryId: category.id,
+      variants: [
+        {
+          sku: "QA-I1V-" + suffix,
+          barcode: "QA-I1B-" + suffix,
+          costAvg: 10,
+          price: 20,
+        },
+      ],
+    });
+    products.push(product);
+    variant = product.variants[0];
+  });
+
+  it("I1: código sin distinguir caso converge, NULL recibe fecha y otro vencimiento se rechaza", async () => {
+    const codes = [" lote   i1 ", "LOTE I1", "Lote I1", "lote i1"];
+    const responses = await Promise.all(
+      codes.map((lotNumber) =>
+        request("/inventory/adjustments", {
+          variantId: variant.id,
+          qty: 1,
+          reason: "QA identidad concurrente",
+          lotNumber,
+        }),
+      ),
+    );
+    expect(responses.map((response) => response.status)).toEqual([
+      201, 201, 201, 201,
+    ]);
+    let lots = await fixtureDb.lot.findMany({
+      where: { variantId: variant.id },
+    });
+    expect(lots).toHaveLength(1);
+    expect(lots[0]).toMatchObject({
+      lotNumber: "LOTE I1",
+      lotNumberNormalized: "LOTE I1",
+      expiryDate: null,
+    });
+    expect(Number(lots[0].qty)).toBe(4);
+
+    await ok("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 1,
+      reason: "QA completa vencimiento",
+      lotNumber: "lote i1",
+      expiryDate: "2030-01-01T04:00:00.000Z",
+    });
+    await ok("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 1,
+      reason: "QA mismo día dominicano",
+      lotNumber: "LOTE   I1",
+      expiryDate: "2030-01-01T12:00:00.000Z",
+    });
+    const rejected = await request("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 1,
+      reason: "QA vencimiento contradictorio",
+      lotNumber: "Lote I1",
+      expiryDate: "2030-01-02T04:00:00.000Z",
+    });
+    expect(rejected.status).toBe(400);
+    expect(rejected.body.message).toMatch(/vencimiento diferente/i);
+    lots = await fixtureDb.lot.findMany({ where: { variantId: variant.id } });
+    expect(lots).toHaveLength(1);
+    expect(lots[0].expiryDate?.toISOString()).toBe("2030-01-01T04:00:00.000Z");
+    expect(Number(lots[0].qty)).toBe(6);
+  });
+
+  it("K1: aplicar el mismo conteo en paralelo no duplica el movimiento", async () => {
+    const product = await ok("/products", {
+      name: "QA conteo K1 " + suffix,
+      sku: "QA-K1-" + suffix,
+      categoryId: clothing.categoryId,
+      variants: [
+        {
+          sku: "QA-K1V-" + suffix,
+          barcode: "QA-K1B-" + suffix,
+          costAvg: 10,
+          price: 20,
+        },
+      ],
+    });
+    products.push(product);
+    const id = product.variants[0].id;
+    const count = await ok("/inventory/counts", {
+      items: [{ variantId: id, counted: 7 }],
+    });
+    const results = await Promise.all([
+      request("/inventory/counts/" + count.id + "/apply", {}),
+      request("/inventory/counts/" + count.id + "/apply", {}),
+    ]);
+    expect(results.map((result) => result.status).sort()).toEqual([201, 400]);
+    expect(
+      await fixtureDb.inventoryMovement.count({
+        where: { refId: count.id, type: "count" },
+      }),
+    ).toBe(1);
+    expect(
+      Number(
+        (await fixtureDb.variant.findUniqueOrThrow({ where: { id } })).stock,
+      ),
+    ).toBe(7);
+  });
+});
+
+describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
+  let variant: any;
+
+  beforeAll(async () => {
+    const category = await ok("/categories", {
+      name: "QA D1 sin promociones " + suffix,
+    });
+    const product = await ok("/products", {
+      name: "QA venta offline heredada " + suffix,
+      sku: "QA-D1-" + suffix,
+      categoryId: category.id,
+      taxRate: 0,
+      variants: [
+        {
+          sku: "QA-D1V-" + suffix,
+          barcode: "QA-D1B-" + suffix,
+          costAvg: 40,
+          price: 100,
+        },
+      ],
+    });
+    products.push(product);
+    variant = product.variants[0];
+    await ok("/inventory/adjustments", {
+      variantId: variant.id,
+      qty: 5,
+      reason: "QA stock para compatibilidad offline",
+    });
+  });
+
+  it("D1: sincroniza el descuento heredado, conserva idempotencia y exige motivo a una venta online nueva", async () => {
+    const settings = await ok("/settings");
+    const originalCash = await fixtureDb.cashSession.findUniqueOrThrow({
+      where: { id: session.id },
+      select: { openedAt: true },
+    });
+    const offlineUuid = randomUUID();
+    const legacyReason = "Venta offline heredada (sin motivo registrado)";
+    const legacy = {
+      offlineUuid,
+      capturedAt: "2026-10-08T12:00:00.000Z",
+      customerId: defaultCustomerId,
+      cashSessionId: session.id,
+      items: [{ variantId: variant.id, qty: 1, discountPercent: 10 }],
+      globalDiscount: 0,
+      payments: [{ method: "cash", amount: 90 }],
+      expectedTotal: 90,
+    };
+    try {
+      await fixtureDb.cashSession.update({
+        where: { id: session.id },
+        data: { openedAt: new Date("2026-10-08T11:00:00.000Z") },
+      });
+      await ok(
+        "/settings",
+        { ...settings, allowOfflineSales: true },
+        token,
+        "PUT",
+      );
+
+      const first = await ok("/sales/sync", { sales: [legacy] });
+      expect(first.results[0].status, JSON.stringify(first.results[0])).toBe(
+        "synced",
+      );
+      expect(first.results[0].sale.discountReason).toBe(legacyReason);
+      const saleId = first.results[0].sale.id;
+      const stored = await fixtureDb.sale.findUniqueOrThrow({
+        where: { offlineUuid },
+      });
+      expect(stored.id).toBe(saleId);
+      expect(stored.discountReason).toBe(legacyReason);
+
+      const discountAudit = await fixtureDb.auditLog.findFirstOrThrow({
+        where: {
+          action: "discount_approved",
+          entity: "sale",
+          entityId: saleId,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      expect((discountAudit.after as any)?.reason).toBe(legacyReason);
+
+      const second = await ok("/sales/sync", { sales: [legacy] });
+      expect(second.results[0]).toMatchObject({
+        status: "synced",
+        sale: { id: saleId, discountReason: legacyReason },
+      });
+      expect(await fixtureDb.sale.count({ where: { offlineUuid } })).toBe(1);
+      expect(
+        await fixtureDb.auditLog.count({
+          where: { action: "discount_approved", entityId: saleId },
+        }),
+      ).toBe(1);
+
+      const online = await request("/sales", {
+        ...legacy,
+        offlineUuid: randomUUID(),
+        capturedAt: undefined,
+      });
+      expect(online.status).toBe(400);
+      expect(online.body.message).toMatch(/motivo del descuento/i);
+    } finally {
+      await fixtureDb.cashSession.update({
+        where: { id: session.id },
+        data: { openedAt: originalCash.openedAt },
+      });
+      await ok("/settings", settings, token, "PUT");
+    }
+  });
+
+  it("O1: audita después de sincronizar una venta y registra como cambio la rebaja en efectivo", async () => {
+    const settings = await ok("/settings");
+    const offlineUuid = randomUUID();
+    const attempted = {
+      offlineUuid,
+      customerId: defaultCustomerId,
+      cashSessionId: session.id,
+      items: [{ variantId: variant.id, qty: 1, discountPercent: 0 }],
+      globalDiscount: 0,
+      expectedTotal: 150,
+      payments: [{ method: "cash", amount: 200 }],
+    };
+    const resolution = {
+      offlineUuid,
+      action: "reprice",
+      previousTotal: 150,
+      currentTotal: 100,
+      reason: "Catálogo vigente confirmado por la cajera",
+    };
+    try {
+      await ok(
+        "/settings",
+        { ...settings, allowOfflineSales: true },
+        token,
+        "PUT",
+      );
+      const conflictResult = await ok("/sales/sync", {
+        sales: [attempted],
+      });
+      expect(conflictResult.results[0].status).toBe("conflict");
+      expect(
+        (await request("/sales/offline-resolution", resolution)).status,
+      ).toBe(404);
+      expect(
+        await fixtureDb.auditLog.count({
+          where: { action: "offline_sale_repriced", entityId: offlineUuid },
+        }),
+      ).toBe(0);
+
+      const corrected = {
+        ...attempted,
+        expectedTotal: 100,
+      };
+      const syncResult = await ok("/sales/sync", { sales: [corrected] });
+      expect(syncResult.results).toHaveLength(1);
+      expect(syncResult.results[0].status).toBe("synced");
+      const saleId = syncResult.results[0].sale.id;
+      const payment = await fixtureDb.payment.findFirstOrThrow({
+        where: { saleId, method: "cash", entryType: "sale" },
+      });
+      expect(Number(payment.tendered)).toBe(200);
+      expect(Number(payment.amount)).toBe(100);
+      expect(Number(payment.change)).toBe(100);
+
+      expect(await ok("/sales/offline-resolution", resolution, token)).toEqual({
+        ok: true,
+        saleId,
+      });
+      // Reintentar después de perder la respuesta no duplica la auditoría.
+      expect(await ok("/sales/offline-resolution", resolution, token)).toEqual({
+        ok: true,
+        saleId,
+      });
+      const logs = await fixtureDb.auditLog.findMany({
+        where: {
+          action: "offline_sale_repriced",
+          entity: "sale",
+          entityId: saleId,
+        },
+      });
+      expect(logs).toHaveLength(1);
+      expect(logs[0].userId).toBe(actors[0].id);
+      expect(logs[0].terminalId).toBe(tokenTerminal.get(token));
+      expect(logs[0].before).toEqual({ total: 150, offlineUuid });
+      expect(logs[0].after).toMatchObject({
+        total: 100,
+        reason: resolution.reason,
+        offlineUuid,
+        cashTendered: 200,
+        cashApplied: 100,
+        cashChange: 100,
+      });
+
+      // B2: un UUID arbitrario que nunca fue conflicto propio no se descarta.
+      const arbitrary = await request("/sales/offline-resolution", {
+        offlineUuid: randomUUID(),
+        action: "discard",
+        previousTotal: 125,
+        reason: "No corresponde a una venta pendiente real",
+      });
+      expect(arbitrary.status).toBe(404);
+    } finally {
+      await ok("/settings", settings, token, "PUT");
+    }
   });
 });
