@@ -13,6 +13,60 @@ const actor = (permissions: string[], id = "cashier-1") =>
   }) as any;
 
 describe("C2 · privacidad de arqueo por rutas indirectas", () => {
+  it("B3: dashboard oculta formas de pago de cajas abiertas y redacta alertas", async () => {
+    const openSessionId = "3e6b82b5-bb56-45ca-9f5a-d19f4955fc84";
+    const paymentQueries: any[] = [];
+    const zeroAggregate = {
+      _sum: { total: 0, taxTotal: 0, costTotal: 0, amount: 0, feeAmount: 0 },
+      _count: 0,
+    };
+    const db = {
+      cashSession: {
+        findMany: async () => [{ id: openSessionId }],
+      },
+      sale: { aggregate: async () => zeroAggregate },
+      saleReturn: { aggregate: async () => zeroAggregate },
+      expense: { aggregate: async () => zeroAggregate },
+      payment: {
+        aggregate: async () => zeroAggregate,
+        groupBy: async (query: any) => {
+          paymentQueries.push(query);
+          const hidden = query.where.OR?.some((clause: any) =>
+            clause.cashSessionId?.notIn?.includes(openSessionId),
+          );
+          return hidden
+            ? [{ method: "transfer", _sum: { amount: 25, feeAmount: 0 } }]
+            : [
+                { method: "cash", _sum: { amount: 125, feeAmount: 0 } },
+                { method: "transfer", _sum: { amount: 25, feeAmount: 0 } },
+              ];
+        },
+      },
+      alert: {
+        findMany: async () => [
+          {
+            id: "cash-alert",
+            type: "cash_difference",
+            message: "Diferencia exacta RD$ 1,234.00",
+          },
+        ],
+      },
+      $queryRaw: async () => [],
+    };
+    const limited = actor(["reports:read", "cash:write"]);
+    const result: any = await new ReportsController(db as any).dashboard(
+      {},
+      limited,
+    );
+
+    expect(paymentQueries).toHaveLength(1);
+    expect(result.payments).toEqual([{ name: "transfer", amount: 25 }]);
+    expect(result.payments).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: "cash" })]),
+    );
+    expect(result.alerts[0].message).not.toMatch(/1,234|RD\$/);
+  });
+
   it("el reporte genérico de caja exige privilegio financiero", async () => {
     const controller = new ReportsController({} as any);
     await expect(

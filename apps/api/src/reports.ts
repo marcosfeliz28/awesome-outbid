@@ -31,6 +31,7 @@ import {
   denied,
   canViewCashExpected,
 } from "./common";
+import { alertForActor } from "./alerts";
 
 export function dateRange(query: Record<string, string>) {
   const from = query.from
@@ -91,6 +92,18 @@ export class ReportsController {
       gte: new Date(+range.gte - (+range.lte - +range.gte)),
       lt: range.gte,
     };
+    // El dashboard conserva los totales operativos, pero para quien no puede
+    // ver el arqueo no desglosa cómo se cobraron ventas que todavía pertenecen
+    // a cajas abiertas. De lo contrario `payments` revela el efectivo/tarjeta/
+    // transferencia esperado antes del cierre.
+    const hiddenOpenCashSessionIds = canViewCashExpected(actor)
+      ? []
+      : (
+          await this.db.cashSession.findMany({
+            where: { branchId: actor.branchId, closedAt: null },
+            select: { id: true },
+          })
+        ).map((session) => session.id);
     const [
       sales,
       returns,
@@ -148,7 +161,18 @@ export class ReportsController {
       // método y sus abonos no se suman otra vez (R9-dinero-9).
       this.db.payment.groupBy({
         by: ["method"],
-        where: { sale: where, entryType: { not: "installment" } },
+        where: {
+          sale: where,
+          entryType: { not: "installment" },
+          ...(hiddenOpenCashSessionIds.length
+            ? {
+                OR: [
+                  { cashSessionId: null },
+                  { cashSessionId: { notIn: hiddenOpenCashSessionIds } },
+                ],
+              }
+            : {}),
+        },
         _sum: { amount: true, feeAmount: true },
       }),
       this.db.$queryRaw<
@@ -260,7 +284,7 @@ export class ReportsController {
           revenue: Number(i.revenue),
         })),
         sellers: sellers.map((i) => ({ ...i, total: Number(i.total) })),
-        alerts,
+        alerts: alerts.map((alert) => alertForActor(alert, actor)),
         from: range.gte,
         to: range.lte,
       },
@@ -816,8 +840,7 @@ export async function storeReport(
     // una jornada abierta. Sin privilegio financiero sólo se admite la caja
     // propia y después de cerrarla.
     if (!session || session.userId !== actor.id) denied();
-    if (!session.closedAt)
-      bad("Cierra la caja para consultar sus reportes.");
+    if (!session.closedAt) bad("Cierra la caja para consultar sus reportes.");
   }
   const range =
     session && !query.from && !query.to
