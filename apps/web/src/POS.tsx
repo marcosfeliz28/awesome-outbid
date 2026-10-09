@@ -1693,6 +1693,9 @@ function Checkout({
               ...line,
               discount: sum(rows, "discount"),
               lineTotal: sum(rows, "lineTotal"),
+              // G15: la promoción automática que aplicó el servidor.
+              promotionName: rows.find((r: any) => r.promotionName)
+                ?.promotionName,
             }
           : line;
       });

@@ -275,6 +275,8 @@ model SaleItem {
   tax              Decimal @db.Decimal(14, 2)
   lineTotal        Decimal @db.Decimal(14, 2)
   stockAllocations Json    @default("[]")
+  // Promoción automática aplicada (copia del nombre al vender) · G15.
+  promotionName    String?
 
   @@index([variantId])
   @@index([lotId])

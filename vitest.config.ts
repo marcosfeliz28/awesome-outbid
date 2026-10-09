@@ -32,6 +32,7 @@ export default defineConfig({
       "tests/telegram-render.test.ts",
       "tests/web-privacy.test.ts",
       "tests/web-monitoring.test.ts",
+      "tests/promotion-ticket.test.ts",
     ],
   },
 });
