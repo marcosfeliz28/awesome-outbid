@@ -44,6 +44,8 @@ Resumen: MIT 274+, ISC 28, Apache-2.0 12, BSD-3 6, BlueOak 5, otros 14. No hay G
 
 ### Brechas del aviso de terceros
 
+> **G14 (resuelto):** `node scripts/licencias-web.mjs` genera `apps/web/public/licencias.txt` (lo que entra en el JS/CSS compilado, fuentes y service worker, con textos completos; contrastado con `pnpm licenses list --json --prod --filter @fitstore/web`) y completa `instalador/THIRD_PARTY_NOTICES.txt`. La app lo enlaza desde «Acerca de» (menú lateral). Origen del ícono y de las SVG: `ORIGEN_DE_ACTIVOS.md`. Los puntos 1 a 4 siguientes quedan como registro de lo que faltaba.
+
 1. `instalador/THIRD_PARTY_NOTICES.txt` cubre solo cinco componentes binarios; ninguna librería npm ni las fuentes.
 2. El instalador NSIS no muestra página de licencias (solo Bienvenida, Instalación, Fin) y la app web no enlaza el aviso (búsqueda sin resultados).
 3. El aviso se copia a la carga del instalador (`build.ps1` línea 263) pero no se sirve en la PWA.

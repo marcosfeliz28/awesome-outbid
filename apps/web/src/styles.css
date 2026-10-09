@@ -250,6 +250,35 @@ a:focus-visible {
   white-space: nowrap;
   border: 0;
 }
+/* G14: Acerca de. */
+.about p {
+  margin: 0 0 12px;
+}
+.about-fiscal {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+}
+.about summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.about-licenses {
+  max-height: 50vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 12px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
 label:has(> input[type="file"].sr-only:focus-visible) {
   outline: 3px solid var(--focus);
   outline-offset: 3px;

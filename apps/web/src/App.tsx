@@ -32,6 +32,7 @@ import {
   Palette,
   ScanLine,
   Zap,
+  Info,
 } from "lucide-react";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
@@ -107,6 +108,51 @@ function IdleWarning({
         pulsa el botón.
       </p>
       <Button onClick={onStay}>Seguir conectado</Button>
+    </Modal>
+  );
+}
+// G14: «Acerca de», con la versión, la nota de documento no fiscal y los
+// avisos de licencia de lo que va dentro de la app (public/licencias.txt).
+function About({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [notices, setNotices] = useState<string | null>(null);
+  const load = async () => {
+    if (notices) return;
+    try {
+      const response = await fetch("/licencias.txt", { cache: "no-cache" });
+      if (!response.ok) throw new Error();
+      setNotices(await response.text());
+    } catch {
+      setNotices("No se pudieron cargar los avisos. Revisa la conexión.");
+    }
+  };
+  return (
+    <Modal open={open} onClose={onClose} title="Acerca de Nexora POS" wide>
+      <div className="about">
+        <p>
+          <strong>Versión {__NEXORA_VERSION__}</strong>
+        </p>
+        <p className="about-fiscal">
+          <strong>Documento no fiscal.</strong> Los recibos, notas y reportes de
+          Nexora POS son documentos internos y no sustituyen un comprobante
+          fiscal (NCF/e-CF).
+        </p>
+        <p>
+          Usa fuentes Inter y Plus Jakarta Sans (SIL Open Font License 1.1),
+          íconos Lucide (ISC) y librerías de código abierto (MIT, ISC,
+          Apache-2.0, 0BSD), cada una con su licencia.
+        </p>
+        <p>
+          <a href="/licencias.txt" target="_blank" rel="noopener">
+            Licencias de terceros (texto completo)
+          </a>
+        </p>
+        <details onToggle={(e) => e.currentTarget.open && load()}>
+          <summary>Ver las licencias aquí</summary>
+          <pre className="about-licenses" tabIndex={0}>
+            {notices ?? "Cargando…"}
+          </pre>
+        </details>
+      </div>
     </Modal>
   );
 }
@@ -361,7 +407,8 @@ function Shell() {
     [staff, setStaff] = useState<any[]>([]),
     [switchId, setSwitchId] = useState(""),
     [pin, setPin] = useState(""),
-    [idleDeadline, setIdleDeadline] = useState<number | null>(null);
+    [idleDeadline, setIdleDeadline] = useState<number | null>(null),
+    [about, setAbout] = useState(false);
   const client = useQueryClient();
   const mobile = useMediaQuery(MOBILE_MENU);
   const menuButton = useRef<HTMLButtonElement>(null),
@@ -688,6 +735,16 @@ function Shell() {
               Configuración
             </button>
           )}
+          <button
+            className="nav-item"
+            onClick={() => {
+              setAbout(true);
+              setMenu(false);
+            }}
+          >
+            <Info size={19} />
+            Acerca de
+          </button>
           {SHOW_STYLE_GUIDE && (
             <button className="nav-item" onClick={() => go("styles")}>
               <Palette size={19} />
@@ -897,6 +954,7 @@ function Shell() {
           Ir al punto de venta
         </Button>
       </Modal>
+      <About open={about} onClose={() => setAbout(false)} />
       {idleDeadline !== null && (
         <IdleWarning
           deadline={idleDeadline}

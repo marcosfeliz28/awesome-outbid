@@ -333,6 +333,16 @@ for (const width of [390, 1280])
       await page.keyboard.press("Control+k");
       await expect(page.getByRole("dialog")).toBeVisible();
       found.push(...(await check(page, "buscador Ctrl+K")));
+      await page.keyboard.press("Escape");
+      // «Acerca de» (G14) desde el menú lateral.
+      if (width < 600)
+        await page.getByRole("button", { name: "Abrir menú" }).click();
+      await page
+        .getByRole("button", { name: "Acerca de", exact: true })
+        .click();
+      await page.getByText("Ver las licencias aquí").click();
+      await expect(page.locator(".about-licenses")).toContainText("Inter");
+      found.push(...(await check(page, "Acerca de")));
       expect(found).toEqual([]);
     });
 

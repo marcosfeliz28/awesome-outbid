@@ -31,6 +31,7 @@ export default defineConfig({
       "tests/variant-code-unique-postgres.test.ts",
       "tests/telegram-render.test.ts",
       "tests/afirmaciones.test.ts",
+      "tests/licencias.test.ts",
     ],
   },
 });
