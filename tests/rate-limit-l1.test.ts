@@ -7,6 +7,7 @@ import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import {
   AuthenticatedRateLimitGuard,
+  REQUEST_RATE_LIMITS,
   RequestRateLimitService,
   ValidatedRateLimitStore,
 } from "../apps/api/src/rate-limit";
@@ -121,7 +122,9 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
         {} as any,
       ),
     ).rejects.toMatchObject({ status: 429 });
-    expect(db.user.findFirst).toHaveBeenCalledTimes(60);
+    // Desde E1 cada identidad inexistente cuesta un bcrypt: sólo
+    // REQUEST_RATE_LIMITS.authIp (20) por minuto y dirección llegan a la base.
+    expect(db.user.findFirst).toHaveBeenCalledTimes(REQUEST_RATE_LIMITS.authIp);
   });
   it("el tope de memoria expulsa por FIFO y nunca rechaza una identidad nueva", () => {
     let now = 0;
@@ -273,7 +276,18 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
       usernameKey: "maria lopez",
       email: "maria@example.test",
     };
-    const users = [user, otherUser];
+    // Cuenta real con cambio de contraseña pendiente: el límite por cuenta
+    // de change-password (60) se prueba con una identidad conocida.
+    const pendingUser = {
+      ...user,
+      id: "11111111-1111-4111-8111-111111111113",
+      mustChangePassword: true,
+      name: "Cuenta Temporal",
+      username: "cuenta temporal",
+      usernameKey: "cuenta temporal",
+      email: "temporal@example.test",
+    };
+    const users = [user, otherUser, pendingUser];
     const findFirst = vi.fn(async ({ where }: any) =>
       users.find(
         (candidate) =>
@@ -347,7 +361,7 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
             .send({ login: `fantasma-${i}`, password: "x" })
         ).status;
       expect(lastFalseStatus).toBe(429);
-      expect(findFirst).toHaveBeenCalledTimes(600);
+      expect(findFirst).toHaveBeenCalledTimes(REQUEST_RATE_LIMITS.authIp);
 
       // Mismo origen: tanto una identidad falsa como una cuenta real con
       // clave incorrecta conservan 429; la cuenta real con la clave correcta
@@ -429,6 +443,11 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
       ).toBe(true);
       expect(changeStatuses[60]).toBe(429);
 
+      // Barrido distribuido: 10.000 direcciones distintas. Cada intento
+      // inventado cuesta un bcrypt, así que hay un tope global de 120 por
+      // minuto (ya se gastaron authIp desde 198.51.100.10). Llenar el
+      // almacén por IP (10.000 cubos, FIFO) no expulsa ese tope.
+      const lookupsBeforeSweep = findFirst.mock.calls.length;
       const sweepStatuses: number[] = [];
       // Cinco solicitudes simultáneas mantienen la prueba rápida sin superar
       // el límite de listeners del servidor HTTP de supertest.
@@ -444,19 +463,27 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
         );
         sweepStatuses.push(...batch.map((response) => response.status));
       }
+      const admitted =
+        REQUEST_RATE_LIMITS.authUnknownGlobal - REQUEST_RATE_LIMITS.authIp;
       expect(sweepStatuses).toHaveLength(10_000);
-      expect(sweepStatuses.every((status) => status === 400)).toBe(true);
-      expect(
-        (
-          await request(server)
-            .post("/api/auth/login/")
-            .set("X-Forwarded-For", "192.0.2.250")
-            .send({
-              login: "jose perez",
-              password: "Clave-correcta-2026!",
-            })
-        ).status,
-      ).toBe(201);
+      expect(sweepStatuses.filter((status) => status === 400)).toHaveLength(
+        admitted,
+      );
+      expect(sweepStatuses.slice(admitted).every((s) => s === 429)).toBe(true);
+      // Sólo los admitidos llegan a la base (y a bcrypt).
+      expect(findFirst.mock.calls.length - lookupsBeforeSweep).toBe(admitted);
+      const fresh = (login: string, password: string) =>
+        request(server)
+          .post("/api/auth/login/")
+          .set("X-Forwarded-For", "192.0.2.250")
+          .send({ login, password });
+      // Una dirección nueva: lo inventado y una clave mala de una cuenta real
+      // reciben el mismo 429; la cuenta real con su clave entra.
+      expect((await fresh("nadie-nuevo", "x")).status).toBe(429);
+      expect((await fresh("maria lopez", "incorrecta")).status).toBe(429);
+      expect((await fresh("jose perez", "Clave-correcta-2026!")).status).toBe(
+        201,
+      );
     } finally {
       await app.close();
     }

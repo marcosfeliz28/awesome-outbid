@@ -23,7 +23,15 @@ const positiveLimit = (value: string | undefined, fallback: number) => {
 
 export const REQUEST_RATE_LIMITS = {
   authAccount: positiveLimit(process.env.AUTH_ACCOUNT_RATE_LIMIT, 60),
-  authIp: positiveLimit(process.env.AUTH_IP_RATE_LIMIT, 600),
+  // Intentos con identidades que no existen. Desde E1 cada uno cuesta un
+  // bcrypt de coste 12 (~0,3 s de CPU) para no delatar cuentas por tiempo:
+  // 20 por minuto y dirección, y 120 por minuto en total (~0,6 CPU como
+  // máximo). Las cuentas reales no consumen estos cupos.
+  authIp: positiveLimit(process.env.AUTH_IP_RATE_LIMIT, 20),
+  authUnknownGlobal: positiveLimit(
+    process.env.AUTH_UNKNOWN_GLOBAL_RATE_LIMIT,
+    120,
+  ),
   pinSession: positiveLimit(process.env.PIN_SESSION_RATE_LIMIT, 60),
   refreshSession: positiveLimit(process.env.REFRESH_SESSION_RATE_LIMIT, 60),
   logoutSession: positiveLimit(process.env.LOGOUT_SESSION_RATE_LIMIT, 60),
@@ -76,19 +84,31 @@ export class ValidatedRateLimitStore {
   }
 }
 
+export const tooManyAttempts = (): never => {
+  throw new HttpException(
+    "Demasiados intentos. Espera un minuto.",
+    HttpStatus.TOO_MANY_REQUESTS,
+  );
+};
+
 @Injectable()
 export class RequestRateLimitService {
   private readonly store = new ValidatedRateLimitStore();
+  // Cupos compartidos por todo el servidor (sin identidad): van aparte para
+  // que llenar el almacén con IPs falsas no los expulse por FIFO.
+  private readonly shared = new ValidatedRateLimitStore();
   private readonly knownAuthIdentities = new Set<string>();
   assert(scope: string, identity: string[], limit: number) {
-    if (this.store.exceeds(scope, identity, limit))
-      throw new HttpException(
-        "Demasiados intentos. Espera un minuto.",
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+    if (this.store.exceeds(scope, identity, limit)) tooManyAttempts();
   }
   limited(scope: string, identity: string[], limit: number) {
     return this.store.limited(scope, identity, limit);
+  }
+  assertShared(scope: string, limit: number) {
+    if (this.shared.exceeds(scope, [], limit)) tooManyAttempts();
+  }
+  limitedShared(scope: string, limit: number) {
+    return this.shared.limited(scope, [], limit);
   }
   rememberAuthIdentity(identity: string) {
     this.knownAuthIdentities.add(identity);

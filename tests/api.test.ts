@@ -11824,3 +11824,56 @@ describe("Revisión F2 · costos por rol contra la API real", () => {
     }
   });
 });
+
+describe("Revisión E1 · cupo de identidades inventadas", () => {
+  it("el intento 21 con usuarios inventados desde una IP recibe 429 y una cajera real sigue entrando", async () => {
+    const ip = "198.51.100." + ((Date.now() % 200) + 30);
+    const login = async (loginName: string, password: string) => {
+      const r = await fetch(base + "/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Forwarded-For": ip },
+        body: JSON.stringify({ login: loginName, password }),
+      });
+      return { status: r.status, body: await r.json() };
+    };
+    // Cajera creada con la API ya en marcha: cuenta como identidad conocida.
+    const roles = await ok("/roles");
+    const cashier = await ok("/users", {
+      name: "QA cajera E1 " + suffix,
+      email: "e1-cajera-" + suffix + "@example.test",
+      password: "FitStore-QA-2026!",
+      pin: "741963",
+      roleId: roles.find((r: any) => r.name === "seller").id,
+    });
+    actors.push(cashier);
+    await ok(
+      "/auth/login",
+      { email: cashier.email, password: "FitStore-QA-2026!" },
+      "",
+    );
+    const password = qaPasswords.get(
+      loginKey({ email: cashier.email }),
+    )!.active;
+
+    const statuses: number[] = [];
+    for (let n = 0; n < 21; n++)
+      statuses.push(
+        (await login("inventado-e1-" + suffix + "-" + n, "Incorrecta-2026!"))
+          .status,
+      );
+    expect(statuses.slice(0, 20).every((s) => s === 400)).toBe(true);
+    expect(statuses[20]).toBe(429);
+    // Misma IP: lo inventado y una clave mala de la cajera dan el mismo 429.
+    expect((await login("otro-inventado-" + suffix, "x")).status).toBe(429);
+    expect((await login(cashier.email, "Incorrecta-2026!")).status).toBe(429);
+    // Con su clave, la cajera nueva y la de la semilla entran desde esa IP.
+    const entered = await login(cashier.email, password);
+    expect(entered.status).toBe(201);
+    expect(entered.body.accessToken).toEqual(expect.any(String));
+    const seeded = await login(
+      "vendedor@fitstore.demo",
+      process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+    );
+    expect(seeded.status).toBe(201);
+  });
+});
