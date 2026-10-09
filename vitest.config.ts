@@ -19,6 +19,7 @@ export default defineConfig({
       "tests/cash-privacy.test.ts",
       "tests/compliance.test.ts",
       "tests/customer-privacy.test.ts",
+      "tests/sales-pdf.test.ts",
       "tests/customer-anonymization-postgres.test.ts",
     ],
   },

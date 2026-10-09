@@ -225,6 +225,7 @@ model Sale {
   discountApprovedName String?
   discountApprovedRole String?
   taxTotal               Decimal      @db.Decimal(14, 2)
+  taxIncluded            Boolean      @default(true)
   total                  Decimal      @db.Decimal(14, 2)
   costTotal              Decimal      @db.Decimal(14, 2)
   creditBalance          Decimal      @default(0) @db.Decimal(14, 2)

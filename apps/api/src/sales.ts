@@ -734,6 +734,7 @@ export class SalesController {
               ? (discountAuthorizer?.role.name ?? actor.role)
               : null,
             taxTotal: money(lines.reduce((a, l) => a.plus(l.totals.tax), d(0))),
+            taxIncluded: config?.taxIncluded !== false,
             total,
             creditBalance: money(d(credit).plus(cod)),
             creditDueDate:
@@ -2124,7 +2125,7 @@ export class SalesController {
     doc
       .moveDown()
       .text(
-        (business.taxIncluded === false
+        (sale.taxIncluded === false
           ? "ITBIS adicional: RD$ "
           : "ITBIS incluido: RD$ ") + sale.taxTotal,
       )

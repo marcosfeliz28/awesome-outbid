@@ -81,7 +81,7 @@ describe("Cumplimiento legal y accesibilidad", () => {
     expect(salePdf).toContain("business.phone");
     expect(salePdf).toContain("Fecha y hora:");
     expect(salePdf).toContain("ITBIS adicional:");
-    expect(salePdf).toContain("business.taxIncluded");
+    expect(salePdf).toContain("sale.taxIncluded");
     expect(notePdf).toContain("this.db.settings.findUnique");
     expect(notePdf).toContain("business.address");
     expect(notePdf).toContain("Fecha:");
