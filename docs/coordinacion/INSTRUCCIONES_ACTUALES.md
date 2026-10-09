@@ -1,6 +1,6 @@
 # Órdenes de Claude (arquitecto) para ChatGPT (ejecutor)
 
-> **Versión 3.3 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
+> **Versión 3.4 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
 
 ## 1. Estado
 - **Fase 1 terminada y mezclada** en `nexora-cloud` (PR #1: T0–T5, CI verde). Claude la está desplegando a Render. `nexora-chatgpt` queda **CONGELADA**: no empujes ahí.
@@ -46,6 +46,15 @@ M1 y D-04 (salidas de efectivo), C1 y D-01 (contraentrega), D-02/D-03 (anulació
 8. **K2** índices únicos `lower(sku)` y `lower(barcode)` dentro de un `DO $$` que detecta duplicados y omite con NOTICE (+ prueba hostil).
 9. **Menores:** merma con cantidad positiva → 400; importador valida tamaño descomprimido y `categoryId` de la sucursal; ceros iniciales en códigos; escape de `=,+,-,@` en exportaciones; índices `InventoryMovement(branchId,createdAt)` y `GoodsReceipt(branchId,createdAt)`; reembolso en efectivo mayor al esperado → 400; venta con total 0 → 400.
 10. **W1–W4, G3/G4/G8/G9/G12–G15** (cumplimiento y tickets) y pruebas de accesibilidad/capturas de U1, según la cola.
+
+## 4b. FASE 4 · listos para el primer día (sin tocar `sales.ts`, `cash.ts`, `reports.ts`, `auth.ts`, `common.ts`, `admin.ts`)
+Hazlas después de U2 y U-crédito, en `nexora-chatgpt-fase2`, mismo protocolo:
+- **P1 · Primer inicio de sesión de las 4 cajeras** (ya están marcadas para cambiar su clave): revisa y mejora SOLO la pantalla de «cambiar contraseña» (`apps/web`): textos claros en español, reglas visibles (12+ caracteres, mayúscula, minúscula, número, símbolo), indicador de fortaleza, mensaje de error sin tecnicismos, teclado numérico/mayúsculas en móvil, y que no se pueda saltar. Captura a 390 px. Si hace falta tocar el endpoint, anótalo con «@claude toma esto».
+- **P2 · Manual de la cajera** (`docs/MANUAL-CAJERO.md`): una página por tarea con pasos numerados y capturas: abrir caja (fondo), vender, cobrar con PIN del gerente (contraentrega/crédito, descuento), retiro de efectivo con PIN, devolver, anular (solo gerencia), cerrar caja ciega, qué hacer sin internet. Lenguaje simple.
+- **P3 · Mensajes de error y estados vacíos** en español claro en todas las pantallas (Productos, Clientes, Inventario, Compras, Reportes): sin textos técnicos; estados vacíos con una acción sugerida.
+- **P4 · Ticket y cuadre de 80 mm** (`Prints.tsx` y plantillas): verifica con pruebas de render que el ticket dice «DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL», muestra negocio/RNC/teléfono de Ajustes, y que el cuadre mantiene el formato del cuadre viejo de la tienda; deja capturas PNG a 80 mm en `docs/capturas/`.
+- **P5 · Privacidad (SEC-05 y SEC-06, solo texto y pantalla de clientes):** (a) política de privacidad y pie de ticket: añade que, si se usa la lectura automática de facturas de proveedor, el documento se envía a un proveedor de IA (Anthropic) y no se guarda allí; (b) en la lista de clientes de la web, oculta cédula/RNC y teléfono completos a quien no tenga permiso de gerencia (muestra solo últimos 3 dígitos), sin cambiar la API (la API la cambio yo después).
+- **P6 · Accesibilidad:** pasa un barrido AA (foco visible, `aria-label` en botones de icono, contraste 4.5:1 claro y oscuro, objetivos táctiles ≥ 44 px) en el punto de venta y la caja; corrige lo encontrado y deja la lista en el PR.
 
 ## 5. Qué hace Claude (no lo hagas tú)
 Auditoría adversaria con datos hostiles, pruebas del navegador (Playwright), migraciones peligrosas, despliegue/Render/CI, respaldos y restauración (ya hecho en `claude/backup-fixes`). Yo audito cada commit tuyo y comento en el PR; si encuentro un defecto, lo corriges en un commit nuevo `Xn: …`.
