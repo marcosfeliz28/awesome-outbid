@@ -9794,43 +9794,99 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
     }
   });
 
-  it("O1: registra cada resolución autenticada en AuditLog", async () => {
-    for (const resolution of [
-      {
-        offlineUuid: randomUUID(),
-        action: "reprice",
-        previousTotal: 100,
-        currentTotal: 90,
-        reason: "Catálogo vigente confirmado por la cajera",
-      },
-      {
+  it("O1: audita después de sincronizar una venta y registra como cambio la rebaja en efectivo", async () => {
+    const settings = await ok("/settings");
+    const offlineUuid = randomUUID();
+    const attempted = {
+      offlineUuid,
+      customerId: defaultCustomerId,
+      cashSessionId: session.id,
+      items: [{ variantId: variant.id, qty: 1, discountPercent: 0 }],
+      globalDiscount: 0,
+      expectedTotal: 150,
+      payments: [{ method: "cash", amount: 150 }],
+    };
+    const resolution = {
+      offlineUuid,
+      action: "reprice",
+      previousTotal: 150,
+      currentTotal: 100,
+      reason: "Catálogo vigente confirmado por la cajera",
+    };
+    try {
+      await ok(
+        "/settings",
+        { ...settings, allowOfflineSales: true },
+        token,
+        "PUT",
+      );
+      const conflictResult = await ok("/sales/sync", {
+        sales: [attempted],
+      });
+      expect(conflictResult.results[0].status).toBe("conflict");
+      expect(
+        (await request("/sales/offline-resolution", resolution)).status,
+      ).toBe(404);
+      expect(
+        await fixtureDb.auditLog.count({
+          where: { action: "offline_sale_repriced", entityId: offlineUuid },
+        }),
+      ).toBe(0);
+
+      const corrected = {
+        ...attempted,
+        expectedTotal: 100,
+      };
+      const syncResult = await ok("/sales/sync", { sales: [corrected] });
+      expect(syncResult.results).toHaveLength(1);
+      expect(syncResult.results[0].status).toBe("synced");
+      const saleId = syncResult.results[0].sale.id;
+      const payment = await fixtureDb.payment.findFirstOrThrow({
+        where: { saleId, method: "cash", entryType: "sale" },
+      });
+      expect(Number(payment.tendered)).toBe(150);
+      expect(Number(payment.amount)).toBe(100);
+      expect(Number(payment.change)).toBe(50);
+
+      expect(await ok("/sales/offline-resolution", resolution, token)).toEqual({
+        ok: true,
+        saleId,
+      });
+      // Reintentar después de perder la respuesta no duplica la auditoría.
+      expect(await ok("/sales/offline-resolution", resolution, token)).toEqual({
+        ok: true,
+        saleId,
+      });
+      const logs = await fixtureDb.auditLog.findMany({
+        where: {
+          action: "offline_sale_repriced",
+          entity: "sale",
+          entityId: saleId,
+        },
+      });
+      expect(logs).toHaveLength(1);
+      expect(logs[0].userId).toBe(actors[0].id);
+      expect(logs[0].terminalId).toBe(tokenTerminal.get(token));
+      expect(logs[0].before).toEqual({ total: 150, offlineUuid });
+      expect(logs[0].after).toMatchObject({
+        total: 100,
+        reason: resolution.reason,
+        offlineUuid,
+        cashTendered: 150,
+        cashApplied: 100,
+        cashChange: 50,
+      });
+
+      // B2: un UUID arbitrario que nunca fue conflicto propio no se descarta.
+      const arbitrary = await request("/sales/offline-resolution", {
         offlineUuid: randomUUID(),
         action: "discard",
         previousTotal: 125,
-        reason: "Cliente canceló la operación pendiente",
-      },
-    ]) {
-      expect(await ok("/sales/offline-resolution", resolution, token)).toEqual({
-        ok: true,
+        reason: "No corresponde a una venta pendiente real",
       });
-      const logged = await fixtureDb.auditLog.findFirstOrThrow({
-        where: {
-          action:
-            resolution.action === "discard"
-              ? "offline_sale_discarded"
-              : "offline_sale_repriced",
-          entity: "offline_sale",
-          entityId: resolution.offlineUuid,
-        },
-        orderBy: { createdAt: "desc" },
-      });
-      expect(logged.userId).toBe(actors[0].id);
-      expect(logged.terminalId).toBe(tokenTerminal.get(token));
-      expect(logged.before).toEqual({ total: resolution.previousTotal });
-      expect(logged.after).toMatchObject({ reason: resolution.reason });
-      if (resolution.currentTotal !== undefined)
-        expect((logged.after as any).total).toBe(resolution.currentTotal);
-      else expect(logged.after).not.toHaveProperty("total");
+      expect(arbitrary.status).toBe(404);
+    } finally {
+      await ok("/settings", settings, token, "PUT");
     }
   });
 });

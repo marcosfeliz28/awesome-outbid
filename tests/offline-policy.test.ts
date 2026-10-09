@@ -3,6 +3,7 @@ import { AdminController } from "../apps/api/src/admin";
 import { OfflineSalesController } from "../apps/api/src/offline-sales";
 import { offlineSaleAction } from "../apps/web/src/offlinePolicy";
 import { normalizeLegacyOfflineDiscount } from "../apps/api/src/sales";
+import { paymentTotals } from "../packages/shared/src";
 import {
   applyPendingSaleReprice,
   discardPendingSale,
@@ -164,6 +165,29 @@ describe("resolución de precios viejos en la cola offline", () => {
     expect(result.input.payments.every((p) => p.amount >= 0)).toBe(true);
   });
 
+  it("una rebaja cobrada en efectivo conserva lo recibido y registra el cambio", () => {
+    const result = repricePendingSale(
+      {
+        ...input,
+        expectedTotal: 300,
+        payments: [{ method: "cash", amount: 300 }],
+      } as any,
+      products.map((p) => ({
+        ...p,
+        variants: p.variants.map((v: any) => ({ ...v, price: "100" })),
+      })),
+      [],
+      true,
+    );
+    expect(result.total).toBe(200);
+    expect(result.input.payments).toEqual([{ method: "cash", amount: 300 }]);
+    expect(paymentTotals(result.total, result.input.payments)).toMatchObject({
+      paid: 300,
+      pending: 0,
+      change: 100,
+    });
+  });
+
   it("distribuye una rebaja entre varios pagos editables sin tocar la tarjeta", () => {
     const result = repricePendingSale(
       {
@@ -225,7 +249,7 @@ describe("resolución de precios viejos en la cola offline", () => {
     expect(isPendingPriceConflict("No hay suficiente stock.")).toBe(false);
   });
 
-  it("audita antes de reemplazar input y recibo, conservando offlineUuid", async () => {
+  it("sincroniza una sola venta antes de auditar y conserva offlineUuid", async () => {
     const order: string[] = [];
     let audit: any;
     let update: any;
@@ -249,8 +273,20 @@ describe("resolución de precios viejos en la cola offline", () => {
         order.push("update");
         update = changes;
       },
+      syncOne: async (repriced) => {
+        order.push("sync:" + repriced.offlineUuid);
+        return { status: "synced" as const, sale: { id: "sale-1" } };
+      },
+      deleteLocal: async () => {
+        order.push("delete");
+      },
     });
-    expect(order).toEqual(["audit", "update"]);
+    expect(order).toEqual([
+      "update",
+      "sync:" + input.offlineUuid,
+      "audit",
+      "delete",
+    ]);
     expect(audit).toMatchObject({
       offlineUuid: input.offlineUuid,
       action: "reprice",
@@ -262,6 +298,36 @@ describe("resolución de precios viejos en la cola offline", () => {
     expect(update.receipt).toMatchObject({ total: 300, taxTotal: 0 });
     expect(update.receipt.snapshot[0].unitPrice).toBe(150);
     expect(update.status).toBe("pending");
+  });
+
+  it("no audita ni borra cuando la venta corregida no sincroniza", async () => {
+    const order: string[] = [];
+    const sale: any = {
+      id: input.offlineUuid,
+      input: { ...input, payments: [{ method: "credit", amount: 200 }] },
+      receipt: { total: 200, snapshot: [] },
+      status: "conflict",
+    };
+    const result = await applyPendingSaleReprice(sale, products, [], true, {
+      recordResolution: async () => {
+        order.push("audit");
+      },
+      updateLocal: async (_id, changes) => {
+        order.push("update:" + changes.status);
+      },
+      syncOne: async () => {
+        order.push("sync");
+        return { status: "conflict", message: "Sin existencias" };
+      },
+      deleteLocal: async () => {
+        order.push("delete");
+      },
+    });
+    expect(order).toEqual(["update:pending", "sync", "update:conflict"]);
+    expect(result.synced).toEqual({
+      status: "conflict",
+      message: "Sin existencias",
+    });
   });
 
   it("al descartar registra motivo antes de borrar IndexedDB", async () => {

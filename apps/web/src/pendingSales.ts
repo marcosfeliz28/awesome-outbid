@@ -156,8 +156,9 @@ type RecordResolution = (body: {
 }) => Promise<unknown>;
 
 /**
- * Audita y luego actualiza una venta en conflicto. El orden importa: si el
- * servidor no confirma la auditoría, la copia local permanece intacta.
+ * Guarda la corrección, sincroniza exclusivamente esta venta y sólo entonces
+ * registra la resolución. Si la auditoría falla, la copia local permanece para
+ * reintentar; el UUID hace idempotente la venta que ya llegó al servidor.
  */
 export async function applyPendingSaleReprice(
   sale: PendingSale,
@@ -170,6 +171,12 @@ export async function applyPendingSaleReprice(
       id: string,
       changes: Partial<PendingSale>,
     ) => Promise<unknown>;
+    syncOne: (input: SaleInput) => Promise<{
+      status: "synced" | "conflict";
+      message?: string;
+      sale?: unknown;
+    }>;
+    deleteLocal: (id: string) => Promise<unknown>;
   },
 ) {
   const result = repricePendingSale(
@@ -181,13 +188,6 @@ export async function applyPendingSaleReprice(
   const previousTotal = Number(
     sale.input.expectedTotal ?? sale.receipt?.total ?? 0,
   );
-  await dependencies.recordResolution({
-    offlineUuid: sale.input.offlineUuid,
-    action: "reprice",
-    previousTotal,
-    currentTotal: result.total,
-    reason: "Catálogo, promociones y ajustes actualizados antes del reintento.",
-  });
   const changes: Partial<PendingSale> = {
     input: result.input,
     receipt: {
@@ -201,7 +201,24 @@ export async function applyPendingSaleReprice(
     message: undefined,
   };
   await dependencies.updateLocal(sale.id, changes);
-  return { ...result, changes };
+  const synced = await dependencies.syncOne(result.input);
+  if (synced.status !== "synced") {
+    const conflictChanges: Partial<PendingSale> = {
+      status: "conflict",
+      message: synced.message ?? "La venta sigue pendiente de revisión.",
+    };
+    await dependencies.updateLocal(sale.id, conflictChanges);
+    return { ...result, changes: { ...changes, ...conflictChanges }, synced };
+  }
+  await dependencies.recordResolution({
+    offlineUuid: sale.input.offlineUuid,
+    action: "reprice",
+    previousTotal,
+    currentTotal: result.total,
+    reason: "Catálogo, promociones y ajustes actualizados antes del reintento.",
+  });
+  await dependencies.deleteLocal(sale.id);
+  return { ...result, changes, synced };
 }
 
 /** Registra el motivo en el servidor antes de borrar la única copia local. */

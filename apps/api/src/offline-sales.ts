@@ -5,7 +5,7 @@ import {
   NotFoundException,
   Post,
 } from "@nestjs/common";
-import { can, z } from "@fitstore/shared";
+import { can, money, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -18,13 +18,19 @@ import {
   parse,
 } from "./common";
 
-const resolution = z.object({
+const resolutionBase = {
   offlineUuid: z.string().uuid(),
-  action: z.enum(["reprice", "discard"]),
   previousTotal: z.number().nonnegative().max(100000000),
-  currentTotal: z.number().nonnegative().max(100000000).optional(),
   reason: z.string().trim().min(3).max(300),
-});
+};
+const resolution = z.discriminatedUnion("action", [
+  z.object({ ...resolutionBase, action: z.literal("discard") }),
+  z.object({
+    ...resolutionBase,
+    action: z.literal("reprice"),
+    currentTotal: z.number().nonnegative().max(100000000),
+  }),
+]);
 
 @Controller()
 export class OfflineSalesController {
@@ -63,7 +69,9 @@ export class OfflineSalesController {
           throw new NotFoundException(
             "No existe una venta offline pendiente de este usuario.",
           );
-        if (await tx.sale.findUnique({ where: { offlineUuid: data.offlineUuid } }))
+        if (
+          await tx.sale.findUnique({ where: { offlineUuid: data.offlineUuid } })
+        )
           conflict("La venta ya fue sincronizada y no se puede descartar.");
 
         const evidence = (ownership.after ?? {}) as Record<string, unknown>;
@@ -94,20 +102,112 @@ export class OfflineSalesController {
       });
       return { ok: true };
     }
-    await audit(
-      this.db,
-      actor,
-      "offline_sale_repriced",
-      "offline_sale",
-      data.offlineUuid,
-      { total: data.previousTotal },
-      {
-        ...(data.currentTotal === undefined
-          ? {}
-          : { total: data.currentTotal }),
-        reason: data.reason,
-      },
-    );
-    return { ok: true };
+    return this.db.$transaction(async (tx) => {
+      // Serializa resolución y reintentos. La auditoría sólo puede existir si
+      // el UUID ya produjo exactamente una Sale en la sincronización.
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.offlineUuid}))::text AS locked`;
+      const ownership = await tx.auditLog.findFirst({
+        where: {
+          action: "offline_sale_conflict",
+          entity: "offline_sale",
+          entityId: data.offlineUuid,
+          userId: actor.id,
+          branchId: actor.branchId,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      const sale = await tx.sale.findUnique({
+        where: { offlineUuid: data.offlineUuid },
+        include: { payments: true },
+      });
+      if (
+        !ownership ||
+        !sale ||
+        sale.sellerId !== actor.id ||
+        sale.branchId !== actor.branchId
+      )
+        throw new NotFoundException(
+          "No existe una venta offline sincronizada de este usuario.",
+        );
+      const conflictEvidence = (ownership.after ?? {}) as Record<
+        string,
+        unknown
+      >;
+      const attemptedPaymentTotal = Number(conflictEvidence.paymentTotal);
+      if (
+        Number.isFinite(attemptedPaymentTotal) &&
+        Math.abs(attemptedPaymentTotal - data.previousTotal) > 0.01
+      )
+        conflict("El total anterior no coincide con el conflicto registrado.");
+      if (Math.abs(Number(sale.total) - data.currentTotal) > 0.01)
+        conflict("El total corregido no coincide con la venta sincronizada.");
+
+      const cash = sale.payments.filter(
+        (payment: any) =>
+          payment.method === "cash" && payment.entryType === "sale",
+      );
+      const cashTendered = money(
+        cash.reduce(
+          (sum: number, payment: any) =>
+            sum + Number(payment.tendered ?? payment.amount),
+          0,
+        ),
+      );
+      const cashApplied = money(
+        cash.reduce(
+          (sum: number, payment: any) => sum + Number(payment.amount),
+          0,
+        ),
+      );
+      const cashChange = money(
+        cash.reduce(
+          (sum: number, payment: any) => sum + Number(payment.change ?? 0),
+          0,
+        ),
+      );
+      if (Math.abs(cashTendered - cashApplied - cashChange) > 0.01)
+        conflict("El efectivo corregido no cuadra con el cambio entregado.");
+      const onlyCash =
+        cash.length > 0 &&
+        sale.payments
+          .filter((payment: any) => payment.entryType === "sale")
+          .every((payment: any) => payment.method === "cash");
+      if (onlyCash && data.previousTotal > data.currentTotal) {
+        const expectedChange = money(data.previousTotal - data.currentTotal);
+        if (
+          Math.abs(cashTendered - data.previousTotal) > 0.01 ||
+          Math.abs(cashChange - expectedChange) > 0.01
+        )
+          conflict(
+            "La rebaja en efectivo debe quedar registrada como cambio entregado.",
+          );
+      }
+
+      const existing = await tx.auditLog.findFirst({
+        where: {
+          action: "offline_sale_repriced",
+          entity: "sale",
+          entityId: sale.id,
+        },
+      });
+      if (!existing)
+        await audit(
+          tx,
+          actor,
+          "offline_sale_repriced",
+          "sale",
+          sale.id,
+          { total: data.previousTotal, offlineUuid: data.offlineUuid },
+          {
+            total: data.currentTotal,
+            reason: data.reason,
+            offlineUuid: data.offlineUuid,
+            cashTendered,
+            cashApplied,
+            cashChange,
+          },
+        );
+      return { ok: true, saleId: sale.id };
+    });
   }
 }

@@ -1395,7 +1395,7 @@ export function Cash() {
       api<any[]>("/promotions"),
       api<any>("/settings"),
     ]);
-    await applyPendingSaleReprice(
+    const applied = await applyPendingSaleReprice(
       sale,
       products,
       promotions,
@@ -1403,15 +1403,19 @@ export function Cash() {
       {
         recordResolution: (body) => post("/sales/offline-resolution", body),
         updateLocal: (id, changes) => localDB.sales.update(id, changes),
+        syncOne: async (input) => {
+          const result = await post("/sales/sync", { sales: [input] });
+          return result.results[0];
+        },
+        deleteLocal: (id) => localDB.sales.delete(id),
       },
     );
-    const result = await syncSales();
     await client.invalidateQueries({ queryKey: ["pending-sales"] });
     toast(
-      result.synced
+      applied.synced.status === "synced"
         ? "Precios actualizados y venta sincronizada."
         : "Precios actualizados. La venta sigue pendiente de revisión.",
-      !result.synced,
+      applied.synced.status !== "synced",
     );
   };
   return (
