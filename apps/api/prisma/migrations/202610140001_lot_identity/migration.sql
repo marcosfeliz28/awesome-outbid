@@ -86,14 +86,14 @@ SET "stockAllocations" = (
   FROM jsonb_array_elements(item."stockAllocations")
        WITH ORDINALITY AS allocation(value, ordinality)
   LEFT JOIN "_LotIdentityMerge" AS mapping
-    ON allocation.value->>'lotId' = mapping.id::text
+    ON lower(allocation.value->>'lotId') = mapping.id::text
 )
 WHERE jsonb_typeof(item."stockAllocations") = 'array'
   AND EXISTS (
   SELECT 1
   FROM jsonb_array_elements(item."stockAllocations") AS allocation(value)
   JOIN "_LotIdentityMerge" AS mapping
-    ON allocation.value->>'lotId' = mapping.id::text
+    ON lower(allocation.value->>'lotId') = mapping.id::text
   WHERE mapping.id <> mapping.keeper
 );
 

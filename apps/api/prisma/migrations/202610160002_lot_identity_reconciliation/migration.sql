@@ -1,5 +1,15 @@
 -- B1-forward: conserva intacta la migración histórica 202610140001 y aplica
 -- toda reconciliación adicional como un cambio hacia delante.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_collation WHERE collname = 'und-x-icu'
+  ) THEN
+    RAISE EXCEPTION
+      'Falta la colación ICU und-x-icu: use un PostgreSQL con ICU.';
+  END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS "LotIdentityConflict" (
   "conflictKey" TEXT NOT NULL,
   "variantId" UUID NOT NULL,
@@ -145,14 +155,14 @@ SET "stockAllocations" = (
   FROM jsonb_array_elements(item."stockAllocations")
        WITH ORDINALITY AS allocation(value, ordinality)
   LEFT JOIN "_LotIdentityForwardMerge" AS mapping
-    ON allocation.value->>'lotId' = mapping.id::text
+    ON lower(allocation.value->>'lotId') = mapping.id::text
 )
 WHERE jsonb_typeof(item."stockAllocations") = 'array'
   AND EXISTS (
     SELECT 1
     FROM jsonb_array_elements(item."stockAllocations") AS allocation(value)
     JOIN "_LotIdentityForwardMerge" AS mapping
-      ON allocation.value->>'lotId' = mapping.id::text
+      ON lower(allocation.value->>'lotId') = mapping.id::text
     WHERE mapping.id <> mapping.keeper
   );
 
