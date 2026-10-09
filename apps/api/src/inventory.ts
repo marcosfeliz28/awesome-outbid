@@ -527,8 +527,6 @@ export class InventoryController {
     const data = parsed.lotNumber
       ? { ...parsed, ...lotIdentity(parsed.lotNumber, parsed.expiryDate) }
       : parsed;
-    if (data.type === "waste" && data.qty >= 0)
-      bad("Una merma debe restar existencias. Indica una cantidad negativa.");
     return retrySerializable(() =>
       this.db.$transaction(
         async (tx) => {
