@@ -1855,10 +1855,20 @@ export function Customers() {
     [search, setSearch] = useState(""),
     [editing, setEditing] = useState<any>(null),
     [anonymizing, setAnonymizing] = useState<any>(null);
+  // SEC-05: sin gerencia, la API envía teléfono, correo y cédula/RNC
+  // enmascarados («•••••••123») y sin gasto histórico. El correo enmascarado
+  // no es un correo válido para el navegador; la API lo valida al guardar.
+  const fullCustomer =
+    can(user.permissions, "sale:manage") ||
+    can(user.permissions, "customers:erase");
   const fields: Field[] = [
     { key: "name", label: "Nombre", required: true },
     { key: "phone", label: "Teléfono" },
-    { key: "email", label: "Correo", type: "email" },
+    {
+      key: "email",
+      label: "Correo",
+      ...(fullCustomer ? { type: "email" } : {}),
+    },
     { key: "legalId", label: "Cédula / RNC" },
     ...(can(useStore.getState().user!.permissions, "sale:manage")
       ? [requiredNumber("creditLimit", "Límite de crédito (RD$)", 0)]
@@ -1903,18 +1913,22 @@ export function Customers() {
                 ),
               },
               { label: "Cédula / RNC", render: (c) => c.legalId || "—" },
-              { label: "Compras", render: (c) => c.purchases },
-              {
-                label: "Total gastado",
-                render: (c) => formatMoney(c.totalSpent),
-              },
-              {
-                label: "Última compra",
-                render: (c) =>
-                  c.lastPurchase
-                    ? dateLabel(c.lastPurchase)
-                    : "Aún sin compras",
-              },
+              ...(fullCustomer
+                ? [
+                    { label: "Compras", render: (c: any) => c.purchases },
+                    {
+                      label: "Total gastado",
+                      render: (c: any) => formatMoney(c.totalSpent),
+                    },
+                    {
+                      label: "Última compra",
+                      render: (c: any) =>
+                        c.lastPurchase
+                          ? dateLabel(c.lastPurchase)
+                          : "Aún sin compras",
+                    },
+                  ]
+                : []),
               {
                 label: "Acción",
                 render: (c) => (

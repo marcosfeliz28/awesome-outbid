@@ -1770,6 +1770,10 @@ function Checkout({
   if (receipt) {
     const text = `Nexora POS · ${receipt.number}\nTotal: ${formatMoney(receipt.total)}\nGracias por tu compra. Documento interno, no fiscal.`;
     const customer = customers.find((c) => c.id === customerId);
+    // SEC-05: un dato enmascarado («•••••••123») no es un destinatario; la
+    // cajera elige el contacto en WhatsApp o en el correo.
+    const contact = (value?: string | null) =>
+      value && !value.includes("•") ? value : "";
     return (
       <Modal open title="¡Una venta más, una meta más cerca!" onClose={onClose}>
         <div className="sale-success">
@@ -1820,7 +1824,7 @@ function Checkout({
             rel="noreferrer"
             href={
               "https://wa.me/" +
-              (customer?.phone?.replace(/\D/g, "") || "") +
+              contact(customer?.phone).replace(/\D/g, "") +
               "?text=" +
               encodeURIComponent(text)
             }
@@ -1832,7 +1836,7 @@ function Checkout({
             className="button secondary"
             href={
               "mailto:" +
-              (customer?.email || "") +
+              contact(customer?.email) +
               "?subject=" +
               encodeURIComponent("Recibo " + receipt.number) +
               "&body=" +

@@ -228,6 +228,45 @@ export async function lockActiveCustomer(
   return customer;
 }
 
+// SEC-05 (Ley 172-13, minimización): la caja necesita elegir al cliente por
+// su nombre para vender, no su cédula/RNC, teléfono ni su gasto histórico.
+// Sólo gerencia (sale:manage), quien puede borrar clientes (customers:erase)
+// y la administración ven estos datos completos. Esta función es la única
+// que decide cómo sale un cliente en cualquier respuesta de la API.
+export const canViewCustomerPii = (actor: Actor) =>
+  can(actor.permissions, "sale:manage") ||
+  can(actor.permissions, "customers:erase");
+export const PII_MASK = "•";
+/** Deja ver sólo los últimos 3 caracteres: «•••••••123». */
+export function maskTail(value: string | null | undefined, visible = 3) {
+  if (value === null || value === undefined || value === "") return value;
+  const clean = String(value).replace(/[\s\-().]/g, "");
+  return (
+    PII_MASK.repeat(7) + (clean.length > visible ? clean.slice(-visible) : "")
+  );
+}
+/** «m•••@dominio.com»: identifica el buzón sin revelarlo. */
+export function maskEmail(value: string | null | undefined) {
+  if (value === null || value === undefined || value === "") return value;
+  const at = value.lastIndexOf("@");
+  if (at < 1) return PII_MASK.repeat(3);
+  return value[0] + PII_MASK.repeat(3) + value.slice(at);
+}
+/** Un valor enmascarado devuelto tal cual por un formulario no es un dato nuevo. */
+export const isMaskedPii = (value: unknown) =>
+  typeof value === "string" && value.includes(PII_MASK);
+const CUSTOMER_HISTORY_FIELDS = ["totalSpent", "purchases", "lastPurchase"];
+export function customerForActor<T>(customer: T, actor: Actor): T {
+  if (!customer || typeof customer !== "object" || canViewCustomerPii(actor))
+    return customer;
+  const out: Record<string, unknown> = { ...(customer as any) };
+  for (const key of CUSTOMER_HISTORY_FIELDS) delete out[key];
+  if ("phone" in out) out.phone = maskTail(out.phone as string);
+  if ("legalId" in out) out.legalId = maskTail(out.legalId as string);
+  if ("email" in out) out.email = maskEmail(out.email as string);
+  return out as T;
+}
+
 export const audit = (
   db: any,
   actor: Actor,

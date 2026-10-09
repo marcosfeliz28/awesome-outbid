@@ -11639,3 +11639,198 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
     await closeBlind(sellerCash.id, seller.token, { countedCard: 300 });
   });
 });
+describe("SEC-05: datos personales del cliente según el rol (Ley 172-13)", () => {
+  // Texto real del PDF: PDFKit comprime los streams y guarda el texto en hex.
+  const pdfText = async (path: string, as: string) => {
+    const r = await fetch(base + path, {
+      headers: { Authorization: "Bearer " + as, "X-Forwarded-For": testIp },
+    });
+    expect(r.status).toBe(200);
+    const raw = Buffer.from(await r.arrayBuffer()).toString("latin1");
+    const { inflateSync } = await import("node:zlib");
+    const text: string[] = [];
+    for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+      let content = Buffer.from(m[1], "latin1");
+      try {
+        content = inflateSync(content);
+      } catch {
+        /* stream sin comprimir */
+      }
+      for (const hex of content.toString("latin1").matchAll(/<([0-9a-f]+)>/gi))
+        text.push(Buffer.from(hex[1], "hex").toString("latin1"));
+    }
+    return text.join("");
+  };
+  it("la vendedora y la cajera ven cédula/RNC, teléfono y correo enmascarados y sin gasto; gerencia y administración, completos; la venta sigue funcionando", async () => {
+    const tag = randomUUID().slice(0, 6);
+    const roles = await ok("/roles", undefined, ownerToken);
+    // Cajera creada con el rol seller, como en la tienda.
+    const cajeraUser = await ok(
+      "/users",
+      {
+        name: "QA cajera SEC05 " + tag,
+        email: `qa-cajera-sec05-${tag}@example.test`,
+        password: "FitStore-QA-2026!",
+        pin: "876543",
+        roleId: roles.find((r: any) => r.name === "seller").id,
+      },
+      ownerToken,
+    );
+    actors.push(cajeraUser);
+    const cajeraToken = (
+      await ok(
+        "/auth/login",
+        { email: cajeraUser.email, password: "FitStore-QA-2026!" },
+        "",
+      )
+    ).accessToken;
+    expect(cajeraToken).toBeTruthy();
+    // La cajera vende con su propio equipo y su propia caja.
+    await enroll(cajeraToken, "QA caja SEC05 " + tag);
+    const cajeraCash = await ok(
+      "/cash-sessions/open",
+      { registerId: "qa-sec05-" + tag, openingAmount: 0 },
+      cajeraToken,
+    );
+    const product = await ok(
+      "/products",
+      {
+        name: "QA SEC05 " + tag,
+        sku: "QA-SEC05-" + tag,
+        categoryId: (await ok("/categories", undefined, ownerToken)).find(
+          (c: any) => c.name === "Ropa deportiva",
+        ).id,
+        variants: [
+          {
+            sku: "QA-SEC05-V-" + tag,
+            barcode: "QA-SEC05-B-" + tag,
+            costAvg: 40,
+            price: 118,
+          },
+        ],
+      },
+      ownerToken,
+    );
+    products.push(product);
+    const variantId = product.variants[0].id;
+    await ok(
+      "/inventory/adjustments",
+      { variantId, qty: 5, reason: "QA SEC05" },
+      ownerToken,
+    );
+    const legalId = "00112345678",
+      phone = "809-555-0123",
+      email = `sec05-${tag}@example.test`;
+    // Cliente existente con todos sus datos (lo registra la gerencia).
+    const existing = await ok(
+      "/customers",
+      { name: "QA SEC05 existente " + tag, phone, legalId, email },
+      managerToken,
+    );
+    expect(existing.legalId).toBe(legalId);
+    // Venta de la cajera con el cliente existente.
+    const soldExisting = await ok(
+      "/sales",
+      { ...input(variantId, 118, cajeraCash), customerId: existing.id },
+      cajeraToken,
+    );
+    expect(soldExisting.customerId).toBe(existing.id);
+
+    for (const as of [sellerToken, cajeraToken]) {
+      const list = await ok("/customers", undefined, as);
+      const row = list.find((c: any) => c.id === existing.id);
+      expect(row.name).toBe(existing.name);
+      expect(row.legalId).toBe("•••••••678");
+      expect(row.phone).toBe("•••••••123");
+      expect(row.email).toBe("s•••@example.test");
+      for (const key of ["totalSpent", "purchases", "lastPurchase"])
+        expect(row).not.toHaveProperty(key);
+      const raw = JSON.stringify(list);
+      expect(raw).not.toContain(legalId);
+      expect(raw).not.toContain(phone);
+      expect(raw).not.toContain(email);
+    }
+    for (const as of [managerToken, token, ownerToken]) {
+      const row = (await ok("/customers", undefined, as)).find(
+        (c: any) => c.id === existing.id,
+      );
+      expect(row.legalId).toBe(legalId);
+      expect(row.phone).toBe(phone);
+      expect(row.email).toBe(email);
+      expect(row.totalSpent).toBe(118);
+      expect(row.purchases).toBe(1);
+      expect(row.lastPurchase).toBeTruthy();
+    }
+
+    // Cliente nuevo creado en la caja por la vendedora y venta con él.
+    const fresh = await ok(
+      "/customers",
+      {
+        name: "QA SEC05 nuevo " + tag,
+        phone: "8095550456",
+        legalId: "40212345999",
+        notes: "",
+      },
+      sellerToken,
+    );
+    expect(fresh.id).toBeTruthy();
+    expect(fresh.name).toBe("QA SEC05 nuevo " + tag);
+    expect(fresh.legalId).toBe("•••••••999");
+    expect(fresh.phone).toBe("•••••••456");
+    const soldFresh = await ok(
+      "/sales",
+      { ...input(variantId, 118, cajeraCash), customerId: fresh.id },
+      cajeraToken,
+    );
+    expect(soldFresh.customerId).toBe(fresh.id);
+
+    // Editar desde la caja devolviendo los datos enmascarados no borra ni
+    // sustituye los verdaderos.
+    const edited = await ok(
+      "/customers/" + fresh.id,
+      {
+        name: fresh.name + " editado",
+        phone: fresh.phone,
+        legalId: fresh.legalId,
+        email: "",
+        notes: "",
+      },
+      sellerToken,
+      "PATCH",
+    );
+    expect(edited.legalId).toBe("•••••••999");
+    const stored = (await ok("/customers", undefined, managerToken)).find(
+      (c: any) => c.id === fresh.id,
+    );
+    expect(stored.name).toBe(fresh.name + " editado");
+    expect(stored.legalId).toBe("40212345999");
+    expect(stored.phone).toBe("8095550456");
+
+    // Recibo PDF (interno, no fiscal): la cajera que vendió no recibe la
+    // cédula completa; la gerencia sí.
+    const sellerPdf = await pdfText(
+      "/sales/" + soldExisting.id + "/receipt.pdf",
+      cajeraToken,
+    );
+    expect(sellerPdf).toContain(existing.name);
+    expect(sellerPdf).toContain("678");
+    expect(sellerPdf).not.toContain(legalId);
+    expect(sellerPdf).not.toContain(phone);
+    const managerPdf = await pdfText(
+      "/sales/" + soldExisting.id + "/receipt.pdf",
+      managerToken,
+    );
+    expect(managerPdf).toContain(legalId);
+    expect(managerPdf).toContain(phone);
+    await ok(
+      "/cash-sessions/" + cajeraCash.id + "/close",
+      {
+        countedCash: 236,
+        countedCard: 0,
+        countedTransfer: 0,
+        notes: "Cierre QA SEC05",
+      },
+      cajeraToken,
+    );
+  });
+});
