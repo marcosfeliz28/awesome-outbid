@@ -109,6 +109,28 @@ export async function assertCodesFree(
     );
 }
 
+// La categoría de un producto debe ser de la sucursal de quien lo crea: el
+// importador y el formulario aceptaban cualquier ID (o uno inexistente, que
+// terminaba en un error 500 de la base).
+async function assertCategoriesInBranch(
+  tx: any,
+  branchId: string,
+  ids: (string | undefined)[],
+) {
+  const wanted = [...new Set(ids.filter(Boolean))] as string[];
+  if (!wanted.length) return;
+  const found = await tx.category.findMany({
+    where: { id: { in: wanted }, branchId },
+    select: { id: true },
+  });
+  if (found.length !== wanted.length)
+    bad(
+      "La categoría " +
+        wanted.find((id) => !found.some((c: any) => c.id === id)) +
+        " no existe en tu sucursal. Copia el ID de la hoja «Categorías» de la plantilla.",
+    );
+}
+
 const variantSchema = z.object({
   sku: z.string().trim().min(1).max(80),
   barcode: z.string().trim().min(1).max(80),
@@ -314,6 +336,7 @@ export class CatalogController {
   async create(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const { variants, ...data } = parse(productSchema, body);
     return this.db.$transaction(async (tx) => {
+      await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
       await assertCodesFree(
         tx,
         actor.branchId,
@@ -356,6 +379,7 @@ export class CatalogController {
       const before = await tx.product.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
       });
+      await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
       const row = await tx.product.update({ where: { id }, data });
       await audit(tx, actor, "update", "product", id, before, row);
       return safe(row, actor);
@@ -482,6 +506,11 @@ export class CatalogController {
     });
     const validated = rows.map((row) => parse(productSchema, row));
     await this.db.$transaction(async (tx) => {
+      await assertCategoriesInBranch(
+        tx,
+        actor.branchId,
+        validated.map((row) => row.categoryId),
+      );
       // Todas las filas a la vez, contra la base y entre ellas: un choque
       // detiene la carga sin escribir ninguna (R9-codigos-1).
       await assertCodesFree(

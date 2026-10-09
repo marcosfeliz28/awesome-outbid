@@ -164,4 +164,38 @@ describe("Menores de la cola", () => {
       Number((await ok("/products/" + v.productId)).variants[0].stock),
     ).toBe(9);
   });
+
+  it("2: el importador rechaza una categoría de otra sucursal o inexistente", async () => {
+    const foreign = await db.category.create({
+      data: { name: "QA otra sucursal " + suffix, branchId: "otra-" + suffix },
+    });
+    foreignCategoryIds.push(foreign.id);
+    for (const cat of [foreign.id, randomUUID()]) {
+      const tag = randomUUID().slice(0, 8);
+      const r = await importCatalog([
+        [
+          "QA importado ajeno " + tag,
+          "QAI-" + tag,
+          cat,
+          "QAI-B-" + tag,
+          50,
+          20,
+        ],
+      ]);
+      expect(r.status).toBe(400);
+      expect(r.body.message).toMatch(/categoría/i);
+      expect(await db.product.count({ where: { sku: "QAI-" + tag } })).toBe(0);
+    }
+    // POST /products aplica la misma regla.
+    const tag = randomUUID().slice(0, 8);
+    const r = await request("/products", {
+      name: "QA ajeno " + tag,
+      sku: "QAJ-" + tag,
+      categoryId: foreign.id,
+      variants: [
+        { sku: "QAJ-V-" + tag, barcode: "QAJ-B-" + tag, price: 1, costAvg: 1 },
+      ],
+    });
+    expect(r.status).toBe(400);
+  });
 });
