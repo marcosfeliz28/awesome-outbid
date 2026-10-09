@@ -30,7 +30,7 @@ try {
   # Rollback restaura y vuelve a proteger archivos: eso elimina el permiso de servicio.
   $rollback = Get-Content -LiteralPath (Join-Path $installerRoot "scripts\Rollback-FitStoreUpdate.ps1") -Raw
   $grant = $rollback.IndexOf('Grant-FitStoreApplicationAccess -Paths $paths')
-  $restart = $rollback.IndexOf('Ensure-RestoredApplicationService -Paths $paths -Name $script:ApiService')
+  $restart = $rollback.IndexOf('  Start-FitStoreApplication')
   if ($grant -lt 0 -or $grant -gt $restart) { throw "W3-R: rollback no restablece permisos antes de iniciar LocalService." }
   foreach ($file in @("work\.env", "server.json", "pki\FitStore-server.pfx")) {
     $path = Join-Path $root $file

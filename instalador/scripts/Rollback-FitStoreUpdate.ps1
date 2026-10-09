@@ -93,19 +93,29 @@ function Ensure-RestoredApplicationService {
   param($Paths, [Parameter(Mandatory = $true)][string]$Name)
   $config = Join-Path $Paths.Services "$Name.xml"
   $dedicatedWrapper = Join-Path $Paths.Services "$Name.exe"
-  if (-not (Get-Service -Name $Name -ErrorAction SilentlyContinue)) {
-    if (-not (Test-Path -LiteralPath $config -PathType Leaf)) { throw "Falta la configuración restaurada del servicio $Name." }
+  # El XML restaurado no cambia una cuenta ya registrada en SCM: reinstalar
+  # siempre, incluso si el servicio de la actualizacion fallida aun existe.
+  if (-not (Test-Path -LiteralPath $config -PathType Leaf)) { throw "Falta la configuración restaurada del servicio $Name." }
+  if (-not (Test-Path -LiteralPath $dedicatedWrapper -PathType Leaf) -and -not (Test-Path -LiteralPath $Paths.WinSW -PathType Leaf)) {
+    throw "Falta el ejecutable WinSW restaurado para $Name."
+  }
+  Remove-FitStoreServiceRegistration -Name $Name -WinSW $Paths.WinSW -Config $config
     if (Test-Path -LiteralPath $dedicatedWrapper -PathType Leaf) {
-      Invoke-FitStoreProcess -FilePath $dedicatedWrapper -Arguments @("install") -FailureMessage "No se pudo volver a registrar el servicio restaurado $Name"
+      Invoke-FitStoreProcess -FilePath $dedicatedWrapper -Arguments @("install") -FailureMessage "No se pudo volver a registrar el servicio restaurado $Name" | Out-Null
     } elseif (Test-Path -LiteralPath $Paths.WinSW -PathType Leaf) {
       # Compatibilidad con instalaciones antiguas que usaban un WinSW global y
       # recibían el XML como argumento.
-      Invoke-FitStoreProcess -FilePath $Paths.WinSW -Arguments @("install", $config) -FailureMessage "No se pudo volver a registrar el servicio restaurado $Name"
+      Invoke-FitStoreProcess -FilePath $Paths.WinSW -Arguments @("install", $config) -FailureMessage "No se pudo volver a registrar el servicio restaurado $Name" | Out-Null
     } else {
       throw "Falta el ejecutable WinSW restaurado para $Name."
     }
-  }
   Set-FitStoreServiceStartMode -Name $Name -Mode "delayed-auto"
+  $escapedName = $Name.Replace("'", "''")
+  $registered = Get-CimInstance -ClassName Win32_Service -Filter "Name='$escapedName'" -ErrorAction Stop
+  if (-not $registered -or [string]::IsNullOrWhiteSpace([string]$registered.StartName)) {
+    throw "No se pudo verificar la cuenta registrada del servicio restaurado $Name."
+  }
+  return [string]$registered.StartName
 }
 
 Assert-FitStoreAdministrator
@@ -167,19 +177,14 @@ try {
   }
 
   # Restore-PreviousDataFiles protege de nuevo .env/TLS y elimina sus grants.
-  # Solo restituir acceso de LocalService si la versión restaurada lo usa.
+  # La identidad real en SCM (no el XML) determina los permisos necesarios.
   $usesLocalService = $false
   foreach ($service in @($script:ApiService, $script:WebService)) {
-    $serviceConfig = Join-Path $paths.Services ($service + ".xml")
-    if (Test-Path -LiteralPath $serviceConfig -PathType Leaf) {
-      [xml]$serviceXml = Get-Content -LiteralPath $serviceConfig -Raw -Encoding UTF8
-      $account = $serviceXml.SelectSingleNode("/service/serviceaccount/user")
-      if ($account -and $account.InnerText -eq "LocalService") { $usesLocalService = $true }
-    }
+    $account = Ensure-RestoredApplicationService -Paths $paths -Name $service
+    if ($account -in @('NT AUTHORITY\LocalService', 'LocalService')) { $usesLocalService = $true }
+    elseif ($account -notin @('LocalSystem', 'NT AUTHORITY\SYSTEM')) { throw "Cuenta de servicio restaurada no admitida para $service." }
   }
   if ($usesLocalService) { Grant-FitStoreApplicationAccess -Paths $paths }
-  Ensure-RestoredApplicationService -Paths $paths -Name $script:ApiService
-  Ensure-RestoredApplicationService -Paths $paths -Name $script:WebService
   Start-FitStoreApplication
   Wait-FitStoreHttp -Url "http://127.0.0.1:3001/api/health" -TimeoutSeconds 120
   Wait-FitStoreHttp -Url "https://localhost:4173/__fitstore/health" -TimeoutSeconds 120
