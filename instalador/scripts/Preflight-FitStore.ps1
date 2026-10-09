@@ -1,5 +1,6 @@
 param(
   [string]$ExistingInstallDir,
+  [Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()][string]$InstallerSession,
   [Parameter(Mandatory = $true)][ValidatePattern("^\d+$")][string]$ExpectedPostgresMajor
 )
 
@@ -117,6 +118,7 @@ try {
   $transaction = [ordered]@{
     schemaVersion = 2
     transactionId = $transactionId
+    installerSession = $InstallerSession
     preparedAt = (Get-Date).ToUniversalTime().ToString("o")
     phase = "prepared-copy-pending"
     phaseChangedAt = (Get-Date).ToUniversalTime().ToString("o")

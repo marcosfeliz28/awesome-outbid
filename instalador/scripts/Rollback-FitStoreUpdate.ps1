@@ -1,4 +1,7 @@
-param([Parameter(Mandatory = $true)][string]$InstallDir)
+param(
+  [Parameter(Mandatory = $true)][string]$InstallDir,
+  [Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()][string]$InstallerSession
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -113,6 +116,13 @@ if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) {
   exit 0
 }
 $transaction = Read-FitStoreJson -Path $marker
+# No tocar servicios, archivos ni base con un marcador de otra ejecución.
+# Marcadores anteriores sin sesión requieren recuperación manual verificada.
+if (-not ($transaction.PSObject.Properties.Name -contains "installerSession") -or
+    [string]$transaction.installerSession -cne $InstallerSession -or
+    ($transaction.PSObject.Properties.Name -contains "phase" -and [string]$transaction.phase -eq "verified")) {
+  throw "La transacción no pertenece a esta ejecución activa o ya fue verificada. No se modificaron datos; requiere revisión y recuperación manual con respaldo verificado."
+}
 foreach ($property in @("installDir", "transactionPath", "snapshotPath", "manifestPath", "manifestSha256", "backup", "backupSha256")) {
   if (-not ($transaction.PSObject.Properties.Name -contains $property) -or -not [string]$transaction.$property) {
     throw "La transacción de actualización está incompleta: falta $property."

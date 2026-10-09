@@ -67,6 +67,7 @@ Var PurgeData
 Var ProgramDataDir
 Var PowerShellExe
 Var RollbackAttempted
+Var UpdatePrepared
 Var RollbackResult
 Var InstallerMutex
 Var InstallerOwnsMutex
@@ -134,6 +135,7 @@ Function .onInit
   ${EndIf}
   StrCpy $UpdateMode "nuevo"
   StrCpy $RollbackAttempted "0"
+  StrCpy $UpdatePrepared "0"
   StrCpy $RollbackResult "no-aplica"
   ReadRegStr $0 HKLM "${PRODUCT_KEY}" "InstallLocation"
   ${If} $0 != ""
@@ -148,9 +150,10 @@ Function TryRollbackUpdate
   ${If} $InstallerOwnsMutex == "1"
   ${AndIf} $UpdateMode == "actualizar"
   ${AndIf} $RollbackAttempted != "1"
+  ${AndIf} $UpdatePrepared == "1"
     StrCpy $RollbackAttempted "1"
     ${If} ${FileExists} "$PLUGINSDIR\Rollback-FitStoreUpdate.ps1"
-      nsExec::ExecToLog '"$PowerShellExe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\Rollback-FitStoreUpdate.ps1" -InstallDir "$INSTDIR"'
+      nsExec::ExecToLog '"$PowerShellExe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\Rollback-FitStoreUpdate.ps1" -InstallDir "$INSTDIR" -InstallerSession "$PLUGINSDIR"'
       Pop $0
       ${If} $0 == 0
         StrCpy $RollbackResult "correcto"
@@ -285,13 +288,14 @@ Section "Nexora POS" SecMain
     File /oname=FitStore.Common.ps1 "${PAYLOAD_DIR}\scripts\FitStore.Common.ps1"
     File /oname=Preflight-FitStore.ps1 "${PAYLOAD_DIR}\scripts\Preflight-FitStore.ps1"
     File /oname=Rollback-FitStoreUpdate.ps1 "${PAYLOAD_DIR}\scripts\Rollback-FitStoreUpdate.ps1"
-    nsExec::ExecToLog '"$PowerShellExe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\Preflight-FitStore.ps1" -ExistingInstallDir "$INSTDIR" -ExpectedPostgresMajor "${POSTGRES_MAJOR}"'
+    nsExec::ExecToLog '"$PowerShellExe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\Preflight-FitStore.ps1" -ExistingInstallDir "$INSTDIR" -ExpectedPostgresMajor "${POSTGRES_MAJOR}" -InstallerSession "$PLUGINSDIR"'
     Pop $0
     ${If} $0 != 0
     MessageBox MB_ICONSTOP "No se pudo crear y verificar el respaldo previo. La actualización fue cancelada sin reemplazar archivos. Revisa el registro de FitStore."
       SetErrorLevel 1
       Abort
     ${EndIf}
+    StrCpy $UpdatePrepared "1"
   ${EndIf}
 
   SetOutPath "$INSTDIR"
