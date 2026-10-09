@@ -38,7 +38,7 @@ import {
   type Product,
 } from "./api";
 import {
-  QueryState as BaseQueryState,
+  QueryState,
   FormModal,
   ConfirmModal,
   type Field,
@@ -61,7 +61,6 @@ import {
   type Printing,
 } from "./Tienda";
 import { METHOD_LABEL, printSoon } from "./Prints";
-import { managementQueryError } from "./managementMessages";
 import { customerPrivateDisplay } from "./customer-display";
 import {
   applyPendingSaleReprice,
@@ -74,29 +73,14 @@ type Column = {
   render: (row: any) => ReactNode;
   className?: string;
 };
-function QueryState({ query, children }: { query: any; children: ReactNode }) {
-  return (
-    <BaseQueryState
-      query={
-        query.error
-          ? { ...query, error: { message: managementQueryError(query.error) } }
-          : query
-      }
-    >
-      {children}
-    </BaseQueryState>
-  );
-}
 function DataTable({
   rows,
   columns,
   empty = "Todavía no hay registros",
-  emptyDescription = "Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla.",
 }: {
   rows: any[];
   columns: Column[];
   empty?: string;
-  emptyDescription?: string;
 }) {
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [rows.length]);
@@ -150,7 +134,10 @@ function DataTable({
       )}
     </>
   ) : (
-    <Empty title={empty} description={emptyDescription} />
+    <Empty
+      title={empty}
+      description="Cada registro te ayuda a conocer mejor tu negocio."
+    />
   );
 }
 function Heading({
@@ -270,12 +257,7 @@ export function Catalog() {
                 download(
                   "/catalog-template.xlsx",
                   "plantilla-productos.xlsx",
-                ).catch(() =>
-                  toast(
-                    "No pudimos descargar la plantilla. Revisa tu conexión e inténtalo de nuevo.",
-                    true,
-                  ),
-                )
+                ).catch((e) => toast(e.message, true))
               }
             >
               <Download size={16} />
@@ -300,11 +282,8 @@ export function Catalog() {
                       });
                       toast(`${result.imported} productos importados.`);
                       await client.invalidateQueries();
-                    } catch {
-                      toast(
-                        "No pudimos importar el archivo. Revisa las columnas y los datos de la plantilla antes de volver a intentar.",
-                        true,
-                      );
+                    } catch (e: any) {
+                      toast(e.message, true);
                     }
                     e.target.value = "";
                   }
@@ -342,8 +321,6 @@ export function Catalog() {
         <QueryState query={query}>
           <DataTable
             rows={rows}
-            empty="No encontramos productos"
-            emptyDescription="Revisa los filtros o agrega un producto con Nuevo producto."
             columns={[
               {
                 label: "Producto",
@@ -799,8 +776,6 @@ export function Inventory() {
           {mode === "stock" ? (
             <DataTable
               rows={rows}
-              empty="No encontramos artículos en el inventario"
-              emptyDescription="Revisa la búsqueda o registra una entrada de mercancía."
               columns={[
                 {
                   label: "Producto / Variante",
@@ -873,8 +848,6 @@ export function Inventory() {
             <QueryState query={counts}>
               <DataTable
                 rows={counts.data || []}
-                empty="Todavía no hay conteos físicos"
-                emptyDescription="Pulsa Contar junto a un artículo para registrar su existencia real."
                 columns={[
                   { label: "Fecha", render: (c) => dateLabel(c.createdAt) },
                   { label: "Artículos", render: (c) => c.items.length },
@@ -903,11 +876,8 @@ export function Inventory() {
                               );
                               await client.invalidateQueries();
                               toast("Conteo aprobado y aplicado.");
-                            } catch {
-                              toast(
-                                "No pudimos aprobar el conteo. Revisa los datos y tu conexión antes de volver a intentar.",
-                                true,
-                              );
+                            } catch (e: any) {
+                              toast(e.message, true);
                             }
                           }}
                         >
@@ -1068,8 +1038,6 @@ export function Purchases() {
           <QueryState query={orders}>
             <DataTable
               rows={orders.data || []}
-              empty="Todavía no hay órdenes de compra"
-              emptyDescription="Crea una Orden de compra para registrar tu próxima compra."
               columns={[
                 { label: "Orden", render: (o) => <strong>{o.number}</strong> },
                 {
@@ -1119,8 +1087,6 @@ export function Purchases() {
           <QueryState query={suppliers}>
             <DataTable
               rows={suppliers.data || []}
-              empty="Todavía no hay proveedores"
-              emptyDescription="Pulsa Proveedor para registrar quién te vende la mercancía."
               columns={[
                 {
                   label: "Proveedor",
@@ -1945,8 +1911,6 @@ export function Customers() {
                 .toLowerCase()
                 .includes(search.toLowerCase()),
             )}
-            empty="No encontramos clientes"
-            emptyDescription="Revisa la búsqueda o registra una persona con Nuevo cliente."
             columns={[
               { label: "Cliente", render: (c) => <strong>{c.name}</strong> },
               {
@@ -2387,12 +2351,7 @@ export function Reports() {
                     download(
                       `/reports/${report}?from=${from}&to=${to}&format=${format}`,
                       `${report}.${format}`,
-                    ).catch(() =>
-                      toast(
-                        "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
-                        true,
-                      ),
-                    )
+                    ).catch((e) => toast(e.message, true))
                   }
                 >
                   <Download size={16} />
@@ -2427,7 +2386,6 @@ export function Reports() {
               rows={rows}
               columns={columns}
               empty="No hay datos para este período"
-              emptyDescription="Prueba otras fechas o registra una venta para consultar este reporte."
             />
           </QueryState>
         </section>

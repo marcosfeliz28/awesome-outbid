@@ -5,10 +5,6 @@ import { Badge, Button, Modal } from "@fitstore/ui";
 import { can, formatMoney } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import {
-  businessErrorMessage,
-  managementQueryError,
-} from "./managementMessages";
-import {
   FormModal,
   attrLabel,
   dateLabel,
@@ -209,7 +205,7 @@ export function PurchaseEditor({
             toast("Orden de compra creada.");
             onClose();
           } catch (e: any) {
-            setError(businessErrorMessage(e));
+            setError(e.message);
             setBusy(false);
           }
         }}
@@ -501,7 +497,7 @@ export function ReceiptHistory({ compact = false }: { compact?: boolean }) {
                       "-" +
                       (to || today()) +
                       ".xlsx",
-                  ).catch((e) => toast(businessErrorMessage(e), true))
+                  ).catch((e) => toast(e.message, true))
                 }
               >
                 <FileSpreadsheet size={16} aria-hidden="true" /> Excel para la
@@ -580,7 +576,7 @@ function ReceiptDetail({ id, onClose }: { id: string; onClose: () => void }) {
       setDoc(null);
       toast("Documento guardado.");
     } catch (e: any) {
-      setError(businessErrorMessage(e));
+      setError(e.message);
     } finally {
       setBusy(false);
     }
@@ -595,7 +591,7 @@ function ReceiptDetail({ id, onClose }: { id: string; onClose: () => void }) {
     <Modal open title="Comprobante de recepción" onClose={onClose} wide>
       {!r ? (
         <p className="modal-intro">
-          {query.error ? managementQueryError(query.error) : "Cargando…"}
+          {query.error ? (query.error as Error).message : "Cargando…"}
         </p>
       ) : (
         <>
@@ -678,7 +674,7 @@ function ReceiptDetail({ id, onClose }: { id: string; onClose: () => void }) {
                   download(
                     "/merchandise/attachments/" + r.attachmentId,
                     "factura-proveedor",
-                  ).catch((e) => toast(businessErrorMessage(e), true))
+                  ).catch((e) => toast(e.message, true))
                 }
               >
                 <Download size={16} aria-hidden="true" /> Factura original
