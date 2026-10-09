@@ -5794,6 +5794,62 @@ describe("Ronda 9 · revisión · dinero", () => {
     );
   });
 
+  it("T3: ventas por método exige permiso financiero mientras hay caja abierta", async () => {
+    const role = await fixtureDb.role.create({
+      data: {
+        name: "qa-reporte-ciego-" + suffix,
+        permissions: ["reports:read"],
+      },
+    });
+    const user = await ok("/users", {
+      name: "QA reporte ciego " + suffix,
+      email: `qa-reporte-ciego-${suffix}@example.test`,
+      password: "FitStore-QA-2026!",
+      pin: "654321",
+      roleId: role.id,
+    });
+    actors.push(user);
+    const viewer = (
+      await ok(
+        "/auth/login",
+        { email: user.email, password: "FitStore-QA-2026!" },
+        "",
+      )
+    ).accessToken;
+    const endpoint = `/reports/by-payment?from=${today}&to=${today}`;
+    const rowsFor = async (as: string) =>
+      (await ok(endpoint, undefined, as)).rows as any[];
+    const amount = (rows: any[], method: string, column: string) =>
+      Number(rows.find((row) => row.Método === method)?.[column] ?? 0);
+    const adminBefore = await rowsFor(token);
+    const variant = await product("reporte ciego", 731, 200, 2);
+    await ok("/sales", {
+      offlineUuid: randomUUID(),
+      customerId: defaultCustomerId,
+      cashSessionId: session.id,
+      items: [{ variantId: variant.id, qty: 1 }],
+      payments: [{ method: "cash", amount: 731 }],
+      expectedTotal: 731,
+    });
+
+    const [openSession, restrictedUser] = await Promise.all([
+      fixtureDb.cashSession.findUniqueOrThrow({ where: { id: session.id } }),
+      fixtureDb.user.findUniqueOrThrow({ where: { id: user.id } }),
+    ]);
+    expect(openSession.closedAt).toBeNull();
+    expect(openSession.branchId).toBe(restrictedUser.branchId);
+
+    const restricted = await request(endpoint, undefined, viewer);
+    const adminAfter = await rowsFor(token);
+    expect(restricted.status).toBe(403);
+    expect(
+      cents(
+        amount(adminAfter, "cash", "Ventas") -
+          amount(adminBefore, "cash", "Ventas"),
+      ),
+    ).toBe(731);
+  });
+
   it("R9-dinero-9: ventas por método no cuenta dos veces el crédito y muestra los cobros el día que entran", async () => {
     await withCredit(async () => {
       const customer = await creditCustomer();

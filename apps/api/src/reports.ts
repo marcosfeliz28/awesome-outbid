@@ -311,6 +311,13 @@ export class ReportsController {
     )
       denied();
     if (name === "cash" && !canViewCashExpected(actor)) denied();
+    if (name === "by-payment" && !canViewCashExpected(actor)) {
+      const openCashSession = await this.db.cashSession.findFirst({
+        where: { branchId: actor.branchId, closedAt: null },
+        select: { id: true },
+      });
+      if (openCashSession) denied();
+    }
     if (STORE_REPORTS.includes(name))
       return sendStoreReport(
         res,
