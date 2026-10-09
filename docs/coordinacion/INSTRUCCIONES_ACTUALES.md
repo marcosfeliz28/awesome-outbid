@@ -12,6 +12,17 @@
 7. Prohibido: saltarse, desactivar o relajar pruebas o límites para ponerlos en verde; secretos; datos de producción.
 8. Al terminar T1–T4 y T0 integrada, comenta «LISTO PARA AUDITORÍA» y detente. Claude audita, se despliega y te escribe aquí si hay cambios.
 
+## ▶ FASE 2 (autorizada; trabajo mientras Claude despliega la Fase 1)
+**La rama `nexora-chatgpt` (PR #1) queda CONGELADA: no empujes nada más ahí** (es lo que se despliega). Crea `nexora-chatgpt-fase2` desde `origin/nexora-chatgpt` (head `1d842a0` o el que haya), abre un PR hacia `nexora-cloud` titulado «Fase 2» y trabaja SOLO allí, mismo protocolo (un commit por ID, `pnpm check` + integración antes de cada push, comentario en el PR con la regresión antes/después). Orden (más riesgo primero; si algo te bloquea 30 min, documenta y pasa a la siguiente):
+1. **M1** movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); sobre `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
+2. **C1** contraentrega: misma aprobación que el crédito (`creditApprovalThreshold`, PIN de gerente para quien no tiene `sale:manage`) y respeta `allowCreditSales`/`creditLimit`; documenta lo que hace con límite 0 sin cambiar la regla existente.
+3. **F2** `safe()` (common.ts) pasa a LISTA BLANCA; oculta costos, margen, capital y `wasteCostTotal` a quien no tiene `profit:read`.
+4. **F1** `GET /payments/:id/proof` con `sale:manage` o caja dueña.
+5. **E1** usuario inexistente/inactivo: bcrypt contra hash falso y mismo mensaje; `change-password` verifica la clave antes de decir si hay cambio pendiente.
+6. **R-backup** (hallazgos de la prueba de restauración, `claude/restore-evidence`): `scripts/backup.mjs` y `deploy/render/backup/render-backup.mjs` deben comprobar el SHA-256 contra el manifiesto antes de dar el respaldo por bueno y antes de restaurar; el comando de restauración de `docs/DEPLOY-RENDER.md` usa `--single-transaction` (incompatible con `--jobs`: documenta cuál usar y cuándo); no vuelques las ~200 líneas del índice en la salida.
+7. **U-crédito** limpieza: quita el campo «Vencimiento del crédito» y el envío de `creditDueDate` inalcanzables (`POS.tsx` ~1956 y ~1531) y actualiza `docs/MANUAL.md:143`, sin cambiar el comportamiento de «Crédito / contraentrega».
+Al terminar cada ID comenta en el PR de la Fase 2. No despliegues; no toques `deploy/**` ni `render.yaml`.
+
 ## ✅ T0b LISTO (commit `16c8824` en `origin/nexora-claude-fixes`)
 Haz `git fetch origin && git merge origin/nexora-claude-fixes` (merge, sin rebase; ya comprobé que mezcla limpio sobre tu head). Solo cambia `tests/e2e/cuatro-cajas.spec.ts` (arqueo ciego: la cajera ya no recibe `expected`). Tras mezclarlo, empuja y comenta «LISTO PARA AUDITORÍA FINAL» con el SHA; no empieces nada más.
 
