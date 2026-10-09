@@ -5399,6 +5399,128 @@ describe("Ronda 9 · revisión · códigos", () => {
     products.push(v.product);
     expect(Number(v.stock)).toBe(5);
   });
+
+  // K2 (prueba hostil): otra conexión guarda el código en otras mayúsculas y
+  // con espacios SIN confirmar. La revisión de la API no la ve, su INSERT
+  // espera al índice único lower(btrim(...)) y, al confirmarse la otra, la
+  // base lo rechaza (23505/P2002). La API responde con el mensaje de R9 (400),
+  // no un 500 ni el 409 genérico, y no queda un duplicado.
+  it("K2: si la base rechaza un código por mayúsculas o espacios, crear, editar, la matriz, la importación y Mercancía dan el mensaje de R9", async () => {
+    const tag = randomUUID().slice(0, 8).toUpperCase();
+    const holder = await owner("K2 dueño", "K2-OWN-" + tag, "K2-OWN-B-" + tag);
+    const lockWaits = async () =>
+      Number(
+        (
+          await fixtureDb.$queryRaw`SELECT count(*)::int AS n FROM pg_stat_activity
+            WHERE datname = current_database() AND wait_event_type = 'Lock'`
+        )[0].n,
+      );
+    const raced = async (
+      held: { sku?: string; barcode?: string },
+      call: () => Promise<{ status: number; body: any }>,
+    ) => {
+      let response!: Promise<{ status: number; body: any }>;
+      let settled = false;
+      await fixtureDb.$transaction(
+        async (tx: any) => {
+          await tx.$executeRaw`INSERT INTO "Variant"
+              (id,"productId",sku,barcode,"costAvg",price,"updatedAt")
+            VALUES (gen_random_uuid(), ${holder.id}::uuid,
+              ${held.sku ?? "K2-HS-" + randomUUID()},
+              ${held.barcode ?? "K2-HB-" + randomUUID()}, 10, 20, now())`;
+          response = call().finally(() => (settled = true));
+          // Espera a que el INSERT de la API quede bloqueado por esta fila.
+          for (let i = 0; i < 200 && !settled; i++) {
+            if ((await lockWaits()) > 0) break;
+            await new Promise((r) => setTimeout(r, 50));
+          }
+        },
+        { timeout: 20000, maxWait: 10000 },
+      );
+      return response;
+    };
+    const expectR9 = (r: { status: number; body: any }, label: string) => {
+      expect(r.status, label + " " + JSON.stringify(r.body)).toBe(400);
+      expect(r.body.message, label).toContain("ya es de «" + holder.name + "»");
+    };
+    // Crear producto: el SKU ya está (sin confirmar) en minúsculas y con
+    // espacios a los lados.
+    const created = await raced(
+      { sku: " k2-c-" + tag.toLowerCase() + " " },
+      () =>
+        request(
+          "/products",
+          productBody("K2 crear", [
+            { sku: "K2-C-" + tag, barcode: "K2-CB-" + randomUUID() },
+          ]),
+        ),
+    );
+    expectR9(created, "crear");
+    // Editar variante: las barras nuevas ya están en minúsculas.
+    const d = await owner("K2 editar", "K2-E-" + tag, "K2-EB-" + tag);
+    const edited = await raced({ barcode: "k2-e2-" + tag.toLowerCase() }, () =>
+      request(
+        "/variants/" + d.variants[0].id,
+        { barcode: "K2-E2-" + tag },
+        token,
+        "PATCH",
+      ),
+    );
+    expectR9(edited, "editar");
+    // Matriz: el código generado (SKU del producto + "-2").
+    const m = await owner("K2 matriz", "K2-M1-" + tag, "K2-M1B-" + tag);
+    const matrix = await raced({ barcode: (m.sku + "-2").toLowerCase() }, () =>
+      request("/products/" + m.id + "/variants", {
+        attributes: { talla: ["S"] },
+        price: 20,
+        costAvg: 10,
+      }),
+    );
+    expectR9(matrix, "matriz");
+    // Importar catálogo: no se escribe ninguna fila.
+    const before = await fixtureDb.product.count();
+    const imported = await raced(
+      { barcode: " k2-i-" + tag.toLowerCase() },
+      () =>
+        importRows([
+          [
+            "QA K2 importa " + suffix,
+            "K2-I-SKU-" + tag,
+            ropa(),
+            "K2-I-" + tag,
+            20,
+            10,
+          ],
+        ]),
+    );
+    expectR9(imported, "importar");
+    expect(await fixtureDb.product.count()).toBe(before);
+    // Recepción de mercancía con producto rápido.
+    const received = await raced({ barcode: "k2-q-" + tag.toLowerCase() }, () =>
+      request("/merchandise/operations", {
+        id: randomUUID(),
+        direction: "entry",
+        items: [quickLine("K2-Q-" + tag)],
+      }),
+    );
+    expectR9(received, "mercancía");
+    // Cada código quedó en una sola variante: la que confirmó primero.
+    for (const code of [
+      "K2-C-" + tag,
+      "K2-E2-" + tag,
+      m.sku + "-2",
+      "K2-I-" + tag,
+      "K2-Q-" + tag,
+    ]) {
+      const { n } = (
+        await fixtureDb.$queryRaw`SELECT count(*)::int AS n FROM "Variant"
+          WHERE lower(btrim(sku)) = lower(${code}) OR lower(btrim(barcode)) = lower(${code})`
+      )[0];
+      expect(n, code).toBe(1);
+    }
+    // Las filas de la prueba no se venden: se desactiva el dueño.
+    await ok("/products/" + holder.id, { active: false }, token, "PATCH");
+  });
 });
 // Área dinero: devoluciones, costo contabilizado, abonos y reportes.
 describe("Ronda 9 · revisión · dinero", () => {
