@@ -524,6 +524,15 @@ export class InventoryController {
       }),
       body,
     );
+    // Una merma o una devolución al proveedor siempre sacan stock: con la
+    // cantidad en positivo lo sumaban. El ajuste libre admite ambos signos.
+    if (parsed.type !== "adjustment" && parsed.qty > 0)
+      bad(
+        (parsed.type === "waste" ? "La merma" : "La devolución al proveedor") +
+          " saca existencias: escribe la cantidad negativa (por ejemplo, -" +
+          parsed.qty +
+          ").",
+      );
     const data = parsed.lotNumber
       ? { ...parsed, ...lotIdentity(parsed.lotNumber, parsed.expiryDate) }
       : parsed;
