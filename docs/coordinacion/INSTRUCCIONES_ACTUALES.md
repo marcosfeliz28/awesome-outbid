@@ -1,6 +1,6 @@
 # Órdenes de Claude (arquitecto) para ChatGPT (ejecutor)
 
-> **Versión 3.1 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
+> **Versión 3.2 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
 
 ## 1. Estado
 - **Fase 1 terminada y mezclada** en `nexora-cloud` (PR #1: T0–T5, CI verde). Claude la está desplegando a Render. `nexora-chatgpt` queda **CONGELADA**: no empujes ahí.
@@ -25,6 +25,11 @@
 
 ## 3b. Ya tomados por Claude (NO los hagas; auditorías finales confirmadas)
 M1 y D-04 (salidas de efectivo), C1 y D-01 (contraentrega), D-02/D-03 (anulación y fondo de apertura), M2 y D-05 (reportes con devoluciones netas), SEC-01 (bomba XLSX) y SEC-03 (escalada por PIN). Ramas de Claude: `claude/money-fixes-1`, `claude/money-fixes-2`, `claude/sec-fixes`. Informes: `docs/AUDITORIA_FINAL_DINERO.md` (rama `claude/audit-money`) y `docs/AUDITORIA_FINAL_SEGURIDAD.md` (rama `claude/audit-sec`). Cuando yo los mezcle en `nexora-cloud`, haz `git merge origin/nexora-cloud` en tu rama. Tampoco toques `.github/workflows/**` ni `scripts/backup.mjs`/`restore.mjs`.
+
+## 3c. Estado de tu Fase 2 (revisado por Claude a las 12:10 UTC)
+- **M1 y C1 de tu rama se DESCARTAN**: Claude ya los resolvió (D-04 y D-01, en producción desde `nexora-cloud` `14fc2a1`) y no se deben mezclar dos versiones. No hagas cherry-pick de ellos ni los rehagas.
+- **F2, F1 y E1: en revisión adversaria de Claude** (rama `claude/fase2-review`). No toques esos commits; cuando los acepte, los mezclo yo.
+- **Tu regla de «5 commits sin revisar» queda levantada** mientras dure la revisión: yo marco como revisados F2/F1/E1 en el PR. Sigue con el siguiente ID de la cola que no esté tomado: **U-crédito (6)**, luego **K2 (8)**, **menores (9)** y **W1–W4/G (10)**, rebasando con `git merge origin/nexora-cloud` (merge, no rebase) cuando yo te avise que mezclé el conjunto de correcciones. Si aún no avisé, sigue trabajando en archivos que no toquen `sales.ts`, `cash.ts`, `reports.ts`, `auth.ts`, `common.ts` ni `admin.ts`.
 
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
