@@ -25,7 +25,11 @@ import {
 
 import { verifyAttempt, verifyPinAttempt } from "./security";
 import { isDifferentPassword, strongPasswordSchema } from "./password-policy";
-import { REQUEST_RATE_LIMITS, RequestRateLimitService } from "./rate-limit";
+import {
+  REQUEST_RATE_LIMITS,
+  RequestRateLimitService,
+  normalizeRequestIp,
+} from "./rate-limit";
 
 export function normalizeUsername(value: string) {
   return value
@@ -72,7 +76,7 @@ export class AuthController implements OnModuleInit {
     }
   }
   private limitPublicCredentials(req: Request, identifier: string) {
-    const ip = req.ip ?? "";
+    const ip = normalizeRequestIp(req.ip);
     const normalized = normalizeUsername(identifier);
     // Ambas comprobaciones ocurren antes de consultar User. El cubo compartido
     // sólo recibe identidades que no existen; cuando se llena, se comprueba
@@ -209,7 +213,7 @@ export class AuthController implements OnModuleInit {
     // administrador desbloquee la cuenta al cambiarle la contraseña (R9-seguridad-1).
     await verifyAttempt(
       this.db,
-      `login:${user.id}:${user.authVersion}:${req.ip ?? ""}`,
+      `login:${user.id}:${user.authVersion}:${credentialLimit.ip}`,
       async (tx) => {
         // Con la transacción del contador: no ocupa otra conexión del pool.
         const current = await tx.user.findUnique({ where: { id: user.id } });
@@ -287,7 +291,7 @@ export class AuthController implements OnModuleInit {
       );
     await verifyAttempt(
       this.db,
-      `login:${user.id}:${user.authVersion}:${req.ip ?? ""}`,
+      `login:${user.id}:${user.authVersion}:${credentialLimit.ip}`,
       async (tx) => {
         const current = await tx.user.findUnique({ where: { id: user.id } });
         return current?.mustChangePassword &&
@@ -359,7 +363,7 @@ export class AuthController implements OnModuleInit {
     if (!saved || saved.expiresAt < new Date()) bad("La sesión ha expirado.");
     this.requestLimits.assert(
       "auth-refresh-session",
-      [req.ip ?? "", saved.sessionId ?? saved.id],
+      [normalizeRequestIp(req.ip), saved.sessionId ?? saved.id],
       REQUEST_RATE_LIMITS.refreshSession,
     );
     // deleteMany hace la rotación de uso único incluso con peticiones concurrentes.

@@ -82,20 +82,20 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
             login: i % 2 ? "  USUARIO   FALSO " : "usuario falso",
             password: "x",
           },
-          { ip: "10.0.0.1" } as any,
+          { ip: i % 2 ? "10.0.0.1" : "::ffff:10.0.0.1" } as any,
           {} as any,
         ),
       ).rejects.toBeTruthy();
     await expect(
       controller.login(
         { login: "Usuario Falso", password: "x" },
-        { ip: "10.0.0.1" } as any,
+        { ip: "::ffff:10.0.0.1" } as any,
         {} as any,
       ),
     ).rejects.toMatchObject({ status: 429 });
     expect(db.user.findFirst).toHaveBeenCalledTimes(60);
   });
-  it("el tope de memoria no expulsa cubos activos y recicla vencidos en O(1)", () => {
+  it("el tope de memoria expulsa por FIFO y nunca rechaza una identidad nueva", () => {
     let now = 0;
     const store = new ValidatedRateLimitStore({
       windowMs: 1_000,
@@ -103,14 +103,28 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
       now: () => now,
     });
     expect(store.exceeds("auth", ["cuenta-activa"], 2)).toBe(false);
-    expect(store.exceeds("auth", ["atacante"], 2)).toBe(false);
-    expect(store.exceeds("auth", ["tercera"], 2)).toBe(true);
-    expect(store.size()).toBe(2);
-    // El rechazo anterior no retiro el cubo legitimo activo.
     expect(store.exceeds("auth", ["cuenta-activa"], 2)).toBe(false);
-    now = 1_001;
+    expect(store.limited("auth", ["cuenta-activa"], 2)).toBe(true);
+    expect(store.exceeds("auth", ["atacante"], 2)).toBe(false);
     expect(store.exceeds("auth", ["tercera"], 2)).toBe(false);
     expect(store.size()).toBe(2);
+    // Leer o incrementar un cubo no cambia su antigüedad: el primero fue
+    // expulsado aunque aún estuviera activo.
+    expect(store.limited("auth", ["cuenta-activa"], 2)).toBe(false);
+    expect(store.exceeds("auth", ["cuenta-activa"], 2)).toBe(false);
+    now = 1_001;
+    expect(store.exceeds("auth", ["cuarta"], 2)).toBe(false);
+    expect(store.size()).toBe(2);
+  });
+  it("10,000 identidades distintas no bloquean a una identidad nueva", () => {
+    const store = new ValidatedRateLimitStore({ maxBuckets: 10_000 });
+    for (let i = 0; i < 10_000; i++)
+      expect(
+        store.exceeds("auth-ip", [`198.51.${i >> 8}.${i & 255}`], 60),
+      ).toBe(false);
+    expect(store.size()).toBe(10_000);
+    expect(store.exceeds("auth-ip", ["203.0.113.250"], 60)).toBe(false);
+    expect(store.size()).toBe(10_000);
   });
   it("cada sesión conserva su propio límite de PIN y ventas", () => {
     const store = new ValidatedRateLimitStore();
@@ -141,6 +155,35 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
     ).toBe(true);
   });
 
+  it("normaliza mayúsculas, querystring y barra final antes de contar la ruta", () => {
+    const service = new RequestRateLimitService();
+    const guard = new AuthenticatedRateLimitGuard(service);
+    const requests = [
+      { method: "POST", path: "/API/AUTH/PIN" },
+      { method: "POST", path: "/api/auth/pin/" },
+      { method: "POST", path: "/API//AUTH//PIN/" },
+      { method: "POST", url: "/api/auth/pin/?source=pos" },
+    ];
+    for (let attempt = 0; attempt < 60; attempt++)
+      expect(
+        guard.canActivate(
+          context({
+            ...requests[attempt % requests.length],
+            actor: { sessionId: "sesion-ruta-normalizada" },
+          }),
+        ),
+      ).toBe(true);
+    expect(() =>
+      guard.canActivate(
+        context({
+          method: "POST",
+          path: "/Api/Auth/Pin/",
+          actor: { sessionId: "sesion-ruta-normalizada" },
+        }),
+      ),
+    ).toThrowError("Demasiados intentos");
+  });
+
   it("aplica B5 sobre una app Nest real mediante supertest", async () => {
     const user = {
       id: "11111111-1111-4111-8111-111111111111",
@@ -155,16 +198,31 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
       branchId: "22222222-2222-4222-8222-222222222222",
       role: { name: "seller", permissions: [] },
     };
+    const otherUser = {
+      ...user,
+      id: "11111111-1111-4111-8111-111111111112",
+      name: "Maria Lopez",
+      username: "maria lopez",
+      usernameKey: "maria lopez",
+      email: "maria@example.test",
+    };
+    const users = [user, otherUser];
     const findFirst = vi.fn(async ({ where }: any) =>
-      where?.usernameKey === user.usernameKey || where?.email === user.email
-        ? user
-        : null,
+      users.find(
+        (candidate) =>
+          where?.usernameKey === candidate.usernameKey ||
+          where?.email === candidate.email,
+      ),
     );
     const tx = {
       $queryRaw: vi.fn(async () => []),
       user: {
-        findUnique: vi.fn(async () => user),
-        findUniqueOrThrow: vi.fn(async () => user),
+        findUnique: vi.fn(async ({ where }: any) =>
+          users.find((candidate) => candidate.id === where.id),
+        ),
+        findUniqueOrThrow: vi.fn(async ({ where }: any) =>
+          users.find((candidate) => candidate.id === where.id),
+        ),
       },
       authAttempt: {
         upsert: vi.fn(async ({ create }: any) => ({
@@ -184,9 +242,9 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
     };
     const db = {
       user: {
-        findMany: vi.fn(async () => [
-          { usernameKey: user.usernameKey, email: user.email },
-        ]),
+        findMany: vi.fn(async () =>
+          users.map(({ usernameKey, email }) => ({ usernameKey, email })),
+        ),
         findFirst,
       },
       settings: { findUnique: vi.fn(async () => null) },
@@ -260,7 +318,7 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
         realStatuses.push(
           (
             await request(server)
-              .post("/api/auth/login")
+              .post(i % 2 ? "/api/auth/login/" : "/api/auth/login")
               .set("X-Forwarded-For", "198.51.100.20")
               .send({
                 login: i % 2 ? "  JOSÉ   PÉREZ " : "jose perez",
@@ -272,6 +330,17 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
         true,
       );
       expect(realStatuses[60]).toBe(429);
+      expect(
+        (
+          await request(server)
+            .post("/api/auth/login/")
+            .set("X-Forwarded-For", "198.51.100.20")
+            .send({
+              login: "maria lopez",
+              password: "Clave-correcta-2026!",
+            })
+        ).status,
+      ).toBe(201);
 
       const changeStatuses: number[] = [];
       for (let i = 0; i < 61; i++)
@@ -292,8 +361,37 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
         changeStatuses.slice(0, 60).every((status) => status === 400),
       ).toBe(true);
       expect(changeStatuses[60]).toBe(429);
+
+      const sweepStatuses: number[] = [];
+      // Cinco solicitudes simultáneas mantienen la prueba rápida sin superar
+      // el límite de listeners del servidor HTTP de supertest.
+      for (let offset = 0; offset < 10_000; offset += 5) {
+        const batch = await Promise.all(
+          Array.from({ length: 5 }, (_, index) => {
+            const attempt = offset + index;
+            return request(server)
+              .post("/api/auth/login")
+              .set("X-Forwarded-For", `203.0.${attempt >> 8}.${attempt & 255}`)
+              .send({ login: `barrido-${attempt}`, password: "x" });
+          }),
+        );
+        sweepStatuses.push(...batch.map((response) => response.status));
+      }
+      expect(sweepStatuses).toHaveLength(10_000);
+      expect(sweepStatuses.every((status) => status === 400)).toBe(true);
+      expect(
+        (
+          await request(server)
+            .post("/api/auth/login/")
+            .set("X-Forwarded-For", "192.0.2.250")
+            .send({
+              login: "jose perez",
+              password: "Clave-correcta-2026!",
+            })
+        ).status,
+      ).toBe(201);
     } finally {
       await app.close();
     }
-  }, 30_000);
+  }, 60_000);
 });

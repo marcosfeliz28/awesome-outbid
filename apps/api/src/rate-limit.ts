@@ -55,15 +55,11 @@ export class ValidatedRateLimitStore {
     }
     if (item) this.buckets.delete(key);
     if (this.buckets.size >= this.maxBuckets) {
-      // Map conserva orden de insercion. Como todos los cubos comparten la
-      // misma ventana, el primero tambien es el primero que vence. Mirar y
-      // retirar solo ese elemento mantiene la admision O(1). Un cubo activo
-      // nunca se expulsa para admitir una identidad nueva controlada por un
-      // atacante: la identidad nueva recibe 429 y la cuenta activa se conserva.
-      const oldest = this.buckets.entries().next().value as
-        [string, Bucket] | undefined;
-      if (oldest && oldest[1].until <= at) this.buckets.delete(oldest[0]);
-      if (this.buckets.size >= this.maxBuckets) return true;
+      // Map conserva el orden de inserción. Expulsar siempre el cubo FIFO
+      // mantiene memoria y admisión acotadas en O(1): llenar el mapa con IPs
+      // falsas nunca convierte su capacidad interna en un 429 global.
+      const oldestKey = this.buckets.keys().next().value as string | undefined;
+      if (oldestKey !== undefined) this.buckets.delete(oldestKey);
     }
     this.buckets.set(key, { count: 1, until: at + this.windowMs });
     return false;
@@ -99,8 +95,22 @@ export class RequestRateLimitService {
   }
 }
 
-const requestPath = (req: any) =>
-  String(req.path ?? req.url?.split("?")[0] ?? "").toLowerCase();
+export const normalizeRequestIp = (value: unknown) => {
+  const ip = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  return ip.startsWith("::ffff:") ? ip.slice("::ffff:".length) : ip;
+};
+
+const requestPath = (req: any) => {
+  const path = String(req.path ?? req.url ?? "")
+    .split("?", 1)[0]
+    .trim()
+    .toLowerCase()
+    .replace(/\/{2,}/g, "/")
+    .replace(/\/+$/, "");
+  return path || "/";
+};
 /** Se ejecuta después de AuthGuard; los Bearer falsos nunca crean un cubo. */
 @Injectable()
 export class AuthenticatedRateLimitGuard implements CanActivate {
