@@ -145,7 +145,8 @@ test("Tienda-4cajas: 3 cajas y el celular de Mercancía ven el stock en tiempo r
     .getByLabel("Buscar producto", { exact: true })
     .fill(product.name);
   const option = phone.page
-    .getByRole("option")
+    .getByRole("list", { name: "Resultados: Buscar producto" })
+    .getByRole("button")
     .filter({ hasText: product.name });
   await expect(option).toContainText("5 en stock");
 

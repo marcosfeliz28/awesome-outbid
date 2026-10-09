@@ -227,17 +227,13 @@ function ProductSearch({
         </span>
       </label>
       {results.length > 0 && (
-        <ul
-          className="goods-results"
-          role="listbox"
-          aria-label={"Resultados: " + label}
-        >
+        // G12: lista de resultados con botones (no es un listbox navegable
+        // con flechas: Enter toma el primero).
+        <ul className="goods-results" aria-label={"Resultados: " + label}>
           {results.map((v) => (
             <li key={v.id}>
               <button
                 type="button"
-                role="option"
-                aria-selected="false"
                 onClick={() => {
                   onPick(v);
                   setText("");

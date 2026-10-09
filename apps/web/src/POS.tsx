@@ -828,7 +828,12 @@ export function POS({ go }: { go: (page: string) => void }) {
           </div>
           <ChevronRight size={16} />
         </button>
-        <div className="cart-items">
+        <div
+          className="cart-items"
+          tabIndex={0}
+          role="region"
+          aria-label="Artículos del carrito"
+        >
           {cart.length ? (
             cart.map((i, index) => (
               <div className="cart-item" key={i.variant.id}>
