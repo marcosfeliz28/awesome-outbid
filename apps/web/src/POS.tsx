@@ -1391,7 +1391,6 @@ function Checkout({
     [receipt, setReceipt] = useState<any>(null);
   const [creditNoteId, setCreditNoteId] = useState("");
   const [creditNoteCode, setCreditNoteCode] = useState("");
-  const [creditDueDate, setCreditDueDate] = useState("");
   const [ncfType, setNcfType] = useState<"" | "B01" | "B02">("");
   const [recipientLegalId, setRecipientLegalId] = useState("");
   const notes = useQuery({
@@ -1473,10 +1472,6 @@ function Checkout({
       setError("Selecciona el cliente para el crédito / contraentrega.");
       return;
     }
-    if (method === "credit" && !creditDueDate) {
-      setError("Indica la fecha de vencimiento.");
-      return;
-    }
     const next = [
       ...payments,
       {
@@ -1533,13 +1528,6 @@ function Checkout({
       globalDiscount,
       ...(hasDiscount ? { discountReason: discountReason.trim() } : {}),
       expectedTotal: total,
-      ...(payments.some((p) => p.method === "credit") && creditDueDate
-        ? {
-            creditDueDate: new Date(
-              creditDueDate + "T23:59:59-04:00",
-            ).toISOString(),
-          }
-        : {}),
       ...(ncfType
         ? { ncfType, ...(recipientLegalId ? { recipientLegalId } : {}) }
         : {}),
@@ -1961,18 +1949,6 @@ function Checkout({
             nombre del cliente. Sólo Marcos o Genesis podrán registrar después
             pagos parciales o completos por efectivo, tarjeta o transferencia.
           </p>
-        )}
-        {method === "credit" && (
-          <label className="field">
-            <span>Vencimiento del crédito</span>
-            <input
-              type="date"
-              required
-              value={creditDueDate}
-              onChange={(e) => setCreditDueDate(e.target.value)}
-            />
-            <small>Requiere un cliente seleccionado.</small>
-          </label>
         )}
         <label className="field">
           <span>Monto del pago</span>

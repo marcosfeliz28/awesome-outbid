@@ -140,7 +140,7 @@ En la línea del carrito puedes indicar porcentaje o RD$. Se aplica el mayor de 
 
 Para usar una nota de crédito, selecciona el cliente y el método **Nota de crédito**, elige la nota y el monto. El saldo no puede excederse ni producir cambio.
 
-El administrador puede habilitar **Ventas a crédito** en Ajustes. Selecciona cliente, agrega **A crédito** y su vencimiento. En **Ventas**, la columna **Saldo a crédito** muestra la deuda; **Registrar abono** cobra en tu caja abierta. El abono puede ser efectivo, tarjeta o transferencia. Una devolución reduce primero el saldo pendiente y reembolsa únicamente lo ya cobrado que corresponda.
+El administrador puede habilitar **Ventas a crédito** en Ajustes. Selecciona el cliente y, al cobrar, selecciona **Crédito / contraentrega** e indica el monto pendiente; este método no pide fecha de vencimiento. La mercancía sale ahora y el saldo queda a nombre del cliente, sujeto a los controles de crédito y autorización vigentes. En **Ventas**, la columna **Saldo a crédito** muestra la deuda; Marcos o Genesis registran los abonos en **Registrar abono**, por efectivo, tarjeta o transferencia. Una devolución reduce primero el saldo pendiente y reembolsa únicamente lo ya cobrado que corresponda.
 
 ## Caja, conexión y alertas
 
