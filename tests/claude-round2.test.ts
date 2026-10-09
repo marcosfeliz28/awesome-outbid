@@ -6,6 +6,7 @@ import {
   canViewCashExpected,
   cashCloseRequiresNote,
 } from "../apps/api/src/cash";
+import { safe } from "../apps/api/src/common";
 import { SalesController, saleHistoryDto } from "../apps/api/src/sales";
 import { paymentReceiptLine } from "../packages/shared/src";
 
@@ -182,15 +183,39 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
         permissions: ["sale:write"],
       }),
     ).rejects.toMatchObject({ status: 403 });
+    const response = {
+      setHeader: () => undefined,
+      type: () => response,
+      send: (bytes: Buffer) => bytes,
+    } as any;
+    for (const identity of [
+      { id: "owner", permissions: [] },
+      { id: "manager", permissions: ["sale:manage"] },
+    ]) {
+      await expect(
+        controller.getPaymentProof(
+          payment.id,
+          { ...identity, branchId: "main" } as any,
+          response,
+        ),
+      ).resolves.toEqual(Buffer.from("iVBORw0KGgo=", "base64"));
+    }
+    await expect(
+      controller.getPaymentProof(
+        payment.id,
+        { id: "other", permissions: [], branchId: "main" } as any,
+        response,
+      ),
+    ).rejects.toMatchObject({ status: 403 });
     expect(
       Reflect.getMetadata("permission", SalesController.prototype.paymentProof),
-    ).toBeUndefined();
+    ).toBe("authenticated");
     expect(
       Reflect.getMetadata(
         "permission",
         SalesController.prototype.getPaymentProof,
       ),
-    ).toBeUndefined();
+    ).toBe("authenticated");
   });
 
   it("F2: el historial usa lista blanca y no entrega costos de merma a la cajera", () => {
@@ -274,5 +299,163 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
     } as any) as any;
     expect(manager.costTotal).toBe(40);
     expect(manager.returns[0].wasteCostTotal).toBe(40);
+  });
+
+  it("F2: safe usa lista blanca y no publica campos nuevos por omisión", () => {
+    const payload = {
+      id: "variant-1",
+      sku: "SKU-1",
+      price: 100,
+      stock: 2,
+      product: {
+        id: "product-1",
+        name: "Producto",
+        attributes: { Color: "Rojo", capital: 200 },
+      },
+      costAvg: 40,
+      wasteCostTotal: 15,
+      futureInternalCostProjection: 999,
+    };
+    const seller = safe(payload, {
+      role: "seller",
+      permissions: ["catalog:read"],
+    } as any) as any;
+    expect(seller).toEqual({
+      id: "variant-1",
+      sku: "SKU-1",
+      price: 100,
+      stock: 2,
+      product: {
+        id: "product-1",
+        name: "Producto",
+        attributes: { Color: "Rojo" },
+      },
+    });
+
+    expect(
+      safe(
+        {
+          id: "receipt-1",
+          supplierId: "supplier-1",
+          orderId: "order-1",
+          total: 500,
+          freight: 20,
+          otherCosts: 5,
+          invoiceTotal: 525,
+          items: [{ itemId: "item-1", qty: 2, landedCost: 250 }],
+          lines: [
+            {
+              variantId: "variant-1",
+              name: "Producto",
+              qty: 2,
+              damagedQty: 1,
+              unitCost: 250,
+            },
+          ],
+        },
+        { role: "warehouse", permissions: ["catalog:read"] } as any,
+      ),
+    ).toEqual({
+      id: "receipt-1",
+      supplierId: "supplier-1",
+      orderId: "order-1",
+      items: [{ itemId: "item-1", qty: 2 }],
+      lines: [
+        { variantId: "variant-1", name: "Producto", qty: 2, damagedQty: 1 },
+      ],
+    });
+
+    expect(
+      safe(
+        {
+          from: "2026-10-09T00:00:00.000Z",
+          to: "2026-10-09T23:59:59.999Z",
+          sellers: [{ name: "Caja uno", total: 300, margin: 70 }],
+          alerts: [{ id: "alert-1", message: "Revisar stock", capital: 80 }],
+          movements: [
+            {
+              id: "movement-1",
+              type: "sale",
+              qty: -1,
+              unitCost: 40,
+              variant: {
+                id: "variant-1",
+                sku: "SKU-1",
+                product: { id: "product-1", name: "Producto" },
+              },
+            },
+          ],
+        },
+        { role: "seller", permissions: ["reports:read"] } as any,
+      ),
+    ).toEqual({
+      from: "2026-10-09T00:00:00.000Z",
+      to: "2026-10-09T23:59:59.999Z",
+      sellers: [{ name: "Caja uno", total: 300 }],
+      alerts: [{ id: "alert-1", message: "Revisar stock" }],
+      movements: [
+        {
+          id: "movement-1",
+          type: "sale",
+          qty: -1,
+          variant: {
+            id: "variant-1",
+            sku: "SKU-1",
+            product: { id: "product-1", name: "Producto" },
+          },
+        },
+      ],
+    });
+
+    const finance = safe(payload, {
+      role: "manager",
+      permissions: ["profit:read"],
+    } as any);
+    expect(finance).toEqual(payload);
+  });
+
+  it("Rev F2: vendedora con profit:read sin costos; dañados y arqueo autorizado visibles", () => {
+    expect(
+      safe({ id: "v", price: 100, costAvg: 40 }, {
+        role: "seller",
+        permissions: ["catalog:read", "profit:read"],
+      } as any),
+    ).toEqual({ id: "v", price: 100 });
+    expect(
+      safe(
+        {
+          id: "receipt-1",
+          supplierId: "supplier-1",
+          orderId: null,
+          units: 2,
+          damagedUnits: 1,
+          itbis: 54,
+          total: 200,
+        },
+        { role: "warehouse", permissions: ["purchase:write"] } as any,
+      ),
+    ).toEqual({
+      id: "receipt-1",
+      supplierId: "supplier-1",
+      orderId: null,
+      units: 2,
+      damagedUnits: 1,
+    });
+    const cash = {
+      Fecha: "hoy",
+      Usuario: "u",
+      Estado: "Cerrada",
+      Esperado: 100,
+      Contado: 90,
+      Diferencia_efectivo: -10,
+      Diferencia_tarjeta: 0,
+      Diferencia_transferencia: 0,
+    };
+    expect(
+      safe([cash], {
+        role: "supervisor",
+        permissions: ["reports:read", "sale:manage"],
+      } as any),
+    ).toEqual([cash]);
   });
 });

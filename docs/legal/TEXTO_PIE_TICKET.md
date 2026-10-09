@@ -43,3 +43,5 @@ Info: [TELEFONO]
 ```
 
 Notas: la leyenda de "NO FISCAL" debe ir siempre mientras no exista NCF; si el sistema emite NCF/e-CF, la leyenda debe cambiar según indique la contable. Evitar la palabra "FACTURA" como título cuando no hay NCF.
+
+El aviso sobre la lectura automática de facturas de proveedor no va en el ticket del cliente (no tiene relación con su compra); está sólo en la política de privacidad, sección 6.

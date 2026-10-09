@@ -38,7 +38,7 @@ import {
   type Product,
 } from "./api";
 import {
-  QueryState,
+  QueryState as BaseQueryState,
   FormModal,
   ConfirmModal,
   type Field,
@@ -62,6 +62,12 @@ import {
 } from "./Tienda";
 import { METHOD_LABEL, printSoon } from "./Prints";
 import {
+  customerEditValue,
+  customerPrivateDisplay,
+  seesCustomerPii,
+} from "./customer-display";
+import { managementQueryError } from "./managementMessages";
+import {
   applyPendingSaleReprice,
   discardPendingSale,
   isPendingPriceConflict,
@@ -72,14 +78,29 @@ type Column = {
   render: (row: any) => ReactNode;
   className?: string;
 };
+function QueryState({ query, children }: { query: any; children: ReactNode }) {
+  return (
+    <BaseQueryState
+      query={
+        query.error
+          ? { ...query, error: { message: managementQueryError(query.error) } }
+          : query
+      }
+    >
+      {children}
+    </BaseQueryState>
+  );
+}
 function DataTable({
   rows,
   columns,
   empty = "Todavía no hay registros",
+  emptyDescription = "Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla.",
 }: {
   rows: any[];
   columns: Column[];
   empty?: string;
+  emptyDescription?: string;
 }) {
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [rows.length]);
@@ -133,10 +154,7 @@ function DataTable({
       )}
     </>
   ) : (
-    <Empty
-      title={empty}
-      description="Cada registro te ayuda a conocer mejor tu negocio."
-    />
+    <Empty title={empty} description={emptyDescription} />
   );
 }
 function Heading({
@@ -256,7 +274,12 @@ export function Catalog() {
                 download(
                   "/catalog-template.xlsx",
                   "plantilla-productos.xlsx",
-                ).catch((e) => toast(e.message, true))
+                ).catch(() =>
+                  toast(
+                    "No pudimos descargar la plantilla. Revisa tu conexión e inténtalo de nuevo.",
+                    true,
+                  ),
+                )
               }
             >
               <Download size={16} />
@@ -281,8 +304,11 @@ export function Catalog() {
                       });
                       toast(`${result.imported} productos importados.`);
                       await client.invalidateQueries();
-                    } catch (e: any) {
-                      toast(e.message, true);
+                    } catch {
+                      toast(
+                        "No pudimos importar el archivo. Revisa las columnas y los datos de la plantilla antes de volver a intentar.",
+                        true,
+                      );
                     }
                     e.target.value = "";
                   }
@@ -320,6 +346,8 @@ export function Catalog() {
         <QueryState query={query}>
           <DataTable
             rows={rows}
+            empty="No encontramos productos"
+            emptyDescription="Revisa los filtros o agrega un producto con Nuevo producto."
             columns={[
               {
                 label: "Producto",
@@ -775,6 +803,8 @@ export function Inventory() {
           {mode === "stock" ? (
             <DataTable
               rows={rows}
+              empty="No encontramos artículos en el inventario"
+              emptyDescription="Revisa la búsqueda o registra una entrada de mercancía."
               columns={[
                 {
                   label: "Producto / Variante",
@@ -847,6 +877,8 @@ export function Inventory() {
             <QueryState query={counts}>
               <DataTable
                 rows={counts.data || []}
+                empty="Todavía no hay conteos físicos"
+                emptyDescription="Pulsa Contar junto a un artículo para registrar su existencia real."
                 columns={[
                   { label: "Fecha", render: (c) => dateLabel(c.createdAt) },
                   { label: "Artículos", render: (c) => c.items.length },
@@ -875,8 +907,11 @@ export function Inventory() {
                               );
                               await client.invalidateQueries();
                               toast("Conteo aprobado y aplicado.");
-                            } catch (e: any) {
-                              toast(e.message, true);
+                            } catch {
+                              toast(
+                                "No pudimos aprobar el conteo. Revisa los datos y tu conexión antes de volver a intentar.",
+                                true,
+                              );
                             }
                           }}
                         >
@@ -973,6 +1008,8 @@ export function Inventory() {
 }
 
 export function Purchases() {
+  // La API no envía el total de la orden a quien no ve costos (F2).
+  const seesCost = can(useStore((s) => s.user)!.permissions, "profit:read");
   const orders = useQuery({
     queryKey: ["orders"],
     queryFn: () => api("/purchase-orders"),
@@ -1035,6 +1072,8 @@ export function Purchases() {
           <QueryState query={orders}>
             <DataTable
               rows={orders.data || []}
+              empty="Todavía no hay órdenes de compra"
+              emptyDescription="Crea una Orden de compra para registrar tu próxima compra."
               columns={[
                 { label: "Orden", render: (o) => <strong>{o.number}</strong> },
                 {
@@ -1045,7 +1084,14 @@ export function Purchases() {
                 },
                 { label: "Fecha", render: (o) => dateLabel(o.createdAt) },
                 { label: "Artículos", render: (o) => o.items.length },
-                { label: "Total", render: (o) => formatMoney(o.total) },
+                ...(seesCost
+                  ? [
+                      {
+                        label: "Total",
+                        render: (o: any) => formatMoney(o.total),
+                      },
+                    ]
+                  : []),
                 {
                   label: "Estado",
                   render: (o) => (
@@ -1077,6 +1123,8 @@ export function Purchases() {
           <QueryState query={suppliers}>
             <DataTable
               rows={suppliers.data || []}
+              empty="Todavía no hay proveedores"
+              emptyDescription="Pulsa Proveedor para registrar quién te vende la mercancía."
               columns={[
                 {
                   label: "Proveedor",
@@ -1419,7 +1467,7 @@ export function Cash() {
     );
   };
   return (
-    <>
+    <div className="cash-page">
       <Heading
         title="Una caja que siempre cuadra"
         caption="Abre el día con claridad. Ciérralo con tranquilidad."
@@ -1840,7 +1888,7 @@ export function Cash() {
         />
       )}
       <PrintModal printing={printing} onClose={() => setPrinting(null)} />
-    </>
+    </div>
   );
 }
 
@@ -1855,10 +1903,18 @@ export function Customers() {
     [search, setSearch] = useState(""),
     [editing, setEditing] = useState<any>(null),
     [anonymizing, setAnonymizing] = useState<any>(null);
+  // SEC-05: sin gerencia, la API envía teléfono, correo y cédula/RNC
+  // enmascarados («•••••••123») y sin gasto histórico. El correo enmascarado
+  // no es un correo válido para el navegador; la API lo valida al guardar.
+  const fullCustomer = seesCustomerPii(user.permissions);
   const fields: Field[] = [
     { key: "name", label: "Nombre", required: true },
     { key: "phone", label: "Teléfono" },
-    { key: "email", label: "Correo", type: "email" },
+    {
+      key: "email",
+      label: "Correo",
+      ...(fullCustomer ? { type: "email" } : {}),
+    },
     { key: "legalId", label: "Cédula / RNC" },
     ...(can(useStore.getState().user!.permissions, "sale:manage")
       ? [requiredNumber("creditLimit", "Límite de crédito (RD$)", 0)]
@@ -1887,34 +1943,48 @@ export function Customers() {
         <QueryState query={query}>
           <DataTable
             rows={(query.data || []).filter((c: any) =>
-              (c.name + " " + c.phone)
+              // P5: sin acceso completo la búsqueda no usa el teléfono, para
+              // no servir de oráculo de los dígitos ocultos.
+              (c.name + " " + (fullCustomer ? c.phone : ""))
                 .toLowerCase()
                 .includes(search.toLowerCase()),
             )}
+            empty="No encontramos clientes"
+            emptyDescription="Revisa la búsqueda o registra una persona con Nuevo cliente."
             columns={[
               { label: "Cliente", render: (c) => <strong>{c.name}</strong> },
               {
                 label: "Contacto",
                 render: (c) => (
                   <span>
-                    {c.phone || "—"}
+                    {customerPrivateDisplay(c.phone, fullCustomer)}
                     <small>{c.email}</small>
                   </span>
                 ),
               },
-              { label: "Cédula / RNC", render: (c) => c.legalId || "—" },
-              { label: "Compras", render: (c) => c.purchases },
               {
-                label: "Total gastado",
-                render: (c) => formatMoney(c.totalSpent),
+                label: "Cédula / RNC",
+                // P5 + SEC-05: la API ya envía el dato enmascarado a la caja;
+                // la vista lo acorta igual («•••123») con el mismo criterio
+                // de acceso que la API (fullCustomer).
+                render: (c) => customerPrivateDisplay(c.legalId, fullCustomer),
               },
-              {
-                label: "Última compra",
-                render: (c) =>
-                  c.lastPurchase
-                    ? dateLabel(c.lastPurchase)
-                    : "Aún sin compras",
-              },
+              ...(fullCustomer
+                ? [
+                    { label: "Compras", render: (c: any) => c.purchases },
+                    {
+                      label: "Total gastado",
+                      render: (c: any) => formatMoney(c.totalSpent),
+                    },
+                    {
+                      label: "Última compra",
+                      render: (c: any) =>
+                        c.lastPurchase
+                          ? dateLabel(c.lastPurchase)
+                          : "Aún sin compras",
+                    },
+                  ]
+                : []),
               {
                 label: "Acción",
                 render: (c) => (
@@ -1949,7 +2019,12 @@ export function Customers() {
         <FormModal
           title="Editar cliente"
           fields={fields}
-          initial={editing}
+          // P5: «Editar» tampoco muestra teléfono ni cédula/RNC completos.
+          initial={{
+            ...editing,
+            phone: customerEditValue(editing.phone, fullCustomer),
+            legalId: customerEditValue(editing.legalId, fullCustomer),
+          }}
           onClose={() => setEditing(null)}
           onSubmit={(data) => mutate("/customers/" + editing.id, data, "PATCH")}
         />
@@ -2321,7 +2396,12 @@ export function Reports() {
                     download(
                       `/reports/${report}?from=${from}&to=${to}&format=${format}`,
                       `${report}.${format}`,
-                    ).catch((e) => toast(e.message, true))
+                    ).catch(() =>
+                      toast(
+                        "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
+                        true,
+                      ),
+                    )
                   }
                 >
                   <Download size={16} />
@@ -2356,6 +2436,7 @@ export function Reports() {
               rows={rows}
               columns={columns}
               empty="No hay datos para este período"
+              emptyDescription="Prueba otras fechas o registra una venta para consultar este reporte."
             />
           </QueryState>
         </section>

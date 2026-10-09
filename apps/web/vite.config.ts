@@ -26,7 +26,9 @@ export default defineConfig({
       // Las cajas no deben quedarse usando una versión anterior después de
       // publicar un cambio. La actualización se instala y toma control sola.
       registerType: "autoUpdate",
-      includeAssets: ["icon.svg", "products/*.svg"],
+      // El logo predeterminado del ticket (Prints.tsx) también debe estar sin
+      // conexión: printSoon imprime a los 50 ms y no espera a la red.
+      includeAssets: ["icon.svg", "products/*.svg", "logo-grupo-macgen.png"],
       manifest: {
         name: "Nexora POS",
         short_name: "Nexora",

@@ -1,5 +1,10 @@
 import { DeviceGate, useRealtime, registerTerminal } from "./realtime";
 import { Merchandise } from "./Merchandise";
+import { PasswordChangeFields } from "./PasswordChangeFields";
+import {
+  passwordChangeError,
+  friendlyPasswordChangeError,
+} from "./passwordChange";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -63,6 +68,8 @@ import {
 
 const SHOW_DEMO_CREDENTIALS =
   import.meta.env.VITE_SHOW_DEMO_CREDENTIALS === "true";
+// La guía es una herramienta interna de desarrollo, nunca una pantalla de tienda.
+const SHOW_STYLE_GUIDE = import.meta.env.DEV;
 
 const navigation = [
   {
@@ -181,6 +188,17 @@ function Login() {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            if (changeRequired) {
+              const validation = passwordChangeError(
+                newPassword,
+                confirmPassword,
+                password,
+              );
+              if (validation) {
+                setError(validation);
+                return;
+              }
+            }
             setBusy(true);
             setError("");
             try {
@@ -202,7 +220,9 @@ function Login() {
                 await saveSession(data.user, data.accessToken);
               }
             } catch (e: any) {
-              setError(e.message);
+              setError(
+                changeRequired ? friendlyPasswordChangeError(e) : e.message,
+              );
             } finally {
               setBusy(false);
             }
@@ -242,34 +262,12 @@ function Login() {
             />
           </label>
           {changeRequired && (
-            <>
-              <label className="field">
-                <span>Nueva contraseña</span>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={12}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span>Confirma la nueva contraseña</span>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={12}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </label>
-              <small>
-                Usa al menos 12 caracteres, con mayúscula, minúscula, número y
-                símbolo.
-              </small>
-            </>
+            <PasswordChangeFields
+              password={newPassword}
+              confirmation={confirmPassword}
+              onPassword={setNewPassword}
+              onConfirmation={setConfirmPassword}
+            />
           )}
           {error && (
             <p className="form-error" role="alert">
@@ -401,7 +399,8 @@ function Shell() {
     if (
       user &&
       !allowed.some((n) => n.id === page) &&
-      !["settings", "styles"].includes(page)
+      page !== "settings" &&
+      !(page === "styles" && SHOW_STYLE_GUIDE)
     )
       go(allowed[0]?.id || "products");
   }, [user, page]);
@@ -527,7 +526,7 @@ function Shell() {
     reports: <Reports />,
     alerts: <Alerts />,
     settings: <Configuration />,
-    styles: <StyleGuide />,
+    ...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {}),
     sales: <SalesHistory />,
     merchandise: <Merchandise />,
   };
@@ -586,14 +585,13 @@ function Shell() {
         <div className="sidebar-bottom">
           <div className="help-card">
             <div className="help-symbol">✦</div>
-            <strong>Tu próximo gran paso</strong>
+            <strong>Ayuda para trabajar</strong>
             <p>
-              Conoce las herramientas
-              <br />
-              que hacen crecer tu tienda.
+              Consulta los pasos de venta
+              <br />y los atajos de tu caja.
             </p>
             <button onClick={() => setHelp(true)}>
-              Explorar Nexora <ArrowUpRight size={15} />
+              Ver ayuda <ArrowUpRight size={15} />
             </button>
           </div>
           {can(user.permissions, "sale:manage") && (
@@ -605,10 +603,12 @@ function Shell() {
               Configuración
             </button>
           )}
-          <button className="nav-item" onClick={() => go("styles")}>
-            <Palette size={19} />
-            Guía de estilos
-          </button>
+          {SHOW_STYLE_GUIDE && (
+            <button className="nav-item" onClick={() => go("styles")}>
+              <Palette size={19} />
+              Guía de estilos
+            </button>
+          )}
         </div>
       </aside>
       <div className="main-shell">
@@ -795,8 +795,10 @@ function Shell() {
           </span>
         </div>
         <p>
-          Sin internet, las ventas quedan en este dispositivo. Al reconectar se
-          sincronizan una sola vez; los conflictos quedan visibles en Caja.
+          Si tu tienda permite ventas sin internet, quedan pendientes en este
+          dispositivo. No borres sus datos ni cambies de equipo hasta reconectar
+          y sincronizar. Si aparece un conflicto, avisa a gerencia y revisa
+          Caja.
         </p>
         <Button
           onClick={() => {

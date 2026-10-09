@@ -75,7 +75,11 @@ export function BusinessHeader({
   const phones = [b.phone, b.phone2].filter(Boolean);
   return (
     <header className="tp-header">
-      {b.logo && <img className="tp-logo" src={b.logo} alt="" />}
+      <img
+        className="tp-logo"
+        src={b.logo || "/logo-grupo-macgen.png"}
+        alt=""
+      />
       <h2>{b.name || "Nexora POS"}</h2>
       {b.branchName && <p className="tp-branch">{b.branchName}</p>}
       {b.address && <p>{b.address}</p>}

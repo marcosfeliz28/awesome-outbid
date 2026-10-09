@@ -1,8 +1,92 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { blockPosShortcutWithModal } from "../apps/web/src/posKeyboard";
+import {
+  passwordChangeError,
+  passwordRules,
+  friendlyPasswordChangeError,
+} from "../apps/web/src/passwordChange";
 
 const css = readFileSync("apps/web/src/styles.css", "utf8");
+
+describe("U2 · identidad y ayuda de producción", () => {
+  const app = readFileSync("apps/web/src/App.tsx", "utf8");
+  const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
+  it("la bolsa del resumen usa la identidad de Nexora", () => {
+    expect(dashboard).toMatch(/n<span>•<\/span>/);
+    expect(dashboard).not.toMatch(/f<span>•<\/span>/);
+  });
+  it("la guía tiene puerta de desarrollo tanto en navegación como en ruta", () => {
+    expect(app).toContain("const SHOW_STYLE_GUIDE = import.meta.env.DEV;");
+    expect(app).toContain("SHOW_STYLE_GUIDE && (");
+    expect(app).toContain(
+      "...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {})",
+    );
+    expect(app).toContain('(page === "styles" && SHOW_STYLE_GUIDE)');
+  });
+  it("la ayuda explica tareas reales sin prometer ventas offline siempre", () => {
+    expect(app).toContain("Ayuda para trabajar");
+    expect(app).toContain("Si tu tienda permite ventas sin internet");
+    expect(app).toContain("Ir al punto de venta");
+  });
+});
+describe("P1 · cambio obligatorio de contraseña", () => {
+  it("bloquea claves débiles, repetidas, largas y confirmación distinta", () => {
+    const good = "ClaveNueva!2026";
+    for (const weak of [
+      "1234",
+      "claveconnumero12!",
+      "CLAVECONNUMERO12!",
+      "ClaveSinNumeros!",
+      "ClaveSinSimbolo2026",
+    ])
+      expect(passwordChangeError(weak, weak, "temporal")).not.toBe("");
+    expect(passwordChangeError(good, good, "temporal")).toBe("");
+    expect(passwordChangeError(good, "otra", "temporal")).toContain(
+      "no coinciden",
+    );
+    expect(passwordChangeError(good, good, good)).toContain("diferente");
+    const tooLong = "Á".repeat(40) + "a1!";
+    expect(passwordChangeError(tooLong, tooLong, "temporal")).toContain(
+      "demasiado larga",
+    );
+    expect(passwordRules(good).filter((rule) => rule.met)).toHaveLength(5);
+  });
+  it("no muestra detalles técnicos del servidor", () => {
+    expect(
+      friendlyPasswordChangeError(
+        new Error("Prisma: internal object {} stack trace"),
+      ),
+    ).not.toMatch(/Prisma|stack|\{\}/);
+    expect(
+      friendlyPasswordChangeError(new TypeError("Failed to fetch")),
+    ).toContain("internet");
+    expect(friendlyPasswordChangeError(new Error("429"))).toContain("Espera");
+  });
+  it("expone reglas y fortaleza accesibles antes de enviar", () => {
+    const source = readFileSync("apps/web/src/App.tsx", "utf8");
+    expect(source).toContain("PasswordChangeFields");
+    const component = readFileSync(
+      "apps/web/src/PasswordChangeFields.tsx",
+      "utf8",
+    );
+    expect(component).toContain('role="status"');
+    expect(component).toContain(
+      'aria-describedby="password-rules password-strength"',
+    );
+    expect(component).toContain('autoCapitalize="none"');
+    expect(component).toContain("passwordRules(password)");
+    expect(
+      passwordRules("")
+        .map((rule) => rule.label)
+        .join(" "),
+    ).toMatch(/Mayúscula.*Minúscula.*Número.*Símbolo/);
+    expect(source).toMatch(
+      /passwordChangeError\(\s*newPassword,\s*confirmPassword,\s*password,?\s*\)/,
+    );
+    expect(source).toContain("friendlyPasswordChangeError(e)");
+  });
+});
 
 function variables(selector: string) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -53,6 +137,33 @@ function meets(
     `${label}: ${foreground} sobre ${background}`,
   ).toBeGreaterThanOrEqual(minimum);
 }
+
+describe("P6 · controles accesibles de venta y caja", () => {
+  it("los campos tienen foco visible real y las acciones pequeñas área táctil", () => {
+    expect(css).toContain(
+      "/* P6: foco y objetivos táctiles de venta y caja. */",
+    );
+    expect(css).toMatch(
+      /input:focus-visible,[\s\S]*?outline:\s*3px solid var\(--focus\)/,
+    );
+    expect(css).toMatch(/\.cart-line-total button,[\s\S]*?min-width:\s*44px/);
+    expect(css).toMatch(/\.cash-page button[\s\S]*?min-height:\s*44px/);
+  });
+  it("los métodos comunican selección y el texto no usa colores libres", () => {
+    const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
+    expect(pos).toContain("aria-pressed={method === m.id}");
+    expect(pos).not.toContain("style={{ color: p.category.color }}");
+  });
+  it.each(["claro", "oscuro"])("texto y foco visibles en %s", (theme) => {
+    const light = variables(":root");
+    const palette =
+      theme === "claro"
+        ? light
+        : { ...light, ...variables(':root[data-theme="dark"]') };
+    for (const name of ["--text", "--muted", "--primary", "--focus"])
+      meets(name, palette[name], palette["--surface"], 4.5);
+  });
+});
 
 describe("G10 · contrato de contraste WCAG AA", () => {
   const light = variables(":root");

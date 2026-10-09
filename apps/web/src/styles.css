@@ -217,6 +217,10 @@ input[type="checkbox"] {
   min-height: 20px;
   accent-color: var(--primary);
 }
+/* P6: foco y objetivos táctiles de venta y caja. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
 input[type="checkbox"]:focus-visible,
 input[type="radio"]:focus-visible {
   outline: 3px solid var(--focus);
@@ -1800,6 +1804,7 @@ td strong {
   padding: 14px 14px 16px;
 }
 .product-category {
+  color: var(--muted);
   font-size: 8px;
   font-weight: 650;
   text-transform: uppercase;
@@ -1984,7 +1989,7 @@ td strong {
   align-items: flex-end;
 }
 .cart-line-total button {
-  color: #8a93a6;
+  color: var(--muted);
   padding: 0;
 }
 .cart-line-total strong {
@@ -2076,7 +2081,7 @@ td strong {
   align-items: center;
   color: var(--muted);
   font-size: 8px;
-  min-height: 36px;
+  min-height: 44px;
 }
 .cart-security {
   text-align: center;
@@ -2176,11 +2181,13 @@ td strong {
 }
 .quick-bills {
   display: flex;
+  flex-wrap: wrap;
   gap: 7px;
   margin: 0 0 17px;
 }
 .quick-bills button {
-  min-height: 34px;
+  min-height: 44px;
+  min-width: 44px;
   flex: 1;
   border: 1px solid var(--border) !important;
   border-radius: 6px;
@@ -3716,6 +3723,16 @@ td strong {
 }
 
 /* Controles de interacción: área táctil mínima de 44 px. */
+.cart-line-total button,
+.line-discount input,
+.open-cash-link,
+.cart-bottom-actions button,
+.cash-page button,
+.cash-page .heading-actions .button,
+.modal button {
+  min-width: 44px;
+  min-height: 44px;
+}
 .icon-button {
   min-width: 44px;
   min-height: 44px;
@@ -4928,7 +4945,7 @@ td strong {
   max-width: none;
 }
 .pos-topbar .heading-actions .button {
-  min-height: 42px;
+  min-height: 44px;
   font-size: 11px;
 }
 .pos-search > svg:last-child {
@@ -4938,7 +4955,10 @@ td strong {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
 }
 .product-card {
-  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
   font-variant-numeric: tabular-nums;
 }
 .product-card:hover:not(:disabled) {

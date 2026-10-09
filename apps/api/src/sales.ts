@@ -54,6 +54,9 @@ import {
   fieldLabel,
   imageType,
   lockActiveCustomer,
+  canViewCustomerPii,
+  customerForActor,
+  maskTail,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
 
@@ -163,7 +166,11 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     creditDueDate: sale.creditDueDate,
     ncf: sale.ncf,
     ncfType: sale.ncfType,
-    recipientLegalId: sale.recipientLegalId,
+    // SEC-05: el historial de la caja no vuelve a mostrar el RNC del
+    // receptor fiscal; gerencia lo ve completo para emitir el comprobante.
+    recipientLegalId: canViewCustomerPii(actor)
+      ? sale.recipientLegalId
+      : maskTail(sale.recipientLegalId),
     fiscalStatus: sale.fiscalStatus,
     notes: sale.notes,
     voidedReason: sale.voidedReason,
@@ -1859,6 +1866,7 @@ export class SalesController {
   // URL en el pago, igual que el logo. La sube quien registró el cobro en su
   // caja o quien gestiona ventas; se puede reemplazar.
   @Post("payments/:id/proof")
+  @Permit("authenticated")
   @UseInterceptors(
     FileInterceptor("file", {
       limits: { fileSize: PROOF_MAX_BYTES + 1, files: 1 },
@@ -1898,6 +1906,7 @@ export class SalesController {
     });
   }
   @Get("payments/:id/proof")
+  @Permit("authenticated")
   async getPaymentProof(
     @Param("id") id: string,
     @CurrentUser() actor: Actor,
@@ -1998,7 +2007,10 @@ export class SalesController {
             paymentId: p.id,
             amount: Number(p.amount),
           })),
-          customer: customers.find((c) => c.id === s.customerId) ?? null,
+          customer: customerForActor(
+            customers.find((c) => c.id === s.customerId) ?? null,
+            actor,
+          ),
           seller: sellers.find((u) => u.id === s.sellerId) ?? null,
           notes: s.notes,
         },
@@ -2144,9 +2156,13 @@ export class SalesController {
     const settings = await this.db.settings.findUnique({
       where: { id: actor.branchId },
     });
+    // SEC-05: este recibo es interno y no fiscal; la vendedora lo descarga
+    // con la cédula/RNC y el teléfono del cliente enmascarados.
     const [customer, seller] = await Promise.all([
       sale.customerId
-        ? this.db.customer.findUnique({ where: { id: sale.customerId } })
+        ? this.db.customer
+            .findUnique({ where: { id: sale.customerId } })
+            .then((c) => customerForActor(c, actor))
         : null,
       this.db.user.findUnique({ where: { id: sale.sellerId } }),
     ]);

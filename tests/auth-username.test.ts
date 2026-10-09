@@ -1,8 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeUsername } from "../apps/api/src/auth";
+import { AuthController, normalizeUsername } from "../apps/api/src/auth";
+import { compare } from "../apps/api/node_modules/bcryptjs/index.js";
+vi.mock("../apps/api/node_modules/bcryptjs/index.js", () => ({
+  compare: vi.fn(async () => false),
+  hash: vi.fn(),
+}));
 import {
   isDifferentPassword,
   isStrongPassword,
@@ -13,6 +18,106 @@ describe("inicio de sesión con usuario corto", () => {
   it("ignora mayúsculas, espacios repetidos y acentos", () => {
     expect(normalizeUsername("  F   Rodríguez ")).toBe("f rodriguez");
     expect(normalizeUsername("M Félix")).toBe("m felix");
+  });
+});
+
+describe("E1 · credenciales sin enumeración", () => {
+  const controllerFor = (user: any) => {
+    const db = {
+      user: { findFirst: async () => user, findUnique: async () => user },
+      $queryRaw: async () => [],
+      authAttempt: {
+        upsert: async () => ({ failedAttempts: 0, lockedUntil: null }),
+        update: async () => ({}),
+      },
+      $transaction: async (run: (tx: any) => unknown): Promise<unknown> =>
+        run(db),
+    };
+    const controller = new AuthController(
+      db as any,
+      {} as any,
+      { rememberAuthIdentity: () => undefined } as any,
+    );
+    (controller as any).limitPublicCredentials = () => ({
+      normalized: "cuenta",
+      ip: "127.0.0.1",
+      unknownFlooded: false,
+    });
+    return controller;
+  };
+  it.each([null, { id: "inactivo", active: false, passwordHash: "hash-real" }])(
+    "login de cuenta ausente/inactiva realiza bcrypt y responde igual",
+    async (user) => {
+      vi.mocked(compare).mockClear();
+      await expect(
+        controllerFor(user).login(
+          { login: "cuenta", password: "Incorrecta!" },
+          {} as any,
+          {} as any,
+        ),
+      ).rejects.toMatchObject({
+        status: 400,
+        response: "Usuario o contraseña incorrectos.",
+      });
+      expect(compare).toHaveBeenCalledTimes(1);
+      expect(compare).toHaveBeenCalledWith(
+        "Incorrecta!",
+        expect.stringMatching(/^\$2[aby]\$12\$/),
+      );
+    },
+  );
+  it.each([
+    null,
+    {
+      id: "activo",
+      active: true,
+      mustChangePassword: false,
+      passwordHash: "hash-real",
+    },
+  ])(
+    "change-password no revela pendiente antes de verificar contraseña",
+    async (user) => {
+      vi.mocked(compare).mockClear();
+      await expect(
+        controllerFor(user).changePassword(
+          {
+            login: "cuenta",
+            currentPassword: "Incorrecta!",
+            newPassword: "Nueva-Cuenta-2026!",
+            confirmPassword: "Nueva-Cuenta-2026!",
+          },
+          {} as any,
+          {} as any,
+        ),
+      ).rejects.toMatchObject({
+        status: 400,
+        response: "Usuario o contraseña incorrectos.",
+      });
+      expect(compare).toHaveBeenCalledTimes(1);
+    },
+  );
+  it("sólo revela que no hay cambio pendiente con la contraseña correcta", async () => {
+    vi.mocked(compare).mockResolvedValueOnce(true as never);
+    await expect(
+      controllerFor({
+        id: "activo",
+        active: true,
+        mustChangePassword: false,
+        passwordHash: "hash-real",
+      }).changePassword(
+        {
+          login: "cuenta",
+          currentPassword: "Correcta!",
+          newPassword: "Nueva-Cuenta-2026!",
+          confirmPassword: "Nueva-Cuenta-2026!",
+        },
+        {} as any,
+        {} as any,
+      ),
+    ).rejects.toMatchObject({
+      status: 400,
+      response: "No hay un cambio de contraseña pendiente para esta cuenta.",
+    });
   });
 });
 

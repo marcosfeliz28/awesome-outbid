@@ -66,6 +66,7 @@ import {
   priceChanges,
 } from "./realtime";
 import { offlineSaleAction } from "./offlinePolicy";
+import { customerPrivateDisplay, seesCustomerPii } from "./customer-display";
 import { blockPosShortcutWithModal } from "./posKeyboard";
 
 function discountFor(
@@ -754,10 +755,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                       </span>
                     </div>
                     <div className="product-info">
-                      <span
-                        className="product-category"
-                        style={{ color: p.category.color }}
-                      >
+                      <span className="product-category">
                         {p.category.name}
                       </span>
                       <h3 title={p.name}>{p.name}</h3>
@@ -1166,7 +1164,15 @@ export function POS({ go }: { go: (page: string) => void }) {
                   <UserRound />
                   <span>
                     {c.name}
-                    <small>{c.phone}</small>
+                    {/* P5 + SEC-05: el selector no muestra el teléfono completo. */}
+                    <small>
+                      {c.phone
+                        ? customerPrivateDisplay(
+                            c.phone,
+                            seesCustomerPii(user!.permissions),
+                          )
+                        : null}
+                    </small>
                   </span>
                 </button>
               ))}
@@ -1391,7 +1397,6 @@ function Checkout({
     [receipt, setReceipt] = useState<any>(null);
   const [creditNoteId, setCreditNoteId] = useState("");
   const [creditNoteCode, setCreditNoteCode] = useState("");
-  const [creditDueDate, setCreditDueDate] = useState("");
   const [ncfType, setNcfType] = useState<"" | "B01" | "B02">("");
   const [recipientLegalId, setRecipientLegalId] = useState("");
   const notes = useQuery({
@@ -1473,10 +1478,6 @@ function Checkout({
       setError("Selecciona el cliente para el crédito / contraentrega.");
       return;
     }
-    if (method === "credit" && !creditDueDate) {
-      setError("Indica la fecha de vencimiento.");
-      return;
-    }
     const next = [
       ...payments,
       {
@@ -1533,13 +1534,6 @@ function Checkout({
       globalDiscount,
       ...(hasDiscount ? { discountReason: discountReason.trim() } : {}),
       expectedTotal: total,
-      ...(payments.some((p) => p.method === "credit") && creditDueDate
-        ? {
-            creditDueDate: new Date(
-              creditDueDate + "T23:59:59-04:00",
-            ).toISOString(),
-          }
-        : {}),
       ...(ncfType
         ? { ncfType, ...(recipientLegalId ? { recipientLegalId } : {}) }
         : {}),
@@ -1770,6 +1764,10 @@ function Checkout({
   if (receipt) {
     const text = `Nexora POS · ${receipt.number}\nTotal: ${formatMoney(receipt.total)}\nGracias por tu compra. Documento interno, no fiscal.`;
     const customer = customers.find((c) => c.id === customerId);
+    // SEC-05: un dato enmascarado («•••••••123») no es un destinatario; la
+    // cajera elige el contacto en WhatsApp o en el correo.
+    const contact = (value?: string | null) =>
+      value && !value.includes("•") ? value : "";
     return (
       <Modal open title="¡Una venta más, una meta más cerca!" onClose={onClose}>
         <div className="sale-success">
@@ -1820,7 +1818,7 @@ function Checkout({
             rel="noreferrer"
             href={
               "https://wa.me/" +
-              (customer?.phone?.replace(/\D/g, "") || "") +
+              contact(customer?.phone).replace(/\D/g, "") +
               "?text=" +
               encodeURIComponent(text)
             }
@@ -1832,7 +1830,7 @@ function Checkout({
             className="button secondary"
             href={
               "mailto:" +
-              (customer?.email || "") +
+              contact(customer?.email) +
               "?subject=" +
               encodeURIComponent("Recibo " + receipt.number) +
               "&body=" +
@@ -1872,6 +1870,7 @@ function Checkout({
         ].map((m) => (
           <button
             className={method === m.id ? "active" : ""}
+            aria-pressed={method === m.id}
             key={m.id}
             onClick={() => {
               setMethod(m.id as any);
@@ -1957,18 +1956,6 @@ function Checkout({
             nombre del cliente. Sólo Marcos o Genesis podrán registrar después
             pagos parciales o completos por efectivo, tarjeta o transferencia.
           </p>
-        )}
-        {method === "credit" && (
-          <label className="field">
-            <span>Vencimiento del crédito</span>
-            <input
-              type="date"
-              required
-              value={creditDueDate}
-              onChange={(e) => setCreditDueDate(e.target.value)}
-            />
-            <small>Requiere un cliente seleccionado.</small>
-          </label>
         )}
         <label className="field">
           <span>Monto del pago</span>

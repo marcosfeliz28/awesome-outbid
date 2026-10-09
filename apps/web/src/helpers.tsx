@@ -3,6 +3,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button, Loading, Modal } from "@fitstore/ui";
 import { AlertCircle, Check, X } from "lucide-react";
 import { api } from "./api";
+import {
+  businessErrorMessage,
+  managementQueryError,
+} from "./managementMessages";
 
 export const today = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "America/Santo_Domingo" });
@@ -64,7 +68,7 @@ export function QueryState({
     return (
       <div className="error-panel" role="alert">
         <AlertCircle />
-        <p>{query.error.message}</p>
+        <p>{managementQueryError(query.error)}</p>
         <Button variant="secondary" onClick={() => query.refetch()}>
           Reintentar
         </Button>
@@ -129,7 +133,7 @@ export function FormModal({
       toast("Cambios guardados.");
       onClose();
     } catch (e: any) {
-      setError(e.message);
+      setError(businessErrorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -235,7 +239,7 @@ export function ConfirmModal({
             await onConfirm(reason);
             onClose();
           } catch (e: any) {
-            setError(e.message);
+            setError(businessErrorMessage(e));
             setBusy(false);
           }
         }}

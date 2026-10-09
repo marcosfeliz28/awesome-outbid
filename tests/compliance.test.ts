@@ -1,10 +1,54 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdirSync, existsSync } from "node:fs";
+import { chromium } from "@playwright/test";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { BusinessHeader } from "../apps/web/src/Prints";
+import {
+  BusinessHeader,
+  InvoicePrint,
+  CuadrePrint,
+} from "../apps/web/src/Prints";
 
 const webRequire = createRequire(resolve("apps/web/package.json"));
+
+describe("P2 · manual operativo de cajera", () => {
+  it("documenta arqueo ciego sin inventar esperado y separa ocho tareas", () => {
+    const manual = readFileSync("docs/MANUAL-CAJERO.md", "utf8");
+    expect(manual).toContain("Los campos vacíos representan RD$ 0.00");
+    expect(manual).not.toContain("se toma el monto esperado");
+    expect(manual).not.toContain("puede exigir vencimiento");
+    expect(manual.match(/<div class="manual-page-break"/g)).toHaveLength(7);
+    expect(manual).toContain("Datos ficticios");
+    expect(manual).toContain(
+      "Confirmo que conté efectivo, tarjeta y transferencia",
+    );
+    const images = [
+      ...manual.matchAll(/!\[[^\]]*\]\((capturas\/manual\/[^)]+)\)/g),
+    ];
+    expect(images).toHaveLength(8);
+    for (const image of images)
+      expect(existsSync(resolve("docs", image[1]))).toBe(true);
+  });
+  it("Int P2-1: anular, abonos y ventas sin internet son de administración, no del rol gerente", () => {
+    // sales.ts: anular y abonos con @Permit("*"); admin.ts: PUT /settings «*».
+    const manual = readFileSync("docs/MANUAL-CAJERO.md", "utf8");
+    expect(manual).not.toContain("## 6. Anular: solo gerencia");
+    expect(manual).toContain(
+      "## 6. Anular: solo administración (Marcos o Génesis)",
+    );
+    expect(manual).toContain(
+      "Administración (Marcos o Génesis) registra y verifica luego los abonos",
+    );
+    expect(manual).not.toContain("solo gerencia puede habilitarlas");
+    expect(manual).toContain("solo administración puede habilitarlas");
+  });
+  it("Int P4-1: el logo predeterminado del ticket queda precacheado sin conexión", () => {
+    const vite = readFileSync("apps/web/vite.config.ts", "utf8");
+    expect(vite).toMatch(/includeAssets:\s*\[[^\]]*"logo-grupo-macgen\.png"/);
+    const prints = readFileSync("apps/web/src/Prints.tsx", "utf8");
+    expect(prints).toContain('"/logo-grupo-macgen.png"');
+  });
+});
 const { createElement } = webRequire("react") as typeof import("react");
 const { renderToStaticMarkup } = webRequire(
   "react-dom/server",
@@ -16,9 +60,7 @@ const luminance = (hex: string) => {
     .match(/.{2}/g)!
     .map((part) => parseInt(part, 16) / 255)
     .map((value) =>
-      value <= 0.04045
-        ? value / 12.92
-        : Math.pow((value + 0.055) / 1.055, 2.4),
+      value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4),
     );
   return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
 };
@@ -40,18 +82,153 @@ const cssVariables = (css: string, selector: string) => {
 };
 
 describe("Cumplimiento legal y accesibilidad", () => {
+  it("P4: captura reproducible del render térmico a 80 mm", async () => {
+    if (process.env.NEXORA_CAPTURE_THERMAL !== "1") return;
+    mkdirSync("docs/capturas", { recursive: true });
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({
+        viewport: { width: 303, height: 1400 },
+      });
+      await page.emulateMedia({ media: "print" });
+      const business = {
+        name: "Grupo Macgen (prueba)",
+        branchName: "Sucursal de prueba",
+        address: "Dirección de prueba",
+        phone: "809-555-0100",
+        legalId: "",
+        logo:
+          "data:image/png;base64," +
+          readFileSync("apps/web/public/logo-grupo-macgen.png").toString(
+            "base64",
+          ),
+      };
+      const samples = [
+        [
+          "ticket",
+          createElement(InvoicePrint, {
+            config: business,
+            customer: { name: "Cliente de prueba" },
+            sale: {
+              number: "QA-1",
+              createdAt: "2026-10-09T12:00:00Z",
+              cashierName: "Cajera de prueba",
+              snapshot: [
+                {
+                  sku: "QA",
+                  name: "Producto de prueba",
+                  qty: 1,
+                  unitPrice: 100,
+                  discount: 0,
+                },
+              ],
+              total: 100,
+              taxTotal: 0,
+              payments: [{ method: "cash", amount: 100 }],
+              change: 0,
+            },
+          }),
+        ],
+        [
+          "cuadre",
+          createElement(CuadrePrint, {
+            c: {
+              business,
+              title: "Cuadre de Caja",
+              cashier: { name: "Cajera de prueba" },
+              openedAt: "2026-10-09T12:00:00Z",
+              closedAt: "2026-10-09T22:00:00Z",
+              register: { number: 1, name: "Caja de prueba" },
+              denominations: [{ value: 100, qty: 2, total: 200 }],
+              denominationsSubtotal: 200,
+              lines: [
+                { key: "cash", line: 2, label: "Efectivo RD$", value: 200 },
+              ],
+              summary: { text: "Cuadre de prueba" },
+            },
+          }),
+        ],
+      ] as const;
+      for (const [name, component] of samples) {
+        await page.setContent(
+          `<style>${readFileSync("apps/web/src/styles.css", "utf8")}</style><div class="thermal-print w80">${renderToStaticMarkup(component)}</div>`,
+        );
+        await page.locator("img").evaluateAll(async (images) => {
+          await Promise.all(
+            images.map((image) => (image as HTMLImageElement).decode()),
+          );
+        });
+        await page
+          .locator(".thermal-print")
+          .screenshot({ path: `docs/capturas/P4-${name}-80mm.png` });
+      }
+    } finally {
+      await browser.close();
+    }
+  });
+  it("P4: render real del ticket no fiscal y cuadre conserva datos y nombre de cajera", () => {
+    const business = {
+      name: "Negocio de prueba",
+      branchName: "Sucursal de prueba",
+      address: "Dirección de prueba",
+      phone: "809-555-0100",
+      legalId: "",
+    };
+    const ticket = renderToStaticMarkup(
+      createElement(InvoicePrint, {
+        config: business,
+        sale: {
+          number: "QA-1",
+          createdAt: "2026-10-09T12:00:00Z",
+          cashierName: "Cajera de prueba",
+          snapshot: [],
+          total: 0,
+        },
+      }),
+    );
+    expect(ticket).toContain("DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL");
+    expect(ticket).not.toContain("NCF:");
+    expect(ticket).not.toContain("RNC:");
+    for (const text of [
+      business.name,
+      business.branchName,
+      business.address,
+      business.phone,
+      "Cajera de prueba",
+    ])
+      expect(ticket).toContain(text);
+    const cuadre = renderToStaticMarkup(
+      createElement(CuadrePrint, {
+        c: {
+          business,
+          title: "Cuadre de Caja",
+          cashier: { name: "Cajera de prueba", number: 12345 },
+          denominations: [{ value: 100, qty: 2, total: 200 }],
+          denominationsSubtotal: 200,
+          lines: [{ key: "cash", line: 2, label: "Efectivo RD$", value: 200 }],
+        },
+      }),
+    );
+    for (const text of [
+      "Cuadre de Caja",
+      "Cajera de prueba",
+      "Detalles de monedas",
+      "100 × 2",
+      "Descripción / Totales",
+      "200.00",
+      "FIN DEL CUADRE",
+    ])
+      expect(cuadre).toContain(text);
+    expect(cuadre).not.toContain("12345");
+  });
   it("G1: el ticket sin NCF se identifica como no fiscal y no imprime una fila NCF vacía", () => {
     const source = readFileSync("apps/web/src/Prints.tsx", "utf8");
-    expect(source).toContain(
-      "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL",
-    );
+    expect(source).toContain("DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL");
     expect(source).not.toContain('<h3 className="tp-center">FACTURA</h3>');
-    expect(source).not.toContain(
-      '<Row label="NCF:" value={sale.ncf ?? ""} />',
-    );
+    expect(source).not.toContain('<Row label="NCF:" value={sale.ncf ?? ""} />');
   });
 
-  it("G2: el HTML térmico usa Ajustes y sólo incluye img cuando hay logo", () => {
+  it("G2/P4: el HTML térmico usa Ajustes y el logo predeterminado o configurado", () => {
     const settings = {
       name: "Negocio configurado",
       branchName: "Sucursal configurada",
@@ -62,7 +239,7 @@ describe("Cumplimiento legal y accesibilidad", () => {
     const withoutLogo = renderToStaticMarkup(
       createElement(BusinessHeader, { business: settings }),
     );
-    expect(withoutLogo).not.toContain("<img");
+    expect(withoutLogo).toContain('src="/logo-grupo-macgen.png"');
     for (const value of Object.values(settings))
       expect(withoutLogo).toContain(value);
 
@@ -82,7 +259,9 @@ describe("Cumplimiento legal y accesibilidad", () => {
 
   it("G5: los PDF incluyen contacto, hora, tratamiento del ITBIS y condiciones de la nota", () => {
     const source = readFileSync("apps/api/src/sales.ts", "utf8");
-    const salePdf = source.slice(source.indexOf('@Get("sales/:id/receipt.pdf")'));
+    const salePdf = source.slice(
+      source.indexOf('@Get("sales/:id/receipt.pdf")'),
+    );
     const noteStart = source.indexOf('@Get("returns/:id/credit-note.pdf")');
     const notePdf = source.slice(
       noteStart,
@@ -105,11 +284,21 @@ describe("Cumplimiento legal y accesibilidad", () => {
       ...light,
       ...cssVariables(css, ':root[data-theme="dark"]'),
     };
-    expect(contrast(cssVariable(css, "--success-strong"), "#ffffff")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(cssVariable(css, "--warning-text"), "#fff5e6")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(cssVariable(css, "--danger-text"), "#ffffff")).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(cssVariable(css, "--focus"), "#ffffff")).toBeGreaterThanOrEqual(3);
-    expect(contrast(cssVariable(css, "--input-border"), "#ffffff")).toBeGreaterThanOrEqual(3);
+    expect(
+      contrast(cssVariable(css, "--success-strong"), "#ffffff"),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(cssVariable(css, "--warning-text"), "#fff5e6"),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(cssVariable(css, "--danger-text"), "#ffffff"),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrast(cssVariable(css, "--focus"), "#ffffff"),
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      contrast(cssVariable(css, "--input-border"), "#ffffff"),
+    ).toBeGreaterThanOrEqual(3);
     for (const palette of [light, dark])
       expect(
         contrast(palette["--warning-text"], palette["--alert-counter-bg"]),
