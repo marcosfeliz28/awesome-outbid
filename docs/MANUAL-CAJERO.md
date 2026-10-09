@@ -30,6 +30,7 @@ Esta guía explica cómo iniciar sesión, cobrar y cerrar la caja. Los recibos q
 
 - La opción **Crédito / contraentrega** permite entregar la mercancía y dejar el saldo asociado al cliente. La contraentrega equivale a un saldo pendiente que debe cobrarse después; no la uses sin identificar al cliente y confirmar el acuerdo.
 - Las ventas a crédito requieren que estén habilitadas por la administración; el crédito también puede exigir vencimiento y aprobación de gerente. Crédito, contraentrega y nota de crédito requieren conexión a internet.
+- La contraentrega pide el **PIN de un gerente** cuando supera el monto definido en Ajustes (RD$ 1,000 si no se cambió) o, si las ventas a crédito no están habilitadas, por cualquier monto. Escríbelo en el campo **PIN del gerente para aprobar la venta** antes de pulsar **Finalizar venta**. No pidas el PIN para repartir una contraentrega en varias facturas.
 - El cajero no debe marcar ese saldo como pagado. Marcos o Génesis, como administradores, registran luego los pagos o abonos desde **Ventas** y verifican la evidencia de pago. No cierres la caja contando un saldo pendiente como efectivo cobrado.
 
 ## 5. Cerrar e imprimir el cuadre

@@ -33,6 +33,7 @@ import {
   replayReturns,
   moneyAmount,
   quantity,
+  receivableNeedsApproval,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -363,11 +364,15 @@ export class SalesController {
             100 >
         limit,
     );
-    const credit = input.payments
-      .filter((p) => p.method === "credit")
-      .reduce((sum, p) => sum + p.amount, 0);
-    const needsCreditApproval =
-      credit > Number((setting?.data as any)?.creditApprovalThreshold ?? 1000);
+    // Crédito y contraentrega (D-01): la misma regla que aplica la caja. La
+    // contraentrega de quien no gestiona ventas pide PIN sobre el umbral, o
+    // siempre si las ventas a crédito no están habilitadas; un límite de
+    // cliente 0 no la exime (ver receivableNeedsApproval).
+    const needsCreditApproval = receivableNeedsApproval(
+      input.payments,
+      setting?.data as any,
+      can(actor.permissions, "sale:manage"),
+    );
     const needsNoteApproval = input.payments.some(
       (p) => p.method === "credit_note" && !p.creditNoteCode,
     );
@@ -620,6 +625,9 @@ export class SalesController {
             },
             _sum: { creditBalance: true },
           });
+          // Límite 0 = sin límite para el crédito (regla existente). La
+          // contraentrega no queda abierta por eso: su aprobación por umbral
+          // se aplica siempre en approve() (D-01).
           if (
             Number(customer.creditLimit) > 0 &&
             d(debt._sum.creditBalance ?? 0)
@@ -853,7 +861,7 @@ export class SalesController {
               cashSessionId: cashSession.id,
             },
           );
-        if (credit && approvedBy)
+        if ((credit || cod) && approvedBy)
           await audit(
             tx,
             actor,
@@ -861,7 +869,7 @@ export class SalesController {
             "sale",
             sale.id,
             undefined,
-            { approvedBy, amount: credit },
+            { approvedBy, amount: credit, cod },
           );
         let change = d(payment.change);
         for (const p of input.payments) {

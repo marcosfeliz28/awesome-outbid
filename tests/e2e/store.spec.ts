@@ -2600,3 +2600,120 @@ test.describe("Tienda-pantallas", () => {
     expect(wide).toBe(false);
   });
 });
+
+// Auditoría final de dinero · D-01: en la caja, la contraentrega de una
+// vendedora sobre el umbral pide el PIN del gerente con el mismo campo que el
+// crédito, y no se puede finalizar sin él.
+test("D-01: la vendedora necesita el PIN del gerente para una contraentrega sobre el umbral", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const settings = await (
+    await request.get("/api/settings", { headers })
+  ).json();
+  const code = r9Code("8");
+  const name = "Faja E2E contraentrega PIN " + code;
+  let product: any;
+  try {
+    const saved = await request.put("/api/settings", {
+      headers,
+      data: {
+        ...settings,
+        allowCreditSales: true,
+        creditApprovalThreshold: 1000,
+      },
+    });
+    expect(saved.ok()).toBe(true);
+    product = await r9Product(request, headers, name, code, { price: 1500 });
+    const customer = await (
+      await request.post("/api/customers", {
+        headers,
+        data: { name: "E2E contraentrega PIN " + code },
+      })
+    ).json();
+    expect(customer.id).toBeTruthy();
+    // La vendedora del seed entra en un equipo nuevo, que aprueba el gerente.
+    await page.goto("/");
+    await page.getByLabel("Usuario").fill("vendedor@fitstore.demo");
+    await page
+      .getByLabel("Contraseña", { exact: true })
+      .fill("FitStore-Demo-2026!");
+    await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
+    const approval = page.getByText("Este equipo necesita aprobación");
+    await expect(
+      approval
+        .or(page.getByRole("button", { name: "Caja", exact: true }))
+        .first(),
+    ).toBeVisible({ timeout: 15000 });
+    if (await approval.isVisible()) {
+      await page.getByLabel("Nombre del equipo").fill("Caja E2E D-01");
+      await page.getByLabel("PIN del gerente").fill("234567");
+      await page.getByRole("button", { name: "Aprobar este equipo" }).click();
+      await expect(approval).toHaveCount(0);
+    }
+    await ensureCash(page);
+    await page
+      .getByRole("button", { name: "Punto de venta", exact: true })
+      .click();
+    const search = page.getByLabel("Buscar productos");
+    await search.fill(code);
+    await search.press("Enter");
+    await expect(r9Qty(page, name)).toHaveText("1");
+    await page.keyboard.press("F4");
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: customer.name })
+      .click();
+    await page.getByRole("button", { name: /Cobrar/ }).click();
+    await page
+      .getByRole("button", { name: "Crédito / contraentrega", exact: true })
+      .click();
+    await expect(page.getByLabel("Monto del pago")).toHaveValue("1500");
+    await page
+      .getByRole("button", { name: "Agregar pago", exact: true })
+      .click();
+    const pin = page.getByLabel("PIN del gerente para aprobar la venta");
+    const finish = page.getByRole("button", {
+      name: "Finalizar venta",
+      exact: true,
+    });
+    await expect(pin).toBeVisible();
+    await expect(finish).toBeDisabled();
+    await pin.fill("234567");
+    await finish.click();
+    await expect(
+      page.getByText("Venta registrada", { exact: true }),
+    ).toBeVisible();
+  } finally {
+    // La caja de la vendedora no la cierra el beforeEach: la cierra el admin.
+    const seller = await (
+      await request.post("/api/auth/login", {
+        data: {
+          email: "vendedor@fitstore.demo",
+          password: "FitStore-Demo-2026!",
+        },
+      })
+    ).json();
+    const sessions = await (
+      await request.get("/api/cash-sessions", { headers })
+    ).json();
+    for (const s of sessions.filter(
+      (s: any) => !s.closedAt && s.userId === seller.user?.id,
+    ))
+      await request.post("/api/cash-sessions/" + s.id + "/close", {
+        headers,
+        data: {
+          countedCash: Math.max(0, s.expected.cash),
+          countedCard: Math.max(0, s.expected.card),
+          countedTransfer: Math.max(0, s.expected.transfer),
+          notes: "Cierre E2E D-01",
+        },
+      });
+    await request.put("/api/settings", {
+      headers,
+      data: { ...settings, logo: settings.logo ?? "" },
+    });
+    if (product) await r9Retire(request, headers, [product]);
+  }
+});
