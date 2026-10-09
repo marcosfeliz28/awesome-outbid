@@ -4,6 +4,28 @@ import { blockPosShortcutWithModal } from "../apps/web/src/posKeyboard";
 
 const css = readFileSync("apps/web/src/styles.css", "utf8");
 
+describe("U2 · identidad y ayuda de producción", () => {
+  const app = readFileSync("apps/web/src/App.tsx", "utf8");
+  const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
+  it("la bolsa del resumen usa la identidad de Nexora", () => {
+    expect(dashboard).toMatch(/n<span>•<\/span>/);
+    expect(dashboard).not.toMatch(/f<span>•<\/span>/);
+  });
+  it("la guía tiene puerta de desarrollo tanto en navegación como en ruta", () => {
+    expect(app).toContain("const SHOW_STYLE_GUIDE = import.meta.env.DEV;");
+    expect(app).toContain("SHOW_STYLE_GUIDE && (");
+    expect(app).toContain(
+      "...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {})",
+    );
+    expect(app).toContain('(page === "styles" && SHOW_STYLE_GUIDE)');
+  });
+  it("la ayuda explica tareas reales sin prometer ventas offline siempre", () => {
+    expect(app).toContain("Ayuda para trabajar");
+    expect(app).toContain("Si tu tienda permite ventas sin internet");
+    expect(app).toContain("Ir al punto de venta");
+  });
+});
+
 function variables(selector: string) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const block =

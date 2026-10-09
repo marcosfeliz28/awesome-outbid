@@ -148,7 +148,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             <div className="bag-shape">
               <div className="bag-handle" />
               <span>
-                f<span>•</span>
+                n<span>•</span>
               </span>
             </div>
             <div className="banner-spark one">✦</div>
