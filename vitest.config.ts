@@ -7,6 +7,7 @@ export default defineConfig({
       "tests/realtime.test.ts",
       "tests/inventario.test.ts",
       "tests/inventory-resilience.test.ts",
+      "tests/lot-migration-postgres.test.ts",
       "tests/portabilidad.test.ts",
       "tests/e2e-higiene.test.ts",
       "tests/offline-policy.test.ts",
@@ -18,6 +19,7 @@ export default defineConfig({
       "tests/cash-privacy.test.ts",
       "tests/compliance.test.ts",
       "tests/customer-privacy.test.ts",
+      "tests/customer-anonymization-postgres.test.ts",
     ],
   },
 });

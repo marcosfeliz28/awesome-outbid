@@ -178,6 +178,8 @@ export class AdminController {
     const before = await this.db.customer.findFirstOrThrow({
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
+    if (!before.active && before.name.startsWith("Cliente anonimizado "))
+      conflict("El cliente ya fue anonimizado y no puede modificarse.");
     const row = await this.db.customer.update({
       where: { id },
       data: {
@@ -211,9 +213,11 @@ export class AdminController {
     const customerId = parse(uuid, id);
     const request = parse(anonymizeCustomerSchema, body);
     return this.db.$transaction(async (tx) => {
-      await tx.customer.findFirstOrThrow({
+      const customer = await tx.customer.findFirstOrThrow({
         where: { id: customerId, branchId: actor.branchId },
       });
+      if (!customer.active && customer.name.startsWith("Cliente anonimizado "))
+        conflict("El cliente ya fue anonimizado.");
       const [debt, creditNotes] = await Promise.all([
         tx.sale.aggregate({
           where: {
@@ -250,6 +254,26 @@ export class AdminController {
         where: { branchId: actor.branchId, customerId },
         data: { notes: "" },
       });
+      const sales = await tx.sale.findMany({
+        where: { branchId: actor.branchId, customerId },
+        select: { id: true },
+      });
+      const saleIds = sales.map((sale) => sale.id);
+      if (saleIds.length) {
+        // Los números, fechas, NCF e importes se conservan para la trazabilidad
+        // contable. Sólo se eliminan campos libres o identificadores personales.
+        await tx.sale.updateMany({
+          where: { id: { in: saleIds } },
+          data: { recipientLegalId: null, notes: "" },
+        });
+        await tx.alert.updateMany({
+          where: { branchId: actor.branchId, entityId: { in: saleIds } },
+          data: {
+            message: "Cuenta por cobrar cerrada de cliente anonimizado.",
+            status: "resolved",
+          },
+        });
+      }
       const row = await tx.customer.update({
         where: { id: customerId },
         data: {
@@ -262,15 +286,10 @@ export class AdminController {
           active: false,
         },
       });
-      await audit(
-        tx,
-        actor,
-        "anonymize",
-        "customer",
-        customerId,
-        undefined,
-        { reason: request.reason, requestRef: request.requestRef },
-      );
+      await audit(tx, actor, "anonymize", "customer", customerId, undefined, {
+        reason: request.reason,
+        requestRef: request.requestRef,
+      });
       return row;
     });
   }

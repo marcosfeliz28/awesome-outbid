@@ -13,21 +13,33 @@ const actor = {
 } as any;
 
 function fixture(debt = 0, creditNoteBalance = 0) {
-  const sale = { number: "NX-42", total: 875, ncf: "B0200000042" };
+  let customer = {
+    id: customerId,
+    name: "Persona privada",
+    phone: "809-555-0101",
+    email: "private@example.test",
+    legalId: "00100000001",
+    notes: "Dato privado",
+    active: true,
+  };
+  const sale = {
+    id: "22222222-2222-4222-8222-222222222222",
+    number: "NX-42",
+    total: 875,
+    ncf: "B0200000042",
+  };
   const tx = {
     customer: {
-      findFirstOrThrow: vi.fn(async () => ({
-        id: customerId,
-        name: "Persona privada",
-        phone: "809-555-0101",
-        email: "private@example.test",
-        legalId: "00100000001",
-        notes: "Dato privado",
-      })),
-      update: vi.fn(async ({ data }: any) => ({ id: customerId, ...data })),
+      findFirstOrThrow: vi.fn(async () => customer),
+      update: vi.fn(async ({ data }: any) => {
+        customer = { ...customer, ...data };
+        return customer;
+      }),
     },
     sale: {
       aggregate: vi.fn(async () => ({ _sum: { creditBalance: debt } })),
+      findMany: vi.fn(async () => [{ id: sale.id }]),
+      updateMany: vi.fn(async () => ({ count: 1 })),
     },
     creditNote: {
       aggregate: vi.fn(async () => ({
@@ -35,12 +47,14 @@ function fixture(debt = 0, creditNoteBalance = 0) {
       })),
     },
     quote: { updateMany: vi.fn(async () => ({ count: 1 })) },
+    alert: { updateMany: vi.fn(async () => ({ count: 1 })) },
     auditLog: {
       updateMany: vi.fn(async () => ({ count: 2 })),
       create: vi.fn(async ({ data }: any) => data),
     },
   };
   const db = {
+    customer: tx.customer,
     $transaction: vi.fn(async (operation: (client: typeof tx) => unknown) =>
       operation(tx),
     ),
@@ -90,6 +104,15 @@ describe("G6: anonimización de clientes", () => {
       }),
     );
     expect(tx.auditLog.updateMany).toHaveBeenCalled();
+    expect(tx.sale.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: [sale.id] } },
+      data: { recipientLegalId: null, notes: "" },
+    });
+    expect(tx.alert.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "resolved" }),
+      }),
+    );
     expect(JSON.stringify(tx.auditLog.updateMany.mock.calls)).not.toContain(
       "809-555-0101",
     );
@@ -97,5 +120,38 @@ describe("G6: anonimización de clientes", () => {
       "809-555-0101",
     );
     expect(sale).toEqual(originalSale);
+  });
+
+  it("rechaza una segunda anonimización sin sobrescribir la primera auditoría", async () => {
+    const { api, tx } = fixture();
+    const request = {
+      reason: "Solicitud verificada",
+      requestRef: "SOL-2026-003",
+    };
+    await (api as any).anonymizeCustomer(customerId, request, actor);
+    const firstAudit = structuredClone(tx.auditLog.create.mock.calls);
+
+    await expect(
+      (api as any).anonymizeCustomer(customerId, request, actor),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(tx.auditLog.create.mock.calls).toEqual(firstAudit);
+    expect(tx.customer.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("impide volver a identificar un cliente ya anonimizado", async () => {
+    const { api } = fixture();
+    await (api as any).anonymizeCustomer(
+      customerId,
+      { reason: "Solicitud verificada", requestRef: "SOL-2026-004" },
+      actor,
+    );
+
+    await expect(
+      (api as any).editCustomer(
+        customerId,
+        { name: "Persona privada otra vez" },
+        actor,
+      ),
+    ).rejects.toMatchObject({ status: 409 });
   });
 });
