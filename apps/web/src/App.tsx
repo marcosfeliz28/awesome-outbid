@@ -1,5 +1,10 @@
 import { DeviceGate, useRealtime, registerTerminal } from "./realtime";
 import { Merchandise } from "./Merchandise";
+import { PasswordChangeFields } from "./PasswordChangeFields";
+import {
+  passwordChangeError,
+  friendlyPasswordChangeError,
+} from "./passwordChange";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -183,6 +188,17 @@ function Login() {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            if (changeRequired) {
+              const validation = passwordChangeError(
+                newPassword,
+                confirmPassword,
+                password,
+              );
+              if (validation) {
+                setError(validation);
+                return;
+              }
+            }
             setBusy(true);
             setError("");
             try {
@@ -204,7 +220,9 @@ function Login() {
                 await saveSession(data.user, data.accessToken);
               }
             } catch (e: any) {
-              setError(e.message);
+              setError(
+                changeRequired ? friendlyPasswordChangeError(e) : e.message,
+              );
             } finally {
               setBusy(false);
             }
@@ -244,34 +262,12 @@ function Login() {
             />
           </label>
           {changeRequired && (
-            <>
-              <label className="field">
-                <span>Nueva contraseña</span>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={12}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span>Confirma la nueva contraseña</span>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={12}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </label>
-              <small>
-                Usa al menos 12 caracteres, con mayúscula, minúscula, número y
-                símbolo.
-              </small>
-            </>
+            <PasswordChangeFields
+              password={newPassword}
+              confirmation={confirmPassword}
+              onPassword={setNewPassword}
+              onConfirmation={setConfirmPassword}
+            />
           )}
           {error && (
             <p className="form-error" role="alert">
