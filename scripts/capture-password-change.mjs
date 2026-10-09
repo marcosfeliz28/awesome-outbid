@@ -43,7 +43,10 @@ await page.getByRole("button", { name: "Guardar contraseña y entrar" }).click()
 await expect(page.getByRole("alert")).toContainText("pide ayuda a gerencia");
 if (changeCalls !== 1) throw new Error("Expected one validated request");
 if (
-  await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)
+  await page.evaluate(
+    () =>
+      globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
+  )
 )
   throw new Error("Horizontal overflow at390");
 await mkdir("docs/capturas", { recursive: true });
@@ -53,7 +56,10 @@ await page.screenshot({
 });
 await page.setViewportSize({ width: 320, height: 844 });
 if (
-  await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)
+  await page.evaluate(
+    () =>
+      globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
+  )
 )
   throw new Error("Horizontal overflow at320");
 console.log(
