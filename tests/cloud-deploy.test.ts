@@ -124,9 +124,13 @@ describe("Render · proxy público", () => {
   it("agrega cabeceras de seguridad sin bloquear PWA, cámara ni Sentry", () => {
     const nginx = read("deploy/render/nginx.conf.template");
     const headers = read("deploy/render/security-headers.conf");
-    const monitoring = read("apps/web/src/monitoring.ts");
-    const dsn = monitoring.match(/const SENTRY_DSN\s*=\s*"([^"]+)"/)?.[1];
-    expect(dsn).toBeTruthy();
+    // G8: el DSN ya no está en el código; llega en VITE_SENTRY_DSN al
+    // compilar. La CSP sigue permitiendo el destino de ingesta de Sentry.
+    const sentryOrigin = "https://o4512218489683968.ingest.us.sentry.io";
+    expect(read("deploy/render/Dockerfile.web")).toContain(
+      "ARG VITE_SENTRY_DSN",
+    );
+    expect(read("render.yaml")).toContain("key: VITE_SENTRY_DSN");
     for (const name of [
       "Content-Security-Policy",
       "Strict-Transport-Security",
@@ -137,7 +141,7 @@ describe("Render · proxy público", () => {
       expect(headers).toContain(name);
     expect(headers).toContain("worker-src 'self' blob:");
     expect(headers).toContain("camera=(self)");
-    expect(headers).toContain(new URL(dsn!).origin);
+    expect(headers).toContain("connect-src 'self' " + sentryOrigin);
     expect(
       nginx.match(
         /include \/etc\/nginx\/snippets\/nexora-security-headers.conf;/g,
