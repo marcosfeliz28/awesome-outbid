@@ -248,6 +248,9 @@ model Sale {
   notes                  String       @default("")
   voidedReason           String?
   voidedBy               String?
+  // «Venta al por mayor» (INC): sólo reduce el incentivo de la cajera a la
+  // mitad; no cambia precios ni totales (docs/INCENTIVOS.md).
+  wholesale              Boolean      @default(false)
   items                  SaleItem[]
   payments               Payment[]
   returns                SaleReturn[]
@@ -346,6 +349,8 @@ model Quote {
   items          Json
   notes          String   @default("")
   globalDiscount Decimal  @default(0) @db.Decimal(5, 2)
+  // La venta en espera conserva la marca «Venta al por mayor» (INC).
+  wholesale      Boolean  @default(false)
   status         String   @default("open")
   branchId       String   @default("main")
   createdAt      DateTime @default(now())
@@ -680,4 +685,82 @@ model NotificationOutbox {
 
   @@unique([eventType, refId])
   @@index([status, nextAttemptAt])
+}
+
+// Incentivos por cajera (docs/INCENTIVOS.md, apps/api/src/incentives.ts).
+// Tarifa por unidad vendida de cada categoría. Sin fila, la categoría usa la
+// tarifa por defecto según su nombre (Suplementos 50, Fajas 50, Maquillaje 25,
+// las demás 0). Cambiarla no altera lo ya ganado: cada entrada guarda la suya.
+model IncentiveRate {
+  id         String   @id @default(uuid()) @db.Uuid
+  branchId   String   @default("main")
+  categoryId String   @db.Uuid
+  amount     Decimal  @db.Decimal(14, 2)
+  updatedBy  String?
+  updatedAt  DateTime @updatedAt
+
+  @@unique([branchId, categoryId])
+}
+
+// Instantánea por línea vendida (kind "sale") y sus reversos negativos por
+// devolución ("return", refId = devolución) o anulación ("void", refId =
+// venta). El monto ya viene calculado: cantidad × tarifa × 0.5 si mayorista.
+// period es el mes (America/Santo_Domingo) en que cuenta; originPeriod, el de
+// la venta original.
+model IncentiveEntry {
+  id           String   @id @default(uuid()) @db.Uuid
+  kind         String
+  refId        String   @db.Uuid
+  saleId       String   @db.Uuid
+  saleItemId   String   @db.Uuid
+  userId       String   @db.Uuid
+  categoryId   String?  @db.Uuid
+  categoryName String
+  qty          Decimal  @db.Decimal(14, 3)
+  rateAtSale   Decimal  @db.Decimal(14, 2)
+  wholesale    Boolean  @default(false)
+  amount       Decimal  @db.Decimal(14, 2)
+  period       String
+  originPeriod String
+  note         String?
+  branchId     String   @default("main")
+  createdAt    DateTime @default(now())
+
+  @@unique([saleItemId, kind, refId])
+  @@index([branchId, period, userId])
+  @@index([saleId])
+}
+
+// Cierre de un mes: marca inmutable por sucursal y mes.
+model IncentivePeriodClose {
+  id        String   @id @default(uuid()) @db.Uuid
+  branchId  String   @default("main")
+  period    String
+  closedBy  String   @db.Uuid
+  closedAt  DateTime @default(now())
+
+  @@unique([branchId, period])
+}
+
+// Cuadre cerrado de una cajera en un mes: instantánea inmutable.
+model IncentiveSettlement {
+  id                String   @id @default(uuid()) @db.Uuid
+  branchId          String   @default("main")
+  period            String
+  userId            String   @db.Uuid
+  userName          String
+  units             Json
+  salesCount        Int
+  wholesaleSales    Int
+  gross             Decimal  @db.Decimal(14, 2)
+  deductions        Decimal  @db.Decimal(14, 2)
+  net               Decimal  @db.Decimal(14, 2)
+  pendingCollection Decimal  @db.Decimal(14, 2)
+  priorDeductions   Decimal  @db.Decimal(14, 2)
+  entryCount        Int
+  closedBy          String   @db.Uuid
+  closedByName      String
+  closedAt          DateTime @default(now())
+
+  @@unique([branchId, period, userId])
 }
