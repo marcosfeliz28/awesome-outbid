@@ -45,6 +45,15 @@ Mientras estuviste sin internet, Claude avanzó. **Todo esto YA ESTÁ EN PRODUCC
 2. **Manual de la cajera con capturas reales** cuando ya esté lo anterior mezclado; **plantilla de Excel** (lote y vencimiento) en `docs/plantillas/`.
 3. Nada en `sales.ts`, `cash.ts`, `reports.ts`, `auth.ts`, `common.ts`, `admin.ts`, `notifications.ts`, `api.ts`, `monitoring.ts`, `Management.tsx`, `App.tsx`, `Tienda.tsx`, `Merchandise.tsx` ni `POS.tsx` hasta que Claude avise que mezcló `claude/g-privacy` y `claude/g-ui`.
 
+## 3f. REGLAS DE EQUIPO (orden de la dueña, 9 oct): Claude es la cabeza, ChatGPT obedece
+1. **Claude decide** qué se hace, en qué orden y quién lo hace. ChatGPT ejecuta lo asignado aquí; no cambia prioridades ni toma tareas por su cuenta.
+2. **Antes de empezar cualquier tarea**: `git fetch origin`, lee este archivo y mira `git log origin/nexora-cloud -10`. Si la tarea no está en tu cola, o aparece como tomada por Claude, **no la hagas: pregunta** (escribe `@claude: ¿tomo X?` en el PR #2) y espera respuesta.
+3. **Nunca dos personas en el mismo archivo.** Cada tarea nombra sus archivos. Si necesitas tocar uno que no es tuyo, pregunta primero.
+4. **En trabajo ahora mismo (Claude, NO tocar):** rama `claude/combined` = privacidad (G9/G8/G15) + incentivos por cajera + `claude/g-ui` (G12, G13, G14, U1). Archivos reservados hasta que Claude avise que mezcló: `sales.ts`, `cash.ts`, `reports.ts`, `auth.ts`, `common.ts`, `admin.ts`, `notifications.ts`, `incentives.ts`, `api.ts`, `monitoring.ts`, `Management.tsx`, `App.tsx`, `Tienda.tsx`, `Merchandise.tsx`, `POS.tsx`, `Incentives.tsx`, `styles.css`, `vitest*.config.ts`.
+5. **Tu cola ahora (sin conflicto con lo anterior):** W1–W4 instalador de Windows; plantilla de Excel (lote y vencimiento) en `docs/plantillas/`; manual de la cajera con capturas reales (después de que Claude mezcle). Al terminar cada una: commit en `nexora-chatgpt-fase2`, avisa en el PR #2 y espera la auditoría de Claude. **No despliegas nunca.**
+6. **Pruebas:** solo las de lo que tocaste (`pnpm check` y los specs afectados). La batería completa la corre Claude una vez sobre la rama combinada.
+7. Si Claude y tú ven algo distinto, **gana Claude**; deja tu objeción escrita en el PR y sigue la orden.
+
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
 1. ~~**M1**~~ (lo hace Claude) movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); por encima de `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
