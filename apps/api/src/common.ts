@@ -258,42 +258,249 @@ export function imageType(bytes: Buffer) {
   return null;
 }
 export function safe<T>(value: T, actor: Actor): T {
-  if (actor.role !== "seller" && can(actor.permissions, "profit:read"))
-    return json(value);
-  const privateFields = new Set([
-    "costAvg",
-    "cost",
-    "unitCost",
-    "landedCost",
-    "costTotal",
-    "wasteCost",
-    "wasteCostTotal",
-    "wholesalePrice",
-    "grossProfit",
-    "netProfit",
-    "margin",
-    "inventoryCost",
-    "capital",
-    "score",
-    "suggestedDiscount",
-    "feeAmount",
-    "passwordHash",
-    "pinHash",
-    "Costo",
-    "Utilidad",
-    "Margen",
-    "Valor",
+  if (can(actor.permissions, "profit:read")) return json(value);
+
+  // Lista blanca deliberada para respuestas operativas. Antes se eliminaban
+  // sólo nombres conocidos de costos; una columna nueva (por ejemplo,
+  // `wasteCostTotal`) podía llegar a la caja hasta que alguien la añadiera a
+  // la lista negra. Ahora todo campo nuevo queda privado por omisión.
+  const publicFields = new Set([
+    // Estructura y paginación.
+    "id",
+    "items",
+    "lines",
+    "variants",
+    "variant",
+    "product",
+    "category",
+    "lots",
+    "movements",
+    "receipts",
+    "order",
+    "supplier",
+    "payments",
+    "returns",
+    "sale",
+    "alerts",
+    "total",
+    "page",
+    "limit",
+    // Identificadores que los clientes usan para navegar o relacionar filas.
+    "branchId",
+    "productId",
+    "categoryId",
+    "supplierId",
+    "variantId",
+    "lotId",
+    "refId",
+    "userId",
+    "saleId",
+    "sellerId",
+    "customerId",
+    "cashSessionId",
+    "discountApprovedBy",
+    "voidedBy",
+    "creditNoteId",
+    "returnId",
+    "itemId",
+    "orderId",
+    "operationId",
+    "attachmentId",
+    "entityId",
+    "sessionId",
+    "terminalId",
+    "roleId",
+    "createdBy",
+    // Fechas públicas conocidas; una fecha futura no se publica por accidente.
+    "createdAt",
+    "updatedAt",
+    "expiryDate",
+    "expectedDate",
+    "creditDueDate",
+    "invoiceDate",
+    "startsAt",
+    "endsAt",
+    "openedAt",
+    "closedAt",
+    // Identidad y presentación de catálogo/inventario.
+    "name",
+    "number",
+    "sku",
+    "barcode",
+    "attributes",
+    "brand",
+    "description",
+    "imageUrl",
+    "color",
+    "unit",
+    "location",
+    "active",
+    "isKit",
+    "requiresLot",
+    "requiresExpiry",
+    "price",
+    "taxRate",
+    "minStock",
+    "maxStock",
+    "stock",
+    "expiredStock",
+    "sellableStock",
+    "allowNegativeStock",
+    "qty",
+    "receivedQty",
+    "damagedQty",
+    "damageReason",
+    "balanceAfter",
+    "lotNumber",
+    "lotNumberNormalized",
+    // Ventas, cobros y devoluciones: importes cobrados no son costo/utilidad.
+    "status",
+    "type",
+    "subtotal",
+    "discount",
+    "discountTotal",
+    "discountReason",
+    "discountRule",
+    "discountApprovedName",
+    "discountApprovedRole",
+    "tax",
+    "taxTotal",
+    "taxIncluded",
+    "lineTotal",
+    "unitPrice",
+    "returnedQty",
+    "creditBalance",
+    "ncf",
+    "ncfType",
+    "recipientLegalId",
+    "fiscalStatus",
+    "notes",
+    "voidedReason",
+    "method",
+    "amount",
+    "tendered",
+    "change",
+    "bank",
+    "reference",
+    "cardBrand",
+    "cardLast4",
+    "approvalCode",
+    "cardType",
+    "entryType",
+    "hasProof",
+    "proofContentType",
+    "proofBytes",
+    "reason",
+    "refundAmount",
+    "refundMethod",
+    "restock",
+    // Compras y documentos, conservando cantidades pero nunca sus costos.
+    "supplierInvoice",
+    "supplierNcf",
+    "paymentType",
+    "creditDays",
+    "supplierName",
+    "supplierLegalId",
+    "orderNumber",
+    "userName",
+    "paymentLabel",
+    // Resumen operativo sin costo, utilidad, margen, capital ni comisiones.
+    "revenue",
+    "previousYearRevenue",
+    "yearOverYear",
+    "peakHours",
+    "netSales",
+    "expenses",
+    "invoices",
+    "ticketAverage",
+    "trend",
+    "inventoryRetail",
+    "daily",
+    "top",
+    "sellers",
+    "from",
+    "to",
+    "day",
+    "hour",
+    "units",
+    "value",
+    "severity",
+    "message",
+    "key",
+    // Encabezados públicos de exportes/reportes en español.
+    "Fecha",
+    "Factura",
+    "NCF",
+    "Producto",
+    "Cantidad",
+    "Precio",
+    "Descuento",
+    "ITBIS",
+    "Total",
+    "Cajero",
+    "Cliente",
+    "Método",
+    "Referencia",
+    "Estado",
+    "Motivo",
+    "Detalle",
+    "Tipo",
+    "Categoría",
+    "Unidades",
+    "Ventas",
+    "Devoluciones",
+    "Neto",
+    "SKU",
+    "Stock",
+    "Sugerido",
+    "Lote",
+    "Vencimiento",
+    "Descripción",
+    "Usuario",
+    "Saldo_crédito",
+    "Tipo_NCF",
+    "Estado_fiscal",
+    "Mes_Producto",
+    "Vendedor",
+    "Cobros_de_crédito",
+    "Clasificación",
+    "Evento",
+    "Saldo",
   ]);
-  const sanitize = (v: any): any =>
+  const publicKey = (key: string) => publicFields.has(key);
+  const financialKey = (key: string) =>
+    /(?:cost|costo|margin|margen|capital|profit|utilidad|wholesale|fee|valor)/i.test(
+      key,
+    );
+  const sanitizeAttributes = (v: any): any =>
     Array.isArray(v)
-      ? v.map(sanitize)
+      ? v.map(sanitizeAttributes)
       : v && typeof v === "object"
         ? Object.fromEntries(
             Object.entries(v)
-              .filter(([key]) => !privateFields.has(key))
-              .map(([k, item]) => [k, sanitize(item)]),
+              .filter(([key]) => !financialKey(key))
+              .map(([key, item]) => [key, sanitizeAttributes(item)]),
           )
         : v;
+  const sanitize = (v: any, container?: string): any => {
+    if (Array.isArray(v)) return v.map((item) => sanitize(item, container));
+    if (!v || typeof v !== "object") return v;
+    // Los atributos de variantes/categorías son definidos por la tienda; sus
+    // claves (Color, Talla, etc.) no son columnas del servidor ni importes.
+    if (container === "attributes") return sanitizeAttributes(v);
+    const procurementRecord =
+      Object.hasOwn(v, "supplierId") &&
+      ["expectedDate", "freight", "supplierInvoice", "goods", "orderId"].some(
+        (key) => Object.hasOwn(v, key),
+      );
+    return Object.fromEntries(
+      Object.entries(v)
+        .filter(
+          ([key]) => publicKey(key) && !(procurementRecord && key === "total"),
+        )
+        .map(([key, item]) => [key, sanitize(item, key)]),
+    );
+  };
   return sanitize(json(value));
 }
 @Injectable()
