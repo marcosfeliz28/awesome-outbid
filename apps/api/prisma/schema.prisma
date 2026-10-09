@@ -192,7 +192,6 @@ model InventoryMovement {
 
   @@index([lotId])
   @@index([variantId, createdAt])
-  @@index([branchId, createdAt])
 }
 
 model Customer {
@@ -408,7 +407,6 @@ model GoodsReceipt {
   createdAt         DateTime       @default(now())
 
   @@index([supplierId, createdAt])
-  @@index([branchId, createdAt])
 }
 
 model SupplierPayment {
