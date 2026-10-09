@@ -41,7 +41,7 @@ Esta guía explica cómo iniciar sesión, cobrar y cerrar la caja. Los recibos q
 
 ## 6. Anular una venta por error
 
-No anules la venta desde el usuario de cajero. Avisa a Marcos o Génesis con el número de factura y el motivo. Un administrador puede entrar en **Ventas**, buscar la factura y pulsar **Anular** sin abrir caja; debe confirmar el motivo. La factura no se borra: queda registrada como anulada, se revierte el inventario y deja de contar en ventas. La anulación no está disponible si la venta ya tiene devoluciones o abonos registrados; en ese caso, pide al administrador que revise el caso y use el procedimiento correcto.
+No anules la venta desde el usuario de cajero. Avisa a Marcos o Génesis con el número de factura y el motivo. Un administrador puede entrar en **Ventas**, buscar la factura y pulsar **Anular**; debe confirmar el motivo. Si la caja de esa venta ya cerró y se cobró en efectivo, el administrador necesita su propia caja abierta: el reembolso sale de ella y queda como salida con el número de la factura. La factura no se borra: queda registrada como anulada, se revierte el inventario y deja de contar en ventas. La anulación no está disponible si la venta ya tiene devoluciones o abonos registrados; en ese caso, pide al administrador que revise el caso y use el procedimiento correcto.
 
 ## Si algo falla
 

@@ -563,7 +563,11 @@ describe("Aceptación financiera y permisos", () => {
     ).toBe(403);
     expect((await request("/users", undefined, sellerToken)).status).toBe(403);
   });
-  it("solo un administrador anula una venta antigua sin abrir caja", async () => {
+  // Contrato cambiado a propósito por D-02: antes el administrador anulaba sin
+  // caja abierta y la caja cerrada quedaba con un sobrante de 118 (esperado
+  // 200, diferencia +118) sin que ninguna caja registrara el reembolso. Ahora
+  // el efectivo sale de su caja abierta y el cierre anterior no cambia.
+  it("solo un administrador anula una venta antigua; con la caja cerrada, el reembolso en efectivo sale de su caja abierta", async () => {
     const roles = await ok("/roles", undefined, ownerToken);
     const cashier = await ok(
       "/users",
@@ -637,6 +641,18 @@ describe("Aceptación financiera y permisos", () => {
     ).toBe(403);
 
     const owner = await ok("/auth/me", undefined, ownerToken);
+    const withoutCash = await request(
+      "/sales/" + sold.id + "/void",
+      { reason: "QA factura antigua anulada por administrador" },
+      ownerToken,
+    );
+    expect(withoutCash.status).toBe(400);
+    expect(withoutCash.body.message).toMatch(/Abre tu caja/);
+    const refundCash = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 200 },
+      ownerToken,
+    );
     await ok(
       "/sales/" + sold.id + "/void",
       { reason: "QA factura antigua anulada por administrador" },
@@ -670,8 +686,19 @@ describe("Aceptación financiera y permisos", () => {
     const closedCash = await fixtureDb.cashSession.findUniqueOrThrow({
       where: { id: oldCash.id },
     });
-    expect(Number(closedCash.expectedCash)).toBe(200);
-    expect(Number(closedCash.differenceCash)).toBe(118);
+    expect(Number(closedCash.expectedCash)).toBe(318);
+    expect(Number(closedCash.differenceCash)).toBe(0);
+    expect((await expectedForCash(refundCash.id)).cash).toBe(82);
+    await ok(
+      "/cash-sessions/" + refundCash.id + "/close",
+      {
+        countedCash: 82,
+        countedCard: 0,
+        countedTransfer: 0,
+        notes: "QA cierre de la caja que reembolsó",
+      },
+      ownerToken,
+    );
     const audits = await ok("/audit-log", undefined, ownerToken);
     expect(
       audits.some(
@@ -10475,5 +10502,176 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
     } finally {
       await ok("/settings", settings, token, "PUT");
     }
+  });
+});
+
+// Auditoría final de dinero (docs/AUDITORIA_FINAL_DINERO.md en
+// claude/audit-money): D-03 fondo de apertura, D-02 anulación con la caja
+// cerrada y D-05 una sola definición de venta neta en los informes.
+describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
+  const roleId = async (name: string) =>
+    (await ok("/roles", undefined, ownerToken)).find(
+      (r: any) => r.name === name,
+    ).id;
+  // Usuario nuevo con su equipo aprobado.
+  const newActor = async (role: string, label: string) => {
+    const tag = randomUUID().slice(0, 8);
+    const user = await ok(
+      "/users",
+      {
+        name: "QA " + label + " " + tag,
+        email: `qa-dinero-${tag}@example.test`,
+        password: "FitStore-QA-2026!",
+        pin: "246813",
+        roleId: await roleId(role),
+      },
+      ownerToken,
+    );
+    actors.push(user);
+    const auth = await ok(
+      "/auth/login",
+      { email: user.email, password: "FitStore-QA-2026!" },
+      "",
+    );
+    await enroll(auth.accessToken, "QA " + label);
+    return { user, token: auth.accessToken as string };
+  };
+  const closeBlind = (id: string, as: string, extra: any = {}) =>
+    ok(
+      "/cash-sessions/" + id + "/close",
+      { countedCash: 0, countedCard: 0, countedTransfer: 0, ...extra },
+      as,
+    );
+  const product = async (label: string, category: string, price: number) => {
+    const cats = await ok("/categories", undefined, ownerToken);
+    const tag = randomUUID().slice(0, 8);
+    const p = await ok(
+      "/products",
+      {
+        name: "QA dinero " + label + " " + tag,
+        sku: "QA-DIN-" + tag,
+        categoryId: cats.find((c: any) => c.name === category).id,
+        variants: [
+          {
+            sku: "QA-DINV-" + tag,
+            barcode: "QA-DINB-" + tag,
+            costAvg: Math.round(price * 0.4),
+            price,
+          },
+        ],
+      },
+      ownerToken,
+    );
+    products.push(p);
+    await ok(
+      "/inventory/adjustments",
+      {
+        variantId: p.variants[0].id,
+        qty: 20,
+        reason: "QA dinero existencias",
+        // Los suplementos exigen lote y vencimiento.
+        ...(category === "Suplementos"
+          ? {
+              lotNumber: "QA-DIN-" + tag,
+              expiryDate: new Date(Date.now() + 200 * 86400000).toISOString(),
+            }
+          : {}),
+      },
+      ownerToken,
+    );
+    return p.variants[0];
+  };
+
+  it("D-02: anular una venta en efectivo de una caja cerrada no cambia su cuadre y el reembolso sale de la caja abierta de quien anula", async () => {
+    const variant = await product("anulación", "Ropa deportiva", 118);
+    const cashier = await newActor("seller", "cajera D-02");
+    const admin = await newActor("admin", "admin D-02");
+    // Caja A: vende 118 en efectivo y cierra cuadrada.
+    const a = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 200 },
+      cashier.token,
+    );
+    const sold = await ok("/sales", input(variant.id, 118, a), cashier.token);
+    await closeBlind(a.id, cashier.token, { countedCash: 318 });
+    const closedA = await fixtureDb.cashSession.findUniqueOrThrow({
+      where: { id: a.id },
+    });
+    expect(Number(closedA.expectedCash)).toBe(318);
+    expect(Number(closedA.differenceCash)).toBe(0);
+    // Sin caja abierta, quien anula no tiene de dónde entregar el efectivo.
+    const noCash = await request(
+      "/sales/" + sold.id + "/void",
+      { reason: "QA cliente devolvió al día siguiente" },
+      admin.token,
+    );
+    expect(noCash.status).toBe(400);
+    expect(noCash.body.message).toMatch(/Abre tu caja/);
+    expect(
+      (await fixtureDb.sale.findUniqueOrThrow({ where: { id: sold.id } }))
+        .status,
+    ).toBe("completed");
+    // Caja B, otro turno: el reembolso sale de aquí.
+    const b = await ok(
+      "/cash-sessions/open",
+      { openingAmount: 500 },
+      admin.token,
+    );
+    await ok(
+      "/sales/" + sold.id + "/void",
+      { reason: "QA cliente devolvió al día siguiente" },
+      admin.token,
+    );
+    // A: el cierre aprobado no cambia; ningún sobrante después del cierre.
+    const afterA = await fixtureDb.cashSession.findUniqueOrThrow({
+      where: { id: a.id },
+    });
+    expect(Number(afterA.expectedCash)).toBe(318);
+    expect(Number(afterA.differenceCash)).toBe(0);
+    expect((await expectedForCash(a.id)).cash).toBe(318);
+    const cuadreA = await ok(
+      "/cash-sessions/" + a.id + "/cuadre",
+      undefined,
+      ownerToken,
+    );
+    expect(
+      cuadreA.lines.find((l: any) => l.key === "differenceDop").value,
+    ).toBe(0);
+    // B: el esperado baja exactamente lo reembolsado y cierra cuadrada.
+    expect((await expectedForCash(b.id)).cash).toBe(382);
+    // Los dos movimientos nombran la venta original.
+    const movements = await fixtureDb.cashMovement.findMany({
+      where: { sessionId: { in: [a.id, b.id] } },
+    });
+    expect(
+      movements.map((m: any) => [m.sessionId, m.type, Number(m.amount)]).sort(),
+    ).toEqual(
+      [
+        [a.id, "in", 118],
+        [b.id, "out", 118],
+      ].sort(),
+    );
+    for (const m of movements) expect(m.reason).toContain(sold.number);
+    const closedB = await ok(
+      "/cash-sessions/" + b.id + "/close",
+      { countedCash: 382, countedCard: 0, countedTransfer: 0 },
+      admin.token,
+    );
+    expect(closedB.differences).toMatchObject({
+      cash: 0,
+      card: 0,
+      transfer: 0,
+    });
+    const audits = await ok("/audit-log", undefined, ownerToken);
+    expect(
+      audits.find(
+        (l: any) => l.action === "void_after_close" && l.entityId === a.id,
+      ).after,
+    ).toMatchObject({
+      saleId: sold.id,
+      cash: 0,
+      refundCashSessionId: b.id,
+      refundAmount: 118,
+    });
   });
 });
