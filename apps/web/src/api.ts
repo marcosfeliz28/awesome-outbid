@@ -3,6 +3,7 @@ import { create } from "zustand";
 import type { QueryClient } from "@tanstack/react-query";
 import type { SaleInput } from "@fitstore/shared";
 import { businessOperationName, traceBusinessOperation } from "./monitoring";
+import { clearLogoutCache, hasLogoutPending } from "./logoutPrivacy";
 
 export type User = {
   id: string;
@@ -265,7 +266,12 @@ export async function saveSession(
 // el usuario anterior. Si el servidor no responde, la sesión guardada queda
 // vencida para pedir la contraseña e intentarlo otra vez al abrir
 // (R9-offline-5).
-export async function endSession() {
+export async function endSession(options: { allowPendingLock?: boolean } = {}) {
+  if (!options.allowPendingLock && (await hasLogoutPending(localDB))) {
+    throw new Error(
+      "Hay operaciones pendientes. Sincronízalas o revísalas antes de cerrar sesión.",
+    );
+  }
   let revoked = true;
   try {
     await api("/auth/logout", { method: "POST", body: "{}", timeout: 8000 });
@@ -273,8 +279,7 @@ export async function endSession() {
     revoked = !isNetworkError(e);
   }
   useStore.getState().clearSession();
-  if (revoked) await localDB.cache.delete("session");
-  else await localDB.cache.update("session", { "data.expiresAt": 0 });
+  await clearLogoutCache(localDB, revoked);
 }
 // timeout: milisegundos sin respuesta para tratarlo como sin conexión.
 export async function api<T = any>(
