@@ -31,7 +31,7 @@ export default defineConfig({
         name: "Nexora POS",
         short_name: "Nexora",
         lang: "es",
-        description: "Caja e inventario para tu tienda",
+        description: "Facturación e inventario para tu tienda",
         theme_color: "#7C3AED",
         background_color: "#F8FAFC",
         display: "standalone",

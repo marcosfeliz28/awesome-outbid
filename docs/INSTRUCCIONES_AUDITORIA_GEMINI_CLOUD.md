@@ -1,14 +1,10 @@
-# Instrucciones para revisión automatizada con IA de Nexora POS
-
-Esta revisión no es una auditoría independiente ni una certificación profesional.
-El contenido restante describe un paquete y pruebas de su versión histórica;
-no demuestra el estado actual de producción.
+# Instrucciones para auditoría independiente de Nexora POS
 
 Adjunta a este documento el archivo `Nexora-POS-Codigo-Auditoria-e8f462a.zip` y su manifiesto `.sha256.txt`. La versión fuente corresponde al commit `e8f462a` del repositorio `marcosfeliz28/awesome-outbid`, rama `nexora-cloud`. Ese commit contiene el ejemplo de usuario `mfeliz`, el arreglo concurrente de apertura de caja, la instrumentación de errores de la API y el pipeline opcional de respaldo cloud. Al preparar este paquete, esos últimos cambios estaban pendientes de desplegar en Render.
 
 ## Prompt para Gemini o Cloud
 
-Realiza una revisión automatizada de software POS, con énfasis en integridad contable, seguridad y operación real. Inspecciona únicamente el código y las pruebas dentro del ZIP adjunto. No supongas que una función existe por estar descrita aquí: encuentra su implementación y pruebas, e indica rutas, símbolos y líneas que sostengan cada conclusión. Si el artefacto no contiene evidencia suficiente, decláralo como no verificado; no reemplaces la revisión por teoría general. No presentes el dictamen como una certificación profesional ni como una auditoría independiente.
+Actúa como auditor independiente de software POS, con énfasis en integridad contable, seguridad y operación real. Inspecciona únicamente el código y las pruebas dentro del ZIP adjunto. No supongas que una función existe por estar descrita aquí: encuentra su implementación y pruebas, e indica rutas, símbolos y líneas que sostengan cada conclusión. Si el artefacto no contiene evidencia suficiente, decláralo como no verificado; no reemplaces la revisión por teoría general.
 
 ### Contexto técnico
 

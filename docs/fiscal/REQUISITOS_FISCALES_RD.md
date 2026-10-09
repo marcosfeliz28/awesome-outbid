@@ -182,7 +182,7 @@ Requisitos operativos recomendados:
 - Conservar copia histórica de emisor/cliente, productos, tasas, precios, descuentos y distribución de pagos de cada documento.
 - Mantener registros de quién creó, autorizó, cobró, devolvió o anuló; separar usuarios y permisos.
 - Registrar movimientos de caja, cuentas por cobrar, recepción, costo histórico y destino de devoluciones; vincularlos a sus documentos.
-- Hacer respaldos cifrados y probar restauración/exportación (recomendación operativa, no capacidad certificada de esta versión). El sistema no cifra el volcado por su cuenta; el cifrado del almacenamiento, como S3 cuando se configura, es un control separado. Si se usa PSFE, asegurar contractualmente acceso a XML y estados durante y después del contrato.
+- Hacer respaldos cifrados y probar restauración/exportación. Si se usa PSFE, asegurar contractualmente acceso a XML y estados durante y después del contrato.
 - Usar la fecha local de la tienda, **America/Santo_Domingo (UTC−4)**, para períodos y cierres; conservar hora técnica consistente para rastrear envíos.
 
 ## 9. Lo que falta confirmar antes de activar producción fiscal

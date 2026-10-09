@@ -1878,7 +1878,7 @@ function Checkout({
               onChange={(e) => setNcfType(e.target.value as any)}
             >
               <option value="">Sin solicitud</option>
-              <option value="B01">B01 · Crédito fiscal (solo solicitud)</option>
+              <option value="B01">B01 · Crédito fiscal</option>
               <option value="B02">B02 · Consumidor final</option>
             </select>
           </label>

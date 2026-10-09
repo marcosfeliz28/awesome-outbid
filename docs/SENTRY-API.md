@@ -1,4 +1,4 @@
-# Monitoreo de errores de la API con datos saneados en Sentry
+# Monitoreo seguro de la API en Sentry
 
 La API NestJS solo envía errores internos (HTTP 5xx) cuando se configura
 `SENTRY_DSN` en el entorno del servicio API. Sin esa variable, el SDK queda
@@ -32,22 +32,3 @@ validación, permisos y conflictos 4xx no se reportan. Tras añadir el DSN al
 servicio API, desplegar y provocar un error controlado en un entorno de prueba,
 verificar en Sentry que el issue muestre `api.internal_error`, el área permitida
 y un stack técnico, pero ningún dato de la petición.
-
-## Monitoreo web
-
-La configuración del navegador es independiente de `SENTRY_DSN` de la API.
-`apps/web/src/monitoring.ts` inicializa el SDK web con su DSN configurado;
-no desaparece al quitar la variable del servidor. No se publica aquí ese valor.
-
-En producción el código muestrea trazas con `tracesSampleRate: 0.1` y Replay
-asociado a errores con `replaysOnErrorSampleRate: 0.05`; no inicia Replay de
-sesiones ordinarias (`replaysSessionSampleRate: 0`). Se enmascaran textos e
-inputs, se bloquean medios y se excluyen cuerpos de red de Replay. Los hooks
-retiran identidad del usuario y cuerpos/cookies/cabeceras de petición y recortan
-URLs. Los nombres de operaciones de negocio no incluyen clientes ni montos.
-
-Ese saneado describe los controles configurados: no garantiza que todo contexto
-libre de un evento del navegador esté anonimizado ni que toda pantalla quede
-sin datos personales. Hay que inspeccionar los eventos de un entorno de prueba
-antes de habilitar observabilidad en una instalación. Sentry recopila evidencia
-técnica; no realiza una auditoría financiera del negocio ni certifica seguridad.

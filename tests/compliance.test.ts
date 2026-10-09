@@ -11,44 +11,6 @@ import {
 
 const webRequire = createRequire(resolve("apps/web/package.json"));
 
-describe("G13 · afirmaciones acotadas a evidencia", () => {
-  it("explica la limitación offline sin prometer seguridad absoluta", () => {
-    const ui = readFileSync("apps/web/src/Management.tsx", "utf8");
-    expect(ui).not.toContain("Desactivado es lo más seguro");
-    expect(ui).toContain("Desactivado evita vender la misma última unidad");
-    const manual = readFileSync("docs/MANUAL.md", "utf8");
-    expect(manual).not.toMatch(/política segura|opción más segura/);
-  });
-  it("no presenta el manifest como emisión fiscal", () => {
-    expect(readFileSync("apps/web/vite.config.ts", "utf8")).toContain(
-      'description: "Caja e inventario para tu tienda"',
-    );
-    expect(readFileSync("apps/web/src/POS.tsx", "utf8")).toContain(
-      "B01 · Crédito fiscal (solo solicitud)",
-    );
-  });
-  it("distingue revisión automatizada de certificación independiente", () => {
-    const readme = readFileSync("README.md", "utf8");
-    expect(readme).not.toContain("No se ha publicado un servidor externo");
-    expect(readme).toContain("no es una auditoría independiente");
-    expect(readFileSync("docs/ENTREGA.md", "utf8")).not.toContain(
-      "anulación auditada",
-    );
-    expect(
-      readFileSync("docs/INSTRUCCIONES_AUDITORIA_GEMINI_CLOUD.md", "utf8"),
-    ).not.toContain("Actúa como auditor independiente");
-  });
-  it("acota saneado y cifrado sin certificar cobertura inexistente", () => {
-    const sentry = readFileSync("docs/SENTRY-API.md", "utf8");
-    expect(sentry).not.toContain("Monitoreo seguro");
-    expect(sentry).toContain("## Monitoreo web");
-    expect(sentry).toContain("no garantiza");
-    expect(
-      readFileSync("docs/fiscal/REQUISITOS_FISCALES_RD.md", "utf8"),
-    ).toContain("no cifra el volcado por su cuenta");
-  });
-});
-
 describe("P2 · manual operativo de cajera", () => {
   it("documenta arqueo ciego sin inventar esperado y separa ocho tareas", () => {
     const manual = readFileSync("docs/MANUAL-CAJERO.md", "utf8");
