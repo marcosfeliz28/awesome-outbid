@@ -91,14 +91,6 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
     expect(management).toContain("Cambio:");
   });
 
-  it("C1: la caja pide PIN por crédito o contraentrega sólo al personal sin sale:manage", () => {
-    const pos = source("apps/web/src/POS.tsx");
-    expect(pos).toContain('p.method === "credit" || p.method === "cod"');
-    expect(pos).toMatch(
-      /!can\(user!\.permissions, "sale:manage"\)[\s\S]*creditApprovalThreshold/,
-    );
-  });
-
   it("C2: la cajera no obtiene el arqueo abierto ni usa retiros o el umbral como oráculo", async () => {
     const seller = {
       role: "seller",

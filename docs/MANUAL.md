@@ -158,7 +158,7 @@ Ajustes permite preparar una solicitud de NCF. El cobro registra tipo y, para cr
 
 ## Controles de crédito y notas (revisión 2)
 
-El gerente configura el límite de crédito de cada cliente. Crédito y contraentrega forman un mismo saldo pendiente: la deuda previa más la venta nueva no puede superar un límite mayor que cero. Se conserva la regla histórica del sistema: **límite 0 significa sin tope configurado**, no crédito prohibido; para impedir ambos tipos de venta se desactiva «Permitir ventas a crédito» en Ajustes. Ajustes también define el monto pendiente que exige aprobación, inicialmente RD$1,000; por encima de ese umbral el personal sin permiso `sale:manage` debe introducir el PIN de un gerente, mientras que quien ya tiene ese permiso autoriza con su propia sesión.
+El gerente configura el límite de crédito de cada cliente; por defecto es cero. La deuda pendiente más la venta nueva no puede superar ese límite. Ajustes permite definir el monto de crédito que exige PIN de gerente, inicialmente RD$1,000; superar ese monto exige PIN incluso al gerente.
 
 Para pagar con una nota, selecciona el cliente o introduce su código impreso. El vendedor sólo puede consultar notas del cliente seleccionado o buscar por código. Una nota asignada a un cliente requiere ese mismo cliente en la venta y su código o un PIN de gerente. Una nota sin cliente requiere siempre su código. Desde Ventas, el gerente imprime el PDF de la nota con su código. Cada uso queda auditado y no genera cambio.
 

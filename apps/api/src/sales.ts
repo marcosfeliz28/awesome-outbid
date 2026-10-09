@@ -363,13 +363,11 @@ export class SalesController {
             100 >
         limit,
     );
-    const receivable = input.payments
-      .filter((p) => p.method === "credit" || p.method === "cod")
+    const credit = input.payments
+      .filter((p) => p.method === "credit")
       .reduce((sum, p) => sum + p.amount, 0);
     const needsCreditApproval =
-      !can(actor.permissions, "sale:manage") &&
-      receivable >
-        Number((setting?.data as any)?.creditApprovalThreshold ?? 1000);
+      credit > Number((setting?.data as any)?.creditApprovalThreshold ?? 1000);
     const needsNoteApproval = input.payments.some(
       (p) => p.method === "credit_note" && !p.creditNoteCode,
     );
@@ -622,9 +620,6 @@ export class SalesController {
             },
             _sum: { creditBalance: true },
           });
-          // Regla heredada del crédito: un límite 0 significa que el cliente
-          // no tiene un tope configurado. La autorización general se controla
-          // por allowCreditSales; no reinterpretamos 0 como crédito prohibido.
           if (
             Number(customer.creditLimit) > 0 &&
             d(debt._sum.creditBalance ?? 0)
@@ -634,10 +629,8 @@ export class SalesController {
           )
             bad("La venta supera el límite de crédito del cliente.");
         }
-        if ((credit || cod) && config?.allowCreditSales !== true)
-          bad(
-            "Las ventas a crédito / contraentrega están desactivadas en Ajustes.",
-          );
+        if (credit && config?.allowCreditSales !== true)
+          bad("Las ventas a crédito están desactivadas en Ajustes.");
         if (credit && (!input.customerId || !input.creditDueDate))
           bad("La venta a crédito requiere cliente y fecha de vencimiento.");
         if (input.creditDueDate && expired(input.creditDueDate))
@@ -860,7 +853,7 @@ export class SalesController {
               cashSessionId: cashSession.id,
             },
           );
-        if ((credit || cod) && approvedBy)
+        if (credit && approvedBy)
           await audit(
             tx,
             actor,
@@ -868,12 +861,7 @@ export class SalesController {
             "sale",
             sale.id,
             undefined,
-            {
-              approvedBy,
-              amount: money(d(credit).plus(cod)),
-              credit,
-              cod,
-            },
+            { approvedBy, amount: credit },
           );
         let change = d(payment.change);
         for (const p of input.payments) {
