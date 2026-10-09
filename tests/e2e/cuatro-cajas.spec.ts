@@ -202,16 +202,29 @@ test("Tienda-4cajas: 3 cajas y el celular de Mercancía ven el stock en tiempo r
     const session = (await api("/cash-sessions", undefined, as)).find(
       (s: any) => !s.closedAt,
     );
-    expect(session.expected.cash).toBe(500 * (i + 1) + sold[i]);
+    // Arqueo ciego: la cajera no recibe `expected`; el esperado se calcula aquí
+    // (su fondo + lo vendido por ella) y se cuenta exactamente eso.
+    expect(session.expected).toBeUndefined();
+    const expectedCash = 500 * (i + 1) + sold[i];
     await api(
       "/cash-sessions/" + session.id + "/close",
-      { countedCash: session.expected.cash },
+      { countedCash: expectedCash, countedCard: 0, countedTransfer: 0 },
       as,
     );
-    const cuadre = await api(
+    // La cajera tampoco ve la diferencia del cuadre (apps/api/src/cash.ts,
+    // cuadre): la comprueba el dueño, que sí puede verla.
+    const cajera = await api(
       "/cash-sessions/" + session.id + "/cuadre",
       undefined,
       as,
+    );
+    expect(
+      cajera.lines.find((l: any) => l.key === "differenceDop"),
+    ).toBeUndefined();
+    const cuadre = await api(
+      "/cash-sessions/" + session.id + "/cuadre",
+      undefined,
+      headers,
     );
     expect(cuadre.lines.find((l: any) => l.key === "differenceDop").value).toBe(
       0,
