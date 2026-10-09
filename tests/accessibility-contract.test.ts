@@ -138,6 +138,33 @@ function meets(
   ).toBeGreaterThanOrEqual(minimum);
 }
 
+describe("P6 · controles accesibles de venta y caja", () => {
+  it("los campos tienen foco visible real y las acciones pequeñas área táctil", () => {
+    expect(css).toContain(
+      "/* P6: foco y objetivos táctiles de venta y caja. */",
+    );
+    expect(css).toMatch(
+      /input:focus-visible,[\s\S]*?outline:\s*3px solid var\(--focus\)/,
+    );
+    expect(css).toMatch(/\.cart-line-total button,[\s\S]*?min-width:\s*44px/);
+    expect(css).toMatch(/\.cash-page button[\s\S]*?min-height:\s*44px/);
+  });
+  it("los métodos comunican selección y el texto no usa colores libres", () => {
+    const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
+    expect(pos).toContain("aria-pressed={method === m.id}");
+    expect(pos).not.toContain("style={{ color: p.category.color }}");
+  });
+  it.each(["claro", "oscuro"])("texto y foco visibles en %s", (theme) => {
+    const light = variables(":root");
+    const palette =
+      theme === "claro"
+        ? light
+        : { ...light, ...variables(':root[data-theme="dark"]') };
+    for (const name of ["--text", "--muted", "--primary", "--focus"])
+      meets(name, palette[name], palette["--surface"], 4.5);
+  });
+});
+
 describe("G10 · contrato de contraste WCAG AA", () => {
   const light = variables(":root");
   const dark = { ...light, ...variables(':root[data-theme="dark"]') };

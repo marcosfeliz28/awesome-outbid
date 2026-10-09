@@ -754,10 +754,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                       </span>
                     </div>
                     <div className="product-info">
-                      <span
-                        className="product-category"
-                        style={{ color: p.category.color }}
-                      >
+                      <span className="product-category">
                         {p.category.name}
                       </span>
                       <h3 title={p.name}>{p.name}</h3>
@@ -1864,6 +1861,7 @@ function Checkout({
         ].map((m) => (
           <button
             className={method === m.id ? "active" : ""}
+            aria-pressed={method === m.id}
             key={m.id}
             onClick={() => {
               setMethod(m.id as any);
