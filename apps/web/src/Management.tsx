@@ -1454,7 +1454,7 @@ export function Cash() {
     );
   };
   return (
-    <>
+    <div className="cash-page">
       <Heading
         title="Una caja que siempre cuadra"
         caption="Abre el día con claridad. Ciérralo con tranquilidad."
@@ -1875,7 +1875,7 @@ export function Cash() {
         />
       )}
       <PrintModal printing={printing} onClose={() => setPrinting(null)} />
-    </>
+    </div>
   );
 }
 
