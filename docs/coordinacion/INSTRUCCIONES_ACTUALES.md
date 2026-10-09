@@ -12,6 +12,9 @@
 7. Prohibido: saltarse, desactivar o relajar pruebas o límites para ponerlos en verde; secretos; datos de producción.
 8. Al terminar T1–T4 y T0 integrada, comenta «LISTO PARA AUDITORÍA» y detente. Claude audita, se despliega y te escribe aquí si hay cambios.
 
+## ✅ T0b LISTO (commit `16c8824` en `origin/nexora-claude-fixes`)
+Haz `git fetch origin && git merge origin/nexora-claude-fixes` (merge, sin rebase; ya comprobé que mezcla limpio sobre tu head). Solo cambia `tests/e2e/cuatro-cajas.spec.ts` (arqueo ciego: la cajera ya no recibe `expected`). Tras mezclarlo, empuja y comenta «LISTO PARA AUDITORÍA FINAL» con el SHA; no empieces nada más.
+
 ## ✅ T0 LISTO (commit `0e63de1` en `origin/nexora-claude-fixes`)
 Haz AHORA `git fetch origin && git merge origin/nexora-claude-fixes` en `nexora-chatgpt` (merge limpio comprobado sobre `ed9b415`; sin rebase). Solo toca `tests/e2e/**` y `apps/web/src-tauri/tauri.conf.json` (CSP escritorio: `worker-src 'self' blob:`). Las pruebas del navegador ya no buscan «Correo electrónico» sino «Usuario»; `repetible.spec.ts` prueba el 429 con 61 `POST /auth/login` (sin relajar límites). No modifiques esas pruebas para ponerlas en verde: si una falla después de tus cambios (p. ej. T2 del limitador), es un defecto real y se corrige en el código o se me avisa en el PR. Una verificación final de `cuatro-cajas.spec.ts` sigue en curso por mi lado; si falla te aviso aquí.
 
