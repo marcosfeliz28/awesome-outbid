@@ -1,6 +1,6 @@
 # Órdenes de Claude (arquitecto) para ChatGPT (ejecutor)
 
-> **Versión 3 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
+> **Versión 3.1 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
 
 ## 1. Estado
 - **Fase 1 terminada y mezclada** en `nexora-cloud` (PR #1: T0–T5, CI verde). Claude la está desplegando a Render. `nexora-chatgpt` queda **CONGELADA**: no empujes ahí.
@@ -23,17 +23,20 @@
 - **Migraciones/esquema:** ver regla 6.
 - **UI:** contraste AA (≥ 4.5:1) calculado con las variables CSS reales; nada que desborde a 320 px.
 
+## 3b. Ya tomados por Claude (NO los hagas; auditorías finales confirmadas)
+M1 y D-04 (salidas de efectivo), C1 y D-01 (contraentrega), D-02/D-03 (anulación y fondo de apertura), M2 y D-05 (reportes con devoluciones netas), SEC-01 (bomba XLSX) y SEC-03 (escalada por PIN). Ramas de Claude: `claude/money-fixes-1`, `claude/money-fixes-2`, `claude/sec-fixes`. Informes: `docs/AUDITORIA_FINAL_DINERO.md` (rama `claude/audit-money`) y `docs/AUDITORIA_FINAL_SEGURIDAD.md` (rama `claude/audit-sec`). Cuando yo los mezcle en `nexora-cloud`, haz `git merge origin/nexora-cloud` en tu rama. Tampoco toques `.github/workflows/**` ni `scripts/backup.mjs`/`restore.mjs`.
+
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
-1. **M1** movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); por encima de `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
-2. **C1** contraentrega: misma aprobación que el crédito (`creditApprovalThreshold`, PIN de gerente para quien no tiene `sale:manage`); respeta `allowCreditSales`/`creditLimit`; documenta lo que hace con límite 0 sin cambiar la regla del crédito existente.
+1. ~~**M1**~~ (lo hace Claude) movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); por encima de `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
+2. ~~**C1**~~ (lo hace Claude) contraentrega: misma aprobación que el crédito (`creditApprovalThreshold`, PIN de gerente para quien no tiene `sale:manage`); respeta `allowCreditSales`/`creditLimit`; documenta lo que hace con límite 0 sin cambiar la regla del crédito existente.
 3. **F2** `safe()` (`apps/api/src/common.ts`) pasa a LISTA BLANCA: oculta costos, margen, capital y `wasteCostTotal` a quien no tiene `profit:read`.
 4. **F1** `GET /payments/:id/proof`: con `sale:manage` o la caja dueña.
 5. **E1** usuario inexistente/inactivo: `bcrypt` contra un hash falso y el mismo mensaje; `change-password` verifica la clave antes de decir si hay cambio pendiente.
 6. **U-crédito** limpieza: quita el campo «Vencimiento del crédito» y el envío de `creditDueDate` inalcanzables (`POS.tsx` ~1956 y ~1531) y corrige `docs/MANUAL.md:143`, sin cambiar «Crédito / contraentrega».
 
 **Fase 3 (sigue sin parar cuando acabes la 2; orden de `docs/coordinacion/COLA_HALLAZGOS_NEXORA.md`: P2 → P3 → cumplimiento → interfaz)**
-7. **M2** reportes (daily/sellers/category/payments y revenue) con la misma definición neta de devoluciones.
+7. ~~**M2**~~ (lo hace Claude) reportes (daily/sellers/category/payments y revenue) con la misma definición neta de devoluciones.
 8. **K2** índices únicos `lower(sku)` y `lower(barcode)` dentro de un `DO $$` que detecta duplicados y omite con NOTICE (+ prueba hostil).
 9. **Menores:** merma con cantidad positiva → 400; importador valida tamaño descomprimido y `categoryId` de la sucursal; ceros iniciales en códigos; escape de `=,+,-,@` en exportaciones; índices `InventoryMovement(branchId,createdAt)` y `GoodsReceipt(branchId,createdAt)`; reembolso en efectivo mayor al esperado → 400; venta con total 0 → 400.
 10. **W1–W4, G3/G4/G8/G9/G12–G15** (cumplimiento y tickets) y pruebas de accesibilidad/capturas de U1, según la cola.
