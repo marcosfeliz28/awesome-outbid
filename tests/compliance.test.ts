@@ -1,5 +1,14 @@
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { BusinessHeader } from "../apps/web/src/Prints";
+
+const webRequire = createRequire(resolve("apps/web/package.json"));
+const { createElement } = webRequire("react") as typeof import("react");
+const { renderToStaticMarkup } = webRequire(
+  "react-dom/server",
+) as typeof import("react-dom/server");
 
 const luminance = (hex: string) => {
   const channels = hex
@@ -32,18 +41,33 @@ describe("Cumplimiento legal y accesibilidad", () => {
     );
   });
 
-  it("G2: el encabezado térmico usa los datos de Ajustes y un logo predeterminado", () => {
-    const source = readFileSync("apps/web/src/Prints.tsx", "utf8");
-    expect(source).not.toContain("<h2>Grupo Macgen</h2>");
-    expect(source).not.toContain(
-      '<p className="tp-branch">Plaza Lope de Vega</p>',
+  it("G2: el HTML térmico usa Ajustes y sólo incluye img cuando hay logo", () => {
+    const settings = {
+      name: "Negocio configurado",
+      branchName: "Sucursal configurada",
+      address: "Dirección configurada",
+      phone: "809-555-0110",
+      legalId: "101010101",
+    };
+    const withoutLogo = renderToStaticMarkup(
+      createElement(BusinessHeader, { business: settings }),
     );
-    expect(source).toContain('{b.name || "Nexora POS"}');
-    expect(source).toContain("b.branchName");
-    expect(source).toContain("b.address");
-    expect(source).toContain("b.phone");
-    expect(source).toContain("b.legalId");
-    expect(source).toContain('b.logo || "/logo-grupo-macgen.png"');
+    expect(withoutLogo).not.toContain("<img");
+    for (const value of Object.values(settings))
+      expect(withoutLogo).toContain(value);
+
+    const logo = "data:image/png;base64,iVBORw0KGgo=";
+    const withLogo = renderToStaticMarkup(
+      createElement(BusinessHeader, { business: { ...settings, logo } }),
+    );
+    expect(withLogo).toContain('<img class="tp-logo"');
+    expect(withLogo).toContain(logo);
+
+    const seeds =
+      readFileSync("apps/api/prisma/seed.ts", "utf8") +
+      readFileSync("apps/api/scripts/create-admin.ts", "utf8");
+    expect(seeds).not.toContain("Grupo Mac Hen");
+    expect(seeds).not.toContain("Plaza Lope de Vega");
   });
 
   it("G5: los PDF incluyen contacto, hora, tratamiento del ITBIS y condiciones de la nota", () => {
