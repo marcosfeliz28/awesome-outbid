@@ -661,3 +661,23 @@ model InvoiceAttachment {
   data      Bytes
   createdAt DateTime @default(now())
 }
+
+// Cola durable de avisos por Telegram (apps/api/src/notifications.ts). El
+// texto se guarda ya renderizado y sin datos personales sensibles; el token y
+// el chat sólo viven en las variables de entorno.
+model NotificationOutbox {
+  id            String    @id @db.Uuid
+  eventType     String
+  refId         String
+  payload       Json
+  status        String    @default("pending")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  sentAt        DateTime?
+  branchId      String    @default("main")
+
+  @@unique([eventType, refId])
+  @@index([status, nextAttemptAt])
+}
