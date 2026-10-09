@@ -75,7 +75,11 @@ export function BusinessHeader({
   const phones = [b.phone, b.phone2].filter(Boolean);
   return (
     <header className="tp-header">
-      <img className="tp-logo" src={b.logo || "/logo-grupo-macgen.png"} alt="" />
+      <img
+        className="tp-logo"
+        src={b.logo || "/logo-grupo-macgen.png"}
+        alt=""
+      />
       <h2>{b.name || "Nexora POS"}</h2>
       {b.branchName && <p className="tp-branch">{b.branchName}</p>}
       {b.address && <p>{b.address}</p>}
@@ -370,6 +374,10 @@ export function InvoicePrint({
       <hr />
       <Row label="Cantidad de Productos" value={units} strong />
       <p className="tp-center">¡Gracias por su compra!</p>
+      <small className="tp-center">
+        Privacidad: si se usa lectura automática de facturas de proveedor, el
+        documento se envía a Anthropic (IA). Hay alternativa manual.
+      </small>
     </>
   );
 }

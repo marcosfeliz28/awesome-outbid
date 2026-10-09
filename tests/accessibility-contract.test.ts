@@ -81,7 +81,9 @@ describe("P1 · cambio obligatorio de contraseña", () => {
         .map((rule) => rule.label)
         .join(" "),
     ).toMatch(/Mayúscula.*Minúscula.*Número.*Símbolo/);
-    expect(source).toMatch(/passwordChangeError\(\s*newPassword,\s*confirmPassword,\s*password,?\s*\)/);
+    expect(source).toMatch(
+      /passwordChangeError\(\s*newPassword,\s*confirmPassword,\s*password,?\s*\)/,
+    );
     expect(source).toContain("friendlyPasswordChangeError(e)");
   });
 });
