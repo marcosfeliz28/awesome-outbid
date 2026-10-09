@@ -42,6 +42,7 @@ import {
 import { cashLock, terminalName } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
 import { verifyPinAttempt } from "./security";
+import { notify } from "./notifications";
 
 export async function cashExpected(db: any, session: any) {
   const payments = await db.payment.findMany({
@@ -816,7 +817,7 @@ export class CashController {
     } catch (e: any) {
       bad(e.message);
     }
-    return this.db.$transaction(async (tx) => {
+    const closed = await this.db.$transaction(async (tx) => {
       const session = await cashLock(
         tx,
         actor,
@@ -903,6 +904,8 @@ export class CashController {
         ? { ...row, differences }
         : { id: row.id, closedAt: row.closedAt };
     });
+    notify(this.db, "cash_close", closed.id);
+    return closed;
   }
   // Fondo sugerido para abrir: lo dejado en el último cierre de este equipo
   // (o de este usuario si el equipo no tiene cierres).

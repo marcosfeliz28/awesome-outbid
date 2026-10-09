@@ -343,6 +343,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 }
 
 import { cashExpected, refreshClosedCash } from "./cash";
+import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
 
 @Controller()
@@ -992,6 +993,7 @@ export class SalesController {
       },
       { timeout: 20000 },
     );
+    notify(this.db, "sale", result.id);
     return safe(result, actor);
   }
   @Post("sales") @Permit("sale:write") @RequireTerminal() sale(
@@ -1177,7 +1179,7 @@ export class SalesController {
     // Si esa caja ya cerró y la venta se cobró en efectivo, el reembolso sale
     // de la caja abierta de quien anula (D-02, docs/DECISIONES.md, punto 9).
     const data = parse(z.object({ reason }), body);
-    return this.db.$transaction(async (tx) => {
+    const voided = await this.db.$transaction(async (tx) => {
       const saleRef = await tx.sale.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
         select: { cashSessionId: true, payments: true },
@@ -1357,6 +1359,8 @@ export class SalesController {
       });
       return { ok: true };
     });
+    notify(this.db, "sale_voided", id);
+    return voided;
   }
   @Post("payments/:id/verify")
   @RequireTerminal()
@@ -1482,7 +1486,7 @@ export class SalesController {
     );
     if (new Set(data.items.map((i) => i.saleItemId)).size !== data.items.length)
       bad("No repitas artículos en la devolución.");
-    return this.db.$transaction(async (tx) => {
+    const done = await this.db.$transaction(async (tx) => {
       // Dos envíos con la misma clave se atienden uno detrás del otro: el
       // segundo encuentra la devolución del primero y la devuelve tal cual.
       // Misma clave con otros datos es un error, no otra devolución.
@@ -1765,6 +1769,8 @@ export class SalesController {
       await audit(tx, actor, "return", "sale", sale.id, undefined, row);
       return safe(row, actor);
     });
+    if (done?.id) notify(this.db, "return", done.id);
+    return done;
   }
   @Get("credit-notes")
   @Permit("sale:write")
@@ -2045,7 +2051,7 @@ export class SalesController {
     data: z.infer<typeof installmentSchema>,
     codOnly: boolean,
   ) {
-    return this.db.$transaction(async (tx) => {
+    const row = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.offlineUuid}))::text AS locked`;
       const existing = await tx.payment.findUnique({
         where: { idempotencyKey: data.offlineUuid },
@@ -2154,6 +2160,8 @@ export class SalesController {
       );
       return row;
     });
+    notify(this.db, "collection", row.id);
+    return row;
   }
   @Get("sales/:id/receipt.pdf")
   @Permit("sale:write")
