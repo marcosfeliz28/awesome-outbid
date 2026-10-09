@@ -1,9 +1,12 @@
 import type { Browser } from "@playwright/test";
-import { test, expect } from "./apoyo";
+import { test, expect, selectNamedCustomer } from "./apoyo";
 // Tienda: 3 cajas en computadoras y Mercancía en un celular, a la vez, contra
 // la misma base. Cada pantalla ve el stock cambiar sin recargar.
 const owner = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
-const password = "FitStore-QA-2026!";
+// Contraseña temporal con la que el administrador crea la cuenta; en el primer
+// ingreso la persona debe cambiarla (mustChangePassword) por la definitiva.
+const temporary = "FitStore-QA-2026!";
+const password = "FitStore-QA-2026-Definitiva!";
 
 test("Tienda-4cajas: 3 cajas y el celular de Mercancía ven el stock en tiempo real", async ({
   browser,
@@ -60,13 +63,22 @@ test("Tienda-4cajas: 3 cajas y el celular de Mercancía ven el stock en tiempo r
     await api("/users", {
       name: "E2E " + label + " " + tag,
       email,
-      password,
+      password: temporary,
       pin: "246813",
       roleId: roles.find((r: any) => r.name === role).id,
     });
-    const login = await (
-      await request.post("/api/auth/login", { data: { email, password } })
-    ).json();
+    // Una cuenta nueva obliga a cambiar la contraseña antes de entrar; el
+    // cambio devuelve la sesión ya iniciada.
+    const changed = await request.post("/api/auth/change-password", {
+      data: {
+        login: email,
+        currentPassword: temporary,
+        newPassword: password,
+        confirmPassword: password,
+      },
+    });
+    expect(changed.ok(), "cambio de contraseña inicial").toBe(true);
+    const login = await changed.json();
     const identity = {
       id: crypto.randomUUID(),
       name: "E2E " + label,
@@ -94,7 +106,7 @@ test("Tienda-4cajas: 3 cajas y el celular de Mercancía ven el stock en tiempo r
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto("/");
-    await page.getByLabel("Correo electrónico").fill(email);
+    await page.getByLabel("Usuario").fill(email);
     await page.getByLabel("Contraseña", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
     // La cajera entra directo a su pantalla; basta con que se vaya el login.
@@ -140,6 +152,7 @@ test("Tienda-4cajas: 3 cajas y el celular de Mercancía ven el stock en tiempo r
   // La caja 1 vende 2 desde su pantalla.
   const sell = async (page: any, card: any) => {
     await card.click();
+    await selectNamedCustomer(page);
     await page.getByRole("button", { name: /Cobrar/ }).click();
     await page.getByRole("button", { name: "Agregar pago" }).click();
     await page.getByRole("button", { name: "Finalizar venta" }).click();

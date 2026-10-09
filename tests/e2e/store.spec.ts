@@ -1,4 +1,10 @@
-import { test, expect, ensureStock, screenshotPath } from "./apoyo";
+import {
+  test,
+  expect,
+  ensureStock,
+  screenshotPath,
+  selectNamedCustomer,
+} from "./apoyo";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 // Cada contexto representa un equipo nuevo: cerrar la caja del escenario anterior.
@@ -62,14 +68,6 @@ async function ensureCash(page: any) {
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
   }
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();
-}
-async function selectNamedCustomer(page: any) {
-  const selected =
-    (await page.locator(".customer-selector strong").textContent()) || "";
-  if (!selected.includes("Selecciona")) return;
-  await page.locator(".customer-selector").click();
-  await expect(page.locator(".customer-list button").first()).toBeVisible();
-  await page.locator(".customer-list button").first().click();
 }
 test("venta completa desde caja hasta pagos combinados y recibo", async ({
   page,

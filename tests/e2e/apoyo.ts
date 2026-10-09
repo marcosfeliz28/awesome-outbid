@@ -200,3 +200,13 @@ export async function ensureStock(
     ).toBe(true);
   }
 }
+
+/** La venta exige un cliente con nombre: elige el primero de la lista si falta. */
+export async function selectNamedCustomer(page: any) {
+  const selected =
+    (await page.locator(".customer-selector strong").textContent()) || "";
+  if (!selected.includes("Selecciona")) return;
+  await page.locator(".customer-selector").click();
+  await expect(page.locator(".customer-list button").first()).toBeVisible();
+  await page.locator(".customer-list button").first().click();
+}
