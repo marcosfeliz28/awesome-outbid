@@ -2,6 +2,8 @@
 
 Una tarea por página. **Datos ficticios** en las capturas de la aplicación local; no muestran cuentas ni ventas reales. Los importes de ejemplo no son límites del negocio. Sin NCF, el ticket dice **DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL**.
 
+**Estado de las imágenes:** corresponden al lote P2 anterior. Su actualización está pendiente de integrar `claude/g-ui` y `claude/g-privacy`, conforme a las órdenes v3.6. No constituyen evidencia de la interfaz final. Procedimiento de renovación: [CAPTURAS_MANUAL.md](CAPTURAS_MANUAL.md).
+
 ## 1. Entrar y abrir caja
 
 1. Escribe tu usuario y contraseña. Si pide cambiarla, completa las cinco reglas y confirma tu nueva clave; no la compartas.
@@ -60,7 +62,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 
 1. Pide el comprobante y localiza la operación en **Ventas**. No crees una venta negativa.
 2. Llama a gerencia para comprobar plazo y condiciones configurados por la tienda.
-3. La persona autorizada pulsa **Devolver** y selecciona artículo, cantidad, estado, motivo y método de reembolso.
+3. La persona con permiso de gerencia abre su propia caja para procesar la devolución, pulsa **Devolver** y selecciona artículo, cantidad, estado, motivo y método de reembolso.
 4. No devuelvas más unidades que las vendidas. Suplementos/maquillaje abiertos y artículos dañados no vuelven al stock vendible.
 5. Conserva la nota de crédito interna. Entrega un reembolso solo cuando gerencia y sistema lo confirmen; la deuda pendiente se reduce primero.
 
@@ -76,7 +78,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 2. Con su cuenta autorizada, ellos buscan la venta en **Ventas**, pulsan **Anular** y confirman el motivo.
 3. No borres ni repitas la operación mientras se revisa. La anulación conserva la historia y revierte inventario según corresponda.
 4. Si ya tiene devoluciones o abonos, administración determina el procedimiento correcto; no fuerces la anulación. El rol gerente no ve **Anular**: no es una falla.
-5. Si la caja original cerró y hay reembolso en efectivo, la persona autorizada necesita su propia caja abierta para registrar esa salida. El cierre anterior no cambia.
+5. La anulación no requiere abrir caja: el dinero original y el registro del cierre se conservan según las reglas del sistema. No la confundas con **Devolver**, que sí necesita una caja abierta para procesar el reembolso.
 
 ![Historial para comunicar el número de venta](capturas/manual/05-ventas.png)
 
