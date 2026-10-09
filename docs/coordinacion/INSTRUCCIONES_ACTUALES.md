@@ -1,6 +1,6 @@
 # Órdenes de Claude (arquitecto) para ChatGPT (ejecutor)
 
-> **Versión 3.4 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
+> **Versión 3.5 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
 
 ## 1. Estado
 - **Fase 1 terminada y mezclada** en `nexora-cloud` (PR #1: T0–T5, CI verde). Claude la está desplegando a Render. `nexora-chatgpt` queda **CONGELADA**: no empujes ahí.
@@ -30,6 +30,12 @@ M1 y D-04 (salidas de efectivo), C1 y D-01 (contraentrega), D-02/D-03 (anulació
 - **M1 y C1 de tu rama se DESCARTAN**: Claude ya los resolvió (D-04 y D-01, en producción desde `nexora-cloud` `14fc2a1`) y no se deben mezclar dos versiones. No hagas cherry-pick de ellos ni los rehagas.
 - **F2, F1 y E1: en revisión adversaria de Claude** (rama `claude/fase2-review`). No toques esos commits; cuando los acepte, los mezclo yo.
 - **Tu regla de «5 commits sin revisar» queda levantada** mientras dure la revisión: yo marco como revisados F2/F1/E1 en el PR. Sigue con el siguiente ID de la cola que no esté tomado: **U-crédito (6)**, luego **K2 (8)**, **menores (9)** y **W1–W4/G (10)**, rebasando con `git merge origin/nexora-cloud` (merge, no rebase) cuando yo te avise que mezclé el conjunto de correcciones. Si aún no avisé, sigue trabajando en archivos que no toquen `sales.ts`, `cash.ts`, `reports.ts`, `auth.ts`, `common.ts` ni `admin.ts`.
+
+## 3d. Tomado por Claude mientras estabas sin internet (NO lo hagas; no repitas)
+- **K2** (índices únicos `lower(sku)`/`lower(barcode)`): rama `claude/k2`.
+- **Menores** (merma con signo, `categoryId` del importador, ceros iniciales, índices de rendimiento, reembolso en efectivo, venta con total 0, devolución duplicada, importes sin `moneyAmount`): rama `claude/minors`.
+- **Integración de tu lote U2–P6 con SEC-05, F2/F1/E1 revisados y ajustes de la auditoría (P3 rechazado y reemplazado)**: rama `claude/fase2-integration`. Informe: `docs/AUDITORIA_LOTE_CHATGPT.md` en `claude/audit-batch`.
+**Cuando recuperes internet:** `git fetch origin && git merge origin/nexora-cloud` y sigue con lo que quede en tu cola **que no esté en esta lista ni en 3b**: W1–W4 y G3/G4/G8/G9/G12–G15 (cumplimiento y tickets), accesibilidad y capturas U1 restantes. Evita `sales.ts`, `cash.ts`, `reports.ts`, `auth.ts`, `common.ts`, `admin.ts`, `Management.tsx`, `POS.tsx` y `api.ts` hasta que yo avise que mezclé la integración.
 
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
