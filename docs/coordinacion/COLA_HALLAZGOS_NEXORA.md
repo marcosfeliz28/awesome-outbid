@@ -74,4 +74,4 @@ Prioridad P1 = antes de imprimir tickets reales a clientes.
 
 | ID | Pri | Tarea | Condición |
 |---|---|---|---|
-| U1 | P3 | Rediseño de la pantalla de caja según `docs/coordinacion/PROMPT_UI_POS.md` (versión corregida del prompt de Gemini). | Sólo después de integración 157/157 y CI en verde, y de fusionar B0–B6 y O1/S1–S4. |
+| U1 | P3 | **Reducido:** casi todo el rediseño ya existe; sólo queda el tamaño del total, barra de desplazamiento fina y capturas (ver `docs/coordinacion/PROMPT_UI_POS.md`). | Sólo después de integración 157/157 y CI en verde, y de fusionar B0–B6 y O1/S1–S4. |

@@ -1,5 +1,26 @@
 # Lote 5 · Rediseño de la pantalla de caja (POS.tsx)
 
+> **ACTUALIZACIÓN (revisión del código en `nexora-cloud` 39a8f4f): GRAN PARTE YA ESTÁ IMPLEMENTADA. No rehacer.** El lote se reduce a verificar y completar lo que falta.
+
+| Punto del prompt de Gemini | Estado en el código |
+|---|---|
+| Quitar `page-heading` en la caja | Ya hecho: `POS.tsx` no lo usa |
+| Barra superior compacta con búsqueda, «En espera» y «Escanear» | Ya hecho: `pos-topbar` y `pos-search` (POS.tsx:644-648) |
+| Atajo visual F2 | Ya hecho |
+| Estado vacío «Carrito vacío», icono `ShoppingCart` | Ya hecho (`cart-empty-state`, POS.tsx:934) |
+| Panel de venta 380–400 px | Ya hecho: `.cart-panel { width: 390px }` |
+| `.cart-items` sin barra visible | Ya hecho, pero con `scrollbar-width: none` (ver nota) |
+| Cifras tabulares en precios y total | Ya hecho (`tabular-nums`, 8 reglas) |
+| Hundimiento táctil `scale(.98)` y reducción de movimiento | Ya hecho |
+| Botón de cobro al 100 %, alto mínimo 56 px, icono `CreditCard` | Ya hecho (`min-height: 56px`) |
+| Color del botón con contraste AA | **Falta en `nexora-cloud`** (`#059669`, 3.77). El PR #1 ya lo cambia a `var(--success-strong)` (5.48). No tocar aquí; llegará con el PR #1 |
+| Total como texto más grande (28–32 px, Plus Jakarta Sans, negrita) | **Verificar** el tamaño real de `.cart-summary > .cart-total strong` (varias reglas, última en styles.css:4956) |
+| Barra de desplazamiento del carrito | **Cambiar** a `scrollbar-width: thin` (ratón en laptop); hoy está oculta |
+
+**Trabajo real que queda de este lote:** (1) comprobar y ajustar el tamaño del total, (2) barra de desplazamiento fina, (3) captura antes/después en claro y oscuro, (4) e2e del estado vacío. Es un cambio pequeño, no un refactor de 2,200 líneas.
+
+---
+
 **Estado: EN COLA. No empezar hasta que se cumplan las tres condiciones de abajo.**
 
 ## Condiciones para empezar
