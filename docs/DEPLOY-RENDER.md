@@ -32,16 +32,17 @@ Internet -> HTTPS de Render -> nexora-pos-web (Nginx + PWA)
 
 ## Archivos de despliegue
 
-| Archivo                               | Función                                                                   |
-| ------------------------------------- | ------------------------------------------------------------------------- |
-| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados. |
-| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                             |
-| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.         |
-| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                              |
-| `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx). |
-| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                |
-| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales.              |
-| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.           |
+| Archivo                               | Función                                                                                                                     |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados.                                                   |
+| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                                                                               |
+| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.                                                           |
+| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                                                                                |
+| `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx).                                                   |
+| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                  |
+| `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `database: ok`. |
+| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales.                                                                |
+| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                             |
 
 ## Variables y secretos
 
