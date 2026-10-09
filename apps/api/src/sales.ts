@@ -1025,20 +1025,56 @@ export class SalesController {
           status: "conflict",
           message,
         });
-        await this.db.alert.upsert({
-          where: { key: "offline:" + sale.offlineUuid },
-          create: {
-            key: "offline:" + sale.offlineUuid,
-            type: "offline_conflict",
-            severity: "high",
-            entityId: sale.offlineUuid,
-            message: "Venta offline pendiente: " + message,
-            branchId: actor.branchId,
-          },
-          update: {
-            message: "Venta offline pendiente: " + message,
-            status: "new",
-          },
+        await this.db.$transaction(async (tx) => {
+          await tx.alert.upsert({
+            where: { key: "offline:" + sale.offlineUuid },
+            create: {
+              key: "offline:" + sale.offlineUuid,
+              type: "offline_conflict",
+              severity: "high",
+              entityId: sale.offlineUuid,
+              message: "Venta offline pendiente: " + message,
+              branchId: actor.branchId,
+            },
+            update: {
+              message: "Venta offline pendiente: " + message,
+              status: "new",
+            },
+          });
+          const ownership = await tx.auditLog.findFirst({
+            where: {
+              action: "offline_sale_conflict",
+              entity: "offline_sale",
+              entityId: sale.offlineUuid,
+              userId: actor.id,
+              branchId: actor.branchId,
+            },
+          });
+          if (!ownership) {
+            const attempted = sale as any;
+            const paymentTotal = money(
+              (Array.isArray(attempted.payments) ? attempted.payments : []).reduce(
+                (sum: number, payment: any) =>
+                  sum +
+                  (Number.isFinite(Number(payment?.amount))
+                    ? Number(payment.amount)
+                    : 0),
+                0,
+              ),
+            );
+            await audit(
+              tx,
+              actor,
+              "offline_sale_conflict",
+              "offline_sale",
+              sale.offlineUuid,
+              undefined,
+              {
+                paymentTotal,
+                cashSessionId: attempted.cashSessionId ?? null,
+              },
+            );
+          }
         });
       }
     return { results };

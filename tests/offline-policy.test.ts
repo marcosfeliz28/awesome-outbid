@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AdminController } from "../apps/api/src/admin";
+import { OfflineSalesController } from "../apps/api/src/offline-sales";
 import { offlineSaleAction } from "../apps/web/src/offlinePolicy";
 import { normalizeLegacyOfflineDiscount } from "../apps/api/src/sales";
 import {
@@ -282,6 +283,103 @@ describe("resolución de precios viejos en la cola offline", () => {
     expect(order).toEqual([
       "audit:discard:Cliente canceló la operación",
       "delete",
+    ]);
+  });
+});
+
+describe("descarte protegido de ventas offline", () => {
+  const offlineUuid = "11111111-1111-4111-8111-111111111111";
+  const body = {
+    offlineUuid,
+    action: "discard" as const,
+    previousTotal: 200,
+    reason: "Cliente canceló antes del cobro",
+  };
+  const manager = {
+    id: "manager",
+    name: "Gerente",
+    email: "manager@example.invalid",
+    role: "admin",
+    permissions: ["sale:write", "sale:manage"],
+    branchId: "main",
+    terminalId: "terminal",
+  } as any;
+
+  function controller(options: {
+    owner?: boolean;
+    alert?: boolean;
+    paymentTotal?: number;
+    sale?: boolean;
+  }) {
+    const order: string[] = [];
+    const tx = {
+      auditLog: {
+        findFirst: async () =>
+          options.owner === false
+            ? null
+            : { after: { paymentTotal: options.paymentTotal ?? 0 } },
+        create: async ({ data }: any) => {
+          order.push("audit:" + data.action);
+          return data;
+        },
+      },
+      alert: {
+        findFirst: async () =>
+          options.alert === false ? null : { id: "alert-1" },
+        updateMany: async () => {
+          order.push("resolve-alert");
+          return { count: 1 };
+        },
+      },
+      sale: {
+        findUnique: async () => (options.sale ? { id: "sale-1" } : null),
+      },
+    };
+    return {
+      api: new OfflineSalesController({
+        $transaction: async (operation: (client: typeof tx) => unknown) =>
+          operation(tx),
+      } as any),
+      order,
+    };
+  }
+
+  it("rechaza a un vendedor aunque conozca el UUID", async () => {
+    const fixture = controller({});
+    await expect(
+      fixture.api.record(body, {
+        ...manager,
+        role: "seller",
+        permissions: ["sale:write"],
+      }),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(fixture.order).toEqual([]);
+  });
+
+  it("responde 404 si el UUID no es un conflicto del actor", async () => {
+    const fixture = controller({ owner: false });
+    await expect(fixture.api.record(body, manager)).rejects.toMatchObject({
+      status: 404,
+    });
+    expect(fixture.order).toEqual([]);
+  });
+
+  it("impide descartar una venta que ya recibió pagos", async () => {
+    const fixture = controller({ paymentTotal: 200 });
+    await expect(fixture.api.record(body, manager)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(fixture.order).toEqual([]);
+  });
+
+  it("resuelve la alerta y luego audita un conflicto propio sin cobro", async () => {
+    const fixture = controller({ paymentTotal: 0 });
+    await expect(fixture.api.record(body, manager)).resolves.toEqual({
+      ok: true,
+    });
+    expect(fixture.order).toEqual([
+      "resolve-alert",
+      "audit:offline_sale_discarded",
     ]);
   });
 });

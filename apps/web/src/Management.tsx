@@ -1608,9 +1608,14 @@ export function Cash() {
                           Reintentar
                         </Button>
                       )}
-                      <Button variant="danger" onClick={() => setDiscarding(s)}>
-                        Descartar
-                      </Button>
+                      {can(user.permissions, "sale:manage") && (
+                        <Button
+                          variant="danger"
+                          onClick={() => setDiscarding(s)}
+                        >
+                          Descartar
+                        </Button>
+                      )}
                     </div>
                   );
                 },
