@@ -1435,10 +1435,11 @@ function Checkout({
     /* El formulario evita el exceso de pagos sin efectivo. */
   }
   const needsPin =
-    payments
-      .filter((p) => p.method === "credit")
-      .reduce((sum, p) => sum + p.amount, 0) >
-      Number(config?.creditApprovalThreshold ?? 1000) ||
+    (!can(user!.permissions, "sale:manage") &&
+      payments
+        .filter((p) => p.method === "credit" || p.method === "cod")
+        .reduce((sum, p) => sum + p.amount, 0) >
+        Number(config?.creditApprovalThreshold ?? 1000)) ||
     payments.some((p) => p.method === "credit_note" && !p.creditNoteCode) ||
     (!can(user!.permissions, "sale:manage") &&
       cart.some(
