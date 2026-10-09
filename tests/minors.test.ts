@@ -221,4 +221,18 @@ describe("Menores de la cola", () => {
     expect(row.variants[0].sku).toBe("00" + n);
     expect(row.variants[0].barcode).toBe("0000000" + (n + 1));
   });
+
+  it("4: InventoryMovement y GoodsReceipt tienen índice (branchId, createdAt)", async () => {
+    const rows: { indexname: string; indexdef: string }[] =
+      await db.$queryRaw`SELECT indexname, indexdef FROM pg_indexes
+        WHERE tablename IN ('InventoryMovement', 'GoodsReceipt')`;
+    for (const table of ["InventoryMovement", "GoodsReceipt"])
+      expect(
+        rows.some((r) =>
+          r.indexdef.includes(
+            `ON public."${table}" USING btree ("branchId", "createdAt")`,
+          ),
+        ),
+      ).toBe(true);
+  });
 });
