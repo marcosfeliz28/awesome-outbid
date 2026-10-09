@@ -25,17 +25,47 @@ if [ "$api_port" -lt 1 ] || [ "$api_port" -gt 65535 ]; then
 fi
 
 # `fromService.hostport` entrega la dirección corta mostrada por Render
-# (por ejemplo, nexora-pos-api:10000). Render requiere resolver esos nombres
-# con el resolvedor del sistema para aplicar su configuración privada. Nginx
-# consulta DNS directamente y no puede resolver ese nombre corto, por lo que
-# lo convertimos a la IPv4 privada antes de generar su configuración.
+# (por ejemplo, nexora-pos-api:10000). Ese nombre sólo se resuelve con el
+# resolvedor del sistema (getent), no con el cliente DNS de Nginx. Como la IP
+# privada de la API cambia al redesplegarla, el upstream se guarda en un
+# archivo incluido por la configuración y un bucle lo vuelve a resolver cada
+# 10 s; si la IP cambió, reescribe el archivo y recarga Nginx sin cortar
+# conexiones. Así la web no queda con una IP vieja (502) tras desplegar la API.
 api_host=${API_UPSTREAM%:*}
-api_ip=$(getent hosts "$api_host" 2>/dev/null | awk 'NR == 1 { print $1 }')
-if ! printf '%s' "$api_ip" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+upstream_file=/etc/nginx/snippets/nexora-api-upstream.conf
+
+resolve_api_ip() {
+  getent hosts "$api_host" 2>/dev/null | awk 'NR == 1 { print $1 }' \
+    | grep -E '^([0-9]{1,3}\.){3}[0-9]{1,3}$' || true
+}
+
+write_upstream() {
+  printf 'server %s:%s;\n' "$1" "$api_port" > "$upstream_file.tmp"
+  mv "$upstream_file.tmp" "$upstream_file"
+}
+
+api_ip=$(resolve_api_ip)
+if [ -z "$api_ip" ]; then
   echo "No se pudo resolver la IPv4 privada de API_UPSTREAM." >&2
   exit 1
 fi
-API_UPSTREAM="${api_ip}:${api_port}"
+write_upstream "$api_ip"
+
+(
+  current_ip=$api_ip
+  while sleep "${NEXORA_UPSTREAM_REFRESH_SECONDS:-10}"; do
+    new_ip=$(resolve_api_ip)
+    # Si la resolución falla (API reiniciando) se conserva la última IP.
+    if [ -n "$new_ip" ] && [ "$new_ip" != "$current_ip" ] \
+      && [ -s /run/nginx.pid ]; then
+      write_upstream "$new_ip"
+      if nginx -t >/dev/null 2>&1 && nginx -s reload 2>/dev/null; then
+        current_ip=$new_ip
+        echo "Upstream de la API actualizado y Nginx recargado." >&2
+      fi
+    fi
+  done
+) &
 
 if ! printf '%s' "$PORT" | grep -Eq '^[0-9]{1,5}$' \
   || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
@@ -43,17 +73,6 @@ if ! printf '%s' "$PORT" | grep -Eq '^[0-9]{1,5}$' \
   exit 1
 fi
 
-resolver_address=$(awk '$1 == "nameserver" { print $2; exit }' /etc/resolv.conf)
-if [ -z "$resolver_address" ] \
-  || ! printf '%s' "$resolver_address" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$|^[0-9A-Fa-f:]+$'; then
-  echo "No se encontró un resolvedor DNS seguro en /etc/resolv.conf." >&2
-  exit 1
-fi
-
-case "$resolver_address" in
-  *:*) NGINX_RESOLVER="[$resolver_address]" ;;
-  *)   NGINX_RESOLVER="$resolver_address" ;;
-esac
-export API_UPSTREAM PORT NGINX_RESOLVER
+export API_UPSTREAM PORT
 
 exec /docker-entrypoint.sh "$@"
