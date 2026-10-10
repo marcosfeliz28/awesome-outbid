@@ -179,7 +179,7 @@ try {
         throw 'No se pudo resolver la carpeta Documents.'
     }
 
-    $backupPath = Join-Path $documents 'FitStore Backups'
+    $backupPath = Join-Path $env:ProgramData 'FitStore POS\Backups'
     $baseCredentialFile = Join-Path $documents 'FitStore-Credenciales-iniciales.txt'
     if ($ReuseCredentials) {
         $credentialFile = Get-ChildItem -LiteralPath $documents `

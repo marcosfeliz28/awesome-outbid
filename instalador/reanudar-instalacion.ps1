@@ -87,7 +87,7 @@ try {
         $password.Length -lt 12 -or $pin -notmatch '^\d{4,6}$') {
         throw 'El archivo privado de credenciales contiene valores inválidos.'
     }
-    $backupPath = Join-Path $documents 'FitStore Backups'
+    $backupPath = Join-Path $env:ProgramData 'FitStore POS\Backups'
 
     $answerDir = Join-Path ([IO.Path]::GetTempPath()) (
         'FitStoreResume-' + [Guid]::NewGuid().ToString('N')

@@ -10,6 +10,7 @@ export const powershellTests = [
   "Restore-Real-Sql",
   "Application-Service-Privacy",
   "Backup-Privacy",
+  "Launcher-Backup-Destination",
   "FreshInstall-FaultInjection",
   "Stale-Update-FaultInjection",
   "Rollback-ServiceAccount-FaultInjection",
