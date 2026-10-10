@@ -35,13 +35,14 @@ server {
     }
 
     # Comprobación profunda, para uso manual o externo (NO para Render): la web
-    # sólo es sana si la API responde. auth_request descarta el cuerpo de la
-    # API y sólo se devuelve 204/503, sin detalles.
+    # sólo es sana si la API y su base de datos responden (/api/health/ready).
+    # auth_request descarta el cuerpo de la API y sólo se devuelve 204/503,
+    # sin detalles.
     location = /healthz/deep {
         access_log off;
         add_header Cache-Control "no-store" always;
         include /etc/nginx/snippets/nexora-security-headers.conf;
-        auth_request /_nexora_api_live;
+        auth_request /_nexora_api_ready;
         error_page 500 502 503 504 =503 @nexora_api_down;
         # `return` se evalúa antes de auth_request; try_files, después.
         try_files /nexora-inexistente @nexora_healthy;
@@ -53,9 +54,9 @@ server {
         return 204;
     }
 
-    location = /_nexora_api_live {
+    location = /_nexora_api_ready {
         internal;
-        proxy_pass http://nexora_api/api/health/live;
+        proxy_pass http://nexora_api/api/health/ready;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_pass_request_body off;

@@ -32,18 +32,20 @@ import { SecurityMaintenance } from "./security";
 export class HealthController {
   constructor(@Inject(Database) private readonly db: Database) {}
 
+  // S-06: las rutas públicas sólo dicen si el servicio está listo (200) o no
+  // (503), sin nombre del producto ni detalle de la base de datos.
   @Public() @Get("health/live") live() {
-    return { status: "ok", service: "Nexora POS" };
+    return { status: "ok" };
   }
 
+  // Preparación: comprueba la base. Nginx la consulta en /healthz/deep (sin
+  // cuerpo) y post-deploy-check.mjs en /api/health.
   @Public() @Get(["health", "health/ready"]) async ready() {
     try {
       await this.db.$queryRaw`SELECT 1`;
-      return { status: "ok", service: "Nexora POS", database: "ok" };
+      return { status: "ok" };
     } catch {
-      throw new ServiceUnavailableException(
-        "La base de datos no está disponible.",
-      );
+      throw new ServiceUnavailableException("Servicio no disponible.");
     }
   }
 }

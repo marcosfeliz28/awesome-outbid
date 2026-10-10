@@ -327,15 +327,17 @@ describe("Render · proxy público", () => {
     expect(healthz).toContain("return 204;");
     expect(healthz).not.toContain("auth_request");
     expect(healthz).not.toContain("proxy_pass");
-    // /healthz/deep sí comprueba la API, sin exponer su cuerpo.
+    // /healthz/deep sí comprueba la API, sin exponer su cuerpo. Desde S-06
+    // (auditoría 2026-10-10) consulta la preparación (API + base de datos),
+    // porque /api/health público ya no detalla el estado de la base.
     const deep = nginx.match(/location = \/healthz\/deep \{[^}]*\}/)?.[0] ?? "";
-    expect(deep).toContain("auth_request /_nexora_api_live;");
+    expect(deep).toContain("auth_request /_nexora_api_ready;");
     expect(deep).toContain("=503");
     expect(deep).not.toContain("return 204;");
-    const live = nginx.match(/location = \/_nexora_api_live \{[^}]*\}/)?.[0];
-    expect(live).toContain("internal;");
-    expect(live).toContain("proxy_pass http://nexora_api/api/health/live;");
-    expect(live).toContain("proxy_pass_request_body off;");
+    const ready = nginx.match(/location = \/_nexora_api_ready \{[^}]*\}/)?.[0];
+    expect(ready).toContain("internal;");
+    expect(ready).toContain("proxy_pass http://nexora_api/api/health/ready;");
+    expect(ready).toContain("proxy_pass_request_body off;");
     expect(read("render.yaml")).toContain("healthCheckPath: /healthz\n");
   });
 

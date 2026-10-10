@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 // Comprobación posterior al despliegue: consulta /api/health de la web pública
-// y, si se indica, de la API, y falla si `database` no es "ok".
+// y, si se indica, de la API, y falla si no responde 200 con `status: "ok"`.
+// /api/health comprueba la base de datos (503 si no responde) pero, al ser
+// público, ya no detalla el estado (S-06); se acepta también la respuesta
+// anterior con `database: "ok"` para verificar un despliegue previo.
 //
 // Uso: node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]
 //   o con NEXORA_WEB_URL / NEXORA_API_URL. La API es un servicio privado en
@@ -37,9 +40,14 @@ async function check(name, base) {
         signal: AbortSignal.timeout(timeoutMs),
       });
       const body = await response.json().catch(() => null);
-      if (response.ok && body?.database === "ok") return null;
+      if (
+        response.ok &&
+        (body?.database === "ok" ||
+          (body?.status === "ok" && body?.database === undefined))
+      )
+        return null;
       reason = response.ok
-        ? `database=${JSON.stringify(body?.database ?? null)}`
+        ? `status=${JSON.stringify(body?.status ?? null)}`
         : `HTTP ${response.status}`;
     } catch (error) {
       reason =
@@ -54,7 +62,7 @@ const failures = [];
 for (const [name, base] of targets) {
   const failure = await check(name, base);
   if (failure) failures.push(failure);
-  else console.log(`${name}: database ok`);
+  else console.log(`${name}: ok (API y base de datos)`);
 }
 if (failures.length) {
   for (const failure of failures) console.error(failure);
