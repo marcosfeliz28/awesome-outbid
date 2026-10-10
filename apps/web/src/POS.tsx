@@ -571,7 +571,22 @@ export function POS({ go }: { go: (page: string) => void }) {
     if (distinct > 1) return { ambiguous: distinct } as const;
     return hits[0];
   };
+  // Un escaneo o un Enter hecho mientras el catálogo aún se descarga (al entrar
+  // o recargar la caja) no puede decir «Código no encontrado»: se guarda y se
+  // procesa cuando el catálogo llega. Si la descarga falla, products.isPending
+  // es falso y sale el aviso de siempre.
+  const pendingScan = useRef<{ kind: "scan"; code: string } | "enter" | null>(
+    null,
+  );
+  const catalogLoading = () =>
+    products.data === undefined && products.isPending;
   const scan = (code: string) => {
+    if (catalogLoading()) {
+      pendingScan.current = { kind: "scan", code };
+      setQ(code);
+      toast("Cargando el catálogo… el código se agregará al terminar.");
+      return;
+    }
     const found = byCode(code);
     if (found && "ambiguous" in found) {
       setQ(code);
@@ -612,6 +627,11 @@ export function POS({ go }: { go: (page: string) => void }) {
   const enter = () => {
     const text = q.trim();
     if (!text) return;
+    if (catalogLoading()) {
+      pendingScan.current = "enter";
+      toast("Cargando el catálogo… se agregará al terminar.");
+      return;
+    }
     if (byCode(text)) return scan(q);
     const warn = (message: string) => {
       toast(message, true);
@@ -646,6 +666,15 @@ export function POS({ go }: { go: (page: string) => void }) {
         : "No se agregó nada: no hay productos con esas palabras.",
     );
   };
+  // Cuando llega el catálogo se procesa el escaneo que quedó esperando.
+  useEffect(() => {
+    if (products.data === undefined) return;
+    const pending = pendingScan.current;
+    if (!pending) return;
+    pendingScan.current = null;
+    if (pending === "enter") enter();
+    else scan(pending.code);
+  }, [products.data]);
   return (
     <div className="pos-layout">
       <section className="pos-catalog">
