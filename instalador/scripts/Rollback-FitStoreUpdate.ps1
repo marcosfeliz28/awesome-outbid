@@ -58,7 +58,7 @@ function Restore-PreviousDataFiles {
 }
 
 function Restore-DatabaseFromUpdateBackup {
-  param($Paths, $Secrets, [string]$Archive, [string]$ExpectedHash)
+  param($Paths, $Secrets, [string]$Archive, [string]$ExpectedHash, [switch]$ExclusiveRecovery)
   if (-not (Test-Path -LiteralPath $Archive -PathType Leaf)) { throw "Falta el respaldo previo a la actualización: $Archive" }
   $actualHash = (Get-FileHash -LiteralPath $Archive -Algorithm SHA256).Hash.ToLowerInvariant()
   if ($actualHash -ne $ExpectedHash.ToLowerInvariant()) { throw "El respaldo previo a la actualización no conserva su SHA-256." }
@@ -71,13 +71,16 @@ function Restore-DatabaseFromUpdateBackup {
     -Password ([string]$Secrets.postgresPassword) `
     -Arguments @("--host=127.0.0.1", "--port=5434", "--username=postgres", "--dbname=postgres", "--no-password", "--command=SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'fitstore' AND pid <> pg_backend_pid();") `
     -FailureMessage "No se pudieron cerrar las conexiones antes del rollback"
+  $restoreUser = if ($ExclusiveRecovery) { 'postgres' } else { 'fitstore' }
+  $restorePassword = if ($ExclusiveRecovery) { [string]$Secrets.postgresPassword } else { [string]$Secrets.databasePassword }
   Invoke-FitStorePg `
     -Tool $pgRestore `
-    -Password ([string]$Secrets.databasePassword) `
+    -Password $restorePassword `
     -Arguments @(
       "--host=127.0.0.1",
       "--port=5434",
-      "--username=fitstore",
+      "--username=$restoreUser",
+      "--role=fitstore",
       "--dbname=fitstore",
       "--no-owner",
       "--no-privileges",
@@ -91,7 +94,7 @@ function Restore-DatabaseFromUpdateBackup {
 }
 
 function Ensure-RestoredApplicationService {
-  param($Paths, [Parameter(Mandatory = $true)][string]$Name)
+  param($Paths, [Parameter(Mandatory = $true)][string]$Name, [switch]$KeepDisabled)
   $config = Join-Path $Paths.Services "$Name.xml"
   $dedicatedWrapper = Join-Path $Paths.Services "$Name.exe"
   # El XML restaurado no cambia una cuenta ya registrada en SCM: reinstalar
@@ -110,7 +113,8 @@ function Ensure-RestoredApplicationService {
     } else {
       throw "Falta el ejecutable WinSW restaurado para $Name."
     }
-  Set-FitStoreServiceStartMode -Name $Name -Mode "delayed-auto"
+  $mode = if ($KeepDisabled) { 'disabled' } else { 'delayed-auto' }
+  Set-FitStoreServiceStartMode -Name $Name -Mode $mode
   $escapedName = $Name.Replace("'", "''")
   $registered = Get-CimInstance -ClassName Win32_Service -Filter "Name='$escapedName'" -ErrorAction Stop
   if (-not $registered -or [string]::IsNullOrWhiteSpace([string]$registered.StartName)) {
@@ -152,8 +156,13 @@ $phase = if ($transaction.PSObject.Properties.Name -contains "phase") { [string]
 $recoveryAction = Get-FitStoreUpdateRecoveryAction -InstallPath $actualInstall -SnapshotPath $snapshotPath -Phase $phase
 $hadSnapshot = $recoveryAction -in @("restore-snapshot", "resume-rollback")
 if ($RecoverInterrupted) {
+  # Verificar archivos antes de ejecutar psql/pg_ctl de la copia anterior.
+  $verifiedRoot = if ($recoveryAction -eq 'restore-snapshot') { $snapshotPath } else { $actualInstall }
+  Assert-UpdateManifest -Manifest ([string]$transaction.manifestPath) -ExpectedManifestHash ([string]$transaction.manifestSha256) -Root $verifiedRoot
   . (Join-Path $PSScriptRoot 'Recover-FitStoreUpdate.ps1') -DefinitionsOnly
-  Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $transaction
+  $relativeBin = $paths.PgBin.Substring($actualInstall.Length).TrimStart('\')
+  $verifiedPgBin = Join-Path $verifiedRoot $relativeBin
+  Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $transaction -ExclusiveAccess -VerifiedPgBin $verifiedPgBin
 }
 
 try {
@@ -178,18 +187,23 @@ try {
     if ($previousDataPath) { Restore-PreviousDataFiles -Paths $paths -PreviousDataPath $previousDataPath }
 
     $secrets = Read-FitStoreJson -Path $paths.Secrets
-    Restore-DatabaseFromUpdateBackup -Paths $paths -Secrets $secrets -Archive ([string]$transaction.backup) -ExpectedHash ([string]$transaction.backupSha256)
+    Restore-DatabaseFromUpdateBackup -Paths $paths -Secrets $secrets -Archive ([string]$transaction.backup) -ExpectedHash ([string]$transaction.backupSha256) -ExclusiveRecovery:$RecoverInterrupted
   }
 
   # Restore-PreviousDataFiles protege de nuevo .env/TLS y elimina sus grants.
   # La identidad real en SCM (no el XML) determina los permisos necesarios.
   $usesLocalService = $false
   foreach ($service in @($script:ApiService, $script:WebService)) {
-    $account = Ensure-RestoredApplicationService -Paths $paths -Name $service
+    $account = Ensure-RestoredApplicationService -Paths $paths -Name $service -KeepDisabled:$RecoverInterrupted
     if ($account -in @('NT AUTHORITY\LocalService', 'LocalService')) { $usesLocalService = $true }
     elseif ($account -notin @('LocalSystem', 'NT AUTHORITY\SYSTEM')) { throw "Cuenta de servicio restaurada no admitida para $service." }
   }
   if ($usesLocalService) { Grant-FitStoreApplicationAccess -Paths $paths }
+  if ($RecoverInterrupted) {
+    Disable-FitStoreRecoveryIsolation -Transaction $transaction -Psql (Join-Path $paths.PgBin 'psql.exe') -Secrets (Read-FitStoreJson -Path $paths.Secrets)
+    Set-FitStoreServiceStartMode -Name $script:ApiService -Mode 'delayed-auto'
+    Set-FitStoreServiceStartMode -Name $script:WebService -Mode 'delayed-auto'
+  }
   Start-FitStoreApplication
   Wait-FitStoreHttp -Url "http://127.0.0.1:3001/api/health" -TimeoutSeconds 120
   Wait-FitStoreHttp -Url "https://localhost:4173/__fitstore/health" -TimeoutSeconds 120

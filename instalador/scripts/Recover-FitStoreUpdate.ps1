@@ -16,7 +16,7 @@ function Invoke-FitStoreRecoveryPgCtl {
 }
 
 function Assert-FitStoreInterruptedRecovery {
-  param($Paths, $Transaction, [ValidateRange(1024,65535)][int]$DatabasePort = 5434)
+  param($Paths, $Transaction, [ValidateRange(1024,65535)][int]$DatabasePort = 5434, [switch]$ExclusiveAccess, [string]$VerifiedPgBin)
   foreach ($field in @('backupCutoffAt','applicationAutostartDisabled','backup','backupSha256','snapshotPath','phase')) {
     if ($Transaction.PSObject.Properties.Name -notcontains $field) { throw "Transaccion antigua o incompleta: falta $field. Requiere recuperacion asistida; no se restauraron datos." }
   }
@@ -30,6 +30,8 @@ function Assert-FitStoreInterruptedRecovery {
   if (-not (Test-Path -LiteralPath $Transaction.backup -PathType Leaf) -or
       (Get-FileHash -LiteralPath $Transaction.backup -Algorithm SHA256).Hash -ine $Transaction.backupSha256) { throw 'Respaldo ausente o alterado; recuperacion cancelada.' }
   $psql = Join-Path $Paths.PgBin 'psql.exe'
+  if ($VerifiedPgBin) { $psql = Join-Path $VerifiedPgBin 'psql.exe' }
+  if ($VerifiedPgBin -and -not (Test-Path -LiteralPath $psql -PathType Leaf)) { throw 'La copia verificada no contiene psql; recuperacion cancelada.' }
   if (-not (Test-Path -LiteralPath $psql -PathType Leaf)) {
     # Preflight puede haber apartado Program Files antes del corte.
     $relative = $Paths.PgBin.Substring($Paths.Install.TrimEnd('\').Length).TrimStart('\')
@@ -52,15 +54,63 @@ function Assert-FitStoreInterruptedRecovery {
         Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-l',(Join-Path $Paths.Database 'recovery-postgres.log'),'-o',"-p $DatabasePort",'-w','start')
       }
     } else { Start-FitStoreService -Name $script:PostgresService -TimeoutSeconds 90 }
-    $output = @(Invoke-FitStorePg -Tool $psql -Password ([string]$secrets.databasePassword) -Arguments @('--host=127.0.0.1',"--port=$DatabasePort",'--username=fitstore','--dbname=fitstore','--no-password','--no-psqlrc','--tuples-only','--no-align','--set=ON_ERROR_STOP=1',"--command=$sql") -FailureMessage 'No se pudieron comprobar las ventas posteriores al respaldo')
+    if ($ExclusiveAccess) { Enable-FitStoreRecoveryIsolation -Transaction $Transaction -Psql $psql -Secrets $secrets -DatabasePort $DatabasePort }
+    $user = if ($ExclusiveAccess) { 'postgres' } else { 'fitstore' }
+    $password = if ($ExclusiveAccess) { [string]$secrets.postgresPassword } else { [string]$secrets.databasePassword }
+    $output = @(Invoke-FitStorePg -Tool $psql -Password $password -Arguments @('--host=127.0.0.1',"--port=$DatabasePort","--username=$user",'--dbname=fitstore','--no-password','--no-psqlrc','--tuples-only','--no-align','--set=ON_ERROR_STOP=1',"--command=$sql") -FailureMessage 'No se pudieron comprobar las ventas posteriores al respaldo')
+    if ($output.Count -ne 1 -or ([string]$output[0]).Trim() -cne '0') { throw 'Hay ventas posteriores al respaldo o no se pudo verificarlas. No se restauraron datos; requiere recuperacion asistida.' }
+    foreach ($name in @($script:ApiService, $script:WebService)) {
+      $service = Get-CimInstance -ClassName Win32_Service -Filter "Name='$name'" -ErrorAction Stop
+      if (-not $service -or $service.StartMode -ne 'Disabled' -or $service.State -ne 'Stopped') { throw 'Los servicios cambiaron durante la comprobacion. No se restauraron datos.' }
+    }
+  } catch {
+    # Una negativa anterior a restaurar no deja usuarios bloqueados.
+    if ($ExclusiveAccess) { Disable-FitStoreRecoveryIsolation -Transaction $Transaction -Psql $psql -Secrets $secrets -DatabasePort $DatabasePort }
+    throw
   } finally {
     if ($temporaryPostgres) { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
   }
-  if ($output.Count -ne 1 -or ([string]$output[0]).Trim() -cne '0') { throw 'Hay ventas posteriores al respaldo o no se pudo verificarlas. No se restauraron datos; requiere recuperacion asistida.' }
-  foreach ($name in @($script:ApiService, $script:WebService)) {
-    $service = Get-CimInstance -ClassName Win32_Service -Filter "Name='$name'" -ErrorAction Stop
-    if (-not $service -or $service.StartMode -ne 'Disabled' -or $service.State -ne 'Stopped') { throw 'Los servicios cambiaron durante la comprobacion. No se restauraron datos.' }
+}
+
+function Invoke-FitStoreRecoverySql {
+  param([string]$Psql, $Secrets, [int]$DatabasePort, [string]$Sql)
+  Invoke-FitStorePg -Tool $Psql -Password ([string]$Secrets.postgresPassword) -Arguments @('--host=127.0.0.1',"--port=$DatabasePort",'--username=postgres','--dbname=postgres','--no-password','--no-psqlrc','--tuples-only','--no-align','--set=ON_ERROR_STOP=1',"--command=$Sql") -FailureMessage 'No se pudo controlar el acceso exclusivo de recuperacion'
+}
+
+function Enable-FitStoreRecoveryIsolation {
+  param($Transaction, [string]$Psql, $Secrets, [int]$DatabasePort=5434)
+  $statePath = Join-Path $Transaction.transactionPath 'recovery-login-state.json'
+  if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) {
+    $json = @(Invoke-FitStoreRecoverySql -Psql $Psql -Secrets $Secrets -DatabasePort $DatabasePort -Sql "SELECT json_build_object('originalLoginRoles', COALESCE(json_agg(rolname), '[]'::json)) FROM pg_roles WHERE rolcanlogin AND rolname <> 'postgres';")
+    if ($json.Count -ne 1) { throw 'No se pudieron registrar los accesos originales; no se bloquearon cuentas.' }
+    $original = ([string]$json[0]).Trim() | ConvertFrom-Json
+    # Persistir ANTES de NOLOGIN: un corte permite reanudar usando postgres.
+    Write-FitStoreJson -Path $statePath -Value $original -Protect
   }
+  $sql = @'
+DO $$ DECLARE r record; BEGIN
+  FOR r IN SELECT rolname FROM pg_roles WHERE rolcanlogin AND rolname <> 'postgres' LOOP
+    EXECUTE format('ALTER ROLE %I NOLOGIN', r.rolname);
+  END LOOP;
+END $$;
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND backend_type = 'client backend';
+'@
+  Invoke-FitStoreRecoverySql -Psql $Psql -Secrets $Secrets -DatabasePort $DatabasePort -Sql $sql | Out-Null
+}
+
+function Disable-FitStoreRecoveryIsolation {
+  param($Transaction, [string]$Psql, $Secrets, [int]$DatabasePort=5434)
+  $statePath = Join-Path $Transaction.transactionPath 'recovery-login-state.json'
+  if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) { return }
+  $state = Read-FitStoreJson -Path $statePath
+  foreach ($role in $state.originalLoginRoles) {
+    $literal = ([string]$role).Replace("'", "''")
+    # Si el rol desaparecio en una intervencion administrativa, no recrearlo.
+    $sql = "DO `$`$ BEGIN IF EXISTS (SELECT FROM pg_roles WHERE rolname = '$literal') THEN EXECUTE format('ALTER ROLE %I LOGIN', '$literal'); END IF; END `$`$;"
+    Invoke-FitStoreRecoverySql -Psql $Psql -Secrets $Secrets -DatabasePort $DatabasePort -Sql $sql | Out-Null
+  }
+  # Borrar al FINAL: una interrupcion conserva el plan idempotente de restitucion.
+  Remove-Item -LiteralPath $statePath -Force
 }
 if ($DefinitionsOnly) { return }
 . (Join-Path $PSScriptRoot 'FitStore.Common.ps1')
