@@ -53,6 +53,7 @@ import {
   denied,
   json,
   safeErrorMessage,
+  OfflineSaleDiscardedError,
   fieldLabel,
   imageType,
   lockActiveCustomer,
@@ -61,6 +62,7 @@ import {
   maskTail,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
+import { moneyDb } from "./database-errors";
 
 // Foto de evidencia de un cobro: hasta 2 MB.
 const PROOF_MAX_BYTES = 2 * 1024 * 1024;
@@ -544,7 +546,7 @@ export class SalesController {
         );
     }
     const approvedBy = await this.approve(actor, input);
-    const result = await this.db.$transaction(
+    const result = await moneyDb(this.db).$transaction(
       async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${input.offlineUuid}))::text AS locked`;
         const existing = await tx.sale.findUnique({
@@ -561,6 +563,21 @@ export class SalesController {
             bad("El UUID ya corresponde a otra venta.");
           return existing;
         }
+        // N-M1: una venta que gerencia descartó no vuelve a registrarse aunque
+        // la caja la reenvíe (respuesta perdida, copia aún en su cola). Se
+        // consulta dentro del candado del UUID, el mismo que toma el descarte.
+        if (
+          await tx.auditLog.findFirst({
+            where: {
+              action: "offline_sale_discarded",
+              entity: "offline_sale",
+              entityId: input.offlineUuid,
+              branchId: actor.branchId,
+            },
+            select: { id: true },
+          })
+        )
+          throw new OfflineSaleDiscardedError();
         if (offline) {
           const settings = await tx.settings.findUnique({
             where: { id: actor.branchId },
@@ -1160,6 +1177,17 @@ export class SalesController {
         });
       } catch (e: any) {
         const message = safeErrorMessage(e);
+        if (e instanceof OfflineSaleDiscardedError) {
+          // Ya descartada por gerencia: rechazo idempotente, sin reabrir la
+          // alerta ni registrar otro conflicto.
+          results.push({
+            offlineUuid: sale.offlineUuid,
+            status: "conflict",
+            discarded: true,
+            message,
+          });
+          continue;
+        }
         results.push({
           offlineUuid: sale.offlineUuid,
           status: "conflict",
@@ -1299,7 +1327,7 @@ export class SalesController {
     // Si esa caja ya cerró y la venta se cobró en efectivo, el reembolso sale
     // de la caja abierta de quien anula (D-02, docs/DECISIONES.md, punto 9).
     const data = parse(z.object({ reason }), body);
-    const voided = await this.db.$transaction(async (tx) => {
+    const voided = await moneyDb(this.db).$transaction(async (tx) => {
       const saleRef = await tx.sale.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
         select: { cashSessionId: true, payments: true },
@@ -1654,7 +1682,7 @@ export class SalesController {
     );
     if (new Set(data.items.map((i) => i.saleItemId)).size !== data.items.length)
       bad("No repitas artículos en la devolución.");
-    const done = await this.db.$transaction(async (tx) => {
+    const done = await moneyDb(this.db).$transaction(async (tx) => {
       // Dos envíos con la misma clave se atienden uno detrás del otro: el
       // segundo encuentra la devolución del primero y la devuelve tal cual.
       // Misma clave con otros datos es un error, no otra devolución.
@@ -1671,6 +1699,18 @@ export class SalesController {
         }
       }
       const refundCash = await cashLock(tx, actor, data.cashSessionId, true);
+      // N-A1 (auditoría 06 v2): orden único de bloqueo Caja → Cliente → Venta
+      // → Variantes → Notas. La nota de crédito referencia al cliente con una
+      // FK (CreditNote_customerId_fkey) que toma FOR KEY SHARE sobre su fila;
+      // la venta ya tiene ese cliente FOR UPDATE y espera la variante que esta
+      // devolución tiene, y la anonimización (Cliente → Venta) cruza igual. Se
+      // bloquea al cliente antes que la venta y las variantes, como ellas.
+      const customerOf = await tx.sale.findFirst({
+        where: { id: data.saleId, branchId: actor.branchId },
+        select: { customerId: true },
+      });
+      if (customerOf?.customerId)
+        await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerOf.customerId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
       await tx.$queryRaw`SELECT id FROM "Sale" WHERE id = ${data.saleId}::uuid FOR UPDATE`;
       const sale = await tx.sale.findFirstOrThrow({
         where: { id: data.saleId, branchId: actor.branchId },
@@ -1685,6 +1725,8 @@ export class SalesController {
           returns: true,
         },
       });
+      if ((sale.customerId ?? null) !== (customerOf?.customerId ?? null))
+        conflict("La venta cambió de cliente mientras se devolvía. Reintenta.");
       if (sale.status !== "completed")
         bad("Sólo se devuelven ventas completadas.");
       const settings = await tx.settings.findUnique({

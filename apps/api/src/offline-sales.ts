@@ -45,6 +45,9 @@ export class OfflineSalesController {
     if (data.action === "discard") {
       if (!can(actor.permissions, "sale:manage")) denied();
       await this.db.$transaction(async (tx) => {
+        // N-M1: mismo candado del UUID que la sincronización, para que el
+        // descarte y un reenvío simultáneo se atiendan uno tras otro.
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.offlineUuid}))::text AS locked`;
         // La alerta no basta para demostrar propiedad: toda la sucursal puede
         // verla. El primer intento fallido deja esta marca con el usuario que
         // realmente entregó la venta offline.

@@ -42,6 +42,7 @@ export default defineConfig({
       "tests/afirmaciones.test.ts",
       "tests/licencias.test.ts",
       "tests/auth-guard.test.ts",
+      "tests/db-errores.test.ts",
       "tests/perf-apertura.test.ts",
       "tests/perf-indexes-postgres.test.ts",
       "tests/drive-backup-core.test.ts",

@@ -284,6 +284,57 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
     expect(late.status).toBe(409);
   });
 
+  it("N-M1 · una venta descartada por gerencia no se registra aunque la caja la reenvíe", async () => {
+    const [first] = cashiers;
+    const sale = await conflict(first);
+    await ok(
+      "/sales/offline-review/discard",
+      {
+        offlineUuid: sale.offlineUuid,
+        reason: "Revisado por gerencia (N-M1)",
+        detail,
+      },
+      manager,
+    );
+    // La caja no recibió la respuesta (o conserva la copia en su cola) y hay
+    // existencias de nuevo: antes de la corrección la venta se registraba.
+    await ok(
+      "/inventory/adjustments",
+      { variantId: variant.id, qty: 2, reason: "QA N-M1: reposición" },
+      owner,
+    );
+    const stockBefore = (
+      await db.variant.findUniqueOrThrow({ where: { id: variant.id } })
+    ).stock;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const again = await ok("/sales/sync", { sales: [sale] }, first.token);
+      expect(again.results[0]).toMatchObject({
+        status: "conflict",
+        discarded: true,
+      });
+      expect(again.results[0].message).toMatch(/descart/i);
+      expect(again.results[0].sale).toBeUndefined();
+    }
+    // Tampoco por la ruta directa de venta con el mismo UUID.
+    const direct = await call(
+      "/sales",
+      { ...sale, capturedAt: undefined },
+      first.token,
+    );
+    expect(direct.status).toBe(409);
+    expect(
+      await db.sale.count({ where: { offlineUuid: sale.offlineUuid } }),
+    ).toBe(0);
+    expect(
+      (await db.variant.findUniqueOrThrow({ where: { id: variant.id } })).stock,
+    ).toEqual(stockBefore);
+    // La alerta del conflicto sigue resuelta: el reenvío no la reabre.
+    const alert = await db.alert.findUniqueOrThrow({
+      where: { key: "offline:" + sale.offlineUuid },
+    });
+    expect(alert.status).toBe("resolved");
+  });
+
   it("sin permiso de venta no se usa", async () => {
     const warehouse = (
       await ok("/auth/login", {
