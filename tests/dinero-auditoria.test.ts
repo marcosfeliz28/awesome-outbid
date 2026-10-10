@@ -668,6 +668,28 @@ describe("Auditoría 01 · dinero", () => {
     });
   });
 
+  it("B-7: cambiar a mano el costo promedio con existencias queda en bitácora y alerta", async () => {
+    const m = await person("manager", "b7");
+    const v = await product(1100, 600, 20);
+    await ok("/variants/" + v, m.token, { costAvg: 1 }, "PATCH");
+    const a = await alert("cost-change:" + v);
+    expect(a).toMatchObject({
+      type: "cost_change",
+      severity: "high",
+      status: "new",
+    });
+    expect(a.message).toContain("11,980.00");
+    const log = await db.auditLog.findFirst({
+      where: { action: "cost_change", entityId: v },
+    });
+    expect((log.before as any).costAvg).toBe(600);
+    expect((log.after as any).costAvg).toBe(1);
+    // Cambiar sólo el precio no la genera.
+    const w = await product(1100, 600, 20);
+    await ok("/variants/" + w, m.token, { price: 1200 }, "PATCH");
+    expect(await alert("cost-change:" + w)).toBeNull();
+  });
+
   it("D-11: anular exige un equipo registrado", async () => {
     const c = await person("seller", "d11", 0);
     const v = await product(300, 100, 5);

@@ -36,10 +36,11 @@ const CASH_DIFFERENCE_PRIVATE_MESSAGE =
 
 // M-1 (auditoría 01): alertas que registran un hecho (una caja que cerró con
 // diferencia, un descuento, un vale, una transferencia sin verificar, una
-// merma, un reembolso en otra forma de pago). La evaluación periódica no las
-// da por resueltas aunque el hecho salga de su ventana (30 cierres, ventas de
-// hoy): sólo una persona las resuelve, o su propio flujo (verificar la
-// transferencia, cobrar la cuenta, resolver el conflicto offline).
+// merma, un reembolso en otra forma de pago, un costo cambiado a mano). La
+// evaluación periódica no las da por resueltas aunque el hecho salga de su
+// ventana (30 cierres, ventas de hoy): sólo una persona las resuelve, o su
+// propio flujo (verificar la transferencia, cobrar la cuenta, resolver el
+// conflicto offline).
 export const MANUAL_ALERT_TYPES = [
   "offline_conflict",
   "receivable",
@@ -49,6 +50,7 @@ export const MANUAL_ALERT_TYPES = [
   "transfer_pending",
   "inventory_loss",
   "refund_method_mismatch",
+  "cost_change",
 ];
 /** Mensaje de la alerta de diferencia de caja (cierre y evaluación). */
 export const cashDifferenceMessage = (s: {
