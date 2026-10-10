@@ -9,6 +9,70 @@ import { cloudEnvironment } from "../deploy/render/with-cloud-env.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path: string) => readFileSync(resolve(root, path), "utf8");
 
+// Estado real comprobado en Render el 10-oct-2026 (A3). Ver render.yaml.
+const PLAN_FLOOR: Record<string, { cpu: number; memoryMb: number }> = {
+  "nexora-pos-web": { cpu: 0.5, memoryMb: 512 },
+  "nexora-pos-api": { cpu: 1, memoryMb: 2048 },
+  "nexora-pos-db": { cpu: 0.5, memoryMb: 1024 },
+};
+// El disco de PostgreSQL en Render sólo puede crecer.
+const DISK_FLOOR_GB = 5;
+
+// Bloque de un recurso de primer nivel (servicio o base) de render.yaml.
+function resourceBlock(blueprint: string, name: string) {
+  const lines = blueprint.split("\n");
+  const at = lines.findIndex(
+    (line) => line === `    name: ${name}` || line === `  - name: ${name}`,
+  );
+  if (at < 0) return "";
+  let start = at;
+  while (!lines[start].startsWith("  - ")) start -= 1;
+  let end = start + 1;
+  while (
+    end < lines.length &&
+    !lines[end].startsWith("  - ") &&
+    !/^\S/.test(lines[end])
+  )
+    end += 1;
+  return lines.slice(start, end).join("\n");
+}
+
+function yamlField(block: string, key: string) {
+  return block.match(new RegExp(`^ {4}${key}: "?([^"\\n]*)"?$`, "m"))?.[1];
+}
+
+function planViolations(blueprint: string) {
+  const violations: string[] = [];
+  for (const [name, floor] of Object.entries(PLAN_FLOOR)) {
+    const block = resourceBlock(blueprint, name);
+    const plan = yamlField(block, "plan");
+    const match = plan?.match(/^(\d+(?:\.\d+)?)c-(\d+)(mb|gb|g)$/);
+    if (!match) {
+      violations.push(`${name}: plan ausente o con otra forma (${plan})`);
+      continue;
+    }
+    const cpu = Number(match[1]);
+    const memoryMb = Number(match[2]) * (match[3] === "mb" ? 1 : 1024);
+    if (cpu < floor.cpu || memoryMb < floor.memoryMb)
+      violations.push(
+        `${name}: plan ${plan} menor que ${floor.cpu}c-${floor.memoryMb}mb`,
+      );
+    if (
+      name !== "nexora-pos-db" &&
+      !(Number(yamlField(block, "numInstances")) >= 1)
+    )
+      violations.push(`${name}: sin instancias`);
+  }
+  const disk = Number(
+    yamlField(resourceBlock(blueprint, "nexora-pos-db"), "diskSizeGB"),
+  );
+  if (!(disk >= DISK_FLOOR_GB))
+    violations.push(
+      `nexora-pos-db: disco ${disk} GB menor que ${DISK_FLOOR_GB} GB`,
+    );
+  return violations;
+}
+
 describe("Render · aislamiento reproducible", () => {
   it("declara una sola entrada pública, API privada y PostgreSQL cerrado", () => {
     const blueprint = read("render.yaml");
@@ -22,12 +86,45 @@ describe("Render · aislamiento reproducible", () => {
     expect(blueprint).toContain("property: connectionString");
     expect(blueprint).toContain("envVarKey: RENDER_EXTERNAL_URL");
     expect(blueprint.match(/region: virginia/g)).toHaveLength(3);
-    expect(blueprint.match(/plan: 0\.5c-512mb/g)).toHaveLength(2);
-    expect(blueprint).toContain("plan: 0.1c-256mb");
     expect(blueprint).toContain('postgresMajorVersion: "17"');
-    expect(blueprint).toContain("diskSizeGB: 1");
     expect(blueprint.match(/autoDeployTrigger: off/g)).toHaveLength(2);
     expect(blueprint).toContain("healthCheckPath: /healthz");
+  });
+
+  // A3 (auditoría de infraestructura, 10-oct-2026): render.yaml debe
+  // coincidir con lo que corre en Render. Si declarara planes menores, una
+  // sincronización del Blueprint bajaría la API o la base (reinicio en horario
+  // de tienda) e intentaría encoger el disco, que Render no permite. Los
+  // mínimos de PLAN_FLOOR sólo se cambian a la vez que el plan real, nunca
+  // para que pase la prueba. Subir un plan está permitido; bajarlo, no.
+  it("no baja por accidente los planes ni el disco reales de Render", () => {
+    const blueprint = read("render.yaml");
+    expect(planViolations(blueprint)).toEqual([]);
+    const database = resourceBlock(blueprint, "nexora-pos-db");
+    expect(yamlField(database, "databaseName")).toBe("fitstore_bfjz");
+    expect(yamlField(database, "storageAutoscalingEnabled")).toBe("false");
+    // La regla queda escrita junto a los planes.
+    expect(blueprint).toContain("PRIMERO aquí");
+  });
+
+  it("la comprobación de planes detecta una bajada o un disco menor", () => {
+    const blueprint = read("render.yaml");
+    const apiAt = blueprint.search(/^ {4}name: nexora-pos-api$/m);
+    const downgradeApi =
+      blueprint.slice(0, apiAt) +
+      blueprint.slice(apiAt).replace(/plan: \S+/, "plan: 0.5c-512mb");
+    expect(planViolations(downgradeApi)).toEqual([
+      "nexora-pos-api: plan 0.5c-512mb menor que 1c-2048mb",
+    ]);
+    expect(
+      planViolations(blueprint.replace(/diskSizeGB: \d+/, "diskSizeGB: 1")),
+    ).toEqual(["nexora-pos-db: disco 1 GB menor que 5 GB"]);
+    expect(
+      planViolations(blueprint.replace("plan: 0.5c-1g", "plan: 0.1c-256mb")),
+    ).toEqual(["nexora-pos-db: plan 0.1c-256mb menor que 0.5c-1024mb"]);
+    expect(
+      planViolations(blueprint.replace("plan: 1c-2g", "plan: 2c-4g")),
+    ).toEqual([]);
   });
 
   it("aplica migraciones antes de publicar y no ejecuta seed ni db push", () => {
