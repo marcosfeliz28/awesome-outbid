@@ -646,7 +646,7 @@ describe("Auditoría 01 · dinero", () => {
 });
 
 describe("Auditoría 06 · concurrencia del dinero", () => {
-  it.skip("D-M4: un doble clic no duplica movimientos de caja, pagos a proveedor ni gastos", async () => {
+  it("D-M4: un doble clic no duplica movimientos de caja, pagos a proveedor ni gastos", async () => {
     const c = await person("seller", "dm4", 500);
     const twice = async (path: string, as: string, data: any) => {
       const [a, b] = await Promise.all([

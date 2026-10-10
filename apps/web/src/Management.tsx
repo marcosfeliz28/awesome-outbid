@@ -1157,7 +1157,14 @@ export function Purchases() {
                   render: (s) => (
                     <Button
                       variant="secondary"
-                      onClick={() => setPaySupplier(s)}
+                      // D-M4: una clave por formulario; un reintento no
+                      // duplica el pago.
+                      onClick={() =>
+                        setPaySupplier({
+                          ...s,
+                          operationId: crypto.randomUUID(),
+                        })
+                      }
                     >
                       Registrar pago
                     </Button>
@@ -1214,7 +1221,11 @@ export function Purchases() {
           ]}
           onClose={() => setPaySupplier(null)}
           onSubmit={(data) =>
-            post("/supplier-payments", { ...data, supplierId: paySupplier.id })
+            post("/supplier-payments", {
+              ...data,
+              supplierId: paySupplier.id,
+              operationId: paySupplier.operationId,
+            })
           }
         />
       )}
@@ -1230,7 +1241,8 @@ export function Expenses() {
     queryKey: ["expense-categories"],
     queryFn: () => api("/expense-categories"),
   });
-  const [create, setCreate] = useState(false),
+  // D-M4: la clave del formulario abierto (un reintento no duplica el gasto).
+  const [create, setCreate] = useState<string | false>(false),
     [budget, setBudget] = useState<any>(null),
     [voiding, setVoiding] = useState<any>(null);
   const client = useQueryClient();
@@ -1242,7 +1254,7 @@ export function Expenses() {
         title="Tus gastos, sin sorpresas"
         caption="Controla lo que sale para cuidar lo que ganas."
       >
-        <Button onClick={() => setCreate(true)}>
+        <Button onClick={() => setCreate(crypto.randomUUID())}>
           <Plus size={17} />
           Registrar gasto
         </Button>
@@ -1373,6 +1385,7 @@ export function Expenses() {
           onSubmit={(data) =>
             post("/expenses", {
               ...data,
+              operationId: create,
               date: new Date(data.date + "T12:00:00-04:00").toISOString(),
             })
           }
@@ -1427,7 +1440,8 @@ export function Cash() {
     queryFn: () => api("/customers"),
   });
   const [open, setOpen] = useState(false),
-    [movement, setMovement] = useState(false),
+    // D-M4: la clave del formulario abierto (un reintento no duplica).
+    [movement, setMovement] = useState<string | false>(false),
     [closing, setClosing] = useState<any>(null),
     [discarding, setDiscarding] = useState<any>(null),
     [printing, setPrinting] = useState<Printing>(null);
@@ -1494,7 +1508,7 @@ export function Cash() {
                   ? "Traslada la caja a este equipo para registrar movimientos."
                   : undefined
               }
-              onClick={() => setMovement(true)}
+              onClick={() => setMovement(crypto.randomUUID())}
             >
               <Plus size={17} />
               Movimiento
@@ -1862,6 +1876,7 @@ export function Cash() {
           onSubmit={({ managerPin, ...data }) =>
             post("/cash-sessions/" + active.id + "/movements", {
               ...data,
+              operationId: movement,
               ...(managerPin ? { managerPin } : {}),
             })
           }

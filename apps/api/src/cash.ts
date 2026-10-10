@@ -642,8 +642,10 @@ export class CashController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const { managerPin, ...data } = parse(
+    const { managerPin, operationId, ...data } = parse(
       z.object({
+        // D-M4 (auditoría 06): clave que la web genera una vez por formulario.
+        operationId: uuid.optional(),
         type: z.enum(["in", "out"]),
         // 2 decimales y un tope (D-04/D-08): 0.004 o 1e15 son un 400, no un
         // movimiento de 0.00 ni un error 500 de la base.
@@ -683,6 +685,24 @@ export class CashController {
     return this.db.$transaction(async (tx) => {
       const session = await cashLock(tx, actor, parse(uuid, id));
       // El bloqueo de la sesión serializa movimientos y ventas concurrentes.
+      // D-M4: un reintento con la misma clave devuelve el mismo movimiento
+      // (antes que el tope y el saldo, que ya lo incluyen).
+      if (operationId) {
+        const existing = await tx.cashMovement.findUnique({
+          where: { operationId },
+        });
+        if (existing) {
+          if (
+            existing.sessionId !== id ||
+            existing.userId !== actor.id ||
+            existing.type !== data.type ||
+            !d(existing.amount).eq(data.amount) ||
+            existing.reason !== data.reason
+          )
+            bad("La clave de la operación ya corresponde a otro movimiento.");
+          return existing;
+        }
+      }
       if (needsApproval && !approvedBy) {
         const settings = await tx.settings.findUnique({
           where: { id: actor.branchId },
@@ -722,7 +742,12 @@ export class CashController {
           bad("No hay suficiente efectivo en caja.");
       }
       const row = await tx.cashMovement.create({
-        data: { ...data, sessionId: id, userId: actor.id },
+        data: {
+          ...data,
+          sessionId: id,
+          userId: actor.id,
+          ...(operationId ? { operationId } : {}),
+        },
       });
       await audit(tx, actor, "movement", "cash", id, undefined, {
         ...row,

@@ -435,6 +435,8 @@ model SupplierPayment {
   branchId   String   @default("main")
   createdBy  String?
   createdAt  DateTime @default(now())
+  // D-M4: clave del formulario; un reintento devuelve el mismo pago.
+  operationId String? @unique @db.Uuid
 }
 
 model InventoryCount {
@@ -480,6 +482,8 @@ model CashMovement {
   reason    String
   userId    String
   createdAt DateTime @default(now())
+  // D-M4: clave del formulario; un reintento devuelve el mismo movimiento.
+  operationId String? @unique @db.Uuid
 }
 
 model ExpenseCategory {
@@ -505,6 +509,8 @@ model Expense {
   createdBy   String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  // D-M4: clave del formulario; un reintento devuelve el mismo gasto.
+  operationId String?         @unique @db.Uuid
 
   @@index([date])
 }
