@@ -25,3 +25,6 @@ Producción: la base no acepta conexiones externas. El importador (`apps/api/scr
 - Producto nuevo: «Platinum Multi Vitamin - MuscleTech - 180 tabletas» (la dueña dijo 200 una vez, la foto decía 180: usé 180, confirmar), ID 1631, Suplementos, 20 unidades, costo 750, precio 1,900.
 - Archivo ya preparado por Claude en formato del importador (hoja «Inventario»; columnas ID, DESCRIPCION, REFERENCIA, SUB-GRUPO DE ARTICULO, EXISTENCIA, COSTO, PRECIO DETALLE; 629 filas; existencia total 3,022). NO está en el repositorio (trae costos): la dueña lo entrega a quien implemente la carga.
 - La dueña autorizó cargarlo. Falta la ruta técnica (ver «Cómo cargar»): tarea 3n.
+
+## ACTUALIZACIÓN 2 (10 oct): tanda 2 del conteo (dueña)
+Se aplican como existencia: Broche Crema XS (1584)→4, XL (1588)→2, 2XL (1589)→6; Chaleco Génesis S (1595)→1; Corset Génesis S (1598)→5; Panty Negro («Panties Faja») 2XS (1593)→2, L (1591)→7. Coinciden sin cambio: Broche Crema S 6, M 2, L 1; Chaleco Génesis XS 2, M 2; Corset Génesis M 1; Panty Negro XS 4, XL 2. Panty Negro S/M (1610/1609) y Broche L «color por confirmar» (1611) no se nombraron: quedan como están (0). Archivo vigente: `inventario-listo-para-cargar-v2.xlsx` (fuera del repositorio).
