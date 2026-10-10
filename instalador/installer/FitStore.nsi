@@ -300,6 +300,8 @@ Section "Nexora POS" SecMain
     File /oname=FitStore.Common.ps1 "${PAYLOAD_DIR}\scripts\FitStore.Common.ps1"
     File /oname=Preflight-FitStore.ps1 "${PAYLOAD_DIR}\scripts\Preflight-FitStore.ps1"
     File /oname=Rollback-FitStoreUpdate.ps1 "${PAYLOAD_DIR}\scripts\Rollback-FitStoreUpdate.ps1"
+    ; Rollback carga las definiciones de recuperacion desde su propio directorio.
+    File /oname=Recover-FitStoreUpdate.ps1 "${PAYLOAD_DIR}\scripts\Recover-FitStoreUpdate.ps1"
     ; Preflight puede detener servicios o escribir el marcador antes de fallar.
     ; El rollback valida la sesion: habilitarlo ahora no autoriza marcadores viejos.
     StrCpy $UpdatePrepared "1"
