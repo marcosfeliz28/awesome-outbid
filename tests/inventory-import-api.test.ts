@@ -177,6 +177,13 @@ afterAll(async () => {
   await db.variant.deleteMany({ where: { id: { in: variantIds } } });
   await db.product.deleteMany({ where: { id: { in: ids } } });
   await db.category.deleteMany({ where: { name: { contains: suffix } } });
+  // El PIN de gerente se comprueba contra el hash de cada usuario activo: las
+  // cuentas de esta prueba se desactivan para no hacer más lenta esa
+  // verificación en las pruebas de navegador que corren después.
+  await db.user.updateMany({
+    where: { email: { startsWith: "qa-imp-" } },
+    data: { active: false },
+  });
   await db.$disconnect();
 });
 
