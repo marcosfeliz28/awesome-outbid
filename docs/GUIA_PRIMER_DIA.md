@@ -70,7 +70,7 @@ En **Caja** ves **Mis incentivos** con lo tuyo del mes.
 - Arriba, donde decía **En línea**, ahora dice **Offline**. El número que sale al lado son las ventas que esperan en esa computadora.
 - Al principio el sistema **no deja cobrar sin internet** (sale «Las ventas sin conexión están desactivadas…»). Espera a que vuelva **En línea**.
 - Si la dueña activó **«Permitir ventas sin conexión»**, solo se puede cobrar en efectivo, tarjeta o transferencia, sin PIN ni crédito. El recibo sale como **LOCAL-…** y dice «Guardada en este dispositivo · Pendiente de sincronizar».
-- Cuando vuelve el internet, esas ventas se suben solas. También puedes ir a **Caja** → **Ventas guardadas en este dispositivo** → **Sincronizar**. Si alguna dice **Requiere revisión**, avisa a la gerente.
+- Cuando vuelve el internet, esas ventas se suben solas. También puedes ir a **Caja** → **Ventas guardadas en este dispositivo** → **Sincronizar**. Si alguna dice **Requiere revisión**, la fila dice qué hacer: si falta inventario, la gerente lo ajusta y la cajera pulsa **Reintentar**; si no se puede reintentar, la gerente la descarta con su PIN (**Descartar con PIN de gerente**) y queda en la bitácora. Mientras quede alguna, el cierre de caja de esa computadora avisa y no deja cerrar.
 - Mientras no haya internet: no borres los datos del navegador, no cambies de computadora y no cierres sesión (sin internet no se puede volver a entrar).
 
 **Pulsaste «Finalizar venta» y no hubo respuesta:** **no cobres otra vez.** El sistema guarda la venta con el mismo código y la confirma sola cuando vuelve la conexión, sin duplicarla.
@@ -89,7 +89,7 @@ En **Caja** ves **Mis incentivos** con lo tuyo del mes.
 
 **«Tu caja está abierta en "…"»:** tu caja quedó abierta en otra computadora. Ve a esa computadora, o pulsa **Trasladar caja aquí** → PIN de la gerente → **Trasladar caja**. Nunca abras una caja nueva para salir del paso.
 
-**«¿Sigues ahí?»:** pulsa **Seguir conectado**. Si nadie toca nada, la sesión se cierra a los 30 minutos (o el tiempo que haya puesto la dueña).
+**«¿Sigues ahí?»:** pulsa **Seguir conectado**. Si nadie toca nada, la sesión se cierra a los 30 minutos (o el tiempo que haya puesto la dueña). Con artículos en el carrito o ventas sin internet por subir no se cierra, y si se recarga la página el carrito vuelve a aparecer.
 
 ## 5. Avisos por Telegram (lo hace la dueña o soporte, una sola vez)
 
