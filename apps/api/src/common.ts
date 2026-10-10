@@ -17,6 +17,7 @@ import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
 import type { Request, Response } from "express";
 import { captureApiException } from "./monitoring";
 import { isSerializationConflict } from "./inventory-resilience";
+import { databaseUnavailable, isDatabaseUnavailable } from "./database-errors";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -641,7 +642,10 @@ export class AuthGuard implements CanActivate {
         permissions: user.role.permissions,
         branchId: user.branchId,
       };
-    } catch {
+    } catch (error) {
+      // Un fallo de la base (pool lleno, tiempo agotado, conexión) no dice
+      // nada de la sesión: 503 para que la web reintente sin cerrarla.
+      if (isDatabaseUnavailable(error)) throw databaseUnavailable();
       throw new HttpException("Inicia sesión para continuar.", 401);
     }
     const permission = this.reflector.getAllAndOverride<string>("permission", [
