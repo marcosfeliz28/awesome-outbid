@@ -9,6 +9,8 @@ export const powershellTests = [
   "Restore-FaultInjection",
   "Restore-Real-Sql",
   "Application-Service-Privacy",
+  "Service-Isolation",
+  "Service-Pfx-Passwords",
   "Backup-Privacy",
   "Launcher-Backup-Destination",
   "FreshInstall-FaultInjection",
@@ -71,6 +73,7 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
     "powershell.exe",
   );
   const steps = [
+    [process.execPath, ["--test", "instalador/tests/installer-session.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/web-server.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/recovery-error-contract.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/recovery-documentation.test.mjs"]],
