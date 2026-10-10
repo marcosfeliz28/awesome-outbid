@@ -233,6 +233,42 @@ el respaldo, marcador y carpetas y solicite recuperación asistida. Una fase
 marcador preservando la versión activa. No cambie servicios para forzar este
 procedimiento. La prueba Windows-Smoke en una máquina limpia sigue pendiente.
 
+### Limpieza asistida del marcador en services/verifying
+
+Las fases `services` y `verifying` no acreditan una actualización terminada:
+la primera precede al registro de servicios; en la segunda estos pueden haber
+arrancado, aunque aún no consten las dos comprobaciones HTTP. Por tanto, un
+marcador en esas fases **no autoriza un rollback ni una limpieza automática**.
+Preflight bloquea otra actualización mientras exista el marcador.
+
+1. Soporte debe conservar una copia protegida del marcador, los logs, el
+   respaldo previo y sus hashes, y las carpetas de la transacción. Registrar
+   fase, versión y rutas reales, sin publicar secretos. No borrar la copia
+   anterior ni ejecutar `Complete-FitStoreUpdate` para saltarse el bloqueo.
+2. Consultar el estado y la cuenta real de los servicios en Windows, y las
+   respuestas de `http://127.0.0.1:3001/api/health` y
+   `https://localhost:4173/__fitstore/health`. Contrastar versión instalada,
+   configuración y logs. Una respuesta HTTP por sí sola no demuestra que la
+   actualización y sus migraciones hayan concluido correctamente.
+3. Revisar si hubo actividad posterior al respaldo, incluidas ventas offline,
+   pagos, inventario y caja. Si los servicios están habilitados o la revisión
+   es incompleta, **no restaurar la base anterior**. No detener o deshabilitar
+   servicios para simular que nunca hubo actividad. Preservar los datos vivos
+   y obtener un respaldo actual verificado antes de cualquier intervención.
+4. Si soporte confirma que la versión activa es correcta y debe conservarse,
+   documentar la evidencia y retirar **solo el marcador exacto** mediante
+   intervención asistida. No ejecutar rollback, no reemplazar la base, no
+   sobrescribir archivos activos y no borrar automáticamente la transacción
+   ni los respaldos. Comprobar después que servicios y datos siguen intactos.
+5. Si no puede confirmarse la versión activa, mantener el bloqueo y escalar
+   a recuperación asistida. `Recover-FitStoreUpdate.ps1` solo procede cuando
+   satisface todos sus controles originales; no cambiar la fase del JSON ni
+   la sesión del instalador para forzarlo. `verified` tampoco admite restaurar
+   la base anterior: su limpieza asistida debe preservar la versión activa.
+
+Este procedimiento requiere revisión de soporte; no es una reparación
+automática ni una certificación de la prueba Windows-Smoke pendiente.
+
 Si el directorio actual está dentro de la instalación, el script **rechaza antes
 de restaurar**: salga de esa carpeta y repita desde el paquete externo. Así se
 evita bloquear el reemplazo de la carpeta instalada con `Move-Item`.
