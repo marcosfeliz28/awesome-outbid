@@ -167,6 +167,14 @@ comprueba aparte la copia externa. El registro «Archivo de respaldo local
 validado por PostgreSQL» confirma la validación local, no que haya una copia
 fuera del equipo. Comprueba el archivo y su SHA-256 también en el destino externo.
 
+Preflight exige que el dump coincida con el hash previo registrado en su
+`.sha256` antes de copiarlo a la carpeta privada, y vuelve a comprobar la copia.
+El sidecar de la copia usa el nombre de la copia privada, no el del dump original.
+Esto detecta cambios del dump respecto de ese registro, pero no acredita autenticidad:
+quien pueda modificar a la vez el dump y su `.sha256` puede sustituir ambos.
+Una copia privada no vuelve confiable un respaldo externo ya manipulado;
+conserva hashes y copias de referencia en una ubicación protegida independiente.
+
 ## Restaurar un respaldo
 
 La restauración reemplaza la base activa; debe hacerse sin ventas en curso.
@@ -260,6 +268,16 @@ manuales sin auditoría o escrituras que no actualicen ninguna marca no quedan
 demostradas por esta consulta; si hubo intervención directa, no use recuperación
 automática y solicite revisión de soporte.
 
+La cobertura no demuestra todos los UPDATE o DELETE: `Brand`, `KitComponent`,
+`SaleItem`, `PurchaseItem`, `ExpenseCategory`, `Counter`, `AuthAttempt`,
+`AuthSession`, `SupplierImportProfile` y `SupplierCode` carecen de marcas
+genéricas `createdAt`/`updatedAt` en el esquema. Las marcas específicas de
+actividad de algunos modelos no equivalen a un historial completo de cambios;
+sin auditoría ni una marca comprobada, una escritura puede pasar inadvertida.
+Un UPDATE de migración sobre `Variant` que dispare el trigger de
+`RealtimeEvent` después del corte también bloquea la recuperación: falla
+cerrada y requiere soporte, no significa que deba ignorarse ese evento.
+
 ### Limpieza asistida del marcador en services/verifying
 
 Las fases `services` y `verifying` no acreditan una actualización terminada:
@@ -307,9 +325,17 @@ La recuperación guarda la lista de roles con LOGIN tanto en el marcador como en
 `recovery-login-state.json` antes de bloquear conexiones. En una recuperación
 correcta restituye `fitstore` y los roles registrados antes de habilitar API/Web.
 Si falla sin haber intentado modificar la base, intenta arrancar PostgreSQL y
-restituir LOGIN en el camino de error. Si ya comenzó la restauración de datos,
-conserva NOLOGIN **a propósito**: la base puede estar parcial y soporte debe
-verificar su integridad antes de permitir clientes. Si el arranque o la
+restituir LOGIN en el camino de error. Si ya se entró en la fase de restauración
+y todavía no se liberó el aislamiento, conserva NOLOGIN como política
+conservadora de revisión: esto no demuestra que la base esté parcial.
+`pg_restore --single-transaction --exit-on-error` revierte su propia transacción
+si falla; el procedimiento completo incluye también archivos, configuración y
+servicios, que no comparten esa transacción. Si hubo LOGIN ya restituido y falla
+la comprobación HTTP o la limpieza posterior, registra ese estado y detiene
+la aplicación; no afirma que las cuentas sigan en NOLOGIN.
+La comprobación previa de actividad, si rechaza antes de restaurar, intenta
+restituir LOGIN; no es el mismo camino que un fallo durante el rollback.
+Soporte debe revisar qué fase falló antes de permitir clientes. Si el arranque o la
 restitución también fallan, conserva el plan y registra ese bloqueo sin ocultar
 el error original. Si otra interrupción deja el acceso
 bloqueado, soporte debe conectarse como `postgres` y ejecutar
