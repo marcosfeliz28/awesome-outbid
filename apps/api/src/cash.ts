@@ -50,6 +50,8 @@ export async function cashExpected(db: any, session: any) {
     where: {
       cashSessionId: session.id,
       sale: { status: "completed" },
+      // M-3: una transferencia de venta rechazada no entró (pasó a cobrar).
+      status: { not: "rejected" },
       OR: [{ entryType: { not: "installment" } }, { status: "ok" }],
     },
   });
@@ -192,7 +194,10 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
     salesByMethod[method] = sumOf(
       completed.flatMap((s: any) =>
         s.payments.filter(
-          (p: any) => p.entryType === "sale" && p.method === method,
+          (p: any) =>
+            p.entryType === "sale" &&
+            p.method === method &&
+            p.status !== "rejected",
         ),
       ),
     );

@@ -422,7 +422,7 @@ describe("Auditoría 01 · dinero", () => {
     });
   });
 
-  it.skip("M-3: la transferencia al vender deja una alerta y se puede rechazar (pasa a cuenta por cobrar)", async () => {
+  it("M-3: la transferencia al vender deja una alerta y se puede rechazar (pasa a cuenta por cobrar)", async () => {
     const c = await person("seller", "m3", 0);
     const v = await product(600, 300, 10);
     const sale = await sell(c, v, 1, [

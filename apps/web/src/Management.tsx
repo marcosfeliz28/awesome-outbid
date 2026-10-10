@@ -2843,9 +2843,9 @@ export function SalesHistory() {
                     )}
                   {/* Un abono por transferencia que no llegó se rechaza: si no,
                       bloquea para siempre la devolución de la venta
-                      (R9-dinero-3-ui). */}
+                      (R9-dinero-3-ui). M-3: también la transferencia con la
+                      que se pagó la venta; su importe pasa a cobrar. */}
                   {p.method === "transfer" &&
-                    p.entryType === "installment" &&
                     p.status === "pending_verification" &&
                     can(user.permissions, "*") && (
                       <button
@@ -2883,7 +2883,11 @@ export function SalesHistory() {
       {rejecting && (
         <ConfirmModal
           title={"Rechazar transferencia de " + formatMoney(rejecting.amount)}
-          description="Úsalo cuando el dinero no llegó al banco. El abono no descuenta la deuda ni entra a la caja; si el cliente vuelve a pagar, registra un abono nuevo."
+          description={
+            rejecting.entryType === "sale"
+              ? "Úsalo cuando el dinero no llegó al banco. La mercancía ya se entregó: el importe pasa a cuenta por cobrar del cliente y deja de contar en la caja; cuando pague, registra un abono."
+              : "Úsalo cuando el dinero no llegó al banco. El abono no descuenta la deuda ni entra a la caja; si el cliente vuelve a pagar, registra un abono nuevo."
+          }
           onClose={() => setRejecting(null)}
           onConfirm={async (reason) => {
             await post("/payments/" + rejecting.id + "/reject", { reason });

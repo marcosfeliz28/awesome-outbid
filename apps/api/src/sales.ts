@@ -23,6 +23,7 @@ import {
   paymentReceiptLine,
   money,
   formatMoney,
+  formatAmount,
   d,
   can,
   z,
@@ -207,6 +208,15 @@ export function normalizeLegacyOfflineDiscount(
     ...input,
     discountReason: "Venta offline heredada (sin motivo registrado)",
   };
+}
+
+// M-3: la alerta de una transferencia sin verificar se cierra al verificarla
+// o rechazarla.
+async function resolveTransferAlert(tx: any, paymentId: string) {
+  await tx.alert.updateMany({
+    where: { key: "transfer:" + paymentId, status: { not: "resolved" } },
+    data: { status: "resolved" },
+  });
 }
 
 // Deuda abierta de un cliente en la sucursal: saldo por cobrar de sus ventas
@@ -987,7 +997,7 @@ export class SalesController {
                 authorization: p.creditNoteCode ? "code" : "manager",
               },
             );
-          await tx.payment.create({
+          const createdPayment = await tx.payment.create({
             data: {
               ...paymentData,
               saleId: sale.id,
@@ -1011,6 +1021,24 @@ export class SalesController {
                     : "ok",
             },
           });
+          // M-3 (auditoría 01): la mercancía sale contra una transferencia que
+          // nadie comprobó. Alerta alta hasta que la administración la
+          // verifique o la rechace (sólo esos flujos la resuelven).
+          if (p.method === "transfer")
+            await tx.alert.upsert({
+              where: { key: "transfer:" + createdPayment.id },
+              create: {
+                key: "transfer:" + createdPayment.id,
+                type: "transfer_pending",
+                severity: "high",
+                entityId: sale.id,
+                branchId: actor.branchId,
+                message:
+                  `Transferencia de ${sale.number} por RD$ ${formatAmount(Number(createdPayment.amount))} sin verificar · ` +
+                  `${p.bank ?? ""} · ref. ${p.reference ?? ""}`,
+              },
+              update: {},
+            });
         }
         if (cashSession.closedAt) {
           const differences = await refreshClosedCash(tx, cashSession);
@@ -1468,6 +1496,7 @@ export class SalesController {
         await refreshReceivableAlert(tx, sale.id, actor.branchId);
       }
       await tx.payment.update({ where: { id }, data: { status: "ok" } });
+      await resolveTransferAlert(tx, id);
       if (payment.cashSessionId) {
         const cash = await tx.cashSession.findUnique({
           where: { id: payment.cashSessionId },
@@ -1494,6 +1523,10 @@ export class SalesController {
   // Un abono por transferencia que nunca llegó se rechaza: no descuenta la
   // deuda ni entra a la caja, y deja de bloquear devoluciones y abonos de la
   // venta (R9-dinero-3).
+  // M-3 (auditoría 01): también la transferencia con la que se pagó una
+  // venta. La mercancía ya salió: ese importe pasa a cuenta por cobrar del
+  // cliente (saldo de la venta y alerta «receivable») y deja de contar en el
+  // esperado de la caja; si la caja ya cerró, su cuadre se recalcula.
   @Post("payments/:id/reject")
   @RequireTerminal()
   @Permit("*")
@@ -1509,22 +1542,59 @@ export class SalesController {
           id: parse(uuid, id),
           sale: { branchId: actor.branchId },
           method: "transfer",
-          entryType: "installment",
+          entryType: { in: ["installment", "sale"] },
         },
       });
+      // Mismo orden que verify(): caja, venta, pago.
+      if (found.entryType === "sale" && found.cashSessionId)
+        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${found.cashSessionId}::uuid FOR UPDATE`;
       await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${found.saleId}::uuid FOR UPDATE`;
       await tx.$queryRaw`SELECT id FROM "Payment" WHERE id=${id}::uuid FOR UPDATE`;
       const payment = await tx.payment.findUniqueOrThrow({ where: { id } });
       if (payment.status === "rejected") return { ok: true };
       if (payment.status !== "pending_verification")
-        bad("Sólo se rechaza un abono pendiente de verificar.");
+        bad("Sólo se rechaza una transferencia pendiente de verificar.");
+      let saleDebt: number | undefined;
+      if (payment.entryType === "sale") {
+        const sale = await tx.sale.findUniqueOrThrow({
+          where: { id: payment.saleId },
+        });
+        if (sale.status !== "completed") bad("La venta ya no está completada.");
+        const updated = await tx.sale.update({
+          where: { id: sale.id },
+          data: { creditBalance: { increment: payment.amount } },
+        });
+        saleDebt = Number(updated.creditBalance);
+      }
       await tx.payment.update({
         where: { id },
         data: { status: "rejected" },
       });
+      await resolveTransferAlert(tx, id);
+      if (payment.entryType === "sale") {
+        await refreshReceivableAlert(tx, payment.saleId, actor.branchId);
+        const cash = payment.cashSessionId
+          ? await tx.cashSession.findUnique({
+              where: { id: payment.cashSessionId },
+            })
+          : null;
+        if (cash?.closedAt) {
+          const differences = await refreshClosedCash(tx, cash);
+          await audit(
+            tx,
+            actor,
+            "rejected_after_close",
+            "cash",
+            cash.id,
+            cash,
+            { paymentId: id, ...differences },
+          );
+        }
+      }
       await audit(tx, actor, "reject", "payment", id, payment, {
         status: "rejected",
         reason: data.reason,
+        ...(saleDebt === undefined ? {} : { saleCreditBalance: saleDebt }),
       });
       return { ok: true };
     });
