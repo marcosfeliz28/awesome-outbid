@@ -624,6 +624,9 @@ model AuthAttempt {
   key            String    @id
   failedAttempts Int       @default(0)
   lockedUntil    DateTime?
+  // Último intento (disparador auth_attempt_touch, 202610210003): permite
+  // purgar las filas viejas (retention.ts). La clave lleva la IP.
+  updatedAt      DateTime  @default(now())
 }
 
 model AuthSession {
