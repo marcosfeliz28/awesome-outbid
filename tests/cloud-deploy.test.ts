@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -501,5 +501,100 @@ describe("Render · compresión de la web", () => {
     expect(nginx).toContain(
       'add_header Cache-Control "public, max-age=31536000, immutable";',
     );
+  });
+});
+
+describe("Render · memoria de la API", () => {
+  it("la imagen arranca un solo node con el montón acotado para 512 MB", () => {
+    const api = read("deploy/render/Dockerfile.api");
+    const cmd = api.match(/^CMD (\[.*\])$/m)?.[1];
+    expect(cmd).toBeDefined();
+    const argv = JSON.parse(cmd!);
+    // node <opciones> with-cloud-env.mjs <script>: sin un segundo «node».
+    expect(argv[0]).toBe("node");
+    expect(argv.filter((a: string) => a === "node")).toHaveLength(1);
+    expect(argv.slice(-2)).toEqual([
+      "deploy/render/with-cloud-env.mjs",
+      "apps/api/dist/main.js",
+    ]);
+    const heap = Number(
+      argv
+        .find((a: string) => a.startsWith("--max-old-space-size="))
+        ?.split("=")[1],
+    );
+    expect(heap).toBeGreaterThanOrEqual(192);
+    expect(heap).toBeLessThanOrEqual(320);
+    // El pre-deploy sigue lanzando Prisma como proceso aparte (termina).
+    expect(read("render.yaml")).toContain(
+      "preDeployCommand: node deploy/render/with-cloud-env.mjs node apps/api/node_modules/prisma/build/index.js migrate deploy",
+    );
+  });
+
+  it("carga el script en el mismo proceso, con el entorno cloud y las opciones de node", () => {
+    const dir = mkdtempSync(join(tmpdir(), "nexora-cloud-env-"));
+    try {
+      const script = join(dir, "probe.mjs");
+      writeFileSync(
+        script,
+        `import v8 from "node:v8";
+console.log(JSON.stringify({
+  pid: process.pid,
+  argv: process.argv.slice(1),
+  render: "RENDER_DATABASE_URL" in process.env,
+  sslmode: new URL(process.env.DATABASE_URL).searchParams.get("sslmode"),
+  timezone: new URL(process.env.DATABASE_URL).searchParams.get("options"),
+  keep: process.env.WEB_ORIGIN,
+  heapMb: Math.round(v8.getHeapStatistics().heap_size_limit / 1048576),
+}));`,
+      );
+      const result = spawnSync(
+        process.execPath,
+        [
+          "--max-old-space-size=200",
+          resolve(root, "deploy/render/with-cloud-env.mjs"),
+          script,
+          "uno",
+          "dos",
+        ],
+        {
+          encoding: "utf8",
+          env: {
+            PATH: process.env.PATH,
+            RENDER_DATABASE_URL:
+              "postgresql://nexora:secreto@db.internal:5432/fitstore",
+            WEB_ORIGIN: "https://nexora.example",
+          },
+        },
+      );
+      expect(result.status, result.stderr).toBe(0);
+      const probe = JSON.parse(result.stdout.trim());
+      // Mismo PID que el node lanzado: no hay proceso hijo.
+      expect(probe.pid).toBe(result.pid);
+      expect(probe.argv).toEqual([script, "uno", "dos"]);
+      expect(probe.render).toBe(false);
+      expect(probe.sslmode).toBe("require");
+      expect(probe.timezone).toBe("-c TimeZone=UTC");
+      expect(probe.keep).toBe("https://nexora.example");
+      expect(probe.heapMb).toBeGreaterThanOrEqual(200);
+      expect(probe.heapMb).toBeLessThan(300);
+      // Un script que no existe falla con código 1 y sin la URL de la base.
+      const missing = spawnSync(
+        process.execPath,
+        [resolve(root, "deploy/render/with-cloud-env.mjs"), join(dir, "x.js")],
+        {
+          encoding: "utf8",
+          env: {
+            PATH: process.env.PATH,
+            RENDER_DATABASE_URL:
+              "postgresql://nexora:secreto@db.internal:5432/fitstore",
+          },
+        },
+      );
+      expect(missing.status).toBe(1);
+      expect(missing.stderr).toContain("No se pudo iniciar");
+      expect(missing.stderr).not.toContain("secreto");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

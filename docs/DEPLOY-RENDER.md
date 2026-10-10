@@ -41,7 +41,7 @@ Internet -> HTTPS de Render -> nexora-pos-web (Nginx + PWA)
 | `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx).                                                   |
 | `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                  |
 | `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `database: ok`. |
-| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales.                                                                |
+| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales; con un script `.js` lo carga en el mismo proceso.              |
 | `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                             |
 
 ## Variables y secretos
@@ -199,6 +199,30 @@ Swagger en producción (`ENABLE_SWAGGER=true`), su interfaz queda sujeta a ella.
   revalidar. La API autentica con `Authorization: Bearer` y la cookie de
   renovación es `SameSite=Strict`, así que comprimir respuestas no abre un
   oráculo de tamaño tipo BREACH desde otro sitio.
+
+## Memoria de la API
+
+El plan `0.5c-512mb` mata el contenedor si pasa de 512 MB. La imagen arranca un
+solo proceso:
+
+```text
+node --max-old-space-size=256 deploy/render/with-cloud-env.mjs apps/api/dist/main.js
+```
+
+- `with-cloud-env.mjs` forma `DATABASE_URL` y, cuando recibe un script `.js`
+  (sin `node` delante), lo carga en el mismo proceso. Antes lanzaba un segundo
+  `node` que quedaba residente toda la vida de la API (~46 MB). Las señales de
+  Render (`SIGTERM`) llegan directamente a la API, que cierra con sus
+  `shutdown hooks`. Con `node <script>` (pre-deploy de Prisma, tareas puntuales
+  con `tsx`) sigue lanzando un proceso aparte que termina, como antes.
+- El montón de V8 queda en 256 MB: con el motor de Prisma, el código y los
+  búferes (~130 MB fuera del montón) la API queda holgada bajo 512 MB y el
+  recolector trabaja antes de acercarse al límite. Si alguna vez aparece
+  `JavaScript heap out of memory` en el registro, subirlo con prudencia
+  (máximo ~320) en `deploy/render/Dockerfile.api`; nunca quitarlo.
+- Medición (prueba de carga con un año de historial, 4 cajas + gerente, API
+  compilada en 0,5 CPU): ver la tabla del informe de la rama
+  `claude/perf-apertura`.
 
 ## Salud y preparación
 
