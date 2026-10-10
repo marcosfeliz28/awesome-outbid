@@ -54,6 +54,7 @@ export default defineConfig({
       "tests/pwa-update.test.ts",
       "tests/cart-draft-policy.test.ts",
       "tests/cart-draft-race.test.ts",
+      "tests/alertas-rendimiento.test.ts",
     ],
   },
 });
