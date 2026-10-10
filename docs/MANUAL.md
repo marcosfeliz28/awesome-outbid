@@ -64,7 +64,7 @@ Las existencias de un producto ya cargado nunca se tocan: los cambios de stock s
 ## Comenzar el día
 
 1. Inicia sesión con tu usuario o correo y tu contraseña.
-2. En **Caja**, pulsa **Abrir caja** e indica el efectivo inicial y una terminal única. Cada usuario y terminal puede tener una sola caja abierta.
+2. En **Caja**, pulsa **Abrir caja** e indica el efectivo inicial y una terminal única. Cada usuario tiene una sola caja abierta; varias personas pueden tener la suya abierta a la vez en la misma computadora.
 3. En **Punto de venta**, busca un producto por nombre, SKU o código. Un lector USB/Bluetooth funciona como teclado: escanea y presiona Enter.
 4. Si el producto tiene variantes, elige su talla, color, sabor o tono. El stock se controla por variante y, cuando corresponde, por lote.
 
@@ -183,7 +183,7 @@ Las ventas offline sólo se aceptan dentro del horario de la caja propia indicad
 
 ## Equipos y stock en tiempo real (ronda 3)
 
-Cada navegador registra un equipo con un identificador propio al iniciar sesión. En **Configuración > Equipos**, gerente y administrador pueden cambiar su nombre (por ejemplo, Caja 1 o Celular principal), ver conexión, última actividad y caja abierta, y revocar sus sesiones. Al entrar por primera vez se asigna un nombre provisional que puedes cambiar. No compartas el mismo usuario entre cajas simultáneas: cada vendedor tiene su propia caja. Un usuario que cambia de equipo debe cerrar su caja anterior antes de abrir otra. Las cajas anteriores sin identificador de equipo se vinculan durante el primer registro.
+Cada navegador registra un equipo con un identificador propio al iniciar sesión. En **Configuración > Equipos**, gerente y administrador pueden cambiar su nombre (por ejemplo, Caja 1 o Celular principal), ver conexión, última actividad y caja abierta, y revocar sus sesiones. Al entrar por primera vez se asigna un nombre provisional que puedes cambiar. No compartas el mismo usuario entre cajas simultáneas: cada persona tiene su propia caja. Un usuario que cambia de equipo traslada su caja o la cierra antes de abrir otra. Las cajas anteriores sin identificador de equipo se vinculan durante el primer registro.
 
 El stock, inventario, resumen y alertas se actualizan por eventos SSE de la sucursal, después de confirmar la transacción. Si una variante del carrito se agota, aparece un aviso y el servidor vuelve a comprobar existencias al cobrar. Al recuperar la conexión se descarga el catálogo completo. Una conexión interrumpida se reintenta automáticamente; el navegador usa el token de sesión en una cabecera, nunca en la URL. La campana indica si hay alertas nuevas.
 
@@ -246,3 +246,11 @@ Con `ANTHROPIC_API_KEY` configurada en el servidor también se aceptan fotos JPE
 La pantalla **Revisión de factura** es obligatoria. Busca coincidencias por barras, SKU, equivalencia del proveedor y similitud de nombre. La variante (sabor, tamaño, talla, color) sólo se elige sola si la factura la indica sin ambigüedad; si no, se sugiere el producto y debes elegir la variante en la lista. Cada línea muestra sugerencia, confianza y el texto original de la factura; revisa incluso las coincidencias exactas. Las líneas sin pareja se resaltan en amarillo y con texto: debes elegir o crear el producto. Puedes modificar cantidades, costos, lote y vencimiento. Ningún stock cambia al subir el archivo.
 
 Compara el total de las líneas más flete e impuestos adicionales con el total de la factura. Si difiere, la app lo avisa y exige revisar y confirmar la diferencia. En Excel/CSV introduce el total manualmente; si la IA no lo identifica, introdúcelo también. Después de **Confirmar entrada** se crean recepción, movimientos, costo promedio, equivalencias de códigos y eventos. El comprobante original queda guardado de forma privada en PostgreSQL y se puede descargar desde la revisión. No se garantiza exactitud del OCR: la revisión humana es parte del proceso.
+
+## Cada persona, su propia caja
+
+Cada usuario (cajera, vendedora, gerente o administradora) abre su caja al empezar su día y la cierra al terminar. La caja es de una persona: solo ella vende, registra entradas o salidas, cobra abonos y la cierra. En una misma computadora pueden estar abiertas varias cajas, una por persona, por turnos o a la vez. Si entras y no ves caja abierta, es que aún no abriste la tuya: pulsa **Abrir mi caja**; nunca verás ni usarás la de otra persona.
+
+- **Cambiar de usuario con PIN:** entra con la sesión de esa persona. Si no tiene caja abierta, debe abrir la suya; no se puede vender con su nombre sobre la caja de otra.
+- **Cierre de emergencia:** si una caja se quedó abierta, solo quien tiene permiso de gestión (hoy administradora y gerente) la cierra desde **Caja › Historial de cajas › Cerrar y arquear**. La lista muestra de quién es cada caja y en qué equipo está. Queda en la bitácora como «cerrada por X en nombre de Y» y el cuadre impreso lleva ambos nombres.
+- **Al cerrar** se imprime el cuadre de esa caja: equipo, cajero, ventas por forma de pago, entradas y salidas de efectivo, conteo, firma y «DOCUMENTO NO FISCAL». La cajera no ve el esperado ni las diferencias; la administración sí.

@@ -1309,36 +1309,39 @@ describe("Regresiones de Claude", () => {
       );
     }
   });
-  it("12: índice parcial impide apertura concurrente de terminal", async () => {
+  it("12: dos usuarios pueden tener su caja abierta en el mismo equipo (decisión 38)", async () => {
     const manager = actors.find((u) => u.email.includes("qa-manager"));
     const auth = await ok(
       "/auth/login",
       { email: manager.email, password: "FitStore-QA-2026!" },
       "",
     );
-    // Con equipos, la caja usa el equipo de la sesión: dos usuarios en el
-    // mismo equipo no pueden tener cajas abiertas a la vez.
+    // La caja es de quien la abre; el equipo ya no es único entre cajas.
     await registerTerminal(
       auth.accessToken,
       session.registerId,
       "QA compartido",
     );
-    expect(
-      (
-        await request(
-          "/cash-sessions/open",
-          { registerId: session.registerId, openingAmount: 0 },
-          auth.accessToken,
-        )
-      ).status,
-    ).toBeGreaterThanOrEqual(400);
+    const second = await request(
+      "/cash-sessions/open",
+      { ...REOPEN, registerId: session.registerId, openingAmount: 0 },
+      auth.accessToken,
+    );
+    expect(second.status, JSON.stringify(second.body)).toBe(201);
+    expect(second.body.userId).toBe(manager.id);
+    expect(second.body.id).not.toBe(session.id);
     expect(
       await fixtureDb.cashSession.count({
         where: { registerId: session.registerId, closedAt: null },
       }),
-    ).toBe(1);
+    ).toBe(2);
+    await ok(
+      "/cash-sessions/" + second.body.id + "/close",
+      { countedCash: 0, countedCard: 0, countedTransfer: 0 },
+      auth.accessToken,
+    );
   });
-  it("aperturas simultáneas en el mismo equipo devuelven un conflicto claro", async () => {
+  it("aperturas simultáneas de dos usuarios en el mismo equipo abren cada una la suya", async () => {
     const sellerRole = (await ok("/roles")).find(
       (role: any) => role.name === "seller",
     );
@@ -1376,25 +1379,19 @@ describe("Regresiones de Claude", () => {
         ),
       ),
     );
-    const created = results.filter((result) => result.status === 201);
-    const rejected = results.filter((result) => result.status >= 400);
-    expect(created).toHaveLength(1);
-    expect(rejected).toHaveLength(1);
-    expect(rejected[0].status).toBe(409);
-    expect(rejected[0].body.message).toContain(
-      "Este equipo ya tiene otra caja abierta.",
-    );
-    expect(JSON.stringify(rejected[0].body)).not.toMatch(/Prisma|P2002/i);
-    await ok(
-      "/cash-sessions/" + created[0].body.id + "/close",
-      {
-        countedCash: Number(created[0].body.openingAmount),
-        countedCard: 0,
-        countedTransfer: 0,
-      },
-      temporaryUsers.find((entry) => entry.user.id === created[0].body.userId)!
-        .token,
-    );
+    expect(results.map((r) => r.status)).toEqual([201, 201]);
+    expect(new Set(results.map((r) => r.body.id)).size).toBe(2);
+    expect(JSON.stringify(results)).not.toMatch(/Prisma|P2002/i);
+    for (const [index, result] of results.entries())
+      await ok(
+        "/cash-sessions/" + result.body.id + "/close",
+        {
+          countedCash: Number(result.body.openingAmount),
+          countedCard: 0,
+          countedTransfer: 0,
+        },
+        temporaryUsers[index].token,
+      );
   });
   it("reintentar abrir la caja devuelve la sesión existente", async () => {
     const repeated = await ok(

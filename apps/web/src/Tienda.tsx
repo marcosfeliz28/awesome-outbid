@@ -233,6 +233,14 @@ export function CloseCashModal({
             {waiting}
           </p>
         )}
+        {session.userId !== user?.id && (
+          <p className="close-pending-warning" role="alert">
+            Estás cerrando la caja de {session.userName ?? "otra persona"}
+            {session.registerName ? " (" + session.registerName + ")" : ""}. Es
+            un cierre de emergencia: queda en la bitácora como cerrada por ti en
+            su nombre y el cuadre muestra a ambos.
+          </p>
+        )}
         <p className="close-expected">{closeCashIntro(canSeeExpected)}</p>
         <h3>Detalles de monedas</h3>
         <div className="count-grid">

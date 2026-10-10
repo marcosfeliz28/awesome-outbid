@@ -383,16 +383,20 @@ export function Equipment() {
                   {t.lastUserName ? " · " + t.lastUserName : ""}
                 </small>
                 <small>
-                  {t.openCash
-                    ? "Caja abierta desde " +
-                      new Date(t.openCash.openedAt).toLocaleTimeString(
-                        "es-DO",
-                        {
-                          timeZone: "America/Santo_Domingo",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )
+                  {(t.openCashes ?? []).length
+                    ? "Cajas abiertas: " +
+                      t.openCashes
+                        .map(
+                          (c: any) =>
+                            (c.userName ?? "—") +
+                            " desde " +
+                            new Date(c.openedAt).toLocaleTimeString("es-DO", {
+                              timeZone: "America/Santo_Domingo",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }),
+                        )
+                        .join(" · ")
                     : "Sin caja abierta"}
                   {t.status === "pending" && t.createdByName && !t.legacy
                     ? " · Registrado por " + t.createdByName

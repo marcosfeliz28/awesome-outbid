@@ -85,8 +85,10 @@ export const RequireTerminal = () => SetMetadata("terminal", true);
 export function bad(message: string): never {
   throw new HttpException(message, 400);
 }
-export function denied(): never {
-  throw new HttpException("No tienes permiso para realizar esta acción.", 403);
+export function denied(
+  message = "No tienes permiso para realizar esta acción.",
+): never {
+  throw new HttpException(message, 403);
 }
 // SEC-03: el cambio rápido de usuario con PIN solo mantiene o baja
 // privilegios: cada permiso del destino debe tenerlo ya quien cambia. La

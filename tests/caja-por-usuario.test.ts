@@ -122,7 +122,9 @@ const open = (who: Person, amount = 1000) =>
     managerPin: MANAGER_PIN,
   });
 const openSessions = async (who: Person) =>
-  (await ok("/cash-sessions", who.token)).filter((s: any) => !s.closedAt);
+  (await ok("/cash-sessions", who.token)).filter(
+    (s: any) => !s.closedAt && s.userId === who.id,
+  );
 
 beforeAll(async () => {
   owner = (
@@ -206,7 +208,9 @@ describe("W6 · cada usuario tiene su propia caja", () => {
       const all = await ok("/cash-sessions", who.token);
       expect(all.every((s: any) => s.userId === lisbeth.id)).toBe(true);
     }
-    const seen = await openSessions(gerente);
+    const seen = (await ok("/cash-sessions", gerente.token)).filter(
+      (s: any) => !s.closedAt,
+    );
     const ids = seen.map((s: any) => s.id);
     expect(ids).toContain(marcosCash.id);
     expect(ids).toContain(lisbethCash.id);
@@ -309,6 +313,8 @@ describe("W6 · cada usuario tiene su propia caja", () => {
     });
     expect(switched.user.id).toBe(lisbeth.id);
     const asLisbeth = switched.accessToken as string;
+    // Como hace la web al cambiar de usuario: registra el equipo en la sesión.
+    await enroll(asLisbeth, T1, "Computadora T1 " + suffix);
     // La sesión nueva es de Lisbeth: la caja del gerente le está vedada...
     expect(
       (await request("/sales", asLisbeth, saleBody(g.body.id))).status,
@@ -318,9 +324,8 @@ describe("W6 · cada usuario tiene su propia caja", () => {
       (s: any) => !s.closedAt,
     );
     expect(mine.map((s: any) => s.id)).toEqual([lisbethCash.id]);
-    expect(
-      (await request("/sales", asLisbeth, saleBody(lisbethCash.id))).status,
-    ).toBe(201);
+    const sold = await request("/sales", asLisbeth, saleBody(lisbethCash.id));
+    expect(sold.status, JSON.stringify(sold.body)).toBe(201);
     // Cierra la del gerente: el dueño la cierra con su propia sesión.
     await ok("/cash-sessions/" + g.body.id + "/close", gerente.token, {
       countedCash: 300,
