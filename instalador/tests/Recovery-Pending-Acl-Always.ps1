@@ -8,6 +8,12 @@ $marker=Join-Path $root 'marker'
 $script:ApiService='fixture-api';$script:WebService='fixture-web'
 try {
  foreach($p in @($database,$transactionPath)){[IO.Directory]::CreateDirectory($p)|Out-Null}
+ # El diario real usa FullName, no la representacion 8.3/../ del TEMP de CI.
+ # Los JSON negativos deben cambiar solamente el campo que estan probando.
+ $root=(Get-Item -LiteralPath $root).FullName
+ $database=(Get-Item -LiteralPath $database).FullName
+ $transactionPath=(Get-Item -LiteralPath $transactionPath).FullName
+ $marker=Join-Path $root 'marker'
  $original=(Get-Acl -LiteralPath $database).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
  Enable-FitStoreTemporaryPostgresAccess -Database $database -TransactionPath $transactionPath|Out-Null
  $paths=[pscustomobject]@{Database=$database;PgBin='unused'}
@@ -39,4 +45,14 @@ try {
  $failed=$false;try{& $cleanup}catch{if($_.Exception.Message -like '*fuera de PGDATA*'){$failed=$true}else{throw}}
  if(-not $failed -or -not(Test-Path -LiteralPath $marker) -or -not(Test-Path -LiteralPath $state)){throw 'M1: fallo de restauracion no conserva marcador y diario/transaccion.'}
  Write-Host 'PASS M1 negativo: error de validacion conserva marcador, diario y carpeta para soporte.'
+ # Una PGDATA realmente distinta sigue rechazada: no aceptar alias mediante
+ # una relajacion del contrato de produccion ni borrar evidencia de soporte.
+ $otherDatabase=Join-Path $root 'other-cluster'
+ [IO.Directory]::CreateDirectory($otherDatabase)|Out-Null
+ [IO.File]::WriteAllText($state,(@{database=$otherDatabase;entries=@(@{Path=$database;Sddl=$original})}|ConvertTo-Json -Depth 4))
+ $before=[IO.File]::ReadAllText($state)
+ $failed=$false;try{& $cleanup}catch{if($_.Exception.Message -like '*Estado DACL no corresponde a PGDATA*'){$failed=$true}else{throw}}
+ if(-not $failed -or -not(Test-Path -LiteralPath $marker) -or [IO.File]::ReadAllText($state) -cne $before){throw 'M1: otra PGDATA no fue rechazada conservando evidencia.'}
+ if(-not(Test-FitStoreExactDacl $original (Get-Acl -LiteralPath $database).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access))){throw 'M1: otra PGDATA altero los permisos.'}
+ Write-Host 'PASS M1 negativo: otra PGDATA sigue rechazada sin alterar diario, marcador ni DACL.'
 }finally{if([IO.Directory]::Exists($root)){[IO.Directory]::Delete($root,$true)}}

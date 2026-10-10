@@ -6,6 +6,10 @@ $root=Join-Path $env:TEMP ('nexora-corrupt-journal-'+[guid]::NewGuid().ToString(
 $database=Join-Path $root 'cluster';$transaction=Join-Path $root 'transaction'
 try {
  foreach($p in @($database,$transaction)){[IO.Directory]::CreateDirectory($p)|Out-Null}
+ # Igual que el escritor real: FullName resuelve el alias 8.3 del TEMP de CI.
+ # De lo contrario un JSON de SDDL corrupto prueba otra ruta accidentalmente.
+ $database=(Get-Item -LiteralPath $database).FullName
+ $transaction=(Get-Item -LiteralPath $transaction).FullName
  $leaf=Join-Path $database 'fixture';[IO.File]::WriteAllText($leaf,'intact')
  $saved=@(Enable-FitStoreTemporaryPostgresAccess -Database $database -TransactionPath $transaction)
  $statePath=Join-Path $transaction 'recovery-pgdata-acl.json'
