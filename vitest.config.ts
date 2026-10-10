@@ -49,6 +49,7 @@ export default defineConfig({
       "tests/offline-review-web.test.ts",
       "tests/pwa-update.test.ts",
       "tests/cart-draft-policy.test.ts",
+      "tests/cart-draft-race.test.ts",
     ],
   },
 });

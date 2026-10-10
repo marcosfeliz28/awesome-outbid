@@ -47,8 +47,21 @@ export const restoredAttempt = (key: string) =>
 // Tras cobrar, ningún guardado diferido (ya en cola) puede volver a escribir
 // el carrito vendido: queda sellado hasta que el carrito esté vacío.
 let sealed = false;
+// Cada venta cobrada abre una generación nueva: un guardado que ya estaba en
+// cola (temporizador o instante libre del navegador) y es de una generación
+// anterior se descarta aunque llegue después del borrado.
+let generation = 0;
+let idleHandle: number | undefined;
+const cancelPending = () => {
+  clearTimeout(timer);
+  if (idleHandle !== undefined && typeof cancelIdleCallback === "function")
+    cancelIdleCallback(idleHandle);
+  idleHandle = undefined;
+};
 
 function write(userId: string, state = useStore.getState()) {
+  // Vendido y sellado: un carrito con artículos ya no se guarda.
+  if (sealed && state.cart.length) return Promise.resolve();
   const data: CartDraft = {
     items: state.cart.map(leanItem),
     customerId: state.customerId,
@@ -74,7 +87,7 @@ export async function rememberAttempt(next: SaleAttempt) {
   attempt = next;
   const userId = useStore.getState().user?.id;
   if (!userId || sealed) return;
-  clearTimeout(timer);
+  cancelPending();
   await write(userId);
 }
 
@@ -86,7 +99,8 @@ export async function rememberAttempt(next: SaleAttempt) {
  */
 export async function discardCartDraft() {
   const userId = useStore.getState().user?.id ?? owner;
-  clearTimeout(timer);
+  generation++;
+  cancelPending();
   attempt = null;
   sealed = true;
   if (!userId) return;
@@ -104,7 +118,7 @@ export async function discardCartDraft() {
 export async function keepDraftThrough(close: () => Promise<void>) {
   const userId = useStore.getState().user?.id;
   if (userId && useStore.getState().cart.length && !sealed) {
-    clearTimeout(timer);
+    cancelPending();
     await write(userId);
   }
   const saved = userId
@@ -169,7 +183,8 @@ export function keepCartDraft() {
     if (userId !== owner) {
       const before = owner;
       owner = userId;
-      clearTimeout(timer);
+      generation++;
+      cancelPending();
       attempt = null;
       sealed = false;
       // Cambio de vendedor con PIN: el carrito en pantalla es de quien
@@ -185,21 +200,30 @@ export function keepCartDraft() {
     }
     if (!userId || restoring) return;
     // El carrito vendido ya está vacío: se acabó el sello.
-    if (sealed && !state.cart.length) sealed = false;
+    if (sealed && !state.cart.length) {
+      sealed = false;
+      // Borrado inmediato, sin esperar al temporizador.
+      cancelPending();
+      void write(userId, state);
+      return;
+    }
     if (sealed) return;
     if (
       state.cart !== previous.cart ||
       state.customerId !== previous.customerId ||
       state.globalDiscount !== previous.globalDiscount
     ) {
-      clearTimeout(timer);
+      cancelPending();
+      const scheduled = generation;
       timer = setTimeout(() => {
         const save = () => {
+          idleHandle = undefined;
+          if (scheduled !== generation || sealed) return;
           if (useStore.getState().user?.id === userId) void write(userId);
         };
         // Cuando el navegador esté libre: nunca en medio de un escaneo.
         if (typeof requestIdleCallback === "function")
-          requestIdleCallback(save, { timeout: 2000 });
+          idleHandle = requestIdleCallback(save, { timeout: 2000 });
         else save();
       }, 600);
     }
