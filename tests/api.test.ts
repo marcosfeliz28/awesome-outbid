@@ -10841,7 +10841,14 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
     ...extra,
   });
   const setSettings = (changes: Record<string, unknown>) =>
-    must("/settings", { ...settingsBefore, ...changes }, ownerToken, "PUT");
+    // N-2: estas pruebas ejercen el umbral por venta y por cliente; el tope por
+    // turno de la cajera (que acumula entre pruebas) se sube para no mezclarlo.
+    must(
+      "/settings",
+      { ...settingsBefore, receivableShiftLimit: 10000000, ...changes },
+      ownerToken,
+      "PUT",
+    );
   // M-2 (auditoría 01): la deuda abierta del cliente cuenta para el umbral de
   // la cajera. Las pruebas de «una venta bajo el umbral» usan un cliente sin
   // deuda; el cliente compartido ya acumuló contraentregas de otras pruebas.
@@ -11808,6 +11815,8 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
       ],
       [{ method: "transfer", amount: 400, bank: "BHD", reference: "QA-D05" }],
     );
+    // N-3: la transferencia de la venta se verifica antes de devolverla.
+    await ok("/payments/" + s3.payments[0].id + "/verify", {}, admin.token);
     // 400 devueltos, ambas devoluciones parciales: 1 de 2 unidades de s1 en
     // efectivo y la línea de suplemento de s3 por transferencia.
     const giveBack = (
