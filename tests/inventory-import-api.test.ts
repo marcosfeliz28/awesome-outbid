@@ -148,7 +148,28 @@ beforeAll(async () => {
   expect(ownerToken).toBeTruthy();
   admin = await userToken("admin");
 });
-afterAll(async () => db.$disconnect());
+afterAll(async () => {
+  // La prueba de 629 filas deja cientos de productos: se borran para no
+  // engordar el catálogo de las pruebas que corren después (la caja descarga
+  // el catálogo completo).
+  const products = await db.product.findMany({
+    where: { name: { contains: suffix } },
+    select: { id: true },
+  });
+  const ids = products.map((p: any) => p.id);
+  const variants = await db.variant.findMany({
+    where: { productId: { in: ids } },
+    select: { id: true },
+  });
+  const variantIds = variants.map((v: any) => v.id);
+  await db.inventoryMovement.deleteMany({
+    where: { variantId: { in: variantIds } },
+  });
+  await db.variant.deleteMany({ where: { id: { in: variantIds } } });
+  await db.product.deleteMany({ where: { id: { in: ids } } });
+  await db.category.deleteMany({ where: { name: { contains: suffix } } });
+  await db.$disconnect();
+});
 
 describe("Importar inventario · permisos y archivo", () => {
   it("cajeras y gerentes reciben 403; sin sesión 401; el administrador pasa", async () => {
