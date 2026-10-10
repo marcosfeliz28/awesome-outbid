@@ -850,7 +850,7 @@ export class NotificationWorker
     await this.db.$executeRaw`
       DELETE FROM "NotificationOutbox"
       WHERE status = 'sent'
-        AND "sentAt" < timezone('UTC', now()) - make_interval(days => ${PURGE_DAYS})`;
+        AND "sentAt" < timezone('UTC', now()) - make_interval(days => ${PURGE_DAYS}::int)`;
   }
 }
 
