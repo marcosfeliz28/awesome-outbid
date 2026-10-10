@@ -1659,7 +1659,7 @@ function Checkout({
             return preserveUnanswered();
           }
           throw new Error(
-            "Las ventas sin conexión están desactivadas para evitar conflictos de inventario entre varias cajas. Conéctate para cobrar o pide al administrador que revise esta opción en Ajustes.",
+            "Las ventas sin conexión están desactivadas para evitar conflictos de inventario entre varias cajas. Conéctate para cobrar o pide al administrador que revise «Permitir ventas sin conexión» en Configuración › Negocio y reglas › Editar configuración.",
           );
         }
         // Contraentrega: queda un saldo pendiente en el servidor, como el crédito.

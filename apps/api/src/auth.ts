@@ -257,7 +257,7 @@ export class AuthController implements OnModuleInit {
       },
       {
         blocked:
-          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a un administrador que te cambie la contraseña.",
+          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.",
         wrong: "Usuario o contraseña incorrectos.",
       },
     );
@@ -326,7 +326,7 @@ export class AuthController implements OnModuleInit {
       },
       {
         blocked:
-          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a un administrador que te cambie la contraseña.",
+          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.",
         wrong: "Usuario o contraseña incorrectos.",
       },
     );

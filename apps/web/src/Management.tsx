@@ -2868,7 +2868,7 @@ export function SalesHistory() {
       {voiding && (
         <ConfirmModal
           title={"Anular " + voiding.number}
-          description="Solo un administrador puede hacerlo. La factura se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas; no necesitas abrir caja."
+          description="Solo un administrador puede hacerlo. La factura se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
           confirmLabel="Sí, anular factura"
           onClose={() => setVoiding(null)}
           onConfirm={async (reason) => {

@@ -50,7 +50,7 @@ Las existencias de un producto ya cargado nunca se tocan: los cambios de stock s
 
 ## Comenzar el día
 
-1. Inicia sesión con tu correo y contraseña.
+1. Inicia sesión con tu usuario o correo y tu contraseña.
 2. En **Caja**, pulsa **Abrir caja** e indica el efectivo inicial y una terminal única. Cada usuario y terminal puede tener una sola caja abierta.
 3. En **Punto de venta**, busca un producto por nombre, SKU o código. Un lector USB/Bluetooth funciona como teclado: escanea y presiona Enter.
 4. Si el producto tiene variantes, elige su talla, color, sabor o tono. El stock se controla por variante y, cuando corresponde, por lote.
@@ -109,7 +109,7 @@ En **Caja**, registra entradas/salidas con motivo. Las salidas (retiros y vales)
 
 Primero abre la app en línea y entra al POS para descargar catálogo, categorías, clientes, promociones y la caja actual. En producción, instala la PWA desde el navegador y espera a que cargue completamente antes de desconectarte.
 
-**Las ventas sin conexión están desactivadas por defecto.** Desactivadas, evitan vender la misma última unidad desde dos equipos sin conexión: dos laptops desconectadas no pueden reservar entre sí esa unidad. En ese estado, la caja permite consultar su copia local, pero exige conexión para finalizar una venta. Sólo el administrador puede habilitarlas en **Ajustes > Permitir ventas sin conexión**, después de aceptar que tendrá que revisar posibles conflictos al reconectar. Un equipo que ya está desconectado no puede recibir un cambio de configuración: después de activar o desactivar esta opción, conecta y actualiza todas las cajas antes de depender del nuevo valor.
+**Las ventas sin conexión están desactivadas por defecto.** Desactivadas, evitan vender la misma última unidad desde dos equipos sin conexión: dos laptops desconectadas no pueden reservar entre sí esa unidad. En ese estado, la caja permite consultar su copia local, pero exige conexión para finalizar una venta. Sólo el administrador puede habilitarlas en **Configuración → Negocio y reglas → Editar configuración → «Permitir ventas sin conexión»**, después de aceptar que tendrá que revisar posibles conflictos al reconectar. Un equipo que ya está desconectado no puede recibir un cambio de configuración: después de activar o desactivar esta opción, conecta y actualiza todas las cajas antes de depender del nuevo valor.
 
 Con esa opción habilitada, una venta iniciada sin conexión conserva un UUID y un número provisional en este dispositivo, y descuenta únicamente la copia local del stock de esa caja. Al volver la conexión se reintenta con el mismo UUID. El servidor crea una sola factura y asigna su número definitivo. Si cambiaron los precios, se cerró la caja o falta stock, queda **Requiere revisión** en Caja; la venta local no se borra. Habilitar esta función no garantiza que dos cajas offline no vendan la misma última unidad.
 
@@ -132,7 +132,7 @@ Los descuentos superiores al límite no se autorizan offline. Cada usuario sólo
 
 El vendedor vende, consulta stock/precios, administra clientes y su caja. El servidor oculta costos y ganancias. Almacén recibe y ajusta inventario. Gerente administra compras, gastos, reportes, promociones y devoluciones. Administrador configura negocio, usuarios y permisos granulares.
 
-En el menú de cuenta puedes cambiar de vendedor con PIN. Cambiarlo limpia el carrito sin guardar; guárdalo antes si quieres retomarlo. El cierre por inactividad usa los minutos configurados en Ajustes, tanto en cliente como en API. Cambiar contraseña o PIN revoca las sesiones anteriores.
+En el menú de cuenta puedes cambiar de vendedor con PIN. Cambiarlo limpia el carrito sin guardar; guárdalo antes si quieres retomarlo. El cierre por inactividad usa los minutos configurados en Ajustes, tanto en cliente como en API. Cambiar contraseña o PIN revoca las sesiones anteriores. **Cambiar mi contraseña** (menú de cuenta, para cualquier usuario) pide la contraseña actual y las mismas cinco reglas del primer ingreso; cierra tus otras sesiones y este equipo sigue dentro. Para otra persona, la administración usa **Restablecer contraseña** en Configuración › Usuarios y permisos: escribe una temporal o deja que el sistema genere una (se muestra una sola vez), se cierran sus sesiones, se quita su bloqueo por intentos fallidos y debe crear su propia contraseña al entrar.
 
 ## Descuentos por monto, notas de crédito y crédito
 
