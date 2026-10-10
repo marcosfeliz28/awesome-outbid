@@ -128,8 +128,13 @@ export function Toasts() {
       action,
       id: Date.now() + Math.random(),
     };
-    if (isError) setError(notice);
-    else setInfo(notice);
+    // Un error nuevo reemplaza el aviso informativo anterior (por ejemplo
+    // «X agregado.» junto a «No hay suficiente stock de X»); un aviso
+    // informativo nuevo no tapa el error.
+    if (isError) {
+      setError(notice);
+      setInfo(null);
+    } else setInfo(notice);
   };
   dismissHandler = () =>
     setError((current) => (current?.sticky ? null : current));
