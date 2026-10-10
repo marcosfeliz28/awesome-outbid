@@ -284,6 +284,102 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
     expect(late.status).toBe(409);
   });
 
+  it("M-6: si el cliente se llevó la mercancía, el descarte registra la salida de inventario y la entrada de caja", async () => {
+    const [first] = cashiers;
+    const stockOf = async () =>
+      Number(
+        (await ok("/products/" + product.id, undefined, owner)).variants[0]
+          .stock,
+      );
+    // Sin existencias para que la sincronización deje el conflicto.
+    const current = await stockOf();
+    if (current > 0)
+      await ok(
+        "/inventory/adjustments",
+        { variantId: variant.id, qty: -current, reason: "QA M-6: en cero" },
+        owner,
+      );
+    const sale = await conflict(first);
+    await ok(
+      "/inventory/adjustments",
+      { variantId: variant.id, qty: 3, reason: "QA M-6: reposición" },
+      owner,
+    );
+    const stockBefore = await stockOf();
+    const movementsBefore = await db.cashMovement.count({
+      where: { sessionId: first.session.id, type: "in" },
+    });
+    const done = await call(
+      "/sales/offline-review/discard",
+      {
+        offlineUuid: sale.offlineUuid,
+        reason: "El cliente se fue con el producto; precio subió",
+        outcome: "delivered",
+        managerPin: MANAGER_PIN,
+        detail: {
+          ...detail,
+          items: [{ ...detail.items[0], variantId: variant.id }],
+        },
+      },
+      first.token,
+    );
+    expect(done.status).toBe(201);
+    expect(await stockOf()).toBe(stockBefore - 1);
+    const movement = await db.inventoryMovement.findFirstOrThrow({
+      where: { refId: sale.offlineUuid },
+    });
+    expect(movement).toMatchObject({ type: "adjustment" });
+    expect(Number(movement.qty)).toBe(-1);
+    expect(movement.reason).toContain("mercancía entregada");
+    const cashIn = await db.cashMovement.findMany({
+      where: { sessionId: first.session.id, type: "in" },
+    });
+    expect(cashIn.length).toBe(movementsBefore + 1);
+    expect(Number(cashIn.at(-1).amount)).toBe(1000);
+    const log = await db.auditLog.findFirstOrThrow({
+      where: { action: "offline_sale_discarded", entityId: sale.offlineUuid },
+    });
+    expect(log.after).toMatchObject({
+      outcome: "delivered",
+      consequences: ["salida de inventario", "entrada de caja"],
+    });
+    const alert = await db.alert.findUniqueOrThrow({
+      where: { key: "offline-discarded:" + sale.offlineUuid },
+    });
+    expect(alert.message).toContain("se llevó la mercancía");
+    // Sin mercancía entregada (por defecto) no se mueve nada.
+    await ok(
+      "/inventory/adjustments",
+      {
+        variantId: variant.id,
+        qty: -(await stockOf()),
+        reason: "QA M-6: cero",
+      },
+      owner,
+    );
+    const other = await conflict(first);
+    await ok(
+      "/inventory/adjustments",
+      { variantId: variant.id, qty: 2, reason: "QA M-6: reposición" },
+      owner,
+    );
+    const before = await stockOf();
+    await ok(
+      "/sales/offline-review/discard",
+      {
+        offlineUuid: other.offlineUuid,
+        reason: "Se devolvió todo",
+        managerPin: MANAGER_PIN,
+        detail: {
+          ...detail,
+          items: [{ ...detail.items[0], variantId: variant.id }],
+        },
+      },
+      first.token,
+    );
+    expect(await stockOf()).toBe(before);
+  });
+
   it("sin permiso de venta no se usa", async () => {
     const warehouse = (
       await ok("/auth/login", {

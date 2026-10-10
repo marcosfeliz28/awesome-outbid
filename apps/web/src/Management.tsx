@@ -2025,6 +2025,7 @@ function DiscardOfflineSale({
 }) {
   const [reason, setReason] = useState(""),
     [pin, setPin] = useState(""),
+    [outcome, setOutcome] = useState<"returned" | "delivered">("returned"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const lines: any[] = sale.receipt?.snapshot ?? [];
@@ -2049,6 +2050,7 @@ function DiscardOfflineSale({
                 post,
                 deleteLocal: (id) => localDB.sales.delete(id),
               },
+              outcome,
             );
             onDiscarded();
           } catch (e: any) {
@@ -2071,11 +2073,29 @@ function DiscardOfflineSale({
             ))}
           </ul>
         )}
+        <label className="field">
+          <span>¿Qué pasó con la mercancía?</span>
+          <select
+            value={outcome}
+            onChange={(e) => setOutcome(e.target.value as any)}
+          >
+            <option value="returned">
+              No salió o se devolvió, con su dinero (no se mueve nada)
+            </option>
+            <option value="delivered">
+              El cliente se la llevó y pagó (salida de inventario y entrada de
+              caja)
+            </option>
+          </select>
+        </label>
         <p className="form-hint">
-          La venta no se registra ni descuenta inventario. Lo cobrado en este
-          equipo ({formatMoney(paid)}) queda anotado en la bitácora y en una
-          alerta para gerencia: si el dinero quedó en la caja, el cuadre lo
-          mostrará como sobrante.
+          {outcome === "delivered"
+            ? "La venta no se registra, pero se descuenta la mercancía del inventario y lo cobrado en efectivo (" +
+              formatMoney(paid) +
+              ") entra a la caja de esa venta, para que el cuadre y el stock coincidan. Queda en la bitácora y en una alerta para gerencia."
+            : "La venta no se registra ni descuenta inventario. Lo cobrado en este equipo (" +
+              formatMoney(paid) +
+              ") queda anotado en la bitácora y en una alerta para gerencia: si el dinero quedó en la caja, el cuadre lo mostrará como sobrante."}
         </p>
         <label className="field">
           <span>Motivo obligatorio</span>

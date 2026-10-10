@@ -116,6 +116,19 @@ describe("05-A2 · conflicto de una venta sin conexión", () => {
     });
     expect(manager.mock.calls[0]).not.toHaveProperty("1.managerPin");
   });
+  it("M-6: si el cliente se llevó la mercancía, el descarte lo manda al servidor", async () => {
+    const post = vi.fn(async () => {});
+    await discardWithApproval(
+      sale,
+      "Precio subió",
+      "234567",
+      { post, deleteLocal: async () => {} },
+      "delivered",
+    );
+    expect((post.mock.calls[0] as any[])[1]).toMatchObject({
+      outcome: "delivered",
+    });
+  });
   it("una venta de una versión vieja sin detalle manda al menos sus artículos", () => {
     const detail = pendingSaleDetail({
       ...sale,
