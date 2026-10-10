@@ -127,6 +127,10 @@ La auditoría confirma 3j.1–3j.7 en el código real. Corrige, en este orden, u
 6. **BAJOS** B1 (stubs en `Stale-Update-FaultInjection.ps1:31` y `Recovery-FaultInjection.ps1:152` deben tener la firma real), B2 (borra o reconvierte el mapa de 38 modelos que solo vive en pruebas), B3 (docs: ya no es «CI pendiente»), B4 (probar también con PostgreSQL 18.6 que lleva el instalador si el runner lo permite o documentar).
 **Siguen pendientes, en este orden, después de lo anterior:** B8 (SID por servicio y contraseñas de pfx distintas), B9, B10, B11, plantilla `exceljs`, capturas del manual, tareas 3k (documentos legales), y Windows-Smoke limpio por la dueña. Ahora hay que hacer `git merge origin/nexora-cloud` otra vez (contraseñas, guía, retoques de despliegue y órdenes 3k ya están ahí).
 
+## 3m. RELEVO (10 oct): Claude sin cupo hasta el lunes. Lee PRIMERO `RELEVO_CLAUDE_A_CHATGPT.md`
+
+Ahí están el estado de producción (a12c980), las ramas `claude/w3-*` que debes revisar e integrar, las reglas, el despliegue y la lista de la dueña. Las auditorías están en `docs/coordinacion/auditoria-2026-10-10/`. Sigues sin desplegar y sin tocar `nexora-cloud`.
+
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
 1. ~~**M1**~~ (lo hace Claude) movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); por encima de `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
