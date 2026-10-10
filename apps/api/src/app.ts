@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { RealtimeController } from "./realtime";
 import { MerchandiseController } from "./merchandise";
+import { InventoryImportController } from "./inventory-import";
 import {
   Controller,
   Get,
@@ -63,6 +64,7 @@ export function createAppModule(secret: string) {
       HealthController,
       RealtimeController,
       MerchandiseController,
+      InventoryImportController,
       AuthController,
       CatalogController,
       InventoryController,

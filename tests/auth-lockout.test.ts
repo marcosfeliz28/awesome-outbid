@@ -11,6 +11,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createHash, randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { spawn } from "node:child_process";
+import { createServer } from "node:net";
+import { stop } from "../scripts/verify.mjs";
+import { ValidatedRateLimitStore } from "../apps/api/src/rate-limit";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -36,9 +40,15 @@ const MINUTE = 60_000;
 type Reply = { status: number; body: any };
 async function call(
   path: string,
-  options: { ip: string; token?: string; body?: unknown; method?: string },
+  options: {
+    ip: string;
+    token?: string;
+    body?: unknown;
+    method?: string;
+    api?: string;
+  },
 ): Promise<Reply> {
-  const r = await fetch(base + path, {
+  const r = await fetch((options.api ?? base) + path, {
     method: options.method ?? (options.body === undefined ? "GET" : "POST"),
     headers: {
       "Content-Type": "application/json",
@@ -92,9 +102,11 @@ const login = (
   ip: string,
   password = PASSWORD,
   terminal?: { id: string; secret: string },
+  api?: string,
 ) =>
   call("/auth/login", {
     ip,
+    api,
     body: { login: user.username, password, ...(terminal ? { terminal } : {}) },
   });
 const blocked = (r: Reply) =>
@@ -598,40 +610,162 @@ describe("S-04 · retención de la IP y purga de contadores", () => {
   });
 });
 
-// Va al final: llena el cubo global de identidades desconocidas (120/min) y
-// los demás casos no deben compartir ese minuto.
+// Proceso real exclusivo: no hereda un cubo iniciado por una prueba anterior
+// cuya ventana de 60 s pueda vencer mientras se esperan los bcrypt del barrido.
+// Reutiliza sólo la base descartable de integración, nunca sus contadores en memoria.
+async function isolatedCredentialApi() {
+  const reservation = createServer();
+  await new Promise<void>((resolve, reject) => {
+    reservation.once("error", reject);
+    reservation.listen(0, "127.0.0.1", resolve);
+  });
+  const address = reservation.address();
+  if (!address || typeof address === "string")
+    throw new Error("No se pudo reservar el puerto de la API N-02.");
+  const port = address.port;
+  await new Promise<void>((resolve, reject) =>
+    reservation.close((error) => (error ? reject(error) : resolve())),
+  );
+  // Nest puede imprimir «started» antes de bind/listen. La señal proviene del
+  // evento real del servidor TCP, no del log ni de una espera arbitraria.
+  const readyScript = `
+    const net = require('node:net');
+    const listen = net.Server.prototype.listen;
+    net.Server.prototype.listen = function (...args) {
+      this.once('listening', () => process.send({ ready: true }));
+      return listen.apply(this, args);
+    };
+    require('./dist/main.js');
+  `;
+  const child = spawn(process.execPath, ["-e", readyScript], {
+    cwd: fileURLToPath(new URL("../apps/api", import.meta.url)),
+    env: { ...process.env, PORT: String(port) },
+    windowsHide: true,
+    stdio: ["ignore", "pipe", "pipe", "ipc"],
+  });
+  const api = `http://127.0.0.1:${port}/api`;
+  let output = "";
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error("La API N-02 no arrancó: " + output)),
+        40000,
+      );
+      const finish = (error?: Error) => {
+        clearTimeout(timeout);
+        child.off("error", failed);
+        child.off("exit", exited);
+        child.off("message", listening);
+        if (error) reject(error);
+        else resolve();
+      };
+      const failed = (error: Error) => finish(error);
+      const exited = () =>
+        finish(new Error("La API N-02 terminó al arrancar: " + output));
+      const listening = (message: { ready?: boolean }) => {
+        if (message?.ready) finish();
+      };
+      const capture = (chunk: Buffer) => {
+        output = (output + chunk.toString()).slice(-16000);
+      };
+      child.once("error", failed);
+      child.once("exit", exited);
+      child.on("message", listening);
+      child.stdout.on("data", capture);
+      child.stderr.on("data", capture);
+    });
+    expect(
+      (await fetch(api + "/health", { signal: AbortSignal.timeout(5000) })).ok,
+    ).toBe(true);
+    child.disconnect();
+    return { api, close: () => stop(child) };
+  } catch (error) {
+    await stop(child);
+    throw error;
+  }
+}
+
 describe("N-02 · el cubo global de identidades desconocidas no da 429 a los equipos aprobados", () => {
+  it("el reloj real del limitador vence la ventana anterior sin prolongarla al llenar el cubo", () => {
+    let now = 0;
+    const limits = new ValidatedRateLimitStore({ now: () => now });
+    limits.exceeds("auth-unknown", [], 120);
+    now = 53000;
+    for (let n = 0; n < 140; n++) limits.exceeds("auth-unknown", [], 120);
+    expect(limits.limited("auth-unknown", [], 120)).toBe(true);
+    now = 60000;
+    expect(limits.limited("auth-unknown", [], 120)).toBe(false);
+    // Una fixture con un proceso nuevo parte de una ventana completa, no de
+    // los siete segundos que quedaban en la fixture compartida defectuosa.
+    expect(limits.exceeds("auth-unknown", [], 120)).toBe(false);
+  });
   it("tras un barrido de 140 nombres inventados desde 7 IP, una clave errónea de una cuenta real desde su equipo aprobado recibe 400 y no 429", async () => {
     const cashier = await makeUser("seller");
     const terminal = await approvedTerminal();
-    const sweep: Promise<Reply>[] = [];
-    for (let ipIndex = 0; ipIndex < 7; ipIndex++) {
-      const ip = nextIp();
-      for (let n = 0; n < 20; n++)
-        sweep.push(
-          login(
-            { username: "qa-lock-barrido-" + randomUUID().slice(0, 8) },
-            ip,
-            "incorrecta",
-          ),
+    const isolated = await isolatedCredentialApi();
+    try {
+      const ips = Array.from({ length: 7 }, nextIp);
+      const replies: Reply[] = [];
+      const started = Date.now();
+      // Es una prueba del cupo por minuto, no de saturación de conexiones de
+      // PostgreSQL: veinte tandas de una petición por cada una de las siete IP.
+      for (let n = 0; n < 20; n++) {
+        replies.push(
+          ...(await Promise.all(
+            ips.map((ip) =>
+              login(
+                { username: "qa-lock-barrido-" + randomUUID().slice(0, 8) },
+                ip,
+                "incorrecta",
+                undefined,
+                isolated.api,
+              ),
+            ),
+          )),
         );
+      }
+      expect(
+        Date.now() - started,
+        "El barrido debe terminar dentro de la ventana real de 60 segundos; el entorno no fue suficientemente rápido.",
+      ).toBeLessThan(MINUTE);
+      expect(replies).toHaveLength(140);
+      expect(
+        replies.filter((reply) => ![400, 429].includes(reply.status)),
+      ).toEqual([]);
+      // Probar que realmente se llenó el cupo global predeterminado: siete
+      // direcciones con veinte intentos cada una no exceden su cupo por IP.
+      expect(
+        replies.filter((reply) => reply.status === 429).length,
+      ).toBeGreaterThanOrEqual(20);
+      // Desde una IP nueva y sin equipo, el 429 indistinguible se mantiene...
+      expect(
+        (await login(cashier, nextIp(), "incorrecta", undefined, isolated.api))
+          .status,
+      ).toBe(429);
+      // ...pero el equipo aprobado sólo gasta su propio cupo.
+      const typo = await login(
+        cashier,
+        nextIp(),
+        "incorrecta",
+        terminal,
+        isolated.api,
+      );
+      expect(typo.status).toBe(400);
+      expect(typo.body.message).toMatch(/incorrectos/);
+      const ghostFromTerminal = await login(
+        { username: "qa-lock-typo-" + randomUUID().slice(0, 8) },
+        nextIp(),
+        "incorrecta",
+        terminal,
+        isolated.api,
+      );
+      expect(ghostFromTerminal.status).toBe(400);
+      expect(
+        (await login(cashier, nextIp(), PASSWORD, terminal, isolated.api))
+          .status,
+      ).toBe(201);
+    } finally {
+      await isolated.close();
     }
-    await Promise.all(sweep);
-    // Desde una IP nueva y sin equipo, el 429 indistinguible se mantiene...
-    expect((await login(cashier, nextIp(), "incorrecta")).status).toBe(429);
-    // ...pero el equipo aprobado sólo gasta su propio cupo.
-    const typo = await login(cashier, nextIp(), "incorrecta", terminal);
-    expect(typo.status).toBe(400);
-    expect(typo.body.message).toMatch(/incorrectos/);
-    const ghostFromTerminal = await login(
-      { username: "qa-lock-typo-" + randomUUID().slice(0, 8) },
-      nextIp(),
-      "incorrecta",
-      terminal,
-    );
-    expect(ghostFromTerminal.status).toBe(400);
-    expect((await login(cashier, nextIp(), PASSWORD, terminal)).status).toBe(
-      201,
-    );
   }, 120000);
 });

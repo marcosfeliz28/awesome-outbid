@@ -6455,7 +6455,7 @@ describe("Ronda 9 · revisión · importador", () => {
     expect(r.status).not.toBe(0);
     expect(r.out).toMatch(
       new RegExp(
-        "fila R9E-" + tag + ", SUB-GRUPO: la celda tiene el error #N/A",
+        "fila \\d+ del Excel \\(ID R9E-" + tag + "\\), SUB-GRUPO: la celda tiene el error #N/A",
       ),
     );
     expect(r.out).not.toMatch(/object/);
