@@ -67,6 +67,30 @@ const group = (
     .sort((a, b) => b.amount - a.amount);
 };
 
+// PERF-informes: ningún informe carga todas las ventas del período. Con ~300
+// ventas al día, el mes en curso (lo que abre Reportes) agotaba el montón de
+// 256 MB de la API en Render. Los totales se agregan en PostgreSQL y lo que
+// necesita la lógica de la API (costos contabilizados, devoluciones) se recorre
+// por lotes con sólo las columnas necesarias; nunca comprobantes en base64.
+const SALE_BATCH = 2000;
+const RETURN_BATCH = 300;
+// Listados que crecen con el historial: página en JSON y exportación por lotes.
+export const LISTING_PAGE = { default: 500, max: 2000 };
+export const EXPORT_LIMIT: Record<string, number> = { xlsx: 50000, pdf: 10000 };
+// Utilidad y ABC: facturas que se recorren en un pedido (unos 4 meses).
+export const PROFIT_LIMIT = 40000;
+// Mismo filtro que `saleWhere`, en SQL sobre el alias «s».
+function saleSql(
+  actor: Actor,
+  range: { gte: Date; lte: Date },
+  sellerId?: string,
+  method?: string,
+) {
+  return Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}${sellerId ? Prisma.sql` AND s."sellerId" = ${sellerId}::uuid` : Prisma.empty}${method ? Prisma.sql` AND EXISTS (SELECT 1 FROM "Payment" pm WHERE pm."saleId" = s.id AND pm.method = ${method})` : Prisma.empty}`;
+}
+const addTo = (map: Map<string, any>, key: string, amount: unknown) =>
+  map.set(key, (map.get(key) ?? d(0)).plus(amount as any));
+
 // D-05: una sola definición de venta neta en todos los informes de ventas.
 // Lo vendido en el período (por la fecha de la venta) menos lo devuelto en el
 // período (por la fecha de la devolución), igual que «ingresos» del dashboard.
@@ -79,13 +103,18 @@ async function periodReturns(
   actor: Actor,
   range: { gte: Date; lte: Date },
   sale?: Record<string, unknown>,
+  cursor?: string,
 ) {
+  // Por lotes (forEachPeriodReturn): sin cargar todas las del período.
   return db.saleReturn.findMany({
     where: {
       branchId: actor.branchId,
       createdAt: range,
       ...(sale ? { sale } : {}),
     },
+    orderBy: { id: "asc" },
+    take: RETURN_BATCH,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
       sale: {
         select: {
@@ -143,6 +172,56 @@ function returnedByCategory(r: PeriodReturn) {
         : d(line.lineTotal).times(part.qty).dividedBy(line.qty);
     return [{ category: line.variant.product.category, amount }];
   });
+}
+async function forEachPeriodReturn(
+  db: Database,
+  actor: Actor,
+  range: { gte: Date; lte: Date },
+  sale: Record<string, unknown> | undefined,
+  visit: (r: PeriodReturn) => void,
+) {
+  for (let cursor: string | undefined; ;) {
+    const page = await periodReturns(db, actor, range, sale, cursor);
+    page.forEach(visit);
+    if (page.length < RETURN_BATCH) return;
+    cursor = page[page.length - 1].id;
+  }
+}
+// D-05 del dashboard: lo devuelto en el período por día, categoría, forma de
+// pago (lo reembolsado en cajas ocultas no se desglosa) y vendedor.
+async function returnedBreakdown(
+  db: Database,
+  actor: Actor,
+  range: { gte: Date; lte: Date },
+  hiddenOpenCashSessionIds: string[],
+) {
+  const days = new Map<string, any>(),
+    categories = new Map<string, any>(),
+    colors = new Map<string, string>(),
+    methods = new Map<string, any>(),
+    sellers = new Map<string, any>();
+  await forEachPeriodReturn(db, actor, range, undefined, (r) => {
+    addTo(days, businessDate(r.createdAt), r.total);
+    for (const { category, amount } of returnedByCategory(r)) {
+      addTo(categories, category.name, amount);
+      if (!colors.has(category.name)) colors.set(category.name, category.color);
+    }
+    for (const m of returnedByMethod(
+      r,
+      !r.cashSessionId || !hiddenOpenCashSessionIds.includes(r.cashSessionId),
+    ))
+      addTo(methods, m.method, m.amount);
+    addTo(sellers, r.sale.sellerId, r.total);
+  });
+  const list = (map: Map<string, any>) =>
+    [...map].map(([key, amount]) => ({ key, amount }));
+  return {
+    days: list(days),
+    categories: list(categories),
+    colors,
+    methods: list(methods),
+    sellers: list(sellers),
+  };
 }
 @Controller()
 export class ReportsController {
@@ -295,7 +374,7 @@ export class ReportsController {
         },
         _sum: { feeAmount: true },
       }),
-      periodReturns(this.db, actor, range),
+      returnedBreakdown(this.db, actor, range, hiddenOpenCashSessionIds),
       // M-5: mermas, ajustes, conteos y salidas de mercancía a costo.
       this.db.$queryRaw<
         any[]
@@ -319,38 +398,25 @@ export class ReportsController {
       daily,
       (i) => i.day,
       (i) => i.total,
-      returned.map((r) => ({
-        key: businessDate(r.createdAt),
-        amount: r.total,
-      })),
+      returned.days,
     );
     const colors = new Map<string, string>();
     for (const c of category) colors.set(c.name, c.color);
-    const returnedCategories = returned.flatMap(returnedByCategory);
-    for (const { category: c } of returnedCategories)
-      if (!colors.has(c.name)) colors.set(c.name, c.color);
+    for (const [name, color] of returned.colors)
+      if (!colors.has(name)) colors.set(name, color);
     const categoryNet = netOf(
       category,
       (i) => i.name,
       (i) => i.total,
-      returnedCategories.map((r) => ({
-        key: r.category.name,
-        amount: r.amount,
-      })),
+      returned.categories,
     );
     const paymentsNet = netOf(
       payments,
       (p) => p.method,
       (p) => p._sum.amount ?? 0,
-      returned.flatMap((r) =>
-        returnedByMethod(
-          r,
-          !r.cashSessionId ||
-            !hiddenOpenCashSessionIds.includes(r.cashSessionId),
-        ).map((m) => ({ key: m.method, amount: m.amount })),
-      ),
+      returned.methods,
     );
-    const sellerIds = [...new Set(returned.map((r) => r.sale.sellerId))];
+    const sellerIds = returned.sellers.map((r) => r.key);
     const sellerNames = new Map(
       (sellerIds.length
         ? await this.db.user.findMany({
@@ -364,9 +430,9 @@ export class ReportsController {
       sellers,
       (i) => i.name,
       (i) => i.total,
-      returned.map((r) => ({
-        key: sellerNames.get(r.sale.sellerId) ?? r.sale.sellerId,
-        amount: r.total,
+      returned.sellers.map((r) => ({
+        key: sellerNames.get(r.key) ?? r.key,
+        amount: r.amount,
       })),
     );
     const byAmount = (a: { total: number }, b: { total: number }) =>
@@ -504,19 +570,28 @@ export class ReportsController {
     };
     // Las devoluciones del período de esas mismas ventas (de cualquier fecha).
     const { createdAt: _saleDate, ...returnSaleWhere } = saleWhere;
-    const variants = await this.db.variant.findMany({
-      where: {
-        branchId: actor.branchId,
-        active: true,
-        ...(query.categoryId
-          ? { product: { categoryId: parse(uuid, query.categoryId) } }
-          : {}),
-      },
-      include: {
-        product: { include: { category: true } },
-        lots: { where: { qty: { gt: 0 } } },
-      },
-    });
+    if (query.categoryId) parse(uuid, query.categoryId);
+    // El catálogo completo sólo para los informes de inventario.
+    const variants = [
+      "inventory-value",
+      "low-stock",
+      "expiring",
+      "no-movement",
+    ].includes(name)
+      ? await this.db.variant.findMany({
+          where: {
+            branchId: actor.branchId,
+            active: true,
+            ...(query.categoryId
+              ? { product: { categoryId: parse(uuid, query.categoryId) } }
+              : {}),
+          },
+          include: {
+            product: { include: { category: true } },
+            lots: { where: { qty: { gt: 0 } } },
+          },
+        })
+      : [];
     const baseVariants = variants.map((v) => ({
       SKU: v.sku,
       Producto: v.product.name,
@@ -668,82 +743,63 @@ export class ReportsController {
         (v, i) =>
           v.Stock > 0 && !last.some((l) => l.variantId === variants[i].id),
       );
-    } else {
-      const count = await this.db.sale.count({ where: saleWhere });
-      if (count > 10000)
-        bad(
-          "Selecciona un período con menos de 10,000 facturas para exportar el detalle.",
-        );
-      const sales = await this.db.sale.findMany({
-        where: saleWhere,
-        include: {
-          items: {
-            include: {
-              variant: {
-                include: { product: { include: { category: true } } },
-              },
-            },
-          },
-          payments: true,
-          returns: true,
-        },
-        orderBy: { createdAt: "desc" },
-      });
-      const items = sales.flatMap((s) =>
-        s.items
-          .filter(
-            (i) =>
-              !query.categoryId ||
-              i.variant.product.categoryId === query.categoryId,
-          )
-          .map((i) => ({ ...i, sale: s })),
+    } else if (LISTINGS.includes(name))
+      return sendListing(
+        res,
+        name,
+        query,
+        actor,
+        range,
+        listing(this.db, name, actor, range, saleWhere),
       );
-      if (name === "sales")
-        rows = sales.map((s) => ({
-          Factura: s.number,
-          Fecha: s.createdAt.toLocaleString("es-DO", {
-            timeZone: BUSINESS_TIME_ZONE,
-          }),
-          Vendedor: s.sellerId,
-          Total: Number(s.total),
-          ITBIS: Number(s.taxTotal),
-          Saldo_crédito: Number(s.creditBalance),
-          NCF: s.ncf ?? "",
-          Tipo_NCF: s.ncfType ?? "",
-          Estado_fiscal: s.fiscalStatus,
-          Devoluciones: sum(s.returns, "total"),
-        }));
-      else if (name === "monthly-consumption")
+    else {
+      // Informes de ventas: agregados en PostgreSQL o recorridos por lotes,
+      // nunca todas las ventas del período en memoria (PERF-informes).
+      const sellerId = saleWhere.sellerId as string | undefined;
+      const filter = saleSql(actor, range, sellerId, query.method);
+      const inCategory = query.categoryId
+        ? Prisma.sql` AND p."categoryId"::text = ${query.categoryId}`
+        : Prisma.empty;
+      // Orden de aparición de cada grupo (la venta más reciente primero), como
+      // cuando se recorrían las ventas: decide los empates de `group`.
+      if (name === "monthly-consumption")
         rows = group(
-          items,
-          (i) =>
-            businessDate(i.sale.createdAt).slice(0, 7) +
-            " · " +
-            i.variant.product.name,
-          (i) => Number(i.qty) - Number(i.returnedQty),
+          await this.db.$queryRaw<
+            any[]
+          >`SELECT to_char((s."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo','YYYY-MM') AS month, p.name, SUM(i.qty - i."returnedQty") AS units FROM "SaleItem" i JOIN "Sale" s ON s.id = i."saleId" JOIN "Variant" v ON v.id = i."variantId" JOIN "Product" p ON p.id = v."productId" WHERE ${filter}${inCategory} GROUP BY 1, 2 ORDER BY MAX(s."createdAt") DESC`,
+          (i) => i.month + " · " + i.name,
+          (i) => Number(i.units),
         ).map((g) => ({ Mes_Producto: g.name, Unidades: g.amount }));
       else if (name === "by-seller") {
-        const users = await this.db.user.findMany({
-          select: { id: true, name: true },
-        });
+        const sold = await this.db.$queryRaw<
+          { seller: string; total: unknown }[]
+        >`SELECT s."sellerId" AS seller, SUM(s.total) AS total FROM "Sale" s WHERE ${filter} GROUP BY 1 ORDER BY MAX(s."createdAt") DESC`;
         // D-05: neto de las devoluciones del período, como el dashboard.
-        const returns = await periodReturns(
-          this.db,
-          actor,
-          range,
-          returnSaleWhere,
+        const returned = new Map<string, any>();
+        await forEachPeriodReturn(this.db, actor, range, returnSaleWhere, (r) =>
+          addTo(returned, r.sale.sellerId, r.total),
         );
-        const nameOf = (id: string) =>
-          users.find((u) => u.id === id)?.name || id;
+        const ids = [
+          ...new Set([...sold.map((s) => s.seller), ...returned.keys()]),
+        ];
+        const users = new Map(
+          (ids.length
+            ? await this.db.user.findMany({
+                where: { id: { in: ids } },
+                select: { id: true, name: true },
+              })
+            : []
+          ).map((u) => [u.id, u.name]),
+        );
         rows = group(
           [
-            ...sales.map((s) => ({ seller: s.sellerId, total: s.total })),
-            ...returns.map((r) => ({
-              seller: r.sale.sellerId,
-              total: d(r.total).negated(),
+            ...sold,
+            ...[...returned].map(([seller, total]) => ({
+              seller,
+              total: d(total).negated(),
             })),
           ],
-          (s) => nameOf(s.seller),
+          (s) => users.get(s.seller) || s.seller,
           (s) => Number(s.total),
         ).map((g) => ({ Vendedor: g.name, Ventas: g.amount }));
       } else if (name === "by-payment") {
@@ -751,21 +807,26 @@ export class ReportsController {
         // cobraron las facturas del período, con el crédito como método
         // propio; su suma es la venta neta (D-05). Cobros de crédito: abonos verificados
         // por la fecha en que entraron, aunque la venta sea de otro período.
-        const collected = await this.db.payment.findMany({
-          where: {
-            entryType: "installment",
-            status: "ok",
-            createdAt: range,
-            ...(query.method ? { method: query.method } : {}),
-            sale: {
-              branchId: actor.branchId,
-              status: "completed",
-              ...(query.sellerId
-                ? { sellerId: parse(uuid, query.sellerId) }
-                : {}),
+        const [sold, collected] = await Promise.all([
+          this.db.$queryRaw<
+            { method: string; amount: unknown }[]
+          >`SELECT p.method, SUM(p.amount) AS amount FROM "Payment" p JOIN "Sale" s ON s.id = p."saleId" WHERE ${filter} AND p."entryType" <> 'installment' GROUP BY p.method ORDER BY MAX(s."createdAt") DESC`,
+          this.db.payment.groupBy({
+            by: ["method"],
+            where: {
+              entryType: "installment",
+              status: "ok",
+              createdAt: range,
+              ...(query.method ? { method: query.method } : {}),
+              sale: {
+                branchId: actor.branchId,
+                status: "completed",
+                ...(sellerId ? { sellerId } : {}),
+              },
             },
-          },
-        });
+            _sum: { amount: true },
+          }),
+        ]);
         const methods = new Map<
           string,
           { sold: ReturnType<typeof d>; collected: ReturnType<typeof d> }
@@ -775,21 +836,24 @@ export class ReportsController {
             methods.set(method, { sold: d(0), collected: d(0) });
           return methods.get(method)!;
         };
-        for (const p of sales.flatMap((s) => s.payments))
-          if (p.entryType !== "installment")
-            of(p.method).sold = of(p.method).sold.plus(p.amount);
+        for (const p of sold)
+          of(p.method).sold = of(p.method).sold.plus(p.amount as any);
         // D-05: Ventas es neto de las devoluciones del período, como el
         // dashboard: lo reembolsado se descuenta de su método.
-        for (const r of await periodReturns(
+        await forEachPeriodReturn(
           this.db,
           actor,
           range,
           returnSaleWhere,
-        ))
-          for (const m of returnedByMethod(r))
-            of(m.method).sold = of(m.method).sold.minus(m.amount);
+          (r) => {
+            for (const m of returnedByMethod(r))
+              of(m.method).sold = of(m.method).sold.minus(m.amount);
+          },
+        );
         for (const p of collected)
-          of(p.method).collected = of(p.method).collected.plus(p.amount);
+          of(p.method).collected = of(p.method).collected.plus(
+            p._sum.amount ?? 0,
+          );
         rows = [...methods]
           .map(([method, m]) => ({
             Método: method,
@@ -802,7 +866,10 @@ export class ReportsController {
           );
       } else if (name === "profit" || name === "abc") {
         const grouped = new Map<string, any>();
-        const rowOf = (variant: (typeof items)[number]["variant"]) =>
+        const rowOf = (variant: {
+          productId: string;
+          product: { name: string; category: { name: string } };
+        }) =>
           grouped.get(variant.productId) ?? {
             Producto: variant.product.name,
             Categoría: variant.product.category.name,
@@ -810,89 +877,176 @@ export class ReportsController {
             Costo: 0,
             Unidades: 0,
           };
+        const lineSelect = {
+          select: {
+            id: true,
+            qty: true,
+            unitCost: true,
+            variantId: true,
+            stockAllocations: true,
+            lineTotal: true,
+            tax: true,
+            variant: {
+              select: {
+                productId: true,
+                product: {
+                  select: {
+                    name: true,
+                    categoryId: true,
+                    category: { select: { name: true } },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { id: "asc" as const },
+        };
         // Lo contabilizado por línea: el costo redondeado de cada una o, en
         // ventas anteriores a la ronda 7 final, Sale.costTotal repartido. Se
         // reparte sobre todas las líneas de la venta, antes de filtrar por
         // categoría, para que cuadre con el dashboard (R9-dinero-7).
-        const booked = new Map(sales.map((s) => [s.id, bookedLineCosts(s)]));
-        for (const i of items) {
-          const row = rowOf(i.variant);
-          // Sin redondear hasta el final: ventas y devoluciones parciales se
-          // compensan exactamente.
-          row.Ventas = d(row.Ventas).plus(d(i.lineTotal).minus(i.tax));
-          row.Costo = d(row.Costo).plus(booked.get(i.sale.id)!.get(i.id)!);
-          row.Unidades += Number(i.qty);
-          grouped.set(i.variant.productId, row);
-        }
-        const periodReturns = await this.db.saleReturn.findMany({
-          where: {
-            branchId: actor.branchId,
-            createdAt: range,
-            sale: {
-              branchId: actor.branchId,
-              status: "completed",
-              ...(query.sellerId
-                ? { sellerId: parse(uuid, query.sellerId) }
-                : {}),
-              ...(query.method
-                ? { payments: { some: { method: query.method } } }
-                : {}),
-            },
-          },
-          include: {
-            sale: {
-              include: {
-                items: {
-                  include: {
-                    variant: {
-                      include: { product: { include: { category: true } } },
-                    },
+        // El costo contabilizado se calcula venta por venta en la API: con
+        // un período muy largo la respuesta tardaría más que el plazo del
+        // proxy (60 s en Render). Se avisa antes de empezar.
+        const [{ invoices }] = await this.db.$queryRaw<
+          { invoices: number }[]
+        >`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE ${filter}`;
+        if (invoices > PROFIT_LIMIT)
+          bad(
+            `El período tiene ${count(invoices)} facturas y la utilidad por producto se calcula con hasta ${count(PROFIT_LIMIT)}. Selecciona un período más corto.`,
+          );
+        // Lotes de ventas con sus líneas en una consulta plana; el lote
+        // siguiente se pide mientras se procesa el actual.
+        const salesBatch = (cursor?: { at: Date; id: string }) => {
+          const batch = this.db.$queryRaw<
+            any[]
+          >`WITH b AS (SELECT s.id, s."costTotal", s."createdAt" FROM "Sale" s WHERE ${filter}${cursor ? Prisma.sql` AND (s."createdAt", s.id) < (${utc(cursor.at)}, ${cursor.id}::uuid)` : Prisma.empty} ORDER BY s."createdAt" DESC, s.id DESC LIMIT ${SALE_BATCH}) SELECT b.id AS "saleId", b."costTotal", b."createdAt", i.id, i.qty, i."unitCost", i."variantId", i."stockAllocations", i."lineTotal" - i.tax AS net, v."productId", p.name, p."categoryId"::text AS "categoryId", c.name AS category FROM b LEFT JOIN "SaleItem" i ON i."saleId" = b.id LEFT JOIN "Variant" v ON v.id = i."variantId" LEFT JOIN "Product" p ON p.id = v."productId" LEFT JOIN "Category" c ON c.id = p."categoryId" ORDER BY b."createdAt" DESC, b.id DESC, i.id`;
+          // Si el lote en curso falla, este no queda como rechazo sin atender.
+          batch.catch(() => undefined);
+          return batch;
+        };
+        for (let next: Promise<any[]> | undefined = salesBatch(); next;) {
+          const lines: any[] = await next;
+          const sales: { costTotal: unknown; items: any[] }[] = [];
+          let last: string | undefined;
+          for (const l of lines) {
+            if (l.saleId !== last)
+              sales.push({ costTotal: l.costTotal, items: [] });
+            last = l.saleId;
+            if (l.id)
+              sales[sales.length - 1].items.push({
+                id: l.id,
+                qty: l.qty,
+                unitCost: l.unitCost,
+                variantId: l.variantId,
+                stockAllocations: l.stockAllocations,
+                net: l.net,
+                variant: {
+                  productId: l.productId,
+                  product: {
+                    name: l.name,
+                    categoryId: l.categoryId,
+                    category: { name: l.category },
                   },
                 },
-                returns: true,
-              },
-            },
-          },
-        });
+              });
+          }
+          const end: any = lines[lines.length - 1];
+          next =
+            sales.length < SALE_BATCH
+              ? undefined
+              : salesBatch({ at: end.createdAt, id: end.saleId });
+          for (const s of sales) {
+            const booked = bookedLineCosts(s as any);
+            for (const i of s.items) {
+              if (
+                query.categoryId &&
+                i.variant.product.categoryId !== query.categoryId
+              )
+                continue;
+              const row = rowOf(i.variant);
+              // Sin redondear hasta el final: ventas y devoluciones parciales se
+              // compensan exactamente.
+              row.Ventas = d(row.Ventas).plus(i.net);
+              row.Costo = d(row.Costo).plus(booked.get(i.id)!);
+              row.Unidades += Number(i.qty);
+              grouped.set(i.variant.productId, row);
+            }
+          }
+        }
         // Lo que contabilizó cada parte de cada devolución (R8-02, R9-dinero-1,
         // R9-dinero-6): el costo guardado desde la ronda 8 o, antes, el
         // reconstruido con todas las devoluciones de la venta, también las de
         // otros períodos. Se calcula al leer, así que es idempotente.
         const histories = new Map<string, ReturnType<typeof replayReturns>>();
-        for (const returned of periodReturns) {
-          const history =
-            histories.get(returned.saleId) ??
-            replayReturns(returned.sale, returned.sale.returns);
-          histories.set(returned.saleId, history);
-          (returned.items as any[]).forEach((part, n) => {
-            const found = history.parts.get(returned.id + "#" + n);
-            const line = found
-              ? returned.sale.items.find((i) => i.id === found.line.id)
-              : undefined;
-            if (
-              !found ||
-              !line ||
-              (query.categoryId &&
-                line.variant.product.categoryId !== query.categoryId)
-            )
-              return;
-            const row = rowOf(line.variant);
-            // Venta devuelta sin ITBIS: lo registrado en la parte desde
-            // R9-dinero-2; antes, el mismo redondeo acumulado de la línea.
-            const after = found.before.plus(part.qty);
-            const back = (value: ReturnType<typeof d>) =>
-              returnedAt(value, line.qty, after).minus(
-                returnedAt(value, line.qty, found.before),
-              );
-            const net =
-              typeof part.total === "number" && typeof part.tax === "number"
-                ? d(part.total).minus(part.tax)
-                : back(d(line.lineTotal)).minus(back(d(line.tax)));
-            row.Ventas = d(row.Ventas).minus(net);
-            if (found.restock) row.Costo = d(row.Costo).minus(found.cost);
-            row.Unidades -= Number(part.qty);
-            grouped.set(line.variant.productId, row);
+        for (let cursor: string | undefined; ;) {
+          const page = await this.db.saleReturn.findMany({
+            where: {
+              branchId: actor.branchId,
+              createdAt: range,
+              sale: returnSaleWhere,
+            },
+            orderBy: { id: "asc" },
+            take: RETURN_BATCH,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+            select: {
+              id: true,
+              saleId: true,
+              items: true,
+              sale: {
+                select: {
+                  costTotal: true,
+                  items: lineSelect,
+                  returns: {
+                    select: {
+                      id: true,
+                      number: true,
+                      createdAt: true,
+                      costTotal: true,
+                      items: true,
+                    },
+                  },
+                },
+              },
+            },
           });
+          for (const returned of page) {
+            const history =
+              histories.get(returned.saleId) ??
+              replayReturns(returned.sale, returned.sale.returns);
+            histories.set(returned.saleId, history);
+            (returned.items as any[]).forEach((part, n) => {
+              const found = history.parts.get(returned.id + "#" + n);
+              const line = found
+                ? returned.sale.items.find((i) => i.id === found.line.id)
+                : undefined;
+              if (
+                !found ||
+                !line ||
+                (query.categoryId &&
+                  line.variant.product.categoryId !== query.categoryId)
+              )
+                return;
+              const row = rowOf(line.variant);
+              // Venta devuelta sin ITBIS: lo registrado en la parte desde
+              // R9-dinero-2; antes, el mismo redondeo acumulado de la línea.
+              const after = found.before.plus(part.qty);
+              const back = (value: ReturnType<typeof d>) =>
+                returnedAt(value, line.qty, after).minus(
+                  returnedAt(value, line.qty, found.before),
+                );
+              const net =
+                typeof part.total === "number" && typeof part.tax === "number"
+                  ? d(part.total).minus(part.tax)
+                  : back(d(line.lineTotal)).minus(back(d(line.tax)));
+              row.Ventas = d(row.Ventas).minus(net);
+              if (found.restock) row.Costo = d(row.Costo).minus(found.cost);
+              row.Unidades -= Number(part.qty);
+              grouped.set(line.variant.productId, row);
+            });
+          }
+          if (page.length < RETURN_BATCH) break;
+          cursor = page[page.length - 1].id;
         }
         rows = [...grouped.values()].map((i) => {
           const Ventas = money(i.Ventas),
@@ -910,56 +1064,25 @@ export class ReportsController {
             ({ revenue: _revenue, ...i }) => ({ ...i, Clasificación: i.class }),
           );
       } else if (name === "customers") {
-        const customers = await this.db.customer.findMany({
-          where: { branchId: actor.branchId },
-        });
+        const totals = await this.db.$queryRaw<
+          { customer: string | null; total: unknown }[]
+        >`SELECT s."customerId" AS customer, SUM(s.total) AS total FROM "Sale" s WHERE ${filter} GROUP BY 1 ORDER BY MAX(s."createdAt") DESC`;
+        const ids = totals.flatMap((t) => (t.customer ? [t.customer] : []));
+        const names = new Map(
+          (ids.length
+            ? await this.db.customer.findMany({
+                where: { branchId: actor.branchId, id: { in: ids } },
+                select: { id: true, name: true },
+              })
+            : []
+          ).map((c) => [c.id, c.name]),
+        );
         rows = group(
-          sales,
-          (s) =>
-            customers.find((c) => c.id === s.customerId)?.name ||
-            "Consumidor final",
-          (s) => Number(s.total),
+          totals,
+          (t) => (t.customer && names.get(t.customer)) || "Consumidor final",
+          (t) => Number(t.total),
         ).map((g) => ({ Cliente: g.name, Ventas: g.amount }));
-      } else if (name === "returns-discounts") {
-        const events = await this.db.auditLog.findMany({
-          where: {
-            branchId: actor.branchId,
-            createdAt: range,
-            action: { in: ["void", "return", "discount_approved"] },
-          },
-          orderBy: { createdAt: "desc" },
-        });
-        rows = events.map((e) => ({
-          Fecha: e.createdAt.toLocaleString("es-DO", {
-            timeZone: BUSINESS_TIME_ZONE,
-          }),
-          Evento: e.action,
-          Usuario: e.userId,
-          Referencia: e.entityId,
-          // Sin costos para quien no tiene profit:read: el safe() final no
-          // limpia dentro de un texto (R9-dinero-8).
-          Detalle: JSON.stringify(safe(e.after, actor)),
-        }));
-      } else if (name === "kardex")
-        rows = (
-          await this.db.inventoryMovement.findMany({
-            where: { branchId: actor.branchId, createdAt: range },
-            include: { variant: { include: { product: true } } },
-            take: 10000,
-          })
-        ).map((m) => ({
-          Fecha: m.createdAt.toLocaleString("es-DO", {
-            timeZone: BUSINESS_TIME_ZONE,
-          }),
-          SKU: m.variant.sku,
-          Producto: m.variant.product.name,
-          Tipo: m.type,
-          Cantidad: Number(m.qty),
-          Saldo: Number(m.balanceAfter),
-          Costo: Number(m.unitCost),
-          Motivo: m.reason,
-        }));
-      else bad("Reporte no disponible.");
+      } else bad("Reporte no disponible.");
     }
     rows = safe(rows, actor);
     if (query.format === "xlsx") {
@@ -1024,6 +1147,272 @@ export class ReportsController {
   }
 }
 
+// ── Listados que crecen con el historial (PERF-informes) ──
+// JSON: una página (`page`, `limit`) y el `total` aparte. Excel/PDF: por lotes
+// en flujo, hasta EXPORT_LIMIT filas; si el período tiene más, se avisa antes
+// de empezar la descarga.
+export const LISTINGS = ["sales", "kardex", "returns-discounts"];
+const EXPORT_BATCH = 1000;
+type ListingPage = { take: number; skip?: number; cursor?: string };
+type Listing = {
+  count: () => Promise<number>;
+  read: (page: ListingPage) => Promise<{ rows: any[]; last?: string }>;
+};
+const pageArgs = ({ take, skip, cursor }: ListingPage) => ({
+  take,
+  ...(cursor ? { cursor: { id: cursor }, skip: 1 } : { skip: skip ?? 0 }),
+});
+const localTime = (date: Date) =>
+  date.toLocaleString("es-DO", { timeZone: BUSINESS_TIME_ZONE });
+function listing(
+  db: Database,
+  name: string,
+  actor: Actor,
+  range: { gte: Date; lte: Date },
+  saleWhere: any,
+): Listing {
+  if (name === "sales")
+    return {
+      count: () => db.sale.count({ where: saleWhere }),
+      read: async (page) => {
+        const sales = await db.sale.findMany({
+          where: saleWhere,
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          ...pageArgs(page),
+          select: {
+            id: true,
+            number: true,
+            createdAt: true,
+            sellerId: true,
+            total: true,
+            taxTotal: true,
+            creditBalance: true,
+            ncf: true,
+            ncfType: true,
+            fiscalStatus: true,
+          },
+        });
+        const returned = new Map(
+          (sales.length
+            ? await db.saleReturn.groupBy({
+                by: ["saleId"],
+                where: { saleId: { in: sales.map((s) => s.id) } },
+                _sum: { total: true },
+              })
+            : []
+          ).map((r) => [r.saleId, r._sum.total ?? 0]),
+        );
+        return {
+          last: sales.at(-1)?.id,
+          rows: sales.map((s) => ({
+            Factura: s.number,
+            Fecha: localTime(s.createdAt),
+            Vendedor: s.sellerId,
+            Total: Number(s.total),
+            ITBIS: Number(s.taxTotal),
+            Saldo_crédito: Number(s.creditBalance),
+            NCF: s.ncf ?? "",
+            Tipo_NCF: s.ncfType ?? "",
+            Estado_fiscal: s.fiscalStatus,
+            Devoluciones: money(returned.get(s.id) ?? 0),
+          })),
+        };
+      },
+    };
+  if (name === "kardex") {
+    const where = { branchId: actor.branchId, createdAt: range };
+    return {
+      count: () => db.inventoryMovement.count({ where }),
+      read: async (page) => {
+        const moves = await db.inventoryMovement.findMany({
+          where,
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          ...pageArgs(page),
+          select: {
+            id: true,
+            createdAt: true,
+            type: true,
+            qty: true,
+            balanceAfter: true,
+            unitCost: true,
+            reason: true,
+            variant: {
+              select: { sku: true, product: { select: { name: true } } },
+            },
+          },
+        });
+        return {
+          last: moves.at(-1)?.id,
+          rows: moves.map((m) => ({
+            Fecha: localTime(m.createdAt),
+            SKU: m.variant.sku,
+            Producto: m.variant.product.name,
+            Tipo: m.type,
+            Cantidad: Number(m.qty),
+            Saldo: Number(m.balanceAfter),
+            Costo: Number(m.unitCost),
+            Motivo: m.reason,
+          })),
+        };
+      },
+    };
+  }
+  const where = {
+    branchId: actor.branchId,
+    createdAt: range,
+    action: { in: ["void", "return", "discount_approved"] },
+  };
+  return {
+    count: () => db.auditLog.count({ where }),
+    read: async (page) => {
+      const events = await db.auditLog.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        ...pageArgs(page),
+        select: {
+          id: true,
+          createdAt: true,
+          action: true,
+          userId: true,
+          entityId: true,
+          after: true,
+        },
+      });
+      return {
+        last: events.at(-1)?.id,
+        rows: events.map((e) => ({
+          Fecha: localTime(e.createdAt),
+          Evento: e.action,
+          Usuario: e.userId,
+          Referencia: e.entityId,
+          // Sin costos para quien no tiene profit:read: el safe() final no
+          // limpia dentro de un texto (R9-dinero-8).
+          Detalle: JSON.stringify(safe(e.after, actor)),
+        })),
+      };
+    },
+  };
+}
+const count = (value: number) => value.toLocaleString("en-US");
+async function sendListing(
+  res: Response,
+  name: string,
+  query: Record<string, string>,
+  actor: Actor,
+  range: { gte: Date; lte: Date },
+  list: Listing,
+) {
+  const format = query.format;
+  if (format !== "xlsx" && format !== "pdf") {
+    const limit = Math.min(
+      Math.max(Math.floor(Number(query.limit)) || LISTING_PAGE.default, 1),
+      LISTING_PAGE.max,
+    );
+    const page = Math.max(Math.floor(Number(query.page)) || 1, 1);
+    const [total, { rows }] = await Promise.all([
+      list.count(),
+      list.read({ take: limit, skip: (page - 1) * limit }),
+    ]);
+    return res.json({
+      name,
+      rows: safe(rows, actor),
+      from: range.gte,
+      to: range.lte,
+      total,
+      page,
+      limit,
+    });
+  }
+  const total = await list.count();
+  if (total > EXPORT_LIMIT[format])
+    bad(
+      `El reporte tiene ${count(total)} filas y el máximo para exportar a ${format === "xlsx" ? "Excel" : "PDF"} es ${count(EXPORT_LIMIT[format])}. Selecciona un período más corto.`,
+    );
+  // El primer lote antes de las cabeceras: si la base falla, el error llega
+  // como respuesta normal y no como un archivo cortado.
+  let batch = await list.read({ take: EXPORT_BATCH });
+  const batches = async function* () {
+    for (;;) {
+      yield safe(batch.rows, actor);
+      if (batch.rows.length < EXPORT_BATCH) return;
+      batch = await list.read({ take: EXPORT_BATCH, cursor: batch.last });
+    }
+  };
+  res.setHeader(
+    "Content-Type",
+    format === "xlsx"
+      ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      : "application/pdf",
+  );
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="nexora-${name}.${format}"`,
+  );
+  try {
+    if (format === "xlsx") {
+      const book = new ExcelJS.stream.xlsx.WorkbookWriter({
+        stream: res,
+        useStyles: true,
+        // Con la tabla de textos compartidos, una celda vacía ("") se
+        // conserva igual que en el libro en memoria (NCF sin emitir).
+        useSharedStrings: true,
+      });
+      const sheet = book.addWorksheet(name.slice(0, 31));
+      let started = false;
+      for await (const rows of batches()) {
+        if (!started) {
+          const keys = Object.keys(rows[0] || { Resultado: "" });
+          sheet.columns = keys.map((k) => ({ header: k, key: k, width: 24 }));
+          sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+          sheet.getRow(1).fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FF7C3AED" },
+          };
+          started = true;
+        }
+        for (const row of rows) sheet.addRow(row).commit();
+      }
+      sheet.commit();
+      await book.commit();
+      return;
+    }
+    const doc = new PDFDocument({
+      size: "A4",
+      layout: "landscape",
+      margin: 32,
+    });
+    doc.pipe(res);
+    doc
+      .fontSize(18)
+      .text("Nexora POS · " + name)
+      .fontSize(9)
+      .text(
+        range.gte.toLocaleDateString("en-CA", {
+          timeZone: BUSINESS_TIME_ZONE,
+        }) +
+          " / " +
+          range.lte.toLocaleDateString("en-CA", {
+            timeZone: BUSINESS_TIME_ZONE,
+          }),
+      )
+      .moveDown();
+    for await (const rows of batches())
+      for (const row of rows)
+        doc.text(
+          Object.entries(row)
+            .map(([k, v]) => k + ": " + v)
+            .join(" | "),
+        );
+    doc.end();
+  } catch (error) {
+    // La descarga ya empezó: se corta para que no quede un archivo a medias
+    // que parezca completo.
+    console.error(error);
+    res.destroy(error as Error);
+  }
+}
+
 // ── Reportes del día de la tienda (docs/tienda/CUADRE_REPORTES_FACTURA.md) ──
 export const STORE_REPORTS = ["venta-diaria-usuario", "venta-por-forma-pago"];
 const NOTE = "Verificar si los totales tienen descuentos aplicados";
@@ -1057,20 +1446,11 @@ export async function storeReport(
   const userId = query.userId
     ? parse(uuid, query.userId)
     : (session?.userId ?? null);
-  const sales = await db.sale.findMany({
-    where: {
-      branchId: actor.branchId,
-      status: "completed",
-      ...(session ? { cashSessionId: session.id } : {}),
-      ...(query.userId ? { sellerId: userId } : {}),
-      ...(range ? { createdAt: range } : {}),
-    },
-    include: {
-      items: { include: { variant: { include: { product: true } } } },
-      payments: true,
-    },
-    orderBy: { createdAt: "asc" },
-  });
+  // PERF-informes: el reporte por producto se agrega en PostgreSQL; el de
+  // formas de pago lista cada factura (una caja o una jornada) con tope.
+  const where = Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed'${session ? Prisma.sql` AND s."cashSessionId" = ${session.id}::uuid` : Prisma.empty}${query.userId ? Prisma.sql` AND s."sellerId" = ${userId}::uuid` : Prisma.empty}${range ? Prisma.sql` AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}` : Prisma.empty}`;
+  const sales =
+    name === "venta-diaria-usuario" ? [] : await storeSales(db, where);
   const [user, terminal] = await Promise.all([
     userId ? db.user.findUnique({ where: { id: userId } }) : null,
     session && /^[0-9a-f-]{36}$/i.test(session.registerId)
@@ -1108,30 +1488,17 @@ export async function storeReport(
     s.items.reduce((a: any, i: any) => a.plus(i.qty), d(0)).toNumber();
   if (name === "venta-diaria-usuario") {
     // Una fila por producto (variante); PRECIO es el bruto antes del descuento.
-    const byVariant = new Map<string, any>();
-    for (const s of sales)
-      for (const i of s.items) {
-        const row = byVariant.get(i.variantId) ?? {
-          Descripción: i.variant.product.name,
-          SKU: i.variant.sku,
-          Cant: d(0),
-          ITBIS: d(0),
-          Desc: d(0),
-          Precio: d(0),
-        };
-        row.Cant = row.Cant.plus(i.qty);
-        row.ITBIS = row.ITBIS.plus(i.tax);
-        row.Desc = row.Desc.plus(i.discount);
-        row.Precio = row.Precio.plus(i.lineTotal).plus(i.discount);
-        byVariant.set(i.variantId, row);
-      }
-    const rows = [...byVariant.values()]
+    // En orden de primera venta, como cuando se recorrían las facturas.
+    const lines =
+      await db.$queryRaw`SELECT p.name, v.sku, SUM(i.qty) AS qty, SUM(i.tax) AS tax, SUM(i.discount) AS discount, SUM(i."lineTotal" + i.discount) AS gross FROM "SaleItem" i JOIN "Sale" s ON s.id = i."saleId" JOIN "Variant" v ON v.id = i."variantId" JOIN "Product" p ON p.id = v."productId" WHERE ${where} GROUP BY i."variantId", p.name, v.sku ORDER BY MIN(s."createdAt"), v.sku`;
+    const rows = (lines as any[])
       .map((r) => ({
-        ...r,
-        Cant: r.Cant.toNumber(),
-        ITBIS: money(r.ITBIS),
-        Desc: money(r.Desc),
-        Precio: money(r.Precio),
+        Descripción: r.name as string,
+        SKU: r.sku as string,
+        Cant: d(r.qty).toNumber(),
+        ITBIS: money(r.tax),
+        Desc: money(r.discount),
+        Precio: money(r.gross),
       }))
       .sort((a, b) => a.Descripción.localeCompare(b.Descripción, "es"));
     const totals = {
@@ -1234,6 +1601,39 @@ export async function storeReport(
     total: byInvoice.amount,
     rows,
   };
+}
+// Facturas del reporte por forma de pago: sólo lo que imprime, sin
+// comprobantes ni catálogo, y con tope para un período muy largo.
+const STORE_REPORT_LIMIT = 10000;
+async function storeSales(db: any, where: Prisma.Sql) {
+  const [{ total }] =
+    await db.$queryRaw`SELECT COUNT(*)::int AS total FROM "Sale" s WHERE ${where}`;
+  if (total > STORE_REPORT_LIMIT)
+    bad(
+      `El período tiene ${count(total)} facturas y este reporte admite hasta ${count(STORE_REPORT_LIMIT)}. Elige una caja o un período más corto.`,
+    );
+  // Por factura: sus unidades y lo cobrado al vender con cada método.
+  const rows: any[] =
+    await db.$queryRaw`WITH sl AS (SELECT s.id, s.number, s.total, s."creditBalance", s."createdAt" FROM "Sale" s WHERE ${where}), u AS (SELECT i."saleId", SUM(i.qty) AS qty FROM "SaleItem" i JOIN sl ON sl.id = i."saleId" GROUP BY 1), pm AS (SELECT p."saleId", p.method, SUM(p.amount) AS amount FROM "Payment" p JOIN sl ON sl.id = p."saleId" WHERE p."entryType" = 'sale' GROUP BY 1, 2) SELECT sl.id, sl.number, sl.total, sl."creditBalance", u.qty, pm.method, pm.amount FROM sl LEFT JOIN u ON u."saleId" = sl.id LEFT JOIN pm ON pm."saleId" = sl.id ORDER BY sl."createdAt", sl.id, pm.method`;
+  const sales: any[] = [];
+  for (const row of rows) {
+    if (sales.at(-1)?.id !== row.id)
+      sales.push({
+        id: row.id,
+        number: row.number,
+        total: row.total,
+        creditBalance: row.creditBalance,
+        items: row.qty == null ? [] : [{ qty: row.qty }],
+        payments: [],
+      });
+    if (row.method)
+      sales.at(-1).payments.push({
+        method: row.method,
+        amount: row.amount,
+        entryType: "sale",
+      });
+  }
+  return sales;
 }
 // Envía un reporte de la tienda como JSON, Excel o PDF (filas planas).
 export async function sendStoreReport(

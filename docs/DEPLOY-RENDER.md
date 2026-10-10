@@ -444,6 +444,78 @@ Blueprint sí los crea y sólo debe hacerse después de aprobar el gasto.
 
 Los disparadores automáticos permanecen apagados para conservar este orden.
 
+## Informes con historial y memoria de la API
+
+Ningún informe carga en memoria todas las ventas del período (PERF-informes,
+`apps/api/src/reports.ts`). Antes, el informe de ventas del mes en curso, el
+que abre la pantalla Reportes, leía cada venta con sus líneas, producto,
+categoría y pagos (también el comprobante de transferencia en base64) y la
+API caía con unas 9 000 ventas.
+
+- **Sumas en PostgreSQL:** consumo mensual, por vendedor, por método de
+  pago, clientes y la venta diaria por producto de la tienda.
+- **Por lotes, sólo con las columnas necesarias:** utilidad y ABC (2 000
+  ventas por lote; el costo contabilizado se sigue calculando en la API) y
+  las devoluciones del período (300 por lote) del dashboard, por vendedor y
+  por método de pago.
+- **Listados que crecen con el historial** (ventas detalladas, kardex,
+  devoluciones y descuentos): el JSON llega por páginas (`page`, `limit`; 500
+  por defecto, 2 000 como máximo) con `total` aparte, y la pantalla Reportes
+  navega entre páginas. Excel y PDF se generan en flujo, por lotes de 1 000.
+- **Topes con aviso** (400 con el motivo, antes de empezar): Excel hasta
+  50 000 filas, PDF hasta 10 000; utilidad y ABC hasta 40 000 facturas (un
+  año tardaba 30-45 s con 0,5 CPU, cerca del plazo de 60 s de Nginx); venta
+  por forma de pago de la tienda hasta 10 000 facturas. El kardex en JSON ya
+  no se corta en silencio a los 10 000 movimientos.
+
+Medición (API compilada con `--max-old-space-size=256`, 0,5 CPU y 512 MB;
+base con 110 376 ventas en un año, 2 969 devoluciones, 1 080 comprobantes de
+80 KB y 29 521 movimientos de kardex; RSS máximo del proceso y tiempo de la
+petición; «sin RAM» = el montón de V8 se agotó o el contenedor mató el
+proceso):
+
+| Informe (mes completo, ~9 000 ventas) | Antes           | Ahora                     |
+| ------------------------------------- | --------------- | ------------------------- |
+| Ventas detalladas (JSON)              | sin RAM, 12,8 s | 176 MB, 0,2 s             |
+| Ventas en Excel / PDF                 | sin RAM         | 214 / 210 MB, 4,3 / 8,5 s |
+| Consumo mensual                       | sin RAM         | 163 MB, 0,1 s             |
+| Utilidad por producto / ABC           | sin RAM         | 204 MB, 2,4 s             |
+| Por vendedor / por método de pago     | sin RAM         | 165 MB, 0,2 s             |
+| Clientes / devoluciones y descuentos  | sin RAM         | 174 MB, 0,1 s             |
+| Kardex (JSON / Excel)                 | sin RAM         | 176 / 223 MB, 0,3 / 8,8 s |
+| Venta diaria por producto (tienda)    | sin RAM         | 166 MB, 0,2 s             |
+| Venta por forma de pago (tienda)      | sin RAM         | 190 MB, 5,0 s             |
+| Dashboard / estado de resultados      | 173-179 MB, 1 s | 173 MB, 0,5 s             |
+
+| Informe (un año, ~110 000 ventas)     | Antes                 | Ahora                 |
+| ------------------------------------- | --------------------- | --------------------- |
+| Ventas detalladas (JSON, 1.ª página)  | 400 (>10 000)         | 177 MB, 0,2 s         |
+| Consumo mensual / por vendedor / pago | 400 (>10 000)         | 176-181 MB, 1,2-1,8 s |
+| Kardex en Excel                       | 400 (>10 000)         | 225 MB, 14,9 s        |
+| Venta diaria por producto (tienda)    | sin RAM (contenedor)  | 166 MB, 0,6 s         |
+| Venta por forma de pago (tienda)      | sin RAM (contenedor)  | 400 con aviso (tope)  |
+| Utilidad / ABC                        | 400 (>10 000)         | 400 con aviso (tope)  |
+| Dashboard / estado de resultados      | 286-288 MB, 2,4-2,9 s | 233-234 MB, 2,5-2,7 s |
+
+Con los índices de enlace (`202610200001_perf_indexes_links`) la memoria es
+la misma; la venta por forma de pago del mes baja de 5,0 a 1,7 s.
+
+Resultados idénticos: con la misma base, las versiones anterior y nueva
+devolvieron el mismo JSON (y las mismas celdas en Excel) en 282
+comparaciones (262 respuestas y 20 rechazos 403/400 iguales): un día, una
+semana, el mes, un período entre febrero y marzo, el mes en curso con una
+caja abierta y los últimos 30 días; administración,
+gerencia y un rol sólo con `reports:read` (sin costos ni formas de pago de
+cajas abiertas); filtros por vendedor, método y categoría; reportes de la
+tienda por caja y por usuaria. Lo único distinto es lo que antes fallaba
+(400 o sin memoria) y el kardex de más de 10 000 movimientos, que antes se
+cortaba (todas sus filas están en el listado nuevo). El orden de las filas
+empatadas (mismo importe o misma fecha) no estaba definido y tampoco ahora.
+
+La prueba `tests/reports-memory-postgres.test.ts` (PostgreSQL embebido, 3 000
+ventas) falla si una consulta de cualquier informe trae más de 5 000 objetos
+o un comprobante.
+
 ## Respaldo y recuperación de Render
 
 `render.yaml` configura PostgreSQL pagado `0.1c-256mb`, pero no permite inferir
