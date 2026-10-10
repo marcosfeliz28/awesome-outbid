@@ -37,7 +37,23 @@ import(pathToFileURL(auditor).href).then(({verifyDeployLock}) => {
   const added = structuredClone(deployed);
   added.packages['ficticio-no-autorizado@99.0.0'] = structuredClone(deployed.packages[registry]);
   assert.throws(() => verifyDeployLock(source, added, require('node:path').dirname(sourcePath), payload), /nuevo o alterado/);
+  const changedEdge = structuredClone(deployed);
+  let altered = false;
+  for (const field of ['dependencies','devDependencies','optionalDependencies']) {
+    for (const [name, value] of Object.entries(source.importers['apps/api'][field] || {})) {
+      const alternative = Object.keys(deployed.snapshots).find(key => key.startsWith(name + '@') && key !== name + '@' + value.version && source.snapshots[key]);
+      if (alternative) {
+        changedEdge.importers['.'][field][name].version = alternative.slice(name.length + 1);
+        altered = true;
+        break;
+      }
+    }
+    if (altered) break;
+  }
+  assert.ok(altered, 'El lock real debe ofrecer una segunda version/contexto autorizado para reproducir el cambio de edge');
+  assert.throws(() => verifyDeployLock(source, changedEdge, require('node:path').dirname(sourcePath), payload), /Dependencias.*API.*cambiaron/);
   console.log('PASS auditor real: lock completo desplegado rechaza integridad alterada y paquete externo nuevo.');
+  console.log('PASS auditor real: API no puede cambiar a otra version/contexto ya existente en el lock fuente.');
 }).catch(error => { console.error(error.message); process.exitCode = 1; });
 '@
   $tamperPath = Join-Path $root 'tamper-probe.cjs'
