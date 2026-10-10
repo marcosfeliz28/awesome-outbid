@@ -300,12 +300,16 @@ export function POS({ go }: { go: (page: string) => void }) {
     variant: Variant,
     product: Product,
   ): "added" | "negative" | false => {
-    const existing = cart.find((i) => i.variant.id === variant.id);
+    // El carrito del momento, no el de este render: los escaneos en cola
+    // (A4) se procesan seguidos en el mismo efecto.
+    const existing = useStore
+      .getState()
+      .cart.find((i) => i.variant.id === variant.id);
     if (
       (existing?.qty || 0) + 1 > Number(variant.stock) &&
       !(config.data?.allowNegativeStock && !product.category.requiresLot)
     ) {
-      toast(
+      say(
         "No hay suficiente stock de " +
           product.name +
           " (quedan " +
@@ -318,7 +322,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     add(variant, product);
     setChoosing(null);
     if ((existing?.qty || 0) + 1 > Number(variant.stock)) {
-      toast(
+      say(
         "Advertencia: " + product.name + " quedará con stock negativo.",
         true,
       );
@@ -521,7 +525,6 @@ export function POS({ go }: { go: (page: string) => void }) {
   // Búsqueda por palabras sueltas, sin acentos, apóstrofos ni orden:
   // "iso100 vanilla 5lb" encuentra "ISO100 Hydrolyzed - Dymatize - Gourmet
   // Vanilla / 5 lb" y "loreal" encuentra "L'Oréal".
-  const words = searchWords(q);
   const searchText = (p: Product) =>
     [
       p.name,
@@ -536,24 +539,32 @@ export function POS({ go }: { go: (page: string) => void }) {
   const inCategory = (products.data ?? []).filter(
     (p) => category === "all" || p.categoryId === category,
   );
-  const exactMatches = inCategory.filter(
-    (p) => !words.length || matchesWords(searchText(p), words),
-  );
-  // Ninguno tiene todas las palabras ("proteina whey" frente a nombres en
-  // inglés): se muestran los que tienen más de ellas, como sugerencia.
-  const approximate = !exactMatches.length && words.length > 1;
-  const filtered = approximate
-    ? inCategory
-        .map((p) => ({
-          p,
-          hits: words.filter(
-            (w) => w.length >= 3 && matchesWords(searchText(p), [w]),
-          ).length,
-        }))
-        .filter((x) => x.hits > 0)
-        .sort((a, b) => b.hits - a.hits)
-        .map((x) => x.p)
-    : exactMatches;
+  // Lo que muestra la lista para un texto. Es una función del texto (y no
+  // del buscador) para procesar con el mismo criterio un Enter que quedó en
+  // cola mientras cargaba el catálogo (A4).
+  const findProducts = (text: string) => {
+    const words = searchWords(text);
+    const exactMatches = inCategory.filter(
+      (p) => !words.length || matchesWords(searchText(p), words),
+    );
+    // Ninguno tiene todas las palabras ("proteina whey" frente a nombres en
+    // inglés): se muestran los que tienen más de ellas, como sugerencia.
+    const approximate = !exactMatches.length && words.length > 1;
+    const filtered = approximate
+      ? inCategory
+          .map((p) => ({
+            p,
+            hits: words.filter(
+              (w) => w.length >= 3 && matchesWords(searchText(p), [w]),
+            ).length,
+          }))
+          .filter((x) => x.hits > 0)
+          .sort((a, b) => b.hits - a.hits)
+          .map((x) => x.p)
+      : exactMatches;
+    return { filtered, approximate };
+  };
+  const { filtered, approximate } = findProducts(q);
   // Con cientos de productos se dibujan 120 tarjetas; la búsqueda llega al resto.
   const MAX_CARDS = 120;
   const visible = filtered.slice(0, MAX_CARDS);
@@ -578,32 +589,46 @@ export function POS({ go }: { go: (page: string) => void }) {
     if (distinct > 1) return { ambiguous: distinct } as const;
     return hits[0];
   };
-  // Un escaneo o un Enter hecho mientras el catálogo aún se descarga (al entrar
-  // o recargar la caja) no puede decir «Código no encontrado»: se guarda y se
-  // procesa cuando el catálogo llega. Si la descarga falla o queda en pausa
-  // (sin conexión ni copia local), el código guardado sale con el aviso de
-  // siempre en vez de quedar esperando.
-  const pendingScan = useRef<{ kind: "scan"; code: string } | "enter" | null>(
-    null,
-  );
+  // A4: escaneos y Enter hechos mientras el catálogo aún se descarga (al
+  // entrar, al recargar o tras una actualización). Antes se guardaba uno solo
+  // y el buscador no se vaciaba: el siguiente código se pegaba al anterior y
+  // al llegar el catálogo no entraba ningún artículo. Ahora cada código va a
+  // una cola, el buscador queda vacío para el siguiente y, al llegar el
+  // catálogo, se procesan en orden. Si la descarga falla o queda en pausa
+  // (sin conexión ni copia local) se dice qué códigos no entraron.
+  const scanQueue = useRef<{ kind: "scan" | "enter"; text: string }[]>([]);
   const catalogLoading = () =>
     products.data === undefined &&
     products.isPending &&
     products.fetchStatus !== "paused";
+  const queueWhileLoading = (kind: "scan" | "enter", text: string) => {
+    scanQueue.current.push({ kind, text: text.trim() });
+    setQ("");
+    const waiting = scanQueue.current.length;
+    toast(
+      "Cargando el catálogo… " +
+        (waiting === 1
+          ? "1 código en espera"
+          : waiting + " códigos en espera") +
+        "; se agregarán al terminar.",
+    );
+  };
+  // Avisos del escaneo. Mientras se procesa la cola se juntan para dar uno
+  // solo al final; si no, cada aviso tapaba al anterior.
+  const batch = useRef<{ message: string; error: boolean }[] | null>(null);
+  const say = (message: string, error = false) => {
+    if (batch.current) batch.current.push({ message, error });
+    else toast(message, error);
+  };
   const scan = (code: string) => {
-    if (catalogLoading()) {
-      pendingScan.current = { kind: "scan", code };
-      setQ(code);
-      toast("Cargando el catálogo… el código se agregará al terminar.");
-      return;
-    }
+    if (catalogLoading()) return queueWhileLoading("scan", code);
     const found = byCode(code);
     if (found && "ambiguous" in found) {
       setQ(code);
       // Seleccionado, para que el siguiente escaneo lo reemplace en vez de
       // pegarse al código anterior (R9-caja-2).
       requestAnimationFrame(() => search.current?.select());
-      toast(
+      say(
         "El código " +
           code.trim() +
           " es de " +
@@ -620,7 +645,7 @@ export function POS({ go }: { go: (page: string) => void }) {
       if (result) {
         setQ("");
         // La advertencia de stock negativo ya está a la vista.
-        if (result === "added") toast(product.name + " agregado.");
+        if (result === "added") say(product.name + " agregado.");
       } else {
         // Sin stock: el código queda a la vista, pero seleccionado, para
         // que el siguiente escaneo lo reemplace en vez de sumarse.
@@ -630,21 +655,18 @@ export function POS({ go }: { go: (page: string) => void }) {
     } else {
       setQ(code);
       requestAnimationFrame(() => search.current?.select());
-      toast("Código no encontrado: " + code.trim() + ".", true);
+      say("Código no encontrado: " + code.trim() + ".", true);
     }
   };
-  // Enter en el buscador (teclado o lector).
-  const enter = () => {
-    const text = q.trim();
+  // Enter en el buscador (teclado o lector) con el texto escrito.
+  const enterText = (raw: string) => {
+    const text = raw.trim();
     if (!text) return;
-    if (catalogLoading()) {
-      pendingScan.current = "enter";
-      toast("Cargando el catálogo… se agregará al terminar.");
-      return;
-    }
-    if (byCode(text)) return scan(q);
+    if (catalogLoading()) return queueWhileLoading("enter", text);
+    if (byCode(text)) return scan(text);
+    const { filtered, approximate } = findProducts(text);
     const warn = (message: string) => {
-      toast(message, true);
+      say(message, true);
       search.current?.select();
     };
     // Un código que no es de ningún producto activo (por ejemplo, el de uno
@@ -665,7 +687,7 @@ export function POS({ go }: { go: (page: string) => void }) {
         // Como al escanear: aviso y buscador vacío, para que el siguiente
         // escaneo no se pegue a las palabras (R9-caja-6).
         setQ("");
-        if (result === "added") toast(product.name + " agregado.");
+        if (result === "added") say(product.name + " agregado.");
       } else search.current?.select();
       return;
     }
@@ -676,17 +698,38 @@ export function POS({ go }: { go: (page: string) => void }) {
         : "No se agregó nada: no hay productos con esas palabras.",
     );
   };
-  // Cuando termina la descarga se procesa el escaneo que quedó esperando.
+  const enter = () => enterText(q);
+  // Cuando termina la descarga se procesa la cola, en orden.
   // useLayoutEffect: corre antes de que el navegador entregue otra tecla, así
   // un Enter justo al llegar el catálogo no agrega el producto dos veces.
   const waitingCatalog = catalogLoading();
   useLayoutEffect(() => {
-    if (waitingCatalog) return;
-    const pending = pendingScan.current;
-    if (!pending) return;
-    pendingScan.current = null;
-    if (pending === "enter") enter();
-    else scan(pending.code);
+    if (waitingCatalog || !scanQueue.current.length) return;
+    const queued = scanQueue.current;
+    scanQueue.current = [];
+    if (products.data === undefined) {
+      toast(
+        "No se pudo cargar el catálogo: no se agregó " +
+          queued.map((item) => item.text).join(", ") +
+          ". Vuelve a escanear cuando aparezcan los productos.",
+        true,
+      );
+      return;
+    }
+    batch.current = [];
+    try {
+      for (const item of queued)
+        if (item.kind === "scan") scan(item.text);
+        else enterText(item.text);
+    } finally {
+      const notices = batch.current ?? [];
+      batch.current = null;
+      const errors = notices.filter((n) => n.error);
+      if (errors.length) toast(errors.map((n) => n.message).join(" "), true);
+      else if (notices.length === 1) toast(notices[0].message);
+      else if (notices.length)
+        toast(notices.length + " artículos escaneados agregados.");
+    }
   }, [waitingCatalog]);
   return (
     <div className="pos-layout">
