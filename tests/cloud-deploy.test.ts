@@ -1047,6 +1047,10 @@ console.log(JSON.stringify({
         process.execPath,
         [
           "--max-old-space-size=200",
+          // heap_size_limit suma la generación joven (3 semiespacios): 16 MB
+          // por omisión en Node 22, 64 MB en Node 24 (+192 MB). Se fija para
+          // que el límite medido sea el mismo con cualquiera de los dos.
+          "--max-semi-space-size=16",
           resolve(root, "deploy/render/with-cloud-env.mjs"),
           script,
           "uno",

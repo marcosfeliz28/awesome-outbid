@@ -277,6 +277,11 @@ node --max-old-space-size=256 deploy/render/with-cloud-env.mjs apps/api/dist/mai
   recolector trabaja antes de acercarse al límite. Si alguna vez aparece
   `JavaScript heap out of memory` en el registro, subirlo con prudencia
   (máximo ~320) en `deploy/render/Dockerfile.api`; nunca quitarlo.
+- Con Node 24 (el de la imagen) la generación joven de V8 puede crecer hasta
+  3 × 64 MB además del montón viejo: el límite total de V8 es ~448 MB (en
+  Node 22 eran 3 × 16 MB, ~304 MB). Con el plan real `1c-2g` sobra margen; si
+  la API volviera a `0.5c-512mb`, añadir `--max-semi-space-size=16` al `CMD`
+  y medir de nuevo.
 - Medición (API compilada, 0,5 CPU y 512 MB; PostgreSQL 0,1 CPU y 256 MB; un
   año de historial, ~110 000 ventas):
 
