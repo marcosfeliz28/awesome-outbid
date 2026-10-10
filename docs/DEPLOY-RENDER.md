@@ -45,18 +45,18 @@ Internet -> HTTPS de Render -> nexora-pos-web (Nginx + PWA)
 
 ## Archivos de despliegue
 
-| Archivo                               | Función                                                                                                                                                                   |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados.                                                                                                 |
-| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                                                                                                                             |
-| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.                                                                                                         |
-| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                                                                                                                              |
-| `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx). Si la API no resuelve, arranca igual con `/api` en 502.                                         |
-| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                                                                |
-| `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `status: "ok"`.                                               |
-| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS, UTC y tope de conexiones; en `migrate deploy` añade `lock_timeout` y `statement_timeout`; con un script `.js` lo carga en el mismo proceso. |
-| `deploy/render/ci-smoke.sh`           | En el CI: arranca las imágenes como en Render (web sin API, migración, API) y ejecuta `post-deploy-check.mjs`.                                                            |
-| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                                                                           |
+| Archivo                               | Función                                                                                                                                                                                                                                                                                             |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados.                                                                                                                                                                                                                           |
+| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                                                                                                                                                                                                                                                       |
+| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.                                                                                                                                                                                                                                   |
+| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                                                                                                                                                                                                                                                        |
+| `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx). Si la API no resuelve, arranca igual con `/api` en 502.                                                                                                                                                                   |
+| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                                                                                                                                                                                          |
+| `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `status: "ok"`. Con `--db-only` (en el _Shell_ de la API) comprueba, de solo lectura, índices válidos, restricciones validadas, el disparador `auth_attempt_touch` y `plan_cache_mode`. |
+| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS, UTC y tope de conexiones; en `migrate deploy` añade `lock_timeout` y `statement_timeout`; con un script `.js` lo carga en el mismo proceso.                                                                                                                           |
+| `deploy/render/ci-smoke.sh`           | En el CI: arranca las imágenes como en Render (web sin API, migración, API) y ejecuta `post-deploy-check.mjs` (HTTP y `--db-only`).                                                                                                                                                                 |
+| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                                                                                                                                                                                                     |
 
 ## Variables y secretos
 
@@ -366,27 +366,41 @@ usando un plan genérico malo para la suma de pagos por método. La migración:
 **Nunca aborta un despliegue.** Cada índice y cada `ALTER` van en su propio
 bloque `DO` con `EXCEPTION WHEN OTHERS THEN RAISE NOTICE`: si el rol no tiene
 permiso, o una escritura retiene la tabla más de 15 s (`lock_timeout`), ese paso
-se omite con un aviso `PERF: …` en el registro del pre-deploy y el despliegue
-sigue. Un índice inválido con el mismo nombre se rehace. Con las tablas de hoy
-cada índice se crea en milisegundos; el bloqueo de escritura dura eso.
+se omite y el despliegue sigue. Un índice inválido con el mismo nombre se
+rehace. Con las tablas de hoy cada índice se crea en milisegundos; el
+bloqueo de escritura dura eso.
 
-Comprobar después de desplegar (Render › nexora-pos-db › Shell o `psql` con la
-URL interna):
+> **Los `NOTICE` no se ven.** `prisma migrate deploy` **no imprime** los
+> mensajes `RAISE NOTICE` (ni `PERF:`, `DATOS:`, `K2:` ni `INC:`) en el
+> registro del pre-deploy de Render: se probó con una migración-sonda. Un paso
+> omitido deja `migrate status` en «up to date» y el despliegue en verde. Por
+> eso la comprobación NO se hace buscando avisos en el registro sino
+> consultando la base (siguiente apartado). Lo único con rastro durable en la
+> base es `AuditLog` (`k2_code_index_skipped`, `constraint_not_validated`).
 
-```sql
-SELECT indexname FROM pg_indexes WHERE indexname IN (
-  'Payment_saleId_idx','Payment_cashSessionId_idx','SaleItem_saleId_idx',
-  'Sale_cashSessionId_idx','SaleReturn_saleId_idx','SaleReturn_cashSessionId_idx',
-  'CashMovement_sessionId_idx','Variant_productId_idx');   -- 8 filas
-SHOW plan_cache_mode;                                       -- force_custom_plan
+Comprobar después de desplegar, **siempre**, desde el _Shell_ de
+`nexora-pos-api` (la base no acepta conexiones externas; la API ya tiene
+`RENDER_DATABASE_URL`):
+
+```text
+node deploy/render/post-deploy-check.mjs --db-only
 ```
 
-Si el registro del pre-deploy mostró un aviso `PERF:` o faltan filas, la
-migración es idempotente: se puede volver a ejecutar tal cual con
-`psql "$URL" -f apps/api/prisma/migrations/202610200001_perf_indexes_links/migration.sql`
-(sólo crea lo que falte) y reiniciar la API para que tome `plan_cache_mode`.
-Prueba: `tests/perf-indexes-postgres.test.ts` (base vacía, base con datos, dos
-ejecuciones seguidas, índice inválido y rol sin permisos).
+Es de solo lectura y falla (código 1) si hay un índice inválido
+(`indisvalid`), falta alguno de los 20 índices que las migraciones crean sin
+abortar (enlaces, `Variant_sku_ci_key` y `Variant_barcode_ci_key`, únicos de
+incentivos e idempotencia), falta o está sin validar (`convalidated`) alguna de
+las 29 restricciones de `202610210002`, o falta el disparador
+`auth_attempt_touch`; avisa (sin fallar) si `plan_cache_mode` no es
+`force_custom_plan`. El mismo comando corre en el CI (`ci-smoke.sh`). Si
+falla, la migración correspondiente es idempotente: se puede volver a ejecutar
+tal cual con
+`psql "$URL" -f apps/api/prisma/migrations/<migración>/migration.sql` (sólo
+crea o valida lo que falte) y, para `plan_cache_mode`, reiniciar la API.
+Pruebas: `tests/perf-indexes-postgres.test.ts`,
+`tests/datos-integridad-postgres.test.ts` y `tests/post-deploy-check.test.ts`.
+Qué hacer con restricciones que no se pudieron validar:
+[MIGRACIONES_SEGURAS.md](MIGRACIONES_SEGURAS.md#restricciones-not-valid-filas-antiguas-y-su-validación).
 
 ### Actualización de la PWA en las cajas
 
@@ -491,8 +505,11 @@ Blueprint sí los crea y sólo debe hacerse después de aprobar el gasto.
 4. Verificar `/api/health` y una transacción controlada.
 5. Publicar la web.
 6. Ejecutar Actions › «Comprobación posterior al despliegue» (corre
-   `post-deploy-check.mjs` contra la web pública) y verificar inicio de
-   sesión, venta, SSE, impresión y cola offline.
+   `post-deploy-check.mjs` contra la web pública), ejecutar en el _Shell_ de
+   la API `node deploy/render/post-deploy-check.mjs --db-only` (índices,
+   restricciones validadas y disparador; el workflow de Actions no tiene
+   acceso a la base) y verificar inicio de sesión, venta, SSE, impresión y
+   cola offline.
 7. Observar errores antes de declarar finalizada la liberación.
 
 Los disparadores automáticos permanecen apagados para conservar este orden.

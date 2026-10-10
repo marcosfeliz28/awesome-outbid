@@ -1145,6 +1145,12 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
     expect(smoke).toContain("preDeployCommand:");
     expect(smoke).toContain("render.yaml");
     expect(smoke).toContain("node deploy/render/post-deploy-check.mjs");
+    // N2/D-M9: también comprueba la base (índices, restricciones, disparador).
+    expect(smoke).toContain("post-deploy-check.mjs --db-only");
+    // ...y el script viaja en la imagen de la API para correrlo en su Shell.
+    expect(read("deploy/render/Dockerfile.api")).toContain(
+      "COPY deploy/render/post-deploy-check.mjs deploy/render/post-deploy-check.mjs",
+    );
     // La web arranca antes que la API y debe responder igual.
     expect(smoke.indexOf('echo "2) La web arranca sin API"')).toBeLessThan(
       smoke.indexOf('echo "4) Arranca la API"'),
@@ -1155,5 +1161,31 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
     expect(post).toContain("workflow_dispatch:");
     expect(post).toContain("NEXORA_WEB_URL: ${{ inputs.web_url }}");
     expect(post).not.toMatch(/run:.*\$\{\{/);
+  });
+
+  // Auditoría 04 N2/N3/N5: Prisma no imprime los NOTICE de las migraciones; la
+  // documentación no puede mandar a buscarlos en el registro del pre-deploy.
+  it("la documentación no afirma que los NOTICE se vean y explica las restricciones NOT VALID", () => {
+    const deploy = read("docs/DEPLOY-RENDER.md");
+    expect(deploy).not.toMatch(/aviso `PERF:[^`]*` en el registro/);
+    expect(deploy).not.toMatch(/mostró un aviso `PERF:`/);
+    expect(deploy).toContain("`prisma migrate deploy` **no imprime**");
+    expect(deploy).toContain("post-deploy-check.mjs --db-only");
+    expect(read("docs/INCENTIVOS.md")).not.toMatch(
+      /`NOTICE` y el despliegue sigue/,
+    );
+    const safe = read("docs/MIGRACIONES_SEGURAS.md");
+    expect(safe).toContain("constraint_not_validated");
+    expect(safe).toContain("WHERE NOT convalidated");
+    expect(safe).toMatch(/fuera de horario/);
+    expect(safe).toContain("**no muestra los `RAISE NOTICE`**");
+    // Cada migración nueva tiene un prefijo único y posterior a las aplicadas.
+    const names = readdirSync(
+      resolve(root, "apps/api/prisma/migrations"),
+    ).filter((n) => /^\d/.test(n));
+    const prefixes = names.map((n) => n.split("_")[0]);
+    const last = names.sort().at(-1)!;
+    expect(last >= "202610220001_validar_restricciones").toBe(true);
+    expect(prefixes.filter((p) => p === "202610220001")).toHaveLength(1);
   });
 });

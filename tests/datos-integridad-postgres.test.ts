@@ -10,6 +10,10 @@ import { fileURLToPath } from "node:url";
 import EmbeddedPostgres from "embedded-postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { permissions } from "../packages/shared/src/index";
+import {
+  evaluateDatabaseFacts,
+  readDatabaseFacts,
+} from "../deploy/render/post-deploy-check.mjs";
 
 // Auditorías 06 (datos y concurrencia) y 03 (privacidad) contra PostgreSQL
 // real: migraciones nuevas (base vacía, base con datos antiguos que violan
@@ -195,6 +199,32 @@ async function applyOwn(client: any) {
   }
   return notices.filter((n) => n.startsWith("DATOS:"));
 }
+
+// 202610220001: valida lo que quedó NOT VALID y deja rastro en AuditLog.
+const VALIDATE_MIGRATION = "202610220001_validar_restricciones";
+async function applyValidation(client: any) {
+  const notices: string[] = [];
+  const onNotice = (n: any) => notices.push(String(n.message));
+  client.on("notice", onNotice);
+  try {
+    await client.query(
+      await readFile(
+        join(migrationsDir, VALIDATE_MIGRATION, "migration.sql"),
+        "utf8",
+      ),
+    );
+  } finally {
+    client.off("notice", onNotice);
+  }
+  return notices.filter((n) => n.startsWith("VALIDAR:"));
+}
+const notValidated = async (client: any) =>
+  (
+    await client.query(
+      `SELECT "entityId", after FROM "AuditLog"
+        WHERE action = 'constraint_not_validated' ORDER BY "entityId"`,
+    )
+  ).rows;
 
 const indexes = async (client: any) =>
   (
@@ -433,6 +463,131 @@ describe("Auditoría 06 · migraciones de datos en PostgreSQL real", () => {
         [ids.item],
       );
 
+      // (a2) 202610220001: una restricción que quedó NOT VALID (p. ej. por un
+      // bloqueo al desplegar la anterior) con filas que SÍ cumplen se valida
+      // sola; sin filas violadoras no deja rastro de pendientes.
+      await a.query(
+        `ALTER TABLE "KitComponent" DROP CONSTRAINT kit_component_qty_positive`,
+      );
+      await a.query(
+        `ALTER TABLE "KitComponent" ADD CONSTRAINT kit_component_qty_positive CHECK (qty > 0) NOT VALID`,
+      );
+      expect((await constraintState(a)).kit_component_qty_positive).toBe(false);
+      const clean2 = await applyValidation(a);
+      expect(clean2).toContain("VALIDAR: kit_component_qty_positive validada.");
+      expect((await constraintState(a)).kit_component_qty_positive).toBe(true);
+      expect(await notValidated(a)).toEqual([]);
+
+      // (a3) Una escritura larga retiene la tabla: no se espera más de 3 s, la
+      // restricción se omite, queda registrada con el motivo y las demás
+      // siguen su curso; sin el bloqueo, la siguiente ejecución la valida.
+      await a.query(
+        `ALTER TABLE "KitComponent" DROP CONSTRAINT kit_component_qty_positive`,
+      );
+      await a.query(
+        `ALTER TABLE "KitComponent" ADD CONSTRAINT kit_component_qty_positive CHECK (qty > 0) NOT VALID`,
+      );
+      const holder = await open("nexora_datos_clean");
+      await holder.query("BEGIN");
+      await holder.query(
+        `LOCK TABLE "KitComponent" IN SHARE ROW EXCLUSIVE MODE`,
+      );
+      const started = Date.now();
+      let skipped: string[];
+      try {
+        skipped = await applyValidation(a);
+      } finally {
+        await holder.query("ROLLBACK");
+      }
+      const waited = Date.now() - started;
+      expect(waited).toBeGreaterThanOrEqual(2500);
+      expect(waited).toBeLessThan(10_000);
+      expect(skipped.join("\n")).toMatch(
+        /kit_component_qty_positive sigue NOT VALID .*lock_timeout/,
+      );
+      expect((await constraintState(a)).kit_component_qty_positive).toBe(false);
+      const [pending] = await notValidated(a);
+      expect(pending.entityId).toBe("kit_component_qty_positive");
+      expect(pending.after).toMatchObject({
+        table: "KitComponent",
+        reason: "lock_timeout",
+      });
+      expect(await applyValidation(a)).toContain(
+        "VALIDAR: kit_component_qty_positive validada.",
+      );
+      expect((await constraintState(a)).kit_component_qty_positive).toBe(true);
+      await a.query(
+        `DELETE FROM "AuditLog" WHERE action = 'constraint_not_validated'`,
+      );
+
+      // (a4) post-deploy-check.mjs (solo lectura) sobre la base real: una base
+      // recién migrada no tiene fallos ni avisos; cada defecto que Prisma no
+      // muestra se detecta por su nombre.
+      const read = async () =>
+        evaluateDatabaseFacts(
+          await readDatabaseFacts(
+            async (sql: string, params: unknown[] = []) =>
+              (await a.query(sql, params)).rows,
+          ),
+        );
+      expect(await read()).toEqual({ failures: [], warnings: [] });
+      // Índice inválido: un CREATE UNIQUE INDEX CONCURRENTLY que falla por
+      // duplicados deja el índice marcado como no válido.
+      await a.query(`CREATE TABLE pdc_dup(k int)`);
+      await a.query(`INSERT INTO pdc_dup VALUES (1), (1)`);
+      await expect(
+        a.query(`CREATE UNIQUE INDEX CONCURRENTLY pdc_dup_k ON pdc_dup(k)`),
+      ).rejects.toMatchObject({ code: "23505" });
+      expect((await read()).failures.join("\n")).toMatch(
+        /índices inválidos.*pdc_dup_k/,
+      );
+      await a.query(`DROP TABLE pdc_dup`);
+      // D-M9: falta Variant_sku_ci_key.
+      await a.query(`DROP INDEX "Variant_sku_ci_key"`);
+      expect((await read()).failures.join("\n")).toMatch(
+        /faltan índices.*Variant_sku_ci_key/,
+      );
+      await a.query(
+        `CREATE UNIQUE INDEX "Variant_sku_ci_key" ON "Variant" (lower(btrim(sku))) WHERE sku IS NOT NULL AND btrim(sku) <> ''`,
+      );
+      // Restricción NOT VALID (convalidated) y restricción ausente.
+      await a.query(
+        `ALTER TABLE "KitComponent" DROP CONSTRAINT kit_component_qty_positive`,
+      );
+      await a.query(
+        `ALTER TABLE "KitComponent" ADD CONSTRAINT kit_component_qty_positive CHECK (qty > 0) NOT VALID`,
+      );
+      expect((await read()).failures.join("\n")).toMatch(
+        /restricciones sin validar.*kit_component_qty_positive/,
+      );
+      await a.query(
+        `ALTER TABLE "KitComponent" VALIDATE CONSTRAINT kit_component_qty_positive`,
+      );
+      await a.query(
+        `ALTER TABLE "CashMovement" DROP CONSTRAINT cash_movement_type_valid`,
+      );
+      expect((await read()).failures.join("\n")).toMatch(
+        /faltan restricciones.*cash_movement_type_valid/,
+      );
+      await a.query(
+        `ALTER TABLE "CashMovement" ADD CONSTRAINT cash_movement_type_valid CHECK (type IN ('in', 'out'))`,
+      );
+      // Disparador auth_attempt_touch y plan_cache_mode (aviso, no fallo).
+      await a.query(
+        `ALTER TABLE "AuthAttempt" DISABLE TRIGGER auth_attempt_touch`,
+      );
+      expect((await read()).failures.join("\n")).toMatch(/auth_attempt_touch/);
+      await a.query(
+        `ALTER TABLE "AuthAttempt" ENABLE TRIGGER auth_attempt_touch`,
+      );
+      await a.query(`SET plan_cache_mode = auto`);
+      const plan = await read();
+      expect(plan.failures).toEqual([]);
+      expect(plan.warnings.join("\n")).toMatch(/plan_cache_mode = auto/);
+      await a.query(`RESET plan_cache_mode`);
+      await a.query(`SET plan_cache_mode = force_custom_plan`);
+      expect(await read()).toEqual({ failures: [], warnings: [] });
+
       // (b) Base anterior con datos que violan las reglas: el despliegue
       // termina, las restricciones violadas quedan NOT VALID (protegen lo
       // nuevo) con un aviso, el resto queda validado; al corregir los datos y
@@ -482,6 +637,24 @@ describe("Auditoría 06 · migraciones de datos en PostgreSQL real", () => {
           .map(([name]) => name)
           .sort(),
       ).toEqual(["CreditNote_returnId_fkey", "purchase_item_quantities_valid"]);
+      // 202610220001 corrió en el mismo despliegue: las dos que no se pueden
+      // validar quedan registradas en AuditLog (Prisma no muestra los NOTICE)
+      // con cuántas filas las violan y cómo listarlas.
+      const pendingRows = await notValidated(b);
+      expect(pendingRows.map((r: any) => r.entityId)).toEqual([
+        "CreditNote_returnId_fkey",
+        "purchase_item_quantities_valid",
+      ]);
+      for (const row of pendingRows)
+        expect(row.after).toMatchObject({
+          reason: "violations",
+          violatingRows: 1,
+        });
+      expect(pendingRows[0].after.table).toBe("CreditNote");
+      expect(pendingRows[1].after.listQuery).toContain('FROM "PurchaseItem"');
+      // Y las filas violadoras se pueden listar con esa consulta.
+      const listed = await b.query(pendingRows[1].after.listQuery);
+      expect(listed.rows).toHaveLength(1);
       // NOT VALID también protege: lo nuevo que viole la regla se rechaza.
       await expectRejected(
         b,
@@ -519,6 +692,10 @@ describe("Auditoría 06 · migraciones de datos en PostgreSQL real", () => {
       );
       expect(await applyOwn(b)).toEqual([]);
       expect(Object.values(await constraintState(b)).every(Boolean)).toBe(true);
+      // Ya validadas: volver a ejecutar 202610220001 no encuentra pendientes.
+      expect((await applyValidation(b)).join("\n")).toMatch(
+        /0 restricción\(es\) validada\(s\) ahora, 0 sin validar/,
+      );
     } finally {
       for (const c of clients) await c.end().catch(() => undefined);
       await server.stop();

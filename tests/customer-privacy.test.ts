@@ -292,6 +292,8 @@ describe("G6: anonimización de clientes", () => {
     const tx = {
       $queryRaw: vi.fn(async () => [{ locked: "1" }]),
       sale: { findUnique: vi.fn(async () => null) },
+      // N-M1: se consulta si gerencia descartó esta venta offline.
+      auditLog: { findFirst: vi.fn(async () => null) },
       settings: { findUnique: vi.fn(async () => ({ data: {} })) },
       cashSession: {
         findFirstOrThrow: vi.fn(async () => ({

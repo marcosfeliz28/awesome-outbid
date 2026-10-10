@@ -47,6 +47,7 @@ import { notify } from "./notifications";
 import { cashDifferenceMessage } from "./alerts";
 // Aparte del import anterior de ./sales para no chocar al fusionar ramas.
 import { MONEY_TRANSACTION } from "./sales";
+import { moneyDb } from "./database-errors";
 
 export async function cashExpected(db: any, session: any) {
   // Sólo las columnas que se suman (D-M6): sin select, Prisma traía también
@@ -770,7 +771,7 @@ export class CashController {
         { pin: managerPin, actor },
       );
     }
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       const session = await cashLock(tx, actor, parse(uuid, id));
       // El bloqueo de la sesión serializa movimientos y ventas concurrentes.
       // D-M4: un reintento con la misma clave devuelve el mismo movimiento
@@ -971,7 +972,7 @@ export class CashController {
         );
       }
     }
-    const closed = await this.db.$transaction(async (tx) => {
+    const closed = await moneyDb(this.db).$transaction(async (tx) => {
       const session = await cashLock(
         tx,
         actor,

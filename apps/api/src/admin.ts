@@ -34,6 +34,7 @@ import {
   isMaskedPii,
   withoutImages,
 } from "./common";
+import { moneyDb } from "./database-errors";
 import {
   can,
   d,
@@ -578,7 +579,7 @@ export class AdminController {
     await this.db.supplier.findFirstOrThrow({
       where: { id: data.supplierId, branchId: actor.branchId },
     });
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       // D-M4: un doble clic o un reintento con la misma clave devuelve el
       // mismo pago en vez de rebajar dos veces la cuenta por pagar.
       const existing = await idempotent(
@@ -665,7 +666,7 @@ export class AdminController {
       }),
       body,
     );
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       // D-M4: un reintento con la misma clave devuelve el mismo gasto.
       const existing = await idempotent(
         tx,
