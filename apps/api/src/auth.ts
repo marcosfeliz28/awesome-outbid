@@ -64,12 +64,12 @@ const credentialAttemptIdentity = (user: any, normalized: string) =>
     : `missing:${createHash("sha256").update(normalized).digest("hex")}`;
 // Equipo de la tienda (Configuración › Equipos) desde el que se intenta
 // entrar: el navegador envía el id y el secreto que guardó al registrarlo.
-const terminalCredentials = z
-  .object({
-    id: z.string().uuid(),
-    secret: z.string().min(16).max(200),
-  })
-  .optional();
+// Un valor mal formado no impide entrar: se trata como equipo no aprobado.
+const terminalCredentials = z.unknown().optional();
+const terminalShape = z.object({
+  id: z.string().uuid(),
+  secret: z.string().min(16).max(200),
+});
 // Iguales para cuentas existentes e inexistentes: no delatan cuentas. Cada
 // uno dice qué se puede hacer (esperar, «Restablecer contraseña» o entrar
 // desde un equipo aprobado), sin prometer lo que no existe.
@@ -167,10 +167,10 @@ export class AuthController implements OnModuleInit {
     return { ip, normalized, unknownFlooded };
   }
   /** Equipo registrado y aprobado cuyo secreto coincide; si no, null. */
-  private async approvedTerminal(
-    input: { id: string; secret: string } | undefined,
-  ) {
-    if (!input) return null;
+  private async approvedTerminal(value: unknown) {
+    const parsed = terminalShape.safeParse(value);
+    if (!parsed.success) return null;
+    const input = parsed.data;
     const terminal = await this.db.terminal.findUnique({
       where: { id: input.id },
     });

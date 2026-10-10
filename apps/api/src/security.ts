@@ -113,6 +113,11 @@ async function serializeAttempt<T>(key: string, work: () => Promise<T>) {
   }
 }
 
+const serializeAll = <T>(keys: string[], work: () => Promise<T>): Promise<T> =>
+  keys.length
+    ? serializeAttempt(keys[0], () => serializeAll(keys.slice(1), work))
+    : work();
+
 const locked = (row: { lockedUntil: Date | null }, now: Date) =>
   !!row.lockedUntil && row.lockedUntil > now;
 
@@ -128,7 +133,12 @@ export async function verifyAttempt(
   hooks: AttemptHooks = {},
 ) {
   const budgets = hooks.budgets ?? [];
-  return serializeAttempt(key, async () => {
+  // En este proceso, los intentos que comparten un cupo (p. ej. la misma
+  // cuenta desde muchas IP) esperan en cola sin abrir transacciones: si no,
+  // una ráfaga ocuparía todas las conexiones esperando el advisory lock.
+  // Orden fijo (cupos ordenados y luego la clave propia; los espacios de
+  // nombres no se mezclan), así dos colas nunca se esperan en círculo.
+  return serializeAll([...budgets.map((b) => b.key).sort(), key], async () => {
     const result = await db.$transaction(
       async (tx: any) => {
         // Todas las claves del intento se bloquean en un solo orden (el del

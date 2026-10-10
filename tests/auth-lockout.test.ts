@@ -149,6 +149,15 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
         }),
       ),
     ).toBe(true);
+    // Un valor mal formado tampoco, y no rompe el inicio de sesión.
+    expect(
+      blocked(
+        await login(cashier, EDGE_IP, PASSWORD, {
+          id: "no-es-un-uuid",
+          secret: 42,
+        } as any),
+      ),
+    ).toBe(true);
     // Un equipo pendiente de aprobación tampoco.
     const pending = await approvedTerminal(false);
     expect(blocked(await login(cashier, EDGE_IP, PASSWORD, pending))).toBe(
@@ -459,4 +468,57 @@ describe("S-03 · PIN de gerente", () => {
     });
     expect(lock).toBeTruthy();
   }, 60000);
+});
+
+describe("S-04 · retención de la IP y purga de contadores", () => {
+  it("borra la IP de la bitácora a los 90 días y los contadores viejos sin bloqueo vigente", async () => {
+    const { SecurityMaintenance } = await import("../apps/api/src/security");
+    const owner = await makeUser("seller");
+    const day = 24 * 60 * MINUTE;
+    const ago = (days: number) => new Date(Date.now() - days * day);
+    const [oldEntry, recentEntry] = await Promise.all(
+      [100, 10].map((days) =>
+        db.auditLog.create({
+          data: {
+            userId: owner.id,
+            action: "qa_retencion",
+            entity: "user",
+            entityId: owner.id,
+            ip: "198.51.100.200",
+            createdAt: ago(days),
+          },
+        }),
+      ),
+    );
+    const key = (name: string) => `login:${owner.id}:0:qa-${name}`;
+    await db.authAttempt.createMany({
+      data: [
+        // Primer fallo hace dos días y sin bloqueo: se purga.
+        { key: key("viejo"), failedAttempts: 3, windowStartedAt: ago(2) },
+        // Viejo pero todavía bloqueado: se conserva.
+        {
+          key: key("bloqueado"),
+          failedAttempts: 10,
+          windowStartedAt: ago(2),
+          lockedUntil: new Date(Date.now() + 10 * MINUTE),
+        },
+        // Reciente: se conserva.
+        { key: key("reciente"), failedAttempts: 2, windowStartedAt: ago(0.1) },
+      ],
+    });
+    await new SecurityMaintenance(db).run();
+    expect(
+      (await db.auditLog.findUniqueOrThrow({ where: { id: oldEntry.id } })).ip,
+    ).toBeNull();
+    expect(
+      (await db.auditLog.findUniqueOrThrow({ where: { id: recentEntry.id } }))
+        .ip,
+    ).toBe("198.51.100.200");
+    const left = await db.authAttempt.findMany({
+      where: { key: { startsWith: `login:${owner.id}:0:qa-` } },
+    });
+    expect(left.map((row: any) => row.key).sort()).toEqual(
+      [key("bloqueado"), key("reciente")].sort(),
+    );
+  });
 });
