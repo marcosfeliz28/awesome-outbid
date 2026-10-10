@@ -234,6 +234,7 @@ function Install-WinSwService {
   Remove-FitStoreServiceRegistration -Name $Name -WinSW $wrapper -Config $config
   Copy-Item -LiteralPath $Paths.WinSW -Destination $wrapper -Force
   Invoke-FitStoreProcess -FilePath $wrapper -Arguments @("install") -FailureMessage "No se pudo instalar el servicio $Name"
+  Enable-FitStoreServiceSid -Name $Name
   Set-FitStoreServiceStartMode -Name $Name -Mode $StartMode
 }
 
@@ -355,7 +356,8 @@ if ($isUpdate -or $isResume) {
     postgresPassword = New-FitStoreSecret -Bytes 48
     databasePassword = New-FitStoreSecret -Bytes 48
     jwtSecret = New-FitStoreSecret -Bytes 64
-    pfxPassword = New-FitStoreSecret -Bytes 48
+    caPfxPassword = New-FitStoreSecret -Bytes 48
+    serverPfxPassword = New-FitStoreSecret -Bytes 48
   }
   $backupPath = $paths.LocalBackups
   if ($answer.ContainsKey("BackupPath") -and [string]$answer.BackupPath) { $backupPath = [IO.Path]::GetFullPath([string]$answer.BackupPath) }
@@ -426,7 +428,7 @@ $serviceValues = @{
   NODE_EXE = $paths.Node
   API_MAIN = (Join-Path $paths.Api "dist\main.js")
   API_WORKDIR = (Join-Path $paths.Work "app\api")
-  LOG_DIR = $paths.Logs
+  LOG_DIR = (Join-Path $paths.Logs $script:ApiService)
   WEB_SERVER = (Join-Path $paths.Install "runtime\web-server.mjs")
   SERVER_CONFIG = $paths.ServerConfig
   INSTALL_DIR = $paths.Install
@@ -435,6 +437,7 @@ $serviceValues = @{
 }
 if ($isUpdate) { Set-FitStoreUpdatePhase -Paths $paths -Phase "services" }
 Install-WinSwService -Paths $paths -Name $script:ApiService -TemplateName "FitStoreAPI" -Replacements $serviceValues -StartMode $applicationServiceStartMode
+$serviceValues.LOG_DIR = Join-Path $paths.Logs $script:WebService
 Install-WinSwService -Paths $paths -Name $script:WebService -TemplateName "FitStoreWeb" -Replacements $serviceValues -StartMode $applicationServiceStartMode
 Register-FitStoreTasks -Paths $paths
 

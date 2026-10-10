@@ -119,47 +119,115 @@ function Resolve-FitStoreServiceAccountSid {
   param([Parameter(Mandatory)][string]$Account)
   # LocalSystem es el token de SCM, no un nombre localizado de NTAccount.
   if ($Account -eq 'LocalSystem') { return 'S-1-5-18' }
+  if ($Account -match '^NT SERVICE\\(FitStoreAPI|FitStoreWeb)$') { return Get-FitStoreServiceSid -Name $Matches[1] }
   return [Security.Principal.NTAccount]::new($Account).Translate([Security.Principal.SecurityIdentifier]).Value
 }
 
+function Get-FitStoreServiceSid {
+  param([Parameter(Mandatory)][ValidateSet('FitStoreAPI','FitStoreWeb')][string]$Name)
+  # Windows deriva el SID de servicio del SHA1 del nombre mayusculo UTF-16LE.
+  # Funciona antes de registrar el servicio (instalacion y recuperacion).
+  $sha = [Security.Cryptography.SHA1]::Create()
+  try { $hash = $sha.ComputeHash([Text.Encoding]::Unicode.GetBytes($Name.ToUpperInvariant())) }
+  finally { $sha.Dispose() }
+  $parts = for ($i=0; $i -lt 20; $i+=4) { [BitConverter]::ToUInt32($hash,$i) }
+  return 'S-1-5-80-' + ($parts -join '-')
+}
+
+function Enable-FitStoreServiceSid {
+  param([Parameter(Mandatory)][ValidateSet('FitStoreAPI','FitStoreWeb')][string]$Name)
+  & "$env:SystemRoot\System32\sc.exe" sidtype $Name unrestricted | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "No se pudo habilitar el SID independiente de $Name." }
+}
+
 function Remove-FitStoreLocalServiceAccess {
-  param([Parameter(Mandatory)]$Paths)
-  $identity = [Security.Principal.SecurityIdentifier]::new('S-1-5-19')
+  param([Parameter(Mandatory)]$Paths, [string[]]$KeepInstallSids = @())
   # Solo destinos que Grant-FitStoreApplicationAccess modifica, sin recorrer
   # node_modules. Eliminar primero grants de padres retira la herencia hija.
   $targets = @($Paths.Data, $Paths.Work, (Join-Path $Paths.Work 'app'),
     (Join-Path $Paths.Work 'app\api'), $Paths.Pki, $Paths.Install, $Paths.Logs,
     (Join-Path $Paths.Work '.env'), $Paths.ServerConfig,
     (Join-Path $Paths.Pki 'FitStore-server.pfx'))
+  $targets += @((Join-Path $Paths.Logs 'FitStoreAPI'), (Join-Path $Paths.Logs 'FitStoreWeb'))
   foreach ($path in $targets) {
     if (-not (Test-Path -LiteralPath $path)) { continue }
     $item = Get-Item -LiteralPath $path
     $acl = Get-Acl -LiteralPath $path
-    $acl.PurgeAccessRules($identity)
+    $changed = $false
+    $explicit = @($acl.GetAccessRules($true,$false,[Security.Principal.SecurityIdentifier]))
+    foreach ($sid in @('S-1-5-19', (Get-FitStoreServiceSid -Name FitStoreAPI), (Get-FitStoreServiceSid -Name FitStoreWeb))) {
+      if ($path -eq $Paths.Install -and $sid -in $KeepInstallSids) { continue }
+      if (-not @($explicit | Where-Object { $_.IdentityReference.Value -eq $sid }).Count) { continue }
+      $acl.PurgeAccessRules([Security.Principal.SecurityIdentifier]::new($sid))
+      $changed = $true
+    }
+    if (-not $changed) { continue }
     if ($item.PSIsContainer) { [IO.Directory]::SetAccessControl($path, $acl) }
     else { [IO.File]::SetAccessControl($path, $acl) }
   }
 }
 
 function Grant-FitStoreApplicationAccess {
-  param([Parameter(Mandatory = $true)]$Paths)
-  $identity = [Security.Principal.SecurityIdentifier]::new("S-1-5-19")
-  # No grants recursivos sobre Data: base, respaldos, CA y secrets son administrativos.
-  foreach ($path in @($Paths.Data, $Paths.Work, (Join-Path $Paths.Work "app"), (Join-Path $Paths.Work "app\api"), $Paths.Pki)) {
-    $acl = [IO.Directory]::GetAccessControl($path, [Security.AccessControl.AccessControlSections]::Access)
-    $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, "ReadAndExecute", "None", "None", "Allow"))
-    [IO.Directory]::SetAccessControl($path, $acl)
+  param([Parameter(Mandatory = $true)]$Paths,
+    [string]$ApiAccount = 'NT SERVICE\FitStoreAPI', [string]$WebAccount = 'NT SERVICE\FitStoreWeb')
+  $accounts = @(@('FitStoreAPI',$ApiAccount), @('FitStoreWeb',$WebAccount))
+  $installSids = @($accounts | ForEach-Object { Resolve-FitStoreServiceAccountSid -Account $_[1] })
+  Remove-FitStoreLocalServiceAccess -Paths $Paths -KeepInstallSids $installSids
+  foreach ($account in $accounts) {
+    $sid = Resolve-FitStoreServiceAccountSid -Account $account[1]
+    if ($sid -eq 'S-1-5-18') { continue }
+    $identity = [Security.Principal.SecurityIdentifier]::new($sid)
+    # No grants recursivos sobre Data: base, respaldos, CA y secrets son administrativos.
+    $parents = @($Paths.Data, $Paths.Logs)
+    if ($account[0] -eq 'FitStoreAPI') { $parents += @($Paths.Work, (Join-Path $Paths.Work 'app'), (Join-Path $Paths.Work 'app\api')) }
+    else { $parents += $Paths.Pki }
+    foreach ($path in $parents) {
+      $acl = [IO.Directory]::GetAccessControl($path, [Security.AccessControl.AccessControlSections]::Access)
+      $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, "ReadAndExecute", "None", "None", "Allow"))
+      [IO.Directory]::SetAccessControl($path, $acl)
+    }
+    $logDir = Join-Path $Paths.Logs $account[0]
+    # XML anteriores escriben en la raiz de logs; conservarlo al revertir.
+    if ($sid -eq 'S-1-5-19') { $logDir = $Paths.Logs }
+    New-FitStoreDirectory -Path $logDir
+    foreach ($entry in @(@($Paths.Install, "ReadAndExecute"), @($logDir, "Modify"))) {
+      $acl = [IO.Directory]::GetAccessControl($entry[0], [Security.AccessControl.AccessControlSections]::Access)
+      # NTFS hereda RX desde esta unica raiz. No quitar y recrear la misma
+      # regla en cada renovacion HTTPS: propagaria ACL por todo node_modules.
+      $existing = @($acl.GetAccessRules($true,$false,[Security.Principal.SecurityIdentifier]) | Where-Object {
+        $_.IdentityReference.Value -eq $sid -and $_.AccessControlType -eq 'Allow' -and
+        $_.FileSystemRights -eq ([Security.AccessControl.FileSystemRights]$entry[1] -bor [Security.AccessControl.FileSystemRights]::Synchronize) -and
+        $_.InheritanceFlags -eq [Security.AccessControl.InheritanceFlags]'ContainerInherit, ObjectInherit'
+      })
+      if ($existing.Count) { continue }
+      $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, $entry[1], "ContainerInherit, ObjectInherit", "None", "Allow"))
+      [IO.Directory]::SetAccessControl($entry[0], $acl)
+    }
+    $files = if ($account[0] -eq 'FitStoreAPI') { @((Join-Path $Paths.Work '.env')) }
+      else { @($Paths.ServerConfig, (Join-Path $Paths.Pki 'FitStore-server.pfx')) }
+    foreach ($path in $files) {
+      $acl = [IO.File]::GetAccessControl($path, [Security.AccessControl.AccessControlSections]::Access)
+      $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, "Read", "Allow"))
+      [IO.File]::SetAccessControl($path, $acl)
+    }
   }
-  foreach ($entry in @(@($Paths.Install, "ReadAndExecute"), @($Paths.Logs, "Modify"))) {
-    $acl = [IO.Directory]::GetAccessControl($entry[0], [Security.AccessControl.AccessControlSections]::Access)
-    $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, $entry[1], "ContainerInherit, ObjectInherit", "None", "Allow"))
-    [IO.Directory]::SetAccessControl($entry[0], $acl)
+}
+
+function Initialize-FitStorePfxSecrets {
+  param([Parameter(Mandatory)]$Secrets)
+  $changed = $false
+  if (-not ($Secrets.PSObject.Properties.Name -contains 'caPfxPassword')) {
+    $legacy = if ($Secrets.PSObject.Properties.Name -contains 'pfxPassword') { [string]$Secrets.pfxPassword } else { New-FitStoreSecret }
+    $Secrets | Add-Member -NotePropertyName caPfxPassword -NotePropertyValue $legacy -Force
+    $changed = $true
   }
-  foreach ($path in @((Join-Path $Paths.Work ".env"), $Paths.ServerConfig, (Join-Path $Paths.Pki "FitStore-server.pfx"))) {
-    $acl = [IO.File]::GetAccessControl($path, [Security.AccessControl.AccessControlSections]::Access)
-    $acl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, "Read", "Allow"))
-    [IO.File]::SetAccessControl($path, $acl)
+  if (-not ($Secrets.PSObject.Properties.Name -contains 'serverPfxPassword') -or
+      [string]::IsNullOrWhiteSpace([string]$Secrets.serverPfxPassword) -or
+      [string]$Secrets.serverPfxPassword -ceq [string]$Secrets.caPfxPassword) {
+    $Secrets | Add-Member -NotePropertyName serverPfxPassword -NotePropertyValue (New-FitStoreSecret) -Force
+    $changed = $true
   }
+  return $changed
 }
 
 function Protect-FitStoreBackupFile {

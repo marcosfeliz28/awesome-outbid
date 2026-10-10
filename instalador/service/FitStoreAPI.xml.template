@@ -1,7 +1,7 @@
 <service>
   <serviceaccount>
-    <domain>NT AUTHORITY</domain>
-    <user>LocalService</user>
+    <domain>NT SERVICE</domain>
+    <user>FitStoreAPI</user>
   </serviceaccount>
   <id>FitStoreAPI</id>
   <name>FitStore POS - API</name>

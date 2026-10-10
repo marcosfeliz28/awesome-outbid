@@ -39,7 +39,7 @@ function Get-OrImportCaCertificate {
   }
   $caPfx = Join-Path $Paths.Pki "FitStore-CA.pfx"
   if (Test-Path -LiteralPath $caPfx) {
-    $password = ConvertTo-SecureString ([string]$Secrets.pfxPassword) -AsPlainText -Force
+    $password = ConvertTo-SecureString ([string]$Secrets.caPfxPassword) -AsPlainText -Force
     return Import-PfxCertificate -FilePath $caPfx -CertStoreLocation Cert:\LocalMachine\My -Password $password -Exportable
   }
   return $null
@@ -59,7 +59,7 @@ function New-FitStoreCa {
     -KeyUsage CertSign, CRLSign, DigitalSignature `
     -TextExtension @("2.5.29.19={critical}{text}ca=1&pathlength=1") `
     -NotAfter (Get-Date).AddYears(10)
-  $password = ConvertTo-SecureString ([string]$Secrets.pfxPassword) -AsPlainText -Force
+  $password = ConvertTo-SecureString ([string]$Secrets.caPfxPassword) -AsPlainText -Force
   Export-PfxCertificate -Cert $ca -FilePath (Join-Path $Paths.Pki "FitStore-CA.pfx") -Password $password -Force | Out-Null
   Export-Certificate -Cert $ca -FilePath (Join-Path $Paths.Pki "FitStore-CA.cer") -Type CERT -Force | Out-Null
   Import-Certificate -FilePath (Join-Path $Paths.Pki "FitStore-CA.cer") -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
@@ -68,7 +68,8 @@ function New-FitStoreCa {
 }
 
 function New-FitStoreServerCertificate {
-  param($Paths, $Secrets, $Ca, [string[]]$Ips, [string[]]$DnsNames)
+  param($Paths, $Secrets, $Ca, [string[]]$Ips, [string[]]$DnsNames,
+    [ValidateSet('Cert:\LocalMachine\My','Cert:\CurrentUser\My')][string]$CertStoreLocation = 'Cert:\LocalMachine\My')
   $san = @()
   foreach ($dns in $DnsNames) { $san += "DNS=$dns" }
   foreach ($ip in $Ips) { $san += "IPAddress=$ip" }
@@ -77,7 +78,7 @@ function New-FitStoreServerCertificate {
     -Subject ("CN={0}" -f $env:COMPUTERNAME) `
     -FriendlyName "FitStore POS HTTPS" `
     -Signer $Ca `
-    -CertStoreLocation Cert:\LocalMachine\My `
+    -CertStoreLocation $CertStoreLocation `
     -KeyAlgorithm RSA `
     -KeyLength 2048 `
     -HashAlgorithm SHA256 `
@@ -88,7 +89,7 @@ function New-FitStoreServerCertificate {
       ("2.5.29.17={text}" + ($san -join "&"))
     ) `
     -NotAfter (Get-Date).AddMonths(24)
-  $password = ConvertTo-SecureString ([string]$Secrets.pfxPassword) -AsPlainText -Force
+  $password = ConvertTo-SecureString ([string]$Secrets.serverPfxPassword) -AsPlainText -Force
   $serverPfx = Join-Path $Paths.Pki "FitStore-server.pfx"
   Export-PfxCertificate -Cert $leaf -FilePath $serverPfx -Password $password -Force | Out-Null
   Protect-FitStoreFile -Path $serverPfx
@@ -98,6 +99,8 @@ function New-FitStoreServerCertificate {
 Assert-FitStoreAdministrator
 $paths = Get-FitStorePaths -InstallDir $InstallDir
 $secrets = Read-FitStoreJson -Path $paths.Secrets
+$pfxMigrated = Initialize-FitStorePfxSecrets -Secrets $secrets
+if ($pfxMigrated) { Write-FitStoreJson -Path $paths.Secrets -Value $secrets -Protect }
 $state = Read-FitStoreJson -Path $paths.State
 New-FitStoreDirectory -Path $paths.Pki
 
@@ -112,7 +115,14 @@ $sameIps = (($savedIps -join ",") -eq (($ips | Sort-Object) -join ","))
 $serverPfx = Join-Path $paths.Pki "FitStore-server.pfx"
 $leafThumbprint = [string](Get-StateValue -State $state -Name "leafThumbprint" -Default "")
 $existingLeaf = Get-ChildItem Cert:\LocalMachine\My | Where-Object { $_.Thumbprint -eq $leafThumbprint } | Select-Object -First 1
-$mustIssue = $Force -or -not $sameIps -or -not (Test-Path -LiteralPath $serverPfx) -or $null -eq $existingLeaf -or $existingLeaf.NotAfter -lt (Get-Date).AddDays(60)
+$passwordMatches = $false
+if (Test-Path -LiteralPath $paths.ServerConfig) {
+  $previousConfig = Read-FitStoreJson -Path $paths.ServerConfig
+  $passwordMatches = [string](Get-StateValue -State $previousConfig -Name pfxPassword -Default '') -ceq [string]$secrets.serverPfxPassword
+}
+# Una interrupcion despues de guardar secrets y antes de exportar/configurar
+# vuelve a emitir el servidor; nunca cambia la clave de la CA antigua.
+$mustIssue = $Force -or $pfxMigrated -or -not $passwordMatches -or -not $sameIps -or -not (Test-Path -LiteralPath $serverPfx) -or $null -eq $existingLeaf -or $existingLeaf.NotAfter -lt (Get-Date).AddDays(60)
 
 $ca = Get-OrImportCaCertificate -Paths $paths -Secrets $secrets -State $state
 if ($null -eq $ca) {
@@ -142,7 +152,7 @@ $serverConfig = [ordered]@{
   apiPort = 3001
   webRoot = $paths.Web
   pfxPath = $serverPfx
-  pfxPassword = [string]$secrets.pfxPassword
+  pfxPassword = [string]$secrets.serverPfxPassword
 }
 Write-FitStoreJson -Path $paths.ServerConfig -Value $serverConfig -Protect
 Grant-FitStoreApplicationAccess -Paths $paths

@@ -121,6 +121,7 @@ function Ensure-RestoredApplicationService {
   if (-not $registered -or [string]::IsNullOrWhiteSpace([string]$registered.StartName)) {
     throw "No se pudo verificar la cuenta registrada del servicio restaurado $Name."
   }
+  if ([string]$registered.StartName -like 'NT SERVICE\*') { Enable-FitStoreServiceSid -Name $Name }
   return [string]$registered.StartName
 }
 
@@ -197,15 +198,14 @@ try {
 
   # Restore-PreviousDataFiles protege de nuevo .env/TLS y elimina sus grants.
   # La identidad real en SCM (no el XML) determina los permisos necesarios.
-  $usesLocalService = $false
+  $restoredAccounts = @{}
   foreach ($service in @($script:ApiService, $script:WebService)) {
     $account = Ensure-RestoredApplicationService -Paths $paths -Name $service -KeepDisabled:$RecoverInterrupted
     $accountSid = Resolve-FitStoreServiceAccountSid -Account $account
-    if ($accountSid -eq 'S-1-5-19') { $usesLocalService = $true }
-    elseif ($accountSid -ne 'S-1-5-18') { throw "Cuenta de servicio restaurada no admitida para $service." }
+    if ($accountSid -notin @('S-1-5-19','S-1-5-18',(Get-FitStoreServiceSid -Name $service))) { throw "Cuenta de servicio restaurada no admitida para $service." }
+    $restoredAccounts[$service] = $account
   }
-  if ($usesLocalService) { Grant-FitStoreApplicationAccess -Paths $paths }
-  else { Remove-FitStoreLocalServiceAccess -Paths $paths }
+  Grant-FitStoreApplicationAccess -Paths $paths -ApiAccount $restoredAccounts[$script:ApiService] -WebAccount $restoredAccounts[$script:WebService]
   if ($RecoverInterrupted) {
     # restart-previous no pasa por Restore-DatabaseFromUpdateBackup, que inicia
     # el servicio. Arrancarlo expresamente tambien en esa ruta antes de psql.
