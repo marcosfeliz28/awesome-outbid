@@ -1,6 +1,13 @@
 # Preparación de Nexora POS para Render
 
-**Estado:** código preparado y validable; no se ha creado, comprado ni desplegado ningún recurso.
+**Estado (10-oct-2026):** en producción desde el 8-oct-2026. Web
+`nexora-pos-web` (`0.5c-512mb`), API privada `nexora-pos-api` (`1c-2g`) y
+PostgreSQL 17 `nexora-pos-db` (`0.5c-1g`, 5 GB, base `fitstore_bfjz`), los tres
+en Virginia. Los despliegues son manuales. Documentos de operación:
+[CONTINGENCIA.md](CONTINGENCIA.md) (qué hace la tienda si algo cae),
+[MONITOREO.md](MONITOREO.md) (avisos de caída),
+[RESTAURACION_RENDER.md](RESTAURACION_RENDER.md) (recuperar la base) y
+[MIGRACIONES_SEGURAS.md](MIGRACIONES_SEGURAS.md).
 
 Este documento acompaña `render.yaml`. El Blueprint describe una web pública,
 una API privada y PostgreSQL sin acceso público. Los nombres internos
@@ -27,22 +34,29 @@ Internet -> HTTPS de Render -> nexora-pos-web (Nginx + PWA)
   desde Internet.
 - Los tres recursos están fijados en `virginia` y usan una sola instancia para
   el piloto.
+- `render.yaml` refleja los planes reales. **Los cambios de plan se hacen
+  primero en el repositorio** (`render.yaml` y los mínimos de
+  `tests/cloud-deploy.test.ts`) y después en el panel, nunca sólo en el panel:
+  una sincronización del Blueprint con valores menores bajaría los planes
+  (reinicio) e intentaría encoger el disco, que Render no permite. La prueba
+  impide bajar un plan o el disco por accidente.
 - `autoDeployTrigger: off` evita que web, API y migraciones se publiquen en un
   orden accidental. Cada liberación debe iniciarse de forma controlada.
 
 ## Archivos de despliegue
 
-| Archivo                               | Función                                                                                                                     |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados.                                                   |
-| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                                                                               |
-| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.                                                           |
-| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                                                                                |
-| `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx).                                                   |
-| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                  |
-| `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `database: ok`. |
-| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales.                                                                |
-| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                             |
+| Archivo                               | Función                                                                                                                           |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados.                                                         |
+| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                                                                                     |
+| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.                                                                 |
+| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                                                                                      |
+| `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx). Si la API no resuelve, arranca igual con `/api` en 502. |
+| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                        |
+| `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `database: ok`.       |
+| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS, UTC y tope de conexiones; en `migrate deploy` añade `lock_timeout` y `statement_timeout`.           |
+| `deploy/render/ci-smoke.sh`           | En el CI: arranca las imágenes como en Render (web sin API, migración, API) y ejecuta `post-deploy-check.mjs`.                    |
+| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                                   |
 
 ## Variables y secretos
 
@@ -56,6 +70,11 @@ El repositorio no contiene valores secretos.
   del entorno del proceso hijo y nunca imprime la URL.
 - `WEB_ORIGIN` se copia de `RENDER_EXTERNAL_URL` de la web. Así el primer piloto
   usa automáticamente su dirección `https://…onrender.com` real.
+- `NEXORA_DB_CONNECTION_LIMIT` (opcional, 1–100, por defecto 10) limita las
+  conexiones de la API. Sin tope, Prisma usaba los núcleos físicos del host
+  (17 conexiones). `NEXORA_MIGRATION_LOCK_TIMEOUT` y
+  `NEXORA_MIGRATION_STATEMENT_TIMEOUT` (por defecto `5s` y `120s`) sólo se
+  añaden de forma temporal para una migración pesada planificada.
 - `ANTHROPIC_API_KEY` no está declarada. La lectura con IA permanece apagada
   hasta que el negocio decida activarla como secreto separado.
 - Swagger queda apagado en producción.
@@ -150,10 +169,10 @@ ejecuta `render-security-headers.sh`, que genera
 
 Para comprobarlo tras un despliegue: `curl -sI <URL_WEB>/ | grep -i
 content-security-policy` debe mostrar el host de Sentry sólo si hay DSN. La cámara requiere HTTPS (o localhost). Las cabeceras y
-reglas de rutas se comprobaron con un Nginx 1.24 real (no con la imagen
-`nginx:1.30.5-alpine3.24`); el recorrido visual/offline de la cámara y la
-imagen Docker siguen pendientes porque Docker no está disponible en el equipo
-de revisión.
+reglas de rutas se comprobaron con un Nginx 1.24 real y, desde el 10-oct-2026,
+con la imagen `nginx:1.30.5-alpine3.24` construida en Docker (job
+`render-images` del CI). El recorrido visual/offline de la cámara sigue
+pendiente.
 
 ### Cabeceras en `/api`
 
@@ -199,7 +218,12 @@ Swagger en producción (`ENABLE_SWAGGER=true`), su interfaz queda sujeta a ella.
   la API no reinicie la web en bucle.
 - `GET /healthz/deep` comprueba además que la API responde (`204` o `503`, sin
   detalles). Es para uso manual o externo; Render no debe usarlo como
-  `healthCheckPath`.
+  `healthCheckPath`. Lo vigila el monitor externo ([MONITOREO.md](MONITOREO.md)).
+- Si al arrancar la web la API no resuelve (suspendida, reiniciando), Nginx
+  arranca igual: sirve la PWA y `/healthz`, y `/api/*` responde `502` con un
+  JSON claro (`504` si la API tarda más de 60 s), que la PWA trata como «sin
+  conexión». El bucle de re-resolución apunta a la API en cuanto aparece. Si
+  ese bucle muere, detiene Nginx para que Render reinicie la web.
 - Render sólo realiza comprobación TCP nativa al servicio privado.
 - `GET /api/health/live` confirma que el proceso de la API vive.
 - `GET /api/health` y `GET /api/health/ready` consultan PostgreSQL y devuelven
@@ -219,8 +243,12 @@ node deploy/render/with-cloud-env.mjs node apps/api/node_modules/prisma/build/in
 ```
 
 Si la migración falla, el despliegue se detiene. No se ejecuta `prisma db push`
-ni el seed de demostración. Las migraciones nuevas deben seguir el patrón
-“ampliar y luego retirar”:
+ni el seed de demostración. `with-cloud-env.mjs` reconoce esta orden y le
+añade `lock_timeout=5s` y `statement_timeout=120s`: una migración que tendría
+que esperar o bloquear las tablas de venta falla en vez de congelar las cajas.
+Reglas, migraciones pesadas y qué hacer ante un error P3009/P3018:
+[MIGRACIONES_SEGURAS.md](MIGRACIONES_SEGURAS.md). Las migraciones nuevas deben
+seguir el patrón “ampliar y luego retirar”:
 
 1. Añadir tablas, columnas o índices de forma compatible.
 2. Publicar una API que entienda la estructura vieja y la nueva.
@@ -229,6 +257,16 @@ ni el seed de demostración. Las migraciones nuevas deben seguir el patrón
    un respaldo verificable.
 
 Volver al contenedor anterior no revierte una migración de datos.
+
+### Actualización de la PWA en las cajas
+
+La web usa `registerType: "prompt"`: una versión nueva no recarga la página
+sola. Aparece el aviso «Hay una versión nueva de Nexora» y se aplica con
+«Actualizar ahora» (sólo con el carrito vacío) o sola cuando el carrito está
+vacío y la caja lleva 5 minutos sin uso; nunca con una venta en curso
+(`apps/web/src/pwaUpdate.ts`). Cada caja comprueba cada hora si hay versión
+nueva. Por eso **la API debe aceptar durante al menos 7 días la versión
+anterior de la web y su cola de ventas sin conexión**.
 
 ### Contraseñas temporales de cajero
 
@@ -265,11 +303,14 @@ pnpm typecheck
 pnpm build
 ```
 
-Si Docker está disponible, construir ambas imágenes sin iniciarlas:
+El CI (job `render-images` de `.github/workflows/ci.yml`) construye ambas
+imágenes en cada _push_ sin publicarlas y ejecuta `deploy/render/ci-smoke.sh`.
+Si Docker está disponible en local, se puede repetir:
 
 ```text
 docker build -f deploy/render/Dockerfile.api -t nexora-api:verify .
 docker build -f deploy/render/Dockerfile.web -t nexora-web:verify .
+NEXORA_API_IMAGE=nexora-api:verify NEXORA_WEB_IMAGE=nexora-web:verify bash deploy/render/ci-smoke.sh
 ```
 
 Cuando el código esté en un repositorio privado conectado a Render, validar el
@@ -285,9 +326,9 @@ Blueprint sí los crea y sólo debe hacerse después de aprobar el gasto.
 ## Secuencia del primer piloto
 
 1. Subir esta carpeta a un repositorio Git privado de la empresa.
-2. Confirmar en el panel de Render el precio vigente de los dos planes
-   `0.5c-512mb`, PostgreSQL `0.1c-256mb` y 1 GB. No aceptar el Blueprint si el
-   total supera el presupuesto aprobado.
+2. Confirmar en el panel de Render el precio vigente de los planes de
+   `render.yaml` (web `0.5c-512mb`, API `1c-2g`, PostgreSQL `0.5c-1g` con
+   5 GB). No aceptar el Blueprint si el total supera el presupuesto aprobado.
 3. Validar `render.yaml` y revisar que PostgreSQL muestre cero reglas de entrada
    pública.
 4. Crear los recursos desde el Blueprint. No cargar todavía datos reales.
@@ -311,18 +352,35 @@ Blueprint sí los crea y sólo debe hacerse después de aprobar el gasto.
 
 ## Publicaciones posteriores
 
-1. Confirmar un respaldo recuperable.
-2. Publicar primero la API; su `preDeployCommand` aplica la migración.
-3. Verificar `/api/health` y una transacción controlada.
-4. Publicar la web.
-5. Verificar inicio de sesión, venta, SSE, impresión y cola offline.
-6. Observar errores antes de declarar finalizada la liberación.
+1. Desplegar sólo un commit de `nexora-cloud` con el CI **en verde** (incluido
+   el job `render-images`), fuera de horario (antes de abrir o después del
+   cierre) salvo urgencia.
+2. Confirmar un respaldo recuperable (export semanal, ver
+   [RESTAURACION_RENDER.md](RESTAURACION_RENDER.md)).
+3. Publicar primero la API; su `preDeployCommand` aplica la migración.
+4. Verificar `/api/health` y una transacción controlada.
+5. Publicar la web.
+6. Ejecutar Actions › «Comprobación posterior al despliegue» (corre
+   `post-deploy-check.mjs` contra la web pública) y verificar inicio de
+   sesión, venta, SSE, impresión y cola offline.
+7. Observar errores antes de declarar finalizada la liberación.
 
 Los disparadores automáticos permanecen apagados para conservar este orden.
 
+### Protección que sólo puede activar la dueña
+
+- GitHub › _Settings › Branches_: regla para `nexora-cloud` que exija el CI
+  en verde (`verify` y `render-images`) y una revisión antes de mezclar.
+- GitHub › _Settings › Actions › General_: permisos del `GITHUB_TOKEN` en
+  «Read repository contents» (los workflows ya piden sólo lectura).
+- Render › Blueprint: confirmar si _Auto Sync_ está activo y dejarlo
+  **apagado** (sincronizar sólo a mano, tras revisar el diff).
+
 ## Respaldo y recuperación de Render
 
-`render.yaml` configura PostgreSQL pagado `0.1c-256mb`, pero no permite inferir
+Procedimiento completo y probado: [RESTAURACION_RENDER.md](RESTAURACION_RENDER.md).
+
+`render.yaml` configura PostgreSQL pagado `0.5c-1g`, pero no permite inferir
 el plan del workspace Render. El panel de facturación verificó el plan Hobby
 para este workspace el 8 de octubre de 2026: Render publica
 PITR continuo con ventana de 3 días en Hobby y 7 días en Pro o superior; los
@@ -330,7 +388,7 @@ exports lógicos iniciados desde el Dashboard se conservan 7 días. PITR y los
 exports lógicos no están disponibles para bases Free. Fuente y fecha de
 consulta: [documentación oficial de Render](https://render.com/docs/postgresql-backups),
 consultada el 8 de octubre de 2026. Esta ventana depende del workspace, no del
-tamaño `0.1c-256mb` del servicio.
+tamaño `0.5c-1g` del servicio.
 
 **Procedimiento recomendado de recuperación Render (sin sobrescribir la base
 fuente):**
@@ -379,25 +437,25 @@ fuente):**
    controladas. Mantener la instancia anterior intacta hasta completar la
    verificación y decisión del negocio.
 
-No se ejecutó PITR ni una restauración lógica en Render: todavía no se ha
-confirmado la cuenta/plan del workspace y no se debe ensayar sobre datos reales.
-La fault-injection local del instalador no sustituye la prueba de restauración
-cloud. Un ensayo real requiere una base descartable y Docker/`pg_restore`, que
-no están disponibles en este equipo durante esta revisión.
+No se ejecutó PITR ni una restauración lógica en Render. El 10-oct-2026 se
+ensayó en Docker con PostgreSQL 17.11 el respaldo propio (`backup.mjs` /
+`restore.mjs`) y un export en formato directorio como el de Render, con
+conteos idénticos y la API sana contra la base restaurada (detalle en
+[RESTAURACION_RENDER.md](RESTAURACION_RENDER.md); prueba anterior con
+PostgreSQL 16 en [PRUEBA_RESTAURACION.md](PRUEBA_RESTAURACION.md)). El ensayo
+de PITR hacia una base descartable en Render sigue pendiente.
 
 ## Trabajo que sigue pendiente
 
-Esta preparación no incluye ni autoriza:
-
-- compra, cuenta, repositorio, dominio o despliegue;
-- importación del inventario real;
-- activar y programar el pipeline privado de Render a S3 y de S3 a la laptop.
+- Activar y programar el pipeline privado de Render a S3 y de S3 a la laptop.
   Diseño, fragmento de cron no activo, cliente local y límites: [Respaldo cloud
-  de Render](./RESPALDO_CLOUD_RENDER.md);
-- monitor externo y alertas operativas;
-- ensayo de restauración con base descartable en Render;
-- pruebas reales con dos laptops, celular, impresora, lector y cortes de red;
-- aceptación del riesgo de una sola instancia.
+  de Render](./RESPALDO_CLOUD_RENDER.md). Mientras tanto, export semanal a mano
+  ([RESTAURACION_RENDER.md](RESTAURACION_RENDER.md)).
+- Crear el monitor externo y los avisos ([MONITOREO.md](MONITOREO.md)).
+- Ensayo de PITR con base descartable en Render.
+- Pruebas reales con dos laptops, celular, impresora, lector y cortes de red
+  ([CONTINGENCIA.md](CONTINGENCIA.md)).
+- Aceptación del riesgo de una sola instancia.
 
 Tampoco se añadió `ANTHROPIC_API_KEY` ni se cambió el instalador Windows.
 

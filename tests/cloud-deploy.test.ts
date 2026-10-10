@@ -296,6 +296,64 @@ describe("Render · operación inicial", () => {
   });
 });
 
+describe("Operación · contingencia, monitoreo y restauración", () => {
+  it("la contingencia nombra los ajustes reales y enlaza los procedimientos", () => {
+    const plan = read("docs/CONTINGENCIA.md").replace(/\s+/g, " ");
+    // La ruta del ajuste debe existir en la interfaz.
+    expect(plan).toContain(
+      "Configuración › Negocio y reglas › Editar configuración › «Permitir ventas sin conexión»",
+    );
+    expect(read("apps/web/src/Management.tsx")).toContain(
+      "Permitir ventas sin conexión",
+    );
+    for (const link of [
+      "MONITOREO.md",
+      "RESTAURACION_RENDER.md",
+      "INSTALADOR.md",
+    ])
+      expect(plan).toContain(`(${link})`);
+    expect(plan).toContain("talonario");
+    expect(plan).toContain("Sistema anterior");
+  });
+
+  it("el monitoreo vigila la salud profunda y la de la base cada minuto", () => {
+    const guide = read("docs/MONITOREO.md");
+    expect(guide).toContain("https://nexora-pos-web.onrender.com/api/health");
+    expect(guide).toContain("https://nexora-pos-web.onrender.com/healthz/deep");
+    expect(guide).toContain('`"database":"ok"`');
+    expect(guide).toContain("**60 segundos**");
+    expect(guide).toMatch(/Telegram/);
+  });
+
+  it("la restauración verifica la huella, es atómica y no pisa la base en uso", () => {
+    const guide = read("docs/RESTAURACION_RENDER.md");
+    expect(guide).toContain("sha256sum -c");
+    expect(guide).toContain(
+      "pg_restore --format=directory --single-transaction --exit-on-error --no-owner --no-privileges",
+    );
+    expect(guide).toContain("node scripts/restore.mjs");
+    expect(guide).toContain("migrate status");
+    expect(guide).toContain("RENDER_DATABASE_URL");
+    expect(guide).toContain(
+      "nunca se restaura encima de la base que está en uso",
+    );
+    expect(guide).toContain("(PRUEBA_RESTAURACION.md)");
+    expect(read("docs/PRUEBA_RESTAURACION.md")).toContain(
+      "Prueba real de respaldo y restauración",
+    );
+    const deploy = read("docs/DEPLOY-RENDER.md");
+    for (const link of [
+      "CONTINGENCIA.md",
+      "MONITOREO.md",
+      "RESTAURACION_RENDER.md",
+      "MIGRACIONES_SEGURAS.md",
+    ])
+      expect(deploy).toContain(`(${link})`);
+    expect(deploy).not.toContain("no se ha creado, comprado ni desplegado");
+    expect(deploy).not.toContain("0.1c-256mb");
+  });
+});
+
 describe("Respaldo cloud · tarea Windows", () => {
   it("se ejecuta como usuario limitado al iniciar sesión y diariamente, sin guardar claves", () => {
     const task = read("scripts/Register-NexoraCloudBackupTask.ps1");
