@@ -2,7 +2,46 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { verifyDeployLock } from "../tools/verify-deploy-lock.mjs";
 import { deserialize, serialize } from "node:v8";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 const clone = (value) => deserialize(serialize(value));
+test("workspace proyecta dev solo de fuente; snapshot destino no puede agregar dev", () => {
+  const sourceDir = path.resolve("source-fixture");
+  const deployDir = path.resolve("output-fixture");
+  const sharedDir = path.resolve(sourceDir, "packages/shared");
+  const shared = "@fitstore/shared";
+  const key = `${shared}@${pathToFileURL(sharedDir).href}`;
+  const original = {
+    importers: {
+      "apps/api": {
+        dependencies: { [shared]: { version: "link:../../packages/shared" } },
+      },
+      "packages/shared": { devDependencies: { extra: { version: "1.0.0" } } },
+    },
+    packages: { "extra@1.0.0": { resolution: { integrity: "sha512-extra" } } },
+    snapshots: { "extra@1.0.0": {} },
+  };
+  const changed = {
+    importers: { ".": { dependencies: { [shared]: { version: key } } } },
+    packages: {
+      [key]: {
+        resolution: {
+          type: "directory",
+          directory: path.relative(deployDir, sharedDir),
+        },
+      },
+      "extra@1.0.0": original.packages["extra@1.0.0"],
+    },
+    snapshots: {
+      [key]: { devDependencies: { extra: "1.0.0" } },
+      "extra@1.0.0": {},
+    },
+  };
+  assert.throws(
+    () => verifyDeployLock(original, changed, sourceDir, deployDir),
+    /Dependencias.*snapshot.*cambiaron/,
+  );
+});
 
 const source = {
   importers: {

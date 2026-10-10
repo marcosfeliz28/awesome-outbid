@@ -10,7 +10,10 @@ const fields = ["dependencies", "devDependencies", "optionalDependencies"];
 function edges(entry, projectDir, sourceDir, includeDev = true) {
   const result = {};
   for (const field of fields) {
-    if (!includeDev && field === "devDependencies") continue;
+    if (!includeDev && field === "devDependencies") {
+      result[field] = {};
+      continue;
+    }
     result[field] = Object.fromEntries(
       Object.entries(entry[field] ?? {})
         .sort(([a], [b]) => a.localeCompare(b))
@@ -37,7 +40,7 @@ function compareEdges(
 ) {
   if (
     JSON.stringify(edges(expected, projectDir, sourceDir, includeDev)) !==
-    JSON.stringify(edges(actual, deployDir, deployDir, includeDev))
+    JSON.stringify(edges(actual, deployDir, deployDir))
   ) {
     throw new Error(
       `Dependencias de ${label} cambiaron respecto al lock fuente.`,
