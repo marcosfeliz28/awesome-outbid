@@ -34,3 +34,6 @@ Existencia: Creamy Vanilla 3 lb (1172)→34; Dutch Chocolate 3 lb (1173)→3; Ba
 
 ## CORRECCIÓN a la ACTUALIZACIÓN 3 (10 oct): Isopure 3 lb se SUMA, no reemplaza
 La dueña aclaró que las cantidades de Isopure son entradas nuevas: se SUMAN a la existencia que tenía el listado: 1172 8+34=42; 1173 7+3=10; 1156 1+3=4. Los dos sabores nuevos entran con 5 y 4. Los conteos de fajas, creatina, multivitamínicos y Opti-Men siguen siendo «cantidad que debe haber» (reemplazan). La duda del «3 Chocolate» repetido sigue abierta. Archivo vigente: `inventario-listo-para-cargar-v3.xlsx` (631 filas; fuera del repositorio).
+
+## ACTUALIZACIÓN 4 (10 oct): el segundo «3 Chocolate» de Isopure es OTRO sabor
+Dutch Chocolate (1173) suma 3; Chocolate Peanut Butter (1632) 5; y el segundo «chocolate» es un sabor distinto que no está en el listado: producto nuevo «Isopure - Chocolate / 3 lb» (ID 1634, 3 u., costo 2,700, precio 5,000). PENDIENTE: que la dueña confirme el nombre exacto del sabor. Archivo vigente: v3 (632 filas).
