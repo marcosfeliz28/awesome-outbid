@@ -27,6 +27,7 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     "Recovery-Restart-Previous",
     "Recovery-Temporary-Acl",
     "Recovery-Physical-Directory",
+    "Recovery-Schema-Contract",
     "Preflight-Backup-Fallback",
     "Recovery-FaultInjection",
     "Backup-Reader-Privacy",
