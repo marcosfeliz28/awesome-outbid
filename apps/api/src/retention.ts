@@ -78,44 +78,69 @@ export async function purgeExpiredData(db: any, now = new Date()) {
       result.errors.push(`${name}: ${String(error?.message ?? error)}`);
     }
   };
+  // Cada DELETE repite su condición fuera del lote: si una fila cambia
+  // mientras tanto (p. ej. un intento de inicio de sesión renueva su fecha),
+  // PostgreSQL la vuelve a evaluar y no la borra.
   await step(
     "realtimeEvents",
     (limit) => db.$executeRaw`
-      DELETE FROM "RealtimeEvent" WHERE id IN (
+      WITH old AS MATERIALIZED (
         SELECT id FROM "RealtimeEvent"
          WHERE "createdAt" < (${realtimeCutoff}::timestamptz AT TIME ZONE 'UTC')
-         ORDER BY id LIMIT ${limit})`,
+         ORDER BY id LIMIT ${limit})
+      DELETE FROM "RealtimeEvent" e USING old
+       WHERE e.id = old.id
+         AND e."createdAt" < (${realtimeCutoff}::timestamptz AT TIME ZONE 'UTC')`,
   );
   await step(
     "notifications",
     (limit) => db.$executeRaw`
-      DELETE FROM "NotificationOutbox" WHERE id IN (
+      WITH old AS MATERIALIZED (
         SELECT id FROM "NotificationOutbox"
          WHERE (status = 'sent'
                 AND "sentAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC'))
             OR (status = 'failed'
                 AND "createdAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC'))
-         LIMIT ${limit})`,
+         LIMIT ${limit})
+      DELETE FROM "NotificationOutbox" o USING old
+       WHERE o.id = old.id
+         AND ((o.status = 'sent'
+               AND o."sentAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC'))
+           OR (o.status = 'failed'
+               AND o."createdAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC')))`,
   );
+  // Mismo candado consultivo por clave que el freno de intentos de la rama
+  // de seguridad (sin esperar): nunca borra un contador en uso.
   await step(
     "authAttempts",
     (limit) => db.$executeRaw`
-      DELETE FROM "AuthAttempt" WHERE key IN (
+      WITH old AS MATERIALIZED (
         SELECT key FROM "AuthAttempt"
          WHERE ("lockedUntil" IS NULL
                 OR "lockedUntil" < (${now}::timestamptz AT TIME ZONE 'UTC'))
            AND (("key" LIKE 'login:missing:%'
                  AND "updatedAt" < (${missingCutoff}::timestamptz AT TIME ZONE 'UTC'))
                 OR "updatedAt" < (${attemptCutoff}::timestamptz AT TIME ZONE 'UTC'))
-         LIMIT ${limit})`,
+         LIMIT ${limit})
+      DELETE FROM "AuthAttempt" a USING old
+       WHERE a.key = old.key
+         AND (a."lockedUntil" IS NULL
+              OR a."lockedUntil" < (${now}::timestamptz AT TIME ZONE 'UTC'))
+         AND ((a.key LIKE 'login:missing:%'
+               AND a."updatedAt" < (${missingCutoff}::timestamptz AT TIME ZONE 'UTC'))
+              OR a."updatedAt" < (${attemptCutoff}::timestamptz AT TIME ZONE 'UTC'))
+         AND pg_try_advisory_xact_lock(hashtext(a.key))`,
   );
   await step(
     "refreshTokens",
     (limit) => db.$executeRaw`
-      DELETE FROM "RefreshToken" WHERE id IN (
+      WITH old AS MATERIALIZED (
         SELECT id FROM "RefreshToken"
          WHERE "expiresAt" < (${tokenCutoff}::timestamptz AT TIME ZONE 'UTC')
-         LIMIT ${limit})`,
+         LIMIT ${limit})
+      DELETE FROM "RefreshToken" t USING old
+       WHERE t.id = old.id
+         AND t."expiresAt" < (${tokenCutoff}::timestamptz AT TIME ZONE 'UTC')`,
   );
   return result;
 }
