@@ -701,6 +701,49 @@ describe("Auditoría 01 · dinero", () => {
     ).toBe("new");
   });
 
+  it("N-4: los informes de forma de pago no cuentan como cobrada una transferencia rechazada", async () => {
+    const c = await person("seller", "n4", 0);
+    const v = await product(700, 300, 10);
+    const range = "?from=" + today() + "&to=" + today();
+    const amountOf = (rows: any[], name: string) =>
+      Number(rows.find((r: any) => (r.name ?? r.Método) === name)?.amount ?? 0);
+    const sale = await sell(c, v, 1, [
+      {
+        method: "transfer",
+        amount: 700,
+        bank: "Banco Inventado",
+        reference: "N4",
+      },
+    ]);
+    const mid = await ok("/dashboard/summary" + range, admin);
+    const midReport = await ok("/reports/by-payment" + range, admin);
+    await ok("/payments/" + sale.payments[0].id + "/reject", admin, {
+      reason: "No llegó",
+    });
+    const after = await ok("/dashboard/summary" + range, admin);
+    const afterReport = await ok("/reports/by-payment" + range, admin);
+    // Los ingresos no cambian: lo que cambia es cómo se cobró.
+    expect(after.revenue).toBeCloseTo(mid.revenue, 2);
+    expect(
+      amountOf(after.payments, "transfer") - amountOf(mid.payments, "transfer"),
+    ).toBeCloseTo(-700, 2);
+    expect(
+      amountOf(after.payments, "credit") - amountOf(mid.payments, "credit"),
+    ).toBeCloseTo(700, 2);
+    const total = (rows: any[]) =>
+      rows.reduce((a: number, r: any) => a + Number(r.amount), 0);
+    expect(total(after.payments)).toBeCloseTo(after.revenue, 2);
+    const sold = (report: any, method: string) =>
+      Number(report.rows.find((r: any) => r.Método === method)?.Ventas ?? 0);
+    expect(
+      sold(afterReport, "transfer") - sold(midReport, "transfer"),
+    ).toBeCloseTo(-700, 2);
+    expect(sold(afterReport, "credit") - sold(midReport, "credit")).toBeCloseTo(
+      700,
+      2,
+    );
+  });
+
   it("B-3: no se cierra el mes de incentivos en curso", async () => {
     const month = businessMonth();
     const r = await request("/incentives/close", admin, { month });

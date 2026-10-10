@@ -319,7 +319,7 @@ export class ReportsController {
       // Cómo se cobraron las ventas del período: el crédito es su propio
       // método y sus abonos no se suman otra vez (R9-dinero-9).
       this.db.payment.groupBy({
-        by: ["method"],
+        by: ["method", "status"],
         where: {
           sale: where,
           entryType: { not: "installment" },
@@ -412,7 +412,8 @@ export class ReportsController {
     );
     const paymentsNet = netOf(
       payments,
-      (p) => p.method,
+      // N-4: una transferencia rechazada no se cobró; pasó a cuenta por cobrar.
+      (p) => (p.status === "rejected" ? "credit" : p.method),
       (p) => p._sum.amount ?? 0,
       returned.methods,
     );
@@ -814,7 +815,7 @@ export class ReportsController {
         const [sold, collected] = await Promise.all([
           this.db.$queryRaw<
             { method: string; amount: unknown }[]
-          >`SELECT p.method, SUM(p.amount) AS amount FROM "Payment" p JOIN "Sale" s ON s.id = p."saleId" WHERE ${filter} AND p."entryType" <> 'installment' GROUP BY p.method ORDER BY MAX(s."createdAt") DESC`,
+          >`SELECT CASE WHEN p.status = 'rejected' THEN 'credit' ELSE p.method END AS method, SUM(p.amount) AS amount FROM "Payment" p JOIN "Sale" s ON s.id = p."saleId" WHERE ${filter} AND p."entryType" <> 'installment' GROUP BY 1 ORDER BY MAX(s."createdAt") DESC`,
           this.db.payment.groupBy({
             by: ["method"],
             where: {
