@@ -175,9 +175,18 @@ function Initialize-FitStoreBackupStorage {
   }
   New-FitStoreDirectory -Path $Paths.LocalBackups
   Protect-FitStoreBackupDirectory -Path $Paths.LocalBackups
-  foreach ($directory in @($previous, $Paths.LocalBackups) | Select-Object -Unique) {
-    if (-not $directory -or -not (Test-Path -LiteralPath $directory -PathType Container)) { continue }
-    foreach ($file in Get-ChildItem -LiteralPath $directory -Filter "FitStore_*" -File) { Protect-FitStoreBackupFile -Path $file.FullName }
+  # La carpeta nueva y sus copias siempre deben quedar privadas: sus errores
+  # no se ignoran. El destino antiguo puede estar en una USB o red desconectada.
+  foreach ($file in Get-ChildItem -LiteralPath $Paths.LocalBackups -Filter "FitStore_*" -File -ErrorAction Stop) {
+    Protect-FitStoreBackupFile -Path $file.FullName
+  }
+  if ($previous -and -not [string]::Equals($previous, $Paths.LocalBackups, [StringComparison]::OrdinalIgnoreCase)) {
+    try {
+      if (-not (Test-Path -LiteralPath $previous -PathType Container -ErrorAction Stop)) { throw "El destino anterior no esta disponible." }
+      foreach ($file in Get-ChildItem -LiteralPath $previous -Filter "FitStore_*" -File -ErrorAction Stop) { Protect-FitStoreBackupFile -Path $file.FullName }
+    } catch {
+      Write-FitStoreLog -InstallDir $Paths.Install -Level "AVISO" -Message "No se pudieron retirar los permisos publicos de todas las copias del destino anterior. Revise esa USB o ubicacion de red; las nuevas copias se guardan en la carpeta local privada."
+    }
   }
   $State | Add-Member -NotePropertyName backupPath -NotePropertyValue $Paths.LocalBackups -Force
   return $Paths.LocalBackups
