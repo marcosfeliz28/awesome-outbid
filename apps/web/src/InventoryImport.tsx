@@ -40,6 +40,7 @@ export type ImportPreview = {
   categories?: Category[];
   changes?: Change[];
   newCategories?: string[];
+  lotCategories?: string[];
   review?: {
     id: string;
     name: string;
@@ -78,7 +79,7 @@ export function changesCsv(changes: Change[]) {
     '"' +
     String(v)
       .replace(/"/g, '""')
-      .replace(/^([=+\-@])/, "'$1") +
+      .replace(/^([=+\-@\t\r])/, "'$1") +
     '"';
   return (
     "﻿" +
@@ -126,6 +127,9 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [stock, setStock] = useState(true);
   const [prices, setPrices] = useState(true);
+  const [noLots, setNoLots] = useState(false);
+  // Sólo vale la respuesta de la última revisión pedida.
+  const latest = useRef(0);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [busy, setBusy] = useState<"" | "preview" | "apply">("");
   const [error, setError] = useState("");
@@ -137,12 +141,13 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
     data.append("file", f);
     data.append("updatePrices", String(prices));
     data.append("updateStock", String(stock));
+    data.append("withoutLots", String(noLots));
     for (const [k, v] of Object.entries(extra)) data.append(k, v);
     return data;
   };
   async function review(
     f: File | null = file,
-    options?: { stock: boolean; prices: boolean },
+    options?: { stock?: boolean; prices?: boolean; noLots?: boolean },
   ) {
     if (!f) return;
     setError("");
@@ -158,27 +163,29 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
       );
       return;
     }
+    const mine = ++latest.current;
     setBusy("preview");
     try {
       const data = new FormData();
       data.append("file", f);
       data.append("updatePrices", String(options?.prices ?? prices));
       data.append("updateStock", String(options?.stock ?? stock));
-      setPreview(
-        await api<ImportPreview>("/inventory-import/preview", {
-          method: "POST",
-          body: data,
-          timeout: 120_000,
-        }),
-      );
+      data.append("withoutLots", String(options?.noLots ?? noLots));
+      const result = await api<ImportPreview>("/inventory-import/preview", {
+        method: "POST",
+        body: data,
+        timeout: 120_000,
+      });
+      if (mine === latest.current) setPreview(result);
     } catch (e) {
+      if (mine !== latest.current) return;
       setError(
         e instanceof Error && e.message
           ? e.message
           : "No pudimos revisar el archivo. Inténtalo de nuevo.",
       );
     } finally {
-      setBusy("");
+      if (mine === latest.current) setBusy("");
     }
   }
   async function apply() {
@@ -268,7 +275,8 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
             const f = e.target.files?.[0] ?? null;
             setFile(f);
             setResult(null);
-            if (f) void review(f);
+            setNoLots(false);
+            if (f) void review(f, { noLots: false });
           }}
         />
       </div>
@@ -298,6 +306,10 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
         </label>
         <p>Lo que no viene en el archivo nunca se toca.</p>
       </fieldset>
+      <p className="inv-warn">
+        Hazlo con la tienda cerrada o sin ventas: mientras se carga (puede
+        tardar unos segundos) las ventas de estos productos esperan.
+      </p>
       {busy === "preview" && (
         <p role="status" className="inv-wait">
           Revisando el archivo…
@@ -307,6 +319,34 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
         <p role="alert" className="inv-error">
           {error}
         </p>
+      )}
+      {preview && !!preview.lotCategories?.length && (
+        <div
+          className="inv-options"
+          role="group"
+          aria-label="Categorías con lote"
+        >
+          <p className="inv-warn">
+            {preview.lotCategories.length === 1
+              ? "La categoría "
+              : "Las categorías "}
+            «{preview.lotCategories.join("», «")}» exige lote y vencimiento y el
+            Excel no los trae. Para cargar, el control de lote y vencimiento se
+            desactivará en{" "}
+            {preview.lotCategories.length === 1 ? "ella" : "ellas"}.
+          </p>
+          <label>
+            <input
+              type="checkbox"
+              checked={noLots}
+              onChange={(e) => {
+                setNoLots(e.target.checked);
+                if (file) void review(file, { noLots: e.target.checked });
+              }}
+            />
+            Cargar sin lotes (queda en la bitácora)
+          </label>
+        </div>
       )}
       {preview && !preview.canApply && (
         <div role="alert" className="inv-error">
@@ -318,7 +358,9 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
           <ul>
             {preview.blocking.slice(0, 50).map((p, i) => (
               <li key={i}>
-                {p.row ? <strong>Fila {p.row}: </strong> : null}
+                {p.row && !/^fila /i.test(p.message) ? (
+                  <strong>Fila {p.row} del Excel: </strong>
+                ) : null}
                 {p.message}
               </li>
             ))}

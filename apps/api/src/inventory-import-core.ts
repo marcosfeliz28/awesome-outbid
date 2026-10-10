@@ -274,7 +274,10 @@ export async function readInventory(
     )
       return;
     const who =
-      id && !isProblem(idCell) ? "fila " + id : "fila " + n + " del Excel";
+      "fila " +
+      n +
+      " del Excel" +
+      (id && !isProblem(idCell) ? " (ID " + id + ")" : "");
     for (const [label, v] of [
       ["ID", idCell],
       ["REFERENCIA", refCell],
@@ -302,6 +305,35 @@ export async function readInventory(
           lacks.join(" y "),
       });
     if (!id || !raw) return;
+    // Topes y caracteres de control: lo que se escribe en el catálogo, las
+    // etiquetas y la bitácora no puede traer texto de más ni invisible.
+    // eslint-disable-next-line no-control-regex
+    const control = /[\u0000-\u001f\u007f-\u009f]/;
+    const group_ = text(group);
+    for (const [label, value, max, strict] of [
+      ["ID", id, 64, true],
+      ["REFERENCIA", ref, 64, true],
+      ["SUB-GRUPO", group_, 80, true],
+      ["DESCRIPCION", raw, 200, false],
+    ] as const) {
+      if (value.length > max)
+        errors.push({
+          row: n,
+          message:
+            who +
+            ", " +
+            label +
+            ": demasiado largo (máximo " +
+            max +
+            " caracteres)",
+        });
+      if (control.test(strict ? value : value.replace(/[\t\n\r]/g, " ")))
+        errors.push({
+          row: n,
+          message:
+            who + ", " + label + ": trae caracteres de control no permitidos",
+        });
+    }
     const barcode =
       raw.match(/barcode\s*[:#]?\s*(\d{6,14})/i)?.[1] ??
       (ref && ref !== id ? ref : null);
@@ -528,6 +560,10 @@ export type ImportReport = {
   blocking: FileProblem[];
 };
 
+/** «fila 300 del Excel (ID 1284)»: la fila que se abre en Excel y el código. */
+const at = (row: Row) =>
+  "fila " + (row.line ?? "?") + " del Excel (ID " + row.id + ")";
+
 type Db = PrismaClient | Prisma.TransactionClient;
 export type Holder = Prisma.VariantGetPayload<{
   include: { product: { include: { category: true } } };
@@ -573,7 +609,12 @@ async function prepare(
   const codeProblems: FileProblem[] = [];
   const ownOf = new Map<string, Holder | undefined>();
   for (const row of rows) {
-    const own = holders.find((v) => v.sku === row.id);
+    // Variant.sku es único en toda la base: sólo cuenta como «ya cargado» el
+    // producto de ESTA sucursal. Un código de otra sucursal bloquea la fila sin
+    // decir de qué producto es.
+    const own = holders.find(
+      (v) => v.sku === row.id && v.branchId === actor.branchId,
+    );
     ownOf.set(row.id, own);
     for (const code of new Set(
       [row.id, row.ref, row.barcode].filter(Boolean) as string[],
@@ -587,15 +628,12 @@ async function prepare(
         codeProblems.push({
           row: row.line,
           message:
-            "fila " +
-            row.id +
+            at(row) +
             ": el código " +
             code +
-            " ya es de «" +
-            other.product.name +
-            "» (" +
-            other.sku +
-            ")",
+            (other.branchId === actor.branchId
+              ? " ya es de «" + other.product.name + "» (" + other.sku + ")"
+              : " ya está en uso por otro producto del sistema"),
         });
     }
   }
@@ -619,8 +657,7 @@ async function prepare(
         codeProblems.push({
           row: row.line,
           message:
-            "fila " +
-            row.id +
+            at(row) +
             ": «" +
             own.product.name +
             "» se controla por lotes; ajusta su existencia desde el lote en Inventario",
@@ -629,8 +666,7 @@ async function prepare(
         codeProblems.push({
           row: row.line,
           message:
-            "fila " +
-            row.id +
+            at(row) +
             ": la existencia (" +
             row.qty +
             ") queda por debajo de lo que tiene en lotes (" +
@@ -1072,6 +1108,37 @@ async function load(
       )
         summary.precios++;
       if (dryRun) continue;
+      if (Object.keys(changes).length) {
+        await db.variant.update({ where: { id: existing.id }, data: changes });
+        if (changes.active !== undefined)
+          await db.product.update({
+            where: { id: existing.productId },
+            data: { active: changes.active },
+          });
+        await db.auditLog.create({
+          data: {
+            userId: actor.id,
+            action:
+              changes.active === true
+                ? "inventory_import_activate"
+                : changes.active === false
+                  ? "inventory_import_deactivate_commercial_risk"
+                  : "price_change",
+            entity: "variant",
+            entityId: existing.id,
+            before: {
+              sku: existing.sku,
+              price: Number(existing.price),
+              costAvg: Number(existing.costAvg),
+              active: existing.product.active,
+            },
+            after: { ...changes, origen },
+            branchId,
+          },
+        });
+      }
+      // Después de cambiar el costo: el movimiento «Conteo» se valora con el
+      // costo nuevo, no con el anterior.
       if (delta !== 0)
         await run.stockCount!.apply(
           db as Prisma.TransactionClient,
@@ -1079,34 +1146,6 @@ async function load(
           delta,
           row.qty,
         );
-      if (!Object.keys(changes).length) continue;
-      await db.variant.update({ where: { id: existing.id }, data: changes });
-      if (changes.active !== undefined)
-        await db.product.update({
-          where: { id: existing.productId },
-          data: { active: changes.active },
-        });
-      await db.auditLog.create({
-        data: {
-          userId: actor.id,
-          action:
-            changes.active === true
-              ? "inventory_import_activate"
-              : changes.active === false
-                ? "inventory_import_deactivate_commercial_risk"
-                : "price_change",
-          entity: "variant",
-          entityId: existing.id,
-          before: {
-            sku: existing.sku,
-            price: Number(existing.price),
-            costAvg: Number(existing.costAvg),
-            active: existing.product.active,
-          },
-          after: { ...changes, origen },
-          branchId,
-        },
-      });
       continue;
     }
     summary.nuevos++;

@@ -20,6 +20,7 @@ import {
   CurrentUser,
   Database,
   Permit,
+  RequireTerminal,
   audit,
   bad,
   conflict,
@@ -57,14 +58,14 @@ const MONTHS = [
   "nov",
   "dic",
 ];
-/** «Conteo 10-oct-2026», con la fecha del negocio (Santo Domingo) de hoy. */
+/** «Conteo físico 10-oct-2026», con la fecha del negocio (Santo Domingo) de hoy. */
 export function countReason(now = new Date()) {
   const [y, m, day] = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Santo_Domingo",
   })
     .format(now)
     .split("-");
-  return "Conteo " + Number(day) + "-" + MONTHS[Number(m) - 1] + "-" + y;
+  return "Conteo físico " + Number(day) + "-" + MONTHS[Number(m) - 1] + "-" + y;
 }
 
 /** «actualizar precios y costos» y «actualizar existencias»: activadas salvo que se pida «false». */
@@ -105,10 +106,11 @@ export class InventoryImportController {
     return {
       updatePrices: update,
       updateCosts: update,
+      disableLots: String(body?.withoutLots) === "true",
       lotStopMessage: (name) =>
         "La categoría «" +
         name +
-        "» exige lote o vencimiento y el Excel no los trae. Desactívalo en Productos › Categorías y vuelve a subir el archivo.",
+        "» exige lote o vencimiento y el Excel no los trae. Marca «Cargar sin lotes» para continuar (queda en la bitácora).",
       stockCount: !flag(body?.updateStock)
         ? undefined
         : {
@@ -167,6 +169,7 @@ export class InventoryImportController {
   }
 
   @Post("inventory-import/preview")
+  @RequireTerminal()
   @Permit(INVENTORY_IMPORT_PERMISSION)
   @UseInterceptors(
     FileInterceptor("file", {
@@ -213,6 +216,7 @@ export class InventoryImportController {
       categories: report.categories,
       changes: report.changes,
       newCategories: report.newCategories,
+      lotCategories: report.lotCategories,
       review: report.review.map(
         ({ id, name, category, qty, active, notes }) => ({
           id,
@@ -227,6 +231,7 @@ export class InventoryImportController {
   }
 
   @Post("inventory-import/apply")
+  @RequireTerminal()
   @Permit(INVENTORY_IMPORT_PERMISSION)
   @UseInterceptors(
     FileInterceptor("file", {
@@ -278,6 +283,7 @@ export class InventoryImportController {
               activados: s.activados,
               sinCambios: s.sinCambios,
               categoriasNuevas: done.newCategories,
+              sinLotes: done.lotCategories,
               actualizarPrecios: flag(body?.updatePrices),
               actualizarExistencias: flag(body?.updateStock),
             },

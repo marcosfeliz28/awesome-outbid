@@ -108,11 +108,26 @@ describe("importador de inventario · módulo compartido", () => {
   });
   it("el motivo del conteo usa la fecha del negocio (Santo Domingo), sin fechas fijas", () => {
     expect(countReason(new Date("2031-03-05T03:00:00Z"))).toBe(
-      "Conteo 4-mar-2031",
+      "Conteo físico 4-mar-2031",
     );
     expect(countReason(new Date("2031-12-31T12:00:00Z"))).toBe(
-      "Conteo 31-dic-2031",
+      "Conteo físico 31-dic-2031",
     );
-    expect(countReason()).toMatch(/^Conteo \d{1,2}-[a-z]{3}-\d{4}$/);
+    expect(countReason()).toMatch(/^Conteo físico \d{1,2}-[a-z]{3}-\d{4}$/);
+  });
+  it("rechaza textos demasiado largos, con su fila (ExcelJS ya quita los caracteres de control al escribir; el control queda como defensa para archivos de otros programas)", async () => {
+    const error = await readInventory(
+      await book([
+        ["1".repeat(65), "Largo", "", "Fajas", 1, 1, 2],
+        [2, "Con\u007fcontrol", "", "Fajas", 1, 1, 2],
+        [3, "x".repeat(201), "", "Fajas", 1, 1, 2],
+        [4, "Salto\nde línea permitido", "", "Fajas", 1, 1, 2],
+        [5, "Categoría larga", "", "c".repeat(81), 1, 1, 2],
+      ]),
+    ).catch((e) => e);
+    expect(error).toBeInstanceOf(InventoryFileError);
+    expect(error.problems.map((p: any) => p.row)).toEqual([2, 4, 6]);
+    expect(error.message).toMatch(/demasiado largo \(máximo 64/);
+    expect(error.message).toMatch(/fila 4 del Excel \(ID 3\)/);
   });
 });

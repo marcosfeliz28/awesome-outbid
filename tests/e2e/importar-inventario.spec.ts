@@ -144,12 +144,56 @@ test.describe("Importar inventario", () => {
     await expect(
       dialog.getByRole("heading", { name: /Hay que corregir el archivo/ }),
     ).toBeVisible();
-    await expect(dialog.getByText("Fila 3:")).toBeVisible();
+    await expect(dialog.getByText(/fila 3 del Excel \(ID E2E/i)).toBeVisible();
     await expect(
       dialog.getByRole("button", { name: "Cargar inventario" }),
     ).toHaveCount(0);
     await noHorizontalScroll(page);
     await axe(page);
+  });
+
+  test("una categoría que exige lote pide marcar «Cargar sin lotes» y lo deja en la bitácora", async ({
+    page,
+    request,
+  }) => {
+    const owner = await request.post("/api/auth/login", {
+      data: { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" },
+    });
+    const headers = {
+      Authorization: "Bearer " + (await owner.json()).accessToken,
+    };
+    const category = "E2E Lote " + suffix;
+    const made = await request.post("/api/categories", {
+      headers,
+      data: { name: category, color: "#7C3AED", requiresLot: true },
+    });
+    expect(made.ok(), await made.text()).toBe(true);
+    await login(page, "admin@fitstore.demo");
+    await page.evaluate(() => (location.hash = "products"));
+    await page.getByRole("button", { name: "Importar inventario" }).click();
+    const dialog = page.getByRole("dialog", { name: "Importar inventario" });
+    await dialog.getByLabel(/Archivo de Excel/).setInputFiles({
+      name: "lotes.xlsx",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: await xlsx([
+        [`E2E${suffix}-L1`, "Producto con lote", "", category, 3, 10, 30],
+      ]),
+    });
+    await expect(dialog.getByText(/exige lote y vencimiento/)).toBeVisible();
+    await expect(
+      dialog.getByRole("heading", { name: /Hay que corregir el archivo/ }),
+    ).toBeVisible();
+    await axe(page);
+    await dialog.getByLabel("Cargar sin lotes (queda en la bitácora)").check();
+    await expect(
+      dialog.getByRole("heading", { name: /Esto es lo que pasará/ }),
+    ).toBeVisible();
+    await dialog.getByLabel(/Revisé la vista previa/).check();
+    await dialog.getByRole("button", { name: "Cargar inventario" }).click();
+    await expect(
+      dialog.getByRole("heading", { name: /el inventario quedó cargado/ }),
+    ).toBeVisible();
   });
 
   test("la API responde 403 a una cajera y a un gerente", async ({

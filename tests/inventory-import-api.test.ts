@@ -46,7 +46,20 @@ async function json(path: string, body?: unknown, token = "", from = ip) {
   return { status: response.status, body: await response.json() };
 }
 let ownerToken = "";
-async function userToken(role: string) {
+/** Las rutas que mueven inventario exigen un equipo aprobado (como el resto). */
+async function enroll(token: string, own = ip) {
+  const id = randomUUID();
+  const registered = await json(
+    "/terminals/register",
+    { id, name: "QA importar " + id.slice(0, 6), secret: "qa-secret-" + id },
+    token,
+    own,
+  );
+  expect(registered.status, JSON.stringify(registered.body)).toBeLessThan(300);
+  if (registered.body.status === "pending")
+    await json("/terminals/" + id + "/approve", {}, ownerToken);
+}
+async function userToken(role: string, withTerminal = role === "admin") {
   const roles = (await json("/roles", undefined, ownerToken)).body;
   const email = `qa-imp-${role}-${randomUUID().slice(0, 8)}@example.test`;
   const created = await json(
@@ -78,6 +91,7 @@ async function userToken(role: string) {
       own,
     );
   expect(auth.body.accessToken, JSON.stringify(auth.body)).toBeTruthy();
+  if (withTerminal) await enroll(auth.body.accessToken, own);
   return auth.body.accessToken as string;
 }
 async function xlsx(rows: unknown[][], sheet = "Inventario") {
@@ -155,6 +169,7 @@ beforeAll(async () => {
   });
   ownerToken = login.body.accessToken;
   expect(ownerToken).toBeTruthy();
+  await enroll(ownerToken);
   admin = await userToken("admin");
 });
 afterAll(async () => {
@@ -437,7 +452,7 @@ describe("Importar inventario · actualización de lo ya cargado", () => {
     expect(moves).toHaveLength(1);
     expect(Number(moves[0].qty)).toBe(-6);
     expect(Number(moves[0].balanceAfter)).toBe(4);
-    expect(moves[0].reason).toMatch(/^Conteo \d{1,2}-[a-z]{3}-\d{4}$/);
+    expect(moves[0].reason).toMatch(/^Conteo físico \d{1,2}-[a-z]{3}-\d{4}$/);
     // Otra vez el mismo archivo: no vuelve a aplicar las diferencias.
     const again = await load(admin, buffer);
     expect(again.preview.summary).toMatchObject({
@@ -535,6 +550,160 @@ describe("Importar inventario · actualización de lo ya cargado", () => {
         },
       }),
     ).toBe(4);
+  });
+});
+
+describe("Importar inventario · equipo, lotes, sucursales y valoración", () => {
+  let admin = "";
+  beforeAll(async () => (admin = await userToken("admin")));
+  it("sin equipo aprobado la vista previa y la carga responden TERMINAL_REQUIRED", async () => {
+    const bare = await userToken("admin", false);
+    const file = await xlsx(sample(1));
+    for (const action of ["preview", "apply"] as const) {
+      const r = await send(action, bare, file, { hash: sha(file), state: "x" });
+      expect(r.status).toBe(403);
+      expect(JSON.stringify(r.body)).toContain("TERMINAL_REQUIRED");
+    }
+  });
+  it("una categoría que exige lote avisa y sólo carga con «sin lotes» marcado; queda en la bitácora", async () => {
+    const name = "QA Lote consentido " + suffix;
+    await db.category.create({
+      data: { name, branchId: "main", createdBy: "qa", requiresLot: true },
+    });
+    const file = await xlsx([
+      [code(300), "Con lote " + suffix, "", name, 4, 10, 30],
+    ]);
+    const without = await send("preview", admin, file, {
+      withoutLots: "false",
+    });
+    expect(without.body.canApply).toBe(false);
+    expect(without.body.lotCategories).toEqual([name]);
+    expect(JSON.stringify(without.body.blocking)).toContain("Cargar sin lotes");
+    const refused = await send("apply", admin, file, {
+      withoutLots: "false",
+      hash: without.body.hash,
+      state: without.body.state,
+    });
+    expect(refused.status).toBe(400);
+    expect(
+      (await db.category.findUnique({ where: { name } })).requiresLot,
+    ).toBe(true);
+    expect(await db.variant.count({ where: { sku: code(300) } })).toBe(0);
+    const consent = await send("preview", admin, file, { withoutLots: "true" });
+    expect(consent.body.canApply).toBe(true);
+    const done = await send("apply", admin, file, {
+      withoutLots: "true",
+      hash: consent.body.hash,
+      state: consent.body.state,
+    });
+    expect(done.status, JSON.stringify(done.body)).toBe(201);
+    expect(
+      (await db.category.findUnique({ where: { name } })).requiresLot,
+    ).toBe(false);
+    const logs = await db.auditLog.findMany({
+      where: {
+        action: {
+          in: ["category_lots_disabled_by_import", "inventory_import"],
+        },
+        entityId: {
+          in: [
+            (await db.category.findUnique({ where: { name } })).id,
+            sha(file),
+          ],
+        },
+      },
+    });
+    expect(logs.map((l: any) => l.action).sort()).toEqual([
+      "category_lots_disabled_by_import",
+      "inventory_import",
+    ]);
+    expect(
+      JSON.stringify(
+        logs.find((l: any) => l.action === "inventory_import").after,
+      ),
+    ).toContain(name);
+  });
+  it("el error dice la fila del Excel y el ID, no solo el ID", async () => {
+    const file = await xlsx([
+      [code(310), "Bueno " + suffix, "", CATEGORY, 1, 1, 2],
+      [code(311), "Bueno dos " + suffix, "", CATEGORY, 1, 1, 2],
+      ["1284", "Malo", "", CATEGORY, "abc", 1, 2],
+    ]);
+    const r = await send("preview", admin, file);
+    expect(r.body.blocking[0].row).toBe(4);
+    expect(r.body.blocking[0].message).toContain("fila 4 del Excel (ID 1284)");
+  });
+  it("textos demasiado largos se rechazan con su fila", async () => {
+    const file = await xlsx([
+      ["X".repeat(65), "Largo " + suffix, "", CATEGORY, 1, 1, 2],
+    ]);
+    const r = await send("preview", admin, file);
+    expect(r.body.canApply).toBe(false);
+    expect(r.body.blocking[0]).toMatchObject({ row: 2 });
+    expect(r.body.blocking[0].message).toContain("demasiado largo");
+  });
+  it("un código de OTRA sucursal bloquea la fila sin revelar su nombre ni tocar el producto", async () => {
+    const category = await db.category.findFirstOrThrow();
+    const sku = code(320);
+    const secret = "Producto secreto otra sucursal " + suffix;
+    const other = await db.product.create({
+      data: {
+        name: secret,
+        sku: "INV-" + sku,
+        categoryId: category.id,
+        branchId: "otra-" + suffix,
+        createdBy: "qa",
+        variants: {
+          create: {
+            sku,
+            barcode: sku,
+            price: 500,
+            costAvg: 300,
+            stock: 7,
+            branchId: "otra-" + suffix,
+            createdBy: "qa",
+          },
+        },
+      },
+    });
+    const file = await xlsx([[sku, "Mío " + suffix, "", CATEGORY, 99, 1, 2]]);
+    const r = await send("preview", admin, file);
+    expect(r.body.canApply).toBe(false);
+    expect(JSON.stringify(r.body)).not.toContain(secret);
+    expect(r.body.blocking[0].message).toContain("ya está en uso");
+    const applied = await send("apply", admin, file, {
+      hash: r.body.hash,
+      state: r.body.state,
+    });
+    expect(applied.status).toBe(400);
+    const variant = await db.variant.findFirstOrThrow({
+      where: { productId: other.id },
+    });
+    expect([
+      Number(variant.stock),
+      Number(variant.price),
+      Number(variant.costAvg),
+    ]).toEqual([7, 500, 300]);
+    expect(JSON.stringify(applied.body)).not.toContain(secret);
+  });
+  it("el movimiento «Conteo» se valora con el costo nuevo, no con el anterior", async () => {
+    const id = code(330);
+    await load(
+      admin,
+      await xlsx([[id, "Valoración " + suffix, "", CATEGORY, 10, 100, 300]]),
+    );
+    const buffer = await xlsx([
+      [id, "Valoración " + suffix, "", CATEGORY, 12, 150, 300],
+    ]);
+    const { applied } = await load(admin, buffer, true);
+    expect(applied.status, JSON.stringify(applied.body)).toBe(201);
+    const v = await db.variant.findFirstOrThrow({ where: { sku: id } });
+    expect(Number(v.costAvg)).toBe(150);
+    const move = await db.inventoryMovement.findFirstOrThrow({
+      where: { variantId: v.id, type: "count" },
+    });
+    expect(Number(move.qty)).toBe(2);
+    expect(Number(move.unitCost)).toBe(150);
   });
 });
 
