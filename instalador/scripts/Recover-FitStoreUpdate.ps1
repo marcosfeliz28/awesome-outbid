@@ -381,13 +381,28 @@ function Assert-FitStoreInterruptedRecovery {
     throw $originalFailure
   } finally {
     try {
-      try {
-        if ($temporaryPostgres) { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
-      } finally {
-        if ($temporaryAcl.Count) { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $temporaryAcl -StatePath (Join-Path $Transaction.transactionPath 'recovery-pgdata-acl.json') }
-      }
+      # Do not retire the ACL journal while a failed stop may leave PG running.
+      if ($temporaryPostgres) { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
+      if ($temporaryAcl.Count) { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $temporaryAcl -StatePath (Join-Path $Transaction.transactionPath 'recovery-pgdata-acl.json') }
     } catch {
-      if($guardFailure){Write-Warning ('Limpieza de PostgreSQL/DACL pendiente; conserve el diario y reintente recuperacion: '+$_.Exception.Message)}else{throw}
+      $cleanupFailure=$_
+      if ($ExclusiveAccess) {
+        try {
+          # ACL cleanup can fail after stop succeeded. Reopen only this same
+          # temporary cluster to undo NOLOGIN; never restore data or initdb.
+          if ($temporaryPostgres -and -not (Test-Path -LiteralPath (Join-Path $Paths.Database 'postmaster.pid'))) {
+            Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-l',(Join-Path $Paths.Database 'recovery-postgres.log'),'-o',"-p $DatabasePort",'-w','start')
+          }
+          Disable-FitStoreRecoveryIsolation -Transaction $Transaction -Psql $psql -Secrets $secrets -DatabasePort $DatabasePort
+        } catch { Write-Warning ('No se pudo restituir LOGIN tras fallo de limpieza: '+$_.Exception.Message+'. Soporte debe ejecutar ALTER ROLE fitstore LOGIN; con postgres. Conserve marcador y diarios; no restaure respaldos.') }
+        finally {
+          if ($temporaryPostgres) {
+            try { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
+            catch { Write-Warning ('Parada temporal pendiente; conserve el diario DACL: '+$_.Exception.Message) }
+          }
+        }
+      }
+      if($guardFailure){Write-Warning ('Limpieza de PostgreSQL/DACL pendiente; conserve el diario y reintente recuperacion: '+$cleanupFailure.Exception.Message)}else{throw $cleanupFailure}
     }
   }
 }
