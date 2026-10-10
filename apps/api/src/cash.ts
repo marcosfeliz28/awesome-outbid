@@ -40,11 +40,13 @@ import {
   denied,
   canViewCashExpected,
 } from "./common";
-import { MONEY_TRANSACTION, cashLock, terminalName } from "./sales";
+import { cashLock, terminalName } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
 import { managerPinApproval, verifyPinAttempt } from "./security";
 import { notify } from "./notifications";
 import { cashDifferenceMessage } from "./alerts";
+// Aparte del import anterior de ./sales para no chocar al fusionar ramas.
+import { MONEY_TRANSACTION } from "./sales";
 
 export async function cashExpected(db: any, session: any) {
   const payments = await db.payment.findMany({

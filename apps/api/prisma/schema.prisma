@@ -476,14 +476,14 @@ model CashSession {
 
 model CashMovement {
   id        String   @id @default(uuid()) @db.Uuid
+  // D-M4: clave del formulario; un reintento devuelve el mismo movimiento.
+  operationId String? @unique @db.Uuid
   sessionId String   @db.Uuid
   type      String
   amount    Decimal  @db.Decimal(14, 2)
   reason    String
   userId    String
   createdAt DateTime @default(now())
-  // D-M4: clave del formulario; un reintento devuelve el mismo movimiento.
-  operationId String? @unique @db.Uuid
 }
 
 model ExpenseCategory {
