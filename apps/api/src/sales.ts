@@ -1278,7 +1278,21 @@ export class SalesController {
               {
                 paymentTotal,
                 attemptedExpectedTotal,
-                cashSessionId: attempted.cashSessionId ?? null,
+                // Sólo una caja propia de esta sucursal se guarda como evidencia.
+                cashSessionId:
+                  typeof attempted.cashSessionId === "string" &&
+                  z.string().uuid().safeParse(attempted.cashSessionId)
+                    .success &&
+                  (await tx.cashSession.findFirst({
+                    where: {
+                      id: attempted.cashSessionId,
+                      branchId: actor.branchId,
+                      userId: actor.id,
+                    },
+                    select: { id: true },
+                  }))
+                    ? attempted.cashSessionId
+                    : null,
               },
             );
           }

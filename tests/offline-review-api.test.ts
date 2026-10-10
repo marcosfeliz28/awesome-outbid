@@ -399,4 +399,96 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
     );
     expect(await stockOf()).toBe(before);
   });
+
+  it("M-6: la caja guardada como evidencia no se acepta sin validar sucursal y dueña", async () => {
+    const [first, second] = cashiers;
+    const stockOf = async () =>
+      Number(
+        (await ok("/products/" + product.id, undefined, owner)).variants[0]
+          .stock,
+      );
+    const current = await stockOf();
+    if (current > 0)
+      await ok(
+        "/inventory/adjustments",
+        { variantId: variant.id, qty: -current, reason: "QA M-6: en cero" },
+        owner,
+      );
+    const foreign = await db.cashSession.create({
+      data: {
+        registerId: "qa-otra-sucursal-" + tag,
+        userId: second.id,
+        openingAmount: 0,
+        branchId: "otra-" + tag,
+      },
+    });
+    const movements = (sessionId: string) =>
+      db.cashMovement.count({ where: { sessionId } });
+    try {
+      // Una caja ajena (otra sucursal; otra cajera de la misma) enviada en la
+      // venta no queda como evidencia ni recibe dinero al descartar.
+      for (const target of [foreign.id, second.session.id]) {
+        const offlineUuid = randomUUID();
+        const sale = {
+          offlineUuid,
+          capturedAt: new Date().toISOString(),
+          customerId,
+          cashSessionId: target,
+          items: [{ variantId: variant.id, qty: 1, discountPercent: 0 }],
+          globalDiscount: 0,
+          expectedTotal: 1000,
+          payments: [{ method: "cash", amount: 1000 }],
+        };
+        const synced = await ok("/sales/sync", { sales: [sale] }, first.token);
+        expect(synced.results[0].status).toBe("conflict");
+        const before = await movements(target);
+        const done = await call(
+          "/sales/offline-review/discard",
+          {
+            offlineUuid,
+            reason: "Prueba de frontera",
+            outcome: "delivered",
+            managerPin: MANAGER_PIN,
+            detail,
+          },
+          first.token,
+        );
+        expect(done.status).toBe(201);
+        expect(await movements(target)).toBe(before);
+      }
+      // Evidencia antigua o alterada que apunta a una caja ajena: se rechaza.
+      const sale = await conflict(first);
+      await db.auditLog.updateMany({
+        where: { action: "offline_sale_conflict", entityId: sale.offlineUuid },
+        data: {
+          after: { paymentTotal: 1000, cashSessionId: foreign.id },
+        },
+      });
+      const before = await movements(foreign.id);
+      const rejected = await call(
+        "/sales/offline-review/discard",
+        {
+          offlineUuid: sale.offlineUuid,
+          reason: "Prueba de frontera",
+          outcome: "delivered",
+          managerPin: MANAGER_PIN,
+          detail,
+        },
+        first.token,
+      );
+      expect(rejected.status).toBe(400);
+      expect(await movements(foreign.id)).toBe(before);
+      expect(
+        await db.auditLog.count({
+          where: {
+            action: "offline_sale_discarded",
+            entityId: sale.offlineUuid,
+          },
+        }),
+      ).toBe(0);
+    } finally {
+      await db.cashMovement.deleteMany({ where: { sessionId: foreign.id } });
+      await db.cashSession.delete({ where: { id: foreign.id } });
+    }
+  });
 });

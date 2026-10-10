@@ -166,10 +166,27 @@ export class OfflineSaleReviewController {
               item.variantId,
               (wanted.get(item.variantId) ?? 0) + item.qty,
             );
-        const sessionId =
-          typeof evidence.cashSessionId === "string"
-            ? evidence.cashSessionId
-            : null;
+        // La evidencia viene de lo que la caja envió: nunca se confía en ella.
+        // La caja debe ser de esta sucursal y de quien sincronizó la venta.
+        let sessionId: string | null = null;
+        if (
+          typeof evidence.cashSessionId === "string" &&
+          z.string().uuid().safeParse(evidence.cashSessionId).success
+        ) {
+          const own = await tx.cashSession.findFirst({
+            where: {
+              id: evidence.cashSessionId,
+              branchId: actor.branchId,
+              userId: ownership.userId,
+            },
+            select: { id: true },
+          });
+          if (!own)
+            bad(
+              "La caja de esta venta no corresponde a la sucursal o a la cajera que la envió: no se puede registrar la entrada de dinero.",
+            );
+          sessionId = own!.id;
+        }
         // Mismo orden que la venta: caja primero, luego las variantes por id.
         if (sessionId)
           await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${sessionId}::uuid FOR UPDATE`;
