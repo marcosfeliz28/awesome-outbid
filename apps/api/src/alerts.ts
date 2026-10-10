@@ -54,6 +54,90 @@ export const MANUAL_ALERT_TYPES = [
   "refund_method_mismatch",
   "cost_change",
 ];
+// N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
+// venta, con la misma clave y el mismo mensaje que la evaluación periódica,
+// para que no dependa de que alguien abra Avisos ese día.
+export const unusualDiscountMessage = (number: string) =>
+  "La factura " + number + " tiene un descuento inusual. Revisa su aprobación.";
+export const discountCountMessage = (count: number) =>
+  "Un vendedor registra " +
+  count +
+  " descuentos hoy. Revisa las aprobaciones en auditoría.";
+export async function unusualDiscountAlerts(
+  tx: any,
+  sale: {
+    id: string;
+    number: string;
+    sellerId: string;
+    branchId: string;
+    subtotal: unknown;
+    discountTotal: unknown;
+    createdAt: Date;
+  },
+) {
+  const [settings, rule] = await Promise.all([
+    tx.settings.findUnique({ where: { id: sale.branchId } }),
+    tx.alertRule.findUnique({ where: { type: "unusual_discount" } }),
+  ]);
+  if (rule?.active === false || !(Number(sale.discountTotal) > 0)) return;
+  const config = settings?.data as any;
+  const upsert = (key: string, entityId: string, message: string) =>
+    tx.alert.upsert({
+      where: { key },
+      create: {
+        key,
+        type: "unusual_discount",
+        severity: "medium",
+        entityId,
+        branchId: sale.branchId,
+        message,
+      },
+      update: {},
+    });
+  if (
+    Number(sale.subtotal) > 0 &&
+    (Number(sale.discountTotal) / Number(sale.subtotal)) * 100 >=
+      Number(config?.unusualDiscountPercent ?? 25)
+  )
+    await upsert(
+      "discount:" + sale.id,
+      sale.id,
+      unusualDiscountMessage(sale.number),
+    );
+  const day = businessDate(sale.createdAt);
+  const count = await tx.sale.count({
+    where: {
+      branchId: sale.branchId,
+      sellerId: sale.sellerId,
+      status: "completed",
+      discountTotal: { gt: 0 },
+      createdAt: {
+        gte: new Date(day + "T00:00:00-04:00"),
+        lte: new Date(day + "T23:59:59.999-04:00"),
+      },
+    },
+  });
+  if (count >= Number(config?.unusualDiscountCount ?? 10)) {
+    const key = "discount-count:" + sale.sellerId + ":" + day;
+    const existing = await tx.alert.findUnique({ where: { key } });
+    const message = discountCountMessage(count);
+    // Un aviso que una persona ya revisó no se reabre con cada venta nueva;
+    // sólo cuando el conteo cambia (igual que la evaluación periódica).
+    if (!existing || existing.message !== message)
+      await tx.alert.upsert({
+        where: { key },
+        create: {
+          key,
+          type: "unusual_discount",
+          severity: "medium",
+          entityId: sale.sellerId,
+          branchId: sale.branchId,
+          message,
+        },
+        update: { message, status: "new" },
+      });
+  }
+}
 /** Mensaje de la alerta de diferencia de caja (cierre y evaluación). */
 export const cashDifferenceMessage = (s: {
   differenceCash: unknown;
@@ -364,9 +448,7 @@ export class AlertEngine {
           "unusual_discount",
           "medium",
           sellerId,
-          "Un vendedor registra " +
-            count +
-            " descuentos hoy. Revisa las aprobaciones en auditoría.",
+          discountCountMessage(count),
         );
     for (const sale of discounted)
       if (
@@ -379,9 +461,7 @@ export class AlertEngine {
           "unusual_discount",
           "medium",
           sale.id,
-          "La factura " +
-            sale.number +
-            " tiene un descuento inusual. Revisa su aprobación.",
+          unusualDiscountMessage(sale.number),
         );
     for (const v of variants)
       if (Number(v.stock) < 0)

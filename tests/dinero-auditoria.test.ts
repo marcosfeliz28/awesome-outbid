@@ -744,6 +744,53 @@ describe("Auditoría 01 · dinero", () => {
     );
   });
 
+  it("N-5: el aviso de descuento inusual nace al registrar la venta, sin esperar a la evaluación", async () => {
+    await withSettings(
+      { unusualDiscountPercent: 25, unusualDiscountCount: 1 },
+      async () => {
+        const m = await person("manager", "n5", 0);
+        const v = await product(1000, 400, 10);
+        const sale = await ok(
+          "/sales",
+          m.token,
+          saleBody(m, v, 1, [{ method: "cash", amount: 600 }], {
+            globalDiscount: 40,
+            discountReason: "Cliente frecuente",
+          }),
+        );
+        // Sin abrir Avisos ni correr la evaluación.
+        expect(await alert("discount:" + sale.id)).toMatchObject({
+          type: "unusual_discount",
+          status: "new",
+        });
+        expect(
+          (await alert("discount-count:" + m.id + ":" + today()))?.type,
+        ).toBe("unusual_discount");
+        // Una venta con descuento pequeño no genera el aviso por factura.
+        const small = await ok(
+          "/sales",
+          m.token,
+          saleBody(m, v, 1, [{ method: "cash", amount: 950 }], {
+            globalDiscount: 5,
+            discountReason: "Cliente frecuente",
+          }),
+        );
+        expect(await alert("discount:" + small.id)).toBeNull();
+        // La evaluación posterior no cambia ni duplica nada.
+        const before = await db.alert.count({
+          where: { type: "unusual_discount" },
+        });
+        await ok("/alerts", admin);
+        expect((await alert("discount:" + sale.id))?.message).toContain(
+          sale.number,
+        );
+        expect(
+          await db.alert.count({ where: { type: "unusual_discount" } }),
+        ).toBeGreaterThanOrEqual(before);
+      },
+    );
+  });
+
   it("B-3: no se cierra el mes de incentivos en curso", async () => {
     const month = businessMonth();
     const r = await request("/incentives/close", admin, { month });

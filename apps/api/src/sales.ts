@@ -389,6 +389,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 }
 
 import { cashExpected, refreshClosedCash } from "./cash";
+import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
 import { recordSaleIncentives, reverseIncentives } from "./incentives";
@@ -1081,6 +1082,7 @@ export class SalesController {
         if (credit || cod)
           await refreshReceivableAlert(tx, sale.id, actor.branchId);
         if (Number(sale.discountTotal) > 0) {
+          await unusualDiscountAlerts(tx, sale);
           await audit(
             tx,
             actor,
