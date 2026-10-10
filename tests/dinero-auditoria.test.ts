@@ -267,7 +267,7 @@ describe("Auditoría 01 · dinero", () => {
     expect((await alert("voucher:" + m.cash.id))?.status).toBe("new");
   });
 
-  it.skip("A-2: sin «Entregado», lo contado es el fondo que debe abrir la caja siguiente", async () => {
+  it("A-2: sin «Entregado», lo contado es el fondo que debe abrir la caja siguiente", async () => {
     const c = await person("seller", "a2", 500);
     const closed = await close(c, { countedCash: 500 });
     expect(closed.status).toBeLessThan(300);

@@ -982,7 +982,11 @@ export class CashController {
       },
       orderBy: { closedAt: "desc" },
     });
-    const left = (last?.closeDetails as any)?.left;
+    // A-2 (auditoría 01): si el cierre no informó «Entregado», nada salió de
+    // la gaveta: lo contado es lo dejado (es lo que la pantalla de cierre
+    // anuncia como fondo sugerido). Sirve también para cierres ya guardados.
+    const left =
+      (last?.closeDetails as any)?.left ?? last?.countedCash ?? undefined;
     return left === undefined || left === null
       ? { amount: null, fromSessionId: null }
       : { amount: Number(left), fromSessionId: last!.id };
