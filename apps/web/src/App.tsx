@@ -5,7 +5,7 @@ import {
   passwordChangeError,
   friendlyPasswordChangeError,
 } from "./passwordChange";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
@@ -32,6 +32,7 @@ import {
   Palette,
   ScanLine,
   Zap,
+  Info,
 } from "lucide-react";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
@@ -51,6 +52,7 @@ import {
 import { Toasts, toast } from "./helpers";
 import { Dashboard } from "./Dashboard";
 import { POS } from "./POS";
+import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import {
   Catalog,
   Inventory,
@@ -70,6 +72,91 @@ const SHOW_DEMO_CREDENTIALS =
   import.meta.env.VITE_SHOW_DEMO_CREDENTIALS === "true";
 // La guía es una herramienta interna de desarrollo, nunca una pantalla de tienda.
 const SHOW_STYLE_GUIDE = import.meta.env.DEV;
+// G12: el aviso de inactividad sale 60 s antes del cierre (o a la mitad del
+// plazo si éste es menor de 2 minutos).
+export const IDLE_WARNING_MS = 60000;
+// Mismo corte que styles.css: por debajo, el menú lateral es un cajón.
+const MOBILE_MENU = "(max-width: 780px)";
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => matchMedia(query).matches);
+  useEffect(() => {
+    const list = matchMedia(query);
+    const change = () => setMatches(list.matches);
+    change();
+    list.addEventListener("change", change);
+    return () => list.removeEventListener("change", change);
+  }, [query]);
+  return matches;
+}
+function IdleWarning({
+  deadline,
+  onStay,
+}: {
+  deadline: number;
+  onStay: () => void;
+}) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const seconds = Math.max(0, Math.ceil((deadline - now) / 1000));
+  return (
+    <Modal open onClose={onStay} title="¿Sigues ahí?">
+      <p>
+        Por inactividad, la sesión se cerrará en{" "}
+        <strong aria-live="off">{seconds} s</strong>. Para seguir trabajando,
+        pulsa el botón.
+      </p>
+      <Button onClick={onStay}>Seguir conectado</Button>
+    </Modal>
+  );
+}
+// G14: «Acerca de», con la versión, la nota de documento no fiscal y los
+// avisos de licencia de lo que va dentro de la app (public/licencias.txt).
+function About({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [notices, setNotices] = useState<string | null>(null);
+  const load = async () => {
+    if (notices) return;
+    try {
+      const response = await fetch("/licencias.txt", { cache: "no-cache" });
+      if (!response.ok) throw new Error();
+      setNotices(await response.text());
+    } catch {
+      setNotices("No se pudieron cargar los avisos. Revisa la conexión.");
+    }
+  };
+  return (
+    <Modal open={open} onClose={onClose} title="Acerca de Nexora POS" wide>
+      <div className="about">
+        <p>
+          <strong>Versión {__NEXORA_VERSION__}</strong>
+        </p>
+        <p className="about-fiscal">
+          <strong>Documento no fiscal.</strong> Los recibos, notas y reportes de
+          Nexora POS son documentos internos y no sustituyen un comprobante
+          fiscal (NCF/e-CF).
+        </p>
+        <p>
+          Usa fuentes Inter y Plus Jakarta Sans (SIL Open Font License 1.1),
+          íconos Lucide (ISC) y librerías de código abierto (MIT, ISC,
+          Apache-2.0, 0BSD), cada una con su licencia.
+        </p>
+        <p>
+          <a href="/licencias.txt" target="_blank" rel="noopener">
+            Licencias de terceros (texto completo)
+          </a>
+        </p>
+        <details onToggle={(e) => e.currentTarget.open && load()}>
+          <summary>Ver las licencias aquí</summary>
+          <pre className="about-licenses" tabIndex={0}>
+            {notices ?? "Cargando…"}
+          </pre>
+        </details>
+      </div>
+    </Modal>
+  );
+}
 
 const navigation = [
   {
@@ -135,6 +222,12 @@ const navigation = [
     permission: "reports:read",
   },
   { id: "alerts", label: "Alertas", icon: Bell, permission: "alerts:write" },
+  {
+    id: "incentives",
+    label: "Incentivos",
+    icon: IncentivesIcon,
+    permission: "sale:manage",
+  },
 ];
 function Login() {
   const [login, setLogin] = useState(""),
@@ -320,8 +413,14 @@ function Shell() {
     [switchUser, setSwitchUser] = useState(false),
     [staff, setStaff] = useState<any[]>([]),
     [switchId, setSwitchId] = useState(""),
-    [pin, setPin] = useState("");
+    [pin, setPin] = useState(""),
+    [idleDeadline, setIdleDeadline] = useState<number | null>(null),
+    [about, setAbout] = useState(false);
   const client = useQueryClient();
+  const mobile = useMediaQuery(MOBILE_MENU);
+  const menuButton = useRef<HTMLButtonElement>(null),
+    sidebar = useRef<HTMLElement>(null),
+    stayActive = useRef(() => {});
   const allowed = navigation.filter(
     (n) => user && can(user.permissions, n.permission),
   );
@@ -335,6 +434,11 @@ function Shell() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+  // G12: al abrir el menú en celular, el foco entra en él.
+  useEffect(() => {
+    if (mobile && menu)
+      sidebar.current?.querySelector<HTMLElement>(".nav-item")?.focus();
+  }, [mobile, menu]);
   useEffect(() => {
     (async () => {
       const saved = await localDB.cache.get("session").catch(() => undefined);
@@ -440,13 +544,17 @@ function Shell() {
   }, [user?.id, online]);
   useEffect(() => {
     const keyboard = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+      // Con Bloq Mayús o Mayús llega «K».
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setCommands(true);
       }
       if (e.key === "Escape") {
         setCommands(false);
         setMenu(false);
+        // El foco vuelve al botón que abrió el menú (G12).
+        if (sidebar.current?.contains(document.activeElement))
+          menuButton.current?.focus();
       }
       // Atajos del sistema anterior: F9 Entrada de mercancía, F7 Etiquetas,
       // F10 Precios (F2, F4, F8 y F12 son de la caja).
@@ -474,33 +582,54 @@ function Shell() {
   useEffect(() => {
     if (!user) return;
     const timeout = (user.sessionTimeoutMinutes ?? 30) * 60000;
+    const warnBefore = Math.min(IDLE_WARNING_MS, timeout / 2);
     let last = Date.now(),
-      closing = false;
+      closing = false,
+      checking = false;
     const active = () => {
       last = Date.now();
+      setIdleDeadline(null);
       localDB.cache.update("session", { "data.expiresAt": last + timeout });
     };
-    const interval = setInterval(async () => {
-      if (closing || Date.now() - last <= timeout) return;
-      // Otra pestaña de este equipo pudo tener actividad: el plazo guardado
-      // es el de todo el equipo.
-      const saved = await localDB.cache.get("session").catch(() => undefined);
-      if (saved?.data?.expiresAt > Date.now()) {
-        last = saved!.data.expiresAt - timeout;
+    stayActive.current = active;
+    const check = async () => {
+      if (closing || checking || Date.now() - last <= timeout - warnBefore)
         return;
+      checking = true;
+      try {
+        // Otra pestaña de este equipo pudo tener actividad: el plazo guardado
+        // es el de todo el equipo.
+        const saved = await localDB.cache.get("session").catch(() => undefined);
+        const shared = Number(saved?.data?.expiresAt) - timeout;
+        if (shared > last) last = shared;
+        const idle = Date.now() - last;
+        if (idle <= timeout - warnBefore) {
+          setIdleDeadline(null);
+          return;
+        }
+        // G12: aviso previo con «Seguir conectado» antes de cerrar.
+        if (idle <= timeout) {
+          setIdleDeadline(last + timeout);
+          return;
+        }
+        // Antes sólo se borraba el estado del navegador: la cookie y la
+        // sesión del servidor seguían vivas y al recargar volvía a entrar el
+        // usuario anterior (R9-offline-5).
+        closing = true;
+        setIdleDeadline(null);
+        await endSession();
+        client.clear();
+        toast("Sesión cerrada por inactividad.");
+      } finally {
+        checking = false;
       }
-      // Antes sólo se borraba el estado del navegador: la cookie y la sesión
-      // del servidor seguían vivas y al recargar volvía a entrar el usuario
-      // anterior (R9-offline-5).
-      closing = true;
-      await endSession();
-      client.clear();
-      toast("Sesión cerrada por inactividad.");
-    }, 30000);
+    };
+    const interval = setInterval(check, 5000);
     window.addEventListener("pointerdown", active);
     window.addEventListener("keydown", active);
     return () => {
       clearInterval(interval);
+      setIdleDeadline(null);
       window.removeEventListener("pointerdown", active);
       window.removeEventListener("keydown", active);
     };
@@ -529,6 +658,7 @@ function Shell() {
     ...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {}),
     sales: <SalesHistory />,
     merchandise: <Merchandise />,
+    incentives: <IncentivesPage />,
   };
   return (
     <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>
@@ -536,7 +666,10 @@ function Shell() {
         <button
           className="sidebar-backdrop"
           aria-label="Cerrar menú"
-          onClick={() => setMenu(false)}
+          onClick={() => {
+            setMenu(false);
+            menuButton.current?.focus();
+          }}
         />
       )}
       {can(user.permissions, "inventory:write") &&
@@ -549,7 +682,14 @@ function Shell() {
             </Button>
           </nav>
         )}
-      <aside className={`sidebar ${menu ? "open" : ""}`}>
+      {/* G12: en celular, el menú cerrado queda fuera del orden de tabulación
+          y del lector de pantalla. */}
+      <aside
+        ref={sidebar}
+        className={`sidebar ${menu ? "open" : ""}`}
+        inert={mobile && !menu}
+        aria-hidden={mobile && !menu ? true : undefined}
+      >
         <a className="brand" href="#dashboard">
           <div className="brand-icon">
             n<span>•</span>
@@ -603,6 +743,16 @@ function Shell() {
               Configuración
             </button>
           )}
+          <button
+            className="nav-item"
+            onClick={() => {
+              setAbout(true);
+              setMenu(false);
+            }}
+          >
+            <Info size={19} />
+            Acerca de
+          </button>
           {SHOW_STYLE_GUIDE && (
             <button className="nav-item" onClick={() => go("styles")}>
               <Palette size={19} />
@@ -615,7 +765,9 @@ function Shell() {
         <header className="topbar">
           <div className="topbar-left">
             <button
+              ref={menuButton}
               className="icon-button mobile-menu"
+              aria-expanded={mobile ? menu : undefined}
               onClick={() => setMenu(true)}
               aria-label="Abrir menú"
             >
@@ -740,6 +892,7 @@ function Shell() {
         <label className="field">
           <input
             autoFocus
+            aria-label="Buscar pantalla"
             placeholder="Buscar pantalla…"
             value={commandQuery}
             onChange={(e) => setCommandQuery(e.target.value)}
@@ -809,6 +962,13 @@ function Shell() {
           Ir al punto de venta
         </Button>
       </Modal>
+      <About open={about} onClose={() => setAbout(false)} />
+      {idleDeadline !== null && (
+        <IdleWarning
+          deadline={idleDeadline}
+          onStay={() => stayActive.current()}
+        />
+      )}
       <Modal
         open={switchUser}
         onClose={() => setSwitchUser(false)}

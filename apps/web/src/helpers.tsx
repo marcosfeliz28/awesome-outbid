@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Loading, Modal } from "@fitstore/ui";
 import { AlertCircle, Check, X } from "lucide-react";
@@ -34,19 +34,42 @@ export const attrLabel = (attributes: Record<string, string>) =>
 let toastHandler: (message: string, error?: boolean) => void = () => {};
 export const toast = (message: string, error = false) =>
   toastHandler(message, error);
+// G12: cuánto queda un aviso a la vista. Un error se lee con calma (no menos
+// de 8 s); con el ratón encima o el foco dentro, no se cierra solo.
+export const TOAST_MS = { info: 6000, error: 10000 } as const;
 export function Toasts() {
   const [notice, setNotice] = useState<{
     message: string;
     error: boolean;
+    id: number;
   } | null>(null);
-  toastHandler = (message, error = false) => {
-    setNotice({ message, error });
-    setTimeout(() => setNotice(null), 6000);
-  };
+  const [paused, setPaused] = useState(false);
+  toastHandler = (message, error = false) =>
+    setNotice({ message, error, id: Date.now() + Math.random() });
+  // Un temporizador por aviso: uno nuevo cancela el del anterior, y pausar
+  // lo detiene; al salir se cuenta otra vez el plazo completo.
+  useEffect(() => {
+    if (!notice || paused) return;
+    const timer = setTimeout(
+      () => setNotice(null),
+      notice.error ? TOAST_MS.error : TOAST_MS.info,
+    );
+    return () => clearTimeout(timer);
+  }, [notice, paused]);
+  useEffect(() => {
+    if (!notice) setPaused(false);
+  }, [notice]);
   return notice ? (
     <div
       className={`toast ${notice.error ? "error" : ""}`}
       role={notice.error ? "alert" : "status"}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+          setPaused(false);
+      }}
     >
       {notice.error ? <AlertCircle size={20} /> : <Check size={20} />}
       <span>{notice.message}</span>

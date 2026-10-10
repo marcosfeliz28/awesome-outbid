@@ -340,6 +340,7 @@ export function InvoicePrint({
           {Number(i.discount) > 0 && (
             <Row label="Descuento" value={"−" + rd(i.discount)} />
           )}
+          {i.promotionName && <small>Promoción: {i.promotionName}</small>}
         </div>
       ))}
       <hr />

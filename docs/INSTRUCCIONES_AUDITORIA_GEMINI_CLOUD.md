@@ -1,4 +1,6 @@
-# Instrucciones para auditoría independiente de Nexora POS
+# Instrucciones para la revisión con IA de Nexora POS
+
+> **Nota (G13):** revisión automatizada hecha con un modelo de IA. No es una auditoría independiente ni una certificación; no la cites como respaldo ante terceros.
 
 Adjunta a este documento el archivo `Nexora-POS-Codigo-Auditoria-e8f462a.zip` y su manifiesto `.sha256.txt`. La versión fuente corresponde al commit `e8f462a` del repositorio `marcosfeliz28/awesome-outbid`, rama `nexora-cloud`. Ese commit contiene el ejemplo de usuario `mfeliz`, el arreglo concurrente de apertura de caja, la instrumentación de errores de la API y el pipeline opcional de respaldo cloud. Al preparar este paquete, esos últimos cambios estaban pendientes de desplegar en Render.
 

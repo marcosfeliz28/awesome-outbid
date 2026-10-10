@@ -823,7 +823,7 @@ export function StoreSettings() {
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,image/gif"
-            hidden
+            className="sr-only"
             onChange={(e) => upload(e.target.files?.[0])}
           />
         </label>

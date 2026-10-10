@@ -68,6 +68,12 @@ import {
 import { offlineSaleAction } from "./offlinePolicy";
 import { customerPrivateDisplay, seesCustomerPii } from "./customer-display";
 import { blockPosShortcutWithModal } from "./posKeyboard";
+import {
+  WholesaleNotice,
+  WholesaleToggle,
+  useWholesale,
+  wholesaleField,
+} from "./Incentives";
 
 function discountFor(
   promo: any,
@@ -356,6 +362,7 @@ export function POS({ go }: { go: (page: string) => void }) {
         customerId: state.customerId,
         // La venta en espera conserva todos sus descuentos (R9-caja-4).
         globalDiscount: state.globalDiscount,
+        ...wholesaleField(),
         items: state.cart.map((i) => {
           const label = attrLabel(i.variant.attributes || {});
           return {
@@ -828,7 +835,13 @@ export function POS({ go }: { go: (page: string) => void }) {
           </div>
           <ChevronRight size={16} />
         </button>
-        <div className="cart-items">
+        <WholesaleToggle />
+        <div
+          className="cart-items"
+          tabIndex={0}
+          role="region"
+          aria-label="Artículos del carrito"
+        >
           {cart.length ? (
             cart.map((i, index) => (
               <div className="cart-item" key={i.variant.id}>
@@ -1304,6 +1317,7 @@ function HeldSales({
       setCustomer(quote.customerId ?? null);
       // Su propio descuento global, no el del carrito anterior (R9-caja-4).
       setDiscount(Number(quote.globalDiscount ?? 0));
+      useWholesale.getState().set(!!quote.wholesale);
       onClose();
     } catch (e: any) {
       toast(e.message, true);
@@ -1539,6 +1553,7 @@ function Checkout({
         : {}),
       payments,
       ...(pin ? { managerPin: pin } : {}),
+      ...wholesaleField(),
     };
     // El ticket lleva el descuento de cada línea para que cuadre con el total
     // cobrado (R9-caja-9).
@@ -1693,6 +1708,9 @@ function Checkout({
               ...line,
               discount: sum(rows, "discount"),
               lineTotal: sum(rows, "lineTotal"),
+              // G15: la promoción automática que aplicó el servidor.
+              promotionName: rows.find((r: any) => r.promotionName)
+                ?.promotionName,
             }
           : line;
       });
@@ -1700,6 +1718,7 @@ function Checkout({
         ...sale,
         snapshot: printed,
         cashierName: user!.name,
+        wholesale: !!input.wholesale,
         change: payment.change,
         tendered: payments,
         createdAt: sale.createdAt ?? new Date().toISOString(),
@@ -1783,6 +1802,7 @@ function Checkout({
           ) : (
             <Badge tone="success">Venta registrada</Badge>
           )}
+          <WholesaleNotice on={!!receipt.wholesale} />
           {Number(receipt.creditBalance) > 0 && (
             <p>
               Crédito / contraentrega pendiente:{" "}
@@ -1859,6 +1879,7 @@ function Checkout({
           ITBIS {config?.taxIncluded === false ? "" : "incluido"} ·{" "}
           {formatMoney(tax)}
         </small>
+        <WholesaleNotice />
       </div>
       <div className="payment-methods">
         {[

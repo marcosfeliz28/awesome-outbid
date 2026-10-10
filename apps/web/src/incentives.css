@@ -1,0 +1,212 @@
+/* Incentivos por cajera (Incentives.tsx). Sólo variables del tema: los
+   contrastes los vigila tests/accessibility-contract.test.ts. */
+.wholesale-toggle {
+  margin: -6px 20px 12px;
+}
+.wholesale-toggle button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.wholesale-toggle button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.wholesale-toggle.active button {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--text);
+}
+.wholesale-switch {
+  margin-left: auto;
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--input-border);
+  flex: none;
+}
+.wholesale-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: transform 0.15s;
+}
+.wholesale-toggle.active .wholesale-switch {
+  background: var(--primary);
+}
+.wholesale-toggle.active .wholesale-switch::after {
+  transform: translateX(16px);
+}
+.wholesale-toggle small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted-on-soft);
+  font-size: 12px;
+}
+.wholesale-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--primary-soft);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+.incentive-mine {
+  margin: 0 0 18px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+}
+.incentive-mine > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.incentive-mine h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+}
+.incentive-mine strong {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.incentive-mine p {
+  margin: 6px 0 4px;
+  font-size: 13px;
+}
+.incentive-mine small,
+.incentive-hint,
+.incentive-table small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.incentive-table small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+}
+.incentive-table td,
+.incentive-table th {
+  vertical-align: top;
+}
+.incentive-table td {
+  white-space: nowrap;
+}
+.incentive-table td small {
+  white-space: normal;
+  max-width: 150px;
+}
+.incentive-table td:first-child {
+  min-width: 140px;
+  white-space: normal;
+}
+.incentive-table td:nth-child(3) {
+  min-width: 160px;
+  max-width: 220px;
+  white-space: normal;
+}
+.incentive-table tfoot td {
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+}
+.incentive-negative {
+  display: flex !important;
+  align-items: center;
+  gap: 4px;
+  color: var(--danger-text) !important;
+}
+.incentive-month {
+  margin: 0;
+}
+.incentive-hint {
+  padding: 4px 28px 16px;
+}
+.incentive-rules {
+  margin-top: 18px;
+  padding: 20px 28px;
+}
+.incentive-rules h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.incentive-rules ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.incentive-rates {
+  padding: 25px 30px;
+  border-top: 1px solid var(--border);
+}
+.incentive-rates .panel-heading {
+  padding: 0;
+}
+.incentive-rates h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.incentive-rates p {
+  font-size: 12px;
+  margin: 8px 0 12px;
+}
+.incentive-rates input {
+  width: 120px;
+  min-height: 40px;
+}
+.incentive-rates form > .button {
+  margin-top: 12px;
+}
+@media (max-width: 720px) {
+  .incentive-rates {
+    padding: 18px 16px;
+  }
+}
+.incentive-receipt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--primary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.incentive-receipt:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}

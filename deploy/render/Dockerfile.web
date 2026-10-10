@@ -13,6 +13,10 @@ COPY tsconfig.base.json ./
 COPY apps/web apps/web
 COPY packages/shared packages/shared
 COPY packages/ui packages/ui
+# G8: Sentry de la web sólo se activa si Render entrega VITE_SENTRY_DSN al
+# compilar (las variables del servicio llegan como argumentos de compilación).
+# Sin ella la app no envía nada a Sentry.
+ARG VITE_SENTRY_DSN=""
 RUN pnpm --filter @fitstore/web build
 
 # Nginx abierto incorpora `resolve` para upstreams desde 1.27.3. Se fija una

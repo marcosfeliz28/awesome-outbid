@@ -138,7 +138,8 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               Explorar mis reportes <ArrowRight size={16} />
             </button>
           </div>
-          <div className="banner-illustration">
+          {/* Ilustración decorativa: el lector de pantalla la omite. */}
+          <div className="banner-illustration" aria-hidden="true">
             <div className="floating-tag">
               <TrendingUp size={20} />
               <span>
@@ -337,7 +338,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                 Ver productos <ChevronRight size={15} />
               </button>
             </div>
-            <div className="table-wrap">
+            <div className="table-wrap" tabIndex={0}>
               <table>
                 <thead>
                   <tr>
@@ -432,17 +433,20 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             className="heatmap"
             role="table"
             aria-label="Ventas por día y hora"
+            tabIndex={0}
           >
-            <div className="heatmap-row">
-              <span>Hora</span>
+            <div className="heatmap-row" role="row">
+              <span role="columnheader">Hora</span>
               {Array.from({ length: 24 }, (_, hour) => (
-                <span key={hour}>{hour}</span>
+                <span role="columnheader" key={hour}>
+                  {hour}
+                </span>
               ))}
             </div>
             {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map(
               (day, index) => (
-                <div className="heatmap-row" key={day}>
-                  <strong>{day}</strong>
+                <div className="heatmap-row" role="row" key={day}>
+                  <strong role="rowheader">{day}</strong>
                   {Array.from({ length: 24 }, (_, hour) => {
                     const count =
                       data?.peakHours?.find(
@@ -455,6 +459,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                     return (
                       <span
                         key={hour}
+                        role="cell"
                         title={
                           day + " " + hour + ":00 · " + count + " facturas"
                         }

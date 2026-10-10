@@ -24,6 +24,7 @@ import {
 import { randomUUID } from "node:crypto";
 import { formatMoney } from "@fitstore/shared";
 import { Actor, CurrentUser, Database, Permit } from "./common";
+import { saleIncentive } from "./incentives";
 
 // ---------------------------------------------------------------------------
 // Configuración
@@ -148,6 +149,9 @@ export type SaleView = {
   taxTotal: number;
   taxIncluded: boolean;
   creditBalance: number;
+  // Incentivos (INC): el grupo es de la administración, no de las cajeras.
+  wholesale?: boolean;
+  incentive?: number | null;
 };
 
 function itemsLine(label: string, items: ItemView[]) {
@@ -193,6 +197,8 @@ export function renderSale(sale: SaleView) {
       : []),
     ...taxLine(sale.taxTotal, sale.taxIncluded),
     `<b>Total: ${amount(sale.total)}</b>`,
+    ...(sale.wholesale ? ["Venta al por mayor (incentivo a la mitad)"] : []),
+    ...(sale.incentive ? [`Incentivo: ${amount(sale.incentive)}`] : []),
   ].join("\n");
 }
 
@@ -382,6 +388,7 @@ async function saleView(db: Db, id: string) {
       taxTotal: true,
       taxIncluded: true,
       creditBalance: true,
+      wholesale: true,
       voidedReason: true,
       voidedBy: true,
       updatedAt: true,
@@ -400,10 +407,11 @@ async function saleView(db: Db, id: string) {
     },
   });
   if (!sale) return null;
-  const [cashier, customer, place] = await Promise.all([
+  const [cashier, customer, place, incentive] = await Promise.all([
     userName(db, sale.sellerId),
     customerName(db, sale.customerId),
     sessionRegister(db, sale.cashSessionId),
+    saleIncentive(db, id),
   ]);
   const view: SaleView = {
     number: sale.number,
@@ -424,6 +432,8 @@ async function saleView(db: Db, id: string) {
     taxTotal: Number(sale.taxTotal),
     taxIncluded: sale.taxIncluded,
     creditBalance: Number(sale.creditBalance),
+    wholesale: sale.wholesale,
+    incentive,
   };
   return { sale, view };
 }
@@ -840,7 +850,7 @@ export class NotificationWorker
     await this.db.$executeRaw`
       DELETE FROM "NotificationOutbox"
       WHERE status = 'sent'
-        AND "sentAt" < timezone('UTC', now()) - make_interval(days => ${PURGE_DAYS})`;
+        AND "sentAt" < timezone('UTC', now()) - make_interval(days => ${PURGE_DAYS}::int)`;
   }
 }
 

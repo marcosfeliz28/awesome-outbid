@@ -91,6 +91,7 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     discount: row.discount,
     tax: row.tax,
     lineTotal: row.lineTotal,
+    promotionName: row.promotionName ?? null,
     ...(showProfit ? { unitCost: row.unitCost } : {}),
     variant: row.variant
       ? {
@@ -345,6 +346,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 import { cashExpected, refreshClosedCash } from "./cash";
 import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
+import { recordSaleIncentives, reverseIncentives } from "./incentives";
 
 @Controller()
 export class SalesController {
@@ -547,10 +549,15 @@ export class SalesController {
           );
           const manual =
             100 - ((100 - lineDiscount) * (100 - input.globalDiscount)) / 100;
-          const promo = Math.max(
-            0,
-            ...promos.map((p) => promotionDiscount(p, variant, item.qty)),
-          );
+          let promo = 0,
+            promotionName: string | null = null;
+          for (const p of promos) {
+            const off = promotionDiscount(p, variant, item.qty);
+            if (off > promo) [promo, promotionName] = [off, p.name];
+          }
+          // G15: se nombra sólo si la promoción es lo que se aplicó (supera
+          // al descuento manual de la línea).
+          if (!(promo > manual)) promotionName = null;
           const totals = lineTotals(
             item.qty,
             Number(variant.price),
@@ -586,7 +593,15 @@ export class SalesController {
                 d(0),
               )
             : d(variant.costAvg);
-          return { item, variant, totals, kit, consumption, cost };
+          return {
+            item,
+            variant,
+            totals,
+            kit,
+            consumption,
+            cost,
+            promotionName,
+          };
         });
         const total = money(
           lines.reduce((a, l) => a.plus(l.totals.total), d(0)),
@@ -768,6 +783,7 @@ export class SalesController {
               lines.reduce((a, l) => a.plus(l.cost.times(l.item.qty)), d(0)),
             ),
             notes: input.notes || "",
+            wholesale: input.wholesale === true,
             ...(capturedAt ? { createdAt: capturedAt } : {}),
             branchId: actor.branchId,
           },
@@ -776,7 +792,15 @@ export class SalesController {
         // (lotes y combos incluidos): así cada devolución, que redondea por
         // línea, deja el costo de la venta exactamente en cero.
         let booked = d(0);
-        for (const { item, variant, totals, kit, consumption, cost } of lines) {
+        for (const {
+          item,
+          variant,
+          totals,
+          kit,
+          consumption,
+          cost,
+          promotionName,
+        } of lines) {
           if (kit.length) {
             const allocations: any[] = [];
             for (const { component, qty } of consumption) {
@@ -803,6 +827,7 @@ export class SalesController {
                 tax: totals.tax,
                 lineTotal: totals.total,
                 stockAllocations: allocations,
+                promotionName,
               },
             });
             booked = booked.plus(
@@ -853,6 +878,7 @@ export class SalesController {
                   discount,
                   tax,
                   lineTotal,
+                  promotionName,
                   stockAllocations: json([
                     {
                       ...part,
@@ -956,6 +982,7 @@ export class SalesController {
             { saleId: sale.id, ...differences },
           );
         }
+        await recordSaleIncentives(tx, actor, sale.id);
         await audit(tx, actor, "complete", "sale", sale.id, undefined, {
           number: sale.number,
           total,
@@ -1307,6 +1334,7 @@ export class SalesController {
         },
       });
       await refreshReceivableAlert(tx, id, actor.branchId);
+      await reverseIncentives(tx, actor, "void", id, id);
       let cashDifferences: Record<string, number> | undefined;
       if (refundCash && refundAmount > 0) {
         // D-02: el cierre aprobado no se reescribe. La caja cerrada recibió ese
@@ -1766,6 +1794,7 @@ export class SalesController {
           balance: data.refundMethod === "credit_note" ? refundAmount : 0,
         },
       });
+      await reverseIncentives(tx, actor, "return", sale.id, row.id, data.items);
       await audit(tx, actor, "return", "sale", sale.id, undefined, row);
       return safe(row, actor);
     });
@@ -2235,10 +2264,12 @@ export class SalesController {
     );
     doc.moveDown();
     if (sale.status === "voided") doc.text("ANULADA · " + sale.voidedReason);
-    for (const item of sale.items)
+    for (const item of sale.items) {
       doc.text(
         `${item.variant.product.name} / ${item.variant.sku}   ${item.qty} × RD$ ${item.unitPrice}   RD$ ${item.lineTotal}`,
       );
+      if (item.promotionName) doc.text("   Promoción: " + item.promotionName);
+    }
     doc
       .moveDown()
       .text(

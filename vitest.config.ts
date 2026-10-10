@@ -31,6 +31,12 @@ export default defineConfig({
       "tests/accessibility-contract.test.ts",
       "tests/variant-code-unique-postgres.test.ts",
       "tests/telegram-render.test.ts",
+      "tests/web-privacy.test.ts",
+      "tests/web-monitoring.test.ts",
+      "tests/promotion-ticket.test.ts",
+      "tests/incentives-calc.test.ts",
+      "tests/afirmaciones.test.ts",
+      "tests/licencias.test.ts",
     ],
   },
 });

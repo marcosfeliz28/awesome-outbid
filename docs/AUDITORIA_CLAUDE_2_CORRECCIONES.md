@@ -1,4 +1,6 @@
-# Correcciones de la segunda auditoría Claude
+# Correcciones de la segunda revisión con IA (Claude)
+
+> **Nota (G13):** revisión automatizada hecha con un modelo de IA. No es una auditoría independiente ni una certificación; no la cites como respaldo ante terceros.
 
 **Fecha:** 8 de octubre de 2026  
 **Alcance:** código y pruebas locales. No se conectó ni modificó Render,

@@ -67,6 +67,7 @@ import {
   seesCustomerPii,
 } from "./customer-display";
 import { managementQueryError } from "./managementMessages";
+import { IncentiveRates, MyIncentives } from "./Incentives";
 import {
   applyPendingSaleReprice,
   discardPendingSale,
@@ -107,7 +108,8 @@ function DataTable({
   const totalPages = Math.ceil(rows.length / 20);
   return rows.length ? (
     <>
-      <div className="table-wrap">
+      {/* G12: con desplazamiento horizontal, la tabla se recorre con teclado. */}
+      <div className="table-wrap" tabIndex={0}>
         <table>
           <thead>
             <tr>
@@ -291,7 +293,7 @@ export function Catalog() {
               <input
                 type="file"
                 accept=".xlsx"
-                hidden
+                className="sr-only"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
@@ -1550,6 +1552,7 @@ export function Cash() {
           />
         </div>
       )}
+      <MyIncentives />
       {can(user.permissions, "*") && <CodPending session={active} />}
       {!!pending.data?.length && (
         <section className="panel pending-panel">
@@ -2781,7 +2784,7 @@ export function SalesHistory() {
                         {p.hasProof ? "Cambiar foto" : "Subir foto"}
                         <input
                           type="file"
-                          hidden
+                          className="sr-only"
                           accept="image/jpeg,image/png,image/webp"
                           capture="environment"
                           onChange={async (e) => {
@@ -3179,7 +3182,7 @@ export function Configuration() {
     {
       key: "allowOfflineSales",
       label: "Permitir ventas sin conexión (riesgo entre varias cajas)",
-      help: "Desactivado es lo más seguro: dos laptops offline no pueden reservar entre sí la última unidad. Actívalo sólo si aceptas revisar conflictos al reconectar.",
+      help: "Desactivado evita vender la misma última unidad desde dos equipos sin conexión: dos laptops offline no pueden reservarla entre sí. Actívalo sólo si aceptas revisar conflictos al reconectar.",
       type: "checkbox",
     },
     requiredNumber(
@@ -3282,6 +3285,7 @@ export function Configuration() {
             </div>
             <StoreSettings />
             <TelegramNotices />
+            <IncentiveRates />
           </QueryState>
         ) : tab === "users" ? (
           <>

@@ -8850,10 +8850,16 @@ describe("Tienda · 4 cajas a la vez", () => {
         ]);
         for (const r of [a, b])
           expect([201, 400, 409], JSON.stringify(r.body)).toContain(r.status);
-        expect(a.status).toBe(b.status);
-        if (a.status === 201) {
-          expect(b.body.id).toBe(a.body.id);
-          c.sales.add(a.body.id);
+        // Si entra mercancía entre los dos envíos, el primero puede rechazarse por
+        // stock (400, sin guardar nada) y el reintento con el mismo UUID pasar (201):
+        // es el comportamiento previsto. Lo que nunca puede pasar es una venta doble.
+        const created = [a, b].filter((r) => r.status === 201);
+        if (created.length === 0) expect(a.status).toBe(b.status);
+        else if (created.length === 1)
+          expect([a, b].find((r) => r.status !== 201)!.status).toBe(400);
+        else expect(b.body.id).toBe(a.body.id);
+        if (created.length > 0) {
+          c.sales.add(created[0].body.id);
           c.cash += 300;
           c.scarce += 1;
         } else c.rejected += 1;

@@ -20,6 +20,7 @@ import { CashController } from "./cash";
 import { ReportsController } from "./reports";
 import { AlertEngine, AlertsController } from "./alerts";
 import { OfflineSalesController } from "./offline-sales";
+import { IncentivesController } from "./incentives";
 import { NotificationsController, NotificationWorker } from "./notifications";
 import {
   AuthenticatedRateLimitGuard,
@@ -62,6 +63,7 @@ export function createAppModule(secret: string) {
       AlertsController,
       OfflineSalesController,
       NotificationsController,
+      IncentivesController,
     ],
     providers: [
       Database,
