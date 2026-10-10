@@ -274,10 +274,17 @@ de restaurar**: salga de esa carpeta y repita desde el paquete externo. Así se
 evita bloquear el reemplazo de la carpeta instalada con `Move-Item`.
 
 La recuperación guarda la lista de roles con LOGIN tanto en el marcador como en
-`recovery-login-state.json` antes de bloquear conexiones. Siempre restituye
-`fitstore` y los roles registrados al salir. Si otra interrupción deja el acceso
+`recovery-login-state.json` antes de bloquear conexiones. En una recuperación
+correcta restituye `fitstore` y los roles registrados antes de habilitar API/Web.
+Si falla sin haber intentado modificar la base, intenta arrancar PostgreSQL y
+restituir LOGIN en el camino de error. Si ya comenzó la restauración de datos,
+conserva NOLOGIN **a propósito**: la base puede estar parcial y soporte debe
+verificar su integridad antes de permitir clientes. Si el arranque o la
+restitución también fallan, conserva el plan y registra ese bloqueo sin ocultar
+el error original. Si otra interrupción deja el acceso
 bloqueado, soporte debe conectarse como `postgres` y ejecutar
-`ALTER ROLE fitstore LOGIN;`. Esta salida también se indica en el log; conserve
+`ALTER ROLE fitstore LOGIN;` **solo después de revisar la integridad de la base**.
+Esta salida también se indica en el log; conserve
 ambos archivos y no restaure ni elimine el marcador sin revisión asistida.
 
 **@dueña: probar en Windows limpio** PostgreSQL temporal con un cluster creado
