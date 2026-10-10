@@ -124,6 +124,10 @@ model Variant {
   lots           Lot[]
   movements      InventoryMovement[]
   saleItems      SaleItem[]
+  // Claves foráneas de 202610210002_datos_restricciones.
+  purchaseItems  PurchaseItem[]
+  kitComponents  KitComponent[]      @relation("KitVariant")
+  usedInKits     KitComponent[]      @relation("KitComponentVariant")
   branchId       String              @default("main")
   createdBy      String?
   createdAt      DateTime            @default(now())
@@ -141,7 +145,10 @@ model Variant {
 model KitComponent {
   id                 String  @id @default(uuid()) @db.Uuid
   kitVariantId       String  @db.Uuid
+  kitVariant         Variant @relation("KitVariant", fields: [kitVariantId], references: [id])
   componentVariantId String  @db.Uuid
+  componentVariant   Variant @relation("KitComponentVariant", fields: [componentVariantId], references: [id])
+  // CHECK kit_component_qty_positive (qty > 0), 202610210002.
   qty                Decimal @db.Decimal(14, 3)
 
   @@unique([kitVariantId, componentVariantId])
@@ -217,6 +224,10 @@ model Customer {
   createdBy   String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  // Claves foráneas de 202610210002_datos_restricciones (un cliente no se
+  // borra: se anonimiza).
+  sales        Sale[]
+  creditNotes  CreditNote[]
 }
 
 model Sale {
@@ -226,8 +237,12 @@ model Sale {
   offlineUuid            String       @unique @db.Uuid
   requestHash            String       @default("")
   customerId             String?      @db.Uuid
+  customer               Customer?    @relation(fields: [customerId], references: [id], onDelete: Restrict)
   sellerId               String       @db.Uuid
   cashSessionId          String?      @db.Uuid
+  cashSession            CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  // CHECK sale_amounts_nonnegative y sale_status_valid (completed | voided),
+  // migración 202610210002_datos_restricciones.
   subtotal               Decimal      @db.Decimal(14, 2)
   discountTotal          Decimal      @db.Decimal(14, 2)
   discountReason         String?
@@ -260,6 +275,8 @@ model Sale {
 
   @@index([createdAt])
   @@index([sellerId, createdAt])
+  // Migración 202610210001_datos_indices (deuda del cliente, anonimización).
+  @@index([customerId])
 }
 
 model SaleItem {
@@ -290,7 +307,10 @@ model Payment {
   saleId         String   @db.Uuid
   sale           Sale     @relation(fields: [saleId], references: [id])
   cashSessionId  String?  @db.Uuid
+  cashSession    CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
   creditNoteId   String?  @db.Uuid
+  creditNote     CreditNote? @relation(fields: [creditNoteId], references: [id], onDelete: Restrict)
+  // CHECK payment_amounts_nonnegative (monto, entregado, cambio, comisión).
   entryType      String   @default("sale")
   idempotencyKey String?  @unique @db.Uuid
   createdAt      DateTime @default(now())
@@ -325,6 +345,9 @@ model SaleReturn {
   refundAmount   Decimal  @default(0) @db.Decimal(14, 2)
   refundMethod   String
   cashSessionId  String?  @db.Uuid
+  cashSession    CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  creditNote     CreditNote?
+  // CHECK sale_return_amounts_nonnegative y sale_return_refund_method_valid.
   userId         String
   items          Json
   branchId       String   @default("main")
@@ -337,10 +360,13 @@ model CreditNote {
   id             String   @id @default(uuid()) @db.Uuid
   redemptionCode String   @unique
   returnId       String   @unique @db.Uuid
+  saleReturn     SaleReturn @relation(fields: [returnId], references: [id])
   customerId     String?  @db.Uuid
+  customer       Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
   amount         Decimal  @db.Decimal(14, 2)
   balance        Decimal  @db.Decimal(14, 2)
   createdAt      DateTime @default(now())
+  payments       Payment[]
 }
 
 model Quote {
@@ -386,21 +412,31 @@ model PurchaseItem {
   orderId     String        @db.Uuid
   order       PurchaseOrder @relation(fields: [orderId], references: [id])
   variantId   String        @db.Uuid
+  variant     Variant       @relation(fields: [variantId], references: [id])
+  // CHECK purchase_item_quantities_valid: qty > 0 y
+  // recibido + dañado <= pedido (202610210002_datos_restricciones).
   qty         Decimal       @db.Decimal(14, 3)
   receivedQty Decimal       @default(0) @db.Decimal(14, 3)
   // Dañadas o rechazadas al recibir: no entran al stock y cierran lo pendiente.
   damagedQty  Decimal       @default(0) @db.Decimal(14, 3)
   unitCost    Decimal       @db.Decimal(14, 2)
+
+  // Migración 202610210001_datos_indices (recepción de una orden).
+  @@index([orderId])
 }
 
 model GoodsReceipt {
   id                String         @id @default(uuid()) @db.Uuid
   orderId           String?        @db.Uuid
-  order             PurchaseOrder? @relation(fields: [orderId], references: [id])
+  // RESTRICT como en 202610030001_initial: una orden con recepciones no se
+  // borra (sin onDelete explícito Prisma supondría SetNull: deriva D-B1).
+  order             PurchaseOrder? @relation(fields: [orderId], references: [id], onDelete: Restrict)
   // Compras sin orden: proveedor, total (líneas + flete + impuestos) y comprobante.
   supplierId        String?        @db.Uuid
   total             Decimal?       @db.Decimal(14, 2)
   attachmentId      String?        @db.Uuid
+  // La factura del proveedor de una recepción no se puede borrar (D-M5).
+  attachment        InvoiceAttachment? @relation(fields: [attachmentId], references: [id], onDelete: Restrict)
   operationId       String?        @unique @db.Uuid
   freight           Decimal        @db.Decimal(14, 2)
   otherCosts        Decimal        @db.Decimal(14, 2)
@@ -468,6 +504,12 @@ model CashSession {
   // Cuadre de la tienda: denominaciones, vales, US$/€ y entregado/dejado.
   closeDetails       Json?
   branchId           String    @default("main")
+  // Claves foráneas de 202610210002_datos_restricciones; además los CHECK
+  // cash_session_closed_after_opened y cash_session_opening_nonnegative.
+  sales              Sale[]
+  payments           Payment[]
+  returns            SaleReturn[]
+  movements          CashMovement[]
 
   @@index([userId, closedAt])
 }
@@ -475,6 +517,8 @@ model CashSession {
 model CashMovement {
   id        String   @id @default(uuid()) @db.Uuid
   sessionId String   @db.Uuid
+  session   CashSession @relation(fields: [sessionId], references: [id])
+  // CHECK cash_movement_type_valid (in | out) y cash_movement_amount_nonnegative.
   type      String
   amount    Decimal  @db.Decimal(14, 2)
   reason    String
@@ -560,6 +604,9 @@ model AuditLog {
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
+  // Migración 202610210001_datos_indices (venta offline en conflicto,
+  // anonimización).
+  @@index([entityId, entity])
 }
 
 model Settings {
@@ -667,6 +714,9 @@ model InvoiceAttachment {
   mime      String
   data      Bytes
   createdAt DateTime @default(now())
+  // GoodsReceipt_attachmentId_fkey (RESTRICT): no se borra si una recepción
+  // la usa (202610210002_datos_restricciones).
+  goodsReceipts GoodsReceipt[]
 }
 
 // Cola durable de avisos por Telegram (apps/api/src/notifications.ts). El
