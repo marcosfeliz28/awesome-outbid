@@ -30,13 +30,14 @@ Para registrar la venta pedimos un nombre que identifique al cliente en el recib
 - Datos de contacto de clientes sin obligación contable: mientras mantenga relación con nosotros o hasta que pida eliminarlos. Clientes inactivos: [N] años.
 - Si pide eliminar sus datos, anonimizaremos los datos que lo identifican y conservaremos importes y números de venta, porque la ley nos obliga a guardar los registros contables.
 - Foto de comprobante de pago: [PLAZO] tras saldarse la deuda.
-- Copias de seguridad: se renuevan cada 30 días aproximadamente; los datos eliminados desaparecen de ellas en ese plazo.
+- Copias de seguridad: las diarias se conservan 30 días y, si la Tienda activa el respaldo en Google Drive, además una copia mensual durante 12 meses; los datos eliminados desaparecen de ellas cuando esas copias se renuevan (hasta unos 13 meses). [ABOGADO: confirmar que este plazo es aceptable frente a las solicitudes de eliminación.]
 - Datos de empleados: durante la relación laboral y el plazo legal posterior [ABOGADO: confirmar].
 
 ## 6. Con quién los compartimos
 - Proveedores tecnológicos que alojan el sistema y las copias de seguridad ([PROVEEDOR DE ALOJAMIENTO], [PROVEEDOR DE COPIAS]) y el servicio de monitoreo de errores (Sentry), algunos con servidores fuera de la República Dominicana. [ABOGADO: revisar transferencias internacionales.]
 - Autoridades, como la DGII, cuando la ley lo exija.
 - Procesadores de tarjeta o bancos, solo con la información propia de la operación de cobro (no pasan por nuestro sistema).
+- Google (Google Drive), si la Tienda activa el respaldo diario: cada madrugada se guarda en la cuenta de Google Drive de la Tienda una copia de seguridad completa de la base de datos, cifrada antes de salir de nuestro servidor con una clave que Google no recibe; Google sólo almacena el archivo cifrado, en servidores que pueden estar fuera de la República Dominicana.
 - Telegram, si la Tienda activa los avisos de ventas: cada factura, anulación, devolución, cobro o cierre de caja se envía como mensaje a un grupo privado de Telegram de la administración. El aviso lleva el nombre del cliente y el detalle de la venta, sin cédula/RNC, teléfono, correo ni dirección; Telegram es un tercero que procesa y almacena ese contenido en sus servidores, algunos fuera de la República Dominicana.
 No vendemos sus datos.
 
