@@ -166,6 +166,19 @@ server {
         try_files $uri =404;
     }
 
+    # Avisos de licencias (/licencias.txt, que genera scripts/licencias-web.mjs,
+    # y cualquier otro .txt): texto UTF-8 con charset explícito. `charset`
+    # sólo actúa en esta ubicación, así que el resto de tipos conserva su
+    # Content-Type; la caché y las cabeceras de seguridad son las del bloque
+    # genérico de abajo.
+    location ~* \.txt$ {
+        charset utf-8;
+        charset_types text/plain;
+        add_header Cache-Control "no-cache";
+        include /etc/nginx/snippets/nexora-security-headers.conf;
+        try_files $uri =404;
+    }
+
     # Resto de archivos con extensión (icon.svg, registerSW.js, workbox-*.js,
     # products/*.svg...): se sirven si existen y revalidan siempre; si no
     # existen, 404 y no el HTML de la SPA.

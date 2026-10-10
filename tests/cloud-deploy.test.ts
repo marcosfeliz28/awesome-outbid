@@ -1,5 +1,7 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { cloudEnvironment } from "../deploy/render/with-cloud-env.mjs";
@@ -125,8 +127,8 @@ describe("Render · proxy público", () => {
     const nginx = read("deploy/render/nginx.conf.template");
     const headers = read("deploy/render/security-headers.conf");
     // G8: el DSN ya no está en el código; llega en VITE_SENTRY_DSN al
-    // compilar. La CSP sigue permitiendo el destino de ingesta de Sentry.
-    const sentryOrigin = "https://o4512218489683968.ingest.us.sentry.io";
+    // compilar. La CSP sólo autoriza Sentry si hay DSN (marcador que rellena
+    // render-security-headers.sh al arrancar; ver la prueba siguiente).
     expect(read("deploy/render/Dockerfile.web")).toContain(
       "ARG VITE_SENTRY_DSN",
     );
@@ -141,17 +143,77 @@ describe("Render · proxy público", () => {
       expect(headers).toContain(name);
     expect(headers).toContain("worker-src 'self' blob:");
     expect(headers).toContain("camera=(self)");
-    expect(headers).toContain("connect-src 'self' " + sentryOrigin);
+    expect(headers).toContain("connect-src 'self'${NEXORA_CSP_SENTRY_SRC};");
+    expect(headers).not.toMatch(/sentry\.io/i);
     expect(
       nginx.match(
         /include \/etc\/nginx\/snippets\/nexora-security-headers.conf;/g,
       ),
-    ).toHaveLength(11);
+    ).toHaveLength(12);
     // HSTS cubre subdominios.
     expect(headers).toContain(
       'Strict-Transport-Security "max-age=31536000; includeSubDomains"',
     );
   });
+
+  it.skipIf(process.platform === "win32")(
+    "la CSP sólo incluye el host de Sentry cuando hay VITE_SENTRY_DSN",
+    () => {
+      const dir = mkdtempSync(join(tmpdir(), "nexora-csp-"));
+      const render = (dsn?: string) => {
+        const target = join(dir, "headers.conf");
+        const env: NodeJS.ProcessEnv = { PATH: process.env.PATH };
+        if (dsn !== undefined) env.VITE_SENTRY_DSN = dsn;
+        const result = spawnSync(
+          "sh",
+          [
+            resolve(root, "deploy/render/render-security-headers.sh"),
+            resolve(root, "deploy/render/security-headers.conf"),
+            target,
+          ],
+          { env, encoding: "utf8" },
+        );
+        expect(result.status, result.stderr).toBe(0);
+        const text = readFileSync(target, "utf8");
+        expect(text).not.toContain("NEXORA_CSP_SENTRY_SRC");
+        return {
+          connect: text.match(/connect-src [^;]*;/)?.[0],
+          stderr: result.stderr,
+          lines: text.trim().split("\n").length,
+        };
+      };
+      try {
+        const expectedLines = read("deploy/render/security-headers.conf")
+          .trim()
+          .split("\n").length;
+        // Por defecto (sin DSN o vacío): nada de Sentry.
+        expect(render().connect).toBe("connect-src 'self';");
+        expect(render("  ").connect).toBe("connect-src 'self';");
+        // Con DSN: sólo el origen (sin clave ni proyecto).
+        const on = render(
+          "https://abc123@o4512218489683968.ingest.us.sentry.io/4512",
+        );
+        expect(on.connect).toBe(
+          "connect-src 'self' https://o4512218489683968.ingest.us.sentry.io;",
+        );
+        expect(on.lines).toBe(expectedLines);
+        // Un DSN inválido o que intente inyectar directivas no rompe el
+        // arranque: se avisa y la CSP queda en 'self'.
+        for (const bad of [
+          "http://k@o1.ingest.sentry.io/1",
+          'https://k@evil.example"; add_header X y/1',
+          "no-es-un-dsn",
+        ]) {
+          const off = render(bad);
+          expect(off.connect).toBe("connect-src 'self';");
+          expect(off.stderr).toContain("VITE_SENTRY_DSN no tiene el formato");
+          expect(off.lines).toBe(expectedLines);
+        }
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
 
   it("deja una sola fuente de cabeceras de seguridad también en /api", () => {
     const nginx = read("deploy/render/nginx.conf.template");
@@ -217,6 +279,29 @@ describe("Render · proxy público", () => {
     );
     // Sin `always`: un 404 de un hash viejo nunca queda cacheado como inmutable.
     expect(assets).not.toMatch(/Cache-Control[^;]*always/);
+    // Los .txt (licencias.txt) llevan charset UTF-8 sin cambiar el resto:
+    // misma caché y cabeceras que el bloque genérico y nada global.
+    const txt = block("location ~* \\.txt$ {");
+    const generic = block("location ~ \\.[A-Za-z0-9]+$ {");
+    expect(txt).toContain("charset utf-8;");
+    expect(txt).toContain("charset_types text/plain;");
+    for (const line of [
+      'add_header Cache-Control "no-cache";',
+      "include /etc/nginx/snippets/nexora-security-headers.conf;",
+      "try_files $uri =404;",
+    ]) {
+      expect(txt).toContain(line);
+      expect(generic).toContain(line);
+    }
+    expect(nginx.match(/^\s*charset\s/gm)).toHaveLength(1);
+    // Va antes del bloque genérico (en Nginx gana la primera regex) y
+    // después de las reglas de dotfiles y mapas.
+    expect(nginx.indexOf("location ~* \\.txt$ {")).toBeLessThan(
+      nginx.indexOf("location ~ \\.[A-Za-z0-9]+$ {"),
+    );
+    expect(nginx.indexOf("location ~ /\\. {")).toBeLessThan(
+      nginx.indexOf("location ~* \\.txt$ {"),
+    );
     // El service worker, el HTML y la config en runtime siguen sin caché.
     for (const file of ["sw.js", "index.html", "runtime-config.js"]) {
       const loc = block(`location = /${file} {`);
@@ -316,6 +401,19 @@ describe("Render · proxy público", () => {
     expect(entrypoint).toContain('"$new_ip" != "$current_ip"');
     expect(entrypoint).toContain("nginx -s reload");
     expect(entrypoint).toContain('exec /docker-entrypoint.sh "$@"');
+    // El snippet de cabeceras se genera al arrancar desde la plantilla.
+    expect(dockerfile).toContain(
+      "COPY deploy/render/security-headers.conf /etc/nginx/nexora/security-headers.conf.in",
+    );
+    expect(dockerfile).toContain(
+      "deploy/render/render-security-headers.sh /usr/local/bin/nexora-render-security-headers",
+    );
+    expect(entrypoint).toContain(
+      "nexora-render-security-headers /etc/nginx/nexora/security-headers.conf.in",
+    );
+    expect(entrypoint.indexOf("nexora-render-security-headers")).toBeLessThan(
+      entrypoint.indexOf("exec /docker-entrypoint.sh"),
+    );
   });
 
   it("las imágenes copian todos los archivos y herramientas que invocan", () => {
