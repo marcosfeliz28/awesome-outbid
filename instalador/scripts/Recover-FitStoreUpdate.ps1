@@ -14,6 +14,48 @@ function Assert-FitStoreRecoveryWorkingDirectory {
   }
 }
 
+function Restore-FitStoreTemporaryPostgresAccess {
+  param([object[]]$OriginalAcl)
+  foreach ($entry in $OriginalAcl) {
+    if (-not (Test-Path -LiteralPath $entry.Path)) { continue }
+    $item = Get-Item -LiteralPath $entry.Path -Force
+    $acl = if ($item.PSIsContainer) { [Security.AccessControl.DirectorySecurity]::new() } else { [Security.AccessControl.FileSecurity]::new() }
+    $acl.SetSecurityDescriptorSddlForm($entry.Sddl, [Security.AccessControl.AccessControlSections]::Access)
+    $item.SetAccessControl($acl)
+  }
+}
+
+function Enable-FitStoreTemporaryPostgresAccess {
+  param([Parameter(Mandatory)][string]$Database)
+  $root = Get-Item -LiteralPath $Database -Force
+  if (-not $root.PSIsContainer -or ($root.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'PGDATA temporal debe ser un directorio real, no un enlace.' }
+  $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User
+  $saved = [Collections.Generic.List[object]]::new()
+  try {
+    # Guardar DACL antes de otorgar: restaurar exactamente, sin borrar una
+    # concesion que la cuenta ya tuviera. Administradores deny-only no basta.
+    foreach ($item in @($root) + @(Get-ChildItem -LiteralPath $root.FullName -Recurse -Force)) {
+      if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'PGDATA contiene un enlace; acceso temporal cancelado.' }
+      $acl = Get-Acl -LiteralPath $item.FullName
+      $saved.Add([pscustomobject]@{ Path=$item.FullName; Sddl=$acl.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) })
+    }
+    foreach ($entry in $saved) {
+      $item = Get-Item -LiteralPath $entry.Path -Force
+      $acl = if ($item.PSIsContainer) { [Security.AccessControl.DirectorySecurity]::new() } else { [Security.AccessControl.FileSecurity]::new() }
+      $acl.SetSecurityDescriptorSddlForm($entry.Sddl, [Security.AccessControl.AccessControlSections]::Access)
+      $inheritance = if ($item.PSIsContainer) { [Security.AccessControl.InheritanceFlags]'ContainerInherit,ObjectInherit' } else { [Security.AccessControl.InheritanceFlags]::None }
+      $rule = [Security.AccessControl.FileSystemAccessRule]::new($sid, [Security.AccessControl.FileSystemRights]::Modify, $inheritance, [Security.AccessControl.PropagationFlags]::None, [Security.AccessControl.AccessControlType]::Allow)
+      $acl.AddAccessRule($rule)
+      $item.SetAccessControl($acl)
+    }
+    return $saved.ToArray()
+  } catch {
+    $failure = $_
+    try { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved.ToArray() } catch { Write-Warning ('No se pudo retirar todo el acceso temporal a PGDATA: ' + $_.Exception.Message) }
+    throw $failure
+  }
+}
+
 function Invoke-FitStoreRecoveryPgCtl {
   param([string]$Tool, [string[]]$Arguments, [string]$Database)
   # No -Wait: Windows espera tambien a postgres (hijo persistente). Esperar
@@ -108,6 +150,7 @@ SELECT SUM(activity)::bigint FROM (
 ) AS recent_activity;
 "@
   $temporaryPostgres = $false
+  $temporaryAcl = @()
   try {
     if ($psql -ne (Join-Path $Paths.PgBin 'psql.exe')) {
       # El servicio registrado apunta a Program Files, que puede estar apartado.
@@ -115,6 +158,7 @@ SELECT SUM(activity)::bigint FROM (
       $postgres = Get-Service -Name $script:PostgresService -ErrorAction Stop
       if ($postgres.Status -ne 'Running') {
         $pgCtl = Join-Path (Split-Path -Parent $psql) 'pg_ctl.exe'
+        $temporaryAcl = @(Enable-FitStoreTemporaryPostgresAccess -Database $Paths.Database)
         $temporaryPostgres = $true
         Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-l',(Join-Path $Paths.Database 'recovery-postgres.log'),'-o',"-p $DatabasePort",'-w','start')
       }
@@ -133,7 +177,11 @@ SELECT SUM(activity)::bigint FROM (
     if ($ExclusiveAccess) { Disable-FitStoreRecoveryIsolation -Transaction $Transaction -Psql $psql -Secrets $secrets -DatabasePort $DatabasePort }
     throw
   } finally {
-    if ($temporaryPostgres) { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
+    try {
+      if ($temporaryPostgres) { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
+    } finally {
+      if ($temporaryAcl.Count) { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $temporaryAcl }
+    }
   }
 }
 
