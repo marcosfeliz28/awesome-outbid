@@ -49,6 +49,13 @@ En ese primer dictamen se rechazó integrar las cuatro ramas con los dos P1. La 
 
 ## Pendientes explícitos
 
+### Correcciones locales posteriores, pendientes del CI de la nueva entrega
+
+- `93502d7`: Windows-Smoke usa `Invoke-FitStorePgSql` en ambas consultas. Antes, las asignaciones reales extraídas del AST fallaban en Windows PowerShell 5.1 con `relation "sale" does not exist`; después devuelven `2|3|4` sobre dos bases PostgreSQL 18.6 aisladas y rechazan una tabla `Sale` ausente. La regresión está conectada al runner Windows. `pnpm instalador:validar` completo terminó con salida 0, sin ejecutar el smoke de una instalación real.
+- `419fb51`: N-02 usa una API compilada nueva, señal TCP real de arranque y veinte tandas de siete peticiones. Conserva 140 intentos desde siete IP, ventana real de 60 s, rechazo de respuestas distintas de 400/429 y las expectativas originales 429/400/201. No cambia límites ni código de autenticación. El archivo completo pasó 17/17; el reloj inyectado solo se usa con la clase real en una prueba separada. Los intentos intermedios detectaron una señal de arranque prematura y respuestas 503 al lanzar 140 solicitudes simultáneas; no se aceptaron como respuestas correctas ni se ocultaron.
+- `460f232`: manual actualizado con 22 capturas de React local, fixtures ficticias y tráfico externo bloqueado. No certifican permisos de API, operaciones realizadas ni producción. Se documentaron el botón de cierre recortado en 390 px y la diferencia entre el texto de la interfaz y el filtrado de diferencias de la API. Las ocho tareas principales conservan sus siete separadores.
+- Validación conjunta local tras esas correcciones: `pnpm check` salida 0, 542 aprobadas y 9 omisiones existentes; typecheck, lint y compilaciones API/web pasan. La integración completa del nuevo árbol está en curso; no trasladar el CI verde de `078be28` a esta entrega sin un nuevo run verde.
+
 - Corregir y verificar la fixture N-02 que falló en la integración combinada; no usar un CI verde para ocultar el fallo local.
 - Capturas nuevas del manual: dependen de mezclar la caja web corregida (3k.5). No sustituirlas por imágenes de una versión anterior.
 - Windows-Smoke limpio por la dueña: instalación/actualización/recuperación con servicios y elevación reales. CI y pruebas locales no certifican ese equipo ni hardware.
