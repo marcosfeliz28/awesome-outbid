@@ -13,6 +13,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaClient } from "@prisma/client";
+import { databaseUrlWithPool } from "./database-pool";
 import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
 import type { Request, Response } from "express";
 import { captureApiException } from "./monitoring";
@@ -20,6 +21,11 @@ import { isSerializationConflict } from "./inventory-resilience";
 
 @Injectable()
 export class Database extends PrismaClient {
+  // Pool explícito (connection_limit, pool_timeout): ver database-pool.ts.
+  constructor() {
+    const url = databaseUrlWithPool(process.env.DATABASE_URL);
+    super(url ? { datasources: { db: { url } } } : undefined);
+  }
   async onModuleInit() {
     await this.$connect();
   }
