@@ -7,6 +7,13 @@ if(-not $RecoverySource){$RecoverySource=Join-Path $PSScriptRoot '../scripts/Rec
 $root=Join-Path $env:TEMP ('nexora-legacy-schema-'+[guid]::NewGuid().ToString('N'));$cluster=Join-Path $root 'cluster'
 $password=[guid]::NewGuid().ToString('N');$psql=Join-Path $PgBin 'psql.exe'
 $arguments=@('-h','127.0.0.1','-p',[string]$Port,'-U','postgres','-d','fitstore','-t','-A','-v','ON_ERROR_STOP=1')
+$realSql=(Get-Command Invoke-FitStorePgSql).ScriptBlock
+$script:sqlCalls=0
+function Invoke-FitStorePgSql {
+ param($Tool,$Arguments,$Password,$Sql,$FailureMessage='Fallo una consulta PostgreSQL.')
+ $script:sqlCalls++
+ & $realSql -Tool $Tool -Arguments $Arguments -Password $Password -Sql $Sql -FailureMessage $FailureMessage
+}
 function Sql([string]$query){Invoke-FitStorePgSql -Tool $psql -Arguments $arguments -Password $password -Sql $query}
 function Get-CimInstance {param($ClassName,$Filter,$ErrorAction) [pscustomobject]@{StartMode='Disabled';State='Stopped'}}
 function Start-FitStoreService {param($Name,$TimeoutSeconds)}
@@ -31,7 +38,9 @@ try{
   Sql ($queries -join ' UNION ALL ')|Out-Null
   throw 'El mapa antiguo no fue rechazado sobre esquema previo'
  }
+ $script:sqlCalls=0
  Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port
+ if($script:sqlCalls -gt 2){throw "Metadata no agrupada: $($script:sqlCalls) procesos SQL reales para una comprobacion"}
  Write-Host 'PASS 3j4: esquema antiguo real con solo nucleo y dump antiguo permite recuperar antes de migrating.'
  Sql 'DROP TABLE "Payment";'|Out-Null
  $rejected=$false;try{Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port}catch{$rejected=$_.Exception.Message -match 'nucleo obligatorio'}

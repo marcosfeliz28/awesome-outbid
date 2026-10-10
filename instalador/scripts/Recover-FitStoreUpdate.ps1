@@ -233,7 +233,7 @@ function Get-FitStoreRecoveryActivityColumns {
 function Get-FitStoreDatabaseActivitySql {
   param([string]$Psql,[string[]]$Arguments,[string]$Password,[string]$Archive,[string]$Timestamp)
   $metadataSql = @'
-SELECT COALESCE(json_agg(json_build_object('table', table_name, 'column', column_name)), '[]'::json)::text
+SELECT json_build_object('tables', (SELECT COALESCE(json_agg(table_name), '[]'::json) FROM information_schema.tables WHERE table_schema='public'), 'columns', COALESCE(json_agg(json_build_object('table', table_name, 'column', column_name)), '[]'::json))::text
 FROM information_schema.columns WHERE table_schema='public'
 AND data_type IN ('timestamp without time zone','timestamp with time zone')
 AND column_name IN ('createdAt','updatedAt','openedAt','closedAt','lastActivityAt','approvedAt','revokedAt','sentAt');
@@ -241,7 +241,8 @@ AND column_name IN ('createdAt','updatedAt','openedAt','closedAt','lastActivityA
   $json=@(Invoke-FitStorePgSql -Tool $Psql -Arguments $Arguments -Password $Password -Sql $metadataSql -FailureMessage 'No se pudo leer el esquema real de recuperacion')
   if($json.Count -ne 1){throw 'Esquema real no verificable; recuperacion cancelada.'}
   $parsed=([string]$json[0]) | ConvertFrom-Json
-  $rows=@($parsed)
+  $rows=@($parsed.columns)
+  $liveTables=@($parsed.tables)
   $live=[ordered]@{}
   foreach($row in $rows){
     if($row.table -notmatch '^[A-Za-z_][A-Za-z0-9_]*$' -or $row.column -notmatch '^[A-Za-z_][A-Za-z0-9_]*$'){throw 'Identificador de esquema no admitido; recuperacion cancelada.'}
@@ -257,9 +258,7 @@ AND column_name IN ('createdAt','updatedAt','openedAt','closedAt','lastActivityA
     if([string]$line -match '^\d+;\s+\d+\s+\d+\s+TABLE\s+public\s+(\S+)\s+'){
       $table=$Matches[1]
       # Incluso tablas sin marca temporal del respaldo deben seguir existiendo.
-      $existsSql="SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='"+$table.Replace("'","''")+"';"
-      $exists=@(Invoke-FitStorePgSql -Tool $Psql -Arguments $Arguments -Password $Password -Sql $existsSql)
-      if($exists.Count -ne 1 -or ([string]$exists[0]).Trim() -ne '1'){throw "Tabla del respaldo ausente en base activa: $table. Recuperacion cancelada."}
+      if($table -cnotin $liveTables){throw "Tabla del respaldo ausente en base activa: $table. Recuperacion cancelada."}
     }
   }
   $queries=foreach($table in $live.Keys){
