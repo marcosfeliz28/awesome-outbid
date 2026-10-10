@@ -143,6 +143,31 @@ function Invoke-FitStoreRecoveryPgCtl {
   }
 }
 
+function Get-FitStoreRecoveryActivityColumns {
+  # Contrato cotejado con schema.prisma: toda marca de alta/modificacion/cierre.
+  # No usar fechas comerciales (vencimiento/captura prevista) como actividad.
+  return [ordered]@{
+    Role=@('updatedAt'); User=@('createdAt','updatedAt'); RefreshToken=@('createdAt')
+    Category=@('createdAt','updatedAt'); Supplier=@('createdAt','updatedAt')
+    Product=@('createdAt','updatedAt'); Variant=@('createdAt','updatedAt')
+    Lot=@('createdAt','updatedAt'); LotIdentityConflict=@('createdAt')
+    InventoryMovement=@('createdAt'); Customer=@('createdAt','updatedAt')
+    Sale=@('createdAt','updatedAt'); Payment=@('createdAt'); SaleReturn=@('createdAt')
+    CreditNote=@('createdAt'); Quote=@('createdAt','updatedAt')
+    PurchaseOrder=@('createdAt','updatedAt'); GoodsReceipt=@('createdAt')
+    SupplierPayment=@('createdAt'); InventoryCount=@('createdAt')
+    CashSession=@('openedAt','closedAt'); CashMovement=@('createdAt')
+    Expense=@('createdAt','updatedAt'); Promotion=@('createdAt','updatedAt')
+    Alert=@('createdAt','updatedAt'); AlertRule=@('updatedAt')
+    AuditLog=@('createdAt'); Settings=@('updatedAt'); Terminal=@('createdAt')
+    RealtimeEvent=@('createdAt'); MerchandiseOperation=@('createdAt')
+    InvoiceDraft=@('createdAt'); InvoiceAttachment=@('createdAt')
+    NotificationOutbox=@('createdAt'); IncentiveRate=@('updatedAt')
+    IncentiveEntry=@('createdAt'); IncentivePeriodClose=@('closedAt')
+    IncentiveSettlement=@('closedAt')
+  }
+}
+
 function Assert-FitStoreInterruptedRecovery {
   param($Paths, $Transaction, [ValidateRange(1024,65535)][int]$DatabasePort = 5434, [switch]$ExclusiveAccess, [string]$VerifiedPgBin)
   foreach ($field in @('backupCutoffAt','applicationAutostartDisabled','backup','backupSha256','snapshotPath','phase')) {
@@ -172,17 +197,12 @@ function Assert-FitStoreInterruptedRecovery {
   # La hora capturada offline puede preceder al respaldo. AuditLog usa la
   # hora del servidor; incluir tambien cobros, devoluciones, caja e inventario.
   # Una tabla/columna ausente provoca error y rechazo, nunca un cero inventado.
-  $sql = @"
-SELECT SUM(activity)::bigint FROM (
-  SELECT count(*) AS activity FROM "Sale" WHERE "createdAt" >= TIMESTAMP '$timestamp'
-  UNION ALL SELECT count(*) FROM "AuditLog" WHERE "createdAt" >= TIMESTAMP '$timestamp'
-  UNION ALL SELECT count(*) FROM "Payment" WHERE "createdAt" >= TIMESTAMP '$timestamp'
-  UNION ALL SELECT count(*) FROM "SaleReturn" WHERE "createdAt" >= TIMESTAMP '$timestamp'
-  UNION ALL SELECT count(*) FROM "CashMovement" WHERE "createdAt" >= TIMESTAMP '$timestamp'
-  UNION ALL SELECT count(*) FROM "InventoryMovement" WHERE "createdAt" >= TIMESTAMP '$timestamp'
-  UNION ALL SELECT count(*) FROM "CashSession" WHERE "openedAt" >= TIMESTAMP '$timestamp' OR "closedAt" >= TIMESTAMP '$timestamp'
-) AS recent_activity;
-"@
+  $columns = Get-FitStoreRecoveryActivityColumns
+  $queries = foreach ($table in $columns.Keys) {
+    $conditions = foreach ($column in $columns[$table]) { '"' + $column + '" >= TIMESTAMP ' + "'$timestamp'" }
+    'SELECT count(*) AS activity FROM "' + $table + '" WHERE ' + ($conditions -join ' OR ')
+  }
+  $sql = 'SELECT SUM(activity)::bigint FROM (' + ($queries -join ' UNION ALL ') + ') AS recent_activity;'
   $temporaryPostgres = $false
   $temporaryAcl = @()
   try {

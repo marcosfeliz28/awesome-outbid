@@ -233,6 +233,19 @@ el respaldo, marcador y carpetas y solicite recuperación asistida. Una fase
 marcador preservando la versión activa. No cambie servicios para forzar este
 procedimiento. La prueba Windows-Smoke en una máquina limpia sigue pendiente.
 
+La consulta también comprueba `Sale.updatedAt`, cotizaciones (`Quote`), compras,
+clientes, productos, configuración e incentivos: incluye las marcas
+`createdAt`, `updatedAt`, `openedAt` y `closedAt` de los 38 modelos actuales que
+las tienen, cotejadas con el esquema Prisma mediante una prueba. Una tabla o
+columna que falte rechaza la recuperación, no cuenta como cero. Una migración
+que inserte en `AuditLog` después del corte también hace que la recuperación se
+rechace: es un cierre seguro deliberado y requiere revisión asistida. Cambios de
+configuración o cotizaciones sin auditoría pero con fecha posterior igualmente
+bloquean. No es un historial genérico de commits de PostgreSQL: eliminaciones
+manuales sin auditoría o escrituras que no actualicen ninguna marca no quedan
+demostradas por esta consulta; si hubo intervención directa, no use recuperación
+automática y solicite revisión de soporte.
+
 ### Limpieza asistida del marcador en services/verifying
 
 Las fases `services` y `verifying` no acreditan una actualización terminada:
