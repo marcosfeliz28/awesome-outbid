@@ -1,0 +1,57 @@
+/* Respaldo diario a Google Drive (DriveBackup.tsx). Mismo aspecto que la
+   tarjeta de Telegram (.telegram-card) y sólo variables del tema. */
+.drive-card {
+  padding: 25px 30px;
+  border-top: 1px solid var(--border);
+}
+.drive-card .panel-heading {
+  padding: 0;
+}
+.drive-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.drive-card p {
+  font-size: 12px;
+  margin: 8px 0 12px;
+}
+.drive-card .drive-state p {
+  margin: 4px 0;
+}
+.drive-card .drive-error {
+  color: var(--danger-text);
+  font-weight: 600;
+}
+.drive-card .drive-warning {
+  color: var(--warning-text);
+}
+.drive-card .drive-code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+.drive-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.drive-actions .button {
+  min-height: 44px;
+}
+@media (max-width: 640px) {
+  .drive-card {
+    padding: 20px 16px;
+  }
+  .drive-card .panel-heading {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .drive-actions .button {
+    flex: 1 1 100%;
+  }
+}

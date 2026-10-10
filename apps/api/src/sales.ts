@@ -320,6 +320,21 @@ export async function terminalName(tx: any, registerId: string) {
   const terminal = await tx.terminal.findUnique({ where: { id: registerId } });
   return terminal?.name ?? "otro equipo";
 }
+// Lo mismo que terminalName para muchas cajas, con una sola consulta.
+export async function terminalNames(tx: any, registerIds: string[]) {
+  const ids = [...new Set(registerIds.filter((id) => UUID.test(id)))];
+  const terminals: { id: string; name: string }[] = ids.length
+    ? await tx.terminal.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const names = new Map(terminals.map((t) => [t.id, t.name]));
+  return (registerId: string) =>
+    UUID.test(registerId)
+      ? (names.get(registerId) ?? "otro equipo")
+      : registerId;
+}
 function promotionDiscount(promo: any, variant: any, qty: number) {
   const scope = promo.scope as any;
   if (scope.variantId && scope.variantId !== variant.id) return 0;
@@ -348,6 +363,10 @@ import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
 import { recordSaleIncentives, reverseIncentives } from "./incentives";
 
+// Plazo de las transacciones que mueven dinero (venta y devolución). Con el
+// valor por defecto de Prisma (5 s) una devolución bajo carga fallaba con
+// P2028 mientras la venta, con 20 s, terminaba (prueba de carga R5).
+export const MONEY_TRANSACTION = { timeout: 20000 };
 @Controller()
 export class SalesController {
   constructor(@Inject(Database) private db: Database) {}
@@ -1018,7 +1037,7 @@ export class SalesController {
           include: { items: true, payments: true },
         });
       },
-      { timeout: 20000 },
+      { timeout: MONEY_TRANSACTION.timeout },
     );
     notify(this.db, "sale", result.id);
     return safe(result, actor);
@@ -1797,7 +1816,7 @@ export class SalesController {
       await reverseIncentives(tx, actor, "return", sale.id, row.id, data.items);
       await audit(tx, actor, "return", "sale", sale.id, undefined, row);
       return safe(row, actor);
-    });
+    }, MONEY_TRANSACTION);
     if (done?.id) notify(this.db, "return", done.id);
     return done;
   }

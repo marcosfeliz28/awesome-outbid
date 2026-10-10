@@ -23,12 +23,42 @@ RUN pnpm --filter @fitstore/api db:generate \
 FROM node:24.21.0-bookworm-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
+# Cliente PostgreSQL 17 para el respaldo diario a Google Drive
+# (apps/api/src/drive-backup.ts, docs/RESPALDO_DRIVE.md): la base de Render es
+# PostgreSQL 17 y pg_dump se niega a respaldar un servidor más nuevo que él,
+# así que el cliente 15 de Debian no sirve. Sale del repositorio oficial PGDG
+# (apt.postgresql.org), cuya clave se fija aquí por suma SHA-256 (huella
+# B97B 0AFC AA1A 47F0 44F2 44A0 7FCC 7D46 ACCC 4CF8); apt comprueba la firma
+# del repositorio y la suma de cada paquete. Se instala libpq5 (17) y del
+# paquete postgresql-client-17 sólo se extraen pg_dump y pg_restore: el
+# paquete completo arrastra Perl (~50 MB) por sus guiones envoltorio. Sin
+# servidor PostgreSQL. La compilación falla si a pg_dump le falta una librería.
+ADD --checksum=sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76 --chmod=644 \
+    https://www.postgresql.org/media/keys/ACCC4CF8.asc /usr/share/keyrings/pgdg.asc
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates openssl \
-    && rm -rf /var/lib/apt/lists/*
+    && echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 \
+    && mkdir /tmp/pg17 && cd /tmp/pg17 \
+    && apt-get download postgresql-client-17 \
+    && dpkg-deb -x postgresql-client-17_*.deb extract \
+    && install -d /usr/lib/postgresql/17/bin \
+    && install -m 755 extract/usr/lib/postgresql/17/bin/pg_dump \
+        extract/usr/lib/postgresql/17/bin/pg_restore /usr/lib/postgresql/17/bin/ \
+    && cd / && rm -rf /tmp/pg17 /var/lib/apt/lists/* \
+    && ! ldd /usr/lib/postgresql/17/bin/pg_dump /usr/lib/postgresql/17/bin/pg_restore | grep -q "not found" \
+    && /usr/lib/postgresql/17/bin/pg_dump --version \
+    && /usr/lib/postgresql/17/bin/pg_restore --version
+ENV PG_DUMP_BIN=/usr/lib/postgresql/17/bin/pg_dump
 COPY --from=build --chown=node:node /app /app
 USER node
 EXPOSE 10000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||10000)+'/api/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
-CMD ["node", "deploy/render/with-cloud-env.mjs", "node", "apps/api/dist/main.js"]
+# Un solo proceso node: with-cloud-env.mjs prepara DATABASE_URL y carga la API
+# en el mismo proceso (antes lanzaba un segundo node que quedaba residente,
+# ~46 MB). Montón de V8 limitado a 256 MB para que, con el motor de Prisma y
+# el código (~130 MB), la API quede holgada dentro de los 512 MB del plan.
+CMD ["node", "--max-old-space-size=256", "deploy/render/with-cloud-env.mjs", "apps/api/dist/main.js"]
