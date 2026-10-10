@@ -22,6 +22,8 @@ import {
   Camera,
   Truck,
   ShoppingCart,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import {
@@ -56,9 +58,12 @@ import {
   attrLabel,
   categoryImage,
   matchesWords,
+  persistentError,
+  clearPersistentErrors,
   searchWords,
   toast,
 } from "./helpers";
+import { scanBeep, scanSoundEnabled, setScanSoundEnabled } from "./scanSound";
 import {
   InvoicePrint,
   METHOD_LABEL,
@@ -182,7 +187,11 @@ export function POS({ go }: { go: (page: string) => void }) {
       email: "",
       legalId: "",
     }),
-    [camera, setCamera] = useState(false);
+    [camera, setCamera] = useState(false),
+    // 05-M2: el aviso «elige el cliente» va dentro de la ventana del cliente;
+    // como aviso flotante tapaba su título.
+    [pickerHint, setPickerHint] = useState(""),
+    [sound, setSound] = useState(scanSoundEnabled);
   const search = useRef<HTMLInputElement>(null);
   // La ventana de variantes se abrió con Enter desde el buscador: al elegir,
   // el buscador queda vacío como tras un escaneo (R9-caja-6).
@@ -321,6 +330,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     add(variant, product);
     setChoosing(null);
+    clearPersistentErrors();
     if ((existing?.qty || 0) + 1 > Number(variant.stock)) {
       say(
         "Advertencia: " + product.name + " quedará con stock negativo.",
@@ -402,8 +412,8 @@ export function POS({ go }: { go: (page: string) => void }) {
   const charge = () => {
     if (!cart.length) return;
     if (!customerId) {
+      setPickerHint("Selecciona o crea el cliente antes de cobrar.");
       setClientPicker(true);
-      toast("Selecciona o crea el cliente antes de cobrar.", true);
       return;
     }
     if (!session) {
@@ -432,6 +442,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     if (e.key === "F4") {
       e.preventDefault();
+      setPickerHint("");
       setClientPicker(true);
     }
     if (e.key === "F8") {
@@ -616,9 +627,22 @@ export function POS({ go }: { go: (page: string) => void }) {
   // Avisos del escaneo. Mientras se procesa la cola se juntan para dar uno
   // solo al final; si no, cada aviso tapaba al anterior.
   const batch = useRef<{ message: string; error: boolean }[] | null>(null);
+  // 05-M2: un error del escaneo queda a la vista hasta el siguiente escaneo
+  // correcto, con un pitido grave; lo agregado da un pitido corto.
   const say = (message: string, error = false) => {
     if (batch.current) batch.current.push({ message, error });
-    else toast(message, error);
+    else if (error) {
+      persistentError(message);
+      scanBeep("error");
+    } else toast(message);
+  };
+  const added = (name: string) => {
+    if (batch.current)
+      batch.current.push({ message: name + " agregado.", error: false });
+    else {
+      toast(name + " agregado.");
+      scanBeep("ok");
+    }
   };
   const scan = (code: string) => {
     if (catalogLoading()) return queueWhileLoading("scan", code);
@@ -645,7 +669,7 @@ export function POS({ go }: { go: (page: string) => void }) {
       if (result) {
         setQ("");
         // La advertencia de stock negativo ya está a la vista.
-        if (result === "added") say(product.name + " agregado.");
+        if (result === "added") added(product.name);
       } else {
         // Sin stock: el código queda a la vista, pero seleccionado, para
         // que el siguiente escaneo lo reemplace en vez de sumarse.
@@ -687,7 +711,7 @@ export function POS({ go }: { go: (page: string) => void }) {
         // Como al escanear: aviso y buscador vacío, para que el siguiente
         // escaneo no se pegue a las palabras (R9-caja-6).
         setQ("");
-        if (result === "added") say(product.name + " agregado.");
+        if (result === "added") added(product.name);
       } else search.current?.select();
       return;
     }
@@ -725,10 +749,17 @@ export function POS({ go }: { go: (page: string) => void }) {
       const notices = batch.current ?? [];
       batch.current = null;
       const errors = notices.filter((n) => n.error);
-      if (errors.length) toast(errors.map((n) => n.message).join(" "), true);
-      else if (notices.length === 1) toast(notices[0].message);
-      else if (notices.length)
-        toast(notices.length + " artículos escaneados agregados.");
+      if (errors.length) {
+        persistentError(errors.map((n) => n.message).join(" "));
+        scanBeep("error");
+      } else if (notices.length) {
+        toast(
+          notices.length === 1
+            ? notices[0].message
+            : notices.length + " artículos escaneados agregados.",
+        );
+        scanBeep("ok");
+      }
     }
   }, [waitingCatalog]);
   return (
@@ -761,6 +792,22 @@ export function POS({ go }: { go: (page: string) => void }) {
             <Button variant="secondary" onClick={() => setHeld(true)}>
               <Pause size={16} />
               En espera
+            </Button>
+            <Button
+              variant="secondary"
+              aria-label="Pitido del lector"
+              aria-pressed={sound}
+              title={
+                sound
+                  ? "Pitido del lector: encendido"
+                  : "Pitido del lector: apagado"
+              }
+              onClick={() => {
+                setScanSoundEnabled(!sound);
+                setSound(!sound);
+              }}
+            >
+              {sound ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </Button>
             <Button
               variant="secondary"
@@ -906,7 +953,10 @@ export function POS({ go }: { go: (page: string) => void }) {
         </div>
         <button
           className="customer-selector"
-          onClick={() => setClientPicker(true)}
+          onClick={() => {
+            setPickerHint("");
+            setClientPicker(true);
+          }}
         >
           <span className="customer-avatar">
             <UserRound size={18} />
@@ -1163,6 +1213,11 @@ export function POS({ go }: { go: (page: string) => void }) {
         onClose={() => setClientPicker(false)}
         title="¿Para quién es esta venta?"
       >
+        {pickerHint && (
+          <p className="form-error" role="alert">
+            {pickerHint}
+          </p>
+        )}
         {creatingClient ? (
           <form
             className="form-stack"

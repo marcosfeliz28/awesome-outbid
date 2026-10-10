@@ -31,37 +31,47 @@ export const attrLabel = (attributes: Record<string, string>) =>
     .filter((key) => attributes[key])
     .map((key) => attributes[key])
     .join(" · ") || "Única";
-let toastHandler: (message: string, error?: boolean) => void = () => {};
+let toastHandler: (
+  message: string,
+  error?: boolean,
+  sticky?: boolean,
+) => void = () => {};
 export const toast = (message: string, error = false) =>
   toastHandler(message, error);
+// 05-M2: error de la caja (código no encontrado, sin stock, código de dos
+// productos) que queda a la vista hasta el siguiente escaneo correcto o hasta
+// cerrarlo; antes el aviso siguiente lo tapaba y se perdía.
+export const persistentError = (message: string) =>
+  toastHandler(message, true, true);
+let dismissHandler = () => {};
+export const clearPersistentErrors = () => dismissHandler();
 // G12: cuánto queda un aviso a la vista. Un error se lee con calma (no menos
 // de 8 s); con el ratón encima o el foco dentro, no se cierra solo.
 export const TOAST_MS = { info: 6000, error: 10000 } as const;
-export function Toasts() {
-  const [notice, setNotice] = useState<{
-    message: string;
-    error: boolean;
-    id: number;
-  } | null>(null);
+type Notice = { message: string; error: boolean; sticky: boolean; id: number };
+function Toast({
+  notice,
+  stacked,
+  onClose,
+}: {
+  notice: Notice;
+  stacked?: boolean;
+  onClose: () => void;
+}) {
   const [paused, setPaused] = useState(false);
-  toastHandler = (message, error = false) =>
-    setNotice({ message, error, id: Date.now() + Math.random() });
   // Un temporizador por aviso: uno nuevo cancela el del anterior, y pausar
   // lo detiene; al salir se cuenta otra vez el plazo completo.
   useEffect(() => {
-    if (!notice || paused) return;
+    if (paused || notice.sticky) return;
     const timer = setTimeout(
-      () => setNotice(null),
+      onClose,
       notice.error ? TOAST_MS.error : TOAST_MS.info,
     );
     return () => clearTimeout(timer);
   }, [notice, paused]);
-  useEffect(() => {
-    if (!notice) setPaused(false);
-  }, [notice]);
-  return notice ? (
+  return (
     <div
-      className={`toast ${notice.error ? "error" : ""}`}
+      className={`toast ${notice.error ? "error" : ""} ${stacked ? "toast-stacked" : ""}`}
       role={notice.error ? "alert" : "status"}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -73,11 +83,44 @@ export function Toasts() {
     >
       {notice.error ? <AlertCircle size={20} /> : <Check size={20} />}
       <span>{notice.message}</span>
-      <button onClick={() => setNotice(null)} aria-label="Cerrar aviso">
+      <button onClick={onClose} aria-label="Cerrar aviso">
         <X size={18} />
       </button>
     </div>
-  ) : null;
+  );
+}
+// Dos lugares: un error y un aviso informativo. Un aviso informativo ya no
+// tapa un error que la cajera todavía no leyó (05-M2).
+export function Toasts() {
+  const [error, setError] = useState<Notice | null>(null);
+  const [info, setInfo] = useState<Notice | null>(null);
+  toastHandler = (message, isError = false, sticky = false) => {
+    const notice = {
+      message,
+      error: isError,
+      sticky,
+      id: Date.now() + Math.random(),
+    };
+    if (isError) setError(notice);
+    else setInfo(notice);
+  };
+  dismissHandler = () =>
+    setError((current) => (current?.sticky ? null : current));
+  return (
+    <>
+      {error && (
+        <Toast key={error.id} notice={error} onClose={() => setError(null)} />
+      )}
+      {info && (
+        <Toast
+          key={info.id}
+          notice={info}
+          stacked={!!error}
+          onClose={() => setInfo(null)}
+        />
+      )}
+    </>
+  );
 }
 export function QueryState({
   query,

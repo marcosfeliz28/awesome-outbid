@@ -4562,6 +4562,17 @@ td strong {
     bottom: auto;
   }
 }
+/* 05-M2: un aviso informativo junto a un error de la caja va encima de él,
+   sin taparlo. */
+.toast.toast-stacked {
+  bottom: 100px;
+}
+@media (max-width: 768px) {
+  .toast.toast-stacked {
+    top: calc(144px + env(safe-area-inset-top));
+    bottom: auto;
+  }
+}
 /* Celular: los botones de escaneo se ajustan al ancho sin desbordar la tarjeta. */
 .goods-scan > *,
 .goods-grid > *,
