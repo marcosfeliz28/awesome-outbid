@@ -2048,7 +2048,9 @@ function Checkout({
         setServerPinFor(pinRequest);
         setError(
           e.message +
-            (pin ? "" : " Escribe el PIN del gerente y pulsa «Finalizar venta»."),
+            (pin
+              ? ""
+              : " Escribe el PIN del gerente y pulsa «Finalizar venta»."),
         );
       }
       // El cobro sin respuesta sí quedó registrado, pero con otros pagos: en

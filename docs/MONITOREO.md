@@ -7,10 +7,10 @@ código ni Render.
 
 ## Qué se vigila
 
-| Monitor          | Dirección                                          | Está bien si                            | Detecta                                                                 |
-| ---------------- | -------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------- |
-| 1. Venta posible | `https://nexora-pos-web.onrender.com/api/health`   | Código 200 y el texto `"status":"ok"`   | Web, red privada, API **y base de datos**. Si la base cae responde 503. |
-| 2. Servidor vivo | `https://nexora-pos-web.onrender.com/healthz/deep` | Código 204 (o cualquier 2xx)            | Web, API y base, sin cuerpo (lo resuelve Nginx, no la PWA).             |
+| Monitor          | Dirección                                          | Está bien si                          | Detecta                                                                 |
+| ---------------- | -------------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------- |
+| 1. Venta posible | `https://nexora-pos-web.onrender.com/api/health`   | Código 200 y el texto `"status":"ok"` | Web, red privada, API **y base de datos**. Si la base cae responde 503. |
+| 2. Servidor vivo | `https://nexora-pos-web.onrender.com/healthz/deep` | Código 204 (o cualquier 2xx)          | Web, API y base, sin cuerpo (lo resuelve Nginx, no la PWA).             |
 
 - Intervalo: **60 segundos**. Avisar después de **2 fallos seguidos** (o
   «después de 2 minutos caído») para no alarmar por un reinicio de segundos.
