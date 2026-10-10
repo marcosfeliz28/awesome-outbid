@@ -685,11 +685,27 @@ function Shell() {
       localDB.cache.update("session", { "data.expiresAt": last + timeout });
     };
     stayActive.current = active;
+    // 05-A3: con artículos en el carrito o ventas sin sincronizar en este
+    // equipo, la inactividad no cierra la sesión. Sin internet, cerrarla
+    // dejaba a la cajera sin poder entrar ni vender y perdía el carrito; el
+    // plazo vuelve a contar cuando el carrito queda vacío y la cola, enviada.
+    const holdsWork = async () =>
+      useStore.getState().cart.length > 0 ||
+      (await localDB.sales
+        .where("userId")
+        .equals(user.id)
+        .filter((sale) => sale.status === "pending")
+        .count()
+        .catch(() => 0)) > 0;
     const check = async () => {
       if (closing || checking || Date.now() - last <= timeout - warnBefore)
         return;
       checking = true;
       try {
+        if (await holdsWork()) {
+          active();
+          return;
+        }
         // Otra pestaña de este equipo pudo tener actividad: el plazo guardado
         // es el de todo el equipo.
         const saved = await localDB.cache.get("session").catch(() => undefined);
@@ -1087,7 +1103,8 @@ function Shell() {
                 userId: switchId,
                 pin,
               });
-              useStore.getState().clearCart();
+              // 05-M1: el carrito de quien sale queda guardado a su nombre
+              // (cartDraft.ts) y la nueva persona ve el suyo.
               client.clear();
               await saveSession(result.user, result.accessToken);
               setSwitchUser(false);

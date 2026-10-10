@@ -177,3 +177,30 @@ describe("03-A1 · aviso de privacidad en la web", () => {
     expect(page).not.toMatch(/\[[A-ZÁÉÍÓÚ ]{3,}\]/);
   });
 });
+
+describe("05-A3/M1 · carrito en curso y cierre por inactividad", () => {
+  const app = readFileSync("apps/web/src/App.tsx", "utf8");
+  const draft = readFileSync("apps/web/src/cartDraft.ts", "utf8");
+  it("la inactividad no cierra la sesión con carrito o ventas pendientes en la cola", () => {
+    const check = app.slice(app.indexOf("const holdsWork"));
+    expect(check).toContain("useStore.getState().cart.length > 0");
+    expect(check).toContain('sale.status === "pending"');
+    // Se pregunta antes de avisar o cerrar.
+    expect(check.indexOf("if (await holdsWork())")).toBeLessThan(
+      check.indexOf("await endSession()"),
+    );
+  });
+  it("el borrador va en la tabla que cerrar sesión borra (G9) y sin el costo", () => {
+    expect(draft).toContain('"cart-draft:" + userId');
+    expect(draft).toContain(
+      "localDB.cache.put({ key: draftKey(userId), data })",
+    );
+    expect(draft).toMatch(/costAvg: removed/);
+    expect(readFileSync("apps/web/src/main.tsx", "utf8")).toContain(
+      "keepCartDraft();",
+    );
+    // Cambiar de vendedor ya no vacía el carrito de quien sale.
+    const pin = app.slice(app.indexOf('post("/auth/pin"'));
+    expect(pin.slice(0, 400)).not.toContain("clearCart()");
+  });
+});
