@@ -33,6 +33,7 @@ import {
   ScanLine,
   Zap,
   Info,
+  KeyRound,
 } from "lucide-react";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
@@ -392,6 +393,88 @@ function Login() {
   );
 }
 
+// «Cambiar mi contraseña» desde el menú de la cuenta, para cualquier usuario.
+// Mismas reglas que el cambio obligatorio; el servidor exige la contraseña
+// actual, cierra las demás sesiones y deja este equipo dentro.
+function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
+  const [current, setCurrent] = useState(""),
+    [newPassword, setNewPassword] = useState(""),
+    [confirmPassword, setConfirmPassword] = useState(""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  return (
+    <Modal open onClose={onClose} title="Cambiar mi contraseña">
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const validation = passwordChangeError(
+            newPassword,
+            confirmPassword,
+            current,
+            "voluntary",
+          );
+          if (validation) {
+            setError(validation);
+            return;
+          }
+          setBusy(true);
+          setError("");
+          try {
+            const data = await post("/auth/password", {
+              currentPassword: current,
+              newPassword,
+              confirmPassword,
+            });
+            await saveSession(data.user, data.accessToken);
+            toast(
+              "Tu contraseña se cambió. Se cerraron tus otras sesiones abiertas.",
+            );
+            onClose();
+          } catch (e) {
+            setError(friendlyPasswordChangeError(e, "voluntary"));
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <label className="field">
+          <span>Contraseña actual</span>
+          <input
+            type="password"
+            autoComplete="current-password"
+            autoCapitalize="none"
+            spellCheck={false}
+            required
+            maxLength={128}
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+          />
+        </label>
+        <PasswordChangeFields
+          password={newPassword}
+          confirmation={confirmPassword}
+          onPassword={setNewPassword}
+          onConfirmation={setConfirmPassword}
+          intro="Elige una contraseña nueva y personal; no la compartas. Al guardar se cierran tus otras sesiones abiertas; en este equipo sigues dentro."
+        />
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="modal-footer">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button disabled={busy}>
+            {busy ? "Guardando…" : "Guardar contraseña"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 function Shell() {
   const { user, online, theme, toggleTheme, setOnline } = useStore();
   const alertBell = useQuery({
@@ -415,7 +498,8 @@ function Shell() {
     [switchId, setSwitchId] = useState(""),
     [pin, setPin] = useState(""),
     [idleDeadline, setIdleDeadline] = useState<number | null>(null),
-    [about, setAbout] = useState(false);
+    [about, setAbout] = useState(false),
+    [ownPassword, setOwnPassword] = useState(false);
   const client = useQueryClient();
   const mobile = useMediaQuery(MOBILE_MENU);
   const menuButton = useRef<HTMLButtonElement>(null),
@@ -859,6 +943,15 @@ function Shell() {
                   </button>
                 )}
                 <button
+                  onClick={() => {
+                    setOwnPassword(true);
+                    setAccount(false);
+                  }}
+                >
+                  <KeyRound size={16} />
+                  Cambiar mi contraseña
+                </button>
+                <button
                   onClick={async () => {
                     // La cola local permanece hasta que su dueño vuelva a
                     // entrar. Sin conexión, la sesión queda vencida en este
@@ -963,6 +1056,9 @@ function Shell() {
         </Button>
       </Modal>
       <About open={about} onClose={() => setAbout(false)} />
+      {ownPassword && (
+        <ChangeOwnPassword onClose={() => setOwnPassword(false)} />
+      )}
       {idleDeadline !== null && (
         <IdleWarning
           deadline={idleDeadline}

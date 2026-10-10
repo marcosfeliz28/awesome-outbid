@@ -376,6 +376,108 @@ export class AuthController implements OnModuleInit {
     );
     return this.issue(freshUser, res);
   }
+  // «Cambiar mi contraseña»: cambio voluntario con la sesión abierta. Exige la
+  // contraseña actual con el mismo contador de intentos que el inicio de
+  // sesión (cuenta y dirección IP: cinco fallos bloquean 15 minutos ambos
+  // caminos) y las mismas reglas que el cambio obligatorio. Cierra todas las
+  // demás sesiones de la cuenta; este equipo sigue en su sesión (y con su
+  // registro de equipo) con un token y una cookie de renovación nuevos.
+  @Post("password")
+  async changeOwnPassword(
+    @CurrentUser() actor: Actor,
+    @Body() body: unknown,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = parse(
+      z
+        .object({
+          currentPassword: z.string().min(1).max(128),
+          newPassword: strongPasswordSchema,
+          confirmPassword: z.string().min(1).max(128),
+        })
+        .refine((value) => value.newPassword === value.confirmPassword, {
+          message: "Las contraseñas nuevas no coinciden.",
+          path: ["confirmPassword"],
+        })
+        .refine(
+          (value) =>
+            isDifferentPassword(value.currentPassword, value.newPassword),
+          {
+            message: "La contraseña nueva debe ser distinta de la actual.",
+            path: ["newPassword"],
+          },
+        ),
+      body,
+    );
+    const ip = normalizeRequestIp(req.ip);
+    this.requestLimits.assert(
+      "auth-password-session",
+      [ip, actor.sessionId ?? actor.id],
+      REQUEST_RATE_LIMITS.authAccount,
+    );
+    const user = await this.db.user.findUniqueOrThrow({
+      where: { id: actor.id },
+      include: { role: true },
+    });
+    const currentPasswordMatches = await compare(
+      data.currentPassword,
+      user.passwordHash,
+    );
+    await verifyAttempt(
+      this.db,
+      `login:${credentialAttemptIdentity(user, "")}:${ip}`,
+      async (tx) => {
+        const current = await tx.user.findUnique({ where: { id: user.id } });
+        return current?.active &&
+          current.passwordHash === user.passwordHash &&
+          currentPasswordMatches
+          ? user.id
+          : null;
+      },
+      {
+        blocked:
+          "Cuenta bloqueada temporalmente por intentos fallidos. Espera 15 minutos y vuelve a intentarlo.",
+        wrong: "La contraseña actual no es correcta.",
+      },
+    );
+    const passwordHashValue = await passwordHash(data.newPassword);
+    await this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id=${user.id}::uuid FOR UPDATE`;
+      const current = await tx.user.findUniqueOrThrow({
+        where: { id: user.id },
+      });
+      if (
+        !current.active ||
+        current.passwordHash !== user.passwordHash ||
+        current.authVersion !== user.authVersion
+      )
+        bad(
+          "La cuenta cambió mientras actualizabas la contraseña. Inicia sesión otra vez.",
+        );
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: passwordHashValue,
+          mustChangePassword: false,
+          authVersion: { increment: 1 },
+        },
+      });
+      await tx.refreshToken.deleteMany({ where: { userId: user.id } });
+      await tx.authSession.deleteMany({
+        where: { userId: user.id, id: { not: actor.sessionId } },
+      });
+      await tx.authAttempt.deleteMany({
+        where: { key: { startsWith: `login:${user.id}:` } },
+      });
+    });
+    const freshUser = await this.db.user.findUniqueOrThrow({
+      where: { id: user.id },
+      include: { role: true },
+    });
+    await audit(this.db, actor, "password_changed", "user", user.id);
+    return this.issue(freshUser, res, actor.sessionId);
+  }
   @Public()
   @Post("refresh")
   async refresh(
