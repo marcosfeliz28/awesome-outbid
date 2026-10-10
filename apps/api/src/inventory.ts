@@ -922,10 +922,12 @@ export class InventoryController {
               operationId: data.operationId,
               supplierId: order.supplierId,
               // Lo que se debe: unidades buenas, flete y otros costos.
+              // B-2 (auditoría 01): con Decimal, no con float (±1 centavo).
               total: money(
-                lines.reduce((sum, l) => sum + l.qty * l.cost, 0) +
-                  data.freight +
-                  data.otherCosts,
+                lines
+                  .reduce((sum, l) => sum.plus(d(l.qty).times(l.cost)), d(0))
+                  .plus(data.freight)
+                  .plus(data.otherCosts),
               ),
               freight: data.freight,
               otherCosts: data.otherCosts,

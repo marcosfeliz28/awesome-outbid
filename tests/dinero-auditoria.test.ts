@@ -572,7 +572,7 @@ describe("Auditoría 01 · dinero", () => {
     }
   });
 
-  it.skip("B-2: el total de una recepción de mercancía se suma con Decimal", async () => {
+  it("B-2: el total de una recepción de mercancía se suma con Decimal", async () => {
     const v = await product(1500, 600, 0);
     const result = await ok("/merchandise/operations", admin, {
       id: randomUUID(),

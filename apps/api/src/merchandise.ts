@@ -423,10 +423,12 @@ export class MerchandiseController {
             if (draft.supplierId !== (data.supplierId ?? null))
               bad("El proveedor debe coincidir con el de la revisión.");
           }
+          // B-2 (auditoría 01): con Decimal, no con float (±1 centavo).
           const total = money(
-            data.items.reduce((s, l) => s + l.qty * l.unitCost, 0) +
-              data.freight +
-              data.taxes,
+            data.items
+              .reduce((s, l) => s.plus(d(l.qty).times(l.unitCost)), d(0))
+              .plus(data.freight)
+              .plus(data.taxes),
           );
           const damagedCost = money(
             data.items.reduce(
