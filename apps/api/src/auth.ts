@@ -448,6 +448,9 @@ export class AuthController implements OnModuleInit {
       { wrong: "Usuario o contraseña incorrectos." },
     );
     if (!user?.active) bad("Usuario o contraseña incorrectos.");
+    // N-08: la clave temporal correcta pero vencida no inicia sesión ni abre
+    // el cambio de clave (y no se audita como un inicio de sesión).
+    if (temporaryPasswordExpired(user)) bad(TEMPORARY_PASSWORD_EXPIRED_MESSAGE);
     await audit(
       this.db,
       this.actor(user, ip, terminalId ?? undefined),
@@ -455,8 +458,6 @@ export class AuthController implements OnModuleInit {
       "user",
       user.id,
     );
-    // N-08: la clave temporal correcta pero vencida no abre el cambio.
-    if (temporaryPasswordExpired(user)) bad(TEMPORARY_PASSWORD_EXPIRED_MESSAGE);
     if (user.mustChangePassword) return { requiresPasswordChange: true };
     return this.issue(user, res);
   }
