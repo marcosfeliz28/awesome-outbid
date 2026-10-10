@@ -1586,11 +1586,38 @@ export class SalesController {
           where: { id: payment.saleId },
         });
         if (sale.status !== "completed") bad("La venta ya no está completada.");
+        // N-3 (defensa en profundidad): la deuda nunca pasa de lo que el
+        // cliente conserva sin pagar (venta menos devoluciones, menos la deuda
+        // que ya tiene). Una devolución anterior a esta corrección pudo sacar
+        // efectivo por esta transferencia: ese faltante se avisa, no se cobra.
+        const returned = await tx.saleReturn.aggregate({
+          where: { saleId: sale.id },
+          _sum: { total: true },
+        });
+        const keptRaw = d(sale.total)
+          .minus(returned._sum.total ?? 0)
+          .minus(sale.creditBalance);
+        const kept = keptRaw.gt(0) ? keptRaw : d(0);
+        const owed = d(payment.amount).lt(kept) ? d(payment.amount) : kept;
         const updated = await tx.sale.update({
           where: { id: sale.id },
-          data: { creditBalance: { increment: payment.amount } },
+          data: { creditBalance: { increment: money(owed) } },
         });
         saleDebt = Number(updated.creditBalance);
+        const lost = d(payment.amount).minus(owed);
+        if (lost.gt(0))
+          await tx.alert.upsert({
+            where: { key: "transfer-lost:" + payment.id },
+            create: {
+              key: "transfer-lost:" + payment.id,
+              type: "transfer_rejected_loss",
+              severity: "high",
+              entityId: sale.id,
+              branchId: actor.branchId,
+              message: `Se rechazó la transferencia de ${sale.number}, pero RD$ ${formatAmount(Number(money(lost)))} ya se habían devuelto al cliente: no queda deuda que cobrar.`,
+            },
+            update: {},
+          });
       }
       await tx.payment.update({
         where: { id },
@@ -1883,6 +1910,38 @@ export class SalesController {
           "Verifica o rechaza primero los abonos por transferencia pendientes de esta venta.",
         );
       const refundAmount = money(total.minus(debtReduction));
+      // N-3 (auditoría 01 v2): mientras la transferencia de la propia venta no
+      // se verifique, lo que se devuelve (en el medio que sea, también nota de
+      // crédito) no puede pasar de lo realmente cobrado y no devuelto. Si no,
+      // saldría efectivo que nunca llegó y, al rechazar la transferencia, el
+      // cliente quedaría debiendo mercancía que ya devolvió.
+      const pendingSaleTransfer = await tx.payment.aggregate({
+        where: {
+          saleId: sale.id,
+          entryType: "sale",
+          method: "transfer",
+          status: "pending_verification",
+        },
+        _sum: { amount: true },
+      });
+      if (d(pendingSaleTransfer._sum.amount ?? 0).gt(0)) {
+        const collected = await tx.payment.aggregate({
+          where: { saleId: sale.id, status: "ok" },
+          _sum: { amount: true },
+        });
+        const refunded = await tx.saleReturn.aggregate({
+          where: { saleId: sale.id },
+          _sum: { refundAmount: true },
+        });
+        const availableRaw = d(collected._sum.amount ?? 0).minus(
+          refunded._sum.refundAmount ?? 0,
+        );
+        const available = availableRaw.gt(0) ? availableRaw : d(0);
+        if (d(refundAmount).gt(available))
+          bad(
+            `La transferencia de esta venta aún no está verificada: sólo se pueden reembolsar RD$ ${formatAmount(Number(available))} de lo ya cobrado. Verifica o rechaza primero la transferencia.`,
+          );
+      }
       // D-06: el efectivo que se entrega tiene que estar en la caja que
       // reembolsa (la caja ya está bloqueada arriba). Sin este control, una
       // venta cobrada con tarjeta devuelta en efectivo dejaba el esperado en

@@ -620,6 +620,87 @@ describe("Auditoría 01 · dinero", () => {
     expect(again.inventoryLoss - after.inventoryLoss).toBeCloseTo(220, 2);
   });
 
+  it("N-3: no se devuelve efectivo de una transferencia sin verificar y rechazarla no deja deuda sobre mercancía devuelta", async () => {
+    const m = await person("manager", "n3", 5000);
+    const v = await product(500, 200, 20);
+    const transfer = [
+      {
+        method: "transfer",
+        amount: 500,
+        bank: "Banco Inventado",
+        reference: "N3",
+      },
+    ];
+    const giveBack = (sale: any, qty: number, refundMethod = "cash") =>
+      request("/returns", m.token, {
+        operationId: randomUUID(),
+        saleId: sale.id,
+        cashSessionId: m.cash.id,
+        reason: "Cliente devolvió",
+        refundMethod,
+        items: [{ saleItemId: sale.items[0].id, qty, restock: true }],
+      });
+    // Escenario del informe: venta 100 % por transferencia y devolución en efectivo.
+    const pure = await sell(m, v, 1, transfer);
+    for (const method of ["cash", "transfer", "credit_note"]) {
+      const blocked = await giveBack(pure, 1, method);
+      expect(blocked.status).toBe(400);
+      expect(JSON.stringify(blocked.body)).toContain("transferencia");
+    }
+    expect(await db.saleReturn.count({ where: { saleId: pure.id } })).toBe(0);
+    // Rechazada, ya no hay nada que verificar: la deuda es la mercancía conservada.
+    await ok("/payments/" + pure.payments[0].id + "/reject", admin, {
+      reason: "No llegó",
+    });
+    expect(
+      Number(
+        (await db.sale.findUnique({ where: { id: pure.id } })).creditBalance,
+      ),
+    ).toBe(500);
+    // Mixta: 500 en efectivo y 500 por verificar; sólo se devuelve lo cobrado.
+    const mixed = await sell(m, v, 2, [
+      { method: "cash", amount: 500 },
+      { ...transfer[0], reference: "N3b" },
+    ]);
+    expect((await giveBack(mixed, 2)).status).toBe(400);
+    expect((await giveBack(mixed, 1)).status).toBeLessThan(300);
+    expect((await giveBack(mixed, 1)).status).toBe(400);
+    await ok("/payments/" + mixed.payments[1].id + "/reject", admin, {
+      reason: "No llegó",
+    });
+    const rejected = await db.sale.findUnique({ where: { id: mixed.id } });
+    // Quedó una unidad sin devolver y sin pagar: debe 500, no 1,000.
+    expect(Number(rejected.creditBalance)).toBe(500);
+    // Defensa en profundidad: una devolución en efectivo anterior a la corrección.
+    const legacy = await sell(m, v, 1, [{ ...transfer[0], reference: "N3c" }]);
+    await db.saleReturn.create({
+      data: {
+        saleId: legacy.id,
+        number: "NC-N3-" + suffix,
+        reason: "Heredada",
+        total: 500,
+        taxTotal: 0,
+        costTotal: 200,
+        refundAmount: 500,
+        refundMethod: "cash",
+        cashSessionId: m.cash.id,
+        userId: m.id,
+        items: [],
+      },
+    });
+    await ok("/payments/" + legacy.payments[0].id + "/reject", admin, {
+      reason: "No llegó",
+    });
+    expect(
+      Number(
+        (await db.sale.findUnique({ where: { id: legacy.id } })).creditBalance,
+      ),
+    ).toBe(0);
+    expect(
+      (await alert("transfer-lost:" + legacy.payments[0].id))?.status,
+    ).toBe("new");
+  });
+
   it("B-3: no se cierra el mes de incentivos en curso", async () => {
     const month = businessMonth();
     const r = await request("/incentives/close", admin, { month });

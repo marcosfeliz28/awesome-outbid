@@ -50,6 +50,7 @@ export const MANUAL_ALERT_TYPES = [
   "transfer_pending",
   "inventory_loss",
   "supplier_return",
+  "transfer_rejected_loss",
   "refund_method_mismatch",
   "cost_change",
 ];
