@@ -18,6 +18,6 @@ $cases=[ordered]@{
 }
 foreach($case in $cases.Keys){if(Test-FitStoreExactDacl $base $cases[$case]){throw "Diferencia $case indebidamente permitida"};Write-Host "PASS DACL exacta rechaza $case"}
 if(Test-FitStoreExactDacl 'D:NO_ACCESS_CONTROL' 'D:'){throw 'DACL null no equivale a DACL vacia'}
-if(-not(Test-FitStoreExactDacl 'D:(A;;FR;;;SY)(A;;FR;;;BA)' 'D:AI(A;;FR;;;BA)(A;;FR;;;SY)')){throw 'Orden de Allow canonicos no altera multiset'}
+if(Test-FitStoreExactDacl 'D:(A;;FR;;;SY)(A;;FR;;;BA)' 'D:AI(A;;FR;;;BA)(A;;FR;;;SY)'){throw 'Cambio de orden de ACE canonicos indebidamente permitido'}
 if(Test-FitStoreExactDacl 'D:(D;;FR;;;BA)(A;;FA;;;SY)' 'D:(A;;FA;;;SY)(D;;FR;;;BA)'){throw 'Cambio de orden canonico a no canonico indebidamente permitido'}
-Write-Host 'PASS DACL exacta: solo AutoInherited permitido; NULL no equivale a vacia; multiset conserva duplicados.'
+Write-Host 'PASS DACL exacta: solo AutoInherited permitido; NULL no equivale a vacia; orden y duplicados conservados.'

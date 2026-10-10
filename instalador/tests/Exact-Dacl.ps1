@@ -24,9 +24,9 @@ function Test-FitStoreExactDacl {
    $bytes=[byte[]]::new($ace.BinaryLength);$ace.GetBinaryForm($bytes,0)
    [BitConverter]::ToString($bytes)
   })
-  # Solo ACE canónicos admiten orden incidental: en DACL no canonica el
-  # orden Allow/Deny puede cambiar acceso efectivo, conservarlo exactamente.
-  if($canonical[0]){$sets+= ,@($entries|Sort-Object)}else{$sets+= ,$entries}
+  # El diagnostico CI conserva el orden de cada ACE. No ignorar orden ni
+  # siquiera en DACL canonica: agrupaciones heredadas pueden afectar acceso.
+  $sets+= ,$entries
  }
  for($i=0;$i -lt $sets[0].Count;$i++){if($sets[0][$i] -cne $sets[1][$i]){return $false}}
  return $true
