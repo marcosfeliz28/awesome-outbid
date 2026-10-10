@@ -671,13 +671,16 @@ export const formatMoney = (value: number | string) =>
   });
 
 export const BUSINESS_TIME_ZONE = "America/Santo_Domingo";
+// Un solo formateador: crearlo en cada llamada costaba ~0,1 ms y el motor de
+// alertas lo llama varias veces por lote (2,3 s con 3 000 variantes).
+const businessDateFormat = new Intl.DateTimeFormat("en-CA", {
+  timeZone: BUSINESS_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 export const businessDate = (value: Date | string | number = new Date()) =>
-  new Intl.DateTimeFormat("en-CA", {
-    timeZone: BUSINESS_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(value));
+  businessDateFormat.format(new Date(value));
 // Los vencimientos son fechas civiles: vencen al terminar ese día en Santo Domingo.
 export const expired = (
   value: Date | string | null | undefined,
