@@ -217,7 +217,9 @@ const constraintState = async (client: any) =>
   );
 
 // Lo que la base aceptaba sin protestar (06-anexos/sql/restricciones.sql).
-async function expectRejected(client: any, sql: string, code: string) {
+// Borrar una fila referida con ON DELETE RESTRICT da 23503 hasta
+// PostgreSQL 17 y 23001 (restrict_violation) desde PostgreSQL 18.
+async function expectRejected(client: any, sql: string, code: string | RegExp) {
   await client.query("BEGIN");
   try {
     await expect(client.query(sql)).rejects.toMatchObject({ code });
@@ -643,7 +645,7 @@ describe("Auditorías 06 y 03 · comportamiento en PostgreSQL real", () => {
     await expectRejected(
       sql,
       `DELETE FROM "InvoiceAttachment" WHERE id = '${attachmentId}'`,
-      "23503",
+      /^(23503|23001)$/,
     );
   }, 60_000);
 
