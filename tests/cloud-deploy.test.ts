@@ -4,7 +4,10 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { cloudEnvironment } from "../deploy/render/with-cloud-env.mjs";
+import {
+  cloudEnvironment,
+  isMigrationCommand,
+} from "../deploy/render/with-cloud-env.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path: string) => readFileSync(resolve(root, path), "utf8");
@@ -169,6 +172,101 @@ describe("Render · conexión de PostgreSQL", () => {
     expect(parsed.searchParams.get("application_name")).toBe("pos");
     expect(env.RENDER_DATABASE_URL).toBeUndefined();
     expect(env.WEB_ORIGIN).toBe("https://nexora.example");
+  });
+
+  // M4: Prisma calculaba el pool con los núcleos físicos del host (17
+  // conexiones fijas en Render). La API usa un tope explícito.
+  it("fija un tope de conexiones del pool, configurable y validado", () => {
+    const base = {
+      RENDER_DATABASE_URL: "postgresql://nexora:x@db.internal:5432/fitstore",
+    } as NodeJS.ProcessEnv;
+    const limit = (env: NodeJS.ProcessEnv) =>
+      new URL(cloudEnvironment(env).DATABASE_URL!).searchParams.get(
+        "connection_limit",
+      );
+    expect(limit(base)).toBe("10");
+    expect(limit({ ...base, NEXORA_DB_CONNECTION_LIMIT: "6" })).toBe("6");
+    expect(
+      limit({
+        RENDER_DATABASE_URL: base.RENDER_DATABASE_URL + "?connection_limit=4",
+      }),
+    ).toBe("4");
+    for (const bad of ["0", "101", "5.5", "diez"])
+      expect(() =>
+        cloudEnvironment({ ...base, NEXORA_DB_CONNECTION_LIMIT: bad }),
+      ).toThrow(/NEXORA_DB_CONNECTION_LIMIT/);
+  });
+
+  // M1: las migraciones de Render no esperan bloqueos ni corren sentencias
+  // sin límite; se reconoce `migrate deploy` sin cambiar el preDeployCommand.
+  it("las migraciones llevan lock_timeout y statement_timeout", () => {
+    const blueprint = read("render.yaml");
+    const command = blueprint
+      .split("\n")
+      .find((line) => line.trimStart().startsWith("preDeployCommand:"))!
+      .replace(/^\s*preDeployCommand:\s*/, "")
+      .split(/\s+/);
+    expect(isMigrationCommand(command.slice(2))).toBe(true);
+    expect(isMigrationCommand(["node", "apps/api/dist/main.js"])).toBe(false);
+    expect(isMigrationCommand(["prisma", "migrate", "status"])).toBe(false);
+    const render = {
+      RENDER_DATABASE_URL: "postgresql://nexora:x@db.internal:5432/fitstore",
+    } as NodeJS.ProcessEnv;
+    const options = (env: NodeJS.ProcessEnv) =>
+      new URL(
+        cloudEnvironment(env, { migration: true }).DATABASE_URL!,
+      ).searchParams.get("options");
+    expect(options(render)).toBe(
+      "-c TimeZone=UTC -c lock_timeout=5s -c statement_timeout=120s",
+    );
+    expect(
+      options({
+        ...render,
+        NEXORA_MIGRATION_LOCK_TIMEOUT: "3s",
+        NEXORA_MIGRATION_STATEMENT_TIMEOUT: "30min",
+      }),
+    ).toBe("-c TimeZone=UTC -c lock_timeout=3s -c statement_timeout=30min");
+    // El preDeploy no recibe el tope de pool de la API (no lo necesita).
+    expect(
+      new URL(
+        cloudEnvironment(render, { migration: true }).DATABASE_URL!,
+      ).searchParams.has("connection_limit"),
+    ).toBe(false);
+    // También con DATABASE_URL local (CI, pruebas con Docker).
+    expect(
+      options({ DATABASE_URL: "postgresql://f:l@127.0.0.1:5434/fitstore" }),
+    ).toBe("-c lock_timeout=5s -c statement_timeout=120s");
+    for (const bad of ["5 s", "-1s", "5h", "1;DROP", "s"])
+      expect(() =>
+        cloudEnvironment(
+          { ...render, NEXORA_MIGRATION_LOCK_TIMEOUT: bad },
+          { migration: true },
+        ),
+      ).toThrow(/NEXORA_MIGRATION_LOCK_TIMEOUT/);
+  });
+
+  it("documenta cómo escribir migraciones seguras y no repite prefijos", () => {
+    const guide = read("docs/MIGRACIONES_SEGURAS.md");
+    for (const text of [
+      "lock_timeout",
+      "statement_timeout",
+      "NEXORA_MIGRATION_STATEMENT_TIMEOUT",
+      "migrate resolve --rolled-back",
+      "CREATE INDEX CONCURRENTLY",
+      "Ampliar y luego retirar",
+    ])
+      expect(guide).toContain(text);
+    // M2: dos migraciones con el mismo prefijo se ordenan por el resto del
+    // nombre y pueden aplicarse en otro orden en una base nueva. Sólo se
+    // toleran los dos casos históricos ya aplicados en producción.
+    const names = readdirSync(resolve(root, "apps/api/prisma/migrations"))
+      .filter((name) => /^\d{12}_/.test(name))
+      .sort();
+    const prefixes = names.map((name) => name.slice(0, 12));
+    const repeated = [
+      ...new Set(prefixes.filter((p, i) => prefixes.indexOf(p) !== i)),
+    ];
+    expect(repeated).toEqual(["202610170001", "202610190001"]);
   });
 
   it("respeta DATABASE_URL local cuando no está dentro de Render", () => {
