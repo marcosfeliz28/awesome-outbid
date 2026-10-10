@@ -17,26 +17,52 @@ function Assert-FitStoreRecoveryWorkingDirectory {
 function Invoke-FitStoreRecoveryPgCtl {
   param([string]$Tool, [string[]]$Arguments, [string]$Database)
   # No -Wait: Windows espera tambien a postgres (hijo persistente). Esperar
-  # exclusivamente al pg_ctl; stdout/stderr a archivos del cluster protegido.
+  # exclusivamente al pg_ctl. PostgreSQL puede heredar los handles de captura:
+  # usar TEMP del usuario, nunca dejar stdout/stderr dentro de PGDATA.
   $quoted = @($Arguments | ForEach-Object { '"' + $_.Replace('"','\"') + '"' })
   $logId = 'recovery-control-' + [guid]::NewGuid().ToString('N')
-  $stdout = Join-Path $Database ($logId + '.out')
-  $stderr = Join-Path $Database ($logId + '.err')
+  $digest = [Security.Cryptography.SHA256]::Create()
+  try { $key = [BitConverter]::ToString($digest.ComputeHash([Text.Encoding]::UTF8.GetBytes([IO.Path]::GetFullPath($Database)))).Replace('-','').ToLowerInvariant() } finally { $digest.Dispose() }
+  $captureDir = Join-Path ([IO.Path]::GetTempPath()) ('nexora-recovery-control-' + $key)
+  [IO.Directory]::CreateDirectory($captureDir) | Out-Null
+  if (((Get-Item -LiteralPath $captureDir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'La carpeta temporal de captura es un punto de reanalisis.' }
+  $stdout = Join-Path $captureDir ($logId + '.out')
+  $stderr = Join-Path $captureDir ($logId + '.err')
+  $process = $null
+  $completed = $false
   try {
     $process = Start-Process -FilePath $Tool -ArgumentList $quoted -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     $processHandle = $process.Handle
     $process.WaitForExit()
     $process.Refresh()
     if ($process.ExitCode -ne 0) { throw "No se pudo controlar PostgreSQL temporal. Codigo: $($process.ExitCode). No se restauraron datos." }
+    $completed = $true
     # Solo al confirmar stop PostgreSQL libero su log. No borrar logs ajenos
     # ni el log activo si el intento de detener el servidor fallo.
     if ($Arguments -contains 'stop') {
       $postgresLog = Join-Path $Database 'recovery-postgres.log'
       if (Test-Path -LiteralPath $postgresLog -PathType Leaf) { Remove-Item -LiteralPath $postgresLog -Force }
+      foreach ($legacyCapture in Get-ChildItem -LiteralPath $Database -File) {
+        if ($legacyCapture.Name -match '^recovery-control-[0-9a-f]{32}\.(out|err)$') { Remove-Item -LiteralPath $legacyCapture.FullName -Force }
+      }
     }
   } finally {
+    if ($process -is [Diagnostics.Process]) { $process.Dispose() }
     foreach ($capture in @($stdout,$stderr)) {
-      if (Test-Path -LiteralPath $capture -PathType Leaf) { Remove-Item -LiteralPath $capture -Force }
+      if (Test-Path -LiteralPath $capture -PathType Leaf) {
+        try { Remove-Item -LiteralPath $capture -Force }
+        catch [IO.IOException] { if ($Arguments -notcontains 'start') { throw } }
+      }
+    }
+    # Tras stop los handles heredados ya cerraron: retirar capturas pendientes
+    # exclusivamente de este cluster y con nombres generados por este script.
+    if ($Arguments -contains 'stop' -and $completed) {
+      foreach ($capture in Get-ChildItem -LiteralPath $captureDir -File) {
+        if ($capture.Name -match '^recovery-control-[0-9a-f]{32}\.(out|err)$') { Remove-Item -LiteralPath $capture.FullName -Force }
+      }
+    }
+    if (@(Get-ChildItem -LiteralPath $captureDir -Force).Count -eq 0) {
+      [IO.Directory]::Delete($captureDir)
     }
   }
 }
