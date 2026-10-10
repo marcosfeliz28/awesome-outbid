@@ -479,7 +479,7 @@ describe("Auditoría 01 · dinero", () => {
     );
   });
 
-  it.skip("M-4: el tope de salidas sin PIN es por usuaria y día, no por turno", async () => {
+  it("M-4: el tope de salidas sin PIN es por usuaria y día, no por turno", async () => {
     const c = await person("seller", "m4", 3000);
     const out = () =>
       request("/cash-sessions/" + c.cash.id + "/movements", c.token, {

@@ -22,6 +22,7 @@ import {
   formatAmount,
   formatMoney,
   moneyAmount,
+  businessDate,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -656,7 +657,7 @@ export class CashController {
       body,
     );
     // Salidas (retiros y vales) de quien no gestiona ventas (D-04): si las
-    // salidas del turno superan cashMovementApprovalLimit (RD$ 1,000 por
+    // salidas del día superan cashMovementApprovalLimit (RD$ 1,000 por
     // defecto) hace falta el PIN de un gerente. Se suman todas las salidas de
     // la caja para que partir un retiro en varios vales no evite el control.
     const needsApproval =
@@ -689,8 +690,18 @@ export class CashController {
         const limit = Number(
           (settings?.data as any)?.cashMovementApprovalLimit ?? 1000,
         );
+        // M-4 (auditoría 01): el tope es por usuaria y día de negocio, no
+        // por turno; cerrar y reabrir ya no lo reinicia. Se suman las salidas
+        // de este turno (aunque empezara ayer) y las de la usuaria hoy.
+        const dayStart = new Date(businessDate() + "T00:00:00-04:00");
         const outs = await tx.cashMovement.aggregate({
-          where: { sessionId: session.id, type: "out" },
+          where: {
+            type: "out",
+            OR: [
+              { sessionId: session.id },
+              { userId: actor.id, createdAt: { gte: dayStart } },
+            ],
+          },
           _sum: { amount: true },
         });
         if (
