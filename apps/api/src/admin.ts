@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Inject,
   Optional,
   Param,
@@ -42,7 +43,10 @@ import {
   LOGO_MAX_BYTES,
 } from "@fitstore/shared";
 import { normalizeUsername, passwordHash } from "./auth";
-import { strongPasswordSchema } from "./password-policy";
+import {
+  generateTemporaryPassword,
+  strongPasswordSchema,
+} from "./password-policy";
 import { RequestRateLimitService } from "./rate-limit";
 
 const customerSchema = z.object({
@@ -910,18 +914,27 @@ export class AdminController {
       }),
       body,
     );
-    if (id === actor.id && (data.active === false || data.roleId))
+    // El id llega normalizado (minúsculas): un UUID en mayúsculas no esquiva
+    // las protecciones sobre la propia cuenta.
+    const userId = parse(uuid, id);
+    if (userId === actor.id && (data.active === false || data.roleId))
       bad("Otro administrador debe cambiar tu acceso.");
+    // Sin la contraseña actual, una sesión robada podría quedarse con la
+    // cuenta: la propia se cambia sólo con «Cambiar mi contraseña».
+    if (userId === actor.id && data.password)
+      bad(
+        "Para tu propia contraseña usa «Cambiar mi contraseña» en el menú de tu cuenta.",
+      );
     const { password, pin, username, ...rest } = data;
     await this.db.user.findFirstOrThrow({
-      where: { id: parse(uuid, id), branchId: actor.branchId },
+      where: { id: userId, branchId: actor.branchId },
     });
-    await this.freeCashierNumber(actor, data.cashierNumber, id);
+    await this.freeCashierNumber(actor, data.cashierNumber, userId);
     const passwordValue = password ? await passwordHash(password) : undefined;
     const pinValue = pin ? await passwordHash(pin) : undefined;
     const row = await this.db.$transaction(async (tx) => {
       const row = await tx.user.update({
-        where: { id },
+        where: { id: userId },
         data: {
           ...rest,
           ...(username
@@ -939,19 +952,88 @@ export class AdminController {
         },
       });
       if (password || pin || data.active === false) {
-        await tx.refreshToken.deleteMany({ where: { userId: id } });
-        await tx.authSession.deleteMany({ where: { userId: id } });
+        await tx.refreshToken.deleteMany({ where: { userId } });
+        await tx.authSession.deleteMany({ where: { userId } });
       }
       return row;
     });
     this.rememberLogin(row);
-    await audit(this.db, actor, "access_change", "user", id, undefined, rest);
+    // La contraseña y el PIN nunca se auditan; sólo que se cambiaron.
+    await audit(this.db, actor, "access_change", "user", userId, undefined, {
+      ...rest,
+      ...(password ? { passwordReset: true } : {}),
+      ...(pin ? { pinReset: true } : {}),
+    });
     return {
       id: row.id,
       name: row.name,
       username: row.username,
       active: row.active,
       cashierNumber: row.cashierNumber,
+    };
+  }
+  // «Restablecer contraseña» (Configuración › Usuarios y permisos): la
+  // administración da una contraseña temporal (escrita o generada, que se
+  // muestra una sola vez y nunca se guarda ni se audita), la persona debe
+  // elegir la suya al entrar, se cierran sus sesiones y se quita su bloqueo
+  // por intentos fallidos.
+  @Post("users/:id/reset-password")
+  @Permit("*")
+  @Header("Cache-Control", "no-store")
+  async resetPassword(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const userId = parse(uuid, id);
+    const data = parse(
+      z.object({ password: strongPasswordSchema.optional() }),
+      body ?? {},
+    );
+    if (userId === actor.id)
+      bad(
+        "Para tu propia contraseña usa «Cambiar mi contraseña» en el menú de tu cuenta.",
+      );
+    // Sólo la administración (permiso «*», 403 para el resto) llega aquí y
+    // puede restablecer a cualquier persona de su sucursal, también a otra
+    // administradora: queda auditado (docs/DECISIONES.md, punto 14).
+    await this.db.user.findFirstOrThrow({
+      where: { id: userId, branchId: actor.branchId },
+    });
+    const temporaryPassword = data.password ?? generateTemporaryPassword();
+    const passwordHashValue = await passwordHash(temporaryPassword);
+    const row = await this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id=${userId}::uuid FOR UPDATE`;
+      const row = await tx.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash: passwordHashValue,
+          mustChangePassword: true,
+          authVersion: { increment: 1 },
+        },
+      });
+      await tx.refreshToken.deleteMany({ where: { userId } });
+      await tx.authSession.deleteMany({ where: { userId } });
+      await tx.authAttempt.deleteMany({
+        where: { key: { startsWith: `login:${userId}:` } },
+      });
+      await audit(
+        tx,
+        actor,
+        "password_reset_by_admin",
+        "user",
+        userId,
+        undefined,
+        { mustChangePassword: true, generated: !data.password },
+      );
+      return row;
+    });
+    return {
+      id: row.id,
+      name: row.name,
+      username: row.username,
+      mustChangePassword: true,
+      ...(data.password ? {} : { temporaryPassword }),
     };
   }
   @Get("roles") @Permit("*") roles() {

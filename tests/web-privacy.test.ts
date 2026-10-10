@@ -18,6 +18,33 @@ describe("G9 · service worker", () => {
     expect(patterns).not.toMatch(/json|api/i);
   });
 
+  it("el fallback de navegación de la PWA no captura /api ni /healthz", () => {
+    expect(workbox).toMatch(/navigateFallback:\s*"\/index\.html"/);
+    const list = /navigateFallbackDenylist:\s*\[([^\]]*)\]/.exec(workbox)?.[1];
+    expect(list).toBeDefined();
+    // Se evalúan las expresiones tal cual están en la configuración.
+    const denylist = (list!.match(/\/\^[^,]*\//g) ?? []).map((literal) => {
+      const body = literal.slice(1, literal.lastIndexOf("/"));
+      return new RegExp(body);
+    });
+    expect(denylist.length).toBeGreaterThanOrEqual(2);
+    // Workbox compara con pathname + search.
+    const denied = (path: string) => denylist.some((re) => re.test(path));
+    for (const path of [
+      "/api",
+      "/api/",
+      "/api/health",
+      "/api/sales/123/receipt.pdf",
+      "/api/events?token=x",
+      "/healthz",
+      "/healthz/deep",
+    ])
+      expect(denied(path), path).toBe(true);
+    // Las rutas de la SPA siguen cayendo en index.html sin conexión.
+    for (const path of ["/", "/pos", "/caja", "/apis", "/api-docs-app", "/healthzone"])
+      expect(denied(path), path).toBe(false);
+  });
+
   it("no tiene reglas de caché en tiempo de ejecución para /api, salvo NetworkOnly", () => {
     const runtime = /runtimeCaching:\s*\[([\s\S]*?)\]\s*,/.exec(workbox)?.[1];
     expect(runtime).toBeDefined();

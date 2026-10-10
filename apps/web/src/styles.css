@@ -5208,3 +5208,10 @@ td strong {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* Acciones de una fila (Usuarios y permisos): separadas y en una sola línea;
+   en pantallas angostas la tabla se desplaza de lado. */
+.inline-actions {
+  display: flex;
+  gap: 14px;
+  white-space: nowrap;
+}

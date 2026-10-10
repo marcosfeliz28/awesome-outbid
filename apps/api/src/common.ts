@@ -196,7 +196,13 @@ export const parse = <T extends z.ZodTypeAny>(
   schema: T,
   input: unknown,
 ): z.infer<T> => schema.parse(input);
-export const uuid = z.string().uuid();
+// PostgreSQL acepta un UUID en mayúsculas y lo guarda en minúsculas: se
+// normaliza al validar para que toda comparación con ids de la base (por
+// ejemplo, «¿es mi propia cuenta?») vea el mismo texto.
+export const uuid = z
+  .string()
+  .uuid()
+  .transform((value) => value.toLowerCase());
 // Importes de dinero: como máximo 2 decimales, porque terminan en Decimal(14,2)
 // y un tercer decimal hacía que orden y recepción no cuadraran (R9-A04).
 export const amount = moneyAmount(100000000, true);

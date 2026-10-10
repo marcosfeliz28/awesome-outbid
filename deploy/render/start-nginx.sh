@@ -11,6 +11,11 @@ if printf '%s' "${RENDER_GIT_COMMIT:-}" | grep -Eq '^[a-fA-F0-9]{7,64}$'; then
     "$RENDER_GIT_COMMIT" > /usr/share/nginx/html/runtime-config.js
 fi
 
+# La CSP sólo autoriza el destino de Sentry si hay VITE_SENTRY_DSN (G8): sin
+# DSN, connect-src queda en 'self'. Ver render-security-headers.sh.
+nexora-render-security-headers /etc/nginx/nexora/security-headers.conf.in \
+  /etc/nginx/snippets/nexora-security-headers.conf
+
 # API_UPSTREAM proviene de `fromService.hostport`. La validación impide que un
 # valor accidental termine convertido en una directiva de Nginx.
 if ! printf '%s' "$API_UPSTREAM" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9.-]*:[0-9]{1,5}$'; then

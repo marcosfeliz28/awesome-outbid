@@ -21,8 +21,9 @@ services:
           name: nexora-pos-api
           property: hostport
       # Opcional (G8): DSN de Sentry para la web, se lee al compilar. Sin él la
-      # web no envía errores a Sentry. Debe ser del destino permitido en
-      # connect-src (deploy/render/security-headers.conf).
+      # web no envía errores a Sentry. Al arrancar, la web añade el host de
+      # este DSN a connect-src (deploy/render/render-security-headers.sh); sin
+      # él, la CSP no menciona Sentry.
       - key: VITE_SENTRY_DSN
         sync: false
 

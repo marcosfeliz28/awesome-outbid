@@ -26,7 +26,10 @@ ENV NGINX_ENVSUBST_FILTER="^(API_UPSTREAM|PORT)$"
 RUN apk add --no-cache musl-utils && mkdir -p /etc/nginx/snippets
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 COPY deploy/render/nginx.conf.template /etc/nginx/templates/default.conf.template
-COPY deploy/render/security-headers.conf /etc/nginx/snippets/nexora-security-headers.conf
+# El snippet de cabeceras se genera al arrancar (start-nginx.sh) para que la
+# CSP sólo incluya Sentry cuando hay VITE_SENTRY_DSN.
+COPY deploy/render/security-headers.conf /etc/nginx/nexora/security-headers.conf.in
+COPY --chmod=755 deploy/render/render-security-headers.sh /usr/local/bin/nexora-render-security-headers
 COPY --chmod=755 deploy/render/start-nginx.sh /usr/local/bin/nexora-nginx-entrypoint
 EXPOSE 10000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

@@ -61,6 +61,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,woff2}"],
         navigateFallback: "/index.html",
+        // Abrir /api/... o /healthz directamente en el navegador debe llegar
+        // al servidor (JSON, 204/503), no a la app servida desde la caché.
+        navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/healthz(?:\/|$)/],
         runtimeCaching: [],
       },
     }),

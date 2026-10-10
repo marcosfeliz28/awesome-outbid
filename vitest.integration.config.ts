@@ -7,6 +7,7 @@ export default defineConfig({
       "tests/telegram.test.ts",
       "tests/promotion-name.test.ts",
       "tests/incentives-api.test.ts",
+      "tests/password-account.test.ts",
     ],
     testTimeout: 30000,
     hookTimeout: 60000,
