@@ -131,7 +131,9 @@ La auditoría confirma 3j.1–3j.7 en el código real. Corrige, en este orden, u
 
 Ahí están el estado de producción (a12c980), las ramas `claude/w3-*` que debes revisar e integrar, las reglas, el despliegue y la lista de la dueña. Las auditorías están en `docs/coordinacion/auditoria-2026-10-10/`. Sigues sin desplegar y sin tocar `nexora-cloud`.
 
-## 3n. TAREA (10 oct): pantalla de administración «Importar inventario» (solo administrador) para la carga inicial
+## 3n. (10 oct) La pantalla «Importar inventario» la construye CLAUDE en `claude/w3-importar` (la dueña quiere abrir tienda ya). TÚ NO LA HAGAS: revísala cuando exista y su CI esté verde.
+
+Especificación (para tu revisión):
 
 Contexto y decisiones: `CARGA_INVENTARIO_DECISIONES.md`. La base de producción no acepta conexiones externas y la pantalla actual de plantilla no sirve (pide IDs de categoría, código de barras obligatorio y no carga existencias). Construye, sobre `claude/wave3` (o `nexora-cloud` ya con wave3), una pantalla/endpoint SOLO ADMIN que reutilice la lógica de `apps/api/scripts/import-inventario.ts` (extráela a un módulo compartido, sin duplicar): subir el .xlsx, **primero vista previa sin guardar** (cuántos se crean, inactivos por falta de precio/costo, márgenes bajos, códigos en conflicto, categorías que crearía), y un segundo botón «Cargar» solo tras la vista previa del mismo archivo (hash). Atómico, auditado en la bitácora, límite de tamaño, idempotente (repetir no duplica ni pisa existencias), sin enviar el archivo a terceros. Pruebas (PostgreSQL real) y CI verde en los 3 trabajos. No lo despliegas: la dueña o Claude lo hacen.
 
