@@ -680,12 +680,16 @@ export class DriveBackupService {
     return driveBackupSettings();
   }
 
+  /** La fila «main» (se crea la primera vez; leerla no escribe nada). */
   async row() {
-    return this.db.driveBackup.upsert({
-      where: { id: "main" },
-      create: { id: "main" },
-      update: {},
-    });
+    return (
+      (await this.db.driveBackup.findUnique({ where: { id: "main" } })) ??
+      (await this.db.driveBackup.upsert({
+        where: { id: "main" },
+        create: { id: "main" },
+        update: {},
+      }))
+    );
   }
 
   stop() {
