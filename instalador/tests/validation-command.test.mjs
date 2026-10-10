@@ -22,6 +22,7 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     "Recovery-Acl-MissingEntry",
     "Recovery-Pending-Acl-Always",
     "Recovery-Corrupt-Acl-Journal",
+    "Recovery-Cleanup-Login",
     "Application-Service-Privacy",
     "Backup-Privacy",
     "FreshInstall-FaultInjection",
