@@ -10565,7 +10565,7 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
     });
   });
 
-  it("D1: sincroniza el descuento heredado, conserva idempotencia y exige motivo a una venta online nueva", async () => {
+  it("D1: pasada la fecha de corte ya no hay motivo heredado; con motivo sincroniza una vez y el online lo exige", async () => {
     const settings = await ok("/settings");
     const originalCash = await fixtureDb.cashSession.findUniqueOrThrow({
       where: { id: session.id },
@@ -10573,7 +10573,10 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
     });
     const offlineUuid = randomUUID();
     const capturedMs = Date.now() - 2 * 3600_000;
-    const legacyReason = "Venta offline heredada (sin motivo registrado)";
+    const reason = "Descuento autorizado por la gerente";
+    // La normalización de ventas heredadas (capturadas antes del corte del
+    // 9-oct-2026) se prueba en tests/offline-policy.test.ts con su parámetro
+    // `cutoff`: por HTTP ya no puede llegar una (el plazo offline es de 48 h).
     const legacy = {
       offlineUuid,
       capturedAt: new Date(capturedMs).toISOString(),
@@ -10596,17 +10599,23 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
         "PUT",
       );
 
-      const first = await ok("/sales/sync", { sales: [legacy] });
+      const rejected = await ok("/sales/sync", { sales: [legacy] });
+      expect(rejected.results[0].status).toBe("conflict");
+      expect(rejected.results[0].message).toMatch(/motivo del descuento/i);
+      expect(await fixtureDb.sale.count({ where: { offlineUuid } })).toBe(0);
+
+      const withReason = { ...legacy, discountReason: reason };
+      const first = await ok("/sales/sync", { sales: [withReason] });
       expect(first.results[0].status, JSON.stringify(first.results[0])).toBe(
         "synced",
       );
-      expect(first.results[0].sale.discountReason).toBe(legacyReason);
+      expect(first.results[0].sale.discountReason).toBe(reason);
       const saleId = first.results[0].sale.id;
       const stored = await fixtureDb.sale.findUniqueOrThrow({
         where: { offlineUuid },
       });
       expect(stored.id).toBe(saleId);
-      expect(stored.discountReason).toBe(legacyReason);
+      expect(stored.discountReason).toBe(reason);
 
       const discountAudit = await fixtureDb.auditLog.findFirstOrThrow({
         where: {
@@ -10616,12 +10625,12 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
         },
         orderBy: { createdAt: "desc" },
       });
-      expect((discountAudit.after as any)?.reason).toBe(legacyReason);
+      expect((discountAudit.after as any)?.reason).toBe(reason);
 
-      const second = await ok("/sales/sync", { sales: [legacy] });
+      const second = await ok("/sales/sync", { sales: [withReason] });
       expect(second.results[0]).toMatchObject({
         status: "synced",
-        sale: { id: saleId, discountReason: legacyReason },
+        sale: { id: saleId, discountReason: reason },
       });
       expect(await fixtureDb.sale.count({ where: { offlineUuid } })).toBe(1);
       expect(
