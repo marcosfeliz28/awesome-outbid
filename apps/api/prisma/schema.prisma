@@ -574,9 +574,12 @@ model Counter {
 }
 
 model AuthAttempt {
-  key            String    @id
-  failedAttempts Int       @default(0)
-  lockedUntil    DateTime?
+  key             String    @id
+  failedAttempts  Int       @default(0)
+  lockedUntil     DateTime?
+  // Primer fallo de la racha (o inicio de la ventana de una hora de los cupos
+  // por cuenta y por PIN). Permite purgar contadores viejos.
+  windowStartedAt DateTime?
 }
 
 model AuthSession {

@@ -26,6 +26,7 @@ import {
   AuthenticatedRateLimitGuard,
   RequestRateLimitService,
 } from "./rate-limit";
+import { SecurityMaintenance } from "./security";
 
 @Controller()
 export class HealthController {
@@ -70,6 +71,7 @@ export function createAppModule(secret: string) {
       AlertEngine,
       NotificationWorker,
       RequestRateLimitService,
+      SecurityMaintenance,
       { provide: APP_GUARD, useClass: AuthGuard },
       { provide: APP_GUARD, useClass: AuthenticatedRateLimitGuard },
     ],

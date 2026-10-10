@@ -177,6 +177,13 @@ function redactKnownCustomerPii(value: unknown, customer: any): unknown {
 }
 const cashierNumber = z.number().int().min(1).max(999999);
 
+// S-03 (auditoría de seguridad 2026-10-10): todo PIN nuevo o cambiado tiene
+// 6 dígitos. Los PIN de 4 o 5 dígitos ya guardados siguen sirviendo para
+// aprobar, con un cupo de intentos propio (verifyPinAttempt) y quedan
+// señalados en la bitácora (pin_short_used) para cambiarlos.
+const newPinSchema = z
+  .string()
+  .regex(/^\d{6}$/, "El PIN debe tener 6 dígitos (sólo números).");
 @Controller()
 export class AdminController {
   constructor(
@@ -851,7 +858,7 @@ export class AdminController {
         username: z.string().trim().min(2).max(80).optional(),
         email: z.string().email().optional(),
         password: strongPasswordSchema,
-        pin: z.string().regex(/^\d{4,6}$/),
+        pin: newPinSchema,
         roleId: uuid,
         cashierNumber: cashierNumber.optional(),
       }),
@@ -906,10 +913,7 @@ export class AdminController {
         roleId: uuid.optional(),
         active: z.boolean().optional(),
         password: strongPasswordSchema.optional(),
-        pin: z
-          .string()
-          .regex(/^\d{4,6}$/)
-          .optional(),
+        pin: newPinSchema.optional(),
         cashierNumber: cashierNumber.nullable().optional(),
       }),
       body,

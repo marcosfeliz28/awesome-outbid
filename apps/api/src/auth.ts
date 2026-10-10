@@ -26,13 +26,18 @@ import {
   audit,
 } from "./common";
 
-import { verifyAttempt, verifyPinAttempt } from "./security";
+import {
+  LOGIN_ACCOUNT_FAILURES_PER_HOUR,
+  sameTerminalSecret,
+  verifyAttempt,
+  verifyPinAttempt,
+} from "./security";
 import { isDifferentPassword, strongPasswordSchema } from "./password-policy";
 import {
   REQUEST_RATE_LIMITS,
   RequestRateLimitService,
   tooManyAttempts,
-  normalizeRequestIp,
+  clientIp,
 } from "./rate-limit";
 
 export function normalizeUsername(value: string) {
@@ -57,6 +62,29 @@ const credentialAttemptIdentity = (user: any, normalized: string) =>
   user
     ? `${user.id}:${user.authVersion}`
     : `missing:${createHash("sha256").update(normalized).digest("hex")}`;
+// Equipo de la tienda (Configuración › Equipos) desde el que se intenta
+// entrar: el navegador envía el id y el secreto que guardó al registrarlo.
+const terminalCredentials = z
+  .object({
+    id: z.string().uuid(),
+    secret: z.string().min(16).max(200),
+  })
+  .optional();
+const RESET_HINT =
+  "pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.";
+// Iguales para cuentas existentes e inexistentes: no delatan cuentas.
+const LOGIN_BLOCKED = {
+  ip:
+    "Cuenta bloqueada temporalmente. Desde un equipo aprobado de la tienda puedes entrar con tu contraseña; desde este, espera 15 minutos o " +
+    RESET_HINT,
+  terminal:
+    "Cuenta bloqueada temporalmente en este equipo por intentos fallidos. Espera 15 minutos o " +
+    RESET_HINT,
+  account:
+    "Cuenta bloqueada temporalmente por demasiados intentos fallidos desde equipos no aprobados. Durante una hora como máximo sólo se puede entrar desde un equipo aprobado de la tienda; si no, " +
+    RESET_HINT,
+};
+const HOUR = 3_600_000;
 
 @Controller("auth")
 export class AuthController implements OnModuleInit {
@@ -66,8 +94,10 @@ export class AuthController implements OnModuleInit {
     @Inject(RequestRateLimitService)
     private requestLimits: RequestRateLimitService,
   ) {}
-  private actor(user: any): Actor {
+  private actor(user: any, ip?: string, terminalId?: string): Actor {
     return {
+      ...(ip ? { ip } : {}),
+      ...(terminalId ? { terminalId } : {}),
       id: user.id,
       name: user.name,
       username: user.username,
@@ -93,8 +123,15 @@ export class AuthController implements OnModuleInit {
         this.requestLimits.rememberAuthIdentity(normalizeUsername(user.email));
     }
   }
-  private limitPublicCredentials(req: Request, identifier: string) {
-    const ip = normalizeRequestIp(req.ip);
+  // Desde un equipo aprobado los cupos en memoria se cuentan por equipo y no
+  // por IP: un barrido desde la IP del borde compartido (o desde la misma
+  // red) no deja a los equipos de la tienda con 429 (S-02).
+  private limitPublicCredentials(
+    ip: string,
+    terminalId: string | null,
+    identifier: string,
+  ) {
+    const origin = terminalId ? "terminal:" + terminalId : ip;
     const normalized = normalizeUsername(identifier);
     // Ambas comprobaciones ocurren antes de consultar User. El cubo compartido
     // sólo recibe identidades que no existen; cuando se llena, se comprueba
@@ -106,7 +143,7 @@ export class AuthController implements OnModuleInit {
     const unknownFlooded =
       this.requestLimits.limited(
         "auth-unknown-ip",
-        [ip],
+        [origin],
         REQUEST_RATE_LIMITS.authIp,
       ) ||
       this.requestLimits.limitedShared(
@@ -118,7 +155,7 @@ export class AuthController implements OnModuleInit {
       // una sola dirección no puede agotarlo para todas.
       this.requestLimits.assert(
         "auth-unknown-ip",
-        [ip],
+        [origin],
         REQUEST_RATE_LIMITS.authIp,
       );
       this.requestLimits.assertShared(
@@ -128,10 +165,92 @@ export class AuthController implements OnModuleInit {
     }
     this.requestLimits.assert(
       "auth-identifier",
-      [ip, normalized],
+      [origin, normalized],
       REQUEST_RATE_LIMITS.authAccount,
     );
     return { ip, normalized, unknownFlooded };
+  }
+  /** Equipo registrado y aprobado cuyo secreto coincide; si no, null. */
+  private async approvedTerminal(
+    input: { id: string; secret: string } | undefined,
+  ) {
+    if (!input) return null;
+    const terminal = await this.db.terminal.findUnique({
+      where: { id: input.id },
+    });
+    return terminal &&
+      !terminal.revokedAt &&
+      terminal.approvedAt &&
+      terminal.secretHash &&
+      sameTerminalSecret(input.secret, terminal.secretHash)
+      ? terminal
+      : null;
+  }
+  // Contadores de la contraseña (S-01, auditoría de seguridad 2026-10-10).
+  // El bloqueo de la cuenta no puede depender de la IP: detrás del borde
+  // compartido puede ser la misma para todos, y un tercero sin la contraseña
+  // no debe dejar fuera a la cajera.
+  // - Desde un equipo aprobado de la sucursal: clave propia del equipo
+  //   (`login:<cuenta>:terminal:<equipo>`); 5 fallos → 15 min sólo ahí. Sin
+  //   el secreto del equipo nadie puede gastarla.
+  // - Desde cualquier otro origen: clave por IP (`login:<cuenta>:<ip>`, 5
+  //   fallos → 15 min) y además el cupo de la cuenta
+  //   (`login-account:<cuenta>`): 10 fallos por hora entre todas las IP.
+  //   Ni cambiando de IP se prueban más de 10 contraseñas por hora y cuenta;
+  //   agotado, sólo se entra desde un equipo aprobado hasta que vence.
+  // Las claves llevan authVersion: «Restablecer contraseña» las desbloquea.
+  // Se aplican igual a identidades inexistentes (sin oráculo).
+  private passwordAttempt(
+    user: any,
+    identity: string,
+    ip: string,
+    terminalId: string | null,
+    verify: (tx: any) => Promise<string | null>,
+    messages: { wrong: string; blocked?: string },
+  ) {
+    return verifyAttempt(
+      this.db,
+      terminalId
+        ? `login:${identity}:terminal:${terminalId}`
+        : `login:${identity}:${ip}`,
+      verify,
+      {
+        wrong: messages.wrong,
+        blocked:
+          messages.blocked ??
+          (terminalId ? LOGIN_BLOCKED.terminal : LOGIN_BLOCKED.ip),
+      },
+      {
+        scope: terminalId ? "terminal" : "ip",
+        budgets: terminalId
+          ? []
+          : [
+              {
+                key: `login-account:${identity}`,
+                max: LOGIN_ACCOUNT_FAILURES_PER_HOUR,
+                windowMs: HOUR,
+                message: LOGIN_BLOCKED.account,
+                scope: "account",
+              },
+            ],
+        // Cada bloqueo queda en la bitácora con su origen (S-04).
+        onLocked: user
+          ? (tx, scope) =>
+              tx.auditLog.create({
+                data: {
+                  userId: "system",
+                  terminalId: terminalId ?? undefined,
+                  ip,
+                  action: "login_locked",
+                  entity: "user",
+                  entityId: user.id,
+                  branchId: user.branchId,
+                  after: { scope },
+                },
+              })
+          : undefined,
+      },
+    );
   }
   // Las rutas que llaman a issue() (y el restablecimiento, que devuelve una
   // contraseña temporal) responden con Cache-Control: no-store: ni el
@@ -216,6 +335,7 @@ export class AuthController implements OnModuleInit {
           // Compatibilidad con instaladores y sesiones anteriores.
           email: z.string().email().optional(),
           password: z.string().min(1).max(128),
+          terminal: terminalCredentials,
         })
         .refine((value) => !!(value.login || value.email), {
           message: "Escribe tu usuario.",
@@ -224,7 +344,13 @@ export class AuthController implements OnModuleInit {
       body,
     );
     const identifier = (data.login ?? data.email ?? "").trim();
-    const credentialLimit = this.limitPublicCredentials(req, identifier);
+    const ip = clientIp(req);
+    const device = await this.approvedTerminal(data.terminal);
+    const credentialLimit = this.limitPublicCredentials(
+      ip,
+      device?.id ?? null,
+      identifier,
+    );
     const user = await this.db.user.findFirst({
       where: identifier.includes("@")
         ? { email: identifier.toLowerCase() }
@@ -242,13 +368,16 @@ export class AuthController implements OnModuleInit {
     // real conserva el mismo 429 que una identidad inventada. Una clave
     // correcta si puede entrar: no hay bloqueo cruzado ni enumeracion.
     if (credentialLimit.unknownFlooded && !matches) tooManyAttempts();
-    // Los fallos se cuentan por cuenta y dirección IP, como los PIN por
-    // solicitante: quien prueba contraseñas ajenas sólo se bloquea a sí mismo,
-    // no a la vendedora en su caja. La clave lleva authVersion para que un
-    // administrador desbloquee la cuenta al cambiarle la contraseña (R9-seguridad-1).
-    await verifyAttempt(
-      this.db,
-      `login:${credentialAttemptIdentity(user, credentialLimit.normalized)}:${credentialLimit.ip}`,
+    // Un equipo de otra sucursal no es «aprobado» para esta cuenta.
+    const terminalId =
+      device && (!user || device.branchId === user.branchId)
+        ? device.id
+        : null;
+    await this.passwordAttempt(
+      user,
+      credentialAttemptIdentity(user, credentialLimit.normalized),
+      ip,
+      terminalId,
       async (tx) => {
         // Con la transacción del contador: no ocupa otra conexión del pool.
         const current = await tx.user.findUnique({
@@ -260,14 +389,16 @@ export class AuthController implements OnModuleInit {
           ? (user?.id ?? null)
           : null;
       },
-      {
-        blocked:
-          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.",
-        wrong: "Usuario o contraseña incorrectos.",
-      },
+      { wrong: "Usuario o contraseña incorrectos." },
     );
     if (!user?.active) bad("Usuario o contraseña incorrectos.");
-    await audit(this.db, this.actor(user), "login", "user", user.id);
+    await audit(
+      this.db,
+      this.actor(user, ip, terminalId ?? undefined),
+      "login",
+      "user",
+      user.id,
+    );
     if (user.mustChangePassword) return { requiresPasswordChange: true };
     return this.issue(user, res);
   }
@@ -286,6 +417,7 @@ export class AuthController implements OnModuleInit {
           currentPassword: z.string().min(1).max(128),
           newPassword: strongPasswordSchema,
           confirmPassword: z.string().min(1).max(128),
+          terminal: terminalCredentials,
         })
         .refine((value) => value.newPassword === value.confirmPassword, {
           message: "Las contraseñas nuevas no coinciden.",
@@ -302,7 +434,13 @@ export class AuthController implements OnModuleInit {
       body,
     );
     const identifier = data.login.trim();
-    const credentialLimit = this.limitPublicCredentials(req, identifier);
+    const ip = clientIp(req);
+    const device = await this.approvedTerminal(data.terminal);
+    const credentialLimit = this.limitPublicCredentials(
+      ip,
+      device?.id ?? null,
+      identifier,
+    );
     const user = await this.db.user.findFirst({
       where: identifier.includes("@")
         ? { email: identifier.toLowerCase() }
@@ -317,9 +455,15 @@ export class AuthController implements OnModuleInit {
     );
     if (credentialLimit.unknownFlooded && !currentPasswordMatches)
       tooManyAttempts();
-    await verifyAttempt(
-      this.db,
-      `login:${credentialAttemptIdentity(user, credentialLimit.normalized)}:${credentialLimit.ip}`,
+    const terminalId =
+      device && (!user || device.branchId === user.branchId)
+        ? device.id
+        : null;
+    await this.passwordAttempt(
+      user,
+      credentialAttemptIdentity(user, credentialLimit.normalized),
+      ip,
+      terminalId,
       async (tx) => {
         const current = await tx.user.findUnique({
           where: { id: user?.id ?? ABSENT_USER_ID },
@@ -330,11 +474,7 @@ export class AuthController implements OnModuleInit {
           ? (user?.id ?? null)
           : null;
       },
-      {
-        blocked:
-          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.",
-        wrong: "Usuario o contraseña incorrectos.",
-      },
+      { wrong: "Usuario o contraseña incorrectos." },
     );
     if (!user?.active) bad("Usuario o contraseña incorrectos.");
     // Sólo la contraseña válida autoriza revelar el estado del cambio.
@@ -365,7 +505,12 @@ export class AuthController implements OnModuleInit {
       await tx.refreshToken.deleteMany({ where: { userId: user.id } });
       await tx.authSession.deleteMany({ where: { userId: user.id } });
       await tx.authAttempt.deleteMany({
-        where: { key: { startsWith: `login:${user.id}:` } },
+        where: {
+          OR: [
+            { key: { startsWith: `login:${user.id}:` } },
+            { key: { startsWith: `login-account:${user.id}:` } },
+          ],
+        },
       });
       return row;
     });
@@ -375,7 +520,7 @@ export class AuthController implements OnModuleInit {
     });
     await audit(
       this.db,
-      this.actor(freshUser),
+      this.actor(freshUser, ip, terminalId ?? undefined),
       "password_changed",
       "user",
       user.id,
@@ -383,9 +528,9 @@ export class AuthController implements OnModuleInit {
     return this.issue(freshUser, res);
   }
   // «Cambiar mi contraseña»: cambio voluntario con la sesión abierta. Exige la
-  // contraseña actual con el mismo contador de intentos que el inicio de
-  // sesión (cuenta y dirección IP: cinco fallos bloquean 15 minutos ambos
-  // caminos) y las mismas reglas que el cambio obligatorio. Cierra todas las
+  // contraseña actual con los mismos contadores que el inicio de sesión (los
+  // del equipo si la sesión está en un equipo aprobado; si no, los de la IP y
+  // el cupo de la cuenta) y las mismas reglas que el cambio obligatorio. Cierra todas las
   // demás sesiones de la cuenta; este equipo sigue en su sesión (y con su
   // registro de equipo) con un token y una cookie de renovación nuevos.
   @Post("password")
@@ -417,7 +562,7 @@ export class AuthController implements OnModuleInit {
         ),
       body,
     );
-    const ip = normalizeRequestIp(req.ip);
+    const ip = clientIp(req);
     this.requestLimits.assert(
       "auth-password-session",
       [ip, actor.sessionId ?? actor.id],
@@ -431,9 +576,11 @@ export class AuthController implements OnModuleInit {
       data.currentPassword,
       user.passwordHash,
     );
-    await verifyAttempt(
-      this.db,
-      `login:${credentialAttemptIdentity(user, "")}:${ip}`,
+    await this.passwordAttempt(
+      user,
+      credentialAttemptIdentity(user, ""),
+      ip,
+      actor.terminalApproved && actor.terminalId ? actor.terminalId : null,
       async (tx) => {
         const current = await tx.user.findUnique({ where: { id: user.id } });
         return current?.active &&
@@ -475,7 +622,12 @@ export class AuthController implements OnModuleInit {
         where: { userId: user.id, id: { not: actor.sessionId } },
       });
       await tx.authAttempt.deleteMany({
-        where: { key: { startsWith: `login:${user.id}:` } },
+        where: {
+          OR: [
+            { key: { startsWith: `login:${user.id}:` } },
+            { key: { startsWith: `login-account:${user.id}:` } },
+          ],
+        },
       });
       // En la misma transacción: si la auditoría falla, la contraseña no
       // cambia; y un fallo después del cambio no la deja sin rastro.
@@ -503,7 +655,7 @@ export class AuthController implements OnModuleInit {
     if (!saved || saved.expiresAt < new Date()) bad("La sesión ha expirado.");
     this.requestLimits.assert(
       "auth-refresh-session",
-      [normalizeRequestIp(req.ip), saved.sessionId ?? saved.id],
+      [clientIp(req), saved.sessionId ?? saved.id],
       REQUEST_RATE_LIMITS.refreshSession,
     );
     // deleteMany hace la rotación de uso único incluso con peticiones concurrentes.
@@ -546,7 +698,9 @@ export class AuthController implements OnModuleInit {
     return { ok: true };
   }
   @Get("me") me(@CurrentUser() actor: Actor) {
-    return actor;
+    // La IP es para la bitácora; no se devuelve.
+    const { ip: _ip, ...rest } = actor;
+    return rest;
   }
   @Post("pin")
   @Header("Cache-Control", "no-store")
@@ -584,8 +738,12 @@ export class AuthController implements OnModuleInit {
         403,
       );
     }
-    await verifyPinAttempt(this.db, "switch:" + actor.id, async () =>
-      user && (await compare(data.pin, user.pinHash)) ? user.id : null,
+    await verifyPinAttempt(
+      this.db,
+      "switch:" + actor.id,
+      async () =>
+        user && (await compare(data.pin, user.pinHash)) ? user.id : null,
+      { pin: data.pin, actor },
     );
     if (!user) bad("PIN incorrecto.");
     return this.issue(user, res);
