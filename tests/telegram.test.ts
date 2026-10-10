@@ -711,4 +711,65 @@ describe("Telegram · avisos de facturas", () => {
       expect(t.replace(/<\/?b>/g, "")).not.toMatch(/[<>]/);
     void productId;
   });
+
+  it("la purga borra los avisos enviados hace más de 30 días, conserva los recientes y no frena la entrega", async () => {
+    // La purga corre en el primer ciclo de cada API (y luego cada hora), así
+    // que se siembran las filas y se arranca una API nueva.
+    const oldId = randomUUID();
+    const recentId = randomUUID();
+    const pendingId = randomUUID();
+    const marker = "purga-" + suffix;
+    const insert = (
+      id: string,
+      status: string,
+      sentDaysAgo: number | null,
+      text: string,
+    ) =>
+      db.$executeRawUnsafe(
+        `INSERT INTO "NotificationOutbox"
+           (id, "eventType", "refId", payload, status, "nextAttemptAt", "createdAt", "sentAt")
+         VALUES ($1::uuid, 'qa.purge', $1, $2::jsonb, $3,
+           timezone('UTC', now()), timezone('UTC', now()) - interval '40 days',
+           CASE WHEN $4::int IS NULL THEN NULL
+                ELSE timezone('UTC', now()) - $4::int * interval '1 day' END)`,
+        id,
+        JSON.stringify({ text }),
+        status,
+        sentDaysAgo,
+      );
+    const exists = async (id: string) =>
+      (await db.notificationOutbox.count({ where: { id } })) === 1;
+    let purgeApi: Awaited<ReturnType<typeof startApi>> | undefined;
+    try {
+      await insert(oldId, "sent", 31, marker + " viejo");
+      await insert(recentId, "sent", 29, marker + " reciente");
+      await insert(pendingId, "pending", null, marker + " pendiente");
+      const fakePort = (fake.address() as { port: number }).port;
+      purgeApi = await startApi({
+        TELEGRAM_BOT_TOKEN: TOKEN,
+        TELEGRAM_CHAT_ID: CHAT,
+        TELEGRAM_API_BASE: `http://127.0.0.1:${fakePort}`,
+      });
+      await waitFor(
+        async () => !(await exists(oldId)),
+        "purga del aviso viejo",
+      );
+      expect(await exists(recentId)).toBe(true);
+      // La purga no debe abortar el ciclo: el aviso pendiente sale.
+      await waitFor(
+        async () =>
+          (await db.notificationOutbox.findUnique({ where: { id: pendingId } }))
+            ?.status === "sent",
+        "aviso pendiente enviado",
+      );
+      expect(messagesFor(marker + " pendiente")).toHaveLength(1);
+      expect(purgeApi.output()).not.toContain("make_interval");
+      expect(purgeApi.output()).not.toContain("Error del trabajador");
+    } finally {
+      await purgeApi?.stop();
+      await db.notificationOutbox.deleteMany({
+        where: { id: { in: [oldId, recentId, pendingId] } },
+      });
+    }
+  }, 60000);
 });
