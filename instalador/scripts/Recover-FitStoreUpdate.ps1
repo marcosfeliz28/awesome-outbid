@@ -2,15 +2,49 @@ param([string]$InstallDir, [switch]$DefinitionsOnly)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Resolve-FitStoreRecoveryPhysicalDirectory {
+  param([Parameter(Mandatory)][string]$Path)
+  if (-not ('FitStoreRecoveryDirectoryNative' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+public static class FitStoreRecoveryDirectoryNative {
+ [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+ public static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security, uint creation, uint flags, IntPtr template);
+ [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+ public static extern uint GetFinalPathNameByHandle(SafeFileHandle handle, StringBuilder path, uint size, uint flags);
+}
+'@
+  }
+  $handle=[FitStoreRecoveryDirectoryNative]::CreateFile([IO.Path]::GetFullPath($Path),0,7,[IntPtr]::Zero,3,0x02000000,[IntPtr]::Zero)
+  try {
+    if($handle.IsInvalid){throw "No se pudo resolver el directorio real: $Path"}
+    $buffer=[Text.StringBuilder]::new(32768)
+    $length=[FitStoreRecoveryDirectoryNative]::GetFinalPathNameByHandle($handle,$buffer,32768,0)
+    if(-not $length -or $length -ge 32768){throw "No se pudo resolver el directorio real: $Path"}
+    return $buffer.ToString().TrimEnd('\','/')
+  } finally {$handle.Dispose()}
+}
+
 function Assert-FitStoreRecoveryWorkingDirectory {
-  param([Parameter(Mandatory)][string]$InstallDir)
+  param([Parameter(Mandatory)][string]$InstallDir,[string]$TransactionPath,[string]$RecoveryScriptDirectory=$PSScriptRoot)
   $location = Get-Location
   if ($location.Provider.Name -ne 'FileSystem') { throw 'Ejecute recuperacion desde un directorio actual del sistema de archivos fuera de la instalacion.' }
-  $installation = [IO.Path]::GetFullPath($InstallDir).TrimEnd('\','/')
-  $current = [IO.Path]::GetFullPath($location.ProviderPath).TrimEnd('\','/')
+  $installation = Resolve-FitStoreRecoveryPhysicalDirectory -Path $InstallDir
+  $current = Resolve-FitStoreRecoveryPhysicalDirectory -Path $location.ProviderPath
   if ($current.Equals($installation, [StringComparison]::OrdinalIgnoreCase) -or
       $current.StartsWith($installation + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
     throw 'El directorio actual esta dentro de la instalacion que debe reemplazarse. Abra PowerShell en una carpeta externa (por ejemplo TEMP) y ejecute el paquete nuevo de recuperacion desde alli. No se restauraron datos.'
+  }
+  if($TransactionPath){
+    $transactionDirectory=Resolve-FitStoreRecoveryPhysicalDirectory -Path $TransactionPath
+    foreach($candidate in @($current,(Resolve-FitStoreRecoveryPhysicalDirectory -Path $RecoveryScriptDirectory))){
+      if($candidate.Equals($transactionDirectory,[StringComparison]::OrdinalIgnoreCase) -or $candidate.StartsWith($transactionDirectory+'\',[StringComparison]::OrdinalIgnoreCase)){
+        throw 'El directorio actual o el paquete de recuperacion esta dentro de la transaccion que se eliminara. Ejecute el paquete desde una carpeta externa. No se restauraron datos.'
+      }
+    }
   }
 }
 
@@ -244,6 +278,7 @@ Assert-FitStoreRecoveryWorkingDirectory -InstallDir $paths.Install
 $marker = Get-FitStoreUpdateMarker -Paths $paths
 if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { throw 'No existe una actualizacion interrumpida que recuperar.' }
 $transaction = Read-FitStoreJson -Path $marker
+Assert-FitStoreRecoveryWorkingDirectory -InstallDir $paths.Install -TransactionPath $transaction.transactionPath -RecoveryScriptDirectory $PSScriptRoot
 if ($transaction.PSObject.Properties.Name -notcontains 'installerSession' -or -not $transaction.installerSession) { throw 'Transaccion anterior sin identificador: requiere recuperacion asistida.' }
 # Compartir exclusividad con NSIS; su comprobacion rechaza un mutex existente.
 $created = $false
