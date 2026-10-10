@@ -348,6 +348,10 @@ import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
 import { recordSaleIncentives, reverseIncentives } from "./incentives";
 
+// Plazo de las transacciones que mueven dinero (venta y devolución). Con el
+// valor por defecto de Prisma (5 s) una devolución bajo carga fallaba con
+// P2028 mientras la venta, con 20 s, terminaba (prueba de carga R5).
+export const MONEY_TRANSACTION = { timeout: 20000 };
 @Controller()
 export class SalesController {
   constructor(@Inject(Database) private db: Database) {}
@@ -1018,7 +1022,7 @@ export class SalesController {
           include: { items: true, payments: true },
         });
       },
-      { timeout: 20000 },
+      { timeout: MONEY_TRANSACTION.timeout },
     );
     notify(this.db, "sale", result.id);
     return safe(result, actor);
@@ -1386,7 +1390,9 @@ export class SalesController {
         ...(cashDifferences ? { cashDifferences } : {}),
       });
       return { ok: true };
-    });
+      // D-M2 (auditoría 06): la anulación repone inventario y toca cajas y
+      // notas como una venta; con 5 s expiraba bajo carga.
+    }, MONEY_TRANSACTION);
     notify(this.db, "sale_voided", id);
     return voided;
   }
@@ -1797,7 +1803,7 @@ export class SalesController {
       await reverseIncentives(tx, actor, "return", sale.id, row.id, data.items);
       await audit(tx, actor, "return", "sale", sale.id, undefined, row);
       return safe(row, actor);
-    });
+    }, MONEY_TRANSACTION);
     if (done?.id) notify(this.db, "return", done.id);
     return done;
   }

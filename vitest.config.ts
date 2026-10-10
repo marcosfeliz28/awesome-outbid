@@ -24,6 +24,7 @@ export default defineConfig({
       "tests/claude-round2.test.ts",
       "tests/rate-limit-l1.test.ts",
       "tests/cash-privacy.test.ts",
+      "tests/dinero-plazos.test.ts",
       "tests/compliance.test.ts",
       "tests/customer-privacy.test.ts",
       "tests/sales-pdf.test.ts",

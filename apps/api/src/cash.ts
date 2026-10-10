@@ -39,7 +39,7 @@ import {
   denied,
   canViewCashExpected,
 } from "./common";
-import { cashLock, terminalName } from "./sales";
+import { MONEY_TRANSACTION, cashLock, terminalName } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
 import { verifyPinAttempt } from "./security";
 import { notify } from "./notifications";
@@ -903,7 +903,9 @@ export class CashController {
       return showExpected
         ? { ...row, differences }
         : { id: row.id, closedAt: row.closedAt };
-    });
+      // D-M2 (auditoría 06): el cierre recalcula todo el turno; mismo plazo
+      // que la venta en vez de los 5 s por defecto.
+    }, MONEY_TRANSACTION);
     notify(this.db, "cash_close", closed.id);
     return closed;
   }

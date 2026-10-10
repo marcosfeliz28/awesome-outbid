@@ -3,6 +3,7 @@ export default defineConfig({
   test: {
     include: [
       "tests/api.test.ts",
+      "tests/dinero-auditoria.test.ts",
       "tests/minors.test.ts",
       "tests/telegram.test.ts",
       "tests/promotion-name.test.ts",
