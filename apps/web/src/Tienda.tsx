@@ -7,6 +7,7 @@ import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import { CASH_DENOMINATIONS, can, formatMoney } from "@fitstore/shared";
 import { api, apiBlob, post, localDB, useStore } from "./api";
 import { FormModal, QueryState, toast, mutate, today } from "./helpers";
+import { closeCashIntro } from "./managementMessages";
 import { pendingCloseMessage } from "./pendingSales";
 import {
   CuadrePrint,
@@ -124,6 +125,10 @@ export function CloseCashModal({
     managerPin: "",
   });
   const user = useStore((s) => s.user);
+  // Igual que cash.ts (canViewCashExpected).
+  const canSeeExpected =
+    can(user?.permissions ?? [], "profit:read") ||
+    can(user?.permissions ?? [], "sale:manage");
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [confirmBlindClose, setConfirmBlindClose] = useState(false);
@@ -228,10 +233,7 @@ export function CloseCashModal({
             {waiting}
           </p>
         )}
-        <p className="close-expected">
-          Conteo ciego: declara lo que realmente tienes. La comparación aparece
-          después de cerrar.
-        </p>
+        <p className="close-expected">{closeCashIntro(canSeeExpected)}</p>
         <h3>Detalles de monedas</h3>
         <div className="count-grid">
           {CASH_DENOMINATIONS.map((v) => {

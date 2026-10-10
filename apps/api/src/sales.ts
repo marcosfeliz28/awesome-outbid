@@ -64,7 +64,48 @@ import {
   maskTail,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
-import { moneyDb } from "./database-errors";
+import {
+  databaseUnavailable,
+  isDatabaseDown,
+  isTransientDbError,
+  moneyDb,
+} from "./database-errors";
+
+const TRANSIENT_SYNC_MESSAGE =
+  "El servidor está ocupado. La venta sigue guardada en este equipo y se reintentará sola.";
+/**
+ * N8 (auditoría 05 v2): lo que la caja intentó vender, guardado con el
+ * conflicto. Si se borran los datos del navegador antes de que gerencia la
+ * descarte, el servidor sabe qué artículos y pagos eran. Sólo campos
+ * conocidos y acotados; nunca referencias de pago ni notas libres.
+ */
+function offlineSaleEvidence(attempted: any) {
+  const number = (value: unknown) =>
+    Number.isFinite(Number(value)) ? money(Number(value)) : null;
+  return {
+    capturedAt:
+      typeof attempted?.capturedAt === "string"
+        ? attempted.capturedAt.slice(0, 40)
+        : null,
+    customerId:
+      typeof attempted?.customerId === "string"
+        ? attempted.customerId.slice(0, 40)
+        : null,
+    items: (Array.isArray(attempted?.items) ? attempted.items : [])
+      .slice(0, 200)
+      .map((item: any) => ({
+        variantId: String(item?.variantId ?? "").slice(0, 40),
+        qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : null,
+        discountPercent: number(item?.discountPercent),
+      })),
+    payments: (Array.isArray(attempted?.payments) ? attempted.payments : [])
+      .slice(0, 20)
+      .map((payment: any) => ({
+        method: String(payment?.method ?? "").slice(0, 20),
+        amount: number(payment?.amount),
+      })),
+  };
+}
 
 // Foto de evidencia de un cobro: hasta 2 MB.
 const PROOF_MAX_BYTES = 2 * 1024 * 1024;
@@ -342,12 +383,21 @@ export async function cashLock(
 ) {
   await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id = ${id}::uuid FOR UPDATE`;
   const session = await tx.cashSession.findFirstOrThrow({
-    where: {
-      id,
-      branchId: actor.branchId,
-      ...(capturedAt ? {} : { closedAt: null }),
-    },
+    where: { id, branchId: actor.branchId },
   });
+  // D-B6 (auditoría 06 v2): una venta o movimiento en una caja recién cerrada
+  // devolvía 404 «El registro no existe.»; ahora se dice qué pasó. Sólo la
+  // dueña o gerencia llegan a saberlo (antes de este punto el 404 de otra
+  // sucursal o de un id inexistente no cambia). Las ventas offline sí pueden
+  // entrar a una caja cerrada si se cobraron antes del cierre (abajo).
+  if (!capturedAt && session.closedAt) {
+    if (
+      session.userId !== actor.id &&
+      !(manager && can(actor.permissions, "sale:manage"))
+    )
+      denied();
+    conflict("La caja ya está cerrada. Abre una caja para seguir vendiendo.");
+  }
   const own = session.userId === actor.id;
   if (!own && !(manager && can(actor.permissions, "sale:manage"))) denied();
   if (
@@ -1209,8 +1259,12 @@ export class SalesController {
       body,
     );
     const results = [];
+    // N-M3: la base no respondió; las ventas que faltan se devuelven como
+    // reintentables sin intentarlas (cada intento esperaría el tiempo del pool).
+    let databaseDown = false;
     for (const sale of input.sales)
       try {
+        if (databaseDown) throw databaseUnavailable();
         const valid = saleSchema.safeParse(sale);
         if (!valid.success)
           bad(
@@ -1244,6 +1298,19 @@ export class SalesController {
             status: "conflict",
             discarded: true,
             message,
+          });
+          continue;
+        }
+        // N-M3: un error transitorio (503 DB_UNAVAILABLE, interbloqueo,
+        // P2028/P2024…) NO es un conflicto offline: sin alerta, sin bitácora
+        // de conflicto y sin pedir revisión. La cola local conserva la venta
+        // «pendiente» y la reenvía con el mismo UUID (idempotente).
+        if (isTransientDbError(e)) {
+          if (isDatabaseDown(e)) databaseDown = true;
+          results.push({
+            offlineUuid: sale.offlineUuid,
+            status: "retry",
+            message: TRANSIENT_SYNC_MESSAGE,
           });
           continue;
         }
@@ -1307,6 +1374,9 @@ export class SalesController {
               {
                 paymentTotal,
                 attemptedExpectedTotal,
+                // N8: qué se vendió, por si se borran los datos del navegador
+                // antes de que gerencia la descarte.
+                detail: offlineSaleEvidence(attempted),
                 // Sólo una caja propia de esta sucursal se guarda como evidencia.
                 cashSessionId:
                   typeof attempted.cashSessionId === "string" &&
@@ -2144,39 +2214,55 @@ export class SalesController {
     if (done?.id) notify(this.db, "return", done.id);
     return done;
   }
+  /**
+   * D-B11 (auditoría 06 v2): antes leía todas las devoluciones de la sucursal
+   * y las pasaba como `IN (…)`. Ahora una sola consulta con la relación, ordenada
+   * (más reciente primero) y paginada: `limit` (1-500, 200 por defecto) y
+   * `cursor` (cabecera `X-Next-Cursor` de la página anterior).
+   */
   @Get("credit-notes")
   @Permit("sale:write")
   async creditNotes(
     @CurrentUser() actor: Actor,
     @Query("customerId") customerId?: string,
     @Query("code") code?: string,
+    @Query("limit") limitText?: string,
+    @Query("cursor") cursorText?: string,
+    @Res({ passthrough: true }) res?: Response,
   ) {
     const manager = can(actor.permissions, "sale:manage");
     const normalized = code?.trim().toUpperCase();
     if (normalized && !/^[0-9A-F]{32}$/.test(normalized)) return [];
     if (!manager && !customerId && !normalized) return [];
     if (customerId) parse(uuid, customerId);
-    const returns = await this.db.saleReturn.findMany({
-      where: { branchId: actor.branchId },
-      select: { id: true, number: true },
-    });
+    const { limit, cursor } = parse(
+      z.object({
+        limit: z.coerce.number().int().min(1).max(500).default(200),
+        cursor: uuid.optional(),
+      }),
+      { limit: limitText, cursor: cursorText },
+    );
     const notes = await this.db.creditNote.findMany({
       where: {
-        returnId: { in: returns.map((r) => r.id) },
+        saleReturn: { branchId: actor.branchId },
         balance: { gt: 0 },
         ...(customerId ? { customerId } : {}),
         ...(normalized ? { redemptionCode: normalized } : {}),
         ...(!manager && !normalized ? { customerId: customerId! } : {}),
       },
+      include: { saleReturn: { select: { number: true } } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
-    return notes.map((n) => {
-      const { redemptionCode, ...publicNote } = n;
-      return {
-        ...publicNote,
-        ...(manager ? { redemptionCode } : {}),
-        number: returns.find((r) => r.id === n.returnId)?.number,
-      };
-    });
+    const more = notes.length > limit;
+    if (more) notes.pop();
+    if (res && more) res.setHeader("X-Next-Cursor", notes[notes.length - 1].id);
+    return notes.map(({ saleReturn, redemptionCode, ...publicNote }) => ({
+      ...publicNote,
+      ...(manager ? { redemptionCode } : {}),
+      number: saleReturn.number,
+    }));
   }
   @Get("returns/:id/credit-note.pdf")
   @Permit("sale:manage")

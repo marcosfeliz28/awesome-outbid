@@ -15,6 +15,8 @@ export default defineConfig({
       "tests/offline-review-api.test.ts",
       "tests/datos-concurrencia-api.test.ts",
       "tests/inventory-import-api.test.ts",
+      "tests/alertas-postgres.test.ts",
+      "tests/restos-api.test.ts",
     ],
     testTimeout: 30000,
     hookTimeout: 60000,

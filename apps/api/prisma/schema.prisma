@@ -607,6 +607,11 @@ model Alert {
   branchId  String   @default("main")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Migración 202610230101_alertas_indices (lista paginada de GET /alerts).
+  @@index([branchId, updatedAt])
+  @@index([branchId, status, updatedAt])
+  @@index([entityId])
 }
 
 model AlertRule {

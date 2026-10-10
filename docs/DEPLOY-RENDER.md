@@ -142,9 +142,10 @@ Cloud, pantalla de consentimiento **publicada «En producción»**, credenciales
 - URI de redirección autorizada en Google:
   `https://<WEB_ORIGIN>/api/backups/google/callback` (la web la reenvía a la
   API por `/api/`). La PWA no la intercepta (`navigateFallbackDenylist`).
-- La imagen de la API incluye `pg_dump` 17 del repositorio PGDG
-  (`PG_DUMP_BIN`); un servidor 17 no se puede respaldar con el cliente 15 de
-  Debian.
+- La imagen de la API incluye `pg_dump` 17 copiado de la imagen oficial
+  `postgres:17.x-bookworm` fijada por suma en `Dockerfile.api` (`PG_DUMP_BIN`);
+  un servidor 17 no se puede respaldar con el cliente 15 de Debian. No se
+  descarga nada de postgresql.org en la construcción.
 - Migración `202610200101_drive_backup`: sólo crea la tabla `DriveBackup`
   (`IF NOT EXISTS`). El permiso de Google se guarda cifrado ahí.
 - Estado: Configuración › Negocio y reglas › «Respaldo diario a Google Drive»

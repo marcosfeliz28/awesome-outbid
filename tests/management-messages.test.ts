@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   businessErrorMessage,
+  closeCashIntro,
   managementQueryError,
+  openCashBlindNote,
 } from "../apps/web/src/managementMessages";
 
 const management = readFileSync("apps/web/src/Management.tsx", "utf8");
@@ -101,5 +103,28 @@ describe("P3 · estados de administración", () => {
       expect(source.includes("setError(e.message)"), file).toBe(false);
       expect(source.includes("businessErrorMessage(e)"), file).toBe(true);
     }
+  });
+});
+
+describe("Cierre de caja · el texto coincide con lo que la API entrega por rol", () => {
+  it("la cajera no recibe promesa de comparación, esperado ni diferencias", () => {
+    for (const text of [closeCashIntro(false), openCashBlindNote(false)]) {
+      expect(text).not.toMatch(/aparece después de cerrar|con las diferencias/);
+      expect(text).toMatch(/administración/);
+    }
+    expect(openCashBlindNote(false)).toMatch(
+      /verás los montos esperados ni las diferencias/,
+    );
+  });
+  it("quien ve el esperado (profit:read / sale:manage) sí ve la comparación", () => {
+    expect(closeCashIntro(true)).toMatch(/comparación con lo esperado aparece/);
+    expect(openCashBlindNote(true)).toMatch(/con las diferencias/);
+  });
+  it("las pantallas usan estos textos y el criterio de cash.ts", () => {
+    const tienda = readFileSync("apps/web/src/Tienda.tsx", "utf8");
+    expect(tienda).toContain("closeCashIntro(canSeeExpected)");
+    expect(tienda).toContain('can(user?.permissions ?? [], "profit:read")');
+    expect(tienda).toContain('can(user?.permissions ?? [], "sale:manage")');
+    expect(management).toContain("openCashBlindNote(false)");
   });
 });

@@ -27,3 +27,18 @@ export function businessErrorMessage(error: unknown): string {
     ? message
     : GENERIC;
 }
+
+/**
+ * Textos del conteo ciego, según lo que la API entrega de verdad por rol
+ * (cash.ts: `canViewCashExpected` = profit:read o sale:manage). La cajera
+ * nunca recibe el esperado ni las diferencias: ni el cuadre ni la pantalla
+ * deben prometérselos.
+ */
+export const closeCashIntro = (canSeeExpected: boolean) =>
+  canSeeExpected
+    ? "Conteo ciego: declara lo que realmente tienes. La comparación con lo esperado aparece después de cerrar."
+    : "Conteo ciego: declara lo que realmente tienes. El cuadre que se imprime muestra lo que contaste; la comparación con lo esperado la revisa administración.";
+export const openCashBlindNote = (canSeeExpected: boolean) =>
+  canSeeExpected
+    ? "Arqueo ciego activo: mientras la caja está abierta no ves los montos esperados. Al cerrar cuentas lo que tienes y se imprime el cuadre con las diferencias."
+    : "Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación.";
