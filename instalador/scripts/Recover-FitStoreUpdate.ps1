@@ -20,11 +20,25 @@ function Invoke-FitStoreRecoveryPgCtl {
   # exclusivamente al pg_ctl; stdout/stderr a archivos del cluster protegido.
   $quoted = @($Arguments | ForEach-Object { '"' + $_.Replace('"','\"') + '"' })
   $logId = 'recovery-control-' + [guid]::NewGuid().ToString('N')
-  $process = Start-Process -FilePath $Tool -ArgumentList $quoted -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $Database ($logId + '.out')) -RedirectStandardError (Join-Path $Database ($logId + '.err'))
-  $processHandle = $process.Handle
-  $process.WaitForExit()
-  $process.Refresh()
-  if ($process.ExitCode -ne 0) { throw "No se pudo controlar PostgreSQL temporal. Codigo: $($process.ExitCode). No se restauraron datos." }
+  $stdout = Join-Path $Database ($logId + '.out')
+  $stderr = Join-Path $Database ($logId + '.err')
+  try {
+    $process = Start-Process -FilePath $Tool -ArgumentList $quoted -WindowStyle Hidden -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+    $processHandle = $process.Handle
+    $process.WaitForExit()
+    $process.Refresh()
+    if ($process.ExitCode -ne 0) { throw "No se pudo controlar PostgreSQL temporal. Codigo: $($process.ExitCode). No se restauraron datos." }
+    # Solo al confirmar stop PostgreSQL libero su log. No borrar logs ajenos
+    # ni el log activo si el intento de detener el servidor fallo.
+    if ($Arguments -contains 'stop') {
+      $postgresLog = Join-Path $Database 'recovery-postgres.log'
+      if (Test-Path -LiteralPath $postgresLog -PathType Leaf) { Remove-Item -LiteralPath $postgresLog -Force }
+    }
+  } finally {
+    foreach ($capture in @($stdout,$stderr)) {
+      if (Test-Path -LiteralPath $capture -PathType Leaf) { Remove-Item -LiteralPath $capture -Force }
+    }
+  }
 }
 
 function Assert-FitStoreInterruptedRecovery {

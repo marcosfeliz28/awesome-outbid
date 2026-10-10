@@ -21,6 +21,7 @@ export const powershellTests = [
   "Preflight-Backup-Privacy",
   "Legacy-Backup-Unavailable",
   "Backup-AzureAD-Warning",
+  "Recovery-Control-Logs",
 ];
 
 export function windowsPowerShellEnvironment(source) {
