@@ -211,7 +211,7 @@ try {
     # el servicio. Arrancarlo expresamente tambien en esa ruta antes de psql.
     $secrets = Read-FitStoreJson -Path $paths.Secrets
     Start-FitStoreService -Name $script:PostgresService
-    Wait-FitStorePostgres -Paths $paths -Secrets $secrets -TimeoutSeconds 90
+    Wait-FitStorePostgres -Paths $paths -TimeoutSeconds 90
     Disable-FitStoreRecoveryIsolation -Transaction $transaction -Psql (Join-Path $paths.PgBin 'psql.exe') -Secrets (Read-FitStoreJson -Path $paths.Secrets)
     $isolationReleased = $true
     Set-FitStoreServiceStartMode -Name $script:ApiService -Mode 'delayed-auto'
@@ -238,7 +238,7 @@ try {
       try {
         $secrets = Read-FitStoreJson -Path $paths.Secrets
         Start-FitStoreService -Name $script:PostgresService
-        Wait-FitStorePostgres -Paths $paths -Secrets $secrets -TimeoutSeconds 90
+        Wait-FitStorePostgres -Paths $paths -TimeoutSeconds 90
         Disable-FitStoreRecoveryIsolation -Transaction $transaction -Psql (Join-Path $paths.PgBin 'psql.exe') -Secrets $secrets
       } catch {
         try { Write-FitStoreLog -InstallDir $actualInstall -Level 'ERROR' -Message 'La base no se modifico, pero no se pudo restituir LOGIN; queda bloqueada y requiere soporte.' } catch {}

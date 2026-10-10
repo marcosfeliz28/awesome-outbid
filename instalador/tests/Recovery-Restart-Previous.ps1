@@ -23,7 +23,14 @@ function Start-FitStoreService {param($Name)
 function Stop-FitStoreService {param($Name,$TimeoutSeconds)
  if($script:running){Invoke-FitStoreRecoveryPgCtl -Tool (Join-Path $PgBin 'pg_ctl.exe') -Database $cluster -Arguments @('-D',$cluster,'-m','fast','-w','stop');$script:running=$false}
 }
-function Wait-FitStorePostgres {param($Paths,$Secrets,$TimeoutSeconds) Sql 'SELECT 1;'|Out-Null}
+function Wait-FitStorePostgres {
+ param([Parameter(Mandatory = $true)]$Paths, [int]$TimeoutSeconds = 90)
+ Sql 'SELECT 1;'|Out-Null
+}
+$realWait=$commonAst.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Wait-FitStorePostgres'},$true)
+$fixtureAst=[Management.Automation.Language.Parser]::ParseFile($PSCommandPath,[ref]$tokens,[ref]$parseErrors)
+$fixtureWait=$fixtureAst.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Wait-FitStorePostgres'},$true)
+if(-not $realWait -or $realWait.Body.ParamBlock.Extent.Text -ne $fixtureWait.Body.ParamBlock.Extent.Text){throw '3j1: firma de espera fixture no coincide con funcion real'}
 function Invoke-FitStorePg {param($Tool,$Password,$Arguments,$FailureMessage)
  $actual=@($Arguments|ForEach-Object {if($_ -eq '--port=5434'){"--port=$Port"}else{$_}})
  & $Tool @actual; if($LASTEXITCODE -ne 0){throw $FailureMessage}
