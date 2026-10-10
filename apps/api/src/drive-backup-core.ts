@@ -618,37 +618,9 @@ export type ScheduleState = {
   nextRetryAt?: Date | null;
 };
 
-const minutesOfDay = (date: Date) => {
-  const p = localParts(date);
-  return Number(p.hour) * 60 + Number(p.minute);
-};
-const scheduleMinutes = SCHEDULE.hour * 60 + SCHEDULE.minute;
-
-export function attemptsToday(state: ScheduleState, now: Date) {
-  return state.dayKey === localDay(now) ? Number(state.dayAttempts ?? 0) : 0;
-}
-
-/** ¿Toca un respaldo programado ahora? */
-export function scheduledRunDue(
-  state: ScheduleState,
-  now: Date,
-  // Sólo pruebas (DRIVE_BACKUP_TEST_IGNORE_HOUR fuera de producción).
-  options: { ignoreHour?: boolean } = {},
-) {
-  if (!options.ignoreHour && minutesOfDay(now) < scheduleMinutes) return false;
-  if (
-    state.lastSuccessAt &&
-    now.getTime() - state.lastSuccessAt.getTime() < FRESH_SUCCESS_MS
-  )
-    return false;
-  if (attemptsToday(state, now) >= MAX_DAILY_ATTEMPTS) return false;
-  if (state.nextRetryAt && now.getTime() < state.nextRetryAt.getTime())
-    return false;
-  return true;
-}
-
 // Santo Domingo no cambia de horario: siempre UTC−4.
 const OFFSET_MS = 4 * 3600000;
+const DAY_MS = 86400000;
 /** Las 03:30 del día (de la tienda) en que cae `ms`. */
 function scheduleOfDay(ms: number) {
   const local = new Date(ms - OFFSET_MS);
@@ -663,29 +635,54 @@ function scheduleOfDay(ms: number) {
   );
 }
 
+export function attemptsToday(state: ScheduleState, now: Date) {
+  return state.dayKey === localDay(now) ? Number(state.dayAttempts ?? 0) : 0;
+}
+
+/**
+ * ¿Toca el respaldo programado? Desde las 03:30, si hoy (desde las 03:30) no
+ * hubo un respaldo bueno, tampoco en las últimas 20 h (p. ej. uno manual de
+ * anoche), quedan intentos y ya pasó la espera del reintento.
+ */
+export function scheduledRunDue(
+  state: ScheduleState,
+  now: Date,
+  // Sólo pruebas (DRIVE_BACKUP_TEST_IGNORE_HOUR fuera de producción).
+  options: { ignoreHour?: boolean } = {},
+) {
+  const today = scheduleOfDay(now.getTime());
+  if (!options.ignoreHour && now.getTime() < today) return false;
+  const success = state.lastSuccessAt?.getTime();
+  if (success !== undefined) {
+    if (now.getTime() - success < FRESH_SUCCESS_MS) return false;
+    if (!options.ignoreHour && success >= today) return false;
+  }
+  if (attemptsToday(state, now) >= MAX_DAILY_ATTEMPTS) return false;
+  if (state.nextRetryAt && now.getTime() < state.nextRetryAt.getTime())
+    return false;
+  return true;
+}
+
 /** Próxima hora a la que el temporizador intentará un respaldo (aprox.). */
 export function nextScheduledRun(state: ScheduleState, now: Date): Date {
   if (scheduledRunDue(state, now)) return now;
   const today = scheduleOfDay(now.getTime());
-  const exhausted = attemptsToday(state, now) >= MAX_DAILY_ATTEMPTS;
+  const success = state.lastSuccessAt?.getTime();
+  const finished =
+    attemptsToday(state, now) >= MAX_DAILY_ATTEMPTS ||
+    (success !== undefined && success >= today);
   let at =
-    now.getTime() < today
-      ? today
-      : exhausted
-        ? today + 86400000
-        : now.getTime();
+    now.getTime() < today ? today : finished ? today + DAY_MS : now.getTime();
   if (
-    !exhausted &&
+    !finished &&
     now.getTime() >= today &&
     state.nextRetryAt &&
     state.nextRetryAt.getTime() > at
   )
     at = state.nextRetryAt.getTime();
-  if (state.lastSuccessAt)
-    at = Math.max(at, state.lastSuccessAt.getTime() + FRESH_SUCCESS_MS);
+  if (success !== undefined) at = Math.max(at, success + FRESH_SUCCESS_MS);
   // Antes de las 03:30 de ese día no se intenta nada.
-  at = Math.max(at, scheduleOfDay(at));
-  return new Date(at);
+  return new Date(Math.max(at, scheduleOfDay(at)));
 }
 
 // ---------------------------------------------------------------------------

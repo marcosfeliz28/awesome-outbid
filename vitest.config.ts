@@ -37,6 +37,7 @@ export default defineConfig({
       "tests/incentives-calc.test.ts",
       "tests/afirmaciones.test.ts",
       "tests/licencias.test.ts",
+      "tests/drive-backup-core.test.ts",
     ],
   },
 });
