@@ -7,6 +7,7 @@
 import { localDB, useStore, type CartItem, type Variant } from "./api";
 import { useWholesale } from "./Incentives";
 import { toast } from "./helpers";
+import { draftExpired } from "./cartDraftPolicy";
 
 export const draftKey = (userId: string) => "cart-draft:" + userId;
 export type CartDraft = {
@@ -15,7 +16,13 @@ export type CartDraft = {
   globalDiscount: number;
   wholesale: boolean;
   savedAt: number;
+  // 05-N3: el cobro que se estaba enviando (su offlineUuid). Si la recarga
+  // llega justo después de cobrar, la venta no se vuelve a ofrecer y, si el
+  // carrito vuelve, el cobro reutiliza el mismo offlineUuid: la API devuelve
+  // la venta ya registrada en vez de cobrar otra vez.
+  attempt?: SaleAttempt;
 };
+export type SaleAttempt = { key: string; uuid: string; capturedAt: string };
 
 // Lo justo para dibujar la línea hasta que llegue el catálogo (refreshCart
 // pone entonces la variante y el producto vigentes): sin costo ni lotes y sin
@@ -33,6 +40,14 @@ export const leanItem = (item: CartItem): CartItem => ({
   product: { ...item.product, variants: [] },
 });
 
+let attempt: SaleAttempt | null = null;
+/** Cobro recuperado junto con el carrito, para reusar su offlineUuid. */
+export const restoredAttempt = (key: string) =>
+  attempt && attempt.key === key ? attempt : null;
+// Tras cobrar, ningún guardado diferido (ya en cola) puede volver a escribir
+// el carrito vendido: queda sellado hasta que el carrito esté vacío.
+let sealed = false;
+
 function write(userId: string, state = useStore.getState()) {
   const data: CartDraft = {
     items: state.cart.map(leanItem),
@@ -40,6 +55,7 @@ function write(userId: string, state = useStore.getState()) {
     globalDiscount: state.globalDiscount,
     wholesale: useWholesale.getState().on,
     savedAt: Date.now(),
+    ...(attempt ? { attempt } : {}),
   };
   const saving: Promise<unknown> = state.cart.length
     ? localDB.cache.put({ key: draftKey(userId), data })
@@ -47,6 +63,55 @@ function write(userId: string, state = useStore.getState()) {
   return saving.catch(() => {
     /* Sin IndexedDB (modo privado): el carrito sigue en memoria. */
   });
+}
+
+/**
+ * 05-N3: se va a enviar el cobro. Su offlineUuid se guarda con el borrador
+ * antes de la petición, para que una recarga a mitad del cobro no cobre dos
+ * veces.
+ */
+export async function rememberAttempt(next: SaleAttempt) {
+  attempt = next;
+  const userId = useStore.getState().user?.id;
+  if (!userId || sealed) return;
+  clearTimeout(timer);
+  await write(userId);
+}
+
+/**
+ * 05-N3: la venta quedó registrada. El borrador se borra aquí mismo, antes de
+ * mostrar el recibo, y no por el guardado diferido (600 ms más un instante
+ * libre del navegador): una recarga, un apagón o la impresión automática en
+ * ese intervalo resucitaban la venta ya cobrada.
+ */
+export async function discardCartDraft() {
+  const userId = useStore.getState().user?.id ?? owner;
+  clearTimeout(timer);
+  attempt = null;
+  sealed = true;
+  if (!userId) return;
+  await localDB.cache.delete(draftKey(userId)).catch(() => {
+    /* Sin IndexedDB: no hay borrador que borrar. */
+  });
+}
+
+/**
+ * 05-N2: la sesión se cierra por inactividad con un carrito a medias. Cerrar
+ * la sesión borra la tabla `cache` (G9), borrador incluido; aquí se vuelve a
+ * dejar el del propio usuario para que lo encuentre al volver a entrar (sólo
+ * lo recupera él, y caduca a las 12 h).
+ */
+export async function keepDraftThrough(close: () => Promise<void>) {
+  const userId = useStore.getState().user?.id;
+  if (userId && useStore.getState().cart.length && !sealed) {
+    clearTimeout(timer);
+    await write(userId);
+  }
+  const saved = userId
+    ? await localDB.cache.get(draftKey(userId)).catch(() => undefined)
+    : undefined;
+  await close();
+  if (saved) await localDB.cache.put(saved).catch(() => {});
 }
 
 let owner: string | null = null;
@@ -60,9 +125,26 @@ async function restore(userId: string) {
       .get(draftKey(userId))
       .catch(() => undefined);
     const draft = saved?.data as CartDraft | undefined;
+    // 05-N3b: un carrito de hace más de 12 h es de otro turno, no una venta
+    // en curso: se descarta.
+    if (draft && draftExpired(draft.savedAt, Date.now())) {
+      await localDB.cache.delete(draftKey(userId)).catch(() => {});
+      return;
+    }
+    // 05-N3: el cobro de ese carrito ya quedó guardado en este equipo (venta
+    // sin conexión o con respuesta incierta): no se vuelve a ofrecer.
+    if (
+      draft?.attempt?.uuid &&
+      (await localDB.sales.get(draft.attempt.uuid).catch(() => undefined))
+    ) {
+      await localDB.cache.delete(draftKey(userId)).catch(() => {});
+      return;
+    }
     // Otra persona entró mientras se leía, o ya se escaneó algo nuevo.
     if (owner !== userId || !draft?.items?.length) return;
     if (useStore.getState().cart.length) return;
+    attempt = draft.attempt ?? null;
+    sealed = false;
     useStore.setState({
       cart: draft.items,
       customerId: draft.customerId ?? null,
@@ -88,6 +170,8 @@ export function keepCartDraft() {
       const before = owner;
       owner = userId;
       clearTimeout(timer);
+      attempt = null;
+      sealed = false;
       // Cambio de vendedor con PIN: el carrito en pantalla es de quien
       // salió; se guarda a su nombre y la nueva persona ve el suyo.
       if (before && userId) {
@@ -100,6 +184,9 @@ export function keepCartDraft() {
       return;
     }
     if (!userId || restoring) return;
+    // El carrito vendido ya está vacío: se acabó el sello.
+    if (sealed && !state.cart.length) sealed = false;
+    if (sealed) return;
     if (
       state.cart !== previous.cart ||
       state.customerId !== previous.customerId ||

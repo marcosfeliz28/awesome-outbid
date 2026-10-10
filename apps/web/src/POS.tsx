@@ -72,6 +72,11 @@ import {
   searchWords,
   toast,
 } from "./helpers";
+import {
+  discardCartDraft,
+  rememberAttempt,
+  restoredAttempt,
+} from "./cartDraft";
 import { scanBeep, scanSoundEnabled, setScanSoundEnabled } from "./scanSound";
 import {
   InvoicePrint,
@@ -214,6 +219,17 @@ export function POS({ go }: { go: (page: string) => void }) {
     );
   const search = useRef<HTMLInputElement>(null);
   const cartList = useRef<HTMLDivElement>(null);
+  // 05-N1: el error de un escaneo se quita al abrir cualquier ventana, al
+  // teclear en el buscador y al salir de la caja.
+  const windowOpen =
+    !!choosing || checkout || held || clientPicker || creatingClient || camera;
+  useEffect(() => {
+    if (windowOpen) clearPersistentErrors();
+  }, [windowOpen]);
+  useEffect(() => {
+    if (q) clearPersistentErrors();
+  }, [q]);
+  useEffect(() => clearPersistentErrors, []);
   // La ventana de variantes se abrió con Enter desde el buscador: al elegir,
   // el buscador queda vacío como tras un escaneo (R9-caja-6).
   const clearOnChoose = useRef(false);
@@ -475,6 +491,8 @@ export function POS({ go }: { go: (page: string) => void }) {
     );
   };
   const charge = () => {
+    // 05-N1: un error de escaneo no se queda sobre la ventana de cobro.
+    clearPersistentErrors();
     if (!cart.length) return;
     if (!customerId) {
       setPickerHint("Selecciona o crea el cliente antes de cobrar.");
@@ -1736,8 +1754,13 @@ function Checkout({
   ]);
   const previous = unanswered?.key === attempt ? unanswered : null;
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(!!previous);
-  const uuid = useRef(previous?.uuid ?? crypto.randomUUID());
-  const captured = useRef<string | null>(previous?.capturedAt ?? null);
+  // 05-N3: tras una recarga a mitad del cobro, el borrador devuelve el mismo
+  // offlineUuid y la API contesta con la venta ya registrada.
+  const recovered = previous ? null : restoredAttempt(attempt);
+  const uuid = useRef(previous?.uuid ?? recovered?.uuid ?? crypto.randomUUID());
+  const captured = useRef<string | null>(
+    previous?.capturedAt ?? recovered?.capturedAt ?? null,
+  );
   const client = useQueryClient();
   let payment = { paid: 0, pending: total, change: 0 };
   try {
@@ -1867,6 +1890,12 @@ function Checkout({
       discount: lines[index]?.discount ?? 0,
       lineTotal: lines[index]?.total ?? 0,
     }));
+    // 05-N3: el offlineUuid del cobro queda en el borrador antes de enviarlo.
+    await rememberAttempt({
+      key: attempt,
+      uuid: uuid.current,
+      capturedAt: input.capturedAt!,
+    });
     try {
       const preserveUnanswered = async (): Promise<never> => {
         setAwaitingConfirmation(true);
@@ -1998,6 +2027,9 @@ function Checkout({
         await localDB.sales.delete(uuid.current).catch(() => {});
       setAwaitingConfirmation(false);
       unanswered = null;
+      // 05-N3: el borrador del carrito se borra ya, antes del recibo: una
+      // recarga justo después de cobrar no debe resucitar esta venta.
+      await discardCartDraft();
       // En línea, el ticket usa los importes que guardó el servidor (una
       // línea puede repartirse en varios lotes); sin conexión, los de la caja.
       const sum = (rows: any[], key: string) =>
