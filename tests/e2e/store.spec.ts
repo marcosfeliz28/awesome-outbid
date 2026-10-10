@@ -1353,6 +1353,69 @@ test("R9-caja-5: recuperar una venta en espera avisa si falta un producto y no p
   await r9Retire(request, headers, created);
 });
 
+test("R9-caja-5 regresión: un escaneo mientras se descarga el catálogo espera y agrega el producto una sola vez", async ({
+  page,
+  request,
+}) => {
+  const headers = await r9Headers(request);
+  const code = r9Code("6");
+  const name = "Faja E2E catálogo lento " + code;
+  const product = await r9Product(request, headers, name, code);
+  await r9Pos(page);
+  // Al recargar, el catálogo tarda en llegar: cada respuesta se retrasa 1,5 s
+  // y, además, no sale hasta que se escaneó, para que el escaneo caiga
+  // siempre dentro de la espera.
+  let held = 0;
+  let scanned = () => {};
+  const afterScan = new Promise<void>((resolve) => (scanned = resolve));
+  await page.route("**/api/products*", async (route: any) => {
+    held++;
+    await Promise.all([
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+      afterScan,
+    ]);
+    await route.continue();
+  });
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Punto de venta", exact: true })
+    .click();
+  const search = page.getByLabel("Buscar productos");
+  await expect.poll(() => held).toBeGreaterThan(0);
+  await expect(page.locator(".product-card")).toHaveCount(0);
+  await search.fill(code);
+  await search.press("Enter");
+  // Un segundo Enter mientras espera no agrega otra unidad.
+  await search.press("Enter");
+  // El escaneo ocurrió antes de que llegara el catálogo.
+  await expect(page.locator(".product-card")).toHaveCount(0);
+  await expect(
+    page.getByText("Código no encontrado: " + code + "."),
+  ).toHaveCount(0);
+  await expect(page.locator(".cart-items")).not.toContainText(name);
+  scanned();
+  // Al llegar el catálogo la línea entra una sola vez.
+  await expect(page.locator(".product-card").first()).toBeVisible();
+  await expect(r9Qty(page, name)).toHaveText("1");
+  await expect(page.locator(".cart-item", { hasText: name })).toHaveCount(1);
+  await expect(page.getByText(name + " agregado.")).toBeVisible();
+  await expect(search).toHaveValue("");
+  await expect(
+    page.getByText("Código no encontrado: " + code + "."),
+  ).toHaveCount(0);
+  await page.unroute("**/api/products*");
+  // Con el catálogo cargado, un código inexistente sigue avisando.
+  const missing = r9Code("7");
+  await search.fill(missing);
+  await search.press("Enter");
+  await expect(
+    page.getByText("Código no encontrado: " + missing + "."),
+  ).toBeVisible();
+  await expect(r9Qty(page, name)).toHaveText("1");
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await r9Retire(request, headers, [product]);
+});
+
 test("R9-caja-8: el descuento de línea no pasa del 100 % ni del importe de la línea", async ({
   page,
   request,
