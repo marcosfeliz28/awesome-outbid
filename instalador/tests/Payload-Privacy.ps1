@@ -1,5 +1,6 @@
 param([string]$BuildScript = (Join-Path $PSScriptRoot '..\build.ps1'),
-  [string]$DependenciesRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)))
+  [string]$DependenciesRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)),
+  [switch]$InjectMissingBootstrapCli)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $root = Join-Path $env:TEMP ('nexora-payload-privacy-' + [guid]::NewGuid().ToString('N'))
@@ -46,6 +47,15 @@ try {
   if (-not $config.compilerOptions.esModuleInterop -or $config.compilerOptions.module -ne 'commonjs') { throw 'No se conservaron las opciones de compilacion del bootstrap.' }
   $link = Join-Path $api 'node_modules'
   New-Item -ItemType Junction -Path $link -Target (Join-Path $DependenciesRoot 'apps\api\node_modules') | Out-Null
+  $cwdProbe = Join-Path $api 'cwd-probe.cjs'
+  [IO.File]::WriteAllText($cwdProbe, @'
+const fs = require('node:fs');
+const path = require('node:path');
+if (fs.realpathSync(process.cwd()) !== fs.realpathSync(__dirname)) throw new Error('BOOTSTRAP_FIXTURE_WRONG_CWD');
+const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'tsconfig.json'), 'utf8'));
+if (config.extends || config.compilerOptions.module !== 'commonjs' || !config.compilerOptions.esModuleInterop) throw new Error('BOOTSTRAP_FIXTURE_WRONG_CONFIG');
+console.log('PASS fixture: proceso Node real usa cwd API y tsconfig del payload.');
+'@, [Text.UTF8Encoding]::new($false))
   $saved = @{}
   try {
     foreach ($name in @('DATABASE_URL','ADMIN_EMAIL','ADMIN_PASSWORD','ADMIN_PIN','ADMIN_NAME','ADMIN_MODE')) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -53,8 +63,12 @@ try {
     $env:ADMIN_EMAIL = 'invalid-email'; $env:ADMIN_PASSWORD = ''; $env:ADMIN_PIN = ''; $env:ADMIN_NAME = ''; $env:ADMIN_MODE = 'bootstrap'
     $process = [Diagnostics.Process]::new()
     $process.StartInfo.FileName = (Get-Command node).Source
+    # El instalador ejecuta bootstrap desde la API desplegada. La fixture debe
+    # reproducir ese cwd, no heredar el workspace ni su configuracion externa.
+    $process.StartInfo.WorkingDirectory = $api
     $cli = [IO.Path]::GetFullPath((Join-Path $DependenciesRoot 'apps\api\node_modules\tsx\dist\cli.mjs'))
-    $process.StartInfo.Arguments = '"' + $cli + '" "' + (Join-Path $api 'scripts\create-admin.ts') + '"'
+    if ($InjectMissingBootstrapCli) { $cli = Join-Path $api 'missing-fixture-cli.mjs' }
+    $process.StartInfo.Arguments = '--require "' + $cwdProbe + '" "' + $cli + '" "' + (Join-Path $api 'scripts\create-admin.ts') + '"'
     $process.StartInfo.UseShellExecute = $false
     $process.StartInfo.CreateNoWindow = $true
     $process.StartInfo.RedirectStandardOutput = $true
@@ -63,12 +77,38 @@ try {
       $process.Start() | Out-Null
       $output = $process.StandardOutput.ReadToEnd() + $process.StandardError.ReadToEnd()
       $process.WaitForExit()
-      if ($process.ExitCode -eq 0 -or $output -notmatch 'invalid_string|invalid_format' -or $output -match 'Cannot find|MODULE_NOT_FOUND|ECONNREFUSED|P1001') { throw 'El bootstrap real no llego a validar entradas antes de consultar la base.' }
+      if ($process.ExitCode -eq 0 -or $output -notmatch 'invalid_string|invalid_format' -or $output -match 'Cannot find|MODULE_NOT_FOUND|ECONNREFUSED|P1001' -or $output -notmatch 'PASS fixture: proceso Node real usa cwd API') {
+        $safeOutput = $output
+        foreach ($name in $saved.Keys) { if ($saved[$name] -and ([string]$saved[$name]).Length -gt 3) { $safeOutput = $safeOutput.Replace([string]$saved[$name], '[REDACTADO]') } }
+        $safeOutput = $safeOutput -replace 'postgres(?:ql)?://[^/@\s]+@', 'postgresql://[REDACTADO]@'
+        Write-Host ('BOOTSTRAP_FIXTURE_EXIT=' + $process.ExitCode)
+        Write-Host ($safeOutput.Substring(0, [Math]::Min(8192, $safeOutput.Length)))
+        throw 'El bootstrap real no llego a validar entradas antes de consultar la base.'
+      }
     } finally { $process.Dispose() }
+    Write-Host 'PASS fixture: proceso Node real usa cwd API y tsconfig del payload.'
     Write-Host 'PASS: tsx y create-admin.ts reales validan entradas con tsconfig portable; sin conexion a base.'
   } finally {
     foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
     if (Test-Path -LiteralPath $link) { [IO.Directory]::Delete($link) }
+  }
+  # Regresion del diagnostico: falla el proceso Node original por una CLI
+  # inexistente controlada, no un stub. Debe conservar rechazo y causa segura.
+  if (-not $InjectMissingBootstrapCli) {
+    $diagnostic = [Diagnostics.Process]::new()
+    $diagnostic.StartInfo.FileName = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+    $diagnostic.StartInfo.Arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $PSCommandPath + '" -BuildScript "' + $BuildScript + '" -DependenciesRoot "' + $DependenciesRoot + '" -InjectMissingBootstrapCli'
+    $diagnostic.StartInfo.UseShellExecute = $false
+    $diagnostic.StartInfo.CreateNoWindow = $true
+    $diagnostic.StartInfo.RedirectStandardOutput = $true
+    $diagnostic.StartInfo.RedirectStandardError = $true
+    try {
+      $diagnostic.Start() | Out-Null
+      $diagnosticOutput = $diagnostic.StandardOutput.ReadToEnd() + $diagnostic.StandardError.ReadToEnd()
+      $diagnostic.WaitForExit()
+      if ($diagnostic.ExitCode -eq 0 -or $diagnosticOutput -notmatch 'BOOTSTRAP_FIXTURE_EXIT=1' -or $diagnosticOutput -notmatch 'MODULE_NOT_FOUND' -or $diagnosticOutput -notmatch 'missing-fixture-cli' -or $diagnosticOutput -notmatch 'El bootstrap real no llego a validar entradas') { throw 'El fallo real de Node no conserva el rechazo y diagnostico del bootstrap.' }
+    } finally { $diagnostic.Dispose() }
+    Write-Host 'PASS diagnostico: CLI inexistente falla en Node real, conserva exitcode, causa y rechazo original.'
   }
   Write-Host 'PASS: filtro real del build elimina datos/secretos ficticios y conserva Prisma, tsx, migraciones y bootstrap.'
 } finally {
