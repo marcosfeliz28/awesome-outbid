@@ -33,6 +33,7 @@ export const powershellTests = [
   "Recovery-Acl-Interruption",
   "Recovery-Acl-MissingEntry",
   "Recovery-Pending-Acl-Always",
+  "Recovery-Corrupt-Acl-Journal",
   "Exact-Dacl-Contract",
   "Postgres-Real-Sql",
   "Recovery-Legacy-Schema",
