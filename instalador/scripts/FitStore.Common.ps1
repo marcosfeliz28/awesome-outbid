@@ -115,6 +115,32 @@ function Grant-FitStoreSystemAccess {
   if ($LASTEXITCODE -ne 0) { throw "No se pudo dar acceso al servicio de respaldo en $Path." }
 }
 
+function Resolve-FitStoreServiceAccountSid {
+  param([Parameter(Mandatory)][string]$Account)
+  # LocalSystem es el token de SCM, no un nombre localizado de NTAccount.
+  if ($Account -eq 'LocalSystem') { return 'S-1-5-18' }
+  return [Security.Principal.NTAccount]::new($Account).Translate([Security.Principal.SecurityIdentifier]).Value
+}
+
+function Remove-FitStoreLocalServiceAccess {
+  param([Parameter(Mandatory)]$Paths)
+  $identity = [Security.Principal.SecurityIdentifier]::new('S-1-5-19')
+  # Solo destinos que Grant-FitStoreApplicationAccess modifica, sin recorrer
+  # node_modules. Eliminar primero grants de padres retira la herencia hija.
+  $targets = @($Paths.Data, $Paths.Work, (Join-Path $Paths.Work 'app'),
+    (Join-Path $Paths.Work 'app\api'), $Paths.Pki, $Paths.Install, $Paths.Logs,
+    (Join-Path $Paths.Work '.env'), $Paths.ServerConfig,
+    (Join-Path $Paths.Pki 'FitStore-server.pfx'))
+  foreach ($path in $targets) {
+    if (-not (Test-Path -LiteralPath $path)) { continue }
+    $item = Get-Item -LiteralPath $path
+    $acl = Get-Acl -LiteralPath $path
+    $acl.PurgeAccessRules($identity)
+    if ($item.PSIsContainer) { [IO.Directory]::SetAccessControl($path, $acl) }
+    else { [IO.File]::SetAccessControl($path, $acl) }
+  }
+}
+
 function Grant-FitStoreApplicationAccess {
   param([Parameter(Mandatory = $true)]$Paths)
   $identity = [Security.Principal.SecurityIdentifier]::new("S-1-5-19")

@@ -195,10 +195,12 @@ try {
   $usesLocalService = $false
   foreach ($service in @($script:ApiService, $script:WebService)) {
     $account = Ensure-RestoredApplicationService -Paths $paths -Name $service -KeepDisabled:$RecoverInterrupted
-    if ($account -in @('NT AUTHORITY\LocalService', 'LocalService')) { $usesLocalService = $true }
-    elseif ($account -notin @('LocalSystem', 'NT AUTHORITY\SYSTEM')) { throw "Cuenta de servicio restaurada no admitida para $service." }
+    $accountSid = Resolve-FitStoreServiceAccountSid -Account $account
+    if ($accountSid -eq 'S-1-5-19') { $usesLocalService = $true }
+    elseif ($accountSid -ne 'S-1-5-18') { throw "Cuenta de servicio restaurada no admitida para $service." }
   }
   if ($usesLocalService) { Grant-FitStoreApplicationAccess -Paths $paths }
+  else { Remove-FitStoreLocalServiceAccess -Paths $paths }
   if ($RecoverInterrupted) {
     Disable-FitStoreRecoveryIsolation -Transaction $transaction -Psql (Join-Path $paths.PgBin 'psql.exe') -Secrets (Read-FitStoreJson -Path $paths.Secrets)
     Set-FitStoreServiceStartMode -Name $script:ApiService -Mode 'delayed-auto'
