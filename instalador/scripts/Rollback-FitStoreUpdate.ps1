@@ -7,6 +7,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "FitStore.Common.ps1")
+. (Join-Path $PSScriptRoot 'Recover-FitStoreUpdate.ps1') -InstallDir $InstallDir -DefinitionsOnly
 
 function Assert-UpdateManifest {
   param(
@@ -159,7 +160,6 @@ if ($RecoverInterrupted) {
   # Verificar archivos antes de ejecutar psql/pg_ctl de la copia anterior.
   $verifiedRoot = if ($recoveryAction -eq 'restore-snapshot') { $snapshotPath } else { $actualInstall }
   Assert-UpdateManifest -Manifest ([string]$transaction.manifestPath) -ExpectedManifestHash ([string]$transaction.manifestSha256) -Root $verifiedRoot
-  . (Join-Path $PSScriptRoot 'Recover-FitStoreUpdate.ps1') -DefinitionsOnly
   $relativeBin = $paths.PgBin.Substring($actualInstall.Length).TrimStart('\')
   $verifiedPgBin = Join-Path $verifiedRoot $relativeBin
   Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $transaction -ExclusiveAccess -VerifiedPgBin $verifiedPgBin
@@ -225,6 +225,10 @@ try {
     New-ItemProperty -Path $script:FitStoreRegistry -Name Version -Value ([string]$transaction.previousVersion) -PropertyType String -Force | Out-Null
   }
   Write-FitStoreLog -InstallDir $actualInstall -Level "AVISO" -Message "La actualización fallida fue revertida y la versión anterior respondió correctamente."
+  # No borrar la unica copia de los permisos originales si la limpieza falla.
+  # El helper valida las rutas; cualquier error conserva marcador/transaccion.
+  $pendingAcl=Join-Path $transactionPath 'recovery-pgdata-acl.json'
+  if(Test-Path -LiteralPath $pendingAcl){Restore-FitStorePendingPostgresAccess -Database $paths.Database -StatePath $pendingAcl}
   Remove-Item -LiteralPath $marker -Force
   if (Test-Path -LiteralPath $transactionPath) { Remove-Item -LiteralPath $transactionPath -Recurse -Force }
   Write-Host "ROLLBACK CORRECTO: la versión anterior y su base fueron restauradas y verificadas."

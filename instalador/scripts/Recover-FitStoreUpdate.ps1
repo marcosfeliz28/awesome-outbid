@@ -288,9 +288,14 @@ AND column_name IN ('createdAt','updatedAt','openedAt','closedAt','lastActivityA
 
 function Assert-FitStoreInterruptedRecovery {
   param($Paths, $Transaction, [ValidateRange(1024,65535)][int]$DatabasePort = 5434, [switch]$ExclusiveAccess, [string]$VerifiedPgBin)
-  foreach ($field in @('backupCutoffAt','applicationAutostartDisabled','backup','backupSha256','snapshotPath','phase')) {
+  foreach ($field in @('transactionPath','backupCutoffAt','applicationAutostartDisabled','backup','backupSha256','snapshotPath','phase')) {
     if ($Transaction.PSObject.Properties.Name -notcontains $field) { throw "Transaccion antigua o incompleta: falta $field. Requiere recuperacion asistida; no se restauraron datos." }
   }
+  # Incluso una guardia que rechace antes de arrancar PostgreSQL debe retirar
+  # el acceso temporal dejado por un proceso anterior. El helper comprueba
+  # PGDATA y cada ruta del diario antes de restaurar; un error conserva diario.
+  $pendingAcl=Join-Path $Transaction.transactionPath 'recovery-pgdata-acl.json'
+  if(Test-Path -LiteralPath $pendingAcl){Restore-FitStorePendingPostgresAccess -Database $Paths.Database -StatePath $pendingAcl}
   if ($Transaction.applicationAutostartDisabled -ne $true -or $Transaction.phase -eq 'verified') { throw 'La transaccion no acredita servicios deshabilitados antes del corte; no se restauraron datos.' }
   $cutoff = [DateTimeOffset]::ParseExact([string]$Transaction.backupCutoffAt, 'o', [Globalization.CultureInfo]::InvariantCulture)
   if ($cutoff -gt [DateTimeOffset]::UtcNow) { throw 'Fecha del respaldo futura; recuperacion cancelada.' }
