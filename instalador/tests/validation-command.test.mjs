@@ -27,6 +27,7 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     "Service-Isolation",
     "Service-Pfx-Passwords",
     "Launcher-Backup-Destination",
+    "Uninstall-Backup-Preservation",
     "Backup-Privacy",
     "FreshInstall-FaultInjection",
     "Stale-Update-FaultInjection",
