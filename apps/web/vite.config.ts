@@ -61,10 +61,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,woff2}"],
         navigateFallback: "/index.html",
-        // Una navegación a /api (la vuelta desde Google del respaldo a Drive,
-        // /api/backups/google/callback) debe llegar a la API, no a la PWA en
-        // caché.
-        navigateFallbackDenylist: [/^\/api\//],
+        // Abrir /api/... o /healthz directamente en el navegador debe llegar
+        // al servidor (JSON, 204/503), no a la app servida desde la caché.
+        navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/healthz(?:\/|$)/],
         runtimeCaching: [],
       },
     }),

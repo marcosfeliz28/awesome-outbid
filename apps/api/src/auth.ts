@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpException,
   Inject,
   OnModuleInit,
@@ -132,6 +133,9 @@ export class AuthController implements OnModuleInit {
     );
     return { ip, normalized, unknownFlooded };
   }
+  // Las rutas que llaman a issue() (y el restablecimiento, que devuelve una
+  // contraseña temporal) responden con Cache-Control: no-store: ni el
+  // navegador ni un proxy guardan tokens ni contraseñas.
   private async issue(user: any, res: Response, sessionId?: string | null) {
     const refresh = randomBytes(48).toString("hex");
     const settings = await this.db.settings.findUnique({
@@ -199,6 +203,7 @@ export class AuthController implements OnModuleInit {
   }
   @Public()
   @Post("login")
+  @Header("Cache-Control", "no-store")
   async login(
     @Body() body: unknown,
     @Req() req: Request,
@@ -257,7 +262,7 @@ export class AuthController implements OnModuleInit {
       },
       {
         blocked:
-          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a un administrador que te cambie la contraseña.",
+          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.",
         wrong: "Usuario o contraseña incorrectos.",
       },
     );
@@ -268,6 +273,7 @@ export class AuthController implements OnModuleInit {
   }
   @Public()
   @Post("change-password")
+  @Header("Cache-Control", "no-store")
   async changePassword(
     @Body() body: unknown,
     @Req() req: Request,
@@ -326,7 +332,7 @@ export class AuthController implements OnModuleInit {
       },
       {
         blocked:
-          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a un administrador que te cambie la contraseña.",
+          "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.",
         wrong: "Usuario o contraseña incorrectos.",
       },
     );
@@ -376,8 +382,114 @@ export class AuthController implements OnModuleInit {
     );
     return this.issue(freshUser, res);
   }
+  // «Cambiar mi contraseña»: cambio voluntario con la sesión abierta. Exige la
+  // contraseña actual con el mismo contador de intentos que el inicio de
+  // sesión (cuenta y dirección IP: cinco fallos bloquean 15 minutos ambos
+  // caminos) y las mismas reglas que el cambio obligatorio. Cierra todas las
+  // demás sesiones de la cuenta; este equipo sigue en su sesión (y con su
+  // registro de equipo) con un token y una cookie de renovación nuevos.
+  @Post("password")
+  @Header("Cache-Control", "no-store")
+  async changeOwnPassword(
+    @CurrentUser() actor: Actor,
+    @Body() body: unknown,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = parse(
+      z
+        .object({
+          currentPassword: z.string().min(1).max(128),
+          newPassword: strongPasswordSchema,
+          confirmPassword: z.string().min(1).max(128),
+        })
+        .refine((value) => value.newPassword === value.confirmPassword, {
+          message: "Las contraseñas nuevas no coinciden.",
+          path: ["confirmPassword"],
+        })
+        .refine(
+          (value) =>
+            isDifferentPassword(value.currentPassword, value.newPassword),
+          {
+            message: "La contraseña nueva debe ser distinta de la actual.",
+            path: ["newPassword"],
+          },
+        ),
+      body,
+    );
+    const ip = normalizeRequestIp(req.ip);
+    this.requestLimits.assert(
+      "auth-password-session",
+      [ip, actor.sessionId ?? actor.id],
+      REQUEST_RATE_LIMITS.authAccount,
+    );
+    const user = await this.db.user.findUniqueOrThrow({
+      where: { id: actor.id },
+      include: { role: true },
+    });
+    const currentPasswordMatches = await compare(
+      data.currentPassword,
+      user.passwordHash,
+    );
+    await verifyAttempt(
+      this.db,
+      `login:${credentialAttemptIdentity(user, "")}:${ip}`,
+      async (tx) => {
+        const current = await tx.user.findUnique({ where: { id: user.id } });
+        return current?.active &&
+          current.passwordHash === user.passwordHash &&
+          currentPasswordMatches
+          ? user.id
+          : null;
+      },
+      {
+        blocked:
+          "Cuenta bloqueada temporalmente por intentos fallidos. Espera 15 minutos y vuelve a intentarlo.",
+        wrong: "La contraseña actual no es correcta.",
+      },
+    );
+    const passwordHashValue = await passwordHash(data.newPassword);
+    await this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id=${user.id}::uuid FOR UPDATE`;
+      const current = await tx.user.findUniqueOrThrow({
+        where: { id: user.id },
+      });
+      if (
+        !current.active ||
+        current.passwordHash !== user.passwordHash ||
+        current.authVersion !== user.authVersion
+      )
+        bad(
+          "La cuenta cambió mientras actualizabas la contraseña. Inicia sesión otra vez.",
+        );
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: passwordHashValue,
+          mustChangePassword: false,
+          authVersion: { increment: 1 },
+        },
+      });
+      await tx.refreshToken.deleteMany({ where: { userId: user.id } });
+      await tx.authSession.deleteMany({
+        where: { userId: user.id, id: { not: actor.sessionId } },
+      });
+      await tx.authAttempt.deleteMany({
+        where: { key: { startsWith: `login:${user.id}:` } },
+      });
+      // En la misma transacción: si la auditoría falla, la contraseña no
+      // cambia; y un fallo después del cambio no la deja sin rastro.
+      await audit(tx, actor, "password_changed", "user", user.id);
+    });
+    const freshUser = await this.db.user.findUniqueOrThrow({
+      where: { id: user.id },
+      include: { role: true },
+    });
+    return this.issue(freshUser, res, actor.sessionId);
+  }
   @Public()
   @Post("refresh")
+  @Header("Cache-Control", "no-store")
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -437,6 +549,7 @@ export class AuthController implements OnModuleInit {
     return actor;
   }
   @Post("pin")
+  @Header("Cache-Control", "no-store")
   async pin(
     @CurrentUser() actor: Actor,
     @Body() body: unknown,

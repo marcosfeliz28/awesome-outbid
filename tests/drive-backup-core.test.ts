@@ -558,6 +558,14 @@ describe("Despliegue del respaldo", () => {
 
   it("la PWA no sirve index.html en la vuelta desde Google (/api/…)", () => {
     const vite = readFileSync("apps/web/vite.config.ts", "utf8");
-    expect(vite).toContain("navigateFallbackDenylist: [/^\\/api\\//]");
+    const list =
+      /navigateFallbackDenylist:\s*\[([^\]]*)\]/.exec(vite)?.[1] ?? "";
+    const patterns = [...list.matchAll(/\/(.+?)\/(?=\s*(?:,|$))/g)].map(
+      (m) => new RegExp(m[1]!),
+    );
+    expect(patterns.length).toBeGreaterThan(0);
+    expect(patterns.some((p) => p.test("/api/backups/google/callback"))).toBe(
+      true,
+    );
   });
 });

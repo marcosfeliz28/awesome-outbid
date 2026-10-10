@@ -1403,7 +1403,10 @@ test("R9-caja-5 regresión: un escaneo mientras se descarga el catálogo espera 
   await expect(
     page.getByText("Código no encontrado: " + code + "."),
   ).toHaveCount(0);
-  await page.unroute("**/api/products*");
+  // La recarga del catálogo por «ready» de /api/events sigue retenida unos
+  // 0,2 s más; unroute la soltaba a la fuerza y su route.continue() fallaba con
+  // «Route is already handled!». Se espera a que salgan las retenidas.
+  await page.unrouteAll({ behavior: "wait" });
   // Con el catálogo cargado, un código inexistente sigue avisando.
   const missing = r9Code("7");
   await search.fill(missing);

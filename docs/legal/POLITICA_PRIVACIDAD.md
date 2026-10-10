@@ -34,7 +34,7 @@ Para registrar la venta pedimos un nombre que identifique al cliente en el recib
 - Datos de empleados: durante la relación laboral y el plazo legal posterior [ABOGADO: confirmar].
 
 ## 6. Con quién los compartimos
-- Proveedores tecnológicos que alojan el sistema y las copias de seguridad ([PROVEEDOR DE ALOJAMIENTO], [PROVEEDOR DE COPIAS]) y el servicio de monitoreo de errores (Sentry), algunos con servidores fuera de la República Dominicana. [ABOGADO: revisar transferencias internacionales.]
+- Proveedores tecnológicos que alojan el sistema y las copias de seguridad ([PROVEEDOR DE ALOJAMIENTO], [PROVEEDOR DE COPIAS]) y, solo si la Tienda lo activa, el servicio de monitoreo de errores (Sentry), algunos con servidores fuera de la República Dominicana. [ABOGADO: revisar transferencias internacionales.]
 - Autoridades, como la DGII, cuando la ley lo exija.
 - Procesadores de tarjeta o bancos, solo con la información propia de la operación de cobro (no pasan por nuestro sistema).
 - Google (Google Drive), si la Tienda activa el respaldo diario: cada madrugada se guarda en la cuenta de Google Drive de la Tienda una copia de seguridad completa de la base de datos, cifrada antes de salir de nuestro servidor con una clave que Google no recibe; Google sólo almacena el archivo cifrado, en servidores que pueden estar fuera de la República Dominicana.
