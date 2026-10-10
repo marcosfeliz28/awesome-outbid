@@ -112,6 +112,54 @@ function Remove-DeploymentLink {
   }
 }
 
+function Protect-ApiPayload {
+  param([Parameter(Mandatory = $true)][string]$Path)
+  $root = [IO.Path]::GetFullPath($Path).TrimEnd('\', '/')
+  $rootItem = Get-Item -LiteralPath $root -Force -ErrorAction Stop
+  if (-not $rootItem.PSIsContainer -or ($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+    throw 'El payload API debe ser una carpeta normal, no un enlace.'
+  }
+  $entries = @(Get-ChildItem -LiteralPath $root -Recurse -Force -ErrorAction Stop)
+  foreach ($entry in $entries) {
+    if (($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+      throw 'El payload API contiene enlaces; no se puede filtrar con seguridad.'
+    }
+  }
+  $removed = 0
+  foreach ($entry in $entries) {
+    if ($entry.PSIsContainer) { continue }
+    $full = [IO.Path]::GetFullPath($entry.FullName)
+    if (-not $full.StartsWith($root + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+      throw 'Un archivo del payload API queda fuera de su carpeta.'
+    }
+    $relative = $full.Substring($root.Length + 1).Replace('\', '/')
+    # pnpm deploy no hereda aqui el .gitignore de la raiz. Solo se conservan
+    # runtime compilado/dependencias, contrato Prisma y bootstrap del propietario.
+    $allowed = $relative -match '^(package\.json|tsconfig\.json|prisma\.config\.ts|scripts/create-admin\.ts|dist/.+\.(js|json)|node_modules/.+|prisma/schema\.prisma|prisma/migrations/migration_lock\.toml|prisma/migrations/[^/]+/migration\.sql)$'
+    $private = $relative -match '(^|/)(\.env($|\.)|\.npmrc$|secrets\.json$|credentials\.json$|id_(rsa|ed25519)($|\.))|\.(csv|xlsx?|ods|pfx|p12|pem|key|dump|backup|sqlite3?|db|log)$'
+    if (-not $allowed -or $private) {
+      Remove-Item -LiteralPath $full -Force -ErrorAction Stop
+      $removed++
+    }
+  }
+  Write-Host "Payload API filtrado: $removed archivos ajenos al runtime eliminados."
+}
+
+function Write-ApiRuntimeTsConfig {
+  param([Parameter(Mandatory = $true)][string]$RepositoryRoot,
+    [Parameter(Mandatory = $true)][string]$ApiPayload)
+  $base = Get-Content -LiteralPath (Join-Path $RepositoryRoot 'tsconfig.base.json') -Raw | ConvertFrom-Json
+  $api = Get-Content -LiteralPath (Join-Path $RepositoryRoot 'apps\api\tsconfig.json') -Raw | ConvertFrom-Json
+  if ($base.PSObject.Properties.Name -contains 'extends') { throw 'El tsconfig base requiere resolver otra herencia antes de empaquetar.' }
+  $options = [ordered]@{}
+  foreach ($source in @($base.compilerOptions, $api.compilerOptions)) {
+    foreach ($property in $source.PSObject.Properties) { $options[$property.Name] = $property.Value }
+  }
+  $api.PSObject.Properties.Remove('extends')
+  $api.compilerOptions = [pscustomobject]$options
+  [IO.File]::WriteAllText((Join-Path $ApiPayload 'tsconfig.json'), ($api | ConvertTo-Json -Depth 20), [Text.UTF8Encoding]::new($false))
+}
+
 if ($PSVersionTable.PSVersion.Major -ge 6 -and -not $IsWindows) { throw "El instalador se prepara en Windows 11 x64 para obtener binarios nativos correctos." }
 if (-not [Environment]::Is64BitOperatingSystem) { throw "Se requiere Windows de 64 bits." }
 if ($version -notmatch "^(\d+)\.(\d+)\.(\d+)([.-][A-Za-z0-9.-]+)?$") { throw "VERSION no tiene un formato válido." }
@@ -185,6 +233,8 @@ $reparsePoints = @(Get-ChildItem -LiteralPath $nodeModulesPayload -Recurse -Forc
 if ($reparsePoints.Count -gt 0) {
   throw "La API desplegable conserva enlaces no portables: $($reparsePoints[0].FullName)"
 }
+Protect-ApiPayload -Path $apiPayload
+Write-ApiRuntimeTsConfig -RepositoryRoot $repoRoot -ApiPayload $apiPayload
 Push-Location $apiPayload
 try {
   Invoke-Checked -File "node" -Arguments @("node_modules\prisma\build\index.js", "generate", "--schema=prisma\schema.prisma") -Message "No se pudo generar Prisma Client en la API desplegable"

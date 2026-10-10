@@ -16,6 +16,7 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
   );
   for (const name of [
     "PowerShell-Parse",
+    "Payload-Privacy",
     "Transaction-FaultInjection",
     "Restore-FaultInjection",
     "Restore-Real-Sql",

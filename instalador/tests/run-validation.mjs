@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 
 export const powershellTests = [
   "PowerShell-Parse",
+  "Payload-Privacy",
   "Transaction-FaultInjection",
   "Restore-FaultInjection",
   "Restore-Real-Sql",
