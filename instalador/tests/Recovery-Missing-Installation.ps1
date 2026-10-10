@@ -1,3 +1,4 @@
+Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot '../scripts/Recover-FitStoreUpdate.ps1') -DefinitionsOnly
 . (Join-Path $PSScriptRoot '../scripts/FitStore.Common.ps1')

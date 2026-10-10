@@ -7,15 +7,23 @@ function Resolve-FitStoreRecoveryPhysicalDirectory {
   # Tras mover Program Files al snapshot el destino puede no existir. Resolver
   # fisicamente el ancestro existente (incluye junction/8.3), luego reconstruir
   # solo los componentes inexistentes; no omitir comparaciones de seguridad.
+  $localNames=@('localhost','127.0.0.1',$env:COMPUTERNAME) | Where-Object { $_ }
+  $localPattern='^\\\\(?:\?\\UNC\\)?('+(($localNames|ForEach-Object{[regex]::Escape($_)})-join '|')+')\\([A-Za-z])\$(\\.*)?$'
+  if($Path -match $localPattern){$Path=$Matches[2]+':\'+([string]$Matches[3]).TrimStart('\')}
   $existing=[IO.Path]::GetFullPath($Path).TrimEnd('\','/')
   $missing=[Collections.Generic.List[string]]::new()
-  while(-not (Test-Path -LiteralPath $existing -ErrorAction Stop)){
+  while($true){
+    try {$item=Get-Item -LiteralPath $existing -Force -ErrorAction Stop;break}
+    catch [System.Management.Automation.ItemNotFoundException] {}
+    catch [IO.FileNotFoundException] {}
+    catch [IO.DirectoryNotFoundException] {}
+    # AccessDenied y errores de red NO significan ausencia. No reconstruirlos.
     $parent=[IO.Path]::GetDirectoryName($existing)
     if([string]::IsNullOrEmpty($parent) -or $parent -eq $existing){throw "No existe un ancestro verificable del directorio: $Path"}
     $missing.Insert(0,[IO.Path]::GetFileName($existing))
     $existing=$parent
   }
-  if(-not (Get-Item -LiteralPath $existing -Force).PSIsContainer){throw "El ancestro no es un directorio: $Path"}
+  if(-not $item.PSIsContainer){throw "El ancestro no es un directorio: $Path"}
   if (-not ('FitStoreRecoveryDirectoryNative' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
@@ -48,13 +56,16 @@ function Assert-FitStoreRecoveryWorkingDirectory {
   if ($location.Provider.Name -ne 'FileSystem') { throw 'Ejecute recuperacion desde un directorio actual del sistema de archivos fuera de la instalacion.' }
   $installation = Resolve-FitStoreRecoveryPhysicalDirectory -Path $InstallDir
   $current = Resolve-FitStoreRecoveryPhysicalDirectory -Path $location.ProviderPath
-  if ($current.Equals($installation, [StringComparison]::OrdinalIgnoreCase) -or
-      $current.StartsWith($installation + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+  $processCurrent=Resolve-FitStoreRecoveryPhysicalDirectory -Path ([Environment]::CurrentDirectory)
+  foreach($candidate in @($current,$processCurrent)){
+  if ($candidate.Equals($installation, [StringComparison]::OrdinalIgnoreCase) -or
+      $candidate.StartsWith($installation + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
     throw 'El directorio actual esta dentro de la instalacion que debe reemplazarse. Abra PowerShell en una carpeta externa (por ejemplo TEMP) y ejecute el paquete nuevo de recuperacion desde alli. No se restauraron datos.'
+  }
   }
   if($TransactionPath){
     $transactionDirectory=Resolve-FitStoreRecoveryPhysicalDirectory -Path $TransactionPath
-    foreach($candidate in @($current,(Resolve-FitStoreRecoveryPhysicalDirectory -Path $RecoveryScriptDirectory))){
+    foreach($candidate in @($current,$processCurrent,(Resolve-FitStoreRecoveryPhysicalDirectory -Path $RecoveryScriptDirectory))){
       if($candidate.Equals($transactionDirectory,[StringComparison]::OrdinalIgnoreCase) -or $candidate.StartsWith($transactionDirectory+'\',[StringComparison]::OrdinalIgnoreCase)){
         throw 'El directorio actual o el paquete de recuperacion esta dentro de la transaccion que se eliminara. Ejecute el paquete desde una carpeta externa. No se restauraron datos.'
       }
