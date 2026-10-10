@@ -1465,6 +1465,7 @@ export function Expenses() {
 const ALERT_TYPE_LABEL: Record<string, string> = {
   offline_conflict: "Venta sin conexión",
   receivable: "Por cobrar",
+  credit_reminder: "Créditos por cobrar",
   cash_difference: "Diferencia de caja",
   return_waste: "Merma por devolución",
   expense_budget: "Presupuesto de gastos",

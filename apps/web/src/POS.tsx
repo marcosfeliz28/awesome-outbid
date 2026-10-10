@@ -1744,6 +1744,8 @@ function Checkout({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [receipt, setReceipt] = useState<any>(null);
+  // Venta a crédito sin pago: confirmación antes de dejar el saldo pendiente.
+  const [confirmingCredit, setConfirmingCredit] = useState(false);
   const [creditNoteId, setCreditNoteId] = useState("");
   const [creditNoteCode, setCreditNoteCode] = useState("");
   const [ncfType, setNcfType] = useState<"" | "B01" | "B02">("");
@@ -1874,6 +1876,45 @@ function Checkout({
       setError(e.message);
     }
   };
+  // «Vender a crédito (queda pendiente)»: lo que falta por cobrar pasa a
+  // crédito / contraentrega sin escribir montos (mismo método `cod` de D-01).
+  const startCredit = () => {
+    setError("");
+    if (!customerId) {
+      setError(
+        "Para vender a crédito primero elige al cliente: cierra esta ventana, pulsa «Selecciona el cliente» (o F4) y elige o crea al cliente. Sin cliente no se puede dejar una venta pendiente.",
+      );
+      return;
+    }
+    if (!online) {
+      setError(
+        "Las ventas a crédito necesitan conexión. Espera a que vuelva el internet para dejar esta venta pendiente.",
+      );
+      return;
+    }
+    if (payment.pending <= 0) return;
+    setPayments([...payments, { method: "cod", amount: payment.pending }]);
+    setConfirmingCredit(true);
+  };
+  const cancelCredit = () => {
+    setPayments(payments.filter((p) => p.method !== "cod"));
+    setConfirmingCredit(false);
+    setError("");
+  };
+  const creditAmount = payments
+    .filter((p) => p.method === "cod")
+    .reduce((a, p) => a + p.amount, 0);
+  const finishHint = busy
+    ? ""
+    : !payments.length
+      ? "Todavía no hay pagos. Agrega el pago del cliente o, si no paga ahora, pulsa «Vender a crédito (queda pendiente)»."
+      : payment.pending > 0
+        ? `Faltan ${formatMoney(payment.pending)} por cubrir. Agrega otro pago o pulsa «Vender a crédito (queda pendiente)» para dejar ese monto pendiente.`
+        : needsPin && !pin
+          ? "Escribe el PIN de un gerente para aprobar esta venta."
+          : hasDiscount && discountReason.trim().length < 3
+            ? "Escribe el motivo del descuento."
+            : "";
   const finish = async () => {
     if (!customerId) {
       setError("Selecciona o crea el cliente antes de vender.");
@@ -2181,10 +2222,17 @@ function Checkout({
           )}
           <WholesaleNotice on={!!receipt.wholesale} />
           {Number(receipt.creditBalance) > 0 && (
-            <p>
-              Crédito / contraentrega pendiente:{" "}
-              <strong>{formatMoney(receipt.creditBalance)}</strong>
-            </p>
+            <div className="credit-pending-notice" role="status">
+              <Badge tone="warning">CRÉDITO · PENDIENTE DE PAGO</Badge>
+              <p>
+                Pendiente de cobro:{" "}
+                <strong>{formatMoney(receipt.creditBalance)}</strong>
+              </p>
+              <small>
+                Venta registrada. La caja no recibió dinero por esa parte; un
+                administrador la cobra en Créditos pendientes.
+              </small>
+            </div>
           )}
           <p>
             Cambio: <strong>{formatMoney(receipt.change)}</strong>
@@ -2258,6 +2306,59 @@ function Checkout({
         </small>
         <WholesaleNotice />
       </div>
+      {!(confirmingCredit && creditAmount > 0) && payment.pending > 0 && (
+        <div className="credit-shortcut">
+          <p>
+            ¿El cliente no paga ahora? La venta se hace igual y queda como
+            crédito pendiente.
+          </p>
+          <Button
+            variant="secondary"
+            className="full-width"
+            onClick={startCredit}
+          >
+            <Truck size={18} />
+            Vender a crédito (queda pendiente)
+          </Button>
+        </div>
+      )}
+      {confirmingCredit && creditAmount > 0 && (
+        <div
+          className="credit-confirm"
+          role="group"
+          aria-label="Confirmar crédito"
+        >
+          <strong>Confirma la venta a crédito</strong>
+          <p>
+            {formatMoney(creditAmount)} quedan pendientes a nombre de{" "}
+            <b>
+              {customers.find((c) => c.id === customerId)?.name ?? "el cliente"}
+            </b>
+            . El cliente se lleva la mercancía sin pagar esa parte, la caja no
+            recibe ese dinero y solo un administrador podrá cobrarlo.
+          </p>
+          {needsPin && (
+            <small>Esta venta necesita el PIN de un gerente (abajo).</small>
+          )}
+          <div className="credit-confirm-actions">
+            <Button variant="secondary" onClick={cancelCredit} disabled={busy}>
+              Cancelar
+            </Button>
+            <Button
+              variant="success"
+              onClick={finish}
+              disabled={
+                busy ||
+                (needsPin && !pin) ||
+                (hasDiscount && discountReason.trim().length < 3)
+              }
+            >
+              <Check size={18} />
+              {busy ? "Registrando…" : "Sí, vender a crédito"}
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="payment-methods">
         {[
           { id: "cash", label: "Efectivo", icon: Banknote },
@@ -2310,6 +2411,13 @@ function Checkout({
         </div>
       )}
       <form onSubmit={addPayment}>
+        {method === "credit_note" && (
+          <p className="cod-hint" role="note">
+            La nota de crédito es saldo a favor del cliente por una devolución:
+            no sirve para vender sin pago. Si el cliente no paga ahora, pulsa
+            «Vender a crédito (queda pendiente)».
+          </p>
+        )}
         {method === "credit_note" && (
           <label className="field">
             <span>Código impreso de la nota</span>
@@ -2546,6 +2654,11 @@ function Checkout({
         <Check size={19} />
         {busy ? "Registrando…" : "Finalizar venta"}
       </Button>
+      {finishHint && (
+        <p className="finish-hint" role="status">
+          {finishHint}
+        </p>
+      )}
     </Modal>
   );
 }

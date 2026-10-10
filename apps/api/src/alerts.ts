@@ -63,6 +63,8 @@ export const MANUAL_ALERT_TYPES = [
   "cost_change",
   // Cupo de contraseñas de una cuenta agotado (auth.ts, N-01).
   "account_locked",
+  // Recordatorio semanal de créditos por cobrar (credit-reminder.ts).
+  "credit_reminder",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,

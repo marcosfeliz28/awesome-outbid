@@ -5730,3 +5730,81 @@ td strong {
     display: none;
   }
 }
+
+.credit-shortcut {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+.credit-shortcut p,
+.credit-confirm p,
+.finish-hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.credit-confirm {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+}
+.credit-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.credit-confirm-actions > * {
+  flex: 1 1 140px;
+}
+.finish-hint {
+  margin-top: 8px;
+}
+.credit-pending-notice {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  text-align: center;
+}
+.credit-pending {
+  margin: 6px 0;
+}
+
+.collect-line {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.collect-line legend {
+  padding: 0 6px;
+  font-weight: 600;
+}
+.segmented {
+  display: inline-flex;
+  gap: 4px;
+}
+.segmented button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.segmented button.active {
+  border-color: var(--brand, currentColor);
+  font-weight: 700;
+}
+.cod-figures {
+  display: block;
+}

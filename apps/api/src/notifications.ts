@@ -447,13 +447,18 @@ export type EventType =
   | "test"
   // Aviso del respaldo diario a Google Drive (drive-backup.ts).
   | "backup_alert"
+  // Recordatorio semanal de créditos por cobrar (credit-reminder.ts).
+  | "credit_reminder"
   // Cupo de intentos de una cuenta agotado (auth.ts, N-01).
   | "security_alert";
 
 /** Texto del aviso y sucursal, o null si el registro ya no existe. */
 export async function renderEvent(
   db: Db,
-  event: Exclude<EventType, "test" | "backup_alert" | "security_alert">,
+  event: Exclude<
+    EventType,
+    "test" | "backup_alert" | "security_alert" | "credit_reminder"
+  >,
   refId: string,
 ): Promise<{ text: string; branchId: string } | null> {
   if (event === "sale" || event === "sale_voided") {
@@ -643,7 +648,10 @@ export async function enqueue(
  */
 export function notify(
   db: Db,
-  event: Exclude<EventType, "test" | "backup_alert" | "security_alert">,
+  event: Exclude<
+    EventType,
+    "test" | "backup_alert" | "security_alert" | "credit_reminder"
+  >,
   refId: string,
 ): void {
   try {
@@ -725,7 +733,7 @@ const sleep = (ms: number) =>
 // Trabajadores activos de este proceso: al encolar se les avisa para enviar
 // ya, sin esperar al siguiente intervalo.
 const wakers = new Set<() => void>();
-const wakeWorkers = () => wakers.forEach((wake) => wake());
+export const wakeWorkers = () => wakers.forEach((wake) => wake());
 
 @Injectable()
 export class NotificationWorker
