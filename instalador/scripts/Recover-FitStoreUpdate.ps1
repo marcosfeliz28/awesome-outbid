@@ -108,7 +108,14 @@ function Restore-FitStorePendingPostgresAccess {
   foreach($entry in $state.entries){
     $path=[IO.Path]::GetFullPath([string]$entry.Path)
     if($path -ine $base -and -not $path.StartsWith($base+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Estado DACL contiene ruta fuera de PGDATA.'}
-    if((Get-Item -LiteralPath $path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Estado DACL contiene enlace.'}
+    # PostgreSQL recicla WAL y borra estadisticas entre arranques. Validar
+    # primero el limite de PGDATA, aun si la entrada desaparecio. Solo ausencia
+    # comprobada se omite: AccessDenied/red/otros errores siguen abortando.
+    try {$item=Get-Item -LiteralPath $path -Force -ErrorAction Stop}
+    catch [System.Management.Automation.ItemNotFoundException] {continue}
+    catch [IO.FileNotFoundException] {continue}
+    catch [IO.DirectoryNotFoundException] {continue}
+    if($item.Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Estado DACL contiene enlace.'}
   }
   Restore-FitStoreTemporaryPostgresAccess -OriginalAcl @($state.entries) -StatePath $StatePath
 }
