@@ -236,11 +236,19 @@ export function saleHistoryDto(sale: any, actor: Actor) {
 import PDFDocument from "pdfkit";
 import type { Response } from "express";
 
+// Frontera HISTÓRICA fija (no «ahora»): las ventas offline capturadas antes de
+// este instante pudieron quedar en la cola del navegador antes de que el motivo
+// del descuento fuera obligatorio. Con el plazo offline de 48 h deja de aplicar
+// sola; es un parámetro de normalizeLegacyOfflineDiscount para poder probarla
+// sin depender del reloj.
+export const LEGACY_OFFLINE_DISCOUNT_CUTOFF = Date.parse(
+  "2026-10-09T04:00:00.000Z",
+);
 export function normalizeLegacyOfflineDiscount(
   input: SaleInput,
   offline: boolean,
   requestsDiscount: boolean,
-  cutoff = Date.parse("2026-10-09T04:00:00.000Z"),
+  cutoff = LEGACY_OFFLINE_DISCOUNT_CUTOFF,
 ) {
   const capturedAt = input.capturedAt ? Date.parse(input.capturedAt) : NaN;
   if (

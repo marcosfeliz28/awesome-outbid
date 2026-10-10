@@ -7,6 +7,20 @@ import {
 } from "./apoyo";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
+// Fecha futura relativa a hoy, fija durante la corrida (antes un literal «2030-01-01» que, ese día, dejaba
+// de ser futuro: el lote «vigente» vencía y el crédito «caía en el pasado»).
+const RUN_START = new Date();
+const inFiveYears = (hourUtc = 12) => {
+  const now = RUN_START;
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear() + 5,
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      hourUtc,
+    ),
+  ).toISOString();
+};
 // Cada contexto representa un equipo nuevo: cerrar la caja del escenario anterior.
 test.beforeEach(async ({ request }) => {
   const login = await request.post("/api/auth/login", {
@@ -1509,7 +1523,7 @@ test("R9-dinero-3-ui: un abono por transferencia que no llegó se rechaza desde 
       offlineUuid: crypto.randomUUID(),
       cashSessionId: session.id,
       customerId: customer.id,
-      creditDueDate: "2030-01-01T12:00:00.000Z",
+      creditDueDate: inFiveYears(),
       items: [{ variantId: product.variants[0].id, qty: 2 }],
       payments: [{ method: "credit", amount: 1000 }],
     });
@@ -2492,7 +2506,7 @@ test("Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible
         qty,
         reason: "E2E lote",
         lotNumber,
-        expiryDate: "2030-01-01T12:00:00.000Z",
+        expiryDate: inFiveYears(),
       },
     });
     expect(r.ok()).toBe(true);
