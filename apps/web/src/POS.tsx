@@ -60,6 +60,7 @@ import {
   matchesWords,
   persistentError,
   clearPersistentErrors,
+  toastWithAction,
   searchWords,
   toast,
 } from "./helpers";
@@ -196,6 +197,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     // 05-M2: el aviso «elige el cliente» va dentro de la ventana del cliente;
     // como aviso flotante tapaba su título.
     [pickerHint, setPickerHint] = useState(""),
+    [clientQuery, setClientQuery] = useState(""),
     [sound, setSound] = useState(scanSoundEnabled),
     // 05-A5: la última línea agregada se trae a la vista dentro del carrito y
     // se resalta un instante (n alterna la animación para repetirla).
@@ -312,6 +314,21 @@ export function POS({ go }: { go: (page: string) => void }) {
     ),
   );
   const units = cart.reduce((a, i) => a + i.qty, 0);
+  const clientWords = searchWords(clientQuery);
+  const pickable = (customers.data ?? [])
+    .filter(
+      (c: any) =>
+        !clientWords.length ||
+        matchesWords(
+          [c.name, c.phone, c.legalId, c.email].filter(Boolean).join(" "),
+          clientWords,
+        ),
+    )
+    .sort(
+      (a: any, b: any) =>
+        Number(/^consumidor final$/i.test(b.name.trim())) -
+        Number(/^consumidor final$/i.test(a.name.trim())),
+    );
   const total = money(totals.reduce((a, i) => a.plus(i.total), d(0))),
     subtotal = money(totals.reduce((a, i) => a.plus(i.subtotal), d(0))),
     tax = money(totals.reduce((a, i) => a.plus(i.tax), d(0))),
@@ -415,6 +432,30 @@ export function POS({ go }: { go: (page: string) => void }) {
       toast(e.message, true);
       return false;
     }
+  };
+  // 05-M7: «Limpiar» vacía al instante, pero durante 8 s se puede deshacer:
+  // un toque por error ya no borra una venta grande.
+  const clearWithUndo = () => {
+    const before = useStore.getState();
+    const saved = {
+      cart: before.cart,
+      customerId: before.customerId,
+      globalDiscount: before.globalDiscount,
+    };
+    const wholesale = useWholesale.getState().on;
+    const count = saved.cart.reduce((a, i) => a + i.qty, 0);
+    clearCart();
+    toastWithAction(
+      count === 1
+        ? "Carrito vaciado (1 artículo)."
+        : "Carrito vaciado (" + count + " artículos).",
+      "Deshacer",
+      () => {
+        if (useStore.getState().cart.length) return;
+        useStore.setState(saved);
+        if (wholesale) useWholesale.getState().set(true);
+      },
+    );
   };
   const charge = () => {
     if (!cart.length) return;
@@ -1186,7 +1227,7 @@ export function POS({ go }: { go: (page: string) => void }) {
               <FileText size={14} />
               Cotizar
             </button>
-            <button disabled={!cart.length} onClick={clearCart}>
+            <button disabled={!cart.length} onClick={clearWithUndo}>
               <Trash2 size={14} />
               Limpiar
             </button>
@@ -1355,13 +1396,40 @@ export function POS({ go }: { go: (page: string) => void }) {
           </form>
         ) : (
           <>
+            {/* 05-M4: buscar por nombre, teléfono o cédula; Enter elige el
+                primero. «Consumidor final», si existe, va primero. */}
+            <label className="field customer-search">
+              <span className="sr-only">Buscar cliente</span>
+              <input
+                autoFocus
+                aria-label="Buscar cliente"
+                placeholder="Nombre, teléfono o cédula"
+                value={clientQuery}
+                onChange={(e) => setClientQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  const first = pickable[0];
+                  if (!first) return;
+                  setCustomer(first.id);
+                  setClientPicker(false);
+                  setClientQuery("");
+                }}
+              />
+            </label>
+            {!pickable.length && (
+              <p className="form-hint">
+                Ningún cliente coincide. Créalo con «Nuevo cliente aquí mismo».
+              </p>
+            )}
             <div className="customer-list">
-              {customers.data?.map((c: any) => (
+              {pickable.map((c: any) => (
                 <button
                   key={c.id}
                   onClick={() => {
                     setCustomer(c.id);
                     setClientPicker(false);
+                    setClientQuery("");
                   }}
                 >
                   <UserRound />

@@ -5464,3 +5464,16 @@ td strong {
   font-weight: 600;
   line-height: 1.45;
 }
+/* 05-M7: acción dentro de un aviso («Deshacer»). */
+.toast button.toast-action {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+/* 05-M4: buscador del selector de cliente. */
+.customer-search {
+  margin-bottom: 8px;
+}

@@ -643,3 +643,82 @@ test("A2: el conflicto de stock de una venta sin conexión de la cajera se expli
   expect(JSON.stringify(entry.after)).toContain("Andrea Gómez");
   await retire(request, headers, [product]);
 });
+
+test("05-M7: «Limpiar» vacía el carrito y se puede deshacer", async ({
+  page,
+  request,
+}) => {
+  const { headers } = await ownerApi(request);
+  const sku = code("7");
+  const name = "Faja E2E deshacer " + sku;
+  const product = await newProduct(request, headers, name, sku);
+  await login(page);
+  await openCash(page);
+  const search = await pos(page);
+  await search.click();
+  await scan(page, sku);
+  await scan(page, sku);
+  await expect(qty(page, name)).toHaveText("2");
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await expect(page.locator(".cart-item")).toHaveCount(0);
+  await page.getByRole("button", { name: "Deshacer", exact: true }).click();
+  await expect(qty(page, name)).toHaveText("2");
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await retire(request, headers, [product]);
+});
+
+test("05-M3: sin internet, «En espera» dice que necesita conexión en vez de cargar sin fin", async ({
+  page,
+  context,
+  request,
+}) => {
+  await ownerApi(request);
+  await login(page);
+  await pos(page);
+  await context.setOffline(true);
+  await page
+    .getByRole("button", { name: "En espera", exact: true })
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Ventas en espera y cotizaciones",
+  });
+  await expect(
+    dialog.getByText("Sin conexión: esta información necesita internet."),
+  ).toBeVisible();
+  await context.setOffline(false);
+});
+
+test("05-M4: el selector de cliente busca por nombre y Enter elige", async ({
+  page,
+  request,
+}) => {
+  const { headers } = await ownerApi(request);
+  const tag = code("1");
+  const created = await request.post("/api/customers", {
+    headers,
+    data: {
+      name: "Clienta Buscable " + tag,
+      phone: "",
+      email: "",
+      legalId: "",
+      notes: "",
+    },
+  });
+  expect(created.ok()).toBe(true);
+  await login(page);
+  await pos(page);
+  await page.keyboard.press("F4");
+  const dialog = page.getByRole("dialog", {
+    name: "¿Para quién es esta venta?",
+  });
+  const finder = dialog.getByLabel("Buscar cliente");
+  await expect(finder).toBeFocused();
+  await finder.fill("buscable " + tag);
+  await expect(dialog.locator(".customer-list button")).toHaveCount(1);
+  await finder.press("Enter");
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator(".customer-selector strong")).toHaveText(
+    "Clienta Buscable " + tag,
+  );
+});

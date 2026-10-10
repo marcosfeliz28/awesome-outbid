@@ -31,10 +31,12 @@ export const attrLabel = (attributes: Record<string, string>) =>
     .filter((key) => attributes[key])
     .map((key) => attributes[key])
     .join(" · ") || "Única";
+type ToastAction = { label: string; run: () => void };
 let toastHandler: (
   message: string,
   error?: boolean,
   sticky?: boolean,
+  action?: ToastAction,
 ) => void = () => {};
 export const toast = (message: string, error = false) =>
   toastHandler(message, error);
@@ -43,12 +45,25 @@ export const toast = (message: string, error = false) =>
 // cerrarlo; antes el aviso siguiente lo tapaba y se perdía.
 export const persistentError = (message: string) =>
   toastHandler(message, true, true);
+// 05-M7: aviso con una acción (por ejemplo «Deshacer»), 8 s a la vista.
+export const toastWithAction = (
+  message: string,
+  label: string,
+  run: () => void,
+) => toastHandler(message, false, false, { label, run });
 let dismissHandler = () => {};
 export const clearPersistentErrors = () => dismissHandler();
 // G12: cuánto queda un aviso a la vista. Un error se lee con calma (no menos
 // de 8 s); con el ratón encima o el foco dentro, no se cierra solo.
 export const TOAST_MS = { info: 6000, error: 10000 } as const;
-type Notice = { message: string; error: boolean; sticky: boolean; id: number };
+type Notice = {
+  message: string;
+  error: boolean;
+  sticky: boolean;
+  id: number;
+  action?: ToastAction;
+};
+const ACTION_MS = 8000;
 function Toast({
   notice,
   stacked,
@@ -65,7 +80,7 @@ function Toast({
     if (paused || notice.sticky) return;
     const timer = setTimeout(
       onClose,
-      notice.error ? TOAST_MS.error : TOAST_MS.info,
+      notice.error ? TOAST_MS.error : notice.action ? ACTION_MS : TOAST_MS.info,
     );
     return () => clearTimeout(timer);
   }, [notice, paused]);
@@ -83,6 +98,17 @@ function Toast({
     >
       {notice.error ? <AlertCircle size={20} /> : <Check size={20} />}
       <span>{notice.message}</span>
+      {notice.action && (
+        <button
+          className="toast-action"
+          onClick={() => {
+            notice.action!.run();
+            onClose();
+          }}
+        >
+          {notice.action.label}
+        </button>
+      )}
       <button onClick={onClose} aria-label="Cerrar aviso">
         <X size={18} />
       </button>
@@ -94,11 +120,12 @@ function Toast({
 export function Toasts() {
   const [error, setError] = useState<Notice | null>(null);
   const [info, setInfo] = useState<Notice | null>(null);
-  toastHandler = (message, isError = false, sticky = false) => {
+  toastHandler = (message, isError = false, sticky = false, action) => {
     const notice = {
       message,
       error: isError,
       sticky,
+      action,
       id: Date.now() + Math.random(),
     };
     if (isError) setError(notice);
