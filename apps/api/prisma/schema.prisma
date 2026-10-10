@@ -766,3 +766,35 @@ model IncentiveSettlement {
 
   @@unique([branchId, period, userId])
 }
+
+// Respaldo diario cifrado a Google Drive (apps/api/src/drive-backup.ts,
+// docs/RESPALDO_DRIVE.md). Una sola fila «main». refreshTokenEnc va cifrado
+// con AES-256-GCM (clave derivada de BACKUP_ENCRYPTION_KEY); jamás en claro ni
+// en respuestas. lockId/lockedUntil: arriendo para un solo respaldo a la vez.
+model DriveBackup {
+  id                  String    @id @default("main")
+  refreshTokenEnc     String?
+  accountEmail        String?
+  folderId            String?
+  branchId            String    @default("main")
+  connectedAt         DateTime?
+  connectedBy         String?
+  authError           String?
+  lockId              String?
+  lockedUntil         DateTime?
+  runningSince        DateTime?
+  lastRunAt           DateTime?
+  lastTrigger         String?
+  lastStatus          String?
+  lastError           String?
+  lastDurationMs      Int?
+  lastSuccessAt       DateTime?
+  lastSize            BigInt?
+  lastFileName        String?
+  consecutiveFailures Int       @default(0)
+  dayKey              String?
+  dayAttempts         Int       @default(0)
+  nextRetryAt         DateTime?
+  lastAlertAt         DateTime?
+  updatedAt           DateTime  @default(now()) @updatedAt
+}

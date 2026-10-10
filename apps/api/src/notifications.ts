@@ -439,12 +439,19 @@ async function saleView(db: Db, id: string) {
 }
 
 export type EventType =
-  "sale" | "sale_voided" | "return" | "collection" | "cash_close" | "test";
+  | "sale"
+  | "sale_voided"
+  | "return"
+  | "collection"
+  | "cash_close"
+  | "test"
+  // Aviso del respaldo diario a Google Drive (drive-backup.ts).
+  | "backup_alert";
 
 /** Texto del aviso y sucursal, o null si el registro ya no existe. */
 export async function renderEvent(
   db: Db,
-  event: Exclude<EventType, "test">,
+  event: Exclude<EventType, "test" | "backup_alert">,
   refId: string,
 ): Promise<{ text: string; branchId: string } | null> {
   if (event === "sale" || event === "sale_voided") {
@@ -634,7 +641,7 @@ export async function enqueue(
  */
 export function notify(
   db: Db,
-  event: Exclude<EventType, "test">,
+  event: Exclude<EventType, "test" | "backup_alert">,
   refId: string,
 ): void {
   try {
