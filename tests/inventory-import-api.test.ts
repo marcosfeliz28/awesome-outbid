@@ -33,12 +33,12 @@ const HEADER = [
 const CATEGORY = "QA Importar " + suffix;
 const sha = (b: Buffer) => createHash("sha256").update(b).digest("hex");
 
-async function json(path: string, body?: unknown, token = "") {
+async function json(path: string, body?: unknown, token = "", from = ip) {
   const response = await fetch(base + path, {
     method: body === undefined ? "GET" : "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Forwarded-For": ip,
+      "X-Forwarded-For": from,
       ...(token ? { Authorization: "Bearer " + token } : {}),
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -61,14 +61,23 @@ async function userToken(role: string) {
     ownerToken,
   );
   expect(created.status, JSON.stringify(created.body)).toBeLessThan(300);
-  let auth = await json("/auth/login", { email, password: PASSWORD });
+  // Cada usuaria entra desde su propia dirección: el límite de inicios de
+  // sesión por IP no debe agotarse con las cuentas de la prueba.
+  const own = `198.51.100.${1 + Math.floor(Math.random() * 250)}`;
+  let auth = await json("/auth/login", { email, password: PASSWORD }, "", own);
   if (auth.body.requiresPasswordChange)
-    auth = await json("/auth/change-password", {
-      login: email,
-      currentPassword: PASSWORD,
-      newPassword: ACTIVE,
-      confirmPassword: ACTIVE,
-    });
+    auth = await json(
+      "/auth/change-password",
+      {
+        login: email,
+        currentPassword: PASSWORD,
+        newPassword: ACTIVE,
+        confirmPassword: ACTIVE,
+      },
+      "",
+      own,
+    );
+  expect(auth.body.accessToken, JSON.stringify(auth.body)).toBeTruthy();
   return auth.body.accessToken as string;
 }
 async function xlsx(rows: unknown[][], sheet = "Inventario") {
