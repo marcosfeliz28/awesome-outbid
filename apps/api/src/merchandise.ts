@@ -46,6 +46,7 @@ import {
   lockVariant,
   receiptCosts,
   stockChange,
+  inventoryLossAlert,
 } from "./inventory";
 import {
   isSerializationConflict,
@@ -733,6 +734,8 @@ export class MerchandiseController {
               where: { id: draft.id },
               data: { confirmedOperationId: data.id },
             });
+          // M-5: una salida (merma, dañado, uso interno…) sin aprobación.
+          if (data.direction === "exit") await inventoryLossAlert(tx, actor);
           const result = {
             id: data.id,
             receiptId: receipt?.id,

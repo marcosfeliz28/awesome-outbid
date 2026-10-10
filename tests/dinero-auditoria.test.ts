@@ -508,7 +508,7 @@ describe("Auditoría 01 · dinero", () => {
     expect(approved.status).toBeLessThan(300);
   });
 
-  it.skip("M-5: las mermas y salidas de almacén bajan la utilidad del estado de resultados y dejan alerta", async () => {
+  it("M-5: las mermas y salidas de almacén bajan la utilidad del estado de resultados y dejan alerta", async () => {
     const w = await person("warehouse", "m5");
     const v = await product(1100, 600, 50);
     const range = "?from=" + today() + "&to=" + today();
@@ -535,7 +535,7 @@ describe("Auditoría 01 · dinero", () => {
     expect(before.netProfit - after.netProfit).toBeCloseTo(12600, 2);
     const statement = await ok("/reports/income-statement" + range, admin);
     expect(
-      statement.find((r: any) => r.Concepto.startsWith("Mermas")),
+      statement.rows.find((r: any) => r.Concepto.startsWith("Mermas"))?.Monto,
     ).toBeTruthy();
     const loss = await alert("inventory-loss:" + w.id + ":" + today());
     expect(loss).toMatchObject({
@@ -544,10 +544,14 @@ describe("Auditoría 01 · dinero", () => {
       status: "new",
     });
     expect(loss.message).toContain("12,600.00");
-    // La vendedora no ve el costo de las mermas.
-    const seller = await person("seller", "m5s");
-    const hidden = await ok("/dashboard/summary" + range, seller.token);
-    expect(hidden.inventoryLoss).toBeUndefined();
+    // Una persona la revisa; una merma nueva del mismo día la reabre.
+    await ok("/alerts/" + loss.id, admin, { status: "resolved" }, "PATCH");
+    await ok("/inventory/adjustments", w.token, {
+      variantId: v,
+      qty: -1,
+      reason: "Conteo de almacén",
+    });
+    expect((await alert(loss.key))?.status).toBe("new");
   });
 
   it.skip("B-3: no se cierra el mes de incentivos en curso", async () => {

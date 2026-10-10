@@ -3,6 +3,7 @@ import type { Response } from "express";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { Prisma } from "@prisma/client";
+import { INVENTORY_LOSS_SQL } from "./inventory";
 import {
   businessDate,
   expiryDays,
@@ -199,6 +200,7 @@ export class ReportsController {
       previousReturns,
       collected,
       returned,
+      inventoryLossRows,
     ] = await Promise.all([
       this.db.sale.aggregate({
         where,
@@ -294,6 +296,10 @@ export class ReportsController {
         _sum: { feeAmount: true },
       }),
       periodReturns(this.db, actor, range),
+      // M-5: mermas, ajustes, conteos y salidas de mercancía a costo.
+      this.db.$queryRaw<
+        any[]
+      >`SELECT COALESCE(SUM(-m.qty * m."unitCost"), 0) AS loss FROM "InventoryMovement" m WHERE m."branchId"=${actor.branchId} AND m."createdAt">=${since} AND m."createdAt"<=${until} AND ${Prisma.raw(INVENTORY_LOSS_SQL)}`,
     ]);
     // D-05: los desgloses descuentan las mismas devoluciones que «revenue».
     const netOf = <T>(
@@ -376,6 +382,7 @@ export class ReportsController {
         d(sales._sum.costTotal ?? 0).minus(returns._sum.costTotal ?? 0),
       ),
       expense = Number(expenses._sum.amount ?? 0),
+      inventoryLoss = money(inventoryLossRows?.[0]?.loss ?? 0),
       fees = money(
         payments.reduce(
           (a, p) => a.plus(p._sum.feeAmount ?? 0),
@@ -412,7 +419,11 @@ export class ReportsController {
         costTotal: cost,
         grossProfit: money(d(net).minus(cost)),
         expenses: expense,
-        netProfit: netProfit(net, cost, expense, fees),
+        // M-5: lo que salió del inventario sin venta también es pérdida.
+        inventoryLoss,
+        netProfit: money(
+          d(netProfit(net, cost, expense, fees)).minus(inventoryLoss),
+        ),
         margin: margin(net, cost),
         fees,
         invoices: sales._count,
@@ -577,6 +588,10 @@ export class ReportsController {
         { Concepto: "Ganancia bruta", Monto: summary.grossProfit },
         { Concepto: "Gastos", Monto: summary.expenses },
         { Concepto: "Comisiones bancarias", Monto: summary.fees },
+        {
+          Concepto: "Mermas y ajustes de inventario (a costo)",
+          Monto: summary.inventoryLoss,
+        },
         { Concepto: "Ganancia neta", Monto: summary.netProfit },
       ];
     } else if (name === "purchases") {
