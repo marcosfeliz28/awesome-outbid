@@ -5,7 +5,7 @@ import {
   registerTerminal,
   terminalIdentity,
 } from "./realtime";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -3103,6 +3103,12 @@ function ResetPassword({
     [error, setError] = useState(""),
     [done, setDone] = useState<{ temporaryPassword?: string } | null>(null);
   const client = useQueryClient();
+  const result = useRef<HTMLDivElement>(null);
+  // El foco va al resultado (la temporal y lo que ocurrió) para que se lea
+  // en voz alta y no quede en un botón que ya no existe.
+  useEffect(() => {
+    if (done) result.current?.focus();
+  }, [done]);
   return (
     <Modal
       open
@@ -3111,25 +3117,33 @@ function ResetPassword({
     >
       {done ? (
         <div className="reset-password-result">
-          {done.temporaryPassword && (
-            <>
-              <p>
-                Contraseña temporal de {target.name}. Dásela en persona; no se
-                volverá a mostrar.
-              </p>
-              <code
-                className="temporary-password"
-                data-testid="temporary-password"
-              >
-                {done.temporaryPassword}
-              </code>
-            </>
-          )}
-          <p role="status">
-            {target.name} deberá crear su propia contraseña la próxima vez que
-            entre. Sus sesiones abiertas se cerraron y ya no está bloqueada por
-            intentos fallidos.
-          </p>
+          <div
+            ref={result}
+            tabIndex={-1}
+            role="status"
+            className="reset-password-summary"
+            data-testid="reset-password-summary"
+          >
+            {done.temporaryPassword && (
+              <>
+                <p>
+                  Contraseña temporal de {target.name}. Dásela en persona; no se
+                  volverá a mostrar.
+                </p>
+                <code
+                  className="temporary-password"
+                  data-testid="temporary-password"
+                >
+                  {done.temporaryPassword}
+                </code>
+              </>
+            )}
+            <p>
+              {target.name} deberá crear su propia contraseña la próxima vez que
+              entre. Sus sesiones abiertas se cerraron y ya no está bloqueada
+              por intentos fallidos.
+            </p>
+          </div>
           <div className="modal-footer">
             <Button onClick={onClose}>Listo</Button>
           </div>
@@ -3168,9 +3182,11 @@ function ResetPassword({
           </p>
           <label className="field">
             <span>Contraseña temporal (opcional)</span>
+            {/* Es de un solo uso y de otra persona: el navegador no debe
+                ofrecer guardarla como la contraseña de la administradora. */}
             <input
               type="password"
-              autoComplete="new-password"
+              autoComplete="off"
               autoCapitalize="none"
               spellCheck={false}
               maxLength={128}

@@ -53,6 +53,28 @@ describe("Cambiar mi contraseña (voluntario)", () => {
       friendlyPasswordChangeError(new Error("Prisma stack"), "voluntary"),
     ).not.toMatch(/Prisma|temporal/);
   });
+  it("si se pierde la respuesta no afirma que la contraseña sigue igual", () => {
+    for (const [mode, previous] of [
+      ["voluntary", "la anterior"],
+      ["required", "la temporal"],
+    ] as const) {
+      const text = friendlyPasswordChangeError(
+        new Error("Failed to fetch"),
+        mode,
+      );
+      expect(text).toBe(
+        `No pudimos confirmar el cambio. Revisa tu internet. Si tu contraseña nueva no funciona, usa ${previous}.`,
+      );
+      expect(text).not.toContain("todavía no cambió");
+    }
+  });
+  it("el manual distingue olvido (restablecer) de bloqueo (esperar)", () => {
+    const manual = readFileSync("docs/MANUAL-CAJERO.md", "utf8");
+    expect(manual).toContain(
+      "Si la olvidaste, pide a la administración **Restablecer contraseña**.",
+    );
+    expect(manual).not.toMatch(/olvidaste[^.]*espera 15 minutos/);
+  });
   it("está en el menú de la cuenta para cualquier usuario, con contraseña actual", () => {
     const app = readFileSync("apps/web/src/App.tsx", "utf8");
     expect(app).toContain("Cambiar mi contraseña");
