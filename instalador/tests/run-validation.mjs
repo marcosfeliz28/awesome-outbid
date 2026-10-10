@@ -35,6 +35,8 @@ export function windowsPowerShellEnvironment(source) {
 }
 
 export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
+  if (env.CI && !env.PGBIN?.trim())
+    throw new Error("3h1: CI requiere PGBIN; PostgreSQL real no puede omitirse.");
   const childEnv = windowsPowerShellEnvironment(env);
   const powerShell = path.win32.join(
     env.SystemRoot,
@@ -61,6 +63,9 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
         "Bypass",
         "-File",
         `instalador/tests/${name}.ps1`,
+        ...(name === "Recovery-FaultInjection" && env.PGBIN
+          ? ["-PgBin", env.PGBIN]
+          : []),
       ],
     ]),
     [process.execPath, ["instalador/tests/validar.mjs"]],

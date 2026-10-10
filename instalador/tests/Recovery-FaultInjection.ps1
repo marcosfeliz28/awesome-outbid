@@ -1,6 +1,13 @@
 param([string]$PgBin, [int]$Port=55611, [string]$RecoverySource)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+if (-not $PgBin) { $PgBin = $env:PGBIN }
+if ($env:CI -and -not $PgBin) { throw '3h1: CI requiere PgBin/PGBIN para ejecutar PostgreSQL real; no se permite omitirlo.' }
+if ($PgBin) {
+ foreach ($tool in @('initdb.exe','pg_ctl.exe','psql.exe','pg_dump.exe','pg_restore.exe')) {
+  if (-not (Test-Path -LiteralPath (Join-Path $PgBin $tool) -PathType Leaf)) { throw "3h1: falta herramienta PostgreSQL real: $tool" }
+ }
+}
 $recover = Join-Path $PSScriptRoot '../scripts/Recover-FitStoreUpdate.ps1'
 if ($RecoverySource) { $recover=$RecoverySource }
 if (-not (Test-Path -LiteralPath $recover)) { throw 'A3: falta recuperacion explicita tras corte de luz.' }
@@ -82,10 +89,10 @@ try {
    $tx|Add-Member transactionPath $root -Force
    foreach($name in @('Invoke-FitStoreRecoverySql','Enable-FitStoreRecoveryIsolation','Disable-FitStoreRecoveryIsolation')){
     $def=$ast.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)
-    if($def){Invoke-Expression $def.Extent.Text}
+    if(-not $def){throw "3h1: falta funcion obligatoria de aislamiento: $name"}
+    Invoke-Expression $def.Extent.Text
    }
-   if(Get-Command Enable-FitStoreRecoveryIsolation -ErrorAction SilentlyContinue){Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port -ExclusiveAccess}
-   else{Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port}
+   Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port -ExclusiveAccess
    $ErrorActionPreference='Continue'
    try { & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U fitstore -d fitstore -c 'INSERT INTO "Sale" VALUES (TIMESTAMP ''2026-10-09 10:00:01'');' 2>$null | Out-Null } finally { $ErrorActionPreference='Stop' }
    if($LASTEXITCODE -eq 0){throw 'A3 exclusive: SQL writer admitted AFTER eligibility SELECT; restore can overwrite sale.'}
