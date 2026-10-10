@@ -1,3 +1,5 @@
+import { compare } from "bcryptjs";
+import { can } from "@fitstore/shared";
 import { bad } from "./common";
 
 export function validateSecret(
@@ -52,6 +54,26 @@ export const verifyPinAttempt = (
       "PIN bloqueado temporalmente para este usuario. Espera 15 minutos.",
     wrong: "PIN incorrecto.",
   });
+
+// PIN de cualquier gerente activo (sale:manage) de la sucursal, con el mismo
+// contador de intentos que las demás aprobaciones. Devuelve su id.
+export async function managerPinApproval(
+  db: any,
+  actor: { id: string; branchId: string },
+  pin: string,
+): Promise<string> {
+  const managers = await db.user.findMany({
+    where: { active: true, branchId: actor.branchId },
+    include: { role: true },
+  });
+  return verifyPinAttempt(db, "approval:" + actor.id, async () => {
+    for (const manager of managers.filter((m: any) =>
+      can(m.role.permissions, "sale:manage"),
+    ))
+      if (await compare(pin, manager.pinHash)) return manager.id as string;
+    return null;
+  }) as Promise<string>;
+}
 
 // Evita que una ráfaga con la misma identidad consuma todas las conexiones de
 // Prisma mientras espera el advisory lock. PostgreSQL conserva el bloqueo

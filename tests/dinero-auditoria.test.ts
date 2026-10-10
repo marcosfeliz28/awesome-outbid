@@ -211,7 +211,7 @@ afterAll(async () => {
 });
 
 describe("Auditoría 01 · dinero", () => {
-  it.skip("A-1: un vale de caja al cerrar exige nota y PIN de gerente y deja una alerta", async () => {
+  it("A-1: un vale de caja al cerrar exige nota y PIN de gerente y deja una alerta", async () => {
     const c = await person("seller", "a1", 1000);
     const v = await product(1100, 600, 10);
     await sell(c, v, 2, [{ method: "cash", amount: 2200 }]);

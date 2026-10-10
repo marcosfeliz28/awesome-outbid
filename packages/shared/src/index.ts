@@ -599,6 +599,11 @@ export const cashCloseSchema = z
     countedEur: cashAmount.default(0),
     delivered: cashAmount.optional(),
     notes: z.string().max(1000).default(""),
+    // A-1: un vale de caja de quien no gestiona ventas necesita este PIN.
+    managerPin: z
+      .string()
+      .regex(/^\d{4,6}$/)
+      .optional(),
   })
   .refine((v) => v.countedCash !== undefined || v.denominations !== undefined, {
     message: "indica el efectivo contado o el conteo por denominaciones",

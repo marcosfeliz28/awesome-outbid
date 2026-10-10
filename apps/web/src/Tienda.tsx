@@ -106,7 +106,9 @@ export function CloseCashModal({
     countedTransfer: "",
     delivered: "",
     notes: "",
+    managerPin: "",
   });
+  const user = useStore((s) => s.user);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [confirmBlindClose, setConfirmBlindClose] = useState(false);
@@ -121,11 +123,22 @@ export function CloseCashModal({
     ) / 100;
   const delivered = form.delivered.trim() === "" ? null : parse(form.delivered);
   const left = delivered === null ? subtotal : subtotal - delivered;
+  // A-1: un vale de caja exige nota y, a quien no gestiona ventas, el PIN de
+  // un gerente (la API aplica la misma regla).
+  const hasVouchers = parse(form.vouchers) > 0;
+  const voucherNeedsPin =
+    hasVouchers && !can(user?.permissions ?? [], "sale:manage");
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (delivered !== null && delivered > subtotal) {
       setError("Lo entregado no puede superar el efectivo contado.");
+      return;
+    }
+    if (hasVouchers && !form.notes.trim()) {
+      setError(
+        "Explica en las notas del cierre qué comprobantes forman el vale de caja.",
+      );
       return;
     }
     if (!confirmBlindClose) {
@@ -158,6 +171,7 @@ export function CloseCashModal({
         countedTransfer: parse(form.countedTransfer),
         ...(delivered === null ? {} : { delivered }),
         notes: form.notes,
+        ...(voucherNeedsPin ? { managerPin: form.managerPin } : {}),
       });
       const cuadre = await api("/cash-sessions/" + session.id + "/cuadre");
       await client.invalidateQueries();
@@ -227,7 +241,21 @@ export function CloseCashModal({
           {money(
             "Vale de caja",
             "vouchers",
-            "Comprobantes de salida que están en la gaveta.",
+            "Comprobantes de salida que están en la gaveta. Requiere una nota y, para cajeras, el PIN de un gerente; mejor regístralos como «Salida» antes de cerrar.",
+          )}
+          {voucherNeedsPin && (
+            <label className="field">
+              <span>PIN de gerente (vale de caja)</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                pattern="[0-9]{4,6}"
+                value={form.managerPin}
+                onChange={set("managerPin")}
+                required
+              />
+            </label>
           )}
           {!!config.data?.usdRate &&
             money("Dólares US$", "countedUsd", "Tasa " + config.data.usdRate)}

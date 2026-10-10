@@ -41,7 +41,7 @@ import {
 } from "./common";
 import { MONEY_TRANSACTION, cashLock, terminalName } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
-import { verifyPinAttempt } from "./security";
+import { managerPinApproval, verifyPinAttempt } from "./security";
 import { notify } from "./notifications";
 
 export async function cashExpected(db: any, session: any) {
@@ -817,6 +817,29 @@ export class CashController {
     } catch (e: any) {
       bad(e.message);
     }
+    // A-1 (auditoría 01): un «Vale de caja» compensa efectivo que no está en
+    // la gaveta. Sin control, una cajera se llevaba el turno entero y cerraba
+    // en 0. Todo vale exige una nota; el de quien no gestiona ventas, además,
+    // el PIN de un gerente (como las salidas sobre el tope, D-04). Queda en la
+    // bitácora y como alerta alta que sólo una persona resuelve.
+    let voucherApprovedBy: string | null = null;
+    if (d(input.vouchers).gt(0)) {
+      if (!input.notes.trim())
+        bad(
+          "Explica en las notas del cierre qué comprobantes forman el vale de caja.",
+        );
+      if (!can(actor.permissions, "sale:manage")) {
+        if (!input.managerPin)
+          bad(
+            "Cerrar con un vale de caja requiere el PIN de un gerente. Si fue una salida de efectivo, regístrala en «Salida» antes de cerrar.",
+          );
+        voucherApprovedBy = await managerPinApproval(
+          this.db,
+          actor,
+          input.managerPin!,
+        );
+      }
+    }
     const closed = await this.db.$transaction(async (tx) => {
       const session = await cashLock(
         tx,
@@ -875,8 +898,43 @@ export class CashController {
         },
       });
       await audit(tx, actor, "close", "cash", id, session, row);
-      if (row.differenceCash || row.differenceCard || row.differenceTransfer)
+      // D-10: Prisma.Decimal(0) es un objeto (verdadero); se compara el número.
+      if (
+        Number(row.differenceCash) ||
+        Number(row.differenceCard) ||
+        Number(row.differenceTransfer)
+      )
         await audit(tx, actor, "close_difference", "cash", id, session, row);
+      if (d(input.vouchers).gt(0)) {
+        const approver = voucherApprovedBy
+          ? await tx.user.findUnique({
+              where: { id: voucherApprovedBy },
+              select: { name: true },
+            })
+          : null;
+        await audit(tx, actor, "close_vouchers", "cash", id, undefined, {
+          vouchers: input.vouchers,
+          notes: input.notes,
+          approvedBy: voucherApprovedBy,
+        });
+        const message =
+          `Caja cerrada con vale de caja por RD$ ${formatAmount(input.vouchers)} · ` +
+          `${actor.name}` +
+          (approver ? ` · aprobó ${approver.name}` : "") +
+          ` · ${input.notes.trim().slice(0, 200)}`;
+        await tx.alert.upsert({
+          where: { key: "voucher:" + id },
+          create: {
+            key: "voucher:" + id,
+            type: "cash_voucher",
+            severity: "high",
+            entityId: id,
+            branchId: actor.branchId,
+            message,
+          },
+          update: { status: "new", message },
+        });
+      }
       if (
         Math.max(
           Math.abs(Number(row.differenceCash)),

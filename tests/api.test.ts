@@ -7780,6 +7780,9 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       countedTransfer: expected.transfer,
       delivered: 1700,
       notes: "QA cuadre",
+      // A-1 (auditoría 01): el vale de caja de una cajera exige el PIN de un
+      // gerente además de la nota.
+      managerPin: "987654",
     });
     expect(closed.status).toBe(201);
     expect(closed.body.countedCash).toBeUndefined();
