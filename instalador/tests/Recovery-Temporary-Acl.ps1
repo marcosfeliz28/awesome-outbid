@@ -18,6 +18,20 @@ try {
  Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved
  if((Get-Acl -LiteralPath $cluster).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $original -or (Get-Acl -LiteralPath $leaf).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $originalLeaf){throw '3i2: DACL originales no restauradas'}
  Write-Host 'PASS 3i2: cuenta actual recibe Modify; DACL originales de raiz y archivo restauradas.'
+ # Reproducir control de herencia de runners: padre protegido y descendiente
+ # heredado con una concesion explicita. No normalizar ni debilitar SDDL.
+ $parentAcl=Get-Acl -LiteralPath $root
+ $parentAcl.SetAccessRuleProtection($true,$true)
+ ([IO.DirectoryInfo]::new($root)).SetAccessControl($parentAcl)
+ $explicitAcl=Get-Acl -LiteralPath $leaf
+ $explicitAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.WindowsIdentity]::GetCurrent().User,[Security.AccessControl.FileSystemRights]::Read,[Security.AccessControl.AccessControlType]::Allow))
+ ([IO.FileInfo]::new($leaf)).SetAccessControl($explicitAcl)
+ $original=(Get-Acl -LiteralPath $cluster).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
+ $originalLeaf=(Get-Acl -LiteralPath $leaf).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
+ $saved=@(Enable-FitStoreTemporaryPostgresAccess -Database $cluster)
+ Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved
+ if((Get-Acl -LiteralPath $cluster).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $original -or (Get-Acl -LiteralPath $leaf).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $originalLeaf){throw '3j2: herencia y ACE explicitos originales no restaurados'}
+ Write-Host 'PASS 3j2: DACL exactas con padre protegido, herencia y ACE explicitos restauradas.'
  if($PgBin) {
   Remove-Item -LiteralPath $leaf -Force
   & (Join-Path $PgBin 'initdb.exe') -D $cluster -U postgres -A trust --encoding=UTF8 --no-locale | Out-Null

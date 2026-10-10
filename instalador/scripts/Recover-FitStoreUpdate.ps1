@@ -69,7 +69,17 @@ function Restore-FitStoreTemporaryPostgresAccess {
     $item = Get-Item -LiteralPath $entry.Path -Force
     $acl = if ($item.PSIsContainer) { [Security.AccessControl.DirectorySecurity]::new() } else { [Security.AccessControl.FileSecurity]::new() }
     $acl.SetSecurityDescriptorSddlForm($entry.Sddl, [Security.AccessControl.AccessControlSections]::Access)
+    # Restaurar tambien proteccion/herencia. El descriptor Access-only nuevo
+    # no marca la proteccion como modificada al persistir en todos los Windows.
+    # Primero fijar el DACL exacto sin recalcular ACE heredados desde el padre;
+    # luego restituir el estado original de herencia.
+    $wasProtected=$acl.AreAccessRulesProtected
+    $acl.SetAccessRuleProtection($true,$true)
     $item.SetAccessControl($acl)
+    if(-not $wasProtected){
+      $acl.SetAccessRuleProtection($false,$false)
+      $item.SetAccessControl($acl)
+    }
   }
 }
 
