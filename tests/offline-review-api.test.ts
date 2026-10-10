@@ -52,8 +52,8 @@ async function enroll(token: string, owner: string) {
 }
 
 let owner = "",
-  manager = "",
-  cashiers: { token: string; id: string; session: any }[] = [];
+  manager = "";
+const cashiers: { token: string; id: string; session: any }[] = [];
 let variant: any,
   product: any,
   customerId = "";
