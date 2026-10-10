@@ -149,7 +149,7 @@ describe("Render · proxy público", () => {
       nginx.match(
         /include \/etc\/nginx\/snippets\/nexora-security-headers.conf;/g,
       ),
-    ).toHaveLength(11);
+    ).toHaveLength(12);
     // HSTS cubre subdominios.
     expect(headers).toContain(
       'Strict-Transport-Security "max-age=31536000; includeSubDomains"',
@@ -279,6 +279,29 @@ describe("Render · proxy público", () => {
     );
     // Sin `always`: un 404 de un hash viejo nunca queda cacheado como inmutable.
     expect(assets).not.toMatch(/Cache-Control[^;]*always/);
+    // Los .txt (licencias.txt) llevan charset UTF-8 sin cambiar el resto:
+    // misma caché y cabeceras que el bloque genérico y nada global.
+    const txt = block("location ~* \\.txt$ {");
+    const generic = block("location ~ \\.[A-Za-z0-9]+$ {");
+    expect(txt).toContain("charset utf-8;");
+    expect(txt).toContain("charset_types text/plain;");
+    for (const line of [
+      'add_header Cache-Control "no-cache";',
+      "include /etc/nginx/snippets/nexora-security-headers.conf;",
+      "try_files $uri =404;",
+    ]) {
+      expect(txt).toContain(line);
+      expect(generic).toContain(line);
+    }
+    expect(nginx.match(/^\s*charset\s/gm)).toHaveLength(1);
+    // Va antes del bloque genérico (en Nginx gana la primera regex) y
+    // después de las reglas de dotfiles y mapas.
+    expect(nginx.indexOf("location ~* \\.txt$ {")).toBeLessThan(
+      nginx.indexOf("location ~ \\.[A-Za-z0-9]+$ {"),
+    );
+    expect(nginx.indexOf("location ~ /\\. {")).toBeLessThan(
+      nginx.indexOf("location ~* \\.txt$ {"),
+    );
     // El service worker, el HTML y la config en runtime siguen sin caché.
     for (const file of ["sw.js", "index.html", "runtime-config.js"]) {
       const loc = block(`location = /${file} {`);

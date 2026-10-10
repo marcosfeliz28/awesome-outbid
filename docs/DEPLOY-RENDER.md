@@ -182,6 +182,9 @@ Swagger en producción (`ENABLE_SWAGGER=true`), su interfaz queda sujeta a ella.
   (`types {}` + `default_type`, sin depender del `mime.types` de la imagen) con
   `no-cache`. El resto de archivos con extensión (`icon.svg`, `registerSW.js`,
   `workbox-*.js`, `products/*.svg`) llevan `no-cache` (revalidan).
+- `/licencias.txt` (y cualquier `.txt`) se sirve como
+  `text/plain; charset=utf-8`, con la misma caché `no-cache` y las mismas
+  cabeceras de seguridad; el `charset` sólo se aplica a esa ubicación.
 - Dotfiles (`/.env`, `/.git/config`...), `*.map` y cualquier ruta con extensión
   que no exista devuelven `404`; sólo las rutas sin extensión caen en
   `index.html` (SPA). Una ruta de la SPA no debe terminar en `.algo`. Un
