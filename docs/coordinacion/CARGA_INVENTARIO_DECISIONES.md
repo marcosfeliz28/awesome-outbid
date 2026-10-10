@@ -31,3 +31,6 @@ Se aplican como existencia: Broche Crema XS (1584)→4, XL (1588)→2, 2XL (1589
 
 ## ACTUALIZACIÓN 3 (10 oct): Isopure 3 lb
 Existencia: Creamy Vanilla 3 lb (1172)→34; Dutch Chocolate 3 lb (1173)→3; Banana Cream 3 lb (1156)→3. La dueña repitió «3 Chocolate» dos veces: se aplicó una (PENDIENTE confirmar si era otro sabor). Nuevos (costo 2,700, precio 5,000): «Isopure - Chocolate Peanut Butter / 3 lb» (ID 1632, 5 u.) y «Isopure - Vanilla Salted Caramel / 3 lb» (ID 1633, 4 u.). Los existentes conservan su costo/precio del listado. Archivo vigente: `inventario-listo-para-cargar-v3.xlsx` (631 filas, fuera del repositorio).
+
+## CORRECCIÓN a la ACTUALIZACIÓN 3 (10 oct): Isopure 3 lb se SUMA, no reemplaza
+La dueña aclaró que las cantidades de Isopure son entradas nuevas: se SUMAN a la existencia que tenía el listado: 1172 8+34=42; 1173 7+3=10; 1156 1+3=4. Los dos sabores nuevos entran con 5 y 4. Los conteos de fajas, creatina, multivitamínicos y Opti-Men siguen siendo «cantidad que debe haber» (reemplazan). La duda del «3 Chocolate» repetido sigue abierta. Archivo vigente: `inventario-listo-para-cargar-v3.xlsx` (631 filas; fuera del repositorio).
