@@ -224,6 +224,32 @@ no borres el respaldo indicado y entrega el registro a soporte.
 Sólo puede ejecutarse una instalación, actualización o desinstalación a la vez.
 ### Recuperar después de un corte de luz
 
+#### Diario de permisos de PostgreSQL
+
+Antes de conceder acceso temporal a PGDATA, la recuperación guarda las DACL
+originales en `recovery-pgdata-acl.json`, dentro de la carpeta de la transacción
+indicada por `actualizacion-preparada.json`. El archivo es privado y contiene
+rutas y descriptores de permisos; no lo publique ni lo adjunte a un repositorio.
+Se restaura al entrar en la recuperación y antes de eliminar marcador y
+transacción. Los archivos volátiles ya inexistentes se omiten; eso no autoriza
+a omitir errores de acceso ni entradas fuera de PGDATA.
+
+Si aparece **«Diario de permisos corrupto o incompleto»**, no borre ni edite el
+diario, el marcador, la transacción ni el cluster. La validación comprueba JSON,
+campos y todos los descriptores antes de aplicar permisos, y conserva el archivo
+para soporte. No siga abriendo la aplicación ni conceda permisos a Users/Everyone.
+
+**Salida manual, solo por soporte:** identifique la transacción y PGDATA desde
+el marcador, conserve copias privadas del diario y del registro, y recupere los
+permisos originales desde una copia íntegra y confiable del diario o desde una
+referencia de ACL comprobada de esa instalación. Compare SID, derechos, orden,
+herencia y protección de cada entrada con `Get-Acl`/`icacls`; no reconstruya ACL
+por adivinación ni sustituya el diario por `{}`. Si no existe referencia confiable,
+requiere recuperación asistida. Restituir `LOGIN` no corrige permisos de archivos:
+el comando de soporte indicado más abajo solo se usa tras verificar integridad
+y resolver el acceso a PGDATA. No se ofrece un comando universal que sobrescriba
+las ACL de instalaciones distintas.
+
 No vuelva a ejecutar el instalador ni borre `actualizacion-preparada.json`.
 Obtenga el paquete de scripts de **la versión nueva** entregado por soporte
 (directorio `instalador/scripts` de la entrega auditada). El snapshot anterior

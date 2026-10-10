@@ -102,11 +102,34 @@ function Restore-FitStoreTemporaryPostgresAccess {
 function Restore-FitStorePendingPostgresAccess {
   param([string]$Database,[string]$StatePath)
   if(-not(Test-Path -LiteralPath $StatePath)){return}
-  $state=Get-Content -LiteralPath $StatePath -Raw|ConvertFrom-Json
+  $invalidDiary='Diario de permisos corrupto o incompleto. Conserve recovery-pgdata-acl.json, el marcador y la transaccion; solicite soporte para recuperar las DACL originales. No se aplicaron permisos del diario.'
+  $json=Get-Content -LiteralPath $StatePath -Raw -ErrorAction Stop
+  try {$state=$json|ConvertFrom-Json -ErrorAction Stop} catch {throw $invalidDiary}
+  if($null -eq $state -or $state -isnot [pscustomobject] -or
+     $null -eq $state.PSObject.Properties['database'] -or
+     $null -eq $state.PSObject.Properties['entries'] -or
+     $state.database -isnot [string] -or [string]::IsNullOrWhiteSpace($state.database) -or
+     $state.entries -isnot [array] -or $state.entries.Count -eq 0){throw $invalidDiary}
   $base=[IO.Path]::GetFullPath($Database).TrimEnd('\')
   if($state.database -ine $base){throw 'Estado DACL no corresponde a PGDATA; recuperacion cancelada.'}
+  $seen=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
   foreach($entry in $state.entries){
-    $path=[IO.Path]::GetFullPath([string]$entry.Path)
+    if($null -eq $entry -or $entry -isnot [pscustomobject] -or
+       $null -eq $entry.PSObject.Properties['Path'] -or
+       $null -eq $entry.PSObject.Properties['Sddl'] -or
+       $entry.Path -isnot [string] -or [string]::IsNullOrWhiteSpace($entry.Path) -or
+       $entry.Sddl -isnot [string] -or [string]::IsNullOrWhiteSpace($entry.Sddl)){throw $invalidDiary}
+    # Validar TODOS los descriptores antes de modificar el primero. No basta
+    # con validar solo entradas existentes: un archivo puede reaparecer.
+    try {
+      if(-not [IO.Path]::IsPathRooted($entry.Path)){throw 'Ruta no absoluta'}
+      $path=[IO.Path]::GetFullPath($entry.Path)
+      $descriptor=[Security.AccessControl.RawSecurityDescriptor]::new($entry.Sddl)
+      if(-not ($descriptor.ControlFlags -band [Security.AccessControl.ControlFlags]::DiscretionaryAclPresent)){throw 'Falta DACL en descriptor'}
+      $security=[Security.AccessControl.FileSecurity]::new()
+      $security.SetSecurityDescriptorSddlForm($entry.Sddl,[Security.AccessControl.AccessControlSections]::Access)
+    } catch {throw $invalidDiary}
+    if(-not $seen.Add($path)){throw $invalidDiary}
     if($path -ine $base -and -not $path.StartsWith($base+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Estado DACL contiene ruta fuera de PGDATA.'}
     # PostgreSQL recicla WAL y borra estadisticas entre arranques. Validar
     # primero el limite de PGDATA, aun si la entrada desaparecio. Solo ausencia
@@ -117,6 +140,7 @@ function Restore-FitStorePendingPostgresAccess {
     catch [IO.DirectoryNotFoundException] {continue}
     if($item.Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Estado DACL contiene enlace.'}
   }
+  if(-not $seen.Contains($base)){throw $invalidDiary}
   Restore-FitStoreTemporaryPostgresAccess -OriginalAcl @($state.entries) -StatePath $StatePath
 }
 
