@@ -17,6 +17,7 @@ COPY tsconfig.base.json ./
 COPY apps/api apps/api
 COPY packages/shared packages/shared
 COPY deploy/render/with-cloud-env.mjs deploy/render/with-cloud-env.mjs
+COPY deploy/render/post-deploy-check.mjs deploy/render/post-deploy-check.mjs
 RUN pnpm --filter @fitstore/api db:generate \
     && pnpm --filter @fitstore/api build
 

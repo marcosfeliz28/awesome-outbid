@@ -1147,6 +1147,10 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
     expect(smoke).toContain("node deploy/render/post-deploy-check.mjs");
     // N2/D-M9: también comprueba la base (índices, restricciones, disparador).
     expect(smoke).toContain("post-deploy-check.mjs --db-only");
+    // ...y el script viaja en la imagen de la API para correrlo en su Shell.
+    expect(read("deploy/render/Dockerfile.api")).toContain(
+      "COPY deploy/render/post-deploy-check.mjs deploy/render/post-deploy-check.mjs",
+    );
     // La web arranca antes que la API y debe responder igual.
     expect(smoke.indexOf('echo "2) La web arranca sin API"')).toBeLessThan(
       smoke.indexOf('echo "4) Arranca la API"'),
