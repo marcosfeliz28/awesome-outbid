@@ -59,6 +59,10 @@ El repositorio no contiene valores secretos.
 - `ANTHROPIC_API_KEY` no está declarada. La lectura con IA permanece apagada
   hasta que el negocio decida activarla como secreto separado.
 - Swagger queda apagado en producción.
+- `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` y
+  `BACKUP_ENCRYPTION_KEY` (respaldo diario a Google Drive) no están
+  declaradas: se añaden a mano como secretos cuando la dueña active el
+  respaldo (ver «Respaldo diario a Google Drive»).
 
 Cuando se apruebe un dominio propio, cambiar en `render.yaml` la entrada de
 `WEB_ORIGIN` de la API por el origen exacto, sin barra final:
@@ -100,6 +104,38 @@ los enviados se borran a los 30 días. El estado (pendientes, enviados,
 fallidos y último error, sin el token) está en `GET /api/notifications/status`.
 `TELEGRAM_API_BASE` sólo se usa en pruebas; no se declara en Render. Si el
 token se filtra, revócalo con `/revoke` en @BotFather y cambia la variable.
+
+## Respaldo diario a Google Drive
+
+Opcional y recomendado. Guía paso a paso para la dueña (proyecto de Google
+Cloud, pantalla de consentimiento **publicada «En producción»**, credenciales
+«Aplicación web», variables y prueba): [`docs/RESPALDO_DRIVE.md`](RESPALDO_DRIVE.md).
+
+- Cada madrugada (03:30, Santo Domingo) la propia API ejecuta `pg_dump -Fc`,
+  cifra la copia con `BACKUP_ENCRYPTION_KEY` (AES-256-GCM, formato NXBK v1) y
+  la sube a la carpeta «Nexora POS respaldos» del Drive de la dueña;
+  conserva 30 diarias y 12 mensuales. Sin servicio extra en Render.
+- En Render, servicio `nexora-pos-api` › _Environment_, como secretos:
+  `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` y
+  `BACKUP_ENCRYPTION_KEY` (frase de 24 caracteres o más; sin ella las copias
+  no se pueden abrir: guardarla fuera de Render). Sin las tres, la función
+  queda apagada y la tarjeta dice «No configurado».
+- URI de redirección autorizada en Google:
+  `https://<WEB_ORIGIN>/api/backups/google/callback` (la web la reenvía a la
+  API por `/api/`). La PWA no la intercepta (`navigateFallbackDenylist`).
+- La imagen de la API incluye `pg_dump` 17 del repositorio PGDG
+  (`PG_DUMP_BIN`); un servidor 17 no se puede respaldar con el cliente 15 de
+  Debian.
+- Migración `202610200101_drive_backup`: sólo crea la tabla `DriveBackup`
+  (`IF NOT EXISTS`). El permiso de Google se guarda cifrado ahí.
+- Estado: Configuración › Negocio y reglas › «Respaldo diario a Google Drive»
+  o `GET /api/backups/status` (administración). Si falla 3 veces seguidas o
+  pasan 36 h sin éxito, aviso por Telegram (si está activado).
+- Restaurar: `node scripts/decrypt-backup.mjs <archivo>.dump.enc` y después
+  `scripts/restore.mjs` sobre una base nueva (ver «Respaldo y recuperación de
+  Render» más abajo).
+- `GOOGLE_OAUTH_BASE`, `GOOGLE_DRIVE_BASE` y las variables `DRIVE_BACKUP_*`
+  sólo se usan en pruebas; no se declaran en Render.
 
 ## DNS privado y cabeceras del cliente
 
@@ -453,7 +489,10 @@ fuente):**
    `--single-transaction`) sólo para bases grandes y siempre en una base nueva
    que se elimina si falla. Para un `.dump` propio, `scripts/restore.mjs`
    (`RESTORE_DATABASE_URL=... node scripts/restore.mjs <archivo>.dump`) verifica
-   el SHA-256 y aplica estas opciones.
+   el SHA-256 y aplica estas opciones. Un respaldo de Google Drive
+   (`.dump.enc`) se descifra antes con `node scripts/decrypt-backup.mjs
+<archivo>.dump.enc`, que deja el `.dump` con su `.sha256` y su `.json`
+   (`docs/RESPALDO_DRIVE.md`).
 
    El procedimiento de Render documenta este formato y recomienda no restaurar
    sobre un esquema con datos importantes. La contraseña/URL se proporciona

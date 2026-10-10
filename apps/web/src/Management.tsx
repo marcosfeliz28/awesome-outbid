@@ -73,6 +73,7 @@ import {
 import { passwordRules } from "./passwordChange";
 import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
+import { DriveBackupCard } from "./DriveBackup";
 import {
   applyPendingSaleReprice,
   discardPendingSale,
@@ -3418,6 +3419,7 @@ export function Configuration() {
             </div>
             <StoreSettings />
             <TelegramNotices />
+            <DriveBackupCard />
             <IncentiveRates />
           </QueryState>
         ) : tab === "users" ? (

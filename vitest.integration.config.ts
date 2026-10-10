@@ -9,6 +9,7 @@ export default defineConfig({
       "tests/incentives-api.test.ts",
       "tests/password-account.test.ts",
       "tests/perf-api.test.ts",
+      "tests/drive-backup.test.ts",
     ],
     testTimeout: 30000,
     hookTimeout: 60000,

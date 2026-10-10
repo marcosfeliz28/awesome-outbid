@@ -182,7 +182,7 @@ Requisitos operativos recomendados:
 - Conservar copia histórica de emisor/cliente, productos, tasas, precios, descuentos y distribución de pagos de cada documento.
 - Mantener registros de quién creó, autorizó, cobró, devolvió o anuló; separar usuarios y permisos.
 - Registrar movimientos de caja, cuentas por cobrar, recepción, costo histórico y destino de devoluciones; vincularlos a sus documentos.
-- Hacer respaldos cifrados (recomendado: Nexora POS aún no cifra el volcado por su cuenta; sólo la copia a S3 usa el cifrado del bucket si se activa) y probar restauración/exportación. Si se usa PSFE, asegurar contractualmente acceso a XML y estados durante y después del contrato.
+- Hacer respaldos cifrados (recomendado: el respaldo diario a Google Drive, si se activa, cifra la copia con AES-256-GCM antes de enviarla, ver `docs/RESPALDO_DRIVE.md`; en los demás caminos, `scripts/backup.mjs` y la copia a S3, Nexora POS aún no cifra el volcado por su cuenta y sólo la copia a S3 usa el cifrado del bucket si se activa) y probar restauración/exportación. Si se usa PSFE, asegurar contractualmente acceso a XML y estados durante y después del contrato.
 - Usar la fecha local de la tienda, **America/Santo_Domingo (UTC−4)**, para períodos y cierres; conservar hora técnica consistente para rastrear envíos.
 
 ## 9. Lo que falta confirmar antes de activar producción fiscal

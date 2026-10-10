@@ -23,6 +23,11 @@ import { OfflineSalesController } from "./offline-sales";
 import { IncentivesController } from "./incentives";
 import { NotificationsController, NotificationWorker } from "./notifications";
 import {
+  DriveBackupController,
+  DriveBackupService,
+  DriveBackupWorker,
+} from "./drive-backup";
+import {
   AuthenticatedRateLimitGuard,
   RequestRateLimitService,
 } from "./rate-limit";
@@ -64,11 +69,14 @@ export function createAppModule(secret: string) {
       OfflineSalesController,
       NotificationsController,
       IncentivesController,
+      DriveBackupController,
     ],
     providers: [
       Database,
       AlertEngine,
       NotificationWorker,
+      DriveBackupService,
+      DriveBackupWorker,
       RequestRateLimitService,
       { provide: APP_GUARD, useClass: AuthGuard },
       { provide: APP_GUARD, useClass: AuthenticatedRateLimitGuard },

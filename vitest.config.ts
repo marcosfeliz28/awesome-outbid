@@ -40,6 +40,7 @@ export default defineConfig({
       "tests/auth-guard.test.ts",
       "tests/perf-apertura.test.ts",
       "tests/perf-indexes-postgres.test.ts",
+      "tests/drive-backup-core.test.ts",
     ],
   },
 });
