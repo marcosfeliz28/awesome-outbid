@@ -490,7 +490,11 @@ import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
 import { receiptCustomerLine, receiptFooterLines } from "./receipt-pdf";
-import { recordSaleIncentives, reverseIncentives } from "./incentives";
+import {
+  recordSaleIncentives,
+  reverseIncentives,
+  syncCreditIncentives,
+} from "./incentives";
 
 // Plazo de las transacciones que mueven dinero (venta y devolución). Con el
 // valor por defecto de Prisma (5 s) una devolución bajo carga fallaba con
@@ -988,6 +992,8 @@ export class SalesController {
             taxIncluded: config?.taxIncluded !== false,
             total,
             creditBalance: money(d(credit).plus(cod)),
+            // El incentivo de la parte a crédito se acredita al cobrarla.
+            incentiveOnCollection: d(credit).plus(cod).gt(0),
             creditDueDate:
               credit && input.creditDueDate
                 ? new Date(input.creditDueDate)
@@ -1710,6 +1716,7 @@ export class SalesController {
         });
         await refreshReceivableAlert(tx, sale.id, actor.branchId);
         await settleCredit(tx, actor, sale.id);
+        await syncCreditIncentives(tx, actor, sale.id, "collection", id);
       }
       await tx.payment.update({ where: { id }, data: { status: "ok" } });
       await resolveTransferAlert(tx, id);
@@ -1821,6 +1828,14 @@ export class SalesController {
       await resolveTransferAlert(tx, id);
       if (payment.entryType === "sale") {
         await refreshReceivableAlert(tx, payment.saleId, actor.branchId);
+        // La deuda sube: lo acreditado de más se descuenta.
+        await syncCreditIncentives(
+          tx,
+          actor,
+          payment.saleId,
+          "collection",
+          payment.id,
+        );
         const cash = payment.cashSessionId
           ? await tx.cashSession.findUnique({
               where: { id: payment.cashSessionId },
@@ -2782,6 +2797,7 @@ export class SalesController {
       });
       await refreshReceivableAlert(tx, id, actor.branchId);
       await settleCredit(tx, actor, id);
+      await syncCreditIncentives(tx, actor, id, "collection", row.id);
     }
     await audit(
       tx,

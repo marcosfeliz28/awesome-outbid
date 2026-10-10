@@ -266,6 +266,10 @@ model Sale {
   // y quién dejó el saldo en cero. Nulo mientras el crédito está abierto.
   creditClosedAt         DateTime?
   creditClosedById       String?      @db.Uuid
+  // Incentivo al cobrar: las ventas a crédito nuevas acreditan el incentivo de
+  // la cajera a medida que se cobran (docs/INCENTIVOS.md). false = venta
+  // anterior, que sigue el comportamiento viejo (todo al vender).
+  incentiveOnCollection  Boolean      @default(false)
   ncf                    String?      @unique
   ncfType                String?
   recipientLegalId       String?

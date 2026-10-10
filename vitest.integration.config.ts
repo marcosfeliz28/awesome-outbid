@@ -17,6 +17,7 @@ export default defineConfig({
       "tests/inventory-import-api.test.ts",
       "tests/alertas-postgres.test.ts",
       "tests/restos-api.test.ts",
+      "tests/credito-api.test.ts",
     ],
     testTimeout: 30000,
     hookTimeout: 60000,

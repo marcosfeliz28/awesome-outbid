@@ -33,6 +33,7 @@ type Row = {
   deductions: number;
   net: number;
   pendingCollection: number;
+  pendingEstimate?: number;
   priorDeductions: number;
   entryCount: number;
   lateEntries: number;
@@ -131,7 +132,12 @@ export function MyIncentives() {
   const online = useStore((s) => s.online);
   const query = useQuery({
     queryKey: ["incentives-me"],
-    queryFn: () => api<{ label: string; row: Row | null }>("/incentives/me"),
+    queryFn: () =>
+      api<{
+        label: string;
+        row: Row | null;
+        pendingEstimate?: number;
+      }>("/incentives/me"),
     enabled: online && can(user.permissions, "sale:write"),
   });
   if (!query.data) return null;
@@ -157,6 +163,17 @@ export function MyIncentives() {
           <> · {formatMoney(row.pendingCollection)} de ventas por cobrar</>
         ) : null}
       </p>
+      {query.data.pendingEstimate ? (
+        <p className="incentive-pending" data-testid="incentivo-pendiente">
+          Incentivo pendiente de cobro (estimado):{" "}
+          <strong>{formatMoney(query.data.pendingEstimate)}</strong>
+          <small>
+            {" "}
+            No está en tu total. Se suma, en el mes del pago, cuando la
+            administración cobre esos créditos.
+          </small>
+        </p>
+      ) : null}
       <small>
         Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración.
       </small>
@@ -449,6 +466,12 @@ export function IncentivesPage() {
                           ) : (
                             "—"
                           )}
+                          {r.pendingEstimate ? (
+                            <small>
+                              Por cobrar (estimado):{" "}
+                              {formatMoney(r.pendingEstimate)}
+                            </small>
+                          ) : null}
                         </td>
                       </tr>
                     ))}

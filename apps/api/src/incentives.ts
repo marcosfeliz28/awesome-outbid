@@ -201,6 +201,10 @@ export function summarize(
         unit.sold = unit.sold.plus(e.qty as any);
         sales.add(e.saleId);
         if (e.wholesale) wholesale.add(e.saleId);
+      } else if (e.kind === "collection") {
+        // Cobro de una venta a crédito: suma al incentivo ganado del mes del
+        // pago; las unidades y la venta ya contaron el día de la venta.
+        gross = gross.plus(amount);
       } else {
         deductions = deductions.plus(amount);
         unit.returned = unit.returned.minus(e.qty as any);
@@ -271,6 +275,9 @@ export async function recordSaleIncentives(
       branchId: true,
       createdAt: true,
       wholesale: true,
+      total: true,
+      creditBalance: true,
+      incentiveOnCollection: true,
       items: {
         select: {
           id: true,
@@ -296,6 +303,12 @@ export async function recordSaleIncentives(
     period === origin
       ? null
       : `Venta de ${origin} registrada después del cierre de ese mes: cuenta en ${period}.`;
+  // Venta a crédito (incentivo al cobrar): al vender sólo se acredita la
+  // fracción ya pagada; el resto llega con cada cobro (syncCreditIncentives).
+  const paidFraction =
+    sale.incentiveOnCollection && d(sale.total).gt(0)
+      ? d(sale.total).minus(sale.creditBalance).div(sale.total)
+      : d(1);
   const data = sale.items.map((item: any) => {
     const category = item.variant.product.category;
     const rate = rateFor(category, rates);
@@ -310,7 +323,11 @@ export async function recordSaleIncentives(
       qty: item.qty,
       rateAtSale: rate,
       wholesale: sale.wholesale,
-      amount: incentiveAmount(String(item.qty), rate, sale.wholesale),
+      amount: money(
+        d(incentiveAmount(String(item.qty), rate, sale.wholesale)).times(
+          paidFraction,
+        ),
+      ),
       period,
       originPeriod: origin,
       note,
@@ -344,7 +361,12 @@ export async function reverseIncentives(
   refId: string,
   items?: { saleItemId: string; qty: number }[],
 ) {
-  void actor;
+  const credit = await tx.sale.findUnique({
+    where: { id: saleId },
+    select: { incentiveOnCollection: true },
+  });
+  if (credit?.incentiveOnCollection)
+    return syncCreditIncentives(tx, actor, saleId, kind, refId, items);
   const entries = await tx.incentiveEntry.findMany({ where: { saleId } });
   const earned = new Map<string, any>(
     entries
@@ -419,6 +441,168 @@ export async function reverseIncentives(
     await tx.incentiveEntry.createMany({ data: rows, skipDuplicates: true });
 }
 
+/**
+ * Incentivo de una venta a crédito (decisión de la dueña): se acredita a la
+ * cajera de la venta (Sale.sellerId, nunca a quien cobra) a medida que el
+ * dinero entra, en el mes del cobro. Para cada línea se calcula lo que debe
+ * llevar acreditado ahora, `incentivo de las unidades no devueltas × fracción
+ * cobrada`, y se registra la diferencia con lo que ya lleva. Así la suma de
+ * entradas siempre es exacta (al saldarse la venta, la última entrada cierra el
+ * resto sin redondeos perdidos) y una devolución o anulación sólo descuenta lo
+ * ya acreditado.
+ *
+ * Fracción cobrada = (venta − devoluciones − saldo pendiente) / (venta −
+ * devoluciones). El saldo baja cuando un cobro entra (una transferencia, sólo
+ * al verificarla) y sube si se rechaza una transferencia.
+ *
+ * `kind`: "collection" (cobro o verificación), "return" o "void". `refId`:
+ * pago, devolución o venta; (saleItemId, kind, refId) es único.
+ */
+export async function syncCreditIncentives(
+  tx: any,
+  actor: Actor,
+  saleId: string,
+  kind: "collection" | "return" | "void",
+  refId: string,
+  items?: { saleItemId: string; qty: number }[],
+) {
+  void actor;
+  const sale = await tx.sale.findUnique({
+    where: { id: saleId },
+    select: {
+      total: true,
+      creditBalance: true,
+      incentiveOnCollection: true,
+      items: { select: { id: true, qty: true, returnedQty: true } },
+    },
+  });
+  if (!sale?.incentiveOnCollection) return;
+  const entries: any[] = await tx.incentiveEntry.findMany({
+    where: { saleId },
+  });
+  const base = new Map<string, any>(
+    entries.filter((e) => e.kind === "sale").map((e) => [e.saleItemId, e]),
+  );
+  if (!base.size) return;
+  const first = [...base.values()][0];
+  await closeLock(tx, first.branchId, false);
+  const returns = await tx.saleReturn.aggregate({
+    where: { saleId },
+    _sum: { total: true },
+  });
+  const effective = d(sale.total).minus(returns._sum.total ?? 0);
+  let fraction = effective.lte(0)
+    ? d(1)
+    : effective.minus(sale.creditBalance).div(effective);
+  if (fraction.gt(1)) fraction = d(1);
+  if (fraction.lt(0)) fraction = d(0);
+  const month = businessMonth(new Date());
+  const period = await openPeriod(tx, first.branchId, month);
+  const rows: any[] = [];
+  for (const line of sale.items) {
+    const origin = base.get(line.id);
+    if (!origin) continue;
+    const lineEntries = entries.filter((e) => e.saleItemId === line.id);
+    const full = d(
+      incentiveAmount(
+        String(origin.qty),
+        String(origin.rateAtSale),
+        origin.wholesale,
+      ),
+    );
+    const remaining =
+      kind === "void"
+        ? d(0)
+        : full.minus(returnedAt(full, line.qty, line.returnedQty));
+    const target = d(money(remaining.times(fraction)));
+    const held = lineEntries.reduce((s, e) => s.plus(e.amount), d(0));
+    const delta = target.minus(held);
+    const returned = items?.find((i) => i.saleItemId === line.id);
+    const qty =
+      kind === "return"
+        ? d(returned?.qty ?? 0).negated()
+        : kind === "void"
+          ? lineEntries.reduce((s, e) => s.plus(e.qty), d(0)).negated()
+          : d(0);
+    if (delta.isZero() && qty.isZero()) continue;
+    const notes = [
+      ...(period !== month
+        ? [`El mes ${month} ya estaba cerrado: cuenta en ${period}.`]
+        : []),
+    ];
+    rows.push({
+      kind,
+      refId,
+      saleId,
+      saleItemId: line.id,
+      userId: origin.userId,
+      categoryId: origin.categoryId,
+      categoryName: origin.categoryName,
+      qty: quantity(qty),
+      rateAtSale: origin.rateAtSale,
+      wholesale: origin.wholesale,
+      amount: money(delta),
+      period,
+      originPeriod: origin.originPeriod,
+      note: notes.length ? notes.join(" ") : null,
+      branchId: origin.branchId,
+    });
+  }
+  if (rows.length)
+    await tx.incentiveEntry.createMany({ data: rows, skipDuplicates: true });
+}
+
+/**
+ * Incentivo estimado de las ventas a crédito todavía abiertas de una cajera:
+ * lo que ganará cuando se cobren (no incluye lo ya acreditado).
+ */
+export async function pendingCreditIncentive(
+  db: any,
+  branchId: string,
+  userId?: string,
+): Promise<Map<string, number>> {
+  const sales: any[] = await db.sale.findMany({
+    where: {
+      branchId,
+      status: "completed",
+      incentiveOnCollection: true,
+      creditBalance: { gt: 0 },
+      ...(userId ? { sellerId: userId } : {}),
+    },
+    select: {
+      id: true,
+      items: { select: { id: true, qty: true, returnedQty: true } },
+    },
+  });
+  const out = new Map<string, number>();
+  if (!sales.length) return out;
+  const entries: any[] = await db.incentiveEntry.findMany({
+    where: { saleId: { in: sales.map((s) => s.id) } },
+  });
+  for (const sale of sales)
+    for (const line of sale.items) {
+      const mine = entries.filter((e) => e.saleItemId === line.id);
+      const origin = mine.find((e) => e.kind === "sale");
+      if (!origin) continue;
+      const full = d(
+        incentiveAmount(
+          String(origin.qty),
+          String(origin.rateAtSale),
+          origin.wholesale,
+        ),
+      );
+      const left = full
+        .minus(returnedAt(full, line.qty, line.returnedQty))
+        .minus(mine.reduce((s, e) => s.plus(e.amount), d(0)));
+      if (left.gt(0))
+        out.set(
+          origin.userId,
+          money((out.get(origin.userId) ?? 0) + left.toNumber()),
+        );
+    }
+  return out;
+}
+
 /** Suma del incentivo de una venta (para el aviso de Telegram). */
 export async function saleIncentive(db: any, saleId: string) {
   const sum = await db.incentiveEntry.aggregate({
@@ -448,6 +632,7 @@ const KIND_LABEL: Record<string, string> = {
   sale: "Venta",
   return: "Devolución",
   void: "Anulación",
+  collection: "Cobro de crédito",
 };
 
 @Controller()
@@ -534,9 +719,12 @@ export class IncentivesController {
       where: { id: { in: summaries.map((s) => s.userId) } },
       select: { id: true, name: true },
     });
+    const estimates = await pendingCreditIncentive(db, branchId, userId);
     return summaries
       .map((s) => ({
         ...s,
+        // Incentivo estimado de créditos aún abiertos: separado de lo ganado.
+        pendingEstimate: estimates.get(s.userId) ?? 0,
         name: users.find((u) => u.id === s.userId)?.name ?? "Usuaria eliminada",
       }))
       .sort((a, b) => a.name.localeCompare(b.name, "es"));
@@ -569,11 +757,18 @@ export class IncentivesController {
       await this.month(query, actor.branchId, "open"),
       actor.id,
     );
+    const estimates = await pendingCreditIncentive(
+      this.db,
+      actor.branchId,
+      actor.id,
+    );
     return {
       month: report.month,
       label: report.label,
       closed: !!report.closed,
       row: report.rows.find((r) => r.userId === actor.id) ?? null,
+      // Créditos todavía abiertos: lo que ganará cuando se cobren.
+      pendingEstimate: estimates.get(actor.id) ?? 0,
     };
   }
 

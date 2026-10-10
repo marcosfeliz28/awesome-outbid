@@ -3,3 +3,5 @@
 ALTER TABLE "Sale" ADD COLUMN "creditClosedAt" TIMESTAMP(3);
 ALTER TABLE "Sale" ADD COLUMN "creditClosedById" UUID;
 ALTER TABLE "Payment" ADD COLUMN "receivedById" UUID;
+-- Incentivo al cobrar: false para todo lo existente (no retroactivo).
+ALTER TABLE "Sale" ADD COLUMN "incentiveOnCollection" BOOLEAN NOT NULL DEFAULT false;
