@@ -14,6 +14,10 @@ $database=Join-Path $root 'cluster';$transaction=Join-Path $root 'transaction'
 $child=$null;$running=$false
 try {
  foreach($path in @($database,$transaction)){[IO.Directory]::CreateDirectory($path)|Out-Null}
+ # El diario usa FileSystemInfo.FullName. TEMP puede contener alias o '..';
+ # comparar la misma representacion real antes de que PostgreSQL borre el leaf.
+ $database=(Get-Item -LiteralPath $database -Force).FullName
+ $transaction=(Get-Item -LiteralPath $transaction -Force).FullName
  & (Join-Path $PgBin 'initdb.exe') -D $database -U postgres -A trust --encoding=UTF8 --no-locale | Out-Null
  if($LASTEXITCODE -ne 0){throw 'initdb real fallo.'}
  # Obtener un archivo de estadisticas real, creado al detener PostgreSQL.
@@ -23,6 +27,8 @@ try {
  $running=$false
  $volatile=Join-Path $database 'pg_stat/pgstat.stat'
  if(-not(Test-Path -LiteralPath $volatile -PathType Leaf)){throw 'PostgreSQL no genero pg_stat/pgstat.stat para la regresion.'}
+ $volatileInput=$volatile
+ $volatile=(Get-Item -LiteralPath $volatile -Force).FullName
  $originalIcacls=@{}
  foreach($item in @(Get-Item -LiteralPath $database)+@(Get-ChildItem -LiteralPath $database -Recurse -Force)){
   $originalIcacls[$item.FullName]=(& icacls.exe $item.FullName)-join "`n"
@@ -39,6 +45,9 @@ try {
  if($LASTEXITCODE -ne 0){throw 'PostgreSQL real no responde antes del taskkill.'}
  $state=Join-Path $transaction 'recovery-pgdata-acl.json'
  $saved=@((Get-Content -LiteralPath $state -Raw|ConvertFrom-Json).entries)
+ $statEntries=@($saved|Where-Object{[IO.Path]::GetFileName($_.Path) -eq 'pgstat.stat'})
+ Write-Host "A1 PATH TEMP_INPUT=$env:TEMP EXPECTED_INPUT=$volatileInput EXPECTED_FULLNAME=$volatile JOURNAL_DATABASE=$((Get-Content -LiteralPath $state -Raw|ConvertFrom-Json).database)"
+ foreach($entry in $statEntries){Write-Host "A1 PATH JOURNAL_ENTRY=$($entry.Path)"}
  if(-not @($saved|Where-Object{$_.Path -eq $volatile}).Count){throw 'Archivo volatil no figura en el diario persistido.'}
  & taskkill.exe /PID $child.Id /F|Out-Null
  if($LASTEXITCODE -ne 0){throw 'taskkill no interrumpio el proceso hijo.'}
