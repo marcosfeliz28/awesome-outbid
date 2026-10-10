@@ -448,6 +448,21 @@ así, el desinstalador nunca borra respaldos ubicados en OneDrive, USB u otra
 carpeta externa. No elijas el borrado permanente mientras exista información
 que deba conservarse.
 
+Antes de borrar la base, conserva **todos los archivos de Backups**, incluidos
+los respaldos retenidos, además del respaldo final con sus archivos `.sha256`
+y `.json`, en `%ProgramData%\Nexora POS - respaldos conservados\<identificador>`.
+La ruta exacta aparece durante la desinstalación y al terminar; anótala. Los
+archivos quedan fuera de `%ProgramData%\FitStore POS`, que es la única carpeta
+de datos que puede borrarse. Una reinstalación no borra esas copias conservadas.
+
+La carpeta y cada archivo se crean con permisos privados antes de escribir
+datos: SYSTEM y Administradores tienen control completo; la cuenta de Windows
+registrada como lectora sólo puede leer. Quien tenga esa cuenta puede leer las
+copias; los archivos no están cifrados. No los comparta. Si falta SHA/manifiesto,
+no coincide el contenido, falla una copia o hay enlaces/junctions en las rutas,
+el borrado se cancela y se conservan los datos. La comparación SHA verifica la
+copia, no sustituye probar una restauración en una base descartable.
+
 ## Si no abre
 
 1. Confirma que la laptop está conectada a la red y tiene fecha/hora correctas.
