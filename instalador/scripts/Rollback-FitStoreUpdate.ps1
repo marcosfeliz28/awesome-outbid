@@ -217,6 +217,7 @@ try {
   Write-Host "ROLLBACK CORRECTO: la versión anterior y su base fueron restauradas y verificadas."
 } catch {
   try { Stop-FitStoreApplication } catch {}
+  if ($RecoverInterrupted) { Write-FitStoreLog -InstallDir $actualInstall -Level 'ERROR' -Message 'Salida manual de soporte para NOLOGIN: ALTER ROLE fitstore LOGIN; con la cuenta administrativa postgres. La lista original de accesos esta en el marcador y recovery-login-state.json; conserve ambos y no restaure ni borre datos sin revision.' }
   Write-FitStoreLog -InstallDir $actualInstall -Level "ERROR" -Message ("El rollback automático no terminó; se conservaron la transacción y el respaldo. " + $_.Exception.Message)
   throw
 }
