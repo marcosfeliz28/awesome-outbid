@@ -76,7 +76,11 @@ async function retire(request: any, headers: any, products: any[]) {
       data: { active: false },
     });
 }
-async function login(page: any, email = OWNER.email, password = OWNER.password) {
+async function login(
+  page: any,
+  email = OWNER.email,
+  password = OWNER.password,
+) {
   await page.goto("/");
   await page.getByLabel("Usuario").fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
@@ -115,7 +119,9 @@ async function scan(page: any, value: string) {
   await page.keyboard.press("Enter");
 }
 const qty = (page: any, name: string) =>
-  page.locator(".cart-item", { hasText: name }).locator(".quantity-control span");
+  page
+    .locator(".cart-item", { hasText: name })
+    .locator(".quantity-control span");
 const stubPrint = (page: any) =>
   page.addInitScript(() => {
     (window as any).__prints = 0;
@@ -145,7 +151,10 @@ test.describe("A1 y 03 · recibo de la venta", () => {
       .locator(".customer-selector strong")
       .textContent())!.trim();
     expect(customer).not.toMatch(/Selecciona/);
-    await page.getByRole("button", { name: /Cobrar/ }).first().click();
+    await page
+      .getByRole("button", { name: /Cobrar/ })
+      .first()
+      .click();
     await page.getByLabel("Monto del pago").fill("500");
     await page.getByRole("button", { name: "Agregar pago" }).click();
     await page
@@ -174,7 +183,9 @@ test.describe("A1 y 03 · recibo de la venta", () => {
     await expect(
       dialog.getByRole("button", { name: "Imprimir recibo" }),
     ).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Recibo PDF" })).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Recibo PDF" }),
+    ).toBeVisible();
     // WhatsApp y correo llevan la misma leyenda que el ticket.
     const whatsapp = await dialog
       .getByRole("link", { name: "WhatsApp" })
@@ -184,7 +195,9 @@ test.describe("A1 y 03 · recibo de la venta", () => {
     await expect
       .poll(() => page.evaluate(() => (window as any).__prints))
       .toBeGreaterThan(0);
-    await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Nueva venta", exact: true })
+      .click();
     await retire(request, headers, [product]);
   });
 
@@ -196,7 +209,9 @@ test.describe("A1 y 03 · recibo de la venta", () => {
     await login(page);
     await pos(page);
     await page.locator(".customer-selector").click();
-    await page.getByRole("button", { name: "Nuevo cliente aquí mismo" }).click();
+    await page
+      .getByRole("button", { name: "Nuevo cliente aquí mismo" })
+      .click();
     const notice = page.locator(".privacy-notice");
     await expect(notice).toContainText("opcionales");
     const link = notice.getByRole("link", { name: "Privacidad" });
@@ -223,8 +238,18 @@ for (const width of [390, 1280]) {
     const { headers } = await ownerApi(request);
     const first = code("3"),
       second = code("4");
-    const a = await newProduct(request, headers, "Faja E2E cola A " + first, first);
-    const b = await newProduct(request, headers, "Faja E2E cola B " + second, second);
+    const a = await newProduct(
+      request,
+      headers,
+      "Faja E2E cola A " + first,
+      first,
+    );
+    const b = await newProduct(
+      request,
+      headers,
+      "Faja E2E cola B " + second,
+      second,
+    );
     await login(page);
     await openCash(page);
     await pos(page);
@@ -285,7 +310,9 @@ test("A5 (1366×768): con 5 artículos se ven completas varias líneas y la últ
   await expect(page.locator(".cart-item")).toHaveCount(5);
   await page.waitForTimeout(600);
   const view = await page.evaluate(() => {
-    const region = document.querySelector(".cart-items")!.getBoundingClientRect();
+    const region = document
+      .querySelector(".cart-items")!
+      .getBoundingClientRect();
     const rows = [...document.querySelectorAll(".cart-item")].map((r) =>
       r.getBoundingClientRect(),
     );
@@ -296,8 +323,9 @@ test("A5 (1366×768): con 5 artículos se ven completas varias líneas y la últ
       lastVisible: inside(rows[rows.length - 1]),
       rowHeight: Math.round(rows[0].height),
       bottom: Math.round(
-        document.querySelector(".cart-panel .charge-button")!.getBoundingClientRect()
-          .bottom,
+        document
+          .querySelector(".cart-panel .charge-button")!
+          .getBoundingClientRect().bottom,
       ),
     };
   });
@@ -342,7 +370,9 @@ test("A5 (390 px): la barra inferior muestra el carrito y el total y lleva al ca
   await expect(page.locator(".cart-item", { hasText: name })).toBeInViewport();
   // Sin desplazamiento horizontal de la página.
   const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
   await page.screenshot({
@@ -376,7 +406,12 @@ test("05-M2: el error de un escaneo no se va solo ni lo tapa otro aviso; suena u
         return { gain: param, connect() {} };
       }
       createOscillator() {
-        const frequency = { value: 0, setValueAtTime(v: number) { frequency.value = v; } };
+        const frequency = {
+          value: 0,
+          setValueAtTime(v: number) {
+            frequency.value = v;
+          },
+        };
         return {
           type: "sine",
           frequency,
@@ -531,7 +566,10 @@ test("A2: el conflicto de stock de una venta sin conexión de la cajera se expli
   await search.press("Enter");
   await expect(qty(page, name)).toHaveText("1");
   await selectNamedCustomer(page);
-  await page.getByRole("button", { name: /Cobrar/ }).first().click();
+  await page
+    .getByRole("button", { name: /Cobrar/ })
+    .first()
+    .click();
   await page.getByRole("button", { name: "Agregar pago" }).click();
   await page.getByRole("button", { name: "Finalizar venta" }).click();
   await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible();
@@ -562,10 +600,16 @@ test("A2: el conflicto de stock de una venta sin conexión de la cajera se expli
     /1 venta/,
   );
   await page.keyboard.press("Escape");
-  await row.getByRole("button", { name: "Descartar con PIN de gerente" }).click();
-  const dialog = page.getByRole("dialog", { name: "Descartar venta sin conexión" });
+  await row
+    .getByRole("button", { name: "Descartar con PIN de gerente" })
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Descartar venta sin conexión",
+  });
   await expect(dialog).toContainText(name);
-  await dialog.getByLabel("Motivo obligatorio").fill("No hay unidades; se devolvió el dinero");
+  await dialog
+    .getByLabel("Motivo obligatorio")
+    .fill("No hay unidades; se devolvió el dinero");
   await dialog.getByLabel("PIN del gerente").fill("000000");
   await dialog.getByRole("button", { name: "Descartar venta" }).click();
   await expect(dialog.getByText("PIN incorrecto.")).toBeVisible();
@@ -582,11 +626,11 @@ test("A2: el conflicto de stock de una venta sin conexión de la cajera se expli
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
   // La bitácora conserva quién aprobó, el motivo y el detalle de la venta.
-  const log = await (
-    await request.get("/api/audit-log", { headers })
-  ).json();
+  const log = await (await request.get("/api/audit-log", { headers })).json();
   const entry = (Array.isArray(log) ? log : log.items).find(
-    (e: any) => e.action === "offline_sale_discarded" && JSON.stringify(e.after).includes(sku),
+    (e: any) =>
+      e.action === "offline_sale_discarded" &&
+      JSON.stringify(e.after).includes(sku),
   );
   expect(entry, "auditoría del descarte").toBeTruthy();
   expect(JSON.stringify(entry.after)).toContain("Andrea Gómez");
