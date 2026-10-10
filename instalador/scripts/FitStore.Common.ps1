@@ -265,6 +265,34 @@ function Invoke-FitStorePg {
   }
 }
 
+function Invoke-FitStorePgSql {
+  param(
+    [Parameter(Mandatory)][string]$Tool,
+    [Parameter(Mandatory)][string[]]$Arguments,
+    [Parameter(Mandatory)][string]$Password,
+    [Parameter(Mandatory)][string]$Sql,
+    [string]$FailureMessage = 'Fallo una consulta PostgreSQL.'
+  )
+  if (@($Arguments | Where-Object { $_ -match '^(--command|--file)(=|$)|^-[cf]' }).Count) { throw 'SQL debe proporcionarse exclusivamente mediante el archivo privado.' }
+  $path = Join-Path ([IO.Path]::GetTempPath()) ('nexora-private-sql-' + [guid]::NewGuid().ToString('N') + '.sql')
+  $acl = [Security.AccessControl.FileSecurity]::new()
+  $acl.SetAccessRuleProtection($true,$false)
+  $sids = @('S-1-5-18','S-1-5-32-544',[Security.Principal.WindowsIdentity]::GetCurrent().User.Value) | Select-Object -Unique
+  foreach ($sid in $sids) { $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($sid),'FullControl','Allow')) }
+  $stream = $null
+  try {
+    # DACL privada aplicada al CREAR, no despues de escribir la consulta.
+    $stream = [IO.File]::Create($path,4096,[IO.FileOptions]::None,$acl)
+    $bytes = [Text.UTF8Encoding]::new($false).GetBytes($Sql)
+    $stream.Write($bytes,0,$bytes.Length)
+    $stream.Dispose(); $stream=$null
+    Invoke-FitStorePg -Tool $Tool -Arguments @($Arguments + "--file=$path") -Password $Password -FailureMessage $FailureMessage
+  } finally {
+    if ($stream) { $stream.Dispose() }
+    if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force }
+  }
+}
+
 function Get-FitStoreDatabaseUrl {
   param([Parameter(Mandatory = $true)]$Secrets, [int]$Port = 5434, [string]$Database = "fitstore")
   $encoded = [Uri]::EscapeDataString([string]$Secrets.databasePassword)
