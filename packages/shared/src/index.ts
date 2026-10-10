@@ -374,6 +374,8 @@ export const paymentTotals = (
     change: money(Decimal.max(0, paid.minus(total))),
   };
 };
+/** Tope por defecto de lo que una cajera deja por cobrar en el turno sin PIN. */
+export const RECEIVABLE_SHIFT_LIMIT = 3000;
 /**
  * ¿La parte por cobrar de una venta necesita el PIN de un gerente? (D-01)
  * La caja y la API usan esta misma regla.
@@ -390,15 +392,25 @@ export const paymentTotals = (
  *   contraentrega de esta venta no pueden superar el umbral sin PIN; partir
  *   la deuda en varias ventas pequeñas ya no evita el control. Sin
  *   `openDebt` (0) la regla se aplica a la suma de esta venta.
+ * - Tope por turno (N-2, auditoría 01 v2): el umbral por cliente se rodea
+ *   creando clientes nuevos. Para quien no tiene `sale:manage`, lo que ya dejó
+ *   por cobrar en el turno y el día (`shiftReceivable`, crédito y contraentrega
+ *   de todos sus clientes) más esta venta no puede superar
+ *   `receivableShiftLimit` (RD$ 3,000 por defecto) sin PIN de gerente.
  */
 export const receivableNeedsApproval = (
   payments: { method: string; amount: number }[],
   settings:
-    | { creditApprovalThreshold?: unknown; allowCreditSales?: unknown }
+    | {
+        creditApprovalThreshold?: unknown;
+        allowCreditSales?: unknown;
+        receivableShiftLimit?: unknown;
+      }
     | null
     | undefined,
   canManageSales: boolean,
   openDebt: Decimal.Value = 0,
+  shiftReceivable: Decimal.Value = 0,
 ) => {
   const threshold = Number(settings?.creditApprovalThreshold ?? 1000);
   const sum = (method: string) =>
@@ -412,6 +424,15 @@ export const receivableNeedsApproval = (
     !canManageSales &&
     credit.plus(cod).gt(0) &&
     d(openDebt).plus(credit).plus(cod).gt(threshold)
+  )
+    return true;
+  if (
+    !canManageSales &&
+    credit.plus(cod).gt(0) &&
+    d(shiftReceivable)
+      .plus(credit)
+      .plus(cod)
+      .gt(Number(settings?.receivableShiftLimit ?? RECEIVABLE_SHIFT_LIMIT))
   )
     return true;
   if (canManageSales || !cod.gt(0)) return false;

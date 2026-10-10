@@ -771,6 +771,11 @@ export function Inventory() {
     queryKey: ["counts"],
     queryFn: () => api("/inventory/counts"),
   });
+  // N-1: la devolución a proveedor lleva proveedor y referencia.
+  const adjustSuppliers = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: () => api("/suppliers"),
+  });
   const [search, setSearch] = useState(""),
     [mode, setMode] = useState("stock"),
     [adjust, setAdjust] = useState<any>(null),
@@ -957,6 +962,20 @@ export function Inventory() {
               ],
             },
             {
+              key: "supplierId",
+              label: "Proveedor (solo en devolución a proveedor)",
+              type: "select",
+              options: (adjustSuppliers.data || []).map((x: any) => ({
+                label: x.name,
+                value: x.id,
+              })),
+            },
+            {
+              key: "reference",
+              label:
+                "Referencia de la devolución (documento o nota de crédito)",
+            },
+            {
               key: "lotId",
               label: "Lote de salida",
               type: "select",
@@ -985,6 +1004,14 @@ export function Inventory() {
               variantId: adjust.id,
               lotId: data.lotId || undefined,
               lotNumber: data.lotNumber || undefined,
+              supplierId:
+                data.type === "supplier_return"
+                  ? data.supplierId || undefined
+                  : undefined,
+              reference:
+                data.type === "supplier_return"
+                  ? data.reference || undefined
+                  : undefined,
               expiryDate: data.expiryDate
                 ? new Date(data.expiryDate + "T23:59:59-04:00").toISOString()
                 : undefined,
@@ -1998,6 +2025,7 @@ function DiscardOfflineSale({
 }) {
   const [reason, setReason] = useState(""),
     [pin, setPin] = useState(""),
+    [outcome, setOutcome] = useState<"returned" | "delivered">("returned"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const lines: any[] = sale.receipt?.snapshot ?? [];
@@ -2022,6 +2050,7 @@ function DiscardOfflineSale({
                 post,
                 deleteLocal: (id) => localDB.sales.delete(id),
               },
+              outcome,
             );
             onDiscarded();
           } catch (e: any) {
@@ -2044,11 +2073,29 @@ function DiscardOfflineSale({
             ))}
           </ul>
         )}
+        <label className="field">
+          <span>¿Qué pasó con la mercancía?</span>
+          <select
+            value={outcome}
+            onChange={(e) => setOutcome(e.target.value as any)}
+          >
+            <option value="returned">
+              No salió o se devolvió, con su dinero (no se mueve nada)
+            </option>
+            <option value="delivered">
+              El cliente se la llevó y pagó (salida de inventario y entrada de
+              caja)
+            </option>
+          </select>
+        </label>
         <p className="form-hint">
-          La venta no se registra ni descuenta inventario. Lo cobrado en este
-          equipo ({formatMoney(paid)}) queda anotado en la bitácora y en una
-          alerta para gerencia: si el dinero quedó en la caja, el cuadre lo
-          mostrará como sobrante.
+          {outcome === "delivered"
+            ? "La venta no se registra, pero se descuenta la mercancía del inventario y lo cobrado en efectivo (" +
+              formatMoney(paid) +
+              ") entra a la caja de esa venta, para que el cuadre y el stock coincidan. Queda en la bitácora y en una alerta para gerencia."
+            : "La venta no se registra ni descuenta inventario. Lo cobrado en este equipo (" +
+              formatMoney(paid) +
+              ") queda anotado en la bitácora y en una alerta para gerencia: si el dinero quedó en la caja, el cuadre lo mostrará como sobrante."}
         </p>
         <label className="field">
           <span>Motivo obligatorio</span>
@@ -3539,6 +3586,14 @@ export function Configuration() {
       "Crédito por venta que requiere gerente (RD$)",
       1000,
     ),
+    {
+      ...requiredNumber(
+        "receivableShiftLimit",
+        "Crédito y contraentrega por turno sin PIN de gerente (RD$)",
+        3000,
+      ),
+      help: "Suma de lo que una cajera deja por cobrar en su turno, de todos sus clientes. Por encima, se pide el PIN de un gerente.",
+    },
     {
       ...requiredNumber(
         "cashMovementApprovalLimit",

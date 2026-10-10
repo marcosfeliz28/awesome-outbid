@@ -9,6 +9,7 @@ import {
   Query,
   Res,
 } from "@nestjs/common";
+import { randomUUID } from "node:crypto";
 import type { Response } from "express";
 import ExcelJS from "exceljs";
 import {
@@ -355,9 +356,37 @@ export async function lockVariant(tx: any, id: string, actor: Actor) {
 }
 // M-5 (auditoría 01): mermas, ajustes negativos, conteos y salidas de
 // mercancía sacan inventario sin venta. Se valoran a costo (unitCost del
-// movimiento) en el estado de resultados y en el dashboard; una salida por
-// devolución al proveedor no es pérdida (el proveedor la acredita).
-export const INVENTORY_LOSS_SQL = `m.qty < 0 AND (m.type IN ('adjustment','waste','count') OR (m.type = 'merchandise_exit' AND m.reason <> 'devolución a proveedor'))`;
+// movimiento) en el estado de resultados y en el dashboard. N-1 (v2): la
+// devolución a proveedor TAMBIÉN cuenta: mientras el sistema no registre el
+// crédito del proveedor, cambiar el motivo no puede sacar valor del informe.
+export const INVENTORY_LOSS_SQL = `m.qty < 0 AND m.type IN ('adjustment','waste','count','supplier_return','merchandise_exit')`;
+// Subconjunto de lo anterior que es devolución a proveedor (se muestra aparte).
+export const SUPPLIER_RETURN_SQL = `m.qty < 0 AND (m.type = 'supplier_return' OR (m.type = 'merchandise_exit' AND m.reason = 'devolución a proveedor'))`;
+// N-1: toda devolución a proveedor deja una alerta (no se resuelve sola) con el
+// proveedor, la referencia y el costo, hasta que una persona confirme el crédito.
+export async function supplierReturnAlert(
+  tx: any,
+  actor: Actor,
+  info: { key: string; supplierId: string; reference: string; cost: number },
+) {
+  const supplier = await tx.supplier.findFirst({
+    where: { id: info.supplierId, branchId: actor.branchId },
+    select: { name: true },
+  });
+  const message = `${actor.name}: devolución a proveedor ${supplier?.name ?? ""} (ref. ${info.reference}) por RD$ ${formatAmount(money(info.cost))} a costo. Confirma que el proveedor la acreditó.`;
+  await tx.alert.upsert({
+    where: { key: info.key },
+    create: {
+      key: info.key,
+      type: "supplier_return",
+      severity: "medium",
+      entityId: info.supplierId,
+      branchId: actor.branchId,
+      message,
+    },
+    update: {},
+  });
+}
 // Quien no gestiona ventas (almacén) saca inventario sin aprobación: cuando
 // sus pérdidas del día a costo superan inventoryLossAlertLimit (RD$ 1,000 por
 // defecto), alerta alta que sólo una persona resuelve. Se suma el día entero
@@ -573,9 +602,13 @@ export class InventoryController {
         type: z
           .enum(["adjustment", "waste", "supplier_return"])
           .default("adjustment"),
+        // N-1: la devolución a proveedor necesita proveedor y referencia.
+        supplierId: uuid.optional(),
+        reference: z.string().trim().min(1).max(60).optional(),
       }),
       body,
     );
+
     // Una merma o una devolución al proveedor siempre sacan stock: con la
     // cantidad en positivo lo sumaban. El ajuste libre admite ambos signos.
     if (parsed.type !== "adjustment" && parsed.qty > 0)
@@ -585,12 +618,21 @@ export class InventoryController {
           parsed.qty +
           ").",
       );
+    if (
+      parsed.type === "supplier_return" &&
+      (!parsed.supplierId || !parsed.reference)
+    )
+      bad("Elige el proveedor y escribe la referencia de la devolución.");
     const data = parsed.lotNumber
       ? { ...parsed, ...lotIdentity(parsed.lotNumber, parsed.expiryDate) }
       : parsed;
     return retrySerializable(() =>
       this.db.$transaction(
         async (tx) => {
+          if (data.type === "supplier_return")
+            await tx.supplier.findFirstOrThrow({
+              where: { id: data.supplierId, branchId: actor.branchId },
+            });
           const variant = await lockVariant(tx, data.variantId, actor);
           let lotId = data.lotId;
           if (
@@ -690,6 +732,13 @@ export class InventoryController {
             undefined,
             data,
           );
+          if (data.type === "supplier_return" && data.supplierId)
+            await supplierReturnAlert(tx, actor, {
+              key: "supplier-return:" + randomUUID(),
+              supplierId: data.supplierId,
+              reference: data.reference!,
+              cost: -data.qty * Number(variant.costAvg),
+            });
           if (data.qty < 0) await inventoryLossAlert(tx, actor);
           return safe(variant, actor);
         },

@@ -36,6 +36,8 @@ import {
   moneyAmount,
   quantity,
   receivableNeedsApproval,
+  RECEIVABLE_SHIFT_LIMIT,
+  businessDate,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -240,6 +242,31 @@ export async function customerOpenDebt(
   return money(debt._sum.creditBalance ?? 0);
 }
 
+// N-2: lo que esta persona ya dejó por cobrar (crédito y contraentrega) en el
+// turno de esta caja o en el día de negocio, de cualquier cliente. Se cuenta
+// lo originado, no el saldo: un abono no libera el tope.
+export async function sellerShiftReceivable(
+  db: any,
+  actor: Actor,
+  cashSessionId: string,
+) {
+  const dayStart = new Date(businessDate() + "T00:00:00-04:00");
+  const total = await db.payment.aggregate({
+    where: {
+      method: { in: ["credit", "cod"] },
+      entryType: "sale",
+      sale: {
+        branchId: actor.branchId,
+        sellerId: actor.id,
+        status: "completed",
+        OR: [{ cashSessionId }, { createdAt: { gte: dayStart } }],
+      },
+    },
+    _sum: { amount: true },
+  });
+  return money(total._sum.amount ?? 0);
+}
+
 // Una venta pendiente se mantiene como una sola cuenta por cobrar hasta que
 // un administrador confirma todos sus abonos.
 async function refreshReceivableAlert(
@@ -391,6 +418,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 }
 
 import { cashExpected, refreshClosedCash } from "./cash";
+import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
 import { recordSaleIncentives, reverseIncentives } from "./incentives";
@@ -448,14 +476,28 @@ export class SalesController {
       receivable && !manages && input.customerId
         ? await customerOpenDebt(this.db, actor.branchId, input.customerId)
         : 0;
+    const shiftReceivable =
+      receivable && !manages
+        ? await sellerShiftReceivable(this.db, actor, input.cashSessionId)
+        : 0;
     const needsCreditApproval = receivableNeedsApproval(
       input.payments,
       setting?.data as any,
       manages,
       openDebt,
+      shiftReceivable,
     );
+    const becauseOfShift =
+      needsCreditApproval &&
+      !receivableNeedsApproval(
+        input.payments,
+        setting?.data as any,
+        manages,
+        openDebt,
+      );
     const becauseOfDebt =
       needsCreditApproval &&
+      !becauseOfShift &&
       !receivableNeedsApproval(input.payments, setting?.data as any, manages);
     const needsNoteApproval = input.payments.some(
       (p) => p.method === "credit_note" && !p.creditNoteCode,
@@ -468,9 +510,11 @@ export class SalesController {
       return null;
     if (!input.managerPin)
       bad(
-        becauseOfDebt
-          ? `La deuda pendiente de este cliente más esta venta supera ${formatMoney(Number((setting?.data as any)?.creditApprovalThreshold ?? 1000))}: esta operación requiere el PIN de un gerente.`
-          : "Esta operación requiere el PIN de un gerente.",
+        becauseOfShift
+          ? `Lo que dejas por cobrar en este turno más esta venta supera ${formatMoney(Number((setting?.data as any)?.receivableShiftLimit ?? RECEIVABLE_SHIFT_LIMIT))}: esta operación requiere el PIN de un gerente.`
+          : becauseOfDebt
+            ? `La deuda pendiente de este cliente más esta venta supera ${formatMoney(Number((setting?.data as any)?.creditApprovalThreshold ?? 1000))}: esta operación requiere el PIN de un gerente.`
+            : "Esta operación requiere el PIN de un gerente.",
       );
     const managers = await this.db.user.findMany({
       where: { active: true, branchId: actor.branchId },
@@ -588,6 +632,16 @@ export class SalesController {
               "Las ventas sin conexión están desactivadas para esta tienda. Pide a un administrador que revise el conflicto.",
             );
         }
+        // N-2: ventas por cobrar de la misma persona se atienden una tras otra
+        // para que el tope del turno se compruebe sobre lo ya confirmado. Es el
+        // primer bloqueo después del de la operación, así no entra en ciclos.
+        if (
+          !can(actor.permissions, "sale:manage") &&
+          input.payments.some(
+            (p) => p.method === "credit" || p.method === "cod",
+          )
+        )
+          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"receivable-shift:" + actor.id}))::text AS locked`;
         const capturedAt =
           offline && input.capturedAt ? new Date(input.capturedAt) : undefined;
         if (capturedAt && Date.now() - capturedAt.getTime() > 48 * 3600000)
@@ -759,10 +813,13 @@ export class SalesController {
               config,
               can(actor.permissions, "sale:manage"),
               debt,
+              can(actor.permissions, "sale:manage")
+                ? 0
+                : await sellerShiftReceivable(tx, actor, input.cashSessionId),
             )
           )
             bad(
-              "La deuda pendiente de este cliente cambió: esta operación requiere el PIN de un gerente.",
+              "La deuda del cliente o lo dejado por cobrar en el turno cambió: esta operación requiere el PIN de un gerente.",
             );
         }
         if (credit && config?.allowCreditSales !== true)
@@ -1098,6 +1155,7 @@ export class SalesController {
         if (credit || cod)
           await refreshReceivableAlert(tx, sale.id, actor.branchId);
         if (Number(sale.discountTotal) > 0) {
+          await unusualDiscountAlerts(tx, sale);
           await audit(
             tx,
             actor,
@@ -1248,7 +1306,21 @@ export class SalesController {
               {
                 paymentTotal,
                 attemptedExpectedTotal,
-                cashSessionId: attempted.cashSessionId ?? null,
+                // Sólo una caja propia de esta sucursal se guarda como evidencia.
+                cashSessionId:
+                  typeof attempted.cashSessionId === "string" &&
+                  z.string().uuid().safeParse(attempted.cashSessionId)
+                    .success &&
+                  (await tx.cashSession.findFirst({
+                    where: {
+                      id: attempted.cashSessionId,
+                      branchId: actor.branchId,
+                      userId: actor.id,
+                    },
+                    select: { id: true },
+                  }))
+                    ? attempted.cashSessionId
+                    : null,
               },
             );
           }
@@ -1614,11 +1686,38 @@ export class SalesController {
           where: { id: payment.saleId },
         });
         if (sale.status !== "completed") bad("La venta ya no está completada.");
+        // N-3 (defensa en profundidad): la deuda nunca pasa de lo que el
+        // cliente conserva sin pagar (venta menos devoluciones, menos la deuda
+        // que ya tiene). Una devolución anterior a esta corrección pudo sacar
+        // efectivo por esta transferencia: ese faltante se avisa, no se cobra.
+        const returned = await tx.saleReturn.aggregate({
+          where: { saleId: sale.id },
+          _sum: { total: true },
+        });
+        const keptRaw = d(sale.total)
+          .minus(returned._sum.total ?? 0)
+          .minus(sale.creditBalance);
+        const kept = keptRaw.gt(0) ? keptRaw : d(0);
+        const owed = d(payment.amount).lt(kept) ? d(payment.amount) : kept;
         const updated = await tx.sale.update({
           where: { id: sale.id },
-          data: { creditBalance: { increment: payment.amount } },
+          data: { creditBalance: { increment: money(owed) } },
         });
         saleDebt = Number(updated.creditBalance);
+        const lost = d(payment.amount).minus(owed);
+        if (lost.gt(0))
+          await tx.alert.upsert({
+            where: { key: "transfer-lost:" + payment.id },
+            create: {
+              key: "transfer-lost:" + payment.id,
+              type: "transfer_rejected_loss",
+              severity: "high",
+              entityId: sale.id,
+              branchId: actor.branchId,
+              message: `Se rechazó la transferencia de ${sale.number}, pero RD$ ${formatAmount(Number(money(lost)))} ya se habían devuelto al cliente: no queda deuda que cobrar.`,
+            },
+            update: {},
+          });
       }
       await tx.payment.update({
         where: { id },
@@ -1925,6 +2024,38 @@ export class SalesController {
           "Verifica o rechaza primero los abonos por transferencia pendientes de esta venta.",
         );
       const refundAmount = money(total.minus(debtReduction));
+      // N-3 (auditoría 01 v2): mientras la transferencia de la propia venta no
+      // se verifique, lo que se devuelve (en el medio que sea, también nota de
+      // crédito) no puede pasar de lo realmente cobrado y no devuelto. Si no,
+      // saldría efectivo que nunca llegó y, al rechazar la transferencia, el
+      // cliente quedaría debiendo mercancía que ya devolvió.
+      const pendingSaleTransfer = await tx.payment.aggregate({
+        where: {
+          saleId: sale.id,
+          entryType: "sale",
+          method: "transfer",
+          status: "pending_verification",
+        },
+        _sum: { amount: true },
+      });
+      if (d(pendingSaleTransfer._sum.amount ?? 0).gt(0)) {
+        const collected = await tx.payment.aggregate({
+          where: { saleId: sale.id, status: "ok" },
+          _sum: { amount: true },
+        });
+        const refunded = await tx.saleReturn.aggregate({
+          where: { saleId: sale.id },
+          _sum: { refundAmount: true },
+        });
+        const availableRaw = d(collected._sum.amount ?? 0).minus(
+          refunded._sum.refundAmount ?? 0,
+        );
+        const available = availableRaw.gt(0) ? availableRaw : d(0);
+        if (d(refundAmount).gt(available))
+          bad(
+            `La transferencia de esta venta aún no está verificada: sólo se pueden reembolsar RD$ ${formatAmount(Number(available))} de lo ya cobrado. Verifica o rechaza primero la transferencia.`,
+          );
+      }
       // D-06: el efectivo que se entrega tiene que estar en la caja que
       // reembolsa (la caja ya está bloqueada arriba). Sin este control, una
       // venta cobrada con tarjeta devuelta en efectivo dejaba el esperado en

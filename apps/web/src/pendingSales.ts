@@ -309,10 +309,14 @@ export async function discardWithApproval(
     post: (path: string, body: unknown) => Promise<unknown>;
     deleteLocal: (id: string) => Promise<unknown>;
   },
+  // M-6: «delivered» = el cliente se llevó la mercancía y pagó; el servidor
+  // registra la salida de inventario y la entrada de caja.
+  outcome: "returned" | "delivered" = "returned",
 ) {
   await dependencies.post("/sales/offline-review/discard", {
     offlineUuid: sale.input.offlineUuid,
     reason: reason.trim(),
+    ...(outcome === "delivered" ? { outcome } : {}),
     ...(managerPin ? { managerPin } : {}),
     detail: pendingSaleDetail(sale),
   });

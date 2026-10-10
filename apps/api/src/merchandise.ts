@@ -47,6 +47,7 @@ import {
   receiptCosts,
   stockChange,
   inventoryLossAlert,
+  supplierReturnAlert,
 } from "./inventory";
 import {
   isSerializationConflict,
@@ -359,6 +360,16 @@ export class MerchandiseController {
       bad("Registra este equipo antes de mover mercancía.");
     if (data.direction === "exit" && !data.reason)
       bad("Elige el motivo de salida.");
+    // N-1: una devolución a proveedor necesita proveedor y documento; sin ellos
+    // es una merma disfrazada.
+    if (
+      data.direction === "exit" &&
+      data.reason === "devolución a proveedor" &&
+      (!data.supplierId || !data.supplierInvoice?.trim())
+    )
+      bad(
+        "Elige el proveedor y escribe la referencia de la devolución (documento o nota de crédito).",
+      );
     if (data.direction === "exit" && data.items.some((i) => i.quick))
       bad("No puedes crear productos en una salida.");
     // En una entrada el lote se indica por número (se crea o se incrementa);
@@ -749,7 +760,25 @@ export class MerchandiseController {
               data: { confirmedOperationId: data.id },
             });
           // M-5: una salida (merma, dañado, uso interno…) sin aprobación.
-          if (data.direction === "exit") await inventoryLossAlert(tx, actor);
+          if (data.direction === "exit") {
+            if (data.reason === "devolución a proveedor")
+              await supplierReturnAlert(tx, actor, {
+                key: "supplier-return:" + data.id,
+                supplierId: data.supplierId!,
+                reference: data.supplierInvoice!.trim(),
+                // A costo del kardex (el costo promedio, no el escrito en la línea).
+                cost: (
+                  await tx.inventoryMovement.findMany({
+                    where: { refId: data.id, type: "merchandise_exit" },
+                    select: { qty: true, unitCost: true },
+                  })
+                ).reduce(
+                  (s: number, m: any) => s - Number(m.qty) * Number(m.unitCost),
+                  0,
+                ),
+              });
+            await inventoryLossAlert(tx, actor);
+          }
           const result = {
             id: data.id,
             receiptId: receipt?.id,
