@@ -28,3 +28,6 @@ Producción: la base no acepta conexiones externas. El importador (`apps/api/scr
 
 ## ACTUALIZACIÓN 2 (10 oct): tanda 2 del conteo (dueña)
 Se aplican como existencia: Broche Crema XS (1584)→4, XL (1588)→2, 2XL (1589)→6; Chaleco Génesis S (1595)→1; Corset Génesis S (1598)→5; Panty Negro («Panties Faja») 2XS (1593)→2, L (1591)→7. Coinciden sin cambio: Broche Crema S 6, M 2, L 1; Chaleco Génesis XS 2, M 2; Corset Génesis M 1; Panty Negro XS 4, XL 2. Panty Negro S/M (1610/1609) y Broche L «color por confirmar» (1611) no se nombraron: quedan como están (0). Archivo vigente: `inventario-listo-para-cargar-v2.xlsx` (fuera del repositorio).
+
+## ACTUALIZACIÓN 3 (10 oct): Isopure 3 lb
+Existencia: Creamy Vanilla 3 lb (1172)→34; Dutch Chocolate 3 lb (1173)→3; Banana Cream 3 lb (1156)→3. La dueña repitió «3 Chocolate» dos veces: se aplicó una (PENDIENTE confirmar si era otro sabor). Nuevos (costo 2,700, precio 5,000): «Isopure - Chocolate Peanut Butter / 3 lb» (ID 1632, 5 u.) y «Isopure - Vanilla Salted Caramel / 3 lb» (ID 1633, 4 u.). Los existentes conservan su costo/precio del listado. Archivo vigente: `inventario-listo-para-cargar-v3.xlsx` (631 filas, fuera del repositorio).
