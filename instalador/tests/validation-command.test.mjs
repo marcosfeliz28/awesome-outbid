@@ -28,6 +28,10 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     "Preflight-Rollback-Contract",
     "Recovery-Login-Exit",
     "Recovery-Activity-Guard",
+    "Recovery-WorkingDirectory",
+    "Preflight-Backup-Privacy",
+    "Legacy-Backup-Unavailable",
+    "Backup-AzureAD-Warning",
   ]) {
     assert.ok(
       powershellTests.includes(name),
