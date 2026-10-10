@@ -18,3 +18,10 @@ Productos NUEVOS por crear (faltan costo y precio): Multivitamínico MuscleTech 
 
 ## Cómo cargar
 Producción: la base no acepta conexiones externas. El importador (`apps/api/scripts/import-inventario.ts`, con `--dry-run` primero) necesita acceso a la base; la pantalla de la app (plantilla .xlsx) pide IDs de categoría, código de barras obligatorio y no carga existencias. Decisión pendiente: pantalla de administración para importar inventario (requiere desarrollo y auditoría) o ejecutarlo como tarea puntual en Render. Siempre `--dry-run` y mostrar el resultado a la dueña antes de cargar.
+
+## ACTUALIZACIÓN (10 oct, tarde): decisiones finales de la dueña
+- LOOréal too faced / honey (IDs 1623, 1624): costo 1,675 y precio 2,450 (valor del archivo). La dueña escribió «2550» una vez: confirmar si hace falta.
+- Conteo de hoy aplicado directamente como EXISTENCIA INICIAL (no hay kardex previo): 22 cambios sobre el listado. IDs y valores: 1604→4, 1605→3, 1607→1, 1608→6, 1602→1, 1603→5, 1576→24, 1615→3, 1616→1 (fajas); 1076→3, 1077→12, 1078→3, 1080→3, 1152→12, 1141→3, 1143→0 (vencida), 1122→6 (creatinas); 1003→2, 1005→11 (Opti-Men 150 y 240 tabletas; el «250» de la dueña es el de 240: «lo que diga el empaque»); 1125→4. Chaleco L y corset XS siguen en 0. 1214 (ON 3 en 1 naranja 80 serv) sigue en 0. Lo no nombrado no se toca.
+- Producto nuevo: «Platinum Multi Vitamin - MuscleTech - 180 tabletas» (la dueña dijo 200 una vez, la foto decía 180: usé 180, confirmar), ID 1631, Suplementos, 20 unidades, costo 750, precio 1,900.
+- Archivo ya preparado por Claude en formato del importador (hoja «Inventario»; columnas ID, DESCRIPCION, REFERENCIA, SUB-GRUPO DE ARTICULO, EXISTENCIA, COSTO, PRECIO DETALLE; 629 filas; existencia total 3,022). NO está en el repositorio (trae costos): la dueña lo entrega a quien implemente la carga.
+- La dueña autorizó cargarlo. Falta la ruta técnica (ver «Cómo cargar»): tarea 3n.
