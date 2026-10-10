@@ -40,7 +40,7 @@ Internet -> HTTPS de Render -> nexora-pos-web (Nginx + PWA)
 | `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                                                                                |
 | `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx).                                                   |
 | `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                  |
-| `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `database: ok`. |
+| `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `status: "ok"`. |
 | `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales.                                                                |
 | `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                             |
 
@@ -197,13 +197,14 @@ Swagger en producción (`ENABLE_SWAGGER=true`), su interfaz queda sujeta a ella.
   esté temporalmente caído, por lo que una avería de datos no reinicia una web
   sana. Es liveness sólo de Nginx y no depende de la API, para que redesplegar
   la API no reinicie la web en bucle.
-- `GET /healthz/deep` comprueba además que la API responde (`204` o `503`, sin
-  detalles). Es para uso manual o externo; Render no debe usarlo como
-  `healthCheckPath`.
+- `GET /healthz/deep` comprueba además que la API y su base responden
+  (`/api/health/ready`; `204` o `503`, sin detalles). Es para uso manual o
+  externo; Render no debe usarlo como `healthCheckPath`.
 - Render sólo realiza comprobación TCP nativa al servicio privado.
 - `GET /api/health/live` confirma que el proceso de la API vive.
 - `GET /api/health` y `GET /api/health/ready` consultan PostgreSQL y devuelven
-  `503` si la base no está disponible.
+  `503` si la base no está disponible. Son públicas y sólo responden
+  `{"status":"ok"}`: ni el nombre del servicio ni el detalle de la base.
 - Después de cada publicación, la comprobación funcional obligatoria es
   `https://URL-DE-LA-WEB/api/health`. Recorre web, DNS privado, API y base.
 
@@ -411,3 +412,65 @@ Tampoco se añadió `ANTHROPIC_API_KEY` ni se cambió el instalador Windows.
 - Despliegues y pre-deploy: <https://render.com/docs/deploys>
 - PostgreSQL y acceso: <https://render.com/docs/postgresql-creating-connecting>
 - Nginx `resolve`: <https://nginx.org/en/docs/http/ngx_http_upstream_module.html>
+
+## IP real del cliente (bloqueo de inicio de sesión y bitácora)
+
+La cadena es Cloudflare → proxy de Render → Nginx (web) → API (privada). Para
+Nginx, `$remote_addr` es el proxy de Render: la misma para todos los clientes.
+Por eso (auditoría de seguridad 2026-10-10, S-01/S-02/S-04; ver
+`docs/DECISIONES.md` punto 15):
+
+- Nginx toma la IP del cliente de `CF-Connecting-IP` **sólo** si la conexión
+  llega desde una red de `NEXORA_TRUSTED_EDGE_CIDRS` y si la cabecera contiene
+  una sola IP. Si no, usa `$remote_addr`, como antes. La envía a la API como
+  `X-Forwarded-For`/`X-Real-IP` y no reenvía `CF-Connecting-IP` ni
+  `True-Client-IP`. La `X-Forwarded-For` que manda el navegador nunca se usa.
+- `NEXORA_TRUSTED_EDGE_CIDRS` es una variable opcional del servicio web (redes
+  separadas por espacios o comas; `none` desactiva la cabecera). Al arrancar,
+  `deploy/render/render-trusted-edge.sh` la valida y la convierte en
+  configuración. Sin ella se usan las redes privadas, CGNAT y ULA:
+
+  ```text
+  10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 100.64.0.0/10 fc00::/7
+  ```
+
+- La API sólo cree `X-Forwarded-For` si la conexión viene de loopback o de una
+  red privada (`TRUSTED_PROXIES`, sintaxis de Express `trust proxy`, para otra
+  red interna). Así nadie fuera de la red privada elige su IP con cabeceras.
+- El bloqueo de cuenta **no** depende de que esto funcione: con la IP
+  colapsada sigue limitando a 10 contraseñas por hora y cuenta y deja entrar
+  a la cajera desde su equipo aprobado. La IP real sólo afina los límites por
+  dirección y llena `AuditLog.ip`.
+
+**Comprobar tras desplegar** (no verificable sin Render y Cloudflare reales):
+
+1. Inicia sesión desde dos redes distintas (p. ej. Wi-Fi de la tienda y datos
+   del celular) y consulta la base (la pantalla de bitácora no muestra la IP):
+
+   ```sql
+   SELECT action, ip, "createdAt" FROM "AuditLog"
+   WHERE action = 'login' ORDER BY "createdAt" DESC LIMIT 5;
+   ```
+
+   Debe aparecer la IP pública de cada red, no una `10.x`/`100.64.x` del
+   proxy. Si sale la del proxy de Render, mira en el registro de Nginx la
+   dirección de conexión y ajusta `NEXORA_TRUSTED_EDGE_CIDRS`; si sale la de
+   Nginx, ajusta `TRUSTED_PROXIES` en la API.
+
+2. Falsificación: ninguna de estas IP debe aparecer en la bitácora ni en
+   `AuthAttempt` (Cloudflare sustituye `CF-Connecting-IP` por la real):
+
+   ```sh
+   curl -s -X POST https://URL-DE-LA-WEB/api/auth/login \
+     -H 'Content-Type: application/json' \
+     -H 'X-Forwarded-For: 203.0.113.9' -H 'CF-Connecting-IP: 203.0.113.8' \
+     -d '{"login":"no-existe","password":"x"}'
+   ```
+
+   ```sql
+   SELECT key FROM "AuthAttempt" WHERE key LIKE '%203.0.113.%';  -- vacío
+   ```
+
+3. `curl -s https://URL-DE-LA-WEB/api/health` responde `{"status":"ok"}` y
+   `curl -s -o /dev/null -w '%{http_code}' https://URL-DE-LA-WEB/healthz/deep`
+   responde `204`.
