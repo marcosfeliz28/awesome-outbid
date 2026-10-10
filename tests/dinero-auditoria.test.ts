@@ -607,6 +607,67 @@ describe("Auditoría 01 · dinero", () => {
     );
   });
 
+  it("B-1: repreciar una venta offline más barata registra la diferencia como entrada de caja", async () => {
+    await withSettings({ allowOfflineSales: true }, async () => {
+      const c = await person("seller", "b1", 0);
+      const v = await product(1100, 500, 5);
+      const offlineUuid = randomUUID();
+      const body = (expectedTotal: number) => ({
+        sales: [
+          {
+            ...saleBody(c, v, 1, [{ method: "cash", amount: 1210 }]),
+            offlineUuid,
+            capturedAt: new Date(Date.now() - 100).toISOString(),
+            expectedTotal,
+          },
+        ],
+      });
+      // Se cobró 1,210 sin conexión; el precio actual es 1,100.
+      const first = await ok("/sales/sync", c.token, body(1210));
+      expect(first[0]?.status ?? first.results?.[0]?.status).toBe("conflict");
+      const second = await ok("/sales/sync", c.token, body(1100));
+      const synced = second[0] ?? second.results?.[0];
+      expect(synced.status).toBe("synced");
+      await ok("/sales/offline-resolution", c.token, {
+        offlineUuid,
+        action: "reprice",
+        previousTotal: 1210,
+        currentTotal: 1100,
+        reason: "Precio actualizado",
+      });
+      // Los 1,210 están en la gaveta: el esperado debe incluirlos.
+      const moves = await db.cashMovement.findMany({
+        where: { sessionId: c.cash.id, type: "in" },
+      });
+      expect(moves.map((m: any) => Number(m.amount))).toEqual([110]);
+      // Reintentar la resolución no duplica la entrada.
+      await ok("/sales/offline-resolution", c.token, {
+        offlineUuid,
+        action: "reprice",
+        previousTotal: 1210,
+        currentTotal: 1100,
+        reason: "Precio actualizado",
+      });
+      expect(
+        await db.cashMovement.count({
+          where: { sessionId: c.cash.id, type: "in" },
+        }),
+      ).toBe(1);
+      expect(
+        (
+          await close(c, {
+            countedCash: 1210,
+            notes: "",
+          })
+        ).status,
+      ).toBeLessThan(300);
+      const session = await db.cashSession.findUnique({
+        where: { id: c.cash.id },
+      });
+      expect(Number(session.differenceCash)).toBe(0);
+    });
+  });
+
   it("D-11: anular exige un equipo registrado", async () => {
     const c = await person("seller", "d11", 0);
     const v = await product(300, 100, 5);
