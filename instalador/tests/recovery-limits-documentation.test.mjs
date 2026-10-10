@@ -8,4 +8,8 @@ test('3j guía distingue integridad, atomicidad y cobertura de actividad', () =>
     assert.ok(text.includes(required), `Falta límite 3j: ${required}`);
   }
   assert.ok(!text.includes('conserva NOLOGIN **a propósito**: la base puede estar parcial'));
+  for (const required of ['information_schema', 'núcleo obligatorio', 'AuthSession.lastActivityAt', 'firma real de `Wait-FitStorePostgres`', 'CI completo en verde sigue pendiente']) {
+    assert.ok(text.includes(required), `Falta contrato actual 3j: ${required}`);
+  }
+  assert.ok(!text.includes('de los 38 modelos actuales'));
 });

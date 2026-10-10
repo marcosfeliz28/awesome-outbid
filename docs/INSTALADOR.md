@@ -256,10 +256,16 @@ marcador preservando la versión activa. No cambie servicios para forzar este
 procedimiento. La prueba Windows-Smoke en una máquina limpia sigue pendiente.
 
 La consulta también comprueba `Sale.updatedAt`, cotizaciones (`Quote`), compras,
-clientes, productos, configuración e incentivos: incluye las marcas
-`createdAt`, `updatedAt`, `openedAt` y `closedAt` de los 38 modelos actuales que
-las tienen, cotejadas con el esquema Prisma mediante una prueba. Una tabla o
-columna que falte rechaza la recuperación, no cuenta como cero. Una migración
+clientes, productos, configuración e incentivos. Obtiene de `information_schema`
+las tablas y columnas de fecha de la base real, no exige el catálogo completo
+de la versión nueva. Comprueba `createdAt`, `updatedAt`, `openedAt`, `closedAt`,
+`lastActivityAt`, `approvedAt`, `revokedAt` y `sentAt` cuando existan.
+El núcleo obligatorio es Sale, AuditLog, Payment, SaleReturn, CashMovement,
+CashSession e InventoryMovement con sus columnas esenciales: si falta alguna,
+rechaza la recuperación, no cuenta como cero. También exige que cada tabla
+enumerada por `pg_restore --list` del respaldo siga existiendo en la base real.
+Una tabla nueva ausente antes de migrar solo es aceptable si no pertenece al
+núcleo ni aparece en ese respaldo. Una migración
 que inserte en `AuditLog` después del corte también hace que la recuperación se
 rechace: es un cierre seguro deliberado y requiere revisión asistida. Cambios de
 configuración o cotizaciones sin auditoría pero con fecha posterior igualmente
@@ -274,6 +280,9 @@ La cobertura no demuestra todos los UPDATE o DELETE: `Brand`, `KitComponent`,
 genéricas `createdAt`/`updatedAt` en el esquema. Las marcas específicas de
 actividad de algunos modelos no equivalen a un historial completo de cambios;
 sin auditoría ni una marca comprobada, una escritura puede pasar inadvertida.
+En particular, `AuthSession.lastActivityAt` sí se consulta: AuthSession no está
+totalmente excluida. También se comprueban las fechas de actividad, aprobación y
+revocación de Terminal y `NotificationOutbox.sentAt` si existen en la base real.
 Un UPDATE de migración sobre `Variant` que dispare el trigger de
 `RealtimeEvent` después del corte también bloquea la recuperación: falla
 cerrada y requiere soporte, no significa que deba ignorarse ese evento.
@@ -349,6 +358,12 @@ en PGDATA para el token reducido de `pg_ctl`, y restaura las ACL originales en
 `finally`. Falta verificar ese diseño con un cluster creado por otra cuenta;
 las pruebas aisladas actuales no acreditan ese caso de Windows limpio.
 No se declara el instalador certificado ni se entrega a la tienda sin esta prueba.
+
+Las regresiones deben respetar la firma real de `Wait-FitStorePostgres`
+(`Paths`, `TimeoutSeconds`): no acepta `Secrets`; un stub con parámetros extra
+puede ocultar un fallo de recuperación. La confirmación de CI completo en verde sigue pendiente
+para esta entrega, además de Windows-Smoke en Windows limpio. Una prueba focal
+local aprobada no sustituye ninguno de esos requisitos ni certifica el instalador.
 
 Un segundo asistente se detiene antes de tocar archivos o activar un rollback.
 
