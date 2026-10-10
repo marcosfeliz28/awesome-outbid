@@ -12,6 +12,7 @@ export default defineConfig({
       "tests/perf-api.test.ts",
       "tests/drive-backup.test.ts",
       "tests/auth-lockout.test.ts",
+      "tests/offline-review-api.test.ts",
     ],
     testTimeout: 30000,
     hookTimeout: 60000,

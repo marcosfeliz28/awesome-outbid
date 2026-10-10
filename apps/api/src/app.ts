@@ -20,6 +20,7 @@ import { CashController } from "./cash";
 import { ReportsController } from "./reports";
 import { AlertEngine, AlertsController } from "./alerts";
 import { OfflineSalesController } from "./offline-sales";
+import { OfflineSaleReviewController } from "./offline-sale-review";
 import { IncentivesController } from "./incentives";
 import { NotificationsController, NotificationWorker } from "./notifications";
 import { RetentionWorker } from "./retention";
@@ -71,6 +72,7 @@ export function createAppModule(secret: string) {
       ReportsController,
       AlertsController,
       OfflineSalesController,
+      OfflineSaleReviewController,
       NotificationsController,
       IncentivesController,
       DriveBackupController,

@@ -143,6 +143,15 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
           Nexora POS son documentos internos y no sustituyen un comprobante
           fiscal (NCF/e-CF).
         </p>
+        <h3>Privacidad</h3>
+        <p className="about-privacy">
+          Nexora guarda los datos de clientes que registra la tienda (nombre y,
+          si se dan, teléfono, correo y cédula/RNC) sólo para sus ventas,
+          garantías y créditos. Cada recibo lo recuerda en el pie.{" "}
+          <a href="/privacidad.html" target="_blank" rel="noopener">
+            Aviso de privacidad para clientes
+          </a>
+        </p>
         <p>
           Usa fuentes Inter y Plus Jakarta Sans (SIL Open Font License 1.1),
           íconos Lucide (ISC) y librerías de código abierto (MIT, ISC,
@@ -351,7 +360,7 @@ function Login() {
               type="text"
               autoComplete="username"
               required
-              placeholder="mfeliz"
+              placeholder="Tu usuario o correo"
               value={login}
               onChange={(e) => setLogin(e.target.value)}
             />
@@ -688,11 +697,27 @@ function Shell() {
       localDB.cache.update("session", { "data.expiresAt": last + timeout });
     };
     stayActive.current = active;
+    // 05-A3: con artículos en el carrito o ventas sin sincronizar en este
+    // equipo, la inactividad no cierra la sesión. Sin internet, cerrarla
+    // dejaba a la cajera sin poder entrar ni vender y perdía el carrito; el
+    // plazo vuelve a contar cuando el carrito queda vacío y la cola, enviada.
+    const holdsWork = async () =>
+      useStore.getState().cart.length > 0 ||
+      (await localDB.sales
+        .where("userId")
+        .equals(user.id)
+        .filter((sale) => sale.status === "pending")
+        .count()
+        .catch(() => 0)) > 0;
     const check = async () => {
       if (closing || checking || Date.now() - last <= timeout - warnBefore)
         return;
       checking = true;
       try {
+        if (await holdsWork()) {
+          active();
+          return;
+        }
         // Otra pestaña de este equipo pudo tener actividad: el plazo guardado
         // es el de todo el equipo.
         const saved = await localDB.cache.get("session").catch(() => undefined);
@@ -946,9 +971,21 @@ function Shell() {
                 {can(user.permissions, "sale:write") && (
                   <button
                     onClick={async () => {
-                      setStaff(await api("/staff"));
-                      setSwitchUser(true);
-                      setAccount(false);
+                      // 05-B13: sin conexión la lista no llega; antes no se
+                      // veía nada.
+                      try {
+                        setStaff(await api("/staff"));
+                        setSwitchUser(true);
+                      } catch (e) {
+                        toast(
+                          isNetworkError(e)
+                            ? "Necesitas conexión para cambiar de vendedor."
+                            : (e as Error).message,
+                          true,
+                        );
+                      } finally {
+                        setAccount(false);
+                      }
                     }}
                   >
                     Cambiar vendedor con PIN
@@ -1090,7 +1127,8 @@ function Shell() {
                 userId: switchId,
                 pin,
               });
-              useStore.getState().clearCart();
+              // 05-M1: el carrito de quien sale queda guardado a su nombre
+              // (cartDraft.ts) y la nueva persona ve el suyo.
               client.clear();
               await saveSession(result.user, result.accessToken);
               setSwitchUser(false);

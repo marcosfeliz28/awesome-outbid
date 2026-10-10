@@ -313,9 +313,9 @@ export function Equipment() {
         <div>
           <h2>Este equipo</h2>
           <p>
-            Cada computadora, laptop o celular que factura o mueve mercancía
-            debe estar aprobado. Los equipos nuevos de vendedores y almacén
-            esperan tu aprobación.
+            Cada computadora, laptop o celular que vende o mueve mercancía debe
+            estar aprobado. Los equipos nuevos de vendedores y almacén esperan
+            tu aprobación.
           </p>
         </div>
         <form
@@ -475,8 +475,8 @@ export function DeviceGate() {
         <div>
           <strong>Este equipo fue revocado</strong>
           <p>
-            No puede facturar ni mover mercancía. Si fue un error, regístralo
-            como equipo nuevo y pide a un gerente que lo apruebe.
+            No puede vender ni mover mercancía. Si fue un error, regístralo como
+            equipo nuevo y pide a un gerente que lo apruebe.
           </p>
         </div>
         <Button
@@ -497,7 +497,7 @@ export function DeviceGate() {
       <div>
         <strong>Este equipo necesita aprobación</strong>
         <p>
-          Puedes consultar, pero para facturar o mover mercancía un gerente debe
+          Puedes consultar, pero para vender o mover mercancía un gerente debe
           aprobarlo: con su PIN aquí mismo o desde Configuración › Equipos.
         </p>
         <form

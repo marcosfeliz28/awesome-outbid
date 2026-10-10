@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { flushSync } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -22,6 +30,8 @@ import {
   Camera,
   Truck,
   ShoppingCart,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import {
@@ -51,14 +61,25 @@ import {
   type Variant,
 } from "./api";
 import {
+  CustomerPrivacyNotice,
   QueryState,
   attrLabel,
   categoryImage,
   matchesWords,
+  persistentError,
+  clearPersistentErrors,
+  toastWithAction,
   searchWords,
   toast,
 } from "./helpers";
-import { InvoicePrint, METHOD_LABEL, PrintSheet, printSoon } from "./Prints";
+import { scanBeep, scanSoundEnabled, setScanSoundEnabled } from "./scanSound";
+import {
+  InvoicePrint,
+  METHOD_LABEL,
+  NON_FISCAL_LEGEND,
+  PrintSheet,
+  printSoon,
+} from "./Prints";
 import {
   announcePriceChanges,
   CashElsewhere,
@@ -122,6 +143,11 @@ const manualDiscount = (i: CartItem, globalDiscount: number) => {
   const global = Math.min(100, Math.max(0, globalDiscount));
   return 100 - ((100 - line) * (100 - global)) / 100;
 };
+// Nombre de la línea en el ticket: producto y variante, salvo «Única».
+const lineName = (i: CartItem) => {
+  const label = attrLabel(i.variant.attributes || {});
+  return label === "Única" ? i.product.name : i.product.name + " · " + label;
+};
 const lineGross = (i: CartItem, qty = i.qty) =>
   money(d(qty).times(Number(i.variant.price)));
 // Parece un código: un solo bloque de dígitos (con «-» o «.», como 1600) o
@@ -175,8 +201,19 @@ export function POS({ go }: { go: (page: string) => void }) {
       email: "",
       legalId: "",
     }),
-    [camera, setCamera] = useState(false);
+    [camera, setCamera] = useState(false),
+    // 05-M2: el aviso «elige el cliente» va dentro de la ventana del cliente;
+    // como aviso flotante tapaba su título.
+    [pickerHint, setPickerHint] = useState(""),
+    [clientQuery, setClientQuery] = useState(""),
+    [sound, setSound] = useState(scanSoundEnabled),
+    // 05-A5: la última línea agregada se trae a la vista dentro del carrito y
+    // se resalta un instante (n alterna la animación para repetirla).
+    [lastAdded, setLastAdded] = useState<{ id: string; n: number } | null>(
+      null,
+    );
   const search = useRef<HTMLInputElement>(null);
+  const cartList = useRef<HTMLDivElement>(null);
   // La ventana de variantes se abrió con Enter desde el buscador: al elegir,
   // el buscador queda vacío como tras un escaneo (R9-caja-6).
   const clearOnChoose = useRef(false);
@@ -284,6 +321,25 @@ export function POS({ go }: { go: (page: string) => void }) {
       config.data?.taxIncluded !== false,
     ),
   );
+  const units = cart.reduce((a, i) => a + i.qty, 0);
+  // Sólo con la ventana abierta y memorizado: la caja se vuelve a dibujar
+  // con cada tecla y el lector necesita teclas seguidas (SCAN_GAP_MS).
+  const pickable = useMemo(() => {
+    if (!clientPicker) return [];
+    const clientWords = searchWords(clientQuery);
+    const finalConsumer = (c: any) =>
+      Number(/^consumidor final$/i.test(String(c.name).trim()));
+    return (customers.data ?? [])
+      .filter(
+        (c: any) =>
+          !clientWords.length ||
+          matchesWords(
+            [c.name, c.phone, c.legalId, c.email].filter(Boolean).join(" "),
+            clientWords,
+          ),
+      )
+      .sort((a: any, b: any) => finalConsumer(b) - finalConsumer(a));
+  }, [customers.data, clientQuery, clientPicker]);
   const total = money(totals.reduce((a, i) => a.plus(i.total), d(0))),
     subtotal = money(totals.reduce((a, i) => a.plus(i.subtotal), d(0))),
     tax = money(totals.reduce((a, i) => a.plus(i.tax), d(0))),
@@ -293,12 +349,16 @@ export function POS({ go }: { go: (page: string) => void }) {
     variant: Variant,
     product: Product,
   ): "added" | "negative" | false => {
-    const existing = cart.find((i) => i.variant.id === variant.id);
+    // El carrito del momento, no el de este render: los escaneos en cola
+    // (A4) se procesan seguidos en el mismo efecto.
+    const existing = useStore
+      .getState()
+      .cart.find((i) => i.variant.id === variant.id);
     if (
       (existing?.qty || 0) + 1 > Number(variant.stock) &&
       !(config.data?.allowNegativeStock && !product.category.requiresLot)
     ) {
-      toast(
+      say(
         "No hay suficiente stock de " +
           product.name +
           " (quedan " +
@@ -310,8 +370,10 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     add(variant, product);
     setChoosing(null);
+    clearPersistentErrors();
+    setLastAdded((last) => ({ id: variant.id, n: (last?.n ?? 0) + 1 }));
     if ((existing?.qty || 0) + 1 > Number(variant.stock)) {
-      toast(
+      say(
         "Advertencia: " + product.name + " quedará con stock negativo.",
         true,
       );
@@ -319,12 +381,18 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     return "added";
   };
+  const addRef = useRef<(product: Product) => void>(() => {});
+  const onAddProduct = useCallback(
+    (product: Product) => addRef.current(product),
+    [],
+  );
   const addProduct = (product: Product) => {
     clearOnChoose.current = false;
     return product.variants.length === 1
       ? choose(product.variants[0], product)
       : setChoosing(product);
   };
+  addRef.current = addProduct;
   // Línea del carrito con descuentos dentro de rango (R9-caja-8).
   const setLine = (id: string, change: Partial<CartItem>) =>
     setCart(
@@ -363,19 +431,13 @@ export function POS({ go }: { go: (page: string) => void }) {
         // La venta en espera conserva todos sus descuentos (R9-caja-4).
         globalDiscount: state.globalDiscount,
         ...wholesaleField(),
-        items: state.cart.map((i) => {
-          const label = attrLabel(i.variant.attributes || {});
-          return {
-            variantId: i.variant.id,
-            qty: i.qty,
-            discountPercent: i.discountPercent,
-            discountAmount: i.discountAmount,
-            name: (label === "Única"
-              ? i.product.name
-              : i.product.name + " · " + label
-            ).slice(0, 300),
-          };
-        }),
+        items: state.cart.map((i) => ({
+          variantId: i.variant.id,
+          qty: i.qty,
+          discountPercent: i.discountPercent,
+          discountAmount: i.discountAmount,
+          name: lineName(i).slice(0, 300),
+        })),
       });
       clearCart();
       await client.invalidateQueries({ queryKey: ["quotes"] });
@@ -388,11 +450,35 @@ export function POS({ go }: { go: (page: string) => void }) {
       return false;
     }
   };
+  // 05-M7: «Limpiar» vacía al instante, pero durante 8 s se puede deshacer:
+  // un toque por error ya no borra una venta grande.
+  const clearWithUndo = () => {
+    const before = useStore.getState();
+    const saved = {
+      cart: before.cart,
+      customerId: before.customerId,
+      globalDiscount: before.globalDiscount,
+    };
+    const wholesale = useWholesale.getState().on;
+    const count = saved.cart.reduce((a, i) => a + i.qty, 0);
+    clearCart();
+    toastWithAction(
+      count === 1
+        ? "Carrito vaciado (1 artículo)."
+        : "Carrito vaciado (" + count + " artículos).",
+      "Deshacer",
+      () => {
+        if (useStore.getState().cart.length) return;
+        useStore.setState(saved);
+        if (wholesale) useWholesale.getState().set(true);
+      },
+    );
+  };
   const charge = () => {
     if (!cart.length) return;
     if (!customerId) {
+      setPickerHint("Selecciona o crea el cliente antes de cobrar.");
       setClientPicker(true);
-      toast("Selecciona o crea el cliente antes de cobrar.", true);
       return;
     }
     if (!session) {
@@ -410,6 +496,27 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     setCheckout(true);
   };
+  useEffect(() => {
+    const box = cartList.current;
+    const row = lastAdded
+      ? box?.querySelector<HTMLElement>(
+          `[data-variant="${CSS.escape(lastAdded.id)}"]`,
+        )
+      : null;
+    if (!box || !row) return;
+    // Sólo se desplaza la lista del carrito: en el celular la página no salta
+    // del catálogo al carrito con cada escaneo.
+    const top = row.offsetTop,
+      bottom = top + row.offsetHeight;
+    if (bottom > box.scrollTop + box.clientHeight)
+      box.scrollTop = bottom - box.clientHeight;
+    else if (top < box.scrollTop) box.scrollTop = top;
+  }, [lastAdded]);
+  const showCart = () => {
+    const panel = document.getElementById("pos-cart");
+    panel?.scrollIntoView({ block: "start" });
+    panel?.focus({ preventScroll: true });
+  };
   // El atajo usa siempre la versión de este render: con el efecto atado a
   // [cart, session, online], F8 guardaba el cliente anterior (R9-caja-7).
   const onKey = useRef<(e: KeyboardEvent) => void>(() => {});
@@ -421,6 +528,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     if (e.key === "F4") {
       e.preventDefault();
+      setPickerHint("");
       setClientPicker(true);
     }
     if (e.key === "F8") {
@@ -514,7 +622,6 @@ export function POS({ go }: { go: (page: string) => void }) {
   // Búsqueda por palabras sueltas, sin acentos, apóstrofos ni orden:
   // "iso100 vanilla 5lb" encuentra "ISO100 Hydrolyzed - Dymatize - Gourmet
   // Vanilla / 5 lb" y "loreal" encuentra "L'Oréal".
-  const words = searchWords(q);
   const searchText = (p: Product) =>
     [
       p.name,
@@ -529,27 +636,40 @@ export function POS({ go }: { go: (page: string) => void }) {
   const inCategory = (products.data ?? []).filter(
     (p) => category === "all" || p.categoryId === category,
   );
-  const exactMatches = inCategory.filter(
-    (p) => !words.length || matchesWords(searchText(p), words),
+  // Lo que muestra la lista para un texto. Es una función del texto (y no
+  // del buscador) para procesar con el mismo criterio un Enter que quedó en
+  // cola mientras cargaba el catálogo (A4).
+  const findProducts = (text: string) => {
+    const words = searchWords(text);
+    const exactMatches = inCategory.filter(
+      (p) => !words.length || matchesWords(searchText(p), words),
+    );
+    // Ninguno tiene todas las palabras ("proteina whey" frente a nombres en
+    // inglés): se muestran los que tienen más de ellas, como sugerencia.
+    const approximate = !exactMatches.length && words.length > 1;
+    const filtered = approximate
+      ? inCategory
+          .map((p) => ({
+            p,
+            hits: words.filter(
+              (w) => w.length >= 3 && matchesWords(searchText(p), [w]),
+            ).length,
+          }))
+          .filter((x) => x.hits > 0)
+          .sort((a, b) => b.hits - a.hits)
+          .map((x) => x.p)
+      : exactMatches;
+    return { filtered, approximate };
+  };
+  // Memorizado: escribir un descuento o escanear no vuelve a calcular ni a
+  // dibujar las tarjetas del catálogo (el lector necesita teclas seguidas).
+  const { filtered, approximate } = useMemo(
+    () => findProducts(q),
+    [products.data, category, q],
   );
-  // Ninguno tiene todas las palabras ("proteina whey" frente a nombres en
-  // inglés): se muestran los que tienen más de ellas, como sugerencia.
-  const approximate = !exactMatches.length && words.length > 1;
-  const filtered = approximate
-    ? inCategory
-        .map((p) => ({
-          p,
-          hits: words.filter(
-            (w) => w.length >= 3 && matchesWords(searchText(p), [w]),
-          ).length,
-        }))
-        .filter((x) => x.hits > 0)
-        .sort((a, b) => b.hits - a.hits)
-        .map((x) => x.p)
-    : exactMatches;
   // Con cientos de productos se dibujan 120 tarjetas; la búsqueda llega al resto.
   const MAX_CARDS = 120;
-  const visible = filtered.slice(0, MAX_CARDS);
+  const visible = useMemo(() => filtered.slice(0, MAX_CARDS), [filtered]);
   // Código exacto: primero el código de barras y, si ninguno coincide, el
   // código del producto (el ID del inventario, por ejemplo 1216). Así se cobra
   // escribiendo el número + Enter, sin depender del orden del catálogo.
@@ -571,32 +691,59 @@ export function POS({ go }: { go: (page: string) => void }) {
     if (distinct > 1) return { ambiguous: distinct } as const;
     return hits[0];
   };
-  // Un escaneo o un Enter hecho mientras el catálogo aún se descarga (al entrar
-  // o recargar la caja) no puede decir «Código no encontrado»: se guarda y se
-  // procesa cuando el catálogo llega. Si la descarga falla o queda en pausa
-  // (sin conexión ni copia local), el código guardado sale con el aviso de
-  // siempre en vez de quedar esperando.
-  const pendingScan = useRef<{ kind: "scan"; code: string } | "enter" | null>(
-    null,
-  );
+  // A4: escaneos y Enter hechos mientras el catálogo aún se descarga (al
+  // entrar, al recargar o tras una actualización). Antes se guardaba uno solo
+  // y el buscador no se vaciaba: el siguiente código se pegaba al anterior y
+  // al llegar el catálogo no entraba ningún artículo. Ahora cada código va a
+  // una cola, el buscador queda vacío para el siguiente y, al llegar el
+  // catálogo, se procesan en orden. Si la descarga falla o queda en pausa
+  // (sin conexión ni copia local) se dice qué códigos no entraron.
+  const scanQueue = useRef<{ kind: "scan" | "enter"; text: string }[]>([]);
   const catalogLoading = () =>
     products.data === undefined &&
     products.isPending &&
     products.fetchStatus !== "paused";
-  const scan = (code: string) => {
-    if (catalogLoading()) {
-      pendingScan.current = { kind: "scan", code };
-      setQ(code);
-      toast("Cargando el catálogo… el código se agregará al terminar.");
-      return;
+  const queueWhileLoading = (kind: "scan" | "enter", text: string) => {
+    scanQueue.current.push({ kind, text: text.trim() });
+    setQ("");
+    const waiting = scanQueue.current.length;
+    toast(
+      "Cargando el catálogo… " +
+        (waiting === 1
+          ? "1 código en espera"
+          : waiting + " códigos en espera") +
+        "; se agregarán al terminar.",
+    );
+  };
+  // Avisos del escaneo. Mientras se procesa la cola se juntan para dar uno
+  // solo al final; si no, cada aviso tapaba al anterior.
+  const batch = useRef<{ message: string; error: boolean }[] | null>(null);
+  // 05-M2: un error del escaneo queda a la vista hasta el siguiente escaneo
+  // correcto, con un pitido grave; lo agregado da un pitido corto.
+  const say = (message: string, error = false) => {
+    if (batch.current) batch.current.push({ message, error });
+    else if (error) {
+      persistentError(message);
+      scanBeep("error");
+    } else toast(message);
+  };
+  const added = (name: string) => {
+    if (batch.current)
+      batch.current.push({ message: name + " agregado.", error: false });
+    else {
+      toast(name + " agregado.");
+      scanBeep("ok");
     }
+  };
+  const scan = (code: string) => {
+    if (catalogLoading()) return queueWhileLoading("scan", code);
     const found = byCode(code);
     if (found && "ambiguous" in found) {
       setQ(code);
       // Seleccionado, para que el siguiente escaneo lo reemplace en vez de
       // pegarse al código anterior (R9-caja-2).
       requestAnimationFrame(() => search.current?.select());
-      toast(
+      say(
         "El código " +
           code.trim() +
           " es de " +
@@ -613,7 +760,7 @@ export function POS({ go }: { go: (page: string) => void }) {
       if (result) {
         setQ("");
         // La advertencia de stock negativo ya está a la vista.
-        if (result === "added") toast(product.name + " agregado.");
+        if (result === "added") added(product.name);
       } else {
         // Sin stock: el código queda a la vista, pero seleccionado, para
         // que el siguiente escaneo lo reemplace en vez de sumarse.
@@ -623,21 +770,18 @@ export function POS({ go }: { go: (page: string) => void }) {
     } else {
       setQ(code);
       requestAnimationFrame(() => search.current?.select());
-      toast("Código no encontrado: " + code.trim() + ".", true);
+      say("Código no encontrado: " + code.trim() + ".", true);
     }
   };
-  // Enter en el buscador (teclado o lector).
-  const enter = () => {
-    const text = q.trim();
+  // Enter en el buscador (teclado o lector) con el texto escrito.
+  const enterText = (raw: string) => {
+    const text = raw.trim();
     if (!text) return;
-    if (catalogLoading()) {
-      pendingScan.current = "enter";
-      toast("Cargando el catálogo… se agregará al terminar.");
-      return;
-    }
-    if (byCode(text)) return scan(q);
+    if (catalogLoading()) return queueWhileLoading("enter", text);
+    if (byCode(text)) return scan(text);
+    const { filtered, approximate } = findProducts(text);
     const warn = (message: string) => {
-      toast(message, true);
+      say(message, true);
       search.current?.select();
     };
     // Un código que no es de ningún producto activo (por ejemplo, el de uno
@@ -658,7 +802,7 @@ export function POS({ go }: { go: (page: string) => void }) {
         // Como al escanear: aviso y buscador vacío, para que el siguiente
         // escaneo no se pegue a las palabras (R9-caja-6).
         setQ("");
-        if (result === "added") toast(product.name + " agregado.");
+        if (result === "added") added(product.name);
       } else search.current?.select();
       return;
     }
@@ -669,17 +813,45 @@ export function POS({ go }: { go: (page: string) => void }) {
         : "No se agregó nada: no hay productos con esas palabras.",
     );
   };
-  // Cuando termina la descarga se procesa el escaneo que quedó esperando.
+  const enter = () => enterText(q);
+  // Cuando termina la descarga se procesa la cola, en orden.
   // useLayoutEffect: corre antes de que el navegador entregue otra tecla, así
   // un Enter justo al llegar el catálogo no agrega el producto dos veces.
   const waitingCatalog = catalogLoading();
   useLayoutEffect(() => {
-    if (waitingCatalog) return;
-    const pending = pendingScan.current;
-    if (!pending) return;
-    pendingScan.current = null;
-    if (pending === "enter") enter();
-    else scan(pending.code);
+    if (waitingCatalog || !scanQueue.current.length) return;
+    const queued = scanQueue.current;
+    scanQueue.current = [];
+    if (products.data === undefined) {
+      toast(
+        "No se pudo cargar el catálogo: no se agregó " +
+          queued.map((item) => item.text).join(", ") +
+          ". Vuelve a escanear cuando aparezcan los productos.",
+        true,
+      );
+      return;
+    }
+    batch.current = [];
+    try {
+      for (const item of queued)
+        if (item.kind === "scan") scan(item.text);
+        else enterText(item.text);
+    } finally {
+      const notices = batch.current ?? [];
+      batch.current = null;
+      const errors = notices.filter((n) => n.error);
+      if (errors.length) {
+        persistentError(errors.map((n) => n.message).join(" "));
+        scanBeep("error");
+      } else if (notices.length) {
+        toast(
+          notices.length === 1
+            ? notices[0].message
+            : notices.length + " artículos escaneados agregados.",
+        );
+        scanBeep("ok");
+      }
+    }
   }, [waitingCatalog]);
   return (
     <div className="pos-layout">
@@ -711,6 +883,22 @@ export function POS({ go }: { go: (page: string) => void }) {
             <Button variant="secondary" onClick={() => setHeld(true)}>
               <Pause size={16} />
               En espera
+            </Button>
+            <Button
+              variant="secondary"
+              aria-label="Pitido del lector"
+              aria-pressed={sound}
+              title={
+                sound
+                  ? "Pitido del lector: encendido"
+                  : "Pitido del lector: apagado"
+              }
+              onClick={() => {
+                setScanSoundEnabled(!sound);
+                setSound(!sound);
+              }}
+            >
+              {sound ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </Button>
             <Button
               variant="secondary"
@@ -763,67 +951,11 @@ export function POS({ go }: { go: (page: string) => void }) {
         </div>
         <QueryState query={products}>
           {filtered.length ? (
-            <div className="product-grid">
-              {visible.map((p) => {
-                const stock = p.variants.reduce(
-                  (a, v) => a + Number(v.stock),
-                  0,
-                );
-                return (
-                  <button
-                    className="product-card"
-                    onClick={() => addProduct(p)}
-                    key={p.id}
-                    disabled={
-                      stock <= 0 &&
-                      !(
-                        config.data?.allowNegativeStock &&
-                        !p.category.requiresLot
-                      )
-                    }
-                  >
-                    <div className="product-image">
-                      <img
-                        src={p.imageUrl || categoryImage(p.category.name)}
-                        alt={p.name}
-                      />
-                      {stock <= Number(p.minStock) && (
-                        <Badge tone={stock === 0 ? "danger" : "warning"}>
-                          {stock === 0 ? "Agotado" : "Últimas unidades"}
-                        </Badge>
-                      )}
-                      <span className="add-product">
-                        <Plus size={18} />
-                      </span>
-                    </div>
-                    <div className="product-info">
-                      <span className="product-category">
-                        {p.category.name}
-                      </span>
-                      <h3 title={p.name}>{p.name}</h3>
-                      <p>
-                        {p.variants.length > 1
-                          ? `${p.variants.length} variantes`
-                          : [
-                              "Cód. " + p.variants[0]?.sku,
-                              attrLabel(p.variants[0]?.attributes || {}),
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                      </p>
-                      <div className="product-bottom">
-                        <strong>
-                          {formatMoney(
-                            Math.min(...p.variants.map((v) => Number(v.price))),
-                          )}
-                        </strong>
-                        <span>{stock} en stock</span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <ProductGrid
+              products={visible}
+              allowNegativeStock={!!config.data?.allowNegativeStock}
+              onAdd={onAddProduct}
+            />
           ) : (
             <Empty
               title="No encontramos ese producto"
@@ -850,13 +982,14 @@ export function POS({ go }: { go: (page: string) => void }) {
                   : "Caja abierta"}
             </span>
           </div>
-          <Badge tone="violet">
-            {cart.reduce((a, i) => a + i.qty, 0)} artículos
-          </Badge>
+          <Badge tone="violet">{units} artículos</Badge>
         </div>
         <button
           className="customer-selector"
-          onClick={() => setClientPicker(true)}
+          onClick={() => {
+            setPickerHint("");
+            setClientPicker(true);
+          }}
         >
           <span className="customer-avatar">
             <UserRound size={18} />
@@ -873,13 +1006,23 @@ export function POS({ go }: { go: (page: string) => void }) {
         <WholesaleToggle />
         <div
           className="cart-items"
+          ref={cartList}
           tabIndex={0}
           role="region"
           aria-label="Artículos del carrito"
         >
           {cart.length ? (
             cart.map((i, index) => (
-              <div className="cart-item" key={i.variant.id}>
+              <div
+                className={
+                  "cart-item" +
+                  (lastAdded?.id === i.variant.id
+                    ? " just-added flash-" + (lastAdded.n % 2)
+                    : "")
+                }
+                data-variant={i.variant.id}
+                key={i.variant.id}
+              >
                 <img
                   src={
                     i.product.imageUrl ||
@@ -1050,7 +1193,7 @@ export function POS({ go }: { go: (page: string) => void }) {
               <FileText size={14} />
               Cotizar
             </button>
-            <button disabled={!cart.length} onClick={clearCart}>
+            <button disabled={!cart.length} onClick={clearWithUndo}>
               <Trash2 size={14} />
               Limpiar
             </button>
@@ -1060,23 +1203,36 @@ export function POS({ go }: { go: (page: string) => void }) {
           </small>
         </div>
       </aside>
-      <Button
-        variant="success"
-        className="charge-button pos-mobile-charge"
-        disabled={!cart.length}
-        onClick={charge}
-        aria-label={`Cobrar ${formatMoney(total)}`}
-      >
-        <CreditCard size={20} />
-        {cart.length ? (
-          <>
-            <span>Cobrar · {formatMoney(total)}</span>
-            <kbd>F12</kbd>
-          </>
-        ) : (
-          <span>Carrito vacío · Busca un artículo</span>
-        )}
-      </Button>
+      {/* 05-A5: en el celular el carrito queda debajo del catálogo; la barra
+          fija dice cuántos artículos hay y lleva al carrito o al cobro. */}
+      <div className="pos-mobile-bar">
+        <button
+          type="button"
+          className="pos-mobile-cart"
+          onClick={showCart}
+          aria-label={`Ver carrito (${units} artículos)`}
+        >
+          <ShoppingCart size={20} aria-hidden="true" />
+          <span>{units}</span>
+        </button>
+        <Button
+          variant="success"
+          className="charge-button pos-mobile-charge"
+          disabled={!cart.length}
+          onClick={charge}
+          aria-label={`Cobrar ${formatMoney(total)}`}
+        >
+          <CreditCard size={20} />
+          {cart.length ? (
+            <>
+              <span>Cobrar · {formatMoney(total)}</span>
+              <kbd>F12</kbd>
+            </>
+          ) : (
+            <span>Carrito vacío · Busca un artículo</span>
+          )}
+        </Button>
+      </div>
       <Modal
         open={!!choosing}
         onClose={() => setChoosing(null)}
@@ -1113,6 +1269,11 @@ export function POS({ go }: { go: (page: string) => void }) {
         onClose={() => setClientPicker(false)}
         title="¿Para quién es esta venta?"
       >
+        {pickerHint && (
+          <p className="form-error" role="alert">
+            {pickerHint}
+          </p>
+        )}
         {creatingClient ? (
           <form
             className="form-stack"
@@ -1184,6 +1345,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                 }
               />
             </label>
+            <CustomerPrivacyNotice />
             {clientError && <p className="form-error">{clientError}</p>}
             <div className="form-actions">
               <Button
@@ -1200,13 +1362,40 @@ export function POS({ go }: { go: (page: string) => void }) {
           </form>
         ) : (
           <>
+            {/* 05-M4: buscar por nombre, teléfono o cédula; Enter elige el
+                primero. «Consumidor final», si existe, va primero. */}
+            <label className="field customer-search">
+              <span className="sr-only">Buscar cliente</span>
+              <input
+                autoFocus
+                aria-label="Buscar cliente"
+                placeholder="Nombre, teléfono o cédula"
+                value={clientQuery}
+                onChange={(e) => setClientQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  const first = pickable[0];
+                  if (!first) return;
+                  setCustomer(first.id);
+                  setClientPicker(false);
+                  setClientQuery("");
+                }}
+              />
+            </label>
+            {!pickable.length && (
+              <p className="form-hint">
+                Ningún cliente coincide. Créalo con «Nuevo cliente aquí mismo».
+              </p>
+            )}
             <div className="customer-list">
-              {customers.data?.map((c: any) => (
+              {pickable.map((c: any) => (
                 <button
                   key={c.id}
                   onClick={() => {
                     setCustomer(c.id);
                     setClientPicker(false);
+                    setClientQuery("");
                   }}
                 >
                   <UserRound />
@@ -1263,6 +1452,73 @@ export function POS({ go }: { go: (page: string) => void }) {
     </div>
   );
 }
+
+// Tarjetas del catálogo, memorizadas: sólo se vuelven a dibujar si cambia la
+// lista (búsqueda, categoría o stock), no con cada tecla de un descuento.
+const ProductGrid = memo(function ProductGrid({
+  products,
+  allowNegativeStock,
+  onAdd,
+}: {
+  products: Product[];
+  allowNegativeStock: boolean;
+  onAdd: (product: Product) => void;
+}) {
+  return (
+    <div className="product-grid">
+      {products.map((p) => {
+        const stock = p.variants.reduce((a, v) => a + Number(v.stock), 0);
+        return (
+          <button
+            className="product-card"
+            onClick={() => onAdd(p)}
+            key={p.id}
+            disabled={
+              stock <= 0 && !(allowNegativeStock && !p.category.requiresLot)
+            }
+          >
+            <div className="product-image">
+              <img
+                src={p.imageUrl || categoryImage(p.category.name)}
+                alt={p.name}
+              />
+              {stock <= Number(p.minStock) && (
+                <Badge tone={stock === 0 ? "danger" : "warning"}>
+                  {stock === 0 ? "Agotado" : "Últimas unidades"}
+                </Badge>
+              )}
+              <span className="add-product">
+                <Plus size={18} />
+              </span>
+            </div>
+            <div className="product-info">
+              <span className="product-category">{p.category.name}</span>
+              <h3 title={p.name}>{p.name}</h3>
+              <p>
+                {p.variants.length > 1
+                  ? `${p.variants.length} variantes`
+                  : [
+                      "Cód. " + p.variants[0]?.sku,
+                      attrLabel(p.variants[0]?.attributes || {}),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+              </p>
+              <div className="product-bottom">
+                <strong>
+                  {formatMoney(
+                    Math.min(...p.variants.map((v) => Number(v.price))),
+                  )}
+                </strong>
+                <span>{stock} en stock</span>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+});
 
 function HeldSales({
   products,
@@ -1592,9 +1848,11 @@ function Checkout({
     };
     // El ticket lleva el descuento de cada línea para que cuadre con el total
     // cobrado (R9-caja-9).
+    // 05-M8: con la variante (talla, color, sabor, tono): dos «Shaker
+    // FitStore» de distinto color ya no se confunden en el ticket.
     const snapshot = cart.map((i, index) => ({
       variantId: i.variant.id,
-      name: i.product.name,
+      name: lineName(i),
       sku: i.variant.sku,
       qty: i.qty,
       unitPrice: Number(i.variant.price),
@@ -1619,6 +1877,7 @@ function Checkout({
           await localDB.sales.put({
             id: uuid.current,
             userId: user!.id,
+            userName: user!.name,
             branchId: user!.branchId,
             input: recoveryInput,
             status: "pending",
@@ -1698,6 +1957,7 @@ function Checkout({
         await localDB.sales.put({
           id: uuid.current,
           userId: user!.id,
+          userName: user!.name,
           branchId: user!.branchId,
           input,
           status: "pending",
@@ -1752,13 +2012,18 @@ function Checkout({
       setReceipt({
         ...sale,
         snapshot: printed,
+        // A1: el cliente se guarda en el recibo antes de vaciar el carrito
+        // (clearCart deja customerId en null); si no, el ticket de un crédito
+        // o contraentrega decía «Consumidor final» y WhatsApp salía sin
+        // destinatario.
+        customer: customers.find((c) => c.id === customerId) ?? null,
         cashierName: user!.name,
         wholesale: !!input.wholesale,
         change: payment.change,
         tendered: payments,
         createdAt: sale.createdAt ?? new Date().toISOString(),
       });
-      // Impresión automática de la factura (Ajustes).
+      // Impresión automática del recibo (Ajustes).
       if (config?.autoPrintReceipt) printSoon();
       clearCart();
       await client.invalidateQueries();
@@ -1816,8 +2081,8 @@ function Checkout({
     void finish();
   }, [online, awaitingConfirmation, busy, receipt]);
   if (receipt) {
-    const text = `Nexora POS · ${receipt.number}\nTotal: ${formatMoney(receipt.total)}\nGracias por tu compra. Documento interno, no fiscal.`;
-    const customer = customers.find((c) => c.id === customerId);
+    const text = `${config?.name || "Nexora POS"} · Recibo ${receipt.number}\nTotal: ${formatMoney(receipt.total)}\n${NON_FISCAL_LEGEND}\nGracias por tu compra.`;
+    const customer = receipt.customer;
     // SEC-05: un dato enmascarado («•••••••123») no es un destinatario; la
     // cajera elige el contacto en WhatsApp o en el correo.
     const contact = (value?: string | null) =>
@@ -1851,7 +2116,7 @@ function Checkout({
         <div className="receipt-actions">
           <Button className="print-big" onClick={() => window.print()}>
             <Printer size={20} />
-            Imprimir factura
+            Imprimir recibo
           </Button>
           {!receipt.offline && (
             <Button
@@ -1864,7 +2129,7 @@ function Checkout({
               }
             >
               <FileText size={17} />
-              Factura PDF
+              Recibo PDF
             </Button>
           )}
           <a
@@ -2009,7 +2274,7 @@ function Checkout({
         {method === "cod" && (
           <p className="cod-hint">
             Crédito / contraentrega: la mercancía sale ahora y el saldo queda a
-            nombre del cliente. Sólo Marcos o Genesis podrán registrar después
+            nombre del cliente. Sólo la administración podrá registrar después
             pagos parciales o completos por efectivo, tarjeta o transferencia.
           </p>
         )}

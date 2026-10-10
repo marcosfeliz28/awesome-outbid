@@ -2413,7 +2413,7 @@ export class SalesController {
       doc.fontSize(9).text("RNC: " + business.legalId, { align: "center" });
     doc
       .fontSize(10)
-      .text("Documento interno — no fiscal")
+      .text("DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL")
       .text(sale.number)
       .text(
         "Fecha y hora: " +

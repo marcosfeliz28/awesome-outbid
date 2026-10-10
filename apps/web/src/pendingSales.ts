@@ -238,3 +238,100 @@ export async function discardPendingSale(
   });
   await dependencies.deleteLocal(sale.id);
 }
+
+/**
+ * 05-A2: qué hacer con una venta sin conexión que el servidor no aceptó, en
+ * palabras de la caja. Sale del mensaje de la sincronización.
+ */
+export function conflictHelp(message?: string) {
+  const text = message ?? "";
+  if (isPendingPriceConflict(text))
+    return "Cambió un precio o una promoción: pulsa «Actualizar precios y reintentar».";
+  if (/stock|existencia|unidades|lote/i.test(text))
+    return "Falta inventario. Pide a gerencia que ajuste el inventario y pulsa «Reintentar». Si no hay unidades, gerencia la descarta con su PIN.";
+  if (/48 horas/i.test(text))
+    return "Pasó el plazo de 48 horas: ya no se puede reintentar. Pide a gerencia que la descarte con su PIN y, si corresponde, vuelve a cobrarla en línea.";
+  if (/sin conexi[oó]n|offline/i.test(text))
+    return "Las ventas sin conexión están desactivadas: ya no se puede reintentar. Pide a gerencia que la descarte con su PIN y, si corresponde, vuelve a cobrarla en línea.";
+  if (/cliente/i.test(text))
+    return "Revisa el cliente y pulsa «Reintentar». Si no se puede, pide a gerencia que la descarte con su PIN.";
+  return "Pulsa «Reintentar». Si vuelve a fallar, avisa a gerencia: puede descartarla con su PIN.";
+}
+
+/** Lo que la caja guardó de la venta, para la bitácora del descarte. */
+export function pendingSaleDetail(sale: PendingSale) {
+  const snapshot: any[] = Array.isArray(sale.receipt?.snapshot)
+    ? sale.receipt.snapshot
+    : [];
+  const money2 = (value: unknown) =>
+    Math.max(0, Math.round(Number(value ?? 0) * 100) / 100) || 0;
+  return {
+    receiptNumber: String(sale.receipt?.number ?? sale.id.slice(0, 8)).slice(
+      0,
+      40,
+    ),
+    total: money2(sale.receipt?.total ?? sale.input.expectedTotal),
+    capturedAt: sale.input.capturedAt
+      ? String(sale.input.capturedAt).slice(0, 40)
+      : undefined,
+    items: (snapshot.length
+      ? snapshot.map((line) => ({
+          variantId: line.variantId,
+          name: String(line.name ?? "Artículo").slice(0, 300),
+          sku: line.sku ? String(line.sku).slice(0, 100) : undefined,
+          qty: Number(line.qty) || 1,
+          unitPrice: money2(line.unitPrice),
+          lineTotal: money2(line.lineTotal),
+        }))
+      : sale.input.items.map((item) => ({
+          variantId: item.variantId,
+          name: "Artículo",
+          qty: Number(item.qty) || 1,
+        }))
+    ).slice(0, 200),
+    payments: sale.input.payments.slice(0, 20).map((payment) => ({
+      method: String(payment.method).slice(0, 20),
+      amount: money2(payment.amount),
+    })),
+  };
+}
+
+/**
+ * 05-A2: descarta con aprobación de gerencia (su PIN en el equipo de la
+ * cajera, o su propia sesión). Primero queda la bitácora en el servidor y
+ * sólo después se borra la copia local.
+ */
+export async function discardWithApproval(
+  sale: PendingSale,
+  reason: string,
+  managerPin: string | undefined,
+  dependencies: {
+    post: (path: string, body: unknown) => Promise<unknown>;
+    deleteLocal: (id: string) => Promise<unknown>;
+  },
+) {
+  await dependencies.post("/sales/offline-review/discard", {
+    offlineUuid: sale.input.offlineUuid,
+    reason: reason.trim(),
+    ...(managerPin ? { managerPin } : {}),
+    detail: pendingSaleDetail(sale),
+  });
+  await dependencies.deleteLocal(sale.id);
+}
+
+/** 05-A2: aviso del cierre de caja cuando quedan ventas en este equipo. */
+export function pendingCloseMessage(total: number, conflicts: number) {
+  if (!total) return "";
+  return (
+    (total === 1
+      ? "Hay 1 venta guardada"
+      : "Hay " + total + " ventas guardadas") +
+    " en este equipo sin registrar en el servidor" +
+    (conflicts
+      ? " (" +
+        conflicts +
+        (conflicts === 1 ? " requiere revisión)" : " requieren revisión)")
+      : "") +
+    ". Antes de cerrar: en Caja › Ventas guardadas en este dispositivo pulsa «Sincronizar»; si alguna requiere revisión, la cajera la reintenta o gerencia la descarta con su PIN."
+  );
+}

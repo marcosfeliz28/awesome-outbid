@@ -45,6 +45,8 @@ export default defineConfig({
       "tests/perf-apertura.test.ts",
       "tests/perf-indexes-postgres.test.ts",
       "tests/drive-backup-core.test.ts",
+      "tests/caja-web-ticket.test.ts",
+      "tests/offline-review-web.test.ts",
     ],
   },
 });

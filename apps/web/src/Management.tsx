@@ -40,6 +40,7 @@ import {
 } from "./api";
 import {
   QueryState as BaseQueryState,
+  CustomerPrivacyNotice,
   FormModal,
   ConfirmModal,
   type Field,
@@ -77,7 +78,8 @@ import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
 import {
   applyPendingSaleReprice,
-  discardPendingSale,
+  conflictHelp,
+  discardWithApproval,
   isPendingPriceConflict,
 } from "./pendingSales";
 
@@ -1425,6 +1427,28 @@ export function Expenses() {
   );
 }
 
+// 05-B2: el tipo de alerta en español (antes «offline conflict», «low
+// stock»…). Un tipo nuevo sin etiqueta se muestra legible igual.
+const ALERT_TYPE_LABEL: Record<string, string> = {
+  offline_conflict: "Venta sin conexión",
+  receivable: "Por cobrar",
+  cash_difference: "Diferencia de caja",
+  return_waste: "Merma por devolución",
+  expense_budget: "Presupuesto de gastos",
+  expired: "Vencido",
+  expiring: "Por vencer",
+  low_margin: "Margen bajo",
+  low_sales: "Ventas bajas",
+  low_stock: "Stock bajo",
+  negative_stock: "Stock negativo",
+  no_movement: "Sin movimiento",
+  out_of_stock: "Agotado",
+  overstock: "Exceso de stock",
+  unusual_discount: "Descuento inusual",
+};
+const alertTypeLabel = (type: string) =>
+  ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " ");
+
 export function Cash() {
   const user = useStore((s) => s.user)!;
   const client = useQueryClient();
@@ -1432,10 +1456,18 @@ export function Cash() {
     queryKey: ["cash-sessions"],
     queryFn: () => api("/cash-sessions"),
   });
+  // 05-A2: gerencia ve en este equipo las ventas guardadas de toda su
+  // sucursal (antes sólo las suyas, que eran ninguna); la cajera, las suyas.
+  // 05-M3: es una consulta local (IndexedDB): sin internet también corre.
+  const manages = can(user.permissions, "sale:manage");
   const pending = useQuery({
-    queryKey: ["pending-sales"],
-    queryFn: () => localDB.sales.where("userId").equals(user.id).toArray(),
+    queryKey: ["pending-sales", user.id, manages],
+    queryFn: () =>
+      manages
+        ? localDB.sales.filter((s) => s.branchId === user.branchId).toArray()
+        : localDB.sales.where("userId").equals(user.id).toArray(),
     refetchInterval: 5000,
+    networkMode: "always",
   });
   const customers = useQuery({
     queryKey: ["customers"],
@@ -1566,7 +1598,7 @@ export function Cash() {
         <div className="panel">
           <Empty
             title="Tu día empieza con una caja abierta"
-            description="Registra el fondo inicial para comenzar a facturar."
+            description="Registra el fondo inicial para comenzar a vender."
             action={
               <Button onClick={() => setOpen(true)}>Abrir mi caja</Button>
             }
@@ -1580,7 +1612,11 @@ export function Cash() {
           <div className="panel-heading">
             <div>
               <h2>Ventas guardadas en este dispositivo</h2>
-              <p>Conservadas hasta recibir confirmación del servidor.</p>
+              <p>
+                Conservadas hasta recibir confirmación del servidor. Si una
+                requiere revisión, la cajera la reintenta y gerencia la puede
+                descartar con su PIN.
+              </p>
             </div>
             <Button
               variant="secondary"
@@ -1604,6 +1640,17 @@ export function Cash() {
             rows={pending.data}
             columns={[
               { label: "Recibo", render: (s) => s.receipt.number },
+              ...(manages
+                ? [
+                    {
+                      label: "Cobró",
+                      render: (s: any) =>
+                        s.userId === user.id
+                          ? user.name
+                          : (s.userName ?? "Otra persona de este equipo"),
+                    },
+                  ]
+                : []),
               { label: "Monto", render: (s) => formatMoney(s.receipt.total) },
               {
                 label: "Estado",
@@ -1617,16 +1664,30 @@ export function Cash() {
               },
               {
                 label: "Detalle",
-                render: (s) => s.message || "Esperando conexión",
+                render: (s) => (
+                  <>
+                    {s.message || "Esperando conexión"}
+                    {s.status === "conflict" && (
+                      <small className="pending-sale-help">
+                        {s.userId === user.id
+                          ? conflictHelp(s.message)
+                          : "Sólo " +
+                            (s.userName ?? "quien la cobró") +
+                            " puede reintentarla desde su sesión. Si no se puede cobrar, descártala."}
+                      </small>
+                    )}
+                  </>
+                ),
               },
               {
                 label: "Acción",
                 render: (s) => {
                   if (s.status !== "conflict") return null;
                   const priceConflict = isPendingPriceConflict(s.message);
+                  const own = s.userId === user.id;
                   return (
                     <div className="pending-sale-actions">
-                      {!s.input.customerId && (
+                      {own && !s.input.customerId && (
                         <select
                           aria-label={`Cliente para el recibo ${s.receipt.number}`}
                           defaultValue=""
@@ -1655,7 +1716,7 @@ export function Cash() {
                           ))}
                         </select>
                       )}
-                      {priceConflict && (
+                      {own && priceConflict && (
                         <Button
                           variant="secondary"
                           onClick={() =>
@@ -1667,7 +1728,7 @@ export function Cash() {
                           Actualizar precios y reintentar
                         </Button>
                       )}
-                      {s.input.customerId && !priceConflict && (
+                      {own && s.input.customerId && !priceConflict && (
                         <Button
                           variant="secondary"
                           onClick={async () => {
@@ -1675,23 +1736,32 @@ export function Cash() {
                               status: "pending",
                               message: undefined,
                             });
+                            // 05-A2: reintenta ya, no al próximo
+                            // «Sincronizar»: la cajera ve el resultado.
+                            try {
+                              const result = await syncSales();
+                              toast(
+                                result.conflicts
+                                  ? "La venta sigue requiriendo revisión."
+                                  : result.synced
+                                    ? "Venta sincronizada."
+                                    : "Lista para reintentar al volver la conexión.",
+                                result.conflicts > 0,
+                              );
+                            } catch (e: any) {
+                              toast(e.message, true);
+                            }
                             await client.invalidateQueries({
                               queryKey: ["pending-sales"],
                             });
-                            toast("Lista para reintentar.");
                           }}
                         >
                           Reintentar
                         </Button>
                       )}
-                      {can(user.permissions, "sale:manage") && (
-                        <Button
-                          variant="danger"
-                          onClick={() => setDiscarding(s)}
-                        >
-                          Descartar
-                        </Button>
-                      )}
+                      <Button variant="danger" onClick={() => setDiscarding(s)}>
+                        {manages ? "Descartar" : "Descartar con PIN de gerente"}
+                      </Button>
                     </div>
                   );
                 },
@@ -1896,24 +1966,129 @@ export function Cash() {
         />
       )}
       {discarding && (
-        <ConfirmModal
-          title="Descartar venta pendiente"
-          description={`Se eliminará ${discarding.receipt?.number ?? "esta venta"} de este dispositivo. La decisión y el motivo quedarán en la bitácora.`}
-          confirmLabel="Descartar"
+        <DiscardOfflineSale
+          sale={discarding}
+          needsPin={!manages}
           onClose={() => setDiscarding(null)}
-          onConfirm={async (reason) => {
-            await discardPendingSale(discarding, reason, {
-              recordResolution: (body) =>
-                post("/sales/offline-resolution", body),
-              deleteLocal: (id) => localDB.sales.delete(id),
-            });
+          onDiscarded={async () => {
+            setDiscarding(null);
             await client.invalidateQueries({ queryKey: ["pending-sales"] });
-            toast("Venta pendiente descartada.");
+            toast("Venta sin conexión descartada. Quedó en la bitácora.");
           }}
         />
       )}
       <PrintModal printing={printing} onClose={() => setPrinting(null)} />
     </div>
+  );
+}
+
+// 05-A2: descartar una venta sin conexión en conflicto, con el PIN de un
+// gerente si quien la pide es la cajera. La bitácora guarda quién aprobó, el
+// motivo y lo que la caja tenía (artículos y pagos).
+function DiscardOfflineSale({
+  sale,
+  needsPin,
+  onClose,
+  onDiscarded,
+}: {
+  sale: any;
+  needsPin: boolean;
+  onClose: () => void;
+  onDiscarded: () => void;
+}) {
+  const [reason, setReason] = useState(""),
+    [pin, setPin] = useState(""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const lines: any[] = sale.receipt?.snapshot ?? [];
+  const paid = (sale.input?.payments ?? []).reduce(
+    (sum: number, p: any) => sum + Number(p.amount ?? 0),
+    0,
+  );
+  return (
+    <Modal open onClose={onClose} title="Descartar venta sin conexión">
+      <form
+        className="form-stack"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          setError("");
+          try {
+            await discardWithApproval(
+              sale,
+              reason,
+              needsPin ? pin : undefined,
+              {
+                post,
+                deleteLocal: (id) => localDB.sales.delete(id),
+              },
+            );
+            onDiscarded();
+          } catch (e: any) {
+            setError(businessErrorMessage(e));
+            setBusy(false);
+          }
+        }}
+      >
+        <p>
+          <strong>{sale.receipt?.number}</strong> ·{" "}
+          {formatMoney(sale.receipt?.total ?? 0)}
+          {sale.userName ? " · cobró " + sale.userName : ""}
+        </p>
+        {!!lines.length && (
+          <ul className="discard-lines">
+            {lines.map((line, index) => (
+              <li key={index}>
+                {line.qty} × {line.name}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="form-hint">
+          La venta no se registra ni descuenta inventario. Lo cobrado en este
+          equipo ({formatMoney(paid)}) queda anotado en la bitácora y en una
+          alerta para gerencia: si el dinero quedó en la caja, el cuadre lo
+          mostrará como sobrante.
+        </p>
+        <label className="field">
+          <span>Motivo obligatorio</span>
+          <textarea
+            required
+            minLength={3}
+            maxLength={300}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </label>
+        {needsPin && (
+          <label className="field">
+            <span>PIN del gerente</span>
+            <input
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              pattern="[0-9]{4,6}"
+              required
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+            />
+          </label>
+        )}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="modal-footer">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button variant="danger" disabled={busy}>
+            {busy ? "Descartando…" : "Descartar venta"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -2036,6 +2211,7 @@ export function Customers() {
         <FormModal
           title="Nuevo cliente"
           fields={fields}
+          notice={<CustomerPrivacyNotice />}
           onClose={() => setCreate(false)}
           onSubmit={(data) => post("/customers", data)}
         />
@@ -2044,6 +2220,7 @@ export function Customers() {
         <FormModal
           title="Editar cliente"
           fields={fields}
+          notice={<CustomerPrivacyNotice />}
           // P5: «Editar» tampoco muestra teléfono ni cédula/RNC completos.
           initial={{
             ...editing,
@@ -2563,7 +2740,7 @@ export function Alerts() {
                 <div>
                   <strong>{a.message}</strong>
                   <p>
-                    {dateLabel(a.createdAt)} · {a.type.replaceAll("_", " ")}
+                    {dateLabel(a.createdAt)} · {alertTypeLabel(a.type)}
                   </p>
                 </div>
                 <Badge tone={a.severity === "high" ? "danger" : "warning"}>
@@ -2651,7 +2828,7 @@ export function SalesHistory() {
           <Filter
             value={search}
             onChange={setSearch}
-            placeholder="Buscar número de factura"
+            placeholder="Buscar número de venta"
           />
           <label className="table-search">
             <span>Fecha</span>
@@ -2667,7 +2844,10 @@ export function SalesHistory() {
           <DataTable
             rows={query.data || []}
             columns={[
-              { label: "Factura", render: (s) => <strong>{s.number}</strong> },
+              {
+                label: "Venta n.º",
+                render: (s) => <strong>{s.number}</strong>,
+              },
               { label: "Fecha", render: (s) => dateLabel(s.createdAt) },
               {
                 label: "Estado",
@@ -2925,15 +3105,15 @@ export function SalesHistory() {
       {voiding && (
         <ConfirmModal
           title={"Anular " + voiding.number}
-          description="Solo un administrador puede hacerlo. La factura se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
-          confirmLabel="Sí, anular factura"
+          description="Solo un administrador puede hacerlo. La venta se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
+          confirmLabel="Sí, anular venta"
           onClose={() => setVoiding(null)}
           onConfirm={async (reason) => {
             await post("/sales/" + voiding.id + "/void", {
               reason,
             });
             await client.invalidateQueries();
-            toast("Factura anulada.");
+            toast("Venta anulada.");
           }}
         />
       )}
@@ -3324,7 +3504,7 @@ export function Configuration() {
     { key: "phone2", label: "Teléfono 2 / WhatsApp" },
     {
       key: "autoPrintReceipt",
-      label: "Imprimir la factura automáticamente al cobrar",
+      label: "Imprimir el recibo automáticamente al cobrar",
       type: "checkbox",
     },
     {
