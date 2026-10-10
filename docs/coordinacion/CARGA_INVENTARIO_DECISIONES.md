@@ -37,3 +37,6 @@ La dueña aclaró que las cantidades de Isopure son entradas nuevas: se SUMAN a 
 
 ## ACTUALIZACIÓN 4 (10 oct): el segundo «3 Chocolate» de Isopure es OTRO sabor
 Dutch Chocolate (1173) suma 3; Chocolate Peanut Butter (1632) 5; y el segundo «chocolate» es un sabor distinto que no está en el listado: producto nuevo «Isopure - Chocolate / 3 lb» (ID 1634, 3 u., costo 2,700, precio 5,000). PENDIENTE: que la dueña confirme el nombre exacto del sabor. Archivo vigente: v3 (632 filas).
+
+## ACTUALIZACIÓN 5 (10 oct): Broche Negro («Broche Negra»)
+Conteo: 2XS 1 (sin cambio), S 4 (1579: 5→4), M 4, XL 3, 2XL 6 (sin cambio). XS y L no nombradas: sin tocar. Archivo vigente: `inventario-listo-para-cargar-v4.xlsx` (632 filas; fuera del repositorio). La importación es idempotente: si ya se cargó la v3, cargar la v4 aplica solo la diferencia.
