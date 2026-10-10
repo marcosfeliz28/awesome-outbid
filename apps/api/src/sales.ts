@@ -391,6 +391,9 @@ function cashCollected(
       .reduce((sum, p) => sum.plus(p.amount as any), d(0)),
   );
 }
+// Decisión 38: una caja es de un usuario; nadie opera con la de otra persona.
+const OTHER_CASH =
+  "Esta caja es de otra persona. Cada usuario vende y mueve dinero sólo en su propia caja; abre la tuya.";
 export async function cashLock(
   tx: any,
   actor: Actor,
@@ -413,11 +416,12 @@ export async function cashLock(
       session.userId !== actor.id &&
       !(manager && can(actor.permissions, "sale:manage"))
     )
-      denied();
+      denied(OTHER_CASH);
     conflict("La caja ya está cerrada. Abre una caja para seguir vendiendo.");
   }
   const own = session.userId === actor.id;
-  if (!own && !(manager && can(actor.permissions, "sale:manage"))) denied();
+  if (!own && !(manager && can(actor.permissions, "sale:manage")))
+    denied(OTHER_CASH);
   if (
     capturedAt &&
     (capturedAt < session.openedAt ||
@@ -726,6 +730,10 @@ export class SalesController {
           false,
           capturedAt,
         );
+        // Decisión 38: el vendedor de la venta es el dueño de la caja donde se
+        // cobra. cashLock ya exige que la caja sea de quien vende; esto lo
+        // deja como invariante explícito por si esa regla cambia.
+        if (cashSession.userId !== actor.id) denied(OTHER_CASH);
         const customer = input.customerId
           ? await lockActiveCustomer(tx, actor, input.customerId)
           : null;

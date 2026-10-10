@@ -36,7 +36,6 @@ import {
   reason,
   audit,
   bad,
-  conflict,
   denied,
   canViewCashExpected,
 } from "./common";
@@ -420,6 +419,16 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
       number: cashier?.cashierNumber ?? null,
       name: cashier?.name ?? "",
     },
+    // Quién cerró la caja; «en nombre de» cuando no es su dueña. Las cajas
+    // cerradas antes de la decisión 38 no lo guardaron: null.
+    closedBy: details.closedBy?.id
+      ? {
+          id: details.closedBy.id,
+          name: details.closedBy.name ?? "",
+          onBehalfOf: details.closedBy.id !== session.userId,
+        }
+      : null,
+    nonFiscalNotice: "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL",
     openedAt: session.openedAt,
     closedAt: session.closedAt,
     denominations: counts.lines.map((l) => ({
@@ -534,6 +543,15 @@ export class CashController {
       this.db,
       sessions.map((s) => s.registerId),
     );
+    // Dueño de cada caja: gerencia ve de quién es cada una para cerrarla.
+    const owners = new Map(
+      (
+        await this.db.user.findMany({
+          where: { id: { in: [...new Set(sessions.map((s) => s.userId))] } },
+          select: { id: true, name: true },
+        })
+      ).map((u) => [u.id, u.name]),
+    );
     // La cajera nunca recibe el esperado (cierre ciego): ni se calcula.
     const expectedBySession = showExpected
       ? await cashExpectedMany(this.db, sessions)
@@ -553,6 +571,7 @@ export class CashController {
         return {
           ...visible,
           registerName: registerName(s.registerId),
+          userName: owners.get(s.userId) ?? null,
           ...(showExpected
             ? {
                 expectedCash,
@@ -649,8 +668,8 @@ export class CashController {
     try {
       return await this.db.$transaction(async (tx) => {
         // Una apertura es poco frecuente. Serializar las aperturas de la sucursal
-        // evita que dos usuarios distintos compitan por el mismo terminal y que
-        // el índice único parcial termine mostrando un error Prisma al cajero.
+        // evita que el índice único parcial (una caja abierta por usuario)
+        // termine mostrando un error Prisma al cajero en un doble clic.
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${actor.branchId + ":cash-open"}))::text AS locked`;
         // Repetir "Abrir caja" (doble clic, respuesta perdida o una pantalla
         // desactualizada) no debe crear otra caja ni dejar al usuario bloqueado.
@@ -664,14 +683,8 @@ export class CashController {
           },
         });
         if (own) return own;
-        const busy = await tx.cashSession.findFirst({
-          where: {
-            branchId: actor.branchId,
-            closedAt: null,
-            registerId: data.registerId,
-          },
-        });
-        if (busy) conflict("Este equipo ya tiene otra caja abierta.");
+        // Decisión 38: otra persona puede tener su caja abierta en este mismo
+        // equipo; la caja es de quien la abre, no del equipo.
         const row = await tx.cashSession.create({
           data: { ...data, userId: actor.id, branchId: actor.branchId },
         });
@@ -711,14 +724,6 @@ export class CashController {
         },
       });
       if (own) return own;
-      const busy = await this.db.cashSession.findFirst({
-        where: {
-          branchId: actor.branchId,
-          closedAt: null,
-          registerId: data.registerId,
-        },
-      });
-      if (busy) conflict("Este equipo ya tiene otra caja abierta.");
       throw error;
     }
   }
@@ -897,15 +902,6 @@ export class CashController {
       });
       if (session.userId !== actor.id) denied();
       if (session.registerId === target) return session;
-      const busy = await tx.cashSession.findFirst({
-        where: {
-          branchId: actor.branchId,
-          closedAt: null,
-          registerId: target,
-          id: { not: sessionId },
-        },
-      });
-      if (busy) bad("Este equipo ya tiene otra caja abierta.");
       const from = await terminalName(tx, session.registerId);
       const to = await terminalName(tx, target!);
       const row = await tx.cashSession.update({
@@ -1000,6 +996,8 @@ export class CashController {
           left: split!.left,
           usdRate: settings?.usdRate ?? null,
           eurRate: settings?.eurRate ?? null,
+          // Decisión 38: quién cerró la caja (puede no ser su dueño).
+          closedBy: { id: actor.id, name: actor.name },
         },
       };
       const differences = closeDifferences(data, expected);
@@ -1030,6 +1028,23 @@ export class CashController {
         },
       });
       await audit(tx, actor, "close", "cash", id, session, row);
+      // Cierre de emergencia: la administración cierra la caja de otra
+      // persona. Queda «cerrada por X en nombre de Y» con el equipo.
+      if (session.userId !== actor.id) {
+        const owner = await tx.user.findUnique({
+          where: { id: session.userId },
+          select: { name: true },
+        });
+        await audit(tx, actor, "close_on_behalf", "cash", id, undefined, {
+          ownerId: session.userId,
+          ownerName: owner?.name ?? null,
+          closedById: actor.id,
+          closedByName: actor.name,
+          registerId: session.registerId,
+          terminal: await terminalName(tx, session.registerId),
+          notes: input.notes,
+        });
+      }
       // D-10: Prisma.Decimal(0) es un objeto (verdadero); se compara el número.
       if (
         Number(row.differenceCash) ||

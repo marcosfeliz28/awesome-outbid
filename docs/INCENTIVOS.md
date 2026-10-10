@@ -29,7 +29,7 @@ Cada cajera gana dinero por cada producto que vende y se cuadra a fin de mes. Pe
 - Transferencia: sólo suma al **verificarla**; verificarla otra vez no duplica. Si se rechaza una transferencia de la venta, se descuenta lo acreditado de más.
 - Devoluciones y anulaciones descuentan **sólo lo ya acreditado**, a nombre de la misma cajera y en el mes de la devolución. Anular un crédito sin cobrar no crea montos negativos.
 - «Mis incentivos» muestra aparte el **incentivo pendiente de cobro (estimado)** de los créditos abiertos; no está en el total ganado.
-- No retroactivo: `Sale.incentiveOnCollection` es `false` para toda venta existente (migración `202610240101_credito_cobros`) y esas ventas no se tocan.
+- No retroactivo: `Sale.incentiveOnCollection` es `false` para toda venta existente (migración `202610240201_credito_cobros`) y esas ventas no se tocan.
 - Idempotencia: `(saleItemId, kind, refId)` único, con `refId` = el pago (cobro o verificación), la devolución o la venta; repetir un envío con el mismo `operationId` no crea entradas nuevas.
 
 ## Quién ve qué

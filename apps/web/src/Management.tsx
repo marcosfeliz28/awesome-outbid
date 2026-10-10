@@ -1820,6 +1820,14 @@ export function Cash() {
           <DataTable
             rows={query.data || []}
             columns={[
+              ...(can(user.permissions, "sale:manage")
+                ? [
+                    {
+                      label: "Cajero",
+                      render: (s: any) => <strong>{s.userName ?? "—"}</strong>,
+                    },
+                  ]
+                : []),
               {
                 label: "Equipo",
                 render: (s) => (

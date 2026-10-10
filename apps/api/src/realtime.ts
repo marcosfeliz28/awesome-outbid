@@ -381,6 +381,14 @@ export class RealtimeController {
     const open = await this.db.cashSession.findMany({
       where: { branchId: actor.branchId, closedAt: null },
     });
+    const cashOwners = new Map(
+      (
+        await this.db.user.findMany({
+          where: { id: { in: open.map((c) => c.userId) } },
+          select: { id: true, name: true },
+        })
+      ).map((u) => [u.id, u.name]),
+    );
     return rows.map((t) => ({
       ...publicTerminal(t),
       connected:
@@ -389,7 +397,15 @@ export class RealtimeController {
       lastUserName: name(t.lastUserId),
       createdByName: name(t.createdBy),
       approvedByName: name(t.approvedBy),
+      // Varias personas pueden tener su caja abierta en el mismo equipo
+      // (decisión 38): openCash conserva la primera por compatibilidad.
       openCash: open.find((c) => c.registerId === t.id) ?? null,
+      openCashes: open
+        .filter((c) => c.registerId === t.id)
+        .map((c) => ({
+          ...c,
+          userName: name(c.userId) ?? cashOwners.get(c.userId) ?? null,
+        })),
     }));
   }
   @Post("terminals/:id/revoke")
