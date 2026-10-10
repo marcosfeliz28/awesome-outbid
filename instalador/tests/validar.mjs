@@ -159,12 +159,50 @@ assertOrdered(
     "Move-Item -LiteralPath $actualInstall -Destination $failedInstall",
     "Move-Item -LiteralPath $snapshotPath -Destination $actualInstall",
     'Set-FitStoreUpdatePhase -Paths $paths -Phase "rollback-files-restored"',
-    "Ensure-RestoredApplicationService -Paths $paths -Name $script:ApiService",
-    "Ensure-RestoredApplicationService -Paths $paths -Name $script:WebService",
+    "foreach ($service in @($script:ApiService, $script:WebService))",
+    "Ensure-RestoredApplicationService -Paths $paths -Name $service -KeepDisabled:$RecoverInterrupted",
     "Start-FitStoreApplication",
   ],
   "El rollback debe persistir el movimiento de archivos y volver a registrar ambos servicios antes de iniciarlos",
 );
+// El loop debe registrar ambas identidades y conservar disabled durante la
+// recuperacion interrumpida; no basta con encontrar un nombre en un comentario.
+const assertRollbackServices = (source) => {
+  assert.match(
+    source,
+    /foreach \(\$service in @\(\$script:ApiService, \$script:WebService\)\) \{\s*\$account = Ensure-RestoredApplicationService -Paths \$paths -Name \$service -KeepDisabled:\$RecoverInterrupted/,
+    "Ambos servicios deben pasar por el registro real con KeepDisabled",
+  );
+  assert.match(
+    source,
+    /\$mode = if \(\$KeepDisabled\) \{ 'disabled' \} else \{ 'delayed-auto' \}\s*Set-FitStoreServiceStartMode -Name \$Name -Mode \$mode/,
+    "La funcion de registro debe aplicar el modo disabled, no ignorar el switch",
+  );
+  assertOrdered(
+    source,
+    [
+      "Ensure-RestoredApplicationService -Paths $paths -Name $service -KeepDisabled:$RecoverInterrupted",
+      "Set-FitStoreServiceStartMode -Name $script:ApiService -Mode 'delayed-auto'",
+      "Set-FitStoreServiceStartMode -Name $script:WebService -Mode 'delayed-auto'",
+      "Start-FitStoreApplication",
+    ],
+    "Ambas cuentas deben estar registradas antes de habilitar/iniciar servicios",
+  );
+};
+assertRollbackServices(rollbackScript);
+for (const mutant of [
+  rollbackScript.replace(
+    "@($script:ApiService, $script:WebService)",
+    "@($script:ApiService)",
+  ),
+  rollbackScript.replace("-KeepDisabled:$RecoverInterrupted", ""),
+  rollbackScript.replace("{ 'disabled' }", "{ 'delayed-auto' }"),
+]) {
+  assert.throws(
+    () => assertRollbackServices(mutant),
+    "El contrato no debe aceptar omitir Web o KeepDisabled",
+  );
+}
 assert.match(rollbackScript, /\$Paths\.WinSW/);
 
 const restoreScript = await readFile(
