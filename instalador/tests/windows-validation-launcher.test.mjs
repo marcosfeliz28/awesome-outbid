@@ -47,7 +47,7 @@ test("3i runner pasa PgBin solo a pruebas PostgreSQL y conecta todos los contrat
     assert.ok(call, name);
     assert.deepEqual(call.args.slice(-2),['-PgBin','C:/fixture/postgres/bin']);
   }
-  for(const name of ['Recovery-Physical-Directory','Preflight-Backup-Fallback','Rollback-Service-Sid','Recovery-Acl-Interruption']){
+  for(const name of ['Recovery-Physical-Directory','Preflight-Backup-Fallback','Rollback-Service-Sid','Recovery-Acl-Interruption','Recovery-Pending-Acl-Always']){
     const call=calls.find(c=>c.args.includes(`instalador/tests/${name}.ps1`));
     assert.ok(call,name);assert.equal(call.args.includes('-PgBin'),false,name);
   }
