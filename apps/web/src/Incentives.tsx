@@ -333,7 +333,8 @@ export function IncentivesPage() {
             <Download size={16} />
             Exportar Excel
           </Button>
-          {admin && report && !report.closed && month <= currentMonth() && (
+          {/* B-3: sólo un mes terminado se cierra (la API lo exige). */}
+          {admin && report && !report.closed && month < currentMonth() && (
             <Button onClick={() => setClosing(true)}>
               <Lock size={16} />
               Cerrar mes
@@ -360,6 +361,12 @@ export function IncentivesPage() {
                 <Badge tone="warning">Mes abierto · cifras preliminares</Badge>
               )}
             </div>
+            {admin && !report.closed && month === currentMonth() && (
+              <p className="incentive-hint">
+                El mes en curso se cierra cuando termine, a partir del día 1 del
+                mes siguiente.
+              </p>
+            )}
             {report.openPeriod && report.openPeriod !== currentMonth() && (
               <p className="incentive-hint">
                 Este mes ya se cerró: las ventas y devoluciones nuevas cuentan

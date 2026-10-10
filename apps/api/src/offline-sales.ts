@@ -5,7 +5,7 @@ import {
   NotFoundException,
   Post,
 } from "@nestjs/common";
-import { can, money, z } from "@fitstore/shared";
+import { can, formatAmount, money, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -17,6 +17,7 @@ import {
   denied,
   parse,
 } from "./common";
+import { refreshClosedCash } from "./cash";
 
 const resolutionBase = {
   offlineUuid: z.string().uuid(),
@@ -196,7 +197,7 @@ export class OfflineSalesController {
           entityId: sale.id,
         },
       });
-      if (!existing)
+      if (!existing) {
         await audit(
           tx,
           actor,
@@ -213,6 +214,33 @@ export class OfflineSalesController {
             cashChange,
           },
         );
+        // B-1 (auditoría 01): la venta quedó con el precio actual y un
+        // «cambio» que el cliente nunca recibió: pagó el total anterior y esa
+        // diferencia sigue en la gaveta. Una entrada de caja por ese monto
+        // deja el esperado igual al efectivo real, en vez de un sobrante que
+        // nadie espera. Sólo una vez (la auditoría de arriba la protege).
+        if (
+          onlyCash &&
+          data.previousTotal > data.currentTotal &&
+          sale.cashSessionId
+        ) {
+          await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${sale.cashSessionId}::uuid FOR UPDATE`;
+          const surplus = money(data.previousTotal - data.currentTotal);
+          await tx.cashMovement.create({
+            data: {
+              sessionId: sale.cashSessionId,
+              type: "in",
+              amount: surplus,
+              reason: `Diferencia de precio de la venta offline ${sale.number}: el cliente pagó RD$ ${formatAmount(data.previousTotal)} y no recibió esa diferencia.`,
+              userId: actor.id,
+            },
+          });
+          const cash = await tx.cashSession.findUnique({
+            where: { id: sale.cashSessionId },
+          });
+          if (cash?.closedAt) await refreshClosedCash(tx, cash);
+        }
+      }
       return { ok: true, saleId: sale.id };
     });
   }

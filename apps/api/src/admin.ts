@@ -185,6 +185,25 @@ const cashierNumber = z.number().int().min(1).max(999999);
 const newPinSchema = z
   .string()
   .regex(/^\d{6}$/, "El PIN debe tener 6 dígitos (sólo números).");
+
+// D-M4: con la clave del formulario, las peticiones repetidas se serializan
+// (candado consultivo por clave) y la segunda recibe la fila de la primera.
+// La misma clave con otros datos es un error, no un registro nuevo.
+async function idempotent<T>(
+  tx: any,
+  operationId: string | undefined,
+  find: () => Promise<T | null>,
+  same: (row: T) => boolean,
+  label: string,
+): Promise<T | null> {
+  if (!operationId) return null;
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"op:" + operationId}))::text AS locked`;
+  const row = await find();
+  if (row && !same(row))
+    bad(`La clave de la operación ya corresponde a otro ${label}.`);
+  return row;
+}
+
 @Controller()
 export class AdminController {
   constructor(
@@ -543,8 +562,10 @@ export class AdminController {
   @Post("supplier-payments")
   @Permit("purchase:write")
   async supplierPayment(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    const data = parse(
+    const { operationId, ...data } = parse(
       z.object({
+        // D-M4 (auditoría 06): clave que la web genera una vez por formulario.
+        operationId: uuid.optional(),
         supplierId: uuid,
         // 2 decimales y un tope (D-08): 1e15 es un 400, no un error 500 de
         // Decimal(14,2) en la base.
@@ -557,19 +578,42 @@ export class AdminController {
     await this.db.supplier.findFirstOrThrow({
       where: { id: data.supplierId, branchId: actor.branchId },
     });
-    const row = await this.db.supplierPayment.create({
-      data: { ...data, createdBy: actor.id, branchId: actor.branchId },
+    return this.db.$transaction(async (tx) => {
+      // D-M4: un doble clic o un reintento con la misma clave devuelve el
+      // mismo pago en vez de rebajar dos veces la cuenta por pagar.
+      const existing = await idempotent(
+        tx,
+        operationId,
+        () => tx.supplierPayment.findUnique({ where: { operationId } }),
+        (row: any) =>
+          row.branchId === actor.branchId &&
+          row.createdBy === actor.id &&
+          row.supplierId === data.supplierId &&
+          Number(row.amount) === data.amount &&
+          row.method === data.method &&
+          (row.reference ?? undefined) === data.reference,
+        "pago",
+      );
+      if (existing) return existing;
+      const row = await tx.supplierPayment.create({
+        data: {
+          ...data,
+          createdBy: actor.id,
+          branchId: actor.branchId,
+          ...(operationId ? { operationId } : {}),
+        },
+      });
+      await audit(
+        tx,
+        actor,
+        "payment",
+        "supplier",
+        data.supplierId,
+        undefined,
+        row,
+      );
+      return row;
     });
-    await audit(
-      this.db,
-      actor,
-      "payment",
-      "supplier",
-      data.supplierId,
-      undefined,
-      row,
-    );
-    return row;
   }
   @Get("expense-categories") @Permit("expense:write") expenseCategories() {
     return this.db.expenseCategory.findMany({ orderBy: { name: "asc" } });
@@ -606,8 +650,10 @@ export class AdminController {
   @Post("expenses")
   @Permit("expense:write")
   async expense(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    const data = parse(
+    const { operationId, ...data } = parse(
       z.object({
+        // D-M4 (auditoría 06): clave que la web genera una vez por formulario.
+        operationId: uuid.optional(),
         categoryId: uuid,
         // Igual que el pago a proveedor (D-08).
         amount: moneyAmount(10000000),
@@ -620,12 +666,28 @@ export class AdminController {
       body,
     );
     return this.db.$transaction(async (tx) => {
+      // D-M4: un reintento con la misma clave devuelve el mismo gasto.
+      const existing = await idempotent(
+        tx,
+        operationId,
+        () => tx.expense.findUnique({ where: { operationId } }),
+        (row: any) =>
+          row.branchId === actor.branchId &&
+          row.createdBy === actor.id &&
+          row.categoryId === data.categoryId &&
+          Number(row.amount) === data.amount &&
+          row.method === data.method &&
+          row.description === data.description,
+        "gasto",
+      );
+      if (existing) return existing;
       const row = await tx.expense.create({
         data: {
           ...data,
           date: data.date ? new Date(data.date) : new Date(),
           createdBy: actor.id,
           branchId: actor.branchId,
+          ...(operationId ? { operationId } : {}),
         },
       });
       await audit(tx, actor, "create", "expense", row.id, undefined, row);

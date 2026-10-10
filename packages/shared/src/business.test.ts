@@ -583,3 +583,33 @@ describe("D-01 · la contraentrega pasa por la aprobación del crédito", () => 
     expect(receivableNeedsApproval(credit(800), {}, false)).toBe(false);
   });
 });
+
+describe("M-2 · el umbral del crédito y la contraentrega es por cliente", () => {
+  const on = { allowCreditSales: true, creditApprovalThreshold: 1000 };
+  const cod = (amount: number) => [{ method: "cod", amount }];
+  const credit = (amount: number) => [{ method: "credit", amount }];
+  it("la deuda abierta del cliente cuenta para la cajera", () => {
+    expect(receivableNeedsApproval(cod(900), on, false, 0)).toBe(false);
+    expect(receivableNeedsApproval(cod(900), on, false, 900)).toBe(true);
+    expect(receivableNeedsApproval(credit(900), on, false, 900)).toBe(true);
+    expect(receivableNeedsApproval(cod(100), on, false, 900)).toBe(false);
+    // Crédito y contraentrega en la misma venta se suman.
+    expect(
+      receivableNeedsApproval([...cod(600), ...credit(600)], on, false),
+    ).toBe(true);
+  });
+  it("una venta sin cuenta por cobrar no mira la deuda", () => {
+    expect(
+      receivableNeedsApproval(
+        [{ method: "cash", amount: 900 }],
+        on,
+        false,
+        5000,
+      ),
+    ).toBe(false);
+  });
+  it("quien gestiona ventas conserva la regla por venta", () => {
+    expect(receivableNeedsApproval(cod(900), on, true, 5000)).toBe(false);
+    expect(receivableNeedsApproval(credit(900), on, true, 5000)).toBe(false);
+  });
+});

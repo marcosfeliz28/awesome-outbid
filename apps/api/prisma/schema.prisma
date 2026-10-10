@@ -486,6 +486,8 @@ model SupplierPayment {
   branchId   String   @default("main")
   createdBy  String?
   createdAt  DateTime @default(now())
+  // D-M4: clave del formulario; un reintento devuelve el mismo pago.
+  operationId String? @unique @db.Uuid
 }
 
 model InventoryCount {
@@ -531,6 +533,8 @@ model CashSession {
 
 model CashMovement {
   id        String   @id @default(uuid()) @db.Uuid
+  // D-M4: clave del formulario; un reintento devuelve el mismo movimiento.
+  operationId String? @unique @db.Uuid
   sessionId String   @db.Uuid
   session   CashSession @relation(fields: [sessionId], references: [id])
   // CHECK cash_movement_type_valid (in | out) y cash_movement_amount_nonnegative.
@@ -567,6 +571,8 @@ model Expense {
   createdBy   String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  // D-M4: clave del formulario; un reintento devuelve el mismo gasto.
+  operationId String?         @unique @db.Uuid
 
   @@index([date])
 }

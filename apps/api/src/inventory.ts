@@ -24,6 +24,7 @@ import {
   z,
   signedStockQty,
   countedQty,
+  formatAmount,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -352,6 +353,49 @@ export async function lockVariant(tx: any, id: string, actor: Actor) {
       !variant.product.category.requiresLot,
   };
 }
+// M-5 (auditoría 01): mermas, ajustes negativos, conteos y salidas de
+// mercancía sacan inventario sin venta. Se valoran a costo (unitCost del
+// movimiento) en el estado de resultados y en el dashboard; una salida por
+// devolución al proveedor no es pérdida (el proveedor la acredita).
+export const INVENTORY_LOSS_SQL = `m.qty < 0 AND (m.type IN ('adjustment','waste','count') OR (m.type = 'merchandise_exit' AND m.reason <> 'devolución a proveedor'))`;
+// Quien no gestiona ventas (almacén) saca inventario sin aprobación: cuando
+// sus pérdidas del día a costo superan inventoryLossAlertLimit (RD$ 1,000 por
+// defecto), alerta alta que sólo una persona resuelve. Se suma el día entero
+// para que partir la merma en varios ajustes no evite el aviso.
+export async function inventoryLossAlert(tx: any, actor: Actor) {
+  if (can(actor.permissions, "sale:manage")) return;
+  const day = businessDate();
+  const since = new Date(day + "T00:00:00-04:00");
+  const rows = await tx.$queryRawUnsafe(
+    `SELECT COALESCE(SUM(-m.qty * m."unitCost"), 0)::text AS loss FROM "InventoryMovement" m WHERE m."branchId" = $1 AND m."userId" = $2 AND m."createdAt" >= $3 AND ${INVENTORY_LOSS_SQL}`,
+    actor.branchId,
+    actor.id,
+    since,
+  );
+  const loss = money(rows[0]?.loss ?? 0);
+  const settings = await tx.settings.findUnique({
+    where: { id: actor.branchId },
+  });
+  const limit = Number(
+    (settings?.data as any)?.inventoryLossAlertLimit ?? 1000,
+  );
+  if (!(loss > limit)) return;
+  const key = "inventory-loss:" + actor.id + ":" + day;
+  const message = `${actor.name}: mermas, ajustes y salidas de inventario de hoy por RD$ ${formatAmount(loss)} a costo, sin aprobación de un gerente. Revisa el kardex.`;
+  await tx.alert.upsert({
+    where: { key },
+    create: {
+      key,
+      type: "inventory_loss",
+      severity: "high",
+      entityId: actor.id,
+      branchId: actor.branchId,
+      message,
+    },
+    update: { message, status: "new" },
+  });
+}
+
 export async function stockChange(
   tx: any,
   actor: Actor,
@@ -646,6 +690,7 @@ export class InventoryController {
             undefined,
             data,
           );
+          if (data.qty < 0) await inventoryLossAlert(tx, actor);
           return safe(variant, actor);
         },
         { isolationLevel: "Serializable" },
@@ -877,10 +922,12 @@ export class InventoryController {
               operationId: data.operationId,
               supplierId: order.supplierId,
               // Lo que se debe: unidades buenas, flete y otros costos.
+              // B-2 (auditoría 01): con Decimal, no con float (±1 centavo).
               total: money(
-                lines.reduce((sum, l) => sum + l.qty * l.cost, 0) +
-                  data.freight +
-                  data.otherCosts,
+                lines
+                  .reduce((sum, l) => sum.plus(d(l.qty).times(l.cost)), d(0))
+                  .plus(data.freight)
+                  .plus(data.otherCosts),
               ),
               freight: data.freight,
               otherCosts: data.otherCosts,
