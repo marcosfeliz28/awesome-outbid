@@ -77,6 +77,24 @@ function fixture(
       create: vi.fn(async ({ data }: any) => data),
     },
     alert: { updateMany: vi.fn(async () => ({ count: 1 })) },
+    // Auditoría 03 (A2): pagos, devoluciones, kardex y avisos de la venta.
+    payment: {
+      updateMany: vi.fn(async () => ({ count: 0 })),
+      findMany: vi.fn(async () => []),
+      update: vi.fn(async ({ data }: any) => data),
+    },
+    saleReturn: {
+      findMany: vi.fn(async () => []),
+      update: vi.fn(async ({ data }: any) => data),
+    },
+    inventoryMovement: {
+      findMany: vi.fn(async () => []),
+      update: vi.fn(async ({ data }: any) => data),
+    },
+    notificationOutbox: {
+      findMany: vi.fn(async () => []),
+      update: vi.fn(async ({ data }: any) => data),
+    },
     auditLog: {
       updateMany: vi.fn(async () => ({ count: 2 })),
       findMany: vi.fn(async () => [saleAudit]),

@@ -45,18 +45,23 @@ import { verifyPinAttempt } from "./security";
 import { notify } from "./notifications";
 
 export async function cashExpected(db: any, session: any) {
+  // Sólo las columnas que se suman (D-M6): sin select, Prisma traía también
+  // Payment.proofUrl, la foto base64 de cada abono (26 MB con 20 fotos),
+  // dentro de transacciones que retienen el bloqueo de la caja.
   const payments = await db.payment.findMany({
     where: {
       cashSessionId: session.id,
       sale: { status: "completed" },
       OR: [{ entryType: { not: "installment" } }, { status: "ok" }],
     },
+    select: { method: true, amount: true },
   });
   const movements = await db.cashMovement.findMany({
     where: { sessionId: session.id },
   });
   const returns = await db.saleReturn.findMany({
     where: { cashSessionId: session.id },
+    select: { refundMethod: true, refundAmount: true },
   });
   const expected = {
     cash: d(session.openingAmount),

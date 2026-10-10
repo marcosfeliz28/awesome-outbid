@@ -13,6 +13,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaClient } from "@prisma/client";
+import { databaseUrlWithPool } from "./database-pool";
 import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
 import type { Request, Response } from "express";
 import { captureApiException } from "./monitoring";
@@ -25,6 +26,11 @@ import {
 
 @Injectable()
 export class Database extends PrismaClient {
+  // Pool explícito (connection_limit, pool_timeout): ver database-pool.ts.
+  constructor() {
+    const url = databaseUrlWithPool(process.env.DATABASE_URL);
+    super(url ? { datasources: { db: { url } } } : undefined);
+  }
   async onModuleInit() {
     await this.$connect();
   }
@@ -280,6 +286,24 @@ export function customerForActor<T>(customer: T, actor: Actor): T {
   return out as T;
 }
 
+// La bitácora nunca guarda imágenes (auditoría 03, A2): verificar o rechazar
+// un abono registraba la fila Payment completa con la foto del comprobante
+// (data URL base64), que quedaba para siempre aunque se anonimizara al
+// cliente. Cualquier data URL de imagen se reemplaza por un marcador.
+const IMAGE_DATA_URL = /^data:image\/[^;,]+;base64,/i;
+export function withoutImages(value: unknown): unknown {
+  if (typeof value === "string")
+    return IMAGE_DATA_URL.test(value) ? "(imagen)" : value;
+  if (Array.isArray(value)) return value.map(withoutImages);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nested]) => [
+        key,
+        withoutImages(nested),
+      ]),
+    );
+  return value;
+}
 export const audit = (
   db: any,
   actor: Actor,
@@ -297,8 +321,8 @@ export const audit = (
       entity,
       entityId,
       branchId: actor.branchId,
-      ...(before === undefined ? {} : { before: json(before) }),
-      ...(after === undefined ? {} : { after: json(after) }),
+      ...(before === undefined ? {} : { before: withoutImages(json(before)) }),
+      ...(after === undefined ? {} : { after: withoutImages(json(after)) }),
     },
   });
 // Tipo real de una imagen por sus primeros bytes: no se guarda otra cosa

@@ -67,6 +67,38 @@ export {
   parseExtraction,
   readInvoiceTable,
 } from "./invoice";
+// Los borradores sin confirmar se conservan 7 días con su archivo.
+export const STALE_DRAFT_MS = 7 * 24 * 3600000;
+// D-M5: la lectura previa no bloquea, así que una confirmación simultánea
+// (merchandise/operations: bloquea el borrador, crea la recepción con su
+// attachmentId y marca confirmedOperationId) podía terminar entre la lectura
+// y el borrado. Ahora el DELETE repite la condición: si espera el bloqueo de
+// la confirmación, PostgreSQL vuelve a evaluarla con la fila confirmada y la
+// omite. El archivo sólo se borra si ningún borrador ni recepción lo usa; la
+// clave GoodsReceipt_attachmentId_fkey (RESTRICT) lo garantiza en la base.
+export async function purgeStaleInvoiceDrafts(
+  tx: any,
+  branchId: string,
+  now = new Date(),
+) {
+  const cutoff = new Date(now.getTime() - STALE_DRAFT_MS);
+  const deleted: { attachmentId: string | null }[] = await tx.$queryRaw`
+    DELETE FROM "InvoiceDraft"
+     WHERE "branchId" = ${branchId}
+       AND "confirmedOperationId" IS NULL
+       AND "createdAt" < (${cutoff}::timestamptz AT TIME ZONE 'UTC')
+    RETURNING "attachmentId"::text AS "attachmentId"`;
+  const attachmentIds = [
+    ...new Set(deleted.map((d) => d.attachmentId).filter(Boolean)),
+  ] as string[];
+  if (attachmentIds.length)
+    await tx.$executeRaw`
+      DELETE FROM "InvoiceAttachment" a
+       WHERE a.id = ANY(${attachmentIds}::uuid[])
+         AND NOT EXISTS (SELECT 1 FROM "GoodsReceipt" r WHERE r."attachmentId" = a.id)
+         AND NOT EXISTS (SELECT 1 FROM "InvoiceDraft" d WHERE d."attachmentId" = a.id)`;
+  return deleted.length;
+}
 const quickSchema = z.object({
   name: z.string().trim().min(2).max(200),
   categoryId: uuid,
@@ -244,27 +276,7 @@ export class MerchandiseController {
       : [];
     const lines = matchInvoiceLines(extracted.lines, variants, equivalents);
     return this.db.$transaction(async (tx) => {
-      // Los borradores sin confirmar se conservan 7 días con su archivo.
-      const stale = await tx.invoiceDraft.findMany({
-        where: {
-          branchId: actor.branchId,
-          confirmedOperationId: null,
-          createdAt: { lt: new Date(Date.now() - 7 * 24 * 3600000) },
-        },
-        select: { id: true, attachmentId: true },
-      });
-      if (stale.length) {
-        await tx.invoiceDraft.deleteMany({
-          where: { id: { in: stale.map((d) => d.id) } },
-        });
-        await tx.invoiceAttachment.deleteMany({
-          where: {
-            id: {
-              in: stale.map((d) => d.attachmentId).filter(Boolean) as string[],
-            },
-          },
-        });
-      }
+      await purgeStaleInvoiceDrafts(tx, actor.branchId);
       if (supplierId && mapping)
         await tx.supplierImportProfile.upsert({
           where: {
