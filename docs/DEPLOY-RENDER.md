@@ -131,9 +131,25 @@ cliente.
 El snippet de seguridad instala CSP, HSTS (`max-age=31536000;
 includeSubDomains`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`
 y `Referrer-Policy`. La CSP permite módulos
-locales, workers `blob:` usados por la PWA, peticiones al mismo origen y
-ingesta de Sentry; la política de permisos conserva cámara sólo en el mismo
-origen para el lector. La cámara requiere HTTPS (o localhost). Las cabeceras y
+locales, workers `blob:` usados por la PWA y peticiones al mismo origen; la
+política de permisos conserva cámara sólo en el mismo origen para el lector.
+
+Sentry de la web está apagado por defecto y la CSP no lo menciona. El archivo
+`deploy/render/security-headers.conf` es una plantilla con el marcador
+`${NEXORA_CSP_SENTRY_SRC}` en `connect-src`; al arrancar, `start-nginx.sh`
+ejecuta `render-security-headers.sh`, que genera
+`/etc/nginx/snippets/nexora-security-headers.conf`:
+
+- Sin `VITE_SENTRY_DSN` (o vacía): `connect-src 'self'`.
+- Con `VITE_SENTRY_DSN=https://<clave>@<host>/<proyecto>`: se añade sólo
+  `https://<host>` (sin clave ni proyecto). Es la misma variable con la que se
+  compila la web y Render la entrega también al arrancar, así que basta con
+  definirla una vez en el servicio `nexora-pos-web` y redesplegar.
+- Con un valor que no tenga esa forma (otro esquema, comillas, espacios...):
+  se escribe un aviso en el log, la CSP queda en `'self'` y Nginx arranca igual.
+
+Para comprobarlo tras un despliegue: `curl -sI <URL_WEB>/ | grep -i
+content-security-policy` debe mostrar el host de Sentry sólo si hay DSN. La cámara requiere HTTPS (o localhost). Las cabeceras y
 reglas de rutas se comprobaron con un Nginx 1.24 real (no con la imagen
 `nginx:1.30.5-alpine3.24`); el recorrido visual/offline de la cámara y la
 imagen Docker siguen pendientes porque Docker no está disponible en el equipo
