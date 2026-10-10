@@ -265,7 +265,12 @@ describe("Restablecer contraseña (POST /users/:id/reset-password)", () => {
       expect(
         (await login(seller, cashIp, "Olvidada-Clave-" + n + "!")).status,
       ).toBe(400);
-    expect((await login(seller, cashIp)).body.message).toMatch(/bloquead/i);
+    const locked = (await login(seller, cashIp)).body.message;
+    expect(locked).toMatch(/bloquead/i);
+    // El aviso ofrece lo que existe: esperar o que la administración use
+    // «Restablecer contraseña».
+    expect(locked).toContain("Restablecer contraseña");
+    expect(locked).toContain("Configuración › Usuarios y permisos");
 
     const reset = await call(`/users/${seller.id}/reset-password`, {
       ip: admin.ip,

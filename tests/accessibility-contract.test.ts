@@ -60,6 +60,58 @@ describe("Cambiar mi contraseña (voluntario)", () => {
     expect(app).toContain('autoComplete="current-password"');
   });
 });
+describe("Textos que dicen lo que funciona hoy", () => {
+  const read = (path: string) => readFileSync(path, "utf8");
+  it("la opción de ventas sin conexión se nombra con su ruta real, no «Ajustes»", () => {
+    const management = read("apps/web/src/Management.tsx");
+    // La ruta que citan los textos existe en la pantalla.
+    expect(management).toContain('["business", "Negocio y reglas"]');
+    expect(management).toContain("Editar configuración");
+    expect(management).toContain('"Permitir ventas sin conexión');
+    const route =
+      "Configuración → Negocio y reglas → Editar configuración → «Permitir ventas sin conexión»";
+    for (const manual of ["docs/MANUAL-CAJERO.md", "docs/MANUAL.md"]) {
+      expect(read(manual)).toContain(route);
+      expect(read(manual)).not.toMatch(/Ajustes\s*>\s*Permitir ventas/);
+    }
+    const pos = read("apps/web/src/POS.tsx");
+    expect(pos).toContain(
+      "revise «Permitir ventas sin conexión» en Configuración › Negocio y reglas › Editar configuración.",
+    );
+    expect(pos).not.toContain("revise esta opción en Ajustes");
+  });
+  it("el manual de caja nombra el indicador «Offline» que muestra la barra", () => {
+    const app = read("apps/web/src/App.tsx");
+    expect(app).toContain('online ? "En línea" : "Offline"');
+    const section = read("docs/MANUAL-CAJERO.md").split("## 8.")[1];
+    expect(section).toContain("**Offline**");
+    expect(section).toContain("**En línea**");
+    expect(section).not.toContain("aparece **Sin conexión**");
+  });
+  it("Anular explica cuándo sí hace falta la caja propia, como exige la API", () => {
+    const sales = read("apps/api/src/sales.ts");
+    expect(sales).toContain(
+      "La caja de esta venta ya cerró. Abre tu caja para entregar el reembolso en efectivo",
+    );
+    const management = read("apps/web/src/Management.tsx");
+    expect(management).not.toContain("; no necesitas abrir caja.");
+    expect(management).toContain(
+      "si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente.",
+    );
+  });
+  it("el bloqueo de cuenta ofrece lo que existe: esperar o «Restablecer contraseña»", () => {
+    const auth = read("apps/api/src/auth.ts");
+    expect(auth).not.toContain(
+      "pide a un administrador que te cambie la contraseña",
+    );
+    expect(
+      auth.match(
+        /Espera 15 minutos o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos\./g,
+      ),
+    ).toHaveLength(2);
+    expect(read("docs/MANUAL.md")).toContain("con tu usuario o correo");
+  });
+});
 describe("P1 · cambio obligatorio de contraseña", () => {
   it("bloquea claves débiles, repetidas, largas y confirmación distinta", () => {
     const good = "ClaveNueva!2026";
