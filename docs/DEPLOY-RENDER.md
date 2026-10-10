@@ -230,6 +230,49 @@ ni el seed de demostración. Las migraciones nuevas deben seguir el patrón
 
 Volver al contenedor anterior no revierte una migración de datos.
 
+### Índices de enlace y `plan_cache_mode` (202610200001_perf_indexes_links)
+
+Una prueba de carga con un año de historial (~110 000 ventas, 4 cajas y un
+gerente, con los tamaños de este Blueprint) mostró que faltaban índices en las
+columnas que enlazan tablas y que, con sentencias preparadas, PostgreSQL acaba
+usando un plan genérico malo para la suma de pagos por método. La migración:
+
+- crea con `CREATE INDEX IF NOT EXISTS` `Payment(saleId)`,
+  `Payment(cashSessionId)`, `SaleItem(saleId)`, `Sale(cashSessionId)`,
+  `SaleReturn(saleId)`, `SaleReturn(cashSessionId)`,
+  `CashMovement(sessionId)` y `Variant(productId)` (mismos nombres que los
+  `@@index` de `schema.prisma`). El esperado de una caja pasó de 203 ms a
+  0,14 ms;
+- fija `plan_cache_mode = force_custom_plan` para el rol que migra
+  (`ALTER ROLE CURRENT_USER`) y para la base (`ALTER DATABASE`). La suma de
+  pagos por método (dashboard y `reports/by-payment`) pasó de 2 s a 2 ms. Sólo
+  afecta a conexiones nuevas: la API se reinicia en cada despliegue.
+
+**Nunca aborta un despliegue.** Cada índice y cada `ALTER` van en su propio
+bloque `DO` con `EXCEPTION WHEN OTHERS THEN RAISE NOTICE`: si el rol no tiene
+permiso, o una escritura retiene la tabla más de 15 s (`lock_timeout`), ese paso
+se omite con un aviso `PERF: …` en el registro del pre-deploy y el despliegue
+sigue. Un índice inválido con el mismo nombre se rehace. Con las tablas de hoy
+cada índice se crea en milisegundos; el bloqueo de escritura dura eso.
+
+Comprobar después de desplegar (Render › nexora-pos-db › Shell o `psql` con la
+URL interna):
+
+```sql
+SELECT indexname FROM pg_indexes WHERE indexname IN (
+  'Payment_saleId_idx','Payment_cashSessionId_idx','SaleItem_saleId_idx',
+  'Sale_cashSessionId_idx','SaleReturn_saleId_idx','SaleReturn_cashSessionId_idx',
+  'CashMovement_sessionId_idx','Variant_productId_idx');   -- 8 filas
+SHOW plan_cache_mode;                                       -- force_custom_plan
+```
+
+Si el registro del pre-deploy mostró un aviso `PERF:` o faltan filas, la
+migración es idempotente: se puede volver a ejecutar tal cual con
+`psql "$URL" -f apps/api/prisma/migrations/202610200001_perf_indexes_links/migration.sql`
+(sólo crea lo que falte) y reiniciar la API para que tome `plan_cache_mode`.
+Prueba: `tests/perf-indexes-postgres.test.ts` (base vacía, base con datos, dos
+ejecuciones seguidas, índice inválido y rol sin permisos).
+
 ### Contraseñas temporales de cajero
 
 La migración `202610130001_password_change_required` agrega una marca por
