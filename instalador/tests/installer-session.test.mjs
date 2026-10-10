@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { URL } from 'node:url';
 
 const source = readFileSync(new URL('../installer/FitStore.nsi', import.meta.url), 'utf8');
 test('B11: la sesion se genera como GUID y ambas operaciones comparten esa identidad', () => {

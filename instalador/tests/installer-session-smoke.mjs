@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
+import { URL } from 'node:url';
 
 const compiler = process.env.NSIS_MAKENSIS || 'C:/Program Files (x86)/NSIS/makensis.exe';
 const source = readFileSync(new URL('../installer/FitStore.nsi', import.meta.url), 'utf8');
