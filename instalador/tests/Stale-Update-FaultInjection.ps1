@@ -6,6 +6,13 @@ $source = Get-Content -LiteralPath $scriptPath -Raw
 $start = $source.IndexOf("Assert-FitStoreAdministrator`r`n")
 if ($start -lt 0) { $start = $source.IndexOf("Assert-FitStoreAdministrator`n") }
 . (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts\FitStore.Common.ps1")
+$signatureTokens=$null;$signatureErrors=$null
+$signatureCommon=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '../scripts/FitStore.Common.ps1'),[ref]$signatureTokens,[ref]$signatureErrors)
+$signatureFixture=[Management.Automation.Language.Parser]::ParseFile($PSCommandPath,[ref]$signatureTokens,[ref]$signatureErrors)
+$signatureReal=$signatureCommon.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Wait-FitStorePostgres'},$true)
+foreach($wait in $signatureFixture.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Wait-FitStorePostgres'},$true)){
+  if(-not $wait.Body.ParamBlock -or ($wait.Body.ParamBlock.Extent.Text -replace '\s','') -cne ($signatureReal.Body.ParamBlock.Extent.Text -replace '\s','')){throw 'B1: firma Wait-FitStorePostgres fixture no coincide con Common real'}
+}
 $tokens = $null; $errors = $null
 $ast = [Management.Automation.Language.Parser]::ParseInput($source, [ref]$tokens, [ref]$errors)
 if ($errors.Count) { throw "A7: rollback no parsea." }
@@ -28,7 +35,9 @@ function Assert-UpdateManifest { }
 function Stop-FitStoreApplication { $script:effects++ }
 function Stop-FitStoreService { $script:effects++ }
 function Start-FitStoreService { }
-function Wait-FitStorePostgres { }
+function Wait-FitStorePostgres { param([Parameter(Mandatory = $true)]$Paths, [int]$TimeoutSeconds = 90) }
+try { Wait-FitStorePostgres -Paths @{} -Secrets @{}; throw 'B1: fixture acepto Secrets inexistente' }
+catch [Management.Automation.ParameterBindingException] { Write-Host 'PASS B1: fixture rechaza Secrets con firma Common real.' }
 function Set-FitStoreUpdatePhase { }
 function Ensure-RestoredApplicationService { return "LocalSystem" }
 function Remove-FitStoreLocalServiceAccess { $script:aclCleanupCalls++ }
