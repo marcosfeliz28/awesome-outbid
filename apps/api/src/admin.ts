@@ -47,6 +47,7 @@ import { normalizeUsername, passwordHash } from "./auth";
 import {
   generateTemporaryPassword,
   strongPasswordSchema,
+  temporaryPasswordExpiry,
 } from "./password-policy";
 import { RequestRateLimitService } from "./rate-limit";
 
@@ -1045,6 +1046,7 @@ export class AdminController {
         email: (data.email || generatedEmail).toLowerCase(),
         passwordHash: await passwordHash(data.password),
         mustChangePassword: true,
+        passwordExpiresAt: temporaryPasswordExpiry(),
         pinHash: await passwordHash(data.pin),
         roleId: data.roleId,
         branchId: actor.branchId,
@@ -1114,7 +1116,12 @@ export class AdminController {
               }
             : {}),
           ...(passwordValue ? { passwordHash: passwordValue } : {}),
-          ...(passwordValue ? { mustChangePassword: true } : {}),
+          ...(passwordValue
+            ? {
+                mustChangePassword: true,
+                passwordExpiresAt: temporaryPasswordExpiry(),
+              }
+            : {}),
           ...(pinValue ? { pinHash: pinValue } : {}),
           ...(password || pin || data.active === false
             ? { authVersion: { increment: 1 } }
@@ -1179,6 +1186,7 @@ export class AdminController {
         data: {
           passwordHash: passwordHashValue,
           mustChangePassword: true,
+          passwordExpiresAt: temporaryPasswordExpiry(),
           authVersion: { increment: 1 },
         },
       });

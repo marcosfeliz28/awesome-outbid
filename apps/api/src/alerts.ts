@@ -51,6 +51,8 @@ export const MANUAL_ALERT_TYPES = [
   "inventory_loss",
   "refund_method_mismatch",
   "cost_change",
+  // Cupo de contraseñas de una cuenta agotado (auth.ts, N-01).
+  "account_locked",
 ];
 /** Mensaje de la alerta de diferencia de caja (cierre y evaluación). */
 export const cashDifferenceMessage = (s: {

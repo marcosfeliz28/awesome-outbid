@@ -32,8 +32,14 @@ import {
   verifyAttempt,
   verifyPinAttempt,
 } from "./security";
-import { isDifferentPassword, strongPasswordSchema } from "./password-policy";
+import {
+  TEMPORARY_PASSWORD_EXPIRED_MESSAGE,
+  isDifferentPassword,
+  strongPasswordSchema,
+  temporaryPasswordExpired,
+} from "./password-policy";
 import { sessionActivityGraceMs } from "./session-activity";
+import { enqueue, escapeHtml, telegramSettings } from "./notifications";
 import {
   REQUEST_RATE_LIMITS,
   RequestRateLimitService,
@@ -128,31 +134,37 @@ export class AuthController implements OnModuleInit {
   }
   // Desde un equipo aprobado los cupos en memoria se cuentan por equipo y no
   // por IP: un barrido desde la IP del borde compartido (o desde la misma
-  // red) no deja a los equipos de la tienda con 429 (S-02).
+  // red) no deja a los equipos de la tienda con 429 (S-02). Tampoco les
+  // alcanza el cubo global de identidades desconocidas (N-02): ese cubo lo
+  // pueden llenar terceros desde fuera, y un equipo aprobado (que exige el
+  // secreto del equipo) sólo gasta su propio cupo por equipo.
   private limitPublicCredentials(
     ip: string,
     terminalId: string | null,
     identifier: string,
   ) {
+    const approved = !!terminalId;
     const origin = terminalId ? "terminal:" + terminalId : ip;
     const normalized = normalizeUsername(identifier);
     // Ambas comprobaciones ocurren antes de consultar User. El cubo compartido
     // sólo recibe identidades que no existen; cuando se llena, se comprueba
     // antes de crear otro cubo por nombre. Así el barrido no crea miles de
     // consultas ni entradas. Las cuentas precargadas conservan su cubo propio.
-    // Con el cupo de desconocidos lleno (de esta IP o de todo el servidor),
-    // una cuenta real con clave incorrecta también recibe 429: así el 429 no
-    // distingue cuentas. Con la clave correcta entra igual.
+    // Con el cupo de desconocidos lleno (de esta IP o, para equipos no
+    // aprobados, de todo el servidor), una cuenta real con clave incorrecta
+    // también recibe 429: así el 429 no distingue cuentas. Con la clave
+    // correcta entra igual.
     const unknownFlooded =
       this.requestLimits.limited(
         "auth-unknown-ip",
         [origin],
         REQUEST_RATE_LIMITS.authIp,
       ) ||
-      this.requestLimits.limitedShared(
-        "auth-unknown",
-        REQUEST_RATE_LIMITS.authUnknownGlobal,
-      );
+      (!approved &&
+        this.requestLimits.limitedShared(
+          "auth-unknown",
+          REQUEST_RATE_LIMITS.authUnknownGlobal,
+        ));
     if (!this.requestLimits.knowsAuthIdentity(normalized)) {
       // Primero el cupo de la IP: lo que ella rechaza no gasta el global, y
       // una sola dirección no puede agotarlo para todas.
@@ -161,10 +173,11 @@ export class AuthController implements OnModuleInit {
         [origin],
         REQUEST_RATE_LIMITS.authIp,
       );
-      this.requestLimits.assertShared(
-        "auth-unknown",
-        REQUEST_RATE_LIMITS.authUnknownGlobal,
-      );
+      if (!approved)
+        this.requestLimits.assertShared(
+          "auth-unknown",
+          REQUEST_RATE_LIMITS.authUnknownGlobal,
+        );
     }
     this.requestLimits.assert(
       "auth-identifier",
@@ -198,9 +211,14 @@ export class AuthController implements OnModuleInit {
   //   el secreto del equipo nadie puede gastarla.
   // - Desde cualquier otro origen: clave por IP (`login:<cuenta>:<ip>`, 5
   //   fallos → 15 min) y además el cupo de la cuenta
-  //   (`login-account:<cuenta>`): 10 fallos por hora entre todas las IP.
-  //   Ni cambiando de IP se prueban más de 10 contraseñas por hora y cuenta;
-  //   agotado, sólo se entra desde un equipo aprobado hasta que vence.
+  //   (`login-account:<cuenta>`): 30 fallos por hora entre todas las IP
+  //   (N-01). Ni cambiando de IP se prueban más de 30 contraseñas por hora y
+  //   cuenta; agotado, sólo se entra desde un equipo aprobado (la dueña y la
+  //   administración deben tener uno propio) hasta que vence, y se emite una
+  //   alerta (`account_locked`, más Telegram si está activo).
+  // - Las identidades inexistentes sólo crean la fila por IP (N-03): sin
+  //   cupo de cuenta, un barrido de nombres inventados deja 1 fila por
+  //   intento y no 2.
   // Las claves llevan authVersion: «Restablecer contraseña» las desbloquea.
   // Se aplican igual a identidades inexistentes (sin oráculo).
   private passwordAttempt(
@@ -225,21 +243,22 @@ export class AuthController implements OnModuleInit {
       },
       {
         scope: terminalId ? "terminal" : "ip",
-        budgets: terminalId
-          ? []
-          : [
-              {
-                key: `login-account:${identity}`,
-                max: LOGIN_ACCOUNT_FAILURES_PER_HOUR,
-                windowMs: HOUR,
-                message: LOGIN_BLOCKED.account,
-                scope: "account",
-              },
-            ],
+        budgets:
+          terminalId || !user
+            ? []
+            : [
+                {
+                  key: `login-account:${identity}`,
+                  max: LOGIN_ACCOUNT_FAILURES_PER_HOUR,
+                  windowMs: HOUR,
+                  message: LOGIN_BLOCKED.account,
+                  scope: "account",
+                },
+              ],
         // Cada bloqueo queda en la bitácora con su origen (S-04).
         onLocked: user
-          ? (tx, scope) =>
-              tx.auditLog.create({
+          ? async (tx, scope) => {
+              await tx.auditLog.create({
                 data: {
                   userId: "system",
                   terminalId: terminalId ?? undefined,
@@ -250,10 +269,45 @@ export class AuthController implements OnModuleInit {
                   branchId: user.branchId,
                   after: { scope },
                 },
-              })
+              });
+              if (scope === "account") await this.alertAccountLocked(tx, user);
+            }
           : undefined,
       },
     );
+  }
+  // N-01: el cupo de contraseñas de la cuenta se agotó (30 fallos en una
+  // hora desde equipos no aprobados). Sin esto sólo quedaba una fila en la
+  // bitácora que nadie mira: ahora la administración ve una alerta y, si
+  // Telegram está activo, recibe el aviso. No incluye IP ni contraseñas.
+  private async alertAccountLocked(tx: any, user: any) {
+    const message =
+      `La cuenta de ${user.name} recibió 30 contraseñas incorrectas en una hora ` +
+      `desde equipos no aprobados y quedó bloqueada hasta una hora, salvo desde un equipo aprobado. ` +
+      `Si no fue ella o él, cambia su contraseña con «Restablecer contraseña».`;
+    await tx.alert.upsert({
+      where: { key: "login-locked:" + user.id },
+      create: {
+        key: "login-locked:" + user.id,
+        type: "account_locked",
+        severity: "high",
+        entityId: user.id,
+        branchId: user.branchId,
+        message,
+      },
+      update: { message, status: "new" },
+    });
+    if (telegramSettings().enabled)
+      await enqueue(
+        tx,
+        "security_alert",
+        "login-locked:" + user.id + ":" + new Date().toISOString().slice(0, 13),
+        user.branchId,
+        [
+          "🔒 <b>Cuenta bloqueada por intentos fallidos</b>",
+          escapeHtml(message),
+        ].join("\n"),
+      );
   }
   // Las rutas que llaman a issue() (y el restablecimiento, que devuelve una
   // contraseña temporal) responden con Cache-Control: no-store: ni el
@@ -401,6 +455,8 @@ export class AuthController implements OnModuleInit {
       "user",
       user.id,
     );
+    // N-08: la clave temporal correcta pero vencida no abre el cambio.
+    if (temporaryPasswordExpired(user)) bad(TEMPORARY_PASSWORD_EXPIRED_MESSAGE);
     if (user.mustChangePassword) return { requiresPasswordChange: true };
     return this.issue(user, res);
   }
@@ -480,6 +536,7 @@ export class AuthController implements OnModuleInit {
     // Sólo la contraseña válida autoriza revelar el estado del cambio.
     if (!user.mustChangePassword)
       bad("No hay un cambio de contraseña pendiente para esta cuenta.");
+    if (temporaryPasswordExpired(user)) bad(TEMPORARY_PASSWORD_EXPIRED_MESSAGE);
     const passwordHashValue = await passwordHash(data.newPassword);
     const updated = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id=${user.id}::uuid FOR UPDATE`;
@@ -499,6 +556,7 @@ export class AuthController implements OnModuleInit {
         data: {
           passwordHash: passwordHashValue,
           mustChangePassword: false,
+          passwordExpiresAt: null,
           authVersion: { increment: 1 },
         },
       });
@@ -614,6 +672,7 @@ export class AuthController implements OnModuleInit {
         data: {
           passwordHash: passwordHashValue,
           mustChangePassword: false,
+          passwordExpiresAt: null,
           authVersion: { increment: 1 },
         },
       });

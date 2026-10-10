@@ -446,12 +446,14 @@ export type EventType =
   | "cash_close"
   | "test"
   // Aviso del respaldo diario a Google Drive (drive-backup.ts).
-  | "backup_alert";
+  | "backup_alert"
+  // Cupo de intentos de una cuenta agotado (auth.ts, N-01).
+  | "security_alert";
 
 /** Texto del aviso y sucursal, o null si el registro ya no existe. */
 export async function renderEvent(
   db: Db,
-  event: Exclude<EventType, "test" | "backup_alert">,
+  event: Exclude<EventType, "test" | "backup_alert" | "security_alert">,
   refId: string,
 ): Promise<{ text: string; branchId: string } | null> {
   if (event === "sale" || event === "sale_voided") {
@@ -641,7 +643,7 @@ export async function enqueue(
  */
 export function notify(
   db: Db,
-  event: Exclude<EventType, "test" | "backup_alert">,
+  event: Exclude<EventType, "test" | "backup_alert" | "security_alert">,
   refId: string,
 ): void {
   try {

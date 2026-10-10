@@ -8,6 +8,7 @@ import {
 import { compare } from "bcryptjs";
 import { can } from "@fitstore/shared";
 import { Actor, Database, bad } from "./common";
+import { weakSecretReason } from "./secret-strength";
 
 export function validateSecret(
   secret: string | undefined,
@@ -17,35 +18,11 @@ export function validateSecret(
     throw new Error(
       "Configura JWT_SECRET con al menos 32 caracteres aleatorios.",
     );
-  if (production) {
-    const frequencies = new Map<string, number>();
-    for (const char of secret)
-      frequencies.set(char, (frequencies.get(char) ?? 0) + 1);
-    const entropy = [...frequencies.values()].reduce(
-      (sum, n) => sum - (n / secret.length) * Math.log2(n / secret.length),
-      0,
+  // Mismas reglas que la frase del respaldo (secret-strength.ts).
+  if (production && weakSecretReason(secret))
+    throw new Error(
+      "JWT_SECRET de producción debe ser aleatorio; genera 32 bytes con crypto.randomBytes.",
     );
-    const repeated = Array.from(
-      { length: Math.floor(secret.length / 2) },
-      (_, i) => i + 1,
-    ).some(
-      (length) =>
-        secret ===
-        secret
-          .slice(0, length)
-          .repeat(Math.ceil(secret.length / length))
-          .slice(0, secret.length),
-    );
-    if (
-      repeated ||
-      /replace|example|changeme|fitstore|secret-of|password/i.test(secret) ||
-      frequencies.size < 12 ||
-      entropy < 3.5
-    )
-      throw new Error(
-        "JWT_SECRET de producción debe ser aleatorio; genera 32 bytes con crypto.randomBytes.",
-      );
-  }
   return secret;
 }
 
@@ -66,7 +43,11 @@ export const ATTEMPT_LIMIT = 5;
 export const ATTEMPT_LOCK_MINUTES = 15;
 // Cupos por ventana fija de una hora (auditoría de seguridad 2026-10-10,
 // S-01 y S-03). No dependen de la IP: valen aunque el borde la colapse.
-export const LOGIN_ACCOUNT_FAILURES_PER_HOUR = 10;
+// N-01 (auditoría v2): 30 fallos por hora y cuenta. Sigue acotando la
+// adivinanza de claves (720 al día) pero obliga al atacante a mucho más
+// tráfico para dejar fuera, desde equipos no aprobados, a una cuenta real; un
+// equipo aprobado nunca usa este cupo. Al agotarse emite una alerta (auth.ts).
+export const LOGIN_ACCOUNT_FAILURES_PER_HOUR = 30;
 export const PIN_REQUESTER_FAILURES_PER_HOUR = 10;
 export const SHORT_PIN_FAILURES_PER_HOUR = 10;
 
