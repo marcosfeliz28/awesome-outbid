@@ -169,6 +169,29 @@ Las alertas de baja venta comparan el mes anterior con el promedio de tres meses
 
 Ajustes permite preparar una solicitud de NCF. El cobro registra tipo y, para crédito fiscal, RNC o cédula del cliente. La preparación no emite un NCF: los recibos siguen identificados como documentos internos no fiscales.
 
+## Vender a crédito (el cliente no paga ahora)
+
+Si el cliente se lleva la mercancía sin pagar, la venta se hace igual y queda **pendiente**: cuenta como venta normal, pero la caja no recibe dinero por esa parte.
+
+1. Elige al **cliente** (botón «Selecciona el cliente» o F4). Sin cliente no se puede vender a crédito.
+2. Pulsa **Cobrar**. Si el cliente paga una parte, agrégala primero (efectivo, tarjeta o transferencia).
+3. Pulsa **Vender a crédito (queda pendiente)**, revisa el mensaje y confirma con **Sí, vender a crédito**. No hay que escribir montos: queda pendiente lo que falta.
+4. El ticket dice **CRÉDITO · PENDIENTE DE PAGO**, el monto pendiente y «DOCUMENTO NO FISCAL».
+
+**Nota de crédito no es crédito:** la nota de crédito es saldo a favor de un cliente por una devolución. No sirve para vender sin pago. Si «Finalizar venta» está deshabilitado, debajo del botón aparece qué falta.
+
+Si **Ventas a crédito** está desactivado en Ajustes, el monto supera el umbral o el cliente ya debe mucho, un gerente escribe su PIN. Si el cliente tiene límite de crédito (0 = sin límite), no se puede pasar.
+
+## Créditos pendientes: cobrar (sólo administración)
+
+En **Caja** el administrador ve **Créditos pendientes**: cliente, venta, quién vendió, fecha y antigüedad (solo informativa; no hay cortes automáticos), total, cobrado y pendiente, con estado **Abierto**, **Parcial** o **Cerrado** (pestaña «Cerrados»: quién y cuándo).
+
+- **Registrar cobro**: agrega una línea por cada forma de pago y su monto (por ejemplo, mitad transferencia y mitad efectivo). La suma no puede pasar del pendiente; puede cobrarse sólo una parte. Tarjeta pide la referencia del voucher; transferencia, banco y referencia (queda por verificar hasta confirmarla en el banco).
+- El **efectivo entra a TU caja abierta**, no a la de la cajera. Sin caja abierta sólo puedes registrar tarjeta o transferencia. Cualquier administrador puede cobrar; la venta conserva su cliente, vendedora y fecha, y el cobro guarda quién lo recibió.
+- Solo administradores: cajeras, vendedoras y gerentes no ven ni cierran créditos.
+- El incentivo de la cajera por un crédito se suma **cuando se cobra** (en el mes del pago, prorrateado). En «Mis incentivos» ve aparte el **incentivo pendiente de cobro** estimado.
+- Cada lunes, desde las 8:00, llega una alerta **Créditos por cobrar** (y un aviso por Telegram si está configurado) con el total y los clientes que deben, de mayor a menor saldo.
+
 ## Controles de crédito y notas (revisión 2)
 
 El gerente configura el límite de crédito de cada cliente; por defecto es cero. La deuda pendiente más la venta nueva no puede superar ese límite. Ajustes permite definir el monto de crédito que exige PIN de gerente, inicialmente RD$1,000; superar ese monto exige PIN incluso al gerente.

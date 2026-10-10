@@ -664,3 +664,159 @@ describe("W7 · incentivo al cobrar", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Recordatorio semanal de créditos por cobrar, con reloj inyectado.
+import {
+  CreditReminderService,
+  isoWeekKey,
+  reminderDue,
+  renderReminder,
+  summarizeCredits,
+} from "../apps/api/src/credit-reminder";
+
+// Lunes (hora de Santo Domingo, UTC-4 todo el año) dentro de `weeks` semanas.
+const mondayAt = (weeks: number, hour: number, minute = 0) => {
+  const day = new Date(Date.now() + weeks * 7 * 86400000);
+  const local = new Date(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santo_Domingo",
+    }).format(day) + "T12:00:00-04:00",
+  );
+  const back = (local.getUTCDay() + 6) % 7; // días desde el lunes
+  const monday = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santo_Domingo",
+  }).format(new Date(+local - back * 86400000));
+  return new Date(
+    `${monday}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00-04:00`,
+  );
+};
+
+describe("W7 · recordatorio semanal de créditos", () => {
+  it("semana ISO y hora de aviso (lunes 8:00 de Santo Domingo)", () => {
+    const monday = mondayAt(30, 9);
+    expect(isoWeekKey(new Date(+monday + 3 * 86400000))).toBe(
+      isoWeekKey(monday),
+    );
+    expect(isoWeekKey(new Date(+monday - 86400000))).not.toBe(
+      isoWeekKey(monday),
+    );
+    expect(isoWeekKey(new Date("2021-01-03T15:00:00-04:00"))).toBe("2020-W53");
+    expect(isoWeekKey(new Date("2021-01-04T00:30:00-04:00"))).toBe("2021-W01");
+    expect(reminderDue(mondayAt(30, 7, 59))).toBe(false);
+    expect(reminderDue(mondayAt(30, 8))).toBe(true);
+    expect(reminderDue(new Date(+monday + 2 * 86400000))).toBe(true);
+  });
+
+  it("resumen: mayor saldo primero, antigüedad solo informativa y sin datos sensibles", () => {
+    const at = mondayAt(30, 9);
+    const day = 86400000;
+    const s = summarizeCredits(
+      [
+        {
+          customerId: "a",
+          customerName: "Ana <b>",
+          pending: 100,
+          createdAt: new Date(+at - 90 * day),
+        },
+        {
+          customerId: "b",
+          customerName: "Beto",
+          pending: 300,
+          createdAt: new Date(+at - 2 * day),
+        },
+        {
+          customerId: "a",
+          customerName: "Ana <b>",
+          pending: 50.25,
+          createdAt: new Date(+at - 5 * day),
+        },
+      ],
+      at,
+    );
+    expect(s).toMatchObject({ total: 450.25, customers: 2 });
+    expect(s.lines.map((l) => l.name)).toEqual(["Beto", "Ana <b>"]);
+    expect(s.lines[1]).toMatchObject({
+      pending: 150.25,
+      ageDays: 90,
+      sales: 2,
+    });
+    const html = renderReminder("2099-W01", s, true);
+    expect(html).toContain("Ana &lt;b&gt;");
+    expect(html).not.toMatch(/tel|cédula|@/i);
+    expect(renderReminder("2099-W01", s)).toContain(
+      "Caja › Créditos pendientes",
+    );
+  });
+
+  it("una sola alerta por semana aunque se ejecute dos veces; sin crédito abierto no se avisa", async () => {
+    await sale(ana, 100, [{ method: "cod", amount: 100 }]);
+    const service = new CreditReminderService(db);
+    const monday = mondayAt(40, 8);
+    const week = isoWeekKey(monday);
+    const key = `credit-reminder:main:${week}`;
+    const nextKey = `credit-reminder:main:${isoWeekKey(mondayAt(41, 9))}`;
+    try {
+      expect(
+        (await service.run(mondayAt(40, 7, 59), { telegram: true })).created,
+      ).toEqual([]);
+      const [a, b] = await Promise.all([
+        service.run(monday, { telegram: true }),
+        service.run(new Date(+monday + 60000), { telegram: true }),
+      ]);
+      expect([...a.created, ...b.created]).toEqual([key]);
+      expect(
+        (
+          await service.run(new Date(+monday + 2 * 86400000), {
+            telegram: true,
+          })
+        ).created,
+      ).toEqual([]);
+      const alerts = await db.alert.findMany({ where: { key } });
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0]).toMatchObject({
+        type: "credit_reminder",
+        status: "new",
+        entityId: week,
+      });
+      expect(alerts[0].message).toContain("QA crédito");
+      expect(alerts[0].message).toMatch(/RD\$/);
+      expect(
+        await db.notificationOutbox.count({
+          where: { eventType: "credit_reminder", refId: "main:" + week },
+        }),
+      ).toBe(1);
+      // Resolver la alerta no la hace reaparecer esa semana.
+      await db.alert.update({ where: { key }, data: { status: "resolved" } });
+      expect((await service.run(monday, { telegram: true })).created).toEqual(
+        [],
+      );
+      // La semana siguiente sí, y sin Telegram solo queda la alerta.
+      expect(
+        (await service.run(mondayAt(41, 9), { telegram: false })).created,
+      ).toEqual([nextKey]);
+      expect(
+        await db.notificationOutbox.count({
+          where: {
+            eventType: "credit_reminder",
+            refId: "main:" + isoWeekKey(mondayAt(41, 9)),
+          },
+        }),
+      ).toBe(0);
+      // La evaluación automática no la resuelve sola.
+      await ok("/alerts/evaluate", owner, {});
+      expect(
+        (await db.alert.findUnique({ where: { key: nextKey } })).status,
+      ).toBe("new");
+    } finally {
+      await db.alert.deleteMany({ where: { key: { in: [key, nextKey] } } });
+      await db.notificationOutbox.deleteMany({
+        where: { eventType: "credit_reminder" },
+      });
+    }
+    const empty = new CreditReminderService({
+      sale: { findMany: async () => [] },
+    } as any);
+    expect((await empty.run(monday, { telegram: true })).created).toEqual([]);
+  });
+});

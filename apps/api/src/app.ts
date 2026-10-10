@@ -24,6 +24,7 @@ import { OfflineSalesController } from "./offline-sales";
 import { OfflineSaleReviewController } from "./offline-sale-review";
 import { IncentivesController } from "./incentives";
 import { NotificationsController, NotificationWorker } from "./notifications";
+import { CreditReminderService } from "./credit-reminder";
 import { RetentionWorker } from "./retention";
 import {
   DriveBackupController,
@@ -83,6 +84,7 @@ export function createAppModule(secret: string) {
       Database,
       AlertEngine,
       NotificationWorker,
+      CreditReminderService,
       DriveBackupService,
       DriveBackupWorker,
       RetentionWorker,
