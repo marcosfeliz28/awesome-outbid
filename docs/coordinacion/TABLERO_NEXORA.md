@@ -41,3 +41,4 @@ Sirve para que dos asistentes trabajen sin pisarse. Se actualiza en cada entrega
 |---|---|---|---|---|---|
 | 2026-10-08 | ChatGPT | Correcciones de la auditoría 2 (N1, A06–A12) | c0b7105 | Claude | N1 mal: ver L1 |
 | 2026-10-08 | ChatGPT | Cumplimiento G1, G2, G5, G6, G7, G10 y G11; G3/G4/G8 quedan a decisión | `2e04cd7..760e715` dentro de PR #1 `561e752` | Pendiente Claude | Ejecución real: `pnpm check` 212/1; focales 46/46; 24 migraciones y seed en base nueva; integración no verde 76/81/0; CI `verify` no alcanzó integración y Playwright no corrió. Ver sección E de `docs/RONDA_NEXORA_CHATGPT.md`. |
+| 2026-10-10 | ChatGPT | Relevo 3m: 3k, B8–B11, ExcelJS y revisión de cuatro ramas W3 | `496030f..0d3d184` | Pendiente | Entrega parcial en `docs/ENTREGA_RELEVO_3M_CHATGPT.md`; CI final se confirma en PR #2. Wave3 bloqueada por P1 web y dinero, sin integrar ni desplegar. Capturas dependen de caja web corregida; Windows-Smoke limpio sigue pendiente. |
