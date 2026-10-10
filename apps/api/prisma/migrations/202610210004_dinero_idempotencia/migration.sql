@@ -1,3 +1,8 @@
+-- Nombre 202610210004 (no 202610210001, el de la rama fix-dinero): en la
+-- integración chocaba con 202610210001_datos_indices y las migraciones no
+-- deben repetir prefijo (docs/MIGRACIONES_SEGURAS.md, M2). Es independiente
+-- de las de datos y nunca se aplicó en producción.
+--
 -- D-M4 (auditoría 06): clave de idempotencia de los movimientos de caja, los
 -- pagos a proveedor y los gastos. Un doble clic o un reintento con la misma
 -- clave devuelve el registro ya creado en vez de duplicarlo.
