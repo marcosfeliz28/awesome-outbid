@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { realpathSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 function databaseEnvironment(source = process.env) {
   const env = { ...source };
@@ -67,6 +68,35 @@ if (isMain()) {
     process.exit(1);
   }
 
+  // Un script de Node sin «node» delante (p. ej. apps/api/dist/main.js) se
+  // carga en ESTE proceso: sin un segundo node residente (~46 MB) y con las
+  // opciones de memoria que recibió este node (--max-old-space-size). Las
+  // señales (SIGTERM de Render) las atiende directamente la API.
+  if (/\.[cm]?js$/.test(command)) {
+    for (const key of Object.keys(process.env))
+      if (!(key in env)) delete process.env[key];
+    Object.assign(process.env, env);
+    const script = resolve(command);
+    process.argv = [process.argv[0], script, ...args];
+    try {
+      await import(pathToFileURL(script).href);
+    } catch (error) {
+      // Nunca la URL de la base: se oculta si el mensaje la incluyera.
+      console.error(
+        "No se pudo iniciar el proceso de Nexora.",
+        error instanceof Error
+          ? error.message.replace(
+              /postgres(?:ql)?:\/\/\S+/gi,
+              "postgresql://***",
+            )
+          : "",
+      );
+      process.exit(1);
+    }
+  } else runChild(command, args, env);
+}
+
+function runChild(command, args, env) {
   const child = spawn(command, args, { env, stdio: "inherit" });
   for (const signal of ["SIGINT", "SIGTERM"])
     process.on(signal, () => {

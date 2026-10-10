@@ -136,6 +136,9 @@ model Variant {
   //   "Variant_barcode_ci_key" ON (lower(btrim(barcode))) WHERE btrim(barcode) <> ''
   // Si al migrar ya había repetidos, el índice se omite (NOTICE + AuditLog
   // k2_code_index_skipped) hasta corregirlos y volver a ejecutar la migración.
+
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([productId])
 }
 
 model KitComponent {
@@ -260,6 +263,8 @@ model Sale {
 
   @@index([createdAt])
   @@index([sellerId, createdAt])
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([cashSessionId])
 }
 
 model SaleItem {
@@ -283,6 +288,8 @@ model SaleItem {
 
   @@index([variantId])
   @@index([lotId])
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([saleId])
 }
 
 model Payment {
@@ -307,6 +314,10 @@ model Payment {
   feeAmount      Decimal  @default(0) @db.Decimal(14, 2)
   status         String   @default("ok")
   proofUrl       String?
+
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([saleId])
+  @@index([cashSessionId])
 }
 
 model SaleReturn {
@@ -331,6 +342,10 @@ model SaleReturn {
   // Clave de la operación que envía la interfaz: un reintento devuelve esta fila (R9-A01).
   operationId    String?  @unique @db.Uuid
   createdAt      DateTime @default(now())
+
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([saleId])
+  @@index([cashSessionId])
 }
 
 model CreditNote {
@@ -480,6 +495,9 @@ model CashMovement {
   reason    String
   userId    String
   createdAt DateTime @default(now())
+
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([sessionId])
 }
 
 model ExpenseCategory {

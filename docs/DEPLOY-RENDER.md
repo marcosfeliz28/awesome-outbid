@@ -41,7 +41,7 @@ Internet -> HTTPS de Render -> nexora-pos-web (Nginx + PWA)
 | `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx).                                                   |
 | `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                  |
 | `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `database: ok`. |
-| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales.                                                                |
+| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales; con un script `.js` lo carga en el mismo proceso.              |
 | `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                             |
 
 ## Variables y secretos
@@ -190,6 +190,50 @@ Swagger en producción (`ENABLE_SWAGGER=true`), su interfaz queda sujeta a ella.
   `index.html` (SPA). Una ruta de la SPA no debe terminar en `.algo`. Un
   directorio como `/products/` ya no devuelve 403 sino la SPA.
 - `server_tokens off` oculta la versión de Nginx.
+- Compresión `gzip` (nivel 5, desde 1 KB, `Vary: Accept-Encoding`) para HTML,
+  texto, CSS, JS, SVG, manifiesto y JSON de la API (también lo que viene del
+  proxy): el JS principal baja de ~1 MB a ~320 KB y el catálogo de la API a una
+  décima parte. Las imágenes y fuentes ya comprimidas no se tocan y
+  `/api/events` (SSE) lleva `gzip off`. No cambia las cabeceras de seguridad ni
+  `Cache-Control`; el `ETag` pasa a débil (`W/`), que sigue sirviendo para
+  revalidar. La API autentica con `Authorization: Bearer` y la cookie de
+  renovación es `SameSite=Strict`, así que comprimir respuestas no abre un
+  oráculo de tamaño tipo BREACH desde otro sitio.
+
+## Memoria de la API
+
+El plan `0.5c-512mb` mata el contenedor si pasa de 512 MB. La imagen arranca un
+solo proceso:
+
+```text
+node --max-old-space-size=256 deploy/render/with-cloud-env.mjs apps/api/dist/main.js
+```
+
+- `with-cloud-env.mjs` forma `DATABASE_URL` y, cuando recibe un script `.js`
+  (sin `node` delante), lo carga en el mismo proceso. Antes lanzaba un segundo
+  `node` que quedaba residente toda la vida de la API (~46 MB). Las señales de
+  Render (`SIGTERM`) llegan directamente a la API, que cierra con sus
+  `shutdown hooks`. Con `node <script>` (pre-deploy de Prisma, tareas puntuales
+  con `tsx`) sigue lanzando un proceso aparte que termina, como antes.
+- El montón de V8 queda en 256 MB: con el motor de Prisma, el código y los
+  búferes (~130 MB fuera del montón) la API queda holgada bajo 512 MB y el
+  recolector trabaja antes de acercarse al límite. Si alguna vez aparece
+  `JavaScript heap out of memory` en el registro, subirlo con prudencia
+  (máximo ~320) en `deploy/render/Dockerfile.api`; nunca quitarlo.
+- Medición (API compilada, 0,5 CPU y 512 MB; PostgreSQL 0,1 CPU y 256 MB; un
+  año de historial, ~110 000 ventas):
+
+  | Escenario                                              | Antes (envoltorio + API)                   | Ahora (un proceso) |
+  | ------------------------------------------------------ | ------------------------------------------ | ------------------ |
+  | Prueba R3b (4 cajas + gerente, 4 min)                  | 46 + 221 = 267 MB                          | 239 MB             |
+  | Lectura intensa (900 peticiones, 12 a la vez, sin CPU) | 304 MB (2 procesos); 383 × 401 y 178 × 500 | 262 MB; 900 × 200  |
+
+- **Riesgo conocido, no resuelto aquí:** `GET /reports/sales` sin paginar
+  carga todas las ventas del período. Con ~300 ventas al día, el informe del
+  mes en curso que abre por defecto la pantalla Reportes pasa de 512 MB hacia
+  el día 20 del mes, con o sin límite de montón (con 14 días llega a ~480 MB).
+  Hay que paginarlo o agregarlo en SQL antes de que la tienda acumule ese
+  volumen.
 
 ## Salud y preparación
 
@@ -229,6 +273,49 @@ ni el seed de demostración. Las migraciones nuevas deben seguir el patrón
    un respaldo verificable.
 
 Volver al contenedor anterior no revierte una migración de datos.
+
+### Índices de enlace y `plan_cache_mode` (202610200001_perf_indexes_links)
+
+Una prueba de carga con un año de historial (~110 000 ventas, 4 cajas y un
+gerente, con los tamaños de este Blueprint) mostró que faltaban índices en las
+columnas que enlazan tablas y que, con sentencias preparadas, PostgreSQL acaba
+usando un plan genérico malo para la suma de pagos por método. La migración:
+
+- crea con `CREATE INDEX IF NOT EXISTS` `Payment(saleId)`,
+  `Payment(cashSessionId)`, `SaleItem(saleId)`, `Sale(cashSessionId)`,
+  `SaleReturn(saleId)`, `SaleReturn(cashSessionId)`,
+  `CashMovement(sessionId)` y `Variant(productId)` (mismos nombres que los
+  `@@index` de `schema.prisma`). El esperado de una caja pasó de 203 ms a
+  0,14 ms;
+- fija `plan_cache_mode = force_custom_plan` para el rol que migra
+  (`ALTER ROLE CURRENT_USER`) y para la base (`ALTER DATABASE`). La suma de
+  pagos por método (dashboard y `reports/by-payment`) pasó de 2 s a 2 ms. Sólo
+  afecta a conexiones nuevas: la API se reinicia en cada despliegue.
+
+**Nunca aborta un despliegue.** Cada índice y cada `ALTER` van en su propio
+bloque `DO` con `EXCEPTION WHEN OTHERS THEN RAISE NOTICE`: si el rol no tiene
+permiso, o una escritura retiene la tabla más de 15 s (`lock_timeout`), ese paso
+se omite con un aviso `PERF: …` en el registro del pre-deploy y el despliegue
+sigue. Un índice inválido con el mismo nombre se rehace. Con las tablas de hoy
+cada índice se crea en milisegundos; el bloqueo de escritura dura eso.
+
+Comprobar después de desplegar (Render › nexora-pos-db › Shell o `psql` con la
+URL interna):
+
+```sql
+SELECT indexname FROM pg_indexes WHERE indexname IN (
+  'Payment_saleId_idx','Payment_cashSessionId_idx','SaleItem_saleId_idx',
+  'Sale_cashSessionId_idx','SaleReturn_saleId_idx','SaleReturn_cashSessionId_idx',
+  'CashMovement_sessionId_idx','Variant_productId_idx');   -- 8 filas
+SHOW plan_cache_mode;                                       -- force_custom_plan
+```
+
+Si el registro del pre-deploy mostró un aviso `PERF:` o faltan filas, la
+migración es idempotente: se puede volver a ejecutar tal cual con
+`psql "$URL" -f apps/api/prisma/migrations/202610200001_perf_indexes_links/migration.sql`
+(sólo crea lo que falte) y reiniciar la API para que tome `plan_cache_mode`.
+Prueba: `tests/perf-indexes-postgres.test.ts` (base vacía, base con datos, dos
+ejecuciones seguidas, índice inválido y rol sin permisos).
 
 ### Contraseñas temporales de cajero
 

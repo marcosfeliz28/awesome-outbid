@@ -37,6 +37,9 @@ export default defineConfig({
       "tests/incentives-calc.test.ts",
       "tests/afirmaciones.test.ts",
       "tests/licencias.test.ts",
+      "tests/auth-guard.test.ts",
+      "tests/perf-apertura.test.ts",
+      "tests/perf-indexes-postgres.test.ts",
     ],
   },
 });

@@ -39,7 +39,7 @@ import {
   denied,
   canViewCashExpected,
 } from "./common";
-import { cashLock, terminalName } from "./sales";
+import { cashLock, terminalName, terminalNames } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
 import { verifyPinAttempt } from "./security";
 import { notify } from "./notifications";
@@ -83,6 +83,62 @@ export async function cashExpected(db: any, session: any) {
     transfer: money(expected.transfer),
     movements,
   };
+}
+// Esperado de varias cajas a la vez (GET /cash-sessions): una consulta
+// agrupada por tabla en vez de tres por caja; con 100 cajas en paralelo el
+// pool de Prisma se agotaba (P2024). Misma fórmula que cashExpected, que
+// sigue siendo la del cierre y los movimientos; tests/perf-api.test.ts
+// comprueba que ambas coinciden.
+export async function cashExpectedMany(db: any, sessions: any[]) {
+  const result = new Map<string, Awaited<ReturnType<typeof cashExpected>>>();
+  const ids = sessions.map((s) => s.id);
+  if (!ids.length) return result;
+  const payments = await db.payment.groupBy({
+    by: ["cashSessionId", "method"],
+    where: {
+      cashSessionId: { in: ids },
+      sale: { status: "completed" },
+      OR: [{ entryType: { not: "installment" } }, { status: "ok" }],
+    },
+    _sum: { amount: true },
+  });
+  const movements = await db.cashMovement.findMany({
+    where: { sessionId: { in: ids } },
+  });
+  const returns = await db.saleReturn.groupBy({
+    by: ["cashSessionId", "refundMethod"],
+    where: { cashSessionId: { in: ids } },
+    _sum: { refundAmount: true },
+  });
+  for (const session of sessions) {
+    const expected = {
+      cash: d(session.openingAmount),
+      card: d(0),
+      transfer: d(0),
+    };
+    for (const p of payments)
+      if (p.cashSessionId === session.id && p.method in expected)
+        expected[p.method as keyof typeof expected] = expected[
+          p.method as keyof typeof expected
+        ].plus(p._sum.amount ?? 0);
+    const own = movements.filter((m: any) => m.sessionId === session.id);
+    for (const m of own)
+      expected.cash = expected.cash.plus(
+        m.type === "in" ? m.amount : d(m.amount).negated(),
+      );
+    for (const r of returns)
+      if (r.cashSessionId === session.id && r.refundMethod in expected)
+        expected[r.refundMethod as keyof typeof expected] = expected[
+          r.refundMethod as keyof typeof expected
+        ].minus(r._sum.refundAmount ?? 0);
+    result.set(session.id, {
+      cash: money(expected.cash),
+      card: money(expected.card),
+      transfer: money(expected.transfer),
+      movements: own,
+    });
+  }
+  return result;
 }
 // Diferencias de una caja cerrada: contado (+ vales) contra lo esperado.
 function closeDifferences(session: any, expected: any) {
@@ -429,6 +485,8 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   };
 }
 const UUID_RE = /^[0-9a-f-]{36}$/i;
+// Cajas cerradas que lista GET /cash-sessions (además de todas las abiertas).
+const CLOSED_SESSIONS_LIMIT = 100;
 @Controller("cash-sessions")
 export class CashController {
   constructor(@Inject(Database) private db: Database) {}
@@ -436,14 +494,32 @@ export class CashController {
   @Permit("cash:write")
   async sessions(@CurrentUser() actor: Actor) {
     const showExpected = canViewCashExpected(actor);
-    const sessions = await this.db.cashSession.findMany({
-      where: {
-        branchId: actor.branchId,
-        ...(can(actor.permissions, "sale:manage") ? {} : { userId: actor.id }),
-      },
+    const scope = {
+      branchId: actor.branchId,
+      ...(can(actor.permissions, "sale:manage") ? {} : { userId: actor.id }),
+    };
+    // Todas las cajas abiertas (aunque sean antiguas) y las cerradas más
+    // recientes; el esperado se calcula para todas con consultas agrupadas.
+    const open = await this.db.cashSession.findMany({
+      where: { ...scope, closedAt: null },
       orderBy: { openedAt: "desc" },
-      take: 100,
     });
+    const closed = await this.db.cashSession.findMany({
+      where: { ...scope, closedAt: { not: null } },
+      orderBy: { openedAt: "desc" },
+      take: CLOSED_SESSIONS_LIMIT,
+    });
+    const sessions = [...open, ...closed].sort(
+      (a, b) => b.openedAt.getTime() - a.openedAt.getTime(),
+    );
+    const registerName = await terminalNames(
+      this.db,
+      sessions.map((s) => s.registerId),
+    );
+    // La cajera nunca recibe el esperado (cierre ciego): ni se calcula.
+    const expectedBySession = showExpected
+      ? await cashExpectedMany(this.db, sessions)
+      : new Map();
     return Promise.all(
       sessions.map(async (s) => {
         const {
@@ -458,7 +534,7 @@ export class CashController {
         } = s;
         return {
           ...visible,
-          registerName: await terminalName(this.db, s.registerId),
+          registerName: registerName(s.registerId),
           ...(showExpected
             ? {
                 expectedCash,
@@ -468,7 +544,7 @@ export class CashController {
                 differenceCash,
                 differenceCard,
                 differenceTransfer,
-                expected: await cashExpected(this.db, s),
+                expected: expectedBySession.get(s.id),
                 differences: s.closedAt
                   ? {
                       cash: Number(s.differenceCash),
