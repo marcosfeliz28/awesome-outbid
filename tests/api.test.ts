@@ -10572,10 +10572,11 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
       select: { openedAt: true },
     });
     const offlineUuid = randomUUID();
+    const capturedMs = Date.now() - 2 * 3600_000;
     const legacyReason = "Venta offline heredada (sin motivo registrado)";
     const legacy = {
       offlineUuid,
-      capturedAt: "2026-10-08T12:00:00.000Z",
+      capturedAt: new Date(capturedMs).toISOString(),
       customerId: defaultCustomerId,
       cashSessionId: session.id,
       items: [{ variantId: variant.id, qty: 1, discountPercent: 10 }],
@@ -10586,7 +10587,7 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
     try {
       await fixtureDb.cashSession.update({
         where: { id: session.id },
-        data: { openedAt: new Date("2026-10-08T11:00:00.000Z") },
+        data: { openedAt: new Date(capturedMs - 3600_000) },
       });
       await ok(
         "/settings",
