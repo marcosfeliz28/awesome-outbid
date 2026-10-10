@@ -1016,9 +1016,17 @@ export class DriveBackupService {
       (shaOk === true || md5Ok === true) &&
       meta.appProperties?.sha256 === dump.sha256;
     if (!verified) {
-      await drive.trash(id).catch(() => {});
+      // Si la copia dudosa no se pudo mandar a la papelera sigue en Drive con
+      // la etiqueta de respaldo: el fallo lo dice para que se borre a mano.
+      let trashed = true;
+      await drive.trash(id).catch(() => {
+        trashed = false;
+      });
       throw new BackupError(
-        "Google Drive no confirmó la copia subida (tamaño o suma distintos). No se borró ningún respaldo anterior.",
+        "Google Drive no confirmó la copia subida (tamaño o suma distintos). No se borró ningún respaldo anterior." +
+          (trashed
+            ? ""
+            : " Además, la copia dudosa no se pudo mover a la papelera: bórrala a mano en la carpeta de respaldos de Drive."),
         "drive",
       );
     }
