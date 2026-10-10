@@ -1338,7 +1338,9 @@ async function sendListing(
       const book = new ExcelJS.stream.xlsx.WorkbookWriter({
         stream: res,
         useStyles: true,
-        useSharedStrings: false,
+        // Con la tabla de textos compartidos, una celda vacía ("") se
+        // conserva igual que en el libro en memoria (NCF sin emitir).
+        useSharedStrings: true,
       });
       const sheet = book.addWorksheet(name.slice(0, 31));
       let started = false;
