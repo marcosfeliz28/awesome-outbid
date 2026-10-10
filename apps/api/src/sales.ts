@@ -1264,6 +1264,9 @@ export class SalesController {
     return rows.map((sale) => saleHistoryDto(sale, actor));
   }
   @Post("sales/:id/void")
+  // D-11 (auditoría 01): como la devolución, desde un equipo registrado: la
+  // anulación puede sacar efectivo de la caja abierta de quien anula (D-02).
+  @RequireTerminal()
   @Permit("*")
   async voidSale(
     @Param("id") id: string,

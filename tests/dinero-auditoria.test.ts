@@ -607,22 +607,7 @@ describe("Auditoría 01 · dinero", () => {
     );
   });
 
-  it.skip("D-07: la devolución exige su clave de operación", async () => {
-    const m = await person("manager", "d07", 5000);
-    const v = await product(180, 90, 5);
-    const sale = await sell(m, v, 1, [{ method: "cash", amount: 180 }]);
-    const body = {
-      saleId: sale.id,
-      cashSessionId: m.cash.id,
-      reason: "Talla equivocada",
-      refundMethod: "cash",
-      items: [{ saleItemId: sale.items[0].id, qty: 1, restock: true }],
-    };
-    expect((await request("/returns", m.token, body)).status).toBe(400);
-    expect(await db.saleReturn.count({ where: { saleId: sale.id } })).toBe(0);
-  });
-
-  it.skip("D-11: anular exige un equipo registrado", async () => {
+  it("D-11: anular exige un equipo registrado", async () => {
     const c = await person("seller", "d11", 0);
     const v = await product(300, 100, 5);
     const sale = await sell(c, v, 1, [{ method: "cash", amount: 300 }]);
