@@ -102,13 +102,14 @@ describe("Textos que dicen lo que funciona hoy", () => {
     );
     expect(pos).not.toContain("revise esta opción en Ajustes");
   });
-  it("el manual de caja nombra el indicador «Offline» que muestra la barra", () => {
+  it("el manual de caja nombra el indicador «Sin conexión» que muestra la barra (05-B2)", () => {
     const app = read("apps/web/src/App.tsx");
-    expect(app).toContain('online ? "En línea" : "Offline"');
+    expect(app).toMatch(/online\s*\?\s*"En línea"\s*:\s*"Sin conexión"/);
+    expect(app).not.toContain('"Offline"');
     const section = read("docs/MANUAL-CAJERO.md").split("## 8.")[1];
-    expect(section).toContain("**Offline**");
+    expect(section).toContain("**Sin conexión**");
     expect(section).toContain("**En línea**");
-    expect(section).not.toContain("aparece **Sin conexión**");
+    expect(section).not.toContain("**Offline**");
   });
   it("Anular explica cuándo sí hace falta la caja propia, como exige la API", () => {
     const sales = read("apps/api/src/sales.ts");

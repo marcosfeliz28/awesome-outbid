@@ -3031,6 +3031,10 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
       const op = goods({
         direction: "exit",
         reason,
+        // N-1: la devolución a proveedor lleva proveedor y referencia.
+        ...(reason === "devolución a proveedor"
+          ? { supplierId, supplierInvoice: "NC-API" }
+          : {}),
         items: [{ variantId: product.variants[0].id, qty: 1, unitCost: 12 }],
       });
       await ok("/merchandise/operations", op, warehouseToken);
@@ -10837,7 +10841,14 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
     ...extra,
   });
   const setSettings = (changes: Record<string, unknown>) =>
-    must("/settings", { ...settingsBefore, ...changes }, ownerToken, "PUT");
+    // N-2: estas pruebas ejercen el umbral por venta y por cliente; el tope por
+    // turno de la cajera (que acumula entre pruebas) se sube para no mezclarlo.
+    must(
+      "/settings",
+      { ...settingsBefore, receivableShiftLimit: 10000000, ...changes },
+      ownerToken,
+      "PUT",
+    );
   // M-2 (auditoría 01): la deuda abierta del cliente cuenta para el umbral de
   // la cajera. Las pruebas de «una venta bajo el umbral» usan un cliente sin
   // deuda; el cliente compartido ya acumuló contraentregas de otras pruebas.
@@ -11804,6 +11815,8 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
       ],
       [{ method: "transfer", amount: 400, bank: "BHD", reference: "QA-D05" }],
     );
+    // N-3: la transferencia de la venta se verifica antes de devolverla.
+    await ok("/payments/" + s3.payments[0].id + "/verify", {}, admin.token);
     // 400 devueltos, ambas devoluciones parciales: 1 de 2 unidades de s1 en
     // efectivo y la línea de suplemento de s3 por transferencia.
     const giveBack = (
@@ -12241,22 +12254,25 @@ describe("SEC-05: datos personales del cliente según el rol (Ley 172-13)", () =
     expect(stored.legalId).toBe("40212345999");
     expect(stored.phone).toBe("8095550456");
 
-    // Recibo PDF (interno, no fiscal): la cajera que vendió no recibe la
-    // cédula completa; la gerencia sí.
-    const sellerPdf = await pdfText(
-      "/sales/" + soldExisting.id + "/receipt.pdf",
-      cajeraToken,
-    );
-    expect(sellerPdf).toContain(existing.name);
-    expect(sellerPdf).toContain("678");
-    expect(sellerPdf).not.toContain(legalId);
-    expect(sellerPdf).not.toContain(phone);
-    const managerPdf = await pdfText(
-      "/sales/" + soldExisting.id + "/receipt.pdf",
-      managerToken,
-    );
-    expect(managerPdf).toContain(legalId);
-    expect(managerPdf).toContain(phone);
+    // Recibo PDF (no fiscal; sale por WhatsApp o correo, V2-02): ni la cajera
+    // ni la gerencia reciben en él la cédula completa ni el teléfono del
+    // cliente (sin NCF no lleva documento), y lleva el aviso de privacidad y
+    // la política de devolución.
+    for (const [token, who] of [
+      [cajeraToken, "cajera"],
+      [managerToken, "gerencia"],
+    ] as const) {
+      const pdf = await pdfText(
+        "/sales/" + soldExisting.id + "/receipt.pdf",
+        token,
+      );
+      expect(pdf, who).toContain(existing.name);
+      expect(pdf, who).not.toContain(legalId);
+      expect(pdf, who).not.toContain(phone);
+      expect(pdf, who).not.toContain("RNC/Cédula");
+      expect(pdf, who).toContain("Devoluciones:");
+      expect(pdf, who).toContain("Privacidad: usamos sus datos");
+    }
     await ok(
       "/cash-sessions/" + cajeraCash.id + "/close",
       {

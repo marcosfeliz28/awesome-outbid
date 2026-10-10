@@ -137,7 +137,24 @@ describe("03 · textos del recibo no fiscal", () => {
     expect(returnPolicyText({ returnDays: 0 })).toMatch(
       /^Devoluciones: según la política de la tienda/,
     );
-    expect(returnPolicyText(undefined)).toContain("garantía de ley");
+    expect(returnPolicyText(undefined)).toMatch(/conserve este recibo/);
+  });
+  // V2-01: el recibo no promete una «garantía de ley» que la API no permite
+  // atender. Mientras sales.ts rechace TODA devolución fuera de plazo sin una
+  // excepción por producto defectuoso o vencido, la frase no puede aparecer;
+  // si algún día la API añade esa excepción (con «defect» o «garant» junto al
+  // control de plazo), la prueba obliga a que el recibo la anuncie.
+  it("V2-01: la frase de garantía sólo aparece si la API realmente la atiende", () => {
+    const api = readFileSync("apps/api/src/sales.ts", "utf8");
+    const guard = api.indexOf("La venta excede el plazo de devolución");
+    expect(guard).toBeGreaterThan(0);
+    const around = api.slice(Math.max(0, guard - 1500), guard + 300);
+    const apiHonorsDefects = /defect|garant[ií]a|vencid/i.test(around);
+    const printed = [{ returnDays: 30 }, { returnDays: 0 }, undefined]
+      .map(returnPolicyText)
+      .join(" ");
+    expect(/garant[ií]a/i.test(printed)).toBe(apiHonorsDefects);
+    expect(render({ sale, config })).not.toMatch(/garant[ií]a de ley/);
   });
   it("A1: aviso corto de privacidad en el pie, con el teléfono de la tienda", () => {
     expect(render({ sale, config })).toContain(
@@ -176,6 +193,25 @@ describe("03-A1 · aviso de privacidad en la web", () => {
     expect(page).toContain("opcionales");
     expect(page).not.toMatch(/\[[A-ZÁÉÍÓÚ ]{3,}\]/);
   });
+  // V2-05: el aviso no depende de un teléfono que la tienda puede no haber
+  // configurado, y nombra a quienes reciben los datos.
+  it("V2-05: la página dice dónde ejercer los derechos sin exigir el teléfono del recibo y lista los destinatarios", () => {
+    const page = readFileSync("apps/web/public/privacidad.html", "utf8");
+    const plain = page.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    expect(plain).toContain("pregunta en caja");
+    expect(plain).not.toMatch(/llama al teléfono impreso/i);
+    expect(plain).toMatch(/no hace falta/);
+    for (const third of [
+      "Telegram",
+      "Google Drive",
+      "Estados Unidos",
+      "13 meses",
+    ])
+      expect(plain, third).toContain(third);
+    // El recibo, sin teléfono configurado, sigue diciendo que se pide en caja.
+    expect(privacyNoticeText({})).toContain("en caja");
+    expect(privacyNoticeText({})).not.toMatch(/ o al /);
+  });
 });
 
 describe("05-A3/M1 · carrito en curso y cierre por inactividad", () => {
@@ -183,8 +219,13 @@ describe("05-A3/M1 · carrito en curso y cierre por inactividad", () => {
   const draft = readFileSync("apps/web/src/cartDraft.ts", "utf8");
   it("la inactividad no cierra la sesión con carrito o ventas pendientes en la cola", () => {
     const check = app.slice(app.indexOf("const holdsWork"));
-    expect(check).toContain("useStore.getState().cart.length > 0");
+    expect(check).toContain("useStore.getState().cart.length");
     expect(check).toContain('sale.status === "pending"');
+    // 05-N2: con tope; sólo la cola sin enviar y sin conexión espera sin él.
+    expect(check).toContain("inactivityWaits({");
+    expect(check).toContain("untouchedMs: Date.now() - touched");
+    // Cerrar por inactividad conserva el borrador del carrito.
+    expect(check).toContain("keepDraftThrough(endSession)");
     // Se pregunta antes de avisar o cerrar.
     expect(check.indexOf("if (await holdsWork())")).toBeLessThan(
       check.indexOf("await endSession()"),

@@ -485,6 +485,14 @@ export function Merchandise() {
       return;
     }
     if (
+      direction === "exit" &&
+      reason === "devolución a proveedor" &&
+      (!supplierId || !String(doc.supplierInvoice ?? "").trim())
+    ) {
+      setError("Elige el proveedor y escribe la referencia de la devolución.");
+      return;
+    }
+    if (
       !window.confirm(
         direction === "entry"
           ? `¿Confirmar entrada de ${units} unidad(es)${damaged ? ` y ${damaged} dañada(s) que no entran al stock` : ""}?`
@@ -506,6 +514,9 @@ export function Merchandise() {
       invoiceTotal: total ? Number(total) : undefined,
       acknowledgeMismatch: mismatchAccepted,
       ...(direction === "entry" ? documentPayload(doc) : {}),
+      ...(direction === "exit" && reason === "devolución a proveedor"
+        ? { supplierInvoice: String(doc.supplierInvoice ?? "").trim() }
+        : {}),
       items: items.map(
         ({
           name,
@@ -751,16 +762,49 @@ export function Merchandise() {
             )}
           </div>
         ) : (
-          <label className="field">
-            Motivo de la salida
-            <select value={reason} onChange={(e) => setReason(e.target.value)}>
-              {EXIT_REASONS.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="goods-grid">
+            <label className="field">
+              Motivo de la salida
+              <select
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              >
+                {EXIT_REASONS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {reason === "devolución a proveedor" && (
+              <>
+                <label className="field">
+                  Proveedor
+                  <select
+                    value={supplierId}
+                    onChange={(e) => setSupplier(e.target.value)}
+                  >
+                    <option value="">Elige el proveedor</option>
+                    {suppliers.data?.map((s: any) => (
+                      <option value={s.id} key={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  Referencia (documento o nota de crédito)
+                  <input
+                    maxLength={60}
+                    value={doc.supplierInvoice ?? ""}
+                    onChange={(e) =>
+                      setDoc({ ...doc, supplierInvoice: e.target.value })
+                    }
+                  />
+                </label>
+              </>
+            )}
+          </div>
         )}
         {direction === "entry" && (
           <details className="goods-document">

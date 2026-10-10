@@ -251,7 +251,11 @@ export function conflictHelp(message?: string) {
     return "Falta inventario. Pide a gerencia que ajuste el inventario y pulsa «Reintentar». Si no hay unidades, gerencia la descarta con su PIN.";
   if (/48 horas/i.test(text))
     return "Pasó el plazo de 48 horas: ya no se puede reintentar. Pide a gerencia que la descarte con su PIN y, si corresponde, vuelve a cobrarla en línea.";
-  if (/sin conexi[oó]n|offline/i.test(text))
+  // 05-N4: el reloj de este equipo no coincide con el horario de la caja (o la
+  // caja ya se cerró): el servidor la rechaza siempre igual.
+  if (/horario de esta caja/i.test(text))
+    return "La hora en que se cobró no corresponde al horario de esa caja (revisa el reloj del equipo o la caja ya se cerró): ya no se puede reintentar. Pide a gerencia que la descarte con su PIN y, si corresponde, vuelve a cobrarla en línea.";
+  if (/ventas sin conexi[oó]n est[aá]n desactivadas/i.test(text))
     return "Las ventas sin conexión están desactivadas: ya no se puede reintentar. Pide a gerencia que la descarte con su PIN y, si corresponde, vuelve a cobrarla en línea.";
   if (/cliente/i.test(text))
     return "Revisa el cliente y pulsa «Reintentar». Si no se puede, pide a gerencia que la descarte con su PIN.";
@@ -309,10 +313,14 @@ export async function discardWithApproval(
     post: (path: string, body: unknown) => Promise<unknown>;
     deleteLocal: (id: string) => Promise<unknown>;
   },
+  // M-6: «delivered» = el cliente se llevó la mercancía y pagó; el servidor
+  // registra la salida de inventario y la entrada de caja.
+  outcome: "returned" | "delivered" = "returned",
 ) {
   await dependencies.post("/sales/offline-review/discard", {
     offlineUuid: sale.input.offlineUuid,
     reason: reason.trim(),
+    ...(outcome === "delivered" ? { outcome } : {}),
     ...(managerPin ? { managerPin } : {}),
     detail: pendingSaleDetail(sale),
   });

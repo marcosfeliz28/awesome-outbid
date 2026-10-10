@@ -12,7 +12,14 @@
 // La bitácora guarda quién la envió, quién aprobó, el motivo y el detalle que
 // la caja tenía (artículos y pagos), y queda una alerta para gerencia: si el
 // dinero quedó en la gaveta, el cuadre de esa caja lo mostrará como sobrante.
-// La venta no se crea ni se mueve inventario ni dinero.
+// Por defecto («returned») la venta no se crea ni se mueve inventario ni
+// dinero: la mercancía y el dinero se devolvieron. M-6 (v1/v2): si el cliente
+// SE LLEVÓ la mercancía y pagó («delivered»), descartar dejaba el stock
+// sobrestimado y un sobrante sin explicar; con esa salida el servidor registra
+// la salida de inventario (ajuste, a costo, cuenta en mermas y ajustes) y una
+// entrada de caja por lo cobrado en efectivo, ambas con la referencia de la
+// venta descartada. No es una venta: gerencia puede cobrar la diferencia o
+// registrarla aparte.
 import {
   Body,
   Controller,
@@ -34,11 +41,16 @@ import {
   parse,
 } from "./common";
 import { verifyPinAttempt } from "./security";
+import { lockVariant, takeStock } from "./inventory";
+import { refreshClosedCash } from "./cash";
 
 const amount = z.number().nonnegative().max(100000000);
 const discardSchema = z.object({
   offlineUuid: z.string().uuid(),
   reason: z.string().trim().min(3).max(300),
+  // M-6: qué pasó con la mercancía y el dinero. Sin la clave se conserva el
+  // comportamiento anterior (no se mueve nada).
+  outcome: z.enum(["returned", "delivered"]).default("returned"),
   managerPin: z
     .string()
     .regex(/^\d{4,6}$/)
@@ -141,6 +153,91 @@ export class OfflineSaleReviewController {
       const paid = money(
         data.detail.payments.reduce((sum, p) => sum + p.amount, 0),
       );
+      // M-6: el cliente se llevó la mercancía y pagó, pero la venta no se crea.
+      const consequences: string[] = [];
+      if (data.outcome === "delivered") {
+        const wanted = new Map<string, number>();
+        for (const item of data.detail.items)
+          if (
+            item.variantId &&
+            z.string().uuid().safeParse(item.variantId).success
+          )
+            wanted.set(
+              item.variantId,
+              (wanted.get(item.variantId) ?? 0) + item.qty,
+            );
+        // La evidencia viene de lo que la caja envió: nunca se confía en ella.
+        // La caja debe ser de esta sucursal y de quien sincronizó la venta.
+        let sessionId: string | null = null;
+        if (
+          typeof evidence.cashSessionId === "string" &&
+          z.string().uuid().safeParse(evidence.cashSessionId).success
+        ) {
+          const own = await tx.cashSession.findFirst({
+            where: {
+              id: evidence.cashSessionId,
+              branchId: actor.branchId,
+              userId: ownership.userId,
+            },
+            select: { id: true },
+          });
+          if (!own)
+            bad(
+              "La caja de esta venta no corresponde a la sucursal o a la cajera que la envió: no se puede registrar la entrada de dinero.",
+            );
+          sessionId = own!.id;
+        }
+        // Mismo orden que la venta: caja primero, luego las variantes por id.
+        if (sessionId)
+          await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${sessionId}::uuid FOR UPDATE`;
+        for (const variantId of [...wanted.keys()].sort()) {
+          const variant = await lockVariant(tx, variantId, actor);
+          await takeStock(
+            tx,
+            actor,
+            variant,
+            wanted.get(variantId)!,
+            "adjustment",
+            data.offlineUuid,
+          );
+        }
+        if (wanted.size) {
+          await tx.inventoryMovement.updateMany({
+            where: { refId: data.offlineUuid, type: "adjustment" },
+            data: {
+              reason:
+                "Venta sin conexión " +
+                data.detail.receiptNumber +
+                " descartada con la mercancía entregada",
+            },
+          });
+          consequences.push("salida de inventario");
+        }
+        const cashPaid = money(
+          data.detail.payments
+            .filter((p) => p.method === "cash")
+            .reduce((sum, p) => sum + p.amount, 0),
+        );
+        if (sessionId && cashPaid > 0) {
+          await tx.cashMovement.create({
+            data: {
+              sessionId,
+              type: "in",
+              amount: cashPaid,
+              reason:
+                "Venta sin conexión " +
+                data.detail.receiptNumber +
+                " descartada: efectivo cobrado por mercancía entregada",
+              userId: actor.id,
+            },
+          });
+          const cash = await tx.cashSession.findUnique({
+            where: { id: sessionId },
+          });
+          if (cash?.closedAt) await refreshClosedCash(tx, cash);
+          consequences.push("entrada de caja");
+        }
+      }
       await audit(
         tx,
         actor,
@@ -158,6 +255,8 @@ export class OfflineSaleReviewController {
           approvedById: approver.id,
           approvedByName: approver.name,
           approval: manages ? "session" : "pin",
+          outcome: data.outcome,
+          consequences,
           detail: data.detail,
         },
       );
@@ -180,7 +279,11 @@ export class OfflineSaleReviewController {
             data.reason +
             ". Cobrado en el equipo: RD$ " +
             paid.toFixed(2) +
-            ". Si el dinero quedó en la caja, el cuadre lo mostrará como sobrante.",
+            (data.outcome === "delivered"
+              ? ". El cliente se llevó la mercancía: se registró " +
+                (consequences.join(" y ") || "sin movimientos") +
+                " (no es una venta; cóbrala o regístrala aparte)."
+              : ". Si el dinero quedó en la caja, el cuadre lo mostrará como sobrante."),
         },
         update: {},
       });

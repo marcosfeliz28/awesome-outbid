@@ -12,15 +12,31 @@ import { Database } from "./common";
 //                       (descartados tras 8 intentos) creados hace más de 30
 //                       días. Antes los fallidos no se borraban nunca, con el
 //                       nombre del cliente, y los enviados sólo si Telegram
-//                       estaba activo. Los pendientes se conservan: todavía
-//                       se van a enviar.
+//                       estaba activo. Los pendientes se conservan mientras
+//                       sean recientes (todavía se van a enviar); uno con más
+//                       de 30 días ya es noticia vieja (el trabajador está
+//                       detenido o Telegram apagado) y se borra igual, con
+//                       los nombres de clientes de su texto (V2-06).
 //   AuthAttempt         intentos de usuarios inexistentes (login:missing:…,
 //                       con la IP en la clave) de más de 2 días y el resto de
 //                       más de 30, nunca uno que siga bloqueado.
 //   RefreshToken        vencidos hace más de 1 día.
+//   AuditLog            sólo el ruido de seguridad de sesiones (inicios de
+//                       sesión, bloqueos, PIN): más de 400 días (13 meses,
+//                       el mismo horizonte de los respaldos de Drive). El
+//                       resto de la bitácora (ventas, anulaciones, pagos,
+//                       devoluciones, usuarios, ajustes) NO se purga: es
+//                       trazabilidad de dinero; el plazo legal (el Código
+//                       Tributario habla de 10 años) lo confirma el
+//                       contador antes de archivar nada (V2-06).
+//   InvoiceAttachment   archivos de factura de proveedor huérfanos: sin
+//                       recepción ni borrador que los use, de más de 14 días
+//                       (los borradores sin confirmar vencen a los 7 al subir
+//                       otra factura; si nadie sube otra, quedaban para
+//                       siempre). Los de una recepción nunca (clave RESTRICT).
 //
-// Fuera de esta purga, a propósito: AuditLog (trazabilidad; archivar requiere
-// decisión del contador), MerchandiseOperation (clave de idempotencia de la
+// Fuera de esta purga, a propósito: el resto de AuditLog (ver arriba),
+// MerchandiseOperation (clave de idempotencia de la
 // mercancía offline) y las ventas/pagos (conservación fiscal). Ver
 // docs/legal/DATOS_PERSONALES_INVENTARIO.md.
 export const RETENTION = {
@@ -29,12 +45,23 @@ export const RETENTION = {
   missingLoginAttemptHours: 48,
   loginAttemptDays: 30,
   expiredRefreshTokenHours: 24,
+  auditSecurityDays: 400,
+  orphanAttachmentDays: 14,
   // Filas por sentencia: una primera purga grande no retiene la tabla.
   batch: 5000,
   maxBatches: 200,
 } as const;
 
 const HOUR = 3600000;
+
+// Acciones de AuditLog que son ruido de seguridad de sesiones y no dinero.
+export const SECURITY_AUDIT_ACTIONS = [
+  "login",
+  "login_locked",
+  "pin_locked",
+  "pin_short_used",
+  "pin_switch_denied",
+] as const;
 
 // Borra en lotes con la sentencia que recibe el corte y el tamaño del lote.
 async function batched(
@@ -59,11 +86,15 @@ export async function purgeExpiredData(db: any, now = new Date()) {
   const missingCutoff = at(RETENTION.missingLoginAttemptHours * HOUR);
   const attemptCutoff = at(RETENTION.loginAttemptDays * 24 * HOUR);
   const tokenCutoff = at(RETENTION.expiredRefreshTokenHours * HOUR);
+  const auditCutoff = at(RETENTION.auditSecurityDays * 24 * HOUR);
+  const attachmentCutoff = at(RETENTION.orphanAttachmentDays * 24 * HOUR);
   const result = {
     realtimeEvents: 0,
     notifications: 0,
     authAttempts: 0,
     refreshTokens: 0,
+    auditLogs: 0,
+    invoiceAttachments: 0,
     errors: [] as string[],
   };
   const step = async (
@@ -99,14 +130,14 @@ export async function purgeExpiredData(db: any, now = new Date()) {
         SELECT id FROM "NotificationOutbox"
          WHERE (status = 'sent'
                 AND "sentAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC'))
-            OR (status = 'failed'
+            OR (status IN ('failed', 'pending')
                 AND "createdAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC'))
          LIMIT ${limit})
       DELETE FROM "NotificationOutbox" o USING old
        WHERE o.id = old.id
          AND ((o.status = 'sent'
                AND o."sentAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC'))
-           OR (o.status = 'failed'
+           OR (o.status IN ('failed', 'pending')
                AND o."createdAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC')))`,
   );
   // Mismo candado consultivo por clave que el freno de intentos de la rama
@@ -141,6 +172,35 @@ export async function purgeExpiredData(db: any, now = new Date()) {
       DELETE FROM "RefreshToken" t USING old
        WHERE t.id = old.id
          AND t."expiresAt" < (${tokenCutoff}::timestamptz AT TIME ZONE 'UTC')`,
+  );
+  await step(
+    "auditLogs",
+    (limit) => db.$executeRaw`
+      WITH old AS MATERIALIZED (
+        SELECT id FROM "AuditLog"
+         WHERE action = ANY(${[...SECURITY_AUDIT_ACTIONS]}::text[])
+           AND "createdAt" < (${auditCutoff}::timestamptz AT TIME ZONE 'UTC')
+         ORDER BY "createdAt" LIMIT ${limit})
+      DELETE FROM "AuditLog" a USING old
+       WHERE a.id = old.id
+         AND a.action = ANY(${[...SECURITY_AUDIT_ACTIONS]}::text[])
+         AND a."createdAt" < (${auditCutoff}::timestamptz AT TIME ZONE 'UTC')`,
+  );
+  // Sólo huérfanos: ni una recepción ni un borrador los usan (la clave
+  // GoodsReceipt_attachmentId_fkey, RESTRICT, lo garantiza además en la base).
+  await step(
+    "invoiceAttachments",
+    (limit) => db.$executeRaw`
+      WITH old AS MATERIALIZED (
+        SELECT a.id FROM "InvoiceAttachment" a
+         WHERE a."createdAt" < (${attachmentCutoff}::timestamptz AT TIME ZONE 'UTC')
+           AND NOT EXISTS (SELECT 1 FROM "GoodsReceipt" r WHERE r."attachmentId" = a.id)
+           AND NOT EXISTS (SELECT 1 FROM "InvoiceDraft" d WHERE d."attachmentId" = a.id)
+         ORDER BY a."createdAt" LIMIT ${limit})
+      DELETE FROM "InvoiceAttachment" a USING old
+       WHERE a.id = old.id
+         AND NOT EXISTS (SELECT 1 FROM "GoodsReceipt" r WHERE r."attachmentId" = a.id)
+         AND NOT EXISTS (SELECT 1 FROM "InvoiceDraft" d WHERE d."attachmentId" = a.id)`,
   );
   return result;
 }

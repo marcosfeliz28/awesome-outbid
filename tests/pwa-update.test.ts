@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   canApplyPwaUpdate,
   PWA_UPDATE_CHECK_MS,
+  PWA_UPDATE_FORM_MS,
   PWA_UPDATE_HIDDEN_IDLE_MS,
   PWA_UPDATE_IDLE_MS,
   pwaUpdateMessage,
@@ -31,6 +32,34 @@ describe("PWA · actualización sin cortar ventas", () => {
     expect(hidden(PWA_UPDATE_HIDDEN_IDLE_MS)).toBe(true);
     expect(PWA_UPDATE_IDLE_MS).toBeGreaterThanOrEqual(2 * 60_000);
     expect(PWA_UPDATE_CHECK_MS).toBeLessThanOrEqual(60 * 60_000);
+  });
+
+  it("05-N9: tampoco con una ventana abierta ni con un formulario a medias", () => {
+    const base = {
+      cartItems: 0,
+      idleMs: PWA_UPDATE_IDLE_MS * 10,
+      hidden: true,
+    };
+    expect(canApplyPwaUpdate(base)).toBe(true);
+    expect(canApplyPwaUpdate({ ...base, dialogOpen: true })).toBe(false);
+    expect(canApplyPwaUpdate({ ...base, sinceInputMs: 60_000 })).toBe(false);
+    expect(
+      canApplyPwaUpdate({ ...base, sinceInputMs: PWA_UPDATE_FORM_MS }),
+    ).toBe(true);
+    expect(
+      canApplyPwaUpdate({ ...base, hidden: false, dialogOpen: true }),
+    ).toBe(false);
+  });
+
+  it("05-N7/N6: todas las pestañas se recargan al cambiar de service worker y el aviso va abajo", () => {
+    const module = read("apps/web/src/pwaUpdate.ts");
+    // Un oyente permanente (sólo si ya había service worker) y no sólo el de
+    // la pestaña que pulsó «Actualizar ahora».
+    expect(module).toContain("const hadController");
+    expect(module).toContain("if (hadController)");
+    expect(module).toContain("reloadIfFree");
+    expect(module).toContain("bottom:");
+    expect(module).not.toContain('top: "12px"');
   });
 
   it("el aviso dice si hay que terminar la venta primero", () => {

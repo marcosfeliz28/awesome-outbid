@@ -1,6 +1,6 @@
 # Política de privacidad — Grupo Macgen
 
-BORRADOR del 10-oct-2026 sobre `496030f`. Revisión asistida por IA, no auditoría independiente ni certificación legal. Complete y lleve a abogado antes de publicar. No se inspeccionaron cuentas/configuración de producción.
+BORRADOR del 10-oct-2026, reconciliado con `nexora-cloud@1efe40f`. Revisión asistida por IA, no auditoría independiente ni certificación legal. Complete y lleve a abogado antes de publicar. No se inspeccionaron cuentas/configuración de producción.
 
 ## Responsable, datos y finalidad
 
@@ -24,7 +24,7 @@ El repositorio es **público** y contiene documentos internos e historial accesi
 
 ## Conservación, derechos y eliminación
 
-**[COMPLETAR con contador/abogado: plazos para ventas, pagos, auditoría, clientes, empleados y fotos]**. La purga técnica excluye ventas/pagos y auditoría. Borra eventos de más de 48 h, avisos enviados/fallidos antiguos de 30 días, ciertos intentos de autenticación de 48 h/30 días y tokens vencidos hace más de 24 h; puede desactivarse. No borra mensajes entregados a Telegram (`apps/api/src/retention.ts:22`, `:26`, `:163`).
+**[COMPLETAR con contador/abogado: plazos para ventas, pagos, auditoría, clientes, empleados y fotos]**. La purga técnica conserva ventas/pagos y auditoría comercial; elimina determinados registros de auditoría de seguridad de más de 400 días, eventos de más de 48 h, avisos antiguos de 30 días (incluidos pendientes), ciertos intentos de autenticación de 48 h/30 días y tokens vencidos hace más de 24 h. También elimina adjuntos de proveedor huérfanos de más de 14 días, no los asociados a recepciones; puede desactivarse. No borra mensajes entregados a Telegram (`apps/api/src/retention.ts:8`, `:20`, `:24`, `:31`, `:42`). La IP de la bitácora se anonimiza a los 90 días por un proceso independiente; copias anteriores pueden conservarla hasta su eliminación (`apps/api/src/security.ts:327`, `:354`). Estos límites técnicos no certifican plazos legales ni garantizan eliminación externa.
 
 Drive conserva una copia por cada uno de los 30 días más recientes **con respaldo** y una por cada uno de los 12 meses más recientes **con respaldo**; envía sobrantes a papelera después de verificar la nueva. Aproximadamente 13 meses con operación regular/papelera **no es máximo garantizado**: se cuentan días/meses con copia; interrupciones, desconexión y descargas pueden prolongar conservación. **[COMPLETAR: eliminación efectiva, papelera y reaplicación de solicitudes tras restaurar]** (`apps/api/src/drive-backup-core.ts:546`; `apps/api/src/drive-backup.ts:1062`, `:1287`).
 

@@ -45,18 +45,18 @@ Internet -> HTTPS de Render -> nexora-pos-web (Nginx + PWA)
 
 ## Archivos de despliegue
 
-| Archivo                               | Función                                                                                                                                                                   |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados.                                                                                                 |
-| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                                                                                                                             |
-| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.                                                                                                         |
-| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                                                                                                                              |
-| `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx). Si la API no resuelve, arranca igual con `/api` en 502.                                         |
-| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                                                                |
-| `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `status: "ok"`.                                               |
-| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS, UTC y tope de conexiones; en `migrate deploy` añade `lock_timeout` y `statement_timeout`; con un script `.js` lo carga en el mismo proceso. |
-| `deploy/render/ci-smoke.sh`           | En el CI: arranca las imágenes como en Render (web sin API, migración, API) y ejecuta `post-deploy-check.mjs`.                                                            |
-| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                                                                           |
+| Archivo                               | Función                                                                                                                                                                                                                                                                                             |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados.                                                                                                                                                                                                                           |
+| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                                                                                                                                                                                                                                                       |
+| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.                                                                                                                                                                                                                                   |
+| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                                                                                                                                                                                                                                                        |
+| `deploy/render/start-nginx.sh`        | Valida el destino privado y re-resuelve la API cada 10 s (recarga Nginx). Si la API no resuelve, arranca igual con `/api` en 502.                                                                                                                                                                   |
+| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                                                                                                                                                                                                                                          |
+| `deploy/render/post-deploy-check.mjs` | Tras desplegar: `node deploy/render/post-deploy-check.mjs <URL_WEB> [URL_API]` falla si `/api/health` no da `status: "ok"`. Con `--db-only` (en el _Shell_ de la API) comprueba, de solo lectura, índices válidos, restricciones validadas, el disparador `auth_attempt_touch` y `plan_cache_mode`. |
+| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS, UTC y tope de conexiones; en `migrate deploy` añade `lock_timeout` y `statement_timeout`; con un script `.js` lo carga en el mismo proceso.                                                                                                                           |
+| `deploy/render/ci-smoke.sh`           | En el CI: arranca las imágenes como en Render (web sin API, migración, API) y ejecuta `post-deploy-check.mjs` (HTTP y `--db-only`).                                                                                                                                                                 |
+| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.                                                                                                                                                                                                                                     |
 
 ## Variables y secretos
 
@@ -136,7 +136,7 @@ Cloud, pantalla de consentimiento **publicada «En producción»**, credenciales
   conserva 30 diarias y 12 mensuales. Sin servicio extra en Render.
 - En Render, servicio `nexora-pos-api` › _Environment_, como secretos:
   `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` y
-  `BACKUP_ENCRYPTION_KEY` (frase de 24 caracteres o más; sin ella las copias
+  `BACKUP_ENCRYPTION_KEY` (frase de 32 caracteres o más y con variedad; sin ella las copias
   no se pueden abrir: guardarla fuera de Render). Sin las tres, la función
   queda apagada y la tarjeta dice «No configurado».
 - URI de redirección autorizada en Google:
@@ -154,7 +154,8 @@ Cloud, pantalla de consentimiento **publicada «En producción»**, credenciales
   `scripts/restore.mjs` sobre una base nueva (ver «Respaldo y recuperación de
   Render» más abajo).
 - `GOOGLE_OAUTH_BASE`, `GOOGLE_DRIVE_BASE` y las variables `DRIVE_BACKUP_*`
-  sólo se usan en pruebas; no se declaran en Render.
+  sólo se usan en pruebas; no se declaran en Render y, en producción, se
+  ignoran.
 
 ## DNS privado y cabeceras del cliente
 
@@ -366,27 +367,41 @@ usando un plan genérico malo para la suma de pagos por método. La migración:
 **Nunca aborta un despliegue.** Cada índice y cada `ALTER` van en su propio
 bloque `DO` con `EXCEPTION WHEN OTHERS THEN RAISE NOTICE`: si el rol no tiene
 permiso, o una escritura retiene la tabla más de 15 s (`lock_timeout`), ese paso
-se omite con un aviso `PERF: …` en el registro del pre-deploy y el despliegue
-sigue. Un índice inválido con el mismo nombre se rehace. Con las tablas de hoy
-cada índice se crea en milisegundos; el bloqueo de escritura dura eso.
+se omite y el despliegue sigue. Un índice inválido con el mismo nombre se
+rehace. Con las tablas de hoy cada índice se crea en milisegundos; el
+bloqueo de escritura dura eso.
 
-Comprobar después de desplegar (Render › nexora-pos-db › Shell o `psql` con la
-URL interna):
+> **Los `NOTICE` no se ven.** `prisma migrate deploy` **no imprime** los
+> mensajes `RAISE NOTICE` (ni `PERF:`, `DATOS:`, `K2:` ni `INC:`) en el
+> registro del pre-deploy de Render: se probó con una migración-sonda. Un paso
+> omitido deja `migrate status` en «up to date» y el despliegue en verde. Por
+> eso la comprobación NO se hace buscando avisos en el registro sino
+> consultando la base (siguiente apartado). Lo único con rastro durable en la
+> base es `AuditLog` (`k2_code_index_skipped`, `constraint_not_validated`).
 
-```sql
-SELECT indexname FROM pg_indexes WHERE indexname IN (
-  'Payment_saleId_idx','Payment_cashSessionId_idx','SaleItem_saleId_idx',
-  'Sale_cashSessionId_idx','SaleReturn_saleId_idx','SaleReturn_cashSessionId_idx',
-  'CashMovement_sessionId_idx','Variant_productId_idx');   -- 8 filas
-SHOW plan_cache_mode;                                       -- force_custom_plan
+Comprobar después de desplegar, **siempre**, desde el _Shell_ de
+`nexora-pos-api` (la base no acepta conexiones externas; la API ya tiene
+`RENDER_DATABASE_URL`):
+
+```text
+node deploy/render/post-deploy-check.mjs --db-only
 ```
 
-Si el registro del pre-deploy mostró un aviso `PERF:` o faltan filas, la
-migración es idempotente: se puede volver a ejecutar tal cual con
-`psql "$URL" -f apps/api/prisma/migrations/202610200001_perf_indexes_links/migration.sql`
-(sólo crea lo que falte) y reiniciar la API para que tome `plan_cache_mode`.
-Prueba: `tests/perf-indexes-postgres.test.ts` (base vacía, base con datos, dos
-ejecuciones seguidas, índice inválido y rol sin permisos).
+Es de solo lectura y falla (código 1) si hay un índice inválido
+(`indisvalid`), falta alguno de los 20 índices que las migraciones crean sin
+abortar (enlaces, `Variant_sku_ci_key` y `Variant_barcode_ci_key`, únicos de
+incentivos e idempotencia), falta o está sin validar (`convalidated`) alguna de
+las 29 restricciones de `202610210002`, o falta el disparador
+`auth_attempt_touch`; avisa (sin fallar) si `plan_cache_mode` no es
+`force_custom_plan`. El mismo comando corre en el CI (`ci-smoke.sh`). Si
+falla, la migración correspondiente es idempotente: se puede volver a ejecutar
+tal cual con
+`psql "$URL" -f apps/api/prisma/migrations/<migración>/migration.sql` (sólo
+crea o valida lo que falte) y, para `plan_cache_mode`, reiniciar la API.
+Pruebas: `tests/perf-indexes-postgres.test.ts`,
+`tests/datos-integridad-postgres.test.ts` y `tests/post-deploy-check.test.ts`.
+Qué hacer con restricciones que no se pudieron validar:
+[MIGRACIONES_SEGURAS.md](MIGRACIONES_SEGURAS.md#restricciones-not-valid-filas-antiguas-y-su-validación).
 
 ### Actualización de la PWA en las cajas
 
@@ -491,8 +506,11 @@ Blueprint sí los crea y sólo debe hacerse después de aprobar el gasto.
 4. Verificar `/api/health` y una transacción controlada.
 5. Publicar la web.
 6. Ejecutar Actions › «Comprobación posterior al despliegue» (corre
-   `post-deploy-check.mjs` contra la web pública) y verificar inicio de
-   sesión, venta, SSE, impresión y cola offline.
+   `post-deploy-check.mjs` contra la web pública), ejecutar en el _Shell_ de
+   la API `node deploy/render/post-deploy-check.mjs --db-only` (índices,
+   restricciones validadas y disparador; el workflow de Actions no tiene
+   acceso a la base) y verificar inicio de sesión, venta, SSE, impresión y
+   cola offline.
 7. Observar errores antes de declarar finalizada la liberación.
 
 Los disparadores automáticos permanecen apagados para conservar este orden.
@@ -682,26 +700,35 @@ Nginx, `$remote_addr` es el proxy de Render: la misma para todos los clientes.
 Por eso (auditoría de seguridad 2026-10-10, S-01/S-02/S-04; ver
 `docs/DECISIONES.md` punto 15):
 
-- Nginx toma la IP del cliente de `CF-Connecting-IP` **sólo** si la conexión
-  llega desde una red de `NEXORA_TRUSTED_EDGE_CIDRS` y si la cabecera contiene
-  una sola IP. Si no, usa `$remote_addr`, como antes. La envía a la API como
+- Nginx toma la IP del cliente de `CF-Connecting-IP` **sólo** si (1) la
+  conexión llega desde una red de `NEXORA_TRUSTED_EDGE_CIDRS` (el proxy de
+  Render), (2) el último salto de `X-Forwarded-For` —el que añade Render con la
+  dirección desde la que recibió la conexión— es una red publicada de
+  Cloudflare (`deploy/render/cloudflare-ips.txt`) y (3) la cabecera contiene
+  una sola IP (N-04). Quien llegue al origen sin pasar por Cloudflare deja su
+  propia IP como último salto, no es de Cloudflare y la cabecera se ignora. Si no, usa `$remote_addr`, como antes. La envía a la API como
   `X-Forwarded-For`/`X-Real-IP` y no reenvía `CF-Connecting-IP` ni
   `True-Client-IP`. La `X-Forwarded-For` que manda el navegador nunca se usa.
 - `NEXORA_TRUSTED_EDGE_CIDRS` es una variable opcional del servicio web (redes
   separadas por espacios o comas; `none` desactiva la cabecera). Al arrancar,
   `deploy/render/render-trusted-edge.sh` la valida y la convierte en
-  configuración. Sin ella se usan las redes privadas, CGNAT y ULA:
-
-  ```text
-  10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 100.64.0.0/10 fc00::/7
-  ```
-
+  configuración. Sin ella se usa sólo la red privada de Render, `10.0.0.0/8`
+  (antes también 172.16/12, 192.168/16, 100.64/10 y fc00::/7). Si tras
+  desplegar la IP sigue colapsada, mira abajo cómo ampliar la lista con el
+  rango exacto que se observe, nunca con rangos privados «por si acaso».
+- `NEXORA_CLOUDFLARE_CIDRS` (opcional) reemplaza la lista de Cloudflare;
+  `any` desactiva sólo la condición (2) si Render no añadiera el salto (la
+  protección queda en la condición 1). La lista incluida es la publicada en
+  <https://www.cloudflare.com/ips-v4> y `/ips-v6` (2026-10-10); actualízala
+  cuando Cloudflare la cambie.
 - La API sólo cree `X-Forwarded-For` si la conexión viene de loopback o de una
   red privada (`TRUSTED_PROXIES`, sintaxis de Express `trust proxy`, para otra
   red interna). Así nadie fuera de la red privada elige su IP con cabeceras.
 - El bloqueo de cuenta **no** depende de que esto funcione: con la IP
-  colapsada sigue limitando a 10 contraseñas por hora y cuenta y deja entrar
-  a la cajera desde su equipo aprobado. La IP real sólo afina los límites por
+  colapsada sigue limitando a 30 contraseñas por hora y cuenta (y avisa con una
+  alerta cuando se agota) y deja entrar a la cajera y a la dueña desde su equipo
+  aprobado; por eso la dueña y la administración deben tener al menos un equipo
+  aprobado propio (Configuración › Equipos). La IP real sólo afina los límites por
   dirección y llena `AuditLog.ip`.
 
 **Comprobar tras desplegar** (no verificable sin Render y Cloudflare reales):

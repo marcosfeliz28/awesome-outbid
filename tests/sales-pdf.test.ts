@@ -111,6 +111,82 @@ describe("G5 · contenido real de PDF", () => {
     expect(text).not.toContain("ITBIS incluido:");
   });
 
+  // V2-02 (auditoría 03 v2): el PDF sale por WhatsApp o correo.
+  it("V2-02: no imprime teléfono ni cédula completa del cliente y lleva política de devolución y aviso de privacidad", async () => {
+    const make = (ncfType: string | null) => ({
+      id: "ee2ed38c-fd20-4e93-8780-24049da3f566",
+      number: "FS-0000043",
+      status: "completed",
+      sellerId: actor.id,
+      customerId: "582341f6-9abc-4f46-9bdf-62f7cc5509e6",
+      createdAt: new Date("2026-10-08T16:34:00.000Z"),
+      taxIncluded: true,
+      taxTotal: 18,
+      total: 118,
+      creditBalance: 0,
+      discountTotal: 0,
+      ncfType,
+      items: [
+        {
+          qty: 1,
+          unitPrice: 100,
+          lineTotal: 118,
+          variant: { sku: "SKU-1", product: { name: "Producto PDF" } },
+        },
+      ],
+      payments: [{ method: "cash", tendered: 118, amount: 118, change: 0 }],
+    });
+    const privileged = { ...actor, role: "admin", permissions: ["*"] };
+    const render = async (ncfType: string | null, who = privileged) => {
+      const sale = make(ncfType);
+      const db = {
+        sale: { findFirstOrThrow: async () => sale },
+        settings: {
+          findUnique: async () => ({
+            data: {
+              name: "Negocio PDF",
+              phone: "809-555-0199",
+              returnDays: 15,
+            },
+          }),
+        },
+        customer: {
+          findUnique: async () => ({
+            name: "Ana Herrera",
+            phone: "8095550101",
+            legalId: "00112345678",
+          }),
+        },
+        user: { findUnique: async () => ({ name: "Cajera PDF" }) },
+      };
+      const rendered = await capturePdf((response) =>
+        new SalesController(db as any).receipt(sale.id, who, response),
+      );
+      return pdfText(rendered.buffer);
+    };
+    for (const who of [privileged, actor]) {
+      const plain = await render(null, who);
+      expect(plain).toContain("Vendido a: Ana Herrera");
+      expect(plain).not.toContain("8095550101");
+      expect(plain).not.toContain("Tel. ");
+      expect(plain).not.toContain("00112345678");
+      expect(plain).not.toContain("RNC/Cédula");
+      expect(plain).toContain(
+        "Devoluciones: hasta 15 días con este recibo y el empaque original",
+      );
+      expect(plain).toContain(
+        "Privacidad: usamos sus datos sólo para esta venta",
+      );
+      expect(plain).toContain("o al 809-555-0199");
+      expect(plain).not.toMatch(/garant[ií]a de ley/);
+      const fiscal = await render("B01", who);
+      expect(fiscal).toContain("RNC/Cédula ***");
+      expect(fiscal).not.toContain("00112345678");
+      expect(fiscal).not.toContain("8095550101");
+    }
+    expect(await render("B01")).toContain("RNC/Cédula ***5678");
+  });
+
   it("la nota de crédito incluye negocio, fecha, devolución y condiciones", async () => {
     const returned = {
       id: "462f4fe6-4718-49d0-b63c-ef8e8bba58f9",

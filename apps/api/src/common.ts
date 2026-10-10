@@ -18,7 +18,13 @@ import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
 import type { Request, Response } from "express";
 import { captureApiException } from "./monitoring";
 import { isSerializationConflict } from "./inventory-resilience";
-import { databaseUnavailable, isDatabaseUnavailable } from "./database-errors";
+import {
+  constraintConflictMessage,
+  constraintViolation,
+  databaseUnavailable,
+  isDatabaseUnavailable,
+  isDeadlock,
+} from "./database-errors";
 import {
   ACTIVITY_WRITE_INTERVAL_MS,
   sessionActivityGraceMs,
@@ -87,6 +93,16 @@ export const canSwitchUserTo = (actor: string[], target: string[]) =>
   can(actor, "sale:manage") || target.every((p) => can(actor, p));
 export function conflict(message: string): never {
   throw new HttpException(message, 409);
+}
+// N-M1: gerencia descartó esta venta sin conexión; si la caja la reenvía, el
+// servidor la rechaza siempre igual (idempotente) y nunca crea la venta.
+export class OfflineSaleDiscardedError extends HttpException {
+  constructor() {
+    super(
+      "Gerencia descartó esta venta sin conexión; no se registrará. Elimínala de la cola de la caja.",
+      409,
+    );
+  }
 }
 // Mensajes de validación en español y con nombres de campo comprensibles.
 const FIELD_NAMES: Record<string, string> = {
@@ -772,10 +788,30 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (exception?.code === "P2025") {
       status = 404;
       message = "El registro no existe.";
-    } else if (isSerializationConflict(exception)) {
+    } else if (constraintViolation(exception)) {
+      // 23514/23503 sobre una fila antigua que viola una restricción NOT VALID
+      // (o un dato nuevo que la viola): conflicto explicado, no 500 genérico.
+      // Va antes de «base no disponible»: Prisma lo entrega como error
+      // desconocido, el mismo tipo que usa una conexión cortada.
+      status = 409;
+      code = "CONSTRAINT_VIOLATION";
+      message = constraintConflictMessage(constraintViolation(exception)!);
+    } else if (isSerializationConflict(exception) || isDeadlock(exception)) {
       status = 409;
       message = "Otra operación modificó estos datos. Reintenta.";
+    } else if (isDatabaseUnavailable(exception)) {
+      // P1001/P1017/P2024/P2028…: pool lleno, transacción vencida o conexión
+      // cortada a mitad de petición. Reintentable, igual que en AuthGuard.
+      const unavailable = databaseUnavailable().getResponse() as {
+        code: string;
+        message: string;
+      };
+      status = 503;
+      code = unavailable.code;
+      message = unavailable.message;
     }
+    if (status === 503 && code === "DB_UNAVAILABLE")
+      res.setHeader("Retry-After", "5");
     if (status >= 500) {
       const path = String(req.path ?? "")
         .split(/[?#]/, 1)[0]
@@ -806,7 +842,7 @@ export function safeErrorMessage(error: any): string {
   if (error?.code === "P2025")
     return "El registro no existe o ya no está disponible.";
   if (error?.code === "P2002") return "Ya existe un registro con esos datos.";
-  if (isSerializationConflict(error))
+  if (isSerializationConflict(error) || isDeadlock(error))
     return "Otra operación modificó estos datos. Reintenta.";
   return "No se pudo completar la operación. Revisa la venta e intenta de nuevo.";
 }

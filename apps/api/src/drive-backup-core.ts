@@ -47,8 +47,13 @@ export const HEADER_BYTES = 36;
 export const TAG_BYTES = 16;
 export const DEFAULT_CHUNK_BYTES = 1024 * 1024;
 export const SCRYPT = { log2N: 15, r: 8, p: 1 } as const;
-/** Mínimo de la frase BACKUP_ENCRYPTION_KEY. */
-export const MIN_PASSPHRASE = 24;
+/**
+ * Mínimo de la frase BACKUP_ENCRYPTION_KEY (N-06): el volcado lleva toda la
+ * base y la frase es lo único que lo protege fuera de línea. Además debe
+ * tener variedad (ver secret-strength.ts). Sólo se exige al CIFRAR; descifrar
+ * un respaldo viejo acepta la frase con que se hizo.
+ */
+export const MIN_PASSPHRASE = 32;
 /** Zona horaria de la tienda: nombres de archivo, retención y calendario. */
 export const TIME_ZONE = "America/Santo_Domingo";
 

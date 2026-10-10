@@ -103,9 +103,12 @@ consola nueva se llama **Google Auth Platform**).
 Es la llave de tus respaldos. **Sin ella no se pueden abrir: ni nosotros ni
 Google pueden recuperarla.**
 
-- Mínimo 24 caracteres. Lo más fácil: 6 o 7 palabras al azar separadas por
+- Mínimo 32 caracteres y con variedad: el servidor rechaza una frase corta, repetida
+  (`aaaa…`, `abcabc…`), en secuencia (`abcdef…`, `1234…`) o con pocos
+  caracteres distintos. Lo más fácil: 7 u 8 palabras al azar separadas por
   guiones, por ejemplo con este estilo (¡no uses este ejemplo!):
-  `mango-tambora-azul-puerto-nube-siete-cafe`.
+  `mango-tambora-azul-puerto-nube-siete-cafe-lluvia`. Mejor aún, genérala:
+  `node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"`.
 - Guárdala en dos lugares seguros: un gestor de contraseñas (por ejemplo, el
   de Google o 1Password) **y** escrita en papel en un sobre cerrado, en la caja
   fuerte o con una persona de confianza.
@@ -129,8 +132,16 @@ Google pueden recuperarla.**
 3. Pulsa **Save, rebuild, and deploy** (o «Save changes» y luego
    **Manual Deploy › Deploy latest commit**). Espera a que diga **Live**.
 
-Si falta alguna de las tres, o la frase tiene menos de 24 caracteres, la
-tarjeta dice «No configurado» y no se hace nada más.
+Si falta alguna de las tres, o la frase tiene menos de 32 caracteres o es
+demasiado simple, la tarjeta dice «No configurado» (y explica por qué) y no se
+hace nada más.
+
+> **Si ya tenías una frase de 24 a 31 caracteres:** al actualizar, la tarjeta
+> pasará a «No configurado» hasta que pongas una frase nueva. Cambiarla obliga a
+> pulsar **Conectar con Google** otra vez (el permiso guardado va cifrado con la
+> frase) y los respaldos **anteriores** sólo se abren con la frase con que se
+> hicieron: conserva la vieja mientras existan esas copias (hasta unos 13
+> meses).
 
 ## Paso 7. Conecta Google Drive
 
@@ -288,5 +299,7 @@ Path=/api/backups/google` del mismo navegador; el verificador PKCE se deriva
   `DRIVE_BACKUP_RETRY_MS`, `DRIVE_BACKUP_TEST_IGNORE_HOUR`,
   `DRIVE_BACKUP_UPLOAD_CHUNK`, `DRIVE_BACKUP_UPLOAD_RETRY_MS`. Las bases
   `GOOGLE_OAUTH_BASE` y `GOOGLE_DRIVE_BASE` permiten un Google falso; no se
-  declaran en Render. `GOOGLE_OAUTH_REDIRECT_URI` sustituye la dirección de
+  declaran en Render y con `NODE_ENV=production` se ignoran (así nadie que
+  pueda editar variables redirige el secreto del cliente, el token de Drive ni
+  la subida del respaldo). `GOOGLE_OAUTH_REDIRECT_URI` sustituye la dirección de
   regreso si hiciera falta.

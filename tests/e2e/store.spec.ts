@@ -195,7 +195,7 @@ test("venta offline queda guardada y se sincroniza una sola vez", async ({
   await page.getByRole("dialog").getByRole("button", { name: /Lila/ }).click();
   await selectNamedCustomer(page);
   await context.setOffline(true);
-  await expect(page.locator(".connection")).toContainText("Offline");
+  await expect(page.locator(".connection")).toContainText("Sin conexión");
   await page.getByRole("button", { name: /Cobrar/ }).click();
   await page.getByRole("button", { name: "Agregar pago" }).click();
   await page.getByRole("button", { name: "Finalizar venta" }).click();
@@ -1613,7 +1613,7 @@ test("R9-dinero-5-pos: un descuento por monto con 3 decimales se cobra en línea
   await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
   // Sin conexión: la venta ya entregada se sincroniza, no queda en conflicto.
   await context.setOffline(true);
-  await expect(page.locator(".connection")).toContainText("Offline");
+  await expect(page.locator(".connection")).toContainText("Sin conexión");
   await sell();
   await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible();
   await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
@@ -1797,7 +1797,7 @@ test("R9-offline-1: sin internet pero con la red local activa, la caja sigue ven
   await r9Charge(page);
   await expect(page.getByText(/Guardada en este dispositivo/)).toBeVisible();
   await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
-  await expect(page.locator(".connection")).toContainText("Offline");
+  await expect(page.locator(".connection")).toContainText("Sin conexión");
   // La lista sigue a la vista con el stock ya descontado (antes: «Failed to
   // fetch · Reintentar» en lugar de las tarjetas).
   await expect(page.locator(".error-panel")).toHaveCount(0);
@@ -1810,7 +1810,7 @@ test("R9-offline-1: sin internet pero con la red local activa, la caja sigue ven
   await expect(
     page.getByRole("heading", { name: "Punto de venta" }),
   ).toBeVisible();
-  await expect(page.locator(".connection")).toContainText("Offline");
+  await expect(page.locator(".connection")).toContainText("Sin conexión");
   await search.fill(code);
   await expect(page.locator(".product-card", { hasText: name })).toContainText(
     "4 en stock",
@@ -1893,7 +1893,7 @@ test("R9-offline-2: una venta sin conexión descuenta el stock local y no deja v
   const product = await r9Product(request, headers, name, code);
   const search = await r9Pos(page);
   await context.setOffline(true);
-  await expect(page.locator(".connection")).toContainText("Offline");
+  await expect(page.locator(".connection")).toContainText("Sin conexión");
   // Las 5 unidades del producto, sin conexión.
   for (let i = 0; i < 5; i++) {
     await search.fill(code);
@@ -2288,7 +2288,7 @@ test("R9-offline-1 revisión: si el servidor no responde (paquetes perdidos), la
   await expect(
     page.getByRole("heading", { name: "Punto de venta" }),
   ).toBeVisible({ timeout: 20000 });
-  await expect(page.locator(".connection")).toContainText("Offline");
+  await expect(page.locator(".connection")).toContainText("Sin conexión");
   await context.unroute(api);
   await expect(async () => {
     expect(await r9LocalSales(page)).toEqual([]);

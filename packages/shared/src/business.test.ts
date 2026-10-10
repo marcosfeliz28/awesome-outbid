@@ -613,3 +613,34 @@ describe("M-2 · el umbral del crédito y la contraentrega es por cliente", () =
     expect(receivableNeedsApproval(credit(900), on, true, 5000)).toBe(false);
   });
 });
+
+describe("N-2 · tope por turno de lo que se deja por cobrar", () => {
+  const on = { allowCreditSales: true, creditApprovalThreshold: 1000 };
+  const cod = (amount: number) => [{ method: "cod", amount }];
+  it("lo ya dejado por cobrar en el turno suma, de cualquier cliente", () => {
+    expect(receivableNeedsApproval(cod(800), on, false, 0, 2200)).toBe(false);
+    expect(receivableNeedsApproval(cod(800), on, false, 0, 2400)).toBe(true);
+    // El tope es configurable.
+    expect(
+      receivableNeedsApproval(
+        cod(800),
+        { ...on, receivableShiftLimit: 5000 },
+        false,
+        0,
+        4000,
+      ),
+    ).toBe(false);
+  });
+  it("no aplica a quien gestiona ventas ni a ventas sin cuenta por cobrar", () => {
+    expect(receivableNeedsApproval(cod(800), on, true, 0, 9000)).toBe(false);
+    expect(
+      receivableNeedsApproval(
+        [{ method: "cash", amount: 800 }],
+        on,
+        false,
+        0,
+        9000,
+      ),
+    ).toBe(false);
+  });
+});

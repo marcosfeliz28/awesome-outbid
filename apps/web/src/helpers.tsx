@@ -42,7 +42,9 @@ export const toast = (message: string, error = false) =>
   toastHandler(message, error);
 // 05-M2: error de la caja (código no encontrado, sin stock, código de dos
 // productos) que queda a la vista hasta el siguiente escaneo correcto o hasta
-// cerrarlo; antes el aviso siguiente lo tapaba y se perdía.
+// cerrarlo; antes el aviso siguiente lo tapaba y se perdía. 05-N1: ya no es
+// eterno: caduca a los 15 s (TOAST_MS.sticky) y la caja lo quita al teclear,
+// al cobrar y al abrir una ventana, para que no quede sobre el cobro.
 export const persistentError = (message: string) =>
   toastHandler(message, true, true);
 // 05-M7: aviso con una acción (por ejemplo «Deshacer»), 8 s a la vista.
@@ -55,7 +57,7 @@ let dismissHandler = () => {};
 export const clearPersistentErrors = () => dismissHandler();
 // G12: cuánto queda un aviso a la vista. Un error se lee con calma (no menos
 // de 8 s); con el ratón encima o el foco dentro, no se cierra solo.
-export const TOAST_MS = { info: 6000, error: 10000 } as const;
+export const TOAST_MS = { info: 6000, error: 10000, sticky: 15000 } as const;
 type Notice = {
   message: string;
   error: boolean;
@@ -77,10 +79,16 @@ function Toast({
   // Un temporizador por aviso: uno nuevo cancela el del anterior, y pausar
   // lo detiene; al salir se cuenta otra vez el plazo completo.
   useEffect(() => {
-    if (paused || notice.sticky) return;
+    if (paused) return;
     const timer = setTimeout(
       onClose,
-      notice.error ? TOAST_MS.error : notice.action ? ACTION_MS : TOAST_MS.info,
+      notice.sticky
+        ? TOAST_MS.sticky
+        : notice.error
+          ? TOAST_MS.error
+          : notice.action
+            ? ACTION_MS
+            : TOAST_MS.info,
     );
     return () => clearTimeout(timer);
   }, [notice, paused]);

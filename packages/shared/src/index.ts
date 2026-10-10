@@ -374,6 +374,8 @@ export const paymentTotals = (
     change: money(Decimal.max(0, paid.minus(total))),
   };
 };
+/** Tope por defecto de lo que una cajera deja por cobrar en el turno sin PIN. */
+export const RECEIVABLE_SHIFT_LIMIT = 3000;
 /**
  * ¿La parte por cobrar de una venta necesita el PIN de un gerente? (D-01)
  * La caja y la API usan esta misma regla.
@@ -390,15 +392,25 @@ export const paymentTotals = (
  *   contraentrega de esta venta no pueden superar el umbral sin PIN; partir
  *   la deuda en varias ventas pequeñas ya no evita el control. Sin
  *   `openDebt` (0) la regla se aplica a la suma de esta venta.
+ * - Tope por turno (N-2, auditoría 01 v2): el umbral por cliente se rodea
+ *   creando clientes nuevos. Para quien no tiene `sale:manage`, lo que ya dejó
+ *   por cobrar en el turno y el día (`shiftReceivable`, crédito y contraentrega
+ *   de todos sus clientes) más esta venta no puede superar
+ *   `receivableShiftLimit` (RD$ 3,000 por defecto) sin PIN de gerente.
  */
 export const receivableNeedsApproval = (
   payments: { method: string; amount: number }[],
   settings:
-    | { creditApprovalThreshold?: unknown; allowCreditSales?: unknown }
+    | {
+        creditApprovalThreshold?: unknown;
+        allowCreditSales?: unknown;
+        receivableShiftLimit?: unknown;
+      }
     | null
     | undefined,
   canManageSales: boolean,
   openDebt: Decimal.Value = 0,
+  shiftReceivable: Decimal.Value = 0,
 ) => {
   const threshold = Number(settings?.creditApprovalThreshold ?? 1000);
   const sum = (method: string) =>
@@ -412,6 +424,15 @@ export const receivableNeedsApproval = (
     !canManageSales &&
     credit.plus(cod).gt(0) &&
     d(openDebt).plus(credit).plus(cod).gt(threshold)
+  )
+    return true;
+  if (
+    !canManageSales &&
+    credit.plus(cod).gt(0) &&
+    d(shiftReceivable)
+      .plus(credit)
+      .plus(cod)
+      .gt(Number(settings?.receivableShiftLimit ?? RECEIVABLE_SHIFT_LIMIT))
   )
     return true;
   if (canManageSales || !cod.gt(0)) return false;
@@ -712,3 +733,39 @@ export const weekStart = (value: Date = new Date()) => {
   day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));
   return day.toISOString().slice(0, 10);
 };
+
+// ---------------------------------------------------------------------------
+// Textos legales del recibo no fiscal. Los usan el ticket térmico (web) y el
+// PDF (API): una sola redacción para que las salidas no se
+// contradigan entre sí (auditoría 03 v2, V2-01 y V2-02).
+
+/**
+ * 03-M3: plazo de devolución de Ajustes (returnDays) o un texto genérico.
+ *
+ * V2-01: no promete una «garantía de ley» para producto defectuoso o vencido.
+ * La API rechaza toda devolución fuera de plazo (sales.ts, «La venta excede el
+ * plazo de devolución») y no tiene todavía una excepción por defecto; mientras
+ * no exista, el recibo no puede ofrecer algo que la caja no puede registrar.
+ * La prueba tests/caja-web-ticket.test.ts exige que la frase vuelva sólo
+ * cuando la API tenga esa excepción.
+ */
+export function returnPolicyText(config: any) {
+  const days = Number(config?.returnDays);
+  return Number.isInteger(days) && days > 0
+    ? `Devoluciones: hasta ${days} días con este recibo y el empaque original, según la política de la tienda.`
+    : "Devoluciones: según la política de la tienda; conserve este recibo.";
+}
+
+/**
+ * 03-A1: aviso corto de privacidad del pie del recibo. Siempre dice dónde
+ * ejercer los derechos (en caja); el teléfono es un extra si la tienda lo
+ * configuró, nunca el único canal (V2-05).
+ */
+export function privacyNoticeText(config: any) {
+  const phone = String(config?.phone ?? "").trim();
+  return (
+    "Privacidad: usamos sus datos sólo para esta venta, sus garantías y créditos. Puede pedir verlos, corregirlos o borrarlos en caja" +
+    (phone ? " o al " + phone : "") +
+    "."
+  );
+}

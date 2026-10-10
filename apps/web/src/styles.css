@@ -5477,3 +5477,43 @@ td strong {
 .customer-search {
   margin-bottom: 8px;
 }
+/* 05-B10: la barra inferior del celular nunca muestra la tecla F12. */
+.pos-mobile-charge kbd {
+  display: none;
+}
+/* 05-B1: áreas táctiles de al menos 44 px en celular: cerrar aviso y quitar
+   una línea crecen; el botón de conexión y la cuenta, que están en la barra
+   superior (a 320 px no hay un píxel de sobra), amplían sólo la zona que
+   responde al toque con un elemento invisible. */
+@media (max-width: 720px), (pointer: coarse) {
+  .toast button,
+  .cart-line-total button {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .connection,
+  .account {
+    position: relative;
+  }
+  .connection::after,
+  .account::after {
+    content: "";
+    position: absolute;
+  }
+  .connection::after {
+    inset: -15px;
+  }
+  .account::after {
+    inset: -8px 0;
+  }
+}
+/* 05-B11: «Mostrar contraseña» en el inicio de sesión. */
+.show-password {
+  font-size: 13px;
+  margin: 0;
+  min-height: 32px;
+  justify-self: start;
+}

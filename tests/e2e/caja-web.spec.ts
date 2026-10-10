@@ -441,8 +441,9 @@ test("05-M2: el error de un escaneo no se va solo ni lo tapa otro aviso; suena u
   await expect(error).toBeVisible();
   const beeps = () => page.evaluate(() => (window as any).__beeps.slice());
   await expect.poll(async () => (await beeps()).length).toBe(1);
-  // Pasan 15 s: el error sigue a la vista hasta el siguiente escaneo correcto.
-  await page.clock.fastForward(15000);
+  // Pasan 12 s: el error sigue a la vista hasta el siguiente escaneo correcto
+  // (05-N1: caduca a los 15 s; ver caja-borrador.spec.ts).
+  await page.clock.fastForward(12000);
   await expect(error).toBeVisible();
   await scan(page, sku);
   await expect(qty(page, name)).toHaveText("1");

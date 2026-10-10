@@ -4,6 +4,7 @@
 // ven al imprimir.
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
+import { privacyNoticeText, returnPolicyText } from "@fitstore/shared";
 
 const TZ = "America/Santo_Domingo";
 // Números como en el impreso: 1,234.50 (sin RD$).
@@ -288,25 +289,9 @@ export const METHOD_LABEL: Record<string, string> = {
 // Nexora POS no emite NCF/e-CF: el recibo nunca se llama «factura».
 export const NON_FISCAL_LEGEND =
   "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL";
-/** 03-M3: plazo de devolución de Ajustes (returnDays) o un texto genérico. */
-export function returnPolicyText(config: any) {
-  const days = Number(config?.returnDays);
-  return (
-    (Number.isInteger(days) && days > 0
-      ? `Devoluciones: hasta ${days} días con este recibo y el empaque original, según la política de la tienda.`
-      : "Devoluciones: según la política de la tienda; conserve este recibo.") +
-    " Producto defectuoso o vencido: tiene la garantía de ley."
-  );
-}
-/** 03-A1: aviso corto de privacidad del pie del ticket. */
-export function privacyNoticeText(config: any) {
-  const phone = String(config?.phone ?? "").trim();
-  return (
-    "Privacidad: usamos sus datos sólo para esta venta, sus garantías y créditos. Puede pedir verlos, corregirlos o borrarlos en caja" +
-    (phone ? " o al " + phone : "") +
-    "."
-  );
-}
+// 03-M3/A1 (V2-01, V2-02): la política de devolución y el aviso de privacidad
+// viven en @fitstore/shared para que el ticket y el PDF digan lo mismo.
+export { returnPolicyText, privacyNoticeText };
 /** 03-M2: el ITBIS del ticket dice si está incluido en el precio o se suma. */
 export const taxLabel = (sale: any, config: any) =>
   (sale?.taxIncluded ?? config?.taxIncluded) === false

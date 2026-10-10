@@ -34,6 +34,7 @@ import {
   isMaskedPii,
   withoutImages,
 } from "./common";
+import { moneyDb } from "./database-errors";
 import {
   can,
   d,
@@ -42,11 +43,13 @@ import {
   moneyAmount,
   isImageDataUrl,
   LOGO_MAX_BYTES,
+  RECEIVABLE_SHIFT_LIMIT,
 } from "@fitstore/shared";
 import { normalizeUsername, passwordHash } from "./auth";
 import {
   generateTemporaryPassword,
   strongPasswordSchema,
+  temporaryPasswordExpiry,
 } from "./password-policy";
 import { RequestRateLimitService } from "./rate-limit";
 
@@ -95,6 +98,9 @@ const configSchema = z.object({
   // Salidas de efectivo del turno que una cajera registra sin PIN de gerente
   // (D-04). Sin la clave se conserva el valor guardado (RD$ 1,000 si no hay).
   cashMovementApprovalLimit: amount.optional(),
+  // N-2: crédito y contraentrega que una cajera deja por cobrar en el turno,
+  // de todos sus clientes, sin PIN de gerente (RD$ 3,000 si no hay valor).
+  receivableShiftLimit: amount.optional(),
   unusualDiscountCount: z.number().int().min(1).max(1000).default(10),
   unusualDiscountPercent: z.number().min(0).max(100).default(25),
   lowSalesDropPercent: z.number().min(0).max(100).default(50),
@@ -125,6 +131,10 @@ const cashMovementLimit = (data: Record<string, unknown> | undefined) =>
   typeof data?.cashMovementApprovalLimit === "number"
     ? data.cashMovementApprovalLimit
     : 1000;
+const receivableShiftLimit = (data: Record<string, unknown> | undefined) =>
+  typeof data?.receivableShiftLimit === "number"
+    ? data.receivableShiftLimit
+    : RECEIVABLE_SHIFT_LIMIT;
 function checkLogo(logo: string) {
   const [head, data] = logo.split(",");
   if (imageType(Buffer.from(data, "base64")) !== head.slice(11, -7))
@@ -578,7 +588,7 @@ export class AdminController {
     await this.db.supplier.findFirstOrThrow({
       where: { id: data.supplierId, branchId: actor.branchId },
     });
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       // D-M4: un doble clic o un reintento con la misma clave devuelve el
       // mismo pago en vez de rebajar dos veces la cuenta por pagar.
       const existing = await idempotent(
@@ -665,7 +675,7 @@ export class AdminController {
       }),
       body,
     );
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       // D-M4: un reintento con la misma clave devuelve el mismo gasto.
       const existing = await idempotent(
         tx,
@@ -807,6 +817,7 @@ export class AdminController {
       ...data,
       allowOfflineSales: data.allowOfflineSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
+      receivableShiftLimit: receivableShiftLimit(data),
       requireCustomer: true,
     };
   }
@@ -838,6 +849,8 @@ export class AdminController {
         // Una PWA anterior no envía el límite: no se afloja ni se endurece.
         cashMovementApprovalLimit:
           config.cashMovementApprovalLimit ?? cashMovementLimit(previous),
+        receivableShiftLimit:
+          config.receivableShiftLimit ?? receivableShiftLimit(previous),
         // Compatibilidad con clientes anteriores, pero la regla comercial es
         // invariable: toda venta se guarda a nombre de un cliente.
         requireCustomer: true,
@@ -1045,6 +1058,7 @@ export class AdminController {
         email: (data.email || generatedEmail).toLowerCase(),
         passwordHash: await passwordHash(data.password),
         mustChangePassword: true,
+        passwordExpiresAt: temporaryPasswordExpiry(),
         pinHash: await passwordHash(data.pin),
         roleId: data.roleId,
         branchId: actor.branchId,
@@ -1114,7 +1128,12 @@ export class AdminController {
               }
             : {}),
           ...(passwordValue ? { passwordHash: passwordValue } : {}),
-          ...(passwordValue ? { mustChangePassword: true } : {}),
+          ...(passwordValue
+            ? {
+                mustChangePassword: true,
+                passwordExpiresAt: temporaryPasswordExpiry(),
+              }
+            : {}),
           ...(pinValue ? { pinHash: pinValue } : {}),
           ...(password || pin || data.active === false
             ? { authVersion: { increment: 1 } }
@@ -1179,6 +1198,7 @@ export class AdminController {
         data: {
           passwordHash: passwordHashValue,
           mustChangePassword: true,
+          passwordExpiresAt: temporaryPasswordExpiry(),
           authVersion: { increment: 1 },
         },
       });

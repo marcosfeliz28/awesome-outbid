@@ -14,7 +14,7 @@ Necesitas:
 1. La laptop Windows 11 conectada al router de la tienda.
 2. Una cuenta de Windows con permiso de administrador.
 3. El archivo `Nexora-POS-Setup-<versión>.exe`.
-4. Un correo, una contraseña nueva de al menos 12 caracteres y un PIN de 4 a 6
+4. Un correo, una contraseña nueva de al menos 12 caracteres y un PIN de 6
    dígitos para la persona dueña. El paquete no trae contraseña de demostración.
 5. Espacio libre para las copias en `%ProgramData%\FitStore POS\Backups`.
    Para conservar una copia fuera de la laptop, prepara aparte OneDrive o una USB.

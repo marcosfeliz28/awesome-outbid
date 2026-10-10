@@ -185,14 +185,20 @@ function DriveBackupPanel() {
       {data && !data.configured && (
         <>
           <p>
-            Falta configurarlo en el servidor (Render, servicio de la API).
-            Sigue la guía «Respaldo diario a Google Drive»
-            (docs/RESPALDO_DRIVE.md). Falta: {data.missing.join(", ")}.
+            Falta configurarlo en el servidor. Pide a quien instaló Nexora que
+            siga la guía «Respaldo diario a Google Drive»
+            (docs/RESPALDO_DRIVE.md).
           </p>
-          <p>
-            Dirección de regreso para Google:{" "}
-            <code className="drive-code">{data.redirectUri}</code>
-          </p>
+          {/* 05-N10: los nombres de variables y la dirección de regreso son
+              para el técnico; plegados, no ocupan la pantalla de la dueña. */}
+          <details className="drive-details">
+            <summary>Detalle para el técnico</summary>
+            <p>Falta: {data.missing.join(", ")}.</p>
+            <p>
+              Dirección de regreso para Google:{" "}
+              <code className="drive-code">{data.redirectUri}</code>
+            </p>
+          </details>
         </>
       )}
       {data?.configured && (

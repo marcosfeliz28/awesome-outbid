@@ -519,20 +519,25 @@ describe("Auditoría 01 · dinero", () => {
       reason: "Conteo de almacén",
     });
     expect(adjusted.status).toBeLessThan(300);
-    // Salida de mercancía por merma (1 u) y devolución a proveedor (no cuenta).
+    // Salida de mercancía por merma (1 u) y devolución a proveedor (1 u): N-1,
+    // ambas cuentan hasta que el proveedor acredite.
+    const supplier = (await ok("/suppliers", admin))[0];
     for (const reason of ["merma", "devolución a proveedor"])
       await ok("/merchandise/operations", w.token, {
         id: randomUUID(),
         direction: "exit",
         reason,
+        ...(reason === "merma"
+          ? {}
+          : { supplierId: supplier.id, supplierInvoice: "NC-M5" }),
         items: [{ variantId: v, qty: 1, unitCost: 600 }],
       });
     const after = await ok("/dashboard/summary" + range, admin);
     expect(after.inventoryLoss - (before.inventoryLoss ?? 0)).toBeCloseTo(
-      12600,
+      13200,
       2,
     );
-    expect(before.netProfit - after.netProfit).toBeCloseTo(12600, 2);
+    expect(before.netProfit - after.netProfit).toBeCloseTo(13200, 2);
     const statement = await ok("/reports/income-statement" + range, admin);
     expect(
       statement.rows.find((r: any) => r.Concepto.startsWith("Mermas"))?.Monto,
@@ -543,7 +548,7 @@ describe("Auditoría 01 · dinero", () => {
       severity: "high",
       status: "new",
     });
-    expect(loss.message).toContain("12,600.00");
+    expect(loss.message).toContain("13,200.00");
     // Una persona la revisa; una merma nueva del mismo día la reabre.
     await ok("/alerts/" + loss.id, admin, { status: "resolved" }, "PATCH");
     await ok("/inventory/adjustments", w.token, {
@@ -552,6 +557,303 @@ describe("Auditoría 01 · dinero", () => {
       reason: "Conteo de almacén",
     });
     expect((await alert(loss.key))?.status).toBe("new");
+  });
+
+  it("N-1: la devolución a proveedor exige proveedor y referencia, deja alerta y cuenta en el informe", async () => {
+    const w = await person("warehouse", "n1");
+    const v = await product(1100, 220, 200);
+    const supplier = (await ok("/suppliers", admin))[0];
+    const range = "?from=" + today() + "&to=" + today();
+    const before = await ok("/dashboard/summary" + range, admin);
+    const exit = (extra: Record<string, unknown>) =>
+      request("/merchandise/operations", w.token, {
+        id: randomUUID(),
+        direction: "exit",
+        reason: "devolución a proveedor",
+        items: [{ variantId: v, qty: 100, unitCost: 220 }],
+        ...extra,
+      });
+    // Escenario del informe: sin proveedor ni documento ya no pasa.
+    expect((await exit({})).status).toBe(400);
+    expect((await exit({ supplierId: supplier.id })).status).toBe(400);
+    expect((await exit({ supplierInvoice: "X1" })).status).toBe(400);
+    const id = randomUUID();
+    const done = await exit({
+      id,
+      supplierId: supplier.id,
+      supplierInvoice: "NC-N1-" + suffix,
+    });
+    expect(done.status).toBeLessThan(300);
+    const a = await alert("supplier-return:" + id);
+    expect(a).toMatchObject({ type: "supplier_return", status: "new" });
+    expect(a.message).toContain("22,000.00");
+    expect(a.message).toContain("NC-N1-" + suffix);
+    // Una persona la revisa y la evaluación periódica no la reabre ni la borra.
+    const after = await ok("/dashboard/summary" + range, admin);
+    expect(after.inventoryLoss - (before.inventoryLoss ?? 0)).toBeCloseTo(
+      22000,
+      2,
+    );
+    expect(after.supplierReturns - (before.supplierReturns ?? 0)).toBeCloseTo(
+      22000,
+      2,
+    );
+    expect(before.netProfit - after.netProfit).toBeCloseTo(22000, 2);
+    expect(
+      (await alert("inventory-loss:" + w.id + ":" + today()))?.status,
+    ).toBe("new");
+    // El ajuste de inventario con tipo «devolución a proveedor» sigue la misma regla.
+    const adj = (extra: Record<string, unknown>) =>
+      request("/inventory/adjustments", w.token, {
+        variantId: v,
+        qty: -1,
+        type: "supplier_return",
+        reason: "Devolución por defecto",
+        ...extra,
+      });
+    expect((await adj({})).status).toBe(400);
+    expect((await adj({ supplierId: supplier.id })).status).toBe(400);
+    expect(
+      (await adj({ supplierId: supplier.id, reference: "NC-N1B" })).status,
+    ).toBeLessThan(300);
+    const again = await ok("/dashboard/summary" + range, admin);
+    expect(again.inventoryLoss - after.inventoryLoss).toBeCloseTo(220, 2);
+  });
+
+  it("N-3: no se devuelve efectivo de una transferencia sin verificar y rechazarla no deja deuda sobre mercancía devuelta", async () => {
+    const m = await person("manager", "n3", 5000);
+    const v = await product(500, 200, 20);
+    const transfer = [
+      {
+        method: "transfer",
+        amount: 500,
+        bank: "Banco Inventado",
+        reference: "N3",
+      },
+    ];
+    const giveBack = (sale: any, qty: number, refundMethod = "cash") =>
+      request("/returns", m.token, {
+        operationId: randomUUID(),
+        saleId: sale.id,
+        cashSessionId: m.cash.id,
+        reason: "Cliente devolvió",
+        refundMethod,
+        items: [{ saleItemId: sale.items[0].id, qty, restock: true }],
+      });
+    // Escenario del informe: venta 100 % por transferencia y devolución en efectivo.
+    const pure = await sell(m, v, 1, transfer);
+    for (const method of ["cash", "transfer", "credit_note"]) {
+      const blocked = await giveBack(pure, 1, method);
+      expect(blocked.status).toBe(400);
+      expect(JSON.stringify(blocked.body)).toContain("transferencia");
+    }
+    expect(await db.saleReturn.count({ where: { saleId: pure.id } })).toBe(0);
+    // Rechazada, ya no hay nada que verificar: la deuda es la mercancía conservada.
+    await ok("/payments/" + pure.payments[0].id + "/reject", admin, {
+      reason: "No llegó",
+    });
+    expect(
+      Number(
+        (await db.sale.findUnique({ where: { id: pure.id } })).creditBalance,
+      ),
+    ).toBe(500);
+    // Mixta: 500 en efectivo y 500 por verificar; sólo se devuelve lo cobrado.
+    const mixed = await sell(m, v, 2, [
+      { method: "cash", amount: 500 },
+      { ...transfer[0], reference: "N3b" },
+    ]);
+    expect((await giveBack(mixed, 2)).status).toBe(400);
+    expect((await giveBack(mixed, 1)).status).toBeLessThan(300);
+    expect((await giveBack(mixed, 1)).status).toBe(400);
+    await ok("/payments/" + mixed.payments[1].id + "/reject", admin, {
+      reason: "No llegó",
+    });
+    const rejected = await db.sale.findUnique({ where: { id: mixed.id } });
+    // Quedó una unidad sin devolver y sin pagar: debe 500, no 1,000.
+    expect(Number(rejected.creditBalance)).toBe(500);
+    // Defensa en profundidad: una devolución en efectivo anterior a la corrección.
+    const legacy = await sell(m, v, 1, [{ ...transfer[0], reference: "N3c" }]);
+    await db.saleReturn.create({
+      data: {
+        saleId: legacy.id,
+        number: "NC-N3-" + suffix,
+        reason: "Heredada",
+        total: 500,
+        taxTotal: 0,
+        costTotal: 200,
+        refundAmount: 500,
+        refundMethod: "cash",
+        cashSessionId: m.cash.id,
+        userId: m.id,
+        items: [],
+      },
+    });
+    await ok("/payments/" + legacy.payments[0].id + "/reject", admin, {
+      reason: "No llegó",
+    });
+    expect(
+      Number(
+        (await db.sale.findUnique({ where: { id: legacy.id } })).creditBalance,
+      ),
+    ).toBe(0);
+    expect(
+      (await alert("transfer-lost:" + legacy.payments[0].id))?.status,
+    ).toBe("new");
+  });
+
+  it("N-4: los informes de forma de pago no cuentan como cobrada una transferencia rechazada", async () => {
+    const c = await person("seller", "n4", 0);
+    const v = await product(700, 300, 10);
+    const range = "?from=" + today() + "&to=" + today();
+    const amountOf = (rows: any[], name: string) =>
+      Number(rows.find((r: any) => (r.name ?? r.Método) === name)?.amount ?? 0);
+    const sale = await sell(c, v, 1, [
+      {
+        method: "transfer",
+        amount: 700,
+        bank: "Banco Inventado",
+        reference: "N4",
+      },
+    ]);
+    const mid = await ok("/dashboard/summary" + range, admin);
+    const midReport = await ok("/reports/by-payment" + range, admin);
+    await ok("/payments/" + sale.payments[0].id + "/reject", admin, {
+      reason: "No llegó",
+    });
+    const after = await ok("/dashboard/summary" + range, admin);
+    const afterReport = await ok("/reports/by-payment" + range, admin);
+    // Los ingresos no cambian: lo que cambia es cómo se cobró.
+    expect(after.revenue).toBeCloseTo(mid.revenue, 2);
+    expect(
+      amountOf(after.payments, "transfer") - amountOf(mid.payments, "transfer"),
+    ).toBeCloseTo(-700, 2);
+    expect(
+      amountOf(after.payments, "credit") - amountOf(mid.payments, "credit"),
+    ).toBeCloseTo(700, 2);
+    const total = (rows: any[]) =>
+      rows.reduce((a: number, r: any) => a + Number(r.amount), 0);
+    expect(total(after.payments)).toBeCloseTo(after.revenue, 2);
+    const sold = (report: any, method: string) =>
+      Number(report.rows.find((r: any) => r.Método === method)?.Ventas ?? 0);
+    expect(
+      sold(afterReport, "transfer") - sold(midReport, "transfer"),
+    ).toBeCloseTo(-700, 2);
+    expect(sold(afterReport, "credit") - sold(midReport, "credit")).toBeCloseTo(
+      700,
+      2,
+    );
+  });
+
+  it("N-5: el aviso de descuento inusual nace al registrar la venta, sin esperar a la evaluación", async () => {
+    await withSettings(
+      { unusualDiscountPercent: 25, unusualDiscountCount: 1 },
+      async () => {
+        const m = await person("manager", "n5", 0);
+        const v = await product(1000, 400, 10);
+        const sale = await ok(
+          "/sales",
+          m.token,
+          saleBody(m, v, 1, [{ method: "cash", amount: 600 }], {
+            globalDiscount: 40,
+            discountReason: "Cliente frecuente",
+          }),
+        );
+        // Sin abrir Avisos ni correr la evaluación.
+        expect(await alert("discount:" + sale.id)).toMatchObject({
+          type: "unusual_discount",
+          status: "new",
+        });
+        expect(
+          (await alert("discount-count:" + m.id + ":" + today()))?.type,
+        ).toBe("unusual_discount");
+        // Una venta con descuento pequeño no genera el aviso por factura.
+        const small = await ok(
+          "/sales",
+          m.token,
+          saleBody(m, v, 1, [{ method: "cash", amount: 950 }], {
+            globalDiscount: 5,
+            discountReason: "Cliente frecuente",
+          }),
+        );
+        expect(await alert("discount:" + small.id)).toBeNull();
+        // La evaluación posterior no cambia ni duplica nada.
+        const before = await db.alert.count({
+          where: { type: "unusual_discount" },
+        });
+        await ok("/alerts", admin);
+        expect((await alert("discount:" + sale.id))?.message).toContain(
+          sale.number,
+        );
+        expect(
+          await db.alert.count({ where: { type: "unusual_discount" } }),
+        ).toBeGreaterThanOrEqual(before);
+      },
+    );
+  });
+
+  it("N-2: crear clientes nuevos no esquiva el tope de crédito y contraentrega por turno", async () => {
+    await withSettings({ allowCreditSales: true }, async () => {
+      const c = await person("seller", "n2", 500);
+      const v = await product(800, 300, 30);
+      const sellTo = async (extra: Record<string, unknown> = {}) => {
+        const sybil = await ok("/customers", admin, {
+          name: "QA Sybil " + randomUUID().slice(0, 6),
+        });
+        return request(
+          "/sales",
+          c.token,
+          saleBody(c, v, 1, [{ method: "cod", amount: 800 }], {
+            customerId: sybil.id,
+            ...extra,
+          }),
+        );
+      };
+      // Escenario del informe: cada cliente nuevo tiene deuda 0 y pasa el umbral
+      // por cliente (800 < 1,000); el tope del turno (3,000) lo detiene.
+      for (let i = 0; i < 3; i++) expect((await sellTo()).status).toBe(201);
+      const fourth = await sellTo();
+      expect(fourth.status).toBe(400);
+      expect(JSON.stringify(fourth.body)).toMatch(/turno.*PIN de un gerente/);
+      // Con el PIN de un gerente sí pasa.
+      expect((await sellTo({ managerPin: MANAGER_PIN })).status).toBe(201);
+      // Una gerente no está sujeta al tope de la cajera.
+      const m = await person("manager", "n2m", 0);
+      for (let i = 0; i < 5; i++) {
+        const customer = await ok("/customers", admin, {
+          name: "QA Sybil m " + randomUUID().slice(0, 6),
+        });
+        const r = await request(
+          "/sales",
+          m.token,
+          saleBody(m, v, 1, [{ method: "cod", amount: 800 }], {
+            customerId: customer.id,
+          }),
+        );
+        expect(r.status).toBe(201);
+      }
+      // En paralelo, con otra cajera: nunca pasan más de 3 sin PIN.
+      const p = await person("seller", "n2p", 500);
+      const results = await Promise.all(
+        Array.from({ length: 6 }, async () => {
+          const customer = await ok("/customers", admin, {
+            name: "QA Sybil p " + randomUUID().slice(0, 6),
+          });
+          return request(
+            "/sales",
+            p.token,
+            saleBody(p, v, 1, [{ method: "cod", amount: 800 }], {
+              customerId: customer.id,
+            }),
+          );
+        }),
+      );
+      expect(results.filter((r) => r.status === 201).length).toBe(3);
+      const owed = await db.sale.aggregate({
+        where: { cashSessionId: p.cash.id },
+        _sum: { creditBalance: true },
+      });
+      expect(Number(owed._sum.creditBalance)).toBe(2400);
+    });
   });
 
   it("B-3: no se cierra el mes de incentivos en curso", async () => {

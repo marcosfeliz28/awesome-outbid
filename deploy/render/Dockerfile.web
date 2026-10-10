@@ -30,6 +30,7 @@ COPY deploy/render/nginx.conf.template /etc/nginx/templates/default.conf.templat
 # CSP sólo incluya Sentry cuando hay VITE_SENTRY_DSN.
 COPY deploy/render/security-headers.conf /etc/nginx/nexora/security-headers.conf.in
 COPY --chmod=755 deploy/render/render-security-headers.sh /usr/local/bin/nexora-render-security-headers
+COPY deploy/render/cloudflare-ips.txt /etc/nginx/nexora/cloudflare-ips.txt
 COPY --chmod=755 deploy/render/render-trusted-edge.sh /usr/local/bin/nexora-render-trusted-edge
 COPY --chmod=755 deploy/render/start-nginx.sh /usr/local/bin/nexora-nginx-entrypoint
 EXPOSE 10000

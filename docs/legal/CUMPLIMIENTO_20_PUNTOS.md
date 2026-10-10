@@ -12,7 +12,7 @@ Nexora es un sistema **interno** de caja de una tienda en República Dominicana.
 | 4 | Política de cookies | Mínima | Falta | Sólo hay una cookie de sesión; se declara en la política de privacidad | POLITICA_PRIVACIDAD.md |
 | 5 | Banner de cookies | **No** | n/a | Sin analítica ni publicidad no hace falta banner | — |
 | 6 | Consentimientos en formularios | Sí | Falta | Aviso breve donde se capturan datos del cliente (nombre, teléfono, RNC) | POLITICA_PRIVACIDAD.md |
-| 7 | Sin datos innecesarios | Sí | Parcial | Quitar `birthday`; decidir `email`; `AuditLog.ip` nunca se llena | DATOS_PERSONALES_INVENTARIO.md |
+| 7 | Sin datos innecesarios | Sí | Parcial | Quitar `birthday`; decidir `email`; `AuditLog.ip` se llena en cada acción y se borra a los 90 días (declarar la IP del empleado en los términos internos) | DATOS_PERSONALES_INVENTARIO.md |
 | 8 | Auditar SDKs de terceros | Sí | Hecho (inventario) | Sentry web siempre activo: poner interruptor y declararlo; Anthropic y S3 sólo si se activan | REGISTRO_TERCEROS.md |
 | 9 | Patrones engañosos | Sí | **Sin hallazgos** | Pago por defecto es efectivo; sin urgencia ni casillas premarcadas | — |
 | 10 | Cargos ocultos | Sí | **Sin hallazgos** | La comisión de tarjeta es costo del negocio, no se suma al cliente. Mostrar qué promoción se aplicó | — |

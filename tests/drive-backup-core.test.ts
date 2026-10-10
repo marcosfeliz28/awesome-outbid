@@ -474,17 +474,59 @@ describe("Calendario diario 03:30 (Santo Domingo, UTC−4)", () => {
 });
 
 describe("Configuración y mensajes sin secretos", () => {
+  // N-07: los servidores de Google configurables son sólo para pruebas.
+  it("en producción ignora GOOGLE_OAUTH_BASE y GOOGLE_DRIVE_BASE", () => {
+    const env = {
+      GOOGLE_OAUTH_CLIENT_ID: "id",
+      GOOGLE_OAUTH_CLIENT_SECRET: "secret",
+      BACKUP_ENCRYPTION_KEY: PASS,
+      GOOGLE_OAUTH_BASE: "https://evil.example",
+      GOOGLE_DRIVE_BASE: "https://evil.example",
+    };
+    const prod = driveBackupSettings({ ...env, NODE_ENV: "production" });
+    expect(prod.authUrl).toBe("https://accounts.google.com/o/oauth2/v2/auth");
+    expect(prod.tokenUrl).toBe("https://oauth2.googleapis.com/token");
+    expect(prod.revokeUrl).toBe("https://oauth2.googleapis.com/revoke");
+    expect(prod.driveBase).toBe("https://www.googleapis.com");
+    const dev = driveBackupSettings({ ...env, NODE_ENV: "test" });
+    expect(dev.tokenUrl).toBe("https://evil.example/token");
+    expect(dev.driveBase).toBe("https://evil.example");
+  });
+
   it("desactivado sin las tres variables o con una frase corta", () => {
     expect(driveBackupSettings({}).configured).toBe(false);
     const full = {
       GOOGLE_OAUTH_CLIENT_ID: "id",
       GOOGLE_OAUTH_CLIENT_SECRET: "secret",
-      BACKUP_ENCRYPTION_KEY: "x".repeat(24),
+      BACKUP_ENCRYPTION_KEY: PASS,
     };
     expect(driveBackupSettings(full).configured).toBe(true);
     expect(
       driveBackupSettings({ ...full, BACKUP_ENCRYPTION_KEY: "corta" }).missing,
-    ).toEqual(["BACKUP_ENCRYPTION_KEY (24 caracteres o más)"]);
+    ).toEqual(["BACKUP_ENCRYPTION_KEY (32 caracteres o más)"]);
+    // N-06: ni 31 caracteres, ni una frase repetida o simple, aunque sea larga.
+    for (const weak of [
+      "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d",
+      "x".repeat(40),
+      "abcabcabcabcabcabcabcabcabcabcabcabc",
+      "abcdefghijklmnopqrstuvwxyz0123456789",
+      "contraseña de respaldo de la tienda!!",
+    ])
+      expect(
+        driveBackupSettings({ ...full, BACKUP_ENCRYPTION_KEY: weak })
+          .configured,
+        weak,
+      ).toBe(false);
+    expect(
+      driveBackupSettings({ ...full, BACKUP_ENCRYPTION_KEY: "x".repeat(40) })
+        .missing[0],
+    ).toMatch(/demasiado simple: se repite/);
+    expect(
+      driveBackupSettings({
+        ...full,
+        BACKUP_ENCRYPTION_KEY: "q7Zk2mX9vB4nR8tY1wC6pL3sD0hGfJ5a",
+      }).configured,
+    ).toBe(true);
     const s = driveBackupSettings({
       ...full,
       WEB_ORIGIN: "https://pos.example.com/",

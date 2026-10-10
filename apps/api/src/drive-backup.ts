@@ -2,7 +2,7 @@
 // la dueña (docs/RESPALDO_DRIVE.md).
 //
 // Se activa sólo con GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET y
-// BACKUP_ENCRYPTION_KEY (frase de 24 caracteres o más); sin ellas el estado
+// BACKUP_ENCRYPTION_KEY (frase de 32 caracteres o más y con variedad); sin ellas el estado
 // dice «no configurado» y nada más ocurre.
 //
 // Aislamiento: nada de aquí se llama desde ventas ni caja. El temporizador y
@@ -40,6 +40,8 @@ import { pipeline } from "node:stream/promises";
 import type { Request, Response } from "express";
 import { can } from "@fitstore/shared";
 import { Actor, CurrentUser, Database, Permit, Public, audit } from "./common";
+import { weakSecretReason } from "./secret-strength";
+import { sessionActivityGraceMs } from "./session-activity";
 import {
   ALERT_AFTER_FAILURES,
   FRESH_SUCCESS_MS,
@@ -101,14 +103,20 @@ export function driveBackupSettings(env: NodeJS.ProcessEnv = process.env) {
   if (!clientSecret) missing.push("GOOGLE_OAUTH_CLIENT_SECRET");
   if (passphrase.trim().length < MIN_PASSPHRASE)
     missing.push(`BACKUP_ENCRYPTION_KEY (${MIN_PASSPHRASE} caracteres o más)`);
+  else if (weakSecretReason(passphrase.trim()))
+    missing.push(
+      `BACKUP_ENCRYPTION_KEY (demasiado simple: ${weakSecretReason(passphrase.trim())}; genera una con crypto.randomBytes)`,
+    );
   const strip = (v: string) => v.replace(/\/+$/, "");
   // GOOGLE_OAUTH_BASE y GOOGLE_DRIVE_BASE existen para probar con un servidor
   // falso local, como TELEGRAM_API_BASE.
-  const oauthBase = env.GOOGLE_OAUTH_BASE?.trim();
   const webOrigin = strip(env.WEB_ORIGIN?.trim() || "http://localhost:5173");
   const production = env.NODE_ENV === "production";
-  // Perillas sólo para pruebas: en producción se ignoran.
+  // Perillas sólo para pruebas: en producción se ignoran (N-07). Así quien
+  // pueda cambiar variables de la API no redirige client_secret, tokens ni el
+  // volcado a un servidor propio.
   const test = (name: string) => (production ? undefined : env[name]);
+  const oauthBase = test("GOOGLE_OAUTH_BASE")?.trim();
   return {
     configured: missing.length === 0,
     missing,
@@ -120,7 +128,7 @@ export function driveBackupSettings(env: NodeJS.ProcessEnv = process.env) {
     tokenUrl: strip(oauthBase || "https://oauth2.googleapis.com") + "/token",
     revokeUrl: strip(oauthBase || "https://oauth2.googleapis.com") + "/revoke",
     driveBase: strip(
-      env.GOOGLE_DRIVE_BASE?.trim() || "https://www.googleapis.com",
+      test("GOOGLE_DRIVE_BASE")?.trim() || "https://www.googleapis.com",
     ),
     webOrigin,
     redirectUri:
@@ -1195,11 +1203,36 @@ export class DriveBackupService {
         })
       : null;
     if (
+      !session ||
       !user?.active ||
       user.mustChangePassword ||
       !can(user.role.permissions, "*")
     )
       return "invalid";
+    // N-09: la sesión que inició la conexión debe seguir vigente (no vencida
+    // por inactividad), como en cualquier otra petición autenticada.
+    const branchSettings = await this.db.settings.findUnique({
+      where: { id: user.branchId },
+    });
+    const timeoutMs =
+      Number((branchSettings?.data as any)?.sessionTimeoutMinutes ?? 30) *
+      60000;
+    if (
+      Date.now() - session.lastActivityAt.getTime() >
+      timeoutMs + sessionActivityGraceMs(timeoutMs)
+    )
+      return "invalid";
+    // N-09: el «state» sirve una sola vez. Se consume antes de usar el
+    // código; repetir la misma URL de vuelta (historial, referer, recarga)
+    // ya no hace nada. La fila se purga sola con el resto de AuthAttempt.
+    try {
+      await this.db.authAttempt.create({
+        data: { key: "drive-oauth-state:" + state.n },
+      });
+    } catch (error: any) {
+      if (error?.code === "P2002") return "invalid";
+      throw error;
+    }
     if (typeof query.error === "string") return "denied";
     if (
       typeof query.code !== "string" ||
