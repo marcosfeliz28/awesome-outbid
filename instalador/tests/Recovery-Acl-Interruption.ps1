@@ -1,6 +1,27 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Exact-Dacl.ps1')
+function Test-FitStoreIcaclsDisplay {
+ param([string]$ExpectedText,[string]$ActualText,[string]$ExpectedSddl,[string]$ActualSddl)
+ if(-not(Test-FitStoreExactDacl $ExpectedSddl $ActualSddl)){return $false}
+ if($ExpectedText -ceq $ActualText){return $true}
+ $expected=[Security.AccessControl.RawSecurityDescriptor]::new($ExpectedSddl)
+ $actual=[Security.AccessControl.RawSecurityDescriptor]::new($ActualSddl)
+ $changed=[int]$expected.ControlFlags -bxor [int]$actual.ControlFlags
+ # CI 38024535438: icacls agrega (I) cuando NTFS establece SOLO SD AI,
+ # aunque cada ACE ya tenia IsInherited=True antes. No ignorar otros textos
+ # ni herencia real de ACE: ExactDacl verifica bytes y orden primero.
+ if($changed -ne [int][Security.AccessControl.ControlFlags]::DiscretionaryAclAutoInherited){return $false}
+ return $ExpectedText.Replace('(I)','') -ceq $ActualText.Replace('(I)','')
+}
+# Caso exacto del diagnostico CI y negativos: la presentacion nunca puede
+# ocultar derechos, SID, duplicados, proteccion ni herencia efectiva distinta.
+$fixtureSddl='D:(A;OICIID;FA;;;SY)';$fixtureAi='D:AI(A;OICIID;FA;;;SY)'
+if(-not(Test-FitStoreIcaclsDisplay 'SYSTEM:(OI)(CI)(F)' 'SYSTEM:(I)(OI)(CI)(F)' $fixtureSddl $fixtureAi)){throw 'Caso CI AI-only no reconocido'}
+if(Test-FitStoreIcaclsDisplay 'SYSTEM:(OI)(CI)(F)' 'SYSTEM:(I)(OI)(CI)(R)' $fixtureSddl $fixtureAi){throw 'icacls derechos distintos aceptados'}
+if(Test-FitStoreIcaclsDisplay 'SYSTEM:(OI)(CI)(F)' 'SYSTEM:(I)(OI)(CI)(F)' $fixtureSddl $fixtureAi.Replace('OICIID','OICI')){throw 'Herencia ACE distinta aceptada'}
+if(Test-FitStoreIcaclsDisplay 'SYSTEM:(OI)(CI)(F)' 'SYSTEM:(I)(OI)(CI)(F)' $fixtureSddl $fixtureSddl){throw 'Cambio icacls sin cambio AI aceptado'}
+Write-Host 'PASS icacls: AI-only confirmado; derechos, herencia ACE y cambios sin AI rechazados.'
 $source=(Resolve-Path (Join-Path $PSScriptRoot '../scripts/Recover-FitStoreUpdate.ps1')).Path
 . $source -DefinitionsOnly
 if(-not(Get-Command Restore-FitStorePendingPostgresAccess -ErrorAction SilentlyContinue)){throw '3j5: falta recuperacion persistente de DACL'}
@@ -27,9 +48,12 @@ try {
  & taskkill.exe /PID $child.Id /F|Out-Null
  $child.WaitForExit()
  Restore-FitStorePendingPostgresAccess -Database $database -StatePath $state
- if(-not(Test-FitStoreExactDacl $original (Get-Acl -LiteralPath $database).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access))){throw 'DACL distinta tras taskkill y recuperacion'}
+ foreach($entry in $savedEntries){
+  if(-not(Test-FitStoreExactDacl $entry.Sddl (Get-Acl -LiteralPath $entry.Path).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access))){throw "DACL distinta tras taskkill y recuperacion: $($entry.Path)"}
+ }
+ $actualSddl=(Get-Acl -LiteralPath $database).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
  $actualIcacls=(& icacls.exe $database) -join "`n"
- if($actualIcacls -cne $originalIcacls){
+ if(-not(Test-FitStoreIcaclsDisplay $originalIcacls $actualIcacls $original $actualSddl)){
   Write-Host 'ICACLS EXPECTED BEGIN';Write-Host $originalIcacls;Write-Host 'ICACLS EXPECTED END'
   Write-Host 'ICACLS ACTUAL BEGIN';Write-Host $actualIcacls;Write-Host 'ICACLS ACTUAL END'
   foreach($entry in $savedEntries){
