@@ -617,7 +617,10 @@ describe("Auditoría 01 · dinero", () => {
           {
             ...saleBody(c, v, 1, [{ method: "cash", amount: 1210 }]),
             offlineUuid,
-            capturedAt: new Date(Date.now() - 100).toISOString(),
+            // Dentro del horario de la caja: después de abrirla y no en el futuro.
+            capturedAt: new Date(
+              Math.max(Date.parse(c.cash.openedAt) + 5, Date.now() - 50),
+            ).toISOString(),
             expectedTotal,
           },
         ],
@@ -627,7 +630,7 @@ describe("Auditoría 01 · dinero", () => {
       expect(first[0]?.status ?? first.results?.[0]?.status).toBe("conflict");
       const second = await ok("/sales/sync", c.token, body(1100));
       const synced = second[0] ?? second.results?.[0];
-      expect(synced.status).toBe("synced");
+      expect(synced).toMatchObject({ status: "synced" });
       await ok("/sales/offline-resolution", c.token, {
         offlineUuid,
         action: "reprice",
