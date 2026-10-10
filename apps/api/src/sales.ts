@@ -1913,6 +1913,35 @@ export class SalesController {
       });
       await reverseIncentives(tx, actor, "return", sale.id, row.id, data.items);
       await audit(tx, actor, "return", "sale", sale.id, undefined, row);
+      // B-6 (auditoría 01): reembolsar por un medio que la venta no usó (p. ej.
+      // efectivo de una venta con tarjeta) convierte tarjeta en efectivo. Se
+      // permite a quien gestiona ventas, pero queda una alerta para revisarlo.
+      // La nota de crédito (saldo en tienda) nunca la genera.
+      if (data.refundMethod !== "credit_note" && Number(refundAmount) > 0) {
+        const paid = await tx.payment.findMany({
+          where: { saleId: sale.id, status: { not: "rejected" } },
+          select: { method: true },
+        });
+        if (!paid.some((p) => p.method === data.refundMethod)) {
+          const label: Record<string, string> = {
+            cash: "efectivo",
+            card: "tarjeta",
+            transfer: "transferencia",
+          };
+          await tx.alert.upsert({
+            where: { key: "refund-method:" + row.id },
+            create: {
+              key: "refund-method:" + row.id,
+              type: "refund_method_mismatch",
+              severity: data.refundMethod === "cash" ? "high" : "medium",
+              entityId: sale.id,
+              branchId: actor.branchId,
+              message: `Devolución ${row.number} de ${sale.number}: RD$ ${formatAmount(Number(refundAmount))} reembolsados en ${label[data.refundMethod]}, que no es un medio con el que se cobró la venta · ${actor.name}.`,
+            },
+            update: {},
+          });
+        }
+      }
       return safe(row, actor);
     }, MONEY_TRANSACTION);
     if (done?.id) notify(this.db, "return", done.id);

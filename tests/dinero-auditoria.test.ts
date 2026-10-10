@@ -588,7 +588,7 @@ describe("Auditoría 01 · dinero", () => {
     expect(Number(receipt.total)).toBe(5692.51);
   });
 
-  it.skip("B-6: reembolsar en efectivo una venta cobrada con tarjeta deja una alerta", async () => {
+  it("B-6: reembolsar en efectivo una venta cobrada con tarjeta deja una alerta", async () => {
     const m = await person("manager", "b6", 5000);
     const v = await product(1100, 600, 5);
     const sale = await sell(m, v, 1, [
