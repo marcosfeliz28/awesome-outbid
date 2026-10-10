@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { flushSync } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -314,21 +322,24 @@ export function POS({ go }: { go: (page: string) => void }) {
     ),
   );
   const units = cart.reduce((a, i) => a + i.qty, 0);
-  const clientWords = searchWords(clientQuery);
-  const pickable = (customers.data ?? [])
-    .filter(
-      (c: any) =>
-        !clientWords.length ||
-        matchesWords(
-          [c.name, c.phone, c.legalId, c.email].filter(Boolean).join(" "),
-          clientWords,
-        ),
-    )
-    .sort(
-      (a: any, b: any) =>
-        Number(/^consumidor final$/i.test(b.name.trim())) -
-        Number(/^consumidor final$/i.test(a.name.trim())),
-    );
+  // Sólo con la ventana abierta y memorizado: la caja se vuelve a dibujar
+  // con cada tecla y el lector necesita teclas seguidas (SCAN_GAP_MS).
+  const pickable = useMemo(() => {
+    if (!clientPicker) return [];
+    const clientWords = searchWords(clientQuery);
+    const finalConsumer = (c: any) =>
+      Number(/^consumidor final$/i.test(String(c.name).trim()));
+    return (customers.data ?? [])
+      .filter(
+        (c: any) =>
+          !clientWords.length ||
+          matchesWords(
+            [c.name, c.phone, c.legalId, c.email].filter(Boolean).join(" "),
+            clientWords,
+          ),
+      )
+      .sort((a: any, b: any) => finalConsumer(b) - finalConsumer(a));
+  }, [customers.data, clientQuery, clientPicker]);
   const total = money(totals.reduce((a, i) => a.plus(i.total), d(0))),
     subtotal = money(totals.reduce((a, i) => a.plus(i.subtotal), d(0))),
     tax = money(totals.reduce((a, i) => a.plus(i.tax), d(0))),
@@ -370,12 +381,18 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     return "added";
   };
+  const addRef = useRef<(product: Product) => void>(() => {});
+  const onAddProduct = useCallback(
+    (product: Product) => addRef.current(product),
+    [],
+  );
   const addProduct = (product: Product) => {
     clearOnChoose.current = false;
     return product.variants.length === 1
       ? choose(product.variants[0], product)
       : setChoosing(product);
   };
+  addRef.current = addProduct;
   // Línea del carrito con descuentos dentro de rango (R9-caja-8).
   const setLine = (id: string, change: Partial<CartItem>) =>
     setCart(
@@ -644,10 +661,15 @@ export function POS({ go }: { go: (page: string) => void }) {
       : exactMatches;
     return { filtered, approximate };
   };
-  const { filtered, approximate } = findProducts(q);
+  // Memorizado: escribir un descuento o escanear no vuelve a calcular ni a
+  // dibujar las tarjetas del catálogo (el lector necesita teclas seguidas).
+  const { filtered, approximate } = useMemo(
+    () => findProducts(q),
+    [products.data, category, q],
+  );
   // Con cientos de productos se dibujan 120 tarjetas; la búsqueda llega al resto.
   const MAX_CARDS = 120;
-  const visible = filtered.slice(0, MAX_CARDS);
+  const visible = useMemo(() => filtered.slice(0, MAX_CARDS), [filtered]);
   // Código exacto: primero el código de barras y, si ninguno coincide, el
   // código del producto (el ID del inventario, por ejemplo 1216). Así se cobra
   // escribiendo el número + Enter, sin depender del orden del catálogo.
@@ -929,67 +951,11 @@ export function POS({ go }: { go: (page: string) => void }) {
         </div>
         <QueryState query={products}>
           {filtered.length ? (
-            <div className="product-grid">
-              {visible.map((p) => {
-                const stock = p.variants.reduce(
-                  (a, v) => a + Number(v.stock),
-                  0,
-                );
-                return (
-                  <button
-                    className="product-card"
-                    onClick={() => addProduct(p)}
-                    key={p.id}
-                    disabled={
-                      stock <= 0 &&
-                      !(
-                        config.data?.allowNegativeStock &&
-                        !p.category.requiresLot
-                      )
-                    }
-                  >
-                    <div className="product-image">
-                      <img
-                        src={p.imageUrl || categoryImage(p.category.name)}
-                        alt={p.name}
-                      />
-                      {stock <= Number(p.minStock) && (
-                        <Badge tone={stock === 0 ? "danger" : "warning"}>
-                          {stock === 0 ? "Agotado" : "Últimas unidades"}
-                        </Badge>
-                      )}
-                      <span className="add-product">
-                        <Plus size={18} />
-                      </span>
-                    </div>
-                    <div className="product-info">
-                      <span className="product-category">
-                        {p.category.name}
-                      </span>
-                      <h3 title={p.name}>{p.name}</h3>
-                      <p>
-                        {p.variants.length > 1
-                          ? `${p.variants.length} variantes`
-                          : [
-                              "Cód. " + p.variants[0]?.sku,
-                              attrLabel(p.variants[0]?.attributes || {}),
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                      </p>
-                      <div className="product-bottom">
-                        <strong>
-                          {formatMoney(
-                            Math.min(...p.variants.map((v) => Number(v.price))),
-                          )}
-                        </strong>
-                        <span>{stock} en stock</span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <ProductGrid
+              products={visible}
+              allowNegativeStock={!!config.data?.allowNegativeStock}
+              onAdd={onAddProduct}
+            />
           ) : (
             <Empty
               title="No encontramos ese producto"
@@ -1486,6 +1452,73 @@ export function POS({ go }: { go: (page: string) => void }) {
     </div>
   );
 }
+
+// Tarjetas del catálogo, memorizadas: sólo se vuelven a dibujar si cambia la
+// lista (búsqueda, categoría o stock), no con cada tecla de un descuento.
+const ProductGrid = memo(function ProductGrid({
+  products,
+  allowNegativeStock,
+  onAdd,
+}: {
+  products: Product[];
+  allowNegativeStock: boolean;
+  onAdd: (product: Product) => void;
+}) {
+  return (
+    <div className="product-grid">
+      {products.map((p) => {
+        const stock = p.variants.reduce((a, v) => a + Number(v.stock), 0);
+        return (
+          <button
+            className="product-card"
+            onClick={() => onAdd(p)}
+            key={p.id}
+            disabled={
+              stock <= 0 && !(allowNegativeStock && !p.category.requiresLot)
+            }
+          >
+            <div className="product-image">
+              <img
+                src={p.imageUrl || categoryImage(p.category.name)}
+                alt={p.name}
+              />
+              {stock <= Number(p.minStock) && (
+                <Badge tone={stock === 0 ? "danger" : "warning"}>
+                  {stock === 0 ? "Agotado" : "Últimas unidades"}
+                </Badge>
+              )}
+              <span className="add-product">
+                <Plus size={18} />
+              </span>
+            </div>
+            <div className="product-info">
+              <span className="product-category">{p.category.name}</span>
+              <h3 title={p.name}>{p.name}</h3>
+              <p>
+                {p.variants.length > 1
+                  ? `${p.variants.length} variantes`
+                  : [
+                      "Cód. " + p.variants[0]?.sku,
+                      attrLabel(p.variants[0]?.attributes || {}),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+              </p>
+              <div className="product-bottom">
+                <strong>
+                  {formatMoney(
+                    Math.min(...p.variants.map((v) => Number(v.price))),
+                  )}
+                </strong>
+                <span>{stock} en stock</span>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+});
 
 function HeldSales({
   products,

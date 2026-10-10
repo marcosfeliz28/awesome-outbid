@@ -17,22 +17,20 @@ export type CartDraft = {
   savedAt: number;
 };
 
-// Sin el costo: la copia local del catálogo tampoco lo guarda.
+// Lo justo para dibujar la línea hasta que llegue el catálogo (refreshCart
+// pone entonces la variante y el producto vigentes): sin costo ni lotes y sin
+// las demás variantes del producto. Así la copia es pequeña y guardarla no
+// frena la caja mientras el lector escribe.
 const lean = (variant: Variant): Variant => {
-  const { costAvg: removed, lots, ...rest } = variant;
+  const { costAvg: removed, lots: unused, ...rest } = variant;
   void removed;
-  return {
-    ...rest,
-    lots: lots?.map(({ cost: unused, ...lot }: any) => {
-      void unused;
-      return lot;
-    }),
-  };
+  void unused;
+  return rest;
 };
 export const leanItem = (item: CartItem): CartItem => ({
   ...item,
   variant: lean(item.variant),
-  product: { ...item.product, variants: item.product.variants.map(lean) },
+  product: { ...item.product, variants: [] },
 });
 
 function write(userId: string, state = useStore.getState()) {
@@ -109,8 +107,14 @@ export function keepCartDraft() {
     ) {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        if (useStore.getState().user?.id === userId) void write(userId);
-      }, 200);
+        const save = () => {
+          if (useStore.getState().user?.id === userId) void write(userId);
+        };
+        // Cuando el navegador esté libre: nunca en medio de un escaneo.
+        if (typeof requestIdleCallback === "function")
+          requestIdleCallback(save, { timeout: 2000 });
+        else save();
+      }, 600);
     }
   });
 }
