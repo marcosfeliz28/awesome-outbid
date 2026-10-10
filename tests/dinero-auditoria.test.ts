@@ -519,20 +519,25 @@ describe("Auditoría 01 · dinero", () => {
       reason: "Conteo de almacén",
     });
     expect(adjusted.status).toBeLessThan(300);
-    // Salida de mercancía por merma (1 u) y devolución a proveedor (no cuenta).
+    // Salida de mercancía por merma (1 u) y devolución a proveedor (1 u): N-1,
+    // ambas cuentan hasta que el proveedor acredite.
+    const supplier = (await ok("/suppliers", admin))[0];
     for (const reason of ["merma", "devolución a proveedor"])
       await ok("/merchandise/operations", w.token, {
         id: randomUUID(),
         direction: "exit",
         reason,
+        ...(reason === "merma"
+          ? {}
+          : { supplierId: supplier.id, supplierInvoice: "NC-M5" }),
         items: [{ variantId: v, qty: 1, unitCost: 600 }],
       });
     const after = await ok("/dashboard/summary" + range, admin);
     expect(after.inventoryLoss - (before.inventoryLoss ?? 0)).toBeCloseTo(
-      12600,
+      13200,
       2,
     );
-    expect(before.netProfit - after.netProfit).toBeCloseTo(12600, 2);
+    expect(before.netProfit - after.netProfit).toBeCloseTo(13200, 2);
     const statement = await ok("/reports/income-statement" + range, admin);
     expect(
       statement.rows.find((r: any) => r.Concepto.startsWith("Mermas"))?.Monto,
@@ -543,7 +548,7 @@ describe("Auditoría 01 · dinero", () => {
       severity: "high",
       status: "new",
     });
-    expect(loss.message).toContain("12,600.00");
+    expect(loss.message).toContain("13,200.00");
     // Una persona la revisa; una merma nueva del mismo día la reabre.
     await ok("/alerts/" + loss.id, admin, { status: "resolved" }, "PATCH");
     await ok("/inventory/adjustments", w.token, {
@@ -552,6 +557,67 @@ describe("Auditoría 01 · dinero", () => {
       reason: "Conteo de almacén",
     });
     expect((await alert(loss.key))?.status).toBe("new");
+  });
+
+  it("N-1: la devolución a proveedor exige proveedor y referencia, deja alerta y cuenta en el informe", async () => {
+    const w = await person("warehouse", "n1");
+    const v = await product(1100, 220, 200);
+    const supplier = (await ok("/suppliers", admin))[0];
+    const range = "?from=" + today() + "&to=" + today();
+    const before = await ok("/dashboard/summary" + range, admin);
+    const exit = (extra: Record<string, unknown>) =>
+      request("/merchandise/operations", w.token, {
+        id: randomUUID(),
+        direction: "exit",
+        reason: "devolución a proveedor",
+        items: [{ variantId: v, qty: 100, unitCost: 220 }],
+        ...extra,
+      });
+    // Escenario del informe: sin proveedor ni documento ya no pasa.
+    expect((await exit({})).status).toBe(400);
+    expect((await exit({ supplierId: supplier.id })).status).toBe(400);
+    expect((await exit({ supplierInvoice: "X1" })).status).toBe(400);
+    const id = randomUUID();
+    const done = await exit({
+      id,
+      supplierId: supplier.id,
+      supplierInvoice: "NC-N1-" + suffix,
+    });
+    expect(done.status).toBeLessThan(300);
+    const a = await alert("supplier-return:" + id);
+    expect(a).toMatchObject({ type: "supplier_return", status: "new" });
+    expect(a.message).toContain("22,000.00");
+    expect(a.message).toContain("NC-N1-" + suffix);
+    // Una persona la revisa y la evaluación periódica no la reabre ni la borra.
+    const after = await ok("/dashboard/summary" + range, admin);
+    expect(after.inventoryLoss - (before.inventoryLoss ?? 0)).toBeCloseTo(
+      22000,
+      2,
+    );
+    expect(after.supplierReturns - (before.supplierReturns ?? 0)).toBeCloseTo(
+      22000,
+      2,
+    );
+    expect(before.netProfit - after.netProfit).toBeCloseTo(22000, 2);
+    expect(
+      (await alert("inventory-loss:" + w.id + ":" + today()))?.status,
+    ).toBe("new");
+    // El ajuste de inventario con tipo «devolución a proveedor» sigue la misma regla.
+    const adj = (extra: Record<string, unknown>) =>
+      request("/inventory/adjustments", w.token, {
+        variantId: v,
+        qty: -1,
+        type: "supplier_return",
+        reason: "Devolución por defecto",
+        ...extra,
+      });
+    expect((await adj({})).status).toBe(400);
+    expect((await adj({ supplierId: supplier.id })).status).toBe(400);
+    expect(
+      (await adj({ supplierId: supplier.id, reference: "NC-N1B" })).status,
+    ).toBeLessThan(300);
+    const again = await ok("/dashboard/summary" + range, admin);
+    expect(again.inventoryLoss - after.inventoryLoss).toBeCloseTo(220, 2);
   });
 
   it("B-3: no se cierra el mes de incentivos en curso", async () => {

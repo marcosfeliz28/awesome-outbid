@@ -49,6 +49,7 @@ export const MANUAL_ALERT_TYPES = [
   "cash_voucher",
   "transfer_pending",
   "inventory_loss",
+  "supplier_return",
   "refund_method_mismatch",
   "cost_change",
 ];

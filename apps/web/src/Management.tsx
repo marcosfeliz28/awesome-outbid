@@ -771,6 +771,11 @@ export function Inventory() {
     queryKey: ["counts"],
     queryFn: () => api("/inventory/counts"),
   });
+  // N-1: la devolución a proveedor lleva proveedor y referencia.
+  const adjustSuppliers = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: () => api("/suppliers"),
+  });
   const [search, setSearch] = useState(""),
     [mode, setMode] = useState("stock"),
     [adjust, setAdjust] = useState<any>(null),
@@ -957,6 +962,20 @@ export function Inventory() {
               ],
             },
             {
+              key: "supplierId",
+              label: "Proveedor (solo en devolución a proveedor)",
+              type: "select",
+              options: (adjustSuppliers.data || []).map((x: any) => ({
+                label: x.name,
+                value: x.id,
+              })),
+            },
+            {
+              key: "reference",
+              label:
+                "Referencia de la devolución (documento o nota de crédito)",
+            },
+            {
               key: "lotId",
               label: "Lote de salida",
               type: "select",
@@ -985,6 +1004,14 @@ export function Inventory() {
               variantId: adjust.id,
               lotId: data.lotId || undefined,
               lotNumber: data.lotNumber || undefined,
+              supplierId:
+                data.type === "supplier_return"
+                  ? data.supplierId || undefined
+                  : undefined,
+              reference:
+                data.type === "supplier_return"
+                  ? data.reference || undefined
+                  : undefined,
               expiryDate: data.expiryDate
                 ? new Date(data.expiryDate + "T23:59:59-04:00").toISOString()
                 : undefined,

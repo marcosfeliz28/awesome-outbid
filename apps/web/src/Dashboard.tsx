@@ -485,7 +485,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               <strong>{formatMoney(data?.fees ?? 0)}</strong>
             </div>
             <div>
-              <span>Mermas y ajustes (a costo)</span>
+              <span>Mermas, ajustes y devoluciones a proveedor (a costo)</span>
               <strong>{formatMoney(data?.inventoryLoss ?? 0)}</strong>
             </div>
             <div>

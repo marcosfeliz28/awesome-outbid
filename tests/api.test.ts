@@ -3031,6 +3031,10 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
       const op = goods({
         direction: "exit",
         reason,
+        // N-1: la devolución a proveedor lleva proveedor y referencia.
+        ...(reason === "devolución a proveedor"
+          ? { supplierId, supplierInvoice: "NC-API" }
+          : {}),
         items: [{ variantId: product.variants[0].id, qty: 1, unitCost: 12 }],
       });
       await ok("/merchandise/operations", op, warehouseToken);
