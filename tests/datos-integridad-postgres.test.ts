@@ -693,7 +693,7 @@ describe("Auditorías 06 y 03 · comportamiento en PostgreSQL real", () => {
     const purged = await purgeExpiredData(prisma);
     expect(purged).toMatchObject({
       realtimeEvents: 1,
-      notifications: 2,
+      notifications: 3,
       authAttempts: 2,
       refreshTokens: 1,
     });
@@ -701,9 +701,9 @@ describe("Auditorías 06 y 03 · comportamiento en PostgreSQL real", () => {
       (await sql.query(`SELECT "refId" FROM "NotificationOutbox" ORDER BY 1`))
         .rows,
     ).toEqual([
+      // V2-06: el pendiente de hace 40 días ya se descarta.
       { refId: "enviado-hace-29" },
       { refId: "reciente-fallido" },
-      { refId: "viejo-pendiente" },
     ]);
     expect(
       (await sql.query(`SELECT key FROM "AuthAttempt" ORDER BY 1`)).rows.map(

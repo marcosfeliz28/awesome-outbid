@@ -193,6 +193,25 @@ describe("03-A1 · aviso de privacidad en la web", () => {
     expect(page).toContain("opcionales");
     expect(page).not.toMatch(/\[[A-ZÁÉÍÓÚ ]{3,}\]/);
   });
+  // V2-05: el aviso no depende de un teléfono que la tienda puede no haber
+  // configurado, y nombra a quienes reciben los datos.
+  it("V2-05: la página dice dónde ejercer los derechos sin exigir el teléfono del recibo y lista los destinatarios", () => {
+    const page = readFileSync("apps/web/public/privacidad.html", "utf8");
+    const plain = page.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    expect(plain).toContain("pregunta en caja");
+    expect(plain).not.toMatch(/llama al teléfono impreso/i);
+    expect(plain).toMatch(/no hace falta/);
+    for (const third of [
+      "Telegram",
+      "Google Drive",
+      "Estados Unidos",
+      "13 meses",
+    ])
+      expect(plain, third).toContain(third);
+    // El recibo, sin teléfono configurado, sigue diciendo que se pide en caja.
+    expect(privacyNoticeText({})).toContain("en caja");
+    expect(privacyNoticeText({})).not.toMatch(/ o al /);
+  });
 });
 
 describe("05-A3/M1 · carrito en curso y cierre por inactividad", () => {

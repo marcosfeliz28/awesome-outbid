@@ -98,3 +98,45 @@ describe("N-08 · las contraseñas temporales vencen", () => {
     ).toBe(false);
   });
 });
+
+describe("Privacidad v2 · V2-03/V2-04/V2-06 · la documentación dice lo que hace el sistema", () => {
+  const inventory = read("docs/legal/DATOS_PERSONALES_INVENTARIO.md");
+  it("V2-03: AuditLog.ip se guarda, se borra a los 90 días y persiste en los respaldos", () => {
+    expect(inventory).not.toMatch(/`audit\(\)` no la rellena/);
+    const row = inventory.split("\n").find((l) => l.includes("**ip**"))!;
+    expect(row).toContain("90 días");
+    expect(row).toMatch(/respaldos de Drive conservan la IP hasta ~13 meses/);
+    expect(read("docs/legal/CUMPLIMIENTO_20_PUNTOS.md")).not.toContain(
+      "`AuditLog.ip` nunca se llena",
+    );
+    expect(read("docs/legal/POLITICA_PRIVACIDAD.md")).toContain(
+      "la IP se borra a los 90 días",
+    );
+  });
+  it("V2-04: el procedimiento ya no promete que los respaldos se rotan en 30 días", () => {
+    const procedure = read("docs/legal/PROCEDIMIENTO_DERECHOS_DATOS.md");
+    expect(procedure).not.toContain("se rotan en 30 días");
+    expect(procedure).toMatch(/hasta unos 13 meses/);
+    expect(procedure).toContain("repetir las anonimizaciones posteriores");
+  });
+  it("V2-04: los 13 meses salen de la retención real (30 diarias + 12 mensuales)", () => {
+    const core = read("apps/api/src/drive-backup-core.ts");
+    expect(core).toMatch(/daily[^\n]*30|30[^\n]*daily/i);
+    expect(core).toMatch(/12/);
+  });
+  it("V2-06: los plazos documentados son los de retention.ts", async () => {
+    const { RETENTION, SECURITY_AUDIT_ACTIONS } =
+      await import("../apps/api/src/retention");
+    expect(RETENTION.notificationDays).toBe(30);
+    expect(RETENTION.auditSecurityDays).toBe(400);
+    expect(RETENTION.orphanAttachmentDays).toBe(14);
+    expect(inventory).toContain("30 días");
+    expect(inventory).toContain("400 días");
+    expect(inventory).toContain("14 días");
+    for (const action of SECURITY_AUDIT_ACTIONS)
+      expect(inventory, action).toContain(action);
+    // Nunca se purga dinero: ninguna acción de venta o pago en la lista.
+    for (const action of SECURITY_AUDIT_ACTIONS)
+      expect(action).toMatch(/^(login|pin_)/);
+  });
+});
