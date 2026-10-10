@@ -37,6 +37,7 @@ export default defineConfig({
       "tests/incentives-calc.test.ts",
       "tests/afirmaciones.test.ts",
       "tests/licencias.test.ts",
+      "tests/caja-web-ticket.test.ts",
     ],
   },
 });

@@ -4661,6 +4661,13 @@ td strong {
 .tp-center {
   text-align: center;
 }
+/* Pie del recibo: devoluciones y privacidad, en letra algo menor. */
+.thermal-print .tp-small,
+.print-preview .tp-small {
+  font-size: 0.85em;
+  line-height: 1.25;
+  margin: 3px 0;
+}
 .tp-item small {
   font-size: 0.8em;
 }

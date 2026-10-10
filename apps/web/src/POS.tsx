@@ -58,7 +58,13 @@ import {
   searchWords,
   toast,
 } from "./helpers";
-import { InvoicePrint, METHOD_LABEL, PrintSheet, printSoon } from "./Prints";
+import {
+  InvoicePrint,
+  METHOD_LABEL,
+  NON_FISCAL_LEGEND,
+  PrintSheet,
+  printSoon,
+} from "./Prints";
 import {
   announcePriceChanges,
   CashElsewhere,
@@ -1752,13 +1758,18 @@ function Checkout({
       setReceipt({
         ...sale,
         snapshot: printed,
+        // A1: el cliente se guarda en el recibo antes de vaciar el carrito
+        // (clearCart deja customerId en null); si no, el ticket de un crédito
+        // o contraentrega decía «Consumidor final» y WhatsApp salía sin
+        // destinatario.
+        customer: customers.find((c) => c.id === customerId) ?? null,
         cashierName: user!.name,
         wholesale: !!input.wholesale,
         change: payment.change,
         tendered: payments,
         createdAt: sale.createdAt ?? new Date().toISOString(),
       });
-      // Impresión automática de la factura (Ajustes).
+      // Impresión automática del recibo (Ajustes).
       if (config?.autoPrintReceipt) printSoon();
       clearCart();
       await client.invalidateQueries();
@@ -1816,8 +1827,8 @@ function Checkout({
     void finish();
   }, [online, awaitingConfirmation, busy, receipt]);
   if (receipt) {
-    const text = `Nexora POS · ${receipt.number}\nTotal: ${formatMoney(receipt.total)}\nGracias por tu compra. Documento interno, no fiscal.`;
-    const customer = customers.find((c) => c.id === customerId);
+    const text = `${config?.name || "Nexora POS"} · Recibo ${receipt.number}\nTotal: ${formatMoney(receipt.total)}\n${NON_FISCAL_LEGEND}\nGracias por tu compra.`;
+    const customer = receipt.customer;
     // SEC-05: un dato enmascarado («•••••••123») no es un destinatario; la
     // cajera elige el contacto en WhatsApp o en el correo.
     const contact = (value?: string | null) =>
@@ -1851,7 +1862,7 @@ function Checkout({
         <div className="receipt-actions">
           <Button className="print-big" onClick={() => window.print()}>
             <Printer size={20} />
-            Imprimir factura
+            Imprimir recibo
           </Button>
           {!receipt.offline && (
             <Button
@@ -1864,7 +1875,7 @@ function Checkout({
               }
             >
               <FileText size={17} />
-              Factura PDF
+              Recibo PDF
             </Button>
           )}
           <a

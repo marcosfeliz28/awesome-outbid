@@ -284,7 +284,36 @@ export const METHOD_LABEL: Record<string, string> = {
   cod: "Crédito / contraentrega",
 };
 
-/** 4. Factura (ticket de venta). */
+// 03-M1: la misma leyenda en el ticket térmico, el PDF y WhatsApp/correo.
+// Nexora POS no emite NCF/e-CF: el recibo nunca se llama «factura».
+export const NON_FISCAL_LEGEND =
+  "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL";
+/** 03-M3: plazo de devolución de Ajustes (returnDays) o un texto genérico. */
+export function returnPolicyText(config: any) {
+  const days = Number(config?.returnDays);
+  return (
+    (Number.isInteger(days) && days > 0
+      ? `Devoluciones: hasta ${days} días con este recibo y el empaque original, según la política de la tienda.`
+      : "Devoluciones: según la política de la tienda; conserve este recibo.") +
+    " Producto defectuoso o vencido: tiene la garantía de ley."
+  );
+}
+/** 03-A1: aviso corto de privacidad del pie del ticket. */
+export function privacyNoticeText(config: any) {
+  const phone = String(config?.phone ?? "").trim();
+  return (
+    "Privacidad: usamos sus datos sólo para esta venta, sus garantías y créditos. Puede pedir verlos, corregirlos o borrarlos en caja" +
+    (phone ? " o al " + phone : "") +
+    "."
+  );
+}
+/** 03-M2: el ITBIS del ticket dice si está incluido en el precio o se suma. */
+export const taxLabel = (sale: any, config: any) =>
+  (sale?.taxIncluded ?? config?.taxIncluded) === false
+    ? "ITBIS adicional"
+    : "ITBIS incluido";
+
+/** 4. Recibo de venta (ticket térmico, documento no fiscal). */
 export function InvoicePrint({
   sale,
   config,
@@ -309,24 +338,27 @@ export function InvoicePrint({
   return (
     <>
       <BusinessHeader business={config} />
-      {sale.ncf ? (
+      {/* 03-B4: sin una integración e-CF real (ncfMode «electronic» y el
+          comprobante emitido) el ticket nunca se titula fiscal, aunque una
+          restauración o migración deje un NCF en la venta. */}
+      {sale.ncf &&
+      sale.fiscalStatus === "issued" &&
+      config?.ncfMode === "electronic" ? (
         <>
           <Row label="NCF:" value={sale.ncf} />
           <h3 className="tp-center">COMPROBANTE FISCAL</h3>
         </>
       ) : (
-        <h3 className="tp-center">
-          DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL
-        </h3>
+        <h3 className="tp-center">{NON_FISCAL_LEGEND}</h3>
       )}
       <Row label="Secuencia No." value={sale.number} />
       <Row label="Fecha" value={when(sale.createdAt ?? new Date())} />
       <Row label="Cajero" value={sale.cashierName ?? ""} />
+      {/* 03-B3: el ticket queda en la bolsa del cliente; sin teléfono, y la
+          cédula/RNC sólo cuando se pidió un comprobante B01/B02. */}
       <p>
         Vendido a: {customer?.name ?? "Consumidor final"}
-        {customer?.legalId ? " · RNC " + customer.legalId : ""}
-        {customer?.phone ? " · Tel. " + customer.phone : ""}
-        {customer?.address ? " · " + customer.address : ""}
+        {customer?.legalId && sale.ncfType ? " · RNC " + customer.legalId : ""}
       </p>
       <hr />
       {lines.map((i: any, n: number) => (
@@ -354,7 +386,7 @@ export function InvoicePrint({
             : ""}
         </p>
       )}
-      <Row label="ITBIS" value={rd(sale.taxTotal)} />
+      <Row label={taxLabel(sale, config)} value={rd(sale.taxTotal)} />
       <Row label="Total a pagar" value={rd(sale.total)} strong />
       <hr />
       {payments.map((p: any, n: number) => (
@@ -374,6 +406,9 @@ export function InvoicePrint({
       {sale.offline && <p>RECIBO PROVISIONAL · PENDIENTE DE SINCRONIZAR</p>}
       <hr />
       <Row label="Cantidad de Productos" value={units} strong />
+      <hr />
+      <p className="tp-small">{returnPolicyText(config)}</p>
+      <p className="tp-small">{privacyNoticeText(config)}</p>
       <p className="tp-center">¡Gracias por su compra!</p>
     </>
   );

@@ -1550,7 +1550,7 @@ export function Cash() {
         <div className="panel">
           <Empty
             title="Tu día empieza con una caja abierta"
-            description="Registra el fondo inicial para comenzar a facturar."
+            description="Registra el fondo inicial para comenzar a vender."
             action={
               <Button onClick={() => setOpen(true)}>Abrir mi caja</Button>
             }
@@ -2594,7 +2594,7 @@ export function SalesHistory() {
           <Filter
             value={search}
             onChange={setSearch}
-            placeholder="Buscar número de factura"
+            placeholder="Buscar número de venta"
           />
           <label className="table-search">
             <span>Fecha</span>
@@ -2610,7 +2610,10 @@ export function SalesHistory() {
           <DataTable
             rows={query.data || []}
             columns={[
-              { label: "Factura", render: (s) => <strong>{s.number}</strong> },
+              {
+                label: "Venta n.º",
+                render: (s) => <strong>{s.number}</strong>,
+              },
               { label: "Fecha", render: (s) => dateLabel(s.createdAt) },
               {
                 label: "Estado",
@@ -2868,15 +2871,15 @@ export function SalesHistory() {
       {voiding && (
         <ConfirmModal
           title={"Anular " + voiding.number}
-          description="Solo un administrador puede hacerlo. La factura se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
-          confirmLabel="Sí, anular factura"
+          description="Solo un administrador puede hacerlo. La venta se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
+          confirmLabel="Sí, anular venta"
           onClose={() => setVoiding(null)}
           onConfirm={async (reason) => {
             await post("/sales/" + voiding.id + "/void", {
               reason,
             });
             await client.invalidateQueries();
-            toast("Factura anulada.");
+            toast("Venta anulada.");
           }}
         />
       )}
@@ -3263,7 +3266,7 @@ export function Configuration() {
     { key: "phone2", label: "Teléfono 2 / WhatsApp" },
     {
       key: "autoPrintReceipt",
-      label: "Imprimir la factura automáticamente al cobrar",
+      label: "Imprimir el recibo automáticamente al cobrar",
       type: "checkbox",
     },
     {

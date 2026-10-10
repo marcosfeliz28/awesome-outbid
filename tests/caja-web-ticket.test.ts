@@ -1,0 +1,149 @@
+// Auditoría 03 (textos que ve el cliente) y 05-A1/M8: el recibo térmico de la
+// caja. Render real del componente, sin navegador.
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
+import { describe, expect, it } from "vitest";
+import {
+  InvoicePrint,
+  NON_FISCAL_LEGEND,
+  privacyNoticeText,
+  returnPolicyText,
+  taxLabel,
+} from "../apps/web/src/Prints";
+
+const webRequire = createRequire(resolve("apps/web/package.json"));
+const { createElement } = webRequire("react") as typeof import("react");
+const { renderToStaticMarkup } = webRequire(
+  "react-dom/server",
+) as typeof import("react-dom/server");
+const text = (html: string) =>
+  html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ");
+
+const sale = {
+  number: "V-000123",
+  createdAt: "2026-10-09T12:00:00Z",
+  cashierName: "Cajera de prueba",
+  snapshot: [
+    { sku: "QA", name: "Faja · M", qty: 1, unitPrice: 1180, discount: 0 },
+  ],
+  total: 1180,
+  taxTotal: 180,
+  creditBalance: 1000,
+  payments: [{ method: "cash", amount: 180 }],
+  change: 0,
+};
+const config = {
+  name: "Tienda de prueba",
+  phone: "809-555-0100",
+  returnDays: 30,
+  taxIncluded: true,
+};
+const render = (props: any) =>
+  text(renderToStaticMarkup(createElement(InvoicePrint, props)));
+
+describe("05-A1 · el recibo identifica al cliente", () => {
+  it("imprime el nombre del cliente del recibo; «Consumidor final» sólo sin cliente", () => {
+    const named = render({
+      sale,
+      config,
+      customer: {
+        name: "Ana Herrera",
+        phone: "8095550199",
+        legalId: "00112345678",
+      },
+    });
+    expect(named).toContain("Vendido a: Ana Herrera");
+    expect(named).not.toContain("Consumidor final");
+    // 03-B3: sin teléfono y sin cédula si no se pidió comprobante.
+    expect(named).not.toContain("8095550199");
+    expect(named).not.toContain("00112345678");
+    expect(render({ sale, config })).toContain("Vendido a: Consumidor final");
+    expect(
+      render({
+        sale: { ...sale, ncfType: "B01" },
+        config,
+        customer: { name: "Ana Herrera", legalId: "00112345678" },
+      }),
+    ).toContain("RNC 00112345678");
+  });
+  it("POS guarda el cliente en el recibo antes de vaciar el carrito", () => {
+    const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
+    const finish = pos.slice(pos.indexOf("setReceipt({"));
+    expect(finish.indexOf("customer: customers.find")).toBeGreaterThan(0);
+    expect(finish.indexOf("customer: customers.find")).toBeLessThan(
+      finish.indexOf("clearCart()"),
+    );
+    expect(pos).toContain("const customer = receipt.customer;");
+  });
+});
+
+describe("03 · textos del recibo no fiscal", () => {
+  it("M1: leyenda no fiscal idéntica en el ticket, en WhatsApp/correo y en el PDF", () => {
+    expect(NON_FISCAL_LEGEND).toBe(
+      "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL",
+    );
+    expect(render({ sale, config })).toContain(NON_FISCAL_LEGEND);
+    const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
+    expect(pos).toMatch(/const text = `[^`]*\$\{NON_FISCAL_LEGEND\}/);
+    expect(pos).not.toContain("Documento interno, no fiscal.");
+    const api = readFileSync("apps/api/src/sales.ts", "utf8");
+    const pdf = api.slice(api.indexOf('@Get("sales/:id/receipt.pdf")'));
+    expect(pdf).toContain(NON_FISCAL_LEGEND);
+  });
+  it("M1: ningún botón ni título de la venta llama «factura» al recibo", () => {
+    const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
+    expect(pos).not.toMatch(/>\s*(Imprimir factura|Factura PDF)\s*</);
+    expect(pos).toContain("Imprimir recibo");
+    expect(pos).toContain("Recibo PDF");
+    const management = readFileSync("apps/web/src/Management.tsx", "utf8");
+    for (const label of [
+      '"Buscar número de factura"',
+      'label: "Factura"',
+      '"Sí, anular factura"',
+      '"Factura anulada."',
+      '"Imprimir la factura automáticamente al cobrar"',
+    ])
+      expect(management).not.toContain(label);
+    const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
+    expect(dashboard).not.toContain("Facturas emitidas");
+  });
+  it("B4: un NCF suelto (restauración o migración) no convierte el ticket en «COMPROBANTE FISCAL»", () => {
+    const html = renderToStaticMarkup(
+      createElement(InvoicePrint, {
+        sale: { ...sale, ncf: "B0200000001" },
+        config: { ...config, ncfMode: "prepared" },
+      }),
+    );
+    expect(html).not.toContain('<h3 class="tp-center">COMPROBANTE FISCAL</h3>');
+    expect(html).not.toContain("B0200000001");
+    expect(html).toContain(NON_FISCAL_LEGEND);
+  });
+  it("M2: el ITBIS dice si está incluido o se suma", () => {
+    expect(render({ sale, config })).toContain("ITBIS incluido RD$ 180.00");
+    expect(
+      render({ sale, config: { ...config, taxIncluded: false } }),
+    ).toContain("ITBIS adicional RD$ 180.00");
+    expect(taxLabel({ taxIncluded: false }, config)).toBe("ITBIS adicional");
+    expect(taxLabel({}, {})).toBe("ITBIS incluido");
+  });
+  it("M3: la política de devoluciones usa los días de Ajustes o un texto genérico", () => {
+    expect(render({ sale, config })).toContain(
+      "Devoluciones: hasta 30 días con este recibo",
+    );
+    expect(returnPolicyText({ returnDays: 0 })).toMatch(
+      /^Devoluciones: según la política de la tienda/,
+    );
+    expect(returnPolicyText(undefined)).toContain("garantía de ley");
+  });
+  it("A1: aviso corto de privacidad en el pie, con el teléfono de la tienda", () => {
+    expect(render({ sale, config })).toContain(
+      "Privacidad: usamos sus datos sólo para esta venta",
+    );
+    expect(privacyNoticeText(config)).toContain("o al 809-555-0100");
+    expect(privacyNoticeText({})).not.toContain(" o al ");
+  });
+});
