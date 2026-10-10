@@ -660,6 +660,13 @@ export class IncentivesController {
       body,
     ).month;
     if (period > businessMonth()) bad("Ese mes todavía no empieza.");
+    // B-3 / D-M8 (auditorías 01 y 06): el cierre es irreversible y movía al
+    // mes siguiente todas las ventas que faltaban del mes en curso. Sólo se
+    // cierra un mes terminado.
+    if (period === businessMonth())
+      bad(
+        "Sólo se cierra un mes terminado: este mes sigue en curso. Ciérralo a partir del día 1 del mes siguiente.",
+      );
     await this.db.$transaction(
       async (tx) => {
         await closeLock(tx, actor.branchId, true);

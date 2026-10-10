@@ -530,7 +530,24 @@ describe("INC · incentivos por cajera", () => {
       where: { branchId_period: { branchId: "main", period: month } },
     });
     expect(already).toBeNull();
-    await ok("/incentives/close", admin, { month });
+    // B-3 (auditoría 01): la API ya no cierra el mes en curso. La regla de
+    // las ventas tardías se sigue probando con un cierre del mes actual
+    // creado en la base (como los que pudieron hacerse antes de la regla).
+    expect((await request("/incentives/close", admin, { month })).status).toBe(
+      400,
+    );
+    await db.incentivePeriodClose.create({
+      data: {
+        branchId: "main",
+        period: month,
+        closedBy: (
+          await db.user.findFirstOrThrow({
+            where: { email: "admin@fitstore.demo" },
+          })
+        ).id,
+        closedAt: new Date(),
+      },
+    });
     try {
       const sale = await sell(luz, [["faja", 1]]);
       const [row] = await entries(sale.id);

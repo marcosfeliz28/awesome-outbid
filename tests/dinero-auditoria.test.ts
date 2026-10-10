@@ -554,7 +554,7 @@ describe("Auditoría 01 · dinero", () => {
     expect((await alert(loss.key))?.status).toBe("new");
   });
 
-  it.skip("B-3: no se cierra el mes de incentivos en curso", async () => {
+  it("B-3: no se cierra el mes de incentivos en curso", async () => {
     const month = businessMonth();
     const r = await request("/incentives/close", admin, { month });
     try {

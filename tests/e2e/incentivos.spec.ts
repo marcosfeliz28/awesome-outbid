@@ -12,7 +12,7 @@ const month = new Date()
   .toLocaleDateString("en-CA", { timeZone: "America/Santo_Domingo" })
   .slice(0, 7);
 
-// El cierre del mes actual se deshace al terminar (sólo en la base de
+// Los cierres que hace la prueba se deshacen al terminar (sólo en la base de
 // pruebas), para que la suite se pueda repetir y las demás pruebas vendan en
 // un mes abierto.
 function testDb() {
@@ -26,14 +26,17 @@ function testDb() {
   const { PrismaClient } = requireApi("@prisma/client");
   return new PrismaClient();
 }
-async function reopen(db: any, branchId: string) {
+async function reopen(db: any, branchId: string, period = month) {
   await db.incentiveSettlement.deleteMany({
-    where: { branchId, period: month },
+    where: { branchId, period },
   });
   await db.incentivePeriodClose.deleteMany({
-    where: { branchId, period: month },
+    where: { branchId, period },
   });
 }
+// Un mes pasado propio de cada corrida (no choca con tests/incentives-api).
+const n = Date.now();
+const past = `${1981 + (n % 20)}-${String((Math.floor(n / 20) % 12) + 1).padStart(2, "0")}`;
 
 test("Incentivos: tarifa en Configuración, venta al por mayor a la mitad y cierre del mes", async ({
   browser,
@@ -231,6 +234,22 @@ test("Incentivos: tarifa en Configuración, venta al por mayor a la mitad y cier
     const excel = admin.page.waitForEvent("download");
     await admin.page.getByRole("button", { name: "Exportar Excel" }).click();
     expect((await excel).suggestedFilename()).toBe(`incentivos-${month}.xlsx`);
+    // B-3 (auditoría 01): el mes en curso no se cierra; se avisa cuándo.
+    await expect(
+      admin.page.getByRole("button", { name: "Cerrar mes" }),
+    ).toHaveCount(0);
+    await expect(
+      admin.page.getByText("El mes en curso se cierra cuando termine"),
+    ).toBeVisible();
+    // Un mes ya terminado sí: la venta de la cajera se lleva a un mes pasado
+    // propio de esta corrida (sólo en la base de pruebas).
+    const cajeraId = (await db.user.findFirstOrThrow({ where: { email } })).id;
+    await db.incentiveEntry.updateMany({
+      where: { userId: cajeraId },
+      data: { period: past, originPeriod: past },
+    });
+    await admin.page.getByLabel("Mes", { exact: true }).fill(past);
+    await expect(row).toContainText("RD$ 40.00");
     await admin.page.getByRole("button", { name: "Cerrar mes" }).click();
     await admin.page.getByRole("button", { name: "Cerrar el mes" }).click();
     await expect(admin.page.getByText(/^Mes cerrado ·/)).toBeVisible();
@@ -238,7 +257,7 @@ test("Incentivos: tarifa en Configuración, venta al por mayor a la mitad y cier
       admin.page.getByRole("button", { name: "Cerrar mes" }),
     ).toHaveCount(0);
     await expect(row).toContainText("RD$ 40.00");
-    const closed = await api("/incentives?month=" + month);
+    const closed = await api("/incentives?month=" + past);
     expect(closed.closed).toBeTruthy();
     expect(closed.rows.find((r: any) => r.name === name).net).toBe(40);
 
@@ -248,6 +267,7 @@ test("Incentivos: tarifa en Configuración, venta al por mayor a la mitad y cier
     }
   } finally {
     await reopen(db, branch);
+    await reopen(db, branch, past);
     await db.$disconnect();
     await request.patch("/api/products/" + product.id, {
       headers,
