@@ -1219,9 +1219,13 @@ export class DriveBackupService {
       !body.refresh_token
     )
       return "error";
+    const previous = await this.row();
     const scopes = String(body.scope ?? "").split(/\s+/);
     if (!scopes.includes(DRIVE_SCOPE)) {
-      await this.revoke(settings, body.refresh_token);
+      // Se devuelve lo concedido. Revocar anula todo el permiso de esa cuenta
+      // con esta app; si ya había una conexión, se deja como estaba.
+      if (!previous.refreshTokenEnc)
+        await this.revoke(settings, body.refresh_token);
       return "scope";
     }
     let email: string | null = null;
@@ -1233,14 +1237,9 @@ export class DriveBackupService {
       )
         .about()
         .catch(() => null);
-    const previous = await this.row();
-    if (previous.refreshTokenEnc)
-      // El permiso anterior deja de servir: se revoca para no dejarlo vivo.
-      await openSecret(previous.refreshTokenEnc, settings.passphrase)
-        .then((old) =>
-          old !== body.refresh_token ? this.revoke(settings, old) : undefined,
-        )
-        .catch(() => {});
+    // El permiso anterior (si lo había) NO se revoca: con la misma cuenta,
+    // revocarlo anularía también el que se acaba de conceder. Google retira
+    // solo los permisos viejos de una misma cuenta al pasar de 100.
     await this.db.driveBackup.update({
       where: { id: "main" },
       data: {
