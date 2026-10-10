@@ -196,6 +196,45 @@ function Get-FitStoreRecoveryActivityColumns {
   }
 }
 
+function Get-FitStoreDatabaseActivitySql {
+  param([string]$Psql,[string[]]$Arguments,[string]$Password,[string]$Archive,[string]$Timestamp)
+  $metadataSql = @'
+SELECT COALESCE(json_agg(json_build_object('table', table_name, 'column', column_name)), '[]'::json)::text
+FROM information_schema.columns WHERE table_schema='public'
+AND data_type IN ('timestamp without time zone','timestamp with time zone')
+AND column_name IN ('createdAt','updatedAt','openedAt','closedAt','lastActivityAt','approvedAt','revokedAt','sentAt');
+'@
+  $json=@(Invoke-FitStorePgSql -Tool $Psql -Arguments $Arguments -Password $Password -Sql $metadataSql -FailureMessage 'No se pudo leer el esquema real de recuperacion')
+  if($json.Count -ne 1){throw 'Esquema real no verificable; recuperacion cancelada.'}
+  $parsed=([string]$json[0]) | ConvertFrom-Json
+  $rows=@($parsed)
+  $live=[ordered]@{}
+  foreach($row in $rows){
+    if($row.table -notmatch '^[A-Za-z_][A-Za-z0-9_]*$' -or $row.column -notmatch '^[A-Za-z_][A-Za-z0-9_]*$'){throw 'Identificador de esquema no admitido; recuperacion cancelada.'}
+    if(-not $live.Contains([string]$row.table)){$live[[string]$row.table]=@()}
+    $live[[string]$row.table]+=[string]$row.column
+  }
+  $core=@{Sale=@('createdAt','updatedAt');AuditLog=@('createdAt');Payment=@('createdAt');SaleReturn=@('createdAt');CashMovement=@('createdAt');CashSession=@('openedAt','closedAt');InventoryMovement=@('createdAt')}
+  foreach($table in $core.Keys){foreach($column in $core[$table]){
+    if(-not $live.Contains($table) -or $column -notin $live[$table]){throw "Falta nucleo obligatorio $table.$column; recuperacion cancelada."}
+  }}
+  $list=@(Invoke-FitStorePg -Tool (Join-Path (Split-Path -Parent $Psql) 'pg_restore.exe') -Arguments @('--list',$Archive) -Password $Password -FailureMessage 'Respaldo no permite comprobar tablas anteriores')
+  foreach($line in $list){
+    if([string]$line -match '^\d+;\s+\d+\s+\d+\s+TABLE\s+public\s+(\S+)\s+'){
+      $table=$Matches[1]
+      # Incluso tablas sin marca temporal del respaldo deben seguir existiendo.
+      $existsSql="SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='"+$table.Replace("'","''")+"';"
+      $exists=@(Invoke-FitStorePgSql -Tool $Psql -Arguments $Arguments -Password $Password -Sql $existsSql)
+      if($exists.Count -ne 1 -or ([string]$exists[0]).Trim() -ne '1'){throw "Tabla del respaldo ausente en base activa: $table. Recuperacion cancelada."}
+    }
+  }
+  $queries=foreach($table in $live.Keys){
+    $conditions=foreach($column in $live[$table]){'"'+$column+'" >= TIMESTAMP '+"'$Timestamp'"}
+    'SELECT count(*) AS activity FROM "'+$table+'" WHERE '+($conditions -join ' OR ')
+  }
+  return 'SELECT SUM(activity)::bigint FROM ('+($queries -join ' UNION ALL ')+') AS recent_activity;'
+}
+
 function Assert-FitStoreInterruptedRecovery {
   param($Paths, $Transaction, [ValidateRange(1024,65535)][int]$DatabasePort = 5434, [switch]$ExclusiveAccess, [string]$VerifiedPgBin)
   foreach ($field in @('backupCutoffAt','applicationAutostartDisabled','backup','backupSha256','snapshotPath','phase')) {
@@ -225,12 +264,6 @@ function Assert-FitStoreInterruptedRecovery {
   # La hora capturada offline puede preceder al respaldo. AuditLog usa la
   # hora del servidor; incluir tambien cobros, devoluciones, caja e inventario.
   # Una tabla/columna ausente provoca error y rechazo, nunca un cero inventado.
-  $columns = Get-FitStoreRecoveryActivityColumns
-  $queries = foreach ($table in $columns.Keys) {
-    $conditions = foreach ($column in $columns[$table]) { '"' + $column + '" >= TIMESTAMP ' + "'$timestamp'" }
-    'SELECT count(*) AS activity FROM "' + $table + '" WHERE ' + ($conditions -join ' OR ')
-  }
-  $sql = 'SELECT SUM(activity)::bigint FROM (' + ($queries -join ' UNION ALL ') + ') AS recent_activity;'
   $temporaryPostgres = $false
   $temporaryAcl = @()
   try {
@@ -248,7 +281,9 @@ function Assert-FitStoreInterruptedRecovery {
     if ($ExclusiveAccess) { Enable-FitStoreRecoveryIsolation -Transaction $Transaction -Psql $psql -Secrets $secrets -DatabasePort $DatabasePort -MarkerPath (Get-FitStoreUpdateMarker -Paths $Paths) }
     $user = if ($ExclusiveAccess) { 'postgres' } else { 'fitstore' }
     $password = if ($ExclusiveAccess) { [string]$secrets.postgresPassword } else { [string]$secrets.databasePassword }
-    $output = @(Invoke-FitStorePg -Tool $psql -Password $password -Arguments @('--host=127.0.0.1',"--port=$DatabasePort","--username=$user",'--dbname=fitstore','--no-password','--no-psqlrc','--tuples-only','--no-align','--set=ON_ERROR_STOP=1',"--command=$sql") -FailureMessage 'No se pudieron comprobar las ventas posteriores al respaldo')
+    $sqlArguments=@('--host=127.0.0.1',"--port=$DatabasePort","--username=$user",'--dbname=fitstore','--no-password','--no-psqlrc','--tuples-only','--no-align','--set=ON_ERROR_STOP=1')
+    $sql=Get-FitStoreDatabaseActivitySql -Psql $psql -Arguments $sqlArguments -Password $password -Archive $Transaction.backup -Timestamp $timestamp
+    $output = @(Invoke-FitStorePgSql -Tool $psql -Password $password -Arguments $sqlArguments -Sql $sql -FailureMessage 'No se pudieron comprobar las ventas posteriores al respaldo')
     if ($output.Count -ne 1 -or ([string]$output[0]).Trim() -cne '0') { throw 'Hay ventas posteriores al respaldo o no se pudo verificarlas. No se restauraron datos; requiere recuperacion asistida.' }
     foreach ($name in @($script:ApiService, $script:WebService)) {
       $service = Get-CimInstance -ClassName Win32_Service -Filter "Name='$name'" -ErrorAction Stop
@@ -273,7 +308,7 @@ function Assert-FitStoreInterruptedRecovery {
 
 function Invoke-FitStoreRecoverySql {
   param([string]$Psql, $Secrets, [int]$DatabasePort, [string]$Sql)
-  Invoke-FitStorePg -Tool $Psql -Password ([string]$Secrets.postgresPassword) -Arguments @('--host=127.0.0.1',"--port=$DatabasePort",'--username=postgres','--dbname=postgres','--no-password','--no-psqlrc','--tuples-only','--no-align','--set=ON_ERROR_STOP=1',"--command=$Sql") -FailureMessage 'No se pudo controlar el acceso exclusivo de recuperacion'
+  Invoke-FitStorePgSql -Tool $Psql -Password ([string]$Secrets.postgresPassword) -Arguments @('--host=127.0.0.1',"--port=$DatabasePort",'--username=postgres','--dbname=postgres','--no-password','--no-psqlrc','--tuples-only','--no-align','--set=ON_ERROR_STOP=1') -Sql $Sql -FailureMessage 'No se pudo controlar el acceso exclusivo de recuperacion'
 }
 
 function Enable-FitStoreRecoveryIsolation {
