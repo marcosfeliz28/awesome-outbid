@@ -5253,3 +5253,183 @@ td strong {
   gap: 14px;
   white-space: nowrap;
 }
+
+/* 05-A5: carrito legible en el monitor típico de caja (1366×768) y en el
+   celular. Líneas compactas en rejilla (imagen y nombre arriba, cantidad y
+   descuentos en una sola fila de 44 px), la última agregada se trae a la
+   vista dentro de la lista y se resalta un instante. */
+.cart-items {
+  position: relative;
+  min-height: 0;
+}
+.cart-item {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) minmax(0, max-content) auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+  padding: 6px 0;
+}
+.cart-item > img {
+  grid-column: 1;
+  grid-row: 1;
+  width: 26px;
+  height: 26px;
+  padding: 2px;
+  align-self: center;
+}
+.cart-item-detail {
+  display: contents;
+}
+/* Nombre y variante en la misma fila: la variante (talla, color, sabor)
+   nunca se corta antes que el nombre. */
+.cart-item-detail strong {
+  grid-column: 2;
+  grid-row: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.35;
+}
+.cart-item-detail small {
+  grid-column: 3;
+  grid-row: 1;
+  display: block;
+  max-width: 11em;
+  margin-top: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cart-item-controls {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-top: 0;
+}
+.cart-line-total {
+  grid-column: 4;
+  grid-row: 1;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.cart-line-total button {
+  min-width: 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cart-item.just-added.flash-0 {
+  animation: cart-flash-a 1.2s ease-out;
+}
+.cart-item.just-added.flash-1 {
+  animation: cart-flash-b 1.2s ease-out;
+}
+@keyframes cart-flash-a {
+  from {
+    background: var(--primary-soft);
+  }
+}
+@keyframes cart-flash-b {
+  from {
+    background: var(--primary-soft);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cart-item.just-added {
+    animation: none !important;
+  }
+}
+/* Pantallas de poca altura (1366×768, 1280×800): menos aire alrededor para
+   que se vean varias líneas completas sin ocultar el total ni «Cobrar». */
+@media (min-width: 901px) and (max-height: 860px) {
+  .cart-heading {
+    padding: 12px 18px;
+  }
+  .customer-selector {
+    margin: 8px 18px;
+    padding: 6px 10px !important;
+  }
+  .wholesale-toggle {
+    margin: 0 18px 6px;
+  }
+  .cart-items {
+    padding: 0 18px;
+  }
+  .cart-summary {
+    padding: 10px 18px 8px;
+  }
+  .cart-summary > div:not(.cart-bottom-actions) {
+    margin-bottom: 4px;
+  }
+  .cart-summary > .cart-total {
+    padding-top: 6px;
+    margin-top: 6px;
+    margin-bottom: 8px !important;
+  }
+  .cart-summary > .cart-total strong {
+    font-size: 28px;
+  }
+  .charge-button {
+    min-height: 48px;
+  }
+  .cart-bottom-actions {
+    margin-top: 4px;
+  }
+  .cart-security {
+    display: none;
+  }
+}
+/* Celular y tableta: barra fija con el carrito y el cobro. */
+.pos-mobile-bar {
+  display: none;
+}
+@media (max-width: 900px) {
+  .pos-mobile-bar {
+    display: flex;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 70;
+    gap: 8px;
+    max-width: 520px;
+    margin-left: auto;
+  }
+  .pos-mobile-bar .pos-mobile-charge {
+    position: static;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+  /* Dos clases: button:not(.button) quitaría el fondo y el borde. */
+  .pos-mobile-bar .pos-mobile-cart {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 72px;
+    min-height: 56px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 750;
+    box-shadow: 0 8px 24px #0003;
+  }
+  .cart-items {
+    max-height: 60vh;
+  }
+}
+/* B10: en pantallas táctiles no hay teclas de función. */
+@media (pointer: coarse) {
+  .charge-button kbd,
+  .pos-search kbd {
+    display: none;
+  }
+}

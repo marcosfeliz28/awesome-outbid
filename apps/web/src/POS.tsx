@@ -191,8 +191,14 @@ export function POS({ go }: { go: (page: string) => void }) {
     // 05-M2: el aviso «elige el cliente» va dentro de la ventana del cliente;
     // como aviso flotante tapaba su título.
     [pickerHint, setPickerHint] = useState(""),
-    [sound, setSound] = useState(scanSoundEnabled);
+    [sound, setSound] = useState(scanSoundEnabled),
+    // 05-A5: la última línea agregada se trae a la vista dentro del carrito y
+    // se resalta un instante (n alterna la animación para repetirla).
+    [lastAdded, setLastAdded] = useState<{ id: string; n: number } | null>(
+      null,
+    );
   const search = useRef<HTMLInputElement>(null);
+  const cartList = useRef<HTMLDivElement>(null);
   // La ventana de variantes se abrió con Enter desde el buscador: al elegir,
   // el buscador queda vacío como tras un escaneo (R9-caja-6).
   const clearOnChoose = useRef(false);
@@ -300,6 +306,7 @@ export function POS({ go }: { go: (page: string) => void }) {
       config.data?.taxIncluded !== false,
     ),
   );
+  const units = cart.reduce((a, i) => a + i.qty, 0);
   const total = money(totals.reduce((a, i) => a.plus(i.total), d(0))),
     subtotal = money(totals.reduce((a, i) => a.plus(i.subtotal), d(0))),
     tax = money(totals.reduce((a, i) => a.plus(i.tax), d(0))),
@@ -331,6 +338,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     add(variant, product);
     setChoosing(null);
     clearPersistentErrors();
+    setLastAdded((last) => ({ id: variant.id, n: (last?.n ?? 0) + 1 }));
     if ((existing?.qty || 0) + 1 > Number(variant.stock)) {
       say(
         "Advertencia: " + product.name + " quedará con stock negativo.",
@@ -430,6 +438,27 @@ export function POS({ go }: { go: (page: string) => void }) {
       return;
     }
     setCheckout(true);
+  };
+  useEffect(() => {
+    const box = cartList.current;
+    const row = lastAdded
+      ? box?.querySelector<HTMLElement>(
+          `[data-variant="${CSS.escape(lastAdded.id)}"]`,
+        )
+      : null;
+    if (!box || !row) return;
+    // Sólo se desplaza la lista del carrito: en el celular la página no salta
+    // del catálogo al carrito con cada escaneo.
+    const top = row.offsetTop,
+      bottom = top + row.offsetHeight;
+    if (bottom > box.scrollTop + box.clientHeight)
+      box.scrollTop = bottom - box.clientHeight;
+    else if (top < box.scrollTop) box.scrollTop = top;
+  }, [lastAdded]);
+  const showCart = () => {
+    const panel = document.getElementById("pos-cart");
+    panel?.scrollIntoView({ block: "start" });
+    panel?.focus({ preventScroll: true });
   };
   // El atajo usa siempre la versión de este render: con el efecto atado a
   // [cart, session, online], F8 guardaba el cliente anterior (R9-caja-7).
@@ -947,9 +976,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                   : "Caja abierta"}
             </span>
           </div>
-          <Badge tone="violet">
-            {cart.reduce((a, i) => a + i.qty, 0)} artículos
-          </Badge>
+          <Badge tone="violet">{units} artículos</Badge>
         </div>
         <button
           className="customer-selector"
@@ -973,13 +1000,23 @@ export function POS({ go }: { go: (page: string) => void }) {
         <WholesaleToggle />
         <div
           className="cart-items"
+          ref={cartList}
           tabIndex={0}
           role="region"
           aria-label="Artículos del carrito"
         >
           {cart.length ? (
             cart.map((i, index) => (
-              <div className="cart-item" key={i.variant.id}>
+              <div
+                className={
+                  "cart-item" +
+                  (lastAdded?.id === i.variant.id
+                    ? " just-added flash-" + (lastAdded.n % 2)
+                    : "")
+                }
+                data-variant={i.variant.id}
+                key={i.variant.id}
+              >
                 <img
                   src={
                     i.product.imageUrl ||
@@ -1160,23 +1197,36 @@ export function POS({ go }: { go: (page: string) => void }) {
           </small>
         </div>
       </aside>
-      <Button
-        variant="success"
-        className="charge-button pos-mobile-charge"
-        disabled={!cart.length}
-        onClick={charge}
-        aria-label={`Cobrar ${formatMoney(total)}`}
-      >
-        <CreditCard size={20} />
-        {cart.length ? (
-          <>
-            <span>Cobrar · {formatMoney(total)}</span>
-            <kbd>F12</kbd>
-          </>
-        ) : (
-          <span>Carrito vacío · Busca un artículo</span>
-        )}
-      </Button>
+      {/* 05-A5: en el celular el carrito queda debajo del catálogo; la barra
+          fija dice cuántos artículos hay y lleva al carrito o al cobro. */}
+      <div className="pos-mobile-bar">
+        <button
+          type="button"
+          className="pos-mobile-cart"
+          onClick={showCart}
+          aria-label={`Ver carrito (${units} artículos)`}
+        >
+          <ShoppingCart size={20} aria-hidden="true" />
+          <span>{units}</span>
+        </button>
+        <Button
+          variant="success"
+          className="charge-button pos-mobile-charge"
+          disabled={!cart.length}
+          onClick={charge}
+          aria-label={`Cobrar ${formatMoney(total)}`}
+        >
+          <CreditCard size={20} />
+          {cart.length ? (
+            <>
+              <span>Cobrar · {formatMoney(total)}</span>
+              <kbd>F12</kbd>
+            </>
+          ) : (
+            <span>Carrito vacío · Busca un artículo</span>
+          )}
+        </Button>
+      </div>
       <Modal
         open={!!choosing}
         onClose={() => setChoosing(null)}
