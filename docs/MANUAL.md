@@ -1,5 +1,18 @@
 # Manual de demostración
 
+## Importar inventario desde la pantalla (solo administración)
+
+Sirve para la carga inicial y para actualizar el inventario con un Excel (el mismo formato de la sección siguiente: ID, DESCRIPCION, REFERENCIA, SUB-GRUPO DE ARTICULO, EXISTENCIA, COSTO, PRECIO DETALLE). No hace falta acceso a la base de datos ni plantilla: lo hace la administración desde **Productos › Importar inventario**. Las cajeras y los gerentes no ven el botón y la API les responde «sin permiso».
+
+1. Entra como administrador, abre **Productos** y pulsa **Importar inventario**.
+2. Elige el archivo `.xlsx` (hasta 5 MB y 1,500 productos). Se revisa solo, sin guardar nada.
+3. Deja marcadas (o desmarca) las dos opciones para los productos que ya existen: **Actualizar existencias** (cada diferencia queda en el kardex como «Conteo 10-oct-2026», con tu usuario) y **Actualizar precios y costos**. Lo que no viene en el archivo nunca se toca.
+4. Lee la **vista previa**: productos nuevos, existencias que suben o bajan (con las unidades), precios y costos que cambian, sin cambios, productos que quedan inactivos por no tener precio o costo, agotados, margen bajo, categorías que se crearán, el resumen por categoría y los 20 cambios de precio más grandes (antes y después). «Descargar la lista de todos los cambios» baja un `.csv` con cada cambio.
+5. Si hay errores, la pantalla dice la **fila del Excel** y el motivo, y no ofrece cargar: corrige el Excel y súbelo otra vez. No se guarda nada mientras haya un error.
+6. Si todo está bien, marca «Revisé la vista previa…» y pulsa **Cargar inventario**. Se hace todo o nada.
+
+Garantías: si hubo ventas, compras o ajustes de esos productos entre la vista previa y la carga, la carga se detiene sin cambiar nada y pide revisar de nuevo; si subes un archivo distinto al revisado, también se rechaza; dos cargas a la vez no se mezclan; repetir el mismo archivo no vuelve a aplicar las diferencias. Cada carga queda en la bitácora (quién, cuándo, huella SHA-256 del archivo y las cifras, nunca costos). El archivo no se guarda en ningún lado. Productos nuevos: IVA 18 %, existencia inicial como «Inventario inicial» con su costo; los de precio o costo 0 quedan inactivos. Si una categoría exige lote o vencimiento (Suplementos, Maquillaje…) y el Excel no los trae, la vista previa lo avisa y no deja cargar hasta que marques conscientemente **Cargar sin lotes (queda en la bitácora)**: entonces se desactiva ese control en esa categoría. Hazlo con la tienda cerrada o sin ventas: mientras se carga (unos segundos) las ventas de esos productos esperan. El equipo debe estar aprobado (como para cualquier ajuste de inventario). Los mensajes de error dicen «fila N del Excel (ID …)»: N es la fila que ves en Excel. Cada ajuste de existencia queda como «Conteo físico d-mmm-aaaa» valorado con el costo nuevo.
+
 ## Cargar el inventario de la tienda (ronda 7)
 
 El inventario de la tienda (por ejemplo `INVENTARIO_2026_Actualizado.xlsx`) se carga tal como está. El archivo necesita la hoja de inventario con estas columnas: **ID, DESCRIPCION, REFERENCIA, SUB-GRUPO DE ARTICULO, EXISTENCIA, COSTO y PRECIO DETALLE**.

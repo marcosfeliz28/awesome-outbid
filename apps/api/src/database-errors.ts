@@ -1,5 +1,6 @@
 import { HttpException } from "@nestjs/common";
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { isSerializationConflict } from "./inventory-resilience";
 
 // Errores de Prisma que significan «la base no respondió a tiempo o no está
 // disponible», no «los datos o la sesión son inválidos»: conexión imposible o
@@ -148,4 +149,36 @@ export function moneyDb(db: Pick<PrismaClient, "$transaction">) {
       options?: { timeout?: number; maxWait?: number },
     ): Promise<T> => retryDeadlock(() => db.$transaction(operation, options)),
   };
+}
+
+/** La base no respondió: el error de Prisma o el 503 DB_UNAVAILABLE ya traducido. */
+export function isDatabaseDown(error: unknown) {
+  if (error instanceof HttpException) {
+    const response = error.getResponse() as { code?: unknown } | string;
+    return typeof response === "object" && response?.code === "DB_UNAVAILABLE";
+  }
+  return isDatabaseUnavailable(error) && !constraintViolation(error);
+}
+
+/**
+ * N-M3 (auditoría 06 v2): un error de la base que se resuelve solo al repetir
+ * la misma operación (base no disponible o saturada, 503 DB_UNAVAILABLE, pool
+ * lleno P2024, transacción vencida P2028, interbloqueo 40P01, conflicto de
+ * serialización 40001/P2034, incluido el 409 que lanza `retrySerializable` al
+ * agotar sus intentos). Una regla de negocio o una restricción de integridad
+ * NO lo es: ésas se repiten igual y siguen siendo conflicto.
+ */
+export function isTransientDbError(error: unknown): boolean {
+  if (isDatabaseDown(error)) return true;
+  if (error instanceof HttpException) {
+    // «Otra operación modificó el inventario»: lleva el conflicto de
+    // serialización como causa.
+    return error.getStatus() === 409 && isTransientDbError(error.cause);
+  }
+  if (constraintViolation(error)) return false;
+  return (
+    isDeadlock(error) ||
+    isSerializationConflict(error) ||
+    isDatabaseUnavailable(error)
+  );
 }

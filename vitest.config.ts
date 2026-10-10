@@ -12,6 +12,7 @@ export default defineConfig({
       "tests/import-codes.test.ts",
       "tests/realtime.test.ts",
       "tests/inventario.test.ts",
+      "tests/inventory-import-core.test.ts",
       "tests/inventory-resilience.test.ts",
       "tests/lot-migration-postgres.test.ts",
       "tests/portabilidad.test.ts",
@@ -54,6 +55,10 @@ export default defineConfig({
       "tests/pwa-update.test.ts",
       "tests/cart-draft-policy.test.ts",
       "tests/cart-draft-race.test.ts",
+      "tests/alertas-rendimiento.test.ts",
+      "tests/sync-transitorio.test.ts",
+      "tests/sync-cola-web.test.ts",
+      "tests/db-zona-horaria.test.ts",
     ],
   },
 });

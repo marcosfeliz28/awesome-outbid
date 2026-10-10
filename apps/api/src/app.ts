@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { RealtimeController } from "./realtime";
 import { MerchandiseController } from "./merchandise";
+import { InventoryImportController } from "./inventory-import";
 import {
   Controller,
   Get,
@@ -8,7 +9,7 @@ import {
   Module,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthGuard, Database, Public } from "./common";
 import { AuthController } from "./auth";
@@ -18,7 +19,7 @@ import { SalesController } from "./sales";
 import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
-import { AlertEngine, AlertsController } from "./alerts";
+import { AlertCacheInterceptor, AlertEngine, AlertsController } from "./alerts";
 import { OfflineSalesController } from "./offline-sales";
 import { OfflineSaleReviewController } from "./offline-sale-review";
 import { IncentivesController } from "./incentives";
@@ -63,6 +64,7 @@ export function createAppModule(secret: string) {
       HealthController,
       RealtimeController,
       MerchandiseController,
+      InventoryImportController,
       AuthController,
       CatalogController,
       InventoryController,
@@ -88,6 +90,7 @@ export function createAppModule(secret: string) {
       SecurityMaintenance,
       { provide: APP_GUARD, useClass: AuthGuard },
       { provide: APP_GUARD, useClass: AuthenticatedRateLimitGuard },
+      { provide: APP_INTERCEPTOR, useClass: AlertCacheInterceptor },
     ],
   })
   class AppModule {}

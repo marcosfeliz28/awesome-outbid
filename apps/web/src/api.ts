@@ -2,6 +2,7 @@ import Dexie, { type Table } from "dexie";
 import { create } from "zustand";
 import type { QueryClient } from "@tanstack/react-query";
 import type { SaleInput } from "@fitstore/shared";
+import { applySyncResults } from "./pendingSales";
 import { businessOperationName, traceBusinessOperation } from "./monitoring";
 
 export type User = {
@@ -516,33 +517,29 @@ export function refreshCart(products: Product[]) {
 }
 export async function syncSales() {
   const user = useStore.getState().user;
-  if (!user || !navigator.onLine) return { synced: 0, conflicts: 0 };
+  if (!user || !navigator.onLine) return { synced: 0, conflicts: 0, retry: 0 };
   const pending = await localDB.sales
     .where("userId")
     .equals(user.id)
     .filter((s) => s.status === "pending")
     .sortBy("createdAt");
-  if (!pending.length) return { synced: 0, conflicts: 0 };
-  let synced = 0,
-    conflicts = 0;
+  if (!pending.length) return { synced: 0, conflicts: 0, retry: 0 };
+  const total = { synced: 0, conflicts: 0, retry: 0 };
   for (let i = 0; i < pending.length; i += 100) {
     const result = await post("/sales/sync", {
       sales: pending.slice(i, i + 100).map((s) => s.input),
     });
-    for (const item of result.results) {
-      if (item.status === "synced") {
-        await localDB.sales.delete(item.offlineUuid);
-        synced++;
-      } else {
-        await localDB.sales.update(item.offlineUuid, {
-          status: "conflict",
-          message: item.message,
-        });
-        conflicts++;
-      }
-    }
+    // N-M3: sólo «conflict» pide revisión; «retry» la deja pendiente.
+    const part = await applySyncResults(result.results, {
+      deleteLocal: (id) => localDB.sales.delete(id),
+      markConflict: (id, message) =>
+        localDB.sales.update(id, { status: "conflict", message }),
+    });
+    total.synced += part.synced;
+    total.conflicts += part.conflicts;
+    total.retry += part.retry;
   }
-  return { synced, conflicts };
+  return total;
 }
 export const DOWNLOAD_FAILED = "No se pudo descargar el archivo.";
 export async function download(path: string, filename: string) {

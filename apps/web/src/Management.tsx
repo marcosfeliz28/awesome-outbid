@@ -71,16 +71,19 @@ import {
 import {
   businessErrorMessage,
   managementQueryError,
+  openCashBlindNote,
 } from "./managementMessages";
 import { passwordRules } from "./passwordChange";
 import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
+import { InventoryImportButton } from "./InventoryImport";
 import {
   applyPendingSaleReprice,
   conflictHelp,
   discardWithApproval,
   isPendingPriceConflict,
+  retryMessage,
 } from "./pendingSales";
 
 type Column = {
@@ -326,6 +329,9 @@ export function Catalog() {
                 }}
               />
             </label>
+            {can(user.permissions, "inventory:import") && (
+              <InventoryImportButton />
+            )}
             <Button onClick={() => setCreate(true)}>
               <Plus size={17} />
               Nuevo producto
@@ -1544,7 +1550,9 @@ export function Cash() {
     toast(
       applied.synced.status === "synced"
         ? "Precios actualizados y venta sincronizada."
-        : "Precios actualizados. La venta sigue pendiente de revisión.",
+        : applied.synced.status === "retry"
+          ? "Precios actualizados. " + retryMessage(1)
+          : "Precios actualizados. La venta sigue pendiente de revisión.",
       applied.synced.status !== "synced",
     );
   };
@@ -1616,11 +1624,7 @@ export function Cash() {
         <div className="panel">
           <Badge tone="success">Caja abierta</Badge>
           <h2>{active.registerName ?? active.registerId}</h2>
-          <p>
-            Arqueo ciego activo: mientras la caja está abierta no ves los montos
-            esperados. Al cerrar cuentas lo que tienes y se imprime el cuadre
-            con las diferencias.
-          </p>
+          <p>{openCashBlindNote(false)}</p>
         </div>
       ) : (
         <div className="panel">
@@ -1653,7 +1657,10 @@ export function Cash() {
                   const result = await syncSales();
                   await client.invalidateQueries();
                   toast(
-                    `${result.synced} sincronizadas · ${result.conflicts} requieren revisión.`,
+                    `${result.synced} sincronizadas · ${result.conflicts} requieren revisión` +
+                      (result.retry
+                        ? ` · ${result.retry} por reintentar.`
+                        : "."),
                   );
                 } catch (e: any) {
                   toast(e.message, true);
@@ -1773,8 +1780,10 @@ export function Cash() {
                                   ? "La venta sigue requiriendo revisión."
                                   : result.synced
                                     ? "Venta sincronizada."
-                                    : "Lista para reintentar al volver la conexión.",
-                                result.conflicts > 0,
+                                    : result.retry
+                                      ? retryMessage(result.retry)
+                                      : "Lista para reintentar al volver la conexión.",
+                                result.conflicts > 0 || result.retry > 0,
                               );
                             } catch (e: any) {
                               toast(e.message, true);

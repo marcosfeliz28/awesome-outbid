@@ -63,6 +63,10 @@ export const EXPECTED_INDEXES = [
   "Sale_customerId_idx",
   "AuditLog_entityId_entity_idx",
   "PurchaseItem_orderId_idx",
+  // 202610230101_alertas_indices
+  "Alert_branchId_updatedAt_idx",
+  "Alert_branchId_status_updatedAt_idx",
+  "Alert_entityId_idx",
   // 202610210004_dinero_idempotencia
   "CashMovement_operationId_key",
   "SupplierPayment_operationId_key",

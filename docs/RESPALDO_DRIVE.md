@@ -291,8 +291,8 @@ Path=/api/backups/google` del mismo navegador; el verificador PKCE se deriva
   el permiso fue revocado. Sin datos personales.
 - **Auditoría**: `backup_run`, `backup_failed` (usuario `system` en los
   programados), `drive_connected`, `drive_disconnected`; sin secretos.
-- **Imagen**: `deploy/render/Dockerfile.api` instala `libpq5` y extrae
-  `pg_dump`/`pg_restore` 17 del repositorio PGDG; `PG_DUMP_BIN` apunta a
+- **Imagen**: `deploy/render/Dockerfile.api` copia `pg_dump`/`pg_restore` 17
+  y `libpq` de la imagen oficial `postgres:17.x-bookworm` (fijada por suma); `PG_DUMP_BIN` apunta a
   `/usr/lib/postgresql/17/bin/pg_dump`.
 - **Variables sólo para pruebas** (ignoradas con `NODE_ENV=production`):
   `DRIVE_BACKUP_START_DELAY_MS`, `DRIVE_BACKUP_TICK_MS`,

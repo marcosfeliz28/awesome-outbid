@@ -147,6 +147,52 @@ export function repricePendingSale(
   };
 }
 
+/** Un resultado de POST /sales/sync (N-M3: «retry» es un error transitorio). */
+export type SyncResultItem = {
+  offlineUuid: string;
+  status: "synced" | "conflict" | "retry";
+  message?: string;
+};
+
+/**
+ * N-M3: aplica la respuesta de /sales/sync a la cola local. SÓLO «conflict»
+ * marca la venta como conflicto (y pide revisión); «synced» la borra; «retry»
+ * —y cualquier estado que esta versión no conozca— la deja «pendiente» con su
+ * mismo UUID para el siguiente intento. Un error transitorio del servidor
+ * (503, interbloqueo) nunca debe convertir una venta buena en «requiere
+ * revisión» ni pedir el PIN de gerencia.
+ */
+export async function applySyncResults(
+  results: SyncResultItem[],
+  dependencies: {
+    deleteLocal: (id: string) => Promise<unknown>;
+    markConflict: (id: string, message?: string) => Promise<unknown>;
+  },
+) {
+  let synced = 0,
+    conflicts = 0,
+    retry = 0;
+  for (const item of results) {
+    if (item.status === "synced") {
+      await dependencies.deleteLocal(item.offlineUuid);
+      synced++;
+    } else if (item.status === "conflict") {
+      await dependencies.markConflict(item.offlineUuid, item.message);
+      conflicts++;
+    } else retry++;
+  }
+  return { synced, conflicts, retry };
+}
+
+/** Aviso a la cajera cuando quedaron ventas por reintentar. */
+export const retryMessage = (count: number) =>
+  count === 1
+    ? "1 venta sigue guardada en este equipo; se reintentará sola."
+    : `${count} ventas siguen guardadas en este equipo; se reintentarán solas.`;
+/** Espera antes de reenviar tras un «retry»: 15 s, 30 s, 60 s… hasta 5 min. */
+export const retryDelayMs = (attempt: number) =>
+  Math.min(15_000 * 2 ** Math.max(0, attempt), 300_000);
+
 type RecordResolution = (body: {
   offlineUuid: string;
   action: "reprice" | "discard";
@@ -172,7 +218,7 @@ export async function applyPendingSaleReprice(
       changes: Partial<PendingSale>,
     ) => Promise<unknown>;
     syncOne: (input: SaleInput) => Promise<{
-      status: "synced" | "conflict";
+      status: "synced" | "conflict" | "retry";
       message?: string;
       sale?: unknown;
     }>;
@@ -202,6 +248,8 @@ export async function applyPendingSaleReprice(
   };
   await dependencies.updateLocal(sale.id, changes);
   const synced = await dependencies.syncOne(result.input);
+  // N-M3: un error transitorio deja la venta pendiente, sin pedir revisión.
+  if (synced.status === "retry") return { ...result, changes, synced };
   if (synced.status !== "synced") {
     const conflictChanges: Partial<PendingSale> = {
       status: "conflict",

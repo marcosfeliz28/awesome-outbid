@@ -79,9 +79,17 @@ deploy` **no muestra los `RAISE NOTICE`** (probado): un bloque
    `202610220001_validar_restricciones`, que escriben en `AuditLog`) y el
    objeto debe estar en `EXPECTED_INDEXES` / `EXPECTED_CONSTRAINTS` de
    `deploy/render/post-deploy-check.mjs`, que quien despliega ejecuta con
-   `--db-only` (ver abajo). Además, `QUERY_CANCELED` (el `statement_timeout`
-   de 120 s) **no** lo captura `EXCEPTION WHEN OTHERS`: un `DO` que pase de
-   120 s falla entera.
+   `--db-only` (ver abajo). Además, `QUERY_CANCELED` (el `statement_timeout` de 120 s)
+   **no** lo captura `EXCEPTION WHEN OTHERS` (probado con PostgreSQL 16):
+   un `DO` que pase de 120 s falla entera y deja el P3009. Atraparlo
+   explícitamente (`WHEN query_canceled`) tampoco sirve de mucho: el plazo
+   corre sobre **todo** el `DO` (es una sola sentencia para el servidor), no
+   por sentencia interna, y una vez vencido y atrapado no se vuelve a armar,
+   así que el resto del bloque correría sin límite. Por eso, en una
+   migración nueva: una sentencia por objeto, **fuera** de `DO … EXCEPTION`
+   (que falle en voz alta y se reintente fuera de horario), o un `DO` con un
+   único objeto que se pueda rehacer. `tests/cloud-deploy.test.ts` rechaza un
+   `EXCEPTION WHEN OTHERS` en migraciones posteriores a `202610220101`.
    - `lock_timeout`: no subirlo dentro de la migración por encima del que fija
      el envoltorio (5 s). Las migraciones `202610200001`…`202610210003` ya
      aplicadas lo suben a 15 s con `set_config` y no se pueden editar;

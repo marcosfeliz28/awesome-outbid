@@ -2,7 +2,12 @@ name: FitStore checks
 on: [push, pull_request]
 # M10: el GITHUB_TOKEN de este workflow sólo puede leer el repositorio. Las
 # acciones se fijan por SHA (comentario con la versión); Dependabot las
-# actualiza (.github/dependabot.yml).
+# actualiza (.github/dependabot.yml). N7 (auditoría 04 v2): cada SHA se
+# verificó contra el repositorio de la acción con
+#   git ls-remote --tags https://github.com/<dueño>/<acción>.git
+# y coincide con el tag del comentario (v4.4.0, v4.3.0, v4.4.0, v4.6.2); si se
+# cambia uno, repetir la comprobación (el SHA de un tag anotado es el de
+# `<tag>^{}`, no el del objeto tag).
 permissions:
   contents: read
 jobs:

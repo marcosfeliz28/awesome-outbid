@@ -167,7 +167,7 @@ describe("importador de inventario · lectura del Excel", () => {
         ]),
       ),
     ).rejects.toThrow(
-      /9002, COSTO: «1\.250» es ambiguo[\s\S]*9003, EXISTENCIA[\s\S]*9004, EXISTENCIA[\s\S]*9005, COSTO/,
+      /fila 2 del Excel \(ID 9002\), COSTO: «1\.250» es ambiguo[\s\S]*\(ID 9003\), EXISTENCIA[\s\S]*\(ID 9004\), EXISTENCIA[\s\S]*\(ID 9005\), COSTO/,
     );
   });
   // Revisión adversarial R9 (docs/validacion/ronda9-revision-adversarial.json).
@@ -245,7 +245,7 @@ describe("importador de inventario · lectura del Excel", () => {
       ]),
     );
     await expect(bad).rejects.toThrow(
-      /fila 2003, SUB-GRUPO: la celda tiene el error #N\/A[\s\S]*fila 2004, DESCRIPCION: la celda tiene el error #REF![\s\S]*fila 2005, PRECIO DETALLE: fórmula sin valor calculado; abre el archivo en Excel y guárdalo[\s\S]*fila 5 del Excel, ID: fórmula sin valor calculado/,
+      /fila \d+ del Excel \(ID 2003\), SUB-GRUPO: la celda tiene el error #N\/A[\s\S]*\(ID 2004\), DESCRIPCION: la celda tiene el error #REF![\s\S]*\(ID 2005\), PRECIO DETALLE: fórmula sin valor calculado; abre el archivo en Excel y guárdalo[\s\S]*fila 5 del Excel, ID: fórmula sin valor calculado/,
     );
     await expect(bad).rejects.not.toThrow(/object/);
   });

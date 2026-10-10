@@ -1043,9 +1043,10 @@ describe("Aceptación financiera y permisos", () => {
     expect(Number(r.difference)).toBe(0);
     expect(r.differences.cash).toBe(10);
     expect(r.differences.card).toBe(-10);
-    expect(
-      (await request("/sales", input(clothing.variants[0].id, 118))).status,
-    ).toBe(404);
+    // D-B6: caja cerrada = 409 con el motivo, no 404 genérico.
+    const closed = await request("/sales", input(clothing.variants[0].id, 118));
+    expect(closed.status).toBe(409);
+    expect(closed.body.message).toMatch(/La caja ya está cerrada/);
   });
 });
 
@@ -1639,7 +1640,7 @@ describe("Seguridad, offline y funciones completadas", () => {
       countedCard: cash.expected.card,
       countedTransfer: cash.expected.transfer,
     });
-    expect((await request("/sales", payload)).status).toBe(404);
+    expect((await request("/sales", payload)).status).toBe(409);
     const synced = await ok("/sales/sync", { sales: [payload] });
     expect(synced.results[0].status).toBe("synced");
     const adjusted = (await ok("/cash-sessions")).find((c) => c.id === cash.id);
@@ -6455,7 +6456,7 @@ describe("Ronda 9 · revisión · importador", () => {
     expect(r.status).not.toBe(0);
     expect(r.out).toMatch(
       new RegExp(
-        "fila R9E-" + tag + ", SUB-GRUPO: la celda tiene el error #N/A",
+        "fila \\d+ del Excel \\(ID R9E-" + tag + "\\), SUB-GRUPO: la celda tiene el error #N/A",
       ),
     );
     expect(r.out).not.toMatch(/object/);
