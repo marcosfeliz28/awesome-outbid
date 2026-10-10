@@ -76,6 +76,8 @@ const RETURN_BATCH = 300;
 // Listados que crecen con el historial: página en JSON y exportación por lotes.
 export const LISTING_PAGE = { default: 500, max: 2000 };
 export const EXPORT_LIMIT: Record<string, number> = { xlsx: 50000, pdf: 10000 };
+// Utilidad y ABC: facturas que se recorren en un pedido (unos 4 meses).
+export const PROFIT_LIMIT = 40000;
 // Mismo filtro que `saleWhere`, en SQL sobre el alias «s».
 function saleSql(
   actor: Actor,
@@ -888,11 +890,28 @@ export class ReportsController {
         // ventas anteriores a la ronda 7 final, Sale.costTotal repartido. Se
         // reparte sobre todas las líneas de la venta, antes de filtrar por
         // categoría, para que cuadre con el dashboard (R9-dinero-7).
-        // Un lote de ventas con sus líneas en una sola consulta plana.
-        for (let cursor: { at: Date; id: string } | undefined; ;) {
-          const lines = await this.db.$queryRaw<
+        // El costo contabilizado se calcula venta por venta en la API: con
+        // un período muy largo la respuesta tardaría más que el plazo del
+        // proxy (60 s en Render). Se avisa antes de empezar.
+        const [{ invoices }] = await this.db.$queryRaw<
+          { invoices: number }[]
+        >`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE ${filter}`;
+        if (invoices > PROFIT_LIMIT)
+          bad(
+            `El período tiene ${count(invoices)} facturas y la utilidad por producto se calcula con hasta ${count(PROFIT_LIMIT)}. Selecciona un período más corto.`,
+          );
+        // Lotes de ventas con sus líneas en una consulta plana; el lote
+        // siguiente se pide mientras se procesa el actual.
+        const salesBatch = (cursor?: { at: Date; id: string }) => {
+          const batch = this.db.$queryRaw<
             any[]
-          >`WITH b AS (SELECT s.id, s."costTotal", s."createdAt" FROM "Sale" s WHERE ${filter}${cursor ? Prisma.sql` AND (s."createdAt", s.id) < (${utc(cursor.at)}, ${cursor.id}::uuid)` : Prisma.empty} ORDER BY s."createdAt" DESC, s.id DESC LIMIT ${SALE_BATCH}) SELECT b.id AS "saleId", b."costTotal", b."createdAt", i.id, i.qty, i."unitCost", i."variantId", i."stockAllocations", i."lineTotal", i.tax, v."productId", p.name, p."categoryId"::text AS "categoryId", c.name AS category FROM b LEFT JOIN "SaleItem" i ON i."saleId" = b.id LEFT JOIN "Variant" v ON v.id = i."variantId" LEFT JOIN "Product" p ON p.id = v."productId" LEFT JOIN "Category" c ON c.id = p."categoryId" ORDER BY b."createdAt" DESC, b.id DESC, i.id`;
+          >`WITH b AS (SELECT s.id, s."costTotal", s."createdAt" FROM "Sale" s WHERE ${filter}${cursor ? Prisma.sql` AND (s."createdAt", s.id) < (${utc(cursor.at)}, ${cursor.id}::uuid)` : Prisma.empty} ORDER BY s."createdAt" DESC, s.id DESC LIMIT ${SALE_BATCH}) SELECT b.id AS "saleId", b."costTotal", b."createdAt", i.id, i.qty, i."unitCost", i."variantId", i."stockAllocations", i."lineTotal" - i.tax AS net, v."productId", p.name, p."categoryId"::text AS "categoryId", c.name AS category FROM b LEFT JOIN "SaleItem" i ON i."saleId" = b.id LEFT JOIN "Variant" v ON v.id = i."variantId" LEFT JOIN "Product" p ON p.id = v."productId" LEFT JOIN "Category" c ON c.id = p."categoryId" ORDER BY b."createdAt" DESC, b.id DESC, i.id`;
+          // Si el lote en curso falla, este no queda como rechazo sin atender.
+          batch.catch(() => undefined);
+          return batch;
+        };
+        for (let next: Promise<any[]> | undefined = salesBatch(); next;) {
+          const lines: any[] = await next;
           const sales: { costTotal: unknown; items: any[] }[] = [];
           let last: string | undefined;
           for (const l of lines) {
@@ -901,7 +920,12 @@ export class ReportsController {
             last = l.saleId;
             if (l.id)
               sales[sales.length - 1].items.push({
-                ...l,
+                id: l.id,
+                qty: l.qty,
+                unitCost: l.unitCost,
+                variantId: l.variantId,
+                stockAllocations: l.stockAllocations,
+                net: l.net,
                 variant: {
                   productId: l.productId,
                   product: {
@@ -912,6 +936,11 @@ export class ReportsController {
                 },
               });
           }
+          const end: any = lines[lines.length - 1];
+          next =
+            sales.length < SALE_BATCH
+              ? undefined
+              : salesBatch({ at: end.createdAt, id: end.saleId });
           for (const s of sales) {
             const booked = bookedLineCosts(s as any);
             for (const i of s.items) {
@@ -923,15 +952,12 @@ export class ReportsController {
               const row = rowOf(i.variant);
               // Sin redondear hasta el final: ventas y devoluciones parciales se
               // compensan exactamente.
-              row.Ventas = d(row.Ventas).plus(d(i.lineTotal).minus(i.tax));
+              row.Ventas = d(row.Ventas).plus(i.net);
               row.Costo = d(row.Costo).plus(booked.get(i.id)!);
               row.Unidades += Number(i.qty);
               grouped.set(i.variant.productId, row);
             }
           }
-          if (sales.length < SALE_BATCH) break;
-          const end = lines[lines.length - 1];
-          cursor = { at: end.createdAt, id: end.saleId };
         }
         // Lo que contabilizó cada parte de cada devolución (R8-02, R9-dinero-1,
         // R9-dinero-6): el costo guardado desde la ronda 8 o, antes, el
