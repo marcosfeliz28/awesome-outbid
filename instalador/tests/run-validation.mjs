@@ -12,6 +12,7 @@ export const powershellTests = [
   "FreshInstall-FaultInjection",
   "Stale-Update-FaultInjection",
   "Rollback-ServiceAccount-FaultInjection",
+  "Rollback-Service-Sid",
   "Recovery-FaultInjection",
   "Backup-Reader-Privacy",
   "Preflight-Rollback-Contract",

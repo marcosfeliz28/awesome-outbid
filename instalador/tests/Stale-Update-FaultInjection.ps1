@@ -31,6 +31,7 @@ function Start-FitStoreService { }
 function Wait-FitStorePostgres { }
 function Set-FitStoreUpdatePhase { }
 function Ensure-RestoredApplicationService { return "LocalSystem" }
+function Remove-FitStoreLocalServiceAccess { $script:aclCleanupCalls++ }
 function Start-FitStoreApplication { }
 function Wait-FitStoreHttp { }
 function Write-FitStoreLog { }
@@ -68,7 +69,7 @@ try {
     [IO.Directory]::CreateDirectory($InstallDir) | Out-Null
     [IO.File]::WriteAllText((Join-Path $snapshot "prior-version.fixture"), "old-version")
     [IO.File]::WriteAllText($script:sales, "new-sale-unchanged")
-    $script:pgCalls = @(); $script:effects = 0
+    $script:pgCalls = @(); $script:effects = 0; $script:aclCleanupCalls = 0
     $transaction = @{ installerSession="current-run"; phase="migrating"; installDir=$InstallDir; transactionPath=$transactionPath; snapshotPath=$snapshot; manifestPath="fixture-manifest"; manifestSha256="fixture-hash"; backup=$archive; backupSha256=$hash }
     if ($case -eq "stale") { $transaction.installerSession = "old-run" }
     if ($case -eq "verified") { $transaction.phase = "verified" }
@@ -77,10 +78,12 @@ try {
     try { & $rollback } catch { $failure = $_ }
     if ($case -ne "current") {
       if (-not $failure -or $failure.Exception.Message -notmatch "no pertenece") { throw "A7: $case no rechazo por sesion/fase antes de restaurar." }
+      if ($script:aclCleanupCalls -ne 0) { throw "A7: marcador rechazado alcanzo cambios ACL." }
       if ($script:effects -ne 0 -or $script:pgCalls.Count -ne 0 -or [IO.File]::ReadAllText($script:sales) -cne "new-sale-unchanged") { throw "A7: $case alcanzo servicios/PostgreSQL y piso ventas." }
       Write-Host "PASS A7: $case rechazado; cero servicios/psql/pg_restore y ventas intactas."
     } else {
       if ($failure) { throw $failure }
+      if ($script:aclCleanupCalls -ne 1) { throw "A7: rollback SYSTEM no retiro ACL LocalService exactamente una vez." }
       if ($script:pgCalls.Count -ne 3 -or $script:pgCalls -notcontains "psql.exe" -or [IO.File]::ReadAllText($script:sales) -cne "overwritten-by-rollback") { throw "A7: control positivo no alcanzo restore completo con mock destructivo." }
       Write-Host "PASS A7: sesion actual ejecuto rollback completo; psql y pg_restore cambiaron fixture de ventas."
     }
