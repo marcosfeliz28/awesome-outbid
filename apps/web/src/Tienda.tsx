@@ -439,45 +439,101 @@ export function DayReports({ onPrint }: { onPrint: (p: Printing) => void }) {
   );
 }
 
-/** Créditos y contraentregas: sólo la administración registra los cobros. */
+/** Créditos pendientes: sólo la administración registra los cobros. */
+const CREDIT_STATUS: Record<string, { label: string; tone: any }> = {
+  open: { label: "Abierto", tone: "danger" },
+  partial: { label: "Parcial", tone: "warning" },
+  closed: { label: "Cerrado", tone: "success" },
+};
+const ageText = (days: number) =>
+  days <= 0 ? "hoy" : days === 1 ? "hace 1 día" : `hace ${days} días`;
 export function CodPending({ session }: { session: any }) {
+  const [state, setState] = useState<"pending" | "closed">("pending");
   const query = useQuery({
-    queryKey: ["cod-pending"],
-    queryFn: () => api<any[]>("/cod/pending"),
+    queryKey: ["cod-pending", state],
+    queryFn: () => api<any[]>("/cod/pending?state=" + state),
     refetchInterval: 30000,
   });
   const [collecting, setCollecting] = useState<any>(null);
   const rows = query.data ?? [];
+  const totalPending = rows.reduce((a, r) => a + Number(r.pending), 0);
   return (
-    <section className="panel cod-panel">
+    <section className="panel cod-panel" aria-labelledby="credits-title">
       <div className="panel-heading">
         <div>
-          <h2>
-            <Truck size={20} /> Créditos y contraentregas pendientes
+          <h2 id="credits-title">
+            <Truck size={20} /> Créditos pendientes
           </h2>
           <p>
-            Seguimiento administrativo de mercancía entregada y todavía no
-            cobrada.
+            Ventas entregadas sin pago. Solo la administración las cobra: indica
+            por dónde pagó el cliente y cuánto entregó. Pueden ser pagos mixtos.
           </p>
         </div>
+        <div
+          className="segmented"
+          role="group"
+          aria-label="Estado de los créditos"
+        >
+          {(
+            [
+              ["pending", "Pendientes"],
+              ["closed", "Cerrados"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={state === id ? "active" : ""}
+              aria-pressed={state === id}
+              onClick={() => setState(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
+      {state === "pending" && rows.length > 0 && (
+        <p className="cod-hint">
+          {rows.length} {rows.length === 1 ? "crédito" : "créditos"} · Por
+          cobrar: <strong>{formatMoney(totalPending)}</strong>
+        </p>
+      )}
       <QueryState query={query}>
         {rows.length ? (
           <div className="cod-list">
             {rows.map((r) => (
               <div className="cod-row" key={r.saleId}>
                 <div>
-                  <strong>{r.number}</strong>
+                  <strong>{r.number}</strong>{" "}
+                  <Badge tone={CREDIT_STATUS[r.status]?.tone}>
+                    {CREDIT_STATUS[r.status]?.label}
+                  </Badge>
                   <small>
                     {new Date(r.createdAt).toLocaleString("es-DO", {
                       timeZone: "America/Santo_Domingo",
                     })}
+                    {" · " + ageText(r.ageDays)}
                     {r.customer
                       ? " · " +
                         r.customer.name +
                         (r.customer.phone ? " · " + r.customer.phone : "")
                       : ""}
+                    {r.seller ? " · Vendió " + r.seller.name : ""}
                   </small>
+                  <small className="cod-figures">
+                    Total {formatMoney(r.total)} · Cobrado{" "}
+                    {formatMoney(r.collected)} · Pendiente{" "}
+                    {formatMoney(r.pending)}
+                  </small>
+                  {r.closedAt && (
+                    <small>
+                      Cerrado el{" "}
+                      {new Date(r.closedAt).toLocaleString("es-DO", {
+                        timeZone: "America/Santo_Domingo",
+                      })}
+                      {r.closedBy ? " por " + r.closedBy : ""}
+                    </small>
+                  )}
                   {r.pendingVerification > 0 && (
                     <Badge tone="warning">
                       {formatMoney(r.pendingVerification)} por verificar
@@ -495,6 +551,7 @@ export function CodPending({ session }: { session: any }) {
                             {COD_METHOD_LABEL[c.method] ?? c.method}{" "}
                             {formatMoney(c.amount)}
                             {c.reference ? " · " + c.reference : ""}
+                            {c.receivedBy ? " · recibió " + c.receivedBy : ""}
                             {c.status === "pending_verification"
                               ? " · por verificar"
                               : c.status === "rejected"
@@ -507,24 +564,30 @@ export function CodPending({ session }: { session: any }) {
                   )}
                 </div>
                 <strong className="cod-amount">{formatMoney(r.pending)}</strong>
-                <Button
-                  disabled={!session}
-                  title={session ? undefined : "Abre tu caja para cobrar."}
-                  onClick={() => setCollecting(r)}
-                >
-                  Registrar pago
-                </Button>
+                {state === "pending" && (
+                  <Button onClick={() => setCollecting(r)}>
+                    Registrar cobro
+                  </Button>
+                )}
               </div>
             ))}
           </div>
         ) : (
           <Empty
-            title="Sin créditos ni contraentregas pendientes"
-            description="Las ventas pendientes aparecerán aquí, con el nombre del cliente, hasta completar el pago."
+            title={
+              state === "pending"
+                ? "Sin créditos pendientes"
+                : "Sin créditos cerrados"
+            }
+            description={
+              state === "pending"
+                ? "Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago."
+                : "Los créditos saldados aparecerán aquí con quién y cuándo los cerró."
+            }
           />
         )}
       </QueryState>
-      {collecting && session && (
+      {collecting && (
         <CodCollect
           row={collecting}
           session={session}
@@ -675,6 +738,13 @@ export function ProofPicker({
   );
 }
 
+type CollectLine = {
+  key: string;
+  method: "cash" | "card" | "transfer";
+  amount: string;
+  bank: string;
+  reference: string;
+};
 function CodCollect({
   row,
   session,
@@ -685,35 +755,59 @@ function CodCollect({
   onClose: () => void;
 }) {
   const client = useQueryClient();
-  const [amount, setAmount] = useState(String(row.pending)),
-    [method, setMethod] = useState<"cash" | "card" | "transfer">("cash"),
-    [bank, setBank] = useState(""),
-    [reference, setReference] = useState(""),
-    [proof, setProof] = useState<File | null>(null),
+  const newLine = (
+    amount: string,
+    method: CollectLine["method"] = session ? "cash" : "transfer",
+  ) => ({
+    key: crypto.randomUUID(),
+    method,
+    amount,
+    bank: "",
+    reference: "",
+  });
+  const [lines, setLines] = useState<CollectLine[]>(() => [
+    newLine(String(row.pending)),
+  ]);
+  const [proof, setProof] = useState<File | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   // Un reintento usa el mismo identificador: no se cobra dos veces.
-  const [uuid] = useState(() => crypto.randomUUID());
+  const [operationId] = useState(() => crypto.randomUUID());
+  const total = lines.reduce((a, l) => a + (Number(l.amount) || 0), 0);
+  const left = Math.round((Number(row.pending) - total) * 100) / 100;
+  const patch = (key: string, change: Partial<CollectLine>) =>
+    setLines(lines.map((l) => (l.key === key ? { ...l, ...change } : l)));
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true);
     setError("");
+    if (!(total > 0)) return setError("Indica cuánto entregó el cliente.");
+    if (left < 0)
+      return setError(
+        `Los pagos suman ${formatMoney(total)} y solo quedan ${formatMoney(row.pending)} pendientes.`,
+      );
+    setBusy(true);
     try {
-      const payment = await post("/sales/" + row.saleId + "/cod-collections", {
-        offlineUuid: uuid,
-        cashSessionId: session.id,
-        amount: Number(amount),
-        method,
-        ...(method === "transfer" ? { bank, reference } : {}),
-        ...(method === "card" ? { reference } : {}),
-      });
+      const result = await post(
+        "/sales/" + row.saleId + "/credit-collections",
+        {
+          operationId,
+          ...(session ? { cashSessionId: session.id } : {}),
+          lines: lines.map((l) => ({
+            method: l.method,
+            amount: Number(l.amount),
+            ...(l.method === "transfer"
+              ? { bank: l.bank, reference: l.reference }
+              : l.method === "card"
+                ? { reference: l.reference }
+                : {}),
+          })),
+        },
+      );
       let proofFailed = "";
-      if (proof) {
+      if (proof && result.payments?.[0]) {
         try {
-          await uploadProof(payment.id, proof);
+          await uploadProof(result.payments[0].id, proof);
         } catch (err: any) {
-          // El cobro ya quedó registrado; la foto se puede subir después
-          // desde el detalle de la venta.
           proofFailed = err.message;
         }
       }
@@ -725,11 +819,13 @@ function CodCollect({
         );
       else
         toast(
-          method === "transfer"
-            ? "Cobro registrado: queda por verificar en el banco."
-            : method === "card"
-              ? "Cobro con tarjeta registrado en tu caja."
-              : "Cobro registrado en tu caja.",
+          result.closed
+            ? "Cobro registrado: el crédito quedó cerrado."
+            : lines.some((l) => l.method === "transfer")
+              ? "Cobro registrado: la transferencia queda por verificar en el banco."
+              : "Cobro registrado. Queda pendiente " +
+                formatMoney(result.pending) +
+                ".",
         );
       onClose();
     } catch (e: any) {
@@ -739,75 +835,115 @@ function CodCollect({
     }
   };
   return (
-    <Modal
-      open
-      onClose={onClose}
-      title={"Pago de crédito / contraentrega · " + row.number}
-    >
+    <Modal open onClose={onClose} title={"Registrar cobro · " + row.number}>
       <form className="form-grid" onSubmit={submit}>
-        <label className="field">
-          <span>Monto cobrado</span>
-          <input
-            type="number"
-            min="0.01"
-            max={row.pending}
-            step="0.01"
-            required
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-        </label>
-        <label className="field">
-          <span>Forma de pago</span>
-          <select
-            value={method}
-            onChange={(e) => setMethod(e.target.value as any)}
+        <p className="cod-hint full">
+          Pendiente: <strong>{formatMoney(row.pending)}</strong> de{" "}
+          {formatMoney(row.total)}
+          {row.customer ? " · " + row.customer.name : ""}. Agrega una línea por
+          cada forma de pago (por ejemplo, mitad transferencia y mitad
+          efectivo).
+        </p>
+        {!session && (
+          <p className="form-error full" role="note">
+            No tienes caja abierta: sin ella no puedes recibir efectivo. Abre tu
+            caja o registra solo tarjeta o transferencia.
+          </p>
+        )}
+        {lines.map((l, index) => (
+          <fieldset className="collect-line full" key={l.key}>
+            <legend>Pago {index + 1}</legend>
+            <label className="field">
+              <span>Forma de pago</span>
+              <select
+                value={l.method}
+                onChange={(e) =>
+                  patch(l.key, { method: e.target.value as any })
+                }
+              >
+                <option value="cash" disabled={!session}>
+                  Efectivo
+                </option>
+                <option value="card">Tarjeta</option>
+                <option value="transfer">Transferencia</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Monto entregado</span>
+              <input
+                type="number"
+                min="0.01"
+                max={row.pending}
+                step="0.01"
+                required
+                value={l.amount}
+                onChange={(e) => patch(l.key, { amount: e.target.value })}
+              />
+            </label>
+            {l.method === "card" && (
+              <label className="field full">
+                <span>Referencia del voucher</span>
+                <input
+                  required
+                  value={l.reference}
+                  onChange={(e) => patch(l.key, { reference: e.target.value })}
+                  placeholder="Número de aprobación o del enlace de pago"
+                />
+              </label>
+            )}
+            {l.method === "transfer" && (
+              <>
+                <label className="field">
+                  <span>Banco</span>
+                  <input
+                    required
+                    value={l.bank}
+                    onChange={(e) => patch(l.key, { bank: e.target.value })}
+                  />
+                </label>
+                <label className="field">
+                  <span>Referencia</span>
+                  <input
+                    required
+                    value={l.reference}
+                    onChange={(e) =>
+                      patch(l.key, { reference: e.target.value })
+                    }
+                  />
+                </label>
+              </>
+            )}
+            {lines.length > 1 && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setLines(lines.filter((x) => x.key !== l.key))}
+              >
+                Quitar este pago
+              </Button>
+            )}
+          </fieldset>
+        ))}
+        {lines.length < 4 && left > 0 && (
+          <Button
+            type="button"
+            variant="secondary"
+            className="full"
+            onClick={() => setLines([...lines, newLine(String(left))])}
           >
-            <option value="cash">Efectivo</option>
-            <option value="card">Tarjeta</option>
-            <option value="transfer">Transferencia</option>
-          </select>
-        </label>
-        {method === "card" && (
-          <label className="field full">
-            <span>Referencia del voucher</span>
-            <input
-              required
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              placeholder="Número de aprobación o del enlace de pago"
-            />
-          </label>
+            Agregar otra forma de pago
+          </Button>
         )}
-        {method === "transfer" && (
-          <>
-            <label className="field">
-              <span>Banco</span>
-              <input
-                required
-                value={bank}
-                onChange={(e) => setBank(e.target.value)}
-              />
-            </label>
-            <label className="field">
-              <span>Referencia</span>
-              <input
-                required
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-              />
-            </label>
-          </>
-        )}
+        <p className="cod-hint full" role="status">
+          Suma de pagos: <strong>{formatMoney(total)}</strong> · Quedaría
+          pendiente: <strong>{formatMoney(Math.max(0, left))}</strong>
+        </p>
         <ProofPicker file={proof} onChange={setProof} disabled={busy} />
         <p className="cod-hint full">
-          {method === "cash"
-            ? "El efectivo entra en el cuadre de tu caja."
-            : method === "card"
-              ? "Cuenta como tarjeta en el cuadre de tu caja."
-              : "Queda pendiente hasta que se verifique en el banco."}{" "}
-          Puedes registrar una parte ahora y otra después, incluso con métodos
-          diferentes. La cuenta sólo se cierra cuando el saldo llega a cero.
+          El efectivo entra en el cuadre de tu caja; la tarjeta y la
+          transferencia se anotan por método. La transferencia queda pendiente
+          hasta verificarla en el banco. Puedes cobrar una parte ahora y el
+          resto después: el crédito se cierra cuando el saldo llega a cero.
         </p>
         {error && (
           <p className="form-error full" role="alert">
@@ -819,7 +955,7 @@ function CodCollect({
             Cancelar
           </Button>
           <Button disabled={busy}>
-            {busy ? "Registrando…" : "Registrar cobro"}
+            {busy ? "Registrando…" : "Guardar cobro"}
           </Button>
         </div>
       </form>

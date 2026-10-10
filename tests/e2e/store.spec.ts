@@ -2656,12 +2656,12 @@ test.describe("Tienda-pantallas", () => {
     await page.getByRole("button", { name: "Caja", exact: true }).click();
     const pending = page.locator(".cod-row", { hasText: number });
     await expect(pending).toContainText("RD$ 1,000.00");
-    await pending.getByRole("button", { name: "Registrar pago" }).click();
+    await pending.getByRole("button", { name: "Registrar cobro" }).click();
     const dialog = page.getByRole("dialog", {
-      name: /Pago de crédito \/ contraentrega/,
+      name: /Registrar cobro/,
     });
-    await expect(dialog.getByLabel("Monto cobrado")).toHaveValue("1000");
-    await dialog.getByRole("button", { name: "Registrar cobro" }).click();
+    await expect(dialog.getByLabel("Monto entregado")).toHaveValue("1000");
+    await dialog.getByRole("button", { name: "Guardar cobro" }).click();
     await expect(page.locator(".cod-row", { hasText: number })).toHaveCount(0);
     await r9Retire(request, headers, [product]);
   });

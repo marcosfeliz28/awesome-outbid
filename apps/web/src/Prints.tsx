@@ -383,7 +383,14 @@ export function InvoicePrint({
       ))}
       <Row label="Cambio" value={rd(sale.change ?? 0)} />
       {Number(sale.creditBalance) > 0 && (
-        <Row label="Pendiente" value={rd(sale.creditBalance)} />
+        <>
+          <Row label="Pendiente" value={rd(sale.creditBalance)} />
+          <h3 className="tp-center credit-pending">
+            CRÉDITO · PENDIENTE DE PAGO
+          </h3>
+          <Row label="Monto pendiente" value={rd(sale.creditBalance)} strong />
+          <p className="tp-center">{NON_FISCAL_LEGEND}</p>
+        </>
       )}
       {sale.ncfType && (
         <p>Solicitud NCF {sale.ncfType} · pendiente de emisión fiscal</p>

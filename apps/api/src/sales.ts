@@ -308,6 +308,24 @@ export async function sellerShiftReceivable(
   return money(total._sum.amount ?? 0);
 }
 
+// Estado del crédito: cuando el saldo llega a cero por cobros, queda cerrado
+// con quién y cuándo (bitácora «credit_closed»).
+async function settleCredit(tx: any, actor: Actor, saleId: string) {
+  const sale = await tx.sale.findUniqueOrThrow({
+    where: { id: saleId },
+    select: { number: true, creditBalance: true, creditClosedAt: true },
+  });
+  if (d(sale.creditBalance).gt(0) || sale.creditClosedAt) return;
+  await tx.sale.update({
+    where: { id: saleId },
+    data: { creditClosedAt: new Date(), creditClosedById: actor.id },
+  });
+  await audit(tx, actor, "credit_closed", "sale", saleId, undefined, {
+    number: sale.number,
+    closedBy: actor.id,
+  });
+}
+
 // Una venta pendiente se mantiene como una sola cuenta por cobrar hasta que
 // un administrador confirma todos sus abonos.
 async function refreshReceivableAlert(
@@ -1691,6 +1709,7 @@ export class SalesController {
           data: { creditBalance: { decrement: payment.amount } },
         });
         await refreshReceivableAlert(tx, sale.id, actor.branchId);
+        await settleCredit(tx, actor, sale.id);
       }
       await tx.payment.update({ where: { id }, data: { status: "ok" } });
       await resolveTransferAlert(tx, id);
@@ -1772,7 +1791,12 @@ export class SalesController {
         const owed = d(payment.amount).lt(kept) ? d(payment.amount) : kept;
         const updated = await tx.sale.update({
           where: { id: sale.id },
-          data: { creditBalance: { increment: money(owed) } },
+          data: {
+            creditBalance: { increment: money(owed) },
+            ...(d(owed).gt(0)
+              ? { creditClosedAt: null, creditClosedById: null }
+              : {}),
+          },
         });
         saleDebt = Number(updated.creditBalance);
         const lost = d(payment.amount).minus(owed);
@@ -2430,24 +2454,50 @@ export class SalesController {
   // y registrar cómo entró el dinero.
   @Get("cod/pending")
   @Permit("*")
-  async codPending(@CurrentUser() actor: Actor) {
+  async codPending(
+    @CurrentUser() actor: Actor,
+    @Query("state") stateParam?: string,
+  ) {
+    // pending (abiertos y parciales, por defecto), closed (saldados) o all.
+    const state = ["pending", "closed", "all"].includes(stateParam ?? "")
+      ? (stateParam as "pending" | "closed" | "all")
+      : "pending";
+    const receivablePayment = {
+      some: { method: { in: ["credit", "cod"] }, entryType: "sale" },
+    };
     const sales = await this.db.sale.findMany({
       where: {
         branchId: actor.branchId,
         status: "completed",
-        creditBalance: { gt: 0 },
-        payments: {
-          some: {
-            method: { in: ["credit", "cod"] },
-            entryType: "sale",
-          },
-        },
+        payments: { ...receivablePayment },
+        ...(state === "pending"
+          ? { creditBalance: { gt: 0 } }
+          : state === "closed"
+            ? { creditBalance: { lte: 0 }, creditClosedAt: { not: null } }
+            : {
+                OR: [
+                  { creditBalance: { gt: 0 } },
+                  { creditClosedAt: { not: null } },
+                ],
+              }),
       },
       include: { payments: true },
-      orderBy: { createdAt: "asc" },
+      orderBy:
+        state === "closed" ? { creditClosedAt: "desc" } : { createdAt: "asc" },
       take: 500,
     });
-    const [customers, sellers] = await Promise.all([
+    const userIds = [
+      ...new Set(
+        sales.flatMap((s) => [
+          s.sellerId,
+          ...(s.creditClosedById ? [s.creditClosedById] : []),
+          ...s.payments.flatMap((p) =>
+            p.receivedById ? [p.receivedById] : [],
+          ),
+        ]),
+      ),
+    ];
+    const [customers, users] = await Promise.all([
       this.db.customer.findMany({
         where: {
           id: {
@@ -2457,12 +2507,15 @@ export class SalesController {
         select: { id: true, name: true, phone: true },
       }),
       this.db.user.findMany({
-        where: { id: { in: sales.map((s) => s.sellerId) } },
+        where: { id: { in: userIds } },
         select: { id: true, name: true },
       }),
     ]);
+    const nameOf = (id?: string | null) =>
+      users.find((u) => u.id === id)?.name ?? null;
     const sum = (rows: { amount: unknown }[]) =>
       money(rows.reduce((a, p) => a.plus(p.amount as any), d(0)));
+    const now = Date.now();
     return sales.flatMap((s) => {
       const collections = s.payments.filter(
         (p) => p.entryType === "installment",
@@ -2473,17 +2526,32 @@ export class SalesController {
         ),
       );
       const pending = Number(s.creditBalance);
-      if (pending <= 0) return [];
+      // Pagado = lo que ya descontó la deuda (cobros verificados). Lo que
+      // se pagó al vender (efectivo del cobro parcial) no es parte del crédito.
+      const collected = Number(
+        sum(collections.filter((p) => p.status === "ok")),
+      );
+      if (state === "pending" && pending <= 0) return [];
+      const status =
+        pending <= 0 ? "closed" : collected > 0 ? "partial" : "open";
       return [
         {
           saleId: s.id,
           number: s.number,
           createdAt: s.createdAt,
+          ageDays: Math.max(
+            0,
+            Math.floor((now - s.createdAt.getTime()) / 86400000),
+          ),
+          status,
           cashSessionId: s.cashSessionId,
           total: Number(s.total),
           codAmount: receivableAmount,
           receivableAmount,
+          collected,
           pending,
+          closedAt: s.creditClosedAt,
+          closedBy: nameOf(s.creditClosedById),
           // Transferencias del mensajero registradas que falta verificar.
           pendingVerification: sum(
             collections.filter((p) => p.status === "pending_verification"),
@@ -2492,12 +2560,13 @@ export class SalesController {
             ...paymentSummary(p),
             paymentId: p.id,
             amount: Number(p.amount),
+            receivedBy: nameOf(p.receivedById),
           })),
           customer: customerForActor(
             customers.find((c) => c.id === s.customerId) ?? null,
             actor,
           ),
-          seller: sellers.find((u) => u.id === s.sellerId) ?? null,
+          seller: users.find((u) => u.id === s.sellerId) ?? null,
           notes: s.notes,
         },
       ];
@@ -2532,93 +2601,197 @@ export class SalesController {
         if (!own) denied();
         return existing;
       }
-      await cashLock(tx, actor, data.cashSessionId);
-      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${parse(uuid, id)}::uuid FOR UPDATE`;
-      const sale = await tx.sale.findFirstOrThrow({
-        where: { id, branchId: actor.branchId, status: "completed" },
-      });
-      const receivable = !!(await tx.payment.count({
-        where: {
-          saleId: id,
-          method: { in: ["credit", "cod"] },
-          entryType: "sale",
-        },
-      }));
-      if (codOnly && !receivable)
-        bad("Esta venta no tiene crédito / contraentrega pendiente.");
-      const pending = await tx.payment.aggregate({
-        where: {
-          saleId: id,
-          entryType: "installment",
-          status: "pending_verification",
-        },
-        _sum: { amount: true },
-      });
-      if (
-        d(sale.creditBalance)
-          .minus(pending._sum.amount ?? 0)
-          .lt(data.amount)
-      )
-        bad(
-          receivable
-            ? "El cobro supera el saldo pendiente."
-            : "El abono supera el saldo pendiente.",
-        );
-      // El mensajero cobra con un terminal o enlace de pago: basta la
-      // referencia del voucher.
-      if (codOnly && data.method === "card" && !data.reference?.trim())
-        bad("Indica la referencia del voucher de la tarjeta.");
-      if (
-        !codOnly &&
-        data.method === "card" &&
-        (!data.cardLast4 || !data.approvalCode)
-      )
-        bad("Indica los últimos 4 dígitos y la aprobación de tarjeta.");
-      if (data.method === "transfer" && (!data.bank || !data.reference))
-        bad("Indica banco y referencia de transferencia.");
-      const settings = await tx.settings.findUnique({
-        where: { id: actor.branchId },
-      });
-      const { offlineUuid, ...payment } = data;
-      const row = await tx.payment.create({
-        data: {
-          ...payment,
-          saleId: id,
-          idempotencyKey: offlineUuid,
-          entryType: "installment",
-          tendered: data.amount,
-          feeAmount:
-            data.method === "card"
-              ? money(
-                  d(data.amount)
-                    .times(
-                      Number((settings?.data as any)?.cardFeePercent ?? 2.5),
-                    )
-                    .div(100),
-                )
-              : 0,
-          status: data.method === "transfer" ? "pending_verification" : "ok",
-        },
-      });
-      if (data.method !== "transfer")
-        await tx.sale.update({
-          where: { id },
-          data: { creditBalance: { decrement: data.amount } },
-        });
-      if (data.method !== "transfer")
-        await refreshReceivableAlert(tx, id, actor.branchId);
-      await audit(
-        tx,
-        actor,
-        receivable ? "receivable_collected" : "installment",
-        "sale",
-        id,
-        undefined,
-        row,
-      );
-      return row;
+      const { offlineUuid, ...line } = data;
+      return this.collectLine(tx, actor, id, line, offlineUuid, codOnly);
     });
     notify(this.db, "collection", row.id);
+    return row;
+  }
+  // Un cobro de la pantalla «Créditos pendientes»: varias líneas de pago
+  // (efectivo, tarjeta, transferencia) de una misma venta a crédito, todas o
+  // ninguna. Sólo administración. El efectivo entra a la caja ABIERTA de quien
+  // registra el cobro; sin caja sólo se aceptan tarjeta y transferencia.
+  // Idempotente por `operationId`: cada línea guarda una clave derivada, así
+  // que repetir el envío devuelve los mismos pagos y no descuenta dos veces.
+  @Post("sales/:id/credit-collections")
+  @RequireTerminal()
+  @Permit("*")
+  async creditCollection(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const data = parse(creditCollectionSchema, body);
+    const keys = data.lines.map((_, i) => lineKey(data.operationId, i));
+    const rows = await this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))::text AS locked`;
+      const existing = await tx.payment.findMany({
+        where: { idempotencyKey: { in: keys } },
+      });
+      if (existing.length) {
+        const same =
+          existing.length === keys.length &&
+          existing.every((p) => {
+            const i = keys.indexOf(p.idempotencyKey!);
+            const l = data.lines[i];
+            return (
+              p.saleId === id &&
+              l &&
+              Number(p.amount) === l.amount &&
+              p.method === l.method
+            );
+          });
+        if (!same) bad("La operación ya corresponde a otro cobro.");
+        if (existing.some((p) => p.receivedById !== actor.id)) denied();
+        return existing.sort(
+          (a, b) =>
+            keys.indexOf(a.idempotencyKey!) - keys.indexOf(b.idempotencyKey!),
+        );
+      }
+      if (!data.cashSessionId && data.lines.some((l) => l.method === "cash"))
+        bad(
+          "Para recibir efectivo necesitas tu caja abierta. Ábrela en Caja o registra solo tarjeta o transferencia.",
+        );
+      const total = data.lines.reduce((a, l) => a.plus(l.amount), d(0));
+      const out: any[] = [];
+      for (let i = 0; i < data.lines.length; i++)
+        out.push(
+          await this.collectLine(
+            tx,
+            actor,
+            id,
+            { ...data.lines[i], cashSessionId: data.cashSessionId },
+            keys[i],
+            true,
+          ),
+        );
+      await audit(tx, actor, "credit_collection", "sale", id, undefined, {
+        operationId: data.operationId,
+        total: money(total),
+        lines: out.map((p) => ({
+          paymentId: p.id,
+          method: p.method,
+          amount: Number(p.amount),
+          status: p.status,
+        })),
+      });
+      return out;
+    });
+    for (const r of rows) notify(this.db, "collection", r.id);
+    const sale = await this.db.sale.findUniqueOrThrow({
+      where: { id },
+      select: { creditBalance: true, creditClosedAt: true },
+    });
+    return {
+      payments: rows.map(paymentSummary),
+      pending: Number(sale.creditBalance),
+      closed: !!sale.creditClosedAt,
+    };
+  }
+  // Un solo cobro dentro de una transacción ya abierta (lo usan el abono
+  // individual y el cobro por líneas).
+  private async collectLine(
+    tx: any,
+    actor: Actor,
+    id: string,
+    data: Omit<
+      z.infer<typeof installmentSchema>,
+      "offlineUuid" | "cashSessionId"
+    > & {
+      cashSessionId?: string;
+    },
+    idempotencyKey: string,
+    codOnly: boolean,
+  ) {
+    if (data.cashSessionId) await cashLock(tx, actor, data.cashSessionId);
+    else if (data.method === "cash")
+      bad(
+        "Para recibir efectivo necesitas tu caja abierta. Ábrela en Caja o registra solo tarjeta o transferencia.",
+      );
+    await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${parse(uuid, id)}::uuid FOR UPDATE`;
+    const sale = await tx.sale.findFirstOrThrow({
+      where: { id, branchId: actor.branchId, status: "completed" },
+    });
+    const receivable = !!(await tx.payment.count({
+      where: {
+        saleId: id,
+        method: { in: ["credit", "cod"] },
+        entryType: "sale",
+      },
+    }));
+    if (codOnly && !receivable)
+      bad("Esta venta no tiene crédito / contraentrega pendiente.");
+    const pending = await tx.payment.aggregate({
+      where: {
+        saleId: id,
+        entryType: "installment",
+        status: "pending_verification",
+      },
+      _sum: { amount: true },
+    });
+    if (
+      d(sale.creditBalance)
+        .minus(pending._sum.amount ?? 0)
+        .lt(data.amount)
+    )
+      bad(
+        receivable
+          ? "El cobro supera el saldo pendiente."
+          : "El abono supera el saldo pendiente.",
+      );
+    // El mensajero cobra con un terminal o enlace de pago: basta la
+    // referencia del voucher.
+    if (codOnly && data.method === "card" && !data.reference?.trim())
+      bad("Indica la referencia del voucher de la tarjeta.");
+    if (
+      !codOnly &&
+      data.method === "card" &&
+      (!data.cardLast4 || !data.approvalCode)
+    )
+      bad("Indica los últimos 4 dígitos y la aprobación de tarjeta.");
+    if (data.method === "transfer" && (!data.bank || !data.reference))
+      bad("Indica banco y referencia de transferencia.");
+    const settings = await tx.settings.findUnique({
+      where: { id: actor.branchId },
+    });
+    const { cashSessionId, ...payment } = data;
+    const row = await tx.payment.create({
+      data: {
+        ...payment,
+        saleId: id,
+        cashSessionId: cashSessionId ?? null,
+        receivedById: actor.id,
+        idempotencyKey,
+        entryType: "installment",
+        tendered: data.amount,
+        feeAmount:
+          data.method === "card"
+            ? money(
+                d(data.amount)
+                  .times(Number((settings?.data as any)?.cardFeePercent ?? 2.5))
+                  .div(100),
+              )
+            : 0,
+        status: data.method === "transfer" ? "pending_verification" : "ok",
+      },
+    });
+    if (data.method !== "transfer") {
+      await tx.sale.update({
+        where: { id },
+        data: { creditBalance: { decrement: data.amount } },
+      });
+      await refreshReceivableAlert(tx, id, actor.branchId);
+      await settleCredit(tx, actor, id);
+    }
+    await audit(
+      tx,
+      actor,
+      receivable ? "receivable_collected" : "installment",
+      "sale",
+      id,
+      undefined,
+      row,
+    );
     return row;
   }
   @Get("sales/:id/receipt.pdf")
@@ -2710,7 +2883,12 @@ export class SalesController {
         "Solicitud NCF: " + sale.ncfType + " · pendiente de emisión fiscal",
       );
     if (Number(sale.creditBalance) > 0)
-      doc.text("Crédito / contraentrega pendiente: RD$ " + sale.creditBalance);
+      doc
+        .fontSize(12)
+        .text("CRÉDITO · PENDIENTE DE PAGO")
+        .text("Monto pendiente: RD$ " + sale.creditBalance)
+        .fontSize(10)
+        .text("DOCUMENTO NO FISCAL");
     if (Number(sale.discountTotal) > 0)
       doc.text(
         `Descuento: RD$ ${sale.discountTotal} · ${sale.discountReason ?? "Sin motivo"} · Autorizó: ${sale.discountApprovedName ?? "No identificado"} (${sale.discountApprovedRole ?? sale.discountRule ?? "regla no identificada"})`,
@@ -2724,6 +2902,29 @@ export class SalesController {
     doc.end();
   }
 }
+// Clave determinista (con forma de UUID) de la línea `index` de un cobro.
+function lineKey(operationId: string, index: number) {
+  const h = createHash("sha256")
+    .update(operationId + ":" + index)
+    .digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+const creditLineSchema = z.object({
+  amount: moneyAmount().transform((v) => money(v)),
+  method: z.enum(["cash", "card", "transfer"]),
+  bank: z.string().max(100).optional(),
+  reference: z.string().max(100).optional(),
+  cardLast4: z
+    .string()
+    .regex(/^\d{4}$/)
+    .optional(),
+  approvalCode: z.string().max(100).optional(),
+});
+const creditCollectionSchema = z.object({
+  operationId: uuid,
+  cashSessionId: uuid.optional(),
+  lines: z.array(creditLineSchema).min(1).max(6),
+});
 const installmentSchema = z.object({
   offlineUuid: uuid,
   cashSessionId: uuid,

@@ -262,6 +262,10 @@ model Sale {
   costTotal              Decimal      @db.Decimal(14, 2)
   creditBalance          Decimal      @default(0) @db.Decimal(14, 2)
   creditDueDate          DateTime?
+  // Cuenta por cobrar saldada (migración 202610240101_credito_cobros): cuándo
+  // y quién dejó el saldo en cero. Nulo mientras el crédito está abierto.
+  creditClosedAt         DateTime?
+  creditClosedById       String?      @db.Uuid
   ncf                    String?      @unique
   ncfType                String?
   recipientLegalId       String?
@@ -337,6 +341,9 @@ model Payment {
   feeAmount      Decimal  @default(0) @db.Decimal(14, 2)
   status         String   @default("ok")
   proofUrl       String?
+  // Quién recibió el dinero de un cobro de crédito (administrador que lo
+  // registró). Migración 202610240101_credito_cobros.
+  receivedById   String?  @db.Uuid
 
   // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
   @@index([saleId])
