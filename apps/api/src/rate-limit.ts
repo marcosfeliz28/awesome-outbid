@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isIP } from "node:net";
 import {
   CanActivate,
   ExecutionContext,
@@ -123,6 +124,29 @@ export const normalizeRequestIp = (value: unknown) => {
     .trim()
     .toLowerCase();
   return ip.startsWith("::ffff:") ? ip.slice("::ffff:".length) : ip;
+};
+
+/**
+ * Proxies cuya X-Forwarded-For acepta la API (Express `trust proxy`): sólo
+ * la red local y privada, donde está Nginx (en Render, la red privada del
+ * servicio web; en Compose, la red de Docker; en el instalador, 127.0.0.1).
+ * Una conexión desde cualquier otra dirección no puede elegir su IP con
+ * cabeceras. TRUSTED_PROXIES admite la sintaxis de Express (nombres o CIDR
+ * separados por comas) por si el proxy de un despliegue usa otra red.
+ */
+export const DEFAULT_TRUSTED_PROXIES = "loopback, linklocal, uniquelocal";
+export const trustedProxies = (value = process.env.TRUSTED_PROXIES) =>
+  value?.trim() || DEFAULT_TRUSTED_PROXIES;
+
+/**
+ * IP del cliente para límites, contadores de intentos y bitácora. Es la que
+ * Express obtiene con `trust proxy` (Nginx la fija a partir del borde, ver
+ * deploy/render/nginx.conf.template). Nunca devuelve texto arbitrario: lo que
+ * no es una IP se trata como una única dirección «desconocida».
+ */
+export const clientIp = (req: { ip?: unknown }) => {
+  const ip = normalizeRequestIp(req.ip);
+  return isIP(ip) ? ip : "desconocida";
 };
 
 const requestPath = (req: any) => {

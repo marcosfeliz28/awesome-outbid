@@ -727,6 +727,63 @@ describe("Auditorías 06 y 03 · comportamiento en PostgreSQL real", () => {
     });
   }, 60_000);
 
+  // Integración wave2: la purga de retención (fix-datos, por updatedAt) y la
+  // de SecurityMaintenance (fix-login, por windowStartedAt) conviven: las dos
+  // respetan el mismo candado consultivo de verifyAttempt y el bloqueo
+  // vigente, y cada una borra lo suyo sin pisar a la otra.
+  it("AuthAttempt: retención y SecurityMaintenance comparten el candado consultivo", async () => {
+    const { purgeExpiredData } = await import("../apps/api/src/retention");
+    const { SecurityMaintenance } = await import("../apps/api/src/security");
+    await sql.query(`DELETE FROM "AuthAttempt"`);
+    await sql.query(
+      `INSERT INTO "AuthAttempt"(key, "failedAttempts", "lockedUntil", "windowStartedAt") VALUES
+         ('login:missing:en-uso:10.0.1.1', 2, NULL, timezone('UTC', now()) - interval '2 days'),
+         ('login:missing:racha-vieja:10.0.1.2', 2, NULL, timezone('UTC', now()) - interval '2 days'),
+         ('login:missing:sin-fallos:10.0.1.3', 0, NULL, NULL),
+         ('login:missing:bloqueado:10.0.1.4', 9, timezone('UTC', now()) + interval '1 hour', timezone('UTC', now()) - interval '2 days'),
+         ('login:user-9:0:10.0.1.5', 1, NULL, timezone('UTC', now()) - interval '1 hour')`,
+    );
+    await sql.query(
+      `ALTER TABLE "AuthAttempt" DISABLE TRIGGER auth_attempt_touch;
+       UPDATE "AuthAttempt" SET "updatedAt" = timezone('UTC', now()) - interval '3 days'
+        WHERE key IN ('login:missing:en-uso:10.0.1.1', 'login:missing:sin-fallos:10.0.1.3', 'login:missing:bloqueado:10.0.1.4');
+       ALTER TABLE "AuthAttempt" ENABLE TRIGGER auth_attempt_touch;`,
+    );
+    const keys = async () =>
+      (await sql.query(`SELECT key FROM "AuthAttempt" ORDER BY 1`)).rows.map(
+        (r: any) => r.key,
+      );
+    // Un intento de inicio de sesión en curso retiene el candado de su clave.
+    const holder = server.client("nexora_datos_app");
+    await holder.connect();
+    try {
+      await holder.query("BEGIN");
+      await holder.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [
+        "login:missing:en-uso:10.0.1.1",
+      ]);
+      // SecurityMaintenance: la racha vieja (windowStartedAt de hace 2 días).
+      await new SecurityMaintenance(prisma).run();
+      // Retención: la fila sin fallos con updatedAt viejo (windowStartedAt nulo).
+      await purgeExpiredData(prisma);
+      expect(await keys()).toEqual([
+        "login:missing:bloqueado:10.0.1.4",
+        "login:missing:en-uso:10.0.1.1",
+        "login:user-9:0:10.0.1.5",
+      ]);
+    } finally {
+      await holder.query("COMMIT").catch(() => undefined);
+      await holder.end();
+    }
+    // Liberado el candado, cualquiera de las dos la purga; el bloqueo vigente
+    // y la racha reciente siguen.
+    await purgeExpiredData(prisma);
+    await new SecurityMaintenance(prisma).run();
+    expect(await keys()).toEqual([
+      "login:missing:bloqueado:10.0.1.4",
+      "login:user-9:0:10.0.1.5",
+    ]);
+  }, 60_000);
+
   it("03-A2: la anonimización borra fotos, textos libres, copias en bitácora y avisos de Telegram", async () => {
     const { AdminController } = await import("../apps/api/src/admin");
     const actor = {

@@ -11,7 +11,6 @@ import {
 } from "@nestjs/common";
 import type { Response } from "express";
 import { compare } from "bcryptjs";
-import { createHash, timingSafeEqual } from "node:crypto";
 import { can, z } from "@fitstore/shared";
 import {
   Actor,
@@ -25,20 +24,16 @@ import {
   parse,
   uuid,
 } from "./common";
-import { verifyPinAttempt } from "./security";
+import {
+  hashTerminalSecret as hashSecret,
+  sameTerminalSecret as sameSecret,
+  verifyPinAttempt,
+} from "./security";
 import {
   ACTIVITY_WRITE_INTERVAL_MS,
   TERMINAL_ONLINE_MS,
   sessionActivityGraceMs,
 } from "./session-activity";
-
-const hashSecret = (secret: string) =>
-  createHash("sha256").update(secret).digest("hex");
-const sameSecret = (secret: string, stored: string) => {
-  const a = Buffer.from(hashSecret(secret), "hex"),
-    b = Buffer.from(stored, "hex");
-  return a.length === b.length && timingSafeEqual(a, b);
-};
 const terminalStatus = (t: {
   revokedAt: Date | null;
   approvedAt: Date | null;
@@ -290,6 +285,7 @@ export class RealtimeController {
           if (await compare(data.managerPin, m.pinHash)) return m.id;
         return null;
       },
+      { pin: data.managerPin, actor },
     );
     return this.approveTerminal(terminalId, actor, managerId, "pin");
   }

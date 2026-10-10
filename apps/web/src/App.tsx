@@ -1,4 +1,9 @@
-import { DeviceGate, useRealtime, registerTerminal } from "./realtime";
+import {
+  DeviceGate,
+  useRealtime,
+  registerTerminal,
+  storedTerminalCredentials,
+} from "./realtime";
 import { Merchandise } from "./Merchandise";
 import { PasswordChangeFields } from "./PasswordChangeFields";
 import {
@@ -297,7 +302,12 @@ function Login() {
             setError("");
             try {
               if (!changeRequired) {
-                const data = await post("/auth/login", { login, password });
+                const terminal = storedTerminalCredentials();
+                const data = await post("/auth/login", {
+                  login,
+                  password,
+                  ...(terminal ? { terminal } : {}),
+                });
                 if (data.requiresPasswordChange) {
                   setChangeRequired(true);
                   setError("");
@@ -305,11 +315,13 @@ function Login() {
                 }
                 await saveSession(data.user, data.accessToken);
               } else {
+                const terminal = storedTerminalCredentials();
                 const data = await post("/auth/change-password", {
                   login,
                   currentPassword: password,
                   newPassword,
                   confirmPassword,
+                  ...(terminal ? { terminal } : {}),
                 });
                 await saveSession(data.user, data.accessToken);
               }
@@ -1104,7 +1116,7 @@ function Shell() {
             </select>
           </label>
           <label className="field">
-            <span>PIN de 4–6 dígitos</span>
+            <span>PIN</span>
             <input
               type="password"
               inputMode="numeric"

@@ -23,6 +23,7 @@ import {
   ACTIVITY_WRITE_INTERVAL_MS,
   sessionActivityGraceMs,
 } from "./session-activity";
+import { clientIp } from "./rate-limit";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -43,6 +44,9 @@ export type Actor = {
   sessionId?: string;
   terminalId?: string;
   terminalApproved?: boolean;
+  // IP del cliente según el proxy de confianza (clientIp); sólo para la
+  // bitácora (AuditLog.ip) y los contadores de intentos.
+  ip?: string;
   name: string;
   username?: string | null;
   email: string;
@@ -317,6 +321,7 @@ export const audit = (
     data: {
       userId: actor.id,
       terminalId: actor.terminalId,
+      ip: actor.ip,
       action,
       entity,
       entityId,
@@ -679,6 +684,7 @@ export class AuthGuard implements CanActivate {
         terminalApproved = !!terminal.approvedAt && !!terminal.secretHash;
       }
       req.actor = {
+        ip: clientIp(req),
         sessionId: payload.sid,
         terminalId: session?.terminalId ?? undefined,
         terminalApproved,

@@ -624,6 +624,7 @@ export class CashController {
                 return manager.id;
             return null;
           },
+          { pin: managerPin, actor },
         );
       }
       shortfall = {
@@ -752,6 +753,7 @@ export class CashController {
             if (await compare(managerPin, manager.pinHash)) return manager.id;
           return null;
         },
+        { pin: managerPin, actor },
       );
     }
     return this.db.$transaction(async (tx) => {
@@ -836,6 +838,7 @@ export class CashController {
               return manager.id;
           return null;
         },
+        { pin: data.managerPin, actor },
       );
     }
     return this.db.$transaction(async (tx) => {

@@ -3584,7 +3584,7 @@ export function Configuration() {
             },
             {
               key: "pin",
-              label: "PIN de 4–6 dígitos",
+              label: "PIN de 6 dígitos",
               type: "password",
               required: true,
             },
@@ -3613,10 +3613,22 @@ export function Configuration() {
               label: "Usuario para entrar",
               required: true,
             },
+            {
+              key: "pin",
+              label: "PIN nuevo de 6 dígitos (opcional)",
+              type: "password",
+              help: "Déjalo vacío para conservar el PIN actual. Los PIN antiguos de 4 o 5 dígitos siguen sirviendo, pero conviene cambiarlos.",
+            },
           ]}
           initial={{ name: userEdit.name, username: userEdit.username || "" }}
           onClose={() => setUserEdit(null)}
-          onSubmit={(data) => mutate("/users/" + userEdit.id, data, "PATCH")}
+          onSubmit={({ pin, ...data }) =>
+            mutate(
+              "/users/" + userEdit.id,
+              pin ? { ...data, pin } : data,
+              "PATCH",
+            )
+          }
         />
       )}
       {passwordReset && (

@@ -426,14 +426,19 @@ export class SalesController {
       where: { active: true, branchId: actor.branchId },
       include: { role: true },
     });
-    return verifyPinAttempt(this.db, "approval:" + actor.id, async () => {
-      for (const manager of managers.filter((m) =>
-        can(m.role.permissions, "sale:manage"),
-      ))
-        if (await compare(input.managerPin!, manager.pinHash))
-          return manager.id;
-      return null;
-    });
+    return verifyPinAttempt(
+      this.db,
+      "approval:" + actor.id,
+      async () => {
+        for (const manager of managers.filter((m) =>
+          can(m.role.permissions, "sale:manage"),
+        ))
+          if (await compare(input.managerPin!, manager.pinHash))
+            return manager.id;
+        return null;
+      },
+      { pin: input.managerPin, actor },
+    );
   }
   async complete(actor: Actor, input: SaleInput, offline = false) {
     const requestsDiscount =

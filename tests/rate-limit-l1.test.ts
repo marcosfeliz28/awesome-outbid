@@ -7,9 +7,12 @@ import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import {
   AuthenticatedRateLimitGuard,
+  DEFAULT_TRUSTED_PROXIES,
   REQUEST_RATE_LIMITS,
   RequestRateLimitService,
   ValidatedRateLimitStore,
+  clientIp,
+  trustedProxies,
 } from "../apps/api/src/rate-limit";
 import { AuthController } from "../apps/api/src/auth";
 import { Database } from "../apps/api/src/common";
@@ -488,4 +491,51 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
       await app.close();
     }
   }, 60_000);
+});
+
+// S-01/S-02/S-04 (auditoría de seguridad 2026-10-10): la API sólo cree la
+// X-Forwarded-For de la red local o privada (Nginx) y nunca usa como IP un
+// texto arbitrario.
+describe("IP del cliente detrás del proxy de confianza", () => {
+  it("main.ts confía sólo en los proxies de trustedProxies, no en un número de saltos", () => {
+    const main = readFileSync("apps/api/src/main.ts", "utf8");
+    expect(main).toContain('set("trust proxy", trustedProxies())');
+    expect(main).not.toMatch(/set\("trust proxy", \d+\)/);
+  });
+  it("Express acepta X-Forwarded-For sólo desde loopback y redes privadas", async () => {
+    const { default: express } = await import("express");
+    const app = express();
+    app.set("trust proxy", trustedProxies(""));
+    app.get("/ip", (req, res) => {
+      res.json({ ip: clientIp(req) });
+    });
+    // supertest conecta desde 127.0.0.1: Nginx en la misma máquina.
+    const local = await request(app)
+      .get("/ip")
+      .set("X-Forwarded-For", "198.51.100.7");
+    expect(local.body.ip).toBe("198.51.100.7");
+    const trust = app.get("trust proxy fn");
+    for (const peer of ["127.0.0.1", "10.12.0.5", "172.20.1.1", "192.168.1.9"])
+      expect(trust(peer, 0)).toBe(true);
+    for (const peer of ["203.0.113.5", "100.64.1.1", "8.8.8.8"])
+      expect(trust(peer, 0)).toBe(false);
+    // Desde una red pública (sin proxy de confianza) la cabecera no vale.
+    const strict = express();
+    strict.set("trust proxy", trustedProxies("10.0.0.0/8"));
+    strict.get("/ip", (req, res) => {
+      res.json({ ip: clientIp(req) });
+    });
+    const direct = await request(strict)
+      .get("/ip")
+      .set("X-Forwarded-For", "198.51.100.7");
+    expect(direct.body.ip).toBe("127.0.0.1");
+  });
+  it("clientIp normaliza IPv4 mapeadas y descarta lo que no es una IP", () => {
+    expect(clientIp({ ip: "::ffff:198.51.100.7" })).toBe("198.51.100.7");
+    expect(clientIp({ ip: "2001:DB8::1" })).toBe("2001:db8::1");
+    expect(clientIp({ ip: "198.51.100.7, 10.0.0.1" })).toBe("desconocida");
+    expect(clientIp({ ip: undefined })).toBe("desconocida");
+    expect(trustedProxies(undefined)).toBe(DEFAULT_TRUSTED_PROXIES);
+    expect(trustedProxies("  10.0.0.0/8 ")).toBe("10.0.0.0/8");
+  });
 });

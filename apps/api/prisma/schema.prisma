@@ -639,12 +639,15 @@ model Counter {
 }
 
 model AuthAttempt {
-  key            String    @id
-  failedAttempts Int       @default(0)
-  lockedUntil    DateTime?
+  key             String    @id
+  failedAttempts  Int       @default(0)
+  lockedUntil     DateTime?
+  // Primer fallo de la racha (o inicio de la ventana de una hora de los cupos
+  // por cuenta y por PIN), 202610200201_auth_attempt_window.
+  windowStartedAt DateTime?
   // Último intento (disparador auth_attempt_touch, 202610210003): permite
   // purgar las filas viejas (retention.ts). La clave lleva la IP.
-  updatedAt      DateTime  @default(now())
+  updatedAt       DateTime  @default(now())
 }
 
 model AuthSession {
