@@ -28,6 +28,14 @@ El CI del SHA final y la integración local final se registran en PR #2 después
 
 ## Revisión de ramas recibidas
 
+### Actualización posterior al primer dictamen
+
+El cuadro de abajo conserva el dictamen de los SHA originales, no el estado vigente. Claude corrigió ambos P1: dinero `028bcd2` y web `db4161c`, revisados con reproducción real antes/después. Dinero dejó de escribir el movimiento en caja ajena; web impide guardar el borrador vendido incluso si el callback cancelado llega a ejecutarse. Sus tres trabajos de CI completaron en verde.
+
+Claude publicó la combinación `92853bb31870e9769cab13f1d22ac1fcf68d146d`. Una integración local independiente produjo el mismo árbol; no se sobrescribió su rama. GitHub run `38070042388` completó los tres trabajos en verde. Verificación local: `pnpm check` 541 aprobadas y 9 omisiones existentes; 41 migraciones sobre PostgreSQL 18.6; integración en una sola ejecución 293 aprobadas y 1 fallo, sin reintentos. El fallo está en `tests/auth-lockout.test.ts:621`: esperaba 429 y recibió 400. El diagnóstico detectó una ventana compartida de 60 segundos que podía caducar mientras la prueba esperaba el barrido. Sigue abierto hasta validar una fixture aislada sin relajar las respuestas exigidas ni cambiar límites de producción.
+
+Entrega propia `078be28eedf5b5854760f91da9d32464ccf65e61`: integración local 276/276 y CI run `38069100501` con los tres trabajos en verde. El resultado positivo elevado de preservación de respaldos B10 también pasó en Windows CI. El merge posterior `7dc49ef` incorporó `origin/nexora-cloud@1efe40f` y reconcilió los nuevos plazos técnicos de privacidad; esta nueva base requiere validación propia antes de otro push.
+
 | Rama / SHA revisado | Evidencia | Estado |
 |---|---|---|
 | datos / `7ffcbf3` | check 500 + focales 7; CI attempt 2 completo verde | Sin hallazgo nuevo concreto. Attempt 1 tuvo fallo de stock en cuatro-cajas; rerun de otro actor registrado |
@@ -37,11 +45,11 @@ El CI del SHA final y la integración local final se registran en PR #2 después
 
 WEB: `apps/web/src/cartDraft.ts:87–95,197–202`. Guardado pendiente no cancelado ni protegido por `sealed`; reproducción con módulo real y dobles de temporizador/almacenamiento muestra borrador vendido después de descarte, sin UUID. DINERO: `apps/api/src/offline-sale-review.ts:170–175,204–214` y `sales.ts:1281`. API/PG real aislado confirma movimiento en caja ajena tras sincronización rechazada. Detalles publicados en PR #2; no se usó producción.
 
-**No integrar las cuatro ramas** con estos defectos. El relevo §6 exige autorización de la dueña para corregir en ramas Claude; no se han modificado. No se creó ni empujó `claude/wave3`, ni se empujó a `nexora-cloud`.
+En ese primer dictamen se rechazó integrar las cuatro ramas con los dos P1. La actualización anterior documenta sus correcciones posteriores y la combinación publicada por Claude. ChatGPT no empujó a `nexora-cloud` ni desplegó.
 
 ## Pendientes explícitos
 
-- Correcciones y regresiones reales de los dos P1 antes de integrar wave3; luego CI completo del SHA integrado.
+- Corregir y verificar la fixture N-02 que falló en la integración combinada; no usar un CI verde para ocultar el fallo local.
 - Capturas nuevas del manual: dependen de mezclar la caja web corregida (3k.5). No sustituirlas por imágenes de una versión anterior.
 - Windows-Smoke limpio por la dueña: instalación/actualización/recuperación con servicios y elevación reales. CI y pruebas locales no certifican ese equipo ni hardware.
 - Completar/revisar datos legales, apertura en Excel real y conectar Drive mediante sus cuentas: sin pedir claves por chat.
