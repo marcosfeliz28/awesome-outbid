@@ -1241,6 +1241,21 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
     .filter((file) => /\.ya?ml$/.test(file))
     .map((file) => `.github/workflows/${file}`);
 
+  // N5 (auditoría 04 v2): QUERY_CANCELED (statement_timeout) no lo atrapa
+  // `EXCEPTION WHEN OTHERS` y el plazo corre sobre todo el DO: las migraciones
+  // nuevas fallan en voz alta en vez de prometer «nunca aborta».
+  it("las migraciones nuevas no ocultan errores con EXCEPTION WHEN OTHERS", () => {
+    const dir = resolve(root, "apps/api/prisma/migrations");
+    const fresh = readdirSync(dir).filter(
+      (name) => /^\d{12}_/.test(name) && name > "202610220101",
+    );
+    for (const name of fresh)
+      expect(
+        readFileSync(resolve(dir, name, "migration.sql"), "utf8"),
+        name,
+      ).not.toMatch(/EXCEPTION\s+WHEN\s+OTHERS/i);
+  });
+
   // M10: una etiqueta móvil (@v4) puede reescribirse; un SHA, no.
   it("fija cada acción por SHA y limita el token a lectura", () => {
     expect(workflows.length).toBeGreaterThan(0);

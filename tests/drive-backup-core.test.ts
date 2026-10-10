@@ -577,18 +577,29 @@ describe("Configuración y mensajes sin secretos", () => {
 });
 
 describe("Despliegue del respaldo", () => {
-  it("la imagen de la API trae pg_dump 17 del repositorio PGDG con la clave fijada", () => {
+  it("la imagen de la API copia pg_dump 17 de la imagen oficial fijada por suma (N6)", () => {
     const docker = readFileSync("deploy/render/Dockerfile.api", "utf8");
+    // Sin descarga en cada construcción desde postgresql.org / apt.postgresql.org.
+    const instructions = docker
+      .split("\n")
+      .filter((line) => !line.trimStart().startsWith("#"))
+      .join("\n");
+    expect(instructions).not.toMatch(
+      /apt\.postgresql\.org|postgresql\.org\/media/,
+    );
+    expect(instructions).not.toContain("apt-get download postgresql-client");
+    // Etapa con la imagen de PostgreSQL 17 sobre el mismo Debian que Node,
+    // por suma, no por etiqueta.
+    expect(docker).toMatch(
+      /^FROM postgres:17\.\d+-bookworm@sha256:[0-9a-f]{64} AS pgclient$/m,
+    );
     const runtime = docker.slice(docker.indexOf("AS runtime"));
-    expect(runtime).toMatch(
-      /ADD --checksum=sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76 --chmod=644 \\\n\s+https:\/\/www\.postgresql\.org\/media\/keys\/ACCC4CF8\.asc/,
-    );
-    expect(runtime).toContain(
-      "signed-by=/usr/share/keyrings/pgdg.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main",
-    );
-    expect(runtime).toContain("apt-get download postgresql-client-17");
+    expect(runtime).toContain("--mount=from=pgclient,source=/usr/lib");
+    expect(runtime).toContain("/pg/postgresql/17/bin/pg_dump");
+    expect(runtime).toContain("/pg/postgresql/17/bin/pg_restore");
+    expect(runtime).toContain("libpq.so.5");
     expect(runtime).toContain("/usr/lib/postgresql/17/bin/pg_dump --version");
-    expect(runtime).toContain("! ldd /usr/lib/postgresql/17/bin/pg_dump");
+    expect(runtime).toContain("ldd /usr/lib/postgresql/17/bin/pg_dump");
     expect(runtime).toContain(
       "ENV PG_DUMP_BIN=/usr/lib/postgresql/17/bin/pg_dump",
     );
