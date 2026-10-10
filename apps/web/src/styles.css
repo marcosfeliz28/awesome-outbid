@@ -5535,3 +5535,198 @@ td strong {
   min-height: 32px;
   justify-self: start;
 }
+
+/* W5 · Punto de venta fluido a cualquier ancho desde 901 px.
+   La dueña usa un monitor con escala de Windows de 125 a 150 %, es decir una
+   ventana CSS de ~1280×720 o 1366×768. Antes: (1) .pos-content tenía
+   overflow:hidden, que convierte al contenedor en el ancestro de desplazamiento
+   del carrito «sticky»: el carrito se iba de la pantalla al bajar por el
+   catálogo y «Cobrar» quedaba fuera de vista; además un contenedor hidden se
+   puede desplazar solo (scrollIntoView, foco) y deja la página «cortada» por la
+   izquierda; (2) tarjetas de 150 px de imagen y letra de 8–10 px, sólo 1,5
+   filas a la vista; (3) columna del carrito fija en 390 px y barra lateral fija.
+   Ahora: overflow:clip (recorta sin crear desplazamiento), rejilla fluida,
+   carrito con clamp(), tipografías con clamp() y barra lateral que se encoge. */
+:root {
+  --sidebar-w: clamp(185px, 15.5vw, 225px);
+  --pos-cart-w: clamp(300px, 29vw, 400px);
+}
+.main-shell,
+.main-content {
+  min-width: 0;
+}
+@media (min-width: 901px) {
+  .sidebar {
+    width: var(--sidebar-w);
+  }
+  .main-shell {
+    margin-left: var(--sidebar-w);
+    width: calc(100% - var(--sidebar-w));
+  }
+  .main-content.pos-content {
+    padding: 16px 0 0 clamp(14px, 1.6vw, 24px);
+    overflow: clip;
+    max-width: 100%;
+  }
+  .pos-layout {
+    grid-template-columns: minmax(0, 1fr) var(--pos-cart-w);
+    gap: clamp(12px, 1.4vw, 20px);
+  }
+  .cart-panel {
+    width: 100%;
+    min-width: 0;
+    margin-top: -16px;
+    top: 0;
+    height: calc(100vh - 77px);
+    height: calc(100dvh - 77px);
+    min-height: 0;
+  }
+  .pos-topbar {
+    gap: clamp(8px, 1vw, 16px);
+    min-width: 0;
+  }
+  .pos-topbar h1 {
+    font-size: clamp(17px, 1.5vw, 21px);
+  }
+  .pos-topbar .pos-search {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+  .pos-topbar .heading-actions .button {
+    font-size: clamp(12px, 0.95vw, 14px);
+  }
+  .category-tabs button {
+    font-size: clamp(11px, 0.9vw, 13px);
+  }
+  .catalog-caption {
+    font-size: clamp(11px, 0.85vw, 12px);
+    margin-bottom: 12px;
+  }
+  .product-grid {
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(min(100%, clamp(138px, 11.5vw, 178px)), 1fr)
+    );
+    gap: clamp(10px, 1vw, 14px);
+  }
+  .product-image {
+    height: auto;
+    aspect-ratio: 4 / 3;
+    padding: 8px;
+  }
+  .product-image > .badge {
+    font-size: 10px;
+    top: 6px;
+    left: 6px;
+  }
+  .product-info {
+    padding: 8px 10px 10px;
+  }
+  .product-category {
+    font-size: 10px;
+  }
+  .product-info h3 {
+    font-size: clamp(12px, 0.95vw, 14px);
+    margin: 4px 0 2px;
+  }
+  .product-info p {
+    font-size: 11px;
+    margin: 0 0 6px;
+  }
+  .product-bottom {
+    flex-wrap: wrap;
+    gap: 0 8px;
+  }
+  .product-bottom strong {
+    font-size: clamp(13px, 1vw, 15px);
+    white-space: nowrap;
+  }
+  .product-bottom span {
+    font-size: 10px;
+  }
+  .cart-heading h2 {
+    font-size: clamp(16px, 1.3vw, 18px);
+  }
+  .cart-heading > div > span,
+  .cart-heading .badge {
+    font-size: 11px;
+  }
+  .customer-selector strong {
+    font-size: 12px;
+  }
+  .customer-selector small {
+    font-size: 11px;
+  }
+  .cart-item-detail strong,
+  .cart-line-total strong {
+    font-size: 12px;
+  }
+  .cart-item-detail small,
+  .quantity-control,
+  .line-discount,
+  .line-discount input {
+    font-size: 11px;
+  }
+  .cart-summary > div:not(.cart-bottom-actions),
+  .cart-summary > div strong,
+  .discount-input,
+  .discount-input input {
+    font-size: 12px;
+  }
+  .discount-input input {
+    width: 3.6em;
+    min-height: 28px;
+  }
+  .discount-input small {
+    font-size: 11px;
+  }
+  .cart-summary > .cart-total span {
+    font-size: 13px;
+  }
+  .cart-summary > .cart-total strong {
+    font-size: clamp(26px, 2.2vw, 32px);
+  }
+  .charge-button {
+    font-size: 15px;
+  }
+  .cart-bottom-actions button,
+  .cart-security,
+  .open-cash-link {
+    font-size: 11px;
+  }
+}
+/* Poca altura (monitores 16:9 con escala 125–150 %): el cobro sin desplazarse. */
+@media (min-width: 901px) and (max-height: 800px) {
+  .cart-heading {
+    padding: 8px 16px;
+  }
+  .customer-selector {
+    margin: 6px 16px 2px;
+    padding: 4px 10px !important;
+  }
+  .wholesale-toggle {
+    margin: 0 16px 2px;
+  }
+  .cart-items {
+    padding: 0 16px;
+  }
+  .cart-summary {
+    padding: 6px 16px 6px;
+  }
+  .cart-summary > div:not(.cart-bottom-actions) {
+    margin-bottom: 2px;
+  }
+  .cart-summary > .cart-total {
+    margin: 4px 0 6px !important;
+    padding-top: 4px;
+  }
+  .cart-summary > .cart-total strong {
+    font-size: 26px;
+  }
+  .charge-button {
+    min-height: 46px;
+  }
+  .cart-security {
+    display: none;
+  }
+}
