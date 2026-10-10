@@ -456,3 +456,50 @@ describe("Render · proxy público", () => {
     });
   });
 });
+
+describe("Render · compresión de la web", () => {
+  it("comprime texto, JS, CSS, SVG y JSON de la API; no imágenes ni el flujo de eventos", () => {
+    const nginx = read("deploy/render/nginx.conf.template");
+    const server = nginx.slice(nginx.indexOf("server {"));
+    const before = server.slice(0, server.indexOf("location "));
+    // A nivel de servidor, antes de las ubicaciones: lo heredan todas.
+    expect(before).toMatch(/^\s*gzip on;$/m);
+    expect(before).toMatch(/^\s*gzip_vary on;$/m);
+    expect(before).toMatch(/^\s*gzip_proxied any;$/m);
+    expect(before).toMatch(/^\s*gzip_min_length \d+;$/m);
+    const types = before.match(/^\s*gzip_types ([^;]+);$/m)?.[1].split(/\s+/);
+    expect(types).toEqual(
+      expect.arrayContaining([
+        "text/css",
+        "application/javascript",
+        "text/javascript",
+        "application/json",
+        "application/manifest+json",
+        "image/svg+xml",
+      ]),
+    );
+    for (const compressed of [
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+      "font/woff2",
+      "text/event-stream",
+    ])
+      expect(types).not.toContain(compressed);
+    // Comprimir el flujo SSE retendría los eventos en el búfer de gzip.
+    const events = nginx.slice(
+      nginx.indexOf("location = /api/events {"),
+      nginx.indexOf("location ^~ /api/ {"),
+    );
+    expect(events).toContain("gzip off;");
+    // La compresión no sustituye a las cabeceras de seguridad ni a la caché.
+    expect(
+      nginx.match(
+        /include \/etc\/nginx\/snippets\/nexora-security-headers.conf;/g,
+      )?.length,
+    ).toBeGreaterThanOrEqual(10);
+    expect(nginx).toContain(
+      'add_header Cache-Control "public, max-age=31536000, immutable";',
+    );
+  });
+});

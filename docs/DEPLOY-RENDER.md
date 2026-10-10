@@ -190,6 +190,15 @@ Swagger en producción (`ENABLE_SWAGGER=true`), su interfaz queda sujeta a ella.
   `index.html` (SPA). Una ruta de la SPA no debe terminar en `.algo`. Un
   directorio como `/products/` ya no devuelve 403 sino la SPA.
 - `server_tokens off` oculta la versión de Nginx.
+- Compresión `gzip` (nivel 5, desde 1 KB, `Vary: Accept-Encoding`) para HTML,
+  texto, CSS, JS, SVG, manifiesto y JSON de la API (también lo que viene del
+  proxy): el JS principal baja de ~1 MB a ~320 KB y el catálogo de la API a una
+  décima parte. Las imágenes y fuentes ya comprimidas no se tocan y
+  `/api/events` (SSE) lleva `gzip off`. No cambia las cabeceras de seguridad ni
+  `Cache-Control`; el `ETag` pasa a débil (`W/`), que sigue sirviendo para
+  revalidar. La API autentica con `Authorization: Bearer` y la cookie de
+  renovación es `SameSite=Strict`, así que comprimir respuestas no abre un
+  oráculo de tamaño tipo BREACH desde otro sitio.
 
 ## Salud y preparación
 
