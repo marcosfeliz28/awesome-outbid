@@ -103,11 +103,19 @@ afterAll(async () => {
   await db.$executeRawUnsafe(
     `DELETE FROM "Product" WHERE sku LIKE '${PREFIX}-%'`,
   );
+  // Las pruebas de navegador que siguen usan esta misma base: sin esto las
+  // estadísticas conservan 17 000 variantes y 50 000 avisos que ya no existen
+  // y los planes (y la primera pantalla) se vuelven lentos.
+  for (const table of ["Alert", "Variant", "Product"])
+    await db.$executeRawUnsafe(`VACUUM (ANALYZE) "${table}"`);
   await db.$disconnect();
 }, 120_000);
 
 describe("F7 · GET /alerts con 50 000 filas y 17 000 variantes", () => {
   it("la primera lectura evalúa sin superar el límite de parámetros y nombra la variante", async () => {
+    // Los datos se insertaron por SQL (sin pasar por la API): se pide una
+    // evaluación nueva en vez de depender de la caché de 60 s.
+    await ok("/alerts/evaluate", admin, {});
     const first = await ok("/alerts?status=new&limit=500", admin);
     expect(first.body).toHaveLength(500);
     const stock = (
