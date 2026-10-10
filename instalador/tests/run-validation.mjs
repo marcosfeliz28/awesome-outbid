@@ -26,6 +26,7 @@ export const powershellTests = [
   "Recovery-Restart-Previous",
   "Recovery-Temporary-Acl",
   "Recovery-Physical-Directory",
+  "Recovery-Process-Directory",
   "Recovery-Missing-Installation",
   "Recovery-Schema-Contract",
   "Recovery-Acl-Interruption",
