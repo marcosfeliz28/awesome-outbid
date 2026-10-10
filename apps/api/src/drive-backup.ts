@@ -189,7 +189,9 @@ async function googleFetch(
   try {
     return await fetch(url, {
       ...init,
-      redirect: "error",
+      // Sin seguir redirecciones; «manual» además deja ver el 308 de la
+      // subida reanudable (Google lo usa para «sigue enviando»).
+      redirect: "manual",
       signal: timeoutSignal(timeoutMs, signal),
     });
   } catch (error: any) {
@@ -407,16 +409,14 @@ class Drive {
               session.toString(),
               {
                 method: "PUT",
-                headers: this.headers({
-                  "Content-Range": `bytes */${size}`,
-                  "Content-Length": "0",
-                }),
+                headers: this.headers({ "Content-Range": `bytes */${size}` }),
               },
               "Subida",
               this.signal,
             );
             if (response.status === 308) {
               offset = nextOffset(response);
+              await response.body?.cancel().catch(() => {});
               response = null;
             }
           }
@@ -438,7 +438,6 @@ class Drive {
               {
                 method: "PUT",
                 headers: this.headers({
-                  "Content-Length": String(end - offset),
                   "Content-Range": `bytes ${offset}-${end - 1}/${size}`,
                 }),
                 body: chunk.subarray(0, end - offset),
@@ -464,6 +463,7 @@ class Drive {
         }
         if (response?.status === 308) {
           offset = nextOffset(response);
+          await response.body?.cancel().catch(() => {});
           failures = 0;
           continue;
         }
@@ -747,7 +747,7 @@ export class DriveBackupService {
         ? await this.db.$queryRaw<{ id: string }[]>`
             UPDATE "DriveBackup"
             SET "lockId" = ${lockId},
-                "lockedUntil" = timezone('UTC', now()) + make_interval(mins => ${LEASE_MINUTES}),
+                "lockedUntil" = timezone('UTC', now()) + make_interval(mins => ${LEASE_MINUTES}::int),
                 "runningSince" = timezone('UTC', now()),
                 "dayAttempts" = CASE WHEN "dayKey" = ${today} THEN "dayAttempts" + 1 ELSE 1 END,
                 "dayKey" = ${today},
@@ -758,7 +758,7 @@ export class DriveBackupService {
         : await this.db.$queryRaw<{ id: string }[]>`
             UPDATE "DriveBackup"
             SET "lockId" = ${lockId},
-                "lockedUntil" = timezone('UTC', now()) + make_interval(mins => ${LEASE_MINUTES}),
+                "lockedUntil" = timezone('UTC', now()) + make_interval(mins => ${LEASE_MINUTES}::int),
                 "runningSince" = timezone('UTC', now()),
                 "updatedAt" = timezone('UTC', now())
             WHERE id = 'main'
