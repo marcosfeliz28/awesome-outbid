@@ -41,7 +41,7 @@ function Assert-BackupIntegrity {
 
 function Close-FitStoreDatabaseConnections {
   param($Paths, $Secrets, [string]$Database = "fitstore")
-  Invoke-FitStorePg `
+  Invoke-FitStorePgSql `
     -Tool (Join-Path $Paths.PgBin "psql.exe") `
     -Password ([string]$Secrets.postgresPassword) `
     -Arguments @(
@@ -50,8 +50,9 @@ function Close-FitStoreDatabaseConnections {
       "--username=postgres",
       "--dbname=postgres",
       "--no-password",
-      "--command=SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$Database' AND pid <> pg_backend_pid();"
+      "--set=ON_ERROR_STOP=1"
     ) `
+    -Sql "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$Database' AND pid <> pg_backend_pid();" `
     -FailureMessage "No se pudieron cerrar las conexiones a $Database"
 }
 
@@ -80,7 +81,7 @@ function Restore-ArchiveAtomically {
 function Test-FitStoreRestoredDatabase {
   param($Paths, $Secrets, [string]$Database)
   foreach ($table in @("_prisma_migrations", "User", "Product")) {
-    Invoke-FitStorePg `
+    Invoke-FitStorePgSql `
       -Tool (Join-Path $Paths.PgBin "psql.exe") `
       -Password ([string]$Secrets.databasePassword) `
       -Arguments @(
@@ -89,8 +90,9 @@ function Test-FitStoreRestoredDatabase {
         "--username=fitstore",
         "--dbname=$Database",
         "--no-password",
-        "--command=SELECT count(*) FROM `"$table`";"
+        "--set=ON_ERROR_STOP=1"
       ) `
+      -Sql "SELECT count(*) FROM `"$table`";" `
       -FailureMessage "La base restaurada no contiene la tabla requerida $table"
   }
 }
