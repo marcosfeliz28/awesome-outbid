@@ -575,9 +575,9 @@ async function prepare(
   for (const row of rows) {
     const own = holders.find((v) => v.sku === row.id);
     ownOf.set(row.id, own);
-    for (const code of [row.id, row.ref, row.barcode].filter(
-      Boolean,
-    ) as string[]) {
+    for (const code of new Set(
+      [row.id, row.ref, row.barcode].filter(Boolean) as string[],
+    )) {
       const other = holders.find(
         (v) =>
           (low(v.sku) === low(code) || low(v.barcode) === low(code)) &&
