@@ -4,7 +4,7 @@
 // buena. Ahora un error transitorio responde `retry` (la venta sigue pendiente
 // en la cola y se reenvía con el mismo UUID) y un conflicto real sigue siéndolo
 // (con el detalle de lo vendido, N8).
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { SalesController } from "../apps/api/src/sales";
@@ -12,7 +12,15 @@ import {
   databaseUnavailable,
   isTransientDbError,
 } from "../apps/api/src/database-errors";
-import { bad } from "../apps/api/src/common";
+import { bad, isUnexpectedError } from "../apps/api/src/common";
+
+// Lo que llegaría a Sentry (el SDK real sólo existe con un DSN).
+const captured: { error: unknown; area: string }[] = [];
+vi.mock("../apps/api/src/monitoring", () => ({
+  captureApiException: (error: unknown, area: string) =>
+    captured.push({ error, area }),
+  initializeApiMonitoring: () => false,
+}));
 
 // @nestjs/common es dependencia de la API, no de la raíz.
 const { HttpException } = createRequire(
@@ -196,5 +204,89 @@ describe("N-M3 · /sales/sync y los errores transitorios", () => {
     expect(after.detail.customerId).toBe(input.customerId);
     // Nunca la referencia del pago.
     expect(JSON.stringify(after)).not.toContain("secreto-no-guardar");
+  });
+});
+
+// W9 (auditoría 07 v2, E-1): el `catch` de /sales/sync convertía CUALQUIER
+// excepción en «conflicto» sin dejar rastro. El contrato de la respuesta no
+// cambia (sigue siendo `conflict` con alerta), pero un error que no es de
+// negocio ahora se registra en la consola y en Sentry; una regla de negocio, un
+// conflicto de datos o un error transitorio no.
+describe("W9 · /sales/sync registra los errores inesperados", () => {
+  const spies = () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    captured.length = 0;
+    return logged;
+  };
+  afterEach(() => vi.restoreAllMocks());
+
+  it("un TypeError sigue siendo conflicto con el mismo contrato, pero se registra con el UUID y se envía a Sentry", async () => {
+    const logged = spies();
+    const boom = new TypeError("Cannot read properties of undefined");
+    const { controller, writes } = setup(() => boom);
+    const input = sale();
+    const { results } = await controller.sync({ sales: [input] }, actor);
+    expect(results).toEqual([
+      {
+        offlineUuid: input.offlineUuid,
+        status: "conflict",
+        message:
+          "No se pudo completar la operación. Revisa la venta e intenta de nuevo.",
+      },
+    ]);
+    expect(writes).toContain("alert.upsert");
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(String(logged.mock.calls[0][0])).toContain(input.offlineUuid);
+    expect(logged.mock.calls[0][1]).toBe(boom);
+    expect(captured).toEqual([{ error: boom, area: "sales" }]);
+  });
+
+  it("un 500 o un error de Prisma desconocido también se registran", async () => {
+    const logged = spies();
+    const unknown = prisma("P2003", "PrismaClientKnownRequestError");
+    const { controller } = setup((input) =>
+      input.offlineUuid === first.offlineUuid
+        ? new HttpException("fallo interno", 500)
+        : unknown,
+    );
+    const first = sale();
+    const second = sale();
+    const { results } = await controller.sync(
+      { sales: [first, second] },
+      actor,
+    );
+    expect(results.map((r: any) => r.status)).toEqual(["conflict", "conflict"]);
+    expect(logged).toHaveBeenCalledTimes(2);
+    expect(captured).toHaveLength(2);
+  });
+
+  it.each([
+    [
+      "una regla de negocio (400)",
+      () => new HttpException("Stock insuficiente", 400),
+    ],
+    ["un permiso (403)", () => new HttpException("Sin permiso", 403)],
+    [
+      "un conflicto de datos (409)",
+      () => new HttpException("La caja ya está cerrada", 409),
+    ],
+    ["P2002 (duplicado)", () => prisma("P2002")],
+    ["P2025 (no existe)", () => prisma("P2025")],
+    ["un interbloqueo (reintento)", () => deadlock()],
+    ["la base caída (reintento)", () => databaseUnavailable()],
+  ])("%s no se registra como error inesperado", async (_, make) => {
+    const logged = spies();
+    const { controller } = setup(() => make());
+    await controller.sync({ sales: [sale()] }, actor);
+    expect(logged).not.toHaveBeenCalled();
+    expect(captured).toEqual([]);
+  });
+
+  it("isUnexpectedError separa lo de programación de lo de negocio", () => {
+    expect(isUnexpectedError(new TypeError("x"))).toBe(true);
+    expect(isUnexpectedError(new HttpException("x", 500))).toBe(true);
+    expect(isUnexpectedError(new HttpException("x", 400))).toBe(false);
+    expect(isUnexpectedError(prisma("P2002"))).toBe(false);
+    expect(isUnexpectedError(deadlock())).toBe(false);
   });
 });

@@ -837,6 +837,18 @@ export class ApiExceptionFilter implements ExceptionFilter {
   }
 }
 
+/**
+ * Un error que no es de negocio (regla, permiso o conflicto de datos que el
+ * cliente puede corregir) sino de programación o de infraestructura. La
+ * sincronización offline lo devuelve como conflicto igual que a los demás, pero
+ * éste además se registra (consola y Sentry) para que alguien reciba el stack.
+ */
+export function isUnexpectedError(error: any): boolean {
+  if (error instanceof HttpException) return error.getStatus() >= 500;
+  if (error?.code === "P2025" || error?.code === "P2002") return false;
+  return !(isSerializationConflict(error) || isDeadlock(error));
+}
+
 export function safeErrorMessage(error: any): string {
   if (error instanceof HttpException) {
     const response = error.getResponse();
