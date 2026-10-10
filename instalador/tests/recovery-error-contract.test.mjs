@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { URL } from 'node:url';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 const source=readFileSync(new URL('../scripts/Recover-FitStoreUpdate.ps1',import.meta.url),'utf8');
