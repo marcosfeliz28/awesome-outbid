@@ -16,8 +16,8 @@ Necesitas:
 3. El archivo `Nexora-POS-Setup-<versión>.exe`.
 4. Un correo, una contraseña nueva de al menos 12 caracteres y un PIN de 4 a 6
    dígitos para la persona dueña. El paquete no trae contraseña de demostración.
-5. De preferencia, una carpeta de OneDrive o una memoria USB con espacio para
-   los respaldos. La memoria debe estar conectada a la hora programada.
+5. Espacio libre para las copias en `%ProgramData%\FitStore POS\Backups`.
+   Para conservar una copia fuera de la laptop, prepara aparte OneDrive o una USB.
 6. La red de la tienda marcada como **Privada** en **Configuración de Windows ›
    Red e Internet › Wi-Fi › Propiedades**. No marques como privada una red
    pública de hotel, aeropuerto o cafetería.
@@ -32,8 +32,8 @@ No desconectes ni apagues la laptop durante la instalación o una actualización
 3. Escribe el nombre y el correo del usuario dueño.
 4. Crea una contraseña de al menos 12 caracteres, repítela y elige un PIN de 4
    a 6 dígitos. Guárdalos en un lugar seguro.
-5. Elige la carpeta de respaldo. Conviene usar OneDrive o una memoria USB. Si
-   no tienes una, elige una carpeta local y cámbiala después con asistencia.
+5. Los respaldos se guardan en `%ProgramData%\FitStore POS\Backups`, incluso
+   si el asistente heredado muestra otra carpeta. No elige un destino externo.
 6. Pulsa **Instalar** y espera el mensaje de finalización. El primer arranque
    puede tardar varios minutos.
 7. Abre el acceso directo **Nexora POS** del escritorio.
@@ -132,13 +132,28 @@ archivo `.cer` que se instala en los teléfonos sólo contiene la parte pública
 - Cada copia se crea con `pg_dump` en formato custom, se abre con `pg_restore
   --list` para comprobarla y recibe un archivo SHA-256.
 - Se conservan los últimos 30 días.
-- Si OneDrive o la memoria USB no están disponibles, ese día se usa
-  `%ProgramData%\FitStore POS\Backups` y queda una advertencia en el registro.
+- El destino siempre es `%ProgramData%\FitStore POS\Backups`. Una actualización
+  corrige `state.backupPath` antiguo y retira permisos públicos de los archivos
+  `FitStore_*` que ya existían en el destino anterior. No elimina esas copias.
 - Una actualización y una restauración crean otra copia antes de cambiar nada.
 
 Revisa al menos una vez por semana que aparezcan archivos recientes
-`FitStore_*.dump`, `.sha256` y `.json` en la carpeta elegida. Un respaldo dentro
+`FitStore_*.dump`, `.sha256` y `.json` en `%ProgramData%\FitStore POS\Backups`. Un respaldo dentro
 de la misma laptop no protege frente a daño, robo o pérdida de esa laptop.
+
+Los archivos y la carpeta tienen una ACL privada: SYSTEM y los administradores
+pueden escribir. La cuenta de Windows que ejecutó el instalador tiene solamente
+lectura (y acceso a la carpeta), identificada por su SID real registrado en
+`state.json` como `backupReaderSid`. No se concede acceso a Users ni Everyone.
+Quien pueda usar esa cuenta de Windows también puede leer los datos de los
+respaldos. Ejecutar como otra cuenta administrativa registra esa otra cuenta.
+
+OneDrive corre como el usuario normal. Ese permiso de lectura permite copiar
+los archivos desde dicha cuenta, pero **el instalador no configura ni verifica
+la sincronización de OneDrive**, ni copia automáticamente a USB. Configura y
+comprueba aparte la copia externa. El registro «Archivo de respaldo local
+validado por PostgreSQL» confirma la validación local, no que haya una copia
+fuera del equipo. Comprueba el archivo y su SHA-256 también en el destino externo.
 
 ## Restaurar un respaldo
 
@@ -166,7 +181,8 @@ no borres el respaldo indicado y entrega el registro a soporte.
 
 1. Espera a que terminen las ventas y sincroniza las cajas que trabajaron sin
    internet.
-2. Conecta el destino habitual de respaldos.
+2. Comprueba espacio libre en `%ProgramData%\FitStore POS\Backups` y conserva
+   aparte una copia externa de los archivos recientes antes de actualizar.
 3. Ejecuta el nuevo `Nexora-POS-Setup-<versión>.exe` como administrador.
 4. El asistente detecta FitStore. No vuelve a pedir el usuario dueño ni cambia
    sus credenciales.
