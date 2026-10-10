@@ -97,9 +97,12 @@ function Invoke-FitStoreRecoveryPgCtl {
   # usar TEMP del usuario, nunca dejar stdout/stderr dentro de PGDATA.
   $quoted = @($Arguments | ForEach-Object { '"' + $_.Replace('"','\"') + '"' })
   $logId = 'recovery-control-' + [guid]::NewGuid().ToString('N')
-  $digest = [Security.Cryptography.SHA256]::Create()
-  try { $key = [BitConverter]::ToString($digest.ComputeHash([Text.Encoding]::UTF8.GetBytes([IO.Path]::GetFullPath($Database)))).Replace('-','').ToLowerInvariant() } finally { $digest.Dispose() }
-  $captureDir = Join-Path ([IO.Path]::GetTempPath()) ('nexora-recovery-control-' + $key)
+  if (-not (Get-Variable FitStoreRecoveryCaptureDirectories -Scope Script -ErrorAction SilentlyContinue)) { $script:FitStoreRecoveryCaptureDirectories=@{} }
+  $key=[IO.Path]::GetFullPath($Database).ToLowerInvariant()
+  if (-not $script:FitStoreRecoveryCaptureDirectories.ContainsKey($key)) {
+    $script:FitStoreRecoveryCaptureDirectories[$key]=Join-Path ([IO.Path]::GetTempPath()) ('nexora-recovery-control-'+[guid]::NewGuid().ToString('N'))
+  }
+  $captureDir=$script:FitStoreRecoveryCaptureDirectories[$key]
   [IO.Directory]::CreateDirectory($captureDir) | Out-Null
   if (((Get-Item -LiteralPath $captureDir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'La carpeta temporal de captura es un punto de reanalisis.' }
   $stdout = Join-Path $captureDir ($logId + '.out')
@@ -139,6 +142,7 @@ function Invoke-FitStoreRecoveryPgCtl {
     }
     if (@(Get-ChildItem -LiteralPath $captureDir -Force).Count -eq 0) {
       [IO.Directory]::Delete($captureDir)
+      $script:FitStoreRecoveryCaptureDirectories.Remove($key)
     }
   }
 }
@@ -228,8 +232,12 @@ function Assert-FitStoreInterruptedRecovery {
     }
   } catch {
     # Una negativa anterior a restaurar no deja usuarios bloqueados.
-    if ($ExclusiveAccess) { Disable-FitStoreRecoveryIsolation -Transaction $Transaction -Psql $psql -Secrets $secrets -DatabasePort $DatabasePort }
-    throw
+    $originalFailure=$_
+    if ($ExclusiveAccess) {
+      try { Disable-FitStoreRecoveryIsolation -Transaction $Transaction -Psql $psql -Secrets $secrets -DatabasePort $DatabasePort }
+      catch { Write-Warning ('No se pudo restituir LOGIN automaticamente: '+$_.Exception.Message+'. Soporte debe ejecutar ALTER ROLE fitstore LOGIN; con postgres y revisar recovery-login-state.json antes de retirar el marcador. No restaure respaldos.') }
+    }
+    throw $originalFailure
   } finally {
     try {
       if ($temporaryPostgres) { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
