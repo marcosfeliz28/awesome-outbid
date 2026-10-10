@@ -71,6 +71,7 @@ import {
 import {
   businessErrorMessage,
   managementQueryError,
+  openCashBlindNote,
 } from "./managementMessages";
 import { passwordRules } from "./passwordChange";
 import "./passwordChange.css";
@@ -1619,11 +1620,7 @@ export function Cash() {
         <div className="panel">
           <Badge tone="success">Caja abierta</Badge>
           <h2>{active.registerName ?? active.registerId}</h2>
-          <p>
-            Arqueo ciego activo: mientras la caja está abierta no ves los montos
-            esperados. Al cerrar cuentas lo que tienes y se imprime el cuadre
-            con las diferencias.
-          </p>
+          <p>{openCashBlindNote(false)}</p>
         </div>
       ) : (
         <div className="panel">

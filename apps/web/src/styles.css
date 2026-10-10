@@ -4604,6 +4604,24 @@ td strong {
   font-size: 17px;
   font-weight: 700;
 }
+/* Celular (390 px): el pie del cierre de caja apila los botones a todo el
+ * ancho y deja que el texto largo («Cerrar caja e imprimir cuadre») baje de
+ * renglón; antes quedaban recortados fuera de la ventana. */
+@media (max-width: 640px) {
+  .close-cash .modal-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .close-cash .modal-footer button {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    white-space: normal;
+    text-align: center;
+    justify-content: center;
+  }
+}
 .print-actions {
   display: grid;
   grid-template-columns: 2fr 1fr;

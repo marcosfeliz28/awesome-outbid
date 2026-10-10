@@ -44,7 +44,7 @@ async function bootstrap() {
   app.enableCors({
     origin: webOrigin || "http://localhost:5173",
     credentials: true,
-    // Paginación de GET /alerts (cursor de la página siguiente).
+    // Paginación de GET /alerts y /credit-notes (cursor de la página siguiente).
     exposedHeaders: ["X-Next-Cursor"],
   });
   app.useGlobalFilters(new ApiExceptionFilter());

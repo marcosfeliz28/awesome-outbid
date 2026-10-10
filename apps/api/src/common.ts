@@ -30,6 +30,7 @@ import {
   sessionActivityGraceMs,
 } from "./session-activity";
 import { clientIp } from "./rate-limit";
+import { checkDatabaseTimeZone } from "./database-timezone";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -40,6 +41,8 @@ export class Database extends PrismaClient {
   }
   async onModuleInit() {
     await this.$connect();
+    // D-B7: avisa (sin impedir el arranque) si la sesión no está en UTC.
+    await checkDatabaseTimeZone(this);
   }
   async onModuleDestroy() {
     await this.$disconnect();

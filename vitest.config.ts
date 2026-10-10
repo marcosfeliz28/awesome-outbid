@@ -57,6 +57,7 @@ export default defineConfig({
       "tests/alertas-rendimiento.test.ts",
       "tests/sync-transitorio.test.ts",
       "tests/sync-cola-web.test.ts",
+      "tests/db-zona-horaria.test.ts",
     ],
   },
 });
