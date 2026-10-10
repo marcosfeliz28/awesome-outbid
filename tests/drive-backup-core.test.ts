@@ -4,7 +4,13 @@
 // real está en tests/drive-backup.test.ts.
 import { describe, expect, it } from "vitest";
 import { randomBytes, createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
@@ -215,7 +221,7 @@ describe("Formato NXBK v1 (cifrado en flujo por bloques)", () => {
       await expect(
         decryptBackup(join(dir, "t.dump.enc"), bad, PASS),
       ).rejects.toThrow();
-      const names = (await import("node:fs")).readdirSync(dir);
+      const names = readdirSync(dir);
       expect(names.filter((n) => n.startsWith("malo"))).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -525,5 +531,33 @@ describe("Configuración y mensajes sin secretos", () => {
       /https?:|ya29|1\/\/0g|ABCDEFGHIJ|gmail|secreto-xyz/,
     );
     expect(maskAccount("duena@gmail.com")).toBe("d•••@gmail.com");
+  });
+});
+
+describe("Despliegue del respaldo", () => {
+  it("la imagen de la API trae pg_dump 17 del repositorio PGDG con la clave fijada", () => {
+    const docker = readFileSync("deploy/render/Dockerfile.api", "utf8");
+    const runtime = docker.slice(docker.indexOf("AS runtime"));
+    expect(runtime).toMatch(
+      /ADD --checksum=sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76 --chmod=644 \\\n\s+https:\/\/www\.postgresql\.org\/media\/keys\/ACCC4CF8\.asc/,
+    );
+    expect(runtime).toContain(
+      "signed-by=/usr/share/keyrings/pgdg.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main",
+    );
+    expect(runtime).toContain("apt-get download postgresql-client-17");
+    expect(runtime).toContain("/usr/lib/postgresql/17/bin/pg_dump --version");
+    expect(runtime).toContain("! ldd /usr/lib/postgresql/17/bin/pg_dump");
+    expect(runtime).toContain(
+      "ENV PG_DUMP_BIN=/usr/lib/postgresql/17/bin/pg_dump",
+    );
+    // Antes de pasar al usuario sin privilegios.
+    expect(runtime.indexOf("PG_DUMP_BIN")).toBeLessThan(
+      runtime.indexOf("USER node"),
+    );
+  });
+
+  it("la PWA no sirve index.html en la vuelta desde Google (/api/…)", () => {
+    const vite = readFileSync("apps/web/vite.config.ts", "utf8");
+    expect(vite).toContain("navigateFallbackDenylist: [/^\\/api\\//]");
   });
 });
