@@ -1,15 +1,21 @@
+import { randomUUID } from "node:crypto";
 import {
   Body,
+  CallHandler,
   Controller,
+  ExecutionContext,
   Get,
   Inject,
   Injectable,
+  NestInterceptor,
   Param,
   Patch,
   Post,
   Put,
   Query,
 } from "@nestjs/common";
+import { finalize, type Observable } from "rxjs";
+import type { Prisma } from "@prisma/client";
 import {
   expiryDays,
   businessDate,
@@ -43,13 +49,51 @@ export function alertForActor<T extends { type?: string; message?: string }>(
     : alert;
 }
 
+/** Una evaluación se reutiliza este tiempo si ninguna escritura la invalidó. */
+export const ALERT_EVALUATION_TTL_MS = 60_000;
+/** Filas por sentencia al leer y escribir alertas en lote. */
+const ALERT_BATCH = 1000;
+
+type AlertEvent = {
+  key: string;
+  type: string;
+  severity: string;
+  entityId: string;
+  message: string;
+  branchId: string;
+};
+type StoredAlert = Pick<
+  AlertEvent,
+  "type" | "severity" | "entityId" | "message"
+> & { status: string };
+type AlertWrite = { event: AlertEvent; status: string; create: boolean };
+type Evaluation = { generation: number; at: number; candidates: any[] };
+
+const chunks = <T>(items: T[], size = ALERT_BATCH) =>
+  Array.from({ length: Math.ceil(items.length / size) }, (_, i) =>
+    items.slice(i * size, (i + 1) * size),
+  );
+// Hora UTC sin zona, como guarda Prisma las columnas timestamp(3).
+const sqlTimestamp = (at: Date) =>
+  at.toISOString().replace("T", " ").replace("Z", "");
+
 @Injectable()
 export class AlertEngine {
   private timer: ReturnType<typeof setInterval> | undefined;
+  /** Sube con cada escritura de la API: la evaluación guardada queda vieja. */
+  generation = 0;
+  private now = () => Date.now();
+  private results = new Map<string, Evaluation>();
+  private running:
+    | (Omit<Evaluation, "candidates"> & {
+        branchId: string;
+        promise: Promise<any[]>;
+      })
+    | undefined;
   constructor(@Inject(Database) private db: Database) {}
   onModuleInit() {
     this.timer = setInterval(
-      () => this.evaluate().catch(console.error),
+      () => this.evaluate("main", { fresh: true }).catch(console.error),
       24 * 3600000,
     );
     this.timer.unref();
@@ -57,20 +101,118 @@ export class AlertEngine {
   onModuleDestroy() {
     if (this.timer) clearInterval(this.timer);
   }
-  async evaluate(branchId = "main") {
-    const [variants, settings, lastSales, expenses, rules, cash] =
+  /** Una escritura (venta, ajuste, gasto, ajustes…) cambió los datos. */
+  invalidate() {
+    this.generation++;
+  }
+  /**
+   * Candidatos de liquidación, con las alertas ya escritas en la tabla Alert.
+   * - Las peticiones simultáneas comparten una evaluación y nunca corren dos
+   *   a la vez (las que llegan durante una evaluación vieja esperan a que
+   *   termine y comparten la siguiente).
+   * - Sin escrituras desde la última evaluación y con menos de 60 s, responde
+   *   con ella sin recalcular.
+   * - Con una escritura pendiente espera una evaluación que la incluya, para
+   *   que una venta o un ajuste se vean en el siguiente GET.
+   * - Pasados los 60 s sin escrituras (sólo cambió la hora) responde con la
+   *   anterior y recalcula en segundo plano.
+   * - `fresh` exige una evaluación que empiece después de la llamada.
+   */
+  async evaluate(
+    branchId = "main",
+    options: { fresh?: boolean } = {},
+  ): Promise<any[]> {
+    const wanted = this.generation;
+    const requestedAt = this.now();
+    for (;;) {
+      const running = this.running;
+      const cached = this.results.get(branchId);
+      if (!options.fresh && cached && cached.generation >= wanted) {
+        if (!running && this.now() - cached.at >= ALERT_EVALUATION_TTL_MS)
+          this.start(branchId).catch((error) => {
+            // Reintenta en el próximo período, no en cada petición.
+            cached.at = this.now();
+            console.error(error);
+          });
+        return cached.candidates;
+      }
+      if (
+        running?.branchId === branchId &&
+        running.generation >= wanted &&
+        (!options.fresh || running.at >= requestedAt)
+      )
+        return running.promise;
+      if (!running) return this.start(branchId);
+      await running.promise.catch(() => undefined);
+    }
+  }
+  private start(branchId: string) {
+    const generation = this.generation;
+    const at = this.now();
+    const promise: Promise<any[]> = this.compute(branchId)
+      .then((candidates) => {
+        this.results.set(branchId, { generation, at, candidates });
+        return candidates;
+      })
+      .finally(() => {
+        if (this.running?.promise === promise) this.running = undefined;
+      });
+    this.running = { branchId, generation, at, promise };
+    return promise;
+  }
+  private async compute(branchId: string) {
+    const today = businessDate();
+    const todayStart = new Date(today + "T00:00:00-04:00");
+    const todayEnd = new Date(today + "T23:59:59.999-04:00");
+    const monthStart = new Date(today.slice(0, 8) + "01T00:00:00-04:00");
+    const lastMonthStart = new Date(monthStart);
+    lastMonthStart.setUTCMonth(lastMonthStart.getUTCMonth() - 1);
+    const baselineStart = new Date(lastMonthStart);
+    baselineStart.setUTCMonth(baselineStart.getUTCMonth() - 3);
+    const [variants, settings, sales, expenses, rules, cash, discounted] =
       await Promise.all([
         this.db.variant.findMany({
           where: { branchId, active: true, product: { active: true } },
-          include: {
-            product: { include: { category: true } },
-            lots: { where: { qty: { gt: 0 } } },
+          // Sólo las columnas que usan las reglas: memoria acotada.
+          select: {
+            id: true,
+            productId: true,
+            sku: true,
+            stock: true,
+            costAvg: true,
+            price: true,
+            createdAt: true,
+            product: {
+              select: {
+                name: true,
+                minStock: true,
+                maxStock: true,
+                taxRate: true,
+                imageUrl: true,
+                category: { select: { name: true } },
+              },
+            },
+            lots: {
+              where: { qty: { gt: 0 } },
+              select: { id: true, lotNumber: true, expiryDate: true },
+            },
           },
         }),
         this.db.settings.findUnique({ where: { id: branchId } }),
+        // Una sola pasada agregada en SQL por variante: última venta y ventas
+        // del mes pasado y de los tres anteriores (antes, tres consultas).
+        // Fechas como texto UTC: la columna es timestamp sin zona.
         this.db.$queryRaw<
-          any[]
-        >`SELECT i."variantId",MAX(s."createdAt") AS last FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" WHERE s."branchId"=${branchId} AND s.status='completed' GROUP BY i."variantId"`,
+          {
+            variantId: string;
+            last: Date;
+            recent: Prisma.Decimal | null;
+            prior: Prisma.Decimal | null;
+          }[]
+        >`SELECT i."variantId",MAX(s."createdAt") AS last,
+            SUM(i."lineTotal") FILTER (WHERE s."createdAt" >= ${sqlTimestamp(lastMonthStart)}::timestamp AND s."createdAt" < ${sqlTimestamp(monthStart)}::timestamp) AS recent,
+            SUM(i."lineTotal") FILTER (WHERE s."createdAt" >= ${sqlTimestamp(baselineStart)}::timestamp AND s."createdAt" < ${sqlTimestamp(lastMonthStart)}::timestamp) AS prior
+          FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" WHERE s."branchId"=${branchId} AND s.status='completed' GROUP BY i."variantId"`,
         this.db.expense.findMany({
           where: {
             branchId,
@@ -79,20 +221,43 @@ export class AlertEngine {
               gte: new Date(businessDate().slice(0, 8) + "01T00:00:00-04:00"),
             },
           },
-          include: { category: true },
+          select: {
+            categoryId: true,
+            amount: true,
+            category: { select: { name: true, monthlyBudget: true } },
+          },
         }),
-        this.db.alertRule.findMany(),
+        this.db.alertRule.findMany({ select: { type: true, active: true } }),
         this.db.cashSession.findMany({
           where: { branchId, closedAt: { not: null } },
           take: 30,
           orderBy: { closedAt: "desc" },
         }),
+        this.db.sale.findMany({
+          where: {
+            branchId,
+            status: "completed",
+            createdAt: { gte: todayStart, lte: todayEnd },
+            discountTotal: { gt: 0 },
+          },
+          select: {
+            id: true,
+            number: true,
+            sellerId: true,
+            subtotal: true,
+            discountTotal: true,
+          },
+        }),
       ]);
     const config = settings?.data as any;
-    const events: any[] = [];
+    const events: AlertEvent[] = [];
     const candidates: any[] = [];
-    const enabled = (type: string) =>
-      rules.find((r) => r.type === type)?.active !== false;
+    // Búsquedas por Map: con miles de variantes `.find` crecía al cuadrado.
+    const ruleActive = new Map<string, boolean>();
+    for (const r of rules)
+      if (!ruleActive.has(r.type)) ruleActive.set(r.type, r.active);
+    const salesByVariant = new Map(sales.map((row) => [row.variantId, row]));
+    const enabled = (type: string) => ruleActive.get(type) !== false;
     const add = (
       key: string,
       type: string,
@@ -106,7 +271,7 @@ export class AlertEngine {
     for (const v of variants) {
       const stock = Number(v.stock),
         cost = Number(v.costAvg),
-        last = lastSales.find((s) => s.variantId === v.id)?.last ?? v.createdAt;
+        last = salesByVariant.get(v.id)?.last ?? v.createdAt;
       const daysIdle = Math.floor((Date.now() - +new Date(last)) / 86400000);
       const lots = v.lots
         .filter((l) => l.expiryDate)
@@ -149,10 +314,11 @@ export class AlertEngine {
             `${v.product.name} · ${lot.lotNumber}: ${days < 0 ? "vencido" : `vence en ${days} días`}.`,
           );
       }
-      if (
-        margin(Number(v.price) / (1 + Number(v.product.taxRate) / 100), cost) <
-        (config?.lowMargin ?? 15)
-      )
+      const netMargin = margin(
+        Number(v.price) / (1 + Number(v.product.taxRate) / 100),
+        cost,
+      );
+      if (netMargin < (config?.lowMargin ?? 15))
         add(
           "margin:" + v.id,
           "low_margin",
@@ -181,10 +347,7 @@ export class AlertEngine {
           daysToExpiry,
           lot: lots[0]?.lotNumber,
           capital: money(d(stock).times(cost)),
-          margin: margin(
-            Number(v.price) / (1 + Number(v.product.taxRate) / 100),
-            cost,
-          ),
+          margin: netMargin,
           suggestedDiscount: Math.min(
             daysToExpiry !== null && daysToExpiry < 30 ? 25 : 15,
             safeDiscount(Number(v.price), cost, Number(v.product.taxRate)),
@@ -227,55 +390,13 @@ export class AlertEngine {
           `Caja ${s.registerId}: diferencia de RD$ ${difference.toFixed(2)}.`,
         );
     }
-    const today = businessDate();
-    const todayStart = new Date(today + "T00:00:00-04:00");
-    const todayEnd = new Date(today + "T23:59:59.999-04:00");
-    const monthStart = new Date(today.slice(0, 8) + "01T00:00:00-04:00");
-    const lastMonthStart = new Date(monthStart);
-    lastMonthStart.setUTCMonth(lastMonthStart.getUTCMonth() - 1);
-    const baselineStart = new Date(lastMonthStart);
-    baselineStart.setUTCMonth(baselineStart.getUTCMonth() - 3);
-    const [recent, prior, discounted] = await Promise.all([
-      this.db.saleItem.groupBy({
-        by: ["variantId"],
-        where: {
-          sale: {
-            branchId,
-            status: "completed",
-            createdAt: { gte: lastMonthStart, lt: monthStart },
-          },
-        },
-        _sum: { lineTotal: true },
-      }),
-      this.db.saleItem.groupBy({
-        by: ["variantId"],
-        where: {
-          sale: {
-            branchId,
-            status: "completed",
-            createdAt: { gte: baselineStart, lt: lastMonthStart },
-          },
-        },
-        _sum: { lineTotal: true },
-      }),
-      this.db.sale.findMany({
-        where: {
-          branchId,
-          status: "completed",
-          createdAt: { gte: todayStart, lte: todayEnd },
-          discountTotal: { gt: 0 },
-        },
-      }),
-    ]);
+    const candidateByVariant = new Map<string, any>();
+    for (const c of candidates)
+      if (!candidateByVariant.has(c.variantId))
+        candidateByVariant.set(c.variantId, c);
     for (const variant of variants) {
-      const previous =
-        Number(
-          prior.find((row) => row.variantId === variant.id)?._sum.lineTotal ??
-            0,
-        ) / 3;
-      const latest = Number(
-        recent.find((row) => row.variantId === variant.id)?._sum.lineTotal ?? 0,
-      );
+      const previous = Number(salesByVariant.get(variant.id)?.prior ?? 0) / 3;
+      const latest = Number(salesByVariant.get(variant.id)?.recent ?? 0);
       if (
         previous > 0 &&
         latest <
@@ -289,7 +410,7 @@ export class AlertEngine {
           variant.product.name +
             ": ventas del último mes por debajo del promedio de los tres meses anteriores. Candidato a oferta.",
         );
-        const existing = candidates.find((c) => c.variantId === variant.id);
+        const existing = candidateByVariant.get(variant.id);
         if (existing) existing.lowSales = true;
         else if (Number(variant.stock) > 0)
           candidates.push({
@@ -369,10 +490,10 @@ export class AlertEngine {
       },
       data: { status: "resolved" },
     });
+    const stored = await this.storedAlerts(events);
+    const writes: AlertWrite[] = [];
     for (const event of events) {
-      const existing = await this.db.alert.findUnique({
-        where: { key: event.key },
-      });
+      const existing = stored.get(event.key);
       if (
         existing &&
         existing.status !== "resolved" &&
@@ -382,19 +503,127 @@ export class AlertEngine {
         existing.entityId === event.entityId
       )
         continue;
-      await this.db.alert.upsert({
-        where: { key: event.key },
-        create: event,
-        update: {
-          ...event,
-          status:
-            existing?.status === "resolved"
-              ? "new"
-              : (existing?.status ?? "new"),
-        },
-      });
+      const status =
+        existing?.status === "resolved" ? "new" : (existing?.status ?? "new");
+      writes.push({ event, status, create: !existing });
+      // Una clave repetida ve lo que dejó la anterior, como en serie.
+      stored.set(event.key, { ...event, status });
     }
+    await this.writeAlerts(writes);
     return candidates.sort((a, b) => b.score - a.score);
+  }
+  /** Estado guardado de las claves evaluadas, en lecturas de 1 000. */
+  private async storedAlerts(events: AlertEvent[]) {
+    const stored = new Map<string, StoredAlert>();
+    const keys = [...new Set(events.map((e) => e.key))];
+    for (const chunk of chunks(keys))
+      for (const row of await this.db.alert.findMany({
+        where: { key: { in: chunk } },
+        select: {
+          key: true,
+          type: true,
+          severity: true,
+          entityId: true,
+          message: true,
+          status: true,
+        },
+      }))
+        stored.set(row.key, row);
+    return stored;
+  }
+  /**
+   * Crea y actualiza en lote, en una transacción corta y con un candado para
+   * que dos procesos no escriban a la vez. Cada alerta conserva una marca de
+   * tiempo creciente en el orden de evaluación, como cuando se escribían de una
+   * en una: el GET ordena por updatedAt.
+   */
+  private async writeAlerts(writes: AlertWrite[]) {
+    if (!writes.length) return;
+    const start = Date.now();
+    const rows = writes.map((write, i) => ({
+      ...write,
+      id: randomUUID(),
+      at: new Date(start + i),
+    }));
+    const creates = rows.filter((row) => row.create);
+    const updates = rows.filter((row) => !row.create);
+    await this.db.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('fitstore:alert-engine'))`;
+        for (const chunk of chunks(creates)) {
+          const { count } = await tx.alert.createMany({
+            data: chunk.map(({ event, status, id, at }) => ({
+              ...event,
+              id,
+              status,
+              createdAt: at,
+              updatedAt: at,
+            })),
+            skipDuplicates: true,
+          });
+          if (count === chunk.length) continue;
+          // Otra parte de la API creó la clave entre la lectura y esta
+          // escritura: como hacía el upsert, se actualiza.
+          const ours = new Set<string>(chunk.map((row) => row.id));
+          const byKey = new Map(chunk.map((row) => [row.event.key, row]));
+          for (const row of await tx.alert.findMany({
+            where: { key: { in: [...byKey.keys()] } },
+            select: { id: true, key: true },
+          }))
+            if (!ours.has(row.id)) updates.push(byKey.get(row.key)!);
+        }
+        for (const chunk of chunks(updates)) {
+          const column = (pick: (row: (typeof chunk)[number]) => string) =>
+            chunk.map(pick);
+          await tx.$executeRaw`
+            UPDATE "Alert" AS a
+               SET "type" = v."type", "severity" = v."severity",
+                   "entityId" = v."entityId", "message" = v."message",
+                   "branchId" = v."branchId", "status" = v."status",
+                   "updatedAt" = v."at"
+              FROM unnest(
+                ${column((r) => r.event.key)}::text[],
+                ${column((r) => r.event.type)}::text[],
+                ${column((r) => r.event.severity)}::text[],
+                ${column((r) => r.event.entityId)}::text[],
+                ${column((r) => r.event.message)}::text[],
+                ${column((r) => r.event.branchId)}::text[],
+                ${column((r) => r.status)}::text[],
+                ${column((r) => sqlTimestamp(r.at))}::timestamp(3)[]
+              ) AS v("key", "type", "severity", "entityId", "message", "branchId", "status", "at")
+             WHERE a."key" = v."key"`;
+        }
+      },
+      { maxWait: 10_000, timeout: 60_000 },
+    );
+  }
+}
+
+const SESSION_CONTROLLERS = new Set(["AuthController", "RealtimeController"]);
+/**
+ * Toda escritura de la API (venta, devolución, ajuste, recepción, gasto,
+ * ajustes, reglas, estado de una alerta…) invalida la evaluación guardada, así
+ * el siguiente GET /alerts la incluye. Las de sesión y equipos no tocan datos
+ * que use el motor; POST /alerts/evaluate ya evalúa.
+ */
+@Injectable()
+export class AlertCacheInterceptor implements NestInterceptor {
+  constructor(@Inject(AlertEngine) private engine: AlertEngine) {}
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    if (context.getType() !== "http") return next.handle();
+    const method = String(
+      context.switchToHttp().getRequest()?.method ?? "GET",
+    ).toUpperCase();
+    const controller = context.getClass().name;
+    if (
+      ["GET", "HEAD", "OPTIONS"].includes(method) ||
+      SESSION_CONTROLLERS.has(controller) ||
+      (controller === "AlertsController" &&
+        context.getHandler().name === "evaluate")
+    )
+      return next.handle();
+    // Al terminar (bien o con error): una escritura parcial también cuenta.
+    return next.handle().pipe(finalize(() => this.engine.invalidate()));
   }
 }
 @Controller()
@@ -482,6 +711,6 @@ export class AlertsController {
   @Post("alerts/evaluate") @Permit("alerts:write") evaluate(
     @CurrentUser() actor: Actor,
   ) {
-    return this.engine.evaluate(actor.branchId);
+    return this.engine.evaluate(actor.branchId, { fresh: true });
   }
 }

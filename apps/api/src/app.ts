@@ -8,7 +8,7 @@ import {
   Module,
   ServiceUnavailableException,
 } from "@nestjs/common";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthGuard, Database, Public } from "./common";
 import { AuthController } from "./auth";
@@ -18,7 +18,7 @@ import { SalesController } from "./sales";
 import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
-import { AlertEngine, AlertsController } from "./alerts";
+import { AlertCacheInterceptor, AlertEngine, AlertsController } from "./alerts";
 import { OfflineSalesController } from "./offline-sales";
 import { IncentivesController } from "./incentives";
 import { NotificationsController, NotificationWorker } from "./notifications";
@@ -72,6 +72,7 @@ export function createAppModule(secret: string) {
       RequestRateLimitService,
       { provide: APP_GUARD, useClass: AuthGuard },
       { provide: APP_GUARD, useClass: AuthenticatedRateLimitGuard },
+      { provide: APP_INTERCEPTOR, useClass: AlertCacheInterceptor },
     ],
   })
   class AppModule {}
