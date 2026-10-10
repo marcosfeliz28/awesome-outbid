@@ -77,6 +77,7 @@ import {
   rememberAttempt,
   restoredAttempt,
 } from "./cartDraft";
+import { pickOnEnter, startsWithWords } from "./customerSearch";
 import { scanBeep, scanSoundEnabled, setScanSoundEnabled } from "./scanSound";
 import {
   InvoicePrint,
@@ -354,7 +355,13 @@ export function POS({ go }: { go: (page: string) => void }) {
             clientWords,
           ),
       )
-      .sort((a: any, b: any) => finalConsumer(b) - finalConsumer(a));
+      .sort(
+        (a: any, b: any) =>
+          finalConsumer(b) - finalConsumer(a) ||
+          // 05-N5: primero los que empiezan por lo escrito.
+          Number(startsWithWords(String(b.name), clientQuery)) -
+            Number(startsWithWords(String(a.name), clientQuery)),
+      );
   }, [customers.data, clientQuery, clientPicker]);
   const total = money(totals.reduce((a, i) => a.plus(i.total), d(0))),
     subtotal = money(totals.reduce((a, i) => a.plus(i.subtotal), d(0))),
@@ -1389,12 +1396,21 @@ export function POS({ go }: { go: (page: string) => void }) {
                 aria-label="Buscar cliente"
                 placeholder="Nombre, teléfono o cédula"
                 value={clientQuery}
-                onChange={(e) => setClientQuery(e.target.value)}
+                onChange={(e) => {
+                  setClientQuery(e.target.value);
+                  setPickerHint("");
+                }}
                 onKeyDown={(e) => {
                   if (e.key !== "Enter") return;
                   e.preventDefault();
-                  const first = pickable[0];
-                  if (!first) return;
+                  const first = pickOnEnter(pickable, clientQuery);
+                  if (!first) {
+                    if (pickable.length)
+                      setPickerHint(
+                        "Hay varios clientes parecidos: elige uno de la lista.",
+                      );
+                    return;
+                  }
                   setCustomer(first.id);
                   setClientPicker(false);
                   setClientQuery("");
@@ -1556,6 +1572,12 @@ function HeldSales({
     queryKey: ["quotes"],
     queryFn: () => api("/quotes"),
   });
+  const heldCustomer = (id?: string | null) =>
+    id
+      ? (client.getQueryData<any[]>(["customers"]) ?? []).find(
+          (c) => c.id === id,
+        )?.name
+      : undefined;
   const recover = async (quote: any) => {
     if (busy) return;
     // El carrito se arma antes de consumir la venta en espera: si falta un
@@ -1650,6 +1672,10 @@ function HeldSales({
               <span>
                 {quote.type === "held" ? "En espera" : "Cotización"}
                 <small>
+                  {/* 05-B9: de quién es la venta en espera. */}
+                  {heldCustomer(quote.customerId)
+                    ? heldCustomer(quote.customerId) + " · "
+                    : ""}
                   {quote.items.length} artículos ·{" "}
                   {new Date(quote.createdAt).toLocaleString("es-DO", {
                     timeZone: "America/Santo_Domingo",

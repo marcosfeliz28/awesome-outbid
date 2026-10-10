@@ -11,6 +11,7 @@ import { useStore } from "./api";
 import {
   canApplyPwaUpdate,
   PWA_UPDATE_CHECK_MS,
+  PWA_UPDATE_FORM_MS,
   pwaUpdateMessage,
 } from "./pwaUpdatePolicy";
 
@@ -24,6 +25,14 @@ const ACTIVITY_EVENTS = [
 
 export function startPwaUpdates() {
   let lastActivity = Date.now();
+  // 05-N9: la última vez que se escribió en un campo (formularios a medias).
+  let lastInput = -Infinity;
+  // 05-N7: otra pestaña aplicó la versión nueva: ésta se recarga en cuanto
+  // pueda. Sin esto quedaba con JS viejo bajo un service worker cuyo
+  // precaché ya no tiene sus archivos.
+  let reloading = false;
+  let reloadWanted = false;
+  const hadController = !!navigator.serviceWorker?.controller;
   let waiting = false;
   let applying = false;
   let dismissed = false;
@@ -39,7 +48,6 @@ export function startPwaUpdates() {
     // Recarga cuando el service worker nuevo tome el control. workbox-window
     // no recarga si la versión la encontró una revisión posterior a la carga
     // (la de cada hora la marca como «externa»), así que se escucha aquí.
-    let reloading = false;
     navigator.serviceWorker?.addEventListener("controllerchange", () => {
       if (reloading) return;
       reloading = true;
@@ -48,6 +56,28 @@ export function startPwaUpdates() {
     // Activa el service worker en espera (mensaje SKIP_WAITING).
     void updateSW(true);
   };
+
+  const dialogOpen = () => !!document.querySelector('[role="dialog"]');
+  const reloadIfFree = () => {
+    if (
+      !reloadWanted ||
+      reloading ||
+      cartItems() > 0 ||
+      dialogOpen() ||
+      Date.now() - lastInput < PWA_UPDATE_FORM_MS
+    )
+      return;
+    reloading = true;
+    window.location.reload();
+  };
+  // Sólo si la página ya la controlaba un service worker: la primera
+  // instalación también cambia de controlador y no debe recargar.
+  if (hadController)
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      reloadWanted = true;
+      reloadIfFree();
+      setInterval(reloadIfFree, 15_000);
+    });
 
   const render = () => {
     if (!waiting || applying || dismissed) {
@@ -62,7 +92,11 @@ export function startPwaUpdates() {
       banner.setAttribute("aria-live", "polite");
       Object.assign(banner.style, {
         position: "fixed",
-        top: "12px",
+        // 05-N6: abajo y no arriba, para no tapar la búsqueda ni el estado de
+        // conexión; en el celular, sobre la barra del carrito.
+        bottom: window.matchMedia("(max-width: 720px)").matches
+          ? "88px"
+          : "12px",
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: "2147483000",
@@ -120,9 +154,12 @@ export function startPwaUpdates() {
         cartItems: cartItems(),
         idleMs: Date.now() - lastActivity,
         hidden: document.visibilityState === "hidden",
+        dialogOpen: dialogOpen(),
+        sinceInputMs: Date.now() - lastInput,
       })
     )
       apply();
+    else reloadIfFree();
   };
 
   const updateSW = registerSW({
@@ -149,12 +186,20 @@ export function startPwaUpdates() {
       },
       { capture: true, passive: true },
     );
+  window.addEventListener(
+    "input",
+    () => {
+      lastInput = Date.now();
+    },
+    { capture: true, passive: true },
+  );
   document.addEventListener("visibilitychange", check);
   // El aviso cambia (con o sin botón) cuando se vacía o se llena el carrito.
   useStore.subscribe((state, previous) => {
     if (state.cart.length !== previous.cart.length) {
       if (state.cart.length === 0) dismissed = false;
       render();
+      reloadIfFree();
     }
   });
 }

@@ -249,6 +249,7 @@ const navigation = [
 function Login() {
   const [login, setLogin] = useState(""),
     [password, setPassword] = useState(""),
+    [showPassword, setShowPassword] = useState(false),
     [changeRequired, setChangeRequired] = useState(false),
     [newPassword, setNewPassword] = useState(""),
     [confirmPassword, setConfirmPassword] = useState(""),
@@ -370,7 +371,7 @@ function Login() {
           <label className="field">
             <span>{changeRequired ? "Contraseña temporal" : "Contraseña"}</span>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
               placeholder="Tu contraseña"
@@ -378,6 +379,15 @@ function Login() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
+          {/* 05-B11: ver lo que se escribe, útil con el teclado del celular. */}
+          <button
+            type="button"
+            className="link-button show-password"
+            aria-pressed={showPassword}
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            Mostrar contraseña
+          </button>
           {changeRequired && (
             <PasswordChangeFields
               password={newPassword}
@@ -946,7 +956,11 @@ function Shell() {
                 <WifiOff size={15} />
               )}
               <span>
-                {syncing ? "Sincronizando" : online ? "En línea" : "Offline"}
+                {syncing
+                  ? "Sincronizando"
+                  : online
+                    ? "En línea"
+                    : "Sin conexión"}
                 {pending ? ` · ${pending}` : ""}
               </span>
             </button>
