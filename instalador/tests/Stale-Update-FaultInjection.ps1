@@ -58,6 +58,9 @@ try {
   $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
   $InstallDir = $script:fixturePaths.Install
   $InstallerSession = "current-run"
+  # El cuerpo se ejecuta sin el bloque param del script real: inicializar el
+  # nuevo switch como en un rollback normal, sin activar recuperacion manual.
+  $RecoverInterrupted = $false
   foreach ($case in @("stale", "verified", "current")) {
     $transactionPath = Join-Path $root ("transaction-" + $case)
     $snapshot = Join-Path $transactionPath "snapshot"
