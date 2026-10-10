@@ -284,6 +284,26 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
     expect(late.status).toBe(409);
   });
 
+  it("sin permiso de venta no se usa", async () => {
+    const warehouse = (
+      await ok("/auth/login", {
+        email: "almacen@fitstore.demo",
+        password: demo,
+      })
+    ).accessToken;
+    const denied = await call(
+      "/sales/offline-review/discard",
+      {
+        offlineUuid: randomUUID(),
+        reason: "Prueba QA A2",
+        managerPin: MANAGER_PIN,
+        detail,
+      },
+      warehouse,
+    );
+    expect([401, 403]).toContain(denied.status);
+  });
+
   it("M-6: si el cliente se llevó la mercancía, el descarte registra la salida de inventario y la entrada de caja", async () => {
     const [first] = cashiers;
     const stockOf = async () =>
@@ -378,25 +398,5 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
       first.token,
     );
     expect(await stockOf()).toBe(before);
-  });
-
-  it("sin permiso de venta no se usa", async () => {
-    const warehouse = (
-      await ok("/auth/login", {
-        email: "almacen@fitstore.demo",
-        password: demo,
-      })
-    ).accessToken;
-    const denied = await call(
-      "/sales/offline-review/discard",
-      {
-        offlineUuid: randomUUID(),
-        reason: "Prueba QA A2",
-        managerPin: MANAGER_PIN,
-        detail,
-      },
-      warehouse,
-    );
-    expect([401, 403]).toContain(denied.status);
   });
 });

@@ -605,16 +605,6 @@ export class SalesController {
             bad("El UUID ya corresponde a otra venta.");
           return existing;
         }
-        // N-2: ventas por cobrar de la misma persona se atienden una tras otra
-        // para que el tope del turno se compruebe sobre lo ya confirmado. Es el
-        // primer bloqueo después del de la operación, así no entra en ciclos.
-        if (
-          !can(actor.permissions, "sale:manage") &&
-          input.payments.some(
-            (p) => p.method === "credit" || p.method === "cod",
-          )
-        )
-          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"receivable-shift:" + actor.id}))::text AS locked`;
         if (offline) {
           const settings = await tx.settings.findUnique({
             where: { id: actor.branchId },
@@ -625,6 +615,16 @@ export class SalesController {
               "Las ventas sin conexión están desactivadas para esta tienda. Pide a un administrador que revise el conflicto.",
             );
         }
+        // N-2: ventas por cobrar de la misma persona se atienden una tras otra
+        // para que el tope del turno se compruebe sobre lo ya confirmado. Es el
+        // primer bloqueo después del de la operación, así no entra en ciclos.
+        if (
+          !can(actor.permissions, "sale:manage") &&
+          input.payments.some(
+            (p) => p.method === "credit" || p.method === "cod",
+          )
+        )
+          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"receivable-shift:" + actor.id}))::text AS locked`;
         const capturedAt =
           offline && input.capturedAt ? new Date(input.capturedAt) : undefined;
         if (capturedAt && Date.now() - capturedAt.getTime() > 48 * 3600000)
