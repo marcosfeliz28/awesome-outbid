@@ -94,9 +94,14 @@ function Enable-FitStoreRecoveryIsolation {
   param($Transaction, [string]$Psql, $Secrets, [int]$DatabasePort=5434, [string]$MarkerPath)
   $statePath = Join-Path $Transaction.transactionPath 'recovery-login-state.json'
   if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) {
+    if ($Transaction.PSObject.Properties.Name -contains 'recoveryLoginRoles') {
+      # Reanudar con el plan del marcador, no con roles ya bloqueados por NOLOGIN.
+      $original = @{ originalLoginRoles=@($Transaction.recoveryLoginRoles) }
+    } else {
     $json = @(Invoke-FitStoreRecoverySql -Psql $Psql -Secrets $Secrets -DatabasePort $DatabasePort -Sql "SELECT json_build_object('originalLoginRoles', COALESCE(json_agg(rolname), '[]'::json)) FROM pg_roles WHERE rolcanlogin AND rolname <> 'postgres';")
     if ($json.Count -ne 1) { throw 'No se pudieron registrar los accesos originales; no se bloquearon cuentas.' }
     $original = ([string]$json[0]).Trim() | ConvertFrom-Json
+    }
     # Persistir ANTES de NOLOGIN: un corte permite reanudar usando postgres.
     Write-FitStoreJson -Path $statePath -Value $original -Protect
   }

@@ -29,6 +29,7 @@ try {
  $saved=Read-FitStoreJson -Path $marker
  if($saved.PSObject.Properties.Name -notcontains 'recoveryLoginRoles' -or 'cashier' -notin $saved.recoveryLoginRoles){throw '3h2: lista de LOGIN no conservada en marcador.'}
  Remove-Item -LiteralPath (Join-Path $root 'recovery-login-state.json')
+ Enable-FitStoreRecoveryIsolation -Transaction $saved -Psql (Join-Path $PgBin 'psql.exe') -Secrets $secrets -DatabasePort $Port -MarkerPath $marker
  Disable-FitStoreRecoveryIsolation -Transaction $saved -Psql (Join-Path $PgBin 'psql.exe') -Secrets $secrets -DatabasePort $Port
  if(([string](Sql "SELECT rolcanlogin FROM pg_roles WHERE rolname='cashier';")).Trim() -ne 't'){throw '3h2: perder archivo auxiliar pierde restitucion del marcador.'}
  Write-Host 'PASS 3h2: marcador conserva lista y recupera LOGIN si falta archivo auxiliar.'
