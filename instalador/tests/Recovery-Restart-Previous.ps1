@@ -6,7 +6,7 @@ $source=Get-Content -LiteralPath $rollbackPath -Raw
 $start=$source.IndexOf('try {' + "`r`n" + '  Stop-FitStoreApplication')
 if($start -lt 0){$start=$source.IndexOf('try {' + "`n" + '  Stop-FitStoreApplication')}
 if($start -lt 0){throw 'Fixture no encontro cuerpo rollback'}
-$body=[scriptblock]::Create('$databaseTouched = $false' + "`n" + $source.Substring($start))
+$body=[scriptblock]::Create('$databaseTouched = $false; $isolationReleased = $false' + "`n" + $source.Substring($start))
 . (Join-Path $PSScriptRoot '..\scripts\Recover-FitStoreUpdate.ps1') -DefinitionsOnly
 $tokens=$null;$parseErrors=$null
 $commonAst=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '..\scripts\FitStore.Common.ps1'),[ref]$tokens,[ref]$parseErrors)
@@ -35,7 +35,7 @@ function Resolve-FitStoreServiceAccountSid {param($Account) 'S-1-5-18'}
 function Remove-FitStoreLocalServiceAccess {param($Paths)}
 function Set-FitStoreServiceStartMode {param($Name,$Mode)}
 function Start-FitStoreApplication {}
-function Wait-FitStoreHttp {param($Url,$TimeoutSeconds)}
+function Wait-FitStoreHttp {param($Url,$TimeoutSeconds) if($script:inject -eq 'health'){throw 'fixture-original-health'}}
 function Write-FitStoreLog {param($InstallDir,$Level,$Message) $script:logs+= $Message}
 function Assert-UpdateManifest {param($Manifest,$ExpectedManifestHash,$Root)}
 function Restore-PreviousDataFiles {param($Paths,$PreviousDataPath)}
@@ -50,10 +50,10 @@ try {
  $RecoverInterrupted=$true;$hadSnapshot=$false;$previousDataPath='';$snapshotPath=$root;$failedInstall=Join-Path $root 'failed'
  Start-FitStoreService
  Sql 'CREATE ROLE fitstore NOLOGIN;'|Out-Null
- foreach($case in @('success','winsw','pg-restore')){
+ foreach($case in @('success','winsw','health','pg-restore')){
   if(-not $script:running){Start-FitStoreService}
   Sql 'ALTER ROLE fitstore NOLOGIN;'|Out-Null
-  $script:inject=if($case -eq 'winsw'){'winsw'}else{''};$script:logs=@()
+  $script:inject=if($case -in @('winsw','health')){$case}else{''};$script:logs=@()
   $phase=if($case -eq 'pg-restore'){'rollback-files-restored'}else{'prepared-copy-pending'}
   $recoveryAction=Get-FitStoreUpdateRecoveryAction -InstallPath $root -SnapshotPath (Join-Path $root 'missing-snapshot') -Phase $phase
   $marker=Join-Path $root 'marker';[IO.File]::WriteAllText($marker,'fixture')
@@ -67,6 +67,11 @@ try {
    if(-not $failure -or $failure.Exception.Message -ne 'fixture-original-winsw'){throw 'No conserva fallo original WinSW'}
    if(([string](Sql "SELECT rolcanlogin FROM pg_roles WHERE rolname='fitstore';")).Trim() -ne 't'){throw 'LOGIN no restituido sin tocar base'}
    Write-Host 'PASS 3i1 PostgreSQL real: fallo WinSW con base intacta restituye LOGIN y conserva error original.'
+  }elseif($case -eq 'health'){
+   if(-not $failure -or $failure.Exception.Message -ne 'fixture-original-health'){throw 'No conserva fallo original HTTP'}
+   if(([string](Sql "SELECT rolcanlogin FROM pg_roles WHERE rolname='fitstore';")).Trim() -ne 't'){throw 'LOGIN restituido no conservado'}
+   if(-not($script:logs -match 'LOGIN ya fue restituido') -or ($script:logs -match 'NOLOGIN conservado a proposito')){throw 'Estado LOGIN falso tras fallo HTTP'}
+   Write-Host 'PASS PostgreSQL real: fallo HTTP posterior informa LOGIN ya restituido, sin prometer NOLOGIN.'
   }else{
    if(-not $failure -or $failure.Exception.Message -ne 'fixture-original-pg-restore'){throw 'No conserva fallo original restore'}
    Start-FitStoreService

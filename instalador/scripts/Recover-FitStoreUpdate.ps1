@@ -4,6 +4,18 @@ $ErrorActionPreference = 'Stop'
 
 function Resolve-FitStoreRecoveryPhysicalDirectory {
   param([Parameter(Mandatory)][string]$Path)
+  # Tras mover Program Files al snapshot el destino puede no existir. Resolver
+  # fisicamente el ancestro existente (incluye junction/8.3), luego reconstruir
+  # solo los componentes inexistentes; no omitir comparaciones de seguridad.
+  $existing=[IO.Path]::GetFullPath($Path).TrimEnd('\','/')
+  $missing=[Collections.Generic.List[string]]::new()
+  while(-not (Test-Path -LiteralPath $existing -ErrorAction Stop)){
+    $parent=[IO.Path]::GetDirectoryName($existing)
+    if([string]::IsNullOrEmpty($parent) -or $parent -eq $existing){throw "No existe un ancestro verificable del directorio: $Path"}
+    $missing.Insert(0,[IO.Path]::GetFileName($existing))
+    $existing=$parent
+  }
+  if(-not (Get-Item -LiteralPath $existing -Force).PSIsContainer){throw "El ancestro no es un directorio: $Path"}
   if (-not ('FitStoreRecoveryDirectoryNative' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
@@ -18,13 +30,15 @@ public static class FitStoreRecoveryDirectoryNative {
 }
 '@
   }
-  $handle=[FitStoreRecoveryDirectoryNative]::CreateFile([IO.Path]::GetFullPath($Path),0,7,[IntPtr]::Zero,3,0x02000000,[IntPtr]::Zero)
+  $handle=[FitStoreRecoveryDirectoryNative]::CreateFile($existing,0,7,[IntPtr]::Zero,3,0x02000000,[IntPtr]::Zero)
   try {
     if($handle.IsInvalid){throw "No se pudo resolver el directorio real: $Path"}
     $buffer=[Text.StringBuilder]::new(32768)
     $length=[FitStoreRecoveryDirectoryNative]::GetFinalPathNameByHandle($handle,$buffer,32768,0)
     if(-not $length -or $length -ge 32768){throw "No se pudo resolver el directorio real: $Path"}
-    return $buffer.ToString().TrimEnd('\','/')
+    $physical=$buffer.ToString().TrimEnd('\','/')
+    foreach($component in $missing){$physical=[IO.Path]::Combine($physical,$component)}
+    return $physical
   } finally {$handle.Dispose()}
 }
 

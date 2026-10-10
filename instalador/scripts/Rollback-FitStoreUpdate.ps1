@@ -166,6 +166,7 @@ if ($RecoverInterrupted) {
 }
 
 $databaseTouched = $false
+$isolationReleased = $false
 try {
   Stop-FitStoreApplication
   Stop-FitStoreService -Name $script:PostgresService -TimeoutSeconds 90
@@ -212,6 +213,7 @@ try {
     Start-FitStoreService -Name $script:PostgresService
     Wait-FitStorePostgres -Paths $paths -Secrets $secrets -TimeoutSeconds 90
     Disable-FitStoreRecoveryIsolation -Transaction $transaction -Psql (Join-Path $paths.PgBin 'psql.exe') -Secrets (Read-FitStoreJson -Path $paths.Secrets)
+    $isolationReleased = $true
     Set-FitStoreServiceStartMode -Name $script:ApiService -Mode 'delayed-auto'
     Set-FitStoreServiceStartMode -Name $script:WebService -Mode 'delayed-auto'
   }
@@ -230,7 +232,9 @@ try {
   $originalFailure = $_
   try { Stop-FitStoreApplication } catch {}
   if ($RecoverInterrupted) {
-    if (-not $databaseTouched) {
+    if ($isolationReleased) {
+      try { Write-FitStoreLog -InstallDir $actualInstall -Level 'ERROR' -Message 'LOGIN ya fue restituido tras restaurar la base; fallo la verificacion posterior o la limpieza. Aplicacion detenida: conserve marcador y solicite revision.' } catch {}
+    } elseif (-not $databaseTouched) {
       try {
         $secrets = Read-FitStoreJson -Path $paths.Secrets
         Start-FitStoreService -Name $script:PostgresService
