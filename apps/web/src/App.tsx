@@ -55,6 +55,7 @@ import {
   isNetworkError,
   sessionDeadline,
 } from "./api";
+import { retryDelayMs, retryMessage } from "./pendingSales";
 import { Toasts, toast } from "./helpers";
 import { inactivityWaits } from "./cartDraftPolicy";
 import { keepDraftThrough } from "./cartDraft";
@@ -639,6 +640,19 @@ function Shell() {
       clearInterval(timer);
     };
   }, [user]);
+  // N-M3: ante un error transitorio del servidor («retry») las ventas siguen
+  // pendientes y se reenvían solas, con espera creciente y el mismo UUID.
+  const retryTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const retryAttempt = useRef(0);
+  const latestSynchronize = useRef<() => Promise<void>>(async () => undefined);
+  const scheduleRetry = () => {
+    clearTimeout(retryTimer.current);
+    retryTimer.current = setTimeout(
+      () => latestSynchronize.current(),
+      retryDelayMs(retryAttempt.current++),
+    );
+  };
+  useEffect(() => () => clearTimeout(retryTimer.current), []);
   const synchronize = async () => {
     if (syncing || !online) return;
     setSyncing(true);
@@ -649,6 +663,10 @@ function Shell() {
       if (result.synced) toast(`${result.synced} ventas sincronizadas.`);
       if (result.conflicts)
         toast(`${result.conflicts} ventas requieren revisión en Caja.`, true);
+      if (result.retry) {
+        toast(retryMessage(result.retry), true);
+        scheduleRetry();
+      } else retryAttempt.current = 0;
       await client.invalidateQueries();
     } catch (e: any) {
       toast(e.message, true);
@@ -656,6 +674,7 @@ function Shell() {
       setSyncing(false);
     }
   };
+  latestSynchronize.current = synchronize;
   useEffect(() => {
     if (user && online) synchronize();
   }, [user?.id, online]);

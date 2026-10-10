@@ -148,6 +148,15 @@ async function conflict(cashier: (typeof cashiers)[number]) {
   const result = await ok("/sales/sync", { sales: [sale] }, cashier.token);
   expect(result.results[0].status).toBe("conflict");
   expect(result.results[0].message).toMatch(/stock/i);
+  // N8: la bitácora del conflicto guarda qué se vendió.
+  const log = await db.auditLog.findFirstOrThrow({
+    where: { action: "offline_sale_conflict", entityId: offlineUuid },
+  });
+  expect((log.after as any).detail).toMatchObject({
+    items: [{ variantId: variant.id, qty: 1, discountPercent: 0 }],
+    payments: [{ method: "cash", amount: 1000 }],
+    customerId,
+  });
   return sale;
 }
 const detail = {

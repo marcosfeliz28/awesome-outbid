@@ -64,7 +64,48 @@ import {
   maskTail,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
-import { moneyDb } from "./database-errors";
+import {
+  databaseUnavailable,
+  isDatabaseDown,
+  isTransientDbError,
+  moneyDb,
+} from "./database-errors";
+
+const TRANSIENT_SYNC_MESSAGE =
+  "El servidor está ocupado. La venta sigue guardada en este equipo y se reintentará sola.";
+/**
+ * N8 (auditoría 05 v2): lo que la caja intentó vender, guardado con el
+ * conflicto. Si se borran los datos del navegador antes de que gerencia la
+ * descarte, el servidor sabe qué artículos y pagos eran. Sólo campos
+ * conocidos y acotados; nunca referencias de pago ni notas libres.
+ */
+function offlineSaleEvidence(attempted: any) {
+  const number = (value: unknown) =>
+    Number.isFinite(Number(value)) ? money(Number(value)) : null;
+  return {
+    capturedAt:
+      typeof attempted?.capturedAt === "string"
+        ? attempted.capturedAt.slice(0, 40)
+        : null,
+    customerId:
+      typeof attempted?.customerId === "string"
+        ? attempted.customerId.slice(0, 40)
+        : null,
+    items: (Array.isArray(attempted?.items) ? attempted.items : [])
+      .slice(0, 200)
+      .map((item: any) => ({
+        variantId: String(item?.variantId ?? "").slice(0, 40),
+        qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : null,
+        discountPercent: number(item?.discountPercent),
+      })),
+    payments: (Array.isArray(attempted?.payments) ? attempted.payments : [])
+      .slice(0, 20)
+      .map((payment: any) => ({
+        method: String(payment?.method ?? "").slice(0, 20),
+        amount: number(payment?.amount),
+      })),
+  };
+}
 
 // Foto de evidencia de un cobro: hasta 2 MB.
 const PROOF_MAX_BYTES = 2 * 1024 * 1024;
@@ -1209,8 +1250,12 @@ export class SalesController {
       body,
     );
     const results = [];
+    // N-M3: la base no respondió; las ventas que faltan se devuelven como
+    // reintentables sin intentarlas (cada intento esperaría el tiempo del pool).
+    let databaseDown = false;
     for (const sale of input.sales)
       try {
+        if (databaseDown) throw databaseUnavailable();
         const valid = saleSchema.safeParse(sale);
         if (!valid.success)
           bad(
@@ -1244,6 +1289,19 @@ export class SalesController {
             status: "conflict",
             discarded: true,
             message,
+          });
+          continue;
+        }
+        // N-M3: un error transitorio (503 DB_UNAVAILABLE, interbloqueo,
+        // P2028/P2024…) NO es un conflicto offline: sin alerta, sin bitácora
+        // de conflicto y sin pedir revisión. La cola local conserva la venta
+        // «pendiente» y la reenvía con el mismo UUID (idempotente).
+        if (isTransientDbError(e)) {
+          if (isDatabaseDown(e)) databaseDown = true;
+          results.push({
+            offlineUuid: sale.offlineUuid,
+            status: "retry",
+            message: TRANSIENT_SYNC_MESSAGE,
           });
           continue;
         }
@@ -1307,6 +1365,9 @@ export class SalesController {
               {
                 paymentTotal,
                 attemptedExpectedTotal,
+                // N8: qué se vendió, por si se borran los datos del navegador
+                // antes de que gerencia la descarte.
+                detail: offlineSaleEvidence(attempted),
                 // Sólo una caja propia de esta sucursal se guarda como evidencia.
                 cashSessionId:
                   typeof attempted.cashSessionId === "string" &&
