@@ -195,10 +195,12 @@ try {
   $usesLocalService = $false
   foreach ($service in @($script:ApiService, $script:WebService)) {
     $account = Ensure-RestoredApplicationService -Paths $paths -Name $service -KeepDisabled:$RecoverInterrupted
-    if ($account -in @('NT AUTHORITY\LocalService', 'LocalService')) { $usesLocalService = $true }
-    elseif ($account -notin @('LocalSystem', 'NT AUTHORITY\SYSTEM')) { throw "Cuenta de servicio restaurada no admitida para $service." }
+    $accountSid = Resolve-FitStoreServiceAccountSid -Account $account
+    if ($accountSid -eq 'S-1-5-19') { $usesLocalService = $true }
+    elseif ($accountSid -ne 'S-1-5-18') { throw "Cuenta de servicio restaurada no admitida para $service." }
   }
   if ($usesLocalService) { Grant-FitStoreApplicationAccess -Paths $paths }
+  else { Remove-FitStoreLocalServiceAccess -Paths $paths }
   if ($RecoverInterrupted) {
     Disable-FitStoreRecoveryIsolation -Transaction $transaction -Psql (Join-Path $paths.PgBin 'psql.exe') -Secrets (Read-FitStoreJson -Path $paths.Secrets)
     Set-FitStoreServiceStartMode -Name $script:ApiService -Mode 'delayed-auto'
@@ -217,6 +219,7 @@ try {
   Write-Host "ROLLBACK CORRECTO: la versión anterior y su base fueron restauradas y verificadas."
 } catch {
   try { Stop-FitStoreApplication } catch {}
+  if ($RecoverInterrupted) { Write-FitStoreLog -InstallDir $actualInstall -Level 'ERROR' -Message 'Salida manual de soporte para NOLOGIN: ALTER ROLE fitstore LOGIN; con la cuenta administrativa postgres. La lista original de accesos esta en el marcador y recovery-login-state.json; conserve ambos y no restaure ni borre datos sin revision.' }
   Write-FitStoreLog -InstallDir $actualInstall -Level "ERROR" -Message ("El rollback automático no terminó; se conservaron la transacción y el respaldo. " + $_.Exception.Message)
   throw
 }

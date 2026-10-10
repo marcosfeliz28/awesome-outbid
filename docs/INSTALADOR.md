@@ -203,16 +203,24 @@ Sólo puede ejecutarse una instalación, actualización o desinstalación a la v
 ### Recuperar después de un corte de luz
 
 No vuelva a ejecutar el instalador ni borre `actualizacion-preparada.json`.
-Desde los scripts de la versión nueva (o su paquete extraído), ejecute como
-administrador:
+Obtenga el paquete de scripts de **la versión nueva** entregado por soporte
+(directorio `instalador/scripts` de la entrega auditada). El snapshot anterior
+puede no contener `Recover-FitStoreUpdate.ps1`: no copie ese script antiguo ni
+un archivo suelto. Extraiga el directorio completo, con `FitStore.Common.ps1`,
+`Rollback-FitStoreUpdate.ps1` y sus demás archivos, a una carpeta externa, por
+ejemplo `%TEMP%\Nexora-Recovery\scripts`. No sobrescriba la instalación.
+Abra PowerShell como administrador y cambie primero a esa carpeta:
 
 ```powershell
+Set-Location -LiteralPath "$env:TEMP\Nexora-Recovery\scripts"
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Recover-FitStoreUpdate.ps1 -InstallDir "C:\Program Files\FitStore POS"
 ```
 
 La recuperación explícita verifica el SHA-256 del respaldo y exige que API y
 Web sigan **deshabilitados y detenidos**, como los dejó Preflight. Consulta la
-base para rechazar ventas desde el instante anterior al respaldo. Si la ruta
+base para rechazar actividad posterior (ventas, auditoría del servidor, pagos,
+devoluciones, movimientos y apertura/cierre de caja e inventario) desde el
+instante anterior al respaldo, incluidas ventas offline capturadas antes. Si la ruta
 instalada fue apartada, usa PostgreSQL de la copia anterior temporalmente para
 esa consulta; no crea ni restaura una base durante la comprobación. Después
 restaura archivos y base mediante el rollback verificado, incluidas sus fases
@@ -224,6 +232,59 @@ el respaldo, marcador y carpetas y solicite recuperación asistida. Una fase
 `verified` nunca restaura la base anterior; requiere limpieza manual del
 marcador preservando la versión activa. No cambie servicios para forzar este
 procedimiento. La prueba Windows-Smoke en una máquina limpia sigue pendiente.
+
+### Limpieza asistida del marcador en services/verifying
+
+Las fases `services` y `verifying` no acreditan una actualización terminada:
+la primera precede al registro de servicios; en la segunda estos pueden haber
+arrancado, aunque aún no consten las dos comprobaciones HTTP. Por tanto, un
+marcador en esas fases **no autoriza un rollback ni una limpieza automática**.
+Preflight bloquea otra actualización mientras exista el marcador.
+
+1. Soporte debe conservar una copia protegida del marcador, los logs, el
+   respaldo previo y sus hashes, y las carpetas de la transacción. Registrar
+   fase, versión y rutas reales, sin publicar secretos. No borrar la copia
+   anterior ni ejecutar `Complete-FitStoreUpdate` para saltarse el bloqueo.
+2. Consultar el estado y la cuenta real de los servicios en Windows, y las
+   respuestas de `http://127.0.0.1:3001/api/health` y
+   `https://localhost:4173/__fitstore/health`. Contrastar versión instalada,
+   configuración y logs. Una respuesta HTTP por sí sola no demuestra que la
+   actualización y sus migraciones hayan concluido correctamente.
+3. Revisar si hubo actividad posterior al respaldo, incluidas ventas offline,
+   pagos, inventario y caja. Si los servicios están habilitados o la revisión
+   es incompleta, **no restaurar la base anterior**. No detener o deshabilitar
+   servicios para simular que nunca hubo actividad. Preservar los datos vivos
+   y obtener un respaldo actual verificado antes de cualquier intervención.
+4. Si soporte confirma que la versión activa es correcta y debe conservarse,
+   documentar la evidencia y retirar **solo el marcador exacto** mediante
+   intervención asistida. No ejecutar rollback, no reemplazar la base, no
+   sobrescribir archivos activos y no borrar automáticamente la transacción
+   ni los respaldos. Comprobar después que servicios y datos siguen intactos.
+5. Si no puede confirmarse la versión activa, mantener el bloqueo y escalar
+   a recuperación asistida. `Recover-FitStoreUpdate.ps1` solo procede cuando
+   satisface todos sus controles originales; no cambiar la fase del JSON ni
+   la sesión del instalador para forzarlo. `verified` tampoco admite restaurar
+   la base anterior: su limpieza asistida debe preservar la versión activa.
+
+Este procedimiento requiere revisión de soporte; no es una reparación
+automática ni una certificación de la prueba Windows-Smoke pendiente.
+
+Si el directorio actual está dentro de la instalación, el script **rechaza antes
+de restaurar**: salga de esa carpeta y repita desde el paquete externo. Así se
+evita bloquear el reemplazo de la carpeta instalada con `Move-Item`.
+
+La recuperación guarda la lista de roles con LOGIN tanto en el marcador como en
+`recovery-login-state.json` antes de bloquear conexiones. Siempre restituye
+`fitstore` y los roles registrados al salir. Si otra interrupción deja el acceso
+bloqueado, soporte debe conectarse como `postgres` y ejecutar
+`ALTER ROLE fitstore LOGIN;`. Esta salida también se indica en el log; conserve
+ambos archivos y no restaure ni elimine el marcador sin revisión asistida.
+
+**@dueña: probar en Windows limpio** PostgreSQL temporal con un cluster creado
+por otra cuenta: aún no está verificado que el token reducido de `pg_ctl` pueda
+acceder a una carpeta protegida solo para SYSTEM/Administradores. Las pruebas
+aisladas actuales crean el cluster con la misma cuenta y no acreditan ese caso.
+No se declara el instalador certificado ni se entrega a la tienda sin esta prueba.
 
 Un segundo asistente se detiene antes de tocar archivos o activar un rollback.
 

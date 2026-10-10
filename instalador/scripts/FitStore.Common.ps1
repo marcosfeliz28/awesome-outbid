@@ -115,6 +115,32 @@ function Grant-FitStoreSystemAccess {
   if ($LASTEXITCODE -ne 0) { throw "No se pudo dar acceso al servicio de respaldo en $Path." }
 }
 
+function Resolve-FitStoreServiceAccountSid {
+  param([Parameter(Mandatory)][string]$Account)
+  # LocalSystem es el token de SCM, no un nombre localizado de NTAccount.
+  if ($Account -eq 'LocalSystem') { return 'S-1-5-18' }
+  return [Security.Principal.NTAccount]::new($Account).Translate([Security.Principal.SecurityIdentifier]).Value
+}
+
+function Remove-FitStoreLocalServiceAccess {
+  param([Parameter(Mandatory)]$Paths)
+  $identity = [Security.Principal.SecurityIdentifier]::new('S-1-5-19')
+  # Solo destinos que Grant-FitStoreApplicationAccess modifica, sin recorrer
+  # node_modules. Eliminar primero grants de padres retira la herencia hija.
+  $targets = @($Paths.Data, $Paths.Work, (Join-Path $Paths.Work 'app'),
+    (Join-Path $Paths.Work 'app\api'), $Paths.Pki, $Paths.Install, $Paths.Logs,
+    (Join-Path $Paths.Work '.env'), $Paths.ServerConfig,
+    (Join-Path $Paths.Pki 'FitStore-server.pfx'))
+  foreach ($path in $targets) {
+    if (-not (Test-Path -LiteralPath $path)) { continue }
+    $item = Get-Item -LiteralPath $path
+    $acl = Get-Acl -LiteralPath $path
+    $acl.PurgeAccessRules($identity)
+    if ($item.PSIsContainer) { [IO.Directory]::SetAccessControl($path, $acl) }
+    else { [IO.File]::SetAccessControl($path, $acl) }
+  }
+}
+
 function Grant-FitStoreApplicationAccess {
   param([Parameter(Mandatory = $true)]$Paths)
   $identity = [Security.Principal.SecurityIdentifier]::new("S-1-5-19")
@@ -170,14 +196,29 @@ function Initialize-FitStoreBackupStorage {
   $script:BackupReaderSid = ""
   if ($State.PSObject.Properties.Name -contains "backupReaderSid" -and $State.backupReaderSid) {
     $sid = [Security.Principal.SecurityIdentifier]::new([string]$State.backupReaderSid)
-    if (-not $sid.IsAccountSid()) { throw "El lector de respaldos debe ser el SID real de una cuenta de Windows." }
-    $script:BackupReaderSid = $sid.Value
+    if ($sid.Value -like "S-1-12-1-*") {
+      Write-FitStoreLog -InstallDir $Paths.Install -Level "AVISO" -Message "La cuenta Azure AD no tiene lectura automatica de respaldos en esta version. Las copias siguen privadas para SYSTEM y administradores; solicite configurar el acceso de esa cuenta sin usar Users ni Everyone."
+    } elseif (-not $sid.IsAccountSid()) { throw "El lector de respaldos debe ser el SID real de una cuenta de Windows." }
+    else { $script:BackupReaderSid = $sid.Value }
+  } elseif ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value -like "S-1-12-1-*") {
+    # Install descarta IsAccountSid() para identidades Azure AD. No callar esa
+    # limitacion: la copia local sigue privada, pero OneDrive no podra leerla.
+    Write-FitStoreLog -InstallDir $Paths.Install -Level "AVISO" -Message "La cuenta Azure AD del instalador no tiene lectura automatica de respaldos. Solicite configurar el acceso de esa cuenta sin usar Users ni Everyone."
   }
   New-FitStoreDirectory -Path $Paths.LocalBackups
   Protect-FitStoreBackupDirectory -Path $Paths.LocalBackups
-  foreach ($directory in @($previous, $Paths.LocalBackups) | Select-Object -Unique) {
-    if (-not $directory -or -not (Test-Path -LiteralPath $directory -PathType Container)) { continue }
-    foreach ($file in Get-ChildItem -LiteralPath $directory -Filter "FitStore_*" -File) { Protect-FitStoreBackupFile -Path $file.FullName }
+  # La carpeta nueva y sus copias siempre deben quedar privadas: sus errores
+  # no se ignoran. El destino antiguo puede estar en una USB o red desconectada.
+  foreach ($file in Get-ChildItem -LiteralPath $Paths.LocalBackups -Filter "FitStore_*" -File -ErrorAction Stop) {
+    Protect-FitStoreBackupFile -Path $file.FullName
+  }
+  if ($previous -and -not [string]::Equals($previous, $Paths.LocalBackups, [StringComparison]::OrdinalIgnoreCase)) {
+    try {
+      if (-not (Test-Path -LiteralPath $previous -PathType Container -ErrorAction Stop)) { throw "El destino anterior no esta disponible." }
+      foreach ($file in Get-ChildItem -LiteralPath $previous -Filter "FitStore_*" -File -ErrorAction Stop) { Protect-FitStoreBackupFile -Path $file.FullName }
+    } catch {
+      Write-FitStoreLog -InstallDir $Paths.Install -Level "AVISO" -Message "No se pudieron retirar los permisos publicos de todas las copias del destino anterior. Revise esa USB o ubicacion de red; las nuevas copias se guardan en la carpeta local privada."
+    }
   }
   $State | Add-Member -NotePropertyName backupPath -NotePropertyValue $Paths.LocalBackups -Force
   return $Paths.LocalBackups

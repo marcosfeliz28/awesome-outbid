@@ -1,6 +1,13 @@
 param([string]$PgBin, [int]$Port=55611, [string]$RecoverySource)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+if (-not $PgBin) { $PgBin = $env:PGBIN }
+if ($env:CI -and -not $PgBin) { throw '3h1: CI requiere PgBin/PGBIN para ejecutar PostgreSQL real; no se permite omitirlo.' }
+if ($PgBin) {
+ foreach ($tool in @('initdb.exe','pg_ctl.exe','psql.exe','pg_dump.exe','pg_restore.exe')) {
+  if (-not (Test-Path -LiteralPath (Join-Path $PgBin $tool) -PathType Leaf)) { throw "3h1: falta herramienta PostgreSQL real: $tool" }
+ }
+}
 $recover = Join-Path $PSScriptRoot '../scripts/Recover-FitStoreUpdate.ps1'
 if ($RecoverySource) { $recover=$RecoverySource }
 if (-not (Test-Path -LiteralPath $recover)) { throw 'A3: falta recuperacion explicita tras corte de luz.' }
@@ -24,6 +31,7 @@ function Read-FitStoreJson { param($Path) if($Path -like '*recovery-login-state.
 function Write-FitStoreJson { param($Path,$Value,[switch]$Protect) [IO.File]::WriteAllText($Path,($Value|ConvertTo-Json -Depth 10)) }
 function Invoke-FitStorePg { param($Tool,$Password,$Arguments,$FailureMessage) if(($Arguments -join ' ') -notmatch 'SELECT count'){throw 'Only read query allowed'}; return $script:count }
 function Get-Service { param($Name,$ErrorAction) [pscustomobject]@{Status='Stopped'} }
+function Get-FitStoreUpdateMarker { param($Paths) return (Join-Path $root 'update-marker.fixture.json') }
 $script:pgOperations=@()
 function Invoke-FitStoreRecoveryPgCtl { param($Tool,$Arguments,$Database) $script:pgOperations+=($Arguments -join ' ') }
 try {
@@ -64,6 +72,13 @@ try {
    & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE fitstore OWNER fitstore;' | Out-Null
    & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U fitstore -d fitstore -v ON_ERROR_STOP=1 -c 'CREATE TABLE "Sale" ("createdAt" timestamp NOT NULL);' | Out-Null
    if($LASTEXITCODE -ne 0){throw 'fixture schema failed'}
+   foreach ($table in @('AuditLog','Payment','SaleReturn','CashMovement','InventoryMovement')) {
+    $schema = 'CREATE TABLE "' + $table + '" ("createdAt" timestamp NOT NULL);'
+    & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U fitstore -d fitstore -v ON_ERROR_STOP=1 -c $schema | Out-Null
+    if($LASTEXITCODE -ne 0){throw "fixture activity schema failed: $table"}
+   }
+   & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U fitstore -d fitstore -v ON_ERROR_STOP=1 -c 'CREATE TABLE "CashSession" ("openedAt" timestamp NOT NULL, "closedAt" timestamp);' | Out-Null
+   if($LASTEXITCODE -ne 0){throw 'fixture CashSession schema failed'}
    function Invoke-FitStorePg {param($Tool,$Password,$Arguments,$FailureMessage) $localArgs=@($Arguments|ForEach-Object{if($_ -eq '--port=5434'){"--port=$Port"}else{$_}}); & $Tool @localArgs; if($LASTEXITCODE -ne 0){throw $FailureMessage}}
    $paths.PgBin=$PgBin
    Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port
@@ -82,10 +97,10 @@ try {
    $tx|Add-Member transactionPath $root -Force
    foreach($name in @('Invoke-FitStoreRecoverySql','Enable-FitStoreRecoveryIsolation','Disable-FitStoreRecoveryIsolation')){
     $def=$ast.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)
-    if($def){Invoke-Expression $def.Extent.Text}
+    if(-not $def){throw "3h1: falta funcion obligatoria de aislamiento: $name"}
+    Invoke-Expression $def.Extent.Text
    }
-   if(Get-Command Enable-FitStoreRecoveryIsolation -ErrorAction SilentlyContinue){Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port -ExclusiveAccess}
-   else{Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port}
+   Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port -ExclusiveAccess
    $ErrorActionPreference='Continue'
    try { & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U fitstore -d fitstore -c 'INSERT INTO "Sale" VALUES (TIMESTAMP ''2026-10-09 10:00:01'');' 2>$null | Out-Null } finally { $ErrorActionPreference='Stop' }
    if($LASTEXITCODE -eq 0){throw 'A3 exclusive: SQL writer admitted AFTER eligibility SELECT; restore can overwrite sale.'}
