@@ -558,7 +558,7 @@ describe("Respaldo a Google Drive · sin configuración", () => {
     expect(s.body.missing).toEqual([
       "GOOGLE_OAUTH_CLIENT_ID",
       "GOOGLE_OAUTH_CLIENT_SECRET",
-      "BACKUP_ENCRYPTION_KEY (24 caracteres o más)",
+      "BACKUP_ENCRYPTION_KEY (32 caracteres o más)",
     ]);
     expect(
       (await call(bare.base, "/backups/google/connect", { token })).status,
@@ -674,6 +674,38 @@ describe("Respaldo a Google Drive · permisos y conexión", () => {
     expect(g.requests.filter((r) => r.path === "/token")).toHaveLength(0);
   });
 
+  it("la vuelta de Google falla si la sesión que inició la conexión venció por inactividad", async () => {
+    const before = g.requests.filter((r) => r.path === "/token").length;
+    const c = await call(api.base, "/backups/google/connect", { token: admin });
+    const cookie = c.headers.getSetCookie()[0]!.split(";")[0]!;
+    const consent = await fetch(c.body.url, { redirect: "manual" });
+    const back = new URL(consent.headers.get("location")!);
+    const claims = JSON.parse(
+      Buffer.from(
+        back.searchParams.get("state")!.split(".")[0]!,
+        "base64url",
+      ).toString(),
+    );
+    await db.authSession.update({
+      where: { id: claims.s },
+      data: { lastActivityAt: new Date(Date.now() - 24 * 3600_000) },
+    });
+    try {
+      const r = await call(api.base, "/backups/google/callback" + back.search, {
+        headers: { Cookie: cookie },
+      });
+      expect(r.headers.get("location")).toMatch(/\/\?drive=invalid#settings$/);
+      expect(g.requests.filter((x) => x.path === "/token")).toHaveLength(
+        before,
+      );
+    } finally {
+      await db.authSession.update({
+        where: { id: claims.s },
+        data: { lastActivityAt: new Date() },
+      });
+    }
+  });
+
   it("sin el permiso de Drive marcado no conecta y revoca lo concedido", async () => {
     g.grantScope = "openid";
     const { result } = await connect();
@@ -684,7 +716,7 @@ describe("Respaldo a Google Drive · permisos y conexión", () => {
   });
 
   it("conecta: token cifrado en reposo, cuenta enmascarada, auditoría sin secretos", async () => {
-    const { result } = await connect();
+    const { result, back, cookie } = await connect();
     expect(result.status).toBe(302);
     expect(result.headers.get("location")).toMatch(
       /\/\?drive=connected#settings$/,
@@ -706,6 +738,18 @@ describe("Respaldo a Google Drive · permisos y conexión", () => {
     // El código ya usado no sirve otra vez.
     const used = g.requests.filter((r) => r.path === "/token").length;
     expect(used).toBeGreaterThan(0);
+    // N-09: el state tampoco. Repetir la URL de vuelta (historial, recarga,
+    // referer) con la misma cookie no vuelve a pedir el token a Google.
+    const replay = await call(
+      api.base,
+      "/backups/google/callback" + back.search,
+      { headers: { Cookie: cookie } },
+    );
+    expect(replay.headers.get("location")).toMatch(
+      /\/\?drive=invalid#settings$/,
+    );
+    expect(g.requests.filter((r) => r.path === "/token")).toHaveLength(used);
+    expect((await status()).connected).toBe(true);
   });
 });
 

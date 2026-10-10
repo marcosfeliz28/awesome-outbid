@@ -192,7 +192,7 @@ Function OwnerPageCreate
   ${NSD_CreateLabel} 0 101u 31% 12u "Repetir contraseña"
   ${NSD_CreatePassword} 33% 98u 67% 13u ""
   Pop $OwnerConfirmField
-  ${NSD_CreateLabel} 0 123u 31% 12u "PIN (4 a 6 dígitos)"
+  ${NSD_CreateLabel} 0 123u 31% 12u "PIN (6 dígitos)"
   ${NSD_CreatePassword} 33% 120u 35% 13u ""
   Pop $OwnerPinField
   ${NSD_CreateLabel} 0 145u 100% 22u "La contraseña debe tener al menos 12 caracteres. El PIN se usa para autorizaciones rápidas en caja."
@@ -230,7 +230,7 @@ Function OwnerPageLeave
   StrLen $0 $OwnerPin
   ${If} $0 < 4
   ${OrIf} $0 > 6
-    MessageBox MB_ICONEXCLAMATION "El PIN debe tener entre 4 y 6 dígitos."
+    MessageBox MB_ICONEXCLAMATION "El PIN debe tener 6 dígitos."
     Abort
   ${EndIf}
 FunctionEnd

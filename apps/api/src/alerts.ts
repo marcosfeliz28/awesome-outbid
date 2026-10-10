@@ -53,6 +53,8 @@ export const MANUAL_ALERT_TYPES = [
   "transfer_rejected_loss",
   "refund_method_mismatch",
   "cost_change",
+  // Cupo de contraseñas de una cuenta agotado (auth.ts, N-01).
+  "account_locked",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,

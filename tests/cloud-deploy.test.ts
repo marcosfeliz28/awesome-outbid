@@ -619,18 +619,34 @@ describe("Render · proxy público", () => {
     expect(geo).toContain(
       "include /etc/nginx/snippets/nexora-trusted-edge.conf;",
     );
+    // N-04: además del borde de Render, el último salto de X-Forwarded-For
+    // (el que añade Render) debe ser una red publicada de Cloudflare.
+    const cloudflare = nginx.match(
+      /geo \$nexora_xff_last_hop \$nexora_cloudflare_peer \{([\s\S]*?)\n\}/,
+    )?.[1];
+    expect(cloudflare).toContain("default 0;");
+    expect(cloudflare).toContain(
+      "include /etc/nginx/snippets/nexora-cloudflare-ips.conf;",
+    );
     const map = nginx.match(
-      /map "\$nexora_trusted_edge\|\$http_cf_connecting_ip" \$nexora_client_ip \{([\s\S]*?)\n\}/,
+      /map "\$nexora_trusted_edge\|\$nexora_cloudflare_peer\|\$http_cf_connecting_ip" \$nexora_client_ip \{([\s\S]*?)\n\}/,
     )?.[1];
     expect(map).toContain("default $remote_addr;");
-    // Sólo con el borde de confianza (1|) y una sola IP con forma válida.
-    for (const line of map!.split("\n").filter((l) => l.includes("~")))
+    // Sólo con el borde de confianza Y Cloudflare (1|1|) y una sola IP con
+    // forma válida.
+    const guarded = map!.split("\n").filter((l) => l.includes("~"));
+    expect(guarded).toHaveLength(2);
+    for (const line of guarded)
       expect(line).toMatch(
-        /"~\^1\\\|\(\?<nexora_cf_ipv[46]>.*\)\$" \$nexora_cf_ipv[46];$/,
+        /"~\^1\\\|1\\\|\(\?<nexora_cf_ipv[46]>.*\)\$" \$nexora_cf_ipv[46];$/,
       );
-    expect(nginx).not.toMatch(
-      /\$http_(?:cf_ray|x_forwarded_for|true_client_ip|x_real_ip)/,
+    // X-Forwarded-For sólo se lee para su ÚLTIMO salto (y no se reenvía tal
+    // cual); el resto de cabeceras de IP del cliente nunca se leen.
+    expect(nginx.match(/\$http_x_forwarded_for/g)).toHaveLength(1);
+    expect(nginx).toMatch(
+      /map \$http_x_forwarded_for \$nexora_xff_last_hop \{\s+default "";\s+"~\(\?<nexora_last_hop>\[\^,\\s\]\+\)\\s\*\$" \$nexora_last_hop;/,
     );
+    expect(nginx).not.toMatch(/\$http_(?:cf_ray|true_client_ip|x_real_ip)/);
     expect(nginx).not.toContain("$proxy_add_x_forwarded_for");
     expect(nginx).not.toContain("real_ip_header");
     expect(
@@ -648,7 +664,7 @@ describe("Render · proxy público", () => {
     // El snippet se genera al arrancar y la imagen trae el generador.
     const entrypoint = read("deploy/render/start-nginx.sh");
     expect(entrypoint).toContain(
-      "nexora-render-trusted-edge /etc/nginx/snippets/nexora-trusted-edge.conf",
+      "nexora-render-trusted-edge /etc/nginx/snippets/nexora-trusted-edge.conf \\\n  /etc/nginx/snippets/nexora-cloudflare-ips.conf",
     );
     expect(entrypoint.indexOf("nexora-render-trusted-edge")).toBeLessThan(
       entrypoint.indexOf("exec /docker-entrypoint.sh"),
@@ -656,44 +672,112 @@ describe("Render · proxy público", () => {
     expect(read("deploy/render/Dockerfile.web")).toContain(
       "COPY --chmod=755 deploy/render/render-trusted-edge.sh /usr/local/bin/nexora-render-trusted-edge",
     );
+    expect(read("deploy/render/Dockerfile.web")).toContain(
+      "COPY deploy/render/cloudflare-ips.txt /etc/nginx/nexora/cloudflare-ips.txt",
+    );
+  });
+
+  // N-04: la lista de confianza es la mínima real. Del borde de Render sólo
+  // 10.0.0.0/8 (su red privada) y, de Cloudflare, exactamente las redes
+  // publicadas: ninguna privada, de loopback ni "todo Internet".
+  it("las redes de confianza por defecto son mínimas y las de Cloudflare son públicas y están bien formadas", () => {
+    const script = read("deploy/render/render-trusted-edge.sh");
+    expect(script).toContain("NEXORA_TRUSTED_EDGE_CIDRS-10.0.0.0/8}");
+    expect(script).not.toMatch(
+      /172\.16\.0\.0|192\.168\.0\.0|100\.64\.0\.0|fc00::/,
+    );
+    const list = read("deploy/render/cloudflare-ips.txt")
+      .split("\n")
+      .filter((line) => line.trim() && !line.startsWith("#"));
+    expect(list.length).toBeGreaterThanOrEqual(20);
+    const cidr =
+      /^(([0-9]{1,3}\.){3}[0-9]{1,3}\/[0-9]{1,2}|[0-9a-f:]+:[0-9a-f:]*\/[0-9]{1,3})$/;
+    for (const net of list) {
+      expect(net).toMatch(cidr);
+      const [address, bits] = net.split("/");
+      // Nada privado ni «cualquiera»: el prefijo no puede ser más ancho que /12
+      // (IPv4) ni /29 (IPv6), y no puede empezar por una red reservada.
+      expect(Number(bits)).toBeGreaterThanOrEqual(
+        address.includes(":") ? 29 : 12,
+      );
+      expect(address).not.toMatch(
+        /^(0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|fc|fd|fe80|::)/i,
+      );
+    }
+    // Las redes publicadas más conocidas siguen en la lista.
+    for (const net of ["173.245.48.0/20", "104.16.0.0/13", "2606:4700::/32"])
+      expect(list).toContain(net);
   });
 
   it.skipIf(process.platform === "win32")(
-    "genera la lista del borde sólo con redes válidas",
+    "genera la lista del borde y la de Cloudflare sólo con redes válidas",
     () => {
       const dir = mkdtempSync(join(tmpdir(), "nexora-edge-"));
       const target = join(dir, "edge.conf");
-      const render = (value?: string) =>
+      const cfTarget = join(dir, "cloudflare.conf");
+      const source = resolve(root, "deploy/render/cloudflare-ips.txt");
+      const render = (
+        value?: string,
+        cloudflare?: string,
+        withCloudflare = true,
+      ) =>
         spawnSync(
           "sh",
-          [resolve(root, "deploy/render/render-trusted-edge.sh"), target],
+          [
+            resolve(root, "deploy/render/render-trusted-edge.sh"),
+            target,
+            ...(withCloudflare ? [cfTarget, source] : []),
+          ],
           {
             env: {
               PATH: process.env.PATH,
               ...(value === undefined
                 ? {}
                 : { NEXORA_TRUSTED_EDGE_CIDRS: value }),
+              ...(cloudflare === undefined
+                ? {}
+                : { NEXORA_CLOUDFLARE_CIDRS: cloudflare }),
             },
             encoding: "utf8",
           },
         );
       try {
         expect(render().status).toBe(0);
-        expect(readFileSync(target, "utf8")).toBe(
-          "10.0.0.0/8 1;\n172.16.0.0/12 1;\n192.168.0.0/16 1;\n100.64.0.0/10 1;\nfc00::/7 1;\n",
+        // Sólo la red privada de Render, no todo el espacio privado (N-04).
+        expect(readFileSync(target, "utf8")).toBe("10.0.0.0/8 1;\n");
+        const published = readFileSync(source, "utf8")
+          .split("\n")
+          .filter((line) => line.trim() && !line.startsWith("#"));
+        expect(readFileSync(cfTarget, "utf8")).toBe(
+          published.map((net) => net + " 1;\n").join(""),
         );
-        expect(render("10.1.0.0/16, 2001:db8::/32").status).toBe(0);
+        // Sin el destino de Cloudflare el script sigue sirviendo (uso viejo).
+        expect(
+          render("10.1.0.0/16, 2001:db8::/32", undefined, false).status,
+        ).toBe(0);
         expect(readFileSync(target, "utf8")).toBe(
           "10.1.0.0/16 1;\n2001:db8::/32 1;\n",
         );
         expect(render("none").status).toBe(0);
         expect(readFileSync(target, "utf8")).toBe("");
+        expect(render(undefined, "198.51.100.0/24,2001:db8::/32").status).toBe(
+          0,
+        );
+        expect(readFileSync(cfTarget, "utf8")).toBe(
+          "198.51.100.0/24 1;\n2001:db8::/32 1;\n",
+        );
+        expect(render(undefined, "any").status).toBe(0);
+        expect(readFileSync(cfTarget, "utf8")).toBe("0.0.0.0/0 1;\n::/0 1;\n");
+        expect(render("none").status).toBe(0);
         for (const bad of ["10.0.0.0/8; return 200", "0.0.0.0", "evil"]) {
           const r = render(bad);
           expect(r.status).toBe(1);
           expect(r.stderr).toContain("NEXORA_TRUSTED_EDGE_CIDRS");
           // Se conserva el último snippet válido; nunca uno a medias.
           expect(readFileSync(target, "utf8")).toBe("");
+          const c = render("none", bad);
+          expect(c.status).toBe(1);
+          expect(c.stderr).toContain("NEXORA_CLOUDFLARE_CIDRS");
         }
       } finally {
         rmSync(dir, { recursive: true, force: true });
@@ -754,6 +838,8 @@ describe("Render · proxy público", () => {
           [
             resolve(root, "deploy/render/render-trusted-edge.sh"),
             join(snippets, "nexora-trusted-edge.conf"),
+            join(snippets, "nexora-cloudflare-ips.conf"),
+            resolve(root, "deploy/render/cloudflare-ips.txt"),
           ],
           { env: { PATH: process.env.PATH, NEXORA_TRUSTED_EDGE_CIDRS: cidrs } },
         ).status;
@@ -798,16 +884,62 @@ describe("Render · proxy público", () => {
         await exited;
       };
       try {
-        // Conexión desde el borde de confianza (127.0.0.1 en esta prueba).
+        // Conexión desde el borde de confianza (127.0.0.1 en esta prueba) y
+        // último salto de X-Forwarded-For de Cloudflare (lo que añade Render).
+        const viaCloudflare = (
+          extra: Record<string, string>,
+          hop = "173.245.48.5",
+        ) => ({
+          "X-Forwarded-For": hop,
+          ...extra,
+        });
         expect(edge("127.0.0.1/32")).toBe(0);
         proc = start();
-        const real = await seen({ "CF-Connecting-IP": "198.51.100.23" });
+        const real = await seen(
+          viaCloudflare({ "CF-Connecting-IP": "198.51.100.23" }),
+        );
         expect(real["x-forwarded-for"]).toBe("198.51.100.23");
         expect(real["x-real-ip"]).toBe("198.51.100.23");
         expect(real["cf-connecting-ip"]).toBeUndefined();
         expect(real["true-client-ip"]).toBeUndefined();
-        const v6 = await seen({ "CF-Connecting-IP": "2001:db8::7" });
+        const v6 = await seen(
+          viaCloudflare({ "CF-Connecting-IP": "2001:db8::7" }, "2606:4700::1"),
+        );
         expect(v6["x-forwarded-for"]).toBe("2001:db8::7");
+        // El cliente puede escribir lo que quiera antes; sólo cuenta el último
+        // salto, que añade Render.
+        const behind = await seen(
+          viaCloudflare(
+            { "CF-Connecting-IP": "198.51.100.24" },
+            "203.0.113.99, 104.16.5.5",
+          ),
+        );
+        expect(behind["x-forwarded-for"]).toBe("198.51.100.24");
+        // N-04: llegar al origen sin pasar por Cloudflare. Aunque la conexión
+        // venga del borde de Render, un último salto que no es de Cloudflare
+        // (la IP del propio atacante, o un X-Forwarded-For con una IP de
+        // Cloudflare escrita al principio) anula la cabecera.
+        for (const hop of [
+          "198.51.100.77",
+          "173.245.48.5, 198.51.100.77",
+          "2001:db8::99",
+          "10.1.2.3",
+          "evil",
+        ])
+          expect(
+            (
+              await seen(
+                viaCloudflare({ "CF-Connecting-IP": "198.51.100.23" }, hop),
+              )
+            )["x-forwarded-for"],
+            hop,
+          ).toBe("127.0.0.1");
+        // Sin X-Forwarded-For tampoco.
+        expect(
+          (await seen({ "CF-Connecting-IP": "198.51.100.23" }))[
+            "x-forwarded-for"
+          ],
+        ).toBe("127.0.0.1");
         // X-Forwarded-For y True-Client-IP del navegador nunca se creen.
         const forged = await seen({
           "X-Forwarded-For": "203.0.113.99",
@@ -822,13 +954,18 @@ describe("Render · proxy público", () => {
           "fe80::1%eth0",
         ])
           expect(
-            (await seen({ "CF-Connecting-IP": value }))["x-forwarded-for"],
+            (await seen(viaCloudflare({ "CF-Connecting-IP": value })))[
+              "x-forwarded-for"
+            ],
           ).toBe("127.0.0.1");
         await stop();
-        // Si la conexión no viene del borde, CF-Connecting-IP no vale nada.
+        // Si la conexión no viene del borde, CF-Connecting-IP no vale nada,
+        // aunque el salto sea de Cloudflare.
         expect(edge("10.0.0.0/8")).toBe(0);
         proc = start();
-        const outside = await seen({ "CF-Connecting-IP": "198.51.100.23" });
+        const outside = await seen(
+          viaCloudflare({ "CF-Connecting-IP": "198.51.100.23" }),
+        );
         expect(outside["x-forwarded-for"]).toBe("127.0.0.1");
       } finally {
         await stop();

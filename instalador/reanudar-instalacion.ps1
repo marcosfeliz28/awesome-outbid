@@ -84,7 +84,7 @@ try {
     $password = ([string]$passwordLine).Substring(([string]$passwordLine).IndexOf(':') + 1).Trim()
     $pin = ([string]$pinLine).Substring(([string]$pinLine).IndexOf(':') + 1).Trim()
     if ($ownerEmail -notmatch '^[^\s@]+@[^\s@]+\.[^\s@]+$' -or
-        $password.Length -lt 12 -or $pin -notmatch '^\d{4,6}$') {
+        $password.Length -lt 12 -or $pin -notmatch '^\d{6}$') {
         throw 'El archivo privado de credenciales contiene valores inválidos.'
     }
     $backupPath = Join-Path $documents 'FitStore Backups'

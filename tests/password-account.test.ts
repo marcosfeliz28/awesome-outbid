@@ -694,3 +694,130 @@ describe("Cambios simultáneos, cambio pendiente y caché", () => {
     noStore(switched);
   });
 });
+
+// N-08 (auditoría de seguridad v2): una contraseña temporal vence a los 7 días.
+describe("Contraseñas temporales con vencimiento", () => {
+  const DAY = 86_400_000;
+  const changeObligatory = (user: any, ip: string, current = TEMP) =>
+    call("/auth/change-password", {
+      ip,
+      body: {
+        login: user.username,
+        currentPassword: current,
+        newPassword: NEW,
+        confirmPassword: NEW,
+      },
+    });
+
+  it("restablecer fija el vencimiento a 7 días; la clave vigente entra y cambiarla lo quita", async () => {
+    const admin = await signedIn(await makeUser("admin"));
+    const seller = await makeUser("seller");
+    const before = Date.now();
+    const reset = await call(`/users/${seller.id}/reset-password`, {
+      ip: admin.ip,
+      token: admin.token,
+      body: { password: TEMP },
+    });
+    expect(reset.status).toBe(201);
+    const row = await db.user.findUniqueOrThrow({ where: { id: seller.id } });
+    expect(+row.passwordExpiresAt).toBeGreaterThan(before + 6.99 * DAY);
+    expect(+row.passwordExpiresAt).toBeLessThan(Date.now() + 7.01 * DAY);
+    const ip = nextIp();
+    expect((await login(seller, ip, TEMP)).body).toEqual({
+      requiresPasswordChange: true,
+    });
+    expect((await changeObligatory(seller, ip)).status).toBe(201);
+    const after = await db.user.findUniqueOrThrow({ where: { id: seller.id } });
+    expect(after).toMatchObject({
+      mustChangePassword: false,
+      passwordExpiresAt: null,
+    });
+  });
+
+  it("vencida, la temporal correcta ya no entra ni cambia la clave, y un nuevo restablecimiento la rehabilita", async () => {
+    const admin = await signedIn(await makeUser("admin"));
+    const seller = await makeUser("seller");
+    await call(`/users/${seller.id}/reset-password`, {
+      ip: admin.ip,
+      token: admin.token,
+      body: { password: TEMP },
+    });
+    await db.user.update({
+      where: { id: seller.id },
+      data: { passwordExpiresAt: new Date(Date.now() - 1000) },
+    });
+    const ip = nextIp();
+    const expired = await login(seller, ip, TEMP);
+    expect(expired.status).toBe(400);
+    expect(expired.body.message).toMatch(/temporal venció/);
+    expect(expired.body.message).toContain("Restablecer contraseña");
+    expect(JSON.stringify(expired.body)).not.toContain("accessToken");
+    const change = await changeObligatory(seller, ip);
+    expect(change.status).toBe(400);
+    expect(change.body.message).toMatch(/temporal venció/);
+    expect(await db.authSession.count({ where: { userId: seller.id } })).toBe(
+      0,
+    );
+    // Con una clave incorrecta no se revela si la temporal venció.
+    const wrongPassword = await login(seller, nextIp(), "Otra-Clave-2026!");
+    expect(wrongPassword.body.message).toMatch(/incorrectos/);
+    // La administración la restablece y vuelve a funcionar.
+    const again = await call(`/users/${seller.id}/reset-password`, {
+      ip: admin.ip,
+      token: admin.token,
+      body: { password: TEMP },
+    });
+    expect(again.status).toBe(201);
+    expect((await login(seller, nextIp(), TEMP)).body).toEqual({
+      requiresPasswordChange: true,
+    });
+  });
+
+  it("el alta de usuario y la edición con contraseña también fijan el vencimiento", async () => {
+    const admin = await signedIn(await makeUser("admin"));
+    const roles = await call("/roles", { ip: admin.ip, token: admin.token });
+    const roleId = roles.body.find((r: any) => r.name === "seller").id;
+    const key = "qa-pw-alta-" + randomUUID().slice(0, 8);
+    const made = await call("/users", {
+      ip: admin.ip,
+      token: admin.token,
+      body: {
+        name: "QA alta temporal",
+        username: key,
+        password: TEMP,
+        pin: "135790",
+        roleId,
+      },
+    });
+    expect(made.status).toBe(201);
+    created.push(made.body.id);
+    const fresh = await db.user.findUniqueOrThrow({
+      where: { id: made.body.id },
+    });
+    expect(+fresh.passwordExpiresAt).toBeGreaterThan(Date.now() + 6.9 * DAY);
+    await db.user.update({
+      where: { id: made.body.id },
+      data: { passwordExpiresAt: null },
+    });
+    const edited = await call("/users/" + made.body.id, {
+      ip: admin.ip,
+      token: admin.token,
+      method: "PATCH",
+      body: { password: NEW },
+    });
+    expect(edited.status).toBe(200);
+    const row = await db.user.findUniqueOrThrow({
+      where: { id: made.body.id },
+    });
+    expect(row.mustChangePassword).toBe(true);
+    expect(+row.passwordExpiresAt).toBeGreaterThan(Date.now() + 6.9 * DAY);
+  });
+
+  it("un cambio de contraseña obligatorio sin vencimiento (política) no caduca", async () => {
+    const seller = await makeUser("seller", { mustChangePassword: true });
+    const ip = nextIp();
+    expect((await login(seller, ip)).body).toEqual({
+      requiresPasswordChange: true,
+    });
+  });
+});

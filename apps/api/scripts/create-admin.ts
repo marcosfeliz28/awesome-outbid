@@ -14,7 +14,7 @@ async function main() {
         .min(12)
         .max(128)
         .refine((value) => Buffer.byteLength(value, "utf8") <= 72),
-      pin: z.string().regex(/^\d{4,6}$/),
+      pin: z.string().regex(/^\d{6}$/),
       name: z.string().min(2).max(100).optional(),
       mode: z.enum(["bootstrap", "repair"]).default("bootstrap"),
     })

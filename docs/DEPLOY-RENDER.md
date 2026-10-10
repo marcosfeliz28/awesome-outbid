@@ -136,7 +136,7 @@ Cloud, pantalla de consentimiento **publicada «En producción»**, credenciales
   conserva 30 diarias y 12 mensuales. Sin servicio extra en Render.
 - En Render, servicio `nexora-pos-api` › _Environment_, como secretos:
   `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` y
-  `BACKUP_ENCRYPTION_KEY` (frase de 24 caracteres o más; sin ella las copias
+  `BACKUP_ENCRYPTION_KEY` (frase de 32 caracteres o más y con variedad; sin ella las copias
   no se pueden abrir: guardarla fuera de Render). Sin las tres, la función
   queda apagada y la tarjeta dice «No configurado».
 - URI de redirección autorizada en Google:
@@ -154,7 +154,8 @@ Cloud, pantalla de consentimiento **publicada «En producción»**, credenciales
   `scripts/restore.mjs` sobre una base nueva (ver «Respaldo y recuperación de
   Render» más abajo).
 - `GOOGLE_OAUTH_BASE`, `GOOGLE_DRIVE_BASE` y las variables `DRIVE_BACKUP_*`
-  sólo se usan en pruebas; no se declaran en Render.
+  sólo se usan en pruebas; no se declaran en Render y, en producción, se
+  ignoran.
 
 ## DNS privado y cabeceras del cliente
 
@@ -699,26 +700,35 @@ Nginx, `$remote_addr` es el proxy de Render: la misma para todos los clientes.
 Por eso (auditoría de seguridad 2026-10-10, S-01/S-02/S-04; ver
 `docs/DECISIONES.md` punto 15):
 
-- Nginx toma la IP del cliente de `CF-Connecting-IP` **sólo** si la conexión
-  llega desde una red de `NEXORA_TRUSTED_EDGE_CIDRS` y si la cabecera contiene
-  una sola IP. Si no, usa `$remote_addr`, como antes. La envía a la API como
+- Nginx toma la IP del cliente de `CF-Connecting-IP` **sólo** si (1) la
+  conexión llega desde una red de `NEXORA_TRUSTED_EDGE_CIDRS` (el proxy de
+  Render), (2) el último salto de `X-Forwarded-For` —el que añade Render con la
+  dirección desde la que recibió la conexión— es una red publicada de
+  Cloudflare (`deploy/render/cloudflare-ips.txt`) y (3) la cabecera contiene
+  una sola IP (N-04). Quien llegue al origen sin pasar por Cloudflare deja su
+  propia IP como último salto, no es de Cloudflare y la cabecera se ignora. Si no, usa `$remote_addr`, como antes. La envía a la API como
   `X-Forwarded-For`/`X-Real-IP` y no reenvía `CF-Connecting-IP` ni
   `True-Client-IP`. La `X-Forwarded-For` que manda el navegador nunca se usa.
 - `NEXORA_TRUSTED_EDGE_CIDRS` es una variable opcional del servicio web (redes
   separadas por espacios o comas; `none` desactiva la cabecera). Al arrancar,
   `deploy/render/render-trusted-edge.sh` la valida y la convierte en
-  configuración. Sin ella se usan las redes privadas, CGNAT y ULA:
-
-  ```text
-  10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 100.64.0.0/10 fc00::/7
-  ```
-
+  configuración. Sin ella se usa sólo la red privada de Render, `10.0.0.0/8`
+  (antes también 172.16/12, 192.168/16, 100.64/10 y fc00::/7). Si tras
+  desplegar la IP sigue colapsada, mira abajo cómo ampliar la lista con el
+  rango exacto que se observe, nunca con rangos privados «por si acaso».
+- `NEXORA_CLOUDFLARE_CIDRS` (opcional) reemplaza la lista de Cloudflare;
+  `any` desactiva sólo la condición (2) si Render no añadiera el salto (la
+  protección queda en la condición 1). La lista incluida es la publicada en
+  <https://www.cloudflare.com/ips-v4> y `/ips-v6` (2026-10-10); actualízala
+  cuando Cloudflare la cambie.
 - La API sólo cree `X-Forwarded-For` si la conexión viene de loopback o de una
   red privada (`TRUSTED_PROXIES`, sintaxis de Express `trust proxy`, para otra
   red interna). Así nadie fuera de la red privada elige su IP con cabeceras.
 - El bloqueo de cuenta **no** depende de que esto funcione: con la IP
-  colapsada sigue limitando a 10 contraseñas por hora y cuenta y deja entrar
-  a la cajera desde su equipo aprobado. La IP real sólo afina los límites por
+  colapsada sigue limitando a 30 contraseñas por hora y cuenta (y avisa con una
+  alerta cuando se agota) y deja entrar a la cajera y a la dueña desde su equipo
+  aprobado; por eso la dueña y la administración deben tener al menos un equipo
+  aprobado propio (Configuración › Equipos). La IP real sólo afina los límites por
   dirección y llena `AuditLog.ip`.
 
 **Comprobar tras desplegar** (no verificable sin Render y Cloudflare reales):

@@ -49,7 +49,7 @@ $pin = ([string]$pinLine).Substring(([string]$pinLine).IndexOf(":") + 1).Trim()
 if ($email -notmatch "^[^\s@]+@[^\s@]+\.[^\s@]+$" -or
     $password.Length -lt 12 -or $password.Length -gt 128 -or
     [Text.Encoding]::UTF8.GetByteCount($password) -gt 72 -or
-    $pin -notmatch "^\d{4,6}$") {
+    $pin -notmatch "^\d{6}$") {
   throw "El archivo privado de credenciales contiene valores inválidos."
 }
 

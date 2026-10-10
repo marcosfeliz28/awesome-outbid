@@ -17,7 +17,7 @@ A (a) clientes que compran o a quienes se les registra en nuestro sistema de caj
 | Clientes: nombre; teléfono y cédula/RNC cuando usted los entrega | Registrar la venta, emitir recibo o comprobante fiscal, administrar ventas a crédito o contraentrega y contactarle sobre ellas | Ejecución de la compra; obligación fiscal; su consentimiento cuando el dato es opcional |
 | Clientes: correo y notas (si los entrega) | [Indicar uso real o eliminar este renglón] | Su consentimiento |
 | Pagos: tipo de pago, banco, referencia, últimos 4 dígitos de la tarjeta, código de aprobación, foto de comprobante de pago (en abonos) | Conciliar cobros y demostrar pagos | Obligación contable; interés legítimo en evitar fraudes |
-| Empleados: nombre, usuario, correo, número de cajero, contraseña y PIN (guardados cifrados con hash), equipo usado, registro de acciones | Controlar el acceso, atribuir ventas y cuadres, auditar y prevenir fraude | Relación laboral; interés legítimo en seguridad |
+| Empleados: nombre, usuario, correo, número de cajero, contraseña y PIN (guardados cifrados con hash), equipo usado, registro de acciones con la dirección IP desde la que se hizo cada una (la IP se borra a los 90 días) | Controlar el acceso, atribuir ventas y cuadres, auditar y prevenir fraude | Relación laboral; interés legítimo en seguridad |
 | Datos técnicos: errores de la aplicación, tipo de navegador, dirección IP y página (sin datos de clientes) | Corregir fallas y mantener el servicio | Interés legítimo |
 
 No recolectamos números completos de tarjeta ni códigos de seguridad. No tomamos fecha de nacimiento ni datos de menores. No usamos sus datos para publicidad de terceros ni para decisiones automatizadas. [Si la Tienda enviará promociones, deberá pedir un consentimiento separado y hoy no lo hace.]
@@ -31,7 +31,7 @@ Para registrar la venta pedimos un nombre que identifique al cliente en el recib
 - Si pide eliminar sus datos, anonimizaremos los datos que lo identifican y conservaremos importes y números de venta, porque la ley nos obliga a guardar los registros contables.
 - Foto de comprobante de pago: [PLAZO] tras saldarse la deuda.
 - Copias de seguridad: las diarias se conservan 30 días y, si la Tienda activa el respaldo en Google Drive, además una copia mensual durante 12 meses; los datos eliminados desaparecen de ellas cuando esas copias se renuevan (hasta unos 13 meses). [ABOGADO: confirmar que este plazo es aceptable frente a las solicitudes de eliminación.]
-- Datos de empleados: durante la relación laboral y el plazo legal posterior [ABOGADO: confirmar].
+- Datos de empleados: durante la relación laboral y el plazo legal posterior [ABOGADO: confirmar]. La dirección IP de cada acción del registro se borra a los 90 días; los registros de inicio de sesión y bloqueo, a los 400 días; el registro de ventas, pagos y devoluciones se conserva por obligación contable. Las copias de seguridad ya hechas pueden conservar la IP hasta unos 13 meses.
 
 ## 6. Con quién los compartimos
 - Proveedores tecnológicos que alojan el sistema y las copias de seguridad ([PROVEEDOR DE ALOJAMIENTO], [PROVEEDOR DE COPIAS]) y, solo si la Tienda lo activa, el servicio de monitoreo de errores (Sentry), algunos con servidores fuera de la República Dominicana. [ABOGADO: revisar transferencias internacionales.]

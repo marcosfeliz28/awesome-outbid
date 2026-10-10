@@ -16,6 +16,22 @@ export function isStrongPassword(value: string) {
   );
 }
 
+// N-08: una contraseña temporal (alta de usuario o «Restablecer contraseña»)
+// vence a los 7 días; después hay que restablecerla otra vez. Sin esto una
+// clave que alguien anotó o compartió valdría para siempre.
+export const TEMPORARY_PASSWORD_DAYS = 7;
+export const TEMPORARY_PASSWORD_EXPIRED_MESSAGE =
+  "La contraseña temporal venció. Pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.";
+export const temporaryPasswordExpiry = (now = new Date()) =>
+  new Date(now.getTime() + TEMPORARY_PASSWORD_DAYS * 86_400_000);
+export const temporaryPasswordExpired = (
+  user: { mustChangePassword: boolean; passwordExpiresAt?: Date | null },
+  now = new Date(),
+) =>
+  user.mustChangePassword &&
+  !!user.passwordExpiresAt &&
+  user.passwordExpiresAt.getTime() <= now.getTime();
+
 export function isDifferentPassword(
   currentPassword: string,
   newPassword: string,

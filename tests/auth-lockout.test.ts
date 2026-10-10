@@ -114,6 +114,9 @@ afterAll(async () => {
       ],
     },
   });
+  await db.alert.deleteMany({
+    where: { key: { in: created.map((id) => "login-locked:" + id) } },
+  });
   await db.refreshToken.deleteMany({ where: { userId: { in: created } } });
   await db.authSession.deleteMany({ where: { userId: { in: created } } });
   await db.auditLog.deleteMany({
@@ -189,16 +192,38 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     expect((await login(cashier, EDGE_IP, PASSWORD, other)).status).toBe(201);
   });
 
-  it("un atacante no prueba más de 10 contraseñas por hora y cuenta aunque cambie de IP; la cajera sigue entrando desde su equipo", async () => {
+  it("un atacante no prueba más de 30 contraseñas por hora y cuenta aunque cambie de IP, la administración recibe una alerta y la cajera sigue entrando desde su equipo (N-01)", async () => {
     const cashier = await makeUser("seller");
     const terminal = await approvedTerminal();
     const replies: Reply[] = [];
-    for (let n = 0; n < 25; n++)
+    for (let n = 0; n < 35; n++)
       replies.push(await login(cashier, nextIp(), "incorrecta-" + n));
-    // Sólo diez llegan a compararse; el resto se rechaza sin probar la clave.
-    expect(replies.filter(wrong)).toHaveLength(10);
-    expect(replies.slice(0, 10).every(wrong)).toBe(true);
-    expect(replies.slice(10).every(blocked)).toBe(true);
+    // Sólo treinta llegan a compararse; el resto se rechaza sin probar la clave.
+    expect(replies.filter(wrong)).toHaveLength(30);
+    expect(replies.slice(0, 30).every(wrong)).toBe(true);
+    expect(replies.slice(30).every(blocked)).toBe(true);
+    // Al agotarse el cupo queda una alerta para la administración (una sola,
+    // aunque sigan los intentos) y la bitácora con ámbito «account».
+    const alerts = await db.alert.findMany({
+      where: { key: "login-locked:" + cashier.id },
+    });
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({
+      type: "account_locked",
+      severity: "high",
+      status: "new",
+      entityId: cashier.id,
+    });
+    expect(alerts[0].message).not.toMatch(/\d+\.\d+\.\d+\.\d+/);
+    expect(
+      await db.auditLog.count({
+        where: {
+          entityId: cashier.id,
+          action: "login_locked",
+          after: { path: ["scope"], equals: "account" },
+        },
+      }),
+    ).toBe(1);
     // Con la contraseña correcta desde un equipo no aprobado también se
     // rechaza: el mensaje explica cómo entrar.
     const fromNewPhone = await login(cashier, nextIp());
@@ -208,6 +233,7 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     expect((await login(cashier, nextIp(), PASSWORD, terminal)).status).toBe(
       201,
     );
+    // La dueña (administración) con su equipo aprobado tampoco queda fuera.
     // El cupo por cuenta vence a la hora como mucho.
     const budget = await db.authAttempt.findUniqueOrThrow({
       where: { key: `login-account:${cashier.id}:0` },
@@ -239,7 +265,7 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     };
     const [a, b] = [await sequence(real), await sequence(ghost)];
     expect(b).toEqual(a);
-    expect(a.filter((m) => /incorrectos/.test(m))).toHaveLength(10);
+    expect(a.filter((m) => /incorrectos/.test(m))).toHaveLength(13);
   }, 60000);
 
   it("un barrido de 60 intentos desde la IP del borde no deja a la cajera con 429 en su equipo aprobado", async () => {
@@ -256,6 +282,44 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
       201,
     );
   }, 90000);
+});
+
+describe("N-01 · la dueña o administradora con equipo aprobado nunca queda fuera", () => {
+  it("con el cupo de la cuenta agotado desde equipos no aprobados, la administradora entra y cambia datos desde su equipo aprobado", async () => {
+    const owner = await makeUser("admin");
+    const terminal = await approvedTerminal();
+    for (let n = 0; n < 30; n++)
+      expect(wrong(await login(owner, nextIp(), "incorrecta-" + n))).toBe(true);
+    // Desde un celular nuevo, ni con la clave correcta (el cupo sigue agotado)...
+    expect(blocked(await login(owner, nextIp()))).toBe(true);
+    // ...pero desde su equipo aprobado entra, tantas veces como necesite.
+    for (let n = 0; n < 3; n++) {
+      const ok = await login(owner, nextIp(), PASSWORD, terminal);
+      expect(ok.status).toBe(201);
+      expect(ok.body.accessToken).toBeTruthy();
+    }
+    // Y los fallos en su equipo no tocan el cupo de la cuenta: sólo el propio.
+    const row = await db.authAttempt.findUniqueOrThrow({
+      where: { key: `login-account:${owner.id}:0` },
+    });
+    expect(row.failedAttempts).toBe(30);
+  }, 90000);
+});
+
+describe("N-03 · una identidad inexistente deja una sola fila por intento", () => {
+  it("el barrido de nombres inventados no crea el cupo de cuenta, sólo la fila por IP", async () => {
+    const ghost = "qa-lock-fantasma-" + randomUUID().slice(0, 8);
+    const digest = createHash("sha256").update(ghost).digest("hex");
+    const ips = [nextIp(), nextIp(), nextIp()];
+    for (const ip of ips) await login({ username: ghost }, ip, "incorrecta");
+    const rows = await db.authAttempt.findMany({
+      where: { key: { contains: digest } },
+    });
+    expect(rows.map((row: any) => row.key).sort()).toEqual(
+      ips.map((ip) => `login:missing:${digest}:${ip}`).sort(),
+    );
+    await db.authAttempt.deleteMany({ where: { key: { contains: digest } } });
+  });
 });
 
 describe("S-02 · el cupo de identidades inexistentes no deja sin acceso a los equipos de la tienda", () => {
@@ -532,4 +596,42 @@ describe("S-04 · retención de la IP y purga de contadores", () => {
       [key("bloqueado"), key("reciente")].sort(),
     );
   });
+});
+
+// Va al final: llena el cubo global de identidades desconocidas (120/min) y
+// los demás casos no deben compartir ese minuto.
+describe("N-02 · el cubo global de identidades desconocidas no da 429 a los equipos aprobados", () => {
+  it("tras un barrido de 140 nombres inventados desde 7 IP, una clave errónea de una cuenta real desde su equipo aprobado recibe 400 y no 429", async () => {
+    const cashier = await makeUser("seller");
+    const terminal = await approvedTerminal();
+    const sweep: Promise<Reply>[] = [];
+    for (let ipIndex = 0; ipIndex < 7; ipIndex++) {
+      const ip = nextIp();
+      for (let n = 0; n < 20; n++)
+        sweep.push(
+          login(
+            { username: "qa-lock-barrido-" + randomUUID().slice(0, 8) },
+            ip,
+            "incorrecta",
+          ),
+        );
+    }
+    await Promise.all(sweep);
+    // Desde una IP nueva y sin equipo, el 429 indistinguible se mantiene...
+    expect((await login(cashier, nextIp(), "incorrecta")).status).toBe(429);
+    // ...pero el equipo aprobado sólo gasta su propio cupo.
+    const typo = await login(cashier, nextIp(), "incorrecta", terminal);
+    expect(typo.status).toBe(400);
+    expect(typo.body.message).toMatch(/incorrectos/);
+    const ghostFromTerminal = await login(
+      { username: "qa-lock-typo-" + randomUUID().slice(0, 8) },
+      nextIp(),
+      "incorrecta",
+      terminal,
+    );
+    expect(ghostFromTerminal.status).toBe(400);
+    expect((await login(cashier, nextIp(), PASSWORD, terminal)).status).toBe(
+      201,
+    );
+  }, 120000);
 });

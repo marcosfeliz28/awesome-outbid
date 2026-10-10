@@ -25,6 +25,9 @@ model User {
   email              String    @unique
   passwordHash       String
   mustChangePassword Boolean   @default(false)
+  // N-08: una contraseña temporal vence (7 días). Null = sin vencimiento
+  // (cambio de contraseña forzado por política, no por una clave temporal).
+  passwordExpiresAt  DateTime?
   pinHash            String
   roleId             String    @db.Uuid
   role               Role      @relation(fields: [roleId], references: [id])

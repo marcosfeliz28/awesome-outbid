@@ -1,21 +1,38 @@
-# IP real del cliente (S-01/S-02/S-04, auditoría de seguridad 2026-10-10).
-# En Render la cadena es Cloudflare → proxy de Render → Nginx, así que
-# $remote_addr es la del proxy y es la misma para todos los clientes.
+# IP real del cliente (S-01/S-02/S-04, auditoría de seguridad 2026-10-10; N-04,
+# auditoría v2). En Render la cadena es Cloudflare → proxy de Render → Nginx,
+# así que $remote_addr es la del proxy y es la misma para todos los clientes.
 # Cloudflare fija CF-Connecting-IP con la IP que abrió la conexión y
-# reemplaza la que envíe el navegador; se acepta SÓLO si la conexión llega
-# desde la red interna del borde (nexora-trusted-edge.conf, que genera
-# start-nginx.sh desde NEXORA_TRUSTED_EDGE_CIDRS) y es una IP con forma
-# válida. X-Forwarded-For del cliente nunca se usa: Render la conserva y sólo
-# añade al final. Sin cabecera válida se usa la IP de la conexión, como antes.
+# reemplaza la que envíe el navegador. Se acepta SÓLO si se cumplen las dos:
+# 1. la conexión llega del proxy de Render (nexora-trusted-edge.conf, que
+#    genera start-nginx.sh desde NEXORA_TRUSTED_EDGE_CIDRS; por defecto sólo
+#    10.0.0.0/8), y
+# 2. el último salto de X-Forwarded-For (el que añade Render con la dirección
+#    desde la que recibió la conexión) pertenece a las redes publicadas de
+#    Cloudflare (nexora-cloudflare-ips.conf). Si alguien llega al origen sin
+#    pasar por Cloudflare, ese salto no es de Cloudflare y la cabecera se
+#    ignora.
+# Además debe ser una IP con forma válida. Del resto de X-Forwarded-For
+# (lo que el cliente escribió) nada se usa nunca. Sin cabecera válida o de
+# confianza se usa la IP de la conexión, como antes.
 geo $remote_addr $nexora_trusted_edge {
     default 0;
     include /etc/nginx/snippets/nexora-trusted-edge.conf;
 }
 
-map "$nexora_trusted_edge|$http_cf_connecting_ip" $nexora_client_ip {
+map $http_x_forwarded_for $nexora_xff_last_hop {
+    default "";
+    "~(?<nexora_last_hop>[^,\s]+)\s*$" $nexora_last_hop;
+}
+
+geo $nexora_xff_last_hop $nexora_cloudflare_peer {
+    default 0;
+    include /etc/nginx/snippets/nexora-cloudflare-ips.conf;
+}
+
+map "$nexora_trusted_edge|$nexora_cloudflare_peer|$http_cf_connecting_ip" $nexora_client_ip {
     default $remote_addr;
-    "~^1\|(?<nexora_cf_ipv4>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})$" $nexora_cf_ipv4;
-    "~^1\|(?<nexora_cf_ipv6>[0-9A-Fa-f]{0,4}:[0-9A-Fa-f:.]{1,44})$" $nexora_cf_ipv6;
+    "~^1\|1\|(?<nexora_cf_ipv4>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})$" $nexora_cf_ipv4;
+    "~^1\|1\|(?<nexora_cf_ipv6>[0-9A-Fa-f]{0,4}:[0-9A-Fa-f:.]{1,44})$" $nexora_cf_ipv6;
 }
 
 # Referrer-Policy por ruta (lo consume security-headers.conf): la API conserva
