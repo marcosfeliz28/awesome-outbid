@@ -26,6 +26,7 @@ export const powershellTests = [
   "Recovery-Restart-Previous",
   "Recovery-Temporary-Acl",
   "Recovery-Physical-Directory",
+  "Recovery-Missing-Installation",
   "Recovery-Schema-Contract",
   "Preflight-Backup-Fallback",
 ];
@@ -61,6 +62,7 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
   const steps = [
     [process.execPath, ["--test", "instalador/tests/web-server.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/recovery-error-contract.test.mjs"]],
+    [process.execPath, ["--test", "instalador/tests/recovery-documentation.test.mjs"]],
     [
       process.execPath,
       ["--test", "instalador/tests/validation-command.test.mjs"],
