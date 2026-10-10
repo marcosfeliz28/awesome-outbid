@@ -30,6 +30,9 @@ try {
  $legacy=Join-Path $root ('recovery-control-'+[guid]::NewGuid().ToString('N')+'.err')
  [IO.File]::WriteAllText($legacy,'legacy stderr')
  [IO.File]::WriteAllText((Join-Path $root 'postgres-user.log'),'keep user log')
+ $script:exitCode=1;$rejected=$false
+ try {Invoke-FitStoreRecoveryPgCtl -Tool 'fixture-pg_ctl.exe' -Database $root -Arguments @('stop')}catch{$rejected=$true}
+ if(-not $rejected -or -not(Test-Path -LiteralPath (Join-Path $root 'recovery-postgres.log')) -or -not(Test-Path -LiteralPath $legacy)){throw 'Failed stop removed PostgreSQL logs or hid failure'}
  $script:exitCode=0
  Invoke-FitStoreRecoveryPgCtl -Tool 'fixture-pg_ctl.exe' -Database $root -Arguments @('stop')
  if(Test-Path -LiteralPath (Join-Path $root 'recovery-postgres.log')){throw '3h8: log temporal postgres quedo tras detener'}

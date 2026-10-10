@@ -372,6 +372,7 @@ function Assert-FitStoreInterruptedRecovery {
       if ($temporaryAcl.Count) { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $temporaryAcl -StatePath (Join-Path $Transaction.transactionPath 'recovery-pgdata-acl.json') }
     } catch {
       $cleanupFailure=$_
+      Write-Warning ('Limpieza incompleta: solicite soporte; conserve el marcador, la transaccion y el diario recovery-pgdata-acl.json aunque LOGIN se restituya. No restaure respaldos ni retire permisos manualmente. Error original: '+$cleanupFailure.Exception.Message)
       if ($ExclusiveAccess) {
         try {
           # ACL cleanup can fail after stop succeeded. Reopen only this same

@@ -31,8 +31,9 @@ try {
  $paths=@{PgBin=(Join-Path $root 'missing-bin');Install=$root;Database=$cluster;Secrets='fixture';Data=$root}
  $tx=[pscustomobject]@{backupCutoffAt=[DateTimeOffset]::UtcNow.AddMinutes(-1).ToString('o');applicationAutostartDisabled=$true;backup=$backup;backupSha256=(Get-FileHash $backup).Hash;snapshotPath=$root;phase='services';transactionPath=$root}
  foreach($mode in @('stop','acl','success')) {
-  $script:failure=$mode;$caught=$null
-  try{Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port -ExclusiveAccess -VerifiedPgBin $PgBin}catch{$caught=$_}
+  $script:failure=$mode;$caught=$null;$warnings=[Collections.Generic.List[string]]::new()
+  try{Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port -ExclusiveAccess -VerifiedPgBin $PgBin 3>&1 | ForEach-Object {if($_ -is [Management.Automation.WarningRecord]){$warnings.Add($_.Message)}}}catch{$caught=$_}
+  if($mode -eq 'acl' -and ($warnings -join ' ') -notmatch 'Limpieza incompleta.*soporte.*marcador.*diario'){throw 'ACL cleanup failure omitted explicit support/journal warning'}
   if($mode -ne 'success' -and (-not $caught -or $caught.Exception.Message -notlike "*INJECTED $mode*")){throw "Original $mode error lost: $caught"}
   if(-not(Test-Path (Join-Path $cluster 'postmaster.pid'))){& $realControl -Tool (Join-Path $PgBin 'pg_ctl.exe') -Database $cluster -Arguments @('-D',$cluster,'-l',(Join-Path $cluster 'recovery-postgres.log'),'-o',"-p $Port",'-w','start')}
   $login=(Sql "SELECT rolcanlogin FROM pg_roles WHERE rolname='fitstore';") -join ''
