@@ -76,6 +76,7 @@ import { passwordRules } from "./passwordChange";
 import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
+import { InventoryImportButton } from "./InventoryImport";
 import {
   applyPendingSaleReprice,
   conflictHelp,
@@ -326,6 +327,9 @@ export function Catalog() {
                 }}
               />
             </label>
+            {can(user.permissions, "inventory:import") && (
+              <InventoryImportButton />
+            )}
             <Button onClick={() => setCreate(true)}>
               <Plus size={17} />
               Nuevo producto
