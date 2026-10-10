@@ -722,3 +722,173 @@ test("05-M4: el selector de cliente busca por nombre y Enter elige", async ({
     "Clienta Buscable " + tag,
   );
 });
+
+// Integración wave2 (fix-dinero M-2): la API también exige el PIN cuando la
+// deuda abierta del cliente más esta venta supera el umbral, algo que la caja
+// no puede calcular. Antes la caja sólo mostraba el error y la cajera no tenía
+// dónde escribir el PIN; ahora aparece el campo y el mismo cobro se reintenta.
+test("M-2: si la deuda del cliente exige PIN, la caja lo pide y reintenta el mismo cobro", async ({
+  page,
+  context,
+  request,
+}) => {
+  test.setTimeout(120000);
+  const { headers, branch } = await ownerApi(request);
+  const settings = await (
+    await request.get("/api/settings", { headers })
+  ).json();
+  const sku = code("2");
+  const name = "Faja E2E deuda M-2 " + sku;
+  const product = await newProduct(request, headers, name, sku, {
+    price: 600,
+    qty: 4,
+  });
+  let seller = "";
+  let cashId = "";
+  try {
+    // Con crédito activado, una contraentrega de RD$ 600 no pide PIN por sí
+    // sola (umbral RD$ 1,000); la segunda al mismo cliente sí, por la deuda.
+    const allowed = await request.put("/api/settings", {
+      headers,
+      data: { ...settings, allowCreditSales: true },
+    });
+    expect(allowed.ok(), await allowed.text()).toBe(true);
+    const client = await request.post("/api/customers", {
+      headers,
+      data: { name: "Clienta Deuda M2 " + sku },
+    });
+    expect(client.ok(), await client.text()).toBe(true);
+    const customer = await client.json();
+    // Una cajera nueva (sin sale:manage) con su equipo aprobado.
+    const roles = await (await request.get("/api/roles", { headers })).json();
+    const tag = Date.now().toString(36);
+    const email = `e2e-deuda-${tag}@example.test`;
+    const temporary = "FitStore-QA-2026!",
+      password = "FitStore-QA-2026-Definitiva!";
+    const created = await request.post("/api/users", {
+      headers,
+      data: {
+        name: "E2E Cajera deuda " + tag,
+        email,
+        password: temporary,
+        pin: "246813",
+        roleId: roles.find((r: any) => r.name === "seller").id,
+      },
+    });
+    expect(created.ok(), await created.text()).toBe(true);
+    const changed = await request.post("/api/auth/change-password", {
+      data: {
+        login: email,
+        currentPassword: temporary,
+        newPassword: password,
+        confirmPassword: password,
+      },
+    });
+    expect(changed.ok()).toBe(true);
+    seller = (await changed.json()).accessToken;
+    const identity = {
+      id: crypto.randomUUID(),
+      name: "E2E deuda " + tag,
+      secret: "e2e-deuda-secreto-" + crypto.randomUUID(),
+    };
+    const registered = await request.post("/api/terminals/register", {
+      headers: { Authorization: "Bearer " + seller },
+      data: identity,
+    });
+    if ((await registered.json()).status === "pending")
+      await request.post("/api/terminals/" + identity.id + "/approve", {
+        headers,
+        data: {},
+      });
+    await context.addInitScript(
+      ([key, value]) => localStorage.setItem(key, value),
+      ["fitstore-equipment:" + branch, JSON.stringify(identity)] as const,
+    );
+    await login(page, email, password);
+    await openCash(page);
+    const sellCod = async () => {
+      const search = await pos(page);
+      await search.fill(sku);
+      await search.press("Enter");
+      await expect(qty(page, name)).toHaveText("1");
+      await page.keyboard.press("F4");
+      const picker = page.getByRole("dialog", {
+        name: "¿Para quién es esta venta?",
+      });
+      await picker.getByLabel("Buscar cliente").fill("Deuda M2 " + sku);
+      await expect(picker.locator(".customer-list button")).toHaveCount(1);
+      await picker.getByLabel("Buscar cliente").press("Enter");
+      await expect(page.locator(".customer-selector strong")).toHaveText(
+        customer.name,
+      );
+      await page
+        .getByRole("button", { name: /Cobrar/ })
+        .first()
+        .click();
+      await page
+        .getByRole("button", { name: "Crédito / contraentrega", exact: true })
+        .click();
+      await page.getByRole("button", { name: "Agregar pago" }).click();
+    };
+    const pinField = page.getByLabel("PIN del gerente para aprobar la venta");
+    // 1) Sin deuda previa: se registra sin PIN.
+    await sellCod();
+    await expect(pinField).toHaveCount(0);
+    await page.getByRole("button", { name: "Finalizar venta" }).click();
+    await expect(
+      page.getByText("Venta registrada", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Nueva venta", exact: true })
+      .click();
+    // 2) Con RD$ 600 pendientes, la API pide el PIN: la caja lo muestra.
+    await sellCod();
+    await expect(pinField).toHaveCount(0);
+    await page.getByRole("button", { name: "Finalizar venta" }).click();
+    await expect(page.locator(".form-error")).toContainText(
+      "La deuda pendiente de este cliente",
+    );
+    await expect(pinField).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Finalizar venta" }),
+    ).toBeDisabled();
+    await pinField.fill("000000");
+    await page.getByRole("button", { name: "Finalizar venta" }).click();
+    await expect(page.locator(".form-error")).toContainText("PIN incorrecto.");
+    await pinField.fill("234567");
+    await page.getByRole("button", { name: "Finalizar venta" }).click();
+    await expect(
+      page.getByText("Venta registrada", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Nueva venta", exact: true })
+      .click();
+    // Dos ventas (no una duplicada) y RD$ 1,200 por cobrar al cliente.
+    const sold = (
+      await (await request.get("/api/sales", { headers })).json()
+    ).filter((s: any) => s.customerId === customer.id);
+    expect(sold).toHaveLength(2);
+    expect(
+      sold.reduce((a: number, s: any) => a + Number(s.creditBalance), 0),
+    ).toBe(1200);
+    const sessions = await (
+      await request.get("/api/cash-sessions", {
+        headers: { Authorization: "Bearer " + seller },
+      })
+    ).json();
+    cashId = sessions.find((s: any) => !s.closedAt)?.id ?? "";
+  } finally {
+    await request.put("/api/settings", { headers, data: settings });
+    if (cashId)
+      await request.post("/api/cash-sessions/" + cashId + "/close", {
+        headers: { Authorization: "Bearer " + seller },
+        data: {
+          countedCash: 500,
+          countedCard: 0,
+          countedTransfer: 0,
+          notes: "Cierre del escenario E2E M-2",
+        },
+      });
+    await retire(request, headers, [product]);
+  }
+});

@@ -1745,10 +1745,18 @@ function Checkout({
   } catch {
     /* El formulario evita el exceso de pagos sin efectivo. */
   }
+  // M-2: la API suma además la deuda abierta del cliente, que la caja no
+  // conoce. Si responde que hace falta el PIN, se pide aquí y la cajera
+  // reintenta con el mismo cobro (mismo offlineUuid). Vale sólo para este
+  // carrito, cliente y pagos: cambiar cualquiera vuelve a la regla local.
+  const pinRequest = attempt + JSON.stringify(payments);
+  const [serverPinFor, setServerPinFor] = useState<string | null>(null);
+  const serverAskedPin = serverPinFor === pinRequest;
   // Crédito y contraentrega usan la misma regla que la API (D-01): la
   // contraentrega de quien no gestiona ventas pide el PIN sobre el umbral, o
   // siempre si las ventas a crédito no están habilitadas.
   const needsPin =
+    serverAskedPin ||
     receivableNeedsApproval(
       payments,
       config,
@@ -2034,6 +2042,15 @@ function Checkout({
       // cuáles cambiaron; el cobro ya muestra el total nuevo (R9-offline-3).
       if (/precios o promociones cambiaron/i.test(e.message))
         setError(await reprice().catch(() => e.message));
+      // M-2: la deuda del cliente supera el umbral (o cambió mientras se
+      // cobraba): se muestra el campo del PIN para reintentar.
+      else if (/requiere el PIN de un gerente/i.test(e.message)) {
+        setServerPinFor(pinRequest);
+        setError(
+          e.message +
+            (pin ? "" : " Escribe el PIN del gerente y pulsa «Finalizar venta»."),
+        );
+      }
       // El cobro sin respuesta sí quedó registrado, pero con otros pagos: en
       // esta ventana no se vuelve a cobrar (R9-offline-1).
       else if (/UUID ya corresponde/i.test(e.message)) {
