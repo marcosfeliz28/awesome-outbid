@@ -237,7 +237,7 @@ function Get-FitStoreRecoveryActivityColumns {
     InvoiceDraft=@('createdAt'); InvoiceAttachment=@('createdAt')
     NotificationOutbox=@('createdAt'); IncentiveRate=@('updatedAt')
     IncentiveEntry=@('createdAt'); IncentivePeriodClose=@('closedAt')
-    IncentiveSettlement=@('closedAt')
+    IncentiveSettlement=@('closedAt'); AuthAttempt=@('updatedAt'); DriveBackup=@('updatedAt')
   }
 }
 
