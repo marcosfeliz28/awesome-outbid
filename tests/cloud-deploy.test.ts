@@ -1,13 +1,86 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { cloudEnvironment } from "../deploy/render/with-cloud-env.mjs";
+import {
+  cloudEnvironment,
+  isMigrationCommand,
+} from "../deploy/render/with-cloud-env.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path: string) => readFileSync(resolve(root, path), "utf8");
+
+// Estado real comprobado en Render el 10-oct-2026 (A3). Ver render.yaml.
+const PLAN_FLOOR: Record<string, { cpu: number; memoryMb: number }> = {
+  "nexora-pos-web": { cpu: 0.5, memoryMb: 512 },
+  "nexora-pos-api": { cpu: 1, memoryMb: 2048 },
+  "nexora-pos-db": { cpu: 0.5, memoryMb: 1024 },
+};
+// El disco de PostgreSQL en Render sólo puede crecer.
+const DISK_FLOOR_GB = 5;
+
+// Bloque de un recurso de primer nivel (servicio o base) de render.yaml.
+function resourceBlock(blueprint: string, name: string) {
+  const lines = blueprint.split("\n");
+  const at = lines.findIndex(
+    (line) => line === `    name: ${name}` || line === `  - name: ${name}`,
+  );
+  if (at < 0) return "";
+  let start = at;
+  while (!lines[start].startsWith("  - ")) start -= 1;
+  let end = start + 1;
+  while (
+    end < lines.length &&
+    !lines[end].startsWith("  - ") &&
+    !/^\S/.test(lines[end])
+  )
+    end += 1;
+  return lines.slice(start, end).join("\n");
+}
+
+function yamlField(block: string, key: string) {
+  return block.match(new RegExp(`^ {4}${key}: "?([^"\\n]*)"?$`, "m"))?.[1];
+}
+
+function planViolations(blueprint: string) {
+  const violations: string[] = [];
+  for (const [name, floor] of Object.entries(PLAN_FLOOR)) {
+    const block = resourceBlock(blueprint, name);
+    const plan = yamlField(block, "plan");
+    const match = plan?.match(/^(\d+(?:\.\d+)?)c-(\d+)(mb|gb|g)$/);
+    if (!match) {
+      violations.push(`${name}: plan ausente o con otra forma (${plan})`);
+      continue;
+    }
+    const cpu = Number(match[1]);
+    const memoryMb = Number(match[2]) * (match[3] === "mb" ? 1 : 1024);
+    if (cpu < floor.cpu || memoryMb < floor.memoryMb)
+      violations.push(
+        `${name}: plan ${plan} menor que ${floor.cpu}c-${floor.memoryMb}mb`,
+      );
+    if (
+      name !== "nexora-pos-db" &&
+      !(Number(yamlField(block, "numInstances")) >= 1)
+    )
+      violations.push(`${name}: sin instancias`);
+  }
+  const disk = Number(
+    yamlField(resourceBlock(blueprint, "nexora-pos-db"), "diskSizeGB"),
+  );
+  if (!(disk >= DISK_FLOOR_GB))
+    violations.push(
+      `nexora-pos-db: disco ${disk} GB menor que ${DISK_FLOOR_GB} GB`,
+    );
+  return violations;
+}
 
 describe("Render · aislamiento reproducible", () => {
   it("declara una sola entrada pública, API privada y PostgreSQL cerrado", () => {
@@ -22,12 +95,45 @@ describe("Render · aislamiento reproducible", () => {
     expect(blueprint).toContain("property: connectionString");
     expect(blueprint).toContain("envVarKey: RENDER_EXTERNAL_URL");
     expect(blueprint.match(/region: virginia/g)).toHaveLength(3);
-    expect(blueprint.match(/plan: 0\.5c-512mb/g)).toHaveLength(2);
-    expect(blueprint).toContain("plan: 0.1c-256mb");
     expect(blueprint).toContain('postgresMajorVersion: "17"');
-    expect(blueprint).toContain("diskSizeGB: 1");
     expect(blueprint.match(/autoDeployTrigger: off/g)).toHaveLength(2);
     expect(blueprint).toContain("healthCheckPath: /healthz");
+  });
+
+  // A3 (auditoría de infraestructura, 10-oct-2026): render.yaml debe
+  // coincidir con lo que corre en Render. Si declarara planes menores, una
+  // sincronización del Blueprint bajaría la API o la base (reinicio en horario
+  // de tienda) e intentaría encoger el disco, que Render no permite. Los
+  // mínimos de PLAN_FLOOR sólo se cambian a la vez que el plan real, nunca
+  // para que pase la prueba. Subir un plan está permitido; bajarlo, no.
+  it("no baja por accidente los planes ni el disco reales de Render", () => {
+    const blueprint = read("render.yaml");
+    expect(planViolations(blueprint)).toEqual([]);
+    const database = resourceBlock(blueprint, "nexora-pos-db");
+    expect(yamlField(database, "databaseName")).toBe("fitstore_bfjz");
+    expect(yamlField(database, "storageAutoscalingEnabled")).toBe("false");
+    // La regla queda escrita junto a los planes.
+    expect(blueprint).toContain("PRIMERO aquí");
+  });
+
+  it("la comprobación de planes detecta una bajada o un disco menor", () => {
+    const blueprint = read("render.yaml");
+    const apiAt = blueprint.search(/^ {4}name: nexora-pos-api$/m);
+    const downgradeApi =
+      blueprint.slice(0, apiAt) +
+      blueprint.slice(apiAt).replace(/plan: \S+/, "plan: 0.5c-512mb");
+    expect(planViolations(downgradeApi)).toEqual([
+      "nexora-pos-api: plan 0.5c-512mb menor que 1c-2048mb",
+    ]);
+    expect(
+      planViolations(blueprint.replace(/diskSizeGB: \d+/, "diskSizeGB: 1")),
+    ).toEqual(["nexora-pos-db: disco 1 GB menor que 5 GB"]);
+    expect(
+      planViolations(blueprint.replace("plan: 0.5c-1g", "plan: 0.1c-256mb")),
+    ).toEqual(["nexora-pos-db: plan 0.1c-256mb menor que 0.5c-1024mb"]);
+    expect(
+      planViolations(blueprint.replace("plan: 1c-2g", "plan: 2c-4g")),
+    ).toEqual([]);
   });
 
   it("aplica migraciones antes de publicar y no ejecuta seed ni db push", () => {
@@ -74,6 +180,101 @@ describe("Render · conexión de PostgreSQL", () => {
     expect(env.WEB_ORIGIN).toBe("https://nexora.example");
   });
 
+  // M4: Prisma calculaba el pool con los núcleos físicos del host (17
+  // conexiones fijas en Render). La API usa un tope explícito.
+  it("fija un tope de conexiones del pool, configurable y validado", () => {
+    const base = {
+      RENDER_DATABASE_URL: "postgresql://nexora:x@db.internal:5432/fitstore",
+    } as NodeJS.ProcessEnv;
+    const limit = (env: NodeJS.ProcessEnv) =>
+      new URL(cloudEnvironment(env).DATABASE_URL!).searchParams.get(
+        "connection_limit",
+      );
+    expect(limit(base)).toBe("10");
+    expect(limit({ ...base, NEXORA_DB_CONNECTION_LIMIT: "6" })).toBe("6");
+    expect(
+      limit({
+        RENDER_DATABASE_URL: base.RENDER_DATABASE_URL + "?connection_limit=4",
+      }),
+    ).toBe("4");
+    for (const bad of ["0", "101", "5.5", "diez"])
+      expect(() =>
+        cloudEnvironment({ ...base, NEXORA_DB_CONNECTION_LIMIT: bad }),
+      ).toThrow(/NEXORA_DB_CONNECTION_LIMIT/);
+  });
+
+  // M1: las migraciones de Render no esperan bloqueos ni corren sentencias
+  // sin límite; se reconoce `migrate deploy` sin cambiar el preDeployCommand.
+  it("las migraciones llevan lock_timeout y statement_timeout", () => {
+    const blueprint = read("render.yaml");
+    const command = blueprint
+      .split("\n")
+      .find((line) => line.trimStart().startsWith("preDeployCommand:"))!
+      .replace(/^\s*preDeployCommand:\s*/, "")
+      .split(/\s+/);
+    expect(isMigrationCommand(command.slice(2))).toBe(true);
+    expect(isMigrationCommand(["node", "apps/api/dist/main.js"])).toBe(false);
+    expect(isMigrationCommand(["prisma", "migrate", "status"])).toBe(false);
+    const render = {
+      RENDER_DATABASE_URL: "postgresql://nexora:x@db.internal:5432/fitstore",
+    } as NodeJS.ProcessEnv;
+    const options = (env: NodeJS.ProcessEnv) =>
+      new URL(
+        cloudEnvironment(env, { migration: true }).DATABASE_URL!,
+      ).searchParams.get("options");
+    expect(options(render)).toBe(
+      "-c TimeZone=UTC -c lock_timeout=5s -c statement_timeout=120s",
+    );
+    expect(
+      options({
+        ...render,
+        NEXORA_MIGRATION_LOCK_TIMEOUT: "3s",
+        NEXORA_MIGRATION_STATEMENT_TIMEOUT: "30min",
+      }),
+    ).toBe("-c TimeZone=UTC -c lock_timeout=3s -c statement_timeout=30min");
+    // El preDeploy no recibe el tope de pool de la API (no lo necesita).
+    expect(
+      new URL(
+        cloudEnvironment(render, { migration: true }).DATABASE_URL!,
+      ).searchParams.has("connection_limit"),
+    ).toBe(false);
+    // También con DATABASE_URL local (CI, pruebas con Docker).
+    expect(
+      options({ DATABASE_URL: "postgresql://f:l@127.0.0.1:5434/fitstore" }),
+    ).toBe("-c lock_timeout=5s -c statement_timeout=120s");
+    for (const bad of ["5 s", "-1s", "5h", "1;DROP", "s"])
+      expect(() =>
+        cloudEnvironment(
+          { ...render, NEXORA_MIGRATION_LOCK_TIMEOUT: bad },
+          { migration: true },
+        ),
+      ).toThrow(/NEXORA_MIGRATION_LOCK_TIMEOUT/);
+  });
+
+  it("documenta cómo escribir migraciones seguras y no repite prefijos", () => {
+    const guide = read("docs/MIGRACIONES_SEGURAS.md");
+    for (const text of [
+      "lock_timeout",
+      "statement_timeout",
+      "NEXORA_MIGRATION_STATEMENT_TIMEOUT",
+      "migrate resolve --rolled-back",
+      "CREATE INDEX CONCURRENTLY",
+      "Ampliar y luego retirar",
+    ])
+      expect(guide).toContain(text);
+    // M2: dos migraciones con el mismo prefijo se ordenan por el resto del
+    // nombre y pueden aplicarse en otro orden en una base nueva. Sólo se
+    // toleran los dos casos históricos ya aplicados en producción.
+    const names = readdirSync(resolve(root, "apps/api/prisma/migrations"))
+      .filter((name) => /^\d{12}_/.test(name))
+      .sort();
+    const prefixes = names.map((name) => name.slice(0, 12));
+    const repeated = [
+      ...new Set(prefixes.filter((p, i) => prefixes.indexOf(p) !== i)),
+    ];
+    expect(repeated).toEqual(["202610170001", "202610190001"]);
+  });
+
   it("respeta DATABASE_URL local cuando no está dentro de Render", () => {
     const local = "postgresql://fitstore:local@127.0.0.1:5434/fitstore";
     expect(cloudEnvironment({ DATABASE_URL: local }).DATABASE_URL).toBe(local);
@@ -98,6 +299,64 @@ describe("Render · operación inicial", () => {
       "node deploy/render/with-cloud-env.mjs node apps/api/node_modules/tsx/dist/cli.mjs apps/api/scripts/create-admin.ts",
     );
     expect(guide).not.toContain("ADMIN_MODE=create");
+  });
+});
+
+describe("Operación · contingencia, monitoreo y restauración", () => {
+  it("la contingencia nombra los ajustes reales y enlaza los procedimientos", () => {
+    const plan = read("docs/CONTINGENCIA.md").replace(/\s+/g, " ");
+    // La ruta del ajuste debe existir en la interfaz.
+    expect(plan).toContain(
+      "Configuración › Negocio y reglas › Editar configuración › «Permitir ventas sin conexión»",
+    );
+    expect(read("apps/web/src/Management.tsx")).toContain(
+      "Permitir ventas sin conexión",
+    );
+    for (const link of [
+      "MONITOREO.md",
+      "RESTAURACION_RENDER.md",
+      "INSTALADOR.md",
+    ])
+      expect(plan).toContain(`(${link})`);
+    expect(plan).toContain("talonario");
+    expect(plan).toContain("Sistema anterior");
+  });
+
+  it("el monitoreo vigila la salud profunda y la de la base cada minuto", () => {
+    const guide = read("docs/MONITOREO.md");
+    expect(guide).toContain("https://nexora-pos-web.onrender.com/api/health");
+    expect(guide).toContain("https://nexora-pos-web.onrender.com/healthz/deep");
+    expect(guide).toContain('`"database":"ok"`');
+    expect(guide).toContain("**60 segundos**");
+    expect(guide).toMatch(/Telegram/);
+  });
+
+  it("la restauración verifica la huella, es atómica y no pisa la base en uso", () => {
+    const guide = read("docs/RESTAURACION_RENDER.md");
+    expect(guide).toContain("sha256sum -c");
+    expect(guide).toContain(
+      "pg_restore --format=directory --single-transaction --exit-on-error --no-owner --no-privileges",
+    );
+    expect(guide).toContain("node scripts/restore.mjs");
+    expect(guide).toContain("migrate status");
+    expect(guide).toContain("RENDER_DATABASE_URL");
+    expect(guide).toContain(
+      "nunca se restaura encima de la base que está en uso",
+    );
+    expect(guide).toContain("(PRUEBA_RESTAURACION.md)");
+    expect(read("docs/PRUEBA_RESTAURACION.md")).toContain(
+      "Prueba real de respaldo y restauración",
+    );
+    const deploy = read("docs/DEPLOY-RENDER.md");
+    for (const link of [
+      "CONTINGENCIA.md",
+      "MONITOREO.md",
+      "RESTAURACION_RENDER.md",
+      "MIGRACIONES_SEGURAS.md",
+    ])
+      expect(deploy).toContain(`(${link})`);
+    expect(deploy).not.toContain("no se ha creado, comprado ni desplegado");
+    expect(deploy).not.toContain("0.1c-256mb");
   });
 });
 
@@ -615,6 +874,41 @@ describe("Render · proxy público", () => {
     );
   });
 
+  // M5 (auditoría de infraestructura): si la API no resuelve al arrancar, la
+  // web arranca igual con /api en 502 y reintenta; antes salía con error y
+  // Render la dejaba en bucle de arranque fallido.
+  it("la web arranca aunque la API no resuelva y /api responde 502 claro", () => {
+    const entrypoint = read("deploy/render/start-nginx.sh");
+    const startup = entrypoint.slice(
+      entrypoint.indexOf("api_ip=$(resolve_api_ip)"),
+      entrypoint.indexOf("exec /docker-entrypoint.sh"),
+    );
+    expect(startup).toContain("write_unavailable_upstream");
+    expect(startup).not.toMatch(/if \[ -z "\$api_ip" \]; then[^]*?exit 1/);
+    expect(entrypoint).toContain(
+      "printf 'server 127.0.0.1:%s down;\\n' \"$api_port\"",
+    );
+    // Si el bucle de re-resolución muere, se detiene Nginx para que Render
+    // reinicie la web (no queda con una IP vieja para siempre).
+    expect(entrypoint).toContain("trap '");
+    expect(entrypoint).toContain("kill -TERM $$");
+    const nginx = read("deploy/render/nginx.conf.template");
+    const api = nginx.slice(
+      nginx.indexOf("location ^~ /api/ {"),
+      nginx.indexOf("location = /sw.js {"),
+    );
+    expect(api).toContain("error_page 502 @nexora_api_unavailable;");
+    expect(api).toContain("error_page 504 @nexora_api_timeout;");
+    // El código se conserva (502/504): la PWA los trata como «sin conexión».
+    expect(api).toMatch(
+      /location @nexora_api_unavailable \{\s*default_type application\/json;\s*return 502 '\{"statusCode":502,"message":"[^']+"\}';/,
+    );
+    expect(api).toMatch(
+      /location @nexora_api_timeout \{\s*default_type application\/json;\s*return 504 '/,
+    );
+    expect(api).not.toContain("proxy_intercept_errors");
+  });
+
   it("las imágenes copian todos los archivos y herramientas que invocan", () => {
     const api = read("deploy/render/Dockerfile.api");
     const web = read("deploy/render/Dockerfile.web");
@@ -795,5 +1089,64 @@ console.log(JSON.stringify({
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("CI · cadena de suministro y despliegue protegido", () => {
+  const workflows = readdirSync(resolve(root, ".github/workflows"))
+    .filter((file) => /\.ya?ml$/.test(file))
+    .map((file) => `.github/workflows/${file}`);
+
+  // M10: una etiqueta móvil (@v4) puede reescribirse; un SHA, no.
+  it("fija cada acción por SHA y limita el token a lectura", () => {
+    expect(workflows.length).toBeGreaterThan(0);
+    for (const path of workflows) {
+      const text = read(path);
+      const uses = [...text.matchAll(/^\s*-?\s*uses:\s*(\S+)(.*)$/gm)];
+      for (const [, ref, comment] of uses) {
+        expect(ref, `${path}: ${ref}`).toMatch(
+          /^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/,
+        );
+        expect(comment, `${path}: ${ref} sin versión`).toMatch(/# v\d/);
+      }
+      expect(text, path).toMatch(/^permissions:\n {2}contents: read$/m);
+      expect(text, path).not.toMatch(/contents: write|write-all/);
+    }
+    expect(read(".github/workflows/ci.yml")).toMatch(
+      /image: postgres:17\.\d+@sha256:[0-9a-f]{64}/,
+    );
+    expect(read(".github/dependabot.yml")).toContain(
+      "package-ecosystem: github-actions",
+    );
+  });
+
+  // A4: el CI construye ambas imágenes (sin publicarlas) y las arranca como
+  // en Render, terminando con post-deploy-check.mjs.
+  it("construye las imágenes de Render y ejecuta la comprobación posterior", () => {
+    const ci = read(".github/workflows/ci.yml");
+    const job = ci.slice(ci.indexOf("  render-images:"));
+    expect(job).toContain(
+      "docker build -f deploy/render/Dockerfile.api -t nexora-pos-api:ci .",
+    );
+    expect(job).toContain(
+      "docker build -f deploy/render/Dockerfile.web -t nexora-pos-web:ci .",
+    );
+    expect(job).toContain("bash deploy/render/ci-smoke.sh");
+    expect(ci).not.toMatch(/docker (push|login)|--push/);
+    const smoke = read("deploy/render/ci-smoke.sh");
+    // Usa la misma orden de migración que Render y la misma comprobación.
+    expect(smoke).toContain("preDeployCommand:");
+    expect(smoke).toContain("render.yaml");
+    expect(smoke).toContain("node deploy/render/post-deploy-check.mjs");
+    // La web arranca antes que la API y debe responder igual.
+    expect(smoke.indexOf('echo "2) La web arranca sin API"')).toBeLessThan(
+      smoke.indexOf('echo "4) Arranca la API"'),
+    );
+    expect(smoke).toContain('"statusCode":502');
+    // Comprobación manual tras desplegar, sin secretos en la orden.
+    const post = read(".github/workflows/post-deploy-check.yml");
+    expect(post).toContain("workflow_dispatch:");
+    expect(post).toContain("NEXORA_WEB_URL: ${{ inputs.web_url }}");
+    expect(post).not.toMatch(/run:.*\$\{\{/);
   });
 });

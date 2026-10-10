@@ -34,9 +34,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      // Las cajas no deben quedarse usando una versión anterior después de
-      // publicar un cambio. La actualización se instala y toma control sola.
-      registerType: "autoUpdate",
+      // M7: con "autoUpdate" la versión nueva recargaba la página sin
+      // preguntar, también en mitad de una venta. Con "prompt" queda en
+      // espera y src/pwaUpdate.ts la aplica con el carrito vacío (aviso
+      // «hay versión nueva», botón o caja sin usar) y revisa cada hora.
+      registerType: "prompt",
       // El logo predeterminado del ticket (Prints.tsx) también debe estar sin
       // conexión: printSoon imprime a los 50 ms y no espera a la red.
       includeAssets: ["icon.svg", "products/*.svg", "logo-grupo-macgen.png"],
@@ -61,6 +63,10 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,woff2}"],
         navigateFallback: "/index.html",
+        // Con "prompt", la primera instalación también controla la página
+        // abierta (como antes con autoUpdate) para que funcione sin conexión
+        // sin recargar. Una versión nueva sigue en espera hasta aplicarla.
+        clientsClaim: true,
         // Abrir /api/... o /healthz directamente en el navegador debe llegar
         // al servidor (JSON, 204/503), no a la app servida desde la caché.
         navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/healthz(?:\/|$)/],

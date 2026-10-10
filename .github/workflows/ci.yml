@@ -1,11 +1,16 @@
 name: FitStore checks
 on: [push, pull_request]
+# M10: el GITHUB_TOKEN de este workflow sólo puede leer el repositorio. Las
+# acciones se fijan por SHA (comentario con la versión); Dependabot las
+# actualiza (.github/dependabot.yml).
+permissions:
+  contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        image: postgres:17.11@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
         env:
           POSTGRES_USER: fitstore
           POSTGRES_PASSWORD: fitstore_ci
@@ -22,11 +27,11 @@ jobs:
       SEED_DEMO_PASSWORD: FitStore-Demo-2026!
       BACKUP_TEST_ADMIN_URL: postgresql://fitstore:fitstore_ci@localhost:5434/postgres
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 11.19.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: pnpm
@@ -61,21 +66,40 @@ jobs:
       - run: pnpm check
       - run: pnpm exec playwright install --with-deps chromium
       - run: node scripts/verify.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: fitstore-test-evidence
           path: |
             playwright-report
             test-results
+  # A4: construye las imágenes de Render (sin publicarlas) y las arranca como
+  # en un despliegue: web antes que la API, migraciones con el preDeployCommand
+  # de render.yaml y post-deploy-check.mjs a través de la web.
+  render-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - name: Construir la imagen de la API (Render, sin publicar)
+        run: docker build -f deploy/render/Dockerfile.api -t nexora-pos-api:ci .
+      - name: Construir la imagen web (Render, sin publicar)
+        run: docker build -f deploy/render/Dockerfile.web -t nexora-pos-web:ci .
+      - name: Arranque como en Render y comprobación posterior al despliegue
+        run: bash deploy/render/ci-smoke.sh
   windows-installer:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 11.19.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: pnpm

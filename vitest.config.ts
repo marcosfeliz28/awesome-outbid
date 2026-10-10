@@ -47,6 +47,7 @@ export default defineConfig({
       "tests/drive-backup-core.test.ts",
       "tests/caja-web-ticket.test.ts",
       "tests/offline-review-web.test.ts",
+      "tests/pwa-update.test.ts",
     ],
   },
 });
