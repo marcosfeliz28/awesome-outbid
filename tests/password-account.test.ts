@@ -31,7 +31,7 @@ const run = Date.now() % 200;
 const nextIp = () => `198.18.${run}.${ipCounter++}`;
 const created: string[] = [];
 
-type Reply = { status: number; body: any; cookie: string };
+type Reply = { status: number; body: any; cookie: string; headers: Headers };
 async function call(
   path: string,
   options: {
@@ -59,6 +59,7 @@ async function call(
     status: r.status,
     body: text ? JSON.parse(text) : null,
     cookie: r.headers.get("set-cookie")?.split(";")[0] ?? "",
+    headers: r.headers,
   };
 }
 const claims = (token: string) =>
@@ -412,12 +413,113 @@ describe("Restablecer contraseña (POST /users/:id/reset-password)", () => {
     });
     expect(patched.status).toBe(400);
     expect(patched.body.message).toContain("Cambiar mi contraseña");
+    // El mismo UUID en mayúsculas no esquiva ninguna protección.
+    const upper = adminUser.id.toUpperCase();
+    expect(upper).not.toBe(adminUser.id);
+    const selfUpper = await call(`/users/${upper}/reset-password`, {
+      ip: admin.ip,
+      token: admin.token,
+      body: { password: TEMP },
+    });
+    expect(selfUpper.status).toBe(400);
+    expect(selfUpper.body.message).toContain("Cambiar mi contraseña");
+    const patchSelf = (body: Record<string, unknown>) =>
+      call(`/users/${upper}`, {
+        ip: admin.ip,
+        token: admin.token,
+        method: "PATCH",
+        body,
+      });
+    const patchedUpper = await patchSelf({ password: TEMP });
+    expect(patchedUpper.status).toBe(400);
+    expect(patchedUpper.body.message).toContain("Cambiar mi contraseña");
+    const sellerRole = await db.role.findFirstOrThrow({
+      where: { name: "seller" },
+    });
+    for (const body of [{ active: false }, { roleId: sellerRole.id }]) {
+      const r = await patchSelf(body);
+      expect(r.status).toBe(400);
+      expect(r.body.message).toContain("Otro administrador");
+    }
     const row = await db.user.findUniqueOrThrow({
       where: { id: adminUser.id },
     });
+    expect(row).toMatchObject({ active: true, roleId: adminUser.roleId });
     expect(row.passwordHash).toBe(adminUser.passwordHash);
     expect(row).toMatchObject({ mustChangePassword: false, authVersion: 0 });
     expect((await me(admin.token, admin.ip)).status).toBe(200);
+  });
+
+  it("con el UUID de otra persona en mayúsculas funciona igual y audita el id normalizado", async () => {
+    const admin = await signedIn(await makeUser("admin"));
+    const seller = await makeUser("seller");
+    const sellerSession = await signedIn(seller);
+    const upper = seller.id.toUpperCase();
+    const edited = await call(`/users/${upper}`, {
+      ip: admin.ip,
+      token: admin.token,
+      method: "PATCH",
+      body: { name: "QA contraseña renombrada" },
+    });
+    expect(edited.status).toBe(200);
+    expect(edited.body).toMatchObject({
+      id: seller.id,
+      name: "QA contraseña renombrada",
+    });
+    const reset = await call(`/users/${upper}/reset-password`, {
+      ip: admin.ip,
+      token: admin.token,
+      body: { password: TEMP },
+    });
+    expect(reset.status).toBe(201);
+    expect(reset.body.id).toBe(seller.id);
+    expect((await me(sellerSession.token, sellerSession.ip)).status).toBe(401);
+    const logs = await db.auditLog.findMany({
+      where: {
+        entityId: { in: [seller.id, upper] },
+        action: { in: ["access_change", "password_reset_by_admin"] },
+      },
+    });
+    expect(logs.map((l: any) => l.entityId)).toEqual([seller.id, seller.id]);
+  });
+
+  it("la edición del usuario con contraseña deja rastro de restablecimiento, sin la clave", async () => {
+    const admin = await signedIn(await makeUser("admin"));
+    const seller = await makeUser("seller");
+    const edited = await call(`/users/${seller.id}`, {
+      ip: admin.ip,
+      token: admin.token,
+      method: "PATCH",
+      body: { password: TEMP, pin: "135790" },
+    });
+    expect(edited.status).toBe(200);
+    noSecrets(edited.body, TEMP);
+    const logs = await db.auditLog.findMany({
+      where: { entityId: seller.id, action: "access_change" },
+    });
+    expect(logs).toHaveLength(1);
+    expect(logs[0].after).toEqual({ passwordReset: true, pinReset: true });
+    noSecrets(logs, TEMP, "135790");
+    const row = await db.user.findUniqueOrThrow({ where: { id: seller.id } });
+    expect(row).toMatchObject({ mustChangePassword: true, authVersion: 1 });
+  });
+
+  it("la administración puede restablecer a otra administradora de su sucursal, con auditoría", async () => {
+    const actorUser = await makeUser("admin");
+    const admin = await signedIn(actorUser);
+    const other = await makeUser("admin");
+    const reset = await call(`/users/${other.id}/reset-password`, {
+      ip: admin.ip,
+      token: admin.token,
+      body: {},
+    });
+    expect(reset.status).toBe(201);
+    expect(reset.body.mustChangePassword).toBe(true);
+    const logs = await db.auditLog.findMany({
+      where: { entityId: other.id, action: "password_reset_by_admin" },
+    });
+    expect(logs).toHaveLength(1);
+    expect(logs[0].userId).toBe(actorUser.id);
   });
 
   it("no alcanza cuentas de otra sucursal ni identificadores inválidos", async () => {
@@ -450,5 +552,145 @@ describe("Restablecer contraseña (POST /users/:id/reset-password)", () => {
         })
       ).status,
     ).toBe(400);
+  });
+});
+
+describe("Cambios simultáneos, cambio pendiente y caché", () => {
+  it("dos cambios simultáneos de la propia contraseña: uno gana, el otro falla y las sesiones quedan coherentes", async () => {
+    const seller = await makeUser("seller");
+    const first = await signedIn(seller);
+    const second = await signedIn(seller);
+    const OTHER = "Cuenta-Otra-Segura-2026%";
+    const [a, b] = await Promise.all([
+      call("/auth/password", {
+        ip: first.ip,
+        token: first.token,
+        body: {
+          currentPassword: INITIAL,
+          newPassword: NEW,
+          confirmPassword: NEW,
+        },
+      }),
+      call("/auth/password", {
+        ip: second.ip,
+        token: second.token,
+        body: {
+          currentPassword: INITIAL,
+          newPassword: OTHER,
+          confirmPassword: OTHER,
+        },
+      }),
+    ]);
+    const results = [
+      { reply: a, session: first, password: NEW },
+      { reply: b, session: second, password: OTHER },
+    ];
+    const winners = results.filter((r) => r.reply.status === 201);
+    const losers = results.filter((r) => r.reply.status !== 201);
+    expect(winners).toHaveLength(1);
+    expect(losers).toHaveLength(1);
+    const [winner] = winners;
+    const [loser] = losers;
+    // Quien pierde recibe un rechazo (o ya no tiene sesión), nunca tokens.
+    expect([400, 401]).toContain(loser.reply.status);
+    expect(loser.reply.body.accessToken).toBeUndefined();
+    noSecrets(loser.reply.body, INITIAL, NEW, OTHER);
+    // Sólo vale la contraseña ganadora; la sesión perdedora quedó cerrada.
+    expect((await login(seller, nextIp(), winner.password)).status).toBe(201);
+    expect((await login(seller, nextIp(), loser.password)).status).toBe(400);
+    expect((await login(seller, nextIp(), INITIAL)).status).toBe(400);
+    expect(
+      (await me(winner.reply.body.accessToken, winner.session.ip)).status,
+    ).toBe(200);
+    expect((await me(loser.session.token, loser.session.ip)).status).toBe(401);
+    expect((await refresh(loser.session.cookie, loser.session.ip)).status).toBe(
+      400,
+    );
+    const row = await db.user.findUniqueOrThrow({ where: { id: seller.id } });
+    expect(row.authVersion).toBe(1);
+    expect(
+      await db.auditLog.count({
+        where: { entityId: seller.id, action: "password_changed" },
+      }),
+    ).toBe(1);
+  });
+
+  it("con un cambio obligatorio pendiente, la sesión anterior no sirve para /auth/password", async () => {
+    const seller = await makeUser("seller");
+    const session = await signedIn(seller);
+    // La administración marcó el cambio obligatorio (sin pasar por la API).
+    await db.user.update({
+      where: { id: seller.id },
+      data: { mustChangePassword: true },
+    });
+    const r = await call("/auth/password", {
+      ip: session.ip,
+      token: session.token,
+      body: {
+        currentPassword: INITIAL,
+        newPassword: NEW,
+        confirmPassword: NEW,
+      },
+    });
+    expect(r.status).toBe(401);
+    expect(r.body.accessToken).toBeUndefined();
+    const row = await db.user.findUniqueOrThrow({ where: { id: seller.id } });
+    expect(row.passwordHash).toBe(seller.passwordHash);
+    expect(row).toMatchObject({ mustChangePassword: true, authVersion: 0 });
+  });
+
+  it("las respuestas con tokens o con la contraseña temporal llevan Cache-Control: no-store", async () => {
+    const noStore = (r: Reply) =>
+      expect(r.headers.get("cache-control")).toBe("no-store");
+    const adminUser = await makeUser("admin");
+    const ip = nextIp();
+    const adminLogin = await login(adminUser, ip);
+    expect(adminLogin.status).toBe(201);
+    noStore(adminLogin);
+    const refreshed = await refresh(adminLogin.cookie, ip);
+    expect(refreshed.status).toBe(201);
+    noStore(refreshed);
+    // Cambio voluntario.
+    const changed = await call("/auth/password", {
+      ip,
+      token: refreshed.body.accessToken,
+      body: {
+        currentPassword: INITIAL,
+        newPassword: NEW,
+        confirmPassword: NEW,
+      },
+    });
+    expect(changed.status).toBe(201);
+    noStore(changed);
+    // Restablecimiento con temporal generada.
+    const seller = await makeUser("seller");
+    const reset = await call(`/users/${seller.id}/reset-password`, {
+      ip,
+      token: changed.body.accessToken,
+      body: {},
+    });
+    expect(reset.status).toBe(201);
+    expect(reset.body.temporaryPassword).toBeTruthy();
+    noStore(reset);
+    // Cambio obligatorio desde la temporal.
+    const required = await call("/auth/change-password", {
+      ip: nextIp(),
+      body: {
+        login: seller.username,
+        currentPassword: reset.body.temporaryPassword,
+        newPassword: NEW,
+        confirmPassword: NEW,
+      },
+    });
+    expect(required.status).toBe(201);
+    noStore(required);
+    // Cambio de vendedor con PIN.
+    const switched = await call("/auth/pin", {
+      ip,
+      token: changed.body.accessToken,
+      body: { userId: seller.id, pin: "246813" },
+    });
+    expect(switched.status).toBe(201);
+    noStore(switched);
   });
 });

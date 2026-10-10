@@ -2,7 +2,7 @@ import {
   Body,
   Controller,
   Get,
-  HttpException,
+  Header,
   Inject,
   Optional,
   Param,
@@ -979,6 +979,7 @@ export class AdminController {
   // por intentos fallidos.
   @Post("users/:id/reset-password")
   @Permit("*")
+  @Header("Cache-Control", "no-store")
   async resetPassword(
     @Param("id") id: string,
     @Body() body: unknown,
@@ -993,16 +994,12 @@ export class AdminController {
       bad(
         "Para tu propia contraseña usa «Cambiar mi contraseña» en el menú de tu cuenta.",
       );
-    const target = await this.db.user.findFirstOrThrow({
+    // Sólo la administración (permiso «*», 403 para el resto) llega aquí y
+    // puede restablecer a cualquier persona de su sucursal, también a otra
+    // administradora: queda auditado (docs/DECISIONES.md, punto 14).
+    await this.db.user.findFirstOrThrow({
       where: { id: userId, branchId: actor.branchId },
-      include: { role: true },
     });
-    // Nadie restablece a quien tiene permisos que él no tiene.
-    if (!target.role.permissions.every((p) => can(actor.permissions, p)))
-      throw new HttpException(
-        "No puedes restablecer la contraseña de alguien con más permisos que los tuyos.",
-        403,
-      );
     const temporaryPassword = data.password ?? generateTemporaryPassword();
     const passwordHashValue = await passwordHash(temporaryPassword);
     const row = await this.db.$transaction(async (tx) => {
