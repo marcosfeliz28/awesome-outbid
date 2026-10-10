@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
   Inject,
   Optional,
   Param,
@@ -42,7 +43,10 @@ import {
   LOGO_MAX_BYTES,
 } from "@fitstore/shared";
 import { normalizeUsername, passwordHash } from "./auth";
-import { strongPasswordSchema } from "./password-policy";
+import {
+  generateTemporaryPassword,
+  strongPasswordSchema,
+} from "./password-policy";
 import { RequestRateLimitService } from "./rate-limit";
 
 const customerSchema = z.object({
@@ -912,6 +916,12 @@ export class AdminController {
     );
     if (id === actor.id && (data.active === false || data.roleId))
       bad("Otro administrador debe cambiar tu acceso.");
+    // Sin la contraseña actual, una sesión robada podría quedarse con la
+    // cuenta: la propia se cambia sólo con «Cambiar mi contraseña».
+    if (id === actor.id && data.password)
+      bad(
+        "Para tu propia contraseña usa «Cambiar mi contraseña» en el menú de tu cuenta.",
+      );
     const { password, pin, username, ...rest } = data;
     await this.db.user.findFirstOrThrow({
       where: { id: parse(uuid, id), branchId: actor.branchId },
@@ -952,6 +962,73 @@ export class AdminController {
       username: row.username,
       active: row.active,
       cashierNumber: row.cashierNumber,
+    };
+  }
+  // «Restablecer contraseña» (Configuración › Usuarios y permisos): la
+  // administración da una contraseña temporal (escrita o generada, que se
+  // muestra una sola vez y nunca se guarda ni se audita), la persona debe
+  // elegir la suya al entrar, se cierran sus sesiones y se quita su bloqueo
+  // por intentos fallidos.
+  @Post("users/:id/reset-password")
+  @Permit("*")
+  async resetPassword(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const userId = parse(uuid, id);
+    const data = parse(
+      z.object({ password: strongPasswordSchema.optional() }),
+      body ?? {},
+    );
+    if (userId === actor.id)
+      bad(
+        "Para tu propia contraseña usa «Cambiar mi contraseña» en el menú de tu cuenta.",
+      );
+    const target = await this.db.user.findFirstOrThrow({
+      where: { id: userId, branchId: actor.branchId },
+      include: { role: true },
+    });
+    // Nadie restablece a quien tiene permisos que él no tiene.
+    if (!target.role.permissions.every((p) => can(actor.permissions, p)))
+      throw new HttpException(
+        "No puedes restablecer la contraseña de alguien con más permisos que los tuyos.",
+        403,
+      );
+    const temporaryPassword = data.password ?? generateTemporaryPassword();
+    const passwordHashValue = await passwordHash(temporaryPassword);
+    const row = await this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id=${userId}::uuid FOR UPDATE`;
+      const row = await tx.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash: passwordHashValue,
+          mustChangePassword: true,
+          authVersion: { increment: 1 },
+        },
+      });
+      await tx.refreshToken.deleteMany({ where: { userId } });
+      await tx.authSession.deleteMany({ where: { userId } });
+      await tx.authAttempt.deleteMany({
+        where: { key: { startsWith: `login:${userId}:` } },
+      });
+      await audit(
+        tx,
+        actor,
+        "password_reset_by_admin",
+        "user",
+        userId,
+        undefined,
+        { mustChangePassword: true, generated: !data.password },
+      );
+      return row;
+    });
+    return {
+      id: row.id,
+      name: row.name,
+      username: row.username,
+      mustChangePassword: true,
+      ...(data.password ? {} : { temporaryPassword }),
     };
   }
   @Get("roles") @Permit("*") roles() {

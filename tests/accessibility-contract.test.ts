@@ -30,6 +30,36 @@ describe("U2 · identidad y ayuda de producción", () => {
     expect(app).toContain("Ir al punto de venta");
   });
 });
+describe("Cambiar mi contraseña (voluntario)", () => {
+  it("usa las mismas reglas y habla de la contraseña actual, no de la temporal", () => {
+    const good = "ClaveNueva!2026";
+    for (const weak of ["1234", "claveconnumero12!", "ClaveSinSimbolo2026"])
+      expect(passwordChangeError(weak, weak, "Actual-2026!", "voluntary")).toBe(
+        passwordChangeError(weak, weak, "Actual-2026!"),
+      );
+    expect(passwordChangeError(good, good, "Actual-2026!", "voluntary")).toBe(
+      "",
+    );
+    const same = passwordChangeError(good, good, good, "voluntary");
+    expect(same).toContain("actual");
+    expect(same).not.toContain("temporal");
+    expect(
+      friendlyPasswordChangeError(
+        new Error("La contraseña actual no es correcta."),
+        "voluntary",
+      ),
+    ).toContain("actual no es correcta");
+    expect(
+      friendlyPasswordChangeError(new Error("Prisma stack"), "voluntary"),
+    ).not.toMatch(/Prisma|temporal/);
+  });
+  it("está en el menú de la cuenta para cualquier usuario, con contraseña actual", () => {
+    const app = readFileSync("apps/web/src/App.tsx", "utf8");
+    expect(app).toContain("Cambiar mi contraseña");
+    expect(app).toContain('"/auth/password"');
+    expect(app).toContain('autoComplete="current-password"');
+  });
+});
 describe("P1 · cambio obligatorio de contraseña", () => {
   it("bloquea claves débiles, repetidas, largas y confirmación distinta", () => {
     const good = "ClaveNueva!2026";
