@@ -18,6 +18,10 @@ import type { Request, Response } from "express";
 import { captureApiException } from "./monitoring";
 import { isSerializationConflict } from "./inventory-resilience";
 import { databaseUnavailable, isDatabaseUnavailable } from "./database-errors";
+import {
+  ACTIVITY_WRITE_INTERVAL_MS,
+  sessionActivityGraceMs,
+} from "./session-activity";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -597,22 +601,31 @@ export class AuthGuard implements CanActivate {
       const settings = await this.db.settings.findUnique({
         where: { id: user.branchId },
       });
-      const cutoff = new Date(
-        Date.now() -
-          Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000,
-      );
-      const touched = await this.db.authSession.updateMany({
-        where: {
-          id: payload.sid,
-          userId: user.id,
-          lastActivityAt: { gte: cutoff },
-        },
-        data: { lastActivityAt: new Date() },
-      });
-      if (!touched.count) throw new Error();
+      const now = Date.now();
+      const timeout =
+        Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000;
+      const cutoff = new Date(now - timeout - sessionActivityGraceMs(timeout));
       const session = await this.db.authSession.findUnique({
         where: { id: payload.sid },
       });
+      if (!session || session.userId !== user.id) throw new Error();
+      if (session.lastActivityAt < cutoff) throw new Error();
+      // La actividad se escribe como mucho una vez por intervalo: escribir en
+      // cada petición bloqueaba la fila de la sesión bajo carga.
+      if (
+        now - session.lastActivityAt.getTime() >=
+        sessionActivityGraceMs(timeout)
+      ) {
+        const touched = await this.db.authSession.updateMany({
+          where: {
+            id: payload.sid,
+            userId: user.id,
+            lastActivityAt: { gte: cutoff },
+          },
+          data: { lastActivityAt: new Date(now) },
+        });
+        if (!touched.count) throw new Error();
+      }
       let terminalApproved = false;
       if (session?.terminalId) {
         const terminal = await this.db.terminal.findUnique({
@@ -624,10 +637,14 @@ export class AuthGuard implements CanActivate {
           terminal.branchId !== user.branchId
         )
           throw new Error();
-        await this.db.terminal.update({
-          where: { id: terminal.id },
-          data: { lastActivityAt: new Date(), lastUserId: user.id },
-        });
+        if (
+          terminal.lastUserId !== user.id ||
+          now - terminal.lastActivityAt.getTime() >= ACTIVITY_WRITE_INTERVAL_MS
+        )
+          await this.db.terminal.update({
+            where: { id: terminal.id },
+            data: { lastActivityAt: new Date(now), lastUserId: user.id },
+          });
         // Un equipo sin secreto (anterior a la ronda 4) nunca opera.
         terminalApproved = !!terminal.approvedAt && !!terminal.secretHash;
       }

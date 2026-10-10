@@ -27,6 +27,7 @@ import {
 
 import { verifyAttempt, verifyPinAttempt } from "./security";
 import { isDifferentPassword, strongPasswordSchema } from "./password-policy";
+import { sessionActivityGraceMs } from "./session-activity";
 import {
   REQUEST_RATE_LIMITS,
   RequestRateLimitService,
@@ -159,7 +160,8 @@ export class AuthController implements OnModuleInit {
       if (
         !session ||
         Date.now() - session.lastActivityAt.getTime() >
-          sessionTimeoutMinutes * 60000
+          sessionTimeoutMinutes * 60000 +
+            sessionActivityGraceMs(sessionTimeoutMinutes * 60000)
       )
         bad("La sesión ha expirado por inactividad.");
       await tx.refreshToken.create({

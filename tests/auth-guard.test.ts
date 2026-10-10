@@ -157,3 +157,101 @@ describe("AuthGuard · fallos de la base no cierran la sesión", () => {
     expect(req.actor).toMatchObject({ id: USER_ID, sessionId: SESSION_ID });
   });
 });
+
+// Cada petición escribía AuthSession y Terminal (UPDATE por petición, filas
+// calientes bajo carga). Ahora como mucho una vez por minuto, con el mismo
+// minuto de margen al comprobar la inactividad (apps/api/src/session-activity.ts).
+describe("AuthGuard · actividad de sesión y equipo como mucho una vez por minuto", () => {
+  const TERMINAL_ID = "5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a";
+  function tracked(opts: {
+    idleMs: number;
+    timeoutMinutes?: number;
+    terminalIdleMs?: number;
+    terminalUser?: string;
+  }) {
+    const writes = { session: 0, terminal: 0 };
+    const db = database({
+      settings: {
+        findUnique: async () =>
+          opts.timeoutMinutes
+            ? { data: { sessionTimeoutMinutes: opts.timeoutMinutes } }
+            : null,
+      },
+      authSession: {
+        findUnique: async () => ({
+          id: SESSION_ID,
+          userId: USER_ID,
+          terminalId: opts.terminalIdleMs === undefined ? null : TERMINAL_ID,
+          lastActivityAt: new Date(Date.now() - opts.idleMs),
+        }),
+        updateMany: async ({ where }: any) => {
+          writes.session++;
+          // La escritura conserva la condición de vigencia de la sesión.
+          expect(where).toMatchObject({ id: SESSION_ID, userId: USER_ID });
+          expect(where.lastActivityAt.gte).toBeInstanceOf(Date);
+          return { count: 1 };
+        },
+      },
+      terminal: {
+        findUnique: async () => ({
+          id: TERMINAL_ID,
+          branchId: "main",
+          revokedAt: null,
+          approvedAt: new Date(),
+          secretHash: "x",
+          lastUserId: opts.terminalUser ?? USER_ID,
+          lastActivityAt: new Date(Date.now() - (opts.terminalIdleMs ?? 0)),
+        }),
+        update: async () => {
+          writes.terminal++;
+          return {};
+        },
+      },
+    });
+    return { db, writes };
+  }
+  const run = (db: any) => guard(db).canActivate(context().ctx);
+
+  it("no escribe la sesión ni el equipo si la última escritura tiene menos de un minuto", async () => {
+    for (const idleMs of [0, 1_000, 59_000]) {
+      const { db, writes } = tracked({ idleMs, terminalIdleMs: idleMs });
+      await expect(run(db)).resolves.toBe(true);
+      expect(writes).toEqual({ session: 0, terminal: 0 });
+    }
+  });
+
+  it("escribe la sesión y el equipo pasado un minuto", async () => {
+    const { db, writes } = tracked({ idleMs: 61_000, terminalIdleMs: 61_000 });
+    await expect(run(db)).resolves.toBe(true);
+    expect(writes).toEqual({ session: 1, terminal: 1 });
+  });
+
+  it("si cambia la persona del equipo lo anota en seguida", async () => {
+    const { db, writes } = tracked({
+      idleMs: 1_000,
+      terminalIdleMs: 1_000,
+      terminalUser: "otra-persona",
+    });
+    await expect(run(db)).resolves.toBe(true);
+    expect(writes.terminal).toBe(1);
+  });
+
+  it("concede el minuto de margen y caduca después (plazo de 30 min)", async () => {
+    // Actividad guardada con hasta un minuto de retraso: la sesión no muere
+    // antes de lo que vería la web.
+    const inGrace = tracked({ idleMs: 30 * 60_000 + 30_000 });
+    await expect(run(inGrace.db)).resolves.toBe(true);
+    expect(inGrace.writes.session).toBe(1);
+    const expired = tracked({ idleMs: 31 * 60_000 + 1_000 });
+    await expect(run(expired.db)).rejects.toMatchObject({ status: 401 });
+    expect(expired.writes.session).toBe(0);
+  });
+
+  it("con plazos cortos (1 min) escribe en cada petición y caduca exacto", async () => {
+    const fresh = tracked({ idleMs: 1_000, timeoutMinutes: 1 });
+    await expect(run(fresh.db)).resolves.toBe(true);
+    expect(fresh.writes.session).toBe(1);
+    const expired = tracked({ idleMs: 61_000, timeoutMinutes: 1 });
+    await expect(run(expired.db)).rejects.toMatchObject({ status: 401 });
+  });
+});
