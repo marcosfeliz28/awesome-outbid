@@ -7,6 +7,7 @@ export const powershellTests = [
   "PowerShell-Parse",
   "Transaction-FaultInjection",
   "Restore-FaultInjection",
+  "Restore-Real-Sql",
   "Application-Service-Privacy",
   "Backup-Privacy",
   "FreshInstall-FaultInjection",
@@ -30,6 +31,7 @@ export const powershellTests = [
   "Recovery-Missing-Installation",
   "Recovery-Schema-Contract",
   "Recovery-Acl-Interruption",
+  "Recovery-Acl-MissingEntry",
   "Exact-Dacl-Contract",
   "Postgres-Real-Sql",
   "Recovery-Legacy-Schema",
@@ -84,7 +86,7 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
         "Bypass",
         "-File",
         `instalador/tests/${name}.ps1`,
-        ...(["Recovery-FaultInjection", "Recovery-Login-Exit", "Recovery-Activity-Guard", "Recovery-Restart-Previous", "Recovery-Temporary-Acl", "Postgres-Real-Sql", "Recovery-Legacy-Schema"].includes(name) && env.PGBIN
+        ...(["Recovery-FaultInjection", "Recovery-Login-Exit", "Recovery-Activity-Guard", "Recovery-Restart-Previous", "Recovery-Temporary-Acl", "Postgres-Real-Sql", "Recovery-Legacy-Schema", "Recovery-Acl-MissingEntry", "Restore-Real-Sql"].includes(name) && env.PGBIN
           ? ["-PgBin", env.PGBIN]
           : []),
       ],

@@ -18,6 +18,8 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     "PowerShell-Parse",
     "Transaction-FaultInjection",
     "Restore-FaultInjection",
+    "Restore-Real-Sql",
+    "Recovery-Acl-MissingEntry",
     "Application-Service-Privacy",
     "Backup-Privacy",
     "FreshInstall-FaultInjection",
