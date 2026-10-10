@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -573,13 +573,16 @@ export function POS({ go }: { go: (page: string) => void }) {
   };
   // Un escaneo o un Enter hecho mientras el catálogo aún se descarga (al entrar
   // o recargar la caja) no puede decir «Código no encontrado»: se guarda y se
-  // procesa cuando el catálogo llega. Si la descarga falla, products.isPending
-  // es falso y sale el aviso de siempre.
+  // procesa cuando el catálogo llega. Si la descarga falla o queda en pausa
+  // (sin conexión ni copia local), el código guardado sale con el aviso de
+  // siempre en vez de quedar esperando.
   const pendingScan = useRef<{ kind: "scan"; code: string } | "enter" | null>(
     null,
   );
   const catalogLoading = () =>
-    products.data === undefined && products.isPending;
+    products.data === undefined &&
+    products.isPending &&
+    products.fetchStatus !== "paused";
   const scan = (code: string) => {
     if (catalogLoading()) {
       pendingScan.current = { kind: "scan", code };
@@ -666,15 +669,18 @@ export function POS({ go }: { go: (page: string) => void }) {
         : "No se agregó nada: no hay productos con esas palabras.",
     );
   };
-  // Cuando llega el catálogo se procesa el escaneo que quedó esperando.
-  useEffect(() => {
-    if (products.data === undefined) return;
+  // Cuando termina la descarga se procesa el escaneo que quedó esperando.
+  // useLayoutEffect: corre antes de que el navegador entregue otra tecla, así
+  // un Enter justo al llegar el catálogo no agrega el producto dos veces.
+  const waitingCatalog = catalogLoading();
+  useLayoutEffect(() => {
+    if (waitingCatalog) return;
     const pending = pendingScan.current;
     if (!pending) return;
     pendingScan.current = null;
     if (pending === "enter") enter();
     else scan(pending.code);
-  }, [products.data]);
+  }, [waitingCatalog]);
   return (
     <div className="pos-layout">
       <section className="pos-catalog">
