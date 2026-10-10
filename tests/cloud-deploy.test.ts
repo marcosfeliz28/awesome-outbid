@@ -341,44 +341,241 @@ describe("Render · proxy público", () => {
     expect(read("render.yaml")).toContain("healthCheckPath: /healthz\n");
   });
 
-  it("reemplaza X-Forwarded-For usando sólo la IP de conexión confiable", () => {
+  // S-01/S-02/S-04 (auditoría de seguridad 2026-10-10): antes Nginx enviaba
+  // siempre $remote_addr, que en Render es el proxy del borde y es la misma
+  // para todos los clientes. Ahora acepta CF-Connecting-IP, que Cloudflare
+  // fija, sólo desde la red del borde; la X-Forwarded-For del cliente sigue
+  // sin usarse nunca. Las pruebas anteriores exigían ignorar
+  // CF-Connecting-IP siempre; se sustituyen por estas, que además ejecutan
+  // Nginx de verdad cuando está instalado.
+  it("reemplaza X-Forwarded-For con la IP del cliente y sólo cree CF-Connecting-IP desde el borde", () => {
     const nginx = read("deploy/render/nginx.conf.template");
-    expect(nginx).toContain("map $remote_addr $nexora_client_ip {");
-    expect(nginx).toContain("default $remote_addr;");
-    expect(nginx).not.toMatch(
-      /\$http_(?:cf_ray|cf_connecting_ip|x_forwarded_for)/,
+    const geo = nginx.match(
+      /geo \$remote_addr \$nexora_trusted_edge \{([\s\S]*?)\n\}/,
+    )?.[1];
+    expect(geo).toContain("default 0;");
+    expect(geo).toContain(
+      "include /etc/nginx/snippets/nexora-trusted-edge.conf;",
     );
+    const map = nginx.match(
+      /map "\$nexora_trusted_edge\|\$http_cf_connecting_ip" \$nexora_client_ip \{([\s\S]*?)\n\}/,
+    )?.[1];
+    expect(map).toContain("default $remote_addr;");
+    // Sólo con el borde de confianza (1|) y una sola IP con forma válida.
+    for (const line of map!.split("\n").filter((l) => l.includes("~")))
+      expect(line).toMatch(
+        /"~\^1\\\|\(\?<nexora_cf_ipv[46]>.*\)\$" \$nexora_cf_ipv[46];$/,
+      );
+    expect(nginx).not.toMatch(
+      /\$http_(?:cf_ray|x_forwarded_for|true_client_ip|x_real_ip)/,
+    );
+    expect(nginx).not.toContain("$proxy_add_x_forwarded_for");
+    expect(nginx).not.toContain("real_ip_header");
     expect(
       nginx.match(/proxy_set_header X-Forwarded-For \$nexora_client_ip;/g),
     ).toHaveLength(2);
-    expect(nginx).not.toContain("$proxy_add_x_forwarded_for");
-    expect(nginx).not.toContain("$http_x_forwarded_for");
-    expect(nginx).toContain("proxy_set_header X-Forwarded-Proto https;");
-  });
-
-  it("ignora CF-Ray, CF-Connecting-IP y X-Forwarded-For falsificados juntos", () => {
-    const nginx = read("deploy/render/nginx.conf.template");
-    const map = nginx.match(
-      /map \$remote_addr \$nexora_client_ip \{([\s\S]*?)\n\}/,
-    )?.[1];
-    expect(map).toBeTruthy();
-    expect(map).toContain("default $remote_addr;");
-    expect(map).not.toMatch(
-      /\$http_(?:cf_ray|cf_connecting_ip|x_forwarded_for)/,
+    expect(
+      nginx.match(/proxy_set_header X-Real-IP \$nexora_client_ip;/g),
+    ).toHaveLength(2);
+    // Las cabeceras del borde no llegan a la API.
+    expect(nginx.match(/proxy_set_header CF-Connecting-IP "";/g)).toHaveLength(
+      2,
     );
-
-    // El cliente falsifica las tres cabeceras; Nginx conserva la IP del socket.
-    const request = {
-      socketIp: "10.20.30.40",
-      cfRay: "a1b2c3d4e5f67890-IAD",
-      forgedCfConnectingIp: "198.51.100.77",
-      forgedXForwardedFor: "203.0.113.99",
-    };
-    const apiIp = request.socketIp;
-    expect(apiIp).toBe("10.20.30.40");
-    expect(apiIp).not.toBe(request.forgedCfConnectingIp);
-    expect(apiIp).not.toBe(request.forgedXForwardedFor);
+    expect(nginx.match(/proxy_set_header True-Client-IP "";/g)).toHaveLength(2);
+    expect(nginx).toContain("proxy_set_header X-Forwarded-Proto https;");
+    // El snippet se genera al arrancar y la imagen trae el generador.
+    const entrypoint = read("deploy/render/start-nginx.sh");
+    expect(entrypoint).toContain(
+      "nexora-render-trusted-edge /etc/nginx/snippets/nexora-trusted-edge.conf",
+    );
+    expect(entrypoint.indexOf("nexora-render-trusted-edge")).toBeLessThan(
+      entrypoint.indexOf("exec /docker-entrypoint.sh"),
+    );
+    expect(read("deploy/render/Dockerfile.web")).toContain(
+      "COPY --chmod=755 deploy/render/render-trusted-edge.sh /usr/local/bin/nexora-render-trusted-edge",
+    );
   });
+
+  it.skipIf(process.platform === "win32")(
+    "genera la lista del borde sólo con redes válidas",
+    () => {
+      const dir = mkdtempSync(join(tmpdir(), "nexora-edge-"));
+      const target = join(dir, "edge.conf");
+      const render = (value?: string) =>
+        spawnSync(
+          "sh",
+          [resolve(root, "deploy/render/render-trusted-edge.sh"), target],
+          {
+            env: {
+              PATH: process.env.PATH,
+              ...(value === undefined
+                ? {}
+                : { NEXORA_TRUSTED_EDGE_CIDRS: value }),
+            },
+            encoding: "utf8",
+          },
+        );
+      try {
+        expect(render().status).toBe(0);
+        expect(readFileSync(target, "utf8")).toBe(
+          "10.0.0.0/8 1;\n172.16.0.0/12 1;\n192.168.0.0/16 1;\n100.64.0.0/10 1;\nfc00::/7 1;\n",
+        );
+        expect(render("10.1.0.0/16, 2001:db8::/32").status).toBe(0);
+        expect(readFileSync(target, "utf8")).toBe(
+          "10.1.0.0/16 1;\n2001:db8::/32 1;\n",
+        );
+        expect(render("none").status).toBe(0);
+        expect(readFileSync(target, "utf8")).toBe("");
+        for (const bad of ["10.0.0.0/8; return 200", "0.0.0.0", "evil"]) {
+          const r = render(bad);
+          expect(r.status).toBe(1);
+          expect(r.stderr).toContain("NEXORA_TRUSTED_EDGE_CIDRS");
+          // Se conserva el último snippet válido; nunca uno a medias.
+          expect(readFileSync(target, "utf8")).toBe("");
+        }
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
+
+  const hasNginx =
+    process.platform !== "win32" &&
+    spawnSync("nginx", ["-v"], { encoding: "utf8" }).status === 0;
+  it.skipIf(!hasNginx)(
+    "Nginx real: la API recibe la IP de CF-Connecting-IP sólo desde el borde y nunca la X-Forwarded-For del cliente",
+    async () => {
+      const { createServer } = await import("node:http");
+      const { writeFileSync, mkdirSync, existsSync } = await import("node:fs");
+      const { spawn } = await import("node:child_process");
+      const freePort = () =>
+        new Promise<number>((done) => {
+          const probe = createServer().listen(0, "127.0.0.1", () => {
+            const { port } = probe.address() as { port: number };
+            probe.close(() => done(port));
+          });
+        });
+      // API simulada: devuelve las cabeceras que recibe.
+      const api = createServer((req, res) => {
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify(req.headers));
+      });
+      const apiPort = await freePort();
+      await new Promise<void>((done) => api.listen(apiPort, "127.0.0.1", done));
+      const webPort = await freePort();
+      const dir = mkdtempSync(join(tmpdir(), "nexora-nginx-"));
+      const snippets = join(dir, "snippets");
+      mkdirSync(snippets);
+      mkdirSync(join(dir, "html"));
+      writeFileSync(
+        join(snippets, "nexora-api-upstream.conf"),
+        `server 127.0.0.1:${apiPort};\n`,
+      );
+      writeFileSync(join(snippets, "nexora-security-headers.conf"), "");
+      const site = read("deploy/render/nginx.conf.template")
+        .replaceAll("/etc/nginx/snippets", snippets)
+        .replace("${PORT}", String(webPort))
+        .replace("/usr/share/nginx/html", join(dir, "html"));
+      writeFileSync(join(dir, "site.conf"), site);
+      writeFileSync(
+        join(dir, "nginx.conf"),
+        `worker_processes 1;\npid ${dir}/nginx.pid;\nerror_log ${dir}/error.log;\n` +
+          `events { worker_connections 64; }\nhttp {\n access_log off;\n` +
+          ["client_body", "proxy", "fastcgi", "uwsgi", "scgi"]
+            .map((t) => ` ${t}_temp_path ${dir}/tmp_${t};`)
+            .join("\n") +
+          `\n include ${dir}/site.conf;\n}\n`,
+      );
+      const edge = (cidrs: string) =>
+        spawnSync(
+          "sh",
+          [
+            resolve(root, "deploy/render/render-trusted-edge.sh"),
+            join(snippets, "nexora-trusted-edge.conf"),
+          ],
+          { env: { PATH: process.env.PATH, NEXORA_TRUSTED_EDGE_CIDRS: cidrs } },
+        ).status;
+      const start = () =>
+        spawn(
+          "nginx",
+          [
+            "-p",
+            dir,
+            "-e",
+            join(dir, "error.log"),
+            "-c",
+            join(dir, "nginx.conf"),
+            "-g",
+            "daemon off;",
+          ],
+          { stdio: "ignore" },
+        );
+      const seen = async (headers: Record<string, string>) => {
+        for (let i = 0; i < 50; i++) {
+          try {
+            const r = await fetch(`http://127.0.0.1:${webPort}/api/eco`, {
+              headers,
+            });
+            return (await r.json()) as Record<string, string>;
+          } catch {
+            await new Promise((done) => setTimeout(done, 100));
+          }
+        }
+        throw new Error(
+          "Nginx no arrancó: " +
+            (existsSync(join(dir, "error.log"))
+              ? readFileSync(join(dir, "error.log"), "utf8")
+              : ""),
+        );
+      };
+      let proc = undefined as ReturnType<typeof spawn> | undefined;
+      const stop = async () => {
+        if (!proc || proc.exitCode !== null) return;
+        const exited = new Promise((done) => proc!.once("exit", done));
+        proc.kill("SIGTERM");
+        await exited;
+      };
+      try {
+        // Conexión desde el borde de confianza (127.0.0.1 en esta prueba).
+        expect(edge("127.0.0.1/32")).toBe(0);
+        proc = start();
+        const real = await seen({ "CF-Connecting-IP": "198.51.100.23" });
+        expect(real["x-forwarded-for"]).toBe("198.51.100.23");
+        expect(real["x-real-ip"]).toBe("198.51.100.23");
+        expect(real["cf-connecting-ip"]).toBeUndefined();
+        expect(real["true-client-ip"]).toBeUndefined();
+        const v6 = await seen({ "CF-Connecting-IP": "2001:db8::7" });
+        expect(v6["x-forwarded-for"]).toBe("2001:db8::7");
+        // X-Forwarded-For y True-Client-IP del navegador nunca se creen.
+        const forged = await seen({
+          "X-Forwarded-For": "203.0.113.99",
+          "True-Client-IP": "203.0.113.98",
+        });
+        expect(forged["x-forwarded-for"]).toBe("127.0.0.1");
+        // Una lista o un texto en CF-Connecting-IP no es una IP: se ignora.
+        for (const value of [
+          "198.51.100.1, 203.0.113.5",
+          "evil;x",
+          "1.2.3",
+          "fe80::1%eth0",
+        ])
+          expect(
+            (await seen({ "CF-Connecting-IP": value }))["x-forwarded-for"],
+          ).toBe("127.0.0.1");
+        await stop();
+        // Si la conexión no viene del borde, CF-Connecting-IP no vale nada.
+        expect(edge("10.0.0.0/8")).toBe(0);
+        proc = start();
+        const outside = await seen({ "CF-Connecting-IP": "198.51.100.23" });
+        expect(outside["x-forwarded-for"]).toBe("127.0.0.1");
+      } finally {
+        await stop();
+        await new Promise((done) => api.close(done));
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+    30000,
+  );
 
   it("fija una versión de Nginx compatible y valida valores antes de sustituirlos", () => {
     const dockerfile = read("deploy/render/Dockerfile.web");
