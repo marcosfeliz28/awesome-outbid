@@ -29,6 +29,8 @@ node scripts/create-merchandise-template.mjs --output $salidaPlantilla
 
 `--output` es obligatorio y recibe una carpeta. El generador crea `ENTRADA-MERCANCIA-LOTES.xlsx` y rechaza sobrescribir un archivo existente. La generación de las pruebas ocurre exclusivamente en carpetas temporales que se eliminan al terminar. La plantilla y las vistas PNG publicadas no se regeneran con esta corrección.
 
-**@dueña: abrir la plantilla en Excel real.** Antes de sustituir el archivo publicado, revisa en Excel la plantilla regenerada: encabezados, instrucciones completas, congelación de fila/columna, códigos y lotes con ceros, fecha real y aviso de captura manual. La prueba del lector verifica contenido y tipos; la revisión visual de la nueva exportación queda pendiente. No se usó producción ni secretos.
+La exportación nueva generada en una carpeta temporal se importó con Artifact Tool y se renderizaron `Mercancia!A1:F12` e `Instrucciones!A1:B16`. Ambas vistas se revisaron: encabezados legibles, área de entrada vacía, instrucciones completas y aviso manual visible, sin recortes. La prueba de roundtrip del generador volvió a pasar (3/3). No se sustituyeron el XLSX ni las vistas PNG publicados.
+
+**@dueña: abrir la plantilla en Excel real.** Antes de sustituir el archivo publicado, revisa en Excel la plantilla regenerada: encabezados, instrucciones completas, congelación de fila/columna, códigos y lotes con ceros, fecha real y aviso de captura manual. La inspección visual del renderer y la prueba del lector no certifican el comportamiento de Microsoft Excel: esa apertura real sigue pendiente. No se usó producción ni secretos.
 
 Fuente del contrato: `apps/api/src/invoice.ts`, `apps/api/src/merchandise.ts` y el formulario de `apps/web/src/Merchandise.tsx` en `origin/nexora-cloud`, órdenes versión 3.6. Ninguno de esos archivos se modifica en esta entrega.
