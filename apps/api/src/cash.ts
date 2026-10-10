@@ -109,6 +109,9 @@ export async function cashExpectedMany(db: any, sessions: any[]) {
     where: {
       cashSessionId: { in: ids },
       sale: { status: "completed" },
+      // M-3: igual que cashExpected, una transferencia de venta rechazada no
+      // entró en la caja (pasó a cobrar) y no cuenta en la lista de cajas.
+      status: { not: "rejected" },
       OR: [{ entryType: { not: "installment" } }, { status: "ok" }],
     },
     _sum: { amount: true },

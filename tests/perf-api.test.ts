@@ -305,6 +305,42 @@ describe("GET /cash-sessions con historial", () => {
     await db.cashSession.deleteMany({ where: { id: { in: fakeSessionIds } } });
     fakeSessionIds.length = 0;
   });
+
+  // Integración wave2 (fix-dinero M-3 + perf-apertura PERF-4): una
+  // transferencia de venta rechazada pasa a cuenta por cobrar y no cuenta en
+  // el esperado, tampoco en la lista agrupada de cajas (cashExpectedMany).
+  it("gerencia: una transferencia rechazada sale del esperado de la lista, como en cashExpected", async () => {
+    const listed = async () =>
+      (await ok("/cash-sessions", manager)).find(
+        (s: any) => s.id === cashier.cash.id,
+      ).expected;
+    const before = await listed();
+    const byTransfer = await sale(cashier.token, cashier.cash.id, [
+      {
+        method: "transfer",
+        amount: 300,
+        bank: "Banco QA perf",
+        reference: "QP-" + suffix,
+      },
+    ]);
+    const payment = byTransfer.payments[0];
+    expect((await listed()).transfer).toBe(before.transfer + 300);
+    await ok("/payments/" + payment.id + "/reject", admin, {
+      reason: "QA perf: no llegó al banco",
+    });
+    const after = await listed();
+    expect(after).toMatchObject({
+      cash: before.cash,
+      card: before.card,
+      transfer: before.transfer,
+    });
+    const reference = await cashExpected(
+      db,
+      await db.cashSession.findUnique({ where: { id: cashier.cash.id } }),
+    );
+    expect(after.transfer).toBe(reference.transfer);
+    expect(after.cash).toBe(reference.cash);
+  });
 });
 
 describe("Actividad de sesión", () => {
