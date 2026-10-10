@@ -3,7 +3,8 @@ $ErrorActionPreference = "Stop"
 . (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts\FitStore.Common.ps1")
 $root = Join-Path ([IO.Path]::GetTempPath()) ("nexora-preflight-private-" + [Guid]::NewGuid().ToString("N"))
 $reader = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-$script:BackupReaderSid = $reader
+$state = [pscustomobject]@{ backupReaderSid = $reader }
+$paths = [pscustomobject]@{ LocalBackups = (Join-Path $root 'private'); Install = $root }
 try {
   [IO.Directory]::CreateDirectory($root) | Out-Null
   $backup = Join-Path $root "FitStore_old.dump"
