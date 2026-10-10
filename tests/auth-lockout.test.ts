@@ -239,9 +239,7 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     const terminal = await approvedTerminal();
     const statuses: number[] = [];
     for (let n = 0; n < 61; n++)
-      statuses.push(
-        (await login(cashier, EDGE_IP, "incorrecta-" + n)).status,
-      );
+      statuses.push((await login(cashier, EDGE_IP, "incorrecta-" + n)).status);
     // El freno en memoria sigue actuando sobre esa IP...
     expect(statuses.at(-1)).toBe(429);
     // ...pero el equipo aprobado tiene su propio cupo.
@@ -415,7 +413,10 @@ describe("S-03 · PIN de gerente", () => {
       expect((await fourth.approve("802461")).status).toBe(201);
       expect(
         await db.auditLog.count({
-          where: { action: "pin_locked", after: { path: ["scope"], equals: "short-pin" } },
+          where: {
+            action: "pin_locked",
+            after: { path: ["scope"], equals: "short-pin" },
+          },
         }),
       ).toBeGreaterThan(0);
     } finally {
@@ -445,9 +446,7 @@ describe("S-03 · PIN de gerente", () => {
       });
     for (let round = 0; round < 2; round++) {
       for (let n = 0; n < 5; n++)
-        expect((await pin("00000" + n)).body.message).toMatch(
-          /PIN incorrecto/,
-        );
+        expect((await pin("00000" + n)).body.message).toMatch(/PIN incorrecto/);
       await expireSwitch();
     }
     // Once intentos en menos de una hora: el cupo del solicitante se agotó,

@@ -370,9 +370,7 @@ export class AuthController implements OnModuleInit {
     if (credentialLimit.unknownFlooded && !matches) tooManyAttempts();
     // Un equipo de otra sucursal no es «aprobado» para esta cuenta.
     const terminalId =
-      device && (!user || device.branchId === user.branchId)
-        ? device.id
-        : null;
+      device && (!user || device.branchId === user.branchId) ? device.id : null;
     await this.passwordAttempt(
       user,
       credentialAttemptIdentity(user, credentialLimit.normalized),
@@ -456,9 +454,7 @@ export class AuthController implements OnModuleInit {
     if (credentialLimit.unknownFlooded && !currentPasswordMatches)
       tooManyAttempts();
     const terminalId =
-      device && (!user || device.branchId === user.branchId)
-        ? device.id
-        : null;
+      device && (!user || device.branchId === user.branchId) ? device.id : null;
     await this.passwordAttempt(
       user,
       credentialAttemptIdentity(user, credentialLimit.normalized),

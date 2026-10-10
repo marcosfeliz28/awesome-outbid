@@ -1,5 +1,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import {
+  Inject,
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from "@nestjs/common";
 import { Actor, Database, bad } from "./common";
 
 export function validateSecret(
@@ -41,7 +46,6 @@ export function validateSecret(
   }
   return secret;
 }
-
 
 // Secreto de un equipo registrado (Configuración › Equipos): sólo se guarda
 // su hash y se compara en tiempo constante.
@@ -152,13 +156,21 @@ export async function verifyAttempt(
         if (row.lockedUntil)
           await tx.authAttempt.update({
             where: { key },
-            data: { failedAttempts: 0, lockedUntil: null, windowStartedAt: null },
+            data: {
+              failedAttempts: 0,
+              lockedUntil: null,
+              windowStartedAt: null,
+            },
           });
         const matched = await verify(tx);
         if (matched) {
           await tx.authAttempt.update({
             where: { key },
-            data: { failedAttempts: 0, lockedUntil: null, windowStartedAt: null },
+            data: {
+              failedAttempts: 0,
+              lockedUntil: null,
+              windowStartedAt: null,
+            },
           });
           await hooks.onMatched?.(tx, matched);
           return { matched };
@@ -275,7 +287,9 @@ export const verifyPinAttempt = (
       // pero queda señalado para que la administración lo cambie.
       onMatched: shortPin
         ? (tx, matched) =>
-            auditPin(tx, "pin_short_used", matched, { length: context.pin!.length })
+            auditPin(tx, "pin_short_used", matched, {
+              length: context.pin!.length,
+            })
         : undefined,
     },
   );
