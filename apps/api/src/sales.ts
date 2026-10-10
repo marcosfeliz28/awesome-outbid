@@ -1336,24 +1336,6 @@ export class SalesController {
         bad(
           "Esta venta antigua no conserva el detalle necesario para reponer el inventario automáticamente. Usa una devolución o revisión manual.",
         );
-      const notes = await tx.creditNote.findMany({
-        where: {
-          id: {
-            in: sale.payments.flatMap((p) =>
-              p.creditNoteId ? [p.creditNoteId] : [],
-            ),
-          },
-        },
-      });
-      for (const note of notes) {
-        const restored = sale.payments
-          .filter((p) => p.creditNoteId === note.id)
-          .reduce((sum, p) => sum + Number(p.amount), 0);
-        await tx.creditNote.update({
-          where: { id: note.id },
-          data: { balance: { increment: restored } },
-        });
-      }
       const allocations = sale.items.flatMap(
         (i) => i.stockAllocations as any[],
       );
@@ -1362,6 +1344,27 @@ export class SalesController {
         ...new Set(allocations.map((a) => a.variantId as string)),
       ].sort())
         variants.set(variantId, await lockVariant(tx, variantId, actor));
+      // D-M1 (auditoría 06): las notas de crédito se bloquean DESPUÉS de las
+      // variantes y en orden de id, como en la venta. Antes la anulación
+      // tomaba la nota y luego las variantes, la venta al revés, y una venta
+      // pagada con la misma nota interbloqueaba con la anulación (HTTP 500).
+      const noteIds = [
+        ...new Set(
+          sale.payments.flatMap((p) =>
+            p.creditNoteId ? [p.creditNoteId] : [],
+          ),
+        ),
+      ].sort();
+      for (const noteId of noteIds) {
+        await tx.$queryRaw`SELECT id FROM "CreditNote" WHERE id=${noteId}::uuid FOR UPDATE`;
+        const restored = sale.payments
+          .filter((p) => p.creditNoteId === noteId)
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+        await tx.creditNote.updateMany({
+          where: { id: noteId },
+          data: { balance: { increment: restored } },
+        });
+      }
       for (const allocation of allocations) {
         const variant = variants.get(allocation.variantId);
         if (allocation.lotId)

@@ -704,7 +704,7 @@ describe("Auditoría 06 · concurrencia del dinero", () => {
     );
   });
 
-  it.skip("D-M1: vender con una nota de crédito mientras se anula otra venta pagada con ella no interbloquea", async () => {
+  it("D-M1: vender con una nota de crédito mientras se anula otra venta pagada con ella no interbloquea", async () => {
     const m = await person("manager", "dm1", 20000);
     const c3 = await person("seller", "dm1a", 1000);
     const c4 = await person("seller", "dm1b", 1000);
