@@ -78,6 +78,11 @@ try {
   if (-not $backup -or -not (Test-Path -LiteralPath $backup -PathType Leaf)) {
     throw "No se pudo verificar la ruta del respaldo previo. La actualización fue cancelada."
   }
+  # El script de respaldo de la version anterior puede escribir en una carpeta
+  # publica. Retirar esa ACL inmediatamente, antes de continuar el staging.
+  foreach ($backupFile in @($backup, "$backup.sha256", "$backup.json")) {
+    if (Test-Path -LiteralPath $backupFile -PathType Leaf) { Protect-FitStoreBackupFile -Path $backupFile }
+  }
   $backupHash = (Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash.ToLowerInvariant()
 
   # Si Windows se reinicia durante el staging, ninguna versión sin verificar
