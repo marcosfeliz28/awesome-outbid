@@ -436,6 +436,8 @@ describe("descarte protegido de ventas offline", () => {
   }) {
     const order: string[] = [];
     const tx = {
+      // N-M1: el descarte toma el candado consultivo del UUID.
+      $queryRaw: async () => [{ locked: "1" }],
       auditLog: {
         findFirst: async () =>
           options.owner === false

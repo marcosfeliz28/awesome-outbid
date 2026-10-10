@@ -7,7 +7,8 @@
 #      /api en 502 con mensaje claro (no puede quedarse caída).
 #   3. El preDeployCommand de render.yaml aplica las migraciones.
 #   4. Arranca la API y la web la encuentra sola (re-resolución del upstream).
-#   5. deploy/render/post-deploy-check.mjs pasa contra la web.
+#   5. deploy/render/post-deploy-check.mjs pasa contra la web y, con --db-only,
+#      contra la base (índices válidos, restricciones validadas, disparador).
 #
 # Uso: bash deploy/render/ci-smoke.sh   (desde la raíz del repositorio)
 # Imágenes: NEXORA_API_IMAGE y NEXORA_WEB_IMAGE (por defecto, las de CI).
@@ -110,6 +111,12 @@ echo "5) Comprobación posterior al despliegue a través de la web"
 NEXORA_CHECK_ATTEMPTS=24 NEXORA_CHECK_DELAY_MS=5000 \
   node deploy/render/post-deploy-check.mjs "$WEB_URL"
 wait_status "$WEB_URL/healthz/deep" 204 30
+
+echo "5b) Índices, restricciones validadas y disparador (solo lectura)"
+# Mismo script que se corre en el shell de la API de Render tras desplegar
+# (docs/DEPLOY-RENDER.md): falla si una migración omitió algo sin avisar.
+docker run --rm --network "$net" -e RENDER_DATABASE_URL="$database_url" \
+  "$API_IMAGE" node deploy/render/post-deploy-check.mjs --db-only
 
 echo "6) Las migraciones son idempotentes"
 # shellcheck disable=SC2086

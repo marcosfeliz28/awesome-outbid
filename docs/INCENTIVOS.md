@@ -46,7 +46,7 @@ Por mes y cajera: ventas, unidades por categoría (vendidas y devueltas), incent
 
 ## Migración `202610190001_incentives`
 
-Idempotente: `ADD COLUMN IF NOT EXISTS` (booleanos con `DEFAULT false`, sin reescribir tablas en PostgreSQL 11+), `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS` y los índices únicos sólo si los datos lo permiten (si no, `NOTICE` y el despliegue sigue). No borra ni modifica datos ni genera incentivos para ventas anteriores.
+Idempotente: `ADD COLUMN IF NOT EXISTS` (booleanos con `DEFAULT false`, sin reescribir tablas en PostgreSQL 11+), `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS` y los índices únicos sólo si los datos lo permiten (si no, el índice queda pendiente y el despliegue sigue; el `NOTICE` no se ve en Render: lo detecta `node deploy/render/post-deploy-check.mjs --db-only`). No borra ni modifica datos ni genera incentivos para ventas anteriores.
 
 ## Pruebas
 
