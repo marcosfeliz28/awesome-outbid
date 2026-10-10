@@ -13,3 +13,4 @@ test('3j guía distingue integridad, atomicidad y cobertura de actividad', () =>
   }
   assert.ok(!text.includes('de los 38 modelos actuales'));
 });
+import { URL } from 'node:url';
