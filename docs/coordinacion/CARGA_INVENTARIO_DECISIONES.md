@@ -40,3 +40,6 @@ Dutch Chocolate (1173) suma 3; Chocolate Peanut Butter (1632) 5; y el segundo «
 
 ## ACTUALIZACIÓN 5 (10 oct): Broche Negro («Broche Negra»)
 Conteo: 2XS 1 (sin cambio), S 4 (1579: 5→4), M 4, XL 3, 2XL 6 (sin cambio). XS y L no nombradas: sin tocar. Archivo vigente: `inventario-listo-para-cargar-v4.xlsx` (632 filas; fuera del repositorio). La importación es idempotente: si ya se cargó la v3, cargar la v4 aplica solo la diferencia.
+
+## ACTUALIZACIÓN 6 (10 oct): Muscle Milk Pro Series Gainer 5 lb
+Vainilla (1220, antes 0 u., costo 2,950, precio 4,900) → 1 u., costo 3,100, precio 4,300. Chocolate: producto nuevo ID 1635 «Muscle Milk Pro Series - Chocolate / 5 lb», 1 u., costo 3,100, precio 4,300. Archivo vigente: `inventario-listo-para-cargar-v5.xlsx` (633 filas; fuera del repositorio).
