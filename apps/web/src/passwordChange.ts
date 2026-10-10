@@ -35,8 +35,10 @@ export function friendlyPasswordChangeError(
   mode: PasswordChangeMode = "required",
 ) {
   const message = error instanceof Error ? error.message : "";
+  // Si se perdió la respuesta, el servidor pudo haber guardado ya el cambio:
+  // no afirmamos que la contraseña sigue igual.
   if (/fetch|network|conexi|internet|offline/i.test(message))
-    return "No pudimos conectar. Revisa tu internet y vuelve a intentar. Tu contraseña todavía no cambió.";
+    return `No pudimos confirmar el cambio. Revisa tu internet. Si tu contraseña nueva no funciona, usa ${mode === "voluntary" ? "la anterior" : "la temporal"}.`;
   if (/demasiados|intentos|429|bloquead/i.test(message))
     return mode === "voluntary"
       ? "Hubo demasiados intentos. Espera 15 minutos antes de intentar de nuevo. Tu contraseña todavía no cambió."

@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpException,
   Inject,
   OnModuleInit,
@@ -132,6 +133,9 @@ export class AuthController implements OnModuleInit {
     );
     return { ip, normalized, unknownFlooded };
   }
+  // Las rutas que llaman a issue() (y el restablecimiento, que devuelve una
+  // contraseña temporal) responden con Cache-Control: no-store: ni el
+  // navegador ni un proxy guardan tokens ni contraseñas.
   private async issue(user: any, res: Response, sessionId?: string | null) {
     const refresh = randomBytes(48).toString("hex");
     const settings = await this.db.settings.findUnique({
@@ -199,6 +203,7 @@ export class AuthController implements OnModuleInit {
   }
   @Public()
   @Post("login")
+  @Header("Cache-Control", "no-store")
   async login(
     @Body() body: unknown,
     @Req() req: Request,
@@ -268,6 +273,7 @@ export class AuthController implements OnModuleInit {
   }
   @Public()
   @Post("change-password")
+  @Header("Cache-Control", "no-store")
   async changePassword(
     @Body() body: unknown,
     @Req() req: Request,
@@ -383,6 +389,7 @@ export class AuthController implements OnModuleInit {
   // demás sesiones de la cuenta; este equipo sigue en su sesión (y con su
   // registro de equipo) con un token y una cookie de renovación nuevos.
   @Post("password")
+  @Header("Cache-Control", "no-store")
   async changeOwnPassword(
     @CurrentUser() actor: Actor,
     @Body() body: unknown,
@@ -470,16 +477,19 @@ export class AuthController implements OnModuleInit {
       await tx.authAttempt.deleteMany({
         where: { key: { startsWith: `login:${user.id}:` } },
       });
+      // En la misma transacción: si la auditoría falla, la contraseña no
+      // cambia; y un fallo después del cambio no la deja sin rastro.
+      await audit(tx, actor, "password_changed", "user", user.id);
     });
     const freshUser = await this.db.user.findUniqueOrThrow({
       where: { id: user.id },
       include: { role: true },
     });
-    await audit(this.db, actor, "password_changed", "user", user.id);
     return this.issue(freshUser, res, actor.sessionId);
   }
   @Public()
   @Post("refresh")
+  @Header("Cache-Control", "no-store")
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -539,6 +549,7 @@ export class AuthController implements OnModuleInit {
     return actor;
   }
   @Post("pin")
+  @Header("Cache-Control", "no-store")
   async pin(
     @CurrentUser() actor: Actor,
     @Body() body: unknown,

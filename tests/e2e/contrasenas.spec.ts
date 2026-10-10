@@ -190,6 +190,11 @@ for (const screen of [
       });
       await expect(dialog).toBeVisible();
       await expect(dialog).toContainText("cierra sus sesiones");
+      // La temporal es de otra persona: el navegador no ofrece guardarla.
+      await expect(dialog.getByLabel("Contraseña temporal")).toHaveAttribute(
+        "autocomplete",
+        "off",
+      );
       let temporary = TEMPORARY;
       if (screen.mobile) {
         await dialog.getByLabel("Contraseña temporal").fill(TEMPORARY);
@@ -197,6 +202,10 @@ for (const screen of [
       await dialog
         .getByRole("button", { name: "Restablecer contraseña" })
         .click();
+      // El foco pasa al resultado, que se anuncia como estado.
+      const summary = dialog.getByRole("status");
+      await expect(summary).toBeFocused();
+      await expect(summary).toContainText("deberá crear su propia contraseña");
       if (screen.mobile) {
         await expect(dialog).toContainText("deberá crear su propia contraseña");
         await expect(dialog).not.toContainText(TEMPORARY);
@@ -205,6 +214,7 @@ for (const screen of [
         // Generada por el sistema: se muestra una sola vez.
         const shown = dialog.getByTestId("temporary-password");
         await expect(shown).toBeVisible();
+        await expect(summary).toContainText("no se volverá a mostrar");
         temporary = (await shown.textContent())!.trim();
         expect(temporary.length).toBeGreaterThanOrEqual(12);
       }
