@@ -60,5 +60,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 # Un solo proceso node: with-cloud-env.mjs prepara DATABASE_URL y carga la API
 # en el mismo proceso (antes lanzaba un segundo node que quedaba residente,
 # ~46 MB). Montón de V8 limitado a 256 MB para que, con el motor de Prisma y
-# el código (~130 MB), la API quede holgada dentro de los 512 MB del plan.
+# el código (~130 MB), la API quepa holgada en 512 MB (medido con 0.5c-512mb;
+# el plan real 1c-2g de render.yaml deja más margen).
 CMD ["node", "--max-old-space-size=256", "deploy/render/with-cloud-env.mjs", "apps/api/dist/main.js"]

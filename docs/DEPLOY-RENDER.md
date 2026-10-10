@@ -257,8 +257,10 @@ Swagger en producción (`ENABLE_SWAGGER=true`), su interfaz queda sujeta a ella.
 
 ## Memoria de la API
 
-El plan `0.5c-512mb` mata el contenedor si pasa de 512 MB. La imagen arranca un
-solo proceso:
+La API corre en `1c-2g` (`render.yaml`), pero la imagen se diseñó y midió para
+caber en `0.5c-512mb` (el plan con el que se hizo la prueba de carga, que mata
+el contenedor si pasa de 512 MB): así queda margen de sobra y sigue sana si el
+plan se bajara. La imagen arranca un solo proceso:
 
 ```text
 node --max-old-space-size=256 deploy/render/with-cloud-env.mjs apps/api/dist/main.js
