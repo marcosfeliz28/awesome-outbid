@@ -1,4 +1,4 @@
-param([string]$PreflightPath)
+param([string]$PreflightPath, [switch]$TamperDump)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path (Split-Path -Parent $PSScriptRoot) 'scripts\FitStore.Common.ps1')
@@ -36,16 +36,32 @@ try {
   [IO.Directory]::CreateDirectory($root) | Out-Null
   $original = Join-Path $root 'FitStore_old.dump'
   foreach ($suffix in @('', '.sha256', '.json')) { [IO.File]::WriteAllText($original + $suffix, 'fixture-backup' + $suffix) }
+  $recordedHash = (Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash.ToLowerInvariant()
+  [IO.File]::WriteAllText("$original.sha256", "$recordedHash *FitStore_old.dump")
+  if ($TamperDump) { [IO.File]::WriteAllText($original, 'tampered-dump-with-old-hash') }
   $output = @($original)
   $source = Get-Content -LiteralPath $PreflightPath -Raw
   $start = $source.IndexOf('$backup = $output | Select-Object -Last 1')
   $end = $source.IndexOf('$backupHash =', $start)
-  . ([scriptblock]::Create($source.Substring($start, $end - $start)))
+  $rejected = $false
+  try { . ([scriptblock]::Create($source.Substring($start, $end - $start))) }
+  catch {
+    if (-not $TamperDump -or $_.Exception.Message -notlike '*no coincide con su SHA256 registrado*') { throw }
+    $rejected = $true
+  }
+  if ($TamperDump) {
+    if (-not $rejected) { throw '3j6: dump manipulado fue aceptado usando un hash nuevo del original.' }
+    if (Test-Path -LiteralPath $paths.LocalBackups) { throw '3j6: copio antes de validar hash previo.' }
+    Write-Host 'PASS 3j6: dump manipulado rechazado contra SHA256 previo antes de copiar.'
+    return
+  }
   if ($backup -eq $original -or -not $backup.StartsWith($paths.LocalBackups + '\')) { throw '3i5: no usa copia privada.' }
   if ($script:BackupReaderSid -cne $state.backupReaderSid) { throw '3i5: no cargo SID real desde state.' }
   foreach ($suffix in @('', '.sha256', '.json')) {
     $file = $backup + $suffix
-    if ([IO.File]::ReadAllText($file) -cne [IO.File]::ReadAllText($original + $suffix)) { throw '3i5: contenido cambiado.' }
+    if ($suffix -eq '.sha256') {
+      if ([IO.File]::ReadAllText($file).Trim() -cne ($recordedHash + ' *' + (Split-Path -Leaf $backup))) { throw '3j7: sidecar no nombra la copia privada.' }
+    } elseif ([IO.File]::ReadAllText($file) -cne [IO.File]::ReadAllText($original + $suffix)) { throw '3i5: contenido cambiado.' }
     if (-not $elevated) { & $realProtect -Path $file }
     $acl = [IO.File]::GetAccessControl($file)
     if (-not $acl.AreAccessRulesProtected) { throw '3i5: hereda ACL.' }
@@ -55,6 +71,16 @@ try {
       if ($sid -eq $reader -and ($rule.FileSystemRights -band [Security.AccessControl.FileSystemRights]::Write)) { throw '3i5: lector puede escribir.' }
     }
   }
+  [IO.File]::WriteAllText($original, 'tampered-after-original-sidecar')
+  $output = @($original)
+  $tamperedRejected = $false
+  try { . ([scriptblock]::Create($source.Substring($start, $end - $start))) }
+  catch {
+    if ($_.Exception.Message -notlike '*no coincide con su SHA256 registrado*') { throw }
+    $tamperedRejected = $true
+  }
+  if (-not $tamperedRejected) { throw '3j6: dump manipulado aceptado por el flujo normal.' }
+  Write-Host 'PASS 3j6/3j7: hash previo obligatorio rechaza dump manipulado; sidecar privado nombra copia.'
   Write-Host "PASS 3i5: USB sin ACL usa copia privada intacta; SID cargado desde state. File.Create elevado=$elevated"
 } finally {
   if (Test-Path -LiteralPath $root) {

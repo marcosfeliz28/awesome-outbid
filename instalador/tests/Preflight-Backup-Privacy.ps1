@@ -8,8 +8,11 @@ $paths = [pscustomobject]@{ LocalBackups = (Join-Path $root 'private'); Install 
 try {
   [IO.Directory]::CreateDirectory($root) | Out-Null
   $backup = Join-Path $root "FitStore_old.dump"
+  [IO.File]::WriteAllText($backup, 'old-backup-fixture')
+  $fixtureHash = (Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash.ToLowerInvariant()
   foreach ($file in @($backup, "$backup.sha256", "$backup.json")) {
-    [IO.File]::WriteAllText($file, "old-backup-fixture")
+    $fixtureContent = if ($file -eq "$backup.sha256") { "$fixtureHash *FitStore_old.dump" } else { 'old-backup-fixture' }
+    [IO.File]::WriteAllText($file, $fixtureContent)
     $acl = [IO.File]::GetAccessControl($file, [Security.AccessControl.AccessControlSections]::Access)
     $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new("S-1-1-0"), "Read", "Allow"))
     [IO.File]::SetAccessControl($file, $acl)
@@ -26,7 +29,8 @@ try {
       $sid = $rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value
       if ($sid -notin @("S-1-5-18", "S-1-5-32-544", $reader)) { throw "3h6: respaldo previo publico: $sid" }
     }
-    if ([IO.File]::ReadAllText($file) -cne "old-backup-fixture") { throw "3h6: contenido de copia alterado." }
+    $expectedContent = if ($file -eq "$backup.sha256") { "$fixtureHash *FitStore_old.dump" } else { 'old-backup-fixture' }
+    if ([IO.File]::ReadAllText($file) -cne $expectedContent) { throw "3h6: contenido de copia alterado." }
   }
   Write-Host "PASS 3h6: dump, SHA256 y JSON del respaldo previo privados e intactos antes del hash."
 } finally {

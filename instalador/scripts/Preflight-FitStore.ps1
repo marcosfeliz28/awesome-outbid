@@ -78,6 +78,18 @@ try {
   if (-not $backup -or -not (Test-Path -LiteralPath $backup -PathType Leaf)) {
     throw "No se pudo verificar la ruta del respaldo previo. La actualización fue cancelada."
   }
+  $backupHashFile = "$backup.sha256"
+  if (-not (Test-Path -LiteralPath $backupHashFile -PathType Leaf)) {
+    throw 'Falta el SHA256 del respaldo previo. La actualizacion fue cancelada.'
+  }
+  $hashRecord = ([IO.File]::ReadAllText($backupHashFile)).Trim()
+  if ($hashRecord -notmatch '^(?<hash>[0-9a-fA-F]{64})\s+\*?[^\r\n]+$') {
+    throw 'El SHA256 del respaldo previo no tiene un formato valido. La actualizacion fue cancelada.'
+  }
+  $expectedBackupHash = $Matches.hash.ToLowerInvariant()
+  if ((Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expectedBackupHash) {
+    throw 'El respaldo previo no coincide con su SHA256 registrado. La actualizacion fue cancelada.'
+  }
   # Cargar el SID registrado, no el de una fixture ni una identidad publica.
   $privateBackupDirectory = Initialize-FitStoreBackupStorage -Paths $paths -State $state
   try {
@@ -108,10 +120,17 @@ try {
         throw 'La copia privada del respaldo previo no coincide con el original. La actualizacion fue cancelada.'
       }
     }
+    # El contenido del dump debe coincidir con el hash registrado antes de la
+    # copia, no con un original que pudo alterarse mientras se copiaba.
+    if ((Get-FileHash -LiteralPath $privateBackup -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expectedBackupHash) {
+      throw 'La copia privada no coincide con el SHA256 registrado del respaldo. La actualizacion fue cancelada.'
+    }
+    [IO.File]::WriteAllText("$privateBackup.sha256", ($expectedBackupHash + ' *' + (Split-Path -Leaf $privateBackup) + [Environment]::NewLine), [Text.Encoding]::ASCII)
     $backup = $privateBackup
     Write-FitStoreLog -InstallDir $paths.Install -Level 'AVISO' -Message 'No se pudo proteger el respaldo anterior en USB/red. Se usara una copia local privada; revise los permisos del original conservado.'
   }
   $backupHash = (Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($backupHash -cne $expectedBackupHash) { throw 'El respaldo cambio despues de verificar su SHA256. La actualizacion fue cancelada.' }
 
   # Si Windows se reinicia durante el staging, ninguna versión sin verificar
   # debe abrir la caja automáticamente. El instalador o el rollback restauran
