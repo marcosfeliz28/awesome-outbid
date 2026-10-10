@@ -112,6 +112,15 @@ const expectedForCash = async (id: string) => {
     );
   return cash.expected as { cash: number; card: number; transfer: number };
 };
+// A-2 (auditoría 01): sin «Entregado», lo contado en el último cierre de un
+// equipo es el fondo sugerido, y abrir con menos exige nota (y a quien no
+// gestiona ventas, el PIN de un gerente; D-03). Estas pruebas cierran y
+// reabren los mismos equipos con fondos arbitrarios: cada apertura que debe
+// funcionar lleva la explicación. Las pruebas de D-03 no la usan.
+const REOPEN = {
+  openingNote: "QA: fondo de la prueba",
+  managerPin: "987654",
+};
 const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
 let token = "",
   ownerToken = "",
@@ -312,12 +321,13 @@ beforeAll(async () => {
     reason: "QA apertura",
   });
   session = await ok("/cash-sessions/open", {
+    ...REOPEN,
     registerId: "qa-admin-" + suffix,
     openingAmount: 500,
   });
   sellerSession = await ok(
     "/cash-sessions/open",
-    { registerId: "qa-seller-" + suffix, openingAmount: 100 },
+    { ...REOPEN, registerId: "qa-seller-" + suffix, openingAmount: 100 },
     sellerToken,
   );
 });
@@ -651,7 +661,7 @@ describe("Aceptación financiera y permisos", () => {
     await enroll(cashierToken, "QA caja para anulación histórica");
     const oldCash = await ok(
       "/cash-sessions/open",
-      { registerId: "qa-void-" + suffix, openingAmount: 200 },
+      { ...REOPEN, registerId: "qa-void-" + suffix, openingAmount: 200 },
       cashierToken,
     );
     const stockBefore = Number(
@@ -710,7 +720,7 @@ describe("Aceptación financiera y permisos", () => {
     expect(withoutCash.body.message).toMatch(/Abre tu caja/);
     const refundCash = await ok(
       "/cash-sessions/open",
-      { openingAmount: 200 },
+      { ...REOPEN, openingAmount: 200 },
       ownerToken,
     );
     await ok(
@@ -1044,6 +1054,9 @@ describe("Regresiones de Claude", () => {
     session = await ok("/cash-sessions/open", {
       registerId: "qa-regression-" + suffix,
       openingAmount: 500,
+      // A-2 (auditoría 01): el equipo cerró antes sin «Entregado» y lo
+      // contado es el fondo sugerido; abrir con otro monto lleva nota (D-03).
+      openingNote: "QA: fondo de la prueba",
     });
   });
   it("1 y 2: diez PIN concurrentes bloquean solo al solicitante y contraseña no los reinicia", async () => {
@@ -1253,7 +1266,7 @@ describe("Regresiones de Claude", () => {
     // abre una propia para no depender del orden ni reutilizar una caja cerrada.
     const retryCash = await ok(
       "/cash-sessions/open",
-      { openingAmount: 0 },
+      { ...REOPEN, openingAmount: 0 },
       sellerToken,
     );
     const approved = {
@@ -1385,7 +1398,7 @@ describe("Regresiones de Claude", () => {
   it("reintentar abrir la caja devuelve la sesión existente", async () => {
     const repeated = await ok(
       "/cash-sessions/open",
-      { registerId: session.registerId, openingAmount: 999 },
+      { ...REOPEN, registerId: session.registerId, openingAmount: 999 },
       token,
     );
     expect(repeated.id).toBe(session.id);
@@ -1460,7 +1473,7 @@ describe("Seguridad, offline y funciones completadas", () => {
     await enroll(pinSellerToken, "QA vendedor contador PIN");
     const pinSession = await ok(
       "/cash-sessions/open",
-      { registerId: "qa-approval-" + suffix, openingAmount: 0 },
+      { ...REOPEN, registerId: "qa-approval-" + suffix, openingAmount: 0 },
       pinSellerToken,
     );
     const payload = () => ({
@@ -1649,6 +1662,7 @@ describe("Seguridad, offline y funciones completadas", () => {
     });
     expect(outside.results[0].status).toBe("conflict");
     session = await ok("/cash-sessions/open", {
+      ...REOPEN,
       registerId: "qa-extra-" + suffix,
       openingAmount: 500,
     });
@@ -1949,7 +1963,11 @@ describe("Seguridad, offline y funciones completadas", () => {
       await enroll(alertToken, "QA alerta diferencia efectivo");
       alertCash = await ok(
         "/cash-sessions/open",
-        { registerId: "qa-cash-alert-" + suffix, openingAmount: 100 },
+        {
+          ...REOPEN,
+          registerId: "qa-cash-alert-" + suffix,
+          openingAmount: 100,
+        },
         alertToken,
       );
       const expected = await expectedForCash(alertCash.id);
@@ -2185,7 +2203,7 @@ describe("Ronda 2 de Claude", () => {
     await enroll(callerToken, "QA R2");
     callerCash = await ok(
       "/cash-sessions/open",
-      { registerId: "qa-r2-" + suffix, openingAmount: 0 },
+      { ...REOPEN, registerId: "qa-r2-" + suffix, openingAmount: 0 },
       callerToken,
     );
   });
@@ -2824,7 +2842,9 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
       ).accessToken;
       auths.push(t);
       await registerTerminal(t, randomUUID(), "Caja SSE " + i);
-      cashes.push(await ok("/cash-sessions/open", { openingAmount: 0 }, t));
+      cashes.push(
+        await ok("/cash-sessions/open", { ...REOPEN, openingAmount: 0 }, t),
+      );
     }
     const p = await ok("/products", {
       name: "QA SSE cinco " + suffix,
@@ -3369,7 +3389,7 @@ describe("Ronda 4 · Claude: caja y equipos", () => {
     await registerTerminal(sellerA, terminalA, "Caja 1 QA");
     cash = await ok(
       "/cash-sessions/open",
-      { openingAmount: 200, registerId: "Caja 1 QA" },
+      { ...REOPEN, openingAmount: 200, registerId: "Caja 1 QA" },
       sellerA,
     );
     sellerB = await login(seller.email);
@@ -3438,7 +3458,14 @@ describe("Ronda 4 · Claude: caja y equipos", () => {
   it("la dueña puede cerrar su caja desde cualquier equipo", async () => {
     const own = await ok(
       "/cash-sessions/open",
-      { openingAmount: 50, registerId: "Laptop 2 QA" },
+      {
+        openingAmount: 50,
+        registerId: "Laptop 2 QA",
+        // A-2 (auditoría 01): el equipo B cerró antes sin «Entregado»; abrir
+        // con menos de lo contado lleva nota y, a la vendedora, el PIN.
+        openingNote: "QA: fondo de la prueba",
+        managerPin: "987654",
+      },
       sellerB,
     );
     const r = await request(
@@ -6747,7 +6774,7 @@ describe("Ronda 9 · revisión · seguridad", () => {
     await enroll(sellerToken, "QA R9 seguridad caja");
     const cash = await ok(
       "/cash-sessions/open",
-      { registerId: "qa-r9-seg-" + randomUUID(), openingAmount: 0 },
+      { ...REOPEN, registerId: "qa-r9-seg-" + randomUUID(), openingAmount: 0 },
       sellerToken,
     );
     const cats = await ok("/categories");
@@ -7003,12 +7030,12 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     });
     s1 = await must(
       "/cash-sessions/open",
-      { openingAmount: 500 },
+      { ...REOPEN, openingAmount: 500 },
       cashier.token,
     );
     s2 = await must(
       "/cash-sessions/open",
-      { openingAmount: 0 },
+      { ...REOPEN, openingAmount: 0 },
       cashier2.token,
     );
   });
@@ -7414,7 +7441,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     const cashier3 = await newCashier("caja3");
     const s3 = await must(
       "/cash-sessions/open",
-      { openingAmount: 0 },
+      { ...REOPEN, openingAmount: 0 },
       cashier3.token,
     );
     const upload = async (
@@ -7780,6 +7807,9 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       countedTransfer: expected.transfer,
       delivered: 1700,
       notes: "QA cuadre",
+      // A-1 (auditoría 01): el vale de caja de una cajera exige el PIN de un
+      // gerente además de la nota.
+      managerPin: "987654",
     });
     expect(closed.status).toBe(201);
     expect(closed.body.countedCash).toBeUndefined();
@@ -8813,7 +8843,7 @@ describe("Tienda · 4 cajas a la vez", () => {
       cajas.map((c) =>
         must(
           "/cash-sessions/open",
-          { openingAmount: 1000 * c.k },
+          { ...REOPEN, openingAmount: 1000 * c.k },
           c.token,
           c.ip,
         ),
@@ -9348,7 +9378,7 @@ describe("Ronda 9 · Windows y zona horaria", () => {
         );
         const cash = await must(
           "/cash-sessions/open",
-          { openingAmount: 0 },
+          { ...REOPEN, openingAmount: 0 },
           as,
         );
         try {
@@ -9596,6 +9626,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", (
     await closeOwnerCash();
     cashId = (
       await must("/cash-sessions/open", {
+        ...REOPEN,
         registerId: "qa-a01-" + suffix,
         openingAmount: 500,
       })
@@ -9754,6 +9785,9 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A02 cierre histórico intacto",
       await must("/cash-sessions/open", {
         registerId: "qa-a02-" + suffix,
         openingAmount: 500,
+        // A-2 (auditoría 01): el equipo cerró antes sin «Entregado» y lo
+        // contado es el fondo sugerido; abrir con otro monto lleva nota (D-03).
+        openingNote: "QA: fondo de la prueba",
       })
     ).id;
   const profitOf = async (id: string) =>
@@ -9920,6 +9954,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A05 merma de devoluciones", () 
     await closeOwnerCash();
     cashId = (
       await must("/cash-sessions/open", {
+        ...REOPEN,
         registerId: "qa-a05-" + suffix,
         openingAmount: 500,
       })
@@ -10530,17 +10565,21 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
     });
   });
 
-  it("D1: sincroniza el descuento heredado, conserva idempotencia y exige motivo a una venta online nueva", async () => {
+  it("D1: pasada la fecha de corte ya no hay motivo heredado; con motivo sincroniza una vez y el online lo exige", async () => {
     const settings = await ok("/settings");
     const originalCash = await fixtureDb.cashSession.findUniqueOrThrow({
       where: { id: session.id },
       select: { openedAt: true },
     });
     const offlineUuid = randomUUID();
-    const legacyReason = "Venta offline heredada (sin motivo registrado)";
+    const capturedMs = Date.now() - 2 * 3600_000;
+    const reason = "Descuento autorizado por la gerente";
+    // La normalización de ventas heredadas (capturadas antes del corte del
+    // 9-oct-2026) se prueba en tests/offline-policy.test.ts con su parámetro
+    // `cutoff`: por HTTP ya no puede llegar una (el plazo offline es de 48 h).
     const legacy = {
       offlineUuid,
-      capturedAt: "2026-10-08T12:00:00.000Z",
+      capturedAt: new Date(capturedMs).toISOString(),
       customerId: defaultCustomerId,
       cashSessionId: session.id,
       items: [{ variantId: variant.id, qty: 1, discountPercent: 10 }],
@@ -10551,7 +10590,7 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
     try {
       await fixtureDb.cashSession.update({
         where: { id: session.id },
-        data: { openedAt: new Date("2026-10-08T11:00:00.000Z") },
+        data: { openedAt: new Date(capturedMs - 3600_000) },
       });
       await ok(
         "/settings",
@@ -10560,17 +10599,23 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
         "PUT",
       );
 
-      const first = await ok("/sales/sync", { sales: [legacy] });
+      const rejected = await ok("/sales/sync", { sales: [legacy] });
+      expect(rejected.results[0].status).toBe("conflict");
+      expect(rejected.results[0].message).toMatch(/motivo del descuento/i);
+      expect(await fixtureDb.sale.count({ where: { offlineUuid } })).toBe(0);
+
+      const withReason = { ...legacy, discountReason: reason };
+      const first = await ok("/sales/sync", { sales: [withReason] });
       expect(first.results[0].status, JSON.stringify(first.results[0])).toBe(
         "synced",
       );
-      expect(first.results[0].sale.discountReason).toBe(legacyReason);
+      expect(first.results[0].sale.discountReason).toBe(reason);
       const saleId = first.results[0].sale.id;
       const stored = await fixtureDb.sale.findUniqueOrThrow({
         where: { offlineUuid },
       });
       expect(stored.id).toBe(saleId);
-      expect(stored.discountReason).toBe(legacyReason);
+      expect(stored.discountReason).toBe(reason);
 
       const discountAudit = await fixtureDb.auditLog.findFirstOrThrow({
         where: {
@@ -10580,12 +10625,12 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
         },
         orderBy: { createdAt: "desc" },
       });
-      expect((discountAudit.after as any)?.reason).toBe(legacyReason);
+      expect((discountAudit.after as any)?.reason).toBe(reason);
 
-      const second = await ok("/sales/sync", { sales: [legacy] });
+      const second = await ok("/sales/sync", { sales: [withReason] });
       expect(second.results[0]).toMatchObject({
         status: "synced",
-        sale: { id: saleId, discountReason: legacyReason },
+        sale: { id: saleId, discountReason: reason },
       });
       expect(await fixtureDb.sale.count({ where: { offlineUuid } })).toBe(1);
       expect(
@@ -10763,7 +10808,7 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
     );
     let cash = await must(
       "/cash-sessions/open",
-      { openingAmount: 3000 },
+      { ...REOPEN, openingAmount: 3000 },
       auth.accessToken,
     );
     // Si la persona ya tenía una caja abierta en otro equipo, se trae a este.
@@ -10793,6 +10838,17 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
   });
   const setSettings = (changes: Record<string, unknown>) =>
     must("/settings", { ...settingsBefore, ...changes }, ownerToken, "PUT");
+  // M-2 (auditoría 01): la deuda abierta del cliente cuenta para el umbral de
+  // la cajera. Las pruebas de «una venta bajo el umbral» usan un cliente sin
+  // deuda; el cliente compartido ya acumuló contraentregas de otras pruebas.
+  const freshCustomer = async () =>
+    (
+      await must(
+        "/customers",
+        { name: "QA Dinero sin deuda " + randomUUID().slice(0, 8) },
+        cajera.token,
+      )
+    ).id;
   beforeAll(async () => {
     settingsBefore = await must("/settings", undefined, ownerToken);
     vendedor = await seedUser("vendedor@fitstore.demo");
@@ -10823,7 +10879,7 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
       user: created,
       cash: await must(
         "/cash-sessions/open",
-        { openingAmount: 3000 },
+        { ...REOPEN, openingAmount: 3000 },
         auth.accessToken,
       ),
     };
@@ -10971,7 +11027,9 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
     });
     const small = await call(
       "/sales",
-      codSale(cajera, 1, [{ method: "cod", amount: 800 }]),
+      codSale(cajera, 1, [{ method: "cod", amount: 800 }], {
+        customerId: await freshCustomer(),
+      }),
       cajera.token,
     );
     expect(small.status).toBe(201);
@@ -10981,7 +11039,9 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
       (
         await call(
           "/sales",
-          codSale(vendedor, 1, [{ method: "cod", amount: 800 }]),
+          codSale(vendedor, 1, [{ method: "cod", amount: 800 }], {
+            customerId: await freshCustomer(),
+          }),
           vendedor.token,
         )
       ).status,
@@ -11057,7 +11117,10 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
       (
         await call(
           "/sales",
-          codSale(cajera, 1, [{ method: "credit", amount: 800 }], due),
+          codSale(cajera, 1, [{ method: "credit", amount: 800 }], {
+            ...due,
+            customerId: await freshCustomer(),
+          }),
           cajera.token,
         )
       ).status,
@@ -11108,7 +11171,12 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
       (
         await call(
           "/sales",
-          forLimited([{ method: "credit", amount: 800 }], 1, due),
+          // M-2: con 800 ya pendientes, 800 más superan el umbral de 1,000 y
+          // la cajera necesita el PIN; el límite (1,600) aún no se supera.
+          forLimited([{ method: "credit", amount: 800 }], 1, {
+            ...due,
+            managerPin,
+          }),
           cajera.token,
         )
       ).status,
@@ -11590,7 +11658,7 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
     // Caja A: vende 118 en efectivo y cierra cuadrada.
     const a = await ok(
       "/cash-sessions/open",
-      { openingAmount: 200 },
+      { ...REOPEN, openingAmount: 200 },
       cashier.token,
     );
     const sold = await ok("/sales", input(variant.id, 118, a), cashier.token);
@@ -11615,7 +11683,7 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
     // Caja B, otro turno: el reembolso sale de aquí.
     const b = await ok(
       "/cash-sessions/open",
-      { openingAmount: 500 },
+      { ...REOPEN, openingAmount: 500 },
       admin.token,
     );
     await ok(
@@ -11686,12 +11754,12 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
     const seller = await newActor("seller", "vendedor D-05");
     const adminCash = await ok(
       "/cash-sessions/open",
-      { openingAmount: 500 },
+      { ...REOPEN, openingAmount: 500 },
       admin.token,
     );
     const sellerCash = await ok(
       "/cash-sessions/open",
-      { openingAmount: 0 },
+      { ...REOPEN, openingAmount: 0 },
       seller.token,
     );
     const sell = (as: string, s: any, items: any[], payments: any[]) =>
@@ -12056,7 +12124,7 @@ describe("SEC-05: datos personales del cliente según el rol (Ley 172-13)", () =
     await enroll(cajeraToken, "QA caja SEC05 " + tag);
     const cajeraCash = await ok(
       "/cash-sessions/open",
-      { registerId: "qa-sec05-" + tag, openingAmount: 0 },
+      { ...REOPEN, registerId: "qa-sec05-" + tag, openingAmount: 0 },
       cajeraToken,
     );
     const product = await ok(

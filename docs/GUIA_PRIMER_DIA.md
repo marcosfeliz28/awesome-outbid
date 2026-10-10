@@ -18,7 +18,7 @@ Escribe a mano antes de empezar:
 - [ ] **Ticket de 80 mm.** **Configuración** → **Negocio y reglas** → **Editar configuración**: revisa que **Ancho de ticket** diga **80 mm** y que el nombre, la dirección y el teléfono estén bien (salen en el ticket). Pulsa **Guardar**.
 - [ ] **Cerrar las 2 cajas de prueba.** **Caja** → sección **Historial de cajas** → en cada fila con estado **Abierta**, pulsa **Cerrar y arquear**. Cuenta el efectivo que hay de verdad en esa gaveta y escribe cuántos billetes y monedas hay de cada valor. En **Tarjeta declarada** y **Transferencia declarada** pon lo real (0 si no hubo). Marca **«Confirmo que conté efectivo, tarjeta y transferencia…»** y pulsa **Cerrar caja e imprimir cuadre**. Si te pide una nota, escribe «Caja de prueba». Al final las dos filas deben decir **Cerrada**. Este cierre imprime el cuadre: es tu **ticket de prueba** en la térmica. En la ventana de imprimir del navegador escoge la impresora térmica, no «Guardar como PDF». El texto debe salir completo, sin cortarse por los lados.
 - [ ] **Contraseñas de las cajeras.** Cada cajera entra con su **Usuario** y la contraseña temporal que le diste. El sistema le pide crear la suya: 12 o más caracteres, con mayúscula, minúscula, número y un símbolo (como ! o #). Que la escoja ella, que no la comparta y que no la pegue en un papel en la caja.
-- [ ] **El lector de códigos, con una venta de prueba.** Una cajera abre su caja (sección 2). En **Punto de venta** escanea un producto: debe aparecer «_nombre_ agregado.» y entrar al carrito. Para probar todo el camino: cobra un artículo barato en efectivo, pulsa **Imprimir factura**, y después la administradora la anula en **Ventas** → **Anular** (motivo: «Venta de prueba») → **Sí, anular factura**. Si no quieres esa venta en el historial, pulsa **Limpiar** en vez de cobrar.
+- [ ] **El lector de códigos, con una venta de prueba.** Una cajera abre su caja (sección 2). En **Punto de venta** escanea un producto: debe aparecer «_nombre_ agregado.» y entrar al carrito. Para probar todo el camino: cobra un artículo barato en efectivo, pulsa **Imprimir recibo**, y después la administradora la anula en **Ventas** → **Anular** (motivo: «Venta de prueba») → **Sí, anular venta**. Si no quieres esa venta en el historial, pulsa **Limpiar** en vez de cobrar.
 - [ ] **Tarifas de incentivo.** **Configuración** → **Negocio y reglas** → **Incentivos por categoría**. Si nadie las cambió, vienen así: Suplementos RD$ 50, Fajas RD$ 50, Maquillaje RD$ 25 por unidad y las demás RD$ 0. Cambia lo que haga falta y pulsa **Guardar tarifas**. Un cambio no toca lo que ya se ganó.
 - [ ] **Clientes.** Cada venta necesita un cliente. Si quieres uno para ventas de mostrador, créalo en **Clientes** → **Nuevo cliente** (por ejemplo, «Consumidor final»).
 
@@ -70,14 +70,14 @@ En **Caja** ves **Mis incentivos** con lo tuyo del mes.
 - Arriba, donde decía **En línea**, ahora dice **Offline**. El número que sale al lado son las ventas que esperan en esa computadora.
 - Al principio el sistema **no deja cobrar sin internet** (sale «Las ventas sin conexión están desactivadas…»). Espera a que vuelva **En línea**.
 - Si la dueña activó **«Permitir ventas sin conexión»**, solo se puede cobrar en efectivo, tarjeta o transferencia, sin PIN ni crédito. El recibo sale como **LOCAL-…** y dice «Guardada en este dispositivo · Pendiente de sincronizar».
-- Cuando vuelve el internet, esas ventas se suben solas. También puedes ir a **Caja** → **Ventas guardadas en este dispositivo** → **Sincronizar**. Si alguna dice **Requiere revisión**, avisa a la gerente.
+- Cuando vuelve el internet, esas ventas se suben solas. También puedes ir a **Caja** → **Ventas guardadas en este dispositivo** → **Sincronizar**. Si alguna dice **Requiere revisión**, la fila dice qué hacer: si falta inventario, la gerente lo ajusta y la cajera pulsa **Reintentar**; si no se puede reintentar, la gerente la descarta con su PIN (**Descartar con PIN de gerente**) y queda en la bitácora. Mientras quede alguna, el cierre de caja de esa computadora avisa y no deja cerrar.
 - Mientras no haya internet: no borres los datos del navegador, no cambies de computadora y no cierres sesión (sin internet no se puede volver a entrar).
 
 **Pulsaste «Finalizar venta» y no hubo respuesta:** **no cobres otra vez.** El sistema guarda la venta con el mismo código y la confirma sola cuando vuelve la conexión, sin duplicarla.
 
 **Venta duplicada:** si sale «El cobro anterior sí quedó registrado…», revisa en **Ventas** antes de cobrar. Si de verdad quedaron dos ventas, avisa a la administradora: ella anula la repetida en **Ventas** → **Anular**, con el motivo.
 
-**La impresora no imprime:** chequea que esté encendida, con papel y conectada. En la ventana de imprimir escoge la impresora térmica. Para repetir, pulsa **Imprimir factura** antes de **Nueva venta**. Si ya cerraste esa ventana, en **Ventas** puedes bajar el PDF de la factura (sale en hoja grande, no de 80 mm).
+**La impresora no imprime:** chequea que esté encendida, con papel y conectada. En la ventana de imprimir escoge la impresora térmica. Para repetir, pulsa **Imprimir recibo** antes de **Nueva venta**. Si ya cerraste esa ventana, en **Ventas** puedes bajar el PDF del recibo (sale en hoja grande, no de 80 mm).
 
 **El lector no escanea:** cierra cualquier ventana abierta encima (cobro, cliente…) y pulsa **F2** o toca el buscador; escanea otra vez. Si dice «Código no encontrado», escribe el código a mano o busca por nombre y avisa a la gerente. Si el lector no escribe nada en ningún lado, revisa el cable o el USB.
 
@@ -85,11 +85,11 @@ En **Caja** ves **Mis incentivos** con lo tuyo del mes.
 
 **Contraseña olvidada:** la pantalla no tiene una opción para poner una contraseña nueva. Avisa a soporte técnico: le pone una temporal y la cajera crea la suya al entrar.
 
-**La página no carga:** espera 1 o 2 minutos y recarga (F5). Chequea si hay internet abriendo otra página. Abre **https://nexora-pos-web.onrender.com/api/health**: si dice `"database":"ok"`, el sistema está bien. Si sigue sin cargar, llama a soporte técnico y anota la hora.
+**La página no carga:** espera 1 o 2 minutos y recarga (F5). Chequea si hay internet abriendo otra página. Abre **https://nexora-pos-web.onrender.com/api/health**: si dice `"status":"ok"`, el sistema está bien. Si sigue sin cargar, llama a soporte técnico y anota la hora.
 
 **«Tu caja está abierta en "…"»:** tu caja quedó abierta en otra computadora. Ve a esa computadora, o pulsa **Trasladar caja aquí** → PIN de la gerente → **Trasladar caja**. Nunca abras una caja nueva para salir del paso.
 
-**«¿Sigues ahí?»:** pulsa **Seguir conectado**. Si nadie toca nada, la sesión se cierra a los 30 minutos (o el tiempo que haya puesto la dueña).
+**«¿Sigues ahí?»:** pulsa **Seguir conectado**. Si nadie toca nada, la sesión se cierra a los 30 minutos (o el tiempo que haya puesto la dueña). Con artículos en el carrito o ventas sin internet por subir no se cierra, y si se recarga la página el carrito vuelve a aparecer.
 
 ## 5. Avisos por Telegram (lo hace la dueña o soporte, una sola vez)
 

@@ -49,6 +49,9 @@ export type CartItem = {
 export type PendingSale = {
   id: string;
   userId: string;
+  // 05-A2: el nombre de quien cobró, para que gerencia la reconozca en el
+  // equipo (las ventas guardadas antes no lo tienen).
+  userName?: string;
   branchId: string;
   input: SaleInput;
   status: "pending" | "conflict";
@@ -541,6 +544,7 @@ export async function syncSales() {
   }
   return { synced, conflicts };
 }
+export const DOWNLOAD_FAILED = "No se pudo descargar el archivo.";
 export async function download(path: string, filename: string) {
   const response = await fetch("/api" + path, {
     headers: { Authorization: "Bearer " + useStore.getState().token },
@@ -550,7 +554,15 @@ export async function download(path: string, filename: string) {
     await refreshSession();
     return download(path, filename);
   }
-  if (!response.ok) throw new Error("No se pudo descargar el archivo.");
+  if (!response.ok) {
+    // Un 400 dice qué cambiar (por ejemplo, un período que supera el máximo
+    // exportable); cualquier otro fallo, el aviso genérico.
+    const body =
+      response.status === 400 ? await response.json().catch(() => null) : null;
+    throw new Error(
+      typeof body?.message === "string" ? body.message : DOWNLOAD_FAILED,
+    );
+  }
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

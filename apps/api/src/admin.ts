@@ -32,6 +32,7 @@ import {
   canViewCustomerPii,
   customerForActor,
   isMaskedPii,
+  withoutImages,
 } from "./common";
 import {
   can,
@@ -176,6 +177,32 @@ function redactKnownCustomerPii(value: unknown, customer: any): unknown {
   return redact(json(value));
 }
 const cashierNumber = z.number().int().min(1).max(999999);
+
+// S-03 (auditoría de seguridad 2026-10-10): todo PIN nuevo o cambiado tiene
+// 6 dígitos. Los PIN de 4 o 5 dígitos ya guardados siguen sirviendo para
+// aprobar, con un cupo de intentos propio (verifyPinAttempt) y quedan
+// señalados en la bitácora (pin_short_used) para cambiarlos.
+const newPinSchema = z
+  .string()
+  .regex(/^\d{6}$/, "El PIN debe tener 6 dígitos (sólo números).");
+
+// D-M4: con la clave del formulario, las peticiones repetidas se serializan
+// (candado consultivo por clave) y la segunda recibe la fila de la primera.
+// La misma clave con otros datos es un error, no un registro nuevo.
+async function idempotent<T>(
+  tx: any,
+  operationId: string | undefined,
+  find: () => Promise<T | null>,
+  same: (row: T) => boolean,
+  label: string,
+): Promise<T | null> {
+  if (!operationId) return null;
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"op:" + operationId}))::text AS locked`;
+  const row = await find();
+  if (row && !same(row))
+    bad(`La clave de la operación ya corresponde a otro ${label}.`);
+  return row;
+}
 
 @Controller()
 export class AdminController {
@@ -350,7 +377,12 @@ export class AdminController {
         });
         const sales = await tx.sale.findMany({
           where: { branchId: actor.branchId, customerId },
-          select: { id: true },
+          select: {
+            id: true,
+            offlineUuid: true,
+            voidedReason: true,
+            discountReason: true,
+          },
         });
         const saleIds = sales.map((sale) => sale.id);
         if (saleIds.length) {
@@ -360,24 +392,122 @@ export class AdminController {
             where: { id: { in: saleIds } },
             data: { recipientLegalId: null, notes: "" },
           });
-          const saleAudits = await tx.auditLog.findMany({
+          // Auditoría 03 (A2): todo lo demás que la pantalla promete borrar.
+          // Textos libres: se quitan los datos conocidos del cliente y se
+          // conserva el resto del motivo (anulación, descuento, devolución,
+          // referencia de la transferencia).
+          const redactText = (text: string | null | undefined) =>
+            text ? (redactKnownCustomerPii(text, customer) as string) : text;
+          for (const sale of sales) {
+            const data: Record<string, unknown> = {};
+            const voidedReason = redactText(sale.voidedReason);
+            if (voidedReason !== sale.voidedReason)
+              data.voidedReason = voidedReason;
+            const discountReason = redactText(sale.discountReason);
+            if (discountReason !== sale.discountReason)
+              data.discountReason = discountReason;
+            if (Object.keys(data).length)
+              await tx.sale.update({ where: { id: sale.id }, data });
+          }
+          // Fotos de comprobantes: la captura bancaria muestra nombre y
+          // cuenta. Las ventas ya no tienen deuda (se comprobó arriba).
+          await tx.payment.updateMany({
+            where: { saleId: { in: saleIds }, proofUrl: { not: null } },
+            data: { proofUrl: null },
+          });
+          const payments = await tx.payment.findMany({
+            where: { saleId: { in: saleIds } },
+            select: { id: true, reference: true },
+          });
+          for (const payment of payments) {
+            const reference = redactText(payment.reference);
+            if (reference !== payment.reference)
+              await tx.payment.update({
+                where: { id: payment.id },
+                data: { reference },
+              });
+          }
+          const returns = await tx.saleReturn.findMany({
+            where: { saleId: { in: saleIds } },
+            select: { id: true, reason: true },
+          });
+          for (const row of returns) {
+            const reason = redactText(row.reason);
+            if (reason !== row.reason)
+              await tx.saleReturn.update({
+                where: { id: row.id },
+                data: { reason: reason ?? "" },
+              });
+          }
+          // El kardex copia el motivo de la devolución (merma).
+          const movements = await tx.inventoryMovement.findMany({
+            where: { refId: { in: saleIds } },
+            select: { id: true, reason: true },
+          });
+          for (const movement of movements) {
+            const reason = redactText(movement.reason);
+            if (reason !== movement.reason)
+              await tx.inventoryMovement.update({
+                where: { id: movement.id },
+                data: { reason: reason ?? "" },
+              });
+          }
+          const paymentIds = payments.map((p) => p.id);
+          const returnIds = returns.map((r) => r.id);
+          // Bitácora de la venta, sus pagos (verificar/rechazar guardaban la
+          // fila con la foto), devoluciones y la venta offline.
+          const relatedAudits = await tx.auditLog.findMany({
             where: {
               branchId: actor.branchId,
-              entity: "sale",
-              entityId: { in: saleIds },
+              entity: { not: "customer" },
+              entityId: {
+                in: [
+                  ...saleIds,
+                  ...paymentIds,
+                  ...returnIds,
+                  ...sales.map((sale) => sale.offlineUuid),
+                ],
+              },
             },
             select: { id: true, before: true, after: true },
           });
-          for (const entry of saleAudits) {
+          for (const entry of relatedAudits) {
             const cleaned: Record<string, unknown> = {};
             if (entry.before != null)
-              cleaned.before = redactKnownCustomerPii(entry.before, customer);
+              cleaned.before = withoutImages(
+                redactKnownCustomerPii(entry.before, customer),
+              );
             if (entry.after != null)
-              cleaned.after = redactKnownCustomerPii(entry.after, customer);
+              cleaned.after = withoutImages(
+                redactKnownCustomerPii(entry.after, customer),
+              );
             if (Object.keys(cleaned).length)
               await tx.auditLog.update({
                 where: { id: entry.id },
                 data: cleaned,
+              });
+          }
+          // Avisos de Telegram en cola, enviados o fallidos: el texto lleva
+          // «Cliente: <nombre>» (escapado para HTML, por eso se reemplaza la
+          // línea completa). Los mensajes que ya llegaron al grupo no se
+          // pueden borrar desde aquí.
+          const notices = await tx.notificationOutbox.findMany({
+            where: { refId: { in: [...saleIds, ...returnIds, ...paymentIds] } },
+            select: { id: true, payload: true },
+          });
+          for (const notice of notices) {
+            const payload: any = notice.payload;
+            if (typeof payload?.text !== "string") continue;
+            const text = redactText(
+              payload.text.replace(
+                /^Cliente: .*$/gm,
+                "Cliente: [dato anonimizado]",
+              ),
+            );
+            if (text !== payload.text)
+              await tx.notificationOutbox.update({
+                where: { id: notice.id },
+                data: { payload: { ...payload, text } },
               });
           }
           await tx.alert.updateMany({
@@ -432,8 +562,10 @@ export class AdminController {
   @Post("supplier-payments")
   @Permit("purchase:write")
   async supplierPayment(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    const data = parse(
+    const { operationId, ...data } = parse(
       z.object({
+        // D-M4 (auditoría 06): clave que la web genera una vez por formulario.
+        operationId: uuid.optional(),
         supplierId: uuid,
         // 2 decimales y un tope (D-08): 1e15 es un 400, no un error 500 de
         // Decimal(14,2) en la base.
@@ -446,19 +578,42 @@ export class AdminController {
     await this.db.supplier.findFirstOrThrow({
       where: { id: data.supplierId, branchId: actor.branchId },
     });
-    const row = await this.db.supplierPayment.create({
-      data: { ...data, createdBy: actor.id, branchId: actor.branchId },
+    return this.db.$transaction(async (tx) => {
+      // D-M4: un doble clic o un reintento con la misma clave devuelve el
+      // mismo pago en vez de rebajar dos veces la cuenta por pagar.
+      const existing = await idempotent(
+        tx,
+        operationId,
+        () => tx.supplierPayment.findUnique({ where: { operationId } }),
+        (row: any) =>
+          row.branchId === actor.branchId &&
+          row.createdBy === actor.id &&
+          row.supplierId === data.supplierId &&
+          Number(row.amount) === data.amount &&
+          row.method === data.method &&
+          (row.reference ?? undefined) === data.reference,
+        "pago",
+      );
+      if (existing) return existing;
+      const row = await tx.supplierPayment.create({
+        data: {
+          ...data,
+          createdBy: actor.id,
+          branchId: actor.branchId,
+          ...(operationId ? { operationId } : {}),
+        },
+      });
+      await audit(
+        tx,
+        actor,
+        "payment",
+        "supplier",
+        data.supplierId,
+        undefined,
+        row,
+      );
+      return row;
     });
-    await audit(
-      this.db,
-      actor,
-      "payment",
-      "supplier",
-      data.supplierId,
-      undefined,
-      row,
-    );
-    return row;
   }
   @Get("expense-categories") @Permit("expense:write") expenseCategories() {
     return this.db.expenseCategory.findMany({ orderBy: { name: "asc" } });
@@ -495,8 +650,10 @@ export class AdminController {
   @Post("expenses")
   @Permit("expense:write")
   async expense(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    const data = parse(
+    const { operationId, ...data } = parse(
       z.object({
+        // D-M4 (auditoría 06): clave que la web genera una vez por formulario.
+        operationId: uuid.optional(),
         categoryId: uuid,
         // Igual que el pago a proveedor (D-08).
         amount: moneyAmount(10000000),
@@ -509,12 +666,28 @@ export class AdminController {
       body,
     );
     return this.db.$transaction(async (tx) => {
+      // D-M4: un reintento con la misma clave devuelve el mismo gasto.
+      const existing = await idempotent(
+        tx,
+        operationId,
+        () => tx.expense.findUnique({ where: { operationId } }),
+        (row: any) =>
+          row.branchId === actor.branchId &&
+          row.createdBy === actor.id &&
+          row.categoryId === data.categoryId &&
+          Number(row.amount) === data.amount &&
+          row.method === data.method &&
+          row.description === data.description,
+        "gasto",
+      );
+      if (existing) return existing;
       const row = await tx.expense.create({
         data: {
           ...data,
           date: data.date ? new Date(data.date) : new Date(),
           createdBy: actor.id,
           branchId: actor.branchId,
+          ...(operationId ? { operationId } : {}),
         },
       });
       await audit(tx, actor, "create", "expense", row.id, undefined, row);
@@ -851,7 +1024,7 @@ export class AdminController {
         username: z.string().trim().min(2).max(80).optional(),
         email: z.string().email().optional(),
         password: strongPasswordSchema,
-        pin: z.string().regex(/^\d{4,6}$/),
+        pin: newPinSchema,
         roleId: uuid,
         cashierNumber: cashierNumber.optional(),
       }),
@@ -906,10 +1079,7 @@ export class AdminController {
         roleId: uuid.optional(),
         active: z.boolean().optional(),
         password: strongPasswordSchema.optional(),
-        pin: z
-          .string()
-          .regex(/^\d{4,6}$/)
-          .optional(),
+        pin: newPinSchema.optional(),
         cashierNumber: cashierNumber.nullable().optional(),
       }),
       body,

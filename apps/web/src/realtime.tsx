@@ -86,6 +86,37 @@ export function terminalIdentity(): Identity {
     localStorage.setItem(key, JSON.stringify(identity));
   return identity;
 }
+// Credenciales del equipo ya registrado en este navegador, para enviarlas al
+// iniciar sesión: desde un equipo aprobado la API no aplica el bloqueo que
+// pudo provocar un tercero con contraseñas erróneas (S-01). No crea una
+// identidad nueva; antes de iniciar sesión no se conoce la sucursal, así que
+// se prefiere la principal y, si no, la única guardada.
+export function storedTerminalCredentials(): {
+  id: string;
+  secret: string;
+} | null {
+  try {
+    const keys = Object.keys(localStorage).filter((key) =>
+      key.startsWith("fitstore-equipment:"),
+    );
+    const key = keys.includes("fitstore-equipment:main")
+      ? "fitstore-equipment:main"
+      : keys.length === 1
+        ? keys[0]
+        : null;
+    if (!key) return null;
+    const value = JSON.parse(localStorage.getItem(key) ?? "null");
+    return typeof value?.id === "string" &&
+      /^[0-9a-f-]{36}$/i.test(value.id) &&
+      typeof value?.secret === "string" &&
+      value.secret.length >= 16 &&
+      value.secret.length <= 200
+      ? { id: value.id, secret: value.secret }
+      : null;
+  } catch {
+    return null;
+  }
+}
 function forgetIdentity() {
   const branch = useStore.getState().user?.branchId ?? "main";
   localStorage.removeItem("fitstore-equipment:" + branch);
@@ -282,9 +313,9 @@ export function Equipment() {
         <div>
           <h2>Este equipo</h2>
           <p>
-            Cada computadora, laptop o celular que factura o mueve mercancía
-            debe estar aprobado. Los equipos nuevos de vendedores y almacén
-            esperan tu aprobación.
+            Cada computadora, laptop o celular que vende o mueve mercancía debe
+            estar aprobado. Los equipos nuevos de vendedores y almacén esperan
+            tu aprobación.
           </p>
         </div>
         <form
@@ -444,8 +475,8 @@ export function DeviceGate() {
         <div>
           <strong>Este equipo fue revocado</strong>
           <p>
-            No puede facturar ni mover mercancía. Si fue un error, regístralo
-            como equipo nuevo y pide a un gerente que lo apruebe.
+            No puede vender ni mover mercancía. Si fue un error, regístralo como
+            equipo nuevo y pide a un gerente que lo apruebe.
           </p>
         </div>
         <Button
@@ -466,7 +497,7 @@ export function DeviceGate() {
       <div>
         <strong>Este equipo necesita aprobación</strong>
         <p>
-          Puedes consultar, pero para facturar o mover mercancía un gerente debe
+          Puedes consultar, pero para vender o mover mercancía un gerente debe
           aprobarlo: con su PIN aquí mismo o desde Configuración › Equipos.
         </p>
         <form

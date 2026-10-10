@@ -2642,7 +2642,8 @@ test.describe("Tienda-pantallas", () => {
     await expect(sheet).toContainText("Efectivo RD$ 500.00");
     await expect(sheet).toContainText("Crédito / contraentrega RD$ 1,000.00");
     await expect(sheet).toContainText("Cantidad de Productos 1");
-    await page.getByRole("button", { name: "Imprimir factura" }).click();
+    // 03-M1: el botón dice «recibo»; el documento no es una factura fiscal.
+    await page.getByRole("button", { name: "Imprimir recibo" }).click();
     await expect.poll(() => prints(page)).toBeGreaterThan(0);
     const number = (await page
       .locator(".sale-success p")

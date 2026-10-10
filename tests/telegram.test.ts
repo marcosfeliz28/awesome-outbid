@@ -629,7 +629,8 @@ describe("Telegram · avisos de facturas", () => {
       name: "QA Telegram vendedor",
       username,
       password: initial,
-      pin: "4826",
+      // S-03: los PIN nuevos tienen 6 dígitos (antes "4826").
+      pin: "482613",
       roleId: role.id,
     });
     let login = await request(

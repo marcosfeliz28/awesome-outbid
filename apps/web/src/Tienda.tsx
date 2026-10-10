@@ -7,6 +7,7 @@ import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import { CASH_DENOMINATIONS, can, formatMoney } from "@fitstore/shared";
 import { api, apiBlob, post, localDB, useStore } from "./api";
 import { FormModal, QueryState, toast, mutate, today } from "./helpers";
+import { pendingCloseMessage } from "./pendingSales";
 import {
   CuadrePrint,
   DailyUserReportPrint,
@@ -96,6 +97,20 @@ export function CloseCashModal({
     queryKey: ["settings"],
     queryFn: () => api("/settings"),
   });
+  // 05-A2: lo que quedó en este equipo de esta caja se avisa antes de
+  // contar, con lo que hay que hacer (antes sólo salía al pulsar «Cerrar»).
+  const local = useQuery({
+    queryKey: ["pending-sales", "close", session.id],
+    queryFn: () =>
+      localDB.sales
+        .filter((s) => s.input.cashSessionId === session.id)
+        .toArray(),
+    networkMode: "always",
+  });
+  const waiting = pendingCloseMessage(
+    local.data?.length ?? 0,
+    local.data?.filter((s) => s.status === "conflict").length ?? 0,
+  );
   const client = useQueryClient();
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
@@ -106,7 +121,9 @@ export function CloseCashModal({
     countedTransfer: "",
     delivered: "",
     notes: "",
+    managerPin: "",
   });
+  const user = useStore((s) => s.user);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [confirmBlindClose, setConfirmBlindClose] = useState(false);
@@ -121,11 +138,22 @@ export function CloseCashModal({
     ) / 100;
   const delivered = form.delivered.trim() === "" ? null : parse(form.delivered);
   const left = delivered === null ? subtotal : subtotal - delivered;
+  // A-1: un vale de caja exige nota y, a quien no gestiona ventas, el PIN de
+  // un gerente (la API aplica la misma regla).
+  const hasVouchers = parse(form.vouchers) > 0;
+  const voucherNeedsPin =
+    hasVouchers && !can(user?.permissions ?? [], "sale:manage");
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (delivered !== null && delivered > subtotal) {
       setError("Lo entregado no puede superar el efectivo contado.");
+      return;
+    }
+    if (hasVouchers && !form.notes.trim()) {
+      setError(
+        "Explica en las notas del cierre qué comprobantes forman el vale de caja.",
+      );
       return;
     }
     if (!confirmBlindClose) {
@@ -138,10 +166,13 @@ export function CloseCashModal({
     try {
       const pending = await localDB.sales
         .filter((s) => s.input.cashSessionId === session.id)
-        .count();
-      if (pending)
+        .toArray();
+      if (pending.length)
         throw new Error(
-          "Sincroniza o resuelve las ventas pendientes de este dispositivo antes de cerrar la caja.",
+          pendingCloseMessage(
+            pending.length,
+            pending.filter((s) => s.status === "conflict").length,
+          ),
         );
       const denominations = Object.fromEntries(
         Object.entries(counts)
@@ -158,6 +189,7 @@ export function CloseCashModal({
         countedTransfer: parse(form.countedTransfer),
         ...(delivered === null ? {} : { delivered }),
         notes: form.notes,
+        ...(voucherNeedsPin ? { managerPin: form.managerPin } : {}),
       });
       const cuadre = await api("/cash-sessions/" + session.id + "/cuadre");
       await client.invalidateQueries();
@@ -191,6 +223,11 @@ export function CloseCashModal({
   return (
     <Modal open onClose={onClose} title="Cuadre y cierre de caja">
       <form onSubmit={submit} className="close-cash">
+        {waiting && (
+          <p className="close-pending-warning" role="alert">
+            {waiting}
+          </p>
+        )}
         <p className="close-expected">
           Conteo ciego: declara lo que realmente tienes. La comparación aparece
           después de cerrar.
@@ -227,7 +264,21 @@ export function CloseCashModal({
           {money(
             "Vale de caja",
             "vouchers",
-            "Comprobantes de salida que están en la gaveta.",
+            "Comprobantes de salida que están en la gaveta. Requiere una nota y, para cajeras, el PIN de un gerente; mejor regístralos como «Salida» antes de cerrar.",
+          )}
+          {voucherNeedsPin && (
+            <label className="field">
+              <span>PIN de gerente (vale de caja)</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                pattern="[0-9]{4,6}"
+                value={form.managerPin}
+                onChange={set("managerPin")}
+                required
+              />
+            </label>
           )}
           {!!config.data?.usdRate &&
             money("Dólares US$", "countedUsd", "Tasa " + config.data.usdRate)}

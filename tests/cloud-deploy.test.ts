@@ -1,13 +1,86 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { cloudEnvironment } from "../deploy/render/with-cloud-env.mjs";
+import {
+  cloudEnvironment,
+  isMigrationCommand,
+} from "../deploy/render/with-cloud-env.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path: string) => readFileSync(resolve(root, path), "utf8");
+
+// Estado real comprobado en Render el 10-oct-2026 (A3). Ver render.yaml.
+const PLAN_FLOOR: Record<string, { cpu: number; memoryMb: number }> = {
+  "nexora-pos-web": { cpu: 0.5, memoryMb: 512 },
+  "nexora-pos-api": { cpu: 1, memoryMb: 2048 },
+  "nexora-pos-db": { cpu: 0.5, memoryMb: 1024 },
+};
+// El disco de PostgreSQL en Render sólo puede crecer.
+const DISK_FLOOR_GB = 5;
+
+// Bloque de un recurso de primer nivel (servicio o base) de render.yaml.
+function resourceBlock(blueprint: string, name: string) {
+  const lines = blueprint.split("\n");
+  const at = lines.findIndex(
+    (line) => line === `    name: ${name}` || line === `  - name: ${name}`,
+  );
+  if (at < 0) return "";
+  let start = at;
+  while (!lines[start].startsWith("  - ")) start -= 1;
+  let end = start + 1;
+  while (
+    end < lines.length &&
+    !lines[end].startsWith("  - ") &&
+    !/^\S/.test(lines[end])
+  )
+    end += 1;
+  return lines.slice(start, end).join("\n");
+}
+
+function yamlField(block: string, key: string) {
+  return block.match(new RegExp(`^ {4}${key}: "?([^"\\n]*)"?$`, "m"))?.[1];
+}
+
+function planViolations(blueprint: string) {
+  const violations: string[] = [];
+  for (const [name, floor] of Object.entries(PLAN_FLOOR)) {
+    const block = resourceBlock(blueprint, name);
+    const plan = yamlField(block, "plan");
+    const match = plan?.match(/^(\d+(?:\.\d+)?)c-(\d+)(mb|gb|g)$/);
+    if (!match) {
+      violations.push(`${name}: plan ausente o con otra forma (${plan})`);
+      continue;
+    }
+    const cpu = Number(match[1]);
+    const memoryMb = Number(match[2]) * (match[3] === "mb" ? 1 : 1024);
+    if (cpu < floor.cpu || memoryMb < floor.memoryMb)
+      violations.push(
+        `${name}: plan ${plan} menor que ${floor.cpu}c-${floor.memoryMb}mb`,
+      );
+    if (
+      name !== "nexora-pos-db" &&
+      !(Number(yamlField(block, "numInstances")) >= 1)
+    )
+      violations.push(`${name}: sin instancias`);
+  }
+  const disk = Number(
+    yamlField(resourceBlock(blueprint, "nexora-pos-db"), "diskSizeGB"),
+  );
+  if (!(disk >= DISK_FLOOR_GB))
+    violations.push(
+      `nexora-pos-db: disco ${disk} GB menor que ${DISK_FLOOR_GB} GB`,
+    );
+  return violations;
+}
 
 describe("Render · aislamiento reproducible", () => {
   it("declara una sola entrada pública, API privada y PostgreSQL cerrado", () => {
@@ -22,12 +95,45 @@ describe("Render · aislamiento reproducible", () => {
     expect(blueprint).toContain("property: connectionString");
     expect(blueprint).toContain("envVarKey: RENDER_EXTERNAL_URL");
     expect(blueprint.match(/region: virginia/g)).toHaveLength(3);
-    expect(blueprint.match(/plan: 0\.5c-512mb/g)).toHaveLength(2);
-    expect(blueprint).toContain("plan: 0.1c-256mb");
     expect(blueprint).toContain('postgresMajorVersion: "17"');
-    expect(blueprint).toContain("diskSizeGB: 1");
     expect(blueprint.match(/autoDeployTrigger: off/g)).toHaveLength(2);
     expect(blueprint).toContain("healthCheckPath: /healthz");
+  });
+
+  // A3 (auditoría de infraestructura, 10-oct-2026): render.yaml debe
+  // coincidir con lo que corre en Render. Si declarara planes menores, una
+  // sincronización del Blueprint bajaría la API o la base (reinicio en horario
+  // de tienda) e intentaría encoger el disco, que Render no permite. Los
+  // mínimos de PLAN_FLOOR sólo se cambian a la vez que el plan real, nunca
+  // para que pase la prueba. Subir un plan está permitido; bajarlo, no.
+  it("no baja por accidente los planes ni el disco reales de Render", () => {
+    const blueprint = read("render.yaml");
+    expect(planViolations(blueprint)).toEqual([]);
+    const database = resourceBlock(blueprint, "nexora-pos-db");
+    expect(yamlField(database, "databaseName")).toBe("fitstore_bfjz");
+    expect(yamlField(database, "storageAutoscalingEnabled")).toBe("false");
+    // La regla queda escrita junto a los planes.
+    expect(blueprint).toContain("PRIMERO aquí");
+  });
+
+  it("la comprobación de planes detecta una bajada o un disco menor", () => {
+    const blueprint = read("render.yaml");
+    const apiAt = blueprint.search(/^ {4}name: nexora-pos-api$/m);
+    const downgradeApi =
+      blueprint.slice(0, apiAt) +
+      blueprint.slice(apiAt).replace(/plan: \S+/, "plan: 0.5c-512mb");
+    expect(planViolations(downgradeApi)).toEqual([
+      "nexora-pos-api: plan 0.5c-512mb menor que 1c-2048mb",
+    ]);
+    expect(
+      planViolations(blueprint.replace(/diskSizeGB: \d+/, "diskSizeGB: 1")),
+    ).toEqual(["nexora-pos-db: disco 1 GB menor que 5 GB"]);
+    expect(
+      planViolations(blueprint.replace("plan: 0.5c-1g", "plan: 0.1c-256mb")),
+    ).toEqual(["nexora-pos-db: plan 0.1c-256mb menor que 0.5c-1024mb"]);
+    expect(
+      planViolations(blueprint.replace("plan: 1c-2g", "plan: 2c-4g")),
+    ).toEqual([]);
   });
 
   it("aplica migraciones antes de publicar y no ejecuta seed ni db push", () => {
@@ -74,6 +180,101 @@ describe("Render · conexión de PostgreSQL", () => {
     expect(env.WEB_ORIGIN).toBe("https://nexora.example");
   });
 
+  // M4: Prisma calculaba el pool con los núcleos físicos del host (17
+  // conexiones fijas en Render). La API usa un tope explícito.
+  it("fija un tope de conexiones del pool, configurable y validado", () => {
+    const base = {
+      RENDER_DATABASE_URL: "postgresql://nexora:x@db.internal:5432/fitstore",
+    } as NodeJS.ProcessEnv;
+    const limit = (env: NodeJS.ProcessEnv) =>
+      new URL(cloudEnvironment(env).DATABASE_URL!).searchParams.get(
+        "connection_limit",
+      );
+    expect(limit(base)).toBe("10");
+    expect(limit({ ...base, NEXORA_DB_CONNECTION_LIMIT: "6" })).toBe("6");
+    expect(
+      limit({
+        RENDER_DATABASE_URL: base.RENDER_DATABASE_URL + "?connection_limit=4",
+      }),
+    ).toBe("4");
+    for (const bad of ["0", "101", "5.5", "diez"])
+      expect(() =>
+        cloudEnvironment({ ...base, NEXORA_DB_CONNECTION_LIMIT: bad }),
+      ).toThrow(/NEXORA_DB_CONNECTION_LIMIT/);
+  });
+
+  // M1: las migraciones de Render no esperan bloqueos ni corren sentencias
+  // sin límite; se reconoce `migrate deploy` sin cambiar el preDeployCommand.
+  it("las migraciones llevan lock_timeout y statement_timeout", () => {
+    const blueprint = read("render.yaml");
+    const command = blueprint
+      .split("\n")
+      .find((line) => line.trimStart().startsWith("preDeployCommand:"))!
+      .replace(/^\s*preDeployCommand:\s*/, "")
+      .split(/\s+/);
+    expect(isMigrationCommand(command.slice(2))).toBe(true);
+    expect(isMigrationCommand(["node", "apps/api/dist/main.js"])).toBe(false);
+    expect(isMigrationCommand(["prisma", "migrate", "status"])).toBe(false);
+    const render = {
+      RENDER_DATABASE_URL: "postgresql://nexora:x@db.internal:5432/fitstore",
+    } as NodeJS.ProcessEnv;
+    const options = (env: NodeJS.ProcessEnv) =>
+      new URL(
+        cloudEnvironment(env, { migration: true }).DATABASE_URL!,
+      ).searchParams.get("options");
+    expect(options(render)).toBe(
+      "-c TimeZone=UTC -c lock_timeout=5s -c statement_timeout=120s",
+    );
+    expect(
+      options({
+        ...render,
+        NEXORA_MIGRATION_LOCK_TIMEOUT: "3s",
+        NEXORA_MIGRATION_STATEMENT_TIMEOUT: "30min",
+      }),
+    ).toBe("-c TimeZone=UTC -c lock_timeout=3s -c statement_timeout=30min");
+    // El preDeploy no recibe el tope de pool de la API (no lo necesita).
+    expect(
+      new URL(
+        cloudEnvironment(render, { migration: true }).DATABASE_URL!,
+      ).searchParams.has("connection_limit"),
+    ).toBe(false);
+    // También con DATABASE_URL local (CI, pruebas con Docker).
+    expect(
+      options({ DATABASE_URL: "postgresql://f:l@127.0.0.1:5434/fitstore" }),
+    ).toBe("-c lock_timeout=5s -c statement_timeout=120s");
+    for (const bad of ["5 s", "-1s", "5h", "1;DROP", "s"])
+      expect(() =>
+        cloudEnvironment(
+          { ...render, NEXORA_MIGRATION_LOCK_TIMEOUT: bad },
+          { migration: true },
+        ),
+      ).toThrow(/NEXORA_MIGRATION_LOCK_TIMEOUT/);
+  });
+
+  it("documenta cómo escribir migraciones seguras y no repite prefijos", () => {
+    const guide = read("docs/MIGRACIONES_SEGURAS.md");
+    for (const text of [
+      "lock_timeout",
+      "statement_timeout",
+      "NEXORA_MIGRATION_STATEMENT_TIMEOUT",
+      "migrate resolve --rolled-back",
+      "CREATE INDEX CONCURRENTLY",
+      "Ampliar y luego retirar",
+    ])
+      expect(guide).toContain(text);
+    // M2: dos migraciones con el mismo prefijo se ordenan por el resto del
+    // nombre y pueden aplicarse en otro orden en una base nueva. Sólo se
+    // toleran los dos casos históricos ya aplicados en producción.
+    const names = readdirSync(resolve(root, "apps/api/prisma/migrations"))
+      .filter((name) => /^\d{12}_/.test(name))
+      .sort();
+    const prefixes = names.map((name) => name.slice(0, 12));
+    const repeated = [
+      ...new Set(prefixes.filter((p, i) => prefixes.indexOf(p) !== i)),
+    ];
+    expect(repeated).toEqual(["202610170001", "202610190001"]);
+  });
+
   it("respeta DATABASE_URL local cuando no está dentro de Render", () => {
     const local = "postgresql://fitstore:local@127.0.0.1:5434/fitstore";
     expect(cloudEnvironment({ DATABASE_URL: local }).DATABASE_URL).toBe(local);
@@ -98,6 +299,67 @@ describe("Render · operación inicial", () => {
       "node deploy/render/with-cloud-env.mjs node apps/api/node_modules/tsx/dist/cli.mjs apps/api/scripts/create-admin.ts",
     );
     expect(guide).not.toContain("ADMIN_MODE=create");
+  });
+});
+
+describe("Operación · contingencia, monitoreo y restauración", () => {
+  it("la contingencia nombra los ajustes reales y enlaza los procedimientos", () => {
+    const plan = read("docs/CONTINGENCIA.md").replace(/\s+/g, " ");
+    // La ruta del ajuste debe existir en la interfaz.
+    expect(plan).toContain(
+      "Configuración › Negocio y reglas › Editar configuración › «Permitir ventas sin conexión»",
+    );
+    expect(read("apps/web/src/Management.tsx")).toContain(
+      "Permitir ventas sin conexión",
+    );
+    for (const link of [
+      "MONITOREO.md",
+      "RESTAURACION_RENDER.md",
+      "INSTALADOR.md",
+    ])
+      expect(plan).toContain(`(${link})`);
+    expect(plan).toContain("talonario");
+    expect(plan).toContain("Sistema anterior");
+  });
+
+  it("el monitoreo vigila la salud profunda y la de la base cada minuto", () => {
+    const guide = read("docs/MONITOREO.md");
+    expect(guide).toContain("https://nexora-pos-web.onrender.com/api/health");
+    expect(guide).toContain("https://nexora-pos-web.onrender.com/healthz/deep");
+    // S-06 (fix-login): /api/health público sólo responde {"status":"ok"}
+    // (503 si la base falla); ya no publica «database».
+    expect(guide).toContain('`"status":"ok"`');
+    expect(guide).not.toContain('"database":"ok"');
+    expect(guide).toContain("**60 segundos**");
+    expect(guide).toMatch(/Telegram/);
+  });
+
+  it("la restauración verifica la huella, es atómica y no pisa la base en uso", () => {
+    const guide = read("docs/RESTAURACION_RENDER.md");
+    expect(guide).toContain("sha256sum -c");
+    expect(guide).toContain(
+      "pg_restore --format=directory --single-transaction --exit-on-error --no-owner --no-privileges",
+    );
+    expect(guide).toContain("node scripts/restore.mjs");
+    expect(guide).toContain("migrate status");
+    expect(guide).toContain("RENDER_DATABASE_URL");
+    expect(guide).toContain(
+      "nunca se restaura encima de la base que está en uso",
+    );
+    expect(guide).toContain("(PRUEBA_RESTAURACION.md)");
+    expect(read("docs/PRUEBA_RESTAURACION.md")).toContain(
+      "Prueba real de respaldo y restauración",
+    );
+    const deploy = read("docs/DEPLOY-RENDER.md");
+    for (const link of [
+      "CONTINGENCIA.md",
+      "MONITOREO.md",
+      "RESTAURACION_RENDER.md",
+      "MIGRACIONES_SEGURAS.md",
+    ])
+      expect(deploy).toContain(`(${link})`);
+    expect(deploy).not.toContain("no se ha creado, comprado ni desplegado");
+    expect(deploy).not.toContain("0.1c-256mb");
   });
 });
 
@@ -327,56 +589,255 @@ describe("Render · proxy público", () => {
     expect(healthz).toContain("return 204;");
     expect(healthz).not.toContain("auth_request");
     expect(healthz).not.toContain("proxy_pass");
-    // /healthz/deep sí comprueba la API, sin exponer su cuerpo.
+    // /healthz/deep sí comprueba la API, sin exponer su cuerpo. Desde S-06
+    // (auditoría 2026-10-10) consulta la preparación (API + base de datos),
+    // porque /api/health público ya no detalla el estado de la base.
     const deep = nginx.match(/location = \/healthz\/deep \{[^}]*\}/)?.[0] ?? "";
-    expect(deep).toContain("auth_request /_nexora_api_live;");
+    expect(deep).toContain("auth_request /_nexora_api_ready;");
     expect(deep).toContain("=503");
     expect(deep).not.toContain("return 204;");
-    const live = nginx.match(/location = \/_nexora_api_live \{[^}]*\}/)?.[0];
-    expect(live).toContain("internal;");
-    expect(live).toContain("proxy_pass http://nexora_api/api/health/live;");
-    expect(live).toContain("proxy_pass_request_body off;");
+    const ready = nginx.match(/location = \/_nexora_api_ready \{[^}]*\}/)?.[0];
+    expect(ready).toContain("internal;");
+    expect(ready).toContain("proxy_pass http://nexora_api/api/health/ready;");
+    expect(ready).toContain("proxy_pass_request_body off;");
     expect(read("render.yaml")).toContain("healthCheckPath: /healthz\n");
   });
 
-  it("reemplaza X-Forwarded-For usando sólo la IP de conexión confiable", () => {
+  // S-01/S-02/S-04 (auditoría de seguridad 2026-10-10): antes Nginx enviaba
+  // siempre $remote_addr, que en Render es el proxy del borde y es la misma
+  // para todos los clientes. Ahora acepta CF-Connecting-IP, que Cloudflare
+  // fija, sólo desde la red del borde; la X-Forwarded-For del cliente sigue
+  // sin usarse nunca. Las pruebas anteriores exigían ignorar
+  // CF-Connecting-IP siempre; se sustituyen por estas, que además ejecutan
+  // Nginx de verdad cuando está instalado.
+  it("reemplaza X-Forwarded-For con la IP del cliente y sólo cree CF-Connecting-IP desde el borde", () => {
     const nginx = read("deploy/render/nginx.conf.template");
-    expect(nginx).toContain("map $remote_addr $nexora_client_ip {");
-    expect(nginx).toContain("default $remote_addr;");
-    expect(nginx).not.toMatch(
-      /\$http_(?:cf_ray|cf_connecting_ip|x_forwarded_for)/,
+    const geo = nginx.match(
+      /geo \$remote_addr \$nexora_trusted_edge \{([\s\S]*?)\n\}/,
+    )?.[1];
+    expect(geo).toContain("default 0;");
+    expect(geo).toContain(
+      "include /etc/nginx/snippets/nexora-trusted-edge.conf;",
     );
+    const map = nginx.match(
+      /map "\$nexora_trusted_edge\|\$http_cf_connecting_ip" \$nexora_client_ip \{([\s\S]*?)\n\}/,
+    )?.[1];
+    expect(map).toContain("default $remote_addr;");
+    // Sólo con el borde de confianza (1|) y una sola IP con forma válida.
+    for (const line of map!.split("\n").filter((l) => l.includes("~")))
+      expect(line).toMatch(
+        /"~\^1\\\|\(\?<nexora_cf_ipv[46]>.*\)\$" \$nexora_cf_ipv[46];$/,
+      );
+    expect(nginx).not.toMatch(
+      /\$http_(?:cf_ray|x_forwarded_for|true_client_ip|x_real_ip)/,
+    );
+    expect(nginx).not.toContain("$proxy_add_x_forwarded_for");
+    expect(nginx).not.toContain("real_ip_header");
     expect(
       nginx.match(/proxy_set_header X-Forwarded-For \$nexora_client_ip;/g),
     ).toHaveLength(2);
-    expect(nginx).not.toContain("$proxy_add_x_forwarded_for");
-    expect(nginx).not.toContain("$http_x_forwarded_for");
-    expect(nginx).toContain("proxy_set_header X-Forwarded-Proto https;");
-  });
-
-  it("ignora CF-Ray, CF-Connecting-IP y X-Forwarded-For falsificados juntos", () => {
-    const nginx = read("deploy/render/nginx.conf.template");
-    const map = nginx.match(
-      /map \$remote_addr \$nexora_client_ip \{([\s\S]*?)\n\}/,
-    )?.[1];
-    expect(map).toBeTruthy();
-    expect(map).toContain("default $remote_addr;");
-    expect(map).not.toMatch(
-      /\$http_(?:cf_ray|cf_connecting_ip|x_forwarded_for)/,
+    expect(
+      nginx.match(/proxy_set_header X-Real-IP \$nexora_client_ip;/g),
+    ).toHaveLength(2);
+    // Las cabeceras del borde no llegan a la API.
+    expect(nginx.match(/proxy_set_header CF-Connecting-IP "";/g)).toHaveLength(
+      2,
     );
-
-    // El cliente falsifica las tres cabeceras; Nginx conserva la IP del socket.
-    const request = {
-      socketIp: "10.20.30.40",
-      cfRay: "a1b2c3d4e5f67890-IAD",
-      forgedCfConnectingIp: "198.51.100.77",
-      forgedXForwardedFor: "203.0.113.99",
-    };
-    const apiIp = request.socketIp;
-    expect(apiIp).toBe("10.20.30.40");
-    expect(apiIp).not.toBe(request.forgedCfConnectingIp);
-    expect(apiIp).not.toBe(request.forgedXForwardedFor);
+    expect(nginx.match(/proxy_set_header True-Client-IP "";/g)).toHaveLength(2);
+    expect(nginx).toContain("proxy_set_header X-Forwarded-Proto https;");
+    // El snippet se genera al arrancar y la imagen trae el generador.
+    const entrypoint = read("deploy/render/start-nginx.sh");
+    expect(entrypoint).toContain(
+      "nexora-render-trusted-edge /etc/nginx/snippets/nexora-trusted-edge.conf",
+    );
+    expect(entrypoint.indexOf("nexora-render-trusted-edge")).toBeLessThan(
+      entrypoint.indexOf("exec /docker-entrypoint.sh"),
+    );
+    expect(read("deploy/render/Dockerfile.web")).toContain(
+      "COPY --chmod=755 deploy/render/render-trusted-edge.sh /usr/local/bin/nexora-render-trusted-edge",
+    );
   });
+
+  it.skipIf(process.platform === "win32")(
+    "genera la lista del borde sólo con redes válidas",
+    () => {
+      const dir = mkdtempSync(join(tmpdir(), "nexora-edge-"));
+      const target = join(dir, "edge.conf");
+      const render = (value?: string) =>
+        spawnSync(
+          "sh",
+          [resolve(root, "deploy/render/render-trusted-edge.sh"), target],
+          {
+            env: {
+              PATH: process.env.PATH,
+              ...(value === undefined
+                ? {}
+                : { NEXORA_TRUSTED_EDGE_CIDRS: value }),
+            },
+            encoding: "utf8",
+          },
+        );
+      try {
+        expect(render().status).toBe(0);
+        expect(readFileSync(target, "utf8")).toBe(
+          "10.0.0.0/8 1;\n172.16.0.0/12 1;\n192.168.0.0/16 1;\n100.64.0.0/10 1;\nfc00::/7 1;\n",
+        );
+        expect(render("10.1.0.0/16, 2001:db8::/32").status).toBe(0);
+        expect(readFileSync(target, "utf8")).toBe(
+          "10.1.0.0/16 1;\n2001:db8::/32 1;\n",
+        );
+        expect(render("none").status).toBe(0);
+        expect(readFileSync(target, "utf8")).toBe("");
+        for (const bad of ["10.0.0.0/8; return 200", "0.0.0.0", "evil"]) {
+          const r = render(bad);
+          expect(r.status).toBe(1);
+          expect(r.stderr).toContain("NEXORA_TRUSTED_EDGE_CIDRS");
+          // Se conserva el último snippet válido; nunca uno a medias.
+          expect(readFileSync(target, "utf8")).toBe("");
+        }
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  );
+
+  const hasNginx =
+    process.platform !== "win32" &&
+    spawnSync("nginx", ["-v"], { encoding: "utf8" }).status === 0;
+  it.skipIf(!hasNginx)(
+    "Nginx real: la API recibe la IP de CF-Connecting-IP sólo desde el borde y nunca la X-Forwarded-For del cliente",
+    async () => {
+      const { createServer } = await import("node:http");
+      const { writeFileSync, mkdirSync, existsSync } = await import("node:fs");
+      const { spawn } = await import("node:child_process");
+      const freePort = () =>
+        new Promise<number>((done) => {
+          const probe = createServer().listen(0, "127.0.0.1", () => {
+            const { port } = probe.address() as { port: number };
+            probe.close(() => done(port));
+          });
+        });
+      // API simulada: devuelve las cabeceras que recibe.
+      const api = createServer((req, res) => {
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify(req.headers));
+      });
+      const apiPort = await freePort();
+      await new Promise<void>((done) => api.listen(apiPort, "127.0.0.1", done));
+      const webPort = await freePort();
+      const dir = mkdtempSync(join(tmpdir(), "nexora-nginx-"));
+      const snippets = join(dir, "snippets");
+      mkdirSync(snippets);
+      mkdirSync(join(dir, "html"));
+      writeFileSync(
+        join(snippets, "nexora-api-upstream.conf"),
+        `server 127.0.0.1:${apiPort};\n`,
+      );
+      writeFileSync(join(snippets, "nexora-security-headers.conf"), "");
+      const site = read("deploy/render/nginx.conf.template")
+        .replaceAll("/etc/nginx/snippets", snippets)
+        .replace("${PORT}", String(webPort))
+        .replace("/usr/share/nginx/html", join(dir, "html"));
+      writeFileSync(join(dir, "site.conf"), site);
+      writeFileSync(
+        join(dir, "nginx.conf"),
+        `worker_processes 1;\npid ${dir}/nginx.pid;\nerror_log ${dir}/error.log;\n` +
+          `events { worker_connections 64; }\nhttp {\n access_log off;\n` +
+          ["client_body", "proxy", "fastcgi", "uwsgi", "scgi"]
+            .map((t) => ` ${t}_temp_path ${dir}/tmp_${t};`)
+            .join("\n") +
+          `\n include ${dir}/site.conf;\n}\n`,
+      );
+      const edge = (cidrs: string) =>
+        spawnSync(
+          "sh",
+          [
+            resolve(root, "deploy/render/render-trusted-edge.sh"),
+            join(snippets, "nexora-trusted-edge.conf"),
+          ],
+          { env: { PATH: process.env.PATH, NEXORA_TRUSTED_EDGE_CIDRS: cidrs } },
+        ).status;
+      const start = () =>
+        spawn(
+          "nginx",
+          [
+            "-p",
+            dir,
+            "-e",
+            join(dir, "error.log"),
+            "-c",
+            join(dir, "nginx.conf"),
+            "-g",
+            "daemon off;",
+          ],
+          { stdio: "ignore" },
+        );
+      const seen = async (headers: Record<string, string>) => {
+        for (let i = 0; i < 50; i++) {
+          try {
+            const r = await fetch(`http://127.0.0.1:${webPort}/api/eco`, {
+              headers,
+            });
+            return (await r.json()) as Record<string, string>;
+          } catch {
+            await new Promise((done) => setTimeout(done, 100));
+          }
+        }
+        throw new Error(
+          "Nginx no arrancó: " +
+            (existsSync(join(dir, "error.log"))
+              ? readFileSync(join(dir, "error.log"), "utf8")
+              : ""),
+        );
+      };
+      let proc = undefined as ReturnType<typeof spawn> | undefined;
+      const stop = async () => {
+        if (!proc || proc.exitCode !== null) return;
+        const exited = new Promise((done) => proc!.once("exit", done));
+        proc.kill("SIGTERM");
+        await exited;
+      };
+      try {
+        // Conexión desde el borde de confianza (127.0.0.1 en esta prueba).
+        expect(edge("127.0.0.1/32")).toBe(0);
+        proc = start();
+        const real = await seen({ "CF-Connecting-IP": "198.51.100.23" });
+        expect(real["x-forwarded-for"]).toBe("198.51.100.23");
+        expect(real["x-real-ip"]).toBe("198.51.100.23");
+        expect(real["cf-connecting-ip"]).toBeUndefined();
+        expect(real["true-client-ip"]).toBeUndefined();
+        const v6 = await seen({ "CF-Connecting-IP": "2001:db8::7" });
+        expect(v6["x-forwarded-for"]).toBe("2001:db8::7");
+        // X-Forwarded-For y True-Client-IP del navegador nunca se creen.
+        const forged = await seen({
+          "X-Forwarded-For": "203.0.113.99",
+          "True-Client-IP": "203.0.113.98",
+        });
+        expect(forged["x-forwarded-for"]).toBe("127.0.0.1");
+        // Una lista o un texto en CF-Connecting-IP no es una IP: se ignora.
+        for (const value of [
+          "198.51.100.1, 203.0.113.5",
+          "evil;x",
+          "1.2.3",
+          "fe80::1%eth0",
+        ])
+          expect(
+            (await seen({ "CF-Connecting-IP": value }))["x-forwarded-for"],
+          ).toBe("127.0.0.1");
+        await stop();
+        // Si la conexión no viene del borde, CF-Connecting-IP no vale nada.
+        expect(edge("10.0.0.0/8")).toBe(0);
+        proc = start();
+        const outside = await seen({ "CF-Connecting-IP": "198.51.100.23" });
+        expect(outside["x-forwarded-for"]).toBe("127.0.0.1");
+      } finally {
+        await stop();
+        await new Promise((done) => api.close(done));
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+    30000,
+  );
 
   it("fija una versión de Nginx compatible y valida valores antes de sustituirlos", () => {
     const dockerfile = read("deploy/render/Dockerfile.web");
@@ -414,6 +875,41 @@ describe("Render · proxy público", () => {
     expect(entrypoint.indexOf("nexora-render-security-headers")).toBeLessThan(
       entrypoint.indexOf("exec /docker-entrypoint.sh"),
     );
+  });
+
+  // M5 (auditoría de infraestructura): si la API no resuelve al arrancar, la
+  // web arranca igual con /api en 502 y reintenta; antes salía con error y
+  // Render la dejaba en bucle de arranque fallido.
+  it("la web arranca aunque la API no resuelva y /api responde 502 claro", () => {
+    const entrypoint = read("deploy/render/start-nginx.sh");
+    const startup = entrypoint.slice(
+      entrypoint.indexOf("api_ip=$(resolve_api_ip)"),
+      entrypoint.indexOf("exec /docker-entrypoint.sh"),
+    );
+    expect(startup).toContain("write_unavailable_upstream");
+    expect(startup).not.toMatch(/if \[ -z "\$api_ip" \]; then[^]*?exit 1/);
+    expect(entrypoint).toContain(
+      "printf 'server 127.0.0.1:%s down;\\n' \"$api_port\"",
+    );
+    // Si el bucle de re-resolución muere, se detiene Nginx para que Render
+    // reinicie la web (no queda con una IP vieja para siempre).
+    expect(entrypoint).toContain("trap '");
+    expect(entrypoint).toContain("kill -TERM $$");
+    const nginx = read("deploy/render/nginx.conf.template");
+    const api = nginx.slice(
+      nginx.indexOf("location ^~ /api/ {"),
+      nginx.indexOf("location = /sw.js {"),
+    );
+    expect(api).toContain("error_page 502 @nexora_api_unavailable;");
+    expect(api).toContain("error_page 504 @nexora_api_timeout;");
+    // El código se conserva (502/504): la PWA los trata como «sin conexión».
+    expect(api).toMatch(
+      /location @nexora_api_unavailable \{\s*default_type application\/json;\s*return 502 '\{"statusCode":502,"message":"[^']+"\}';/,
+    );
+    expect(api).toMatch(
+      /location @nexora_api_timeout \{\s*default_type application\/json;\s*return 504 '/,
+    );
+    expect(api).not.toContain("proxy_intercept_errors");
   });
 
   it("las imágenes copian todos los archivos y herramientas que invocan", () => {
@@ -454,5 +950,210 @@ describe("Render · proxy público", () => {
       typescript: "~5.9.3",
       vite: expect.any(String),
     });
+  });
+});
+
+describe("Render · compresión de la web", () => {
+  it("comprime texto, JS, CSS, SVG y JSON de la API; no imágenes ni el flujo de eventos", () => {
+    const nginx = read("deploy/render/nginx.conf.template");
+    const server = nginx.slice(nginx.indexOf("server {"));
+    const before = server.slice(0, server.indexOf("location "));
+    // A nivel de servidor, antes de las ubicaciones: lo heredan todas.
+    expect(before).toMatch(/^\s*gzip on;$/m);
+    expect(before).toMatch(/^\s*gzip_vary on;$/m);
+    expect(before).toMatch(/^\s*gzip_proxied any;$/m);
+    expect(before).toMatch(/^\s*gzip_min_length \d+;$/m);
+    const types = before.match(/^\s*gzip_types ([^;]+);$/m)?.[1].split(/\s+/);
+    expect(types).toEqual(
+      expect.arrayContaining([
+        "text/css",
+        "application/javascript",
+        "text/javascript",
+        "application/json",
+        "application/manifest+json",
+        "image/svg+xml",
+      ]),
+    );
+    for (const compressed of [
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+      "font/woff2",
+      "text/event-stream",
+    ])
+      expect(types).not.toContain(compressed);
+    // Comprimir el flujo SSE retendría los eventos en el búfer de gzip.
+    const events = nginx.slice(
+      nginx.indexOf("location = /api/events {"),
+      nginx.indexOf("location ^~ /api/ {"),
+    );
+    expect(events).toContain("gzip off;");
+    // La compresión no sustituye a las cabeceras de seguridad ni a la caché.
+    expect(
+      nginx.match(
+        /include \/etc\/nginx\/snippets\/nexora-security-headers.conf;/g,
+      )?.length,
+    ).toBeGreaterThanOrEqual(10);
+    expect(nginx).toContain(
+      'add_header Cache-Control "public, max-age=31536000, immutable";',
+    );
+  });
+});
+
+describe("Render · memoria de la API", () => {
+  it("la imagen arranca un solo node con el montón acotado para 512 MB", () => {
+    const api = read("deploy/render/Dockerfile.api");
+    const cmd = api.match(/^CMD (\[.*\])$/m)?.[1];
+    expect(cmd).toBeDefined();
+    const argv = JSON.parse(cmd!);
+    // node <opciones> with-cloud-env.mjs <script>: sin un segundo «node».
+    expect(argv[0]).toBe("node");
+    expect(argv.filter((a: string) => a === "node")).toHaveLength(1);
+    expect(argv.slice(-2)).toEqual([
+      "deploy/render/with-cloud-env.mjs",
+      "apps/api/dist/main.js",
+    ]);
+    const heap = Number(
+      argv
+        .find((a: string) => a.startsWith("--max-old-space-size="))
+        ?.split("=")[1],
+    );
+    expect(heap).toBeGreaterThanOrEqual(192);
+    expect(heap).toBeLessThanOrEqual(320);
+    // El pre-deploy sigue lanzando Prisma como proceso aparte (termina).
+    expect(read("render.yaml")).toContain(
+      "preDeployCommand: node deploy/render/with-cloud-env.mjs node apps/api/node_modules/prisma/build/index.js migrate deploy",
+    );
+  });
+
+  it("carga el script en el mismo proceso, con el entorno cloud y las opciones de node", () => {
+    const dir = mkdtempSync(join(tmpdir(), "nexora-cloud-env-"));
+    try {
+      const script = join(dir, "probe.mjs");
+      writeFileSync(
+        script,
+        `import v8 from "node:v8";
+console.log(JSON.stringify({
+  pid: process.pid,
+  argv: process.argv.slice(1),
+  render: "RENDER_DATABASE_URL" in process.env,
+  sslmode: new URL(process.env.DATABASE_URL).searchParams.get("sslmode"),
+  timezone: new URL(process.env.DATABASE_URL).searchParams.get("options"),
+  keep: process.env.WEB_ORIGIN,
+  heapMb: Math.round(v8.getHeapStatistics().heap_size_limit / 1048576),
+}));`,
+      );
+      const result = spawnSync(
+        process.execPath,
+        [
+          "--max-old-space-size=200",
+          // heap_size_limit suma la generación joven (3 semiespacios): 16 MB
+          // por omisión en Node 22, 64 MB en Node 24 (+192 MB). Se fija para
+          // que el límite medido sea el mismo con cualquiera de los dos.
+          "--max-semi-space-size=16",
+          resolve(root, "deploy/render/with-cloud-env.mjs"),
+          script,
+          "uno",
+          "dos",
+        ],
+        {
+          encoding: "utf8",
+          env: {
+            PATH: process.env.PATH,
+            RENDER_DATABASE_URL:
+              "postgresql://nexora:secreto@db.internal:5432/fitstore",
+            WEB_ORIGIN: "https://nexora.example",
+          },
+        },
+      );
+      expect(result.status, result.stderr).toBe(0);
+      const probe = JSON.parse(result.stdout.trim());
+      // Mismo PID que el node lanzado: no hay proceso hijo.
+      expect(probe.pid).toBe(result.pid);
+      expect(probe.argv).toEqual([script, "uno", "dos"]);
+      expect(probe.render).toBe(false);
+      expect(probe.sslmode).toBe("require");
+      expect(probe.timezone).toBe("-c TimeZone=UTC");
+      expect(probe.keep).toBe("https://nexora.example");
+      expect(probe.heapMb).toBeGreaterThanOrEqual(200);
+      expect(probe.heapMb).toBeLessThan(300);
+      // Un script que no existe falla con código 1 y sin la URL de la base.
+      const missing = spawnSync(
+        process.execPath,
+        [resolve(root, "deploy/render/with-cloud-env.mjs"), join(dir, "x.js")],
+        {
+          encoding: "utf8",
+          env: {
+            PATH: process.env.PATH,
+            RENDER_DATABASE_URL:
+              "postgresql://nexora:secreto@db.internal:5432/fitstore",
+          },
+        },
+      );
+      expect(missing.status).toBe(1);
+      expect(missing.stderr).toContain("No se pudo iniciar");
+      expect(missing.stderr).not.toContain("secreto");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("CI · cadena de suministro y despliegue protegido", () => {
+  const workflows = readdirSync(resolve(root, ".github/workflows"))
+    .filter((file) => /\.ya?ml$/.test(file))
+    .map((file) => `.github/workflows/${file}`);
+
+  // M10: una etiqueta móvil (@v4) puede reescribirse; un SHA, no.
+  it("fija cada acción por SHA y limita el token a lectura", () => {
+    expect(workflows.length).toBeGreaterThan(0);
+    for (const path of workflows) {
+      const text = read(path);
+      const uses = [...text.matchAll(/^\s*-?\s*uses:\s*(\S+)(.*)$/gm)];
+      for (const [, ref, comment] of uses) {
+        expect(ref, `${path}: ${ref}`).toMatch(
+          /^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/,
+        );
+        expect(comment, `${path}: ${ref} sin versión`).toMatch(/# v\d/);
+      }
+      expect(text, path).toMatch(/^permissions:\n {2}contents: read$/m);
+      expect(text, path).not.toMatch(/contents: write|write-all/);
+    }
+    expect(read(".github/workflows/ci.yml")).toMatch(
+      /image: postgres:17\.\d+@sha256:[0-9a-f]{64}/,
+    );
+    expect(read(".github/dependabot.yml")).toContain(
+      "package-ecosystem: github-actions",
+    );
+  });
+
+  // A4: el CI construye ambas imágenes (sin publicarlas) y las arranca como
+  // en Render, terminando con post-deploy-check.mjs.
+  it("construye las imágenes de Render y ejecuta la comprobación posterior", () => {
+    const ci = read(".github/workflows/ci.yml");
+    const job = ci.slice(ci.indexOf("  render-images:"));
+    expect(job).toContain(
+      "docker build -f deploy/render/Dockerfile.api -t nexora-pos-api:ci .",
+    );
+    expect(job).toContain(
+      "docker build -f deploy/render/Dockerfile.web -t nexora-pos-web:ci .",
+    );
+    expect(job).toContain("bash deploy/render/ci-smoke.sh");
+    expect(ci).not.toMatch(/docker (push|login)|--push/);
+    const smoke = read("deploy/render/ci-smoke.sh");
+    // Usa la misma orden de migración que Render y la misma comprobación.
+    expect(smoke).toContain("preDeployCommand:");
+    expect(smoke).toContain("render.yaml");
+    expect(smoke).toContain("node deploy/render/post-deploy-check.mjs");
+    // La web arranca antes que la API y debe responder igual.
+    expect(smoke.indexOf('echo "2) La web arranca sin API"')).toBeLessThan(
+      smoke.indexOf('echo "4) Arranca la API"'),
+    );
+    expect(smoke).toContain('"statusCode":502');
+    // Comprobación manual tras desplegar, sin secretos en la orden.
+    const post = read(".github/workflows/post-deploy-check.yml");
+    expect(post).toContain("workflow_dispatch:");
+    expect(post).toContain("NEXORA_WEB_URL: ${{ inputs.web_url }}");
+    expect(post).not.toMatch(/run:.*\$\{\{/);
   });
 });

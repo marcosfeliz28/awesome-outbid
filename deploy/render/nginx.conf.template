@@ -1,5 +1,21 @@
-map $remote_addr $nexora_client_ip {
+# IP real del cliente (S-01/S-02/S-04, auditoría de seguridad 2026-10-10).
+# En Render la cadena es Cloudflare → proxy de Render → Nginx, así que
+# $remote_addr es la del proxy y es la misma para todos los clientes.
+# Cloudflare fija CF-Connecting-IP con la IP que abrió la conexión y
+# reemplaza la que envíe el navegador; se acepta SÓLO si la conexión llega
+# desde la red interna del borde (nexora-trusted-edge.conf, que genera
+# start-nginx.sh desde NEXORA_TRUSTED_EDGE_CIDRS) y es una IP con forma
+# válida. X-Forwarded-For del cliente nunca se usa: Render la conserva y sólo
+# añade al final. Sin cabecera válida se usa la IP de la conexión, como antes.
+geo $remote_addr $nexora_trusted_edge {
+    default 0;
+    include /etc/nginx/snippets/nexora-trusted-edge.conf;
+}
+
+map "$nexora_trusted_edge|$http_cf_connecting_ip" $nexora_client_ip {
     default $remote_addr;
+    "~^1\|(?<nexora_cf_ipv4>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})$" $nexora_cf_ipv4;
+    "~^1\|(?<nexora_cf_ipv6>[0-9A-Fa-f]{0,4}:[0-9A-Fa-f:.]{1,44})$" $nexora_cf_ipv6;
 }
 
 # Referrer-Policy por ruta (lo consume security-headers.conf): la API conserva
@@ -25,6 +41,18 @@ server {
     client_max_body_size 5m;
     include /etc/nginx/snippets/nexora-security-headers.conf;
 
+    # Compresión de texto: HTML, JS, CSS, SVG, manifiesto y JSON de la API (el
+    # catálogo pesa ~900 KB sin comprimir). Las imágenes y fuentes ya
+    # comprimidas (png, jpg, webp, woff2) no están en la lista. No cambia
+    # cabeceras de seguridad ni Cache-Control; el ETag pasa a débil. El flujo
+    # de eventos (/api/events) no se comprime: retendría los eventos.
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/javascript application/javascript application/json application/manifest+json image/svg+xml;
+
     # Liveness sólo de Nginx: Render lo usa como healthCheckPath de la web y no
     # debe fallar mientras la API se redespliega (reiniciaría la web en bucle).
     location = /healthz {
@@ -35,13 +63,14 @@ server {
     }
 
     # Comprobación profunda, para uso manual o externo (NO para Render): la web
-    # sólo es sana si la API responde. auth_request descarta el cuerpo de la
-    # API y sólo se devuelve 204/503, sin detalles.
+    # sólo es sana si la API y su base de datos responden (/api/health/ready).
+    # auth_request descarta el cuerpo de la API y sólo se devuelve 204/503,
+    # sin detalles.
     location = /healthz/deep {
         access_log off;
         add_header Cache-Control "no-store" always;
         include /etc/nginx/snippets/nexora-security-headers.conf;
-        auth_request /_nexora_api_live;
+        auth_request /_nexora_api_ready;
         error_page 500 502 503 504 =503 @nexora_api_down;
         # `return` se evalúa antes de auth_request; try_files, después.
         try_files /nexora-inexistente @nexora_healthy;
@@ -53,9 +82,9 @@ server {
         return 204;
     }
 
-    location = /_nexora_api_live {
+    location = /_nexora_api_ready {
         internal;
-        proxy_pass http://nexora_api/api/health/live;
+        proxy_pass http://nexora_api/api/health/ready;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_pass_request_body off;
@@ -85,10 +114,14 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $nexora_client_ip;
         proxy_set_header X-Forwarded-For $nexora_client_ip;
+        # La API sólo usa X-Forwarded-For; las cabeceras del borde no pasan.
+        proxy_set_header CF-Connecting-IP "";
+        proxy_set_header True-Client-IP "";
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Proto https;
         proxy_buffering off;
         proxy_cache off;
+        gzip off;
         proxy_connect_timeout 5s;
         proxy_read_timeout 75s;
         include /etc/nginx/snippets/nexora-security-headers.conf;
@@ -112,10 +145,28 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $nexora_client_ip;
         proxy_set_header X-Forwarded-For $nexora_client_ip;
+        # La API sólo usa X-Forwarded-For; las cabeceras del borde no pasan.
+        proxy_set_header CF-Connecting-IP "";
+        proxy_set_header True-Client-IP "";
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Proto https;
         proxy_connect_timeout 5s;
         proxy_read_timeout 60s;
+        # Errores generados por Nginx (no los de la API): la API no está
+        # disponible (502) o tardó más de 60 s (504). Se conserva el código,
+        # que la PWA trata como «sin conexión», con un mensaje JSON claro.
+        error_page 502 @nexora_api_unavailable;
+        error_page 504 @nexora_api_timeout;
+    }
+
+    location @nexora_api_unavailable {
+        default_type application/json;
+        return 502 '{"statusCode":502,"message":"El servidor de Nexora no está disponible en este momento. Reintenta en unos segundos."}';
+    }
+
+    location @nexora_api_timeout {
+        default_type application/json;
+        return 504 '{"statusCode":504,"message":"El servidor de Nexora tardó demasiado en responder. Reintenta en unos segundos."}';
     }
 
     location = /sw.js {

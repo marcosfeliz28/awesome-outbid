@@ -13,13 +13,25 @@ import {
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaClient } from "@prisma/client";
+import { databaseUrlWithPool } from "./database-pool";
 import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
 import type { Request, Response } from "express";
 import { captureApiException } from "./monitoring";
 import { isSerializationConflict } from "./inventory-resilience";
+import { databaseUnavailable, isDatabaseUnavailable } from "./database-errors";
+import {
+  ACTIVITY_WRITE_INTERVAL_MS,
+  sessionActivityGraceMs,
+} from "./session-activity";
+import { clientIp } from "./rate-limit";
 
 @Injectable()
 export class Database extends PrismaClient {
+  // Pool explícito (connection_limit, pool_timeout): ver database-pool.ts.
+  constructor() {
+    const url = databaseUrlWithPool(process.env.DATABASE_URL);
+    super(url ? { datasources: { db: { url } } } : undefined);
+  }
   async onModuleInit() {
     await this.$connect();
   }
@@ -32,6 +44,9 @@ export type Actor = {
   sessionId?: string;
   terminalId?: string;
   terminalApproved?: boolean;
+  // IP del cliente según el proxy de confianza (clientIp); sólo para la
+  // bitácora (AuditLog.ip) y los contadores de intentos.
+  ip?: string;
   name: string;
   username?: string | null;
   email: string;
@@ -275,6 +290,24 @@ export function customerForActor<T>(customer: T, actor: Actor): T {
   return out as T;
 }
 
+// La bitácora nunca guarda imágenes (auditoría 03, A2): verificar o rechazar
+// un abono registraba la fila Payment completa con la foto del comprobante
+// (data URL base64), que quedaba para siempre aunque se anonimizara al
+// cliente. Cualquier data URL de imagen se reemplaza por un marcador.
+const IMAGE_DATA_URL = /^data:image\/[^;,]+;base64,/i;
+export function withoutImages(value: unknown): unknown {
+  if (typeof value === "string")
+    return IMAGE_DATA_URL.test(value) ? "(imagen)" : value;
+  if (Array.isArray(value)) return value.map(withoutImages);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nested]) => [
+        key,
+        withoutImages(nested),
+      ]),
+    );
+  return value;
+}
 export const audit = (
   db: any,
   actor: Actor,
@@ -288,12 +321,13 @@ export const audit = (
     data: {
       userId: actor.id,
       terminalId: actor.terminalId,
+      ip: actor.ip,
       action,
       entity,
       entityId,
       branchId: actor.branchId,
-      ...(before === undefined ? {} : { before: json(before) }),
-      ...(after === undefined ? {} : { after: json(after) }),
+      ...(before === undefined ? {} : { before: withoutImages(json(before)) }),
+      ...(after === undefined ? {} : { after: withoutImages(json(after)) }),
     },
   });
 // Tipo real de una imagen por sus primeros bytes: no se guarda otra cosa
@@ -602,22 +636,31 @@ export class AuthGuard implements CanActivate {
       const settings = await this.db.settings.findUnique({
         where: { id: user.branchId },
       });
-      const cutoff = new Date(
-        Date.now() -
-          Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000,
-      );
-      const touched = await this.db.authSession.updateMany({
-        where: {
-          id: payload.sid,
-          userId: user.id,
-          lastActivityAt: { gte: cutoff },
-        },
-        data: { lastActivityAt: new Date() },
-      });
-      if (!touched.count) throw new Error();
+      const now = Date.now();
+      const timeout =
+        Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000;
+      const cutoff = new Date(now - timeout - sessionActivityGraceMs(timeout));
       const session = await this.db.authSession.findUnique({
         where: { id: payload.sid },
       });
+      if (!session || session.userId !== user.id) throw new Error();
+      if (session.lastActivityAt < cutoff) throw new Error();
+      // La actividad se escribe como mucho una vez por intervalo: escribir en
+      // cada petición bloqueaba la fila de la sesión bajo carga.
+      if (
+        now - session.lastActivityAt.getTime() >=
+        sessionActivityGraceMs(timeout)
+      ) {
+        const touched = await this.db.authSession.updateMany({
+          where: {
+            id: payload.sid,
+            userId: user.id,
+            lastActivityAt: { gte: cutoff },
+          },
+          data: { lastActivityAt: new Date(now) },
+        });
+        if (!touched.count) throw new Error();
+      }
       let terminalApproved = false;
       if (session?.terminalId) {
         const terminal = await this.db.terminal.findUnique({
@@ -629,14 +672,19 @@ export class AuthGuard implements CanActivate {
           terminal.branchId !== user.branchId
         )
           throw new Error();
-        await this.db.terminal.update({
-          where: { id: terminal.id },
-          data: { lastActivityAt: new Date(), lastUserId: user.id },
-        });
+        if (
+          terminal.lastUserId !== user.id ||
+          now - terminal.lastActivityAt.getTime() >= ACTIVITY_WRITE_INTERVAL_MS
+        )
+          await this.db.terminal.update({
+            where: { id: terminal.id },
+            data: { lastActivityAt: new Date(now), lastUserId: user.id },
+          });
         // Un equipo sin secreto (anterior a la ronda 4) nunca opera.
         terminalApproved = !!terminal.approvedAt && !!terminal.secretHash;
       }
       req.actor = {
+        ip: clientIp(req),
         sessionId: payload.sid,
         terminalId: session?.terminalId ?? undefined,
         terminalApproved,
@@ -647,7 +695,10 @@ export class AuthGuard implements CanActivate {
         permissions: user.role.permissions,
         branchId: user.branchId,
       };
-    } catch {
+    } catch (error) {
+      // Un fallo de la base (pool lleno, tiempo agotado, conexión) no dice
+      // nada de la sesión: 503 para que la web reintente sin cerrarla.
+      if (isDatabaseUnavailable(error)) throw databaseUnavailable();
       throw new HttpException("Inicia sesión para continuar.", 401);
     }
     const permission = this.reflector.getAllAndOverride<string>("permission", [

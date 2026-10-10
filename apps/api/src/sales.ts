@@ -22,6 +22,8 @@ import {
   paymentTotals,
   paymentReceiptLine,
   money,
+  formatMoney,
+  formatAmount,
   d,
   can,
   z,
@@ -208,6 +210,34 @@ export function normalizeLegacyOfflineDiscount(
   };
 }
 
+// M-3: la alerta de una transferencia sin verificar se cierra al verificarla
+// o rechazarla.
+async function resolveTransferAlert(tx: any, paymentId: string) {
+  await tx.alert.updateMany({
+    where: { key: "transfer:" + paymentId, status: { not: "resolved" } },
+    data: { status: "resolved" },
+  });
+}
+
+// Deuda abierta de un cliente en la sucursal: saldo por cobrar de sus ventas
+// completadas (crédito, contraentrega o transferencia rechazada).
+export async function customerOpenDebt(
+  db: any,
+  branchId: string,
+  customerId: string,
+) {
+  const debt = await db.sale.aggregate({
+    where: {
+      customerId,
+      branchId,
+      status: "completed",
+      creditBalance: { gt: 0 },
+    },
+    _sum: { creditBalance: true },
+  });
+  return money(debt._sum.creditBalance ?? 0);
+}
+
 // Una venta pendiente se mantiene como una sola cuenta por cobrar hasta que
 // un administrador confirma todos sus abonos.
 async function refreshReceivableAlert(
@@ -320,6 +350,21 @@ export async function terminalName(tx: any, registerId: string) {
   const terminal = await tx.terminal.findUnique({ where: { id: registerId } });
   return terminal?.name ?? "otro equipo";
 }
+// Lo mismo que terminalName para muchas cajas, con una sola consulta.
+export async function terminalNames(tx: any, registerIds: string[]) {
+  const ids = [...new Set(registerIds.filter((id) => UUID.test(id)))];
+  const terminals: { id: string; name: string }[] = ids.length
+    ? await tx.terminal.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const names = new Map(terminals.map((t) => [t.id, t.name]));
+  return (registerId: string) =>
+    UUID.test(registerId)
+      ? (names.get(registerId) ?? "otro equipo")
+      : registerId;
+}
 function promotionDiscount(promo: any, variant: any, qty: number) {
   const scope = promo.scope as any;
   if (scope.variantId && scope.variantId !== variant.id) return 0;
@@ -348,6 +393,10 @@ import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
 import { recordSaleIncentives, reverseIncentives } from "./incentives";
 
+// Plazo de las transacciones que mueven dinero (venta y devolución). Con el
+// valor por defecto de Prisma (5 s) una devolución bajo carga fallaba con
+// P2028 mientras la venta, con 20 s, terminaba (prueba de carga R5).
+export const MONEY_TRANSACTION = { timeout: 20000 };
 @Controller()
 export class SalesController {
   constructor(@Inject(Database) private db: Database) {}
@@ -387,12 +436,25 @@ export class SalesController {
     // Crédito y contraentrega (D-01): la misma regla que aplica la caja. La
     // contraentrega de quien no gestiona ventas pide PIN sobre el umbral, o
     // siempre si las ventas a crédito no están habilitadas; un límite de
-    // cliente 0 no la exime (ver receivableNeedsApproval).
+    // cliente 0 no la exime (ver receivableNeedsApproval). M-2: para quien no
+    // gestiona ventas cuenta además la deuda abierta del cliente.
+    const manages = can(actor.permissions, "sale:manage");
+    const receivable = input.payments.some(
+      (p) => p.method === "credit" || p.method === "cod",
+    );
+    const openDebt =
+      receivable && !manages && input.customerId
+        ? await customerOpenDebt(this.db, actor.branchId, input.customerId)
+        : 0;
     const needsCreditApproval = receivableNeedsApproval(
       input.payments,
       setting?.data as any,
-      can(actor.permissions, "sale:manage"),
+      manages,
+      openDebt,
     );
+    const becauseOfDebt =
+      needsCreditApproval &&
+      !receivableNeedsApproval(input.payments, setting?.data as any, manages);
     const needsNoteApproval = input.payments.some(
       (p) => p.method === "credit_note" && !p.creditNoteCode,
     );
@@ -402,19 +464,29 @@ export class SalesController {
       !needsNoteApproval
     )
       return null;
-    if (!input.managerPin) bad("Esta operación requiere el PIN de un gerente.");
+    if (!input.managerPin)
+      bad(
+        becauseOfDebt
+          ? `La deuda pendiente de este cliente más esta venta supera ${formatMoney(Number((setting?.data as any)?.creditApprovalThreshold ?? 1000))}: esta operación requiere el PIN de un gerente.`
+          : "Esta operación requiere el PIN de un gerente.",
+      );
     const managers = await this.db.user.findMany({
       where: { active: true, branchId: actor.branchId },
       include: { role: true },
     });
-    return verifyPinAttempt(this.db, "approval:" + actor.id, async () => {
-      for (const manager of managers.filter((m) =>
-        can(m.role.permissions, "sale:manage"),
-      ))
-        if (await compare(input.managerPin!, manager.pinHash))
-          return manager.id;
-      return null;
-    });
+    return verifyPinAttempt(
+      this.db,
+      "approval:" + actor.id,
+      async () => {
+        for (const manager of managers.filter((m) =>
+          can(m.role.permissions, "sale:manage"),
+        ))
+          if (await compare(input.managerPin!, manager.pinHash))
+            return manager.id;
+        return null;
+      },
+      { pin: input.managerPin, actor },
+    );
   }
   async complete(actor: Actor, input: SaleInput, offline = false) {
     const requestsDiscount =
@@ -649,32 +721,32 @@ export class SalesController {
         if ((credit || cod) && !customer)
           bad("El crédito / contraentrega requiere seleccionar un cliente.");
         if ((credit || cod) && customer) {
-          // Toda mercancía despachada pendiente de cobro cuenta en la deuda.
-          const debt = await tx.sale.aggregate({
-            where: {
-              customerId: customer.id,
-              branchId: actor.branchId,
-              status: "completed",
-              payments: {
-                some: {
-                  method: { in: ["credit", "cod"] },
-                  entryType: "sale",
-                },
-              },
-            },
-            _sum: { creditBalance: true },
-          });
+          // Toda mercancía despachada pendiente de cobro cuenta en la deuda
+          // (también una transferencia rechazada que pasó a cobrar, M-3).
+          const debt = await customerOpenDebt(tx, actor.branchId, customer.id);
           // Límite 0 = sin límite para el crédito (regla existente). La
           // contraentrega no queda abierta por eso: su aprobación por umbral
           // se aplica siempre en approve() (D-01).
           if (
             Number(customer.creditLimit) > 0 &&
-            d(debt._sum.creditBalance ?? 0)
-              .plus(credit)
-              .plus(cod)
-              .gt(customer.creditLimit)
+            d(debt).plus(credit).plus(cod).gt(customer.creditLimit)
           )
             bad("La venta supera el límite de crédito del cliente.");
+          // M-2: approve() miró la deuda antes de bloquear al cliente; con el
+          // bloqueo se vuelve a mirar para que dos ventas simultáneas no
+          // pasen ambas por debajo del umbral sin PIN.
+          if (
+            !approvedBy &&
+            receivableNeedsApproval(
+              input.payments,
+              config,
+              can(actor.permissions, "sale:manage"),
+              debt,
+            )
+          )
+            bad(
+              "La deuda pendiente de este cliente cambió: esta operación requiere el PIN de un gerente.",
+            );
         }
         if (credit && config?.allowCreditSales !== true)
           bad("Las ventas a crédito están desactivadas en Ajustes.");
@@ -945,7 +1017,7 @@ export class SalesController {
                 authorization: p.creditNoteCode ? "code" : "manager",
               },
             );
-          await tx.payment.create({
+          const createdPayment = await tx.payment.create({
             data: {
               ...paymentData,
               saleId: sale.id,
@@ -969,6 +1041,24 @@ export class SalesController {
                     : "ok",
             },
           });
+          // M-3 (auditoría 01): la mercancía sale contra una transferencia que
+          // nadie comprobó. Alerta alta hasta que la administración la
+          // verifique o la rechace (sólo esos flujos la resuelven).
+          if (p.method === "transfer")
+            await tx.alert.upsert({
+              where: { key: "transfer:" + createdPayment.id },
+              create: {
+                key: "transfer:" + createdPayment.id,
+                type: "transfer_pending",
+                severity: "high",
+                entityId: sale.id,
+                branchId: actor.branchId,
+                message:
+                  `Transferencia de ${sale.number} por RD$ ${formatAmount(Number(createdPayment.amount))} sin verificar · ` +
+                  `${p.bank ?? ""} · ref. ${p.reference ?? ""}`,
+              },
+              update: {},
+            });
         }
         if (cashSession.closedAt) {
           const differences = await refreshClosedCash(tx, cashSession);
@@ -1018,7 +1108,7 @@ export class SalesController {
           include: { items: true, payments: true },
         });
       },
-      { timeout: 20000 },
+      { timeout: MONEY_TRANSACTION.timeout },
     );
     notify(this.db, "sale", result.id);
     return safe(result, actor);
@@ -1194,6 +1284,9 @@ export class SalesController {
     return rows.map((sale) => saleHistoryDto(sale, actor));
   }
   @Post("sales/:id/void")
+  // D-11 (auditoría 01): como la devolución, desde un equipo registrado: la
+  // anulación puede sacar efectivo de la caja abierta de quien anula (D-02).
+  @RequireTerminal()
   @Permit("*")
   async voidSale(
     @Param("id") id: string,
@@ -1266,24 +1359,6 @@ export class SalesController {
         bad(
           "Esta venta antigua no conserva el detalle necesario para reponer el inventario automáticamente. Usa una devolución o revisión manual.",
         );
-      const notes = await tx.creditNote.findMany({
-        where: {
-          id: {
-            in: sale.payments.flatMap((p) =>
-              p.creditNoteId ? [p.creditNoteId] : [],
-            ),
-          },
-        },
-      });
-      for (const note of notes) {
-        const restored = sale.payments
-          .filter((p) => p.creditNoteId === note.id)
-          .reduce((sum, p) => sum + Number(p.amount), 0);
-        await tx.creditNote.update({
-          where: { id: note.id },
-          data: { balance: { increment: restored } },
-        });
-      }
       const allocations = sale.items.flatMap(
         (i) => i.stockAllocations as any[],
       );
@@ -1292,6 +1367,27 @@ export class SalesController {
         ...new Set(allocations.map((a) => a.variantId as string)),
       ].sort())
         variants.set(variantId, await lockVariant(tx, variantId, actor));
+      // D-M1 (auditoría 06): las notas de crédito se bloquean DESPUÉS de las
+      // variantes y en orden de id, como en la venta. Antes la anulación
+      // tomaba la nota y luego las variantes, la venta al revés, y una venta
+      // pagada con la misma nota interbloqueaba con la anulación (HTTP 500).
+      const noteIds = [
+        ...new Set(
+          sale.payments.flatMap((p) =>
+            p.creditNoteId ? [p.creditNoteId] : [],
+          ),
+        ),
+      ].sort();
+      for (const noteId of noteIds) {
+        await tx.$queryRaw`SELECT id FROM "CreditNote" WHERE id=${noteId}::uuid FOR UPDATE`;
+        const restored = sale.payments
+          .filter((p) => p.creditNoteId === noteId)
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+        await tx.creditNote.updateMany({
+          where: { id: noteId },
+          data: { balance: { increment: restored } },
+        });
+      }
       for (const allocation of allocations) {
         const variant = variants.get(allocation.variantId);
         if (allocation.lotId)
@@ -1386,7 +1482,9 @@ export class SalesController {
         ...(cashDifferences ? { cashDifferences } : {}),
       });
       return { ok: true };
-    });
+      // D-M2 (auditoría 06): la anulación repone inventario y toca cajas y
+      // notas como una venta; con 5 s expiraba bajo carga.
+    }, MONEY_TRANSACTION);
     notify(this.db, "sale_voided", id);
     return voided;
   }
@@ -1424,6 +1522,7 @@ export class SalesController {
         await refreshReceivableAlert(tx, sale.id, actor.branchId);
       }
       await tx.payment.update({ where: { id }, data: { status: "ok" } });
+      await resolveTransferAlert(tx, id);
       if (payment.cashSessionId) {
         const cash = await tx.cashSession.findUnique({
           where: { id: payment.cashSessionId },
@@ -1450,6 +1549,10 @@ export class SalesController {
   // Un abono por transferencia que nunca llegó se rechaza: no descuenta la
   // deuda ni entra a la caja, y deja de bloquear devoluciones y abonos de la
   // venta (R9-dinero-3).
+  // M-3 (auditoría 01): también la transferencia con la que se pagó una
+  // venta. La mercancía ya salió: ese importe pasa a cuenta por cobrar del
+  // cliente (saldo de la venta y alerta «receivable») y deja de contar en el
+  // esperado de la caja; si la caja ya cerró, su cuadre se recalcula.
   @Post("payments/:id/reject")
   @RequireTerminal()
   @Permit("*")
@@ -1465,22 +1568,59 @@ export class SalesController {
           id: parse(uuid, id),
           sale: { branchId: actor.branchId },
           method: "transfer",
-          entryType: "installment",
+          entryType: { in: ["installment", "sale"] },
         },
       });
+      // Mismo orden que verify(): caja, venta, pago.
+      if (found.entryType === "sale" && found.cashSessionId)
+        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${found.cashSessionId}::uuid FOR UPDATE`;
       await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${found.saleId}::uuid FOR UPDATE`;
       await tx.$queryRaw`SELECT id FROM "Payment" WHERE id=${id}::uuid FOR UPDATE`;
       const payment = await tx.payment.findUniqueOrThrow({ where: { id } });
       if (payment.status === "rejected") return { ok: true };
       if (payment.status !== "pending_verification")
-        bad("Sólo se rechaza un abono pendiente de verificar.");
+        bad("Sólo se rechaza una transferencia pendiente de verificar.");
+      let saleDebt: number | undefined;
+      if (payment.entryType === "sale") {
+        const sale = await tx.sale.findUniqueOrThrow({
+          where: { id: payment.saleId },
+        });
+        if (sale.status !== "completed") bad("La venta ya no está completada.");
+        const updated = await tx.sale.update({
+          where: { id: sale.id },
+          data: { creditBalance: { increment: payment.amount } },
+        });
+        saleDebt = Number(updated.creditBalance);
+      }
       await tx.payment.update({
         where: { id },
         data: { status: "rejected" },
       });
+      await resolveTransferAlert(tx, id);
+      if (payment.entryType === "sale") {
+        await refreshReceivableAlert(tx, payment.saleId, actor.branchId);
+        const cash = payment.cashSessionId
+          ? await tx.cashSession.findUnique({
+              where: { id: payment.cashSessionId },
+            })
+          : null;
+        if (cash?.closedAt) {
+          const differences = await refreshClosedCash(tx, cash);
+          await audit(
+            tx,
+            actor,
+            "rejected_after_close",
+            "cash",
+            cash.id,
+            cash,
+            { paymentId: id, ...differences },
+          );
+        }
+      }
       await audit(tx, actor, "reject", "payment", id, payment, {
         status: "rejected",
         reason: data.reason,
+        ...(saleDebt === undefined ? {} : { saleCreditBalance: saleDebt }),
       });
       return { ok: true };
     });
@@ -1796,8 +1936,37 @@ export class SalesController {
       });
       await reverseIncentives(tx, actor, "return", sale.id, row.id, data.items);
       await audit(tx, actor, "return", "sale", sale.id, undefined, row);
+      // B-6 (auditoría 01): reembolsar por un medio que la venta no usó (p. ej.
+      // efectivo de una venta con tarjeta) convierte tarjeta en efectivo. Se
+      // permite a quien gestiona ventas, pero queda una alerta para revisarlo.
+      // La nota de crédito (saldo en tienda) nunca la genera.
+      if (data.refundMethod !== "credit_note" && Number(refundAmount) > 0) {
+        const paid = await tx.payment.findMany({
+          where: { saleId: sale.id, status: { not: "rejected" } },
+          select: { method: true },
+        });
+        if (!paid.some((p) => p.method === data.refundMethod)) {
+          const label: Record<string, string> = {
+            cash: "efectivo",
+            card: "tarjeta",
+            transfer: "transferencia",
+          };
+          await tx.alert.upsert({
+            where: { key: "refund-method:" + row.id },
+            create: {
+              key: "refund-method:" + row.id,
+              type: "refund_method_mismatch",
+              severity: data.refundMethod === "cash" ? "high" : "medium",
+              entityId: sale.id,
+              branchId: actor.branchId,
+              message: `Devolución ${row.number} de ${sale.number}: RD$ ${formatAmount(Number(refundAmount))} reembolsados en ${label[data.refundMethod]}, que no es un medio con el que se cobró la venta · ${actor.name}.`,
+            },
+            update: {},
+          });
+        }
+      }
       return safe(row, actor);
-    });
+    }, MONEY_TRANSACTION);
     if (done?.id) notify(this.db, "return", done.id);
     return done;
   }
@@ -2244,7 +2413,7 @@ export class SalesController {
       doc.fontSize(9).text("RNC: " + business.legalId, { align: "center" });
     doc
       .fontSize(10)
-      .text("Documento interno — no fiscal")
+      .text("DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL")
       .text(sale.number)
       .text(
         "Fecha y hora: " +

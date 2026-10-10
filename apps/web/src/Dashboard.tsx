@@ -67,7 +67,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         : "Valor del stock disponible",
     },
     {
-      label: "Facturas emitidas",
+      label: "Ventas registradas",
       value: (data?.invoices ?? 0).toLocaleString("es-DO"),
       icon: ReceiptText,
       tone: "pink",
@@ -426,7 +426,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           <div className="panel-heading">
             <div>
               <h2>Horas pico</h2>
-              <p>Facturas por día y hora · Santo Domingo</p>
+              <p>Ventas por día y hora · Santo Domingo</p>
             </div>
           </div>
           <div
@@ -460,9 +460,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                       <span
                         key={hour}
                         role="cell"
-                        title={
-                          day + " " + hour + ":00 · " + count + " facturas"
-                        }
+                        title={day + " " + hour + ":00 · " + count + " ventas"}
                         style={{
                           background: `rgba(124,58,237,${count ? 0.15 + (count / max) * 0.65 : 0.04})`,
                         }}
@@ -485,6 +483,10 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             <div>
               <span>Comisiones bancarias</span>
               <strong>{formatMoney(data?.fees ?? 0)}</strong>
+            </div>
+            <div>
+              <span>Mermas y ajustes (a costo)</span>
+              <strong>{formatMoney(data?.inventoryLoss ?? 0)}</strong>
             </div>
             <div>
               <span>Ganancia neta</span>

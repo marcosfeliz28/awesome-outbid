@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import { json as jsonBodyParser } from "express";
 import { createAppModule } from "./app";
 import { validateSecret } from "./security";
+import { trustedProxies } from "./rate-limit";
 import { ApiExceptionFilter } from "./common";
 import { captureApiException, initializeApiMonitoring } from "./monitoring";
 import { PrismaClient } from "@prisma/client";
@@ -33,7 +34,9 @@ async function bootstrap() {
   const app = await NestFactory.create(createAppModule(secret), {
     bodyParser: false,
   });
-  app.getHttpAdapter().getInstance().set("trust proxy", 1);
+  // Sólo se cree la X-Forwarded-For que llega desde la red privada (Nginx);
+  // ver trustedProxies y deploy/render/nginx.conf.template.
+  app.getHttpAdapter().getInstance().set("trust proxy", trustedProxies());
   app.setGlobalPrefix("api");
   app.use(helmet());
   app.use(jsonBodyParser({ limit: "100kb" }));

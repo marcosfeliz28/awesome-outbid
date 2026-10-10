@@ -1,73 +1,86 @@
 # Inventario de datos personales - Nexora POS (BORRADOR)
 
-Elaborado a partir de la lectura del código (rama nexora-cloud). No es asesoría legal; debe revisarlo un abogado. Referencias: `apps/api/prisma/schema.prisma`, `apps/api/src/admin.ts`, `apps/api/src/sales.ts`, `packages/shared/src/index.ts`.
+Elaborado a partir del código de la rama `claude/fix-datos` (sobre `nexora-cloud`), después de las correcciones de las auditorías 03 (privacidad) y 06 (datos). No es asesoría legal: un abogado debe revisarlo y el contador debe fijar los plazos marcados como «por decidir».
 
-## 1. Clientes (modelo Customer)
+Referencias: `apps/api/prisma/schema.prisma`, `apps/api/src/admin.ts` (anonimización, `POST /customers/:id/anonymize`), `apps/api/src/retention.ts` (purga horaria), `apps/api/src/common.ts` (`audit()`), `apps/api/src/notifications.ts` (Telegram).
 
-| Campo | Obligatorio | Para qué se usa | Observación |
-|---|---|---|---|
-| name | Sí (2-120) | Identificar al cliente, ventas a crédito, recibo | Necesario |
-| phone | No | Contacto; se imprime en el recibo PDF y se busca por él | Útil para cobro de crédito/contraentrega |
-| email | No | Ninguna función encontrada (no se envían correos) | SOBRA: se pide y no se usa |
-| legalId (cédula/RNC) | No | Recibo y comprobante fiscal | Necesario solo si pide NCF con RNC; la venta guarda su copia en `Sale.recipientLegalId` |
-| birthday | No (solo API) | Ninguno. La interfaz web no lo pide ni lo muestra | SOBRA: eliminar del esquema y de la API (también deja abierto el tema de menores) |
-| notes | No (hasta 1000) | Texto libre | Riesgo: pueden escribirse datos sensibles; advertir al personal |
-| creditLimit | No (solo gerente) | Crédito | Dato financiero |
-| createdBy, branchId, createdAt | Auto | Trazabilidad | - |
-| Dirección | No existe en el modelo | - | La dirección que se menciona en la lista NO se guarda por cliente (solo la del negocio en Settings) |
+Columnas de las tablas:
 
-Derivados mostrados en pantalla: total gastado, número de compras, última compra (perfil de compra; finalidad interna).
+- **Al anonimizar**: qué hace `POST /customers/:id/anonymize` con ese campo. «Se redacta» significa que el nombre, teléfono, correo, cédula/RNC y notas conocidos del cliente se reemplazan por `[dato anonimizado]`; si el texto contiene el teléfono o la cédula, se reemplaza el texto completo. El resto del texto se conserva.
+- **Retención**: cuánto tiempo se guarda hoy. «Indefinida» quiere decir que el sistema no lo borra solo.
 
-## 2. Empleados (modelo User y relacionados)
+## 1. Clientes y sus ventas
 
-| Dato | Obligatorio | Uso |
-|---|---|---|
-| name, username/usernameKey, email | Sí (email único) | Acceso y atribución de ventas |
-| passwordHash, pinHash | Sí | Autenticación (solo hash; no se guarda en claro) |
-| cashierNumber | No | Número visible en cuadre y reportes |
-| failedAttempts, lockedUntil | Auto | Protección contra fuerza bruta |
-| RefreshToken (hash), AuthSession, AuthAttempt | Auto | Sesión; expira a los 7 días |
-| Terminal (name, secretHash, lastUserId, registerName) | Auto | Equipos autorizados |
-| AuditLog (userId, ip opcional, before/after, terminalId) | Auto | Auditoría de acciones |
-| IP | - | `AuditLog.ip` existe en el esquema pero `audit()` en `common.ts` no la rellena (siempre vacío). La IP sí se usa en memoria para límite de intentos (`rate-limit.ts`, claves auth-account:IP) |
+| Tabla                   | Campo                                                             | Contenido                                                                                   | Al anonimizar                                                                                                                                                | Retención                                                                                                                               |
+| ----------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Customer                | name                                                              | Nombre (obligatorio, 2-120)                                                                 | «Cliente anonimizado xxxxxxxx»                                                                                                                               | Indefinida hasta anonimizar                                                                                                             |
+| Customer                | phone, email, legalId                                             | Teléfono, correo (se usa en `mailto:` del POS), cédula/RNC                                  | Se borran (`NULL`)                                                                                                                                           | Indefinida hasta anonimizar                                                                                                             |
+| Customer                | notes                                                             | Texto libre (hasta 1000)                                                                    | Se vacía                                                                                                                                                     | Indefinida hasta anonimizar                                                                                                             |
+| Customer                | creditLimit, active, anonymizedAt                                 | Crédito, estado                                                                             | Límite 0, inactivo, fecha de anonimización                                                                                                                   | Indefinida                                                                                                                              |
+| Sale                    | recipientLegalId                                                  | RNC/cédula para NCF (B01)                                                                   | Se borra                                                                                                                                                     | Indefinida (conservación fiscal de la venta, 10 años)                                                                                   |
+| Sale                    | notes                                                             | Texto libre                                                                                 | Se vacía                                                                                                                                                     | Indefinida                                                                                                                              |
+| Sale                    | voidedReason, discountReason                                      | Motivo de anulación y de descuento                                                          | Se redactan                                                                                                                                                  | Indefinida                                                                                                                              |
+| Sale                    | customerId, número, fechas, importes, NCF                         | Trazabilidad contable                                                                       | Se conservan (el cliente ya no es identificable)                                                                                                             | Indefinida (fiscal)                                                                                                                     |
+| Payment                 | proofUrl                                                          | Foto del comprobante de pago (data URL base64, ≤ 2 MB): suele mostrar nombre, cuenta o chat | **Se borra**                                                                                                                                                 | Indefinida hasta anonimizar. Plazo contable por decidir con el contador                                                                 |
+| Payment                 | reference                                                         | Referencia de transferencia o voucher (a veces el nombre del remitente)                     | Se redacta                                                                                                                                                   | Indefinida                                                                                                                              |
+| Payment                 | bank, cardBrand, cardType, cardLast4, approvalCode                | Datos de pago (sin PAN ni CVV)                                                              | Se conservan para conciliar con el banco                                                                                                                     | Indefinida                                                                                                                              |
+| SaleReturn              | reason                                                            | Motivo de la devolución                                                                     | Se redacta                                                                                                                                                   | Indefinida                                                                                                                              |
+| InventoryMovement       | reason (refId = venta)                                            | El kardex copia el motivo de la devolución (merma)                                          | Se redacta                                                                                                                                                   | Indefinida                                                                                                                              |
+| CreditNote              | customerId, importes                                              | Nota de crédito                                                                             | Se conserva (sólo se anonimiza sin saldo pendiente)                                                                                                          | Indefinida                                                                                                                              |
+| Quote                   | notes                                                             | Texto libre de la cotización                                                                | Se vacía                                                                                                                                                     | Indefinida                                                                                                                              |
+| Alert                   | message (`receivable:<venta>`)                                    | «Crédito <nombre> <teléfono>»                                                               | Mensaje genérico y resuelta                                                                                                                                  | Indefinida                                                                                                                              |
+| AuditLog                | before/after (entity `customer`)                                  | Ficha del cliente al crearla                                                                | Se reemplaza por `{customerId, anonymized: true}`                                                                                                            | Indefinida                                                                                                                              |
+| AuditLog                | before/after de la venta, sus pagos, devoluciones y venta offline | Copias de la venta y del pago                                                               | Se redactan; las imágenes se reemplazan por `(imagen)`                                                                                                       | Indefinida                                                                                                                              |
+| AuditLog                | before/after con fotos                                            | Verificar/rechazar un abono copiaba la fila con la foto                                     | Desde la migración `202610210003_datos_privacidad` ninguna fila guarda imágenes: `audit()` las reemplaza por `(imagen)` y la migración limpió las existentes | Indefinida                                                                                                                              |
+| NotificationOutbox      | payload.text                                                      | Aviso de Telegram con «Cliente: <nombre>», cajera, motivo                                   | Se reescribe: «Cliente: [dato anonimizado]» y se redacta el resto (pendientes, enviados y fallidos)                                                          | Enviados: 30 días desde el envío. Fallidos: 30 días desde su creación. Pendientes: hasta enviarse                                       |
+| Grupo de Telegram       | mensajes ya entregados                                            | Igual que el aviso                                                                          | **No se pueden borrar desde el sistema** (la pantalla lo advierte)                                                                                           | Lo que conserve Telegram                                                                                                                |
+| IndexedDB del navegador | `cache` (clientes, catálogo), `sales` (ventas offline pendientes) | Copia local                                                                                 | No se toca (otros equipos)                                                                                                                                   | `cache`: se borra al cerrar sesión. `sales`: hasta sincronizar                                                                          |
+| Respaldos               | Volcado completo                                                  | Todo lo anterior                                                                            | No se toca                                                                                                                                                   | Local 30 días; S3 según su ciclo de vida. Al restaurar hay que volver a aplicar las anonimizaciones (`PROCEDIMIENTO_DERECHOS_DATOS.md`) |
 
-## 3. Ventas y pagos
+Derivados en pantalla (no se guardan): total gastado, número de compras y última compra por cliente.
 
-- Sale: customerId, sellerId, `recipientLegalId` (RNC/cédula del comprador para NCF), ncf, `notes` (texto libre), montos. Conservación fiscal obligatoria.
-- Payment (SENSIBLE): `cardLast4` (últimos 4), `cardBrand`, `cardType`, `approvalCode`, `bank`, `reference` (transferencias), **`proofUrl`**: foto de comprobante almacenada como `data:image/...;base64` dentro de la fila (máx. 2 MB; solo para abonos `installment`). No hay PAN completo ni CVV (correcto).
-  - `cardLast4` y `approvalCode` son obligatorios para pagos con tarjeta (`sales.ts` líneas ~450 y ~1804). Se justifica para conciliar con el cierre del banco; los últimos 4 no son dato de pago completo, pero sí identificador.
-- SaleReturn, CreditNote, Quote (customerId, notes libres), CashSession/CashMovement (userId, notas).
-- Proveedores (Supplier: name, legalId, phone, email): son datos de personas jurídicas o físicas comerciantes; mismas reglas de conservación contable.
-- InvoiceAttachment (bytes del documento del proveedor) y comprobantes de gasto (`Expense.receiptUrl`): pueden contener datos personales de terceros.
+## 2. Empleados
 
-## 4. Datos que sobran o conviene reducir
+| Tabla                               | Campo                                                                     | Contenido                                                                | Retención                                                                                                            |
+| ----------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| User                                | name, username, email, cashierNumber                                      | Acceso y atribución de ventas, cuadres y reportes                        | Indefinida (se desactiva, no se borra)                                                                               |
+| User                                | passwordHash, pinHash                                                     | Hash bcrypt (no reversible)                                              | Mientras exista el usuario                                                                                           |
+| RefreshToken                        | hash, expiresAt                                                           | Sesión de 7 días                                                         | Se purgan 24 h después de vencer (`retention.ts`)                                                                    |
+| AuthSession, Terminal               | Actividad, equipo, último usuario                                         | Sesión y equipos autorizados                                             | Indefinida                                                                                                           |
+| AuthAttempt                         | key (`login:<usuario o hash>:<versión>:<IP>`), fallos, bloqueo, updatedAt | Freno de fuerza bruta; **la clave lleva la IP**                          | `login:missing:%` (usuario inexistente): 48 h desde el último intento. Resto: 30 días. Nunca mientras siga bloqueado |
+| AuditLog                            | userId, terminalId, before/after                                          | Auditoría de acciones. `AuditLog.ip` existe pero `audit()` no la rellena | Indefinida (archivar requiere decisión del contador)                                                                 |
+| IncentiveEntry, IncentiveSettlement | userName, importes                                                        | Incentivos por venta y cuadre mensual                                    | Indefinida                                                                                                           |
+| NotificationOutbox / Telegram       | Cajera, incentivo, faltante o sobrante de caja                            | Avisos a la administración                                               | Igual que la tabla de la sección 1                                                                                   |
 
-1. `Customer.birthday`: sin uso. Quitar.
-2. `Customer.email`: sin uso funcional. Quitar o dejarlo oculto hasta que exista una función real.
-3. `AuditLog.ip`: columna sin uso (decidir: no registrar, o registrar con plazo corto).
-4. `notes` libres (Customer, Sale, Quote): limitar y avisar al usuario de no escribir datos sensibles.
-5. `proofUrl` base64 en base de datos: aumenta el tamaño de respaldos y su exposición; mantener solo mientras haya deuda y fiscalmente necesario, definir plazo.
+## 3. Proveedores y gastos
 
-## 5. Dónde viajan o se copian los datos
+| Tabla             | Campo                       | Contenido                                                                                                                | Retención                                                                                                                                                            |
+| ----------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supplier          | name, legalId, phone, email | Pueden ser personas físicas                                                                                              | Indefinida                                                                                                                                                           |
+| InvoiceAttachment | data                        | Factura del proveedor (foto/PDF/Excel); con `ANTHROPIC_API_KEY` la foto o PDF se envía a Anthropic (EE. UU.) para leerla | Borradores sin confirmar: 7 días (se borran al subir otra factura). Facturas de recepciones: indefinida; la base impide borrarlas (`GoodsReceipt_attachmentId_fkey`) |
+| Expense           | description, receiptUrl     | Gastos                                                                                                                   | Indefinida                                                                                                                                                           |
 
-| Lugar | Qué contiene | Riesgo / hallazgo |
-|---|---|---|
-| Audit log (`audit()` en `common.ts`) | Crear cliente guarda la fila completa `after: row` (nombre, teléfono, correo, RNC, cumpleaños, notas) en `AuditLog.after` (admin.ts:160). Editar cliente NO se audita | Copia permanente de PII; una anonimización debe depurar también `AuditLog.before/after` de entity=customer. Falta auditar edición |
-| Visualización de audit-log | `GET /audit-log` (permiso `*`, últimas 300 filas) muestra before/after | Solo administración |
-| Recibo PDF `sales/:id/receipt.pdf` | Nombre, RNC/cédula, teléfono del cliente; nombre del cajero | Descarga de PDF; no se guarda en servidor |
-| Excel | Solo plantilla de productos y reporte de compras (proveedores). Reporte de clientes (`reports.ts:678`) usa nombre | No hay exportación masiva de clientes encontrada |
-| Navegador (Dexie `fitstore-pos-v1`) | Tabla `cache` (catálogo por sucursal, sesión: usuario, rol, vencimiento), `sales` (ventas pendientes offline con `input.customerId`, pagos con cardLast4/approvalCode, y `receipt`), `merchandise` | Al cerrar sesión (`endSession` en `api.ts:266`) solo se borra la clave `session`; el resto (catálogo, ventas pendientes y recibos) permanece en el equipo. Si no hay red, solo se vence la sesión. Para una caja compartida es un dato personal residual |
-| Respaldos | `scripts/backup.mjs` (pg_dump, retención 30 días), respaldo cloud a S3 con SSE-S3 y ciclo de vida 30 días, exports de Render 7 días | Los respaldos conservan clientes ya anonimizados hasta que expiren: informarlo en el procedimiento |
-| Sentry servidor | `monitoring.ts`: elimina request, user, extra, contexts, breadcrumbs; mensaje genérico; sin trazas | Bien (minimización). Solo activo si hay `SENTRY_DSN` |
-| Sentry navegador | `apps/web/src/monitoring.ts`: sin DSN fijo; apagado por defecto y solo activo si la web se compila con `VITE_SENTRY_DSN` (G8). Si se activa: borra user, cookies, headers, data; replay con maskAllText/maskAllInputs/blockAllMedia, 5% en errores, trazas 10% en producción | Envía a un tercero (Sentry, EE. UU.) IP del navegador, URL saneada, navegador/SO. Declarar en la política. Recomendado: revisar si el replay es necesario |
-| Logs | `console.error` de excepciones 500 (`common.ts:433`) | Podrían incluir texto del error; revisar que no imprima cuerpo de solicitudes |
-| Realtime events (`RealtimeEvent`) | Eventos por sucursal | No se confirmó que lleven datos personales; verificar |
+## 4. Tablas técnicas
 
-## 6. Datos sensibles guardados (resumen)
+| Tabla                | Contenido                                               | Datos personales      | Retención                                                                           |
+| -------------------- | ------------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| RealtimeEvent        | Cambios de stock y alertas para las pantallas           | No (ids y cantidades) | 48 h (`retention.ts`)                                                               |
+| MerchandiseOperation | Resultado de cada operación de mercancía (idempotencia) | No directamente       | Indefinida (pendiente de decidir; es la clave de reintento de la mercancía offline) |
 
-- Fotos de comprobantes (bases64 en `Payment.proofUrl`).
-- Últimos 4 dígitos de tarjeta y código de aprobación.
-- RNC/cédula (identificador nacional) de clientes y en ventas con NCF.
-- Hashes de contraseña y PIN (no reversibles).
+## 5. Dónde viajan los datos
 
-No se guardan: números completos de tarjeta, CVV, huellas, datos de salud ni de menores.
+| Destino                    | Qué recibe                                                                                 | Observación                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| Render (EE. UU., Virginia) | Toda la base                                                                               | Alojamiento de la API, la web y PostgreSQL                                                  |
+| Telegram (opcional)        | Avisos de venta, anulación, devolución, cobro y cierre: nombre del cliente, cajera, montos | Sólo si hay `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`. Cédula, teléfono y correo se filtran |
+| Sentry (opcional)          | Errores depurados                                                                          | Sólo con DSN configurado                                                                    |
+| Anthropic (opcional)       | Foto o PDF de la factura del proveedor                                                     | Sólo con `ANTHROPIC_API_KEY`                                                                |
+| WhatsApp / correo          | Recibo que la cajera comparte a mano                                                       | Acción manual (`wa.me`, `mailto:`)                                                          |
+| S3 (opcional)              | Respaldos                                                                                  | Cifrado del servidor (SSE)                                                                  |
+
+## 6. Datos que conviene reducir (pendiente de decisión)
+
+1. `Payment.proofUrl`: plazo contable para borrar la foto de pagos ya saldados aunque no se anonimice al cliente; además, guardarla fuera de la base. La web no reduce la foto antes de subirla (no hay librería de imágenes en el proyecto; ver el informe de la rama).
+2. Notas libres (`Customer.notes`, `Sale.notes`, `Quote.notes`): advertir en pantalla que no se escriban datos sensibles.
+3. `AuditLog`: plazo de archivo con el contador.
+4. Clientes inactivos: plazo para anonimizarlos sin solicitud (la política dice `[N] años`).

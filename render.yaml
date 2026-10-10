@@ -1,5 +1,13 @@
 # Blueprint del piloto Nexora. Este archivo describe recursos, pero no crea
 # nada por sí solo: Render sólo lo aplica cuando una persona conecta el repo.
+#
+# Debe reflejar lo que corre en Render (comprobado el 10-oct-2026): web
+# 0.5c-512mb, API 1c-2g y PostgreSQL 0.5c-1g con 5 GB de disco. Si el
+# Blueprint se sincroniza con valores menores, Render bajaría los planes
+# (reinicio en horario de tienda) e intentaría encoger el disco, cosa que no
+# admite. Regla: los cambios de plan se hacen PRIMERO aquí (y en
+# tests/cloud-deploy.test.ts, que impide bajar planes por accidente) y después
+# en el panel; nunca sólo en el panel. Ver docs/DEPLOY-RENDER.md.
 services:
   - type: web
     name: nexora-pos-web
@@ -31,7 +39,7 @@ services:
     name: nexora-pos-api
     runtime: docker
     region: virginia
-    plan: 0.5c-512mb
+    plan: 1c-2g
     numInstances: 1
     dockerContext: .
     dockerfilePath: ./deploy/render/Dockerfile.api
@@ -67,11 +75,15 @@ services:
 databases:
   - name: nexora-pos-db
     region: virginia
-    plan: 0.1c-256mb
+    plan: 0.5c-1g
     postgresMajorVersion: "17"
-    databaseName: fitstore
+    # Nombre real de la base en Render (no se puede cambiar tras crearla).
+    databaseName: fitstore_bfjz
     user: fitstore
-    diskSizeGB: 1
+    # El disco de PostgreSQL en Render sólo puede crecer: nunca bajar de 5.
+    diskSizeGB: 5
+    # Apagado como en Render. Activarlo es decisión de la dueña (costo); ver
+    # docs/MONITOREO.md para vigilar el uso de disco mientras tanto.
     storageAutoscalingEnabled: false
     connectionPool: none
     ipAllowList: []

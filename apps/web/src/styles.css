@@ -254,6 +254,26 @@ a:focus-visible {
 .about p {
   margin: 0 0 12px;
 }
+.about h3 {
+  margin: 4px 0 6px;
+  font-size: 14px;
+}
+/* 03-A1: aviso corto de privacidad al registrar un cliente. */
+.privacy-notice {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.privacy-notice a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
 .about-fiscal {
   padding: 10px 12px;
   border-radius: 9px;
@@ -4542,6 +4562,17 @@ td strong {
     bottom: auto;
   }
 }
+/* 05-M2: un aviso informativo junto a un error de la caja va encima de él,
+   sin taparlo. */
+.toast.toast-stacked {
+  bottom: 100px;
+}
+@media (max-width: 768px) {
+  .toast.toast-stacked {
+    top: calc(144px + env(safe-area-inset-top));
+    bottom: auto;
+  }
+}
 /* Celular: los botones de escaneo se ajustan al ancho sin desbordar la tarjeta. */
 .goods-scan > *,
 .goods-grid > *,
@@ -4660,6 +4691,13 @@ td strong {
 }
 .tp-center {
   text-align: center;
+}
+/* Pie del recibo: devoluciones y privacidad, en letra algo menor. */
+.thermal-print .tp-small,
+.print-preview .tp-small {
+  font-size: 0.85em;
+  line-height: 1.25;
+  margin: 3px 0;
 }
 .tp-item small {
   font-size: 0.8em;
@@ -5214,4 +5252,228 @@ td strong {
   display: flex;
   gap: 14px;
   white-space: nowrap;
+}
+
+/* 05-A5: carrito legible en el monitor típico de caja (1366×768) y en el
+   celular. Líneas compactas en rejilla (imagen y nombre arriba, cantidad y
+   descuentos en una sola fila de 44 px), la última agregada se trae a la
+   vista dentro de la lista y se resalta un instante. */
+.cart-items {
+  position: relative;
+  min-height: 0;
+}
+.cart-item {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) minmax(0, max-content) auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+  padding: 6px 0;
+}
+.cart-item > img {
+  grid-column: 1;
+  grid-row: 1;
+  width: 26px;
+  height: 26px;
+  padding: 2px;
+  align-self: center;
+}
+.cart-item-detail {
+  display: contents;
+}
+/* Nombre y variante en la misma fila: la variante (talla, color, sabor)
+   nunca se corta antes que el nombre. */
+.cart-item-detail strong {
+  grid-column: 2;
+  grid-row: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.35;
+}
+.cart-item-detail small {
+  grid-column: 3;
+  grid-row: 1;
+  display: block;
+  max-width: 11em;
+  margin-top: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cart-item-controls {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-top: 0;
+}
+.cart-line-total {
+  grid-column: 4;
+  grid-row: 1;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.cart-line-total button {
+  min-width: 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cart-item.just-added.flash-0 {
+  animation: cart-flash-a 1.2s ease-out;
+}
+.cart-item.just-added.flash-1 {
+  animation: cart-flash-b 1.2s ease-out;
+}
+@keyframes cart-flash-a {
+  from {
+    background: var(--primary-soft);
+  }
+}
+@keyframes cart-flash-b {
+  from {
+    background: var(--primary-soft);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cart-item.just-added {
+    animation: none !important;
+  }
+}
+/* Pantallas de poca altura (1366×768, 1280×800): menos aire alrededor para
+   que se vean varias líneas completas sin ocultar el total ni «Cobrar». */
+@media (min-width: 901px) and (max-height: 860px) {
+  .cart-heading {
+    padding: 12px 18px;
+  }
+  .customer-selector {
+    margin: 8px 18px;
+    padding: 6px 10px !important;
+  }
+  .wholesale-toggle {
+    margin: 0 18px 6px;
+  }
+  .cart-items {
+    padding: 0 18px;
+  }
+  .cart-summary {
+    padding: 10px 18px 8px;
+  }
+  .cart-summary > div:not(.cart-bottom-actions) {
+    margin-bottom: 4px;
+  }
+  .cart-summary > .cart-total {
+    padding-top: 6px;
+    margin-top: 6px;
+    margin-bottom: 8px !important;
+  }
+  .cart-summary > .cart-total strong {
+    font-size: 28px;
+  }
+  .charge-button {
+    min-height: 48px;
+  }
+  .cart-bottom-actions {
+    margin-top: 4px;
+  }
+  .cart-security {
+    display: none;
+  }
+}
+/* Celular y tableta: barra fija con el carrito y el cobro. */
+.pos-mobile-bar {
+  display: none;
+}
+@media (max-width: 900px) {
+  .pos-mobile-bar {
+    display: flex;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 70;
+    gap: 8px;
+    max-width: 520px;
+    margin-left: auto;
+  }
+  .pos-mobile-bar .pos-mobile-charge {
+    position: static;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+  /* Dos clases: button:not(.button) quitaría el fondo y el borde. */
+  .pos-mobile-bar .pos-mobile-cart {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 72px;
+    min-height: 56px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 750;
+    box-shadow: 0 8px 24px #0003;
+  }
+  .cart-items {
+    max-height: 60vh;
+  }
+}
+/* B10: en pantallas táctiles no hay teclas de función. */
+@media (pointer: coarse) {
+  .charge-button kbd,
+  .pos-search kbd {
+    display: none;
+  }
+}
+/* 05-A2: ventas sin conexión en conflicto: qué hacer y quién lo resuelve. */
+.pending-sale-help {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+  max-width: 42ch;
+}
+.discard-lines {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.form-hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.close-pending-warning {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--warning-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+/* 05-M7: acción dentro de un aviso («Deshacer»). */
+.toast button.toast-action {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+/* 05-M4: buscador del selector de cliente. */
+.customer-search {
+  margin-bottom: 8px;
 }

@@ -34,6 +34,32 @@ import {
 const CASH_DIFFERENCE_PRIVATE_MESSAGE =
   "Se detectó una diferencia en una caja cerrada. Administración debe revisarla.";
 
+// M-1 (auditoría 01): alertas que registran un hecho (una caja que cerró con
+// diferencia, un descuento, un vale, una transferencia sin verificar, una
+// merma, un reembolso en otra forma de pago, un costo cambiado a mano). La
+// evaluación periódica no las da por resueltas aunque el hecho salga de su
+// ventana (30 cierres, ventas de hoy): sólo una persona las resuelve, o su
+// propio flujo (verificar la transferencia, cobrar la cuenta, resolver el
+// conflicto offline).
+export const MANUAL_ALERT_TYPES = [
+  "offline_conflict",
+  "receivable",
+  "cash_difference",
+  "unusual_discount",
+  "cash_voucher",
+  "transfer_pending",
+  "inventory_loss",
+  "refund_method_mismatch",
+  "cost_change",
+];
+/** Mensaje de la alerta de diferencia de caja (cierre y evaluación). */
+export const cashDifferenceMessage = (s: {
+  differenceCash: unknown;
+  differenceCard: unknown;
+  differenceTransfer: unknown;
+}) =>
+  `Diferencias de caja: efectivo RD$ ${s.differenceCash ?? 0}, tarjeta RD$ ${s.differenceCard ?? 0}, transferencia RD$ ${s.differenceTransfer ?? 0}`;
+
 export function alertForActor<T extends { type?: string; message?: string }>(
   alert: T,
   actor: Actor,
@@ -213,10 +239,16 @@ export class AlertEngine {
         );
     }
     for (const s of cash) {
-      const difference = Math.abs(
-        Number(
-          s.differenceCash ?? Number(s.countedCash) - Number(s.expectedCash),
+      // La misma regla y el mismo mensaje que el cierre (cash.ts): así una
+      // alerta revisada no se reabre sólo porque cambió el texto.
+      const difference = Math.max(
+        Math.abs(
+          Number(
+            s.differenceCash ?? Number(s.countedCash) - Number(s.expectedCash),
+          ),
         ),
+        Math.abs(Number(s.differenceCard ?? 0)),
+        Math.abs(Number(s.differenceTransfer ?? 0)),
       );
       if (difference > (config?.cashDifferenceLimit ?? 100))
         add(
@@ -224,7 +256,7 @@ export class AlertEngine {
           "cash_difference",
           "high",
           s.id,
-          `Caja ${s.registerId}: diferencia de RD$ ${difference.toFixed(2)}.`,
+          cashDifferenceMessage(s),
         );
     }
     const today = businessDate();
@@ -358,12 +390,13 @@ export class AlertEngine {
           v.id,
           v.product.name + ": stock negativo. Revisa el inventario.",
         );
-    // Resolver sólo reglas evaluadas; los conflictos offline y las cuentas por
-    // cobrar permanecen hasta que su propio flujo las cierre.
+    // Resolver sólo reglas de estado (stock, vencimiento, margen…). Las de
+    // hechos (MANUAL_ALERT_TYPES) permanecen hasta que una persona o su
+    // propio flujo las cierre (M-1).
     await this.db.alert.updateMany({
       where: {
         branchId,
-        type: { notIn: ["offline_conflict", "receivable"] },
+        type: { notIn: MANUAL_ALERT_TYPES },
         key: { notIn: events.map((e) => e.key) },
         status: { not: "resolved" },
       },
@@ -380,6 +413,13 @@ export class AlertEngine {
         existing.severity === event.severity &&
         existing.type === event.type &&
         existing.entityId === event.entityId
+      )
+        continue;
+      // Un hecho que una persona ya revisó no se reabre mientras no cambie.
+      if (
+        existing?.status === "resolved" &&
+        MANUAL_ALERT_TYPES.includes(event.type) &&
+        existing.message === event.message
       )
         continue;
       await this.db.alert.upsert({

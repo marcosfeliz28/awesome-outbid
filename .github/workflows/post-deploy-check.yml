@@ -1,0 +1,29 @@
+name: Comprobación posterior al despliegue
+# A4: después de desplegar en Render (a mano, desde el panel), abrir Actions ›
+# «Comprobación posterior al despliegue» › Run workflow. Sólo hace GET a
+# /api/health de la web pública (web, red privada, API y base) y falla si la
+# base no responde «ok». No despliega ni cambia nada en Render.
+on:
+  workflow_dispatch:
+    inputs:
+      web_url:
+        description: URL pública de la web
+        required: true
+        default: https://nexora-pos-web.onrender.com
+permissions:
+  contents: read
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - name: /api/health a través de la web
+        env:
+          NEXORA_WEB_URL: ${{ inputs.web_url }}
+        run: node deploy/render/post-deploy-check.mjs

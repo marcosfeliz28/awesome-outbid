@@ -1,4 +1,11 @@
-import { d, quantity, z, stockQty } from "@fitstore/shared";
+import {
+  d,
+  formatAmount,
+  money,
+  quantity,
+  z,
+  stockQty,
+} from "@fitstore/shared";
 import {
   Body,
   Controller,
@@ -501,6 +508,48 @@ export class CatalogController {
       ]);
       const row = await tx.variant.update({ where: { id }, data });
       await audit(tx, actor, "price_change", "variant", id, before, row);
+      // B-7 (auditoría 01): el costo promedio cambiado a mano, con existencias,
+      // revalúa el inventario y la utilidad de las ventas siguientes sin
+      // movimiento de inventario. Se permite (corrige errores de carga), pero
+      // queda como «cost_change» en la bitácora y en una alerta alta.
+      if (
+        data.costAvg !== undefined &&
+        !d(data.costAvg).eq(before.costAvg) &&
+        Number(before.stock) > 0
+      ) {
+        const impact = money(
+          d(before.stock).times(d(data.costAvg).minus(before.costAvg)),
+        );
+        await audit(
+          tx,
+          actor,
+          "cost_change",
+          "variant",
+          id,
+          { costAvg: Number(before.costAvg), stock: Number(before.stock) },
+          { costAvg: Number(row.costAvg), inventoryImpact: impact },
+        );
+        const product = await tx.product.findUnique({
+          where: { id: before.productId },
+          select: { name: true },
+        });
+        const message =
+          `${product?.name ?? before.sku}: costo promedio cambiado a mano de RD$ ${formatAmount(Number(before.costAvg))} ` +
+          `a RD$ ${formatAmount(Number(row.costAvg))} con ${Number(before.stock)} en existencia ` +
+          `(valor del inventario ${impact < 0 ? "−" : "+"}RD$ ${formatAmount(Math.abs(impact))}) · ${actor.name}.`;
+        await tx.alert.upsert({
+          where: { key: "cost-change:" + id },
+          create: {
+            key: "cost-change:" + id,
+            type: "cost_change",
+            severity: "high",
+            entityId: id,
+            branchId: actor.branchId,
+            message,
+          },
+          update: { message, status: "new" },
+        });
+      }
       return safe(row, actor);
     });
     return write.catch((error) =>

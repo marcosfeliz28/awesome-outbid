@@ -22,6 +22,7 @@ import {
   formatAmount,
   formatMoney,
   moneyAmount,
+  businessDate,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -39,24 +40,34 @@ import {
   denied,
   canViewCashExpected,
 } from "./common";
-import { cashLock, terminalName } from "./sales";
+import { cashLock, terminalName, terminalNames } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
-import { verifyPinAttempt } from "./security";
+import { managerPinApproval, verifyPinAttempt } from "./security";
 import { notify } from "./notifications";
+import { cashDifferenceMessage } from "./alerts";
+// Aparte del import anterior de ./sales para no chocar al fusionar ramas.
+import { MONEY_TRANSACTION } from "./sales";
 
 export async function cashExpected(db: any, session: any) {
+  // Sólo las columnas que se suman (D-M6): sin select, Prisma traía también
+  // Payment.proofUrl, la foto base64 de cada abono (26 MB con 20 fotos),
+  // dentro de transacciones que retienen el bloqueo de la caja.
   const payments = await db.payment.findMany({
     where: {
       cashSessionId: session.id,
       sale: { status: "completed" },
+      // M-3: una transferencia de venta rechazada no entró (pasó a cobrar).
+      status: { not: "rejected" },
       OR: [{ entryType: { not: "installment" } }, { status: "ok" }],
     },
+    select: { method: true, amount: true },
   });
   const movements = await db.cashMovement.findMany({
     where: { sessionId: session.id },
   });
   const returns = await db.saleReturn.findMany({
     where: { cashSessionId: session.id },
+    select: { refundMethod: true, refundAmount: true },
   });
   const expected = {
     cash: d(session.openingAmount),
@@ -83,6 +94,65 @@ export async function cashExpected(db: any, session: any) {
     transfer: money(expected.transfer),
     movements,
   };
+}
+// Esperado de varias cajas a la vez (GET /cash-sessions): una consulta
+// agrupada por tabla en vez de tres por caja; con 100 cajas en paralelo el
+// pool de Prisma se agotaba (P2024). Misma fórmula que cashExpected, que
+// sigue siendo la del cierre y los movimientos; tests/perf-api.test.ts
+// comprueba que ambas coinciden.
+export async function cashExpectedMany(db: any, sessions: any[]) {
+  const result = new Map<string, Awaited<ReturnType<typeof cashExpected>>>();
+  const ids = sessions.map((s) => s.id);
+  if (!ids.length) return result;
+  const payments = await db.payment.groupBy({
+    by: ["cashSessionId", "method"],
+    where: {
+      cashSessionId: { in: ids },
+      sale: { status: "completed" },
+      // M-3: igual que cashExpected, una transferencia de venta rechazada no
+      // entró en la caja (pasó a cobrar) y no cuenta en la lista de cajas.
+      status: { not: "rejected" },
+      OR: [{ entryType: { not: "installment" } }, { status: "ok" }],
+    },
+    _sum: { amount: true },
+  });
+  const movements = await db.cashMovement.findMany({
+    where: { sessionId: { in: ids } },
+  });
+  const returns = await db.saleReturn.groupBy({
+    by: ["cashSessionId", "refundMethod"],
+    where: { cashSessionId: { in: ids } },
+    _sum: { refundAmount: true },
+  });
+  for (const session of sessions) {
+    const expected = {
+      cash: d(session.openingAmount),
+      card: d(0),
+      transfer: d(0),
+    };
+    for (const p of payments)
+      if (p.cashSessionId === session.id && p.method in expected)
+        expected[p.method as keyof typeof expected] = expected[
+          p.method as keyof typeof expected
+        ].plus(p._sum.amount ?? 0);
+    const own = movements.filter((m: any) => m.sessionId === session.id);
+    for (const m of own)
+      expected.cash = expected.cash.plus(
+        m.type === "in" ? m.amount : d(m.amount).negated(),
+      );
+    for (const r of returns)
+      if (r.cashSessionId === session.id && r.refundMethod in expected)
+        expected[r.refundMethod as keyof typeof expected] = expected[
+          r.refundMethod as keyof typeof expected
+        ].minus(r._sum.refundAmount ?? 0);
+    result.set(session.id, {
+      cash: money(expected.cash),
+      card: money(expected.card),
+      transfer: money(expected.transfer),
+      movements: own,
+    });
+  }
+  return result;
 }
 // Diferencias de una caja cerrada: contado (+ vales) contra lo esperado.
 function closeDifferences(session: any, expected: any) {
@@ -191,7 +261,10 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
     salesByMethod[method] = sumOf(
       completed.flatMap((s: any) =>
         s.payments.filter(
-          (p: any) => p.entryType === "sale" && p.method === method,
+          (p: any) =>
+            p.entryType === "sale" &&
+            p.method === method &&
+            p.status !== "rejected",
         ),
       ),
     );
@@ -429,6 +502,8 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   };
 }
 const UUID_RE = /^[0-9a-f-]{36}$/i;
+// Cajas cerradas que lista GET /cash-sessions (además de todas las abiertas).
+const CLOSED_SESSIONS_LIMIT = 100;
 @Controller("cash-sessions")
 export class CashController {
   constructor(@Inject(Database) private db: Database) {}
@@ -436,14 +511,32 @@ export class CashController {
   @Permit("cash:write")
   async sessions(@CurrentUser() actor: Actor) {
     const showExpected = canViewCashExpected(actor);
-    const sessions = await this.db.cashSession.findMany({
-      where: {
-        branchId: actor.branchId,
-        ...(can(actor.permissions, "sale:manage") ? {} : { userId: actor.id }),
-      },
+    const scope = {
+      branchId: actor.branchId,
+      ...(can(actor.permissions, "sale:manage") ? {} : { userId: actor.id }),
+    };
+    // Todas las cajas abiertas (aunque sean antiguas) y las cerradas más
+    // recientes; el esperado se calcula para todas con consultas agrupadas.
+    const open = await this.db.cashSession.findMany({
+      where: { ...scope, closedAt: null },
       orderBy: { openedAt: "desc" },
-      take: 100,
     });
+    const closed = await this.db.cashSession.findMany({
+      where: { ...scope, closedAt: { not: null } },
+      orderBy: { openedAt: "desc" },
+      take: CLOSED_SESSIONS_LIMIT,
+    });
+    const sessions = [...open, ...closed].sort(
+      (a, b) => b.openedAt.getTime() - a.openedAt.getTime(),
+    );
+    const registerName = await terminalNames(
+      this.db,
+      sessions.map((s) => s.registerId),
+    );
+    // La cajera nunca recibe el esperado (cierre ciego): ni se calcula.
+    const expectedBySession = showExpected
+      ? await cashExpectedMany(this.db, sessions)
+      : new Map();
     return Promise.all(
       sessions.map(async (s) => {
         const {
@@ -458,7 +551,7 @@ export class CashController {
         } = s;
         return {
           ...visible,
-          registerName: await terminalName(this.db, s.registerId),
+          registerName: registerName(s.registerId),
           ...(showExpected
             ? {
                 expectedCash,
@@ -468,7 +561,7 @@ export class CashController {
                 differenceCash,
                 differenceCard,
                 differenceTransfer,
-                expected: await cashExpected(this.db, s),
+                expected: expectedBySession.get(s.id),
                 differences: s.closedAt
                   ? {
                       cash: Number(s.differenceCash),
@@ -543,6 +636,7 @@ export class CashController {
                 return manager.id;
             return null;
           },
+          { pin: managerPin, actor },
         );
       }
       shortfall = {
@@ -635,8 +729,10 @@ export class CashController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const { managerPin, ...data } = parse(
+    const { managerPin, operationId, ...data } = parse(
       z.object({
+        // D-M4 (auditoría 06): clave que la web genera una vez por formulario.
+        operationId: uuid.optional(),
         type: z.enum(["in", "out"]),
         // 2 decimales y un tope (D-04/D-08): 0.004 o 1e15 son un 400, no un
         // movimiento de 0.00 ni un error 500 de la base.
@@ -650,7 +746,7 @@ export class CashController {
       body,
     );
     // Salidas (retiros y vales) de quien no gestiona ventas (D-04): si las
-    // salidas del turno superan cashMovementApprovalLimit (RD$ 1,000 por
+    // salidas del día superan cashMovementApprovalLimit (RD$ 1,000 por
     // defecto) hace falta el PIN de un gerente. Se suman todas las salidas de
     // la caja para que partir un retiro en varios vales no evite el control.
     const needsApproval =
@@ -671,11 +767,30 @@ export class CashController {
             if (await compare(managerPin, manager.pinHash)) return manager.id;
           return null;
         },
+        { pin: managerPin, actor },
       );
     }
     return this.db.$transaction(async (tx) => {
       const session = await cashLock(tx, actor, parse(uuid, id));
       // El bloqueo de la sesión serializa movimientos y ventas concurrentes.
+      // D-M4: un reintento con la misma clave devuelve el mismo movimiento
+      // (antes que el tope y el saldo, que ya lo incluyen).
+      if (operationId) {
+        const existing = await tx.cashMovement.findUnique({
+          where: { operationId },
+        });
+        if (existing) {
+          if (
+            existing.sessionId !== id ||
+            existing.userId !== actor.id ||
+            existing.type !== data.type ||
+            !d(existing.amount).eq(data.amount) ||
+            existing.reason !== data.reason
+          )
+            bad("La clave de la operación ya corresponde a otro movimiento.");
+          return existing;
+        }
+      }
       if (needsApproval && !approvedBy) {
         const settings = await tx.settings.findUnique({
           where: { id: actor.branchId },
@@ -683,8 +798,18 @@ export class CashController {
         const limit = Number(
           (settings?.data as any)?.cashMovementApprovalLimit ?? 1000,
         );
+        // M-4 (auditoría 01): el tope es por usuaria y día de negocio, no
+        // por turno; cerrar y reabrir ya no lo reinicia. Se suman las salidas
+        // de este turno (aunque empezara ayer) y las de la usuaria hoy.
+        const dayStart = new Date(businessDate() + "T00:00:00-04:00");
         const outs = await tx.cashMovement.aggregate({
-          where: { sessionId: session.id, type: "out" },
+          where: {
+            type: "out",
+            OR: [
+              { sessionId: session.id },
+              { userId: actor.id, createdAt: { gte: dayStart } },
+            ],
+          },
           _sum: { amount: true },
         });
         if (
@@ -705,7 +830,12 @@ export class CashController {
           bad("No hay suficiente efectivo en caja.");
       }
       const row = await tx.cashMovement.create({
-        data: { ...data, sessionId: id, userId: actor.id },
+        data: {
+          ...data,
+          sessionId: id,
+          userId: actor.id,
+          ...(operationId ? { operationId } : {}),
+        },
       });
       await audit(tx, actor, "movement", "cash", id, undefined, {
         ...row,
@@ -755,6 +885,7 @@ export class CashController {
               return manager.id;
           return null;
         },
+        { pin: data.managerPin, actor },
       );
     }
     return this.db.$transaction(async (tx) => {
@@ -817,6 +948,29 @@ export class CashController {
     } catch (e: any) {
       bad(e.message);
     }
+    // A-1 (auditoría 01): un «Vale de caja» compensa efectivo que no está en
+    // la gaveta. Sin control, una cajera se llevaba el turno entero y cerraba
+    // en 0. Todo vale exige una nota; el de quien no gestiona ventas, además,
+    // el PIN de un gerente (como las salidas sobre el tope, D-04). Queda en la
+    // bitácora y como alerta alta que sólo una persona resuelve.
+    let voucherApprovedBy: string | null = null;
+    if (d(input.vouchers).gt(0)) {
+      if (!input.notes.trim())
+        bad(
+          "Explica en las notas del cierre qué comprobantes forman el vale de caja.",
+        );
+      if (!can(actor.permissions, "sale:manage")) {
+        if (!input.managerPin)
+          bad(
+            "Cerrar con un vale de caja requiere el PIN de un gerente. Si fue una salida de efectivo, regístrala en «Salida» antes de cerrar.",
+          );
+        voucherApprovedBy = await managerPinApproval(
+          this.db,
+          actor,
+          input.managerPin!,
+        );
+      }
+    }
     const closed = await this.db.$transaction(async (tx) => {
       const session = await cashLock(
         tx,
@@ -875,8 +1029,43 @@ export class CashController {
         },
       });
       await audit(tx, actor, "close", "cash", id, session, row);
-      if (row.differenceCash || row.differenceCard || row.differenceTransfer)
+      // D-10: Prisma.Decimal(0) es un objeto (verdadero); se compara el número.
+      if (
+        Number(row.differenceCash) ||
+        Number(row.differenceCard) ||
+        Number(row.differenceTransfer)
+      )
         await audit(tx, actor, "close_difference", "cash", id, session, row);
+      if (d(input.vouchers).gt(0)) {
+        const approver = voucherApprovedBy
+          ? await tx.user.findUnique({
+              where: { id: voucherApprovedBy },
+              select: { name: true },
+            })
+          : null;
+        await audit(tx, actor, "close_vouchers", "cash", id, undefined, {
+          vouchers: input.vouchers,
+          notes: input.notes,
+          approvedBy: voucherApprovedBy,
+        });
+        const message =
+          `Caja cerrada con vale de caja por RD$ ${formatAmount(input.vouchers)} · ` +
+          `${actor.name}` +
+          (approver ? ` · aprobó ${approver.name}` : "") +
+          ` · ${input.notes.trim().slice(0, 200)}`;
+        await tx.alert.upsert({
+          where: { key: "voucher:" + id },
+          create: {
+            key: "voucher:" + id,
+            type: "cash_voucher",
+            severity: "high",
+            entityId: id,
+            branchId: actor.branchId,
+            message,
+          },
+          update: { status: "new", message },
+        });
+      }
       if (
         Math.max(
           Math.abs(Number(row.differenceCash)),
@@ -892,18 +1081,20 @@ export class CashController {
             severity: "high",
             entityId: id,
             branchId: actor.branchId,
-            message: `Diferencias de caja: efectivo RD$ ${row.differenceCash}, tarjeta RD$ ${row.differenceCard}, transferencia RD$ ${row.differenceTransfer}`,
+            message: cashDifferenceMessage(row),
           },
           update: {
             status: "new",
-            message: `Diferencias de caja: efectivo RD$ ${row.differenceCash}, tarjeta RD$ ${row.differenceCard}, transferencia RD$ ${row.differenceTransfer}`,
+            message: cashDifferenceMessage(row),
           },
         });
       const showExpected = canViewCashExpected(actor);
       return showExpected
         ? { ...row, differences }
         : { id: row.id, closedAt: row.closedAt };
-    });
+      // D-M2 (auditoría 06): el cierre recalcula todo el turno; mismo plazo
+      // que la venta en vez de los 5 s por defecto.
+    }, MONEY_TRANSACTION);
     notify(this.db, "cash_close", closed.id);
     return closed;
   }
@@ -922,7 +1113,11 @@ export class CashController {
       },
       orderBy: { closedAt: "desc" },
     });
-    const left = (last?.closeDetails as any)?.left;
+    // A-2 (auditoría 01): si el cierre no informó «Entregado», nada salió de
+    // la gaveta: lo contado es lo dejado (es lo que la pantalla de cierre
+    // anuncia como fondo sugerido). Sirve también para cierres ya guardados.
+    const left =
+      (last?.closeDetails as any)?.left ?? last?.countedCash ?? undefined;
     return left === undefined || left === null
       ? { amount: null, fromSessionId: null }
       : { amount: Number(left), fromSessionId: last!.id };

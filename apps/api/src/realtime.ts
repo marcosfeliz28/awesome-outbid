@@ -11,7 +11,6 @@ import {
 } from "@nestjs/common";
 import type { Response } from "express";
 import { compare } from "bcryptjs";
-import { createHash, timingSafeEqual } from "node:crypto";
 import { can, z } from "@fitstore/shared";
 import {
   Actor,
@@ -25,15 +24,16 @@ import {
   parse,
   uuid,
 } from "./common";
-import { verifyPinAttempt } from "./security";
-
-const hashSecret = (secret: string) =>
-  createHash("sha256").update(secret).digest("hex");
-const sameSecret = (secret: string, stored: string) => {
-  const a = Buffer.from(hashSecret(secret), "hex"),
-    b = Buffer.from(stored, "hex");
-  return a.length === b.length && timingSafeEqual(a, b);
-};
+import {
+  hashTerminalSecret as hashSecret,
+  sameTerminalSecret as sameSecret,
+  verifyPinAttempt,
+} from "./security";
+import {
+  ACTIVITY_WRITE_INTERVAL_MS,
+  TERMINAL_ONLINE_MS,
+  sessionActivityGraceMs,
+} from "./session-activity";
 const terminalStatus = (t: {
   revokedAt: Date | null;
   approvedAt: Date | null;
@@ -285,6 +285,7 @@ export class RealtimeController {
           if (await compare(data.managerPin, m.pinHash)) return m.id;
         return null;
       },
+      { pin: data.managerPin, actor },
     );
     return this.approveTerminal(terminalId, actor, managerId, "pin");
   }
@@ -383,7 +384,8 @@ export class RealtimeController {
     return rows.map((t) => ({
       ...publicTerminal(t),
       connected:
-        !t.revokedAt && Date.now() - t.lastActivityAt.getTime() < 45000,
+        !t.revokedAt &&
+        Date.now() - t.lastActivityAt.getTime() < TERMINAL_ONLINE_MS,
       lastUserName: name(t.lastUserId),
       createdByName: name(t.createdBy),
       approvedByName: name(t.approvedBy),
@@ -492,7 +494,9 @@ export class RealtimeController {
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
     res.write("event: ready\ndata: {}\n\n");
-    // Comprobación de sesión, equipo y latido cada 15 segundos.
+    // Comprobación de sesión, equipo y latido cada 15 segundos. La actividad
+    // del equipo se escribe como mucho una vez por minuto (session-activity).
+    let terminalTouchedAt = 0;
     timers.check = setInterval(async () => {
       if (closed) return;
       if (res.destroyed || res.writableEnded || req.socket?.destroyed)
@@ -505,18 +509,25 @@ export class RealtimeController {
         const settings = await this.db.settings.findUnique({
           where: { id: actor.branchId },
         });
+        const timeoutMs =
+          Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000;
         if (
           !session ||
           !user?.active ||
           Date.now() - session.lastActivityAt.getTime() >
-            Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000
+            timeoutMs + sessionActivityGraceMs(timeoutMs)
         )
           return end();
-        if (actor.terminalId)
+        if (
+          actor.terminalId &&
+          Date.now() - terminalTouchedAt >= ACTIVITY_WRITE_INTERVAL_MS
+        ) {
           await this.db.terminal.update({
             where: { id: actor.terminalId },
             data: { lastActivityAt: new Date() },
           });
+          terminalTouchedAt = Date.now();
+        }
         // Latido sin consumir: el cliente dejó de leer; se expulsa.
         if (!res.write(": heartbeat\n\n")) end();
       } catch {
