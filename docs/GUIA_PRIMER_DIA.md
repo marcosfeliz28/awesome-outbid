@@ -67,7 +67,7 @@ En **Caja** ves **Mis incentivos** con lo tuyo del mes.
 
 **Se fue el internet**
 
-- Arriba, donde decía **En línea**, ahora dice **Offline**. El número que sale al lado son las ventas que esperan en esa computadora.
+- Arriba, donde decía **En línea**, ahora dice **Sin conexión**. El número que sale al lado son las ventas que esperan en esa computadora.
 - Al principio el sistema **no deja cobrar sin internet** (sale «Las ventas sin conexión están desactivadas…»). Espera a que vuelva **En línea**.
 - Si la dueña activó **«Permitir ventas sin conexión»**, solo se puede cobrar en efectivo, tarjeta o transferencia, sin PIN ni crédito. El recibo sale como **LOCAL-…** y dice «Guardada en este dispositivo · Pendiente de sincronizar».
 - Cuando vuelve el internet, esas ventas se suben solas. También puedes ir a **Caja** → **Ventas guardadas en este dispositivo** → **Sincronizar**. Si alguna dice **Requiere revisión**, la fila dice qué hacer: si falta inventario, la gerente lo ajusta y la cajera pulsa **Reintentar**; si no se puede reintentar, la gerente la descarta con su PIN (**Descartar con PIN de gerente**) y queda en la bitácora. Mientras quede alguna, el cierre de caja de esa computadora avisa y no deja cerrar.

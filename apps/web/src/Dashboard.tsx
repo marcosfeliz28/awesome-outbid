@@ -43,6 +43,9 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
   const query = useQuery({
     queryKey: ["dashboard", from, to],
     queryFn: () => api("/dashboard/summary?from=" + from + "&to=" + to),
+    // 05-B4: quien no ve reportes (la cajera) pasa por aquí al entrar y la
+    // API le contestaba 403 en cada inicio de sesión.
+    enabled: can(user.permissions, "reports:read"),
   });
   const data = query.data;
   const showProfit = can(user.permissions, "profit:read");
@@ -462,7 +465,9 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                         role="cell"
                         title={day + " " + hour + ":00 · " + count + " ventas"}
                         style={{
-                          background: `rgba(124,58,237,${count ? 0.15 + (count / max) * 0.65 : 0.04})`,
+                          // Tope de 0.62: con más color, el número de la celda más
+                          // fuerte pasaba de 4.5:1 a unos 4.4:1 según los datos.
+                          background: `rgba(124,58,237,${count ? 0.12 + (count / max) * 0.5 : 0.04})`,
                         }}
                       >
                         {count}

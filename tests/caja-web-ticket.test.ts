@@ -219,8 +219,13 @@ describe("05-A3/M1 · carrito en curso y cierre por inactividad", () => {
   const draft = readFileSync("apps/web/src/cartDraft.ts", "utf8");
   it("la inactividad no cierra la sesión con carrito o ventas pendientes en la cola", () => {
     const check = app.slice(app.indexOf("const holdsWork"));
-    expect(check).toContain("useStore.getState().cart.length > 0");
+    expect(check).toContain("useStore.getState().cart.length");
     expect(check).toContain('sale.status === "pending"');
+    // 05-N2: con tope; sólo la cola sin enviar y sin conexión espera sin él.
+    expect(check).toContain("inactivityWaits({");
+    expect(check).toContain("untouchedMs: Date.now() - touched");
+    // Cerrar por inactividad conserva el borrador del carrito.
+    expect(check).toContain("keepDraftThrough(endSession)");
     // Se pregunta antes de avisar o cerrar.
     expect(check.indexOf("if (await holdsWork())")).toBeLessThan(
       check.indexOf("await endSession()"),

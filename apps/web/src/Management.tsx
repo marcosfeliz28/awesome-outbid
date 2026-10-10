@@ -1617,8 +1617,9 @@ export function Cash() {
           <Badge tone="success">Caja abierta</Badge>
           <h2>{active.registerName ?? active.registerId}</h2>
           <p>
-            Arqueo ciego activo: los montos esperados y las diferencias se
-            mostrarán únicamente a administración.
+            Arqueo ciego activo: mientras la caja está abierta no ves los montos
+            esperados. Al cerrar cuentas lo que tienes y se imprime el cuadre
+            con las diferencias.
           </p>
         </div>
       ) : (

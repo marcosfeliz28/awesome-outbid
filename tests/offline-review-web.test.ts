@@ -8,6 +8,7 @@ import {
   pendingCloseMessage,
   pendingSaleDetail,
 } from "../apps/web/src/pendingSales";
+import { pickOnEnter, startsWithWords } from "../apps/web/src/customerSearch";
 
 const sale: any = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -58,6 +59,31 @@ describe("05-A2 · conflicto de una venta sin conexión", () => {
       conflictHelp("Los precios o promociones cambiaron; revisa la venta."),
     ).toContain("Actualizar precios y reintentar");
     expect(conflictHelp(undefined)).toMatch(/Reintentar.*gerencia/);
+  });
+  it("05-N4: «no corresponde al horario de esta caja» no se confunde con ventas desactivadas", () => {
+    const help = conflictHelp(
+      "La venta offline no corresponde al horario de esta caja.",
+    );
+    expect(help).toMatch(/horario de esa caja.*reloj.*descarte con su PIN/);
+    expect(help).not.toMatch(/desactivadas/);
+    // Cualquier otro texto con «offline» ofrece reintentar, no declara nada.
+    expect(conflictHelp("Error offline desconocido")).toMatch(/Reintentar/);
+  });
+  it("05-N5: Enter sólo elige al único cliente que empieza por lo escrito", () => {
+    const list = [{ name: "Adriana Torres" }, { name: "Ana Herrera" }];
+    expect(pickOnEnter(list, "ana")?.name).toBe("Ana Herrera");
+    expect(pickOnEnter(list, "Ana h")?.name).toBe("Ana Herrera");
+    expect(
+      pickOnEnter([{ name: "Ana Pérez" }, { name: "Ana Gómez" }], "ana"),
+    ).toBeNull();
+    expect(pickOnEnter([{ name: "Adriana" }], "ana")?.name).toBe("Adriana");
+    expect(pickOnEnter([{ name: "Consumidor final" }, ...list], "")?.name).toBe(
+      "Consumidor final",
+    );
+    expect(pickOnEnter(list, "")).toBeNull();
+    expect(pickOnEnter([], "ana")).toBeNull();
+    expect(startsWithWords("María José Pérez", "maria perez")).toBe(true);
+    expect(startsWithWords("Adriana", "ana")).toBe(false);
   });
   it("el descarte manda a la bitácora artículos y pagos y sólo después borra la copia local", async () => {
     const calls: string[] = [];

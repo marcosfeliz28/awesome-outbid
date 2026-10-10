@@ -56,6 +56,8 @@ import {
   sessionDeadline,
 } from "./api";
 import { Toasts, toast } from "./helpers";
+import { inactivityWaits } from "./cartDraftPolicy";
+import { keepDraftThrough } from "./cartDraft";
 import { Dashboard } from "./Dashboard";
 import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
@@ -247,6 +249,7 @@ const navigation = [
 function Login() {
   const [login, setLogin] = useState(""),
     [password, setPassword] = useState(""),
+    [showPassword, setShowPassword] = useState(false),
     [changeRequired, setChangeRequired] = useState(false),
     [newPassword, setNewPassword] = useState(""),
     [confirmPassword, setConfirmPassword] = useState(""),
@@ -368,7 +371,7 @@ function Login() {
           <label className="field">
             <span>{changeRequired ? "Contraseña temporal" : "Contraseña"}</span>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
               placeholder="Tu contraseña"
@@ -376,6 +379,15 @@ function Login() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
+          {/* 05-B11: ver lo que se escribe, útil con el teclado del celular. */}
+          <button
+            type="button"
+            className="link-button show-password"
+            aria-pressed={showPassword}
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            Mostrar contraseña
+          </button>
           {changeRequired && (
             <PasswordChangeFields
               password={newPassword}
@@ -689,33 +701,49 @@ function Shell() {
     const timeout = (user.sessionTimeoutMinutes ?? 30) * 60000;
     const warnBefore = Math.min(IDLE_WARNING_MS, timeout / 2);
     let last = Date.now(),
+      // 05-N2: la última vez que una persona tocó la pantalla. `last` también
+      // se alarga cuando hay trabajo sin terminar; éste, no.
+      touched = Date.now(),
       closing = false,
       checking = false;
-    const active = () => {
+    const extend = () => {
       last = Date.now();
       setIdleDeadline(null);
       localDB.cache.update("session", { "data.expiresAt": last + timeout });
     };
+    const active = () => {
+      touched = Date.now();
+      extend();
+    };
     stayActive.current = active;
     // 05-A3: con artículos en el carrito o ventas sin sincronizar en este
-    // equipo, la inactividad no cierra la sesión. Sin internet, cerrarla
-    // dejaba a la cajera sin poder entrar ni vender y perdía el carrito; el
-    // plazo vuelve a contar cuando el carrito queda vacío y la cola, enviada.
-    const holdsWork = async () =>
-      useStore.getState().cart.length > 0 ||
-      (await localDB.sales
+    // equipo, la inactividad espera. Sin internet, cerrarla dejaba a la cajera
+    // sin poder entrar ni vender y perdía el carrito. 05-N2: con tope; un
+    // carrito olvidado ya no deja la sesión abierta toda la noche (sólo la cola
+    // sin enviar y sin conexión espera sin límite).
+    const holdsWork = async () => {
+      const cartItems = useStore.getState().cart.length;
+      const pendingSales = await localDB.sales
         .where("userId")
         .equals(user.id)
         .filter((sale) => sale.status === "pending")
         .count()
-        .catch(() => 0)) > 0;
+        .catch(() => 0);
+      return inactivityWaits({
+        cartItems,
+        pendingSales,
+        online: useStore.getState().online,
+        untouchedMs: Date.now() - touched,
+        timeoutMs: timeout,
+      });
+    };
     const check = async () => {
       if (closing || checking || Date.now() - last <= timeout - warnBefore)
         return;
       checking = true;
       try {
         if (await holdsWork()) {
-          active();
+          extend();
           return;
         }
         // Otra pestaña de este equipo pudo tener actividad: el plazo guardado
@@ -738,7 +766,8 @@ function Shell() {
         // usuario anterior (R9-offline-5).
         closing = true;
         setIdleDeadline(null);
-        await endSession();
+        // 05-N2: el carrito a medias no se pierde al bloquear la pantalla.
+        await keepDraftThrough(endSession);
         client.clear();
         toast("Sesión cerrada por inactividad.");
       } finally {
@@ -927,7 +956,11 @@ function Shell() {
                 <WifiOff size={15} />
               )}
               <span>
-                {syncing ? "Sincronizando" : online ? "En línea" : "Offline"}
+                {syncing
+                  ? "Sincronizando"
+                  : online
+                    ? "En línea"
+                    : "Sin conexión"}
                 {pending ? ` · ${pending}` : ""}
               </span>
             </button>

@@ -72,6 +72,12 @@ import {
   searchWords,
   toast,
 } from "./helpers";
+import {
+  discardCartDraft,
+  rememberAttempt,
+  restoredAttempt,
+} from "./cartDraft";
+import { pickOnEnter, startsWithWords } from "./customerSearch";
 import { scanBeep, scanSoundEnabled, setScanSoundEnabled } from "./scanSound";
 import {
   InvoicePrint,
@@ -214,6 +220,17 @@ export function POS({ go }: { go: (page: string) => void }) {
     );
   const search = useRef<HTMLInputElement>(null);
   const cartList = useRef<HTMLDivElement>(null);
+  // 05-N1: el error de un escaneo se quita al abrir cualquier ventana, al
+  // teclear en el buscador y al salir de la caja.
+  const windowOpen =
+    !!choosing || checkout || held || clientPicker || creatingClient || camera;
+  useEffect(() => {
+    if (windowOpen) clearPersistentErrors();
+  }, [windowOpen]);
+  useEffect(() => {
+    if (q) clearPersistentErrors();
+  }, [q]);
+  useEffect(() => clearPersistentErrors, []);
   // La ventana de variantes se abrió con Enter desde el buscador: al elegir,
   // el buscador queda vacío como tras un escaneo (R9-caja-6).
   const clearOnChoose = useRef(false);
@@ -338,7 +355,13 @@ export function POS({ go }: { go: (page: string) => void }) {
             clientWords,
           ),
       )
-      .sort((a: any, b: any) => finalConsumer(b) - finalConsumer(a));
+      .sort(
+        (a: any, b: any) =>
+          finalConsumer(b) - finalConsumer(a) ||
+          // 05-N5: primero los que empiezan por lo escrito.
+          Number(startsWithWords(String(b.name), clientQuery)) -
+            Number(startsWithWords(String(a.name), clientQuery)),
+      );
   }, [customers.data, clientQuery, clientPicker]);
   const total = money(totals.reduce((a, i) => a.plus(i.total), d(0))),
     subtotal = money(totals.reduce((a, i) => a.plus(i.subtotal), d(0))),
@@ -475,6 +498,8 @@ export function POS({ go }: { go: (page: string) => void }) {
     );
   };
   const charge = () => {
+    // 05-N1: un error de escaneo no se queda sobre la ventana de cobro.
+    clearPersistentErrors();
     if (!cart.length) return;
     if (!customerId) {
       setPickerHint("Selecciona o crea el cliente antes de cobrar.");
@@ -1371,12 +1396,21 @@ export function POS({ go }: { go: (page: string) => void }) {
                 aria-label="Buscar cliente"
                 placeholder="Nombre, teléfono o cédula"
                 value={clientQuery}
-                onChange={(e) => setClientQuery(e.target.value)}
+                onChange={(e) => {
+                  setClientQuery(e.target.value);
+                  setPickerHint("");
+                }}
                 onKeyDown={(e) => {
                   if (e.key !== "Enter") return;
                   e.preventDefault();
-                  const first = pickable[0];
-                  if (!first) return;
+                  const first = pickOnEnter(pickable, clientQuery);
+                  if (!first) {
+                    if (pickable.length)
+                      setPickerHint(
+                        "Hay varios clientes parecidos: elige uno de la lista.",
+                      );
+                    return;
+                  }
                   setCustomer(first.id);
                   setClientPicker(false);
                   setClientQuery("");
@@ -1538,6 +1572,12 @@ function HeldSales({
     queryKey: ["quotes"],
     queryFn: () => api("/quotes"),
   });
+  const heldCustomer = (id?: string | null) =>
+    id
+      ? (client.getQueryData<any[]>(["customers"]) ?? []).find(
+          (c) => c.id === id,
+        )?.name
+      : undefined;
   const recover = async (quote: any) => {
     if (busy) return;
     // El carrito se arma antes de consumir la venta en espera: si falta un
@@ -1632,6 +1672,10 @@ function HeldSales({
               <span>
                 {quote.type === "held" ? "En espera" : "Cotización"}
                 <small>
+                  {/* 05-B9: de quién es la venta en espera. */}
+                  {heldCustomer(quote.customerId)
+                    ? heldCustomer(quote.customerId) + " · "
+                    : ""}
                   {quote.items.length} artículos ·{" "}
                   {new Date(quote.createdAt).toLocaleString("es-DO", {
                     timeZone: "America/Santo_Domingo",
@@ -1736,8 +1780,13 @@ function Checkout({
   ]);
   const previous = unanswered?.key === attempt ? unanswered : null;
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(!!previous);
-  const uuid = useRef(previous?.uuid ?? crypto.randomUUID());
-  const captured = useRef<string | null>(previous?.capturedAt ?? null);
+  // 05-N3: tras una recarga a mitad del cobro, el borrador devuelve el mismo
+  // offlineUuid y la API contesta con la venta ya registrada.
+  const recovered = previous ? null : restoredAttempt(attempt);
+  const uuid = useRef(previous?.uuid ?? recovered?.uuid ?? crypto.randomUUID());
+  const captured = useRef<string | null>(
+    previous?.capturedAt ?? recovered?.capturedAt ?? null,
+  );
   const client = useQueryClient();
   let payment = { paid: 0, pending: total, change: 0 };
   try {
@@ -1867,6 +1916,12 @@ function Checkout({
       discount: lines[index]?.discount ?? 0,
       lineTotal: lines[index]?.total ?? 0,
     }));
+    // 05-N3: el offlineUuid del cobro queda en el borrador antes de enviarlo.
+    await rememberAttempt({
+      key: attempt,
+      uuid: uuid.current,
+      capturedAt: input.capturedAt!,
+    });
     try {
       const preserveUnanswered = async (): Promise<never> => {
         setAwaitingConfirmation(true);
@@ -1998,6 +2053,9 @@ function Checkout({
         await localDB.sales.delete(uuid.current).catch(() => {});
       setAwaitingConfirmation(false);
       unanswered = null;
+      // 05-N3: el borrador del carrito se borra ya, antes del recibo: una
+      // recarga justo después de cobrar no debe resucitar esta venta.
+      await discardCartDraft();
       // En línea, el ticket usa los importes que guardó el servidor (una
       // línea puede repartirse en varios lotes); sin conexión, los de la caja.
       const sum = (rows: any[], key: string) =>
