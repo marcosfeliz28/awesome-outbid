@@ -16,9 +16,11 @@ fi
 nexora-render-security-headers /etc/nginx/nexora/security-headers.conf.in \
   /etc/nginx/snippets/nexora-security-headers.conf
 
-# Redes del borde de Render cuya CF-Connecting-IP se acepta como IP real del
-# cliente (S-01). Ver render-trusted-edge.sh y nginx.conf.template.
-nexora-render-trusted-edge /etc/nginx/snippets/nexora-trusted-edge.conf
+# Redes del borde de Render y de Cloudflare cuya CF-Connecting-IP se acepta
+# como IP real del cliente (S-01, N-04). Ver render-trusted-edge.sh y
+# nginx.conf.template.
+nexora-render-trusted-edge /etc/nginx/snippets/nexora-trusted-edge.conf \
+  /etc/nginx/snippets/nexora-cloudflare-ips.conf
 
 # API_UPSTREAM proviene de `fromService.hostport`. La validación impide que un
 # valor accidental termine convertido en una directiva de Nginx.
