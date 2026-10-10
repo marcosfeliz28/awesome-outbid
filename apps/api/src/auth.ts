@@ -70,19 +70,15 @@ const terminalCredentials = z
     secret: z.string().min(16).max(200),
   })
   .optional();
-const RESET_HINT =
-  "pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.";
-// Iguales para cuentas existentes e inexistentes: no delatan cuentas.
+// Iguales para cuentas existentes e inexistentes: no delatan cuentas. Cada
+// uno dice qué se puede hacer (esperar, «Restablecer contraseña» o entrar
+// desde un equipo aprobado), sin prometer lo que no existe.
 const LOGIN_BLOCKED = {
-  ip:
-    "Cuenta bloqueada temporalmente. Desde un equipo aprobado de la tienda puedes entrar con tu contraseña; desde este, espera 15 minutos o " +
-    RESET_HINT,
+  ip: "Cuenta bloqueada temporalmente. Espera 15 minutos o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos. Desde un equipo aprobado de la tienda puedes entrar con tu contraseña.",
   terminal:
-    "Cuenta bloqueada temporalmente en este equipo por intentos fallidos. Espera 15 minutos o " +
-    RESET_HINT,
+    "Cuenta bloqueada temporalmente en este equipo por intentos fallidos. Espera 15 minutos o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.",
   account:
-    "Cuenta bloqueada temporalmente por demasiados intentos fallidos desde equipos no aprobados. Durante una hora como máximo sólo se puede entrar desde un equipo aprobado de la tienda; si no, " +
-    RESET_HINT,
+    "Cuenta bloqueada temporalmente por demasiados intentos fallidos desde equipos no aprobados. Durante una hora como máximo sólo se puede entrar desde un equipo aprobado de la tienda, o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.",
 };
 const HOUR = 3_600_000;
 
