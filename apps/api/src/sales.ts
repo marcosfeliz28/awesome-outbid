@@ -320,6 +320,21 @@ export async function terminalName(tx: any, registerId: string) {
   const terminal = await tx.terminal.findUnique({ where: { id: registerId } });
   return terminal?.name ?? "otro equipo";
 }
+// Lo mismo que terminalName para muchas cajas, con una sola consulta.
+export async function terminalNames(tx: any, registerIds: string[]) {
+  const ids = [...new Set(registerIds.filter((id) => UUID.test(id)))];
+  const terminals: { id: string; name: string }[] = ids.length
+    ? await tx.terminal.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const names = new Map(terminals.map((t) => [t.id, t.name]));
+  return (registerId: string) =>
+    UUID.test(registerId)
+      ? (names.get(registerId) ?? "otro equipo")
+      : registerId;
+}
 function promotionDiscount(promo: any, variant: any, qty: number) {
   const scope = promo.scope as any;
   if (scope.variantId && scope.variantId !== variant.id) return 0;
