@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 export const powershellTests = [
   "PowerShell-Parse",
   "Payload-Privacy",
+  "Payload-Locked-Deploy",
   "Transaction-FaultInjection",
   "Restore-FaultInjection",
   "Restore-Real-Sql",
@@ -78,6 +79,7 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
   const steps = [
     [process.execPath, ["--test", "instalador/tests/installer-session.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/web-server.test.mjs"]],
+    [process.execPath, ["--test", "instalador/tests/deploy-lock.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/recovery-error-contract.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/recovery-documentation.test.mjs"]],
     [
