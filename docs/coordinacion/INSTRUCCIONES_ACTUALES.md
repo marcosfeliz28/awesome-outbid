@@ -117,6 +117,16 @@ Claude auditó todo el sistema con 7 auditores y reparte las correcciones de có
 5. Cuando Claude te avise que mezcló la rama de la caja web (F3), actualiza el manual con capturas reales (`docs/MANUAL-CAJERO.md`, `docs/CAPTURAS_MANUAL.md`).
 Reglas de siempre: cita archivo/línea para cualquier afirmación sobre el sistema; no certifiques cumplimiento legal; CI en verde antes de reportar; no despliegas.
 
+## 3l. VEREDICTO DE CLAUDE sobre 3j (10 oct): MEZCLADO a `nexora-cloud` (75b091d, CI verde completo); quedan 2 ALTOS y 3 MEDIOS antes de la prueba en Windows limpio
+La auditoría confirma 3j.1–3j.7 en el código real. Corrige, en este orden, un commit por punto con regresión que falle antes y pase después (funciones REALES, no stubs), y CI verde completo antes de reportar:
+1. **ALTO · A1** `Recover-FitStoreUpdate.ps1:111`: un diario de permisos con entradas de archivos ya borrados bloquea para siempre la recuperación (al reanudar `Get-Item` lanza ItemNotFound; PostgreSQL borra `pg_stat/pgstat.stat` y recicla WAL al arrancar y detenerse). En la validación salta las entradas inexistentes (como ya hace `Restore-FitStoreTemporaryPostgresAccess:81`). Regresión: PostgreSQL real arrancado → taskkill → borrar una entrada del diario → reanudar → restaura y `icacls` coincide.
+2. **ALTO · A2** `Restore-FitStore.ps1:92`: `"--command=SELECT count(*) FROM \"$table\";"` pierde las comillas en Windows PowerShell 5.1 y «Restaurar respaldo» falla siempre al verificar. Usa `Invoke-FitStorePgSql` (archivo/stdin); la prueba `Restore-FaultInjection` debe usar la función real, no el stub de `fixtures/restore-fault/FitStore.Common.ps1:106`, y una prueba con PostgreSQL real.
+3. **MEDIO · M1**: restaura el diario de permisos SIEMPRE al empezar `Assert-FitStoreInterruptedRecovery` (no solo en la rama de `Enable-FitStoreTemporaryPostgresAccess`) y antes de borrar la carpeta de la transacción (`Rollback:229`).
+4. **MEDIO · M2**: diario corrupto/truncado → mensaje explícito (no un error genérico de JSON), documenta `recovery-pgdata-acl.json` en `docs/INSTALADOR.md` y la salida manual.
+5. **MEDIO · M3** `Recover:347-355`: si fallan `pg_ctl stop` o la restauración de permisos en el camino sin error previo, la excepción sale del `finally` y nadie recupera LOGIN: asegura que el `catch`/limpieza devuelva LOGIN y muestre el mensaje de soporte.
+6. **BAJOS** B1 (stubs en `Stale-Update-FaultInjection.ps1:31` y `Recovery-FaultInjection.ps1:152` deben tener la firma real), B2 (borra o reconvierte el mapa de 38 modelos que solo vive en pruebas), B3 (docs: ya no es «CI pendiente»), B4 (probar también con PostgreSQL 18.6 que lleva el instalador si el runner lo permite o documentar).
+**Siguen pendientes, en este orden, después de lo anterior:** B8 (SID por servicio y contraseñas de pfx distintas), B9, B10, B11, plantilla `exceljs`, capturas del manual, tareas 3k (documentos legales), y Windows-Smoke limpio por la dueña. Ahora hay que hacer `git merge origin/nexora-cloud` otra vez (contraseñas, guía, retoques de despliegue y órdenes 3k ya están ahí).
+
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
 1. ~~**M1**~~ (lo hace Claude) movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); por encima de `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
