@@ -23,6 +23,10 @@ export const powershellTests = [
   "Legacy-Backup-Unavailable",
   "Backup-AzureAD-Warning",
   "Recovery-Control-Logs",
+  "Recovery-Restart-Previous",
+  "Recovery-Temporary-Acl",
+  "Recovery-Physical-Directory",
+  "Preflight-Backup-Fallback",
 ];
 
 export function windowsPowerShellEnvironment(source) {
@@ -55,6 +59,7 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
   );
   const steps = [
     [process.execPath, ["--test", "instalador/tests/web-server.test.mjs"]],
+    [process.execPath, ["--test", "instalador/tests/recovery-error-contract.test.mjs"]],
     [
       process.execPath,
       ["--test", "instalador/tests/validation-command.test.mjs"],
@@ -71,7 +76,7 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
         "Bypass",
         "-File",
         `instalador/tests/${name}.ps1`,
-        ...(["Recovery-FaultInjection", "Recovery-Login-Exit", "Recovery-Activity-Guard"].includes(name) && env.PGBIN
+        ...(["Recovery-FaultInjection", "Recovery-Login-Exit", "Recovery-Activity-Guard", "Recovery-Restart-Previous", "Recovery-Temporary-Acl"].includes(name) && env.PGBIN
           ? ["-PgBin", env.PGBIN]
           : []),
       ],

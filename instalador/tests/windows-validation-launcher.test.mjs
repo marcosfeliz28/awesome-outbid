@@ -38,3 +38,18 @@ test("un fallo conserva exitcode y no ejecuta pruebas posteriores", () => {
   assert.equal(result, 37);
   assert.equal(calls, 1);
 });
+
+test("3i runner pasa PgBin solo a pruebas PostgreSQL y conecta todos los contratos", () => {
+  const calls=[];
+  assert.equal(runValidation({env:{...process.env,PGBIN:'C:/fixture/postgres/bin'},spawn:(command,args)=>{calls.push({command,args});return {status:0};}}),0);
+  for(const name of ['Recovery-Restart-Previous','Recovery-Temporary-Acl']){
+    const call=calls.find(c=>c.args.includes(`instalador/tests/${name}.ps1`));
+    assert.ok(call, name);
+    assert.deepEqual(call.args.slice(-2),['-PgBin','C:/fixture/postgres/bin']);
+  }
+  for(const name of ['Recovery-Physical-Directory','Preflight-Backup-Fallback','Rollback-Service-Sid']){
+    const call=calls.find(c=>c.args.includes(`instalador/tests/${name}.ps1`));
+    assert.ok(call,name);assert.equal(call.args.includes('-PgBin'),false,name);
+  }
+  assert.ok(calls.some(c=>c.args.includes('instalador/tests/recovery-error-contract.test.mjs')));
+});

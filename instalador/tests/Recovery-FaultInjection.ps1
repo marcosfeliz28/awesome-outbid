@@ -22,6 +22,11 @@ if($rollbackSource.IndexOf('-VerifiedPgBin $verifiedPgBin',$gate) -lt 0){throw '
 Write-Host 'PASS A3: manifiesto verificado antes de ejecutar binarios, usando exclusivamente runtime verificado.'
 $function=$ast.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Assert-FitStoreInterruptedRecovery'},$true)
 Invoke-Expression $function.Extent.Text
+foreach($name in @('Enable-FitStoreTemporaryPostgresAccess','Restore-FitStoreTemporaryPostgresAccess')){
+ $definition=$ast.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)
+ if(-not $definition){throw "3i2: falta helper real $name"}
+ Invoke-Expression $definition.Extent.Text
+}
 $root=Join-Path ([IO.Path]::GetTempPath()) ('nexora-a3-'+[guid]::NewGuid().ToString('N'))
 $script:ApiService='FitStoreAPI'; $script:WebService='FitStoreWeb'; $script:PostgresService='FitStorePostgres'
 $script:count='0'; $script:mode='Disabled'; $script:state='Stopped'
@@ -55,6 +60,7 @@ try {
  $paths.PgBin=Join-Path $root 'missing-install\bin'
  $paths.Install=Join-Path $root 'missing-install'
  $paths|Add-Member Database (Join-Path $root 'isolated-cluster')
+ [IO.Directory]::CreateDirectory($paths.Database)|Out-Null
  [IO.Directory]::CreateDirectory((Join-Path $root 'bin'))|Out-Null
  [IO.File]::WriteAllText((Join-Path $root 'bin\psql.exe'),'not executed')
  Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx

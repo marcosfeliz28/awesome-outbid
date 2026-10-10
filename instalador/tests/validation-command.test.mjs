@@ -23,6 +23,11 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     "FreshInstall-FaultInjection",
     "Stale-Update-FaultInjection",
     "Rollback-ServiceAccount-FaultInjection",
+    "Rollback-Service-Sid",
+    "Recovery-Restart-Previous",
+    "Recovery-Temporary-Acl",
+    "Recovery-Physical-Directory",
+    "Preflight-Backup-Fallback",
     "Recovery-FaultInjection",
     "Backup-Reader-Privacy",
     "Preflight-Rollback-Contract",
@@ -40,6 +45,7 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     );
   }
   assert.ok(launcher.includes('"instalador/tests/web-server.test.mjs"'));
+  assert.ok(launcher.includes('"instalador/tests/recovery-error-contract.test.mjs"'));
   assert.ok(
     launcher.includes('"instalador/tests/validation-command.test.mjs"'),
   );
