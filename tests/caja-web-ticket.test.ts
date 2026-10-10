@@ -147,3 +147,33 @@ describe("03 · textos del recibo no fiscal", () => {
     expect(privacyNoticeText({})).not.toContain(" o al ");
   });
 });
+
+describe("03-A1 · aviso de privacidad en la web", () => {
+  it("el formulario de cliente (caja y Clientes) muestra el aviso con el enlace «Privacidad»", () => {
+    const helpers = readFileSync("apps/web/src/helpers.tsx", "utf8");
+    const notice = helpers.slice(
+      helpers.indexOf("export function CustomerPrivacyNotice"),
+      helpers.indexOf("export function FormModal"),
+    );
+    expect(notice).toContain("son opcionales");
+    expect(notice).toContain('href="/privacidad.html"');
+    expect(notice).toMatch(/>\s*Privacidad\s*</);
+    expect(readFileSync("apps/web/src/POS.tsx", "utf8")).toContain(
+      "<CustomerPrivacyNotice />",
+    );
+    const management = readFileSync("apps/web/src/Management.tsx", "utf8");
+    expect(
+      management.match(/notice=\{<CustomerPrivacyNotice \/>\}/g),
+    ).toHaveLength(2);
+  });
+  it("«Acerca de» enlaza el aviso, que existe como página estática", () => {
+    const app = readFileSync("apps/web/src/App.tsx", "utf8");
+    const about = app.slice(app.indexOf("function About("));
+    expect(about).toContain("<h3>Privacidad</h3>");
+    expect(about).toContain('href="/privacidad.html"');
+    const page = readFileSync("apps/web/public/privacidad.html", "utf8");
+    expect(page).toContain("<h1>Aviso de privacidad</h1>");
+    expect(page).toContain("opcionales");
+    expect(page).not.toMatch(/\[[A-ZÁÉÍÓÚ ]{3,}\]/);
+  });
+});

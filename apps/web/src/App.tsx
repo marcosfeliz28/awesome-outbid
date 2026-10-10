@@ -138,6 +138,15 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
           Nexora POS son documentos internos y no sustituyen un comprobante
           fiscal (NCF/e-CF).
         </p>
+        <h3>Privacidad</h3>
+        <p className="about-privacy">
+          Nexora guarda los datos de clientes que registra la tienda (nombre y,
+          si se dan, teléfono, correo y cédula/RNC) sólo para sus ventas,
+          garantías y créditos. Cada recibo lo recuerda en el pie.{" "}
+          <a href="/privacidad.html" target="_blank" rel="noopener">
+            Aviso de privacidad para clientes
+          </a>
+        </p>
         <p>
           Usa fuentes Inter y Plus Jakarta Sans (SIL Open Font License 1.1),
           íconos Lucide (ISC) y librerías de código abierto (MIT, ISC,

@@ -51,6 +51,7 @@ import {
   type Variant,
 } from "./api";
 import {
+  CustomerPrivacyNotice,
   QueryState,
   attrLabel,
   categoryImage,
@@ -1190,6 +1191,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                 }
               />
             </label>
+            <CustomerPrivacyNotice />
             {clientError && <p className="form-error">{clientError}</p>}
             <div className="form-actions">
               <Button

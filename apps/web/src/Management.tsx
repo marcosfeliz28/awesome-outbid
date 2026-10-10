@@ -39,6 +39,7 @@ import {
 } from "./api";
 import {
   QueryState as BaseQueryState,
+  CustomerPrivacyNotice,
   FormModal,
   ConfirmModal,
   type Field,
@@ -2019,6 +2020,7 @@ export function Customers() {
         <FormModal
           title="Nuevo cliente"
           fields={fields}
+          notice={<CustomerPrivacyNotice />}
           onClose={() => setCreate(false)}
           onSubmit={(data) => post("/customers", data)}
         />
@@ -2027,6 +2029,7 @@ export function Customers() {
         <FormModal
           title="Editar cliente"
           fields={fields}
+          notice={<CustomerPrivacyNotice />}
           // P5: «Editar» tampoco muestra teléfono ni cédula/RNC completos.
           initial={{
             ...editing,

@@ -254,6 +254,26 @@ a:focus-visible {
 .about p {
   margin: 0 0 12px;
 }
+.about h3 {
+  margin: 4px 0 6px;
+  font-size: 14px;
+}
+/* 03-A1: aviso corto de privacidad al registrar un cliente. */
+.privacy-notice {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.privacy-notice a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
 .about-fiscal {
   padding: 10px 12px;
   border-radius: 9px;

@@ -119,18 +119,34 @@ export type Field = {
   step?: string;
   help?: string;
 };
+// 03-A1: aviso corto al pedir los datos de un cliente. El texto jurídico
+// completo lo redacta la tienda con su abogado; /privacidad.html es el resumen.
+export function CustomerPrivacyNotice() {
+  return (
+    <p className="privacy-notice full">
+      Usamos estos datos sólo para registrar las ventas, garantías y créditos
+      del cliente. Teléfono, correo y cédula/RNC son opcionales. El cliente
+      puede pedir verlos, corregirlos o borrarlos.{" "}
+      <a href="/privacidad.html" target="_blank" rel="noopener">
+        Privacidad
+      </a>
+    </p>
+  );
+}
 export function FormModal({
   title,
   fields,
   onSubmit,
   onClose,
   initial = {},
+  notice,
 }: {
   title: string;
   fields: Field[];
   onSubmit: (data: Record<string, any>) => Promise<unknown>;
   onClose: () => void;
   initial?: Record<string, any>;
+  notice?: ReactNode;
 }) {
   const [values, setValues] = useState<Record<string, any>>(() =>
     Object.fromEntries(
@@ -220,6 +236,7 @@ export function FormModal({
             <small>{f.help}</small>
           </label>
         ))}
+        {notice}
         {error && (
           <p className="form-error full" role="alert">
             {error}
