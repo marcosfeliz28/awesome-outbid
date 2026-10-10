@@ -66,7 +66,12 @@ import {
   customerPrivateDisplay,
   seesCustomerPii,
 } from "./customer-display";
-import { managementQueryError } from "./managementMessages";
+import {
+  businessErrorMessage,
+  managementQueryError,
+} from "./managementMessages";
+import { passwordRules } from "./passwordChange";
+import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import {
   applyPendingSaleReprice,
@@ -2863,7 +2868,7 @@ export function SalesHistory() {
       {voiding && (
         <ConfirmModal
           title={"Anular " + voiding.number}
-          description="Solo un administrador puede hacerlo. La factura se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas; no necesitas abrir caja."
+          description="Solo un administrador puede hacerlo. La factura se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
           confirmLabel="Sí, anular factura"
           onClose={() => setVoiding(null)}
           onConfirm={async (reason) => {
@@ -3084,6 +3089,117 @@ function TelegramNotices() {
   );
 }
 
+// «Restablecer contraseña» de otra persona (sólo administración). La temporal
+// generada se muestra una sola vez; nunca se guarda en el equipo.
+function ResetPassword({
+  target,
+  onClose,
+}: {
+  target: any;
+  onClose: () => void;
+}) {
+  const [password, setPassword] = useState(""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [done, setDone] = useState<{ temporaryPassword?: string } | null>(null);
+  const client = useQueryClient();
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={"Restablecer contraseña · " + target.name}
+    >
+      {done ? (
+        <div className="reset-password-result">
+          {done.temporaryPassword && (
+            <>
+              <p>
+                Contraseña temporal de {target.name}. Dásela en persona; no se
+                volverá a mostrar.
+              </p>
+              <code
+                className="temporary-password"
+                data-testid="temporary-password"
+              >
+                {done.temporaryPassword}
+              </code>
+            </>
+          )}
+          <p role="status">
+            {target.name} deberá crear su propia contraseña la próxima vez que
+            entre. Sus sesiones abiertas se cerraron y ya no está bloqueada por
+            intentos fallidos.
+          </p>
+          <div className="modal-footer">
+            <Button onClick={onClose}>Listo</Button>
+          </div>
+        </div>
+      ) : (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (password && !passwordRules(password).every((r) => r.met)) {
+              setError(
+                "La contraseña temporal debe cumplir las cinco reglas, o deja el campo vacío para que el sistema genere una.",
+              );
+              return;
+            }
+            setBusy(true);
+            setError("");
+            try {
+              const result = await post(
+                `/users/${target.id}/reset-password`,
+                password ? { password } : {},
+              );
+              setPassword("");
+              setDone({ temporaryPassword: result.temporaryPassword });
+              await client.invalidateQueries();
+            } catch (e) {
+              setError(businessErrorMessage(e));
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <p>
+            Úsalo si {target.name} olvidó su contraseña o quedó bloqueada. Esto
+            cierra sus sesiones abiertas, quita el bloqueo por intentos fallidos
+            y le pide crear su propia contraseña al entrar.
+          </p>
+          <label className="field">
+            <span>Contraseña temporal (opcional)</span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              autoCapitalize="none"
+              spellCheck={false}
+              maxLength={128}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <small>
+              Déjala vacía y el sistema genera una segura. Si la escribes: 12 o
+              más caracteres con mayúscula, minúscula, número y símbolo.
+            </small>
+          </label>
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="modal-footer">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button variant="danger" disabled={busy}>
+              {busy ? "Procesando…" : "Restablecer contraseña"}
+            </Button>
+          </div>
+        </form>
+      )}
+    </Modal>
+  );
+}
 export function Configuration() {
   const user = useStore((s) => s.user)!;
   const query = useQuery({
@@ -3108,6 +3224,7 @@ export function Configuration() {
   const [editing, setEditing] = useState(false),
     [newUser, setNewUser] = useState(false),
     [userEdit, setUserEdit] = useState<any>(null),
+    [passwordReset, setPasswordReset] = useState<any>(null),
     [roleEdit, setRoleEdit] = useState<any>(null),
     [tab, setTab] = useState("business");
   const client = useQueryClient();
@@ -3326,6 +3443,14 @@ export function Configuration() {
                         {u.id !== user.id && (
                           <button
                             className="text-link"
+                            onClick={() => setPasswordReset(u)}
+                          >
+                            Restablecer contraseña
+                          </button>
+                        )}
+                        {u.id !== user.id && (
+                          <button
+                            className="text-link"
                             onClick={async () => {
                               try {
                                 await mutate(
@@ -3474,6 +3599,12 @@ export function Configuration() {
           initial={{ name: userEdit.name, username: userEdit.username || "" }}
           onClose={() => setUserEdit(null)}
           onSubmit={(data) => mutate("/users/" + userEdit.id, data, "PATCH")}
+        />
+      )}
+      {passwordReset && (
+        <ResetPassword
+          target={passwordReset}
+          onClose={() => setPasswordReset(null)}
         />
       )}
       {roleEdit && (

@@ -6,12 +6,14 @@ type Props = {
   confirmation: string;
   onPassword: (value: string) => void;
   onConfirmation: (value: string) => void;
+  intro?: string;
 };
 export function PasswordChangeFields({
   password,
   confirmation,
   onPassword,
   onConfirmation,
+  intro = "Este paso es obligatorio antes de entrar a la tienda. Crea una clave personal; no la compartas.",
 }: Props) {
   const rules = passwordRules(password);
   const complete = rules.filter((rule) => rule.met).length;
@@ -23,10 +25,7 @@ export function PasswordChangeFields({
         : "Necesita más seguridad";
   return (
     <div className="password-change-fields">
-      <p>
-        Este paso es obligatorio antes de entrar a la tienda. Crea una clave
-        personal; no la compartas.
-      </p>
+      <p>{intro}</p>
       <label className="field">
         <span>Nueva contraseña</span>
         <input

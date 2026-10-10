@@ -9,6 +9,7 @@ vi.mock("../apps/api/node_modules/bcryptjs/index.js", () => ({
   hash: vi.fn(),
 }));
 import {
+  generateTemporaryPassword,
   isDifferentPassword,
   isStrongPassword,
   STRONG_PASSWORD_MESSAGE,
@@ -132,6 +133,18 @@ describe("Contraseñas temporales de cajero", () => {
   it("acepta una contraseña larga con mayúscula, minúscula, número y símbolo", () => {
     expect(isStrongPassword("Cajera-Nexora-2026!")).toBe(true);
     expect(isStrongPassword("X".repeat(73) + "1a!")).toBe(false);
+  });
+
+  it("genera temporales que cumplen la política, sin caracteres confusos y distintas", () => {
+    const seen = new Set<string>();
+    for (let n = 0; n < 200; n++) {
+      const value = generateTemporaryPassword();
+      expect(isStrongPassword(value)).toBe(true);
+      expect(value).toHaveLength(16);
+      expect(value).not.toMatch(/[0OIl1|`'"\s]/);
+      seen.add(value);
+    }
+    expect(seen.size).toBe(200);
   });
 
   it("no permite reutilizar la contraseña temporal como contraseña nueva", () => {

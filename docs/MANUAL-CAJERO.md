@@ -6,7 +6,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 
 ## 1. Entrar y abrir caja
 
-1. Escribe tu usuario y contraseña. Si pide cambiarla, completa las cinco reglas y confirma tu nueva clave; no la compartas.
+1. Escribe tu usuario y contraseña. Si pide cambiarla, completa las cinco reglas y confirma tu nueva clave; no la compartas. Para cambiarla otro día, abre el menú de tu nombre (arriba a la derecha) → **Cambiar mi contraseña**. Si la olvidaste o tu cuenta quedó bloqueada, pide a la administración **Restablecer contraseña** o espera 15 minutos.
 2. En **Caja**, pulsa **Abrir mi caja** y cuenta el efectivo físico que recibes como fondo inicial.
 3. Escribe el monto y **Guardar**. Si es menor que el fondo sugerido, explica la diferencia y pide al gerente su PIN cuando se solicite.
 4. Si ya existe caja abierta, no la abras otra vez: revisa Caja y llama a gerencia. Cada persona usa su usuario y equipo aprobado.
@@ -103,7 +103,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 
 ## 8. Sin internet o respuesta perdida
 
-1. Si aparece **Sin conexión** antes del cobro, espera En línea. Las ventas offline están desactivadas por defecto; solo administración puede habilitarlas en Ajustes y asumir revisión posterior.
+1. Si antes del cobro el indicador de la barra superior dice **Offline** (en vez de **En línea**; en el celular solo se ve el ícono de wifi tachado), espera a que vuelva a decir **En línea**. Las ventas offline están desactivadas por defecto; solo administración puede habilitarlas en **Configuración → Negocio y reglas → Editar configuración → «Permitir ventas sin conexión»** y asumir revisión posterior.
 2. Si ya pulsaste Finalizar y no llegó respuesta, **no vuelvas a cobrar**: la operación puede estar registrada.
 3. Recupera internet; en **Caja > Ventas guardadas en este dispositivo**, revisa Pendiente y **Sincronizar**. Confirma el resultado con gerencia antes de repetir algo.
 4. Si dice **Requiere revisión**, conserva el dispositivo y sus datos. No borres el navegador ni reinstales la app. Gerencia revisa cliente, stock, precio y pago antes de reintentar.
