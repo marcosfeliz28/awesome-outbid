@@ -220,9 +220,20 @@ node --max-old-space-size=256 deploy/render/with-cloud-env.mjs apps/api/dist/mai
   recolector trabaja antes de acercarse al límite. Si alguna vez aparece
   `JavaScript heap out of memory` en el registro, subirlo con prudencia
   (máximo ~320) en `deploy/render/Dockerfile.api`; nunca quitarlo.
-- Medición (prueba de carga con un año de historial, 4 cajas + gerente, API
-  compilada en 0,5 CPU): ver la tabla del informe de la rama
-  `claude/perf-apertura`.
+- Medición (API compilada, 0,5 CPU y 512 MB; PostgreSQL 0,1 CPU y 256 MB; un
+  año de historial, ~110 000 ventas):
+
+  | Escenario                                              | Antes (envoltorio + API)                   | Ahora (un proceso) |
+  | ------------------------------------------------------ | ------------------------------------------ | ------------------ |
+  | Prueba R3b (4 cajas + gerente, 4 min)                  | 46 + 221 = 267 MB                          | 239 MB             |
+  | Lectura intensa (900 peticiones, 12 a la vez, sin CPU) | 304 MB (2 procesos); 383 × 401 y 178 × 500 | 262 MB; 900 × 200  |
+
+- **Riesgo conocido, no resuelto aquí:** `GET /reports/sales` sin paginar
+  carga todas las ventas del período. Con ~300 ventas al día, el informe del
+  mes en curso que abre por defecto la pantalla Reportes pasa de 512 MB hacia
+  el día 20 del mes, con o sin límite de montón (con 14 días llega a ~480 MB).
+  Hay que paginarlo o agregarlo en SQL antes de que la tienda acumule ese
+  volumen.
 
 ## Salud y preparación
 
