@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Loading, Modal } from "@fitstore/ui";
-import { AlertCircle, Check, X } from "lucide-react";
+import { AlertCircle, Check, WifiOff, X } from "lucide-react";
 import { api } from "./api";
 import {
   businessErrorMessage,
@@ -129,6 +129,18 @@ export function QueryState({
   query: any;
   children: ReactNode;
 }) {
+  // 05-M3: sin conexión React Query deja en pausa las consultas al servidor:
+  // antes quedaba «Cargando datos…» para siempre.
+  if (query.isPending && query.fetchStatus === "paused")
+    return (
+      <div className="error-panel" role="status">
+        <WifiOff />
+        <p>Sin conexión: esta información necesita internet.</p>
+        <Button variant="secondary" onClick={() => query.refetch()}>
+          Reintentar
+        </Button>
+      </div>
+    );
   if (query.isPending) return <Loading />;
   if (query.error)
     return (
