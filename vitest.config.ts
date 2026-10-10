@@ -28,6 +28,8 @@ export default defineConfig({
       "tests/customer-privacy.test.ts",
       "tests/sales-pdf.test.ts",
       "tests/customer-anonymization-postgres.test.ts",
+      "tests/datos-unit.test.ts",
+      "tests/datos-integridad-postgres.test.ts",
       "tests/accessibility-contract.test.ts",
       "tests/variant-code-unique-postgres.test.ts",
       "tests/telegram-render.test.ts",
