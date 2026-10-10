@@ -68,7 +68,11 @@ export const ATTEMPT_LOCK_MINUTES = 15;
 // S-01 y S-03). No dependen de la IP: valen aunque el borde la colapse.
 export const LOGIN_ACCOUNT_FAILURES_PER_HOUR = 10;
 export const PIN_REQUESTER_FAILURES_PER_HOUR = 10;
-export const SHORT_PIN_FAILURES_PER_HOUR = 10;
+// N-6 (auditoría 01 v2): el cupo de PIN cortos de la sucursal es sólo un tope
+// de respaldo, mayor que lo que una persona puede gastar sola (el cupo del
+// solicitante, 10). Antes era 10 y una cajera lo agotaba y dejaba sin aprobar
+// a todos los gerentes con PIN corto durante una hora.
+export const SHORT_PIN_FAILURES_PER_HOUR = 30;
 
 /**
  * Cupo adicional a la clave propia del intento: `max` fallos dentro de una
@@ -258,10 +262,12 @@ const SHORT_PIN_MESSAGE =
 
 // El contador pertenece al solicitante, nunca bloquea la cuenta de otro
 // usuario. Además de la clave propia de cada ruta (5 fallos → 15 min), todos
-// los PIN del solicitante comparten un cupo de 10 fallos por hora, y los PIN
-// cortos (4 o 5 dígitos, anteriores a la regla de 6) un cupo de 10 fallos por
-// hora en toda la sucursal: como cada aprobación compara contra todos los
-// gerentes, ese es el límite que protege a cada gerente con PIN corto (S-03).
+// los PIN del solicitante comparten un cupo de 10 fallos por hora; los PIN
+// cortos (4 o 5 dígitos, anteriores a la regla de 6) suman además un tope de
+// respaldo de 30 fallos por hora en la sucursal: como cada aprobación compara
+// contra todos los gerentes, protege a quien conserve un PIN corto de varias
+// personas probando a la vez (S-03), pero ninguna persona sola lo agota
+// porque su propio cupo (10) la frena antes (N-6).
 // Se serializan comprobación, decisión y actualización; un rechazo se
 // devuelve después del COMMIT.
 export const verifyPinAttempt = (

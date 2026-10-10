@@ -362,9 +362,10 @@ describe("S-03 · PIN de gerente", () => {
     expect((await edit("975310")).status).toBe(200);
   });
 
-  // Un gerente con un PIN antiguo de 4 dígitos sigue aprobando, pero los
-  // intentos con PIN cortos tienen un cupo de toda la sucursal.
-  it("un PIN antiguo de 4 dígitos sigue funcionando y queda señalado; los fallos con PIN cortos tienen un cupo por sucursal", async () => {
+  // Un gerente con un PIN antiguo de 4 dígitos sigue aprobando. N-6: los
+  // fallos de una cajera no bloquean los PIN cortos de la sucursal (el cupo es
+  // por solicitante); sólo un tope de respaldo mayor lo hace.
+  it("un PIN antiguo de 4 dígitos sigue funcionando y queda señalado; los fallos de una cajera no bloquean a las demás", async () => {
     await db.authAttempt.deleteMany({ where: { key: "pin-short:main" } });
     const manager = await makeUser("manager", "4321");
     const strong = await makeUser("manager", "802461");
@@ -398,7 +399,9 @@ describe("S-03 · PIN de gerente", () => {
         where: { action: "pin_short_used", entityId: manager.id },
       });
       expect(flagged.userId).toBe(first.seller.id);
-      // Tres cajeras distintas prueban PIN de 4 dígitos (4 + 4 + 2 = 10).
+      // Tres cajeras distintas prueban PIN de 4 dígitos (4 + 4 + 2 = 10). Con
+      // el cupo de toda la sucursal en 10 (antes) la siguiente cajera quedaba
+      // sin poder aprobar con el PIN corto del gerente (N-6).
       const sessions = [
         await pendingSession(),
         await pendingSession(),
@@ -412,22 +415,30 @@ describe("S-03 · PIN de gerente", () => {
           expect(r.status).toBe(400);
           expect(r.body.message).toMatch(/PIN incorrecto/);
         }
-      // El undécimo intento con PIN corto se rechaza para toda la sucursal,
-      // incluso el correcto...
       const fourth = await pendingSession();
-      const shortBlocked = await fourth.approve("4321");
+      expect((await fourth.approve("4321")).status).toBe(201);
+      // El tope de respaldo de la sucursal (30 por hora) sigue existiendo:
+      // agotado, rechaza el PIN corto, incluso el correcto...
+      await db.authAttempt.upsert({
+        where: { key: "pin-short:main" },
+        create: {
+          key: "pin-short:main",
+          failedAttempts: 30,
+          windowStartedAt: new Date(),
+          lockedUntil: new Date(Date.now() + 30 * MINUTE),
+        },
+        update: {
+          failedAttempts: 30,
+          windowStartedAt: new Date(),
+          lockedUntil: new Date(Date.now() + 30 * MINUTE),
+        },
+      });
+      const fifth = await pendingSession();
+      const shortBlocked = await fifth.approve("4321");
       expect(shortBlocked.status).toBe(400);
       expect(shortBlocked.body.message).toMatch(/6 dígitos/);
       // ...pero un PIN de 6 dígitos sigue aprobando.
-      expect((await fourth.approve("802461")).status).toBe(201);
-      expect(
-        await db.auditLog.count({
-          where: {
-            action: "pin_locked",
-            after: { path: ["scope"], equals: "short-pin" },
-          },
-        }),
-      ).toBeGreaterThan(0);
+      expect((await fifth.approve("802461")).status).toBe(201);
     } finally {
       await db.authAttempt.deleteMany({ where: { key: "pin-short:main" } });
       await db.user.update({
