@@ -20,7 +20,7 @@ $script:ApiService='FitStoreAPI'; $script:WebService='FitStoreWeb'; $script:Post
 $script:count='0'; $script:mode='Disabled'; $script:state='Stopped'
 function Get-CimInstance { param($ClassName,$Filter,$ErrorAction) [pscustomobject]@{StartMode=$script:mode;State=$script:state} }
 function Start-FitStoreService { param($Name,$TimeoutSeconds) if($Name -ne 'FitStorePostgres'){throw 'Application must not start during guard'} }
-function Read-FitStoreJson { param($Path) if($Path -like '*recovery-login-state.json'){return Get-Content -LiteralPath $Path -Raw|ConvertFrom-Json}; [pscustomobject]@{databasePassword='fixture-only';postgresPassword='fixture-only'} }
+function Read-FitStoreJson { param($Path) if($Path -like '*recovery-login-state.json'){return Get-Content -LiteralPath $Path -Raw|ConvertFrom-Json}; [pscustomobject]@{databasePassword=[guid]::NewGuid().ToString('N');postgresPassword=[guid]::NewGuid().ToString('N')} }
 function Write-FitStoreJson { param($Path,$Value,[switch]$Protect) [IO.File]::WriteAllText($Path,($Value|ConvertTo-Json -Depth 10)) }
 function Invoke-FitStorePg { param($Tool,$Password,$Arguments,$FailureMessage) if(($Arguments -join ' ') -notmatch 'SELECT count'){throw 'Only read query allowed'}; return $script:count }
 function Get-Service { param($Name,$ErrorAction) [pscustomobject]@{Status='Stopped'} }
