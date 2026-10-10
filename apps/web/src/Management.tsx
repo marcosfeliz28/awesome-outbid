@@ -68,6 +68,7 @@ import {
 } from "./customer-display";
 import { managementQueryError } from "./managementMessages";
 import { IncentiveRates, MyIncentives } from "./Incentives";
+import { DriveBackupCard } from "./DriveBackup";
 import {
   applyPendingSaleReprice,
   discardPendingSale,
@@ -3285,6 +3286,7 @@ export function Configuration() {
             </div>
             <StoreSettings />
             <TelegramNotices />
+            <DriveBackupCard />
             <IncentiveRates />
           </QueryState>
         ) : tab === "users" ? (
