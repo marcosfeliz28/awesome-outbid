@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -513,6 +513,41 @@ describe("Render · proxy público", () => {
     );
   });
 
+  // M5 (auditoría de infraestructura): si la API no resuelve al arrancar, la
+  // web arranca igual con /api en 502 y reintenta; antes salía con error y
+  // Render la dejaba en bucle de arranque fallido.
+  it("la web arranca aunque la API no resuelva y /api responde 502 claro", () => {
+    const entrypoint = read("deploy/render/start-nginx.sh");
+    const startup = entrypoint.slice(
+      entrypoint.indexOf("api_ip=$(resolve_api_ip)"),
+      entrypoint.indexOf("exec /docker-entrypoint.sh"),
+    );
+    expect(startup).toContain("write_unavailable_upstream");
+    expect(startup).not.toMatch(/if \[ -z "\$api_ip" \]; then[^]*?exit 1/);
+    expect(entrypoint).toContain(
+      "printf 'server 127.0.0.1:%s down;\\n' \"$api_port\"",
+    );
+    // Si el bucle de re-resolución muere, se detiene Nginx para que Render
+    // reinicie la web (no queda con una IP vieja para siempre).
+    expect(entrypoint).toContain("trap '");
+    expect(entrypoint).toContain("kill -TERM $$");
+    const nginx = read("deploy/render/nginx.conf.template");
+    const api = nginx.slice(
+      nginx.indexOf("location ^~ /api/ {"),
+      nginx.indexOf("location = /sw.js {"),
+    );
+    expect(api).toContain("error_page 502 @nexora_api_unavailable;");
+    expect(api).toContain("error_page 504 @nexora_api_timeout;");
+    // El código se conserva (502/504): la PWA los trata como «sin conexión».
+    expect(api).toMatch(
+      /location @nexora_api_unavailable \{\s*default_type application\/json;\s*return 502 '\{"statusCode":502,"message":"[^']+"\}';/,
+    );
+    expect(api).toMatch(
+      /location @nexora_api_timeout \{\s*default_type application\/json;\s*return 504 '/,
+    );
+    expect(api).not.toContain("proxy_intercept_errors");
+  });
+
   it("las imágenes copian todos los archivos y herramientas que invocan", () => {
     const api = read("deploy/render/Dockerfile.api");
     const web = read("deploy/render/Dockerfile.web");
@@ -551,5 +586,64 @@ describe("Render · proxy público", () => {
       typescript: "~5.9.3",
       vite: expect.any(String),
     });
+  });
+});
+
+describe("CI · cadena de suministro y despliegue protegido", () => {
+  const workflows = readdirSync(resolve(root, ".github/workflows"))
+    .filter((file) => /\.ya?ml$/.test(file))
+    .map((file) => `.github/workflows/${file}`);
+
+  // M10: una etiqueta móvil (@v4) puede reescribirse; un SHA, no.
+  it("fija cada acción por SHA y limita el token a lectura", () => {
+    expect(workflows.length).toBeGreaterThan(0);
+    for (const path of workflows) {
+      const text = read(path);
+      const uses = [...text.matchAll(/^\s*-?\s*uses:\s*(\S+)(.*)$/gm)];
+      for (const [, ref, comment] of uses) {
+        expect(ref, `${path}: ${ref}`).toMatch(
+          /^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/,
+        );
+        expect(comment, `${path}: ${ref} sin versión`).toMatch(/# v\d/);
+      }
+      expect(text, path).toMatch(/^permissions:\n {2}contents: read$/m);
+      expect(text, path).not.toMatch(/contents: write|write-all/);
+    }
+    expect(read(".github/workflows/ci.yml")).toMatch(
+      /image: postgres:17\.\d+@sha256:[0-9a-f]{64}/,
+    );
+    expect(read(".github/dependabot.yml")).toContain(
+      "package-ecosystem: github-actions",
+    );
+  });
+
+  // A4: el CI construye ambas imágenes (sin publicarlas) y las arranca como
+  // en Render, terminando con post-deploy-check.mjs.
+  it("construye las imágenes de Render y ejecuta la comprobación posterior", () => {
+    const ci = read(".github/workflows/ci.yml");
+    const job = ci.slice(ci.indexOf("  render-images:"));
+    expect(job).toContain(
+      "docker build -f deploy/render/Dockerfile.api -t nexora-pos-api:ci .",
+    );
+    expect(job).toContain(
+      "docker build -f deploy/render/Dockerfile.web -t nexora-pos-web:ci .",
+    );
+    expect(job).toContain("bash deploy/render/ci-smoke.sh");
+    expect(ci).not.toMatch(/docker (push|login)|--push/);
+    const smoke = read("deploy/render/ci-smoke.sh");
+    // Usa la misma orden de migración que Render y la misma comprobación.
+    expect(smoke).toContain("preDeployCommand:");
+    expect(smoke).toContain("render.yaml");
+    expect(smoke).toContain("node deploy/render/post-deploy-check.mjs");
+    // La web arranca antes que la API y debe responder igual.
+    expect(smoke.indexOf('echo "2) La web arranca sin API"')).toBeLessThan(
+      smoke.indexOf('echo "4) Arranca la API"'),
+    );
+    expect(smoke).toContain('"statusCode":502');
+    // Comprobación manual tras desplegar, sin secretos en la orden.
+    const post = read(".github/workflows/post-deploy-check.yml");
+    expect(post).toContain("workflow_dispatch:");
+    expect(post).toContain("NEXORA_WEB_URL: ${{ inputs.web_url }}");
+    expect(post).not.toMatch(/run:.*\$\{\{/);
   });
 });

@@ -1,0 +1,9 @@
+# M10: propone por PR las nuevas versiones de las acciones de GitHub, que el
+# CI fija por SHA. Nada se mezcla solo: cada PR pasa por el CI y una revisión.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

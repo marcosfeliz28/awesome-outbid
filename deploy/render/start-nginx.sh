@@ -49,14 +49,32 @@ write_upstream() {
   mv "$upstream_file.tmp" "$upstream_file"
 }
 
-api_ip=$(resolve_api_ip)
-if [ -z "$api_ip" ]; then
-  echo "No se pudo resolver la IPv4 privada de API_UPSTREAM." >&2
-  exit 1
-fi
-write_upstream "$api_ip"
+# Upstream de reserva: un servidor marcado `down`, así Nginx arranca y
+# responde 502 (JSON claro en /api, ver nginx.conf.template) en vez de dejar
+# la web caída. La PWA trata el 502 como «sin conexión».
+write_unavailable_upstream() {
+  printf 'server 127.0.0.1:%s down;\n' "$api_port" > "$upstream_file.tmp"
+  mv "$upstream_file.tmp" "$upstream_file"
+}
 
+# Si la API no resuelve al arrancar (suspendida, reiniciando o en un
+# despliegue fallido), la web arranca igual: sirve la PWA, /healthz responde
+# y /api devuelve 502 hasta que el bucle de abajo encuentre la API.
+api_ip=$(resolve_api_ip)
+if [ -n "$api_ip" ]; then
+  write_upstream "$api_ip"
+else
+  echo "La API aún no resuelve; Nginx arranca con /api en 502 y se reintenta cada ${NEXORA_UPSTREAM_REFRESH_SECONDS:-10} s." >&2
+  write_unavailable_upstream
+fi
+
+# El bucle mantiene vivo el enlace con la API. Si termina (error o señal),
+# detiene Nginx ($$ es el PID que hereda Nginx con `exec`) para que Render
+# reinicie la web en lugar de dejarla con una IP vieja para siempre. Docker
+# sólo envía la señal de parada a Nginx (PID 1), no a este bucle.
 (
+  trap 'echo "El bucle de re-resolución de la API terminó; se detiene Nginx para reiniciar la web." >&2; kill -TERM $$ 2>/dev/null' EXIT
+  trap 'exit 1' HUP INT TERM
   current_ip=$api_ip
   while sleep "${NEXORA_UPSTREAM_REFRESH_SECONDS:-10}"; do
     new_ip=$(resolve_api_ip)
