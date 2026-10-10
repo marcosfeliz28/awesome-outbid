@@ -3568,6 +3568,14 @@ export function Configuration() {
     ),
     {
       ...requiredNumber(
+        "receivableShiftLimit",
+        "Crédito y contraentrega por turno sin PIN de gerente (RD$)",
+        3000,
+      ),
+      help: "Suma de lo que una cajera deja por cobrar en su turno, de todos sus clientes. Por encima, se pide el PIN de un gerente.",
+    },
+    {
+      ...requiredNumber(
         "cashMovementApprovalLimit",
         "Salidas de efectivo por turno sin PIN de gerente (RD$)",
         1000,

@@ -36,6 +36,8 @@ import {
   moneyAmount,
   quantity,
   receivableNeedsApproval,
+  RECEIVABLE_SHIFT_LIMIT,
+  businessDate,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -236,6 +238,31 @@ export async function customerOpenDebt(
     _sum: { creditBalance: true },
   });
   return money(debt._sum.creditBalance ?? 0);
+}
+
+// N-2: lo que esta persona ya dejó por cobrar (crédito y contraentrega) en el
+// turno de esta caja o en el día de negocio, de cualquier cliente. Se cuenta
+// lo originado, no el saldo: un abono no libera el tope.
+export async function sellerShiftReceivable(
+  db: any,
+  actor: Actor,
+  cashSessionId: string,
+) {
+  const dayStart = new Date(businessDate() + "T00:00:00-04:00");
+  const total = await db.payment.aggregate({
+    where: {
+      method: { in: ["credit", "cod"] },
+      entryType: "sale",
+      sale: {
+        branchId: actor.branchId,
+        sellerId: actor.id,
+        status: "completed",
+        OR: [{ cashSessionId }, { createdAt: { gte: dayStart } }],
+      },
+    },
+    _sum: { amount: true },
+  });
+  return money(total._sum.amount ?? 0);
 }
 
 // Una venta pendiente se mantiene como una sola cuenta por cobrar hasta que
@@ -447,14 +474,28 @@ export class SalesController {
       receivable && !manages && input.customerId
         ? await customerOpenDebt(this.db, actor.branchId, input.customerId)
         : 0;
+    const shiftReceivable =
+      receivable && !manages
+        ? await sellerShiftReceivable(this.db, actor, input.cashSessionId)
+        : 0;
     const needsCreditApproval = receivableNeedsApproval(
       input.payments,
       setting?.data as any,
       manages,
       openDebt,
+      shiftReceivable,
     );
+    const becauseOfShift =
+      needsCreditApproval &&
+      !receivableNeedsApproval(
+        input.payments,
+        setting?.data as any,
+        manages,
+        openDebt,
+      );
     const becauseOfDebt =
       needsCreditApproval &&
+      !becauseOfShift &&
       !receivableNeedsApproval(input.payments, setting?.data as any, manages);
     const needsNoteApproval = input.payments.some(
       (p) => p.method === "credit_note" && !p.creditNoteCode,
@@ -467,9 +508,11 @@ export class SalesController {
       return null;
     if (!input.managerPin)
       bad(
-        becauseOfDebt
-          ? `La deuda pendiente de este cliente más esta venta supera ${formatMoney(Number((setting?.data as any)?.creditApprovalThreshold ?? 1000))}: esta operación requiere el PIN de un gerente.`
-          : "Esta operación requiere el PIN de un gerente.",
+        becauseOfShift
+          ? `Lo que dejas por cobrar en este turno más esta venta supera ${formatMoney(Number((setting?.data as any)?.receivableShiftLimit ?? RECEIVABLE_SHIFT_LIMIT))}: esta operación requiere el PIN de un gerente.`
+          : becauseOfDebt
+            ? `La deuda pendiente de este cliente más esta venta supera ${formatMoney(Number((setting?.data as any)?.creditApprovalThreshold ?? 1000))}: esta operación requiere el PIN de un gerente.`
+            : "Esta operación requiere el PIN de un gerente.",
       );
     const managers = await this.db.user.findMany({
       where: { active: true, branchId: actor.branchId },
@@ -562,6 +605,16 @@ export class SalesController {
             bad("El UUID ya corresponde a otra venta.");
           return existing;
         }
+        // N-2: ventas por cobrar de la misma persona se atienden una tras otra
+        // para que el tope del turno se compruebe sobre lo ya confirmado. Es el
+        // primer bloqueo después del de la operación, así no entra en ciclos.
+        if (
+          !can(actor.permissions, "sale:manage") &&
+          input.payments.some(
+            (p) => p.method === "credit" || p.method === "cod",
+          )
+        )
+          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"receivable-shift:" + actor.id}))::text AS locked`;
         if (offline) {
           const settings = await tx.settings.findUnique({
             where: { id: actor.branchId },
@@ -743,10 +796,13 @@ export class SalesController {
               config,
               can(actor.permissions, "sale:manage"),
               debt,
+              can(actor.permissions, "sale:manage")
+                ? 0
+                : await sellerShiftReceivable(tx, actor, input.cashSessionId),
             )
           )
             bad(
-              "La deuda pendiente de este cliente cambió: esta operación requiere el PIN de un gerente.",
+              "La deuda del cliente o lo dejado por cobrar en el turno cambió: esta operación requiere el PIN de un gerente.",
             );
         }
         if (credit && config?.allowCreditSales !== true)

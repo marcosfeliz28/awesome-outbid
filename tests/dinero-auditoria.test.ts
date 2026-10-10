@@ -791,6 +791,71 @@ describe("Auditoría 01 · dinero", () => {
     );
   });
 
+  it("N-2: crear clientes nuevos no esquiva el tope de crédito y contraentrega por turno", async () => {
+    await withSettings({ allowCreditSales: true }, async () => {
+      const c = await person("seller", "n2", 500);
+      const v = await product(800, 300, 30);
+      const sellTo = async (extra: Record<string, unknown> = {}) => {
+        const sybil = await ok("/customers", admin, {
+          name: "QA Sybil " + randomUUID().slice(0, 6),
+        });
+        return request(
+          "/sales",
+          c.token,
+          saleBody(c, v, 1, [{ method: "cod", amount: 800 }], {
+            customerId: sybil.id,
+            ...extra,
+          }),
+        );
+      };
+      // Escenario del informe: cada cliente nuevo tiene deuda 0 y pasa el umbral
+      // por cliente (800 < 1,000); el tope del turno (3,000) lo detiene.
+      for (let i = 0; i < 3; i++) expect((await sellTo()).status).toBe(201);
+      const fourth = await sellTo();
+      expect(fourth.status).toBe(400);
+      expect(JSON.stringify(fourth.body)).toMatch(/turno.*PIN de un gerente/);
+      // Con el PIN de un gerente sí pasa.
+      expect((await sellTo({ managerPin: MANAGER_PIN })).status).toBe(201);
+      // Una gerente no está sujeta al tope de la cajera.
+      const m = await person("manager", "n2m", 0);
+      for (let i = 0; i < 5; i++) {
+        const customer = await ok("/customers", admin, {
+          name: "QA Sybil m " + randomUUID().slice(0, 6),
+        });
+        const r = await request(
+          "/sales",
+          m.token,
+          saleBody(m, v, 1, [{ method: "cod", amount: 800 }], {
+            customerId: customer.id,
+          }),
+        );
+        expect(r.status).toBe(201);
+      }
+      // En paralelo, con otra cajera: nunca pasan más de 3 sin PIN.
+      const p = await person("seller", "n2p", 500);
+      const results = await Promise.all(
+        Array.from({ length: 6 }, async () => {
+          const customer = await ok("/customers", admin, {
+            name: "QA Sybil p " + randomUUID().slice(0, 6),
+          });
+          return request(
+            "/sales",
+            p.token,
+            saleBody(p, v, 1, [{ method: "cod", amount: 800 }], {
+              customerId: customer.id,
+            }),
+          );
+        }),
+      );
+      expect(results.filter((r) => r.status === 201).length).toBe(3);
+      const owed = await db.sale.aggregate({
+        where: { cashSessionId: p.cash.id },
+        _sum: { creditBalance: true },
+      });
+      expect(Number(owed._sum.creditBalance)).toBe(2400);
+    });
+  });
+
   it("B-3: no se cierra el mes de incentivos en curso", async () => {
     const month = businessMonth();
     const r = await request("/incentives/close", admin, { month });
