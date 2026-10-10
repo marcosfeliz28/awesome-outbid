@@ -121,7 +121,7 @@ cuenta o en la laptop de reserva (modo isla).
 2. Render › `nexora-pos-api` › _Environment_ › editar `RENDER_DATABASE_URL`
    con esa URL › _Save, rebuild and deploy_ (fuera de horario si se puede).
 3. Al terminar: `https://nexora-pos-web.onrender.com/api/health` debe dar
-   `{"database":"ok"}` (o Actions › «Comprobación posterior al despliegue»).
+   `{"status":"ok"}` (o Actions › «Comprobación posterior al despliegue»).
    Probar inicio de sesión, una venta pequeña y su anulación.
 4. **Blueprint:** `render.yaml` toma la URL de la base llamada
    `nexora-pos-db`. Antes de volver a sincronizar el Blueprint, dejar escrito

@@ -283,12 +283,10 @@ node --max-old-space-size=256 deploy/render/with-cloud-env.mjs apps/api/dist/mai
   | Prueba R3b (4 cajas + gerente, 4 min)                  | 46 + 221 = 267 MB                          | 239 MB             |
   | Lectura intensa (900 peticiones, 12 a la vez, sin CPU) | 304 MB (2 procesos); 383 × 401 y 178 × 500 | 262 MB; 900 × 200  |
 
-- **Riesgo conocido, no resuelto aquí:** `GET /reports/sales` sin paginar
-  carga todas las ventas del período. Con ~300 ventas al día, el informe del
-  mes en curso que abre por defecto la pantalla Reportes pasa de 512 MB hacia
-  el día 20 del mes, con o sin límite de montón (con 14 días llega a ~480 MB).
-  Hay que paginarlo o agregarlo en SQL antes de que la tienda acumule ese
-  volumen.
+- **Informes:** ningún informe carga ya el período completo en memoria
+  (antes `GET /reports/sales` del mes en curso pasaba de 512 MB con unas
+  9 000 ventas). Medición y topes en
+  [Informes con historial y memoria de la API](#informes-con-historial-y-memoria-de-la-api).
 
 ## Salud y preparación
 
@@ -492,6 +490,15 @@ Blueprint sí los crea y sólo debe hacerse después de aprobar el gasto.
 
 Los disparadores automáticos permanecen apagados para conservar este orden.
 
+### Protección que sólo puede activar la dueña
+
+- GitHub › _Settings › Branches_: regla para `nexora-cloud` que exija el CI
+  en verde (`verify` y `render-images`) y una revisión antes de mezclar.
+- GitHub › _Settings › Actions › General_: permisos del `GITHUB_TOKEN` en
+  «Read repository contents» (los workflows ya piden sólo lectura).
+- Render › Blueprint: confirmar si _Auto Sync_ está activo y dejarlo
+  **apagado** (sincronizar sólo a mano, tras revisar el diff).
+
 ## Informes con historial y memoria de la API
 
 Ningún informe carga en memoria todas las ventas del período (PERF-informes,
@@ -563,15 +570,6 @@ empatadas (mismo importe o misma fecha) no estaba definido y tampoco ahora.
 La prueba `tests/reports-memory-postgres.test.ts` (PostgreSQL embebido, 3 000
 ventas) falla si una consulta de cualquier informe trae más de 5 000 objetos
 o un comprobante.
-
-### Protección que sólo puede activar la dueña
-
-- GitHub › _Settings › Branches_: regla para `nexora-cloud` que exija el CI
-  en verde (`verify` y `render-images`) y una revisión antes de mezclar.
-- GitHub › _Settings › Actions › General_: permisos del `GITHUB_TOKEN` en
-  «Read repository contents» (los workflows ya piden sólo lectura).
-- Render › Blueprint: confirmar si _Auto Sync_ está activo y dejarlo
-  **apagado** (sincronizar sólo a mano, tras revisar el diff).
 
 ## Respaldo y recuperación de Render
 

@@ -9,8 +9,8 @@ código ni Render.
 
 | Monitor          | Dirección                                          | Está bien si                            | Detecta                                                                 |
 | ---------------- | -------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------- |
-| 1. Venta posible | `https://nexora-pos-web.onrender.com/api/health`   | Código 200 y el texto `"database":"ok"` | Web, red privada, API **y base de datos**. Si la base cae responde 503. |
-| 2. Servidor vivo | `https://nexora-pos-web.onrender.com/healthz/deep` | Código 204 (o cualquier 2xx)            | Web y API (no la base). Ayuda a saber qué parte falló.                  |
+| 1. Venta posible | `https://nexora-pos-web.onrender.com/api/health`   | Código 200 y el texto `"status":"ok"`   | Web, red privada, API **y base de datos**. Si la base cae responde 503. |
+| 2. Servidor vivo | `https://nexora-pos-web.onrender.com/healthz/deep` | Código 204 (o cualquier 2xx)            | Web, API y base, sin cuerpo (lo resuelve Nginx, no la PWA).             |
 
 - Intervalo: **60 segundos**. Avisar después de **2 fallos seguidos** (o
   «después de 2 minutos caído») para no alarmar por un reinicio de segundos.
@@ -40,7 +40,7 @@ código ni Render.
    - Tipo: **Keyword** (si no aparece, **HTTP(s)**).
    - Nombre: `Nexora - venta posible`.
    - URL: `https://nexora-pos-web.onrender.com/api/health`.
-   - Palabra clave: `"database":"ok"`, avisar si **no existe**.
+   - Palabra clave: `"status":"ok"`, avisar si **no existe**.
    - Intervalo: el menor posible (ideal 1 min). Tiempo de espera: 30 s.
    - Marcar los contactos de Telegram (y SMS).
 5. **Monitor 2:** igual, tipo **HTTP(s)**, nombre `Nexora - servidor vivo`,
@@ -60,7 +60,7 @@ código ni Render.
    lo permite.
 3. _Monitors_ › _Create monitor_:
    - «Alert us when» **URL becomes unavailable** o **URL doesn't contain
-     keyword**, con `"database":"ok"`.
+     keyword**, con `"status":"ok"`.
    - URL `https://nexora-pos-web.onrender.com/api/health`, frecuencia la menor
      posible, _Confirmation period_ 1–2 min.
 4. Segundo monitor con `https://nexora-pos-web.onrender.com/healthz/deep`

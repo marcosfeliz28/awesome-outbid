@@ -85,7 +85,7 @@ En **Caja** ves **Mis incentivos** con lo tuyo del mes.
 
 **Contraseña olvidada:** la pantalla no tiene una opción para poner una contraseña nueva. Avisa a soporte técnico: le pone una temporal y la cajera crea la suya al entrar.
 
-**La página no carga:** espera 1 o 2 minutos y recarga (F5). Chequea si hay internet abriendo otra página. Abre **https://nexora-pos-web.onrender.com/api/health**: si dice `"database":"ok"`, el sistema está bien. Si sigue sin cargar, llama a soporte técnico y anota la hora.
+**La página no carga:** espera 1 o 2 minutos y recarga (F5). Chequea si hay internet abriendo otra página. Abre **https://nexora-pos-web.onrender.com/api/health**: si dice `"status":"ok"`, el sistema está bien. Si sigue sin cargar, llama a soporte técnico y anota la hora.
 
 **«Tu caja está abierta en "…"»:** tu caja quedó abierta en otra computadora. Ve a esa computadora, o pulsa **Trasladar caja aquí** → PIN de la gerente → **Trasladar caja**. Nunca abras una caja nueva para salir del paso.
 

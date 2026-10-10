@@ -326,7 +326,10 @@ describe("Operación · contingencia, monitoreo y restauración", () => {
     const guide = read("docs/MONITOREO.md");
     expect(guide).toContain("https://nexora-pos-web.onrender.com/api/health");
     expect(guide).toContain("https://nexora-pos-web.onrender.com/healthz/deep");
-    expect(guide).toContain('`"database":"ok"`');
+    // S-06 (fix-login): /api/health público sólo responde {"status":"ok"}
+    // (503 si la base falla); ya no publica «database».
+    expect(guide).toContain('`"status":"ok"`');
+    expect(guide).not.toContain('"database":"ok"');
     expect(guide).toContain("**60 segundos**");
     expect(guide).toMatch(/Telegram/);
   });

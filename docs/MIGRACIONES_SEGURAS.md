@@ -113,7 +113,7 @@ anterior. Pasos (desde el _Shell_ del servicio `nexora-pos-api`):
 
 ## Comprobar después de desplegar
 
-- `https://nexora-pos-web.onrender.com/api/health` → `{"database":"ok"}`, o
+- `https://nexora-pos-web.onrender.com/api/health` → `{"status":"ok"}`, o
   Actions › «Comprobación posterior al despliegue» › _Run workflow_.
 - Índices que las migraciones pueden omitir sin fallar (M3). La base no
   acepta conexiones desde Internet (`ipAllowList: []`) y la imagen de la API
