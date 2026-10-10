@@ -914,24 +914,27 @@ export class AdminController {
       }),
       body,
     );
-    if (id === actor.id && (data.active === false || data.roleId))
+    // El id llega normalizado (minúsculas): un UUID en mayúsculas no esquiva
+    // las protecciones sobre la propia cuenta.
+    const userId = parse(uuid, id);
+    if (userId === actor.id && (data.active === false || data.roleId))
       bad("Otro administrador debe cambiar tu acceso.");
     // Sin la contraseña actual, una sesión robada podría quedarse con la
     // cuenta: la propia se cambia sólo con «Cambiar mi contraseña».
-    if (id === actor.id && data.password)
+    if (userId === actor.id && data.password)
       bad(
         "Para tu propia contraseña usa «Cambiar mi contraseña» en el menú de tu cuenta.",
       );
     const { password, pin, username, ...rest } = data;
     await this.db.user.findFirstOrThrow({
-      where: { id: parse(uuid, id), branchId: actor.branchId },
+      where: { id: userId, branchId: actor.branchId },
     });
-    await this.freeCashierNumber(actor, data.cashierNumber, id);
+    await this.freeCashierNumber(actor, data.cashierNumber, userId);
     const passwordValue = password ? await passwordHash(password) : undefined;
     const pinValue = pin ? await passwordHash(pin) : undefined;
     const row = await this.db.$transaction(async (tx) => {
       const row = await tx.user.update({
-        where: { id },
+        where: { id: userId },
         data: {
           ...rest,
           ...(username
@@ -949,13 +952,18 @@ export class AdminController {
         },
       });
       if (password || pin || data.active === false) {
-        await tx.refreshToken.deleteMany({ where: { userId: id } });
-        await tx.authSession.deleteMany({ where: { userId: id } });
+        await tx.refreshToken.deleteMany({ where: { userId } });
+        await tx.authSession.deleteMany({ where: { userId } });
       }
       return row;
     });
     this.rememberLogin(row);
-    await audit(this.db, actor, "access_change", "user", id, undefined, rest);
+    // La contraseña y el PIN nunca se auditan; sólo que se cambiaron.
+    await audit(this.db, actor, "access_change", "user", userId, undefined, {
+      ...rest,
+      ...(password ? { passwordReset: true } : {}),
+      ...(pin ? { pinReset: true } : {}),
+    });
     return {
       id: row.id,
       name: row.name,
