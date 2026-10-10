@@ -12241,22 +12241,25 @@ describe("SEC-05: datos personales del cliente según el rol (Ley 172-13)", () =
     expect(stored.legalId).toBe("40212345999");
     expect(stored.phone).toBe("8095550456");
 
-    // Recibo PDF (interno, no fiscal): la cajera que vendió no recibe la
-    // cédula completa; la gerencia sí.
-    const sellerPdf = await pdfText(
-      "/sales/" + soldExisting.id + "/receipt.pdf",
-      cajeraToken,
-    );
-    expect(sellerPdf).toContain(existing.name);
-    expect(sellerPdf).toContain("678");
-    expect(sellerPdf).not.toContain(legalId);
-    expect(sellerPdf).not.toContain(phone);
-    const managerPdf = await pdfText(
-      "/sales/" + soldExisting.id + "/receipt.pdf",
-      managerToken,
-    );
-    expect(managerPdf).toContain(legalId);
-    expect(managerPdf).toContain(phone);
+    // Recibo PDF (no fiscal; sale por WhatsApp o correo, V2-02): ni la cajera
+    // ni la gerencia reciben en él la cédula completa ni el teléfono del
+    // cliente (sin NCF no lleva documento), y lleva el aviso de privacidad y
+    // la política de devolución.
+    for (const [token, who] of [
+      [cajeraToken, "cajera"],
+      [managerToken, "gerencia"],
+    ] as const) {
+      const pdf = await pdfText(
+        "/sales/" + soldExisting.id + "/receipt.pdf",
+        token,
+      );
+      expect(pdf, who).toContain(existing.name);
+      expect(pdf, who).not.toContain(legalId);
+      expect(pdf, who).not.toContain(phone);
+      expect(pdf, who).not.toContain("RNC/Cédula");
+      expect(pdf, who).toContain("Devoluciones:");
+      expect(pdf, who).toContain("Privacidad: usamos sus datos");
+    }
     await ok(
       "/cash-sessions/" + cajeraCash.id + "/close",
       {
