@@ -385,6 +385,11 @@ export const paymentTotals = (
  *   supera el umbral, o por cualquier monto si las ventas a crédito no están
  *   habilitadas (`allowCreditSales`). El umbral se aplica siempre, también al
  *   cliente con límite 0, que para el crédito sigue significando «sin límite».
+ * - Umbral por cliente (M-2, auditoría 01): para quien no tiene `sale:manage`,
+ *   la deuda abierta del cliente (`openDebt`) más el crédito y la
+ *   contraentrega de esta venta no pueden superar el umbral sin PIN; partir
+ *   la deuda en varias ventas pequeñas ya no evita el control. Sin
+ *   `openDebt` (0) la regla se aplica a la suma de esta venta.
  */
 export const receivableNeedsApproval = (
   payments: { method: string; amount: number }[],
@@ -393,14 +398,22 @@ export const receivableNeedsApproval = (
     | null
     | undefined,
   canManageSales: boolean,
+  openDebt: Decimal.Value = 0,
 ) => {
   const threshold = Number(settings?.creditApprovalThreshold ?? 1000);
   const sum = (method: string) =>
     payments
       .filter((p) => p.method === method)
       .reduce((a, p) => a.plus(p.amount), d(0));
-  if (sum("credit").gt(threshold)) return true;
+  const credit = sum("credit");
+  if (credit.gt(threshold)) return true;
   const cod = sum("cod");
+  if (
+    !canManageSales &&
+    credit.plus(cod).gt(0) &&
+    d(openDebt).plus(credit).plus(cod).gt(threshold)
+  )
+    return true;
   if (canManageSales || !cod.gt(0)) return false;
   return settings?.allowCreditSales !== true || cod.gt(threshold);
 };

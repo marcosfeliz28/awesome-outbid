@@ -22,6 +22,7 @@ import {
   paymentTotals,
   paymentReceiptLine,
   money,
+  formatMoney,
   d,
   can,
   z,
@@ -208,6 +209,25 @@ export function normalizeLegacyOfflineDiscount(
   };
 }
 
+// Deuda abierta de un cliente en la sucursal: saldo por cobrar de sus ventas
+// completadas (crédito, contraentrega o transferencia rechazada).
+export async function customerOpenDebt(
+  db: any,
+  branchId: string,
+  customerId: string,
+) {
+  const debt = await db.sale.aggregate({
+    where: {
+      customerId,
+      branchId,
+      status: "completed",
+      creditBalance: { gt: 0 },
+    },
+    _sum: { creditBalance: true },
+  });
+  return money(debt._sum.creditBalance ?? 0);
+}
+
 // Una venta pendiente se mantiene como una sola cuenta por cobrar hasta que
 // un administrador confirma todos sus abonos.
 async function refreshReceivableAlert(
@@ -391,12 +411,25 @@ export class SalesController {
     // Crédito y contraentrega (D-01): la misma regla que aplica la caja. La
     // contraentrega de quien no gestiona ventas pide PIN sobre el umbral, o
     // siempre si las ventas a crédito no están habilitadas; un límite de
-    // cliente 0 no la exime (ver receivableNeedsApproval).
+    // cliente 0 no la exime (ver receivableNeedsApproval). M-2: para quien no
+    // gestiona ventas cuenta además la deuda abierta del cliente.
+    const manages = can(actor.permissions, "sale:manage");
+    const receivable = input.payments.some(
+      (p) => p.method === "credit" || p.method === "cod",
+    );
+    const openDebt =
+      receivable && !manages && input.customerId
+        ? await customerOpenDebt(this.db, actor.branchId, input.customerId)
+        : 0;
     const needsCreditApproval = receivableNeedsApproval(
       input.payments,
       setting?.data as any,
-      can(actor.permissions, "sale:manage"),
+      manages,
+      openDebt,
     );
+    const becauseOfDebt =
+      needsCreditApproval &&
+      !receivableNeedsApproval(input.payments, setting?.data as any, manages);
     const needsNoteApproval = input.payments.some(
       (p) => p.method === "credit_note" && !p.creditNoteCode,
     );
@@ -406,7 +439,12 @@ export class SalesController {
       !needsNoteApproval
     )
       return null;
-    if (!input.managerPin) bad("Esta operación requiere el PIN de un gerente.");
+    if (!input.managerPin)
+      bad(
+        becauseOfDebt
+          ? `La deuda pendiente de este cliente más esta venta supera ${formatMoney(Number((setting?.data as any)?.creditApprovalThreshold ?? 1000))}: esta operación requiere el PIN de un gerente.`
+          : "Esta operación requiere el PIN de un gerente.",
+      );
     const managers = await this.db.user.findMany({
       where: { active: true, branchId: actor.branchId },
       include: { role: true },
@@ -653,32 +691,32 @@ export class SalesController {
         if ((credit || cod) && !customer)
           bad("El crédito / contraentrega requiere seleccionar un cliente.");
         if ((credit || cod) && customer) {
-          // Toda mercancía despachada pendiente de cobro cuenta en la deuda.
-          const debt = await tx.sale.aggregate({
-            where: {
-              customerId: customer.id,
-              branchId: actor.branchId,
-              status: "completed",
-              payments: {
-                some: {
-                  method: { in: ["credit", "cod"] },
-                  entryType: "sale",
-                },
-              },
-            },
-            _sum: { creditBalance: true },
-          });
+          // Toda mercancía despachada pendiente de cobro cuenta en la deuda
+          // (también una transferencia rechazada que pasó a cobrar, M-3).
+          const debt = await customerOpenDebt(tx, actor.branchId, customer.id);
           // Límite 0 = sin límite para el crédito (regla existente). La
           // contraentrega no queda abierta por eso: su aprobación por umbral
           // se aplica siempre en approve() (D-01).
           if (
             Number(customer.creditLimit) > 0 &&
-            d(debt._sum.creditBalance ?? 0)
-              .plus(credit)
-              .plus(cod)
-              .gt(customer.creditLimit)
+            d(debt).plus(credit).plus(cod).gt(customer.creditLimit)
           )
             bad("La venta supera el límite de crédito del cliente.");
+          // M-2: approve() miró la deuda antes de bloquear al cliente; con el
+          // bloqueo se vuelve a mirar para que dos ventas simultáneas no
+          // pasen ambas por debajo del umbral sin PIN.
+          if (
+            !approvedBy &&
+            receivableNeedsApproval(
+              input.payments,
+              config,
+              can(actor.permissions, "sale:manage"),
+              debt,
+            )
+          )
+            bad(
+              "La deuda pendiente de este cliente cambió: esta operación requiere el PIN de un gerente.",
+            );
         }
         if (credit && config?.allowCreditSales !== true)
           bad("Las ventas a crédito están desactivadas en Ajustes.");

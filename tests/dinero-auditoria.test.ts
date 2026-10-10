@@ -379,7 +379,7 @@ describe("Auditoría 01 · dinero", () => {
     }
   });
 
-  it.skip("M-2: con crédito activado, la deuda abierta del cliente cuenta para el umbral del PIN", async () => {
+  it("M-2: con crédito activado, la deuda abierta del cliente cuenta para el umbral del PIN", async () => {
     await withSettings({ allowCreditSales: true }, async () => {
       const c = await person("seller", "m2", 0);
       const v = await product(100, 40, 100);
