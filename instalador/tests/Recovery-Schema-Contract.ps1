@@ -1,17 +1,22 @@
+Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
-. (Join-Path $PSScriptRoot '../scripts/Recover-FitStoreUpdate.ps1') -DefinitionsOnly
+$source=Join-Path $PSScriptRoot '../scripts/Recover-FitStoreUpdate.ps1'
+. $source -DefinitionsOnly
 $schema=Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../apps/api/prisma/schema.prisma') -Raw
-$expected=[ordered]@{}
-foreach($model in [regex]::Matches($schema,'(?ms)^model\s+(\w+)\s*\{(.*?)^\}')){
- $columns=@([regex]::Matches($model.Groups[2].Value,'(?m)^\s+(createdAt|updatedAt|openedAt|closedAt)\s+DateTime\??\b')|ForEach-Object{$_.Groups[1].Value})
- if($columns.Count){$expected[$model.Groups[1].Value]=$columns}
- if($columns.Count -and $model.Groups[2].Value -match '@@map|@map'){throw 'Mapeo SQL requiere revisar contrato de recuperacion'}
-}
-if(-not(Get-Command Get-FitStoreRecoveryActivityColumns -ErrorAction SilentlyContinue)){throw '3i4: falta contrato de tablas y columnas de actividad'}
+# Solo el nucleo imprescindible es fijo; el resto se descubre en la base real.
+$expected=@{Sale=@('createdAt','updatedAt');AuditLog=@('createdAt');Payment=@('createdAt');SaleReturn=@('createdAt');CashMovement=@('createdAt');CashSession=@('openedAt','closedAt');InventoryMovement=@('createdAt')}
 $actual=Get-FitStoreRecoveryActivityColumns
-if($actual.Count -ne $expected.Count){throw 'Contrato omite o inventa modelos Prisma'}
-foreach($table in $actual.Keys){
- if(-not $expected.Contains($table)){throw "Tabla inexistente $table"}
- if(@(Compare-Object @($expected[$table]) @($actual[$table])).Count){throw "Columnas no corresponden a Prisma: $table"}
+if($actual.Count -ne 7){throw 'B2: mapa fijo aun contiene modelos opcionales del paquete nuevo; debe ser solo nucleo de siete tablas.'}
+foreach($table in $expected.Keys){
+ if(-not $actual.Contains($table) -or @(Compare-Object @($expected[$table]) @($actual[$table])).Count){throw "Nucleo omitido o alterado: $table"}
+ $model=[regex]::Match($schema,'(?ms)^model\s+'+$table+'\s*\{(.*?)^\}')
+ if(-not $model.Success -or $model.Groups[1].Value -match '@@map|@map'){throw "Modelo SQL requiere revisar nucleo: $table"}
+ foreach($column in $expected[$table]){if($model.Groups[1].Value -notmatch ('(?m)^\s+'+$column+'\s+DateTime\??\b')){throw "Columna nucleo no corresponde a Prisma: $table.$column"}}
 }
-Write-Host "PASS 3i4: $($actual.Count) modelos y todas sus marcas de actividad coinciden con Prisma."
+$ast=[Management.Automation.Language.Parser]::ParseFile($source,[ref]$null,[ref]$null)
+$dynamic=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Get-FitStoreDatabaseActivitySql'},$true).Extent.Text
+foreach($required in @('information_schema.tables','information_schema.columns','Get-FitStoreRecoveryActivityColumns','--list','$liveTables','$live.Keys')){
+ if(-not $dynamic.Contains($required)){throw "Guardia dinamica no acredita contrato real: $required"}
+}
+foreach($column in @('lastActivityAt','approvedAt','revokedAt','sentAt')){if(-not $dynamic.Contains($column)){throw "Actividad adicional omitida: $column"}}
+Write-Host 'PASS B2: nucleo fijo siete tablas cotejado con Prisma; consulta viva dinamica information_schema y tablas del dump, no mapa de 38 modelos.'

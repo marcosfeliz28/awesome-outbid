@@ -248,27 +248,13 @@ function Invoke-FitStoreRecoveryPgCtl {
 }
 
 function Get-FitStoreRecoveryActivityColumns {
-  # Contrato cotejado con schema.prisma: toda marca de alta/modificacion/cierre.
-  # No usar fechas comerciales (vencimiento/captura prevista) como actividad.
+  # SOLO nucleo obligatorio compatible con el esquema anterior. La consulta
+  # descubre tablas y marcas adicionales en information_schema y verifica dump.
   return [ordered]@{
-    Role=@('updatedAt'); User=@('createdAt','updatedAt'); RefreshToken=@('createdAt')
-    Category=@('createdAt','updatedAt'); Supplier=@('createdAt','updatedAt')
-    Product=@('createdAt','updatedAt'); Variant=@('createdAt','updatedAt')
-    Lot=@('createdAt','updatedAt'); LotIdentityConflict=@('createdAt')
-    InventoryMovement=@('createdAt'); Customer=@('createdAt','updatedAt')
-    Sale=@('createdAt','updatedAt'); Payment=@('createdAt'); SaleReturn=@('createdAt')
-    CreditNote=@('createdAt'); Quote=@('createdAt','updatedAt')
-    PurchaseOrder=@('createdAt','updatedAt'); GoodsReceipt=@('createdAt')
-    SupplierPayment=@('createdAt'); InventoryCount=@('createdAt')
-    CashSession=@('openedAt','closedAt'); CashMovement=@('createdAt')
-    Expense=@('createdAt','updatedAt'); Promotion=@('createdAt','updatedAt')
-    Alert=@('createdAt','updatedAt'); AlertRule=@('updatedAt')
-    AuditLog=@('createdAt'); Settings=@('updatedAt'); Terminal=@('createdAt')
-    RealtimeEvent=@('createdAt'); MerchandiseOperation=@('createdAt')
-    InvoiceDraft=@('createdAt'); InvoiceAttachment=@('createdAt')
-    NotificationOutbox=@('createdAt'); IncentiveRate=@('updatedAt')
-    IncentiveEntry=@('createdAt'); IncentivePeriodClose=@('closedAt')
-    IncentiveSettlement=@('closedAt')
+    Sale=@('createdAt','updatedAt'); AuditLog=@('createdAt')
+    Payment=@('createdAt'); SaleReturn=@('createdAt')
+    CashMovement=@('createdAt'); CashSession=@('openedAt','closedAt')
+    InventoryMovement=@('createdAt')
   }
 }
 
@@ -291,7 +277,7 @@ AND column_name IN ('createdAt','updatedAt','openedAt','closedAt','lastActivityA
     if(-not $live.Contains([string]$row.table)){$live[[string]$row.table]=@()}
     $live[[string]$row.table]+=[string]$row.column
   }
-  $core=@{Sale=@('createdAt','updatedAt');AuditLog=@('createdAt');Payment=@('createdAt');SaleReturn=@('createdAt');CashMovement=@('createdAt');CashSession=@('openedAt','closedAt');InventoryMovement=@('createdAt')}
+  $core=Get-FitStoreRecoveryActivityColumns
   foreach($table in $core.Keys){foreach($column in $core[$table]){
     if(-not $live.Contains($table) -or $column -notin $live[$table]){throw "Falta nucleo obligatorio $table.$column; recuperacion cancelada."}
   }}
