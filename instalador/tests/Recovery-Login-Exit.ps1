@@ -1,6 +1,7 @@
 param([string]$PgBin='C:/Program Files/PostgreSQL/18/bin',[int]$Port=55613,[string]$RecoverySource)
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot '../scripts/FitStore.Common.ps1')
 $source=if($RecoverySource){$RecoverySource}else{Join-Path $PSScriptRoot '../scripts/Recover-FitStoreUpdate.ps1'}
 $t=$null;$e=$null;$ast=[Management.Automation.Language.Parser]::ParseFile($source,[ref]$t,[ref]$e)
 foreach($f in $ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst]},$true)){Invoke-Expression $f.Extent.Text}
@@ -8,8 +9,7 @@ $root=Join-Path ([IO.Path]::GetTempPath()) ('nexora-login-exit-'+[guid]::NewGuid
 $cluster=Join-Path $root 'cluster';$marker=Join-Path $root 'marker.json'
 function Read-FitStoreJson {param($Path) Get-Content -LiteralPath $Path -Raw|ConvertFrom-Json}
 function Write-FitStoreJson {param($Path,$Value,[switch]$Protect) [IO.File]::WriteAllText($Path,($Value|ConvertTo-Json -Depth 10))}
-function Invoke-FitStorePg {param($Tool,$Password,$Arguments,$FailureMessage) & $Tool @Arguments; if($LASTEXITCODE -ne 0){throw $FailureMessage}}
-function Sql([string]$Query){ & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U postgres -d postgres -t -A -v ON_ERROR_STOP=1 -c $Query; if($LASTEXITCODE -ne 0){throw 'Fixture SQL failed'} }
+function Sql([string]$Query){Invoke-FitStorePgSql -Tool (Join-Path $PgBin 'psql.exe') -Password ([guid]::NewGuid().ToString('N')) -Arguments @('-h','127.0.0.1','-p',[string]$Port,'-U','postgres','-d','postgres','-t','-A','-v','ON_ERROR_STOP=1') -Sql $Query -FailureMessage 'Fixture SQL failed'}
 try {
  [IO.Directory]::CreateDirectory($root)|Out-Null
  & (Join-Path $PgBin 'initdb.exe') -D $cluster -U postgres -A trust --encoding=UTF8 --no-locale|Out-Null

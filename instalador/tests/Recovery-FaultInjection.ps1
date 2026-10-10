@@ -22,7 +22,7 @@ if($rollbackSource.IndexOf('-VerifiedPgBin $verifiedPgBin',$gate) -lt 0){throw '
 Write-Host 'PASS A3: manifiesto verificado antes de ejecutar binarios, usando exclusivamente runtime verificado.'
 $function=$ast.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Assert-FitStoreInterruptedRecovery'},$true)
 Invoke-Expression $function.Extent.Text
-foreach($name in @('Enable-FitStoreTemporaryPostgresAccess','Restore-FitStoreTemporaryPostgresAccess','Get-FitStoreRecoveryActivityColumns')){
+foreach($name in @('Enable-FitStoreTemporaryPostgresAccess','Restore-FitStoreTemporaryPostgresAccess','Restore-FitStorePendingPostgresAccess','Get-FitStoreRecoveryActivityColumns')){
  $definition=$ast.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)
  if(-not $definition){throw "3i2: falta helper real $name"}
  Invoke-Expression $definition.Extent.Text
@@ -35,6 +35,8 @@ function Start-FitStoreService { param($Name,$TimeoutSeconds) if($Name -ne 'FitS
 function Read-FitStoreJson { param($Path) if($Path -like '*recovery-login-state.json'){return Get-Content -LiteralPath $Path -Raw|ConvertFrom-Json}; [pscustomobject]@{databasePassword=[guid]::NewGuid().ToString('N');postgresPassword=[guid]::NewGuid().ToString('N')} }
 function Write-FitStoreJson { param($Path,$Value,[switch]$Protect) [IO.File]::WriteAllText($Path,($Value|ConvertTo-Json -Depth 10)) }
 function Invoke-FitStorePg { param($Tool,$Password,$Arguments,$FailureMessage) if(($Arguments -join ' ') -notmatch 'SELECT count'){throw 'Only read query allowed'}; return $script:count }
+function Invoke-FitStorePgSql {param($Tool,$Password,$Arguments,$FailureMessage,$Sql) if($Sql -notmatch 'SELECT count'){throw 'Only read query allowed'};return $script:count}
+function Get-FitStoreDatabaseActivitySql {param($Psql,$Arguments,$Password,$Archive,$Timestamp) return 'SELECT count(*) AS activity FROM fixture;'}
 function Get-Service { param($Name,$ErrorAction) [pscustomobject]@{Status='Stopped'} }
 function Get-FitStoreUpdateMarker { param($Paths) return (Join-Path $root 'update-marker.fixture.json') }
 $script:pgOperations=@()
@@ -44,7 +46,7 @@ try {
  [IO.File]::WriteAllText((Join-Path $root 'backup.dump'),'isolated backup fixture')
  [IO.File]::WriteAllText((Join-Path $root 'psql.exe'),'not executed')
  $paths=[pscustomobject]@{PgBin=$root;Secrets=(Join-Path $root 'secrets.json');Install=$root}
- $tx=[pscustomobject]@{backup=(Join-Path $root 'backup.dump');backupSha256=(Get-FileHash (Join-Path $root 'backup.dump')).Hash;backupCutoffAt='2026-10-09T10:00:00.0000000Z';applicationAutostartDisabled=$true;phase='snapshot-ready';snapshotPath=$root}
+ $tx=[pscustomobject]@{backup=(Join-Path $root 'backup.dump');backupSha256=(Get-FileHash (Join-Path $root 'backup.dump')).Hash;backupCutoffAt='2026-10-09T10:00:00.0000000Z';applicationAutostartDisabled=$true;phase='snapshot-ready';snapshotPath=$root;transactionPath=$root}
  Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx
  Write-Host 'PASS A3: corte de luz, servicios deshabilitados y sin ventas permite recuperacion.'
  foreach($case in @('sales','enabled','running','invalid-query','tampered-backup','legacy')) {
@@ -67,6 +69,17 @@ try {
  if($script:pgOperations.Count -ne 2 -or $script:pgOperations[0] -notmatch 'start$' -or $script:pgOperations[1] -notmatch 'stop$'){throw 'A3: snapshot PostgreSQL start/stop unbalanced'}
  Write-Host 'PASS A3: instalacion apartada usa PostgreSQL de snapshot y lo detiene tras consulta.'
  if($PgBin) {
+  $ct=$null;$ce=$null
+  $commonAst=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '../scripts/FitStore.Common.ps1'),[ref]$ct,[ref]$ce)
+  foreach($name in @('Invoke-FitStoreProcess','Invoke-FitStorePg','Invoke-FitStorePgSql')){
+   $definition=$commonAst.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true)
+   if(-not $definition){throw "Falta funcion Common real: $name"};Invoke-Expression $definition.Extent.Text
+  }
+  function SqlFixture([string]$Sql,[string]$User='postgres'){
+   Invoke-FitStorePgSql -Tool (Join-Path $PgBin 'psql.exe') -Password ([guid]::NewGuid().ToString('N')) -Arguments @('-h','127.0.0.1','-p',[string]$Port,'-U',$User,'-d','fitstore','-t','-A','-v','ON_ERROR_STOP=1') -Sql $Sql -FailureMessage 'Fixture SQL real fallo'
+  }
+  $definition=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Get-FitStoreDatabaseActivitySql'},$true)
+  if(-not $definition){throw 'Falta consulta real information_schema'};Invoke-Expression $definition.Extent.Text
   $cluster=Join-Path $root 'real-pg'
   & (Join-Path $PgBin 'initdb.exe') -D $cluster -U postgres -A trust --encoding=UTF8 --no-locale | Out-Null
   if($LASTEXITCODE -ne 0){throw 'initdb fixture failed'}
@@ -83,21 +96,22 @@ try {
     $columns=@([regex]::Matches($model.Groups[2].Value,'(?m)^\s+(createdAt|updatedAt|openedAt|closedAt)\s+DateTime\??\b')|ForEach-Object{'"'+$_.Groups[1].Value+'" timestamp'})
     if(-not $columns.Count){continue}
     $definition='CREATE TABLE "'+$table+'" ('+($columns -join ', ')+'); GRANT SELECT ON "'+$table+'" TO fitstore;'
-    & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U fitstore -d fitstore -v ON_ERROR_STOP=1 -c $definition.Replace('"','\"') | Out-Null
-    if($LASTEXITCODE -ne 0){throw "fixture activity schema failed: $table"}
+    Invoke-FitStorePgSql -Tool (Join-Path $PgBin 'psql.exe') -Password ([guid]::NewGuid().ToString('N')) -Arguments @('-h','127.0.0.1','-p',[string]$Port,'-U','fitstore','-d','fitstore','-v','ON_ERROR_STOP=1') -Sql $definition -FailureMessage "fixture activity schema failed: $table" | Out-Null
    }
-   function Invoke-FitStorePg {param($Tool,$Password,$Arguments,$FailureMessage) $localArgs=@($Arguments|ForEach-Object{if($_ -eq '--port=5434'){"--port=$Port"}else{([string]$_).Replace('"','\"')}}); & $Tool @localArgs; if($LASTEXITCODE -ne 0){throw $FailureMessage}}
    $paths.PgBin=$PgBin
+   & (Join-Path $PgBin 'pg_dump.exe') -h 127.0.0.1 -p $Port -U postgres -d fitstore -Fc -f $tx.backup
+   if($LASTEXITCODE -ne 0){throw 'Fixture dump real fallo'}
+   $tx.backupSha256=(Get-FileHash -LiteralPath $tx.backup).Hash
    Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port
    Write-Host 'PASS A3 PostgreSQL real: sin ventas posteriores autoriza.'
-   & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U fitstore -d fitstore -v ON_ERROR_STOP=1 -c 'INSERT INTO \"Sale\" (\"createdAt\") VALUES (TIMESTAMP ''2026-10-09 10:00:01'');' | Out-Null
+   SqlFixture 'INSERT INTO "Sale" ("createdAt") VALUES (TIMESTAMP ''2026-10-09 10:00:01'');' -User fitstore | Out-Null
    $denied=$false
    try{Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port}catch{$denied=$true}
    if(-not $denied){throw 'A3 PostgreSQL real: sale permitted destructive restore'}
-   $count=& (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U fitstore -d fitstore -t -A -c 'SELECT count(*) FROM \"Sale\";'
+   $count=SqlFixture 'SELECT count(*) FROM "Sale";' -User fitstore
    if(([string]$count).Trim() -ne '1'){throw 'A3: sale changed'}
    Write-Host 'PASS A3 PostgreSQL real: venta posterior rechaza y permanece intacta (count=1).'
-   & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U postgres -d fitstore -c 'TRUNCATE \"Sale\";' | Out-Null
+   SqlFixture 'TRUNCATE "Sale";' | Out-Null
    $archive=Join-Path $root 'verified-empty.dump'
    & (Join-Path $PgBin 'pg_dump.exe') -h 127.0.0.1 -p $Port -U postgres -d fitstore -Fc -f $archive
    if($LASTEXITCODE -ne 0){throw 'Real recovery dump fixture failed'}
@@ -108,9 +122,9 @@ try {
     Invoke-Expression $def.Extent.Text
    }
    Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port -ExclusiveAccess
-   $ErrorActionPreference='Continue'
-   try { & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U fitstore -d fitstore -c 'INSERT INTO \"Sale\" (\"createdAt\") VALUES (TIMESTAMP ''2026-10-09 10:00:01'');' 2>$null | Out-Null } finally { $ErrorActionPreference='Stop' }
-   if($LASTEXITCODE -eq 0){throw 'A3 exclusive: SQL writer admitted AFTER eligibility SELECT; restore can overwrite sale.'}
+   $writerFailed=$false
+   try { SqlFixture 'INSERT INTO "Sale" ("createdAt") VALUES (TIMESTAMP ''2026-10-09 10:00:01'');' -User fitstore 2>$null | Out-Null } catch {$writerFailed=$true}
+   if(-not $writerFailed -or $LASTEXITCODE -eq 0){throw 'A3 exclusive: SQL writer admitted AFTER eligibility SELECT; restore can overwrite sale.'}
    Write-Host 'PASS A3 exclusive: escritor fitstore posterior al SELECT recibe NOLOGIN.'
    # Corte despues de NOLOGIN: reejecutar sin perder lista original.
    Enable-FitStoreRecoveryIsolation -Transaction $tx -Psql (Join-Path $PgBin 'psql.exe') -Secrets (Read-FitStoreJson 'fixture') -DatabasePort $Port
@@ -132,7 +146,9 @@ try {
    $rollback=Join-Path $PSScriptRoot '../scripts/Rollback-FitStoreUpdate.ps1'
    $rt=$null;$re=$null;$ra=[Management.Automation.Language.Parser]::ParseFile($rollback,[ref]$rt,[ref]$re)
    $restore=$ra.Find({param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Restore-DatabaseFromUpdateBackup'},$true)
-   Invoke-Expression $restore.Extent.Text
+   # Implementacion real; sustituir SOLO puerto literal para base descartable.
+   # No wrapper que cambie escaping ni argumentos SQL de Common.
+   Invoke-Expression $restore.Extent.Text.Replace('--port=5434',"--port=$Port")
    function Wait-FitStorePostgres {param($Paths,$TimeoutSeconds)}
    Restore-DatabaseFromUpdateBackup -Paths $paths -Secrets (Read-FitStoreJson 'fixture') -Archive $archive -ExpectedHash (Get-FileHash -LiteralPath $archive).Hash -ExclusiveRecovery | Out-Null
    $login=& (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U postgres -d postgres -t -A -c "SELECT rolcanlogin FROM pg_roles WHERE rolname='fitstore';"
@@ -147,7 +163,7 @@ try {
    if(Test-Path -LiteralPath (Join-Path $root 'recovery-login-state.json')){throw 'State not cleaned after successful restoration'}
    Write-Host 'PASS A3 exclusive: corte antes de borrar estado permite restitucion idempotente.'
    # Venta posterior existente: rechazo restituye LOGIN, sin modificar venta.
-   & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U fitstore -d fitstore -c 'INSERT INTO \"Sale\" (\"createdAt\") VALUES (TIMESTAMP ''2026-10-09 10:00:01'');' | Out-Null
+   SqlFixture 'INSERT INTO "Sale" ("createdAt") VALUES (TIMESTAMP ''2026-10-09 10:00:01'');' -User fitstore | Out-Null
    if($LASTEXITCODE -ne 0){throw 'Restored table ownership prevents POS sale'}
    $denied=$false
    try{Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port -ExclusiveAccess}catch{$denied=$true}

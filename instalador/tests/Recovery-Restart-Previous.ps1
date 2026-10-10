@@ -6,17 +6,22 @@ $source=Get-Content -LiteralPath $rollbackPath -Raw
 $start=$source.IndexOf('try {' + "`r`n" + '  Stop-FitStoreApplication')
 if($start -lt 0){$start=$source.IndexOf('try {' + "`n" + '  Stop-FitStoreApplication')}
 if($start -lt 0){throw 'Fixture no encontro cuerpo rollback'}
-$body=[scriptblock]::Create('$databaseTouched = $false; $isolationReleased = $false' + "`n" + $source.Substring($start))
+$fixtureBody=[regex]::Replace($source.Substring($start),'(?m)^(\s*Disable-FitStoreRecoveryIsolation[^\r\n]+)$','$1 -DatabasePort $Port')
+$body=[scriptblock]::Create('$databaseTouched = $false; $isolationReleased = $false' + "`n" + $fixtureBody)
 . (Join-Path $PSScriptRoot '..\scripts\Recover-FitStoreUpdate.ps1') -DefinitionsOnly
 $tokens=$null;$parseErrors=$null
 $commonAst=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '..\scripts\FitStore.Common.ps1'),[ref]$tokens,[ref]$parseErrors)
+foreach($name in @('Invoke-FitStoreProcess','Invoke-FitStorePg','Invoke-FitStorePgSql')){
+ $definition=$commonAst.Find({param($node)$node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true)
+ if(-not $definition){throw "Falta Common real: $name"};Invoke-Expression $definition.Extent.Text
+}
 $actionFunction=$commonAst.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Get-FitStoreUpdateRecoveryAction'},$true)
 if(-not $actionFunction){throw 'Falta selector real de recuperacion'}
 . ([scriptblock]::Create($actionFunction.Extent.Text))
 $root=Join-Path $env:TEMP ('nexora-restart-'+[guid]::NewGuid().ToString('N'))
 $cluster=Join-Path $root 'cluster'
 $script:running=$false;$script:inject='';$script:logs=@()
-function Sql([string]$query){ & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U postgres -d postgres -t -A -v ON_ERROR_STOP=1 -c $query; if($LASTEXITCODE -ne 0){throw 'Fixture SQL failed'} }
+function Sql([string]$query){Invoke-FitStorePgSql -Tool (Join-Path $PgBin 'psql.exe') -Password ([guid]::NewGuid().ToString('N')) -Arguments @('-h','127.0.0.1','-p',[string]$Port,'-U','postgres','-d','postgres','-t','-A','-v','ON_ERROR_STOP=1') -Sql $query -FailureMessage 'Fixture SQL failed'}
 function Start-FitStoreService {param($Name)
  if(-not $script:running){Invoke-FitStoreRecoveryPgCtl -Tool (Join-Path $PgBin 'pg_ctl.exe') -Database $cluster -Arguments @('-D',$cluster,'-l',(Join-Path $root 'pg.log'),'-o',"-p $Port -h 127.0.0.1",'-w','start');$script:running=$true}
 }
@@ -31,10 +36,6 @@ $realWait=$commonAst.Find({param($node) $node -is [Management.Automation.Languag
 $fixtureAst=[Management.Automation.Language.Parser]::ParseFile($PSCommandPath,[ref]$tokens,[ref]$parseErrors)
 $fixtureWait=$fixtureAst.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Wait-FitStorePostgres'},$true)
 if(-not $realWait -or $realWait.Body.ParamBlock.Extent.Text -ne $fixtureWait.Body.ParamBlock.Extent.Text){throw '3j1: firma de espera fixture no coincide con funcion real'}
-function Invoke-FitStorePg {param($Tool,$Password,$Arguments,$FailureMessage)
- $actual=@($Arguments|ForEach-Object {if($_ -eq '--port=5434'){"--port=$Port"}else{$_}})
- & $Tool @actual; if($LASTEXITCODE -ne 0){throw $FailureMessage}
-}
 function Read-FitStoreJson {param($Path) [pscustomobject]@{postgresPassword=[guid]::NewGuid().ToString('N') }}
 function Stop-FitStoreApplication {}
 function Ensure-RestoredApplicationService {param($Paths,$Name,[switch]$KeepDisabled) if($script:inject -eq 'winsw'){throw 'fixture-original-winsw'}; return 'LocalSystem'}

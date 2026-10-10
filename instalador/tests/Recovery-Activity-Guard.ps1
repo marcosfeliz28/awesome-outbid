@@ -1,6 +1,7 @@
 param([string]$PgBin='C:/Program Files/PostgreSQL/18/bin',[int]$Port=55614,[string]$RecoverySource)
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot '../scripts/FitStore.Common.ps1')
 $source=if($RecoverySource){$RecoverySource}else{Join-Path $PSScriptRoot '../scripts/Recover-FitStoreUpdate.ps1'}
 $t=$null;$e=$null;$ast=[Management.Automation.Language.Parser]::ParseFile($source,[ref]$t,[ref]$e)
 foreach($f in $ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst]},$true)){Invoke-Expression $f.Extent.Text}
@@ -9,13 +10,7 @@ $script:ApiService='FitStoreAPI';$script:WebService='FitStoreWeb';$script:Postgr
 function Get-CimInstance {param($ClassName,$Filter,$ErrorAction) [pscustomobject]@{StartMode='Disabled';State='Stopped'}}
 function Start-FitStoreService {param($Name,$TimeoutSeconds)}
 function Read-FitStoreJson {param($Path) [pscustomobject]@{databasePassword=[guid]::NewGuid().ToString('N')}}
-function Invoke-FitStorePg {param($Tool,$Password,$Arguments,$FailureMessage)
- $command=@($Arguments|Where-Object{$_ -like '--command=*'})
- $remaining=@($Arguments|Where-Object{$_ -notlike '--command=*'})
- if($command.Count){$command[0].Substring(10)| & $Tool @remaining}else{ & $Tool @Arguments }
- if($LASTEXITCODE -ne 0){throw $FailureMessage}
-}
-function Sql([string]$Query){$Query| & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U postgres -d fitstore -t -A -v ON_ERROR_STOP=1; if($LASTEXITCODE -ne 0){throw 'Fixture SQL failed'}}
+function Sql([string]$Query){Invoke-FitStorePgSql -Tool (Join-Path $PgBin 'psql.exe') -Password ([guid]::NewGuid().ToString('N')) -Arguments @('-h','127.0.0.1','-p',[string]$Port,'-U','postgres','-d','fitstore','-t','-A','-v','ON_ERROR_STOP=1') -Sql $Query -FailureMessage 'Fixture SQL failed'}
 try {
  [IO.Directory]::CreateDirectory($root)|Out-Null
  & (Join-Path $PgBin 'initdb.exe') -D $cluster -U postgres -A trust --encoding=UTF8 --no-locale|Out-Null
@@ -34,9 +29,13 @@ try {
   Sql ('CREATE TABLE "'+$table+'" ('+$definition+'); GRANT SELECT ON "'+$table+'" TO fitstore;')|Out-Null
  }
  $tables=@('Sale','AuditLog','Payment','SaleReturn','CashMovement','InventoryMovement')
- $backup=Join-Path $root 'backup.dump';[IO.File]::WriteAllText($backup,'isolated hash fixture')
+ $backup=Join-Path $root 'backup.dump'
+ & (Join-Path $PgBin 'pg_dump.exe') -h 127.0.0.1 -p $Port -U postgres -d fitstore -Fc -f $backup
+ if($LASTEXITCODE -ne 0){throw 'Fixture dump real fallo'}
  $paths=[pscustomobject]@{PgBin=$PgBin;Secrets=(Join-Path $root 'fixture');Install=$root}
  $tx=[pscustomobject]@{backupCutoffAt=[DateTimeOffset]::UtcNow.AddHours(-1).ToString('o');applicationAutostartDisabled=$true;backup=$backup;backupSha256=(Get-FileHash $backup).Hash;snapshotPath=$root;phase='snapshot-ready'}
+ Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port
+ Write-Host 'PASS 3j3: Common real permite base sin actividad antes de probar rechazos.'
  $old=[DateTime]::UtcNow.AddHours(-2).ToString('o');$new=[DateTime]::UtcNow.ToString('o')
  Sql ('INSERT INTO "Sale" ("createdAt","updatedAt") VALUES (TIMESTAMP '''+$old+''',TIMESTAMP '''+$new+''');')|Out-Null
  $rejected=$false;try{Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port}catch{$rejected=$true}
