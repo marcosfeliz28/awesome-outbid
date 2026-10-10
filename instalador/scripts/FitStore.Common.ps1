@@ -170,8 +170,14 @@ function Initialize-FitStoreBackupStorage {
   $script:BackupReaderSid = ""
   if ($State.PSObject.Properties.Name -contains "backupReaderSid" -and $State.backupReaderSid) {
     $sid = [Security.Principal.SecurityIdentifier]::new([string]$State.backupReaderSid)
-    if (-not $sid.IsAccountSid()) { throw "El lector de respaldos debe ser el SID real de una cuenta de Windows." }
-    $script:BackupReaderSid = $sid.Value
+    if ($sid.Value -like "S-1-12-1-*") {
+      Write-FitStoreLog -InstallDir $Paths.Install -Level "AVISO" -Message "La cuenta Azure AD no tiene lectura automatica de respaldos en esta version. Las copias siguen privadas para SYSTEM y administradores; solicite configurar el acceso de esa cuenta sin usar Users ni Everyone."
+    } elseif (-not $sid.IsAccountSid()) { throw "El lector de respaldos debe ser el SID real de una cuenta de Windows." }
+    else { $script:BackupReaderSid = $sid.Value }
+  } elseif ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value -like "S-1-12-1-*") {
+    # Install descarta IsAccountSid() para identidades Azure AD. No callar esa
+    # limitacion: la copia local sigue privada, pero OneDrive no podra leerla.
+    Write-FitStoreLog -InstallDir $Paths.Install -Level "AVISO" -Message "La cuenta Azure AD del instalador no tiene lectura automatica de respaldos. Solicite configurar el acceso de esa cuenta sin usar Users ni Everyone."
   }
   New-FitStoreDirectory -Path $Paths.LocalBackups
   Protect-FitStoreBackupDirectory -Path $Paths.LocalBackups
