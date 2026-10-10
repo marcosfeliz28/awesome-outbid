@@ -1412,6 +1412,28 @@ export function Expenses() {
   );
 }
 
+// 05-B2: el tipo de alerta en español (antes «offline conflict», «low
+// stock»…). Un tipo nuevo sin etiqueta se muestra legible igual.
+const ALERT_TYPE_LABEL: Record<string, string> = {
+  offline_conflict: "Venta sin conexión",
+  receivable: "Por cobrar",
+  cash_difference: "Diferencia de caja",
+  return_waste: "Merma por devolución",
+  expense_budget: "Presupuesto de gastos",
+  expired: "Vencido",
+  expiring: "Por vencer",
+  low_margin: "Margen bajo",
+  low_sales: "Ventas bajas",
+  low_stock: "Stock bajo",
+  negative_stock: "Stock negativo",
+  no_movement: "Sin movimiento",
+  out_of_stock: "Agotado",
+  overstock: "Exceso de stock",
+  unusual_discount: "Descuento inusual",
+};
+const alertTypeLabel = (type: string) =>
+  ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " ");
+
 export function Cash() {
   const user = useStore((s) => s.user)!;
   const client = useQueryClient();
@@ -2661,7 +2683,7 @@ export function Alerts() {
                 <div>
                   <strong>{a.message}</strong>
                   <p>
-                    {dateLabel(a.createdAt)} · {a.type.replaceAll("_", " ")}
+                    {dateLabel(a.createdAt)} · {alertTypeLabel(a.type)}
                   </p>
                 </div>
                 <Badge tone={a.severity === "high" ? "danger" : "warning"}>

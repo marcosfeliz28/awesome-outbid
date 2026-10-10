@@ -219,3 +219,18 @@ describe("05-M8 y B3 · ticket con variante y textos sin nombres propios", () =>
     expect(pos).toContain("Sólo la administración podrá registrar después");
   });
 });
+
+describe("05-B2, B11 y B13 · textos y avisos baratos", () => {
+  it("B2: los tipos de alerta se muestran en español", () => {
+    const management = readFileSync("apps/web/src/Management.tsx", "utf8");
+    expect(management).toContain('offline_conflict: "Venta sin conexión"');
+    expect(management).toContain('low_stock: "Stock bajo"');
+    expect(management).toContain("{alertTypeLabel(a.type)}");
+    expect(management).not.toContain('{a.type.replaceAll("_", " ")}');
+  });
+  it("B11: el ejemplo del usuario no parece una cuenta real; B13: sin conexión se avisa", () => {
+    const app = readFileSync("apps/web/src/App.tsx", "utf8");
+    expect(app).not.toContain('placeholder="mfeliz"');
+    expect(app).toContain("Necesitas conexión para cambiar de vendedor.");
+  });
+});

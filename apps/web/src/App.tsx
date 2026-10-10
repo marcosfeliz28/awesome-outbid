@@ -348,7 +348,7 @@ function Login() {
               type="text"
               autoComplete="username"
               required
-              placeholder="mfeliz"
+              placeholder="Tu usuario o correo"
               value={login}
               onChange={(e) => setLogin(e.target.value)}
             />
@@ -959,9 +959,21 @@ function Shell() {
                 {can(user.permissions, "sale:write") && (
                   <button
                     onClick={async () => {
-                      setStaff(await api("/staff"));
-                      setSwitchUser(true);
-                      setAccount(false);
+                      // 05-B13: sin conexión la lista no llega; antes no se
+                      // veía nada.
+                      try {
+                        setStaff(await api("/staff"));
+                        setSwitchUser(true);
+                      } catch (e) {
+                        toast(
+                          isNetworkError(e)
+                            ? "Necesitas conexión para cambiar de vendedor."
+                            : (e as Error).message,
+                          true,
+                        );
+                      } finally {
+                        setAccount(false);
+                      }
                     }}
                   >
                     Cambiar vendedor con PIN
