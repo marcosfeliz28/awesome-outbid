@@ -1,6 +1,7 @@
 param([string]$PgBin,[int]$Port=55619,[string]$RecoverySource=(Join-Path $PSScriptRoot '../scripts/Recover-FitStoreUpdate.ps1'))
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot 'Exact-Dacl.ps1')
 . $RecoverySource -DefinitionsOnly
 if(-not(Get-Command Enable-FitStoreTemporaryPostgresAccess -ErrorAction SilentlyContinue)){throw '3i2: falta acceso temporal a PGDATA para cuenta actual'}
 $root=Join-Path ([IO.Path]::GetTempPath()) ('nexora-temporary-acl-'+[guid]::NewGuid().ToString('N'))
@@ -34,7 +35,7 @@ try {
  if(-not $rules.Count){throw '3i2: la cuenta actual no recibio Modify en PGDATA'}
  Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved -StatePath (Join-Path $root 'recovery-pgdata-acl.json')
  $actualRoot=Get-Acl -LiteralPath $cluster;$actualLeaf=Get-Acl -LiteralPath $leaf
- if($actualRoot.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $original -or $actualLeaf.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $originalLeaf){
+ if(-not(Test-FitStoreExactDacl $original $actualRoot.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)) -or -not(Test-FitStoreExactDacl $originalLeaf $actualLeaf.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access))){
   Write-FitStoreAclDifference -Label ROOT -ExpectedSddl $original -ActualAcl $actualRoot -Directory $true
   Write-FitStoreAclDifference -Label LEAF -ExpectedSddl $originalLeaf -ActualAcl $actualLeaf -Directory $false
   throw '3i2: DACL originales no restauradas'
@@ -53,7 +54,7 @@ try {
  $saved=@(Enable-FitStoreTemporaryPostgresAccess -Database $cluster)
  Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved -StatePath (Join-Path $root 'recovery-pgdata-acl.json')
  $actualRoot=Get-Acl -LiteralPath $cluster;$actualLeaf=Get-Acl -LiteralPath $leaf
- if($actualRoot.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $original -or $actualLeaf.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $originalLeaf){
+ if(-not(Test-FitStoreExactDacl $original $actualRoot.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)) -or -not(Test-FitStoreExactDacl $originalLeaf $actualLeaf.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access))){
   Write-FitStoreAclDifference -Label ROOT-INHERITANCE -ExpectedSddl $original -ActualAcl $actualRoot -Directory $true
   Write-FitStoreAclDifference -Label LEAF-INHERITANCE -ExpectedSddl $originalLeaf -ActualAcl $actualLeaf -Directory $false
   throw '3j2: herencia y ACE explicitos originales no restaurados'
@@ -84,7 +85,7 @@ try {
    try {if($started){Invoke-FitStoreRecoveryPgCtl -Tool (Join-Path $PgBin 'pg_ctl.exe') -Database $cluster -Arguments @('-D',$cluster,'-m','fast','-w','stop')}} finally {Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $window -StatePath (Join-Path $root 'recovery-pgdata-acl.json')}
   }
   $actualRoot=Get-Acl -LiteralPath $cluster
-  if($actualRoot.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $restrictedSddl){
+  if(-not(Test-FitStoreExactDacl $restrictedSddl $actualRoot.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access))){
    Write-FitStoreAclDifference -Label ROOT-POSTGRES -ExpectedSddl $restrictedSddl -ActualAcl $actualRoot -Directory $true
    throw '3i2: permiso temporal quedo tras PostgreSQL real'
   }

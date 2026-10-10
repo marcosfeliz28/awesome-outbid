@@ -29,6 +29,7 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     "Recovery-Physical-Directory",
     "Recovery-Schema-Contract",
     "Recovery-Acl-Interruption",
+    "Exact-Dacl-Contract",
     "Postgres-Real-Sql",
     "Recovery-Legacy-Schema",
     "Preflight-Backup-Fallback",

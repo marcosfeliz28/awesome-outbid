@@ -1,5 +1,6 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot 'Exact-Dacl.ps1')
 $source=(Resolve-Path (Join-Path $PSScriptRoot '../scripts/Recover-FitStoreUpdate.ps1')).Path
 . $source -DefinitionsOnly
 if(-not(Get-Command Restore-FitStorePendingPostgresAccess -ErrorAction SilentlyContinue)){throw '3j5: falta recuperacion persistente de DACL'}
@@ -25,7 +26,7 @@ try {
  & taskkill.exe /PID $child.Id /F|Out-Null
  $child.WaitForExit()
  Restore-FitStorePendingPostgresAccess -Database $database -StatePath $state
- if((Get-Acl -LiteralPath $database).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $original){throw 'DACL distinta tras taskkill y recuperacion'}
+ if(-not(Test-FitStoreExactDacl $original (Get-Acl -LiteralPath $database).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access))){throw 'DACL distinta tras taskkill y recuperacion'}
  if(((& icacls.exe $database) -join "`n") -cne $originalIcacls){throw 'icacls distinto tras taskkill y recuperacion'}
  if(Test-Path -LiteralPath $state){throw 'Diario no retirado tras restaurar todas las entradas'}
  Write-Host 'PASS 3j5: taskkill real; diario privado previo al grant; reinicio restaura DACL e icacls exactos.'

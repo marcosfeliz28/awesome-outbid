@@ -30,6 +30,7 @@ export const powershellTests = [
   "Recovery-Missing-Installation",
   "Recovery-Schema-Contract",
   "Recovery-Acl-Interruption",
+  "Exact-Dacl-Contract",
   "Postgres-Real-Sql",
   "Recovery-Legacy-Schema",
   "Preflight-Backup-Fallback",
