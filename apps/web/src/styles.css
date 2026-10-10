@@ -5433,3 +5433,34 @@ td strong {
     display: none;
   }
 }
+/* 05-A2: ventas sin conexión en conflicto: qué hacer y quién lo resuelve. */
+.pending-sale-help {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+  max-width: 42ch;
+}
+.discard-lines {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.form-hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.close-pending-warning {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--warning-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}

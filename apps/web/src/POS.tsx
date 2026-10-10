@@ -1775,6 +1775,7 @@ function Checkout({
           await localDB.sales.put({
             id: uuid.current,
             userId: user!.id,
+            userName: user!.name,
             branchId: user!.branchId,
             input: recoveryInput,
             status: "pending",
@@ -1854,6 +1855,7 @@ function Checkout({
         await localDB.sales.put({
           id: uuid.current,
           userId: user!.id,
+          userName: user!.name,
           branchId: user!.branchId,
           input,
           status: "pending",

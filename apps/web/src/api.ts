@@ -49,6 +49,9 @@ export type CartItem = {
 export type PendingSale = {
   id: string;
   userId: string;
+  // 05-A2: el nombre de quien cobró, para que gerencia la reconozca en el
+  // equipo (las ventas guardadas antes no lo tienen).
+  userName?: string;
   branchId: string;
   input: SaleInput;
   status: "pending" | "conflict";

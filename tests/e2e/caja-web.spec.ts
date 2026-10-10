@@ -593,6 +593,10 @@ test("A2: el conflicto de stock de una venta sin conexión de la cajera se expli
   await expect(row).toContainText("Requiere revisión", { timeout: 20000 });
   // La pantalla dice qué hacer y quién lo resuelve.
   await expect(row.locator(".pending-sale-help")).toContainText(/gerencia/i);
+  await page.screenshot({
+    path: test.info().outputPath("a2-conflicto-caja.png"),
+    fullPage: true,
+  });
   // El cierre avisa claro antes de contar.
   await page.getByRole("button", { name: "Cerrar y arquear" }).click();
   const closing = page.getByRole("dialog", { name: "Cuadre y cierre de caja" });
@@ -607,6 +611,9 @@ test("A2: el conflicto de stock de una venta sin conexión de la cajera se expli
     name: "Descartar venta sin conexión",
   });
   await expect(dialog).toContainText(name);
+  await dialog.screenshot({
+    path: test.info().outputPath("a2-descartar-con-pin.png"),
+  });
   await dialog
     .getByLabel("Motivo obligatorio")
     .fill("No hay unidades; se devolvió el dinero");

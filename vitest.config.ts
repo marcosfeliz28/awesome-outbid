@@ -38,6 +38,7 @@ export default defineConfig({
       "tests/afirmaciones.test.ts",
       "tests/licencias.test.ts",
       "tests/caja-web-ticket.test.ts",
+      "tests/offline-review-web.test.ts",
     ],
   },
 });
