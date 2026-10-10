@@ -9,7 +9,7 @@ $cluster=Join-Path $root 'cluster'
 $script:failure=''
 function Get-CimInstance {param($ClassName,$Filter,$ErrorAction) [pscustomobject]@{StartMode='Disabled';State='Stopped'}}
 function Get-Service {param($Name,$ErrorAction) [pscustomobject]@{Status='Stopped'}}
-function Read-FitStoreJson {param($Path) if($Path -eq 'fixture'){return @{postgresPassword='isolated-trust';databasePassword='isolated-trust'}};if(Test-Path -LiteralPath $Path){Get-Content -LiteralPath $Path -Raw|ConvertFrom-Json}}
+function Read-FitStoreJson {param($Path) if($Path -eq 'fixture'){return @{postgresPassword=[guid]::NewGuid().ToString('N');databasePassword=[guid]::NewGuid().ToString('N')}};if(Test-Path -LiteralPath $Path){Get-Content -LiteralPath $Path -Raw|ConvertFrom-Json}}
 function Write-FitStoreJson {param($Path,$Value,[switch]$Protect) [IO.File]::WriteAllText($Path,($Value|ConvertTo-Json -Depth 20))}
 function Get-FitStoreDatabaseActivitySql {param($Psql,$Arguments,$Password,$Archive,$Timestamp) 'SELECT 0;'}
 function Enable-FitStoreTemporaryPostgresAccess {param($Database,$TransactionPath) [IO.File]::WriteAllText((Join-Path $TransactionPath 'recovery-pgdata-acl.json'),'KEEP'); [pscustomobject]@{Path=$Database;Sddl='fixture'}}
