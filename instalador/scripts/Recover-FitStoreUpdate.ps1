@@ -2,6 +2,18 @@ param([string]$InstallDir, [switch]$DefinitionsOnly)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Assert-FitStoreRecoveryWorkingDirectory {
+  param([Parameter(Mandatory)][string]$InstallDir)
+  $location = Get-Location
+  if ($location.Provider.Name -ne 'FileSystem') { throw 'Ejecute recuperacion desde un directorio actual del sistema de archivos fuera de la instalacion.' }
+  $installation = [IO.Path]::GetFullPath($InstallDir).TrimEnd('\','/')
+  $current = [IO.Path]::GetFullPath($location.ProviderPath).TrimEnd('\','/')
+  if ($current.Equals($installation, [StringComparison]::OrdinalIgnoreCase) -or
+      $current.StartsWith($installation + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'El directorio actual esta dentro de la instalacion que debe reemplazarse. Abra PowerShell en una carpeta externa (por ejemplo TEMP) y ejecute el paquete nuevo de recuperacion desde alli. No se restauraron datos.'
+  }
+}
+
 function Invoke-FitStoreRecoveryPgCtl {
   param([string]$Tool, [string[]]$Arguments, [string]$Database)
   # No -Wait: Windows espera tambien a postgres (hijo persistente). Esperar
@@ -140,6 +152,7 @@ if ($DefinitionsOnly) { return }
 . (Join-Path $PSScriptRoot 'FitStore.Common.ps1')
 Assert-FitStoreAdministrator
 $paths = Get-FitStorePaths -InstallDir $InstallDir
+Assert-FitStoreRecoveryWorkingDirectory -InstallDir $paths.Install
 $marker = Get-FitStoreUpdateMarker -Paths $paths
 if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { throw 'No existe una actualizacion interrumpida que recuperar.' }
 $transaction = Read-FitStoreJson -Path $marker
