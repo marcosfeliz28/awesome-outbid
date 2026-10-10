@@ -41,7 +41,20 @@ function Assert-FitStoreInterruptedRecovery {
   $secrets = Read-FitStoreJson -Path $Paths.Secrets
   $timestamp = $cutoff.UtcDateTime.ToString('yyyy-MM-dd HH:mm:ss.fffffff', [Globalization.CultureInfo]::InvariantCulture)
   # Literal generado desde una fecha parseada, nunca desde texto libre.
-  $sql = 'SELECT count(*) FROM "Sale" WHERE "createdAt" >= TIMESTAMP ''' + $timestamp + ''';'
+  # La hora capturada offline puede preceder al respaldo. AuditLog usa la
+  # hora del servidor; incluir tambien cobros, devoluciones, caja e inventario.
+  # Una tabla/columna ausente provoca error y rechazo, nunca un cero inventado.
+  $sql = @"
+SELECT SUM(activity)::bigint FROM (
+  SELECT count(*) AS activity FROM "Sale" WHERE "createdAt" >= TIMESTAMP '$timestamp'
+  UNION ALL SELECT count(*) FROM "AuditLog" WHERE "createdAt" >= TIMESTAMP '$timestamp'
+  UNION ALL SELECT count(*) FROM "Payment" WHERE "createdAt" >= TIMESTAMP '$timestamp'
+  UNION ALL SELECT count(*) FROM "SaleReturn" WHERE "createdAt" >= TIMESTAMP '$timestamp'
+  UNION ALL SELECT count(*) FROM "CashMovement" WHERE "createdAt" >= TIMESTAMP '$timestamp'
+  UNION ALL SELECT count(*) FROM "InventoryMovement" WHERE "createdAt" >= TIMESTAMP '$timestamp'
+  UNION ALL SELECT count(*) FROM "CashSession" WHERE "openedAt" >= TIMESTAMP '$timestamp' OR "closedAt" >= TIMESTAMP '$timestamp'
+) AS recent_activity;
+"@
   $temporaryPostgres = $false
   try {
     if ($psql -ne (Join-Path $Paths.PgBin 'psql.exe')) {
