@@ -63,8 +63,10 @@ function Assert-FitStoreRecoveryWorkingDirectory {
 }
 
 function Restore-FitStoreTemporaryPostgresAccess {
-  param([object[]]$OriginalAcl)
+  param([object[]]$OriginalAcl,[string]$StatePath)
+  $failures=[Collections.Generic.List[string]]::new()
   foreach ($entry in $OriginalAcl) {
+    try {
     if (-not (Test-Path -LiteralPath $entry.Path)) { continue }
     $item = Get-Item -LiteralPath $entry.Path -Force
     $acl = if ($item.PSIsContainer) { [Security.AccessControl.DirectorySecurity]::new() } else { [Security.AccessControl.FileSecurity]::new() }
@@ -80,11 +82,31 @@ function Restore-FitStoreTemporaryPostgresAccess {
       $acl.SetAccessRuleProtection($false,$false)
       $item.SetAccessControl($acl)
     }
+    } catch {$failures.Add($entry.Path+': '+$_.Exception.Message)}
   }
+  if($failures.Count){throw ('No se pudieron restaurar todas las DACL originales: '+($failures -join '; '))}
+  if($StatePath -and (Test-Path -LiteralPath $StatePath)){Remove-Item -LiteralPath $StatePath -Force}
+}
+
+function Restore-FitStorePendingPostgresAccess {
+  param([string]$Database,[string]$StatePath)
+  if(-not(Test-Path -LiteralPath $StatePath)){return}
+  $state=Get-Content -LiteralPath $StatePath -Raw|ConvertFrom-Json
+  $base=[IO.Path]::GetFullPath($Database).TrimEnd('\')
+  if($state.database -ine $base){throw 'Estado DACL no corresponde a PGDATA; recuperacion cancelada.'}
+  foreach($entry in $state.entries){
+    $path=[IO.Path]::GetFullPath([string]$entry.Path)
+    if($path -ine $base -and -not $path.StartsWith($base+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Estado DACL contiene ruta fuera de PGDATA.'}
+    if((Get-Item -LiteralPath $path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Estado DACL contiene enlace.'}
+  }
+  Restore-FitStoreTemporaryPostgresAccess -OriginalAcl @($state.entries) -StatePath $StatePath
 }
 
 function Enable-FitStoreTemporaryPostgresAccess {
-  param([Parameter(Mandatory)][string]$Database)
+  param([Parameter(Mandatory)][string]$Database,[string]$TransactionPath)
+  if(-not $TransactionPath){$TransactionPath=Split-Path -Parent ([IO.Path]::GetFullPath($Database))}
+  $statePath=Join-Path $TransactionPath 'recovery-pgdata-acl.json'
+  Restore-FitStorePendingPostgresAccess -Database $Database -StatePath $statePath
   $root = Get-Item -LiteralPath $Database -Force
   if (-not $root.PSIsContainer -or ($root.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'PGDATA temporal debe ser un directorio real, no un enlace.' }
   $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User
@@ -97,6 +119,18 @@ function Enable-FitStoreTemporaryPostgresAccess {
       $acl = Get-Acl -LiteralPath $item.FullName
       $saved.Add([pscustomobject]@{ Path=$item.FullName; Sddl=$acl.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) })
     }
+    # Persistir ANTES de conceder. File.Create aplica DACL desde creacion;
+    # una interrupcion deja el diario privado para el siguiente arranque.
+    $privateAcl=[Security.AccessControl.FileSecurity]::new()
+    $privateAcl.SetAccessRuleProtection($true,$false)
+    foreach($identity in @('S-1-5-18','S-1-5-32-544',$sid.Value)){
+      $privateAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($identity),[Security.AccessControl.FileSystemRights]::FullControl,[Security.AccessControl.AccessControlType]::Allow))
+    }
+    $journal=[IO.File]::Create($statePath,4096,[IO.FileOptions]::WriteThrough,$privateAcl)
+    try{
+      $bytes=[Text.Encoding]::UTF8.GetBytes((@{database=$root.FullName.TrimEnd('\');entries=$saved.ToArray()}|ConvertTo-Json -Depth 6))
+      $journal.Write($bytes,0,$bytes.Length);$journal.Flush($true)
+    } finally{$journal.Dispose()}
     foreach ($entry in $saved) {
       $item = Get-Item -LiteralPath $entry.Path -Force
       $acl = if ($item.PSIsContainer) { [Security.AccessControl.DirectorySecurity]::new() } else { [Security.AccessControl.FileSecurity]::new() }
@@ -109,7 +143,7 @@ function Enable-FitStoreTemporaryPostgresAccess {
     return $saved.ToArray()
   } catch {
     $failure = $_
-    try { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved.ToArray() } catch { Write-Warning ('No se pudo retirar todo el acceso temporal a PGDATA: ' + $_.Exception.Message) }
+    try { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved.ToArray() -StatePath $statePath } catch { Write-Warning ('No se pudo retirar todo el acceso temporal a PGDATA: ' + $_.Exception.Message) }
     throw $failure
   }
 }
@@ -266,6 +300,7 @@ function Assert-FitStoreInterruptedRecovery {
   # Una tabla/columna ausente provoca error y rechazo, nunca un cero inventado.
   $temporaryPostgres = $false
   $temporaryAcl = @()
+  $guardFailure=$null
   try {
     if ($psql -ne (Join-Path $Paths.PgBin 'psql.exe')) {
       # El servicio registrado apunta a Program Files, que puede estar apartado.
@@ -273,7 +308,7 @@ function Assert-FitStoreInterruptedRecovery {
       $postgres = Get-Service -Name $script:PostgresService -ErrorAction Stop
       if ($postgres.Status -ne 'Running') {
         $pgCtl = Join-Path (Split-Path -Parent $psql) 'pg_ctl.exe'
-        $temporaryAcl = @(Enable-FitStoreTemporaryPostgresAccess -Database $Paths.Database)
+        $temporaryAcl = @(Enable-FitStoreTemporaryPostgresAccess -Database $Paths.Database -TransactionPath $Transaction.transactionPath)
         $temporaryPostgres = $true
         Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-l',(Join-Path $Paths.Database 'recovery-postgres.log'),'-o',"-p $DatabasePort",'-w','start')
       }
@@ -292,6 +327,7 @@ function Assert-FitStoreInterruptedRecovery {
   } catch {
     # Una negativa anterior a restaurar no deja usuarios bloqueados.
     $originalFailure=$_
+    $guardFailure=$originalFailure
     if ($ExclusiveAccess) {
       try { Disable-FitStoreRecoveryIsolation -Transaction $Transaction -Psql $psql -Secrets $secrets -DatabasePort $DatabasePort }
       catch { Write-Warning ('No se pudo restituir LOGIN automaticamente: '+$_.Exception.Message+'. Soporte debe ejecutar ALTER ROLE fitstore LOGIN; con postgres y revisar recovery-login-state.json antes de retirar el marcador. No restaure respaldos.') }
@@ -299,9 +335,13 @@ function Assert-FitStoreInterruptedRecovery {
     throw $originalFailure
   } finally {
     try {
-      if ($temporaryPostgres) { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
-    } finally {
-      if ($temporaryAcl.Count) { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $temporaryAcl }
+      try {
+        if ($temporaryPostgres) { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
+      } finally {
+        if ($temporaryAcl.Count) { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $temporaryAcl -StatePath (Join-Path $Transaction.transactionPath 'recovery-pgdata-acl.json') }
+      }
+    } catch {
+      if($guardFailure){Write-Warning ('Limpieza de PostgreSQL/DACL pendiente; conserve el diario y reintente recuperacion: '+$_.Exception.Message)}else{throw}
     }
   }
 }

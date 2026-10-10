@@ -15,7 +15,7 @@ try {
  $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
  $rules=@((Get-Acl -LiteralPath $leaf).Access | Where-Object {$_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value -eq $sid -and $_.AccessControlType -eq 'Allow' -and ($_.FileSystemRights -band [Security.AccessControl.FileSystemRights]::Modify) -eq [Security.AccessControl.FileSystemRights]::Modify})
  if(-not $rules.Count){throw '3i2: la cuenta actual no recibio Modify en PGDATA'}
- Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved
+ Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved -StatePath (Join-Path $root 'recovery-pgdata-acl.json')
  if((Get-Acl -LiteralPath $cluster).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $original -or (Get-Acl -LiteralPath $leaf).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $originalLeaf){throw '3i2: DACL originales no restauradas'}
  Write-Host 'PASS 3i2: cuenta actual recibe Modify; DACL originales de raiz y archivo restauradas.'
  # Reproducir control de herencia de runners: padre protegido y descendiente
@@ -29,7 +29,7 @@ try {
  $original=(Get-Acl -LiteralPath $cluster).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
  $originalLeaf=(Get-Acl -LiteralPath $leaf).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
  $saved=@(Enable-FitStoreTemporaryPostgresAccess -Database $cluster)
- Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved
+ Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $saved -StatePath (Join-Path $root 'recovery-pgdata-acl.json')
  if((Get-Acl -LiteralPath $cluster).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $original -or (Get-Acl -LiteralPath $leaf).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $originalLeaf){throw '3j2: herencia y ACE explicitos originales no restaurados'}
  Write-Host 'PASS 3j2: DACL exactas con padre protegido, herencia y ACE explicitos restauradas.'
  if($PgBin) {
@@ -54,7 +54,7 @@ try {
    & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U postgres -d postgres -t -A -c 'SELECT 1;' | Out-Null
    if($LASTEXITCODE -ne 0){throw '3i2: PostgreSQL real no consulta con permiso temporal'}
   } finally {
-   try {if($started){Invoke-FitStoreRecoveryPgCtl -Tool (Join-Path $PgBin 'pg_ctl.exe') -Database $cluster -Arguments @('-D',$cluster,'-m','fast','-w','stop')}} finally {Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $window}
+   try {if($started){Invoke-FitStoreRecoveryPgCtl -Tool (Join-Path $PgBin 'pg_ctl.exe') -Database $cluster -Arguments @('-D',$cluster,'-m','fast','-w','stop')}} finally {Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $window -StatePath (Join-Path $root 'recovery-pgdata-acl.json')}
   }
   if((Get-Acl -LiteralPath $cluster).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -cne $restrictedSddl){throw '3i2: permiso temporal quedo tras PostgreSQL real'}
   Write-Host 'PASS 3i2 PostgreSQL real: PGDATA con cuenta ReadAndExecute arranca con Modify temporal; ACL restringida vuelve tras stop.'
