@@ -134,6 +134,11 @@ const manualDiscount = (i: CartItem, globalDiscount: number) => {
   const global = Math.min(100, Math.max(0, globalDiscount));
   return 100 - ((100 - line) * (100 - global)) / 100;
 };
+// Nombre de la línea en el ticket: producto y variante, salvo «Única».
+const lineName = (i: CartItem) => {
+  const label = attrLabel(i.variant.attributes || {});
+  return label === "Única" ? i.product.name : i.product.name + " · " + label;
+};
 const lineGross = (i: CartItem, qty = i.qty) =>
   money(d(qty).times(Number(i.variant.price)));
 // Parece un código: un solo bloque de dígitos (con «-» o «.», como 1600) o
@@ -392,19 +397,13 @@ export function POS({ go }: { go: (page: string) => void }) {
         // La venta en espera conserva todos sus descuentos (R9-caja-4).
         globalDiscount: state.globalDiscount,
         ...wholesaleField(),
-        items: state.cart.map((i) => {
-          const label = attrLabel(i.variant.attributes || {});
-          return {
-            variantId: i.variant.id,
-            qty: i.qty,
-            discountPercent: i.discountPercent,
-            discountAmount: i.discountAmount,
-            name: (label === "Única"
-              ? i.product.name
-              : i.product.name + " · " + label
-            ).slice(0, 300),
-          };
-        }),
+        items: state.cart.map((i) => ({
+          variantId: i.variant.id,
+          qty: i.qty,
+          discountPercent: i.discountPercent,
+          discountAmount: i.discountAmount,
+          name: lineName(i).slice(0, 300),
+        })),
       });
       clearCart();
       await client.invalidateQueries({ queryKey: ["quotes"] });
@@ -1748,9 +1747,11 @@ function Checkout({
     };
     // El ticket lleva el descuento de cada línea para que cuadre con el total
     // cobrado (R9-caja-9).
+    // 05-M8: con la variante (talla, color, sabor, tono): dos «Shaker
+    // FitStore» de distinto color ya no se confunden en el ticket.
     const snapshot = cart.map((i, index) => ({
       variantId: i.variant.id,
-      name: i.product.name,
+      name: lineName(i),
       sku: i.variant.sku,
       qty: i.qty,
       unitPrice: Number(i.variant.price),
@@ -2172,7 +2173,7 @@ function Checkout({
         {method === "cod" && (
           <p className="cod-hint">
             Crédito / contraentrega: la mercancía sale ahora y el saldo queda a
-            nombre del cliente. Sólo Marcos o Genesis podrán registrar después
+            nombre del cliente. Sólo la administración podrá registrar después
             pagos parciales o completos por efectivo, tarjeta o transferencia.
           </p>
         )}

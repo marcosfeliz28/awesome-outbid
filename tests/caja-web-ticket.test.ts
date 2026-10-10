@@ -204,3 +204,18 @@ describe("05-A3/M1 · carrito en curso y cierre por inactividad", () => {
     expect(pin.slice(0, 400)).not.toContain("clearCart()");
   });
 });
+
+describe("05-M8 y B3 · ticket con variante y textos sin nombres propios", () => {
+  const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
+  it("la línea del ticket lleva la variante, como la venta en espera", () => {
+    const snapshot = pos.slice(pos.indexOf("const snapshot = cart.map"));
+    expect(snapshot.slice(0, 200)).toContain("name: lineName(i)");
+    expect(pos).toContain(
+      'label === "Única" ? i.product.name : i.product.name + " · " + label',
+    );
+  });
+  it("el cobro no nombra personas fijas", () => {
+    expect(pos).not.toMatch(/Marcos o Genesis/);
+    expect(pos).toContain("Sólo la administración podrá registrar después");
+  });
+});
