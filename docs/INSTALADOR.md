@@ -133,9 +133,17 @@ archivo `.cer` que se instala en los teléfonos sólo contiene la parte pública
   --list` para comprobarla y recibe un archivo SHA-256.
 - Se conservan los últimos 30 días.
 - El destino siempre es `%ProgramData%\FitStore POS\Backups`. Una actualización
-  corrige `state.backupPath` antiguo y retira permisos públicos de los archivos
-  `FitStore_*` que ya existían en el destino anterior. No elimina esas copias.
+  corrige `state.backupPath` antiguo e intenta retirar permisos públicos de los
+  archivos `FitStore_*` del destino anterior. Si la USB/red está inaccesible o
+  no admite ACL, registra un aviso: el original puede seguir con permisos públicos.
+  Preflight usa una copia local privada si no puede proteger el respaldo previo;
+  no elimina el original. Soporte debe revisar esa ubicación antigua.
 - Una actualización y una restauración crean otra copia antes de cambiar nada.
+
+La retención de 30 días no excluye los respaldos referenciados por un marcador
+de actualización pendiente, incluida la copia privada de Preflight. No pospongas
+una recuperación hasta que venza ese plazo: solicita soporte y conserva aparte
+una copia protegida verificada, sin alterar el marcador ni los datos vivos.
 
 Revisa al menos una vez por semana que aparezcan archivos recientes
 `FitStore_*.dump`, `.sha256` y `.json` en `%ProgramData%\FitStore POS\Backups`. Un respaldo dentro
@@ -143,10 +151,14 @@ de la misma laptop no protege frente a daño, robo o pérdida de esa laptop.
 
 Los archivos y la carpeta tienen una ACL privada: SYSTEM y los administradores
 pueden escribir. La cuenta de Windows que ejecutó el instalador tiene solamente
-lectura (y acceso a la carpeta), identificada por su SID real registrado en
+lectura (y acceso a la carpeta) cuando existe un SID real válido registrado en
 `state.json` como `backupReaderSid`. No se concede acceso a Users ni Everyone.
 Quien pueda usar esa cuenta de Windows también puede leer los datos de los
 respaldos. Ejecutar como otra cuenta administrativa registra esa otra cuenta.
+En instalaciones históricas sin `backupReaderSid` válido no se inventa un lector:
+las copias quedan para SYSTEM/Administradores. Las cuentas Azure AD
+(`S-1-12-1-…`) todavía no reciben lectura automática y generan un aviso;
+requieren configuración asistida sin dar acceso a Users ni Everyone.
 
 OneDrive corre como el usuario normal. Ese permiso de lectura permite copiar
 los archivos desde dicha cuenta, pero **el instalador no configura ni verifica
@@ -154,6 +166,14 @@ la sincronización de OneDrive**, ni copia automáticamente a USB. Configura y
 comprueba aparte la copia externa. El registro «Archivo de respaldo local
 validado por PostgreSQL» confirma la validación local, no que haya una copia
 fuera del equipo. Comprueba el archivo y su SHA-256 también en el destino externo.
+
+Preflight exige que el dump coincida con el hash previo registrado en su
+`.sha256` antes de copiarlo a la carpeta privada, y vuelve a comprobar la copia.
+El sidecar de la copia usa el nombre de la copia privada, no el del dump original.
+Esto detecta cambios del dump respecto de ese registro, pero no acredita autenticidad:
+quien pueda modificar a la vez el dump y su `.sha256` puede sustituir ambos.
+Una copia privada no vuelve confiable un respaldo externo ya manipulado;
+conserva hashes y copias de referencia en una ubicación protegida independiente.
 
 ## Restaurar un respaldo
 
@@ -196,8 +216,10 @@ no borres el respaldo indicado y entrega el registro a soporte.
    de API y web.
 7. Si la configuración, migración o verificación falla, el instalador restaura
    automáticamente los archivos, configuración y base anteriores, vuelve a
-   iniciar los servicios y comprueba API y HTTPS. Conserva además el instalador
-   anterior y el respaldo previo hasta completar la prueba de aceptación.
+   iniciar los servicios y comprueba API y HTTPS. La copia temporal de la versión
+   anterior se elimina automáticamente al completar `verified`, o al terminar
+   correctamente el rollback; no existe una aceptación diferida que la conserve.
+   El respaldo previo sigue sujeto a la retención de 30 días indicada arriba.
 
 Sólo puede ejecutarse una instalación, actualización o desinstalación a la vez.
 ### Recuperar después de un corte de luz
@@ -232,6 +254,38 @@ el respaldo, marcador y carpetas y solicite recuperación asistida. Una fase
 `verified` nunca restaura la base anterior; requiere limpieza manual del
 marcador preservando la versión activa. No cambie servicios para forzar este
 procedimiento. La prueba Windows-Smoke en una máquina limpia sigue pendiente.
+
+La consulta también comprueba `Sale.updatedAt`, cotizaciones (`Quote`), compras,
+clientes, productos, configuración e incentivos. Obtiene de `information_schema`
+las tablas y columnas de fecha de la base real, no exige el catálogo completo
+de la versión nueva. Comprueba `createdAt`, `updatedAt`, `openedAt`, `closedAt`,
+`lastActivityAt`, `approvedAt`, `revokedAt` y `sentAt` cuando existan.
+El núcleo obligatorio es Sale, AuditLog, Payment, SaleReturn, CashMovement,
+CashSession e InventoryMovement con sus columnas esenciales: si falta alguna,
+rechaza la recuperación, no cuenta como cero. También exige que cada tabla
+enumerada por `pg_restore --list` del respaldo siga existiendo en la base real.
+Una tabla nueva ausente antes de migrar solo es aceptable si no pertenece al
+núcleo ni aparece en ese respaldo. Una migración
+que inserte en `AuditLog` después del corte también hace que la recuperación se
+rechace: es un cierre seguro deliberado y requiere revisión asistida. Cambios de
+configuración o cotizaciones sin auditoría pero con fecha posterior igualmente
+bloquean. No es un historial genérico de commits de PostgreSQL: eliminaciones
+manuales sin auditoría o escrituras que no actualicen ninguna marca no quedan
+demostradas por esta consulta; si hubo intervención directa, no use recuperación
+automática y solicite revisión de soporte.
+
+La cobertura no demuestra todos los UPDATE o DELETE: `Brand`, `KitComponent`,
+`SaleItem`, `PurchaseItem`, `ExpenseCategory`, `Counter`, `AuthAttempt`,
+`AuthSession`, `SupplierImportProfile` y `SupplierCode` carecen de marcas
+genéricas `createdAt`/`updatedAt` en el esquema. Las marcas específicas de
+actividad de algunos modelos no equivalen a un historial completo de cambios;
+sin auditoría ni una marca comprobada, una escritura puede pasar inadvertida.
+En particular, `AuthSession.lastActivityAt` sí se consulta: AuthSession no está
+totalmente excluida. También se comprueban las fechas de actividad, aprobación y
+revocación de Terminal y `NotificationOutbox.sentAt` si existen en la base real.
+Un UPDATE de migración sobre `Variant` que dispare el trigger de
+`RealtimeEvent` después del corte también bloquea la recuperación: falla
+cerrada y requiere soporte, no significa que deba ignorarse ese evento.
 
 ### Limpieza asistida del marcador en services/verifying
 
@@ -272,19 +326,44 @@ automática ni una certificación de la prueba Windows-Smoke pendiente.
 Si el directorio actual está dentro de la instalación, el script **rechaza antes
 de restaurar**: salga de esa carpeta y repita desde el paquete externo. Así se
 evita bloquear el reemplazo de la carpeta instalada con `Move-Item`.
+También rechaza el directorio actual o el del script dentro de la transacción
+de actualización, incluida la copia anterior, resolviendo rutas reales (enlaces
+y nombres cortos). El paquete externo no debe extraerse en esos directorios.
 
 La recuperación guarda la lista de roles con LOGIN tanto en el marcador como en
-`recovery-login-state.json` antes de bloquear conexiones. Siempre restituye
-`fitstore` y los roles registrados al salir. Si otra interrupción deja el acceso
+`recovery-login-state.json` antes de bloquear conexiones. En una recuperación
+correcta restituye `fitstore` y los roles registrados antes de habilitar API/Web.
+Si falla sin haber intentado modificar la base, intenta arrancar PostgreSQL y
+restituir LOGIN en el camino de error. Si ya se entró en la fase de restauración
+y todavía no se liberó el aislamiento, conserva NOLOGIN como política
+conservadora de revisión: esto no demuestra que la base esté parcial.
+`pg_restore --single-transaction --exit-on-error` revierte su propia transacción
+si falla; el procedimiento completo incluye también archivos, configuración y
+servicios, que no comparten esa transacción. Si hubo LOGIN ya restituido y falla
+la comprobación HTTP o la limpieza posterior, registra ese estado y detiene
+la aplicación; no afirma que las cuentas sigan en NOLOGIN.
+La comprobación previa de actividad, si rechaza antes de restaurar, intenta
+restituir LOGIN; no es el mismo camino que un fallo durante el rollback.
+Soporte debe revisar qué fase falló antes de permitir clientes. Si el arranque o la
+restitución también fallan, conserva el plan y registra ese bloqueo sin ocultar
+el error original. Si otra interrupción deja el acceso
 bloqueado, soporte debe conectarse como `postgres` y ejecutar
-`ALTER ROLE fitstore LOGIN;`. Esta salida también se indica en el log; conserve
+`ALTER ROLE fitstore LOGIN;` **solo después de revisar la integridad de la base**.
+Esta salida también se indica en el log; conserve
 ambos archivos y no restaure ni elimine el marcador sin revisión asistida.
 
 **@dueña: probar en Windows limpio** PostgreSQL temporal con un cluster creado
-por otra cuenta: aún no está verificado que el token reducido de `pg_ctl` pueda
-acceder a una carpeta protegida solo para SYSTEM/Administradores. Las pruebas
-aisladas actuales crean el cluster con la misma cuenta y no acreditan ese caso.
+por otra cuenta: la recuperación concede una ACL temporal a la cuenta actual
+en PGDATA para el token reducido de `pg_ctl`, y restaura las ACL originales en
+`finally`. Falta verificar ese diseño con un cluster creado por otra cuenta;
+las pruebas aisladas actuales no acreditan ese caso de Windows limpio.
 No se declara el instalador certificado ni se entrega a la tienda sin esta prueba.
+
+Las regresiones deben respetar la firma real de `Wait-FitStorePostgres`
+(`Paths`, `TimeoutSeconds`): no acepta `Secrets`; un stub con parámetros extra
+puede ocultar un fallo de recuperación. La confirmación de CI completo en verde sigue pendiente
+para esta entrega, además de Windows-Smoke en Windows limpio. Una prueba focal
+local aprobada no sustituye ninguno de esos requisitos ni certifica el instalador.
 
 Un segundo asistente se detiene antes de tocar archivos o activar un rollback.
 
@@ -379,8 +458,13 @@ En una instalación nueva se generan con CSPRNG:
 - contraseña del PFX local.
 
 Los secretos no pasan como argumentos de procesos ni se escriben en registros.
-`.env`, `secrets.json`, `server.json`, PFX y archivos temporales reciben ACL sólo
-para `SYSTEM` y Administradores. `create-admin.ts` recibe las credenciales por
+`.env`, `secrets.json`, `server.json`, PFX y archivos temporales se protegen
+inicialmente para `SYSTEM` y Administradores. Después LocalService recibe lectura
+del `.env` de ejecución, `server.json` y `FitStore-server.pfx`, y los permisos
+de carpetas necesarios para API/Web; no recibe lectura de `secrets.json`,
+la clave de la CA ni los respaldos. La separación por SID de cada servicio sigue
+pendiente (B8); LocalService es una identidad compartida.
+`create-admin.ts` recibe las credenciales por
 variables de entorno, que se eliminan al terminar. No se ejecuta el seed de
 demostración.
 

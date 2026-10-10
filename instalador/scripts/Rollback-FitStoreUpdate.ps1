@@ -165,6 +165,8 @@ if ($RecoverInterrupted) {
   Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $transaction -ExclusiveAccess -VerifiedPgBin $verifiedPgBin
 }
 
+$databaseTouched = $false
+$isolationReleased = $false
 try {
   Stop-FitStoreApplication
   Stop-FitStoreService -Name $script:PostgresService -TimeoutSeconds 90
@@ -184,6 +186,9 @@ try {
   }
   if ($recoveryAction -in @("restore-snapshot", "resume-rollback")) {
     Assert-UpdateManifest -Manifest ([string]$transaction.manifestPath) -ExpectedManifestHash ([string]$transaction.manifestSha256) -Root $actualInstall
+    # A partir de aqui incluso un fallo parcial exige revisar la base antes de
+    # habilitar clientes; no interpretar un pg_restore fallido como base intacta.
+    $databaseTouched = $true
     if ($previousDataPath) { Restore-PreviousDataFiles -Paths $paths -PreviousDataPath $previousDataPath }
 
     $secrets = Read-FitStoreJson -Path $paths.Secrets
@@ -202,7 +207,13 @@ try {
   if ($usesLocalService) { Grant-FitStoreApplicationAccess -Paths $paths }
   else { Remove-FitStoreLocalServiceAccess -Paths $paths }
   if ($RecoverInterrupted) {
+    # restart-previous no pasa por Restore-DatabaseFromUpdateBackup, que inicia
+    # el servicio. Arrancarlo expresamente tambien en esa ruta antes de psql.
+    $secrets = Read-FitStoreJson -Path $paths.Secrets
+    Start-FitStoreService -Name $script:PostgresService
+    Wait-FitStorePostgres -Paths $paths -TimeoutSeconds 90
     Disable-FitStoreRecoveryIsolation -Transaction $transaction -Psql (Join-Path $paths.PgBin 'psql.exe') -Secrets (Read-FitStoreJson -Path $paths.Secrets)
+    $isolationReleased = $true
     Set-FitStoreServiceStartMode -Name $script:ApiService -Mode 'delayed-auto'
     Set-FitStoreServiceStartMode -Name $script:WebService -Mode 'delayed-auto'
   }
@@ -218,8 +229,25 @@ try {
   if (Test-Path -LiteralPath $transactionPath) { Remove-Item -LiteralPath $transactionPath -Recurse -Force }
   Write-Host "ROLLBACK CORRECTO: la versión anterior y su base fueron restauradas y verificadas."
 } catch {
+  $originalFailure = $_
   try { Stop-FitStoreApplication } catch {}
-  if ($RecoverInterrupted) { Write-FitStoreLog -InstallDir $actualInstall -Level 'ERROR' -Message 'Salida manual de soporte para NOLOGIN: ALTER ROLE fitstore LOGIN; con la cuenta administrativa postgres. La lista original de accesos esta en el marcador y recovery-login-state.json; conserve ambos y no restaure ni borre datos sin revision.' }
-  Write-FitStoreLog -InstallDir $actualInstall -Level "ERROR" -Message ("El rollback automático no terminó; se conservaron la transacción y el respaldo. " + $_.Exception.Message)
-  throw
+  if ($RecoverInterrupted) {
+    if ($isolationReleased) {
+      try { Write-FitStoreLog -InstallDir $actualInstall -Level 'ERROR' -Message 'LOGIN ya fue restituido tras restaurar la base; fallo la verificacion posterior o la limpieza. Aplicacion detenida: conserve marcador y solicite revision.' } catch {}
+    } elseif (-not $databaseTouched) {
+      try {
+        $secrets = Read-FitStoreJson -Path $paths.Secrets
+        Start-FitStoreService -Name $script:PostgresService
+        Wait-FitStorePostgres -Paths $paths -TimeoutSeconds 90
+        Disable-FitStoreRecoveryIsolation -Transaction $transaction -Psql (Join-Path $paths.PgBin 'psql.exe') -Secrets $secrets
+      } catch {
+        try { Write-FitStoreLog -InstallDir $actualInstall -Level 'ERROR' -Message 'La base no se modifico, pero no se pudo restituir LOGIN; queda bloqueada y requiere soporte.' } catch {}
+      }
+    } else {
+      try { Write-FitStoreLog -InstallDir $actualInstall -Level 'ERROR' -Message 'NOLOGIN conservado a proposito: la base pudo modificarse parcialmente. No habilite clientes sin verificar la recuperacion.' } catch {}
+    }
+    try { Write-FitStoreLog -InstallDir $actualInstall -Level 'ERROR' -Message 'Salida manual de soporte para NOLOGIN: ALTER ROLE fitstore LOGIN; con la cuenta administrativa postgres SOLO despues de verificar integridad. La lista original de accesos esta en el marcador y recovery-login-state.json; conserve ambos y no restaure ni borre datos sin revision.' } catch {}
+  }
+  try { Write-FitStoreLog -InstallDir $actualInstall -Level "ERROR" -Message ("El rollback automático no terminó; se conservaron la transacción y el respaldo. " + $originalFailure.Exception.Message) } catch {}
+  throw $originalFailure
 }

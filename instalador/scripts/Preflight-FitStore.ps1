@@ -78,12 +78,59 @@ try {
   if (-not $backup -or -not (Test-Path -LiteralPath $backup -PathType Leaf)) {
     throw "No se pudo verificar la ruta del respaldo previo. La actualización fue cancelada."
   }
-  # El script de respaldo de la version anterior puede escribir en una carpeta
-  # publica. Retirar esa ACL inmediatamente, antes de continuar el staging.
-  foreach ($backupFile in @($backup, "$backup.sha256", "$backup.json")) {
-    if (Test-Path -LiteralPath $backupFile -PathType Leaf) { Protect-FitStoreBackupFile -Path $backupFile }
+  $backupHashFile = "$backup.sha256"
+  if (-not (Test-Path -LiteralPath $backupHashFile -PathType Leaf)) {
+    throw 'Falta el SHA256 del respaldo previo. La actualizacion fue cancelada.'
+  }
+  $hashRecord = ([IO.File]::ReadAllText($backupHashFile)).Trim()
+  if ($hashRecord -notmatch '^(?<hash>[0-9a-fA-F]{64})\s+\*?[^\r\n]+$') {
+    throw 'El SHA256 del respaldo previo no tiene un formato valido. La actualizacion fue cancelada.'
+  }
+  $expectedBackupHash = $Matches.hash.ToLowerInvariant()
+  if ((Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expectedBackupHash) {
+    throw 'El respaldo previo no coincide con su SHA256 registrado. La actualizacion fue cancelada.'
+  }
+  # Cargar el SID registrado, no el de una fixture ni una identidad publica.
+  $privateBackupDirectory = Initialize-FitStoreBackupStorage -Paths $paths -State $state
+  try {
+    foreach ($backupFile in @($backup, "$backup.sha256", "$backup.json")) {
+      if (Test-Path -LiteralPath $backupFile -PathType Leaf) { Protect-FitStoreBackupFile -Path $backupFile }
+    }
+  } catch {
+    # USB/FAT o red pueden permitir leer pero no cambiar ACL. Conservar el
+    # original y utilizar una copia local privada creada con ACL desde el inicio.
+    $sourceBackup = [string]$backup
+    $privateBackup = Join-Path $privateBackupDirectory ("FitStore_preflight_" + [Guid]::NewGuid().ToString('N') + '.dump')
+    foreach ($suffix in @('', '.sha256', '.json')) {
+      $sourceFile = $sourceBackup + $suffix
+      if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) { continue }
+      $destinationFile = $privateBackup + $suffix
+      New-FitStoreBackupFile -Path $destinationFile
+      $inputStream = $null
+      $outputStream = $null
+      try {
+        $inputStream = [IO.File]::OpenRead($sourceFile)
+        $outputStream = [IO.File]::Open($destinationFile, [IO.FileMode]::Open, [IO.FileAccess]::Write, [IO.FileShare]::None)
+        $inputStream.CopyTo($outputStream)
+      } finally {
+        if ($outputStream) { $outputStream.Dispose() }
+        if ($inputStream) { $inputStream.Dispose() }
+      }
+      if ((Get-FileHash -LiteralPath $sourceFile -Algorithm SHA256).Hash -cne (Get-FileHash -LiteralPath $destinationFile -Algorithm SHA256).Hash) {
+        throw 'La copia privada del respaldo previo no coincide con el original. La actualizacion fue cancelada.'
+      }
+    }
+    # El contenido del dump debe coincidir con el hash registrado antes de la
+    # copia, no con un original que pudo alterarse mientras se copiaba.
+    if ((Get-FileHash -LiteralPath $privateBackup -Algorithm SHA256).Hash.ToLowerInvariant() -cne $expectedBackupHash) {
+      throw 'La copia privada no coincide con el SHA256 registrado del respaldo. La actualizacion fue cancelada.'
+    }
+    [IO.File]::WriteAllText("$privateBackup.sha256", ($expectedBackupHash + ' *' + (Split-Path -Leaf $privateBackup) + [Environment]::NewLine), [Text.Encoding]::ASCII)
+    $backup = $privateBackup
+    Write-FitStoreLog -InstallDir $paths.Install -Level 'AVISO' -Message 'No se pudo proteger el respaldo anterior en USB/red. Se usara una copia local privada; revise los permisos del original conservado.'
   }
   $backupHash = (Get-FileHash -LiteralPath $backup -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($backupHash -cne $expectedBackupHash) { throw 'El respaldo cambio despues de verificar su SHA256. La actualizacion fue cancelada.' }
 
   # Si Windows se reinicia durante el staging, ninguna versión sin verificar
   # debe abrir la caja automáticamente. El instalador o el rollback restauran
