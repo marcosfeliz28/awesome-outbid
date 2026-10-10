@@ -15,6 +15,8 @@ export const powershellTests = [
   "Recovery-FaultInjection",
   "Backup-Reader-Privacy",
   "Preflight-Rollback-Contract",
+  "Recovery-Login-Exit",
+  "Recovery-Activity-Guard",
 ];
 
 export function windowsPowerShellEnvironment(source) {
@@ -63,7 +65,7 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
         "Bypass",
         "-File",
         `instalador/tests/${name}.ps1`,
-        ...(name === "Recovery-FaultInjection" && env.PGBIN
+        ...(name.startsWith("Recovery-") && env.PGBIN
           ? ["-PgBin", env.PGBIN]
           : []),
       ],
