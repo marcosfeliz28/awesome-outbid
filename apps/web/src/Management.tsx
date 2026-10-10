@@ -2040,7 +2040,7 @@ export function Customers() {
       {anonymizing && (
         <ConfirmModal
           title="Anonimizar cliente"
-          description={`Se eliminarán los datos personales de ${anonymizing.name}. Las ventas y sus montos se conservarán. Esta acción no se puede deshacer.`}
+          description={`Se eliminarán los datos personales de ${anonymizing.name}: nombre, teléfono, correo, cédula/RNC, notas, fotos de comprobantes y su nombre en motivos, referencias, bitácora y avisos pendientes. Las ventas y sus montos se conservarán. Los avisos que ya llegaron a Telegram y las copias de seguridad se eliminan al vencer su plazo. Esta acción no se puede deshacer.`}
           confirmLabel="Anonimizar"
           onClose={() => setAnonymizing(null)}
           onConfirm={async (reason) => {

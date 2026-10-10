@@ -32,6 +32,7 @@ import {
   canViewCustomerPii,
   customerForActor,
   isMaskedPii,
+  withoutImages,
 } from "./common";
 import {
   can,
@@ -350,7 +351,12 @@ export class AdminController {
         });
         const sales = await tx.sale.findMany({
           where: { branchId: actor.branchId, customerId },
-          select: { id: true },
+          select: {
+            id: true,
+            offlineUuid: true,
+            voidedReason: true,
+            discountReason: true,
+          },
         });
         const saleIds = sales.map((sale) => sale.id);
         if (saleIds.length) {
@@ -360,24 +366,122 @@ export class AdminController {
             where: { id: { in: saleIds } },
             data: { recipientLegalId: null, notes: "" },
           });
-          const saleAudits = await tx.auditLog.findMany({
+          // Auditoría 03 (A2): todo lo demás que la pantalla promete borrar.
+          // Textos libres: se quitan los datos conocidos del cliente y se
+          // conserva el resto del motivo (anulación, descuento, devolución,
+          // referencia de la transferencia).
+          const redactText = (text: string | null | undefined) =>
+            text ? (redactKnownCustomerPii(text, customer) as string) : text;
+          for (const sale of sales) {
+            const data: Record<string, unknown> = {};
+            const voidedReason = redactText(sale.voidedReason);
+            if (voidedReason !== sale.voidedReason)
+              data.voidedReason = voidedReason;
+            const discountReason = redactText(sale.discountReason);
+            if (discountReason !== sale.discountReason)
+              data.discountReason = discountReason;
+            if (Object.keys(data).length)
+              await tx.sale.update({ where: { id: sale.id }, data });
+          }
+          // Fotos de comprobantes: la captura bancaria muestra nombre y
+          // cuenta. Las ventas ya no tienen deuda (se comprobó arriba).
+          await tx.payment.updateMany({
+            where: { saleId: { in: saleIds }, proofUrl: { not: null } },
+            data: { proofUrl: null },
+          });
+          const payments = await tx.payment.findMany({
+            where: { saleId: { in: saleIds } },
+            select: { id: true, reference: true },
+          });
+          for (const payment of payments) {
+            const reference = redactText(payment.reference);
+            if (reference !== payment.reference)
+              await tx.payment.update({
+                where: { id: payment.id },
+                data: { reference },
+              });
+          }
+          const returns = await tx.saleReturn.findMany({
+            where: { saleId: { in: saleIds } },
+            select: { id: true, reason: true },
+          });
+          for (const row of returns) {
+            const reason = redactText(row.reason);
+            if (reason !== row.reason)
+              await tx.saleReturn.update({
+                where: { id: row.id },
+                data: { reason: reason ?? "" },
+              });
+          }
+          // El kardex copia el motivo de la devolución (merma).
+          const movements = await tx.inventoryMovement.findMany({
+            where: { refId: { in: saleIds } },
+            select: { id: true, reason: true },
+          });
+          for (const movement of movements) {
+            const reason = redactText(movement.reason);
+            if (reason !== movement.reason)
+              await tx.inventoryMovement.update({
+                where: { id: movement.id },
+                data: { reason: reason ?? "" },
+              });
+          }
+          const paymentIds = payments.map((p) => p.id);
+          const returnIds = returns.map((r) => r.id);
+          // Bitácora de la venta, sus pagos (verificar/rechazar guardaban la
+          // fila con la foto), devoluciones y la venta offline.
+          const relatedAudits = await tx.auditLog.findMany({
             where: {
               branchId: actor.branchId,
-              entity: "sale",
-              entityId: { in: saleIds },
+              entity: { not: "customer" },
+              entityId: {
+                in: [
+                  ...saleIds,
+                  ...paymentIds,
+                  ...returnIds,
+                  ...sales.map((sale) => sale.offlineUuid),
+                ],
+              },
             },
             select: { id: true, before: true, after: true },
           });
-          for (const entry of saleAudits) {
+          for (const entry of relatedAudits) {
             const cleaned: Record<string, unknown> = {};
             if (entry.before != null)
-              cleaned.before = redactKnownCustomerPii(entry.before, customer);
+              cleaned.before = withoutImages(
+                redactKnownCustomerPii(entry.before, customer),
+              );
             if (entry.after != null)
-              cleaned.after = redactKnownCustomerPii(entry.after, customer);
+              cleaned.after = withoutImages(
+                redactKnownCustomerPii(entry.after, customer),
+              );
             if (Object.keys(cleaned).length)
               await tx.auditLog.update({
                 where: { id: entry.id },
                 data: cleaned,
+              });
+          }
+          // Avisos de Telegram en cola, enviados o fallidos: el texto lleva
+          // «Cliente: <nombre>» (escapado para HTML, por eso se reemplaza la
+          // línea completa). Los mensajes que ya llegaron al grupo no se
+          // pueden borrar desde aquí.
+          const notices = await tx.notificationOutbox.findMany({
+            where: { refId: { in: [...saleIds, ...returnIds, ...paymentIds] } },
+            select: { id: true, payload: true },
+          });
+          for (const notice of notices) {
+            const payload: any = notice.payload;
+            if (typeof payload?.text !== "string") continue;
+            const text = redactText(
+              payload.text.replace(
+                /^Cliente: .*$/gm,
+                "Cliente: [dato anonimizado]",
+              ),
+            );
+            if (text !== payload.text)
+              await tx.notificationOutbox.update({
+                where: { id: notice.id },
+                data: { payload: { ...payload, text } },
               });
           }
           await tx.alert.updateMany({
