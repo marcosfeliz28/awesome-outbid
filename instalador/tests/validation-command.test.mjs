@@ -19,6 +19,7 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     "Transaction-FaultInjection",
     "Restore-FaultInjection",
     "Restore-Real-Sql",
+    "Windows-Smoke-Real-Sql",
     "Recovery-Acl-MissingEntry",
     "Recovery-Pending-Acl-Always",
     "Recovery-Corrupt-Acl-Journal",
