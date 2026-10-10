@@ -33,6 +33,7 @@ import {
   loadCatalog,
   useStore,
   download,
+  DOWNLOAD_FAILED,
   localDB,
   syncSales,
   type Product,
@@ -2354,12 +2355,18 @@ const reportList = [
 export function Reports() {
   const [report, setReport] = useState("sales"),
     [from, setFrom] = useState(today().slice(0, 8) + "01"),
-    [to, setTo] = useState(today());
+    [to, setTo] = useState(today()),
+    // Los listados largos (ventas, kardex, devoluciones) llegan por páginas
+    // con su total; Excel y PDF traen el período completo.
+    [page, setPage] = useState(1);
   const query = useQuery({
-    queryKey: ["report", report, from, to],
-    queryFn: () => api(`/reports/${report}?from=${from}&to=${to}`),
+    queryKey: ["report", report, from, to, page],
+    queryFn: () => api(`/reports/${report}?from=${from}&to=${to}&page=${page}`),
   });
   const rows = query.data?.rows || [];
+  const total: number = query.data?.total ?? rows.length;
+  const limit: number = query.data?.limit ?? (rows.length || 1);
+  const pages = Math.max(1, Math.ceil(total / limit));
   const columns = Object.keys(rows[0] || {})
     .filter((k) => k !== "class")
     .map((key) => ({
@@ -2380,7 +2387,10 @@ export function Reports() {
           {reportList.map(([id, name]) => (
             <button
               key={id}
-              onClick={() => setReport(id)}
+              onClick={() => {
+                setReport(id);
+                setPage(1);
+              }}
               className={report === id ? "active" : ""}
             >
               <FileText size={17} />
@@ -2404,9 +2414,11 @@ export function Reports() {
                     download(
                       `/reports/${report}?from=${from}&to=${to}&format=${format}`,
                       `${report}.${format}`,
-                    ).catch(() =>
+                    ).catch((error) =>
                       toast(
-                        "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
+                        error.message !== DOWNLOAD_FAILED
+                          ? error.message
+                          : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
                         true,
                       ),
                     )
@@ -2424,7 +2436,10 @@ export function Reports() {
               <input
                 type="date"
                 value={from}
-                onChange={(e) => setFrom(e.target.value)}
+                onChange={(e) => {
+                  setFrom(e.target.value);
+                  setPage(1);
+                }}
                 required
               />
             </label>
@@ -2433,12 +2448,38 @@ export function Reports() {
               <input
                 type="date"
                 value={to}
-                onChange={(e) => setTo(e.target.value)}
+                onChange={(e) => {
+                  setTo(e.target.value);
+                  setPage(1);
+                }}
                 required
               />
             </label>
-            <Badge tone="violet">{rows.length} registros</Badge>
+            <Badge tone="violet">{total} registros</Badge>
           </div>
+          {pages > 1 && (
+            <div className="pagination">
+              <span>
+                Mostrando {(page - 1) * limit + 1}–
+                {(page - 1) * limit + rows.length} de {total}. Excel (hasta
+                50,000 filas) y PDF (hasta 10,000) incluyen todo el período.
+              </span>
+              <Button
+                variant="ghost"
+                disabled={page === 1 || query.isFetching}
+                onClick={() => setPage(page - 1)}
+              >
+                Anteriores
+              </Button>
+              <Button
+                variant="ghost"
+                disabled={page >= pages || query.isFetching}
+                onClick={() => setPage(page + 1)}
+              >
+                Siguientes
+              </Button>
+            </div>
+          )}
           <QueryState query={query}>
             <DataTable
               rows={rows}
