@@ -11,7 +11,7 @@ $body=[scriptblock]::Create('$databaseTouched = $false; $isolationReleased = $fa
 . (Join-Path $PSScriptRoot '..\scripts\Recover-FitStoreUpdate.ps1') -DefinitionsOnly
 $tokens=$null;$parseErrors=$null
 $commonAst=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '..\scripts\FitStore.Common.ps1'),[ref]$tokens,[ref]$parseErrors)
-foreach($name in @('Invoke-FitStoreProcess','Invoke-FitStorePg','Invoke-FitStorePgSql')){
+foreach($name in @('Invoke-FitStoreProcess','Invoke-FitStorePg','Invoke-FitStorePgSql','Get-FitStoreServiceSid','Resolve-FitStoreServiceAccountSid')){
  $definition=$commonAst.Find({param($node)$node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true)
  if(-not $definition){throw "Falta Common real: $name"};Invoke-Expression $definition.Extent.Text
 }
@@ -22,10 +22,10 @@ $root=Join-Path $env:TEMP ('nexora-restart-'+[guid]::NewGuid().ToString('N'))
 $cluster=Join-Path $root 'cluster'
 $script:running=$false;$script:inject='';$script:logs=@()
 function Sql([string]$query){Invoke-FitStorePgSql -Tool (Join-Path $PgBin 'psql.exe') -Password ([guid]::NewGuid().ToString('N')) -Arguments @('-h','127.0.0.1','-p',[string]$Port,'-U','postgres','-d','postgres','-t','-A','-v','ON_ERROR_STOP=1') -Sql $query -FailureMessage 'Fixture SQL failed'}
-function Start-FitStoreService {param($Name)
+function Start-FitStoreService {param([Parameter(Mandatory = $true)][string]$Name, [int]$TimeoutSeconds = 60)
  if(-not $script:running){Invoke-FitStoreRecoveryPgCtl -Tool (Join-Path $PgBin 'pg_ctl.exe') -Database $cluster -Arguments @('-D',$cluster,'-l',(Join-Path $root 'pg.log'),'-o',"-p $Port -h 127.0.0.1",'-w','start');$script:running=$true}
 }
-function Stop-FitStoreService {param($Name,$TimeoutSeconds)
+function Stop-FitStoreService {param([Parameter(Mandatory = $true)][string]$Name, [int]$TimeoutSeconds = 45)
  if($script:running){Invoke-FitStoreRecoveryPgCtl -Tool (Join-Path $PgBin 'pg_ctl.exe') -Database $cluster -Arguments @('-D',$cluster,'-m','fast','-w','stop');$script:running=$false}
 }
 function Wait-FitStorePostgres {
@@ -38,9 +38,21 @@ $fixtureWait=$fixtureAst.Find({param($node) $node -is [Management.Automation.Lan
 if(-not $realWait -or $realWait.Body.ParamBlock.Extent.Text -ne $fixtureWait.Body.ParamBlock.Extent.Text){throw '3j1: firma de espera fixture no coincide con funcion real'}
 function Read-FitStoreJson {param($Path) [pscustomobject]@{postgresPassword=[guid]::NewGuid().ToString('N') }}
 function Stop-FitStoreApplication {}
-function Ensure-RestoredApplicationService {param($Paths,$Name,[switch]$KeepDisabled) if($script:inject -eq 'winsw'){throw 'fixture-original-winsw'}; return 'LocalSystem'}
-function Resolve-FitStoreServiceAccountSid {param($Account) 'S-1-5-18'}
-function Remove-FitStoreLocalServiceAccess {param($Paths)}
+function Ensure-RestoredApplicationService {param($Paths, [Parameter(Mandatory = $true)][string]$Name, [switch]$KeepDisabled) if($script:inject -eq 'winsw'){throw 'fixture-original-winsw'}; return "NT SERVICE\$Name"}
+# Esta fixture verifica LOGIN contra PostgreSQL real, no ACL/SCM. El unico
+# doble de ACL conserva la firma real; Application-Service-Privacy verifica
+# los permisos con la implementacion real. La derivacion de SID no se simula.
+function Grant-FitStoreApplicationAccess {
+ param([Parameter(Mandatory = $true)]$Paths,
+    [string]$ApiAccount = 'NT SERVICE\FitStoreAPI', [string]$WebAccount = 'NT SERVICE\FitStoreWeb')
+ if($ApiAccount -ne 'NT SERVICE\FitStoreAPI' -or $WebAccount -ne 'NT SERVICE\FitStoreWeb'){throw 'B8: cuentas restauradas no llegaron a ACL'}
+}
+$fixtureAst=[Management.Automation.Language.Parser]::ParseFile($PSCommandPath,[ref]$tokens,[ref]$parseErrors)
+foreach($name in @('Grant-FitStoreApplicationAccess','Start-FitStoreService','Stop-FitStoreService')) {
+ $real=$commonAst.Find({param($node)$node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true)
+ $fixture=$fixtureAst.Find({param($node)$node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true)
+ if(-not $real -or -not $fixture -or $real.Body.ParamBlock.Extent.Text -ne $fixture.Body.ParamBlock.Extent.Text){throw "B8: firma de fixture no coincide con funcion real $name"}
+}
 function Set-FitStoreServiceStartMode {param($Name,$Mode)}
 function Start-FitStoreApplication {}
 function Wait-FitStoreHttp {param($Url,$TimeoutSeconds) if($script:inject -eq 'health'){throw 'fixture-original-health'}}
@@ -48,7 +60,7 @@ function Write-FitStoreLog {param($InstallDir,$Level,$Message) $script:logs+= $M
 function Assert-UpdateManifest {param($Manifest,$ExpectedManifestHash,$Root)}
 function Restore-PreviousDataFiles {param($Paths,$PreviousDataPath)}
 function Restore-DatabaseFromUpdateBackup {param($Paths,$Secrets,$Archive,$ExpectedHash,[switch]$ExclusiveRecovery) throw 'fixture-original-pg-restore'}
-$script:PostgresService='fixture-pg';$script:ApiService='fixture-api';$script:WebService='fixture-web'
+$script:PostgresService='fixture-pg';$script:ApiService='FitStoreAPI';$script:WebService='FitStoreWeb'
 try {
  New-Item -ItemType Directory -Path $root|Out-Null
  & (Join-Path $PgBin 'initdb.exe') -D $cluster -U postgres -A trust --encoding=UTF8 --no-locale|Out-Null
@@ -56,10 +68,10 @@ try {
  $paths=[pscustomobject]@{PgBin=$PgBin;Secrets=(Join-Path $root 'unused')};$actualInstall=$root
  $transaction=[pscustomobject]@{transactionPath=$root;recoveryLoginRoles=@('fitstore');manifestPath='fixture';manifestSha256='fixture';backup='fixture';backupSha256='fixture'}
  $RecoverInterrupted=$true;$hadSnapshot=$false;$previousDataPath='';$snapshotPath=$root;$failedInstall=Join-Path $root 'failed'
- Start-FitStoreService
+ Start-FitStoreService -Name $script:PostgresService
  Sql 'CREATE ROLE fitstore NOLOGIN;'|Out-Null
  foreach($case in @('success','winsw','health','pg-restore')){
-  if(-not $script:running){Start-FitStoreService}
+  if(-not $script:running){Start-FitStoreService -Name $script:PostgresService}
   Sql 'ALTER ROLE fitstore NOLOGIN;'|Out-Null
   $script:inject=if($case -in @('winsw','health')){$case}else{''};$script:logs=@()
   $phase=if($case -eq 'pg-restore'){'rollback-files-restored'}else{'prepared-copy-pending'}
@@ -82,13 +94,13 @@ try {
    Write-Host 'PASS PostgreSQL real: fallo HTTP posterior informa LOGIN ya restituido, sin prometer NOLOGIN.'
   }else{
    if(-not $failure -or $failure.Exception.Message -ne 'fixture-original-pg-restore'){throw 'No conserva fallo original restore'}
-   Start-FitStoreService
+   Start-FitStoreService -Name $script:PostgresService
    if(([string](Sql "SELECT rolcanlogin FROM pg_roles WHERE rolname='fitstore';")).Trim() -ne 'f'){throw 'Base posiblemente parcial habilitada'}
    if(-not ($script:logs -match 'NOLOGIN.*proposito')){throw 'Falta aviso cierre deliberado'}
    Write-Host 'PASS 3i1 PostgreSQL real: fallo tras tocar base conserva NOLOGIN deliberado, aviso y error original.'
   }
  }
 }finally{
- if($script:running){Stop-FitStoreService}
+ if($script:running){Stop-FitStoreService -Name $script:PostgresService}
  if(Test-Path -LiteralPath $root){Remove-Item -LiteralPath $root -Recurse -Force}
 }
