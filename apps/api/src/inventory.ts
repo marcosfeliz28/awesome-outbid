@@ -608,11 +608,7 @@ export class InventoryController {
       }),
       body,
     );
-    if (
-      parsed.type === "supplier_return" &&
-      (!parsed.supplierId || !parsed.reference)
-    )
-      bad("Elige el proveedor y escribe la referencia de la devolución.");
+
     // Una merma o una devolución al proveedor siempre sacan stock: con la
     // cantidad en positivo lo sumaban. El ajuste libre admite ambos signos.
     if (parsed.type !== "adjustment" && parsed.qty > 0)
@@ -622,6 +618,11 @@ export class InventoryController {
           parsed.qty +
           ").",
       );
+    if (
+      parsed.type === "supplier_return" &&
+      (!parsed.supplierId || !parsed.reference)
+    )
+      bad("Elige el proveedor y escribe la referencia de la devolución.");
     const data = parsed.lotNumber
       ? { ...parsed, ...lotIdentity(parsed.lotNumber, parsed.expiryDate) }
       : parsed;
