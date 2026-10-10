@@ -387,9 +387,46 @@ No se declara el instalador certificado ni se entrega a la tienda sin esta prueb
 
 Las regresiones deben respetar la firma real de `Wait-FitStorePostgres`
 (`Paths`, `TimeoutSeconds`): no acepta `Secrets`; un stub con parámetros extra
-puede ocultar un fallo de recuperación. La confirmación de CI completo en verde sigue pendiente
-para esta entrega, además de Windows-Smoke en Windows limpio. Una prueba focal
-local aprobada no sustituye ninguno de esos requisitos ni certifica el instalador.
+puede ocultar un fallo de recuperación.
+
+**CI histórico de 3j:** Claude confirmó `75b091d` con CI completo en verde
+en `docs/coordinacion/INSTRUCCIONES_ACTUALES.md`, sección 3l. Ese resultado
+corresponde a ese commit, no acredita los cambios posteriores A1/A2/M1/M2/M3
+ni el HEAD de esta documentación. Antes de entregar otro lote se debe consultar
+el run de su SHA exacto y comprobar todos los jobs, incluido `windows-installer`.
+Windows-Smoke en Windows limpio sigue pendiente; una prueba focal local o ese
+CI histórico no certifican el instalador ni sustituyen la aceptación de la tienda.
+
+**Versión PostgreSQL comprobada el 10 de octubre de 2026:** en esta PC,
+`C:\Program Files\PostgreSQL\18\bin\postgres.exe --version` devuelve
+`postgres (PostgreSQL) 18.6`; `pg_ctl.exe --version` y `pg_restore.exe --version`
+también devuelven 18.6. Las regresiones aisladas de recuperación A1, M1 y M2 se
+ejecutaron con las funciones reales; A1 usa ese PostgreSQL 18.6 y taskkill real,
+mientras M1/M2 comprueban DACL de archivos NTFS reales sin arrancar una base.
+El comando reproducible de A1, desde la raíz del repositorio, es:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Recovery-Acl-MissingEntry.ps1 -PgBin "C:\Program Files\PostgreSQL\18\bin"
+```
+
+El instalador fija **18.6-5** y el SHA-256 de su archivo oficial en
+`instalador/dependencias.lock.json` (`postgresql.version`, `postgresql.sha256`).
+Se encontró la copia ya descargada en
+`%LOCALAPPDATA%\FitStore POS\InstallerCache\postgresql-windows-x64.zip`.
+Su SHA-256 es `e2246ba91d22345bc3d017586c09ede52d9df180b1eeb480f050445f1cad84e2`,
+igual al lock. Se comparó, sin extraer ni ejecutar código del ZIP, el SHA-256
+de cada uno de sus nueve ejecutables requeridos con los instalados en la PC:
+`postgres`, `pg_ctl`, `initdb`, `pg_isready`, `psql`, `pg_dump`, `pg_restore`,
+`createdb` y `dropdb`; los nueve coinciden. Así se acredita que las herramientas
+usadas por estas regresiones corresponden al ZIP 18.6-5, no solo que comparten
+versión mayor. No se descargó ni instaló otro motor.
+
+La comparación no acredita todas las DLL, configuración ni el payload completo
+que se distribuirá. **Pendiente:** construir el payload con el lock y ejecutar
+`instalador:validar` con `PGBIN` apuntando a su `postgres\bin`, además de
+Windows-Smoke en la máquina limpia. El CI puede elegir otra versión instalada
+en el runner: registre su `postgres.exe --version`; no deduzca 18.6 solo porque
+el job esté verde.
 
 Un segundo asistente se detiene antes de tocar archivos o activar un rollback.
 
