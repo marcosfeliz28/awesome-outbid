@@ -712,3 +712,4 @@ export const weekStart = (value: Date = new Date()) => {
   day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));
   return day.toISOString().slice(0, 10);
 };
+export * from "./receipt-text";

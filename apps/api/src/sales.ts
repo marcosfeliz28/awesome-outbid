@@ -391,6 +391,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 import { cashExpected, refreshClosedCash } from "./cash";
 import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
+import { receiptCustomerLine, receiptFooterLines } from "./receipt-pdf";
 import { recordSaleIncentives, reverseIncentives } from "./incentives";
 
 // Plazo de las transacciones que mueven dinero (venta y devolución). Con el
@@ -2425,12 +2426,8 @@ export class SalesController {
       )
       .moveDown();
     doc.text("Cajero: " + (seller?.name || ""));
-    doc.text(
-      "Vendido a: " +
-        (customer?.name || "Consumidor final") +
-        (customer?.legalId ? " · RNC/Cédula " + customer.legalId : "") +
-        (customer?.phone ? " · Tel. " + customer.phone : ""),
-    );
+    // V2-02: sin teléfono y con la cédula/RNC enmascarada y sólo con NCF.
+    doc.text(receiptCustomerLine(customer, sale));
     doc.moveDown();
     if (sale.status === "voided") doc.text("ANULADA · " + sale.voidedReason);
     for (const item of sale.items) {
@@ -2460,7 +2457,11 @@ export class SalesController {
         `Descuento: RD$ ${sale.discountTotal} · ${sale.discountReason ?? "Sin motivo"} · Autorizó: ${sale.discountApprovedName ?? "No identificado"} (${sale.discountApprovedRole ?? sale.discountRule ?? "regla no identificada"})`,
       );
     for (const p of sale.payments) doc.text(paymentReceiptLine(p));
-    doc.moveDown().text("Gracias por elegirnos.");
+    // V2-02: el PDF lleva la política de devolución y el aviso de privacidad
+    // igual que el ticket.
+    doc.moveDown().fontSize(8);
+    for (const line of receiptFooterLines(business)) doc.text(line);
+    doc.fontSize(10).moveDown().text("Gracias por elegirnos.");
     doc.end();
   }
 }
