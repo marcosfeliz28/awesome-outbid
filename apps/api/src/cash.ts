@@ -43,6 +43,7 @@ import { MONEY_TRANSACTION, cashLock, terminalName } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
 import { managerPinApproval, verifyPinAttempt } from "./security";
 import { notify } from "./notifications";
+import { cashDifferenceMessage } from "./alerts";
 
 export async function cashExpected(db: any, session: any) {
   const payments = await db.payment.findMany({
@@ -950,11 +951,11 @@ export class CashController {
             severity: "high",
             entityId: id,
             branchId: actor.branchId,
-            message: `Diferencias de caja: efectivo RD$ ${row.differenceCash}, tarjeta RD$ ${row.differenceCard}, transferencia RD$ ${row.differenceTransfer}`,
+            message: cashDifferenceMessage(row),
           },
           update: {
             status: "new",
-            message: `Diferencias de caja: efectivo RD$ ${row.differenceCash}, tarjeta RD$ ${row.differenceCard}, transferencia RD$ ${row.differenceTransfer}`,
+            message: cashDifferenceMessage(row),
           },
         });
       const showExpected = canViewCashExpected(actor);

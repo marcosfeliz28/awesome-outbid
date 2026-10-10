@@ -314,7 +314,7 @@ describe("Auditoría 01 · dinero", () => {
     ).toBe(300);
   });
 
-  it.skip("M-1: las alertas de diferencia de caja y de descuento inusual no se resuelven solas", async () => {
+  it("M-1: las alertas de diferencia de caja y de descuento inusual no se resuelven solas", async () => {
     const c = await person("seller", "m1", 0);
     const v = await product(1000, 400, 10);
     await sell(c, v, 1, [{ method: "cash", amount: 1000 }]);
