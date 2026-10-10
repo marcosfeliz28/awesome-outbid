@@ -45,7 +45,7 @@ function Assert-OwnerInput {
     throw "La contraseña debe tener entre 12 y 72 bytes UTF-8."
   }
   if (-not $Answer.ContainsKey("OwnerPasswordConfirm") -or [string]$Answer.OwnerPassword -cne [string]$Answer.OwnerPasswordConfirm) { throw "Las contraseñas no coinciden." }
-  if (-not $Answer.ContainsKey("OwnerPin") -or [string]$Answer.OwnerPin -notmatch "^\d{4,6}$") { throw "El PIN debe tener entre 4 y 6 dígitos." }
+  if (-not $Answer.ContainsKey("OwnerPin") -or [string]$Answer.OwnerPin -notmatch "^\d{6}$") { throw "El PIN debe tener 6 dígitos." }
 }
 
 function Get-OptionalProperty {
