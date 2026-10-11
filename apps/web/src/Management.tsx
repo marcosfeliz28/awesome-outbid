@@ -73,7 +73,7 @@ import {
   managementQueryError,
   openCashBlindNote,
 } from "./managementMessages";
-import { passwordRules } from "./passwordChange";
+import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
@@ -3490,6 +3490,8 @@ function ResetPassword({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [done, setDone] = useState<{ temporaryPassword?: string } | null>(null);
+  const policy = passwordPolicyForRole(target.role?.name);
+  const cashier = policy === "cashier-six-digits";
   const client = useQueryClient();
   const result = useRef<HTMLDivElement>(null);
   // El foco va al resultado (la temporal y lo que ocurrió) para que se lea
@@ -3540,9 +3542,20 @@ function ResetPassword({
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            if (password && !passwordRules(password).every((r) => r.met)) {
+            if (
+              password &&
+              passwordChangeError(password, password, "", "required", policy)
+            ) {
               setError(
-                "La contraseña temporal debe cumplir las cinco reglas, o deja el campo vacío para que el sistema genere una.",
+                cashier
+                  ? passwordChangeError(
+                      password,
+                      password,
+                      "",
+                      "required",
+                      policy,
+                    )
+                  : "La contraseña temporal debe cumplir las cinco reglas, o deja el campo vacío para que el sistema genere una.",
               );
               return;
             }
@@ -3569,7 +3582,11 @@ function ResetPassword({
             y le pide crear su propia contraseña al entrar.
           </p>
           <label className="field">
-            <span>Contraseña temporal (opcional)</span>
+            <span>
+              {cashier
+                ? "Contraseña temporal de 6 números (opcional)"
+                : "Contraseña temporal (opcional)"}
+            </span>
             {/* Es de un solo uso y de otra persona: el navegador no debe
                 ofrecer guardarla como la contraseña de la administradora. */}
             <input
@@ -3577,13 +3594,18 @@ function ResetPassword({
               autoComplete="off"
               autoCapitalize="none"
               spellCheck={false}
-              maxLength={128}
+              inputMode={cashier ? "numeric" : "text"}
+              minLength={cashier ? 6 : undefined}
+              maxLength={cashier ? 6 : 128}
+              pattern={cashier ? "[0-9]{6}" : undefined}
+              title={cashier ? "Escribe exactamente 6 números." : undefined}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
             <small>
-              Déjala vacía y el sistema genera una segura. Si la escribes: 12 o
-              más caracteres con mayúscula, minúscula, número y símbolo.
+              {cashier
+                ? "Déjala vacía para que el sistema genere una temporal. Si la escribes, usa exactamente 6 números; no uses secuencias ni números repetidos."
+                : "Déjala vacía y el sistema genera una segura. Si la escribes: 12 o más caracteres con mayúscula, minúscula, número y símbolo."}
             </small>
           </label>
           {error && (
@@ -3963,37 +3985,52 @@ export function Configuration() {
       {newUser && (
         <FormModal
           title="Crear usuario"
-          fields={[
-            { key: "name", label: "Nombre", required: true },
-            {
-              key: "username",
-              label: "Usuario para entrar",
-              required: true,
-            },
-            {
-              key: "password",
-              label:
-                "Contraseña temporal (12+; mayúscula, minúscula, número y símbolo)",
-              type: "password",
-              required: true,
-            },
-            {
-              key: "pin",
-              label: "PIN de 6 dígitos",
-              type: "password",
-              required: true,
-            },
-            {
-              key: "roleId",
-              label: "Rol",
-              type: "select",
-              required: true,
-              options: roles.data?.map((r: any) => ({
-                label: r.name,
-                value: r.id,
-              })),
-            },
-          ]}
+          fields={(values) => {
+            const cashier =
+              roles.data?.find((role: any) => role.id === values.roleId)
+                ?.name === "seller";
+            return [
+              {
+                key: "roleId",
+                label: "Rol",
+                type: "select",
+                required: true,
+                resetFieldsOnChange: ["password"],
+                options: roles.data?.map((r: any) => ({
+                  label: r.name,
+                  value: r.id,
+                })),
+              },
+              { key: "name", label: "Nombre", required: true },
+              {
+                key: "username",
+                label: "Usuario para entrar",
+                required: true,
+              },
+              {
+                key: "password",
+                label: cashier
+                  ? "Contraseña temporal (6 números)"
+                  : "Contraseña temporal (12+; mayúscula, minúscula, número y símbolo)",
+                type: "password",
+                required: true,
+                inputMode: cashier ? "numeric" : "text",
+                minLength: cashier ? 6 : 12,
+                maxLength: cashier ? 6 : 128,
+                pattern: cashier ? "[0-9]{6}" : undefined,
+                title: cashier ? "Escribe exactamente 6 números." : undefined,
+                help: cashier
+                  ? "Usa 6 números no triviales; la cajera deberá cambiarla al entrar."
+                  : "La persona deberá cambiarla al entrar.",
+              },
+              {
+                key: "pin",
+                label: "PIN de 6 dígitos",
+                type: "password",
+                required: true,
+              },
+            ];
+          }}
           onClose={() => setNewUser(false)}
           onSubmit={(data) => post("/users", data)}
         />

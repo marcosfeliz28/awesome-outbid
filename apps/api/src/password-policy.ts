@@ -3,6 +3,65 @@ import { randomInt } from "node:crypto";
 
 export const STRONG_PASSWORD_MESSAGE =
   "Usa al menos 12 caracteres e incluye mayúscula, minúscula, número y símbolo.";
+export const CASHIER_PASSWORD_MESSAGE =
+  "La contraseña del cajero son 6 números.";
+export type PasswordPolicy = "cashier-six-digits" | "strong";
+
+/** Role names come from the persisted Role row, never from user input. */
+export function passwordPolicyForRole(roleName: string): PasswordPolicy {
+  return roleName === "seller" ? "cashier-six-digits" : "strong";
+}
+
+const TRIVIAL_CASHIER_PASSWORDS = new Set([
+  "000000",
+  "123456",
+  "234567",
+  "345678",
+  "456789",
+  "654321",
+  "765432",
+  "876543",
+  "987654",
+  "112233",
+  "121212",
+  "123123",
+  "010101",
+  "101010",
+]);
+
+export function isNonTrivialCashierPassword(value: string) {
+  if (!/^\d{6}$/.test(value) || TRIVIAL_CASHIER_PASSWORDS.has(value))
+    return false;
+
+  // Bloquea seis dígitos iguales y secuencias ascendentes/descendentes,
+  // incluidos los patrones circulares como 789012 y 210987.
+  const digits = [...value].map(Number);
+  if (digits.every((digit) => digit === digits[0])) return false;
+  const asc = digits.every((digit, index) =>
+    index === 0 ? true : digit === (digits[index - 1] + 1) % 10,
+  );
+  const desc = digits.every((digit, index) =>
+    index === 0 ? true : digit === (digits[index - 1] + 9) % 10,
+  );
+  if (asc || desc) return false;
+
+  // También rechaza bloques cortos repetidos (p. ej. 121212 o 123123).
+  for (const width of [1, 2, 3]) {
+    if (value === value.slice(0, width).repeat(6 / width)) return false;
+  }
+  return true;
+}
+
+export const cashierPasswordSchema = z.string().refine(
+  isNonTrivialCashierPassword,
+  { message: CASHIER_PASSWORD_MESSAGE },
+);
+
+export function passwordSchemaForRole(roleName: string) {
+  return passwordPolicyForRole(roleName) === "cashier-six-digits"
+    ? cashierPasswordSchema
+    : strongPasswordSchema;
+}
 
 export function isStrongPassword(value: string) {
   return (
@@ -65,4 +124,13 @@ export function generateTemporaryPassword(length = 16) {
     [chars[i], chars[j]] = [chars[j], chars[i]];
   }
   return chars.join("");
+}
+
+export function generateTemporaryPasswordForRole(roleName: string) {
+  if (roleName !== "seller") return generateTemporaryPassword();
+  let password = "";
+  do {
+    password = String(randomInt(1_000_000)).padStart(6, "0");
+  } while (!isNonTrivialCashierPassword(password));
+  return password;
 }

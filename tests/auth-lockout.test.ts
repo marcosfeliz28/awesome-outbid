@@ -32,6 +32,7 @@ const db = new PrismaClient();
 const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
 
 const PASSWORD = "Cuenta-Cajera-2026!";
+const CASHIER_PASSWORD = "583904";
 const run = Date.now() % 200;
 let ipCounter = 1;
 // Direcciones de documentación/benchmark propias de esta ejecución.
@@ -69,20 +70,21 @@ async function call(
 async function makeUser(role: string, pin = "246813") {
   const roleRow = await db.role.findFirstOrThrow({ where: { name: role } });
   const key = `qa-lock-${role}-${randomUUID().slice(0, 8)}`;
+  const password = role === "seller" ? CASHIER_PASSWORD : PASSWORD;
   const user = await db.user.create({
     data: {
       name: "QA bloqueo " + role,
       username: key,
       usernameKey: key,
       email: key + "@example.test",
-      passwordHash: await hash(PASSWORD, 4),
+      passwordHash: await hash(password, 4),
       pinHash: await hash(pin, 4),
       roleId: roleRow.id,
       branchId: "main",
     },
   });
   created.push(user.id);
-  return user;
+  return { ...user, qaPassword: password };
 }
 // Un equipo de la tienda ya aprobado por un gerente (Configuración › Equipos).
 async function approvedTerminal(approved = true) {
@@ -101,9 +103,9 @@ async function approvedTerminal(approved = true) {
   return { id, secret };
 }
 const login = (
-  user: { username: string },
+  user: { username: string; qaPassword?: string },
   ip: string,
-  password = PASSWORD,
+  password = user.qaPassword ?? PASSWORD,
   terminal?: { id: string; secret: string },
   api?: string,
 ) =>
@@ -161,7 +163,7 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     // Un secreto de equipo falso no sirve para saltarse el bloqueo.
     expect(
       blocked(
-        await login(cashier, EDGE_IP, PASSWORD, {
+        await login(cashier, EDGE_IP, CASHIER_PASSWORD, {
           id: terminal.id,
           secret: "otro-secreto-cualquiera-0000",
         }),
@@ -170,7 +172,7 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     // Un valor mal formado tampoco, y no rompe el inicio de sesión.
     expect(
       blocked(
-        await login(cashier, EDGE_IP, PASSWORD, {
+        await login(cashier, EDGE_IP, CASHIER_PASSWORD, {
           id: "no-es-un-uuid",
           secret: 42,
         } as any),
@@ -178,11 +180,11 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     ).toBe(true);
     // Un equipo pendiente de aprobación tampoco.
     const pending = await approvedTerminal(false);
-    expect(blocked(await login(cashier, EDGE_IP, PASSWORD, pending))).toBe(
+    expect(blocked(await login(cashier, EDGE_IP, CASHIER_PASSWORD, pending))).toBe(
       true,
     );
     // La cajera, con la misma IP de borde, entra desde su equipo aprobado.
-    const ok = await login(cashier, EDGE_IP, PASSWORD, terminal);
+    const ok = await login(cashier, EDGE_IP, CASHIER_PASSWORD, terminal);
     expect(ok.status).toBe(201);
     expect(ok.body.accessToken).toBeTruthy();
   });
@@ -196,7 +198,7 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
       expect(
         wrong(await login(cashier, EDGE_IP, "incorrecta-" + n, stolen)),
       ).toBe(true);
-    expect(blocked(await login(cashier, EDGE_IP, PASSWORD, stolen))).toBe(true);
+    expect(blocked(await login(cashier, EDGE_IP, CASHIER_PASSWORD, stolen))).toBe(true);
     const row = await db.authAttempt.findUniqueOrThrow({
       where: { key: `login:${cashier.id}:0:terminal:${stolen.id}` },
     });
@@ -204,7 +206,7 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     const left = (+row.lockedUntil - Date.now()) / MINUTE;
     expect(left).toBeGreaterThan(13);
     expect(left).toBeLessThan(17);
-    expect((await login(cashier, EDGE_IP, PASSWORD, other)).status).toBe(201);
+    expect((await login(cashier, EDGE_IP, CASHIER_PASSWORD, other)).status).toBe(201);
   });
 
   it("un atacante no prueba más de 30 contraseñas por hora y cuenta aunque cambie de IP, la administración recibe una alerta y la cajera sigue entrando desde su equipo (N-01)", async () => {
@@ -245,7 +247,7 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     expect(blocked(fromNewPhone)).toBe(true);
     expect(fromNewPhone.body.message).toMatch(/equipo aprobado/);
     // Desde su equipo aprobado entra.
-    expect((await login(cashier, nextIp(), PASSWORD, terminal)).status).toBe(
+    expect((await login(cashier, nextIp(), CASHIER_PASSWORD, terminal)).status).toBe(
       201,
     );
     // La dueña (administración) con su equipo aprobado tampoco queda fuera.
@@ -293,7 +295,7 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     // El freno en memoria sigue actuando sobre esa IP...
     expect(statuses.at(-1)).toBe(429);
     // ...pero el equipo aprobado tiene su propio cupo.
-    expect((await login(cashier, EDGE_IP, PASSWORD, terminal)).status).toBe(
+    expect((await login(cashier, EDGE_IP, CASHIER_PASSWORD, terminal)).status).toBe(
       201,
     );
   }, 90000);
@@ -353,7 +355,7 @@ describe("S-02 · el cupo de identidades inexistentes no deja sin acceso a los e
     const typo = await login(cashier, EDGE_IP, "incorrecta", terminal);
     expect(typo.status).toBe(400);
     expect(typo.body.message).toMatch(/incorrectos/);
-    expect((await login(cashier, EDGE_IP, PASSWORD, terminal)).status).toBe(
+    expect((await login(cashier, EDGE_IP, CASHIER_PASSWORD, terminal)).status).toBe(
       201,
     );
   }, 60000);
@@ -418,7 +420,7 @@ describe("S-03 · PIN de gerente", () => {
     const body = (pin: string) => ({
       name: "QA PIN corto",
       username: "qa-lock-pin-" + randomUUID().slice(0, 8),
-      password: "Temporal-QA-PIN-2026!",
+      password: "739205",
       pin,
       roleId,
     });
@@ -779,7 +781,7 @@ describe("N-02 · el cubo global de identidades desconocidas no da 429 a los equ
       );
       expect(ghostFromTerminal.status).toBe(400);
       expect(
-        (await login(cashier, nextIp(), PASSWORD, terminal, isolated.api))
+        (await login(cashier, nextIp(), CASHIER_PASSWORD, terminal, isolated.api))
           .status,
       ).toBe(201);
     } finally {

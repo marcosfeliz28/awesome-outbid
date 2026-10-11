@@ -19,8 +19,8 @@ async function cashier(request: any, context: any) {
   const roles = await (await request.get("/api/roles", { headers })).json();
   const tag = Date.now().toString(36);
   const email = `e2e-cierre-${tag}@example.test`;
-  const temporary = "FitStore-QA-2026!",
-    password = "FitStore-QA-2026-Definitiva!";
+  const temporary = "482917",
+    password = "736204";
   const created = await request.post("/api/users", {
     headers,
     data: {

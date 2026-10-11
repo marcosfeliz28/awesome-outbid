@@ -154,17 +154,56 @@ const testIp = "192.0.2." + ((Date.now() % 250) + 1);
 const authIp = "203.0.113." + ((Date.now() % 250) + 1);
 const rateIp = "198.51.100." + ((Date.now() % 250) + 1);
 const QA_ACTIVE_PASSWORD = "FitStore-QA-Activa-2026!";
+const QA_CASHIER_INITIAL_PASSWORD = "583907";
+const QA_CASHIER_ACTIVE_PASSWORD = "649283";
 const qaPasswords = new Map<string, { initial: string; active: string }>();
+const qaPasswordInputs = new Map<
+  string,
+  { supplied: string; initial: string; active: string }
+>();
+const roleNameById = new Map<string, string>();
 const loginKey = (data: any) =>
   String(data?.login ?? data?.email ?? "")
     .trim()
     .toLocaleLowerCase("es");
 const withActiveTestPassword = (path: string, data: any) => {
-  if (path !== "/auth/login" || !data || typeof data !== "object") return data;
-  const known = qaPasswords.get(loginKey(data));
-  return known && data.password === known.initial
-    ? { ...data, password: known.active }
-    : data;
+  if (!data || typeof data !== "object") return data;
+  if (
+    path === "/users" &&
+    data.roleId &&
+    roleNameById.get(data.roleId) === "seller"
+  ) {
+    const supplied = String(data.password ?? "");
+    const email = String(data.email ?? "")
+      .trim()
+      .toLocaleLowerCase("es");
+    const username = String(data.username ?? "")
+      .trim()
+      .toLocaleLowerCase("es");
+    const credentials = {
+      supplied,
+      initial: QA_CASHIER_INITIAL_PASSWORD,
+      active: QA_CASHIER_ACTIVE_PASSWORD,
+    };
+    for (const key of [email, username].filter(Boolean))
+      qaPasswordInputs.set(key, credentials);
+    return { ...data, password: QA_CASHIER_INITIAL_PASSWORD };
+  }
+  if (path === "/auth/login") {
+    const key = loginKey(data);
+    const changed = qaPasswords.get(key);
+    if (changed && data.password === changed.initial)
+      return { ...data, password: changed.active };
+    const known = qaPasswordInputs.get(key);
+    if (known && data.password === known.supplied)
+      return { ...data, password: changed?.active ?? known.initial };
+  }
+  if (path === "/auth/change-password") {
+    const known = qaPasswordInputs.get(loginKey(data));
+    if (known && data.currentPassword === known.supplied)
+      return { ...data, currentPassword: known.initial };
+  }
+  return data;
 };
 const prepareTestPayload = (path: string, data: any) => {
   return withActiveTestPassword(path, data);
@@ -178,15 +217,19 @@ async function completeRequiredPasswordChange(
   if (path !== "/auth/login" || !response.body?.requiresPasswordChange)
     return response;
   const key = loginKey(data);
-  const initial = String(data?.password ?? "");
+  const known = qaPasswordInputs.get(key);
+  const initial = known?.initial ?? String(data?.password ?? "");
+  const active =
+    response.body.passwordPolicy === "cashier-six-digits"
+      ? QA_CASHIER_ACTIVE_PASSWORD
+      : QA_ACTIVE_PASSWORD;
   const changed = await send("/auth/change-password", {
     login: String(data?.login ?? data?.email ?? ""),
     currentPassword: initial,
-    newPassword: QA_ACTIVE_PASSWORD,
-    confirmPassword: QA_ACTIVE_PASSWORD,
+    newPassword: active,
+    confirmPassword: active,
   });
-  if (changed.status < 400)
-    qaPasswords.set(key, { initial, active: QA_ACTIVE_PASSWORD });
+  if (changed.status < 400) qaPasswords.set(key, { initial, active });
   return changed;
 }
 async function request(
@@ -194,8 +237,9 @@ async function request(
   data?: unknown,
   as = token,
   method = data === undefined ? "GET" : "POST",
+  adaptTestPassword = true,
 ) {
-  data = prepareTestPayload(path, data);
+  if (adaptTestPassword) data = prepareTestPayload(path, data);
   const response = await fetch(base + path, {
     method,
     headers: {
@@ -205,7 +249,18 @@ async function request(
     },
     ...(data === undefined ? {} : { body: JSON.stringify(data) }),
   });
-  return { status: response.status, body: await response.json() };
+  const body = await response.json();
+  if (path === "/roles" && Array.isArray(body))
+    for (const role of body) roleNameById.set(role.id, role.name);
+  if (path === "/auth/change-password" && response.status < 400) {
+    const key = loginKey(data);
+    const known = qaPasswordInputs.get(key);
+    if (known && typeof data === "object" && data && "newPassword" in data) {
+      const active = String((data as any).newPassword);
+      qaPasswords.set(key, { initial: known.initial, active });
+    }
+  }
+  return { status: response.status, body };
 }
 async function ok(path: string, data?: unknown, as = token, method?: string) {
   let r = await request(path, data, as, method);
@@ -254,6 +309,7 @@ beforeAll(async () => {
   ).accessToken;
   await enroll(ownerToken, "QA dueño");
   const roles = await ok("/roles");
+  for (const role of roles) roleNameById.set(role.id, role.name);
   for (const role of ["admin", "seller", "manager"]) {
     const u = await ok("/users", {
       name: "QA " + role + " " + suffix,
@@ -559,8 +615,8 @@ describe("Aceptación financiera y permisos", () => {
 
   it("la contraseña temporal no abre sesión hasta que el usuario la reemplaza", async () => {
     const email = `qa-temporal-${randomUUID()}@example.test`;
-    const initial = "FitStore-QA-Temporal-2026!";
-    const active = "FitStore-QA-Definitiva-2026!";
+    const initial = QA_CASHIER_INITIAL_PASSWORD;
+    const active = QA_CASHIER_ACTIVE_PASSWORD;
     const roles = await ok("/roles");
     const user = await ok("/users", {
       name: "QA contraseña temporal " + suffix,
@@ -605,7 +661,15 @@ describe("Aceptación financiera y permisos", () => {
       (await request("/auth/me", undefined, changed.body.accessToken)).status,
     ).toBe(200);
     expect(
-      (await request("/auth/login", { email, password: initial }, "")).status,
+      (
+        await request(
+          "/auth/login",
+          { email, password: initial },
+          "",
+          "POST",
+          false,
+        )
+      ).status,
     ).toBe(400);
     const second = await request(
       "/auth/login",
@@ -1860,8 +1924,8 @@ describe("Seguridad, offline y funciones completadas", () => {
   });
   it("cambiar PIN o contraseña revoca refresh y acceso anteriores", async () => {
     for (const change of [
-      { pin: "123456" },
-      { password: "FitStore-New-QA-2026!" },
+      { pin: "573916" },
+      { password: QA_CASHIER_ACTIVE_PASSWORD },
     ]) {
       const u = await newUser();
       const r = await loginRaw(u);
@@ -6760,7 +6824,10 @@ describe("Ronda 9 · revisión · seguridad", () => {
       pin: "246813",
       roleId: roles.find((r: any) => r.name === role).id,
     });
-    const activePassword = "FitStore-R9-Activa-2026!";
+    const activePassword =
+      role === "seller"
+        ? QA_CASHIER_ACTIVE_PASSWORD
+        : "FitStore-R9-Activa-2026!";
     const changed = await call("/auth/change-password", randomIp(), {
       login: user.email,
       currentPassword: password,
@@ -6862,13 +6929,14 @@ describe("Ronda 9 · revisión · seguridad", () => {
     for (let n = 0; n < 5; n++)
       expect((await login(seller, ip, "incorrecta-" + n)).status).toBe(400);
     expect((await login(seller, ip)).body.message).toMatch(/bloquead/i);
+    const resetPassword = "592847";
     await ok(
       "/users/" + seller.id,
-      { password: "FitStore-R9-Nueva!" },
+      { password: resetPassword },
       token,
       "PATCH",
     );
-    expect((await login(seller, ip, "FitStore-R9-Nueva!")).status).toBe(201);
+    expect((await login(seller, ip, resetPassword)).status).toBe(201);
   });
 
   it("R9-seguridad-2: los límites por cuenta y sesión no se evitan cambiando mayúsculas o IP", async () => {
@@ -9192,12 +9260,14 @@ describe("Ronda 9 · Windows y zona horaria", () => {
         return id;
       };
       const newUser = async (role: string, pin = "876543") => {
+        const temporaryPassword =
+          role === "seller" ? QA_CASHIER_INITIAL_PASSWORD : password;
         const user = await lane(0).must(
           "/users",
           {
             name: "QA zona " + randomUUID().slice(0, 8),
             email: "zona-" + randomUUID() + "@example.test",
-            password,
+            password: temporaryPassword,
             pin,
             roleId: roles.find((r: any) => r.name === role).id,
           },
@@ -9210,7 +9280,7 @@ describe("Ronda 9 · Windows y zona horaria", () => {
         // siguen dentro de esta matriz de zonas horarias.
         await lane(0).must("/auth/login", {
           email: user.email,
-          password,
+          password: temporaryPassword,
         });
         return user;
       };
@@ -9239,7 +9309,7 @@ describe("Ronda 9 · Windows y zona horaria", () => {
         const client = lane(1);
         const { call } = client;
         const user = await newUser("seller");
-        const login = (pass = password) =>
+        const login = (pass = QA_CASHIER_ACTIVE_PASSWORD) =>
           call("/auth/login", { email: user.email, password: pass });
         // Desde R9-seguridad-1 el contador de la contraseña es el mismo
         // AuthAttempt del PIN, con una clave por cuenta y dirección IP. Aquí
@@ -9316,8 +9386,12 @@ describe("Ronda 9 · Windows y zona horaria", () => {
         const { call, must } = client;
         const actor = await newUser("seller");
         const target = await newUser("seller", "654321");
-        const as = (await must("/auth/login", { email: actor.email, password }))
-          .accessToken;
+        const as = (
+          await must("/auth/login", {
+            email: actor.email,
+            password: QA_CASHIER_ACTIVE_PASSWORD,
+          })
+        ).accessToken;
         await enrollLocal(client, as, "QA K4 PIN");
         const key = "switch:" + actor.id;
         const pin = (value: string) =>

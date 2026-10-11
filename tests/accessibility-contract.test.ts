@@ -5,6 +5,8 @@ import {
   passwordChangeError,
   passwordRules,
   friendlyPasswordChangeError,
+  isTrivialCashierPassword,
+  passwordPolicyForRole,
 } from "../apps/web/src/passwordChange";
 
 const css = readFileSync("apps/web/src/styles.css", "utf8");
@@ -176,20 +178,100 @@ describe("P1 · cambio obligatorio de contraseña", () => {
       "utf8",
     );
     expect(component).toContain('role="status"');
+    expect(component).toContain('"password-rules password-strength"');
     expect(component).toContain(
-      'aria-describedby="password-rules password-strength"',
+      '"password-rules cashier-password-guidance"',
     );
     expect(component).toContain('autoCapitalize="none"');
-    expect(component).toContain("passwordRules(password)");
+    expect(component).toContain("passwordRules(password, policy)");
     expect(
       passwordRules("")
         .map((rule) => rule.label)
         .join(" "),
     ).toMatch(/Mayúscula.*Minúscula.*Número.*Símbolo/);
     expect(source).toMatch(
-      /passwordChangeError\(\s*newPassword,\s*confirmPassword,\s*password,?\s*\)/,
+      /passwordChangeError\(\s*newPassword,\s*confirmPassword,\s*password,\s*"required",\s*passwordPolicy,\s*\)/,
     );
-    expect(source).toContain("friendlyPasswordChangeError(e)");
+    expect(source).toMatch(
+      /passwordChangeError\(\s*newPassword,\s*confirmPassword,\s*current,\s*"voluntary",\s*policy,\s*\)/,
+    );
+    expect(source).toContain(
+      'friendlyPasswordChangeError(e, "required", passwordPolicy)',
+    );
+    expect(source).toContain(
+      'friendlyPasswordChangeError(e, "voluntary", policy)',
+    );
+  });
+});
+
+describe("3t · política visual de contraseña por rol", () => {
+  const CASHIER_POLICY = "cashier-six-digits";
+  const CASHIER_CURRENT = "583941";
+  const CASHIER_NEW = "729405";
+
+  it("resuelve el rol desde el perfil: seller/cajero corto, manager/admin fuerte", () => {
+    expect(passwordPolicyForRole("seller")).toBe(CASHIER_POLICY);
+    expect(passwordPolicyForRole("cashier")).toBe(CASHIER_POLICY);
+    expect(passwordPolicyForRole("cajero")).toBe(CASHIER_POLICY);
+    expect(passwordPolicyForRole("manager")).toBe("strong");
+    expect(passwordPolicyForRole("admin")).toBe("strong");
+    expect(passwordPolicyForRole(undefined)).toBe("strong");
+  });
+
+  it("cajero acepta exactamente 6 dígitos no triviales en el cambio requerido y voluntario", () => {
+    expect(isTrivialCashierPassword(CASHIER_NEW)).toBe(false);
+    expect(passwordRules(CASHIER_NEW, CASHIER_POLICY)).toEqual([
+      { label: "6 números", met: true },
+    ]);
+    for (const mode of ["required", "voluntary"] as const)
+      expect(
+        passwordChangeError(
+          CASHIER_NEW,
+          CASHIER_NEW,
+          CASHIER_CURRENT,
+          mode,
+          CASHIER_POLICY,
+        ),
+      ).toBe("");
+  });
+
+  it("rechaza 5, 7, letras y secuencias/repeticiones conocidas para cajero", () => {
+    for (const invalid of [
+      "58394",
+      "5839417",
+      "abc123",
+      "000000",
+      "123456",
+      "654321",
+      "789012",
+      "210987",
+      "111111",
+      "121212",
+      "112233",
+    ]) {
+      expect(isTrivialCashierPassword(invalid)).toBe(true);
+      expect(
+        passwordChangeError(
+          invalid,
+          invalid,
+          CASHIER_CURRENT,
+          "required",
+          CASHIER_POLICY,
+        ),
+      ).not.toBe("");
+    }
+  });
+
+  it("no relaja manager/admin: un PIN numérico falla y la clave fuerte pasa", () => {
+    for (const role of ["manager", "admin"]) {
+      const policy = passwordPolicyForRole(role);
+      expect(passwordChangeError(CASHIER_NEW, CASHIER_NEW, "Anterior!2026", "required", policy)).toMatch(
+        /cinco reglas/,
+      );
+      const strong = "Gerencia-Nexora-2026!";
+      expect(passwordChangeError(strong, strong, "Anterior!2026", "required", policy)).toBe("");
+      expect(passwordRules(strong, policy).filter((rule) => rule.met)).toHaveLength(5);
+    }
   });
 });
 

@@ -9,9 +9,14 @@ vi.mock("../apps/api/node_modules/bcryptjs/index.js", () => ({
   hash: vi.fn(),
 }));
 import {
+  CASHIER_PASSWORD_MESSAGE,
   generateTemporaryPassword,
+  generateTemporaryPasswordForRole,
   isDifferentPassword,
+  isNonTrivialCashierPassword,
   isStrongPassword,
+  passwordPolicyForRole,
+  passwordSchemaForRole,
   STRONG_PASSWORD_MESSAGE,
 } from "../apps/api/src/password-policy";
 
@@ -145,6 +150,46 @@ describe("Contraseñas temporales de cajero", () => {
       seen.add(value);
     }
     expect(seen.size).toBe(200);
+  });
+
+  it("aplica 6 dígitos solo a seller y conserva la política fuerte para gerencia", () => {
+    expect(passwordPolicyForRole("seller")).toBe("cashier-six-digits");
+    expect(passwordPolicyForRole("manager")).toBe("strong");
+    expect(passwordPolicyForRole("admin")).toBe("strong");
+    expect(passwordSchemaForRole("seller").safeParse("583904").success).toBe(
+      true,
+    );
+    for (const value of ["58390", "5839041", "abc123", "000000", "123456", "111111", "654321", "121212"]) {
+      expect(passwordSchemaForRole("seller").safeParse(value).success).toBe(
+        false,
+      );
+    }
+    expect(CASHIER_PASSWORD_MESSAGE).toContain("6 números");
+    expect(passwordSchemaForRole("manager").safeParse("583904").success).toBe(
+      false,
+    );
+    expect(
+      passwordSchemaForRole("manager").safeParse("Gerencia-Nexora-2026!")
+        .success,
+    ).toBe(true);
+  });
+
+  it("genera claves temporales seller aleatorias de 6 dígitos sin patrones obvios", () => {
+    for (let n = 0; n < 200; n++) {
+      const value = generateTemporaryPasswordForRole("seller");
+      expect(value).toMatch(/^\d{6}$/);
+      expect(isNonTrivialCashierPassword(value)).toBe(true);
+    }
+    expect(isNonTrivialCashierPassword("000000")).toBe(false);
+    expect(isNonTrivialCashierPassword("123456")).toBe(false);
+    expect(isNonTrivialCashierPassword("654321")).toBe(false);
+    expect(isNonTrivialCashierPassword("111111")).toBe(false);
+  });
+
+  it("mantiene temporales fuertes para los demás roles", () => {
+    const value = generateTemporaryPasswordForRole("manager");
+    expect(isStrongPassword(value)).toBe(true);
+    expect(value).toHaveLength(16);
   });
 
   it("no permite reutilizar la contraseña temporal como contraseña nueva", () => {

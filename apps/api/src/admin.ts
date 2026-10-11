@@ -47,8 +47,9 @@ import {
 } from "@fitstore/shared";
 import { normalizeUsername, passwordHash } from "./auth";
 import {
-  generateTemporaryPassword,
-  strongPasswordSchema,
+  generateTemporaryPasswordForRole,
+  passwordPolicyForRole,
+  passwordSchemaForRole,
   temporaryPasswordExpiry,
 } from "./password-policy";
 import { RequestRateLimitService } from "./rate-limit";
@@ -1036,13 +1037,17 @@ export class AdminController {
         name: z.string().min(2),
         username: z.string().trim().min(2).max(80).optional(),
         email: z.string().email().optional(),
-        password: strongPasswordSchema,
+        password: z.string().min(1).max(128),
         pin: newPinSchema,
         roleId: uuid,
         cashierNumber: cashierNumber.optional(),
       }),
       body,
     );
+    const role = await this.db.role.findUniqueOrThrow({
+      where: { id: data.roleId },
+    });
+    const password = parse(passwordSchemaForRole(role.name), data.password);
     await this.freeCashierNumber(actor, data.cashierNumber);
     const requestedUsername =
       data.username?.trim() || data.email?.split("@")[0] || data.name;
@@ -1056,7 +1061,7 @@ export class AdminController {
         username: requestedUsername,
         usernameKey,
         email: (data.email || generatedEmail).toLowerCase(),
-        passwordHash: await passwordHash(data.password),
+        passwordHash: await passwordHash(password),
         mustChangePassword: true,
         passwordExpiresAt: temporaryPasswordExpiry(),
         pinHash: await passwordHash(data.pin),
@@ -1092,7 +1097,7 @@ export class AdminController {
         username: z.string().trim().min(2).max(80).optional(),
         roleId: uuid.optional(),
         active: z.boolean().optional(),
-        password: strongPasswordSchema.optional(),
+        password: z.string().min(1).max(128).optional(),
         pin: newPinSchema.optional(),
         cashierNumber: cashierNumber.nullable().optional(),
       }),
@@ -1109,14 +1114,35 @@ export class AdminController {
       bad(
         "Para tu propia contraseña usa «Cambiar mi contraseña» en el menú de tu cuenta.",
       );
-    const { password, pin, username, ...rest } = data;
-    await this.db.user.findFirstOrThrow({
+    const { password: passwordInput, pin, username, ...rest } = data;
+    const target = await this.db.user.findFirstOrThrow({
       where: { id: userId, branchId: actor.branchId },
+      include: { role: true },
     });
+    const role = data.roleId
+      ? await this.db.role.findUniqueOrThrow({ where: { id: data.roleId } })
+      : target.role;
+    // Al pasar de cajero a un rol con política más fuerte, la clave de seis
+    // dígitos deja de ser válida. Forzamos el cambio en el siguiente acceso y
+    // revocamos las sesiones para que la elevación no herede una sesión débil.
+    const passwordPolicyTightened =
+      passwordPolicyForRole(target.role.name) === "cashier-six-digits" &&
+      passwordPolicyForRole(role.name) === "strong";
+    const validatedPassword = passwordInput
+      ? parse(passwordSchemaForRole(role.name), passwordInput)
+      : undefined;
     await this.freeCashierNumber(actor, data.cashierNumber, userId);
-    const passwordValue = password ? await passwordHash(password) : undefined;
+    const passwordValue = validatedPassword
+      ? await passwordHash(validatedPassword)
+      : undefined;
     const pinValue = pin ? await passwordHash(pin) : undefined;
     const row = await this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id=${userId}::uuid FOR UPDATE`;
+      const current = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
+      });
+      if (current.roleId !== target.roleId)
+        conflict("El rol del usuario cambió. Revisa y vuelve a intentarlo.");
       const row = await tx.user.update({
         where: { id: userId },
         data: {
@@ -1128,19 +1154,27 @@ export class AdminController {
               }
             : {}),
           ...(passwordValue ? { passwordHash: passwordValue } : {}),
-          ...(passwordValue
+          ...(passwordValue || passwordPolicyTightened
             ? {
                 mustChangePassword: true,
                 passwordExpiresAt: temporaryPasswordExpiry(),
               }
             : {}),
           ...(pinValue ? { pinHash: pinValue } : {}),
-          ...(password || pin || data.active === false
+          ...(validatedPassword ||
+          pin ||
+          data.active === false ||
+          passwordPolicyTightened
             ? { authVersion: { increment: 1 } }
             : {}),
         },
       });
-      if (password || pin || data.active === false) {
+      if (
+        validatedPassword ||
+        pin ||
+        data.active === false ||
+        passwordPolicyTightened
+      ) {
         await tx.refreshToken.deleteMany({ where: { userId } });
         await tx.authSession.deleteMany({ where: { userId } });
       }
@@ -1150,7 +1184,7 @@ export class AdminController {
     // La contraseña y el PIN nunca se auditan; sólo que se cambiaron.
     await audit(this.db, actor, "access_change", "user", userId, undefined, {
       ...rest,
-      ...(password ? { passwordReset: true } : {}),
+      ...(validatedPassword ? { passwordReset: true } : {}),
       ...(pin ? { pinReset: true } : {}),
     });
     return {
@@ -1159,6 +1193,7 @@ export class AdminController {
       username: row.username,
       active: row.active,
       cashierNumber: row.cashierNumber,
+      ...(passwordPolicyTightened ? { mustChangePassword: true } : {}),
     };
   }
   // «Restablecer contraseña» (Configuración › Usuarios y permisos): la
@@ -1176,7 +1211,7 @@ export class AdminController {
   ) {
     const userId = parse(uuid, id);
     const data = parse(
-      z.object({ password: strongPasswordSchema.optional() }),
+      z.object({ password: z.string().min(1).max(128).optional() }),
       body ?? {},
     );
     if (userId === actor.id)
@@ -1186,13 +1221,21 @@ export class AdminController {
     // Sólo la administración (permiso «*», 403 para el resto) llega aquí y
     // puede restablecer a cualquier persona de su sucursal, también a otra
     // administradora: queda auditado (docs/DECISIONES.md, punto 14).
-    await this.db.user.findFirstOrThrow({
+    const target = await this.db.user.findFirstOrThrow({
       where: { id: userId, branchId: actor.branchId },
+      include: { role: true },
     });
-    const temporaryPassword = data.password ?? generateTemporaryPassword();
+    const temporaryPassword = data.password
+      ? parse(passwordSchemaForRole(target.role.name), data.password)
+      : generateTemporaryPasswordForRole(target.role.name);
     const passwordHashValue = await passwordHash(temporaryPassword);
     const row = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id=${userId}::uuid FOR UPDATE`;
+      const current = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
+      });
+      if (current.roleId !== target.roleId)
+        conflict("El rol del usuario cambió. Revisa y vuelve a intentarlo.");
       const row = await tx.user.update({
         where: { id: userId },
         data: {

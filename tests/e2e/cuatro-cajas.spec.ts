@@ -5,8 +5,10 @@ import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
 const owner = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
 // Contraseña temporal con la que el administrador crea la cuenta; en el primer
 // ingreso la persona debe cambiarla (mustChangePassword) por la definitiva.
-const temporary = "FitStore-QA-2026!";
-const password = "FitStore-QA-2026-Definitiva!";
+const cashierTemporary = "482917";
+const cashierPassword = "736204";
+const strongTemporary = "FitStore-QA-2026!";
+const strongPassword = "FitStore-QA-2026-Definitiva!";
 
 test("Tienda-4cajas: 3 cajas y el celular de Mercancía ven el stock en tiempo real", async ({
   browser,
@@ -59,6 +61,9 @@ test("Tienda-4cajas: 3 cajas y el celular de Mercancía ven el stock en tiempo r
 
   // Un usuario y un equipo aprobado por pantalla.
   async function station(label: string, role: string, mobile: boolean) {
+    const isSeller = role === "seller";
+    const temporary = isSeller ? cashierTemporary : strongTemporary;
+    const password = isSeller ? cashierPassword : strongPassword;
     const email = `e2e-4cajas-${label}-${tag}@example.test`;
     await api("/users", {
       name: "E2E " + label + " " + tag,

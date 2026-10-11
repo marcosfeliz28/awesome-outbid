@@ -20,8 +20,10 @@ const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
 const suffix = Date.now().toString(36);
 const ip = "198.18.9." + ((Date.now() % 250) + 1);
 const DEMO = process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!";
-const TEMPORARY = "FitStore-QA-Caja-2026!";
-const PASSWORD = "FitStore-QA-Caja-Definitiva-2026!";
+const STRONG_TEMPORARY = "FitStore-QA-Caja-2026!";
+const STRONG_PASSWORD = "FitStore-QA-Caja-Definitiva-2026!";
+const CASHIER_TEMPORARY = "583904";
+const CASHIER_PASSWORD = "739205";
 
 async function request(
   path: string,
@@ -76,18 +78,21 @@ async function person(
   const roles = await ok("/roles", owner);
   const email = `qa-caja-${label}-${suffix}@example.test`;
   const name = `QA ${label} ${suffix}`;
+  const isSeller = role === "seller";
+  const temporaryPassword = isSeller ? CASHIER_TEMPORARY : STRONG_TEMPORARY;
+  const password = isSeller ? CASHIER_PASSWORD : STRONG_PASSWORD;
   const user = await ok("/users", owner, {
     name,
     email,
-    password: TEMPORARY,
+    password: temporaryPassword,
     pin,
     roleId: roles.find((r: any) => r.name === role).id,
   });
   const login = await ok("/auth/change-password", "", {
     login: email,
-    currentPassword: TEMPORARY,
-    newPassword: PASSWORD,
-    confirmPassword: PASSWORD,
+    currentPassword: temporaryPassword,
+    newPassword: password,
+    confirmPassword: password,
   });
   created.push(user.id);
   return { id: user.id, name, token: login.accessToken };
