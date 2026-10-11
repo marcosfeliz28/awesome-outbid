@@ -257,3 +257,23 @@ Qué hacer (rama `nexora-chatgpt-fase2`, desde `origin/nexora-cloud`):
 4. Mantener (y verificar con pruebas) que el límite de intentos/bloqueo del inicio de sesión sigue vigente: 6 dígitos solo son aceptables con ese freno. No tocar ese freno. No usar contraseñas triviales de lista (000000, 123456, 111111…): rechazarlas con mensaje claro.
 5. Pruebas: unitarias de la política por rol; integración (alta/restablecer/cambio de cajero con 6 dígitos OK, 5 o 7 dígitos y letras NO; gerente con 6 dígitos NO; el rol no se toma del cuerpo); e2e del cambio obligatorio de un cajero. Corregir pruebas existentes que asuman 12 caracteres para cajeros.
 6. AUTOAUDITORÍA obligatoria (§3s) y entrega con los 3 CI en verde. Sin desplegar. No tocar contraseñas reales ni mostrar ninguna.
+
+### 3u. ORDEN DE LA DUEÑA — rediseño del PDF del recibo/crédito (ChatGPT PC)
+
+**Orden (11-oct-2026):** «el PDF del crédito: que salga mejor, más bonito, más estable, más entendible y más ético. Hay que trabajarlo, sin afectar la producción».
+
+Código: `apps/api/src/sales.ts` ~3248 (`GET sales/:id/receipt.pdf`, pdfkit, A4) y `apps/api/src/receipt-pdf.ts`. Muestra real (venta FS-0000010, crédito mayorista RD$ 43,800 de Edgar Soto a «alex roque»). **Análisis de lo que está mal hoy:**
+
+1. **Cantidades que no cuadran a la vista:** «10 × RD$ 1950 … RD$ 9000» (la línea ya trae el descuento mayorista, pero no se ve). Mostrar por línea: cantidad, precio unitario, descuento de la línea y total; y un bloque de totales: Subtotal, Descuento, ITBIS, **Total**.
+2. **Engañoso (ético) en créditos:** imprime «cod: Recibido RD$ 43800 · Aplicado RD$ 43800 · Cambio RD$ 0», como si el cliente hubiera pagado, y «cod» es un código interno. Un crédito debe decir: **«Pagado hoy: RD$ 0.00 · Saldo pendiente: RD$ 43,800.00»**, sin «Recibido/Cambio» ni nombres internos de método.
+3. **Falta lo que hace entendible y justo un crédito:** cliente (nombre, y teléfono/RNC **enmascarados** según SEC-05), fecha de la venta, vencimiento si existe, quién vendió (vendedor), el saldo pendiente destacado, forma de pagar el saldo (efectivo/tarjeta/transferencia en la tienda; los pagos los registra solo administración), y un recuadro «Reconocimiento del cliente» con líneas de nombre/firma/fecha. Sin inventar plazos ni intereses que el sistema no tenga.
+4. **Información interna al cliente:** «Autorizó: Edgar Soto (seller)» y «regla» salen en un documento para el cliente. En el PDF para el cliente mostrar solo el monto y el motivo comercial del descuento («Precio al por mayor»); quién autorizó y la regla quedan en la auditoría interna, no en el PDF del cliente. (No tocar la auditoría.)
+5. **Leyenda repetida:** «DOCUMENTO NO FISCAL» sale dos veces y en mayúsculas pesadas. Una sola línea discreta al pie: «Documento interno, sin valor fiscal». (La dueña ya pidió quitarla del ticket térmico; en el PDF queda una vez, pequeña.)
+6. **Aspecto:** hoy es texto corrido. Diseño limpio en A4: encabezado con logo de la tienda si existe (config), nombre «Grupo Macgen», sucursal, teléfono; título «Recibo de venta» / «Venta a crédito»; tabla de productos con columnas alineadas y bandas suaves; totales alineados a la derecha; saldo pendiente en recuadro; pie con devoluciones + privacidad (ya existen) y gracias. Tipografía legible (≥10 pt cuerpo), buen contraste, sin cortar texto largo (nombres de producto largos deben saltar de línea dentro de su columna), varias páginas con encabezado repetido si hay muchas líneas, número de página.
+7. **Estabilidad:** nombres/valores muy largos, 1 línea o 100 líneas, caracteres especiales (ñ, tildes, &, comillas), venta anulada (sello «ANULADA» con motivo), venta con devolución parcial, pago mixto, sin cliente, sin logo. Nunca romper la descarga: si falta un dato, omitir la línea, no lanzar error. Montos con formato RD$ 43,800.00 (miles y 2 decimales) en vez de «43800».
+
+**Reglas de la entrega:**
+- Mismo endpoint, mismos permisos (`sale:write`, vendedor solo la suya, enmascarado SEC-05) y misma ruta; **cero cambios de base de datos, de dinero, de caja o de inventario**. No tocar el ticket térmico (`Prints.tsx`) ni WhatsApp/correo.
+- Pruebas: unitarias de las funciones de texto/formato; integración que descargue el PDF de ventas de contado, mixta, crédito, anulada y larga, y verifique contenido (extraer texto) y que NO aparezca «Recibido», «cod:», «Autorizó» ni «Cambio» en créditos; que no falle con datos extremos. Corregir pruebas existentes que dependan del texto viejo.
+- Generar 3 PDFs de ejemplo (contado, crédito, anulada) con datos ficticios y subirlos a `docs/capturas/` para que la dueña los vea.
+- AUTOAUDITORÍA obligatoria (§3s), 3 CI en verde, sin desplegar.
