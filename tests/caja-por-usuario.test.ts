@@ -176,6 +176,10 @@ afterAll(async () => {
       });
   if (productId)
     await request("/products/" + productId, owner, { active: false }, "PATCH");
+  // La aprobación con PIN compara contra todas las usuarias activas (bcrypt
+  // por cada una): las de prueba se desactivan para no alentar otras pruebas.
+  for (const id of created)
+    await request("/users/" + id, owner, { active: false }, "PATCH");
   await db.$disconnect();
 }, 60000);
 

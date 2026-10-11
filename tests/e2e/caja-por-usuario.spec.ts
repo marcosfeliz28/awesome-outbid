@@ -8,6 +8,21 @@ const owner = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
 const temporary = "FitStore-QA-2026!";
 const password = "FitStore-QA-2026-Definitiva!";
 
+// Las usuarias de prueba se desactivan al terminar: la aprobación con PIN
+// compara contra todas las activas (bcrypt por cada una) y alentaría otras
+// pruebas de la suite.
+const made: string[] = [];
+test.afterEach(async ({ request }) => {
+  const auth = await (
+    await request.post("/api/auth/login", { data: owner })
+  ).json();
+  for (const id of made.splice(0))
+    await request.patch("/api/users/" + id, {
+      headers: { Authorization: "Bearer " + auth.accessToken },
+      data: { active: false },
+    });
+});
+
 test("W6: Lisbeth no ve la caja de Marcos en la misma computadora y abre la suya", async ({
   browser,
   request,
@@ -37,13 +52,14 @@ test("W6: Lisbeth no ve la caja de Marcos en la misma computadora y abre la suya
   async function person(label: string, role: string) {
     const email = `e2e-w6-${label}-${tag}@example.test`;
     names[label] = "E2E " + label + " " + tag;
-    await api("/users", {
+    const user = await api("/users", {
       name: names[label],
       email,
       password: temporary,
       pin: "246813",
       roleId: roles.find((r: any) => r.name === role).id,
     });
+    made.push(user.id);
     const changed = await request.post("/api/auth/change-password", {
       data: {
         login: email,
