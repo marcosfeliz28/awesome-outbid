@@ -189,7 +189,8 @@ describe("Cumplimiento legal y accesibilidad", () => {
         },
       }),
     );
-    expect(ticket).toContain("DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL");
+    // La dueña pidió quitar la leyenda del ticket térmico: sin NCF no hay fila fiscal.
+    expect(ticket).not.toContain("COMPROBANTE FISCAL");
     expect(ticket).not.toContain("NCF:");
     expect(ticket).not.toContain("RNC:");
     for (const text of [
