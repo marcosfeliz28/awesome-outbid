@@ -40,6 +40,8 @@ model User {
   cashierNumber      Int?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+  voidRequestsMade   SaleVoidRequest[] @relation("VoidRequestRequester")
+  voidRequestsReviewed SaleVoidRequest[] @relation("VoidRequestReviewer")
 }
 
 model RefreshToken {
@@ -283,6 +285,7 @@ model Sale {
   items                  SaleItem[]
   payments               Payment[]
   returns                SaleReturn[]
+  voidRequests           SaleVoidRequest[]
   branchId               String       @default("main")
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
@@ -293,6 +296,30 @@ model Sale {
   @@index([sellerId, createdAt])
   // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
   @@index([cashSessionId])
+}
+
+model SaleVoidRequest {
+  id             String   @id @default(uuid()) @db.Uuid
+  saleId         String   @db.Uuid
+  sale           Sale     @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  requestedById  String   @db.Uuid
+  requester      User     @relation("VoidRequestRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedById   String?  @db.Uuid
+  reviewer       User?    @relation("VoidRequestReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+  operationId    String   @unique @db.Uuid
+  reasonCode     String
+  reason         String
+  status         String   @default("pending")
+  resolutionNote String?
+  requestedAt    DateTime @default(now())
+  reviewedAt     DateTime?
+  cancelledAt    DateTime?
+  updatedAt      DateTime @updatedAt
+  branchId       String   @default("main")
+
+  @@index([branchId, status, requestedAt])
+  @@index([saleId])
+  @@index([requestedById, requestedAt])
 }
 
 model SaleItem {

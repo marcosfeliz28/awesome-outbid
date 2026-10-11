@@ -26,6 +26,7 @@ import {
   margin,
   money,
   d,
+  can,
   z,
 } from "@fitstore/shared";
 import {
@@ -36,6 +37,7 @@ import {
   parse,
   uuid,
   audit,
+  conflict,
   canViewCashExpected,
 } from "./common";
 
@@ -65,6 +67,7 @@ export const MANUAL_ALERT_TYPES = [
   "account_locked",
   // Recordatorio semanal de créditos por cobrar (credit-reminder.ts).
   "credit_reminder",
+  "sale_void_request",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,
@@ -849,6 +852,9 @@ export class AlertsController {
         ...(filter.status !== "all" ? { status: filter.status } : {}),
         ...(filter.type ? { type: filter.type } : {}),
         ...(filter.entityId ? { entityId: filter.entityId } : {}),
+        ...(!can(actor.permissions, "*")
+          ? { AND: [{ type: { not: "sale_void_request" } }] }
+          : {}),
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       take: filter.limit + 1,
@@ -868,9 +874,19 @@ export class AlertsController {
       z.object({ status: z.enum(["new", "seen", "resolved"]) }),
       body,
     );
-    await this.db.alert.findFirstOrThrow({
-      where: { id: parse(uuid, id), branchId: actor.branchId },
+    const found = await this.db.alert.findFirstOrThrow({
+      where: {
+        id: parse(uuid, id),
+        branchId: actor.branchId,
+        ...(!can(actor.permissions, "*")
+          ? { type: { not: "sale_void_request" } }
+          : {}),
+      },
     });
+    if (found.type === "sale_void_request")
+      conflict(
+        "Este aviso se resuelve al aprobar, rechazar o cancelar la solicitud.",
+      );
     await audit(this.db, actor, "state", "alert", id, undefined, data);
     return alertForActor(
       await this.db.alert.update({ where: { id }, data }),

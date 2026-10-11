@@ -60,6 +60,7 @@ import { Toasts, toast } from "./helpers";
 import { inactivityWaits } from "./cartDraftPolicy";
 import { keepDraftThrough } from "./cartDraft";
 import { Dashboard } from "./Dashboard";
+import { VoidRequests } from "./VoidRequests";
 import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import {
@@ -196,6 +197,12 @@ const navigation = [
     permission: "sale:write",
   },
   { id: "sales", label: "Ventas", icon: ScanLine, permission: "sale:write" },
+  {
+    id: "void-requests",
+    label: "Solicitudes de anulación",
+    icon: Bell,
+    permission: "sale:write",
+  },
   {
     id: "products",
     label: "Productos",
@@ -822,10 +829,11 @@ function Shell() {
     customers: <Customers />,
     promotions: <Promotions />,
     reports: <Reports />,
-    alerts: <Alerts />,
+    alerts: <Alerts go={go} />,
     settings: <Configuration />,
     ...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {}),
     sales: <SalesHistory />,
+    "void-requests": <VoidRequests />,
     merchandise: <Merchandise />,
     incentives: <IncentivesPage />,
   };

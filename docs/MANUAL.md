@@ -100,11 +100,11 @@ El POS aplica FEFO automáticamente y no vende lotes vencidos. Un lote vencido s
 
 ## Devolver o anular
 
-Gerente y administrador pueden hacerlo desde **Ventas**, con una caja abierta. Una devolución elige artículo, cantidad, motivo y método de reembolso. Se conserva una nota de crédito interna. Productos abiertos de suplementos/maquillaje y cualquier producto dañado no pueden volver al stock vendible.
+Gerente y administrador pueden gestionar devoluciones desde **Ventas**, con una caja abierta. Una devolución elige artículo, cantidad, motivo y método de reembolso. Se conserva una nota de crédito interna. Productos abiertos de suplementos/maquillaje y cualquier producto dañado no pueden volver al stock vendible.
 
 La demostración configura 30 días de devolución; el negocio debe confirmar ese plazo antes de utilizar datos reales. Las devoluciones repetidas no pueden superar la cantidad comprada.
 
-La anulación exige motivo, conserva la factura y restaura inventario. Sólo se anulan ventas sin devoluciones ni abonos previos. Si la caja de la venta ya cerró y se cobró en efectivo, quien anula necesita su caja abierta: el reembolso sale de ella y el cierre anterior no cambia (ver `docs/DECISIONES.md`, punto 9). Los cambios de talla se realizan como devolución y una nueva venta.
+La cajera o vendedora abre **Ventas**, busca una venta propia y pulsa **Solicitar anulación**. Elige un tipo de motivo y lo explica por escrito. La venta sigue vigente mientras la solicitud esté pendiente; puede verla y cancelarla en **Solicitudes de anulación**. Administración ve la solicitud en el inicio, la campana y esa pantalla. Allí revisa ticket, artículos, pagos y motivo, y puede **Aprobar y anular** o **Rechazar** con nota. Sólo administración puede aprobar o anular directamente; el gerente no tiene ese permiso en la configuración actual. La anulación exige motivo, conserva la factura y restaura inventario. Sólo se anulan ventas sin devoluciones ni abonos previos. Si la caja de la venta ya cerró y se cobró en efectivo, quien anula necesita su caja abierta: el reembolso sale de ella y el cierre anterior no cambia (ver `docs/DECISIONES.md`, punto 9). Los cambios de talla se realizan como devolución y una nueva venta.
 
 ## Gastos y cierre
 

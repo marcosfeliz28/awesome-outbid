@@ -23,6 +23,7 @@ export default defineConfig({
       "tests/credito-api.test.ts",
       "tests/calidad-dinero-api.test.ts",
       "tests/calidad-seguridad-api.test.ts",
+      "tests/void-requests-api.test.ts",
     ],
     testTimeout: 30000,
     hookTimeout: 60000,

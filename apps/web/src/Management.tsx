@@ -1479,6 +1479,7 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   out_of_stock: "Agotado",
   overstock: "Exceso de stock",
   unusual_discount: "Descuento inusual",
+  sale_void_request: "Solicitud de anulación",
 };
 const alertTypeLabel = (type: string) =>
   ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " ");
@@ -2753,7 +2754,7 @@ export function Reports() {
   );
 }
 
-export function Alerts() {
+export function Alerts({ go }: { go?: (page: string) => void }) {
   const [status, setStatus] = useState("new");
   const query = useQuery({
     queryKey: ["alerts", status],
@@ -2813,36 +2814,47 @@ export function Alerts() {
                   {a.severity === "high" ? "Prioritaria" : "Atención"}
                 </Badge>
                 <div className="table-actions">
-                  {a.status !== "seen" && a.status !== "resolved" && (
+                  {a.type === "sale_void_request" && go && (
                     <button
                       className="text-link"
-                      onClick={async () => {
-                        await mutate(
-                          "/alerts/" + a.id,
-                          { status: "seen" },
-                          "PATCH",
-                        );
-                        await client.invalidateQueries();
-                      }}
+                      onClick={() => go("void-requests")}
                     >
-                      Marcar vista
+                      Revisar solicitud
                     </button>
                   )}
-                  {a.status !== "resolved" && (
-                    <button
-                      className="text-link"
-                      onClick={async () => {
-                        await mutate(
-                          "/alerts/" + a.id,
-                          { status: "resolved" },
-                          "PATCH",
-                        );
-                        await client.invalidateQueries();
-                      }}
-                    >
-                      Resolver
-                    </button>
-                  )}
+                  {a.type !== "sale_void_request" &&
+                    a.status !== "seen" &&
+                    a.status !== "resolved" && (
+                      <button
+                        className="text-link"
+                        onClick={async () => {
+                          await mutate(
+                            "/alerts/" + a.id,
+                            { status: "seen" },
+                            "PATCH",
+                          );
+                          await client.invalidateQueries();
+                        }}
+                      >
+                        Marcar vista
+                      </button>
+                    )}
+                  {a.type !== "sale_void_request" &&
+                    a.status !== "resolved" && (
+                      <button
+                        className="text-link"
+                        onClick={async () => {
+                          await mutate(
+                            "/alerts/" + a.id,
+                            { status: "resolved" },
+                            "PATCH",
+                          );
+                          await client.invalidateQueries();
+                        }}
+                      >
+                        Resolver
+                      </button>
+                    )}
                 </div>
               </div>
             ))}
@@ -2863,6 +2875,7 @@ export function SalesHistory() {
   const user = useStore((s) => s.user)!;
   const [selected, setSelected] = useState<any>(null),
     [voiding, setVoiding] = useState<any>(null),
+    [requestingVoid, setRequestingVoid] = useState<any>(null),
     [returning, setReturning] = useState<any>(null),
     [installment, setInstallment] = useState<any>(null),
     [rejecting, setRejecting] = useState<any>(null),
@@ -2918,9 +2931,27 @@ export function SalesHistory() {
               {
                 label: "Estado",
                 render: (s) => (
-                  <Badge tone={s.status === "voided" ? "danger" : "success"}>
-                    {s.status === "voided" ? "Anulada" : "Completada"}
-                  </Badge>
+                  <>
+                    <Badge tone={s.status === "voided" ? "danger" : "success"}>
+                      {s.status === "voided" ? "Anulada" : "Completada"}
+                    </Badge>
+                    {s.voidRequest && (
+                      <small>
+                        {" "}
+                        · Solicitud{" "}
+                        {
+                          (
+                            {
+                              pending: "pendiente",
+                              approved: "aprobada",
+                              rejected: "rechazada",
+                              cancelled: "cancelada",
+                            } as Record<string, string>
+                          )[s.voidRequest.status]
+                        }
+                      </small>
+                    )}
+                  </>
                 ),
               },
               { label: "Total", render: (s) => formatMoney(s.total) },
@@ -2979,6 +3010,22 @@ export function SalesHistory() {
                           }}
                         >
                           Registrar abono
+                        </button>
+                      )}
+                    {!can(user.permissions, "*") &&
+                      s.sellerId === user.id &&
+                      s.status === "completed" &&
+                      s.voidRequest?.status !== "pending" && (
+                        <button
+                          className="text-link"
+                          onClick={() =>
+                            setRequestingVoid({
+                              ...s,
+                              operationId: crypto.randomUUID(),
+                            })
+                          }
+                        >
+                          Solicitar anulación
                         </button>
                       )}
                     {can(user.permissions, "sale:manage") &&
@@ -3181,6 +3228,40 @@ export function SalesHistory() {
             await client.invalidateQueries();
             toast("Venta anulada.");
           }}
+        />
+      )}
+      {requestingVoid && (
+        <FormModal
+          title={"Solicitar anulación · " + requestingVoid.number}
+          fields={[
+            {
+              key: "reasonCode",
+              label: "Tipo de motivo",
+              type: "select",
+              required: true,
+              options: [
+                { value: "customer_request", label: "Solicitud del cliente" },
+                { value: "duplicate", label: "Venta duplicada" },
+                { value: "payment_error", label: "Error de pago" },
+                { value: "item_error", label: "Error de artículo" },
+                { value: "other", label: "Otro" },
+              ],
+            },
+            {
+              key: "reason",
+              label: "Explica el motivo",
+              type: "textarea",
+              required: true,
+            },
+          ]}
+          onClose={() => setRequestingVoid(null)}
+          onSubmit={(data) =>
+            post("/sales/" + requestingVoid.id + "/void-requests", {
+              operationId: requestingVoid.operationId,
+              reasonCode: data.reasonCode,
+              reason: data.reason,
+            })
+          }
         />
       )}
       {rejecting && (

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Inject,
   Param,
   Post,
@@ -11,6 +12,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import type { Prisma } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import {
@@ -230,6 +232,14 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     items: (sale.items ?? []).map(item),
     payments: (sale.payments ?? []).map(payment),
     returns: (sale.returns ?? []).map(returned),
+    voidRequest: sale.voidRequests?.[0]
+      ? {
+          id: sale.voidRequests[0].id,
+          status: sale.voidRequests[0].status,
+          requestedAt: sale.voidRequests[0].requestedAt,
+          resolutionNote: sale.voidRequests[0].resolutionNote,
+        }
+      : null,
     ...(showProfit ? { costTotal: sale.costTotal } : {}),
   };
 }
@@ -1500,6 +1510,7 @@ export class SalesController {
         items: { include: { variant: { include: { product: true } } } },
         payments: true,
         returns: true,
+        voidRequests: { orderBy: { requestedAt: "desc" }, take: 1 },
       },
       orderBy: { createdAt: "desc" },
       // La búsqueda por número o fecha alcanza todo el historial sin enviar
@@ -1508,6 +1519,363 @@ export class SalesController {
     });
     return rows.map((sale) => saleHistoryDto(sale, actor));
   }
+  private async voidRequestDto(id: string, actor: Actor) {
+    const row = await this.db.saleVoidRequest.findFirstOrThrow({
+      where: {
+        id,
+        branchId: actor.branchId,
+        ...(can(actor.permissions, "*") ? {} : { requestedById: actor.id }),
+      },
+      include: {
+        requester: { select: { id: true, name: true } },
+        reviewer: { select: { id: true, name: true } },
+        sale: {
+          include: {
+            customer: { select: { name: true } },
+            items: { include: { variant: { include: { product: true } } } },
+            payments: {
+              select: {
+                method: true,
+                amount: true,
+                status: true,
+                entryType: true,
+              },
+            },
+            returns: { select: { id: true } },
+          },
+        },
+      },
+    });
+    return this.voidRequestView(row);
+  }
+
+  private voidRequestView(row: any) {
+    const sale = row.sale;
+    const approvalBlocker =
+      sale.status !== "completed"
+        ? "La venta ya está anulada."
+        : sale.returns.length
+          ? "La venta tiene devoluciones. Usa una devolución o revisión manual."
+          : sale.payments.some(
+                (p: any) =>
+                  p.entryType === "installment" && p.status !== "rejected",
+              )
+            ? "La venta tiene abonos. Usa una devolución."
+            : sale.items.some(
+                  (i: any) =>
+                    !Array.isArray(i.stockAllocations) ||
+                    !i.stockAllocations.length,
+                )
+              ? "La venta no conserva el detalle de inventario necesario para anularla."
+              : null;
+    return {
+      id: row.id,
+      operationId: row.operationId,
+      status: row.status,
+      reasonCode: row.reasonCode,
+      reason: row.reason,
+      resolutionNote: row.resolutionNote,
+      requestedAt: row.requestedAt,
+      reviewedAt: row.reviewedAt,
+      cancelledAt: row.cancelledAt,
+      requester: row.requester,
+      reviewer: row.reviewer,
+      approvalBlocker,
+      sale: {
+        id: sale.id,
+        number: sale.number,
+        status: sale.status,
+        total: sale.total,
+        createdAt: sale.createdAt,
+        customer: sale.customer?.name ?? null,
+        items: sale.items.map((i: any) => ({
+          name: i.variant.product.name,
+          sku: i.variant.sku,
+          qty: i.qty,
+          lineTotal: i.lineTotal,
+        })),
+        payments: sale.payments.map((p: any) => ({
+          method: p.method,
+          amount: p.amount,
+          status: p.status,
+          entryType: p.entryType,
+        })),
+      },
+    };
+  }
+
+  @Get("void-requests")
+  @Permit("sale:write")
+  async voidRequests(
+    @Query("status") status: string,
+    @CurrentUser() actor: Actor,
+  ) {
+    const filter =
+      status === "all" || !status
+        ? {}
+        : {
+            status: parse(
+              z.enum(["pending", "approved", "rejected", "cancelled"]),
+              status,
+            ),
+          };
+    const rows = await this.db.saleVoidRequest.findMany({
+      where: {
+        branchId: actor.branchId,
+        ...filter,
+        ...(can(actor.permissions, "*") ? {} : { requestedById: actor.id }),
+      },
+      include: {
+        requester: { select: { id: true, name: true } },
+        reviewer: { select: { id: true, name: true } },
+        sale: {
+          include: {
+            customer: { select: { name: true } },
+            items: { include: { variant: { include: { product: true } } } },
+            payments: {
+              select: {
+                method: true,
+                amount: true,
+                status: true,
+                entryType: true,
+              },
+            },
+            returns: { select: { id: true } },
+          },
+        },
+      },
+      orderBy: { requestedAt: "desc" },
+      take: 100,
+    });
+    return rows.map((row) => this.voidRequestView(row));
+  }
+
+  @Post("sales/:id/void-requests")
+  @RequireTerminal()
+  @Permit("sale:write")
+  async requestVoid(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    if (can(actor.permissions, "*"))
+      denied("Administración puede anular directamente desde la venta.");
+    const saleId = parse(uuid, id);
+    const data = parse(
+      z.object({
+        operationId: uuid,
+        reasonCode: z.enum([
+          "customer_request",
+          "duplicate",
+          "payment_error",
+          "item_error",
+          "other",
+        ]),
+        reason: z.string().trim().min(8).max(500),
+      }),
+      body,
+    );
+    const result = await moneyDb(this.db).$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"sale-void:" + saleId}))`;
+      const previous = await tx.saleVoidRequest.findUnique({
+        where: { operationId: data.operationId },
+      });
+      if (previous) {
+        if (
+          previous.saleId === saleId &&
+          previous.requestedById === actor.id &&
+          previous.branchId === actor.branchId
+        )
+          return previous;
+        conflict(
+          "Este identificador de operación ya se usó en otra solicitud.",
+        );
+      }
+      const sale = await tx.sale.findFirstOrThrow({
+        where: {
+          id: saleId,
+          branchId: actor.branchId,
+          sellerId: actor.id,
+          status: "completed",
+          cashSession: { userId: actor.id },
+        },
+      });
+      if (
+        await tx.saleVoidRequest.findFirst({
+          where: { saleId, status: "pending" },
+        })
+      )
+        conflict("Ya hay una solicitud pendiente para esta venta.");
+      const row = await tx.saleVoidRequest.create({
+        data: {
+          saleId,
+          branchId: actor.branchId,
+          requestedById: actor.id,
+          operationId: data.operationId,
+          reasonCode: data.reasonCode,
+          reason: data.reason,
+        },
+      });
+      await tx.alert.create({
+        data: {
+          key: "sale-void-request:" + row.id,
+          type: "sale_void_request",
+          severity: "high",
+          entityId: row.id,
+          branchId: actor.branchId,
+          message: `Solicitud de anulación de la factura ${sale.number}. Revisión pendiente.`,
+        },
+      });
+      await audit(tx, actor, "request", "sale_void_request", row.id, null, {
+        saleId,
+        status: "pending",
+        reasonCode: data.reasonCode,
+        reason: data.reason,
+      });
+      return row;
+    }, MONEY_TRANSACTION);
+    notify(this.db, "void_request", result.id);
+    return this.voidRequestDto(result.id, actor);
+  }
+
+  @Post("void-requests/:id/cancel")
+  @HttpCode(200)
+  @Permit("sale:write")
+  async cancelVoidRequest(
+    @Param("id") id: string,
+    @CurrentUser() actor: Actor,
+  ) {
+    const requestId = parse(uuid, id);
+    await moneyDb(this.db).$transaction(async (tx) => {
+      const found = await tx.saleVoidRequest.findFirstOrThrow({
+        where: {
+          id: requestId,
+          branchId: actor.branchId,
+          requestedById: actor.id,
+        },
+      });
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"sale-void:" + found.saleId}))`;
+      const row = await tx.saleVoidRequest.findUniqueOrThrow({
+        where: { id: requestId },
+      });
+      if (row.status === "cancelled") return;
+      if (row.status !== "pending")
+        conflict("La solicitud ya no está pendiente.");
+      await tx.saleVoidRequest.update({
+        where: { id: requestId },
+        data: {
+          status: "cancelled",
+          cancelledAt: new Date(),
+        },
+      });
+      await tx.alert.updateMany({
+        where: {
+          key: "sale-void-request:" + requestId,
+          branchId: actor.branchId,
+        },
+        data: { status: "resolved" },
+      });
+      await audit(
+        tx,
+        actor,
+        "cancel",
+        "sale_void_request",
+        requestId,
+        { status: "pending" },
+        { status: "cancelled" },
+      );
+    }, MONEY_TRANSACTION);
+    return this.voidRequestDto(requestId, actor);
+  }
+
+  @Post("void-requests/:id/reject")
+  @HttpCode(200)
+  @Permit("*")
+  async rejectVoidRequest(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const requestId = parse(uuid, id);
+    const { note } = parse(
+      z.object({ note: z.string().trim().min(8).max(500) }),
+      body,
+    );
+    await moneyDb(this.db).$transaction(async (tx) => {
+      const found = await tx.saleVoidRequest.findFirstOrThrow({
+        where: {
+          id: requestId,
+          branchId: actor.branchId,
+        },
+      });
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"sale-void:" + found.saleId}))`;
+      const row = await tx.saleVoidRequest.findUniqueOrThrow({
+        where: { id: requestId },
+      });
+      if (row.status !== "pending")
+        conflict("La solicitud ya no está pendiente.");
+      if (row.requestedById === actor.id)
+        denied("No puedes revisar tu propia solicitud.");
+      await tx.saleVoidRequest.update({
+        where: { id: requestId },
+        data: {
+          status: "rejected",
+          reviewedById: actor.id,
+          reviewedAt: new Date(),
+          resolutionNote: note,
+        },
+      });
+      await tx.alert.updateMany({
+        where: {
+          key: "sale-void-request:" + requestId,
+          branchId: actor.branchId,
+        },
+        data: { status: "resolved" },
+      });
+      await audit(
+        tx,
+        actor,
+        "reject",
+        "sale_void_request",
+        requestId,
+        { status: "pending" },
+        { status: "rejected", note },
+      );
+    }, MONEY_TRANSACTION);
+    return this.voidRequestDto(requestId, actor);
+  }
+
+  @Post("void-requests/:id/approve")
+  @HttpCode(200)
+  @RequireTerminal()
+  @Permit("*")
+  async approveVoidRequest(
+    @Param("id") id: string,
+    @CurrentUser() actor: Actor,
+  ) {
+    const requestId = parse(uuid, id);
+    const saleId = await moneyDb(this.db).$transaction(async (tx) => {
+      const found = await tx.saleVoidRequest.findFirstOrThrow({
+        where: {
+          id: requestId,
+          branchId: actor.branchId,
+        },
+      });
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"sale-void:" + found.saleId}))`;
+      const row = await tx.saleVoidRequest.findUniqueOrThrow({
+        where: { id: requestId },
+      });
+      if (row.status !== "pending")
+        conflict("La solicitud ya no está pendiente.");
+      if (row.requestedById === actor.id)
+        denied("No puedes aprobar tu propia solicitud de anulación.");
+      await this.voidSaleTx(tx, row.saleId, "Solicitud: " + row.reason, actor);
+      return row.saleId;
+    }, MONEY_TRANSACTION);
+    notify(this.db, "sale_voided", saleId);
+    return this.voidRequestDto(requestId, actor);
+  }
+
   @Post("sales/:id/void")
   // D-11 (auditoría 01): como la devolución, desde un equipo registrado: la
   // anulación puede sacar efectivo de la caja abierta de quien anula (D-02).
@@ -1524,194 +1892,230 @@ export class SalesController {
     // Si esa caja ya cerró y la venta se cobró en efectivo, el reembolso sale
     // de la caja abierta de quien anula (D-02, docs/DECISIONES.md, punto 9).
     const data = parse(z.object({ reason }), body);
-    const voided = await moneyDb(this.db).$transaction(async (tx) => {
-      const saleRef = await tx.sale.findFirstOrThrow({
-        where: { id: parse(uuid, id), branchId: actor.branchId },
-        select: { cashSessionId: true, payments: true },
-      });
-      let originalCash: any = null;
-      if (saleRef.cashSessionId) {
-        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${saleRef.cashSessionId}::uuid FOR UPDATE`;
-        originalCash = await tx.cashSession.findUnique({
-          where: { id: saleRef.cashSessionId },
-        });
-      }
-      // D-02: si la caja de la venta ya cerró, el efectivo del reembolso sale
-      // de la caja abierta de quien anula. Se bloquea antes que la venta, en el
-      // mismo orden que una devolución (caja que reembolsa y luego venta).
-      let refundCash: any = null;
-      if (originalCash?.closedAt && cashCollected(saleRef.payments) > 0) {
-        const own = await tx.cashSession.findFirst({
-          where: {
-            branchId: actor.branchId,
-            userId: actor.id,
-            closedAt: null,
-          },
-          select: { id: true },
-        });
-        if (!own)
-          bad(
-            "La caja de esta venta ya cerró. Abre tu caja para entregar el reembolso en efectivo y vuelve a anular.",
-          );
-        refundCash = await cashLock(tx, actor, own!.id);
-      }
-      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id = ${parse(uuid, id)}::uuid FOR UPDATE`;
-      const sale = await tx.sale.findFirstOrThrow({
-        where: { id, branchId: actor.branchId },
-        include: { items: true, payments: true, returns: true },
-      });
-      if (sale.status !== "completed" || sale.returns.length)
-        bad("La venta ya está anulada o tiene devoluciones.");
-      const refundAmount = refundCash ? cashCollected(sale.payments) : 0;
-      if (
-        refundCash &&
-        d(refundAmount).gt((await cashExpected(tx, refundCash)).cash)
-      )
-        bad("No hay suficiente efectivo en tu caja para este reembolso.");
-      if (
-        sale.payments.some(
-          (p) => p.entryType === "installment" && p.status !== "rejected",
-        )
-      )
-        bad("La venta tiene abonos. Usa una devolución.");
-      if (
-        sale.items.some(
-          (item) =>
-            !Array.isArray(item.stockAllocations) ||
-            item.stockAllocations.length === 0,
-        )
-      )
-        bad(
-          "Esta venta antigua no conserva el detalle necesario para reponer el inventario automáticamente. Usa una devolución o revisión manual.",
-        );
-      const allocations = sale.items.flatMap(
-        (i) => i.stockAllocations as any[],
-      );
-      const variants = new Map<string, any>();
-      for (const variantId of [
-        ...new Set(allocations.map((a) => a.variantId as string)),
-      ].sort())
-        variants.set(variantId, await lockVariant(tx, variantId, actor));
-      // D-M1 (auditoría 06): las notas de crédito se bloquean DESPUÉS de las
-      // variantes y en orden de id, como en la venta. Antes la anulación
-      // tomaba la nota y luego las variantes, la venta al revés, y una venta
-      // pagada con la misma nota interbloqueaba con la anulación (HTTP 500).
-      const noteIds = [
-        ...new Set(
-          sale.payments.flatMap((p) =>
-            p.creditNoteId ? [p.creditNoteId] : [],
-          ),
-        ),
-      ].sort();
-      for (const noteId of noteIds) {
-        await tx.$queryRaw`SELECT id FROM "CreditNote" WHERE id=${noteId}::uuid FOR UPDATE`;
-        const restored = sale.payments
-          .filter((p) => p.creditNoteId === noteId)
-          .reduce((sum, p) => sum + Number(p.amount), 0);
-        await tx.creditNote.updateMany({
-          where: { id: noteId },
-          data: { balance: { increment: restored } },
-        });
-      }
-      for (const allocation of allocations) {
-        const variant = variants.get(allocation.variantId);
-        if (allocation.lotId)
-          await tx.lot.update({
-            where: { id: allocation.lotId },
-            data: { qty: { increment: allocation.qty } },
-          });
-        // Lo anulado vuelve a su costo, igual que en una devolución: si entre
-        // la venta y la anulación se recibió mercancía a otro costo, el
-        // promedio debe ponderar ambas (R9-dinero-4).
-        const newCost = weightedReturn(
-          variant,
-          allocation.qty,
-          allocation.unitCost,
-        );
-        await tx.variant.update({
-          where: { id: variant.id },
-          data: { costAvg: newCost },
-        });
-        variant.costAvg = newCost;
-        await stockChange(
-          tx,
-          actor,
-          variant,
-          allocation.qty,
-          "void",
-          data.reason,
-          id,
-          allocation.lotId,
-          allocation.unitCost,
-        );
-      }
-      await tx.sale.update({
-        where: { id },
-        data: {
-          status: "voided",
-          creditBalance: 0,
-          voidedReason: data.reason,
-          voidedBy: actor.id,
-        },
-      });
-      await refreshReceivableAlert(tx, id, actor.branchId);
-      await reverseIncentives(tx, actor, "void", id, id);
-      let cashDifferences: Record<string, number> | undefined;
-      if (refundCash && refundAmount > 0) {
-        // D-02: el cierre aprobado no se reescribe. La caja cerrada recibió ese
-        // efectivo y lo entregó: la entrada compensa la venta que ya no cuenta
-        // y su esperado sigue igual. La caja abierta registra la salida del
-        // reembolso. Ambos movimientos nombran la venta original.
-        await tx.cashMovement.create({
-          data: {
-            sessionId: originalCash.id,
-            type: "in",
-            amount: refundAmount,
-            reason: `Venta ${sale.number} anulada después del cierre: su efectivo entró en este turno y se reembolsó desde otra caja.`,
-            userId: actor.id,
-          },
-        });
-        await tx.cashMovement.create({
-          data: {
-            sessionId: refundCash.id,
-            type: "out",
-            amount: refundAmount,
-            reason: `Reembolso de la venta ${sale.number} anulada (su caja ya cerró).`,
-            userId: actor.id,
-          },
-        });
-      }
-      if (originalCash?.closedAt) {
-        cashDifferences = await refreshClosedCash(tx, originalCash);
-        await audit(
-          tx,
-          actor,
-          "void_after_close",
-          "cash",
-          originalCash.id,
-          originalCash,
-          {
-            saleId: id,
-            ...cashDifferences,
-            ...(refundCash
-              ? { refundCashSessionId: refundCash.id, refundAmount }
-              : {}),
-          },
-        );
-      }
-      await audit(tx, actor, "void", "sale", id, sale, {
-        status: "voided",
-        reason: data.reason,
-        cashSessionId: sale.cashSessionId,
-        afterCashClose: Boolean(originalCash?.closedAt),
-        ...(cashDifferences ? { cashDifferences } : {}),
-      });
-      return { ok: true };
-      // D-M2 (auditoría 06): la anulación repone inventario y toca cajas y
-      // notas como una venta; con 5 s expiraba bajo carga.
-    }, MONEY_TRANSACTION);
+    const voided = await moneyDb(this.db).$transaction(
+      (tx) => this.voidSaleTx(tx, parse(uuid, id), data.reason, actor),
+      MONEY_TRANSACTION,
+    );
     notify(this.db, "sale_voided", id);
     return voided;
+  }
+
+  private async voidSaleTx(
+    tx: Prisma.TransactionClient,
+    id: string,
+    reasonText: string,
+    actor: Actor,
+  ) {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"sale-void:" + id}))`;
+    const pending = await tx.saleVoidRequest.findFirst({
+      where: { saleId: id, branchId: actor.branchId, status: "pending" },
+    });
+    if (pending?.requestedById === actor.id)
+      denied("No puedes aprobar tu propia solicitud de anulación.");
+    const saleRef = await tx.sale.findFirstOrThrow({
+      where: { id: parse(uuid, id), branchId: actor.branchId },
+      select: { cashSessionId: true, payments: true },
+    });
+    let originalCash: any = null;
+    if (saleRef.cashSessionId) {
+      await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${saleRef.cashSessionId}::uuid FOR UPDATE`;
+      originalCash = await tx.cashSession.findUnique({
+        where: { id: saleRef.cashSessionId },
+      });
+    }
+    // D-02: si la caja de la venta ya cerró, el efectivo del reembolso sale
+    // de la caja abierta de quien anula. Se bloquea antes que la venta, en el
+    // mismo orden que una devolución (caja que reembolsa y luego venta).
+    let refundCash: any = null;
+    if (originalCash?.closedAt && cashCollected(saleRef.payments) > 0) {
+      const own = await tx.cashSession.findFirst({
+        where: {
+          branchId: actor.branchId,
+          userId: actor.id,
+          closedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!own)
+        bad(
+          "La caja de esta venta ya cerró. Abre tu caja para entregar el reembolso en efectivo y vuelve a anular.",
+        );
+      refundCash = await cashLock(tx, actor, own!.id);
+    }
+    await tx.$queryRaw`SELECT id FROM "Sale" WHERE id = ${parse(uuid, id)}::uuid FOR UPDATE`;
+    const sale = await tx.sale.findFirstOrThrow({
+      where: { id, branchId: actor.branchId },
+      include: { items: true, payments: true, returns: true },
+    });
+    if (sale.status !== "completed" || sale.returns.length)
+      bad("La venta ya está anulada o tiene devoluciones.");
+    const refundAmount = refundCash ? cashCollected(sale.payments) : 0;
+    if (
+      refundCash &&
+      d(refundAmount).gt((await cashExpected(tx, refundCash)).cash)
+    )
+      bad("No hay suficiente efectivo en tu caja para este reembolso.");
+    if (
+      sale.payments.some(
+        (p) => p.entryType === "installment" && p.status !== "rejected",
+      )
+    )
+      bad("La venta tiene abonos. Usa una devolución.");
+    if (
+      sale.items.some(
+        (item) =>
+          !Array.isArray(item.stockAllocations) ||
+          item.stockAllocations.length === 0,
+      )
+    )
+      bad(
+        "Esta venta antigua no conserva el detalle necesario para reponer el inventario automáticamente. Usa una devolución o revisión manual.",
+      );
+    const allocations = sale.items.flatMap((i) => i.stockAllocations as any[]);
+    const variants = new Map<string, any>();
+    for (const variantId of [
+      ...new Set(allocations.map((a) => a.variantId as string)),
+    ].sort())
+      variants.set(variantId, await lockVariant(tx, variantId, actor));
+    // D-M1 (auditoría 06): las notas de crédito se bloquean DESPUÉS de las
+    // variantes y en orden de id, como en la venta. Antes la anulación
+    // tomaba la nota y luego las variantes, la venta al revés, y una venta
+    // pagada con la misma nota interbloqueaba con la anulación (HTTP 500).
+    const noteIds = [
+      ...new Set(
+        sale.payments.flatMap((p) => (p.creditNoteId ? [p.creditNoteId] : [])),
+      ),
+    ].sort();
+    for (const noteId of noteIds) {
+      await tx.$queryRaw`SELECT id FROM "CreditNote" WHERE id=${noteId}::uuid FOR UPDATE`;
+      const restored = sale.payments
+        .filter((p) => p.creditNoteId === noteId)
+        .reduce((sum, p) => sum + Number(p.amount), 0);
+      await tx.creditNote.updateMany({
+        where: { id: noteId },
+        data: { balance: { increment: restored } },
+      });
+    }
+    for (const allocation of allocations) {
+      const variant = variants.get(allocation.variantId);
+      if (allocation.lotId)
+        await tx.lot.update({
+          where: { id: allocation.lotId },
+          data: { qty: { increment: allocation.qty } },
+        });
+      // Lo anulado vuelve a su costo, igual que en una devolución: si entre
+      // la venta y la anulación se recibió mercancía a otro costo, el
+      // promedio debe ponderar ambas (R9-dinero-4).
+      const newCost = weightedReturn(
+        variant,
+        allocation.qty,
+        allocation.unitCost,
+      );
+      await tx.variant.update({
+        where: { id: variant.id },
+        data: { costAvg: newCost },
+      });
+      variant.costAvg = newCost;
+      await stockChange(
+        tx,
+        actor,
+        variant,
+        allocation.qty,
+        "void",
+        reasonText,
+        id,
+        allocation.lotId,
+        allocation.unitCost,
+      );
+    }
+    await tx.sale.update({
+      where: { id },
+      data: {
+        status: "voided",
+        creditBalance: 0,
+        voidedReason: reasonText,
+        voidedBy: actor.id,
+      },
+    });
+    await refreshReceivableAlert(tx, id, actor.branchId);
+    await reverseIncentives(tx, actor, "void", id, id);
+    let cashDifferences: Record<string, number> | undefined;
+    if (refundCash && refundAmount > 0) {
+      // D-02: el cierre aprobado no se reescribe. La caja cerrada recibió ese
+      // efectivo y lo entregó: la entrada compensa la venta que ya no cuenta
+      // y su esperado sigue igual. La caja abierta registra la salida del
+      // reembolso. Ambos movimientos nombran la venta original.
+      await tx.cashMovement.create({
+        data: {
+          sessionId: originalCash.id,
+          type: "in",
+          amount: refundAmount,
+          reason: `Venta ${sale.number} anulada después del cierre: su efectivo entró en este turno y se reembolsó desde otra caja.`,
+          userId: actor.id,
+        },
+      });
+      await tx.cashMovement.create({
+        data: {
+          sessionId: refundCash.id,
+          type: "out",
+          amount: refundAmount,
+          reason: `Reembolso de la venta ${sale.number} anulada (su caja ya cerró).`,
+          userId: actor.id,
+        },
+      });
+    }
+    if (originalCash?.closedAt) {
+      cashDifferences = await refreshClosedCash(tx, originalCash);
+      await audit(
+        tx,
+        actor,
+        "void_after_close",
+        "cash",
+        originalCash.id,
+        originalCash,
+        {
+          saleId: id,
+          ...cashDifferences,
+          ...(refundCash
+            ? { refundCashSessionId: refundCash.id, refundAmount }
+            : {}),
+        },
+      );
+    }
+    await audit(tx, actor, "void", "sale", id, sale, {
+      status: "voided",
+      reason: reasonText,
+      cashSessionId: sale.cashSessionId,
+      afterCashClose: Boolean(originalCash?.closedAt),
+      ...(cashDifferences ? { cashDifferences } : {}),
+    });
+    if (pending) {
+      await tx.saleVoidRequest.update({
+        where: { id: pending.id },
+        data: {
+          status: "approved",
+          reviewedById: actor.id,
+          reviewedAt: new Date(),
+        },
+      });
+      await tx.alert.updateMany({
+        where: {
+          key: "sale-void-request:" + pending.id,
+          branchId: actor.branchId,
+        },
+        data: { status: "resolved" },
+      });
+      await audit(
+        tx,
+        actor,
+        "approve",
+        "sale_void_request",
+        pending.id,
+        { status: "pending" },
+        { status: "approved", saleId: id },
+      );
+    }
+    return { ok: true };
   }
   @Post("payments/:id/verify")
   @RequireTerminal()

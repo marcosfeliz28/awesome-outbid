@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AreaChart,
   Area,
@@ -25,14 +25,18 @@ import {
   ArrowRight,
   Plus,
 } from "lucide-react";
-import { Button, Badge } from "@fitstore/ui";
+import { Button, Badge, Modal } from "@fitstore/ui";
 import { formatMoney, can, weekStart } from "@fitstore/shared";
-import { api, download, useStore } from "./api";
+import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 
 export function Dashboard({ go }: { go: (page: string) => void }) {
   const user = useStore((s) => s.user)!;
   const [period, setPeriod] = useState("month");
+  const [voidToApprove, setVoidToApprove] = useState<any>(null);
+  const [voidBusy, setVoidBusy] = useState(false);
+  const [voidError, setVoidError] = useState("");
+  const queryClient = useQueryClient();
   const to = today(),
     from =
       period === "today"
@@ -46,6 +50,12 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
     // 05-B4: quien no ve reportes (la cajera) pasa por aquí al entrar y la
     // API le contestaba 403 en cada inicio de sesión.
     enabled: can(user.permissions, "reports:read"),
+  });
+  const voidRequests = useQuery<any[]>({
+    queryKey: ["void-requests", "pending"],
+    queryFn: () => api("/void-requests?status=pending"),
+    enabled: can(user.permissions, "*"),
+    refetchInterval: 15000,
   });
   const data = query.data;
   const showProfit = can(user.permissions, "profit:read");
@@ -124,6 +134,87 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           )}
         </div>
       </div>
+      {can(user.permissions, "*") && !!voidRequests.data?.length && (
+        <section
+          className="void-request-dashboard"
+          aria-label="Solicitudes de anulación pendientes"
+        >
+          <div>
+            <strong>
+              {voidRequests.data.length} solicitud
+              {voidRequests.data.length === 1 ? "" : "es"} de anulación
+              pendiente{voidRequests.data.length === 1 ? "" : "s"}
+            </strong>
+            <p>Revisa la venta antes de aprobar o rechazar.</p>
+          </div>
+          <Button onClick={() => go("void-requests")}>
+            Revisar solicitudes
+          </Button>
+          {voidRequests.data.slice(0, 3).map((row) => (
+            <div className="void-request-dashboard-row" key={row.id}>
+              <span>
+                Factura {row.sale.number} · {row.requester.name}
+              </span>
+              <Button
+                variant="secondary"
+                disabled={!!row.approvalBlocker}
+                onClick={() => {
+                  setVoidError("");
+                  setVoidToApprove(row);
+                }}
+              >
+                Anular venta
+              </Button>
+              {row.approvalBlocker && (
+                <small>No se puede anular: {row.approvalBlocker}</small>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
+      {voidToApprove && (
+        <Modal
+          open
+          title={"Anular factura " + voidToApprove.sale.number}
+          onClose={() => setVoidToApprove(null)}
+        >
+          <p>
+            Confirma la anulación. Se revertirán los movimientos de esta venta.
+          </p>
+          {voidError && (
+            <p role="alert" className="danger-text">
+              {voidError}
+            </p>
+          )}
+          <div className="void-request-actions">
+            <Button variant="secondary" onClick={() => setVoidToApprove(null)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={voidBusy}
+              onClick={async () => {
+                setVoidBusy(true);
+                setVoidError("");
+                try {
+                  await post(
+                    "/void-requests/" + voidToApprove.id + "/approve",
+                    {},
+                  );
+                  await queryClient.invalidateQueries();
+                  setVoidToApprove(null);
+                  toast("Venta anulada y solicitud aprobada.");
+                } catch (error: any) {
+                  setVoidError(error.message);
+                } finally {
+                  setVoidBusy(false);
+                }
+              }}
+            >
+              Confirmar anulación
+            </Button>
+          </div>
+        </Modal>
+      )}
       <QueryState query={query}>
         <div className="welcome-banner">
           <div>

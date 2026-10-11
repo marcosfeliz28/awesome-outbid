@@ -217,6 +217,7 @@ export function useRealtime() {
         void client.invalidateQueries({ queryKey: ["alerts"] });
         void client.invalidateQueries({ queryKey: ["alert-bell"] });
         void client.invalidateQueries({ queryKey: ["dashboard"] });
+        void client.invalidateQueries({ queryKey: ["void-requests"] });
       }
     };
     const connect = async () => {

@@ -1,0 +1,655 @@
+// 3p · Solicitudes de anulación contra PostgreSQL y la API reales.
+// Cubre propiedad de la venta/sucursal, idempotencia, permisos, cancelación,
+// rechazo, aprobación concurrente y la misma anulación financiera existente.
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+import { renderEvent } from "../apps/api/src/notifications";
+
+const requireApi = createRequire(
+  new URL("../apps/api/package.json", import.meta.url),
+);
+requireApi("dotenv").config({
+  path: fileURLToPath(new URL("../.env", import.meta.url)),
+  quiet: true,
+});
+const { PrismaClient } = requireApi("@prisma/client");
+const db = new PrismaClient();
+
+const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
+const tag = Date.now().toString(36);
+const ip = "198.18.24." + ((Date.now() % 240) + 10);
+const DEMO = process.env.SEED_DEMO_PASSWORD;
+const TEMPORARY = "Qa-Aa1!" + randomUUID();
+const PASSWORD = "Qa-Bb2!" + randomUUID();
+const TEST_PIN = String(Math.floor(100000 + Math.random() * 900000));
+
+type ResponseBody = { status: number; body: any };
+type Person = {
+  id: string;
+  name: string;
+  email: string;
+  token: string;
+  terminalId?: string;
+  cash?: any;
+};
+
+async function request(
+  path: string,
+  as = "",
+  data?: unknown,
+  method = data === undefined ? "GET" : "POST",
+): Promise<ResponseBody> {
+  const response = await fetch(base + path, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Forwarded-For": ip,
+      ...(as ? { Authorization: "Bearer " + as } : {}),
+    },
+    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+  });
+  const text = await response.text();
+  let body: any = text;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    // Una respuesta de error puede ser texto.
+  }
+  return { status: response.status, body };
+}
+
+async function ok(path: string, as = "", data?: unknown, method?: string) {
+  const response = await request(path, as, data, method);
+  if (response.status >= 400)
+    throw new Error(
+      `${path}: ${response.status} ${JSON.stringify(response.body)}`,
+    );
+  return response.body;
+}
+
+const createdUsers: string[] = [];
+let owner: Person;
+let secondAdmin: Person;
+let seller: Person;
+let otherSeller: Person;
+let warehouse: Person;
+let managerToken = "";
+let variantId = "";
+let productId = "";
+let customerId = "";
+
+async function registerTerminal(person: Person, label: string) {
+  const id = randomUUID();
+  const terminal = await ok("/terminals/register", person.token, {
+    id,
+    name: `QA anulaciones ${label} ${tag}`,
+    secret: "qa-anulacion-" + id,
+  });
+  if (terminal.status === "pending")
+    await ok("/terminals/" + id + "/approve", owner.token, {});
+  person.terminalId = id;
+}
+
+async function person(label: string, role: string): Promise<Person> {
+  const roles = await ok("/roles", owner.token);
+  const email = `qa-anula-${label.normalize("NFD").replace(/[\u0300-\u036f]/g, "")}-${tag}@example.com`;
+  const name = `QA Anulación ${label} ${tag}`;
+  const created = await ok("/users", owner.token, {
+    name,
+    email,
+    password: TEMPORARY,
+    pin: TEST_PIN,
+    roleId: roles.find((candidate: any) => candidate.name === role).id,
+  });
+  createdUsers.push(created.id);
+  const changed = await ok("/auth/change-password", "", {
+    login: email,
+    currentPassword: TEMPORARY,
+    newPassword: PASSWORD,
+    confirmPassword: PASSWORD,
+  });
+  const result = { id: created.id, name, email, token: changed.accessToken };
+  await registerTerminal(result, label);
+  return result;
+}
+
+async function openCash(person: Person, openingAmount = 1000) {
+  person.cash = await ok("/cash-sessions/open", person.token, {
+    registerId: person.terminalId,
+    openingAmount,
+  });
+}
+
+async function sale(person: Person, method: "cash" | "card" = "card", qty = 1) {
+  return ok("/sales", person.token, {
+    offlineUuid: randomUUID(),
+    customerId,
+    cashSessionId: person.cash.id,
+    items: [{ variantId, qty }],
+    payments: [
+      {
+        method,
+        amount: 100 * qty,
+        ...(method === "card"
+          ? {
+              reference: "VCH-" + randomUUID().slice(0, 8),
+              cardLast4: "4242",
+              approvalCode: "QA4242",
+              cardType: "credit",
+            }
+          : {}),
+      },
+    ],
+    expectedTotal: 100 * qty,
+  });
+}
+
+const ask = (
+  who: Person,
+  saleId: string,
+  operationId = randomUUID(),
+  reasonCode = "customer_request",
+) =>
+  request("/sales/" + saleId + "/void-requests", who.token, {
+    operationId,
+    reasonCode,
+    reason: "El cliente pidió corregir esta venta en caja.",
+  });
+
+const requests = (who: Person, status = "all") =>
+  ok("/void-requests?status=" + status, who.token);
+
+beforeAll(async () => {
+  if (!DEMO)
+    throw new Error("SEED_DEMO_PASSWORD es obligatoria para esta prueba.");
+  const login = async (email: string): Promise<Person> => {
+    const body = await ok("/auth/login", "", { email, password: DEMO });
+    return {
+      id: body.user.id,
+      name: body.user.name,
+      email,
+      token: body.accessToken,
+    };
+  };
+  owner = await login("admin@fitstore.demo");
+  await registerTerminal(owner, "dueña");
+  managerToken = (await login("gerente@fitstore.demo")).token;
+  secondAdmin = await person("admin-dos", "admin");
+  seller = await person("vendedora", "seller");
+  otherSeller = await person("otra-vendedora", "seller");
+  warehouse = await person("almacén", "warehouse");
+  await openCash(seller);
+  await openCash(otherSeller);
+  customerId = (
+    await ok("/customers", owner.token, {
+      name: "Cliente QA anulación " + tag,
+    })
+  ).id;
+
+  const categories = await ok("/categories", owner.token);
+  const created = await ok("/products", owner.token, {
+    name: "Producto QA solicitudes de anulación " + tag,
+    sku: "ANULA-P-" + tag,
+    categoryId: categories.find((c: any) => c.name === "Fajas").id,
+    taxRate: 0,
+    variants: [
+      {
+        sku: "ANULA-V-" + tag,
+        barcode: "ANULA-B-" + tag,
+        price: 100,
+        costAvg: 40,
+      },
+    ],
+  });
+  productId = created.id;
+  variantId = created.variants[0].id;
+  await ok("/inventory/adjustments", owner.token, {
+    variantId,
+    qty: 50,
+    reason: "Existencias QA solicitudes de anulación",
+  });
+}, 120_000);
+
+afterAll(async () => {
+  await db.user
+    .updateMany({
+      where: { id: { in: createdUsers } },
+      data: { active: false, authVersion: { increment: 1 } },
+    })
+    .catch(() => undefined);
+  if (productId)
+    await db.product
+      .update({ where: { id: productId }, data: { active: false } })
+      .catch(() => undefined);
+  await db.$disconnect();
+});
+
+describe("3p · solicitud de anulación", () => {
+  it("solicitar es idempotente y todavía no toca venta, stock, caja ni incentivo", async () => {
+    const beforeStock = await db.variant.findUniqueOrThrow({
+      where: { id: variantId },
+      select: { stock: true },
+    });
+    const sold = await sale(seller, "cash");
+    const afterSaleStock = await db.variant.findUniqueOrThrow({
+      where: { id: variantId },
+      select: { stock: true },
+    });
+    const beforeExpected = await ok("/cash-sessions", owner.token).then(
+      (rows: any[]) => rows.find((row) => row.id === seller.cash.id).expected,
+    );
+    const beforeIncentive = await db.incentiveEntry.aggregate({
+      where: { saleId: sold.id },
+      _sum: { amount: true },
+      _count: true,
+    });
+    const operationId = randomUUID();
+    const first = await ask(seller, sold.id, operationId);
+    expect(first.status).toBe(201);
+    expect(first.body).toMatchObject({
+      sale: { id: sold.id, number: sold.number, status: "completed" },
+      requester: { id: seller.id },
+      status: "pending",
+      operationId,
+    });
+    const repeated = await ask(seller, sold.id, operationId);
+    expect(repeated.status).toBe(201);
+    expect(repeated.body.id).toBe(first.body.id);
+    const otherOperation = await ask(seller, sold.id);
+    expect(otherOperation.status).toBe(409);
+
+    const savedSale = await db.sale.findUniqueOrThrow({
+      where: { id: sold.id },
+    });
+    const savedStock = await db.variant.findUniqueOrThrow({
+      where: { id: variantId },
+      select: { stock: true },
+    });
+    const afterExpected = await ok("/cash-sessions", owner.token).then(
+      (rows: any[]) => rows.find((row) => row.id === seller.cash.id).expected,
+    );
+    const afterIncentive = await db.incentiveEntry.aggregate({
+      where: { saleId: sold.id },
+      _sum: { amount: true },
+      _count: true,
+    });
+    expect(savedSale.status).toBe("completed");
+    expect(Number(savedStock.stock)).toBe(Number(afterSaleStock.stock));
+    expect(Number(beforeStock.stock) - Number(savedStock.stock)).toBe(1);
+    expect(afterExpected).toEqual(beforeExpected);
+    expect(afterIncentive).toEqual(beforeIncentive);
+
+    const alert = await db.alert.findUnique({
+      where: { key: "sale-void-request:" + first.body.id },
+    });
+    expect(alert).toMatchObject({
+      type: "sale_void_request",
+      entityId: first.body.id,
+      status: "new",
+      branchId: "main",
+    });
+    const notice = await renderEvent(db, "void_request", first.body.id);
+    expect(notice?.text).toContain(sold.number);
+    expect(notice?.text).not.toContain("Cliente QA");
+    expect(
+      (await request("/alerts?type=sale_void_request", managerToken)).body.some(
+        (item: any) => item.id === alert?.id,
+      ),
+    ).toBe(false);
+    expect(
+      (
+        await request(
+          "/alerts/" + alert?.id,
+          managerToken,
+          { status: "resolved" },
+          "PATCH",
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await request(
+          "/alerts/" + alert?.id,
+          owner.token,
+          { status: "resolved" },
+          "PATCH",
+        )
+      ).status,
+    ).toBe(409);
+  });
+
+  it("impide IDOR: otra vendedora no solicita, ve ni cancela la venta ajena", async () => {
+    const sold = await sale(seller);
+    const created = await ask(seller, sold.id);
+    expect(created.status).toBe(201);
+    expect(
+      (await requests(otherSeller)).some((r: any) => r.id === created.body.id),
+    ).toBe(false);
+    expect((await ask(otherSeller, sold.id)).status).toBe(404);
+    expect(
+      (
+        await request(
+          "/void-requests/" + created.body.id + "/cancel",
+          otherSeller.token,
+          {},
+        )
+      ).status,
+    ).toBe(404);
+  });
+
+  it("la solicitante cancela una pendiente y luego puede crear una nueva", async () => {
+    const sold = await sale(seller);
+    const created = await ask(seller, sold.id);
+    const cancelled = await request(
+      "/void-requests/" + created.body.id + "/cancel",
+      seller.token,
+      {},
+    );
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.body).toMatchObject({ status: "cancelled" });
+    const repeated = await request(
+      "/void-requests/" + created.body.id + "/cancel",
+      seller.token,
+      {},
+    );
+    expect(repeated.status).toBe(200);
+    expect(repeated.body.status).toBe("cancelled");
+    const next = await ask(seller, sold.id);
+    expect(next.status).toBe(201);
+    expect(next.body.id).not.toBe(created.body.id);
+  });
+
+  it("solo administración rechaza y la nota es obligatoria", async () => {
+    const sold = await sale(seller);
+    const created = await ask(seller, sold.id);
+    expect(created.status).toBe(201);
+    expect(
+      (
+        await request(
+          "/void-requests/" + created.body.id + "/reject",
+          managerToken,
+          { note: "Gerencia intenta decidir" },
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await request(
+          "/void-requests/" + created.body.id + "/reject",
+          warehouse.token,
+          { note: "Almacén intenta decidir" },
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await request(
+          "/void-requests/" + created.body.id + "/reject",
+          owner.token,
+          { note: "" },
+        )
+      ).status,
+    ).toBe(400);
+    const rejected = await request(
+      "/void-requests/" + created.body.id + "/reject",
+      owner.token,
+      { note: "La venta corresponde y debe conservarse." },
+    );
+    expect(rejected.status).toBe(200);
+    expect(rejected.body).toMatchObject({
+      status: "rejected",
+      resolutionNote: "La venta corresponde y debe conservarse.",
+      reviewer: { id: owner.id },
+    });
+    expect(
+      (await db.sale.findUniqueOrThrow({ where: { id: sold.id } })).status,
+    ).toBe("completed");
+  });
+
+  it("dos administradores aprueban a la vez: una anulación y un 409 claro", async () => {
+    const stockBefore = Number(
+      (
+        await db.variant.findUniqueOrThrow({
+          where: { id: variantId },
+          select: { stock: true },
+        })
+      ).stock,
+    );
+    const sold = await sale(seller, "cash");
+    const expectedAfterSale = await ok("/cash-sessions", owner.token).then(
+      (rows: any[]) => rows.find((row) => row.id === seller.cash.id).expected,
+    );
+    const created = await ask(seller, sold.id);
+    expect(created.status).toBe(201);
+
+    const [a, b] = await Promise.all([
+      request(
+        "/void-requests/" + created.body.id + "/approve",
+        owner.token,
+        {},
+      ),
+      request(
+        "/void-requests/" + created.body.id + "/approve",
+        secondAdmin.token,
+        {},
+      ),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 409]);
+    expect(JSON.stringify(a.status === 409 ? a.body : b.body)).toMatch(
+      /ya fue aprobada|ya no est[aá] pendiente/i,
+    );
+
+    const savedSale = await db.sale.findUniqueOrThrow({
+      where: { id: sold.id },
+    });
+    const savedRequest = await (db as any).saleVoidRequest.findUniqueOrThrow({
+      where: { id: created.body.id },
+    });
+    const stockAfter = Number(
+      (
+        await db.variant.findUniqueOrThrow({
+          where: { id: variantId },
+          select: { stock: true },
+        })
+      ).stock,
+    );
+    const expectedAfterVoid = await ok("/cash-sessions", owner.token).then(
+      (rows: any[]) => rows.find((row) => row.id === seller.cash.id).expected,
+    );
+    const incentive = await db.incentiveEntry.aggregate({
+      where: { saleId: sold.id },
+      _sum: { amount: true },
+      _count: true,
+    });
+    expect(savedSale).toMatchObject({
+      status: "voided",
+      voidedReason: "Solicitud: El cliente pidió corregir esta venta en caja.",
+    });
+    expect(savedRequest.status).toBe("approved");
+    expect(savedRequest.reviewedById).toMatch(
+      new RegExp(`^(${owner.id}|${secondAdmin.id})$`),
+    );
+    expect(savedRequest.reviewedAt).toBeInstanceOf(Date);
+    expect(stockAfter).toBe(stockBefore);
+    expect(
+      Number(expectedAfterSale.cash) - Number(expectedAfterVoid.cash),
+    ).toBe(100);
+    expect(Number(incentive._sum.amount ?? 0)).toBe(0);
+    expect(incentive._count).toBe(2);
+    expect(
+      await db.inventoryMovement.count({
+        where: { type: "void", refId: sold.id },
+      }),
+    ).toBe(1);
+    expect(
+      await db.cashMovement.count({
+        where: { reason: { contains: sold.number } },
+      }),
+    ).toBe(0);
+    expect(
+      (
+        await db.alert.findUniqueOrThrow({
+          where: { key: "sale-void-request:" + created.body.id },
+        })
+      ).status,
+    ).toBe("resolved");
+  });
+
+  it("nadie aprueba su propia solicitud, incluso con permiso administrativo", async () => {
+    const sold = await sale(seller);
+    const row = await (db as any).saleVoidRequest.create({
+      data: {
+        saleId: sold.id,
+        requestedById: owner.id,
+        operationId: randomUUID(),
+        reasonCode: "other",
+        reason: "Solicitud creada para probar separación de funciones.",
+        branchId: "main",
+      },
+    });
+    const response = await request(
+      "/void-requests/" + row.id + "/approve",
+      owner.token,
+      {},
+    );
+    expect(response.status).toBe(403);
+    expect(JSON.stringify(response.body)).toMatch(/propia solicitud/i);
+    expect(
+      (await db.sale.findUniqueOrThrow({ where: { id: sold.id } })).status,
+    ).toBe("completed");
+  });
+
+  it("muestra por qué una venta con abonos o devoluciones no se puede aprobar", async () => {
+    const withInstallment = await sale(seller);
+    await db.payment.create({
+      data: {
+        saleId: withInstallment.id,
+        cashSessionId: seller.cash.id,
+        entryType: "installment",
+        method: "cash",
+        amount: 1,
+        tendered: 1,
+        status: "ok",
+      },
+    });
+    const installmentRequest = await ask(seller, withInstallment.id);
+    expect(installmentRequest.status).toBe(201);
+    const installmentDetail = (await requests(owner, "pending")).find(
+      (row: any) => row.id === installmentRequest.body.id,
+    );
+    expect(installmentDetail.approvalBlocker).toMatch(/abonos/i);
+    expect(
+      (
+        await request(
+          "/void-requests/" + installmentRequest.body.id + "/approve",
+          owner.token,
+          {},
+        )
+      ).status,
+    ).toBe(400);
+
+    const withReturn = await sale(seller);
+    await db.saleReturn.create({
+      data: {
+        saleId: withReturn.id,
+        number: "DEV-QA-" + randomUUID().slice(0, 8),
+        reason: "Registro QA",
+        total: 0,
+        taxTotal: 0,
+        costTotal: 0,
+        refundAmount: 0,
+        refundMethod: "credit_note",
+        userId: owner.id,
+        items: [],
+        branchId: "main",
+      },
+    });
+    const returnRequest = await ask(seller, withReturn.id);
+    expect(returnRequest.status).toBe(201);
+    const returnDetail = (await requests(owner, "pending")).find(
+      (row: any) => row.id === returnRequest.body.id,
+    );
+    expect(returnDetail.approvalBlocker).toMatch(/devoluciones/i);
+    const blocked = await request(
+      "/void-requests/" + returnRequest.body.id + "/approve",
+      owner.token,
+      {},
+    );
+    expect(blocked.status).toBe(400);
+    expect(JSON.stringify(blocked.body)).toMatch(/devoluciones/i);
+  });
+
+  it("la anulación directa aprueba la solicitud pendiente en la misma transacción", async () => {
+    const sold = await sale(seller);
+    const created = await ask(seller, sold.id);
+    expect(created.status).toBe(201);
+    const direct = await request("/sales/" + sold.id + "/void", owner.token, {
+      reason: "Administración confirmó la solicitud desde Ventas.",
+    });
+    expect(direct.status).toBe(201);
+    const saved = await (db as any).saleVoidRequest.findUniqueOrThrow({
+      where: { id: created.body.id },
+    });
+    expect(saved).toMatchObject({
+      status: "approved",
+      reviewedById: owner.id,
+    });
+    expect(saved.reviewedAt).toBeInstanceOf(Date);
+  });
+
+  it("una solicitud de otra sucursal no aparece ni se puede decidir", async () => {
+    const role = await db.role.findUniqueOrThrow({ where: { name: "seller" } });
+    const source = await db.user.findUniqueOrThrow({
+      where: { id: seller.id },
+    });
+    const foreignUser = await db.user.create({
+      data: {
+        name: "QA Otra sucursal " + tag,
+        email: `qa-anula-otra-sucursal-${tag}@example.com`,
+        passwordHash: source.passwordHash,
+        pinHash: source.pinHash,
+        roleId: role.id,
+        branchId: "otra-sucursal",
+        active: false,
+      },
+    });
+    createdUsers.push(foreignUser.id);
+    const foreignSale = await db.sale.create({
+      data: {
+        number: "QA-OTRA-" + tag,
+        offlineUuid: randomUUID(),
+        sellerId: foreignUser.id,
+        subtotal: 0,
+        discountTotal: 0,
+        taxTotal: 0,
+        total: 0,
+        costTotal: 0,
+        branchId: "otra-sucursal",
+      },
+    });
+    const foreignRequest = await (db as any).saleVoidRequest.create({
+      data: {
+        saleId: foreignSale.id,
+        requestedById: foreignUser.id,
+        operationId: randomUUID(),
+        reasonCode: "other",
+        reason: "Solicitud de otra sucursal.",
+        branchId: "otra-sucursal",
+      },
+    });
+    expect(
+      (await requests(owner)).some((row: any) => row.id === foreignRequest.id),
+    ).toBe(false);
+    expect(
+      (
+        await request(
+          "/void-requests/" + foreignRequest.id + "/approve",
+          owner.token,
+          {},
+        )
+      ).status,
+    ).toBe(404);
+  });
+});

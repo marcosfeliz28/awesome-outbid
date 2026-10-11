@@ -441,6 +441,7 @@ async function saleView(db: Db, id: string) {
 export type EventType =
   | "sale"
   | "sale_voided"
+  | "void_request"
   | "return"
   | "collection"
   | "cash_close"
@@ -461,6 +462,24 @@ export async function renderEvent(
   >,
   refId: string,
 ): Promise<{ text: string; branchId: string } | null> {
+  if (event === "void_request") {
+    const row = await db.saleVoidRequest.findUnique({
+      where: { id: refId },
+      select: {
+        status: true,
+        branchId: true,
+        sale: { select: { number: true } },
+      },
+    });
+    if (!row) return null;
+    return {
+      branchId: row.branchId,
+      text:
+        row.status === "pending"
+          ? `Solicitud de anulación pendiente · Factura ${escapeHtml(row.sale.number)}. Revisa Solicitudes de anulación en Nexora POS.`
+          : `Solicitud de anulación registrada · Factura ${escapeHtml(row.sale.number)}. Consulta su estado en Nexora POS.`,
+    };
+  }
   if (event === "sale" || event === "sale_voided") {
     const found = await saleView(db, refId);
     if (!found) return null;

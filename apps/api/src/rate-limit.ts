@@ -201,7 +201,9 @@ export class AuthenticatedRateLimitGuard implements CanActivate {
       (path === "/api/sales" ||
         path.startsWith("/api/sales/") ||
         path === "/sales" ||
-        path.startsWith("/sales/"))
+        path.startsWith("/sales/") ||
+        path.startsWith("/api/void-requests/") ||
+        path.startsWith("/void-requests/"))
     )
       this.limits.assert(
         "sales-session",
