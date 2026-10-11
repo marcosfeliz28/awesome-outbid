@@ -34,7 +34,6 @@ const suffix = randomUUID().slice(0, 8);
 let ipCounter = 1 + Math.floor(Math.random() * 200);
 const nextIp = () => "198.18.21." + (ipCounter++ % 250 || 1);
 const PASSWORD = "FitStore-QA-W9-Seg-2026!";
-const DEMO = process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!";
 
 const created: { users: string[]; terminals: string[]; keys: string[] } = {
   users: [],
@@ -288,12 +287,15 @@ describe("Sesiones y equipos (API real)", () => {
   });
 
   it("A06 · el cambio rápido de usuario con PIN no cruza de sucursal", async () => {
-    const owner = await post("/auth/login", {
-      email: "admin@fitstore.demo",
-      password: DEMO,
+    // Una gerente propia (no la dueña de la demo): el intento fallido gasta su
+    // cupo de PIN por hora, que las pruebas de navegador comparten con la dueña.
+    const actor = await makeUser("manager");
+    const login = await post("/auth/login", {
+      email: actor.email,
+      password: PASSWORD,
     });
-    expect(owner.status).toBe(201);
-    const token = owner.body.accessToken;
+    expect(login.status, JSON.stringify(login.body)).toBe(201);
+    const token = login.body.accessToken;
     const here = await makeUser("seller", { pin: "135790" });
     const there = await makeUser("seller", {
       pin: "135790",

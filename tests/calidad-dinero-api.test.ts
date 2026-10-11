@@ -214,6 +214,11 @@ afterAll(async () => {
       where: { id: { in: promotionIds } },
       data: { active: false },
     });
+  // La aprobación con PIN recorre con bcrypt a todos los gerentes activos: las
+  // personas de esta prueba (administradoras) se desactivan al terminar para
+  // no volver lentas las pruebas siguientes.
+  for (const who of people)
+    await request("/users/" + who.id, owner, { active: false }, "PATCH");
   if (originalSettings)
     await request("/settings", owner, originalSettings, "PUT");
   for (const id of productIds)
