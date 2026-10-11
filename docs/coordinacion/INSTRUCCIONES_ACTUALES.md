@@ -164,6 +164,21 @@ Requisitos:
 7. **Pruebas**: integración con PostgreSQL real (solicitar, duplicado, cancelar, aprobar ⇒ venta anulada con inventario/caja/incentivo correctos, rechazar, IDOR, doble aprobación concurrente, aprobar la propia 403, permisos por rol) y Playwright (cajera solicita; administradora ve la tarjeta al iniciar sesión y aprueba/rechaza; 390 px). Sin fechas fijas cercanas a «hoy». Desactiva al terminar las usuarias de prueba que crees (el PIN de gerente recorre a todas las activas con bcrypt y vuelve lentas las pruebas de navegador).
 8. Docs: `docs/DECISIONES.md` (siguiente número libre), `docs/MANUAL.md`. Reporta CI verde (3 trabajos) del último SHA, roles que aprueban, riesgos y decisiones pendientes de la dueña.
 
+## 3q. REPARTO ENTRE LOS DOS CHATGPT (11 oct): PC y NUBE. Claude (arquitecto) decide; nadie duplica
+
+Producción corre `nexora-cloud` (cajas por usuario, créditos, importar inventario, pantalla de venta compacta). Reglas comunes (valen para los dos): no despliegan, no tocan Render, no usan ni pegan contraseñas/claves, no empujan a `nexora-cloud` ni a `claude/*`, no relajan pruebas, no dicen «listo» sin los 3 trabajos de CI verdes del último SHA, y antes de empezar cualquier tarea hacen `git fetch` y leen esta sección por si cambió el reparto.
+
+**ChatGPT NUBE → rama `nexora-chatgpt-nube`** (créala desde `origin/nexora-cloud`; merge de `nexora-cloud` sin rebase antes de entregar):
+1. **Tarea 3p: función «Solicitud de anulación»** (código, migración, pruebas, docs). En 3p cambia «tu rama `nexora-chatgpt-fase2`» por `nexora-chatgpt-nube`. Es la prioridad.
+2. Después, las guías en español simple de la tarea 3o, puntos 1 y 2 (`docs/guias/GUIA_CAJERA.md`, `GUIA_ADMINISTRADORA.md`, `CHECKLIST_DIA_1.md` y `docs/GUIA_DRIVE_PASO_A_PASO.md`).
+
+**ChatGPT PC → rama `nexora-chatgpt-fase2`** (la de siempre):
+1. **Instalador de Windows (3m)** y todo lo que necesite un Windows real (VM limpia, PGDATA de otra cuenta, hardware, cortes). Reporta cuando los 3 CI de tu último SHA estén verdes.
+2. **Revisiones independientes de solo lectura** (tarea 3o punto 3): `claude/w5-pos` (ya desplegada), y cuando Claude avise, `claude/w8-fondo` y lo que publique la NUBE (`nexora-chatgpt-nube`): hallazgos con archivo:línea, repro mínimo y severidad; sin empujar a esas ramas.
+3. No hagas la tarea 3p ni las guías: son de la NUBE. Si ya tienes trabajo avanzado de 3p o de las guías en tu rama, repórtalo a la dueña y a Claude para decidir, NO lo dupliques.
+
+**Coordinación:** cada uno publica un comentario corto al empezar («tomo X») y al terminar («SHA, CI de 3 trabajos, hallazgos»). Si dos tareas tocan el mismo archivo, gana el orden de arriba y el otro espera. Claude revisa, une y despliega.
+
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
 1. ~~**M1**~~ (lo hace Claude) movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); por encima de `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
