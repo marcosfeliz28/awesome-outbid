@@ -265,15 +265,17 @@ describe("Cumplimiento legal y accesibilidad", () => {
     const salePdf = source.slice(
       source.indexOf('@Get("sales/:id/receipt.pdf")'),
     );
+    const saleReceipt = readFileSync("apps/api/src/receipt-pdf.ts", "utf8");
     const noteStart = source.indexOf('@Get("returns/:id/credit-note.pdf")');
     const notePdf = source.slice(
       noteStart,
       source.indexOf('@Post("sales/:id/installments")', noteStart),
     );
-    expect(salePdf).toContain("business.phone");
-    expect(salePdf).toContain("Fecha y hora:");
-    expect(salePdf).toContain("ITBIS adicional:");
-    expect(salePdf).toContain("sale.taxIncluded");
+    expect(salePdf).toContain("drawSaleReceipt(doc");
+    expect(saleReceipt).toContain("business?.phone");
+    expect(saleReceipt).toContain('"Fecha: " + date');
+    expect(saleReceipt).toContain('"ITBIS adicional"');
+    expect(saleReceipt).toContain("sale?.taxIncluded === false");
     expect(notePdf).toContain("this.db.settings.findUnique");
     expect(notePdf).toContain("business.address");
     expect(notePdf).toContain("Fecha:");

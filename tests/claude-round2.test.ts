@@ -70,15 +70,18 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
     const schema = source("apps/api/prisma/schema.prisma");
     const sales = source("apps/api/src/sales.ts");
     const prints = source("apps/web/src/Prints.tsx");
+    const management = source("apps/web/src/Management.tsx");
     expect(schema).toContain("discountApprovedBy");
-    expect(sales).toContain("Autorizó:");
+    expect(sales).toContain("discountApprovedBy: sale.discountApprovedBy");
+    expect(sales).toContain("discountApprovedName: sale.discountApprovedName");
     expect(prints).toContain("Autorizó:");
+    expect(management).toContain("Autorizó:");
   });
 
   it("A11: PDF e historial muestran recibido, aplicado y cambio", () => {
-    const sales = source("apps/api/src/sales.ts");
+    const receipt = source("apps/api/src/receipt-pdf.ts");
     const management = source("apps/web/src/Management.tsx");
-    expect(sales).toContain("paymentReceiptLine(p)");
+    expect(receipt).toContain("paymentReceiptLine({");
     expect(
       paymentReceiptLine({
         method: "Efectivo",

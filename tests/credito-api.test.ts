@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { inflateSync } from "node:zlib";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -59,6 +60,25 @@ async function ok(path: string, as: string, data?: unknown, method?: string) {
   return r.body;
 }
 
+function extractPdfText(buffer: Buffer) {
+  const raw = buffer.toString("latin1");
+  const output: string[] = [];
+  for (const match of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+    const dictionary = raw.slice(Math.max(0, match.index! - 250), match.index);
+    let content = Buffer.from(match[1], "latin1");
+    if (dictionary.includes("/FlateDecode")) {
+      try {
+        content = inflateSync(content);
+      } catch {
+        continue;
+      }
+    }
+    for (const hex of content.toString("latin1").matchAll(/<([0-9a-f]+)>/gi))
+      output.push(Buffer.from(hex[1], "hex").toString("latin1"));
+  }
+  return output.join("");
+}
+
 type Actor = { id: string; token: string; cash: any; name: string };
 let owner = "",
   manager = "",
@@ -70,6 +90,7 @@ let owner = "",
   adminB: Actor,
   adminNoCash: Actor;
 let originalSettings: any;
+let longProductId = "";
 
 async function terminal(token: string, label: string) {
   const id = randomUUID();
@@ -224,12 +245,116 @@ afterAll(async () => {
     await request("/settings", owner, originalSettings, "PUT");
   if (productId)
     await request("/products/" + productId, owner, { active: false }, "PATCH");
+  if (longProductId)
+    await request(
+      "/products/" + longProductId,
+      owner,
+      { active: false },
+      "PATCH",
+    );
   for (const id of createdUsers)
     await request("/users/" + id, owner, { active: false }, "PATCH");
   await db.$disconnect();
 }, 60000);
 
 describe("W7 · venta a crédito sin pago", () => {
+  it("descarga recibos reales de crédito, mixto, contado, anulado y largo", async () => {
+    const getPdfText = async (id: string, token = ana.token) => {
+      const response = await fetch(base + "/sales/" + id + "/receipt.pdf", {
+        headers: { Authorization: "Bearer " + token },
+      });
+      const buffer = Buffer.from(await response.arrayBuffer());
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toContain("application/pdf");
+      expect(buffer.subarray(0, 5).toString("ascii")).toBe("%PDF-");
+      return { buffer, text: extractPdfText(buffer) };
+    };
+
+    const credit = (await sale(ana, 200, [{ method: "cod", amount: 200 }]))
+      .body;
+    const creditPdf = await getPdfText(credit.id);
+    expect(creditPdf.text).toContain("Venta a crédito");
+    expect(creditPdf.text).toContain("Pagado hoy: RD$ 0.00");
+    expect(creditPdf.text).toContain("Saldo pendiente: RD$ 200.00");
+    expect(creditPdf.text).not.toMatch(/Recibido|Cambio|Autorizó|cod:/i);
+
+    const otherSeller = await person("otra-vendedora", "seller", false);
+    const denied = await request(
+      "/sales/" + credit.id + "/receipt.pdf",
+      otherSeller.token,
+    );
+    expect(denied.status).toBe(404);
+
+    const mixed = (
+      await sale(ana, 300, [
+        { method: "cash", amount: 100 },
+        { method: "cod", amount: 200 },
+      ])
+    ).body;
+    const mixedPdf = await getPdfText(mixed.id);
+    expect(mixedPdf.text).toContain("Pagado hoy: RD$ 100.00");
+    expect(mixedPdf.text).toContain("Saldo pendiente: RD$ 200.00");
+    expect(mixedPdf.text).toContain("Pagado por: Efectivo RD$ 100.00");
+    expect(mixedPdf.text).not.toMatch(/Recibido|Cambio|Autorizó|cod:/i);
+
+    const cash = (await sale(ana, 100, [{ method: "cash", amount: 100 }])).body;
+    const cashPdf = await getPdfText(cash.id);
+    expect(cashPdf.text).toContain("Recibo de venta");
+    expect(cashPdf.text).toContain("Forma de pago: Efectivo RD$ 100.00");
+
+    const voided = (await sale(ana, 100, [{ method: "cod", amount: 100 }]))
+      .body;
+    const voidResult = await request("/sales/" + voided.id + "/void", owner, {
+      reason: "Anulación de prueba 3u",
+    });
+    expect(voidResult.status).toBeLessThan(300);
+    const voidPdf = await getPdfText(voided.id);
+    expect(voidPdf.text).toContain("ANULADA");
+    expect(voidPdf.text).toContain("Anulación de prueba 3u");
+
+    const category = (await ok("/categories", owner)).find(
+      (row: any) => row.name === "Fajas",
+    );
+    const longName = "Producto QA ñ & detalle largo ".repeat(5).trim();
+    const longProduct = await ok("/products", owner, {
+      name: longName,
+      sku: "QAL-" + randomUUID().slice(0, 8),
+      categoryId: category.id,
+      taxRate: 0,
+      variants: [
+        {
+          sku: "QAL-V-" + randomUUID().slice(0, 8),
+          barcode: "QAL-B-" + randomUUID().slice(0, 8),
+          price: 100,
+          costAvg: 40,
+        },
+      ],
+    });
+    longProductId = longProduct.id;
+    await ok("/inventory/adjustments", owner, {
+      variantId: longProduct.variants[0].id,
+      qty: 200,
+      reason: "QA PDF 3u",
+    });
+    const manyLines = await ok("/sales", ana.token, {
+      offlineUuid: randomUUID(),
+      customerId,
+      cashSessionId: ana.cash.id,
+      items: Array.from({ length: 100 }, () => ({
+        variantId: longProduct.variants[0].id,
+        qty: 1,
+      })),
+      payments: [{ method: "cash", amount: 10000 }],
+      expectedTotal: 10000,
+    });
+    const longPdf = await getPdfText(manyLines.id);
+    const pageCount =
+      longPdf.buffer.toString("latin1").match(/\/Type \/Page\b/g)?.length ?? 0;
+    expect(pageCount).toBeGreaterThan(1);
+    expect(longPdf.text).toContain("Producto QA ñ");
+    expect(longPdf.text).toContain("Página 2 de");
+  }, 60000);
+
   it("cero pago ahora: es una venta normal, queda pendiente, la caja no recibe dinero y el incentivo es de la cajera", async () => {
     const before = await expectedOf(ana);
     const r = await sale(ana, 200, [{ method: "cod", amount: 200 }]);

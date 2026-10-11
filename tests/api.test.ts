@@ -12370,10 +12370,8 @@ describe("SEC-05: datos personales del cliente según el rol (Ley 172-13)", () =
     expect(stored.legalId).toBe("40212345999");
     expect(stored.phone).toBe("8095550456");
 
-    // Recibo PDF (no fiscal; sale por WhatsApp o correo, V2-02): ni la cajera
-    // ni la gerencia reciben en él la cédula completa ni el teléfono del
-    // cliente (sin NCF no lleva documento), y lleva el aviso de privacidad y
-    // la política de devolución.
+    // Recibo PDF (3u): el teléfono y la cédula/RNC aparecen enmascarados
+    // incluso para gerencia; sólo se muestran sus últimos tres dígitos.
     for (const [token, who] of [
       [cajeraToken, "cajera"],
       [managerToken, "gerencia"],
@@ -12385,7 +12383,8 @@ describe("SEC-05: datos personales del cliente según el rol (Ley 172-13)", () =
       expect(pdf, who).toContain(existing.name);
       expect(pdf, who).not.toContain(legalId);
       expect(pdf, who).not.toContain(phone);
-      expect(pdf, who).not.toContain("RNC/Cédula");
+      expect(pdf, who).toContain("123");
+      expect(pdf, who).toContain("678");
       expect(pdf, who).toContain("Devoluciones:");
       expect(pdf, who).toContain("Privacidad: usamos sus datos");
     }
