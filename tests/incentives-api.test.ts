@@ -364,13 +364,18 @@ describe("INC · incentivos por cajera", () => {
     expect((await mine(luz)).row.net).toBeCloseTo(before - 25, 2);
   });
 
-  it("contraentrega: se incluye y se marca «por cobrar»", async () => {
-    const before = (await mine(luz)).row.pendingCollection;
+  it("contraentrega: no suma hasta cobrarla y se informa como pendiente estimado", async () => {
+    const before = await mine(luz);
     await sell(luz, [["faja", 1]], {
       payments: [{ method: "cod", amount: 100 }],
       managerPin: "123456",
     });
-    expect((await mine(luz)).row.pendingCollection).toBeCloseTo(before + 50, 2);
+    const after = await mine(luz);
+    expect(after.row.net).toBeCloseTo(before.row.net, 2);
+    expect(after.pendingEstimate).toBeCloseTo(
+      (before.pendingEstimate ?? 0) + 50,
+      2,
+    );
   });
 
   it("privacidad por rol: la cajera sólo ve lo suyo; gerencia y administración ven a todas", async () => {

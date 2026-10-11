@@ -137,6 +137,82 @@ Especificación (para tu revisión):
 
 Contexto y decisiones: `CARGA_INVENTARIO_DECISIONES.md`. La base de producción no acepta conexiones externas y la pantalla actual de plantilla no sirve (pide IDs de categoría, código de barras obligatorio y no carga existencias). Construye, sobre `claude/wave3` (o `nexora-cloud` ya con wave3), una pantalla/endpoint SOLO ADMIN que reutilice la lógica de `apps/api/scripts/import-inventario.ts` (extráela a un módulo compartido, sin duplicar): subir el .xlsx, **primero vista previa sin guardar** (cuántos se crean, inactivos por falta de precio/costo, márgenes bajos, códigos en conflicto, categorías que crearía), y un segundo botón «Cargar» solo tras la vista previa del mismo archivo (hash). Atómico, auditado en la bitácora, límite de tamaño, idempotente (repetir no duplica ni pisa existencias), sin enviar el archivo a terceros. Pruebas (PostgreSQL real) y CI verde en los 3 trabajos. No lo despliegas: la dueña o Claude lo hacen.
 
+## 3o. TAREAS DELEGADAS A CHATGPT (10 oct, noche): documentos y revisiones; NO toques `apps/`, `packages/`, `deploy/`, `.github/` ni las ramas `claude/*`
+
+Estado: producción corre `nexora-cloud` (API y web en 90c435c + pantalla de venta compacta f0a1481). Claude tiene dos ramas en construcción, que NO debes tocar ni duplicar: `claude/w6-caja-usuario` (una caja por usuario, cierre de emergencia por administración, incentivos por dueña de la venta) y `claude/w7-credito` (venta a crédito sin pago, pantalla «Créditos pendientes», cobros mixtos solo administración, incentivo SOLO al cobrar y prorrateado, en el mes del cobro).
+
+Trabajo tuyo, en este orden, siempre en tu rama `nexora-chatgpt-fase2`, con CI verde en los 3 trabajos del último SHA antes de reportar:
+1. **Guías de una página en español simple (docs/guias/)**, sin tecnicismos, para una dueña de tienda y sus cajeras: `GUIA_CAJERA.md` (abrir caja, vender, cobrar en efectivo/tarjeta/transferencia, venta a crédito, devolución, cerrar caja e imprimir el cierre), `GUIA_ADMINISTRADORA.md` (cerrar una caja ajena en emergencia, créditos pendientes y cobros mixtos, entradas de mercancía, importar inventario, incentivos, usuarios y restablecer contraseña) y `CHECKLIST_DIA_1.md` (antes de abrir: contraseñas, impresora, lector, caja con efectivo real, respaldo). Redáctalas según las reglas de la dueña en `CARGA_INVENTARIO_DECISIONES.md` y este resumen; donde `w6`/`w7` aún no estén desplegadas, márcalo «(próximamente)». No inventes pantallas: verifica nombres de botones en `apps/web/src` (solo lectura).
+2. **Guía del Drive**: `docs/GUIA_DRIVE_PASO_A_PASO.md` (la que un agente de Claude dejó sin escribir): hallazgos a respetar: la URI de redirección es `WEB_ORIGIN` + `/api/backups/google/callback` (WEB_ORIGIN sale de `RENDER_EXTERNAL_URL` de la web); una `BACKUP_ENCRYPTION_KEY` de 24–31 caracteres deja la tarjeta en «No configurado» (se exigen ≥32 con variedad); en Windows genérala con PowerShell, no con `node -e`; la clave debe guardarse FUERA de Render. Verifica contra `docs/RESPALDO_DRIVE.md` y el código (solo lectura) y corrige ese doc si difiere.
+3. **Revisión independiente (solo lectura, como en el lote anterior)** de lo que Claude publique: primero `claude/w5-pos` (ya desplegada), luego `w6` y `w7` cuando Claude avise que tienen CI verde. Entrega hallazgos con archivo:línea, repro mínimo y severidad; no empujes a esas ramas; no mezcles a `nexora-cloud`.
+4. Sigue con el instalador de Windows (3m) y reporta cuando tus 3 trabajos de CI estén verdes; ya recibimos 16dd103.
+Reglas fijas: no despliegas, no tocas Render, no pegas secretos, no relajas pruebas, no declaras «listo» sin los 3 CI verdes del último SHA.
+
+## 3p. ENCARGO PARA CHATGPT (11 oct): FUNCIÓN «SOLICITUD DE ANULACIÓN». Claude ahorra cupo: la construyes TÚ. AUTORIZADO por la dueña tocar `apps/`, `tests/`, migraciones y docs SOLO para esta función
+
+Base: `nexora-cloud` (producción ya trae: una caja por usuario, ventas a crédito, créditos pendientes, incentivo al cobrar, 34 pruebas de dinero/seguridad nuevas). Trabaja en `nexora-chatgpt-fase2` (haz merge de `origin/nexora-cloud` primero, sin rebase). Si existe `origin/claude/w10-solicitud-anulacion` (trabajo parcial de un agente de Claude), léela y reaprovecha lo coherente; NO la modifiques. No cambies las reglas de propiedad de caja ni los créditos/incentivos más allá de lo necesario. No despliegas; Claude/la dueña despliegan tras CI verde y tu entrega.
+
+**Función pedida por la dueña (textual en esencia):** los empleados pueden hacer una SOLICITUD DE ANULACIÓN; a la cuenta del administrador (Génesis o Marcos), cuando entren, al frente, ven la solicitud; y desde la plataforma inicial el administrador puede anular el pedido si es necesario.
+
+Requisitos:
+1. **Cajera/vendedora (sin permiso de anular)**: en una venta propia (completada, no anulada, de su caja/vendedora) pulsa «Solicitar anulación» con motivo obligatorio (lista de motivos + texto libre). Crea una SolicitudAnulación pendiente (venta, quién, cuándo, motivo). Una sola pendiente por venta; idempotente (`operationId`). No cambia venta, stock ni caja todavía. La cajera ve el estado de sus solicitudes y puede cancelar una pendiente.
+2. **Administración** (y quien hoy tenga el permiso de anular; respeta permisos existentes y dilo en tu informe) ve las pendientes AL FRENTE: tarjeta destacada en la pantalla inicial (Resumen), contador en la campana/Alertas, alerta del sistema y Telegram si está configurado (reutiliza `notify`/outbox; sin datos personales innecesarios), con enlace directo.
+3. **Pantalla «Solicitudes de anulación»**: ve la venta (ticket, artículos, pagos, cliente, motivo, solicitante) y puede **APROBAR** → ejecuta la anulación real con la lógica existente (restaura inventario, reembolsos, notas de crédito, incentivos negativos proporcionales, créditos/cobros, caja abierta/cerrada; ventas con devoluciones o abonos previos no se anulan: mostrar el motivo) o **RECHAZAR** con nota obligatoria. Estados pendiente/aprobada/rechazada/cancelada. Bitácora (solicitante, aprobador, fechas). La anulación directa del administrador debe ser alcanzable también desde la tarjeta del inicio; si anula una venta con solicitud pendiente, esta pasa a aprobada.
+4. **Seguridad**: rate limit; sin IDOR (ni ventas de otra cajera ni otra sucursal); nadie aprueba su propia solicitud; concurrencia (dos administradores aprueban a la vez ⇒ una sola anulación, el otro 409 claro); idempotencia.
+5. **UI** en español simple, accesible (axe 0 violaciones), usable a 320/390/1280 px.
+6. **Migración aditiva**, prefijo único POSTERIOR a `202610240201` y a las que existan en `nexora-cloud`.
+7. **Pruebas**: integración con PostgreSQL real (solicitar, duplicado, cancelar, aprobar ⇒ venta anulada con inventario/caja/incentivo correctos, rechazar, IDOR, doble aprobación concurrente, aprobar la propia 403, permisos por rol) y Playwright (cajera solicita; administradora ve la tarjeta al iniciar sesión y aprueba/rechaza; 390 px). Sin fechas fijas cercanas a «hoy». Desactiva al terminar las usuarias de prueba que crees (el PIN de gerente recorre a todas las activas con bcrypt y vuelve lentas las pruebas de navegador).
+8. Docs: `docs/DECISIONES.md` (siguiente número libre), `docs/MANUAL.md`. Reporta CI verde (3 trabajos) del último SHA, roles que aprueban, riesgos y decisiones pendientes de la dueña.
+
+## 3q. REPARTO ENTRE LOS DOS CHATGPT (11 oct): PC y NUBE. Claude (arquitecto) decide; nadie duplica
+
+Producción corre `nexora-cloud` (cajas por usuario, créditos, importar inventario, pantalla de venta compacta). Reglas comunes (valen para los dos): no despliegan, no tocan Render, no usan ni pegan contraseñas/claves, no empujan a `nexora-cloud` ni a `claude/*`, no relajan pruebas, no dicen «listo» sin los 3 trabajos de CI verdes del último SHA, y antes de empezar cualquier tarea hacen `git fetch` y leen esta sección por si cambió el reparto.
+
+**ChatGPT NUBE → rama `nexora-chatgpt-nube`** (créala desde `origin/nexora-cloud`; merge de `nexora-cloud` sin rebase antes de entregar):
+1. **Tarea 3p: función «Solicitud de anulación»** (código, migración, pruebas, docs). En 3p cambia «tu rama `nexora-chatgpt-fase2`» por `nexora-chatgpt-nube`. Es la prioridad.
+2. Después, las guías en español simple de la tarea 3o, puntos 1 y 2 (`docs/guias/GUIA_CAJERA.md`, `GUIA_ADMINISTRADORA.md`, `CHECKLIST_DIA_1.md` y `docs/GUIA_DRIVE_PASO_A_PASO.md`).
+
+**ChatGPT PC → rama `nexora-chatgpt-fase2`** (la de siempre):
+1. **Instalador de Windows (3m)** y todo lo que necesite un Windows real (VM limpia, PGDATA de otra cuenta, hardware, cortes). Reporta cuando los 3 CI de tu último SHA estén verdes.
+2. **Revisiones independientes de solo lectura** (tarea 3o punto 3): `claude/w5-pos` (ya desplegada), y cuando Claude avise, `claude/w8-fondo` y lo que publique la NUBE (`nexora-chatgpt-nube`): hallazgos con archivo:línea, repro mínimo y severidad; sin empujar a esas ramas.
+3. No hagas la tarea 3p ni las guías: son de la NUBE. Si ya tienes trabajo avanzado de 3p o de las guías en tu rama, repórtalo a la dueña y a Claude para decidir, NO lo dupliques.
+
+**Coordinación:** cada uno publica un comentario corto al empezar («tomo X») y al terminar («SHA, CI de 3 trabajos, hallazgos»). Si dos tareas tocan el mismo archivo, gana el orden de arriba y el otro espera. Claude revisa, une y despliega.
+
+## 3r. AJUSTE AL REPARTO (11 oct, Claude): ChatGPT PC vuelve y el instalador local pasa a SEGUNDA FASE
+
+Decisión de Claude: (1) El instalador local de prueba queda en **pausa** (segunda fase): no gastes tiempo en él ahora. (2) **ChatGPT PC toma las guías** de la tarea 3o puntos 1 y 2 (`docs/guias/GUIA_CAJERA.md`, `GUIA_ADMINISTRADORA.md`, `CHECKLIST_DIA_1.md`, `docs/GUIA_DRIVE_PASO_A_PASO.md`) en `nexora-chatgpt-fase2`; **ChatGPT NUBE se queda solo con la tarea 3p** (Solicitud de anulación) en `nexora-chatgpt-nube`. (3) Además, ChatGPT PC hace las **revisiones de solo lectura** (3o punto 3). (4) La **app de escritorio** que mencionas: solo evaluación/diseño en documento (`docs/coordinacion/EVALUACION_APP_ESCRITORIO.md`), en rama independiente; debe usar la MISMA nube y autenticación, **sin base de datos local ni sincronización propia** (la base queda solo en Render). Nada de código de esa app hasta que la dueña y Claude aprueben el documento. Todo lo demás de 3q sigue igual.
+
+## 3s. PLAN VIGENTE (11 oct, decisión de la dueña; REEMPLAZA los repartos 3o, 3q y 3r donde choquen): CHATGPT HACE CASI TODO; CLAUDE SOLO SUPERVISA Y DESPLIEGA
+
+Motivo: el cupo de Claude es escaso; el de ChatGPT PC y NUBE se puede reiniciar. Por eso ahora **no hay auditorías de Claude hasta la fase final**. Claude solo: (a) integra a `nexora-cloud` lo que ustedes entreguen con CI verde, (b) despliega API y luego web y verifica, (c) responde bloqueos y decisiones de arquitectura. Todo lo demás es de ustedes dos. Reglas fijas (siguen valiendo): no despliegan, no tocan Render, no usan ni pegan contraseñas/claves, no empujan a `nexora-cloud` ni a `claude/*`, no relajan pruebas, no dicen «listo» sin los 3 trabajos de CI verdes del último SHA, fechas relativas en pruebas (nada de fechas fijas cercanas a hoy), desactivar al terminar las usuarias de prueba que creen (el PIN de gerente recorre a todas las activas con bcrypt).
+
+### AUTOAUDITORÍA OBLIGATORIA (reemplaza la auditoría de Claude hasta el final)
+1. **Antes de programar** cada tarea: escribe en el comentario de «tomo X» un plan de 5–10 líneas con los riesgos (dinero, permisos/IDOR, concurrencia, idempotencia, datos personales, offline, accesibilidad).
+2. **Después de programar**, antes de reportar: revisa tu propio diff como si fueras un auditor hostil y deja en el informe final una sección **«AUTOAUDITORÍA»** con: (a) pruebas que FALLAN sin el cambio y pasan con él, (b) intentos de abuso probados (otro usuario, otra sucursal, doble envío, dos peticiones simultáneas, importes extremos), (c) qué queda sin probar y por qué, (d) efectos laterales revisados (caja, kardex, incentivos, créditos, reportes, cola offline). Si encuentras algo, corrígelo antes de reportar.
+3. Un hallazgo que no puedas resolver sin decidir reglas de negocio → pregunta a la dueña con opciones concretas (no adivines).
+
+### CHATGPT NUBE (rama `nexora-chatgpt-nube`, desde `origin/nexora-cloud`; merge de `nexora-cloud` sin rebase antes de entregar). Orden de prioridad:
+1. **Tarea 3p: Solicitud de anulación** (especificación completa en 3p; reemplaza «tu rama» por `nexora-chatgpt-nube`).
+2. **Fondo sugerido por persona** (si `origin/claude/w8-fondo` ya existe con CI verde, NO la rehagas: solo revísala/reutilízala y avisa; si no existe, impleméntala: el fondo sugerido al abrir sale del último cierre de la PROPIA persona en cualquier equipo; sin cierre propio ⇒ último cierre del equipo; sin ninguno ⇒ 0; sin migración; pruebas).
+3. **(CANCELADA el 11 oct: la dueña anulará las ventas de prueba desde Ventas y volverá a subir el Excel de inventario; no se construye función de borrado.)** Texto original, no hacer: función protegida solo administradora, con vista previa de conteos, doble confirmación escrita, respaldo/aviso previo, bitácora, atómica; borra ventas, cajas, movimientos, clientes y proveedores de prueba que ella marque; NUNCA usuarios, configuración ni catálogo.
+4. **Pruebas de mutación** de lo nuevo (cajas por usuario, créditos/cobros, importar inventario, solicitud de anulación): por cada regla de dinero o permisos, cambia una condición en copia temporal y exige que alguna prueba falle; añade las que falten.
+
+### CHATGPT PC (rama `nexora-chatgpt-fase2`)
+1. **Guías en español simple** (tarea 3o puntos 1–2): `docs/guias/GUIA_CAJERA.md`, `GUIA_ADMINISTRADORA.md`, `CHECKLIST_DIA_1.md`, `docs/GUIA_DRIVE_PASO_A_PASO.md` (con los hallazgos de 3o).
+2. **Guías de operación para la dueña**, nuevas, en `docs/guias/`: `MONITOR_DE_CAIDAS.md` (monitor externo gratuito sobre `/healthz/deep` con palabra clave `"status":"ok"`), `TELEGRAM_BOT.md` (BotFather, variables `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` en Render, sin pegar secretos en chats), `AJUSTES_RENDER.md` (autoescalado del disco, pestaña Recovery de la base, planes reales y verificación de `render.yaml`, repositorio privado) y `PRECIOS_PENDIENTES.md` (cómo llenar y subir el Excel de los 27 productos sin precio con «Importar inventario»).
+3. **Evaluación de la app de escritorio** (documento `docs/coordinacion/EVALUACION_APP_ESCRITORIO.md`, sin código): misma nube y autenticación, sin base de datos local ni sincronización propia; riesgos y esfuerzo.
+4. **Instalador de Windows**: segunda fase, solo cuando la dueña lo pida.
+5. **Revisión cruzada entre ustedes dos**: cuando NUBE termine algo, PC lo revisa de solo lectura y viceversa (hallazgos con archivo:línea y repro mínimo). Esto complementa la autoauditoría; no sustituye la de cada quien.
+
+### FLUJO DE ENTREGA (para gastar lo mínimo de Claude)
+- Al terminar: comentario corto «ENTREGA: SHA, CI de 3 trabajos en verde, AUTOAUDITORÍA resumida, decisiones pendientes de la dueña».
+- La dueña (o Claude) avisa a Claude con UNA frase («integra X»); Claude hace un merge limpio, espera el CI de la integración, despliega API→web y verifica. No hace revisión línea por línea hasta la fase final.
+- Si dos ramas chocan, gana la que entregó primero; la otra hace merge de `nexora-cloud`.
+
+### FASE FINAL (la dueña avisa cuando todo lo anterior esté desplegado)
+Claude hará UNA auditoría general (con agentes Claude de la nube y Claude PC, repartida en el tiempo para gastar poco) y compara contra la auditoría del 10 oct. Hasta entonces, nadie de Claude audita.
+
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
 1. ~~**M1**~~ (lo hace Claude) movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); por encima de `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.

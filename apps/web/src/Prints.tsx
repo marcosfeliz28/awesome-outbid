@@ -104,8 +104,18 @@ export function CuadrePrint({ c }: { c: any }) {
       <Row label="Fecha inicial" value={when(c.openedAt)} />
       <Row label="Fecha final" value={when(c.closedAt)} />
       <Row label="No. Caja" value={c.register?.number ?? "—"} />
-      <Row label="Caja" value={c.register?.name ?? "—"} />
+      <Row label="Equipo" value={c.register?.name ?? "—"} />
       <Row label="Cajero" value={c.cashier?.name ?? "—"} />
+      {c.closedBy?.name && (
+        <Row
+          label="Cerrada por"
+          value={
+            c.closedBy.onBehalfOf
+              ? `${c.closedBy.name} en nombre de ${c.cashier?.name ?? "—"}`
+              : c.closedBy.name
+          }
+        />
+      )}
       <h4>Detalles de monedas</h4>
       <div className="tp-row tp-head">
         <span>Moneda × Cantidad</span> <span>= Total</span>
@@ -158,6 +168,19 @@ export function CuadrePrint({ c }: { c: any }) {
           )}
         </>
       ) : null}
+      {c.cashSalesDetail && (
+        <>
+          <h4>Entradas y salidas de efectivo</h4>
+          <Row
+            label="Ventas en efectivo"
+            value={num(c.cashSalesDetail.sales)}
+          />
+          <Row label="Recibos CxC" value={num(c.cashSalesDetail.receipts)} />
+          <Row label="Entradas" value={num(c.cashSalesDetail.cashIn)} />
+          <Row label="Devoluciones" value={num(c.cashSalesDetail.refunds)} />
+          <Row label="Salidas" value={num(c.cashSalesDetail.cashOut)} />
+        </>
+      )}
       <h4>Resumen</h4>
       <p>{c.summary?.formula}</p>
       <p className="tp-strong">{c.summary?.text}</p>
@@ -170,11 +193,14 @@ export function CuadrePrint({ c }: { c: any }) {
       {c.notes && <p>Notas: {c.notes}</p>}
       <div className="tp-signatures">
         <p>______________________</p>
-        <p>Firma cajera</p>
+        <p>{"Firma cajera" + (c.cashier?.name ? ": " + c.cashier.name : "")}</p>
         <p>______________________</p>
         <p>Firma de quien recibe</p>
       </div>
       <p className="tp-center tp-strong">{c.footer || "FIN DEL CUADRE"}</p>
+      <p className="tp-center">
+        {c.nonFiscalNotice || "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL"}
+      </p>
     </>
   );
 }
@@ -383,7 +409,14 @@ export function InvoicePrint({
       ))}
       <Row label="Cambio" value={rd(sale.change ?? 0)} />
       {Number(sale.creditBalance) > 0 && (
-        <Row label="Pendiente" value={rd(sale.creditBalance)} />
+        <>
+          <Row label="Pendiente" value={rd(sale.creditBalance)} />
+          <h3 className="tp-center credit-pending">
+            CRÉDITO · PENDIENTE DE PAGO
+          </h3>
+          <Row label="Monto pendiente" value={rd(sale.creditBalance)} strong />
+          <p className="tp-center">{NON_FISCAL_LEGEND}</p>
+        </>
       )}
       {sale.ncfType && (
         <p>Solicitud NCF {sale.ncfType} · pendiente de emisión fiscal</p>

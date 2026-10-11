@@ -1040,7 +1040,7 @@ function Shell() {
                       }
                     }}
                   >
-                    Cambiar vendedor con PIN
+                    Cambiar de usuario con PIN
                   </button>
                 )}
                 <button
@@ -1169,8 +1169,12 @@ function Shell() {
       <Modal
         open={switchUser}
         onClose={() => setSwitchUser(false)}
-        title="Cambiar vendedor"
+        title="Cambiar de usuario"
       >
+        <p className="modal-intro">
+          Entras con la sesión y la caja de esa persona: cada usuario vende solo
+          en su propia caja. Si no tiene una abierta, debe abrir la suya.
+        </p>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -1191,7 +1195,7 @@ function Shell() {
           }}
         >
           <label className="field">
-            <span>Vendedor</span>
+            <span>Usuario</span>
             <select
               required
               value={switchId}

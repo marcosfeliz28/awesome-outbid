@@ -136,6 +136,20 @@ let supplierId = "",
 const actors: any[] = [],
   products: any[] = [];
 const suffix = Date.now().toString(36);
+// Fecha futura relativa a hoy, fija durante la corrida (antes un literal «2030-01-01» que, ese día, dejaba
+// de ser futuro: el lote «vigente» vencía y el crédito «caía en el pasado»).
+const RUN_START = new Date();
+const inFiveYears = (hourUtc = 12) => {
+  const now = RUN_START;
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear() + 5,
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      hourUtc,
+    ),
+  ).toISOString();
+};
 const testIp = "192.0.2." + ((Date.now() % 250) + 1);
 const authIp = "203.0.113." + ((Date.now() % 250) + 1);
 const rateIp = "198.51.100." + ((Date.now() % 250) + 1);
@@ -1146,7 +1160,7 @@ describe("Regresiones de Claude", () => {
       qty: 1,
       reason: "QA con lote",
       lotNumber: "QA-OPTIONAL",
-      expiryDate: "2030-01-01T12:00:00.000Z",
+      expiryDate: inFiveYears(),
     });
     const p = await ok("/products/" + clothing.id);
     expect(p.variants[0].lots.some((l) => l.lotNumber === "QA-OPTIONAL")).toBe(
@@ -1309,36 +1323,39 @@ describe("Regresiones de Claude", () => {
       );
     }
   });
-  it("12: índice parcial impide apertura concurrente de terminal", async () => {
+  it("12: dos usuarios pueden tener su caja abierta en el mismo equipo (decisión 38)", async () => {
     const manager = actors.find((u) => u.email.includes("qa-manager"));
     const auth = await ok(
       "/auth/login",
       { email: manager.email, password: "FitStore-QA-2026!" },
       "",
     );
-    // Con equipos, la caja usa el equipo de la sesión: dos usuarios en el
-    // mismo equipo no pueden tener cajas abiertas a la vez.
+    // La caja es de quien la abre; el equipo ya no es único entre cajas.
     await registerTerminal(
       auth.accessToken,
       session.registerId,
       "QA compartido",
     );
-    expect(
-      (
-        await request(
-          "/cash-sessions/open",
-          { registerId: session.registerId, openingAmount: 0 },
-          auth.accessToken,
-        )
-      ).status,
-    ).toBeGreaterThanOrEqual(400);
+    const second = await request(
+      "/cash-sessions/open",
+      { ...REOPEN, registerId: session.registerId, openingAmount: 0 },
+      auth.accessToken,
+    );
+    expect(second.status, JSON.stringify(second.body)).toBe(201);
+    expect(second.body.userId).toBe(manager.id);
+    expect(second.body.id).not.toBe(session.id);
     expect(
       await fixtureDb.cashSession.count({
         where: { registerId: session.registerId, closedAt: null },
       }),
-    ).toBe(1);
+    ).toBe(2);
+    await ok(
+      "/cash-sessions/" + second.body.id + "/close",
+      { countedCash: 0, countedCard: 0, countedTransfer: 0 },
+      auth.accessToken,
+    );
   });
-  it("aperturas simultáneas en el mismo equipo devuelven un conflicto claro", async () => {
+  it("aperturas simultáneas de dos usuarios en el mismo equipo abren cada una la suya", async () => {
     const sellerRole = (await ok("/roles")).find(
       (role: any) => role.name === "seller",
     );
@@ -1376,25 +1393,19 @@ describe("Regresiones de Claude", () => {
         ),
       ),
     );
-    const created = results.filter((result) => result.status === 201);
-    const rejected = results.filter((result) => result.status >= 400);
-    expect(created).toHaveLength(1);
-    expect(rejected).toHaveLength(1);
-    expect(rejected[0].status).toBe(409);
-    expect(rejected[0].body.message).toContain(
-      "Este equipo ya tiene otra caja abierta.",
-    );
-    expect(JSON.stringify(rejected[0].body)).not.toMatch(/Prisma|P2002/i);
-    await ok(
-      "/cash-sessions/" + created[0].body.id + "/close",
-      {
-        countedCash: Number(created[0].body.openingAmount),
-        countedCard: 0,
-        countedTransfer: 0,
-      },
-      temporaryUsers.find((entry) => entry.user.id === created[0].body.userId)!
-        .token,
-    );
+    expect(results.map((r) => r.status)).toEqual([201, 201]);
+    expect(new Set(results.map((r) => r.body.id)).size).toBe(2);
+    expect(JSON.stringify(results)).not.toMatch(/Prisma|P2002/i);
+    for (const [index, result] of results.entries())
+      await ok(
+        "/cash-sessions/" + result.body.id + "/close",
+        {
+          countedCash: Number(result.body.openingAmount),
+          countedCard: 0,
+          countedTransfer: 0,
+        },
+        temporaryUsers[index].token,
+      );
   });
   it("reintentar abrir la caja devuelve la sesión existente", async () => {
     const repeated = await ok(
@@ -1577,7 +1588,7 @@ describe("Seguridad, offline y funciones completadas", () => {
       qty: 1,
       reason: "QA vencimiento",
       lotNumber: "QA-BOUNDARY",
-      expiryDate: "2030-01-01T12:00:00.000Z",
+      expiryDate: inFiveYears(),
     });
     const day = new Date().toLocaleDateString("en-CA", {
       timeZone: "America/Santo_Domingo",
@@ -1620,7 +1631,7 @@ describe("Seguridad, offline y funciones completadas", () => {
       qty: 1,
       reason: "QA lote opcional",
       lotNumber: "QA-MIXED",
-      expiryDate: "2030-01-01T12:00:00.000Z",
+      expiryDate: inFiveYears(),
     });
     const sold = await ok("/sales", {
       ...input(id, 236),
@@ -1784,7 +1795,7 @@ describe("Seguridad, offline y funciones completadas", () => {
       const sold = await ok("/sales", {
         ...input(clothing.variants[0].id, 118),
         customerId: customer.id,
-        creditDueDate: "2030-01-01T12:00:00.000Z",
+        creditDueDate: inFiveYears(),
         payments: [{ method: "credit", amount: 118 }],
       });
       expect(Number(sold.creditBalance)).toBe(118);
@@ -2494,7 +2505,7 @@ describe("Ronda 2 de Claude", () => {
       const credit = {
         ...payload(callerCash),
         customerId: customer.id,
-        creditDueDate: "2030-01-01T12:00:00.000Z",
+        creditDueDate: inFiveYears(),
         payments: [{ method: "credit", amount: 118 }],
       };
       expect((await request("/sales", credit, callerToken)).status).toBe(400);
@@ -2548,7 +2559,7 @@ describe("Ronda 2 de Claude", () => {
       const sold = await ok("/sales", {
         ...payload(),
         customerId: customer.id,
-        creditDueDate: "2030-01-01T12:00:00.000Z",
+        creditDueDate: inFiveYears(),
         payments: [{ method: "credit", amount: 118 }],
       });
       const expected = (await ok("/cash-sessions")).find(
@@ -5683,7 +5694,7 @@ describe("Ronda 9 · revisión · dinero", () => {
       cashSessionId: session.id,
       items: [{ variantId, qty }],
       customerId,
-      creditDueDate: "2030-01-01T12:00:00.000Z",
+      creditDueDate: inFiveYears(),
       payments: [{ method: "credit", amount }],
       expectedTotal: amount,
     });
@@ -6456,7 +6467,9 @@ describe("Ronda 9 · revisión · importador", () => {
     expect(r.status).not.toBe(0);
     expect(r.out).toMatch(
       new RegExp(
-        "fila \\d+ del Excel \\(ID R9E-" + tag + "\\), SUB-GRUPO: la celda tiene el error #N/A",
+        "fila \\d+ del Excel \\(ID R9E-" +
+          tag +
+          "\\), SUB-GRUPO: la celda tiene el error #N/A",
       ),
     );
     expect(r.out).not.toMatch(/object/);
@@ -7491,7 +7504,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
           { method: "credit", amount: 250 },
           { method: "cod", amount: 250 },
         ],
-        { customerId: customer.id, creditDueDate: "2030-01-01T12:00:00.000Z" },
+        { customerId: customer.id, creditDueDate: inFiveYears() },
       );
       expect(r.status).toBe(201);
       expect(Number(r.body.creditBalance)).toBe(500);
@@ -7705,7 +7718,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
         [{ method: "credit", amount: 1180 }],
         {
           customerId: customer.id,
-          creditDueDate: "2030-01-01T12:00:00.000Z",
+          creditDueDate: inFiveYears(),
         },
       )
     ).body;
@@ -8243,7 +8256,7 @@ describe("Aceptación · mercancía", () => {
         qty,
         reason: "QA lote",
         lotNumber,
-        expiryDate: "2030-01-01T12:00:00.000Z",
+        expiryDate: inFiveYears(),
       });
     // El lote venció (así quedan los datos al pasar la fecha).
     await fixtureDb.lot.updateMany({
@@ -8270,7 +8283,7 @@ describe("Aceptación · mercancía", () => {
       qty: 1,
       reason: "QA lote",
       lotNumber: "AM-VIGENTE",
-      expiryDate: "2030-01-01T12:00:00.000Z",
+      expiryDate: inFiveYears(),
     });
     const event = await fixtureDb.realtimeEvent.findFirst({
       where: {
@@ -10479,27 +10492,29 @@ describe("I1 + K1 · lotes y concurrencia de inventario", () => {
       qty: 1,
       reason: "QA completa vencimiento",
       lotNumber: "lote i1",
-      expiryDate: "2030-01-01T04:00:00.000Z",
+      expiryDate: inFiveYears(4),
     });
     await ok("/inventory/adjustments", {
       variantId: variant.id,
       qty: 1,
       reason: "QA mismo día dominicano",
       lotNumber: "LOTE   I1",
-      expiryDate: "2030-01-01T12:00:00.000Z",
+      expiryDate: inFiveYears(12),
     });
     const rejected = await request("/inventory/adjustments", {
       variantId: variant.id,
       qty: 1,
       reason: "QA vencimiento contradictorio",
       lotNumber: "Lote I1",
-      expiryDate: "2030-01-02T04:00:00.000Z",
+      expiryDate: new Date(
+        Date.parse(inFiveYears(4)) + 24 * 3600_000,
+      ).toISOString(),
     });
     expect(rejected.status).toBe(400);
     expect(rejected.body.message).toMatch(/vencimiento diferente/i);
     lots = await fixtureDb.lot.findMany({ where: { variantId: variant.id } });
     expect(lots).toHaveLength(1);
-    expect(lots[0].expiryDate?.toISOString()).toBe("2030-01-01T04:00:00.000Z");
+    expect(lots[0].expiryDate?.toISOString()).toBe(inFiveYears(4));
     expect(Number(lots[0].qty)).toBe(6);
   });
 
@@ -11102,7 +11117,7 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
   });
 
   it("D-01: el crédito sigue igual y el límite del cliente cuenta la contraentrega pendiente", async () => {
-    const due = { creditDueDate: "2030-01-01T12:00:00.000Z" };
+    const due = { creditDueDate: inFiveYears() };
     // Desactivado: rechazado para todos, también con PIN.
     await setSettings({
       allowCreditSales: false,
@@ -11757,7 +11772,33 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
   });
 
   it("D-05: dashboard, informes por vendedor y por forma de pago usan la misma venta neta con devoluciones parciales", async () => {
-    const day = "2023-03-15";
+    // Un día lejano SIN ventas ni devoluciones, distinto en cada corrida: con
+    // un día fijo, la 2.ª corrida sobre la misma base sumaba las ventas de la
+    // primera (1000 en vez de 500).
+    const iso = (date: Date) => date.toISOString().slice(0, 10);
+    const dayMs = 86400000;
+    let day = "";
+    for (;;) {
+      day = iso(
+        new Date(
+          Date.UTC(
+            2003 + Math.floor(Math.random() * 15),
+            0,
+            1 + Math.floor(Math.random() * 365),
+          ),
+        ),
+      );
+      const midnight = new Date(day + "T00:00:00-04:00");
+      const window = {
+        gte: new Date(+midnight - dayMs),
+        lt: new Date(+midnight + 2 * dayMs),
+      };
+      if (
+        !(await fixtureDb.sale.count({ where: { createdAt: window } })) &&
+        !(await fixtureDb.saleReturn.count({ where: { createdAt: window } }))
+      )
+        break;
+    }
     const at = new Date(day + "T15:00:00.000Z");
     const ropa = await product("neto ropa", "Ropa deportiva", 100);
     const supl = await product("neto suplemento", "Suplementos", 300);

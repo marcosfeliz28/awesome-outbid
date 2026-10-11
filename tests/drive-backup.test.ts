@@ -76,6 +76,18 @@ const g = {
   failChunks: 0,
   resumedAt: 0,
   badChecksum: false,
+  // W9: cómo responde Drive al leer la copia que la API acaba de subir.
+  mode: "ok" as
+    | "ok"
+    | "sha_wrong"
+    | "md5_wrong"
+    | "only_md5"
+    | "no_sums"
+    | "trashed"
+    | "props_wrong"
+    | "list_hides_new",
+  lastUploaded: "",
+  trashFails: false,
 };
 let refreshIssued = "";
 const accessIssued: string[] = [];
@@ -223,6 +235,8 @@ const fake = createServer(async (req, res) => {
   if (url.pathname === "/drive/v3/files" && req.method === "GET") {
     const q = url.searchParams.get("q") ?? "";
     let list = [...g.files.values()].filter((f) => !f.trashed);
+    if (g.mode === "list_hides_new")
+      list = list.filter((f) => f.id !== g.lastUploaded);
     if (q.includes("application/vnd.google-apps.folder"))
       list = list.filter(
         (f) =>
@@ -253,11 +267,29 @@ const fake = createServer(async (req, res) => {
     const f = g.files.get(decodeURIComponent(fileMatch[1]!));
     if (!f) return send(404, { error: { code: 404 } });
     if (req.method === "PATCH") {
+      if (g.trashFails) return send(500, { error: { code: 500 } });
       const m = JSON.parse(body.toString());
       if (m.trashed === true) f.trashed = true;
       return send(200, { id: f.id });
     }
-    return send(200, meta(f));
+    const answer: any = meta(f);
+    // W9: sólo la copia recién subida se lee "mal"; las demás quedan igual.
+    if (f.id === g.lastUploaded) {
+      if (g.mode === "sha_wrong") answer.sha256Checksum = "0".repeat(64);
+      if (g.mode === "md5_wrong") answer.md5Checksum = "0".repeat(32);
+      if (g.mode === "only_md5") delete answer.sha256Checksum;
+      if (g.mode === "no_sums") {
+        delete answer.sha256Checksum;
+        delete answer.md5Checksum;
+      }
+      if (g.mode === "trashed") answer.trashed = true;
+      if (g.mode === "props_wrong")
+        answer.appProperties = {
+          ...answer.appProperties,
+          sha256: "f".repeat(64),
+        };
+    }
+    return send(200, answer);
   }
   if (url.pathname === "/upload/drive/v3/files" && req.method === "POST") {
     if (url.searchParams.get("uploadType") !== "resumable")
@@ -294,6 +326,7 @@ const fake = createServer(async (req, res) => {
         content: Buffer.concat(up.data),
       };
       g.files.set(f.id, f);
+      g.lastUploaded = f.id;
       return send(200, { id: f.id, name: f.name });
     };
     const partial = () =>
@@ -1010,6 +1043,176 @@ describe("Respaldo a Google Drive · respaldos", () => {
       expect(actions).toContain(action);
     await connect();
   });
+
+  // W9 (auditoría 07 v2, Q-04): la verificación posterior a la subida no tenía
+  // pruebas de rechazo por separado. Cada caso cambia UNA sola señal de Drive y
+  // exige que la copia dudosa vaya a la papelera y que NO se borre ninguna
+  // copia anterior (la retención tendría trabajo que hacer: 45 diarias viejas).
+  describe("verificación de la copia subida y retención (W9)", () => {
+    const folderId = () =>
+      [...g.files.values()].find(
+        (f) => f.mimeType === "application/vnd.google-apps.folder",
+      )!.id;
+    const seedOld = () => {
+      const parent = folderId();
+      const old: FakeFile[] = [];
+      for (let i = 1; i <= 45; i++) {
+        const f: FakeFile = {
+          id: newId("w9old"),
+          name: backupName(new Date(Date.now() - i * 86400000)),
+          mimeType: "application/octet-stream",
+          parents: [parent],
+          appProperties: { nexoraBackup: "1" },
+          trashed: false,
+          createdTime: new Date(Date.now() - i * 86400000).toISOString(),
+          content: Buffer.from("viejo-w9"),
+        };
+        g.files.set(f.id, f);
+        old.push(f);
+      }
+      // Sin esto la prueba no probaría nada: la retención sí borraría copias.
+      const plan = retentionPlan(
+        [
+          ...old.map((f) => ({
+            id: f.id,
+            name: f.name,
+            createdTime: f.createdTime,
+          })),
+          {
+            id: "nueva",
+            name: backupName(new Date()),
+            createdTime: new Date().toISOString(),
+          },
+        ],
+        { keep: ["nueva"] },
+      );
+      expect(plan.remove.length).toBeGreaterThan(5);
+      return old;
+    };
+    const alive = () =>
+      new Set(
+        driveFiles()
+          .filter((f) => !f.trashed)
+          .map((f) => f.id),
+      );
+    const rejected = async (mode: typeof g.mode) => {
+      const old = seedOld();
+      const before = alive();
+      g.mode = mode;
+      let s;
+      try {
+        s = await runNow();
+      } finally {
+        g.mode = "ok";
+      }
+      expect(s.lastRun.status, mode).toBe("failed");
+      expect(s.lastRun.error, mode).toMatch(/no confirmó la copia/);
+      expect(s.consecutiveFailures).toBeGreaterThan(0);
+      // La copia dudosa quedó en la papelera y todo lo anterior sigue vivo.
+      expect(g.files.get(g.lastUploaded)!.trashed, mode).toBe(true);
+      expect(alive(), mode).toEqual(before);
+      for (const f of old) expect(g.files.get(f.id)!.trashed, mode).toBe(false);
+    };
+
+    it("D01 · una suma sha256 distinta (aunque la md5 coincida) rechaza la copia", () =>
+      rejected("sha_wrong"));
+    it("D01b · una suma md5 distinta (aunque la sha256 coincida) rechaza la copia", () =>
+      rejected("md5_wrong"));
+    it("D02 · sin ninguna suma de control de Drive no se da por verificada", () =>
+      rejected("no_sums"));
+    it("D06 · una copia que Drive ya muestra en la papelera no se da por buena", () =>
+      rejected("trashed"));
+    it("D07 · si la etiqueta sha256 de la copia no es la del archivo local se rechaza", () =>
+      rejected("props_wrong"));
+
+    it("con sólo la md5 de Drive (sin sha256) la copia se verifica y la retención corre", async () => {
+      const old = seedOld();
+      g.mode = "only_md5";
+      let s;
+      try {
+        s = await runNow();
+      } finally {
+        g.mode = "ok";
+      }
+      expect(s.lastRun.status, JSON.stringify(s)).toBe("success");
+      expect(g.files.get(g.lastUploaded)!.trashed).toBe(false);
+      expect(old.some((f) => g.files.get(f.id)!.trashed)).toBe(true);
+    });
+
+    it("D03 · si el listado de Drive no incluye la copia nueva no se borra nada, pero el respaldo queda guardado", async () => {
+      const old = seedOld();
+      g.mode = "list_hides_new";
+      let s;
+      try {
+        s = await runNow();
+      } finally {
+        g.mode = "ok";
+      }
+      expect(s.lastRun.status, JSON.stringify(s)).toBe("success");
+      expect(s.lastRun.error).toMatch(
+        /no se pudieron borrar copias antiguas.*no incluye la copia nueva/,
+      );
+      expect(g.files.get(g.lastUploaded)!.trashed).toBe(false);
+      for (const f of old) expect(g.files.get(f.id)!.trashed).toBe(false);
+      // Con el listado normal, la siguiente corrida sí aplica la retención.
+      const next = await runNow();
+      expect(next.lastRun.status).toBe("success");
+      expect(next.lastRun.error).toBeNull();
+      expect(old.some((f) => g.files.get(f.id)!.trashed)).toBe(true);
+    });
+
+    it("si la copia dudosa no se puede mandar a la papelera, el fallo lo dice", async () => {
+      g.trashFails = true;
+      g.mode = "sha_wrong";
+      let s;
+      try {
+        s = await runNow();
+      } finally {
+        g.mode = "ok";
+        g.trashFails = false;
+      }
+      expect(s.lastRun.status).toBe("failed");
+      expect(s.lastRun.error).toMatch(/no confirmó la copia/);
+      expect(s.lastRun.error).toMatch(/papelera/);
+      // Sigue en Drive: hay que borrarla a mano y el aviso lo dice.
+      expect(g.files.get(g.lastUploaded)!.trashed).toBe(false);
+      g.files.get(g.lastUploaded)!.trashed = true;
+      expect((await runNow()).lastRun.status).toBe("success");
+    });
+
+    it("D04 · el callback de Google rechaza a quien no es administrador, aunque su estado esté bien firmado", async () => {
+      const manager = await login(api.base, "gerente@fitstore.demo");
+      const claims = JSON.parse(
+        Buffer.from(manager.split(".")[1]!, "base64url").toString(),
+      );
+      expect(claims.sid).toBeTruthy();
+      const nonce = randomBytes(16).toString("hex");
+      const tokenRequests = g.requests.filter(
+        (x) => x.path === "/token",
+      ).length;
+      const state = signState(
+        {
+          u: claims.sub,
+          s: claims.sid,
+          n: sha256Hex(nonce),
+          e: Date.now() + 60000,
+        },
+        stateKey(process.env.JWT_SECRET!),
+      );
+      const r = await call(
+        api.base,
+        "/backups/google/callback?error=access_denied&state=" +
+          encodeURIComponent(state),
+        { headers: { Cookie: "nexora_drive_oauth=" + nonce } },
+      );
+      expect(r.status).toBe(302);
+      // Con un administrador la misma petición llega a «denied»; aquí, «invalid».
+      expect(r.headers.get("location")).toMatch(/\/\?drive=invalid#settings$/);
+      expect(g.requests.filter((x) => x.path === "/token")).toHaveLength(
+        tokenRequests,
+      );
+    });
+  });
 });
 
 describe("Respaldo a Google Drive · temporizador", () => {
@@ -1111,11 +1314,18 @@ describe("Respaldo a Google Drive · temporizador", () => {
       ...[...g.refresh, ...g.revoked].filter(Boolean),
       ...accessIssued,
     ];
-    for (const secret of secrets)
+    // Un secreto vacío o corto (p. ej. una base local sin contraseña) está
+    // contenido en cualquier texto: no prueba nada y daría un rojo falso. Los
+    // secretos fijos de esta prueba son largos; sólo la contraseña de la base
+    // depende de la configuración.
+    const checked = secrets.filter((secret) => secret.length >= 8);
+    expect(checked.length).toBeGreaterThanOrEqual(secrets.length - 1);
+    for (const secret of checked)
       expect(everything.includes(secret), "secreto expuesto").toBe(false);
     // A Google sólo le llega la copia cifrada: nunca la contraseña de la base ni la frase.
     const toGoogle = g.requests.map((r) => r.body).join("\n");
-    expect(toGoogle.includes(DB_PASSWORD)).toBe(false);
+    if (DB_PASSWORD.length >= 8)
+      expect(toGoogle.includes(DB_PASSWORD)).toBe(false);
     expect(toGoogle.includes(PASS)).toBe(false);
   });
 });

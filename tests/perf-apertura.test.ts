@@ -86,6 +86,11 @@ describe("PERF-4 · GET /cash-sessions con consultas agrupadas", () => {
         findMany: hit("saleReturn.findMany"),
         groupBy: hit("saleReturn.groupBy"),
       },
+      user: {
+        findMany: hit("user.findMany", () => [
+          { id: "cajera-1", name: "Cajera Uno" },
+        ]),
+      },
       terminal: {
         findUnique: hit("terminal.findUnique", () => null),
         findMany: hit("terminal.findMany"),
@@ -116,6 +121,7 @@ describe("PERF-4 · GET /cash-sessions con consultas agrupadas", () => {
       "cashMovement.findMany": 1,
       "saleReturn.groupBy": 1,
       "terminal.findMany": 1,
+      "user.findMany": 1,
     });
   });
 
@@ -131,6 +137,7 @@ describe("PERF-4 · GET /cash-sessions con consultas agrupadas", () => {
     expect(calls).toEqual({
       "cashSession.findMany": 2,
       "terminal.findMany": 1,
+      "user.findMany": 1,
     });
   });
 });

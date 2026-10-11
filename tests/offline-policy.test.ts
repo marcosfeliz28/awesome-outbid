@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { AdminController } from "../apps/api/src/admin";
 import { OfflineSalesController } from "../apps/api/src/offline-sales";
 import { offlineSaleAction } from "../apps/web/src/offlinePolicy";
-import { normalizeLegacyOfflineDiscount } from "../apps/api/src/sales";
+import {
+  LEGACY_OFFLINE_DISCOUNT_CUTOFF,
+  normalizeLegacyOfflineDiscount,
+} from "../apps/api/src/sales";
 import { paymentTotals } from "../packages/shared/src";
 import {
   applyPendingSaleReprice,
@@ -38,7 +41,10 @@ describe("compatibilidad de descuentos offline heredados", () => {
   const input = {
     offlineUuid: "11111111-1111-4111-8111-111111111111",
     cashSessionId: "22222222-2222-4222-8222-222222222222",
-    capturedAt: "2026-10-08T12:00:00.000Z",
+    // Un día antes de la frontera histórica (no depende del reloj).
+    capturedAt: new Date(
+      LEGACY_OFFLINE_DISCOUNT_CUTOFF - 86400000,
+    ).toISOString(),
     customerId: "33333333-3333-4333-8333-333333333333",
     items: [
       {
@@ -62,8 +68,31 @@ describe("compatibilidad de descuentos offline heredados", () => {
   });
 
   it("no inventa motivo para una venta offline posterior al corte legado", () => {
-    const current = { ...input, capturedAt: "2026-10-10T12:00:00.000Z" };
+    const current = {
+      ...input,
+      capturedAt: new Date(
+        LEGACY_OFFLINE_DISCOUNT_CUTOFF + 86400000,
+      ).toISOString(),
+    };
     expect(normalizeLegacyOfflineDiscount(current, true, true)).toBe(current);
+  });
+
+  it("la frontera se puede inyectar: con una relativa a hoy, la venta de hace un minuto es heredada y la de dentro de un minuto no", () => {
+    const cutoff = Date.now();
+    const past = {
+      ...input,
+      capturedAt: new Date(cutoff - 60_000).toISOString(),
+    };
+    const future = {
+      ...input,
+      capturedAt: new Date(cutoff + 60_000).toISOString(),
+    };
+    expect(
+      normalizeLegacyOfflineDiscount(past, true, true, cutoff).discountReason,
+    ).toMatch(/heredada/);
+    expect(normalizeLegacyOfflineDiscount(future, true, true, cutoff)).toBe(
+      future,
+    );
   });
 });
 
@@ -225,9 +254,7 @@ describe("resolución de precios viejos en la cola offline", () => {
         },
         syncOne: async (repriced) => {
           order.push("sync");
-          expect(repriced.payments).toEqual([
-            { method: "cash", amount: 200 },
-          ]);
+          expect(repriced.payments).toEqual([{ method: "cash", amount: 200 }]);
           return { status: "synced" as const, sale: { id: "sale-1" } };
         },
         deleteLocal: async () => {

@@ -1,6 +1,8 @@
 import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
+    // 5 s (el valor por defecto) se agotaban con la máquina ocupada (F-3).
+    testTimeout: 30000,
     include: [
       "tests/customer-display.test.ts",
       "tests/management-messages.test.ts",
@@ -59,6 +61,10 @@ export default defineConfig({
       "tests/sync-transitorio.test.ts",
       "tests/sync-cola-web.test.ts",
       "tests/db-zona-horaria.test.ts",
+      "tests/integration-api-check.test.ts",
+      "tests/calidad-unit.test.ts",
+      "tests/promociones-paridad.test.ts",
+      "tests/configuracion-pruebas.test.ts",
     ],
   },
 });

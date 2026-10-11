@@ -26,6 +26,21 @@ const db = new PrismaClient();
 // Datos que jamás deben salir hacia Telegram.
 const TOKEN = "987654321:AAQA-fake-telegram-token_only_for_tests";
 const CHAT = "-1009876543210";
+// Fecha futura relativa a hoy, fija durante la corrida (antes un literal «2030-01-01» que, ese día, dejaba
+// de ser futuro: el lote «vigente» vencía y el crédito «caía en el pasado»).
+const RUN_START = new Date();
+const inFiveYears = (hourUtc = 12) => {
+  const now = RUN_START;
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear() + 5,
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      hourUtc,
+    ),
+  ).toISOString();
+};
+
 const CEDULA = "40212345678";
 const PHONE = "8095550199";
 const EMAIL = "cliente.qa.telegram@example.com";
@@ -330,7 +345,7 @@ describe("Telegram · avisos de facturas", () => {
     mode = "ok";
     const cashSale = await sell([{ method: "cash", amount: 100 }]);
     const creditSale = await sell([{ method: "credit", amount: 100 }], {
-      creditDueDate: "2030-01-01T12:00:00.000Z",
+      creditDueDate: inFiveYears(),
     });
     const codSale = await sell([{ method: "cod", amount: 100 }]);
     const returned = await ok(withTg.base, "/sales", {

@@ -85,8 +85,10 @@ export const RequireTerminal = () => SetMetadata("terminal", true);
 export function bad(message: string): never {
   throw new HttpException(message, 400);
 }
-export function denied(): never {
-  throw new HttpException("No tienes permiso para realizar esta acción.", 403);
+export function denied(
+  message = "No tienes permiso para realizar esta acción.",
+): never {
+  throw new HttpException(message, 403);
 }
 // SEC-03: el cambio rápido de usuario con PIN solo mantiene o baja
 // privilegios: cada permiso del destino debe tenerlo ya quien cambia. La
@@ -833,6 +835,18 @@ export class ApiExceptionFilter implements ExceptionFilter {
       .status(status)
       .json({ statusCode: status, message, ...(code ? { code } : {}) });
   }
+}
+
+/**
+ * Un error que no es de negocio (regla, permiso o conflicto de datos que el
+ * cliente puede corregir) sino de programación o de infraestructura. La
+ * sincronización offline lo devuelve como conflicto igual que a los demás, pero
+ * éste además se registra (consola y Sentry) para que alguien reciba el stack.
+ */
+export function isUnexpectedError(error: any): boolean {
+  if (error instanceof HttpException) return error.getStatus() >= 500;
+  if (error?.code === "P2025" || error?.code === "P2002") return false;
+  return !(isSerializationConflict(error) || isDeadlock(error));
 }
 
 export function safeErrorMessage(error: any): string {

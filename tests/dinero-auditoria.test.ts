@@ -207,6 +207,12 @@ afterAll(async () => {
     });
   for (const id of created.products)
     await request("/products/" + id, admin, { active: false }, "PATCH");
+  // La aprobación con PIN compara contra todas las usuarias activas (bcrypt
+  // por cada una): las de prueba se desactivan para no alentar otras pruebas.
+  await db.user.updateMany({
+    where: { id: { in: created.users } },
+    data: { active: false },
+  });
   await db.$disconnect();
 });
 
