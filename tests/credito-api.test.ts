@@ -79,6 +79,9 @@ async function terminal(token: string, label: string) {
   if (t.status === "pending")
     await ok("/terminals/" + id + "/approve", owner, {});
 }
+// Usuarias de prueba: se desactivan al terminar (la aprobación con PIN
+// compara contra todas las activas con bcrypt y alentaría otras pruebas).
+const createdUsers: string[] = [];
 async function person(
   label: string,
   role: "seller" | "admin",
@@ -94,6 +97,7 @@ async function person(
     pin: "246813",
     roleId: roles.find((r: any) => r.name === role).id,
   });
+  createdUsers.push(user.id);
   const login = await ok("/auth/change-password", "", {
     login: email,
     currentPassword: TEMPORARY,
@@ -216,6 +220,8 @@ afterAll(async () => {
     await request("/settings", owner, originalSettings, "PUT");
   if (productId)
     await request("/products/" + productId, owner, { active: false }, "PATCH");
+  for (const id of createdUsers)
+    await request("/users/" + id, owner, { active: false }, "PATCH");
   await db.$disconnect();
 }, 60000);
 
