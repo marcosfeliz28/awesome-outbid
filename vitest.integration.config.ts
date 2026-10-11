@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       "tests/api.test.ts",
       "tests/caja-por-usuario.test.ts",
+      "tests/caja-fondo-sugerido.test.ts",
       "tests/dinero-auditoria.test.ts",
       "tests/minors.test.ts",
       "tests/telegram.test.ts",

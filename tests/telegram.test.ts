@@ -314,6 +314,7 @@ beforeAll(async () => {
   cash = await ok(withTg.base, "/cash-sessions/open", {
     registerId: "qa-telegram-" + suffix,
     openingAmount: 0,
+    openingNote: "QA: fondo de la prueba",
   });
 }, 120000);
 

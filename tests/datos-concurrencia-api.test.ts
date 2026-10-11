@@ -86,7 +86,11 @@ beforeAll(async () => {
   const managerTerminal = await enroll(managerToken, owner);
   const managerSession = await ok(
     "/cash-sessions/open",
-    { openingAmount: 0, registerId: "qa-na1-m-" + tag + managerTerminal },
+    {
+      openingAmount: 0,
+      openingNote: "QA: fondo de la prueba",
+      registerId: "qa-na1-m-" + tag + managerTerminal,
+    },
     managerToken,
   );
   manager = { token: managerToken, sessionId: managerSession.id };

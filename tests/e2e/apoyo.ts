@@ -210,3 +210,17 @@ export async function selectNamedCustomer(page: any) {
   await expect(page.locator(".customer-list button").first()).toBeVisible();
   await page.locator(".customer-list button").first().click();
 }
+
+/**
+ * Llena el fondo de «Abrir mi caja». El fondo sugerido sale del último cierre
+ * de la propia persona (decisión 40): una cuenta compartida de la suite puede
+ * haber dejado más de lo que esta prueba declara, y entonces la pantalla pide
+ * una nota (y el PIN de un gerente a quien no gestiona ventas).
+ */
+export async function fillOpeningFund(page: any, amount: string) {
+  await page.getByLabel("Efectivo inicial").fill(amount);
+  const note = page.getByLabel(/Nota si el fondo es menor/);
+  if (await note.isVisible()) await note.fill("E2E: fondo de la prueba");
+  const pin = page.getByLabel(/PIN de gerente si el fondo es menor/);
+  if (await pin.isVisible()) await pin.fill("234567");
+}

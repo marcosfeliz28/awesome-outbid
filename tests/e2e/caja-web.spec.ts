@@ -4,7 +4,7 @@
 // carrito visible en 1366×768 y en el celular; avisos que no se pisan; cierre
 // por inactividad con trabajo pendiente; conflicto de una venta sin conexión.
 // Cada escenario crea sus productos con códigos al azar y los desactiva al final.
-import { test, expect, selectNamedCustomer } from "./apoyo";
+import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
 
 const OWNER = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
 const LEGEND = "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL";
@@ -100,7 +100,7 @@ async function openCash(page: any, amount = "500") {
   await expect(open.or(opened).first()).toBeVisible();
   if (await open.isVisible()) {
     await open.click();
-    await page.getByLabel("Efectivo inicial").fill(amount);
+    await fillOpeningFund(page, amount);
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
   }
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();

@@ -1,4 +1,4 @@
-import { test, expect } from "./apoyo";
+import { test, expect, fillOpeningFund } from "./apoyo";
 // Ronda 9 · Windows: el celular de la tienda abre la PWA por la red local con
 // http://<ip de la computadora>:4173. Esa página no es «segura» para el
 // navegador, y en ella no existe crypto.randomUUID: abrir caja, vender y
@@ -124,7 +124,7 @@ test("desde un celular por http (dirección de red, sin https) se abre la caja",
     .click();
   await expect(page.locator(".main-content .loading")).toHaveCount(0);
   await page.getByRole("button", { name: "Abrir caja", exact: true }).click();
-  await page.getByLabel("Efectivo inicial").fill("4000");
+  await fillOpeningFund(page, "4000");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
 
   await expect(page.getByText(/randomUUID/)).toHaveCount(0);

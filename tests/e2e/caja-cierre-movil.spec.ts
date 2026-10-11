@@ -2,7 +2,7 @@
 // quedaban recortados y el texto prometía una «comparación» que la API no le
 // entrega (cash.ts: sólo profit:read / sale:manage reciben esperado y
 // diferencias). La pantalla debe decir lo que de verdad ocurre por rol.
-import { test, expect } from "./apoyo";
+import { test, expect, fillOpeningFund } from "./apoyo";
 
 const OWNER = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
 
@@ -82,7 +82,7 @@ test("cierre de caja a 390 px: botones completos y texto que no promete la compa
   ).toHaveCount(0);
   await page.evaluate(() => (location.hash = "cash"));
   await page.getByRole("button", { name: "Abrir caja", exact: true }).click();
-  await page.getByLabel("Efectivo inicial").fill("500");
+  await fillOpeningFund(page, "500");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();
   // La cajera no ve esperados ni diferencias, y la pantalla no los promete.

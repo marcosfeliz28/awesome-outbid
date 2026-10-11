@@ -2,7 +2,7 @@
 // inactividad con un carrito abandonado y borrador del carrito. Cada escenario
 // crea sus productos con códigos al azar y los desactiva al final. Los plazos
 // se miden con el reloj de la prueba, sin fechas fijas.
-import { test, expect, selectNamedCustomer } from "./apoyo";
+import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
 
 const OWNER = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
 const HOUR = 3600000;
@@ -89,7 +89,7 @@ async function openCash(page: any) {
   await expect(open.or(opened).first()).toBeVisible();
   if (await open.isVisible()) {
     await open.click();
-    await page.getByLabel("Efectivo inicial").fill("500");
+    await fillOpeningFund(page, "500");
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
   }
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();

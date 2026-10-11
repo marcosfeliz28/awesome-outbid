@@ -1,6 +1,6 @@
 // G9 · Privacidad al cerrar sesión: el navegador no se queda con clientes ni
 // catálogo de la sesión, pero una venta sin sincronizar nunca se pierde.
-import { test, expect, selectNamedCustomer } from "./apoyo";
+import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
 
 const ADMIN = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
 
@@ -55,7 +55,7 @@ async function ensureCash(page: any) {
   const open = page.getByRole("button", { name: "Abrir caja", exact: true });
   if (await open.isVisible()) {
     await open.click();
-    await page.getByLabel("Efectivo inicial").fill("500");
+    await fillOpeningFund(page, "500");
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
   }
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();

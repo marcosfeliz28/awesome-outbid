@@ -4,7 +4,7 @@
 // graves o críticas, como accesibilidad.spec.ts.
 import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
-import { test, expect, selectNamedCustomer } from "./apoyo";
+import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
 
 const AXE_SCRIPT = process.env.NEXORA_AXE_SCRIPT;
 const VIEWPORTS = [
@@ -101,7 +101,7 @@ async function openCash(page: Page) {
   const open = page.getByRole("button", { name: "Abrir caja", exact: true });
   if (await open.isVisible()) {
     await open.click();
-    await page.getByLabel("Efectivo inicial").fill("500");
+    await fillOpeningFund(page, "500");
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
   }
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();

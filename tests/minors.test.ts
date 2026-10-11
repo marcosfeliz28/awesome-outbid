@@ -114,6 +114,7 @@ beforeAll(async () => {
   cash = await ok("/cash-sessions/open", {
     registerId: "qa-menores-" + suffix,
     openingAmount: 0,
+    openingNote: "QA: fondo de la prueba",
   });
 });
 afterAll(async () => {
