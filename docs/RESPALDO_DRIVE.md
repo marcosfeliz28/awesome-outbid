@@ -110,8 +110,13 @@ Google pueden recuperarla.**
   generador criptográfico del sistema:
 
   ```powershell
-  $bytes = [byte[]]::new(32)
-  [System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+  $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+  $bytes = New-Object byte[] 32
+  try {
+    $rng.GetBytes($bytes)
+  } finally {
+    $rng.Dispose()
+  }
   $clave = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+','-').Replace('/','_')
   $clave
   ```
