@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { PROMOTION_CASES } from "./fixtures/promociones";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -301,62 +302,7 @@ describe("Cobro: reglas de la venta", () => {
 });
 
 describe("Promociones de los cinco tipos (API; la caja y la cola offline calculan lo mismo)", () => {
-  const cases: {
-    id: string;
-    type: string;
-    value: number;
-    scope?: Record<string, number>;
-    price: number;
-    qty: number;
-    total: number;
-  }[] = [
-    {
-      id: "percent",
-      type: "percent",
-      value: 20,
-      price: 1000,
-      qty: 1,
-      total: 800,
-    },
-    // 150 de 1000 = 15 %: 2 × 1000 → 1700.
-    {
-      id: "amount",
-      type: "amount",
-      value: 150,
-      price: 1000,
-      qty: 2,
-      total: 1700,
-    },
-    // Precio especial 800 sobre 1000 = 20 % menos.
-    {
-      id: "special",
-      type: "special_price",
-      value: 800,
-      price: 1000,
-      qty: 1,
-      total: 800,
-    },
-    // 3×2: de 4 unidades, una gratis (25 %) → 3000.
-    {
-      id: "nxm",
-      type: "nxm",
-      value: 0,
-      scope: { buy: 3, pay: 2 },
-      price: 1000,
-      qty: 4,
-      total: 3000,
-    },
-    // Segundo a mitad de precio: de 3 unidades, una a 500 → 2500.
-    {
-      id: "second",
-      type: "second_half",
-      value: 0,
-      price: 1000,
-      qty: 3,
-      total: 2500,
-    },
-  ];
-  for (const c of cases)
+  for (const c of PROMOTION_CASES)
     it(`S16/S17 · ${c.type}: ${c.qty} × RD$ ${c.price} cuestan RD$ ${c.total}`, async () => {
       const adm = await person("promo-" + c.id, "admin");
       const p = await product("promo " + c.id, c.price);

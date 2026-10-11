@@ -41,7 +41,7 @@ const created: { users: string[]; terminals: string[]; keys: string[] } = {
   terminals: [],
   keys: [],
 };
-let roles: Record<string, string> = {};
+const roles: Record<string, string> = {};
 let passwordHash = "";
 
 async function post(

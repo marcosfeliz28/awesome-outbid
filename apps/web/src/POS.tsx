@@ -102,7 +102,7 @@ import {
   wholesaleField,
 } from "./Incentives";
 
-function discountFor(
+export function discountFor(
   promo: any,
   variant: Variant,
   product: Product,
