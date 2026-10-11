@@ -22,16 +22,8 @@ try {
   Invoke-FitStorePg -Tool $createdb -Password ([string]$secrets.postgresPassword) -Arguments @("--host=127.0.0.1", "--port=5434", "--username=postgres", "--owner=fitstore", $testDatabase) -FailureMessage "No se pudo crear la base aislada de prueba"
   Invoke-FitStorePg -Tool $pgRestore -Password ([string]$secrets.databasePassword) -Arguments @("--host=127.0.0.1", "--port=5434", "--username=fitstore", "--dbname=$testDatabase", "--no-owner", "--no-privileges", "--exit-on-error", $archive) -FailureMessage "No se pudo restaurar la base aislada"
   $query = "SELECT (SELECT count(*) FROM `"User`")::text || '|' || (SELECT count(*) FROM `"Sale`")::text || '|' || (SELECT count(*) FROM _prisma_migrations)::text;"
-  $previous = $env:PGPASSWORD
-  try {
-    $env:PGPASSWORD = [string]$secrets.databasePassword
-    $production = (& $psql "--host=127.0.0.1" "--port=5434" "--username=fitstore" "--dbname=fitstore" "--tuples-only" "--no-align" "--command=$query").Trim()
-    if ($LASTEXITCODE -ne 0) { throw "No se pudo leer la base activa para comparar." }
-    $restored = (& $psql "--host=127.0.0.1" "--port=5434" "--username=fitstore" "--dbname=$testDatabase" "--tuples-only" "--no-align" "--command=$query").Trim()
-    if ($LASTEXITCODE -ne 0) { throw "No se pudo leer la base restaurada para comparar." }
-  } finally {
-    if ($null -eq $previous) { Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue } else { $env:PGPASSWORD = $previous }
-  }
+  $production = (@(Invoke-FitStorePgSql -Tool $psql -Password ([string]$secrets.databasePassword) -Arguments @("--host=127.0.0.1", "--port=5434", "--username=fitstore", "--dbname=fitstore", "--tuples-only", "--no-align", "--set=ON_ERROR_STOP=1") -Sql $query -FailureMessage "No se pudo leer la base activa para comparar") -join "`n").Trim()
+  $restored = (@(Invoke-FitStorePgSql -Tool $psql -Password ([string]$secrets.databasePassword) -Arguments @("--host=127.0.0.1", "--port=5434", "--username=fitstore", "--dbname=$testDatabase", "--tuples-only", "--no-align", "--set=ON_ERROR_STOP=1") -Sql $query -FailureMessage "No se pudo leer la base restaurada para comparar") -join "`n").Trim()
   if ($production -ne $restored) { throw "Los conteos de usuarios, ventas o migraciones no coinciden: activa=$production restaurada=$restored" }
   & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File (Join-Path $paths.Scripts "Verify-FitStore.ps1") -InstallDir $paths.Install
   if ($LASTEXITCODE -ne 0) { throw "La verificación operativa no pasó." }

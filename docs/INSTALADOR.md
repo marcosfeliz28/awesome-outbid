@@ -224,6 +224,32 @@ no borres el respaldo indicado y entrega el registro a soporte.
 Sólo puede ejecutarse una instalación, actualización o desinstalación a la vez.
 ### Recuperar después de un corte de luz
 
+#### Diario de permisos de PostgreSQL
+
+Antes de conceder acceso temporal a PGDATA, la recuperación guarda las DACL
+originales en `recovery-pgdata-acl.json`, dentro de la carpeta de la transacción
+indicada por `actualizacion-preparada.json`. El archivo es privado y contiene
+rutas y descriptores de permisos; no lo publique ni lo adjunte a un repositorio.
+Se restaura al entrar en la recuperación y antes de eliminar marcador y
+transacción. Los archivos volátiles ya inexistentes se omiten; eso no autoriza
+a omitir errores de acceso ni entradas fuera de PGDATA.
+
+Si aparece **«Diario de permisos corrupto o incompleto»**, no borre ni edite el
+diario, el marcador, la transacción ni el cluster. La validación comprueba JSON,
+campos y todos los descriptores antes de aplicar permisos, y conserva el archivo
+para soporte. No siga abriendo la aplicación ni conceda permisos a Users/Everyone.
+
+**Salida manual, solo por soporte:** identifique la transacción y PGDATA desde
+el marcador, conserve copias privadas del diario y del registro, y recupere los
+permisos originales desde una copia íntegra y confiable del diario o desde una
+referencia de ACL comprobada de esa instalación. Compare SID, derechos, orden,
+herencia y protección de cada entrada con `Get-Acl`/`icacls`; no reconstruya ACL
+por adivinación ni sustituya el diario por `{}`. Si no existe referencia confiable,
+requiere recuperación asistida. Restituir `LOGIN` no corrige permisos de archivos:
+el comando de soporte indicado más abajo solo se usa tras verificar integridad
+y resolver el acceso a PGDATA. No se ofrece un comando universal que sobrescriba
+las ACL de instalaciones distintas.
+
 No vuelva a ejecutar el instalador ni borre `actualizacion-preparada.json`.
 Obtenga el paquete de scripts de **la versión nueva** entregado por soporte
 (directorio `instalador/scripts` de la entrega auditada). El snapshot anterior
@@ -361,9 +387,46 @@ No se declara el instalador certificado ni se entrega a la tienda sin esta prueb
 
 Las regresiones deben respetar la firma real de `Wait-FitStorePostgres`
 (`Paths`, `TimeoutSeconds`): no acepta `Secrets`; un stub con parámetros extra
-puede ocultar un fallo de recuperación. La confirmación de CI completo en verde sigue pendiente
-para esta entrega, además de Windows-Smoke en Windows limpio. Una prueba focal
-local aprobada no sustituye ninguno de esos requisitos ni certifica el instalador.
+puede ocultar un fallo de recuperación.
+
+**CI histórico de 3j:** Claude confirmó `75b091d` con CI completo en verde
+en `docs/coordinacion/INSTRUCCIONES_ACTUALES.md`, sección 3l. Ese resultado
+corresponde a ese commit, no acredita los cambios posteriores A1/A2/M1/M2/M3
+ni el HEAD de esta documentación. Antes de entregar otro lote se debe consultar
+el run de su SHA exacto y comprobar todos los jobs, incluido `windows-installer`.
+Windows-Smoke en Windows limpio sigue pendiente; una prueba focal local o ese
+CI histórico no certifican el instalador ni sustituyen la aceptación de la tienda.
+
+**Versión PostgreSQL comprobada el 10 de octubre de 2026:** en esta PC,
+`C:\Program Files\PostgreSQL\18\bin\postgres.exe --version` devuelve
+`postgres (PostgreSQL) 18.6`; `pg_ctl.exe --version` y `pg_restore.exe --version`
+también devuelven 18.6. Las regresiones aisladas de recuperación A1, M1 y M2 se
+ejecutaron con las funciones reales; A1 usa ese PostgreSQL 18.6 y taskkill real,
+mientras M1/M2 comprueban DACL de archivos NTFS reales sin arrancar una base.
+El comando reproducible de A1, desde la raíz del repositorio, es:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File instalador/tests/Recovery-Acl-MissingEntry.ps1 -PgBin "C:\Program Files\PostgreSQL\18\bin"
+```
+
+El instalador fija **18.6-5** y el SHA-256 de su archivo oficial en
+`instalador/dependencias.lock.json` (`postgresql.version`, `postgresql.sha256`).
+Se encontró la copia ya descargada en
+`%LOCALAPPDATA%\FitStore POS\InstallerCache\postgresql-windows-x64.zip`.
+Su SHA-256 es `e2246ba91d22345bc3d017586c09ede52d9df180b1eeb480f050445f1cad84e2`,
+igual al lock. Se comparó, sin extraer ni ejecutar código del ZIP, el SHA-256
+de cada uno de sus nueve ejecutables requeridos con los instalados en la PC:
+`postgres`, `pg_ctl`, `initdb`, `pg_isready`, `psql`, `pg_dump`, `pg_restore`,
+`createdb` y `dropdb`; los nueve coinciden. Así se acredita que las herramientas
+usadas por estas regresiones corresponden al ZIP 18.6-5, no solo que comparten
+versión mayor. No se descargó ni instaló otro motor.
+
+La comparación no acredita todas las DLL, configuración ni el payload completo
+que se distribuirá. **Pendiente:** construir el payload con el lock y ejecutar
+`instalador:validar` con `PGBIN` apuntando a su `postgres\bin`, además de
+Windows-Smoke en la máquina limpia. El CI puede elegir otra versión instalada
+en el runner: registre su `postgres.exe --version`; no deduzca 18.6 solo porque
+el job esté verde.
 
 Un segundo asistente se detiene antes de tocar archivos o activar un rollback.
 
@@ -384,6 +447,21 @@ El borrado de datos sólo aparece mediante dos confirmaciones explícitas. Aun
 así, el desinstalador nunca borra respaldos ubicados en OneDrive, USB u otra
 carpeta externa. No elijas el borrado permanente mientras exista información
 que deba conservarse.
+
+Antes de borrar la base, conserva **todos los archivos de Backups**, incluidos
+los respaldos retenidos, además del respaldo final con sus archivos `.sha256`
+y `.json`, en `%ProgramData%\Nexora POS - respaldos conservados\<identificador>`.
+La ruta exacta aparece durante la desinstalación y al terminar; anótala. Los
+archivos quedan fuera de `%ProgramData%\FitStore POS`, que es la única carpeta
+de datos que puede borrarse. Una reinstalación no borra esas copias conservadas.
+
+La carpeta y cada archivo se crean con permisos privados antes de escribir
+datos: SYSTEM y Administradores tienen control completo; la cuenta de Windows
+registrada como lectora sólo puede leer. Quien tenga esa cuenta puede leer las
+copias; los archivos no están cifrados. No los comparta. Si falta SHA/manifiesto,
+no coincide el contenido, falla una copia o hay enlaces/junctions en las rutas,
+el borrado se cancela y se conservan los datos. La comparación SHA verifica la
+copia, no sustituye probar una restauración en una base descartable.
 
 ## Si no abre
 

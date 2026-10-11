@@ -102,14 +102,45 @@ function Restore-FitStoreTemporaryPostgresAccess {
 function Restore-FitStorePendingPostgresAccess {
   param([string]$Database,[string]$StatePath)
   if(-not(Test-Path -LiteralPath $StatePath)){return}
-  $state=Get-Content -LiteralPath $StatePath -Raw|ConvertFrom-Json
+  $invalidDiary='Diario de permisos corrupto o incompleto. Conserve recovery-pgdata-acl.json, el marcador y la transaccion; solicite soporte para recuperar las DACL originales. No se aplicaron permisos del diario.'
+  $json=Get-Content -LiteralPath $StatePath -Raw -ErrorAction Stop
+  try {$state=$json|ConvertFrom-Json -ErrorAction Stop} catch {throw $invalidDiary}
+  if($null -eq $state -or $state -isnot [pscustomobject] -or
+     $null -eq $state.PSObject.Properties['database'] -or
+     $null -eq $state.PSObject.Properties['entries'] -or
+     $state.database -isnot [string] -or [string]::IsNullOrWhiteSpace($state.database) -or
+     $state.entries -isnot [array] -or $state.entries.Count -eq 0){throw $invalidDiary}
   $base=[IO.Path]::GetFullPath($Database).TrimEnd('\')
   if($state.database -ine $base){throw 'Estado DACL no corresponde a PGDATA; recuperacion cancelada.'}
+  $seen=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
   foreach($entry in $state.entries){
-    $path=[IO.Path]::GetFullPath([string]$entry.Path)
+    if($null -eq $entry -or $entry -isnot [pscustomobject] -or
+       $null -eq $entry.PSObject.Properties['Path'] -or
+       $null -eq $entry.PSObject.Properties['Sddl'] -or
+       $entry.Path -isnot [string] -or [string]::IsNullOrWhiteSpace($entry.Path) -or
+       $entry.Sddl -isnot [string] -or [string]::IsNullOrWhiteSpace($entry.Sddl)){throw $invalidDiary}
+    # Validar TODOS los descriptores antes de modificar el primero. No basta
+    # con validar solo entradas existentes: un archivo puede reaparecer.
+    try {
+      if(-not [IO.Path]::IsPathRooted($entry.Path)){throw 'Ruta no absoluta'}
+      $path=[IO.Path]::GetFullPath($entry.Path)
+      $descriptor=[Security.AccessControl.RawSecurityDescriptor]::new($entry.Sddl)
+      if(-not ($descriptor.ControlFlags -band [Security.AccessControl.ControlFlags]::DiscretionaryAclPresent)){throw 'Falta DACL en descriptor'}
+      $security=[Security.AccessControl.FileSecurity]::new()
+      $security.SetSecurityDescriptorSddlForm($entry.Sddl,[Security.AccessControl.AccessControlSections]::Access)
+    } catch {throw $invalidDiary}
+    if(-not $seen.Add($path)){throw $invalidDiary}
     if($path -ine $base -and -not $path.StartsWith($base+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Estado DACL contiene ruta fuera de PGDATA.'}
-    if((Get-Item -LiteralPath $path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Estado DACL contiene enlace.'}
+    # PostgreSQL recicla WAL y borra estadisticas entre arranques. Validar
+    # primero el limite de PGDATA, aun si la entrada desaparecio. Solo ausencia
+    # comprobada se omite: AccessDenied/red/otros errores siguen abortando.
+    try {$item=Get-Item -LiteralPath $path -Force -ErrorAction Stop}
+    catch [System.Management.Automation.ItemNotFoundException] {continue}
+    catch [IO.FileNotFoundException] {continue}
+    catch [IO.DirectoryNotFoundException] {continue}
+    if($item.Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Estado DACL contiene enlace.'}
   }
+  if(-not $seen.Contains($base)){throw $invalidDiary}
   Restore-FitStoreTemporaryPostgresAccess -OriginalAcl @($state.entries) -StatePath $StatePath
 }
 
@@ -217,27 +248,13 @@ function Invoke-FitStoreRecoveryPgCtl {
 }
 
 function Get-FitStoreRecoveryActivityColumns {
-  # Contrato cotejado con schema.prisma: toda marca de alta/modificacion/cierre.
-  # No usar fechas comerciales (vencimiento/captura prevista) como actividad.
+  # SOLO nucleo obligatorio compatible con el esquema anterior. La consulta
+  # descubre tablas y marcas adicionales en information_schema y verifica dump.
   return [ordered]@{
-    Role=@('updatedAt'); User=@('createdAt','updatedAt'); RefreshToken=@('createdAt')
-    Category=@('createdAt','updatedAt'); Supplier=@('createdAt','updatedAt')
-    Product=@('createdAt','updatedAt'); Variant=@('createdAt','updatedAt')
-    Lot=@('createdAt','updatedAt'); LotIdentityConflict=@('createdAt')
-    InventoryMovement=@('createdAt'); Customer=@('createdAt','updatedAt')
-    Sale=@('createdAt','updatedAt'); Payment=@('createdAt'); SaleReturn=@('createdAt')
-    CreditNote=@('createdAt'); Quote=@('createdAt','updatedAt')
-    PurchaseOrder=@('createdAt','updatedAt'); GoodsReceipt=@('createdAt')
-    SupplierPayment=@('createdAt'); InventoryCount=@('createdAt')
-    CashSession=@('openedAt','closedAt'); CashMovement=@('createdAt')
-    Expense=@('createdAt','updatedAt'); Promotion=@('createdAt','updatedAt')
-    Alert=@('createdAt','updatedAt'); AlertRule=@('updatedAt')
-    AuditLog=@('createdAt'); Settings=@('updatedAt'); Terminal=@('createdAt')
-    RealtimeEvent=@('createdAt'); MerchandiseOperation=@('createdAt')
-    InvoiceDraft=@('createdAt'); InvoiceAttachment=@('createdAt')
-    NotificationOutbox=@('createdAt'); IncentiveRate=@('updatedAt')
-    IncentiveEntry=@('createdAt'); IncentivePeriodClose=@('closedAt')
-    IncentiveSettlement=@('closedAt'); AuthAttempt=@('updatedAt'); DriveBackup=@('updatedAt')
+    Sale=@('createdAt','updatedAt'); AuditLog=@('createdAt')
+    Payment=@('createdAt'); SaleReturn=@('createdAt')
+    CashMovement=@('createdAt'); CashSession=@('openedAt','closedAt')
+    InventoryMovement=@('createdAt')
   }
 }
 
@@ -260,7 +277,7 @@ AND column_name IN ('createdAt','updatedAt','openedAt','closedAt','lastActivityA
     if(-not $live.Contains([string]$row.table)){$live[[string]$row.table]=@()}
     $live[[string]$row.table]+=[string]$row.column
   }
-  $core=@{Sale=@('createdAt','updatedAt');AuditLog=@('createdAt');Payment=@('createdAt');SaleReturn=@('createdAt');CashMovement=@('createdAt');CashSession=@('openedAt','closedAt');InventoryMovement=@('createdAt')}
+  $core=Get-FitStoreRecoveryActivityColumns
   foreach($table in $core.Keys){foreach($column in $core[$table]){
     if(-not $live.Contains($table) -or $column -notin $live[$table]){throw "Falta nucleo obligatorio $table.$column; recuperacion cancelada."}
   }}
@@ -281,9 +298,14 @@ AND column_name IN ('createdAt','updatedAt','openedAt','closedAt','lastActivityA
 
 function Assert-FitStoreInterruptedRecovery {
   param($Paths, $Transaction, [ValidateRange(1024,65535)][int]$DatabasePort = 5434, [switch]$ExclusiveAccess, [string]$VerifiedPgBin)
-  foreach ($field in @('backupCutoffAt','applicationAutostartDisabled','backup','backupSha256','snapshotPath','phase')) {
+  foreach ($field in @('transactionPath','backupCutoffAt','applicationAutostartDisabled','backup','backupSha256','snapshotPath','phase')) {
     if ($Transaction.PSObject.Properties.Name -notcontains $field) { throw "Transaccion antigua o incompleta: falta $field. Requiere recuperacion asistida; no se restauraron datos." }
   }
+  # Incluso una guardia que rechace antes de arrancar PostgreSQL debe retirar
+  # el acceso temporal dejado por un proceso anterior. El helper comprueba
+  # PGDATA y cada ruta del diario antes de restaurar; un error conserva diario.
+  $pendingAcl=Join-Path $Transaction.transactionPath 'recovery-pgdata-acl.json'
+  if(Test-Path -LiteralPath $pendingAcl){Restore-FitStorePendingPostgresAccess -Database $Paths.Database -StatePath $pendingAcl}
   if ($Transaction.applicationAutostartDisabled -ne $true -or $Transaction.phase -eq 'verified') { throw 'La transaccion no acredita servicios deshabilitados antes del corte; no se restauraron datos.' }
   $cutoff = [DateTimeOffset]::ParseExact([string]$Transaction.backupCutoffAt, 'o', [Globalization.CultureInfo]::InvariantCulture)
   if ($cutoff -gt [DateTimeOffset]::UtcNow) { throw 'Fecha del respaldo futura; recuperacion cancelada.' }
@@ -345,13 +367,29 @@ function Assert-FitStoreInterruptedRecovery {
     throw $originalFailure
   } finally {
     try {
-      try {
-        if ($temporaryPostgres) { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
-      } finally {
-        if ($temporaryAcl.Count) { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $temporaryAcl -StatePath (Join-Path $Transaction.transactionPath 'recovery-pgdata-acl.json') }
-      }
+      # Do not retire the ACL journal while a failed stop may leave PG running.
+      if ($temporaryPostgres) { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
+      if ($temporaryAcl.Count) { Restore-FitStoreTemporaryPostgresAccess -OriginalAcl $temporaryAcl -StatePath (Join-Path $Transaction.transactionPath 'recovery-pgdata-acl.json') }
     } catch {
-      if($guardFailure){Write-Warning ('Limpieza de PostgreSQL/DACL pendiente; conserve el diario y reintente recuperacion: '+$_.Exception.Message)}else{throw}
+      $cleanupFailure=$_
+      Write-Warning ('Limpieza incompleta: solicite soporte; conserve el marcador, la transaccion y el diario recovery-pgdata-acl.json aunque LOGIN se restituya. No restaure respaldos ni retire permisos manualmente. Error original: '+$cleanupFailure.Exception.Message)
+      if ($ExclusiveAccess) {
+        try {
+          # ACL cleanup can fail after stop succeeded. Reopen only this same
+          # temporary cluster to undo NOLOGIN; never restore data or initdb.
+          if ($temporaryPostgres -and -not (Test-Path -LiteralPath (Join-Path $Paths.Database 'postmaster.pid'))) {
+            Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-l',(Join-Path $Paths.Database 'recovery-postgres.log'),'-o',"-p $DatabasePort",'-w','start')
+          }
+          Disable-FitStoreRecoveryIsolation -Transaction $Transaction -Psql $psql -Secrets $secrets -DatabasePort $DatabasePort
+        } catch { Write-Warning ('No se pudo restituir LOGIN tras fallo de limpieza: '+$_.Exception.Message+'. Soporte debe ejecutar ALTER ROLE fitstore LOGIN; con postgres. Conserve marcador y diarios; no restaure respaldos.') }
+        finally {
+          if ($temporaryPostgres) {
+            try { Invoke-FitStoreRecoveryPgCtl -Tool $pgCtl -Database $Paths.Database -Arguments @('-D',$Paths.Database,'-m','fast','-w','stop') }
+            catch { Write-Warning ('Parada temporal pendiente; conserve el diario DACL: '+$_.Exception.Message) }
+          }
+        }
+      }
+      if($guardFailure){Write-Warning ('Limpieza de PostgreSQL/DACL pendiente; conserve el diario y reintente recuperacion: '+$cleanupFailure.Exception.Message)}else{throw $cleanupFailure}
     }
   }
 }

@@ -16,9 +16,21 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
   );
   for (const name of [
     "PowerShell-Parse",
+    "Payload-Privacy",
+    "Payload-Locked-Deploy",
     "Transaction-FaultInjection",
     "Restore-FaultInjection",
+    "Restore-Real-Sql",
+    "Windows-Smoke-Real-Sql",
+    "Recovery-Acl-MissingEntry",
+    "Recovery-Pending-Acl-Always",
+    "Recovery-Corrupt-Acl-Journal",
+    "Recovery-Cleanup-Login",
     "Application-Service-Privacy",
+    "Service-Isolation",
+    "Service-Pfx-Passwords",
+    "Launcher-Backup-Destination",
+    "Uninstall-Backup-Preservation",
     "Backup-Privacy",
     "FreshInstall-FaultInjection",
     "Stale-Update-FaultInjection",
@@ -50,6 +62,7 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     );
   }
   assert.ok(launcher.includes('"instalador/tests/web-server.test.mjs"'));
+  assert.ok(launcher.includes('"instalador/tests/deploy-lock.test.mjs"'));
   assert.ok(launcher.includes('"instalador/tests/recovery-error-contract.test.mjs"'));
   assert.ok(
     launcher.includes('"instalador/tests/validation-command.test.mjs"'),

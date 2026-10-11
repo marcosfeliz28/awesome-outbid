@@ -32,8 +32,8 @@ try {
  $backup=Join-Path $root 'backup.dump'
  & (Join-Path $PgBin 'pg_dump.exe') -h 127.0.0.1 -p $Port -U postgres -d fitstore -Fc -f $backup
  if($LASTEXITCODE -ne 0){throw 'Fixture dump real fallo'}
- $paths=[pscustomobject]@{PgBin=$PgBin;Secrets=(Join-Path $root 'fixture');Install=$root}
- $tx=[pscustomobject]@{backupCutoffAt=[DateTimeOffset]::UtcNow.AddHours(-1).ToString('o');applicationAutostartDisabled=$true;backup=$backup;backupSha256=(Get-FileHash $backup).Hash;snapshotPath=$root;phase='snapshot-ready'}
+ $paths=[pscustomobject]@{PgBin=$PgBin;Secrets=(Join-Path $root 'fixture');Install=$root;Database=$cluster}
+ $tx=[pscustomobject]@{transactionPath=$root;backupCutoffAt=[DateTimeOffset]::UtcNow.AddHours(-1).ToString('o');applicationAutostartDisabled=$true;backup=$backup;backupSha256=(Get-FileHash $backup).Hash;snapshotPath=$root;phase='snapshot-ready'}
  Assert-FitStoreInterruptedRecovery -Paths $paths -Transaction $tx -DatabasePort $Port
  Write-Host 'PASS 3j3: Common real permite base sin actividad antes de probar rechazos.'
  $old=[DateTime]::UtcNow.AddHours(-2).ToString('o');$new=[DateTime]::UtcNow.ToString('o')

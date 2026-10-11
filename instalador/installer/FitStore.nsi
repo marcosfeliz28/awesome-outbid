@@ -71,6 +71,7 @@ Var UpdatePrepared
 Var RollbackResult
 Var InstallerMutex
 Var InstallerOwnsMutex
+Var InstallerSession
 
 !define MUI_ABORTWARNING
 !define MUI_CUSTOMFUNCTION_ABORT TryRollbackUpdate
@@ -106,6 +107,7 @@ Function .onInit
     Abort
   ${EndIf}
   StrCpy $InstallerOwnsMutex "1"
+  Call CreateInstallerSession
   SetRegView 64
   SetShellVarContext all
   ReadEnvStr $ProgramDataDir "ProgramData"
@@ -146,6 +148,16 @@ Function .onInit
   ${EndIf}
 FunctionEnd
 
+Function CreateInstallerSession
+  System::Call 'ole32::CoCreateGuid(g .r0) i .r1'
+  ${If} $1 != 0
+  ${OrIf} $0 == ""
+    SetErrorLevel 3
+    Abort
+  ${EndIf}
+  StrCpy $InstallerSession $0
+FunctionEnd
+
 Function TryRollbackUpdate
   ${If} $InstallerOwnsMutex == "1"
   ${AndIf} $UpdateMode == "actualizar"
@@ -153,7 +165,7 @@ Function TryRollbackUpdate
   ${AndIf} $UpdatePrepared == "1"
     StrCpy $RollbackAttempted "1"
     ${If} ${FileExists} "$PLUGINSDIR\Rollback-FitStoreUpdate.ps1"
-      nsExec::ExecToLog '"$PowerShellExe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\Rollback-FitStoreUpdate.ps1" -InstallDir "$INSTDIR" -InstallerSession "$PLUGINSDIR"'
+      nsExec::ExecToLog '"$PowerShellExe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\Rollback-FitStoreUpdate.ps1" -InstallDir "$INSTDIR" -InstallerSession "$InstallerSession"'
       Pop $0
       ${If} $0 == 0
         StrCpy $RollbackResult "correcto"
@@ -288,10 +300,12 @@ Section "Nexora POS" SecMain
     File /oname=FitStore.Common.ps1 "${PAYLOAD_DIR}\scripts\FitStore.Common.ps1"
     File /oname=Preflight-FitStore.ps1 "${PAYLOAD_DIR}\scripts\Preflight-FitStore.ps1"
     File /oname=Rollback-FitStoreUpdate.ps1 "${PAYLOAD_DIR}\scripts\Rollback-FitStoreUpdate.ps1"
+    ; Rollback carga las definiciones de recuperacion desde su propio directorio.
+    File /oname=Recover-FitStoreUpdate.ps1 "${PAYLOAD_DIR}\scripts\Recover-FitStoreUpdate.ps1"
     ; Preflight puede detener servicios o escribir el marcador antes de fallar.
     ; El rollback valida la sesion: habilitarlo ahora no autoriza marcadores viejos.
     StrCpy $UpdatePrepared "1"
-    nsExec::ExecToLog '"$PowerShellExe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\Preflight-FitStore.ps1" -ExistingInstallDir "$INSTDIR" -ExpectedPostgresMajor "${POSTGRES_MAJOR}" -InstallerSession "$PLUGINSDIR"'
+    nsExec::ExecToLog '"$PowerShellExe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\Preflight-FitStore.ps1" -ExistingInstallDir "$INSTDIR" -ExpectedPostgresMajor "${POSTGRES_MAJOR}" -InstallerSession "$InstallerSession"'
     Pop $0
     ${If} $0 != 0
     MessageBox MB_ICONSTOP "No se pudo completar la preparación de la actualización. Se intentará recuperar la instalación anterior si existe una transacción válida de esta ejecución. Revisa el registro de FitStore."

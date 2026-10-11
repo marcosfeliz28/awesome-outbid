@@ -2,7 +2,7 @@
 
 Una tarea por página. **Datos ficticios** en las capturas de la aplicación local; no muestran cuentas ni ventas reales. Los importes de ejemplo no son límites del negocio. Sin NCF, el ticket dice **DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL**.
 
-**Estado de las imágenes:** corresponden al lote P2 anterior. Su actualización está pendiente de integrar `claude/g-ui` y `claude/g-privacy`, conforme a las órdenes v3.6. No constituyen evidencia de la interfaz final. Procedimiento de renovación: [CAPTURAS_MANUAL.md](CAPTURAS_MANUAL.md).
+**Estado de las imágenes:** renovadas el 10 de octubre de 2026 con la interfaz wave3 integrada, en una aplicación local y con respuestas API ficticias. Orientan sobre formularios y botones; no prueban permisos del servidor, operaciones ejecutadas ni producción. Base, variantes de celular y límites: [CAPTURAS_MANUAL.md](CAPTURAS_MANUAL.md).
 
 ## 1. Entrar y abrir caja
 
@@ -66,9 +66,9 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 4. No devuelvas más unidades que las vendidas. Suplementos/maquillaje abiertos y artículos dañados no vuelven al stock vendible.
 5. Conserva la nota de crédito interna. Entrega un reembolso solo cuando gerencia y sistema lo confirmen; la deuda pendiente se reduce primero.
 
-![Consulta de ventas para hablar con gerencia](capturas/manual/05-ventas.png)
+![Formulario de devolución abierto por gerencia](capturas/manual/05-devolucion-gerente.png)
 
-**Acceso:** la captura es de una cajera. Los botones de devolución dependen del permiso de gerencia; si no aparecen, no es una falla.
+**Acceso:** la captura muestra un formulario de gerencia, sin ejecutar la devolución. Tu cuenta de cajera sirve para localizar la venta; si no aparece **Devolver**, llama a gerencia.
 
 <div class="manual-page-break" style="break-after: page; page-break-after: always;"></div>
 
@@ -80,7 +80,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 4. Si ya tiene devoluciones o abonos, administración determina el procedimiento correcto; no fuerces la anulación. El rol gerente no ve **Anular**: no es una falla.
 5. Si la caja original ya cerró y la venta tuvo efectivo, el administrador necesita su propia caja abierta, con efectivo suficiente, para entregar el reembolso y anular. Si el sistema pide abrir caja, no es un error: registra esa salida en el turno que reembolsa y conserva el cierre anterior. Cuando no coinciden esas dos condiciones, la anulación no exige esa caja de reembolso. **Devolver** también requiere caja abierta.
 
-![Historial para comunicar el número de venta](capturas/manual/05-ventas.png)
+![Confirmación de anulación en una cuenta de administración](capturas/manual/06-anulacion-admin.png)
 
 **Tu usuario de cajera no anula ventas.** No pidas ni uses la contraseña de un administrador.
 
@@ -93,7 +93,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 3. Escribe **Tarjeta declarada** y **Transferencia declarada** según comprobantes; escribe 0 si no hubo. **Los campos vacíos representan RD$ 0.00**: nunca se rellenan con lo esperado.
 4. Registra vales, efectivo **Entregado** a la dueña y revisa **Dejado en caja**. Explica incidencias en Notas; si pide nota adicional, describe lo ocurrido sin inventar cifras.
 5. Marca **Confirmo que conté efectivo, tarjeta y transferencia**. Revisa todo y pulsa **Cerrar caja e imprimir cuadre** una sola vez.
-6. Entrega efectivo y comprobantes. Esperados y diferencias solo los revisa gerencia; no cambies conteos para hacerlos coincidir.
+6. Entrega efectivo y comprobantes. Conserva el cuadre que se imprime después del cierre y pide a gerencia revisar las diferencias. No cambies conteos para hacerlos coincidir.
 
 ![Conteo ciego y confirmación](capturas/manual/07-cierre-ciego.png)
 
@@ -117,4 +117,4 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 
 **Regla de oro:** si no sabes si se registró una venta, consúltala; nunca la cobres otra vez por intuición.
 
-Las reglas de dinero y permisos de estas ocho tareas se contrastaron con el servidor, no solo con la pantalla: [VERIFICACION_MANUAL.md](VERIFICACION_MANUAL.md). Los nombres de botones y atajos son orientación de interfaz, no garantías de autorización.
+La revisión de código de las reglas de dinero y permisos está en [VERIFICACION_MANUAL.md](VERIFICACION_MANUAL.md), con su base y alcance. Las nuevas capturas son una revisión visual local con fixtures: no sustituyen pruebas de autorización del servidor ni certifican el despliegue. Los nombres de botones y atajos son orientación de interfaz.

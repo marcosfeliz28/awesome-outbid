@@ -1,7 +1,7 @@
 <service>
   <serviceaccount>
-    <domain>NT AUTHORITY</domain>
-    <user>LocalService</user>
+    <domain>NT SERVICE</domain>
+    <user>FitStoreWeb</user>
   </serviceaccount>
   <id>FitStoreWeb</id>
   <name>FitStore POS - Web HTTPS</name>

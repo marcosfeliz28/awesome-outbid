@@ -105,10 +105,28 @@ Google pueden recuperarla.**
 
 - Mínimo 32 caracteres y con variedad: el servidor rechaza una frase corta, repetida
   (`aaaa…`, `abcabc…`), en secuencia (`abcdef…`, `1234…`) o con pocos
-  caracteres distintos. Lo más fácil: 7 u 8 palabras al azar separadas por
-  guiones, por ejemplo con este estilo (¡no uses este ejemplo!):
-  `mango-tambora-azul-puerto-nube-siete-cafe-lluvia`. Mejor aún, genérala:
-  `node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"`.
+  caracteres distintos. En Windows, abre PowerShell en una computadora privada,
+  sin grabación ni pantalla compartida, y genera 32 bytes aleatorios con el
+  generador criptográfico del sistema:
+
+  ```powershell
+  $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+  $bytes = New-Object byte[] 32
+  try {
+    $rng.GetBytes($bytes)
+  } finally {
+    $rng.Dispose()
+  }
+  $clave = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+','-').Replace('/','_')
+  $clave
+  ```
+
+  Copia la frase resultante directamente a un gestor de contraseñas y guarda
+  una segunda copia fuera de la computadora. No la pegues en chats, capturas,
+  correo ni en el repositorio. El ejemplo genera 43 caracteres; el servidor
+  exige 32 o más y también rechaza frases repetidas, secuencias, textos de
+  ejemplo, menos de 12 caracteres distintos o entropía inferior a 3,5 bits por
+  carácter. No uses `node -e` en esta guía de Windows.
 - Guárdala en dos lugares seguros: un gestor de contraseñas (por ejemplo, el
   de Google o 1Password) **y** escrita en papel en un sobre cerrado, en la caja
   fuerte o con una persona de confianza.

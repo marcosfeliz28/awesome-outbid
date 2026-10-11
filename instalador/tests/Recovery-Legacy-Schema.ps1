@@ -29,7 +29,7 @@ try{
  $backup=Join-Path $root 'old.dump'
  Invoke-FitStorePg -Tool (Join-Path $PgBin 'pg_dump.exe') -Arguments @('-h','127.0.0.1','-p',[string]$Port,'-U','postgres','-d','fitstore','-Fc',"--file=$backup") -Password $password|Out-Null
  $tx=[pscustomobject]@{transactionPath=$root;backupCutoffAt=[DateTimeOffset]::UtcNow.AddHours(-1).ToString('o');applicationAutostartDisabled=$true;backup=$backup;backupSha256=(Get-FileHash $backup).Hash;snapshotPath=$root;phase='prepared-copy-pending'}
- $paths=[pscustomobject]@{PgBin=$PgBin;Install=$root;Secrets='unused'}
+ $paths=[pscustomobject]@{PgBin=$PgBin;Install=$root;Secrets='unused';Database=$cluster}
  if(-not(Get-Command Get-FitStoreDatabaseActivitySql -ErrorAction SilentlyContinue)){
   # Ejecutar el mapa antiguo con transporte SQL REAL ya corregido: distingue
   # el fallo de esquema legado del fallo de comillas de 3j3, sin stub SQL.

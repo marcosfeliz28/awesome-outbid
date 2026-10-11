@@ -38,6 +38,33 @@ function Get-Sha256 {
   }
 }
 
+function Deploy-LockedApi {
+  param([Parameter(Mandatory = $true)][string]$RepositoryRoot,
+    [Parameter(Mandatory = $true)][string]$Destination,
+    [Parameter(Mandatory = $true)][string]$VerifiedLockHash)
+  $sourceLock = Join-Path $RepositoryRoot 'pnpm-lock.yaml'
+  if ((Get-Sha256 -Path $sourceLock) -ne $VerifiedLockHash) { throw 'El lock fuente cambio despues de verificarse.' }
+  Push-Location $RepositoryRoot
+  try {
+    # store-dir del workspace es relativo. El install del destino vuelve a
+    # interpretarlo alli: fijar la cache que YA lleno el install frozen.
+    $versionedStore = ((& pnpm store path --silent) | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or (Split-Path -Leaf $versionedStore) -notmatch '^v\d+$') { throw 'No se pudo identificar la cache verificada de pnpm.' }
+    $storeRoot = Split-Path -Parent $versionedStore
+    # La instalacion frozen anterior YA verifico las politicas del lock fuente.
+    # Solo el lock derivado usa trust-lockfile: offline evita resolver versiones
+    # nuevas; la auditoria posterior exige las integridades del original.
+    Invoke-Checked -File 'pnpm' -Arguments @('--filter', '@fitstore/api', 'deploy', $Destination,
+      '--config.inject-workspace-packages=true', '--config.force-legacy-deploy=false',
+      '--config.node-linker=hoisted', "--config.store-dir=$storeRoot", '--offline', '--trust-lockfile') -Message 'Fallo el despliegue bloqueado de la API'
+    Invoke-Checked -File 'node' -Arguments @((Join-Path $RepositoryRoot 'instalador\tools\verify-deploy-lock.mjs'),
+      $sourceLock, $Destination, $VerifiedLockHash) -Message 'El lock desplegado no equivale al lock verificado'
+  } finally {
+    Pop-Location
+    if ((Get-Sha256 -Path $sourceLock) -ne $VerifiedLockHash) { throw 'El despliegue modifico el lock fuente.' }
+  }
+}
+
 function Get-VerifiedDownload {
   param([string]$Url, [string]$Sha256, [string]$Destination)
   if (Test-Path -LiteralPath $Destination) {
@@ -112,6 +139,54 @@ function Remove-DeploymentLink {
   }
 }
 
+function Protect-ApiPayload {
+  param([Parameter(Mandatory = $true)][string]$Path)
+  $root = [IO.Path]::GetFullPath($Path).TrimEnd('\', '/')
+  $rootItem = Get-Item -LiteralPath $root -Force -ErrorAction Stop
+  if (-not $rootItem.PSIsContainer -or ($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+    throw 'El payload API debe ser una carpeta normal, no un enlace.'
+  }
+  $entries = @(Get-ChildItem -LiteralPath $root -Recurse -Force -ErrorAction Stop)
+  foreach ($entry in $entries) {
+    if (($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+      throw 'El payload API contiene enlaces; no se puede filtrar con seguridad.'
+    }
+  }
+  $removed = 0
+  foreach ($entry in $entries) {
+    if ($entry.PSIsContainer) { continue }
+    $full = [IO.Path]::GetFullPath($entry.FullName)
+    if (-not $full.StartsWith($root + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+      throw 'Un archivo del payload API queda fuera de su carpeta.'
+    }
+    $relative = $full.Substring($root.Length + 1).Replace('\', '/')
+    # pnpm deploy no hereda aqui el .gitignore de la raiz. Solo se conservan
+    # runtime compilado/dependencias, contrato Prisma y bootstrap del propietario.
+    $allowed = $relative -match '^(package\.json|tsconfig\.json|prisma\.config\.ts|scripts/create-admin\.ts|dist/.+\.(js|json)|node_modules/.+|prisma/schema\.prisma|prisma/migrations/migration_lock\.toml|prisma/migrations/[^/]+/migration\.sql)$'
+    $private = $relative -match '(^|/)(\.env($|\.)|\.npmrc$|secrets\.json$|credentials\.json$|id_(rsa|ed25519)($|\.))|\.(csv|xlsx?|ods|pfx|p12|pem|key|dump|backup|sqlite3?|db|log)$'
+    if (-not $allowed -or $private) {
+      Remove-Item -LiteralPath $full -Force -ErrorAction Stop
+      $removed++
+    }
+  }
+  Write-Host "Payload API filtrado: $removed archivos ajenos al runtime eliminados."
+}
+
+function Write-ApiRuntimeTsConfig {
+  param([Parameter(Mandatory = $true)][string]$RepositoryRoot,
+    [Parameter(Mandatory = $true)][string]$ApiPayload)
+  $base = Get-Content -LiteralPath (Join-Path $RepositoryRoot 'tsconfig.base.json') -Raw | ConvertFrom-Json
+  $api = Get-Content -LiteralPath (Join-Path $RepositoryRoot 'apps\api\tsconfig.json') -Raw | ConvertFrom-Json
+  if ($base.PSObject.Properties.Name -contains 'extends') { throw 'El tsconfig base requiere resolver otra herencia antes de empaquetar.' }
+  $options = [ordered]@{}
+  foreach ($source in @($base.compilerOptions, $api.compilerOptions)) {
+    foreach ($property in $source.PSObject.Properties) { $options[$property.Name] = $property.Value }
+  }
+  $api.PSObject.Properties.Remove('extends')
+  $api.compilerOptions = [pscustomobject]$options
+  [IO.File]::WriteAllText((Join-Path $ApiPayload 'tsconfig.json'), ($api | ConvertTo-Json -Depth 20), [Text.UTF8Encoding]::new($false))
+}
+
 if ($PSVersionTable.PSVersion.Major -ge 6 -and -not $IsWindows) { throw "El instalador se prepara en Windows 11 x64 para obtener binarios nativos correctos." }
 if (-not [Environment]::Is64BitOperatingSystem) { throw "Se requiere Windows de 64 bits." }
 if ($version -notmatch "^(\d+)\.(\d+)\.(\d+)([.-][A-Za-z0-9.-]+)?$") { throw "VERSION no tiene un formato válido." }
@@ -124,9 +199,11 @@ $nodeMajor = [int]((& node -p "process.versions.node.split('.')[0]").Trim())
 if ($LASTEXITCODE -ne 0 -or $nodeMajor -lt 24) { throw "Para construir se requiere Node 24 o posterior." }
 if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) { throw "No se encontró pnpm. Ejecuta: corepack enable" }
 
+$verifiedLockHash = Get-Sha256 -Path (Join-Path $repoRoot 'pnpm-lock.yaml')
 Push-Location $repoRoot
 try {
   Invoke-Checked -File "pnpm" -Arguments @("install", "--frozen-lockfile") -Message "Falló pnpm install"
+  if ((Get-Sha256 -Path (Join-Path $repoRoot 'pnpm-lock.yaml')) -ne $verifiedLockHash) { throw 'La instalacion frozen modifico el lock fuente.' }
   Invoke-Checked -File "pnpm" -Arguments @("db:generate") -Message "Falló prisma generate"
   Invoke-Checked -File "pnpm" -Arguments @("build") -Message "Falló la compilación de FitStore"
 } finally { Pop-Location }
@@ -136,13 +213,9 @@ New-Item -Path $payload, $downloads, $dist -ItemType Directory -Force | Out-Null
 New-Item -Path (Join-Path $payload "app"), (Join-Path $payload "runtime"), (Join-Path $payload "runtime\node"), (Join-Path $payload "scripts"), (Join-Path $payload "service"), (Join-Path $payload "assets"), (Join-Path $payload "docs"), (Join-Path $payload "tests") -ItemType Directory -Force | Out-Null
 
 $apiPayload = Join-Path $payload "app\api"
-Push-Location $repoRoot
-try {
-  Invoke-Checked -File "pnpm" -Arguments @("--filter", "@fitstore/api", "deploy", $apiPayload, "--legacy", "--config.node-linker=hoisted") -Message "No se pudo preparar la API desplegable"
-} finally { Pop-Location }
+Deploy-LockedApi -RepositoryRoot $repoRoot -Destination $apiPayload -VerifiedLockHash $verifiedLockHash
 
-# `pnpm deploy --legacy` deja los paquetes del propio workspace como enlaces al
-# repositorio. Un instalador debe ser autosuficiente: se empaqueta Shared como
+# Un instalador debe ser autosuficiente: se empaqueta Shared como
 # CommonJS, manteniendo zod externo para que la API y Shared usen la misma
 # instancia (los errores de validación dependen de esa identidad).
 $esbuild = Get-ChildItem `
@@ -185,6 +258,8 @@ $reparsePoints = @(Get-ChildItem -LiteralPath $nodeModulesPayload -Recurse -Forc
 if ($reparsePoints.Count -gt 0) {
   throw "La API desplegable conserva enlaces no portables: $($reparsePoints[0].FullName)"
 }
+Protect-ApiPayload -Path $apiPayload
+Write-ApiRuntimeTsConfig -RepositoryRoot $repoRoot -ApiPayload $apiPayload
 Push-Location $apiPayload
 try {
   Invoke-Checked -File "node" -Arguments @("node_modules\prisma\build\index.js", "generate", "--schema=prisma\schema.prisma") -Message "No se pudo generar Prisma Client en la API desplegable"

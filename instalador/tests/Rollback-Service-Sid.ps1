@@ -14,7 +14,7 @@ try {
   Remove-FitStoreLocalServiceAccess -Paths $paths
   foreach ($item in @(Get-Item -LiteralPath $root) + @(Get-ChildItem -LiteralPath $root -Recurse)) {
     $rules = (Get-Acl -LiteralPath $item.FullName).GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])
-    if (@($rules | Where-Object { $_.IdentityReference.Value -eq 'S-1-5-19' }).Count) { throw "LocalService conserva acceso: $($item.Name)" }
+    if (@($rules | Where-Object { $_.IdentityReference.Value -in @('S-1-5-19',(Get-FitStoreServiceSid -Name FitStoreAPI),(Get-FitStoreServiceSid -Name FitStoreWeb)) }).Count) { throw "Un servicio conserva acceso: $($item.Name)" }
   }
   Write-Host 'PASS 3h8: ACL NTFS reales sin LocalService en archivos ni carpetas tras volver a SYSTEM.'
 } finally { if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force } }

@@ -103,14 +103,13 @@ function Start-Process {
   return [pscustomobject]@{ ExitCode = 0 }
 }
 
-function Invoke-FitStorePg {
+function Invoke-FitStoreProcess {
   param(
-    [Parameter(Mandatory = $true)][string]$Tool,
+    [Parameter(Mandatory = $true)][string]$FilePath,
     [Parameter(Mandatory = $true)][string[]]$Arguments,
-    [Parameter(Mandatory = $true)][string]$Password,
     [string]$FailureMessage = "fixture failure"
   )
-  $toolName = [IO.Path]::GetFileName($Tool).ToLowerInvariant()
+  $toolName = [IO.Path]::GetFileName($FilePath).ToLowerInvariant()
   $databaseArgument = @($Arguments | Where-Object { $_ -like "--dbname=*" } | Select-Object -First 1)
   $database = if ($databaseArgument.Count) { [string]$databaseArgument[0].Substring(("--dbname=").Length) } else { "" }
 
@@ -133,7 +132,11 @@ function Invoke-FitStorePg {
       return
     }
     "psql.exe" {
+      $sqlFiles = @($Arguments | Where-Object { $_ -like '--file=*' })
+      if ($sqlFiles.Count -ne 1) { throw 'SQL must use the real private-file helper.' }
+      $sql = [IO.File]::ReadAllText($sqlFiles[0].Substring(7))
       if ($database -like "fitstore_restore_*") {
+        if ($sql -notmatch '^SELECT count\(\*\) FROM "(_prisma_migrations|User|Product)";$') { throw 'Quoted validation SQL was lost.' }
         Add-FixtureEvent -Event "validate-temp:$database"
       } else {
         Add-FixtureEvent -Event "terminate-active"

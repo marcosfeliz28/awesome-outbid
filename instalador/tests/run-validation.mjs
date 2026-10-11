@@ -5,10 +5,18 @@ import { spawnSync } from "node:child_process";
 
 export const powershellTests = [
   "PowerShell-Parse",
+  "Payload-Privacy",
+  "Payload-Locked-Deploy",
   "Transaction-FaultInjection",
   "Restore-FaultInjection",
+  "Restore-Real-Sql",
+  "Windows-Smoke-Real-Sql",
   "Application-Service-Privacy",
+  "Service-Isolation",
+  "Service-Pfx-Passwords",
   "Backup-Privacy",
+  "Launcher-Backup-Destination",
+  "Uninstall-Backup-Preservation",
   "FreshInstall-FaultInjection",
   "Stale-Update-FaultInjection",
   "Rollback-ServiceAccount-FaultInjection",
@@ -30,6 +38,10 @@ export const powershellTests = [
   "Recovery-Missing-Installation",
   "Recovery-Schema-Contract",
   "Recovery-Acl-Interruption",
+  "Recovery-Acl-MissingEntry",
+  "Recovery-Pending-Acl-Always",
+  "Recovery-Corrupt-Acl-Journal",
+  "Recovery-Cleanup-Login",
   "Exact-Dacl-Contract",
   "Postgres-Real-Sql",
   "Recovery-Legacy-Schema",
@@ -65,7 +77,9 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
     "powershell.exe",
   );
   const steps = [
+    [process.execPath, ["--test", "instalador/tests/installer-session.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/web-server.test.mjs"]],
+    [process.execPath, ["--test", "instalador/tests/deploy-lock.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/recovery-error-contract.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/recovery-documentation.test.mjs"]],
     [
@@ -84,7 +98,7 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
         "Bypass",
         "-File",
         `instalador/tests/${name}.ps1`,
-        ...(["Recovery-FaultInjection", "Recovery-Login-Exit", "Recovery-Activity-Guard", "Recovery-Restart-Previous", "Recovery-Temporary-Acl", "Postgres-Real-Sql", "Recovery-Legacy-Schema"].includes(name) && env.PGBIN
+        ...(["Recovery-FaultInjection", "Recovery-Login-Exit", "Recovery-Activity-Guard", "Recovery-Restart-Previous", "Recovery-Temporary-Acl", "Postgres-Real-Sql", "Recovery-Legacy-Schema", "Recovery-Acl-MissingEntry", "Restore-Real-Sql", "Windows-Smoke-Real-Sql", "Recovery-Cleanup-Login"].includes(name) && env.PGBIN
           ? ["-PgBin", env.PGBIN]
           : []),
       ],

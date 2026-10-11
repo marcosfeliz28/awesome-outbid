@@ -1,6 +1,13 @@
 param([string]$PgBin, [int]$Port=55611, [string]$RecoverySource)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$signatureTokens=$null;$signatureErrors=$null
+$signatureCommon=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '../scripts/FitStore.Common.ps1'),[ref]$signatureTokens,[ref]$signatureErrors)
+$signatureFixture=[Management.Automation.Language.Parser]::ParseFile($PSCommandPath,[ref]$signatureTokens,[ref]$signatureErrors)
+$signatureReal=$signatureCommon.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Wait-FitStorePostgres'},$true)
+foreach($wait in $signatureFixture.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Wait-FitStorePostgres'},$true)){
+  if(-not $wait.Body.ParamBlock -or ($wait.Body.ParamBlock.Extent.Text -replace '\s','') -cne ($signatureReal.Body.ParamBlock.Extent.Text -replace '\s','')){throw 'B1: firma Wait-FitStorePostgres fixture no coincide con Common real'}
+}
 if (-not $PgBin) { $PgBin = $env:PGBIN }
 if ($env:CI -and -not $PgBin) { throw '3h1: CI requiere PgBin/PGBIN para ejecutar PostgreSQL real; no se permite omitirlo.' }
 if ($PgBin) {
@@ -149,7 +156,9 @@ try {
    # Implementacion real; sustituir SOLO puerto literal para base descartable.
    # No wrapper que cambie escaping ni argumentos SQL de Common.
    Invoke-Expression $restore.Extent.Text.Replace('--port=5434',"--port=$Port")
-   function Wait-FitStorePostgres {param($Paths,$TimeoutSeconds)}
+   function Wait-FitStorePostgres {param([Parameter(Mandatory = $true)]$Paths, [int]$TimeoutSeconds = 90)}
+   try { Wait-FitStorePostgres -Paths @{} -Secrets @{}; throw 'B1: fixture acepto Secrets inexistente' }
+   catch [Management.Automation.ParameterBindingException] { Write-Host 'PASS B1: fixture rechaza Secrets con firma Common real.' }
    Restore-DatabaseFromUpdateBackup -Paths $paths -Secrets (Read-FitStoreJson 'fixture') -Archive $archive -ExpectedHash (Get-FileHash -LiteralPath $archive).Hash -ExclusiveRecovery | Out-Null
    $login=& (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $Port -U postgres -d postgres -t -A -c "SELECT rolcanlogin FROM pg_roles WHERE rolname='fitstore';"
    if(([string]$login).Trim() -ne 'f'){throw 'Restore reopened login before explicit cleanup'}

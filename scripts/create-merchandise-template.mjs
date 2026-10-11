@@ -1,75 +1,102 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { pathToFileURL } from "node:url";
+import { parseArgs } from "node:util";
 
-// Run with the bundled Node runtime. Dependencies stay outside the repository.
-const dependencyRoot = process.env.NEXORA_ARTIFACT_DEPENDENCIES;
-if (!dependencyRoot)
-  throw new Error(
-    "Define NEXORA_ARTIFACT_DEPENDENCIES con el node_modules del runtime bundled.",
+// Usar exactamente el lector instalado de la API, sin runtime externo.
+const ExcelJS = createRequire(
+  new URL("../apps/api/package.json", import.meta.url),
+)("exceljs");
+const { values } = parseArgs({
+  options: { output: { type: "string" }, help: { type: "boolean" } },
+});
+if (values.help) {
+  console.log(
+    "Uso: node scripts/create-merchandise-template.mjs --output <carpeta-de-salida>",
   );
-const require = createRequire(path.join(dependencyRoot, "runtime.cjs"));
-const { Workbook, SpreadsheetFile } = await import(
-  pathToFileURL(require.resolve("@oai/artifact-tool")).href
-);
-const output = path.resolve("docs/plantillas");
-await fs.mkdir(output, { recursive: true });
-const workbook = Workbook.create();
-const sheet = workbook.worksheets.add("Mercancia");
-sheet.showGridLines = false;
-sheet.getRange("A1:F1").values = [
-  ["codigo", "descripcion", "cantidad", "costo", "lote", "vencimiento"],
+  process.exit(0);
+}
+if (!values.output?.trim()) {
+  throw new Error(
+    "Indica --output <carpeta-de-salida>. El generador no reemplaza la plantilla publicada por defecto.",
+  );
+}
+const output = path.resolve(values.output);
+const workbook = new ExcelJS.Workbook();
+workbook.creator = "Nexora";
+const sheet = workbook.addWorksheet("Mercancia", {
+  views: [
+    {
+      state: "frozen",
+      xSplit: 1,
+      ySplit: 1,
+      topLeftCell: "B2",
+      showGridLines: false,
+    },
+  ],
+});
+const headers = [
+  "codigo",
+  "descripcion",
+  "cantidad",
+  "costo",
+  "lote",
+  "vencimiento",
 ];
-sheet.getRange("A1:F201").format.font = {
-  name: "Arial",
-  size: 11,
-  color: "#172033",
-};
-sheet.getRange("A1:F1").format = {
-  fill: "#3730A3",
-  font: { name: "Arial", size: 11, bold: true, color: "#FFFFFF" },
-  rowHeight: 30,
-  horizontalAlignment: "center",
-};
-sheet.getRange("A2:F201").format = {
-  fill: "#FFFBE6",
-  rowHeight: 23,
-  verticalAlignment: "center",
-};
-for (const [column, width] of [
-  ["A", 18],
-  ["B", 44],
-  ["C", 15],
-  ["D", 18],
-  ["E", 22],
-  ["F", 22],
-])
-  sheet.getRange(`${column}1:${column}201`).format.columnWidth = width;
-sheet.getRange("A2:A201").setNumberFormat("@");
-sheet.getRange("E2:E201").setNumberFormat("@");
-sheet.getRange("C2:C201").setNumberFormat("0.###");
-sheet.getRange("D2:D201").setNumberFormat("0.00");
-sheet.getRange("F2:F201").setNumberFormat("yyyy-mm-dd");
-sheet.freezePanes.freezeRows(1);
-sheet.freezePanes.freezeColumns(1);
-const instructions = workbook.worksheets.add("Instrucciones");
-instructions.showGridLines = false;
-instructions.getRange("A1:B16").format.font = {
-  name: "Arial",
-  size: 11,
-  color: "#172033",
-};
-instructions.getRange("A1:A16").format.columnWidth = 25;
-instructions.getRange("B1:B16").format.columnWidth = 104;
-instructions.getRange("A1:B16").format.rowHeight = 28;
-instructions.getRange("A2").values = [["Entrada de mercancía"]];
-instructions.getRange("A2").format.font = {
-  name: "Arial",
-  size: 16,
-  bold: true,
-};
-instructions.getRange("A4:B14").values = [
+const widths = [18, 44, 15, 18, 22, 22];
+const formats = ["@", "General", "0.###", "0.00", "@", "yyyy-mm-dd"];
+const bodyFont = { name: "Arial", size: 11, color: { argb: "FF172033" } };
+for (let column = 1; column <= 6; column++)
+  sheet.getColumn(column).width = widths[column - 1];
+sheet.getRow(1).values = headers;
+sheet.getRow(1).height = 30;
+for (let column = 1; column <= 6; column++) {
+  const cell = sheet.getCell(1, column);
+  cell.font = { ...bodyFont, bold: true, color: { argb: "FFFFFFFF" } };
+  cell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF3730A3" },
+  };
+  cell.alignment = { horizontal: "center", vertical: "middle" };
+}
+// 200 filas reservadas, sin productos de ejemplo ni formulas.
+for (let row = 2; row <= 201; row++) {
+  sheet.getRow(row).height = 23;
+  for (let column = 1; column <= 6; column++) {
+    const cell = sheet.getCell(row, column);
+    cell.font = bodyFont;
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFFFFBE6" },
+    };
+    cell.numFmt = formats[column - 1];
+    cell.alignment = {
+      horizontal:
+        column === 3 || column === 4 || column === 6 ? "right" : "left",
+      vertical: "middle",
+    };
+  }
+}
+const instructions = workbook.addWorksheet("Instrucciones", {
+  views: [{ showGridLines: false }],
+});
+instructions.getColumn(1).width = 25;
+instructions.getColumn(2).width = 104;
+for (let row = 1; row <= 16; row++) {
+  instructions.getRow(row).height = 28;
+  for (let column = 1; column <= 2; column++) {
+    instructions.getCell(row, column).font = bodyFont;
+    instructions.getCell(row, column).alignment = {
+      horizontal: "left",
+      vertical: "middle",
+    };
+  }
+}
+instructions.getCell("A2").value = "Entrada de mercancía";
+instructions.getCell("A2").font = { ...bodyFont, size: 16, bold: true };
+const guidance = [
   [
     "Dónde usarla",
     "Mercancía > Entrada > Importar factura. Selecciona Excel (.xlsx).",
@@ -115,77 +142,18 @@ instructions.getRange("A4:B14").values = [
     "La hoja Mercancia no trae productos de ejemplo. Llena desde la fila 2, sin cambiar encabezados.",
   ],
 ];
-instructions.getRange("A4:A14").format.font = {
-  name: "Arial",
-  size: 11,
-  bold: true,
-  color: "#3730A3",
-};
-workbook.recalculate();
-console.log(
-  (
-    await workbook.inspect({
-      kind: "table",
-      range: "Mercancia!A1:F3",
-      include: "values,formulas",
-      tableMaxRows: 3,
-      tableMaxCols: 6,
-    })
-  ).ndjson,
-);
-console.log(
-  (
-    await workbook.inspect({
-      kind: "match",
-      searchTerm: "#REF!|#DIV/0!|#VALUE!|#NAME\\?|#N/A",
-      options: { useRegex: true, maxResults: 20 },
-    })
-  ).ndjson,
-);
-for (const [sheetName, range] of [
-  ["Mercancia", "A1:F8"],
-  ["Instrucciones", "A1:B15"],
-]) {
-  const preview = await workbook.render({
-    sheetName,
-    range,
-    scale: 1.3,
-    format: "png",
-  });
-  await fs.writeFile(
-    path.join(output, `${sheetName}-preview.png`),
-    new Uint8Array(await preview.arrayBuffer()),
-  );
+for (const [index, content] of guidance.entries()) {
+  instructions.getRow(index + 4).values = content;
+  instructions.getCell(index + 4, 1).font = {
+    ...bodyFont,
+    bold: true,
+    color: { argb: "FF3730A3" },
+  };
 }
-await (
-  await SpreadsheetFile.exportXlsx(workbook)
-).save(path.join(output, "ENTRADA-MERCANCIA-LOTES.xlsx"));
-// ExcelJS (the application's reader) requires the SpreadsheetML default
-// namespace. Artifact exports an equivalent x: prefix that it cannot read.
-// Normalize only that namespace, keeping worksheet values/styles untouched.
-const JSZip = require("jszip");
+await fs.mkdir(output, { recursive: true });
 const filename = path.join(output, "ENTRADA-MERCANCIA-LOTES.xlsx");
-const zip = await JSZip.loadAsync(await fs.readFile(filename));
-for (const entry of Object.values(zip.files)) {
-  if (entry.dir || !entry.name.endsWith(".xml")) continue;
-  const xml = await entry.async("string");
-  if (
-    !xml.includes(
-      'xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',
-    )
-  )
-    continue;
-  zip.file(
-    entry.name,
-    xml
-      .replaceAll(
-        'xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',
-        'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',
-      )
-      .replace(/(<\/?)(x:)/g, "$1"),
-  );
-}
-await fs.writeFile(
-  filename,
-  await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }),
-);
+// Nunca pisar silenciosamente un archivo que ya tenga datos o este publicado.
+await fs.writeFile(filename, Buffer.from(await workbook.xlsx.writeBuffer()), {
+  flag: "wx",
+});
+console.log(`Plantilla generada: ${filename}`);

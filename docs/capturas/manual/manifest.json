@@ -1,0 +1,178 @@
+[
+  {
+    "file": "01-abrir-caja-1024.png",
+    "role": "seller",
+    "width": 1024,
+    "hashRoute": "#cash",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "04-retiro-1024.png",
+    "role": "seller",
+    "width": 1024,
+    "hashRoute": "#cash",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "07-cierre-ciego-1024.png",
+    "role": "seller",
+    "width": 1024,
+    "hashRoute": "#cash",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "07-confirmacion-cierre-1024.png",
+    "role": "seller",
+    "width": 1024,
+    "hashRoute": "#cash",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "02-vender-1024.png",
+    "role": "seller",
+    "width": 1024,
+    "hashRoute": "#pos",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "03-cobrar-1024.png",
+    "role": "seller",
+    "width": 1024,
+    "hashRoute": "#pos",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "03-credito-1024.png",
+    "role": "seller",
+    "width": 1024,
+    "hashRoute": "#pos",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "05-ventas-cajera-1024.png",
+    "role": "seller",
+    "width": 1024,
+    "hashRoute": "#sales",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "08-sin-internet-1024.png",
+    "role": "seller",
+    "width": 1024,
+    "hashRoute": "#cash",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "05-devolucion-gerente-1024.png",
+    "role": "manager",
+    "width": 1024,
+    "hashRoute": "#sales",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "06-anulacion-admin-1024.png",
+    "role": "admin",
+    "width": 1024,
+    "hashRoute": "#sales",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "01-abrir-caja-390.png",
+    "role": "seller",
+    "width": 390,
+    "hashRoute": "#cash",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "04-retiro-390.png",
+    "role": "seller",
+    "width": 390,
+    "hashRoute": "#cash",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "07-cierre-ciego-390.png",
+    "role": "seller",
+    "width": 390,
+    "hashRoute": "#cash",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "07-confirmacion-cierre-390.png",
+    "role": "seller",
+    "width": 390,
+    "hashRoute": "#cash",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "02-vender-390.png",
+    "role": "seller",
+    "width": 390,
+    "hashRoute": "#pos",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "03-cobrar-390.png",
+    "role": "seller",
+    "width": 390,
+    "hashRoute": "#pos",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "03-credito-390.png",
+    "role": "seller",
+    "width": 390,
+    "hashRoute": "#pos",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "05-ventas-cajera-390.png",
+    "role": "seller",
+    "width": 390,
+    "hashRoute": "#sales",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "08-sin-internet-390.png",
+    "role": "seller",
+    "width": 390,
+    "hashRoute": "#cash",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "05-devolucion-gerente-390.png",
+    "role": "manager",
+    "width": 390,
+    "hashRoute": "#sales",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  },
+  {
+    "file": "06-anulacion-admin-390.png",
+    "role": "admin",
+    "width": 390,
+    "hashRoute": "#sales",
+    "source": "92853bb31870e9769cab13f1d22ac1fcf68d146d",
+    "api": "synthetic fixtures; external requests blocked"
+  }
+]

@@ -31,6 +31,15 @@ try {
   [IO.Directory]::CreateDirectory($activeDatabase) | Out-Null
   Copy-Item -LiteralPath $productionRestore -Destination (Join-Path $fixtureScripts "Restore-FitStore.ps1")
   Copy-Item -LiteralPath (Join-Path $fixtureSource "FitStore.Common.ps1") -Destination $fixtureScripts
+  # Simulate only the process boundary; use the production password/SQL helpers.
+  $tokens = $null; $parseErrors = $null
+  $commonAst = [Management.Automation.Language.Parser]::ParseFile((Join-Path $installerRoot 'scripts/FitStore.Common.ps1'), [ref]$tokens, [ref]$parseErrors)
+  if ($parseErrors.Count) { throw 'Production Common did not parse.' }
+  foreach ($name in @('Invoke-FitStorePg', 'Invoke-FitStorePgSql')) {
+    $definition = $commonAst.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name }, $true)
+    if (-not $definition) { throw "Missing real helper $name" }
+    [IO.File]::AppendAllText((Join-Path $fixtureScripts 'FitStore.Common.ps1'), "`r`n" + $definition.Extent.Text, [Text.UTF8Encoding]::new($false))
+  }
   Copy-Item -LiteralPath (Join-Path $fixtureSource "Backup-FitStore.ps1") -Destination $fixtureScripts
   [IO.File]::WriteAllText($activeSentinel, "ACTIVE DATABASE MUST REMAIN UNCHANGED", [Text.UTF8Encoding]::new($false))
   [IO.File]::WriteAllText($requestedBackup, "requested fixture dump", [Text.UTF8Encoding]::new($false))
