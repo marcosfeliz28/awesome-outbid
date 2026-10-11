@@ -86,7 +86,8 @@ describe("03 · textos del recibo no fiscal", () => {
     expect(NON_FISCAL_LEGEND).toBe(
       "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL",
     );
-    expect(render({ sale, config })).toContain(NON_FISCAL_LEGEND);
+    // La dueña pidió quitarla del ticket térmico; sigue en WhatsApp/correo y PDF.
+    expect(render({ sale, config })).not.toContain(NON_FISCAL_LEGEND);
     const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
     expect(pos).toMatch(/const text = `[^`]*\$\{NON_FISCAL_LEGEND\}/);
     expect(pos).not.toContain("Documento interno, no fiscal.");
@@ -131,9 +132,8 @@ describe("03 · textos del recibo no fiscal", () => {
     expect(taxLabel({}, {})).toBe("ITBIS incluido");
   });
   it("M3: la política de devoluciones usa los días de Ajustes o un texto genérico", () => {
-    expect(render({ sale, config })).toContain(
-      "Devoluciones: hasta 30 días con este recibo",
-    );
+    // La dueña pidió quitar la línea de devoluciones del ticket térmico.
+    expect(render({ sale, config })).not.toContain("Devoluciones:");
     expect(returnPolicyText({ returnDays: 0 })).toMatch(
       /^Devoluciones: según la política de la tienda/,
     );

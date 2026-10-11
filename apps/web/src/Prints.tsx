@@ -198,9 +198,6 @@ export function CuadrePrint({ c }: { c: any }) {
         <p>Firma de quien recibe</p>
       </div>
       <p className="tp-center tp-strong">{c.footer || "FIN DEL CUADRE"}</p>
-      <p className="tp-center">
-        {c.nonFiscalNotice || "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL"}
-      </p>
     </>
   );
 }
@@ -359,9 +356,7 @@ export function InvoicePrint({
           <Row label="NCF:" value={sale.ncf} />
           <h3 className="tp-center">COMPROBANTE FISCAL</h3>
         </>
-      ) : (
-        <h3 className="tp-center">{NON_FISCAL_LEGEND}</h3>
-      )}
+      ) : null}
       <Row label="Secuencia No." value={sale.number} />
       <Row label="Fecha" value={when(sale.createdAt ?? new Date())} />
       <Row label="Cajero" value={sale.cashierName ?? ""} />
@@ -415,7 +410,6 @@ export function InvoicePrint({
             CRÉDITO · PENDIENTE DE PAGO
           </h3>
           <Row label="Monto pendiente" value={rd(sale.creditBalance)} strong />
-          <p className="tp-center">{NON_FISCAL_LEGEND}</p>
         </>
       )}
       {sale.ncfType && (
@@ -425,7 +419,6 @@ export function InvoicePrint({
       <hr />
       <Row label="Cantidad de Productos" value={units} strong />
       <hr />
-      <p className="tp-small">{returnPolicyText(config)}</p>
       <p className="tp-small">{privacyNoticeText(config)}</p>
       <p className="tp-center">¡Gracias por su compra!</p>
     </>

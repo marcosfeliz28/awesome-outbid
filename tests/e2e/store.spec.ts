@@ -2647,9 +2647,7 @@ test.describe("Tienda-pantallas", () => {
       page.getByText("Venta registrada", { exact: true }),
     ).toBeVisible();
     const sheet = page.locator(".thermal-print");
-    await expect(sheet).toContainText(
-      "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL",
-    );
+    await expect(sheet).not.toContainText("DOCUMENTO NO FISCAL");
     await expect(sheet).toContainText("Secuencia No.");
     await expect(sheet).toContainText("Cod. " + code);
     await expect(sheet).toContainText("1 X RD$ 1,500.00");
