@@ -243,3 +243,17 @@ Auditoría adversaria con datos hostiles, pruebas del navegador (Playwright), mi
 
 ## 6. Fin de turno
 Cuando se acabe la cola o apliques la regla 8, comenta en el PR de la Fase 2: IDs terminados con SHA, IDs bloqueados con motivo, y el comando exacto para reproducir cada regresión. Después detente.
+
+### 3t. ORDEN DIRECTA DE LA DUEÑA — contraseña de cajero = exactamente 6 números (ChatGPT PC)
+
+**Orden (11-oct-2026, textual):** «los password de los cajeros sean de 6 números y ya».
+
+Regla: para usuarios con rol **cajero** (cashier), la contraseña válida es **exactamente 6 dígitos (0-9)**, sin más reglas de complejidad. Administradores y gerentes **conservan** la política fuerte actual (12+, mayúscula, minúscula, número, símbolo). No se negocia ni se debate: es decisión de la dueña.
+
+Qué hacer (rama `nexora-chatgpt-fase2`, desde `origin/nexora-cloud`):
+1. API `apps/api/src/password-policy.ts`: política por rol (`passwordSchemaForRole(role)` o equivalente); cajero = `/^\d{6}$/`. Mensaje: «La contraseña del cajero son 6 números.». Aplicar en `admin.ts` (alta de usuario ~1039, edición ~1095, restablecer ~1179) y `auth.ts` (cambio ~477 y ~607). El rol se toma del usuario destino/autenticado, nunca del cuerpo de la petición. Si un usuario cambia de rol, la política nueva aplica al siguiente cambio de contraseña.
+2. Contraseña temporal al restablecer a un cajero: generar 6 dígitos aleatorios con `randomInt` (no 16 caracteres); sigue venciendo a los 7 días y exigiendo cambio al entrar.
+3. Web: `passwordChange.ts`, `PasswordChangeFields.tsx`, `Management.tsx` (~3543), `App.tsx`: reglas por rol (cajero: una sola regla «6 números», teclado numérico `inputMode="numeric"`, `maxLength=6`); el resto de roles igual que hoy.
+4. Mantener (y verificar con pruebas) que el límite de intentos/bloqueo del inicio de sesión sigue vigente: 6 dígitos solo son aceptables con ese freno. No tocar ese freno. No usar contraseñas triviales de lista (000000, 123456, 111111…): rechazarlas con mensaje claro.
+5. Pruebas: unitarias de la política por rol; integración (alta/restablecer/cambio de cajero con 6 dígitos OK, 5 o 7 dígitos y letras NO; gerente con 6 dígitos NO; el rol no se toma del cuerpo); e2e del cambio obligatorio de un cajero. Corregir pruebas existentes que asuman 12 caracteres para cajeros.
+6. AUTOAUDITORÍA obligatoria (§3s) y entrega con los 3 CI en verde. Sin desplegar. No tocar contraseñas reales ni mostrar ninguna.
