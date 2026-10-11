@@ -277,3 +277,15 @@ Código: `apps/api/src/sales.ts` ~3248 (`GET sales/:id/receipt.pdf`, pdfkit, A4)
 - Pruebas: unitarias de las funciones de texto/formato; integración que descargue el PDF de ventas de contado, mixta, crédito, anulada y larga, y verifique contenido (extraer texto) y que NO aparezca «Recibido», «cod:», «Autorizó» ni «Cambio» en créditos; que no falle con datos extremos. Corregir pruebas existentes que dependan del texto viejo.
 - Generar 3 PDFs de ejemplo (contado, crédito, anulada) con datos ficticios y subirlos a `docs/capturas/` para que la dueña los vea.
 - AUTOAUDITORÍA obligatoria (§3s), 3 CI en verde, sin desplegar.
+
+### 3v. ORDEN DE LA DUEÑA — créditos por persona («estado de cuenta» del cliente) (ChatGPT NUBE; si no está activa, ChatGPT PC después de la 3t y 3u)
+
+**Orden (11-oct-2026):** «sumar los créditos de personas; que se pueda buscar por persona (ej. Juan Carlos López) y ver todo lo que debe».
+
+Hoy existe: `Créditos pendientes` (`Tienda.tsx` `CodPending`, `GET /cod/pending`) lista **por venta**, y `POST /sales/:id/credit-collections` registra cobros (solo administración). **No existe** la vista por persona. Construir:
+
+1. **Cuentas por cobrar por cliente** (pantalla nueva dentro de Clientes o de Créditos pendientes): lista de clientes con deuda abierta, **búsqueda por nombre**, total que debe cada uno, cantidad de ventas abiertas, la más antigua (días), orden por monto o antigüedad, y total general por cobrar. Solo administración (`sale:manage`); alcance por sucursal; nunca mostrar cédula/teléfono sin enmascarar (SEC-05).
+2. **Ficha/estado de cuenta de un cliente:** todas sus ventas a crédito (abiertas y cerradas), cada pago aplicado (fecha, método, quién lo registró), saldo por venta y saldo total; botón **«Registrar pago»** que reutiliza `credit-collections` sin cambiarla (sin dinero nuevo, sin duplicar lógica) y permite pagar a **varias ventas del cliente a la vez** repartiendo del más antiguo al más nuevo (con vista previa del reparto, idempotente, una sola operación atómica).
+3. **PDF «Estado de cuenta»** del cliente (mismo estilo del recibo rediseñado en 3u, A4, claro y entendible): datos del cliente enmascarados, tabla de ventas/pagos, saldo total destacado, fecha de emisión, formas de pagar, pie discreto «Documento interno, sin valor fiscal».
+4. **Sin cambios al cálculo de incentivos, caja ni inventario.** Los incentivos siguen pagándose al cobrar, prorrateados (§ créditos existentes). El reparto de pagos debe respetar eso.
+5. Pruebas: unitarias del reparto (centavos exactos, más antigua primero, sobrepago rechazado), integración PostgreSQL (permisos, sucursal, doble envío, carrera, saldo cero), e2e de búsqueda y registro de pago, PDF con datos extremos. AUTOAUDITORÍA (§3s), 3 CI en verde, sin desplegar.
