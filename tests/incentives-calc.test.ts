@@ -32,6 +32,10 @@ describe("tarifas por categoría", () => {
     expect(defaultIncentiveRate("suplementos ")).toBe(50);
     expect(defaultIncentiveRate("Máquillaje")).toBe(25);
     expect(defaultIncentiveRate("faja")).toBe(50);
+    // W9 (I01): la forma en singular de cada categoría paga lo mismo.
+    expect(defaultIncentiveRate("suplemento")).toBe(50);
+    expect(defaultIncentiveRate("Suplemento ")).toBe(50);
+    expect(defaultIncentiveRate("maquillaje")).toBe(25);
     expect(defaultIncentiveRate("Suplementos deportivos")).toBe(0);
   });
   it("la tarifa configurada manda, también si es 0", () => {
@@ -108,6 +112,23 @@ const entry = (over: Partial<EntryLike>): EntryLike => ({
 });
 
 describe("cuadre mensual por cajera", () => {
+  it("W9 (I04): un neto exactamente 0 no es negativo; menos de 0 sí", () => {
+    const [zero] = summarize([
+      entry({ qty: 1, amount: 50 }),
+      entry({ kind: "return", qty: -1, amount: -50 }),
+    ]);
+    expect(zero.net).toBe(0);
+    expect(zero.negative).toBe(false);
+    const [below] = summarize([
+      entry({ qty: 1, amount: 50 }),
+      entry({ kind: "return", qty: -1, amount: -50.01 }),
+    ]);
+    expect(below.net).toBe(-0.01);
+    expect(below.negative).toBe(true);
+    const [above] = summarize([entry({ qty: 1, amount: 0.01 })]);
+    expect(above.negative).toBe(false);
+  });
+
   it("venta con categorías mezcladas: unidades y bruto por persona", () => {
     const [ana] = summarize([
       entry({ qty: 2, amount: 100 }),

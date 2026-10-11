@@ -60,6 +60,7 @@ export default defineConfig({
       "tests/sync-cola-web.test.ts",
       "tests/db-zona-horaria.test.ts",
       "tests/integration-api-check.test.ts",
+      "tests/calidad-unit.test.ts",
     ],
   },
 });

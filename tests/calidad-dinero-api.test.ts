@@ -569,6 +569,28 @@ describe("Devoluciones, anulación y abonos", () => {
   });
 });
 
+describe("Incentivos", () => {
+  it("I06 · anular una venta de una categoría sin tarifa (monto 0) igual reversa las unidades", async () => {
+    const adm = await person("incentivo", "admin");
+    const ropa = await product("ropa sin tarifa", 100, "Ropa deportiva");
+    const sold = (await cashSale(adm, ropa.variantId, 2)).body;
+    const rows = () =>
+      db.incentiveEntry
+        .findMany({ where: { saleId: sold.id }, orderBy: { kind: "asc" } })
+        .then((list: any[]) =>
+          list.map((e) => [e.kind, Number(e.qty), Number(e.amount)]),
+        );
+    expect(await rows()).toEqual([["sale", 2, 0]]);
+    await ok("/sales/" + sold.id + "/void", adm.token, {
+      reason: "QA W9 anulación sin tarifa",
+    });
+    expect(await rows()).toEqual([
+      ["sale", 2, 0],
+      ["void", -2, 0],
+    ]);
+  });
+});
+
 describe("Cierre de caja", () => {
   it("C10 · el efectivo contado debe coincidir con el conteo por denominaciones", async () => {
     const adm = await person("cierre", "admin", 100);

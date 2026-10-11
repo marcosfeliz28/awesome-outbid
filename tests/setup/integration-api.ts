@@ -40,7 +40,8 @@ export async function verifyIntegrationApi({
   const how =
     "Arranca la API de este repositorio sobre la base de DATABASE_URL " +
     "(`pnpm --filter @fitstore/api dev`), usa `pnpm verify` (arranca la suya) " +
-    "o apunta FITSTORE_API_URL a la API correcta.";
+    "o apunta FITSTORE_API_URL a la API correcta. Si sólo corres suites que " +
+    "arrancan su propia API (Drive, Telegram), define NEXORA_TEST_SKIP_API_CHECK=1.";
   let health: Response;
   try {
     health = await fetchFn(base + "/health", {
