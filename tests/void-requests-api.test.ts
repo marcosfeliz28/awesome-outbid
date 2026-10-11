@@ -320,6 +320,18 @@ describe("3p · solicitud de anulación", () => {
     ).toBe(409);
   });
 
+  it("rechaza de forma clara el mismo operationId simultáneo en dos ventas", async () => {
+    const firstSale = await sale(seller);
+    const secondSale = await sale(seller);
+    const operationId = randomUUID();
+    const results = await Promise.all([
+      ask(seller, firstSale.id, operationId),
+      ask(seller, secondSale.id, operationId),
+    ]);
+    expect(results.map((result) => result.status).sort()).toEqual([201, 409]);
+    expect(await db.saleVoidRequest.count({ where: { operationId } })).toBe(1);
+  });
+
   it("impide IDOR: otra vendedora no solicita, ve ni cancela la venta ajena", async () => {
     const sold = await sale(seller);
     const created = await ask(seller, sold.id);

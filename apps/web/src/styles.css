@@ -5828,6 +5828,17 @@ td strong {
 .void-request-dashboard p {
   margin: 0.25rem 0 0;
 }
+.void-request-dashboard p,
+.void-request-dashboard small {
+  color: #431407;
+}
+:root[data-theme="dark"] .void-request-dashboard p,
+:root[data-theme="dark"] .void-request-dashboard small {
+  color: #fff7ed;
+}
+.void-request-dashboard small {
+  font-size: 0.75rem;
+}
 .void-request-dashboard {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

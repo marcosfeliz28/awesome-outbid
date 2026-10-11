@@ -1677,6 +1677,7 @@ export class SalesController {
     );
     const result = await moneyDb(this.db).$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"sale-void:" + saleId}))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"sale-void-operation:" + data.operationId}))`;
       const previous = await tx.saleVoidRequest.findUnique({
         where: { operationId: data.operationId },
       });

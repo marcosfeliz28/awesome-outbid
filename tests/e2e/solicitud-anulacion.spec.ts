@@ -32,7 +32,13 @@ async function checkViewport(page: Page) {
         });
         return result.violations
           .filter((v: any) => ["serious", "critical"].includes(v.impact))
-          .map((v: any) => v.id);
+          .map((v: any) => ({
+            id: v.id,
+            nodes: v.nodes.map((node: any) => ({
+              target: node.target,
+              summary: node.failureSummary,
+            })),
+          }));
       });
       expect(violations, `axe a ${width}px`).toEqual([]);
     }
