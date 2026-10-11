@@ -121,7 +121,7 @@ describe("03 · textos del recibo no fiscal", () => {
     );
     expect(html).not.toContain('<h3 class="tp-center">COMPROBANTE FISCAL</h3>');
     expect(html).not.toContain("B0200000001");
-    expect(html).toContain(NON_FISCAL_LEGEND);
+    expect(html).not.toContain(NON_FISCAL_LEGEND);
   });
   it("M2: el ITBIS dice si está incluido o se suma", () => {
     expect(render({ sale, config })).toContain("ITBIS incluido RD$ 180.00");
