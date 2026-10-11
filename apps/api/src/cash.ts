@@ -1114,28 +1114,32 @@ export class CashController {
     notify(this.db, "cash_close", closed.id);
     return closed;
   }
-  // Fondo sugerido para abrir: lo dejado en el último cierre de este equipo
-  // (o de este usuario si el equipo no tiene cierres).
+  // Fondo sugerido para abrir (decisión 40): lo dejado en el último cierre de
+  // la propia persona, en cualquier equipo; si nunca cerró una caja, en el
+  // último cierre de este equipo (D-03); si tampoco hay, 0.
   @Get("opening-suggestion")
   @Permit("cash:write")
   async openingSuggestion(@CurrentUser() actor: Actor) {
-    const last = await this.db.cashSession.findFirst({
-      where: {
-        branchId: actor.branchId,
-        closedAt: { not: null },
-        ...(actor.terminalId
-          ? { registerId: actor.terminalId }
-          : { userId: actor.id }),
-      },
+    const lastWhere = { branchId: actor.branchId, closedAt: { not: null } };
+    const own = await this.db.cashSession.findFirst({
+      where: { ...lastWhere, userId: actor.id },
       orderBy: { closedAt: "desc" },
     });
+    const last =
+      own ??
+      (actor.terminalId
+        ? await this.db.cashSession.findFirst({
+            where: { ...lastWhere, registerId: actor.terminalId },
+            orderBy: { closedAt: "desc" },
+          })
+        : null);
     // A-2 (auditoría 01): si el cierre no informó «Entregado», nada salió de
     // la gaveta: lo contado es lo dejado (es lo que la pantalla de cierre
     // anuncia como fondo sugerido). Sirve también para cierres ya guardados.
     const left =
       (last?.closeDetails as any)?.left ?? last?.countedCash ?? undefined;
     return left === undefined || left === null
-      ? { amount: null, fromSessionId: null }
+      ? { amount: 0, fromSessionId: null }
       : { amount: Number(left), fromSessionId: last!.id };
   }
   // La cajera ve su propia caja; quien tiene sale:manage, cualquiera.

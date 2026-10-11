@@ -1513,7 +1513,7 @@ export function Cash() {
     [closing, setClosing] = useState<any>(null),
     [discarding, setDiscarding] = useState<any>(null),
     [printing, setPrinting] = useState<Printing>(null);
-  // Fondo sugerido: lo dejado en el último cierre de esta caja.
+  // Fondo sugerido: lo dejado en el último cierre de la propia persona.
   const suggestion = useQuery({
     queryKey: ["opening-suggestion"],
     queryFn: () => api("/cash-sessions/opening-suggestion"),
@@ -1915,13 +1915,13 @@ export function Cash() {
                 "Efectivo inicial",
                 suggestion.data?.amount ?? undefined,
               ),
-              ...(suggestion.data?.amount != null
-                ? { help: "Sugerido: lo dejado en el último cierre." }
+              ...(suggestion.data?.fromSessionId
+                ? { help: "Sugerido: lo que dejaste en tu último cierre." }
                 : {}),
             },
             // Un fondo menor que lo dejado en el último cierre se explica y,
             // para quien no gestiona ventas, lo aprueba un gerente (D-03).
-            ...(suggestion.data?.amount != null
+            ...(suggestion.data?.fromSessionId
               ? [
                   {
                     key: "openingNote",
