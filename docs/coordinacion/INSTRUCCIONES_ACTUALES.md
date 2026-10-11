@@ -148,6 +148,22 @@ Trabajo tuyo, en este orden, siempre en tu rama `nexora-chatgpt-fase2`, con CI v
 4. Sigue con el instalador de Windows (3m) y reporta cuando tus 3 trabajos de CI estén verdes; ya recibimos 16dd103.
 Reglas fijas: no despliegas, no tocas Render, no pegas secretos, no relajas pruebas, no declaras «listo» sin los 3 CI verdes del último SHA.
 
+## 3p. ENCARGO PARA CHATGPT (11 oct): FUNCIÓN «SOLICITUD DE ANULACIÓN». Claude ahorra cupo: la construyes TÚ. AUTORIZADO por la dueña tocar `apps/`, `tests/`, migraciones y docs SOLO para esta función
+
+Base: `nexora-cloud` (producción ya trae: una caja por usuario, ventas a crédito, créditos pendientes, incentivo al cobrar, 34 pruebas de dinero/seguridad nuevas). Trabaja en `nexora-chatgpt-fase2` (haz merge de `origin/nexora-cloud` primero, sin rebase). Si existe `origin/claude/w10-solicitud-anulacion` (trabajo parcial de un agente de Claude), léela y reaprovecha lo coherente; NO la modifiques. No cambies las reglas de propiedad de caja ni los créditos/incentivos más allá de lo necesario. No despliegas; Claude/la dueña despliegan tras CI verde y tu entrega.
+
+**Función pedida por la dueña (textual en esencia):** los empleados pueden hacer una SOLICITUD DE ANULACIÓN; a la cuenta del administrador (Génesis o Marcos), cuando entren, al frente, ven la solicitud; y desde la plataforma inicial el administrador puede anular el pedido si es necesario.
+
+Requisitos:
+1. **Cajera/vendedora (sin permiso de anular)**: en una venta propia (completada, no anulada, de su caja/vendedora) pulsa «Solicitar anulación» con motivo obligatorio (lista de motivos + texto libre). Crea una SolicitudAnulación pendiente (venta, quién, cuándo, motivo). Una sola pendiente por venta; idempotente (`operationId`). No cambia venta, stock ni caja todavía. La cajera ve el estado de sus solicitudes y puede cancelar una pendiente.
+2. **Administración** (y quien hoy tenga el permiso de anular; respeta permisos existentes y dilo en tu informe) ve las pendientes AL FRENTE: tarjeta destacada en la pantalla inicial (Resumen), contador en la campana/Alertas, alerta del sistema y Telegram si está configurado (reutiliza `notify`/outbox; sin datos personales innecesarios), con enlace directo.
+3. **Pantalla «Solicitudes de anulación»**: ve la venta (ticket, artículos, pagos, cliente, motivo, solicitante) y puede **APROBAR** → ejecuta la anulación real con la lógica existente (restaura inventario, reembolsos, notas de crédito, incentivos negativos proporcionales, créditos/cobros, caja abierta/cerrada; ventas con devoluciones o abonos previos no se anulan: mostrar el motivo) o **RECHAZAR** con nota obligatoria. Estados pendiente/aprobada/rechazada/cancelada. Bitácora (solicitante, aprobador, fechas). La anulación directa del administrador debe ser alcanzable también desde la tarjeta del inicio; si anula una venta con solicitud pendiente, esta pasa a aprobada.
+4. **Seguridad**: rate limit; sin IDOR (ni ventas de otra cajera ni otra sucursal); nadie aprueba su propia solicitud; concurrencia (dos administradores aprueban a la vez ⇒ una sola anulación, el otro 409 claro); idempotencia.
+5. **UI** en español simple, accesible (axe 0 violaciones), usable a 320/390/1280 px.
+6. **Migración aditiva**, prefijo único POSTERIOR a `202610240201` y a las que existan en `nexora-cloud`.
+7. **Pruebas**: integración con PostgreSQL real (solicitar, duplicado, cancelar, aprobar ⇒ venta anulada con inventario/caja/incentivo correctos, rechazar, IDOR, doble aprobación concurrente, aprobar la propia 403, permisos por rol) y Playwright (cajera solicita; administradora ve la tarjeta al iniciar sesión y aprueba/rechaza; 390 px). Sin fechas fijas cercanas a «hoy». Desactiva al terminar las usuarias de prueba que crees (el PIN de gerente recorre a todas las activas con bcrypt y vuelve lentas las pruebas de navegador).
+8. Docs: `docs/DECISIONES.md` (siguiente número libre), `docs/MANUAL.md`. Reporta CI verde (3 trabajos) del último SHA, roles que aprueban, riesgos y decisiones pendientes de la dueña.
+
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
 1. ~~**M1**~~ (lo hace Claude) movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); por encima de `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
