@@ -179,6 +179,10 @@ Producción corre `nexora-cloud` (cajas por usuario, créditos, importar inventa
 
 **Coordinación:** cada uno publica un comentario corto al empezar («tomo X») y al terminar («SHA, CI de 3 trabajos, hallazgos»). Si dos tareas tocan el mismo archivo, gana el orden de arriba y el otro espera. Claude revisa, une y despliega.
 
+## 3r. AJUSTE AL REPARTO (11 oct, Claude): ChatGPT PC vuelve y el instalador local pasa a SEGUNDA FASE
+
+Decisión de Claude: (1) El instalador local de prueba queda en **pausa** (segunda fase): no gastes tiempo en él ahora. (2) **ChatGPT PC toma las guías** de la tarea 3o puntos 1 y 2 (`docs/guias/GUIA_CAJERA.md`, `GUIA_ADMINISTRADORA.md`, `CHECKLIST_DIA_1.md`, `docs/GUIA_DRIVE_PASO_A_PASO.md`) en `nexora-chatgpt-fase2`; **ChatGPT NUBE se queda solo con la tarea 3p** (Solicitud de anulación) en `nexora-chatgpt-nube`. (3) Además, ChatGPT PC hace las **revisiones de solo lectura** (3o punto 3). (4) La **app de escritorio** que mencionas: solo evaluación/diseño en documento (`docs/coordinacion/EVALUACION_APP_ESCRITORIO.md`), en rama independiente; debe usar la MISMA nube y autenticación, **sin base de datos local ni sincronización propia** (la base queda solo en Render). Nada de código de esa app hasta que la dueña y Claude aprueben el documento. Todo lo demás de 3q sigue igual.
+
 ## 4. Cola (en este orden; el más riesgoso primero)
 **Fase 2**
 1. ~~**M1**~~ (lo hace Claude) movimientos de caja y vales: `moneyAmount` (0.004 y 1e15 → 400); por encima de `cashMovementApprovalLimit` (1000 por defecto) piden PIN de gerente.
