@@ -1,6 +1,6 @@
 // Auditoría 05 v2 (N5, B2, B4, B9, B10, B11, N10 en pantalla): detalles de la
 // caja y del inicio de sesión. Cada escenario usa datos con códigos al azar.
-import { test, expect, selectNamedCustomer } from "./apoyo";
+import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
 
 const OWNER = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
 const code = (first: string) =>
@@ -86,7 +86,7 @@ async function openCash(page: any) {
   await expect(open.or(opened).first()).toBeVisible();
   if (await open.isVisible()) {
     await open.click();
-    await page.getByLabel("Efectivo inicial").fill("500");
+    await fillOpeningFund(page, "500");
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
   }
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();

@@ -87,6 +87,7 @@ beforeAll(async () => {
   cash = await ok("/cash-sessions/open", admin, {
     registerId: "qa-restos-" + suffix,
     openingAmount: 1000,
+    openingNote: "QA: fondo de la prueba",
   });
 }, 60000);
 

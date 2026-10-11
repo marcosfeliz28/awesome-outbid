@@ -1,7 +1,7 @@
 import type { Browser } from "@playwright/test";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
-import { test, expect, selectNamedCustomer } from "./apoyo";
+import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
 // INC: la administración pone la tarifa de una categoría en Configuración, la
 // cajera marca «Venta al por mayor», cobra y ve su acumulado a la mitad en
 // Caja; la administración ve el cuadre en «Incentivos» y cierra el mes.
@@ -166,7 +166,7 @@ test("Incentivos: tarifa en Configuración, venta al por mayor a la mitad y cier
     await page.getByRole("button", { name: "Caja", exact: true }).click();
     await expect(page.locator(".main-content .loading")).toHaveCount(0);
     await page.getByRole("button", { name: "Abrir caja", exact: true }).click();
-    await page.getByLabel("Efectivo inicial").fill("500");
+    await fillOpeningFund(page, "500");
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
     await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();
     await expect(page.getByTestId("mis-incentivos-neto")).toHaveText(

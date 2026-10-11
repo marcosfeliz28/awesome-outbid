@@ -4,6 +4,7 @@ import {
   ensureStock,
   screenshotPath,
   selectNamedCustomer,
+  fillOpeningFund,
 } from "./apoyo";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
@@ -64,7 +65,7 @@ async function ensureCash(page: any) {
   const open = page.getByRole("button", { name: "Abrir caja", exact: true });
   if (await open.isVisible()) {
     await open.click();
-    await page.getByLabel("Efectivo inicial").fill("500");
+    await fillOpeningFund(page, "500");
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
   }
   await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();
@@ -2689,7 +2690,7 @@ test.describe("Tienda-pantallas", () => {
     ).toBeVisible();
     if (await open.isVisible()) {
       await open.click();
-      await page.getByLabel("Efectivo inicial").fill("500");
+      await fillOpeningFund(page, "500");
       await page.getByRole("button", { name: "Guardar", exact: true }).click();
     }
     await page

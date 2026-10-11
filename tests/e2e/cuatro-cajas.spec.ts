@@ -1,5 +1,5 @@
 import type { Browser } from "@playwright/test";
-import { test, expect, selectNamedCustomer } from "./apoyo";
+import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
 // Tienda: 3 cajas en computadoras y Mercancía en un celular, a la vez, contra
 // la misma base. Cada pantalla ve el stock cambiar sin recargar.
 const owner = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
@@ -119,7 +119,7 @@ test("Tienda-4cajas: 3 cajas y el celular de Mercancía ven el stock en tiempo r
     await page.getByRole("button", { name: "Caja", exact: true }).click();
     await expect(page.locator(".main-content .loading")).toHaveCount(0);
     await page.getByRole("button", { name: "Abrir caja", exact: true }).click();
-    await page.getByLabel("Efectivo inicial").fill(amount);
+    await fillOpeningFund(page, amount);
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
     await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();
     await page
