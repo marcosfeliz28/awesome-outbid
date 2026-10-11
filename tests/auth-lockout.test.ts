@@ -14,7 +14,10 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { stop } from "../scripts/verify.mjs";
-import { ValidatedRateLimitStore } from "../apps/api/src/rate-limit";
+import {
+  REQUEST_RATE_LIMITS,
+  ValidatedRateLimitStore,
+} from "../apps/api/src/rate-limit";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -613,7 +616,7 @@ describe("S-04 · retención de la IP y purga de contadores", () => {
 // Proceso real exclusivo: no hereda un cubo iniciado por una prueba anterior
 // cuya ventana de 60 s pueda vencer mientras se esperan los bcrypt del barrido.
 // Reutiliza sólo la base descartable de integración, nunca sus contadores en memoria.
-async function isolatedCredentialApi() {
+async function isolatedCredentialApi(extraEnv: Record<string, string> = {}) {
   const reservation = createServer();
   await new Promise<void>((resolve, reject) => {
     reservation.once("error", reject);
@@ -639,7 +642,7 @@ async function isolatedCredentialApi() {
   `;
   const child = spawn(process.execPath, ["-e", readyScript], {
     cwd: fileURLToPath(new URL("../apps/api", import.meta.url)),
-    env: { ...process.env, PORT: String(port) },
+    env: { ...process.env, ...extraEnv, PORT: String(port) },
     windowsHide: true,
     stdio: ["ignore", "pipe", "pipe", "ipc"],
   });
@@ -699,17 +702,31 @@ describe("N-02 · el cubo global de identidades desconocidas no da 429 a los equ
     // los siete segundos que quedaban en la fixture compartida defectuosa.
     expect(limits.exceeds("auth-unknown", [], 120)).toBe(false);
   });
-  it("tras un barrido de 140 nombres inventados desde 7 IP, una clave errónea de una cuenta real desde su equipo aprobado recibe 400 y no 429", async () => {
+  it("el cupo global de identidades desconocidas es de 120 por minuto por defecto", () => {
+    // La prueba siguiente baja el cupo (en su propio proceso) para no depender
+    // de lo rápido que sea bcrypt; este valor sigue fijado aquí.
+    expect(REQUEST_RATE_LIMITS.authUnknownGlobal).toBe(120);
+  });
+  // N-02 (auditoría 07 v2, F-1): con el cupo por defecto (120) el barrido de
+  // 140 intentos con bcrypt de coste 12 tardaba 55-68 s y, si cruzaba el minuto
+  // de la ventana fija, el cubo se reiniciaba y la clave errónea recibía 400
+  // en vez de 429 (4 de 8 corridas). Con el cupo en 20 el barrido es de 35
+  // intentos (unos 15 s) y la misma regla se comprueba sin depender de la
+  // velocidad de la máquina.
+  it("tras un barrido de nombres inventados desde 7 IP (cupo global reducido a 20), una clave errónea de una cuenta real desde su equipo aprobado recibe 400 y no 429", async () => {
     const cashier = await makeUser("seller");
     const terminal = await approvedTerminal();
-    const isolated = await isolatedCredentialApi();
+    const isolated = await isolatedCredentialApi({
+      AUTH_UNKNOWN_GLOBAL_RATE_LIMIT: "20",
+    });
     try {
       const ips = Array.from({ length: 7 }, nextIp);
       const replies: Reply[] = [];
       const started = Date.now();
       // Es una prueba del cupo por minuto, no de saturación de conexiones de
-      // PostgreSQL: veinte tandas de una petición por cada una de las siete IP.
-      for (let n = 0; n < 20; n++) {
+      // PostgreSQL: cinco tandas de una petición por cada una de las siete IP
+      // (35 intentos, 5 por IP: lejos de su cupo propio de 20).
+      for (let n = 0; n < 5; n++) {
         replies.push(
           ...(await Promise.all(
             ips.map((ip) =>
@@ -728,15 +745,16 @@ describe("N-02 · el cubo global de identidades desconocidas no da 429 a los equ
         Date.now() - started,
         "El barrido debe terminar dentro de la ventana real de 60 segundos; el entorno no fue suficientemente rápido.",
       ).toBeLessThan(MINUTE);
-      expect(replies).toHaveLength(140);
+      expect(replies).toHaveLength(35);
       expect(
         replies.filter((reply) => ![400, 429].includes(reply.status)),
       ).toEqual([]);
-      // Probar que realmente se llenó el cupo global predeterminado: siete
-      // direcciones con veinte intentos cada una no exceden su cupo por IP.
+      // Probar que realmente se llenó el cupo global: siete direcciones con
+      // cinco intentos cada una no exceden su cupo por IP, así que cada 429
+      // viene del cubo global (35 intentos − 20 de cupo = 15).
       expect(
         replies.filter((reply) => reply.status === 429).length,
-      ).toBeGreaterThanOrEqual(20);
+      ).toBeGreaterThanOrEqual(10);
       // Desde una IP nueva y sin equipo, el 429 indistinguible se mantiene...
       expect(
         (await login(cashier, nextIp(), "incorrecta", undefined, isolated.api))

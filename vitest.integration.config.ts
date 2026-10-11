@@ -1,6 +1,8 @@
 import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
+    // Falla de inmediato si la API de :3001 (u otra) no es la de este repositorio.
+    globalSetup: ["tests/setup/integration-api.ts"],
     include: [
       "tests/api.test.ts",
       "tests/caja-por-usuario.test.ts",
