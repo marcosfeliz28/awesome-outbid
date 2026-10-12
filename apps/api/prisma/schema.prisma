@@ -127,6 +127,8 @@ model Variant {
   stock          Decimal             @default(0) @db.Decimal(14, 3)
   active         Boolean             @default(true)
   lots           Lot[]
+  warehouseStocks VariantStock[]
+  transferLines StockTransferLine[]
   movements      InventoryMovement[]
   saleItems      SaleItem[]
   // Claves foráneas de 202610210002_datos_restricciones.
@@ -176,6 +178,8 @@ model Lot {
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   movements           InventoryMovement[]
+  warehouseStocks     LotStock[]
+  transferLines       StockTransferLine[]
   saleItems           SaleItem[]
 
   @@unique([variantId, lotNumberNormalized])
@@ -211,11 +215,75 @@ model InventoryMovement {
   reason       String
   userId       String
   branchId     String   @default("main")
+  warehouseId  String?  @db.Uuid
+  warehouse    Warehouse? @relation(fields: [warehouseId], references: [id])
   createdAt    DateTime @default(now())
 
   @@index([lotId])
   @@index([variantId, createdAt])
   @@index([branchId, createdAt])
+}
+
+model Warehouse {
+  id String @id @default(uuid()) @db.Uuid
+  branchId String @default("main")
+  name String
+  kind String
+  active Boolean @default(true)
+  sellable Boolean @default(false)
+  stocks VariantStock[]
+  lotStocks LotStock[]
+  outgoingTransfers StockTransfer[] @relation("TransferFrom")
+  incomingTransfers StockTransfer[] @relation("TransferTo")
+  movements InventoryMovement[]
+  counts InventoryCount[]
+  @@unique([branchId, kind])
+}
+
+model VariantStock {
+  variantId String @db.Uuid
+  warehouseId String @db.Uuid
+  qty Decimal @default(0) @db.Decimal(14, 3)
+  variant Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  @@id([variantId, warehouseId])
+  @@index([warehouseId])
+}
+
+model LotStock {
+  lotId String @db.Uuid
+  warehouseId String @db.Uuid
+  qty Decimal @default(0) @db.Decimal(14, 3)
+  lot Lot @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  @@id([lotId, warehouseId])
+}
+
+model StockTransfer {
+  id String @id @default(uuid()) @db.Uuid
+  operationId String @unique @db.Uuid
+  branchId String @default("main")
+  fromId String @db.Uuid
+  toId String @db.Uuid
+  from Warehouse @relation("TransferFrom", fields: [fromId], references: [id])
+  to Warehouse @relation("TransferTo", fields: [toId], references: [id])
+  reason String
+  userId String
+  createdAt DateTime @default(now())
+  lines StockTransferLine[]
+  @@index([branchId, createdAt])
+}
+
+model StockTransferLine {
+  id String @id @default(uuid()) @db.Uuid
+  transferId String @db.Uuid
+  variantId String @db.Uuid
+  lotId String? @db.Uuid
+  lot Lot? @relation(fields: [lotId], references: [id], onDelete: Restrict)
+  qty Decimal @db.Decimal(14, 3)
+  transfer StockTransfer @relation(fields: [transferId], references: [id])
+  variant Variant @relation(fields: [variantId], references: [id])
+  @@index([variantId])
 }
 
 model Customer {
@@ -381,6 +449,20 @@ model Payment {
   @@index([cashSessionId])
 }
 
+// Un cobro por cliente puede abarcar varias ventas; conserva la respuesta y
+// el hash del pedido para reintentos sin volver a mover caja ni incentivos.
+model CreditAllocationOperation {
+  operationId String   @id @db.Uuid
+  branchId    String
+  customerId  String   @db.Uuid
+  actorId     String   @db.Uuid
+  requestHash String
+  result      Json
+  createdAt   DateTime @default(now())
+
+  @@index([branchId, customerId, createdAt])
+}
+
 model SaleReturn {
   id             String   @id @default(uuid()) @db.Uuid
   saleId         String   @db.Uuid
@@ -538,6 +620,8 @@ model InventoryCount {
   userId    String
   appliedBy String?
   branchId  String   @default("main")
+  warehouseId String? @db.Uuid
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
   createdAt DateTime @default(now())
 }
 

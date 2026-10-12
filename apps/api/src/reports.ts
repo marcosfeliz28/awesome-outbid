@@ -304,7 +304,7 @@ export class ReportsController {
       }),
       this.db.$queryRaw<
         any[]
-      >`SELECT SUM(stock * "costAvg") AS cost, SUM(stock * price) AS retail FROM "Variant" WHERE "branchId"=${actor.branchId} AND active=true`,
+      >`SELECT SUM(s.qty * v."costAvg") AS cost, SUM(s.qty * v.price) AS retail FROM "Variant" v JOIN "VariantStock" s ON s."variantId"=v.id JOIN "Warehouse" w ON w.id=s."warehouseId" AND w."branchId"=v."branchId" WHERE v."branchId"=${actor.branchId} AND v.active=true`,
       this.db.alert.findMany({
         where: { branchId: actor.branchId, status: { not: "resolved" } },
         orderBy: { createdAt: "desc" },
@@ -593,6 +593,7 @@ export class ReportsController {
           include: {
             product: { include: { category: true } },
             lots: { where: { qty: { gt: 0 } } },
+            warehouseStocks: { include: { warehouse: true } },
           },
         })
       : [];
@@ -603,7 +604,19 @@ export class ReportsController {
       Stock: Number(v.stock),
       Costo: Number(v.costAvg),
       Precio: Number(v.price),
-      Valor: money(d(v.stock).times(v.costAvg)),
+      Casa: Number(
+        v.warehouseStocks
+          .filter((s) => s.warehouse.kind === "home")
+          .reduce((sum, s) => sum.plus(s.qty), d(0)),
+      ),
+      Total: Number(
+        v.warehouseStocks.reduce((sum, s) => sum.plus(s.qty), d(0)),
+      ),
+      Valor: money(
+        v.warehouseStocks
+          .reduce((sum, s) => sum.plus(s.qty), d(0))
+          .times(v.costAvg),
+      ),
     }));
     let rows: any[] = [];
     if (name === "inventory-value") rows = baseVariants;

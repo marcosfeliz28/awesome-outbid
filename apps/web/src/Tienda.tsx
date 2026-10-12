@@ -8,6 +8,7 @@ import { CASH_DENOMINATIONS, can, formatMoney } from "@fitstore/shared";
 import { api, apiBlob, post, localDB, useStore } from "./api";
 import { FormModal, QueryState, toast, mutate, today } from "./helpers";
 import { closeCashIntro } from "./managementMessages";
+import { CreditAccounts } from "./CreditAccounts";
 import { pendingCloseMessage } from "./pendingSales";
 import {
   CuadrePrint,
@@ -456,6 +457,7 @@ const CREDIT_STATUS: Record<string, { label: string; tone: any }> = {
 const ageText = (days: number) =>
   days <= 0 ? "hoy" : days === 1 ? "hace 1 día" : `hace ${days} días`;
 export function CodPending({ session }: { session: any }) {
+  const [view, setView] = useState<"sales" | "customers">("sales");
   const [state, setState] = useState<"pending" | "closed">("pending");
   const query = useQuery({
     queryKey: ["cod-pending", state],
@@ -500,107 +502,135 @@ export function CodPending({ session }: { session: any }) {
           ))}
         </div>
       </div>
-      {state === "pending" && rows.length > 0 && (
-        <p className="cod-hint">
-          {rows.length} {rows.length === 1 ? "crédito" : "créditos"} · Por
-          cobrar: <strong>{formatMoney(totalPending)}</strong>
-        </p>
-      )}
-      <QueryState query={query}>
-        {rows.length ? (
-          <div className="cod-list">
-            {rows.map((r) => (
-              <div className="cod-row" key={r.saleId}>
-                <div>
-                  <strong>{r.number}</strong>{" "}
-                  <Badge tone={CREDIT_STATUS[r.status]?.tone}>
-                    {CREDIT_STATUS[r.status]?.label}
-                  </Badge>
-                  <small>
-                    {new Date(r.createdAt).toLocaleString("es-DO", {
-                      timeZone: "America/Santo_Domingo",
-                    })}
-                    {" · " + ageText(r.ageDays)}
-                    {r.customer
-                      ? " · " +
-                        r.customer.name +
-                        (r.customer.phone ? " · " + r.customer.phone : "")
-                      : ""}
-                    {r.seller ? " · Vendió " + r.seller.name : ""}
-                  </small>
-                  <small className="cod-figures">
-                    Total {formatMoney(r.total)} · Cobrado{" "}
-                    {formatMoney(r.collected)} · Pendiente{" "}
-                    {formatMoney(r.pending)}
-                  </small>
-                  {r.closedAt && (
-                    <small>
-                      Cerrado el{" "}
-                      {new Date(r.closedAt).toLocaleString("es-DO", {
-                        timeZone: "America/Santo_Domingo",
-                      })}
-                      {r.closedBy ? " por " + r.closedBy : ""}
-                    </small>
-                  )}
-                  {r.pendingVerification > 0 && (
-                    <Badge tone="warning">
-                      {formatMoney(r.pendingVerification)} por verificar
-                    </Badge>
-                  )}
-                  {r.collections?.length > 0 && (
-                    <ul className="cod-collections">
-                      {r.collections.map((c: any) => (
-                        <li key={c.paymentId}>
-                          <ProofThumb
-                            paymentId={c.paymentId}
-                            hasProof={c.hasProof}
-                          />
-                          <span>
-                            {COD_METHOD_LABEL[c.method] ?? c.method}{" "}
-                            {formatMoney(c.amount)}
-                            {c.reference ? " · " + c.reference : ""}
-                            {c.receivedBy ? " · recibió " + c.receivedBy : ""}
-                            {c.status === "pending_verification"
-                              ? " · por verificar"
-                              : c.status === "rejected"
-                                ? " · rechazada"
-                                : ""}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <strong className="cod-amount">{formatMoney(r.pending)}</strong>
-                {state === "pending" && (
-                  <Button onClick={() => setCollecting(r)}>
-                    Registrar cobro
-                  </Button>
-                )}
+      <div className="segmented" role="group" aria-label="Vista de créditos">
+        <button
+          type="button"
+          className={view === "sales" ? "active" : ""}
+          aria-pressed={view === "sales"}
+          onClick={() => setView("sales")}
+        >
+          Por venta
+        </button>
+        <button
+          type="button"
+          className={view === "customers" ? "active" : ""}
+          aria-pressed={view === "customers"}
+          onClick={() => setView("customers")}
+        >
+          Por persona
+        </button>
+      </div>
+      {view === "customers" ? (
+        <CreditAccounts session={session} />
+      ) : (
+        <>
+          {state === "pending" && rows.length > 0 && (
+            <p className="cod-hint">
+              {rows.length} {rows.length === 1 ? "crédito" : "créditos"} · Por
+              cobrar: <strong>{formatMoney(totalPending)}</strong>
+            </p>
+          )}
+          <QueryState query={query}>
+            {rows.length ? (
+              <div className="cod-list">
+                {rows.map((r) => (
+                  <div className="cod-row" key={r.saleId}>
+                    <div>
+                      <strong>{r.number}</strong>{" "}
+                      <Badge tone={CREDIT_STATUS[r.status]?.tone}>
+                        {CREDIT_STATUS[r.status]?.label}
+                      </Badge>
+                      <small>
+                        {new Date(r.createdAt).toLocaleString("es-DO", {
+                          timeZone: "America/Santo_Domingo",
+                        })}
+                        {" · " + ageText(r.ageDays)}
+                        {r.customer
+                          ? " · " +
+                            r.customer.name +
+                            (r.customer.phone ? " · " + r.customer.phone : "")
+                          : ""}
+                        {r.seller ? " · Vendió " + r.seller.name : ""}
+                      </small>
+                      <small className="cod-figures">
+                        Total {formatMoney(r.total)} · Cobrado{" "}
+                        {formatMoney(r.collected)} · Pendiente{" "}
+                        {formatMoney(r.pending)}
+                      </small>
+                      {r.closedAt && (
+                        <small>
+                          Cerrado el{" "}
+                          {new Date(r.closedAt).toLocaleString("es-DO", {
+                            timeZone: "America/Santo_Domingo",
+                          })}
+                          {r.closedBy ? " por " + r.closedBy : ""}
+                        </small>
+                      )}
+                      {r.pendingVerification > 0 && (
+                        <Badge tone="warning">
+                          {formatMoney(r.pendingVerification)} por verificar
+                        </Badge>
+                      )}
+                      {r.collections?.length > 0 && (
+                        <ul className="cod-collections">
+                          {r.collections.map((c: any) => (
+                            <li key={c.paymentId}>
+                              <ProofThumb
+                                paymentId={c.paymentId}
+                                hasProof={c.hasProof}
+                              />
+                              <span>
+                                {COD_METHOD_LABEL[c.method] ?? c.method}{" "}
+                                {formatMoney(c.amount)}
+                                {c.reference ? " · " + c.reference : ""}
+                                {c.receivedBy
+                                  ? " · recibió " + c.receivedBy
+                                  : ""}
+                                {c.status === "pending_verification"
+                                  ? " · por verificar"
+                                  : c.status === "rejected"
+                                    ? " · rechazada"
+                                    : ""}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <strong className="cod-amount">
+                      {formatMoney(r.pending)}
+                    </strong>
+                    {state === "pending" && (
+                      <Button onClick={() => setCollecting(r)}>
+                        Registrar cobro
+                      </Button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <Empty
-            title={
-              state === "pending"
-                ? "Sin créditos pendientes"
-                : "Sin créditos cerrados"
-            }
-            description={
-              state === "pending"
-                ? "Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago."
-                : "Los créditos saldados aparecerán aquí con quién y cuándo los cerró."
-            }
-          />
-        )}
-      </QueryState>
-      {collecting && (
-        <CodCollect
-          row={collecting}
-          session={session}
-          onClose={() => setCollecting(null)}
-        />
+            ) : (
+              <Empty
+                title={
+                  state === "pending"
+                    ? "Sin créditos pendientes"
+                    : "Sin créditos cerrados"
+                }
+                description={
+                  state === "pending"
+                    ? "Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago."
+                    : "Los créditos saldados aparecerán aquí con quién y cuándo los cerró."
+                }
+              />
+            )}
+          </QueryState>
+          {collecting && (
+            <CodCollect
+              row={collecting}
+              session={session}
+              onClose={() => setCollecting(null)}
+            />
+          )}
+        </>
       )}
     </section>
   );

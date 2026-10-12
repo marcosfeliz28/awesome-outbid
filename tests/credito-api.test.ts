@@ -464,7 +464,222 @@ describe("W7 · cobro de créditos solo para administración", () => {
   });
 });
 
+describe("3v · créditos por persona", () => {
+  it("no expone cuentas de otra sucursal ni teléfono/identificación completos", async () => {
+    const other = await db.customer.create({
+      data: {
+        name: "QA otra sucursal " + suffix,
+        branchId: "qa-other-" + suffix,
+        phone: "8095551234",
+        legalId: "00112345678",
+      },
+    });
+    expect((await request("/credit-accounts/" + other.id, owner)).status).toBe(
+      404,
+    );
+    expect(
+      (await request("/credit-accounts/" + other.id + "/statement.pdf", owner))
+        .status,
+    ).toBe(404);
+    const visible = await ok("/customers", owner, {
+      name: "QA privacidad " + suffix,
+      phone: "8095551234",
+      legalId: "00112345678",
+    });
+    await sale(ana, 100, [{ method: "cod", amount: 100 }], {
+      customerId: visible.id,
+    });
+    const account = await ok("/credit-accounts/" + visible.id, owner);
+    expect(JSON.stringify(account.customer)).not.toContain("8095551234");
+    expect(JSON.stringify(account.customer)).not.toContain("00112345678");
+  });
+
+  it("agrupa por cliente, muestra historial, reparte y rechaza sobrepago/reenvío distinto", async () => {
+    const customer = await ok("/customers", owner, {
+      name: "QA persona " + suffix,
+    });
+    const a = (
+      await sale(ana, 100, [{ method: "cod", amount: 100 }], {
+        customerId: customer.id,
+      })
+    ).body;
+    const b = (
+      await sale(ana, 200, [{ method: "cod", amount: 200 }], {
+        customerId: customer.id,
+      })
+    ).body;
+    for (const token of [ana.token, manager]) {
+      expect((await request("/credit-accounts", token)).status).toBe(403);
+      expect(
+        (await request("/credit-accounts/" + customer.id, token)).status,
+      ).toBe(403);
+    }
+    const list = await ok("/credit-accounts?search=QA%20persona", owner);
+    expect(
+      list.rows.find((row: any) => row.customer.id === customer.id),
+    ).toMatchObject({ balance: 300, openSales: 2 });
+    const statement = await ok("/credit-accounts/" + customer.id, owner);
+    expect(statement.sales.map((row: any) => row.id)).toEqual([a.id, b.id]);
+    const pdf = await fetch(
+      base + "/credit-accounts/" + customer.id + "/statement.pdf",
+      { headers: { Authorization: "Bearer " + owner } },
+    );
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers.get("content-type")).toContain("application/pdf");
+    const path = "/credit-accounts/" + customer.id + "/collections";
+    const op = randomUUID();
+    const body = {
+      operationId: op,
+      cashSessionId: adminA.cash.id,
+      lines: [line("cash", 101)],
+    };
+    const first = await ok(path, adminA.token, body);
+    expect(
+      first.allocated.map((row: any) => [row.saleId, Number(row.amount)]),
+    ).toEqual([
+      [a.id, 100],
+      [b.id, 1],
+    ]);
+    expect(
+      (await ok(path, adminA.token, body)).payments.map((row: any) => row.id),
+    ).toEqual(first.payments.map((row: any) => row.id));
+    expect(
+      (await request(path, adminA.token, { ...body, lines: [line("cash", 1)] }))
+        .status,
+    ).toBe(400);
+    expect((await request(path, adminB.token, body)).status).toBe(403);
+    expect(
+      (
+        await request(path, adminA.token, {
+          operationId: randomUUID(),
+          cashSessionId: adminA.cash.id,
+          lines: [line("cash", 200)],
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      Number((await db.sale.findUnique({ where: { id: a.id } })).creditBalance),
+    ).toBe(0);
+    expect(
+      Number((await db.sale.findUnique({ where: { id: b.id } })).creditBalance),
+    ).toBe(199);
+  });
+
+  it("dos cobros simultáneos no cobran más que el saldo", async () => {
+    const customer = await ok("/customers", owner, {
+      name: "QA carrera " + suffix,
+    });
+    const s = (
+      await sale(ana, 100, [{ method: "cod", amount: 100 }], {
+        customerId: customer.id,
+      })
+    ).body;
+    const path = "/credit-accounts/" + customer.id + "/collections";
+    const make = () =>
+      request(path, adminA.token, {
+        operationId: randomUUID(),
+        cashSessionId: adminA.cash.id,
+        lines: [line("cash", 100)],
+      });
+    const results = await Promise.all([make(), make()]);
+    expect(results.filter((r) => r.status < 300)).toHaveLength(1);
+    expect(
+      Number((await db.sale.findUnique({ where: { id: s.id } })).creditBalance),
+    ).toBe(0);
+    expect(
+      await db.payment.count({
+        where: { saleId: s.id, entryType: "installment" },
+      }),
+    ).toBe(1);
+  });
+});
+
 describe("W7 · reportes: la venta cuenta el día de la venta, el dinero el día del cobro", () => {
+  it("3z: informe diario y mensual formal, sin cajas QA y con PDF", async () => {
+    const date = bizDay(0);
+    const path = `/reports/formal?period=day&date=${date}`;
+    expect((await request(path, ana.token)).status).toBe(403);
+    expect(
+      (await request("/reports/formal?period=day&date=2026-02-30", owner))
+        .status,
+    ).toBe(400);
+    const daily = await ok(path, owner);
+    expect(daily.title).toContain("Informe formal");
+    expect(daily.cash.every((c: any) => !/^qa[-_]/i.test(c.register))).toBe(
+      true,
+    );
+    expect(daily.totals.margin).toBeDefined();
+    const monthly = await ok(
+      `/reports/formal?period=month&date=${date.slice(0, 7)}`,
+      owner,
+    );
+    expect(monthly.from).toBe(date.slice(0, 7) + "-01");
+    const pdf = await fetch(base + path + "&format=pdf", {
+      headers: { Authorization: "Bearer " + owner },
+    });
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers.get("content-type")).toContain("application/pdf");
+    const bytes = Buffer.from(await pdf.arrayBuffer());
+    expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
+  });
+
+  it("3w: separa crédito antiguo y cobro actual; exporta CSV y Excel", async () => {
+    const past = bizDay(3),
+      current = bizDay(0);
+    const params = `from=${past}&to=${current}`;
+    const before = await ok("/reports/income-by-day?" + params, owner);
+    const day = (data: any, date: string) =>
+      data.rows.find((row: any) => row.day === date) ?? {};
+    const s = (await sale(ana, 100, [{ method: "cod", amount: 100 }])).body;
+    await db.sale.update({
+      where: { id: s.id },
+      data: { createdAt: new Date(Date.now() - 3 * 86400000) },
+    });
+    await collect(adminA, s.id, [line("cash", 100)]);
+    const after = await ok("/reports/income-by-day?" + params, owner);
+    expect(day(after, past).sold - day(before, past).sold).toBe(100);
+    expect(
+      day(after, past).creditGenerated - day(before, past).creditGenerated,
+    ).toBe(100);
+    expect(
+      day(after, current).collectionCash - day(before, current).collectionCash,
+    ).toBe(100);
+    expect(day(after, current).moneyIn - day(before, current).moneyIn).toBe(
+      100,
+    );
+    const csv = await fetch(
+      base + "/reports/income-by-day?" + params + "&format=csv",
+      { headers: { Authorization: "Bearer " + owner } },
+    );
+    expect(csv.status).toBe(200);
+    const csvBody = await csv.text();
+    expect(csvBody.charCodeAt(0)).toBe(0xfeff);
+    expect(csvBody).toContain("Fecha ISO,Efectivo,Tarjeta");
+    const xlsx = await fetch(
+      base + "/reports/income-by-day?" + params + "&format=xlsx",
+      { headers: { Authorization: "Bearer " + owner } },
+    );
+    expect(xlsx.status).toBe(200);
+    const ExcelJS = requireApi("exceljs");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(Buffer.from(await xlsx.arrayBuffer()));
+    expect(workbook.worksheets.map((sheet: any) => sheet.name)).toEqual([
+      "Resumen por día",
+      "Detalle de movimientos",
+    ]);
+    expect(
+      (
+        await request(
+          "/reports/income-by-day?" +
+            params +
+            "&scope=session&scopeId=" +
+            adminA.cash.id,
+          ana.token,
+        )
+      ).status,
+    ).toBe(403);
+  });
+
   it("backdated 3 días: ingreso/ganancia en el día de la venta; cobrar hoy mueve la caja y no los ingresos", async () => {
     const dayOld = bizDay(3),
       today = bizDay(0);

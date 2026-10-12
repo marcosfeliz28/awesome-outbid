@@ -347,8 +347,21 @@ export async function lockVariant(tx: any, id: string, actor: Actor) {
   const settings = await tx.settings.findUnique({
     where: { id: actor.branchId },
   });
+  const otherStocks = await tx.variantStock.findMany({
+    where: {
+      variantId: id,
+      warehouse: { branchId: actor.branchId, sellable: false },
+    },
+    select: { qty: true },
+  });
   return {
     ...variant,
+    totalStock: quantity(
+      otherStocks.reduce(
+        (sum: any, row: any) => sum.plus(row.qty),
+        d(variant.stock),
+      ),
+    ),
     allowNegativeStock:
       (settings?.data as any)?.allowNegativeStock === true &&
       !variant.product.category.requiresLot,
@@ -444,6 +457,10 @@ export async function stockChange(
     where: { id: variant.id },
     data: { stock: balance },
   });
+  const storeWarehouse = await tx.warehouse.findUnique({
+    where: { branchId_kind: { branchId: actor.branchId, kind: "store" } },
+    select: { id: true },
+  });
   await tx.inventoryMovement.create({
     data: {
       variantId: variant.id,
@@ -456,9 +473,11 @@ export async function stockChange(
       reason: reasonText,
       userId: actor.id,
       branchId: actor.branchId,
+      warehouseId: storeWarehouse?.id,
     },
   });
   variant.stock = balance;
+  variant.totalStock = quantity(d(variant.totalStock ?? 0).plus(qty));
   if (balance < 0)
     await tx.alert.upsert({
       where: { key: "negative:" + variant.id },
@@ -552,7 +571,11 @@ export class InventoryController {
   async stock(@CurrentUser() actor: Actor) {
     const rows = await this.db.variant.findMany({
       where: { branchId: actor.branchId, active: true },
-      include: { product: { include: { category: true } }, lots: true },
+      include: {
+        product: { include: { category: true } },
+        lots: true,
+        warehouseStocks: { include: { warehouse: true } },
+      },
       orderBy: { sku: "asc" },
     });
     // `stock` es lo físico (para contar); lo vencido y lo vendible aparte.
@@ -561,6 +584,18 @@ export class InventoryController {
         const blocked = expiredQty(v.lots, v.product.category);
         return {
           ...v,
+          homeStock: String(
+            quantity(
+              v.warehouseStocks
+                .filter((s) => s.warehouse.kind === "home")
+                .reduce((sum, s) => sum.plus(s.qty), d(0)),
+            ),
+          ),
+          totalStock: String(
+            quantity(
+              v.warehouseStocks.reduce((sum, s) => sum.plus(s.qty), d(0)),
+            ),
+          ),
           expiredStock: String(blocked),
           sellableStock: String(quantity(d(v.stock).minus(blocked))),
         };
@@ -594,6 +629,7 @@ export class InventoryController {
     const parsed = parse(
       z.object({
         variantId: uuid,
+        warehouseId: uuid.optional(),
         qty: signedStockQty(),
         reason,
         lotId: uuid.optional(),
@@ -629,6 +665,163 @@ export class InventoryController {
     return retrySerializable(() =>
       this.db.$transaction(
         async (tx) => {
+          const warehouse = data.warehouseId
+            ? await tx.warehouse.findFirst({
+                where: {
+                  id: data.warehouseId,
+                  branchId: actor.branchId,
+                  active: true,
+                },
+              })
+            : null;
+          if (data.warehouseId && !warehouse) bad("Almacén inválido.");
+          if (warehouse && !warehouse.sellable) {
+            const variant = await lockVariant(tx, data.variantId, actor);
+            const before = Number(
+              (
+                await tx.variantStock.findUnique({
+                  where: {
+                    variantId_warehouseId: {
+                      variantId: variant.id,
+                      warehouseId: warehouse.id,
+                    },
+                  },
+                })
+              )?.qty ?? 0,
+            );
+            const after = quantity(d(before).plus(data.qty));
+            if (after < 0) bad("Stock insuficiente en " + warehouse.name + ".");
+            let lotId = data.lotId;
+            if (
+              (variant.product.category.requiresLot ||
+                variant.product.category.requiresExpiry) &&
+              !lotId &&
+              !data.lotNumber
+            )
+              bad("Indica lote para este producto.");
+            if (data.lotNumber && data.qty > 0) {
+              if (variant.product.category.requiresExpiry && !data.expiryDate)
+                bad("Indica vencimiento.");
+              const identity = lotIdentity(data.lotNumber, data.expiryDate);
+              const current = await tx.lot.findUnique({
+                where: {
+                  variantId_lotNumberNormalized: {
+                    variantId: variant.id,
+                    lotNumberNormalized: identity.lotNumberNormalized,
+                  },
+                },
+              });
+              const reconciled = reconcileLotExpiry(
+                current?.expiryDate,
+                identity.expiryDate,
+              );
+              if (reconciled.conflict)
+                bad("Ese lote ya tiene otro vencimiento.");
+              const lot = await tx.lot.upsert({
+                where: {
+                  variantId_lotNumberNormalized: {
+                    variantId: variant.id,
+                    lotNumberNormalized: identity.lotNumberNormalized,
+                  },
+                },
+                create: {
+                  variantId: variant.id,
+                  ...identity,
+                  qty: 0,
+                  cost: variant.costAvg,
+                  branchId: actor.branchId,
+                },
+                update: { expiryDate: reconciled.expiryDate },
+              });
+              lotId = lot.id;
+            }
+            if (lotId) {
+              const lot = await tx.lot.findFirst({
+                where: {
+                  id: lotId,
+                  variantId: variant.id,
+                  branchId: actor.branchId,
+                },
+              });
+              if (!lot) bad("Lote inválido.");
+              if (
+                data.qty > 0 &&
+                variant.product.category.requiresExpiry &&
+                (!lot.expiryDate || expired(lot.expiryDate))
+              )
+                bad("Indica un lote con vencimiento vigente.");
+              const old = Number(
+                (
+                  await tx.lotStock.findUnique({
+                    where: {
+                      lotId_warehouseId: { lotId, warehouseId: warehouse.id },
+                    },
+                  })
+                )?.qty ?? 0,
+              );
+              if (old + data.qty < 0) bad("Stock insuficiente en el lote.");
+              await tx.lotStock.upsert({
+                where: {
+                  lotId_warehouseId: { lotId, warehouseId: warehouse.id },
+                },
+                create: { lotId, warehouseId: warehouse.id, qty: data.qty },
+                update: { qty: { increment: data.qty } },
+              });
+            } else if (data.qty < 0) {
+              const tracked = Number(
+                (
+                  await tx.lotStock.aggregate({
+                    where: {
+                      warehouseId: warehouse.id,
+                      lot: { variantId: variant.id },
+                    },
+                    _sum: { qty: true },
+                  })
+                )._sum.qty ?? 0,
+              );
+              if (before - tracked < -data.qty)
+                bad("Selecciona el lote de salida.");
+            }
+            await tx.variantStock.upsert({
+              where: {
+                variantId_warehouseId: {
+                  variantId: variant.id,
+                  warehouseId: warehouse.id,
+                },
+              },
+              create: {
+                variantId: variant.id,
+                warehouseId: warehouse.id,
+                qty: after,
+              },
+              update: { qty: after },
+            });
+            await tx.inventoryMovement.create({
+              data: {
+                variantId: variant.id,
+                lotId,
+                warehouseId: warehouse.id,
+                type: data.type,
+                qty: data.qty,
+                unitCost: variant.costAvg,
+                balanceAfter: after,
+                reason: data.reason,
+                userId: actor.id,
+                branchId: actor.branchId,
+              },
+            });
+            await audit(
+              tx,
+              actor,
+              data.type,
+              "variant",
+              variant.id,
+              undefined,
+              data,
+            );
+            if (data.qty < 0) await inventoryLossAlert(tx, actor);
+            return safe({ ...variant, homeStock: after }, actor);
+          }
           if (data.type === "supplier_return")
             await tx.supplier.findFirstOrThrow({
               where: { id: data.supplierId, branchId: actor.branchId },
@@ -1023,7 +1216,7 @@ export class InventoryController {
             if (expired(line.expiryDate))
               bad("No puedes recibir un lote vencido.");
             const newCost = weightedCost(
-              Math.max(0, Number(variant.stock)),
+              Math.max(0, Number(variant.totalStock)),
               Number(variant.costAvg),
               line.qty,
               costs[index],
@@ -1292,6 +1485,7 @@ export class InventoryController {
   async count(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
       z.object({
+        warehouseId: uuid.optional(),
         items: z
           .array(z.object({ variantId: uuid, counted: countedQty() }))
           .min(1)
@@ -1299,15 +1493,46 @@ export class InventoryController {
       }),
       body,
     );
+    const warehouse = data.warehouseId
+      ? await this.db.warehouse.findFirst({
+          where: {
+            id: data.warehouseId,
+            branchId: actor.branchId,
+            active: true,
+          },
+        })
+      : await this.db.warehouse.findUnique({
+          where: { branchId_kind: { branchId: actor.branchId, kind: "store" } },
+        });
+    if (!warehouse) bad("Almacén inválido.");
     const items = [];
     for (const item of data.items) {
       const variant = await this.db.variant.findFirstOrThrow({
         where: { id: item.variantId, branchId: actor.branchId },
       });
-      items.push({ ...item, expected: Number(variant.stock) });
+      const held = warehouse.sellable
+        ? Number(variant.stock)
+        : Number(
+            (
+              await this.db.variantStock.findUnique({
+                where: {
+                  variantId_warehouseId: {
+                    variantId: variant.id,
+                    warehouseId: warehouse.id,
+                  },
+                },
+              })
+            )?.qty ?? 0,
+          );
+      items.push({ ...item, expected: held });
     }
     return this.db.inventoryCount.create({
-      data: { items, userId: actor.id, branchId: actor.branchId },
+      data: {
+        items,
+        userId: actor.id,
+        branchId: actor.branchId,
+        warehouseId: warehouse.id,
+      },
     });
   }
   @Post("inventory/counts/:id/apply")
@@ -1321,25 +1546,65 @@ export class InventoryController {
           const count = await tx.inventoryCount.findFirstOrThrow({
             where: { id: parse(uuid, id), branchId: actor.branchId },
           });
+          const warehouse = count.warehouseId
+            ? await tx.warehouse.findFirst({
+                where: {
+                  id: count.warehouseId,
+                  branchId: actor.branchId,
+                  active: true,
+                },
+              })
+            : await tx.warehouse.findUnique({
+                where: {
+                  branchId_kind: { branchId: actor.branchId, kind: "store" },
+                },
+              });
+          if (!warehouse) bad("Almacén inválido.");
           if (count.status !== "pending") bad("El conteo ya fue aplicado.");
           for (const item of (count.items as any[]).sort((a, b) =>
             a.variantId.localeCompare(b.variantId),
           )) {
             const variant = await lockVariant(tx, item.variantId, actor);
-            if (Number(variant.stock) !== item.expected)
+            const held = warehouse.sellable
+              ? Number(variant.stock)
+              : Number(
+                  (
+                    await tx.variantStock.findUnique({
+                      where: {
+                        variantId_warehouseId: {
+                          variantId: variant.id,
+                          warehouseId: warehouse.id,
+                        },
+                      },
+                    })
+                  )?.qty ?? 0,
+                );
+            if (held !== item.expected)
               bad("El stock cambió. Repite el conteo.");
             if (variant.product.category.requiresLot)
               bad("Ajusta productos con lote desde su lote específico.");
-            const lotStock = variant.lots.reduce(
-              (sum: number, l: any) => sum + Number(l.qty),
-              0,
-            );
+            const lotStock = warehouse.sellable
+              ? variant.lots.reduce(
+                  (sum: number, l: any) => sum + Number(l.qty),
+                  0,
+                )
+              : Number(
+                  (
+                    await tx.lotStock.aggregate({
+                      where: {
+                        warehouseId: warehouse.id,
+                        lot: { variantId: variant.id },
+                      },
+                      _sum: { qty: true },
+                    })
+                  )._sum.qty ?? 0,
+                );
             if (item.counted < lotStock)
               bad(
                 "El conteo no puede quedar por debajo del stock con lote. Ajusta el lote específico.",
               );
-            const delta = quantity(d(item.counted).minus(variant.stock));
-            if (delta)
+            const delta = quantity(d(item.counted).minus(held));
+            if (delta && warehouse.sellable)
               await stockChange(
                 tx,
                 actor,
@@ -1349,6 +1614,36 @@ export class InventoryController {
                 "Conteo físico aprobado",
                 id,
               );
+            else if (delta) {
+              await tx.variantStock.upsert({
+                where: {
+                  variantId_warehouseId: {
+                    variantId: variant.id,
+                    warehouseId: warehouse.id,
+                  },
+                },
+                create: {
+                  variantId: variant.id,
+                  warehouseId: warehouse.id,
+                  qty: item.counted,
+                },
+                update: { qty: item.counted },
+              });
+              await tx.inventoryMovement.create({
+                data: {
+                  variantId: variant.id,
+                  warehouseId: warehouse.id,
+                  type: "count",
+                  qty: delta,
+                  unitCost: variant.costAvg,
+                  balanceAfter: item.counted,
+                  refId: id,
+                  reason: "Conteo físico aprobado",
+                  userId: actor.id,
+                  branchId: actor.branchId,
+                },
+              });
+            }
           }
           await tx.inventoryCount.update({
             where: { id },
