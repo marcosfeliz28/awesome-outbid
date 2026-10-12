@@ -241,6 +241,7 @@ export function FormModal({
   onClose,
   initial = {},
   notice,
+  onFieldChange,
 }: {
   title: string;
   fields: Field[] | ((values: Record<string, any>) => Field[]);
@@ -248,6 +249,11 @@ export function FormModal({
   onClose: () => void;
   initial?: Record<string, any>;
   notice?: ReactNode;
+  onFieldChange?: (
+    key: string,
+    value: any,
+    values: Record<string, any>,
+  ) => Record<string, any> | void;
 }) {
   const initialFields = typeof fields === "function" ? fields(initial) : fields;
   const [values, setValues] = useState<Record<string, any>>(() =>
@@ -262,6 +268,16 @@ export function FormModal({
     [error, setError] = useState("");
   const client = useQueryClient();
   const resolvedFields = typeof fields === "function" ? fields(values) : fields;
+  function changeField(key: string, value: any, resetFields: string[] = []) {
+    setValues((current) => {
+      const next = {
+        ...current,
+        [key]: value,
+        ...Object.fromEntries(resetFields.map((reset) => [reset, ""])),
+      };
+      return onFieldChange?.(key, value, next) ?? next;
+    });
+  }
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -297,13 +313,7 @@ export function FormModal({
                 required={f.required}
                 value={values[f.key]}
                 onChange={(e) =>
-                  setValues((current) => ({
-                    ...current,
-                    [f.key]: e.target.value,
-                    ...Object.fromEntries(
-                      (f.resetFieldsOnChange ?? []).map((key) => [key, ""]),
-                    ),
-                  }))
+                  changeField(f.key, e.target.value, f.resetFieldsOnChange)
                 }
               >
                 <option value="">Seleccionar…</option>
@@ -317,17 +327,13 @@ export function FormModal({
               <input
                 type="checkbox"
                 checked={values[f.key]}
-                onChange={(e) =>
-                  setValues({ ...values, [f.key]: e.target.checked })
-                }
+                onChange={(e) => changeField(f.key, e.target.checked)}
               />
             ) : f.type === "textarea" ? (
               <textarea
                 required={f.required}
                 value={values[f.key]}
-                onChange={(e) =>
-                  setValues({ ...values, [f.key]: e.target.value })
-                }
+                onChange={(e) => changeField(f.key, e.target.value)}
               />
             ) : (
               <input
@@ -342,9 +348,7 @@ export function FormModal({
                 title={f.title}
                 step={f.step || "0.01"}
                 value={values[f.key]}
-                onChange={(e) =>
-                  setValues({ ...values, [f.key]: e.target.value })
-                }
+                onChange={(e) => changeField(f.key, e.target.value)}
               />
             )}
             <small>{f.help}</small>

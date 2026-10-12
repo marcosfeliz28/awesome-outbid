@@ -140,3 +140,62 @@ test("el traspaso desde Casa propone Tienda como destino en móvil", async ({
   await expect(selects.nth(0)).toHaveValue(home.id);
   await expect(selects.nth(1)).toHaveValue(store.id);
 });
+
+test("el conteo precarga la existencia del almacén seleccionado", async ({
+  page,
+  request,
+}) => {
+  const headers = await ownerHeaders(request);
+  const warehouses = await (
+    await request.get("/api/inventory/warehouses", { headers })
+  ).json();
+  const home = warehouses.find((w: any) => w.kind === "home");
+  const store = warehouses.find((w: any) => w.kind === "store");
+  const categories = await (await request.get("/api/categories", { headers })).json();
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const created = await request.post("/api/products", {
+    headers,
+    data: {
+      name: "Conteo por almacén " + suffix,
+      sku: "COUNT-WH-P-" + suffix,
+      categoryId: categories.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [
+        {
+          sku: "COUNT-WH-V-" + suffix,
+          barcode: "COUNT-WH-B-" + suffix,
+          price: 250,
+          costAvg: 100,
+        },
+      ],
+    },
+  });
+  expect(created.ok(), await created.text()).toBe(true);
+  const variantId = (await created.json()).variants[0].id;
+  for (const [warehouseId, qty] of [[store.id, 3], [home.id, 5]]) {
+    const adjustment = await request.post("/api/inventory/adjustments", {
+      headers,
+      data: { variantId, warehouseId, qty, reason: "Preparación conteo E2E" },
+    });
+    expect(adjustment.ok(), await adjustment.text()).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByLabel("Usuario").fill("admin@fitstore.demo");
+  await page
+    .getByLabel("Contraseña", { exact: true })
+    .fill("FitStore-Demo-2026!");
+  await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
+  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await page.evaluate(() => (location.hash = "inventory"));
+  await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
+  await page.getByLabel("Buscar producto o código").fill("COUNT-WH-V-" + suffix);
+  await page.getByRole("row", { name: new RegExp("Conteo por almacén " + suffix) })
+    .getByRole("button", { name: "Contar" })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  const counted = dialog.getByLabel("Cantidad contada");
+  await expect(counted).toHaveValue("3");
+  await dialog.getByLabel("Almacén").selectOption(home.id);
+  await expect(counted).toHaveValue("5");
+});
