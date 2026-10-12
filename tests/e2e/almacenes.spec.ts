@@ -203,6 +203,119 @@ test("el conteo precarga la existencia del almacén seleccionado", async ({
   await expect(counted).toHaveValue("3");
   await dialog.getByLabel("Almacén").selectOption(home.id);
   await expect(counted).toHaveValue("5");
+  await counted.fill("6");
+  await dialog.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Cambios guardados.")).toBeVisible();
+  const pendingCounts = await (
+    await request.get("/api/inventory/counts", { headers })
+  ).json();
+  const createdCount = pendingCounts.find(
+    (record: any) =>
+      record.status === "pending" &&
+      record.warehouseId === home.id &&
+      record.items.some(
+        (item: any) => item.variantId === variantId && Number(item.counted) === 6,
+      ),
+  );
+  expect(createdCount).toBeTruthy();
+  await page.getByRole("button", { name: "Conteos físicos" }).click();
+  const pendingAt = pendingCounts
+    .filter((record: any) => record.status === "pending")
+    .findIndex((record: any) => record.id === createdCount.id);
+  await page.getByRole("button", { name: "Aprobar ajuste" }).nth(pendingAt).click();
+  await expect(page.getByText("Conteo aprobado y aplicado.")).toBeVisible();
+  const finalStock = await (
+    await request.get("/api/inventory/stock", { headers })
+  ).json();
+  expect(Number(finalStock.find((v: any) => v.id === variantId).homeStock)).toBe(6);
+});
+
+test("el traspaso Casa→Tienda conserva la identidad del lote en móvil", async ({
+  page,
+  request,
+}) => {
+  const headers = await ownerHeaders(request);
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const categoryResponse = await request.post("/api/categories", {
+    headers,
+    data: {
+      name: "Lote Casa E2E " + suffix,
+      color: "#7C3AED",
+      requiresLot: true,
+      requiresExpiry: true,
+    },
+  });
+  expect(categoryResponse.ok(), await categoryResponse.text()).toBe(true);
+  const category = await categoryResponse.json();
+  const productResponse = await request.post("/api/products", {
+    headers,
+    data: {
+      name: "Producto con lote en Casa " + suffix,
+      sku: "LOT-WH-P-" + suffix,
+      categoryId: category.id,
+      variants: [
+        {
+          sku: "LOT-WH-V-" + suffix,
+          barcode: "LOT-WH-B-" + suffix,
+          costAvg: 100,
+          price: 250,
+        },
+      ],
+    },
+  });
+  expect(productResponse.ok(), await productResponse.text()).toBe(true);
+  const variantId = (await productResponse.json()).variants[0].id;
+  const warehouses = await (
+    await request.get("/api/inventory/warehouses", { headers })
+  ).json();
+  const home = warehouses.find((w: any) => w.kind === "home");
+  const store = warehouses.find((w: any) => w.kind === "store");
+  const adjusted = await request.post("/api/inventory/adjustments", {
+    headers,
+    data: {
+      variantId,
+      warehouseId: home.id,
+      qty: 3,
+      lotNumber: "CASA-" + suffix,
+      expiryDate: new Date(Date.now() + 365 * 86400000).toISOString(),
+      reason: "Preparación E2E, solo pruebas",
+    },
+  });
+  expect(adjusted.ok(), await adjusted.text()).toBe(true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByLabel("Usuario").fill("admin@fitstore.demo");
+  await page
+    .getByLabel("Contraseña", { exact: true })
+    .fill("FitStore-Demo-2026!");
+  await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
+  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await page.evaluate(() => (location.hash = "inventory"));
+  await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
+  await page.getByLabel("Almacén", { exact: true }).selectOption(home.id);
+  await page
+    .getByLabel("Producto", { exact: true })
+    .selectOption({ label: "Producto con lote en Casa " + suffix + " · LOT-WH-V-" + suffix });
+  await page.getByRole("button", { name: "Traspasar", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  const normalizedLot = ("CASA-" + suffix).toUpperCase();
+  await expect(dialog.getByLabel("Lote (si aplica)")).toContainText(normalizedLot);
+  await dialog.getByLabel("Desde").selectOption(home.id);
+  await dialog.getByLabel("Hasta").selectOption(store.id);
+  await dialog.getByLabel("Cantidad").fill("1");
+  await dialog.getByLabel("Lote (si aplica)").selectOption({ label: normalizedLot });
+  await dialog.getByLabel("Motivo").fill("Prueba local de traslado con lote");
+  await dialog.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Cambios guardados.")).toBeVisible();
+  const stock = await (
+    await request.get("/api/inventory/stock", { headers })
+  ).json();
+  const result = stock.find((v: any) => v.id === variantId);
+  expect(Number(result.homeStock)).toBe(2);
+  expect(Number(result.stock)).toBe(1);
+  expect(Number(result.totalStock)).toBe(3);
+  expect(result.lots.some((lot: any) => lot.lotNumber === normalizedLot && Number(lot.qty) === 1)).toBe(true);
 });
 
 test("la vista previa de Casa detalla el antes y el después del Excel", async ({
@@ -210,9 +323,6 @@ test("la vista previa de Casa detalla el antes y el después del Excel", async (
   request,
 }) => {
   const headers = await ownerHeaders(request);
-  const warehouses = await (
-    await request.get("/api/inventory/warehouses", { headers })
-  ).json();
   const categories = await (await request.get("/api/categories", { headers })).json();
   const suffix = crypto.randomUUID().slice(0, 8);
   const sku = "EXCEL-WH-V-" + suffix;
