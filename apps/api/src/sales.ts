@@ -2997,11 +2997,23 @@ export class SalesController {
       },
       include: { payments: { orderBy: { createdAt: "asc" } } },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      take: 1000,
+      take: 1001,
+    });
+    const visibleSales = sales.slice(0, 1000);
+    const balance = await this.db.sale.aggregate({
+      where: {
+        customerId: id,
+        branchId: actor.branchId,
+        status: "completed",
+        payments: {
+          some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+        },
+      },
+      _sum: { creditBalance: true },
     });
     const userIds = [
       ...new Set(
-        sales.flatMap((s) =>
+        visibleSales.flatMap((s) =>
           s.payments.flatMap((p) => (p.receivedById ? [p.receivedById] : [])),
         ),
       ),
@@ -3016,9 +3028,9 @@ export class SalesController {
         phone: maskTail(customer.phone),
         legalId: maskTail(customer.legalId),
       },
-      balance: money(sales.reduce((sum, s) => sum.plus(s.creditBalance), d(0))),
-      truncated: sales.length === 1000,
-      sales: sales.map((s) => ({
+      balance: Number(balance._sum.creditBalance ?? 0),
+      truncated: sales.length > 1000,
+      sales: visibleSales.map((s) => ({
         id: s.id,
         number: s.number,
         createdAt: s.createdAt,
