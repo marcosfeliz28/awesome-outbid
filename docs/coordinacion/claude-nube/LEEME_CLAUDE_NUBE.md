@@ -19,3 +19,11 @@
 - Nunca mostrar ni repetir contraseñas/PIN. La clave de `claude` vive solo en el entorno.
 - La dueña a veces escribe/dicta con cortes: ante montos o cantidades dudosas, pregunta; no adivines dinero.
 - Aviso: las sesiones nuevas no ven este chat; esta nota y `INSTRUCCIONES_ACTUALES.md` son tu memoria.
+
+## Regla de la dueña para entradas de mercancía y costos (orden permanente, 12-oct-2026)
+- **Costo promedio ponderado.** Cuando la dueña agrega mercancía con un costo distinto, el costo nuevo del producto = (existencia actual × costo actual + unidades nuevas × costo nuevo) ÷ (existencia actual + unidades nuevas). Ella negocia precios y compra a costos distintos: el costo debe reflejar siempre el promedio de lo que queda más lo que entra.
+- Sube o baja el costo según salga; redondea a 2 decimales. Si el costo nuevo es igual al vigente, no cambies nada.
+- Orden de trabajo: leer existencia y costo reales del sistema → calcular el promedio → ajustar existencia (`/inventory/adjustments`, motivo «Entrada de mercancía: N a RD$ X c/u») → fijar el costo promedio (`PATCH /variants/:id` con `costAvg`) → verificar leyendo de nuevo → decirle a la dueña el antes/después en español sencillo.
+- El **precio de venta no se toca** salvo que ella lo pida.
+- Producto nuevo: pedirle costo, precio y cantidad; si falta alguno, preguntar (no inventar).
+- Lo que se tocó **ayer o hoy** por conteo no se vuelve a tocar salvo que ella dé un número nuevo explícito.
