@@ -20,6 +20,7 @@ import { SalesController } from "./sales";
 import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
+import { IncomeReportController } from "./income-report";
 import { AlertCacheInterceptor, AlertEngine, AlertsController } from "./alerts";
 import { OfflineSalesController } from "./offline-sales";
 import { OfflineSaleReviewController } from "./offline-sale-review";
@@ -74,6 +75,7 @@ export function createAppModule(secret: string) {
       SalesController,
       AdminController,
       CashController,
+      IncomeReportController,
       ReportsController,
       AlertsController,
       OfflineSalesController,

@@ -52,6 +52,7 @@ import {
 } from "./helpers";
 import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
+import { IncomeByDay } from "./IncomeByDay";
 import {
   CloseCashModal,
   CodPending,
@@ -2679,6 +2680,7 @@ const reportList = [
   ["cash", "Cierres y diferencias"],
   ["by-seller", "Ventas por vendedor"],
   ["by-payment", "Ventas por método de pago"],
+  ["income-by-day", "Ingresos por día y método"],
   ["returns-discounts", "Devoluciones y descuentos"],
   ["customers", "Mejores clientes"],
   ["purchases", "Compras y cuentas por pagar"],
@@ -2693,6 +2695,7 @@ export function Reports() {
   const query = useQuery({
     queryKey: ["report", report, from, to, page],
     queryFn: () => api(`/reports/${report}?from=${from}&to=${to}&page=${page}`),
+    enabled: report !== "income-by-day",
   });
   const rows = query.data?.rows || [];
   const total: number = query.data?.total ?? rows.length;
@@ -2730,96 +2733,100 @@ export function Reports() {
             </button>
           ))}
         </aside>
-        <section className="panel">
-          <div className="panel-heading">
-            <div>
-              <h2>{reportList.find((r) => r[0] === report)?.[1]}</h2>
-              <p>Información registrada en tu tienda.</p>
+        {report === "income-by-day" ? (
+          <IncomeByDay />
+        ) : (
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <h2>{reportList.find((r) => r[0] === report)?.[1]}</h2>
+                <p>Información registrada en tu tienda.</p>
+              </div>
+              <div className="table-actions">
+                {["xlsx", "pdf"].map((format) => (
+                  <Button
+                    variant="secondary"
+                    key={format}
+                    onClick={() =>
+                      download(
+                        `/reports/${report}?from=${from}&to=${to}&format=${format}`,
+                        `${report}.${format}`,
+                      ).catch((error) =>
+                        toast(
+                          error.message !== DOWNLOAD_FAILED
+                            ? error.message
+                            : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
+                          true,
+                        ),
+                      )
+                    }
+                  >
+                    <Download size={16} />
+                    {format === "xlsx" ? "Excel" : "PDF"}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div className="table-actions">
-              {["xlsx", "pdf"].map((format) => (
+            <div className="date-filters">
+              <label className="field">
+                <span>Desde</span>
+                <input
+                  type="date"
+                  value={from}
+                  onChange={(e) => {
+                    setFrom(e.target.value);
+                    setPage(1);
+                  }}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>Hasta</span>
+                <input
+                  type="date"
+                  value={to}
+                  onChange={(e) => {
+                    setTo(e.target.value);
+                    setPage(1);
+                  }}
+                  required
+                />
+              </label>
+              <Badge tone="violet">{total} registros</Badge>
+            </div>
+            {pages > 1 && (
+              <div className="pagination">
+                <span>
+                  Mostrando {(page - 1) * limit + 1}–
+                  {(page - 1) * limit + rows.length} de {total}. Excel (hasta
+                  50,000 filas) y PDF (hasta 10,000) incluyen todo el período.
+                </span>
                 <Button
-                  variant="secondary"
-                  key={format}
-                  onClick={() =>
-                    download(
-                      `/reports/${report}?from=${from}&to=${to}&format=${format}`,
-                      `${report}.${format}`,
-                    ).catch((error) =>
-                      toast(
-                        error.message !== DOWNLOAD_FAILED
-                          ? error.message
-                          : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
-                        true,
-                      ),
-                    )
-                  }
+                  variant="ghost"
+                  disabled={page === 1 || query.isFetching}
+                  onClick={() => setPage(page - 1)}
                 >
-                  <Download size={16} />
-                  {format === "xlsx" ? "Excel" : "PDF"}
+                  Anteriores
                 </Button>
-              ))}
-            </div>
-          </div>
-          <div className="date-filters">
-            <label className="field">
-              <span>Desde</span>
-              <input
-                type="date"
-                value={from}
-                onChange={(e) => {
-                  setFrom(e.target.value);
-                  setPage(1);
-                }}
-                required
+                <Button
+                  variant="ghost"
+                  disabled={page >= pages || query.isFetching}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Siguientes
+                </Button>
+              </div>
+            )}
+            <QueryState query={query}>
+              <DataTable
+                rows={rows}
+                columns={columns}
+                empty="No hay datos para este período"
+                emptyDescription="Prueba otras fechas o registra una venta para consultar este reporte."
               />
-            </label>
-            <label className="field">
-              <span>Hasta</span>
-              <input
-                type="date"
-                value={to}
-                onChange={(e) => {
-                  setTo(e.target.value);
-                  setPage(1);
-                }}
-                required
-              />
-            </label>
-            <Badge tone="violet">{total} registros</Badge>
-          </div>
-          {pages > 1 && (
-            <div className="pagination">
-              <span>
-                Mostrando {(page - 1) * limit + 1}–
-                {(page - 1) * limit + rows.length} de {total}. Excel (hasta
-                50,000 filas) y PDF (hasta 10,000) incluyen todo el período.
-              </span>
-              <Button
-                variant="ghost"
-                disabled={page === 1 || query.isFetching}
-                onClick={() => setPage(page - 1)}
-              >
-                Anteriores
-              </Button>
-              <Button
-                variant="ghost"
-                disabled={page >= pages || query.isFetching}
-                onClick={() => setPage(page + 1)}
-              >
-                Siguientes
-              </Button>
-            </div>
-          )}
-          <QueryState query={query}>
-            <DataTable
-              rows={rows}
-              columns={columns}
-              empty="No hay datos para este período"
-              emptyDescription="Prueba otras fechas o registra una venta para consultar este reporte."
-            />
-          </QueryState>
-        </section>
+            </QueryState>
+          </section>
+        )}
       </div>
     </>
   );

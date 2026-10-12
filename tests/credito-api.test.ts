@@ -595,6 +595,63 @@ describe("3v · créditos por persona", () => {
 });
 
 describe("W7 · reportes: la venta cuenta el día de la venta, el dinero el día del cobro", () => {
+  it("3w: separa crédito antiguo y cobro actual; exporta CSV y Excel", async () => {
+    const past = bizDay(3),
+      current = bizDay(0);
+    const params = `from=${past}&to=${current}`;
+    const before = await ok("/reports/income-by-day?" + params, owner);
+    const day = (data: any, date: string) =>
+      data.rows.find((row: any) => row.day === date) ?? {};
+    const s = (await sale(ana, 100, [{ method: "cod", amount: 100 }])).body;
+    await db.sale.update({
+      where: { id: s.id },
+      data: { createdAt: new Date(Date.now() - 3 * 86400000) },
+    });
+    await collect(adminA, s.id, [line("cash", 100)]);
+    const after = await ok("/reports/income-by-day?" + params, owner);
+    expect(day(after, past).sold - day(before, past).sold).toBe(100);
+    expect(
+      day(after, past).creditGenerated - day(before, past).creditGenerated,
+    ).toBe(100);
+    expect(
+      day(after, current).collectionCash - day(before, current).collectionCash,
+    ).toBe(100);
+    expect(day(after, current).moneyIn - day(before, current).moneyIn).toBe(
+      100,
+    );
+    const csv = await fetch(
+      base + "/reports/income-by-day?" + params + "&format=csv",
+      { headers: { Authorization: "Bearer " + owner } },
+    );
+    expect(csv.status).toBe(200);
+    const csvBody = await csv.text();
+    expect(csvBody.charCodeAt(0)).toBe(0xfeff);
+    expect(csvBody).toContain("Fecha ISO,Efectivo,Tarjeta");
+    const xlsx = await fetch(
+      base + "/reports/income-by-day?" + params + "&format=xlsx",
+      { headers: { Authorization: "Bearer " + owner } },
+    );
+    expect(xlsx.status).toBe(200);
+    const ExcelJS = requireApi("exceljs");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(Buffer.from(await xlsx.arrayBuffer()));
+    expect(workbook.worksheets.map((sheet: any) => sheet.name)).toEqual([
+      "Resumen por día",
+      "Detalle de movimientos",
+    ]);
+    expect(
+      (
+        await request(
+          "/reports/income-by-day?" +
+            params +
+            "&scope=session&scopeId=" +
+            adminA.cash.id,
+          ana.token,
+        )
+      ).status,
+    ).toBe(403);
+  });
+
   it("backdated 3 días: ingreso/ganancia en el día de la venta; cobrar hoy mueve la caja y no los ingresos", async () => {
     const dayOld = bizDay(3),
       today = bizDay(0);
