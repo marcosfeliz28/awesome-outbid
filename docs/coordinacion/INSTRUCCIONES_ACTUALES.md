@@ -331,3 +331,14 @@ Diseño propuesto (aditivo, sin romper lo existente):
 7. Pruebas: unitarias del traspaso (atómico, no negativo, idempotente), integración PostgreSQL (permisos, sucursal, doble envío, carrera de dos traspasos), e2e del traspaso, migración sobre base con datos y consistencia: suma de almacenes = stock total antes y después. AUTOAUDITORÍA (§3s), 3 CI en verde, sin desplegar.
 
 **PRIORIDAD (dueña, 12-oct): la 3y (segundo almacén «Casa») es MUY IMPORTANTE.** La dueña tiene en su casa mucha más mercancía que en la tienda, y de productos caros: necesita ver «dónde está cada producto» y mover entre almacenes con restas automáticas. Orden de trabajo para ChatGPT NUBE: **3y primero**, luego 3v, 3w y 3x. ChatGPT PC: 3t y 3u, luego apoya la 3y (pruebas e integración). Margen mínimo de referencia de la dueña para ofertas y precios nuevos: **15 %** (precio − costo) / precio.
+
+### 3z. ORDEN DE LA DUEÑA (12-oct) — reportes formales diario/mensual y auditoría (extiende 3w; en la cola de ChatGPT NUBE después de 3y, 3v, 3w, 3x)
+Prototipo aprobado en forma («el formato no está mal, pero puede mejorar»). Se mejora día a día. Requisitos:
+- PDF formal (para que ella lo reenvíe: contable, socios): cabecera de Grupo Macgen, fecha, numeración de página, pie de control.
+- **Ingresos por forma de pago bien separados:** efectivo, transferencia, tarjeta y crédito (por cobrar), tanto de ventas del día como de cobros de créditos anteriores. Lo que debe entrar al banco (tarjeta + transferencia) vs. efectivo esperado en caja.
+- Por caja y por usuario, por categoría (fajas / maquillaje / suplementos), qué se vendió y qué no se vendió, créditos abiertos y cerrados del día, quién debe (cliente, factura, saldo, antigüedad), anuladas con motivo.
+- Margen = (precio − costo)/precio **sin restar ITBIS**. Mostrar ITBIS aparte solo informativo, si existe.
+- Cierre mensual y auditoría formal fin de día/fin de mes (cuadre de caja contra ventas, diferencias, anulaciones, descuentos, cambios de costo).
+- Arreglos pendientes del prototipo: encabezados «Efectivo esperado/contado» se montan; excluir cajas de prueba.
+- ~27-oct: análisis de rotación/no vendidos con propuesta y stock a mantener 1–2 meses.
+- **Oferta vitaminas/multivitamínicos: 15 % de DESCUENTO (no margen) aprobado por la dueña**, con fechas y sin tocar el precio normal; excluida Klean Essential Aminos + HMB (quedaría en 14.5 % de margen). Claude la carga.
