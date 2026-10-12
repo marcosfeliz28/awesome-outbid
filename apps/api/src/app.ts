@@ -15,6 +15,7 @@ import { AuthGuard, Database, Public } from "./common";
 import { AuthController } from "./auth";
 import { CatalogController } from "./catalog";
 import { InventoryController } from "./inventory";
+import { WarehousesController } from "./warehouses";
 import { SalesController } from "./sales";
 import { AdminController } from "./admin";
 import { CashController } from "./cash";
@@ -69,6 +70,7 @@ export function createAppModule(secret: string) {
       AuthController,
       CatalogController,
       InventoryController,
+      WarehousesController,
       SalesController,
       AdminController,
       CashController,
