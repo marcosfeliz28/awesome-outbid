@@ -13,6 +13,7 @@ Rama `nexora-chatgpt-nube`. Sin despliegue, acceso a Render ni uso de contraseñ
 
 - `pnpm typecheck`, `pnpm lint`, `pnpm build`: pasaron en esta rama.
 - Cinco archivos de pruebas unitarias focales: **12 pruebas pasaron** (`credit-allocation`, `income-day`, `credit-reasons`, `formal-period`, `formal-pdf`). El PDF de prueba ocupa varias páginas.
+- Regresión 3w comprobada con mutación temporal: al desactivar la resta de `return_total` en `income-day.ts`, la prueba «separa venta, crédito cobrado otro día y devolución» falló (`sold` recibido `0`, esperado `-0.01`); tras restaurar el código, 3/3 pruebas de ese archivo pasaron. No se guardó la mutación.
 - `pnpm check` completo: **no pasó en este entorno**; pruebas existentes que abren servicios locales fallan con `listen EPERM: operation not permitted 127.0.0.1`. PostgreSQL y los navegadores E2E no están disponibles aquí. No se rebajaron pruebas. Las regresiones PostgreSQL se añadieron a `tests/credito-api.test.ts` y deben correrse en CI.
 - GitHub: intento de `git push origin HEAD:refs/heads/nexora-chatgpt-nube` rechazado por falta de credenciales (`could not read Username`). Se entrega bundle para integrar y ejecutar CI.
 
