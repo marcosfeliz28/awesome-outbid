@@ -363,7 +363,7 @@ export class InventoryImportController {
       return await retrySerializable(() =>
         this.db.$transaction(
           async (tx) => {
-            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('nexora-inventory-import'))`;
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('nexora-inventory-import'))`;
             const plan = await this.casaPlan(buffer, actor, tx);
             if (plan.problems.length)
               bad("Corrige el archivo antes de cargarlo.");

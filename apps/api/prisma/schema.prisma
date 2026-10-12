@@ -244,7 +244,7 @@ model VariantStock {
   variantId String @db.Uuid
   warehouseId String @db.Uuid
   qty Decimal @default(0) @db.Decimal(14, 3)
-  variant Variant @relation(fields: [variantId], references: [id])
+  variant Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   warehouse Warehouse @relation(fields: [warehouseId], references: [id])
   @@id([variantId, warehouseId])
   @@index([warehouseId])
@@ -254,7 +254,7 @@ model LotStock {
   lotId String @db.Uuid
   warehouseId String @db.Uuid
   qty Decimal @default(0) @db.Decimal(14, 3)
-  lot Lot @relation(fields: [lotId], references: [id])
+  lot Lot @relation(fields: [lotId], references: [id], onDelete: Cascade)
   warehouse Warehouse @relation(fields: [warehouseId], references: [id])
   @@id([lotId, warehouseId])
 }
