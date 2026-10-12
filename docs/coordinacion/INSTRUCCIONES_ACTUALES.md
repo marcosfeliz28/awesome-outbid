@@ -314,3 +314,18 @@ Origen (11-oct-2026): la dueña puso `0` en «Crédito por venta que requiere ge
 4. Pruebas unitarias del texto de motivo (cada rama), e2e del aviso, y que ninguna regla de aprobación cambie. AUTOAUDITORÍA (§3s), 3 CI en verde, sin desplegar.
 
 **Orden sugerida de las colas (dueña, 12-oct):** PC: publicar 3t/3u (ya hechas en local) y resolver los 3 fallos de CI. NUBE: 3v → 3w → 3x. Si PC se atasca, Claude toma 3t.
+
+### 3y. ORDEN DE LA DUEÑA — segundo almacén («Casa») independiente, con traspasos y levantamiento (Claude lo diseña; ChatGPT NUBE/PC lo construye; Claude lo despliega)
+
+**Orden (12-oct-2026):** «un segundo almacén, independiente del primero, para decir que tengo en mi casa de todo. Cuando diga *moví de un almacén a otro*, que se hagan las restas. Así sabemos que hay tanto en un punto y tanto en otro. Un levantamiento de todo.»
+
+**Hoy:** el sistema tiene un solo inventario por sucursal (`Variant.stock`, `InventoryMovement`, `Product.location` solo es texto). **No existe** modelo de almacén/ubicación ni traspasos. Un segundo almacén **no** se resuelve creando otra sucursal (duplicaría el catálogo y no permite traspasos).
+
+Diseño propuesto (aditivo, sin romper lo existente):
+1. **Modelo `Warehouse`** (`id`, `branchId`, `name`, `kind` = `store`|`home`|`other`, `active`, `sellable` booleano). Almacén «Tienda» = el actual (todo el stock existente migra ahí sin cambiar números). «Casa» = nuevo, **no vendible desde caja** (`sellable=false`) pero sí visible en reportes e inventario.
+2. **Existencia por almacén:** tabla `VariantStock(variantId, warehouseId, qty)`; `Variant.stock` sigue siendo el total vendible (el de Tienda) para no tocar ventas ni caja; el total general = suma de almacenes.
+3. **Traspaso** (`StockTransfer` + líneas): «Mover de Casa a Tienda» o al revés, con operationId, motivo, usuario, fecha; resta de un almacén y suma al otro **en una sola transacción atómica**, con dos movimientos de kardex enlazados («traspaso salida/entrada»); **no cambia el costo promedio ni el costo total del negocio** (el costo viaja con la unidad). Bloquear si no hay existencia suficiente en el origen; idempotente; permiso de administración.
+4. **Levantamiento inicial de Casa:** importación por Excel al almacén Casa (mismas columnas del importador: ID, existencia, costo, precio) y conteo físico por almacén (`inventory-import` y ajustes con `warehouseId`).
+5. **Pantallas (español):** Inventario con selector «Tienda / Casa / Todos» y columna «Total»; botón «Traspasar»; historial de traspasos; reporte «Dónde está la mercancía» (producto, Tienda, Casa, total, valor a costo).
+6. **Reglas:** las ventas, devoluciones, anulaciones y alertas de stock bajo siguen usando **solo Tienda**; el costo promedio ponderado (regla de entradas) se calcula sobre **el total de todos los almacenes**. Migración aditiva (nueva migración, prefijo único).
+7. Pruebas: unitarias del traspaso (atómico, no negativo, idempotente), integración PostgreSQL (permisos, sucursal, doble envío, carrera de dos traspasos), e2e del traspaso, migración sobre base con datos y consistencia: suma de almacenes = stock total antes y después. AUTOAUDITORÍA (§3s), 3 CI en verde, sin desplegar.
