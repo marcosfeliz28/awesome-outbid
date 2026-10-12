@@ -12,4 +12,4 @@ Completa esto antes de cobrar la primera venta. Marca “pendiente” y llama a 
 - [ ] En **Configuración** → **Negocio y reglas** → **Respaldo diario a Google Drive**, revisar si figura **Conectado** y una fecha en **Último respaldo bueno**. Si está “No configurado”, “Sin conectar” o falló, reportarlo; la lista no configura el respaldo por sí sola.
 - [ ] A mano: teléfono de soporte y gerente de turno: ________________________________
 
-**Solo después de marcar lo anterior:** empezar a vender. Para verificar impresión, usar una venta autorizada por la dueña y anularla desde administración con el motivo correcto; si no hay autorización, no crear facturas de prueba.
+**Solo después de marcar lo anterior:** empezar a vender. Para verificar impresión, usar una venta autorizada por la dueña y anularla desde administración con el motivo correcto; si la caja original ya cerró y hubo efectivo, quien anula necesita su propia caja abierta y efectivo suficiente para el reembolso. El sistema no permite anular ventas con devoluciones o abonos; si sucede, detenerse y consultar a gerencia. Si no hay autorización, no crear facturas de prueba.

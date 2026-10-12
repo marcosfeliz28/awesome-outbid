@@ -9,7 +9,7 @@
 ## Para vender
 
 1. Abre **Punto de venta**. Escanea el producto o búscalo por código/nombre; también puedes tocar su tarjeta. Si hace falta, **F2** lleva el cursor al buscador.
-2. Pulsa **Selecciona el cliente** (o **F4**) y elige uno. Si no aparece, pide a administración que lo agregue.
+2. Pulsa **Selecciona el cliente** (o **F4**) y elige uno. Si no aparece, créalo con **Nuevo cliente aquí mismo**.
 3. Revisa producto, cantidad, precio y total antes de cobrar. No cambies el precio sin autorización.
 4. Pulsa **Cobrar** (o **F12**). Elige **Efectivo**, **Tarjeta** o **Transferencia**. Para dividir el pago, agrega una línea por cada forma y verifica que **Pendiente** llegue a RD$ 0.00.
 5. Comprueba el monto recibido y el cambio que muestra la pantalla; pulsa **Finalizar venta** una sola vez. Si no responde, revisa **Ventas** antes de intentar de nuevo para evitar duplicarla.
@@ -18,7 +18,7 @@
 ## Devoluciones y cierre
 
 - Para una devolución, busca la factura en **Ventas** y llama a la gerente. La anulación corresponde a administración.
-- Al terminar, ve a **Caja** → **Cerrar y arquear**. Cuenta billetes y monedas; completa **Tarjeta declarada** y **Transferencia declarada** con lo comprobado (0 si no hubo), revisa vales y dinero entregado, marca la confirmación de conteo y pulsa **Cerrar caja e imprimir cuadre**.
+- Al terminar, ve a **Caja** → **Cerrar y arquear**. Cuenta billetes y monedas; completa **Tarjeta declarada** y **Transferencia declarada** con lo comprobado (0 si no hubo), revisa vales y dinero entregado, marca la confirmación de conteo y pulsa **Cerrar caja e imprimir cuadre**. Si declaras un vale de caja, agrega una nota y pide el PIN de gerente; es preferible registrar esa salida antes como **Salida**.
 - Si el sistema pide una nota, explica lo ocurrido con palabras claras. No alteres el conteo para hacer que cuadre. Guarda el cuadre impreso.
 
 ## Si falla internet o la impresora

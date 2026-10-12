@@ -104,7 +104,7 @@ beforeAll(async () => {
       {
         name: "QA Cajera N-A1 " + n,
         email,
-        password: "FitStore-QA-2026!",
+        password: "739205",
         pin: "24680" + n,
         roleId: seller,
       },
@@ -113,9 +113,9 @@ beforeAll(async () => {
     users.push(user.id);
     const login = await ok("/auth/change-password", {
       login: email,
-      currentPassword: "FitStore-QA-2026!",
-      newPassword: "FitStore-QA-2026-Definitiva!",
-      confirmPassword: "FitStore-QA-2026-Definitiva!",
+      currentPassword: "739205",
+      newPassword: "583904",
+      confirmPassword: "583904",
     });
     await enroll(login.accessToken, owner);
     const session = await ok(

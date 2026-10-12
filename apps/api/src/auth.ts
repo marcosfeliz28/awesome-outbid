@@ -35,7 +35,8 @@ import {
 import {
   TEMPORARY_PASSWORD_EXPIRED_MESSAGE,
   isDifferentPassword,
-  strongPasswordSchema,
+  passwordPolicyForRole,
+  passwordSchemaForRole,
   temporaryPasswordExpired,
 } from "./password-policy";
 import { sessionActivityGraceMs } from "./session-activity";
@@ -375,6 +376,7 @@ export class AuthController implements OnModuleInit {
         ...this.actor(user),
         sessionTimeoutMinutes,
         mustChangePassword: user.mustChangePassword,
+        passwordPolicy: passwordPolicyForRole(user.role.name),
       },
     };
   }
@@ -458,7 +460,11 @@ export class AuthController implements OnModuleInit {
       "user",
       user.id,
     );
-    if (user.mustChangePassword) return { requiresPasswordChange: true };
+    if (user.mustChangePassword)
+      return {
+        requiresPasswordChange: true,
+        passwordPolicy: passwordPolicyForRole(user.role.name),
+      };
     return this.issue(user, res);
   }
   @Public()
@@ -474,7 +480,7 @@ export class AuthController implements OnModuleInit {
         .object({
           login: z.string().trim().min(1).max(120),
           currentPassword: z.string().min(1).max(128),
-          newPassword: strongPasswordSchema,
+          newPassword: z.string().min(1).max(128),
           confirmPassword: z.string().min(1).max(128),
           terminal: terminalCredentials,
         })
@@ -538,6 +544,7 @@ export class AuthController implements OnModuleInit {
     if (!user.mustChangePassword)
       bad("No hay un cambio de contraseña pendiente para esta cuenta.");
     if (temporaryPasswordExpired(user)) bad(TEMPORARY_PASSWORD_EXPIRED_MESSAGE);
+    parse(passwordSchemaForRole(user.role.name), data.newPassword);
     const passwordHashValue = await passwordHash(data.newPassword);
     const updated = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id=${user.id}::uuid FOR UPDATE`;
@@ -547,7 +554,8 @@ export class AuthController implements OnModuleInit {
       if (
         !current.active ||
         !current.mustChangePassword ||
-        current.passwordHash !== user.passwordHash
+        current.passwordHash !== user.passwordHash ||
+        current.roleId !== user.roleId
       )
         bad(
           "La cuenta cambió mientras actualizabas la contraseña. Inicia sesión otra vez.",
@@ -604,7 +612,7 @@ export class AuthController implements OnModuleInit {
       z
         .object({
           currentPassword: z.string().min(1).max(128),
-          newPassword: strongPasswordSchema,
+          newPassword: z.string().min(1).max(128),
           confirmPassword: z.string().min(1).max(128),
         })
         .refine((value) => value.newPassword === value.confirmPassword, {
@@ -654,6 +662,7 @@ export class AuthController implements OnModuleInit {
         wrong: "La contraseña actual no es correcta.",
       },
     );
+    parse(passwordSchemaForRole(user.role.name), data.newPassword);
     const passwordHashValue = await passwordHash(data.newPassword);
     await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id=${user.id}::uuid FOR UPDATE`;
@@ -663,7 +672,8 @@ export class AuthController implements OnModuleInit {
       if (
         !current.active ||
         current.passwordHash !== user.passwordHash ||
-        current.authVersion !== user.authVersion
+        current.authVersion !== user.authVersion ||
+        current.roleId !== user.roleId
       )
         bad(
           "La cuenta cambió mientras actualizabas la contraseña. Inicia sesión otra vez.",
@@ -760,7 +770,10 @@ export class AuthController implements OnModuleInit {
   @Get("me") me(@CurrentUser() actor: Actor) {
     // La IP es para la bitácora; no se devuelve.
     const { ip: _ip, ...rest } = actor;
-    return rest;
+    return {
+      ...rest,
+      passwordPolicy: passwordPolicyForRole(actor.role),
+    };
   }
   @Post("pin")
   @Header("Cache-Control", "no-store")

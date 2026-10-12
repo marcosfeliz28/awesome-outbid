@@ -517,8 +517,8 @@ test("A2: el conflicto de stock de una venta sin conexión de la cajera se expli
   const roles = await (await request.get("/api/roles", { headers })).json();
   const tag = Date.now().toString(36);
   const email = `e2e-conflicto-${tag}@example.test`;
-  const temporary = "FitStore-QA-2026!",
-    password = "FitStore-QA-2026-Definitiva!";
+  const temporary = "482917",
+    password = "736204";
   const created = await request.post("/api/users", {
     headers,
     data: {
@@ -764,8 +764,8 @@ test("M-2: si la deuda del cliente exige PIN, la caja lo pide y reintenta el mis
     const roles = await (await request.get("/api/roles", { headers })).json();
     const tag = Date.now().toString(36);
     const email = `e2e-deuda-${tag}@example.test`;
-    const temporary = "FitStore-QA-2026!",
-      password = "FitStore-QA-2026-Definitiva!";
+    const temporary = "482917",
+      password = "736204";
     const created = await request.post("/api/users", {
       headers,
       data: {

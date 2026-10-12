@@ -34,6 +34,7 @@ const suffix = randomUUID().slice(0, 8);
 let ipCounter = 1 + Math.floor(Math.random() * 200);
 const nextIp = () => "198.18.21." + (ipCounter++ % 250 || 1);
 const PASSWORD = "FitStore-QA-W9-Seg-2026!";
+const CASHIER_PASSWORD = "583904";
 
 const created: { users: string[]; terminals: string[]; keys: string[] } = {
   users: [],
@@ -85,7 +86,8 @@ async function makeUser(
       username: "w9" + tag,
       usernameKey: "w9" + tag,
       email: `w9-${role}-${tag}@example.test`,
-      passwordHash,
+      passwordHash:
+        role === "seller" ? await hash(CASHIER_PASSWORD, 4) : passwordHash,
       pinHash: await hash(pin, 4),
       roleId: roles[role],
       branchId: options.branchId ?? "main",
@@ -235,7 +237,7 @@ describe("Sesiones y equipos (API real)", () => {
     const user = await makeUser("seller");
     const login = await post("/auth/login", {
       email: user.email,
-      password: PASSWORD,
+      password: CASHIER_PASSWORD,
     });
     expect(login.status, JSON.stringify(login.body)).toBe(201);
     const cookie = refreshCookie(login.headers);
@@ -251,7 +253,7 @@ describe("Sesiones y equipos (API real)", () => {
     // Un token emitido con la versión actual, sí renueva.
     const again = await post("/auth/login", {
       email: user.email,
-      password: PASSWORD,
+      password: CASHIER_PASSWORD,
     });
     const ok = await post(
       "/auth/refresh",
@@ -266,7 +268,7 @@ describe("Sesiones y equipos (API real)", () => {
     for (let round = 0; round < 3; round++) {
       const login = await post("/auth/login", {
         email: user.email,
-        password: PASSWORD,
+        password: CASHIER_PASSWORD,
       });
       expect(login.status, JSON.stringify(login.body)).toBe(201);
       const cookie = refreshCookie(login.headers);
@@ -376,7 +378,7 @@ describe("Sesiones y equipos (API real)", () => {
       const user = await makeUser("seller");
       const login = await post("/auth/login", {
         email: user.email,
-        password: PASSWORD,
+        password: CASHIER_PASSWORD,
       });
       expect(login.status, JSON.stringify(login.body)).toBe(201);
       expect(login.body.user.sessionTimeoutMinutes).toBe(30);

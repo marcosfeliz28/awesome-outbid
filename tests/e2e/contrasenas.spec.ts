@@ -1,13 +1,17 @@
 // Contraseñas desde la pantalla: «Cambiar mi contraseña» (cualquier usuario,
 // menú de la cuenta) y «Restablecer contraseña» (administración, Configuración
 // → Usuarios y permisos), en celular (390 px) y en computadora (1280 px).
-import type { APIRequestContext, Page } from "@playwright/test";
+import type { APIRequestContext, Locator, Page } from "@playwright/test";
 import { test, expect } from "./apoyo";
 
 const ADMIN = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
-const TEMPORARY = "Temporal-E2E-Clave-2026!";
-const ACTIVE = "Activa-E2E-Clave-2026!";
-const CHOSEN = "Elegida-E2E-Clave-2026#";
+// Credenciales aisladas de prueba; claves de cajero de seis dígitos y no triviales.
+const CASHIER_TEMPORARY = "583941";
+const CASHIER_ACTIVE = "729405";
+const CASHIER_CHOSEN = "846217";
+const STRONG_TEMPORARY = "Temporal-E2E-Clave-2026!";
+const STRONG_ACTIVE = "Activa-E2E-Clave-2026!";
+const STRONG_CHOSEN = "Elegida-E2E-Clave-2026#";
 
 async function adminApi(request: APIRequestContext) {
   const login = await request.post("/api/auth/login", { data: ADMIN });
@@ -23,7 +27,7 @@ async function adminApi(request: APIRequestContext) {
     return r.json();
   };
 }
-/** Cajera nueva que ya hizo su cambio obligatorio: entra con ACTIVE. */
+/** Cajera nueva que ya hizo su cambio obligatorio con seis dígitos. */
 async function cashier(request: APIRequestContext, label: string) {
   const api = await adminApi(request);
   const roles = await api("/roles");
@@ -31,19 +35,42 @@ async function cashier(request: APIRequestContext, label: string) {
   const user = await api("/users", {
     name: "E2E Clave " + tag,
     username: "e2e-clave-" + tag,
-    password: TEMPORARY,
+    password: CASHIER_TEMPORARY,
     pin: "246813",
     roleId: roles.find((r: any) => r.name === "seller").id,
   });
   const changed = await request.post("/api/auth/change-password", {
     data: {
       login: user.username,
-      currentPassword: TEMPORARY,
-      newPassword: ACTIVE,
-      confirmPassword: ACTIVE,
+      currentPassword: CASHIER_TEMPORARY,
+      newPassword: CASHIER_ACTIVE,
+      confirmPassword: CASHIER_ACTIVE,
     },
   });
   expect(changed.ok(), "cambio obligatorio inicial").toBe(true);
+  return user as { id: string; name: string; username: string };
+}
+/** Gerente de prueba que conserva la política fuerte de contraseña. */
+async function manager(request: APIRequestContext, label: string) {
+  const api = await adminApi(request);
+  const roles = await api("/roles");
+  const tag = label + "-gerente-" + crypto.randomUUID().slice(0, 8);
+  const user = await api("/users", {
+    name: "E2E Gerente " + tag,
+    username: "e2e-gerente-" + tag,
+    password: STRONG_TEMPORARY,
+    pin: "246813",
+    roleId: roles.find((r: any) => r.name === "manager").id,
+  });
+  const changed = await request.post("/api/auth/change-password", {
+    data: {
+      login: user.username,
+      currentPassword: STRONG_TEMPORARY,
+      newPassword: STRONG_ACTIVE,
+      confirmPassword: STRONG_ACTIVE,
+    },
+  });
+  expect(changed.ok(), "cambio obligatorio de gerente").toBe(true);
   return user as { id: string; name: string; username: string };
 }
 async function signIn(page: Page, login: string, password: string) {
@@ -98,6 +125,15 @@ async function fitsWidth(page: Page) {
   }));
   expect(scroll).toBeLessThanOrEqual(width);
 }
+/** Cada referencia de ayuda del campo debe apuntar a contenido real. */
+async function accessibleDescriptions(page: Page, field: Locator) {
+  const ids = (await field.getAttribute("aria-describedby"))
+    ?.split(/\s+/)
+    .filter(Boolean);
+  expect(ids?.length).toBeGreaterThan(0);
+  for (const id of ids ?? [])
+    await expect(page.locator(`#${id}`)).toHaveCount(1);
+}
 
 for (const screen of [
   { name: "celular", viewport: { width: 390, height: 844 }, mobile: true },
@@ -114,12 +150,52 @@ for (const screen of [
       hasTouch: screen.mobile,
     });
 
+    test("Crear usuario: la clave temporal de una cajera son seis números", async ({
+      page,
+      request,
+    }) => {
+      const api = await adminApi(request);
+      const roles = await api("/roles");
+      const sellerRole = roles.find((role: any) => role.name === "seller");
+      expect(sellerRole).toBeTruthy();
+      const tag = crypto.randomUUID().slice(0, 10);
+      const username = "e2e-alta-cajera-" + tag;
+
+      await signIn(page, ADMIN.email, ADMIN.password);
+      if (screen.mobile)
+        await page.getByRole("button", { name: "Abrir menú" }).click();
+      await page.getByRole("button", { name: "Configuración" }).click();
+      await page.getByRole("button", { name: "Usuarios y permisos" }).click();
+      await page.getByRole("button", { name: "Crear usuario" }).click();
+      const dialog = page.getByRole("dialog", { name: "Crear usuario" });
+      await dialog.getByLabel("Rol").selectOption(sellerRole.id);
+      const temporary = dialog.getByLabel(/Contraseña temporal \(6 números\)/);
+      await expect(temporary).toHaveAttribute("inputmode", "numeric");
+      await expect(temporary).toHaveAttribute("maxlength", "6");
+      await expect(temporary).toHaveAttribute("pattern", "[0-9]{6}");
+      await temporary.fill(CASHIER_TEMPORARY);
+      await dialog.getByLabel("Nombre").fill("QA alta de cajera " + tag);
+      await dialog.getByLabel("Usuario para entrar").fill(username);
+      await dialog.getByLabel("PIN de 6 dígitos").fill("246813");
+      const created = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/users") && response.status() === 201,
+      );
+      await dialog.getByRole("button", { name: "Guardar" }).click();
+      const response = await created;
+      const user = await response.json();
+      const login = await apiLogin(request, username, CASHIER_TEMPORARY);
+      expect(login.status).toBe(201);
+      expect(login.body).toMatchObject({ requiresPasswordChange: true });
+      expect(user.username).toBe(username);
+    });
+
     test("Cambiar mi contraseña: pide la actual, aplica las reglas y mantiene la sesión", async ({
       page,
       request,
     }) => {
       const user = await cashier(request, screen.name);
-      await signIn(page, user.username, ACTIVE);
+      await signIn(page, user.username, CASHIER_ACTIVE);
       await page.locator("button.account").click();
       await page.getByRole("button", { name: "Cambiar mi contraseña" }).click();
       const dialog = page.getByRole("dialog", {
@@ -127,24 +203,62 @@ for (const screen of [
       });
       await expect(dialog).toBeVisible();
       await expect(dialog).not.toContainText("obligatorio");
+      const newPassword = dialog.getByLabel("Nueva contraseña", {
+        exact: true,
+      });
+      const confirmation = dialog.getByLabel("Confirma la nueva contraseña");
+      await expect(newPassword).toHaveAttribute("inputmode", "numeric");
+      await expect(newPassword).toHaveAttribute("maxlength", "6");
+      await expect(confirmation).toHaveAttribute("inputmode", "numeric");
+      await expect(confirmation).toHaveAttribute("maxlength", "6");
+      await accessibleDescriptions(page, newPassword);
       // Contraseña actual equivocada: el servidor la rechaza y nada cambia.
       await dialog.getByLabel("Contraseña actual").fill("No-Es-La-Mia-2026!");
-      await dialog.getByLabel("Nueva contraseña", { exact: true }).fill(CHOSEN);
-      await dialog.getByLabel("Confirma la nueva contraseña").fill(CHOSEN);
+      await newPassword.fill(CASHIER_CHOSEN);
+      await confirmation.fill(CASHIER_CHOSEN);
       await dialog.getByRole("button", { name: "Guardar contraseña" }).click();
       await expect(dialog.getByRole("alert")).toHaveText(
         /La contraseña actual no es correcta/,
       );
-      // Una clave débil (larga, pero sin mayúscula ni símbolo) no se envía.
-      const weak = "solominusculas2026";
-      await dialog.getByLabel("Contraseña actual").fill(ACTIVE);
-      await dialog.getByLabel("Nueva contraseña", { exact: true }).fill(weak);
-      await dialog.getByLabel("Confirma la nueva contraseña").fill(weak);
+      // Cinco dígitos y letras se rechazan por la validación HTML nativa;
+      // una secuencia válida en formato llega al servidor y se rechaza allí.
+      const currentPassword = dialog.getByLabel("Contraseña actual");
+      await currentPassword.fill(CASHIER_ACTIVE);
+      await newPassword.fill("58394");
+      await confirmation.fill("58394");
       await dialog.getByRole("button", { name: "Guardar contraseña" }).click();
-      await expect(dialog.getByRole("alert")).toHaveText(/cinco reglas/);
+      await expect
+        .poll(() =>
+          newPassword.evaluate(
+            (input: HTMLInputElement) => input.validity.tooShort,
+          ),
+        )
+        .toBe(true);
+
+      await newPassword.fill("abcdef");
+      await confirmation.fill("abcdef");
+      await dialog.getByRole("button", { name: "Guardar contraseña" }).click();
+      await expect
+        .poll(() =>
+          newPassword.evaluate(
+            (input: HTMLInputElement) => input.validity.patternMismatch,
+          ),
+        )
+        .toBe(true);
+
+      await newPassword.fill("123456");
+      await confirmation.fill("123456");
+      await dialog.getByRole("button", { name: "Guardar contraseña" }).click();
+      await expect(dialog.getByRole("alert")).toHaveText(
+        /6 números|seis números|fácil|trivial|común|secuencia|repetidos/i,
+      );
+      // Los rechazos no cambian la credencial vigente.
+      expect(
+        (await apiLogin(request, user.username, CASHIER_ACTIVE)).status,
+      ).toBe(201);
+      await newPassword.fill(CASHIER_CHOSEN);
+      await confirmation.fill(CASHIER_CHOSEN);
       if (screen.mobile) await fitsWidth(page);
-      await dialog.getByLabel("Nueva contraseña", { exact: true }).fill(CHOSEN);
-      await dialog.getByLabel("Confirma la nueva contraseña").fill(CHOSEN);
       const saved = page.waitForResponse(
         (r) => r.url().endsWith("/api/auth/password") && r.status() === 201,
       );
@@ -159,8 +273,12 @@ for (const screen of [
         page.getByRole("button", { name: "Entrar a mi tienda" }),
       ).toHaveCount(0);
       // La anterior ya no entra y la nueva sí.
-      expect((await apiLogin(request, user.username, ACTIVE)).status).toBe(400);
-      expect((await apiLogin(request, user.username, CHOSEN)).status).toBe(201);
+      expect(
+        (await apiLogin(request, user.username, CASHIER_ACTIVE)).status,
+      ).toBe(400);
+      expect(
+        (await apiLogin(request, user.username, CASHIER_CHOSEN)).status,
+      ).toBe(201);
     });
 
     test("Restablecer contraseña: la administración da una temporal y la cajera elige la suya al entrar", async ({
@@ -170,7 +288,7 @@ for (const screen of [
     }) => {
       const user = await cashier(request, screen.name);
       // La cajera tenía una sesión abierta en su caja.
-      const before = await apiLogin(request, user.username, ACTIVE);
+      const before = await apiLogin(request, user.username, CASHIER_ACTIVE);
       expect(before.status).toBe(201);
       await signIn(page, ADMIN.email, ADMIN.password);
       if (screen.mobile)
@@ -195,9 +313,12 @@ for (const screen of [
         "autocomplete",
         "off",
       );
-      let temporary = TEMPORARY;
+      const temporaryField = dialog.getByLabel("Contraseña temporal");
+      await expect(temporaryField).toHaveAttribute("inputmode", "numeric");
+      await expect(temporaryField).toHaveAttribute("maxlength", "6");
+      let temporary = CASHIER_TEMPORARY;
       if (screen.mobile) {
-        await dialog.getByLabel("Contraseña temporal").fill(TEMPORARY);
+        await temporaryField.fill(CASHIER_TEMPORARY);
       }
       await dialog
         .getByRole("button", { name: "Restablecer contraseña" })
@@ -208,7 +329,7 @@ for (const screen of [
       await expect(summary).toContainText("deberá crear su propia contraseña");
       if (screen.mobile) {
         await expect(dialog).toContainText("deberá crear su propia contraseña");
-        await expect(dialog).not.toContainText(TEMPORARY);
+        await expect(dialog).not.toContainText(CASHIER_TEMPORARY);
         await fitsWidth(page);
       } else {
         // Generada por el sistema: se muestra una sola vez.
@@ -216,7 +337,10 @@ for (const screen of [
         await expect(shown).toBeVisible();
         await expect(summary).toContainText("no se volverá a mostrar");
         temporary = (await shown.textContent())!.trim();
-        expect(temporary.length).toBeGreaterThanOrEqual(12);
+        expect(temporary).toMatch(/^\d{6}$/);
+        expect(temporary).not.toMatch(
+          /^(000000|111111|123456|123123|654321|999999)$/,
+        );
       }
       await dialog.getByRole("button", { name: "Listo" }).click();
       await expect(dialog).toBeHidden();
@@ -243,15 +367,99 @@ for (const screen of [
       await expect(
         cashierPage.getByRole("heading", { name: "Actualiza tu contraseña." }),
       ).toBeVisible();
+      const requiredPassword = cashierPage.getByLabel("Nueva contraseña", {
+        exact: true,
+      });
+      const requiredConfirmation = cashierPage.getByLabel(
+        "Confirma la nueva contraseña",
+      );
+      await expect(requiredPassword).toHaveAttribute("inputmode", "numeric");
+      await expect(requiredPassword).toHaveAttribute("maxlength", "6");
+      await expect(requiredConfirmation).toHaveAttribute(
+        "inputmode",
+        "numeric",
+      );
+      await expect(requiredConfirmation).toHaveAttribute("maxlength", "6");
+      await accessibleDescriptions(cashierPage, requiredPassword);
+      await requiredPassword.fill("58394");
+      await requiredConfirmation.fill("58394");
       await cashierPage
-        .getByLabel("Nueva contraseña", { exact: true })
-        .fill(CHOSEN);
-      await cashierPage.getByLabel("Confirma la nueva contraseña").fill(CHOSEN);
+        .getByRole("button", { name: "Guardar contraseña y entrar" })
+        .click();
+      // La validación nativa de minlength/pattern detiene el formulario antes
+      // de que el servidor o el mensaje de error personalizado puedan actuar.
+      await expect
+        .poll(() =>
+          requiredPassword.evaluate(
+            (input: HTMLInputElement) => input.validity.tooShort,
+          ),
+        )
+        .toBe(true);
+      await requiredPassword.fill(CASHIER_CHOSEN);
+      await requiredConfirmation.fill(CASHIER_CHOSEN);
       await cashierPage
         .getByRole("button", { name: "Guardar contraseña y entrar" })
         .click();
       await expect(cashierPage.locator("button.account")).toBeVisible();
+      expect(
+        (await apiLogin(request, user.username, CASHIER_CHOSEN)).status,
+      ).toBe(201);
       await context.close();
+    });
+
+    test("gerente conserva la contraseña fuerte en cambio voluntario", async ({
+      page,
+      request,
+    }) => {
+      const user = await manager(request, screen.name);
+      await signIn(page, user.username, STRONG_ACTIVE);
+      await page.locator("button.account").click();
+      await page.getByRole("button", { name: "Cambiar mi contraseña" }).click();
+      const dialog = page.getByRole("dialog", {
+        name: "Cambiar mi contraseña",
+      });
+      await expect(dialog).toBeVisible();
+      const newPassword = dialog.getByLabel("Nueva contraseña", {
+        exact: true,
+      });
+      const confirmation = dialog.getByLabel("Confirma la nueva contraseña");
+      await expect(newPassword).toHaveAttribute("inputmode", "text");
+      await expect(newPassword).toHaveAttribute("maxlength", "128");
+      await accessibleDescriptions(page, newPassword);
+      for (const rule of ["Mayúscula", "Minúscula", "Número", "Símbolo"])
+        await expect(dialog).toContainText(rule);
+
+      // Un PIN numérico no basta para el rol de gerente.
+      await dialog.getByLabel("Contraseña actual").fill(STRONG_ACTIVE);
+      await newPassword.fill(CASHIER_CHOSEN);
+      await confirmation.fill(CASHIER_CHOSEN);
+      await dialog.getByRole("button", { name: "Guardar contraseña" }).click();
+      // El navegador bloquea el envío por minlength; el estado de reglas
+      // visible también debe mostrar la contraseña débil como no válida.
+      await expect
+        .poll(() =>
+          newPassword.evaluate(
+            (input: HTMLInputElement) => input.validity.tooShort,
+          ),
+        )
+        .toBe(true);
+      expect(
+        (await apiLogin(request, user.username, STRONG_ACTIVE)).status,
+      ).toBe(201);
+
+      await newPassword.fill(STRONG_CHOSEN);
+      await confirmation.fill(STRONG_CHOSEN);
+      const saved = page.waitForResponse(
+        (r) => r.url().endsWith("/api/auth/password") && r.status() === 201,
+      );
+      await dialog.getByRole("button", { name: "Guardar contraseña" }).click();
+      await saved;
+      expect(
+        (await apiLogin(request, user.username, STRONG_ACTIVE)).status,
+      ).toBe(400);
+      expect(
+        (await apiLogin(request, user.username, STRONG_CHOSEN)).status,
+      ).toBe(201);
     });
   });
 }

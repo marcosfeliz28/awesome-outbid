@@ -5,8 +5,10 @@ import { test, expect } from "./apoyo";
 // misma identidad de equipo), ve «sin caja», abre la suya, y gerencia ve las
 // dos cajas con su dueño. Nada de fechas fijas: todo sale de un sufijo único.
 const owner = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
-const temporary = "FitStore-QA-2026!";
-const password = "FitStore-QA-2026-Definitiva!";
+const cashierTemporary = "482917";
+const cashierPassword = "736204";
+const strongTemporary = "FitStore-QA-2026!";
+const strongPassword = "FitStore-QA-2026-Definitiva!";
 
 // Las usuarias de prueba se desactivan al terminar: la aprobación con PIN
 // compara contra todas las activas (bcrypt por cada una) y alentaría otras
@@ -50,6 +52,9 @@ test("W6: Lisbeth no ve la caja de Marcos en la misma computadora y abre la suya
   };
   const names: Record<string, string> = {};
   async function person(label: string, role: string) {
+    const isSeller = role === "seller";
+    const temporary = isSeller ? cashierTemporary : strongTemporary;
+    const password = isSeller ? cashierPassword : strongPassword;
     const email = `e2e-w6-${label}-${tag}@example.test`;
     names[label] = "E2E " + label + " " + tag;
     const user = await api("/users", {
@@ -75,9 +80,9 @@ test("W6: Lisbeth no ve la caja de Marcos en la misma computadora y abre la suya
     });
     if (t.status === "pending")
       await api("/terminals/" + T1.id + "/approve", {});
-    return email;
+    return { email, password };
   }
-  async function enter(email: string) {
+  async function enter(email: string, password: string) {
     const context = await (browser as Browser).newContext({
       viewport: { width: 1280, height: 900 },
     });
@@ -97,53 +102,55 @@ test("W6: Lisbeth no ve la caja de Marcos en la misma computadora y abre la suya
     await expect(page.locator(".main-content .loading")).toHaveCount(0);
     return { page, context };
   }
-  const marcosEmail = await person("marcos", "manager");
-  const lisbethEmail = await person("lisbeth", "seller");
+  const marcos = await person("marcos", "manager");
+  const lisbeth = await person("lisbeth", "seller");
 
-  const marcos = await enter(marcosEmail);
-  await marcos.page
+  const marcosSession = await enter(marcos.email, marcos.password);
+  await marcosSession.page
     .getByRole("button", { name: "Abrir caja", exact: true })
     .click();
-  await marcos.page.getByLabel("Efectivo inicial").fill("1000");
-  await marcos.page
+  await marcosSession.page.getByLabel("Efectivo inicial").fill("1000");
+  await marcosSession.page
     .getByRole("button", { name: "Guardar", exact: true })
     .click();
   await expect(
-    marcos.page.getByText("Caja abierta", { exact: true }),
+    marcosSession.page.getByText("Caja abierta", { exact: true }),
   ).toBeVisible();
 
   // Lisbeth, en la misma computadora: sin caja, sin avisos de otro equipo.
-  const lisbeth = await enter(lisbethEmail);
+  const lisbethSession = await enter(lisbeth.email, lisbeth.password);
   await expect(
-    lisbeth.page.getByText("Tu día empieza con una caja abierta"),
+    lisbethSession.page.getByText("Tu día empieza con una caja abierta"),
   ).toBeVisible();
   await expect(
-    lisbeth.page.getByText("Caja abierta", { exact: true }),
+    lisbethSession.page.getByText("Caja abierta", { exact: true }),
   ).toHaveCount(0);
-  await expect(lisbeth.page.getByText(/Tu caja está abierta en/)).toHaveCount(
-    0,
-  );
-  await expect(lisbeth.page.getByText(names.marcos)).toHaveCount(0);
-  await lisbeth.page
+  await expect(
+    lisbethSession.page.getByText(/Tu caja está abierta en/),
+  ).toHaveCount(0);
+  await expect(lisbethSession.page.getByText(names.marcos)).toHaveCount(0);
+  await lisbethSession.page
     .getByRole("button", { name: "Abrir caja", exact: true })
     .first()
     .click();
-  await lisbeth.page.getByLabel("Efectivo inicial").fill("500");
-  await lisbeth.page
+  await lisbethSession.page.getByLabel("Efectivo inicial").fill("500");
+  await lisbethSession.page
     .getByRole("button", { name: "Guardar", exact: true })
     .click();
   await expect(
-    lisbeth.page.getByText("Caja abierta", { exact: true }),
+    lisbethSession.page.getByText("Caja abierta", { exact: true }),
   ).toBeVisible();
-  await expect(lisbeth.page.getByText(names.marcos)).toHaveCount(0);
+  await expect(lisbethSession.page.getByText(names.marcos)).toHaveCount(0);
 
   // Gerencia ve las dos cajas, con su dueño.
-  await marcos.page.reload();
-  await marcos.page.getByRole("button", { name: "Caja", exact: true }).click();
-  const history = marcos.page.locator("table").last();
+  await marcosSession.page.reload();
+  await marcosSession.page
+    .getByRole("button", { name: "Caja", exact: true })
+    .click();
+  const history = marcosSession.page.locator("table").last();
   await expect(history).toContainText(names.marcos);
   await expect(history).toContainText(names.lisbeth);
 
-  await marcos.context.close();
-  await lisbeth.context.close();
+  await marcosSession.context.close();
+  await lisbethSession.context.close();
 });

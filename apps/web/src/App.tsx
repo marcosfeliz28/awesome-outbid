@@ -7,8 +7,10 @@ import {
 import { Merchandise } from "./Merchandise";
 import { PasswordChangeFields } from "./PasswordChangeFields";
 import {
+  isCashierPasswordRole,
   passwordChangeError,
   friendlyPasswordChangeError,
+  type PasswordPolicy,
 } from "./passwordChange";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -259,6 +261,7 @@ function Login() {
     [password, setPassword] = useState(""),
     [showPassword, setShowPassword] = useState(false),
     [changeRequired, setChangeRequired] = useState(false),
+    [passwordPolicy, setPasswordPolicy] = useState<PasswordPolicy>("strong"),
     [newPassword, setNewPassword] = useState(""),
     [confirmPassword, setConfirmPassword] = useState(""),
     [busy, setBusy] = useState(false),
@@ -312,6 +315,8 @@ function Login() {
                 newPassword,
                 confirmPassword,
                 password,
+                "required",
+                passwordPolicy,
               );
               if (validation) {
                 setError(validation);
@@ -329,6 +334,11 @@ function Login() {
                   ...(terminal ? { terminal } : {}),
                 });
                 if (data.requiresPasswordChange) {
+                  setPasswordPolicy(
+                    data.passwordPolicy === "cashier-six-digits"
+                      ? "cashier-six-digits"
+                      : "strong",
+                  );
                   setChangeRequired(true);
                   setError("");
                   return;
@@ -347,7 +357,9 @@ function Login() {
               }
             } catch (e: any) {
               setError(
-                changeRequired ? friendlyPasswordChangeError(e) : e.message,
+                changeRequired
+                  ? friendlyPasswordChangeError(e, "required", passwordPolicy)
+                  : e.message,
               );
             } finally {
               setBusy(false);
@@ -402,6 +414,7 @@ function Login() {
               confirmation={confirmPassword}
               onPassword={setNewPassword}
               onConfirmation={setConfirmPassword}
+              policy={passwordPolicy}
             />
           )}
           {error && (
@@ -443,6 +456,12 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
     [confirmPassword, setConfirmPassword] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const user = useStore((s) => s.user);
+  const role = user?.role;
+  const policy =
+    (user as (typeof user & { passwordPolicy?: PasswordPolicy }) | null)
+      ?.passwordPolicy ??
+    (isCashierPasswordRole(role) ? "cashier-six-digits" : "strong");
   return (
     <Modal open onClose={onClose} title="Cambiar mi contraseña">
       <form
@@ -453,6 +472,7 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
             confirmPassword,
             current,
             "voluntary",
+            policy,
           );
           if (validation) {
             setError(validation);
@@ -472,7 +492,7 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
             );
             onClose();
           } catch (e) {
-            setError(friendlyPasswordChangeError(e, "voluntary"));
+            setError(friendlyPasswordChangeError(e, "voluntary", policy));
           } finally {
             setBusy(false);
           }
@@ -485,6 +505,7 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
             autoComplete="current-password"
             autoCapitalize="none"
             spellCheck={false}
+            inputMode="text"
             required
             maxLength={128}
             value={current}
@@ -496,6 +517,7 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
           confirmation={confirmPassword}
           onPassword={setNewPassword}
           onConfirmation={setConfirmPassword}
+          policy={policy}
           intro="Elige una contraseña nueva y personal; no la compartas. Al guardar se cierran tus otras sesiones abiertas; en este equipo sigues dentro."
         />
         {error && (

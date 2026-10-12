@@ -3,8 +3,8 @@ import { test, expect } from "./apoyo";
 // W8 · el fondo sugerido al abrir es lo que la propia persona dejó en su
 // último cierre, sin importar quién cerró antes en la misma computadora.
 const owner = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
-const temporary = "FitStore-QA-2026!";
-const password = "FitStore-QA-2026-Definitiva!";
+const temporary = "482917";
+const password = "736204";
 
 // Las usuarias de prueba se desactivan al terminar (ver caja-por-usuario.spec).
 const made: string[] = [];

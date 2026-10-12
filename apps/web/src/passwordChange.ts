@@ -1,5 +1,31 @@
 // Keep aligned with the API policy; client validation never replaces it.
-export function passwordRules(value: string) {
+// The API's canonical role is "seller"; the other names cover translated or
+// older payloads. This is UI guidance only: the API must use the DB role.
+export type PasswordPolicy = "cashier-six-digits" | "strong";
+export type PasswordRoleOrPolicy = string | null | undefined;
+export function passwordPolicyForRole(
+  role: PasswordRoleOrPolicy,
+): PasswordPolicy {
+  return ["seller", "cashier", "cajero"].includes(
+    (role ?? "").trim().toLowerCase(),
+  )
+    ? "cashier-six-digits"
+    : "strong";
+}
+export function isCashierPasswordRole(roleOrPolicy: PasswordRoleOrPolicy) {
+  const value = (roleOrPolicy ?? "").trim().toLowerCase();
+  return (
+    value === "cashier-six-digits" ||
+    ["seller", "cashier", "cajero"].includes(value)
+  );
+}
+
+export function passwordRules(
+  value: string,
+  policy: PasswordPolicy = "strong",
+) {
+  if (policy === "cashier-six-digits")
+    return [{ label: "6 números", met: /^\d{6}$/.test(value) }];
   return [
     { label: "12 o más caracteres", met: value.length >= 12 },
     { label: "Mayúscula (A–Z)", met: /\p{Lu}/u.test(value) },
@@ -7,6 +33,22 @@ export function passwordRules(value: string) {
     { label: "Número (0–9)", met: /\d/u.test(value) },
     { label: "Símbolo, como ! o #", met: /[\p{P}\p{S}]/u.test(value) },
   ];
+}
+export function isTrivialCashierPassword(value: string) {
+  if (!/^\d{6}$/.test(value)) return true;
+  const digits = [...value].map(Number);
+  if (digits.every((digit) => digit === digits[0])) return true;
+  const ascending = digits.every(
+    (digit, index) => index === 0 || digit === (digits[index - 1] + 1) % 10,
+  );
+  const descending = digits.every(
+    (digit, index) => index === 0 || digit === (digits[index - 1] + 9) % 10,
+  );
+  if (ascending || descending) return true;
+  if (["112233", "010101", "101010"].includes(value)) return true;
+  return [1, 2, 3].some(
+    (width) => value === value.slice(0, width).repeat(6 / width),
+  );
 }
 // "required": cambio obligatorio al entrar, desde la contraseña temporal.
 // "voluntary": «Cambiar mi contraseña» con la sesión abierta.
@@ -18,9 +60,16 @@ export function passwordChangeError(
   confirm: string,
   current: string,
   mode: PasswordChangeMode = "required",
+  policy: PasswordPolicy = "strong",
 ) {
-  if (!passwordRules(value).every((rule) => rule.met))
+  if (policy === "cashier-six-digits") {
+    if (!/^\d{6}$/.test(value))
+      return "La contraseña del cajero debe tener exactamente 6 números.";
+    if (isTrivialCashierPassword(value))
+      return "Elige 6 números distintos de una secuencia o números repetidos.";
+  } else if (!passwordRules(value, policy).every((rule) => rule.met)) {
     return "Completa las cinco reglas para crear tu contraseña.";
+  }
   if (value.length > 128 || new TextEncoder().encode(value).length > 72)
     return "Tu contraseña es demasiado larga. Usa menos caracteres.";
   if (value === current)
@@ -33,6 +82,7 @@ export function passwordChangeError(
 export function friendlyPasswordChangeError(
   error: unknown,
   mode: PasswordChangeMode = "required",
+  policy: PasswordPolicy = "strong",
 ) {
   const message = error instanceof Error ? error.message : "";
   // Si se perdió la respuesta, el servidor pudo haber guardado ya el cambio:
@@ -49,5 +99,12 @@ export function friendlyPasswordChangeError(
     return `Elige una contraseña diferente de ${previousName(mode)}.`;
   if (mode === "voluntary" && /actual no es correcta/i.test(message))
     return "La contraseña actual no es correcta. Revísala y vuelve a intentar.";
-  return `No pudimos guardar tu contraseña. Revisa ${mode === "voluntary" ? "tu contraseña actual" : "la contraseña temporal"} y las cinco reglas. Si sigue ocurriendo, pide ayuda a gerencia.`;
+  if (
+    policy === "cashier-six-digits" &&
+    /6 números|6 digitos|6 dígitos|numérica/i.test(message)
+  )
+    return "La contraseña del cajero debe tener exactamente 6 números y no ser una secuencia ni números repetidos.";
+  return policy === "cashier-six-digits"
+    ? "No pudimos guardar tu contraseña. Verifica que tenga 6 números válidos y pide ayuda a gerencia si el problema continúa."
+    : `No pudimos guardar tu contraseña. Revisa ${mode === "voluntary" ? "tu contraseña actual" : "la contraseña temporal"} y las cinco reglas. Si sigue ocurriendo, pide ayuda a gerencia.`;
 }
