@@ -342,3 +342,11 @@ Prototipo aprobado en forma («el formato no está mal, pero puede mejorar»). S
 - Arreglos pendientes del prototipo: encabezados «Efectivo esperado/contado» se montan; excluir cajas de prueba.
 - ~27-oct: análisis de rotación/no vendidos con propuesta y stock a mantener 1–2 meses.
 - **Oferta vitaminas/multivitamínicos: 15 % de DESCUENTO (no margen) aprobado por la dueña**, con fechas y sin tocar el precio normal; excluida Klean Essential Aminos + HMB (quedaría en 14.5 % de margen). Claude la carga.
+
+### 3y-PC. ORDEN (dueña, 12-oct) — ChatGPT PC valida la 3y con PostgreSQL real
+ChatGPT NUBE entregó la 3y (almacén «Casa», traspasos, levantamiento) pero NO pudo correr PostgreSQL ni E2E (EPERM en su entorno). ChatGPT PC sí puede. Rama a probar: `claude/merge-3y` (ya mezclada con nexora-cloud; CI en curso).
+1. Descarga la rama, `pnpm install`, aplica las migraciones sobre una base **vacía y de pruebas** (nunca producción) y también sobre una con datos de ejemplo.
+2. Corre `tests/warehouses-postgres.test.ts`, `tests/e2e/almacenes.spec.ts` y `pnpm check` completo.
+3. Prueba a mano en un navegador a 390 px: traspaso Casa→Tienda, cantidad excesiva, lote, conteo en Casa, levantamiento por Excel (vista previa y aplicar).
+4. Entrega: lista de fallos con ID, o «sin hallazgos». Los arreglos van en la rama `nexora-chatgpt-fase2`, un commit por hallazgo, con regresión. No despliegues; el desplegador es Claude.
+5. Si aún tienes pendientes 3t/3u, publícalos o dime el bloqueo; esta validación va primero.
