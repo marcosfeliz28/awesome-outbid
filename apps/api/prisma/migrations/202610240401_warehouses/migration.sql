@@ -11,14 +11,14 @@ CREATE TABLE "Warehouse" (
   CONSTRAINT "warehouse_sellable_store" CHECK ("sellable" = ("kind" = 'store'))
 );
 CREATE TABLE "VariantStock" (
-  "variantId" UUID NOT NULL REFERENCES "Variant"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  "variantId" UUID NOT NULL REFERENCES "Variant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   "warehouseId" UUID NOT NULL REFERENCES "Warehouse"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   "qty" DECIMAL(14,3) NOT NULL DEFAULT 0,
   PRIMARY KEY ("variantId", "warehouseId")
 );
 CREATE INDEX "VariantStock_warehouseId_idx" ON "VariantStock"("warehouseId");
 CREATE TABLE "LotStock" (
-  "lotId" UUID NOT NULL REFERENCES "Lot"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  "lotId" UUID NOT NULL REFERENCES "Lot"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   "warehouseId" UUID NOT NULL REFERENCES "Warehouse"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   "qty" DECIMAL(14,3) NOT NULL DEFAULT 0,
   PRIMARY KEY ("lotId", "warehouseId"),
