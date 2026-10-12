@@ -25,3 +25,12 @@ Imágenes de publicidad **de alta calidad** (alta resolución, PNG) con **nombre
 5. **Entrega:** las imágenes finales se las das **directo a la dueña** (PNG, nombrados `lote-1-creatinas-01.png`, etc.). Cada pieza lleva una línea de verificación: «precios al 12-oct-2026».
 6. No cambies precios ni existencias; si ves un precio raro (costo igual al precio, cero), **avisa a la dueña**; no lo publiques.
 7. Autoauditoría: antes de entregar, revisa cada pieza contra el Excel (nombre, tamaño, precio) y di «0 errores» o lista lo que corregiste.
+
+## Actualización (12-oct, orden de la dueña): fotos originales del producto
+La dueña ordena usar **la foto original del producto** buscada en internet, en lugar de maquetas generadas. Reglas:
+1. **Busca la imagen oficial** de cada producto (misma marca, tamaño y sabor): primero el sitio de la **marca/fabricante** (Optimum Nutrition, Nutrex, MuscleTech, Dymatize, Klean Athlete, Muscle Milk, etc.), después tiendas autorizadas. Prefiere fotos de producto sobre fondo limpio y alta resolución (≥ 1000 px de lado).
+2. **Verifica que sea exactamente el producto de la lista**: nombre, tamaño/servicios y sabor deben coincidir con el Excel. Si la foto es de otro sabor o tamaño, no la uses; busca otra o avisa a la dueña.
+3. Recorta limpio el producto (quita fondos, marcas de agua de otras tiendas, precios y textos ajenos) **sin alterar el envase** (no cambies etiquetas, colores ni logos de la marca).
+4. Si no hay foto original de buena calidad de un producto, dilo en tu entrega y propón: (a) pedir foto a la dueña, o (b) dejarlo fuera de esa pieza. No inventes el envase.
+5. Cuida los derechos: usa las imágenes solo para anunciar la venta de esos mismos productos, y **lista en tu entrega la fuente (sitio) de cada imagen**, para que la dueña pueda revisarlas.
+6. Guarda las imágenes originales que uses junto con las piezas finales (PNG), para que la dueña pueda reutilizarlas.
