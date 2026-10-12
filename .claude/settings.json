@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 /tmp/entrar.py)",
+      "Bash(python3 -I /tmp/entrar.py)"
+    ]
+  }
+}
