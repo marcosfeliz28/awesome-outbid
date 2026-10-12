@@ -110,3 +110,33 @@ test("Casa se contabiliza por separado y el traspaso habilita stock en Tienda", 
       .first(),
   ).toContainText("5");
 });
+
+test("el traspaso desde Casa propone Tienda como destino en móvil", async ({
+  page,
+  request,
+}) => {
+  const headers = await ownerHeaders(request);
+  const warehouses = await (
+    await request.get("/api/inventory/warehouses", { headers })
+  ).json();
+  const home = warehouses.find((w: any) => w.kind === "home");
+  const store = warehouses.find((w: any) => w.kind === "store");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByLabel("Usuario").fill("admin@fitstore.demo");
+  await page
+    .getByLabel("Contraseña", { exact: true })
+    .fill("FitStore-Demo-2026!");
+  await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
+  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await page.evaluate(() => (location.hash = "inventory"));
+  await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
+  await page.getByLabel("Almacén", { exact: true }).selectOption(home.id);
+  await page.getByLabel("Producto", { exact: true }).selectOption({ index: 1 });
+  await page.getByRole("button", { name: "Traspasar", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  const selects = dialog.locator("select");
+  await expect(selects.nth(0)).toHaveValue(home.id);
+  await expect(selects.nth(1)).toHaveValue(store.id);
+});

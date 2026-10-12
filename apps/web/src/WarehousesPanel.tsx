@@ -35,6 +35,10 @@ export function WarehousesPanel({
   const [busy, setBusy] = useState(false);
   const selected = warehouses.data?.find((w) => w.id === warehouseId);
   const home = warehouses.data?.find((w) => w.kind === "home");
+  const store = warehouses.data?.find((w) => w.kind === "store");
+  const defaultFrom = selected?.id || store?.id || home?.id || "";
+  const defaultTo =
+    warehouses.data?.find((w) => w.id !== defaultFrom)?.id || "";
   async function upload(stage: "preview" | "apply") {
     if (!file) return;
     setBusy(true);
@@ -145,7 +149,7 @@ export function WarehousesPanel({
                   label: "Desde",
                   type: "select",
                   required: true,
-                  initial: selected?.id || "",
+                  initial: defaultFrom,
                   options: (warehouses.data || []).map((w) => ({
                     label: w.name,
                     value: w.id,
@@ -156,7 +160,7 @@ export function WarehousesPanel({
                   label: "Hasta",
                   type: "select",
                   required: true,
-                  initial: home?.id || "",
+                  initial: defaultTo,
                   options: (warehouses.data || []).map((w) => ({
                     label: w.name,
                     value: w.id,
