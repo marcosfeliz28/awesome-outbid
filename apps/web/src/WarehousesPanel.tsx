@@ -76,7 +76,7 @@ export function WarehousesPanel({
           {can(user.permissions, "profit:read") ? " · Valor a costo" : ""}
         </span>
       </div>
-      <div style={{ overflowX: "auto" }}>
+      <div className="table-wrap" tabIndex={0}>
         <table>
           <thead>
             <tr>
@@ -242,7 +242,7 @@ export function WarehousesPanel({
         </>
       )}
       <h2>Historial de traspasos</h2>
-      <div style={{ overflowX: "auto" }}>
+      <div className="table-wrap" tabIndex={0}>
         <table>
           <thead>
             <tr>
