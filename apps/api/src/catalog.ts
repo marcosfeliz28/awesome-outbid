@@ -508,6 +508,17 @@ export class CatalogController {
       ]);
       const row = await tx.variant.update({ where: { id }, data });
       await audit(tx, actor, "price_change", "variant", id, before, row);
+      const otherStocks = await tx.variantStock.findMany({
+        where: {
+          variantId: id,
+          warehouse: { branchId: actor.branchId, sellable: false },
+        },
+        select: { qty: true },
+      });
+      const totalStock = otherStocks.reduce(
+        (sum, held) => sum.plus(held.qty),
+        d(before.stock),
+      );
       // B-7 (auditoría 01): el costo promedio cambiado a mano, con existencias,
       // revalúa el inventario y la utilidad de las ventas siguientes sin
       // movimiento de inventario. Se permite (corrige errores de carga), pero
@@ -515,10 +526,10 @@ export class CatalogController {
       if (
         data.costAvg !== undefined &&
         !d(data.costAvg).eq(before.costAvg) &&
-        Number(before.stock) > 0
+        totalStock.gt(0)
       ) {
         const impact = money(
-          d(before.stock).times(d(data.costAvg).minus(before.costAvg)),
+          totalStock.times(d(data.costAvg).minus(before.costAvg)),
         );
         await audit(
           tx,
@@ -526,7 +537,7 @@ export class CatalogController {
           "cost_change",
           "variant",
           id,
-          { costAvg: Number(before.costAvg), stock: Number(before.stock) },
+          { costAvg: Number(before.costAvg), stock: Number(totalStock) },
           { costAvg: Number(row.costAvg), inventoryImpact: impact },
         );
         const product = await tx.product.findUnique({
@@ -535,7 +546,7 @@ export class CatalogController {
         });
         const message =
           `${product?.name ?? before.sku}: costo promedio cambiado a mano de RD$ ${formatAmount(Number(before.costAvg))} ` +
-          `a RD$ ${formatAmount(Number(row.costAvg))} con ${Number(before.stock)} en existencia ` +
+          `a RD$ ${formatAmount(Number(row.costAvg))} con ${Number(totalStock)} en existencia ` +
           `(valor del inventario ${impact < 0 ? "−" : "+"}RD$ ${formatAmount(Math.abs(impact))}) · ${actor.name}.`;
         await tx.alert.upsert({
           where: { key: "cost-change:" + id },

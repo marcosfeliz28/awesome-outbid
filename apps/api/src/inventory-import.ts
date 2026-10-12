@@ -15,6 +15,7 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { createHash } from "node:crypto";
+import { d, quantity, weightedCost } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -26,6 +27,7 @@ import {
   conflict,
 } from "./common";
 import { lockVariant, stockChange } from "./inventory";
+import { retrySerializable } from "./inventory-resilience";
 import {
   InventoryBlockedError,
   InventoryBusyError,
@@ -166,6 +168,330 @@ export class InventoryImportController {
       maxRows: INVENTORY_IMPORT_MAX_ROWS,
       inspect: (sheet) => assertSheetCells(sheet),
     });
+  }
+
+  private async casaPlan(buffer: Buffer, actor: Actor, tx: any = this.db) {
+    const rows = await this.rows(buffer);
+    const home = await tx.warehouse.findUnique({
+      where: { branchId_kind: { branchId: actor.branchId, kind: "home" } },
+    });
+    if (!home || !home.active) bad("El almacén Casa no está disponible.");
+    const problems: { row?: number; message: string }[] = [];
+    const changes = [];
+    const seen = new Set<string>();
+    const newBarcodes = new Set<string>();
+    for (const row of rows) {
+      if (seen.has(row.id)) {
+        problems.push({
+          row: row.line,
+          message: `El ID ${row.id} está repetido en el Excel.`,
+        });
+        continue;
+      }
+      seen.add(row.id);
+      const variant = await tx.variant.findFirst({
+        where: { sku: row.id, branchId: actor.branchId },
+        include: { product: { include: { category: true } } },
+      });
+      if (!variant) {
+        const barcode = row.barcode ?? row.id;
+        if (newBarcodes.has(barcode)) {
+          problems.push({
+            row: row.line,
+            message: `El código de barras ${barcode} está repetido en productos nuevos del Excel.`,
+          });
+          continue;
+        }
+        newBarcodes.add(barcode);
+        const skuTaken = await tx.variant.findUnique({
+          where: { sku: row.id },
+        });
+        const barcodeTaken = await tx.variant.findUnique({
+          where: { barcode: row.barcode ?? row.id },
+        });
+        const productTaken = await tx.product.findUnique({
+          where: { sku: "INV-" + row.id },
+        });
+        const category = await tx.category.findUnique({
+          where: { name: row.category },
+        });
+        if (
+          skuTaken ||
+          barcodeTaken ||
+          productTaken ||
+          (category && category.branchId !== actor.branchId)
+        ) {
+          problems.push({
+            row: row.line,
+            message: `El ID, código o categoría de ${row.id} ya está usado por otro producto o sucursal.`,
+          });
+          continue;
+        }
+        if (
+          (category?.requiresLot || category?.requiresExpiry) &&
+          row.qty > 0
+        ) {
+          problems.push({
+            row: row.line,
+            message: `${row.id} exige lote. Registra su existencia por lote en Casa.`,
+          });
+          continue;
+        }
+        changes.push({
+          row,
+          variantId: null as string | null,
+          before: 0,
+          after: row.qty,
+          store: 0,
+          costAvg: row.cost,
+        });
+        continue;
+      }
+      if (
+        (variant.product.category.requiresLot ||
+          variant.product.category.requiresExpiry) &&
+        row.qty > 0
+      ) {
+        problems.push({
+          row: row.line,
+          message: `${row.id} exige lote. Registra el conteo por lote en Casa.`,
+        });
+        continue;
+      }
+      const current = Number(
+        (
+          await tx.variantStock.findUnique({
+            where: {
+              variantId_warehouseId: {
+                variantId: variant.id,
+                warehouseId: home.id,
+              },
+            },
+          })
+        )?.qty ?? 0,
+      );
+      const tracked = Number(
+        (
+          await tx.lotStock.aggregate({
+            where: { warehouseId: home.id, lot: { variantId: variant.id } },
+            _sum: { qty: true },
+          })
+        )._sum.qty ?? 0,
+      );
+      if (row.qty < tracked) {
+        problems.push({
+          row: row.line,
+          message: `${row.id}: el conteo queda por debajo de los lotes de Casa.`,
+        });
+        continue;
+      }
+      changes.push({
+        row,
+        variantId: variant.id as string | null,
+        before: current,
+        after: row.qty,
+        store: Number(variant.stock),
+        costAvg: Number(variant.costAvg),
+      });
+    }
+    const state = createHash("sha256")
+      .update(
+        JSON.stringify(
+          changes.map((x) => [
+            x.variantId ?? x.row.id,
+            x.before,
+            x.after,
+            x.store,
+            x.costAvg,
+            x.row.cost,
+          ]),
+        ),
+      )
+      .digest("hex");
+    return { home, rows, changes, problems, state };
+  }
+
+  @Post("inventory-import/casa/preview")
+  @RequireTerminal()
+  @Permit(INVENTORY_IMPORT_PERMISSION)
+  @UseInterceptors(
+    FileInterceptor("file", {
+      limits: { fileSize: INVENTORY_IMPORT_MAX_BYTES, files: 1 },
+    }),
+  )
+  async casaPreview(@UploadedFile() file: any, @CurrentUser() actor: Actor) {
+    const { buffer, hash, name } = await this.read(file);
+    try {
+      const plan = await this.casaPlan(buffer, actor);
+      return {
+        fileName: name,
+        hash,
+        state: plan.state,
+        rows: plan.rows.length,
+        canApply: plan.problems.length === 0,
+        blocking: plan.problems,
+        changes: plan.changes.map((c) => ({
+          id: c.row.id,
+          name: c.row.name,
+          kind: "existencia",
+          before: c.before,
+          after: c.after,
+        })),
+      };
+    } catch (error) {
+      return this.fail(error);
+    }
+  }
+
+  @Post("inventory-import/casa/apply")
+  @RequireTerminal()
+  @Permit(INVENTORY_IMPORT_PERMISSION)
+  @UseInterceptors(
+    FileInterceptor("file", {
+      limits: { fileSize: INVENTORY_IMPORT_MAX_BYTES, files: 1 },
+    }),
+  )
+  async casaApply(
+    @UploadedFile() file: any,
+    @Body() body: any,
+    @CurrentUser() actor: Actor,
+  ) {
+    const { buffer, hash, name } = await this.read(file);
+    if (body?.hash !== hash || !/^[0-9a-f]{64}$/.test(String(body?.state)))
+      bad("Primero revisa este mismo archivo.");
+    try {
+      return await retrySerializable(() =>
+        this.db.$transaction(
+          async (tx) => {
+            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('nexora-inventory-import'))`;
+            const plan = await this.casaPlan(buffer, actor, tx);
+            if (plan.problems.length)
+              bad("Corrige el archivo antes de cargarlo.");
+            if (plan.state !== body.state)
+              conflict(
+                "El inventario cambió. Revisa otra vez la vista previa.",
+              );
+            for (const change of plan.changes.sort((a, b) =>
+              (a.variantId ?? a.row.id).localeCompare(b.variantId ?? b.row.id),
+            )) {
+              let variantId = change.variantId;
+              if (!variantId) {
+                const category = await tx.category.upsert({
+                  where: { name: change.row.category },
+                  create: {
+                    name: change.row.category,
+                    branchId: actor.branchId,
+                  },
+                  update: {},
+                });
+                const product = await tx.product.create({
+                  data: {
+                    name: change.row.name,
+                    sku: "INV-" + change.row.id,
+                    categoryId: category.id,
+                    brand: "",
+                    active:
+                      change.row.price > change.row.cost && change.row.cost > 0,
+                    branchId: actor.branchId,
+                    createdBy: actor.id,
+                    variants: {
+                      create: {
+                        sku: change.row.id,
+                        barcode: change.row.barcode ?? change.row.id,
+                        price: change.row.price,
+                        costAvg: change.row.cost,
+                        stock: 0,
+                        active:
+                          change.row.price > change.row.cost &&
+                          change.row.cost > 0,
+                        branchId: actor.branchId,
+                        createdBy: actor.id,
+                      },
+                    },
+                  },
+                  include: { variants: true },
+                });
+                variantId = product.variants[0].id;
+              } else {
+                await tx.$queryRaw`SELECT id FROM "Variant" WHERE id=${variantId}::uuid FOR UPDATE`;
+              }
+              if (change.after === change.before) continue;
+              if (change.variantId && change.after > change.before) {
+                const other = await tx.variantStock.findMany({
+                  where: {
+                    variantId,
+                    warehouse: { branchId: actor.branchId, sellable: false },
+                  },
+                  select: { qty: true },
+                });
+                const totalBefore = Math.max(
+                  0,
+                  other.reduce((sum, x) => sum + Number(x.qty), change.store),
+                );
+                await tx.variant.update({
+                  where: { id: variantId },
+                  data: {
+                    costAvg: weightedCost(
+                      totalBefore,
+                      change.costAvg,
+                      change.after - change.before,
+                      change.row.cost,
+                    ),
+                  },
+                });
+              }
+              await tx.variantStock.upsert({
+                where: {
+                  variantId_warehouseId: {
+                    variantId,
+                    warehouseId: plan.home.id,
+                  },
+                },
+                create: {
+                  variantId,
+                  warehouseId: plan.home.id,
+                  qty: change.after,
+                },
+                update: { qty: change.after },
+              });
+              await tx.inventoryMovement.create({
+                data: {
+                  variantId,
+                  warehouseId: plan.home.id,
+                  type: "count",
+                  qty: quantity(d(change.after).minus(change.before)),
+                  unitCost:
+                    change.after > change.before
+                      ? change.row.cost
+                      : change.costAvg,
+                  balanceAfter: change.after,
+                  refId: hash,
+                  reason: "Levantamiento Casa (" + name + ")",
+                  userId: actor.id,
+                  branchId: actor.branchId,
+                },
+              });
+            }
+            await audit(
+              tx,
+              actor,
+              "inventory_import_home",
+              "warehouse",
+              plan.home.id,
+              undefined,
+              { hash, rows: plan.rows.length },
+            );
+            return {
+              rows: plan.rows.length,
+              changed: plan.changes.filter((c) => c.after !== c.before).length,
+            };
+          },
+          { isolationLevel: "Serializable", timeout: 120000 },
+        ),
+      );
+    } catch (error) {
+      return this.fail(error);
+    }
   }
 
   @Post("inventory-import/preview")

@@ -631,7 +631,7 @@ export class MerchandiseController {
               if (expired(line.expiryDate))
                 bad("No se recibe mercancía vencida.");
               v.costAvg = weightedCost(
-                Math.max(0, Number(v.stock)),
+                Math.max(0, Number(v.totalStock)),
                 Number(v.costAvg),
                 line.qty,
                 costs[index],
