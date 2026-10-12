@@ -3333,12 +3333,12 @@ const installmentSchema = z.object({
   approvalCode: z.string().max(100).optional(),
 });
 function weightedReturn(variant: any, qty: number, cost: number) {
-  if (Number(variant.stock) <= 0) return money(cost);
+  if (Number(variant.totalStock) <= 0) return money(cost);
   return money(
-    d(variant.stock)
+    d(variant.totalStock)
       .times(variant.costAvg)
       .plus(d(qty).times(cost))
-      .div(d(variant.stock).plus(qty)),
+      .div(d(variant.totalStock).plus(qty)),
   );
 }
 // La devolución guardada con esa clave de operación, ¿pide lo mismo que este

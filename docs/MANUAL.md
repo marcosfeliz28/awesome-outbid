@@ -278,3 +278,12 @@ Cada usuario (cajera, vendedora, gerente o administradora) abre su caja al empez
 - **Cierre de emergencia:** si una caja se quedó abierta, solo quien tiene permiso de gestión (hoy administradora y gerente) la cierra desde **Caja › Historial de cajas › Cerrar y arquear**. La lista muestra de quién es cada caja y en qué equipo está. Queda en la bitácora como «cerrada por X en nombre de Y» y el cuadre impreso lleva ambos nombres.
 - **Al cerrar** se imprime el cuadre de esa caja: equipo, cajero, ventas por forma de pago, entradas y salidas de efectivo, conteo, firma y «DOCUMENTO NO FISCAL». La cajera no ve el esperado ni las diferencias; la administración sí.
 - **Fondo al abrir:** la pantalla sugiere lo que dejaste en tu último cierre, aunque lo hicieras en otra computadora. Si nunca cerraste una caja, sugiere lo que dejó el último cierre de ese equipo, y si tampoco hay, 0. Abrir con menos de lo sugerido exige una nota (y el PIN de un gerente a quien no gestiona ventas). Cualquier gerente o la administración puede cerrar la caja de otra persona (decisión confirmada).
+
+## Mercancía guardada en Casa
+
+1. Abre **Inventario**. El selector **Almacén** permite ver **Tienda**, **Casa** o **Todos**. **Total** suma lo guardado en ambos lugares.
+2. En **Dónde está la mercancía** se ven las unidades de cada producto en Tienda y Casa, el total y, para quienes pueden ver costos, su valor a costo.
+3. Para registrar lo que ya hay en Casa, en **Levantamiento inicial de Casa** elige un Excel con las mismas columnas de la importación habitual, pulsa **Revisar archivo** y corrige los problemas. Después pulsa **Cargar en Casa**. Los productos nuevos se crean en el catálogo con cero unidades en Tienda. Una segunda carga del mismo conteo no suma dos veces las unidades.
+4. Para un producto con lote o vencimiento, usa **Ajustar** y elige **Casa**, lote y vencimiento. El Excel básico no trae esos datos.
+5. Para llevar mercancía al local, elige el producto en **Traspasar mercancía**, pulsa **Traspasar**, indica **Desde Casa**, **Hasta Tienda**, cantidad y motivo. Si usa lote, elige el lote. La aplicación resta en Casa y suma en Tienda; sólo entonces queda disponible para vender. Para devolver mercancía a Casa, invierte origen y destino.
+6. Revisa **Historial de traspasos** y el kardex si hay diferencias. Para verificar físicamente cada lugar, usa **Contar**, elige el almacén y pide la aprobación del conteo. Los productos con lote se ajustan por lote.

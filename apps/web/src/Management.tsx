@@ -51,6 +51,7 @@ import {
   mutate,
 } from "./helpers";
 import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
+import { WarehousesPanel } from "./WarehousesPanel";
 import {
   CloseCashModal,
   CodPending,
@@ -777,6 +778,10 @@ export function Inventory() {
     queryKey: ["counts"],
     queryFn: () => api("/inventory/counts"),
   });
+  const warehouses = useQuery({
+    queryKey: ["warehouses"],
+    queryFn: () => api("/inventory/warehouses"),
+  });
   // N-1: la devolución a proveedor lleva proveedor y referencia.
   const adjustSuppliers = useQuery({
     queryKey: ["suppliers"],
@@ -787,6 +792,18 @@ export function Inventory() {
     [adjust, setAdjust] = useState<any>(null),
     [count, setCount] = useState<any>(null),
     [kardex, setKardex] = useState<any>(null);
+  const [warehouseView, setWarehouseView] = useState("all");
+  const selectedWarehouse = (warehouses.data || []).find(
+    (w: any) => w.id === warehouseView,
+  );
+  const visibleStock = (v: any) =>
+    selectedWarehouse
+      ? selectedWarehouse.kind === "store"
+        ? v.stock
+        : v.warehouseStocks?.find(
+            (s: any) => s.warehouseId === selectedWarehouse.id,
+          )?.qty || "0"
+      : v.stock;
   const rows = (query.data || []).filter((v: any) =>
     [v.sku, v.barcode, v.product.name]
       .join(" ")
@@ -800,6 +817,19 @@ export function Inventory() {
         caption="El inventario correcto hace espacio para mejores decisiones."
       />
       <div className="panel">
+        <label htmlFor="warehouse-view">Almacén</label>
+        <select
+          id="warehouse-view"
+          value={warehouseView}
+          onChange={(e) => setWarehouseView(e.target.value)}
+        >
+          <option value="all">Todos</option>
+          {(warehouses.data || []).map((w: any) => (
+            <option key={w.id} value={w.id}>
+              {w.name}
+            </option>
+          ))}
+        </select>
         <div className="table-toolbar">
           <div className="tabs">
             <button
@@ -840,21 +870,26 @@ export function Inventory() {
                   ),
                 },
                 {
-                  label: "Stock",
+                  label: selectedWarehouse
+                    ? "En " + selectedWarehouse.name
+                    : "En Tienda",
                   render: (v) => (
                     <Badge
                       tone={
-                        Number(v.stock) <= Number(v.product.minStock)
-                          ? "warning"
-                          : "success"
+                        selectedWarehouse && !selectedWarehouse.sellable
+                          ? "neutral"
+                          : Number(v.stock) <= Number(v.product.minStock)
+                            ? "warning"
+                            : "success"
                       }
                     >
-                      {v.stock}
+                      {visibleStock(v)}
                     </Badge>
                   ),
                 },
+                { label: "Total", render: (v) => v.totalStock },
                 {
-                  label: "Lote más próximo",
+                  label: "Lote en Tienda",
                   render: (v) =>
                     v.lots.find((l: any) => Number(l.qty) > 0)?.lotNumber ||
                     "Sin lote",
@@ -947,10 +982,26 @@ export function Inventory() {
           )}
         </QueryState>
       </div>
+      <WarehousesPanel rows={rows} warehouseId={warehouseView} />
       {adjust && (
         <FormModal
           title={"Ajustar · " + adjust.product.name}
           fields={[
+            {
+              key: "warehouseId",
+              label: "Almacén",
+              type: "select",
+              required: true,
+              initial:
+                selectedWarehouse?.id ||
+                (warehouses.data || []).find((w: any) => w.kind === "store")
+                  ?.id ||
+                "",
+              options: (warehouses.data || []).map((w: any) => ({
+                label: w.name,
+                value: w.id,
+              })),
+            },
             {
               ...requiredNumber("qty", "Cantidad (+ entrada / − salida)"),
               min: -100000,
@@ -1029,11 +1080,31 @@ export function Inventory() {
         <FormModal
           title={"Conteo físico · " + count.product.name}
           fields={[
-            requiredNumber("counted", "Cantidad contada", Number(count.stock)),
+            {
+              key: "warehouseId",
+              label: "Almacén",
+              type: "select",
+              required: true,
+              initial:
+                selectedWarehouse?.id ||
+                (warehouses.data || []).find((w: any) => w.kind === "store")
+                  ?.id ||
+                "",
+              options: (warehouses.data || []).map((w: any) => ({
+                label: w.name,
+                value: w.id,
+              })),
+            },
+            requiredNumber(
+              "counted",
+              "Cantidad contada",
+              Number(visibleStock(count)),
+            ),
           ]}
           onClose={() => setCount(null)}
           onSubmit={(data) =>
             post("/inventory/counts", {
+              warehouseId: data.warehouseId,
               items: [{ variantId: count.id, counted: data.counted }],
             })
           }
