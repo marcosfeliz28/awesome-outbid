@@ -48,6 +48,7 @@ export class FormalReportController {
   ) {
     if (!can(actor.permissions, "profit:read") || !canViewCashExpected(actor))
       denied();
+    res.setHeader("Cache-Control", "private, no-store");
     let period: ReturnType<typeof formalPeriod>;
     try {
       period = formalPeriod(query.period ?? "", query.date ?? "");
@@ -292,6 +293,34 @@ export class FormalReportController {
           s.differenceTransfer === null ? null : num(s.differenceTransfer),
       };
     });
+    const sessionMoney = sessions.slice(0, capped).reduce((sum, s) => {
+      const e = expected.get(s.id);
+      if (!e) return sum;
+      const movementNet = e.movements.reduce(
+        (subtotal: number, m: { type: string; amount: unknown }) =>
+          subtotal + (m.type === "in" ? 1 : -1) * num(m.amount),
+        0,
+      );
+      return (
+        sum +
+        num(e.cash) -
+        num(s.openingAmount) -
+        movementNet +
+        num(e.card) +
+        num(e.transfer)
+      );
+    }, 0);
+    const cashReconciliation = {
+      moneyIn: Number(moneyIn.toFixed(2)),
+      sessionMoney: Number(sessionMoney.toFixed(2)),
+      difference: Number((moneyIn - sessionMoney).toFixed(2)),
+      comparable:
+        sessions.length <= capped &&
+        sessions.every(
+          (s) => s.closedAt && s.openedAt >= opt.start && s.closedAt <= opt.end,
+        ),
+      note: "La comparación de caja excluye fondo inicial y movimientos manuales. Pagos sin caja, turnos abiertos o turnos que cruzan el período pueden causar diferencia.",
+    };
     const customerIds = [
       ...new Set(
         [...openCredits, ...closedCredits].flatMap((s) =>
@@ -365,6 +394,39 @@ export class FormalReportController {
         suggestedMax: Math.ceil(perMonth * 2000) / 1000,
       };
     });
+    const findings: string[] = [];
+    if (cashReconciliation.difference !== 0)
+      findings.push(
+        `Dinero ingresado menos suma de cajas: ${money2(cashReconciliation.difference)}. ${cashReconciliation.note}`,
+      );
+    for (const s of cash.filter((c) =>
+      [c.differenceCash, c.differenceCard, c.differenceTransfer].some(
+        (v) => v !== null && v !== 0,
+      ),
+    ))
+      findings.push(
+        `${s.register}: diferencias de cierre E ${money2(s.differenceCash)} / T ${money2(s.differenceCard)} / Tr ${money2(s.differenceTransfer)}.`,
+      );
+    if (voids.length)
+      findings.push(
+        `${voids.length}${voids.length > capped ? " o más" : ""} ventas anuladas en el período; motivos en la sección de anulaciones.`,
+      );
+    if (discounts.length)
+      findings.push(
+        `${discounts.length}${discounts.length > capped ? " o más" : ""} ventas con descuento; revisar motivo y autorización.`,
+      );
+    if (costChanges.length)
+      findings.push(
+        `${costChanges.length}${costChanges.length > capped ? " o más" : ""} cambios manuales de costo; revisar la bitácora.`,
+      );
+    if (
+      sold > 0 &&
+      reportMargin(sold, cost) <
+        Number((settings?.data as any)?.lowMargin ?? 15)
+    )
+      findings.push(
+        `Margen global ${reportMargin(sold, cost)} % por debajo del margen bajo configurado.`,
+      );
     const report = {
       title: `Informe formal · ${period.label}`,
       business: {
@@ -389,6 +451,8 @@ export class FormalReportController {
         creditGenerated: daily.reduce((sum, r) => sum + r.creditGenerated, 0),
       },
       cash,
+      cashReconciliation,
+      findings,
       users: sellerRows.map((r) => ({
         name: person.get(r.userId) ?? r.userId,
         sold: num(r.sold),
@@ -501,6 +565,14 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
     );
   }
   section("Cajas y arqueo");
+  line(
+    `Ingresó ${fmt(report.cashReconciliation.moneyIn)} · Según cajas ${fmt(report.cashReconciliation.sessionMoney)} · Diferencia ${fmt(report.cashReconciliation.difference)}`,
+    true,
+  );
+  if (!report.cashReconciliation.comparable)
+    line(
+      "Comparación parcial: existen turnos abiertos, turnos cruzados o más de 500 cajas.",
+    );
   if (!report.cash.length) line("Sin cajas reales en este período.");
   for (const c of report.cash) {
     line(
@@ -561,6 +633,10 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
     line(
       `${when(c.at)} · ${c.variantId} · ${c.user} · ${JSON.stringify(c.before)} → ${JSON.stringify(c.after)}`,
     );
+  if (report.findings.length) {
+    section("Señales para revisar");
+    for (const item of report.findings) line(item);
+  }
   section("Notas de control");
   line(report.note);
   if (Object.values(report.truncated).some(Boolean))

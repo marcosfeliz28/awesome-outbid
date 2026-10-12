@@ -297,6 +297,7 @@ export class IncomeReportController {
     @Res() res: Response,
   ) {
     const opt = incomeOptions(query);
+    res.setHeader("Cache-Control", "private, no-store");
     if (!canViewCashExpected(actor)) {
       const open = await this.db.cashSession.findFirst({
         where: { branchId: actor.branchId, closedAt: null },

@@ -56,6 +56,13 @@ describe("3z · PDF formal", () => {
         openCount: 0,
         closedCount: 0,
       },
+      cashReconciliation: {
+        moneyIn: 100,
+        sessionMoney: 100,
+        difference: 0,
+        comparable: true,
+      },
+      findings: [],
       voids: [],
       discounts: [],
       costChanges: [],

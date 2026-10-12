@@ -103,6 +103,14 @@ export function FormalReports() {
               {report.totals.returns}
             </p>
             <h3>Cajas y diferencias</h3>
+            <p role="status">
+              Ingresó {formatMoney(report.cashReconciliation.moneyIn)} · Según
+              cajas {formatMoney(report.cashReconciliation.sessionMoney)} ·
+              Diferencia {formatMoney(report.cashReconciliation.difference)}
+              {!report.cashReconciliation.comparable
+                ? " · Comparación parcial"
+                : ""}
+            </p>
             <div
               className="table-wrap"
               role="region"
@@ -180,6 +188,16 @@ export function FormalReports() {
               {report.discounts.length} · Cambios de costo:{" "}
               {report.costChanges.length}
             </p>
+            {report.findings.length > 0 && (
+              <>
+                <h3>Señales para revisar</h3>
+                <ul>
+                  {report.findings.map((item: string) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </>
+            )}
             <small>{report.note}</small>
             {Object.values(report.truncated).some(Boolean) && (
               <p role="status">

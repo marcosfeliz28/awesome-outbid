@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   Inject,
   Param,
@@ -2904,6 +2905,7 @@ export class SalesController {
   // 3v: resumen por persona. La agregación ocurre en PostgreSQL, no sobre
   // las primeras 500 ventas de la pantalla antigua.
   @Get("credit-accounts")
+  @Header("Cache-Control", "private, no-store")
   @Permit("*")
   async creditAccounts(
     @CurrentUser() actor: Actor,
@@ -3053,6 +3055,7 @@ export class SalesController {
   }
 
   @Get("credit-accounts/:id")
+  @Header("Cache-Control", "private, no-store")
   @Permit("*")
   creditStatement(@CurrentUser() actor: Actor, @Param("id") id: string) {
     return this.creditStatementData(actor, id);
@@ -3075,6 +3078,7 @@ export class SalesController {
     });
     const business = (settings?.data as any) ?? {};
     const doc = new PDFDocument({ size: "A4", margin: 44 });
+    res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
