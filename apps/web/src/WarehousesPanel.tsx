@@ -231,6 +231,30 @@ export function WarehousesPanel({
               <p>
                 {preview.rows} filas · {preview.blocking.length} problemas
               </p>
+              {preview.changes?.length > 0 && (
+                <div className="table-wrap" tabIndex={0}>
+                  <table aria-label="Cambios del levantamiento de Casa">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Producto</th>
+                        <th>Existencia actual en Casa</th>
+                        <th>Existencia después de cargar</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.changes.map((change: any, index: number) => (
+                        <tr key={`${change.id}-${index}`}>
+                          <td>{change.id}</td>
+                          <td>{change.name}</td>
+                          <td>{change.before}</td>
+                          <td>{change.after}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               {preview.blocking.map((b: any, i: number) => (
                 <p key={i}>
                   Fila {b.row}: {b.message}
