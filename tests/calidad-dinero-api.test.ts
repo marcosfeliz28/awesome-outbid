@@ -28,6 +28,8 @@ const ip = "198.18.19." + ((Date.now() % 250) + 1);
 const DEMO = process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!";
 const TEMPORARY = "FitStore-QA-W9-2026!";
 const PASSWORD = "FitStore-QA-W9-Definitiva-2026!";
+const CASHIER_TEMPORARY = "739205";
+const CASHIER_PASSWORD = "583904";
 const DAY = 86400000;
 
 async function request(
@@ -88,18 +90,20 @@ async function person(
   const roles = await ok("/roles", owner);
   const email = `qa-w9-${label}-${suffix}@example.test`;
   const name = `QA W9 ${label} ${suffix}`;
+  const temporaryPassword = role === "seller" ? CASHIER_TEMPORARY : TEMPORARY;
+  const newPassword = role === "seller" ? CASHIER_PASSWORD : PASSWORD;
   const user = await ok("/users", owner, {
     name,
     email,
-    password: TEMPORARY,
+    password: temporaryPassword,
     pin: "246813",
     roleId: roles.find((r: any) => r.name === role).id,
   });
   const login = await ok("/auth/change-password", "", {
     login: email,
-    currentPassword: TEMPORARY,
-    newPassword: PASSWORD,
-    confirmPassword: PASSWORD,
+    currentPassword: temporaryPassword,
+    newPassword,
+    confirmPassword: newPassword,
   });
   await terminal(login.accessToken, label);
   const cash =

@@ -6,8 +6,8 @@ import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
 // cajera marca «Venta al por mayor», cobra y ve su acumulado a la mitad en
 // Caja; la administración ve el cuadre en «Incentivos» y cierra el mes.
 const owner = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
-const temporary = "FitStore-QA-2026!";
-const password = "FitStore-QA-2026-Definitiva!";
+const temporary = "482917";
+const password = "736204";
 const month = new Date()
   .toLocaleDateString("en-CA", { timeZone: "America/Santo_Domingo" })
   .slice(0, 7);

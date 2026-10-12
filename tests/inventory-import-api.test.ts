@@ -19,8 +19,10 @@ const db = new PrismaClient();
 const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
 const suffix = Date.now().toString(36);
 const ip = "192.0.2." + ((Date.now() % 250) + 1);
-const PASSWORD = "FitStore-QA-2026!";
-const ACTIVE = "FitStore-QA-Nueva-2026!";
+const PASSWORD_STRONG = "FitStore-QA-2026!";
+const PASSWORD_CASHIER = "583907";
+const ACTIVE_STRONG = "FitStore-QA-Nueva-2026!";
+const ACTIVE_CASHIER = "649283";
 const HEADER = [
   "ID",
   "DESCRIPCION",
@@ -62,12 +64,15 @@ async function enroll(token: string, own = ip) {
 async function userToken(role: string, withTerminal = role === "admin") {
   const roles = (await json("/roles", undefined, ownerToken)).body;
   const email = `qa-imp-${role}-${randomUUID().slice(0, 8)}@example.test`;
+  const initialPassword =
+    role === "seller" ? PASSWORD_CASHIER : PASSWORD_STRONG;
+  const activePassword = role === "seller" ? ACTIVE_CASHIER : ACTIVE_STRONG;
   const created = await json(
     "/users",
     {
       name: "QA importar " + role,
       email,
-      password: PASSWORD,
+      password: initialPassword,
       pin: "876543",
       roleId: roles.find((r: any) => r.name === role).id,
     },
@@ -77,15 +82,20 @@ async function userToken(role: string, withTerminal = role === "admin") {
   // Cada usuaria entra desde su propia dirección: el límite de inicios de
   // sesión por IP no debe agotarse con las cuentas de la prueba.
   const own = `198.51.100.${1 + Math.floor(Math.random() * 250)}`;
-  let auth = await json("/auth/login", { email, password: PASSWORD }, "", own);
+  let auth = await json(
+    "/auth/login",
+    { email, password: initialPassword },
+    "",
+    own,
+  );
   if (auth.body.requiresPasswordChange)
     auth = await json(
       "/auth/change-password",
       {
         login: email,
-        currentPassword: PASSWORD,
-        newPassword: ACTIVE,
-        confirmPassword: ACTIVE,
+        currentPassword: initialPassword,
+        newPassword: activePassword,
+        confirmPassword: activePassword,
       },
       "",
       own,

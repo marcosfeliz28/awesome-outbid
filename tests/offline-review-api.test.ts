@@ -19,6 +19,8 @@ const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
 const ip =
   "198.18." + ((Date.now() % 200) + 1) + "." + ((Date.now() % 250) + 1);
 const demo = process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!";
+const TEMPORARY_CASHIER_PASSWORD = "583907";
+const FINAL_CASHIER_PASSWORD = "649283";
 const MANAGER_PIN = "234567"; // gerente del seed (apps/api/prisma/seed.ts)
 const tag = Date.now().toString(36);
 
@@ -77,7 +79,7 @@ beforeAll(async () => {
       {
         name: "QA Cajera A2 " + n,
         email,
-        password: "FitStore-QA-2026!",
+        password: TEMPORARY_CASHIER_PASSWORD,
         pin: "13579" + n,
         roleId: seller,
       },
@@ -86,9 +88,9 @@ beforeAll(async () => {
     users.push(user.id);
     const login = await ok("/auth/change-password", {
       login: email,
-      currentPassword: "FitStore-QA-2026!",
-      newPassword: "FitStore-QA-2026-Definitiva!",
-      confirmPassword: "FitStore-QA-2026-Definitiva!",
+      currentPassword: TEMPORARY_CASHIER_PASSWORD,
+      newPassword: FINAL_CASHIER_PASSWORD,
+      confirmPassword: FINAL_CASHIER_PASSWORD,
     });
     await enroll(login.accessToken, owner);
     const session = await ok(

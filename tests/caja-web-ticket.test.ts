@@ -82,7 +82,7 @@ describe("05-A1 · el recibo identifica al cliente", () => {
 });
 
 describe("03 · textos del recibo no fiscal", () => {
-  it("M1: leyenda no fiscal idéntica en el ticket, en WhatsApp/correo y en el PDF", () => {
+  it("M1: ticket y WhatsApp usan la leyenda legal; PDF lleva el aviso discreto", () => {
     expect(NON_FISCAL_LEGEND).toBe(
       "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL",
     );
@@ -91,9 +91,9 @@ describe("03 · textos del recibo no fiscal", () => {
     const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
     expect(pos).toMatch(/const text = `[^`]*\$\{NON_FISCAL_LEGEND\}/);
     expect(pos).not.toContain("Documento interno, no fiscal.");
-    const api = readFileSync("apps/api/src/sales.ts", "utf8");
-    const pdf = api.slice(api.indexOf('@Get("sales/:id/receipt.pdf")'));
-    expect(pdf).toContain(NON_FISCAL_LEGEND);
+    const receipt = readFileSync("apps/api/src/receipt-pdf.ts", "utf8");
+    expect(receipt).toContain("Documento interno, sin valor fiscal");
+    expect(receipt).not.toContain(NON_FISCAL_LEGEND);
   });
   it("M1: ningún botón ni título de la venta llama «factura» al recibo", () => {
     const pos = readFileSync("apps/web/src/POS.tsx", "utf8");

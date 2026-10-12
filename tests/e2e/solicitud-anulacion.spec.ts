@@ -7,8 +7,8 @@ const ownerLogin = {
   email: "admin@fitstore.demo",
   password: process.env.SEED_DEMO_PASSWORD!,
 };
-const temporary = "Qa-Aa1!" + crypto.randomUUID();
-const password = "Qa-Bb2!" + crypto.randomUUID();
+const temporary = "482917";
+const password = "736204";
 const testPin = String(Math.floor(100000 + Math.random() * 900000));
 
 async function checkViewport(page: Page) {

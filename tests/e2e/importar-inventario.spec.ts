@@ -209,13 +209,15 @@ test.describe("Importar inventario", () => {
       await request.get("/api/roles", { headers: admin })
     ).json();
     for (const role of ["seller", "manager"]) {
+      const temporary = role === "seller" ? "482917" : "FitStore-QA-2026!";
+      const password = role === "seller" ? "736204" : "FitStore-QA-Nueva-2026!";
       const email = `e2e-imp-${role}-${suffix.toLowerCase()}@example.test`;
       const created = await request.post("/api/users", {
         headers: admin,
         data: {
           name: "E2E " + role,
           email,
-          password: "FitStore-QA-2026!",
+          password: temporary,
           pin: "876543",
           roleId: roles.find((r: any) => r.name === role).id,
         },
@@ -223,7 +225,7 @@ test.describe("Importar inventario", () => {
       expect(created.ok()).toBe(true);
       let auth = await (
         await request.post("/api/auth/login", {
-          data: { email, password: "FitStore-QA-2026!" },
+          data: { email, password: temporary },
         })
       ).json();
       if (auth.requiresPasswordChange)
@@ -231,9 +233,9 @@ test.describe("Importar inventario", () => {
           await request.post("/api/auth/change-password", {
             data: {
               login: email,
-              currentPassword: "FitStore-QA-2026!",
-              newPassword: "FitStore-QA-Nueva-2026!",
-              confirmPassword: "FitStore-QA-Nueva-2026!",
+              currentPassword: temporary,
+              newPassword: password,
+              confirmPassword: password,
             },
           })
         ).json();

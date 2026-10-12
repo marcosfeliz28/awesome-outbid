@@ -212,6 +212,12 @@ export type Field = {
   min?: number;
   max?: number;
   step?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  title?: string;
+  resetFieldsOnChange?: string[];
   help?: string;
 };
 // 03-A1: aviso corto al pedir los datos de un cliente. El texto jurídico
@@ -237,15 +243,16 @@ export function FormModal({
   notice,
 }: {
   title: string;
-  fields: Field[];
+  fields: Field[] | ((values: Record<string, any>) => Field[]);
   onSubmit: (data: Record<string, any>) => Promise<unknown>;
   onClose: () => void;
   initial?: Record<string, any>;
   notice?: ReactNode;
 }) {
+  const initialFields = typeof fields === "function" ? fields(initial) : fields;
   const [values, setValues] = useState<Record<string, any>>(() =>
     Object.fromEntries(
-      fields.map((f) => [
+      initialFields.map((f) => [
         f.key,
         initial[f.key] ?? f.initial ?? (f.type === "checkbox" ? false : ""),
       ]),
@@ -254,13 +261,14 @@ export function FormModal({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const client = useQueryClient();
+  const resolvedFields = typeof fields === "function" ? fields(values) : fields;
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
     setError("");
     try {
       const data = { ...values };
-      for (const f of fields)
+      for (const f of resolvedFields)
         if (f.type === "number") data[f.key] = Number(data[f.key]);
       await onSubmit(data);
       await client.invalidateQueries();
@@ -275,7 +283,7 @@ export function FormModal({
   return (
     <Modal open onClose={onClose} title={title}>
       <form onSubmit={submit} className="form-grid">
-        {fields.map((f) => (
+        {resolvedFields.map((f) => (
           <label
             className={`field ${f.type === "textarea" ? "full" : ""}`}
             key={f.key}
@@ -289,7 +297,13 @@ export function FormModal({
                 required={f.required}
                 value={values[f.key]}
                 onChange={(e) =>
-                  setValues({ ...values, [f.key]: e.target.value })
+                  setValues((current) => ({
+                    ...current,
+                    [f.key]: e.target.value,
+                    ...Object.fromEntries(
+                      (f.resetFieldsOnChange ?? []).map((key) => [key, ""]),
+                    ),
+                  }))
                 }
               >
                 <option value="">Seleccionar…</option>
@@ -321,6 +335,11 @@ export function FormModal({
                 type={f.type || "text"}
                 min={f.min}
                 max={f.max}
+                minLength={f.minLength}
+                maxLength={f.maxLength}
+                inputMode={f.inputMode}
+                pattern={f.pattern}
+                title={f.title}
                 step={f.step || "0.01"}
                 value={values[f.key]}
                 onChange={(e) =>

@@ -24,7 +24,6 @@ import {
   saleSchema,
   lineTotals,
   paymentTotals,
-  paymentReceiptLine,
   money,
   formatMoney,
   formatAmount,
@@ -515,7 +514,7 @@ import { cashExpected, refreshClosedCash } from "./cash";
 import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
-import { receiptCustomerLine, receiptFooterLines } from "./receipt-pdf";
+import { drawSaleReceipt } from "./receipt-pdf";
 import {
   recordSaleIncentives,
   reverseIncentives,
@@ -3637,6 +3636,7 @@ export class SalesController {
       include: {
         items: { include: { variant: { include: { product: true } } } },
         payments: true,
+        returns: true,
       },
     });
     const settings = await this.db.settings.findUnique({
@@ -3653,77 +3653,18 @@ export class SalesController {
       this.db.user.findUnique({ where: { id: sale.sellerId } }),
     ]);
     const business = (settings?.data as any) ?? {};
-    const doc = new PDFDocument({ size: "A4", margin: 48 });
+    const doc = new PDFDocument({
+      size: "A4",
+      margin: 48,
+      bufferPages: true,
+    });
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
       `inline; filename="${sale.number}.pdf"`,
     );
     doc.pipe(res);
-    doc.fontSize(18).text(business.name || "Nexora POS", { align: "center" });
-    if (business.branchName)
-      doc.fontSize(10).text(business.branchName, { align: "center" });
-    if (business.address)
-      doc.fontSize(9).text(business.address, { align: "center" });
-    if (business.phone)
-      doc.fontSize(9).text("Tel.: " + business.phone, { align: "center" });
-    if (business.legalId)
-      doc.fontSize(9).text("RNC: " + business.legalId, { align: "center" });
-    doc
-      .fontSize(10)
-      .text("DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL")
-      .text(sale.number)
-      .text(
-        "Fecha y hora: " +
-          sale.createdAt.toLocaleString("es-DO", {
-            timeZone: BUSINESS_TIME_ZONE,
-            dateStyle: "short",
-            timeStyle: "short",
-          }),
-      )
-      .moveDown();
-    doc.text("Cajero: " + (seller?.name || ""));
-    // V2-02: sin teléfono y con la cédula/RNC enmascarada y sólo con NCF.
-    doc.text(receiptCustomerLine(customer, sale));
-    doc.moveDown();
-    if (sale.status === "voided") doc.text("ANULADA · " + sale.voidedReason);
-    for (const item of sale.items) {
-      doc.text(
-        `${item.variant.product.name} / ${item.variant.sku}   ${item.qty} × RD$ ${item.unitPrice}   RD$ ${item.lineTotal}`,
-      );
-      if (item.promotionName) doc.text("   Promoción: " + item.promotionName);
-    }
-    doc
-      .moveDown()
-      .text(
-        (sale.taxIncluded === false
-          ? "ITBIS adicional: RD$ "
-          : "ITBIS incluido: RD$ ") + sale.taxTotal,
-      )
-      .fontSize(18)
-      .text("Total: RD$ " + sale.total);
-    doc.fontSize(10);
-    if (sale.ncfType)
-      doc.text(
-        "Solicitud NCF: " + sale.ncfType + " · pendiente de emisión fiscal",
-      );
-    if (Number(sale.creditBalance) > 0)
-      doc
-        .fontSize(12)
-        .text("CRÉDITO · PENDIENTE DE PAGO")
-        .text("Monto pendiente: RD$ " + sale.creditBalance)
-        .fontSize(10)
-        .text("DOCUMENTO NO FISCAL");
-    if (Number(sale.discountTotal) > 0)
-      doc.text(
-        `Descuento: RD$ ${sale.discountTotal} · ${sale.discountReason ?? "Sin motivo"} · Autorizó: ${sale.discountApprovedName ?? "No identificado"} (${sale.discountApprovedRole ?? sale.discountRule ?? "regla no identificada"})`,
-      );
-    for (const p of sale.payments) doc.text(paymentReceiptLine(p));
-    // V2-02: el PDF lleva la política de devolución y el aviso de privacidad
-    // igual que el ticket.
-    doc.moveDown().fontSize(8);
-    for (const line of receiptFooterLines(business)) doc.text(line);
-    doc.fontSize(10).moveDown().text("Gracias por elegirnos.");
+    drawSaleReceipt(doc, { sale, business, customer, seller });
     doc.end();
   }
 }

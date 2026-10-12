@@ -24,8 +24,8 @@ const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
 const suffix = Date.now().toString(36);
 const ip = "198.18.9." + ((Date.now() % 250) + 1);
 const DEMO = process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!";
-const TEMPORARY = "FitStore-QA-Perf-2026!";
-const PASSWORD = "FitStore-QA-Perf-Definitiva-2026!";
+const TEMPORARY = "583907";
+const PASSWORD = "649283";
 
 async function request(path: string, as: string, data?: unknown) {
   const r = await fetch(base + path, {

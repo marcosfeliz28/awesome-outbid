@@ -24,6 +24,8 @@ const suffix = Date.now().toString(36);
 const DEMO = process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!";
 const TEMPORARY = "FitStore-QA-Dinero-2026!";
 const PASSWORD = "FitStore-QA-Dinero-Definitiva-2026!";
+const CASHIER_TEMPORARY = "739205";
+const CASHIER_PASSWORD = "583904";
 // PIN del gerente de la semilla (gerente@fitstore.demo).
 const MANAGER_PIN = "234567";
 let ipCounter = 0;
@@ -87,10 +89,12 @@ async function person(
   const roles = await ok("/roles", admin);
   const email = `qa-din-${label}-${suffix}@example.test`;
   const name = `QA ${label} ${suffix}`;
+  const temporaryPassword = role === "seller" ? CASHIER_TEMPORARY : TEMPORARY;
+  const newPassword = role === "seller" ? CASHIER_PASSWORD : PASSWORD;
   const user = await ok("/users", admin, {
     name,
     email,
-    password: TEMPORARY,
+    password: temporaryPassword,
     pin: "975310",
     roleId: roles.find((r: any) => r.name === role).id,
   });
@@ -101,9 +105,9 @@ async function person(
       "",
       {
         login: email,
-        currentPassword: TEMPORARY,
-        newPassword: PASSWORD,
-        confirmPassword: PASSWORD,
+        currentPassword: temporaryPassword,
+        newPassword,
+        confirmPassword: newPassword,
       },
       "POST",
       nextIp(),

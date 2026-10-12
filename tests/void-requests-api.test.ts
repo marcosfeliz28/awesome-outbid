@@ -20,9 +20,12 @@ const db = new PrismaClient();
 const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
 const tag = Date.now().toString(36);
 const ip = "198.18.24." + ((Date.now() % 240) + 10);
-const DEMO = process.env.SEED_DEMO_PASSWORD;
-const TEMPORARY = "Qa-Aa1!" + randomUUID();
-const PASSWORD = "Qa-Bb2!" + randomUUID();
+const DEMO = process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!";
+const TEMPORARY_STRONG = "Qa-Aa1!" + randomUUID();
+const PASSWORD_STRONG = "Qa-Bb2!" + randomUUID();
+// Las cuentas seller reciben y cambian a claves de 6 dígitos no triviales.
+const TEMPORARY_CASHIER = "583907";
+const PASSWORD_CASHIER = "649283";
 const TEST_PIN = String(Math.floor(100000 + Math.random() * 900000));
 
 type ResponseBody = { status: number; body: any };
@@ -96,19 +99,22 @@ async function person(label: string, role: string): Promise<Person> {
   const roles = await ok("/roles", owner.token);
   const email = `qa-anula-${label.normalize("NFD").replace(/[\u0300-\u036f]/g, "")}-${tag}@example.com`;
   const name = `QA Anulación ${label} ${tag}`;
+  const temporaryPassword =
+    role === "seller" ? TEMPORARY_CASHIER : TEMPORARY_STRONG;
+  const activePassword = role === "seller" ? PASSWORD_CASHIER : PASSWORD_STRONG;
   const created = await ok("/users", owner.token, {
     name,
     email,
-    password: TEMPORARY,
+    password: temporaryPassword,
     pin: TEST_PIN,
     roleId: roles.find((candidate: any) => candidate.name === role).id,
   });
   createdUsers.push(created.id);
   const changed = await ok("/auth/change-password", "", {
     login: email,
-    currentPassword: TEMPORARY,
-    newPassword: PASSWORD,
-    confirmPassword: PASSWORD,
+    currentPassword: temporaryPassword,
+    newPassword: activePassword,
+    confirmPassword: activePassword,
   });
   const result = { id: created.id, name, email, token: changed.accessToken };
   await registerTerminal(result, label);
