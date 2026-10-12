@@ -122,7 +122,7 @@ export class WarehousesController {
       this.db.$transaction(
         async (tx) => {
           // Serializa los reenvíos aun cuando lleguen al mismo tiempo.
-          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${input.operationId}))`;
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${input.operationId}))`;
           const previous = await tx.stockTransfer.findUnique({
             where: { operationId: input.operationId },
             include: { lines: true },

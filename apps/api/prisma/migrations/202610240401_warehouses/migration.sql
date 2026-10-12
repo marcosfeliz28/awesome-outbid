@@ -11,15 +11,15 @@ CREATE TABLE "Warehouse" (
   CONSTRAINT "warehouse_sellable_store" CHECK ("sellable" = ("kind" = 'store'))
 );
 CREATE TABLE "VariantStock" (
-  "variantId" UUID NOT NULL REFERENCES "Variant"("id") ON DELETE RESTRICT,
-  "warehouseId" UUID NOT NULL REFERENCES "Warehouse"("id") ON DELETE RESTRICT,
+  "variantId" UUID NOT NULL REFERENCES "Variant"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  "warehouseId" UUID NOT NULL REFERENCES "Warehouse"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   "qty" DECIMAL(14,3) NOT NULL DEFAULT 0,
   PRIMARY KEY ("variantId", "warehouseId")
 );
 CREATE INDEX "VariantStock_warehouseId_idx" ON "VariantStock"("warehouseId");
 CREATE TABLE "LotStock" (
-  "lotId" UUID NOT NULL REFERENCES "Lot"("id") ON DELETE RESTRICT,
-  "warehouseId" UUID NOT NULL REFERENCES "Warehouse"("id") ON DELETE RESTRICT,
+  "lotId" UUID NOT NULL REFERENCES "Lot"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  "warehouseId" UUID NOT NULL REFERENCES "Warehouse"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   "qty" DECIMAL(14,3) NOT NULL DEFAULT 0,
   PRIMARY KEY ("lotId", "warehouseId"),
   CONSTRAINT "lot_stock_nonnegative" CHECK ("qty" >= 0)
@@ -28,8 +28,8 @@ CREATE TABLE "StockTransfer" (
   "id" UUID PRIMARY KEY,
   "operationId" UUID NOT NULL UNIQUE,
   "branchId" TEXT NOT NULL DEFAULT 'main',
-  "fromId" UUID NOT NULL REFERENCES "Warehouse"("id") ON DELETE RESTRICT,
-  "toId" UUID NOT NULL REFERENCES "Warehouse"("id") ON DELETE RESTRICT,
+  "fromId" UUID NOT NULL REFERENCES "Warehouse"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  "toId" UUID NOT NULL REFERENCES "Warehouse"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   "reason" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -38,15 +38,15 @@ CREATE TABLE "StockTransfer" (
 CREATE INDEX "StockTransfer_branchId_createdAt_idx" ON "StockTransfer"("branchId", "createdAt");
 CREATE TABLE "StockTransferLine" (
   "id" UUID PRIMARY KEY,
-  "transferId" UUID NOT NULL REFERENCES "StockTransfer"("id") ON DELETE RESTRICT,
-  "variantId" UUID NOT NULL REFERENCES "Variant"("id") ON DELETE RESTRICT,
-  "lotId" UUID REFERENCES "Lot"("id") ON DELETE RESTRICT,
+  "transferId" UUID NOT NULL REFERENCES "StockTransfer"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  "variantId" UUID NOT NULL REFERENCES "Variant"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  "lotId" UUID REFERENCES "Lot"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   "qty" DECIMAL(14,3) NOT NULL,
   CONSTRAINT "transfer_line_positive" CHECK ("qty" > 0)
 );
 CREATE INDEX "StockTransferLine_variantId_idx" ON "StockTransferLine"("variantId");
-ALTER TABLE "InventoryMovement" ADD COLUMN "warehouseId" UUID REFERENCES "Warehouse"("id") ON DELETE RESTRICT;
-ALTER TABLE "InventoryCount" ADD COLUMN "warehouseId" UUID REFERENCES "Warehouse"("id") ON DELETE RESTRICT;
+ALTER TABLE "InventoryMovement" ADD COLUMN "warehouseId" UUID REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "InventoryCount" ADD COLUMN "warehouseId" UUID REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- UUIDs aleatorios generados por PostgreSQL. No se altera ninguna existencia.
 INSERT INTO "Warehouse" ("id", "branchId", "name", "kind", "sellable")
