@@ -781,8 +781,10 @@ describe("W7 · reportes: la venta cuenta el día de la venta, el dinero el día
       { headers: { Authorization: "Bearer " + owner } },
     );
     expect(csv.status).toBe(200);
-    const csvBody = await csv.text();
-    expect(csvBody.charCodeAt(0)).toBe(0xfeff);
+    // fetch().text() descarta el BOM: se comprueban los bytes del CSV.
+    const csvBytes = Buffer.from(await csv.arrayBuffer());
+    expect([...csvBytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+    const csvBody = csvBytes.toString("utf8");
     expect(csvBody).toContain("Fecha ISO,Efectivo,Tarjeta");
     const xlsx = await fetch(
       base + "/reports/income-by-day?" + params + "&format=xlsx",
