@@ -1,0 +1,1 @@
+Origen: https://github.com/DietrichGebert/ponytail (commit 9b58c1f, licencia MIT). Copiado solo el texto del skill; sin hooks ni scripts. Revisado por Claude el 12-oct-2026.
