@@ -398,7 +398,9 @@ export const RECEIVABLE_SHIFT_LIMIT = 3000;
  *   de todos sus clientes) más esta venta no puede superar
  *   `receivableShiftLimit` (RD$ 3,000 por defecto) sin PIN de gerente.
  */
-export const receivableNeedsApproval = (
+export type ReceivableApprovalReason =
+  "amount" | "client_debt" | "shift_limit" | "credit_disabled";
+export const receivableApprovalReason = (
   payments: { method: string; amount: number }[],
   settings:
     | {
@@ -411,21 +413,24 @@ export const receivableNeedsApproval = (
   canManageSales: boolean,
   openDebt: Decimal.Value = 0,
   shiftReceivable: Decimal.Value = 0,
-) => {
+): ReceivableApprovalReason | null => {
   const threshold = Number(settings?.creditApprovalThreshold ?? 1000);
   const sum = (method: string) =>
     payments
       .filter((p) => p.method === method)
       .reduce((a, p) => a.plus(p.amount), d(0));
   const credit = sum("credit");
-  if (credit.gt(threshold)) return true;
+  if (credit.gt(threshold)) return "amount";
   const cod = sum("cod");
+  // Si el interruptor está apagado, explicar primero su efecto al cajero.
+  if (!canManageSales && cod.gt(0) && settings?.allowCreditSales !== true)
+    return "credit_disabled";
   if (
     !canManageSales &&
     credit.plus(cod).gt(0) &&
     d(openDebt).plus(credit).plus(cod).gt(threshold)
   )
-    return true;
+    return d(openDebt).gt(0) ? "client_debt" : "amount";
   if (
     !canManageSales &&
     credit.plus(cod).gt(0) &&
@@ -434,9 +439,44 @@ export const receivableNeedsApproval = (
       .plus(cod)
       .gt(Number(settings?.receivableShiftLimit ?? RECEIVABLE_SHIFT_LIMIT))
   )
-    return true;
-  if (canManageSales || !cod.gt(0)) return false;
-  return settings?.allowCreditSales !== true || cod.gt(threshold);
+    return "shift_limit";
+  if (canManageSales || !cod.gt(0)) return null;
+  return cod.gt(threshold) ? "amount" : null;
+};
+export const receivableNeedsApproval = (
+  payments: { method: string; amount: number }[],
+  settings: Parameters<typeof receivableApprovalReason>[1],
+  canManageSales: boolean,
+  openDebt: Decimal.Value = 0,
+  shiftReceivable: Decimal.Value = 0,
+) =>
+  receivableApprovalReason(
+    payments,
+    settings,
+    canManageSales,
+    openDebt,
+    shiftReceivable,
+  ) !== null;
+export const receivableApprovalMessage = (
+  reason: ReceivableApprovalReason,
+  settings:
+    | { creditApprovalThreshold?: unknown; receivableShiftLimit?: unknown }
+    | null
+    | undefined,
+) => {
+  const threshold = formatMoney(
+    Number(settings?.creditApprovalThreshold ?? 1000),
+  );
+  switch (reason) {
+    case "amount":
+      return `El monto a crédito supera ${threshold}.`;
+    case "client_debt":
+      return `La deuda pendiente del cliente más esta venta supera ${threshold}.`;
+    case "shift_limit":
+      return `Lo dejado por cobrar en este turno supera ${formatMoney(Number(settings?.receivableShiftLimit ?? RECEIVABLE_SHIFT_LIMIT))}.`;
+    case "credit_disabled":
+      return "Las ventas a crédito están deshabilitadas en Ajustes; este cobro necesita PIN de gerente.";
+  }
 };
 export const grossProfit = (net: number, cost: number) =>
   money(d(net).minus(cost));

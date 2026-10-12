@@ -3759,18 +3759,21 @@ export function Configuration() {
       ],
     },
     requiredNumber("sessionTimeoutMinutes", "Inactividad (minutos)"),
-    requiredNumber(
-      "creditApprovalThreshold",
-      "Crédito por venta que requiere gerente (RD$)",
-      1000,
-    ),
+    {
+      ...requiredNumber(
+        "creditApprovalThreshold",
+        "Crédito por venta que requiere gerente (RD$)",
+        1000,
+      ),
+      help: "0 = siempre pedir PIN de gerente. Pon un monto alto (ej. 1000000) para no pedir PIN por monto.",
+    },
     {
       ...requiredNumber(
         "receivableShiftLimit",
         "Crédito y contraentrega por turno sin PIN de gerente (RD$)",
         3000,
       ),
-      help: "Suma de lo que una cajera deja por cobrar en su turno, de todos sus clientes. Por encima, se pide el PIN de un gerente.",
+      help: "Suma de todos los clientes del turno. 0 = siempre pedir PIN de gerente. Pon un monto alto (ej. 1000000) para no pedir PIN por monto.",
     },
     {
       ...requiredNumber(
@@ -3811,6 +3814,7 @@ export function Configuration() {
       key: "allowCreditSales",
       label: "Habilitar ventas a crédito con cliente y vencimiento",
       type: "checkbox",
+      help: "Con esto apagado, todo crédito de un cajero pide PIN, sin importar el monto.",
     },
     {
       key: "ncfMode",
@@ -3890,6 +3894,20 @@ export function Configuration() {
                 </div>
               ))}
             </div>
+            {(Number(query.data?.creditApprovalThreshold) === 0 ||
+              Number(query.data?.receivableShiftLimit) === 0) && (
+              <p className="cod-hint" role="note">
+                Algún tope de crédito está en 0: esto significa pedir siempre el
+                PIN de gerente para ese control. Si no buscas ese resultado,
+                escribe un monto alto, por ejemplo RD$ 1,000,000.
+              </p>
+            )}
+            {query.data?.allowCreditSales !== true && (
+              <p className="cod-hint" role="note">
+                Las ventas a crédito están deshabilitadas: todo crédito de un
+                cajero pide PIN de gerente.
+              </p>
+            )}
             <StoreSettings />
             <TelegramNotices />
             <DriveBackupCard />

@@ -42,6 +42,9 @@ import {
   d,
   paymentTotals,
   receivableNeedsApproval,
+  receivableApprovalReason,
+  receivableApprovalMessage,
+  margin,
 } from "@fitstore/shared";
 import type { SaleInput } from "@fitstore/shared";
 import {
@@ -1802,7 +1805,32 @@ function Checkout({
   // carrito, cliente y pagos: cambiar cualquiera vuelve a la regla local.
   const pinRequest = attempt + JSON.stringify(payments);
   const [serverPinFor, setServerPinFor] = useState<string | null>(null);
+  const [serverPinMessage, setServerPinMessage] = useState("");
   const serverAskedPin = serverPinFor === pinRequest;
+  const localCreditReason = receivableApprovalReason(
+    payments,
+    config,
+    can(user!.permissions, "sale:manage"),
+  );
+  const discountNeedsPin =
+    !can(user!.permissions, "sale:manage") &&
+    cart.some(
+      (i) =>
+        manualDiscount(i, globalDiscount) > (config?.sellerDiscountLimit ?? 10),
+    );
+  const noteNeedsPin = payments.some(
+    (p) => p.method === "credit_note" && !p.creditNoteCode,
+  );
+  const pinReason =
+    serverAskedPin && serverPinMessage
+      ? serverPinMessage
+      : localCreditReason
+        ? receivableApprovalMessage(localCreditReason, config)
+        : discountNeedsPin
+          ? `El descuento supera ${config?.sellerDiscountLimit ?? 10} % permitido al cajero.`
+          : noteNeedsPin
+            ? "La nota de crédito necesita aprobación del gerente."
+            : "Esta venta necesita aprobación del gerente.";
   // Crédito y contraentrega usan la misma regla que la API (D-01): la
   // contraentrega de quien no gestiona ventas pide el PIN sobre el umbral, o
   // siempre si las ventas a crédito no están habilitadas.
@@ -1813,19 +1841,31 @@ function Checkout({
       config,
       can(user!.permissions, "sale:manage"),
     ) ||
-    payments.some((p) => p.method === "credit_note" && !p.creditNoteCode) ||
-    (!can(user!.permissions, "sale:manage") &&
-      cart.some(
-        (i) =>
-          manualDiscount(i, globalDiscount) >
-          (config?.sellerDiscountLimit ?? 10),
-      ));
+    noteNeedsPin ||
+    discountNeedsPin;
   const hasDiscount =
     globalDiscount > 0 ||
     cart.some(
       (item) =>
         item.discountPercent > 0 || Number(item.discountAmount ?? 0) > 0,
     );
+  const knownCosts =
+    cart.length > 0 &&
+    cart.every(
+      (item) =>
+        item.variant.costAvg !== undefined &&
+        Number.isFinite(Number(item.variant.costAvg)),
+    );
+  const estimatedCost = cart.reduce(
+    (sum, item) => sum + Number(item.variant.costAvg ?? 0) * item.qty,
+    0,
+  );
+  const saleMargin = knownCosts ? margin(total, estimatedCost) : null;
+  const lowMarginWarning =
+    hasDiscount &&
+    can(user!.permissions, "profit:read") &&
+    saleMargin !== null &&
+    saleMargin < Number(config?.lowMargin ?? 15);
   const addPayment = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -1911,7 +1951,7 @@ function Checkout({
       : payment.pending > 0
         ? `Faltan ${formatMoney(payment.pending)} por cubrir. Agrega otro pago o pulsa «Vender a crédito (queda pendiente)» para dejar ese monto pendiente.`
         : needsPin && !pin
-          ? "Escribe el PIN de un gerente para aprobar esta venta."
+          ? pinReason + " Escribe el PIN de un gerente para aprobar esta venta."
           : hasDiscount && discountReason.trim().length < 3
             ? "Escribe el motivo del descuento."
             : "";
@@ -2145,6 +2185,7 @@ function Checkout({
       // cobraba): se muestra el campo del PIN para reintentar.
       else if (/requiere el PIN de un gerente/i.test(e.message)) {
         setServerPinFor(pinRequest);
+        setServerPinMessage(e.message);
         setError(
           e.message +
             (pin
@@ -2306,6 +2347,18 @@ function Checkout({
         </small>
         <WholesaleNotice />
       </div>
+      {needsPin && (
+        <label className="field checkout-pin">
+          <span>PIN del gerente para aprobar la venta · {pinReason}</span>
+          <input
+            type="password"
+            inputMode="numeric"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            pattern="[0-9]{4,6}"
+          />
+        </label>
+      )}
       {!(confirmingCredit && creditAmount > 0) && payment.pending > 0 && (
         <div className="credit-shortcut">
           <p>
@@ -2338,7 +2391,7 @@ function Checkout({
             recibe ese dinero y solo un administrador podrá cobrarlo.
           </p>
           {needsPin && (
-            <small>Esta venta necesita el PIN de un gerente (abajo).</small>
+            <small>{pinReason} Escribe el PIN del gerente arriba.</small>
           )}
           <div className="credit-confirm-actions">
             <Button variant="secondary" onClick={cancelCredit} disabled={busy}>
@@ -2608,17 +2661,10 @@ function Checkout({
           <strong className="green-text">{formatMoney(payment.change)}</strong>
         </div>
       </div>
-      {needsPin && (
-        <label className="field">
-          <span>PIN del gerente para aprobar la venta</span>
-          <input
-            type="password"
-            inputMode="numeric"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            pattern="[0-9]{4,6}"
-          />
-        </label>
+      {lowMarginWarning && (
+        <p className="cod-hint" role="status">
+          Esta venta queda con margen {saleMargin} %. El aviso es informativo.
+        </p>
       )}
       {hasDiscount && (
         <label className="field">
