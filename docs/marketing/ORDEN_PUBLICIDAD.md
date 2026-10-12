@@ -38,5 +38,5 @@ La dueña ordena usar **la foto original del producto** buscada en internet, en 
 ## Lote vitaminas — precios de oferta SOLO para la imagen (dueña, 12-oct)
 - **Regla:** NO se modifica ningún precio en el sistema. El precio de oferta aparece solo en la foto de publicidad. Si un cliente llega con la foto, **la caja aplica el descuento manual en la factura** (con la aprobación que corresponda).
 - Descuento máximo del especial: **15 %**, salvo estos dos: Klean B-Complex **41 %** (1,450 → 855, margen 15.6 %) y Klean Essential Aminos + HMB **14 %** (2,950 → 2,537, margen 15.5 %).
-- Margen mínimo 15 % = (precio − costo) / precio, sin restar ITBIS. Vigencia sugerida: 12 al 18 de octubre.
+- Margen mínimo 15 % = (precio − costo) / precio, sin restar ITBIS. Vigencia: todo octubre (12 al 31 de octubre, dueña 12-oct).
 - Solo productos con existencia. Tabla de cálculo: precio normal × 0.85 (redondeado) salvo los dos casos anteriores.
