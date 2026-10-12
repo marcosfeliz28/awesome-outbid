@@ -1,4 +1,9 @@
 import { test, expect, ownerHeaders } from "./apoyo";
+import { createRequire } from "node:module";
+import { join } from "node:path";
+
+const apiRequire = createRequire(join(process.cwd(), "apps/api/package.json"));
+const ExcelJS = apiRequire("exceljs");
 
 // La vista debe reflejar exactamente el movimiento que registró la API.
 test("Casa se contabiliza por separado y el traspaso habilita stock en Tienda", async ({
@@ -198,4 +203,70 @@ test("el conteo precarga la existencia del almacén seleccionado", async ({
   await expect(counted).toHaveValue("3");
   await dialog.getByLabel("Almacén").selectOption(home.id);
   await expect(counted).toHaveValue("5");
+});
+
+test("la vista previa de Casa detalla el antes y el después del Excel", async ({
+  page,
+  request,
+}) => {
+  const headers = await ownerHeaders(request);
+  const warehouses = await (
+    await request.get("/api/inventory/warehouses", { headers })
+  ).json();
+  const categories = await (await request.get("/api/categories", { headers })).json();
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const sku = "EXCEL-WH-V-" + suffix;
+  const created = await request.post("/api/products", {
+    headers,
+    data: {
+      name: "Vista previa Casa " + suffix,
+      sku: "EXCEL-WH-P-" + suffix,
+      categoryId: categories.find((c: any) => c.name === "Ropa deportiva").id,
+      variants: [{ sku, barcode: "EXCEL-WH-B-" + suffix, price: 250, costAvg: 100 }],
+    },
+  });
+  expect(created.ok(), await created.text()).toBe(true);
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Inventario Casa");
+  sheet.addRow([
+    "ID",
+    "DESCRIPCION",
+    "REFERENCIA",
+    "SUB-GRUPO DE ARTICULO",
+    "EXISTENCIA",
+    "COSTO",
+    "PRECIODETALLE",
+  ]);
+  sheet.addRow([sku, "Vista previa Casa " + suffix, "REF-" + suffix, "Ropa deportiva", 7, 100, 250]);
+  const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByLabel("Usuario").fill("admin@fitstore.demo");
+  await page
+    .getByLabel("Contraseña", { exact: true })
+    .fill("FitStore-Demo-2026!");
+  await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
+  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await page.evaluate(() => (location.hash = "inventory"));
+  await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
+  await page.getByLabel("Excel de Casa").setInputFiles({
+    name: "levantamiento-casa.xlsx",
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer,
+  });
+  await page.getByRole("button", { name: "Revisar archivo" }).click();
+  const preview = page.locator('[role="status"]').filter({ hasText: "1 filas" });
+  await expect(preview).toBeVisible();
+  const previewRow = preview.getByRole("row", { name: new RegExp(sku) });
+  await expect(previewRow.locator("td").nth(2)).toHaveText("0");
+  await expect(previewRow.locator("td").nth(3)).toHaveText("7");
+  await preview.getByRole("button", { name: "Cargar en Casa" }).click();
+  await expect(page.getByText("Levantamiento de Casa aplicado.")).toBeVisible();
+  const stock = await (
+    await request.get("/api/inventory/stock", { headers })
+  ).json();
+  const row = stock.find((v: any) => v.sku === sku);
+  expect(Number(row.stock)).toBe(0);
+  expect(Number(row.homeStock)).toBe(7);
+  expect(Number(row.totalStock)).toBe(7);
 });
