@@ -15,6 +15,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import type { Prisma } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
+import { allocateCredit } from "./credit-allocation";
 import {
   expired,
   BUSINESS_TIME_ZONE,
@@ -2900,6 +2901,363 @@ export class SalesController {
     }
     return payment;
   }
+  // 3v: resumen por persona. La agregación ocurre en PostgreSQL, no sobre
+  // las primeras 500 ventas de la pantalla antigua.
+  @Get("credit-accounts")
+  @Permit("*")
+  async creditAccounts(
+    @CurrentUser() actor: Actor,
+    @Query("search") search = "",
+    @Query("sort") sort = "amount",
+    @Query("page") page = "1",
+  ) {
+    const text = search.trim().slice(0, 100);
+    const pageNumber = Math.max(
+      1,
+      Math.min(1000, Number.parseInt(page, 10) || 1),
+    );
+    const where: Prisma.SaleWhereInput = {
+      branchId: actor.branchId,
+      status: "completed",
+      customerId: { not: null },
+      creditBalance: { gt: 0 },
+      payments: {
+        some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+      },
+      ...(text
+        ? { customer: { name: { contains: text, mode: "insensitive" } } }
+        : {}),
+    };
+    const [groups, total] = await Promise.all([
+      this.db.sale.groupBy({
+        by: ["customerId"],
+        where,
+        _sum: { creditBalance: true },
+        _count: { id: true },
+        _min: { createdAt: true },
+        orderBy:
+          sort === "age"
+            ? { _min: { createdAt: "asc" } }
+            : { _sum: { creditBalance: "desc" } },
+        skip: (pageNumber - 1) * 50,
+        take: 50,
+      }),
+      this.db.sale.aggregate({ where, _sum: { creditBalance: true } }),
+    ]);
+    const customers = await this.db.customer.findMany({
+      where: {
+        id: { in: groups.flatMap((g) => (g.customerId ? [g.customerId] : [])) },
+        branchId: actor.branchId,
+      },
+      select: { id: true, name: true, phone: true, legalId: true },
+    });
+    return {
+      total: Number(total._sum.creditBalance ?? 0),
+      page: pageNumber,
+      rows: groups.flatMap((g) => {
+        const customer = customers.find((c) => c.id === g.customerId);
+        if (!customer) return [];
+        return [
+          {
+            customer: {
+              ...customer,
+              phone: maskTail(customer.phone),
+              legalId: maskTail(customer.legalId),
+            },
+            balance: Number(g._sum.creditBalance ?? 0),
+            openSales: g._count.id,
+            oldestDays: g._min.createdAt
+              ? Math.max(
+                  0,
+                  Math.floor(
+                    (Date.now() - g._min.createdAt.getTime()) / 86400000,
+                  ),
+                )
+              : 0,
+          },
+        ];
+      }),
+    };
+  }
+
+  private async creditStatementData(actor: Actor, rawId: string) {
+    const id = parse(uuid, rawId);
+    const customer = await this.db.customer.findFirstOrThrow({
+      where: { id, branchId: actor.branchId },
+      select: { id: true, name: true, phone: true, legalId: true },
+    });
+    const sales = await this.db.sale.findMany({
+      where: {
+        customerId: id,
+        branchId: actor.branchId,
+        status: "completed",
+        payments: {
+          some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+        },
+      },
+      include: { payments: { orderBy: { createdAt: "asc" } } },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      take: 1000,
+    });
+    const userIds = [
+      ...new Set(
+        sales.flatMap((s) =>
+          s.payments.flatMap((p) => (p.receivedById ? [p.receivedById] : [])),
+        ),
+      ),
+    ];
+    const users = await this.db.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true },
+    });
+    return {
+      customer: {
+        ...customer,
+        phone: maskTail(customer.phone),
+        legalId: maskTail(customer.legalId),
+      },
+      balance: money(sales.reduce((sum, s) => sum.plus(s.creditBalance), d(0))),
+      truncated: sales.length === 1000,
+      sales: sales.map((s) => ({
+        id: s.id,
+        number: s.number,
+        createdAt: s.createdAt,
+        total: Number(s.total),
+        balance: Number(s.creditBalance),
+        closedAt: s.creditClosedAt,
+        payments: s.payments
+          .filter((p) => p.entryType === "installment")
+          .map((p) => ({
+            id: p.id,
+            date: p.createdAt,
+            method: p.method,
+            amount: Number(p.amount),
+            status: p.status,
+            receivedBy:
+              users.find((u) => u.id === p.receivedById)?.name ?? null,
+          })),
+      })),
+    };
+  }
+
+  @Get("credit-accounts/:id")
+  @Permit("*")
+  creditStatement(@CurrentUser() actor: Actor, @Param("id") id: string) {
+    return this.creditStatementData(actor, id);
+  }
+
+  @Get("credit-accounts/:id/statement.pdf")
+  @Permit("*")
+  async creditStatementPdf(
+    @CurrentUser() actor: Actor,
+    @Param("id") id: string,
+    @Res() res: Response,
+  ) {
+    const statement = await this.creditStatementData(actor, id);
+    if (statement.truncated)
+      bad(
+        "El estado de cuenta excede 1000 ventas; reduce el historial antes de exportar.",
+      );
+    const settings = await this.db.settings.findUnique({
+      where: { id: actor.branchId },
+    });
+    const business = (settings?.data as any) ?? {};
+    const doc = new PDFDocument({ size: "A4", margin: 44 });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'inline; filename="estado-de-cuenta.pdf"',
+    );
+    doc.pipe(res);
+    doc.fontSize(18).text(business.name || "Grupo Macgen", { align: "center" });
+    doc.fontSize(14).text("Estado de cuenta", { align: "center" });
+    doc
+      .fontSize(9)
+      .text(
+        "Emitido: " +
+          new Date().toLocaleString("es-DO", { timeZone: BUSINESS_TIME_ZONE }),
+      );
+    doc.text("Cliente: " + statement.customer.name);
+    if (statement.customer.legalId)
+      doc.text("Identificación: " + statement.customer.legalId);
+    if (statement.customer.phone)
+      doc.text("Teléfono: " + statement.customer.phone);
+    doc
+      .moveDown()
+      .fontSize(12)
+      .text("Saldo total: " + formatMoney(statement.balance));
+    doc.moveDown().fontSize(9);
+    for (const sale of statement.sales) {
+      if (doc.y > 700) doc.addPage();
+      doc
+        .font("Helvetica-Bold")
+        .text(
+          `${sale.number} · ${new Date(sale.createdAt).toLocaleDateString("es-DO", { timeZone: BUSINESS_TIME_ZONE })} · Venta ${formatMoney(sale.total)} · Saldo ${formatMoney(sale.balance)}`,
+        );
+      doc.font("Helvetica");
+      for (const payment of sale.payments) {
+        if (doc.y > 710) doc.addPage();
+        doc.text(
+          `  ${new Date(payment.date).toLocaleString("es-DO", { timeZone: BUSINESS_TIME_ZONE })} · ${payment.method} · ${formatMoney(payment.amount)} · ${payment.receivedBy ?? ""}${payment.status === "pending_verification" ? " · Por verificar" : ""}`,
+        );
+      }
+      doc.moveDown(0.4);
+    }
+    doc.moveDown().text("Formas de pago: efectivo, tarjeta o transferencia.");
+    doc
+      .fontSize(8)
+      .text("Documento interno, sin valor fiscal", { align: "center" });
+    doc.end();
+  }
+
+  @Post("credit-accounts/:id/collections")
+  @RequireTerminal()
+  @Permit("*")
+  async collectCustomerCredit(
+    @CurrentUser() actor: Actor,
+    @Param("id") rawId: string,
+    @Body() body: unknown,
+  ) {
+    const customerId = parse(uuid, rawId);
+    const data = parse(creditCollectionSchema, body);
+    const requestHash = createHash("sha256")
+      .update(JSON.stringify({ customerId, ...data }))
+      .digest("hex");
+    const result = await this.db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))`;
+      const existing = await tx.creditAllocationOperation.findUnique({
+        where: { operationId: data.operationId },
+      });
+      if (existing) {
+        if (
+          existing.branchId !== actor.branchId ||
+          existing.actorId !== actor.id
+        )
+          denied();
+        if (
+          existing.customerId !== customerId ||
+          existing.requestHash !== requestHash
+        )
+          bad("La operación ya corresponde a otro cobro.");
+        return existing.result;
+      }
+      const customer = await tx.customer.findFirst({
+        where: { id: customerId, branchId: actor.branchId },
+      });
+      if (!customer) denied();
+      if (
+        !data.cashSessionId &&
+        data.lines.some((line) => line.method === "cash")
+      )
+        bad("Para recibir efectivo necesitas tu caja abierta.");
+      // Mismo orden de bloqueos que collectLine: caja antes que ventas.
+      if (data.cashSessionId) await cashLock(tx, actor, data.cashSessionId);
+      const sales = await tx.sale.findMany({
+        where: {
+          customerId,
+          branchId: actor.branchId,
+          status: "completed",
+          creditBalance: { gt: 0 },
+          payments: {
+            some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+          },
+        },
+        select: { id: true, createdAt: true, creditBalance: true },
+        orderBy: { id: "asc" },
+        take: 1001,
+      });
+      if (sales.length > 1000)
+        bad("Hay más de 1000 créditos abiertos; contacta a soporte.");
+      // Orden de bloqueos estable entre dos operaciones concurrentes.
+      for (const sale of sales)
+        await tx.$executeRaw`SELECT 1 FROM "Sale" WHERE id=${sale.id}::uuid FOR UPDATE`;
+      const balances = await tx.sale.findMany({
+        where: { id: { in: sales.map((s) => s.id) }, branchId: actor.branchId },
+        select: { id: true, createdAt: true, creditBalance: true },
+      });
+      const reserved = await tx.payment.groupBy({
+        by: ["saleId"],
+        where: {
+          saleId: { in: sales.map((s) => s.id) },
+          entryType: "installment",
+          status: "pending_verification",
+        },
+        _sum: { amount: true },
+      });
+      const available = balances.map((s) => ({
+        id: s.id,
+        createdAt: s.createdAt,
+        availableCents: Math.max(
+          0,
+          Math.round(Number(s.creditBalance) * 100) -
+            Math.round(
+              Number(
+                reserved.find((p) => p.saleId === s.id)?._sum.amount ?? 0,
+              ) * 100,
+            ),
+        ),
+      }));
+      const payments: any[] = [];
+      for (const line of data.lines) {
+        let allocation: ReturnType<typeof allocateCredit>;
+        try {
+          allocation = allocateCredit(available, Math.round(line.amount * 100));
+        } catch (error) {
+          bad((error as Error).message);
+        }
+        for (const part of allocation) {
+          const key = lineKey(data.operationId, payments.length);
+          const row = await this.collectLine(
+            tx,
+            actor,
+            part.saleId,
+            {
+              ...line,
+              amount: part.amountCents / 100,
+              cashSessionId: data.cashSessionId,
+            },
+            key,
+            true,
+          );
+          payments.push({ saleId: part.saleId, ...paymentSummary(row) });
+          available.find((s) => s.id === part.saleId)!.availableCents -=
+            part.amountCents;
+        }
+      }
+      const response = {
+        payments,
+        allocated: payments.map((p) => ({
+          saleId: p.saleId,
+          amount: p.amount,
+          method: p.method,
+        })),
+      };
+      await tx.creditAllocationOperation.create({
+        data: {
+          operationId: data.operationId,
+          branchId: actor.branchId,
+          customerId,
+          actorId: actor.id,
+          requestHash,
+          result: response,
+        },
+      });
+      await audit(
+        tx,
+        actor,
+        "credit_customer_collection",
+        "customer",
+        customerId,
+        undefined,
+        { operationId: data.operationId, allocated: response.allocated },
+      );
+      return response;
+    }, MONEY_TRANSACTION);
+    for (const row of (result as any).payments)
+      notify(this.db, "collection", row.id);
+    return result;
+  }
+
   // Créditos y contraentregas pendientes: sólo la administración puede verlos
   // y registrar cómo entró el dinero.
   @Get("cod/pending")

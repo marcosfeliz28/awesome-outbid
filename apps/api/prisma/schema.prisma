@@ -449,6 +449,20 @@ model Payment {
   @@index([cashSessionId])
 }
 
+// Un cobro por cliente puede abarcar varias ventas; conserva la respuesta y
+// el hash del pedido para reintentos sin volver a mover caja ni incentivos.
+model CreditAllocationOperation {
+  operationId String   @id @db.Uuid
+  branchId    String
+  customerId  String   @db.Uuid
+  actorId     String   @db.Uuid
+  requestHash String
+  result      Json
+  createdAt   DateTime @default(now())
+
+  @@index([branchId, customerId, createdAt])
+}
+
 model SaleReturn {
   id             String   @id @default(uuid()) @db.Uuid
   saleId         String   @db.Uuid
