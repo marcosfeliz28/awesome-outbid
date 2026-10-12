@@ -34,3 +34,9 @@ La dueña ordena usar **la foto original del producto** buscada en internet, en 
 4. Si no hay foto original de buena calidad de un producto, dilo en tu entrega y propón: (a) pedir foto a la dueña, o (b) dejarlo fuera de esa pieza. No inventes el envase.
 5. Cuida los derechos: usa las imágenes solo para anunciar la venta de esos mismos productos, y **lista en tu entrega la fuente (sitio) de cada imagen**, para que la dueña pueda revisarlas.
 6. Guarda las imágenes originales que uses junto con las piezas finales (PNG), para que la dueña pueda reutilizarlas.
+
+## Lote vitaminas — precios de oferta SOLO para la imagen (dueña, 12-oct)
+- **Regla:** NO se modifica ningún precio en el sistema. El precio de oferta aparece solo en la foto de publicidad. Si un cliente llega con la foto, **la caja aplica el descuento manual en la factura** (con la aprobación que corresponda).
+- Descuento máximo del especial: **15 %**, salvo estos dos: Klean B-Complex **41 %** (1,450 → 855, margen 15.6 %) y Klean Essential Aminos + HMB **14 %** (2,950 → 2,537, margen 15.5 %).
+- Margen mínimo 15 % = (precio − costo) / precio, sin restar ITBIS. Vigencia: todo octubre (12 al 31 de octubre, dueña 12-oct).
+- Solo productos con existencia. Tabla de cálculo: precio normal × 0.85 (redondeado) salvo los dos casos anteriores.
