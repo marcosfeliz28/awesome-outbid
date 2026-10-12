@@ -806,6 +806,18 @@ export function Inventory() {
             (s: any) => s.warehouseId === selectedWarehouse.id,
           )?.qty || "0"
       : v.stock;
+  const countWarehouseId =
+    selectedWarehouse?.id ||
+    (warehouses.data || []).find((w: any) => w.kind === "store")?.id ||
+    "";
+  const stockAtWarehouse = (variant: any, id: string) => {
+    const warehouse = (warehouses.data || []).find((w: any) => w.id === id);
+    if (!warehouse || warehouse.kind === "store") return Number(variant.stock);
+    return Number(
+      variant.warehouseStocks?.find((stock: any) => stock.warehouseId === id)
+        ?.qty ?? 0,
+    );
+  };
   const rows = (query.data || []).filter((v: any) =>
     [v.sku, v.barcode, v.product.name]
       .join(" ")
@@ -994,11 +1006,7 @@ export function Inventory() {
               label: "Almacén",
               type: "select",
               required: true,
-              initial:
-                selectedWarehouse?.id ||
-                (warehouses.data || []).find((w: any) => w.kind === "store")
-                  ?.id ||
-                "",
+              initial: countWarehouseId,
               options: (warehouses.data || []).map((w: any) => ({
                 label: w.name,
                 value: w.id,
@@ -1100,9 +1108,14 @@ export function Inventory() {
             requiredNumber(
               "counted",
               "Cantidad contada",
-              Number(visibleStock(count)),
+              stockAtWarehouse(count, countWarehouseId),
             ),
           ]}
+          onFieldChange={(key, value, values) =>
+            key === "warehouseId"
+              ? { ...values, counted: stockAtWarehouse(count, String(value)) }
+              : undefined
+          }
           onClose={() => setCount(null)}
           onSubmit={(data) =>
             post("/inventory/counts", {
