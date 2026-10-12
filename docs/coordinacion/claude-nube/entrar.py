@@ -9,9 +9,21 @@ Uso:  python3 entrar.py        → imprime «OK» y el nombre/rol; nunca imprime
 import json, os, secrets, sys, urllib.request, uuid
 
 B = os.environ.get("NEXORA_API", "https://nexora-pos-web.onrender.com/api")
-user, pw = os.environ.get("NEXORA_CLAUDE_USER"), os.environ.get("NEXORA_CLAUDE_PASSWORD")
+def _archivo():
+    # Respaldo: ~/.nexora_claude (lo escribe el Setup script del entorno), líneas CLAVE=valor.
+    out = {}
+    for ruta in (os.path.expanduser("~/.nexora_claude"), "/root/.nexora_claude"):
+        if os.path.exists(ruta):
+            for linea in open(ruta, encoding="utf-8"):
+                if "=" in linea and not linea.lstrip().startswith("#"):
+                    k, v = linea.rstrip("\n").split("=", 1); out[k.strip()] = v
+            break
+    return out
+_a = _archivo()
+user = os.environ.get("NEXORA_CLAUDE_USER") or _a.get("NEXORA_CLAUDE_USER")
+pw = os.environ.get("NEXORA_CLAUDE_PASSWORD") or _a.get("NEXORA_CLAUDE_PASSWORD")
 if not user or not pw:
-    sys.exit("Faltan NEXORA_CLAUDE_USER / NEXORA_CLAUDE_PASSWORD en el entorno (Edit environment).")
+    sys.exit("Faltan NEXORA_CLAUDE_USER / NEXORA_CLAUDE_PASSWORD (entorno o ~/.nexora_claude del Setup script).")
 
 def call(path, body=None, tok=None):
     h = {"Content-Type": "application/json"}
