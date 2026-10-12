@@ -8,6 +8,8 @@ export default defineConfig({
       "tests/credit-allocation.test.ts",
       "tests/income-day.test.ts",
       "tests/credit-reasons.test.ts",
+      "tests/formal-period.test.ts",
+      "tests/formal-pdf.test.ts",
       "tests/management-messages.test.ts",
       "tests/u-credit-cleanup.test.ts",
       "packages/shared/**/*.test.ts",

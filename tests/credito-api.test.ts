@@ -595,6 +595,34 @@ describe("3v · créditos por persona", () => {
 });
 
 describe("W7 · reportes: la venta cuenta el día de la venta, el dinero el día del cobro", () => {
+  it("3z: informe diario y mensual formal, sin cajas QA y con PDF", async () => {
+    const date = bizDay(0);
+    const path = `/reports/formal?period=day&date=${date}`;
+    expect((await request(path, ana.token)).status).toBe(403);
+    expect(
+      (await request("/reports/formal?period=day&date=2026-02-30", owner))
+        .status,
+    ).toBe(400);
+    const daily = await ok(path, owner);
+    expect(daily.title).toContain("Informe formal");
+    expect(daily.cash.every((c: any) => !/^qa[-_]/i.test(c.register))).toBe(
+      true,
+    );
+    expect(daily.totals.margin).toBeDefined();
+    const monthly = await ok(
+      `/reports/formal?period=month&date=${date.slice(0, 7)}`,
+      owner,
+    );
+    expect(monthly.from).toBe(date.slice(0, 7) + "-01");
+    const pdf = await fetch(base + path + "&format=pdf", {
+      headers: { Authorization: "Bearer " + owner },
+    });
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers.get("content-type")).toContain("application/pdf");
+    const bytes = Buffer.from(await pdf.arrayBuffer());
+    expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
+  });
+
   it("3w: separa crédito antiguo y cobro actual; exporta CSV y Excel", async () => {
     const past = bizDay(3),
       current = bizDay(0);

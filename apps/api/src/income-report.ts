@@ -3,6 +3,7 @@ import type { Response } from "express";
 import { Prisma } from "@prisma/client";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
+import { once } from "node:events";
 import { businessDate } from "@fitstore/shared";
 import {
   Actor,
@@ -54,7 +55,7 @@ const isoDate = (value: string) => {
     bad("Indica fechas válidas con formato AAAA-MM-DD.");
   return value;
 };
-function options(query: QueryInput) {
+export function incomeOptions(query: QueryInput) {
   const from = isoDate(query.from ?? "");
   const to = isoDate(query.to ?? "");
   const days = Math.round((Date.parse(to) - Date.parse(from)) / 86400000);
@@ -78,7 +79,7 @@ function options(query: QueryInput) {
     end: new Date(to + "T23:59:59.999-04:00"),
   };
 }
-type Opt = ReturnType<typeof options>;
+type Opt = ReturnType<typeof incomeOptions> & { excludeTest?: boolean };
 function scopeSql(opt: Opt, kind: "sale" | "payment" | "return") {
   if (opt.scope === "all") return Prisma.empty;
   if (opt.scope === "session")
@@ -98,6 +99,9 @@ function eventsSql(actor: Actor, opt: Opt) {
   const saleScope = scopeSql(opt, "sale");
   const paymentScope = scopeSql(opt, "payment");
   const returnScope = scopeSql(opt, "return");
+  const testFilter = opt.excludeTest
+    ? Prisma.sql`AND COALESCE(cs."registerId",'') !~* '^(qa|test|prueba)[-_]'`
+    : Prisma.empty;
   return Prisma.sql`
     SELECT s.id::text AS id, s."createdAt" AS date, ${soldDate} AS day,
       'sold'::text AS kind, s.total AS amount, s.number,
@@ -105,7 +109,7 @@ function eventsSql(actor: Actor, opt: Opt) {
       NULL::text AS bank, NULL::text AS reference, s."cashSessionId"::text AS "cashSessionId"
     FROM "Sale" s LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
     WHERE s."branchId"=${actor.branchId} AND s.status='completed'
-      AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)} ${saleScope}
+      AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)} ${saleScope} ${testFilter}
     UNION ALL
     SELECT p.id::text, ${paymentTime}, ${paymentDate},
       CASE WHEN p."entryType"='installment' THEN 'collection_'||p.method
@@ -115,29 +119,29 @@ function eventsSql(actor: Actor, opt: Opt) {
       p.amount, s.number, p.method, p."cardLast4", p."approvalCode", p.bank, p.reference,
       p."cashSessionId"::text
     FROM "Payment" p JOIN "Sale" s ON s.id=p."saleId"
-      LEFT JOIN "CashSession" cs ON cs.id=p."cashSessionId"
+      LEFT JOIN "CashSession" cs ON cs.id=COALESCE(p."cashSessionId",s."cashSessionId")
     WHERE s."branchId"=${actor.branchId} AND s.status='completed'
       AND p."entryType" IN ('sale','installment')
       AND p.method IN ('cash','card','transfer','cod','credit')
       AND (p."entryType"='sale' OR p.status='ok')
-      AND ${paymentTime}>=${utc(opt.start)} AND ${paymentTime}<=${utc(opt.end)} ${paymentScope}
+      AND ${paymentTime}>=${utc(opt.start)} AND ${paymentTime}<=${utc(opt.end)} ${paymentScope} ${testFilter}
     UNION ALL
     SELECT r.id::text, r."createdAt", ${returnDate}, 'return_total',
       -r.total, r.number, r."refundMethod", NULL::text, NULL::text,
       NULL::text, NULL::text, r."cashSessionId"::text
     FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId"
-      LEFT JOIN "CashSession" cs ON cs.id=r."cashSessionId"
+      LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
     WHERE r."branchId"=${actor.branchId} AND s.status='completed'
-      AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)} ${returnScope}
+      AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)} ${returnScope} ${testFilter}
     UNION ALL
     SELECT r.id::text, r."createdAt", ${returnDate}, 'return_'||r."refundMethod",
       -r."refundAmount", r.number, r."refundMethod", NULL::text, NULL::text,
       NULL::text, NULL::text, r."cashSessionId"::text
     FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId"
-      LEFT JOIN "CashSession" cs ON cs.id=r."cashSessionId"
+      LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
     WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND r."refundAmount">0
       AND r."refundMethod" IN ('cash','card','transfer')
-      AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)} ${returnScope}`;
+      AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)} ${returnScope} ${testFilter}`;
 }
 const fields = [
   "day",
@@ -176,18 +180,17 @@ function csvLine(values: unknown[]) {
 const localDate = (day: string) =>
   day.slice(8, 10) + "/" + day.slice(5, 7) + "/" + day.slice(0, 4);
 
+export async function incomeSummary(db: Database, actor: Actor, opt: Opt) {
+  const raw = await db.$queryRaw<
+    { day: string; kind: string; amount: unknown }[]
+  >(Prisma.sql`
+    SELECT day, kind, SUM(amount) AS amount FROM (${eventsSql(actor, opt)}) events GROUP BY day, kind ORDER BY day, kind`);
+  return groupIncomeDays(raw.map((r) => ({ ...r, amount: String(r.amount) })));
+}
+
 @Controller()
 export class IncomeReportController {
   constructor(@Inject(Database) private db: Database) {}
-  private async summary(actor: Actor, opt: Opt) {
-    const raw = await this.db.$queryRaw<
-      { day: string; kind: string; amount: unknown }[]
-    >(Prisma.sql`
-      SELECT day, kind, SUM(amount) AS amount FROM (${eventsSql(actor, opt)}) events GROUP BY day, kind ORDER BY day, kind`);
-    return groupIncomeDays(
-      raw.map((r) => ({ ...r, amount: String(r.amount) })),
-    );
-  }
   private async countDetail(actor: Actor, opt: Opt, day?: string) {
     const rows = await this.db.$queryRaw<{ total: bigint }[]>(Prisma.sql`
       SELECT COUNT(*)::bigint AS total FROM (${eventsSql(actor, opt)}) events
@@ -205,6 +208,26 @@ export class IncomeReportController {
       SELECT * FROM (${eventsSql(actor, opt)}) events
       WHERE kind NOT IN ('sold','return_total') ${day ? Prisma.sql`AND day=${day}` : Prisma.empty}
       ORDER BY date, id, kind LIMIT ${limit} OFFSET ${offset}`);
+  }
+  private async *exportDetail(actor: Actor, opt: Opt, max: number) {
+    let cursor: Event | null = null;
+    let emitted = 0;
+    while (emitted < max) {
+      const after = cursor;
+      const batch: Event[] = await this.db.$queryRaw<Event[]>(Prisma.sql`
+        SELECT * FROM (${eventsSql(actor, opt)}) events
+        WHERE kind NOT IN ('sold','return_total')
+        ${after ? Prisma.sql`AND (date,id,kind) > (${utc(after.date)},${after.id},${after.kind})` : Prisma.empty}
+        ORDER BY date,id,kind LIMIT 500`);
+      if (!batch.length) break;
+      for (const event of batch) {
+        yield event;
+        emitted++;
+        if (emitted >= max) break;
+      }
+      cursor = batch[batch.length - 1];
+      if (batch.length < 500) break;
+    }
   }
   private async reconciliation(
     actor: Actor,
@@ -273,7 +296,7 @@ export class IncomeReportController {
     @Query() query: QueryInput,
     @Res() res: Response,
   ) {
-    const opt = options(query);
+    const opt = incomeOptions(query);
     if (!canViewCashExpected(actor)) {
       const open = await this.db.cashSession.findFirst({
         where: { branchId: actor.branchId, closedAt: null },
@@ -281,7 +304,7 @@ export class IncomeReportController {
       });
       if (open) denied();
     }
-    const rows = await this.summary(actor, opt);
+    const rows = await incomeSummary(this.db, actor, opt);
     const totals = rows.reduce(
       (sum, row) => {
         for (const field of fields.slice(1) as Exclude<
@@ -361,10 +384,9 @@ export class IncomeReportController {
           "Referencia",
         ]),
       );
-      for (let offset = 0; offset < total; offset += 500) {
-        const batch = await this.detail(actor, opt, offset, 500);
-        for (const e of batch)
-          res.write(
+      for await (const e of this.exportDetail(actor, opt, total)) {
+        if (
+          !res.write(
             csvLine([
               e.day,
               localDate(e.day),
@@ -381,7 +403,9 @@ export class IncomeReportController {
               e.bank,
               e.reference,
             ]),
-          );
+          )
+        )
+          await once(res, "drain");
       }
       res.end();
       return;
@@ -419,27 +443,25 @@ export class IncomeReportController {
           "Referencia",
         ])
         .commit();
-      for (let offset = 0; offset < total; offset += 500) {
-        const batch = await this.detail(actor, opt, offset, 500);
-        for (const e of batch)
-          detail
-            .addRow([
-              e.day,
-              localDate(e.day),
-              e.date.toLocaleTimeString("es-DO", {
-                timeZone: "America/Santo_Domingo",
-              }),
-              e.number,
-              e.kind,
-              e.method,
-              Number(e.amount),
-              e.cashSessionId,
-              e.cardLast4,
-              e.approvalCode,
-              e.bank,
-              e.reference,
-            ])
-            .commit();
+      for await (const e of this.exportDetail(actor, opt, total)) {
+        detail
+          .addRow([
+            e.day,
+            localDate(e.day),
+            e.date.toLocaleTimeString("es-DO", {
+              timeZone: "America/Santo_Domingo",
+            }),
+            e.number,
+            e.kind,
+            e.method,
+            Number(e.amount),
+            e.cashSessionId,
+            e.cardLast4,
+            e.approvalCode,
+            e.bank,
+            e.reference,
+          ])
+          .commit();
       }
       detail.commit();
       await book.commit();
@@ -481,14 +503,11 @@ export class IncomeReportController {
     }
     doc.addPage().fontSize(12).text("Detalle de movimientos").moveDown();
     doc.fontSize(8);
-    for (let offset = 0; offset < total; offset += 500) {
-      const batch = await this.detail(actor, opt, offset, 500);
-      for (const event of batch) {
-        if (doc.y > 520) doc.addPage();
-        doc.text(
-          `${event.day} ${event.date.toLocaleTimeString("es-DO", { timeZone: "America/Santo_Domingo" })} · ${event.number ?? ""} · ${event.kind} · ${amount(event.amount)} · ${event.bank ?? ""} ${event.reference ?? ""}`,
-        );
-      }
+    for await (const event of this.exportDetail(actor, opt, total)) {
+      if (doc.y > 520) doc.addPage();
+      doc.text(
+        `${event.day} ${event.date.toLocaleTimeString("es-DO", { timeZone: "America/Santo_Domingo" })} · ${event.number ?? ""} · ${event.kind} · ${amount(event.amount)} · ${event.bank ?? ""} ${event.reference ?? ""}`,
+      );
     }
     doc.fontSize(8).text("Documento interno, sin valor fiscal");
     doc.end();

@@ -53,6 +53,7 @@ import {
 import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
 import { IncomeByDay } from "./IncomeByDay";
+import { FormalReports } from "./FormalReports";
 import {
   CloseCashModal,
   CodPending,
@@ -2681,11 +2682,13 @@ const reportList = [
   ["by-seller", "Ventas por vendedor"],
   ["by-payment", "Ventas por método de pago"],
   ["income-by-day", "Ingresos por día y método"],
+  ["formal", "Informe formal diario/mensual"],
   ["returns-discounts", "Devoluciones y descuentos"],
   ["customers", "Mejores clientes"],
   ["purchases", "Compras y cuentas por pagar"],
 ];
 export function Reports() {
+  const user = useStore((s) => s.user);
   const [report, setReport] = useState("sales"),
     [from, setFrom] = useState(today().slice(0, 8) + "01"),
     [to, setTo] = useState(today()),
@@ -2695,7 +2698,7 @@ export function Reports() {
   const query = useQuery({
     queryKey: ["report", report, from, to, page],
     queryFn: () => api(`/reports/${report}?from=${from}&to=${to}&page=${page}`),
-    enabled: report !== "income-by-day",
+    enabled: report !== "income-by-day" && report !== "formal",
   });
   const rows = query.data?.rows || [];
   const total: number = query.data?.total ?? rows.length;
@@ -2718,22 +2721,29 @@ export function Reports() {
       />
       <div className="reports-layout">
         <aside className="panel report-menu">
-          {reportList.map(([id, name]) => (
-            <button
-              key={id}
-              onClick={() => {
-                setReport(id);
-                setPage(1);
-              }}
-              className={report === id ? "active" : ""}
-            >
-              <FileText size={17} />
-              {name}
-              <ChevronRight size={14} />
-            </button>
-          ))}
+          {reportList
+            .filter(
+              ([id]) =>
+                id !== "formal" || can(user?.permissions ?? [], "profit:read"),
+            )
+            .map(([id, name]) => (
+              <button
+                key={id}
+                onClick={() => {
+                  setReport(id);
+                  setPage(1);
+                }}
+                className={report === id ? "active" : ""}
+              >
+                <FileText size={17} />
+                {name}
+                <ChevronRight size={14} />
+              </button>
+            ))}
         </aside>
-        {report === "income-by-day" ? (
+        {report === "formal" ? (
+          <FormalReports />
+        ) : report === "income-by-day" ? (
           <IncomeByDay />
         ) : (
           <section className="panel">
