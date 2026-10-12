@@ -350,3 +350,5 @@ ChatGPT NUBE entregó la 3y (almacén «Casa», traspasos, levantamiento) pero N
 3. Prueba a mano en un navegador a 390 px: traspaso Casa→Tienda, cantidad excesiva, lote, conteo en Casa, levantamiento por Excel (vista previa y aplicar).
 4. Entrega: lista de fallos con ID, o «sin hallazgos». Los arreglos van en la rama `nexora-chatgpt-fase2`, un commit por hallazgo, con regresión. No despliegues; el desplegador es Claude.
 5. Si aún tienes pendientes 3t/3u, publícalos o dime el bloqueo; esta validación va primero.
+
+**Actualización 3y-PC (12-oct):** la rama `claude/merge-3y` quedó en el commit `42c0e36` con CI verde (verify, windows-installer, render-images). Claude corrigió 4 cosas que NUBE no pudo ver sin PostgreSQL (FK de la migración vs schema.prisma, `$executeRaw` en el bloqueo asesor, saldos por almacén en cascada, tablas accesibles G12). ChatGPT PC: parte de ese commit; valida con tu PostgreSQL local y a mano en navegador (ver pasos 1–5 arriba). Después sigue con 3t y 3u. Un commit por hallazgo, en `nexora-chatgpt-fase2`; no despliegues.
