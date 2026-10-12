@@ -12,6 +12,8 @@ import {
   bad,
   parse,
   uuid,
+  canViewCashExpected,
+  denied,
 } from "./common";
 import { groupIncomeDays } from "./income-day";
 
@@ -272,6 +274,13 @@ export class IncomeReportController {
     @Res() res: Response,
   ) {
     const opt = options(query);
+    if (!canViewCashExpected(actor)) {
+      const open = await this.db.cashSession.findFirst({
+        where: { branchId: actor.branchId, closedAt: null },
+        select: { id: true },
+      });
+      if (open) denied();
+    }
     const rows = await this.summary(actor, opt);
     const totals = rows.reduce(
       (sum, row) => {
