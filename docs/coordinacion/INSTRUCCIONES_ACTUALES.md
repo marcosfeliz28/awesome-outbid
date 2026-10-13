@@ -401,3 +401,11 @@ Pedido: (1) campo «envío» opcional en la venta, separado del total de product
 5. Hoja de ruta por fases con riesgos, y qué decisiones necesita de la dueña.
 
 **Entrega:** primero el informe del Camino A y el del B por escrito. Nada de código del Camino B sin el OK de la dueña. Todo con pruebas, `pnpm check` en verde y sin tocar datos reales.
+
+**Actualización 3ad (dueña, 13-oct) — dos productos separados y el sistema de la tienda intocable.**
+La dueña está metiendo mercancía real en el sistema de Render: **ese sistema no se puede parar ni arriesgar.** Reglas:
+1. **Tres líneas separadas, sin mezclar:** (a) `nexora-cloud` = sistema de la tienda en Render (producción); (b) `producto-local` = Nexora POS Local (Camino A, instalación en PC); (c) `producto-saas` = Nexora POS para vender (Camino B). Las dos últimas nacen del código actual de `nexora-cloud` y desde ahí se alejan por su cuenta. Nunca se hace merge de `producto-*` hacia `nexora-cloud` sin orden escrita de la dueña.
+2. **Nada de infraestructura compartida:** los productos nuevos usan sus propias bases de datos, sus propios servicios de Render (o ninguno, en el local) y sus propias credenciales. Prohibido apuntar a la base de producción, ni siquiera de lectura, salvo una copia exportada para pruebas.
+3. **Solo Claude despliega producción**, con los 3 CI en verde, copia (snapshot) antes y comparación después, y **no durante el horario en que la dueña está cargando mercancía** salvo urgencia que ella apruebe.
+4. Cambios pequeños que la tienda sí necesita (como la columna Cliente en Ventas, commit `3a8189c`) siguen su camino normal por `nexora-cloud`, y se despliegan solo con el OK de la dueña.
+5. Ningún dato real de Grupo Macgen entra a `producto-saas`; su demo usa datos de ejemplo.
