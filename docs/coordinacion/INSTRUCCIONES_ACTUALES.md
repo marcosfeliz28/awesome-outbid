@@ -355,3 +355,24 @@ ChatGPT NUBE entregó la 3y (almacén «Casa», traspasos, levantamiento) pero N
 
 ### 3aa. ORDEN (dueña, 13-oct) — corregir la referencia de una transferencia ya registrada (ChatGPT NUBE; pequeña)
 Caso real: la factura FS-0000012 se creó con la referencia «SIN-REF» y la dueña dio después la real (827647262). Hoy el sistema NO permite corregir banco/referencia de un pago ya guardado (solo verificar o rechazar). Pedido: acción de administrador «Corregir referencia de transferencia» sobre un pago `transfer` (pendiente o verificado): cambia solo `bank` y `reference`, exige motivo, deja registro en la bitácora (valor anterior y nuevo, quién y cuándo), no toca montos ni caja, y mantiene las reglas de terminal aprobada. Con regresión (falla antes, pasa después) y `pnpm check` en verde.
+
+### 3ab. ORDEN (dueña, 13-oct) — Asistente de WhatsApp para la publicidad de suplementos (conexión directa con Meta) — ChatGPT NUBE diseña y programa; ChatGPT PC prueba con PostgreSQL; Claude integra y despliega
+**Alcance inicial: UN solo número** (el de la publicidad de suplementos; la dueña dice cuál). Conexión directa con **WhatsApp Business Platform (Cloud API) de Meta**, sin proveedor intermedio salvo que sea imprescindible (costo). Meta cobra sobre todo los mensajes que el negocio inicia con plantillas; los clientes que escriben primero y las respuestas dentro de 24 h no deberían generar costo: **confírmalo en la lista de precios vigente de Meta** y repórtalo.
+
+**Fase 0 (sin código, primero):** verificar y reportar a la dueña (a) si ese número puede seguir usándose en la app de WhatsApp Business de la vendedora a la vez que la API («coexistencia»); si no, qué alternativa hay; (b) requisitos de verificación del negocio en Meta; (c) la política de Meta sobre asistentes de IA en la API (un asistente de tienda con fines concretos suele permitirse; confírmalo); (d) costo mensual estimado con los números reales de conversaciones.
+
+**Fase 1 (modo borrador):** el sistema recibe y guarda los mensajes (webhook firmado, con verificación de firma de Meta) y Claude redacta la respuesta; **un humano la aprueba antes de enviar** (la vendedora). Cero respuestas automáticas.
+**Fase 2 (respuesta automática):** solo con OK escrito de la dueña, después de revisar la Fase 1.
+
+**Reglas del asistente (obligatorias, aplicadas por el sistema, no por el texto del mensaje):**
+1. Inventario y precios: el asistente consulta el sistema como usuario `claude` con permisos de **solo lectura de inventario y precios** (crear un rol sin escritura para esto). Nunca ofrece lo que no tiene existencia.
+2. Descuentos: **productos de poca rotación hasta 10 %; de cero rotación hasta 15 %; proteínas más vendidas: 0 %**. Nunca por debajo de **15 % de margen** (precio − costo)/precio, sin restar ITBIS. La rotación se calcula con las ventas reales (hasta que haya datos suficientes, la lista de poca/cero rotación la define la dueña). El descuento se **aplica en la factura**; no cambia el precio del sistema.
+3. Sin promesas médicas ni de resultados. Para dudas de salud: «consulta a tu médico».
+4. Escala a una persona (vendedora/dueña) cuando: reclamo, devolución, pago dudoso, pedido grande, cliente molesto o cualquier cosa que el asistente no pueda resolver con datos del sistema.
+5. Venta: el asistente arma el pedido y da la forma de pago; **una persona verifica la transferencia** antes de entregar. La venta se registra con el flujo normal de ventas (mismas reglas de caja y de descuentos).
+6. Se identifica como asistente virtual de la tienda al iniciar. Respeta el «no me escribas más» (baja inmediata).
+7. Privacidad: guarda solo lo necesario; los datos del cliente no se usan para otra cosa; retención definida y borrado a petición.
+
+**Comisiones (decisión de la dueña):** durante el horario de trabajo, si la vendedora está asistiendo (turno activo), la comisión de la venta es **de la vendedora**; fuera del horario, la comisión se registra en una cuenta separada «Claude» (el asistente no cobra dinero: queda como fondo para que la dueña decida su destino). Debe poder verse en el reporte de incentivos y en el cierre mensual. Hace falta definir el horario de trabajo en Configuración y cómo se marca el turno activo.
+
+**Entrega:** autoauditoría con límites y pruebas pendientes; regresión para cada regla de descuento y de margen; reporte mensual de costo (Meta + IA) y de ventas atribuidas al asistente. Nada se despliega sin los 3 CI en verde y el OK de la dueña.
