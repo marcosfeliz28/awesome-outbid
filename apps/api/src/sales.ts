@@ -2181,6 +2181,75 @@ export class SalesController {
       return { ok: true };
     });
   }
+  // 3aa: corrige únicamente los datos de conciliación de una transferencia.
+  // La referencia que vio la administradora es un requisito de concurrencia:
+  // una segunda ventana no puede sobrescribir en silencio la primera corrección.
+  @Post("payments/:id/correct-transfer")
+  @RequireTerminal()
+  @Permit("*")
+  async correctTransfer(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const data = parse(
+      z.object({
+        bank: z.string().trim().min(1).max(100),
+        reference: z.string().trim().min(1).max(100),
+        expectedBank: z.string().nullable(),
+        expectedReference: z.string().nullable(),
+        reason,
+      }),
+      body,
+    );
+    const paymentId = parse(uuid, id);
+    return this.db.$transaction(async (tx) => {
+      const found = await tx.payment.findFirstOrThrow({
+        where: {
+          id: paymentId,
+          method: "transfer",
+          status: { in: ["pending_verification", "ok"] },
+          sale: { branchId: actor.branchId },
+        },
+        select: { saleId: true },
+      });
+      // Mismo orden de bloqueo que verificar/rechazar: venta y después pago.
+      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${found.saleId}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Payment" WHERE id=${paymentId}::uuid FOR UPDATE`;
+      const payment = await tx.payment.findUniqueOrThrow({
+        where: { id: paymentId },
+      });
+      if (payment.status !== "pending_verification" && payment.status !== "ok")
+        conflict("La transferencia cambió de estado. Actualiza la venta.");
+      if (
+        payment.bank !== data.expectedBank ||
+        payment.reference !== data.expectedReference
+      )
+        conflict(
+          "Otro usuario corrigió la transferencia. Actualiza la venta antes de continuar.",
+        );
+      if (payment.bank === data.bank && payment.reference === data.reference)
+        bad("Escribe un banco o una referencia diferente.");
+      const updated = await tx.payment.update({
+        where: { id: paymentId },
+        data: { bank: data.bank, reference: data.reference },
+      });
+      await audit(
+        tx,
+        actor,
+        "correct_transfer",
+        "payment",
+        paymentId,
+        { bank: payment.bank, reference: payment.reference },
+        {
+          bank: updated.bank,
+          reference: updated.reference,
+          reason: data.reason,
+        },
+      );
+      return paymentSummary(updated);
+    });
+  }
   // Un abono por transferencia que nunca llegó se rechaza: no descuenta la
   // deuda ni entra a la caja, y deja de bloquear devoluciones y abonos de la
   // venta (R9-dinero-3).

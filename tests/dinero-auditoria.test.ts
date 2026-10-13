@@ -489,6 +489,97 @@ describe("Auditoría 01 · dinero", () => {
     );
   });
 
+  it("3aa: solo administración corrige banco/referencia con motivo y bitácora sin alterar el pago", async () => {
+    const cashier = await person("seller", "3aa", 0);
+    const variant = await product(600, 300, 4);
+    const sale = await sell(cashier, variant, 1, [
+      {
+        method: "transfer",
+        amount: 600,
+        bank: "Banco anterior",
+        reference: "REF-ANTERIOR",
+      },
+    ]);
+    const id = sale.payments[0].id;
+    const before = await db.payment.findUniqueOrThrow({ where: { id } });
+    const body = {
+      bank: "Banco correcto",
+      reference: "REF-CORREGIDA",
+      expectedBank: "Banco anterior",
+      expectedReference: "REF-ANTERIOR",
+      reason: "Dato recibido tras registrar la venta",
+    };
+    expect(
+      (await request(`/payments/${id}/correct-transfer`, cashier.token, body))
+        .status,
+    ).toBe(403);
+    expect(
+      (
+        await request(`/payments/${id}/correct-transfer`, admin, {
+          ...body,
+          reason: "  ",
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await request(`/payments/${id}/correct-transfer`, admin, body)).status,
+    ).toBeLessThan(300);
+    expect(
+      (await request(`/payments/${id}/correct-transfer`, admin, body)).status,
+    ).toBe(409);
+    const after = await db.payment.findUniqueOrThrow({ where: { id } });
+    expect({ bank: after.bank, reference: after.reference }).toEqual({
+      bank: body.bank,
+      reference: body.reference,
+    });
+    expect({
+      amount: after.amount.toString(),
+      status: after.status,
+      cashSessionId: after.cashSessionId,
+    }).toEqual({
+      amount: before.amount.toString(),
+      status: before.status,
+      cashSessionId: before.cashSessionId,
+    });
+    const logs = await db.auditLog.findMany({
+      where: { entity: "payment", entityId: id, action: "correct_transfer" },
+    });
+    expect(logs).toHaveLength(1);
+    expect(logs[0].before).toMatchObject({
+      bank: before.bank,
+      reference: before.reference,
+    });
+    expect(logs[0].after).toMatchObject({
+      bank: body.bank,
+      reference: body.reference,
+      reason: body.reason,
+    });
+    await ok(`/payments/${id}/verify`, admin, {});
+    const edits = await Promise.all([
+      request(`/payments/${id}/correct-transfer`, admin, {
+        ...body,
+        expectedBank: body.bank,
+        expectedReference: body.reference,
+        reference: "REF-A",
+      }),
+      request(`/payments/${id}/correct-transfer`, admin, {
+        ...body,
+        expectedBank: body.bank,
+        expectedReference: body.reference,
+        reference: "REF-B",
+      }),
+    ]);
+    expect(edits.map((r) => r.status).sort()).toEqual([201, 409]);
+    const final = await db.payment.findUniqueOrThrow({ where: { id } });
+    expect(["REF-A", "REF-B"]).toContain(final.reference);
+    expect(final.status).toBe("ok");
+    expect(
+      await db.auditLog.count({
+        where: { entity: "payment", entityId: id, action: "correct_transfer" },
+      }),
+    ).toBe(2);
+  });
+
   it("M-4: el tope de salidas sin PIN es por usuaria y día, no por turno", async () => {
     const c = await person("seller", "m4", 3000);
     const out = () =>
