@@ -409,3 +409,10 @@ La dueña está metiendo mercancía real en el sistema de Render: **ese sistema 
 3. **Solo Claude despliega producción**, con los 3 CI en verde, copia (snapshot) antes y comparación después, y **no durante el horario en que la dueña está cargando mercancía** salvo urgencia que ella apruebe.
 4. Cambios pequeños que la tienda sí necesita (como la columna Cliente en Ventas, commit `3a8189c`) siguen su camino normal por `nexora-cloud`, y se despliegan solo con el OK de la dueña.
 5. Ningún dato real de Grupo Macgen entra a `producto-saas`; su demo usa datos de ejemplo.
+
+**Ampliación 3ad / Camino B (dueña, 13-oct) — venta por su página web, sin servidor casero para clientes.** Incluir en el documento del Camino B:
+1. **Cobro:** suscripción mensual cobrada en la web de la dueña (tarjeta, Apple Pay y Google Pay en la página de pago, no dentro de una tienda de apps). Investigar y comparar procesadores de pago que funcionen para un negocio en República Dominicana (por ejemplo Azul, CardNET, PayPal y la opción de Stripe vía otra entidad), con comisión, requisitos, tiempos de depósito y cómo manejan suscripciones recurrentes. No asumir: confirmar en fuentes actuales.
+2. **Dos diseños de datos, con costo por cliente de cada uno:** (a) todos los negocios en una misma base con separación estricta por negocio; (b) una base PostgreSQL por cliente. Tomar como línea base la infraestructura actual en Render (API 1c-2g, web 0.5c-512mb, base 0.5c-1g con 5 GB) y estimar cuántos clientes pequeños aguanta antes de subir de plan. Precios de Render: leer la lista vigente, no estimar de memoria.
+3. **Planes:** básico (~US$ 20/mes) y «con asistente» (Claude + WhatsApp), más caro porque el costo de IA y de Meta crece con el uso. Calcular el precio mínimo de cada plan para no perder dinero.
+4. **Tiendas de apps:** al final. Primero PWA instalable; luego, si conviene, empaquetado para Google Play y App Store, con su costo y su comisión.
+5. **Servidor en la casa:** solo como copia de respaldo y entorno de pruebas, nunca como servicio de clientes que pagan (riesgo de luz, internet y responsabilidad sobre sus datos).
