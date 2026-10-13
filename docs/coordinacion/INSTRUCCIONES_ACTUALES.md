@@ -380,3 +380,24 @@ Caso real: la factura FS-0000012 se creó con la referencia «SIN-REF» y la due
 ### 3ac. ORDEN (dueña, 13-oct) — Cuenta de envíos de Addison (ChatGPT NUBE; pequeña, después de 3aa)
 Addison hace la logística de entrega. El envío es **100 % de él**. Si el cliente paga producto + envío en una sola transferencia, ese envío entra a nuestra cuenta pero **no es ingreso del negocio**: se le debe a Addison y se le paga **una vez por semana**.
 Pedido: (1) campo «envío» opcional en la venta, separado del total de productos, que no cuenta como venta, ingreso ni margen; (2) «Cuenta de Addison» (Reportes o Gestión): lista de envíos cobrados por nosotros, total pendiente de la semana y botón «Marcar pagado» (con fecha y método; si sale de caja, queda como salida de caja); (3) lo cobrado contra entrega por él directamente NO se anota (no pasa por nosotros). Con regresión y `pnpm check` en verde. Mientras tanto se lleva en `docs/operacion/ENVIOS-ADDISON.csv` (Claude lo mantiene).
+
+### 3ad. ORDEN (dueña, 13-oct) — Nexora POS instalable en PC (uso propio) y camino para venderlo después (ChatGPT NUBE: análisis y diseño primero; ChatGPT PC: pruebas; Claude integra)
+**Regla de oro:** nada de esto puede afectar el trabajo actual en Render ni los datos de la tienda. Se hace en ramas aparte, sin tocar `nexora-cloud` hasta que Claude integre con los 3 CI en verde y la dueña lo apruebe.
+
+**Estado de partida:** ya existe el instalador de Windows 11 (job `windows-installer`, guía `docs/INSTALADOR.md`) que instala un servidor local con su propia base PostgreSQL y respaldos en `%ProgramData%\FitStore POS\Backups`. Hoy sirve como servidor local independiente; **no** es un programa de escritorio conectado a la nube.
+
+**CAMINO A — Uso propio, instalado en la PC (hacerlo primero).** Entregar un informe corto (máx. 2 páginas) y, con el OK de la dueña, el código:
+1. Una instalación «Nexora POS Local»: un solo instalador, un clic, acceso directo en el escritorio, abre la app en ventana propia (no navegador suelto), arranca sola con Windows, base de datos local, respaldo diario automático y botón «Restaurar copia». Sin Render y sin Internet para vender.
+2. Si hay varias PC en la misma tienda: una PC hace de servidor y las otras entran por la red local (como ya describe `INSTALADOR.md`). Explicar los límites y qué pasa si la PC servidor se apaga.
+3. Datos: cómo pasar el inventario y las ventas de la nube a la instalación local (exportar/importar) y cómo volver a la nube, sin pérdida y con verificación (conteo de variantes, unidades y costo, igual que el snapshot del despliegue).
+4. Actualizaciones: cómo se actualiza la instalación sin perder datos (migraciones seguras, copia antes de actualizar).
+5. Pruebas: instalar en una máquina limpia, vender sin Internet, cerrar caja, respaldar, restaurar y actualizar. ChatGPT PC lo ejecuta y deja evidencia.
+
+**CAMINO B — Producto para vender (solo análisis y diseño, NO programar todavía).** Entregar un documento con:
+1. Modelo recomendado: servicio en la nube por suscripción (referencia de la dueña: unos US$ 20 al mes por negocio) con el asistente Claude trabajando junto a las personas (atención, reportes, alertas). Comparar contra vender la instalación local con licencia.
+2. Qué hay que cambiar para atender a varios negocios: separación de datos por negocio (multi-inquilino), registro y cobro de suscripciones, planes (básico / con asistente), límites, soporte, respaldos por cliente, términos de uso y privacidad, facturación y fiscalidad en República Dominicana (el sistema hoy imprime «documento no fiscal»).
+3. Qué NO se vende ni se copia: datos, costos, clientes ni credenciales de Grupo Macgen. Una instalación de demostración con datos de ejemplo.
+4. Costos mensuales estimados por cliente (servidor, base de datos, respaldos, WhatsApp/Meta, IA) y precio mínimo para no perder dinero.
+5. Hoja de ruta por fases con riesgos, y qué decisiones necesita de la dueña.
+
+**Entrega:** primero el informe del Camino A y el del B por escrito. Nada de código del Camino B sin el OK de la dueña. Todo con pruebas, `pnpm check` en verde y sin tocar datos reales.
