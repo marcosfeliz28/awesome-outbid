@@ -3028,6 +3028,7 @@ export function SalesHistory() {
                 label: "Venta n.º",
                 render: (s) => <strong>{s.number}</strong>,
               },
+              { label: "Cliente", render: (s) => s.customerName ?? "—" },
               { label: "Fecha", render: (s) => dateLabel(s.createdAt) },
               {
                 label: "Estado",
