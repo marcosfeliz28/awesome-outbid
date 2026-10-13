@@ -2980,6 +2980,7 @@ export function SalesHistory() {
     [returning, setReturning] = useState<any>(null),
     [installment, setInstallment] = useState<any>(null),
     [rejecting, setRejecting] = useState<any>(null),
+    [correctingTransfer, setCorrectingTransfer] = useState<any>(null),
     [search, setSearch] = useState(""),
     [saleDate, setSaleDate] = useState("");
   const params = new URLSearchParams();
@@ -3234,6 +3235,19 @@ export function SalesHistory() {
                     <small>{p.reference || p.approvalCode}</small>
                   </span>
                   <ProofThumb paymentId={p.id} hasProof={p.hasProof} />
+                  {p.method === "transfer" &&
+                    ["pending_verification", "ok"].includes(p.status) &&
+                    can(user.permissions, "*") && (
+                      <button
+                        className="text-link"
+                        onClick={() => {
+                          setSelected(null);
+                          setCorrectingTransfer(p);
+                        }}
+                      >
+                        Corregir banco y referencia
+                      </button>
+                    )}
                   {p.entryType === "installment" &&
                     can(user.permissions, "*") && (
                       <label className="text-link proof-upload">
@@ -3378,6 +3392,40 @@ export function SalesHistory() {
             await post("/payments/" + rejecting.id + "/reject", { reason });
             await client.invalidateQueries();
             toast("Transferencia rechazada.");
+          }}
+        />
+      )}
+      {correctingTransfer && (
+        <FormModal
+          title="Corregir referencia de transferencia"
+          notice="La corrección queda en la bitácora. El importe y el estado del pago no cambian."
+          fields={[
+            { key: "bank", label: "Banco correcto", required: true },
+            { key: "reference", label: "Referencia correcta", required: true },
+            {
+              key: "reason",
+              label: "Motivo de la corrección",
+              type: "textarea",
+              required: true,
+            },
+          ]}
+          initial={{
+            bank: correctingTransfer.bank ?? "",
+            reference: correctingTransfer.reference ?? "",
+          }}
+          onClose={() => setCorrectingTransfer(null)}
+          onSubmit={async (data) => {
+            await post(
+              "/payments/" + correctingTransfer.id + "/correct-transfer",
+              {
+                bank: data.bank,
+                reference: data.reference,
+                reason: data.reason,
+                expectedBank: correctingTransfer.bank ?? null,
+                expectedReference: correctingTransfer.reference ?? null,
+              },
+            );
+            await client.invalidateQueries();
           }}
         />
       )}
