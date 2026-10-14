@@ -1,0 +1,27 @@
+# 3ab · WhatsApp Business Platform, Fase 0
+
+**Para la dueña · 14 de octubre de 2026 · análisis sin código ni conexión a la cuenta**
+
+## Decisión preliminar
+
+La conexión directa con la Cloud API de Meta es una opción para **un número** de publicidad de suplementos. Antes de comprometer el número que usa la vendedora, hay que comprobar en el alta de Meta si ese número es elegible para **WhatsApp Business App Coexistence**. La [documentación de coexistencia de Meta](https://developers.facebook.com/documentation/business-messaging/whatsapp/embedded-signup/whatsapp-business-app-coexistence) existe, pero en esta consulta su contenido exigió iniciar sesión; **no pude verificar para esta cuenta ni este número** la elegibilidad, las funciones compartidas ni el historial que conservaría. No se debe migrar el número basándose solo en este informe. Si Meta no ofrece coexistencia, las alternativas son: usar otro número para la API y conservar la app de la vendedora, o pasar el número a la API y dar a la vendedora una bandeja humana conectada a la API (ya no la app del mismo número). La elección requiere verificación en el panel de Meta con la dueña.
+
+## Alta y verificación
+
+Se necesita una cartera de negocio de Meta bajo control de la dueña, una cuenta de WhatsApp Business, una aplicación de Meta, el número que ella elija, nombre visible aprobado, método de pago y acceso administrativo. Para producción, el webhook debe comprobar la firma de Meta y los permisos del token deben limitarse. La [guía oficial de inicio](https://developers.facebook.com/documentation/business-messaging/whatsapp/get-started) es la referencia de alta. **La verificación formal del negocio, sus documentos y cuándo Meta la exige para ampliar límites no pudieron confirmarse para la cuenta concreta sin entrar en Business Manager.** Reunir nombre legal y documentos de registro coherentes con la entidad titular; comprobar el estado de verificación y límites en el panel antes de contratar o mover el número. No enviar documentos ni claves por chat.
+
+## Asistente de IA y mensajes
+
+La [página oficial de precios de Meta](https://whatsappbusiness.com/es-la/products/platform-pricing/) describe expresamente la atención con un agente o **un bot con inteligencia artificial conversacional**; por eso un asistente acotado a ventas y atención de esta tienda no aparece prohibido por ser IA en sí mismo. Aun así, hay que revisar las [políticas de WhatsApp Business](https://whatsappbusiness.com/policy/) y las condiciones aplicables a la cuenta y al proveedor de IA antes de lanzar. El asistente debe identificarse, usar solo datos necesarios, respetar bajas, no prometer efectos de salud y escalar reclamos, devoluciones y pagos dudosos. **Fase 1:** solo borradores aprobados por la vendedora antes de enviar. **Fase 2:** ninguna respuesta automática sin OK escrito de la dueña.
+
+Meta explica en su [tarifario](https://whatsappbusiness.com/es-la/products/platform-pricing/) que cuando el cliente escribe, se abre una ventana de atención de **24 horas** que se renueva con cada mensaje del cliente; las respuestas de **servicio** dentro de ella no tienen cargo de Meta. Mensajes comerciales iniciados por la tienda, como publicidad con plantillas de marketing, sí se cobran por mensaje según categoría y país. **No equivale a que toda respuesta o plantilla dentro de 24 horas sea gratis**: antes de enviarla, hay que clasificarla según el tarifario vigente. La publicidad no debe enviarse a quien pidió no recibirla.
+
+## Costo mensual real: dato que falta
+
+No tengo acceso a las estadísticas de la cuenta ni al número elegido, y no hay conteos de conversaciones reales en el repositorio. Por eso **no es posible calcular hoy una factura mensual real** sin inventar volumen. Tampoco pude extraer una tarifa dominicana verificable del calculador público de Meta. El presupuesto se calcula así, con los datos del último mes de ese número:
+
+`costo Meta = Σ (mensajes de marketing × tarifa RD) + Σ (plantillas de utilidad/autenticación cobrables × su tarifa)`; las respuestas de servicio gratuitas aportan US$0. `costo IA = tokens de entrada y salida reales × tarifa del modelo contratado`; añadir infraestructura y tiempo de revisión humana. Si se usa Cloud API directa no se añade tarifa de un intermediario, pero eso **no** elimina Meta ni IA.
+
+Para cerrar el presupuesto hay que anotar, sin compartir conversaciones privadas: mensajes entrantes únicos, respuestas de servicio en 24 h, plantillas enviadas por categoría, país de destino, tarifa mostrada en Meta para RD, tokens por conversación y costo del modelo. Con esos seis números se calcula **un mes observado** y un techo de gasto para el piloto. El reporte mensual de Meta + IA y ventas atribuibles al asistente pertenece a la Fase 1, aún sin construir.
+
+**Fuentes consultadas el 14-oct-2026:** [precios de Meta](https://whatsappbusiness.com/es-la/products/platform-pricing/), [política comercial](https://whatsappbusiness.com/policy/), [inicio de Cloud API](https://developers.facebook.com/documentation/business-messaging/whatsapp/get-started), [coexistencia](https://developers.facebook.com/documentation/business-messaging/whatsapp/embedded-signup/whatsapp-business-app-coexistence) y [orden 3ab](../coordinacion/INSTRUCCIONES_ACTUALES.md). Los dos enlaces de Developers requirieron acceso a Meta en esta consulta; las conclusiones que dependen de la cuenta se dejaron abiertas.
