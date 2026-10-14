@@ -1599,7 +1599,8 @@ export function Cash() {
     [movement, setMovement] = useState<string | false>(false),
     [closing, setClosing] = useState<any>(null),
     [discarding, setDiscarding] = useState<any>(null),
-    [printing, setPrinting] = useState<Printing>(null);
+    [printing, setPrinting] = useState<Printing>(null),
+    [printSession, setPrintSession] = useState<string>();
   // Fondo sugerido: lo dejado en el último cierre de la propia persona.
   const suggestion = useQuery({
     queryKey: ["opening-suggestion"],
@@ -2092,6 +2093,7 @@ export function Cash() {
           session={closing}
           onClose={() => setClosing(null)}
           onClosed={(cuadre) => {
+            setPrintSession(closing.id);
             setClosing(null);
             setPrinting({ kind: "cuadre", data: cuadre });
             printSoon();
@@ -2110,7 +2112,15 @@ export function Cash() {
           }}
         />
       )}
-      <PrintModal printing={printing} onClose={() => setPrinting(null)} />
+      <PrintModal
+        printing={printing}
+        onClose={() => {
+          setPrinting(null);
+          setPrintSession(undefined);
+        }}
+        sessionId={printSession}
+        onSwitch={setPrinting}
+      />
     </div>
   );
 }

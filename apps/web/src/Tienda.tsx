@@ -52,9 +52,14 @@ function PrintBody({ p }: { p: NonNullable<Printing> }) {
 export function PrintModal({
   printing,
   onClose,
+  sessionId,
+  onSwitch,
 }: {
   printing: Printing;
   onClose: () => void;
+  /** Caja recién cerrada: ofrece sus otras dos impresiones del día. */
+  sessionId?: string;
+  onSwitch?: (p: Printing) => void;
 }) {
   const config = useQuery({
     queryKey: ["settings"],
@@ -73,6 +78,33 @@ export function PrintModal({
           Listo
         </Button>
       </div>
+      {sessionId && onSwitch && (
+        <div className="print-actions">
+          {(
+            [
+              ["cuadre", "Cuadre de caja"],
+              ["daily", "Productos vendidos de esta caja"],
+              ["method", "Facturas por forma de pago"],
+            ] as [PrintKind, string][]
+          )
+            .filter(([kind]) => kind !== printing.kind)
+            .map(([kind, label]) => (
+              <Button
+                key={kind}
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    onSwitch(await loadSessionPrint(kind, sessionId));
+                  } catch (e: any) {
+                    toast(e.message, true);
+                  }
+                }}
+              >
+                Siguiente: {label}
+              </Button>
+            ))}
+        </div>
+      )}
       <div className={"print-preview w" + width}>
         <PrintBody p={printing} />
       </div>
@@ -302,7 +334,7 @@ export function CloseCashModal({
           {money(
             "Tarjeta declarada",
             "countedCard",
-            "Escribe 0 si no hubo cobros con tarjeta.",
+            "Total que imprimió el verifón al cerrar el lote de hoy. Cierra el verifón antes de cerrar la caja; escribe 0 solo si no hubo cobros con tarjeta.",
             true,
           )}
           {money(
