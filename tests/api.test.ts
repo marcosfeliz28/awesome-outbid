@@ -2054,6 +2054,7 @@ describe("Seguridad, offline y funciones completadas", () => {
           countedCard: expected.card + 10,
           countedTransfer: expected.transfer,
           notes: "Diferencia de prueba explicada",
+          managerPin: "987654",
         },
         alertToken,
       );

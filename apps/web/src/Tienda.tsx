@@ -164,7 +164,8 @@ export function CloseCashModal({
     can(user?.permissions ?? [], "sale:manage");
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [confirmBlindClose, setConfirmBlindClose] = useState(false);
+    [confirmBlindClose, setConfirmBlindClose] = useState(false),
+    [cardNeedsPin, setCardNeedsPin] = useState(false);
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [key]: e.target.value });
   const subtotal =
@@ -227,13 +228,17 @@ export function CloseCashModal({
         countedTransfer: parse(form.countedTransfer),
         ...(delivered === null ? {} : { delivered }),
         notes: form.notes,
-        ...(voucherNeedsPin ? { managerPin: form.managerPin } : {}),
+        ...(voucherNeedsPin || cardNeedsPin
+          ? { managerPin: form.managerPin }
+          : {}),
       });
       const cuadre = await api("/cash-sessions/" + session.id + "/cuadre");
       await client.invalidateQueries();
       onClosed(cuadre);
     } catch (e: any) {
       setError(e.message);
+      if (/total de tarjeta no coincide/i.test(e.message))
+        setCardNeedsPin(true);
     } finally {
       setBusy(false);
     }
@@ -313,9 +318,13 @@ export function CloseCashModal({
             "vouchers",
             "Comprobantes de salida que están en la gaveta. Requiere una nota y, para cajeras, el PIN de un gerente; mejor regístralos como «Salida» antes de cerrar.",
           )}
-          {voucherNeedsPin && (
+          {(voucherNeedsPin || cardNeedsPin) && (
             <label className="field">
-              <span>PIN de gerente (vale de caja)</span>
+              <span>
+                {voucherNeedsPin
+                  ? "PIN de gerente (vale de caja)"
+                  : "PIN de gerente (tarjeta no coincide)"}
+              </span>
               <input
                 type="password"
                 inputMode="numeric"

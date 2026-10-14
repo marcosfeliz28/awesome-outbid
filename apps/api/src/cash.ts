@@ -1003,6 +1003,24 @@ export class CashController {
       };
       const differences = closeDifferences(data, expected);
       const differenceLimit = Number(settings?.cashDifferenceLimit ?? 100);
+      // Tarjeta = lo que imprimió el verifón. Si la cajera declara un total
+      // distinto del sistema, no cierra sola: necesita el PIN de un gerente
+      // (dueña, 14-oct). Así nadie «cuadra» ventas antes del cierre.
+      if (
+        Number(differences.card) !== 0 &&
+        !can(actor.permissions, "sale:manage")
+      ) {
+        if (!input.managerPin)
+          bad(
+            "El total de tarjeta no coincide con el sistema. Revisa el voucher del verifón; para cerrar con esta diferencia se necesita el PIN de un gerente.",
+          );
+        const approver = await managerPinApproval(
+          this.db,
+          actor,
+          input.managerPin!,
+        );
+        (data.closeDetails as any).cardApprovedBy = approver;
+      }
       if (
         cashCloseRequiresNote(actor, differences, differenceLimit) &&
         !input.notes.trim()
