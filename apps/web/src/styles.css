@@ -1881,12 +1881,8 @@ td strong {
   font-size: 12px;
   line-height: 1.35;
   margin: 7px 0 4px;
-  /* Cuatro líneas: el sabor, tono o talla va al final del nombre y debe verse. */
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 5.4em;
+  /* Nombre completo, sin recorte: el sabor, tono o talla va al final y debe verse. */
+  min-height: 2.7em;
   overflow-wrap: anywhere;
 }
 .product-info p {
