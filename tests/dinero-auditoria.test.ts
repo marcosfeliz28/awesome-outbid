@@ -463,7 +463,8 @@ describe("Auditoría 01 · dinero", () => {
     ).toBe("rejected");
     expect((await alert("receivable:" + sale.id))?.status).toBe("new");
     expect((await alert("transfer:" + pay.id))?.status).toBe("resolved");
-    // El cuadre ya no espera esa transferencia: declararla deja diferencia.
+    // El cuadre ya no espera esa transferencia. Lo declarado se ignora: las
+    // transferencias las suma el sistema, no la cajera (dueña, 14-oct).
     expect(
       (
         await close(c, {
@@ -477,7 +478,8 @@ describe("Auditoría 01 · dinero", () => {
       where: { id: c.cash.id },
     });
     expect(Number(session.expectedTransfer)).toBe(0);
-    expect(Number(session.differenceTransfer)).toBe(600);
+    expect(Number(session.countedTransfer)).toBe(0);
+    expect(Number(session.differenceTransfer)).toBe(0);
     // Una transferencia verificada resuelve su alerta.
     c.cash = await open(c, 0);
     const good = await sell(c, v, 1, [
