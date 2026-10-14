@@ -17,3 +17,28 @@
 - **Sin cantidad (no se tocaron)**: L.A. Colors lápiz CAL561A Nude y CAL565A Pink; Alikka Glitter 712, 710, 226, 728.
 - Amuse Teddy Highlighter pasó a 3 productos por tono (1669 Sugar, 1670 Lovely, 1671 Coco); el renglón combinado 1291 quedó en 0.
 - Lista de lo que la dueña no mencionó: `docs/operacion/MAQUILLAJE-NO-MENCIONADOS-2026-10-14.csv` (184 productos, 1,193 uds).
+
+## Falta para entrar en la noche (14-oct, guardado a pedido de la dueña)
+Preguntar a Lisbeth precio y costo (hoy están en 0) de estos 21 productos de Maquillaje:
+- 1648 Too Faced Better Than Sex Mascara (1)
+- 1649 Ruby Rose Glow Whatever Blush Duo (1)
+- 1650 Haus Labs by Lady Gaga Polvo compacto 6.5 g, tono por identificar (1)
+- 1651 Totemica The 16 Nudes of Miami, paleta completa (1)
+- 1652 Maybelline Super Stay 24H Full Coverage Foundation, tono por identificar (1)
+- 1653 NYX Smoochy Matte Lip Balm Swipe Sesh (1)
+- 1654 Beauty Creations Velvet Stay Lip Paint, tono pendiente (1)
+- 1655 Anastasia Beverly Hills Lip Gloss nude rosado, tono pendiente (1)
+- 1656 Models Own Sculpt & Glow Contour Palette Cheat Day CGP01 (1)
+- 1657 Models Own Sculpt & Glow Contour Palette Tan to Deep 04 (1)
+- 1658 Cosmético tubo blanco y negro, punta fina, por confirmar qué producto es (21)
+- 1659 Beauty Creations Tease Me Lipstick Strings Attached (4)
+- 1660 a 1667 Nabi Gold Eyeliner E06 (3), E09 (3), E04 (1), E05 (3), E08 (2), E17 (3), E11 (2), E10 (2)
+- 1668 Bruna Tavares BT Velvet, tono pendiente (1)
+
+Otros datos que faltan:
+- Maybelline Super Stay Vinyl Ink: 8 unidades entre los tonos 55 Royal, 50 Wicked y 30 Unrivaled. Falta la cantidad por tono.
+- Maybelline Super Stay Matte Ink: 10 unidades entre 180 Revolutionary, 340 Exhilarator, 15 Lover y 1 tono ilegible. Falta la cantidad por tono. (20 Pioneer, 118 Dancer y 112 ya están en el sistema con 1 cada uno; confirmar si son las 3 de la tercera línea.)
+- L.A. Colors lápiz CAL561A Nude y CAL565A Pink: falta la cantidad.
+- Alikka Glitter 712, 710, 226 y 728: falta la cantidad.
+- La Roche-Posay Toleriane Double Repair Matte 100 ml: excluido por la dueña (2 en el sistema, sin tocar).
+- Mota de Sarias (1672): creada con costo RD$ 1 y venta RD$ 200, sin existencias; falta la cantidad.
