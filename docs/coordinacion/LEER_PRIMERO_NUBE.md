@@ -1,5 +1,7 @@
 # LEER PRIMERO — ChatGPT NUBE (actualizado 14-oct-2026)
 
+> **Orden 3ae (14-oct):** la dueña te pasa el control del día a día. Lee primero `docs/coordinacion/TRASPASO_CHATGPT_NUBE.md`: donde choque con las reglas de abajo sobre tocar producción o desplegar, manda ese documento.
+
 **Antes de escribir una sola línea:** baja la rama `nexora-cloud` actualizada y lee, en este orden, `docs/coordinacion/INSTRUCCIONES_ACTUALES.md` desde la orden **3aa** hasta el final. Si no puedes bajar el repositorio, pide a la dueña que te pegue el texto. **Contesta primero con 3 líneas: qué leíste y qué vas a entregar.**
 
 ## Reglas fijas

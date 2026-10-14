@@ -416,3 +416,6 @@ La dueña está metiendo mercancía real en el sistema de Render: **ese sistema 
 3. **Planes:** básico (~US$ 20/mes) y «con asistente» (Claude + WhatsApp), más caro porque el costo de IA y de Meta crece con el uso. Calcular el precio mínimo de cada plan para no perder dinero.
 4. **Tiendas de apps:** al final. Primero PWA instalable; luego, si conviene, empaquetado para Google Play y App Store, con su costo y su comisión.
 5. **Servidor en la casa:** solo como copia de respaldo y entorno de pruebas, nunca como servicio de clientes que pagan (riesgo de luz, internet y responsabilidad sobre sus datos).
+
+## 3ae — Traspaso del día a día a ChatGPT NUBE (14-oct-2026, orden de la dueña)
+Claude puede dejar de estar disponible; la dueña quiere seguir trabajando igual con ChatGPT NUBE. Documento completo y vigente: `docs/coordinacion/TRASPASO_CHATGPT_NUBE.md` (accesos que ella debe darte, reglas del dinero, endpoints, rutina diaria, despliegue con CI verde y orden expresa, estado y pendientes). **Primer entregable:** contesta a la dueña con 3 líneas (qué leíste, qué puedes hacer ya, qué te falta).
