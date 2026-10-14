@@ -42,3 +42,9 @@ Otros datos que faltan:
 - Alikka Glitter 712, 710, 226 y 728: falta la cantidad.
 - La Roche-Posay Toleriane Double Repair Matte 100 ml: excluido por la dueña (2 en el sistema, sin tocar).
 - Mota de Sarias (1672): costo RD$ 1, venta RD$ 200, 2 unidades en tienda (cargadas 14-oct).
+
+## Cierre de Farianelis del 14-oct (tarjeta)
+- El sistema tenía 3 ventas con tarjeta (FS-0000035 1,500; FS-0000038 2,600; FS-0000046 2,900 = 7,000). Ella declaró 12,400 del verifón: diferencia +5,400.
+- Explicación dada por la dueña: el verifón tenía ventas de otros días sin cerrar. No es un error del sistema ni de las ventas de hoy. Autorizado por la dueña.
+- Regla desde ahora: si el total de tarjeta de la cajera no coincide con el sistema, no cierra sola; hace falta el PIN de un gerente (la dueña autoriza). El verifón se cierra todos los días antes de cerrar la caja.
+- Caja de Lizbeth Peguero (Computadora CCB5, abierta 14-oct 20:56) sigue abierta: debe cerrarse en su turno.
