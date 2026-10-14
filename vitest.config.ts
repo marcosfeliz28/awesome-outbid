@@ -45,6 +45,7 @@ export default defineConfig({
       "tests/variant-code-unique-postgres.test.ts",
       "tests/reports-memory-postgres.test.ts",
       "tests/telegram-render.test.ts",
+      "tests/correo-avisos.test.ts",
       "tests/web-privacy.test.ts",
       "tests/web-monitoring.test.ts",
       "tests/promotion-ticket.test.ts",

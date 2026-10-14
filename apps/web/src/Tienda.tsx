@@ -313,11 +313,12 @@ export function CloseCashModal({
           Efectivo contado (Sub-total) <strong>{formatMoney(subtotal)}</strong>
         </p>
         <div className="form-grid">
-          {money(
-            "Vale de caja",
-            "vouchers",
-            "Comprobantes de salida que están en la gaveta. Requiere una nota y, para cajeras, el PIN de un gerente; mejor regístralos como «Salida» antes de cerrar.",
-          )}
+          {canSeeExpected &&
+            money(
+              "Vale de caja",
+              "vouchers",
+              "Comprobantes de salida que están en la gaveta. Requiere una nota y, para cajeras, el PIN de un gerente; mejor regístralos como «Salida» antes de cerrar.",
+            )}
           {(voucherNeedsPin || cardNeedsPin) && (
             <label className="field">
               <span>

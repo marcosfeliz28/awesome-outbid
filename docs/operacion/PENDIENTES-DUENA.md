@@ -48,3 +48,8 @@ Otros datos que faltan:
 - Explicación dada por la dueña: el verifón tenía ventas de otros días sin cerrar. No es un error del sistema ni de las ventas de hoy. Autorizado por la dueña.
 - Regla desde ahora: si el total de tarjeta de la cajera no coincide con el sistema, no cierra sola; hace falta el PIN de un gerente (la dueña autoriza). El verifón se cierra todos los días antes de cerrar la caja.
 - Caja de Lizbeth Peguero (Computadora CCB5, abierta 14-oct 20:56) sigue abierta: debe cerrarse en su turno.
+
+## Correo de cierres y anulaciones (14-oct)
+- Hecho en el código: cada cierre de caja y cada solicitud de anulación manda un correo a marcos.felix@gmail.com (con el cuadre y el enlace a Nexora POS).
+- Falta una sola cosa para activarlo: crear una cuenta gratis en resend.com con ese mismo correo, crear una clave de API y ponerla en Render (servicio API) como `RESEND_API_KEY`, más `NOTIFY_EMAIL_TO=marcos.felix@gmail.com`. La clave no se escribe en chats ni en el repositorio.
+- Las cajeras ya no ven "Vale de caja" en el cierre (así no les pide PIN por error); las salidas de efectivo se registran como «Salida».
