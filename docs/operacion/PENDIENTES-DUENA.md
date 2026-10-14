@@ -41,4 +41,4 @@ Otros datos que faltan:
 - L.A. Colors lápiz CAL561A Nude y CAL565A Pink: falta la cantidad.
 - Alikka Glitter 712, 710, 226 y 728: falta la cantidad.
 - La Roche-Posay Toleriane Double Repair Matte 100 ml: excluido por la dueña (2 en el sistema, sin tocar).
-- Mota de Sarias (1672): creada con costo RD$ 1 y venta RD$ 200, sin existencias; falta la cantidad.
+- Mota de Sarias (1672): costo RD$ 1, venta RD$ 200, 2 unidades en tienda (cargadas 14-oct).
