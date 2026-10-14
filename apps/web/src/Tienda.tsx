@@ -242,6 +242,10 @@ export function CloseCashModal({
             su nombre y el cuadre muestra a ambos.
           </p>
         )}
+        <p className="close-pending-warning" role="note">
+          Antes de cerrar: cierra el lote del verifón (datáfono) para que los
+          cobros con tarjeta caigan el próximo día.
+        </p>
         <p className="close-expected">{closeCashIntro(canSeeExpected)}</p>
         <h3>Detalles de monedas</h3>
         <div className="count-grid">
