@@ -19,9 +19,7 @@ describe("P2 · manual operativo de cajera", () => {
     expect(manual).not.toContain("puede exigir vencimiento");
     expect(manual.match(/<div class="manual-page-break"/g)).toHaveLength(7);
     expect(manual).toContain("Datos ficticios");
-    expect(manual).toContain(
-      "Confirmo que conté efectivo, tarjeta y transferencia",
-    );
+    expect(manual).toContain("Confirmo que conté efectivo y tarjeta");
     const images = [
       ...manual.matchAll(/!\[[^\]]*\]\((capturas\/manual\/[^)]+)\)/g),
     ];

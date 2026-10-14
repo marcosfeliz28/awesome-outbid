@@ -164,7 +164,7 @@ export function CloseCashModal({
     }
     if (!confirmBlindClose) {
       setError(
-        "Confirma que contaste todos los medios de pago antes de cerrar.",
+        "Confirma que contaste el efectivo y la tarjeta antes de cerrar.",
       );
       return;
     }
@@ -306,12 +306,6 @@ export function CloseCashModal({
             true,
           )}
           {money(
-            "Transferencia declarada",
-            "countedTransfer",
-            "Escribe 0 si no hubo transferencias.",
-            true,
-          )}
-          {money(
             "Entregado",
             "delivered",
             "Efectivo que se le entrega a la dueña.",
@@ -334,8 +328,8 @@ export function CloseCashModal({
               onChange={(event) => setConfirmBlindClose(event.target.checked)}
             />
             <span>
-              Confirmo que conté efectivo, tarjeta y transferencia. Los campos
-              vacíos representan RD$ 0.00.
+              Confirmo que conté efectivo y tarjeta. Las transferencias las suma
+              el sistema. Los campos vacíos representan RD$ 0.00.
             </span>
           </label>
         </div>

@@ -984,7 +984,8 @@ export class CashController {
       const data = {
         countedCash: counted,
         countedCard: input.countedCard,
-        countedTransfer: input.countedTransfer,
+        // Las transferencias las suma el sistema, no la cajera (dueña, 14-oct).
+        countedTransfer: expected.transfer,
         notes: input.notes,
         closeDetails: {
           denominations: input.denominations ?? null,

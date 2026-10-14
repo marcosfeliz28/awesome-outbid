@@ -2575,7 +2575,6 @@ test.describe("Tienda-pantallas", () => {
     await dialog.getByLabel("Cantidad de 50", { exact: true }).fill("4");
     await expect(dialog.locator(".count-subtotal")).toContainText("RD$ 500.00");
     await dialog.getByLabel(/Tarjeta declarada/).fill("0");
-    await dialog.getByLabel(/Transferencia declarada/).fill("0");
     await dialog.getByLabel("Entregado").fill("300");
     await expect(dialog.locator(".count-left")).toContainText("RD$ 200.00");
     await dialog
