@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import {
   InventoryFileError,
   checkCodesDetailed,
+  marginOf,
   readInventory,
 } from "../apps/api/src/inventory-import-core";
 import { countReason } from "../apps/api/src/inventory-import";
@@ -129,5 +130,13 @@ describe("importador de inventario · módulo compartido", () => {
     expect(error.problems.map((p: any) => p.row)).toEqual([2, 4, 6]);
     expect(error.message).toMatch(/demasiado largo \(máximo 64/);
     expect(error.message).toMatch(/fila 4 del Excel \(ID 3\)/);
+  });
+
+  it("el margen es (precio − costo) / precio, sin restar ITBIS", () => {
+    const row = (price: number, cost: number) => ({ price, cost }) as any;
+    expect(marginOf(row(100, 86))).toBeCloseTo(0.14, 5);
+    expect(marginOf(row(100, 85))).toBeCloseTo(0.15, 5);
+    expect(marginOf(row(100, 84))).toBeCloseTo(0.16, 5);
+    expect(marginOf(row(0, 10))).toBe(-1);
   });
 });

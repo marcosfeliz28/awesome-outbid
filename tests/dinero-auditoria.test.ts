@@ -839,6 +839,18 @@ describe("Auditoría 01 · dinero", () => {
       700,
       2,
     );
+    // El informe de cierre por forma de pago tampoco la cuenta como cobrada.
+    const closeReport = await ok(
+      "/reports/venta-por-forma-pago?cashSessionId=" + c.cash.id,
+      admin,
+    );
+    const sub = (method: string) =>
+      Number(
+        closeReport.groups.find((g: any) => g.method === method)?.subtotal
+          .amount ?? 0,
+      );
+    expect(sub("transfer")).toBeCloseTo(0, 2);
+    expect(sub("receivable")).toBeCloseTo(700, 2);
   });
 
   it("N-5: el aviso de descuento inusual nace al registrar la venta, sin esperar a la evaluación", async () => {

@@ -1630,9 +1630,11 @@ async function storeSales(db: any, where: Prisma.Sql) {
     bad(
       `El período tiene ${count(total)} facturas y este reporte admite hasta ${count(STORE_REPORT_LIMIT)}. Elige una caja o un período más corto.`,
     );
-  // Por factura: sus unidades y lo cobrado al vender con cada método.
+  // Por factura: sus unidades y lo cobrado al vender con cada método. Un pago
+  // rechazado (transferencia que no llegó) no cuenta como cobrado: es cuenta
+  // por cobrar, igual que en el cuadre y el dashboard.
   const rows: any[] =
-    await db.$queryRaw`WITH sl AS (SELECT s.id, s.number, s.total, s."creditBalance", s."createdAt" FROM "Sale" s WHERE ${where}), u AS (SELECT i."saleId", SUM(i.qty) AS qty FROM "SaleItem" i JOIN sl ON sl.id = i."saleId" GROUP BY 1), pm AS (SELECT p."saleId", p.method, SUM(p.amount) AS amount FROM "Payment" p JOIN sl ON sl.id = p."saleId" WHERE p."entryType" = 'sale' GROUP BY 1, 2) SELECT sl.id, sl.number, sl.total, sl."creditBalance", u.qty, pm.method, pm.amount FROM sl LEFT JOIN u ON u."saleId" = sl.id LEFT JOIN pm ON pm."saleId" = sl.id ORDER BY sl."createdAt", sl.id, pm.method`;
+    await db.$queryRaw`WITH sl AS (SELECT s.id, s.number, s.total, s."creditBalance", s."createdAt" FROM "Sale" s WHERE ${where}), u AS (SELECT i."saleId", SUM(i.qty) AS qty FROM "SaleItem" i JOIN sl ON sl.id = i."saleId" GROUP BY 1), pm AS (SELECT p."saleId", CASE WHEN p.status = 'rejected' THEN 'credit' ELSE p.method END AS method, SUM(p.amount) AS amount FROM "Payment" p JOIN sl ON sl.id = p."saleId" WHERE p."entryType" = 'sale' GROUP BY 1, 2) SELECT sl.id, sl.number, sl.total, sl."creditBalance", u.qty, pm.method, pm.amount FROM sl LEFT JOIN u ON u."saleId" = sl.id LEFT JOIN pm ON pm."saleId" = sl.id ORDER BY sl."createdAt", sl.id, pm.method`;
   const sales: any[] = [];
   for (const row of rows) {
     if (sales.at(-1)?.id !== row.id)

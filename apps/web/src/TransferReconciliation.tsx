@@ -13,7 +13,7 @@ import {
   verifyOneByOne,
   type PendingTransfer,
   type VerifyResult,
-} from "./transferReconciliation";
+} from "./transfer-reconciliation-utils";
 import "./transferReconciliation.css";
 
 const dateTime = (value: string) =>
