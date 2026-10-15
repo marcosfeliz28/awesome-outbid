@@ -2250,12 +2250,12 @@ export class SalesController {
     });
     const cashierIds = [
       ...new Set(
-        payments.map(
-          (payment) =>
-            payment.cashSession?.userId ??
+        payments.flatMap((payment) => [
+          payment.cashSession?.userId ??
             payment.receivedById ??
             payment.sale.sellerId,
-        ),
+          payment.sale.sellerId,
+        ]),
       ),
     ];
     const cashiers = cashierIds.length
@@ -2287,6 +2287,9 @@ export class SalesController {
         difference: payment.amount.minus(expected).toFixed(2),
         bank: payment.bank,
         reference: payment.reference,
+        // Quien hizo la factura (la vendedora), aunque el cobro lo registre otra
+        // persona: sirve para saber a quién preguntar por una transferencia.
+        seller: names.get(payment.sale.sellerId) ?? null,
         cashier:
           names.get(
             payment.cashSession?.userId ??

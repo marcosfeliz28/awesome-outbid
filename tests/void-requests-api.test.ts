@@ -696,10 +696,12 @@ describe("conciliación de transferencias · API real", () => {
       amount: "100",
       bank: "BHD",
       cashier: seller.name,
+      seller: seller.name,
     });
     expect(listed.find((row: any) => row.id === secondId)).toMatchObject({
       invoice: second.number,
       cashier: otherSeller.name,
+      seller: otherSeller.name,
     });
     expect(
       JSON.stringify(listed.find((row: any) => row.id === firstId)),

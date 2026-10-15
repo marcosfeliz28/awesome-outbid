@@ -11,6 +11,7 @@ export type PendingTransfer = {
   bank: string | null;
   reference: string | null;
   cashier: string | null;
+  seller?: string | null;
 };
 
 export const BANK_GROUPS = ["BHD", "Popular", "Banreservas", "Otros"] as const;

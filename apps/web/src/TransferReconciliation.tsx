@@ -290,7 +290,15 @@ export function TransferReconciliation() {
                           Banco: {row.bank || "Sin banco"} · Referencia:{" "}
                           {row.reference || "Sin referencia"}
                         </span>
-                        <span>Cajera: {row.cashier || "Sin identificar"}</span>
+                        <span>
+                          Factura hecha por:{" "}
+                          <b>
+                            {row.seller || row.cashier || "Sin identificar"}
+                          </b>
+                          {row.cashier && row.cashier !== row.seller
+                            ? " · cobro: " + row.cashier
+                            : ""}
+                        </span>
                         {selectedCount === 1 &&
                           selected.has(row.id) &&
                           validBankTotal &&
