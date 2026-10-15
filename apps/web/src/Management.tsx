@@ -2007,8 +2007,8 @@ export function Cash() {
                 ? { help: "Sugerido: lo que dejaste en tu último cierre." }
                 : {}),
             },
-            // Un fondo menor que lo dejado en el último cierre se explica y,
-            // para quien no gestiona ventas, lo aprueba un gerente (D-03).
+            // Un fondo menor que lo dejado en el último cierre se explica con
+            // una nota; no pide PIN (D-03).
             ...(suggestion.data?.fromSessionId
               ? [
                   {
@@ -2016,20 +2016,11 @@ export function Cash() {
                     label: "Nota si el fondo es menor que el sugerido",
                     type: "textarea" as const,
                   },
-                  ...(can(user.permissions, "sale:manage")
-                    ? []
-                    : [
-                        {
-                          key: "managerPin",
-                          label: "PIN de gerente si el fondo es menor",
-                          type: "password" as const,
-                        },
-                      ]),
                 ]
               : []),
           ]}
           onClose={() => setOpen(false)}
-          onSubmit={async ({ openingNote, managerPin, ...data }) => {
+          onSubmit={async ({ openingNote, ...data }) => {
             // La caja queda asignada a este equipo (el servidor usa su registro).
             await registerTerminal().catch(() => undefined);
             return post("/cash-sessions/open", {
@@ -2037,7 +2028,6 @@ export function Cash() {
               ...(String(openingNote ?? "").trim()
                 ? { openingNote: String(openingNote).trim() }
                 : {}),
-              ...(managerPin ? { managerPin } : {}),
               registerId: terminalIdentity().name,
             });
           }}

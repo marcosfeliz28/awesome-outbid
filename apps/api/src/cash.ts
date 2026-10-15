@@ -599,7 +599,11 @@ export class CashController {
   @RequireTerminal()
   @Permit("cash:write")
   async open(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    const { openingNote, managerPin, ...data } = parse(
+    const {
+      openingNote,
+      managerPin: _managerPin,
+      ...data
+    } = parse(
       z.object({
         openingAmount: amount,
         registerId: z.string().min(1).max(80).default("terminal-1"),
@@ -615,7 +619,7 @@ export class CashController {
     if (actor.terminalId) data.registerId = actor.terminalId;
     // D-03: el fondo que se declara al abrir no puede ser menor que lo que el
     // último cierre de este equipo dejó en la gaveta sin que quede explicado.
-    // Menor exige nota y, a quien no gestiona ventas, el PIN de un gerente; la
+    // Menor exige solo una nota (sin PIN, orden de la dueña 15-oct); la
     // diferencia queda en la bitácora. Igual o mayor abre como siempre.
     let shortfall: {
       suggested: number;
@@ -635,34 +639,10 @@ export class CashController {
         bad(
           `El fondo es menor que lo dejado en el último cierre (RD$ ${formatAmount(suggestion.amount)}). Agrega una nota que explique la diferencia.`,
         );
-      let approvedBy: string | null = null;
-      if (!can(actor.permissions, "sale:manage")) {
-        if (!managerPin)
-          bad(
-            "Abrir con un fondo menor que lo dejado en el último cierre requiere el PIN de un gerente.",
-          );
-        const managers = await this.db.user.findMany({
-          where: { active: true, branchId: actor.branchId },
-          include: { role: true },
-        });
-        approvedBy = await verifyPinAttempt(
-          this.db,
-          "approval:" + actor.id,
-          async () => {
-            for (const manager of managers.filter((m) =>
-              can(m.role.permissions, "sale:manage"),
-            ))
-              if (await compare(managerPin!, manager.pinHash))
-                return manager.id;
-            return null;
-          },
-          { pin: managerPin, actor },
-        );
-      }
       shortfall = {
         suggested: suggestion.amount,
         fromSessionId: suggestion.fromSessionId!,
-        approvedBy,
+        approvedBy: null,
       };
     }
     try {

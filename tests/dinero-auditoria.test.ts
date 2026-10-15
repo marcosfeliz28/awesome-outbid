@@ -295,14 +295,8 @@ describe("Auditoría 01 · dinero", () => {
       openingAmount: 0,
     });
     expect(bare.status).toBe(400);
-    const noPin = await request("/cash-sessions/open", c.token, {
-      openingAmount: 0,
-      openingNote: "El fondo se entregó a la dueña",
-    });
-    expect(noPin.status).toBe(400);
     const opened = await open(c, 0, {
       openingNote: "El fondo se entregó a la dueña",
-      managerPin: MANAGER_PIN,
     });
     const log = await db.auditLog.findFirst({
       where: { action: "opening_difference", entityId: opened.id },
