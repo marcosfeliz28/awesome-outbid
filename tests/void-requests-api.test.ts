@@ -706,15 +706,20 @@ describe("conciliación de transferencias · API real", () => {
     ).not.toContain("costTotal");
     const day = new Intl.DateTimeFormat("en-CA", {
       timeZone: "America/Santo_Domingo",
-    }).format(new Date());
+    }).format(new Date(listed.find((row: any) => row.id === firstId).date));
     expect(
       (await ok(path + "?date=" + day, owner.token)).some(
         (row: any) => row.id === firstId,
       ),
     ).toBe(true);
-    expect((await request(path + "?date=2026-02-31", owner.token)).status).toBe(
-      400,
-    );
+    expect(
+      (
+        await request(
+          path + "?date=" + new Date().getUTCFullYear() + "-02-31",
+          owner.token,
+        )
+      ).status,
+    ).toBe(400);
     await db.sale.update({
       where: { id: second.id },
       data: { branchId: "qa-otra-" + tag },

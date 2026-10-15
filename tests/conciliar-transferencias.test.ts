@@ -19,10 +19,14 @@ const actor = {
 
 describe("conciliación de transferencias", () => {
   it("lee solo pendientes de la sucursal con fecha dominicana y campos necesarios", async () => {
+    const day = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santo_Domingo",
+    }).format(new Date());
+    const paymentDate = new Date(day + "T14:00:00Z");
     const findMany = vi.fn().mockResolvedValue([
       {
         id: "pago-1",
-        createdAt: new Date("2026-10-15T14:00:00Z"),
+        createdAt: paymentDate,
         amount: "1250.50",
         bank: "Banco BHD",
         reference: "ABC-1",
@@ -40,9 +44,7 @@ describe("conciliación de transferencias", () => {
       .mockResolvedValue([{ id: "cajera-1", name: "Cajera Uno" }]);
     const db = { payment: { findMany }, user: { findMany: users } };
     const controller = new SalesController(db as never);
-    const rows = await controller.pendingTransfers(actor, {
-      date: "2026-10-15",
-    });
+    const rows = await controller.pendingTransfers(actor, { date: day });
     expect(Reflect.getMetadata("permission", controller.pendingTransfers)).toBe(
       "sale:manage",
     );
@@ -53,8 +55,8 @@ describe("conciliación de transferencias", () => {
           status: "pending_verification",
           sale: { branchId: "sucursal-uno" },
           createdAt: {
-            gte: new Date("2026-10-15T00:00:00-04:00"),
-            lte: new Date("2026-10-15T23:59:59.999-04:00"),
+            gte: new Date(day + "T00:00:00-04:00"),
+            lte: new Date(day + "T23:59:59.999-04:00"),
           },
         },
       }),
@@ -62,7 +64,7 @@ describe("conciliación de transferencias", () => {
     expect(rows).toEqual([
       {
         id: "pago-1",
-        date: "2026-10-15T14:00:00.000Z",
+        date: paymentDate.toISOString(),
         invoice: "FS-1",
         customer: "Cliente de prueba",
         amount: "1250.50",
@@ -78,7 +80,9 @@ describe("conciliación de transferencias", () => {
     const findMany = vi.fn();
     const controller = new SalesController({ payment: { findMany } } as never);
     await expect(
-      controller.pendingTransfers(actor, { date: "2026-02-31" }),
+      controller.pendingTransfers(actor, {
+        date: new Date().getUTCFullYear() + "-02-31",
+      }),
     ).rejects.toThrow("Fecha inválida");
     expect(findMany).not.toHaveBeenCalled();
   });
@@ -91,7 +95,7 @@ describe("conciliación de transferencias", () => {
     const rows = [
       {
         id: "1",
-        date: "2026-10-15T14:00:00Z",
+        date: new Date().toISOString(),
         invoice: "FS-1",
         customer: '=HYPERLINK("x")',
         amount: "0.10",
@@ -101,7 +105,7 @@ describe("conciliación de transferencias", () => {
       },
       {
         id: "2",
-        date: "2026-10-15T14:01:00Z",
+        date: new Date().toISOString(),
         invoice: "FS-2",
         customer: "B",
         amount: "0.20",
