@@ -30,6 +30,63 @@ import { formatMoney, can, weekStart } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 
+const dayBefore = (date: string) =>
+  new Date(Date.parse(date + "T12:00:00Z") - 86400000)
+    .toISOString()
+    .slice(0, 10);
+
+function DayFigures({ date, title }: { date: string; title: string }) {
+  const user = useStore((s) => s.user)!;
+  const showProfit = can(user.permissions, "profit:read");
+  const query = useQuery({
+    queryKey: ["dashboard-day", date],
+    queryFn: () => api("/dashboard/summary?from=" + date + "&to=" + date),
+    enabled: can(user.permissions, "reports:read"),
+  });
+  const data = query.data;
+  const revenue = Number(data?.revenue ?? 0),
+    cost = Number(data?.costTotal ?? 0);
+  return (
+    <div className="day-figures">
+      <span>{title}</span>
+      <strong>{formatMoney(revenue)}</strong>
+      <small>{data?.invoices ?? 0} facturas</small>
+      {showProfit && (
+        <>
+          <small>Costo {formatMoney(cost)}</small>
+          <small>Ganancia (venta − costo) {formatMoney(revenue - cost)}</small>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DayCard() {
+  const to = today(),
+    yesterday = dayBefore(to);
+  const [day, setDay] = useState(yesterday);
+  return (
+    <section className="panel day-card" aria-label="Ventas por día">
+      <div className="day-card-row">
+        <DayFigures date={yesterday} title="Ayer" />
+        <DayFigures date={to} title="Hoy" />
+        <div className="day-figures">
+          <label>
+            Buscar otro día
+            <input
+              type="date"
+              value={day}
+              max={to}
+              onChange={(e) => e.target.value && setDay(e.target.value)}
+            />
+          </label>
+          <DayFigures date={day} title={day.split("-").reverse().join("/")} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function Dashboard({ go }: { go: (page: string) => void }) {
   const user = useStore((s) => s.user)!;
   const [period, setPeriod] = useState("month");
@@ -269,6 +326,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             </div>
           </div>
         </div>
+        <DayCard />
         <div className="kpi-grid">
           {metric.map((m) => (
             <article className="kpi-card" key={m.label}>

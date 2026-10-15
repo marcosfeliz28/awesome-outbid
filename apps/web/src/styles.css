@@ -5906,3 +5906,26 @@ td strong {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.day-card-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+}
+.day-figures {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.day-figures strong {
+  font-size: 1.5rem;
+}
+.day-figures small {
+  color: var(--muted, #64748b);
+}
+.day-figures label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
