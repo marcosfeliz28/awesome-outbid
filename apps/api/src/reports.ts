@@ -547,12 +547,12 @@ export class ReportsController {
     const since = utc(new Date(`${year}-01-01T00:00:00-04:00`));
     const until = utc(new Date(`${year}-12-31T23:59:59.999-04:00`));
     const month = Prisma.sql`EXTRACT(MONTH FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int`;
-    const [sales, returns]: any[][] = await Promise.all([
+    const [sales, returns] = (await Promise.all([
       this.db
         .$queryRaw`SELECT ${month} AS m, COUNT(*)::int AS invoices, SUM(total) AS revenue, SUM("costTotal") AS cost FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY m`,
       this.db
         .$queryRaw`SELECT ${month} AS m, SUM(total) AS revenue, SUM("costTotal") AS cost FROM "SaleReturn" WHERE "branchId"=${actor.branchId} AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY m`,
-    ]);
+    ])) as any[][];
     const months = Array.from({ length: 12 }, (_, i) => {
       const sold = sales.find((r) => r.m === i + 1);
       const back = returns.find((r) => r.m === i + 1);
@@ -595,14 +595,14 @@ export class ReportsController {
       until = utc(range.lte);
     const line = Prisma.sql`i."lineTotal"*(1-i."returnedQty"/i.qty)`;
     const units = Prisma.sql`(i.qty-i."returnedQty")`;
-    const [categories, top, count]: any[][] = await Promise.all([
+    const [categories, top, count] = (await Promise.all([
       this.db
         .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
       this.db
         .$queryRaw`SELECT p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.name, v.sku HAVING SUM(${units}) > 0 ORDER BY units DESC, revenue DESC LIMIT 10`,
       this.db
         .$queryRaw`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until}`,
-    ]);
+    ])) as any[][];
     // Días del período hasta hoy: el promedio diario no se diluye con días
     // que todavía no llegan.
     const last = new Date(Math.min(+range.lte, Date.now()));
