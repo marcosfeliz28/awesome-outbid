@@ -206,7 +206,7 @@ test("Solicitud de anulación: cajera solicita y administración aprueba o recha
       ownerPage.getByRole("region", {
         name: "Solicitudes de anulación pendientes",
       }),
-    ).toContainText(/solicitudes? de anulación pendientes?/);
+    ).toContainText(/solicitud(?:es)? de anulación pendiente(?:s)?/);
     await checkViewport(ownerPage);
     const firstRow = ownerPage
       .locator(".void-request-dashboard-row")
