@@ -2121,6 +2121,91 @@ export class SalesController {
     }
     return { ok: true };
   }
+  @Get("payments/pending-transfers")
+  @Permit("sale:manage")
+  async pendingTransfers(
+    @CurrentUser() actor: Actor,
+    @Query() query: Record<string, string>,
+  ) {
+    const { date } = parse(
+      z.object({
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+      }),
+      query,
+    );
+    let createdAt: { gte: Date; lte: Date } | undefined;
+    if (date) {
+      const gte = new Date(date + "T00:00:00-04:00");
+      const lte = new Date(date + "T23:59:59.999-04:00");
+      if (
+        !Number.isFinite(+gte) ||
+        gte.toLocaleDateString("en-CA", { timeZone: BUSINESS_TIME_ZONE }) !==
+          date
+      )
+        bad("Fecha inválida.");
+      createdAt = { gte, lte };
+    }
+    const payments = await this.db.payment.findMany({
+      where: {
+        method: "transfer",
+        status: "pending_verification",
+        sale: { branchId: actor.branchId },
+        ...(createdAt ? { createdAt } : {}),
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        amount: true,
+        bank: true,
+        reference: true,
+        receivedById: true,
+        cashSession: { select: { userId: true } },
+        sale: {
+          select: {
+            number: true,
+            sellerId: true,
+            customer: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    const cashierIds = [
+      ...new Set(
+        payments.map(
+          (payment) =>
+            payment.cashSession?.userId ??
+            payment.receivedById ??
+            payment.sale.sellerId,
+        ),
+      ),
+    ];
+    const cashiers = cashierIds.length
+      ? await this.db.user.findMany({
+          where: { id: { in: cashierIds }, branchId: actor.branchId },
+          select: { id: true, name: true },
+        })
+      : [];
+    const names = new Map(cashiers.map((user) => [user.id, user.name]));
+    return payments.map((payment) => ({
+      id: payment.id,
+      date: payment.createdAt.toISOString(),
+      invoice: payment.sale.number,
+      customer: payment.sale.customer?.name ?? null,
+      amount: String(payment.amount),
+      bank: payment.bank,
+      reference: payment.reference,
+      cashier:
+        names.get(
+          payment.cashSession?.userId ??
+            payment.receivedById ??
+            payment.sale.sellerId,
+        ) ?? null,
+    }));
+  }
   @Post("payments/:id/verify")
   @RequireTerminal()
   @Permit("*")

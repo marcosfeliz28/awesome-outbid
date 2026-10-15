@@ -5,6 +5,7 @@ export default defineConfig({
     testTimeout: 30000,
     include: [
       "tests/customer-display.test.ts",
+      "tests/conciliar-transferencias.test.ts",
       "tests/credit-allocation.test.ts",
       "tests/income-day.test.ts",
       "tests/credit-reasons.test.ts",
