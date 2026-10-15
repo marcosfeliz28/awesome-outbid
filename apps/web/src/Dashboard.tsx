@@ -33,17 +33,20 @@ import { QueryState, today, toast } from "./helpers";
 export function Dashboard({ go }: { go: (page: string) => void }) {
   const user = useStore((s) => s.user)!;
   const [period, setPeriod] = useState("month");
+  const [day, setDay] = useState(today());
   const [voidToApprove, setVoidToApprove] = useState<any>(null);
   const [voidBusy, setVoidBusy] = useState(false);
   const [voidError, setVoidError] = useState("");
   const queryClient = useQueryClient();
-  const to = today(),
+  const to = period === "day" ? day : today(),
     from =
       period === "today"
         ? to
-        : period === "week"
-          ? weekStart()
-          : to.slice(0, 8) + "01";
+        : period === "day"
+          ? day
+          : period === "week"
+            ? weekStart()
+            : to.slice(0, 8) + "01";
   const query = useQuery({
     queryKey: ["dashboard", from, to],
     queryFn: () => api("/dashboard/summary?from=" + from + "&to=" + to),
@@ -113,7 +116,17 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             <option value="month">Este mes</option>
             <option value="week">Últimos 7 días</option>
             <option value="today">Hoy</option>
+            <option value="day">Otro día…</option>
           </select>
+          {period === "day" && (
+            <input
+              type="date"
+              aria-label="Día del resumen"
+              value={day}
+              max={today()}
+              onChange={(e) => e.target.value && setDay(e.target.value)}
+            />
+          )}
           <Button
             variant="secondary"
             onClick={() =>
