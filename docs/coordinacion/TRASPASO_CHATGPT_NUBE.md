@@ -83,6 +83,16 @@ Orden: API primero, esperar «Live», revisar migraciones aplicadas y `/api/heal
 - **Abiertos:** caja de Lizbeth Peguero (CCB5) abierta; Computadora 576E por aprobar; contraseña de Farianelis; Chaleco con Brasier XS/L por preguntar a Génesis; 9 productos con margen bajo (sin cambiar precios); WhatsApp (3ab) por decidir número y costo; lote 6 de publicidad; cuenta de envíos de Addison (3ac); impresora térmica de la laptop de Farianelis (ya imprime).
 - **No empieces** código del Camino A ni del B sin permiso escrito de la dueña.
 
-## 9. Primer mensaje que debes mandarle
+## 9. Claude sigue aquí: seguimiento y acceso (orden de la dueña, 15-oct)
+
+Orden de la dueña: Claude tiene acceso a todo y da seguimiento a lo que hacen ChatGPT NUBE y ChatGPT PC. La dueña asiste a Claude como siempre (fotos, dictado, órdenes).
+
+- **Claude lee** el repositorio y sus ramas, el CI, los logs y el sistema real con su usuario `claude` (administrador). Revisa lo que entregues y lo verifica contra el sistema.
+- **Tu trabajo debe ser visible para Claude sin que la dueña tenga que pegarlo**: sube siempre tu rama a GitHub y deja el resultado por escrito en `docs/coordinacion/RESULTADOS_CHATGPT.md` (rama `nexora-chatgpt-nube` o `nexora-chatgpt-pc`; una sección con fecha por entrega: qué hiciste, commit, qué pasó/falló con el texto exacto del error, qué falta). Sin secretos.
+- **ChatGPT PC** corre las pruebas con PostgreSQL que Claude no puede correr en su entorno (`pnpm check`, integración, Playwright) y reporta cuáles pasan y cuáles fallan, sin cambiar código salvo que se le pida.
+- **Quién hace qué si hay choque:** la dueña decide; Claude integra y revisa; los demás ejecutan. Ninguno pisa la rama de otro.
+- **Antes de dejar de estar disponible**, Claude actualiza este documento (§8) con el estado real.
+
+## 10. Primer mensaje que debes mandarle
 
 Tres líneas: qué leíste, qué puedes hacer ya (según §0) y qué te falta que ella te dé. Nada más.
