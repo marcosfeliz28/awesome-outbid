@@ -63,6 +63,7 @@ import { inactivityWaits } from "./cartDraftPolicy";
 import { keepDraftThrough } from "./cartDraft";
 import { Dashboard } from "./Dashboard";
 import { VoidRequests } from "./VoidRequests";
+import { TransferReconciliation } from "./TransferReconciliation";
 import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import {
@@ -204,6 +205,12 @@ const navigation = [
     label: "Solicitudes de anulación",
     icon: Bell,
     permission: "sale:write",
+  },
+  {
+    id: "transfer-reconciliation",
+    label: "Conciliar transferencias",
+    icon: Wallet,
+    permission: "*",
   },
   {
     id: "products",
@@ -856,6 +863,7 @@ function Shell() {
     ...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {}),
     sales: <SalesHistory />,
     "void-requests": <VoidRequests />,
+    "transfer-reconciliation": <TransferReconciliation />,
     merchandise: <Merchandise />,
     incentives: <IncentivesPage />,
   };
