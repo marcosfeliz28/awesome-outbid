@@ -46,3 +46,14 @@ En `Sale`: `courierFee` Decimal(12,2) default 0 con CHECK `>= 0`; `courierName` 
 ## 7. Entrega
 
 Cada asistente sube su rama y deja una sección con fecha en `RESULTADOS_CHATGPT.md` (qué hizo, commit, pruebas con el texto exacto de cualquier fallo, qué falta). Si no tiene escritura en GitHub, entrega un bundle a la dueña. Claude revisa, integra, espera los 3 CI en verde y despliega.
+
+## 8. Fase 2 (orden de la dueña, 15-oct): estadística y pago por período
+
+Sobre lo ya construido (campo Envío, pantalla «Envíos del mensajero», conciliación), agrega:
+
+1. **Resumen por período** en «Envíos del mensajero»: selector **Semanal / Quincenal / Mensual** (quincena = 1–15 y 16–fin de mes, hora de Santo Domingo) con una fila por período: **cantidad de envíos (facturas)**, **valor de las facturas entregadas**, **total de envíos RD$**, **promedio por envío**, **pagado** y **pendiente**. Con totales abajo.
+2. **Por mensajero** (hoy solo «Addison», pero con el nombre ya guardado en la venta): mismo resumen filtrable por nombre.
+3. **Estadística**: envío promedio, el envío más frecuente (100/250/300/400/450) y cuántos de cada uno, y los días con más envíos. Todo calculado en cada consulta (sin tablas nuevas si se puede).
+4. **Pagar un período completo**: botón «Seleccionar todo el período» que marca todos los pendientes del período y usa el pago existente (`POST /courier/payouts`, idempotente). Nada nuevo en caja.
+5. **Exportar** el resumen y el detalle a CSV (con protección contra fórmulas, como ya se hace).
+6. Solo administración; sin tocar ventas, ganancia, cuadre ni dashboard. Pruebas: unidad (agrupación semanal/quincenal/mensual, quincena en el límite del día 15/16 y del fin de mes, cambio de mes y de año), API (PostgreSQL) y una e2e. Resultados en `RESULTADOS_CHATGPT.md`.
