@@ -613,9 +613,25 @@ describe("Auditoría 01 · dinero", () => {
     const adjusted = await request("/inventory/adjustments", w.token, {
       variantId: v,
       qty: -20,
-      reason: "Conteo de almacén",
+      reason: "Faltante de almacén",
     });
     expect(adjusted.status).toBeLessThan(300);
+    // Una corrección de conteo de la dueña no es merma del mes: se muestra
+    // aparte y no baja la ganancia neta.
+    const midway = await ok("/dashboard/summary" + range, admin);
+    const counted = await request("/inventory/adjustments", w.token, {
+      variantId: v,
+      qty: -5,
+      reason: "Conteo inicial de la dueña",
+    });
+    expect(counted.status).toBeLessThan(300);
+    const afterCount = await ok("/dashboard/summary" + range, admin);
+    expect(afterCount.inventoryLoss).toBe(midway.inventoryLoss);
+    expect(afterCount.netProfit).toBe(midway.netProfit);
+    expect(afterCount.countCorrections - midway.countCorrections).toBeCloseTo(
+      3000,
+      2,
+    );
     // Salida de mercancía por merma (1 u) y devolución a proveedor (1 u): N-1,
     // ambas cuentan hasta que el proveedor acredite.
     const supplier = (await ok("/suppliers", admin))[0];
@@ -651,7 +667,7 @@ describe("Auditoría 01 · dinero", () => {
     await ok("/inventory/adjustments", w.token, {
       variantId: v,
       qty: -1,
-      reason: "Conteo de almacén",
+      reason: "Faltante de almacén",
     });
     expect((await alert(loss.key))?.status).toBe("new");
   });

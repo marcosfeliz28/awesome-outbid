@@ -36,7 +36,15 @@ const dayBefore = (date: string) =>
     .toISOString()
     .slice(0, 10);
 
-function DayFigures({ date, title }: { date: string; title: string }) {
+function DayFigures({
+  date,
+  title,
+  tone,
+}: {
+  date: string;
+  title: string;
+  tone: "yesterday" | "today" | "other";
+}) {
   const user = useStore((s) => s.user)!;
   const showProfit = can(user.permissions, "profit:read");
   const query = useQuery({
@@ -48,14 +56,16 @@ function DayFigures({ date, title }: { date: string; title: string }) {
   const revenue = Number(data?.revenue ?? 0),
     cost = Number(data?.costTotal ?? 0);
   return (
-    <div className="day-figures">
-      <span>{title}</span>
+    <div className={"day-figures day-" + tone}>
+      <span className="day-title">{title}</span>
       <strong>{formatMoney(revenue)}</strong>
       <small>{data?.invoices ?? 0} facturas</small>
       {showProfit && (
         <>
           <small>Costo {formatMoney(cost)}</small>
-          <small>Ganancia (venta − costo) {formatMoney(revenue - cost)}</small>
+          <small className="day-profit">
+            Ganancia (venta − costo) <b>{formatMoney(revenue - cost)}</b>
+          </small>
         </>
       )}
     </div>
@@ -69,9 +79,9 @@ function DayCard() {
   return (
     <section className="panel day-card" aria-label="Ventas por día">
       <div className="day-card-row">
-        <DayFigures date={yesterday} title="Ayer" />
-        <DayFigures date={to} title="Hoy" />
-        <div className="day-figures">
+        <DayFigures date={yesterday} title="Ayer" tone="yesterday" />
+        <DayFigures date={to} title="Hoy" tone="today" />
+        <div className="day-figures day-other">
           <label>
             Buscar otro día
             <input
@@ -81,7 +91,11 @@ function DayCard() {
               onChange={(e) => e.target.value && setDay(e.target.value)}
             />
           </label>
-          <DayFigures date={day} title={day.split("-").reverse().join("/")} />
+          <DayFigures
+            date={day}
+            title={day.split("-").reverse().join("/")}
+            tone="other"
+          />
         </div>
       </div>
     </section>
@@ -657,6 +671,12 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               <span>Mermas, ajustes y devoluciones a proveedor (a costo)</span>
               <strong>{formatMoney(data?.inventoryLoss ?? 0)}</strong>
             </div>
+            {!!data?.countCorrections && (
+              <div>
+                <span>Correcciones del conteo de inventario (no restan)</span>
+                <strong>{formatMoney(data.countCorrections)}</strong>
+              </div>
+            )}
             <div>
               <span>Ganancia neta</span>
               <strong

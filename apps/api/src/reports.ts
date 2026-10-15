@@ -3,7 +3,11 @@ import type { Response } from "express";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { Prisma } from "@prisma/client";
-import { INVENTORY_LOSS_SQL, SUPPLIER_RETURN_SQL } from "./inventory";
+import {
+  COUNT_CORRECTION_SQL,
+  INVENTORY_LOSS_SQL,
+  SUPPLIER_RETURN_SQL,
+} from "./inventory";
 import {
   businessDate,
   expiryDays,
@@ -378,7 +382,7 @@ export class ReportsController {
       // M-5: mermas, ajustes, conteos y salidas de mercancía a costo.
       this.db.$queryRaw<
         any[]
-      >`SELECT COALESCE(SUM(-m.qty * m."unitCost"), 0) AS loss, COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE ${Prisma.raw(SUPPLIER_RETURN_SQL)}), 0) AS "supplierReturns" FROM "InventoryMovement" m WHERE m."branchId"=${actor.branchId} AND m."createdAt">=${since} AND m."createdAt"<=${until} AND ${Prisma.raw(INVENTORY_LOSS_SQL)}`,
+      >`SELECT COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE NOT (${Prisma.raw(COUNT_CORRECTION_SQL)})), 0) AS loss, COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE ${Prisma.raw(COUNT_CORRECTION_SQL)}), 0) AS "countCorrections", COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE ${Prisma.raw(SUPPLIER_RETURN_SQL)}), 0) AS "supplierReturns" FROM "InventoryMovement" m WHERE m."branchId"=${actor.branchId} AND m."createdAt">=${since} AND m."createdAt"<=${until} AND ${Prisma.raw(INVENTORY_LOSS_SQL)}`,
     ]);
     // D-05: los desgloses descuentan las mismas devoluciones que «revenue».
     const netOf = <T>(
@@ -451,6 +455,8 @@ export class ReportsController {
       expense = Number(expenses._sum.amount ?? 0),
       inventoryLoss = money(inventoryLossRows?.[0]?.loss ?? 0),
       supplierReturns = money(inventoryLossRows?.[0]?.supplierReturns ?? 0),
+      // Correcciones del conteo inicial del inventario: no son pérdida del mes.
+      countCorrections = money(inventoryLossRows?.[0]?.countCorrections ?? 0),
       fees = money(
         payments.reduce(
           (a, p) => a.plus(p._sum.feeAmount ?? 0),
@@ -491,6 +497,7 @@ export class ReportsController {
         inventoryLoss,
         // N-1: parte de lo anterior que salió como devolución a proveedor.
         supplierReturns,
+        countCorrections,
         netProfit: money(
           d(netProfit(net, cost, expense, fees)).minus(inventoryLoss),
         ),
