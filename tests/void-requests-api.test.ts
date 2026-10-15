@@ -14,6 +14,7 @@ requireApi("dotenv").config({
   path: fileURLToPath(new URL("../.env", import.meta.url)),
   quiet: true,
 });
+
 const { PrismaClient } = requireApi("@prisma/client");
 const db = new PrismaClient();
 
@@ -128,7 +129,11 @@ async function openCash(person: Person, openingAmount = 1000) {
   });
 }
 
-async function sale(person: Person, method: "cash" | "card" = "card", qty = 1) {
+async function sale(
+  person: Person,
+  method: "cash" | "card" | "transfer" = "card",
+  qty = 1,
+) {
   return ok("/sales", person.token, {
     offlineUuid: randomUUID(),
     customerId,
@@ -145,6 +150,9 @@ async function sale(person: Person, method: "cash" | "card" = "card", qty = 1) {
               approvalCode: "QA4242",
               cardType: "credit",
             }
+          : {}),
+        ...(method === "transfer"
+          ? { bank: "BHD", reference: "QA-" + randomUUID().slice(0, 8) }
           : {}),
       },
     ],
@@ -669,5 +677,65 @@ describe("3p · solicitud de anulación", () => {
         )
       ).status,
     ).toBe(404);
+  });
+});
+
+describe("conciliación de transferencias · API real", () => {
+  it("solo gerencia lee pendientes de su sucursal y desaparecen al verificar o rechazar", async () => {
+    const first = await sale(seller, "transfer");
+    const second = await sale(otherSeller, "transfer");
+    const firstId = first.payments[0].id;
+    const secondId = second.payments[0].id;
+    const path = "/payments/pending-transfers";
+    expect((await request(path, seller.token)).status).toBe(403);
+    expect((await request(path, "")).status).toBe(401);
+    const listed = await ok(path, owner.token);
+    expect(listed.find((row: any) => row.id === firstId)).toMatchObject({
+      invoice: first.number,
+      customer: "Cliente QA anulación " + tag,
+      amount: "100",
+      bank: "BHD",
+      cashier: seller.name,
+    });
+    expect(listed.find((row: any) => row.id === secondId)).toMatchObject({
+      invoice: second.number,
+      cashier: otherSeller.name,
+    });
+    expect(
+      JSON.stringify(listed.find((row: any) => row.id === firstId)),
+    ).not.toContain("costTotal");
+    const day = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santo_Domingo",
+    }).format(new Date());
+    expect(
+      (await ok(path + "?date=" + day, owner.token)).some(
+        (row: any) => row.id === firstId,
+      ),
+    ).toBe(true);
+    expect((await request(path + "?date=2026-02-31", owner.token)).status).toBe(
+      400,
+    );
+    await db.sale.update({
+      where: { id: second.id },
+      data: { branchId: "qa-otra-" + tag },
+    });
+    try {
+      expect(
+        (await ok(path, owner.token)).some((row: any) => row.id === secondId),
+      ).toBe(false);
+    } finally {
+      await db.sale.update({
+        where: { id: second.id },
+        data: { branchId: "main" },
+      });
+    }
+    await ok("/payments/" + firstId + "/verify", owner.token, {});
+    await ok("/payments/" + secondId + "/reject", owner.token, {
+      reason: "No llegó al banco en la prueba.",
+    });
+    const after = await ok(path, owner.token);
+    expect(
+      after.some((row: any) => row.id === firstId || row.id === secondId),
+    ).toBe(false);
   });
 });
