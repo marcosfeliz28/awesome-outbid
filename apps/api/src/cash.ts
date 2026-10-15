@@ -41,7 +41,7 @@ import {
 } from "./common";
 import { cashLock, terminalName, terminalNames } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
-import { verifyPinAttempt } from "./security";
+import { managerPinApproval, verifyPinAttempt } from "./security";
 import { notify } from "./notifications";
 import { cashDifferenceMessage } from "./alerts";
 // Aparte del import anterior de ./sales para no chocar al fusionar ramas.
@@ -930,12 +930,23 @@ export class CashController {
     // en 0. Todo vale exige una nota; el de quien no gestiona ventas, además,
     // el PIN de un gerente (como las salidas sobre el tope, D-04). Queda en la
     // bitácora y como alerta alta que sólo una persona resuelve.
-    const voucherApprovedBy: string | null = null;
+    let voucherApprovedBy: string | null = null;
     if (d(input.vouchers).gt(0)) {
       if (!input.notes.trim())
         bad(
           "Explica en las notas del cierre qué comprobantes forman el vale de caja.",
         );
+      if (!can(actor.permissions, "sale:manage")) {
+        if (!input.managerPin)
+          bad(
+            "Cerrar con un vale de caja requiere el PIN de un gerente. Si fue una salida de efectivo, regístrala en «Salida» antes de cerrar.",
+          );
+        voucherApprovedBy = await managerPinApproval(
+          this.db,
+          actor,
+          input.managerPin!,
+        );
+      }
     }
     const closed = await moneyDb(this.db).$transaction(async (tx) => {
       const session = await cashLock(
@@ -973,13 +984,23 @@ export class CashController {
       const differences = closeDifferences(data, expected);
       const differenceLimit = Number(settings?.cashDifferenceLimit ?? 100);
       // Tarjeta = lo que imprimió el verifón. Si la cajera declara un total
-      // distinto del sistema cierra igual, pero con una nota que lo explique
-      // (sin PIN de gerente, orden de la dueña 15-oct); la diferencia queda
-      // en el cuadre.
-      if (Number(differences.card) !== 0 && !input.notes.trim())
-        bad(
-          "El total de tarjeta no coincide con el sistema. Revisa el voucher del verifón y explica la diferencia en las notas del cierre.",
+      // distinto del sistema, no cierra sola: necesita el PIN de un gerente
+      // (dueña, 14-oct). Así nadie «cuadra» ventas antes del cierre.
+      if (
+        Number(differences.card) !== 0 &&
+        !can(actor.permissions, "sale:manage")
+      ) {
+        if (!input.managerPin)
+          bad(
+            "El total de tarjeta no coincide con el sistema. Revisa el voucher del verifón; para cerrar con esta diferencia se necesita el PIN de un gerente.",
+          );
+        const approver = await managerPinApproval(
+          this.db,
+          actor,
+          input.managerPin!,
         );
+        (data.closeDetails as any).cardApprovedBy = approver;
+      }
       if (
         cashCloseRequiresNote(actor, differences, differenceLimit) &&
         !input.notes.trim()

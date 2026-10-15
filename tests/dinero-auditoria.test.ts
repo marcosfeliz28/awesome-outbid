@@ -221,13 +221,20 @@ afterAll(async () => {
 });
 
 describe("Auditoría 01 · dinero", () => {
-  it("A-1: un vale de caja al cerrar exige nota (sin PIN) y deja una alerta", async () => {
+  it("A-1: un vale de caja al cerrar exige nota y PIN de gerente y deja una alerta", async () => {
     const c = await person("seller", "a1", 1000);
     const v = await product(1100, 600, 10);
     await sell(c, v, 2, [{ method: "cash", amount: 2200 }]);
     // Escenario del informe: se lleva RD$ 3,000 y lo declara como vale.
     const bare = await close(c, { countedCash: 200, vouchers: 3000 });
     expect(bare.status).toBe(400);
+    const noPin = await close(c, {
+      countedCash: 200,
+      vouchers: 3000,
+      notes: "Vale de pago a mensajero",
+    });
+    expect(noPin.status).toBe(400);
+    expect(JSON.stringify(noPin.body)).toContain("PIN");
     const noNote = await close(c, {
       countedCash: 200,
       vouchers: 3000,
@@ -251,7 +258,7 @@ describe("Auditoría 01 · dinero", () => {
     const log = await db.auditLog.findFirst({
       where: { action: "close_vouchers", entityId: c.cash.id },
     });
-    expect((log.after as any).approvedBy).toBeNull();
+    expect((log.after as any).approvedBy).toBeTruthy();
     expect((log.after as any).vouchers).toBe(3000);
     // Quien gestiona ventas no necesita PIN, pero sí la nota, y queda alerta.
     const m = await person("manager", "a1m", 500);
