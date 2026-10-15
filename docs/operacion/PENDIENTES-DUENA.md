@@ -68,3 +68,11 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 **Sin tocar por estar por aclarar en la hoja:** True Match Warm 8 y Chaud 15 (el sistema tiene 22 en un solo producto); L.A. Girl HD Pro Conceal «tono sin identificar» 8; Airspun (ya hay 3); NARS M1.5 Vallauris (ya hay 1); Infallible Pro-Matte 104.4/104.5 (el sistema ya tiene 104.5 con 7).
 
 **En el sistema y no en la hoja (no se tocaron):** Full Wear Concealer 435 (1), Pro-Matte 102 (1).
+
+## 15-oct-2026 · Conteo de maquillaje, fase 4 (libreta de Lisbeth: bases, correctores, brochas y pinceles)
+
+- Aplicado en Tienda: Huda Latte 3→1; Moira 275N 2→1, 325N 2→1, 350W 4→3, 375N 5→4, 400W 2→1; Urban Decay 28 1→2; Huda Stick 110N 3→4; Macrilan B134 6→5, A23 10→12. Los demás renglones ya coincidían.
+- Productos nuevos sin precio ni costo (1683–1691): limpiador de brochas mediano (7), Macrilan B140 y A40, pinceles Riko 80018, Piccasso 722, Day Makeup 0118/0145/0146 y Ana Paula Marçal 06 (1 c/u, la hoja no traía cantidad).
+- **Regla de la dueña:** NO se pone en cero lo que no aparece en la hoja. Solo se modifica lo anotado.
+- **Cuando la dueña lo indique** (después de anotar todo y de cambiar precios): entregarle la lista de productos de Maquillaje que nadie mencionó ni modificó nunca, para que valide cuáles se quedan y cuáles se sacan.
+- Dudas abiertas: sets de brochas (Génesis rojo 11 vs 32 en sistema, Génesis azul/GM5, auto maquillaje BS/verde, White Angel, set de 4, Brochas Doble 7, Brocha de contorno 4, brocha negra individual 1); sin cantidad: Soft Focus 350, Simply Bella 313, Morphe M158, Ana Paula 02, Fearless B2; Too Faced Natural Beige (¿Born This Way?); base e.l.f. Light/Medium (3).
