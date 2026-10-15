@@ -53,3 +53,8 @@ Otros datos que faltan:
 - Hecho en el código: cada cierre de caja y cada solicitud de anulación manda un correo a **marcos.feliz@gmail.com** (con el cuadre y el enlace a Nexora POS). Ortografía confirmada por la dueña el 14-oct: «feliz», no «felix». El correo de la cuenta de Resend y `NOTIFY_EMAIL_TO` deben ser ese mismo.
 - Falta una sola cosa para activarlo: crear una cuenta gratis en resend.com con su correo, crear una clave de API y ponerla en Render (servicio API) como `RESEND_API_KEY`, más `NOTIFY_EMAIL_TO` con ese mismo correo. La clave no se escribe en chats ni en el repositorio.
 - Las cajeras ya no ven "Vale de caja" en el cierre (así no les pide PIN por error); las salidas de efectivo se registran como «Salida».
+
+## Créditos cobrados en efectivo (15-oct, orden de la dueña)
+- Cerrados por Claude en su caja administrativa, con el monto tomado de las fotos de WhatsApp (la dueña no sumó los billetes y pidió asumirlo correcto): FS-0000027 cielo 4,850; FS-0000028 marck gomez 2,300; FS-0000029 ROSMERY 3,900. Total 11,050. Caja cerrada, cuadre en 0.00, entregado a la dueña.
+- Regla nueva (en CI, por desplegar): cualquier cajera puede ver y cerrar créditos/contraentregas **en efectivo**, de cualquier día y de cualquier vendedora; el dinero entra a **su** caja y lo entrega al cerrar. Tarjeta y transferencia de un crédito las sigue registrando la administración.
+- Pendientes de crédito que quedan: FS-0000007, 008, 010, 011, 018 (Ginette Gómez 30,500), 025 (1,400 por verificar), 030 y 031.
