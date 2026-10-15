@@ -497,6 +497,8 @@ const CREDIT_STATUS: Record<string, { label: string; tone: any }> = {
 const ageText = (days: number) =>
   days <= 0 ? "hoy" : days === 1 ? "hace 1 día" : `hace ${days} días`;
 export function CodPending({ session }: { session: any }) {
+  const user = useStore((s) => s.user);
+  const isAdmin = can(user?.permissions ?? [], "*");
   const [view, setView] = useState<"sales" | "customers">("sales");
   const [state, setState] = useState<"pending" | "closed">("pending");
   const query = useQuery({
@@ -515,8 +517,10 @@ export function CodPending({ session }: { session: any }) {
             <Truck size={20} /> Créditos pendientes
           </h2>
           <p>
-            Ventas entregadas sin pago. Solo la administración las cobra: indica
-            por dónde pagó el cliente y cuánto entregó. Pueden ser pagos mixtos.
+            Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en
+            efectivo, de cualquier día: el dinero entra a su caja y lo entrega
+            al cerrar. La tarjeta y la transferencia las registra la
+            administración.
           </p>
         </div>
         <div
@@ -542,25 +546,27 @@ export function CodPending({ session }: { session: any }) {
           ))}
         </div>
       </div>
-      <div className="segmented" role="group" aria-label="Vista de créditos">
-        <button
-          type="button"
-          className={view === "sales" ? "active" : ""}
-          aria-pressed={view === "sales"}
-          onClick={() => setView("sales")}
-        >
-          Por venta
-        </button>
-        <button
-          type="button"
-          className={view === "customers" ? "active" : ""}
-          aria-pressed={view === "customers"}
-          onClick={() => setView("customers")}
-        >
-          Por persona
-        </button>
-      </div>
-      {view === "customers" ? (
+      {isAdmin && (
+        <div className="segmented" role="group" aria-label="Vista de créditos">
+          <button
+            type="button"
+            className={view === "sales" ? "active" : ""}
+            aria-pressed={view === "sales"}
+            onClick={() => setView("sales")}
+          >
+            Por venta
+          </button>
+          <button
+            type="button"
+            className={view === "customers" ? "active" : ""}
+            aria-pressed={view === "customers"}
+            onClick={() => setView("customers")}
+          >
+            Por persona
+          </button>
+        </div>
+      )}
+      {isAdmin && view === "customers" ? (
         <CreditAccounts session={session} />
       ) : (
         <>
@@ -833,9 +839,11 @@ function CodCollect({
   onClose: () => void;
 }) {
   const client = useQueryClient();
+  const user = useStore((s) => s.user);
+  const manager = can(user?.permissions ?? [], "sale:manage");
   const newLine = (
     amount: string,
-    method: CollectLine["method"] = session ? "cash" : "transfer",
+    method: CollectLine["method"] = session || !manager ? "cash" : "transfer",
   ) => ({
     key: crypto.randomUUID(),
     method,
@@ -942,8 +950,8 @@ function CodCollect({
                 <option value="cash" disabled={!session}>
                   Efectivo
                 </option>
-                <option value="card">Tarjeta</option>
-                <option value="transfer">Transferencia</option>
+                {manager && <option value="card">Tarjeta</option>}
+                {manager && <option value="transfer">Transferencia</option>}
               </select>
             </label>
             <label className="field">

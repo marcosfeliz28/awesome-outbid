@@ -1727,7 +1727,7 @@ export function Cash() {
         </div>
       )}
       <MyIncentives />
-      {can(user.permissions, "*") && <CodPending session={active} />}
+      {can(user.permissions, "sale:write") && <CodPending session={active} />}
       {!!pending.data?.length && (
         <section className="panel pending-panel">
           <div className="panel-heading">

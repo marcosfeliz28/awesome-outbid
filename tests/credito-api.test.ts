@@ -444,20 +444,30 @@ describe("W7 · venta a crédito sin pago", () => {
   });
 });
 
-describe("W7 · cobro de créditos solo para administración", () => {
-  it("cajera y gerente reciben 403 al listar y al cobrar", async () => {
+describe("W7 · cobro de créditos: la cajera solo en efectivo", () => {
+  it("la cajera ve los créditos y los cierra en efectivo en su caja; tarjeta y transferencia solo la administración", async () => {
     const s = (await sale(ana, 100, [{ method: "cod", amount: 100 }])).body;
-    for (const who of [ana.token, manager]) {
-      expect((await request("/cod/pending", who)).status).toBe(403);
-      const r = await request("/sales/" + s.id + "/credit-collections", who, {
+    expect((await request("/cod/pending", ana.token)).status).toBe(200);
+    const refused = await request(
+      "/sales/" + s.id + "/credit-collections",
+      ana.token,
+      {
         operationId: randomUUID(),
+        cashSessionId: ana.cash.id,
         lines: [line("transfer", 100)],
-      });
-      expect(r.status).toBe(403);
-    }
-    expect(
-      Number((await db.sale.findUnique({ where: { id: s.id } })).creditBalance),
-    ).toBe(100);
+      },
+    );
+    expect(refused.status).toBe(400);
+    const balance = async () =>
+      Number((await db.sale.findUnique({ where: { id: s.id } })).creditBalance);
+    expect(await balance()).toBe(100);
+    const before = await expectedOf(ana);
+    const paid = await collect(ana, s.id, [line("cash", 100)]);
+    expect(paid.status, JSON.stringify(paid.body)).toBeLessThan(300);
+    expect(paid.body.closed).toBe(true);
+    expect(await balance()).toBe(0);
+    // El efectivo cobrado entra a la caja de la cajera que lo recibió.
+    expect((await expectedOf(ana)).cash).toBe(before.cash + 100);
   });
 
   it("cobro mixto 50 % transferencia + 50 % efectivo: efectivo a la caja de quien cobra, idempotente, cierra al verificar", async () => {

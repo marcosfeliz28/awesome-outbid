@@ -3347,7 +3347,7 @@ export class SalesController {
   // Créditos y contraentregas pendientes: sólo la administración puede verlos
   // y registrar cómo entró el dinero.
   @Get("cod/pending")
-  @Permit("*")
+  @Permit("sale:write")
   async codPending(
     @CurrentUser() actor: Actor,
     @Query("state") stateParam?: string,
@@ -3509,13 +3509,22 @@ export class SalesController {
   // que repetir el envío devuelve los mismos pagos y no descuenta dos veces.
   @Post("sales/:id/credit-collections")
   @RequireTerminal()
-  @Permit("*")
+  @Permit("sale:write")
   async creditCollection(
     @Param("id") id: string,
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
     const data = parse(creditCollectionSchema, body);
+    // Las cajeras cierran créditos en efectivo (el dinero entra a su caja);
+    // tarjeta y transferencia las registra la administración (dueña, 15-oct).
+    if (
+      !can(actor.permissions, "sale:manage") &&
+      data.lines.some((l) => l.method !== "cash")
+    )
+      bad(
+        "Las cajeras solo cierran créditos en efectivo. La tarjeta y la transferencia las registra la administración.",
+      );
     const keys = data.lines.map((_, i) => lineKey(data.operationId, i));
     const rows = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))::text AS locked`;

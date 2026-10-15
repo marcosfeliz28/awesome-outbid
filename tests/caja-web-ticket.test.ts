@@ -257,7 +257,7 @@ describe("05-M8 y B3 · ticket con variante y textos sin nombres propios", () =>
   });
   it("el cobro no nombra personas fijas", () => {
     expect(pos).not.toMatch(/Marcos o Genesis/);
-    expect(pos).toContain("Sólo la administración podrá registrar después");
+    expect(pos).toContain("Después, cualquier cajera puede cobrarlo en");
   });
 });
 

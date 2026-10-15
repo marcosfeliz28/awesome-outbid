@@ -7385,12 +7385,13 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       await fixtureDb.variant.findUniqueOrThrow({ where: { id: p1.id } })
     ).stock;
     expect(Number(stockBefore) - Number(stockAfter)).toBe(1);
-    // Los cajeros despachan, pero sólo la administración ve y cobra la deuda.
+    // Los cajeros despachan y también ven y cierran en efectivo la deuda
+    // (dueña, 15-oct); la tarjeta y la transferencia las registra la administración.
     expect((await call("/cod/pending", undefined, cashier2.token)).status).toBe(
-      403,
+      200,
     );
     expect((await call("/cod/pending", undefined, managerToken)).status).toBe(
-      403,
+      200,
     );
     const pending = await must("/cod/pending", undefined, token);
     expect(pending.find((p: any) => p.saleId === sold.f.id)).toMatchObject({

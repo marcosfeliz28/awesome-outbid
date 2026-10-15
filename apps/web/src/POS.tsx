@@ -2270,8 +2270,8 @@ function Checkout({
                 <strong>{formatMoney(receipt.creditBalance)}</strong>
               </p>
               <small>
-                Venta registrada. La caja no recibió dinero por esa parte; un
-                administrador la cobra en Créditos pendientes.
+                Venta registrada. La caja no recibió dinero por esa parte; un se
+                cobra después en Créditos pendientes, en la pestaña Caja.
               </small>
             </div>
           )}
@@ -2512,8 +2512,9 @@ function Checkout({
         {method === "cod" && (
           <p className="cod-hint">
             Crédito / contraentrega: la mercancía sale ahora y el saldo queda a
-            nombre del cliente. Sólo la administración podrá registrar después
-            pagos parciales o completos por efectivo, tarjeta o transferencia.
+            nombre del cliente. Después, cualquier cajera puede cobrarlo en
+            efectivo desde Caja; la tarjeta y la transferencia las registra la
+            administración.
           </p>
         )}
         <label className="field">
