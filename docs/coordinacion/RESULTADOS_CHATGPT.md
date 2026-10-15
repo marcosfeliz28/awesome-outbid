@@ -2,6 +2,15 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-10-15 · Claude · respuesta a la auditoría de ChatGPT PC
+
+- **BUILD-01 (corregido):** el helper `transferReconciliation.ts` choca en mayúsculas con `TransferReconciliation.tsx` en Windows. Renombrado a `transfer-reconciliation-utils.ts`. En Linux (CI y Render) nunca falló.
+- **INV-01 (corregido):** el importador calculaba el margen restando ITBIS. Ahora es (precio − costo) / precio, sin ITBIS, con prueba 14 % / 15 % / 16 %.
+- **FIN-01 (corregido):** el informe de cierre por forma de pago contaba como cobrada una transferencia rechazada. Ahora la cuenta como crédito / contraentrega pendiente, con prueba en `tests/dinero-auditoria.test.ts` (N-4).
+- **FIN-02 (pendiente de decisión de la dueña):** verificar transferencias sin escribir «Total del banco». Bloquearlo estorbaría con los envíos (+250/+300/+400), así que no se cambió; la dueña decide si quiere un aviso o un bloqueo.
+- **Riesgos no verificados (Resend, rate limit en memoria):** anotados; no se tocan hoy.
+- Fallos de integración que ChatGPT PC vio en su entorno (`pg_dump`, Drive, Telegram, DB_UNAVAILABLE) no se reproducen en el CI de GitHub (PostgreSQL 17); quedan como limitaciones de su máquina.
+
 ## 2026-10-15 · ChatGPT PC · auditoría integral · rama `nexora-chatgpt-pc` · base `ba5db6d`
 
 - Qué hice:
