@@ -1059,8 +1059,10 @@ export function POS({ go }: { go: (page: string) => void }) {
                   alt=""
                 />
                 <div className="cart-item-detail">
-                  <strong>{i.product.name}</strong>
-                  <small>{attrLabel(i.variant.attributes)}</small>
+                  <strong title={i.product.name}>{i.product.name}</strong>
+                  <small title={attrLabel(i.variant.attributes)}>
+                    {attrLabel(i.variant.attributes)}
+                  </small>
                   <div className="cart-item-controls">
                     <div className="quantity-control">
                       <button

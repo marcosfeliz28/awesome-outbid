@@ -5307,8 +5307,14 @@ td strong {
   grid-column: 2;
   grid-row: 1;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* El nombre baja a una segunda línea en vez de cortarse: dos productos
+     parecidos (p. ej. «Micronized Creatine Flow…» y «…Powder») se distinguen. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere;
   line-height: 1.35;
 }
 .cart-item-detail small {
