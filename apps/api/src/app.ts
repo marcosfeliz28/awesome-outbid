@@ -17,6 +17,7 @@ import { CatalogController } from "./catalog";
 import { InventoryController } from "./inventory";
 import { WarehousesController } from "./warehouses";
 import { SalesController } from "./sales";
+import { CourierController } from "./courier";
 import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
@@ -74,6 +75,7 @@ export function createAppModule(secret: string) {
       InventoryController,
       WarehousesController,
       SalesController,
+      CourierController,
       AdminController,
       CashController,
       IncomeReportController,

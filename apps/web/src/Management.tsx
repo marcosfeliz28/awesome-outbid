@@ -52,6 +52,7 @@ import {
 } from "./helpers";
 import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
+import { CourierFeeEditor } from "./CourierFeeEditor";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
 import {
@@ -3185,6 +3186,33 @@ export function SalesHistory() {
       >
         {selected && (
           <>
+            {can(user.permissions, "sale:manage") && (
+              <div className="panel">
+                <h3>Envío del mensajero</h3>
+                <p>
+                  Separado del total de la factura y de la caja.{" "}
+                  {selected.courierPaidAt ? "Pagado." : "Pendiente de pago."}
+                </p>
+                {selected.status === "completed" && !selected.courierPaidAt ? (
+                  <CourierFeeEditor
+                    key={selected.id}
+                    saleId={selected.id}
+                    initialFee={String(selected.courierFee ?? 0)}
+                    initialName={selected.courierName}
+                    onSaved={(fee, name) => {
+                      setSelected({
+                        ...selected,
+                        courierFee: fee,
+                        courierName: name,
+                      });
+                      void client.invalidateQueries({ queryKey: ["sales"] });
+                    }}
+                  />
+                ) : (
+                  <p>Envío: {formatMoney(Number(selected.courierFee ?? 0))}</p>
+                )}
+              </div>
+            )}
             {can(user.permissions, "sale:manage") &&
               selected.returns?.map((r: any) => (
                 <Button

@@ -2,6 +2,15 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-10-15 · ChatGPT NUBE · `nexora-chatgpt-nube` · envíos del mensajero
+
+- **Qué hice:** migración aditiva `202610250001_courier_fee` (`courierFee`, mensajero y datos de pago en `Sale`, más pago idempotente y sus líneas); API con permiso `sale:manage` para editar/consultar y `*` para marcar pagado; pantallas en Ventas, Conciliar transferencias y Envíos del mensajero. El pago es solo registro: no mueve caja. La conciliación suma el envío una vez por factura y muestra el total esperado y la diferencia bancaria.
+- **Regresión previa:** `pnpm exec vitest run tests/courier-utils.test.ts` falló con `Cannot find module '../apps/web/src/courier-utils'`; luego 3/3 pasaron. `tests/conciliar-transferencias.test.ts` pasó 5/5, incluido el caso de transferencias divididas. La migración sobre PostgreSQL con venta ya existente pasó 1/1: total, costo e impuestos intactos, envío antiguo en cero y `CHECK` negativo rechazado.
+- **API real:** `tests/void-requests-api.test.ts -t 'envío del mensajero'` pasó 2/2 con PostgreSQL local descartable. Compara total/costo/impuestos, caja, dashboard y reporte de ganancia antes y después; verifica vendedora 403, negativo y 3 decimales 400, venta anulada, otra sucursal, auditoría, pago duplicado 409 e idempotencia. Primer fallo de implementación: `Failed to deserialize column of type 'void'` en `pg_advisory_xact_lock`; corregido con `$executeRaw`. Un fallo inicial de prueba comparó timestamps móviles `from/to` del dashboard; corregido para comparar solo métricas estables, sin reducir las aserciones de dinero.
+- **Navegador:** `tests/e2e/envio-mensajero.spec.ts` pasó 1/1 en Chromium tras instalar el navegador de pruebas. Recorre RD$15,550 + envío RD$400 = banco RD$15,950, pago del mensajero y vista a 320 px. Primer intento falló por navegador ausente: `browserType.launch: Executable doesn't exist at /home/agent/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell`.
+- **Chequeo:** `pnpm check` terminó con código 0 (tipos, lint, unitarias y compilaciones web/API); `git diff --check` pasó. No se tocó producción ni Render.
+- **Autoauditoría y límites:** el envío no entra en `Sale.total`, `costTotal`, pagos, caja ni informes; el bloqueo por factura y el identificador de operación evitan pagos repetidos. La asignación del envío a una transferencia dividida sigue una sola fila de forma estable. El historial carga como máximo 500 pagos; falta validar en un móvil físico y revisar con Claude la política para envíos de facturas anuladas después de asignar el envío. CI del commit publicado queda por confirmar antes de integrar o desplegar.
+
 ## 2026-10-15 · Claude · respuesta a la auditoría de ChatGPT PC
 
 - **BUILD-01 (corregido):** el helper `transferReconciliation.ts` choca en mayúsculas con `TransferReconciliation.tsx` en Windows. Renombrado a `transfer-reconciliation-utils.ts`. En Linux (CI y Render) nunca falló.

@@ -64,6 +64,7 @@ import { keepDraftThrough } from "./cartDraft";
 import { Dashboard } from "./Dashboard";
 import { VoidRequests } from "./VoidRequests";
 import { TransferReconciliation } from "./TransferReconciliation";
+import { CourierPayouts } from "./CourierPayouts";
 import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import {
@@ -210,6 +211,12 @@ const navigation = [
     id: "transfer-reconciliation",
     label: "Conciliar transferencias",
     icon: Wallet,
+    permission: "*",
+  },
+  {
+    id: "courier-payouts",
+    label: "Envíos del mensajero",
+    icon: Truck,
     permission: "*",
   },
   {
@@ -864,6 +871,7 @@ function Shell() {
     sales: <SalesHistory />,
     "void-requests": <VoidRequests />,
     "transfer-reconciliation": <TransferReconciliation />,
+    "courier-payouts": <CourierPayouts />,
     merchandise: <Merchandise />,
     incentives: <IncentivesPage />,
   };

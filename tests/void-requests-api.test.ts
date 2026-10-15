@@ -744,3 +744,159 @@ describe("conciliación de transferencias · API real", () => {
     ).toBe(false);
   });
 });
+
+describe("envío del mensajero · API real", () => {
+  it("separa envío de venta/caja/dashboard, restringe permisos y paga una sola vez", async () => {
+    const sold = await sale(seller, "transfer");
+    const path = `/sales/${sold.id}/courier`;
+    const before = await db.sale.findUniqueOrThrow({ where: { id: sold.id } });
+    const cashBefore = await ok("/cash-sessions", owner.token);
+    const dashboardBefore = await ok("/dashboard/summary", owner.token);
+    const businessDay = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santo_Domingo",
+    }).format(new Date());
+    const profitPath = `/reports/profit?from=${businessDay}&to=${businessDay}`;
+    const profitBefore = await ok(profitPath, owner.token);
+    const stableDashboard = ({ from: _from, to: _to, ...values }: any) =>
+      values;
+    expect(
+      (await request(path, seller.token, { fee: 400 }, "PATCH")).status,
+    ).toBe(403);
+    expect(
+      (await request(path, owner.token, { fee: -1 }, "PATCH")).status,
+    ).toBe(400);
+    expect(
+      (await request(path, owner.token, { fee: "400.001" }, "PATCH")).status,
+    ).toBe(400);
+    const changed = await request(
+      path,
+      owner.token,
+      { fee: 400, courierName: "Addison" },
+      "PATCH",
+    );
+    expect(changed.status).toBe(200);
+    expect(changed.body).toMatchObject({
+      courierFee: "400",
+      courierName: "Addison",
+    });
+    const after = await db.sale.findUniqueOrThrow({ where: { id: sold.id } });
+    for (const field of [
+      "subtotal",
+      "total",
+      "costTotal",
+      "taxTotal",
+      "discountTotal",
+    ] as const)
+      expect(String(after[field])).toBe(String(before[field]));
+    expect(await ok("/cash-sessions", owner.token)).toEqual(cashBefore);
+    expect(
+      stableDashboard(await ok("/dashboard/summary", owner.token)),
+    ).toEqual(stableDashboard(dashboardBefore));
+    expect(await ok(profitPath, owner.token)).toEqual(profitBefore);
+    const pending = await ok("/courier/pending", owner.token);
+    expect(pending.rows.find((row: any) => row.id === sold.id)).toMatchObject({
+      courierFee: "400.00",
+      courierName: "Addison",
+    });
+    expect((await request("/courier/pending", seller.token)).status).toBe(403);
+    const transfer = (
+      await ok("/payments/pending-transfers", owner.token)
+    ).find((row: any) => row.id === sold.payments[0].id);
+    expect(transfer).toMatchObject({
+      amount: "100",
+      courierFee: "400.00",
+      expected: "500.00",
+      difference: "-400.00",
+    });
+    const operationId = randomUUID();
+    const payload = { operationId, saleIds: [sold.id], note: "Pago semanal" };
+    expect(
+      (await request("/courier/payouts", seller.token, payload)).status,
+    ).toBe(403);
+    const paid = await request("/courier/payouts", owner.token, payload);
+    expect(paid.status).toBe(201);
+    expect(paid.body).toMatchObject({ total: "400.00", replayed: false });
+    expect(
+      (await request("/courier/payouts", owner.token, payload)).body,
+    ).toMatchObject({ total: "400.00", replayed: true });
+    expect(
+      (
+        await request("/courier/payouts", owner.token, {
+          ...payload,
+          note: "Distinto",
+        })
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await request("/courier/payouts", owner.token, {
+          ...payload,
+          operationId: randomUUID(),
+        })
+      ).status,
+    ).toBe(409);
+    expect(
+      (await request(path, owner.token, { fee: 100 }, "PATCH")).status,
+    ).toBe(409);
+    expect(
+      (await ok("/courier/pending", owner.token)).rows.some(
+        (row: any) => row.id === sold.id,
+      ),
+    ).toBe(false);
+    expect(
+      (await ok("/courier/payouts", owner.token)).some(
+        (row: any) => row.operationId === operationId,
+      ),
+    ).toBe(true);
+    expect(await ok("/cash-sessions", owner.token)).toEqual(cashBefore);
+    expect(
+      stableDashboard(await ok("/dashboard/summary", owner.token)),
+    ).toEqual(stableDashboard(dashboardBefore));
+    expect(await ok(profitPath, owner.token)).toEqual(profitBefore);
+    expect(await db.courierPayout.count({ where: { operationId } })).toBe(1);
+    const logs = await db.auditLog.findMany({
+      where: { entityId: { in: [sold.id, operationId] } },
+    });
+    expect(logs.map((row: any) => row.action)).toEqual(
+      expect.arrayContaining(["courier_fee_changed", "courier_payout"]),
+    );
+  });
+
+  it("rechaza ventas anuladas y oculta otras sucursales", async () => {
+    const sold = await sale(seller);
+    const path = `/sales/${sold.id}/courier`;
+    await db.sale.update({
+      where: { id: sold.id },
+      data: { status: "voided" },
+    });
+    try {
+      expect(
+        (await request(path, owner.token, { fee: 100 }, "PATCH")).status,
+      ).toBe(400);
+    } finally {
+      await db.sale.update({
+        where: { id: sold.id },
+        data: { status: "completed" },
+      });
+    }
+    await db.sale.update({
+      where: { id: sold.id },
+      data: { branchId: "qa-otra-" + tag },
+    });
+    try {
+      expect(
+        (await request(path, owner.token, { fee: 100 }, "PATCH")).status,
+      ).toBe(400);
+      expect(
+        (await ok("/courier/pending", owner.token)).rows.some(
+          (row: any) => row.id === sold.id,
+        ),
+      ).toBe(false);
+    } finally {
+      await db.sale.update({
+        where: { id: sold.id },
+        data: { branchId: "main" },
+      });
+    }
+  });
+});

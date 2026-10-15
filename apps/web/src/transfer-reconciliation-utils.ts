@@ -4,6 +4,10 @@ export type PendingTransfer = {
   invoice: string;
   customer: string | null;
   amount: string;
+  saleId: string;
+  courierFee: string;
+  expected: string;
+  difference: string;
   bank: string | null;
   reference: string | null;
   cashier: string | null;
@@ -37,7 +41,7 @@ export function selectedTotalCents(
   selected: Set<string>,
 ) {
   return rows.reduce((sum, row) => {
-    const next = sum + (selected.has(row.id) ? amountCents(row.amount) : 0);
+    const next = sum + (selected.has(row.id) ? amountCents(row.expected) : 0);
     if (!Number.isSafeInteger(next)) throw new Error("Total demasiado grande.");
     return next;
   }, 0);
@@ -54,6 +58,8 @@ export function reconciliationCsv(rows: PendingTransfer[]) {
     "Factura",
     "Cliente",
     "Monto RD$",
+    "Envío RD$",
+    "Esperado RD$",
     "Banco",
     "Referencia",
     "Cajera",
@@ -65,6 +71,8 @@ export function reconciliationCsv(rows: PendingTransfer[]) {
     row.invoice,
     row.customer ?? "",
     row.amount,
+    row.courierFee,
+    row.expected,
     row.bank ?? "",
     row.reference ?? "",
     row.cashier ?? "",

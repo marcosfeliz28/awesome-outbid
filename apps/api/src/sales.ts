@@ -13,7 +13,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import { allocateCredit } from "./credit-allocation";
@@ -216,6 +216,13 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     discountApprovedRole: sale.discountApprovedRole,
     taxTotal: sale.taxTotal,
     total: sale.total,
+    ...(can(actor.permissions, "sale:manage")
+      ? {
+          courierFee: sale.courierFee,
+          courierName: sale.courierName,
+          courierPaidAt: sale.courierPaidAt,
+        }
+      : {}),
     creditBalance: sale.creditBalance,
     creditDueDate: sale.creditDueDate,
     ncf: sale.ncf,
@@ -2157,6 +2164,7 @@ export class SalesController {
       },
       select: {
         id: true,
+        saleId: true,
         createdAt: true,
         amount: true,
         bank: true,
@@ -2167,6 +2175,13 @@ export class SalesController {
           select: {
             number: true,
             sellerId: true,
+            courierFee: true,
+            payments: {
+              where: { method: "transfer", status: { not: "rejected" } },
+              select: { id: true },
+              orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+              take: 1,
+            },
             customer: { select: { name: true } },
           },
         },
@@ -2190,21 +2205,36 @@ export class SalesController {
         })
       : [];
     const names = new Map(cashiers.map((user) => [user.id, user.name]));
-    return payments.map((payment) => ({
-      id: payment.id,
-      date: payment.createdAt.toISOString(),
-      invoice: payment.sale.number,
-      customer: payment.sale.customer?.name ?? null,
-      amount: String(payment.amount),
-      bank: payment.bank,
-      reference: payment.reference,
-      cashier:
-        names.get(
-          payment.cashSession?.userId ??
-            payment.receivedById ??
-            payment.sale.sellerId,
-        ) ?? null,
-    }));
+    return payments.map((payment) => {
+      // El envío pertenece a la factura: se aplica a una sola transferencia,
+      // aun cuando otras ya se hayan verificado y desaparezcan de este listado.
+      const fee =
+        payment.sale.payments[0]?.id === payment.id
+          ? payment.sale.courierFee
+          : new Prisma.Decimal(0);
+      const expected = payment.amount.plus(fee);
+      return {
+        id: payment.id,
+        saleId: payment.saleId,
+        date: payment.createdAt.toISOString(),
+        invoice: payment.sale.number,
+        customer: payment.sale.customer?.name ?? null,
+        amount: String(payment.amount),
+        courierFee: fee.toFixed(2),
+        expected: expected.toFixed(2),
+        // Diferencia interna del pago registrado frente al esperado con envío;
+        // la diferencia contra el banco se calcula en la pantalla con su total.
+        difference: payment.amount.minus(expected).toFixed(2),
+        bank: payment.bank,
+        reference: payment.reference,
+        cashier:
+          names.get(
+            payment.cashSession?.userId ??
+              payment.receivedById ??
+              payment.sale.sellerId,
+          ) ?? null,
+      };
+    });
   }
   @Post("payments/:id/verify")
   @RequireTerminal()

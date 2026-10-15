@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@fitstore/ui";
 import { can, formatMoney } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
+import { CourierFeeEditor } from "./CourierFeeEditor";
+import { suggestedCourierFee } from "./courier-utils";
 import { QueryState } from "./helpers";
 import {
   amountCents,
@@ -134,6 +136,41 @@ export function TransferReconciliation() {
       setBusy(false);
     }
   };
+  const useFee = async (row: PendingTransfer, fee: number) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      await api(`/sales/${row.saleId}/courier`, {
+        method: "PATCH",
+        body: JSON.stringify({ fee: String(fee) }),
+      });
+      setResults([
+        {
+          id: row.id,
+          invoice: row.invoice,
+          ok: true,
+          message: `Envío de RD$ ${fee} guardado`,
+        },
+      ]);
+      await refresh();
+    } catch (error) {
+      setResults([
+        {
+          id: row.id,
+          invoice: row.invoice,
+          ok: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : "No se pudo guardar el envío.",
+        },
+      ]);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
 
   return (
     <section className="transfer-reconciliation">
@@ -243,6 +280,10 @@ export function TransferReconciliation() {
                           {row.invoice} · {formatMoney(Number(row.amount))}
                         </strong>
                         <span>
+                          Envío: {formatMoney(Number(row.courierFee))} ·
+                          Esperado: {formatMoney(Number(row.expected))}
+                        </span>
+                        <span>
                           {dateTime(row.date)} · {row.customer || "Sin cliente"}
                         </span>
                         <span>
@@ -250,6 +291,35 @@ export function TransferReconciliation() {
                           {row.reference || "Sin referencia"}
                         </span>
                         <span>Cajera: {row.cashier || "Sin identificar"}</span>
+                        {selectedCount === 1 &&
+                          selected.has(row.id) &&
+                          validBankTotal &&
+                          (() => {
+                            const suggestion = suggestedCourierFee(
+                              rawBankTotal,
+                              row.amount,
+                            );
+                            return suggestion !== null &&
+                              amountCents(row.courierFee) !==
+                                suggestion * 100 ? (
+                              <Button
+                                variant="secondary"
+                                disabled={busy}
+                                onClick={() => void useFee(row, suggestion)}
+                              >
+                                Usar RD$ {suggestion} como envío
+                              </Button>
+                            ) : null;
+                          })()}
+                        <details>
+                          <summary>Editar envío</summary>
+                          <CourierFeeEditor
+                            key={`${row.saleId}:${row.courierFee}`}
+                            saleId={row.saleId}
+                            initialFee={row.courierFee}
+                            onSaved={() => void refresh()}
+                          />
+                        </details>
                         {rejectId === row.id && (
                           <form
                             className="reconciliation-reject"
@@ -308,7 +378,7 @@ export function TransferReconciliation() {
                 <div className="reconciliation-totals">
                   <p>
                     <strong>Seleccionadas:</strong> {selectedCount} ·{" "}
-                    <strong>Total seleccionado:</strong>{" "}
+                    <strong>Total esperado seleccionado:</strong>{" "}
                     {formatMoney(total / 100)}
                   </p>
                   <label className="field">
@@ -334,7 +404,9 @@ export function TransferReconciliation() {
                       ? rawBankTotal
                         ? "Usa números y punto decimal, sin separador de miles."
                         : "Escribe el total del banco"
-                      : formatMoney(difference / 100)}
+                      : difference === 0
+                        ? "Cuadrado · RD$ 0.00"
+                        : formatMoney(difference / 100)}
                   </p>
                   <Button
                     disabled={!selectedCount || busy}

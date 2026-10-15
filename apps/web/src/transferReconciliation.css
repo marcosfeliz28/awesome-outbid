@@ -80,6 +80,44 @@
 .reconciliation-error {
   color: var(--danger-text);
 }
+.courier-fee-editor {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+.courier-fee-editor .field {
+  min-width: 0;
+}
+.courier-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.courier-presets button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.courier-presets button:focus-visible,
+.courier-pick:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.courier-pick {
+  cursor: pointer;
+  align-items: center;
+}
+.courier-pick > input {
+  width: 22px;
+  height: 22px;
+  margin: 11px;
+  accent-color: var(--primary);
+}
 @media (max-width: 600px) {
   .reconciliation-row {
     flex-wrap: wrap;
