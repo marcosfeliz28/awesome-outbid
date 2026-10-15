@@ -944,6 +944,28 @@ describe("W7 · incentivo al cobrar", () => {
     expect(rows.every((e: any) => e.period === thisMonth())).toBe(true);
   });
 
+  it("marcar una venta a crédito como mayorista después: el incentivo pasa a la mitad, también lo ya cobrado", async () => {
+    const s = (await sale(ana, 400, [{ method: "cod", amount: 400 }])).body; // incentivo total 200
+    await collect(adminA, s.id, [line("cash", 200)]);
+    expect(await totalOf(s.id)).toBe(100);
+    const mark = (who: Actor) =>
+      request("/sales/" + s.id + "/mark-wholesale", who.token, {
+        reason: "Era una venta al por mayor",
+      });
+    expect((await mark(ana)).status).toBe(403);
+    const done = await mark(adminA);
+    expect(done.status, JSON.stringify(done.body)).toBeLessThan(300);
+    // Mitad del incentivo (100) por la mitad cobrada: 50.
+    expect(await totalOf(s.id)).toBe(50);
+    expect((await mark(adminA)).status).toBeLessThan(300);
+    expect(await totalOf(s.id)).toBe(50);
+    await collect(adminB, s.id, [line("cash", 200)]);
+    expect(await totalOf(s.id)).toBe(100);
+    expect((await db.sale.findUnique({ where: { id: s.id } })).wholesale).toBe(
+      true,
+    );
+  });
+
   it("cobro en un mes posterior: cae en el mes del pago, con el origen de la venta", async () => {
     const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
     const old = previousMonth();

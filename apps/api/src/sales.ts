@@ -15,7 +15,7 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Prisma } from "@prisma/client";
 import { compare } from "bcryptjs";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { allocateCredit } from "./credit-allocation";
 import {
   expired,
@@ -1885,6 +1885,66 @@ export class SalesController {
     }, MONEY_TRANSACTION);
     notify(this.db, "sale_voided", saleId);
     return this.voidRequestDto(requestId, actor);
+  }
+
+  // Orden de la dueña (15-oct): una venta a crédito o contraentrega que la
+  // cajera hizo como detalle pero era al por mayor se marca después. El
+  // incentivo pasa a la mitad: lo ya acreditado se ajusta con una entrada y lo
+  // que falte por cobrar se calcula con la marca. Solo administración.
+  @Post("sales/:id/mark-wholesale")
+  @RequireTerminal()
+  @Permit("*")
+  async markWholesale(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const saleId = parse(uuid, id);
+    const data = parse(z.object({ reason }), body ?? {});
+    const result = await moneyDb(this.db).$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid FOR UPDATE`;
+      const sale = await tx.sale.findFirst({
+        where: { id: saleId, branchId: actor.branchId },
+        select: {
+          id: true,
+          number: true,
+          status: true,
+          wholesale: true,
+          incentiveOnCollection: true,
+        },
+      });
+      if (!sale) bad("Venta no encontrada.");
+      if (sale.status !== "completed")
+        bad("Solo se puede marcar una venta vigente.");
+      if (sale.wholesale) return { number: sale.number, wholesale: true };
+      if (!sale.incentiveOnCollection)
+        bad(
+          "Solo ventas a crédito o contraentrega: en las demás el incentivo ya se acreditó completo.",
+        );
+      await tx.sale.update({
+        where: { id: saleId },
+        data: { wholesale: true },
+      });
+      await tx.incentiveEntry.updateMany({
+        where: { saleId, kind: "sale" },
+        data: { wholesale: true },
+      });
+      await syncCreditIncentives(tx, actor, saleId, "collection", randomUUID());
+      await audit(
+        tx,
+        actor,
+        "wholesale_marked_later",
+        "sale",
+        saleId,
+        undefined,
+        {
+          number: sale.number,
+          reason: data.reason,
+        },
+      );
+      return { number: sale.number, wholesale: true };
+    }, MONEY_TRANSACTION);
+    return result;
   }
 
   @Post("sales/:id/void")
