@@ -156,6 +156,7 @@ export function TransferReconciliation() {
             onChange={(event) => {
               setDate(event.target.value);
               setSelected(new Set());
+              setBankTotals({});
               setResults([]);
             }}
           />
@@ -165,6 +166,8 @@ export function TransferReconciliation() {
           onClick={() => {
             setDate("");
             setSelected(new Set());
+            setBankTotals({});
+            setResults([]);
           }}
         >
           Todas las fechas
