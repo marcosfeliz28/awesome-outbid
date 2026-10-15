@@ -2,6 +2,15 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-10-15 · ChatGPT PC · `nexora-chatgpt-pc` · validación envío del mensajero
+
+- **Base:** rama creada desde `nexora-chatgpt-nube` `bab48736bec28cd4599da8604619670053401076`. Solo se corrigió el aislamiento de una prueba E2E que fallaba al repetirla; el código de aplicación no cambió. PostgreSQL local embebido, base de pruebas separada de producción.
+- **Migración con datos:** `pnpm exec vitest run tests/courier-migration-postgres.test.ts`: 1/1 pasó. Crea una venta anterior, aplica la migración aditiva sobre esa base y comprueba que total, costo e impuestos no cambian, `courierFee` queda en 0, el `CHECK` rechaza negativos y una segunda ejecución no altera nada. También se aplicaron las 48 migraciones y la semilla a la base local descartable para probar API/E2E.
+- **API PostgreSQL:** `pnpm exec vitest run --config vitest.integration.config.ts tests/void-requests-api.test.ts -t 'envío del mensajero'`: 2/2 pasó (11 pruebas de otros temas omitidas por el filtro). Comprueba vendedora 403, importes negativos/3 decimales 400, factura anulada, otra sucursal, bitácora, pago repetido 409 y reintento idempotente. Comparó los campos de venta, caja, dashboard y `/reports/profit` antes y después de registrar y pagar el envío: iguales.
+- **Navegador:** primera repetición de `tests/e2e/envio-mensajero.spec.ts` falló exactamente con `/sales: {"statusCode":409,"message":"Tu caja está abierta en el equipo «E2E mensajero mv9qk3rb». Ciérrala en ese equipo o trasládala a este desde Caja."}`. Era dependencia de la caja del administrador de una corrida previa. Se cambió **solo la prueba** para crear una cajera y terminal nuevos por ejecución; dos corridas sucesivas pasaron 1/1 cada una. Verifican RD$15,550 + envío RD$400 = banco RD$15,950, pago y desaparición de pendientes, y ausencia de desbordamiento a 320 px.
+- **Chequeo general:** `pnpm check` terminó con código 0: 657 pruebas pasadas, 9 omitidas por condiciones existentes, tipos/lint/build web y API aprobados. Sin secretos ni datos reales en el informe. No se desplegó ni se tocó producción.
+- **Límites:** no se probó en un teléfono físico ni en PostgreSQL 17; el local es PostgreSQL embebido. El CI de NUBE seguía en curso al redactar este resultado; Claude debe revisar su conclusión antes de integrar. El historial de pagos tiene un límite de 500 registros.
+
 ## 2026-10-15 · ChatGPT NUBE · `nexora-chatgpt-nube` · envíos del mensajero
 
 - **Qué hice:** migración aditiva `202610250001_courier_fee` (`courierFee`, mensajero y datos de pago en `Sale`, más pago idempotente y sus líneas); API con permiso `sale:manage` para editar/consultar y `*` para marcar pagado; pantallas en Ventas, Conciliar transferencias y Envíos del mensajero. El pago es solo registro: no mueve caja. La conciliación suma el envío una vez por factura y muestra el total esperado y la diferencia bancaria.
