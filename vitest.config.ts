@@ -8,6 +8,7 @@ export default defineConfig({
       "tests/courier-migration-postgres.test.ts",
       "tests/customer-display.test.ts",
       "tests/conciliar-transferencias.test.ts",
+      "tests/year-report.test.ts",
       "tests/credit-allocation.test.ts",
       "tests/income-day.test.ts",
       "tests/credit-reasons.test.ts",

@@ -853,6 +853,32 @@ describe("Auditoría 01 · dinero", () => {
     expect(sub("receivable")).toBeCloseTo(700, 2);
   });
 
+  it("el círculo del año y el desglose del período cuadran con las ventas", async () => {
+    const c = await person("seller", "year", 0);
+    const v = await product(700, 300, 10);
+    await sell(c, v, 2, [{ method: "cash", amount: 1400 }]);
+    const range = "?from=" + today() + "&to=" + today();
+    const breakdown = await ok("/dashboard/breakdown" + range, admin);
+    const year = await ok("/dashboard/year", admin);
+    expect(year.months).toHaveLength(12);
+    expect(
+      year.months.reduce((a: number, m: any) => a + m.revenue, 0),
+    ).toBeCloseTo(year.revenue, 2);
+    const month = year.months[Number(today().slice(5, 7)) - 1];
+    // Hoy es parte del mes: el mes tiene al menos lo vendido hoy.
+    expect(month.revenue).toBeGreaterThanOrEqual(breakdown.revenue - 1);
+    expect(breakdown.units).toBeGreaterThanOrEqual(2);
+    expect(breakdown.invoices).toBeGreaterThanOrEqual(1);
+    expect(
+      breakdown.categories.reduce((a: number, r: any) => a + r.revenue, 0),
+    ).toBeCloseTo(breakdown.revenue, 2);
+    // Ganancia = venta − costo, sin restar ITBIS.
+    expect(breakdown.profit).toBeCloseTo(breakdown.revenue - breakdown.cost, 2);
+    expect(breakdown.days).toBe(1);
+    expect(breakdown.averagePerDay).toBeCloseTo(breakdown.revenue, 2);
+    expect(breakdown.top.length).toBeLessThanOrEqual(10);
+  });
+
   it("N-5: el aviso de descuento inusual nace al registrar la venta, sin esperar a la evaluación", async () => {
     await withSettings(
       { unusualDiscountPercent: 25, unusualDiscountCount: 1 },

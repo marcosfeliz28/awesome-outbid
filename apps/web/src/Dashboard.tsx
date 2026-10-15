@@ -29,6 +29,7 @@ import { Button, Badge, Modal } from "@fitstore/ui";
 import { formatMoney, can, weekStart } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
+import { YearPie } from "./YearPie";
 
 const dayBefore = (date: string) =>
   new Date(Date.parse(date + "T12:00:00Z") - 86400000)
@@ -326,6 +327,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             </div>
           </div>
         </div>
+        <YearPie go={go} />
         <DayCard />
         <div className="kpi-grid">
           {metric.map((m) => (

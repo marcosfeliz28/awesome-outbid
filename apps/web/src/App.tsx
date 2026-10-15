@@ -62,6 +62,7 @@ import { Toasts, toast } from "./helpers";
 import { inactivityWaits } from "./cartDraftPolicy";
 import { keepDraftThrough } from "./cartDraft";
 import { Dashboard } from "./Dashboard";
+import { MonthReport } from "./MonthReport";
 import { VoidRequests } from "./VoidRequests";
 import { TransferReconciliation } from "./TransferReconciliation";
 import { CourierPayouts } from "./CourierPayouts";
@@ -856,6 +857,7 @@ function Shell() {
     .join("");
   const pages: Record<string, React.ReactNode> = {
     dashboard: <Dashboard go={go} />,
+    "month-report": <MonthReport go={go} />,
     pos: <POS go={go} />,
     products: <Catalog />,
     inventory: <Inventory />,
@@ -1117,7 +1119,7 @@ function Shell() {
         </header>
         <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
           <DeviceGate />
-          {pages[page] || <Dashboard go={go} />}
+          {pages[page.split("?")[0]] || <Dashboard go={go} />}
         </main>
         <footer className="app-footer">
           <span>Nexora POS · Tu negocio, en movimiento.</span>
