@@ -58,3 +58,13 @@ Otros datos que faltan:
 - Cerrados por Claude en su caja administrativa, con el monto tomado de las fotos de WhatsApp (la dueña no sumó los billetes y pidió asumirlo correcto): FS-0000027 cielo 4,850; FS-0000028 marck gomez 2,300; FS-0000029 ROSMERY 3,900. Total 11,050. Caja cerrada, cuadre en 0.00, entregado a la dueña.
 - Regla nueva (en CI, por desplegar): cualquier cajera puede ver y cerrar créditos/contraentregas **en efectivo**, de cualquier día y de cualquier vendedora; el dinero entra a **su** caja y lo entrega al cerrar. Tarjeta y transferencia de un crédito las sigue registrando la administración.
 - Pendientes de crédito que quedan: FS-0000007, 008, 010, 011, 018 (Ginette Gómez 30,500), 025 (1,400 por verificar), 030 y 031.
+
+## 15-oct-2026 · Conteo de maquillaje, fase 3 (Excel «Inventario 02 Cloud»)
+
+Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A. Girl GC983 Fawn → 15; fijador chico → 9 y grande → 5; Too Faced vainilla → 8; Full Wear 325 → 5, 330 → 4, 350 → 10. El resto de lo que existía ya coincidía.
+
+**8 productos nuevos sin precio ni costo (1673–1680), por dar precio:** Huda Stick 110N (3) y 120B (1); Urban Decay Face Bond 28 (1) y 29 (1); Too Faced Super Coverage Light Beige (10), Cookie (3), Honey (3); L'Oréal Full Wear 455 Coffee (1). Los hermanos del Too Faced están a 2,450 de precio y 1,675 de costo.
+
+**Sin tocar por estar por aclarar en la hoja:** True Match Warm 8 y Chaud 15 (el sistema tiene 22 en un solo producto); L.A. Girl HD Pro Conceal «tono sin identificar» 8; Airspun (ya hay 3); NARS M1.5 Vallauris (ya hay 1); Infallible Pro-Matte 104.4/104.5 (el sistema ya tiene 104.5 con 7).
+
+**En el sistema y no en la hoja (no se tocaron):** Full Wear Concealer 435 (1), Pro-Matte 102 (1).
