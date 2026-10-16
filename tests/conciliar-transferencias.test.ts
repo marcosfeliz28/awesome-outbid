@@ -82,6 +82,7 @@ describe("conciliación de transferencias", () => {
         difference: "0.00",
         bank: "Banco BHD",
         reference: "ABC-1",
+        seller: "Cajera Uno",
         cashier: "Cajera Uno",
       },
     ]);
