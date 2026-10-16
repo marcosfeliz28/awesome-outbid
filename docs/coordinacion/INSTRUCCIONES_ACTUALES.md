@@ -417,5 +417,14 @@ La dueña está metiendo mercancía real en el sistema de Render: **ese sistema 
 4. **Tiendas de apps:** al final. Primero PWA instalable; luego, si conviene, empaquetado para Google Play y App Store, con su costo y su comisión.
 5. **Servidor en la casa:** solo como copia de respaldo y entorno de pruebas, nunca como servicio de clientes que pagan (riesgo de luz, internet y responsabilidad sobre sus datos).
 
+### 3af. ORDEN (dueña, 16-oct) — Casilla «Con envío» en la caja al cobrar (ChatGPT NUBE; pequeña, sobre el envío del mensajero ya existente)
+Hoy el envío del mensajero se anota **después** de la venta (`PATCH /sales/:id/courier`, `CourierFeeEditor` en Ventas y Conciliar transferencias). La dueña lo quiere **al cobrar**:
+1. En `POS.tsx`, al pagar, casilla «Con envío» + monto + nombre del mensajero (Addison por defecto). **Solo aparece si el pago es transferencia o tarjeta.** En efectivo o contraentrega NO se pregunta ni se guarda (el mensajero se cobra de ahí; no pasa por nosotros).
+2. El monto se guarda como `courierFee`/`courierName` de esa misma factura, **separado del total de productos**: no es venta, ingreso ni margen; el cobro de transferencia/tarjeta puede incluirlo, pero el total de productos y los descuentos no cambian.
+3. Debe funcionar también en la cola sin conexión (`offline-sales.ts`), con la misma validación y sin duplicar si se reenvía.
+4. Lo ya hecho se mantiene: pago al mensajero (`CourierPayouts`) y conciliación; el envío sigue editable después con `CourierFeeEditor` mientras no esté pagado.
+5. Pruebas: regresión e2e (transferencia con envío, tarjeta con envío, efectivo sin casilla, venta sin conexión) e integración PostgreSQL (envío separado del total y del margen, no duplica al reenviar). `pnpm check` y los 3 CI en verde; sin desplegar (Claude despliega).
+Fase 2 (estadística y pago por período) sigue como está en el instructivo previo.
+
 ## 3ae — Traspaso del día a día a ChatGPT NUBE (14-oct-2026, orden de la dueña)
 Claude puede dejar de estar disponible; la dueña quiere seguir trabajando igual con ChatGPT NUBE. Documento completo y vigente: `docs/coordinacion/TRASPASO_CHATGPT_NUBE.md` (accesos que ella debe darte, reglas del dinero, endpoints, rutina diaria, despliegue con CI verde y orden expresa, estado y pendientes). **Primer entregable:** contesta a la dueña con 3 líneas (qué leíste, qué puedes hacer ya, qué te falta).
