@@ -84,3 +84,4 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 - Sin factura: Leydy Marbe 5,100 (última transferencia que cayó en el Popular; puede ser posterior al cierre) → pendiente de identificar, cruzar si una cajera digita una venta de 5,100 o 4,650 + 450.
 - Tarjeta sin factura: Lizbeth +600 y Farianelis +2,100 (verifón contra sistema).
 - Regla: no se modifican facturas ni envíos por la dueña/Claude para «arreglar» cuadres; lo anotan las cajeras. Créditos y contraentregas (incl. Ginette) los rastrea la dueña.
+- **Copia diaria de la base fuera de Render (pendiente de la dueña):** crear el drive/almacenamiento privado donde se guarde la copia diaria (laptop o drive). Plan en `docs/RESPALDO_CLOUD_RENDER.md`; no está activado.
