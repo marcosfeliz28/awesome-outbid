@@ -76,3 +76,11 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 - **Regla de la dueña:** NO se pone en cero lo que no aparece en la hoja. Solo se modifica lo anotado.
 - **Cuando la dueña lo indique** (después de anotar todo y de cambiar precios): entregarle la lista de productos de Maquillaje que nadie mencionó ni modificó nunca, para que valide cuáles se quedan y cuáles se sacan.
 - Dudas abiertas: sets de brochas (Génesis rojo 11 vs 32 en sistema, Génesis azul/GM5, auto maquillaje BS/verde, White Angel, set de 4, Brochas Doble 7, Brocha de contorno 4, brocha negra individual 1); sin cantidad: Soft Focus 350, Simply Bella 313, Morphe M158, Ana Paula 02, Fearless B2; Too Faced Natural Beige (¿Born This Way?); base e.l.f. Light/Medium (3).
+
+## 15/16-oct-2026 · Pendientes de cuadre y orden de la dueña
+- **PIN de gerente del cierre de caja:** lo tiene solo la dueña (Marcos Félix); las cajeras deben llamarla para cerrar con tarjeta distinta del verifón o con vale de caja. El PIN no se escribe en chats ni en documentos. Otros administradores (Genesis, claude) también pueden aprobar con su propio PIN.
+- **Farianelis debe volver a hacer la factura de Alexander Liriano:** anuló la FS-0000055 (3,220, «cambiar el magnesio», aprobada 1:46 p. m.) y no digitó la venta nueva. El banco recibió 3,700 de «Alexander L» (total del cambio + 450 de envío, provincia). Mientras no la haga, esa transferencia queda sin factura.
+- Cuadre de transferencias del 15-oct: Johanna (2,500) cuadra; Katherine 6,250 = 5,800 + 450 envío; Nancheiry 1,950 = 1,500 + 450 envío (las cajeras anotan el envío); Yurielis transfirió el 14 (falta ver el banco del 14).
+- Sin factura: Leydy Marbe 5,100 (última transferencia que cayó en el Popular; puede ser posterior al cierre) → pendiente de identificar, cruzar si una cajera digita una venta de 5,100 o 4,650 + 450.
+- Tarjeta sin factura: Lizbeth +600 y Farianelis +2,100 (verifón contra sistema).
+- Regla: no se modifican facturas ni envíos por la dueña/Claude para «arreglar» cuadres; lo anotan las cajeras. Créditos y contraentregas (incl. Ginette) los rastrea la dueña.
