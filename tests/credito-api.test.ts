@@ -1003,6 +1003,27 @@ describe("W7 · incentivo al cobrar", () => {
     ).toHaveLength(1);
   });
 
+  it("la administración puede dar por recibida una transferencia sin referencia ni verificación y el cliente pasa a «ya pagaron»", async () => {
+    const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
+    const r = await collect(adminA, s.id, [
+      { method: "transfer", amount: 200, ownerConfirmed: true },
+    ]);
+    expect(r.status, JSON.stringify(r.body)).toBeLessThan(300);
+    expect(r.body.closed).toBe(true);
+    const paid = await db.payment.findFirst({
+      where: { saleId: s.id, entryType: "installment" },
+    });
+    expect(paid.status).toBe("ok");
+    expect(
+      Number((await db.sale.findUnique({ where: { id: s.id } })).creditBalance),
+    ).toBe(0);
+    expect(await totalOf(s.id)).toBe(100);
+    const done = await ok("/credit-accounts?view=paid", owner);
+    expect(done.rows.some((row: any) => row.customer.id === customerId)).toBe(
+      true,
+    );
+  });
+
   it("devolución después de un cobro parcial: descuenta sólo lo acreditado y el resto sigue proporcional", async () => {
     const s = (await sale(ana, 400, [{ method: "cod", amount: 400 }])).body; // incentivo 200
     await collect(adminA, s.id, [line("cash", 200)]);

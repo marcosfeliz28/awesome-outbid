@@ -37,6 +37,8 @@ export function CreditAccounts({ session }: { session: any }) {
   const client = useQueryClient();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("amount");
+  // «open»: con deuda; «paid»: ya pagaron o se cerraron (dueña, 15-oct).
+  const [view, setView] = useState<"open" | "paid">("open");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
@@ -47,10 +49,10 @@ export function CreditAccounts({ session }: { session: any }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const list = useQuery({
-    queryKey: ["credit-accounts", search, sort, page],
+    queryKey: ["credit-accounts", search, sort, page, view],
     queryFn: () =>
       api<{ total: number; rows: any[] }>(
-        `/credit-accounts?search=${encodeURIComponent(search)}&sort=${sort}&page=${page}`,
+        `/credit-accounts?search=${encodeURIComponent(search)}&sort=${sort}&page=${page}&view=${view}`,
       ),
   });
   const detail = useQuery({
@@ -59,6 +61,35 @@ export function CreditAccounts({ session }: { session: any }) {
     enabled: !!selected,
   });
   const statement = detail.data;
+  // Primero lo pendiente (con saldo o con una transferencia por verificar); lo
+  // ya pagado o cerrado va aparte (dueña, 15-oct).
+  const isPending = (sale: Statement["sales"][number]) =>
+    sale.balance > 0 ||
+    sale.payments.some((p) => p.status === "pending_verification");
+  const pendingSales = (statement?.sales ?? []).filter(isPending);
+  const paidSales = (statement?.sales ?? []).filter((x) => !isPending(x));
+  const saleRow = (sale: Statement["sales"][number]) => (
+    <div className="cod-row" key={sale.id}>
+      <div>
+        <strong>{sale.number}</strong>
+        <small>
+          {new Date(sale.createdAt).toLocaleDateString("es-DO")} · Total{" "}
+          {formatMoney(sale.total)}
+        </small>
+        {sale.payments.map((p) => (
+          <small key={p.id}>
+            {new Date(p.date).toLocaleString("es-DO", {
+              timeZone: "America/Santo_Domingo",
+            })}{" "}
+            · {methodName[p.method as Method] ?? p.method} ·{" "}
+            {formatMoney(p.amount)} · {p.receivedBy ?? ""}
+            {p.status === "pending_verification" ? " · Por verificar" : ""}
+          </small>
+        ))}
+      </div>
+      <strong>Saldo {formatMoney(sale.balance)}</strong>
+    </div>
+  );
   const cents = Math.round(Number(amount) * 100);
   let left = cents;
   const preview = (statement?.sales ?? [])
@@ -102,7 +133,11 @@ export function CreditAccounts({ session }: { session: any }) {
             method,
             amount: cents / 100,
             ...(method === "transfer"
-              ? { bank, reference }
+              ? {
+                  bank: bank.trim() || undefined,
+                  reference: reference.trim() || undefined,
+                  ownerConfirmed: true,
+                }
               : method === "card"
                 ? { reference }
                 : {}),
@@ -118,7 +153,7 @@ export function CreditAccounts({ session }: { session: any }) {
       await client.invalidateQueries({ queryKey: ["cod-pending"] });
       toast(
         method === "transfer"
-          ? "Transferencia registrada; queda por verificar."
+          ? "Transferencia registrada y cerrada."
           : "Cobro registrado.",
       );
     } catch (err: any) {
@@ -143,6 +178,26 @@ export function CreditAccounts({ session }: { session: any }) {
   };
   return (
     <div className="credit-accounts">
+      <div className="tabs" role="tablist" aria-label="Ver clientes">
+        <Button
+          variant={view === "open" ? "primary" : "secondary"}
+          onClick={() => {
+            setView("open");
+            setPage(1);
+          }}
+        >
+          Pendientes
+        </Button>
+        <Button
+          variant={view === "paid" ? "primary" : "secondary"}
+          onClick={() => {
+            setView("paid");
+            setPage(1);
+          }}
+        >
+          Ya pagaron
+        </Button>
+      </div>
       <div className="form-grid">
         <label className="field">
           <span>Buscar por nombre</span>
@@ -168,10 +223,12 @@ export function CreditAccounts({ session }: { session: any }) {
           </select>
         </label>
       </div>
-      <p>
-        Total general por cobrar:{" "}
-        <strong>{formatMoney(list.data?.total ?? 0)}</strong>
-      </p>
+      {view === "open" && (
+        <p>
+          Total general por cobrar:{" "}
+          <strong>{formatMoney(list.data?.total ?? 0)}</strong>
+        </p>
+      )}
       <QueryState query={list}>
         <div className="cod-list">
           {(list.data?.rows ?? []).map((row) => (
@@ -179,19 +236,34 @@ export function CreditAccounts({ session }: { session: any }) {
               <div>
                 <strong>{row.customer.name}</strong>
                 <small>
-                  {row.openSales} ventas abiertas · La más antigua hace{" "}
-                  {row.oldestDays} días
+                  {view === "paid"
+                    ? row.openSales +
+                      " ventas pagadas" +
+                      (row.lastClosedAt
+                        ? " · Último cierre " +
+                          new Date(row.lastClosedAt).toLocaleDateString("es-DO")
+                        : "")
+                    : row.openSales +
+                      " ventas abiertas · La más antigua hace " +
+                      row.oldestDays +
+                      " días"}
                 </small>
                 <small>{row.customer.phone ?? ""}</small>
               </div>
-              <strong>{formatMoney(row.balance)}</strong>
+              {view === "open" && <strong>{formatMoney(row.balance)}</strong>}
               <Button onClick={() => setSelected(row.customer.id)}>
                 Ver estado de cuenta
               </Button>
             </div>
           ))}
         </div>
-        {!list.data?.rows?.length && <p>Sin clientes con deuda abierta.</p>}
+        {!list.data?.rows?.length && (
+          <p>
+            {view === "paid"
+              ? "Sin clientes con ventas ya pagadas."
+              : "Sin clientes con deuda abierta."}
+          </p>
+        )}
       </QueryState>
       {page > 1 && (
         <Button variant="secondary" onClick={() => setPage(page - 1)}>
@@ -229,32 +301,21 @@ export function CreditAccounts({ session }: { session: any }) {
                 >
                   Descargar estado de cuenta PDF
                 </Button>
+                <h3>Pendientes</h3>
                 <div className="cod-list">
-                  {statement.sales.map((sale) => (
-                    <div className="cod-row" key={sale.id}>
-                      <div>
-                        <strong>{sale.number}</strong>
-                        <small>
-                          {new Date(sale.createdAt).toLocaleDateString("es-DO")}{" "}
-                          · Total {formatMoney(sale.total)}
-                        </small>
-                        {sale.payments.map((p) => (
-                          <small key={p.id}>
-                            {new Date(p.date).toLocaleString("es-DO", {
-                              timeZone: "America/Santo_Domingo",
-                            })}{" "}
-                            · {methodName[p.method as Method] ?? p.method} ·{" "}
-                            {formatMoney(p.amount)} · {p.receivedBy ?? ""}
-                            {p.status === "pending_verification"
-                              ? " · Por verificar"
-                              : ""}
-                          </small>
-                        ))}
-                      </div>
-                      <strong>Saldo {formatMoney(sale.balance)}</strong>
-                    </div>
-                  ))}
+                  {pendingSales.map((sale) => saleRow(sale))}
                 </div>
+                {!pendingSales.length && <p>Nada pendiente.</p>}
+                {!!paidSales.length && (
+                  <details>
+                    <summary>
+                      Ya pagadas o cerradas ({paidSales.length})
+                    </summary>
+                    <div className="cod-list">
+                      {paidSales.map((sale) => saleRow(sale))}
+                    </div>
+                  </details>
+                )}
                 {statement.balance > 0 && (
                   <form className="form-grid" onSubmit={submit}>
                     <h3 className="full">Registrar pago</h3>
@@ -297,7 +358,6 @@ export function CreditAccounts({ session }: { session: any }) {
                             setBank(e.target.value);
                             change();
                           }}
-                          required
                         />
                       </label>
                     )}
@@ -310,7 +370,7 @@ export function CreditAccounts({ session }: { session: any }) {
                             setReference(e.target.value);
                             change();
                           }}
-                          required
+                          required={method === "card"}
                         />
                       </label>
                     )}

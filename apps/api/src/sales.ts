@@ -3160,7 +3160,11 @@ export class SalesController {
     @Query("search") search = "",
     @Query("sort") sort = "amount",
     @Query("page") page = "1",
+    @Query("view") view = "open",
   ) {
+    // «paid»: clientes cuyas ventas a crédito o contraentrega ya se cerraron
+    // (se muestran aparte de los pendientes; dueña, 15-oct).
+    const paid = view === "paid";
     const text = search.trim().slice(0, 100);
     const pageNumber = Math.max(
       1,
@@ -3170,7 +3174,9 @@ export class SalesController {
       branchId: actor.branchId,
       status: "completed",
       customerId: { not: null },
-      creditBalance: { gt: 0 },
+      ...(paid
+        ? { creditBalance: { equals: 0 }, creditClosedAt: { not: null } }
+        : { creditBalance: { gt: 0 } }),
       payments: {
         some: { entryType: "sale", method: { in: ["credit", "cod"] } },
       },
@@ -3185,8 +3191,10 @@ export class SalesController {
         _sum: { creditBalance: true },
         _count: { id: true },
         _min: { createdAt: true },
-        orderBy:
-          sort === "age"
+        _max: { creditClosedAt: true },
+        orderBy: paid
+          ? { _max: { creditClosedAt: "desc" } }
+          : sort === "age"
             ? { _min: { createdAt: "asc" } }
             : { _sum: { creditBalance: "desc" } },
         skip: (pageNumber - 1) * 50,
@@ -3216,6 +3224,7 @@ export class SalesController {
             },
             balance: Number(g._sum.creditBalance ?? 0),
             openSales: g._count.id,
+            lastClosedAt: g._max.creditClosedAt ?? null,
             oldestDays: g._min.createdAt
               ? Math.max(
                   0,
@@ -3780,6 +3789,7 @@ export class SalesController {
       "offlineUuid" | "cashSessionId"
     > & {
       cashSessionId?: string;
+      ownerConfirmed?: boolean;
     },
     idempotencyKey: string,
     codOnly: boolean,
@@ -3830,12 +3840,24 @@ export class SalesController {
       (!data.cardLast4 || !data.approvalCode)
     )
       bad("Indica los últimos 4 dígitos y la aprobación de tarjeta.");
-    if (data.method === "transfer" && (!data.bank || !data.reference))
+    // La dueña/administración que cierra un cobro por transferencia no tiene
+    // que verificarlo ni dar referencia: su palabra basta (orden de la dueña,
+    // 15-oct). Para el resto de usuarias sigue igual: banco, referencia y
+    // verificación de la administración.
+    const ownerClosed =
+      data.method === "transfer" &&
+      data.ownerConfirmed === true &&
+      can(actor.permissions, "*");
+    if (
+      data.method === "transfer" &&
+      !ownerClosed &&
+      (!data.bank || !data.reference)
+    )
       bad("Indica banco y referencia de transferencia.");
     const settings = await tx.settings.findUnique({
       where: { id: actor.branchId },
     });
-    const { cashSessionId, ...payment } = data;
+    const { cashSessionId, ownerConfirmed: _confirmed, ...payment } = data;
     const row = await tx.payment.create({
       data: {
         ...payment,
@@ -3853,10 +3875,13 @@ export class SalesController {
                   .div(100),
               )
             : 0,
-        status: data.method === "transfer" ? "pending_verification" : "ok",
+        status:
+          data.method === "transfer" && !ownerClosed
+            ? "pending_verification"
+            : "ok",
       },
     });
-    if (data.method !== "transfer") {
+    if (data.method !== "transfer" || ownerClosed) {
       await tx.sale.update({
         where: { id },
         data: { creditBalance: { decrement: data.amount } },
@@ -3943,6 +3968,9 @@ const creditLineSchema = z.object({
     .regex(/^\d{4}$/)
     .optional(),
   approvalCode: z.string().max(100).optional(),
+  // Solo administración: la transferencia recibida se da por buena sin
+  // referencia ni verificación (orden de la dueña, 15-oct).
+  ownerConfirmed: z.boolean().optional(),
 });
 const creditCollectionSchema = z.object({
   operationId: uuid,
