@@ -122,7 +122,7 @@ export function PrintModal({
         <PrintBody p={printing} />
         {extra && (
           <div className="tp-next-sheet">
-            <PrintBody p={extra} />
+            <DailyUserReportPrint r={extra.data} compact />
           </div>
         )}
       </div>
@@ -130,7 +130,7 @@ export function PrintModal({
         <PrintBody p={printing} />
         {extra && (
           <div className="tp-next-sheet">
-            <PrintBody p={extra} />
+            <DailyUserReportPrint r={extra.data} compact />
           </div>
         )}
       </PrintSheet>

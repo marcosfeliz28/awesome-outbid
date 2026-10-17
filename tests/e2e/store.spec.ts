@@ -2603,9 +2603,7 @@ test.describe("Tienda-pantallas", () => {
     const row = page.locator(".cash-history-actions").first();
     await row.getByRole("button", { name: "Venta diaria" }).click();
     await expect(sheet).toContainText("REPORTE DE LA VENTA DIARIA DE USUARIO");
-    await expect(sheet).toContainText(
-      "Verificar si los totales tienen descuentos aplicados",
-    );
+    await expect(sheet).toContainText("NETO COBRADO");
     await page.getByRole("button", { name: "Cerrar", exact: true }).click();
     await row.getByRole("button", { name: "Por forma de pago" }).click();
     await expect(sheet).toContainText("REPORTE DE VENTA USUARIO");

@@ -4755,9 +4755,9 @@ td strong {
 }
 .tp-daily-nums {
   display: grid;
-  grid-template-columns: 4ch 9ch 9ch 10ch;
+  grid-template-columns: 5ch 11ch 12ch;
   justify-content: end;
-  gap: 5px;
+  gap: 6px;
 }
 .tp-daily-nums span {
   text-align: right;

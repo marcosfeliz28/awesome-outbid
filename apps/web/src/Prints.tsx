@@ -95,8 +95,13 @@ const COUNT_KEYS = new Set(["tickets", "voidedTickets"]);
 /** 1. Cuadre de caja, en el orden del impreso de la tienda. */
 export function CuadrePrint({ c }: { c: any }) {
   const eur = !!c.foreign?.eur?.rate;
+  // Papel corto (dueña, 17-oct): las líneas en 0 no se imprimen, salvo las
+  // que dicen cuánto efectivo hay, cuánto debía haber y el total.
+  const always = new Set(["cash", "cashSales", "total", "differenceDop"]);
   const lines = (c.lines ?? []).filter(
-    (l: any) => eur || !["eur", "differenceEur"].includes(l.key),
+    (l: any) =>
+      (eur || !["eur", "differenceEur"].includes(l.key)) &&
+      (always.has(l.key) || (l.value !== null && Number(l.value) !== 0)),
   );
   return (
     <>
@@ -120,13 +125,15 @@ export function CuadrePrint({ c }: { c: any }) {
       <div className="tp-row tp-head">
         <span>Moneda × Cantidad</span> <span>= Total</span>
       </div>
-      {(c.denominations ?? []).map((m: any) => (
-        <Row
-          key={m.value}
-          label={`${m.value} × ${m.qty}`}
-          value={"= " + num(m.total)}
-        />
-      ))}
+      {(c.denominations ?? [])
+        .filter((m: any) => Number(m.qty) > 0)
+        .map((m: any) => (
+          <Row
+            key={m.value}
+            label={`${m.value} × ${m.qty}`}
+            value={"= " + num(m.total)}
+          />
+        ))}
       <p className="tp-line">{"Sub-total " + num(c.denominationsSubtotal)}</p>
       <h4>Descripción / Totales</h4>
       {lines.map((l: any) => (
@@ -175,10 +182,19 @@ export function CuadrePrint({ c }: { c: any }) {
             label="Ventas en efectivo"
             value={num(c.cashSalesDetail.sales)}
           />
-          <Row label="Recibos CxC" value={num(c.cashSalesDetail.receipts)} />
-          <Row label="Entradas" value={num(c.cashSalesDetail.cashIn)} />
-          <Row label="Devoluciones" value={num(c.cashSalesDetail.refunds)} />
-          <Row label="Salidas" value={num(c.cashSalesDetail.cashOut)} />
+          {(
+            [
+              ["Recibos CxC", c.cashSalesDetail.receipts],
+              ["Contraentregas cobradas", c.cashSalesDetail.cod],
+              ["Entradas", c.cashSalesDetail.cashIn],
+              ["Devoluciones", c.cashSalesDetail.refunds],
+              ["Salidas", c.cashSalesDetail.cashOut],
+            ] as [string, unknown][]
+          )
+            .filter(([, v]) => Number(v) !== 0)
+            .map(([label, v]) => (
+              <Row key={label} label={label} value={num(v)} />
+            ))}
         </>
       )}
       <h4>Resumen</h4>
@@ -226,39 +242,55 @@ function ReportHeading({ r }: { r: any }) {
 }
 
 /** 2. Reporte de la venta diaria de usuario (por producto). */
-export function DailyUserReportPrint({ r }: { r: any }) {
+export function DailyUserReportPrint({
+  r,
+  compact,
+}: {
+  r: any;
+  /** Va pegado al cuadre: sin logo ni dirección repetidos. */
+  compact?: boolean;
+}) {
   const rows = (r.rows ?? []).filter((x: any) => x.Descripción !== "TOTAL");
+  const t = r.totals ?? {};
+  const net = (x: any) => Number(x.Precio ?? 0) - Number(x.Desc ?? 0);
   return (
     <>
-      <ReportHeading r={{ ...r, title: r.title }} />
-      {/* Cada producto en dos renglones: el nombre completo y, debajo, sus
-          números alineados a la derecha. En 80 mm cinco columnas partían los
-          nombres largos en seis líneas y montaban los totales (dueña, 17-oct). */}
+      {compact ? (
+        <>
+          <h3 className="tp-center">{r.title}</h3>
+          <Row
+            label="Usuario"
+            value={
+              r.user ? `${r.user.number ?? "—"} · ${r.user.name}` : "Todos"
+            }
+          />
+        </>
+      ) : (
+        <ReportHeading r={{ ...r, title: r.title }} />
+      )}
+      {/* Nombre completo en un renglón y debajo cantidad, descuento y lo
+          cobrado (neto), sin ITBIS por línea (dueña, 17-oct). */}
       <div className="tp-daily">
         <div className="tp-daily-nums tp-th">
-          <span>CANT</span> <span>ITBIS</span> <span>DESC</span>{" "}
-          <span>PRECIO</span>
+          <span>CANT</span> <span>DESC</span> <span>NETO</span>
         </div>
         {rows.map((x: any, i: number) => (
           <div key={i} className="tp-daily-item">
             <p className="tp-desc">{x.Descripción}</p>
             <div className="tp-daily-nums">
-              <span>{x.Cant}</span> <span>{num(x.ITBIS)}</span>{" "}
-              <span>{num(x.Desc)}</span> <span>{num(x.Precio)}</span>
+              <span>{x.Cant}</span>{" "}
+              <span>{Number(x.Desc) ? "-" + num(x.Desc) : "0"}</span>{" "}
+              <span>{num(net(x))}</span>
             </div>
           </div>
         ))}
-        <div className="tp-daily-item tp-th">
-          <p>TOTALES</p>
-          <div className="tp-daily-nums">
-            <span>{r.totals?.Cant ?? 0}</span>{" "}
-            <span>{num(r.totals?.ITBIS)}</span>{" "}
-            <span>{num(r.totals?.Desc)}</span>{" "}
-            <span>{num(r.totals?.Precio)}</span>
-          </div>
-        </div>
       </div>
-      <p>{r.note}</p>
+      <h4>Totales</h4>
+      <Row label="Unidades" value={String(t.Cant ?? 0)} />
+      <Row label="Bruto" value={num(t.Precio)} />
+      <Row label="Descuentos" value={"-" + num(t.Desc)} />
+      <Row label="ITBIS incluido" value={num(t.ITBIS)} />
+      <Row label="NETO COBRADO" value={num(net(t))} strong />
       <p className="tp-center">FIN DEL REPORTE</p>
     </>
   );
