@@ -3794,11 +3794,13 @@ export class SalesController {
     idempotencyKey: string,
     codOnly: boolean,
   ) {
-    // La dueña/administración que da por recibida una transferencia no
-    // depende de ninguna caja ni equipo: el dinero cayó al banco, no a una
-    // caja (orden de la dueña, 17-oct). Pide solo el banco, como guía.
+    // La dueña/administración que da por recibida una transferencia o un
+    // efectivo que tiene en la mano no depende de ninguna caja ni equipo: el
+    // dinero cayó al banco o lo tiene ella, no una caja (orden de la dueña,
+    // 17-oct). La transferencia pide solo el banco, como guía. Lo normal
+    // sigue siendo que la cajera reciba el efectivo en su caja.
     const ownerClosed =
-      data.method === "transfer" &&
+      (data.method === "transfer" || data.method === "cash") &&
       data.ownerConfirmed === true &&
       can(actor.permissions, "*");
     if (ownerClosed) data = { ...data, cashSessionId: undefined };
@@ -3864,6 +3866,9 @@ export class SalesController {
       where: { id: actor.branchId },
     });
     const { cashSessionId, ownerConfirmed: _confirmed, ...payment } = data;
+    // Queda marcado en el pago para distinguirlo del efectivo de una caja.
+    if (ownerClosed && data.method === "cash" && !payment.reference?.trim())
+      payment.reference = "Recibido por la dueña";
     const row = await tx.payment.create({
       data: {
         ...payment,

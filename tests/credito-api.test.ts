@@ -1057,6 +1057,38 @@ describe("W7 · incentivo al cobrar", () => {
     expect(paid.cashSessionId).toBeNull();
   });
 
+  it("la dueña cierra en efectivo lo que recibió en la mano, sin caja; una cajera no puede", async () => {
+    const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
+    // La cajera sigue necesitando su caja aunque mande la marca.
+    const cajera = await collect(
+      ana,
+      s.id,
+      [{ method: "cash", amount: 200, ownerConfirmed: true }],
+      randomUUID(),
+      null,
+    );
+    expect(cajera.status).toBe(400);
+    expect(cajera.body.message).toMatch(/caja abierta/i);
+    const r = await collect(
+      adminA,
+      s.id,
+      [{ method: "cash", amount: 200, ownerConfirmed: true }],
+      randomUUID(),
+      null,
+    );
+    expect(r.status, JSON.stringify(r.body)).toBeLessThan(300);
+    expect(r.body.closed).toBe(true);
+    const paid = await db.payment.findFirst({
+      where: { saleId: s.id, entryType: "installment" },
+    });
+    expect(paid.status).toBe("ok");
+    expect(paid.cashSessionId).toBeNull();
+    expect(paid.reference).toBe("Recibido por la dueña");
+    expect(
+      Number((await db.sale.findUnique({ where: { id: s.id } })).creditBalance),
+    ).toBe(0);
+  });
+
   it("devolución después de un cobro parcial: descuenta sólo lo acreditado y el resto sigue proporcional", async () => {
     const s = (await sale(ana, 400, [{ method: "cod", amount: 400 }])).body; // incentivo 200
     await collect(adminA, s.id, [line("cash", 200)]);

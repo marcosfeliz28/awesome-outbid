@@ -851,7 +851,9 @@ function CodCollect({
   const owner = can(user?.permissions ?? [], "*");
   const newLine = (
     amount: string,
-    method: CollectLine["method"] = session || !manager ? "cash" : "transfer",
+    method: CollectLine["method"] = session || !manager || owner
+      ? "cash"
+      : "transfer",
   ) => ({
     key: crypto.randomUUID(),
     method,
@@ -897,7 +899,10 @@ function CodCollect({
                 }
               : l.method === "card"
                 ? { reference: l.reference }
-                : {}),
+                : // Sin caja abierta, la dueña tiene el efectivo en la mano.
+                  owner && !session
+                  ? { ownerConfirmed: true }
+                  : {}),
           })),
         },
       );
@@ -942,10 +947,16 @@ function CodCollect({
           cada forma de pago (por ejemplo, mitad transferencia y mitad
           efectivo).
         </p>
-        {!session && (
+        {!session && !owner && (
           <p className="form-error full" role="note">
             No tienes caja abierta: sin ella no puedes recibir efectivo. Abre tu
             caja o registra solo tarjeta o transferencia.
+          </p>
+        )}
+        {!session && owner && (
+          <p className="cod-hint full" role="note">
+            No tienes caja abierta: el efectivo que registres queda como
+            recibido por ti, fuera de cualquier caja.
           </p>
         )}
         {lines.map((l, index) => (
@@ -959,7 +970,7 @@ function CodCollect({
                   patch(l.key, { method: e.target.value as any })
                 }
               >
-                <option value="cash" disabled={!session}>
+                <option value="cash" disabled={!session && !owner}>
                   Efectivo
                 </option>
                 {manager && <option value="card">Tarjeta</option>}

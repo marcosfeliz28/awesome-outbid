@@ -42,7 +42,7 @@ export function CreditAccounts({ session }: { session: any }) {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<Method>(session ? "cash" : "card");
+  const [method, setMethod] = useState<Method>("cash");
   const [reference, setReference] = useState("");
   const [bank, setBank] = useState("");
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
@@ -140,7 +140,10 @@ export function CreditAccounts({ session }: { session: any }) {
                 }
               : method === "card"
                 ? { reference }
-                : {}),
+                : // Sin caja abierta, la dueña tiene el efectivo en la mano.
+                  session
+                  ? {}
+                  : { ownerConfirmed: true }),
           },
         ],
       });
@@ -342,9 +345,7 @@ export function CreditAccounts({ session }: { session: any }) {
                           change();
                         }}
                       >
-                        <option value="cash" disabled={!session}>
-                          Efectivo
-                        </option>
+                        <option value="cash">Efectivo</option>
                         <option value="card">Tarjeta</option>
                         <option value="transfer">Transferencia</option>
                       </select>
@@ -398,12 +399,7 @@ export function CreditAccounts({ session }: { session: any }) {
                     )}
                     <Button
                       type="submit"
-                      disabled={
-                        busy ||
-                        left > 0 ||
-                        cents <= 0 ||
-                        (method === "cash" && !session)
-                      }
+                      disabled={busy || left > 0 || cents <= 0}
                     >
                       Registrar pago
                     </Button>
