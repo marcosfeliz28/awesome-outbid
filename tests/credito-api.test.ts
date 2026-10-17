@@ -1006,7 +1006,12 @@ describe("W7 · incentivo al cobrar", () => {
   it("la administración puede dar por recibida una transferencia sin referencia ni verificación y el cliente pasa a «ya pagaron»", async () => {
     const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
     const r = await collect(adminA, s.id, [
-      { method: "transfer", amount: 200, ownerConfirmed: true },
+      {
+        method: "transfer",
+        amount: 200,
+        bank: "Popular",
+        ownerConfirmed: true,
+      },
     ]);
     expect(r.status, JSON.stringify(r.body)).toBeLessThan(300);
     expect(r.body.closed).toBe(true);
@@ -1022,6 +1027,34 @@ describe("W7 · incentivo al cobrar", () => {
     expect(done.rows.some((row: any) => row.customer.id === customerId)).toBe(
       true,
     );
+  });
+
+  it("la dueña cierra una transferencia sin depender de su caja (ni de otro equipo) y debe indicar el banco", async () => {
+    const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
+    const sinBanco = await collect(adminA, s.id, [
+      { method: "transfer", amount: 200, ownerConfirmed: true },
+    ]);
+    expect(sinBanco.status).toBe(400);
+    const r = await collect(
+      adminA,
+      s.id,
+      [
+        {
+          method: "transfer",
+          amount: 200,
+          bank: "Popular",
+          ownerConfirmed: true,
+        },
+      ],
+      randomUUID(),
+      randomUUID(), // una caja que no es de este equipo: no debe importar
+    );
+    expect(r.status, JSON.stringify(r.body)).toBeLessThan(300);
+    const paid = await db.payment.findFirst({
+      where: { saleId: s.id, entryType: "installment" },
+    });
+    expect(paid.status).toBe("ok");
+    expect(paid.cashSessionId).toBeNull();
   });
 
   it("devolución después de un cobro parcial: descuenta sólo lo acreditado y el resto sigue proporcional", async () => {

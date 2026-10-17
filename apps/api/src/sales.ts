@@ -3794,6 +3794,14 @@ export class SalesController {
     idempotencyKey: string,
     codOnly: boolean,
   ) {
+    // La dueña/administración que da por recibida una transferencia no
+    // depende de ninguna caja ni equipo: el dinero cayó al banco, no a una
+    // caja (orden de la dueña, 17-oct). Pide solo el banco, como guía.
+    const ownerClosed =
+      data.method === "transfer" &&
+      data.ownerConfirmed === true &&
+      can(actor.permissions, "*");
+    if (ownerClosed) data = { ...data, cashSessionId: undefined };
     if (data.cashSessionId) await cashLock(tx, actor, data.cashSessionId);
     else if (data.method === "cash")
       bad(
@@ -3842,12 +3850,10 @@ export class SalesController {
       bad("Indica los últimos 4 dígitos y la aprobación de tarjeta.");
     // La dueña/administración que cierra un cobro por transferencia no tiene
     // que verificarlo ni dar referencia: su palabra basta (orden de la dueña,
-    // 15-oct). Para el resto de usuarias sigue igual: banco, referencia y
-    // verificación de la administración.
-    const ownerClosed =
-      data.method === "transfer" &&
-      data.ownerConfirmed === true &&
-      can(actor.permissions, "*");
+    // 15-oct); solo indica el banco donde cayó. Para el resto de usuarias
+    // sigue igual: banco, referencia y verificación de la administración.
+    if (data.method === "transfer" && ownerClosed && !data.bank?.trim())
+      bad("Indica en qué banco cayó la transferencia.");
     if (
       data.method === "transfer" &&
       !ownerClosed &&

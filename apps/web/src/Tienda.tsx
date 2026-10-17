@@ -841,6 +841,9 @@ function CodCollect({
   const client = useQueryClient();
   const user = useStore((s) => s.user);
   const manager = can(user?.permissions ?? [], "sale:manage");
+  // La dueña da por recibida la transferencia desde cualquier equipo: solo
+  // indica el banco como guía (sin referencia ni caja propia).
+  const owner = can(user?.permissions ?? [], "*");
   const newLine = (
     amount: string,
     method: CollectLine["method"] = session || !manager ? "cash" : "transfer",
@@ -882,7 +885,11 @@ function CodCollect({
             method: l.method,
             amount: Number(l.amount),
             ...(l.method === "transfer"
-              ? { bank: l.bank, reference: l.reference }
+              ? {
+                  bank: l.bank,
+                  reference: l.reference || undefined,
+                  ...(owner ? { ownerConfirmed: true } : {}),
+                }
               : l.method === "card"
                 ? { reference: l.reference }
                 : {}),
@@ -907,7 +914,7 @@ function CodCollect({
         toast(
           result.closed
             ? "Cobro registrado: el crédito quedó cerrado."
-            : lines.some((l) => l.method === "transfer")
+            : lines.some((l) => l.method === "transfer") && !owner
               ? "Cobro registrado: la transferencia queda por verificar en el banco."
               : "Cobro registrado. Queda pendiente " +
                 formatMoney(result.pending) +
@@ -988,9 +995,9 @@ function CodCollect({
                   />
                 </label>
                 <label className="field">
-                  <span>Referencia</span>
+                  <span>{owner ? "Referencia (opcional)" : "Referencia"}</span>
                   <input
-                    required
+                    required={!owner}
                     value={l.reference}
                     onChange={(e) =>
                       patch(l.key, { reference: e.target.value })
@@ -1027,9 +1034,12 @@ function CodCollect({
         <ProofPicker file={proof} onChange={setProof} disabled={busy} />
         <p className="cod-hint full">
           El efectivo entra en el cuadre de tu caja; la tarjeta y la
-          transferencia se anotan por método. La transferencia queda pendiente
-          hasta verificarla en el banco. Puedes cobrar una parte ahora y el
-          resto después: el crédito se cierra cuando el saldo llega a cero.
+          transferencia se anotan por método.{" "}
+          {owner
+            ? "Tu transferencia se da por recibida y cierra el cobro al instante, sin depender de tu caja."
+            : "La transferencia queda pendiente hasta verificarla en el banco."}{" "}
+          Puedes cobrar una parte ahora y el resto después: el crédito se cierra
+          cuando el saldo llega a cero.
         </p>
         {error && (
           <p className="form-error full" role="alert">

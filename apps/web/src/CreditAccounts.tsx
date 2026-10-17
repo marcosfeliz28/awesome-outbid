@@ -351,8 +351,9 @@ export function CreditAccounts({ session }: { session: any }) {
                     </label>
                     {method === "transfer" && (
                       <label className="field">
-                        <span>Banco</span>
+                        <span>Banco donde cayó</span>
                         <input
+                          required
                           value={bank}
                           onChange={(e) => {
                             setBank(e.target.value);
@@ -363,7 +364,11 @@ export function CreditAccounts({ session }: { session: any }) {
                     )}
                     {method !== "cash" && (
                       <label className="field">
-                        <span>Referencia</span>
+                        <span>
+                          {method === "transfer"
+                            ? "Referencia (opcional)"
+                            : "Referencia"}
+                        </span>
                         <input
                           value={reference}
                           onChange={(e) => {
