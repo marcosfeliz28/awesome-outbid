@@ -377,7 +377,11 @@ export const INVENTORY_LOSS_SQL = `m.qty < 0 AND m.type IN ('adjustment','waste'
 // Ajustes que salen de ordenar el inventario (conteos iniciales de la dueña y
 // reparto de un producto en tonos): corrigen el sistema, no son merma del mes.
 // Se muestran aparte y no restan de la ganancia neta (dueña, 15-oct).
-export const COUNT_CORRECTION_SQL = `m.type = 'adjustment' AND (COALESCE(m.reason, '') ILIKE 'conteo%' OR COALESCE(m.reason, '') ILIKE 'teddy%')`;
+// También los conteos físicos de la puesta en marcha (10 y 11-oct) y los
+// ajustes de la dueña que dicen «conteo», «auditoría», «reversa»… en
+// cualquier parte del motivo (dueña, 17-oct: la ganancia neta salía negativa
+// por ordenar el inventario). Un conteo físico posterior sí es merma.
+export const COUNT_CORRECTION_SQL = `((m.type = 'count' AND m."createdAt" < '2026-10-16') OR (m.type = 'adjustment' AND COALESCE(m.reason, '') ~* '(conteo|teddy|auditor|reversa|casa a 0|no existe|no hay)'))`;
 export const SUPPLIER_RETURN_SQL = `m.qty < 0 AND (m.type = 'supplier_return' OR (m.type = 'merchandise_exit' AND m.reason = 'devolución a proveedor'))`;
 // N-1: toda devolución a proveedor deja una alerta (no se resuelve sola) con el
 // proveedor, la referencia y el costo, hasta que una persona confirme el crédito.
