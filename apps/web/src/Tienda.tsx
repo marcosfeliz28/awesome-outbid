@@ -65,6 +65,16 @@ export function PrintModal({
     queryKey: ["settings"],
     queryFn: () => api("/settings"),
   });
+  // Caja recién cerrada: el papel de productos vendidos sale siempre, pegado
+  // al cuadre en la misma impresión (dueña, 17-oct); antes había que pedirlo
+  // con «Siguiente» y nadie lo imprimía.
+  const withProducts = !!sessionId && printing?.kind === "cuadre";
+  const products = useQuery({
+    queryKey: ["session-print", "daily", sessionId],
+    queryFn: () => loadSessionPrint("daily", sessionId!),
+    enabled: withProducts,
+  });
+  const extra = withProducts ? products.data : undefined;
   if (!printing) return null;
   const width = config.data?.receiptWidth ?? "80";
   return (
@@ -87,7 +97,10 @@ export function PrintModal({
               ["method", "Facturas por forma de pago"],
             ] as [PrintKind, string][]
           )
-            .filter(([kind]) => kind !== printing.kind)
+            .filter(
+              ([kind]) =>
+                kind !== printing.kind && !(extra && kind === "daily"),
+            )
             .map(([kind, label]) => (
               <Button
                 key={kind}
@@ -107,9 +120,19 @@ export function PrintModal({
       )}
       <div className={"print-preview w" + width}>
         <PrintBody p={printing} />
+        {extra && (
+          <div className="tp-next-sheet">
+            <PrintBody p={extra} />
+          </div>
+        )}
       </div>
       <PrintSheet width={width}>
         <PrintBody p={printing} />
+        {extra && (
+          <div className="tp-next-sheet">
+            <PrintBody p={extra} />
+          </div>
+        )}
       </PrintSheet>
     </Modal>
   );

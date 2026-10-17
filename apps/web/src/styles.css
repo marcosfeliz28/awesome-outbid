@@ -4645,6 +4645,14 @@ td strong {
   width: 58mm;
   font-size: 11px;
 }
+/* Segundo papel en la misma impresión (productos vendidos tras el cuadre):
+ * una línea de corte y espacio, sin salto de página, para que el rollo
+ * térmico no alimente papel en blanco. */
+.tp-next-sheet {
+  margin-top: 10mm;
+  padding-top: 4mm;
+  border-top: 1px dashed #000;
+}
 .print-preview p,
 .thermal-print p {
   margin: 2px 0;
