@@ -417,6 +417,16 @@ La dueña está metiendo mercancía real en el sistema de Render: **ese sistema 
 4. **Tiendas de apps:** al final. Primero PWA instalable; luego, si conviene, empaquetado para Google Play y App Store, con su costo y su comisión.
 5. **Servidor en la casa:** solo como copia de respaldo y entorno de pruebas, nunca como servicio de clientes que pagan (riesgo de luz, internet y responsabilidad sobre sus datos).
 
+### 3ag. ORDEN (dueña, 17-oct) — Endurecimiento de seguridad de toda la aplicación (ChatGPT NUBE audita y corrige; Claude revisa y despliega)
+La dueña pidió aplicar **todos los métodos de seguridad** y cerrar los huecos. Ya existen helmet, CORS, límite de intentos (`rate-limit.ts`), política de contraseñas, PIN de gerente, guardia de XLSX y `@Permit`; **no los rehagas, verifícalos y completa lo que falte**. Trabaja por bloques, un commit por bloque, con prueba que falle antes y pase después:
+1. **Autorización:** recorre TODOS los controladores; cada endpoint con `@Permit` y prueba con un rol SIN permiso (403) y otro CON permiso. Busca acceso a datos de otra sucursal/usuario por `id` (IDOR).
+2. **Entradas:** validación zod en cada body/query/param; límites de tamaño y de lista; ningún SQL crudo con texto del usuario (`$queryRaw` solo con parámetros); rechazar campos extra.
+3. **Sesión y credenciales:** expiración y revocación de tokens, bloqueo por intentos fallidos (login y PIN), cambio de contraseña obligatorio, nada de secretos en logs ni respuestas de error.
+4. **Navegador:** cabeceras CSP/HSTS/frame/nosniff en la web (no solo la API), CORS solo al dominio propio, cookies/almacenamiento del token sin XSS (nada de `dangerouslySetInnerHTML` sin sanear), PWA sin cachear datos privados de otro usuario.
+5. **Datos:** `pnpm audit` sin altas/críticas (actualiza o documenta la excepción), secretos solo por variables de entorno, bitácora de auditoría en cambios de dinero/precios/permisos, subida de archivos con tipo y tamaño verificados.
+6. **Entregable:** `docs/SEGURIDAD_ESTADO.md` con tabla «control · estado (ya estaba / corregido / pendiente) · prueba».
+Prohibido: tocar `deploy/**`, `render.yaml`, `.github/workflows/**`, `tests/e2e/**`, desplegar, relajar límites o pruebas. `pnpm check` y los 3 CI en verde. Claude revisa de forma adversaria antes de aceptar.
+
 ### 3af. ORDEN (dueña, 16-oct) — Casilla «Con envío» en la caja al cobrar (ChatGPT NUBE; pequeña, sobre el envío del mensajero ya existente)
 Hoy el envío del mensajero se anota **después** de la venta (`PATCH /sales/:id/courier`, `CourierFeeEditor` en Ventas y Conciliar transferencias). La dueña lo quiere **al cobrar**:
 1. En `POS.tsx`, al pagar, casilla «Con envío» + monto + nombre del mensajero (Addison por defecto). **Solo aparece si el pago es transferencia o tarjeta.** En efectivo o contraentrega NO se pregunta ni se guarda (el mensajero se cobra de ahí; no pasa por nosotros).
