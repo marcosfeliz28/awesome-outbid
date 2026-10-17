@@ -320,11 +320,18 @@ describe("Auditoría 01 · dinero", () => {
 
   it("M-1: las alertas de diferencia de caja y de descuento inusual no se resuelven solas", async () => {
     const c = await person("seller", "m1", 0);
+    // La gerente autoriza con su PIN el cierre descuadrado (dueña, 17-oct).
+    const m = await person("manager", "m1m", 0);
     const v = await product(1000, 400, 10);
     await sell(c, v, 1, [{ method: "cash", amount: 1000 }]);
     expect(
-      (await close(c, { countedCash: 100, notes: "Faltante sin explicar" }))
-        .status,
+      (
+        await close(c, {
+          countedCash: 100,
+          notes: "Faltante sin explicar",
+          managerPin: "975310",
+        })
+      ).status,
     ).toBeLessThan(300);
     const key = "cash:" + c.cash.id;
     expect((await alert(key))?.status).toBe("new");
@@ -357,7 +364,6 @@ describe("Auditoría 01 · dinero", () => {
     expect((await alert(key))?.status).toBe("resolved");
 
     // Descuento inusual: al día siguiente sigue abierta.
-    const m = await person("manager", "m1m", 0);
     const sale = await ok(
       "/sales",
       m.token,

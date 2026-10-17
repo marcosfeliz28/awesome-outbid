@@ -3805,7 +3805,7 @@ export class SalesController {
       can(actor.permissions, "*");
     if (ownerClosed) data = { ...data, cashSessionId: undefined };
     if (data.cashSessionId) await cashLock(tx, actor, data.cashSessionId);
-    else if (data.method === "cash")
+    else if (data.method === "cash" && !ownerClosed)
       bad(
         "Para recibir efectivo necesitas tu caja abierta. Ábrela en Caja o registra solo tarjeta o transferencia.",
       );
