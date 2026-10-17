@@ -231,22 +231,31 @@ export function DailyUserReportPrint({ r }: { r: any }) {
   return (
     <>
       <ReportHeading r={{ ...r, title: r.title }} />
-      <div className="tp-table tp-daily">
-        <div className="tp-th">
-          <span>DESCRIPCIÓN</span> <span>CANT</span> <span>ITBIS</span>{" "}
-          <span>DESC</span> <span>PRECIO</span>
+      {/* Cada producto en dos renglones: el nombre completo y, debajo, sus
+          números alineados a la derecha. En 80 mm cinco columnas partían los
+          nombres largos en seis líneas y montaban los totales (dueña, 17-oct). */}
+      <div className="tp-daily">
+        <div className="tp-daily-nums tp-th">
+          <span>CANT</span> <span>ITBIS</span> <span>DESC</span>{" "}
+          <span>PRECIO</span>
         </div>
         {rows.map((x: any, i: number) => (
-          <div key={i}>
-            <span className="tp-desc">{x.Descripción}</span>{" "}
-            <span>{x.Cant}</span> <span>{num(x.ITBIS)}</span>{" "}
-            <span>{num(x.Desc)}</span> <span>{num(x.Precio)}</span>
+          <div key={i} className="tp-daily-item">
+            <p className="tp-desc">{x.Descripción}</p>
+            <div className="tp-daily-nums">
+              <span>{x.Cant}</span> <span>{num(x.ITBIS)}</span>{" "}
+              <span>{num(x.Desc)}</span> <span>{num(x.Precio)}</span>
+            </div>
           </div>
         ))}
-        <div className="tp-th">
-          <span>TOTALES</span> <span>{r.totals?.Cant ?? 0}</span>{" "}
-          <span>{num(r.totals?.ITBIS)}</span> <span>{num(r.totals?.Desc)}</span>{" "}
-          <span>{num(r.totals?.Precio)}</span>
+        <div className="tp-daily-item tp-th">
+          <p>TOTALES</p>
+          <div className="tp-daily-nums">
+            <span>{r.totals?.Cant ?? 0}</span>{" "}
+            <span>{num(r.totals?.ITBIS)}</span>{" "}
+            <span>{num(r.totals?.Desc)}</span>{" "}
+            <span>{num(r.totals?.Precio)}</span>
+          </div>
         </div>
       </div>
       <p>{r.note}</p>

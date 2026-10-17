@@ -4741,8 +4741,27 @@ td strong {
   display: grid;
   gap: 3px;
 }
-.tp-daily > div {
-  grid-template-columns: minmax(0, 1fr) 4ch 7ch 7ch 9ch;
+/* Productos vendidos: nombre en un renglón y números debajo, a la derecha
+ * (cabe en 58 mm: 4+8+8+10 caracteres). */
+.tp-daily-item {
+  margin-top: 3px;
+  border-top: 1px dotted #999;
+  padding-top: 2px;
+}
+.tp-daily-item .tp-desc,
+.tp-daily-item p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.tp-daily-nums {
+  display: grid;
+  grid-template-columns: 4ch 8ch 8ch 10ch;
+  justify-content: end;
+  gap: 3px;
+}
+.tp-daily-nums span {
+  text-align: right;
+  white-space: nowrap;
 }
 .tp-method > div,
 .tp-method .tp-group > div {
