@@ -1,5 +1,7 @@
+import { logInternalError } from "./safe-log";
 import { Inject, Injectable } from "@nestjs/common";
 import { Database } from "./common";
+import { errorDiagnostic } from "./safe-log";
 
 // Retención de tablas que crecen sin límite (auditoría 06 D-A2/D-B12 y
 // auditoría 03 M7/M11/B1). El disco de la base en Render es de 1 GB: sin
@@ -106,7 +108,7 @@ export async function purgeExpiredData(db: any, now = new Date()) {
     } catch (error: any) {
       // Una tabla que falla (p. ej. falta la columna de una migración que
       // quedó pendiente) no impide purgar las demás.
-      result.errors.push(`${name}: ${String(error?.message ?? error)}`);
+      result.errors.push(`${name}: ${JSON.stringify(errorDiagnostic(error))}`);
     }
   };
   // Cada DELETE repite su condición fuera del lote: si una fila cambia
@@ -231,9 +233,7 @@ export class RetentionWorker {
       for (const error of result.errors)
         console.warn("[retención] " + error.slice(0, 300));
     } catch (error: any) {
-      console.warn(
-        "[retención] " + String(error?.message ?? error).slice(0, 300),
-      );
+      logInternalError(error, "retention", "warn");
     } finally {
       this.running = false;
     }

@@ -441,8 +441,8 @@ export function DayReports({ onPrint }: { onPrint: (p: Printing) => void }) {
   const open = async (kind: "daily" | "method") => {
     try {
       const params = new URLSearchParams({
-        from: date + "T00:00:00-04:00",
-        to: date + "T23:59:59-04:00",
+        from: date,
+        to: date,
         ...(userId ? { userId } : {}),
       });
       onPrint({

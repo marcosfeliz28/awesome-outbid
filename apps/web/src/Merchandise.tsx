@@ -18,6 +18,7 @@ import { Badge, Button, Modal } from "@fitstore/ui";
 import { can, formatMoney } from "@fitstore/shared";
 import {
   api,
+  cachedApi,
   download,
   loadCatalog,
   localDB,
@@ -264,13 +265,7 @@ function ProductSearch({
 
 async function cachedReference(key: string, path: string) {
   const user = useStore.getState().user!;
-  const cacheKey = "goods:" + user.branchId + ":" + key;
-  if (navigator.onLine) {
-    const data = await api(path);
-    await localDB.cache.put({ key: cacheKey, data });
-    return data;
-  }
-  return (await localDB.cache.get(cacheKey))?.data ?? [];
+  return cachedApi<any[]>(path, "goods:" + user.branchId + ":" + key);
 }
 
 export function Merchandise() {

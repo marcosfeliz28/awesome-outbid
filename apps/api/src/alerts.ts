@@ -1,3 +1,5 @@
+import { inputPage } from "./request-validation";
+import { logInternalError } from "./safe-log";
 import { randomUUID } from "node:crypto";
 import {
   Body,
@@ -267,7 +269,7 @@ export class AlertEngine {
   constructor(@Inject(Database) private db: Database) {}
   onModuleInit() {
     this.timer = setInterval(
-      () => this.evaluate("main", { fresh: true }).catch(console.error),
+      () => this.evaluate("main", { fresh: true }).catch((error) => logInternalError(error, "alerts")),
       24 * 3600000,
     );
     this.timer.unref();
@@ -306,7 +308,7 @@ export class AlertEngine {
           this.start(branchId).catch((error) => {
             // Reintenta en el próximo período, no en cada petición.
             cached.at = this.now();
-            console.error(error);
+            logInternalError(error, "alerts");
           });
         return cached.candidates;
       }
@@ -840,7 +842,7 @@ export class AlertsController {
         status: z.enum(["new", "seen", "resolved", "all"]).default("all"),
         type: z.string().max(80).optional(),
         entityId: z.string().max(100).optional(),
-        limit: z.coerce.number().int().min(1).max(500).default(200),
+        limit: inputPage(500).default("200"),
         cursor: uuid.optional(),
       }),
       query,

@@ -1,10 +1,11 @@
+import { inputDate, inputPage } from "./request-validation";
 import { Controller, Get, Inject, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import { Prisma } from "@prisma/client";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { once } from "node:events";
-import { businessDate } from "@fitstore/shared";
+import { businessDate, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -56,6 +57,18 @@ const isoDate = (value: string) => {
   return value;
 };
 export function incomeOptions(query: QueryInput) {
+  query = parse(
+    z.object({
+      from: inputDate,
+      to: inputDate,
+      scope: z.enum(["all", "session", "user", "equipment"]).optional(),
+      scopeId: z.string().min(1).max(100).optional(),
+      day: inputDate.optional(),
+      page: inputPage(10000).transform(String).optional(),
+      format: z.enum(["csv", "xlsx", "pdf"]).optional(),
+    }),
+    query,
+  );
   const from = isoDate(query.from ?? "");
   const to = isoDate(query.to ?? "");
   const days = Math.round((Date.parse(to) - Date.parse(from)) / 86400000);

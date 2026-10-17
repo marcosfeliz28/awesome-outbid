@@ -1834,7 +1834,6 @@ describe("Seguridad, offline y funciones completadas", () => {
     ).toBe(400);
     await ok("/sales/" + a.id + "/void", {
       reason: "QA restaurar nota",
-      cashSessionId: session.id,
     });
     expect(
       Number(
@@ -2304,7 +2303,7 @@ describe("Ronda 2 de Claude", () => {
     }
   });
   const payload = (s = session) => input(variant.variants[0].id, 118, s);
-  it("la API aplica la política offline y recalcula un precio manipulado", async () => {
+  it("la API aplica la política offline, rechaza un precio extra y conserva el precio del servidor", async () => {
     const settings = await ok("/settings");
     const offlineUuid = randomUUID();
     const stockBefore = Number(
@@ -2340,6 +2339,27 @@ describe("Ronda 2 de Claude", () => {
         },
       ],
     };
+    const genuine = {
+      ...forged,
+      items: [
+        { variantId: variant.variants[0].id, qty: 1, discountPercent: 0 },
+      ],
+    };
+    const rejectForgedPrice = async () => {
+      const rejected = await ok("/sales/sync", { sales: [forged] });
+      expect(rejected.results[0].status).toBe("conflict");
+      expect(rejected.results[0].message).toMatch(/campos no permitidos/);
+      expect(await protectedCounts()).toEqual(countsBefore);
+      expect(
+        Number(
+          (
+            await fixtureDb.variant.findUniqueOrThrow({
+              where: { id: variant.variants[0].id },
+            })
+          ).stock,
+        ),
+      ).toBe(stockBefore);
+    };
     try {
       await ok(
         "/settings",
@@ -2347,7 +2367,8 @@ describe("Ronda 2 de Claude", () => {
         token,
         "PUT",
       );
-      const blocked = await ok("/sales/sync", { sales: [forged] });
+      await rejectForgedPrice();
+      const blocked = await ok("/sales/sync", { sales: [genuine] });
       expect(blocked.results[0].status).toBe("conflict");
       expect(blocked.results[0].message).toMatch(/desactivadas/);
       expect(
@@ -2374,7 +2395,8 @@ describe("Ronda 2 de Claude", () => {
         token,
         "PUT",
       );
-      const accepted = await ok("/sales/sync", { sales: [forged] });
+      await rejectForgedPrice();
+      const accepted = await ok("/sales/sync", { sales: [genuine] });
       expect(accepted.results[0].status).toBe("synced");
       const stored = await fixtureDb.sale.findUniqueOrThrow({
         where: { offlineUuid },
@@ -2814,7 +2836,7 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
     });
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/event-stream");
-    const events: { type: string; data: any; at: number }[] = [];
+    const events: { id?: string; type: string; data: any; at: number }[] = [];
     const reader = response.body!.getReader();
     let buf = "";
     const decoder = new TextDecoder();
@@ -2838,8 +2860,13 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
               .find((l) => l.startsWith("data:"))
               ?.slice(5)
               .trim();
+            const id = frame
+              .split("\n")
+              .find((l) => l.startsWith("id:"))
+              ?.slice(3)
+              .trim();
             if (type && text)
-              events.push({ type, data: JSON.parse(text), at: Date.now() });
+              events.push({ id, type, data: JSON.parse(text), at: Date.now() });
           }
         }
       } catch {
@@ -3355,9 +3382,36 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
     const second = await ok("/sales", input(id, 118));
     from = s.events.length;
     qty = Number((await current()).stock) + 1;
-    await ok("/sales/" + second.id + "/void", {
+    const voidState = async () => ({
+      sale: JSON.parse(
+        JSON.stringify(
+          await fixtureDb.sale.findUniqueOrThrow({
+            where: { id: second.id },
+            include: { items: true, payments: true },
+          }),
+        ),
+      ),
+      stock: Number((await current()).stock),
+      movements: await fixtureDb.inventoryMovement.count({
+        where: { variantId: id },
+      }),
+      returns: await fixtureDb.saleReturn.count({
+        where: { saleId: second.id },
+      }),
+      audits: await fixtureDb.auditLog.count({
+        where: { entityId: second.id },
+      }),
+    });
+    const beforeVoid = await voidState();
+    const extra = await request("/sales/" + second.id + "/void", {
       reason: "QA eventos anulación",
       cashSessionId: session.id,
+    });
+    expect(extra.status).toBe(400);
+    expect(extra.body.message).toMatch(/campos no permitidos/);
+    expect(await voidState()).toEqual(beforeVoid);
+    await ok("/sales/" + second.id + "/void", {
+      reason: "QA eventos anulación",
     });
     await waitStock(from, qty);
     const count = await ok("/inventory/counts", {
@@ -3370,6 +3424,13 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
   });
   it("eventos se publican en orden de commit aunque las transacciones empiecen al revés", async () => {
     const s = await stream(token);
+    // Una conexión nueva puede recibir el último lote aún pendiente del hub.
+    // Se identifican los eventos de estas transacciones por el id del servidor.
+    const cutoff =
+      (await fixtureDb.realtimeEvent.aggregate({ _max: { id: true } }))._max
+        .id ?? 0n;
+    const committedEvents = () =>
+      s.events.filter((event) => event.id && BigInt(event.id) > cutoff);
     let release!: () => void, started!: () => void;
     const gate = new Promise<void>((r) => (release = r)),
       ready = new Promise<void>((r) => (started = r));
@@ -3389,14 +3450,23 @@ describe("Ronda 3 · tiempo real y mercancía", () => {
       });
     });
     await waitFor(() =>
-      s.events.some((e) => e.data.variantId === lotProduct.variants[0].id),
+      committedEvents().some(
+        (e) => e.data.variantId === lotProduct.variants[0].id,
+      ),
     );
+    expect(
+      committedEvents().some(
+        (e) => e.data.variantId === product.variants[0].id,
+      ),
+    ).toBe(false);
     release();
     await slow;
     await waitFor(() =>
-      s.events.some((e) => e.data.variantId === product.variants[0].id),
+      committedEvents().some(
+        (e) => e.data.variantId === product.variants[0].id,
+      ),
     );
-    const ids = s.events
+    const ids = committedEvents()
       .filter((e) => e.type === "stock.changed")
       .map((e) => e.data.variantId);
     expect(ids.indexOf(lotProduct.variants[0].id)).toBeLessThan(
@@ -5936,7 +6006,6 @@ describe("Ronda 9 · revisión · dinero", () => {
         fixtureDb.variant.findUniqueOrThrow({ where: { id: v.id } });
       expect(Number((await variant()).costAvg)).toBe(200);
       await ok("/sales/" + sale.id + "/void", {
-        cashSessionId: session.id,
         reason: "QA R9 dinero anulación",
       });
       const after = await variant();
@@ -7814,7 +7883,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     ).body;
     await must(
       "/sales/" + sold.g.id + "/void",
-      { reason: "QA ticket nulo", cashSessionId: s1.id },
+      { reason: "QA ticket nulo" },
       ownerToken,
     );
     // j) venta devuelta en efectivo.
@@ -11454,15 +11523,18 @@ describe("SEC-01 · bomba XLSX en los importadores", () => {
     for (const path of ["/merchandise/import", "/products/import"]) {
       const form = new FormData();
       form.set("file", new Blob([file]), "factura.xlsx");
-      form.set(
-        "mapping",
-        JSON.stringify({
-          code: "codigo",
-          description: "descripcion",
-          qty: "cantidad",
-          unitCost: "costo",
-        }),
-      );
+      // El catálogo sólo recibe el archivo. El mapeo pertenece a facturas:
+      // un campo extra se rechaza antes de llegar a la guarda de XLSX.
+      if (path === "/merchandise/import")
+        form.set(
+          "mapping",
+          JSON.stringify({
+            code: "codigo",
+            description: "descripcion",
+            qty: "cantidad",
+            unitCost: "costo",
+          }),
+        );
       const started = Date.now();
       const r = await fetch(base + path, {
         method: "POST",

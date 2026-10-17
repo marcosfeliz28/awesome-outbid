@@ -107,7 +107,11 @@ function fixture(
   };
   const db = {
     customer: tx.customer,
-    variant: { findMany: vi.fn(async () => []) },
+    variant: {
+      findMany: vi.fn(async () => [
+        { id: "44444444-4444-4444-8444-444444444444", price: 100 },
+      ]),
+    },
     $transaction: vi.fn(async (operation: (client: typeof tx) => unknown) =>
       operation(tx),
     ),

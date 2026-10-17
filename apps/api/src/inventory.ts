@@ -1,3 +1,4 @@
+import { inputDate } from "./request-validation";
 import {
   Body,
   Controller,
@@ -205,7 +206,13 @@ function keepHiddenItbis(input: DocumentInput, actor: Actor): DocumentInput {
   return rest;
 }
 // Período por la fecha de la factura (como el 606) o, si falta, la de recepción.
+const receiptQuery = z.object({
+  from: inputDate.optional(),
+  to: inputDate.optional(),
+  supplierId: uuid.optional(),
+});
 function receiptPeriod(query: Record<string, string>) {
+  parse(receiptQuery, query);
   const day = /^\d{4}-\d{2}-\d{2}$/;
   if (
     (query.from && !day.test(query.from)) ||
@@ -610,9 +617,13 @@ export class InventoryController {
   @Get("inventory/movements")
   @Permit("catalog:read")
   async movements(
-    @Query("variantId") variantId: string,
+    @Query() query: Record<string, string>,
     @CurrentUser() actor: Actor,
   ) {
+    const { variantId } = parse(
+      z.object({ variantId: uuid.optional() }),
+      query,
+    );
     return safe(
       await this.db.inventoryMovement.findMany({
         where: {
@@ -976,6 +987,14 @@ export class InventoryController {
       const supplier = await tx.supplier.findFirstOrThrow({
         where: { id: data.supplierId, branchId: actor.branchId, active: true },
       });
+      const variants = await tx.variant.count({
+        where: {
+          id: { in: data.items.map((item) => item.variantId) },
+          branchId: actor.branchId,
+        },
+      });
+      if (variants !== data.items.length)
+        bad("Una de las variantes no existe en tu sucursal.");
       const count = await tx.counter.upsert({
         where: { key: "purchase" },
         create: { key: "purchase", value: 1 },

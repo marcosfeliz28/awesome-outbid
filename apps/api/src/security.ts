@@ -85,19 +85,43 @@ export async function managerPinApproval(
   db: any,
   actor: Actor,
   pin: string,
+  scope: "approval" | "terminal-approval" = "approval",
 ): Promise<string> {
-  const managers = await db.user.findMany({
-    where: { active: true, branchId: actor.branchId },
-    include: { role: true },
-  });
   return verifyPinAttempt(
     db,
-    "approval:" + actor.id,
-    async () => {
+    scope + ":" + actor.id,
+    async (tx) => {
+      // Se consulta DESPUÉS de adquirir los contadores: un intento en cola
+      // no conserva un PIN ni un permiso revocados mientras esperaba. Quien
+      // debe cambiar su contraseña tampoco puede aprobar con otro secreto.
+      const managers = await tx.user.findMany({
+        where: {
+          active: true,
+          mustChangePassword: false,
+          branchId: actor.branchId,
+        },
+        include: { role: true },
+      });
       for (const manager of managers.filter((m: any) =>
         can(m.role.permissions, "sale:manage"),
-      ))
-        if (await compare(pin, manager.pinHash)) return manager.id as string;
+      )) {
+        if (!(await compare(pin, manager.pinHash))) continue;
+        // bcrypt es asíncrono; vuelve a comprobar credenciales y permisos
+        // por si un restablecimiento o una baja coincidió con la comparación.
+        const current = await tx.user.findUnique({
+          where: { id: manager.id },
+          include: { role: true },
+        });
+        if (
+          current?.active &&
+          !current.mustChangePassword &&
+          current.branchId === actor.branchId &&
+          current.pinHash === manager.pinHash &&
+          current.authVersion === manager.authVersion &&
+          can(current.role.permissions, "sale:manage")
+        )
+          return current.id as string;
+      }
       return null;
     },
     { pin, actor },
@@ -254,7 +278,7 @@ const SHORT_PIN_MESSAGE =
 export const verifyPinAttempt = (
   db: any,
   key: string,
-  verify: () => Promise<string | null>,
+  verify: (tx: any) => Promise<string | null>,
   context: { pin?: string; actor?: Actor } = {},
 ) => {
   const requesterId = context.actor?.id ?? key.slice(key.indexOf(":") + 1);
@@ -332,7 +356,10 @@ export class SecurityMaintenance implements OnModuleInit, OnModuleDestroy {
   constructor(@Inject(Database) private readonly db: Database) {}
   onModuleInit() {
     this.timer = setInterval(
-      () => void this.run().catch((error) => console.warn(String(error))),
+      () =>
+        void this.run().catch(() =>
+          console.warn("No se pudo completar el mantenimiento de seguridad."),
+        ),
       6 * HOUR,
     );
     this.timer.unref();

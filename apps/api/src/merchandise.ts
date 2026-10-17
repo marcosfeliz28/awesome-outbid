@@ -61,6 +61,11 @@ import {
   matchInvoiceLines,
   readInvoiceTable,
 } from "./invoice";
+import {
+  INVOICE_MAX_BYTES,
+  invoiceDownloadMime,
+  validateInvoiceUpload,
+} from "./invoice-upload";
 // Compatibilidad: las pruebas y otros módulos importaban desde aquí.
 export {
   extractAnthropic,
@@ -151,6 +156,26 @@ const operationSchema = documentSchema.extend({
   acknowledgeMismatch: z.boolean().default(false),
   items: z.array(lineSchema).min(1).max(200),
 });
+const importInvoiceSchema = z
+  .object({
+    supplierId: uuid.optional(),
+    mapping: z.string().max(2048).optional(),
+    total: z
+      .union([
+        amount,
+        z.string().trim().min(1).max(40).transform(Number).pipe(amount),
+      ])
+      .optional(),
+  })
+  .strict();
+const invoiceMappingSchema = z
+  .object({
+    code: z.string().max(100),
+    description: z.string().max(100),
+    qty: z.string().max(100),
+    unitCost: z.string().max(100),
+  })
+  .strict();
 function merchandiseAccess(actor: Actor) {
   if (actor.role === "seller") denied();
 }
@@ -187,7 +212,9 @@ export class MerchandiseController {
     const a = await this.db.invoiceAttachment.findFirstOrThrow({
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
-    res.setHeader("Content-Type", a.mime);
+    res.setHeader("Content-Type", invoiceDownloadMime(a.mime));
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Content-Disposition", 'attachment; filename="comprobante"');
     res.send(Buffer.from(a.data));
   }
@@ -195,34 +222,29 @@ export class MerchandiseController {
   @Permit("inventory:write")
   @UseInterceptors(
     FileInterceptor("file", {
-      limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+      limits: {
+        fileSize: INVOICE_MAX_BYTES,
+        files: 1,
+        fields: 3,
+        fieldSize: 8192,
+        // Un archivo y tres campos; fields/files restringen también sus tipos.
+        parts: 5,
+      },
     }),
   )
   async importInvoice(
     @UploadedFile() file: any,
-    @Body() body: any,
+    @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
     merchandiseAccess(actor);
-    if (!file) bad("Adjunta la factura.");
-    const supplierId = body.supplierId
-      ? parse(uuid, body.supplierId)
-      : undefined;
+    const data = parse(importInvoiceSchema, body);
+    const { format, mime } = validateInvoiceUpload(file);
+    const supplierId = data.supplierId;
     if (supplierId)
       await this.db.supplier.findFirstOrThrow({
         where: { id: supplierId, branchId: actor.branchId, active: true },
       });
-    const format = String(file.originalname).toLowerCase().endsWith(".csv")
-      ? "csv"
-      : String(file.originalname).toLowerCase().endsWith(".xlsx")
-        ? "xlsx"
-        : "ai";
-    // Una factura en Excel/CSV pesa pocos KB: archivos grandes se rechazan antes
-    // de leerlos para no bloquear el servidor.
-    if (format !== "ai" && file.size > 1024 * 1024)
-      bad(
-        "El Excel o CSV supera 1 MB. Revisa que sea el archivo de la factura.",
-      );
     const dayAgo = new Date(Date.now() - 24 * 3600000);
     const pendingDrafts = await this.db.invoiceDraft.count({
       where: {
@@ -238,30 +260,18 @@ export class MerchandiseController {
     let mapping: Record<string, string> | undefined;
     if (format !== "ai") {
       try {
-        mapping = parse(
-          z.object({
-            code: z.string(),
-            description: z.string(),
-            qty: z.string(),
-            unitCost: z.string(),
-          }),
-          JSON.parse(body.mapping || "{}"),
-        );
+        mapping = parse(invoiceMappingSchema, JSON.parse(data.mapping || "{}"));
       } catch {
         bad("Revisa el mapeo de columnas.");
       }
       extracted = await readInvoiceTable(file.buffer, format, mapping);
     } else {
       if (!process.env.ANTHROPIC_API_KEY) bad("Extracción IA no configurada.");
-      if (
-        !["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(
-          file.mimetype,
-        )
-      )
-        bad("Usa foto PNG/JPEG/WebP o PDF.");
-      extracted = await extractAnthropic(file, process.env.ANTHROPIC_API_KEY, {
-        model: process.env.ANTHROPIC_MODEL || DEFAULT_INVOICE_MODEL,
-      });
+      extracted = await extractAnthropic(
+        { buffer: file.buffer, mimetype: mime },
+        process.env.ANTHROPIC_API_KEY,
+        { model: process.env.ANTHROPIC_MODEL || DEFAULT_INVOICE_MODEL },
+      );
     }
     const variants = await this.db.variant.findMany({
       where: {
@@ -291,12 +301,7 @@ export class MerchandiseController {
         data: {
           branchId: actor.branchId,
           userId: actor.id,
-          mime:
-            format === "csv"
-              ? "text/csv"
-              : format === "xlsx"
-                ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                : file.mimetype,
+          mime,
           data: file.buffer,
         },
       });
@@ -307,9 +312,7 @@ export class MerchandiseController {
           supplierId,
           attachmentId: attachment.id,
           lines: json(lines),
-          total:
-            extracted.total ??
-            (body.total ? parse(amount, Number(body.total)) : null),
+          total: extracted.total ?? data.total ?? null,
         },
       });
       await audit(

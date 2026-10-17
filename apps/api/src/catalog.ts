@@ -1,3 +1,4 @@
+import { inputPage } from "./request-validation";
 import {
   d,
   formatAmount,
@@ -162,6 +163,19 @@ async function assertCategoriesInBranch(
     );
 }
 
+async function assertSuppliersInBranch(
+  tx: any,
+  branchId: string,
+  ids: (string | null | undefined)[],
+) {
+  const wanted = [...new Set(ids.filter(Boolean))] as string[];
+  if (!wanted.length) return;
+  const found = await tx.supplier.count({
+    where: { id: { in: wanted }, branchId },
+  });
+  if (found !== wanted.length) bad("El proveedor no existe en tu sucursal.");
+}
+
 const variantSchema = z.object({
   sku: z.string().trim().min(1).max(80),
   barcode: z.string().trim().min(1).max(80),
@@ -190,7 +204,7 @@ export class CatalogController {
   constructor(@Inject(Database) private db: Database) {}
   @Get("catalog-template.xlsx")
   @Permit("catalog:write")
-  async template(@Res() res: Response) {
+  async template(@Res() res: Response, @CurrentUser() actor: Actor) {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Productos");
     sheet.addRow([
@@ -212,7 +226,9 @@ export class CatalogController {
     sheet.columns.forEach((c) => (c.width = 24));
     const cats = workbook.addWorksheet("Categorías");
     cats.addRow(["ID", "Nombre"]);
-    for (const c of await this.db.category.findMany())
+    for (const c of await this.db.category.findMany({
+      where: { branchId: actor.branchId },
+    }))
       cats.addRow([c.id, c.name]);
     res.setHeader(
       "Content-Type",
@@ -226,8 +242,11 @@ export class CatalogController {
   }
   @Get("categories")
   @Permit("catalog:read")
-  categories() {
-    return this.db.category.findMany({ orderBy: { createdAt: "asc" } });
+  categories(@CurrentUser() actor: Actor) {
+    return this.db.category.findMany({
+      where: { branchId: actor.branchId },
+      orderBy: { createdAt: "asc" },
+    });
   }
   @Post("categories")
   @Permit("catalog:write")
@@ -269,15 +288,20 @@ export class CatalogController {
     @Query() query: Record<string, string>,
     @CurrentUser() actor: Actor,
   ) {
-    const q = query.q?.trim().slice(0, 100);
-    const page = Math.max(1, Number(query.page) || 1),
-      limit = Math.min(200, Math.max(1, Number(query.limit) || 60));
+    const { q, page, limit, active, categoryId } = parse(
+      z.object({
+        q: z.string().trim().max(100).optional(),
+        page: inputPage().default("1"),
+        limit: inputPage(200).default("60"),
+        active: z.enum(["true", "false"]).default("true"),
+        categoryId: uuid.optional(),
+      }),
+      query,
+    );
     const where: any = {
       branchId: actor.branchId,
-      active: query.active === "false" ? false : true,
-      ...(query.categoryId
-        ? { categoryId: parse(uuid, query.categoryId) }
-        : {}),
+      active: active === "true",
+      ...(categoryId ? { categoryId } : {}),
       ...(q
         ? {
             OR: [
@@ -369,6 +393,7 @@ export class CatalogController {
     const codes = variants.map((v) => ({ codes: [v.sku, v.barcode] }));
     const write = this.db.$transaction(async (tx) => {
       await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
+      await assertSuppliersInBranch(tx, actor.branchId, [data.supplierId]);
       await assertCodesFree(tx, actor.branchId, codes);
       const row = await tx.product.create({
         data: {
@@ -411,6 +436,7 @@ export class CatalogController {
         where: { id: parse(uuid, id), branchId: actor.branchId },
       });
       await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
+      await assertSuppliersInBranch(tx, actor.branchId, [data.supplierId]);
       const row = await tx.product.update({ where: { id }, data });
       await audit(tx, actor, "update", "product", id, before, row);
       return safe(row, actor);
@@ -435,12 +461,15 @@ export class CatalogController {
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
     let combinations: Record<string, string>[] = [{}];
-    for (const [key, values] of Object.entries(data.attributes))
+    for (const [key, values] of Object.entries(data.attributes)) {
+      // Reserva el presupuesto antes de multiplicar: comprobar al final
+      // permitía agotar la memoria con una solicitud pequeña.
+      if (combinations.length * values.length > 500)
+        bad("La matriz no puede exceder 500 variantes.");
       combinations = combinations.flatMap((item) =>
         values.map((value) => ({ ...item, [key]: value })),
       );
-    if (combinations.length > 500)
-      bad("La matriz no puede exceder 500 variantes.");
+    }
     let codes: string[] = [];
     const write = this.db.$transaction(async (tx) => {
       const count = await tx.variant.count({ where: { productId: id } });
@@ -575,7 +604,9 @@ export class CatalogController {
   @Post("products/import")
   @Permit("catalog:write")
   @UseInterceptors(
-    FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }),
+    FileInterceptor("file", {
+      limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 0, parts: 2 },
+    }),
   )
   async import(@UploadedFile() file: any, @CurrentUser() actor: Actor) {
     if (!file) bad("Selecciona un archivo Excel.");
@@ -612,6 +643,11 @@ export class CatalogController {
         tx,
         actor.branchId,
         validated.map((row) => row.categoryId),
+      );
+      await assertSuppliersInBranch(
+        tx,
+        actor.branchId,
+        validated.map((row) => row.supplierId),
       );
       // Todas las filas a la vez, contra la base y entre ellas: un choque
       // detiene la carga sin escribir ninguna (R9-codigos-1).

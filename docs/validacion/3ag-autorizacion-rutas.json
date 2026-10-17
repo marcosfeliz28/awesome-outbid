@@ -1,0 +1,1108 @@
+[
+  {
+    "controller": "HealthController",
+    "method": "GET",
+    "path": "/health/live",
+    "permission": null,
+    "public": true
+  },
+  {
+    "controller": "HealthController",
+    "method": "GET",
+    "path": "/health",
+    "permission": null,
+    "public": true
+  },
+  {
+    "controller": "HealthController",
+    "method": "GET",
+    "path": "/health/ready",
+    "permission": null,
+    "public": true
+  },
+  {
+    "controller": "RealtimeController",
+    "method": "POST",
+    "path": "/terminals/register",
+    "permission": "authenticated",
+    "public": false
+  },
+  {
+    "controller": "RealtimeController",
+    "method": "POST",
+    "path": "/terminals/:id/approve",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "RealtimeController",
+    "method": "POST",
+    "path": "/terminals/:id/approve-with-pin",
+    "permission": "authenticated",
+    "public": false
+  },
+  {
+    "controller": "RealtimeController",
+    "method": "POST",
+    "path": "/terminals/:id/rename",
+    "permission": "authenticated",
+    "public": false
+  },
+  {
+    "controller": "RealtimeController",
+    "method": "GET",
+    "path": "/terminals/current",
+    "permission": "authenticated",
+    "public": false
+  },
+  {
+    "controller": "RealtimeController",
+    "method": "GET",
+    "path": "/terminals",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "RealtimeController",
+    "method": "POST",
+    "path": "/terminals/:id/revoke",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "RealtimeController",
+    "method": "GET",
+    "path": "/events",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "MerchandiseController",
+    "method": "GET",
+    "path": "/merchandise/options",
+    "permission": "inventory:write",
+    "public": false
+  },
+  {
+    "controller": "MerchandiseController",
+    "method": "GET",
+    "path": "/merchandise/profiles/:id",
+    "permission": "inventory:write",
+    "public": false
+  },
+  {
+    "controller": "MerchandiseController",
+    "method": "GET",
+    "path": "/merchandise/attachments/:id",
+    "permission": "inventory:write",
+    "public": false
+  },
+  {
+    "controller": "MerchandiseController",
+    "method": "POST",
+    "path": "/merchandise/import",
+    "permission": "inventory:write",
+    "public": false
+  },
+  {
+    "controller": "MerchandiseController",
+    "method": "GET",
+    "path": "/merchandise/operations",
+    "permission": "inventory:write",
+    "public": false
+  },
+  {
+    "controller": "MerchandiseController",
+    "method": "POST",
+    "path": "/merchandise/operations",
+    "permission": "inventory:write",
+    "public": false
+  },
+  {
+    "controller": "InventoryImportController",
+    "method": "POST",
+    "path": "/inventory-import/casa/preview",
+    "permission": "inventory:import",
+    "public": false
+  },
+  {
+    "controller": "InventoryImportController",
+    "method": "POST",
+    "path": "/inventory-import/casa/apply",
+    "permission": "inventory:import",
+    "public": false
+  },
+  {
+    "controller": "InventoryImportController",
+    "method": "POST",
+    "path": "/inventory-import/preview",
+    "permission": "inventory:import",
+    "public": false
+  },
+  {
+    "controller": "InventoryImportController",
+    "method": "POST",
+    "path": "/inventory-import/apply",
+    "permission": "inventory:import",
+    "public": false
+  },
+  {
+    "controller": "AuthController",
+    "method": "POST",
+    "path": "/auth/login",
+    "permission": null,
+    "public": true
+  },
+  {
+    "controller": "AuthController",
+    "method": "POST",
+    "path": "/auth/change-password",
+    "permission": null,
+    "public": true
+  },
+  {
+    "controller": "AuthController",
+    "method": "POST",
+    "path": "/auth/password",
+    "permission": "authenticated",
+    "public": false
+  },
+  {
+    "controller": "AuthController",
+    "method": "POST",
+    "path": "/auth/refresh",
+    "permission": null,
+    "public": true
+  },
+  {
+    "controller": "AuthController",
+    "method": "POST",
+    "path": "/auth/logout",
+    "permission": "authenticated",
+    "public": false
+  },
+  {
+    "controller": "AuthController",
+    "method": "GET",
+    "path": "/auth/me",
+    "permission": "authenticated",
+    "public": false
+  },
+  {
+    "controller": "AuthController",
+    "method": "POST",
+    "path": "/auth/pin",
+    "permission": "authenticated",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "GET",
+    "path": "/catalog-template.xlsx",
+    "permission": "catalog:write",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "GET",
+    "path": "/categories",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "POST",
+    "path": "/categories",
+    "permission": "catalog:write",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "GET",
+    "path": "/brands",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "POST",
+    "path": "/brands",
+    "permission": "catalog:write",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "GET",
+    "path": "/products",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "GET",
+    "path": "/products/:id",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "POST",
+    "path": "/products",
+    "permission": "catalog:write",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "PATCH",
+    "path": "/products/:id",
+    "permission": "catalog:write",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "POST",
+    "path": "/products/:id/variants",
+    "permission": "catalog:write",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "PATCH",
+    "path": "/variants/:id",
+    "permission": "catalog:write",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "POST",
+    "path": "/products/import",
+    "permission": "catalog:write",
+    "public": false
+  },
+  {
+    "controller": "CatalogController",
+    "method": "POST",
+    "path": "/kits",
+    "permission": "catalog:write",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "GET",
+    "path": "/inventory/stock",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "GET",
+    "path": "/inventory/movements",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "POST",
+    "path": "/inventory/adjustments",
+    "permission": "inventory:write",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "GET",
+    "path": "/purchase-orders",
+    "permission": "purchase:write",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "POST",
+    "path": "/purchase-orders",
+    "permission": "purchase:write",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "PATCH",
+    "path": "/purchase-orders/:id/document",
+    "permission": "purchase:write",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "POST",
+    "path": "/purchase-orders/:id/receive",
+    "permission": "purchase:write",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "GET",
+    "path": "/goods-receipts",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "GET",
+    "path": "/goods-receipts/export",
+    "permission": "reports:read",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "GET",
+    "path": "/goods-receipts/:id",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "PATCH",
+    "path": "/goods-receipts/:id/document",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "GET",
+    "path": "/inventory/counts",
+    "permission": "inventory:write",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "POST",
+    "path": "/inventory/counts",
+    "permission": "inventory:write",
+    "public": false
+  },
+  {
+    "controller": "InventoryController",
+    "method": "POST",
+    "path": "/inventory/counts/:id/apply",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "WarehousesController",
+    "method": "GET",
+    "path": "/inventory/warehouses",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "WarehousesController",
+    "method": "GET",
+    "path": "/inventory/location-report",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "WarehousesController",
+    "method": "GET",
+    "path": "/inventory/transfers",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "WarehousesController",
+    "method": "POST",
+    "path": "/inventory/transfers",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/sales",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/sales/sync",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/sales",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/void-requests",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/sales/:id/void-requests",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/void-requests/:id/cancel",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/void-requests/:id/reject",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/void-requests/:id/approve",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/sales/:id/mark-wholesale",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/sales/:id/void",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/payments/pending-transfers",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/payments/:id/verify",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/payments/:id/correct-transfer",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/payments/:id/reject",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/returns",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/credit-notes",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/returns/:id/credit-note.pdf",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/sales/:id/installments",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/sales/:id/cod-collections",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/payments/:id/proof",
+    "permission": "authenticated",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/payments/:id/proof",
+    "permission": "authenticated",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/credit-accounts",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/credit-accounts/:id",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/credit-accounts/:id/statement.pdf",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/credit-accounts/:id/collections",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/cod/pending",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "POST",
+    "path": "/sales/:id/credit-collections",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "SalesController",
+    "method": "GET",
+    "path": "/sales/:id/receipt.pdf",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "CourierController",
+    "method": "PATCH",
+    "path": "/sales/:id/courier",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "CourierController",
+    "method": "GET",
+    "path": "/courier/pending",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "CourierController",
+    "method": "GET",
+    "path": "/courier/payouts",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "CourierController",
+    "method": "POST",
+    "path": "/courier/payouts",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/customers",
+    "permission": "customers:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/customers",
+    "permission": "customers:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "PATCH",
+    "path": "/customers/:id",
+    "permission": "customers:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/customers/:id/anonymize",
+    "permission": "customers:erase",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/suppliers",
+    "permission": "purchase:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/suppliers",
+    "permission": "purchase:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/supplier-payments",
+    "permission": "purchase:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/expense-categories",
+    "permission": "expense:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/expense-categories",
+    "permission": "expense:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "PATCH",
+    "path": "/expense-categories/:id",
+    "permission": "expense:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/expenses",
+    "permission": "expense:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/expenses",
+    "permission": "expense:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/expenses/:id/void",
+    "permission": "expense:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/quotes",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/quotes",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/quotes/:id/convert",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/settings",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "PUT",
+    "path": "/settings",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/settings/logo",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "PATCH",
+    "path": "/terminals/:id/register",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/staff",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/users",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/users",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "PATCH",
+    "path": "/users/:id",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/users/:id/reset-password",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/roles",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "PUT",
+    "path": "/roles/:id",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/audit-log",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "GET",
+    "path": "/promotions",
+    "permission": "catalog:read",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "POST",
+    "path": "/promotions",
+    "permission": "promotions:write",
+    "public": false
+  },
+  {
+    "controller": "AdminController",
+    "method": "PATCH",
+    "path": "/promotions/:id",
+    "permission": "promotions:write",
+    "public": false
+  },
+  {
+    "controller": "CashController",
+    "method": "GET",
+    "path": "/cash-sessions",
+    "permission": "cash:write",
+    "public": false
+  },
+  {
+    "controller": "CashController",
+    "method": "POST",
+    "path": "/cash-sessions/open",
+    "permission": "cash:write",
+    "public": false
+  },
+  {
+    "controller": "CashController",
+    "method": "POST",
+    "path": "/cash-sessions/:id/movements",
+    "permission": "cash:write",
+    "public": false
+  },
+  {
+    "controller": "CashController",
+    "method": "POST",
+    "path": "/cash-sessions/:id/transfer",
+    "permission": "cash:write",
+    "public": false
+  },
+  {
+    "controller": "CashController",
+    "method": "POST",
+    "path": "/cash-sessions/:id/close",
+    "permission": "cash:write",
+    "public": false
+  },
+  {
+    "controller": "CashController",
+    "method": "GET",
+    "path": "/cash-sessions/opening-suggestion",
+    "permission": "cash:write",
+    "public": false
+  },
+  {
+    "controller": "CashController",
+    "method": "GET",
+    "path": "/cash-sessions/:id/cuadre",
+    "permission": "cash:write",
+    "public": false
+  },
+  {
+    "controller": "CashController",
+    "method": "GET",
+    "path": "/cash-sessions/:id/reports/:name",
+    "permission": "cash:write",
+    "public": false
+  },
+  {
+    "controller": "IncomeReportController",
+    "method": "GET",
+    "path": "/reports/income-by-day",
+    "permission": "reports:read",
+    "public": false
+  },
+  {
+    "controller": "FormalReportController",
+    "method": "GET",
+    "path": "/reports/formal",
+    "permission": "reports:read",
+    "public": false
+  },
+  {
+    "controller": "ReportsController",
+    "method": "GET",
+    "path": "/dashboard/summary",
+    "permission": "reports:read",
+    "public": false
+  },
+  {
+    "controller": "ReportsController",
+    "method": "GET",
+    "path": "/dashboard/year",
+    "permission": "reports:read",
+    "public": false
+  },
+  {
+    "controller": "ReportsController",
+    "method": "GET",
+    "path": "/dashboard/breakdown",
+    "permission": "reports:read",
+    "public": false
+  },
+  {
+    "controller": "ReportsController",
+    "method": "GET",
+    "path": "/reports/:name",
+    "permission": "reports:read",
+    "public": false
+  },
+  {
+    "controller": "AlertsController",
+    "method": "GET",
+    "path": "/alerts",
+    "permission": "alerts:write",
+    "public": false
+  },
+  {
+    "controller": "AlertsController",
+    "method": "PATCH",
+    "path": "/alerts/:id",
+    "permission": "alerts:write",
+    "public": false
+  },
+  {
+    "controller": "AlertsController",
+    "method": "GET",
+    "path": "/promotions/clearance-candidates",
+    "permission": "promotions:write",
+    "public": false
+  },
+  {
+    "controller": "AlertsController",
+    "method": "GET",
+    "path": "/alert-rules",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AlertsController",
+    "method": "PUT",
+    "path": "/alert-rules",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "AlertsController",
+    "method": "POST",
+    "path": "/alerts/evaluate",
+    "permission": "alerts:write",
+    "public": false
+  },
+  {
+    "controller": "OfflineSalesController",
+    "method": "POST",
+    "path": "/sales/offline-resolution",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "OfflineSaleReviewController",
+    "method": "POST",
+    "path": "/sales/offline-review/discard",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "NotificationsController",
+    "method": "POST",
+    "path": "/notifications/telegram/test",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "NotificationsController",
+    "method": "GET",
+    "path": "/notifications/status",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "IncentivesController",
+    "method": "GET",
+    "path": "/incentives",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "IncentivesController",
+    "method": "GET",
+    "path": "/incentives/me",
+    "permission": "sale:write",
+    "public": false
+  },
+  {
+    "controller": "IncentivesController",
+    "method": "GET",
+    "path": "/incentives/rates",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "IncentivesController",
+    "method": "PUT",
+    "path": "/incentives/rates",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "IncentivesController",
+    "method": "POST",
+    "path": "/incentives/close",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "IncentivesController",
+    "method": "GET",
+    "path": "/incentives/export.xlsx",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "IncentivesController",
+    "method": "GET",
+    "path": "/incentives/receipt.pdf",
+    "permission": "sale:manage",
+    "public": false
+  },
+  {
+    "controller": "DriveBackupController",
+    "method": "GET",
+    "path": "/backups/status",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "DriveBackupController",
+    "method": "POST",
+    "path": "/backups/run",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "DriveBackupController",
+    "method": "GET",
+    "path": "/backups/google/connect",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "DriveBackupController",
+    "method": "POST",
+    "path": "/backups/google/disconnect",
+    "permission": "*",
+    "public": false
+  },
+  {
+    "controller": "DriveBackupController",
+    "method": "GET",
+    "path": "/backups/google/callback",
+    "permission": null,
+    "public": true
+  }
+]

@@ -4,6 +4,17 @@ export default defineConfig({
     // 5 s (el valor por defecto) se agotaban con la máquina ocupada (F-3).
     testTimeout: 30000,
     include: [
+      "tests/day-reports-contract.test.ts",
+      "tests/security-matrix-3ag.test.ts",
+      "tests/security-data-3ag.test.ts",
+      "tests/security-files-3ag.test.ts",
+      "tests/security-auditlog-3ag-postgres.test.ts",
+      "tests/browser-session-security.test.ts",
+      "tests/session-security-postgres.test.ts",
+      "tests/input-http.test.ts",
+      "tests/input-validation.test.ts",
+      "tests/security-authorization.test.ts",
+      "tests/security-authorization-postgres.test.ts",
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",
       "tests/customer-display.test.ts",

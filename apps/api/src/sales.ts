@@ -1,3 +1,5 @@
+import { inputPage, safeParseInput } from "./request-validation";
+import { logInternalError } from "./safe-log";
 import {
   Body,
   Controller,
@@ -14,7 +16,6 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Prisma } from "@prisma/client";
-import { compare } from "bcryptjs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { allocateCredit } from "./credit-allocation";
 import {
@@ -521,7 +522,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 import { cashExpected, refreshClosedCash } from "./cash";
 import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
-import { verifyPinAttempt } from "./security";
+import { managerPinApproval } from "./security";
 import { drawSaleReceipt } from "./receipt-pdf";
 import {
   recordSaleIncentives,
@@ -622,23 +623,7 @@ export class SalesController {
             ? `La deuda pendiente de este cliente más esta venta supera ${formatMoney(Number((setting?.data as any)?.creditApprovalThreshold ?? 1000))}: esta operación requiere el PIN de un gerente.`
             : "Esta operación requiere el PIN de un gerente.",
       );
-    const managers = await this.db.user.findMany({
-      where: { active: true, branchId: actor.branchId },
-      include: { role: true },
-    });
-    return verifyPinAttempt(
-      this.db,
-      "approval:" + actor.id,
-      async () => {
-        for (const manager of managers.filter((m) =>
-          can(m.role.permissions, "sale:manage"),
-        ))
-          if (await compare(input.managerPin!, manager.pinHash))
-            return manager.id;
-        return null;
-      },
-      { pin: input.managerPin, actor },
-    );
+    return managerPinApproval(this.db, actor, input.managerPin!);
   }
   async complete(actor: Actor, input: SaleInput, offline = false) {
     const requestsDiscount =
@@ -1326,7 +1311,7 @@ export class SalesController {
     for (const sale of input.sales)
       try {
         if (databaseDown) throw databaseUnavailable();
-        const valid = saleSchema.safeParse(sale);
+        const valid = safeParseInput(saleSchema, sale);
         if (!valid.success)
           bad(
             "Revisa los campos: " +
@@ -1377,14 +1362,10 @@ export class SalesController {
         }
         // Un error de programación o de infraestructura también se devuelve
         // como conflicto (el contrato no cambia: la venta sigue en la cola y
-        // gerencia la revisa), pero ahora deja rastro: el stack va a la consola
-        // y a Sentry. Sin esto sólo se veía una alerta con un mensaje genérico.
+        // gerencia la revisa), pero ahora deja un diagnóstico sin datos en
+        // consola y se envía al sanitizador de Sentry. Sin esto sólo se veía una alerta con un mensaje genérico.
         if (isUnexpectedError(e)) {
-          console.error(
-            "[ventas/sync] Error inesperado al sincronizar la venta offline " +
-              sale.offlineUuid,
-            e,
-          );
+          logInternalError(e, "sales-sync");
           captureApiException(e, "sales");
         }
         results.push({
@@ -1617,9 +1598,17 @@ export class SalesController {
   @Get("void-requests")
   @Permit("sale:write")
   async voidRequests(
-    @Query("status") status: string,
+    @Query() query: Record<string, string>,
     @CurrentUser() actor: Actor,
   ) {
+    const { status } = parse(
+      z.object({
+        status: z
+          .enum(["all", "pending", "approved", "rejected", "cancelled"])
+          .optional(),
+      }),
+      query,
+    );
     const filter =
       status === "all" || !status
         ? {}
@@ -2948,24 +2937,23 @@ export class SalesController {
   @Permit("sale:write")
   async creditNotes(
     @CurrentUser() actor: Actor,
-    @Query("customerId") customerId?: string,
-    @Query("code") code?: string,
-    @Query("limit") limitText?: string,
-    @Query("cursor") cursorText?: string,
+    @Query() query: Record<string, string>,
     @Res({ passthrough: true }) res?: Response,
   ) {
+    const { customerId, code, limit, cursor } = parse(
+      z.object({
+        customerId: uuid.optional(),
+        code: z.string().max(64).optional(),
+        limit: inputPage(500).default("200"),
+        cursor: uuid.optional(),
+      }),
+      query,
+    );
     const manager = can(actor.permissions, "sale:manage");
     const normalized = code?.trim().toUpperCase();
     if (normalized && !/^[0-9A-F]{32}$/.test(normalized)) return [];
     if (!manager && !customerId && !normalized) return [];
     if (customerId) parse(uuid, customerId);
-    const { limit, cursor } = parse(
-      z.object({
-        limit: z.coerce.number().int().min(1).max(500).default(200),
-        cursor: uuid.optional(),
-      }),
-      { limit: limitText, cursor: cursorText },
-    );
     const notes = await this.db.creditNote.findMany({
       where: {
         saleReturn: { branchId: actor.branchId },
@@ -3079,7 +3067,12 @@ export class SalesController {
   @Permit("authenticated")
   @UseInterceptors(
     FileInterceptor("file", {
-      limits: { fileSize: PROOF_MAX_BYTES + 1, files: 1 },
+      limits: {
+        fileSize: PROOF_MAX_BYTES + 1,
+        files: 1,
+        fields: 0,
+        parts: 2,
+      },
     }),
   )
   async paymentProof(
@@ -3157,19 +3150,26 @@ export class SalesController {
   @Permit("*")
   async creditAccounts(
     @CurrentUser() actor: Actor,
-    @Query("search") search = "",
-    @Query("sort") sort = "amount",
-    @Query("page") page = "1",
-    @Query("view") view = "open",
+    @Query() query: Record<string, string>,
   ) {
+    const {
+      search,
+      sort,
+      page: pageNumber,
+      view,
+    } = parse(
+      z.object({
+        search: z.string().trim().max(100).default(""),
+        sort: z.enum(["amount", "age"]).default("amount"),
+        page: inputPage(1000).default("1"),
+        view: z.enum(["open", "paid"]).default("open"),
+      }),
+      query,
+    );
     // «paid»: clientes cuyas ventas a crédito o contraentrega ya se cerraron
     // (se muestran aparte de los pendientes; dueña, 15-oct).
     const paid = view === "paid";
-    const text = search.trim().slice(0, 100);
-    const pageNumber = Math.max(
-      1,
-      Math.min(1000, Number.parseInt(page, 10) || 1),
-    );
+    const text = search;
     const where: Prisma.SaleWhereInput = {
       branchId: actor.branchId,
       status: "completed",
@@ -3537,12 +3537,15 @@ export class SalesController {
   @Permit("sale:write")
   async codPending(
     @CurrentUser() actor: Actor,
-    @Query("state") stateParam?: string,
+    @Query() query: Record<string, string>,
   ) {
     // pending (abiertos y parciales, por defecto), closed (saldados) o all.
-    const state = ["pending", "closed", "all"].includes(stateParam ?? "")
-      ? (stateParam as "pending" | "closed" | "all")
-      : "pending";
+    const { state } = parse(
+      z.object({
+        state: z.enum(["pending", "closed", "all"]).default("pending"),
+      }),
+      query,
+    );
     const receivablePayment = {
       some: { method: { in: ["credit", "cod"] }, entryType: "sale" },
     };
