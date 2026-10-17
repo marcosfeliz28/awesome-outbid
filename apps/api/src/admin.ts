@@ -760,11 +760,16 @@ export class AdminController {
     const prices = new Map(
       (
         await this.db.variant.findMany({
-          where: { id: { in: data.items.map((i) => i.variantId) } },
+          where: {
+            id: { in: data.items.map((i) => i.variantId) },
+            branchId: actor.branchId,
+          },
           select: { id: true, price: true },
         })
       ).map((v) => [v.id, String(v.price)]),
     );
+    if (prices.size !== new Set(data.items.map((item) => item.variantId)).size)
+      bad("Una de las variantes no existe en tu sucursal.");
     // Con decimales exactos: 3 × 0.70 son 2.10, no 2.0999…
     for (const i of data.items)
       if (

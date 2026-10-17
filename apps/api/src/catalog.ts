@@ -162,6 +162,19 @@ async function assertCategoriesInBranch(
     );
 }
 
+async function assertSuppliersInBranch(
+  tx: any,
+  branchId: string,
+  ids: (string | null | undefined)[],
+) {
+  const wanted = [...new Set(ids.filter(Boolean))] as string[];
+  if (!wanted.length) return;
+  const found = await tx.supplier.count({
+    where: { id: { in: wanted }, branchId },
+  });
+  if (found !== wanted.length) bad("El proveedor no existe en tu sucursal.");
+}
+
 const variantSchema = z.object({
   sku: z.string().trim().min(1).max(80),
   barcode: z.string().trim().min(1).max(80),
@@ -190,7 +203,7 @@ export class CatalogController {
   constructor(@Inject(Database) private db: Database) {}
   @Get("catalog-template.xlsx")
   @Permit("catalog:write")
-  async template(@Res() res: Response) {
+  async template(@Res() res: Response, @CurrentUser() actor: Actor) {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Productos");
     sheet.addRow([
@@ -212,7 +225,9 @@ export class CatalogController {
     sheet.columns.forEach((c) => (c.width = 24));
     const cats = workbook.addWorksheet("Categorías");
     cats.addRow(["ID", "Nombre"]);
-    for (const c of await this.db.category.findMany())
+    for (const c of await this.db.category.findMany({
+      where: { branchId: actor.branchId },
+    }))
       cats.addRow([c.id, c.name]);
     res.setHeader(
       "Content-Type",
@@ -226,8 +241,11 @@ export class CatalogController {
   }
   @Get("categories")
   @Permit("catalog:read")
-  categories() {
-    return this.db.category.findMany({ orderBy: { createdAt: "asc" } });
+  categories(@CurrentUser() actor: Actor) {
+    return this.db.category.findMany({
+      where: { branchId: actor.branchId },
+      orderBy: { createdAt: "asc" },
+    });
   }
   @Post("categories")
   @Permit("catalog:write")
@@ -369,6 +387,7 @@ export class CatalogController {
     const codes = variants.map((v) => ({ codes: [v.sku, v.barcode] }));
     const write = this.db.$transaction(async (tx) => {
       await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
+      await assertSuppliersInBranch(tx, actor.branchId, [data.supplierId]);
       await assertCodesFree(tx, actor.branchId, codes);
       const row = await tx.product.create({
         data: {
@@ -411,6 +430,7 @@ export class CatalogController {
         where: { id: parse(uuid, id), branchId: actor.branchId },
       });
       await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
+      await assertSuppliersInBranch(tx, actor.branchId, [data.supplierId]);
       const row = await tx.product.update({ where: { id }, data });
       await audit(tx, actor, "update", "product", id, before, row);
       return safe(row, actor);
@@ -612,6 +632,11 @@ export class CatalogController {
         tx,
         actor.branchId,
         validated.map((row) => row.categoryId),
+      );
+      await assertSuppliersInBranch(
+        tx,
+        actor.branchId,
+        validated.map((row) => row.supplierId),
       );
       // Todas las filas a la vez, contra la base y entre ellas: un choque
       // detiene la carga sin escribir ninguna (R9-codigos-1).

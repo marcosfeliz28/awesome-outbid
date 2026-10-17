@@ -777,6 +777,7 @@ export class IncentivesController {
   async rates(@CurrentUser() actor: Actor) {
     const [categories, configured] = await Promise.all([
       this.db.category.findMany({
+        where: { branchId: actor.branchId },
         orderBy: { name: "asc" },
         select: { id: true, name: true },
       }),
@@ -803,7 +804,10 @@ export class IncentivesController {
       bad("No repitas categorías.");
     await this.db.$transaction(async (tx) => {
       const categories = await tx.category.findMany({
-        where: { id: { in: data.rates.map((r) => r.categoryId) } },
+        where: {
+          id: { in: data.rates.map((r) => r.categoryId) },
+          branchId: actor.branchId,
+        },
         select: { id: true, name: true },
       });
       if (categories.length !== data.rates.length)

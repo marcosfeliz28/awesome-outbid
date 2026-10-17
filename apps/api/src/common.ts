@@ -736,9 +736,9 @@ export class AuthGuard implements CanActivate {
       context.getClass(),
     ]);
     if (
-      permission &&
-      permission !== "authenticated" &&
-      !can(req.actor.permissions, permission)
+      !permission ||
+      (permission !== "authenticated" &&
+        !can(req.actor.permissions, permission))
     )
       denied();
     if (

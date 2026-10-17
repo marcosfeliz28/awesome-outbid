@@ -976,6 +976,14 @@ export class InventoryController {
       const supplier = await tx.supplier.findFirstOrThrow({
         where: { id: data.supplierId, branchId: actor.branchId, active: true },
       });
+      const variants = await tx.variant.count({
+        where: {
+          id: { in: data.items.map((item) => item.variantId) },
+          branchId: actor.branchId,
+        },
+      });
+      if (variants !== data.items.length)
+        bad("Una de las variantes no existe en tu sucursal.");
       const count = await tx.counter.upsert({
         where: { key: "purchase" },
         create: { key: "purchase", value: 1 },

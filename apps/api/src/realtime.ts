@@ -157,6 +157,7 @@ export class RealtimeController {
   // Registro del dispositivo. El navegador guarda id + secreto; un equipo nuevo
   // de un usuario sin permiso de gerencia queda pendiente de aprobación.
   @Post("terminals/register")
+  @Permit("authenticated")
   async register(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
       z.object({
@@ -260,6 +261,7 @@ export class RealtimeController {
   }
   // En la tienda: el gerente escribe su PIN en el equipo nuevo.
   @Post("terminals/:id/approve-with-pin")
+  @Permit("authenticated")
   async approveWithPin(
     @Param("id") id: string,
     @Body() body: unknown,
@@ -319,6 +321,7 @@ export class RealtimeController {
     });
   }
   @Post("terminals/:id/rename")
+  @Permit("authenticated")
   async rename(
     @Param("id") id: string,
     @Body() body: unknown,
@@ -353,6 +356,7 @@ export class RealtimeController {
     });
   }
   @Get("terminals/current")
+  @Permit("authenticated")
   async current(@CurrentUser() actor: Actor) {
     if (!actor.terminalId) return { status: "unregistered" };
     const t = await this.db.terminal.findUnique({
