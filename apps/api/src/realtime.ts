@@ -10,7 +10,6 @@ import {
   Res,
 } from "@nestjs/common";
 import type { Response } from "express";
-import { compare } from "bcryptjs";
 import { can, z } from "@fitstore/shared";
 import {
   Actor,
@@ -27,7 +26,7 @@ import {
 import {
   hashTerminalSecret as hashSecret,
   sameTerminalSecret as sameSecret,
-  verifyPinAttempt,
+  managerPinApproval,
 } from "./security";
 import {
   ACTIVITY_WRITE_INTERVAL_MS,
@@ -273,21 +272,11 @@ export class RealtimeController {
       z.object({ managerPin: z.string().regex(/^\d{4,6}$/) }),
       body,
     );
-    const managers = await this.db.user.findMany({
-      where: { active: true, branchId: actor.branchId },
-      include: { role: true },
-    });
-    const managerId = await verifyPinAttempt(
+    const managerId = await managerPinApproval(
       this.db,
-      "terminal-approval:" + actor.id,
-      async () => {
-        for (const m of managers.filter((m) =>
-          can(m.role.permissions, "sale:manage"),
-        ))
-          if (await compare(data.managerPin, m.pinHash)) return m.id;
-        return null;
-      },
-      { pin: data.managerPin, actor },
+      actor,
+      data.managerPin,
+      "terminal-approval",
     );
     return this.approveTerminal(terminalId, actor, managerId, "pin");
   }

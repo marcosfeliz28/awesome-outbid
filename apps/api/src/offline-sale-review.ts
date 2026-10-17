@@ -27,7 +27,6 @@ import {
   NotFoundException,
   Post,
 } from "@nestjs/common";
-import { compare } from "bcryptjs";
 import { can, money, z } from "@fitstore/shared";
 import {
   Actor,
@@ -40,7 +39,7 @@ import {
   conflict,
   parse,
 } from "./common";
-import { verifyPinAttempt } from "./security";
+import { managerPinApproval } from "./security";
 import { lockVariant, takeStock } from "./inventory";
 import { refreshClosedCash } from "./cash";
 
@@ -90,25 +89,7 @@ export class OfflineSaleReviewController {
     if (!manages) {
       if (!data.managerPin)
         bad("Para descartar esta venta hace falta el PIN de un gerente.");
-      const managers = await this.db.user.findMany({
-        where: { active: true, branchId: actor.branchId },
-        include: { role: true },
-      });
-      approverId = await verifyPinAttempt(
-        this.db,
-        "approval:" + actor.id,
-        async () => {
-          for (const manager of managers.filter((m) =>
-            can(m.role.permissions, "sale:manage"),
-          ))
-            if (await compare(data.managerPin!, manager.pinHash))
-              return manager.id;
-          return null;
-        },
-        // Cupos del solicitante y de PIN cortos (S-03), como las demás
-        // aprobaciones con PIN.
-        { pin: data.managerPin, actor },
-      );
+      approverId = await managerPinApproval(this.db, actor, data.managerPin!);
     }
     const approver = await this.db.user.findUniqueOrThrow({
       where: { id: approverId },

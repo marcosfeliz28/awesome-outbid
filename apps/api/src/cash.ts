@@ -9,7 +9,6 @@ import {
   Res,
 } from "@nestjs/common";
 import type { Response } from "express";
-import { compare } from "bcryptjs";
 import {
   d,
   money,
@@ -41,7 +40,7 @@ import {
 } from "./common";
 import { cashLock, terminalName, terminalNames } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
-import { managerPinApproval, verifyPinAttempt } from "./security";
+import { managerPinApproval } from "./security";
 import { notify } from "./notifications";
 import { cashDifferenceMessage } from "./alerts";
 // Aparte del import anterior de ./sales para no chocar al fusionar ramas.
@@ -739,22 +738,7 @@ export class CashController {
       data.type === "out" && !can(actor.permissions, "sale:manage");
     let approvedBy: string | null = null;
     if (needsApproval && managerPin) {
-      const managers = await this.db.user.findMany({
-        where: { active: true, branchId: actor.branchId },
-        include: { role: true },
-      });
-      approvedBy = await verifyPinAttempt(
-        this.db,
-        "approval:" + actor.id,
-        async () => {
-          for (const manager of managers.filter((m) =>
-            can(m.role.permissions, "sale:manage"),
-          ))
-            if (await compare(managerPin, manager.pinHash)) return manager.id;
-          return null;
-        },
-        { pin: managerPin, actor },
-      );
+      approvedBy = await managerPinApproval(this.db, actor, managerPin);
     }
     return moneyDb(this.db).$transaction(async (tx) => {
       const session = await cashLock(tx, actor, parse(uuid, id));
@@ -856,23 +840,7 @@ export class CashController {
     if (!can(actor.permissions, "sale:manage")) {
       if (!data.managerPin)
         bad("Trasladar la caja requiere el PIN de un gerente.");
-      const managers = await this.db.user.findMany({
-        where: { active: true, branchId: actor.branchId },
-        include: { role: true },
-      });
-      approvedBy = await verifyPinAttempt(
-        this.db,
-        "approval:" + actor.id,
-        async () => {
-          for (const manager of managers.filter((m) =>
-            can(m.role.permissions, "sale:manage"),
-          ))
-            if (await compare(data.managerPin!, manager.pinHash))
-              return manager.id;
-          return null;
-        },
-        { pin: data.managerPin, actor },
-      );
+      approvedBy = await managerPinApproval(this.db, actor, data.managerPin!);
     }
     return this.db.$transaction(async (tx) => {
       const sessionId = parse(uuid, id);

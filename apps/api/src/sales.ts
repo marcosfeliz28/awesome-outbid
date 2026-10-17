@@ -15,7 +15,6 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Prisma } from "@prisma/client";
-import { compare } from "bcryptjs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { allocateCredit } from "./credit-allocation";
 import {
@@ -522,7 +521,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 import { cashExpected, refreshClosedCash } from "./cash";
 import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
-import { verifyPinAttempt } from "./security";
+import { managerPinApproval } from "./security";
 import { drawSaleReceipt } from "./receipt-pdf";
 import {
   recordSaleIncentives,
@@ -623,23 +622,7 @@ export class SalesController {
             ? `La deuda pendiente de este cliente más esta venta supera ${formatMoney(Number((setting?.data as any)?.creditApprovalThreshold ?? 1000))}: esta operación requiere el PIN de un gerente.`
             : "Esta operación requiere el PIN de un gerente.",
       );
-    const managers = await this.db.user.findMany({
-      where: { active: true, branchId: actor.branchId },
-      include: { role: true },
-    });
-    return verifyPinAttempt(
-      this.db,
-      "approval:" + actor.id,
-      async () => {
-        for (const manager of managers.filter((m) =>
-          can(m.role.permissions, "sale:manage"),
-        ))
-          if (await compare(input.managerPin!, manager.pinHash))
-            return manager.id;
-        return null;
-      },
-      { pin: input.managerPin, actor },
-    );
+    return managerPinApproval(this.db, actor, input.managerPin!);
   }
   async complete(actor: Actor, input: SaleInput, offline = false) {
     const requestsDiscount =

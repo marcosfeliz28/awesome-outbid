@@ -20,6 +20,7 @@ import {
   CurrentUser,
   Database,
   Public,
+  Permit,
   bad,
   canSwitchUserTo,
   parse,
@@ -80,10 +81,12 @@ const credentialAttemptIdentity = (user: any, normalized: string) =>
 // entrar: el navegador envía el id y el secreto que guardó al registrarlo.
 // Un valor mal formado no impide entrar: se trata como equipo no aprobado.
 const terminalCredentials = z.unknown().optional();
-const terminalShape = z.object({
-  id: z.string().uuid(),
-  secret: z.string().min(16).max(200),
-});
+const terminalShape = z
+  .object({
+    id: z.string().uuid(),
+    secret: z.string().min(16).max(200),
+  })
+  .strict();
 // Iguales para cuentas existentes e inexistentes: no delatan cuentas. Cada
 // uno dice qué se puede hacer (esperar, «Restablecer contraseña» o entrar
 // desde un equipo aprobado), sin prometer lo que no existe.
@@ -95,6 +98,13 @@ const LOGIN_BLOCKED = {
     "Cuenta bloqueada temporalmente por demasiados intentos fallidos desde equipos no aprobados. Durante una hora como máximo sólo se puede entrar desde un equipo aprobado de la tienda, o pide a la administración que use «Restablecer contraseña» en Configuración › Usuarios y permisos.",
 };
 const HOUR = 3_600_000;
+// cookie-parser también admite cookies JSON. Sólo el formato que emitimos
+// representa una credencial; cualquier otro valor se rechaza sin consultar
+// la base ni incluir la entrada en errores.
+const refreshTokenHash = (value: unknown) =>
+  typeof value === "string" && /^[a-f0-9]{96}$/.test(value)
+    ? createHash("sha256").update(value).digest("hex")
+    : null;
 
 @Controller("auth")
 export class AuthController implements OnModuleInit {
@@ -579,19 +589,19 @@ export class AuthController implements OnModuleInit {
           ],
         },
       });
+      await audit(
+        tx,
+        this.actor(user, ip, terminalId ?? undefined),
+        "password_changed",
+        "user",
+        user.id,
+      );
       return row;
     });
     const freshUser = await this.db.user.findUniqueOrThrow({
       where: { id: updated.id },
       include: { role: true },
     });
-    await audit(
-      this.db,
-      this.actor(freshUser, ip, terminalId ?? undefined),
-      "password_changed",
-      "user",
-      user.id,
-    );
     return this.issue(freshUser, res);
   }
   // «Cambiar mi contraseña»: cambio voluntario con la sesión abierta. Exige la
@@ -601,6 +611,7 @@ export class AuthController implements OnModuleInit {
   // demás sesiones de la cuenta; este equipo sigue en su sesión (y con su
   // registro de equipo) con un token y una cookie de renovación nuevos.
   @Post("password")
+  @Permit("authenticated")
   @Header("Cache-Control", "no-store")
   async changeOwnPassword(
     @CurrentUser() actor: Actor,
@@ -716,13 +727,12 @@ export class AuthController implements OnModuleInit {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const token = req.cookies?.fitstore_refresh;
-    if (!token) bad("La sesión ha expirado.");
-    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const tokenHash = refreshTokenHash(req.cookies?.fitstore_refresh);
+    if (!tokenHash) bad("La sesión ha expirado.");
     const saved = await this.db.refreshToken.findUnique({
       where: { hash: tokenHash },
     });
-    if (!saved || saved.expiresAt < new Date()) bad("La sesión ha expirado.");
+    if (!saved || saved.expiresAt <= new Date()) bad("La sesión ha expirado.");
     this.requestLimits.assert(
       "auth-refresh-session",
       [clientIp(req), saved.sessionId ?? saved.id],
@@ -747,15 +757,11 @@ export class AuthController implements OnModuleInit {
     return this.issue(user, res, saved.sessionId);
   }
   @Post("logout")
+  @Permit("authenticated")
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (req.cookies?.fitstore_refresh)
-      await this.db.refreshToken.deleteMany({
-        where: {
-          hash: createHash("sha256")
-            .update(req.cookies.fitstore_refresh)
-            .digest("hex"),
-        },
-      });
+    const tokenHash = refreshTokenHash(req.cookies?.fitstore_refresh);
+    if (tokenHash)
+      await this.db.refreshToken.deleteMany({ where: { hash: tokenHash } });
     const payload = req.headers.authorization?.replace(/^Bearer /, "");
     if (payload) {
       const claims = this.jwt.verify(payload);
@@ -767,7 +773,9 @@ export class AuthController implements OnModuleInit {
     res.clearCookie("fitstore_refresh", { path: "/api/auth" });
     return { ok: true };
   }
-  @Get("me") me(@CurrentUser() actor: Actor) {
+  @Get("me")
+  @Permit("authenticated")
+  me(@CurrentUser() actor: Actor) {
     // La IP es para la bitácora; no se devuelve.
     const { ip: _ip, ...rest } = actor;
     return {
@@ -776,6 +784,7 @@ export class AuthController implements OnModuleInit {
     };
   }
   @Post("pin")
+  @Permit("authenticated")
   @Header("Cache-Control", "no-store")
   async pin(
     @CurrentUser() actor: Actor,
