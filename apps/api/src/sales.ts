@@ -1,4 +1,5 @@
 import { inputPage, safeParseInput } from "./request-validation";
+import { logInternalError } from "./safe-log";
 import {
   Body,
   Controller,
@@ -1361,14 +1362,10 @@ export class SalesController {
         }
         // Un error de programación o de infraestructura también se devuelve
         // como conflicto (el contrato no cambia: la venta sigue en la cola y
-        // gerencia la revisa), pero ahora deja rastro: el stack va a la consola
-        // y a Sentry. Sin esto sólo se veía una alerta con un mensaje genérico.
+        // gerencia la revisa), pero ahora deja un diagnóstico sin datos en
+        // consola y se envía al sanitizador de Sentry. Sin esto sólo se veía una alerta con un mensaje genérico.
         if (isUnexpectedError(e)) {
-          console.error(
-            "[ventas/sync] Error inesperado al sincronizar la venta offline " +
-              sale.offlineUuid,
-            e,
-          );
+          logInternalError(e, "sales-sync");
           captureApiException(e, "sales");
         }
         results.push({
@@ -3070,7 +3067,12 @@ export class SalesController {
   @Permit("authenticated")
   @UseInterceptors(
     FileInterceptor("file", {
-      limits: { fileSize: PROOF_MAX_BYTES + 1, files: 1 },
+      limits: {
+        fileSize: PROOF_MAX_BYTES + 1,
+        files: 1,
+        fields: 0,
+        parts: 2,
+      },
     }),
   )
   async paymentProof(

@@ -1,3 +1,4 @@
+import { logInternalError } from "./safe-log";
 import {
   ArgumentsHost,
   Catch,
@@ -842,7 +843,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
             : "api";
       captureApiException(exception, area);
     }
-    if (status === 500) console.error(exception);
+    if (status === 500) logInternalError(exception, "api");
     res
       .status(status)
       .json({ statusCode: status, message, ...(code ? { code } : {}) });
@@ -853,7 +854,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
  * Un error que no es de negocio (regla, permiso o conflicto de datos que el
  * cliente puede corregir) sino de programación o de infraestructura. La
  * sincronización offline lo devuelve como conflicto igual que a los demás, pero
- * éste además se registra (consola y Sentry) para que alguien reciba el stack.
+ * éste además deja un diagnóstico sin datos en consola y pasa por Sentry.
  */
 export function isUnexpectedError(error: any): boolean {
   if (error instanceof HttpException) return error.getStatus() >= 500;

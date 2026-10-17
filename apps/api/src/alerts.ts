@@ -1,4 +1,5 @@
 import { inputPage } from "./request-validation";
+import { logInternalError } from "./safe-log";
 import { randomUUID } from "node:crypto";
 import {
   Body,
@@ -268,7 +269,7 @@ export class AlertEngine {
   constructor(@Inject(Database) private db: Database) {}
   onModuleInit() {
     this.timer = setInterval(
-      () => this.evaluate("main", { fresh: true }).catch(console.error),
+      () => this.evaluate("main", { fresh: true }).catch((error) => logInternalError(error, "alerts")),
       24 * 3600000,
     );
     this.timer.unref();
@@ -307,7 +308,7 @@ export class AlertEngine {
           this.start(branchId).catch((error) => {
             // Reintenta en el próximo período, no en cada petición.
             cached.at = this.now();
-            console.error(error);
+            logInternalError(error, "alerts");
           });
         return cached.candidates;
       }

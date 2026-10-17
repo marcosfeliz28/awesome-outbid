@@ -11,6 +11,10 @@ import { FormalReportController } from "../apps/api/src/formal-report";
 import { IncomeReportController } from "../apps/api/src/income-report";
 import { IncentivesController } from "../apps/api/src/incentives";
 import { InventoryImportController } from "../apps/api/src/inventory-import";
+import {
+  DriveBackupController,
+  DriveBackupService,
+} from "../apps/api/src/drive-backup";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -45,6 +49,7 @@ const db: any = new Proxy(
 
 // Los controladores y el filtro son los de producción; la base sólo registra
 // accesos. Se aísla validación, y autorización se prueba en el bloque 1.
+const driveCallback = vi.fn(async () => "connected");
 class InputTestModule {}
 Module({
   controllers: [
@@ -57,8 +62,12 @@ Module({
     ReportsController,
     InventoryImportController,
     IncentivesController,
+    DriveBackupController,
   ],
-  providers: [{ provide: Database, useValue: db }],
+  providers: [
+    { provide: Database, useValue: db },
+    { provide: DriveBackupService, useValue: { callback: driveCallback } },
+  ],
 })(InputTestModule);
 
 beforeAll(async () => {
@@ -251,6 +260,43 @@ describe("3ag · entradas HTTP reales antes de acceder a datos", () => {
       expect(complete).toHaveBeenCalledTimes(1);
     } finally {
       complete.mockRestore();
+    }
+  });
+  it("OAuth acepta los campos acotados del callback de Google sin perder state ni code", async () => {
+    driveCallback.mockClear();
+    const query = {
+      state: "estado-firmado-de-prueba",
+      code: "codigo-de-prueba",
+      scope: "https://www.googleapis.com/auth/drive.file",
+      authuser: "0",
+      prompt: "consent",
+    };
+    const reply = await request(app.getHttpServer())
+      .get("/backups/google/callback")
+      .query(query);
+    expect(reply.status).toBe(302);
+    expect(reply.headers.location).toMatch(/\?drive=connected#settings$/);
+    expect(driveCallback).toHaveBeenCalledExactlyOnceWith(query, undefined);
+  });
+
+  it("OAuth rechaza parámetros desconocidos antes de resolver state, canjear code o acceder a datos", async () => {
+    driveCallback.mockClear();
+    calls.length = 0;
+    const quiet = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const reply = await request(app.getHttpServer())
+        .get("/backups/google/callback")
+        .query({
+          state: "estado-firmado",
+          code: "codigo-de-prueba",
+          role: "admin",
+        });
+      expect(reply.status).toBe(302);
+      expect(reply.headers.location).toMatch(/\?drive=error#settings$/);
+      expect(driveCallback).not.toHaveBeenCalled();
+      expect(calls).toEqual([]);
+    } finally {
+      quiet.mockRestore();
     }
   });
 });

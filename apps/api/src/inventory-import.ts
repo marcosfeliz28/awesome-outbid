@@ -41,6 +41,7 @@ import {
   type ImportReport,
 } from "./inventory-import-core";
 import { assertSafeXlsx, assertSheetCells } from "./xlsx-guard";
+import { errorDiagnostic } from "./safe-log";
 
 export const INVENTORY_IMPORT_MAX_BYTES = 5 * 1024 * 1024;
 export const INVENTORY_IMPORT_MAX_ROWS = 1500;
@@ -170,8 +171,7 @@ export class InventoryImportController {
       );
     // Sin datos del archivo en el registro: sólo el tipo de fallo.
     this.log.error(
-      "Falló la importación: " +
-        ((error as any)?.code ?? (error as any)?.name ?? "error"),
+      "Falló la importación: " + JSON.stringify(errorDiagnostic(error)),
     );
     throw new HttpException(
       "No se pudo cargar el inventario. No se guardó nada; inténtalo de nuevo.",

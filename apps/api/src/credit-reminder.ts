@@ -1,3 +1,4 @@
+import { logInternalError } from "./safe-log";
 // Recordatorio semanal de créditos por cobrar (decisión de la dueña).
 //
 // Cada lunes desde las 8:00 (America/Santo_Domingo) se crea UNA alerta
@@ -141,7 +142,7 @@ export class CreditReminderService {
     // Cada 15 minutos; la clave semanal y el candado evitan repetir.
     this.timer = setInterval(
       () =>
-        void this.run().catch((e) => console.warn("[créditos]", e?.message)),
+        void this.run().catch((e) => logInternalError(e, "credit-reminder", "warn")),
       15 * 60000,
     );
     this.timer.unref();

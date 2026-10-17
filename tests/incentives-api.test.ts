@@ -393,8 +393,16 @@ describe("INC · incentivos por cajera", () => {
       (await request("/incentives/rates", ana.token, { rates: [] }, "PUT"))
         .status,
     ).toBe(403);
-    // Pedir a otra persona por parámetro no sirve: siempre devuelve lo propio.
-    const own = await mine(ana, "?userId=" + luz.id);
+    // El endpoint propio rechaza parámetros ajenos sin revelar sus datos.
+    const injected = await request(
+      "/incentives/me?userId=" + luz.id,
+      ana.token,
+    );
+    expect(injected.status).toBe(400);
+    expect(injected.body.row).toBeUndefined();
+    expect(JSON.stringify(injected.body)).not.toContain(luz.id);
+    expect(JSON.stringify(injected.body)).not.toContain(luz.name);
+    const own = await mine(ana);
     expect(own.row.userId).toBe(ana.id);
     expect(JSON.stringify(own)).not.toContain(luz.id);
     expect(JSON.stringify(own)).not.toContain(luz.name);

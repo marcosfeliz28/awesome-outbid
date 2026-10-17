@@ -461,12 +461,15 @@ export class CatalogController {
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
     let combinations: Record<string, string>[] = [{}];
-    for (const [key, values] of Object.entries(data.attributes))
+    for (const [key, values] of Object.entries(data.attributes)) {
+      // Reserva el presupuesto antes de multiplicar: comprobar al final
+      // permitía agotar la memoria con una solicitud pequeña.
+      if (combinations.length * values.length > 500)
+        bad("La matriz no puede exceder 500 variantes.");
       combinations = combinations.flatMap((item) =>
         values.map((value) => ({ ...item, [key]: value })),
       );
-    if (combinations.length > 500)
-      bad("La matriz no puede exceder 500 variantes.");
+    }
     let codes: string[] = [];
     const write = this.db.$transaction(async (tx) => {
       const count = await tx.variant.count({ where: { productId: id } });
@@ -601,7 +604,9 @@ export class CatalogController {
   @Post("products/import")
   @Permit("catalog:write")
   @UseInterceptors(
-    FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }),
+    FileInterceptor("file", {
+      limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 0, parts: 2 },
+    }),
   )
   async import(@UploadedFile() file: any, @CurrentUser() actor: Actor) {
     if (!file) bad("Selecciona un archivo Excel.");

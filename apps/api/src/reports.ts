@@ -1,3 +1,4 @@
+import { logInternalError } from "./safe-log";
 import { Controller, Get, Inject, Param, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import ExcelJS from "exceljs";
@@ -1611,7 +1612,7 @@ async function sendListing(
   } catch (error) {
     // La descarga ya empezó: se corta para que no quede un archivo a medias
     // que parezca completo.
-    console.error(error);
+    logInternalError(error, "reports");
     res.destroy(error as Error);
   }
 }
