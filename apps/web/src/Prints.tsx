@@ -92,6 +92,12 @@ export function BusinessHeader({
 }
 
 const COUNT_KEYS = new Set(["tickets", "voidedTickets"]);
+const METHOD_SHORT: Record<string, string> = {
+  cash: "efectivo",
+  card: "tarjeta",
+  transfer: "transf.",
+};
+
 /** 1. Cuadre de caja, en el orden del impreso de la tienda. */
 export function CuadrePrint({ c }: { c: any }) {
   const eur = !!c.foreign?.eur?.rate;
@@ -167,6 +173,22 @@ export function CuadrePrint({ c }: { c: any }) {
             label="Cobradas transferencia"
             value={num(c.cod?.collected?.transfer)}
           />
+          {/* Cada cobro con su factura, cliente y fecha de venta, para saber
+              de dónde sale el efectivo de facturas anteriores (dueña, 17-oct). */}
+          {(c.cod?.rows ?? [])
+            .filter((r: any) => r.status !== "rejected")
+            .map((r: any) => (
+              <div key={r.paymentId} className="tp-sub">
+                <Row
+                  label={`${r.number} · ${METHOD_SHORT[r.method] ?? r.method}`}
+                  value={num(r.amount)}
+                />
+                <p>
+                  {(r.customerName ?? "Sin cliente") +
+                    (r.soldAt ? " · vendida " + day(r.soldAt) : "")}
+                </p>
+              </div>
+            ))}
           {Number(c.cod?.collected?.pendingVerification) > 0 && (
             <Row
               label="Por verificar"

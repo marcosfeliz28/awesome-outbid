@@ -228,7 +228,14 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
           entryType: "installment",
           sale: { status: "completed" },
         },
-        include: { sale: { include: { payments: true } } },
+        include: {
+          sale: {
+            include: {
+              payments: true,
+              customer: { select: { name: true } },
+            },
+          },
+        },
         orderBy: { createdAt: "asc" },
       }),
       db.cashMovement.findMany({ where: { sessionId: session.id } }),
@@ -457,6 +464,8 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         paymentId: p.id,
         saleId: p.saleId,
         number: p.sale.number,
+        customerName: p.sale.customer?.name ?? null,
+        soldAt: p.sale.createdAt,
         method: p.method,
         amount: Number(p.amount),
         status: p.status,
