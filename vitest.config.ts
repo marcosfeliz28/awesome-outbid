@@ -4,6 +4,7 @@ export default defineConfig({
     // 5 s (el valor por defecto) se agotaban con la máquina ocupada (F-3).
     testTimeout: 30000,
     include: [
+      "tests/browser-session-security.test.ts",
       "tests/session-security-postgres.test.ts",
       "tests/input-http.test.ts",
       "tests/input-validation.test.ts",

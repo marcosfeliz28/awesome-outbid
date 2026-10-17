@@ -89,6 +89,30 @@ class LocalDB extends Dexie {
   }
 }
 export const localDB = new LocalDB();
+// El token vive sólo en memoria. Las copias sin conexión pertenecen a la
+// persona, sucursal, rol y permisos que las descargaron; una sesión con menos
+// acceso nunca reutiliza la copia de gerencia, tampoco al cambiar por PIN.
+const principal = (user: User) => JSON.stringify([user.branchId, user.id]);
+const cacheOwner = (user: User) =>
+  JSON.stringify([
+    user.branchId,
+    user.id,
+    user.role,
+    [...user.permissions].sort(),
+  ]);
+export const privateCacheKey = (key: string, user: User) =>
+  "private:" + cacheOwner(user) + ":" + key;
+let sessionGeneration = 0;
+let sessionClosing = false;
+export class SessionChangedError extends Error {
+  readonly status = 401;
+  constructor() {
+    super("La sesión cambió. Vuelve a intentar la operación.");
+  }
+}
+const checkSession = (generation: number) => {
+  if (!stillSignedIn(generation)) throw new SessionChangedError();
+};
 export const useStore = create<{
   user: User | null;
   token: string | null;
@@ -115,15 +139,24 @@ export const useStore = create<{
   globalDiscount: 0,
   online: navigator.onLine,
   theme: localStorage.getItem("fitstore-theme") || "light",
-  setSession: (user, token) => set({ user, token }),
-  clearSession: () =>
+  setSession: (user, token) => {
+    const previous = useStore.getState().user;
+    if (!previous || cacheOwner(previous) !== cacheOwner(user))
+      sessionGeneration++;
+    sessionClosing = false;
+    set({ user, token });
+  },
+  clearSession: () => {
+    sessionGeneration++;
+    sessionClosing = false;
     set({
       user: null,
       token: null,
       cart: [],
       customerId: null,
       globalDiscount: 0,
-    }),
+    });
+  },
   add: (variant, product) =>
     set((state) => {
       const existing = state.cart.find((i) => i.variant.id === variant.id);
@@ -158,6 +191,14 @@ export const useStore = create<{
       return { theme };
     }),
 }));
+/** Limpia consultas en memoria al cambiar de persona, rol o permisos. */
+export function isolateQueryClient(client: QueryClient) {
+  return useStore.subscribe((state, previous) => {
+    const current = state.user && cacheOwner(state.user);
+    const before = previous.user && cacheOwner(previous.user);
+    if (current !== before) client.clear();
+  });
+}
 // El servidor no responde: fetch sin red (TypeError) o el proxy sin la API
 // (502/503/504). Con el router encendido y sin internet, navigator.onLine
 // sigue en true: la caja se marca sin conexión al primer fallo y vende con
@@ -200,7 +241,7 @@ async function send(url: string, init: RequestInit, timeout = 0) {
   }
   let response: Response;
   try {
-    response = await fetch(url, { ...init, signal });
+    response = await fetch(url, { ...init, signal, cache: "no-store" });
   } catch (e) {
     if (!expired && e instanceof DOMException && e.name === "AbortError")
       throw e;
@@ -224,22 +265,44 @@ async function readJson(response: Response) {
     throw new NetworkError();
   }
 }
-let refreshPromise: Promise<void> | null = null;
+let refreshPromise: { generation: number; promise: Promise<void> } | null =
+  null;
 export async function refreshSession() {
-  if (!refreshPromise)
-    refreshPromise = (async () => {
+  const generation = sessionGeneration;
+  checkSession(generation);
+  if (!refreshPromise || refreshPromise.generation !== generation) {
+    const entry = { generation, promise: Promise.resolve() };
+    entry.promise = (async () => {
+      // También al recargar: una respuesta HTTP tardía de otra pestaña puede
+      // haber reemplazado la cookie. No cambia la persona guardada por ella.
+      const saved = await localDB.cache.get("session");
+      const savedIsValid =
+        typeof saved?.data?.expiresAt === "number" &&
+        saved.data.expiresAt > Date.now();
+      const expected =
+        useStore.getState().user ?? (savedIsValid ? saved?.data?.user : null);
+      checkSession(generation);
+      // Tras salir (incluso sin red), una cookie aún viva no autoriza a
+      // reabrir la sesión. Se exige usuario activo o restauración vigente.
+      if (!expected?.id || !expected.branchId) throw new SessionChangedError();
       const response = await send(
         "/api/auth/refresh",
         { method: "POST", credentials: "include" },
         ANSWER_TIMEOUT,
       );
+      checkSession(generation);
       if (!response.ok) throw new Error("Inicia sesión para continuar.");
       const result = await readJson(response);
+      checkSession(generation);
+      if (principal(expected) !== principal(result.user))
+        throw new SessionChangedError();
       await saveSession(result.user, result.accessToken, false);
     })().finally(() => {
-      refreshPromise = null;
+      if (refreshPromise === entry) refreshPromise = null;
     });
-  return refreshPromise;
+    refreshPromise = entry;
+  }
+  return refreshPromise.promise;
 }
 export const sessionDeadline = (user: User) =>
   Date.now() + (user.sessionTimeoutMinutes ?? 30) * 60000;
@@ -251,7 +314,9 @@ export async function saveSession(
   activity = true,
 ) {
   useStore.getState().setSession(user, token);
+  const generation = sessionGeneration;
   const saved = activity ? undefined : await localDB.cache.get("session");
+  checkSession(generation);
   await localDB.cache.put({
     key: "session",
     data: {
@@ -270,12 +335,31 @@ export async function saveSession(
 // vencida para pedir la contraseña e intentarlo otra vez al abrir
 // (R9-offline-5).
 export async function endSession() {
-  let revoked = true;
+  // Invalida inmediatamente las consultas y renovaciones que ya estaban en
+  // vuelo. El cierre no intenta renovar un token que acaba de invalidarse.
+  const token = useStore.getState().token;
+  const generation = ++sessionGeneration;
+  sessionClosing = true;
+  let revoked = false;
   try {
-    await api("/auth/logout", { method: "POST", body: "{}", timeout: 8000 });
-  } catch (e) {
-    revoked = !isNetworkError(e);
+    const response = await send(
+      "/api/auth/logout",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: "Bearer " + token } : {}),
+        },
+        body: "{}",
+        credentials: "include",
+      },
+      8000,
+    );
+    revoked = response.ok;
+  } catch {
+    /* Se conserva el marcador vencido hasta revocar en el servidor. */
   }
+  if (generation !== sessionGeneration) return;
   useStore.getState().clearSession();
   await forgetSessionData(revoked);
 }
@@ -310,14 +394,17 @@ export async function forgetSessionData(revoked = true) {
 }
 // Una respuesta que llega después de cerrar la sesión no se guarda: si no, una
 // consulta en curso volvería a dejar clientes o catálogo en el equipo (G9).
-const stillSignedIn = (userId?: string) =>
-  !!userId && useStore.getState().user?.id === userId;
+// Las claves antiguas, sin dueño, no se leen. Se borran al cerrar sesión.
+const stillSignedIn = (generation: number) =>
+  generation === sessionGeneration && !sessionClosing;
 // timeout: milisegundos sin respuesta para tratarlo como sin conexión.
 export async function api<T = any>(
   path: string,
   options: RequestInit & { timeout?: number } = {},
   retry = true,
 ): Promise<T> {
+  const generation = sessionGeneration;
+  checkSession(generation);
   const request = async () => {
     const token = useStore.getState().token;
     const { timeout, ...init } = options;
@@ -330,6 +417,7 @@ export async function api<T = any>(
       { ...init, headers, credentials: "include" },
       timeout,
     );
+    checkSession(generation);
     if (response.status === 401 && retry) {
       await refreshSession();
       return api(path, options, false);
@@ -344,7 +432,9 @@ export async function api<T = any>(
         status: response.status,
       });
     }
-    return readJson(response);
+    const data = await readJson(response);
+    checkSession(generation);
+    return data;
   };
 
   return traceBusinessOperation(
@@ -355,6 +445,8 @@ export async function api<T = any>(
 
 /** Descarga autenticada para evidencias y otros archivos binarios. */
 export async function apiBlob(path: string, retry = true): Promise<Blob> {
+  const generation = sessionGeneration;
+  checkSession(generation);
   const request = async (): Promise<Blob> => {
     const token = useStore.getState().token;
     const headers = new Headers();
@@ -364,6 +456,7 @@ export async function apiBlob(path: string, retry = true): Promise<Blob> {
       { headers, credentials: "include" },
       20_000,
     );
+    checkSession(generation);
     if (response.status === 401 && retry) {
       await refreshSession();
       return apiBlob(path, false);
@@ -374,7 +467,9 @@ export async function apiBlob(path: string, retry = true): Promise<Blob> {
         .catch(() => ({ message: "No se pudo descargar el archivo." }));
       throw new Error(result.message);
     }
-    return response.blob();
+    const blob = await response.blob();
+    checkSession(generation);
+    return blob;
   };
   return traceBusinessOperation("GET " + path, request);
 }
@@ -384,17 +479,23 @@ export const post = <T = any>(path: string, data: unknown) =>
 // o si el servidor no responde, se usa la última. Sin copia se lanza el
 // error: React Query conserva lo que ya estaba en pantalla (R9-offline-1).
 export async function cachedApi<T>(path: string, key: string): Promise<T> {
+  const user = useStore.getState().user;
+  if (!user) throw new SessionChangedError();
+  const generation = sessionGeneration;
+  const scopedKey = privateCacheKey(key, user);
   if (isOnline()) {
     try {
-      const owner = useStore.getState().user?.id;
       const data = await api<T>(path);
-      if (stillSignedIn(owner)) await localDB.cache.put({ key, data });
+      checkSession(generation);
+      await localDB.cache.put({ key: scopedKey, data });
+      checkSession(generation);
       return data;
     } catch (e) {
       if (!isNetworkError(e)) throw e;
     }
   }
-  const cached = await localDB.cache.get(key);
+  const cached = await localDB.cache.get(scopedKey);
+  checkSession(generation);
   if (!cached) throw new NetworkError();
   return cached.data as T;
 }
@@ -424,7 +525,8 @@ async function fetchCatalog() {
 export async function loadCatalog() {
   const user = useStore.getState().user;
   if (!user) throw new Error("Inicia sesión.");
-  const key = "catalog:" + user.branchId;
+  const generation = sessionGeneration;
+  const key = privateCacheKey("catalog:" + user.branchId, user);
   if (isOnline()) {
     try {
       const products = await fetchCatalog();
@@ -441,8 +543,9 @@ export async function loadCatalog() {
           };
         }),
       }));
-      if (stillSignedIn(user.id))
-        await localDB.cache.put({ key, data: cached });
+      checkSession(generation);
+      await localDB.cache.put({ key, data: cached });
+      checkSession(generation);
       return products;
     } catch (e) {
       // Sin respuesta del servidor se vende con la copia local (R9-offline-1).
@@ -450,6 +553,7 @@ export async function loadCatalog() {
     }
   }
   const cached = await localDB.cache.get(key);
+  checkSession(generation);
   if (!cached) throw new Error("Conéctate una vez para descargar el catálogo.");
   return cached.data as Product[];
 }
@@ -483,7 +587,13 @@ export async function discountLocalStock(
     );
   client.setQueryData<Product[]>(["catalog"], (old) => old && discount(old));
   const user = useStore.getState().user;
-  const cached = user && (await localDB.cache.get("catalog:" + user.branchId));
+  const generation = sessionGeneration;
+  const cached =
+    user &&
+    (await localDB.cache.get(
+      privateCacheKey("catalog:" + user.branchId, user),
+    ));
+  checkSession(generation);
   if (cached)
     await localDB.cache.put({ key: cached.key, data: discount(cached.data) });
 }
@@ -517,15 +627,17 @@ export function refreshCart(products: Product[]) {
 }
 export async function syncSales() {
   const user = useStore.getState().user;
+  const generation = sessionGeneration;
   if (!user || !navigator.onLine) return { synced: 0, conflicts: 0, retry: 0 };
   const pending = await localDB.sales
     .where("userId")
     .equals(user.id)
-    .filter((s) => s.status === "pending")
+    .filter((s) => s.branchId === user.branchId && s.status === "pending")
     .sortBy("createdAt");
   if (!pending.length) return { synced: 0, conflicts: 0, retry: 0 };
   const total = { synced: 0, conflicts: 0, retry: 0 };
   for (let i = 0; i < pending.length; i += 100) {
+    checkSession(generation);
     const result = await post("/sales/sync", {
       sales: pending.slice(i, i + 100).map((s) => s.input),
     });
@@ -542,14 +654,18 @@ export async function syncSales() {
   return total;
 }
 export const DOWNLOAD_FAILED = "No se pudo descargar el archivo.";
-export async function download(path: string, filename: string) {
+export async function download(path: string, filename: string, retry = true) {
+  const generation = sessionGeneration;
+  checkSession(generation);
   const response = await fetch("/api" + path, {
     headers: { Authorization: "Bearer " + useStore.getState().token },
     credentials: "include",
+    cache: "no-store",
   });
-  if (response.status === 401) {
+  checkSession(generation);
+  if (response.status === 401 && retry) {
     await refreshSession();
-    return download(path, filename);
+    return download(path, filename, false);
   }
   if (!response.ok) {
     // Un 400 dice qué cambiar (por ejemplo, un período que supera el máximo
@@ -561,6 +677,7 @@ export async function download(path: string, filename: string) {
     );
   }
   const blob = await response.blob();
+  checkSession(generation);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -574,6 +691,7 @@ export async function syncMerchandise() {
   if (goodsSync) return goodsSync;
   goodsSync = (async () => {
     const user = useStore.getState().user;
+    const generation = sessionGeneration;
     if (!user || !navigator.onLine) return;
     const pending = await localDB.merchandise
       .where("userId")
@@ -582,10 +700,16 @@ export async function syncMerchandise() {
       .sortBy("createdAt");
     for (const row of pending) {
       try {
+        checkSession(generation);
         await post("/merchandise/operations", row.input);
         await localDB.merchandise.delete(row.id);
       } catch (e: any) {
-        if (!navigator.onLine || e instanceof TypeError) break;
+        if (
+          !navigator.onLine ||
+          e instanceof TypeError ||
+          e instanceof SessionChangedError
+        )
+          break;
         await localDB.merchandise.update(row.id, {
           status: "conflict",
           message: e.message,

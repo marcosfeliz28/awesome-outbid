@@ -16,6 +16,7 @@ import {
   loadCatalog,
   localDB,
   post,
+  privateCacheKey,
   Product,
   refreshCart,
   refreshSession,
@@ -193,7 +194,10 @@ export function useRealtime() {
           client.setQueryData(["catalog"], catalog);
         }
         apply(data.variantId, data.qtyOnHand);
-        const cached = await localDB.cache.get("catalog:" + user.branchId);
+        const cached = await localDB.cache.get(
+          privateCacheKey("catalog:" + user.branchId, user),
+        );
+        if (stopped) return;
         if (cached) {
           cached.data = cached.data.map((p: Product) => ({
             ...p,
@@ -228,6 +232,7 @@ export function useRealtime() {
         const response = await fetch("/api/events", {
           headers: { Authorization: "Bearer " + useStore.getState().token },
           credentials: "include",
+          cache: "no-store",
           signal: controller.signal,
         });
         if (response.status === 401) {

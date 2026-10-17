@@ -56,6 +56,7 @@ import {
   localDB,
   download,
   cachedApi,
+  privateCacheKey,
   discountLocalStock,
   isNetworkError,
   refreshCart,
@@ -312,7 +313,9 @@ export function POS({ go }: { go: (page: string) => void }) {
       ["settings:" + user!.branchId, config.data],
     ])
       if (data !== undefined)
-        void localDB.cache.put({ key, data }).catch(() => {});
+        void localDB.cache
+          .put({ key: privateCacheKey(key as string, user!), data })
+          .catch(() => {});
   }, [
     categories.data,
     customers.data,
@@ -320,6 +323,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     promos.data,
     config.data,
     user!.branchId,
+    user!.id,
   ]);
   // El carrito usa los precios del catálogo vigente: si otro equipo cambió
   // un precio, la línea se actualiza y se avisa antes de cobrar
