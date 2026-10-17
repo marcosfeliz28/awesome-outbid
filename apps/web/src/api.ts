@@ -60,8 +60,9 @@ export type PendingSale = {
   createdAt: number;
   receipt: any;
 };
+type CacheRow = { key: string; data: any; owner?: string };
 class LocalDB extends Dexie {
-  cache!: Table<{ key: string; data: any }, string>;
+  cache!: Table<CacheRow, string>;
   sales!: Table<PendingSale, string>;
   merchandise!: Table<
     {
@@ -100,8 +101,6 @@ const cacheOwner = (user: User) =>
     user.role,
     [...user.permissions].sort(),
   ]);
-export const privateCacheKey = (key: string, user: User) =>
-  "private:" + cacheOwner(user) + ":" + key;
 let sessionGeneration = 0;
 let sessionClosing = false;
 export class SessionChangedError extends Error {
@@ -197,6 +196,40 @@ export function isolateQueryClient(client: QueryClient) {
     const current = state.user && cacheOwner(state.user);
     const before = previous.user && cacheOwner(previous.user);
     if (current !== before) client.clear();
+  });
+}
+const checkPrivateSession = (user: User, generation: number) => {
+  checkSession(generation);
+  const current = useStore.getState().user;
+  if (!current || cacheOwner(current) !== cacheOwner(user))
+    throw new SessionChangedError();
+};
+// Las claves siguen siendo las del catálogo/caja. El dueño es obligatorio
+// para datos de negocio: una fila heredada sin owner nunca sirve de respaldo.
+// Sesión y borradores conservan su propio protocolo de restauración y cierre.
+export async function readPrivateCache(
+  key: string,
+  user: User,
+  generation = sessionGeneration,
+) {
+  checkPrivateSession(user, generation);
+  const row = await localDB.cache.get(key);
+  checkPrivateSession(user, generation);
+  return row?.owner === cacheOwner(user) ? row : undefined;
+}
+export async function writePrivateCache(
+  key: string,
+  data: unknown,
+  user: User,
+  generation = sessionGeneration,
+) {
+  checkPrivateSession(user, generation);
+  await localDB.transaction("rw", localDB.cache, async () => {
+    checkPrivateSession(user, generation);
+    await localDB.cache.put({ key, data, owner: cacheOwner(user) });
+    // Si cambió la sesión durante el put, Dexie aborta la transacción. Un
+    // clear de logout sobre esta misma tabla tampoco puede adelantársele.
+    checkPrivateSession(user, generation);
   });
 }
 // El servidor no responde: fetch sin red (TypeError) o el proxy sin la API
@@ -394,7 +427,7 @@ export async function forgetSessionData(revoked = true) {
 }
 // Una respuesta que llega después de cerrar la sesión no se guarda: si no, una
 // consulta en curso volvería a dejar clientes o catálogo en el equipo (G9).
-// Las claves antiguas, sin dueño, no se leen. Se borran al cerrar sesión.
+// Las filas antiguas, sin dueño, no se leen. Se borran al cerrar sesión.
 const stillSignedIn = (generation: number) =>
   generation === sessionGeneration && !sessionClosing;
 // timeout: milisegundos sin respuesta para tratarlo como sin conexión.
@@ -482,19 +515,18 @@ export async function cachedApi<T>(path: string, key: string): Promise<T> {
   const user = useStore.getState().user;
   if (!user) throw new SessionChangedError();
   const generation = sessionGeneration;
-  const scopedKey = privateCacheKey(key, user);
   if (isOnline()) {
     try {
       const data = await api<T>(path);
       checkSession(generation);
-      await localDB.cache.put({ key: scopedKey, data });
+      await writePrivateCache(key, data, user, generation);
       checkSession(generation);
       return data;
     } catch (e) {
       if (!isNetworkError(e)) throw e;
     }
   }
-  const cached = await localDB.cache.get(scopedKey);
+  const cached = await readPrivateCache(key, user, generation);
   checkSession(generation);
   if (!cached) throw new NetworkError();
   return cached.data as T;
@@ -526,7 +558,7 @@ export async function loadCatalog() {
   const user = useStore.getState().user;
   if (!user) throw new Error("Inicia sesión.");
   const generation = sessionGeneration;
-  const key = privateCacheKey("catalog:" + user.branchId, user);
+  const key = "catalog:" + user.branchId;
   if (isOnline()) {
     try {
       const products = await fetchCatalog();
@@ -544,7 +576,7 @@ export async function loadCatalog() {
         }),
       }));
       checkSession(generation);
-      await localDB.cache.put({ key, data: cached });
+      await writePrivateCache(key, cached, user, generation);
       checkSession(generation);
       return products;
     } catch (e) {
@@ -552,7 +584,7 @@ export async function loadCatalog() {
       if (!isNetworkError(e)) throw e;
     }
   }
-  const cached = await localDB.cache.get(key);
+  const cached = await readPrivateCache(key, user, generation);
   checkSession(generation);
   if (!cached) throw new Error("Conéctate una vez para descargar el catálogo.");
   return cached.data as Product[];
@@ -590,12 +622,15 @@ export async function discountLocalStock(
   const generation = sessionGeneration;
   const cached =
     user &&
-    (await localDB.cache.get(
-      privateCacheKey("catalog:" + user.branchId, user),
-    ));
+    (await readPrivateCache("catalog:" + user.branchId, user, generation));
   checkSession(generation);
   if (cached)
-    await localDB.cache.put({ key: cached.key, data: discount(cached.data) });
+    await writePrivateCache(
+      cached.key,
+      discount(cached.data),
+      user!,
+      generation,
+    );
 }
 // Las líneas del carrito toman la variante y el producto vigentes del
 // catálogo: un precio cambiado en otro equipo bloqueaba el cobro y volver a

@@ -14,9 +14,9 @@ import {
   api,
   CartItem,
   loadCatalog,
-  localDB,
   post,
-  privateCacheKey,
+  readPrivateCache,
+  writePrivateCache,
   Product,
   refreshCart,
   refreshSession,
@@ -194,9 +194,7 @@ export function useRealtime() {
           client.setQueryData(["catalog"], catalog);
         }
         apply(data.variantId, data.qtyOnHand);
-        const cached = await localDB.cache.get(
-          privateCacheKey("catalog:" + user.branchId, user),
-        );
+        const cached = await readPrivateCache("catalog:" + user.branchId, user);
         if (stopped) return;
         if (cached) {
           cached.data = cached.data.map((p: Product) => ({
@@ -207,7 +205,7 @@ export function useRealtime() {
                 : v,
             ),
           }));
-          await localDB.cache.put(cached);
+          await writePrivateCache(cached.key, cached.data, user);
         }
         for (const key of [
           "stock",

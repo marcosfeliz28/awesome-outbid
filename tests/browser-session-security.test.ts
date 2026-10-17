@@ -3,12 +3,19 @@ import { QueryClient } from "../apps/web/node_modules/@tanstack/react-query";
 
 // Ejecuta api.ts real; IndexedDB y fetch se controlan para intercalar dos
 // identidades exactamente entre el envío, la lectura y el guardado.
-const fixture = vi.hoisted(() => ({ rows: new Map<string, any>() }));
+const fixture = vi.hoisted(() => ({
+  rows: new Map<string, any>(),
+  transactionGate: null as Promise<void> | null,
+  putGate: null as Promise<void> | null,
+}));
 vi.mock("../apps/web/node_modules/dexie", () => ({
   default: class {
     cache = {
       get: async (key: string) => fixture.rows.get(key),
       put: async (row: any) => {
+        const gate = fixture.putGate;
+        fixture.putGate = null;
+        if (gate) await gate;
         fixture.rows.set(row.key, structuredClone(row));
       },
       clear: async () => fixture.rows.clear(),
@@ -19,6 +26,9 @@ vi.mock("../apps/web/node_modules/dexie", () => ({
           this.cache = {
             get: async (key: string) => fixture.rows.get(key),
             put: async (row: any) => {
+              const gate = fixture.putGate;
+              fixture.putGate = null;
+              if (gate) await gate;
               fixture.rows.set(row.key, structuredClone(row));
             },
             clear: async () => fixture.rows.clear(),
@@ -26,8 +36,23 @@ vi.mock("../apps/web/node_modules/dexie", () => ({
         },
       };
     }
-    transaction(_mode: string, _table: unknown, run: () => Promise<void>) {
-      return run();
+    async transaction(
+      _mode: string,
+      _table: unknown,
+      run: () => Promise<void>,
+    ) {
+      const gate = fixture.transactionGate;
+      fixture.transactionGate = null;
+      if (gate) await gate;
+      // Como IndexedDB, una excepción del callback aborta todas sus escrituras.
+      const before = structuredClone([...fixture.rows]);
+      try {
+        return await run();
+      } catch (error) {
+        fixture.rows.clear();
+        for (const [key, row] of before) fixture.rows.set(key, row);
+        throw error;
+      }
     }
   },
 }));
@@ -59,6 +84,8 @@ const deferred = <T>() => {
 beforeEach(() => {
   vi.resetModules();
   fixture.rows.clear();
+  fixture.transactionGate = null;
+  fixture.putGate = null;
   vi.stubGlobal("navigator", { onLine: true });
   vi.stubGlobal("localStorage", { getItem: () => null });
   vi.stubGlobal("fetch", vi.fn());
@@ -68,6 +95,182 @@ afterEach(() => {
 });
 
 describe("3ag · copias privadas por usuario, sucursal y permisos", () => {
+  it("guarda catálogo y clientes reales en sus claves lógicas con dueño obligatorio", async () => {
+    const mod = await import("../apps/web/src/api");
+    const user = actor("a", ["reports:read", "sale:read"]);
+    mod.useStore.getState().setSession(user, "token-a");
+    const products = [
+      { id: "p", variants: [{ id: "v", stock: "5", price: "30" }] },
+    ];
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(json({ items: products, total: 1 }))
+      .mockResolvedValueOnce(
+        json([{ id: "customer-a", name: "Cliente real" }]),
+      );
+    await mod.loadCatalog();
+    await mod.cachedApi("/customers", "customers:a");
+    expect([...fixture.rows.keys()].sort()).toEqual([
+      "catalog:main",
+      "customers:a",
+    ]);
+    const owner = JSON.stringify([
+      "main",
+      "a",
+      "seller",
+      ["reports:read", "sale:read"],
+    ]);
+    expect(fixture.rows.get("catalog:main")).toEqual({
+      key: "catalog:main",
+      owner,
+      data: products,
+    });
+    expect(fixture.rows.get("customers:a")).toEqual({
+      key: "customers:a",
+      owner,
+      data: [{ id: "customer-a", name: "Cliente real" }],
+    });
+  });
+
+  it("sobrescribe la misma clave al cambiar de usuario y nunca entrega esa copia al dueño anterior", async () => {
+    const mod = await import("../apps/web/src/api");
+    mod.useStore.getState().setSession(actor("a"), "token-a");
+    vi.mocked(fetch).mockResolvedValueOnce(json(["datos de a"]));
+    await mod.cachedApi("/settings", "settings:main");
+    mod.useStore.getState().setSession(actor("b"), "token-b");
+    vi.mocked(fetch).mockResolvedValueOnce(json(["datos de b"]));
+    await mod.cachedApi("/settings", "settings:main");
+    expect([...fixture.rows.keys()]).toEqual(["settings:main"]);
+    mod.useStore.getState().setOnline(false);
+    await expect(mod.cachedApi("/settings", "settings:main")).resolves.toEqual([
+      "datos de b",
+    ]);
+    mod.useStore.getState().setSession(actor("a"), "new-token-a");
+    await expect(mod.cachedApi("/settings", "settings:main")).rejects.toThrow();
+  });
+
+  it("lee la clave lógica sólo con owner exacto y normaliza el orden de permisos", async () => {
+    const mod = await import("../apps/web/src/api");
+    const user = actor("a", ["sale:read", "reports:read"]);
+    mod.useStore.getState().setSession(user, "token-a");
+    mod.useStore.getState().setOnline(false);
+    fixture.rows.set("customers:a", {
+      key: "customers:a",
+      data: ["copia propia"],
+      owner: JSON.stringify([
+        "main",
+        "a",
+        "seller",
+        ["reports:read", "sale:read"],
+      ]),
+    });
+    await expect(mod.cachedApi("/customers", "customers:a")).resolves.toEqual([
+      "copia propia",
+    ]);
+  });
+
+  it.each([
+    undefined,
+    JSON.stringify(["main", "other", "seller", ["sale:read"]]),
+    JSON.stringify(["other", "a", "seller", ["sale:read"]]),
+    JSON.stringify(["main", "a", "admin", ["sale:read"]]),
+    JSON.stringify(["main", "a", "seller", ["*"]]),
+  ])(
+    "ignora una fila de la clave real con owner ausente o distinto %j",
+    async (owner) => {
+      const mod = await import("../apps/web/src/api");
+      mod.useStore.getState().setSession(actor("a"), "token-a");
+      mod.useStore.getState().setOnline(false);
+      fixture.rows.set("customers:a", {
+        key: "customers:a",
+        owner,
+        data: ["ajeno"],
+      });
+      await expect(
+        mod.cachedApi("/customers", "customers:a"),
+      ).rejects.toThrow();
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
+
+  it("el efecto de un render o SSE anterior no etiqueta datos ajenos con el usuario nuevo", async () => {
+    const mod = await import("../apps/web/src/api");
+    const first = actor("a");
+    mod.useStore.getState().setSession(first, "token-a");
+    await mod.writePrivateCache("catalog:main", ["catálogo de a"], first);
+    const saved = await mod.readPrivateCache("catalog:main", first);
+    mod.useStore.getState().setSession(actor("b"), "token-b");
+    await expect(
+      mod.writePrivateCache(saved!.key, ["stock viejo"], first),
+    ).rejects.toMatchObject({ status: 401 });
+    await expect(
+      mod.readPrivateCache("catalog:main", actor("b")),
+    ).resolves.toBeUndefined();
+    expect(fixture.rows.get("catalog:main")).toEqual(saved);
+  });
+
+  it("una escritura en cola no recrea datos después del purge de logout", async () => {
+    const mod = await import("../apps/web/src/api");
+    const first = actor("a");
+    mod.useStore.getState().setSession(first, "token-a");
+    const gate = deferred<void>();
+    fixture.transactionGate = gate.promise;
+    const pending = mod.writePrivateCache(
+      "customers:a",
+      ["respuesta antigua"],
+      first,
+    );
+    const rejected = expect(pending).rejects.toMatchObject({ status: 401 });
+    mod.useStore.getState().clearSession();
+    await mod.forgetSessionData();
+    gate.resolve();
+    await rejected;
+    expect(fixture.rows.size).toBe(0);
+  });
+
+  it("aborta la transacción si cambia la sesión durante el put", async () => {
+    const mod = await import("../apps/web/src/api");
+    const first = actor("a");
+    mod.useStore.getState().setSession(first, "token-a");
+    const gate = deferred<void>();
+    fixture.putGate = gate.promise;
+    const pending = mod.writePrivateCache(
+      "customers:a",
+      ["respuesta antigua"],
+      first,
+    );
+    const rejected = expect(pending).rejects.toMatchObject({ status: 401 });
+    mod.useStore.getState().clearSession();
+    gate.resolve();
+    await rejected;
+    expect(fixture.rows.size).toBe(0);
+  });
+
+  it("descuenta stock sólo en el catálogo del owner vigente y conserva sus metadatos", async () => {
+    const mod = await import("../apps/web/src/api");
+    const first = actor("a");
+    mod.useStore.getState().setSession(first, "token-a");
+    const client = new QueryClient();
+    const stop = mod.isolateQueryClient(client);
+    const products = [
+      { id: "p", variants: [{ id: "v", stock: "5", price: "30" }] },
+    ];
+    await mod.writePrivateCache("catalog:main", products, first);
+    const owner = fixture.rows.get("catalog:main").owner;
+    client.setQueryData(["catalog"], products);
+    await mod.discountLocalStock(client, [{ variantId: "v", qty: 2 }]);
+    expect(fixture.rows.get("catalog:main").data[0].variants[0].stock).toBe(
+      "3",
+    );
+    expect(fixture.rows.get("catalog:main").owner).toBe(owner);
+    mod.useStore.getState().setSession(actor("b"), "token-b");
+    await mod.discountLocalStock(client, [{ variantId: "v", qty: 1 }]);
+    expect(fixture.rows.get("catalog:main").data[0].variants[0].stock).toBe(
+      "3",
+    );
+    expect(fixture.rows.get("catalog:main").owner).toBe(owner);
+    stop();
+  });
+
   it.each([
     ["otra persona", actor("cashier")],
     ["otra sucursal", actor("admin", ["*"], "other")],

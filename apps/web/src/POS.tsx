@@ -56,7 +56,7 @@ import {
   localDB,
   download,
   cachedApi,
-  privateCacheKey,
+  writePrivateCache,
   discountLocalStock,
   isNetworkError,
   refreshCart,
@@ -313,9 +313,7 @@ export function POS({ go }: { go: (page: string) => void }) {
       ["settings:" + user!.branchId, config.data],
     ])
       if (data !== undefined)
-        void localDB.cache
-          .put({ key: privateCacheKey(key as string, user!), data })
-          .catch(() => {});
+        void writePrivateCache(key as string, data, user!).catch(() => {});
   }, [
     categories.data,
     customers.data,
