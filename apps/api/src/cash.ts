@@ -986,20 +986,25 @@ export class CashController {
       // Tarjeta = lo que imprimió el verifón. Si la cajera declara un total
       // distinto del sistema, no cierra sola: necesita el PIN de un gerente
       // (dueña, 14-oct). Así nadie «cuadra» ventas antes del cierre.
-      if (
-        Number(differences.card) !== 0 &&
-        !can(actor.permissions, "sale:manage")
-      ) {
+      // Igual con el efectivo (dueña, 17-oct): si no cuadra, la cajera no
+      // cierra hasta que un gerente autorice con su PIN. El mensaje no dice
+      // cuánto falta ni sobra (el cierre sigue siendo ciego).
+      const cardOff = Number(differences.card) !== 0;
+      const cashOff = Number(differences.cash) !== 0;
+      if ((cardOff || cashOff) && !can(actor.permissions, "sale:manage")) {
         if (!input.managerPin)
           bad(
-            "El total de tarjeta no coincide con el sistema. Revisa el voucher del verifón; para cerrar con esta diferencia se necesita el PIN de un gerente.",
+            cardOff
+              ? "El total de tarjeta no coincide con el sistema. Revisa el voucher del verifón; para cerrar con esta diferencia se necesita el PIN de un gerente."
+              : "La caja no cuadra con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente.",
           );
         const approver = await managerPinApproval(
           this.db,
           actor,
           input.managerPin!,
         );
-        (data.closeDetails as any).cardApprovedBy = approver;
+        if (cardOff) (data.closeDetails as any).cardApprovedBy = approver;
+        if (cashOff) (data.closeDetails as any).cashApprovedBy = approver;
       }
       if (
         cashCloseRequiresNote(actor, differences, differenceLimit) &&

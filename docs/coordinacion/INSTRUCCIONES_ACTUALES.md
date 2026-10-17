@@ -417,6 +417,9 @@ La dueña está metiendo mercancía real en el sistema de Render: **ese sistema 
 4. **Tiendas de apps:** al final. Primero PWA instalable; luego, si conviene, empaquetado para Google Play y App Store, con su costo y su comisión.
 5. **Servidor en la casa:** solo como copia de respaldo y entorno de pruebas, nunca como servicio de clientes que pagan (riesgo de luz, internet y responsabilidad sobre sus datos).
 
+### 3ah. ORDEN (dueña, 17-oct) — Levantamiento del cierre de caja (ChatGPT NUBE y Gemini, SOLO PROPUESTA)
+Lee `docs/coordinacion/ORDEN_LEVANTAMIENTO_CIERRE_CAJA.md` y entrega tu propuesta (máx. 2 páginas, sin código) en `docs/PROPUESTA_CIERRE_CHATGPT.md` (rama `nexora-chatgpt-nube`) o `docs/PROPUESTA_CIERRE_GEMINI.md` (rama `nexora-gemini-auditoria`). Claude ya hizo aparte: el cierre pide el PIN de un gerente cuando el efectivo no cuadra (igual que la tarjeta).
+
 ### 3ag. ORDEN (dueña, 17-oct) — Endurecimiento de seguridad de toda la aplicación (ChatGPT NUBE audita y corrige; Claude revisa y despliega)
 La dueña pidió aplicar **todos los métodos de seguridad** y cerrar los huecos. Ya existen helmet, CORS, límite de intentos (`rate-limit.ts`), política de contraseñas, PIN de gerente, guardia de XLSX y `@Permit`; **no los rehagas, verifícalos y completa lo que falte**. Trabaja por bloques, un commit por bloque, con prueba que falle antes y pase después:
 1. **Autorización:** recorre TODOS los controladores; cada endpoint con `@Permit` y prueba con un rol SIN permiso (403) y otro CON permiso. Busca acceso a datos de otra sucursal/usuario por `id` (IDOR).
