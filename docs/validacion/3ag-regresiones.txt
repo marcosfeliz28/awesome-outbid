@@ -204,3 +204,50 @@ Integración final, código d82716b, API compilada y base recién creada: salida
       Tests  413 passed (413)
    Start at  08:32:51
    Duration  992.86s (transform 3.16s, setup 0ms, import 19.93s, tests 965.91s, environment 5ms)
+
+Compatibilidad de caché, base 804ba61: antes
+ Test Files  1 failed (1)
+      Tests  3 failed | 24 skipped (27)
+   Start at  09:14:53
+   Duration  1.90s (transform 298ms, setup 0ms, collect 261ms, tests 798ms, environment 0ms, prepare 150ms)
+
+Compatibilidad de caché con owner y escrituras transaccionales: después
+ Test Files  1 passed (1)
+      Tests  36 passed (36)
+   Start at  09:16:35
+   Duration  1.53s (transform 263ms, setup 0ms, collect 201ms, tests 878ms, environment 0ms, prepare 130ms)
+
+pnpm check de compatibilidad: salida 0 (tipos, lint, pruebas y builds)
+ Test Files  83 passed (83)
+      Tests  997 passed | 3 skipped (1000)
+   Start at  09:18:38
+   Duration  214.27s (transform 15.53s, setup 0ms, import 204.12s, tests 385.18s, environment 27ms)
+
+E2E de privacidad con código 804ba61: antes
+  2 failed
+
+E2E de privacidad con caché compatible: después
+  2 passed (28.9s)
+
+E2E completo local con caché compatible, 142 casos, sin cambios en tests/e2e
+  3 failed
+  139 passed (24.1m)
+Fallos: LAN por proxy del entorno; cuenta demo no exportada al proceso E2E; escaneo con foco en descuento.
+
+Tres focales con NO_PROXY local y configuración de su base de demo exportada
+  3 passed (28.8s)
+Escaneo: dos repeticiones independientes adicionales, una falla y otra pasa.
+No se alteraron manejadores, umbrales, pruebas, reintentos ni límites.
+
+Comparación de escaneo, sin alterar fuentes ni condiciones del test
+Código con corrección: 2/3 focales pasan (11.8 s, fallo 15.0 s, 11.8 s).
+Base 804ba61: 3/3 pasan (totales 14.2 s, 13.4 s, 13.2 s).
+No demuestra causalidad ni preexistencia del fallo; intermitencia registrada para revisión.
+
+Integración final del código 755333f, API compilada y base nueva: salida 0
+ Test Files  21 passed (21)
+      Tests  413 passed (413)
+   Start at  09:28:44
+   Duration  1154.17s (transform 4.63s, setup 0ms, import 19.47s, tests 1126.97s, environment 4ms)
+Una corrida concurrente anterior se detuvo tras dos timeouts; no se cambiaron código ni límites.
+Se reinició sólo la API propia, se recreó su base y se repitió sin pnpm check concurrente.

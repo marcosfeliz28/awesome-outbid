@@ -1,6 +1,6 @@
 # Entrega ChatGPT NUBE · orden 3ag · 17-oct-2026
 
-Estado: validación local completa. Entrega para revisión adversaria de Claude; integración y despliegue corresponden a Claude tras comprobar CI del último SHA.
+Estado: controles corregidos y validación local registrada, incluida la intermitencia de escaneo. Entrega para revisión adversaria de Claude; integración y despliegue corresponden a Claude tras comprobar CI del último SHA.
 
 Base: `4991b5136ad54b134ab7fafeee82bff73935c113` de `nexora-cloud`. Rama local `nexora-chatgpt-nube`, creada desde esa base. Se preserva la rama remota homónima: tiene dos commits no integrados que modifican E2E y un informe anterior. Esta entrega se publica en `nexora-chatgpt-nube-3ag`, sin forzar ni sustituir ese trabajo.
 
@@ -18,7 +18,7 @@ No hay migraciones ni cambios de fórmulas monetarias, crédito, incentivos o ca
 
 ## Validación reproducible
 
-Entorno local descartable: Node 24.19.0, pnpm 11.25.0, PostgreSQL embebido 18.4, cliente PostgreSQL 18.6 y Nginx 1.26.3. Credenciales de fixture generadas al preparar la base; `.env` ignorado y privado. No se usaron producción ni identidades de servicios reales. OAuth/Drive/Telegram de las pruebas son simuladores locales.
+Entorno local descartable: Node 24.19.0, pnpm 11.25.0, PostgreSQL embebido 18.4, cliente PostgreSQL 18.6 y Nginx 1.26.3. Credenciales de base y JWT generadas al preparar cada entorno; `.env` ignorado y privado. La suite E2E utiliza la cuenta demo sintética que exige su harness existente, únicamente en su base descartable independiente, igual que CI. No se usaron producción ni identidades de servicios reales. OAuth/Drive/Telegram de las pruebas son simuladores locales.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -32,20 +32,28 @@ pnpm audit --json
 git diff --check
 ```
 
-Código validado: `d82716b` (cinco commits, uno por bloque). Los informes y las evidencias se entregan en un sexto commit documental.
+Código validado: `755333f`, sobre los cinco bloques iniciales y su corrección posterior de compatibilidad de caché. Los informes y las evidencias se conservan en commits documentales separados.
 
 Resultados del árbol combinado:
 
-- `pnpm check`: salida 0; 83 archivos de pruebas pasan, **985 pruebas pasan y 3 se omiten** por requisitos externos; tipos, lint y build de web/API correctos.
+- `pnpm check`: salida 0; 83 archivos de pruebas pasan, **997 pruebas pasan y 3 se omiten** por requisitos externos; tipos, lint y build de web/API correctos.
 - `pnpm audit --json`: salida 0, **0 vulnerabilidades**.
 - `git diff --check`: salida 0; rutas excluidas sin cambios.
-- `pnpm test:integration`: salida 0; **413/413 pruebas pasan en 21 archivos**, con API compilada y base recién creada (992,86 segundos).
+- `pnpm test:integration`: salida 0; **413/413 pruebas pasan en 21 archivos**, con API compilada y base recién creada (1.154,17 segundos; repetición final del código `755333f`).
+
+Una repetición anterior de integración se detuvo después de dos timeouts mientras coincidían el chequeo completo y dos entornos API/navegador. Se creó otra base y se repitió sin el chequeo concurrente: 413/413 correctas, sin cambiar código ni límites por esos timeouts.
 
 Las pruebas nuevas se registraron en `vitest.config.ts`: se ejecutan por `pnpm check`. No se desactivaron pruebas ni se relajaron límites. Dos fixtures de privacidad se completaron con una variante válida de su sucursal para seguir comprobando anonimización y concurrencia; la prueba de sync ahora exige diagnóstico sin UUID, datos del cliente o texto libre del error, conservando su contrato y reporte higienizado a Sentry.
 
 La primera integración completa señaló 13 fallos y pasó 400 pruebas. Se separaron las peticiones malformadas de los casos legítimos: precio extra en sync, `cashSessionId` obsoleto en anulación, rol extra al crear usuarios, parámetro ajeno en incentivos, `offline: true` sin pertenecer al contrato y mapping de factura enviado al catálogo. El rechazo se comprueba sin mutaciones y las solicitudes limpias conservan las afirmaciones de dinero y propiedad. La prueba SSE ya distingue sus eventos de los anteriores por id, sin alterar el orden exigido. El diagnóstico de arranque permite sólo dos mensajes constantes seguros de configuración. Estas correcciones se reprodujeron en bases exclusivas antes de repetir el conjunto en una base nueva.
 
 La revisión de llamadas web encontró una incompatibilidad de fechas ya presente en la base: `DayReports` enviaba fechas ISO completas a una API que construye el día desde `AAAA-MM-DD`. Se corrigieron sus dos campos de consulta. Cuatro pruebas pulsan los botones reales, pasan la consulta por `dateRange` real y verifican el día entero UTC−4 y el filtro de usuario. Fallan al restaurar las dos líneas anteriores y pasan con la corrección.
+
+El primer CI de la entrega (`804ba61`) pasó la integración 413/413, Windows e imágenes, pero falló en dos de 142 E2E por las claves físicas de caché cambiadas (140 pasaron). Se reprodujeron ambos fallos localmente. La corrección conserva las claves reales anteriores y exige `owner` exacto en cada copia; POS y tiempo real también pasan por helpers con control de identidad/generación y transacción. No se añadieron alias ni registros vacíos, ni se tocaron los E2E. Las 36 regresiones de navegador y los dos E2E focales de privacidad pasan.
+
+La ejecución local de los 142 E2E terminó con 139 correctos y tres fallos: acceso LAN desviado por el proxy del entorno, contraseña demo no exportada al proceso de Playwright y captura intermitente de escaneo con foco en descuento. Con `NO_PROXY` para los hosts locales y la configuración demo de su base aislada exportada al proceso, los tres focales pasan (28,8 s), sin modificar fuentes, pruebas ni umbrales.
+
+El escaneo aislado con la corrección pasó dos de tres veces, frente a tres de tres en la base `804ba61`; la comparación no determina su causa y se registra por separado; estos resultados no se presentan como una ejecución completa 142/142 verde.
 
 ## AUTOAUDITORÍA
 
@@ -58,7 +66,7 @@ La revisión cruzada detectó y corrigió la caché que inicialmente omitía el 
 - `deploy/render/nginx.conf.template`, bloque `@nexora_api_down`: añadir el include de `nexora-security-headers.conf` junto a su `add_header Cache-Control`. La herencia actual pierde CSP/HSTS/frame/nosniff en `/healthz/deep` 503. Reproducción con Nginx real en [3ag-cabeceras-local.json](../validacion/3ag-cabeceras-local.json); verificar también con la imagen 1.30.5 y después en producción.
 - Revisar adversariamente el diff, comprobar los tres trabajos de CI del último SHA y decidir la integración/despliegue. No se inspeccionó la configuración ni las credenciales productivas.
 
-CI y revisión: [comparación de la entrega](https://github.com/marcosfeliz28/awesome-outbid/compare/nexora-cloud...nexora-chatgpt-nube-3ag), [CI de la rama](https://github.com/marcosfeliz28/awesome-outbid/actions?query=branch%3Anexora-chatgpt-nube-3ag). El estado vigente se consulta en el último SHA de la entrega; un resultado focal no sustituye los tres trabajos requeridos.
+CI y revisión: [PR #3](https://github.com/marcosfeliz28/awesome-outbid/pull/3), [comparación de la entrega](https://github.com/marcosfeliz28/awesome-outbid/compare/nexora-cloud...nexora-chatgpt-nube-3ag), [CI de la rama](https://github.com/marcosfeliz28/awesome-outbid/actions?query=branch%3Anexora-chatgpt-nube-3ag). El estado vigente se consulta en el último SHA de la entrega; un resultado focal no sustituye los tres trabajos requeridos.
 
 Comprobación de alcance: sin cambios en `deploy/**`, `render.yaml`, `.github/workflows/**` o `tests/e2e/**`; sin despliegues ni escrituras a `nexora-cloud`, ramas de Claude o datos reales.
 

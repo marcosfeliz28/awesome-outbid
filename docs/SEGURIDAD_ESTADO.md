@@ -27,7 +27,7 @@ Se revisaron los 21 controladores y sus 158 rutas. El inventario [de permisos](v
 | Respuestas privadas fuera de cachés HTTP | corregido | Middleware API `Cache-Control: no-store`; fetch/descargas/SSE con `cache: no-store`; comprobación HTTP local en nueva suite de datos. |
 | Token en memoria y refresh protegido | ya estaba | Access token sin persistencia; cookie refresh HttpOnly, SameSite strict y Secure en producción. Revisión y pruebas de sesión. Esto no hace inmune una sesión activa frente a XSS. |
 | PWA sin cachear API privada | ya estaba | Precache de archivos estáticos, sin runtime cache de `/api`; suites `pwa-update`, `web-privacy` y `cloud-deploy`. |
-| Caché local separada por usuario/sucursal/rol/permisos | corregido | `browser-session-security.test.ts`: IndexedDB y React Query; cambio admin→seller aun con permisos idénticos; respuesta/refresh tardíos; cierre fallido con cookie todavía vigente. |
+| Caché local separada por usuario/sucursal/rol/permisos | corregido | `browser-session-security.test.ts`: claves lógicas compatibles, `owner` obligatorio exacto en cada copia y escrituras transaccionales; React Query, admin→seller aun con permisos idénticos, respuesta/refresh tardíos y cierre fallido con cookie vigente. Los lectores/escritores de POS y tiempo real usan los mismos helpers. |
 | Renderizado sin HTML crudo | ya estaba | Búsqueda en la web sin usos de `dangerouslySetInnerHTML`/`innerHTML`; CSP limita scripts al propio origen. |
 | Tipo y tamaño real de archivos y límites multipart | corregido | Ocho rutas multipart revisadas. Factura valida bytes/MIME/tamaño; CSV binario rechazado; catálogo/logo/evidencia no admiten campos de texto. Pruebas HTTP con archivo genuino → 201 y campo extra → 400 antes de escribir. Descarga de factura privada, attachment y nosniff. |
 | Guardas XLSX contra descompresión y exceso de celdas | ya estaba | `xlsx-bomb`, `inventory-import-core` y `merchandise-template`; se conservan límites y guardas previas a ExcelJS. |
@@ -43,7 +43,7 @@ Los atributos de variantes y umbrales usan registros dinámicos acotados. La cre
 
 Role, Brand, ExpenseCategory, AlertRule y los respaldos son globales de la instalación según el esquema actual. Esta entrega endurece el sistema de la tienda; no lo convierte en un SaaS con aislamiento entre negocios.
 
-Después de actualizar, cada usuario debe conectarse una vez para descargar su catálogo/cachés con propietario. Las copias antiguas sin dueño se ignoran. Se conservan ventas, entradas y borradores pendientes de su dueño.
+Después de actualizar, cada usuario debe conectarse una vez para descargar su catálogo/cachés con propietario. Las copias antiguas sin dueño se ignoran. Cada clave lógica conserva la última copia: si otra identidad la sustituye, la anterior deberá conectarse para recuperarla. Las consultas no reutilizan esa copia ajena. Se conservan ventas, entradas y borradores pendientes de su dueño.
 
 ## AUTOAUDITORÍA y evidencia
 
@@ -53,6 +53,7 @@ Después de actualizar, cada usuario debe conectarse una vez para descargar su c
 | Entradas | 35 fallan / 1 pasa; casa preview aceptaba texto extra hasta el lector | 39/39 |
 | Sesión/PIN | 12 fallan / 8 pasan; cinco consumidores duplicados reproducidos por HTTP | 28/28 |
 | Navegador | 9 fallos iniciales; 5 fallos posteriores al cierre; 2 fallos por cambio de rol | 24/24 |
+| Compatibilidad y atomicidad de caché | Primer CI: 140 E2E pasan y 2 fallan porque las claves físicas cambiaron; reproducción local de ambos fallos y 3 regresiones unitarias rojas | 36/36 controles de navegador y ambos E2E focales pasan con claves originales, datos reales y dueño obligatorio; no se modificó E2E |
 | Archivos | 17 fallan / 3 pasan | 20/20 |
 | Bitácora | 4 fallan / 2 pasan; alta de cliente adicional también persistía tras fallar auditoría | 8/8 |
 | Matriz de variantes | Crecimiento por encima de 500 antes de validar | 2/2 |
@@ -62,6 +63,8 @@ Después de actualizar, cada usuario debe conectarse una vez para descargar su c
 | Dependencias | 3 críticos y 2 moderados | Sin vulnerabilidades en la auditoría posterior |
 
 Se probaron otro usuario/sucursal, rol sin permiso, cambio de rol manteniendo permisos, campos extra anidados, cookie inválida, doble renovación y respuestas simultáneas con cambio de identidad. Las suites de integración existentes comprueban idempotencia, concurrencia, importes extremos, caja, kardex, incentivos, créditos y sync. Las pruebas de precio extra offline, anulación con campos extra y rol falsificado exigen rechazo sin escrituras; las peticiones válidas conservan todas sus afirmaciones monetarias. OAuth acepta los parámetros legítimos acotados y rechaza los desconocidos antes de llamar al servicio. La prueba SSE identifica sus eventos por el id del servidor y mantiene el orden de commit, incluida la ausencia del evento aún no confirmado.
+
+La ejecución local general de navegador obtuvo 139/142; los tres focales posteriores pasan tras corregir el entorno LAN y exportar la configuración demo de pruebas, pero el escaneo con foco en descuento mostró intermitencia: dos de tres focales correctos con el cambio frente a tres de tres en `804ba61`; causa no determinada. La comparación y el CI del último SHA se detallan en la entrega; no se considera una ejecución completa verde ni se relajaron umbrales o pruebas.
 
 Los [resúmenes de salida real de regresiones](validacion/3ag-regresiones.txt) conservan conteos y tiempos sin datos de peticiones. Los resultados finales, comandos y CI se registran en [RESULTADOS_CHATGPT.md](coordinacion/RESULTADOS_CHATGPT.md).
 
