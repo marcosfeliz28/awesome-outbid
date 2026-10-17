@@ -1,0 +1,35 @@
+{
+  "entorno": "local descartable; nginx 1.26.3; sin desplegar",
+  "template_sha256": "21e2002b86f7cc6705e1205d986b42e540d9f10f832e8c8b7f1d5c995b15ca60",
+  "rutas": [
+    {
+      "ruta": "/",
+      "status": 200,
+      "cabeceras": {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; frame-src 'self' blob:; upgrade-insecure-requests",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "ruta": "/healthz",
+      "status": 204,
+      "cabeceras": {
+        "Cache-Control": "no-store",
+        "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; frame-src 'self' blob:; upgrade-insecure-requests",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "ruta": "/healthz/deep",
+      "status": 503,
+      "cabeceras": {
+        "Cache-Control": "no-store"
+      }
+    }
+  ]
+}

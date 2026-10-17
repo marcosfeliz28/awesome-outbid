@@ -1,3 +1,71 @@
+# Entrega ChatGPT NUBE · orden 3ag · 17-oct-2026
+
+Estado: validación local completa. Entrega para revisión adversaria de Claude; integración y despliegue corresponden a Claude tras comprobar CI del último SHA.
+
+Base: `4991b5136ad54b134ab7fafeee82bff73935c113` de `nexora-cloud`. Rama local `nexora-chatgpt-nube`, creada desde esa base. Se preserva la rama remota homónima: tiene dos commits no integrados que modifican E2E y un informe anterior. Esta entrega se publica en `nexora-chatgpt-nube-3ag`, sin forzar ni sustituir ese trabajo.
+
+Informe principal: [SEGURIDAD_ESTADO.md](../SEGURIDAD_ESTADO.md). Inventarios: [158 rutas/permisos](../validacion/3ag-autorizacion-rutas.json) y [entradas por ruta](../validacion/3ag-entradas-rutas.json). [Resúmenes de regresión reales](../validacion/3ag-regresiones.txt).
+
+## Cambios y riesgos revisados
+
+1. **Autorización:** guardia deniega rutas privadas sin permiso declarado; referencias y listados entre sucursales cerrados. Inventario de los 21 controladores. Las excepciones públicas y `authenticated` están justificadas en el informe.
+2. **Entradas:** Zod estricto recursivo, queries/UUID/fechas/paginación, presupuesto de listas/profundidad y metadatos multipart. Se mantiene validación individual del sync para conservar las ventas válidas del lote. SQL revisado: entradas parametrizadas.
+3. **Sesión:** refresh malformado o vencido rechazado; logout tolera cookie inválida; cambio obligatorio y bitácora atómicos. Un solo control de PIN valida al gerente dentro del bloqueo, después de bcrypt y en los cinco consumidores antes duplicados. Se conservan todos los frenos y la política de contraseñas vigente.
+4. **Navegador:** cachés por usuario/sucursal/rol/permisos; limpia React Query y descarta respuestas/renovaciones tardías. Cookie superviviente a logout fallido no reabre una sesión sin registro vigente. API y descargas con no-store. El catálogo offline debe descargarse una vez por persona tras actualizar; colas y borradores se conservan.
+5. **Datos/recursos:** archivos con tipo/tamaño real y campos multipart acotados; descargas privadas sin HTML activo; bitácora atómica en clientes/crédito, usuarios/acceso, promociones y contraseñas. Registros internos de formato cerrado; dependencias sin vulnerabilidades; matriz de variantes comprueba el límite antes del producto cartesiano, manteniendo las 500 permitidas.
+
+No hay migraciones ni cambios de fórmulas monetarias, crédito, incentivos o caja. El alta/cambio de acceso y los cambios de precio fallan junto con su bitácora para conservar la trazabilidad. Las regresiones de dinero existentes se ejecutan en integración.
+
+## Validación reproducible
+
+Entorno local descartable: Node 24.19.0, pnpm 11.25.0, PostgreSQL embebido 18.4, cliente PostgreSQL 18.6 y Nginx 1.26.3. Credenciales de fixture generadas al preparar la base; `.env` ignorado y privado. No se usaron producción ni identidades de servicios reales. OAuth/Drive/Telegram de las pruebas son simuladores locales.
+
+```bash
+pnpm install --frozen-lockfile
+pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
+pnpm check
+# API compilada y en marcha sobre la MISMA base de pruebas:
+pnpm test:integration
+pnpm audit --json
+git diff --check
+```
+
+Código validado: `d82716b` (cinco commits, uno por bloque). Los informes y las evidencias se entregan en un sexto commit documental.
+
+Resultados del árbol combinado:
+
+- `pnpm check`: salida 0; 83 archivos de pruebas pasan, **985 pruebas pasan y 3 se omiten** por requisitos externos; tipos, lint y build de web/API correctos.
+- `pnpm audit --json`: salida 0, **0 vulnerabilidades**.
+- `git diff --check`: salida 0; rutas excluidas sin cambios.
+- `pnpm test:integration`: salida 0; **413/413 pruebas pasan en 21 archivos**, con API compilada y base recién creada (992,86 segundos).
+
+Las pruebas nuevas se registraron en `vitest.config.ts`: se ejecutan por `pnpm check`. No se desactivaron pruebas ni se relajaron límites. Dos fixtures de privacidad se completaron con una variante válida de su sucursal para seguir comprobando anonimización y concurrencia; la prueba de sync ahora exige diagnóstico sin UUID, datos del cliente o texto libre del error, conservando su contrato y reporte higienizado a Sentry.
+
+La primera integración completa señaló 13 fallos y pasó 400 pruebas. Se separaron las peticiones malformadas de los casos legítimos: precio extra en sync, `cashSessionId` obsoleto en anulación, rol extra al crear usuarios, parámetro ajeno en incentivos, `offline: true` sin pertenecer al contrato y mapping de factura enviado al catálogo. El rechazo se comprueba sin mutaciones y las solicitudes limpias conservan las afirmaciones de dinero y propiedad. La prueba SSE ya distingue sus eventos de los anteriores por id, sin alterar el orden exigido. El diagnóstico de arranque permite sólo dos mensajes constantes seguros de configuración. Estas correcciones se reprodujeron en bases exclusivas antes de repetir el conjunto en una base nueva.
+
+La revisión de llamadas web encontró una incompatibilidad de fechas ya presente en la base: `DayReports` enviaba fechas ISO completas a una API que construye el día desde `AAAA-MM-DD`. Se corrigieron sus dos campos de consulta. Cuatro pruebas pulsan los botones reales, pasan la consulta por `dateRange` real y verifican el día entero UTC−4 y el filtro de usuario. Fallan al restaurar las dos líneas anteriores y pasan con la corrección.
+
+## AUTOAUDITORÍA
+
+Se reprodujeron antes/después: IDOR, permiso ausente, campos extra anidados, cookies malformadas, gerente pendiente/desactivado, aprobación que espera un bloqueo, cinco rutas reales de PIN, cierre/cambio de usuario con peticiones en vuelo, cambio de rol conservando permisos, archivo con MIME falso, falta de atomicidad de la bitácora y exceso de combinaciones de variantes. La instrumentación de la matriz aborta antes de materializar una lista peligrosa.
+
+La revisión cruzada detectó y corrigió la caché que inicialmente omitía el rol y los consumidores de PIN que aún duplicaban el chequeo antiguo. PostgreSQL real verifica reversión de permisos, credenciales, sesiones y promociones al rechazar AuditLog. La integración vuelve a cubrir caja, stock, pagos, créditos, incentivos, concurrencia, idempotencia y sync. Los tres saltos locales restantes son los existentes para Windows, impresión física y archivo de inventario externo, según la salida final.
+
+## Pendiente concreto para Claude
+
+- `deploy/render/nginx.conf.template`, bloque `@nexora_api_down`: añadir el include de `nexora-security-headers.conf` junto a su `add_header Cache-Control`. La herencia actual pierde CSP/HSTS/frame/nosniff en `/healthz/deep` 503. Reproducción con Nginx real en [3ag-cabeceras-local.json](../validacion/3ag-cabeceras-local.json); verificar también con la imagen 1.30.5 y después en producción.
+- Revisar adversariamente el diff, comprobar los tres trabajos de CI del último SHA y decidir la integración/despliegue. No se inspeccionó la configuración ni las credenciales productivas.
+
+CI y revisión: [comparación de la entrega](https://github.com/marcosfeliz28/awesome-outbid/compare/nexora-cloud...nexora-chatgpt-nube-3ag), [CI de la rama](https://github.com/marcosfeliz28/awesome-outbid/actions?query=branch%3Anexora-chatgpt-nube-3ag). El estado vigente se consulta en el último SHA de la entrega; un resultado focal no sustituye los tres trabajos requeridos.
+
+Comprobación de alcance: sin cambios en `deploy/**`, `render.yaml`, `.github/workflows/**` o `tests/e2e/**`; sin despliegues ni escrituras a `nexora-cloud`, ramas de Claude o datos reales.
+
+---
+
+## Entregas anteriores (conservadas)
+
 # Resultados de ChatGPT NUBE y ChatGPT PC
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
