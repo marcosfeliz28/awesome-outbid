@@ -1187,6 +1187,14 @@ export class CashController {
     @CurrentUser() actor: Actor,
     @Res() res: Response,
   ) {
+    name = parse(
+      z.enum(["venta-diaria-usuario", "venta-por-forma-pago"]),
+      name,
+    );
+    query = parse(
+      z.object({ format: z.enum(["json", "pdf", "xlsx"]).optional() }),
+      query,
+    );
     if (!STORE_REPORTS.includes(name)) bad("Reporte no disponible.");
     const session = await this.ownSession(actor, id);
     if (!session.closedAt && !canViewCashExpected(actor))

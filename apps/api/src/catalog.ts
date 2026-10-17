@@ -1,3 +1,4 @@
+import { inputPage } from "./request-validation";
 import {
   d,
   formatAmount,
@@ -287,15 +288,20 @@ export class CatalogController {
     @Query() query: Record<string, string>,
     @CurrentUser() actor: Actor,
   ) {
-    const q = query.q?.trim().slice(0, 100);
-    const page = Math.max(1, Number(query.page) || 1),
-      limit = Math.min(200, Math.max(1, Number(query.limit) || 60));
+    const { q, page, limit, active, categoryId } = parse(
+      z.object({
+        q: z.string().trim().max(100).optional(),
+        page: inputPage().default("1"),
+        limit: inputPage(200).default("60"),
+        active: z.enum(["true", "false"]).default("true"),
+        categoryId: uuid.optional(),
+      }),
+      query,
+    );
     const where: any = {
       branchId: actor.branchId,
-      active: query.active === "false" ? false : true,
-      ...(query.categoryId
-        ? { categoryId: parse(uuid, query.categoryId) }
-        : {}),
+      active: active === "true",
+      ...(categoryId ? { categoryId } : {}),
       ...(q
         ? {
             OR: [

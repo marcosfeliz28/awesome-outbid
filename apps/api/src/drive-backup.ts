@@ -38,8 +38,16 @@ import { join } from "node:path";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { Request, Response } from "express";
-import { can } from "@fitstore/shared";
-import { Actor, CurrentUser, Database, Permit, Public, audit } from "./common";
+import { can, z } from "@fitstore/shared";
+import {
+  Actor,
+  CurrentUser,
+  Database,
+  Permit,
+  Public,
+  audit,
+  parse,
+} from "./common";
 import { weakSecretReason } from "./secret-strength";
 import { sessionActivityGraceMs } from "./session-activity";
 import {
@@ -1487,7 +1495,21 @@ export class DriveBackupController {
   ) {
     let result = "error";
     try {
-      result = await this.service.callback(query, req.cookies?.[COOKIE]);
+      const input = parse(
+        z.object({
+          state: z.string().max(2048).optional(),
+          code: z.string().max(2048).optional(),
+          error: z.string().max(200).optional(),
+          error_description: z.string().max(1000).optional(),
+          error_uri: z.string().max(2048).optional(),
+          scope: z.string().max(2048).optional(),
+          authuser: z.string().max(20).optional(),
+          prompt: z.string().max(100).optional(),
+          hd: z.string().max(253).optional(),
+        }),
+        query,
+      );
+      result = await this.service.callback(input, req.cookies?.[COOKIE]);
     } catch (error: any) {
       console.warn(
         "[respaldo] Falló la conexión con Google: " +

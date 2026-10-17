@@ -1027,8 +1027,9 @@ export class IncentivesController {
     @Query() query: Record<string, unknown>,
     @Res() res: Response,
   ) {
-    const period = await this.month({ month: query.month }, actor.branchId);
-    const userId = parse(uuid, query.userId);
+    const input = parse(monthQuery.extend({ userId: uuid }), query);
+    const period = await this.month({ month: input.month }, actor.branchId);
+    const userId = input.userId;
     const report = await this.report(actor.branchId, period, userId);
     const row = report.rows[0];
     if (!row) bad("Esa cajera no tiene incentivos en este mes.");

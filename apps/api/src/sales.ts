@@ -1,3 +1,4 @@
+import { inputPage, safeParseInput } from "./request-validation";
 import {
   Body,
   Controller,
@@ -1326,7 +1327,7 @@ export class SalesController {
     for (const sale of input.sales)
       try {
         if (databaseDown) throw databaseUnavailable();
-        const valid = saleSchema.safeParse(sale);
+        const valid = safeParseInput(saleSchema, sale);
         if (!valid.success)
           bad(
             "Revisa los campos: " +
@@ -1617,9 +1618,17 @@ export class SalesController {
   @Get("void-requests")
   @Permit("sale:write")
   async voidRequests(
-    @Query("status") status: string,
+    @Query() query: Record<string, string>,
     @CurrentUser() actor: Actor,
   ) {
+    const { status } = parse(
+      z.object({
+        status: z
+          .enum(["all", "pending", "approved", "rejected", "cancelled"])
+          .optional(),
+      }),
+      query,
+    );
     const filter =
       status === "all" || !status
         ? {}
@@ -2948,24 +2957,23 @@ export class SalesController {
   @Permit("sale:write")
   async creditNotes(
     @CurrentUser() actor: Actor,
-    @Query("customerId") customerId?: string,
-    @Query("code") code?: string,
-    @Query("limit") limitText?: string,
-    @Query("cursor") cursorText?: string,
+    @Query() query: Record<string, string>,
     @Res({ passthrough: true }) res?: Response,
   ) {
+    const { customerId, code, limit, cursor } = parse(
+      z.object({
+        customerId: uuid.optional(),
+        code: z.string().max(64).optional(),
+        limit: inputPage(500).default("200"),
+        cursor: uuid.optional(),
+      }),
+      query,
+    );
     const manager = can(actor.permissions, "sale:manage");
     const normalized = code?.trim().toUpperCase();
     if (normalized && !/^[0-9A-F]{32}$/.test(normalized)) return [];
     if (!manager && !customerId && !normalized) return [];
     if (customerId) parse(uuid, customerId);
-    const { limit, cursor } = parse(
-      z.object({
-        limit: z.coerce.number().int().min(1).max(500).default(200),
-        cursor: uuid.optional(),
-      }),
-      { limit: limitText, cursor: cursorText },
-    );
     const notes = await this.db.creditNote.findMany({
       where: {
         saleReturn: { branchId: actor.branchId },
@@ -3157,19 +3165,26 @@ export class SalesController {
   @Permit("*")
   async creditAccounts(
     @CurrentUser() actor: Actor,
-    @Query("search") search = "",
-    @Query("sort") sort = "amount",
-    @Query("page") page = "1",
-    @Query("view") view = "open",
+    @Query() query: Record<string, string>,
   ) {
+    const {
+      search,
+      sort,
+      page: pageNumber,
+      view,
+    } = parse(
+      z.object({
+        search: z.string().trim().max(100).default(""),
+        sort: z.enum(["amount", "age"]).default("amount"),
+        page: inputPage(1000).default("1"),
+        view: z.enum(["open", "paid"]).default("open"),
+      }),
+      query,
+    );
     // «paid»: clientes cuyas ventas a crédito o contraentrega ya se cerraron
     // (se muestran aparte de los pendientes; dueña, 15-oct).
     const paid = view === "paid";
-    const text = search.trim().slice(0, 100);
-    const pageNumber = Math.max(
-      1,
-      Math.min(1000, Number.parseInt(page, 10) || 1),
-    );
+    const text = search;
     const where: Prisma.SaleWhereInput = {
       branchId: actor.branchId,
       status: "completed",
@@ -3537,12 +3552,15 @@ export class SalesController {
   @Permit("sale:write")
   async codPending(
     @CurrentUser() actor: Actor,
-    @Query("state") stateParam?: string,
+    @Query() query: Record<string, string>,
   ) {
     // pending (abiertos y parciales, por defecto), closed (saldados) o all.
-    const state = ["pending", "closed", "all"].includes(stateParam ?? "")
-      ? (stateParam as "pending" | "closed" | "all")
-      : "pending";
+    const { state } = parse(
+      z.object({
+        state: z.enum(["pending", "closed", "all"]).default("pending"),
+      }),
+      query,
+    );
     const receivablePayment = {
       some: { method: { in: ["credit", "cod"] }, entryType: "sale" },
     };

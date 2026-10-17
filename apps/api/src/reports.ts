@@ -23,6 +23,7 @@ import {
   replayReturns,
   returnedAt,
   PAYMENT_GROUPS,
+  z,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -37,8 +38,53 @@ import {
   canViewCashExpected,
 } from "./common";
 import { alertForActor } from "./alerts";
+import { inputDate, inputPage } from "./request-validation";
+
+const dateQuery = z.object({
+  from: inputDate.optional(),
+  to: inputDate.optional(),
+});
+const reportQuery = dateQuery.extend({
+  format: z.enum(["json", "xlsx", "pdf"]).optional(),
+  sellerId: uuid.optional(),
+  categoryId: uuid.optional(),
+  cashSessionId: uuid.optional(),
+  userId: uuid.optional(),
+  method: z
+    .enum(["cash", "card", "transfer", "credit", "credit_note", "cod"])
+    .optional(),
+  days: z
+    .string()
+    .regex(/^\d{1,5}$/)
+    .refine((value) => Number(value) <= 36500)
+    .optional(),
+  page: inputPage().transform(String).optional(),
+  limit: inputPage(2000).transform(String).optional(),
+});
+const reportName = z.enum([
+  "sales",
+  "monthly-consumption",
+  "profit",
+  "inventory-value",
+  "kardex",
+  "low-stock",
+  "no-movement",
+  "expiring",
+  "abc",
+  "expenses",
+  "income-statement",
+  "cash",
+  "by-seller",
+  "by-payment",
+  "returns-discounts",
+  "customers",
+  "purchases",
+  "venta-diaria-usuario",
+  "venta-por-forma-pago",
+]);
 
 export function dateRange(query: Record<string, string>) {
+  parse(dateQuery, { from: query.from, to: query.to });
   const from = query.from
     ? new Date(query.from + "T00:00:00-04:00")
     : new Date(Date.now() - 30 * 86400000);
@@ -236,6 +282,7 @@ export class ReportsController {
     @Query() query: Record<string, string>,
     @CurrentUser() actor: Actor,
   ) {
+    query = parse(dateQuery, query);
     const range = dateRange(query);
     const where = {
       branchId: actor.branchId,
@@ -547,6 +594,15 @@ export class ReportsController {
     @Query() query: Record<string, string>,
     @CurrentUser() actor: Actor,
   ) {
+    query = parse(
+      z.object({
+        year: z
+          .string()
+          .regex(/^\d{4}$/)
+          .optional(),
+      }),
+      query,
+    );
     const thisYear = Number(businessDate(new Date()).slice(0, 4));
     const year = query.year ? Number(query.year) : thisYear;
     if (!Number.isInteger(year) || year < 2020 || year > 2100)
@@ -597,6 +653,7 @@ export class ReportsController {
     @Query() query: Record<string, string>,
     @CurrentUser() actor: Actor,
   ) {
+    query = parse(dateQuery, query);
     const range = dateRange(query);
     const since = utc(range.gte),
       until = utc(range.lte);
@@ -665,6 +722,8 @@ export class ReportsController {
     @CurrentUser() actor: Actor,
     @Res() res: Response,
   ) {
+    name = parse(reportName, name);
+    query = parse(reportQuery, query);
     if (
       [
         "profit",
@@ -1596,7 +1655,9 @@ export async function storeReport(
   const sales =
     name === "venta-diaria-usuario" ? [] : await storeSales(db, where);
   const [user, terminal] = await Promise.all([
-    userId ? db.user.findUnique({ where: { id: userId } }) : null,
+    userId
+      ? db.user.findFirst({ where: { id: userId, branchId: actor.branchId } })
+      : null,
     session && /^[0-9a-f-]{36}$/i.test(session.registerId)
       ? db.terminal.findUnique({ where: { id: session.registerId } })
       : null,
