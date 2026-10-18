@@ -107,7 +107,19 @@ it("migra una base con ventas sin alterar total, costo, impuestos ni importe de 
   } finally {
     await client?.end().catch(() => undefined);
     await database.stop().catch(() => undefined);
-    await rm(dataDir, { recursive: true, force: true });
-    await rm(projectDir, { recursive: true, force: true });
+    // On Windows, the embedded PostgreSQL process can release its final file
+    // handles shortly after stop() resolves, while other PG tests run in parallel.
+    await rm(dataDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 12,
+      retryDelay: 250,
+    });
+    await rm(projectDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 12,
+      retryDelay: 250,
+    });
   }
 }, 120000);

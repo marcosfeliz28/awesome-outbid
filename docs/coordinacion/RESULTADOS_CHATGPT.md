@@ -158,3 +158,12 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 ## 2026-10-15 · pedido pendiente para ChatGPT PC
 
 Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/api.test.ts`, `tests/dinero-auditoria.test.ts` y `tests/caja-web-ticket.test.ts`. No cambies código. Anota abajo cuáles pasan, cuáles fallan y el texto exacto de cada fallo.
+
+## 2026-10-18 · ChatGPT NUBE · `nexora-chatgpt-nube` · validación local Windows
+
+- **Qué hice:** la implementación del mensajero ya estaba publicada en esta rama (`f182212`) y descrita arriba; no añadí una segunda migración ni dupliqué la función. Incorporé el último commit de `origin/nexora-cloud` (`74441b2`), conservando la E2E aislada que crea cajera y caja propias. La resolución mantuvo las credenciales temporales aleatorias y el cambio de contraseña de prueba; no se usaron credenciales reales.
+- **Fallo observado y arreglo de prueba:** tras `pnpm db:generate`, la primera corrida de `pnpm check` falló al limpiar dos PostgreSQL temporales en Windows: `Error: EBUSY: resource busy or locked, rmdir 'C:\Users\marco\AppData\Local\Temp\nexora-courier-db-VMFl8q'` y `Error: EBUSY: resource busy or locked, rmdir 'C:\Users\marco\AppData\Local\Temp\nexora-warehouse-db-UogjFH'`. Añadí reintentos acotados (`maxRetries: 12`, `retryDelay: 250`) en la limpieza de ambas pruebas, sin relajar aserciones ni omitir pruebas.
+- **Regresión:** `pnpm exec vitest run tests/courier-migration-postgres.test.ts tests/warehouses-postgres.test.ts` pasó **5/5** tras el cambio. Antes fallaba la limpieza (`EBUSY`) en ambas suites dentro de `pnpm check`.
+- **Verificación local final:** `pnpm db:generate` pasó y `pnpm check` terminó con código 0: **70 archivos de prueba pasaron, 1 omitido; 656 pruebas pasaron, 10 omitidas**. Typecheck, ESLint, build web y build API pasaron. Vite mostró únicamente la advertencia de chunk >500 kB.
+- **CI y publicación:** CI de GitHub para `f182212` terminó verde en `windows-installer`, `verify` y `render-images`: [ejecución 38770399538](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/38770399538). Ese CI es anterior a la integración de `74441b2` y a este arreglo; los cambios de esta sección requieren publicar el commit y confirmar un nuevo CI antes de considerarlos verificados remotamente.
+- **Qué falta:** publicar este arreglo en `nexora-chatgpt-nube` y verificar que los tres trabajos del nuevo SHA queden verdes. No se desplegó ni se accedió a producción.
