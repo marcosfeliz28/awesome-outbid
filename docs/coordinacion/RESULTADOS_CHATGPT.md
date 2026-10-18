@@ -138,11 +138,19 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 
 ## 2026-10-18 · ChatGPT PC · `nexora-chatgpt-fase2` · Q-01, protección de destinos de prueba
 
+- **Commit de código:** `230daec`.
 - **Qué hice:** añadí una validación común para `pnpm test:integration` y `pnpm verify`. Antes de red o de la opción `NEXORA_TEST_SKIP_API_CHECK`, exige API y proxy HTTP en loopback, PostgreSQL local y autorización explícita de base local fuera de GitHub Actions. Bloquea parámetros PostgreSQL `host`/`hostaddr`, y también evita que Playwright visite una web o proxy remoto. En Actions solo acepta la base aislada `fitstore` en loopback. Los errores no imprimen URLs ni credenciales. Documenté cómo autorizar una base local descartable.
 - **Regresión antes:** `pnpm exec vitest run tests/integration-api-check.test.ts` dio `Tests 3 failed | 5 passed (8)`: la URL remota con `NEXORA_TEST_SKIP_API_CHECK=1` resolvía como `"omitida"`; `DATABASE_URL` y proxy remotos no se rechazaban antes del fetch.
 - **Después:** pruebas de destino y de higiene Playwright: `Test Files 2 passed (2)`, `Tests 22 passed (22)`. `pnpm typecheck` pasó en los cuatro paquetes; ESLint de los archivos modificados, `git diff --check` y `pnpm build` pasaron. Probé el CLI con API remota y, por separado, PostgreSQL remoto: ambos rechazaron el destino antes de conectar, sin mostrar URLs.
-- **Suite completa:** última corrida de `pnpm exec vitest run`: `Test Files 2 failed | 69 passed | 1 skipped (72)` y `Tests 1 failed | 664 passed | 10 skipped (675)`. Los tests de negocio pasaron; falló la limpieza de PostgreSQL temporal en `tests/courier-migration-postgres.test.ts` y `tests/warehouses-postgres.test.ts`, en ambos casos `Error: EBUSY: resource busy or locked, rmdir 'C:\\Users\\marco\\AppData\\Local\\Temp\\nexora-<suite>-db-<id>'`. Es el Q-04 de la auditoría, todavía pendiente.
-- **Falta:** verificar este commit en los tres trabajos de CI y corregir Q-04 en un commit separado. No se desplegó ni se usó producción. El SHA se añadirá después del commit.
+- **Suite completa anterior al arreglo Q-04:** dos suites fallaban al borrar sus directorios PostgreSQL temporales; el resultado fue `Test Files 2 failed | 69 passed | 1 skipped (72)` y `Tests 1 failed | 664 passed | 10 skipped (675)`. El mensaje exacto era `EBUSY: resource busy or locked, rmdir 'C:\\Users\\marco\\AppData\\Local\\Temp\\nexora-<suite>-db-<id>'`.
+- **Falta:** verificar el último commit de la rama en los tres trabajos de CI. No se desplegó ni se usó producción.
+
+## 2026-10-18 · ChatGPT PC · `nexora-chatgpt-fase2` · Q-04, limpieza PostgreSQL temporal en Windows
+
+- **Qué hice:** añadí `removeTemporaryDirectory` para reintentar solo bloqueos transitorios al borrar directorios temporales; se usa al cerrar las pruebas PostgreSQL de almacenes y migración de mensajería. Errores como `EACCES` se propagan sin ocultarse.
+- **Regresión antes:** dos corridas de la suite completa fallaron tras pasar las aserciones: `EBUSY: resource busy or locked, rmdir 'C:\\Users\\marco\\AppData\\Local\\Temp\\nexora-warehouse-db-<id>'`; una corrida también falló en `nexora-courier-db-<id>`. En la última: `Test Files 2 failed | 69 passed | 1 skipped (72)`; `Tests 1 failed | 664 passed | 10 skipped (675)`.
+- **Después:** pruebas específicas `tests/temp-cleanup.test.ts`, `tests/warehouses-postgres.test.ts` y `tests/courier-migration-postgres.test.ts`: `Test Files 3 passed (3)`, `Tests 7 passed (7)`. La suite completa quedó en `Test Files 72 passed | 1 skipped (73)`, `Tests 667 passed | 10 skipped (677)`. ESLint de archivos modificados, `pnpm typecheck` y `git diff --check` pasaron.
+- **Falta:** verificar los tres trabajos de CI en el último SHA. `pnpm check` completo no está confirmado; el workspace contiene archivos de marketing no rastreados del usuario que ya habían provocado fallos de lint ajenos a estos cambios. No se desplegó ni se usó producción.
 
 ## 2026-10-15 · ChatGPT NUBE · `nexora-chatgpt-nube` · `ac3ba19`…`6634a1a`
 

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { createServer } from "node:net";
-import { cp, mkdtemp, mkdir, readdir, rm } from "node:fs/promises";
+import { cp, mkdtemp, mkdir, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -10,6 +10,7 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import EmbeddedPostgres from "embedded-postgres";
 import { WarehousesController } from "../apps/api/src/warehouses";
+import { removeTemporaryDirectory } from "./temp-cleanup";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const prismaDir = join(root, "apps/api/prisma");
@@ -156,8 +157,8 @@ afterAll(async () => {
     await admin.$disconnect();
   }
   await database?.stop().catch(() => undefined);
-  if (dataDir) await rm(dataDir, { recursive: true, force: true });
-  if (projectDir) await rm(projectDir, { recursive: true, force: true });
+  if (dataDir) await removeTemporaryDirectory(dataDir);
+  if (projectDir) await removeTemporaryDirectory(projectDir);
 }, 60000);
 
 describe("3y · almacenes con PostgreSQL real", () => {

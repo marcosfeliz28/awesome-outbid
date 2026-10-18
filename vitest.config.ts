@@ -5,6 +5,7 @@ export default defineConfig({
     testTimeout: 30000,
     include: [
       "tests/courier-utils.test.ts",
+      "tests/temp-cleanup.test.ts",
       "tests/courier-migration-postgres.test.ts",
       "tests/customer-display.test.ts",
       "tests/conciliar-transferencias.test.ts",

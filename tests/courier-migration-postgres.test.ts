@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { createServer } from "node:net";
-import { cp, mkdir, mkdtemp, readdir, rm } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import EmbeddedPostgres from "embedded-postgres";
 import { expect, it } from "vitest";
+import { removeTemporaryDirectory } from "./temp-cleanup";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const prismaDir = join(root, "apps/api/prisma");
@@ -107,7 +108,7 @@ it("migra una base con ventas sin alterar total, costo, impuestos ni importe de 
   } finally {
     await client?.end().catch(() => undefined);
     await database.stop().catch(() => undefined);
-    await rm(dataDir, { recursive: true, force: true });
-    await rm(projectDir, { recursive: true, force: true });
+    await removeTemporaryDirectory(dataDir);
+    await removeTemporaryDirectory(projectDir);
   }
 }, 120000);
