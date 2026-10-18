@@ -1151,7 +1151,9 @@ export function Merchandise() {
               )}
               {direction === "entry" ? (
                 <div className="goods-fields">
-                  {(category?.requiresLot || l.lotNumber !== undefined) && (
+                  {(category?.requiresLot ||
+                    category?.requiresExpiry ||
+                    l.lotNumber !== undefined) && (
                     <label className="field">
                       Lote
                       <input
@@ -1180,7 +1182,9 @@ export function Merchandise() {
                   )}
                 </div>
               ) : (
-                (category?.requiresLot || (v?.lots?.length ?? 0) > 0) && (
+                (category?.requiresLot ||
+                  category?.requiresExpiry ||
+                  (v?.lots?.length ?? 0) > 0) && (
                   <label className="field">
                     Lote de salida
                     <select

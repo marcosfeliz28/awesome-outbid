@@ -364,7 +364,8 @@ export async function lockVariant(tx: any, id: string, actor: Actor) {
     ),
     allowNegativeStock:
       (settings?.data as any)?.allowNegativeStock === true &&
-      !variant.product.category.requiresLot,
+      !variant.product.category.requiresLot &&
+      !variant.product.category.requiresExpiry,
   };
 }
 // M-5 (auditoría 01): mermas, ajustes negativos, conteos y salidas de
@@ -529,7 +530,10 @@ export async function takeStock(
     Number(variant.stock) -
       variant.lots.reduce((sum: number, l: any) => sum + Number(l.qty), 0),
   );
-  if (variant.product.category.requiresLot || variant.lots.length) {
+  const requiresTrackedStock =
+    variant.product.category.requiresLot ||
+    variant.product.category.requiresExpiry;
+  if (requiresTrackedStock || variant.lots.length) {
     for (const lot of variant.lots) {
       if (unsellableLot(lot, variant.product.category)) continue;
       const picked = d(lot.qty).lt(remaining) ? d(lot.qty) : remaining;
@@ -543,7 +547,7 @@ export async function takeStock(
       pieces.push({ lotId: lot.id, qty: picked.toNumber() });
       if (remaining.lte(0)) break;
     }
-    if (remaining.gt(0) && !variant.product.category.requiresLot) {
+    if (remaining.gt(0) && !requiresTrackedStock) {
       const picked = d(untracked).lt(remaining) ? d(untracked) : remaining;
       if (picked.gt(0)) pieces.push({ qty: picked.toNumber() });
       remaining = remaining.minus(picked);
@@ -840,6 +844,7 @@ export class InventoryController {
             data.qty < 0 &&
             !data.lotId &&
             !variant.product.category.requiresLot &&
+            !variant.product.category.requiresExpiry &&
             !variant.allowNegativeStock
           ) {
             const untracked =
@@ -855,6 +860,7 @@ export class InventoryController {
             bad("No puedes ajustar un lote vencido.");
           if (
             variant.product.category.requiresLot ||
+            variant.product.category.requiresExpiry ||
             data.lotId ||
             data.lotNumber
           ) {
@@ -1217,7 +1223,11 @@ export class InventoryController {
             }
             const variant = await lockVariant(tx, line.variantId, actor);
             let lotId: string | undefined;
-            if (variant.product.category.requiresLot && !line.lotNumber)
+            if (
+              (variant.product.category.requiresLot ||
+                variant.product.category.requiresExpiry) &&
+              !line.lotNumber
+            )
               bad("El producto requiere un lote.");
             if (variant.product.category.requiresExpiry && !line.expiryDate)
               bad("El producto requiere vencimiento.");
@@ -1589,7 +1599,10 @@ export class InventoryController {
                 );
             if (held !== item.expected)
               bad("El stock cambió. Repite el conteo.");
-            if (variant.product.category.requiresLot)
+            if (
+              variant.product.category.requiresLot ||
+              variant.product.category.requiresExpiry
+            )
               bad("Ajusta productos con lote desde su lote específico.");
             const lotStock = warehouse.sellable
               ? variant.lots.reduce(

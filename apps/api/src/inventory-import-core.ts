@@ -651,7 +651,10 @@ async function prepare(
       const lotQty = Number(
         lots.find((l) => l.variantId === own.id)?._sum.qty ?? 0,
       );
-      if (own.product.category.requiresLot)
+      if (
+        own.product.category.requiresLot ||
+        own.product.category.requiresExpiry
+      )
         codeProblems.push({
           row: row.line,
           message:

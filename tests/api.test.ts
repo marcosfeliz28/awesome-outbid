@@ -10537,6 +10537,76 @@ describe("I1 + K1 · lotes y concurrencia de inventario", () => {
     variant = product.variants[0];
   });
 
+  it("I-01: una categoría con vencimiento exige lote y jamás cuenta/vende stock sin trazabilidad", async () => {
+    const invalid = await request("/categories", {
+      name: "QA I-01 inválida " + suffix,
+      requiresLot: false,
+      requiresExpiry: true,
+    });
+    expect(invalid.status).toBe(400);
+
+    // Simula una categoría histórica creada antes de esta validación.
+    const legacyCategory = await fixtureDb.category.create({
+      data: {
+        name: "QA I-01 histórica " + suffix,
+        branchId: "main",
+        createdBy: "qa",
+        requiresLot: false,
+        requiresExpiry: true,
+      },
+    });
+    const product = await ok("/products", {
+      name: "QA I-01 vencimiento " + suffix,
+      sku: "QA-I01-" + suffix,
+      categoryId: legacyCategory.id,
+      taxRate: 0,
+      variants: [
+        {
+          sku: "QA-I01V-" + suffix,
+          barcode: "QA-I01B-" + suffix,
+          costAvg: 10,
+          price: 20,
+        },
+      ],
+    });
+    products.push(product);
+    const variantId = product.variants[0].id;
+    await fixtureDb.variant.update({
+      where: { id: variantId },
+      data: { stock: 4 },
+    });
+
+    const count = await ok("/inventory/counts", {
+      items: [{ variantId, counted: 5 }],
+    });
+    const countApplied = await request(
+      "/inventory/counts/" + count.id + "/apply",
+      {},
+    );
+    expect(countApplied.status).toBe(400);
+    expect(
+      Number(
+        (
+          await fixtureDb.variant.findUniqueOrThrow({
+            where: { id: variantId },
+          })
+        ).stock,
+      ),
+    ).toBe(4);
+
+    const sale = await request("/sales", input(variantId, 20));
+    expect(sale.status).toBe(400);
+    expect(
+      Number(
+        (
+          await fixtureDb.variant.findUniqueOrThrow({
+            where: { id: variantId },
+          })
+        ).stock,
+      ),
+    ).toBe(4);
+  });
+
   it("I1: código sin distinguir caso converge, NULL recibe fecha y otro vencimiento se rechaza", async () => {
     const codes = [" lote   i1 ", "LOTE I1", "Lote I1", "lote i1"];
     const responses = await Promise.all(

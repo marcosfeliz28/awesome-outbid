@@ -680,7 +680,11 @@ export class MerchandiseController {
                 lotId = lot.id;
               }
             } else {
-              if (v.product.category.requiresLot && !lotId)
+              if (
+                (v.product.category.requiresLot ||
+                  v.product.category.requiresExpiry) &&
+                !lotId
+              )
                 bad("Selecciona el lote de salida.");
               if (lotId) {
                 const lot = await tx.lot.findFirstOrThrow({

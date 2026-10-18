@@ -382,7 +382,11 @@ export function POS({ go }: { go: (page: string) => void }) {
       .cart.find((i) => i.variant.id === variant.id);
     if (
       (existing?.qty || 0) + 1 > Number(variant.stock) &&
-      !(config.data?.allowNegativeStock && !product.category.requiresLot)
+      !(
+        config.data?.allowNegativeStock &&
+        !product.category.requiresLot &&
+        !product.category.requiresExpiry
+      )
     ) {
       say(
         "No hay suficiente stock de " +
@@ -1078,7 +1082,8 @@ export function POS({ go }: { go: (page: string) => void }) {
                           if (
                             i.qty < Number(i.variant.stock) ||
                             (config.data?.allowNegativeStock &&
-                              !i.product.category.requiresLot)
+                              !i.product.category.requiresLot &&
+                              !i.product.category.requiresExpiry)
                           )
                             updateQty(i.variant.id, i.qty + 1);
                           else toast("Stock insuficiente.", true);
@@ -1278,7 +1283,8 @@ export function POS({ go }: { go: (page: string) => void }) {
                 Number(v.stock) <= 0 &&
                 !(
                   config.data?.allowNegativeStock &&
-                  !choosing.category.requiresLot
+                  !choosing.category.requiresLot &&
+                  !choosing.category.requiresExpiry
                 )
               }
               onClick={() => {
@@ -1513,7 +1519,12 @@ const ProductGrid = memo(function ProductGrid({
             onClick={() => onAdd(p)}
             key={p.id}
             disabled={
-              stock <= 0 && !(allowNegativeStock && !p.category.requiresLot)
+              stock <= 0 &&
+              !(
+                allowNegativeStock &&
+                !p.category.requiresLot &&
+                !p.category.requiresExpiry
+              )
             }
           >
             <div className="product-image">

@@ -233,16 +233,25 @@ export class CatalogController {
   @Permit("catalog:write")
   async category(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
-      z.object({
-        name: z.string().min(2),
-        requiresLot: z.boolean().default(false),
-        requiresExpiry: z.boolean().default(false),
-        color: z
-          .string()
-          .regex(/^#[0-9a-fA-F]{6}$/)
-          .default("#7C3AED"),
-        attributes: z.array(z.string()).default([]),
-      }),
+      z
+        .object({
+          name: z.string().min(2),
+          requiresLot: z.boolean().default(false),
+          requiresExpiry: z.boolean().default(false),
+          color: z
+            .string()
+            .regex(/^#[0-9a-fA-F]{6}$/)
+            .default("#7C3AED"),
+          attributes: z.array(z.string()).default([]),
+        })
+        .refine(
+          (category) => !category.requiresExpiry || category.requiresLot,
+          {
+            message:
+              "Una categoría que controla vencimientos también debe exigir lote.",
+            path: ["requiresLot"],
+          },
+        ),
       body,
     );
     const row = await this.db.category.create({

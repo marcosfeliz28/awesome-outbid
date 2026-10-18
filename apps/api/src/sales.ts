@@ -2663,7 +2663,10 @@ export class SalesController {
           bad("Los combos se devuelven por unidades enteras.");
         if (
           i.restock &&
-          (i.damaged || (i.opened && line.variant.product.category.requiresLot))
+          (i.damaged ||
+            (i.opened &&
+              (line.variant.product.category.requiresLot ||
+                line.variant.product.category.requiresExpiry)))
         )
           bad(
             "Un producto abierto o dañado no puede volver al stock vendible.",

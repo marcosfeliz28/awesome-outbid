@@ -37,7 +37,12 @@ export type Product = {
   minStock: string;
   maxStock: string;
   categoryId: string;
-  category: { name: string; color: string; requiresLot: boolean };
+  category: {
+    name: string;
+    color: string;
+    requiresLot: boolean;
+    requiresExpiry: boolean;
+  };
   variants: Variant[];
 };
 export type CartItem = {
