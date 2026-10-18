@@ -1732,6 +1732,11 @@ function Checkout({
 }) {
   const { cart, customerId, globalDiscount, user, online, clearCart } =
     useStore();
+  const [courier, setCourier] = useState({
+    on: false,
+    fee: "",
+    name: "Addison",
+  });
   const [payments, setPayments] = useState<SaleInput["payments"]>([]),
     [method, setMethod] =
       useState<SaleInput["payments"][number]["method"]>("cash"),
@@ -1946,6 +1951,11 @@ function Checkout({
   const creditAmount = payments
     .filter((p) => p.method === "cod")
     .reduce((a, p) => a + p.amount, 0);
+  // «Con envío» solo con transferencia o tarjeta (orden 3af).
+  const courierAllowed = payments.some(
+    (p) => p.method === "transfer" || p.method === "card",
+  );
+  const withCourier = courierAllowed && courier.on && Number(courier.fee) > 0;
   const finishHint = busy
     ? ""
     : !payments.length
@@ -1958,6 +1968,10 @@ function Checkout({
             ? "Escribe el motivo del descuento."
             : "";
   const finish = async () => {
+    if (courierAllowed && courier.on && !(Number(courier.fee) > 0)) {
+      setError("Escribe el monto del envío o quita la casilla «Con envío».");
+      return;
+    }
     if (!customerId) {
       setError("Selecciona o crea el cliente antes de vender.");
       return;
@@ -1985,6 +1999,12 @@ function Checkout({
       payments,
       ...(pin ? { managerPin: pin } : {}),
       ...wholesaleField(),
+      ...(withCourier
+        ? {
+            courierFee: Number(courier.fee),
+            courierName: courier.name.trim() || "Addison",
+          }
+        : {}),
     };
     // El ticket lleva el descuento de cada línea para que cuadre con el total
     // cobrado (R9-caja-9).
@@ -2664,6 +2684,52 @@ function Checkout({
           <strong className="green-text">{formatMoney(payment.change)}</strong>
         </div>
       </div>
+      {courierAllowed && (
+        <div className="courier-at-checkout">
+          <label className="checkbox-line">
+            <input
+              type="checkbox"
+              checked={courier.on}
+              onChange={(e) => setCourier({ ...courier, on: e.target.checked })}
+            />
+            Con envío (el cliente pagó el envío junto con la transferencia o
+            tarjeta)
+          </label>
+          {courier.on && (
+            <div className="form-grid">
+              <label className="field">
+                <span>Monto del envío</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="5000"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={courier.fee}
+                  onChange={(e) =>
+                    setCourier({ ...courier, fee: e.target.value })
+                  }
+                />
+              </label>
+              <label className="field">
+                <span>Mensajero</span>
+                <input
+                  maxLength={100}
+                  value={courier.name}
+                  onChange={(e) =>
+                    setCourier({ ...courier, name: e.target.value })
+                  }
+                />
+              </label>
+              <small className="full">
+                El envío va aparte del total de productos: no es venta ni
+                ganancia. Queda para pagarle al mensajero y para cuadrar la
+                transferencia.
+              </small>
+            </div>
+          )}
+        </div>
+      )}
       {lowMarginWarning && (
         <p className="cod-hint" role="status">
           Esta venta queda con margen {saleMargin} %. El aviso es informativo.

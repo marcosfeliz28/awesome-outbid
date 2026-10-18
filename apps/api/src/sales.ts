@@ -641,6 +641,17 @@ export class SalesController {
     );
   }
   async complete(actor: Actor, input: SaleInput, offline = false) {
+    // El envío solo se anota si el dinero llega por banco o verifón; en
+    // efectivo o contraentrega el mensajero se cobra de ahí (orden 3af).
+    if (
+      input.courierFee &&
+      !input.payments.some(
+        (p) => p.method === "transfer" || p.method === "card",
+      )
+    )
+      bad(
+        "El envío solo se anota cuando el cliente paga por transferencia o tarjeta.",
+      );
     const requestsDiscount =
       input.globalDiscount > 0 ||
       input.items.some(
@@ -1008,6 +1019,12 @@ export class SalesController {
             customerId: input.customerId,
             sellerId: actor.id,
             cashSessionId: input.cashSessionId,
+            ...(input.courierFee
+              ? {
+                  courierFee: money(input.courierFee),
+                  courierName: input.courierName ?? "Addison",
+                }
+              : {}),
             subtotal: money(
               lines.reduce((a, l) => a.plus(l.totals.subtotal), d(0)),
             ),

@@ -546,6 +546,30 @@ describe("Incentivos", () => {
   });
 });
 
+describe("Envío del mensajero al cobrar (orden 3af)", () => {
+  it("se anota con transferencia, aparte del total, y no con efectivo", async () => {
+    const adm = await person("envio", "admin");
+    const item = [{ variantId: plain.variantId, qty: 1 }];
+    const cash = await sale(adm, item, [{ method: "cash", amount: 100 }], {
+      expectedTotal: 100,
+      courierFee: 300,
+    });
+    expect(cash.status).toBe(400);
+    expect(cash.body.message).toMatch(/transferencia o tarjeta/);
+    const ok = await sale(
+      adm,
+      item,
+      [{ method: "transfer", amount: 100, bank: "Popular", reference: "E3AF" }],
+      { expectedTotal: 100, courierFee: 300 },
+    );
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201);
+    const row = await db.sale.findUniqueOrThrow({ where: { id: ok.body.id } });
+    expect(Number(row.courierFee)).toBe(300);
+    expect(row.courierName).toBe("Addison");
+    expect(Number(row.total)).toBe(100);
+  });
+});
+
 describe("Cierre de caja", () => {
   it("C10 · el efectivo contado debe coincidir con el conteo por denominaciones", async () => {
     const adm = await person("cierre", "admin", 100);

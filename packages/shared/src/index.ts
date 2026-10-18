@@ -566,6 +566,11 @@ export const saleSchema = z.object({
   // mitad. Opcional y sin valor por defecto: la huella de una venta offline
   // anterior (requestHash) no cambia.
   wholesale: z.boolean().optional(),
+  // Envío del mensajero cobrado junto con la transferencia o la tarjeta
+  // (dueña, 17-oct). Va aparte del total de productos: no es venta ni margen.
+  // Opcional y sin valor por defecto: la huella offline no cambia.
+  courierFee: z.number().positive().max(5000).optional(),
+  courierName: z.string().trim().min(1).max(100).optional(),
   payments: z
     .array(
       z.object({
