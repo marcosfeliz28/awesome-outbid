@@ -3420,7 +3420,11 @@ export class SalesController {
       if (!customer) denied();
       if (
         !data.cashSessionId &&
-        data.lines.some((line) => line.method === "cash")
+        data.lines.some(
+          (line) =>
+            line.method === "cash" &&
+            !(line.ownerConfirmed === true && can(actor.permissions, "*")),
+        )
       )
         bad("Para recibir efectivo necesitas tu caja abierta.");
       // Mismo orden de bloqueos que collectLine: caja antes que ventas.
@@ -3738,7 +3742,15 @@ export class SalesController {
             keys.indexOf(a.idempotencyKey!) - keys.indexOf(b.idempotencyKey!),
         );
       }
-      if (!data.cashSessionId && data.lines.some((l) => l.method === "cash"))
+      // La dueña puede cerrar en efectivo lo que tiene en la mano, sin caja.
+      const ownerCash = (l: { method: string; ownerConfirmed?: boolean }) =>
+        l.method === "cash" &&
+        l.ownerConfirmed === true &&
+        can(actor.permissions, "*");
+      if (
+        !data.cashSessionId &&
+        data.lines.some((l) => l.method === "cash" && !ownerCash(l))
+      )
         bad(
           "Para recibir efectivo necesitas tu caja abierta. Ábrela en Caja o registra solo tarjeta o transferencia.",
         );
