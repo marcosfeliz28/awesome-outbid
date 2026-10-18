@@ -1,3 +1,4 @@
+import { logInternalError } from "./safe-log";
 import {
   ArgumentsHost,
   Catch,
@@ -31,6 +32,7 @@ import {
 } from "./session-activity";
 import { clientIp } from "./rate-limit";
 import { checkDatabaseTimeZone } from "./database-timezone";
+import { parseInput } from "./request-validation";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -217,6 +219,8 @@ z.setErrorMap((issue, ctx) => {
       return { message: "no es una opción válida" };
     case "invalid_date":
       return { message: "no es una fecha válida" };
+    case "unrecognized_keys":
+      return { message: "contiene campos no permitidos" };
     default:
       return { message: ctx.defaultError };
   }
@@ -231,7 +235,7 @@ const isZodError = (e: any): e is ZodError =>
 export const parse = <T extends z.ZodTypeAny>(
   schema: T,
   input: unknown,
-): z.infer<T> => schema.parse(input);
+): z.infer<T> => parseInput(schema, input);
 // PostgreSQL acepta un UUID en mayúsculas y lo guarda en minúsculas: se
 // normaliza al validar para que toda comparación con ids de la base (por
 // ejemplo, «¿es mi propia cuenta?») vea el mismo texto.
@@ -736,9 +740,9 @@ export class AuthGuard implements CanActivate {
       context.getClass(),
     ]);
     if (
-      permission &&
-      permission !== "authenticated" &&
-      !can(req.actor.permissions, permission)
+      !permission ||
+      (permission !== "authenticated" &&
+        !can(req.actor.permissions, permission))
     )
       denied();
     if (
@@ -839,7 +843,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
             : "api";
       captureApiException(exception, area);
     }
-    if (status === 500) console.error(exception);
+    if (status === 500) logInternalError(exception, "api");
     res
       .status(status)
       .json({ statusCode: status, message, ...(code ? { code } : {}) });
@@ -850,7 +854,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
  * Un error que no es de negocio (regla, permiso o conflicto de datos que el
  * cliente puede corregir) sino de programación o de infraestructura. La
  * sincronización offline lo devuelve como conflicto igual que a los demás, pero
- * éste además se registra (consola y Sentry) para que alguien reciba el stack.
+ * éste además deja un diagnóstico sin datos en consola y pasa por Sentry.
  */
 export function isUnexpectedError(error: any): boolean {
   if (error instanceof HttpException) return error.getStatus() >= 500;

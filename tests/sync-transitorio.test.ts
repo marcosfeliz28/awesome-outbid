@@ -220,7 +220,7 @@ describe("W9 · /sales/sync registra los errores inesperados", () => {
   };
   afterEach(() => vi.restoreAllMocks());
 
-  it("un TypeError sigue siendo conflicto con el mismo contrato, pero se registra con el UUID y se envía a Sentry", async () => {
+  it("un TypeError sigue siendo conflicto, registra sólo el diagnóstico y se envía a Sentry", async () => {
     const logged = spies();
     const boom = new TypeError("Cannot read properties of undefined");
     const { controller, writes } = setup(() => boom);
@@ -236,8 +236,15 @@ describe("W9 · /sales/sync registra los errores inesperados", () => {
     ]);
     expect(writes).toContain("alert.upsert");
     expect(logged).toHaveBeenCalledTimes(1);
-    expect(String(logged.mock.calls[0][0])).toContain(input.offlineUuid);
-    expect(logged.mock.calls[0][1]).toBe(boom);
+    expect(logged.mock.calls[0]).toEqual([
+      "[sales-sync] Error interno.",
+      { type: "TypeError" },
+    ]);
+    const diagnostic = JSON.stringify(logged.mock.calls);
+    expect(diagnostic).not.toContain(input.offlineUuid);
+    expect(diagnostic).not.toContain(input.customerId);
+    expect(diagnostic).not.toContain("secreto-no-guardar");
+    expect(diagnostic).not.toContain(boom.message);
     expect(captured).toEqual([{ error: boom, area: "sales" }]);
   });
 

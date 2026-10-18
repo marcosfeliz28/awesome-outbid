@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
 import { startPwaUpdates } from "./pwaUpdate";
 import { keepCartDraft } from "./cartDraft";
+import { isolateQueryClient } from "./api";
 import "./styles.css";
 // M7: la versión nueva de la PWA no recarga con una venta en curso.
 startPwaUpdates();
@@ -17,6 +18,7 @@ export const queryClient = new QueryClient({
     queries: { retry: 1, staleTime: 30000, refetchOnWindowFocus: false },
   },
 });
+isolateQueryClient(queryClient);
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

@@ -14,8 +14,9 @@ import {
   api,
   CartItem,
   loadCatalog,
-  localDB,
   post,
+  readPrivateCache,
+  writePrivateCache,
   Product,
   refreshCart,
   refreshSession,
@@ -193,7 +194,8 @@ export function useRealtime() {
           client.setQueryData(["catalog"], catalog);
         }
         apply(data.variantId, data.qtyOnHand);
-        const cached = await localDB.cache.get("catalog:" + user.branchId);
+        const cached = await readPrivateCache("catalog:" + user.branchId, user);
+        if (stopped) return;
         if (cached) {
           cached.data = cached.data.map((p: Product) => ({
             ...p,
@@ -203,7 +205,7 @@ export function useRealtime() {
                 : v,
             ),
           }));
-          await localDB.cache.put(cached);
+          await writePrivateCache(cached.key, cached.data, user);
         }
         for (const key of [
           "stock",
@@ -228,6 +230,7 @@ export function useRealtime() {
         const response = await fetch("/api/events", {
           headers: { Authorization: "Bearer " + useStore.getState().token },
           credentials: "include",
+          cache: "no-store",
           signal: controller.signal,
         });
         if (response.status === 401) {

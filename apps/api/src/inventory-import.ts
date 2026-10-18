@@ -15,7 +15,7 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { createHash } from "node:crypto";
-import { d, quantity, weightedCost } from "@fitstore/shared";
+import { d, quantity, weightedCost, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -25,6 +25,7 @@ import {
   audit,
   bad,
   conflict,
+  parse,
 } from "./common";
 import { lockVariant, stockChange } from "./inventory";
 import { retrySerializable } from "./inventory-resilience";
@@ -40,11 +41,27 @@ import {
   type ImportReport,
 } from "./inventory-import-core";
 import { assertSafeXlsx, assertSheetCells } from "./xlsx-guard";
+import { errorDiagnostic } from "./safe-log";
 
 export const INVENTORY_IMPORT_MAX_BYTES = 5 * 1024 * 1024;
 export const INVENTORY_IMPORT_MAX_ROWS = 1500;
 /** Sólo la administración (permiso «*»): ningún rol de cajas ni de gerencia lo tiene. */
 export const INVENTORY_IMPORT_PERMISSION = "inventory:import";
+
+const boolField = z.enum(["true", "false"]).optional();
+const importPreviewInput = z.object({
+  updatePrices: boolField,
+  updateStock: boolField,
+  withoutLots: boolField,
+});
+const importApplyInput = importPreviewInput.extend({
+  hash: z.string().regex(/^[0-9a-f]{64}$/),
+  state: z.string().regex(/^[0-9a-f]{64}$/),
+});
+const homeApplyInput = z.object({
+  hash: z.string().regex(/^[0-9a-f]{64}$/),
+  state: z.string().regex(/^[0-9a-f]{64}$/),
+});
 
 const MONTHS = [
   "ene",
@@ -154,8 +171,7 @@ export class InventoryImportController {
       );
     // Sin datos del archivo en el registro: sólo el tipo de fallo.
     this.log.error(
-      "Falló la importación: " +
-        ((error as any)?.code ?? (error as any)?.name ?? "error"),
+      "Falló la importación: " + JSON.stringify(errorDiagnostic(error)),
     );
     throw new HttpException(
       "No se pudo cargar el inventario. No se guardó nada; inténtalo de nuevo.",
@@ -316,7 +332,13 @@ export class InventoryImportController {
   @Permit(INVENTORY_IMPORT_PERMISSION)
   @UseInterceptors(
     FileInterceptor("file", {
-      limits: { fileSize: INVENTORY_IMPORT_MAX_BYTES, files: 1 },
+      limits: {
+        fileSize: INVENTORY_IMPORT_MAX_BYTES,
+        files: 1,
+        fields: 0,
+        fieldSize: 128,
+        parts: 2,
+      },
     }),
   )
   async casaPreview(@UploadedFile() file: any, @CurrentUser() actor: Actor) {
@@ -348,7 +370,13 @@ export class InventoryImportController {
   @Permit(INVENTORY_IMPORT_PERMISSION)
   @UseInterceptors(
     FileInterceptor("file", {
-      limits: { fileSize: INVENTORY_IMPORT_MAX_BYTES, files: 1 },
+      limits: {
+        fileSize: INVENTORY_IMPORT_MAX_BYTES,
+        files: 1,
+        fields: 5,
+        fieldSize: 128,
+        parts: 6,
+      },
     }),
   )
   async casaApply(
@@ -356,6 +384,7 @@ export class InventoryImportController {
     @Body() body: any,
     @CurrentUser() actor: Actor,
   ) {
+    body = parse(homeApplyInput, body ?? {});
     const { buffer, hash, name } = await this.read(file);
     if (body?.hash !== hash || !/^[0-9a-f]{64}$/.test(String(body?.state)))
       bad("Primero revisa este mismo archivo.");
@@ -499,7 +528,13 @@ export class InventoryImportController {
   @Permit(INVENTORY_IMPORT_PERMISSION)
   @UseInterceptors(
     FileInterceptor("file", {
-      limits: { fileSize: INVENTORY_IMPORT_MAX_BYTES, files: 1 },
+      limits: {
+        fileSize: INVENTORY_IMPORT_MAX_BYTES,
+        files: 1,
+        fields: 5,
+        fieldSize: 128,
+        parts: 6,
+      },
     }),
   )
   async preview(
@@ -507,6 +542,7 @@ export class InventoryImportController {
     @Body() body: any,
     @CurrentUser() actor: Actor,
   ) {
+    body = parse(importPreviewInput, body ?? {});
     const { buffer, hash, name } = await this.read(file);
     try {
       const rows = await this.rows(buffer);
@@ -561,7 +597,13 @@ export class InventoryImportController {
   @Permit(INVENTORY_IMPORT_PERMISSION)
   @UseInterceptors(
     FileInterceptor("file", {
-      limits: { fileSize: INVENTORY_IMPORT_MAX_BYTES, files: 1 },
+      limits: {
+        fileSize: INVENTORY_IMPORT_MAX_BYTES,
+        files: 1,
+        fields: 5,
+        fieldSize: 128,
+        parts: 7,
+      },
     }),
   )
   async apply(
@@ -569,6 +611,7 @@ export class InventoryImportController {
     @Body() body: any,
     @CurrentUser() actor: Actor,
   ) {
+    body = parse(importApplyInput, body ?? {});
     const { buffer, hash, name } = await this.read(file);
     if (!/^[0-9a-f]{64}$/.test(String(body?.hash)) || !body?.state)
       bad("Primero revisa la vista previa del archivo.");

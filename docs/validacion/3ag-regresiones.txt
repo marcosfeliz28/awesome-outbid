@@ -1,0 +1,253 @@
+Orden 3ag · resúmenes de salida real de regresiones locales
+Base de reproducción: 4991b513, salvo addenda que prueban el bloque previo a su corrección.
+Sólo se conservan conteos y tiempos; no mensajes, peticiones ni valores de credenciales.
+
+Autorización: antes
+  Tests: 16 failed | 152 passed | 0 pending; total 168
+
+Entradas: antes
+  Test Files  2 failed (2)
+  Tests  35 failed | 1 passed (36)
+  Start at  08:04:25
+  Duration  14.28s (transform 3.02s, setup 0ms, collect 16.56s, tests 1.19s, environment 2ms, prepare 416ms)
+
+Entradas: después
+  Test Files  2 passed (2)
+  Tests  39 passed (39)
+  Start at  08:08:14
+  Duration  4.54s (transform 1.27s, setup 0ms, collect 5.51s, tests 425ms, environment 1ms, prepare 383ms)
+
+Sesión: antes
+  Test Files  1 failed (1)
+  Tests  12 failed | 8 passed (20)
+  Start at  07:57:36
+  Duration  41.15s (transform 1.77s, setup 0ms, collect 8.38s, tests 30.30s, environment 0ms, prepare 407ms)
+
+Sesión: después
+  Test Files  1 passed (1)
+  Tests  28 passed (28)
+  Start at  08:07:24
+  Duration  17.02s (transform 2.00s, setup 0ms, collect 4.93s, tests 10.69s, environment 0ms, prepare 722ms)
+
+Navegador: antes
+  Test Files  1 failed (1)
+  Tests  9 failed (9)
+  Start at  07:57:12
+  Duration  3.66s (transform 922ms, setup 0ms, collect 310ms, tests 1.71s, environment 0ms, prepare 399ms)
+
+Navegador: refresh posterior al cierre antes
+  Test Files  1 failed (1)
+  Tests  5 failed | 1 passed | 16 skipped (22)
+  Start at  08:03:45
+  Duration  1.18s (transform 344ms, setup 0ms, collect 238ms, tests 371ms, environment 0ms, prepare 131ms)
+
+Navegador: rol antes
+  Test Files  1 failed (1)
+  Tests  2 failed | 22 skipped (24)
+  Start at  08:05:29
+  Duration  2.17s (transform 1.06s, setup 0ms, collect 590ms, tests 795ms, environment 0ms, prepare 189ms)
+
+Navegador: después
+  Test Files  1 passed (1)
+  Tests  24 passed (24)
+  Start at  08:05:43
+  Duration  1.67s (transform 335ms, setup 0ms, collect 389ms, tests 784ms, environment 0ms, prepare 131ms)
+
+Archivos: antes
+  Test Files  1 failed (1)
+  Tests  17 failed | 3 passed (20)
+  Start at  08:06:40
+  Duration  16.54s (transform 4.01s, setup 0ms, collect 13.74s, tests 616ms, environment 0ms, prepare 322ms)
+
+Archivos: después
+  Test Files  1 passed (1)
+  Tests  20 passed (20)
+  Start at  08:07:10
+  Duration  6.44s (transform 1.48s, setup 0ms, collect 4.70s, tests 1.03s, environment 1ms, prepare 156ms)
+
+Bitácora: antes
+  Test Files  1 failed (1)
+  Tests  4 failed | 2 passed (6)
+  Start at  07:57:42
+  Duration  44.30s (transform 2.49s, setup 0ms, import 9.74s, tests 34.03s, environment 0ms)
+
+Bitácora: después
+  Test Files  1 passed (1)
+  Tests  8 passed (8)
+  Start at  08:02:28
+  Duration  10.12s (transform 826ms, setup 0ms, import 3.31s, tests 6.54s, environment 0ms)
+
+Matriz: antes
+  Test Files  1 failed (1)
+  Tests  1 failed | 1 passed (2)
+  Start at  08:12:10
+  Duration  4.16s (transform 792ms, setup 0ms, collect 3.36s, tests 89ms, environment 1ms, prepare 212ms)
+
+Matriz: después
+  Test Files  1 passed (1)
+  Tests  2 passed (2)
+  Start at  08:12:28
+  Duration  4.37s (transform 808ms, setup 0ms, collect 3.54s, tests 35ms, environment 0ms, prepare 156ms)
+
+Registros: antes
+  Test Files  1 failed (1)
+  Tests  2 failed (2)
+  Start at  07:55:39
+  Duration  4.16s (transform 691ms, setup 0ms, collect 3.25s, tests 40ms, environment 0ms, prepare 299ms)
+
+Registro de importación: antes
+  Test Files  1 failed (1)
+  Tests  1 failed | 15 skipped (16)
+  Start at  08:09:42
+  Duration  2.55s (transform 613ms, setup 0ms, import 2.25s, tests 20ms, environment 0ms)
+
+Addenda de integración: base f0e2311, antes de ajustar fixtures al contrato estricto.
+
+Integración de dinero: antes
+ Test Files  1 failed (1)
+      Tests  2 failed | 177 skipped (179)
+   Start at  08:25:48
+   Duration  22.77s (transform 1.68s, setup 0ms, import 4.36s, tests 17.16s, environment 0ms)
+
+Integración de dinero: después
+ Test Files  1 passed (1)
+      Tests  2 passed | 177 skipped (179)
+   Start at  08:26:18
+   Duration  27.92s (transform 1.47s, setup 0ms, import 3.80s, tests 22.88s, environment 0ms)
+
+Integración de contratos offline/SSE/Tienda: antes
+ Test Files  1 failed (1)
+      Tests  6 failed | 173 skipped (179)
+   Start at  08:26:29
+   Duration  34.10s (transform 1.44s, setup 0ms, import 4.33s, tests 27.36s, environment 0ms)
+
+Integración de contratos offline/SSE/Tienda: después
+ Test Files  1 passed (1)
+      Tests  12 passed | 167 skipped (179)
+   Start at  08:28:24
+   Duration  36.66s (transform 1.25s, setup 0ms, import 3.22s, tests 32.44s, environment 0ms)
+
+Integración de privacidad de incentivos: antes
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed | 8 skipped (11)
+   Start at  08:30:40
+   Duration  9.38s (transform 497ms, setup 0ms, import 2.02s, tests 6.38s, environment 0ms)
+
+Integración de privacidad de incentivos: después
+ Test Files  1 passed (1)
+      Tests  3 passed | 8 skipped (11)
+   Start at  08:30:58
+   Duration  13.71s (transform 850ms, setup 0ms, import 3.74s, tests 8.67s, environment 0ms)
+
+Diagnóstico seguro de arranque: antes
+ Test Files  1 failed (1)
+      Tests  4 failed | 17 passed (21)
+   Start at  08:24:35
+   Duration  3.73s (transform 770ms, setup 0ms, import 3.14s, tests 131ms, environment 0ms)
+
+Diagnóstico seguro de arranque: después
+ Test Files  1 passed (1)
+      Tests  21 passed (21)
+   Start at  08:26:19
+   Duration  3.55s (transform 1.01s, setup 0ms, import 3.20s, tests 92ms, environment 0ms)
+
+Integración de política de cuentas: antes
+ Test Files  1 failed (1)
+      Tests  1 failed | 21 skipped (22)
+   Start at  08:27:23
+   Duration  1.18s (transform 172ms, setup 0ms, import 262ms, tests 378ms, environment 0ms)
+
+Integración de política de cuentas: después
+ Test Files  1 passed (1)
+      Tests  1 passed | 21 skipped (22)
+   Start at  08:27:43
+   Duration  9.48s (transform 210ms, setup 0ms, import 336ms, tests 8.78s, environment 0ms)
+
+Primera integración conjunta: diagnóstico previo a ajustes de fixtures
+ Test Files  4 failed | 17 passed (21)
+      Tests  13 failed | 400 passed (413)
+   Start at  08:14:28
+   Duration  978.94s (transform 3.01s, setup 0ms, import 20.34s, tests 951.33s, environment 7ms)
+
+Integración de caja por usuario: antes
+ Test Files  1 failed (1)
+      Tests  2 failed | 6 passed (8)
+   Start at  08:31:49
+   Duration  10.81s (transform 57ms, setup 0ms, import 126ms, tests 9.77s, environment 0ms)
+
+Integración de caja por usuario: después
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  08:32:08
+   Duration  10.73s (transform 53ms, setup 0ms, import 148ms, tests 9.56s, environment 0ms)
+
+Reportes diarios, consulta real del componente: antes (base 416c881)
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  08:39:02
+   Duration  3.33s (transform 1.54s, setup 0ms, import 3.06s, tests 28ms, environment 0ms)
+
+Reportes diarios, consulta real del componente: después
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  08:38:45
+   Duration  2.89s (transform 906ms, setup 0ms, import 2.63s, tests 24ms, environment 0ms)
+
+pnpm check final, código d82716b: salida 0 (tipos, lint, pruebas y builds)
+ Test Files  83 passed (83)
+      Tests  985 passed | 3 skipped (988)
+   Start at  08:39:59
+   Duration  135.34s (transform 9.55s, setup 0ms, import 117.15s, tests 254.42s, environment 20ms)
+
+Integración final, código d82716b, API compilada y base recién creada: salida 0
+ Test Files  21 passed (21)
+      Tests  413 passed (413)
+   Start at  08:32:51
+   Duration  992.86s (transform 3.16s, setup 0ms, import 19.93s, tests 965.91s, environment 5ms)
+
+Compatibilidad de caché, base 804ba61: antes
+ Test Files  1 failed (1)
+      Tests  3 failed | 24 skipped (27)
+   Start at  09:14:53
+   Duration  1.90s (transform 298ms, setup 0ms, collect 261ms, tests 798ms, environment 0ms, prepare 150ms)
+
+Compatibilidad de caché con owner y escrituras transaccionales: después
+ Test Files  1 passed (1)
+      Tests  36 passed (36)
+   Start at  09:16:35
+   Duration  1.53s (transform 263ms, setup 0ms, collect 201ms, tests 878ms, environment 0ms, prepare 130ms)
+
+pnpm check de compatibilidad: salida 0 (tipos, lint, pruebas y builds)
+ Test Files  83 passed (83)
+      Tests  997 passed | 3 skipped (1000)
+   Start at  09:18:38
+   Duration  214.27s (transform 15.53s, setup 0ms, import 204.12s, tests 385.18s, environment 27ms)
+
+E2E de privacidad con código 804ba61: antes
+  2 failed
+
+E2E de privacidad con caché compatible: después
+  2 passed (28.9s)
+
+E2E completo local con caché compatible, 142 casos, sin cambios en tests/e2e
+  3 failed
+  139 passed (24.1m)
+Fallos: LAN por proxy del entorno; cuenta demo no exportada al proceso E2E; escaneo con foco en descuento.
+
+Tres focales con NO_PROXY local y configuración de su base de demo exportada
+  3 passed (28.8s)
+Escaneo: dos repeticiones independientes adicionales, una falla y otra pasa.
+No se alteraron manejadores, umbrales, pruebas, reintentos ni límites.
+
+Comparación de escaneo, sin alterar fuentes ni condiciones del test
+Código con corrección: 2/3 focales pasan (11.8 s, fallo 15.0 s, 11.8 s).
+Base 804ba61: 3/3 pasan (totales 14.2 s, 13.4 s, 13.2 s).
+No demuestra causalidad ni preexistencia del fallo; intermitencia registrada para revisión.
+
+Integración final del código 755333f, API compilada y base nueva: salida 0
+ Test Files  21 passed (21)
+      Tests  413 passed (413)
+   Start at  09:28:44
+   Duration  1154.17s (transform 4.63s, setup 0ms, import 19.47s, tests 1126.97s, environment 4ms)
+Una corrida concurrente anterior se detuvo tras dos timeouts; no se cambiaron código ni límites.
+Se reinició sólo la API propia, se recreó su base y se repitió sin pnpm check concurrente.

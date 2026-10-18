@@ -781,9 +781,21 @@ describe("Política de contraseña según el rol persistido", () => {
       });
     };
 
-    // Un campo de rol inventado en el cuerpo no puede convertir un seller en admin.
-    expect((await create(sellerRole.id, NEW, "admin")).status).toBe(400);
-    const cashierCreated = await create(sellerRole.id, CASHIER_TEMP, "admin");
+    // role no forma parte del contrato: ni una contraseña válida permite
+    // aceptar ese campo extra ni crear una cuenta con privilegios inventados.
+    const countBefore = await db.user.count();
+    for (const [roleId, password, spoofedRole] of [
+      [sellerRole.id, NEW, "admin"],
+      [sellerRole.id, CASHIER_TEMP, "admin"],
+      [managerRole.id, CASHIER_NEW, "seller"],
+      [managerRole.id, NEW, "seller"],
+    ])
+      expect((await create(roleId, password, spoofedRole)).status).toBe(400);
+    expect(await db.user.count()).toBe(countBefore);
+
+    // Con el contrato limpio, el rol persistido decide la política.
+    expect((await create(sellerRole.id, NEW)).status).toBe(400);
+    const cashierCreated = await create(sellerRole.id, CASHIER_TEMP);
     expect(cashierCreated.status).toBe(201);
     created.push(cashierCreated.body.id);
     let cashier = await db.user.findUniqueOrThrow({
@@ -791,11 +803,9 @@ describe("Política de contraseña según el rol persistido", () => {
     });
     expect(cashier.roleId).toBe(sellerRole.id);
 
-    // La política de gerencia tampoco se puede rebajar diciendo "seller" en JSON.
-    expect((await create(managerRole.id, CASHIER_NEW, "seller")).status).toBe(
-      400,
-    );
-    const managerCreated = await create(managerRole.id, NEW, "seller");
+    // Gerencia sigue rechazando seis dígitos incluso sin campos extra.
+    expect((await create(managerRole.id, CASHIER_NEW)).status).toBe(400);
+    const managerCreated = await create(managerRole.id, NEW);
     expect(managerCreated.status).toBe(201);
     created.push(managerCreated.body.id);
     const manager = await db.user.findUniqueOrThrow({

@@ -598,6 +598,32 @@ describe("G6 · anonimización contra PostgreSQL real", () => {
       expect(JSON.stringify(concurrentAudit)).not.toContain(saleFirstPii.phone);
 
       const quoteRaceCustomerId = randomUUID();
+      // La cotización debe usar una variante real de la misma sucursal: así
+      // se comprueba el bloqueo de anonimización, no un rechazo previo de IDOR.
+      const quoteVariantId = randomUUID();
+      const quoteSku = "PRIVACY-QUOTE-" + randomUUID();
+      await prisma.product.create({
+        data: {
+          sku: quoteSku,
+          name: "Producto de cotización de prueba",
+          category: {
+            create: { name: "Privacidad " + randomUUID(), branchId: actor.branchId },
+          },
+          branchId: actor.branchId,
+          createdBy: actor.id,
+          variants: {
+            create: {
+              id: quoteVariantId,
+              sku: quoteSku,
+              barcode: quoteSku,
+              price: 100,
+              costAvg: 50,
+              branchId: actor.branchId,
+              createdBy: actor.id,
+            },
+          },
+        },
+      });
       await prisma.customer.create({
         data: {
           id: quoteRaceCustomerId,
@@ -621,7 +647,7 @@ describe("G6 · anonimización contra PostgreSQL real", () => {
               notes: "Llamar al 809-555-0140",
               items: [
                 {
-                  variantId: randomUUID(),
+                  variantId: quoteVariantId,
                   qty: 1,
                   discountPercent: 0,
                 },

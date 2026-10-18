@@ -1,3 +1,4 @@
+import { logInternalError } from "./safe-log";
 import "reflect-metadata";
 import { config } from "dotenv";
 import { resolve } from "node:path";
@@ -13,15 +14,17 @@ import { ApiExceptionFilter } from "./common";
 import { captureApiException, initializeApiMonitoring } from "./monitoring";
 import { PrismaClient } from "@prisma/client";
 import { safelyForcePasswordChangeAtStartup } from "./require-password-change";
+import {
+  configuredWebOrigin,
+  preventPrivateResponseCaching,
+} from "./http-security";
 
 config({ path: resolve(process.cwd(), "../../.env") });
 config();
 async function bootstrap() {
   initializeApiMonitoring();
   const production = process.env.NODE_ENV === "production";
-  const webOrigin = process.env.WEB_ORIGIN?.trim();
-  if (production && !webOrigin)
-    throw new Error("WEB_ORIGIN es obligatorio en producción.");
+  const webOrigin = configuredWebOrigin();
   const secret = validateSecret(process.env.JWT_SECRET, production);
   const startupDb = new PrismaClient();
   try {
@@ -39,10 +42,11 @@ async function bootstrap() {
   app.getHttpAdapter().getInstance().set("trust proxy", trustedProxies());
   app.setGlobalPrefix("api");
   app.use(helmet());
+  app.use(preventPrivateResponseCaching);
   app.use(jsonBodyParser({ limit: "100kb" }));
   app.use(cookieParser());
   app.enableCors({
-    origin: webOrigin || "http://localhost:5173",
+    origin: webOrigin,
     credentials: true,
     // Paginación de GET /alerts y /credit-notes (cursor de la página siguiente).
     exposedHeaders: ["X-Next-Cursor"],
@@ -67,6 +71,6 @@ async function bootstrap() {
 }
 bootstrap().catch((error) => {
   captureApiException(error, "startup");
-  console.error(error);
+  logInternalError(error, "startup");
   process.exit(1);
 });

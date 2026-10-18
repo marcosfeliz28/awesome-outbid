@@ -2,12 +2,13 @@ import { Controller, Get, Inject, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import PDFDocument from "pdfkit";
 import { Prisma } from "@prisma/client";
-import { can, formatMoney } from "@fitstore/shared";
+import { can, formatMoney, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
   Database,
   Permit,
+  parse,
   bad,
   canViewCashExpected,
   denied,
@@ -48,6 +49,14 @@ export class FormalReportController {
   ) {
     if (!can(actor.permissions, "profit:read") || !canViewCashExpected(actor))
       denied();
+    query = parse(
+      z.object({
+        period: z.enum(["day", "month"]),
+        date: z.string().min(7).max(10),
+        format: z.enum(["json", "pdf"]).optional(),
+      }),
+      query,
+    );
     res.setHeader("Cache-Control", "private, no-store");
     let period: ReturnType<typeof formalPeriod>;
     try {

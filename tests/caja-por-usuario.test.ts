@@ -269,18 +269,17 @@ describe("W6 · cada usuario tiene su propia caja", () => {
       ).status,
     ).toBe(403);
     // Venta offline con la caja de otra persona: igual rechazo.
+    // capturedAt identifica las ventas sin conexión en el contrato de la API.
+    const offlineInput = saleBody(marcosCash.id, {
+      capturedAt: new Date(Date.now() - 5).toISOString(),
+    });
+    const offlineAttempt = await request("/sales", lisbeth.token, offlineInput);
+    expect(offlineAttempt.status, JSON.stringify(offlineAttempt.body)).toBe(
+      403,
+    );
     expect(
-      (
-        await request(
-          "/sales",
-          lisbeth.token,
-          saleBody(marcosCash.id, {
-            offline: true,
-            capturedAt: new Date(Date.now() - 5).toISOString(),
-          }),
-        )
-      ).status,
-    ).toBe(403);
+      await db.sale.count({ where: { offlineUuid: offlineInput.offlineUuid } }),
+    ).toBe(0);
     // Marcos tampoco vende en la de Lisbeth.
     expect(
       (await request("/sales", marcos.token, saleBody(lisbethCash.id))).status,

@@ -268,14 +268,17 @@ export class AdminController {
       !can(actor.permissions, "sale:manage")
     )
       bad("Sólo un gerente puede definir el límite de crédito.");
-    const row = await this.db.customer.create({
-      data: {
-        ...data,
-        createdBy: actor.id,
-        branchId: actor.branchId,
-      },
+    const row = await this.db.$transaction(async (tx) => {
+      const row = await tx.customer.create({
+        data: {
+          ...data,
+          createdBy: actor.id,
+          branchId: actor.branchId,
+        },
+      });
+      await audit(tx, actor, "create", "customer", row.id, undefined, row);
+      return row;
     });
-    await audit(this.db, actor, "create", "customer", row.id, undefined, row);
     return customerForActor(row, actor);
   }
   @Patch("customers/:id")
@@ -760,11 +763,16 @@ export class AdminController {
     const prices = new Map(
       (
         await this.db.variant.findMany({
-          where: { id: { in: data.items.map((i) => i.variantId) } },
+          where: {
+            id: { in: data.items.map((i) => i.variantId) },
+            branchId: actor.branchId,
+          },
           select: { id: true, price: true },
         })
       ).map((v) => [v.id, String(v.price)]),
     );
+    if (prices.size !== new Set(data.items.map((item) => item.variantId)).size)
+      bad("Una de las variantes no existe en tu sucursal.");
     // Con decimales exactos: 3 × 0.70 son 2.10, no 2.0999…
     for (const i of data.items)
       if (
@@ -879,7 +887,9 @@ export class AdminController {
   @Post("settings/logo")
   @Permit("*")
   @UseInterceptors(
-    FileInterceptor("file", { limits: { fileSize: 1024 * 1024, files: 1 } }),
+    FileInterceptor("file", {
+      limits: { fileSize: 1024 * 1024, files: 1, fields: 0, parts: 2 },
+    }),
   )
   async setLogo(@UploadedFile() file: any, @CurrentUser() actor: Actor) {
     if (!file?.buffer?.length) bad("Adjunta la imagen del logo.");
@@ -1055,27 +1065,32 @@ export class AdminController {
     const generatedEmail =
       usernameKey.replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") +
       "@nexora.local";
-    const row = await this.db.user.create({
-      data: {
-        name: data.name,
-        username: requestedUsername,
-        usernameKey,
-        email: (data.email || generatedEmail).toLowerCase(),
-        passwordHash: await passwordHash(password),
-        mustChangePassword: true,
-        passwordExpiresAt: temporaryPasswordExpiry(),
-        pinHash: await passwordHash(data.pin),
-        roleId: data.roleId,
-        branchId: actor.branchId,
-        cashierNumber: data.cashierNumber,
-      },
+    const passwordHashValue = await passwordHash(password);
+    const pinHashValue = await passwordHash(data.pin);
+    const row = await this.db.$transaction(async (tx) => {
+      const row = await tx.user.create({
+        data: {
+          name: data.name,
+          username: requestedUsername,
+          usernameKey,
+          email: (data.email || generatedEmail).toLowerCase(),
+          passwordHash: passwordHashValue,
+          mustChangePassword: true,
+          passwordExpiresAt: temporaryPasswordExpiry(),
+          pinHash: pinHashValue,
+          roleId: data.roleId,
+          branchId: actor.branchId,
+          cashierNumber: data.cashierNumber,
+        },
+      });
+      await audit(tx, actor, "create", "user", row.id, undefined, {
+        name: row.name,
+        roleId: row.roleId,
+        cashierNumber: row.cashierNumber,
+      });
+      return row;
     });
     this.rememberLogin(row);
-    await audit(this.db, actor, "create", "user", row.id, undefined, {
-      name: row.name,
-      roleId: row.roleId,
-      cashierNumber: row.cashierNumber,
-    });
     return {
       id: row.id,
       name: row.name,
@@ -1178,15 +1193,17 @@ export class AdminController {
         await tx.refreshToken.deleteMany({ where: { userId } });
         await tx.authSession.deleteMany({ where: { userId } });
       }
+      // El acceso y la revocación se confirman junto a su evidencia. Si la
+      // bitácora falla, tampoco se cambian permisos, credenciales ni sesiones.
+      // La contraseña y el PIN nunca se auditan; sólo que se cambiaron.
+      await audit(tx, actor, "access_change", "user", userId, undefined, {
+        ...rest,
+        ...(validatedPassword ? { passwordReset: true } : {}),
+        ...(pin ? { pinReset: true } : {}),
+      });
       return row;
     });
     this.rememberLogin(row);
-    // La contraseña y el PIN nunca se auditan; sólo que se cambiaron.
-    await audit(this.db, actor, "access_change", "user", userId, undefined, {
-      ...rest,
-      ...(validatedPassword ? { passwordReset: true } : {}),
-      ...(pin ? { pinReset: true } : {}),
-    });
     return {
       id: row.id,
       name: row.name,
@@ -1343,17 +1360,19 @@ export class AdminController {
       bad("El descuento máximo es 100%.");
     if (data.type === "nxm" && (data.scope.pay ?? 1) >= (data.scope.buy ?? 2))
       bad("La promoción debe regalar al menos una unidad.");
-    const row = await this.db.promotion.create({
-      data: {
-        ...data,
-        startsAt: new Date(data.startsAt),
-        endsAt: new Date(data.endsAt),
-        createdBy: actor.id,
-        branchId: actor.branchId,
-      },
+    return this.db.$transaction(async (tx) => {
+      const row = await tx.promotion.create({
+        data: {
+          ...data,
+          startsAt: new Date(data.startsAt),
+          endsAt: new Date(data.endsAt),
+          createdBy: actor.id,
+          branchId: actor.branchId,
+        },
+      });
+      await audit(tx, actor, "create", "promotion", row.id, undefined, row);
+      return row;
     });
-    await audit(this.db, actor, "create", "promotion", row.id, undefined, row);
-    return row;
   }
   @Patch("promotions/:id")
   @Permit("promotions:write")
@@ -1366,8 +1385,10 @@ export class AdminController {
     await this.db.promotion.findFirstOrThrow({
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
-    const row = await this.db.promotion.update({ where: { id }, data });
-    await audit(this.db, actor, "state", "promotion", id, undefined, data);
-    return row;
+    return this.db.$transaction(async (tx) => {
+      const row = await tx.promotion.update({ where: { id }, data });
+      await audit(tx, actor, "state", "promotion", id, undefined, data);
+      return row;
+    });
   }
 }
