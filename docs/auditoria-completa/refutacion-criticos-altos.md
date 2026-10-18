@@ -83,3 +83,7 @@ La combinación estática y mock sustenta que, si esa API responde y el SID es v
 - `pnpm --filter @fitstore/api build` — código 0.
 - No se ejecutó `pnpm check`, suite de integración ni E2E; para esta refutación basta el caso dirigido y los tests señalados arriba. No se modificó ningún archivo de aplicación, prueba o configuración.
 - I-01 requiere repetición PG con timezone instalada para cerrar el estado SIN REPRODUCIR. Q-01 no requiere ni justifica probar contra un sistema externo.
+
+## Nota posterior del auditor principal
+
+En la auditoría principal, después de recibir esta revisión, repetí `pnpm exec vitest run tests/warehouses-postgres.test.ts` en el worktree `nexora-audit-pc` sobre el mismo SHA de aplicación, con `NEXORA_TEST_PG_URL` ausente. Resultado exacto: `Test Files 1 passed (1); Tests 4 passed (4); Duration 8.77s`. La suite del mismo archivo también pasó dentro de `pnpm check` (`4 tests`, 27–34 s según la corrida). Esto contradice el error de zona horaria observado en el worktree del revisor. El flujo completo de I-01 categoría → conteo → venta aún no está cubierto por esos cuatro tests; mantengo I-01 **SIN REPRODUCIR de extremo a extremo** y dejo registrada la inconsistencia ambiental, en vez de atribuirla a la aplicación.
