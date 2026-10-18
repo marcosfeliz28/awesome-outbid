@@ -1,5 +1,11 @@
 # Pendientes de la dueña (se actualiza a diario)
 
+## Estado al 18-oct (para un chat nuevo)
+- **Conteo de proteínas 18-oct** (Excel del muchacho, 46 renglones / 190 uds; sistema 195 tras FS-0000116): falta que la dueña diga si se ajustan estos 7 renglones: Isopure 3 lb Vanilla 23 (sist. 26), Isopure 3 lb Dutch 2 (sist. 4 Dutch + 1 «Chocolate»), GS Isolate Rich Vanilla 8 (10), GS Casein 1 (0), Isopure 1 lb 17 (11 potes + 5 bolsas), MuscleTech Mass Vanilla 2 (1), MuscleTech Mass Brownie 2 (1). Carnivor Mass Vanilla ya se corrigió a 3.
+- **No contados pero con existencia**: Isoflex Chocolate 2 lb (2), Klean Isolate (1), GS Vanilla Ice Cream 2 lb (1), Muscle Milk Pro Series 2 lb (1): el muchacho debe buscarlos.
+- **Decisiones del cierre de caja** (6): un solo verifone, fondo, tope, Genesis, turnos, mensajero.
+- Señales a revisar: FS-0000113 (Lizbeth 50 %, transferencia ref 1111 por verificar), FS-0000062 (annya bello, 32 % «CREDITO», contraentrega RD$ 71,100 pendiente).
+
 ## Preguntar a Génesis (14-oct)
 - **Chaleco con Brasier**: el sistema dice XS 1 y L 1 (SKU 1600 y 1599), pero la dueña no los encontró en la auditoría de fajas del 13/14-oct. Preguntar a Génesis si los tiene y cuántos. No se ajustó el sistema.
 
