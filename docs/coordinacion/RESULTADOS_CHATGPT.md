@@ -136,6 +136,14 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - Qué pasó (pruebas que pasan y que fallan, con el texto exacto del error):
 - Qué falta o necesita decisión de la dueña:
 
+## 2026-10-18 · ChatGPT PC · `nexora-chatgpt-fase2` · Q-01, protección de destinos de prueba
+
+- **Qué hice:** añadí una validación común para `pnpm test:integration` y `pnpm verify`. Antes de red o de la opción `NEXORA_TEST_SKIP_API_CHECK`, exige API y proxy HTTP en loopback, PostgreSQL local y autorización explícita de base local fuera de GitHub Actions. Bloquea parámetros PostgreSQL `host`/`hostaddr`, y también evita que Playwright visite una web o proxy remoto. En Actions solo acepta la base aislada `fitstore` en loopback. Los errores no imprimen URLs ni credenciales. Documenté cómo autorizar una base local descartable.
+- **Regresión antes:** `pnpm exec vitest run tests/integration-api-check.test.ts` dio `Tests 3 failed | 5 passed (8)`: la URL remota con `NEXORA_TEST_SKIP_API_CHECK=1` resolvía como `"omitida"`; `DATABASE_URL` y proxy remotos no se rechazaban antes del fetch.
+- **Después:** pruebas de destino y de higiene Playwright: `Test Files 2 passed (2)`, `Tests 22 passed (22)`. `pnpm typecheck` pasó en los cuatro paquetes; ESLint de los archivos modificados, `git diff --check` y `pnpm build` pasaron. Probé el CLI con API remota y, por separado, PostgreSQL remoto: ambos rechazaron el destino antes de conectar, sin mostrar URLs.
+- **Suite completa:** última corrida de `pnpm exec vitest run`: `Test Files 2 failed | 69 passed | 1 skipped (72)` y `Tests 1 failed | 664 passed | 10 skipped (675)`. Los tests de negocio pasaron; falló la limpieza de PostgreSQL temporal en `tests/courier-migration-postgres.test.ts` y `tests/warehouses-postgres.test.ts`, en ambos casos `Error: EBUSY: resource busy or locked, rmdir 'C:\\Users\\marco\\AppData\\Local\\Temp\\nexora-<suite>-db-<id>'`. Es el Q-04 de la auditoría, todavía pendiente.
+- **Falta:** verificar este commit en los tres trabajos de CI y corregir Q-04 en un commit separado. No se desplegó ni se usó producción. El SHA se añadirá después del commit.
+
 ## 2026-10-15 · ChatGPT NUBE · `nexora-chatgpt-nube` · `ac3ba19`…`6634a1a`
 
 - **Qué hice:** pantalla «Conciliar transferencias» visible solo para administración. Endpoint de lectura `GET /payments/pending-transfers` con permiso `sale:manage`, filtrado por sucursal y fecha de República Dominicana. Agrupa BHD, Popular, Banreservas y otros; muestra factura, cliente, cajera, monto y referencia. Selección múltiple, total por banco, diferencia, verificación secuencial usando el endpoint existente y resultado por pago; rechazo con motivo mediante el endpoint existente. CSV con protección contra fórmulas. Corregí la prueba para usar la fecha real del pago (`9d5757c`) y el reinicio de totales al cambiar de fecha (`3ebd886`). No cambié `verify`, `reject`, importes, inventario ni producción.

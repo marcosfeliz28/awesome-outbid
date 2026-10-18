@@ -1,4 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import { assertLocalHttpUrl } from "./scripts/test-target-safety.mjs";
+if (process.env.FITSTORE_WEB_URL)
+  assertLocalHttpUrl(process.env.FITSTORE_WEB_URL, "FITSTORE_WEB_URL");
+if (process.env.FITSTORE_API_PROXY)
+  assertLocalHttpUrl(process.env.FITSTORE_API_PROXY, "FITSTORE_API_PROXY");
 // Puerto de la vista previa que arranca Playwright. Por defecto 4173 y, si ya
 // hay una abierta ahí, se reutiliza. Otra copia del proyecto que corra la suite
 // a la vez elige su puerto con FITSTORE_WEB_PORT: así no prueba, sin avisar, la

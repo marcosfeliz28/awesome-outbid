@@ -6,9 +6,10 @@
 //  2. debe usar la MISMA base que DATABASE_URL: se inicia sesión como el
 //     administrador demo y la sesión recién creada tiene que existir en esa base.
 // Si no, la corrida falla de inmediato con un mensaje que dice qué hacer.
-// NEXORA_TEST_SKIP_API_CHECK=1 la omite (suites que arrancan su propia API).
+// NEXORA_TEST_SKIP_API_CHECK=1 omite salud/login, pero nunca la validación local.
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { assertSafeTestTargets } from "../../scripts/test-target-safety.mjs";
 
 export const DEFAULT_API = "http://127.0.0.1:3001/api";
 
@@ -35,8 +36,14 @@ export async function verifyIntegrationApi({
   fetchFn = fetch,
   sessionExists,
 }: ApiCheckOptions) {
-  if (env.NEXORA_TEST_SKIP_API_CHECK === "1") return "omitida";
   const base = (env.FITSTORE_API_URL || DEFAULT_API).replace(/\/+$/, "");
+  assertSafeTestTargets({
+    apiUrl: base,
+    proxyUrl: env.FITSTORE_API_PROXY,
+    databaseUrl: env.DATABASE_URL,
+    env,
+  });
+  if (env.NEXORA_TEST_SKIP_API_CHECK === "1") return "omitida";
   const how =
     "Arranca la API de este repositorio sobre la base de DATABASE_URL " +
     "(`pnpm --filter @fitstore/api dev`), usa `pnpm verify` (arranca la suya) " +
@@ -104,6 +111,16 @@ export default async function setup() {
   requireApi("dotenv").config({
     path: fileURLToPath(new URL("../../.env", import.meta.url)),
     quiet: true,
+  });
+  const base = (process.env.FITSTORE_API_URL || DEFAULT_API).replace(
+    /\/+$/,
+    "",
+  );
+  assertSafeTestTargets({
+    apiUrl: base,
+    proxyUrl: process.env.FITSTORE_API_PROXY,
+    databaseUrl: process.env.DATABASE_URL,
+    env: process.env,
   });
   if (process.env.NEXORA_TEST_SKIP_API_CHECK === "1") return;
   const { PrismaClient } = requireApi("@prisma/client");

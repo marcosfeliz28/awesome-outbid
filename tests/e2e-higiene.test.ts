@@ -171,6 +171,14 @@ describe("playwright.config.ts · cada copia del proyecto prueba su propia compi
     expect(c.webServer).toBeUndefined();
     expect(c.use.baseURL).toBe("http://127.0.0.1:4555");
   });
+  it("rechaza una web o un proxy API remoto antes de lanzar Playwright", async () => {
+    await expect(
+      config({ FITSTORE_WEB_URL: "https://pos.example.test" }),
+    ).rejects.toThrow(/FITSTORE_WEB_URL.*equipo local/);
+    await expect(
+      config({ FITSTORE_API_PROXY: "https://pos.example.test" }),
+    ).rejects.toThrow(/FITSTORE_API_PROXY.*equipo local/);
+  });
   it("un FITSTORE_WEB_PORT que no es un puerto se rechaza con un mensaje claro", async () => {
     for (const bad of ["abc", "0", "70000", "41.5"])
       await expect(config({ FITSTORE_WEB_PORT: bad }), bad).rejects.toThrow(

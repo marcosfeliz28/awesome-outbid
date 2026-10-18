@@ -11,6 +11,7 @@ import { connect } from "node:net";
 import { dirname, resolve } from "node:path";
 import { clearTimeout, setTimeout } from "node:timers";
 import { fileURLToPath } from "node:url";
+import { assertSafeTestTargets } from "./test-target-safety.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WINDOWS = process.platform === "win32";
@@ -190,6 +191,12 @@ async function main() {
     quiet: true,
   });
   const target = targets();
+  assertSafeTestTargets({
+    apiUrl: target.api,
+    proxyUrl: target.proxy,
+    databaseUrl: process.env.DATABASE_URL,
+    env: process.env,
+  });
   // Las pruebas, la PWA y la API que se inicie aquí usan la misma API.
   const env = {
     ...process.env,
