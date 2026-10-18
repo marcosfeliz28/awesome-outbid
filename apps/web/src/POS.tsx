@@ -42,6 +42,9 @@ import {
   d,
   paymentTotals,
   receivableNeedsApproval,
+  receivableApprovalReason,
+  receivableApprovalMessage,
+  margin,
 } from "@fitstore/shared";
 import type { SaleInput } from "@fitstore/shared";
 import {
@@ -1056,8 +1059,10 @@ export function POS({ go }: { go: (page: string) => void }) {
                   alt=""
                 />
                 <div className="cart-item-detail">
-                  <strong>{i.product.name}</strong>
-                  <small>{attrLabel(i.variant.attributes)}</small>
+                  <strong title={i.product.name}>{i.product.name}</strong>
+                  <small title={attrLabel(i.variant.attributes)}>
+                    {attrLabel(i.variant.attributes)}
+                  </small>
                   <div className="cart-item-controls">
                     <div className="quantity-control">
                       <button
@@ -1727,6 +1732,11 @@ function Checkout({
 }) {
   const { cart, customerId, globalDiscount, user, online, clearCart } =
     useStore();
+  const [courier, setCourier] = useState({
+    on: false,
+    fee: "",
+    name: "Addison",
+  });
   const [payments, setPayments] = useState<SaleInput["payments"]>([]),
     [method, setMethod] =
       useState<SaleInput["payments"][number]["method"]>("cash"),
@@ -1802,7 +1812,32 @@ function Checkout({
   // carrito, cliente y pagos: cambiar cualquiera vuelve a la regla local.
   const pinRequest = attempt + JSON.stringify(payments);
   const [serverPinFor, setServerPinFor] = useState<string | null>(null);
+  const [serverPinMessage, setServerPinMessage] = useState("");
   const serverAskedPin = serverPinFor === pinRequest;
+  const localCreditReason = receivableApprovalReason(
+    payments,
+    config,
+    can(user!.permissions, "sale:manage"),
+  );
+  const discountNeedsPin =
+    !can(user!.permissions, "sale:manage") &&
+    cart.some(
+      (i) =>
+        manualDiscount(i, globalDiscount) > (config?.sellerDiscountLimit ?? 10),
+    );
+  const noteNeedsPin = payments.some(
+    (p) => p.method === "credit_note" && !p.creditNoteCode,
+  );
+  const pinReason =
+    serverAskedPin && serverPinMessage
+      ? serverPinMessage
+      : localCreditReason
+        ? receivableApprovalMessage(localCreditReason, config)
+        : discountNeedsPin
+          ? `El descuento supera ${config?.sellerDiscountLimit ?? 10} % permitido al cajero.`
+          : noteNeedsPin
+            ? "La nota de crédito necesita aprobación del gerente."
+            : "Esta venta necesita aprobación del gerente.";
   // Crédito y contraentrega usan la misma regla que la API (D-01): la
   // contraentrega de quien no gestiona ventas pide el PIN sobre el umbral, o
   // siempre si las ventas a crédito no están habilitadas.
@@ -1813,19 +1848,31 @@ function Checkout({
       config,
       can(user!.permissions, "sale:manage"),
     ) ||
-    payments.some((p) => p.method === "credit_note" && !p.creditNoteCode) ||
-    (!can(user!.permissions, "sale:manage") &&
-      cart.some(
-        (i) =>
-          manualDiscount(i, globalDiscount) >
-          (config?.sellerDiscountLimit ?? 10),
-      ));
+    noteNeedsPin ||
+    discountNeedsPin;
   const hasDiscount =
     globalDiscount > 0 ||
     cart.some(
       (item) =>
         item.discountPercent > 0 || Number(item.discountAmount ?? 0) > 0,
     );
+  const knownCosts =
+    cart.length > 0 &&
+    cart.every(
+      (item) =>
+        item.variant.costAvg !== undefined &&
+        Number.isFinite(Number(item.variant.costAvg)),
+    );
+  const estimatedCost = cart.reduce(
+    (sum, item) => sum + Number(item.variant.costAvg ?? 0) * item.qty,
+    0,
+  );
+  const saleMargin = knownCosts ? margin(total, estimatedCost) : null;
+  const lowMarginWarning =
+    hasDiscount &&
+    can(user!.permissions, "profit:read") &&
+    saleMargin !== null &&
+    saleMargin < Number(config?.lowMargin ?? 15);
   const addPayment = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -1904,6 +1951,11 @@ function Checkout({
   const creditAmount = payments
     .filter((p) => p.method === "cod")
     .reduce((a, p) => a + p.amount, 0);
+  // «Con envío» solo con transferencia o tarjeta (orden 3af).
+  const courierAllowed = payments.some(
+    (p) => p.method === "transfer" || p.method === "card",
+  );
+  const withCourier = courierAllowed && courier.on && Number(courier.fee) > 0;
   const finishHint = busy
     ? ""
     : !payments.length
@@ -1911,11 +1963,15 @@ function Checkout({
       : payment.pending > 0
         ? `Faltan ${formatMoney(payment.pending)} por cubrir. Agrega otro pago o pulsa «Vender a crédito (queda pendiente)» para dejar ese monto pendiente.`
         : needsPin && !pin
-          ? "Escribe el PIN de un gerente para aprobar esta venta."
+          ? pinReason + " Escribe el PIN de un gerente para aprobar esta venta."
           : hasDiscount && discountReason.trim().length < 3
             ? "Escribe el motivo del descuento."
             : "";
   const finish = async () => {
+    if (courierAllowed && courier.on && !(Number(courier.fee) > 0)) {
+      setError("Escribe el monto del envío o quita la casilla «Con envío».");
+      return;
+    }
     if (!customerId) {
       setError("Selecciona o crea el cliente antes de vender.");
       return;
@@ -1943,6 +1999,12 @@ function Checkout({
       payments,
       ...(pin ? { managerPin: pin } : {}),
       ...wholesaleField(),
+      ...(withCourier
+        ? {
+            courierFee: Number(courier.fee),
+            courierName: courier.name.trim() || "Addison",
+          }
+        : {}),
     };
     // El ticket lleva el descuento de cada línea para que cuadre con el total
     // cobrado (R9-caja-9).
@@ -2145,6 +2207,7 @@ function Checkout({
       // cobraba): se muestra el campo del PIN para reintentar.
       else if (/requiere el PIN de un gerente/i.test(e.message)) {
         setServerPinFor(pinRequest);
+        setServerPinMessage(e.message);
         setError(
           e.message +
             (pin
@@ -2229,8 +2292,8 @@ function Checkout({
                 <strong>{formatMoney(receipt.creditBalance)}</strong>
               </p>
               <small>
-                Venta registrada. La caja no recibió dinero por esa parte; un
-                administrador la cobra en Créditos pendientes.
+                Venta registrada. La caja no recibió dinero por esa parte; un se
+                cobra después en Créditos pendientes, en la pestaña Caja.
               </small>
             </div>
           )}
@@ -2306,6 +2369,18 @@ function Checkout({
         </small>
         <WholesaleNotice />
       </div>
+      {needsPin && (
+        <label className="field checkout-pin">
+          <span>PIN del gerente para aprobar la venta · {pinReason}</span>
+          <input
+            type="password"
+            inputMode="numeric"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            pattern="[0-9]{4,6}"
+          />
+        </label>
+      )}
       {!(confirmingCredit && creditAmount > 0) && payment.pending > 0 && (
         <div className="credit-shortcut">
           <p>
@@ -2338,7 +2413,7 @@ function Checkout({
             recibe ese dinero y solo un administrador podrá cobrarlo.
           </p>
           {needsPin && (
-            <small>Esta venta necesita el PIN de un gerente (abajo).</small>
+            <small>{pinReason} Escribe el PIN del gerente arriba.</small>
           )}
           <div className="credit-confirm-actions">
             <Button variant="secondary" onClick={cancelCredit} disabled={busy}>
@@ -2459,8 +2534,9 @@ function Checkout({
         {method === "cod" && (
           <p className="cod-hint">
             Crédito / contraentrega: la mercancía sale ahora y el saldo queda a
-            nombre del cliente. Sólo la administración podrá registrar después
-            pagos parciales o completos por efectivo, tarjeta o transferencia.
+            nombre del cliente. Después, cualquier cajera puede cobrarlo en
+            efectivo desde Caja; la tarjeta y la transferencia las registra la
+            administración.
           </p>
         )}
         <label className="field">
@@ -2608,17 +2684,56 @@ function Checkout({
           <strong className="green-text">{formatMoney(payment.change)}</strong>
         </div>
       </div>
-      {needsPin && (
-        <label className="field">
-          <span>PIN del gerente para aprobar la venta</span>
-          <input
-            type="password"
-            inputMode="numeric"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            pattern="[0-9]{4,6}"
-          />
-        </label>
+      {courierAllowed && (
+        <div className="courier-at-checkout">
+          <label className="checkbox-line">
+            <input
+              type="checkbox"
+              checked={courier.on}
+              onChange={(e) => setCourier({ ...courier, on: e.target.checked })}
+            />
+            Con envío (el cliente pagó el envío junto con la transferencia o
+            tarjeta)
+          </label>
+          {courier.on && (
+            <div className="form-grid">
+              <label className="field">
+                <span>Monto del envío</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="5000"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={courier.fee}
+                  onChange={(e) =>
+                    setCourier({ ...courier, fee: e.target.value })
+                  }
+                />
+              </label>
+              <label className="field">
+                <span>Mensajero</span>
+                <input
+                  maxLength={100}
+                  value={courier.name}
+                  onChange={(e) =>
+                    setCourier({ ...courier, name: e.target.value })
+                  }
+                />
+              </label>
+              <small className="full">
+                El envío va aparte del total de productos: no es venta ni
+                ganancia. Queda para pagarle al mensajero y para cuadrar la
+                transferencia.
+              </small>
+            </div>
+          )}
+        </div>
+      )}
+      {lowMarginWarning && (
+        <p className="cod-hint" role="status">
+          Esta venta queda con margen {saleMargin} %. El aviso es informativo.
+        </p>
       )}
       {hasDiscount && (
         <label className="field">

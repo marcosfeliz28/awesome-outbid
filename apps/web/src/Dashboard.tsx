@@ -29,21 +29,96 @@ import { Button, Badge, Modal } from "@fitstore/ui";
 import { formatMoney, can, weekStart } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
+import { YearPie } from "./YearPie";
+
+const dayBefore = (date: string) =>
+  new Date(Date.parse(date + "T12:00:00Z") - 86400000)
+    .toISOString()
+    .slice(0, 10);
+
+function DayFigures({
+  date,
+  title,
+  tone,
+}: {
+  date: string;
+  title: string;
+  tone: "yesterday" | "today" | "other";
+}) {
+  const user = useStore((s) => s.user)!;
+  const showProfit = can(user.permissions, "profit:read");
+  const query = useQuery({
+    queryKey: ["dashboard-day", date],
+    queryFn: () => api("/dashboard/summary?from=" + date + "&to=" + date),
+    enabled: can(user.permissions, "reports:read"),
+  });
+  const data = query.data;
+  const revenue = Number(data?.revenue ?? 0),
+    cost = Number(data?.costTotal ?? 0);
+  return (
+    <div className={"day-figures day-" + tone}>
+      <span className="day-title">{title}</span>
+      <strong>{formatMoney(revenue)}</strong>
+      <small>{data?.invoices ?? 0} facturas</small>
+      {showProfit && (
+        <>
+          <small>Costo {formatMoney(cost)}</small>
+          <small className="day-profit">
+            Ganancia (venta − costo) <b>{formatMoney(revenue - cost)}</b>
+          </small>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DayCard() {
+  const to = today(),
+    yesterday = dayBefore(to);
+  const [day, setDay] = useState(yesterday);
+  return (
+    <section className="panel day-card" aria-label="Ventas por día">
+      <div className="day-card-row">
+        <DayFigures date={yesterday} title="Ayer" tone="yesterday" />
+        <DayFigures date={to} title="Hoy" tone="today" />
+        <div className="day-figures day-other">
+          <label>
+            Buscar otro día
+            <input
+              type="date"
+              value={day}
+              max={to}
+              onChange={(e) => e.target.value && setDay(e.target.value)}
+            />
+          </label>
+          <DayFigures
+            date={day}
+            title={day.split("-").reverse().join("/")}
+            tone="other"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export function Dashboard({ go }: { go: (page: string) => void }) {
   const user = useStore((s) => s.user)!;
   const [period, setPeriod] = useState("month");
+  const [day, setDay] = useState(today());
   const [voidToApprove, setVoidToApprove] = useState<any>(null);
   const [voidBusy, setVoidBusy] = useState(false);
   const [voidError, setVoidError] = useState("");
   const queryClient = useQueryClient();
-  const to = today(),
+  const to = period === "day" ? day : today(),
     from =
       period === "today"
         ? to
-        : period === "week"
-          ? weekStart()
-          : to.slice(0, 8) + "01";
+        : period === "day"
+          ? day
+          : period === "week"
+            ? weekStart()
+            : to.slice(0, 8) + "01";
   const query = useQuery({
     queryKey: ["dashboard", from, to],
     queryFn: () => api("/dashboard/summary?from=" + from + "&to=" + to),
@@ -113,7 +188,17 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             <option value="month">Este mes</option>
             <option value="week">Últimos 7 días</option>
             <option value="today">Hoy</option>
+            <option value="day">Otro día…</option>
           </select>
+          {period === "day" && (
+            <input
+              type="date"
+              aria-label="Día del resumen"
+              value={day}
+              max={today()}
+              onChange={(e) => e.target.value && setDay(e.target.value)}
+            />
+          )}
           <Button
             variant="secondary"
             onClick={() =>
@@ -256,6 +341,8 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             </div>
           </div>
         </div>
+        <YearPie go={go} />
+        <DayCard />
         <div className="kpi-grid">
           {metric.map((m) => (
             <article className="kpi-card" key={m.label}>
@@ -584,6 +671,12 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               <span>Mermas, ajustes y devoluciones a proveedor (a costo)</span>
               <strong>{formatMoney(data?.inventoryLoss ?? 0)}</strong>
             </div>
+            {!!data?.countCorrections && (
+              <div>
+                <span>Correcciones del conteo de inventario (no restan)</span>
+                <strong>{formatMoney(data.countCorrections)}</strong>
+              </div>
+            )}
             <div>
               <span>Ganancia neta</span>
               <strong

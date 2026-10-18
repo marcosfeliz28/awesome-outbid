@@ -8,4 +8,4 @@ Este repositorio lo trabajan dos asistentes y una dueña de negocio. Antes de to
 4. Cada corrección lleva una regresión que falle antes y pase después. `pnpm check` en verde.
 5. Sin secretos, sin datos de producción, sin contraseñas fijas. Textos en español.
 6. Al terminar un lote: abre un PR hacia `nexora-cloud` titulado «Lote N» y anota el resultado en `TABLERO_NEXORA.md`, sección Entregas.
-7. No despliegues en Render; el desplegador es Claude.
+7. No despliegues en Render salvo lo que permite la orden 3ae (`docs/coordinacion/TRASPASO_CHATGPT_NUBE.md` §7): CI verde en el último commit y orden expresa de la dueña. Normalmente el desplegador es Claude.

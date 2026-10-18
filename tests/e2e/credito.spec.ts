@@ -176,7 +176,7 @@ test("Crédito: ventana de cobro con el camino claro, venta sin pago y cobro mix
   const sheet = page.locator(".thermal-print");
   await expect(sheet).toContainText("CRÉDITO · PENDIENTE DE PAGO");
   await expect(sheet).toContainText("Monto pendiente RD$ 600.00");
-  await expect(sheet).toContainText("DOCUMENTO NO FISCAL");
+  await expect(sheet).not.toContainText("DOCUMENTO NO FISCAL");
   const number = (await page
     .locator(".sale-success p")
     .first()
@@ -207,9 +207,9 @@ test("Crédito: ventana de cobro con el camino claro, venta sin pago y cobro mix
   await everyViewport(page, "cobro mixto");
   await collect.getByRole("button", { name: "Guardar cobro" }).click();
   await expect(collect).toHaveCount(0);
-  await expect(row).toContainText("Parcial");
-  await expect(row).toContainText("por verificar");
-  await expect(row).toContainText("recibió");
+  // La dueña da por recibida su transferencia al instante: con el efectivo
+  // el crédito queda saldado y sale de «Créditos pendientes».
+  await expect(row).toHaveCount(0);
 
   await request.patch("/api/products/" + created.id, {
     headers,

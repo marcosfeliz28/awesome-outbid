@@ -17,9 +17,12 @@ import { CatalogController } from "./catalog";
 import { InventoryController } from "./inventory";
 import { WarehousesController } from "./warehouses";
 import { SalesController } from "./sales";
+import { CourierController } from "./courier";
 import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
+import { IncomeReportController } from "./income-report";
+import { FormalReportController } from "./formal-report";
 import { AlertCacheInterceptor, AlertEngine, AlertsController } from "./alerts";
 import { OfflineSalesController } from "./offline-sales";
 import { OfflineSaleReviewController } from "./offline-sale-review";
@@ -72,8 +75,11 @@ export function createAppModule(secret: string) {
       InventoryController,
       WarehousesController,
       SalesController,
+      CourierController,
       AdminController,
       CashController,
+      IncomeReportController,
+      FormalReportController,
       ReportsController,
       AlertsController,
       OfflineSalesController,

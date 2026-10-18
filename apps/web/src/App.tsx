@@ -62,7 +62,10 @@ import { Toasts, toast } from "./helpers";
 import { inactivityWaits } from "./cartDraftPolicy";
 import { keepDraftThrough } from "./cartDraft";
 import { Dashboard } from "./Dashboard";
+import { MonthReport } from "./MonthReport";
 import { VoidRequests } from "./VoidRequests";
+import { TransferReconciliation } from "./TransferReconciliation";
+import { CourierPayouts } from "./CourierPayouts";
 import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import {
@@ -204,6 +207,18 @@ const navigation = [
     label: "Solicitudes de anulación",
     icon: Bell,
     permission: "sale:write",
+  },
+  {
+    id: "transfer-reconciliation",
+    label: "Conciliar transferencias",
+    icon: Wallet,
+    permission: "*",
+  },
+  {
+    id: "courier-payouts",
+    label: "Envíos del mensajero",
+    icon: Truck,
+    permission: "*",
   },
   {
     id: "products",
@@ -842,6 +857,7 @@ function Shell() {
     .join("");
   const pages: Record<string, React.ReactNode> = {
     dashboard: <Dashboard go={go} />,
+    "month-report": <MonthReport go={go} />,
     pos: <POS go={go} />,
     products: <Catalog />,
     inventory: <Inventory />,
@@ -856,6 +872,8 @@ function Shell() {
     ...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {}),
     sales: <SalesHistory />,
     "void-requests": <VoidRequests />,
+    "transfer-reconciliation": <TransferReconciliation />,
+    "courier-payouts": <CourierPayouts />,
     merchandise: <Merchandise />,
     incentives: <IncentivesPage />,
   };
@@ -1101,7 +1119,7 @@ function Shell() {
         </header>
         <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
           <DeviceGate />
-          {pages[page] || <Dashboard go={go} />}
+          {pages[page.split("?")[0]] || <Dashboard go={go} />}
         </main>
         <footer className="app-footer">
           <span>Nexora POS · Tu negocio, en movimiento.</span>

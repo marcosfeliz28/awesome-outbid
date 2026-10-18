@@ -2054,6 +2054,7 @@ describe("Seguridad, offline y funciones completadas", () => {
           countedCard: expected.card + 10,
           countedTransfer: expected.transfer,
           notes: "Diferencia de prueba explicada",
+          managerPin: "987654",
         },
         alertToken,
       );
@@ -7384,12 +7385,13 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       await fixtureDb.variant.findUniqueOrThrow({ where: { id: p1.id } })
     ).stock;
     expect(Number(stockBefore) - Number(stockAfter)).toBe(1);
-    // Los cajeros despachan, pero sólo la administración ve y cobra la deuda.
+    // Los cajeros despachan y también ven y cierran en efectivo la deuda
+    // (dueña, 15-oct); la tarjeta y la transferencia las registra la administración.
     expect((await call("/cod/pending", undefined, cashier2.token)).status).toBe(
-      403,
+      200,
     );
     expect((await call("/cod/pending", undefined, managerToken)).status).toBe(
-      403,
+      200,
     );
     const pending = await must("/cod/pending", undefined, token);
     expect(pending.find((p: any) => p.saleId === sold.f.id)).toMatchObject({
@@ -11667,9 +11669,8 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
     return p.variants[0];
   };
 
-  it("D-03: un fondo menor que lo dejado en el último cierre exige nota y PIN de gerente, y queda en la bitácora", async () => {
+  it("D-03: un fondo menor que lo dejado en el último cierre exige nota (sin PIN) y queda en la bitácora", async () => {
     const cashier = await newActor("seller", "cajera D-03");
-    const manager = (await ok("/auth/me", undefined, managerToken)) as any;
     // Día 1: abre con 1000 y deja todo el efectivo en la gaveta.
     const day1 = await ok(
       "/cash-sessions/open",
@@ -11694,7 +11695,7 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
       countedCash: 1000,
       delivered: 0,
     });
-    // Menor: sin nota, sin PIN o con un PIN incorrecto no abre.
+    // Menor: sin nota no abre.
     const short = (extra: any = {}) =>
       request(
         "/cash-sessions/open",
@@ -11704,29 +11705,17 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
     const noNote = await short();
     expect(noNote.status).toBe(400);
     expect(noNote.body.message).toMatch(/nota/);
-    const noPin = await short({ openingNote: "Se llevó el fondo al banco" });
-    expect(noPin.status).toBe(400);
-    expect(noPin.body.message).toMatch(/PIN de un gerente/);
-    expect(
-      (
-        await short({
-          openingNote: "Se llevó el fondo al banco",
-          managerPin: "000000",
-        })
-      ).status,
-    ).toBe(400);
     expect(
       (await ok("/cash-sessions", undefined, cashier.token)).some(
         (c: any) => !c.closedAt,
       ),
     ).toBe(false);
-    // Con nota y PIN de gerente abre, y la diferencia queda en la bitácora.
+    // Con nota abre, sin PIN, y la diferencia queda en la bitácora.
     const day3 = await ok(
       "/cash-sessions/open",
       {
         openingAmount: 0,
         openingNote: "Se llevó el fondo al banco",
-        managerPin: "987654",
       },
       cashier.token,
     );
@@ -11746,7 +11735,7 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
         declared: 0,
         difference: -1000,
         note: "Se llevó el fondo al banco",
-        approvedBy: manager.id,
+        approvedBy: null,
       },
     });
     await closeBlind(day3.id, cashier.token);

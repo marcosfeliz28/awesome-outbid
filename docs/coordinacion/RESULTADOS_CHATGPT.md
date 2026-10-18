@@ -1,0 +1,150 @@
+# Resultados de ChatGPT NUBE y ChatGPT PC
+
+Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
+
+## 2026-10-15 · ChatGPT NUBE · `nexora-chatgpt-nube` · envíos del mensajero
+
+- **Qué hice:** migración aditiva `202610250001_courier_fee` (`courierFee`, mensajero y datos de pago en `Sale`, más pago idempotente y sus líneas); API con permiso `sale:manage` para editar/consultar y `*` para marcar pagado; pantallas en Ventas, Conciliar transferencias y Envíos del mensajero. El pago es solo registro: no mueve caja. La conciliación suma el envío una vez por factura y muestra el total esperado y la diferencia bancaria.
+- **Regresión previa:** `pnpm exec vitest run tests/courier-utils.test.ts` falló con `Cannot find module '../apps/web/src/courier-utils'`; luego 3/3 pasaron. `tests/conciliar-transferencias.test.ts` pasó 5/5, incluido el caso de transferencias divididas. La migración sobre PostgreSQL con venta ya existente pasó 1/1: total, costo e impuestos intactos, envío antiguo en cero y `CHECK` negativo rechazado.
+- **API real:** `tests/void-requests-api.test.ts -t 'envío del mensajero'` pasó 2/2 con PostgreSQL local descartable. Compara total/costo/impuestos, caja, dashboard y reporte de ganancia antes y después; verifica vendedora 403, negativo y 3 decimales 400, venta anulada, otra sucursal, auditoría, pago duplicado 409 e idempotencia. Primer fallo de implementación: `Failed to deserialize column of type 'void'` en `pg_advisory_xact_lock`; corregido con `$executeRaw`. Un fallo inicial de prueba comparó timestamps móviles `from/to` del dashboard; corregido para comparar solo métricas estables, sin reducir las aserciones de dinero.
+- **Navegador:** `tests/e2e/envio-mensajero.spec.ts` pasó 1/1 en Chromium tras instalar el navegador de pruebas. Recorre RD$15,550 + envío RD$400 = banco RD$15,950, pago del mensajero y vista a 320 px. Primer intento falló por navegador ausente: `browserType.launch: Executable doesn't exist at /home/agent/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell`.
+- **Chequeo:** `pnpm check` terminó con código 0 (tipos, lint, unitarias y compilaciones web/API); `git diff --check` pasó. No se tocó producción ni Render.
+- **Autoauditoría y límites:** el envío no entra en `Sale.total`, `costTotal`, pagos, caja ni informes; el bloqueo por factura y el identificador de operación evitan pagos repetidos. La asignación del envío a una transferencia dividida sigue una sola fila de forma estable. El historial carga como máximo 500 pagos; falta validar en un móvil físico y revisar con Claude la política para envíos de facturas anuladas después de asignar el envío. CI del commit publicado queda por confirmar antes de integrar o desplegar.
+
+## 2026-10-15 · Claude · respuesta a la auditoría de ChatGPT PC
+
+- **BUILD-01 (corregido):** el helper `transferReconciliation.ts` choca en mayúsculas con `TransferReconciliation.tsx` en Windows. Renombrado a `transfer-reconciliation-utils.ts`. En Linux (CI y Render) nunca falló.
+- **INV-01 (corregido):** el importador calculaba el margen restando ITBIS. Ahora es (precio − costo) / precio, sin ITBIS, con prueba 14 % / 15 % / 16 %.
+- **FIN-01 (corregido):** el informe de cierre por forma de pago contaba como cobrada una transferencia rechazada. Ahora la cuenta como crédito / contraentrega pendiente, con prueba en `tests/dinero-auditoria.test.ts` (N-4).
+- **FIN-02 (pendiente de decisión de la dueña):** verificar transferencias sin escribir «Total del banco». Bloquearlo estorbaría con los envíos (+250/+300/+400), así que no se cambió; la dueña decide si quiere un aviso o un bloqueo.
+- **Riesgos no verificados (Resend, rate limit en memoria):** anotados; no se tocan hoy.
+- Fallos de integración que ChatGPT PC vio en su entorno (`pg_dump`, Drive, Telegram, DB_UNAVAILABLE) no se reproducen en el CI de GitHub (PostgreSQL 17); quedan como limitaciones de su máquina.
+
+## 2026-10-15 · ChatGPT PC · auditoría integral · rama `nexora-chatgpt-pc` · base `ba5db6d`
+
+- Qué hice:
+  - Leí `AGENTS.md`, `CLAUDE.md`, `docs/coordinacion/INSTRUCCIONES_ACTUALES.md` y las secciones 2, 3 y 9 de `docs/coordinacion/TRASPASO_CHATGPT_NUBE.md`.
+  - Instalé dependencias, generé Prisma y apliqué las 47 migraciones a una base de pruebas vacía. Después se sembraron datos ficticios y se ejecutaron pruebas contra esa base local aislada. La versión local disponible fue PostgreSQL 18.4 (paquete embedded), no PostgreSQL 17; no se probó una copia preexistente con datos antiguos antes de migrar.
+  - Revisé por lectura dinero, inventario, roles/seguridad, auditoría/datos, UI y cobertura. No cambié código de la aplicación.
+  - Corrí la suite completa de navegador dos veces con la API local y base de prueba: 141/141 pasan en cada corrida. Los primeros intentos incompletos se debieron a entorno de prueba sin API/`DATABASE_URL`/`SEED_DEMO_PASSWORD`; no cuentan como las dos corridas verdes.
+  - No entré a producción ni a Render, no leí ni publiqué secretos y no usé datos reales de clientes.
+  - Hallazgos confirmados: dos de severidad alta, uno medio y un bloqueo medio de compilación.
+  - No se reporta como defecto el rechazo de cobros COD de la ruta dedicada: la cajera puede cobrar en efectivo desde Créditos pendientes mediante `credit-collections`; la UI limita a efectivo y la API exige caja propia.
+  - La rama quedó sin cambios de aplicación; este informe es el único cambio solicitado.
+  - La vista web de las e2e usa el `apps/web/dist` que ya existía: `pnpm check` no pudo generar la compilación actual por conflicto de nombres con mayúsculas/minúsculas. Por eso las e2e verdes no certifican el bundle web actual.
+  - Queda pendiente volver a probar migración sobre snapshot poblado y resolver los fallos de integración/compilación antes de tomar estos resultados como pase de release.
+
+### Hallazgos confirmados
+
+| ID / severidad | Evidencia | Qué pasa, repro y resultado | Parche propuesto |
+|---|---|---|---|
+| FIN-01 · Alta | `apps/api/src/reports.ts:1536-1554,1626-1652`; rechazo en `apps/api/src/sales.ts:2373-2419` | Crear una venta completada de RD$700 pagada por transferencia pendiente, cerrar su caja, rechazarla con `/payments/:id/reject` y consultar `/reports/venta-por-forma-pago?cashSessionId=…`. El rechazo aumenta la deuda de la venta RD$700 y marca el pago `rejected`, pero `storeSales` suma todo `entryType='sale'` sin seleccionar ni filtrar `status`; el informe sigue mostrando RD$700 en CHEQUES/TRANSFERENCIA como cobrado. Esperado: transferencia rechazada no debe contarse como cobrada y el saldo debe aparecer como cuenta por cobrar, reconciliando con el cuadre. El test `N-4` de `tests/dinero-auditoria.test.ts:807-848` cubre `/reports/by-payment`, no este reporte de cierre. | Incluir `status` en el agregado/mapeo del reporte y clasificar pagos rechazados como cuenta por cobrar; añadir regresión al endpoint de cierre para venta y abono rechazados y comprobar igualdad con cuadre/dashboard. |
+| FIN-02 · Alta | `apps/web/src/TransferReconciliation.tsx:75-86,207-218,340-343`; API `apps/api/src/sales.ts:2209-2245` | En Conciliar transferencias, seleccionar cualquier transferencia y dejar vacío o incorrecto «Total del banco». «Verificar seleccionadas» solo se deshabilita cuando no hay selección o hay envío ocupado; `verifyGroup` manda `{}` a `/payments/:id/verify`. La API marca el pago `ok` sin recibir ni validar el total bancario. Resultado real: una transferencia puede quedar verificada aunque el importe del banco no coincida o ni siquiera se haya escrito. Esperado: impedir confirmar hasta conciliar el total o requerir una excepción explícita y auditada. | Atar la verificación al grupo/importe conciliado; bloquear ausencia o diferencia no autorizada, y registrar total, diferencia, quién autorizó y motivo. Añadir E2E/API para vacío, diferencia y excepción autorizada. |
+| INV-01 · Media | `apps/api/src/inventory-import-core.ts:431-470,450-455,882-890,1037-1056` | La regla de negocio define margen `(precio-costo)/precio` sin quitar ITBIS y mínimo 15%. El importador calcula `1 - costo/(precio/(1+ITBIS))`; además, el margen bajo solo se añade a `review`, no a `blocking`, y un producto con precio/costo positivos y precio mayor que costo queda activo. Ejemplo: precio 100, costo 86 = 14% según la regla; el importador indica un margen cercano a −1% sin ITBIS y deja el producto activo/aplicable. Esperado: mostrar 14% y no permitir activar/vender por debajo del mínimo, o exigir autorización de gerente según decisión de negocio. | Usar la fórmula acordada y agregar el margen mínimo a los bloqueos/flujo de autorización, con prueba para 14.99%, 15% y 15.01%. |
+| BUILD-01 · Media | `apps/web/src/App.tsx:66`; existen `apps/web/src/TransferReconciliation.tsx` y `apps/web/src/transferReconciliation.ts` | `pnpm check` y `pnpm build` fallan al compilar web. Errores exactos: `src/App.tsx(66,10): error TS2305: Module '"./TransferReconciliation"' has no exported member 'TransferReconciliation'.` y `error TS1261: Already included file name '...\\apps\\web\\src\\transferReconciliation.ts' differs from file name '...\\apps\\web\\src\\TransferReconciliation.ts' only in casing.` También Vite: `"TransferReconciliation" is not exported by "src/transferReconciliation.ts", imported by "src/App.tsx".` Esperado: compilación determinista en Windows y Linux. | Renombrar el helper con nombre no ambiguo (por ejemplo `transfer-reconciliation-utils.ts`) y ajustar imports/tests; luego ejecutar `pnpm check` en filesystem Windows y Linux/CI. |
+
+### Riesgos no verificados (no contados como hallazgos confirmados)
+
+- `apps/api/src/notifications.ts:123-140,774`: el correo Resend usa reintentos sin una cola durable/clave de idempotencia visible. Un timeout ambiguo puede duplicar el correo o un reinicio perderlo; no reproduje aceptación con respuesta perdida ni caída del proceso, por eso queda **no verificado**. Propuesta: outbox durable e idempotencia del proveedor, con pruebas de reinicio y timeout ambiguo.
+- `apps/api/src/rate-limit.ts:102-106,169-212`: el contador está en memoria de proceso. Si hay varias instancias, los cupos se repartirían por instancia; no inspeccioné topología/despliegue y no se usó producción, así que el impacto real queda **no verificado**. Propuesta: almacenamiento compartido/atómico y prueba multi-instancia.
+
+### Lo revisado y sin hallazgo confirmado
+
+- Cobros de crédito/contraentrega: bloqueo de venta, saldo pendiente, sucursal, caja del cobrador e idempotencia; cajera en efectivo, tarjeta/transferencia solo administración. La UI de Créditos pendientes usa `credit-collections`; no encontré forma reproducible de cobrar más del saldo, dos veces, una venta anulada o de otra sucursal.
+- Caja: el esperado filtra pagos rechazados; las operaciones de cobro/cierre usan candados/validaciones revisados. No confirmé forma de eludir PIN de gerente para la discrepancia de tarjeta.
+- Incentivos: atribución al vendedor original, mitad en mayoreo y actualización tras cobros/devoluciones/anulaciones, con pruebas y flujos revisados; sin hallazgo demostrado.
+- Inventario: traspasos, conteos, Casa/Tienda, identificación de lote, kardex, reservas de stock y aplicación transaccional del importador; los flujos E2E de Casa, lote, conteo, vista previa y UI pequeña pasaron. No encontré una reproducción de stock negativo o doble recepción.
+- Permisos/datos: no confirmé bypass de rol ni IDOR entre sucursales en las rutas inspeccionadas; la bitácora central conserva actor/sucursal y elimina imágenes antes de guardar (`apps/api/src/common.ts:314-348`); no vi hash de PIN/contraseña en las rutas de alta/cambio inspeccionadas. Las pruebas de respaldo/restauración existen, pero la suite de Drive no quedó verde en este entorno.
+- Ventas anuladas quedan fuera del informe por producto mediante `s.status='completed'` (`apps/api/src/reports.ts:1467-1471,1511`); el hallazgo FIN-01 es específicamente del informe de cierre por forma de pago.
+- En UI, las e2e verificaron 320/390 px, teclado, modales, escaneo, offline y flujo de cierre; no vi doble envío en las rutas cubiertas. No hay E2E del flujo de conciliación bancaria con diferencia.
+
+### Pruebas y fallos
+
+- `pnpm install --frozen-lockfile`: pasó; dependencias al día.
+- `pnpm db:generate`: pasó; Prisma Client 6.19.0.
+- `pnpm db:migrate`: pasó en base de pruebas vacía; 47 migraciones aplicadas. Después se sembraron 846 ventas de datos ficticios, 60 productos, 228 variantes, 4 usuarios y 3 proveedores para pruebas. No se probó migración encima de una copia poblada anterior.
+- `pnpm lint`: pasó.
+- `pnpm check`: falló por BUILD-01 (TS2305 y TS1261 arriba); `pnpm build` dio el mismo fallo, y Vite además indicó que el componente no está exportado por el módulo en minúsculas.
+- `pnpm test`: 650 pruebas pasaron, 10 omitidas; la suite `tests/warehouses-postgres.test.ts` hizo pasar sus aserciones pero falló la limpieza: `Error: EBUSY: resource busy or locked, rmdir 'C:\\Users\\marco\\AppData\\Local\\Temp\\nexora-warehouse-db-BJhoT9'`.
+- Integración (`pnpm exec vitest run --config vitest.integration.config.ts`): `Test Files 3 failed | 18 passed (21)`; `Tests 17 failed | 390 passed (407)`. Fallos exactos observados:
+  - `tests/auth-lockout.test.ts`: en el caso de barrido de nombres, 14 peticiones recibieron `503` en vez de los códigos esperados; cuerpo exacto: `{"code":"DB_UNAVAILABLE","message":"El servidor está ocupado y no pudo comprobar tu sesión. Intenta de nuevo en unos segundos.","statusCode":503}`. Causa no aislada; podría ser saturación de esta corrida local.
+  - `tests/drive-backup.test.ts` (15 pruebas): entre los mensajes exactos estuvo `lastRun.status:"failed", error:"El servidor no tiene pg_dump instalado."`; otros casos terminaron con `409 {"statusCode":409,"message":"Primero conecta Google Drive."}`. No se configuraron credenciales de Drive; no se usó Google real.
+  - `tests/telegram.test.ts`: `Tiempo agotado esperando: aviso pendiente enviado`.
+- `node scripts/verify.mjs`: primer intento detenido por `Error: Configura JWT_SECRET con al menos 32 caracteres aleatorios.`; con JWT de prueba local, las integraciones volvieron a fallar y el script informó `Fallaron las pruebas de la API; no se ejecutan las de navegador.` Por ello ejecuté `pnpm test:e2e` directamente.
+- E2E de diagnóstico inicial: 131/141, contaminada por API no iniciada (`ECONNREFUSED 127.0.0.1:30131`); otra pasada quedó 136/141 por falta de `DATABASE_URL` en cuatro helpers y 401 en el test de anulación. Se corrigió únicamente el entorno de prueba (conexión local sin contraseña a la base descartable y clave ficticia del seed), no el código.
+- E2E final 1: `141 passed (10.4m)`. E2E final 2: `141 passed (11.0m)`. Ambas usaron API local y PostgreSQL local aislado; `apps/web/dist` era el artefacto existente porque la compilación web actual está bloqueada por BUILD-01.
+- PostgreSQL 17 no estaba instalado/disponible para esta corrida; el PostgreSQL local aislado fue 18.4. Las migraciones sobre 17 quedan pendientes.
+
+### Diez pruebas de dinero de mayor riesgo que faltan
+
+1. Carrera con dos `operationId` distintos para el mismo saldo restante en `credit-collections`.
+2. Dos cobros COD en paralelo con IDs distintos; solo un cobro debe reducir el saldo una vez.
+3. Cobro COD con cajera: efectivo entra a su propia caja; rechazar tarjeta/transferencia y caja ajena.
+4. `installments` concurrentes cerca del saldo cero, con dos operaciones distintas.
+5. Último abono y cierre de caja simultáneos; el cierre y sus totales deben ser consistentes.
+6. Cobro simultáneo con devolución o anulación; ninguna ruta debe reabrir/cerrar deuda incorrectamente.
+7. Verificación bancaria con importe vacío, menor, mayor y override autorizado con nota.
+8. Rechazo de transferencia y reporte de cierre por caja/sucursal en la misma prueba, comparado con cuadre.
+9. Carrera entre verificar, rechazar y corregir una misma transferencia.
+10. Resend: proveedor acepta y se pierde respuesta, además de reinicio entre envío y confirmación; comprobar cero duplicados y cero avisos perdidos.
+
+### Qué falta
+
+- Corregir FIN-01, FIN-02, INV-01 y BUILD-01 en commits separados y añadir regresiones antes de cualquier despliegue.
+- Repetir integración resolviendo `pg_dump`/restauración de prueba, latencia/DB_UNAVAILABLE y espera de Telegram; comprobar PostgreSQL 17 y migración sobre snapshot poblado.
+- Confirmar visualmente conciliación bancaria y resolver los diez huecos de cobertura de dinero priorizados.
+- La rama no se desplegó. Este informe se publica únicamente en `nexora-chatgpt-pc`; no se modifica `nexora-cloud`.
+
+## 2026-10-15 · ChatGPT PC · rama `nexora-chatgpt-pc` · base `b7feeda`
+
+- Qué hice:
+  - Corrí `pnpm install`, `pnpm db:generate`, `pnpm db:migrate` y `pnpm check` con PostgreSQL local de prueba; las 47 migraciones se aplicaron a bases locales descartables, incluida una base vacía y otra sembrada. No se usó producción ni se cambiaron claves del proyecto.
+  - Corrí `node scripts/verify.mjs` con integraciones PostgreSQL. El verificador se detuvo al fallar integraciones y por eso no alcanzó su fase E2E; corrí después las E2E directamente dos veces.
+  - Arreglé una prueba E2E en un commit independiente: `2902a03 test: fix singular void-request assertion`. La UI producía «1 solicitud de anulación pendiente» y la regex solo aceptaba la forma plural/incorrecta. Cambié la expresión a `/solicitud(?:es)? de anulación pendiente(?:s)?/`; no se relajó el texto requerido ni se añadió espera temporal.
+  - Hice al final la revisión de solo lectura de dinero solicitada. No cambié lógica de API.
+- Qué pasó (pruebas que pasan y que fallan, con el texto exacto del error):
+  - `pnpm install`: pasó.
+  - `pnpm db:generate`: pasó.
+  - `pnpm db:migrate`: pasó; aplicó 47 migraciones en PostgreSQL local.
+  - `pnpm check`, también repetido después del commit de prueba: pasó. Salida final: `Test Files 67 passed | 1 skipped (68)` y `Tests 646 passed | 10 skipped (656)`. Typecheck, ESLint, build web y build API terminaron con código 0. Vite emitió una advertencia de chunk >500 kB, no un fallo.
+  - Integración vía `node scripts/verify.mjs`: no quedó verde. En la corrida con base sembrada y cliente de respaldo configurado, resumen: `Test Files 4 failed | 17 passed (21)` y `Tests 8 failed | 398 passed (406)`. Fallos exactos:
+    1. `tests/api.test.ts > Alertas de negocio y consistencia contable > devolución del período resta costo solo cuando reingresa y cuadra con dashboard`: `AssertionError: expected 200 to be less than or equal to 0.02` (`tests/api.test.ts:2232:7`; el desfase de costo observado fue RD$200).
+    2. `tests/caja-fondo-sugerido.test.ts > W8 · fondo sugerido por persona > cada persona recibe su propio último cierre, con respaldo en el equipo y luego 0`: `/cash-sessions/bd3bffda-9dcd-4900-aff5-2aa2593d7b0a/close: 409 {"statusCode":409,"message":"Este registro no cumple una regla de integridad de la base de datos (cash_session_closed_after_opened) y no se puede modificar así. Si es un registro antiguo, pide a soporte que lo revise y lo corrija (consulta de violaciones en docs/MIGRACIONES_SEGURAS.md).","code":"CONSTRAINT_VIOLATION"}`.
+    3. `tests/drive-backup.test.ts > Respaldo a Google Drive · respaldos > ruta feliz: cifra, sube por partes (con un corte), verifica y se restaura en una base nueva`: `AssertionError: No se encontró pg_restore. Agrega PostgreSQL al PATH o indica PG_RESTORE_BIN. : expected 1 to be +0` (`tests/drive-backup.test.ts:842:46`). Este fallo fue configuración local: el primer reintento tenía `PG_DUMP_BIN` pero no `PG_RESTORE_BIN`; el E2E local sí arrancó con ambos binarios. La suite de integración no se volvió a correr con ambos configurados.
+    4–8. Cinco casos de `tests/offline-review-api.test.ts` (gerencia descarta venta de otra cajera, venta ya existente en servidor, reenvío de N-M1, efecto de stock/caja de M-6 y rechazo de sesión guardada como evidencia): cada uno esperaba `/stock/i`, pero recibió exactamente `La venta offline no corresponde al horario de esta caja.` (aserción común en `tests/offline-review-api.test.ts:152:37`).
+  - En una corrida de diagnóstico anterior, `tests/dinero-auditoria.test.ts` reportó una vez `AssertionError: expected 409 to be less than 300` (`tests/dinero-auditoria.test.ts:314:57`, A-2); no se reprodujo con base limpia. El primer intento de Drive también falló porque no encontraba `pg_dump` y algunas pruebas respondieron `409 "Primero conecta Google Drive"`; tras configurar `PG_DUMP_BIN`, el caso de restauración quedó reducido al error de `PG_RESTORE_BIN` listado arriba.
+  - E2E, primera corrida válida (141 casos): `140 passed`, `1 failed (8.5m)`. Fallo: `tests/e2e/solicitud-anulacion.spec.ts:56:5`, mensaje exacto: `Error: expect(locator).toContainText(expected) failed`; esperado `/solicitudes? de anulación pendientes?/`; recibido `"1 solicitud de anulación pendienteRevisa la venta antes de aprobar o rechazar.Revisar solicitudesFactura FS-0000857 · E2E Anulación mv90hm4pAnular venta"`; timeout 5000 ms. Corregí la regex en el commit `2902a03`.
+  - E2E, segunda corrida completa después del arreglo: `141 passed (8.8m)`, código 0. `D-01` también pasó; no hubo esperas fijas nuevas ni pruebas omitidas.
+  - Revisión de dinero (solo lectura):
+    - **M-PC-01 · P2 — cobros con tarjeta/transferencia por rutas alternas:** `apps/api/src/sales.ts:2871-2894` expone `installments` y `cod-collections` con `@Permit("*")`; `collectLine` acepta tarjeta/transferencia en `apps/api/src/sales.ts:3645-3679` y no exige caja para esos métodos (`3609-3613`). El endpoint nuevo `credit-collections` sí bloquea tarjeta/transferencia a quien no tiene `sale:manage` (`3519-3527`), pero `credit-accounts/:id/collections` también tiene `@Permit("*")` (`3199-3202`) y llama a `collectLine` (`3294-3307`). Por tanto, una cajera autenticada puede registrar esos medios por las rutas alternas, fuera de la caja. Efectivo sí exige caja propia abierta: `3609-3613`, y `cashLock` limita sucursal/propietario/equipo (`apps/api/src/sales.ts:427-467`). Las ventas anuladas y de otra sucursal se rechazan (`3614-3617`); las devueltas solo permiten cobrar cualquier saldo que realmente quede. El mismo `operationId`/UUID es idempotente, el saldo se bloquea y valida; un ID nuevo se considera un cobro nuevo y puede repetir un abono parcial mientras exista saldo, aunque la suma no puede superar el saldo pendiente (`apps/api/src/sales.ts:3528-3548`, `3614-3639`).
+    - **M-PC-02 · P2 — reporte de cierre difiere tras transferencia rechazada:** el cuadre excluye pagos `rejected` (`apps/api/src/cash.ts:261-269`) y el dashboard/reporte general reclasifica una transferencia rechazada como crédito (el test N-4 de `tests/dinero-auditoria.test.ts:807-846` lo cubre). Sin embargo, el reporte de cierre `venta-por-forma-pago` agrupa por `method` sin filtrar `status` (`apps/api/src/reports.ts:1535-1554`), y su consulta incluye ventas `completed` (`1467-1471`). Si se rechaza una transferencia, ese reporte aún la muestra bajo Transferencia, mientras el cuadre la excluye y la deuda pasa a crédito; no cuadran. Ambos reportes de cierre sí excluyen ventas anuladas porque la consulta común exige `s.status = 'completed'` (`apps/api/src/reports.ts:1467-1469`).
+    - **M-PC-03 · P3 — correo Resend puede duplicarse con respuesta ambigua:** `emailWithRetry` reintenta 3 veces (`apps/api/src/notifications.ts:122-133`) sin clave de idempotencia del proveedor; un timeout tras aceptación puede enviar duplicado. La clave API no se imprime en la ruta normal: el error del proveedor se sanitiza con el secreto (`apps/api/src/notifications.ts:105-117`). Riesgo menor: `sanitizeError` oculta tokens y URLs pero no anonimiza explícitamente correos/teléfonos que vinieran dentro del mensaje del proveedor (`154-168`).
+    - **Sin hallazgo de bypass de PIN para cajera al cerrar:** el cierre requiere terminal y permiso `cash:write` (`apps/api/src/cash.ts:923-926`), `cashLock` restringe a la caja propia salvo `sale:manage` (`apps/api/src/sales.ts:427-467`), y una diferencia de tarjeta exige PIN para quien no gestiona ventas (`apps/api/src/cash.ts:1006-1023`). Las transferencias contadas son las calculadas por el servidor (`987-988`). Un administrador con `sale:manage` puede cerrar la caja de otra persona sin PIN de diferencia; es el flujo de emergencia previsto y queda auditado como `close_on_behalf` (`apps/api/src/cash.ts:1050-1065`), no es una vía de la cajera.
+    - **Incentivos: sin hallazgo en lo revisado:** el origen conserva `Sale.sellerId`, tarifa y marca de mayoreo al registrar (`apps/api/src/incentives.ts:270-338`); el incentivo se acredita progresivamente al vendedor original y `incentiveAmount` aplica el factor mayorista (`445-552`). Verificar transferencia sincroniza al cobrarse; rechazarla revierte lo que no quedó pagado (`apps/api/src/sales.ts:2138-2181`, `2331-2345`); devoluciones/anulaciones generan reversos (`apps/api/src/incentives.ts:351-441`, `461-552`).
+- Qué falta o necesita decisión de la dueña:
+  - Corregir o ajustar con fixture determinista los 7 fallos de integración no relacionados con `pg_restore` y volver a ejecutar la integración completa; no he cambiado código de negocio ni pruebas de integración.
+  - Ejecutar `node scripts/verify.mjs` hasta que integración y su fase E2E queden verdes. Las E2E directas sí pasaron en la segunda corrida.
+  - Decidir si se deben prohibir a cajeras los cobros de tarjeta/transferencia en `installments`, `cod-collections` y `credit-accounts/:id/collections`, y si se quiere una detección de doble abono parcial con un nuevo ID.
+  - Corregir el mapeo de transferencias rechazadas en el reporte de cierre y definir idempotencia/reintentos de Resend.
+  - Resultado entregado localmente; no hice `git push` ni PR porque la dueña aclaró que por ahora todo se trabaja en casa. El último commit local de código de prueba es `2902a03`; el documento queda en el siguiente commit local.
+
+## Plantilla
+
+**Fecha · asistente (NUBE o PC) · rama · commit**
+
+- Qué hice:
+- Qué pasó (pruebas que pasan y que fallan, con el texto exacto del error):
+- Qué falta o necesita decisión de la dueña:
+
+## 2026-10-15 · ChatGPT NUBE · `nexora-chatgpt-nube` · `ac3ba19`…`6634a1a`
+
+- **Qué hice:** pantalla «Conciliar transferencias» visible solo para administración. Endpoint de lectura `GET /payments/pending-transfers` con permiso `sale:manage`, filtrado por sucursal y fecha de República Dominicana. Agrupa BHD, Popular, Banreservas y otros; muestra factura, cliente, cajera, monto y referencia. Selección múltiple, total por banco, diferencia, verificación secuencial usando el endpoint existente y resultado por pago; rechazo con motivo mediante el endpoint existente. CSV con protección contra fórmulas. Corregí la prueba para usar la fecha real del pago (`9d5757c`) y el reinicio de totales al cambiar de fecha (`3ebd886`). No cambié `verify`, `reject`, importes, inventario ni producción.
+- **Regresión:** antes de implementar, `pnpm exec vitest run tests/conciliar-transferencias.test.ts` falló con `Error: Cannot find module '../apps/web/src/transferReconciliation'`. Después: 4/4 pruebas pasan. Cubren alcance de lectura, permiso declarado, fecha imposible, centavos, agrupación, CSV y errores individuales durante la verificación. La prueba de integración con API real (vendedora sin permiso, sucursal ajena, filtro de fecha y desaparición tras verificar/rechazar) se ejecutó con PostgreSQL en CI.
+- **Pruebas locales:** `pnpm check` terminó con código 0: typecheck, lint, 651 pruebas pasadas (9 omitidas por las condiciones existentes) y build web/API. `git diff --check` pasó. Captura a 320 px y prueba manual en celular/teclado quedan pendientes.
+- **CI del commit `6634a1a`:** [ejecución 38693275833](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/38693275833). El primer intento aprobó `windows-installer` y `render-images`, pero falló `verify` en una prueba ajena a conciliación: `tests/password-account.test.ts:653:24` — `AssertionError: expected [ 400, 401 ] to include 404`. Se repitió **solo el trabajo fallido, sin cambiar ni relajar código o pruebas**; terminó en verde junto con los otros dos. En la repetición: `pnpm check` 657 pruebas pasadas, 3 omitidas; integración de API 407 pasadas, incluida `tests/void-requests-api.test.ts` (11/11); `tests/password-account.test.ts` 22/22. La pantalla no se ha desplegado.
+- **AUTOAUDITORÍA:** revisé selección múltiple con centavos `0.10 + 0.20`, CSV con campos que empiezan por `=` o `+`, validación de fecha y exclusión de datos de costo. Contraste calculado de texto secundario sobre tarjeta clara: 4,56:1; estados de éxito/error: ≥5,31:1 en tema claro y ≥6,20:1 en tema oscuro. Botones e inputs miden al menos 44 px por los estilos comunes. El backend filtra por sucursal y el frontend impide doble envío durante el lote; la prueba contra otra sucursal y una vendedora pasó en CI. El total del banco es comparativo: una diferencia visible no bloquea la verificación de facturas individuales. No se ha probado simultaneidad real ni el flujo en un teléfono físico. Los únicos cambios en caja se producen al llamar los endpoints actuales, sin modificar sus reglas; no se tocó kardex, incentivos, créditos ni cola offline.
+- **Qué falta:** la prueba manual en celular real y con teclado, y que Claude revise e integre la rama. La repetición del CI probó `6634a1a`; este cambio documental requiere confirmar los tres trabajos en el nuevo último commit. No requiere decisión de negocio para esta pantalla.
+
+## 2026-10-15 · pedido pendiente para ChatGPT PC
+
+Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/api.test.ts`, `tests/dinero-auditoria.test.ts` y `tests/caja-web-ticket.test.ts`. No cambies código. Anota abajo cuáles pasan, cuáles fallan y el texto exacto de cada fallo.

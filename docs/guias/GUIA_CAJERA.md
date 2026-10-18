@@ -18,7 +18,7 @@
 ## Devoluciones y cierre
 
 - Para una devolución, busca la factura en **Ventas** y llama a la gerente. La anulación corresponde a administración.
-- Al terminar, ve a **Caja** → **Cerrar y arquear**. Cuenta billetes y monedas; completa **Tarjeta declarada** y **Transferencia declarada** con lo comprobado (0 si no hubo), revisa vales y dinero entregado, marca la confirmación de conteo y pulsa **Cerrar caja e imprimir cuadre**. Si declaras un vale de caja, agrega una nota y pide el PIN de gerente; es preferible registrar esa salida antes como **Salida**.
+- Al terminar, ve a **Caja** → **Cerrar y arquear**. Cuenta billetes y monedas; completa **Tarjeta declarada** con lo comprobado (0 si no hubo; las transferencias las suma el sistema), revisa vales y dinero entregado, marca la confirmación de conteo y pulsa **Cerrar caja e imprimir cuadre**. Si declaras un vale de caja, agrega una nota y pide el PIN de gerente; es preferible registrar esa salida antes como **Salida**.
 - Si el sistema pide una nota, explica lo ocurrido con palabras claras. No alteres el conteo para hacer que cuadre. Guarda el cuadre impreso.
 
 ## Si falla internet o la impresora

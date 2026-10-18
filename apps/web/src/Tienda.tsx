@@ -8,6 +8,7 @@ import { CASH_DENOMINATIONS, can, formatMoney } from "@fitstore/shared";
 import { api, apiBlob, post, localDB, useStore } from "./api";
 import { FormModal, QueryState, toast, mutate, today } from "./helpers";
 import { closeCashIntro } from "./managementMessages";
+import { CreditAccounts } from "./CreditAccounts";
 import { pendingCloseMessage } from "./pendingSales";
 import {
   CuadrePrint,
@@ -51,14 +52,29 @@ function PrintBody({ p }: { p: NonNullable<Printing> }) {
 export function PrintModal({
   printing,
   onClose,
+  sessionId,
+  onSwitch,
 }: {
   printing: Printing;
   onClose: () => void;
+  /** Caja recién cerrada: ofrece sus otras dos impresiones del día. */
+  sessionId?: string;
+  onSwitch?: (p: Printing) => void;
 }) {
   const config = useQuery({
     queryKey: ["settings"],
     queryFn: () => api("/settings"),
   });
+  // Caja recién cerrada: el papel de productos vendidos sale siempre, pegado
+  // al cuadre en la misma impresión (dueña, 17-oct); antes había que pedirlo
+  // con «Siguiente» y nadie lo imprimía.
+  const withProducts = !!sessionId && printing?.kind === "cuadre";
+  const products = useQuery({
+    queryKey: ["session-print", "daily", sessionId],
+    queryFn: () => loadSessionPrint("daily", sessionId!),
+    enabled: withProducts,
+  });
+  const extra = withProducts ? products.data : undefined;
   if (!printing) return null;
   const width = config.data?.receiptWidth ?? "80";
   return (
@@ -72,11 +88,51 @@ export function PrintModal({
           Listo
         </Button>
       </div>
+      {sessionId && onSwitch && (
+        <div className="print-actions">
+          {(
+            [
+              ["cuadre", "Cuadre de caja"],
+              ["daily", "Productos vendidos de esta caja"],
+              ["method", "Facturas por forma de pago"],
+            ] as [PrintKind, string][]
+          )
+            .filter(
+              ([kind]) =>
+                kind !== printing.kind && !(extra && kind === "daily"),
+            )
+            .map(([kind, label]) => (
+              <Button
+                key={kind}
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    onSwitch(await loadSessionPrint(kind, sessionId));
+                  } catch (e: any) {
+                    toast(e.message, true);
+                  }
+                }}
+              >
+                Siguiente: {label}
+              </Button>
+            ))}
+        </div>
+      )}
       <div className={"print-preview w" + width}>
         <PrintBody p={printing} />
+        {extra && (
+          <div className="tp-next-sheet">
+            <DailyUserReportPrint r={extra.data} compact />
+          </div>
+        )}
       </div>
       <PrintSheet width={width}>
         <PrintBody p={printing} />
+        {extra && (
+          <div className="tp-next-sheet">
+            <DailyUserReportPrint r={extra.data} compact />
+          </div>
+        )}
       </PrintSheet>
     </Modal>
   );
@@ -131,7 +187,9 @@ export function CloseCashModal({
     can(user?.permissions ?? [], "sale:manage");
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [confirmBlindClose, setConfirmBlindClose] = useState(false);
+    [confirmBlindClose, setConfirmBlindClose] = useState(false),
+    [cardNeedsPin, setCardNeedsPin] = useState(false),
+    [cashNeedsPin, setCashNeedsPin] = useState(false);
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [key]: e.target.value });
   const subtotal =
@@ -163,7 +221,7 @@ export function CloseCashModal({
     }
     if (!confirmBlindClose) {
       setError(
-        "Confirma que contaste todos los medios de pago antes de cerrar.",
+        "Confirma que contaste el efectivo y la tarjeta antes de cerrar.",
       );
       return;
     }
@@ -194,13 +252,19 @@ export function CloseCashModal({
         countedTransfer: parse(form.countedTransfer),
         ...(delivered === null ? {} : { delivered }),
         notes: form.notes,
-        ...(voucherNeedsPin ? { managerPin: form.managerPin } : {}),
+        ...(voucherNeedsPin || cardNeedsPin || cashNeedsPin
+          ? { managerPin: form.managerPin }
+          : {}),
       });
       const cuadre = await api("/cash-sessions/" + session.id + "/cuadre");
       await client.invalidateQueries();
       onClosed(cuadre);
     } catch (e: any) {
       setError(e.message);
+      if (/total de tarjeta no coincide/i.test(e.message))
+        setCardNeedsPin(true);
+      if (/caja no cuadra con el sistema/i.test(e.message))
+        setCashNeedsPin(true);
     } finally {
       setBusy(false);
     }
@@ -241,6 +305,10 @@ export function CloseCashModal({
             su nombre y el cuadre muestra a ambos.
           </p>
         )}
+        <p className="close-reminder" role="note">
+          Antes de cerrar: cierra el lote del verifón (datáfono) para que los
+          cobros con tarjeta caigan el próximo día.
+        </p>
         <p className="close-expected">{closeCashIntro(canSeeExpected)}</p>
         <h3>Detalles de monedas</h3>
         <div className="count-grid">
@@ -271,14 +339,21 @@ export function CloseCashModal({
           Efectivo contado (Sub-total) <strong>{formatMoney(subtotal)}</strong>
         </p>
         <div className="form-grid">
-          {money(
-            "Vale de caja",
-            "vouchers",
-            "Comprobantes de salida que están en la gaveta. Requiere una nota y, para cajeras, el PIN de un gerente; mejor regístralos como «Salida» antes de cerrar.",
-          )}
-          {voucherNeedsPin && (
+          {canSeeExpected &&
+            money(
+              "Vale de caja",
+              "vouchers",
+              "Comprobantes de salida que están en la gaveta. Requiere una nota y, para cajeras, el PIN de un gerente; mejor regístralos como «Salida» antes de cerrar.",
+            )}
+          {(voucherNeedsPin || cardNeedsPin || cashNeedsPin) && (
             <label className="field">
-              <span>PIN de gerente (vale de caja)</span>
+              <span>
+                {voucherNeedsPin
+                  ? "PIN de gerente (vale de caja)"
+                  : cardNeedsPin
+                    ? "PIN de gerente (tarjeta no coincide)"
+                    : "PIN de gerente (la caja no cuadra)"}
+              </span>
               <input
                 type="password"
                 inputMode="numeric"
@@ -297,13 +372,7 @@ export function CloseCashModal({
           {money(
             "Tarjeta declarada",
             "countedCard",
-            "Escribe 0 si no hubo cobros con tarjeta.",
-            true,
-          )}
-          {money(
-            "Transferencia declarada",
-            "countedTransfer",
-            "Escribe 0 si no hubo transferencias.",
+            "Total que imprimió el verifón al cerrar el lote de hoy. Cierra el verifón antes de cerrar la caja; escribe 0 solo si no hubo cobros con tarjeta.",
             true,
           )}
           {money(
@@ -329,8 +398,8 @@ export function CloseCashModal({
               onChange={(event) => setConfirmBlindClose(event.target.checked)}
             />
             <span>
-              Confirmo que conté efectivo, tarjeta y transferencia. Los campos
-              vacíos representan RD$ 0.00.
+              Confirmo que conté efectivo y tarjeta. Las transferencias las suma
+              el sistema. Los campos vacíos representan RD$ 0.00.
             </span>
           </label>
         </div>
@@ -456,6 +525,9 @@ const CREDIT_STATUS: Record<string, { label: string; tone: any }> = {
 const ageText = (days: number) =>
   days <= 0 ? "hoy" : days === 1 ? "hace 1 día" : `hace ${days} días`;
 export function CodPending({ session }: { session: any }) {
+  const user = useStore((s) => s.user);
+  const isAdmin = can(user?.permissions ?? [], "*");
+  const [view, setView] = useState<"sales" | "customers">("sales");
   const [state, setState] = useState<"pending" | "closed">("pending");
   const query = useQuery({
     queryKey: ["cod-pending", state],
@@ -473,8 +545,10 @@ export function CodPending({ session }: { session: any }) {
             <Truck size={20} /> Créditos pendientes
           </h2>
           <p>
-            Ventas entregadas sin pago. Solo la administración las cobra: indica
-            por dónde pagó el cliente y cuánto entregó. Pueden ser pagos mixtos.
+            Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en
+            efectivo, de cualquier día: el dinero entra a su caja y lo entrega
+            al cerrar. La tarjeta y la transferencia las registra la
+            administración.
           </p>
         </div>
         <div
@@ -500,107 +574,137 @@ export function CodPending({ session }: { session: any }) {
           ))}
         </div>
       </div>
-      {state === "pending" && rows.length > 0 && (
-        <p className="cod-hint">
-          {rows.length} {rows.length === 1 ? "crédito" : "créditos"} · Por
-          cobrar: <strong>{formatMoney(totalPending)}</strong>
-        </p>
+      {isAdmin && (
+        <div className="segmented" role="group" aria-label="Vista de créditos">
+          <button
+            type="button"
+            className={view === "sales" ? "active" : ""}
+            aria-pressed={view === "sales"}
+            onClick={() => setView("sales")}
+          >
+            Por venta
+          </button>
+          <button
+            type="button"
+            className={view === "customers" ? "active" : ""}
+            aria-pressed={view === "customers"}
+            onClick={() => setView("customers")}
+          >
+            Por persona
+          </button>
+        </div>
       )}
-      <QueryState query={query}>
-        {rows.length ? (
-          <div className="cod-list">
-            {rows.map((r) => (
-              <div className="cod-row" key={r.saleId}>
-                <div>
-                  <strong>{r.number}</strong>{" "}
-                  <Badge tone={CREDIT_STATUS[r.status]?.tone}>
-                    {CREDIT_STATUS[r.status]?.label}
-                  </Badge>
-                  <small>
-                    {new Date(r.createdAt).toLocaleString("es-DO", {
-                      timeZone: "America/Santo_Domingo",
-                    })}
-                    {" · " + ageText(r.ageDays)}
-                    {r.customer
-                      ? " · " +
-                        r.customer.name +
-                        (r.customer.phone ? " · " + r.customer.phone : "")
-                      : ""}
-                    {r.seller ? " · Vendió " + r.seller.name : ""}
-                  </small>
-                  <small className="cod-figures">
-                    Total {formatMoney(r.total)} · Cobrado{" "}
-                    {formatMoney(r.collected)} · Pendiente{" "}
-                    {formatMoney(r.pending)}
-                  </small>
-                  {r.closedAt && (
-                    <small>
-                      Cerrado el{" "}
-                      {new Date(r.closedAt).toLocaleString("es-DO", {
-                        timeZone: "America/Santo_Domingo",
-                      })}
-                      {r.closedBy ? " por " + r.closedBy : ""}
-                    </small>
-                  )}
-                  {r.pendingVerification > 0 && (
-                    <Badge tone="warning">
-                      {formatMoney(r.pendingVerification)} por verificar
-                    </Badge>
-                  )}
-                  {r.collections?.length > 0 && (
-                    <ul className="cod-collections">
-                      {r.collections.map((c: any) => (
-                        <li key={c.paymentId}>
-                          <ProofThumb
-                            paymentId={c.paymentId}
-                            hasProof={c.hasProof}
-                          />
-                          <span>
-                            {COD_METHOD_LABEL[c.method] ?? c.method}{" "}
-                            {formatMoney(c.amount)}
-                            {c.reference ? " · " + c.reference : ""}
-                            {c.receivedBy ? " · recibió " + c.receivedBy : ""}
-                            {c.status === "pending_verification"
-                              ? " · por verificar"
-                              : c.status === "rejected"
-                                ? " · rechazada"
-                                : ""}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <strong className="cod-amount">{formatMoney(r.pending)}</strong>
-                {state === "pending" && (
-                  <Button onClick={() => setCollecting(r)}>
-                    Registrar cobro
-                  </Button>
-                )}
+      {isAdmin && view === "customers" ? (
+        <CreditAccounts session={session} />
+      ) : (
+        <>
+          {state === "pending" && rows.length > 0 && (
+            <p className="cod-hint">
+              {rows.length} {rows.length === 1 ? "crédito" : "créditos"} · Por
+              cobrar: <strong>{formatMoney(totalPending)}</strong>
+            </p>
+          )}
+          <QueryState query={query}>
+            {rows.length ? (
+              <div className="cod-list">
+                {rows.map((r) => (
+                  <div className="cod-row" key={r.saleId}>
+                    <div>
+                      <strong>{r.number}</strong>{" "}
+                      <Badge tone={CREDIT_STATUS[r.status]?.tone}>
+                        {CREDIT_STATUS[r.status]?.label}
+                      </Badge>
+                      <small>
+                        {new Date(r.createdAt).toLocaleString("es-DO", {
+                          timeZone: "America/Santo_Domingo",
+                        })}
+                        {" · " + ageText(r.ageDays)}
+                        {r.customer
+                          ? " · " +
+                            r.customer.name +
+                            (r.customer.phone ? " · " + r.customer.phone : "")
+                          : ""}
+                        {r.seller ? " · Vendió " + r.seller.name : ""}
+                      </small>
+                      <small className="cod-figures">
+                        Total {formatMoney(r.total)} · Cobrado{" "}
+                        {formatMoney(r.collected)} · Pendiente{" "}
+                        {formatMoney(r.pending)}
+                      </small>
+                      {r.closedAt && (
+                        <small>
+                          Cerrado el{" "}
+                          {new Date(r.closedAt).toLocaleString("es-DO", {
+                            timeZone: "America/Santo_Domingo",
+                          })}
+                          {r.closedBy ? " por " + r.closedBy : ""}
+                        </small>
+                      )}
+                      {r.pendingVerification > 0 && (
+                        <Badge tone="warning">
+                          {formatMoney(r.pendingVerification)} por verificar
+                        </Badge>
+                      )}
+                      {r.collections?.length > 0 && (
+                        <ul className="cod-collections">
+                          {r.collections.map((c: any) => (
+                            <li key={c.paymentId}>
+                              <ProofThumb
+                                paymentId={c.paymentId}
+                                hasProof={c.hasProof}
+                              />
+                              <span>
+                                {COD_METHOD_LABEL[c.method] ?? c.method}{" "}
+                                {formatMoney(c.amount)}
+                                {c.reference ? " · " + c.reference : ""}
+                                {c.receivedBy
+                                  ? " · recibió " + c.receivedBy
+                                  : ""}
+                                {c.status === "pending_verification"
+                                  ? " · por verificar"
+                                  : c.status === "rejected"
+                                    ? " · rechazada"
+                                    : ""}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <strong className="cod-amount">
+                      {formatMoney(r.pending)}
+                    </strong>
+                    {state === "pending" && (
+                      <Button onClick={() => setCollecting(r)}>
+                        Registrar cobro
+                      </Button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <Empty
-            title={
-              state === "pending"
-                ? "Sin créditos pendientes"
-                : "Sin créditos cerrados"
-            }
-            description={
-              state === "pending"
-                ? "Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago."
-                : "Los créditos saldados aparecerán aquí con quién y cuándo los cerró."
-            }
-          />
-        )}
-      </QueryState>
-      {collecting && (
-        <CodCollect
-          row={collecting}
-          session={session}
-          onClose={() => setCollecting(null)}
-        />
+            ) : (
+              <Empty
+                title={
+                  state === "pending"
+                    ? "Sin créditos pendientes"
+                    : "Sin créditos cerrados"
+                }
+                description={
+                  state === "pending"
+                    ? "Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago."
+                    : "Los créditos saldados aparecerán aquí con quién y cuándo los cerró."
+                }
+              />
+            )}
+          </QueryState>
+          {collecting && (
+            <CodCollect
+              row={collecting}
+              session={session}
+              onClose={() => setCollecting(null)}
+            />
+          )}
+        </>
       )}
     </section>
   );
@@ -763,9 +867,16 @@ function CodCollect({
   onClose: () => void;
 }) {
   const client = useQueryClient();
+  const user = useStore((s) => s.user);
+  const manager = can(user?.permissions ?? [], "sale:manage");
+  // La dueña da por recibida la transferencia desde cualquier equipo: solo
+  // indica el banco como guía (sin referencia ni caja propia).
+  const owner = can(user?.permissions ?? [], "*");
   const newLine = (
     amount: string,
-    method: CollectLine["method"] = session ? "cash" : "transfer",
+    method: CollectLine["method"] = session || !manager || owner
+      ? "cash"
+      : "transfer",
   ) => ({
     key: crypto.randomUUID(),
     method,
@@ -804,10 +915,17 @@ function CodCollect({
             method: l.method,
             amount: Number(l.amount),
             ...(l.method === "transfer"
-              ? { bank: l.bank, reference: l.reference }
+              ? {
+                  bank: l.bank,
+                  reference: l.reference || undefined,
+                  ...(owner ? { ownerConfirmed: true } : {}),
+                }
               : l.method === "card"
                 ? { reference: l.reference }
-                : {}),
+                : // Sin caja abierta, la dueña tiene el efectivo en la mano.
+                  owner && !session
+                  ? { ownerConfirmed: true }
+                  : {}),
           })),
         },
       );
@@ -829,7 +947,7 @@ function CodCollect({
         toast(
           result.closed
             ? "Cobro registrado: el crédito quedó cerrado."
-            : lines.some((l) => l.method === "transfer")
+            : lines.some((l) => l.method === "transfer") && !owner
               ? "Cobro registrado: la transferencia queda por verificar en el banco."
               : "Cobro registrado. Queda pendiente " +
                 formatMoney(result.pending) +
@@ -852,10 +970,16 @@ function CodCollect({
           cada forma de pago (por ejemplo, mitad transferencia y mitad
           efectivo).
         </p>
-        {!session && (
+        {!session && !owner && (
           <p className="form-error full" role="note">
             No tienes caja abierta: sin ella no puedes recibir efectivo. Abre tu
             caja o registra solo tarjeta o transferencia.
+          </p>
+        )}
+        {!session && owner && (
+          <p className="cod-hint full" role="note">
+            No tienes caja abierta: el efectivo que registres queda como
+            recibido por ti, fuera de cualquier caja.
           </p>
         )}
         {lines.map((l, index) => (
@@ -869,11 +993,11 @@ function CodCollect({
                   patch(l.key, { method: e.target.value as any })
                 }
               >
-                <option value="cash" disabled={!session}>
+                <option value="cash" disabled={!session && !owner}>
                   Efectivo
                 </option>
-                <option value="card">Tarjeta</option>
-                <option value="transfer">Transferencia</option>
+                {manager && <option value="card">Tarjeta</option>}
+                {manager && <option value="transfer">Transferencia</option>}
               </select>
             </label>
             <label className="field">
@@ -910,9 +1034,9 @@ function CodCollect({
                   />
                 </label>
                 <label className="field">
-                  <span>Referencia</span>
+                  <span>{owner ? "Referencia (opcional)" : "Referencia"}</span>
                   <input
-                    required
+                    required={!owner}
                     value={l.reference}
                     onChange={(e) =>
                       patch(l.key, { reference: e.target.value })
@@ -949,9 +1073,12 @@ function CodCollect({
         <ProofPicker file={proof} onChange={setProof} disabled={busy} />
         <p className="cod-hint full">
           El efectivo entra en el cuadre de tu caja; la tarjeta y la
-          transferencia se anotan por método. La transferencia queda pendiente
-          hasta verificarla en el banco. Puedes cobrar una parte ahora y el
-          resto después: el crédito se cierra cuando el saldo llega a cero.
+          transferencia se anotan por método.{" "}
+          {owner
+            ? "Tu transferencia se da por recibida y cierra el cobro al instante, sin depender de tu caja."
+            : "La transferencia queda pendiente hasta verificarla en el banco."}{" "}
+          Puedes cobrar una parte ahora y el resto después: el crédito se cierra
+          cuando el saldo llega a cero.
         </p>
         {error && (
           <p className="form-error full" role="alert">

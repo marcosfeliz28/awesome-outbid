@@ -228,7 +228,14 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
           entryType: "installment",
           sale: { status: "completed" },
         },
-        include: { sale: { include: { payments: true } } },
+        include: {
+          sale: {
+            include: {
+              payments: true,
+              customer: { select: { name: true } },
+            },
+          },
+        },
         orderBy: { createdAt: "asc" },
       }),
       db.cashMovement.findMany({ where: { sessionId: session.id } }),
@@ -457,6 +464,8 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         paymentId: p.id,
         saleId: p.saleId,
         number: p.sale.number,
+        customerName: p.sale.customer?.name ?? null,
+        soldAt: p.sale.createdAt,
         method: p.method,
         amount: Number(p.amount),
         status: p.status,
@@ -599,7 +608,11 @@ export class CashController {
   @RequireTerminal()
   @Permit("cash:write")
   async open(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    const { openingNote, managerPin, ...data } = parse(
+    const {
+      openingNote,
+      managerPin: _managerPin,
+      ...data
+    } = parse(
       z.object({
         openingAmount: amount,
         registerId: z.string().min(1).max(80).default("terminal-1"),
@@ -615,7 +628,7 @@ export class CashController {
     if (actor.terminalId) data.registerId = actor.terminalId;
     // D-03: el fondo que se declara al abrir no puede ser menor que lo que el
     // último cierre de este equipo dejó en la gaveta sin que quede explicado.
-    // Menor exige nota y, a quien no gestiona ventas, el PIN de un gerente; la
+    // Menor exige solo una nota (sin PIN, orden de la dueña 15-oct); la
     // diferencia queda en la bitácora. Igual o mayor abre como siempre.
     let shortfall: {
       suggested: number;
@@ -635,34 +648,10 @@ export class CashController {
         bad(
           `El fondo es menor que lo dejado en el último cierre (RD$ ${formatAmount(suggestion.amount)}). Agrega una nota que explique la diferencia.`,
         );
-      let approvedBy: string | null = null;
-      if (!can(actor.permissions, "sale:manage")) {
-        if (!managerPin)
-          bad(
-            "Abrir con un fondo menor que lo dejado en el último cierre requiere el PIN de un gerente.",
-          );
-        const managers = await this.db.user.findMany({
-          where: { active: true, branchId: actor.branchId },
-          include: { role: true },
-        });
-        approvedBy = await verifyPinAttempt(
-          this.db,
-          "approval:" + actor.id,
-          async () => {
-            for (const manager of managers.filter((m) =>
-              can(m.role.permissions, "sale:manage"),
-            ))
-              if (await compare(managerPin!, manager.pinHash))
-                return manager.id;
-            return null;
-          },
-          { pin: managerPin, actor },
-        );
-      }
       shortfall = {
         suggested: suggestion.amount,
         fromSessionId: suggestion.fromSessionId!,
-        approvedBy,
+        approvedBy: null,
       };
     }
     try {
@@ -984,7 +973,8 @@ export class CashController {
       const data = {
         countedCash: counted,
         countedCard: input.countedCard,
-        countedTransfer: input.countedTransfer,
+        // Las transferencias las suma el sistema, no la cajera (dueña, 14-oct).
+        countedTransfer: expected.transfer,
         notes: input.notes,
         closeDetails: {
           denominations: input.denominations ?? null,
@@ -1002,6 +992,29 @@ export class CashController {
       };
       const differences = closeDifferences(data, expected);
       const differenceLimit = Number(settings?.cashDifferenceLimit ?? 100);
+      // Tarjeta = lo que imprimió el verifón. Si la cajera declara un total
+      // distinto del sistema, no cierra sola: necesita el PIN de un gerente
+      // (dueña, 14-oct). Así nadie «cuadra» ventas antes del cierre.
+      // Igual con el efectivo (dueña, 17-oct): si no cuadra, la cajera no
+      // cierra hasta que un gerente autorice con su PIN. El mensaje no dice
+      // cuánto falta ni sobra (el cierre sigue siendo ciego).
+      const cardOff = Number(differences.card) !== 0;
+      const cashOff = Number(differences.cash) !== 0;
+      if ((cardOff || cashOff) && !can(actor.permissions, "sale:manage")) {
+        if (!input.managerPin)
+          bad(
+            cardOff
+              ? "El total de tarjeta no coincide con el sistema. Revisa el voucher del verifón; para cerrar con esta diferencia se necesita el PIN de un gerente."
+              : "La caja no cuadra con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente.",
+          );
+        const approver = await managerPinApproval(
+          this.db,
+          actor,
+          input.managerPin!,
+        );
+        if (cardOff) (data.closeDetails as any).cardApprovedBy = approver;
+        if (cashOff) (data.closeDetails as any).cashApprovedBy = approver;
+      }
       if (
         cashCloseRequiresNote(actor, differences, differenceLimit) &&
         !input.notes.trim()

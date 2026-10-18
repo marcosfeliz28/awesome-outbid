@@ -427,9 +427,9 @@ export const brandOf = (row: Row) => {
   return row.category === "Suplementos" && parts.length >= 3 ? parts[1] : "";
 };
 
-// Margen sobre el precio sin ITBIS (los precios de la tienda incluyen ITBIS).
-export const marginOf = (row: Row, taxRate = 18) =>
-  row.price > 0 ? 1 - row.cost / (row.price / (1 + taxRate / 100)) : -1;
+// Margen = (precio − costo) / precio, sin restar ITBIS (regla de la dueña).
+export const marginOf = (row: Row) =>
+  row.price > 0 ? 1 - row.cost / row.price : -1;
 
 export const lacksCommercialData = (row: Pick<Row, "price" | "cost">) =>
   row.price <= 0 || row.cost <= 0;
@@ -466,9 +466,7 @@ export function reviewOf(row: Row, inactivatePriceAtOrBelowCost = false) {
           : ""),
     );
   else if (row.price > 0 && row.cost > 0 && marginOf(row) < LOW_MARGIN)
-    notes.push(
-      "margen bajo (" + Math.round(marginOf(row) * 100) + "% sin ITBIS)",
-    );
+    notes.push("margen bajo (" + Math.round(marginOf(row) * 100) + "%)");
   if (row.qty <= 0) notes.push("sin existencia");
   return notes;
 }

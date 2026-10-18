@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   Inject,
   Param,
@@ -12,9 +13,10 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { compare } from "bcryptjs";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { allocateCredit } from "./credit-allocation";
 import {
   expired,
   BUSINESS_TIME_ZONE,
@@ -202,6 +204,7 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     number: sale.number,
     status: sale.status,
     customerId: sale.customerId,
+    customerName: sale.customer?.name ?? null,
     sellerId: sale.sellerId,
     cashSessionId: sale.cashSessionId,
     subtotal: sale.subtotal,
@@ -213,6 +216,13 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     discountApprovedRole: sale.discountApprovedRole,
     taxTotal: sale.taxTotal,
     total: sale.total,
+    ...(can(actor.permissions, "sale:manage")
+      ? {
+          courierFee: sale.courierFee,
+          courierName: sale.courierName,
+          courierPaidAt: sale.courierPaidAt,
+        }
+      : {}),
     creditBalance: sale.creditBalance,
     creditDueDate: sale.creditDueDate,
     ncf: sale.ncf,
@@ -631,6 +641,17 @@ export class SalesController {
     );
   }
   async complete(actor: Actor, input: SaleInput, offline = false) {
+    // El envío solo se anota si el dinero llega por banco o verifón; en
+    // efectivo o contraentrega el mensajero se cobra de ahí (orden 3af).
+    if (
+      input.courierFee &&
+      !input.payments.some(
+        (p) => p.method === "transfer" || p.method === "card",
+      )
+    )
+      bad(
+        "El envío solo se anota cuando el cliente paga por transferencia o tarjeta.",
+      );
     const requestsDiscount =
       input.globalDiscount > 0 ||
       input.items.some(
@@ -998,6 +1019,12 @@ export class SalesController {
             customerId: input.customerId,
             sellerId: actor.id,
             cashSessionId: input.cashSessionId,
+            ...(input.courierFee
+              ? {
+                  courierFee: money(input.courierFee),
+                  courierName: input.courierName ?? "Addison",
+                }
+              : {}),
             subtotal: money(
               lines.reduce((a, l) => a.plus(l.totals.subtotal), d(0)),
             ),
@@ -1509,6 +1536,7 @@ export class SalesController {
         items: { include: { variant: { include: { product: true } } } },
         payments: true,
         returns: true,
+        customer: { select: { name: true } },
         voidRequests: { orderBy: { requestedAt: "desc" }, take: 1 },
       },
       orderBy: { createdAt: "desc" },
@@ -1876,6 +1904,66 @@ export class SalesController {
     return this.voidRequestDto(requestId, actor);
   }
 
+  // Orden de la dueña (15-oct): una venta a crédito o contraentrega que la
+  // cajera hizo como detalle pero era al por mayor se marca después. El
+  // incentivo pasa a la mitad: lo ya acreditado se ajusta con una entrada y lo
+  // que falte por cobrar se calcula con la marca. Solo administración.
+  @Post("sales/:id/mark-wholesale")
+  @RequireTerminal()
+  @Permit("*")
+  async markWholesale(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const saleId = parse(uuid, id);
+    const data = parse(z.object({ reason }), body ?? {});
+    const result = await moneyDb(this.db).$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid FOR UPDATE`;
+      const sale = await tx.sale.findFirst({
+        where: { id: saleId, branchId: actor.branchId },
+        select: {
+          id: true,
+          number: true,
+          status: true,
+          wholesale: true,
+          incentiveOnCollection: true,
+        },
+      });
+      if (!sale) bad("Venta no encontrada.");
+      if (sale.status !== "completed")
+        bad("Solo se puede marcar una venta vigente.");
+      if (sale.wholesale) return { number: sale.number, wholesale: true };
+      if (!sale.incentiveOnCollection)
+        bad(
+          "Solo ventas a crédito o contraentrega: en las demás el incentivo ya se acreditó completo.",
+        );
+      await tx.sale.update({
+        where: { id: saleId },
+        data: { wholesale: true },
+      });
+      await tx.incentiveEntry.updateMany({
+        where: { saleId, kind: "sale" },
+        data: { wholesale: true },
+      });
+      await syncCreditIncentives(tx, actor, saleId, "collection", randomUUID());
+      await audit(
+        tx,
+        actor,
+        "wholesale_marked_later",
+        "sale",
+        saleId,
+        undefined,
+        {
+          number: sale.number,
+          reason: data.reason,
+        },
+      );
+      return { number: sale.number, wholesale: true };
+    }, MONEY_TRANSACTION);
+    return result;
+  }
+
   @Post("sales/:id/void")
   // D-11 (auditoría 01): como la devolución, desde un equipo registrado: la
   // anulación puede sacar efectivo de la caja abierta de quien anula (D-02).
@@ -2117,6 +2205,117 @@ export class SalesController {
     }
     return { ok: true };
   }
+  @Get("payments/pending-transfers")
+  @Permit("sale:manage")
+  async pendingTransfers(
+    @CurrentUser() actor: Actor,
+    @Query() query: Record<string, string>,
+  ) {
+    const { date } = parse(
+      z.object({
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+      }),
+      query,
+    );
+    let createdAt: { gte: Date; lte: Date } | undefined;
+    if (date) {
+      const gte = new Date(date + "T00:00:00-04:00");
+      const lte = new Date(date + "T23:59:59.999-04:00");
+      if (
+        !Number.isFinite(+gte) ||
+        gte.toLocaleDateString("en-CA", { timeZone: BUSINESS_TIME_ZONE }) !==
+          date
+      )
+        bad("Fecha inválida.");
+      createdAt = { gte, lte };
+    }
+    const payments = await this.db.payment.findMany({
+      where: {
+        method: "transfer",
+        status: "pending_verification",
+        sale: { branchId: actor.branchId },
+        ...(createdAt ? { createdAt } : {}),
+      },
+      select: {
+        id: true,
+        saleId: true,
+        createdAt: true,
+        amount: true,
+        bank: true,
+        reference: true,
+        receivedById: true,
+        cashSession: { select: { userId: true } },
+        sale: {
+          select: {
+            number: true,
+            sellerId: true,
+            courierFee: true,
+            payments: {
+              where: { method: "transfer", status: { not: "rejected" } },
+              select: { id: true },
+              orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+              take: 1,
+            },
+            customer: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    const cashierIds = [
+      ...new Set(
+        payments.flatMap((payment) => [
+          payment.cashSession?.userId ??
+            payment.receivedById ??
+            payment.sale.sellerId,
+          payment.sale.sellerId,
+        ]),
+      ),
+    ];
+    const cashiers = cashierIds.length
+      ? await this.db.user.findMany({
+          where: { id: { in: cashierIds }, branchId: actor.branchId },
+          select: { id: true, name: true },
+        })
+      : [];
+    const names = new Map(cashiers.map((user) => [user.id, user.name]));
+    return payments.map((payment) => {
+      // El envío pertenece a la factura: se aplica a una sola transferencia,
+      // aun cuando otras ya se hayan verificado y desaparezcan de este listado.
+      const fee =
+        payment.sale.payments[0]?.id === payment.id
+          ? payment.sale.courierFee
+          : new Prisma.Decimal(0);
+      const expected = payment.amount.plus(fee);
+      return {
+        id: payment.id,
+        saleId: payment.saleId,
+        date: payment.createdAt.toISOString(),
+        invoice: payment.sale.number,
+        customer: payment.sale.customer?.name ?? null,
+        amount: String(payment.amount),
+        courierFee: fee.toFixed(2),
+        expected: expected.toFixed(2),
+        // Diferencia interna del pago registrado frente al esperado con envío;
+        // la diferencia contra el banco se calcula en la pantalla con su total.
+        difference: payment.amount.minus(expected).toFixed(2),
+        bank: payment.bank,
+        reference: payment.reference,
+        // Quien hizo la factura (la vendedora), aunque el cobro lo registre otra
+        // persona: sirve para saber a quién preguntar por una transferencia.
+        seller: names.get(payment.sale.sellerId) ?? null,
+        cashier:
+          names.get(
+            payment.cashSession?.userId ??
+              payment.receivedById ??
+              payment.sale.sellerId,
+          ) ?? null,
+      };
+    });
+  }
   @Post("payments/:id/verify")
   @RequireTerminal()
   @Permit("*")
@@ -2175,6 +2374,75 @@ export class SalesController {
         status: "ok",
       });
       return { ok: true };
+    });
+  }
+  // 3aa: corrige únicamente los datos de conciliación de una transferencia.
+  // La referencia que vio la administradora es un requisito de concurrencia:
+  // una segunda ventana no puede sobrescribir en silencio la primera corrección.
+  @Post("payments/:id/correct-transfer")
+  @RequireTerminal()
+  @Permit("*")
+  async correctTransfer(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const data = parse(
+      z.object({
+        bank: z.string().trim().min(1).max(100),
+        reference: z.string().trim().min(1).max(100),
+        expectedBank: z.string().nullable(),
+        expectedReference: z.string().nullable(),
+        reason,
+      }),
+      body,
+    );
+    const paymentId = parse(uuid, id);
+    return this.db.$transaction(async (tx) => {
+      const found = await tx.payment.findFirstOrThrow({
+        where: {
+          id: paymentId,
+          method: "transfer",
+          status: { in: ["pending_verification", "ok"] },
+          sale: { branchId: actor.branchId },
+        },
+        select: { saleId: true },
+      });
+      // Mismo orden de bloqueo que verificar/rechazar: venta y después pago.
+      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${found.saleId}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Payment" WHERE id=${paymentId}::uuid FOR UPDATE`;
+      const payment = await tx.payment.findUniqueOrThrow({
+        where: { id: paymentId },
+      });
+      if (payment.status !== "pending_verification" && payment.status !== "ok")
+        conflict("La transferencia cambió de estado. Actualiza la venta.");
+      if (
+        payment.bank !== data.expectedBank ||
+        payment.reference !== data.expectedReference
+      )
+        conflict(
+          "Otro usuario corrigió la transferencia. Actualiza la venta antes de continuar.",
+        );
+      if (payment.bank === data.bank && payment.reference === data.reference)
+        bad("Escribe un banco o una referencia diferente.");
+      const updated = await tx.payment.update({
+        where: { id: paymentId },
+        data: { bank: data.bank, reference: data.reference },
+      });
+      await audit(
+        tx,
+        actor,
+        "correct_transfer",
+        "payment",
+        paymentId,
+        { bank: payment.bank, reference: payment.reference },
+        {
+          bank: updated.bank,
+          reference: updated.reference,
+          reason: data.reason,
+        },
+      );
+      return paymentSummary(updated);
     });
   }
   // Un abono por transferencia que nunca llegó se rechaza: no descuenta la
@@ -2899,10 +3167,395 @@ export class SalesController {
     }
     return payment;
   }
+  // 3v: resumen por persona. La agregación ocurre en PostgreSQL, no sobre
+  // las primeras 500 ventas de la pantalla antigua.
+  @Get("credit-accounts")
+  @Header("Cache-Control", "private, no-store")
+  @Permit("*")
+  async creditAccounts(
+    @CurrentUser() actor: Actor,
+    @Query("search") search = "",
+    @Query("sort") sort = "amount",
+    @Query("page") page = "1",
+    @Query("view") view = "open",
+  ) {
+    // «paid»: clientes cuyas ventas a crédito o contraentrega ya se cerraron
+    // (se muestran aparte de los pendientes; dueña, 15-oct).
+    const paid = view === "paid";
+    const text = search.trim().slice(0, 100);
+    const pageNumber = Math.max(
+      1,
+      Math.min(1000, Number.parseInt(page, 10) || 1),
+    );
+    const where: Prisma.SaleWhereInput = {
+      branchId: actor.branchId,
+      status: "completed",
+      customerId: { not: null },
+      ...(paid
+        ? { creditBalance: { equals: 0 }, creditClosedAt: { not: null } }
+        : { creditBalance: { gt: 0 } }),
+      payments: {
+        some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+      },
+      ...(text
+        ? { customer: { name: { contains: text, mode: "insensitive" } } }
+        : {}),
+    };
+    const [groups, total] = await Promise.all([
+      this.db.sale.groupBy({
+        by: ["customerId"],
+        where,
+        _sum: { creditBalance: true },
+        _count: { id: true },
+        _min: { createdAt: true },
+        _max: { creditClosedAt: true },
+        orderBy: paid
+          ? { _max: { creditClosedAt: "desc" } }
+          : sort === "age"
+            ? { _min: { createdAt: "asc" } }
+            : { _sum: { creditBalance: "desc" } },
+        skip: (pageNumber - 1) * 50,
+        take: 50,
+      }),
+      this.db.sale.aggregate({ where, _sum: { creditBalance: true } }),
+    ]);
+    const customers = await this.db.customer.findMany({
+      where: {
+        id: { in: groups.flatMap((g) => (g.customerId ? [g.customerId] : [])) },
+        branchId: actor.branchId,
+      },
+      select: { id: true, name: true, phone: true, legalId: true },
+    });
+    return {
+      total: Number(total._sum.creditBalance ?? 0),
+      page: pageNumber,
+      rows: groups.flatMap((g) => {
+        const customer = customers.find((c) => c.id === g.customerId);
+        if (!customer) return [];
+        return [
+          {
+            customer: {
+              ...customer,
+              phone: maskTail(customer.phone),
+              legalId: maskTail(customer.legalId),
+            },
+            balance: Number(g._sum.creditBalance ?? 0),
+            openSales: g._count.id,
+            lastClosedAt: g._max.creditClosedAt ?? null,
+            oldestDays: g._min.createdAt
+              ? Math.max(
+                  0,
+                  Math.floor(
+                    (Date.now() - g._min.createdAt.getTime()) / 86400000,
+                  ),
+                )
+              : 0,
+          },
+        ];
+      }),
+    };
+  }
+
+  private async creditStatementData(actor: Actor, rawId: string) {
+    const id = parse(uuid, rawId);
+    const customer = await this.db.customer.findFirstOrThrow({
+      where: { id, branchId: actor.branchId },
+      select: { id: true, name: true, phone: true, legalId: true },
+    });
+    const sales = await this.db.sale.findMany({
+      where: {
+        customerId: id,
+        branchId: actor.branchId,
+        status: "completed",
+        payments: {
+          some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+        },
+      },
+      include: { payments: { orderBy: { createdAt: "asc" } } },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      take: 1001,
+    });
+    const visibleSales = sales.slice(0, 1000);
+    const balance = await this.db.sale.aggregate({
+      where: {
+        customerId: id,
+        branchId: actor.branchId,
+        status: "completed",
+        payments: {
+          some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+        },
+      },
+      _sum: { creditBalance: true },
+    });
+    const userIds = [
+      ...new Set(
+        visibleSales.flatMap((s) =>
+          s.payments.flatMap((p) => (p.receivedById ? [p.receivedById] : [])),
+        ),
+      ),
+    ];
+    const users = await this.db.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true },
+    });
+    return {
+      customer: {
+        ...customer,
+        phone: maskTail(customer.phone),
+        legalId: maskTail(customer.legalId),
+      },
+      balance: Number(balance._sum.creditBalance ?? 0),
+      truncated: sales.length > 1000,
+      sales: visibleSales.map((s) => ({
+        id: s.id,
+        number: s.number,
+        createdAt: s.createdAt,
+        total: Number(s.total),
+        balance: Number(s.creditBalance),
+        closedAt: s.creditClosedAt,
+        payments: s.payments
+          .filter((p) => p.entryType === "installment")
+          .map((p) => ({
+            id: p.id,
+            date: p.createdAt,
+            method: p.method,
+            amount: Number(p.amount),
+            status: p.status,
+            receivedBy:
+              users.find((u) => u.id === p.receivedById)?.name ?? null,
+          })),
+      })),
+    };
+  }
+
+  @Get("credit-accounts/:id")
+  @Header("Cache-Control", "private, no-store")
+  @Permit("*")
+  creditStatement(@CurrentUser() actor: Actor, @Param("id") id: string) {
+    return this.creditStatementData(actor, id);
+  }
+
+  @Get("credit-accounts/:id/statement.pdf")
+  @Permit("*")
+  async creditStatementPdf(
+    @CurrentUser() actor: Actor,
+    @Param("id") id: string,
+    @Res() res: Response,
+  ) {
+    const statement = await this.creditStatementData(actor, id);
+    if (statement.truncated)
+      bad(
+        "El estado de cuenta excede 1000 ventas; reduce el historial antes de exportar.",
+      );
+    const settings = await this.db.settings.findUnique({
+      where: { id: actor.branchId },
+    });
+    const business = (settings?.data as any) ?? {};
+    const doc = new PDFDocument({ size: "A4", margin: 44 });
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'inline; filename="estado-de-cuenta.pdf"',
+    );
+    doc.pipe(res);
+    doc.fontSize(18).text(business.name || "Grupo Macgen", { align: "center" });
+    doc.fontSize(14).text("Estado de cuenta", { align: "center" });
+    doc
+      .fontSize(9)
+      .text(
+        "Emitido: " +
+          new Date().toLocaleString("es-DO", { timeZone: BUSINESS_TIME_ZONE }),
+      );
+    doc.text("Cliente: " + statement.customer.name);
+    if (statement.customer.legalId)
+      doc.text("Identificación: " + statement.customer.legalId);
+    if (statement.customer.phone)
+      doc.text("Teléfono: " + statement.customer.phone);
+    doc
+      .moveDown()
+      .fontSize(12)
+      .text("Saldo total: " + formatMoney(statement.balance));
+    doc.moveDown().fontSize(9);
+    for (const sale of statement.sales) {
+      if (doc.y > 700) doc.addPage();
+      doc
+        .font("Helvetica-Bold")
+        .text(
+          `${sale.number} · ${new Date(sale.createdAt).toLocaleDateString("es-DO", { timeZone: BUSINESS_TIME_ZONE })} · Venta ${formatMoney(sale.total)} · Saldo ${formatMoney(sale.balance)}`,
+        );
+      doc.font("Helvetica");
+      for (const payment of sale.payments) {
+        if (doc.y > 710) doc.addPage();
+        doc.text(
+          `  ${new Date(payment.date).toLocaleString("es-DO", { timeZone: BUSINESS_TIME_ZONE })} · ${payment.method} · ${formatMoney(payment.amount)} · ${payment.receivedBy ?? ""}${payment.status === "pending_verification" ? " · Por verificar" : ""}`,
+        );
+      }
+      doc.moveDown(0.4);
+    }
+    doc.moveDown().text("Formas de pago: efectivo, tarjeta o transferencia.");
+    doc
+      .fontSize(8)
+      .text("Documento interno, sin valor fiscal", { align: "center" });
+    doc.end();
+  }
+
+  @Post("credit-accounts/:id/collections")
+  @RequireTerminal()
+  @Permit("*")
+  async collectCustomerCredit(
+    @CurrentUser() actor: Actor,
+    @Param("id") rawId: string,
+    @Body() body: unknown,
+  ) {
+    const customerId = parse(uuid, rawId);
+    const data = parse(creditCollectionSchema, body);
+    const requestHash = createHash("sha256")
+      .update(JSON.stringify({ customerId, ...data }))
+      .digest("hex");
+    const result = await this.db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))`;
+      const existing = await tx.creditAllocationOperation.findUnique({
+        where: { operationId: data.operationId },
+      });
+      if (existing) {
+        if (
+          existing.branchId !== actor.branchId ||
+          existing.actorId !== actor.id
+        )
+          denied();
+        if (
+          existing.customerId !== customerId ||
+          existing.requestHash !== requestHash
+        )
+          bad("La operación ya corresponde a otro cobro.");
+        return existing.result;
+      }
+      const customer = await tx.customer.findFirst({
+        where: { id: customerId, branchId: actor.branchId },
+      });
+      if (!customer) denied();
+      if (
+        !data.cashSessionId &&
+        data.lines.some(
+          (line) =>
+            line.method === "cash" &&
+            !(line.ownerConfirmed === true && can(actor.permissions, "*")),
+        )
+      )
+        bad("Para recibir efectivo necesitas tu caja abierta.");
+      // Mismo orden de bloqueos que collectLine: caja antes que ventas.
+      if (data.cashSessionId) await cashLock(tx, actor, data.cashSessionId);
+      const sales = await tx.sale.findMany({
+        where: {
+          customerId,
+          branchId: actor.branchId,
+          status: "completed",
+          creditBalance: { gt: 0 },
+          payments: {
+            some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+          },
+        },
+        select: { id: true, createdAt: true, creditBalance: true },
+        orderBy: { id: "asc" },
+        take: 1001,
+      });
+      if (sales.length > 1000)
+        bad("Hay más de 1000 créditos abiertos; contacta a soporte.");
+      // Orden de bloqueos estable entre dos operaciones concurrentes.
+      for (const sale of sales)
+        await tx.$executeRaw`SELECT 1 FROM "Sale" WHERE id=${sale.id}::uuid FOR UPDATE`;
+      const balances = await tx.sale.findMany({
+        where: { id: { in: sales.map((s) => s.id) }, branchId: actor.branchId },
+        select: { id: true, createdAt: true, creditBalance: true },
+      });
+      const reserved = await tx.payment.groupBy({
+        by: ["saleId"],
+        where: {
+          saleId: { in: sales.map((s) => s.id) },
+          entryType: "installment",
+          status: "pending_verification",
+        },
+        _sum: { amount: true },
+      });
+      const available = balances.map((s) => ({
+        id: s.id,
+        createdAt: s.createdAt,
+        availableCents: Math.max(
+          0,
+          Math.round(Number(s.creditBalance) * 100) -
+            Math.round(
+              Number(
+                reserved.find((p) => p.saleId === s.id)?._sum.amount ?? 0,
+              ) * 100,
+            ),
+        ),
+      }));
+      const payments: any[] = [];
+      for (const line of data.lines) {
+        let allocation: ReturnType<typeof allocateCredit>;
+        try {
+          allocation = allocateCredit(available, Math.round(line.amount * 100));
+        } catch (error) {
+          bad((error as Error).message);
+        }
+        for (const part of allocation) {
+          const key = lineKey(data.operationId, payments.length);
+          const row = await this.collectLine(
+            tx,
+            actor,
+            part.saleId,
+            {
+              ...line,
+              amount: part.amountCents / 100,
+              cashSessionId: data.cashSessionId,
+            },
+            key,
+            true,
+          );
+          payments.push({ saleId: part.saleId, ...paymentSummary(row) });
+          available.find((s) => s.id === part.saleId)!.availableCents -=
+            part.amountCents;
+        }
+      }
+      const response = {
+        payments,
+        allocated: payments.map((p) => ({
+          saleId: p.saleId,
+          amount: p.amount,
+          method: p.method,
+        })),
+      };
+      await tx.creditAllocationOperation.create({
+        data: {
+          operationId: data.operationId,
+          branchId: actor.branchId,
+          customerId,
+          actorId: actor.id,
+          requestHash,
+          result: response,
+        },
+      });
+      await audit(
+        tx,
+        actor,
+        "credit_customer_collection",
+        "customer",
+        customerId,
+        undefined,
+        { operationId: data.operationId, allocated: response.allocated },
+      );
+      return response;
+    }, MONEY_TRANSACTION);
+    for (const row of (result as any).payments)
+      notify(this.db, "collection", row.id);
+    return result;
+  }
+
   // Créditos y contraentregas pendientes: sólo la administración puede verlos
   // y registrar cómo entró el dinero.
   @Get("cod/pending")
-  @Permit("*")
+  @Permit("sale:write")
   async codPending(
     @CurrentUser() actor: Actor,
     @Query("state") stateParam?: string,
@@ -3064,13 +3717,22 @@ export class SalesController {
   // que repetir el envío devuelve los mismos pagos y no descuenta dos veces.
   @Post("sales/:id/credit-collections")
   @RequireTerminal()
-  @Permit("*")
+  @Permit("sale:write")
   async creditCollection(
     @Param("id") id: string,
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
     const data = parse(creditCollectionSchema, body);
+    // Las cajeras cierran créditos en efectivo (el dinero entra a su caja);
+    // tarjeta y transferencia las registra la administración (dueña, 15-oct).
+    if (
+      !can(actor.permissions, "sale:manage") &&
+      data.lines.some((l) => l.method !== "cash")
+    )
+      bad(
+        "Las cajeras solo cierran créditos en efectivo. La tarjeta y la transferencia las registra la administración.",
+      );
     const keys = data.lines.map((_, i) => lineKey(data.operationId, i));
     const rows = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))::text AS locked`;
@@ -3097,7 +3759,15 @@ export class SalesController {
             keys.indexOf(a.idempotencyKey!) - keys.indexOf(b.idempotencyKey!),
         );
       }
-      if (!data.cashSessionId && data.lines.some((l) => l.method === "cash"))
+      // La dueña puede cerrar en efectivo lo que tiene en la mano, sin caja.
+      const ownerCash = (l: { method: string; ownerConfirmed?: boolean }) =>
+        l.method === "cash" &&
+        l.ownerConfirmed === true &&
+        can(actor.permissions, "*");
+      if (
+        !data.cashSessionId &&
+        data.lines.some((l) => l.method === "cash" && !ownerCash(l))
+      )
         bad(
           "Para recibir efectivo necesitas tu caja abierta. Ábrela en Caja o registra solo tarjeta o transferencia.",
         );
@@ -3148,12 +3818,23 @@ export class SalesController {
       "offlineUuid" | "cashSessionId"
     > & {
       cashSessionId?: string;
+      ownerConfirmed?: boolean;
     },
     idempotencyKey: string,
     codOnly: boolean,
   ) {
+    // La dueña/administración que da por recibida una transferencia o un
+    // efectivo que tiene en la mano no depende de ninguna caja ni equipo: el
+    // dinero cayó al banco o lo tiene ella, no una caja (orden de la dueña,
+    // 17-oct). La transferencia pide solo el banco, como guía. Lo normal
+    // sigue siendo que la cajera reciba el efectivo en su caja.
+    const ownerClosed =
+      (data.method === "transfer" || data.method === "cash") &&
+      data.ownerConfirmed === true &&
+      can(actor.permissions, "*");
+    if (ownerClosed) data = { ...data, cashSessionId: undefined };
     if (data.cashSessionId) await cashLock(tx, actor, data.cashSessionId);
-    else if (data.method === "cash")
+    else if (data.method === "cash" && !ownerClosed)
       bad(
         "Para recibir efectivo necesitas tu caja abierta. Ábrela en Caja o registra solo tarjeta o transferencia.",
       );
@@ -3198,12 +3879,25 @@ export class SalesController {
       (!data.cardLast4 || !data.approvalCode)
     )
       bad("Indica los últimos 4 dígitos y la aprobación de tarjeta.");
-    if (data.method === "transfer" && (!data.bank || !data.reference))
+    // La dueña/administración que cierra un cobro por transferencia no tiene
+    // que verificarlo ni dar referencia: su palabra basta (orden de la dueña,
+    // 15-oct); solo indica el banco donde cayó. Para el resto de usuarias
+    // sigue igual: banco, referencia y verificación de la administración.
+    if (data.method === "transfer" && ownerClosed && !data.bank?.trim())
+      bad("Indica en qué banco cayó la transferencia.");
+    if (
+      data.method === "transfer" &&
+      !ownerClosed &&
+      (!data.bank || !data.reference)
+    )
       bad("Indica banco y referencia de transferencia.");
     const settings = await tx.settings.findUnique({
       where: { id: actor.branchId },
     });
-    const { cashSessionId, ...payment } = data;
+    const { cashSessionId, ownerConfirmed: _confirmed, ...payment } = data;
+    // Queda marcado en el pago para distinguirlo del efectivo de una caja.
+    if (ownerClosed && data.method === "cash" && !payment.reference?.trim())
+      payment.reference = "Recibido por la dueña";
     const row = await tx.payment.create({
       data: {
         ...payment,
@@ -3221,10 +3915,13 @@ export class SalesController {
                   .div(100),
               )
             : 0,
-        status: data.method === "transfer" ? "pending_verification" : "ok",
+        status:
+          data.method === "transfer" && !ownerClosed
+            ? "pending_verification"
+            : "ok",
       },
     });
-    if (data.method !== "transfer") {
+    if (data.method !== "transfer" || ownerClosed) {
       await tx.sale.update({
         where: { id },
         data: { creditBalance: { decrement: data.amount } },
@@ -3311,6 +4008,9 @@ const creditLineSchema = z.object({
     .regex(/^\d{4}$/)
     .optional(),
   approvalCode: z.string().max(100).optional(),
+  // Solo administración: la transferencia recibida se da por buena sin
+  // referencia ni verificación (orden de la dueña, 15-oct).
+  ownerConfirmed: z.boolean().optional(),
 });
 const creditCollectionSchema = z.object({
   operationId: uuid,

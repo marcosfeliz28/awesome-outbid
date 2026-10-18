@@ -1,0 +1,131 @@
+.reconciliation-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.reconciliation-toolbar .field {
+  min-width: min(100%, 230px);
+}
+.reconciliation-bank {
+  margin-bottom: 16px;
+}
+.reconciliation-bank h2 small {
+  font-size: 0.7em;
+  color: var(--muted);
+}
+.reconciliation-list {
+  display: grid;
+  gap: 10px;
+}
+.reconciliation-row {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.reconciliation-select {
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.reconciliation-select input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--primary);
+}
+.reconciliation-details {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.reconciliation-details span {
+  color: var(--text);
+}
+.reconciliation-totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px 22px;
+  margin-top: 18px;
+}
+.reconciliation-totals .field {
+  min-width: min(100%, 210px);
+}
+.reconciliation-totals p {
+  margin: 0;
+}
+.reconciliation-reject {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.reconciliation-reject .field {
+  min-width: min(100%, 220px);
+  flex: 1;
+}
+.reconciliation-ok {
+  color: var(--positive-text);
+}
+.reconciliation-error {
+  color: var(--danger-text);
+}
+.courier-fee-editor {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+.courier-fee-editor .field {
+  min-width: 0;
+}
+.courier-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.courier-presets button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.courier-presets button:focus-visible,
+.courier-pick:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.courier-pick {
+  cursor: pointer;
+  align-items: center;
+}
+.courier-pick > input {
+  width: 22px;
+  height: 22px;
+  margin: 11px;
+  accent-color: var(--primary);
+}
+@media (max-width: 600px) {
+  .reconciliation-row {
+    flex-wrap: wrap;
+  }
+  .reconciliation-row > button {
+    margin-left: 56px;
+  }
+  .reconciliation-totals {
+    display: grid;
+  }
+}

@@ -52,6 +52,9 @@ import {
 } from "./helpers";
 import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
+import { CourierFeeEditor } from "./CourierFeeEditor";
+import { IncomeByDay } from "./IncomeByDay";
+import { FormalReports } from "./FormalReports";
 import {
   CloseCashModal,
   CodPending,
@@ -1597,7 +1600,8 @@ export function Cash() {
     [movement, setMovement] = useState<string | false>(false),
     [closing, setClosing] = useState<any>(null),
     [discarding, setDiscarding] = useState<any>(null),
-    [printing, setPrinting] = useState<Printing>(null);
+    [printing, setPrinting] = useState<Printing>(null),
+    [printSession, setPrintSession] = useState<string>();
   // Fondo sugerido: lo dejado en el último cierre de la propia persona.
   const suggestion = useQuery({
     queryKey: ["opening-suggestion"],
@@ -1724,7 +1728,7 @@ export function Cash() {
         </div>
       )}
       <MyIncentives />
-      {can(user.permissions, "*") && <CodPending session={active} />}
+      {can(user.permissions, "sale:write") && <CodPending session={active} />}
       {!!pending.data?.length && (
         <section className="panel pending-panel">
           <div className="panel-heading">
@@ -2004,8 +2008,8 @@ export function Cash() {
                 ? { help: "Sugerido: lo que dejaste en tu último cierre." }
                 : {}),
             },
-            // Un fondo menor que lo dejado en el último cierre se explica y,
-            // para quien no gestiona ventas, lo aprueba un gerente (D-03).
+            // Un fondo menor que lo dejado en el último cierre se explica con
+            // una nota; no pide PIN (D-03).
             ...(suggestion.data?.fromSessionId
               ? [
                   {
@@ -2013,20 +2017,11 @@ export function Cash() {
                     label: "Nota si el fondo es menor que el sugerido",
                     type: "textarea" as const,
                   },
-                  ...(can(user.permissions, "sale:manage")
-                    ? []
-                    : [
-                        {
-                          key: "managerPin",
-                          label: "PIN de gerente si el fondo es menor",
-                          type: "password" as const,
-                        },
-                      ]),
                 ]
               : []),
           ]}
           onClose={() => setOpen(false)}
-          onSubmit={async ({ openingNote, managerPin, ...data }) => {
+          onSubmit={async ({ openingNote, ...data }) => {
             // La caja queda asignada a este equipo (el servidor usa su registro).
             await registerTerminal().catch(() => undefined);
             return post("/cash-sessions/open", {
@@ -2034,7 +2029,6 @@ export function Cash() {
               ...(String(openingNote ?? "").trim()
                 ? { openingNote: String(openingNote).trim() }
                 : {}),
-              ...(managerPin ? { managerPin } : {}),
               registerId: terminalIdentity().name,
             });
           }}
@@ -2090,6 +2084,7 @@ export function Cash() {
           session={closing}
           onClose={() => setClosing(null)}
           onClosed={(cuadre) => {
+            setPrintSession(closing.id);
             setClosing(null);
             setPrinting({ kind: "cuadre", data: cuadre });
             printSoon();
@@ -2108,7 +2103,15 @@ export function Cash() {
           }}
         />
       )}
-      <PrintModal printing={printing} onClose={() => setPrinting(null)} />
+      <PrintModal
+        printing={printing}
+        onClose={() => {
+          setPrinting(null);
+          setPrintSession(undefined);
+        }}
+        sessionId={printSession}
+        onSwitch={setPrinting}
+      />
     </div>
   );
 }
@@ -2692,11 +2695,14 @@ const reportList = [
   ["cash", "Cierres y diferencias"],
   ["by-seller", "Ventas por vendedor"],
   ["by-payment", "Ventas por método de pago"],
+  ["income-by-day", "Ingresos por día y método"],
+  ["formal", "Informe formal diario/mensual"],
   ["returns-discounts", "Devoluciones y descuentos"],
   ["customers", "Mejores clientes"],
   ["purchases", "Compras y cuentas por pagar"],
 ];
 export function Reports() {
+  const user = useStore((s) => s.user);
   const [report, setReport] = useState("sales"),
     [from, setFrom] = useState(today().slice(0, 8) + "01"),
     [to, setTo] = useState(today()),
@@ -2706,6 +2712,7 @@ export function Reports() {
   const query = useQuery({
     queryKey: ["report", report, from, to, page],
     queryFn: () => api(`/reports/${report}?from=${from}&to=${to}&page=${page}`),
+    enabled: report !== "income-by-day" && report !== "formal",
   });
   const rows = query.data?.rows || [];
   const total: number = query.data?.total ?? rows.length;
@@ -2728,111 +2735,122 @@ export function Reports() {
       />
       <div className="reports-layout">
         <aside className="panel report-menu">
-          {reportList.map(([id, name]) => (
-            <button
-              key={id}
-              onClick={() => {
-                setReport(id);
-                setPage(1);
-              }}
-              className={report === id ? "active" : ""}
-            >
-              <FileText size={17} />
-              {name}
-              <ChevronRight size={14} />
-            </button>
-          ))}
+          {reportList
+            .filter(
+              ([id]) =>
+                id !== "formal" || can(user?.permissions ?? [], "profit:read"),
+            )
+            .map(([id, name]) => (
+              <button
+                key={id}
+                onClick={() => {
+                  setReport(id);
+                  setPage(1);
+                }}
+                className={report === id ? "active" : ""}
+              >
+                <FileText size={17} />
+                {name}
+                <ChevronRight size={14} />
+              </button>
+            ))}
         </aside>
-        <section className="panel">
-          <div className="panel-heading">
-            <div>
-              <h2>{reportList.find((r) => r[0] === report)?.[1]}</h2>
-              <p>Información registrada en tu tienda.</p>
+        {report === "formal" ? (
+          <FormalReports />
+        ) : report === "income-by-day" ? (
+          <IncomeByDay />
+        ) : (
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <h2>{reportList.find((r) => r[0] === report)?.[1]}</h2>
+                <p>Información registrada en tu tienda.</p>
+              </div>
+              <div className="table-actions">
+                {["xlsx", "pdf"].map((format) => (
+                  <Button
+                    variant="secondary"
+                    key={format}
+                    onClick={() =>
+                      download(
+                        `/reports/${report}?from=${from}&to=${to}&format=${format}`,
+                        `${report}.${format}`,
+                      ).catch((error) =>
+                        toast(
+                          error.message !== DOWNLOAD_FAILED
+                            ? error.message
+                            : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
+                          true,
+                        ),
+                      )
+                    }
+                  >
+                    <Download size={16} />
+                    {format === "xlsx" ? "Excel" : "PDF"}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div className="table-actions">
-              {["xlsx", "pdf"].map((format) => (
+            <div className="date-filters">
+              <label className="field">
+                <span>Desde</span>
+                <input
+                  type="date"
+                  value={from}
+                  onChange={(e) => {
+                    setFrom(e.target.value);
+                    setPage(1);
+                  }}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>Hasta</span>
+                <input
+                  type="date"
+                  value={to}
+                  onChange={(e) => {
+                    setTo(e.target.value);
+                    setPage(1);
+                  }}
+                  required
+                />
+              </label>
+              <Badge tone="violet">{total} registros</Badge>
+            </div>
+            {pages > 1 && (
+              <div className="pagination">
+                <span>
+                  Mostrando {(page - 1) * limit + 1}–
+                  {(page - 1) * limit + rows.length} de {total}. Excel (hasta
+                  50,000 filas) y PDF (hasta 10,000) incluyen todo el período.
+                </span>
                 <Button
-                  variant="secondary"
-                  key={format}
-                  onClick={() =>
-                    download(
-                      `/reports/${report}?from=${from}&to=${to}&format=${format}`,
-                      `${report}.${format}`,
-                    ).catch((error) =>
-                      toast(
-                        error.message !== DOWNLOAD_FAILED
-                          ? error.message
-                          : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
-                        true,
-                      ),
-                    )
-                  }
+                  variant="ghost"
+                  disabled={page === 1 || query.isFetching}
+                  onClick={() => setPage(page - 1)}
                 >
-                  <Download size={16} />
-                  {format === "xlsx" ? "Excel" : "PDF"}
+                  Anteriores
                 </Button>
-              ))}
-            </div>
-          </div>
-          <div className="date-filters">
-            <label className="field">
-              <span>Desde</span>
-              <input
-                type="date"
-                value={from}
-                onChange={(e) => {
-                  setFrom(e.target.value);
-                  setPage(1);
-                }}
-                required
+                <Button
+                  variant="ghost"
+                  disabled={page >= pages || query.isFetching}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Siguientes
+                </Button>
+              </div>
+            )}
+            <QueryState query={query}>
+              <DataTable
+                rows={rows}
+                columns={columns}
+                empty="No hay datos para este período"
+                emptyDescription="Prueba otras fechas o registra una venta para consultar este reporte."
               />
-            </label>
-            <label className="field">
-              <span>Hasta</span>
-              <input
-                type="date"
-                value={to}
-                onChange={(e) => {
-                  setTo(e.target.value);
-                  setPage(1);
-                }}
-                required
-              />
-            </label>
-            <Badge tone="violet">{total} registros</Badge>
-          </div>
-          {pages > 1 && (
-            <div className="pagination">
-              <span>
-                Mostrando {(page - 1) * limit + 1}–
-                {(page - 1) * limit + rows.length} de {total}. Excel (hasta
-                50,000 filas) y PDF (hasta 10,000) incluyen todo el período.
-              </span>
-              <Button
-                variant="ghost"
-                disabled={page === 1 || query.isFetching}
-                onClick={() => setPage(page - 1)}
-              >
-                Anteriores
-              </Button>
-              <Button
-                variant="ghost"
-                disabled={page >= pages || query.isFetching}
-                onClick={() => setPage(page + 1)}
-              >
-                Siguientes
-              </Button>
-            </div>
-          )}
-          <QueryState query={query}>
-            <DataTable
-              rows={rows}
-              columns={columns}
-              empty="No hay datos para este período"
-              emptyDescription="Prueba otras fechas o registra una venta para consultar este reporte."
-            />
-          </QueryState>
-        </section>
+            </QueryState>
+          </section>
+        )}
       </div>
     </>
   );
@@ -2963,6 +2981,7 @@ export function SalesHistory() {
     [returning, setReturning] = useState<any>(null),
     [installment, setInstallment] = useState<any>(null),
     [rejecting, setRejecting] = useState<any>(null),
+    [correctingTransfer, setCorrectingTransfer] = useState<any>(null),
     [search, setSearch] = useState(""),
     [saleDate, setSaleDate] = useState("");
   const params = new URLSearchParams();
@@ -3011,6 +3030,7 @@ export function SalesHistory() {
                 label: "Venta n.º",
                 render: (s) => <strong>{s.number}</strong>,
               },
+              { label: "Cliente", render: (s) => s.customerName ?? "—" },
               { label: "Fecha", render: (s) => dateLabel(s.createdAt) },
               {
                 label: "Estado",
@@ -3166,6 +3186,33 @@ export function SalesHistory() {
       >
         {selected && (
           <>
+            {can(user.permissions, "sale:manage") && (
+              <div className="panel">
+                <h3>Envío del mensajero</h3>
+                <p>
+                  Separado del total de la factura y de la caja.{" "}
+                  {selected.courierPaidAt ? "Pagado." : "Pendiente de pago."}
+                </p>
+                {selected.status === "completed" && !selected.courierPaidAt ? (
+                  <CourierFeeEditor
+                    key={selected.id}
+                    saleId={selected.id}
+                    initialFee={String(selected.courierFee ?? 0)}
+                    initialName={selected.courierName}
+                    onSaved={(fee, name) => {
+                      setSelected({
+                        ...selected,
+                        courierFee: fee,
+                        courierName: name,
+                      });
+                      void client.invalidateQueries({ queryKey: ["sales"] });
+                    }}
+                  />
+                ) : (
+                  <p>Envío: {formatMoney(Number(selected.courierFee ?? 0))}</p>
+                )}
+              </div>
+            )}
             {can(user.permissions, "sale:manage") &&
               selected.returns?.map((r: any) => (
                 <Button
@@ -3217,6 +3264,19 @@ export function SalesHistory() {
                     <small>{p.reference || p.approvalCode}</small>
                   </span>
                   <ProofThumb paymentId={p.id} hasProof={p.hasProof} />
+                  {p.method === "transfer" &&
+                    ["pending_verification", "ok"].includes(p.status) &&
+                    can(user.permissions, "*") && (
+                      <button
+                        className="text-link"
+                        onClick={() => {
+                          setSelected(null);
+                          setCorrectingTransfer(p);
+                        }}
+                      >
+                        Corregir banco y referencia
+                      </button>
+                    )}
                   {p.entryType === "installment" &&
                     can(user.permissions, "*") && (
                       <label className="text-link proof-upload">
@@ -3361,6 +3421,40 @@ export function SalesHistory() {
             await post("/payments/" + rejecting.id + "/reject", { reason });
             await client.invalidateQueries();
             toast("Transferencia rechazada.");
+          }}
+        />
+      )}
+      {correctingTransfer && (
+        <FormModal
+          title="Corregir referencia de transferencia"
+          notice="La corrección queda en la bitácora. El importe y el estado del pago no cambian."
+          fields={[
+            { key: "bank", label: "Banco correcto", required: true },
+            { key: "reference", label: "Referencia correcta", required: true },
+            {
+              key: "reason",
+              label: "Motivo de la corrección",
+              type: "textarea",
+              required: true,
+            },
+          ]}
+          initial={{
+            bank: correctingTransfer.bank ?? "",
+            reference: correctingTransfer.reference ?? "",
+          }}
+          onClose={() => setCorrectingTransfer(null)}
+          onSubmit={async (data) => {
+            await post(
+              "/payments/" + correctingTransfer.id + "/correct-transfer",
+              {
+                bank: data.bank,
+                reference: data.reference,
+                reason: data.reason,
+                expectedBank: correctingTransfer.bank ?? null,
+                expectedReference: correctingTransfer.reference ?? null,
+              },
+            );
+            await client.invalidateQueries();
           }}
         />
       )}
@@ -3787,18 +3881,21 @@ export function Configuration() {
       ],
     },
     requiredNumber("sessionTimeoutMinutes", "Inactividad (minutos)"),
-    requiredNumber(
-      "creditApprovalThreshold",
-      "Crédito por venta que requiere gerente (RD$)",
-      1000,
-    ),
+    {
+      ...requiredNumber(
+        "creditApprovalThreshold",
+        "Crédito por venta que requiere gerente (RD$)",
+        1000,
+      ),
+      help: "0 = siempre pedir PIN de gerente. Pon un monto alto (ej. 1000000) para no pedir PIN por monto.",
+    },
     {
       ...requiredNumber(
         "receivableShiftLimit",
         "Crédito y contraentrega por turno sin PIN de gerente (RD$)",
         3000,
       ),
-      help: "Suma de lo que una cajera deja por cobrar en su turno, de todos sus clientes. Por encima, se pide el PIN de un gerente.",
+      help: "Suma de todos los clientes del turno. 0 = siempre pedir PIN de gerente. Pon un monto alto (ej. 1000000) para no pedir PIN por monto.",
     },
     {
       ...requiredNumber(
@@ -3839,6 +3936,7 @@ export function Configuration() {
       key: "allowCreditSales",
       label: "Habilitar ventas a crédito con cliente y vencimiento",
       type: "checkbox",
+      help: "Con esto apagado, todo crédito de un cajero pide PIN, sin importar el monto.",
     },
     {
       key: "ncfMode",
@@ -3918,6 +4016,20 @@ export function Configuration() {
                 </div>
               ))}
             </div>
+            {(Number(query.data?.creditApprovalThreshold) === 0 ||
+              Number(query.data?.receivableShiftLimit) === 0) && (
+              <p className="cod-hint" role="note">
+                Algún tope de crédito está en 0: esto significa pedir siempre el
+                PIN de gerente para ese control. Si no buscas ese resultado,
+                escribe un monto alto, por ejemplo RD$ 1,000,000.
+              </p>
+            )}
+            {query.data?.allowCreditSales !== true && (
+              <p className="cod-hint" role="note">
+                Las ventas a crédito están deshabilitadas: todo crédito de un
+                cajero pide PIN de gerente.
+              </p>
+            )}
             <StoreSettings />
             <TelegramNotices />
             <DriveBackupCard />

@@ -546,6 +546,30 @@ describe("Incentivos", () => {
   });
 });
 
+describe("Envío del mensajero al cobrar (orden 3af)", () => {
+  it("se anota con transferencia, aparte del total, y no con efectivo", async () => {
+    const adm = await person("envio", "admin");
+    const item = [{ variantId: plain.variantId, qty: 1 }];
+    const cash = await sale(adm, item, [{ method: "cash", amount: 100 }], {
+      expectedTotal: 100,
+      courierFee: 300,
+    });
+    expect(cash.status).toBe(400);
+    expect(cash.body.message).toMatch(/transferencia o tarjeta/);
+    const ok = await sale(
+      adm,
+      item,
+      [{ method: "transfer", amount: 100, bank: "Popular", reference: "E3AF" }],
+      { expectedTotal: 100, courierFee: 300 },
+    );
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201);
+    const row = await db.sale.findUniqueOrThrow({ where: { id: ok.body.id } });
+    expect(Number(row.courierFee)).toBe(300);
+    expect(row.courierName).toBe("Addison");
+    expect(Number(row.total)).toBe(100);
+  });
+});
+
 describe("Cierre de caja", () => {
   it("C10 · el efectivo contado debe coincidir con el conteo por denominaciones", async () => {
     const adm = await person("cierre", "admin", 100);
@@ -572,5 +596,55 @@ describe("Cierre de caja", () => {
       { ...body, countedCash: 100 },
     );
     expect(right.status, JSON.stringify(right.body)).toBe(201);
+  });
+
+  it("C11 · la cajera no cierra con el efectivo descuadrado sin el PIN de un gerente", async () => {
+    const manager = await person("gerente-c11", "admin", null);
+    const seller = await person("cajera-c11", "seller", 0);
+    expect((await cashSale(seller, plain.variantId)).status).toBe(201);
+    const url = "/cash-sessions/" + seller.cash.id + "/close";
+    const body = {
+      countedCash: 50,
+      countedCard: 0,
+      countedTransfer: 0,
+      notes: "Conté 50",
+    };
+    const noPin = await request(url, seller.token, body);
+    expect(noPin.status).toBe(400);
+    expect(noPin.body.message).toMatch(/caja no cuadra con el sistema/i);
+    // Cierre ciego: el mensaje no revela cuánto falta ni sobra.
+    expect(noPin.body.message).not.toMatch(/\d/);
+    const badPin = await request(url, seller.token, {
+      ...body,
+      managerPin: "000000",
+    });
+    expect(badPin.status).not.toBe(201);
+    expect(
+      (
+        await db.cashSession.findUniqueOrThrow({
+          where: { id: seller.cash.id },
+        })
+      ).closedAt,
+    ).toBeNull();
+    const approved = await request(url, seller.token, {
+      ...body,
+      managerPin: "246813",
+    });
+    expect(approved.status, JSON.stringify(approved.body)).toBe(201);
+    const saved = await db.cashSession.findUniqueOrThrow({
+      where: { id: seller.cash.id },
+    });
+    expect((saved.closeDetails as any).cashApprovedBy).toBeTruthy();
+    expect(Number(saved.differenceCash)).toBe(-50);
+    void manager;
+    // Si cuadra, cierra sin PIN.
+    const exact = await person("cajera-exacta-c11", "seller", 0);
+    expect((await cashSale(exact, plain.variantId)).status).toBe(201);
+    const ok100 = await request(
+      "/cash-sessions/" + exact.cash.id + "/close",
+      exact.token,
+      { countedCash: 100, countedCard: 0, countedTransfer: 0, notes: "" },
+    );
+    expect(ok100.status, JSON.stringify(ok100.body)).toBe(201);
   });
 });

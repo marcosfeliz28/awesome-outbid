@@ -3,7 +3,11 @@ import type { Response } from "express";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { Prisma } from "@prisma/client";
-import { INVENTORY_LOSS_SQL, SUPPLIER_RETURN_SQL } from "./inventory";
+import {
+  COUNT_CORRECTION_SQL,
+  INVENTORY_LOSS_SQL,
+  SUPPLIER_RETURN_SQL,
+} from "./inventory";
 import {
   businessDate,
   expiryDays,
@@ -378,7 +382,7 @@ export class ReportsController {
       // M-5: mermas, ajustes, conteos y salidas de mercancía a costo.
       this.db.$queryRaw<
         any[]
-      >`SELECT COALESCE(SUM(-m.qty * m."unitCost"), 0) AS loss, COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE ${Prisma.raw(SUPPLIER_RETURN_SQL)}), 0) AS "supplierReturns" FROM "InventoryMovement" m WHERE m."branchId"=${actor.branchId} AND m."createdAt">=${since} AND m."createdAt"<=${until} AND ${Prisma.raw(INVENTORY_LOSS_SQL)}`,
+      >`SELECT COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE NOT (${Prisma.raw(COUNT_CORRECTION_SQL)})), 0) AS loss, COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE ${Prisma.raw(COUNT_CORRECTION_SQL)}), 0) AS "countCorrections", COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE ${Prisma.raw(SUPPLIER_RETURN_SQL)}), 0) AS "supplierReturns" FROM "InventoryMovement" m WHERE m."branchId"=${actor.branchId} AND m."createdAt">=${since} AND m."createdAt"<=${until} AND ${Prisma.raw(INVENTORY_LOSS_SQL)}`,
     ]);
     // D-05: los desgloses descuentan las mismas devoluciones que «revenue».
     const netOf = <T>(
@@ -451,6 +455,8 @@ export class ReportsController {
       expense = Number(expenses._sum.amount ?? 0),
       inventoryLoss = money(inventoryLossRows?.[0]?.loss ?? 0),
       supplierReturns = money(inventoryLossRows?.[0]?.supplierReturns ?? 0),
+      // Correcciones del conteo inicial del inventario: no son pérdida del mes.
+      countCorrections = money(inventoryLossRows?.[0]?.countCorrections ?? 0),
       fees = money(
         payments.reduce(
           (a, p) => a.plus(p._sum.feeAmount ?? 0),
@@ -491,6 +497,7 @@ export class ReportsController {
         inventoryLoss,
         // N-1: parte de lo anterior que salió como devolución a proveedor.
         supplierReturns,
+        countCorrections,
         netProfit: money(
           d(netProfit(net, cost, expense, fees)).minus(inventoryLoss),
         ),
@@ -527,6 +534,125 @@ export class ReportsController {
         alerts: alerts.map((alert) => alertForActor(alert, actor)),
         from: range.gte,
         to: range.lte,
+      },
+      actor,
+    );
+  }
+  // Ventas del año por mes (círculo del inicio): venta bruta (total vendido con
+  // devoluciones descontadas), costo y ganancia = venta − costo (sin restar
+  // ITBIS, regla de la dueña). Los meses sin ventas salen en cero.
+  @Get("dashboard/year")
+  @Permit("reports:read")
+  async dashboardYear(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+  ) {
+    const thisYear = Number(businessDate(new Date()).slice(0, 4));
+    const year = query.year ? Number(query.year) : thisYear;
+    if (!Number.isInteger(year) || year < 2020 || year > 2100)
+      bad("Año inválido.");
+    const since = utc(new Date(`${year}-01-01T00:00:00-04:00`));
+    const until = utc(new Date(`${year}-12-31T23:59:59.999-04:00`));
+    const month = Prisma.sql`EXTRACT(MONTH FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int`;
+    const [sales, returns] = (await Promise.all([
+      this.db
+        .$queryRaw`SELECT ${month} AS m, COUNT(*)::int AS invoices, SUM(total) AS revenue, SUM("costTotal") AS cost FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY m`,
+      this.db
+        .$queryRaw`SELECT ${month} AS m, SUM(total) AS revenue, SUM("costTotal") AS cost FROM "SaleReturn" WHERE "branchId"=${actor.branchId} AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY m`,
+    ])) as any[][];
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const sold = sales.find((r) => r.m === i + 1);
+      const back = returns.find((r) => r.m === i + 1);
+      const revenue = d(sold?.revenue ?? 0).minus(back?.revenue ?? 0);
+      const cost = d(sold?.cost ?? 0).minus(back?.cost ?? 0);
+      const profit = revenue.minus(cost);
+      return {
+        month: i + 1,
+        invoices: Number(sold?.invoices ?? 0),
+        revenue: money(revenue),
+        cost: money(cost),
+        profit: money(profit),
+        margin: revenue.gt(0) ? money(profit.div(revenue).times(100)) : 0,
+      };
+    });
+    const revenue = months.reduce((a, m) => a + m.revenue, 0),
+      profit = months.reduce((a, m) => a + m.profit, 0);
+    return safe(
+      {
+        year,
+        months,
+        revenue: money(revenue),
+        profit: money(profit),
+        margin: revenue > 0 ? money((profit / revenue) * 100) : 0,
+      },
+      actor,
+    );
+  }
+  // Desglose de un período (mes o fechas elegidas): por categoría, promedios
+  // y las 10 variantes más vendidas por unidades. Se calcula en cada consulta,
+  // así siempre está al día.
+  @Get("dashboard/breakdown")
+  @Permit("reports:read")
+  async dashboardBreakdown(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+  ) {
+    const range = dateRange(query);
+    const since = utc(range.gte),
+      until = utc(range.lte);
+    const line = Prisma.sql`i."lineTotal"*(1-i."returnedQty"/i.qty)`;
+    const units = Prisma.sql`(i.qty-i."returnedQty")`;
+    const [categories, top, count] = (await Promise.all([
+      this.db
+        .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
+      this.db
+        .$queryRaw`SELECT p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.name, v.sku HAVING SUM(${units}) > 0 ORDER BY units DESC, revenue DESC LIMIT 10`,
+      this.db
+        .$queryRaw`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until}`,
+    ])) as any[][];
+    // Días del período hasta hoy: el promedio diario no se diluye con días
+    // que todavía no llegan.
+    const last = new Date(Math.min(+range.lte, Date.now()));
+    const dayMs = (iso: string) => Date.parse(iso + "T00:00:00Z");
+    const days = Math.max(
+      1,
+      Math.round(
+        (dayMs(businessDate(last)) - dayMs(businessDate(range.gte))) / 86400000,
+      ) + 1,
+    );
+    const row = (r: any) => {
+      const revenue = d(r.revenue ?? 0),
+        cost = d(r.cost ?? 0),
+        profit = revenue.minus(cost);
+      return {
+        revenue: money(revenue),
+        units: Number(r.units ?? 0),
+        cost: money(cost),
+        profit: money(profit),
+        margin: revenue.gt(0) ? money(profit.div(revenue).times(100)) : 0,
+      };
+    };
+    const total = row({
+      revenue: categories.reduce((a, r) => a.plus(r.revenue ?? 0), d(0)),
+      cost: categories.reduce((a, r) => a.plus(r.cost ?? 0), d(0)),
+      units: categories.reduce((a, r) => a + Number(r.units ?? 0), 0),
+    });
+    const invoices = Number(count[0]?.invoices ?? 0);
+    return safe(
+      {
+        from: range.gte,
+        to: range.lte,
+        days,
+        invoices,
+        ...total,
+        averagePerDay: money(total.revenue / days),
+        averageTicket: invoices ? money(total.revenue / invoices) : 0,
+        categories: categories.map((r) => ({
+          name: r.name,
+          color: r.color,
+          ...row(r),
+        })),
+        top: top.map((r) => ({ name: r.name, sku: r.sku, ...row(r) })),
       },
       actor,
     );
@@ -1630,9 +1756,11 @@ async function storeSales(db: any, where: Prisma.Sql) {
     bad(
       `El período tiene ${count(total)} facturas y este reporte admite hasta ${count(STORE_REPORT_LIMIT)}. Elige una caja o un período más corto.`,
     );
-  // Por factura: sus unidades y lo cobrado al vender con cada método.
+  // Por factura: sus unidades y lo cobrado al vender con cada método. Un pago
+  // rechazado (transferencia que no llegó) no cuenta como cobrado: es cuenta
+  // por cobrar, igual que en el cuadre y el dashboard.
   const rows: any[] =
-    await db.$queryRaw`WITH sl AS (SELECT s.id, s.number, s.total, s."creditBalance", s."createdAt" FROM "Sale" s WHERE ${where}), u AS (SELECT i."saleId", SUM(i.qty) AS qty FROM "SaleItem" i JOIN sl ON sl.id = i."saleId" GROUP BY 1), pm AS (SELECT p."saleId", p.method, SUM(p.amount) AS amount FROM "Payment" p JOIN sl ON sl.id = p."saleId" WHERE p."entryType" = 'sale' GROUP BY 1, 2) SELECT sl.id, sl.number, sl.total, sl."creditBalance", u.qty, pm.method, pm.amount FROM sl LEFT JOIN u ON u."saleId" = sl.id LEFT JOIN pm ON pm."saleId" = sl.id ORDER BY sl."createdAt", sl.id, pm.method`;
+    await db.$queryRaw`WITH sl AS (SELECT s.id, s.number, s.total, s."creditBalance", s."createdAt" FROM "Sale" s WHERE ${where}), u AS (SELECT i."saleId", SUM(i.qty) AS qty FROM "SaleItem" i JOIN sl ON sl.id = i."saleId" GROUP BY 1), pm AS (SELECT p."saleId", CASE WHEN p.status = 'rejected' THEN 'credit' ELSE p.method END AS method, SUM(p.amount) AS amount FROM "Payment" p JOIN sl ON sl.id = p."saleId" WHERE p."entryType" = 'sale' GROUP BY 1, 2) SELECT sl.id, sl.number, sl.total, sl."creditBalance", u.qty, pm.method, pm.amount FROM sl LEFT JOIN u ON u."saleId" = sl.id LEFT JOIN pm ON pm."saleId" = sl.id ORDER BY sl."createdAt", sl.id, pm.method`;
   const sales: any[] = [];
   for (const row of rows) {
     if (sales.at(-1)?.id !== row.id)

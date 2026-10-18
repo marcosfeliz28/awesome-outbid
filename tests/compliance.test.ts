@@ -19,9 +19,7 @@ describe("P2 · manual operativo de cajera", () => {
     expect(manual).not.toContain("puede exigir vencimiento");
     expect(manual.match(/<div class="manual-page-break"/g)).toHaveLength(7);
     expect(manual).toContain("Datos ficticios");
-    expect(manual).toContain(
-      "Confirmo que conté efectivo, tarjeta y transferencia",
-    );
+    expect(manual).toContain("Confirmo que conté efectivo y tarjeta");
     const images = [
       ...manual.matchAll(/!\[[^\]]*\]\((capturas\/manual\/[^)]+)\)/g),
     ];
@@ -189,7 +187,8 @@ describe("Cumplimiento legal y accesibilidad", () => {
         },
       }),
     );
-    expect(ticket).toContain("DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL");
+    // La dueña pidió quitar la leyenda del ticket térmico: sin NCF no hay fila fiscal.
+    expect(ticket).not.toContain("COMPROBANTE FISCAL");
     expect(ticket).not.toContain("NCF:");
     expect(ticket).not.toContain("RNC:");
     for (const text of [

@@ -171,9 +171,9 @@ test.describe("A1 y 03 · recibo de la venta", () => {
     await expect(sheet).not.toContainText("Consumidor final");
     await expect(sheet).toContainText("Pendiente RD$ 1,000.00");
     // 03-M1/M2/M3/A1: leyenda, ITBIS incluido, devoluciones y privacidad.
-    await expect(sheet).toContainText(LEGEND);
+    await expect(sheet).not.toContainText(LEGEND);
     await expect(sheet).toContainText("ITBIS incluido");
-    await expect(sheet).toContainText(/Devoluciones: hasta \d+ días/);
+    await expect(sheet).not.toContainText(/Devoluciones:/);
     await expect(sheet).toContainText("Privacidad:");
     // Ningún botón llama «factura» al documento no fiscal.
     const dialog = page.getByRole("dialog", { name: /Una venta más/ });

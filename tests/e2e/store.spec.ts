@@ -2575,7 +2575,6 @@ test.describe("Tienda-pantallas", () => {
     await dialog.getByLabel("Cantidad de 50", { exact: true }).fill("4");
     await expect(dialog.locator(".count-subtotal")).toContainText("RD$ 500.00");
     await dialog.getByLabel(/Tarjeta declarada/).fill("0");
-    await dialog.getByLabel(/Transferencia declarada/).fill("0");
     await dialog.getByLabel("Entregado").fill("300");
     await expect(dialog.locator(".count-left")).toContainText("RD$ 200.00");
     await dialog
@@ -2604,9 +2603,7 @@ test.describe("Tienda-pantallas", () => {
     const row = page.locator(".cash-history-actions").first();
     await row.getByRole("button", { name: "Venta diaria" }).click();
     await expect(sheet).toContainText("REPORTE DE LA VENTA DIARIA DE USUARIO");
-    await expect(sheet).toContainText(
-      "Verificar si los totales tienen descuentos aplicados",
-    );
+    await expect(sheet).toContainText("NETO COBRADO");
     await page.getByRole("button", { name: "Cerrar", exact: true }).click();
     await row.getByRole("button", { name: "Por forma de pago" }).click();
     await expect(sheet).toContainText("REPORTE DE VENTA USUARIO");
@@ -2647,9 +2644,7 @@ test.describe("Tienda-pantallas", () => {
       page.getByText("Venta registrada", { exact: true }),
     ).toBeVisible();
     const sheet = page.locator(".thermal-print");
-    await expect(sheet).toContainText(
-      "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL",
-    );
+    await expect(sheet).not.toContainText("DOCUMENTO NO FISCAL");
     await expect(sheet).toContainText("Secuencia No.");
     await expect(sheet).toContainText("Cod. " + code);
     await expect(sheet).toContainText("1 X RD$ 1,500.00");

@@ -277,3 +277,170 @@ Código: `apps/api/src/sales.ts` ~3248 (`GET sales/:id/receipt.pdf`, pdfkit, A4)
 - Pruebas: unitarias de las funciones de texto/formato; integración que descargue el PDF de ventas de contado, mixta, crédito, anulada y larga, y verifique contenido (extraer texto) y que NO aparezca «Recibido», «cod:», «Autorizó» ni «Cambio» en créditos; que no falle con datos extremos. Corregir pruebas existentes que dependan del texto viejo.
 - Generar 3 PDFs de ejemplo (contado, crédito, anulada) con datos ficticios y subirlos a `docs/capturas/` para que la dueña los vea.
 - AUTOAUDITORÍA obligatoria (§3s), 3 CI en verde, sin desplegar.
+
+### 3v. ORDEN DE LA DUEÑA — créditos por persona («estado de cuenta» del cliente) (ChatGPT NUBE; si no está activa, ChatGPT PC después de la 3t y 3u)
+
+**Orden (11-oct-2026):** «sumar los créditos de personas; que se pueda buscar por persona (ej. Juan Carlos López) y ver todo lo que debe».
+
+Hoy existe: `Créditos pendientes` (`Tienda.tsx` `CodPending`, `GET /cod/pending`) lista **por venta**, y `POST /sales/:id/credit-collections` registra cobros (solo administración). **No existe** la vista por persona. Construir:
+
+1. **Cuentas por cobrar por cliente** (pantalla nueva dentro de Clientes o de Créditos pendientes): lista de clientes con deuda abierta, **búsqueda por nombre**, total que debe cada uno, cantidad de ventas abiertas, la más antigua (días), orden por monto o antigüedad, y total general por cobrar. Solo administración (`sale:manage`); alcance por sucursal; nunca mostrar cédula/teléfono sin enmascarar (SEC-05).
+2. **Ficha/estado de cuenta de un cliente:** todas sus ventas a crédito (abiertas y cerradas), cada pago aplicado (fecha, método, quién lo registró), saldo por venta y saldo total; botón **«Registrar pago»** que reutiliza `credit-collections` sin cambiarla (sin dinero nuevo, sin duplicar lógica) y permite pagar a **varias ventas del cliente a la vez** repartiendo del más antiguo al más nuevo (con vista previa del reparto, idempotente, una sola operación atómica).
+3. **PDF «Estado de cuenta»** del cliente (mismo estilo del recibo rediseñado en 3u, A4, claro y entendible): datos del cliente enmascarados, tabla de ventas/pagos, saldo total destacado, fecha de emisión, formas de pagar, pie discreto «Documento interno, sin valor fiscal».
+4. **Sin cambios al cálculo de incentivos, caja ni inventario.** Los incentivos siguen pagándose al cobrar, prorrateados (§ créditos existentes). El reparto de pagos debe respetar eso.
+5. Pruebas: unitarias del reparto (centavos exactos, más antigua primero, sobrepago rechazado), integración PostgreSQL (permisos, sucursal, doble envío, carrera, saldo cero), e2e de búsqueda y registro de pago, PDF con datos extremos. AUTOAUDITORÍA (§3s), 3 CI en verde, sin desplegar.
+
+### 3w. ORDEN DE LA DUEÑA — reporte de ingresos por día y por forma de pago, exportable al contable (ChatGPT NUBE o PC, después de 3t/3u/3v)
+
+**Orden (11-oct-2026):** «de tal día a tal día, por día: cuánto entró por transferencia, por tarjeta y en efectivo, para pasarlo a mi contable y que concilie con mis cuentas de banco. Y la venta global por día, o por una caja/usuario específico, subdividida: transferencia, contraentrega y, dentro de contraentrega, si se cobró en efectivo/tarjeta/transferencia».
+
+**Hoy existe** (solo un día): `Tienda.tsx` bloque `day-reports` (`Venta diaria del día` y `Por forma de pago del día`, filtro por usuario) y `GET /reports/…` (`reports.ts`, `common.ts` ~490/529). **Falta:** rango de fechas, tabla día por día, filtro por caja/equipo, desglose de cobros de crédito por método, y exportación.
+
+Construir (pantalla en Reportes, solo `reports:read`; alcance por sucursal; sin cambiar dinero, caja, inventario ni incentivos):
+1. **Selector:** Desde / Hasta (zona horaria del negocio, `BUSINESS_TIME_ZONE`, día completo), alcance: **Todo el negocio** / **Caja (turno)** / **Usuario** / **Equipo**.
+2. **Tabla por día** con columnas: Efectivo · Tarjeta · Transferencia · Crédito/contraentrega generado (venta entregada sin pago) · **Cobros de créditos del día, desglosados** por Efectivo / Tarjeta / Transferencia (cuando se cobran después) · Devoluciones/notas de crédito (restan) · **Total que realmente entró** · Total vendido. Fila de totales del rango. Las ventas anuladas no cuentan; las devoluciones restan el día en que se hicieron.
+3. **Desglose de un día** (clic): lista de movimientos por método; para **tarjeta**: últimos 4 y código de aprobación; para **transferencia**: banco, referencia y hora (los datos que ya guarda el pago), para que el contable concilie con el banco. Sin mostrar datos personales sin enmascarar (SEC-05).
+4. **Conciliación con el cierre de caja:** el total de efectivo/tarjeta/transferencia de un día y caja debe coincidir con lo que muestra el cuadre; si no coincide, mostrarlo explícito, nunca ocultarlo.
+5. **Exportar:** Excel (.xlsx) y CSV (UTF-8 con BOM, coma como separador, importes con punto decimal y 2 decimales, fechas ISO y también dd/mm/aaaa), y PDF imprimible A4 con el estilo del recibo rediseñado (3u). Una hoja «Resumen por día» y otra «Detalle de movimientos» en el Excel. Límite razonable de rango (p. ej. 366 días) y de filas; paginar el servidor, nunca cargar todo en memoria.
+6. Pruebas: unitarias de agrupación por día con borde de medianoche (zona RD) y centavos exactos; integración PostgreSQL (permisos, sucursal, anuladas, devoluciones, cobros de crédito en otro día, pagos mixtos, doble conteo imposible); prueba de consistencia: suma del reporte = suma de cierres; e2e de selección de rango y descarga; archivo exportado abierto y verificado. AUTOAUDITORÍA (§3s), 3 CI en verde, sin desplegar.
+
+### 3x. ORDEN DE LA DUEÑA — configuración de crédito entendible + margen visible en ventas con descuento (ChatGPT NUBE; PC si NUBE no está activa)
+
+Origen (11-oct-2026): la dueña puso `0` en «Crédito por venta que requiere gerente» y «Crédito y contraentrega por turno» creyendo que 0 = sin límite; en realidad `0` = **siempre pide PIN**. Además, con «Habilitar ventas a crédito» apagada, todo crédito/contraentrega de un cajero pide PIN **sin importar el monto** y el cajero no entiende por qué (venta real FS-0000010, RD$ 43,800 al por mayor).
+
+1. **Ajustes (`Management.tsx` ~3685, formulario «Editar configuración»):** textos de ayuda claros en cada campo: «0 = siempre pedir PIN de gerente», «Pon un monto alto (ej. 1000000) para no pedir PIN por monto», y un aviso visible si «Habilitar ventas a crédito» está apagada: «Con esto apagado, todo crédito de un cajero pide PIN». Validar y advertir (no bloquear) si algún tope es 0. Alinear con `receivableNeedsApproval` (`packages/shared/src/index.ts`), sin cambiar su lógica monetaria.
+2. **Caja (`POS.tsx`, cobro):** cuando se pide PIN de gerente, el mensaje debe decir **por qué** («por el monto a crédito», «por el descuento mayor a X %», «por la deuda del cliente», «por el tope del turno», «porque el crédito está deshabilitado»), tomando la razón de la misma función que decide, no de un texto genérico. Que el motivo esté visible junto al campo del PIN y dentro de la ventana sin hacer scroll en pantallas pequeñas.
+3. **Margen en la venta con descuento (solo para quien tiene `profit:read`; nunca para cajeras):** en el cobro, si el descuento deja el margen por debajo de «Margen bajo (%)» (Ajustes), mostrar aviso «Esta venta queda con margen X %»; es informativo, no bloquea. Medición real sin ITBIS: ejemplo FS-0000010: lista RD$ 68,350 → vendido 43,800 (−36 %), costo 36,300, ganancia ≈ RD$ 819 después del ITBIS.
+4. Pruebas unitarias del texto de motivo (cada rama), e2e del aviso, y que ninguna regla de aprobación cambie. AUTOAUDITORÍA (§3s), 3 CI en verde, sin desplegar.
+
+**Orden sugerida de las colas (dueña, 12-oct):** PC: publicar 3t/3u (ya hechas en local) y resolver los 3 fallos de CI. NUBE: 3v → 3w → 3x. Si PC se atasca, Claude toma 3t.
+
+### 3y. ORDEN DE LA DUEÑA — segundo almacén («Casa») independiente, con traspasos y levantamiento (Claude lo diseña; ChatGPT NUBE/PC lo construye; Claude lo despliega)
+
+**Orden (12-oct-2026):** «un segundo almacén, independiente del primero, para decir que tengo en mi casa de todo. Cuando diga *moví de un almacén a otro*, que se hagan las restas. Así sabemos que hay tanto en un punto y tanto en otro. Un levantamiento de todo.»
+
+**Hoy:** el sistema tiene un solo inventario por sucursal (`Variant.stock`, `InventoryMovement`, `Product.location` solo es texto). **No existe** modelo de almacén/ubicación ni traspasos. Un segundo almacén **no** se resuelve creando otra sucursal (duplicaría el catálogo y no permite traspasos).
+
+Diseño propuesto (aditivo, sin romper lo existente):
+1. **Modelo `Warehouse`** (`id`, `branchId`, `name`, `kind` = `store`|`home`|`other`, `active`, `sellable` booleano). Almacén «Tienda» = el actual (todo el stock existente migra ahí sin cambiar números). «Casa» = nuevo, **no vendible desde caja** (`sellable=false`) pero sí visible en reportes e inventario.
+2. **Existencia por almacén:** tabla `VariantStock(variantId, warehouseId, qty)`; `Variant.stock` sigue siendo el total vendible (el de Tienda) para no tocar ventas ni caja; el total general = suma de almacenes.
+3. **Traspaso** (`StockTransfer` + líneas): «Mover de Casa a Tienda» o al revés, con operationId, motivo, usuario, fecha; resta de un almacén y suma al otro **en una sola transacción atómica**, con dos movimientos de kardex enlazados («traspaso salida/entrada»); **no cambia el costo promedio ni el costo total del negocio** (el costo viaja con la unidad). Bloquear si no hay existencia suficiente en el origen; idempotente; permiso de administración.
+4. **Levantamiento inicial de Casa:** importación por Excel al almacén Casa (mismas columnas del importador: ID, existencia, costo, precio) y conteo físico por almacén (`inventory-import` y ajustes con `warehouseId`).
+5. **Pantallas (español):** Inventario con selector «Tienda / Casa / Todos» y columna «Total»; botón «Traspasar»; historial de traspasos; reporte «Dónde está la mercancía» (producto, Tienda, Casa, total, valor a costo).
+6. **Reglas:** las ventas, devoluciones, anulaciones y alertas de stock bajo siguen usando **solo Tienda**; el costo promedio ponderado (regla de entradas) se calcula sobre **el total de todos los almacenes**. Migración aditiva (nueva migración, prefijo único).
+7. Pruebas: unitarias del traspaso (atómico, no negativo, idempotente), integración PostgreSQL (permisos, sucursal, doble envío, carrera de dos traspasos), e2e del traspaso, migración sobre base con datos y consistencia: suma de almacenes = stock total antes y después. AUTOAUDITORÍA (§3s), 3 CI en verde, sin desplegar.
+
+**PRIORIDAD (dueña, 12-oct): la 3y (segundo almacén «Casa») es MUY IMPORTANTE.** La dueña tiene en su casa mucha más mercancía que en la tienda, y de productos caros: necesita ver «dónde está cada producto» y mover entre almacenes con restas automáticas. Orden de trabajo para ChatGPT NUBE: **3y primero**, luego 3v, 3w y 3x. ChatGPT PC: 3t y 3u, luego apoya la 3y (pruebas e integración). Margen mínimo de referencia de la dueña para ofertas y precios nuevos: **15 %** (precio − costo) / precio.
+
+### 3z. ORDEN DE LA DUEÑA (12-oct) — reportes formales diario/mensual y auditoría (extiende 3w; en la cola de ChatGPT NUBE después de 3y, 3v, 3w, 3x)
+Prototipo aprobado en forma («el formato no está mal, pero puede mejorar»). Se mejora día a día. Requisitos:
+- PDF formal (para que ella lo reenvíe: contable, socios): cabecera de Grupo Macgen, fecha, numeración de página, pie de control.
+- **Ingresos por forma de pago bien separados:** efectivo, transferencia, tarjeta y crédito (por cobrar), tanto de ventas del día como de cobros de créditos anteriores. Lo que debe entrar al banco (tarjeta + transferencia) vs. efectivo esperado en caja.
+- Por caja y por usuario, por categoría (fajas / maquillaje / suplementos), qué se vendió y qué no se vendió, créditos abiertos y cerrados del día, quién debe (cliente, factura, saldo, antigüedad), anuladas con motivo.
+- Margen = (precio − costo)/precio **sin restar ITBIS**. Mostrar ITBIS aparte solo informativo, si existe.
+- Cierre mensual y auditoría formal fin de día/fin de mes (cuadre de caja contra ventas, diferencias, anulaciones, descuentos, cambios de costo).
+- Arreglos pendientes del prototipo: encabezados «Efectivo esperado/contado» se montan; excluir cajas de prueba.
+- ~27-oct: análisis de rotación/no vendidos con propuesta y stock a mantener 1–2 meses.
+- **Oferta vitaminas/multivitamínicos: 15 % de DESCUENTO (no margen) aprobado por la dueña**, con fechas y sin tocar el precio normal; excluida Klean Essential Aminos + HMB (quedaría en 14.5 % de margen). Claude la carga.
+
+### 3y-PC. ORDEN (dueña, 12-oct) — ChatGPT PC valida la 3y con PostgreSQL real
+ChatGPT NUBE entregó la 3y (almacén «Casa», traspasos, levantamiento) pero NO pudo correr PostgreSQL ni E2E (EPERM en su entorno). ChatGPT PC sí puede. Rama a probar: `claude/merge-3y` (ya mezclada con nexora-cloud; CI en curso).
+1. Descarga la rama, `pnpm install`, aplica las migraciones sobre una base **vacía y de pruebas** (nunca producción) y también sobre una con datos de ejemplo.
+2. Corre `tests/warehouses-postgres.test.ts`, `tests/e2e/almacenes.spec.ts` y `pnpm check` completo.
+3. Prueba a mano en un navegador a 390 px: traspaso Casa→Tienda, cantidad excesiva, lote, conteo en Casa, levantamiento por Excel (vista previa y aplicar).
+4. Entrega: lista de fallos con ID, o «sin hallazgos». Los arreglos van en la rama `nexora-chatgpt-fase2`, un commit por hallazgo, con regresión. No despliegues; el desplegador es Claude.
+5. Si aún tienes pendientes 3t/3u, publícalos o dime el bloqueo; esta validación va primero.
+
+**Actualización 3y-PC (12-oct):** la rama `claude/merge-3y` quedó en el commit `42c0e36` con CI verde (verify, windows-installer, render-images). Claude corrigió 4 cosas que NUBE no pudo ver sin PostgreSQL (FK de la migración vs schema.prisma, `$executeRaw` en el bloqueo asesor, saldos por almacén en cascada, tablas accesibles G12). ChatGPT PC: parte de ese commit; valida con tu PostgreSQL local y a mano en navegador (ver pasos 1–5 arriba). Después sigue con 3t y 3u. Un commit por hallazgo, en `nexora-chatgpt-fase2`; no despliegues.
+
+### 3aa. ORDEN (dueña, 13-oct) — corregir la referencia de una transferencia ya registrada (ChatGPT NUBE; pequeña)
+Caso real: la factura FS-0000012 se creó con la referencia «SIN-REF» y la dueña dio después la real (827647262). Hoy el sistema NO permite corregir banco/referencia de un pago ya guardado (solo verificar o rechazar). Pedido: acción de administrador «Corregir referencia de transferencia» sobre un pago `transfer` (pendiente o verificado): cambia solo `bank` y `reference`, exige motivo, deja registro en la bitácora (valor anterior y nuevo, quién y cuándo), no toca montos ni caja, y mantiene las reglas de terminal aprobada. Con regresión (falla antes, pasa después) y `pnpm check` en verde.
+
+### 3ab. ORDEN (dueña, 13-oct) — Asistente de WhatsApp para la publicidad de suplementos (conexión directa con Meta) — ChatGPT NUBE diseña y programa; ChatGPT PC prueba con PostgreSQL; Claude integra y despliega
+**Alcance inicial: UN solo número** (el de la publicidad de suplementos; la dueña dice cuál). Conexión directa con **WhatsApp Business Platform (Cloud API) de Meta**, sin proveedor intermedio salvo que sea imprescindible (costo). Meta cobra sobre todo los mensajes que el negocio inicia con plantillas; los clientes que escriben primero y las respuestas dentro de 24 h no deberían generar costo: **confírmalo en la lista de precios vigente de Meta** y repórtalo.
+
+**Fase 0 (sin código, primero):** verificar y reportar a la dueña (a) si ese número puede seguir usándose en la app de WhatsApp Business de la vendedora a la vez que la API («coexistencia»); si no, qué alternativa hay; (b) requisitos de verificación del negocio en Meta; (c) la política de Meta sobre asistentes de IA en la API (un asistente de tienda con fines concretos suele permitirse; confírmalo); (d) costo mensual estimado con los números reales de conversaciones.
+
+**Fase 1 (modo borrador):** el sistema recibe y guarda los mensajes (webhook firmado, con verificación de firma de Meta) y Claude redacta la respuesta; **un humano la aprueba antes de enviar** (la vendedora). Cero respuestas automáticas.
+**Fase 2 (respuesta automática):** solo con OK escrito de la dueña, después de revisar la Fase 1.
+
+**Reglas del asistente (obligatorias, aplicadas por el sistema, no por el texto del mensaje):**
+1. Inventario y precios: el asistente consulta el sistema como usuario `claude` con permisos de **solo lectura de inventario y precios** (crear un rol sin escritura para esto). Nunca ofrece lo que no tiene existencia.
+2. Descuentos: **productos de poca rotación hasta 10 %; de cero rotación hasta 15 %; proteínas más vendidas: 0 %**. Nunca por debajo de **15 % de margen** (precio − costo)/precio, sin restar ITBIS. La rotación se calcula con las ventas reales (hasta que haya datos suficientes, la lista de poca/cero rotación la define la dueña). El descuento se **aplica en la factura**; no cambia el precio del sistema.
+3. Sin promesas médicas ni de resultados. Para dudas de salud: «consulta a tu médico».
+4. Escala a una persona (vendedora/dueña) cuando: reclamo, devolución, pago dudoso, pedido grande, cliente molesto o cualquier cosa que el asistente no pueda resolver con datos del sistema.
+5. Venta: el asistente arma el pedido y da la forma de pago; **una persona verifica la transferencia** antes de entregar. La venta se registra con el flujo normal de ventas (mismas reglas de caja y de descuentos).
+6. Se identifica como asistente virtual de la tienda al iniciar. Respeta el «no me escribas más» (baja inmediata).
+7. Privacidad: guarda solo lo necesario; los datos del cliente no se usan para otra cosa; retención definida y borrado a petición.
+
+**Comisiones (decisión de la dueña):** durante el horario de trabajo, si la vendedora está asistiendo (turno activo), la comisión de la venta es **de la vendedora**; fuera del horario, la comisión se registra en una cuenta separada «Claude» (el asistente no cobra dinero: queda como fondo para que la dueña decida su destino). Debe poder verse en el reporte de incentivos y en el cierre mensual. Hace falta definir el horario de trabajo en Configuración y cómo se marca el turno activo.
+
+**Entrega:** autoauditoría con límites y pruebas pendientes; regresión para cada regla de descuento y de margen; reporte mensual de costo (Meta + IA) y de ventas atribuidas al asistente. Nada se despliega sin los 3 CI en verde y el OK de la dueña.
+
+### 3ac. ORDEN (dueña, 13-oct) — Cuenta de envíos de Addison (ChatGPT NUBE; pequeña, después de 3aa)
+Addison hace la logística de entrega. El envío es **100 % de él**. Si el cliente paga producto + envío en una sola transferencia, ese envío entra a nuestra cuenta pero **no es ingreso del negocio**: se le debe a Addison y se le paga **una vez por semana**.
+Pedido: (1) campo «envío» opcional en la venta, separado del total de productos, que no cuenta como venta, ingreso ni margen; (2) «Cuenta de Addison» (Reportes o Gestión): lista de envíos cobrados por nosotros, total pendiente de la semana y botón «Marcar pagado» (con fecha y método; si sale de caja, queda como salida de caja); (3) lo cobrado contra entrega por él directamente NO se anota (no pasa por nosotros). Con regresión y `pnpm check` en verde. Mientras tanto se lleva en `docs/operacion/ENVIOS-ADDISON.csv` (Claude lo mantiene).
+
+### 3ad. ORDEN (dueña, 13-oct) — Nexora POS instalable en PC (uso propio) y camino para venderlo después (ChatGPT NUBE: análisis y diseño primero; ChatGPT PC: pruebas; Claude integra)
+**Regla de oro:** nada de esto puede afectar el trabajo actual en Render ni los datos de la tienda. Se hace en ramas aparte, sin tocar `nexora-cloud` hasta que Claude integre con los 3 CI en verde y la dueña lo apruebe.
+
+**Estado de partida:** ya existe el instalador de Windows 11 (job `windows-installer`, guía `docs/INSTALADOR.md`) que instala un servidor local con su propia base PostgreSQL y respaldos en `%ProgramData%\FitStore POS\Backups`. Hoy sirve como servidor local independiente; **no** es un programa de escritorio conectado a la nube.
+
+**CAMINO A — Uso propio, instalado en la PC (hacerlo primero).** Entregar un informe corto (máx. 2 páginas) y, con el OK de la dueña, el código:
+1. Una instalación «Nexora POS Local»: un solo instalador, un clic, acceso directo en el escritorio, abre la app en ventana propia (no navegador suelto), arranca sola con Windows, base de datos local, respaldo diario automático y botón «Restaurar copia». Sin Render y sin Internet para vender.
+2. Si hay varias PC en la misma tienda: una PC hace de servidor y las otras entran por la red local (como ya describe `INSTALADOR.md`). Explicar los límites y qué pasa si la PC servidor se apaga.
+3. Datos: cómo pasar el inventario y las ventas de la nube a la instalación local (exportar/importar) y cómo volver a la nube, sin pérdida y con verificación (conteo de variantes, unidades y costo, igual que el snapshot del despliegue).
+4. Actualizaciones: cómo se actualiza la instalación sin perder datos (migraciones seguras, copia antes de actualizar).
+5. Pruebas: instalar en una máquina limpia, vender sin Internet, cerrar caja, respaldar, restaurar y actualizar. ChatGPT PC lo ejecuta y deja evidencia.
+
+**CAMINO B — Producto para vender (solo análisis y diseño, NO programar todavía).** Entregar un documento con:
+1. Modelo recomendado: servicio en la nube por suscripción (referencia de la dueña: unos US$ 20 al mes por negocio) con el asistente Claude trabajando junto a las personas (atención, reportes, alertas). Comparar contra vender la instalación local con licencia.
+2. Qué hay que cambiar para atender a varios negocios: separación de datos por negocio (multi-inquilino), registro y cobro de suscripciones, planes (básico / con asistente), límites, soporte, respaldos por cliente, términos de uso y privacidad, facturación y fiscalidad en República Dominicana (el sistema hoy imprime «documento no fiscal»).
+3. Qué NO se vende ni se copia: datos, costos, clientes ni credenciales de Grupo Macgen. Una instalación de demostración con datos de ejemplo.
+4. Costos mensuales estimados por cliente (servidor, base de datos, respaldos, WhatsApp/Meta, IA) y precio mínimo para no perder dinero.
+5. Hoja de ruta por fases con riesgos, y qué decisiones necesita de la dueña.
+
+**Entrega:** primero el informe del Camino A y el del B por escrito. Nada de código del Camino B sin el OK de la dueña. Todo con pruebas, `pnpm check` en verde y sin tocar datos reales.
+
+**Actualización 3ad (dueña, 13-oct) — dos productos separados y el sistema de la tienda intocable.**
+La dueña está metiendo mercancía real en el sistema de Render: **ese sistema no se puede parar ni arriesgar.** Reglas:
+1. **Tres líneas separadas, sin mezclar:** (a) `nexora-cloud` = sistema de la tienda en Render (producción); (b) `producto-local` = Nexora POS Local (Camino A, instalación en PC); (c) `producto-saas` = Nexora POS para vender (Camino B). Las dos últimas nacen del código actual de `nexora-cloud` y desde ahí se alejan por su cuenta. Nunca se hace merge de `producto-*` hacia `nexora-cloud` sin orden escrita de la dueña.
+2. **Nada de infraestructura compartida:** los productos nuevos usan sus propias bases de datos, sus propios servicios de Render (o ninguno, en el local) y sus propias credenciales. Prohibido apuntar a la base de producción, ni siquiera de lectura, salvo una copia exportada para pruebas.
+3. **Solo Claude despliega producción**, con los 3 CI en verde, copia (snapshot) antes y comparación después, y **no durante el horario en que la dueña está cargando mercancía** salvo urgencia que ella apruebe.
+4. Cambios pequeños que la tienda sí necesita (como la columna Cliente en Ventas, commit `3a8189c`) siguen su camino normal por `nexora-cloud`, y se despliegan solo con el OK de la dueña.
+5. Ningún dato real de Grupo Macgen entra a `producto-saas`; su demo usa datos de ejemplo.
+
+**Ampliación 3ad / Camino B (dueña, 13-oct) — venta por su página web, sin servidor casero para clientes.** Incluir en el documento del Camino B:
+1. **Cobro:** suscripción mensual cobrada en la web de la dueña (tarjeta, Apple Pay y Google Pay en la página de pago, no dentro de una tienda de apps). Investigar y comparar procesadores de pago que funcionen para un negocio en República Dominicana (por ejemplo Azul, CardNET, PayPal y la opción de Stripe vía otra entidad), con comisión, requisitos, tiempos de depósito y cómo manejan suscripciones recurrentes. No asumir: confirmar en fuentes actuales.
+2. **Dos diseños de datos, con costo por cliente de cada uno:** (a) todos los negocios en una misma base con separación estricta por negocio; (b) una base PostgreSQL por cliente. Tomar como línea base la infraestructura actual en Render (API 1c-2g, web 0.5c-512mb, base 0.5c-1g con 5 GB) y estimar cuántos clientes pequeños aguanta antes de subir de plan. Precios de Render: leer la lista vigente, no estimar de memoria.
+3. **Planes:** básico (~US$ 20/mes) y «con asistente» (Claude + WhatsApp), más caro porque el costo de IA y de Meta crece con el uso. Calcular el precio mínimo de cada plan para no perder dinero.
+4. **Tiendas de apps:** al final. Primero PWA instalable; luego, si conviene, empaquetado para Google Play y App Store, con su costo y su comisión.
+5. **Servidor en la casa:** solo como copia de respaldo y entorno de pruebas, nunca como servicio de clientes que pagan (riesgo de luz, internet y responsabilidad sobre sus datos).
+
+### 3ah. ORDEN (dueña, 17-oct) — Levantamiento del cierre de caja (ChatGPT NUBE y Gemini, SOLO PROPUESTA)
+Lee `docs/coordinacion/ORDEN_LEVANTAMIENTO_CIERRE_CAJA.md` y entrega tu propuesta (máx. 2 páginas, sin código) en `docs/PROPUESTA_CIERRE_CHATGPT.md` (rama `nexora-chatgpt-nube`) o `docs/PROPUESTA_CIERRE_GEMINI.md` (rama `nexora-gemini-auditoria`). Claude ya hizo aparte: el cierre pide el PIN de un gerente cuando el efectivo no cuadra (igual que la tarjeta).
+
+### 3ag. ORDEN (dueña, 17-oct) — Endurecimiento de seguridad de toda la aplicación (ChatGPT NUBE audita y corrige; Claude revisa y despliega)
+La dueña pidió aplicar **todos los métodos de seguridad** y cerrar los huecos. Ya existen helmet, CORS, límite de intentos (`rate-limit.ts`), política de contraseñas, PIN de gerente, guardia de XLSX y `@Permit`; **no los rehagas, verifícalos y completa lo que falte**. Trabaja por bloques, un commit por bloque, con prueba que falle antes y pase después:
+1. **Autorización:** recorre TODOS los controladores; cada endpoint con `@Permit` y prueba con un rol SIN permiso (403) y otro CON permiso. Busca acceso a datos de otra sucursal/usuario por `id` (IDOR).
+2. **Entradas:** validación zod en cada body/query/param; límites de tamaño y de lista; ningún SQL crudo con texto del usuario (`$queryRaw` solo con parámetros); rechazar campos extra.
+3. **Sesión y credenciales:** expiración y revocación de tokens, bloqueo por intentos fallidos (login y PIN), cambio de contraseña obligatorio, nada de secretos en logs ni respuestas de error.
+4. **Navegador:** cabeceras CSP/HSTS/frame/nosniff en la web (no solo la API), CORS solo al dominio propio, cookies/almacenamiento del token sin XSS (nada de `dangerouslySetInnerHTML` sin sanear), PWA sin cachear datos privados de otro usuario.
+5. **Datos:** `pnpm audit` sin altas/críticas (actualiza o documenta la excepción), secretos solo por variables de entorno, bitácora de auditoría en cambios de dinero/precios/permisos, subida de archivos con tipo y tamaño verificados.
+6. **Entregable:** `docs/SEGURIDAD_ESTADO.md` con tabla «control · estado (ya estaba / corregido / pendiente) · prueba».
+Prohibido: tocar `deploy/**`, `render.yaml`, `.github/workflows/**`, `tests/e2e/**`, desplegar, relajar límites o pruebas. `pnpm check` y los 3 CI en verde. Claude revisa de forma adversaria antes de aceptar.
+
+### 3af. ORDEN (dueña, 16-oct) — Casilla «Con envío» en la caja al cobrar (ChatGPT NUBE; pequeña, sobre el envío del mensajero ya existente)
+Hoy el envío del mensajero se anota **después** de la venta (`PATCH /sales/:id/courier`, `CourierFeeEditor` en Ventas y Conciliar transferencias). La dueña lo quiere **al cobrar**:
+1. En `POS.tsx`, al pagar, casilla «Con envío» + monto + nombre del mensajero (Addison por defecto). **Solo aparece si el pago es transferencia o tarjeta.** En efectivo o contraentrega NO se pregunta ni se guarda (el mensajero se cobra de ahí; no pasa por nosotros).
+2. El monto se guarda como `courierFee`/`courierName` de esa misma factura, **separado del total de productos**: no es venta, ingreso ni margen; el cobro de transferencia/tarjeta puede incluirlo, pero el total de productos y los descuentos no cambian.
+3. Debe funcionar también en la cola sin conexión (`offline-sales.ts`), con la misma validación y sin duplicar si se reenvía.
+4. Lo ya hecho se mantiene: pago al mensajero (`CourierPayouts`) y conciliación; el envío sigue editable después con `CourierFeeEditor` mientras no esté pagado.
+5. Pruebas: regresión e2e (transferencia con envío, tarjeta con envío, efectivo sin casilla, venta sin conexión) e integración PostgreSQL (envío separado del total y del margen, no duplica al reenviar). `pnpm check` y los 3 CI en verde; sin desplegar (Claude despliega).
+Fase 2 (estadística y pago por período) sigue como está en el instructivo previo.
+
+## 3ae — Traspaso del día a día a ChatGPT NUBE (14-oct-2026, orden de la dueña)
+Claude puede dejar de estar disponible; la dueña quiere seguir trabajando igual con ChatGPT NUBE. Documento completo y vigente: `docs/coordinacion/TRASPASO_CHATGPT_NUBE.md` (accesos que ella debe darte, reglas del dinero, endpoints, rutina diaria, despliegue con CI verde y orden expresa, estado y pendientes). **Primer entregable:** contesta a la dueña con 3 líneas (qué leíste, qué puedes hacer ya, qué te falta).
+
+## Regla del almacén Casa (dueña, 18-oct-2026)
+Casa solo se modifica con instrucción expresa de la dueña. Toda salida de Casa lleva su destino en el motivo: «regalo a <persona>» (salida) o «traspaso a Tienda» (resta Casa y suma Tienda, mismo costo). Conteo inicial de fajas en Casa cargado el 18-oct (205 unidades; «faja tipo corset» = «Cinturilla tipo corset»).

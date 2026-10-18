@@ -295,14 +295,8 @@ describe("Auditoría 01 · dinero", () => {
       openingAmount: 0,
     });
     expect(bare.status).toBe(400);
-    const noPin = await request("/cash-sessions/open", c.token, {
-      openingAmount: 0,
-      openingNote: "El fondo se entregó a la dueña",
-    });
-    expect(noPin.status).toBe(400);
     const opened = await open(c, 0, {
       openingNote: "El fondo se entregó a la dueña",
-      managerPin: MANAGER_PIN,
     });
     const log = await db.auditLog.findFirst({
       where: { action: "opening_difference", entityId: opened.id },
@@ -326,11 +320,18 @@ describe("Auditoría 01 · dinero", () => {
 
   it("M-1: las alertas de diferencia de caja y de descuento inusual no se resuelven solas", async () => {
     const c = await person("seller", "m1", 0);
+    // La gerente autoriza con su PIN el cierre descuadrado (dueña, 17-oct).
+    const m = await person("manager", "m1m", 0);
     const v = await product(1000, 400, 10);
     await sell(c, v, 1, [{ method: "cash", amount: 1000 }]);
     expect(
-      (await close(c, { countedCash: 100, notes: "Faltante sin explicar" }))
-        .status,
+      (
+        await close(c, {
+          countedCash: 100,
+          notes: "Faltante sin explicar",
+          managerPin: "975310",
+        })
+      ).status,
     ).toBeLessThan(300);
     const key = "cash:" + c.cash.id;
     expect((await alert(key))?.status).toBe("new");
@@ -363,7 +364,6 @@ describe("Auditoría 01 · dinero", () => {
     expect((await alert(key))?.status).toBe("resolved");
 
     // Descuento inusual: al día siguiente sigue abierta.
-    const m = await person("manager", "m1m", 0);
     const sale = await ok(
       "/sales",
       m.token,
@@ -463,7 +463,8 @@ describe("Auditoría 01 · dinero", () => {
     ).toBe("rejected");
     expect((await alert("receivable:" + sale.id))?.status).toBe("new");
     expect((await alert("transfer:" + pay.id))?.status).toBe("resolved");
-    // El cuadre ya no espera esa transferencia: declararla deja diferencia.
+    // El cuadre ya no espera esa transferencia. Lo declarado se ignora: las
+    // transferencias las suma el sistema, no la cajera (dueña, 14-oct).
     expect(
       (
         await close(c, {
@@ -477,7 +478,8 @@ describe("Auditoría 01 · dinero", () => {
       where: { id: c.cash.id },
     });
     expect(Number(session.expectedTransfer)).toBe(0);
-    expect(Number(session.differenceTransfer)).toBe(600);
+    expect(Number(session.countedTransfer)).toBe(0);
+    expect(Number(session.differenceTransfer)).toBe(0);
     // Una transferencia verificada resuelve su alerta.
     c.cash = await open(c, 0);
     const good = await sell(c, v, 1, [
@@ -487,6 +489,97 @@ describe("Auditoría 01 · dinero", () => {
     expect((await alert("transfer:" + good.payments[0].id))?.status).toBe(
       "resolved",
     );
+  });
+
+  it("3aa: solo administración corrige banco/referencia con motivo y bitácora sin alterar el pago", async () => {
+    const cashier = await person("seller", "3aa", 0);
+    const variant = await product(600, 300, 4);
+    const sale = await sell(cashier, variant, 1, [
+      {
+        method: "transfer",
+        amount: 600,
+        bank: "Banco anterior",
+        reference: "REF-ANTERIOR",
+      },
+    ]);
+    const id = sale.payments[0].id;
+    const before = await db.payment.findUniqueOrThrow({ where: { id } });
+    const body = {
+      bank: "Banco correcto",
+      reference: "REF-CORREGIDA",
+      expectedBank: "Banco anterior",
+      expectedReference: "REF-ANTERIOR",
+      reason: "Dato recibido tras registrar la venta",
+    };
+    expect(
+      (await request(`/payments/${id}/correct-transfer`, cashier.token, body))
+        .status,
+    ).toBe(403);
+    expect(
+      (
+        await request(`/payments/${id}/correct-transfer`, admin, {
+          ...body,
+          reason: "  ",
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await request(`/payments/${id}/correct-transfer`, admin, body)).status,
+    ).toBeLessThan(300);
+    expect(
+      (await request(`/payments/${id}/correct-transfer`, admin, body)).status,
+    ).toBe(409);
+    const after = await db.payment.findUniqueOrThrow({ where: { id } });
+    expect({ bank: after.bank, reference: after.reference }).toEqual({
+      bank: body.bank,
+      reference: body.reference,
+    });
+    expect({
+      amount: after.amount.toString(),
+      status: after.status,
+      cashSessionId: after.cashSessionId,
+    }).toEqual({
+      amount: before.amount.toString(),
+      status: before.status,
+      cashSessionId: before.cashSessionId,
+    });
+    const logs = await db.auditLog.findMany({
+      where: { entity: "payment", entityId: id, action: "correct_transfer" },
+    });
+    expect(logs).toHaveLength(1);
+    expect(logs[0].before).toMatchObject({
+      bank: before.bank,
+      reference: before.reference,
+    });
+    expect(logs[0].after).toMatchObject({
+      bank: body.bank,
+      reference: body.reference,
+      reason: body.reason,
+    });
+    await ok(`/payments/${id}/verify`, admin, {});
+    const edits = await Promise.all([
+      request(`/payments/${id}/correct-transfer`, admin, {
+        ...body,
+        expectedBank: body.bank,
+        expectedReference: body.reference,
+        reference: "REF-A",
+      }),
+      request(`/payments/${id}/correct-transfer`, admin, {
+        ...body,
+        expectedBank: body.bank,
+        expectedReference: body.reference,
+        reference: "REF-B",
+      }),
+    ]);
+    expect(edits.map((r) => r.status).sort()).toEqual([201, 409]);
+    const final = await db.payment.findUniqueOrThrow({ where: { id } });
+    expect(["REF-A", "REF-B"]).toContain(final.reference);
+    expect(final.status).toBe("ok");
+    expect(
+      await db.auditLog.count({
+        where: { entity: "payment", entityId: id, action: "correct_transfer" },
+      }),
+    ).toBe(2);
   });
 
   it("M-4: el tope de salidas sin PIN es por usuaria y día, no por turno", async () => {
@@ -526,7 +619,7 @@ describe("Auditoría 01 · dinero", () => {
     const adjusted = await request("/inventory/adjustments", w.token, {
       variantId: v,
       qty: -20,
-      reason: "Conteo de almacén",
+      reason: "Faltante de almacén",
     });
     expect(adjusted.status).toBeLessThan(300);
     // Salida de mercancía por merma (1 u) y devolución a proveedor (1 u): N-1,
@@ -564,9 +657,25 @@ describe("Auditoría 01 · dinero", () => {
     await ok("/inventory/adjustments", w.token, {
       variantId: v,
       qty: -1,
-      reason: "Conteo de almacén",
+      reason: "Faltante de almacén",
     });
     expect((await alert(loss.key))?.status).toBe("new");
+    // Una corrección de conteo de la dueña no es merma del mes: se muestra
+    // aparte y no baja la ganancia neta.
+    const midway = await ok("/dashboard/summary" + range, admin);
+    const counted = await request("/inventory/adjustments", w.token, {
+      variantId: v,
+      qty: -5,
+      reason: "Conteo inicial de la dueña",
+    });
+    expect(counted.status).toBeLessThan(300);
+    const afterCount = await ok("/dashboard/summary" + range, admin);
+    expect(afterCount.inventoryLoss).toBe(midway.inventoryLoss);
+    expect(afterCount.netProfit).toBe(midway.netProfit);
+    expect(afterCount.countCorrections - midway.countCorrections).toBeCloseTo(
+      3000,
+      2,
+    );
   });
 
   it("N-1: la devolución a proveedor exige proveedor y referencia, deja alerta y cuenta en el informe", async () => {
@@ -752,6 +861,44 @@ describe("Auditoría 01 · dinero", () => {
       700,
       2,
     );
+    // El informe de cierre por forma de pago tampoco la cuenta como cobrada.
+    const closeReport = await ok(
+      "/reports/venta-por-forma-pago?cashSessionId=" + c.cash.id,
+      admin,
+    );
+    const sub = (method: string) =>
+      Number(
+        closeReport.groups.find((g: any) => g.method === method)?.subtotal
+          .amount ?? 0,
+      );
+    expect(sub("transfer")).toBeCloseTo(0, 2);
+    expect(sub("receivable")).toBeCloseTo(700, 2);
+  });
+
+  it("el círculo del año y el desglose del período cuadran con las ventas", async () => {
+    const c = await person("seller", "year", 0);
+    const v = await product(700, 300, 10);
+    await sell(c, v, 2, [{ method: "cash", amount: 1400 }]);
+    const range = "?from=" + today() + "&to=" + today();
+    const breakdown = await ok("/dashboard/breakdown" + range, admin);
+    const year = await ok("/dashboard/year", admin);
+    expect(year.months).toHaveLength(12);
+    expect(
+      year.months.reduce((a: number, m: any) => a + m.revenue, 0),
+    ).toBeCloseTo(year.revenue, 2);
+    const month = year.months[Number(today().slice(5, 7)) - 1];
+    // Hoy es parte del mes: el mes tiene al menos lo vendido hoy.
+    expect(month.revenue).toBeGreaterThanOrEqual(breakdown.revenue - 1);
+    expect(breakdown.units).toBeGreaterThanOrEqual(2);
+    expect(breakdown.invoices).toBeGreaterThanOrEqual(1);
+    expect(
+      breakdown.categories.reduce((a: number, r: any) => a + r.revenue, 0),
+    ).toBeCloseTo(breakdown.revenue, 2);
+    // Ganancia = venta − costo, sin restar ITBIS.
+    expect(breakdown.profit).toBeCloseTo(breakdown.revenue - breakdown.cost, 2);
+    expect(breakdown.days).toBe(1);
+    expect(breakdown.averagePerDay).toBeCloseTo(breakdown.revenue, 2);
+    expect(breakdown.top.length).toBeLessThanOrEqual(10);
   });
 
   it("N-5: el aviso de descuento inusual nace al registrar la venta, sin esperar a la evaluación", async () => {

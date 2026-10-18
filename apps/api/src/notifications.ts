@@ -48,6 +48,91 @@ export function telegramSettings(
   return { enabled: !!token && !!chatId, token, chatId, apiBase };
 }
 
+// Correo (Resend): la dueña recibe por correo cada cierre de caja y cada
+// solicitud de anulación. Sin RESEND_API_KEY no hace nada.
+export type EmailSettings = {
+  enabled: boolean;
+  apiKey: string;
+  to: string;
+  from: string;
+  apiBase: string;
+};
+
+export function emailSettings(
+  env: NodeJS.ProcessEnv = process.env,
+): EmailSettings {
+  const apiKey = env.RESEND_API_KEY?.trim() ?? "";
+  const to = env.NOTIFY_EMAIL_TO?.trim() ?? "";
+  const from =
+    env.NOTIFY_EMAIL_FROM?.trim() || "Nexora POS <onboarding@resend.dev>";
+  const apiBase = (
+    env.RESEND_API_BASE?.trim() || "https://api.resend.com"
+  ).replace(/\/+$/, "");
+  return { enabled: !!apiKey && !!to, apiKey, to, from, apiBase };
+}
+
+const EMAIL_SUBJECT: Record<string, string> = {
+  cash_close: "Cierre de caja",
+  void_request: "Solicitud de anulación",
+};
+
+export async function sendEmail(
+  settings: EmailSettings,
+  subject: string,
+  text: string,
+): Promise<SendResult> {
+  try {
+    const appUrl =
+      process.env.APP_PUBLIC_URL?.trim() ||
+      "https://nexora-pos-web.onrender.com";
+    const response = await fetch(`${settings.apiBase}/emails`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${settings.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: settings.from,
+        to: [settings.to],
+        subject,
+        html:
+          text.replace(/\n/g, "<br>") +
+          `<br><br><a href="${appUrl}">Abrir Nexora POS</a>`,
+      }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if (response.ok) return { ok: true };
+    const body: any = await response.json().catch(() => null);
+    return {
+      ok: false,
+      status: response.status,
+      error: sanitizeError(
+        `HTTP ${response.status}: ${body?.message ?? response.statusText}`,
+        settings.apiKey,
+      ),
+    };
+  } catch (error: any) {
+    return {
+      ok: false,
+      error: sanitizeError(error?.message ?? String(error), settings.apiKey),
+    };
+  }
+}
+
+/** Tres intentos (ahora, 10 s, 60 s); nunca lanza ni frena la operación. */
+async function emailWithRetry(
+  settings: EmailSettings,
+  subject: string,
+  text: string,
+) {
+  for (const wait of [0, 10_000, 60_000]) {
+    if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
+    const result = await sendEmail(settings, subject, text);
+    if (result.ok) return;
+    console.warn(`[avisos] Correo "${subject}" no se envió: ${result.error}`);
+  }
+}
+
 /** Intervalo del trabajador. */
 export const POLL_MS = 5000;
 /** Separación mínima entre mensajes (~1 por segundo). */
@@ -674,12 +759,19 @@ export function notify(
   refId: string,
 ): void {
   try {
-    if (!telegramSettings().enabled) return;
+    const telegram = telegramSettings();
+    const mail = emailSettings();
+    const wantsMail = mail.enabled && event in EMAIL_SUBJECT;
+    if (!telegram.enabled && !wantsMail) return;
     void (async () => {
       const rendered = await renderEvent(db, event, refId);
       if (!rendered) return;
-      await enqueue(db, event, refId, rendered.branchId, rendered.text);
-      wakeWorkers();
+      if (telegram.enabled) {
+        await enqueue(db, event, refId, rendered.branchId, rendered.text);
+        wakeWorkers();
+      }
+      if (wantsMail)
+        void emailWithRetry(mail, EMAIL_SUBJECT[event], rendered.text);
     })().catch((error) =>
       console.warn(
         `[avisos] No se pudo encolar el aviso ${event}: ` +
