@@ -44,6 +44,8 @@ Tests       15 passed (15)
 
 `pnpm check`, `tests/warehouses-postgres.test.ts`, pruebas API PostgreSQL y `tests/e2e/almacenes.spec.ts` NO ejecutadas: no hay base descartable provisionada; no se usó ni inspeccionó ninguna configuración/credencial existente. No se intentó iniciar PostgreSQL ni conectar a Render/producción. Por ello, transferencias concurrentes reales, conteos/importaciones persistidos, migraciones y flujo UI móvil quedan SIN REPRODUCIR.
 
+**Actualización de la auditoría integrada (2026-10-18):** en el worktree principal se ejecutó `pnpm check` sobre el mismo SHA base (`cf6f7022`), cuyo Vitest incluye `tests/warehouses-postgres.test.ts`: **4 pruebas pasaron**. La variable externa `NEXORA_TEST_PG_URL` no estaba definida; el test crea y destruye su PostgreSQL embebido temporal. Esto confirma esa suite focalizada de almacenes, pero no ejecuta `tests/e2e/almacenes.spec.ts` ni reproduce I-01.
+
 ## Pendiente
 
 Reproducir I-01 y ejecutar la suite PostgreSQL/E2E solo cuando exista una base local desechable confirmada y aislada, usando los puertos reservados por la orden. No se aplicaron parches ni se desplegó nada.
