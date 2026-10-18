@@ -7,8 +7,8 @@ Base revisada: `origin/nexora-cloud` @ `cf6f7022ab9682db45327558e5dd18946a7b1473
 1. Se revisaron las diez áreas pedidas: dinero, seguridad, inventario, datos/migraciones, integraciones, interfaz, infraestructura, instalador, pruebas y documentación.
 2. No se confirmó pérdida real de dinero ni una alteración de datos de negocio durante esta auditoría.
 3. Hay **dos hallazgos altos** que merecen atención: el flujo local de pruebas podría continuar contra una API/base remota si la configuración apunta allí (demostrado con mocks, sin contactar un servicio), y el inventario permite un camino sin lote cuando una categoría exige vencimiento (el consumo real de código se probó con stub, falta el flujo PostgreSQL completo).
-4. Se identificaron ocho hallazgos medios y seis bajos; varios son huecos de prueba o riesgos aún no reproducidos, no fallos confirmados.
-5. `pnpm check`: 659 pruebas aprobadas y 10 omitidas, en 72 archivos (71 pasaron, 1 omitido); no se observaron errores de typecheck, lint ni build.
+4. Se identificaron nueve hallazgos medios y seis bajos; varios son huecos de prueba o riesgos aún no reproducidos, no fallos confirmados.
+5. Primera `pnpm check`: 659 pruebas aprobadas y 10 omitidas, en 72 archivos. Una repetición posterior en árbol limpio encontró una falla de limpieza temporal `EBUSY` en `courier-migration-postgres.test.ts` (658 aprobadas, 1 fallida, 10 omitidas); typecheck y lint sí pasaron.
 6. Los tests PostgreSQL de la suite Vitest usaron bases embebidas y temporales; `NEXORA_TEST_PG_URL` no estaba definido. No se migró ninguna base persistente.
 7. No se ejecutaron `pnpm test:integration`, `pnpm verify` ni Playwright: el harness puede aceptar destinos remotos y no había API/base dedicada explícitamente configurada.
 8. Cinco pruebas de backup/restore se omitieron por falta de admin PostgreSQL desechable y herramientas; también hubo skips condicionales de cumplimiento, inventario y despliegue. No se cuentan como aprobadas.
@@ -29,6 +29,7 @@ Base revisada: `origin/nexora-cloud` @ `cf6f7022ab9682db45327558e5dd18946a7b1473
 | N-02 | **MEDIO — SIN REPRODUCIR proveedor** | Integraciones | La entrega Telegram es al menos una vez; un fallo tras enviar pero antes de marcar `sent` puede duplicar aviso. |
 | W-01 | **MEDIO — contradicción probada por código/test** | Instalador | El asistente ofrece destino OneDrive/USB, pero la ruta efectiva se fuerza a `%ProgramData%`; un test de contrato confirma el destino local. |
 | Q-02 | **MEDIO — brecha de cobertura** | Pruebas | Faltan escenarios API concurrentes de idempotencia para devoluciones/COD/cobros por venta y cierre con diferencia de tarjeta + PIN. No se afirma que el código falle. |
+| Q-04 | **MEDIO — fallo reproducido una vez** | Pruebas Windows/PostgreSQL | Una repetición de `pnpm check` falló al limpiar el directorio temporal de `courier-migration-postgres.test.ts`: `EBUSY: resource busy or locked, rmdir ...`. La causa exacta del bloqueo no se determinó. |
 | D-02 | **BAJO — SIN REPRODUCIR PG** | Datos/migraciones | Restauración acepta cualquier URL PostgreSQL aunque la guía pide base nueva/vacía; el modo paralelo tampoco es atómico. |
 | UI-01 | **BAJO — brecha de cobertura** | Interfaz | E2E móvil comprueba diferencia de conciliación, pero no pulsa verificar ni comprueba el resultado. |
 | INF-01 | **BAJO — SIN REPRODUCIR Nginx** | Infraestructura | Validador textual de CIDR podría aceptar octetos/prefijos fuera de rango; no se ejecutó Nginx real. |
@@ -36,13 +37,14 @@ Base revisada: `origin/nexora-cloud` @ `cf6f7022ab9682db45327558e5dd18946a7b1473
 | DOC-01 | **BAJO — SIN REPRODUCIR instalador completo** | Documentación | Guía/NSIS permiten PIN de 4–5 dígitos, pero el script final exige exactamente 6; la instalación puede fallar después de avanzar. |
 | DOC-02 | **BAJO — confirmado por lectura** | Documentación | `DEPLOY-RENDER.md` se contradice sobre si Nginx confía en `CF-Connecting-IP`; la sección nueva explica el criterio condicionado, la vieja lo niega. |
 
-Detalle, líneas y parches sugeridos (no aplicados) están en los informes por área. **Críticos: 0. Altos: 2 (1 confirmado con mocks; 1 sin reproducción end-to-end). Medios: 8. Bajos: 6.**
+Detalle, líneas y parches sugeridos (no aplicados) están en los informes por área. **Críticos: 0. Altos: 2 (1 confirmado con mocks; 1 sin reproducción end-to-end). Medios: 9. Bajos: 6.**
 
 ## Pruebas y comandos
 
 - `pnpm install --frozen-lockfile` — completó en los worktrees de auditoría.
 - `pnpm db:generate` — completó con Prisma config y sin conectar a una base.
 - `pnpm check` — suite completa: `Test Files 71 passed | 1 skipped (72); Tests 659 passed | 10 skipped (669)`. Typecheck, lint y builds web/API sin error observado. El build API se volvió a ejecutar de forma aislada y terminó con código 0.
+- Repetición posterior de `pnpm check` en árbol limpio: typecheck y lint pasaron; Vitest terminó `Test Files 1 failed | 70 passed | 1 skipped (72); Tests 1 failed | 658 passed | 10 skipped (669)`. Fallo exacto: `tests/courier-migration-postgres.test.ts` → `EBUSY: resource busy or locked, rmdir 'C:\Users\marco\AppData\Local\Temp\nexora-courier-db-MxmzfV'`. El build no se ejecutó porque Vitest falló.
 - `pnpm exec vitest run tests/warehouses-postgres.test.ts` — 1 archivo/4 pruebas aprobadas en el worktree principal, con PostgreSQL embebido; no se usó `NEXORA_TEST_PG_URL`.
 - Notificaciones: 20 pruebas; interfaz y offline: 61; seguridad: 69; dinero: 26; inventario/importación: 15; zona horaria: 4; infraestructura (`cloud-deploy`): 33 aprobadas y 3 omitidas; instalador Windows PowerShell 5.1: 11 aprobadas; cobertura subset: 65; documentación: 4.
 - Primer intento de dos suites de notificación antes de generar Prisma Client: falló durante carga con `Cannot find module '.prisma/client/default'`; después de `pnpm db:generate`, ambas pasaron (20/20). No fue un fallo funcional.
@@ -56,6 +58,7 @@ Detalle, líneas y parches sugeridos (no aplicados) están en los informes por �
 - Proveedores reales, `429`, reintentos/cortes de Resend y Telegram, OAuth/Drive y eventos Sentry.
 - Playwright real a 320/390 px, flakiness en corridas repetidas, impresión física, instalación Windows limpia y restauración/actualización/rollback end-to-end.
 - PostgreSQL 17 del CI frente al PostgreSQL embebido/local; no se compararon todas las migraciones contra ambas versiones.
+- Causa raíz del `EBUSY` durante el teardown de `courier-migration-postgres.test.ts`; no se reintentó.
 - Configuración viva de Render, certificados/dominios/IP reales, variables y estado del servicio; no se consultó Render.
 - Estado de CI remoto de esta rama; el informe es evidencia local, no un resultado de GitHub Actions.
 
