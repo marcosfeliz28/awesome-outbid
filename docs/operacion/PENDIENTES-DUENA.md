@@ -1,8 +1,7 @@
 # Pendientes de la dueña (se actualiza a diario)
 
 ## Estado al 18-oct (para un chat nuevo)
-- **Conteo de proteínas 18-oct** (Excel del muchacho, 46 renglones / 190 uds; sistema 195 tras FS-0000116): falta que la dueña diga si se ajustan estos 7 renglones: Isopure 3 lb Vanilla 23 (sist. 26), Isopure 3 lb Dutch 2 (sist. 4 Dutch + 1 «Chocolate»), GS Isolate Rich Vanilla 8 (10), GS Casein 1 (0), Isopure 1 lb 17 (11 potes + 5 bolsas), MuscleTech Mass Vanilla 2 (1), MuscleTech Mass Brownie 2 (1). Carnivor Mass Vanilla ya se corrigió a 3.
-- **No contados pero con existencia**: Isoflex Chocolate 2 lb (2), Klean Isolate (1), GS Vanilla Ice Cream 2 lb (1), Muscle Milk Pro Series 2 lb (1): el muchacho debe buscarlos.
+- **Conteo de proteínas 18-oct: APLICADO** (15 ajustes + producto nuevo 1933 Nitro-Tech Ripped Vanilla Cream 4 lb, costo 3,300 / venta 4,500). Detalle en `docs/operacion/conteos/CONTEO-PROTEINAS-2026-10-18.xlsx` y la bitácora. Tienda verificada por 4 lecturas: 54 productos, 191 uds (190 del Excel + Klean). Sin tocar: fundas Isopure 1213 (5), colágenos y Dollys Milk (no son proteína para la dueña).
 - **Decisiones del cierre de caja** (6): un solo verifone, fondo, tope, Genesis, turnos, mensajero.
 - Señales a revisar: FS-0000113 (Lizbeth 50 %, transferencia ref 1111 por verificar), FS-0000062 (annya bello, 32 % «CREDITO», contraentrega RD$ 71,100 pendiente).
 
