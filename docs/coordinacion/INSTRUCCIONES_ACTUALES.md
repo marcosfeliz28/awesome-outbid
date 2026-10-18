@@ -441,3 +441,6 @@ Fase 2 (estadística y pago por período) sigue como está en el instructivo pre
 
 ## 3ae — Traspaso del día a día a ChatGPT NUBE (14-oct-2026, orden de la dueña)
 Claude puede dejar de estar disponible; la dueña quiere seguir trabajando igual con ChatGPT NUBE. Documento completo y vigente: `docs/coordinacion/TRASPASO_CHATGPT_NUBE.md` (accesos que ella debe darte, reglas del dinero, endpoints, rutina diaria, despliegue con CI verde y orden expresa, estado y pendientes). **Primer entregable:** contesta a la dueña con 3 líneas (qué leíste, qué puedes hacer ya, qué te falta).
+
+## Regla del almacén Casa (dueña, 18-oct-2026)
+Casa solo se modifica con instrucción expresa de la dueña. Toda salida de Casa lleva su destino en el motivo: «regalo a <persona>» (salida) o «traspaso a Tienda» (resta Casa y suma Tienda, mismo costo). Conteo inicial de fajas en Casa cargado el 18-oct (205 unidades; «faja tipo corset» = «Cinturilla tipo corset»).
