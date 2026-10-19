@@ -38,6 +38,7 @@ type Open = {
   days: number;
   balance: unknown;
   cod: boolean;
+  kind: string | null;
   customerId: string | null;
   name: string | null;
   phone: string | null;
@@ -52,6 +53,7 @@ const openReceivables = (db: any, actor: Actor, to: Date) =>
       GREATEST(0, ${businessDay(to)} - ${local(Prisma.sql`s."createdAt"`)}::date)::int AS days,
       s."creditBalance" AS balance,
       EXISTS (SELECT 1 FROM "Payment" cp WHERE cp."saleId" = s.id AND cp."entryType" = 'sale' AND cp.method = 'cod') AS cod,
+      s."receivableKind" AS kind,
       s."customerId"::text AS "customerId", c.name, c.phone
     FROM "Sale" s LEFT JOIN "Customer" c ON c.id = s."customerId"
     WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed'
@@ -83,7 +85,15 @@ export const clientes: Record<string, ReportDef> = {
       const detail: Row[] = open.map((o) => ({
         Tramo: bucket(o.days),
         Factura: o.number,
-        Tipo: o.cod ? "Contraentrega" : "Crédito",
+        // Etiqueta de la caja (dueña, 19-oct); antes no se distinguía.
+        Tipo:
+          o.kind === "credit"
+            ? "Crédito"
+            : o.kind === "cod"
+              ? "Contraentrega"
+              : o.cod
+                ? "Crédito / contraentrega"
+                : "Crédito",
         Cliente: o.name ?? "Consumidor final",
         Teléfono: phone(o.phone),
         Fecha: o.sold,

@@ -158,7 +158,7 @@ test.describe("A1 y 03 · recibo de la venta", () => {
     await page.getByLabel("Monto del pago").fill("500");
     await page.getByRole("button", { name: "Agregar pago" }).click();
     await page
-      .getByRole("button", { name: "Crédito / contraentrega", exact: true })
+      .getByRole("button", { name: "Contraentrega", exact: true })
       .click();
     await page.getByRole("button", { name: "Agregar pago" }).click();
     await page.getByRole("button", { name: "Finalizar venta" }).click();
@@ -827,7 +827,7 @@ test("M-2: si la deuda del cliente exige PIN, la caja lo pide y reintenta el mis
         .first()
         .click();
       await page
-        .getByRole("button", { name: "Crédito / contraentrega", exact: true })
+        .getByRole("button", { name: "Contraentrega", exact: true })
         .click();
       await page.getByRole("button", { name: "Agregar pago" }).click();
     };
