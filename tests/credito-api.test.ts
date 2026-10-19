@@ -6,6 +6,7 @@
 // relativas a hoy.
 import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { DEMO_TENANT_ID } from "../apps/api/src/tenant-context";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -1362,7 +1363,10 @@ describe("W7 · recordatorio semanal de créditos", () => {
         }),
       ).toBe(1);
       // Resolver la alerta no la hace reaparecer esa semana.
-      await db.alert.update({ where: { key }, data: { status: "resolved" } });
+      await db.alert.update({
+        where: { tenantId_key: { tenantId: DEMO_TENANT_ID, key } },
+        data: { status: "resolved" },
+      });
       expect((await service.run(monday, { telegram: true })).created).toEqual(
         [],
       );
@@ -1381,7 +1385,11 @@ describe("W7 · recordatorio semanal de créditos", () => {
       // La evaluación automática no la resuelve sola.
       await ok("/alerts/evaluate", owner, {});
       expect(
-        (await db.alert.findUnique({ where: { key: nextKey } })).status,
+        (
+          await db.alert.findUnique({
+            where: { tenantId_key: { tenantId: DEMO_TENANT_ID, key: nextKey } },
+          })
+        ).status,
       ).toBe("new");
     } finally {
       await db.alert.deleteMany({ where: { key: { in: [key, nextKey] } } });

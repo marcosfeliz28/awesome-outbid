@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { stop } from "../scripts/verify.mjs";
+import { DEMO_TENANT_ID } from "../apps/api/src/tenant-context";
 import {
   REQUEST_RATE_LIMITS,
   ValidatedRateLimitStore,
@@ -180,9 +181,9 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     ).toBe(true);
     // Un equipo pendiente de aprobación tampoco.
     const pending = await approvedTerminal(false);
-    expect(blocked(await login(cashier, EDGE_IP, CASHIER_PASSWORD, pending))).toBe(
-      true,
-    );
+    expect(
+      blocked(await login(cashier, EDGE_IP, CASHIER_PASSWORD, pending)),
+    ).toBe(true);
     // La cajera, con la misma IP de borde, entra desde su equipo aprobado.
     const ok = await login(cashier, EDGE_IP, CASHIER_PASSWORD, terminal);
     expect(ok.status).toBe(201);
@@ -198,15 +199,24 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
       expect(
         wrong(await login(cashier, EDGE_IP, "incorrecta-" + n, stolen)),
       ).toBe(true);
-    expect(blocked(await login(cashier, EDGE_IP, CASHIER_PASSWORD, stolen))).toBe(true);
+    expect(
+      blocked(await login(cashier, EDGE_IP, CASHIER_PASSWORD, stolen)),
+    ).toBe(true);
     const row = await db.authAttempt.findUniqueOrThrow({
-      where: { key: `login:${cashier.id}:0:terminal:${stolen.id}` },
+      where: {
+        tenantId_key: {
+          tenantId: DEMO_TENANT_ID,
+          key: `login:${cashier.id}:0:terminal:${stolen.id}`,
+        },
+      },
     });
     expect(row.failedAttempts).toBe(5);
     const left = (+row.lockedUntil - Date.now()) / MINUTE;
     expect(left).toBeGreaterThan(13);
     expect(left).toBeLessThan(17);
-    expect((await login(cashier, EDGE_IP, CASHIER_PASSWORD, other)).status).toBe(201);
+    expect(
+      (await login(cashier, EDGE_IP, CASHIER_PASSWORD, other)).status,
+    ).toBe(201);
   });
 
   it("un atacante no prueba más de 30 contraseñas por hora y cuenta aunque cambie de IP, la administración recibe una alerta y la cajera sigue entrando desde su equipo (N-01)", async () => {
@@ -247,20 +257,25 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     expect(blocked(fromNewPhone)).toBe(true);
     expect(fromNewPhone.body.message).toMatch(/equipo aprobado/);
     // Desde su equipo aprobado entra.
-    expect((await login(cashier, nextIp(), CASHIER_PASSWORD, terminal)).status).toBe(
-      201,
-    );
+    expect(
+      (await login(cashier, nextIp(), CASHIER_PASSWORD, terminal)).status,
+    ).toBe(201);
     // La dueña (administración) con su equipo aprobado tampoco queda fuera.
     // El cupo por cuenta vence a la hora como mucho.
     const budget = await db.authAttempt.findUniqueOrThrow({
-      where: { key: `login-account:${cashier.id}:0` },
+      where: {
+        tenantId_key: {
+          tenantId: DEMO_TENANT_ID,
+          key: `login-account:${cashier.id}:0`,
+        },
+      },
     });
     const left = (+budget.lockedUntil - Date.now()) / MINUTE;
     expect(left).toBeGreaterThan(50);
     expect(left).toBeLessThanOrEqual(60);
     // Pasada la hora (simulada), la cuenta vuelve a admitir intentos.
     await db.authAttempt.update({
-      where: { key: budget.key },
+      where: { tenantId_key: { tenantId: DEMO_TENANT_ID, key: budget.key } },
       data: {
         lockedUntil: new Date(Date.now() - MINUTE),
         windowStartedAt: new Date(Date.now() - 61 * MINUTE),
@@ -295,9 +310,9 @@ describe("S-01 · el bloqueo por contraseñas erróneas no deja a la cajera fuer
     // El freno en memoria sigue actuando sobre esa IP...
     expect(statuses.at(-1)).toBe(429);
     // ...pero el equipo aprobado tiene su propio cupo.
-    expect((await login(cashier, EDGE_IP, CASHIER_PASSWORD, terminal)).status).toBe(
-      201,
-    );
+    expect(
+      (await login(cashier, EDGE_IP, CASHIER_PASSWORD, terminal)).status,
+    ).toBe(201);
   }, 90000);
 });
 
@@ -317,7 +332,12 @@ describe("N-01 · la dueña o administradora con equipo aprobado nunca queda fue
     }
     // Y los fallos en su equipo no tocan el cupo de la cuenta: sólo el propio.
     const row = await db.authAttempt.findUniqueOrThrow({
-      where: { key: `login-account:${owner.id}:0` },
+      where: {
+        tenantId_key: {
+          tenantId: DEMO_TENANT_ID,
+          key: `login-account:${owner.id}:0`,
+        },
+      },
     });
     expect(row.failedAttempts).toBe(30);
   }, 90000);
@@ -355,9 +375,9 @@ describe("S-02 · el cupo de identidades inexistentes no deja sin acceso a los e
     const typo = await login(cashier, EDGE_IP, "incorrecta", terminal);
     expect(typo.status).toBe(400);
     expect(typo.body.message).toMatch(/incorrectos/);
-    expect((await login(cashier, EDGE_IP, CASHIER_PASSWORD, terminal)).status).toBe(
-      201,
-    );
+    expect(
+      (await login(cashier, EDGE_IP, CASHIER_PASSWORD, terminal)).status,
+    ).toBe(201);
   }, 60000);
 });
 
@@ -501,7 +521,9 @@ describe("S-03 · PIN de gerente", () => {
       // El tope de respaldo de la sucursal (30 por hora) sigue existiendo:
       // agotado, rechaza el PIN corto, incluso el correcto...
       await db.authAttempt.upsert({
-        where: { key: "pin-short:main" },
+        where: {
+          tenantId_key: { tenantId: DEMO_TENANT_ID, key: "pin-short:main" },
+        },
         create: {
           key: "pin-short:main",
           failedAttempts: 30,
@@ -542,7 +564,9 @@ describe("S-03 · PIN de gerente", () => {
       call("/auth/pin", { ip, token, body: { userId: target.id, pin: value } });
     const expireSwitch = () =>
       db.authAttempt.update({
-        where: { key: "switch:" + actor.id },
+        where: {
+          tenantId_key: { tenantId: DEMO_TENANT_ID, key: "switch:" + actor.id },
+        },
         data: { lockedUntil: new Date(Date.now() - MINUTE) },
       });
     for (let round = 0; round < 2; round++) {
@@ -781,8 +805,15 @@ describe("N-02 · el cubo global de identidades desconocidas no da 429 a los equ
       );
       expect(ghostFromTerminal.status).toBe(400);
       expect(
-        (await login(cashier, nextIp(), CASHIER_PASSWORD, terminal, isolated.api))
-          .status,
+        (
+          await login(
+            cashier,
+            nextIp(),
+            CASHIER_PASSWORD,
+            terminal,
+            isolated.api,
+          )
+        ).status,
       ).toBe(201);
     } finally {
       await isolated.close();

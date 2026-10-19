@@ -83,6 +83,7 @@ let managerToken = "";
 let variantId = "";
 let productId = "";
 let customerId = "";
+let tenantId = "";
 
 async function registerTerminal(person: Person, label: string) {
   const id = randomUUID();
@@ -188,6 +189,12 @@ beforeAll(async () => {
     };
   };
   owner = await login("admin@fitstore.demo");
+  tenantId = (
+    await db.user.findUniqueOrThrow({
+      where: { id: owner.id },
+      select: { tenantId: true },
+    })
+  ).tenantId;
   await registerTerminal(owner, "dueña");
   managerToken = (await login("gerente@fitstore.demo")).token;
   secondAdmin = await person("admin-dos", "admin");
@@ -296,7 +303,9 @@ describe("3p · solicitud de anulación", () => {
     expect(afterIncentive).toEqual(beforeIncentive);
 
     const alert = await db.alert.findUnique({
-      where: { key: "sale-void-request:" + first.body.id },
+      where: {
+        tenantId_key: { tenantId, key: "sale-void-request:" + first.body.id },
+      },
     });
     expect(alert).toMatchObject({
       type: "sale_void_request",
@@ -517,7 +526,12 @@ describe("3p · solicitud de anulación", () => {
     expect(
       (
         await db.alert.findUniqueOrThrow({
-          where: { key: "sale-void-request:" + created.body.id },
+          where: {
+            tenantId_key: {
+              tenantId,
+              key: "sale-void-request:" + created.body.id,
+            },
+          },
         })
       ).status,
     ).toBe("resolved");
@@ -626,9 +640,11 @@ describe("3p · solicitud de anulación", () => {
   });
 
   it("una solicitud de otra sucursal no aparece ni se puede decidir", async () => {
-    const role = await db.role.findUniqueOrThrow({ where: { name: "seller" } });
     const source = await db.user.findUniqueOrThrow({
       where: { id: seller.id },
+    });
+    const role = await db.role.findUniqueOrThrow({
+      where: { tenantId_name: { tenantId: source.tenantId, name: "seller" } },
     });
     const foreignUser = await db.user.create({
       data: {

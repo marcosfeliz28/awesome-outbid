@@ -173,4 +173,8 @@ CREATE UNIQUE INDEX "NotificationOutbox_tenantId_eventType_refId_key"
 DROP INDEX IF EXISTS one_open_cash_per_user;
 CREATE UNIQUE INDEX one_open_cash_per_user ON "CashSession" ("tenantId", "branchId", "userId") WHERE "closedAt" IS NULL;
 DROP INDEX IF EXISTS one_open_cash_per_register;
-CREATE UNIQUE INDEX one_open_cash_per_register ON "CashSession" ("tenantId", "branchId", "registerId") WHERE "closedAt" IS NULL;
+-- W6: la caja pertenece al usuario, no al equipo. Dos personas del mismo
+-- negocio pueden tener cajas abiertas simultáneamente en un solo terminal.
+-- El índice del terminal es sólo para búsqueda, nunca una restricción única.
+CREATE INDEX "CashSession_tenantId_branchId_registerId_open_idx"
+  ON "CashSession" ("tenantId", "branchId", "registerId") WHERE "closedAt" IS NULL;

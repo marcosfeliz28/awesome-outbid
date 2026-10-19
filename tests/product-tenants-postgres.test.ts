@@ -59,6 +59,25 @@ it("migra datos existentes y aísla lectura, escritura y cambio de tenant con RL
     expect(migrated.stdout).toContain("202610260001_product_tenant");
     client = db.getPgClient("product_qa", "127.0.0.1");
     await client.connect();
+    // W6: la caja es de la persona, no del terminal. La migración de
+    // unicidad SaaS no puede reintroducir la restricción por equipo.
+    const registerIndex = (await client.query(
+      `SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND indexname='one_open_cash_per_register'`,
+    )).rows;
+    expect(registerIndex).toHaveLength(0);
+    await client.query(
+      `INSERT INTO "CashSession" (id, "registerId", "userId", "openingAmount") VALUES
+        ('30000000-0000-4000-8000-000000000001', 'mismo-terminal', 'cajera-a', 100),
+        ('30000000-0000-4000-8000-000000000002', 'mismo-terminal', 'cajera-b', 200)`,
+    );
+    const simultaneous = (await client.query(
+      `SELECT count(*)::int AS total FROM "CashSession" WHERE "registerId"='mismo-terminal' AND "closedAt" IS NULL`,
+    )).rows[0];
+    expect(simultaneous.total).toBe(2);
+    await expect(client.query(
+      `INSERT INTO "CashSession" (id, "registerId", "userId", "openingAmount") VALUES
+        ('30000000-0000-4000-8000-000000000003', 'otro-terminal', 'cajera-a', 300)`,
+    )).rejects.toMatchObject({ code: "23505", constraint: "one_open_cash_per_user" });
     await client.query(`INSERT INTO "Tenant" (id, slug, name, "updatedAt") VALUES ($1, 'otro-negocio', 'Otro negocio', now())`, [other]);
     const tables = (await client.query(`SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename <> '_prisma_migrations' AND tablename <> 'Tenant'`)).rows.map((r: any) => r.tablename);
     expect(tables).toHaveLength(58);

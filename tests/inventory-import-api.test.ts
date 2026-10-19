@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createHash, randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { DEMO_TENANT_ID } from "../apps/api/src/tenant-context";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -596,7 +597,11 @@ describe("Importar inventario · equipo, lotes, sucursales y valoración", () =>
     });
     expect(refused.status).toBe(400);
     expect(
-      (await db.category.findUnique({ where: { name } })).requiresLot,
+      (
+        await db.category.findUnique({
+          where: { tenantId_name: { tenantId: DEMO_TENANT_ID, name } },
+        })
+      ).requiresLot,
     ).toBe(true);
     expect(await db.variant.count({ where: { sku: code(300) } })).toBe(0);
     const consent = await send("preview", admin, file, { withoutLots: "true" });
@@ -608,7 +613,11 @@ describe("Importar inventario · equipo, lotes, sucursales y valoración", () =>
     });
     expect(done.status, JSON.stringify(done.body)).toBe(201);
     expect(
-      (await db.category.findUnique({ where: { name } })).requiresLot,
+      (
+        await db.category.findUnique({
+          where: { tenantId_name: { tenantId: DEMO_TENANT_ID, name } },
+        })
+      ).requiresLot,
     ).toBe(false);
     const logs = await db.auditLog.findMany({
       where: {
@@ -617,7 +626,11 @@ describe("Importar inventario · equipo, lotes, sucursales y valoración", () =>
         },
         entityId: {
           in: [
-            (await db.category.findUnique({ where: { name } })).id,
+            (
+              await db.category.findUnique({
+                where: { tenantId_name: { tenantId: DEMO_TENANT_ID, name } },
+              })
+            ).id,
             sha(file),
           ],
         },

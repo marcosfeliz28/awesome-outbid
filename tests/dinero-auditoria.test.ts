@@ -9,6 +9,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { businessDate } from "../packages/shared/src/index";
 import { businessMonth } from "../apps/api/src/incentives";
+import { DEMO_TENANT_ID } from "../apps/api/src/tenant-context";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -171,21 +172,26 @@ async function withSettings<T>(
   patch: Record<string, unknown>,
   run: () => Promise<T>,
 ) {
-  const before = await db.settings.findUnique({ where: { id: "main" } });
+  const before = await db.settings.findUnique({
+    where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
+  });
   await db.settings.update({
-    where: { id: "main" },
+    where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
     data: { data: { ...(before.data as any), ...patch } },
   });
   try {
     return await run();
   } finally {
     await db.settings.update({
-      where: { id: "main" },
+      where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
       data: { data: before.data },
     });
   }
 }
-const alert = (key: string) => db.alert.findUnique({ where: { key } });
+const alert = (key: string) =>
+  db.alert.findUnique({
+    where: { tenantId_key: { tenantId: DEMO_TENANT_ID, key } },
+  });
 const today = () => businessDate();
 
 beforeAll(async () => {

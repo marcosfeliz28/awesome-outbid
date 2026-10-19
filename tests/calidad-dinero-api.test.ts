@@ -8,6 +8,7 @@
 // hoy.
 import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { DEMO_TENANT_ID } from "../apps/api/src/tenant-context";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -369,12 +370,12 @@ describe("Devoluciones, anulación y abonos", () => {
   it("S06 · sin returnDays en Ajustes el plazo de devolución es de 30 días", async () => {
     const adm = await person("plazo", "admin");
     const stored = await db.settings.findUniqueOrThrow({
-      where: { id: "main" },
+      where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
     });
     const { returnDays: _removed, ...withoutReturnDays } = stored.data as any;
     void _removed;
     await db.settings.update({
-      where: { id: "main" },
+      where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
       data: { data: withoutReturnDays },
     });
     try {
@@ -394,7 +395,7 @@ describe("Devoluciones, anulación y abonos", () => {
       expect((await returnOf(adm, recent)).status).toBe(201);
     } finally {
       await db.settings.update({
-        where: { id: "main" },
+        where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
         data: { data: stored.data },
       });
     }

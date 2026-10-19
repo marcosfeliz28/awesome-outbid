@@ -103,6 +103,14 @@ function runNode(args: string[], env: NodeJS.ProcessEnv, timeout?: number) {
 }
 const { PrismaClient } = requireApi("@prisma/client");
 const fixtureDb = new PrismaClient();
+// Las claves naturales de estos modelos son únicas por empresa, no globales.
+const fixtureTenantId = async (): Promise<string> =>
+  (
+    await fixtureDb.user.findFirstOrThrow({
+      where: { email: "admin@fitstore.demo" },
+      select: { tenantId: true },
+    })
+  ).tenantId;
 const expectedForCash = async (id: string) => {
   const cash = (await ok("/cash-sessions", undefined, ownerToken)).find(
     (session: any) => session.id === id,
@@ -435,7 +443,9 @@ afterAll(async () => {
 describe("Aceptación financiera y permisos", () => {
   it("T5: el arranque marca sólo las cuentas configuradas y sin variables no cambia ninguna", async () => {
     const role = await fixtureDb.role.findUniqueOrThrow({
-      where: { name: "seller" },
+      where: {
+        tenantId_name: { tenantId: await fixtureTenantId(), name: "seller" },
+      },
     });
     const prefix = `t5-${randomUUID()}`;
     const created = await Promise.all(
@@ -1577,7 +1587,12 @@ describe("Seguridad, offline y funciones completadas", () => {
         })),
       );
       const attempt = await fixtureDb.authAttempt.findUniqueOrThrow({
-        where: { key: "approval:" + pinSeller.id },
+        where: {
+          tenantId_key: {
+            tenantId: await fixtureTenantId(),
+            key: "approval:" + pinSeller.id,
+          },
+        },
       });
       expect(attempt.failedAttempts).toBe(5);
       expect(attempt.lockedUntil?.getTime()).toBeGreaterThan(Date.now());
@@ -1598,7 +1613,10 @@ describe("Seguridad, offline y funciones completadas", () => {
         pinSellerToken,
       );
       await fixtureDb.authAttempt.deleteMany({
-        where: { key: "approval:" + pinSeller.id },
+        where: {
+          tenantId: await fixtureTenantId(),
+          key: "approval:" + pinSeller.id,
+        },
       });
     }
   });
@@ -2070,7 +2088,12 @@ describe("Seguridad, offline y funciones completadas", () => {
       expect(Number(stored.differenceCard)).toBe(10);
       expect(Number(stored.difference)).toBe(0);
       const alert = await fixtureDb.alert.findUniqueOrThrow({
-        where: { key: "cash:" + alertCash.id },
+        where: {
+          tenantId_key: {
+            tenantId: await fixtureTenantId(),
+            key: "cash:" + alertCash.id,
+          },
+        },
       });
       expect(alert).toMatchObject({
         type: "cash_difference",
@@ -2326,7 +2349,14 @@ describe("Ronda 2 de Claude", () => {
         where: { variantId: variant.variants[0].id },
       }),
       counter: (
-        await fixtureDb.counter.findUnique({ where: { key: "sale:main" } })
+        await fixtureDb.counter.findUnique({
+          where: {
+            tenantId_key: {
+              tenantId: await fixtureTenantId(),
+              key: "sale:main",
+            },
+          },
+        })
       )?.value,
     });
     const countsBefore = await protectedCounts();
@@ -2354,7 +2384,14 @@ describe("Ronda 2 de Claude", () => {
       expect(blocked.results[0].status).toBe("conflict");
       expect(blocked.results[0].message).toMatch(/desactivadas/);
       expect(
-        await fixtureDb.sale.findUnique({ where: { offlineUuid } }),
+        await fixtureDb.sale.findUnique({
+          where: {
+            tenantId_offlineUuid: {
+              tenantId: await fixtureTenantId(),
+              offlineUuid,
+            },
+          },
+        }),
       ).toBeNull();
       expect(await protectedCounts()).toEqual(countsBefore);
       expect(
@@ -2367,7 +2404,12 @@ describe("Ronda 2 de Claude", () => {
         ),
       ).toBe(stockBefore);
       await fixtureDb.alert.update({
-        where: { key: "offline:" + offlineUuid },
+        where: {
+          tenantId_key: {
+            tenantId: await fixtureTenantId(),
+            key: "offline:" + offlineUuid,
+          },
+        },
         data: { status: "seen" },
       });
 
@@ -2380,7 +2422,12 @@ describe("Ronda 2 de Claude", () => {
       const accepted = await ok("/sales/sync", { sales: [forged] });
       expect(accepted.results[0].status).toBe("synced");
       const stored = await fixtureDb.sale.findUniqueOrThrow({
-        where: { offlineUuid },
+        where: {
+          tenantId_offlineUuid: {
+            tenantId: await fixtureTenantId(),
+            offlineUuid,
+          },
+        },
         include: { items: true },
       });
       expect(Number(stored.items[0].unitPrice)).toBe(118);
@@ -2388,7 +2435,12 @@ describe("Ronda 2 de Claude", () => {
       expect(
         (
           await fixtureDb.alert.findUniqueOrThrow({
-            where: { key: "offline:" + offlineUuid },
+            where: {
+              tenantId_key: {
+                tenantId: await fixtureTenantId(),
+                key: "offline:" + offlineUuid,
+              },
+            },
           })
         ).status,
       ).toBe("resolved");
@@ -5195,7 +5247,11 @@ describe("Ronda 9 · auditoría R8 de ChatGPT", () => {
     expect(r1.status).not.toBe(0);
     expect(r1.out).toMatch(/exige lote o vencimiento/);
     expect(
-      await fixtureDb.category.findUnique({ where: { name: newCat } }),
+      await fixtureDb.category.findUnique({
+        where: {
+          tenantId_name: { tenantId: await fixtureTenantId(), name: newCat },
+        },
+      }),
     ).toBeNull();
     expect(await counts()).toEqual(before);
     // Precio fuera del límite de Decimal(14,2) en la segunda fila.
@@ -7717,7 +7773,12 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       ).toBe(false);
       expect(
         await fixtureDb.alert.findUnique({
-          where: { key: "receivable:" + r.body.id },
+          where: {
+            tenantId_key: {
+              tenantId: await fixtureTenantId(),
+              key: "receivable:" + r.body.id,
+            },
+          },
         }),
       ).toMatchObject({ status: "resolved", entityId: r.body.id });
       // La caja vendedora no recibió el dinero; puede cerrar sin ese cobro.
@@ -9445,8 +9506,15 @@ describe("Ronda 9 · Windows y zona horaria", () => {
         const key = "switch:" + actor.id;
         const pin = (value: string) =>
           call("/auth/pin", { userId: target.id, pin: value }, as);
-        const stored = () =>
-          fixtureDb.authAttempt.findUniqueOrThrow({ where: { key } });
+        const stored = async () =>
+          fixtureDb.authAttempt.findUniqueOrThrow({
+            where: {
+              tenantId_key: {
+                tenantId: actor.tenantId ?? (await fixtureTenantId()),
+                key,
+              },
+            },
+          });
         try {
           for (let n = 0; n < 5; n++) {
             const wrong = await pin("000000");
@@ -9467,7 +9535,12 @@ describe("Ronda 9 · Windows y zona horaria", () => {
           // Vencido hace cinco minutos: el PIN correcto entra y el contador se
           // limpia.
           await fixtureDb.authAttempt.update({
-            where: { key },
+            where: {
+              tenantId_key: {
+                tenantId: actor.tenantId ?? (await fixtureTenantId()),
+                key,
+              },
+            },
             data: {
               failedAttempts: 5,
               lockedUntil: new Date(Date.now() - 5 * MINUTE),
@@ -9479,7 +9552,9 @@ describe("Ronda 9 · Windows y zona horaria", () => {
             lockedUntil: null,
           });
         } finally {
-          await fixtureDb.authAttempt.deleteMany({ where: { key } });
+          await fixtureDb.authAttempt.deleteMany({
+            where: { tenantId: await fixtureTenantId(), key },
+          });
         }
       }, 60000);
 
@@ -10757,7 +10832,12 @@ describe("D1 + O1 · compatibilidad y resolución auditable offline", () => {
       expect(first.results[0].sale.discountReason).toBe(reason);
       const saleId = first.results[0].sale.id;
       const stored = await fixtureDb.sale.findUniqueOrThrow({
-        where: { offlineUuid },
+        where: {
+          tenantId_offlineUuid: {
+            tenantId: await fixtureTenantId(),
+            offlineUuid,
+          },
+        },
       });
       expect(stored.id).toBe(saleId);
       expect(stored.discountReason).toBe(reason);

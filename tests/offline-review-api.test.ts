@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { DEMO_TENANT_ID } from "../apps/api/src/tenant-context";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -341,7 +342,12 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
     ).toEqual(stockBefore);
     // La alerta del conflicto sigue resuelta: el reenvío no la reabre.
     const alert = await db.alert.findUniqueOrThrow({
-      where: { key: "offline:" + sale.offlineUuid },
+      where: {
+        tenantId_key: {
+          tenantId: DEMO_TENANT_ID,
+          key: "offline:" + sale.offlineUuid,
+        },
+      },
     });
     expect(alert.status).toBe("resolved");
   });
@@ -426,7 +432,12 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
       consequences: ["salida de inventario", "entrada de caja"],
     });
     const alert = await db.alert.findUniqueOrThrow({
-      where: { key: "offline-discarded:" + sale.offlineUuid },
+      where: {
+        tenantId_key: {
+          tenantId: DEMO_TENANT_ID,
+          key: "offline-discarded:" + sale.offlineUuid,
+        },
+      },
     });
     expect(alert.message).toContain("se llevó la mercancía");
     // Sin mercancía entregada (por defecto) no se mueve nada.

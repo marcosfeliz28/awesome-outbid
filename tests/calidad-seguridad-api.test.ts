@@ -7,6 +7,7 @@
 // revocado o de otra sucursal tratado como aprobado (A07, A08) y el tiempo de
 // inactividad por defecto (A10). Cada caso nombra la mutación que debe matar.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { DEMO_TENANT_ID } from "../apps/api/src/tenant-context";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -366,12 +367,12 @@ describe("Sesiones y equipos (API real)", () => {
 
   it("A10 · sin sessionTimeoutMinutes en Ajustes la sesión inactiva vence a los 30 minutos", async () => {
     const stored = await db.settings.findUniqueOrThrow({
-      where: { id: "main" },
+      where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
     });
     const { sessionTimeoutMinutes: _removed, ...without } = stored.data as any;
     void _removed;
     await db.settings.update({
-      where: { id: "main" },
+      where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
       data: { data: without },
     });
     try {
@@ -384,7 +385,7 @@ describe("Sesiones y equipos (API real)", () => {
       expect(login.body.user.sessionTimeoutMinutes).toBe(30);
     } finally {
       await db.settings.update({
-        where: { id: "main" },
+        where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
         data: { data: stored.data },
       });
     }

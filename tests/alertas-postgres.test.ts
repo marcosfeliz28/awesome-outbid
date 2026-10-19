@@ -198,8 +198,16 @@ describe("F7 · GET /alerts con 50 000 filas y 17 000 variantes", () => {
       "resolved",
     );
     expect(
-      (await db.alert.findUnique({ where: { key: "overstock:" + variant.id } }))
-        ?.status,
+      (
+        await db.alert.findUnique({
+          where: {
+            tenantId_key: {
+              tenantId: variant.tenantId,
+              key: "overstock:" + variant.id,
+            },
+          },
+        })
+      )?.status,
     ).toBe("new");
   }, 120_000);
 });
