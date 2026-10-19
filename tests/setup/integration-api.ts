@@ -7,6 +7,8 @@
 //     administrador demo y la sesión recién creada tiene que existir en esa base.
 // Si no, la corrida falla de inmediato con un mensaje que dice qué hacer.
 // NEXORA_TEST_SKIP_API_CHECK=1 la omite (suites que arrancan su propia API).
+// Antes de cualquier petición, la API y la base tienen que ser de este equipo
+// (auditoría completa, Q-01): el login demo ya escribe en la base.
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
@@ -23,6 +25,29 @@ export function databaseLabel(url: string | undefined) {
   }
 }
 
+const LOOPBACK = ["localhost", "127.0.0.1", "[::1]", "::1"];
+/** ¿La URL apunta a este mismo equipo? */
+export function isLoopback(url: string) {
+  try {
+    return LOOPBACK.includes(new URL(url).hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+/** Falla si la API o la base de las pruebas no son de este equipo. */
+export function requireLocalTargets(env: NodeJS.ProcessEnv = process.env) {
+  const base = env.FITSTORE_API_URL || DEFAULT_API;
+  if (env.NEXORA_TEST_SKIP_API_CHECK !== "1" && !isLoopback(base))
+    throw new Error(
+      `FITSTORE_API_URL (${base}) no es de este equipo: las pruebas sólo corren contra una API local (localhost, 127.0.0.1 o ::1).`,
+    );
+  if (env.DATABASE_URL && !isLoopback(env.DATABASE_URL))
+    throw new Error(
+      `DATABASE_URL (${databaseLabel(env.DATABASE_URL)}) no es de este equipo: las pruebas sólo corren contra una base local (localhost, 127.0.0.1 o ::1).`,
+    );
+}
+
 export type ApiCheckOptions = {
   env?: NodeJS.ProcessEnv;
   fetchFn?: typeof fetch;
@@ -35,6 +60,7 @@ export async function verifyIntegrationApi({
   fetchFn = fetch,
   sessionExists,
 }: ApiCheckOptions) {
+  requireLocalTargets(env);
   if (env.NEXORA_TEST_SKIP_API_CHECK === "1") return "omitida";
   const base = (env.FITSTORE_API_URL || DEFAULT_API).replace(/\/+$/, "");
   const how =
@@ -105,6 +131,7 @@ export default async function setup() {
     path: fileURLToPath(new URL("../../.env", import.meta.url)),
     quiet: true,
   });
+  requireLocalTargets();
   if (process.env.NEXORA_TEST_SKIP_API_CHECK === "1") return;
   const { PrismaClient } = requireApi("@prisma/client");
   const db = new PrismaClient();
