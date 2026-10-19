@@ -586,6 +586,7 @@ describe("Auditoría 01 · dinero", () => {
     const c = await person("seller", "m4", 3000);
     const out = () =>
       request("/cash-sessions/" + c.cash.id + "/movements", c.token, {
+        operationId: randomUUID(),
         type: "out",
         amount: 1000,
         reason: "Pago a mensajero",
@@ -602,6 +603,7 @@ describe("Auditoría 01 · dinero", () => {
       "/cash-sessions/" + c.cash.id + "/movements",
       c.token,
       {
+        operationId: randomUUID(),
         type: "out",
         amount: 1000,
         reason: "Pago a mensajero",

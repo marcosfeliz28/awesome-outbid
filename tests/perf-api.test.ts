@@ -137,11 +137,13 @@ beforeAll(async () => {
     { method: "card", amount: 300, cardLast4: "4242", approvalCode: "QP1" },
   ]);
   await ok("/cash-sessions/" + cashier.cash.id + "/movements", cashier.token, {
+    operationId: randomUUID(),
     type: "in",
     amount: 150,
     reason: "QA perf cambio",
   });
   await ok("/cash-sessions/" + cashier.cash.id + "/movements", cashier.token, {
+    operationId: randomUUID(),
     type: "out",
     amount: 40,
     reason: "QA perf mensajero",

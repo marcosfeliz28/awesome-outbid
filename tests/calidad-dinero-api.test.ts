@@ -354,6 +354,7 @@ describe("Devoluciones, anulación y abonos", () => {
     refundMethod = "credit_note",
   ) =>
     request("/returns", who.token, {
+      operationId: randomUUID(),
       saleId: created.id,
       cashSessionId: who.cash.id,
       reason: "QA W9 devolución",
@@ -510,6 +511,7 @@ describe("Devoluciones, anulación y abonos", () => {
     ).toBe("completed");
     // Con efectivo en su caja la misma anulación procede.
     await ok("/cash-sessions/" + poor.cash.id + "/movements", poor.token, {
+      operationId: randomUUID(),
       type: "in",
       amount: 100,
       reason: "QA W9 fondo para reembolsar",

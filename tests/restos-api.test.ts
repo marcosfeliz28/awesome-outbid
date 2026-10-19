@@ -111,6 +111,7 @@ describe("D-B11 · GET /credit-notes paginado", () => {
       const sold = await sale();
       expect(sold.status).toBe(201);
       const r = await ok("/returns", admin, {
+        operationId: randomUUID(),
         saleId: sold.body.id,
         cashSessionId: cash.id,
         reason: "QA restos nota " + i,
@@ -165,7 +166,12 @@ describe("D-B6 · caja recién cerrada", () => {
     const movement = await request(
       "/cash-sessions/" + cash.id + "/movements",
       admin,
-      { type: "in", amount: 10, reason: "QA restos tardío" },
+      {
+        operationId: randomUUID(),
+        type: "in",
+        amount: 10,
+        reason: "QA restos tardío",
+      },
     );
     expect(movement.status).toBe(409);
     expect(movement.body.message).toMatch(/La caja ya está cerrada/);
@@ -173,7 +179,12 @@ describe("D-B6 · caja recién cerrada", () => {
     const missing = await request(
       "/cash-sessions/" + randomUUID() + "/movements",
       admin,
-      { type: "in", amount: 10, reason: "QA restos inexistente" },
+      {
+        operationId: randomUUID(),
+        type: "in",
+        amount: 10,
+        reason: "QA restos inexistente",
+      },
     );
     expect(missing.status).toBe(404);
   });
