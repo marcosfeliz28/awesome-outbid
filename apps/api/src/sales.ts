@@ -2571,8 +2571,9 @@ export class SalesController {
     const data = parse(
       z.object({
         // Clave que la interfaz genera una vez por formulario: con ella un
-        // reintento no duplica la devolución (R9-A01).
-        operationId: uuid.optional(),
+        // reintento no duplica la devolución (R9-A01). Obligatoria (DIN-01):
+        // sin ella un reenvío sería otra devolución.
+        operationId: uuid,
         saleId: uuid,
         cashSessionId: uuid,
         reason,

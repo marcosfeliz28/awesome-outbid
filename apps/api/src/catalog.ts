@@ -245,6 +245,8 @@ export class CatalogController {
       }),
       body,
     );
+    // I-01: el vencimiento se guarda en el lote; sin lote se vendería sin fecha.
+    if (data.requiresExpiry) data.requiresLot = true;
     const row = await this.db.category.create({
       data: { ...data, createdBy: actor.id, branchId: actor.branchId },
     });

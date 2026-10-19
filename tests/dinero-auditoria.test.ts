@@ -2,6 +2,7 @@
 // tests/api.test.ts: cada prueba reproduce el escenario del informe y falla
 // sin la corrección. Usuarios, equipos, productos y cajas propios de la corrida;
 // los ajustes de la sucursal que se tocan se restauran al terminar.
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -47,7 +48,7 @@ async function request(
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined ? {} : { body: JSON.stringify(conClave(path, data)) }),
   });
   const text = await r.text();
   let body: any = text;

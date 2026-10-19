@@ -4,6 +4,7 @@
 // del administrador que cobra y reportes (la venta cuenta el día de la venta,
 // el dinero el día del cobro, sin contarse dos veces). Fechas siempre
 // relativas a hoy.
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -42,7 +43,7 @@ async function request(
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined ? {} : { body: JSON.stringify(conClave(path, data)) }),
   });
   const text = await r.text();
   let body: any = text;

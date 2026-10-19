@@ -727,7 +727,8 @@ export class CashController {
     const { managerPin, operationId, ...data } = parse(
       z.object({
         // D-M4 (auditoría 06): clave que la web genera una vez por formulario.
-        operationId: uuid.optional(),
+        // Obligatoria (DIN-02): sin ella un reenvío registra otra salida.
+        operationId: uuid,
         type: z.enum(["in", "out"]),
         // 2 decimales y un tope (D-04/D-08): 0.004 o 1e15 son un 400, no un
         // movimiento de 0.00 ni un error 500 de la base.

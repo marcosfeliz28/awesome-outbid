@@ -4,6 +4,7 @@
 //   esperado de todas con consultas agrupadas (no tres consultas por caja) y
 //   el cierre ciego intacto: la cajera nunca recibe el esperado.
 // - La actividad de la sesión se escribe como mucho una vez por minuto.
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -35,7 +36,7 @@ async function request(path: string, as: string, data?: unknown) {
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined ? {} : { body: JSON.stringify(conClave(path, data)) }),
   });
   return { status: r.status, body: await r.json().catch(() => null) };
 }

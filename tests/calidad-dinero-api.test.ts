@@ -6,6 +6,7 @@
 // reembolso sin efectivo y cierre de caja con conteo inconsistente. Cada caso
 // nombra la mutación (S02…) que debe matar. Todas las fechas son relativas a
 // hoy.
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -45,7 +46,7 @@ async function request(
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined ? {} : { body: JSON.stringify(conClave(path, data)) }),
   });
   const text = await r.text();
   let body: any = text;
