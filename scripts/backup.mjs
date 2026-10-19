@@ -138,15 +138,60 @@ function listSummary(tool, archive, env, missingMessage) {
   });
 }
 
-// Restaura un respaldo verificando antes su SHA-256. Por defecto usa
-// --single-transaction --exit-on-error: si algo falla, la base destino queda
-// sin cambios (sin tablas parciales). --single-transaction NO es compatible con
-// --jobs; con `jobs > 1` se restaura en paralelo sin transacción única, y un
-// fallo puede dejar objetos parciales: úsalo solo en una base nueva y
-// descartable, que se borra si falla.
+// Cuenta las tablas del esquema public de la base destino con psql.
+function publicTableCount(env) {
+  return new Promise((resolveCount, reject) => {
+    const child = spawn(
+      process.env.PSQL_BIN || "psql",
+      [
+        "--no-password",
+        "-X",
+        "-At",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-c",
+        "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')",
+      ],
+      { stdio: ["ignore", "pipe", "inherit"], env },
+    );
+    let out = "";
+    child.stdout.on("data", (chunk) => (out += chunk));
+    child.on("error", (error) =>
+      reject(
+        error.code === "ENOENT"
+          ? new Error(
+              "No se encontró psql. Agrega PostgreSQL al PATH o indica PSQL_BIN.",
+            )
+          : error,
+      ),
+    );
+    child.on("exit", (code) => {
+      const count = Number(out.trim());
+      if (code !== 0 || !Number.isInteger(count))
+        return reject(
+          new Error(
+            "No se pudo comprobar que la base destino esté vacía; no se restauró nada.",
+          ),
+        );
+      resolveCount(count);
+    });
+  });
+}
+
+// Restaura un respaldo verificando antes su SHA-256 y que la base destino no
+// tenga tablas en public (auditoría completa D-02): nunca se restaura encima de
+// datos. Por defecto usa --single-transaction --exit-on-error: si algo falla,
+// la base destino queda sin cambios. --single-transaction NO es compatible con
+// --jobs; con `jobs > 1` se restaura en paralelo sin transacción única y un
+// fallo puede dejar objetos parciales en esa base vacía: bórrala si falla.
 async function restoreDump(dumpPath, databaseUrl, { jobs = 1 } = {}) {
   await verifyDump(dumpPath);
   const { env } = getDatabaseConfig(databaseUrl);
+  const tables = await publicTableCount(env);
+  if (tables > 0)
+    throw new Error(
+      `La base destino ${env.PGDATABASE} no está vacía (${tables} tablas en public): restaura sólo en una base nueva y vacía.`,
+    );
   const args = [
     "--no-owner",
     "--no-privileges",

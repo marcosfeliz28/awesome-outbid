@@ -156,8 +156,15 @@ afterAll(async () => {
     await admin.$disconnect();
   }
   await database?.stop().catch(() => undefined);
-  if (dataDir) await rm(dataDir, { recursive: true, force: true });
-  if (projectDir) await rm(projectDir, { recursive: true, force: true });
+  // En Windows PGDATA puede seguir bloqueado un momento (EBUSY, Q-04).
+  const retry = {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 200,
+  };
+  if (dataDir) await rm(dataDir, retry);
+  if (projectDir) await rm(projectDir, retry);
 }, 60000);
 
 describe("3y · almacenes con PostgreSQL real", () => {

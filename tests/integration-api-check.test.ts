@@ -2,7 +2,11 @@
 // avisa con un mensaje claro cuando la API que contesta no es la de este
 // repositorio ni usa la base de las pruebas.
 import { describe, expect, it } from "vitest";
-import { databaseLabel, verifyIntegrationApi } from "./setup/integration-api";
+import {
+  databaseLabel,
+  requireLocalTargets,
+  verifyIntegrationApi,
+} from "./setup/integration-api";
 
 const jwt = (payload: object) =>
   "x." + Buffer.from(JSON.stringify(payload)).toString("base64url") + ".y";
@@ -120,5 +124,47 @@ describe("comprobación de la API de integración", () => {
       }),
     ).toBe("omitida");
     expect(databaseLabel(undefined)).toMatch(/sin definir/);
+  });
+
+  it("Q-01: rechaza una API o base remota sin hacer ninguna petición; acepta loopback", async () => {
+    const noFetch = (async () => {
+      throw new Error("no debe llamarse");
+    }) as unknown as typeof fetch;
+    await expect(
+      verifyIntegrationApi({
+        env: { ...env, FITSTORE_API_URL: "http://203.0.113.77:9443/api" },
+        fetchFn: noFetch,
+        sessionExists: async () => true,
+      }),
+    ).rejects.toThrow(/FITSTORE_API_URL .* no es de este equipo/);
+    let error: Error | undefined;
+    try {
+      requireLocalTargets({
+        ...env,
+        DATABASE_URL: "postgresql://u:secreto@db.example.test:5432/prod",
+      });
+    } catch (e) {
+      error = e as Error;
+    }
+    expect(error?.message).toMatch(/DATABASE_URL .* no es de este equipo/);
+    expect(error?.message).not.toContain("secreto");
+    // Con la API omitida, la base remota se sigue rechazando.
+    expect(() =>
+      requireLocalTargets({
+        NEXORA_TEST_SKIP_API_CHECK: "1",
+        DATABASE_URL: "postgresql://u@10.1.2.3:5432/x",
+      }),
+    ).toThrow(/DATABASE_URL/);
+    for (const url of [
+      "http://localhost:3001/api",
+      "http://127.0.0.1:3001/api",
+      "http://[::1]:3001/api",
+    ])
+      expect(() =>
+        requireLocalTargets({
+          FITSTORE_API_URL: url,
+          DATABASE_URL: "postgresql://u@[::1]:5434/fitstore",
+        }),
+      ).not.toThrow();
   });
 });
