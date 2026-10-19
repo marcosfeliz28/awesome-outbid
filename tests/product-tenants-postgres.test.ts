@@ -147,6 +147,14 @@ it("migra datos existentes y aísla lectura, escritura y cambio de tenant con RL
       const http = supertest(app.getHttpServer());
       const a = auth(demo, userA, sessionA);
       const b = auth(other, userB, sessionB);
+      const { hashSync } = apiRequire("bcryptjs");
+      await client.query(`UPDATE "User" SET "passwordHash"=$1 WHERE id=$2`, [hashSync("Clave solo para prueba B", 4), userB]);
+      const loginB = await http.post("/api/auth/login").set("x-tenant-id", other)
+        .send({ login: "qa-product-b@example.invalid", password: "Clave solo para prueba B" });
+      expect(loginB.status).toBe(201);
+      expect(loginB.body.user.tenantId).toBe(other);
+      expect((await http.post("/api/auth/login").set("x-tenant-id", demo)
+        .send({ login: "qa-product-b@example.invalid", password: "Clave solo para prueba B" })).status).toBeGreaterThanOrEqual(400);
       const categoriesA = await http.get("/api/categories").set("Authorization", a);
       const categoriesB = await http.get("/api/categories").set("Authorization", b);
       expect(categoriesA.status).toBe(200);
