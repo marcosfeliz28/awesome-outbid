@@ -13,12 +13,14 @@ Esta rama parte de `origin/nexora-cloud` y se destina **solo a una base nueva de
 
 ## Límites que impiden lanzar el producto aún
 
-1. La orden exige una matriz de aislamiento con **cada ruta**, informes y exportaciones. La prueba actual verifica el esquema completo y rutas representativas, y ejercita los 40 informes JSON, pero falta cubrir todas las rutas de escritura, archivos y exportaciones. Una respuesta 400/404 de un cuerpo inválido no se contará como cobertura.
+1. La matriz ejercita las 152 rutas de negocio del router Nest con empresas A/B y declara tres excepciones públicas de salud. Los 40 informes, exportaciones Excel/PDF, búsquedas, archivos y SSE tienen caso; la aserción de inventario impide añadir otra ruta sin caso. Esto no sustituye una auditoría de todas las combinaciones de concurrencia y negocio.
 2. Falta definir copias de seguridad y restauración **por tenant**, registro/alta de empresa y manejo de plan/estado.
-4. Validar migración y arranque con el usuario real de una **base nueva y vacía** de Render; aquí se usó PostgreSQL embebido. El blueprint no se aplica hasta que Claude lo revise. No existe validación sobre una base de producción.
+3. Validar migración y arranque con el usuario real de una **base nueva y vacía** de Render; aquí se usó PostgreSQL embebido y el CI usa PostgreSQL desechable en Docker. El blueprint no se aplica hasta que Claude lo revise. No existe validación sobre una base de producción.
 
 ## Cómo repetir la prueba local
 
 `pnpm check` ejecuta `tests/product-tenants-postgres.test.ts`. La prueba levanta PostgreSQL descartable, aplica todas las migraciones y verifica RLS en las 58 tablas; crea dos tenants ficticios y llama a una API Nest de prueba. No usa contraseñas ni información de la tienda.
 
-El siguiente incremento debe ampliar la matriz con casos válidos por endpoint y exigir **0 fugas** antes de declarar la puerta de fase 0 superada. El aislamiento SQL estructural ayuda a proteger las rutas restantes, pero no reemplaza esa matriz.
+La matriz de rutas se encuentra en `tests/product-route-*-postgres.test.ts`; `tests/product-route-matrix-postgres.test.ts` compara el router Nest con el manifiesto de rutas cubiertas. El aislamiento SQL estructural es una defensa adicional, no reemplaza esos casos de API.
+
+El trabajo `render-images` de CI ejecuta `scripts/producto-ci-smoke.sh` únicamente en `producto-nexora`: crea PostgreSQL 17 descartable, aplica dos veces el bootstrap del rol, corre el `preDeployCommand` de `render.producto.yaml`, arranca las imágenes API/web con aislamiento obligatorio, comprueba que no se pueda acceder sin empresa y verifica RLS e índices compuestos. Para las demás ramas permanece la prueba de humo de la tienda sin modificaciones.

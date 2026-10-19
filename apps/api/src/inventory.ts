@@ -773,7 +773,10 @@ export class InventoryController {
                 where: {
                   lotId_warehouseId: { lotId, warehouseId: warehouse.id },
                 },
-                create: { lotId, warehouseId: warehouse.id, qty: data.qty },
+                // PostgreSQL comprueba lot_stock_nonnegative en la fila
+                // propuesta ANTES de resolver ON CONFLICT. En una merma,
+                // `create.qty = data.qty` sería negativa aunque exista stock.
+                create: { lotId, warehouseId: warehouse.id, qty: old + data.qty },
                 update: { qty: { increment: data.qty } },
               });
             } else if (data.qty < 0) {

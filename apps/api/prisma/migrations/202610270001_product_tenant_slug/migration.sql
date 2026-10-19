@@ -6,4 +6,6 @@ UPDATE "Tenant" SET "slug" = CASE
   ELSE 'tenant-' || replace(id::text, '-', '')
 END;
 ALTER TABLE "Tenant" ALTER COLUMN "slug" SET NOT NULL;
+ALTER TABLE "Tenant" ADD CONSTRAINT "Tenant_slug_format_check"
+  CHECK ("slug" ~ '^[a-z0-9][a-z0-9-]{1,62}$');
 CREATE UNIQUE INDEX "Tenant_slug_key" ON "Tenant"("slug");

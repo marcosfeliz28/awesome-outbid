@@ -758,24 +758,31 @@ export class AdminController {
       }),
       body,
     );
-    const prices = new Map(
-      (
-        await this.db.variant.findMany({
-          where: { id: { in: data.items.map((i) => i.variantId) } },
-          select: { id: true, price: true },
-        })
-      ).map((v) => [v.id, String(v.price)]),
-    );
-    // Con decimales exactos: 3 × 0.70 son 2.10, no 2.0999…
-    for (const i of data.items)
-      if (
-        d(i.discountAmount ?? 0).gt(
-          d(prices.get(i.variantId) ?? 0).times(i.qty),
-        )
-      )
-        bad("El descuento por monto supera el importe de la línea.");
+    // Una cotización no puede reservar ni revelar precio de un artículo de
+    // otra empresa. Validar TODOS los IDs antes de guardar el JSON de líneas.
+    const requestedVariantIds = [...new Set(data.items.map((i) => i.variantId))];
     return this.db.$transaction(async (tx) => {
       if (data.customerId) await lockActiveCustomer(tx, actor, data.customerId);
+      const ownVariants = await tx.variant.findMany({
+        where: {
+          id: { in: requestedVariantIds },
+          branchId: actor.branchId,
+          active: true,
+          product: { active: true },
+        },
+        select: { id: true, price: true },
+      });
+      if (ownVariants.length !== requestedVariantIds.length)
+        bad("Artículo no disponible.");
+      const prices = new Map(ownVariants.map((v) => [v.id, String(v.price)]));
+      // Con decimales exactos: 3 × 0.70 son 2.10, no 2.0999…
+      for (const i of data.items)
+        if (
+          d(i.discountAmount ?? 0).gt(
+            d(prices.get(i.variantId) ?? 0).times(i.qty),
+          )
+        )
+          bad("El descuento por monto supera el importe de la línea.");
       return tx.quote.create({
         data: {
           ...data,

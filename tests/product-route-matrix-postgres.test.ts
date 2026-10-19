@@ -120,10 +120,186 @@ const READ_LIST_CASES = [
   "/api/terminals/current", "/api/users", "/api/void-requests",
 ] as const;
 
+// A checked-in manifest of exercised HTTP routes. Each entry corresponds to a
+// valid-body PostgreSQL request in product-route-{matrix,export,admin,
+// admin-extra,auth-void,money,money-extra,money-final,money-last,
+// inventory,inventory-extra,inventory-final,misc}-postgres.test.ts.
+// Adding a Nest route without a concrete case fails this gate; do not generate
+// this set from productRoutes() at runtime, which would hide missing coverage.
+const TESTED_PRODUCT_ROUTES = new Set(`
+GET /api/alert-rules
+GET /api/alerts
+GET /api/audit-log
+GET /api/auth/me
+GET /api/brands
+GET /api/cash-sessions
+GET /api/cash-sessions/:id/cuadre
+GET /api/cash-sessions/:id/reports/:name
+GET /api/cash-sessions/opening-suggestion
+GET /api/catalog-template.xlsx
+GET /api/categories
+GET /api/cod/pending
+GET /api/courier/payouts
+GET /api/courier/pending
+GET /api/credit-accounts
+GET /api/credit-accounts/:id
+GET /api/credit-accounts/:id/statement.pdf
+GET /api/credit-notes
+GET /api/customers
+GET /api/dashboard/breakdown
+GET /api/dashboard/summary
+GET /api/dashboard/year
+GET /api/events
+GET /api/expense-categories
+GET /api/expenses
+GET /api/goods-receipts
+GET /api/goods-receipts/:id
+GET /api/goods-receipts/export
+GET /api/incentives
+GET /api/incentives/export.xlsx
+GET /api/incentives/me
+GET /api/incentives/rates
+GET /api/incentives/receipt.pdf
+GET /api/inventory/counts
+GET /api/inventory/location-report
+GET /api/inventory/movements
+GET /api/inventory/stock
+GET /api/inventory/transfers
+GET /api/inventory/warehouses
+GET /api/merchandise/attachments/:id
+GET /api/merchandise/operations
+GET /api/merchandise/options
+GET /api/merchandise/profiles/:id
+GET /api/notifications/status
+GET /api/payments/:id/proof
+GET /api/payments/pending-transfers
+GET /api/products
+GET /api/products/:id
+GET /api/promotions
+GET /api/promotions/clearance-candidates
+GET /api/purchase-orders
+GET /api/quotes
+GET /api/reportes
+GET /api/reports/:name
+GET /api/reports/formal
+GET /api/reports/income-by-day
+GET /api/returns/:id/credit-note.pdf
+GET /api/roles
+GET /api/sales
+GET /api/sales/:id/receipt.pdf
+GET /api/settings
+GET /api/staff
+GET /api/suppliers
+GET /api/terminals
+GET /api/terminals/current
+GET /api/users
+GET /api/void-requests
+PATCH /api/alerts/:id
+PATCH /api/customers/:id
+PATCH /api/expense-categories/:id
+PATCH /api/goods-receipts/:id/document
+PATCH /api/products/:id
+PATCH /api/promotions/:id
+PATCH /api/purchase-orders/:id/document
+PATCH /api/sales/:id/courier
+PATCH /api/terminals/:id/register
+PATCH /api/users/:id
+PATCH /api/variants/:id
+POST /api/alerts/evaluate
+POST /api/auth/change-password
+POST /api/auth/login
+POST /api/auth/logout
+POST /api/auth/password
+POST /api/auth/pin
+POST /api/auth/refresh
+POST /api/brands
+POST /api/cash-sessions/:id/close
+POST /api/cash-sessions/:id/movements
+POST /api/cash-sessions/:id/transfer
+POST /api/cash-sessions/open
+POST /api/categories
+POST /api/courier/payouts
+POST /api/credit-accounts/:id/collections
+POST /api/customers
+POST /api/customers/:id/anonymize
+POST /api/expense-categories
+POST /api/expenses
+POST /api/expenses/:id/void
+POST /api/incentives/close
+POST /api/inventory-import/apply
+POST /api/inventory-import/casa/apply
+POST /api/inventory-import/casa/preview
+POST /api/inventory-import/preview
+POST /api/inventory/adjustments
+POST /api/inventory/counts
+POST /api/inventory/counts/:id/apply
+POST /api/inventory/transfers
+POST /api/kits
+POST /api/merchandise/import
+POST /api/merchandise/operations
+POST /api/notifications/telegram/test
+POST /api/payments/:id/correct-transfer
+POST /api/payments/:id/proof
+POST /api/payments/:id/reject
+POST /api/payments/:id/verify
+POST /api/products
+POST /api/products/:id/variants
+POST /api/products/import
+POST /api/promotions
+POST /api/purchase-orders
+POST /api/purchase-orders/:id/receive
+POST /api/quotes
+POST /api/quotes/:id/convert
+POST /api/returns
+POST /api/sales
+POST /api/sales/:id/cod-collections
+POST /api/sales/:id/credit-collections
+POST /api/sales/:id/installments
+POST /api/sales/:id/mark-wholesale
+POST /api/sales/:id/seller
+POST /api/sales/:id/void
+POST /api/sales/:id/void-requests
+POST /api/sales/offline-resolution
+POST /api/sales/offline-review/discard
+POST /api/sales/sync
+POST /api/settings/logo
+POST /api/supplier-payments
+POST /api/suppliers
+POST /api/terminals/:id/approve
+POST /api/terminals/:id/approve-with-pin
+POST /api/terminals/:id/rename
+POST /api/terminals/:id/revoke
+POST /api/terminals/register
+POST /api/users
+POST /api/users/:id/reset-password
+POST /api/void-requests/:id/approve
+POST /api/void-requests/:id/cancel
+POST /api/void-requests/:id/reject
+PUT /api/alert-rules
+PUT /api/incentives/rates
+PUT /api/roles/:id
+PUT /api/settings
+`.trim().split("\n"));
+
+// Health endpoints deliberately operate without a tenant to support service
+// probes before login. They have no customer, money, stock or settings output.
+const PUBLIC_HEALTH_EXCEPTIONS = new Set([
+  "GET /api/health",
+  "GET /api/health/live",
+  "GET /api/health/ready",
+]);
+
 it("enumera todas las rutas reales del módulo producto y excluye respaldos globales", () => {
   const routes = productRoutes();
   expect(new Set(routes).size).toBe(routes.length);
-  expect(routes.length).toBeGreaterThan(150);
+  expect([...PUBLIC_HEALTH_EXCEPTIONS].sort()).toEqual(
+    routes.filter((key) => key.startsWith("GET /api/health")).sort(),
+  );
+  const required = routes.filter((key) => !PUBLIC_HEALTH_EXCEPTIONS.has(key));
+  // Both directions matter: a newly registered route must have a case, and a
+  // deleted/renamed route must not leave a stale "covered" manifest entry.
+  expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
+  expect(required).toHaveLength(152);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");
