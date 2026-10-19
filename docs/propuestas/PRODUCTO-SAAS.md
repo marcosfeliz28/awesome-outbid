@@ -11,12 +11,12 @@
 Nexora puede convertirse en un SaaS mensual vendible a comercios dominicanos, pero no conviene intentar entregar a la vez nube multiempresa, aplicaciones móviles, sincronización offline completa, cobro recurrente e inteligencia artificial autónoma. La secuencia recomendada es:
 
 1. **Vender primero una PWA SaaS en la nube**, con cobro contratado en la web, aislamiento multiempresa verificable, respaldo, exportación y soporte.
-2. **Publicar después aplicaciones móviles gratuitas de acompañamiento con Capacitor**, destinadas a clientes que ya tengan cuenta. No deben mostrar botones, enlaces ni mensajes para comprar fuera de la tienda.
+2. **Publicar después aplicaciones móviles con Capacitor**, primero como acompañamiento de solo consumo si Apple/Google aprueban ese diseño; no incluir compra ni conducir a pago externo dentro de esas apps.
 3. **Agregar IA limitada, medible y revisable**, usando un modelo económico por defecto y escalando solamente los casos complejos.
 4. **Construir la sincronización offline para PC como una fase separada**, después de estabilizar el modelo multiempresa y los eventos de inventario/venta.
 5. **Mantener el código, la marca y el producto base como propiedad privada de Nexora**, vendiendo derecho de uso y servicios, no el código fuente.
 
-Con una mezcla estimada de 50% Básico, 35% Pro y 15% Premium, los precios propuestos son **RD$1,990, RD$3,990 y RD$7,990 al mes**, antes de los impuestos que correspondan. El margen mensual modelado conservador es 39.8% con 10 clientes, 59.8% con 50 y 63.5% con 200. Es un modelo de planificación: falta cotizar formalmente adquirencia, asesoría legal/fiscal, soporte real y carga de producción antes de aprobarlo.
+Con una mezcla estimada de 50% Básico, 35% Pro y 15% Premium, los precios propuestos son **RD$1,990, RD$3,990 y RD$7,990 al mes**, antes de los impuestos que correspondan. El margen mensual modelado conservador es 39.8% con 10 clientes, 59.8% con 50 y 63.6% con 200. Es un modelo de planificación: falta cotizar formalmente adquirencia, asesoría legal/fiscal, soporte real y carga de producción antes de aprobarlo.
 
 ## 2. Alcance y decisiones heredadas
 
@@ -105,10 +105,10 @@ El cálculo usa una mezcla de clientes de 50% Básico, 35% Pro y 15% Premium. In
 - plataforma estimada de US$84.50 para 10 clientes, US$156.50 para 50 y US$431 para 200;
 - reserva de atención humana de US$6, US$14 y US$30 por cliente según plan;
 - presupuesto de IA de US$0.45, US$2.67 y US$8.87 por cliente según plan;
-- cobro conservador con Azul: 6% sobre ventas, RD$15 por cargo aprobado entre recurrencia y 3DS, y RD$4,895 fijos mensuales distribuidos entre clientes (RD$2,500 de integración, RD$1,800 de bóveda y RD$595 complementarios);
+- cobro conservador con Azul: 6% sobre ventas, hasta RD$15 por cargo aprobado si se aplican tanto RD$5 de recurrencia como RD$10 de 3DS, y cargos fijos de RD$2,500 de integración + RD$1,800 de bóveda. El complemento de RD$595 sólo se incorpora en las cohortes de 10 y 50 clientes bajo el supuesto de que Azul aplica el umbral al cobro mensual de Nexora y no existen otros cobros relevantes; se excluye a 200 clientes (ingreso modelado aproximado RD$718,000), pero la base exacta del umbral debe confirmarse por escrito;
 - reparto de infraestructura por peso 1.0, 1.3 y 2.0 para Básico, Pro y Premium.
 
-No incluye adquisición de clientes, desarrollo inicial, impuestos, asesoría legal/contable, devoluciones, contracargos, deuda incobrable, visitas presenciales ni comisión de vendedores. El 6% de adquirencia y los RD$4,895 fijos son una sensibilidad conservadora, no una tarifa obtenida para Nexora. Si la cotización confirma que bóveda o cargo complementario no aplican, el margen mejora; hasta entonces no se eliminan del presupuesto.
+No incluye adquisición de clientes, desarrollo inicial, impuestos, asesoría legal/contable, devoluciones, contracargos, deuda incobrable, visitas presenciales ni comisión de vendedores. El MDR de 6% es el extremo publicado “hasta” y no una cotización de Nexora. Los RD$15 por aprobado son un techo presupuestario, no evidencia de que toda renovación recurrente genere además un cargo 3DS; el costo de RD$10 por intento rechazado tampoco está modelado y dependerá de la tasa de rechazo y política de reintentos. Solicitar cotización escrita y recalcular antes de aprobar precios. La bóveda se conserva como supuesto hasta confirmar si el tokenizador elegido la requiere.
 
 ### 6.2 Escenarios de infraestructura
 
@@ -138,17 +138,17 @@ Margen = `(precio - costo mensual directo estimado) / precio`. El ITBIS no se re
 | 50 | Básico | 32.18 | 12.70 | 785 | 60.5% |
 | 50 | Pro | 64.53 | 25.61 | 1,584 | 60.3% |
 | 50 | Premium | 129.22 | 53.44 | 3,304 | 58.7% |
-| 200 | Básico | 32.18 | 10.74 | 664 | 66.6% |
-| 200 | Pro | 64.53 | 23.41 | 1,448 | 63.7% |
-| 200 | Premium | 129.22 | 50.70 | 3,135 | 60.8% |
+| 200 | Básico | 32.18 | 10.69 | 661 | 66.8% |
+| 200 | Pro | 64.53 | 23.36 | 1,444 | 63.8% |
+| 200 | Premium | 129.22 | 50.65 | 3,132 | 60.8% |
 
 | Escala | Ingreso medio/cliente | Costo medio/cliente | Costo total/mes | Margen combinado |
 |---:|---:|---:|---:|---:|
 | 10 | US$58.06 | US$34.98 / RD$2,163 | US$350 / RD$21,631 | **39.8%** |
 | 50 | US$58.06 | US$23.33 / RD$1,443 | US$1,166 / RD$72,126 | **59.8%** |
-| 200 | US$58.06 | US$21.17 / RD$1,309 | US$4,233 / RD$261,761 | **63.5%** |
+| 200 | US$58.06 | US$21.12 / RD$1,305 | US$4,224 / RD$261,161 | **63.6%** |
 
-Los tres escenarios superan el mínimo solicitado de 15%, pero 10 clientes dejan poco espacio para adquisición, desarrollo y contingencias. La reserva de soporte equivale, a un costo cargado de US$30/hora, a 12 minutos/mes en Básico, 28 en Pro y 60 en Premium. Si el soporte real duplica esas reservas, el margen combinado baja a 18.4% con 10 clientes, 38.5% con 50 y 42.2% con 200. La operación empieza a verse sostenible alrededor de 50 clientes, siempre que la telemetría confirme esos tiempos.
+Los tres escenarios superan el mínimo solicitado de 15%, pero 10 clientes dejan poco espacio para adquisición, desarrollo y contingencias. La reserva de soporte equivale, a un costo cargado de US$30/hora, a 12 minutos/mes en Básico, 28 en Pro y 60 en Premium. Si el soporte real duplica esas reservas, el margen combinado baja a 18.4% con 10 clientes, 38.5% con 50 y aproximadamente 42.3% con 200. Son márgenes directos modelados, no margen neto ni una promesa de rentabilidad: excluyen adquisición, desarrollo, impuestos, contracargos y operación no prorrateada. El costo de respaldo externo de la tabla es una provisión, no una cotización; antes de usarlo para decidir se debe fijar GB, retención, frecuencia, cifrado y costo de restauración/egreso. La operación sólo podría considerarse sostenible alrededor de 50 clientes si los pilotos validan costos y soporte.
 
 ## 7. Inversión inicial y recuperación
 
@@ -196,7 +196,7 @@ El reloj empieza cuando la cohorte completa está activa; no incluye el tiempo p
 
 Solicitar propuestas a **Azul y CardNet** y escoger con una tabla firmada de: afiliación, mensualidad, MDR, 3DS, tokenización, recurrencia, contracargos, devoluciones, tiempo de liquidación, webhooks, ambiente de prueba y soporte.
 
-Azul publica RD$2,500/mes para API, página de pago o plugins; RD$5 por recurrencia aprobada, RD$10 por rechazada; RD$1,800/mes para bóveda de tokens; 3DS entre RD$7.50 y RD$10; y un MDR de hasta 6% sujeto al comercio. [Tarifario Azul](https://www.azul.com.do/Pages/es/tarifarioAzul.aspx) y [página de pagos](https://www.azul.com.do/Pages/es/paginaPago/pagina-pagos.aspx).
+Azul publica RD$2,500/mes para API, página de pago o plugins; RD$5 por recurrencia aprobada, RD$10 por rechazada; RD$1,800/mes para bóveda de tokens; 3DS entre RD$7.50 y RD$10; y un MDR de hasta 6% sujeto al comercio. El tarifario indica que el complemento de RD$595 aplica a localidades que facturen menos de RD$300,000 al mes y que las tarifas pueden revisarse; no se debe sumar automáticamente a una cuenta que supere ese umbral. La aplicación del cargo de 3DS a una renovación concreta debe confirmarse con Azul. [Tarifario Azul](https://www.azul.com.do/Pages/es/tarifarioAzul.aspx) y [página de pagos](https://www.azul.com.do/Pages/es/paginaPago/pagina-pagos.aspx).
 
 CardNet publica afiliación de RD$850, botón de pago de RD$2,500, enlace/terminal virtual de RD$850, 3DS y tokenización a RD$7.50 por transacción, además de cargos por baja facturación. MDR, recurrencia y liquidación deben cotizarse. [Tarifario CardNet](https://www.cardnet.com.do/tarifario).
 
@@ -229,7 +229,7 @@ Apple Pay y Google Pay son billeteras para presentar una tarjeta tokenizada; **n
 
 ### 8.4 Impuestos y comprobantes
 
-La tasa general de ITBIS es 18% según [DGII](https://dgii.gov.do/cicloContribuyente/obligacionesTributarias/principalesImpuestos/Paginas/itbis.aspx). Sin embargo, una respuesta oficial de DGII del 3 de septiembre de 2026 indica que una suscripción SaaS y componentes accesorios de IA/WhatsApp están exentos de ITBIS en el supuesto consultado. Otras consultas distinguen desarrollo a medida, licencias o cesión de derechos. Fuentes: [consulta SaaS de DGII](https://ayuda.dgii.gov.do/conversations/discusiones/itbis-en-suscripcin-de-software-saas-con-ia-y-whatsapp/6a99bbad1622efb01549712e), [consulta sobre desarrollo de software](https://ayuda.dgii.gov.do/conversations/discusiones/retencion-de-itbis-por-concepto-de-desarrollo-de-software/656781a044f32b4163d56007) y [consulta técnica sobre software](https://dgii.gov.do/legislacion/consultas/Consultas%20Tecnicas%202024/Septiembre/Consulta%2017-ITBIS%20a%20software.pdf).
+La tasa general de ITBIS es 18% según [DGII](https://dgii.gov.do/cicloContribuyente/obligacionesTributarias/principalesImpuestos/Paginas/itbis.aspx). Una respuesta de DGII de septiembre de 2026 sobre una suscripción SaaS con IA/WhatsApp describe exención para los hechos concretos consultados; no es una garantía universal para la oferta de Nexora. Se necesita una opinión escrita sobre su contrato, factura, residencia del proveedor y componentes (suscripción, alojamiento, soporte, instalación, capacitación, personalización, hardware/licencias), además de NCF/e‑CF y retenciones. No aplicar ni omitir 18% por analogía sin criterio contable/fiscal. Fuentes: [consulta SaaS de DGII](https://ayuda.dgii.gov.do/conversations/discusiones/itbis-en-suscripcin-de-software-saas-con-ia-y-whatsapp/6a99bbad1622efb01549712e), [consulta sobre desarrollo](https://ayuda.dgii.gov.do/conversations/discusiones/retencion-de-itbis-por-concepto-de-desarrollo-de-software/656781a044f32b4163d56007) y [consulta técnica sobre software](https://dgii.gov.do/legislacion/consultas/Consultas%20Tecnicas%202024/Septiembre/Consulta%2017-ITBIS%20a%20software.pdf).
 
 Por tanto, Nexora **no debe agregar ni omitir automáticamente 18%**. Antes de facturar necesita una opinión escrita que clasifique por separado suscripción, implantación, capacitación, personalización, hardware y soporte, y determine NCF/e-CF, retenciones y comprobantes. La prórroga pública para pequeños y micro contribuyentes llega al 15 de noviembre de 2026; no se debe confundir esa fecha con una exención permanente. [Aviso e-CF DGII](https://dgii.gov.do/publicacionesOficiales/avisosInformativos/Documents/2026/06-26.pdf).
 
@@ -261,11 +261,11 @@ Publicación propuesta:
 
 ### 9.2 Reglas de Apple y Google
 
-La aplicación debe ser **gratuita y de acompañamiento**: usuarios que ya pagan en la web pueden iniciar sesión y usar su cuenta. Dentro de la app no habrá precios, compra, “mejorar plan”, enlace a checkout ni llamada a comprar afuera. Así se reduce el riesgo de que la suscripción digital tenga que usar las compras de la tienda.
+La primera opción de bajo riesgo es vender y administrar planes desde la web/PWA y publicar, si la tienda lo acepta, una app móvil gratuita de **solo consumo**: el cliente existente inicia sesión y usa un servicio ya contratado, sin precios, compra, “mejorar plan”, enlaces ni llamadas a pagar fuera de la app. Esto reduce el alcance de facturación dentro de la tienda, pero no garantiza la aprobación de Apple.
 
-Apple cobra normalmente 30%, o 15% para participantes que califiquen en Small Business y ciertos casos de suscripción. La estrategia de Nexora se apoya únicamente en la regla 3.1.3(f): aplicación gratuita que acompaña una herramienta web pagada, sin compra dentro de la app ni llamadas a comprar fuera. No se presupone la excepción separada para servicios empresariales. Fuentes: [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/), [suscripciones](https://developer.apple.com/app-store/subscriptions/) y [Small Business Program](https://developer.apple.com/app-store/small-business-program/).
+Para Apple, el POS no debe basar su plan en 3.1.3(f): esa excepción enumera servicios como VoIP, almacenamiento en nube, correo y alojamiento web, por lo que no es una base segura para un POS. La regla más pertinente podría ser 3.1.3(c) únicamente si la app se vende directamente a organizaciones/grupos para uso de sus empleados; la guía dice que ventas a consumidores, usuarios individuales o familias deben usar IAP. La aplicación y su modelo de distribución deben confirmarse con App Review antes de invertir en publicación. Si no se cumple estrictamente la vía empresarial o se ofrece compra/alta individual en iOS, presupuestar StoreKit/IAP o no habilitar esa compra. Apple Developer cuesta US$99/año; la inscripción como organización requiere entidad legal, D‑U‑N‑S (salvo entidades gubernamentales), autoridad para contratar, correo laboral y sitio web. Comisión: típicamente 30%, 15% para Small Business aprobado o ciertos casos de renovación; no asumir 15% automáticamente. Fuentes: [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/), [suscripciones](https://developer.apple.com/app-store/subscriptions/), [Small Business Program](https://developer.apple.com/app-store/small-business-program/), [inscripción](https://developer.apple.com/help/account/membership/program-enrollment/) y [D‑U‑N‑S](https://developer.apple.com/help/account/membership/D-U-N-S).
 
-Google exige Play Billing para muchas ventas digitales dentro de la aplicación y publica tarifas de servicio que, según programa y transacción, suelen ser 15% en suscripciones o en el primer tramo elegible. También permite aplicaciones de consumo donde la compra ocurre fuera y dentro sólo se usa lo adquirido, sin conducir al usuario al pago. Fuentes: [política de pagos](https://support.google.com/googleplay/android-developer/answer/9858738), [tarifas](https://support.google.com/googleplay/android-developer/answer/112622) y [aplicaciones de consumo](https://support.google.com/googleplay/android-developer/answer/10281818).
+Google permite apps “solo consumo” en las que el usuario inicia sesión y accede a una suscripción adquirida fuera, siempre que la app no venda el acceso ni dirija al pago externo. Si la app permite comprar o mejorar un plan SaaS, Play Billing aplica a software empresarial/productividad y financiero; modelar 15% de comisión para suscripciones auto-renovables en los mercados que siguen el esquema estándar, verificando país y programa al publicar. Google Play Console cuesta US$25 una vez; su alta de desarrollador/merchant admite República Dominicana. Los márgenes de la sección 6 suponen checkout web y **no incluyen** comisión de tiendas: como simple sensibilidad, retener 15% de los precios listados dejaría RD$1,691.50 / 3,391.50 / 6,791.50, y retener 30% dejaría RD$1,393 / 2,793 / 5,593, antes de costos e impuestos. El neto efectivo dependerá de los términos de la tienda, impuestos, reembolsos y país. Fuentes: [política de pagos](https://support.google.com/googleplay/android-developer/answer/9858738), [tarifas](https://support.google.com/googleplay/android-developer/answer/112622), [apps solo consumo](https://support.google.com/googleplay/android-developer/answer/10281818), [registro y países](https://support.google.com/googleplay/android-developer/answer/9306917) y [cuota de Play Console](https://support.google.com/googleplay/android-developer/answer/6112435).
 
 Antes de enviar a revisión, un especialista debe revisar la versión vigente y la redacción exacta. Si se decide vender dentro de la app, hay que presupuestar StoreKit/Play Billing, validación de recibos, restauración de compras, cancelaciones, devoluciones y comisión de la tienda.
 
@@ -300,10 +300,14 @@ Entidades nuevas mínimas:
 - Toda tabla de negocio lleva `tenant_id` no nulo. Claves únicas, relaciones e índices lo incluyen cuando corresponda.
 - El `tenant_id` se deriva de la sesión autenticada; nunca se acepta del cuerpo, URL libre o prompt de IA como autoridad.
 - Cada transacción configura el contexto del inquilino y PostgreSQL aplica Row-Level Security. La aplicación también filtra; una capa no reemplaza a la otra.
+- El rol de conexión de la aplicación no es propietario de tablas ni tiene `BYPASSRLS`; activar `FORCE ROW LEVEL SECURITY`. Establecer el contexto con `SET LOCAL` dentro de cada transacción para impedir que el pool reutilice contexto de otra empresa. El propietario, superusuario y roles `BYPASSRLS` pueden eludir RLS; por eso no usar credenciales privilegiadas en la API.
+- Las claves foráneas y únicas que conectan registros de negocio incluyen `tenant_id`; derivar el tenant sólo del principal autenticado y fijarlo en contexto transaccional, nunca de cabeceras o datos suministrados por el cliente.
 - Almacenamiento de objetos, cachés, colas, trabajos, logs, métricas y backups incluyen el inquilino en su partición o clave.
 - El personal de soporte usa acceso temporal, mínimo, con motivo, aprobación y registro; no cuentas maestras compartidas.
 - Las pruebas automatizadas intentan lectura, escritura, exportación, reporte, archivo y restauración cruzada entre dos empresas.
 - Cada migración se prueba con datos de varios inquilinos, rollback operativo y copia restaurable.
+
+La política de PostgreSQL advierte que superusuarios y roles `BYPASSRLS` siempre eluden RLS; el dueño normalmente también, salvo que se fuerce la política. Por tanto `FORCE ROW LEVEL SECURITY` no reemplaza la prohibición de superusuario/`BYPASSRLS`, y el rol de migraciones no se usa en ejecución. En Prisma, establecer `SET LOCAL` al inicio de cada `$transaction` y ejecutar dentro de esa misma transacción/conexión toda consulta protegida; probar solicitudes sin contexto y reutilización de conexiones del pool. [Documentación de PostgreSQL 17 sobre RLS](https://www.postgresql.org/docs/17/ddl-rowsecurity.html). Este diseño es una propuesta futura: el modelo actual basado en `branchId` no debe presentarse como multi-tenant aislado.
 
 ## 11. Continuidad offline para PC y sincronización
 
@@ -322,7 +326,7 @@ Cada tienda con offline tendrá un nodo local que atiende los equipos de su LAN 
 ### 11.2 Conflictos por dominio
 
 - **Ventas y pagos:** eventos inmutables. Una corrección es otro evento; no se edita ni se sobrescribe una venta sincronizada.
-- **Inventario:** movimientos, no cantidades finales. La nube consolida; una venta offline válida no desaparece aunque produzca inventario negativo, sino que genera alerta/conflicto.
+- **Inventario:** movimientos, no cantidades finales. Elegir antes de construir una de dos políticas incompatibles: (a) cuota estricta por nodo, que bloquea localmente la venta al agotarse la cantidad reservada, evitando sobreventa fuera de esa asignación; o (b) disponibilidad prioritaria, que acepta ventas sin cuota y asume posible sobreventa auditable. Una venta offline registrada nunca desaparece; en ambos modos los movimientos se sincronizan y cualquier conflicto queda visible para resolución humana.
 - **Precios y catálogo:** la nube es autoridad y versiona. Cada línea vendida conserva precio, costo, impuesto y descuento usados en ese instante.
 - **Clientes/proveedores:** fusión por campo con historial; conflictos sensibles requieren revisión humana.
 - **Cierres, devoluciones y transferencias:** reglas de gerente y, para riesgo alto, conexión obligatoria o autorización previamente firmada.
@@ -332,43 +336,45 @@ Cada tienda con offline tendrá un nodo local que atiende los equipos de su LAN 
 
 El servidor entrega una licencia firmada por dispositivo por 30 días, renovable al conectarse, con siete días de gracia. Tras expirar, el nodo conserva lectura, cierre seguro y exportación; no borra ni cifra los datos del cliente. La licencia limita dispositivos según plan y puede revocarse al volver a conectarse. El borrado remoto no se considera un control confiable.
 
-La fase offline requiere pruebas de corte de Internet, reloj incorrecto, duplicación, dos cajas vendiendo el mismo artículo, actualización incompleta, disco lleno, restauración, conflicto, revocación y reconexión después de semanas.
+El diseño descrito soporta, como máximo, pérdida de Internet hacia la nube mientras el nodo local y la LAN siguen disponibles. Si ese nodo/PC servidor cae, las cajas cliente de la tienda no pueden operar; dar modo offline independiente a cada caja requiere réplicas y cuotas de stock adicionales. La fase requiere pruebas de corte de WAN, nodo/LAN caídos, reloj incorrecto, duplicación, dos cajas vendiendo el mismo artículo, actualización incompleta, disco lleno, restauración, conflicto, revocación y reconexión tras semanas.
 
 ## 12. Inteligencia artificial por empresa
 
 ### 12.1 Modelo y costo
 
-La recomendación es **GPT-6 Luna por defecto** y **GPT-6.1 Sol sólo por escalamiento** para consultas complejas. La tarifa oficial revisada es:
+La recomendación es una capa de proveedor intercambiable: comparar **GPT-6 Luna** y **Claude Haiku 5.5** para uso habitual, con **GPT-6.1 Sol** o **Claude Sonnet 5.5** como escalamiento, mediante evaluación en español dominicano con tickets reales anonimizados. No asumir que un proveedor gana sin medir exactitud, costo y latencia. Tarifas oficiales consultadas para la fecha de corte:
 
 | Modelo | Entrada por 1M tokens | Entrada cacheada | Salida por 1M tokens | Uso propuesto |
 |---|---:|---:|---:|---|
 | GPT-6 Luna | US$0.10 | US$0.01 | US$0.50 | Resúmenes, explicación de reportes, consultas frecuentes. |
 | GPT-6.1 Sol | US$2.00 | US$0.10 | US$10.00 | Casos complejos que Luna no resuelva con confianza. |
 | GPT-6 Astra | US$10.00 | US$1.00 | US$50.00 | No incluir de forma general; sólo evaluación excepcional. |
+| Claude Haiku 5.5 | US$0.10 (prompt ≤100k) | US$0.01 (≤100k) | US$0.50 (≤100k) | Alternativa económica a evaluar en prueba controlada. |
+| Claude Sonnet 5.5 | US$2.00 | US$0.10 | US$10.00 | Alternativa de escalamiento a comparar. |
 
-Fuente: [precios oficiales de la API de OpenAI](https://developers.openai.com/api/docs/pricing) y [catálogo de modelos](https://developers.openai.com/api/docs/models). Una conversación de referencia de 20,000 tokens de entrada y 3,000 de salida cuesta aproximadamente US$0.0035 en Luna o US$0.07 en Sol. Con 95% Luna, 5% Sol y 30% de reserva, el presupuesto es US$0.0089 por conversación: US$0.45/50, US$2.67/300 y US$8.87/1,000.
+Fuentes: [precios oficiales de OpenAI](https://developers.openai.com/api/docs/pricing), [catálogo OpenAI](https://developers.openai.com/api/docs/models), [Claude Haiku 5.5](https://www.anthropic.com/claude-haiku-5-5) y [Claude Sonnet 5.5](https://www.anthropic.com/claude-sonnet-5-5). La fila de Haiku aplica a prompts de hasta 100k tokens; para la referencia de 20,000 tokens de entrada y 3,000 de salida, una conversación cuesta aproximadamente US$0.0035 con Luna o Haiku y US$0.07 con Sol o Sonnet. Bajo el supuesto (no medido) de 95% de consultas económicas, 5% de escalamiento y 30% de reserva, se presupuestan US$0.0089 por conversación: aproximadamente US$0.45/50, US$2.67/300 y US$8.87/1,000. No incluye reintentos, herramientas, embeddings, clasificación/guardrails ni cargos por rechazo de proveedor.
 
 La API de Gemini puede evaluarse como segunda fuente o contingencia, pero debe usarse en modalidad pagada y con acuerdo de tratamiento: la modalidad gratuita puede permitir uso para mejora y revisión humana. Fuentes: [precios de Gemini](https://ai.google.dev/gemini-api/docs/pricing), [regiones](https://ai.google.dev/gemini-api/docs/available-regions) y [términos](https://ai.google.dev/gemini-api/terms).
 
 ### 12.2 Límites y seguridad
 
 - La IA sólo recibe datos del `tenant` autenticado y únicamente los campos necesarios.
-- El RAG busca en documentos y datos de esa empresa; sus filtros se prueban contra fugas cruzadas.
+- Backend deriva tenant y permisos antes de recuperar contexto; filtros no dependen del prompt ni del modelo. Documentos, embeddings, fuentes y cachés RAG también llevan aislamiento por tenant. El contenido importado y documentos se tratan como entrada no confiable para mitigar prompt injection.
 - Inicio en sólo lectura y **prohibición técnica de tocar dinero**: la IA no recibe herramientas para cobrar, pagar, reembolsar, cerrar caja, cambiar precios, autorizar descuentos ni ejecutar movimientos de inventario. Puede explicar o preparar un borrador; una persona autorizada debe ejecutar la acción manualmente en la interfaz normal, fuera del flujo de IA.
-- Se registra empresa, usuario, modelo, tokens, fuentes y acción propuesta/aceptada, sin guardar secretos ni datos de tarjeta.
+- Se registra empresa, usuario, modelo, tokens, fuentes y acción propuesta/aceptada, sin guardar secretos ni datos de tarjeta. Las cuotas se reservan/consumen atómicamente en el servidor para impedir superar límites con llamadas concurrentes; auditar metadatos y referencias, no prompts sensibles salvo retención informada y consentida.
 - Se filtran credenciales y datos personales innecesarios; hay retención definida y opción de desactivar IA por empresa.
 - El asistente muestra fuentes, reconoce incertidumbre y deriva a una persona. No actúa como autoridad legal, médica, fiscal o financiera.
 - Tope monetario diario y mensual por tenant, alarma al 70/90/100% y corte duro al llegar al límite.
 - Las llamadas de búsqueda web y archivos tienen cargos separados; no se activan por defecto.
 
-OpenAI indica que los datos de la API no se usan para entrenar por defecto, sujeto a sus controles y política vigentes. [Uso de datos de OpenAI](https://help.openai.com/en/articles/5722486-how-your-data-is-used-) y [países compatibles](https://developers.openai.com/api/docs/supported-countries).
+“No se usa para entrenar por defecto” no significa “no se retiene”. En la API Responses, el estado de aplicación puede retenerse 30 días cuando `store=true` o se omite el parámetro; diseñar con `store:false` donde aplique y evitar endpoints de estado persistente si no se requieren. Además, OpenAI describe hasta 30 días de logs de abuso por defecto; Zero Data Retention/Modified Abuse Monitoring requiere elegibilidad y aprobación. Aplicar revisión equivalente a cada proveedor candidato; el consentimiento no sustituye aviso, finalidad ni base legal. [Uso y retención de datos de OpenAI](https://developers.openai.com/api/docs/guides/your-data) y [países compatibles](https://developers.openai.com/api/docs/supported-countries).
 
 ## 13. Backups, disponibilidad y salida del cliente
 
 - Render PostgreSQL ofrece recuperación a un punto en el tiempo según plan. Además, ejecutar `pg_dump` cifrado nocturno hacia un proveedor independiente.
 - Retención inicial: siete diarios, cuatro semanales y doce mensuales; legal debe ajustar según datos y contrato.
 - Prueba trimestral de restauración en un entorno aislado, con tiempo y evidencia. Un backup no probado no cuenta como recuperación.
-- Restauración por tenant mediante herramientas probadas; nunca importar directamente sobre producción sin staging y verificación.
+- Una restauración selectiva de tenant en base compartida no se obtiene automáticamente del PITR: éste recupera una base a otra instancia, no una empresa aislada. Implementar y ensayar exportación/restauración selectiva con dependencias y auditoría, o vender base dedicada/recuperación integral como opción cotizada; nunca importar directamente sobre producción sin staging y verificación. [Backups PostgreSQL de Render](https://render.com/docs/postgresql-backups).
 - Exportación del cliente en formatos documentados (CSV/JSON más archivos), disponible durante la suscripción y la ventana de salida.
 - Objetivos iniciales propuestos: RPO 24 horas para desastre de plataforma y RTO 8 horas en Básico/Pro; Premium puede comprar objetivos menores sólo después de demostrar capacidad.
 - Render no publica una región dominicana. La ubicación y transferencia internacional deben declararse en contrato y privacidad. [Regiones de Render](https://render.com/docs/regions).
@@ -519,6 +525,6 @@ La dueña debe escoger entre las opciones de la sección 17 antes de autorizar c
 ## Resumen final para la dueña
 1. Recomiendo lanzar primero la PWA SaaS con 3–10 clientes pagos; las apps y el offline vienen después de demostrar aislamiento, restauración y demanda.
 2. Propongo Básico RD$1,990, Pro RD$3,990 y Premium RD$7,990 mensuales, antes de impuestos aplicables, con límites claros y sin uso ilimitado.
-3. El margen conservador modelado es 39.8% con 10 clientes, 59.8% con 50 y 63.5% con 200, pero aún faltan cotizaciones legales, fiscales, de pagos y soporte real.
+3. El margen directo modelado es 39.8% con 10 clientes, 59.8% con 50 y 63.6% con 200; no es margen neto y faltan cotizaciones legales, fiscales, de pagos y soporte real.
 4. Antes de código debe aprobar nicho, inversión, procesador, tratamiento fiscal, contratos, privacidad y reglas de mora/exportación; ningún dato real ni despliegue queda autorizado aquí.
 5. Si se aprueba, Claude debe revisar esta propuesta antes de programar y la fase 2 sólo comienza tras 10 clientes pagos, cero fuga multiempresa y dos restauraciones comprobadas.
