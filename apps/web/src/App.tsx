@@ -132,6 +132,9 @@ const navigation = [
 function Login() {
   const [login, setLogin] = useState(""),
     [password, setPassword] = useState(""),
+    [changeRequired, setChangeRequired] = useState(false),
+    [newPassword, setNewPassword] = useState(""),
+    [confirmPassword, setConfirmPassword] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   return (
@@ -181,8 +184,23 @@ function Login() {
             setBusy(true);
             setError("");
             try {
-              const data = await post("/auth/login", { login, password });
-              await saveSession(data.user, data.accessToken);
+              if (!changeRequired) {
+                const data = await post("/auth/login", { login, password });
+                if (data.requiresPasswordChange) {
+                  setChangeRequired(true);
+                  setError("");
+                  return;
+                }
+                await saveSession(data.user, data.accessToken);
+              } else {
+                const data = await post("/auth/change-password", {
+                  login,
+                  currentPassword: password,
+                  newPassword,
+                  confirmPassword,
+                });
+                await saveSession(data.user, data.accessToken);
+              }
             } catch (e: any) {
               setError(e.message);
             } finally {
@@ -191,8 +209,16 @@ function Login() {
           }}
         >
           <span className="eyebrow">BIENVENIDA A NEXORA</span>
-          <h2>Un nuevo día para crecer.</h2>
-          <p>Inicia sesión para entrar a tu tienda.</p>
+          <h2>
+            {changeRequired
+              ? "Actualiza tu contraseña."
+              : "Un nuevo día para crecer."}
+          </h2>
+          <p>
+            {changeRequired
+              ? "Por seguridad, crea una contraseña nueva para continuar."
+              : "Inicia sesión para entrar a tu tienda."}
+          </p>
           <label className="field">
             <span>Usuario</span>
             <input
@@ -205,7 +231,7 @@ function Login() {
             />
           </label>
           <label className="field">
-            <span>Contraseña</span>
+            <span>{changeRequired ? "Contraseña temporal" : "Contraseña"}</span>
             <input
               type="password"
               autoComplete="current-password"
@@ -215,13 +241,47 @@ function Login() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
+          {changeRequired && (
+            <>
+              <label className="field">
+                <span>Nueva contraseña</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={12}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span>Confirma la nueva contraseña</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={12}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </label>
+              <small>
+                Usa al menos 12 caracteres, con mayúscula, minúscula, número y
+                símbolo.
+              </small>
+            </>
+          )}
           {error && (
             <p className="form-error" role="alert">
               {error}
             </p>
           )}
           <Button className="full-width" disabled={busy}>
-            {busy ? "Entrando…" : "Entrar a mi tienda"}
+            {busy
+              ? "Procesando…"
+              : changeRequired
+                ? "Guardar contraseña y entrar"
+                : "Entrar a mi tienda"}
             <ArrowUpRight size={18} />
           </Button>
           {SHOW_DEMO_CREDENTIALS && (

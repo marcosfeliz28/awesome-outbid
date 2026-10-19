@@ -211,7 +211,7 @@ export class AlertEngine {
           "cash_difference",
           "high",
           s.id,
-          `Caja ${s.registerId}: diferencia de RD$ ${difference.toFixed(2)}.`,
+          "Diferencia de caja superior al límite configurado. Revisión administrativa requerida.",
         );
     }
     const today = businessDate();

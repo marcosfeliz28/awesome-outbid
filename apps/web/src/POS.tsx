@@ -642,7 +642,9 @@ export function POS({ go }: { go: (page: string) => void }) {
           Ir al carrito y cobrar
         </a>
         <div className="pos-topbar">
-          <h1>Punto de venta <span className="title-dot" /></h1>
+          <h1>
+            Punto de venta <span className="title-dot" />
+          </h1>
           <div className="pos-search">
             <Search size={20} aria-hidden="true" />
             <input
@@ -787,7 +789,12 @@ export function POS({ go }: { go: (page: string) => void }) {
           )}
         </QueryState>
       </section>
-      <aside className="cart-panel" id="pos-cart" tabIndex={-1} aria-label="Carrito y cobro">
+      <aside
+        className="cart-panel"
+        id="pos-cart"
+        tabIndex={-1}
+        aria-label="Carrito y cobro"
+      >
         <div className="cart-heading">
           <div>
             <h2>Venta actual</h2>
@@ -1017,7 +1024,9 @@ export function POS({ go }: { go: (page: string) => void }) {
             <span>Cobrar · {formatMoney(total)}</span>
             <kbd>F12</kbd>
           </>
-        ) : <span>Carrito vacío · Busca un artículo</span>}
+        ) : (
+          <span>Carrito vacío · Busca un artículo</span>
+        )}
       </Button>
       <Modal
         open={!!choosing}
@@ -1373,6 +1382,7 @@ function Checkout({
       cardType: "credit" as "credit" | "debit",
     }),
     [pin, setPin] = useState(""),
+    [discountReason, setDiscountReason] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [receipt, setReceipt] = useState<any>(null);
@@ -1434,6 +1444,12 @@ function Checkout({
           manualDiscount(i, globalDiscount) >
           (config?.sellerDiscountLimit ?? 10),
       ));
+  const hasDiscount =
+    globalDiscount > 0 ||
+    cart.some(
+      (item) =>
+        item.discountPercent > 0 || Number(item.discountAmount ?? 0) > 0,
+    );
   const addPayment = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -1508,6 +1524,7 @@ function Checkout({
         discountAmount: i.discountAmount,
       })),
       globalDiscount,
+      ...(hasDiscount ? { discountReason: discountReason.trim() } : {}),
       expectedTotal: total,
       ...(payments.some((p) => p.method === "credit") && creditDueDate
         ? {
@@ -2103,6 +2120,20 @@ function Checkout({
           />
         </label>
       )}
+      {hasDiscount && (
+        <label className="field">
+          <span>Motivo del descuento</span>
+          <input
+            required
+            minLength={3}
+            maxLength={300}
+            value={discountReason}
+            onChange={(e) => setDiscountReason(e.target.value)}
+            placeholder="Ej.: promoción autorizada o cliente frecuente"
+          />
+          <small>Quedará registrado en la auditoría de la venta.</small>
+        </label>
+      )}
       {error && (
         <p className="form-error" role="alert">
           {error}
@@ -2112,7 +2143,11 @@ function Checkout({
         variant="success"
         className="full-width"
         disabled={
-          busy || !payments.length || payment.pending > 0 || (needsPin && !pin)
+          busy ||
+          !payments.length ||
+          payment.pending > 0 ||
+          (needsPin && !pin) ||
+          (hasDiscount && discountReason.trim().length < 3)
         }
         onClick={finish}
       >

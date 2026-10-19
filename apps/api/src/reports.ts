@@ -285,6 +285,12 @@ export class ReportsController {
       (actor.role === "seller" || !can(actor.permissions, "profit:read"))
     )
       denied();
+    if (
+      name === "cash" &&
+      !can(actor.permissions, "profit:read") &&
+      !can(actor.permissions, "sale:manage")
+    )
+      denied();
     if (STORE_REPORTS.includes(name))
       return sendStoreReport(
         res,

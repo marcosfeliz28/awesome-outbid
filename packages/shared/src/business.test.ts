@@ -453,26 +453,52 @@ describe("Tienda · cuadre de caja y contraentrega", () => {
     });
     expect(() => deliveredSplit(500, 500.01)).toThrow(/entregado/i);
   });
-  it("cierre: acepta sólo countedCash (clientes anteriores) o el conteo por denominaciones", () => {
-    expect(cashCloseSchema.parse({ countedCash: 100 })).toMatchObject({
+  it("cierre ciego: exige declarar tarjeta y transferencia además del efectivo", () => {
+    expect(
+      cashCloseSchema.parse({
+        countedCash: 100,
+        countedCard: 0,
+        countedTransfer: 0,
+      }),
+    ).toMatchObject({
       countedCash: 100,
+      countedCard: 0,
+      countedTransfer: 0,
       vouchers: 0,
       countedUsd: 0,
       countedEur: 0,
     });
     expect(
-      cashCloseSchema.parse({ denominations: { "100": 2 }, delivered: 150 }),
+      cashCloseSchema.parse({
+        denominations: { "100": 2 },
+        countedCard: 0,
+        countedTransfer: 0,
+        delivered: 150,
+      }),
     ).toMatchObject({ denominations: { "100": 2 }, delivered: 150 });
     expect(() => cashCloseSchema.parse({})).toThrow();
     // Denominación inexistente, cantidad fraccionaria o vale con fracción de centavo.
     expect(() =>
-      cashCloseSchema.parse({ denominations: { "3": 1 } }),
+      cashCloseSchema.parse({
+        denominations: { "3": 1 },
+        countedCard: 0,
+        countedTransfer: 0,
+      }),
     ).toThrow();
     expect(() =>
-      cashCloseSchema.parse({ denominations: { "100": 1.5 } }),
+      cashCloseSchema.parse({
+        denominations: { "100": 1.5 },
+        countedCard: 0,
+        countedTransfer: 0,
+      }),
     ).toThrow();
     expect(() =>
-      cashCloseSchema.parse({ countedCash: 10, vouchers: 0.001 }),
+      cashCloseSchema.parse({
+        countedCash: 10,
+        countedCard: 0,
+        countedTransfer: 0,
+        vouchers: 0.001,
+      }),
     ).toThrow();
   });
   it("contraentrega: forma de pago propia, combinable y sin cambio", () => {

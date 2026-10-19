@@ -333,6 +333,14 @@ export function InvoicePrint({
       <hr />
       <Row label="Sub-Total" value={rd(gross)} />
       <Row label="Descuento" value={"−" + rd(discount)} />
+      {discount > 0 && (
+        <p>
+          Motivo: {sale.discountReason ?? "Sin motivo"}
+          {sale.discountApprovedName
+            ? ` · Autorizó: ${sale.discountApprovedName}${sale.discountApprovedRole ? ` (${sale.discountApprovedRole})` : ""}`
+            : ""}
+        </p>
+      )}
       <Row label="ITBIS" value={rd(sale.taxTotal)} />
       <Row label="Total a pagar" value={rd(sale.total)} strong />
       <hr />
@@ -340,7 +348,7 @@ export function InvoicePrint({
         <Row
           key={n}
           label={METHOD_LABEL[p.method] ?? p.method}
-          value={rd(p.amount)}
+          value={rd(p.tendered ?? p.amount)}
         />
       ))}
       <Row label="Cambio" value={rd(sale.change ?? 0)} />

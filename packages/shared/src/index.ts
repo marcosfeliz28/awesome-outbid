@@ -9,6 +9,13 @@ Decimal.set({ precision: 28, rounding: Decimal.ROUND_HALF_UP });
 export const d = (value: Decimal.Value) => new Decimal(value);
 export const money = (value: Decimal.Value) =>
   d(value).toDecimalPlaces(2).toNumber();
+export const paymentReceiptLine = (payment: {
+  method: string;
+  tendered: Decimal.Value;
+  amount: Decimal.Value;
+  change: Decimal.Value;
+}) =>
+  `${payment.method}: Recibido RD$ ${payment.tendered} · Aplicado RD$ ${payment.amount} · Cambio RD$ ${payment.change}`;
 export const quantity = (value: Decimal.Value) =>
   d(value).toDecimalPlaces(3).toNumber();
 // Las existencias se guardan con 3 decimales. Una cantidad más fina se
@@ -441,6 +448,7 @@ export const saleSchema = z.object({
     .min(1)
     .max(200),
   globalDiscount: z.number().min(0).max(100).default(0),
+  discountReason: z.string().trim().min(3).max(300).optional(),
   expectedTotal: z.number().nonnegative().optional(),
   managerPin: z
     .string()
@@ -543,15 +551,14 @@ export function deliveredSplit(
 }
 const cashAmount = moneyAmount(100000000, true);
 /**
- * Cierre de caja. Basta countedCash (clientes anteriores) o el conteo por
- * denominaciones; tarjeta y transferencia, si no se declaran, son las
- * esperadas. Vales: salidas con comprobante no registradas como retiro.
+ * Cierre de caja ciego: cada forma de pago debe declararse. El servidor nunca
+ * completa un campo vacío con el valor esperado.
  */
 export const cashCloseSchema = z
   .object({
     countedCash: cashAmount.optional(),
-    countedCard: cashAmount.optional(),
-    countedTransfer: cashAmount.optional(),
+    countedCard: cashAmount,
+    countedTransfer: cashAmount,
     denominations: denominationCountsSchema.optional(),
     vouchers: cashAmount.default(0),
     countedUsd: cashAmount.default(0),

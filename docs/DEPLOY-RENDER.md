@@ -32,15 +32,16 @@ Internet -> HTTPS de Render -> nexora-pos-web (Nginx + PWA)
 
 ## Archivos de despliegue
 
-| Archivo                             | Función                                                                   |
-| ----------------------------------- | ------------------------------------------------------------------------- |
-| `render.yaml`                       | Blueprint reproducible, tamaños, región, conexiones y secretos generados. |
-| `deploy/render/Dockerfile.web`      | Construye la PWA y la sirve con Nginx 1.30.5.                             |
-| `deploy/render/nginx.conf.template` | Publica la web, `/healthz` y reenvía `/api` a la red privada.             |
-| `deploy/render/start-nginx.sh`      | Valida el destino privado y toma el DNS efectivo de `/etc/resolv.conf`.   |
-| `deploy/render/Dockerfile.api`      | Construye y ejecuta exclusivamente la API.                                |
-| `deploy/render/with-cloud-env.mjs`  | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales.              |
-| `tests/cloud-deploy.test.ts`        | Comprueba las reglas de aislamiento y configuración anteriores.           |
+| Archivo                               | Función                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `render.yaml`                         | Blueprint reproducible, tamaños, región, conexiones y secretos generados. |
+| `deploy/render/Dockerfile.web`        | Construye la PWA y la sirve con Nginx 1.30.5.                             |
+| `deploy/render/nginx.conf.template`   | Publica la web, cabeceras de seguridad y `/api` a la red privada.         |
+| `deploy/render/security-headers.conf` | CSP/PWA, cámara y cabeceras HTTP defensivas.                              |
+| `deploy/render/start-nginx.sh`        | Valida el destino privado y toma el DNS efectivo de `/etc/resolv.conf`.   |
+| `deploy/render/Dockerfile.api`        | Construye y ejecuta exclusivamente la API.                                |
+| `deploy/render/with-cloud-env.mjs`    | Forma `DATABASE_URL` con TLS y UTC sin revelar credenciales.              |
+| `tests/cloud-deploy.test.ts`          | Comprueba las reglas de aislamiento y configuración anteriores.           |
 
 ## Variables y secretos
 
@@ -76,11 +77,33 @@ upstream con zona compartida, la opción `resolve` y el servidor DNS que el
 contenedor recibió en `/etc/resolv.conf`; vuelve a resolver el nombre cada diez
 segundos. Esto evita conservar una IP antigua cuando Render reemplaza la API.
 
-El servicio público recibe `CF-Connecting-IP` de la capa de Render y lo copia a
-un único `X-Forwarded-For`, reemplazando cualquier cadena aportada por el
-cliente. La API ya confía exactamente en un salto (`trust proxy = 1`): Nginx.
-En el Compose local se sigue usando `deploy/nginx.conf`; esta configuración
-cloud no altera el instalador ni el funcionamiento local.
+El Nginx cloud no usa como fuente de identidad ninguna cabecera de IP que pueda
+mandar el cliente. El mapa toma únicamente `$remote_addr` y reemplaza
+`X-Real-IP` y `X-Forwarded-For` con ese valor; la API confía en el salto Nginx
+(`trust proxy = 1`). La documentación publicada por Render recomienda leer
+`X-Forwarded-For` para obtener la IP real y señala que `CF-Ray` se reenvía, pero
+no especifica que Render sobrescriba siempre `CF-Connecting-IP` o elimine las
+partes falsificables de `X-Forwarded-For`. Por eso no usamos esas cabeceras para
+autorización ni límites de seguridad hasta que Render confirme formalmente una
+frontera de confianza. Como consecuencia, `$remote_addr` puede ser la IP del
+proxy inmediato y no la del cliente; no se presenta como identificación
+individual fiable. La regresión envía `CF-Ray`, `CF-Connecting-IP` y
+`X-Forwarded-For` falsificados a la vez y comprueba que ninguno se reenvía. La
+prueba dinámica con Nginx/Render queda pendiente si no se dispone del binario o
+del entorno aislado. El Compose local sigue usando `deploy/nginx.conf`.
+
+Fuente: [Render, How Render handles DDoS attacks](https://render.com/articles/how-render-handles-ddos-attacks)
+(consulta del 8-oct-2026). Esa guía recomienda `X-Forwarded-For`, pero no
+declara que el borde lo sobrescriba siempre ante valores enviados por el
+cliente.
+
+El snippet de seguridad instala CSP, HSTS, `X-Frame-Options: DENY`,
+`X-Content-Type-Options: nosniff` y `Referrer-Policy`. La CSP permite módulos
+locales, workers `blob:` usados por la PWA, peticiones al mismo origen y
+ingesta de Sentry; la política de permisos conserva cámara sólo en el mismo
+origen para el lector. La cámara requiere HTTPS (o localhost). Pruebas de
+cabeceras en un Nginx ejecutándose y recorrido visual/offline de la cámara
+siguen pendientes porque Docker no está disponible en el equipo de revisión.
 
 ## Salud y preparación
 
@@ -116,6 +139,31 @@ ni el seed de demostración. Las migraciones nuevas deben seguir el patrón
    un respaldo verificable.
 
 Volver al contenedor anterior no revierte una migración de datos.
+
+### Contraseñas temporales de cajero
+
+La migración `202610130001_password_change_required` agrega una marca por
+usuario. La pantalla de entrada la activa cuando la API detecta esa marca; el
+servidor no emite sesión normal hasta completar el cambio. La clave nueva debe
+tener 12–72 bytes UTF-8 (límite de bcrypt), mayúscula, minúscula, número y
+símbolo. Las cuentas temporales ya existentes se marcan mediante una tarea
+puntual, después de desplegar API/migración. Configura sólo los nombres reales
+que correspondan en variables temporales de la tarea, sin agregar nombres ni
+contraseñas al repositorio:
+
+```text
+PASSWORD_CHANGE_CONFIRM=ROTATE_TEMPORARY_PASSWORDS
+PASSWORD_CHANGE_USERNAMES=<lista de nombres separados por coma>
+node deploy/render/with-cloud-env.mjs node apps/api/node_modules/tsx/dist/cli.mjs apps/api/scripts/require-password-change.ts
+```
+
+El comando valida que todas las cuentas indicadas existan y estén activas antes
+de modificar ninguna, invalida sesiones y tokens previos y registra una acción
+de auditoría. Ejecutarlo sólo como proceso puntual dentro del servicio API
+correcto; no usarlo en una copia de producción desde una laptop. Los nuevos
+usuarios creados por la pantalla de administración y los cambios de contraseña
+hechos por un administrador quedan marcados para que la persona cambie la clave
+en su primer acceso.
 
 ## Validación local sin desplegar
 
@@ -182,6 +230,52 @@ Blueprint sí los crea y sólo debe hacerse después de aprobar el gasto.
 
 Los disparadores automáticos permanecen apagados para conservar este orden.
 
+## Respaldo y recuperación de Render
+
+`render.yaml` configura PostgreSQL pagado `0.1c-256mb`, pero no permite inferir
+el plan del workspace Render. El panel de facturación verificó el plan Hobby
+para este workspace el 8 de octubre de 2026: Render publica
+PITR continuo con ventana de 3 días en Hobby y 7 días en Pro o superior; los
+exports lógicos iniciados desde el Dashboard se conservan 7 días. PITR y los
+exports lógicos no están disponibles para bases Free. Fuente y fecha de
+consulta: [documentación oficial de Render](https://render.com/docs/postgresql-backups),
+consultada el 8 de octubre de 2026. Esta ventana depende del workspace, no del
+tamaño `0.1c-256mb` del servicio.
+
+**Procedimiento recomendado de recuperación Render (sin sobrescribir la base
+fuente):**
+
+1. En el Dashboard de la base, abrir Recovery → Point-in-Time Recovery → Restore
+   Database. Render crea una instancia nueva; elegir un nombre distinto y la
+   hora de recuperación. No apuntar la aplicación a ella todavía.
+2. Comprobar que la instancia recuperada está disponible. Conectar un cliente
+   autorizado de forma temporal y verificar salud, migraciones, conteos de datos
+   y una operación de lectura. No ejecutar una restauración destructiva sobre
+   la base original.
+3. Si se usa un export lógico `.dir.tar.gz`, descargarlo y extraerlo en un
+   equipo controlado. Crear una base vacía aislada, y usar PostgreSQL 17:
+
+   ```text
+   pg_restore --format=directory --no-owner --no-privileges --exit-on-error --dbname=<URL_DE_BASE_NUEVA_VACIA> <directorio_extraido>
+   ```
+
+   El procedimiento de Render documenta este formato y recomienda no restaurar
+   sobre un esquema con datos importantes. La contraseña/URL se proporciona
+   mediante el gestor de secretos del cliente, nunca en el historial o como
+   argumento literal.
+
+4. Sólo después de validar la instancia recuperada, cambiar `RENDER_DATABASE_URL`
+   en el servicio API al connection string de esa nueva base, revisar el
+   despliegue y validar `/api/health` y operaciones de lectura/escritura
+   controladas. Mantener la instancia anterior intacta hasta completar la
+   verificación y decisión del negocio.
+
+No se ejecutó PITR ni una restauración lógica en Render: todavía no se ha
+confirmado la cuenta/plan del workspace y no se debe ensayar sobre datos reales.
+La fault-injection local del instalador no sustituye la prueba de restauración
+cloud. Un ensayo real requiere una base descartable y Docker/`pg_restore`, que
+no están disponibles en este equipo durante esta revisión.
+
 ## Trabajo que sigue pendiente
 
 Esta preparación no incluye ni autoriza:
@@ -192,7 +286,7 @@ Esta preparación no incluye ni autoriza:
   Diseño, fragmento de cron no activo, cliente local y límites: [Respaldo cloud
   de Render](./RESPALDO_CLOUD_RENDER.md);
 - monitor externo y alertas operativas;
-- ensayo de restauración;
+- ensayo de restauración con base descartable en Render;
 - pruebas reales con dos laptops, celular, impresora, lector y cortes de red;
 - aceptación del riesgo de una sola instancia.
 

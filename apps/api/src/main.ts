@@ -9,6 +9,7 @@ import { createAppModule } from "./app";
 import { validateSecret } from "./security";
 import { ApiExceptionFilter } from "./common";
 import { captureApiException, initializeApiMonitoring } from "./monitoring";
+import { createRequestRateLimiter } from "./rate-limit";
 
 config({ path: resolve(process.cwd(), "../../.env") });
 config();
@@ -29,33 +30,7 @@ async function bootstrap() {
     credentials: true,
   });
   app.useGlobalFilters(new ApiExceptionFilter());
-  // Límite por IP en rutas de autenticación y PIN. Los bloqueos de usuario persisten en PostgreSQL.
-  const attempts = new Map<string, { count: number; until: number }>();
-  app.use((req: any, res: any, next: () => void) => {
-    // El enrutador no distingue mayúsculas: /api/Auth/login llega al mismo
-    // controlador, así que se compara la ruta en minúsculas (R9-seguridad-2).
-    const path = String(req.path ?? req.url.split("?")[0]).toLowerCase();
-    const auth = path.startsWith("/api/auth/");
-    if (auth || (req.method === "POST" && path.startsWith("/api/sales"))) {
-      const key = (auth ? "auth:" : "sales:") + req.ip;
-      const now = Date.now();
-      const item = attempts.get(key);
-      if (item && item.until > now && item.count >= (auth ? 60 : 120)) {
-        res
-          .status(429)
-          .json({ message: "Demasiados intentos. Espera un minuto." });
-        return;
-      }
-      attempts.set(key, {
-        count: item && item.until > now ? item.count + 1 : 1,
-        until: item && item.until > now ? item.until : now + 60000,
-      });
-      if (attempts.size > 10000)
-        for (const [id, value] of attempts)
-          if (value.until < now) attempts.delete(id);
-    }
-    next();
-  });
+  app.use(createRequestRateLimiter());
   if (!production || process.env.ENABLE_SWAGGER === "true") {
     const document = SwaggerModule.createDocument(
       app,

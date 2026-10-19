@@ -1,0 +1,71 @@
+services:
+  db:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: nexora_audit
+      POSTGRES_USER: nexora_audit
+      POSTGRES_PASSWORD: ${NEXORA_AUDIT_DB_PASSWORD:?Use scripts/Start-NexoraAuditSandbox.ps1}
+    volumes:
+      - nexora_audit_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexora_audit -d nexora_audit"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    networks: [audit-internal]
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/render/Dockerfile.api
+    environment:
+      NODE_ENV: test
+      PORT: 10000
+      NEXORA_AUDIT_SANDBOX: "1"
+      DATABASE_URL: postgresql://nexora_audit:${NEXORA_AUDIT_DB_PASSWORD}@db:5432/nexora_audit?schema=public
+      JWT_SECRET: ${NEXORA_AUDIT_JWT_SECRET:?Use scripts/Start-NexoraAuditSandbox.ps1}
+      WEB_ORIGIN: http://localhost:4173
+      ENABLE_SWAGGER: "false"
+    command: >-
+      sh -c "./node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma &&
+      ./node_modules/.bin/tsx apps/api/scripts/seed-audit-sandbox.ts &&
+      node apps/api/dist/main.js"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:10000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    networks: [audit-internal]
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/render/Dockerfile.web
+    environment:
+      PORT: 10000
+      API_UPSTREAM: api:10000
+      NGINX_RESOLVER: 127.0.0.11
+    ports:
+      - "127.0.0.1:4173:10000"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [audit-internal]
+
+volumes:
+  nexora_audit_pgdata:
+    name: nexora_audit_pgdata
+
+networks:
+  audit-internal:
+    name: nexora-audit-internal
+    internal: true

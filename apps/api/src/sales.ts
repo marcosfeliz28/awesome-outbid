@@ -20,6 +20,7 @@ import {
   saleSchema,
   lineTotals,
   paymentTotals,
+  paymentReceiptLine,
   money,
   d,
   can,
@@ -56,6 +57,19 @@ import { lockVariant, takeStock, stockChange } from "./inventory";
 
 // Foto de evidencia de un cobro: hasta 2 MB.
 const PROOF_MAX_BYTES = 2 * 1024 * 1024;
+const paymentSummary = (payment: any) => {
+  const { proofUrl, ...summary } = payment;
+  const match = /^data:([^;,]+);base64,(.*)$/s.exec(proofUrl ?? "");
+  return {
+    ...summary,
+    hasProof: !!proofUrl,
+    proofContentType: match?.[1] ?? null,
+    proofBytes: match?.[2]
+      ? Math.floor((match[2].length * 3) / 4) -
+        (match[2].endsWith("==") ? 2 : match[2].endsWith("=") ? 1 : 0)
+      : 0,
+  };
+};
 import PDFDocument from "pdfkit";
 import type { Response } from "express";
 
@@ -252,6 +266,13 @@ export class SalesController {
     });
   }
   async complete(actor: Actor, input: SaleInput, offline = false) {
+    const requestsDiscount =
+      input.globalDiscount > 0 ||
+      input.items.some(
+        (item) => item.discountPercent > 0 || (item.discountAmount ?? 0) > 0,
+      );
+    if (requestsDiscount && !input.discountReason)
+      bad("Indica el motivo del descuento.");
     const { managerPin: ignored, ...fingerprint } = input;
     void ignored;
     const requestHash = createHash("sha256")
@@ -333,8 +354,7 @@ export class SalesController {
           where: { id: actor.branchId },
         });
         const config = settings?.data as any;
-        if (!customer)
-          bad("Selecciona o crea un cliente antes de vender.");
+        if (!customer) bad("Selecciona o crea un cliente antes de vender.");
         const components = await tx.kitComponent.findMany({
           where: { kitVariantId: { in: input.items.map((i) => i.variantId) } },
         });
@@ -533,6 +553,18 @@ export class SalesController {
           create: { key: "sale:" + actor.branchId, value: 1 },
           update: { value: { increment: 1 } },
         });
+        const discountAuthorizer =
+          requestsDiscount && approvedBy
+            ? await tx.user.findUnique({
+                where: { id: approvedBy },
+                include: { role: true },
+              })
+            : null;
+        const discountRule = approvedBy
+          ? "manager_pin"
+          : can(actor.permissions, "sale:manage")
+            ? "administrator"
+            : "cashier_limit";
         const sale = await tx.sale.create({
           data: {
             number: "FS-" + String(counter.value).padStart(7, "0"),
@@ -547,6 +579,17 @@ export class SalesController {
             discountTotal: money(
               lines.reduce((a, l) => a.plus(l.totals.discount), d(0)),
             ),
+            discountReason: requestsDiscount ? input.discountReason : null,
+            discountRule: requestsDiscount ? discountRule : null,
+            discountApprovedBy: requestsDiscount
+              ? (approvedBy ?? actor.id)
+              : null,
+            discountApprovedName: requestsDiscount
+              ? (discountAuthorizer?.name ?? actor.name)
+              : null,
+            discountApprovedRole: requestsDiscount
+              ? (discountAuthorizer?.role.name ?? actor.role)
+              : null,
             taxTotal: money(lines.reduce((a, l) => a.plus(l.totals.tax), d(0))),
             total,
             creditBalance: money(d(credit).plus(cod)),
@@ -755,10 +798,7 @@ export class SalesController {
         });
         if (credit || cod)
           await refreshReceivableAlert(tx, sale.id, actor.branchId);
-        if (
-          Number(sale.discountTotal) > 0 &&
-          (approvedBy || can(actor.permissions, "sale:manage"))
-        )
+        if (Number(sale.discountTotal) > 0) {
           await audit(
             tx,
             actor,
@@ -767,10 +807,20 @@ export class SalesController {
             sale.id,
             undefined,
             {
-              approvedBy: approvedBy ?? actor.id,
+              actor: { id: actor.id, name: actor.name, role: actor.role },
+              rule: discountRule,
+              authorizer: discountAuthorizer
+                ? {
+                    id: discountAuthorizer.id,
+                    name: discountAuthorizer.name,
+                    role: discountAuthorizer.role.name,
+                  }
+                : { id: actor.id, name: actor.name, role: actor.role },
+              reason: input.discountReason,
               discount: sale.discountTotal,
             },
           );
+        }
         return tx.sale.findUniqueOrThrow({
           where: { id: sale.id },
           include: { items: true, payments: true },
@@ -882,28 +932,32 @@ export class SalesController {
         bad("Fecha inválida.");
       createdAt = { gte, lte };
     }
+    const rows = await this.db.sale.findMany({
+      where: {
+        branchId: actor.branchId,
+        ...(can(actor.permissions, "sale:manage")
+          ? {}
+          : { sellerId: actor.id }),
+        ...(filters.q
+          ? { number: { contains: filters.q, mode: "insensitive" as const } }
+          : {}),
+        ...(createdAt ? { createdAt } : {}),
+      },
+      include: {
+        items: { include: { variant: { include: { product: true } } } },
+        payments: true,
+        returns: true,
+      },
+      orderBy: { createdAt: "desc" },
+      // La búsqueda por número o fecha alcanza todo el historial sin enviar
+      // cada artículo de todas las ventas en una sola respuesta.
+      take: filters.q || filters.date ? 500 : 100,
+    });
     return safe(
-      await this.db.sale.findMany({
-        where: {
-          branchId: actor.branchId,
-          ...(can(actor.permissions, "sale:manage")
-            ? {}
-            : { sellerId: actor.id }),
-          ...(filters.q
-            ? { number: { contains: filters.q, mode: "insensitive" as const } }
-            : {}),
-          ...(createdAt ? { createdAt } : {}),
-        },
-        include: {
-          items: { include: { variant: { include: { product: true } } } },
-          payments: true,
-          returns: true,
-        },
-        orderBy: { createdAt: "desc" },
-        // La búsqueda por número o fecha alcanza todo el historial sin enviar
-        // cada artículo de todas las ventas en una sola respuesta.
-        take: filters.q || filters.date ? 500 : 100,
-      }),
+      rows.map((sale) => ({
+        ...sale,
+        payments: sale.payments.map(paymentSummary),
+      })),
       actor,
     );
   }
@@ -1548,21 +1602,7 @@ export class SalesController {
     const type = imageType(file.buffer);
     if (!type || type === "gif")
       bad("La evidencia debe ser una imagen JPG, PNG o WebP.");
-    const payment = await this.db.payment.findFirstOrThrow({
-      where: {
-        id: parse(uuid, id),
-        entryType: "installment",
-        sale: { branchId: actor.branchId },
-      },
-    });
-    if (!can(actor.permissions, "sale:manage")) {
-      const own = payment.cashSessionId
-        ? await this.db.cashSession.findFirst({
-            where: { id: payment.cashSessionId, userId: actor.id },
-          })
-        : null;
-      if (!own) denied();
-    }
+    const payment = await this.proofPayment(actor, id);
     const proofUrl = `data:image/${type};base64,${file.buffer.toString("base64")}`;
     return this.db.$transaction(async (tx) => {
       const row = await tx.payment.update({
@@ -1581,8 +1621,43 @@ export class SalesController {
           proof: `(imagen de ${Math.round(file.size / 1024)} KB)`,
         },
       );
-      return safe(row, actor);
+      return paymentSummary(row);
     });
+  }
+  @Get("payments/:id/proof")
+  @Permit("*")
+  async getPaymentProof(
+    @Param("id") id: string,
+    @CurrentUser() actor: Actor,
+    @Res() res: Response,
+  ) {
+    const payment = await this.proofPayment(actor, id);
+    if (!payment.proofUrl) bad("Este pago no tiene evidencia adjunta.");
+    const match = /^data:(image\/(?:jpeg|png|webp));base64,(.*)$/s.exec(
+      payment.proofUrl,
+    );
+    if (!match) bad("La evidencia guardada no tiene un formato válido.");
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.type(match[1]).send(Buffer.from(match[2], "base64"));
+  }
+  private async proofPayment(actor: Actor, id: string) {
+    const payment = await this.db.payment.findFirstOrThrow({
+      where: {
+        id: parse(uuid, id),
+        entryType: "installment",
+        sale: { branchId: actor.branchId },
+      },
+    });
+    if (!can(actor.permissions, "sale:manage")) {
+      const own = payment.cashSessionId
+        ? await this.db.cashSession.findFirst({
+            where: { id: payment.cashSessionId, userId: actor.id },
+            select: { id: true },
+          })
+        : null;
+      if (!own) denied();
+    }
+    return payment;
   }
   // Créditos y contraentregas pendientes: sólo la administración puede verlos
   // y registrar cómo entró el dinero.
@@ -1647,14 +1722,9 @@ export class SalesController {
             collections.filter((p) => p.status === "pending_verification"),
           ),
           collections: collections.map((p) => ({
+            ...paymentSummary(p),
             paymentId: p.id,
-            method: p.method,
             amount: Number(p.amount),
-            status: p.status,
-            reference: p.reference,
-            bank: p.bank,
-            proofUrl: p.proofUrl,
-            createdAt: p.createdAt,
           })),
           customer: customers.find((c) => c.id === s.customerId) ?? null,
           seller: sellers.find((u) => u.id === s.sellerId) ?? null,
@@ -1859,8 +1929,11 @@ export class SalesController {
       );
     if (Number(sale.creditBalance) > 0)
       doc.text("Crédito / contraentrega pendiente: RD$ " + sale.creditBalance);
-    for (const p of sale.payments)
-      doc.text(`${p.method}: RD$ ${p.amount} · Cambio: RD$ ${p.change}`);
+    if (Number(sale.discountTotal) > 0)
+      doc.text(
+        `Descuento: RD$ ${sale.discountTotal} · ${sale.discountReason ?? "Sin motivo"} · Autorizó: ${sale.discountApprovedName ?? "No identificado"} (${sale.discountApprovedRole ?? sale.discountRule ?? "regla no identificada"})`,
+      );
+    for (const p of sale.payments) doc.text(paymentReceiptLine(p));
     doc.moveDown().text("Gracias por elegirnos.");
     doc.end();
   }
