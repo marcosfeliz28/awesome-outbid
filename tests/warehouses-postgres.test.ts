@@ -156,7 +156,15 @@ afterAll(async () => {
     await admin.$disconnect();
   }
   await database?.stop().catch(() => undefined);
-  if (dataDir) await rm(dataDir, { recursive: true, force: true });
+  // On Windows, the postmaster may release its final directory handle just
+  // after stop() resolves, especially while PostgreSQL suites run in parallel.
+  if (dataDir)
+    await rm(dataDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 12,
+      retryDelay: 250,
+    });
   if (projectDir) await rm(projectDir, { recursive: true, force: true });
 }, 60000);
 
