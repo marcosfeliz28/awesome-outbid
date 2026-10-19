@@ -146,6 +146,22 @@ test("envío: 15,550 + 400 cuadra con 15,950 y se paga una sola vez", async ({
       () => document.documentElement.scrollWidth - innerWidth,
     ),
   ).toBeLessThanOrEqual(1);
+  // UI-01: a 320 px también se verifica de verdad y se ve el resultado.
+  await page
+    .locator(".reconciliation-bank")
+    .filter({ has: row })
+    .getByRole("button", { name: "Verificar seleccionadas" })
+    .click();
+  await expect(
+    page.locator(".reconciliation-ok").filter({ hasText: sold.number }),
+  ).toHaveText(sold.number + ": Verificada");
+  // Ya verificada, sale de la lista de pendientes del servidor.
+  await expect(row).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - innerWidth,
+    ),
+  ).toBeLessThanOrEqual(1);
   await page.evaluate(() => {
     location.hash = "courier-payouts";
   });
