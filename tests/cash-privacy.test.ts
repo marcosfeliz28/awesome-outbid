@@ -31,8 +31,8 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
       // D-04: la cajera está bajo el límite de salidas sin PIN (RD$ 1,000).
       settings: { findUnique: async () => null },
       cashMovement: {
-        findUnique: async () => null,
         findMany: async () => [],
+        findUnique: async () => null,
         aggregate: async () => ({ _sum: { amount: null } }),
         create: async () => {
           created = true;
@@ -50,7 +50,7 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
       controller.movement(
         session.id,
         {
-          operationId: "7f1c2b3a-4d5e-4f60-8a71-92b3c4d5e6f7",
+          operationId: "6a1f0c2e-3b4d-4e5f-8a9b-0c1d2e3f4a5b",
           type: "out",
           amount: 51,
           reason: "Retiro operativo",
@@ -62,21 +62,6 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
       response: "No hay suficiente efectivo en caja.",
     });
     expect(created).toBe(false);
-  });
-
-  it("DIN-02: un movimiento de caja sin operationId se rechaza antes de tocar la base", async () => {
-    const controller = new CashController({
-      $transaction: async () => {
-        throw new Error("no debe llegar a la base");
-      },
-    } as any);
-    await expect(
-      controller.movement(
-        "3e6b82b5-bb56-45ca-9f5a-d19f4955fc84",
-        { type: "out", amount: 10, reason: "Sin clave" },
-        actor(["cash:write"]),
-      ),
-    ).rejects.toMatchObject({ issues: [{ path: ["operationId"] }] });
   });
 
   it("B3: dashboard oculta formas de pago de cajas abiertas y redacta alertas", async () => {

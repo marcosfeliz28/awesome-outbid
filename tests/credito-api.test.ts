@@ -43,7 +43,9 @@ async function request(
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(conClave(path, data)) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   const text = await r.text();
   let body: any = text;
@@ -1289,5 +1291,107 @@ describe("W7 · recordatorio semanal de créditos", () => {
       sale: { findMany: async () => [] },
     } as any);
     expect((await empty.run(monday, { telegram: true })).created).toEqual([]);
+  });
+});
+
+// Q-02 (auditoría de cobertura): reenvíos SIMULTÁNEOS con la misma clave en
+// las tres rutas que mueven dinero o stock de una venta ya hecha. Cada par sale
+// a la vez; debe quedar un solo cobro/devolución, el saldo no baja de cero y
+// la misma clave con otros datos se rechaza sin escribir.
+describe("Q-02 · reenvíos simultáneos con la misma clave", () => {
+  const installments = (saleId: string) =>
+    db.payment.findMany({ where: { saleId, entryType: "installment" } });
+  const balanceOf = async (saleId: string) =>
+    Number((await db.sale.findUnique({ where: { id: saleId } })).creditBalance);
+
+  it("POST /sales/:id/credit-collections: un solo abono", async () => {
+    const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
+    const op = randomUUID();
+    const before = await expectedOf(adminA);
+    const both = await Promise.all([
+      collect(adminA, s.id, [line("cash", 100)], op),
+      collect(adminA, s.id, [line("cash", 100)], op),
+    ]);
+    for (const r of both)
+      expect(r.status, JSON.stringify(r.body)).toBeLessThan(300);
+    expect(both[1].body.payments.map((p: any) => p.id)).toEqual(
+      both[0].body.payments.map((p: any) => p.id),
+    );
+    expect(await installments(s.id)).toHaveLength(1);
+    expect(await balanceOf(s.id)).toBe(100);
+    expect((await expectedOf(adminA)).cash).toBe(before.cash + 100);
+    const other = await collect(adminA, s.id, [line("cash", 50)], op);
+    expect(other.status).toBe(400);
+    expect(await installments(s.id)).toHaveLength(1);
+    expect(await balanceOf(s.id)).toBe(100);
+    expect((await expectedOf(adminA)).cash).toBe(before.cash + 100);
+  });
+
+  it("POST /sales/:id/cod-collections: un solo cobro de la contraentrega", async () => {
+    const s = (await sale(ana, 100, [{ method: "cod", amount: 100 }])).body;
+    const body = {
+      offlineUuid: randomUUID(),
+      cashSessionId: adminA.cash.id,
+      amount: 100,
+      method: "cash",
+    };
+    const path = "/sales/" + s.id + "/cod-collections";
+    const before = await expectedOf(adminA);
+    const both = await Promise.all([
+      request(path, adminA.token, body),
+      request(path, adminA.token, body),
+    ]);
+    for (const r of both)
+      expect(r.status, JSON.stringify(r.body)).toBeLessThan(300);
+    expect(both[1].body.id).toBe(both[0].body.id);
+    expect(await installments(s.id)).toHaveLength(1);
+    expect(await balanceOf(s.id)).toBe(0);
+    expect((await expectedOf(adminA)).cash).toBe(before.cash + 100);
+    const other = await request(path, adminA.token, { ...body, amount: 50 });
+    expect(other.status).toBe(400);
+    expect(await installments(s.id)).toHaveLength(1);
+    expect(await balanceOf(s.id)).toBe(0);
+    expect((await expectedOf(adminA)).cash).toBe(before.cash + 100);
+  });
+
+  // api.test.ts (R9-A01) ya prueba seis envíos simultáneos con nota de
+  // crédito; aquí el reembolso sale en efectivo de la caja.
+  it("POST /returns: una sola devolución, un solo reembolso y el stock sube una vez", async () => {
+    const s = (await sale(adminA, 200, [{ method: "cash", amount: 200 }])).body;
+    const stock = async () =>
+      Number(
+        (await db.variant.findUniqueOrThrow({ where: { id: variantId } }))
+          .stock,
+      );
+    const body = {
+      operationId: randomUUID(),
+      saleId: s.id,
+      cashSessionId: adminA.cash.id,
+      reason: "Q-02 reenvío simultáneo",
+      refundMethod: "cash",
+      items: [{ saleItemId: s.items[0].id, qty: 1, restock: true }],
+    };
+    const stockBefore = await stock();
+    const cashBefore = await expectedOf(adminA);
+    const both = await Promise.all([
+      request("/returns", adminA.token, body),
+      request("/returns", adminA.token, body),
+    ]);
+    for (const r of both) expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(both[1].body.id).toBe(both[0].body.id);
+    const returns = () => db.saleReturn.findMany({ where: { saleId: s.id } });
+    expect(await returns()).toHaveLength(1);
+    expect(await stock()).toBe(stockBefore + 1);
+    const after = await expectedOf(adminA);
+    expect(after.cash).toBe(cashBefore.cash - 100);
+    expect(after.cash).toBeGreaterThanOrEqual(0);
+    const other = await request("/returns", adminA.token, {
+      ...body,
+      items: [{ saleItemId: s.items[0].id, qty: 2, restock: true }],
+    });
+    expect(other.status).toBe(400);
+    expect(await returns()).toHaveLength(1);
+    expect(await stock()).toBe(stockBefore + 1);
+    expect((await expectedOf(adminA)).cash).toBe(cashBefore.cash - 100);
   });
 });

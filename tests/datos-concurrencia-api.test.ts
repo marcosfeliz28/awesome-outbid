@@ -38,7 +38,9 @@ async function call(path: string, data?: unknown, token = "") {
       "X-Forwarded-For": nextIp(),
       ...(token ? { Authorization: "Bearer " + token } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(conClave(path, data)) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   return { status: response.status, body: await response.json() };
 }
