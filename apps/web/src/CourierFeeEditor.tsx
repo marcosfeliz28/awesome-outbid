@@ -18,6 +18,7 @@ export function CourierFeeEditor({
 }) {
   const [fee, setFee] = useState(initialFee);
   const [name, setName] = useState(initialName || "Addison");
+  const [reason, setReason] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -26,13 +27,19 @@ export function CourierFeeEditor({
     try {
       const validFee = feeText(fee);
       if (!name.trim()) throw new Error("Escribe el nombre del mensajero.");
+      if (reason.trim().length < 3)
+        throw new Error("Escribe el motivo del cambio.");
       setBusy(true);
       setError("");
       const result = await api<{ courierFee: string; courierName: string }>(
         `/sales/${saleId}/courier`,
         {
           method: "PATCH",
-          body: JSON.stringify({ fee: validFee, courierName: name.trim() }),
+          body: JSON.stringify({
+            fee: validFee,
+            courierName: name.trim(),
+            reason: reason.trim(),
+          }),
         },
       );
       onSaved(result.courierFee, result.courierName);
@@ -84,6 +91,16 @@ export function CourierFeeEditor({
           maxLength={100}
           disabled={disabled || busy}
           onChange={(event) => setName(event.target.value)}
+        />
+      </label>
+      <label className="field">
+        <span>Motivo</span>
+        <input
+          value={reason}
+          maxLength={200}
+          disabled={disabled || busy}
+          placeholder="Ej.: el mensajero cobró 300"
+          onChange={(event) => setReason(event.target.value)}
         />
       </label>
       {error && (

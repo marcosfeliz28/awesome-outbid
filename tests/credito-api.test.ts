@@ -969,6 +969,108 @@ describe("W7 · incentivo al cobrar", () => {
     );
   });
 
+  it("A1/A2 (18-oct): cambiar vendedora y marcar/desmarcar por mayor una venta de contado, con motivo y hasta 7 días", async () => {
+    const s = (await sale(ana, 400, [{ method: "cash", amount: 400 }])).body;
+    expect(await totalOf(s.id)).toBe(200);
+    const wholesale = (on: boolean, who = adminA) =>
+      request("/sales/" + s.id + "/mark-wholesale", who.token, {
+        reason: "Corrección de la dueña",
+        wholesale: on,
+      });
+    expect((await wholesale(true, ana)).status).toBe(403);
+    expect((await wholesale(true)).status).toBeLessThan(300);
+    expect(await totalOf(s.id)).toBe(100);
+    expect((await wholesale(false)).status).toBeLessThan(300);
+    expect(await totalOf(s.id)).toBe(200);
+    expect((await db.sale.findUnique({ where: { id: s.id } })).wholesale).toBe(
+      false,
+    );
+
+    const seller = (
+      sellerId: string,
+      who = adminA,
+      reason = "La vendió otra",
+    ) => request("/sales/" + s.id + "/seller", who.token, { sellerId, reason });
+    expect((await seller(adminB.id, ana)).status).toBe(403);
+    expect((await seller(adminB.id, adminA, "")).status).toBe(400);
+    const moved = await seller(adminB.id);
+    expect(moved.status, JSON.stringify(moved.body)).toBeLessThan(300);
+    const rows = await entriesOf(s.id);
+    expect(rows.every((e: any) => e.userId === adminB.id)).toBe(true);
+    expect(await totalOf(s.id)).toBe(200);
+    expect((await db.sale.findUnique({ where: { id: s.id } })).sellerId).toBe(
+      adminB.id,
+    );
+    expect(
+      await db.auditLog.count({
+        where: { action: "sale_seller_changed", entityId: s.id },
+      }),
+    ).toBe(1);
+
+    // Incentivo en un mes cerrado: no se cambia la vendedora.
+    const closedMonth = `20${10 + (Date.now() % 80)}-0${1 + (Date.now() % 9)}`;
+    await db.incentiveEntry.updateMany({
+      where: { saleId: s.id },
+      data: { period: closedMonth },
+    });
+    const close = await db.incentivePeriodClose.create({
+      data: { branchId: "main", period: closedMonth, closedBy: adminA.id },
+    });
+    try {
+      const refused = await seller(ana.id);
+      expect(refused.status).toBe(400);
+      expect(refused.body.message).toMatch(/mes cerrado/);
+    } finally {
+      await db.incentivePeriodClose.delete({ where: { id: close.id } });
+    }
+
+    // Más de 7 días: ni vendedora ni por mayor.
+    await db.sale.update({
+      where: { id: s.id },
+      data: { createdAt: new Date(Date.now() - 8 * 86400000) },
+    });
+    expect((await seller(ana.id)).status).toBe(400);
+    expect((await wholesale(true)).status).toBe(400);
+  });
+
+  it("A3 (18-oct): el envío no se cambia si la caja de la venta ya cerró", async () => {
+    const s = (
+      await sale(ana, 200, [
+        {
+          method: "transfer",
+          amount: 200,
+          bank: "Banco QA",
+          reference: "REF-" + randomUUID().slice(0, 6),
+        },
+      ])
+    ).body;
+    const fee = (value: number) =>
+      request(
+        "/sales/" + s.id + "/courier",
+        adminA.token,
+        { fee: value, reason: "Envío corregido" },
+        "PATCH",
+      );
+    expect((await fee(300)).status).toBe(200);
+    await db.cashSession.update({
+      where: { id: ana.cash.id },
+      data: { closedAt: new Date() },
+    });
+    try {
+      const refused = await fee(350);
+      expect(refused.status).toBe(400);
+      expect(refused.body.message).toMatch(/caja de esta venta ya cerró/);
+    } finally {
+      await db.cashSession.update({
+        where: { id: ana.cash.id },
+        data: { closedAt: null },
+      });
+    }
+    expect(
+      Number((await db.sale.findUnique({ where: { id: s.id } })).courierFee),
+    ).toBe(300);
+  });
+
   it("cobro en un mes posterior: cae en el mes del pago, con el origen de la venta", async () => {
     const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
     const old = previousMonth();

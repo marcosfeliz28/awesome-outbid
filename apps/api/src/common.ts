@@ -871,3 +871,20 @@ export function safeErrorMessage(error: any): string {
     return "Otra operación modificó estos datos. Reintenta.";
   return "No se pudo completar la operación. Revisa la venta e intenta de nuevo.";
 }
+
+// Ediciones de factura de la administración (orden 18-oct): solo ventas
+// vigentes y hasta 7 días después de hechas. Bloquea la venta.
+export const EDIT_DAYS = 7;
+export async function editableSale(tx: any, saleId: string, actor: Actor) {
+  await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid FOR UPDATE`;
+  const sale = await tx.sale.findFirst({
+    where: { id: saleId, branchId: actor.branchId },
+    include: { cashSession: { select: { closedAt: true } } },
+  });
+  if (!sale) bad("Venta no encontrada.");
+  if (sale.status !== "completed")
+    bad("Solo se puede editar una venta vigente.");
+  if (Date.now() - new Date(sale.createdAt).getTime() > EDIT_DAYS * 86400000)
+    bad("Solo se puede editar una factura hasta 7 días después de la venta.");
+  return sale;
+}

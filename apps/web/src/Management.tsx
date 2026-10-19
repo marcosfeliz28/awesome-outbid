@@ -53,6 +53,7 @@ import {
 import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
 import { CourierFeeEditor } from "./CourierFeeEditor";
+import { SaleEditPanel, editableNow } from "./SaleEditPanel";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
 import {
@@ -3186,6 +3187,17 @@ export function SalesHistory() {
       >
         {selected && (
           <>
+            {can(user.permissions, "*") && editableNow(selected) && (
+              <SaleEditPanel
+                key={"edit-" + selected.id}
+                sale={selected}
+                onSaved={(change) => {
+                  setSelected({ ...selected, ...change });
+                  void client.invalidateQueries({ queryKey: ["sales"] });
+                  toast("Factura corregida.");
+                }}
+              />
+            )}
             {can(user.permissions, "sale:manage") && (
               <div className="panel">
                 <h3>Envío del mensajero</h3>
@@ -3193,7 +3205,9 @@ export function SalesHistory() {
                   Separado del total de la factura y de la caja.{" "}
                   {selected.courierPaidAt ? "Pagado." : "Pendiente de pago."}
                 </p>
-                {selected.status === "completed" && !selected.courierPaidAt ? (
+                {can(user.permissions, "*") &&
+                editableNow(selected) &&
+                !selected.courierPaidAt ? (
                   <CourierFeeEditor
                     key={selected.id}
                     saleId={selected.id}
