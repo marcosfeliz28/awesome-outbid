@@ -620,6 +620,18 @@ describe("Portabilidad · verificación (scripts/verify.mjs)", () => {
     expect(remoteDb).toMatch(/DATABASE_URL no apunta a este equipo/);
     expect(remoteDb).not.toContain("secreto");
   });
+  it("Q-01: con Nexora instalado no verifica contra la API :3001 ni la base :5434 de la tienda", async () => {
+    const { targets, installedTarget } = await load("verify.mjs");
+    const store = { DATABASE_URL: "postgresql://u:p@127.0.0.1:5434/fitstore" };
+    const scratch = { DATABASE_URL: "postgresql://u:p@localhost:5432/prueba" };
+    const other = targets({ FITSTORE_API_URL: "http://127.0.0.1:3192/api" });
+    // Sin instalación (CI, Linux): nada cambia.
+    expect(installedTarget(targets({}), store, false)).toBeNull();
+    // Con instalación: ni la API de la tienda ni su base.
+    expect(installedTarget(targets({}), scratch, true)).toMatch(/instalado/);
+    expect(installedTarget(other, store, true)).toMatch(/instalado/);
+    expect(installedTarget(other, scratch, true)).toBeNull();
+  });
   it("ejecuta pnpm en esta plataforma y devuelve el código de salida", async () => {
     // En Windows pnpm es un guion .cmd: spawn("pnpm") sin intérprete de
     // órdenes responde ENOENT.

@@ -64,6 +64,21 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
     expect(created).toBe(false);
   });
 
+  it("DIN-02: un movimiento de caja sin operationId se rechaza antes de tocar la base", async () => {
+    const controller = new CashController({
+      $transaction: async () => {
+        throw new Error("no debe llegar a la base");
+      },
+    } as any);
+    await expect(
+      controller.movement(
+        "3e6b82b5-bb56-45ca-9f5a-d19f4955fc84",
+        { type: "out", amount: 10, reason: "Sin clave" },
+        actor(["cash:write"]),
+      ),
+    ).rejects.toMatchObject({ issues: [{ path: ["operationId"] }] });
+  });
+
   it("B3: dashboard oculta formas de pago de cajas abiertas y redacta alertas", async () => {
     const openSessionId = "3e6b82b5-bb56-45ca-9f5a-d19f4955fc84";
     const paymentQueries: any[] = [];
