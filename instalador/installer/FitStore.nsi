@@ -59,8 +59,6 @@ Var OwnerPassword
 Var OwnerConfirm
 Var OwnerPin
 Var BackupDialog
-Var BackupField
-Var BackupBrowse
 Var BackupPath
 Var AnswerFile
 Var PurgeData
@@ -83,7 +81,7 @@ Var InstallerSession
 
 !insertmacro MUI_PAGE_WELCOME
 Page custom OwnerPageCreate OwnerPageLeave
-Page custom BackupPageCreate BackupPageLeave
+Page custom BackupPageCreate
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
@@ -207,6 +205,7 @@ Function OwnerPageCreate
   ${NSD_CreateLabel} 0 123u 31% 12u "PIN (6 dígitos)"
   ${NSD_CreatePassword} 33% 120u 35% 13u ""
   Pop $OwnerPinField
+  ${NSD_AddStyle} $OwnerPinField ${ES_NUMBER}
   ${NSD_CreateLabel} 0 145u 100% 22u "La contraseña debe tener al menos 12 caracteres. El PIN se usa para autorizaciones rápidas en caja."
   nsDialogs::Show
 FunctionEnd
@@ -240,8 +239,7 @@ Function OwnerPageLeave
     Abort
   ${EndIf}
   StrLen $0 $OwnerPin
-  ${If} $0 < 4
-  ${OrIf} $0 > 6
+  ${If} $0 != 6
     MessageBox MB_ICONEXCLAMATION "El PIN debe tener 6 dígitos."
     Abort
   ${EndIf}
@@ -253,41 +251,11 @@ Function BackupPageCreate
   ${If} $BackupDialog == error
     Abort
   ${EndIf}
-  ${NSD_CreateLabel} 0 0 100% 40u "Elige dónde guardar el respaldo diario. Recomendado: una carpeta de OneDrive o una memoria USB que normalmente esté conectada. Se conservarán 30 días."
-  ${If} $UpdateMode == "nuevo"
-    StrCpy $BackupPath "$ProgramDataDir\FitStore POS\Backups"
-  ${Else}
-    StrCpy $BackupPath ""
-  ${EndIf}
-  ${NSD_CreateDirRequest} 0 52u 78% 14u "$BackupPath"
-  Pop $BackupField
-  ${NSD_CreateBrowseButton} 80% 52u 20% 14u "Elegir..."
-  Pop $BackupBrowse
-  ${NSD_OnClick} $BackupBrowse BackupBrowseClick
-  ${If} $UpdateMode != "nuevo"
-    ${NSD_CreateLabel} 0 78u 100% 26u "Actualización detectada. Deja el campo vacío para conservar la carpeta configurada actualmente."
-  ${Else}
-    ${NSD_CreateLabel} 0 78u 100% 26u "Si el destino externo no está disponible, FitStore guardará temporalmente una copia local."
-  ${EndIf}
+  ; El respaldo diario siempre queda en ProgramData (privado); no hay selector de destino.
+  StrCpy $BackupPath ""
+  ${NSD_CreateLabel} 0 0 100% 40u "El respaldo diario se guarda en esta PC, en $ProgramDataDir\FitStore POS\Backups. Se conservarán 30 días."
+  ${NSD_CreateLabel} 0 48u 100% 40u "Esta copia NO sale de la laptop. Para tener una copia fuera (OneDrive o USB), configúrala aparte siguiendo la guía del instalador (sección «Respaldos automáticos»)."
   nsDialogs::Show
-FunctionEnd
-
-Function BackupBrowseClick
-  ${NSD_GetText} $BackupField $BackupPath
-  nsDialogs::SelectFolderDialog "Carpeta para respaldos de FitStore" "$BackupPath"
-  Pop $0
-  ${If} $0 != error
-    ${NSD_SetText} $BackupField $0
-  ${EndIf}
-FunctionEnd
-
-Function BackupPageLeave
-  ${NSD_GetText} $BackupField $BackupPath
-  ${If} $UpdateMode == "nuevo"
-  ${AndIf} $BackupPath == ""
-    MessageBox MB_ICONEXCLAMATION "Elige una carpeta de respaldo."
-    Abort
-  ${EndIf}
 FunctionEnd
 
 Section "Nexora POS" SecMain

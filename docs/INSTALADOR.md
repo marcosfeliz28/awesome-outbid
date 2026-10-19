@@ -30,10 +30,11 @@ No desconectes ni apagues la laptop durante la instalación o una actualización
 2. Acepta el aviso de Windows sólo si el nombre y el SHA-256 coinciden con los
    entregados junto al instalador.
 3. Escribe el nombre y el correo del usuario dueño.
-4. Crea una contraseña de al menos 12 caracteres, repítela y elige un PIN de 4
-   a 6 dígitos. Guárdalos en un lugar seguro.
-5. Los respaldos se guardan en `%ProgramData%\FitStore POS\Backups`, incluso
-   si el asistente heredado muestra otra carpeta. No elige un destino externo.
+4. Crea una contraseña de al menos 12 caracteres, repítela y elige un PIN de
+   exactamente 6 dígitos. Guárdalos en un lugar seguro.
+5. La pantalla de respaldos sólo informa: el respaldo diario se guarda en
+   `%ProgramData%\FitStore POS\Backups` y no sale de la laptop. La copia externa
+   (OneDrive o USB) se configura aparte; ver [Respaldos automáticos](#respaldos-automáticos).
 6. Pulsa **Instalar** y espera el mensaje de finalización. El primer arranque
    puede tardar varios minutos.
 7. Abre el acceso directo **Nexora POS** del escritorio.

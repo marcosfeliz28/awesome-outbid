@@ -31,6 +31,17 @@ describe("N-05 · el administrador del script y del instalador exige PIN de 6 d�
     ])
       expect(read(file), file).not.toMatch(/\\d\{4,6\}|4 a 6 d|entre 4 y 6/);
   });
+  it("el asistente NSIS exige exactamente 6 dígitos", () => {
+    const nsi = read("instalador/installer/FitStore.nsi");
+    expect(nsi).toContain("${If} $0 != 6");
+    expect(nsi).not.toMatch(/\$0 < 4|\$0 > 6/);
+  });
+  it("W-01 · el asistente no ofrece elegir destino del respaldo", () => {
+    const nsi = read("instalador/installer/FitStore.nsi");
+    expect(nsi).not.toContain("NSD_CreateDirRequest");
+    expect(nsi).not.toMatch(/Elige dónde guardar el respaldo/);
+    expect(nsi).toContain("Esta copia NO sale de la laptop");
+  });
 });
 
 describe("N-06 · frases y secretos sin entropía", () => {
