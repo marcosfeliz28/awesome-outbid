@@ -31,8 +31,26 @@ export function targets(env = process.env) {
     apiPort: url.port || (url.protocol === "https:" ? "443" : "80"),
     // La PWA de las pruebas de navegador reenvía /api a esta misma API.
     proxy: env.FITSTORE_API_PROXY || url.origin,
-    local: ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname),
+    local: ["127.0.0.1", "localhost", "[::1]"].includes(
+      url.hostname.toLowerCase(),
+    ),
   };
+}
+
+/** Motivo para no verificar si la API o la base no son de este equipo. */
+export function remoteTarget(target, env = process.env) {
+  if (!target.local)
+    return `La API ${target.api} no es de este equipo: la verificación sólo corre contra localhost, 127.0.0.1 o ::1.`;
+  if (!env.DATABASE_URL) return null;
+  let host = "";
+  try {
+    host = new URL(env.DATABASE_URL).hostname;
+  } catch {
+    // Sin URL válida se trata como ajena.
+  }
+  if (!["127.0.0.1", "localhost", "[::1]"].includes(host.toLowerCase()))
+    return "DATABASE_URL no apunta a este equipo: la verificación sólo corre contra una base en localhost, 127.0.0.1 o ::1.";
+  return null;
 }
 
 // En Windows pnpm es un guion .cmd y spawn, sin intérprete de órdenes,
@@ -200,11 +218,10 @@ async function main() {
     process.on(signal, () => stopAll().then(() => process.exit(1)));
   let code = 1;
   try {
+    // Q-01: nunca se prueba (ni se inicia sesión) contra una API o base ajena.
+    const problem = remoteTarget(target, env);
+    if (problem) throw new Error(problem);
     if (!(await available(target.health))) {
-      if (!target.local)
-        throw new Error(
-          `La API ${target.api} no responde y no es de este equipo: no se puede iniciar desde aquí.`,
-        );
       await startDatabase(env);
       const api = launch("pnpm", ["--filter", "@fitstore/api", "dev"], "api", {
         env: { ...env, PORT: target.apiPort },

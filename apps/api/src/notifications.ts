@@ -80,6 +80,7 @@ export async function sendEmail(
   settings: EmailSettings,
   subject: string,
   text: string,
+  idempotencyKey?: string,
 ): Promise<SendResult> {
   try {
     const appUrl =
@@ -90,6 +91,8 @@ export async function sendEmail(
       headers: {
         Authorization: `Bearer ${settings.apiKey}`,
         "Content-Type": "application/json",
+        // Resend descarta un reintento con la misma clave (24 h): sin correo doble.
+        ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
       },
       body: JSON.stringify({
         from: settings.from,
@@ -119,15 +122,19 @@ export async function sendEmail(
   }
 }
 
-/** Tres intentos (ahora, 10 s, 60 s); nunca lanza ni frena la operación. */
-async function emailWithRetry(
+/**
+ * Tres intentos (ahora, 10 s, 60 s); nunca lanza ni frena la operación.
+ * La misma `idempotencyKey` en cada intento evita duplicar si Resend ya aceptó.
+ */
+export async function emailWithRetry(
   settings: EmailSettings,
   subject: string,
   text: string,
+  idempotencyKey: string,
 ) {
   for (const wait of [0, 10_000, 60_000]) {
     if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
-    const result = await sendEmail(settings, subject, text);
+    const result = await sendEmail(settings, subject, text, idempotencyKey);
     if (result.ok) return;
     console.warn(`[avisos] Correo "${subject}" no se envió: ${result.error}`);
   }
@@ -771,7 +778,12 @@ export function notify(
         wakeWorkers();
       }
       if (wantsMail)
-        void emailWithRetry(mail, EMAIL_SUBJECT[event], rendered.text);
+        void emailWithRetry(
+          mail,
+          EMAIL_SUBJECT[event],
+          rendered.text,
+          `nexora/${event}/${refId}`.slice(0, 256),
+        );
     })().catch((error) =>
       console.warn(
         `[avisos] No se pudo encolar el aviso ${event}: ` +
@@ -937,11 +949,28 @@ export class NotificationWorker
       : ({ ok: false, error: "Aviso sin texto." } as SendResult);
     this.lastSentAt = Date.now();
     if (result.ok) {
-      await this.db.$executeRaw`
-        UPDATE "NotificationOutbox"
-        SET status = 'sent', "sentAt" = timezone('UTC', now()), "lastError" = NULL
-        WHERE id = ${row.id}::uuid`;
-      return;
+      // Entrega «al menos una vez»: Telegram no tiene clave de idempotencia, así
+      // que si la API muere entre el envío y esta marca, el aviso sale dos veces
+      // al vencer el arriendo. Se marca enseguida y se reintenta una vez.
+      for (let attempt = 1; ; attempt++) {
+        try {
+          await this.db.$executeRaw`
+            UPDATE "NotificationOutbox"
+            SET status = 'sent', "sentAt" = timezone('UTC', now()), "lastError" = NULL
+            WHERE id = ${row.id}::uuid`;
+          return;
+        } catch (error: any) {
+          if (attempt >= 2) {
+            console.warn(
+              `[avisos] Aviso ${row.id} enviado pero no se pudo marcar; ` +
+                `puede repetirse al vencer el arriendo: ` +
+                sanitizeError(error?.message ?? error),
+            );
+            throw error;
+          }
+          await sleep(1000);
+        }
+      }
     }
     if (result.retryAfter) {
       // 429: Telegram pide esperar. Se pausa todo el envío y este intento no

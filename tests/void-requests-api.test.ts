@@ -762,18 +762,39 @@ describe("envío del mensajero · API real", () => {
     const stableDashboard = ({ from: _from, to: _to, ...values }: any) =>
       values;
     expect(
-      (await request(path, seller.token, { fee: 400 }, "PATCH")).status,
+      (
+        await request(
+          path,
+          seller.token,
+          { reason: "QA envío", fee: 400 },
+          "PATCH",
+        )
+      ).status,
     ).toBe(403);
     expect(
-      (await request(path, owner.token, { fee: -1 }, "PATCH")).status,
+      (
+        await request(
+          path,
+          owner.token,
+          { reason: "QA envío", fee: -1 },
+          "PATCH",
+        )
+      ).status,
     ).toBe(400);
     expect(
-      (await request(path, owner.token, { fee: "400.001" }, "PATCH")).status,
+      (
+        await request(
+          path,
+          owner.token,
+          { reason: "QA envío", fee: "400.001" },
+          "PATCH",
+        )
+      ).status,
     ).toBe(400);
     const changed = await request(
       path,
       owner.token,
-      { fee: 400, courierName: "Addison" },
+      { fee: 400, courierName: "Addison", reason: "QA envío" },
       "PATCH",
     );
     expect(changed.status).toBe(200);
@@ -838,7 +859,14 @@ describe("envío del mensajero · API real", () => {
       ).status,
     ).toBe(409);
     expect(
-      (await request(path, owner.token, { fee: 100 }, "PATCH")).status,
+      (
+        await request(
+          path,
+          owner.token,
+          { reason: "QA envío", fee: 100 },
+          "PATCH",
+        )
+      ).status,
     ).toBe(409);
     expect(
       (await ok("/courier/pending", owner.token)).rows.some(
@@ -873,7 +901,14 @@ describe("envío del mensajero · API real", () => {
     });
     try {
       expect(
-        (await request(path, owner.token, { fee: 100 }, "PATCH")).status,
+        (
+          await request(
+            path,
+            owner.token,
+            { reason: "QA envío", fee: 100 },
+            "PATCH",
+          )
+        ).status,
       ).toBe(400);
     } finally {
       await db.sale.update({
@@ -887,7 +922,14 @@ describe("envío del mensajero · API real", () => {
     });
     try {
       expect(
-        (await request(path, owner.token, { fee: 100 }, "PATCH")).status,
+        (
+          await request(
+            path,
+            owner.token,
+            { reason: "QA envío", fee: 100 },
+            "PATCH",
+          )
+        ).status,
       ).toBe(400);
       expect(
         (await ok("/courier/pending", owner.token)).rows.some(

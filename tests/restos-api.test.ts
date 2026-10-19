@@ -3,6 +3,7 @@
 //   está cerrada» (409) en vez de «El registro no existe.» (404).
 // - D-B11: GET /credit-notes pagina con cursor (y no carga todas las
 //   devoluciones de la sucursal).
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 
@@ -19,7 +20,9 @@ async function request(path: string, token: string, data?: unknown) {
       "X-Forwarded-For": ip,
       ...(token ? { Authorization: "Bearer " + token } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   return {
     status: r.status,

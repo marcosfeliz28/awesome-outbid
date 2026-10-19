@@ -165,25 +165,12 @@ resuelve el nombre con el resolvedor del sistema, guarda la IP en un snippet
 incluido por Nginx y la vuelve a resolver cada diez segundos (recarga Nginx sólo
 si cambió). Esto evita conservar una IP antigua cuando Render reemplaza la API.
 
-El Nginx cloud no usa como fuente de identidad ninguna cabecera de IP que pueda
-mandar el cliente. El mapa toma únicamente `$remote_addr` y reemplaza
-`X-Real-IP` y `X-Forwarded-For` con ese valor; la API confía en el salto Nginx
-(`trust proxy = 1`). La documentación publicada por Render recomienda leer
-`X-Forwarded-For` para obtener la IP real y señala que `CF-Ray` se reenvía, pero
-no especifica que Render sobrescriba siempre `CF-Connecting-IP` o elimine las
-partes falsificables de `X-Forwarded-For`. Por eso no usamos esas cabeceras para
-autorización ni límites de seguridad hasta que Render confirme formalmente una
-frontera de confianza. Como consecuencia, `$remote_addr` puede ser la IP del
-proxy inmediato y no la del cliente; no se presenta como identificación
-individual fiable. La regresión envía `CF-Ray`, `CF-Connecting-IP` y
-`X-Forwarded-For` falsificados a la vez y comprueba que ninguno se reenvía. La
-prueba dinámica con Nginx/Render queda pendiente si no se dispone del binario o
-del entorno aislado. El Compose local sigue usando `deploy/nginx.conf`.
-
-Fuente: [Render, How Render handles DDoS attacks](https://render.com/articles/how-render-handles-ddos-attacks)
-(consulta del 8-oct-2026). Esa guía recomienda `X-Forwarded-For`, pero no
-declara que el borde lo sobrescriba siempre ante valores enviados por el
-cliente.
+La IP del cliente ya no sale sólo de `$remote_addr`: Nginx acepta
+`CF-Connecting-IP` únicamente cuando llega desde el borde de Render y por
+Cloudflare. La regla vigente está en
+[IP real del cliente](#ip-real-del-cliente-bloqueo-de-inicio-de-sesión-y-bitácora)
+(sustituye a la versión anterior de esta sección, que decía lo contrario). El
+Compose local sigue usando `deploy/nginx.conf`.
 
 El snippet de seguridad instala CSP, HSTS (`max-age=31536000;
 includeSubDomains`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`

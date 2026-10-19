@@ -4,7 +4,7 @@
 - **Conteo de proteínas 18-oct: APLICADO** (15 ajustes + producto nuevo 1933 Nitro-Tech Ripped Vanilla Cream 4 lb, costo 3,300 / venta 4,500). Detalle en `docs/operacion/conteos/CONTEO-PROTEINAS-2026-10-18.xlsx` y la bitácora. Tienda verificada por 4 lecturas: 54 productos, 191 uds (190 del Excel + Klean). Sin tocar: fundas Isopure 1213 (5), colágenos y Dollys Milk (no son proteína para la dueña).
 - **Conteo de suplementos 18-oct: APLICADO** (8 ajustes; detalle en `docs/operacion/conteos/CONTEO-SUPLEMENTOS-2026-10-18.xlsx`). Vitaminas, BCAA y demás no contados: sin tocar por orden de la dueña.
 - **Foto base para el viernes**: `docs/operacion/conteos/FOTO-BASE-TIENDA-2026-10-18.xlsx` (122 productos, 577 uds en Tienda, verificado 6 veces). Ese día el sistema se ajustó a la cuenta manual. El viernes: contar, y comparar contra foto base − ventas/facturas + entradas del sistema.
-- **Incentivo de Manuela Escoto: RD$ 75** por FS-0000118 (3 Amave, facturada por Claude a nombre de Claude). Pagárselo aparte o reasignar la vendedora cuando exista la opción en el programa.
+- Caja de Edgar Soto 18-oct, faltante RD$ 260 en efectivo: **explicado por Edgar a la dueña (19-oct)**. Cerrado.
 - **Decisiones del cierre de caja** (6): un solo verifone, fondo, tope, Genesis, turnos, mensajero.
 - Señales a revisar: FS-0000113 (Lizbeth 50 %, transferencia ref 1111 por verificar), FS-0000062 (annya bello, 32 % «CREDITO», contraentrega RD$ 71,100 pendiente).
 

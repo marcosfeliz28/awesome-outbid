@@ -143,7 +143,10 @@ export function TransferReconciliation() {
     try {
       await api(`/sales/${row.saleId}/courier`, {
         method: "PATCH",
-        body: JSON.stringify({ fee: String(fee) }),
+        body: JSON.stringify({
+          fee: String(fee),
+          reason: "Diferencia del banco en la conciliación",
+        }),
       });
       setResults([
         {

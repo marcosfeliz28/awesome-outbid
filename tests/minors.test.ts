@@ -1,6 +1,7 @@
 // Regresiones de los «menores» de la cola (COLA_HALLAZGOS_NEXORA y
 // AUDITORIA_FINAL_DINERO D-06 a D-08). Corre contra la API compilada, como
 // tests/api.test.ts, con su propia caja, equipo y productos.
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -36,7 +37,9 @@ async function request(path: string, data?: unknown, method?: string) {
       "X-Forwarded-For": ip,
       ...(token ? { Authorization: "Bearer " + token } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   return { status: r.status, body: await r.json().catch(() => null) };
 }

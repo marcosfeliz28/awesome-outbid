@@ -465,6 +465,7 @@ export async function syncCreditIncentives(
   kind: "collection" | "return" | "void",
   refId: string,
   items?: { saleItemId: string; qty: number }[],
+  always = false,
 ) {
   void actor;
   const sale = await tx.sale.findUnique({
@@ -476,7 +477,8 @@ export async function syncCreditIncentives(
       items: { select: { id: true, qty: true, returnedQty: true } },
     },
   });
-  if (!sale?.incentiveOnCollection) return;
+  // `always`: también ventas de contado (al marcar/desmarcar por mayor).
+  if (!sale || (!sale.incentiveOnCollection && !always)) return;
   const entries: any[] = await tx.incentiveEntry.findMany({
     where: { saleId },
   });
@@ -1098,4 +1100,32 @@ export class IncentivesController {
       );
     doc.end();
   }
+}
+
+/** Cambio de vendedora: el incentivo de la venta pasa entero a la nueva. */
+export async function moveSaleIncentives(
+  tx: any,
+  saleId: string,
+  branchId: string,
+  sellerId: string,
+) {
+  await closeLock(tx, branchId, false);
+  const entries: { period: string }[] = await tx.incentiveEntry.findMany({
+    where: { saleId },
+    select: { period: true },
+  });
+  const periods = [...new Set(entries.map((e) => e.period))];
+  if (
+    periods.length &&
+    (await tx.incentivePeriodClose.count({
+      where: { branchId, period: { in: periods } },
+    }))
+  )
+    bad(
+      "El incentivo de esta venta ya está en un mes cerrado: no se puede cambiar la vendedora.",
+    );
+  await tx.incentiveEntry.updateMany({
+    where: { saleId },
+    data: { userId: sellerId },
+  });
 }

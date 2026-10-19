@@ -4,6 +4,7 @@
 // sólo con ella. La gerencia ve y cierra las dos; el cierre queda a nombre de
 // quien la cerró y de la dueña de la caja. Sin fechas fijas: todo se calcula
 // con el reloj y un sufijo único por corrida.
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -42,7 +43,9 @@ async function request(
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   const text = await r.text();
   let body: any = text;

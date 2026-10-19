@@ -768,8 +768,29 @@ describe("Render · proxy público", () => {
         );
         expect(render(undefined, "any").status).toBe(0);
         expect(readFileSync(cfTarget, "utf8")).toBe("0.0.0.0/0 1;\n::/0 1;\n");
+        // INF-01: octetos y prefijos se validan por valor, no sólo por forma.
+        expect(
+          render(
+            "255.255.255.255/32,0.0.0.0/0,::1/128,fe80::1:2/64",
+            undefined,
+            false,
+          ).status,
+        ).toBe(0);
+        expect(readFileSync(target, "utf8")).toBe(
+          "255.255.255.255/32 1;\n0.0.0.0/0 1;\n::1/128 1;\nfe80::1:2/64 1;\n",
+        );
         expect(render("none").status).toBe(0);
-        for (const bad of ["10.0.0.0/8; return 200", "0.0.0.0", "evil"]) {
+        for (const bad of [
+          "10.0.0.0/8; return 200",
+          "0.0.0.0",
+          "evil",
+          "999.999.999.999/8",
+          "10.0.0.0/99",
+          "10.0.0/8",
+          "2001:db8::/129",
+          "2001::db8::1/64",
+          "12345::/16",
+        ]) {
           const r = render(bad);
           expect(r.status).toBe(1);
           expect(r.stderr).toContain("NEXORA_TRUSTED_EDGE_CIDRS");
