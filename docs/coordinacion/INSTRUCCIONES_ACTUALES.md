@@ -455,3 +455,4 @@ Casa solo se modifica con instrucción expresa de la dueña. Toda salida de Casa
 - **ChatGPT PC construye** la fase 0: `docs/coordinacion/ORDEN_CONSTRUCCION_PRODUCTO_CHATGPT_PC.md`.
 - **Claude PC**: rescate y limpieza de los 46 archivos sin guardar: `docs/coordinacion/ORDEN_CLAUDE_PC_RESCATE_46.md`.
 - 19-oct: fase 0 parcial revisada (81935d2, CI verde). Continuación para ChatGPT PC: `docs/coordinacion/ORDEN_FASE0_CONTINUACION_CHATGPT_PC.md`. `producto-nexora` nunca se mezcla hacia `nexora-cloud`.
+- 19-oct: rescate de los 46 revisado; nada que mezclar. Limpieza autorizada para Claude PC: `docs/coordinacion/ORDEN_CLAUDE_PC_LIMPIEZA_46.md`.

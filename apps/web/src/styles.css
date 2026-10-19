@@ -4923,6 +4923,20 @@ td strong {
 .cod-amount {
   font-size: 17px;
 }
+.cod-age {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 6px 0;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.cod-age strong {
+  font-size: 16px;
+}
 .cod-panel h2 {
   display: flex;
   align-items: center;
