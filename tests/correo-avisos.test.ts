@@ -1,8 +1,15 @@
 // Correo de la dueña: cada cierre de caja y cada solicitud de anulación.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { emailSettings, sendEmail } from "../apps/api/src/notifications";
+import {
+  emailSettings,
+  emailWithRetry,
+  sendEmail,
+} from "../apps/api/src/notifications";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 describe("avisos por correo", () => {
   it("sin clave o sin destinatario queda apagado", () => {
@@ -47,5 +54,27 @@ describe("avisos por correo", () => {
     );
     expect(result.ok).toBe(false);
     expect(result.error).not.toContain("clave-secreta");
+  });
+  it("los reintentos llevan la misma Idempotency-Key", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fetchMock = vi.fn(async () => new Response("{}", { status: 500 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const done = emailWithRetry(
+      emailSettings({ RESEND_API_KEY: "k", NOTIFY_EMAIL_TO: "a@b.c" }),
+      "Cierre de caja",
+      "texto",
+      "nexora/cash_close/abc",
+    );
+    await vi.advanceTimersByTimeAsync(70_000);
+    await done;
+    const keys = fetchMock.mock.calls.map(
+      (call: any) => call[1].headers["Idempotency-Key"],
+    );
+    expect(keys).toEqual([
+      "nexora/cash_close/abc",
+      "nexora/cash_close/abc",
+      "nexora/cash_close/abc",
+    ]);
   });
 });
