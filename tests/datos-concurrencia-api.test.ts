@@ -6,6 +6,7 @@
 // Variantes, igual que la venta. Se prueba contra la API y PostgreSQL reales y
 // se cuentan los interbloqueos en pg_stat_database, no sólo los HTTP 500
 // (el reintento de 40P01 podría ocultarlos).
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -37,7 +38,9 @@ async function call(path: string, data?: unknown, token = "") {
       "X-Forwarded-For": nextIp(),
       ...(token ? { Authorization: "Bearer " + token } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   return { status: response.status, body: await response.json() };
 }

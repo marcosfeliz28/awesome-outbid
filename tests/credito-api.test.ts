@@ -4,6 +4,7 @@
 // del administrador que cobra y reportes (la venta cuenta el día de la venta,
 // el dinero el día del cobro, sin contarse dos veces). Fechas siempre
 // relativas a hoy.
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -42,7 +43,9 @@ async function request(
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   const text = await r.text();
   let body: any = text;
@@ -966,6 +969,108 @@ describe("W7 · incentivo al cobrar", () => {
     );
   });
 
+  it("A1/A2 (18-oct): cambiar vendedora y marcar/desmarcar por mayor una venta de contado, con motivo y hasta 7 días", async () => {
+    const s = (await sale(ana, 400, [{ method: "cash", amount: 400 }])).body;
+    expect(await totalOf(s.id)).toBe(200);
+    const wholesale = (on: boolean, who = adminA) =>
+      request("/sales/" + s.id + "/mark-wholesale", who.token, {
+        reason: "Corrección de la dueña",
+        wholesale: on,
+      });
+    expect((await wholesale(true, ana)).status).toBe(403);
+    expect((await wholesale(true)).status).toBeLessThan(300);
+    expect(await totalOf(s.id)).toBe(100);
+    expect((await wholesale(false)).status).toBeLessThan(300);
+    expect(await totalOf(s.id)).toBe(200);
+    expect((await db.sale.findUnique({ where: { id: s.id } })).wholesale).toBe(
+      false,
+    );
+
+    const seller = (
+      sellerId: string,
+      who = adminA,
+      reason = "La vendió otra",
+    ) => request("/sales/" + s.id + "/seller", who.token, { sellerId, reason });
+    expect((await seller(adminB.id, ana)).status).toBe(403);
+    expect((await seller(adminB.id, adminA, "")).status).toBe(400);
+    const moved = await seller(adminB.id);
+    expect(moved.status, JSON.stringify(moved.body)).toBeLessThan(300);
+    const rows = await entriesOf(s.id);
+    expect(rows.every((e: any) => e.userId === adminB.id)).toBe(true);
+    expect(await totalOf(s.id)).toBe(200);
+    expect((await db.sale.findUnique({ where: { id: s.id } })).sellerId).toBe(
+      adminB.id,
+    );
+    expect(
+      await db.auditLog.count({
+        where: { action: "sale_seller_changed", entityId: s.id },
+      }),
+    ).toBe(1);
+
+    // Incentivo en un mes cerrado: no se cambia la vendedora.
+    const closedMonth = `20${10 + (Date.now() % 80)}-0${1 + (Date.now() % 9)}`;
+    await db.incentiveEntry.updateMany({
+      where: { saleId: s.id },
+      data: { period: closedMonth },
+    });
+    const close = await db.incentivePeriodClose.create({
+      data: { branchId: "main", period: closedMonth, closedBy: adminA.id },
+    });
+    try {
+      const refused = await seller(ana.id);
+      expect(refused.status).toBe(400);
+      expect(refused.body.message).toMatch(/mes cerrado/);
+    } finally {
+      await db.incentivePeriodClose.delete({ where: { id: close.id } });
+    }
+
+    // Más de 7 días: ni vendedora ni por mayor.
+    await db.sale.update({
+      where: { id: s.id },
+      data: { createdAt: new Date(Date.now() - 8 * 86400000) },
+    });
+    expect((await seller(ana.id)).status).toBe(400);
+    expect((await wholesale(true)).status).toBe(400);
+  });
+
+  it("A3 (18-oct): el envío no se cambia si la caja de la venta ya cerró", async () => {
+    const s = (
+      await sale(ana, 200, [
+        {
+          method: "transfer",
+          amount: 200,
+          bank: "Banco QA",
+          reference: "REF-" + randomUUID().slice(0, 6),
+        },
+      ])
+    ).body;
+    const fee = (value: number) =>
+      request(
+        "/sales/" + s.id + "/courier",
+        adminA.token,
+        { fee: value, reason: "Envío corregido" },
+        "PATCH",
+      );
+    expect((await fee(300)).status).toBe(200);
+    await db.cashSession.update({
+      where: { id: ana.cash.id },
+      data: { closedAt: new Date() },
+    });
+    try {
+      const refused = await fee(350);
+      expect(refused.status).toBe(400);
+      expect(refused.body.message).toMatch(/caja de esta venta ya cerró/);
+    } finally {
+      await db.cashSession.update({
+        where: { id: ana.cash.id },
+        data: { closedAt: null },
+      });
+    }
+    expect(
+      Number((await db.sale.findUnique({ where: { id: s.id } })).courierFee),
+    ).toBe(300);
+  });
+
   it("cobro en un mes posterior: cae en el mes del pago, con el origen de la venta", async () => {
     const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
     const old = previousMonth();
@@ -1288,5 +1393,107 @@ describe("W7 · recordatorio semanal de créditos", () => {
       sale: { findMany: async () => [] },
     } as any);
     expect((await empty.run(monday, { telegram: true })).created).toEqual([]);
+  });
+});
+
+// Q-02 (auditoría de cobertura): reenvíos SIMULTÁNEOS con la misma clave en
+// las tres rutas que mueven dinero o stock de una venta ya hecha. Cada par sale
+// a la vez; debe quedar un solo cobro/devolución, el saldo no baja de cero y
+// la misma clave con otros datos se rechaza sin escribir.
+describe("Q-02 · reenvíos simultáneos con la misma clave", () => {
+  const installments = (saleId: string) =>
+    db.payment.findMany({ where: { saleId, entryType: "installment" } });
+  const balanceOf = async (saleId: string) =>
+    Number((await db.sale.findUnique({ where: { id: saleId } })).creditBalance);
+
+  it("POST /sales/:id/credit-collections: un solo abono", async () => {
+    const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
+    const op = randomUUID();
+    const before = await expectedOf(adminA);
+    const both = await Promise.all([
+      collect(adminA, s.id, [line("cash", 100)], op),
+      collect(adminA, s.id, [line("cash", 100)], op),
+    ]);
+    for (const r of both)
+      expect(r.status, JSON.stringify(r.body)).toBeLessThan(300);
+    expect(both[1].body.payments.map((p: any) => p.id)).toEqual(
+      both[0].body.payments.map((p: any) => p.id),
+    );
+    expect(await installments(s.id)).toHaveLength(1);
+    expect(await balanceOf(s.id)).toBe(100);
+    expect((await expectedOf(adminA)).cash).toBe(before.cash + 100);
+    const other = await collect(adminA, s.id, [line("cash", 50)], op);
+    expect(other.status).toBe(400);
+    expect(await installments(s.id)).toHaveLength(1);
+    expect(await balanceOf(s.id)).toBe(100);
+    expect((await expectedOf(adminA)).cash).toBe(before.cash + 100);
+  });
+
+  it("POST /sales/:id/cod-collections: un solo cobro de la contraentrega", async () => {
+    const s = (await sale(ana, 100, [{ method: "cod", amount: 100 }])).body;
+    const body = {
+      offlineUuid: randomUUID(),
+      cashSessionId: adminA.cash.id,
+      amount: 100,
+      method: "cash",
+    };
+    const path = "/sales/" + s.id + "/cod-collections";
+    const before = await expectedOf(adminA);
+    const both = await Promise.all([
+      request(path, adminA.token, body),
+      request(path, adminA.token, body),
+    ]);
+    for (const r of both)
+      expect(r.status, JSON.stringify(r.body)).toBeLessThan(300);
+    expect(both[1].body.id).toBe(both[0].body.id);
+    expect(await installments(s.id)).toHaveLength(1);
+    expect(await balanceOf(s.id)).toBe(0);
+    expect((await expectedOf(adminA)).cash).toBe(before.cash + 100);
+    const other = await request(path, adminA.token, { ...body, amount: 50 });
+    expect(other.status).toBe(400);
+    expect(await installments(s.id)).toHaveLength(1);
+    expect(await balanceOf(s.id)).toBe(0);
+    expect((await expectedOf(adminA)).cash).toBe(before.cash + 100);
+  });
+
+  // api.test.ts (R9-A01) ya prueba seis envíos simultáneos con nota de
+  // crédito; aquí el reembolso sale en efectivo de la caja.
+  it("POST /returns: una sola devolución, un solo reembolso y el stock sube una vez", async () => {
+    const s = (await sale(adminA, 200, [{ method: "cash", amount: 200 }])).body;
+    const stock = async () =>
+      Number(
+        (await db.variant.findUniqueOrThrow({ where: { id: variantId } }))
+          .stock,
+      );
+    const body = {
+      operationId: randomUUID(),
+      saleId: s.id,
+      cashSessionId: adminA.cash.id,
+      reason: "Q-02 reenvío simultáneo",
+      refundMethod: "cash",
+      items: [{ saleItemId: s.items[0].id, qty: 1, restock: true }],
+    };
+    const stockBefore = await stock();
+    const cashBefore = await expectedOf(adminA);
+    const both = await Promise.all([
+      request("/returns", adminA.token, body),
+      request("/returns", adminA.token, body),
+    ]);
+    for (const r of both) expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(both[1].body.id).toBe(both[0].body.id);
+    const returns = () => db.saleReturn.findMany({ where: { saleId: s.id } });
+    expect(await returns()).toHaveLength(1);
+    expect(await stock()).toBe(stockBefore + 1);
+    const after = await expectedOf(adminA);
+    expect(after.cash).toBe(cashBefore.cash - 100);
+    expect(after.cash).toBeGreaterThanOrEqual(0);
+    const other = await request("/returns", adminA.token, {
+      ...body,
+      items: [{ saleItemId: s.items[0].id, qty: 2, restock: true }],
+    });
+    expect(other.status).toBe(400);
+    expect(await returns()).toHaveLength(1);
+    expect(await stock()).toBe(stockBefore + 1);
+    expect((await expectedOf(adminA)).cash).toBe(cashBefore.cash - 100);
   });
 });

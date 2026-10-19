@@ -24,6 +24,28 @@ cloudflare_target=${2:-}
 cloudflare_source=${3:-/etc/nginx/nexora/cloudflare-ips.txt}
 cidrs=${NEXORA_TRUSTED_EDGE_CIDRS-10.0.0.0/8}
 
+# 0 si $1 es una red IPv4 (octetos 0-255, prefijo 0-32) o IPv6 (grupos de
+# hasta 4 dígitos hex, un solo "::", prefijo 0-128). awk de busybox (Alpine).
+valid_cidr() {
+  printf '%s\n' "$1" | awk '
+    function num(s, max) { return s ~ /^[0-9]+$/ && length(s) <= 3 && s + 0 <= max }
+    {
+      if (split($0, p, "/") != 2) exit 1
+      if (p[1] ~ /^[0-9.]+$/) {
+        if (!num(p[2], 32) || split(p[1], o, ".") != 4) exit 1
+        for (i = 1; i <= 4; i++) if (!num(o[i], 255)) exit 1
+        exit 0
+      }
+      if (p[1] !~ /^[0-9A-Fa-f:]*:[0-9A-Fa-f:]*$/ || !num(p[2], 128)) exit 1
+      a = p[1]
+      if (gsub(/::/, "", a) > 1 || index(p[1], ":::")) exit 1
+      g = split(p[1], h, ":")
+      if (g > 9) exit 1
+      for (i = 1; i <= g; i++) if (length(h[i]) > 4) exit 1
+      exit 0
+    }'
+}
+
 # Escribe "<cidr> 1;" por red válida en el destino. Sólo IPv4/IPv6 con prefijo:
 # el valor acaba dentro de una directiva de Nginx y no puede contener `;`,
 # espacios ni comillas. Se escribe a un temporal y se mueve al final, así
@@ -35,8 +57,7 @@ emit() {
   tmp="$target.tmp"
   : > "$tmp"
   for cidr in $list; do
-    if printf '%s' "$cidr" | grep -Eq \
-      '^(([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}|[0-9A-Fa-f:]*:[0-9A-Fa-f:]*/[0-9]{1,3})$'; then
+    if valid_cidr "$cidr"; then
       printf '%s 1;\n' "$cidr" >> "$tmp"
     else
       echo "$name contiene un valor no válido." >&2

@@ -56,6 +56,7 @@ import {
   bad,
   conflict,
   denied,
+  editableSale,
   json,
   safeErrorMessage,
   isUnexpectedError,
@@ -524,6 +525,7 @@ import { notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
 import { drawSaleReceipt } from "./receipt-pdf";
 import {
+  moveSaleIncentives,
   recordSaleIncentives,
   reverseIncentives,
   syncCreditIncentives,
@@ -1904,10 +1906,9 @@ export class SalesController {
     return this.voidRequestDto(requestId, actor);
   }
 
-  // Orden de la dueña (15-oct): una venta a crédito o contraentrega que la
-  // cajera hizo como detalle pero era al por mayor se marca después. El
-  // incentivo pasa a la mitad: lo ya acreditado se ajusta con una entrada y lo
-  // que falte por cobrar se calcula con la marca. Solo administración.
+  // Orden de la dueña (15-oct y 18-oct): marcar o desmarcar «al por mayor»
+  // después de la venta, hasta 7 días. El incentivo se ajusta con una entrada
+  // (lo ya acreditado no se borra) y lo que falte por cobrar usa la marca.
   @Post("sales/:id/mark-wholesale")
   @RequireTerminal()
   @Permit("*")
@@ -1917,51 +1918,91 @@ export class SalesController {
     @CurrentUser() actor: Actor,
   ) {
     const saleId = parse(uuid, id);
-    const data = parse(z.object({ reason }), body ?? {});
-    const result = await moneyDb(this.db).$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid FOR UPDATE`;
-      const sale = await tx.sale.findFirst({
-        where: { id: saleId, branchId: actor.branchId },
-        select: {
-          id: true,
-          number: true,
-          status: true,
-          wholesale: true,
-          incentiveOnCollection: true,
-        },
-      });
-      if (!sale) bad("Venta no encontrada.");
-      if (sale.status !== "completed")
-        bad("Solo se puede marcar una venta vigente.");
-      if (sale.wholesale) return { number: sale.number, wholesale: true };
-      if (!sale.incentiveOnCollection)
-        bad(
-          "Solo ventas a crédito o contraentrega: en las demás el incentivo ya se acreditó completo.",
-        );
+    const data = parse(
+      z.object({ reason, wholesale: z.boolean().default(true) }),
+      body ?? {},
+    );
+    return moneyDb(this.db).$transaction(async (tx) => {
+      const sale = await editableSale(tx, saleId, actor);
+      if (sale.wholesale === data.wholesale)
+        return { number: sale.number, wholesale: sale.wholesale };
       await tx.sale.update({
         where: { id: saleId },
-        data: { wholesale: true },
+        data: { wholesale: data.wholesale },
       });
       await tx.incentiveEntry.updateMany({
         where: { saleId, kind: "sale" },
-        data: { wholesale: true },
+        data: { wholesale: data.wholesale },
       });
-      await syncCreditIncentives(tx, actor, saleId, "collection", randomUUID());
+      await syncCreditIncentives(
+        tx,
+        actor,
+        saleId,
+        "collection",
+        randomUUID(),
+        undefined,
+        true,
+      );
       await audit(
         tx,
         actor,
-        "wholesale_marked_later",
+        data.wholesale ? "wholesale_marked_later" : "wholesale_unmarked",
         "sale",
         saleId,
-        undefined,
+        { wholesale: sale.wholesale },
+        { number: sale.number, wholesale: data.wholesale, reason: data.reason },
+      );
+      return { number: sale.number, wholesale: data.wholesale };
+    }, MONEY_TRANSACTION);
+  }
+
+  // Orden de la dueña (18-oct): corregir la vendedora de una factura, hasta 7
+  // días. No mueve dinero; el incentivo pasa entero a la nueva vendedora.
+  @Post("sales/:id/seller")
+  @RequireTerminal()
+  @Permit("*")
+  async changeSeller(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const saleId = parse(uuid, id);
+    const data = parse(z.object({ sellerId: uuid, reason }), body);
+    return moneyDb(this.db).$transaction(async (tx) => {
+      const sale = await editableSale(tx, saleId, actor);
+      if (sale.sellerId === data.sellerId)
+        return { number: sale.number, sellerId: sale.sellerId };
+      const seller = await tx.user.findFirst({
+        where: { id: data.sellerId, branchId: actor.branchId, active: true },
+        include: { role: true },
+      });
+      if (!seller || !can(seller.role.permissions, "sale:write"))
+        bad("Elige una vendedora activa de esta sucursal.");
+      await tx.sale.update({
+        where: { id: saleId },
+        data: { sellerId: seller.id },
+      });
+      await moveSaleIncentives(tx, saleId, actor.branchId, seller.id);
+      await audit(
+        tx,
+        actor,
+        "sale_seller_changed",
+        "sale",
+        saleId,
+        { sellerId: sale.sellerId },
         {
           number: sale.number,
+          sellerId: seller.id,
+          sellerName: seller.name,
           reason: data.reason,
         },
       );
-      return { number: sale.number, wholesale: true };
+      return {
+        number: sale.number,
+        sellerId: seller.id,
+        sellerName: seller.name,
+      };
     }, MONEY_TRANSACTION);
-    return result;
   }
 
   @Post("sales/:id/void")
@@ -2571,8 +2612,9 @@ export class SalesController {
     const data = parse(
       z.object({
         // Clave que la interfaz genera una vez por formulario: con ella un
-        // reintento no duplica la devolución (R9-A01).
-        operationId: uuid.optional(),
+        // reintento no duplica la devolución (R9-A01). Obligatoria (DIN-01):
+        // sin ella un reenvío sería otra devolución.
+        operationId: uuid,
         saleId: uuid,
         cashSessionId: uuid,
         reason,

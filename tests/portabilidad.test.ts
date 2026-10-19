@@ -602,6 +602,24 @@ describe("Portabilidad · verificación (scripts/verify.mjs)", () => {
       targets({ FITSTORE_API_URL: "https://pos.example.test/api" }).local,
     ).toBe(false);
   });
+  it("Q-01: no verifica contra una API o base que no sean de este equipo", async () => {
+    const { targets, remoteTarget } = await load("verify.mjs");
+    const db = "postgresql://u:p@localhost:5434/fitstore";
+    expect(remoteTarget(targets({}), { DATABASE_URL: db })).toBeNull();
+    expect(
+      remoteTarget(
+        targets({ FITSTORE_API_URL: "http://203.0.113.77:9443/api" }),
+        {
+          DATABASE_URL: db,
+        },
+      ),
+    ).toMatch(/no es de este equipo/);
+    const remoteDb = remoteTarget(targets({}), {
+      DATABASE_URL: "postgresql://u:secreto@db.example.test/prod",
+    });
+    expect(remoteDb).toMatch(/DATABASE_URL no apunta a este equipo/);
+    expect(remoteDb).not.toContain("secreto");
+  });
   it("ejecuta pnpm en esta plataforma y devuelve el código de salida", async () => {
     // En Windows pnpm es un guion .cmd: spawn("pnpm") sin intérprete de
     // órdenes responde ENOENT.

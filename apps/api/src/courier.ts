@@ -20,7 +20,9 @@ import {
   audit,
   bad,
   conflict,
+  editableSale,
   parse,
+  reason,
   uuid,
 } from "./common";
 
@@ -60,8 +62,10 @@ function dates(query: Record<string, string>) {
 export class CourierController {
   constructor(@Inject(Database) private readonly db: Database) {}
 
+  // Orden de la dueña (18-oct): solo administración, hasta 7 días, con motivo,
+  // y nunca sobre una caja ya cerrada (el envío es dinero).
   @Patch("sales/:id/courier")
-  @Permit("sale:manage")
+  @Permit("*")
   @RequireTerminal()
   async setFee(
     @Param("id") id: string,
@@ -72,18 +76,15 @@ export class CourierController {
       z.object({
         fee: feeInput,
         courierName: z.string().trim().min(1).max(100).optional(),
+        reason,
       }),
       body,
     );
     const saleId = parse(uuid, id);
     return this.db.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid FOR UPDATE`;
-      const sale = await tx.sale.findFirst({
-        where: { id: saleId, branchId: actor.branchId },
-      });
-      if (!sale) bad("Venta no encontrada.");
-      if (sale.status !== "completed")
-        bad("No se puede poner envío a una venta anulada.");
+      const sale = await editableSale(tx, saleId, actor);
+      if (sale.cashSession?.closedAt)
+        bad("La caja de esta venta ya cerró: el envío no se puede cambiar.");
       if (sale.courierPaidAt)
         conflict("El envío ya está pagado y no puede modificarse.");
       const before = {
@@ -100,6 +101,7 @@ export class CourierController {
       await audit(tx, actor, "courier_fee_changed", "sale", saleId, before, {
         courierFee: String(updated.courierFee),
         courierName: updated.courierName,
+        reason: data.reason,
       });
       return {
         id: saleId,

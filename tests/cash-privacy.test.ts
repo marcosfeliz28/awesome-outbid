@@ -32,6 +32,7 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
       settings: { findUnique: async () => null },
       cashMovement: {
         findMany: async () => [],
+        findUnique: async () => null,
         aggregate: async () => ({ _sum: { amount: null } }),
         create: async () => {
           created = true;
@@ -48,7 +49,12 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
     await expect(
       controller.movement(
         session.id,
-        { type: "out", amount: 51, reason: "Retiro operativo" },
+        {
+          operationId: "6a1f0c2e-3b4d-4e5f-8a9b-0c1d2e3f4a5b",
+          type: "out",
+          amount: 51,
+          reason: "Retiro operativo",
+        },
         actor(["cash:write"]),
       ),
     ).rejects.toMatchObject({

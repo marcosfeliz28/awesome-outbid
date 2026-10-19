@@ -53,6 +53,7 @@ import {
 import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
 import { CourierFeeEditor } from "./CourierFeeEditor";
+import { SaleEditPanel, editableNow } from "./SaleEditPanel";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
 import {
@@ -2695,6 +2696,10 @@ const reportList = [
   ["cash", "Cierres y diferencias"],
   ["by-seller", "Ventas por vendedor"],
   ["by-payment", "Ventas por método de pago"],
+  [
+    "ventas-categoria-forma-pago",
+    "Ventas por categoría y forma de pago (% y monto)",
+  ],
   ["income-by-day", "Ingresos por día y método"],
   ["formal", "Informe formal diario/mensual"],
   ["returns-discounts", "Devoluciones y descuentos"],
@@ -2703,6 +2708,17 @@ const reportList = [
 ];
 export function Reports() {
   const user = useStore((s) => s.user);
+  // Los 40 reportes de la dueña (orden 18-oct) vienen del servidor, ya
+  // filtrados por permiso (los de margen solo con profit:read).
+  const extra = useQuery({
+    queryKey: ["reportes-40"],
+    queryFn: () =>
+      api<{ name: string; title: string; group: string }[]>("/reportes"),
+  });
+  const allReports: string[][] = [
+    ...reportList,
+    ...(extra.data ?? []).map((r) => [r.name, r.group + " · " + r.title]),
+  ];
   const [report, setReport] = useState("sales"),
     [from, setFrom] = useState(today().slice(0, 8) + "01"),
     [to, setTo] = useState(today()),
@@ -2735,7 +2751,7 @@ export function Reports() {
       />
       <div className="reports-layout">
         <aside className="panel report-menu">
-          {reportList
+          {allReports
             .filter(
               ([id]) =>
                 id !== "formal" || can(user?.permissions ?? [], "profit:read"),
@@ -2763,7 +2779,7 @@ export function Reports() {
           <section className="panel">
             <div className="panel-heading">
               <div>
-                <h2>{reportList.find((r) => r[0] === report)?.[1]}</h2>
+                <h2>{allReports.find((r) => r[0] === report)?.[1]}</h2>
                 <p>Información registrada en tu tienda.</p>
               </div>
               <div className="table-actions">
@@ -3186,6 +3202,17 @@ export function SalesHistory() {
       >
         {selected && (
           <>
+            {can(user.permissions, "*") && editableNow(selected) && (
+              <SaleEditPanel
+                key={"edit-" + selected.id}
+                sale={selected}
+                onSaved={(change) => {
+                  setSelected({ ...selected, ...change });
+                  void client.invalidateQueries({ queryKey: ["sales"] });
+                  toast("Factura corregida.");
+                }}
+              />
+            )}
             {can(user.permissions, "sale:manage") && (
               <div className="panel">
                 <h3>Envío del mensajero</h3>
@@ -3193,7 +3220,9 @@ export function SalesHistory() {
                   Separado del total de la factura y de la caja.{" "}
                   {selected.courierPaidAt ? "Pagado." : "Pendiente de pago."}
                 </p>
-                {selected.status === "completed" && !selected.courierPaidAt ? (
+                {can(user.permissions, "*") &&
+                editableNow(selected) &&
+                !selected.courierPaidAt ? (
                   <CourierFeeEditor
                     key={selected.id}
                     saleId={selected.id}

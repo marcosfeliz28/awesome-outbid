@@ -3,6 +3,7 @@
 // offline, devolución parcial, anulación, privacidad por rol, tarifas que no
 // alteran lo ganado y cierre de mes inmutable y reproducible. El cálculo puro
 // está en tests/incentives-calc.test.ts.
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -43,7 +44,9 @@ async function request(
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   const text = await r.text();
   let body: any = text;

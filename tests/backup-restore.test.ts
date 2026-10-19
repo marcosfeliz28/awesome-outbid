@@ -140,23 +140,37 @@ describe.skipIf(!enabled)(
     it("restauración fallida con --single-transaction no deja tablas parciales", async () => {
       const dump = makeDump("fail.dump");
       await sidecars(dump);
-      // Base destino con una tabla "b" incompatible: el restore crea "a", falla en "b".
+      // Base destino sin tablas pero con un tipo "b": el restore crea "a" y
+      // falla al crear la tabla "b".
       const target = newDb(`bkt_f_${suffix}`);
-      psql(target, "CREATE TABLE b (id int)");
+      psql(target, "CREATE TYPE b AS ENUM ('x')");
       await expect(restoreDump(dump, urlFor(target))).rejects.toThrow(
         /pg_restore/,
       );
-      // Atómico: "a" no quedó creada; solo sigue la "b" preexistente.
-      expect(tableCount(target)).toBe(1);
+      // Atómico: "a" no quedó creada.
+      expect(tableCount(target)).toBe(0);
       expect(psql(target, "SELECT to_regclass('public.a')")).toBe("");
 
       // Contraste: sin --single-transaction (jobs>1) sí queda parcial.
       const target2 = newDb(`bkt_p_${suffix}`);
-      psql(target2, "CREATE TABLE b (id int)");
+      psql(target2, "CREATE TYPE b AS ENUM ('x')");
       await expect(
         restoreDump(dump, urlFor(target2), { jobs: 2 }),
       ).rejects.toThrow();
-      expect(tableCount(target2)).toBeGreaterThan(1);
+      expect(tableCount(target2)).toBeGreaterThan(0);
+    });
+
+    it("D-02: no restaura sobre una base con tablas, tampoco con --jobs", async () => {
+      const dump = makeDump("lleno.dump");
+      await sidecars(dump);
+      const target = newDb(`bkt_l_${suffix}`);
+      psql(target, "CREATE TABLE ajena (id int); INSERT INTO ajena VALUES (7)");
+      for (const jobs of [1, 2])
+        await expect(
+          restoreDump(dump, urlFor(target), { jobs }),
+        ).rejects.toThrow(/no está vacía/);
+      expect(tableCount(target)).toBe(1);
+      expect(psql(target, "SELECT id FROM ajena")).toBe("7");
     });
 
     it("restaura un dump íntegro con conteos idénticos", async () => {

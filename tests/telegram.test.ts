@@ -2,6 +2,7 @@
 // propias (node dist/main.js) sobre la base de las pruebas, una con las
 // variables de Telegram apuntando a un Telegram falso local y otra sin ellas.
 // El renderizado puro está en tests/telegram-render.test.ts.
+import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
@@ -172,7 +173,9 @@ async function request(base: string, path: string, data?: unknown, as = token) {
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   return { status: r.status, body: await r.json().catch(() => null) };
 }

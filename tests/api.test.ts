@@ -1,3 +1,4 @@
+import { conClave } from "./setup/con-clave";
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
@@ -247,7 +248,9 @@ async function request(
       "X-Forwarded-For": testIp,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   const body = await response.json();
   if (path === "/roles" && Array.isArray(body))
@@ -4902,6 +4905,15 @@ describe("Ronda 8 · auditoría R7 de ChatGPT", () => {
     ).toBeNull();
   });
 
+  it("I-01: una categoría con vencimiento siempre exige lote", async () => {
+    const category = await ok("/categories", {
+      name: "QA I-01 vence " + suffix,
+      requiresLot: false,
+      requiresExpiry: true,
+    });
+    expect(category).toMatchObject({ requiresLot: true, requiresExpiry: true });
+  });
+
   it("R7-03: una carga no apaga el lote obligatorio de una categoría sin pedirlo", async () => {
     const name = "QA R8 lotes " + suffix;
     const category = await ok("/categories", {
@@ -6808,7 +6820,9 @@ describe("Ronda 9 · revisión · seguridad", () => {
         ...(as ? { Authorization: "Bearer " + as } : {}),
         ...extra,
       },
-      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+      ...(data === undefined
+        ? {}
+        : { body: JSON.stringify(conClave(path, data)) }),
     });
     return {
       status: r.status,
@@ -6993,7 +7007,9 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
         "X-Forwarded-For": ip,
         ...(as ? { Authorization: "Bearer " + as } : {}),
       },
-      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+      ...(data === undefined
+        ? {}
+        : { body: JSON.stringify(conClave(path, data)) }),
     });
     const text = await r.text();
     let body: any = text;
@@ -8151,6 +8167,33 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     expect(pdf.type).toMatch(/pdf/);
   });
 
+  it("B4 (18-oct): ventas por categoría y forma de pago suman lo vendido y cada bloque el 100 %", async () => {
+    const report = await must(
+      "/reports/ventas-categoria-forma-pago?cashSessionId=" + s1.id,
+      undefined,
+      ownerToken,
+    );
+    expect(report.title).toBe("VENTAS POR CATEGORÍA Y FORMA DE PAGO");
+    const all = report.rows.filter((r: any) => r.Categoría === "TODAS");
+    expect(all.length).toBeGreaterThan(0);
+    const sum = (rows: any[], key: string) =>
+      Math.round(rows.reduce((a, r) => a + Number(r[key]), 0) * 100) / 100;
+    // Neto de devoluciones: «TODAS» es la suma de los bloques por categoría.
+    const blocks = report.rows.filter((r: any) => r.Categoría !== "TODAS");
+    expect(sum(all, "Monto")).toBeCloseTo(sum(blocks, "Monto"), 0);
+    expect(sum(all, "Monto")).toBeGreaterThan(0);
+    expect(sum(all, "%")).toBeCloseTo(100, 0);
+    for (const fmt of ["xlsx", "pdf"]) {
+      const file = await call(
+        `/reports/ventas-categoria-forma-pago?format=${fmt}&cashSessionId=` +
+          s1.id,
+        undefined,
+        ownerToken,
+      );
+      expect(file.status).toBe(200);
+    }
+  });
+
   it("Tienda-reportes: venta de usuario por forma de pago, en el orden de la tienda y con pagos combinados repartidos", async () => {
     const report = await must(
       "/reports/venta-por-forma-pago?cashSessionId=" + s1.id,
@@ -8834,7 +8877,9 @@ describe("Tienda · 4 cajas a la vez", () => {
         "X-Forwarded-For": ip,
         Authorization: "Bearer " + as,
       },
-      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+      ...(data === undefined
+        ? {}
+        : { body: JSON.stringify(conClave(path, data)) }),
     });
     return { status: r.status, body: await r.json() };
   }
@@ -9218,7 +9263,9 @@ describe("Ronda 9 · Windows y zona horaria", () => {
           "X-Forwarded-For": ip,
           ...(as ? { Authorization: "Bearer " + as } : {}),
         },
-        ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+        ...(data === undefined
+          ? {}
+          : { body: JSON.stringify(conClave(path, data)) }),
       });
       return { status: response.status, body: await response.json() };
     };
@@ -9675,7 +9722,8 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", (
       expectedTotal: 200,
     });
   const returnOne = (sale: any, operationId?: string, extra = {}) => ({
-    ...(operationId ? { operationId } : {}),
+    // Sin clave se manda explícitamente sin ella (conClave no la agrega).
+    operationId,
     saleId: sale.id,
     cashSessionId: cashId,
     reason: "Reenvío idéntico por respuesta perdida",
@@ -9807,7 +9855,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", (
     expect(await stockOf()).toBe(before + 1);
   });
 
-  it("otra clave sí es otra devolución, y sin clave la devolución sigue funcionando", async () => {
+  it("otra clave sí es otra devolución, y sin clave se rechaza (DIN-01)", async () => {
     const sale = await sellTwo();
     const before = await stockOf();
     const first = await must("/returns", returnOne(sale, randomUUID()));
@@ -9820,8 +9868,9 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", (
       400,
     );
     const legacy = await sellTwo();
-    expect((await call("/returns", returnOne(legacy))).status).toBe(201);
-    expect(await returnsOf(legacy)).toHaveLength(1);
+    // DIN-01: sin clave un reenvío sería otra devolución; ahora es un 400.
+    expect((await call("/returns", returnOne(legacy))).status).toBe(400);
+    expect(await returnsOf(legacy)).toHaveLength(0);
   });
 });
 
@@ -10874,7 +10923,9 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
         "X-Forwarded-For": ip,
         ...(as ? { Authorization: "Bearer " + as } : {}),
       },
-      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+      ...(data === undefined
+        ? {}
+        : { body: JSON.stringify(conClave(path, data)) }),
     });
     return { status: r.status, body: await r.json() };
   }
@@ -11589,6 +11640,18 @@ describe("SEC-03 · cambio de usuario con PIN sin escalar privilegios", () => {
     expect(r.status, JSON.stringify(r.body)).toBe(201);
     expect(r.body.user.id).toBe(vendedora.id);
     expect(r.body.user.permissions).not.toContain("*");
+  });
+  it("A2-01 · gerente → admin con el PIN correcto: rechazado; gerente → vendedora sí", async () => {
+    const staff = await ok("/staff", undefined, managerToken);
+    const ids = staff.map((u: any) => u.id);
+    expect(ids).not.toContain(admin.id);
+    expect(ids).toContain(vendedora.id);
+    const r = await pin(admin.id, "876543", managerToken);
+    expect(r.status, JSON.stringify(r.body)).toBe(403);
+    expect(r.body.accessToken).toBeUndefined();
+    const down = await pin(cajera.id, "135792", managerToken);
+    expect(down.status, JSON.stringify(down.body)).toBe(201);
+    expect(down.body.user.id).toBe(cajera.id);
   });
 });
 

@@ -130,6 +130,11 @@ test("envío: 15,550 + 400 cuadra con 15,950 y se paga una sola vez", async ({
   await page.getByRole("button", { name: "Ver " + sold.number }).click();
   const detail = page.getByRole("dialog");
   await detail.getByLabel("Envío (RD$)").fill("400");
+  // Orden 18-oct: todo cambio de factura lleva motivo.
+  await detail
+    .locator(".courier-fee-editor")
+    .getByLabel("Motivo")
+    .fill("Envío de la prueba");
   await detail.getByRole("button", { name: "Guardar envío" }).click();
   await expect(detail.getByLabel("Envío (RD$)")).toHaveValue("400");
   await detail.getByRole("button", { name: /cerrar/i }).click();
@@ -144,6 +149,22 @@ test("envío: 15,550 + 400 cuadra con 15,950 y se paga una sola vez", async ({
   await page.getByLabel("Total del banco (RD$)").first().fill("15950");
   await expect(page.getByText("Cuadrado · RD$ 0.00")).toBeVisible();
   await page.setViewportSize({ width: 320, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - innerWidth,
+    ),
+  ).toBeLessThanOrEqual(1);
+  // UI-01: a 320 px también se verifica de verdad y se ve el resultado.
+  await page
+    .locator(".reconciliation-bank")
+    .filter({ has: row })
+    .getByRole("button", { name: "Verificar seleccionadas" })
+    .click();
+  await expect(
+    page.locator(".reconciliation-ok").filter({ hasText: sold.number }),
+  ).toHaveText(sold.number + ": Verificada");
+  // Ya verificada, sale de la lista de pendientes del servidor.
+  await expect(row).toHaveCount(0);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth - innerWidth,
