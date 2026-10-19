@@ -31,3 +31,12 @@ Conclusión: no se recomienda fusionar ninguno de estos ocho archivos completos 
 - Los ocho archivos se compararon con `origin/nexora-cloud`, no con `main`.
 - No se ejecutó la suite: esta entrega preserva cambios locales y documenta diferencias; no modifica la aplicación ni despliega.
 - La limpieza del checkout y de artefactos locales se hará únicamente después de confirmar los destinos exactos y que son descartables.
+
+## Limpieza (Claude PC, 19-oct-2026, orden `ORDEN_CLAUDE_PC_LIMPIEZA_46.md`)
+
+- **Las 46 rutas:** el checkout principal (`Downloads\fitstore-pos-instalador-windows-fase1\compilacion-fitstore\fitstore-pos`) ya no tenía cambios: quedaron confirmados en `643af0b` y el checkout pasó a `nexora-cloud`. `git status` vacío; no hubo nada que descartar ni borrar. Ninguno de los 7 stashes contiene estos cambios (todos son del 9 al 15-oct y no se tocaron).
+- **Checkout actualizado:** `git pull --ff-only` a `origin/nexora-cloud` (4 commits); HEAD igual al remoto.
+- **Carpetas de compilación borradas:** `node_modules`, `.turbo`, `dist`, `apps/*/dist` y `node_modules` de `apps/*` y `packages/*` en 34 worktrees viejos (sin actividad desde el 18-oct por la tarde: auditoría ya entregada y trabajos del 9 al 15-oct). 201 rutas. Antes se comprobó que ninguna estaba versionada en git y que ningún proceso corría desde ellas. No se borró ningún worktree ni archivo con cambios.
+- **No se tocaron:** el checkout principal; `producto-nexora`, `nexora-chatgpt-pc-40mejoras`, `nexora-chatgpt-pc-saas` y `nexora-sync-lot1` (en uso o con cambios recientes); `Downloads\nexora-build-20261010` (fuera de la carpeta de compilación, posible compilación del instalador, con 3 cambios sin guardar); Nexora instalado (`C:\Program Files\FitStore POS`), su base (`C:\ProgramData\FitStore POS\PostgreSQL`, :5434) y sus respaldos.
+- **Espacio liberado:** **2,09 GB reales** en C: (diferencia de espacio libre antes y después; quedan 1 617,6 GB libres). Esas carpetas sumaban unos 24,8 GB aparentes, pero pnpm usa enlaces duros a su almacén compartido, que sigue en uso por los checkouts activos: por eso el espacio real liberado es mucho menor.
+- Si alguno de esos worktrees vuelve a usarse, basta `pnpm install --frozen-lockfile` y `pnpm db:generate`.
