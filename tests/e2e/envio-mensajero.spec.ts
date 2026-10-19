@@ -130,6 +130,11 @@ test("envío: 15,550 + 400 cuadra con 15,950 y se paga una sola vez", async ({
   await page.getByRole("button", { name: "Ver " + sold.number }).click();
   const detail = page.getByRole("dialog");
   await detail.getByLabel("Envío (RD$)").fill("400");
+  // Orden 18-oct: todo cambio de factura lleva motivo.
+  await detail
+    .locator(".courier-fee-editor")
+    .getByLabel("Motivo")
+    .fill("Envío de la prueba");
   await detail.getByRole("button", { name: "Guardar envío" }).click();
   await expect(detail.getByLabel("Envío (RD$)")).toHaveValue("400");
   await detail.getByRole("button", { name: /cerrar/i }).click();
