@@ -37,6 +37,7 @@ import {
   canViewCashExpected,
 } from "./common";
 import { alertForActor } from "./alerts";
+import { REPORTES } from "./reportes";
 
 export function dateRange(query: Record<string, string>) {
   const from = query.from
@@ -671,6 +672,15 @@ export class ReportsController {
       actor,
     );
   }
+  // Lista de los 40 reportes que esta persona puede abrir.
+  @Get("reportes")
+  @Permit("reports:read")
+  reportList(@CurrentUser() actor: Actor) {
+    const margin = can(actor.permissions, "profit:read");
+    return Object.entries(REPORTES)
+      .filter(([, r]) => margin || !r.margin)
+      .map(([name, r]) => ({ name, title: r.title, group: r.group }));
+  }
   @Get("reports/:name")
   @Permit("reports:read")
   async report(
@@ -697,6 +707,29 @@ export class ReportsController {
         select: { id: true },
       });
       if (openCashSession) denied();
+    }
+    const r40 = Object.hasOwn(REPORTES, name) ? REPORTES[name] : null;
+    if (r40) {
+      if (r40.margin && !can(actor.permissions, "profit:read")) denied();
+      const range40 = dateRange(query);
+      const settings = ((
+        await this.db.settings.findUnique({ where: { id: actor.branchId } })
+      )?.data ?? {}) as any;
+      return sendStoreReport(
+        res,
+        {
+          name,
+          title: r40.title,
+          group: r40.group,
+          business: { name: settings.name ?? "" },
+          from: range40.gte,
+          to: range40.lte,
+          printedAt: new Date(),
+          note: "Ventas netas: facturas vigentes menos devoluciones.",
+          rows: await r40.run(this.db, actor, range40, query),
+        },
+        query.format,
+      );
     }
     if (STORE_REPORTS.includes(name))
       return sendStoreReport(
@@ -1904,6 +1937,7 @@ export async function sendStoreReport(
             : ""),
       )
       .moveDown();
+    if (rows[0]) doc.text(Object.keys(rows[0]).join("  |  ")).moveDown(0.3);
     for (const row of rows)
       doc.text(
         Object.values(row)

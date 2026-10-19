@@ -2708,6 +2708,17 @@ const reportList = [
 ];
 export function Reports() {
   const user = useStore((s) => s.user);
+  // Los 40 reportes de la dueña (orden 18-oct) vienen del servidor, ya
+  // filtrados por permiso (los de margen solo con profit:read).
+  const extra = useQuery({
+    queryKey: ["reportes-40"],
+    queryFn: () =>
+      api<{ name: string; title: string; group: string }[]>("/reportes"),
+  });
+  const allReports: string[][] = [
+    ...reportList,
+    ...(extra.data ?? []).map((r) => [r.name, r.group + " · " + r.title]),
+  ];
   const [report, setReport] = useState("sales"),
     [from, setFrom] = useState(today().slice(0, 8) + "01"),
     [to, setTo] = useState(today()),
@@ -2740,7 +2751,7 @@ export function Reports() {
       />
       <div className="reports-layout">
         <aside className="panel report-menu">
-          {reportList
+          {allReports
             .filter(
               ([id]) =>
                 id !== "formal" || can(user?.permissions ?? [], "profit:read"),
@@ -2768,7 +2779,7 @@ export function Reports() {
           <section className="panel">
             <div className="panel-heading">
               <div>
-                <h2>{reportList.find((r) => r[0] === report)?.[1]}</h2>
+                <h2>{allReports.find((r) => r[0] === report)?.[1]}</h2>
                 <p>Información registrada en tu tienda.</p>
               </div>
               <div className="table-actions">
