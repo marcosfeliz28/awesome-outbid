@@ -156,8 +156,20 @@ afterAll(async () => {
     await admin.$disconnect();
   }
   await database?.stop().catch(() => undefined);
-  if (dataDir) await rm(dataDir, { recursive: true, force: true });
-  if (projectDir) await rm(projectDir, { recursive: true, force: true });
+  if (dataDir)
+    await rm(dataDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 300,
+    });
+  if (projectDir)
+    await rm(projectDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 300,
+    });
 }, 60000);
 
 describe("3y · almacenes con PostgreSQL real", () => {

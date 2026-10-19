@@ -107,7 +107,14 @@ it("migra una base con ventas sin alterar total, costo, impuestos ni importe de 
   } finally {
     await client?.end().catch(() => undefined);
     await database.stop().catch(() => undefined);
-    await rm(dataDir, { recursive: true, force: true });
-    await rm(projectDir, { recursive: true, force: true });
+    // Windows suelta los archivos de PostgreSQL con retraso tras stop() (EBUSY).
+    const gone = {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 300,
+    };
+    await rm(dataDir, gone);
+    await rm(projectDir, gone);
   }
 }, 120000);
