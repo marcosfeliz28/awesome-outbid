@@ -8178,7 +8178,10 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     expect(all.length).toBeGreaterThan(0);
     const sum = (rows: any[], key: string) =>
       Math.round(rows.reduce((a, r) => a + Number(r[key]), 0) * 100) / 100;
-    expect(sum(all, "Monto")).toBeCloseTo(5990, 0);
+    // Neto de devoluciones: «TODAS» es la suma de los bloques por categoría.
+    const blocks = report.rows.filter((r: any) => r.Categoría !== "TODAS");
+    expect(sum(all, "Monto")).toBeCloseTo(sum(blocks, "Monto"), 0);
+    expect(sum(all, "Monto")).toBeGreaterThan(0);
     expect(sum(all, "%")).toBeCloseTo(100, 0);
     for (const fmt of ["xlsx", "pdf"]) {
       const file = await call(
