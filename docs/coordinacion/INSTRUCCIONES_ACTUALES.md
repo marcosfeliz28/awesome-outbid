@@ -454,3 +454,4 @@ Casa solo se modifica con instrucción expresa de la dueña. Toda salida de Casa
 - Arquitectura (Claude): `docs/producto/ARQUITECTURA_NEXORA_PRODUCTO.md`. Autoservicio, IA aplicada, web y laptop, sin tocar la tienda.
 - **ChatGPT PC construye** la fase 0: `docs/coordinacion/ORDEN_CONSTRUCCION_PRODUCTO_CHATGPT_PC.md`.
 - **Claude PC**: rescate y limpieza de los 46 archivos sin guardar: `docs/coordinacion/ORDEN_CLAUDE_PC_RESCATE_46.md`.
+- 19-oct: fase 0 parcial revisada (81935d2, CI verde). Continuación para ChatGPT PC: `docs/coordinacion/ORDEN_FASE0_CONTINUACION_CHATGPT_PC.md`. `producto-nexora` nunca se mezcla hacia `nexora-cloud`.
