@@ -522,8 +522,17 @@ const CREDIT_STATUS: Record<string, { label: string; tone: any }> = {
   partial: { label: "Parcial", tone: "warning" },
   closed: { label: "Cerrado", tone: "success" },
 };
-const ageText = (days: number) =>
-  days <= 0 ? "hoy" : days === 1 ? "hace 1 día" : `hace ${days} días`;
+// Casilla de días (orden de la dueña, 19-oct): sin vencimiento, sólo cuenta
+// los días de calendario que el crédito / contraentrega lleva sin cerrarse.
+const dayCount = (days: number) => (days === 1 ? "1 día" : `${days} días`);
+export const ageText = (days: number, closed: boolean) =>
+  closed
+    ? days <= 0
+      ? "Se cobró el mismo día"
+      : `Se cobró en ${dayCount(days)}`
+    : days <= 0
+      ? "Lleva 0 días · es de hoy"
+      : `Lleva ${dayCount(days)} sin cobrar`;
 export function CodPending({ session }: { session: any }) {
   const user = useStore((s) => s.user);
   const isAdmin = can(user?.permissions ?? [], "*");
@@ -614,17 +623,27 @@ export function CodPending({ session }: { session: any }) {
                       <Badge tone={CREDIT_STATUS[r.status]?.tone}>
                         {CREDIT_STATUS[r.status]?.label}
                       </Badge>
+                      <div className="cod-age">
+                        <span>
+                          Día de la venta:{" "}
+                          {new Date(r.createdAt).toLocaleString("es-DO", {
+                            timeZone: "America/Santo_Domingo",
+                          })}
+                        </span>
+                        <strong>
+                          {ageText(r.ageDays, r.status === "closed")}
+                        </strong>
+                      </div>
                       <small>
-                        {new Date(r.createdAt).toLocaleString("es-DO", {
-                          timeZone: "America/Santo_Domingo",
-                        })}
-                        {" · " + ageText(r.ageDays)}
                         {r.customer
-                          ? " · " +
-                            r.customer.name +
+                          ? r.customer.name +
                             (r.customer.phone ? " · " + r.customer.phone : "")
                           : ""}
-                        {r.seller ? " · Vendió " + r.seller.name : ""}
+                        {r.seller
+                          ? (r.customer ? " · " : "") +
+                            "Vendió " +
+                            r.seller.name
+                          : ""}
                       </small>
                       <small className="cod-figures">
                         Total {formatMoney(r.total)} · Cobrado{" "}
