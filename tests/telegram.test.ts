@@ -173,7 +173,9 @@ async function request(base: string, path: string, data?: unknown, as = token) {
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(conClave(path, data)) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   return { status: r.status, body: await r.json().catch(() => null) };
 }
