@@ -8,15 +8,16 @@
 
 ## 1. Recomendación ejecutiva
 
-Nexora puede convertirse en un SaaS mensual vendible a comercios dominicanos, pero no conviene intentar entregar a la vez nube multiempresa, aplicaciones móviles, sincronización offline completa, cobro recurrente e inteligencia artificial autónoma. La secuencia recomendada es:
+Nexora puede convertirse en un SaaS mensual vendible a comercios dominicanos, pero no conviene intentar entregar a la vez nube multiempresa, escritorio, aplicaciones móviles, sincronización offline completa, cobro recurrente e inteligencia artificial autónoma. La secuencia recomendada es:
 
-1. **Vender primero una PWA SaaS en la nube**, con cobro contratado en la web, aislamiento multiempresa verificable, respaldo, exportación y soporte.
-2. **Publicar después aplicaciones móviles con Capacitor**, primero como acompañamiento de solo consumo si Apple/Google aprueban ese diseño; no incluir compra ni conducir a pago externo dentro de esas apps.
-3. **Agregar IA limitada, medible y revisable**, usando un modelo económico por defecto y escalando solamente los casos complejos.
-4. **Construir la sincronización offline para PC como una fase separada**, después de estabilizar el modelo multiempresa y los eventos de inventario/venta.
-5. **Mantener el código, la marca y el producto base como propiedad privada de Nexora**, vendiendo derecho de uso y servicios, no el código fuente.
+1. **Separar el producto de la tienda**: infraestructura y base propias, datos de demostración y aislamiento multiempresa probado antes de clientes.
+2. **Lanzar la PWA de autoservicio**, con registro/prueba, importación inicial, cobro web, ayuda e IA limitada; sin depender de que la dueña configure cada negocio.
+3. **Ofrecer laptop Windows online con Tauri** conectada al mismo SaaS, instalador firmado y actualizaciones; no llamarla offline mientras dependa de Internet.
+4. **Publicar después apps móviles** con Capacitor, sólo tras revisar las políticas y obtener aprobación de las tiendas.
+5. **Agregar el offline sincronizado como fase posterior**, con política explícita de inventario y conflictos probados.
+6. **Mantener el código, la marca y el producto base como propiedad privada de Nexora**, vendiendo derecho de uso y servicios, no el código fuente.
 
-Con una mezcla estimada de 50% Básico, 35% Pro y 15% Premium, los precios propuestos son **RD$1,990, RD$3,990 y RD$7,990 al mes**, antes de los impuestos que correspondan. El margen mensual modelado conservador es 39.8% con 10 clientes, 59.8% con 50 y 63.6% con 200. Es un modelo de planificación: falta cotizar formalmente adquirencia, asesoría legal/fiscal, soporte real y carga de producción antes de aprobarlo.
+Con una mezcla estimada de 50% Básico, 35% Pro y 15% Premium, los precios propuestos son **RD$1,990, RD$3,990 y RD$7,990 al mes**, antes de los impuestos que correspondan. La arquitectura posterior añadió un plan de entrada **Autoservicio de RD$990**, cuya adopción aún no está incluida en esa mezcla. El margen mensual modelado para los tres planes originales es 39.8% con 10 clientes, 59.8% con 50 y 63.6% con 200. Es un modelo de planificación: falta cotizar formalmente adquirencia, asesoría legal/fiscal, soporte real y carga de producción antes de aprobarlo.
 
 ## 2. Alcance y decisiones heredadas
 
@@ -74,6 +75,8 @@ Alegra fue la única referencia con tarifa pública claramente dirigida a Repúb
 
 Conversión informativa usada: **RD$61.8322 por US$1**, tasa de venta publicada por el Banco Central para el 16 de octubre de 2026. Se debe actualizar antes de aprobar precios o contratar servicios.
 
+La arquitectura de producto incorporada el 19-oct añade un plan de entrada **Autoservicio a RD$990/mes (≈US$16.01)**: una sucursal, una caja, dos usuarios, 30 consultas de IA, guías y ayuda automatizada; sin soporte humano incluido. El precio es una hipótesis para validar y su margen queda condicionado a la sensibilidad de costos de la sección 6.4.
+
 | Capacidad | Básico | Pro | Premium |
 |---|---:|---:|---:|
 | Precio mensual, antes de impuestos aplicables | **RD$1,990 / US$32.18** | **RD$3,990 / US$64.53** | **RD$7,990 / US$129.22** |
@@ -95,6 +98,7 @@ Reglas comerciales propuestas:
 - La función offline para PC **no está incluida en el lanzamiento**. Después de la fase 3 puede venderse como complemento por ubicación, con un precio preliminar de RD$1,790/mes que debe volver a calcularse tras medir soporte y sincronización.
 - La instalación, migración, capacitación presencial, hardware, personalizaciones y facturación fiscal se cotizan por separado.
 - Los precios al cliente se expresan “antes de impuestos aplicables” hasta recibir una opinión contable escrita.
+- Ofrecer como hipótesis un descuento anual de dos mensualidades, pero no incluirlo en el modelo de margen hasta comparar su efecto en flujo de caja, reembolsos y comisión del procesador.
 
 ## 6. Costos mensuales y margen
 
@@ -147,6 +151,18 @@ Margen = `(precio - costo mensual directo estimado) / precio`. El ITBIS no se re
 | 10 | US$58.06 | US$34.98 / RD$2,163 | US$350 / RD$21,631 | **39.8%** |
 | 50 | US$58.06 | US$23.33 / RD$1,443 | US$1,166 / RD$72,126 | **59.8%** |
 | 200 | US$58.06 | US$21.12 / RD$1,305 | US$4,224 / RD$261,161 | **63.6%** |
+
+### 6.4 Sensibilidad del nuevo plan Autoservicio
+
+El plan de RD$990 no está en la mezcla de ventas anterior. Para estimarlo separadamente se conserva la misma distribución presupuestaria de infraestructura (peso 1.0 como Básico), se presuponen 30 conversaciones de IA, cero horas de soporte humano incluidas, 6% de MDR y hasta RD$15 por cargo aprobado. El prorrateo de cargos fijos usa la cohorte mixta de la tabla: por eso el complemento de Azul de RD$595 se aplica a 10/50 clientes y no a 200; el ingreso de RD$718 mil corresponde a esa mezcla, no a 200 suscripciones Autoservicio. Son sensibilidades, no cotización ni margen neto.
+
+| Tamaño de cohorte mixta | Precio Autoservicio US$ / RD$ | Costo directo estimado US$ / RD$ | Margen directo estimado |
+|---:|---:|---:|---:|
+| 10 | 16.01 / 990 | 16.12 / 997 | **−0.7%** |
+| 50 | 16.01 / 990 | 5.55 / 343 | **65.4%** |
+| 200 | 16.01 / 990 | 3.53 / 219 | **77.9%** |
+
+Con apenas 10 clientes, RD$990 no alcanza el mínimo de margen bajo estos supuestos, incluso antes de adquirirlos o cubrir soporte humano. No lanzarlo a ese precio sin reducir costo fijo, cobrar onboarding/soporte aparte o validar una estructura de pagos distinta. El resultado a 50/200 depende de que los costos fijos sí se compartan con otros planes; una adopción alta de Autoservicio cambia la mezcla y obliga a recalcular.
 
 Los tres escenarios superan el mínimo solicitado de 15%, pero 10 clientes dejan poco espacio para adquisición, desarrollo y contingencias. La reserva de soporte equivale, a un costo cargado de US$30/hora, a 12 minutos/mes en Básico, 28 en Pro y 60 en Premium. Si el soporte real duplica esas reservas, el margen combinado baja a 18.4% con 10 clientes, 38.5% con 50 y aproximadamente 42.3% con 200. Son márgenes directos modelados, no margen neto ni una promesa de rentabilidad: excluyen adquisición, desarrollo, impuestos, contracargos y operación no prorrateada. El costo de respaldo externo de la tabla es una provisión, no una cotización; antes de usarlo para decidir se debe fijar GB, retención, frecuencia, cifrado y costo de restauración/egreso. La operación sólo podría considerarse sostenible alrededor de 50 clientes si los pilotos validan costos y soporte.
 
@@ -424,47 +440,53 @@ Priorización del núcleo: impacto en clientes × ingreso/retención × reutiliz
 
 ## 16. Fases, puertas y entregables
 
-### Fase 0 — Decidir y contratar (2–4 semanas)
+Esta hoja de ruta adopta la arquitectura vigente del 19-oct-2026. Las duraciones son estimaciones de planificación, no compromisos; se vuelven a calcular tras prototipo, cotizaciones y pruebas.
 
-- entrevistas con 10 comercios y cartas de intención de al menos 3;
-- cotizaciones firmadas de Azul/CardNet, contador, abogado y seguridad;
-- clasificación tributaria, modelo de contrato, marca y responsable del producto;
-- prueba de disposición a pagar RD$1,990/RD$3,990/RD$7,990.
+### Fase 0 — Separación y fundación
 
-**Puerta:** no programar el MVP completo si nadie acepta precio y condiciones.
+- Rama y repositorios de producto separados; infraestructura, dominio, secretos y PostgreSQL propios, sin conectar a la tienda.
+- `Tenant` y `tenantId` en datos de negocio, guardia central y Row-Level Security aplicada por transacción.
+- Matriz automática que demuestra cero lectura, modificación, exportación o restauración cruzada.
 
-### Fase 1 — Fundación SaaS y piloto PWA (12–18 semanas)
+**Puerta:** cero fugas multiempresa en pruebas adversariales y CI verde; datos de demostración solamente.
 
-- modelo `Tenant`, membresías, RLS y pruebas cruzadas;
-- planes, derechos, uso, cobro, webhooks, gracia y exportación;
-- secretos por ambiente, logs, backups y restauración;
-- onboarding/migración y operación para 3–10 pilotos;
-- IA en sólo lectura, con tope pequeño y apagable.
+### Fase 1 — PWA autoservicio
 
-**Puerta:** 10 clientes pagos, cero fuga multiempresa, dos restauraciones exitosas y costo/soporte medidos durante 60 días.
+- Registro web, prueba gratis de 14 días, asistente para categorías, Excel, usuarios, cajas e impresora.
+- Cobro mensual automático en modo de prueba, avisos, siete días de gracia, luego sólo lectura y exportación siempre disponible.
+- Guías, centro de ayuda, página de estado, correos de incidentes y soporte humano sólo por escalamiento.
 
-### Fase 2 — Escala y aplicaciones de acompañamiento (8–12 semanas)
+**Puerta:** una empresa nueva se registra, importa productos y completa una venta mediante prueba E2E sin ayuda humana; suspensión nunca borra ni secuestra datos.
 
-- optimización y pruebas de carga para 50 clientes;
-- Capacitor Android/iOS, almacenamiento seguro, cámara, notificaciones y revisión de tiendas;
-- apps de consumo sin compra ni enlaces de compra;
-- métricas de activación, abandono, tickets y consumo de IA.
+### Fase 2 — IA aplicada y laptop Windows en línea
 
-**Puerta:** aprobación de tiendas, margen combinado mayor a 40% y soporte dentro de reserva.
+- Asistente de sólo lectura aislado por empresa, cuota visible, contador atómico, corte de gasto y bitácora de costo.
+- App de escritorio Tauri conectada al SaaS, instalador firmado, actualización automática e impresión térmica; requiere Internet y no se vende como offline.
+- Página comercial del producto, descargas y documentación de instalación.
 
-### Fase 3 — Offline PC y licenciamiento (16–24 semanas)
+**Puerta:** pruebas de aislamiento y límites de IA pasan; escritorio instala y actualiza automáticamente en Windows limpio y sigue autenticando contra la cuenta SaaS.
 
-- protocolo de eventos, outbox/inbox, conflictos, licencia firmada y exportación;
-- piloto con dos tiendas y cortes de red controlados;
-- auditoría de ventas, pagos, stock, actualización y restauración.
+### Fase 3 — Piloto y apps móviles complementarias
 
-**Puerta:** 30 días de piloto sin pérdida ni duplicación y conciliación documentada.
+- Piloto de 3–5 negocios, con medición de activación, soporte, costos y restauraciones durante 30 días como mínimo.
+- Apps Capacitor para Google Play y App Store, sólo como acompañamiento gratuito, sin compra ni enlace que dirija a pago externo dentro de la app; publicar sólo tras revisión de política y aprobación.
 
-### Fase 4 — 200 clientes y opciones Enterprise
+**Puerta:** cero incidentes de datos, cobro real conciliado, margen superior a 40% y soporte dentro de la reserva; aprobación de ambas tiendas antes de anunciar disponibilidad.
 
-- capacidad, observabilidad, rotación de guardia, recuperación y simulacro de incidentes;
-- base dedicada y SLA sólo para clientes que lo paguen;
-- revisión anual de precios, comisiones, IA, retención, leyes y tiendas.
+### Fase 4 — Offline sincronizado en laptop
+
+- Protocolo de eventos, outbox/inbox, licencia por dispositivo, exportación y resolución humana de conflictos.
+- Piloto con dos tiendas y cortes controlados; probar dos cajas vendiendo el mismo producto, reconexión, disco lleno, reloj incorrecto, actualización y restauración.
+
+**Puerta:** 30 días sin pérdida ni duplicación, inventario conciliado y evidencia de recuperación; hasta entonces la conexión a Internet es requisito.
+
+### Fase 5 — Escala y Enterprise
+
+- Pruebas de carga para 50 y 200 clientes, observabilidad, guardia, respuesta a incidentes y recuperación ensayada.
+- Base dedicada, SLA y objetivos de recuperación más estrictos sólo como opciones costeadas.
+- Revisión anual de precios, comisiones, IA, retención, leyes, contratos y políticas de tiendas.
+
+**Puerta:** capacidad y margen medidos en producción piloto; toda opción Enterprise debe cubrir sus costos y soporte.
 
 ## 17. Métricas y decisiones que la dueña debe controlar
 
@@ -518,13 +540,13 @@ Decisiones concretas para aprobar antes de código:
 
 ## 20. Secuencia y decisiones de cierre
 
-El orden de ejecución que se somete a aprobación es: **(1)** contratos, cotizaciones y validación comercial; **(2)** PWA multiempresa con cobro, backup e IA de sólo lectura; **(3)** aplicaciones de acompañamiento; **(4)** offline PC sincronizado; **(5)** escala y Enterprise. Cada paso se detiene si no supera su puerta de la sección 16.
+El orden de ejecución que se somete a aprobación es: **(1)** validar demanda, cotizaciones, contratos y separación del producto; **(2)** PWA autoservicio multiempresa con cobro, ayuda y exportación; **(3)** IA limitada y laptop Windows Tauri en línea; **(4)** piloto y apps móviles complementarias; **(5)** offline sincronizado; **(6)** escala y Enterprise. Cada paso se detiene si no supera su puerta de la sección 16.
 
-La dueña debe escoger entre las opciones de la sección 17 antes de autorizar código. La recomendación concreta es: nicho suplementos/belleza/fajas; precios RD$1,990/RD$3,990/RD$7,990; Azul o CardNet sólo tras cotización comparada; inversión liberada por fases; IA sin herramientas de dinero; offline como complemento; soporte laboral con guardia pagada; y licencia propietaria sin entregar el código fuente.
+La dueña debe escoger entre las opciones de la sección 17 antes de autorizar código. La recomendación concreta es: nicho suplementos/belleza/fajas; probar Autoservicio RD$990 además de Básico/Pro/Premium; Azul o CardNet sólo tras cotización comparada; inversión liberada por fases; IA sin herramientas de dinero; laptop conectada antes que offline; soporte laboral con guardia pagada; y licencia propietaria sin entregar el código fuente.
 
 ## Resumen final para la dueña
-1. Recomiendo lanzar primero la PWA SaaS con 3–10 clientes pagos; las apps y el offline vienen después de demostrar aislamiento, restauración y demanda.
+1. Recomiendo separar el producto y probar primero la PWA autoservicio; la laptop conectada llega en fase 2, apps móviles en fase 3 y offline real al final.
 2. Propongo Básico RD$1,990, Pro RD$3,990 y Premium RD$7,990 mensuales, antes de impuestos aplicables, con límites claros y sin uso ilimitado.
 3. El margen directo modelado es 39.8% con 10 clientes, 59.8% con 50 y 63.6% con 200; no es margen neto y faltan cotizaciones legales, fiscales, de pagos y soporte real.
 4. Antes de código debe aprobar nicho, inversión, procesador, tratamiento fiscal, contratos, privacidad y reglas de mora/exportación; ningún dato real ni despliegue queda autorizado aquí.
-5. Si se aprueba, Claude debe revisar esta propuesta antes de programar y la fase 2 sólo comienza tras 10 clientes pagos, cero fuga multiempresa y dos restauraciones comprobadas.
+5. Si se aprueba, Claude debe revisar esta propuesta antes de programar; ninguna fase avanza sin su puerta de aislamiento, cobro, seguridad y recuperación.
