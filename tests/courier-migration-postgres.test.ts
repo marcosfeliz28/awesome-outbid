@@ -106,8 +106,16 @@ it("migra una base con ventas sin alterar total, costo, impuestos ni importe de 
     await migrate(join(prismaDir, "schema.prisma"));
   } finally {
     await client?.end().catch(() => undefined);
+    // stop() espera a que salga postgres; en Windows los archivos pueden
+    // seguir bloqueados un momento (EBUSY, Q-04): rm reintenta.
     await database.stop().catch(() => undefined);
-    await rm(dataDir, { recursive: true, force: true });
-    await rm(projectDir, { recursive: true, force: true });
+    const retry = {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 200,
+    };
+    await rm(dataDir, retry);
+    await rm(projectDir, retry);
   }
 }, 120000);
