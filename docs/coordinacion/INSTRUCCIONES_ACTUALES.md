@@ -449,3 +449,8 @@ Casa solo se modifica con instrucción expresa de la dueña. Toda salida de Casa
 - **ChatGPT PC:** investigar 40 mejoras (seguridad, estadística, inventario, ventas, clientes, precios) y proponer cómo instalar las 10 primeras. Detalle: `docs/coordinacion/ORDEN_40_MEJORAS_CHATGPT_PC.md`.
 - **Claude PC:** revisión independiente y pruebas en Windows de los arreglos de la auditoría (rama `claude/arreglos-auditoria-pc`). Detalle: `docs/coordinacion/ORDEN_CLAUDE_PC_REVISION_ARREGLOS.md`.
 - **ChatGPT PC (19-oct, noche):** propuesta de Nexora POS como producto para vender (apps, cobro, IA de soporte, nube multi-cliente, PC con sincronización, cambios a la medida, números). Detalle: `docs/coordinacion/ORDEN_PRODUCTO_SAAS_CHATGPT_PC.md`.
+
+## 3aj — Producto Nexora (19-oct-2026)
+- Arquitectura (Claude): `docs/producto/ARQUITECTURA_NEXORA_PRODUCTO.md`. Autoservicio, IA aplicada, web y laptop, sin tocar la tienda.
+- **ChatGPT PC construye** la fase 0: `docs/coordinacion/ORDEN_CONSTRUCCION_PRODUCTO_CHATGPT_PC.md`.
+- **Claude PC**: rescate y limpieza de los 46 archivos sin guardar: `docs/coordinacion/ORDEN_CLAUDE_PC_RESCATE_46.md`.
