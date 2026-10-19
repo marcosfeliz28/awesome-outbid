@@ -8,6 +8,9 @@ datasource db {
 }
 
 model Role {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id          String   @id @default(uuid()) @db.Uuid
   name        String   @unique
   permissions String[]
@@ -16,6 +19,9 @@ model Role {
 }
 
 model User {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id                 String    @id @default(uuid()) @db.Uuid
   name               String
   // Nombre corto que la persona escribe para entrar (por ejemplo, "E Soto").
@@ -47,6 +53,9 @@ model User {
 }
 
 model RefreshToken {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id          String   @id @default(uuid()) @db.Uuid
   userId      String   @db.Uuid
   authVersion Int      @default(0)
@@ -57,6 +66,9 @@ model RefreshToken {
 }
 
 model Category {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id             String    @id @default(uuid()) @db.Uuid
   name           String    @unique
   requiresLot    Boolean   @default(false)
@@ -71,11 +83,17 @@ model Category {
 }
 
 model Brand {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id   String @id @default(uuid()) @db.Uuid
   name String @unique
 }
 
 model Supplier {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id               String   @id @default(uuid()) @db.Uuid
   name             String
   legalId          String?
@@ -91,6 +109,9 @@ model Supplier {
 }
 
 model Product {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id          String    @id @default(uuid()) @db.Uuid
   name        String
   sku         String    @unique
@@ -117,6 +138,9 @@ model Product {
 }
 
 model Variant {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id             String              @id @default(uuid()) @db.Uuid
   productId      String              @db.Uuid
   product        Product             @relation(fields: [productId], references: [id])
@@ -155,6 +179,9 @@ model Variant {
 }
 
 model KitComponent {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id                 String  @id @default(uuid()) @db.Uuid
   kitVariantId       String  @db.Uuid
   kitVariant         Variant @relation("KitVariant", fields: [kitVariantId], references: [id])
@@ -167,6 +194,9 @@ model KitComponent {
 }
 
 model Lot {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id                  String              @id @default(uuid()) @db.Uuid
   variantId           String              @db.Uuid
   variant             Variant             @relation(fields: [variantId], references: [id])
@@ -192,6 +222,9 @@ model Lot {
 // relaciones deliberadamente: conserva los identificadores aunque el lote sea
 // eliminado años después.
 model LotIdentityConflict {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   conflictKey         String    @id
   variantId           String    @db.Uuid
   lotNumberNormalized String
@@ -204,6 +237,9 @@ model LotIdentityConflict {
 }
 
 model InventoryMovement {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id           String   @id @default(uuid()) @db.Uuid
   variantId    String   @db.Uuid
   variant      Variant  @relation(fields: [variantId], references: [id])
@@ -227,6 +263,9 @@ model InventoryMovement {
 }
 
 model Warehouse {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id String @id @default(uuid()) @db.Uuid
   branchId String @default("main")
   name String
@@ -243,6 +282,9 @@ model Warehouse {
 }
 
 model VariantStock {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   variantId String @db.Uuid
   warehouseId String @db.Uuid
   qty Decimal @default(0) @db.Decimal(14, 3)
@@ -253,6 +295,9 @@ model VariantStock {
 }
 
 model LotStock {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   lotId String @db.Uuid
   warehouseId String @db.Uuid
   qty Decimal @default(0) @db.Decimal(14, 3)
@@ -262,6 +307,9 @@ model LotStock {
 }
 
 model StockTransfer {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id String @id @default(uuid()) @db.Uuid
   operationId String @unique @db.Uuid
   branchId String @default("main")
@@ -277,6 +325,9 @@ model StockTransfer {
 }
 
 model StockTransferLine {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id String @id @default(uuid()) @db.Uuid
   transferId String @db.Uuid
   variantId String @db.Uuid
@@ -289,6 +340,9 @@ model StockTransferLine {
 }
 
 model Customer {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id          String    @id @default(uuid()) @db.Uuid
   creditLimit Decimal   @default(0) @db.Decimal(14, 2)
   name        String
@@ -309,6 +363,9 @@ model Customer {
 }
 
 model Sale {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id                     String       @id @default(uuid()) @db.Uuid
   number                 String       @unique
   status                 String       @default("completed")
@@ -376,6 +433,9 @@ model Sale {
 }
 
 model SaleVoidRequest {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id             String   @id @default(uuid()) @db.Uuid
   saleId         String   @db.Uuid
   sale           Sale     @relation(fields: [saleId], references: [id], onDelete: Restrict)
@@ -400,6 +460,9 @@ model SaleVoidRequest {
 }
 
 model CourierPayout {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   operationId String @id @db.Uuid
   branchId String
   actorId String @db.Uuid
@@ -414,6 +477,9 @@ model CourierPayout {
 }
 
 model CourierPayoutItem {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id String @id @default(uuid()) @db.Uuid
   payoutId String @db.Uuid
   payout CourierPayout @relation(fields: [payoutId], references: [operationId], onDelete: Restrict)
@@ -425,6 +491,9 @@ model CourierPayoutItem {
 }
 
 model SaleItem {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id               String  @id @default(uuid()) @db.Uuid
   saleId           String  @db.Uuid
   sale             Sale    @relation(fields: [saleId], references: [id])
@@ -450,6 +519,9 @@ model SaleItem {
 }
 
 model Payment {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id             String   @id @default(uuid()) @db.Uuid
   saleId         String   @db.Uuid
   sale           Sale     @relation(fields: [saleId], references: [id])
@@ -486,6 +558,9 @@ model Payment {
 // Un cobro por cliente puede abarcar varias ventas; conserva la respuesta y
 // el hash del pedido para reintentos sin volver a mover caja ni incentivos.
 model CreditAllocationOperation {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   operationId String   @id @db.Uuid
   branchId    String
   customerId  String   @db.Uuid
@@ -498,6 +573,9 @@ model CreditAllocationOperation {
 }
 
 model SaleReturn {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id             String   @id @default(uuid()) @db.Uuid
   saleId         String   @db.Uuid
   sale           Sale     @relation(fields: [saleId], references: [id])
@@ -529,6 +607,9 @@ model SaleReturn {
 }
 
 model CreditNote {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id             String   @id @default(uuid()) @db.Uuid
   redemptionCode String   @unique
   returnId       String   @unique @db.Uuid
@@ -542,6 +623,9 @@ model CreditNote {
 }
 
 model Quote {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id             String   @id @default(uuid()) @db.Uuid
   type           String   @default("quote")
   customerId     String?  @db.Uuid
@@ -558,6 +642,9 @@ model Quote {
 }
 
 model PurchaseOrder {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id              String         @id @default(uuid()) @db.Uuid
   number          String         @unique
   supplierId      String         @db.Uuid
@@ -580,6 +667,9 @@ model PurchaseOrder {
 }
 
 model PurchaseItem {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id          String        @id @default(uuid()) @db.Uuid
   orderId     String        @db.Uuid
   order       PurchaseOrder @relation(fields: [orderId], references: [id])
@@ -598,6 +688,9 @@ model PurchaseItem {
 }
 
 model GoodsReceipt {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id                String         @id @default(uuid()) @db.Uuid
   orderId           String?        @db.Uuid
   // RESTRICT como en 202610030001_initial: una orden con recepciones no se
@@ -635,6 +728,9 @@ model GoodsReceipt {
 }
 
 model SupplierPayment {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id         String   @id @default(uuid()) @db.Uuid
   supplierId String   @db.Uuid
   amount     Decimal  @db.Decimal(14, 2)
@@ -648,6 +744,9 @@ model SupplierPayment {
 }
 
 model InventoryCount {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id        String   @id @default(uuid()) @db.Uuid
   items     Json
   status    String   @default("pending")
@@ -660,6 +759,9 @@ model InventoryCount {
 }
 
 model CashSession {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id                 String    @id @default(uuid()) @db.Uuid
   registerId         String    @default("terminal-1")
   userId             String
@@ -691,6 +793,9 @@ model CashSession {
 }
 
 model CashMovement {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id        String   @id @default(uuid()) @db.Uuid
   // D-M4: clave del formulario; un reintento devuelve el mismo movimiento.
   operationId String? @unique @db.Uuid
@@ -708,6 +813,9 @@ model CashMovement {
 }
 
 model ExpenseCategory {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id            String    @id @default(uuid()) @db.Uuid
   name          String    @unique
   monthlyBudget Decimal   @default(10000) @db.Decimal(14, 2)
@@ -715,6 +823,9 @@ model ExpenseCategory {
 }
 
 model Expense {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id          String          @id @default(uuid()) @db.Uuid
   categoryId  String          @db.Uuid
   category    ExpenseCategory @relation(fields: [categoryId], references: [id])
@@ -737,6 +848,9 @@ model Expense {
 }
 
 model Promotion {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id          String   @id @default(uuid()) @db.Uuid
   name        String
   type        String   @default("percent")
@@ -753,6 +867,9 @@ model Promotion {
 }
 
 model Alert {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id        String   @id @default(uuid()) @db.Uuid
   key       String   @unique
   type      String
@@ -771,6 +888,9 @@ model Alert {
 }
 
 model AlertRule {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id        String   @id @default(uuid()) @db.Uuid
   type      String   @unique
   threshold Json
@@ -779,6 +899,9 @@ model AlertRule {
 }
 
 model AuditLog {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   terminalId String?  @db.Uuid
   id         String   @id @default(uuid()) @db.Uuid
   userId     String
@@ -798,17 +921,26 @@ model AuditLog {
 }
 
 model Settings {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id        String   @id @default("main")
   data      Json
   updatedAt DateTime @updatedAt
 }
 
 model Counter {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   key   String @id
   value Int    @default(0)
 }
 
 model AuthAttempt {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   key             String    @id
   failedAttempts  Int       @default(0)
   lockedUntil     DateTime?
@@ -821,6 +953,9 @@ model AuthAttempt {
 }
 
 model AuthSession {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   terminalId     String?  @db.Uuid
   id             String   @id @default(uuid()) @db.Uuid
   userId         String   @db.Uuid
@@ -830,6 +965,9 @@ model AuthSession {
 }
 
 model Terminal {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id             String    @id @db.Uuid
   name           String
   branchId       String
@@ -851,6 +989,9 @@ model Terminal {
 }
 
 model RealtimeEvent {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id        BigInt   @id @default(autoincrement())
   branchId  String
   type      String
@@ -861,6 +1002,9 @@ model RealtimeEvent {
 }
 
 model MerchandiseOperation {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id          String   @id @db.Uuid
   branchId    String
   userId      String
@@ -871,6 +1015,9 @@ model MerchandiseOperation {
 }
 
 model SupplierImportProfile {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id         String @id @default(uuid()) @db.Uuid
   supplierId String @db.Uuid
   branchId   String
@@ -880,6 +1027,9 @@ model SupplierImportProfile {
 }
 
 model SupplierCode {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id         String @id @default(uuid()) @db.Uuid
   supplierId String @db.Uuid
   branchId   String
@@ -890,6 +1040,9 @@ model SupplierCode {
 }
 
 model InvoiceDraft {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id                   String   @id @default(uuid()) @db.Uuid
   branchId             String
   userId               String
@@ -902,6 +1055,9 @@ model InvoiceDraft {
 }
 
 model InvoiceAttachment {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id        String   @id @default(uuid()) @db.Uuid
   branchId  String
   userId    String
@@ -917,6 +1073,9 @@ model InvoiceAttachment {
 // texto se guarda ya renderizado y sin datos personales sensibles; el token y
 // el chat sólo viven en las variables de entorno.
 model NotificationOutbox {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id            String    @id @db.Uuid
   eventType     String
   refId         String
@@ -938,6 +1097,9 @@ model NotificationOutbox {
 // tarifa por defecto según su nombre (Suplementos 50, Fajas 50, Maquillaje 25,
 // las demás 0). Cambiarla no altera lo ya ganado: cada entrada guarda la suya.
 model IncentiveRate {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id         String   @id @default(uuid()) @db.Uuid
   branchId   String   @default("main")
   categoryId String   @db.Uuid
@@ -954,6 +1116,9 @@ model IncentiveRate {
 // period es el mes (America/Santo_Domingo) en que cuenta; originPeriod, el de
 // la venta original.
 model IncentiveEntry {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id           String   @id @default(uuid()) @db.Uuid
   kind         String
   refId        String   @db.Uuid
@@ -979,6 +1144,9 @@ model IncentiveEntry {
 
 // Cierre de un mes: marca inmutable por sucursal y mes.
 model IncentivePeriodClose {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id        String   @id @default(uuid()) @db.Uuid
   branchId  String   @default("main")
   period    String
@@ -990,6 +1158,9 @@ model IncentivePeriodClose {
 
 // Cuadre cerrado de una cajera en un mes: instantánea inmutable.
 model IncentiveSettlement {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id                String   @id @default(uuid()) @db.Uuid
   branchId          String   @default("main")
   period            String
@@ -1016,6 +1187,9 @@ model IncentiveSettlement {
 // con AES-256-GCM (clave derivada de BACKUP_ENCRYPTION_KEY); jamás en claro ni
 // en respuestas. lockId/lockedUntil: arriendo para un solo respaldo a la vez.
 model DriveBackup {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  @@index([tenantId])
   id                  String    @id @default("main")
   refreshTokenEnc     String?
   accountEmail        String?
@@ -1041,4 +1215,76 @@ model DriveBackup {
   nextRetryAt         DateTime?
   lastAlertAt         DateTime?
   updatedAt           DateTime  @default(now()) @updatedAt
+}
+
+// Empresa cliente. El tenant demo sólo existe en la base independiente del producto.
+model Tenant {
+  // Relaciones explícitas para que Prisma y la migración coincidan.
+  roleRows Role[]
+  userRows User[]
+  refreshTokenRows RefreshToken[]
+  categoryRows Category[]
+  brandRows Brand[]
+  supplierRows Supplier[]
+  productRows Product[]
+  variantRows Variant[]
+  kitComponentRows KitComponent[]
+  lotRows Lot[]
+  lotIdentityConflictRows LotIdentityConflict[]
+  inventoryMovementRows InventoryMovement[]
+  warehouseRows Warehouse[]
+  variantStockRows VariantStock[]
+  lotStockRows LotStock[]
+  stockTransferRows StockTransfer[]
+  stockTransferLineRows StockTransferLine[]
+  customerRows Customer[]
+  saleRows Sale[]
+  saleVoidRequestRows SaleVoidRequest[]
+  courierPayoutRows CourierPayout[]
+  courierPayoutItemRows CourierPayoutItem[]
+  saleItemRows SaleItem[]
+  paymentRows Payment[]
+  creditAllocationOperationRows CreditAllocationOperation[]
+  saleReturnRows SaleReturn[]
+  creditNoteRows CreditNote[]
+  quoteRows Quote[]
+  purchaseOrderRows PurchaseOrder[]
+  purchaseItemRows PurchaseItem[]
+  goodsReceiptRows GoodsReceipt[]
+  supplierPaymentRows SupplierPayment[]
+  inventoryCountRows InventoryCount[]
+  cashSessionRows CashSession[]
+  cashMovementRows CashMovement[]
+  expenseCategoryRows ExpenseCategory[]
+  expenseRows Expense[]
+  promotionRows Promotion[]
+  alertRows Alert[]
+  alertRuleRows AlertRule[]
+  auditLogRows AuditLog[]
+  settingsRows Settings[]
+  counterRows Counter[]
+  authAttemptRows AuthAttempt[]
+  authSessionRows AuthSession[]
+  terminalRows Terminal[]
+  realtimeEventRows RealtimeEvent[]
+  merchandiseOperationRows MerchandiseOperation[]
+  supplierImportProfileRows SupplierImportProfile[]
+  supplierCodeRows SupplierCode[]
+  invoiceDraftRows InvoiceDraft[]
+  invoiceAttachmentRows InvoiceAttachment[]
+  notificationOutboxRows NotificationOutbox[]
+  incentiveRateRows IncentiveRate[]
+  incentiveEntryRows IncentiveEntry[]
+  incentivePeriodCloseRows IncentivePeriodClose[]
+  incentiveSettlementRows IncentiveSettlement[]
+  driveBackupRows DriveBackup[]
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  plan      String   @default("trial")
+  status    String   @default("trial")
+  country   String   @default("DO")
+  currency  String   @default("DOP")
+  timeZone  String   @default("America/Santo_Domingo")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

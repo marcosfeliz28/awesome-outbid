@@ -23,11 +23,13 @@ async function bootstrap() {
   if (production && !webOrigin)
     throw new Error("WEB_ORIGIN es obligatorio en producción.");
   const secret = validateSecret(process.env.JWT_SECRET, production);
-  const startupDb = new PrismaClient();
-  try {
-    await safelyForcePasswordChangeAtStartup(startupDb);
-  } finally {
-    await startupDb.$disconnect();
+  if (process.env.PRODUCT_TENANCY !== "required") {
+    const startupDb = new PrismaClient();
+    try {
+      await safelyForcePasswordChangeAtStartup(startupDb);
+    } finally {
+      await startupDb.$disconnect();
+    }
   }
   // Nest no registra su parser interno: instalamos exactamente uno. Los
   // limitadores públicos se aplican después de resolver una cuenta real.

@@ -31,6 +31,8 @@ import {
 } from "./session-activity";
 import { clientIp } from "./rate-limit";
 import { checkDatabaseTimeZone } from "./database-timezone";
+import { tenantDatabaseProxy } from "./tenant-database";
+import { tenantScope } from "./tenant-context";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -38,9 +40,17 @@ export class Database extends PrismaClient {
   constructor() {
     const url = databaseUrlWithPool(process.env.DATABASE_URL);
     super(url ? { datasources: { db: { url } } } : undefined);
+    return tenantDatabaseProxy(this);
   }
   async onModuleInit() {
     await this.$connect();
+    if (process.env.PRODUCT_TENANCY === "required") {
+      const role = await tenantDatabaseProxy(this).$queryRawUnsafe<{ role: string }[]>(
+        "SELECT current_user AS role",
+      );
+      if (role[0]?.role !== "nexora_tenant_runtime")
+        throw new Error("RLS de producto no está activo; se cancela el arranque.");
+    }
     // D-B7: avisa (sin impedir el arranque) si la sesión no está en UTC.
     await checkDatabaseTimeZone(this);
   }
@@ -62,6 +72,7 @@ export type Actor = {
   role: string;
   permissions: string[];
   branchId: string;
+  tenantId: string;
 };
 export type ActorRequest = Request & { actor: Actor };
 // Una misma política protege todos los caminos que pueden revelar el arqueo:
@@ -652,6 +663,8 @@ export class AuthGuard implements CanActivate {
       if (!token) throw new Error();
       const payload = this.jwt.verify(token);
       if (payload.type !== "access") throw new Error();
+      if (!payload.tenantId || payload.tenantId !== tenantScope.getStore()?.tenantId)
+        throw new Error();
       const user = await this.db.user.findUnique({
         where: { id: payload.sub },
         include: { role: true },
@@ -659,7 +672,8 @@ export class AuthGuard implements CanActivate {
       // El bloqueo por contraseñas erróneas sólo impide iniciar sesión: si
       // cerrara las sesiones abiertas, cualquiera que conozca el correo
       // dejaría la caja sin cobrar (R9-seguridad-1).
-      if (!user?.active || user.mustChangePassword) throw new Error();
+      if (!user?.active || user.mustChangePassword || user.tenantId !== payload.tenantId)
+        throw new Error();
       if (payload.version !== user.authVersion || !payload.sid)
         throw new Error();
       const settings = await this.db.settings.findUnique({
@@ -723,6 +737,7 @@ export class AuthGuard implements CanActivate {
         role: user.role.name,
         permissions: user.role.permissions,
         branchId: user.branchId,
+        tenantId: user.tenantId,
       };
     } catch (error) {
       // Un fallo de la base (pool lleno, tiempo agotado, conexión) no dice

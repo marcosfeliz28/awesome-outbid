@@ -109,29 +109,14 @@ beforeAll(async () => {
       );
   await migrate(join(oldDir, "schema.prisma"), url);
   db = new PrismaClient({ datasources: { db: { url } } });
-  const category = await db.category.create({
-    data: { name: "Prueba almacén " + randomUUID(), branchId: "main" },
-  });
-  const product = await db.product.create({
-    data: {
-      name: "Producto almacén",
-      sku: randomUUID(),
-      categoryId: category.id,
-      branchId: "main",
-    },
-  });
-  const variant = await db.variant.create({
-    data: {
-      productId: product.id,
-      sku: randomUUID(),
-      barcode: randomUUID(),
-      price: 30,
-      costAvg: 10,
-      stock: 10,
-      branchId: "main",
-    },
-  });
-  variantId = variant.id;
+  // La fixture representa el esquema anterior, que aún no tenía tenantId.
+  // SQL parametrizado evita usar el cliente Prisma generado para el esquema nuevo.
+  const categoryId = randomUUID();
+  const productId = randomUUID();
+  variantId = randomUUID();
+  await db.$executeRaw`INSERT INTO "Category" (id,name,"branchId","updatedAt") VALUES (${categoryId}::uuid,${"Prueba almacén " + randomUUID()},'main',now())`;
+  await db.$executeRaw`INSERT INTO "Product" (id,name,sku,"categoryId","branchId","updatedAt") VALUES (${productId}::uuid,'Producto almacén',${randomUUID()},${categoryId}::uuid,'main',now())`;
+  await db.$executeRaw`INSERT INTO "Variant" (id,"productId",sku,barcode,price,"costAvg",stock,"branchId","updatedAt") VALUES (${variantId}::uuid,${productId}::uuid,${randomUUID()},${randomUUID()},30,10,10,'main',now())`;
   await db.$disconnect();
   await migrate(join(prismaDir, "schema.prisma"), url);
   db = new PrismaClient({ datasources: { db: { url } } });

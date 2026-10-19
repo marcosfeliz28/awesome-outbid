@@ -7,6 +7,8 @@ import {
   Get,
   Inject,
   Module,
+  MiddlewareConsumer,
+  NestModule,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
@@ -40,6 +42,7 @@ import {
   RequestRateLimitService,
 } from "./rate-limit";
 import { SecurityMaintenance } from "./security";
+import { tenantFromRequest, tenantScope } from "./tenant-context";
 
 @Controller()
 export class HealthController {
@@ -63,6 +66,7 @@ export class HealthController {
   }
 }
 export function createAppModule(secret: string) {
+  const product = process.env.PRODUCT_TENANCY === "required";
   @Module({
     imports: [JwtModule.register({ secret })],
     controllers: [
@@ -86,16 +90,12 @@ export function createAppModule(secret: string) {
       OfflineSaleReviewController,
       NotificationsController,
       IncentivesController,
-      DriveBackupController,
+      ...(!product ? [DriveBackupController] : []),
     ],
     providers: [
       Database,
       AlertEngine,
-      NotificationWorker,
-      CreditReminderService,
-      DriveBackupService,
-      DriveBackupWorker,
-      RetentionWorker,
+      ...(!product ? [NotificationWorker, CreditReminderService, DriveBackupService, DriveBackupWorker, RetentionWorker] : []),
       RequestRateLimitService,
       SecurityMaintenance,
       { provide: APP_GUARD, useClass: AuthGuard },
@@ -103,6 +103,12 @@ export function createAppModule(secret: string) {
       { provide: APP_INTERCEPTOR, useClass: AlertCacheInterceptor },
     ],
   })
-  class AppModule {}
+  class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+      consumer.apply((req: any, _res: any, next: () => void) => {
+        tenantScope.run({ tenantId: tenantFromRequest(req) }, next);
+      }).forRoutes("*");
+    }
+  }
   return AppModule;
 }

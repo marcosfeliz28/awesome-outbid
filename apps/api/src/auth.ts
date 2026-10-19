@@ -115,6 +115,7 @@ export class AuthController implements OnModuleInit {
       role: user.role.name,
       permissions: user.role.permissions,
       branchId: user.branchId,
+      tenantId: user.tenantId,
     };
   }
   async onModuleInit() {
@@ -362,6 +363,15 @@ export class AuthController implements OnModuleInit {
       path: "/api/auth",
       maxAge: 7 * 86400000,
     });
+    // La cookie contiene sólo el UUID público de empresa; la autenticación
+    // sigue dependiendo del refresh aleatorio y de la sesión de ese tenant.
+    res.cookie("nexora_tenant", user.tenantId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/api/auth",
+      maxAge: 7 * 86400000,
+    });
     return {
       accessToken: this.jwt.sign(
         {
@@ -369,6 +379,7 @@ export class AuthController implements OnModuleInit {
           type: "access",
           version: user.authVersion,
           sid: session.id,
+          tenantId: user.tenantId,
         },
         { expiresIn: "15m" },
       ),
@@ -765,6 +776,7 @@ export class AuthController implements OnModuleInit {
         });
     }
     res.clearCookie("fitstore_refresh", { path: "/api/auth" });
+    res.clearCookie("nexora_tenant", { path: "/api/auth" });
     return { ok: true };
   }
   @Get("me") me(@CurrentUser() actor: Actor) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AuthGuard } from "../apps/api/src/common";
+import { DEMO_TENANT_ID, tenantScope } from "../apps/api/src/tenant-context";
 
 // Prueba de carga con un año de historial: el pool de Prisma se agotaba
 // (P2024) y el guard convertía ese fallo de la base en un 401 «Inicia sesión»:
@@ -15,6 +16,7 @@ function prismaError(code: string, name = "PrismaClientKnownRequestError") {
 }
 
 function context(token = "token") {
+  tenantScope.enterWith({ tenantId: DEMO_TENANT_ID });
   const req: any = { headers: { authorization: "Bearer " + token } };
   return {
     req,
@@ -39,6 +41,7 @@ const payload = () => ({
   type: "access",
   version: 1,
   sid: SESSION_ID,
+  tenantId: DEMO_TENANT_ID,
 });
 
 function database(overrides: Record<string, any> = {}) {
@@ -48,6 +51,7 @@ function database(overrides: Record<string, any> = {}) {
     mustChangePassword: false,
     authVersion: 1,
     branchId: "main",
+    tenantId: DEMO_TENANT_ID,
     name: "Cajera",
     email: "cajera@example.test",
     role: { name: "seller", permissions: ["sale:write"] },

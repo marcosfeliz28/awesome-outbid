@@ -668,6 +668,8 @@ async function dumpEncrypted(
 // ---------------------------------------------------------------------------
 // Servicio
 
+import { DEMO_TENANT_ID, tenantScope } from "./tenant-context";
+
 export type Trigger = "schedule" | "manual";
 const SYSTEM = (branchId: string): Actor => ({
   id: "system",
@@ -676,6 +678,7 @@ const SYSTEM = (branchId: string): Actor => ({
   role: "system",
   permissions: [],
   branchId,
+  tenantId: tenantScope.getStore()?.tenantId ?? DEMO_TENANT_ID,
 });
 
 @Injectable()
