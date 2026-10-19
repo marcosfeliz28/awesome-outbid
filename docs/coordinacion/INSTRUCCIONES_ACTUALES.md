@@ -448,3 +448,4 @@ Casa solo se modifica con instrucción expresa de la dueña. Toda salida de Casa
 ## 3ai — Órdenes del 19-oct-2026
 - **ChatGPT PC:** investigar 40 mejoras (seguridad, estadística, inventario, ventas, clientes, precios) y proponer cómo instalar las 10 primeras. Detalle: `docs/coordinacion/ORDEN_40_MEJORAS_CHATGPT_PC.md`.
 - **Claude PC:** revisión independiente y pruebas en Windows de los arreglos de la auditoría (rama `claude/arreglos-auditoria-pc`). Detalle: `docs/coordinacion/ORDEN_CLAUDE_PC_REVISION_ARREGLOS.md`.
+- **ChatGPT PC (19-oct, noche):** propuesta de Nexora POS como producto para vender (apps, cobro, IA de soporte, nube multi-cliente, PC con sincronización, cambios a la medida, números). Detalle: `docs/coordinacion/ORDEN_PRODUCTO_SAAS_CHATGPT_PC.md`.
