@@ -15,7 +15,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { BUSINESS_TIME_ZONE, d, formatMoney, money } from "@fitstore/shared";
 import { Database } from "./common";
-import { currentTenantId, forEachActiveTenant, tenantScope } from "./tenant-context";
+import { currentTenantId, forEachActiveTenant, tenantScope, tenantUnique } from "./tenant-context";
 import {
   enqueue,
   escapeHtml,
@@ -191,7 +191,7 @@ export class CreditReminderService {
       const made = await this.db.$transaction(async (tx: any) => {
         // El candado no debe serializar empresas distintas que compartan caja.
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"fitstore:" + currentTenantId() + ":" + key}))`;
-        if (await tx.alert.findUnique({ where: { key }, select: { id: true } }))
+        if (await tx.alert.findUnique({ where: tenantUnique("key", key), select: { id: true } }))
           return false;
         const sales = await tx.sale.findMany({
           where: {
