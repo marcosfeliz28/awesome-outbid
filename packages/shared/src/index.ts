@@ -776,6 +776,13 @@ export const expiryDays = (value: Date | string, now: Date = new Date()) =>
       Date.parse(businessDate(now) + "T12:00:00Z")) /
       86400000,
   );
+// Días de calendario en Santo Domingo desde `from` hasta `to`: una venta de
+// anoche ya lleva 1 día aunque no hayan pasado 24 horas (orden de la dueña,
+// 19-oct: contar los días que lleva un crédito / contraentrega sin cerrarse).
+export const daysSince = (
+  from: Date | string,
+  to: Date | string = new Date(),
+) => Math.max(0, expiryDays(to, new Date(from)));
 export const weekStart = (value: Date = new Date()) => {
   const day = new Date(businessDate(value) + "T12:00:00Z");
   day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));
