@@ -132,7 +132,15 @@ export default async function setup() {
     quiet: true,
   });
   requireLocalTargets();
-  if (process.env.NEXORA_TEST_SKIP_API_CHECK === "1") return;
+  // Q-01: tampoco la API ni la base de Nexora instalado en esta PC.
+  const { targets, installedTarget } = await import("../../scripts/verify.mjs");
+  const skipApi = process.env.NEXORA_TEST_SKIP_API_CHECK === "1";
+  const installed = installedTarget(
+    skipApi ? { apiPort: "" } : targets(process.env),
+    process.env,
+  );
+  if (installed) throw new Error(installed);
+  if (skipApi) return;
   const { PrismaClient } = requireApi("@prisma/client");
   const db = new PrismaClient();
   try {

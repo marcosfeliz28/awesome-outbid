@@ -53,6 +53,35 @@ export function remoteTarget(target, env = process.env) {
   return null;
 }
 
+/** ¿Esta PC tiene Nexora instalado (servicio de Windows FitStoreAPI)? */
+export function hasInstalledService() {
+  if (process.platform !== "win32") return false;
+  return (
+    spawnSync("sc.exe", ["query", "FitStoreAPI"], {
+      stdio: "ignore",
+      windowsHide: true,
+    }).status === 0
+  );
+}
+
+/**
+ * Q-01: en una PC con Nexora instalado, la API :3001 y la base :5434 son las
+ * de la tienda (instalador/scripts/FitStore.Common.ps1): nunca se prueban.
+ * shortcut: puertos fijos del instalador; si algún día se configuran, leerlos de la instalación.
+ */
+export function installedTarget(target, env = process.env, installed) {
+  if (!(installed ?? hasInstalledService())) return null;
+  let dbPort = "";
+  try {
+    dbPort = new URL(env.DATABASE_URL).port;
+  } catch {
+    // Sin DATABASE_URL no hay base que proteger aquí.
+  }
+  if (target.apiPort === "3001" || dbPort === "5434")
+    return "Esta PC tiene Nexora instalado: la API :3001 y la base :5434 son las de la tienda. Prueba con otro puerto (PORT o FITSTORE_API_URL) y una base desechable.";
+  return null;
+}
+
 // En Windows pnpm es un guion .cmd y spawn, sin intérprete de órdenes,
 // responde ENOENT. Con intérprete la orden va en una sola cadena, porque Node
 // no escapa los argumentos sueltos.
@@ -219,7 +248,7 @@ async function main() {
   let code = 1;
   try {
     // Q-01: nunca se prueba (ni se inicia sesión) contra una API o base ajena.
-    const problem = remoteTarget(target, env);
+    const problem = remoteTarget(target, env) ?? installedTarget(target, env);
     if (problem) throw new Error(problem);
     if (!(await available(target.health))) {
       await startDatabase(env);
