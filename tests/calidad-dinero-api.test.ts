@@ -46,7 +46,9 @@ async function request(
       "X-Forwarded-For": ip,
       ...(as ? { Authorization: "Bearer " + as } : {}),
     },
-    ...(data === undefined ? {} : { body: JSON.stringify(conClave(path, data)) }),
+    ...(data === undefined
+      ? {}
+      : { body: JSON.stringify(conClave(path, data)) }),
   });
   const text = await r.text();
   let body: any = text;
