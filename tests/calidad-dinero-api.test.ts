@@ -648,4 +648,67 @@ describe("Cierre de caja", () => {
     );
     expect(ok100.status, JSON.stringify(ok100.body)).toBe(201);
   });
+
+  it("C12 · la cajera no cierra con la tarjeta descuadrada sin el PIN de un gerente (Q-02)", async () => {
+    const manager = await person("gerente-c12", "admin", null);
+    const seller = await person("cajera-c12", "seller", 0);
+    const card = await sale(
+      seller,
+      [{ variantId: plain.variantId, qty: 1 }],
+      [
+        {
+          method: "card",
+          amount: 100,
+          cardLast4: "4242",
+          approvalCode: "APR-C12",
+        },
+      ],
+      { expectedTotal: 100 },
+    );
+    expect(card.status, JSON.stringify(card.body)).toBe(201);
+    const url = "/cash-sessions/" + seller.cash.id + "/close";
+    // El efectivo cuadra (0); sólo la tarjeta declara 80 de 100.
+    const body = {
+      countedCash: 0,
+      countedCard: 80,
+      countedTransfer: 0,
+      notes: "Voucher del verifón: 80",
+    };
+    const stillOpen = async () =>
+      (
+        await db.cashSession.findUniqueOrThrow({
+          where: { id: seller.cash.id },
+        })
+      ).closedAt;
+    const noPin = await request(url, seller.token, body);
+    expect(noPin.status).toBe(400);
+    expect(noPin.body.message).toMatch(/total de tarjeta no coincide/i);
+    expect(noPin.body.message).toMatch(/PIN de un gerente/);
+    expect(noPin.body.message).not.toMatch(/\d/);
+    expect(await stillOpen()).toBeNull();
+    const badPin = await request(url, seller.token, {
+      ...body,
+      managerPin: "000000",
+    });
+    expect(badPin.status).toBeGreaterThanOrEqual(400);
+    expect(await stillOpen()).toBeNull();
+    const approved = await request(url, seller.token, {
+      ...body,
+      managerPin: "246813",
+    });
+    expect(approved.status, JSON.stringify(approved.body)).toBe(201);
+    const saved = await db.cashSession.findUniqueOrThrow({
+      where: { id: seller.cash.id },
+    });
+    expect(saved.closedAt).not.toBeNull();
+    // Lo aprobó una persona con sale:manage: el gerente de esta prueba u otra
+    // administradora activa con el mismo PIN de pruebas.
+    const approver = (saved.closeDetails as any).cardApprovedBy;
+    expect(approver).toBeTruthy();
+    expect(approver).not.toBe(seller.id);
+    expect((saved.closeDetails as any).cashApprovedBy).toBeUndefined();
+    expect(Number(saved.differenceCard)).toBe(-20);
+    expect(Number(saved.differenceCash)).toBe(0);
+    void manager;
+  });
 });
