@@ -602,13 +602,19 @@ export class ReportsController {
       until = utc(range.lte);
     const line = Prisma.sql`i."lineTotal"*(1-i."returnedQty"/i.qty)`;
     const units = Prisma.sql`(i.qty-i."returnedQty")`;
-    const [categories, top, count] = (await Promise.all([
+    const [categories, top, count, mix] = (await Promise.all([
       this.db
         .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
       this.db
         .$queryRaw`SELECT p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.name, v.sku HAVING SUM(${units}) > 0 ORDER BY units DESC, revenue DESC LIMIT 10`,
       this.db
         .$queryRaw`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until}`,
+      // Orden 18-oct: cómo se pagó cada categoría. Lo vendido de la categoría
+      // en cada factura se reparte según la mezcla de pagos de esa factura.
+      canViewCashExpected(actor)
+        ? this.db
+            .$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(${line}) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY i."saleId", c.name), sp AS (SELECT p."saleId", p.method, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY p."saleId", p.method), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" GROUP BY cl.name, sp.method`
+        : Promise.resolve(null),
     ])) as any[][];
     // Días del período hasta hoy: el promedio diario no se diluye con días
     // que todavía no llegan.
@@ -653,6 +659,14 @@ export class ReportsController {
           ...row(r),
         })),
         top: top.map((r) => ({ name: r.name, sku: r.sku, ...row(r) })),
+        // null: quien no ve el esperado de caja no ve la mezcla de pagos.
+        payments: mix
+          ? mix.map((r: any) => ({
+              category: r.category,
+              method: r.method,
+              amount: money(d(r.amount ?? 0)),
+            }))
+          : null,
       },
       actor,
     );
@@ -1558,7 +1572,11 @@ async function sendListing(
 }
 
 // ── Reportes del día de la tienda (docs/tienda/CUADRE_REPORTES_FACTURA.md) ──
-export const STORE_REPORTS = ["venta-diaria-usuario", "venta-por-forma-pago"];
+export const STORE_REPORTS = [
+  "venta-diaria-usuario",
+  "venta-por-forma-pago",
+  "ventas-categoria-forma-pago",
+];
 const NOTE = "Verificar si los totales tienen descuentos aplicados";
 // Filtros: fechas (from/to), caja (cashSessionId) y usuario (userId). Con
 // caja y sin fechas, se toma la caja completa.
@@ -1594,7 +1612,7 @@ export async function storeReport(
   // formas de pago lista cada factura (una caja o una jornada) con tope.
   const where = Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed'${session ? Prisma.sql` AND s."cashSessionId" = ${session.id}::uuid` : Prisma.empty}${query.userId ? Prisma.sql` AND s."sellerId" = ${userId}::uuid` : Prisma.empty}${range ? Prisma.sql` AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}` : Prisma.empty}`;
   const sales =
-    name === "venta-diaria-usuario" ? [] : await storeSales(db, where);
+    name === "venta-por-forma-pago" ? await storeSales(db, where) : [];
   const [user, terminal] = await Promise.all([
     userId ? db.user.findUnique({ where: { id: userId } }) : null,
     session && /^[0-9a-f-]{36}$/i.test(session.registerId)
@@ -1656,6 +1674,55 @@ export async function storeReport(
       title: "REPORTE DE LA VENTA DIARIA DE USUARIO",
       totals,
       rows: [...rows, { Descripción: "TOTAL", SKU: "", ...totals }],
+    };
+  }
+  if (name === "ventas-categoria-forma-pago") {
+    // Orden 18-oct: % y monto por categoría y forma de pago. Lo vendido de la
+    // categoría en cada factura se reparte según la mezcla de pagos.
+    const mix =
+      (await db.$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE ${where} GROUP BY i."saleId", c.name), sp AS (SELECT p."saleId", p.method, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY p."saleId", p.method), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" GROUP BY cl.name, sp.method ORDER BY cl.name, amount DESC`) as any[];
+    const label: Record<string, string> = {
+      cash: "Efectivo",
+      card: "Tarjeta",
+      transfer: "Transferencia",
+      cod: "Crédito / contraentrega",
+      credit: "Crédito / contraentrega",
+      credit_note: "Nota de crédito",
+    };
+    const block = (title: string, list: any[]) => {
+      const total = list.reduce((a, r) => a.plus(r.amount ?? 0), d(0));
+      return list.map((r) => ({
+        Categoría: title,
+        "Forma de pago": label[r.method] ?? r.method,
+        Monto: money(d(r.amount ?? 0)),
+        "%": total.gt(0)
+          ? money(
+              d(r.amount ?? 0)
+                .div(total)
+                .times(100),
+            )
+          : 0,
+      }));
+    };
+    const categories = [...new Set(mix.map((r) => r.category as string))];
+    const all = new Map<string, any>();
+    for (const r of mix)
+      all.set(r.method, {
+        method: r.method,
+        amount: d(all.get(r.method)?.amount ?? 0).plus(r.amount ?? 0),
+      });
+    return {
+      ...header,
+      title: "VENTAS POR CATEGORÍA Y FORMA DE PAGO",
+      rows: [
+        ...categories.flatMap((c) =>
+          block(
+            c,
+            mix.filter((r) => r.category === c),
+          ),
+        ),
+        ...block("TODAS", [...all.values()]),
+      ],
     };
   }
   // Por forma de pago: una venta combinada aparece en cada grupo con su parte.

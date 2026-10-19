@@ -8,6 +8,7 @@ import { monthNames, monthRange, monthShares } from "./year-report-utils";
 
 type Month = {
   month: number;
+  invoices?: number;
   revenue: number;
   profit?: number;
   margin?: number;
@@ -32,6 +33,9 @@ export function YearPie({ go }: { go: (page: string) => void }) {
   const showProfit = can(user.permissions, "profit:read");
   const thisYear = Number(today().slice(0, 4));
   const [year, setYear] = useState(thisYear);
+  // Tocar o pasar sobre un mes solo lo muestra; ir al detalle es un botón
+  // (orden 18-oct: antes un toque en el celular abría otra página).
+  const [picked, setPicked] = useState<Month | null>(null);
   const query = useQuery({
     queryKey: ["dashboard-year", year],
     queryFn: () => api<any>("/dashboard/year?year=" + year),
@@ -79,7 +83,7 @@ export function YearPie({ go }: { go: (page: string) => void }) {
                   nameKey="month"
                   outerRadius={125}
                   stroke="var(--surface, #fff)"
-                  onClick={(slice: any) => open(slice.month)}
+                  onClick={(slice: any) => setPicked(slice)}
                 >
                   {slices.map((m) => (
                     <Cell
@@ -96,9 +100,10 @@ export function YearPie({ go }: { go: (page: string) => void }) {
                     return (
                       <div className="year-pie-tip">
                         <strong>{monthNames[m.month - 1]}</strong>
-                        <span>Vendido {formatMoney(m.revenue)}</span>
+                        <span>{m.invoices ?? 0} ventas</span>
+                        <span>Bruta {formatMoney(m.revenue)}</span>
                         {showProfit && (
-                          <span>Ganancia {m.margin ?? 0} % de esa venta</span>
+                          <span>Neta {formatMoney(m.profit ?? 0)}</span>
                         )}
                       </div>
                     );
@@ -110,6 +115,17 @@ export function YearPie({ go }: { go: (page: string) => void }) {
             <p className="muted">Sin ventas en {year}.</p>
           )}
         </div>
+        {picked && (
+          <div className="year-pie-tip" role="status">
+            <strong>{monthNames[picked.month - 1]}</strong>
+            <span>{picked.invoices ?? 0} ventas</span>
+            <span>Bruta {formatMoney(picked.revenue)}</span>
+            {showProfit && <span>Neta {formatMoney(picked.profit ?? 0)}</span>}
+            <button type="button" onClick={() => open(picked.month)}>
+              Ver detalle del mes
+            </button>
+          </div>
+        )}
         <ul className="year-pie-list">
           {months.map((m, i) => (
             <li key={m.month}>

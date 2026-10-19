@@ -8167,6 +8167,30 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
     expect(pdf.type).toMatch(/pdf/);
   });
 
+  it("B4 (18-oct): ventas por categoría y forma de pago suman lo vendido y cada bloque el 100 %", async () => {
+    const report = await must(
+      "/reports/ventas-categoria-forma-pago?cashSessionId=" + s1.id,
+      undefined,
+      ownerToken,
+    );
+    expect(report.title).toBe("VENTAS POR CATEGORÍA Y FORMA DE PAGO");
+    const all = report.rows.filter((r: any) => r.Categoría === "TODAS");
+    expect(all.length).toBeGreaterThan(0);
+    const sum = (rows: any[], key: string) =>
+      Math.round(rows.reduce((a, r) => a + Number(r[key]), 0) * 100) / 100;
+    expect(sum(all, "Monto")).toBeCloseTo(5990, 0);
+    expect(sum(all, "%")).toBeCloseTo(100, 0);
+    for (const fmt of ["xlsx", "pdf"]) {
+      const file = await call(
+        `/reports/ventas-categoria-forma-pago?format=${fmt}&cashSessionId=` +
+          s1.id,
+        undefined,
+        ownerToken,
+      );
+      expect(file.status).toBe(200);
+    }
+  });
+
   it("Tienda-reportes: venta de usuario por forma de pago, en el orden de la tienda y con pagos combinados repartidos", async () => {
     const report = await must(
       "/reports/venta-por-forma-pago?cashSessionId=" + s1.id,

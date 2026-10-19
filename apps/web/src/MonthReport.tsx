@@ -5,6 +5,8 @@ import { can, formatMoney } from "@fitstore/shared";
 import { api, useStore } from "./api";
 import { QueryState, today } from "./helpers";
 import { monthNames, reportCsv } from "./year-report-utils";
+import { PaymentMixPie, type MixRow } from "./PaymentMixPie";
+import { METHOD_LABEL } from "./Prints";
 
 const params = () => {
   const q = new URLSearchParams(location.hash.split("?")[1] ?? "");
@@ -60,6 +62,17 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
         c.units,
         ...(showProfit ? [c.profit ?? 0, c.margin ?? 0] : []),
       ]),
+      ...(data.payments
+        ? [
+            [],
+            ["Forma de pago por categoría", "Forma de pago", "Monto"],
+            ...data.payments.map((p: MixRow) => [
+              p.category,
+              METHOD_LABEL[p.method] ?? p.method,
+              p.amount,
+            ]),
+          ]
+        : []),
       [],
       ["Las 10 más vendidas", "Código", "Unidades", "Vendido"],
       ...data.top.map((t: Line) => [t.name, t.sku ?? "", t.units, t.revenue]),
@@ -173,6 +186,12 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
                 </table>
               </div>
             </section>
+            {data.payments && (
+              <PaymentMixPie
+                rows={data.payments as MixRow[]}
+                categories={data.categories.map((c: Line) => c.name)}
+              />
+            )}
             <section className="panel">
               <div className="panel-heading">
                 <h2>Las 10 más vendidas (por unidades)</h2>

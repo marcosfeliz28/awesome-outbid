@@ -2696,6 +2696,10 @@ const reportList = [
   ["cash", "Cierres y diferencias"],
   ["by-seller", "Ventas por vendedor"],
   ["by-payment", "Ventas por método de pago"],
+  [
+    "ventas-categoria-forma-pago",
+    "Ventas por categoría y forma de pago (% y monto)",
+  ],
   ["income-by-day", "Ingresos por día y método"],
   ["formal", "Informe formal diario/mensual"],
   ["returns-discounts", "Devoluciones y descuentos"],
