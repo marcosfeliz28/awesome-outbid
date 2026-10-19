@@ -34,6 +34,7 @@ import {
   TERMINAL_ONLINE_MS,
   sessionActivityGraceMs,
 } from "./session-activity";
+import { DEMO_TENANT_ID, tenantScope } from "./tenant-context";
 const terminalStatus = (t: {
   revokedAt: Date | null;
   approvedAt: Date | null;
@@ -48,6 +49,7 @@ const publicTerminal = (t: any) => {
 // Un solo sondeo por proceso reparte los eventos a todas las conexiones SSE
 // (antes: una consulta cada 100 ms por conexión).
 type Listener = {
+  tenantId: string;
   branchId: string;
   cursor: bigint;
   send: (row: { id: bigint; type: string; data: unknown }) => boolean;
@@ -56,40 +58,41 @@ export class RealtimeHub {
   private listeners = new Set<Listener>();
   private timer: ReturnType<typeof setInterval> | undefined;
   private busy = false;
-  private cursor = 0n;
+  private cursors = new Map<string, bigint>();
   // Inicialización compartida: varias altas simultáneas esperan la misma
   // consulta inicial y crean un único intervalo (R4-05).
-  private starting: Promise<void> | undefined;
+  private starting = new Map<string, Promise<void>>();
   private generation = 0;
   constructor(private db: Database) {}
-  private start() {
-    if (this.timer) return Promise.resolve();
-    if (!this.starting) {
+  private start(tenantId: string) {
+    if (this.cursors.has(tenantId)) return Promise.resolve();
+    if (!this.starting.has(tenantId)) {
       const gen = this.generation;
-      this.starting = this.db.realtimeEvent
-        .aggregate({ _max: { id: true } })
+      const pending = tenantScope.run({ tenantId }, () => this.db.realtimeEvent
+        .aggregate({ _max: { id: true } }))
         .then((max) => {
-          // Si todos se desconectaron mientras tanto, no se crea el intervalo.
-          if (gen !== this.generation || this.timer) return;
-          this.cursor = max._max.id ?? 0n;
-          this.timer = setInterval(() => void this.poll(), 150);
+          if (gen !== this.generation) return;
+          this.cursors.set(tenantId, max._max.id ?? 0n);
+          if (!this.timer) this.timer = setInterval(() => void this.poll(), 150);
         })
         .finally(() => {
-          if (gen === this.generation) this.starting = undefined;
+          if (gen === this.generation) this.starting.delete(tenantId);
         });
+      this.starting.set(tenantId, pending);
     }
-    return this.starting;
+    return this.starting.get(tenantId)!;
   }
-  async add(listener: Omit<Listener, "cursor">, isClosed?: () => boolean) {
-    await this.start();
+  async add(listener: Omit<Listener, "cursor" | "tenantId">, isClosed?: () => boolean) {
+    const tenantId = tenantScope.getStore()?.tenantId ?? DEMO_TENANT_ID;
+    await this.start(tenantId);
     // El cliente cerró durante el alta: no se registra nada.
     if (isClosed?.()) {
       this.stopIfIdle();
       return () => {};
     }
     // Arranque cancelado por quedarse sin clientes durante la espera.
-    if (!this.timer) await this.start();
-    const full: Listener = { ...listener, cursor: this.cursor };
+    if (!this.timer) await this.start(tenantId);
+    const full: Listener = { ...listener, tenantId, cursor: this.cursors.get(tenantId) ?? 0n };
     this.listeners.add(full);
     let removed = false;
     return () => {
@@ -105,7 +108,8 @@ export class RealtimeHub {
     this.timer = undefined;
     // Invalida cualquier inicialización pendiente.
     this.generation++;
-    this.starting = undefined;
+    this.starting.clear();
+    this.cursors.clear();
   }
   count() {
     return this.listeners.size;
@@ -117,18 +121,20 @@ export class RealtimeHub {
     if (this.busy || !this.listeners.size) return;
     this.busy = true;
     try {
-      const rows = await this.db.realtimeEvent.findMany({
-        where: { id: { gt: this.cursor } },
-        orderBy: { id: "asc" },
-        take: 500,
-      });
-      for (const row of rows) {
-        this.cursor = row.id;
-        for (const l of this.listeners)
-          if (l.branchId === row.branchId && row.id > l.cursor) {
-            l.cursor = row.id;
-            l.send(row);
-          }
+      for (const tenantId of new Set([...this.listeners].map((listener) => listener.tenantId))) {
+        const rows = await tenantScope.run({ tenantId }, () => this.db.realtimeEvent.findMany({
+          where: { id: { gt: this.cursors.get(tenantId) ?? 0n } },
+          orderBy: { id: "asc" },
+          take: 500,
+        }));
+        for (const row of rows) {
+          this.cursors.set(tenantId, row.id);
+          for (const l of this.listeners)
+            if (l.tenantId === tenantId && l.branchId === row.branchId && row.id > l.cursor) {
+              l.cursor = row.id;
+              l.send(row);
+            }
+        }
       }
     } catch {
       /* Reintenta en el siguiente ciclo. */

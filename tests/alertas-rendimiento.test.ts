@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { createRequire } from "node:module";
 import * as alerts from "../apps/api/src/alerts";
+import { tenantScope } from "../apps/api/src/tenant-context";
 
 // rxjs es dependencia de la API, no de la raíz.
 const { lastValueFrom, of } = createRequire(
@@ -120,6 +121,20 @@ function fakeDb(rows = variants(3)) {
 }
 
 describe("Alertas · rendimiento con catálogo grande", () => {
+  it("dos empresas con sucursal main no comparten alertas en memoria", async () => {
+    const engine = new AlertEngine({} as any);
+    let evaluations = 0;
+    (engine as any).compute = async () => {
+      evaluations++;
+      return [tenantScope.getStore()?.tenantId];
+    };
+    const a = "00000000-0000-0000-0000-000000000001";
+    const b = "00000000-0000-0000-0000-000000000002";
+    expect(await tenantScope.run({ tenantId: a }, () => engine.evaluate("main"))).toEqual([a]);
+    expect(await tenantScope.run({ tenantId: b }, () => engine.evaluate("main"))).toEqual([b]);
+    expect(await tenantScope.run({ tenantId: a }, () => engine.evaluate("main"))).toEqual([a]);
+    expect(evaluations).toBe(2);
+  });
   it("cuatro GET simultáneos ejecutan una sola evaluación", async () => {
     const fake = fakeDb();
     const engine = new AlertEngine(fake.db);

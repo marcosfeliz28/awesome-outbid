@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "node:events";
 import { RealtimeController, RealtimeHub } from "../apps/api/src/realtime";
+import { tenantScope } from "../apps/api/src/tenant-context";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -41,6 +42,33 @@ function response() {
 const request = () => Object.assign(new EventEmitter(), { socket: undefined });
 
 describe("RealtimeHub · inicialización concurrente (R4-05)", () => {
+  it("no entrega eventos de otra empresa aunque compartan la sucursal main", async () => {
+    const live = fakeTimers();
+    const a = "00000000-0000-0000-0000-000000000001";
+    const b = "00000000-0000-0000-0000-000000000002";
+    const delivered: string[] = [];
+    const db: any = { realtimeEvent: {
+      aggregate: async () => ({ _max: { id: 0n } }),
+      findMany: async () => [{
+        id: 1n, branchId: "main", type: "stock.changed",
+        data: { owner: tenantScope.getStore()?.tenantId },
+      }],
+    } };
+    const hub = new RealtimeHub(db);
+    const removeA = await tenantScope.run({ tenantId: a }, () => hub.add({
+      branchId: "main", send: (row) => (delivered.push(`A:${(row.data as any).owner}`), true),
+    }));
+    const removeB = await tenantScope.run({ tenantId: b }, () => hub.add({
+      branchId: "main", send: (row) => (delivered.push(`B:${(row.data as any).owner}`), true),
+    }));
+    expect(live.size).toBe(1);
+    [...live.values()][0]();
+    await flush();
+    expect(delivered).toEqual([`A:${a}`, `B:${b}`]);
+    removeA();
+    removeB();
+    expect(live.size).toBe(0);
+  });
   it("varias altas simultáneas: una consulta inicial, un intervalo y ningún evento perdido", async () => {
     const live = fakeTimers();
     const resolvers: ((v: unknown) => void)[] = [];

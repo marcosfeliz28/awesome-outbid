@@ -40,6 +40,7 @@ import {
   conflict,
   canViewCashExpected,
 } from "./common";
+import { DEMO_TENANT_ID, tenantScope } from "./tenant-context";
 
 const CASH_DIFFERENCE_PRIVATE_MESSAGE =
   "Se detectó una diferencia en una caja cerrada. Administración debe revisarla.";
@@ -266,6 +267,8 @@ export class AlertEngine {
     | undefined;
   constructor(@Inject(Database) private db: Database) {}
   onModuleInit() {
+    // En el producto no existe una empresa implícita para el trabajo periódico.
+    if (process.env.PRODUCT_TENANCY === "required") return;
     this.timer = setInterval(
       () => this.evaluate("main", { fresh: true }).catch(console.error),
       24 * 3600000,
@@ -296,14 +299,15 @@ export class AlertEngine {
     branchId = "main",
     options: { fresh?: boolean } = {},
   ): Promise<any[]> {
+    const key = `${tenantScope.getStore()?.tenantId ?? DEMO_TENANT_ID}:${branchId}`;
     const wanted = this.generation;
     const requestedAt = this.now();
     for (;;) {
       const running = this.running;
-      const cached = this.results.get(branchId);
+      const cached = this.results.get(key);
       if (!options.fresh && cached && cached.generation >= wanted) {
         if (!running && this.now() - cached.at >= ALERT_EVALUATION_TTL_MS)
-          this.start(branchId).catch((error) => {
+          this.start(branchId, key).catch((error) => {
             // Reintenta en el próximo período, no en cada petición.
             cached.at = this.now();
             console.error(error);
@@ -311,27 +315,27 @@ export class AlertEngine {
         return cached.candidates;
       }
       if (
-        running?.branchId === branchId &&
+        running?.branchId === key &&
         running.generation >= wanted &&
         (!options.fresh || running.at >= requestedAt)
       )
         return running.promise;
-      if (!running) return this.start(branchId);
+      if (!running) return this.start(branchId, key);
       await running.promise.catch(() => undefined);
     }
   }
-  private start(branchId: string) {
+  private start(branchId: string, key: string) {
     const generation = this.generation;
     const at = this.now();
     const promise: Promise<any[]> = this.compute(branchId)
       .then((candidates) => {
-        this.results.set(branchId, { generation, at, candidates });
+        this.results.set(key, { generation, at, candidates });
         return candidates;
       })
       .finally(() => {
         if (this.running?.promise === promise) this.running = undefined;
       });
-    this.running = { branchId, generation, at, promise };
+    this.running = { branchId: key, generation, at, promise };
     return promise;
   }
   private async loadVariants(branchId: string) {
