@@ -206,7 +206,15 @@ const withActiveTestPassword = (path: string, data: any) => {
   return data;
 };
 const prepareTestPayload = (path: string, data: any) => {
-  return withActiveTestPassword(path, data);
+  const prepared = withActiveTestPassword(path, data);
+  if (!prepared || typeof prepared !== "object" || Array.isArray(prepared))
+    return prepared;
+  if (
+    (path === "/returns" || /^\/cash-sessions\/[^/]+\/movements$/.test(path)) &&
+    !prepared.operationId
+  )
+    return { ...prepared, operationId: randomUUID() };
+  return prepared;
 };
 async function completeRequiredPasswordChange(
   path: string,
@@ -9807,7 +9815,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", (
     expect(await stockOf()).toBe(before + 1);
   });
 
-  it("otra clave sí es otra devolución, y sin clave la devolución sigue funcionando", async () => {
+  it("otra clave es otra devolución y el servidor rechaza una devolución sin clave", async () => {
     const sale = await sellTwo();
     const before = await stockOf();
     const first = await must("/returns", returnOne(sale, randomUUID()));
@@ -9820,8 +9828,15 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", (
       400,
     );
     const legacy = await sellTwo();
-    expect((await call("/returns", returnOne(legacy))).status).toBe(201);
-    expect(await returnsOf(legacy)).toHaveLength(1);
+    const missingKey = await request(
+      "/returns",
+      returnOne(legacy),
+      owner,
+      "POST",
+      false,
+    );
+    expect(missingKey.status).toBe(400);
+    expect(await returnsOf(legacy)).toHaveLength(0);
   });
 });
 
@@ -11372,6 +11387,42 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
     const before = await fixtureDb.cashMovement.count({
       where: { sessionId: cajera.cash.id },
     });
+    const missingOperation = await request(
+      "/cash-sessions/" + cajera.cash.id + "/movements",
+      { type: "in", amount: 100, reason: "QA sin clave" },
+      cajera.token,
+      "POST",
+      false,
+    );
+    expect(missingOperation.status).toBe(400);
+    expect(
+      await fixtureDb.cashMovement.count({
+        where: { sessionId: cajera.cash.id },
+      }),
+    ).toBe(before);
+    const operationId = randomUUID();
+    const retried = await Promise.all(
+      Array.from({ length: 2 }, () =>
+        move(cajera, {
+          type: "in",
+          amount: 100,
+          reason: "QA misma clave",
+          operationId,
+        }),
+      ),
+    );
+    expect(retried.map((response) => response.status)).toEqual([201, 201]);
+    expect(new Set(retried.map((response) => response.body.id)).size).toBe(1);
+    expect(
+      (
+        await move(cajera, {
+          type: "in",
+          amount: 101,
+          reason: "QA misma clave",
+          operationId,
+        })
+      ).status,
+    ).toBe(400);
     // Importes inválidos: 400, nunca 500 ni un movimiento de 0.00.
     for (const amount of [0.004, 1e15, 10.123, 0, -5])
       expect(
@@ -11451,7 +11502,7 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
       await fixtureDb.cashMovement.count({
         where: { sessionId: cajera.cash.id },
       }),
-    ).toBe(before + 3);
+    ).toBe(before + 4);
   });
 
   it("D-04: quien gestiona ventas no necesita PIN y el límite se ajusta en Ajustes", async () => {
@@ -11614,6 +11665,15 @@ describe("SEC-03 · cambio de usuario con PIN sin escalar privilegios", () => {
     expect(all).toEqual(
       expect.arrayContaining([seedAdmin.id, admin.id, manager.id, cajera.id]),
     );
+  });
+
+  it("gerencia no puede cambiar por PIN a una cuenta administradora", async () => {
+    const staff = await ok("/staff", undefined, managerToken);
+    expect(staff.map((u: any) => u.id)).not.toContain(seedAdmin.id);
+    expect(staff.map((u: any) => u.id)).not.toContain(admin.id);
+    const escalated = await pin(admin.id, "876543", managerToken);
+    expect(escalated.status).toBe(403);
+    expect(escalated.body.accessToken).toBeUndefined();
   });
 
   it("vendedora → admin con el PIN correcto: rechazado, sin sesión nueva y queda en la auditoría", async () => {

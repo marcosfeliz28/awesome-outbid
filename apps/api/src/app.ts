@@ -27,7 +27,11 @@ import { AlertCacheInterceptor, AlertEngine, AlertsController } from "./alerts";
 import { OfflineSalesController } from "./offline-sales";
 import { OfflineSaleReviewController } from "./offline-sale-review";
 import { IncentivesController } from "./incentives";
-import { NotificationsController, NotificationWorker } from "./notifications";
+import {
+  EmailNotificationWorker,
+  NotificationsController,
+  NotificationWorker,
+} from "./notifications";
 import { CreditReminderService } from "./credit-reminder";
 import { RetentionWorker } from "./retention";
 import {
@@ -92,6 +96,7 @@ export function createAppModule(secret: string) {
       Database,
       AlertEngine,
       NotificationWorker,
+      EmailNotificationWorker,
       CreditReminderService,
       DriveBackupService,
       DriveBackupWorker,

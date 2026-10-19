@@ -933,6 +933,25 @@ model NotificationOutbox {
   @@index([status, nextAttemptAt])
 }
 
+// Correo durable de cierres y solicitudes de anulación. No contiene secretos;
+// el destinatario y la clave de Resend se leen sólo del entorno al enviar.
+model EmailNotificationOutbox {
+  id            String    @id @db.Uuid
+  eventType     String
+  refId         String
+  payload       Json
+  status        String    @default("pending")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  sentAt        DateTime?
+  branchId      String    @default("main")
+
+  @@unique([eventType, refId])
+  @@index([status, nextAttemptAt])
+}
+
 // Incentivos por cajera (docs/INCENTIVOS.md, apps/api/src/incentives.ts).
 // Tarifa por unidad vendida de cada categoría. Sin fila, la categoría usa la
 // tarifa por defecto según su nombre (Suplementos 50, Fajas 50, Maquillaje 25,

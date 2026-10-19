@@ -15,6 +15,7 @@ export const powershellTests = [
   "Service-Isolation",
   "Service-Pfx-Passwords",
   "Backup-Privacy",
+  "Owner-Pin-Validation",
   "Launcher-Backup-Destination",
   "Uninstall-Backup-Preservation",
   "FreshInstall-FaultInjection",

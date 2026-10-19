@@ -521,6 +521,25 @@ export class AdminController {
                 data: { payload: { ...payload, text } },
               });
           }
+          const emailNotices = await tx.emailNotificationOutbox.findMany({
+            where: { refId: { in: [...saleIds, ...returnIds, ...paymentIds] } },
+            select: { id: true, payload: true },
+          });
+          for (const notice of emailNotices) {
+            const payload: any = notice.payload;
+            if (typeof payload?.text !== "string") continue;
+            const text = redactText(
+              payload.text.replace(
+                /^Cliente: .*$/gm,
+                "Cliente: [dato anonimizado]",
+              ),
+            );
+            if (text !== payload.text)
+              await tx.emailNotificationOutbox.update({
+                where: { id: notice.id },
+                data: { payload: { ...payload, text } },
+              });
+          }
           await tx.alert.updateMany({
             where: { branchId: actor.branchId, entityId: { in: saleIds } },
             data: {

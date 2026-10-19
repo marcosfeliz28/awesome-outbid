@@ -520,7 +520,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 
 import { cashExpected, refreshClosedCash } from "./cash";
 import { unusualDiscountAlerts } from "./alerts";
-import { notify } from "./notifications";
+import { enqueueEmailIntent, notify } from "./notifications";
 import { verifyPinAttempt } from "./security";
 import { drawSaleReceipt } from "./receipt-pdf";
 import {
@@ -1760,6 +1760,7 @@ export class SalesController {
         reasonCode: data.reasonCode,
         reason: data.reason,
       });
+      await enqueueEmailIntent(tx, "void_request", row.id, row.branchId);
       return row;
     }, MONEY_TRANSACTION);
     notify(this.db, "void_request", result.id);
@@ -2572,7 +2573,7 @@ export class SalesController {
       z.object({
         // Clave que la interfaz genera una vez por formulario: con ella un
         // reintento no duplica la devolución (R9-A01).
-        operationId: uuid.optional(),
+        operationId: uuid,
         saleId: uuid,
         cashSessionId: uuid,
         reason,

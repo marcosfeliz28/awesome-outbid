@@ -137,26 +137,38 @@ describe.skipIf(!enabled)(
       await expect(verifyDump(dump)).rejects.toThrow(/SHA-256/);
     });
 
-    it("restauración fallida con --single-transaction no deja tablas parciales", async () => {
+    it("rechaza destinos no vacíos y no toca sus datos aunque no haya conflicto", async () => {
+      const dump = makeDump("nonempty.dump");
+      await sidecars(dump);
+      const target = newDb(`bkt_n_${suffix}`);
+      psql(target, "CREATE TABLE important (v text); INSERT INTO important VALUES ('preserve-me')");
+      await expect(restoreDump(dump, urlFor(target))).rejects.toThrow(
+        /La base de destino no está vacía/,
+      );
+      expect(tableCount(target)).toBe(1);
+      expect(psql(target, "SELECT v FROM important")).toBe("preserve-me");
+      expect(psql(target, "SELECT to_regclass('public.a')")).toBe("");
+    });
+
+    it("la restauración paralela exige autorización explícita y el destino debe estar vacío", async () => {
       const dump = makeDump("fail.dump");
       await sidecars(dump);
-      // Base destino con una tabla "b" incompatible: el restore crea "a", falla en "b".
+      // Una base no vacía se rechaza antes de que pg_restore pueda tocarla.
       const target = newDb(`bkt_f_${suffix}`);
-      psql(target, "CREATE TABLE b (id int)");
+      psql(target, "CREATE TABLE b (id int); INSERT INTO b VALUES (41)");
       await expect(restoreDump(dump, urlFor(target))).rejects.toThrow(
-        /pg_restore/,
+        /La base de destino no está vacía/,
       );
-      // Atómico: "a" no quedó creada; solo sigue la "b" preexistente.
       expect(tableCount(target)).toBe(1);
+      expect(psql(target, "SELECT id FROM b")).toBe("41");
       expect(psql(target, "SELECT to_regclass('public.a')")).toBe("");
 
-      // Contraste: sin --single-transaction (jobs>1) sí queda parcial.
+      // El modo paralelo no debe arrancar sin una autorización explícita.
       const target2 = newDb(`bkt_p_${suffix}`);
-      psql(target2, "CREATE TABLE b (id int)");
       await expect(
         restoreDump(dump, urlFor(target2), { jobs: 2 }),
-      ).rejects.toThrow();
-      expect(tableCount(target2)).toBeGreaterThan(1);
+      ).rejects.toThrow(/requiere allowNonAtomicParallel explícito/);
+      expect(tableCount(target2)).toBe(0);
     });
 
     it("restaura un dump íntegro con conteos idénticos", async () => {

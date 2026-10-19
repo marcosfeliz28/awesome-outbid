@@ -92,10 +92,10 @@ export function denied(
 }
 // SEC-03: el cambio rápido de usuario con PIN solo mantiene o baja
 // privilegios: cada permiso del destino debe tenerlo ya quien cambia. La
-// gerencia (sale:manage) y la administración pueden cambiar a cualquiera de su
-// sucursal, como en el cambio de turno de las cajas.
+// gerencia puede cambiar de turno entre personas con permisos equivalentes o
+// inferiores, nunca iniciar sesión como administración.
 export const canSwitchUserTo = (actor: string[], target: string[]) =>
-  can(actor, "sale:manage") || target.every((p) => can(actor, p));
+  target.every((p) => can(actor, p));
 export function conflict(message: string): never {
   throw new HttpException(message, 409);
 }

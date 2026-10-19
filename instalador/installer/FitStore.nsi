@@ -111,6 +111,7 @@ Function .onInit
   SetRegView 64
   SetShellVarContext all
   ReadEnvStr $ProgramDataDir "ProgramData"
+  StrCpy $BackupPath "$ProgramDataDir\FitStore POS\Backups"
   StrCpy $PowerShellExe "$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe"
   ${GetParameters} $0
   ${GetOptions} $0 "/ANSWER=" $1
@@ -124,7 +125,6 @@ Function .onInit
     ReadINIStr $OwnerPassword $1 "Setup" "OwnerPassword"
     ReadINIStr $OwnerConfirm $1 "Setup" "OwnerPasswordConfirm"
     ReadINIStr $OwnerPin $1 "Setup" "OwnerPin"
-    ReadINIStr $BackupPath $1 "Setup" "BackupPath"
     StrCpy $1 ""
   ${EndIf}
   ${IfNot} ${RunningX64}
@@ -240,11 +240,31 @@ Function OwnerPageLeave
     Abort
   ${EndIf}
   StrLen $0 $OwnerPin
-  ${If} $0 < 4
-  ${OrIf} $0 > 6
+  ${If} $0 != 6
     MessageBox MB_ICONEXCLAMATION "El PIN debe tener 6 dígitos."
     Abort
   ${EndIf}
+  StrCpy $1 0
+  ${Do}
+    ${If} $1 >= 6
+      ${ExitDo}
+    ${EndIf}
+    StrCpy $2 $OwnerPin 1 $1
+    StrCmp $2 "0" pin_digit_next
+    StrCmp $2 "1" pin_digit_next
+    StrCmp $2 "2" pin_digit_next
+    StrCmp $2 "3" pin_digit_next
+    StrCmp $2 "4" pin_digit_next
+    StrCmp $2 "5" pin_digit_next
+    StrCmp $2 "6" pin_digit_next
+    StrCmp $2 "7" pin_digit_next
+    StrCmp $2 "8" pin_digit_next
+    StrCmp $2 "9" pin_digit_next
+    MessageBox MB_ICONEXCLAMATION "El PIN debe contener exactamente 6 dígitos numéricos."
+    Abort
+  pin_digit_next:
+    IntOp $1 $1 + 1
+  ${Loop}
 FunctionEnd
 
 Function BackupPageCreate
@@ -253,41 +273,12 @@ Function BackupPageCreate
   ${If} $BackupDialog == error
     Abort
   ${EndIf}
-  ${NSD_CreateLabel} 0 0 100% 40u "Elige dónde guardar el respaldo diario. Recomendado: una carpeta de OneDrive o una memoria USB que normalmente esté conectada. Se conservarán 30 días."
-  ${If} $UpdateMode == "nuevo"
-    StrCpy $BackupPath "$ProgramDataDir\FitStore POS\Backups"
-  ${Else}
-    StrCpy $BackupPath ""
-  ${EndIf}
-  ${NSD_CreateDirRequest} 0 52u 78% 14u "$BackupPath"
-  Pop $BackupField
-  ${NSD_CreateBrowseButton} 80% 52u 20% 14u "Elegir..."
-  Pop $BackupBrowse
-  ${NSD_OnClick} $BackupBrowse BackupBrowseClick
-  ${If} $UpdateMode != "nuevo"
-    ${NSD_CreateLabel} 0 78u 100% 26u "Actualización detectada. Deja el campo vacío para conservar la carpeta configurada actualmente."
-  ${Else}
-    ${NSD_CreateLabel} 0 78u 100% 26u "Si el destino externo no está disponible, FitStore guardará temporalmente una copia local."
-  ${EndIf}
+  ${NSD_CreateLabel} 0 0 100% 52u "Los respaldos automáticos se guardan de forma privada en esta PC: $ProgramDataDir\FitStore POS\Backups. Se conservan 30 días. Para una copia adicional en OneDrive o USB, configura la sincronización aparte; este instalador no la realiza."
   nsDialogs::Show
 FunctionEnd
 
-Function BackupBrowseClick
-  ${NSD_GetText} $BackupField $BackupPath
-  nsDialogs::SelectFolderDialog "Carpeta para respaldos de FitStore" "$BackupPath"
-  Pop $0
-  ${If} $0 != error
-    ${NSD_SetText} $BackupField $0
-  ${EndIf}
-FunctionEnd
-
 Function BackupPageLeave
-  ${NSD_GetText} $BackupField $BackupPath
-  ${If} $UpdateMode == "nuevo"
-  ${AndIf} $BackupPath == ""
-    MessageBox MB_ICONEXCLAMATION "Elige una carpeta de respaldo."
-    Abort
-  ${EndIf}
+  StrCpy $BackupPath "$ProgramDataDir\FitStore POS\Backups"
 FunctionEnd
 
 Section "Nexora POS" SecMain

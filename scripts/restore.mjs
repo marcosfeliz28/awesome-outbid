@@ -2,12 +2,15 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { restoreDump } from "./backup.mjs";
 
-// Uso: RESTORE_DATABASE_URL=<base nueva y vacía> node scripts/restore.mjs <archivo.dump> [--jobs N]
-// Verifica el SHA-256 contra el manifiesto ANTES de restaurar. Por defecto usa
-// --single-transaction --exit-on-error (todo o nada). --jobs N (paralelo) no es
-// compatible con --single-transaction: úsalo sólo en una base descartable.
+// Uso: RESTORE_DATABASE_URL=<base nueva y vacía> node scripts/restore.mjs <archivo.dump> [--jobs N --allow-nonatomic-parallel]
+// Verifica el SHA-256 y que el destino esté vacío antes de restaurar. Por
+// defecto usa --single-transaction --exit-on-error (todo o nada). --jobs N
+// requiere --allow-nonatomic-parallel y sólo es apto para un destino descartable.
 async function main() {
   const args = process.argv.slice(2);
+  const allowNonAtomicParallel = args.includes("--allow-nonatomic-parallel");
+  if (allowNonAtomicParallel)
+    args.splice(args.indexOf("--allow-nonatomic-parallel"), 1);
   const jobsIndex = args.indexOf("--jobs");
   let jobs = 1;
   if (jobsIndex !== -1) {
@@ -20,10 +23,10 @@ async function main() {
   const url = process.env.RESTORE_DATABASE_URL;
   if (!dump || !url) {
     throw new Error(
-      "Uso: RESTORE_DATABASE_URL=<base nueva vacía> node scripts/restore.mjs <archivo.dump> [--jobs N]",
+      "Uso: RESTORE_DATABASE_URL=<base nueva vacía> node scripts/restore.mjs <archivo.dump> [--jobs N --allow-nonatomic-parallel]",
     );
   }
-  await restoreDump(resolve(dump), url, { jobs });
+  await restoreDump(resolve(dump), url, { jobs, allowNonAtomicParallel });
   console.log("Restauración completada tras verificar el SHA-256.");
 }
 

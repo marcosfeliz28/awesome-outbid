@@ -229,8 +229,14 @@ describe("V2-06 · retención de AuditLog, InvoiceAttachment y avisos pendientes
         (gen_random_uuid(), 'sale', 'pendiente-hace-29', '{"text":"x"}', 'pending', ${ago("29 days")}, now()),
         (gen_random_uuid(), 'sale', 'pendiente-reciente', '{"text":"x"}', 'pending', ${ago("1 hour")}, now())`,
     );
+    await sql.query(
+      `INSERT INTO "EmailNotificationOutbox"(id, "eventType", "refId", payload, status, "createdAt", "nextAttemptAt") VALUES
+        (gen_random_uuid(), 'cash_close', 'email-viejo', '{"subject":"Cierre","text":"x"}', 'pending', ${ago("31 days")}, now()),
+        (gen_random_uuid(), 'cash_close', 'email-reciente', '{"subject":"Cierre","text":"x"}', 'pending', ${ago("1 hour")}, now())`,
+    );
     const purged = await purgeExpiredData(prisma);
     expect(purged.notifications).toBe(1);
+    expect(purged.emailNotifications).toBe(1);
     expect(
       (await sql.query(`SELECT "refId" FROM "NotificationOutbox" ORDER BY 1`))
         .rows,
@@ -238,5 +244,12 @@ describe("V2-06 · retención de AuditLog, InvoiceAttachment y avisos pendientes
       { refId: "pendiente-hace-29" },
       { refId: "pendiente-reciente" },
     ]);
+    expect(
+      (
+        await sql.query(
+          `SELECT "refId" FROM "EmailNotificationOutbox" ORDER BY 1`,
+        )
+      ).rows,
+    ).toEqual([{ refId: "email-reciente" }]);
   }, 60_000);
 });

@@ -31,6 +31,7 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
       // D-04: la cajera está bajo el límite de salidas sin PIN (RD$ 1,000).
       settings: { findUnique: async () => null },
       cashMovement: {
+        findUnique: async () => null,
         findMany: async () => [],
         aggregate: async () => ({ _sum: { amount: null } }),
         create: async () => {
@@ -48,7 +49,12 @@ describe("C2 · privacidad de arqueo por rutas indirectas", () => {
     await expect(
       controller.movement(
         session.id,
-        { type: "out", amount: 51, reason: "Retiro operativo" },
+        {
+          operationId: "3e6b82b5-bb56-45ca-9f5a-d19f4955fc84",
+          type: "out",
+          amount: 51,
+          reason: "Retiro operativo",
+        },
         actor(["cash:write"]),
       ),
     ).rejects.toMatchObject({

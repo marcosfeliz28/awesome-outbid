@@ -11,6 +11,8 @@ export default tseslint.config(
       "playwright-report/**",
       "test-results/**",
       "apps/web/src-tauri/target/**",
+      // Entregables locales de marketing, fuera del codigo versionado del POS.
+      "marketing_assets_pc_2026-10-11/**",
       // Reproducciones externas de ChatGPT, guardadas tal cual como evidencia.
       "docs/validacion/auditoria-ronda4-reproducciones/**",
       "docs/validacion/auditoria-ronda6-reproducciones/**",

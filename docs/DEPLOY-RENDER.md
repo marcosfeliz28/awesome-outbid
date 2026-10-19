@@ -165,20 +165,12 @@ resuelve el nombre con el resolvedor del sistema, guarda la IP en un snippet
 incluido por Nginx y la vuelve a resolver cada diez segundos (recarga Nginx sólo
 si cambió). Esto evita conservar una IP antigua cuando Render reemplaza la API.
 
-El Nginx cloud no usa como fuente de identidad ninguna cabecera de IP que pueda
-mandar el cliente. El mapa toma únicamente `$remote_addr` y reemplaza
-`X-Real-IP` y `X-Forwarded-For` con ese valor; la API confía en el salto Nginx
-(`trust proxy = 1`). La documentación publicada por Render recomienda leer
-`X-Forwarded-For` para obtener la IP real y señala que `CF-Ray` se reenvía, pero
-no especifica que Render sobrescriba siempre `CF-Connecting-IP` o elimine las
-partes falsificables de `X-Forwarded-For`. Por eso no usamos esas cabeceras para
-autorización ni límites de seguridad hasta que Render confirme formalmente una
-frontera de confianza. Como consecuencia, `$remote_addr` puede ser la IP del
-proxy inmediato y no la del cliente; no se presenta como identificación
-individual fiable. La regresión envía `CF-Ray`, `CF-Connecting-IP` y
-`X-Forwarded-For` falsificados a la vez y comprueba que ninguno se reenvía. La
-prueba dinámica con Nginx/Render queda pendiente si no se dispone del binario o
-del entorno aislado. El Compose local sigue usando `deploy/nginx.conf`.
+La política vigente de IP real está descrita en «IP real del cliente» más abajo.
+No uses este apartado como una política independiente: el Nginx cloud acepta
+`CF-Connecting-IP` únicamente cuando se cumplen allí las condiciones de
+confianza del peer y del último salto de `X-Forwarded-For`; en otro caso usa
+`$remote_addr`. La plantilla `deploy/render/nginx.conf.template` es la fuente
+de configuración. El Compose local sigue usando `deploy/nginx.conf`.
 
 Fuente: [Render, How Render handles DDoS attacks](https://render.com/articles/how-render-handles-ddos-attacks)
 (consulta del 8-oct-2026). Esa guía recomienda `X-Forwarded-For`, pero no
@@ -641,11 +633,17 @@ fuente):**
    ```
 
    `--single-transaction` hace que un fallo no deje tablas parciales en la
-   base. No es compatible con `--jobs`: usar `--jobs N` (sin
-   `--single-transaction`) sólo para bases grandes y siempre en una base nueva
-   que se elimina si falla. Para un `.dump` propio, `scripts/restore.mjs`
+   base. La restauración propia con `scripts/restore.mjs` comprueba que el
+   destino no contenga objetos de usuario (incluidos tipos definidos por el
+   usuario) antes de comenzar y se niega a restaurar sobre una base no vacía.
+   Esa consulta es un preflight, no un bloqueo frente a otros escritores:
+   restaura solo en una base recién creada, aislada y sin conexiones concurrentes.
+   El modo paralelo no es atómico y está
+   deshabilitado salvo que se pase explícitamente `--allow-nonatomic-parallel`
+   junto con `--jobs N`; úsalo sólo en una base nueva y descartable. Para un
+   `.dump` propio, `scripts/restore.mjs`
    (`RESTORE_DATABASE_URL=... node scripts/restore.mjs <archivo>.dump`) verifica
-   el SHA-256 y aplica estas opciones. Un respaldo de Google Drive
+   el SHA-256 antes de comprobar el destino y restaurar. Un respaldo de Google Drive
    (`.dump.enc`) se descifra antes con `node scripts/decrypt-backup.mjs
 <archivo>.dump.enc`, que deja el `.dump` con su `.sha256` y su `.json`
    (`docs/RESPALDO_DRIVE.md`).

@@ -42,7 +42,7 @@ import {
 import { cashLock, terminalName, terminalNames } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
 import { managerPinApproval, verifyPinAttempt } from "./security";
-import { notify } from "./notifications";
+import { enqueueEmailIntent, notify } from "./notifications";
 import { cashDifferenceMessage } from "./alerts";
 // Aparte del import anterior de ./sales para no chocar al fusionar ramas.
 import { MONEY_TRANSACTION } from "./sales";
@@ -727,7 +727,7 @@ export class CashController {
     const { managerPin, operationId, ...data } = parse(
       z.object({
         // D-M4 (auditoría 06): clave que la web genera una vez por formulario.
-        operationId: uuid.optional(),
+        operationId: uuid,
         type: z.enum(["in", "out"]),
         // 2 decimales y un tope (D-04/D-08): 0.004 o 1e15 son un 400, no un
         // movimiento de 0.00 ni un error 500 de la base.
@@ -1117,6 +1117,7 @@ export class CashController {
             message: cashDifferenceMessage(row),
           },
         });
+      await enqueueEmailIntent(tx, "cash_close", row.id, row.branchId);
       const showExpected = canViewCashExpected(actor);
       return showExpected
         ? { ...row, differences }

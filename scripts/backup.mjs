@@ -10,7 +10,7 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -143,10 +143,70 @@ function listSummary(tool, archive, env, missingMessage) {
 // sin cambios (sin tablas parciales). --single-transaction NO es compatible con
 // --jobs; con `jobs > 1` se restaura en paralelo sin transacción única, y un
 // fallo puede dejar objetos parciales: úsalo solo en una base nueva y
-// descartable, que se borra si falla.
-async function restoreDump(dumpPath, databaseUrl, { jobs = 1 } = {}) {
+// descartable, que se elimina manualmente si falla. La comprobación de vacío
+// es un preflight, no un candado contra otros escritores; el destino debe ser
+// aislado y sin conexiones concurrentes.
+export const RESTORE_TARGET_OBJECT_COUNT_SQL = `
+    SELECT
+      (SELECT count(*)
+         FROM pg_class c
+         JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+          AND n.nspname !~ '^pg_toast'
+          AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f'))
+      + (SELECT count(*)
+           FROM pg_proc p
+           JOIN pg_namespace n ON n.oid = p.pronamespace
+          WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+            AND n.nspname !~ '^pg_toast')
+      + (SELECT count(*)
+           FROM pg_namespace n
+          WHERE n.nspname NOT IN ('pg_catalog', 'information_schema', 'public')
+            AND n.nspname !~ '^pg_toast')
+      + (SELECT count(*)
+           FROM pg_type t
+           JOIN pg_namespace n ON n.oid = t.typnamespace
+          WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+            AND n.nspname !~ '^pg_toast'
+            AND t.typtype IN ('d', 'e', 'r', 'm')) AS object_count;
+  `;
+export function assertEmptyRestoreTarget(env, { spawnSyncImpl = spawnSync } = {}) {
+  const result = spawnSyncImpl(
+    process.env.PSQL_BIN || "psql",
+    [
+      "--no-password",
+      "--tuples-only",
+      "--no-align",
+      "--set=ON_ERROR_STOP=1",
+      "--command",
+      RESTORE_TARGET_OBJECT_COUNT_SQL,
+    ],
+    { encoding: "utf8", env, windowsHide: true },
+  );
+  if (result.error?.code === "ENOENT") {
+    throw new Error("No se encontró psql; no se pudo comprobar que el destino esté vacío.");
+  }
+  if (result.status !== 0) {
+    throw new Error("No se pudo comprobar que la base de destino esté vacía; no se inició la restauración.");
+  }
+  if (!/^\s*0\s*$/.test(result.stdout)) {
+    throw new Error("La base de destino no está vacía; se rechazó la restauración.");
+  }
+}
+
+async function restoreDump(
+  dumpPath,
+  databaseUrl,
+  { jobs = 1, allowNonAtomicParallel = false } = {},
+) {
   await verifyDump(dumpPath);
+  if (jobs > 1 && !allowNonAtomicParallel) {
+    throw new Error(
+      "La restauración paralela no es atómica; requiere allowNonAtomicParallel explícito y un destino descartable.",
+    );
+  }
   const { env } = getDatabaseConfig(databaseUrl);
+  assertEmptyRestoreTarget(env);
   const args = [
     "--no-owner",
     "--no-privileges",

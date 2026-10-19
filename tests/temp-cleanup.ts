@@ -14,8 +14,10 @@ export async function retryTemporaryCleanup(
       return;
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
-      if (!RETRYABLE.has(code ?? "") || attempt >= 9) throw error;
-      await wait(Math.min(300 * (attempt + 1), 1500));
+      // Under full Vitest parallel load antivirus/indexers can keep a stopped
+      // embedded-PostgreSQL directory open longer than the usual short retry.
+      if (!RETRYABLE.has(code ?? "") || attempt >= 20) throw error;
+      await wait(Math.min(300 * (attempt + 1), 2000));
     }
   }
 }

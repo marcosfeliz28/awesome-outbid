@@ -222,6 +222,18 @@ describe("G6 · anonimización contra PostgreSQL real", () => {
           branchId: "main",
         },
       });
+      await prisma.emailNotificationOutbox.create({
+        data: {
+          id: randomUUID(),
+          eventType: "void_request",
+          refId: saleId,
+          branchId: "main",
+          payload: {
+            subject: "Solicitud de anulación",
+            text: `Cliente: ${customerName} ${phone} ${email} ${legalId}`,
+          },
+        },
+      });
       await prisma.auditLog.createMany({
         data: Array.from({ length: 100 }, (_, index) => ({
           userId: "privacy-owner",
@@ -396,6 +408,17 @@ describe("G6 · anonimización contra PostgreSQL real", () => {
           financialReference: "B0200000042",
         },
       });
+      const cleanedEmailNotice = await prisma.emailNotificationOutbox.findUniqueOrThrow({
+        where: {
+          eventType_refId: { eventType: "void_request", refId: saleId },
+        },
+      });
+      expect(JSON.stringify(cleanedEmailNotice.payload)).not.toContain(
+        customerName,
+      );
+      expect(JSON.stringify(cleanedEmailNotice.payload)).not.toContain(phone);
+      expect(JSON.stringify(cleanedEmailNotice.payload)).not.toContain(email);
+      expect(JSON.stringify(cleanedEmailNotice.payload)).not.toContain(legalId);
       const volumeAudits = await prisma.auditLog.findMany({
         where: { action: "volume_privacy_test", entityId: saleId },
         orderBy: { createdAt: "asc" },

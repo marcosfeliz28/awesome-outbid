@@ -48,7 +48,7 @@ const suffix = Date.now().toString(36);
 const ip = "198.18.0." + ((Date.now() % 250) + 1);
 
 // --- Telegram falso -------------------------------------------------------
-type Received = { path: string; body: any; at: number };
+type Received = { path: string; body: any; key?: string; at: number };
 const received: Received[] = [];
 // Respuesta para cada petición: "ok", "500", "429:<segundos>" o "hang"
 // (nunca responde: la API debe cortar a los 8 s).
@@ -66,7 +66,12 @@ const fake = createHttpServer((req, res) => {
     } catch {
       /* cuerpo inválido */
     }
-    received.push({ path: req.url ?? "", body, at: Date.now() });
+    received.push({
+      path: req.url ?? "",
+      body,
+      key: String(req.headers["idempotency-key"] ?? "") || undefined,
+      at: Date.now(),
+    });
     const answer = once.shift() ?? mode;
     const send = (status: number, payload: unknown) => {
       res.writeHead(status, { "Content-Type": "application/json" });
@@ -156,6 +161,7 @@ async function startApi(env: Record<string, string | undefined>) {
 
 let withTg: Awaited<ReturnType<typeof startApi>>;
 let withoutTg: Awaited<ReturnType<typeof startApi>>;
+let mailApi: Awaited<ReturnType<typeof startApi>> | undefined;
 let token = "";
 let customerId = "";
 let variantId = "";
@@ -236,6 +242,10 @@ async function waitFor<T>(
 }
 const outbox = (refId: string) =>
   db.notificationOutbox.findMany({ where: { refId } });
+const emailOutbox = (refId: string) =>
+  db.emailNotificationOutbox.findUnique({
+    where: { eventType_refId: { eventType: "cash_close", refId } },
+  });
 // Simula que ya pasó la espera del reintento (30 s, 1 min…).
 const fastForward = (refId: string) =>
   db.$executeRawUnsafe(
@@ -335,7 +345,7 @@ afterAll(async () => {
     }
     if (settingsBefore) await put(withTg.base, "/settings", settingsBefore);
   } finally {
-    await Promise.all([withTg?.stop(), withoutTg?.stop()]);
+    await Promise.all([withTg?.stop(), withoutTg?.stop(), mailApi?.stop()]);
     await new Promise((r) => fake.close(r));
     await db.$disconnect();
   }
@@ -789,4 +799,98 @@ describe("Telegram · avisos de facturas", () => {
       });
     }
   }, 60000);
+
+  it("el correo pendiente sobrevive a reiniciar la API y se entrega desde PostgreSQL", async () => {
+    const fakePort = (fake.address() as { port: number }).port;
+    const mailEnv = {
+      TELEGRAM_BOT_TOKEN: undefined,
+      TELEGRAM_CHAT_ID: undefined,
+      RESEND_API_KEY: "test-only-resend-key",
+      NOTIFY_EMAIL_TO: "owner@example.test",
+      RESEND_API_BASE: `http://127.0.0.1:${fakePort}`,
+    };
+    mode = "500";
+    mailApi = await startApi(mailEnv);
+    const ownerToken = (
+      await ok(mailApi.base, "/auth/login", {
+        email: "admin@fitstore.demo",
+        password: process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!",
+      })
+    ).accessToken;
+    const mailTerminalId = randomUUID();
+    const terminal = await ok(
+      mailApi.base,
+      "/terminals/register",
+      {
+        id: mailTerminalId,
+        name: "QA correo durable " + suffix,
+        secret: "qa-mail-secret-" + mailTerminalId,
+      },
+      ownerToken,
+    );
+    if (terminal.status === "pending")
+      await ok(
+        mailApi.base,
+        "/terminals/" + mailTerminalId + "/approve",
+        {},
+        ownerToken,
+      );
+    const mailCash = await ok(
+      mailApi.base,
+      "/cash-sessions/open",
+      {
+        registerId: "qa-email-" + suffix,
+        openingAmount: 0,
+        openingNote: "QA: correo durable",
+      },
+      ownerToken,
+    );
+    const current = (await ok(mailApi.base, "/cash-sessions", undefined, ownerToken)).find(
+      (s: any) => s.id === mailCash.id,
+    );
+    expect(current?.closedAt).toBeFalsy();
+    await ok(
+      mailApi.base,
+      "/cash-sessions/" + mailCash.id + "/close",
+      {
+        countedCash: Math.max(0, current.expected?.cash ?? 0),
+        countedCard: Math.max(0, current.expected?.card ?? 0),
+        countedTransfer: Math.max(0, current.expected?.transfer ?? 0),
+      },
+      ownerToken,
+    );
+
+    const firstAttempt = await waitFor(async () => {
+      const row = await emailOutbox(mailCash.id);
+      return row?.status === "pending" && row.attempts >= 1 ? row : null;
+    }, "primer intento de correo persistido");
+    expect(firstAttempt.lastError).toContain("HTTP 500");
+    expect(JSON.stringify(firstAttempt.payload)).not.toContain(
+      "test-only-resend-key",
+    );
+    expect(JSON.stringify(firstAttempt.payload)).not.toContain(
+      "owner@example.test",
+    );
+    await mailApi.stop();
+    mailApi = undefined;
+
+    await db.$executeRawUnsafe(
+      `UPDATE "EmailNotificationOutbox" SET "nextAttemptAt" = timezone('UTC', now()) WHERE id = $1::uuid`,
+      firstAttempt.id,
+    );
+    mode = "ok";
+    mailApi = await startApi(mailEnv);
+    const sent = await waitFor(async () => {
+      const row = await emailOutbox(mailCash.id);
+      return row?.status === "sent" ? row : null;
+    }, "correo retomado tras reinicio");
+    expect(sent.attempts).toBeGreaterThanOrEqual(2);
+    const requests = received.filter(
+      (r) => r.path === "/emails" && r.key === `cash_close/${mailCash.id}`,
+    );
+    expect(requests).toHaveLength(2);
+    expect(requests[0].body.subject).toBe("Cierre de caja");
+    expect(requests[1].body).toEqual(requests[0].body);
+    expect(mailApi.output()).not.toContain("test-only-resend-key");
+  }, 90000);
 });

@@ -8,7 +8,7 @@ import { Database } from "./common";
 //   RealtimeEvent       una fila por cada cambio de stock; el sondeo sólo lee
 //                       lo nuevo desde que arranca (realtime.ts), así que lo
 //                       de más de 2 días no lo vuelve a leer nadie.
-//   NotificationOutbox  avisos enviados hace más de 30 días y fallidos
+//   NotificationOutbox y EmailNotificationOutbox  avisos enviados hace más de 30 días y fallidos
 //                       (descartados tras 8 intentos) creados hace más de 30
 //                       días. Antes los fallidos no se borraban nunca, con el
 //                       nombre del cliente, y los enviados sólo si Telegram
@@ -91,6 +91,7 @@ export async function purgeExpiredData(db: any, now = new Date()) {
   const result = {
     realtimeEvents: 0,
     notifications: 0,
+    emailNotifications: 0,
     authAttempts: 0,
     refreshTokens: 0,
     auditLogs: 0,
@@ -139,6 +140,23 @@ export async function purgeExpiredData(db: any, now = new Date()) {
                AND o."sentAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC'))
            OR (o.status IN ('failed', 'pending')
                AND o."createdAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC')))`,
+  );
+  await step(
+    "emailNotifications",
+    (limit) => db.$executeRaw`
+      WITH old AS MATERIALIZED (
+        SELECT id FROM "EmailNotificationOutbox"
+         WHERE (status = 'sent'
+                AND "sentAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC'))
+            OR (status IN ('failed', 'pending')
+                AND "createdAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC'))
+         LIMIT ${limit})
+      DELETE FROM "EmailNotificationOutbox" o USING old
+       WHERE o.id = old.id
+         AND ((o.status = 'sent'
+               AND o."sentAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC'))
+           OR (o.status IN ('failed', 'pending')
+               AND o."createdAt" < (${notificationCutoff}::timestamptz AT TIME ZONE 'UTC')))` ,
   );
   // Mismo candado consultivo por clave que el freno de intentos de la rama
   // de seguridad (sin esperar): nunca borra un contador en uso.

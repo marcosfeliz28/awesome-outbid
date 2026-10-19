@@ -31,6 +31,12 @@ describe("N-05 · el administrador del script y del instalador exige PIN de 6 d�
     ])
       expect(read(file), file).not.toMatch(/\\d\{4,6\}|4 a 6 d|entre 4 y 6/);
   });
+  it("el asistente NSIS valida seis dígitos antes de aceptar la página", () => {
+    const nsis = read("instalador/installer/FitStore.nsi");
+    expect(nsis).toMatch(/StrLen \$0 \$OwnerPin\s+\$\{If\} \$0 != 6/);
+    for (const digit of "0123456789")
+      expect(nsis).toContain(`StrCmp $2 "${digit}" pin_digit_next`);
+  });
 });
 
 describe("N-06 · frases y secretos sin entropía", () => {
@@ -138,5 +144,19 @@ describe("Privacidad v2 · V2-03/V2-04/V2-06 · la documentación dice lo que ha
     // Nunca se purga dinero: ninguna acción de venta o pago en la lista.
     for (const action of SECURITY_AUDIT_ACTIONS)
       expect(action).toMatch(/^(login|pin_)/);
+  });
+});
+
+describe("DOC-02 · la guía cloud mantiene una sola política vigente de IP", () => {
+  it("el apartado introductorio remite a la política vigente y no la contradice", () => {
+    const deploy = read("docs/DEPLOY-RENDER.md");
+    const start = deploy.indexOf("## DNS privado y cabeceras del cliente");
+    const end = deploy.indexOf("## IP real del cliente", start);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    const introductory = deploy.slice(start, end);
+    expect(introductory).toContain("La política vigente de IP real está descrita");
+    expect(introductory).not.toMatch(/El mapa toma únicamente `\$remote_addr`/);
+    expect(introductory).not.toContain("Por eso no usamos esas cabeceras");
   });
 });

@@ -112,6 +112,13 @@ assert.match(
   nsis,
   /Function TryRollbackUpdate[\s\S]+\$InstallerOwnsMutex == "1"[\s\S]+\$UpdateMode == "actualizar"/,
 );
+assert.match(nsis, /StrLen \$0 \$OwnerPin\s+\$\{If\} \$0 != 6/);
+assert.match(nsis, /StrCpy \$2 \$OwnerPin 1 \$1[\s\S]+pin_digit_next:/);
+assert.doesNotMatch(nsis, /NSD_CreateDirRequest|SelectFolderDialog/);
+assert.match(
+  nsis,
+  /Los respaldos automáticos se guardan de forma privada en esta PC:[\s\S]+este instalador no la realiza/,
+);
 
 function assertOrdered(source, labels, description) {
   let cursor = -1;

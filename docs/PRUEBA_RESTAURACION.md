@@ -87,3 +87,18 @@ sha256sum <x>.dump   # no coincide con el .sha256 del respaldo
 ```
 
 `$S` es el directorio temporal de la sesión; las contraseñas y secretos usados son de prueba y no se guardan en el repositorio.
+
+## Actualización del flujo propio (18 de octubre de 2026)
+
+Este informe conserva los resultados históricos del 9 de octubre y no describe
+el comportamiento actual del script propio. `scripts/restore.mjs` ahora valida
+el SHA-256 del manifiesto, comprueba por PostgreSQL que el destino esté vacío y
+rechaza antes de llamar `pg_restore` si encuentra relaciones, rutinas, tipos de
+usuario o esquemas adicionales. El preflight no bloquea a escritores externos:
+se debe usar una base recién creada, aislada y sin conexiones concurrentes. El modo paralelo requiere la opción explícita
+`--allow-nonatomic-parallel`; por defecto se mantiene la restauración atómica.
+La comprobación del SQL de destino se probó con PostgreSQL embebido, pero la
+suite completa `backup-restore.test.ts` aún requiere `BACKUP_TEST_ADMIN_URL` y
+los binarios `pg_dump`, `pg_restore` y `psql`. El comando de restauración del
+export de Render en formato directorio es separado y sigue dependiendo de que
+el operador cree y verifique una base aislada y vacía.

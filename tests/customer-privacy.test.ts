@@ -95,6 +95,10 @@ function fixture(
       findMany: vi.fn(async () => []),
       update: vi.fn(async ({ data }: any) => data),
     },
+    emailNotificationOutbox: {
+      findMany: vi.fn(async () => []),
+      update: vi.fn(async ({ data }: any) => data),
+    },
     auditLog: {
       updateMany: vi.fn(async () => ({ count: 2 })),
       findMany: vi.fn(async () => [saleAudit]),

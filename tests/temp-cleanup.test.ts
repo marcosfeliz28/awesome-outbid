@@ -25,4 +25,17 @@ describe("limpieza de directorios temporales con PostgreSQL", () => {
       retryTemporaryCleanup(async () => Promise.reject(failure)),
     ).rejects.toBe(failure);
   });
+
+  it("tolera un bloqueo prolongado al cerrar PostgreSQL bajo carga", async () => {
+    let attempts = 0;
+    await retryTemporaryCleanup(
+      async () => {
+        attempts += 1;
+        if (attempts <= 12)
+          throw Object.assign(new Error("still busy"), { code: "EBUSY" });
+      },
+      async () => undefined,
+    );
+    expect(attempts).toBe(13);
+  });
 });

@@ -48,8 +48,8 @@ export function telegramSettings(
   return { enabled: !!token && !!chatId, token, chatId, apiBase };
 }
 
-// Correo (Resend): la dueña recibe por correo cada cierre de caja y cada
-// solicitud de anulación. Sin RESEND_API_KEY no hace nada.
+// Correo (Resend): cierres y solicitudes de anulación se persisten primero en
+// EmailNotificationOutbox. Las credenciales se leen sólo del entorno al enviar.
 export type EmailSettings = {
   enabled: boolean;
   apiKey: string;
@@ -80,6 +80,7 @@ export async function sendEmail(
   settings: EmailSettings,
   subject: string,
   text: string,
+  idempotencyKey: string,
 ): Promise<SendResult> {
   try {
     const appUrl =
@@ -90,6 +91,7 @@ export async function sendEmail(
       headers: {
         Authorization: `Bearer ${settings.apiKey}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
       },
       body: JSON.stringify({
         from: settings.from,
@@ -119,15 +121,16 @@ export async function sendEmail(
   }
 }
 
-/** Tres intentos (ahora, 10 s, 60 s); nunca lanza ni frena la operación. */
-async function emailWithRetry(
+/** Helper de reintentos puntuales; producción reintenta desde la cola durable. */
+export async function emailWithRetry(
   settings: EmailSettings,
   subject: string,
   text: string,
+  idempotencyKey: string,
 ) {
   for (const wait of [0, 10_000, 60_000]) {
     if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
-    const result = await sendEmail(settings, subject, text);
+    const result = await sendEmail(settings, subject, text, idempotencyKey);
     if (result.ok) return;
     console.warn(`[avisos] Correo "${subject}" no se envió: ${result.error}`);
   }
@@ -746,9 +749,45 @@ export async function enqueue(
     ON CONFLICT ("eventType", "refId") DO NOTHING`;
 }
 
+/** Persiste antes de que el trabajador intente enviar por Resend. */
+export async function enqueueEmail(
+  db: Db,
+  event: "cash_close" | "void_request",
+  refId: string,
+  branchId: string,
+  text: string,
+) {
+  return db.$executeRaw`
+    INSERT INTO "EmailNotificationOutbox"
+      ("id", "eventType", "refId", "payload", "status", "attempts",
+       "nextAttemptAt", "createdAt", "branchId")
+    VALUES (${randomUUID()}::uuid, ${event}, ${refId},
+      ${JSON.stringify({ text, subject: EMAIL_SUBJECT[event] })}::jsonb,
+      'pending', 0, timezone('UTC', now()), timezone('UTC', now()), ${branchId})
+    ON CONFLICT ("eventType", "refId") DO NOTHING`;
+}
+
+/** Guarda una intención mínima dentro de la transacción del evento de negocio. */
+export async function enqueueEmailIntent(
+  db: Pick<Database, "$executeRaw">,
+  event: "cash_close" | "void_request",
+  refId: string,
+  branchId: string,
+) {
+  if (!emailSettings().enabled) return 0;
+  return db.$executeRaw`
+    INSERT INTO "EmailNotificationOutbox"
+      ("id", "eventType", "refId", "payload", "status", "attempts",
+       "nextAttemptAt", "createdAt", "branchId")
+    VALUES (${randomUUID()}::uuid, ${event}, ${refId},
+      ${JSON.stringify({ subject: EMAIL_SUBJECT[event] })}::jsonb,
+      'pending', 0, timezone('UTC', now()), timezone('UTC', now()), ${branchId})
+    ON CONFLICT ("eventType", "refId") DO NOTHING`;
+}
+
 /**
  * Punto de enganche de ventas y caja: se llama después del commit, no espera
- * nada y jamás lanza. Sin las variables de Telegram no hace nada.
+ * nada y jamás lanza. Sin Telegram/Resend configurados no hace nada.
  */
 export function notify(
   db: Db,
@@ -768,10 +807,16 @@ export function notify(
       if (!rendered) return;
       if (telegram.enabled) {
         await enqueue(db, event, refId, rendered.branchId, rendered.text);
-        wakeWorkers();
       }
       if (wantsMail)
-        void emailWithRetry(mail, EMAIL_SUBJECT[event], rendered.text);
+        await enqueueEmail(
+          db,
+          event as "cash_close" | "void_request",
+          refId,
+          rendered.branchId,
+          rendered.text,
+        );
+      if (telegram.enabled || wantsMail) wakeWorkers();
     })().catch((error) =>
       console.warn(
         `[avisos] No se pudo encolar el aviso ${event}: ` +
@@ -982,6 +1027,124 @@ export class NotificationWorker
   }
 }
 
+/** Reintenta correos desde PostgreSQL, incluso después de reiniciar la API. */
+@Injectable()
+export class EmailNotificationWorker
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
+  private timer: ReturnType<typeof setInterval> | undefined;
+  private running = false;
+  private stopped = false;
+  private again = false;
+  private readonly waker = () => this.wake();
+
+  constructor(@Inject(Database) private readonly db: Database) {}
+
+  onApplicationBootstrap() {
+    if (!emailSettings().enabled) return;
+    wakers.add(this.waker);
+    this.timer = setInterval(() => void this.tick(), POLL_MS);
+    this.timer.unref();
+    this.wake();
+  }
+
+  onModuleDestroy() {
+    this.stopped = true;
+    if (this.timer) clearInterval(this.timer);
+    wakers.delete(this.waker);
+  }
+
+  wake() {
+    if (this.running) this.again = true;
+    else setImmediate(() => void this.tick());
+  }
+
+  async tick() {
+    if (this.running || this.stopped || !emailSettings().enabled) return;
+    this.running = true;
+    try {
+      do {
+        this.again = false;
+        for (let i = 0; i < 20 && !this.stopped; i++) {
+          const row = await this.claim();
+          if (!row) break;
+          await this.deliver(row);
+        }
+      } while (this.again && !this.stopped);
+    } catch (error: any) {
+      console.warn(
+        "[avisos] Error del trabajador de correo: " +
+          sanitizeError(error?.message ?? error, emailSettings().apiKey),
+      );
+    } finally {
+      this.running = false;
+    }
+  }
+
+  private async claim() {
+    const rows = await this.db.$queryRaw<
+      { id: string; eventType: string; refId: string; payload: any; attempts: number }[]
+    >`
+      UPDATE "EmailNotificationOutbox" o
+      SET "attempts" = o."attempts" + 1,
+          "nextAttemptAt" = timezone('UTC', now()) + make_interval(secs => ${LEASE_SECONDS})
+      WHERE o.id = (
+        SELECT id FROM "EmailNotificationOutbox"
+        WHERE status = 'pending' AND "nextAttemptAt" <= timezone('UTC', now())
+        ORDER BY "nextAttemptAt", "createdAt"
+        LIMIT 1 FOR UPDATE SKIP LOCKED
+      )
+      RETURNING o.id::text AS id, o."eventType", o."refId", o.payload, o."attempts"`;
+    return rows[0] ?? null;
+  }
+
+  private async deliver(row: {
+    id: string;
+    eventType: string;
+    refId: string;
+    payload: any;
+    attempts: number;
+  }) {
+    const settings = emailSettings();
+    const subject = String(row.payload?.subject ?? "");
+    let text = String(row.payload?.text ?? "");
+    if (!text) {
+      const rendered = await renderEvent(
+        this.db,
+        row.eventType as "cash_close" | "void_request",
+        row.refId,
+      );
+      if (rendered) text = rendered.text;
+    }
+    const result =
+      subject && text
+        ? await sendEmail(settings, subject, text, `${row.eventType}/${row.refId}`)
+        : ({ ok: false, error: "Aviso de correo sin asunto o texto." } as SendResult);
+    if (result.ok) {
+      await this.db.$executeRaw`
+        UPDATE "EmailNotificationOutbox"
+        SET status = 'sent', "sentAt" = timezone('UTC', now()), "lastError" = NULL
+        WHERE id = ${row.id}::uuid`;
+      return;
+    }
+    if (row.attempts >= MAX_ATTEMPTS) {
+      await this.db.$executeRaw`
+        UPDATE "EmailNotificationOutbox"
+        SET status = 'failed', "lastError" = ${result.error}
+        WHERE id = ${row.id}::uuid`;
+      console.warn(
+        `[avisos] Correo descartado tras ${row.attempts} intentos: ${result.error}`,
+      );
+      return;
+    }
+    await this.db.$executeRaw`
+      UPDATE "EmailNotificationOutbox"
+      SET "nextAttemptAt" = timezone('UTC', now()) + make_interval(secs => ${backoffSeconds(row.attempts)}),
+          "lastError" = ${result.error}
+      WHERE id = ${row.id}::uuid`;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Administración
 
@@ -1018,12 +1181,21 @@ export class NotificationsController {
   @Get("status")
   @Permit("*")
   async status() {
-    const [groups, last] = await Promise.all([
+    const [groups, last, emailGroups, emailLast] = await Promise.all([
       this.db.notificationOutbox.groupBy({
         by: ["status"],
         _count: { _all: true },
       }),
       this.db.notificationOutbox.findFirst({
+        where: { lastError: { not: null } },
+        orderBy: { nextAttemptAt: "desc" },
+        select: { lastError: true, eventType: true },
+      }),
+      this.db.emailNotificationOutbox.groupBy({
+        by: ["status"],
+        _count: { _all: true },
+      }),
+      this.db.emailNotificationOutbox.findFirst({
         where: { lastError: { not: null } },
         orderBy: { nextAttemptAt: "desc" },
         select: { lastError: true, eventType: true },
@@ -1042,6 +1214,21 @@ export class NotificationsController {
             eventType: last.eventType,
           }
         : null,
+      email: {
+        enabled: emailSettings().enabled,
+        pending: emailGroups.find((g) => g.status === "pending")?._count._all ?? 0,
+        sent: emailGroups.find((g) => g.status === "sent")?._count._all ?? 0,
+        failed: emailGroups.find((g) => g.status === "failed")?._count._all ?? 0,
+        lastError: emailLast
+          ? {
+              message: sanitizeError(
+                emailLast.lastError,
+                emailSettings().apiKey,
+              ),
+              eventType: emailLast.eventType,
+            }
+          : null,
+      },
     };
   }
 }
