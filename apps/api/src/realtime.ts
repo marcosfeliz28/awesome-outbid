@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import {
   Body,
   Controller,
@@ -34,7 +35,7 @@ import {
   TERMINAL_ONLINE_MS,
   sessionActivityGraceMs,
 } from "./session-activity";
-import { DEMO_TENANT_ID, tenantScope } from "./tenant-context";
+import { currentTenantId, tenantScope } from "./tenant-context";
 const terminalStatus = (t: {
   revokedAt: Date | null;
   approvedAt: Date | null;
@@ -83,7 +84,7 @@ export class RealtimeHub {
     return this.starting.get(tenantId)!;
   }
   async add(listener: Omit<Listener, "cursor" | "tenantId">, isClosed?: () => boolean) {
-    const tenantId = tenantScope.getStore()?.tenantId ?? DEMO_TENANT_ID;
+    const tenantId = currentTenantId();
     await this.start(tenantId);
     // El cliente cerró durante el alta: no se registra nada.
     if (isClosed?.()) {
@@ -529,7 +530,7 @@ export class RealtimeController {
         });
         const user = await this.db.user.findUnique({ where: { id: actor.id } });
         const settings = await this.db.settings.findUnique({
-          where: { id: actor.branchId },
+          where: tenantUnique("id", actor.branchId),
         });
         const timeoutMs =
           Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000;

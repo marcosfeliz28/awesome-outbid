@@ -4,6 +4,11 @@ export default defineConfig({
     // 5 s (el valor por defecto) se agotaban con la máquina ocupada (F-3).
     testTimeout: 30000,
     include: [
+      "tests/product-route-matrix-postgres.test.ts",
+      "tests/product-route-export-postgres.test.ts",
+      "tests/product-route-money-postgres.test.ts",
+      "tests/product-route-inventory-postgres.test.ts",
+      "tests/product-background-postgres.test.ts",
       "tests/product-tenants-postgres.test.ts",
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",

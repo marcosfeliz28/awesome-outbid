@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import {
   Body,
   Controller,
@@ -74,7 +75,7 @@ export class OfflineSalesController {
             "No existe una venta offline pendiente de este usuario.",
           );
         if (
-          await tx.sale.findUnique({ where: { offlineUuid: data.offlineUuid } })
+          await tx.sale.findUnique({ where: tenantUnique("offlineUuid", data.offlineUuid) })
         )
           conflict("La venta ya fue sincronizada y no se puede descartar.");
 
@@ -121,7 +122,7 @@ export class OfflineSalesController {
         orderBy: { createdAt: "desc" },
       });
       const sale = await tx.sale.findUnique({
-        where: { offlineUuid: data.offlineUuid },
+        where: tenantUnique("offlineUuid", data.offlineUuid),
         include: { payments: true },
       });
       if (

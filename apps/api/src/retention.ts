@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Database } from "./common";
+import { currentTenantId, forEachActiveTenant } from "./tenant-context";
 
 // Retención de tablas que crecen sin límite (auditoría 06 D-A2/D-B12 y
 // auditoría 03 M7/M11/B1). El disco de la base en Render es de 1 GB: sin
@@ -227,9 +228,18 @@ export class RetentionWorker {
     if (this.running) return;
     this.running = true;
     try {
-      const result = await purgeExpiredData(this.db);
-      for (const error of result.errors)
-        console.warn("[retención] " + error.slice(0, 300));
+      await forEachActiveTenant(this.db, async () => {
+        try {
+          const result = await purgeExpiredData(this.db);
+          for (const error of result.errors)
+            console.warn(`[retención] Empresa ${currentTenantId()}: ` + error.slice(0, 300));
+        } catch (error: any) {
+          console.warn(
+            `[retención] Error de empresa ${currentTenantId()}: ` +
+              String(error?.message ?? error).slice(0, 300),
+          );
+        }
+      });
     } catch (error: any) {
       console.warn(
         "[retención] " + String(error?.message ?? error).slice(0, 300),

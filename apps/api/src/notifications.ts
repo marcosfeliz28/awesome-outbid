@@ -1,3 +1,4 @@
+import { currentTenantId, forEachActiveTenant } from "./tenant-context";
 // Avisos de facturas por Telegram.
 //
 // La dueña recibe en un grupo privado cada factura (efectivo, tarjeta,
@@ -8,7 +9,7 @@
 //
 // Diseño: la venta nunca espera a Telegram. Después del commit se renderiza el
 // texto (sin cédula/RNC, teléfono, correo ni dirección: Ley 172-13) y se guarda
-// en la cola durable NotificationOutbox, idempotente por (eventType, refId). Un
+// en la cola durable NotificationOutbox, idempotente por empresa y (eventType, refId). Un
 // trabajador lo envía en segundo plano, con candado entre instancias (FOR
 // UPDATE SKIP LOCKED), reintentos con espera creciente, respeto de los 429 y
 // un mensaje por segundo como máximo. El token nunca se guarda ni se registra.
@@ -743,14 +744,15 @@ export async function enqueue(
   branchId: string,
   text: string,
 ) {
+  const tenantId = currentTenantId();
   return db.$executeRaw`
     INSERT INTO "NotificationOutbox"
-      ("id", "eventType", "refId", "payload", "status", "attempts",
+      ("id", "tenantId", "eventType", "refId", "payload", "status", "attempts",
        "nextAttemptAt", "createdAt", "branchId")
-    VALUES (${randomUUID()}::uuid, ${event}, ${refId},
+    VALUES (${randomUUID()}::uuid, ${tenantId}::uuid, ${event}, ${refId},
       ${JSON.stringify({ text })}::jsonb, 'pending', 0,
       timezone('UTC', now()), timezone('UTC', now()), ${branchId})
-    ON CONFLICT ("eventType", "refId") DO NOTHING`;
+    ON CONFLICT ("tenantId", "eventType", "refId") DO NOTHING`;
 }
 
 /**
@@ -868,7 +870,8 @@ export class NotificationWorker
   private again = false;
   private pausedUntil = 0;
   private lastSentAt = 0;
-  private lastPurge = 0;
+  // El trabajador es compartido, pero cada empresa necesita su propia purga.
+  private readonly lastPurge = new Map<string, number>();
   private readonly waker = () => this.wake();
   constructor(@Inject(Database) private readonly db: Database) {}
 
@@ -895,17 +898,27 @@ export class NotificationWorker
     if (this.running || this.stopped) return;
     this.running = true;
     try {
-      do {
-        this.again = false;
-        await this.purge();
-        // Hasta 20 avisos por vuelta; el resto, en la siguiente.
-        for (let i = 0; i < 20 && !this.stopped; i++) {
-          if (Date.now() < this.pausedUntil) break;
-          const row = await this.claim();
-          if (!row) break;
-          await this.deliver(row);
+      await forEachActiveTenant(this.db, async () => {
+        try {
+          do {
+            this.again = false;
+            await this.purge();
+            // Hasta 20 avisos por vuelta y por empresa.
+            for (let i = 0; i < 20 && !this.stopped; i++) {
+              if (Date.now() < this.pausedUntil) break;
+              const row = await this.claim();
+              if (!row) break;
+              await this.deliver(row);
+            }
+          } while (this.again && !this.stopped && Date.now() >= this.pausedUntil);
+        } catch (error: any) {
+          // Una empresa con datos o permisos defectuosos no detiene a las otras.
+          console.warn(
+            `[avisos] Error de empresa ${currentTenantId()}: ` +
+              sanitizeError(error?.message ?? error),
+          );
         }
-      } while (this.again && !this.stopped && Date.now() >= this.pausedUntil);
+      });
     } catch (error: any) {
       console.warn(
         "[avisos] Error del trabajador: " +
@@ -1002,12 +1015,14 @@ export class NotificationWorker
   }
 
   private async purge() {
-    if (Date.now() - this.lastPurge < 3600000) return;
-    this.lastPurge = Date.now();
+    const tenantId = currentTenantId();
+    const now = Date.now();
+    if (now - (this.lastPurge.get(tenantId) ?? 0) < 3600000) return;
     await this.db.$executeRaw`
       DELETE FROM "NotificationOutbox"
       WHERE status = 'sent'
         AND "sentAt" < timezone('UTC', now()) - make_interval(days => ${PURGE_DAYS}::int)`;
+    this.lastPurge.set(tenantId, now);
   }
 }
 

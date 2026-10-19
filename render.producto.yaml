@@ -1,5 +1,8 @@
 # Producto Nexora, infraestructura independiente. NO sincronizar sin revisión
 # de Claude y sin aprovisionar el rol de ejecución RLS de la base nueva.
+# ANTES del primer preDeployCommand, un administrador de nexora-saas-db debe
+# ejecutar scripts/producto-bootstrap.sql y comprobar su SELECT final.
+# No ejecutar el script ni este blueprint contra la base de la tienda.
 services:
   - type: web
     name: nexora-saas-web

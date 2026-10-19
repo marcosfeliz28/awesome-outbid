@@ -9,6 +9,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { createHash } from "node:crypto";
+import { currentTenantId, tenantUnique } from "./tenant-context";
 import { Prisma } from "@prisma/client";
 import { z } from "@fitstore/shared";
 import {
@@ -210,9 +211,9 @@ export class CourierController {
       .digest("hex");
     return this.db.$transaction(
       async (tx) => {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"courier:" + data.operationId}))`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"courier:" + currentTenantId() + ":" + data.operationId}))`;
         const previous = await tx.courierPayout.findUnique({
-          where: { operationId: data.operationId },
+          where: tenantUnique("operationId", data.operationId),
         });
         if (previous) {
           if (

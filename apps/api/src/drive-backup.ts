@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 // Respaldo diario CIFRADO de la base de datos a la carpeta de Google Drive de
 // la dueña (docs/RESPALDO_DRIVE.md).
 //
@@ -1223,7 +1224,7 @@ export class DriveBackupService {
     // N-09: la sesión que inició la conexión debe seguir vigente (no vencida
     // por inactividad), como en cualquier otra petición autenticada.
     const branchSettings = await this.db.settings.findUnique({
-      where: { id: user.branchId },
+      where: tenantUnique("id", user.branchId),
     });
     const timeoutMs =
       Number((branchSettings?.data as any)?.sessionTimeoutMinutes ?? 30) *

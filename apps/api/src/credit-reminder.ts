@@ -15,6 +15,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { BUSINESS_TIME_ZONE, d, formatMoney, money } from "@fitstore/shared";
 import { Database } from "./common";
+import { currentTenantId, forEachActiveTenant, tenantScope } from "./tenant-context";
 import {
   enqueue,
   escapeHtml,
@@ -156,6 +157,20 @@ export class CreditReminderService {
     at: Date = new Date(),
     options: { telegram?: boolean } = {},
   ): Promise<{ created: string[] }> {
+    if (process.env.PRODUCT_TENANCY === "required" && !tenantScope.getStore()?.tenantId) {
+      const results = await forEachActiveTenant(this.db, async () => {
+        try {
+          return await this.run(at, options);
+        } catch (error: any) {
+          console.warn(
+            `[créditos] Error de empresa ${currentTenantId()}: ` +
+              String(error?.message ?? error).slice(0, 300),
+          );
+          return { created: [] };
+        }
+      });
+      return { created: results.flatMap((result) => result.created) };
+    }
     if (!reminderDue(at)) return { created: [] };
     const week = isoWeekKey(at);
     const telegram = options.telegram ?? telegramSettings().enabled;
@@ -174,7 +189,8 @@ export class CreditReminderService {
     for (const { branchId } of branches) {
       const key = `credit-reminder:${branchId}:${week}`;
       const made = await this.db.$transaction(async (tx: any) => {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"fitstore:" + key}))`;
+        // El candado no debe serializar empresas distintas que compartan caja.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"fitstore:" + currentTenantId() + ":" + key}))`;
         if (await tx.alert.findUnique({ where: { key }, select: { id: true } }))
           return false;
         const sales = await tx.sale.findMany({

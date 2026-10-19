@@ -520,16 +520,40 @@ describe("Auditoría 06 · migraciones de datos en PostgreSQL real", () => {
         `DELETE FROM "AuditLog" WHERE action = 'constraint_not_validated'`,
       );
 
-      // (a4) post-deploy-check.mjs (solo lectura) sobre la base real: una base
-      // recién migrada no tiene fallos ni avisos; cada defecto que Prisma no
-      // muestra se detecta por su nombre.
-      const read = async () =>
-        evaluateDatabaseFacts(
-          await readDatabaseFacts(
-            async (sql: string, params: unknown[] = []) =>
-              (await a.query(sql, params)).rows,
-          ),
+      // La verificación de la tienda conserva sus nombres globales. En esta
+      // rama producto comprobamos sus sustitutos reales, con tenantId, sin
+      // modificar el verificador reservado para la tienda.
+      const productIndexNames = new Map([
+        ["Variant_sku_ci_key", "Variant_tenantId_sku_ci_key"],
+        ["Variant_barcode_ci_key", "Variant_tenantId_barcode_ci_key"],
+        ["CashMovement_operationId_key", "CashMovement_tenantId_operationId_key"],
+        ["SupplierPayment_operationId_key", "SupplierPayment_tenantId_operationId_key"],
+        ["Expense_operationId_key", "Expense_tenantId_operationId_key"],
+      ]);
+      const read = async () => {
+        const query = async (sql: string, params: unknown[] = []) =>
+          (await a.query(sql, params)).rows;
+        const facts = await readDatabaseFacts(query);
+        const productIndexes = await query(
+          `SELECT c.relname AS name, i.indisvalid AS valid FROM pg_index i
+             JOIN pg_class c ON c.oid = i.indexrelid
+             JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = current_schema() AND c.relname = ANY($1::text[])`,
+          [[...productIndexNames.values()]],
         );
+        const found = new Map(productIndexes.map((row: any) => [row.name, row.valid]));
+        for (const [oldName, productName] of productIndexNames)
+          if (found.has(productName)) facts.indexes[oldName] = Boolean(found.get(productName));
+        const result = evaluateDatabaseFacts(facts);
+        return {
+          ...result,
+          failures: result.failures.map((failure: string) => {
+            for (const [oldName, productName] of productIndexNames)
+              failure = failure.replaceAll(oldName, productName);
+            return failure;
+          }),
+        };
+      };
       expect(await read()).toEqual({ failures: [], warnings: [] });
       // Índice inválido: un CREATE UNIQUE INDEX CONCURRENTLY que falla por
       // duplicados deja el índice marcado como no válido.
@@ -542,13 +566,13 @@ describe("Auditoría 06 · migraciones de datos en PostgreSQL real", () => {
         /índices inválidos.*pdc_dup_k/,
       );
       await a.query(`DROP TABLE pdc_dup`);
-      // D-M9: falta Variant_sku_ci_key.
-      await a.query(`DROP INDEX "Variant_sku_ci_key"`);
+      // D-M9: falta el índice de SKU de la empresa.
+      await a.query(`DROP INDEX "Variant_tenantId_sku_ci_key"`);
       expect((await read()).failures.join("\n")).toMatch(
-        /faltan índices.*Variant_sku_ci_key/,
+        /faltan índices.*Variant_tenantId_sku_ci_key/,
       );
       await a.query(
-        `CREATE UNIQUE INDEX "Variant_sku_ci_key" ON "Variant" (lower(btrim(sku))) WHERE sku IS NOT NULL AND btrim(sku) <> ''`,
+        `CREATE UNIQUE INDEX "Variant_tenantId_sku_ci_key" ON "Variant" ("tenantId", lower(btrim(sku))) WHERE sku IS NOT NULL AND btrim(sku) <> ''`,
       );
       // Restricción NOT VALID (convalidated) y restricción ausente.
       await a.query(

@@ -40,6 +40,7 @@ import {
   temporaryPasswordExpired,
 } from "./password-policy";
 import { sessionActivityGraceMs } from "./session-activity";
+import { tenantScope, tenantUnique } from "./tenant-context";
 import { enqueue, escapeHtml, telegramSettings } from "./notifications";
 import {
   REQUEST_RATE_LIMITS,
@@ -122,9 +123,15 @@ export class AuthController implements OnModuleInit {
     // Una sola lectura acotada al iniciar permite que el freno de barridos
     // rechace identidades desconocidas antes de findFirst sin impedir que una
     // cuenta real inicie sesion desde la misma IP durante el ataque.
-    const users = await this.db.user.findMany({
-      select: { usernameKey: true, email: true },
-    });
+    const users = process.env.PRODUCT_TENANCY === "required"
+      ? (await Promise.all((await this.db.activeTenantIds()).map((tenantId) =>
+          tenantScope.run({ tenantId }, () => this.db.user.findMany({
+            select: { usernameKey: true, email: true },
+          })),
+        ))).flat()
+      : await this.db.user.findMany({
+          select: { usernameKey: true, email: true },
+        });
     for (const user of users) {
       if (user.usernameKey)
         this.requestLimits.rememberAuthIdentity(
@@ -288,7 +295,7 @@ export class AuthController implements OnModuleInit {
       `desde equipos no aprobados y quedó bloqueada hasta una hora, salvo desde un equipo aprobado. ` +
       `Si no fue ella o él, cambia su contraseña con «Restablecer contraseña».`;
     await tx.alert.upsert({
-      where: { key: "login-locked:" + user.id },
+      where: tenantUnique("key", "login-locked:" + user.id),
       create: {
         key: "login-locked:" + user.id,
         type: "account_locked",
@@ -317,7 +324,7 @@ export class AuthController implements OnModuleInit {
   private async issue(user: any, res: Response, sessionId?: string | null) {
     const refresh = randomBytes(48).toString("hex");
     const settings = await this.db.settings.findUnique({
-      where: { id: user.branchId },
+      where: tenantUnique("id", user.branchId),
     });
     const sessionTimeoutMinutes = Number(
       (settings?.data as any)?.sessionTimeoutMinutes ?? 30,

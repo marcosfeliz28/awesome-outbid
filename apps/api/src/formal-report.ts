@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import { Controller, Get, Inject, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import PDFDocument from "pdfkit";
@@ -265,7 +266,7 @@ export class FormalReportController {
         where: { branchId: actor.branchId },
         select: { id: true, name: true },
       }),
-      this.db.settings.findUnique({ where: { id: actor.branchId } }),
+      this.db.settings.findUnique({ where: tenantUnique("id", actor.branchId) }),
     ]);
     const person = new Map(users.map((u) => [u.id, u.name]));
     const sessions = cashSessions.filter((s) => !isTestRegister(s.registerId));
@@ -430,7 +431,7 @@ export class FormalReportController {
     const report = {
       title: `Informe formal · ${period.label}`,
       business: {
-        name: (settings?.data as any)?.name || "Grupo Macgen",
+        name: (settings?.data as any)?.name || "Nexora POS",
         branch: (settings?.data as any)?.branchName || "",
       },
       from: period.from,
@@ -513,12 +514,7 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
     doc
       .font("Helvetica-Bold")
       .fontSize(14)
-      .text("Grupo Macgen", { align: "center" });
-    if (report.business.name !== "Grupo Macgen")
-      doc
-        .font("Helvetica")
-        .fontSize(9)
-        .text(report.business.name, { align: "center" });
+      .text(report.business.name || "Nexora POS", { align: "center" });
     if (report.business.branch)
       doc.fontSize(9).text(report.business.branch, { align: "center" });
     doc.font("Helvetica").fontSize(9).text(report.title, { align: "center" });
@@ -651,7 +647,7 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
       .font("Helvetica")
       .fontSize(8)
       .text(
-        `Grupo Macgen · Control interno · Página ${i - pages.start + 1} de ${pages.count}`,
+        `${report.business.name || "Nexora POS"} · Control interno · Página ${i - pages.start + 1} de ${pages.count}`,
         42,
         780,
         { width: 510, align: "center" },

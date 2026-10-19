@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import { Body, Controller, Get, Inject, Post } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import { d, quantity, z } from "@fitstore/shared";
@@ -124,7 +125,7 @@ export class WarehousesController {
           // Serializa los reenvíos aun cuando lleguen al mismo tiempo.
           await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${input.operationId}))`;
           const previous = await tx.stockTransfer.findUnique({
-            where: { operationId: input.operationId },
+            where: tenantUnique("operationId", input.operationId),
             include: { lines: true },
           });
           if (previous) {

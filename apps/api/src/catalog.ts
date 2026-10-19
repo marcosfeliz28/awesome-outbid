@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import {
   d,
   formatAmount,
@@ -551,7 +552,7 @@ export class CatalogController {
           `a RD$ ${formatAmount(Number(row.costAvg))} con ${Number(totalStock)} en existencia ` +
           `(valor del inventario ${impact < 0 ? "−" : "+"}RD$ ${formatAmount(Math.abs(impact))}) · ${actor.name}.`;
         await tx.alert.upsert({
-          where: { key: "cost-change:" + id },
+          where: tenantUnique("key", "cost-change:" + id),
           create: {
             key: "cost-change:" + id,
             type: "cost_change",

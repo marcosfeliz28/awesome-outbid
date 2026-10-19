@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import { Controller, Get, Inject, Param, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import ExcelJS from "exceljs";
@@ -713,7 +714,7 @@ export class ReportsController {
       if (r40.margin && !can(actor.permissions, "profit:read")) denied();
       const range40 = dateRange(query);
       const settings = ((
-        await this.db.settings.findUnique({ where: { id: actor.branchId } })
+        await this.db.settings.findUnique({ where: tenantUnique("id", actor.branchId) })
       )?.data ?? {}) as any;
       return sendStoreReport(
         res,
@@ -1653,7 +1654,7 @@ export async function storeReport(
       : null,
   ]);
   const settings = ((
-    await db.settings.findUnique({ where: { id: actor.branchId } })
+    await db.settings.findFirst({ where: { id: actor.branchId } })
   )?.data ?? {}) as any;
   const header = {
     name,

@@ -5,17 +5,16 @@ Esta rama parte de `origin/nexora-cloud` y se destina **solo a una base nueva de
 ## Esquema y activación
 
 - La migración `202610260001_product_tenant` crea `Tenant` y agrega `tenantId` a 58 tablas preexistentes. Las filas ya presentes en **la base nueva de pruebas** quedan asociadas al tenant demo con ID `00000000-0000-0000-0000-000000000001`.
-- PostgreSQL crea el rol `nexora_tenant_runtime` sin login. El usuario de migración necesita permiso `CREATEROLE` o un administrador de la **base nueva** debe crear ese rol y otorgárselo antes de `prisma migrate deploy`. Esto debe comprobarse antes de aplicar el blueprint; el plan de Render por sí solo no garantiza ese permiso.
+- Antes del **primer** `preDeployCommand`, un administrador de la **base nueva del producto** ejecuta una sola vez `psql -X -v ON_ERROR_STOP=1 -f scripts/producto-bootstrap.sql` con su conexión administrativa local a esa base. El script crea `nexora_tenant_runtime` sin login, concede su membresía a `nexora_saas_migrator` y devuelve una fila de verificación. No copiar la conexión ni ejecutar el script contra la base de la tienda. La configuración exacta está en `render.producto.yaml`; este paso queda para Claude y no se ha aplicado en Render.
 - Cada consulta de `Database` usa una transacción, cambia con `SET LOCAL ROLE nexora_tenant_runtime` y fija `app.tenant_id` con `set_config(..., true)`. RLS compara esa variable con `tenantId`; el valor no sobrevive al fin de la transacción. La guardia de autenticación exige que el tenant firmado en el JWT corresponda al de la consulta y al usuario.
 - Las altas anidadas usan un trigger que asigna el tenant de la transacción; los triggers de referencias cruzadas rechazan enlaces de una empresa a filas de otra. La tabla `Tenant` solo permite lectura de la empresa actual con el rol de ejecución.
-- La API debe arrancar con `PRODUCT_TENANCY=required`. Así verifica el rol RLS al iniciar. El login recibe `x-tenant-id` y el refresh usa una cookie de selección; la identidad sigue dependiendo de credenciales/sesión y firma válida. El producto todavía no tiene registro público de empresas (fase 1).
-- El respaldo completo con `pg_dump` y los trabajos de fondo existentes quedan deshabilitados en este modo hasta disponer de alternativas por tenant. Un respaldo global no debe exponerse a un cliente. Esto es una limitación funcional de la fase 0.
+- La API debe arrancar con `PRODUCT_TENANCY=required`. Así verifica el rol RLS al iniciar y rechaza toda consulta de negocio sin `tenantScope`. El login recibe el **código público** de la empresa en `x-tenant-id`, que resuelve al UUID interno; el refresh usa una cookie de selección y la identidad sigue dependiendo de credenciales/sesión y firma válida. El producto todavía no tiene registro público de empresas (fase 1).
+- Las claves funcionales, incluidos números de factura y recibo, quedan limitadas por empresa mediante índices compuestos. Los trabajos de notificación, recordatorio de crédito y retención recorren las empresas activas con contexto aislado. El respaldo completo con `pg_dump` sigue deshabilitado: un respaldo por empresa es trabajo de fase 1.
 
 ## Límites que impiden lanzar el producto aún
 
 1. La orden exige una matriz de aislamiento con **cada ruta**, informes y exportaciones. La prueba actual verifica el esquema completo y rutas representativas, y ejercita los 40 informes JSON, pero falta cubrir todas las rutas de escritura, archivos y exportaciones. Una respuesta 400/404 de un cuerpo inválido no se contará como cobertura.
-2. Las restricciones `UNIQUE` antiguas siguen globales. Dos empresas pueden chocar al reutilizar un correo, SKU o nombre de rol aunque RLS oculte la fila ajena. Hay que convertir esas claves a unicidad por tenant y probar los flujos de alta.
-3. Falta definir copias de seguridad y restauración **por tenant**, registro/alta de empresa, manejo de plan/estado y trabajos de fondo con contexto seguro.
+2. Falta definir copias de seguridad y restauración **por tenant**, registro/alta de empresa y manejo de plan/estado.
 4. Validar migración y arranque con el usuario real de una **base nueva y vacía** de Render; aquí se usó PostgreSQL embebido. El blueprint no se aplica hasta que Claude lo revise. No existe validación sobre una base de producción.
 
 ## Cómo repetir la prueba local

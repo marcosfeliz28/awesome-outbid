@@ -1,3 +1,4 @@
+import { forEachActiveTenant, tenantScope, tenantUnique } from "./tenant-context";
 import { createHash, timingSafeEqual } from "node:crypto";
 import {
   Inject,
@@ -161,7 +162,7 @@ export async function verifyAttempt(
         await tx.$queryRaw`SELECT count(pg_advisory_xact_lock(h))::text AS locked FROM (SELECT DISTINCT hashtext(k) AS h FROM unnest(${keys}::text[]) AS k ORDER BY 1) AS s`;
         const now = new Date();
         const row = await tx.authAttempt.upsert({
-          where: { key },
+          where: tenantUnique("key", key),
           create: { key },
           update: {},
         });
@@ -169,7 +170,7 @@ export async function verifyAttempt(
         const budgetRows = [];
         for (const budget of budgets) {
           const budgetRow = await tx.authAttempt.upsert({
-            where: { key: budget.key },
+            where: tenantUnique("key", budget.key),
             create: { key: budget.key },
             update: {},
           });
@@ -178,7 +179,7 @@ export async function verifyAttempt(
         }
         if (row.lockedUntil)
           await tx.authAttempt.update({
-            where: { key },
+            where: tenantUnique("key", key),
             data: {
               failedAttempts: 0,
               lockedUntil: null,
@@ -188,7 +189,7 @@ export async function verifyAttempt(
         const matched = await verify(tx);
         if (matched) {
           await tx.authAttempt.update({
-            where: { key },
+            where: tenantUnique("key", key),
             data: {
               failedAttempts: 0,
               lockedUntil: null,
@@ -215,7 +216,7 @@ export async function verifyAttempt(
           const failedAttempts = fresh ? 1 : current.failedAttempts + 1;
           const windowStartedAt = fresh ? now : start;
           await tx.authAttempt.update({
-            where: { key: budget.key },
+            where: tenantUnique("key", budget.key),
             data: {
               failedAttempts,
               windowStartedAt,
@@ -340,7 +341,14 @@ export class SecurityMaintenance implements OnModuleInit, OnModuleDestroy {
   onModuleDestroy() {
     if (this.timer) clearInterval(this.timer);
   }
-  async run() {
+  async run(): Promise<{ attempts: number; ips: number }> {
+    if (process.env.PRODUCT_TENANCY === "required" && !tenantScope.getStore()?.tenantId) {
+      const results = await forEachActiveTenant(this.db, () => this.run());
+      return results.reduce((sum, result) => ({
+        attempts: sum.attempts + result.attempts,
+        ips: sum.ips + result.ips,
+      }), { attempts: 0, ips: 0 });
+    }
     const attempts = await this.db.$executeRaw`
       WITH stale AS MATERIALIZED (
         SELECT key FROM "AuthAttempt"

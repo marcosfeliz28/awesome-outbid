@@ -272,7 +272,8 @@ const navigation = [
   },
 ];
 function Login() {
-  const [login, setLogin] = useState(""),
+  const [companyCode, setCompanyCode] = useState(""),
+    [login, setLogin] = useState(""),
     [password, setPassword] = useState(""),
     [showPassword, setShowPassword] = useState(false),
     [changeRequired, setChangeRequired] = useState(false),
@@ -325,6 +326,11 @@ function Login() {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            const slug = companyCode.trim().toLowerCase();
+            if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) {
+              setError("Escribe el código de empresa.");
+              return;
+            }
             if (changeRequired) {
               const validation = passwordChangeError(
                 newPassword,
@@ -343,11 +349,11 @@ function Login() {
             try {
               if (!changeRequired) {
                 const terminal = storedTerminalCredentials();
-                const data = await post("/auth/login", {
+                const data = await api("/auth/login", { method: "POST", headers: { "x-tenant-id": slug }, body: JSON.stringify({
                   login,
                   password,
                   ...(terminal ? { terminal } : {}),
-                });
+                }) });
                 if (data.requiresPasswordChange) {
                   setPasswordPolicy(
                     data.passwordPolicy === "cashier-six-digits"
@@ -361,13 +367,13 @@ function Login() {
                 await saveSession(data.user, data.accessToken);
               } else {
                 const terminal = storedTerminalCredentials();
-                const data = await post("/auth/change-password", {
+                const data = await api("/auth/change-password", { method: "POST", headers: { "x-tenant-id": slug }, body: JSON.stringify({
                   login,
                   currentPassword: password,
                   newPassword,
                   confirmPassword,
                   ...(terminal ? { terminal } : {}),
-                });
+                }) });
                 await saveSession(data.user, data.accessToken);
               }
             } catch (e: any) {
@@ -392,6 +398,12 @@ function Login() {
               ? "Por seguridad, crea una contraseña nueva para continuar."
               : "Inicia sesión para entrar a tu tienda."}
           </p>
+          <label className="field">
+            <span>Código de empresa</span>
+            <input type="text" autoComplete="organization" required
+              placeholder="Ejemplo: mi-tienda" value={companyCode}
+              onChange={(e) => setCompanyCode(e.target.value)} />
+          </label>
           <label className="field">
             <span>Usuario</span>
             <input

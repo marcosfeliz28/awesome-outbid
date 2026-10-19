@@ -7,9 +7,40 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export type TenantScope = { tenantId: string; transaction?: unknown };
 export const tenantScope = new AsyncLocalStorage<TenantScope>();
 
+export function currentTenantId(): string {
+  const tenantId = tenantScope.getStore()?.tenantId;
+  if (tenantId) return tenantId;
+  if (process.env.PRODUCT_TENANCY === "required")
+    throw new Error("Falta el contexto de empresa para consultar la base de datos.");
+  return DEMO_TENANT_ID;
+}
+
+// Claves compuestas de Prisma: no se puede consultar el identificador de otra
+// empresa ni reservar su clave, incluso si dos empresas usan el mismo texto.
+export function tenantUnique<Field extends string>(field: Field, value: string | undefined): {
+  [Key in `tenantId_${Field}`]: { tenantId: string } & Record<Field, string>
+} {
+  if (value === undefined) throw new Error(`Falta ${field} para buscar el registro.`);
+  return {
+    [`tenantId_${field}`]: { tenantId: currentTenantId(), [field]: value },
+  } as { [Key in `tenantId_${Field}`]: { tenantId: string } & Record<Field, string> };
+}
+
+export async function forEachActiveTenant<Result>(
+  db: { activeTenantIds(): Promise<string[]> },
+  task: () => Promise<Result>,
+): Promise<Result[]> {
+  if (process.env.PRODUCT_TENANCY !== "required" || tenantScope.getStore()?.tenantId)
+    return [await task()];
+  const results: Result[] = [];
+  for (const tenantId of await db.activeTenantIds())
+    results.push(await tenantScope.run({ tenantId }, task));
+  return results;
+}
+
 // Sólo el AuthGuard confía en la firma. Esta lectura previa selecciona la
 // partición RLS para que el propio guard pueda cargar el usuario.
-export function tenantFromRequest(req: Request): string {
+export function tenantFromRequest(req: Request): string | null {
   const token = req.headers.authorization?.match(/^Bearer ([^.]+)\.([^.]+)\./)?.[2];
   if (token) {
     try {
@@ -23,7 +54,8 @@ export function tenantFromRequest(req: Request): string {
   // Antes del registro autoservicio, los clientes de prueba eligen su empresa
   // para el login con este encabezado. La firma decide toda operación privada.
   const header = req.headers["x-tenant-id"];
-  if (typeof header === "string" && uuid.test(header)) return header;
+  if (process.env.PRODUCT_TENANCY !== "required" && typeof header === "string" && uuid.test(header)) return header;
   const cookie = req.headers.cookie?.match(/(?:^|;\s*)nexora_tenant=([^;]+)/)?.[1];
-  return cookie && uuid.test(cookie) ? cookie : DEMO_TENANT_ID;
+  if (cookie && uuid.test(cookie)) return cookie;
+  return process.env.PRODUCT_TENANCY === "required" ? null : DEMO_TENANT_ID;
 }

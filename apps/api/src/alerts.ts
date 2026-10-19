@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import { randomUUID } from "node:crypto";
 import {
   Body,
@@ -40,7 +41,7 @@ import {
   conflict,
   canViewCashExpected,
 } from "./common";
-import { DEMO_TENANT_ID, tenantScope } from "./tenant-context";
+import { currentTenantId } from "./tenant-context";
 
 const CASH_DIFFERENCE_PRIVATE_MESSAGE =
   "Se detectó una diferencia en una caja cerrada. Administración debe revisarla.";
@@ -299,7 +300,7 @@ export class AlertEngine {
     branchId = "main",
     options: { fresh?: boolean } = {},
   ): Promise<any[]> {
-    const key = `${tenantScope.getStore()?.tenantId ?? DEMO_TENANT_ID}:${branchId}`;
+    const key = `${currentTenantId()}:${branchId}`;
     const wanted = this.generation;
     const requestedAt = this.now();
     for (;;) {
@@ -371,7 +372,7 @@ export class AlertEngine {
     const [variants, settings, sales, expenses, rules, cash, discounted] =
       await Promise.all([
         this.loadVariants(branchId),
-        this.db.settings.findUnique({ where: { id: branchId } }),
+        this.db.settings.findUnique({ where: tenantUnique("id", branchId) }),
         // Una sola pasada agregada en SQL por variante: última venta y ventas
         // del mes pasado y de los tres anteriores (antes, tres consultas).
         // Fechas como texto UTC: la columna es timestamp sin zona.
@@ -923,7 +924,7 @@ export class AlertsController {
     );
     for (const rule of data.rules)
       await this.db.alertRule.upsert({
-        where: { type: rule.type },
+        where: tenantUnique("type", rule.type),
         create: rule,
         update: rule,
       });

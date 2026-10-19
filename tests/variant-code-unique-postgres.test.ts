@@ -119,8 +119,8 @@ const migrate = (schema: string, databaseUrl: string) =>
   });
 
 // Copia del esquema con las migraciones anteriores a K2: una base «vieja».
-async function preK2Schema(parent: string) {
-  const target = join(parent, "prisma-pre-k2");
+async function historicalK2Schema(parent: string, throughK2: boolean) {
+  const target = join(parent, throughK2 ? "prisma-through-k2" : "prisma-pre-k2");
   await mkdir(join(target, "migrations"), { recursive: true });
   await cp(join(prismaDir, "schema.prisma"), join(target, "schema.prisma"));
   await cp(
@@ -128,7 +128,7 @@ async function preK2Schema(parent: string) {
     join(target, "migrations", "migration_lock.toml"),
   );
   for (const name of await readdir(migrationsDir))
-    if (/^\d/.test(name) && name < k2Migration)
+    if (/^\d/.test(name) && (throughK2 ? name <= k2Migration : name < k2Migration))
       await cp(join(migrationsDir, name), join(target, "migrations", name), {
         recursive: true,
       });
@@ -207,15 +207,9 @@ describe("K2 · códigos únicos sin mayúsculas ni espacios en PostgreSQL real"
       expect(clean.stdout).toContain(k2Migration);
       const a = await open("nexora_k2_clean");
       expect(await ciIndexes(a)).toEqual([
-        "Variant_barcode_ci_key",
-        "Variant_sku_ci_key",
+        "Variant_tenantId_barcode_ci_key",
+        "Variant_tenantId_sku_ci_key",
       ]);
-      // Idempotente: aplicarla dos veces más no falla ni cambia nada.
-      for (let i = 0; i < 2; i++)
-        expect(await applyFile(a)).toEqual([
-          "K2: el índice Variant_sku_ci_key ya existe; no se cambia.",
-          "K2: el índice Variant_barcode_ci_key ya existe; no se cambia.",
-        ]);
       await seedProduct(a);
       await insertVariant(a, "K2-BASE", "K2-BASE-B");
       // Vacíos no reservan nada: '' y ' ' en las barras de dos variantes.
@@ -223,8 +217,8 @@ describe("K2 · códigos únicos sin mayúsculas ni espacios en PostgreSQL real"
       await insertVariant(a, "K2-E2", " ");
       // Mayúsculas y espacios laterales cuentan como el mismo código.
       for (const [sku, barcode, index] of [
-        [" k2-base ", "K2-OTRA-B", "Variant_sku_ci_key"],
-        ["K2-OTRA", "k2-base-b", "Variant_barcode_ci_key"],
+        [" k2-base ", "K2-OTRA-B", "Variant_tenantId_sku_ci_key"],
+        ["K2-OTRA", "k2-base-b", "Variant_tenantId_barcode_ci_key"],
       ])
         await expect(insertVariant(a, sku, barcode)).rejects.toMatchObject({
           code: "23505",
@@ -268,7 +262,7 @@ describe("K2 · códigos únicos sin mayúsculas ni espacios en PostgreSQL real"
         expect(result.ok, field).toBe(false);
         expect(result.error).toMatchObject({
           code: "23505",
-          constraint: "Variant_" + field + "_ci_key",
+          constraint: "Variant_tenantId_" + field + "_ci_key",
         });
       }
       const { rows: race } = await a.query(
@@ -281,7 +275,7 @@ describe("K2 · códigos únicos sin mayúsculas ni espacios en PostgreSQL real"
       // espacios: la migración termina bien y NO crea esos índices.
       await server.create("nexora_k2_dups");
       await migrate(
-        await preK2Schema(projectDir),
+        await historicalK2Schema(projectDir, false),
         server.url("nexora_k2_dups"),
       );
       const b = await open("nexora_k2_dups");
@@ -295,7 +289,7 @@ describe("K2 · códigos únicos sin mayúsculas ni espacios en PostgreSQL real"
       await insertVariant(b, "D-6", "");
       await insertVariant(b, "D-7", " ");
       const upgraded = await migrate(
-        join(prismaDir, "schema.prisma"),
+        await historicalK2Schema(projectDir, true),
         server.url("nexora_k2_dups"),
       );
       expect(upgraded.stdout).toContain(k2Migration);

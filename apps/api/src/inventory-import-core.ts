@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 // Carga inicial de inventario desde el Excel de la tienda (hoja con ID,
 // DESCRIPCION, REFERENCIA, SUB-GRUPO DE ARTICULO, EXISTENCIA, COSTO y PRECIO
 // DETALLE). Lógica compartida por el script de línea de comandos
@@ -738,7 +739,7 @@ async function prepare(
   const stops: string[] = [];
   const plan: CategoryPlan[] = [];
   for (const name of [...new Set(rows.map((r) => r.category))]) {
-    const existing = await db.category.findUnique({ where: { name } });
+    const existing = await db.category.findUnique({ where: tenantUnique("name", name) });
     const disable =
       !!existing &&
       (existing.requiresLot || existing.requiresExpiry) &&
@@ -991,7 +992,7 @@ async function load(
     if (dryRun) continue;
     if (disable && existing) {
       await db.category.update({
-        where: { name },
+        where: tenantUnique("name", name),
         data: { requiresLot: false, requiresExpiry: false },
       });
       await db.auditLog.create({

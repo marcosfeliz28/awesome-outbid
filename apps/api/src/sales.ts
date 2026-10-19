@@ -1,3 +1,4 @@
+import { currentTenantId, tenantUnique } from "./tenant-context";
 import {
   Body,
   Controller,
@@ -540,7 +541,7 @@ export class SalesController {
   constructor(@Inject(Database) private db: Database) {}
   private async approve(actor: Actor, input: SaleInput) {
     const setting = await this.db.settings.findUnique({
-      where: { id: actor.branchId },
+      where: tenantUnique("id", actor.branchId),
     });
     const limit = Number((setting?.data as any)?.sellerDiscountLimit ?? 10);
 
@@ -676,7 +677,7 @@ export class SalesController {
       .update(JSON.stringify(normalizedFingerprint))
       .digest("hex");
     const completed = await this.db.sale.findUnique({
-      where: { offlineUuid: input.offlineUuid },
+      where: tenantUnique("offlineUuid", input.offlineUuid),
       include: { items: true, payments: true },
     });
     if (completed) {
@@ -700,7 +701,7 @@ export class SalesController {
     input = normalizedInput;
     if (offline) {
       const settings = await this.db.settings.findUnique({
-        where: { id: actor.branchId },
+        where: tenantUnique("id", actor.branchId),
         select: { data: true },
       });
       if ((settings?.data as any)?.allowOfflineSales !== true)
@@ -713,7 +714,7 @@ export class SalesController {
       async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${input.offlineUuid}))::text AS locked`;
         const existing = await tx.sale.findUnique({
-          where: { offlineUuid: input.offlineUuid },
+          where: tenantUnique("offlineUuid", input.offlineUuid),
           include: { items: true, payments: true },
         });
         if (existing) {
@@ -743,7 +744,7 @@ export class SalesController {
           throw new OfflineSaleDiscardedError();
         if (offline) {
           const settings = await tx.settings.findUnique({
-            where: { id: actor.branchId },
+            where: tenantUnique("id", actor.branchId),
             select: { data: true },
           });
           if ((settings?.data as any)?.allowOfflineSales !== true)
@@ -780,7 +781,7 @@ export class SalesController {
           ? await lockActiveCustomer(tx, actor, input.customerId)
           : null;
         const settings = await tx.settings.findUnique({
-          where: { id: actor.branchId },
+          where: tenantUnique("id", actor.branchId),
         });
         const config = settings?.data as any;
         if (!customer) bad("Selecciona o crea un cliente antes de vender.");
@@ -997,7 +998,7 @@ export class SalesController {
           });
         }
         const counter = await tx.counter.upsert({
-          where: { key: "sale:" + actor.branchId },
+          where: tenantUnique("key", "sale:" + actor.branchId),
           create: { key: "sale:" + actor.branchId, value: 1 },
           update: { value: { increment: 1 } },
         });
@@ -1251,7 +1252,7 @@ export class SalesController {
           // verifique o la rechace (sólo esos flujos la resuelven).
           if (p.method === "transfer")
             await tx.alert.upsert({
-              where: { key: "transfer:" + createdPayment.id },
+              where: tenantUnique("key", "transfer:" + createdPayment.id),
               create: {
                 key: "transfer:" + createdPayment.id,
                 type: "transfer_pending",
@@ -1413,7 +1414,7 @@ export class SalesController {
         });
         await this.db.$transaction(async (tx) => {
           await tx.alert.upsert({
-            where: { key: "offline:" + sale.offlineUuid },
+            where: tenantUnique("key", "offline:" + sale.offlineUuid),
             create: {
               key: "offline:" + sale.offlineUuid,
               type: "offline_conflict",
@@ -1708,7 +1709,7 @@ export class SalesController {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"sale-void:" + saleId}))`;
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"sale-void-operation:" + data.operationId}))`;
       const previous = await tx.saleVoidRequest.findUnique({
-        where: { operationId: data.operationId },
+        where: tenantUnique("operationId", data.operationId),
       });
       if (previous) {
         if (
@@ -2552,7 +2553,7 @@ export class SalesController {
         const lost = d(payment.amount).minus(owed);
         if (lost.gt(0))
           await tx.alert.upsert({
-            where: { key: "transfer-lost:" + payment.id },
+            where: tenantUnique("key", "transfer-lost:" + payment.id),
             create: {
               key: "transfer-lost:" + payment.id,
               type: "transfer_rejected_loss",
@@ -2642,7 +2643,7 @@ export class SalesController {
       if (data.operationId) {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))::text AS locked`;
         const prior = await tx.saleReturn.findUnique({
-          where: { operationId: data.operationId },
+          where: tenantUnique("operationId", data.operationId),
         });
         if (prior) {
           if (prior.branchId !== actor.branchId) denied();
@@ -2683,7 +2684,7 @@ export class SalesController {
       if (sale.status !== "completed")
         bad("Sólo se devuelven ventas completadas.");
       const settings = await tx.settings.findUnique({
-        where: { id: actor.branchId },
+        where: tenantUnique("id", actor.branchId),
       });
       if (
         Date.now() - sale.createdAt.getTime() >
@@ -2849,7 +2850,7 @@ export class SalesController {
         }
       }
       const counter = await tx.counter.upsert({
-        where: { key: "return:" + actor.branchId },
+        where: tenantUnique("key", "return:" + actor.branchId),
         create: { key: "return:" + actor.branchId, value: 1 },
         update: { value: { increment: 1 } },
       });
@@ -2979,7 +2980,7 @@ export class SalesController {
             transfer: "transferencia",
           };
           await tx.alert.upsert({
-            where: { key: "refund-method:" + row.id },
+            where: tenantUnique("key", "refund-method:" + row.id),
             create: {
               key: "refund-method:" + row.id,
               type: "refund_method_mismatch",
@@ -3061,7 +3062,7 @@ export class SalesController {
       this.db.creditNote.findUniqueOrThrow({
         where: { returnId: returned.id },
       }),
-      this.db.settings.findUnique({ where: { id: actor.branchId } }),
+      this.db.settings.findUnique({ where: tenantUnique("id", actor.branchId) }),
     ]);
     const business = (settings?.data as any) ?? {};
     res.setHeader("Content-Type", "application/pdf");
@@ -3390,7 +3391,7 @@ export class SalesController {
         "El estado de cuenta excede 1000 ventas; reduce el historial antes de exportar.",
       );
     const settings = await this.db.settings.findUnique({
-      where: { id: actor.branchId },
+      where: tenantUnique("id", actor.branchId),
     });
     const business = (settings?.data as any) ?? {};
     const doc = new PDFDocument({ size: "A4", margin: 44 });
@@ -3401,7 +3402,7 @@ export class SalesController {
       'inline; filename="estado-de-cuenta.pdf"',
     );
     doc.pipe(res);
-    doc.fontSize(18).text(business.name || "Grupo Macgen", { align: "center" });
+    doc.fontSize(18).text(business.name || "Nexora POS", { align: "center" });
     doc.fontSize(14).text("Estado de cuenta", { align: "center" });
     doc
       .fontSize(9)
@@ -3456,9 +3457,9 @@ export class SalesController {
       .update(JSON.stringify({ customerId, ...data }))
       .digest("hex");
     const result = await this.db.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${currentTenantId() + ":" + data.operationId}))`;
       const existing = await tx.creditAllocationOperation.findUnique({
-        where: { operationId: data.operationId },
+        where: tenantUnique("operationId", data.operationId),
       });
       if (existing) {
         if (
@@ -3725,7 +3726,7 @@ export class SalesController {
     const row = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.offlineUuid}))::text AS locked`;
       const existing = await tx.payment.findUnique({
-        where: { idempotencyKey: data.offlineUuid },
+        where: tenantUnique("idempotencyKey", data.offlineUuid),
       });
       if (existing) {
         if (
@@ -3934,7 +3935,7 @@ export class SalesController {
     )
       bad("Indica banco y referencia de transferencia.");
     const settings = await tx.settings.findUnique({
-      where: { id: actor.branchId },
+      where: tenantUnique("id", actor.branchId),
     });
     const { cashSessionId, ownerConfirmed: _confirmed, ...payment } = data;
     // Queda marcado en el pago para distinguirlo del efectivo de una caja.
@@ -4005,7 +4006,7 @@ export class SalesController {
       },
     });
     const settings = await this.db.settings.findUnique({
-      where: { id: actor.branchId },
+      where: tenantUnique("id", actor.branchId),
     });
     // SEC-05: este recibo es interno y no fiscal; la vendedora lo descarga
     // con la cédula/RNC y el teléfono del cliente enmascarados.

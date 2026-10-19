@@ -40,11 +40,11 @@ describe("P2 · manual operativo de cajera", () => {
     expect(manual).not.toContain("solo gerencia puede habilitarlas");
     expect(manual).toContain("solo administración puede habilitarlas");
   });
-  it("Int P4-1: el logo predeterminado del ticket queda precacheado sin conexión", () => {
+  it("Int P4-1: la PWA no precachea el logo de otra empresa", () => {
     const vite = readFileSync("apps/web/vite.config.ts", "utf8");
-    expect(vite).toMatch(/includeAssets:\s*\[[^\]]*"logo-grupo-macgen\.png"/);
+    expect(vite).not.toMatch(/includeAssets:\s*\[[^\]]*"logo-grupo-macgen\.png"/);
     const prints = readFileSync("apps/web/src/Prints.tsx", "utf8");
-    expect(prints).toContain('"/logo-grupo-macgen.png"');
+    expect(prints).not.toContain('"/logo-grupo-macgen.png"');
   });
 });
 const { createElement } = webRequire("react") as typeof import("react");
@@ -230,7 +230,7 @@ describe("Cumplimiento legal y accesibilidad", () => {
     expect(source).not.toContain('<Row label="NCF:" value={sale.ncf ?? ""} />');
   });
 
-  it("G2/P4: el HTML térmico usa Ajustes y el logo predeterminado o configurado", () => {
+  it("G2/P4: el HTML térmico usa Ajustes sin imponer el logo de otra empresa", () => {
     const settings = {
       name: "Negocio configurado",
       branchName: "Sucursal configurada",
@@ -241,7 +241,7 @@ describe("Cumplimiento legal y accesibilidad", () => {
     const withoutLogo = renderToStaticMarkup(
       createElement(BusinessHeader, { business: settings }),
     );
-    expect(withoutLogo).toContain('src="/logo-grupo-macgen.png"');
+    expect(withoutLogo).not.toContain("<img");
     for (const value of Object.values(settings))
       expect(withoutLogo).toContain(value);
 

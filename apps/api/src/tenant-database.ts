@@ -1,11 +1,23 @@
 import type { PrismaClient } from "@prisma/client";
-import { DEMO_TENANT_ID, tenantScope } from "./tenant-context";
+import { currentTenantId, tenantScope } from "./tenant-context";
 
 // Una transacción por operación garantiza que SET LOCAL no sobreviva en una
 // conexión del pool. Los callbacks de $transaction comparten la MISMA conexión.
 // El rol sin propiedad de tablas obliga a PostgreSQL a aplicar RLS.
 export function tenantDatabaseProxy<T extends PrismaClient>(root: T): T {
-  const scopeId = () => tenantScope.getStore()?.tenantId ?? DEMO_TENANT_ID;
+  const scopeId = currentTenantId;
+  const compoundUniqueFields: Record<string, readonly string[]> = {
+    role: ["name"], user: ["email", "usernameKey"], category: ["name"],
+    brand: ["name"], product: ["sku"], variant: ["sku", "barcode"],
+    stockTransfer: ["operationId"], sale: ["number", "offlineUuid", "ncf"],
+    saleVoidRequest: ["operationId"], payment: ["idempotencyKey"],
+    saleReturn: ["number", "operationId"], creditNote: ["redemptionCode"],
+    purchaseOrder: ["number"], goodsReceipt: ["operationId"],
+    supplierPayment: ["operationId"], cashMovement: ["operationId"],
+    expenseCategory: ["name"], expense: ["operationId"], alert: ["key"],
+    alertRule: ["type"], settings: ["id"], counter: ["key"],
+    authAttempt: ["key"], invoiceDraft: ["confirmedOperationId"],
+  };
   const prepare = async (tx: any, tenantId: string) => {
     await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_tenant_runtime");
     await tx.$queryRawUnsafe(
@@ -13,10 +25,27 @@ export function tenantDatabaseProxy<T extends PrismaClient>(root: T): T {
       tenantId,
     );
   };
-  const scopedArgs = (method: string, args: unknown[], tenantId: string) => {
+  const scopedArgs = (model: string, method: string, args: unknown[], tenantId: string) => {
     const first = args[0];
     if (!first || typeof first !== "object" || Array.isArray(first)) return args;
     const input = { ...first as Record<string, any> };
+    if (/^(?:findUnique(?:OrThrow)?|upsert|update|delete)$/.test(method) && input.where) {
+      input.where = { ...input.where };
+      for (const field of compoundUniqueFields[model] ?? []) {
+        if (!Object.hasOwn(input.where, field)) continue;
+        const value = input.where[field];
+        delete input.where[field];
+        input.where[`tenantId_${field}`] = { tenantId, [field]: value };
+      }
+      if (model === "warehouse" && input.where.branchId_kind) {
+        input.where.tenantId_branchId_kind = { tenantId, ...input.where.branchId_kind };
+        delete input.where.branchId_kind;
+      }
+      if (model === "notificationOutbox" && input.where.eventType_refId) {
+        input.where.tenantId_eventType_refId = { tenantId, ...input.where.eventType_refId };
+        delete input.where.eventType_refId;
+      }
+    }
     if (/^(?:find|count$|aggregate$|groupBy$|update|delete)/.test(method)) {
       input.where = { ...(input.where ?? {}), tenantId };
       if (method.startsWith("update") && input.data)
@@ -37,7 +66,7 @@ export function tenantDatabaseProxy<T extends PrismaClient>(root: T): T {
   const execute = (model: string | null, method: string, args: unknown[]) => {
     const active: any = tenantScope.getStore()?.transaction;
     const tenantId = scopeId();
-    const actualArgs = model ? scopedArgs(method, args, tenantId) : args;
+    const actualArgs = model ? scopedArgs(model, method, args, tenantId) : args;
     const invoke = (tx: any) =>
       model
         ? tx[model][method](...actualArgs)

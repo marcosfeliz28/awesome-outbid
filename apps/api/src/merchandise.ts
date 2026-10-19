@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import {
   Body,
   Controller,
@@ -522,7 +523,7 @@ export class MerchandiseController {
               variantId = p.variants[0].id;
               if (!canPrice)
                 await tx.alert.upsert({
-                  where: { key: "new-product:" + p.id },
+                  where: tenantUnique("key", "new-product:" + p.id),
                   create: {
                     key: "new-product:" + p.id,
                     type: "product_review",

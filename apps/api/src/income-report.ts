@@ -17,6 +17,7 @@ import {
   denied,
 } from "./common";
 import { groupIncomeDays } from "./income-day";
+import { tenantUnique } from "./tenant-context";
 
 type QueryInput = {
   from?: string;
@@ -470,6 +471,11 @@ export class IncomeReportController {
     }
     if (total > 10000)
       bad("El PDF supera 10,000 movimientos; divide el período.");
+    const settings = await this.db.settings.findUnique({
+      where: tenantUnique("id", actor.branchId),
+      select: { data: true },
+    });
+    const businessName = String((settings?.data as any)?.name || "Nexora POS");
     res.setHeader("Content-Type", "application/pdf");
     const doc = new PDFDocument({
       size: "A4",
@@ -477,7 +483,7 @@ export class IncomeReportController {
       margin: 36,
     });
     doc.pipe(res);
-    doc.fontSize(16).text("Grupo Macgen · Ingresos por día y forma de pago");
+    doc.fontSize(16).text(`${businessName} · Ingresos por día y forma de pago`);
     doc
       .fontSize(9)
       .text(

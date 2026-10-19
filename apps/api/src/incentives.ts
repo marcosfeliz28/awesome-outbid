@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 // Incentivos por cajera (docs/INCENTIVOS.md).
 //
 // Cada cajera gana un monto por unidad vendida según la categoría del
@@ -1031,7 +1032,7 @@ export class IncentivesController {
     const row = report.rows[0];
     if (!row) bad("Esa cajera no tiene incentivos en este mes.");
     const settings = await this.db.settings.findUnique({
-      where: { id: actor.branchId },
+      where: tenantUnique("id", actor.branchId),
     });
     const business = (settings?.data as any) ?? {};
     res.setHeader("Content-Type", "application/pdf");

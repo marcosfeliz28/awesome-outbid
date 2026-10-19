@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import {
   Body,
   Controller,
@@ -773,7 +774,7 @@ export class CashController {
       // (antes que el tope y el saldo, que ya lo incluyen).
       if (operationId) {
         const existing = await tx.cashMovement.findUnique({
-          where: { operationId },
+          where: tenantUnique("operationId", operationId),
         });
         if (existing) {
           if (
@@ -789,7 +790,7 @@ export class CashController {
       }
       if (needsApproval && !approvedBy) {
         const settings = await tx.settings.findUnique({
-          where: { id: actor.branchId },
+          where: tenantUnique("id", actor.branchId),
         });
         const limit = Number(
           (settings?.data as any)?.cashMovementApprovalLimit ?? 1000,
@@ -969,7 +970,7 @@ export class CashController {
       );
       const expected = await cashExpected(tx, session);
       const settings = (
-        await tx.settings.findUnique({ where: { id: actor.branchId } })
+        await tx.settings.findUnique({ where: tenantUnique("id", actor.branchId) })
       )?.data as any;
       const data = {
         countedCash: counted,
@@ -1084,7 +1085,7 @@ export class CashController {
           (approver ? ` · aprobó ${approver.name}` : "") +
           ` · ${input.notes.trim().slice(0, 200)}`;
         await tx.alert.upsert({
-          where: { key: "voucher:" + id },
+          where: tenantUnique("key", "voucher:" + id),
           create: {
             key: "voucher:" + id,
             type: "cash_voucher",
@@ -1104,7 +1105,7 @@ export class CashController {
         ) > differenceLimit
       )
         await tx.alert.upsert({
-          where: { key: "cash:" + id },
+          where: tenantUnique("key", "cash:" + id),
           create: {
             key: "cash:" + id,
             type: "cash_difference",

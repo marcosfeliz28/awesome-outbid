@@ -41,7 +41,7 @@ it("migra datos existentes y aísla lectura, escritura y cambio de tenant con RL
     persistent: false,
     authMethod: "scram-sha-256",
     initdbFlags: ["--encoding=UTF8", "--locale=C"],
-    postgresFlags: ["-c", "listen_addresses=127.0.0.1"],
+    postgresFlags: ["-c", "listen_addresses=127.0.0.1", "-c", "timezone=UTC"],
     onLog: () => undefined,
     onError: () => undefined,
   });
@@ -59,7 +59,7 @@ it("migra datos existentes y aísla lectura, escritura y cambio de tenant con RL
     expect(migrated.stdout).toContain("202610260001_product_tenant");
     client = db.getPgClient("product_qa", "127.0.0.1");
     await client.connect();
-    await client.query(`INSERT INTO "Tenant" (id, name, "updatedAt") VALUES ($1, 'Otro negocio', now())`, [other]);
+    await client.query(`INSERT INTO "Tenant" (id, slug, name, "updatedAt") VALUES ($1, 'otro-negocio', 'Otro negocio', now())`, [other]);
     const tables = (await client.query(`SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename <> '_prisma_migrations' AND tablename <> 'Tenant'`)).rows.map((r: any) => r.tablename);
     expect(tables).toHaveLength(58);
     for (const table of tables) {
@@ -125,15 +125,63 @@ it("migra datos existentes y aísla lectura, escritura y cambio de tenant con RL
       [demo, roleA, userA, sessionA, "a"],
       [other, roleB, userB, sessionB, "b"],
     ]) {
-      await client.query(`INSERT INTO "Role" (id,name,permissions,"updatedAt","tenantId") VALUES ($1,$2,ARRAY['*'],now(),$3)`, [roleId, `qa-product-${suffix}`, tenantId]);
-      await client.query(`INSERT INTO "User" (id,name,email,"passwordHash","pinHash","roleId","branchId","updatedAt","tenantId") VALUES ($1,$2,$3,'test-only','test-only',$4,'main',now(),$5)`, [userId, `Admin ${suffix}`, `qa-product-${suffix}@example.invalid`, roleId, tenantId]);
+      await client.query(`INSERT INTO "Role" (id,name,permissions,"updatedAt","tenantId") VALUES ($1,'Administración',ARRAY['*'],now(),$2)`, [roleId, tenantId]);
+      await client.query(`INSERT INTO "User" (id,name,email,"passwordHash","pinHash","roleId","branchId","updatedAt","tenantId") VALUES ($1,$2,'qa-product@example.invalid','test-only','test-only',$3,'main',now(),$4)`, [userId, `Admin ${suffix}`, roleId, tenantId]);
       await client.query(`INSERT INTO "AuthSession" (id,"userId","tenantId") VALUES ($1,$2,$3)`, [sessionId, userId, tenantId]);
     }
     const categoryB = "10000000-0000-4000-8000-000000000016";
     await client.query(`INSERT INTO "Category" (id,name,"updatedAt","tenantId") VALUES ($1,'Categoría B',now(),$2)`, [categoryB, other]);
     const productA = "10000000-0000-4000-8000-000000000017";
-    await client.query(`INSERT INTO "Product" (id,name,sku,"categoryId","updatedAt","tenantId") VALUES ($1,'Producto secreto A','QA-PRODUCT-A',$2,now(),$3)`, [productA, categoryId, demo]);
-    await client.query(`INSERT INTO "Product" (id,name,sku,"categoryId","updatedAt","tenantId") VALUES ($1,'Producto B','QA-PRODUCT-B',$2,now(),$3)`, ["10000000-0000-4000-8000-000000000018", categoryB, other]);
+    await client.query(`INSERT INTO "Product" (id,name,sku,"categoryId","updatedAt","tenantId") VALUES ($1,'Producto secreto A','QA-PRODUCT-SHARED',$2,now(),$3)`, [productA, categoryId, demo]);
+    await client.query(`INSERT INTO "Product" (id,name,sku,"categoryId","updatedAt","tenantId") VALUES ($1,'Producto B','QA-PRODUCT-SHARED',$2,now(),$3)`, ["10000000-0000-4000-8000-000000000018", categoryB, other]);
+    const variantA = "10000000-0000-4000-8000-000000000023";
+    const variantB = "10000000-0000-4000-8000-000000000024";
+    for (const [tenantId, variantId, productId] of [
+      [demo, variantA, productA],
+      [other, variantB, "10000000-0000-4000-8000-000000000018"],
+    ]) {
+      await client.query(`INSERT INTO "Variant" (id,"tenantId","productId",sku,barcode,"costAvg",price,stock,"updatedAt")
+        VALUES ($1,$2,$3,'QA-VARIANT-SHARED','QA-BARCODE-SHARED',10,20,1,now())`, [variantId, tenantId, productId]);
+      const stock = await client.query(`SELECT s.qty, w."tenantId" FROM "VariantStock" s
+        JOIN "Warehouse" w ON w.id=s."warehouseId" WHERE s."variantId"=$1 AND w.kind='store'`, [variantId]);
+      expect(stock.rows).toMatchObject([{ qty: "1.000", tenantId }]);
+    }
+    await expect(client.query(`INSERT INTO "Variant" (id,"tenantId","productId",sku,barcode,"costAvg",price,"updatedAt")
+      VALUES (gen_random_uuid(),$1,$2,' qa-variant-shared ','QA-NEW-BARCODE',10,20,now())`, [other, "10000000-0000-4000-8000-000000000018"]))
+      .rejects.toMatchObject({ code: "23505", constraint: "Variant_tenantId_sku_ci_key" });
+    for (const [tenantId, sellerId, saleId, offlineUuid] of [
+      [demo, userA, "10000000-0000-4000-8000-000000000019", "10000000-0000-4000-8000-000000000020"],
+      [other, userB, "10000000-0000-4000-8000-000000000021", "10000000-0000-4000-8000-000000000022"],
+    ]) {
+      await client.query(`INSERT INTO "Counter" (key,value,"tenantId") VALUES ('sale:main',1,$1)`, [tenantId]);
+      await client.query(`INSERT INTO "Sale" (id,number,"offlineUuid","sellerId",subtotal,"discountTotal","taxTotal",total,"costTotal","updatedAt","tenantId") VALUES ($1,'FS-0000001',$2,$3,0,0,0,0,0,now(),$4)`, [saleId, offlineUuid, sellerId, tenantId]);
+    }
+    expect((await client.query(`SELECT "tenantId" FROM "Sale" WHERE number='FS-0000001'`)).rows).toHaveLength(2);
+    const payoutOperationId = "10000000-0000-4000-8000-000000000025";
+    const creditOperationId = "10000000-0000-4000-8000-000000000026";
+    for (const [tenantId, userId, saleId] of [
+      [demo, userA, "10000000-0000-4000-8000-000000000019"],
+      [other, userB, "10000000-0000-4000-8000-000000000021"],
+    ]) {
+      await client.query(`INSERT INTO "CourierPayout" ("operationId","tenantId","branchId","actorId","requestHash",total)
+        VALUES ($1,$2,'main',$3,'test',0)`, [payoutOperationId, tenantId, userId]);
+      await client.query(`INSERT INTO "CourierPayoutItem" (id,"tenantId","payoutId","saleId",fee)
+        VALUES (gen_random_uuid(),$1,$2,$3,0)`, [tenantId, payoutOperationId, saleId]);
+      await client.query(`INSERT INTO "CreditAllocationOperation" ("operationId","tenantId","branchId","customerId","actorId","requestHash",result)
+        VALUES ($1,$2,'main',$3,$3,'test','{}'::jsonb)`, [creditOperationId, tenantId, userId]);
+    }
+    expect((await client.query(`SELECT "tenantId" FROM "CourierPayout" WHERE "operationId"=$1`, [payoutOperationId])).rows).toHaveLength(2);
+    expect((await client.query(`SELECT "tenantId" FROM "CreditAllocationOperation" WHERE "operationId"=$1`, [creditOperationId])).rows).toHaveLength(2);
+    const onlyAOperationId = "10000000-0000-4000-8000-000000000027";
+    const secondBSaleId = "10000000-0000-4000-8000-000000000028";
+    await client.query(`INSERT INTO "CourierPayout" ("operationId","tenantId","branchId","actorId","requestHash",total)
+      VALUES ($1,$2,'main',$3,'test',0)`, [onlyAOperationId, demo, userA]);
+    await client.query(`INSERT INTO "Sale" (id,number,"offlineUuid","sellerId",subtotal,"discountTotal","taxTotal",total,"costTotal","updatedAt","tenantId")
+      VALUES ($1,'FS-0000002',gen_random_uuid(),$2,0,0,0,0,0,now(),$3)`, [secondBSaleId, userB, other]);
+    await expect(client.query(`INSERT INTO "CourierPayoutItem" (id,"tenantId","payoutId","saleId",fee)
+      VALUES (gen_random_uuid(),$1,$2,$3,0)`, [other, onlyAOperationId, secondBSaleId]))
+      .rejects.toMatchObject({ code: "23503", constraint: "CourierPayoutItem_tenantId_payoutId_fkey" });
+    await expect(client.query(`INSERT INTO "Counter" (key,value,"tenantId") VALUES ('sale:main',2,$1)`, [other])).rejects.toThrow();
     const oldMode = process.env.PRODUCT_TENANCY;
     process.env.DATABASE_URL = url;
     process.env.PRODUCT_TENANCY = "required";
@@ -147,14 +195,21 @@ it("migra datos existentes y aísla lectura, escritura y cambio de tenant con RL
       const http = supertest(app.getHttpServer());
       const a = auth(demo, userA, sessionA);
       const b = auth(other, userB, sessionB);
+      expect((await http.get("/api/health/live")).status).toBe(200);
+      expect((await http.get("/api/health")).status).toBe(200);
+      expect((await http.get("/api/categories")).status).toBe(400);
+      expect((await http.post("/api/auth/login").send({ login: "x", password: "x" })).status).toBe(400);
+      expect((await http.post("/api/auth/login").set("x-tenant-id", other)
+        .send({ login: "x", password: "x" })).status).toBe(400);
+      expect(() => app.get(Database).brand.findMany()).toThrow("Falta el contexto de empresa");
       const { hashSync } = apiRequire("bcryptjs");
       await client.query(`UPDATE "User" SET "passwordHash"=$1 WHERE id=$2`, [hashSync("Clave solo para prueba B", 4), userB]);
-      const loginB = await http.post("/api/auth/login").set("x-tenant-id", other)
-        .send({ login: "qa-product-b@example.invalid", password: "Clave solo para prueba B" });
+      const loginB = await http.post("/api/auth/login").set("x-tenant-id", "otro-negocio")
+        .send({ login: "qa-product@example.invalid", password: "Clave solo para prueba B" });
       expect(loginB.status).toBe(201);
       expect(loginB.body.user.tenantId).toBe(other);
-      expect((await http.post("/api/auth/login").set("x-tenant-id", demo)
-        .send({ login: "qa-product-b@example.invalid", password: "Clave solo para prueba B" })).status).toBeGreaterThanOrEqual(400);
+      expect((await http.post("/api/auth/login").set("x-tenant-id", "demo")
+        .send({ login: "qa-product@example.invalid", password: "Clave solo para prueba B" })).status).toBeGreaterThanOrEqual(400);
       const categoriesA = await http.get("/api/categories").set("Authorization", a);
       const categoriesB = await http.get("/api/categories").set("Authorization", b);
       expect(categoriesA.status).toBe(200);

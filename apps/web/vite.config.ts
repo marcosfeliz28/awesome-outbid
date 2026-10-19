@@ -39,9 +39,9 @@ export default defineConfig({
       // espera y src/pwaUpdate.ts la aplica con el carrito vacío (aviso
       // «hay versión nueva», botón o caja sin usar) y revisa cada hora.
       registerType: "prompt",
-      // El logo predeterminado del ticket (Prints.tsx) también debe estar sin
-      // conexión: printSoon imprime a los 50 ms y no espera a la red.
-      includeAssets: ["icon.svg", "products/*.svg", "logo-grupo-macgen.png"],
+      // El logo del negocio se obtiene de sus propios Ajustes; nunca
+      // precachear el logo de otra empresa en el producto multiempresa.
+      includeAssets: ["icon.svg", "products/*.svg"],
       manifest: {
         name: "Nexora POS",
         short_name: "Nexora",

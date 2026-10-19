@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import {
   Body,
   Controller,
@@ -595,7 +596,7 @@ export class AdminController {
       const existing = await idempotent(
         tx,
         operationId,
-        () => tx.supplierPayment.findUnique({ where: { operationId } }),
+        () => tx.supplierPayment.findUnique({ where: tenantUnique("operationId", operationId) }),
         (row: any) =>
           row.branchId === actor.branchId &&
           row.createdBy === actor.id &&
@@ -681,7 +682,7 @@ export class AdminController {
       const existing = await idempotent(
         tx,
         operationId,
-        () => tx.expense.findUnique({ where: { operationId } }),
+        () => tx.expense.findUnique({ where: tenantUnique("operationId", operationId) }),
         (row: any) =>
           row.branchId === actor.branchId &&
           row.createdBy === actor.id &&
@@ -809,7 +810,7 @@ export class AdminController {
   ) {
     const data = (
       await this.db.settings.findUniqueOrThrow({
-        where: { id: actor.branchId },
+        where: tenantUnique("id", actor.branchId),
       })
     ).data as Record<string, unknown>;
     // Instalaciones anteriores no tienen esta clave. El cliente y cualquier
@@ -836,7 +837,7 @@ export class AdminController {
     if (logo) checkLogo(logo);
     return this.db.$transaction(async (tx) => {
       const before = await tx.settings.findUnique({
-        where: { id: actor.branchId },
+        where: tenantUnique("id", actor.branchId),
       });
       // El formulario puede omitir el logo (pesa mucho para reenviarlo).
       const kept =
@@ -858,7 +859,7 @@ export class AdminController {
         ...(kept ? { logo: kept } : {}),
       };
       const row = await tx.settings.upsert({
-        where: { id: actor.branchId },
+        where: tenantUnique("id", actor.branchId),
         create: { id: actor.branchId, data },
         update: { data },
       });
@@ -890,10 +891,10 @@ export class AdminController {
     const logo = `data:image/${type};base64,${file.buffer.toString("base64")}`;
     return this.db.$transaction(async (tx) => {
       const row = await tx.settings.findUniqueOrThrow({
-        where: { id: actor.branchId },
+        where: tenantUnique("id", actor.branchId),
       });
       await tx.settings.update({
-        where: { id: actor.branchId },
+        where: tenantUnique("id", actor.branchId),
         data: { data: { ...(row.data as any), logo } },
       });
       await audit(

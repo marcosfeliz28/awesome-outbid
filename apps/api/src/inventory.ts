@@ -1,3 +1,4 @@
+import { currentTenantId, tenantUnique } from "./tenant-context";
 import {
   Body,
   Controller,
@@ -344,7 +345,7 @@ export async function lockVariant(tx: any, id: string, actor: Actor) {
       },
     },
   });
-  const settings = await tx.settings.findUnique({
+  const settings = await tx.settings.findFirst({
     where: { id: actor.branchId },
   });
   const otherStocks = await tx.variantStock.findMany({
@@ -423,7 +424,7 @@ export async function inventoryLossAlert(tx: any, actor: Actor) {
     since,
   );
   const loss = money(rows[0]?.loss ?? 0);
-  const settings = await tx.settings.findUnique({
+  const settings = await tx.settings.findFirst({
     where: { id: actor.branchId },
   });
   const limit = Number(
@@ -466,7 +467,7 @@ export async function stockChange(
     data: { stock: balance },
   });
   const storeWarehouse = await tx.warehouse.findUnique({
-    where: { branchId_kind: { branchId: actor.branchId, kind: "store" } },
+    where: { tenantId_branchId_kind: { tenantId: currentTenantId(), branchId: actor.branchId, kind: "store" } },
     select: { id: true },
   });
   await tx.inventoryMovement.create({
@@ -981,7 +982,7 @@ export class InventoryController {
         where: { id: data.supplierId, branchId: actor.branchId, active: true },
       });
       const count = await tx.counter.upsert({
-        where: { key: "purchase" },
+        where: tenantUnique("key", "purchase"),
         create: { key: "purchase", value: 1 },
         update: { value: { increment: 1 } },
       });
@@ -1131,7 +1132,7 @@ export class InventoryController {
           // completó la orden devuelve esa recepción, no «ya fue recibida».
           if (data.operationId) {
             const prior = await tx.goodsReceipt.findUnique({
-              where: { operationId: data.operationId },
+              where: tenantUnique("operationId", data.operationId),
             });
             if (prior) {
               if (!sameRequest(prior, order.id))
@@ -1318,7 +1319,7 @@ export class InventoryController {
       } catch (error) {
         if (!isSerializationConflict(error)) throw error;
         const prior = await this.db.goodsReceipt.findUnique({
-          where: { operationId: data.operationId },
+          where: tenantUnique("operationId", data.operationId),
         });
         if (prior) {
           if (!sameRequest(prior, parse(uuid, id)))
@@ -1510,7 +1511,7 @@ export class InventoryController {
           },
         })
       : await this.db.warehouse.findUnique({
-          where: { branchId_kind: { branchId: actor.branchId, kind: "store" } },
+          where: { tenantId_branchId_kind: { tenantId: currentTenantId(), branchId: actor.branchId, kind: "store" } },
         });
     if (!warehouse) bad("Almacén inválido.");
     const items = [];
@@ -1564,7 +1565,7 @@ export class InventoryController {
               })
             : await tx.warehouse.findUnique({
                 where: {
-                  branchId_kind: { branchId: actor.branchId, kind: "store" },
+                  tenantId_branchId_kind: { tenantId: currentTenantId(), branchId: actor.branchId, kind: "store" },
                 },
               });
           if (!warehouse) bad("Almacén inválido.");

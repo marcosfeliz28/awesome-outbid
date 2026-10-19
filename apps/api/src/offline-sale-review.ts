@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 // Auditoría 05-A2: salida para una venta sin conexión en conflicto.
 //
 // Antes, «Descartar» exigía sale:manage y, además, que lo pidiera quien envió
@@ -133,7 +134,7 @@ export class OfflineSaleReviewController {
           "No hay un conflicto registrado para esta venta en tu sucursal.",
         );
       if (
-        await tx.sale.findUnique({ where: { offlineUuid: data.offlineUuid } })
+        await tx.sale.findUnique({ where: tenantUnique("offlineUuid", data.offlineUuid) })
       )
         conflict(
           "La venta ya está registrada en el servidor; no se puede descartar.",
@@ -263,7 +264,7 @@ export class OfflineSaleReviewController {
       // Tipo offline_conflict: la evaluación periódica de alertas no la
       // resuelve sola; queda hasta que gerencia la revise.
       await tx.alert.upsert({
-        where: { key: "offline-discarded:" + data.offlineUuid },
+        where: tenantUnique("key", "offline-discarded:" + data.offlineUuid),
         create: {
           key: "offline-discarded:" + data.offlineUuid,
           type: "offline_conflict",

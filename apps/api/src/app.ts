@@ -58,7 +58,8 @@ export class HealthController {
   // cuerpo) y post-deploy-check.mjs en /api/health.
   @Public() @Get(["health", "health/ready"]) async ready() {
     try {
-      await this.db.$queryRaw`SELECT 1`;
+      if (process.env.PRODUCT_TENANCY === "required") await this.db.healthCheck();
+      else await this.db.$queryRaw`SELECT 1`;
       return { status: "ok" };
     } catch {
       throw new ServiceUnavailableException("Servicio no disponible.");
@@ -95,7 +96,10 @@ export function createAppModule(secret: string) {
     providers: [
       Database,
       AlertEngine,
-      ...(!product ? [NotificationWorker, CreditReminderService, DriveBackupService, DriveBackupWorker, RetentionWorker] : []),
+      NotificationWorker,
+      CreditReminderService,
+      RetentionWorker,
+      ...(!product ? [DriveBackupService, DriveBackupWorker] : []),
       RequestRateLimitService,
       SecurityMaintenance,
       { provide: APP_GUARD, useClass: AuthGuard },
@@ -104,9 +108,36 @@ export function createAppModule(secret: string) {
     ],
   })
   class AppModule implements NestModule {
+    constructor(@Inject(Database) readonly db: Database) {}
     configure(consumer: MiddlewareConsumer) {
-      consumer.apply((req: any, _res: any, next: () => void) => {
-        tenantScope.run({ tenantId: tenantFromRequest(req) }, next);
+      consumer.apply((req: any, res: any, next: (error?: unknown) => void) => {
+        if (!product) {
+          tenantScope.run({ tenantId: tenantFromRequest(req)! }, next);
+          return;
+        }
+        const path = String(req.originalUrl ?? req.url).split("?")[0];
+        if (/^\/api\/health(?:\/live|\/ready)?\/?$/.test(path)) {
+          next();
+          return;
+        }
+        if (/^\/api\/auth\/(?:login|change-password)\/?$/.test(path)) {
+          const slug = req.headers["x-tenant-id"];
+          if (typeof slug !== "string" || !/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) {
+            res.status(400).json({ message: "Escribe el código de empresa." });
+            return;
+          }
+          void this.db.resolveTenantSlug(slug).then((tenantId) => {
+            if (!tenantId) res.status(400).json({ message: "Código de empresa no disponible." });
+            else tenantScope.run({ tenantId }, next);
+          }).catch(next);
+          return;
+        }
+        const tenantId = tenantFromRequest(req);
+        if (!tenantId) {
+          res.status(400).json({ message: "Falta el contexto de empresa." });
+          return;
+        }
+        tenantScope.run({ tenantId }, next);
       }).forRoutes("*");
     }
   }

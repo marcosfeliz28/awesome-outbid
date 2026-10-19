@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 import {
   ArgumentsHost,
   Catch,
@@ -32,7 +33,7 @@ import {
 import { clientIp } from "./rate-limit";
 import { checkDatabaseTimeZone } from "./database-timezone";
 import { tenantDatabaseProxy } from "./tenant-database";
-import { tenantScope } from "./tenant-context";
+import { DEMO_TENANT_ID, tenantScope } from "./tenant-context";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -45,8 +46,9 @@ export class Database extends PrismaClient {
   async onModuleInit() {
     await this.$connect();
     if (process.env.PRODUCT_TENANCY === "required") {
-      const role = await tenantDatabaseProxy(this).$queryRawUnsafe<{ role: string }[]>(
-        "SELECT current_user AS role",
+      const role = await tenantScope.run(
+        { tenantId: DEMO_TENANT_ID },
+        () => tenantDatabaseProxy(this).$queryRawUnsafe<{ role: string }[]>("SELECT current_user AS role"),
       );
       if (role[0]?.role !== "nexora_tenant_runtime")
         throw new Error("RLS de producto no está activo; se cancela el arranque.");
@@ -56,6 +58,24 @@ export class Database extends PrismaClient {
   }
   async onModuleDestroy() {
     await this.$disconnect();
+  }
+  // Estas tres consultas de infraestructura nunca leen datos de negocio.
+  // El proxy sólo permite estas operaciones explícitas fuera de tenantScope.
+  async healthCheck() {
+    await this.$queryRawUnsafe("SELECT 1");
+  }
+  async resolveTenantSlug(slug: string): Promise<string | null> {
+    const row = await this.tenant.findUnique({
+      where: { slug }, select: { id: true, status: true },
+    });
+    return row && ["trial", "active"].includes(row.status) ? row.id : null;
+  }
+  async activeTenantIds(): Promise<string[]> {
+    const rows = await this.tenant.findMany({
+      where: { status: { in: ["trial", "active"] } }, select: { id: true },
+      orderBy: { id: "asc" },
+    });
+    return rows.map((row) => row.id);
   }
 }
 export type Actor = {
@@ -677,7 +697,7 @@ export class AuthGuard implements CanActivate {
       if (payload.version !== user.authVersion || !payload.sid)
         throw new Error();
       const settings = await this.db.settings.findUnique({
-        where: { id: user.branchId },
+        where: tenantUnique("id", user.branchId),
       });
       const now = Date.now();
       const timeout =

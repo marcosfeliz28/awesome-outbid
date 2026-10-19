@@ -1,3 +1,4 @@
+import { tenantUnique } from "./tenant-context";
 // Pantalla «Importar inventario» (sólo administración): vista previa y carga
 // del Excel de existencias. La lógica está en inventory-import-core.ts (la
 // misma del script de línea de comandos). El archivo vive sólo en memoria
@@ -377,7 +378,7 @@ export class InventoryImportController {
               let variantId = change.variantId;
               if (!variantId) {
                 const category = await tx.category.upsert({
-                  where: { name: change.row.category },
+                  where: tenantUnique("name", change.row.category),
                   create: {
                     name: change.row.category,
                     branchId: actor.branchId,
