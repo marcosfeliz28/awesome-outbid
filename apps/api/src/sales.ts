@@ -41,6 +41,7 @@ import {
   receivableNeedsApproval,
   RECEIVABLE_SHIFT_LIMIT,
   businessDate,
+  daysSince,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -3284,14 +3285,7 @@ export class SalesController {
             balance: Number(g._sum.creditBalance ?? 0),
             openSales: g._count.id,
             lastClosedAt: g._max.creditClosedAt ?? null,
-            oldestDays: g._min.createdAt
-              ? Math.max(
-                  0,
-                  Math.floor(
-                    (Date.now() - g._min.createdAt.getTime()) / 86400000,
-                  ),
-                )
-              : 0,
+            oldestDays: g._min.createdAt ? daysSince(g._min.createdAt) : 0,
           },
         ];
       }),
@@ -3659,7 +3653,7 @@ export class SalesController {
       users.find((u) => u.id === id)?.name ?? null;
     const sum = (rows: { amount: unknown }[]) =>
       money(rows.reduce((a, p) => a.plus(p.amount as any), d(0)));
-    const now = Date.now();
+    const now = new Date();
     return sales.flatMap((s) => {
       const collections = s.payments.filter(
         (p) => p.entryType === "installment",
@@ -3683,10 +3677,8 @@ export class SalesController {
           saleId: s.id,
           number: s.number,
           createdAt: s.createdAt,
-          ageDays: Math.max(
-            0,
-            Math.floor((now - s.createdAt.getTime()) / 86400000),
-          ),
+          // Días que lleva sin cerrarse; si ya se cerró, los que tardó.
+          ageDays: daysSince(s.createdAt, s.creditClosedAt ?? now),
           status,
           cashSessionId: s.cashSessionId,
           total: Number(s.total),
