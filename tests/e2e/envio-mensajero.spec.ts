@@ -14,11 +14,11 @@ test("envío: 15,550 + 400 cuadra con 15,950 y se paga una sola vez", async ({
   expect(login.ok()).toBe(true);
   const session = await login.json();
   const headers = { Authorization: "Bearer " + session.accessToken };
-  const api = async (path: string, data?: unknown) => {
+  const api = async (path: string, data?: unknown, auth = headers) => {
     const response =
       data === undefined
-        ? await request.get("/api" + path, { headers })
-        : await request.post("/api" + path, { headers, data });
+        ? await request.get("/api" + path, { headers: auth })
+        : await request.post("/api" + path, { headers: auth, data });
     const text = await response.text();
     expect(response.ok(), path + ": " + text).toBe(true);
     return JSON.parse(text);
@@ -29,6 +29,39 @@ test("envío: 15,550 + 400 cuadra con 15,950 y se paga una sola vez", async ({
     secret: "qa-" + crypto.randomUUID(),
   };
   await api("/terminals/register", terminal);
+  const code = () =>
+    String(100000 + (parseInt(crypto.randomUUID().slice(0, 8), 16) % 900000));
+  const temporary = code();
+  let active = code();
+  while (active === temporary) active = code();
+  const sellerEmail = `e2e-envio-${tag}@example.com`;
+  const roles = await api("/roles");
+  const seller = await api("/users", {
+    name: "Cajera envío QA " + tag,
+    email: sellerEmail,
+    password: temporary,
+    pin: code(),
+    roleId: roles.find((role: any) => role.name === "seller").id,
+  });
+  const changed = await request.post("/api/auth/change-password", {
+    data: {
+      login: sellerEmail,
+      currentPassword: temporary,
+      newPassword: active,
+      confirmPassword: active,
+    },
+  });
+  expect(changed.ok()).toBe(true);
+  const sellerHeaders = {
+    Authorization: "Bearer " + (await changed.json()).accessToken,
+  };
+  const sellerTerminal = {
+    id: crypto.randomUUID(),
+    name: "E2E caja envío " + tag,
+    secret: "qa-" + crypto.randomUUID(),
+  };
+  await api("/terminals/register", sellerTerminal, sellerHeaders);
+  await api("/terminals/" + sellerTerminal.id + "/approve", {});
   await page.addInitScript(
     ([branch, identity]) =>
       localStorage.setItem(
@@ -58,63 +91,33 @@ test("envío: 15,550 + 400 cuadra con 15,950 y se paga una sola vez", async ({
     reason: "Prueba envío del mensajero",
   });
   const customer = await api("/customers", { name: "Cliente envío QA " + tag });
-  // La caja y la venta son de una cajera propia de la prueba: la cuenta de la
-  // administración puede tener otra caja abierta en otro equipo (otras pruebas).
-  const roles = await api("/roles");
-  const sellerEmail = `e2e-envio-${tag}@example.com`;
-  await api("/users", {
-    name: "E2E Envío " + tag,
-    email: sellerEmail,
-    password: "482917",
-    pin: String(Math.floor(100000 + Math.random() * 900000)),
-    roleId: roles.find((r: any) => r.name === "seller").id,
-  });
-  const changed = await (
-    await request.post("/api/auth/change-password", {
-      data: {
-        login: sellerEmail,
-        currentPassword: "482917",
-        newPassword: "736204",
-        confirmPassword: "736204",
-      },
-    })
-  ).json();
-  const asSeller = { Authorization: "Bearer " + changed.accessToken };
-  const sellerApi = async (path: string, data: unknown) => {
-    const response = await request.post("/api" + path, {
-      headers: asSeller,
-      data,
-    });
-    const text = await response.text();
-    expect(response.ok(), path + ": " + text).toBe(true);
-    return JSON.parse(text);
-  };
-  const sellerTerminal = {
-    id: crypto.randomUUID(),
-    name: "E2E envío caja " + tag,
-    secret: "qa-" + crypto.randomUUID(),
-  };
-  await sellerApi("/terminals/register", sellerTerminal);
-  await api("/terminals/" + sellerTerminal.id + "/approve", {});
-  const cash = await sellerApi("/cash-sessions/open", {
-    registerId: sellerTerminal.id,
-    openingAmount: 1000,
-  });
-  const sold = await sellerApi("/sales", {
-    offlineUuid: crypto.randomUUID(),
-    customerId: customer.id,
-    cashSessionId: cash.id,
-    items: [{ variantId: product.variants[0].id, qty: 1 }],
-    payments: [
-      {
-        method: "transfer",
-        amount: 15550,
-        bank: "BHD",
-        reference: "QA-" + tag,
-      },
-    ],
-    expectedTotal: 15550,
-  });
+  const cash = await api(
+    "/cash-sessions/open",
+    {
+      registerId: sellerTerminal.id,
+      openingAmount: 1000,
+    },
+    sellerHeaders,
+  );
+  const sold = await api(
+    "/sales",
+    {
+      offlineUuid: crypto.randomUUID(),
+      customerId: customer.id,
+      cashSessionId: cash.id,
+      items: [{ variantId: product.variants[0].id, qty: 1 }],
+      payments: [
+        {
+          method: "transfer",
+          amount: 15550,
+          bank: "BHD",
+          reference: "QA-" + tag,
+        },
+      ],
+      expectedTotal: 15550,
+    },
+    sellerHeaders,
+  );
   await page.goto("/");
   await page.getByLabel("Usuario").fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
@@ -180,4 +183,8 @@ test("envío: 15,550 + 400 cuadra con 15,950 y se paga una sola vez", async ({
       () => document.documentElement.scrollWidth - innerWidth,
     ),
   ).toBeLessThanOrEqual(1);
+  await request.patch("/api/users/" + seller.id, {
+    headers,
+    data: { active: false },
+  });
 });

@@ -160,8 +160,8 @@ afterAll(async () => {
   const retry = {
     recursive: true,
     force: true,
-    maxRetries: 5,
-    retryDelay: 200,
+    maxRetries: 12,
+    retryDelay: 250,
   };
   if (dataDir) await rm(dataDir, retry);
   if (projectDir) await rm(projectDir, retry);

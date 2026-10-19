@@ -444,3 +444,7 @@ Claude puede dejar de estar disponible; la dueña quiere seguir trabajando igual
 
 ## Regla del almacén Casa (dueña, 18-oct-2026)
 Casa solo se modifica con instrucción expresa de la dueña. Toda salida de Casa lleva su destino en el motivo: «regalo a <persona>» (salida) o «traspaso a Tienda» (resta Casa y suma Tienda, mismo costo). Conteo inicial de fajas en Casa cargado el 18-oct (205 unidades; «faja tipo corset» = «Cinturilla tipo corset»).
+
+## 3ai — Órdenes del 19-oct-2026
+- **ChatGPT PC:** investigar 40 mejoras (seguridad, estadística, inventario, ventas, clientes, precios) y proponer cómo instalar las 10 primeras. Detalle: `docs/coordinacion/ORDEN_40_MEJORAS_CHATGPT_PC.md`.
+- **Claude PC:** revisión independiente y pruebas en Windows de los arreglos de la auditoría (rama `claude/arreglos-auditoria-pc`). Detalle: `docs/coordinacion/ORDEN_CLAUDE_PC_REVISION_ARREGLOS.md`.

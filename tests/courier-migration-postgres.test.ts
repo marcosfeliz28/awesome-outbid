@@ -112,8 +112,8 @@ it("migra una base con ventas sin alterar total, costo, impuestos ni importe de 
     const retry = {
       recursive: true,
       force: true,
-      maxRetries: 5,
-      retryDelay: 200,
+      maxRetries: 12,
+      retryDelay: 250,
     };
     await rm(dataDir, retry);
     await rm(projectDir, retry);
