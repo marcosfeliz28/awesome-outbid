@@ -14,3 +14,8 @@ Solo nombres y últimos dígitos (lo que ve la caja). Los números completos los
 
 Las dos BHD terminan en 0015 pero son cuentas distintas: el nombre siempre lleva la empresa.
 Terminales de tarjeta: pendiente que la dueña diga cuáles son.
+
+## Nombres en la caja (dueña, 20-oct): banco + empresa + últimos 4
+- Popular MacGen ···3620 · Banreservas MacGen ···5237 · BHD MacGen ···0015
+- Popular Grupo Génesis ···9797 · Banreservas Grupo Génesis ···5853 · BHD Grupo Génesis ···0015
+- El efectivo cae en la caja abierta al facturar (sin cambio).
