@@ -54,7 +54,6 @@ let admin = "",
   customerId = "",
   categoryId = "",
   serviceVariant = "",
-  serviceProduct = "",
   cash: any;
 const fakeBranch = "qa-usd-" + suffix;
 
@@ -92,7 +91,7 @@ beforeAll(async () => {
       },
     ],
   });
-  serviceProduct = p.id;
+  expect(p.unit).toBe("servicio");
   serviceVariant = p.variants[0].id;
   cash = await ok("/cash-sessions/open", admin, {
     registerId: "qa-gv-" + suffix,
