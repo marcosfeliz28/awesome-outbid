@@ -8,6 +8,12 @@
 - **Decisiones del cierre de caja** (6): un solo verifone, fondo, tope, Genesis, turnos, mensajero.
 - Señales a revisar: FS-0000113 (Lizbeth 50 %, transferencia ref 1111 por verificar), FS-0000062 (annya bello, 32 % «CREDITO», contraentrega RD$ 71,100 pendiente).
 
+## SEGUIMIENTO MAÑANA (21-oct): conteo de fajas del 20-oct
+
+- Ajustes aplicados el 20-oct en Tienda: chaleco S 1615 12→11 (−1), corset 3XS 1576 22→24 (+2), corset L 1602 2→1 (−1), corset XL 1603 6→5 (−1). Casa no se tocó.
+- Revisar mañana si los +2 de 3XS y los −1 de L/XL eran tallas cruzadas, y volver a contar.
+- Proteínas y creatinas del 20-oct: todo cuadrado, sin cambios.
+
 ## PARA MAÑANA (guardado 20-oct): facturar la venta de Mia Sherlim
 
 - Se vendió **1 Too Faced Born This Way Super Coverage Concealer Light Beige (SKU 1677)** a **Mia Sherlim**, pero **no se facturó**.
