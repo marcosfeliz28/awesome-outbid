@@ -885,7 +885,7 @@ describe("Respaldo a Google Drive · respaldos", () => {
     expect((await waitIdle(before)).lastRun.status).toBe("success");
   });
 
-  it("retención: 30 diarias + 12 mensuales; no toca archivos ajenos", async () => {
+  it("retención: 365 diarias + 120 mensuales (10 años); no toca archivos ajenos", async () => {
     const folder = [...g.files.values()].find(
       (f) => f.mimeType === "application/vnd.google-apps.folder",
     )!;
@@ -906,10 +906,10 @@ describe("Respaldo a Google Drive · respaldos", () => {
       g.files.set(f.id, f);
       return f;
     };
-    // 45 días anteriores y 14 meses atrás (primero de cada mes).
-    for (let i = 1; i <= 45; i++)
+    // 380 días anteriores y 130 meses atrás: la retención de 10 años sí borra.
+    for (let i = 1; i <= 380; i++)
       add(backupName(new Date(Date.now() - i * 86400000)));
-    for (let m = 2; m <= 15; m++) {
+    for (let m = 2; m <= 130; m++) {
       const d = new Date();
       d.setUTCDate(10);
       d.setUTCMonth(d.getUTCMonth() - m);
@@ -946,7 +946,7 @@ describe("Respaldo a Google Drive · respaldos", () => {
         .filter((f) => !f.trashed && f.appProperties.nexoraBackup === "1")
         .map((f) => f.name.slice(7, 17)),
     );
-    expect(days.size).toBeGreaterThanOrEqual(30);
+    expect(days.size).toBeGreaterThanOrEqual(365);
     const audit = await db.auditLog.findFirst({
       where: { action: "backup_run" },
       orderBy: { createdAt: "desc" },
