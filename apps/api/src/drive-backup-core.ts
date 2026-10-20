@@ -552,8 +552,10 @@ export function retentionPlan(
   files: DriveFileInfo[],
   options: { daily?: number; monthly?: number; keep?: string[] } = {},
 ) {
-  const daily = options.daily ?? 30;
-  const monthly = options.monthly ?? 12;
+  // Orden de la dueña (20-oct): que nada se pierda en 10 años. Cada copia es
+  // la base completa: 365 diarias + una por mes durante 120 meses.
+  const daily = options.daily ?? 365;
+  const monthly = options.monthly ?? 120;
   const backups = files
     .map((file) => ({ file, parsed: parseBackupName(file.name) }))
     .filter(

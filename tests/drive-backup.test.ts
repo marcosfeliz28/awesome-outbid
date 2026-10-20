@@ -1047,7 +1047,7 @@ describe("Respaldo a Google Drive · respaldos", () => {
   // W9 (auditoría 07 v2, Q-04): la verificación posterior a la subida no tenía
   // pruebas de rechazo por separado. Cada caso cambia UNA sola señal de Drive y
   // exige que la copia dudosa vaya a la papelera y que NO se borre ninguna
-  // copia anterior (la retención tendría trabajo que hacer: 45 diarias viejas).
+  // copia anterior (la retención tendría trabajo que hacer: 380 diarias viejas).
   describe("verificación de la copia subida y retención (W9)", () => {
     const folderId = () =>
       [...g.files.values()].find(
@@ -1056,7 +1056,8 @@ describe("Respaldo a Google Drive · respaldos", () => {
     const seedOld = () => {
       const parent = folderId();
       const old: FakeFile[] = [];
-      for (let i = 1; i <= 45; i++) {
+      // 380 diarias: la retención de 10 años (365 + mensuales) sí tiene que borrar.
+      for (let i = 1; i <= 380; i++) {
         const f: FakeFile = {
           id: newId("w9old"),
           name: backupName(new Date(Date.now() - i * 86400000)),
