@@ -205,7 +205,7 @@ describe("03-A1 · aviso de privacidad en la web", () => {
       "Telegram",
       "Google Drive",
       "Estados Unidos",
-      "13 meses",
+      "10 años",
     ])
       expect(plain, third).toContain(third);
     // El recibo, sin teléfono configurado, sigue diciendo que se pide en caja.

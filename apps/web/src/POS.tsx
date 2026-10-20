@@ -45,6 +45,7 @@ import {
   receivableApprovalReason,
   receivableApprovalMessage,
   margin,
+  courierCharge,
 } from "@fitstore/shared";
 import type { SaleInput } from "@fitstore/shared";
 import {
@@ -2262,7 +2263,11 @@ function Checkout({
     void finish();
   }, [online, awaitingConfirmation, busy, receipt]);
   if (receipt) {
-    const text = `${config?.name || "Nexora POS"} · Recibo ${receipt.number}\nTotal: ${formatMoney(receipt.total)}\n${NON_FISCAL_LEGEND}\nGracias por tu compra.`;
+    const envio = courierCharge(receipt);
+    const envioText = envio
+      ? `\nEnvío (mensajero ${envio.name}): ${formatMoney(envio.fee)}\nTotal pagado: ${formatMoney(envio.paid)}`
+      : "";
+    const text = `${config?.name || "Nexora POS"} · Recibo ${receipt.number}\nTotal: ${formatMoney(receipt.total)}${envioText}\n${NON_FISCAL_LEGEND}\nGracias por tu compra.`;
     const customer = receipt.customer;
     // SEC-05: un dato enmascarado («•••••••123») no es un destinatario; la
     // cajera elige el contacto en WhatsApp o en el correo.
@@ -2456,6 +2461,11 @@ function Checkout({
           </button>
         ))}
       </div>
+      {!courierAllowed && (
+        <small className="courier-hint">
+          ¿Con envío? Elige Transferencia o Tarjeta y agrega el pago.
+        </small>
+      )}
       {config?.ncfMode === "prepared" && (
         <div className="form-grid">
           <label className="field">

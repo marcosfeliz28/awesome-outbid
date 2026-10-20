@@ -783,6 +783,19 @@ export const daysSince = (
   from: Date | string,
   to: Date | string = new Date(),
 ) => Math.max(0, expiryDays(to, new Date(from)));
+// Envío del mensajero en el recibo del cliente (orden de la dueña, 19-oct):
+// se muestra aparte y no es venta, ganancia ni ITBIS. Sin envío: null.
+export const courierCharge = (sale: {
+  courierFee?: unknown;
+  courierName?: string | null;
+  total?: unknown;
+}) => {
+  const fee = Number(sale?.courierFee ?? 0);
+  if (!(fee > 0)) return null;
+  const name = (sale?.courierName ?? "").trim() || "Addison";
+  const paid = Math.round((Number(sale?.total ?? 0) + fee) * 100) / 100;
+  return { fee, name, paid };
+};
 export const weekStart = (value: Date = new Date()) => {
   const day = new Date(businessDate(value) + "T12:00:00Z");
   day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));
