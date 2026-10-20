@@ -10,7 +10,7 @@
 
 ## SEGUIMIENTO MAÑANA (21-oct): conteo de fajas del 20-oct
 
-- Ajustes aplicados el 20-oct en Tienda: chaleco S 1615 12→11 (−1), corset 3XS 1576 22→24 (+2), corset L 1602 2→1 (−1), corset XL 1603 6→5 (−1). Casa no se tocó.
+- Ajustes aplicados el 20-oct en Tienda: chaleco S 1615 12→11 (−1, la dueña cree que fue robo el viernes 17-oct), corset 3XS 1576 22→24 (+2), corset L 1602 2→1 (−1), corset XL 1603 6→5 (−1). Casa no se tocó.
 - Revisar mañana si los +2 de 3XS y los −1 de L/XL eran tallas cruzadas, y volver a contar.
 - Proteínas y creatinas del 20-oct: todo cuadrado, sin cambios.
 
