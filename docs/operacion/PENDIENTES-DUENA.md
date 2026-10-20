@@ -8,6 +8,13 @@
 - **Decisiones del cierre de caja** (6): un solo verifone, fondo, tope, Genesis, turnos, mensajero.
 - Señales a revisar: FS-0000113 (Lizbeth 50 %, transferencia ref 1111 por verificar), FS-0000062 (annya bello, 32 % «CREDITO», contraentrega RD$ 71,100 pendiente).
 
+## PARA MAÑANA (guardado 20-oct): facturar la venta de Mia Sherlim
+
+- Se vendió **1 Too Faced Born This Way Super Coverage Concealer Light Beige (SKU 1677)** a **Mia Sherlim**, pero **no se facturó**.
+- Pagó por **transferencia 2,550** el 19-oct a las 10:54 a.m. (cuenta *****9127, a Grupo Genesis Vargas Grullón SRL; en el banco: «MB DESDE 856959127 MIA SHERLIM»).
+- 2,550 = **2,100** del corrector + **450** de envío (mensaje del grupo «Tienda de maquillaje GV»: «No está en el sistema, mia 2,100 450 de envío»).
+- Hacer: factura a nombre de Mia Sherlim, SKU 1677 a 2,100, pago transferencia 2,100 + envío 450 (Addison), verificada con la foto del banco. Descuenta 1 del 1677 (hoy 10 en Tienda). Pedir confirmación a la dueña antes de aplicar.
+
 ## Preguntar a Génesis (14-oct)
 - **Chaleco con Brasier**: el sistema dice XS 1 y L 1 (SKU 1600 y 1599), pero la dueña no los encontró en la auditoría de fajas del 13/14-oct. Preguntar a Génesis si los tiene y cuántos. No se ajustó el sistema.
 
