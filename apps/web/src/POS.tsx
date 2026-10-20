@@ -46,8 +46,12 @@ import {
   receivableApprovalMessage,
   margin,
   courierCharge,
+  isService,
 } from "@fitstore/shared";
 import type { SaleInput } from "@fitstore/shared";
+// Lo que se puede vender: un servicio no tiene existencia que lo limite.
+const available = (stock: unknown, product: any) =>
+  isService(product) ? Infinity : Number(stock);
 import {
   useStore,
   api,
@@ -382,7 +386,7 @@ export function POS({ go }: { go: (page: string) => void }) {
       .getState()
       .cart.find((i) => i.variant.id === variant.id);
     if (
-      (existing?.qty || 0) + 1 > Number(variant.stock) &&
+      (existing?.qty || 0) + 1 > available(variant.stock, product) &&
       !(config.data?.allowNegativeStock && !product.category.requiresLot)
     ) {
       say(
@@ -399,7 +403,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     setChoosing(null);
     clearPersistentErrors();
     setLastAdded((last) => ({ id: variant.id, n: (last?.n ?? 0) + 1 }));
-    if ((existing?.qty || 0) + 1 > Number(variant.stock)) {
+    if ((existing?.qty || 0) + 1 > available(variant.stock, product)) {
       say(
         "Advertencia: " + product.name + " quedará con stock negativo.",
         true,
@@ -1077,7 +1081,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                         aria-label={"Aumentar " + i.product.name}
                         onClick={() => {
                           if (
-                            i.qty < Number(i.variant.stock) ||
+                            i.qty < available(i.variant.stock, i.product) ||
                             (config.data?.allowNegativeStock &&
                               !i.product.category.requiresLot)
                           )
@@ -1276,7 +1280,7 @@ export function POS({ go }: { go: (page: string) => void }) {
               className="variant-option"
               key={v.id}
               disabled={
-                Number(v.stock) <= 0 &&
+                available(v.stock, choosing) <= 0 &&
                 !(
                   config.data?.allowNegativeStock &&
                   !choosing.category.requiresLot
@@ -1289,7 +1293,7 @@ export function POS({ go }: { go: (page: string) => void }) {
               <strong>{attrLabel(v.attributes)}</strong>
               <span>{formatMoney(v.price)}</span>
               <Badge tone={Number(v.stock) > 5 ? "success" : "warning"}>
-                {v.stock} disponibles
+                {isService(choosing) ? "Servicio" : v.stock + " disponibles"}
               </Badge>
             </button>
           ))}
@@ -1507,12 +1511,20 @@ const ProductGrid = memo(function ProductGrid({
   return (
     <div className="product-grid">
       {products.map((p) => {
-        const stock = p.variants.reduce((a, v) => a + Number(v.stock), 0);
+        const stock = isService(p)
+          ? Infinity
+          : p.variants.reduce((a, v) => a + Number(v.stock), 0);
         return (
           <button
             className="product-card"
             onClick={() => onAdd(p)}
             key={p.id}
+            // Categoría con color propio (GV Makeup Studio en rosado).
+            style={
+              p.category.color && p.category.color !== "#7C3AED"
+                ? { borderColor: p.category.color, borderWidth: 2 }
+                : undefined
+            }
             disabled={
               stock <= 0 && !(allowNegativeStock && !p.category.requiresLot)
             }

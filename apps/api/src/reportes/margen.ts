@@ -43,6 +43,17 @@ export const margen: Record<string, ReportDef> = {
     margin: true,
     run: by("Categoría", Prisma.sql`c.name`),
   },
+  // GV Makeup Studio y MacGen en la misma tienda (dueña, 20-oct): la
+  // empresa sale de la categoría (las de GV empiezan por «GV »).
+  "margen-por-empresa": {
+    title: "Ventas y ganancia por empresa",
+    group: "Margen",
+    margin: true,
+    run: by(
+      "Empresa",
+      Prisma.sql`CASE WHEN c.name ILIKE 'GV %' THEN 'GV Makeup Studio' ELSE 'MacGen' END`,
+    ),
+  },
   "margen-por-marca": {
     title: "Margen por marca",
     group: "Margen",
