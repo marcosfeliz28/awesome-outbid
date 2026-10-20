@@ -12,7 +12,7 @@
 
 - Entradas aplicadas: 14 productos existentes, 46 uds.
 - Pendiente confirmar: 1218 Isopure Vanilla 4.5 lb (+2, Excel dice Zero Carb Creamy Vanilla 4.23 lb) y 1163 ISO100 Vanilla 1.34 lb (+4, Excel dice Gourmet Vanilla).
-- Códigos nuevos 1936-1949 creados con precio/costo 0 y existencia 0: entrar 35 uds cuando la dueña dé costo y precio.
+- Códigos nuevos 1936-1949: 1936-1945 y 1947 con precio y existencia (30 uds). Faltan 1946 (sin precio), 1948 y 1949 (qué ISO100 3 lb de referencia).
 
 ## SEGUIMIENTO MAÑANA (21-oct): conteo de fajas del 20-oct
 
