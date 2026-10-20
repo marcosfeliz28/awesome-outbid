@@ -8,6 +8,12 @@
 - **Decisiones del cierre de caja** (6): un solo verifone, fondo, tope, Genesis, turnos, mensajero.
 - Señales a revisar: FS-0000113 (Lizbeth 50 %, transferencia ref 1111 por verificar), FS-0000062 (annya bello, 32 % «CREDITO», contraentrega RD$ 71,100 pendiente).
 
+## Excel de mercancía del 20-oct (Inventario_Cloud_GPro_CORREGIDO)
+
+- Entradas aplicadas: 14 productos existentes, 46 uds.
+- Pendiente confirmar: 1218 Isopure Vanilla 4.5 lb (+2, Excel dice Zero Carb Creamy Vanilla 4.23 lb) y 1163 ISO100 Vanilla 1.34 lb (+4, Excel dice Gourmet Vanilla).
+- Códigos nuevos 1936-1949 creados con precio/costo 0 y existencia 0: entrar 35 uds cuando la dueña dé costo y precio.
+
 ## SEGUIMIENTO MAÑANA (21-oct): conteo de fajas del 20-oct
 
 - Ajustes aplicados el 20-oct en Tienda: chaleco S 1615 12→11 (−1, la dueña cree que fue robo el viernes 17-oct), corset 3XS 1576 22→24 (+2), corset L 1602 2→1 (−1), corset XL 1603 6→5 (−1). Casa no se tocó.
