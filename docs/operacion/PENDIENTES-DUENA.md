@@ -10,9 +10,7 @@
 
 ## Excel de mercancía del 20-oct (Inventario_Cloud_GPro_CORREGIDO)
 
-- Entradas aplicadas: 14 productos existentes, 46 uds.
-- Pendiente confirmar: 1218 Isopure Vanilla 4.5 lb (+2, Excel dice Zero Carb Creamy Vanilla 4.23 lb) y 1163 ISO100 Vanilla 1.34 lb (+4, Excel dice Gourmet Vanilla).
-- Códigos nuevos 1936-1949: 1936-1945 y 1947 con precio y existencia (30 uds). Faltan 1946 (sin precio), 1948 y 1949 (qué ISO100 3 lb de referencia).
+- COMPLETO: 30 entradas, 89 uds en Tienda. Códigos nuevos 1936-1949 (1946 desactivado: era la Creatine+ que ya existía como 1214).
 
 ## SEGUIMIENTO MAÑANA (21-oct): conteo de fajas del 20-oct
 
