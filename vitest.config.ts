@@ -32,6 +32,7 @@ export default defineConfig({
       "tests/management-messages.test.ts",
       "tests/u-credit-cleanup.test.ts",
       "tests/credito-dias.test.ts",
+      "tests/recibo-envio.test.ts",
       "packages/shared/**/*.test.ts",
       "tests/invoice.test.ts",
       "tests/merchandise-template.test.ts",

@@ -1,5 +1,6 @@
 import {
   BUSINESS_TIME_ZONE,
+  courierCharge,
   paymentReceiptLine,
   privacyNoticeText,
   returnPolicyText,
@@ -401,10 +402,16 @@ export function drawSaleReceipt(
     ],
     ["Total", formatReceiptMoney(sale?.total)],
   ];
+  const courier = courierCharge(sale ?? {});
+  if (courier)
+    summaries.push(
+      [`Envío (mensajero ${courier.name})`, formatReceiptMoney(courier.fee)],
+      ["Total pagado", formatReceiptMoney(courier.paid)],
+    );
   const drawSummary = () => {
     let cursor = y;
     for (const [label, value] of summaries) {
-      const strong = label === "Total";
+      const strong = label === "Total" || label === "Total pagado";
       const fontSize = strong ? 12 : 10;
       const rowHeight = Math.max(
         strong ? 20 : 16,

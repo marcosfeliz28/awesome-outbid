@@ -8,6 +8,23 @@
 - **Decisiones del cierre de caja** (6): un solo verifone, fondo, tope, Genesis, turnos, mensajero.
 - Señales a revisar: FS-0000113 (Lizbeth 50 %, transferencia ref 1111 por verificar), FS-0000062 (annya bello, 32 % «CREDITO», contraentrega RD$ 71,100 pendiente).
 
+## Excel de mercancía del 20-oct (Inventario_Cloud_GPro_CORREGIDO)
+
+- COMPLETO: 30 entradas, 89 uds en Tienda. Códigos nuevos 1936-1949 (1946 desactivado: era la Creatine+ que ya existía como 1214).
+
+## SEGUIMIENTO MAÑANA (21-oct): conteo de fajas del 20-oct
+
+- Ajustes aplicados el 20-oct en Tienda: chaleco S 1615 12→11 (−1, la dueña cree que fue robo el viernes 17-oct), corset 3XS 1576 22→24 (+2), corset L 1602 2→1 (−1), corset XL 1603 6→5 (−1). Casa no se tocó.
+- Revisar mañana si los +2 de 3XS y los −1 de L/XL eran tallas cruzadas, y volver a contar.
+- Proteínas y creatinas del 20-oct: todo cuadrado, sin cambios.
+
+## PARA MAÑANA (guardado 20-oct): facturar la venta de Mia Sherlim
+
+- Se vendió **1 Too Faced Born This Way Super Coverage Concealer Light Beige (SKU 1677)** a **Mia Sherlim**, pero **no se facturó**.
+- Pagó por **transferencia 2,550** el 19-oct a las 10:54 a.m. (cuenta *****9127, a Grupo Genesis Vargas Grullón SRL; en el banco: «MB DESDE 856959127 MIA SHERLIM»).
+- 2,550 = **2,100** del corrector + **450** de envío (mensaje del grupo «Tienda de maquillaje GV»: «No está en el sistema, mia 2,100 450 de envío»).
+- **Orden de la dueña (20-oct): la factura la hace Lisbeth** (no Claude). La transferencia cayó el 19-oct, un día antes de la factura; así se cuadra con ella.
+
 ## Preguntar a Génesis (14-oct)
 - **Chaleco con Brasier**: el sistema dice XS 1 y L 1 (SKU 1600 y 1599), pero la dueña no los encontró en la auditoría de fajas del 13/14-oct. Preguntar a Génesis si los tiene y cuántos. No se ajustó el sistema.
 
