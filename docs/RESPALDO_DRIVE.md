@@ -11,9 +11,10 @@ calma. Tarda unos 30 minutos la primera vez.
 - La copia se **cifra antes de salir** del servidor con una frase que sólo tú
   conoces (`BACKUP_ENCRYPTION_KEY`). Google guarda un archivo que no puede
   leer: sin la frase nadie puede abrirlo, tampoco Google ni Nexora.
-- Se conservan las copias de los **últimos 30 días** y **una de cada mes** de
-  los últimos 12 meses. Las más viejas pasan a la Papelera de Drive (Google
-  las borra del todo a los 30 días).
+- Se conservan las copias de los **últimos 365 días** y **una de cada mes**
+  durante **10 años** (orden de la dueña, 20-oct-2026). Cada copia es la base
+  completa, así que nada se pierde. Sólo lo más viejo de 10 años pasa a la
+  Papelera de Drive.
 - Nexora sólo puede ver y tocar **los archivos que ella misma creó** en tu
   Drive (permiso «drive.file»). No ve tus fotos, documentos ni nada más.
 - Si un respaldo falla, lo vuelve a intentar a los 15 minutos y a la hora. Si
@@ -26,7 +27,7 @@ calma. Tarda unos 30 minutos la primera vez.
 ## Antes de empezar
 
 - Una cuenta de Google (puede ser tu Gmail) con espacio libre en Drive. Cada
-  copia ocupa pocos megas; 42 copias caben de sobra en los 15 GB gratuitos.
+  copia ocupa pocos megas; las ~485 copias de 10 años caben en los 15 GB gratuitos.
 - Entrar a Render (render.com) con permiso para cambiar el servicio
   `nexora-pos-api`.
 - La dirección de tu sistema, por ejemplo `https://nexora-pos-web.onrender.com`
@@ -291,8 +292,8 @@ Path=/api/backups/google` del mismo navegador; el verificador PKCE se deriva
   y no se borra nada más.
 - **Retención** (sólo tras verificar): de los archivos de la carpeta con
   `nexoraBackup=1` y nombre `nexora-AAAA-MM-DD-HHmm.dump.enc`, conserva el más
-  reciente de cada uno de los 30 días más recientes y el primero de cada uno de
-  los 12 meses más recientes; el resto va a la papelera. Si el listado no trae
+  reciente de cada uno de los 365 días más recientes y el primero de cada uno de
+  los 120 meses más recientes; el resto va a la papelera. Si el listado no trae
   la copia recién subida, no borra nada.
 - **Un solo respaldo a la vez**: arriendo en la fila `main`
   (`lockId`/`lockedUntil`, 60 min, el mismo patrón que `NotificationOutbox`)

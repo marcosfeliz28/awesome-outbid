@@ -174,8 +174,7 @@ function DriveBackupPanel() {
       <p>
         Cada madrugada (3:30) se guarda una copia completa y cifrada de la base
         de datos en tu Google Drive, en la carpeta «Nexora POS respaldos». Se
-        guardan los últimos 30 días y una copia de cada uno de los últimos 12
-        meses.
+        guardan los últimos 365 días y una copia de cada mes durante 10 años.
       </p>
       {status.isError && (
         <p className="drive-error" role="alert">
