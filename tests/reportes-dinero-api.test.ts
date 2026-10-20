@@ -112,7 +112,7 @@ async function cashier(label: string): Promise<Cashier> {
   return { id: user.id, token: login.accessToken, cash, name };
 }
 const PAYMENT_DATA: Record<string, object> = {
-  transfer: { bank: "QA banco", reference: "QA-DIN-" + suffix },
+  transfer: { bank: "QA banco " + suffix, reference: "QA-DIN-" + suffix },
   card: { cardLast4: "4242", approvalCode: "QA-DIN" },
 };
 // Precio 100, sin ITBIS. `discount` en pesos sobre la línea.
@@ -263,8 +263,51 @@ describe("Reportes 40 · Dinero", () => {
         "diferencias-cuadre",
         "anulaciones",
         "devoluciones-producto",
+        "entradas-cuenta",
       ]),
     );
+  });
+
+  it("Configuración guarda cuentas y terminales; sin la clave se conservan", async () => {
+    const original = await ok("/settings", admin);
+    try {
+      const accounts = ["Popular MacGen ···3620", "BHD MacGen ···0015"];
+      await ok(
+        "/settings",
+        admin,
+        {
+          ...original,
+          transferAccounts: accounts,
+          cardTerminals: ["Verifone QA"],
+        },
+        "PUT",
+      );
+      const saved = await ok("/settings", admin);
+      expect(saved.transferAccounts).toEqual(accounts);
+      expect(saved.cardTerminals).toEqual(["Verifone QA"]);
+      // Un cliente viejo que no envía las listas no las borra.
+      const { transferAccounts: _a, cardTerminals: _t, ...older } = saved;
+      await ok("/settings", admin, older, "PUT");
+      expect((await ok("/settings", admin)).transferAccounts).toEqual(accounts);
+    } finally {
+      await ok("/settings", admin, original, "PUT");
+    }
+  });
+
+  it("entradas por cuenta: la transferencia sale en su cuenta y el efectivo en Caja", async () => {
+    const rows = await report("entradas-cuenta");
+    const bank = rows.filter(
+      (r) => r["Cuenta / terminal"] === "QA banco " + suffix,
+    );
+    expect(bank).toHaveLength(1);
+    expect(bank[0].Forma).toBe("Transferencia");
+    expect(bank[0].Monto).toBe(100);
+    expect(bank[0].Cobros).toBe(1);
+    expect(
+      rows.some(
+        (r) => r.Forma === "Efectivo" && r["Cuenta / terminal"] === "Caja",
+      ),
+    ).toBe(true);
   });
 
   it("formas de pago por mes: venta neta por forma, menos la devolución en efectivo", () => {

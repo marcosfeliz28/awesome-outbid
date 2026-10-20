@@ -3893,6 +3893,18 @@ export function Configuration() {
       label: "Tasa del euro (RD$ por €)",
       help: "Vacío: el cuadre no muestra euros.",
     },
+    {
+      key: "transferAccounts",
+      label: "Cuentas de banco para transferencias (una por línea)",
+      type: "textarea",
+      help: "Ej.: Popular MacGen ···3620. La caja elige de esta lista.",
+    },
+    {
+      key: "cardTerminals",
+      label: "Terminales de tarjeta (uno por línea)",
+      type: "textarea",
+      help: "Ej.: Verifone G-Pro MacGen. Vacío: la caja no pregunta.",
+    },
     requiredNumber("sellerDiscountLimit", "Descuento máximo del vendedor (%)"),
     requiredNumber("cardFeePercent", "Comisión bancaria (%)"),
     requiredNumber("returnDays", "Plazo de devolución (días)"),
@@ -4188,18 +4200,27 @@ export function Configuration() {
             allowOfflineSales: query.data?.allowOfflineSales === true,
             usdRate: query.data?.usdRate ?? "",
             eurRate: query.data?.eurRate ?? "",
+            transferAccounts: (query.data?.transferAccounts ?? []).join("\n"),
+            cardTerminals: (query.data?.cardTerminals ?? []).join("\n"),
           }}
           onClose={() => setEditing(false)}
           onSubmit={(data) => {
             // Tasa vacía = sin divisa.
             const rate = (v: unknown) =>
               v === "" || v === null || v === undefined ? null : Number(v);
+            const lines = (v: unknown) =>
+              String(v ?? "")
+                .split("\n")
+                .map((l) => l.trim())
+                .filter(Boolean);
             return mutate(
               "/settings",
               {
                 ...data,
                 usdRate: rate(data.usdRate),
                 eurRate: rate(data.eurRate),
+                transferAccounts: lines(data.transferAccounts),
+                cardTerminals: lines(data.cardTerminals),
                 currency: "DOP",
               },
               "PUT",

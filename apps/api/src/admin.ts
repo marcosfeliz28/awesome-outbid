@@ -127,6 +127,13 @@ const configSchema = z.object({
   // Tasa del día (RD$ por unidad) para el efectivo en dólares y euros.
   usdRate: z.number().positive().max(10000).nullable().optional(),
   eurRate: z.number().positive().max(10000).nullable().optional(),
+  // Cuentas de banco donde caen las transferencias y terminales de tarjeta
+  // (orden de la dueña, 20-oct): la caja elige de esta lista, no escribe.
+  transferAccounts: z
+    .array(z.string().trim().min(3).max(80))
+    .max(20)
+    .optional(),
+  cardTerminals: z.array(z.string().trim().min(3).max(80)).max(20).optional(),
 });
 const cashMovementLimit = (data: Record<string, unknown> | undefined) =>
   typeof data?.cashMovementApprovalLimit === "number"
@@ -852,6 +859,12 @@ export class AdminController {
           config.cashMovementApprovalLimit ?? cashMovementLimit(previous),
         receivableShiftLimit:
           config.receivableShiftLimit ?? receivableShiftLimit(previous),
+        transferAccounts:
+          config.transferAccounts ??
+          (previous?.transferAccounts as string[]) ??
+          [],
+        cardTerminals:
+          config.cardTerminals ?? (previous?.cardTerminals as string[]) ?? [],
         // Compatibilidad con clientes anteriores, pero la regla comercial es
         // invariable: toda venta se guarda a nombre de un cliente.
         requireCustomer: true,
