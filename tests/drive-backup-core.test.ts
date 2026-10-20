@@ -308,7 +308,7 @@ describe("Nombres en hora de Santo Domingo", () => {
   });
 });
 
-describe("Retención: 30 diarias + 12 mensuales", () => {
+describe("Retención: 30 diarias + 12 mensuales (parámetros explícitos)", () => {
   const file = (day: string, hhmm = "0330", id = day + hhmm) => ({
     id,
     name: `nexora-${day}-${hhmm}.dump.enc`,
@@ -320,7 +320,7 @@ describe("Retención: 30 diarias + 12 mensuales", () => {
 
   it("con 45 días seguidos conserva los 30 últimos y el primero de cada mes", () => {
     const files = days(45).map((d) => file(d));
-    const plan = retentionPlan(files);
+    const plan = retentionPlan(files, { daily: 30, monthly: 12 });
     const kept = plan.keep.map((f) => f.id).sort();
     const expected = new Set(days(30).map((d) => d + "0330"));
     // Primeros de mes presentes: 2026-08-27 (primero en la lista de agosto), 09-01, 10-01.
@@ -354,7 +354,7 @@ describe("Retención: 30 diarias + 12 mensuales", () => {
       const d = new Date(Date.UTC(2025, 8 + i, 1));
       return file(d.toISOString().slice(0, 10));
     });
-    const plan = retentionPlan(files, { daily: 0 });
+    const plan = retentionPlan(files, { daily: 0, monthly: 12 });
     expect(plan.keep).toHaveLength(12);
     expect(plan.remove.map((f) => f.id)).toEqual([
       "2025-09-010330",
@@ -381,6 +381,31 @@ describe("Retención: 30 diarias + 12 mensuales", () => {
       "2026-10-100330",
     ]);
     expect(retentionPlan([])).toEqual({ keep: [], remove: [] });
+  });
+});
+
+describe("Retención por defecto: 10 años (orden de la dueña, 20-oct)", () => {
+  const day = (i: number) =>
+    new Date(Date.UTC(2026, 9, 20) - i * 86400000).toISOString().slice(0, 10);
+  it("conserva 365 diarias y una por mes durante 120 meses", () => {
+    const files = Array.from({ length: 400 }, (_, i) => ({
+      id: day(i),
+      name: `nexora-${day(i)}-0330.dump.enc`,
+    }));
+    const plan = retentionPlan(files);
+    const kept = new Set(plan.keep.map((f) => f.id));
+    for (let i = 0; i < 365; i++) expect(kept.has(day(i))).toBe(true);
+    // De las 35 más viejas sólo quedan las primeras de su mes (16-sep y 1-oct de 2025).
+    expect(kept.has("2025-09-16")).toBe(true);
+    expect(kept.has("2025-10-01")).toBe(true);
+    expect(plan.remove).toHaveLength(33);
+  });
+  it("una copia mensual de hace 9 años sigue guardada", () => {
+    const months = Array.from({ length: 110 }, (_, i) => {
+      const d = new Date(Date.UTC(2026, 9 - i, 1)).toISOString().slice(0, 10);
+      return { id: d, name: `nexora-${d}-0330.dump.enc` };
+    });
+    expect(retentionPlan(months).remove).toEqual([]);
   });
 });
 

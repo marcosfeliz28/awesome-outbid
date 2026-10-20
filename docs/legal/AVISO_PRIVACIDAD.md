@@ -30,7 +30,7 @@ Estos servicios pueden tratar datos fuera de República Dominicana. **[ABOGADO: 
 
 Ventas, pagos, auditoría y expedientes laborales: **[COMPLETAR con contador/abogado: plazo por categoría y fundamento]**. No tienen una purga general en el código revisado. Contactos y fotos: **[COMPLETAR: plazo operativo y procedimiento]**. [S10]
 
-El respaldo Drive conserva una copia por cada uno de los 30 días más recientes **con copia** y una por cada uno de los 12 meses más recientes **con copia**; tras verificar una copia nueva, las sobrantes van a la papelera. Con ejecución regular se habla de aproximadamente 13 meses incluyendo papelera, pero **no es un máximo garantizado**: interrupciones, meses sin copia, desconexión o copias descargadas pueden conservar datos más tiempo. **[COMPLETAR: eliminación efectiva, papelera, descargas y retención contractual de Google]**. [S7]
+El respaldo Drive conserva una copia por cada uno de los 365 días más recientes **con copia** y una por cada uno de los 120 meses más recientes **con copia**; tras verificar una copia nueva, las sobrantes van a la papelera. Con ejecución regular se habla de aproximadamente 10 años incluyendo papelera, pero **no es un máximo garantizado**: interrupciones, meses sin copia, desconexión o copias descargadas pueden conservar datos más tiempo. **[COMPLETAR: eliminación efectiva, papelera, descargas y retención contractual de Google]**. [S7]
 
 La purga técnica elimina ciertos registros antiguos de actividad, avisos y autenticación; no elimina mensajes ya entregados a Telegram ni copias externas. **[COMPLETAR: plazos de Telegram, Sentry y Anthropic]**. [S10]
 

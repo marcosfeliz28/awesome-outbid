@@ -4,7 +4,11 @@
 // ven al imprimir.
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
-import { privacyNoticeText, returnPolicyText } from "@fitstore/shared";
+import {
+  courierCharge,
+  privacyNoticeText,
+  returnPolicyText,
+} from "@fitstore/shared";
 
 const TZ = "America/Santo_Domingo";
 // Números como en el impreso: 1,234.50 (sin RD$).
@@ -412,6 +416,7 @@ export function InvoicePrint({
   customer?: any;
 }) {
   const lines = sale.snapshot ?? [];
+  const courier = courierCharge(sale);
   const gross = lines.reduce(
     (a: number, i: any) => a + Number(i.qty) * Number(i.unitPrice),
     0,
@@ -474,6 +479,15 @@ export function InvoicePrint({
       )}
       <Row label={taxLabel(sale, config)} value={rd(sale.taxTotal)} />
       <Row label="Total a pagar" value={rd(sale.total)} strong />
+      {courier && (
+        <>
+          <Row
+            label={`Envío (mensajero ${courier.name})`}
+            value={rd(courier.fee)}
+          />
+          <Row label="Total pagado" value={rd(courier.paid)} strong />
+        </>
+      )}
       <hr />
       {payments.map((p: any, n: number) => (
         <Row
