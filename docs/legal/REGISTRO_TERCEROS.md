@@ -17,7 +17,7 @@ BORRADOR del 10-oct-2026, base `496030f`. Revisión asistida por IA, no auditor�
 
 ## Conservación y solicitudes
 
-Drive programa desde las 03:30 Santo Domingo. Conserva una por cada uno de los 30 días más recientes **con copia** y una por cada uno de los 12 meses más recientes **con copia**. Tras verificar copia nueva manda sobrantes a papelera. No es límite estricto por edad: meses sin copia, desconexión y descargas pueden superar aproximadamente 13 meses. Confirmar vaciado efectivo de papelera/contrato, cuenta y copias descargadas (`apps/api/src/drive-backup-core.ts:546`, `:602`; `apps/api/src/drive-backup.ts:1062`, `:1287`).
+Drive programa desde las 03:30 Santo Domingo. Conserva una por cada uno de los 365 días más recientes **con copia** y una por cada uno de los 120 meses más recientes **con copia** (10 años, decisión de la dueña del 20-oct-2026). Tras verificar copia nueva manda sobrantes a papelera. No es límite estricto por edad: meses sin copia, desconexión y descargas pueden superar aproximadamente 10 años. Confirmar vaciado efectivo de papelera/contrato, cuenta y copias descargadas (`apps/api/src/drive-backup-core.ts:546`, `:602`; `apps/api/src/drive-backup.ts:1062`, `:1287`).
 
 Purga local tiene plazos técnicos/exclusiones; no gobierna proveedores (`apps/api/src/retention.ts:22`, `:26`, `:163`). Anonimización borra identificadores, fotos asociadas de pagos y ciertos textos/auditorías/avisos locales, rechaza saldos y conserva ventas/importes; no borra mensajes entregados ni copias externas (`apps/api/src/admin.ts:326`, `:356`, `:415`, `:491`, `:522`). Restaurar exige reaplicar solicitudes aprobadas.
 

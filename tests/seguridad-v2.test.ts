@@ -116,7 +116,7 @@ describe("Privacidad v2 · V2-03/V2-04/V2-06 · la documentación dice lo que ha
     expect(inventory).not.toMatch(/`audit\(\)` no la rellena/);
     const row = inventory.split("\n").find((l) => l.includes("**ip**"))!;
     expect(row).toContain("90 días");
-    expect(row).toMatch(/respaldos de Drive conservan la IP hasta ~13 meses/);
+    expect(row).toMatch(/respaldos de Drive conservan la IP hasta ~10 años/);
     expect(read("docs/legal/CUMPLIMIENTO_20_PUNTOS.md")).not.toContain(
       "`AuditLog.ip` nunca se llena",
     );
@@ -127,13 +127,13 @@ describe("Privacidad v2 · V2-03/V2-04/V2-06 · la documentación dice lo que ha
   it("V2-04: el procedimiento ya no promete que los respaldos se rotan en 30 días", () => {
     const procedure = read("docs/legal/PROCEDIMIENTO_DERECHOS_DATOS.md");
     expect(procedure).not.toContain("se rotan en 30 días");
-    expect(procedure).toMatch(/hasta unos 13 meses/);
+    expect(procedure).toMatch(/hasta unos 10 años/);
     expect(procedure).toContain("repetir las anonimizaciones posteriores");
   });
-  it("V2-04: los 13 meses salen de la retención real (30 diarias + 12 mensuales)", () => {
+  it("V2-04: los 10 años salen de la retención real (365 diarias + 120 mensuales)", () => {
     const core = read("apps/api/src/drive-backup-core.ts");
-    expect(core).toMatch(/daily[^\n]*30|30[^\n]*daily/i);
-    expect(core).toMatch(/12/);
+    expect(core).toMatch(/daily[^\n]*365|365[^\n]*daily/i);
+    expect(core).toMatch(/monthly[^\n]*120/);
   });
   it("V2-06: los plazos documentados son los de retention.ts", async () => {
     const { RETENTION, SECURITY_AUDIT_ACTIONS } =
