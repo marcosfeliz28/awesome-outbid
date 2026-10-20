@@ -17,6 +17,8 @@ services:
     envVars:
       - key: PORT
         value: "10000"
+      - key: VITE_PRODUCT_TENANCY
+        value: required
       - key: API_UPSTREAM
         fromService:
           type: pserv

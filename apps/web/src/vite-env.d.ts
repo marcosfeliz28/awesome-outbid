@@ -12,4 +12,6 @@ interface ImportMetaEnv {
   /** DSN de Sentry para la web; sin él no se envía nada a Sentry (G8). */
   readonly VITE_SENTRY_DSN?: string;
   readonly VITE_SENTRY_RELEASE?: string;
+  /** Exige código de empresa en el acceso de la web SaaS. */
+  readonly VITE_PRODUCT_TENANCY?: string;
 }

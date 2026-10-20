@@ -17,6 +17,8 @@ COPY packages/ui packages/ui
 # compilar (las variables del servicio llegan como argumentos de compilación).
 # Sin ella la app no envía nada a Sentry.
 ARG VITE_SENTRY_DSN=""
+ARG VITE_PRODUCT_TENANCY=""
+ENV VITE_PRODUCT_TENANCY=$VITE_PRODUCT_TENANCY
 RUN pnpm --filter @fitstore/web build
 
 # Nginx abierto incorpora `resolve` para upstreams desde 1.27.3. Se fija una

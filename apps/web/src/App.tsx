@@ -42,6 +42,7 @@ import {
   Info,
   KeyRound,
 } from "lucide-react";
+import { initialCompanyCode, productTenancyRequired } from "./productTenancy";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
 import {
@@ -271,8 +272,14 @@ const navigation = [
     permission: "sale:manage",
   },
 ];
+const PRODUCT_TENANCY_REQUIRED = productTenancyRequired(
+  import.meta.env.VITE_PRODUCT_TENANCY,
+);
+
 function Login() {
-  const [companyCode, setCompanyCode] = useState(""),
+  const [companyCode, setCompanyCode] = useState(() =>
+      initialCompanyCode(PRODUCT_TENANCY_REQUIRED),
+    ),
     [login, setLogin] = useState(""),
     [password, setPassword] = useState(""),
     [showPassword, setShowPassword] = useState(false),
@@ -349,11 +356,15 @@ function Login() {
             try {
               if (!changeRequired) {
                 const terminal = storedTerminalCredentials();
-                const data = await api("/auth/login", { method: "POST", headers: { "x-tenant-id": slug }, body: JSON.stringify({
-                  login,
-                  password,
-                  ...(terminal ? { terminal } : {}),
-                }) });
+                const data = await api("/auth/login", {
+                  method: "POST",
+                  headers: { "x-tenant-id": slug },
+                  body: JSON.stringify({
+                    login,
+                    password,
+                    ...(terminal ? { terminal } : {}),
+                  }),
+                });
                 if (data.requiresPasswordChange) {
                   setPasswordPolicy(
                     data.passwordPolicy === "cashier-six-digits"
@@ -367,13 +378,17 @@ function Login() {
                 await saveSession(data.user, data.accessToken);
               } else {
                 const terminal = storedTerminalCredentials();
-                const data = await api("/auth/change-password", { method: "POST", headers: { "x-tenant-id": slug }, body: JSON.stringify({
-                  login,
-                  currentPassword: password,
-                  newPassword,
-                  confirmPassword,
-                  ...(terminal ? { terminal } : {}),
-                }) });
+                const data = await api("/auth/change-password", {
+                  method: "POST",
+                  headers: { "x-tenant-id": slug },
+                  body: JSON.stringify({
+                    login,
+                    currentPassword: password,
+                    newPassword,
+                    confirmPassword,
+                    ...(terminal ? { terminal } : {}),
+                  }),
+                });
                 await saveSession(data.user, data.accessToken);
               }
             } catch (e: any) {
@@ -398,12 +413,19 @@ function Login() {
               ? "Por seguridad, crea una contraseña nueva para continuar."
               : "Inicia sesión para entrar a tu tienda."}
           </p>
-          <label className="field">
-            <span>Código de empresa</span>
-            <input type="text" autoComplete="organization" required
-              placeholder="Ejemplo: mi-tienda" value={companyCode}
-              onChange={(e) => setCompanyCode(e.target.value)} />
-          </label>
+          {PRODUCT_TENANCY_REQUIRED && (
+            <label className="field">
+              <span>Código de empresa</span>
+              <input
+                type="text"
+                autoComplete="organization"
+                required
+                placeholder="Ejemplo: mi-tienda"
+                value={companyCode}
+                onChange={(e) => setCompanyCode(e.target.value)}
+              />
+            </label>
+          )}
           <label className="field">
             <span>Usuario</span>
             <input
