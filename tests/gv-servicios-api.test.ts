@@ -96,6 +96,8 @@ beforeAll(async () => {
   cash = await ok("/cash-sessions/open", admin, {
     registerId: "qa-gv-" + suffix,
     openingAmount: 0,
+    openingNote: "QA: fondo de la prueba",
+    managerPin: "987654",
   });
 }, 120000);
 
