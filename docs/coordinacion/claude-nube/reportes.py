@@ -240,6 +240,41 @@ def kpis(vals):
     return t
 
 
+def alerta_descuadre(cajas, usr):
+    """Dueña (21-oct): falte o sobre dinero, el descuadre va arriba, grande y en rojo."""
+    from reportlab.lib import colors
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Paragraph, Table, TableStyle
+    R = colors.HexColor("#DC2626")
+    t1 = ParagraphStyle("dt", fontName="Helvetica-Bold", fontSize=16, textColor=R, leading=20, alignment=1)
+    t2 = ParagraphStyle("dl", fontName="Helvetica-Bold", fontSize=12, textColor=R, leading=15)
+    t3 = ParagraphStyle("dn", fontName="Helvetica", fontSize=8.5, textColor=colors.HexColor("#111"), leading=11)
+    filas = []
+    for c in cajas:
+        det = c.get("closeDetails") or {}
+        for k, forma, quien in (("differenceCash", "EN EFECTIVO", "cashApprovedBy"), ("differenceCard", "EN TARJETA", "cardApprovedBy")):
+            v = f(c.get(k) or 0)
+            if not v:
+                continue
+            aprobo = usr.get(det.get(quien)) or ("SIN APROBAR" if c.get("closedAt") else "caja abierta")
+            just = det.get("differenceReason") or c.get("notes") or "SIN JUSTIFICACIÓN"
+            filas.append([Paragraph(f"{'FALTAN' if v < 0 else 'SOBRAN'} {rd(abs(v))} {forma}", t2)])
+            from xml.sax.saxutils import escape
+            filas.append([Paragraph(escape(f"{c['registerName']} · {c['userName']} · aprobó: {aprobo} · justificación: {just}"), t3)])
+    if not filas:
+        return []
+    t = Table([[Paragraph("¡ DESCUADRE DE CAJA !", t1)]] + filas, colWidths=[178 * mm])
+    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 2, R), ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FEF2F2")),
+                           ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
+    return [Spacer_(6), t]
+
+
+def Spacer_(h):
+    from reportlab.platypus import Spacer
+    return Spacer(1, h)
+
+
 def diario(dia, salida="."):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
@@ -255,6 +290,7 @@ def diario(dia, salida="."):
     el = cabecera("Reporte de cierre diario", f"{fecha:%A %d} de {fecha:%B de %Y} · generado con los datos del sistema Nexora POS")
     el += [kpis([(rd(r["vendido"]), "VENDIDO (activas)"), (rd(r["cobrado"]), "COBRADO"), (rd(r["pend"]), "PENDIENTE A CRÉDITO"), (rd(r["ganancia"]), "GANANCIA")]),
            Spacer(1, 3), Paragraph(f"{len(r['act'])} facturas activas · {len(r['anu'])} anuladas. Ganancia = precio − costo, sin descontar ITBIS.", E["sm"])]
+    el += alerta_descuadre(cajas, usr)
     el += [Paragraph("1. Ventas por forma de pago", E["h2"])]
     d = [["Forma de pago", "Monto"]] + [[k, rd(v)] for k, v in r["met"].items()] + [["Total vendido", rd(r["vendido"])]]
     el += [tabla(d, [120 * mm, 58 * mm], [1], True), Paragraph("Banco = tarjeta + transferencia. Efectivo: ver «Cajas». El crédito es dinero por cobrar, no recibido.", E["sm"])]
@@ -267,14 +303,15 @@ def diario(dia, salida="."):
         d.append([u, int(c["n"]), rd(c["total"]), rd(c["Efectivo"]), rd(c["Transferencia"]), rd(c["Tarjeta"]), rd(c["credito"])])
     el += [tabla(d, [30 * mm, 12 * mm, 28 * mm, 26 * mm, 26 * mm, 24 * mm, 32 * mm], [1, 2, 3, 4, 5, 6])]
     el += [Paragraph("4. Cajas", E["h2"])]
-    d = [["Caja", "Cajero", "Apertura", "Cierre", "Esperado", "Contado", "Dif."]]
+    d = [["Caja", "Cajero", "Apertura", "Cierre", "Esperado", "Contado", "Dif. efect.", "Dif. tarj."]]
     for c in cajas:
         ex = (c.get("expected") or {}).get("cash")
         d.append([c["registerName"], c["userName"], local(c["openedAt"]).strftime("%d/%m %H:%M"),
                   local(c["closedAt"]).strftime("%d/%m %H:%M") if c.get("closedAt") else "Abierta",
                   rd(ex) if ex is not None else "—", rd(c["countedCash"]) if c.get("countedCash") is not None else "—",
-                  rd(c["differenceCash"]) if c.get("differenceCash") is not None else "—"])
-    el += [tabla(d, [34 * mm, 24 * mm, 23 * mm, 23 * mm, 26 * mm, 26 * mm, 22 * mm], [4, 5, 6])]
+                  rd(c["differenceCash"]) if c.get("differenceCash") is not None else "—",
+                  rd(c["differenceCard"]) if c.get("differenceCard") is not None else "—"])
+    el += [tabla(d, [30 * mm, 24 * mm, 20 * mm, 20 * mm, 24 * mm, 24 * mm, 18 * mm, 18 * mm], [4, 5, 6, 7])]
     el += [Paragraph("5. Créditos: quién debe", E["h2"])]
     d = [["Factura", "Cliente", "Vendedor", "Saldo"]]
     for s in r["act"]:
