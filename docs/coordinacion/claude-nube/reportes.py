@@ -7,6 +7,7 @@ Uso:
   python3 reportes.py diario    2026-10-11 [carpeta_salida]   → PDF de cierre diario + hallazgos
   python3 reportes.py anomalias 2026-10-11                    → solo los hallazgos (texto)
   python3 reportes.py mensual   2026-10             [carpeta]  → PDF con gráficos del mes
+  python3 reportes.py semanal   2026-10-20          [carpeta]  → PDF de los 7 días con descuadres de caja
 Reglas: margen = (precio − costo) / precio SIN restar ITBIS. Hora de la tienda = UTC−4.
 Los hallazgos son señales para REVISAR, no acusaciones: cada uno trae el dato que lo causó.
 """
@@ -73,14 +74,16 @@ def clientes():
     return {c["id"]: c["name"] for c in r}
 
 
-def cajas_del_dia(dia):
-    r = api("/cash-sessions?limit=200")
+def cajas_del_dia(dia, hasta=None):
+    """Cajas abiertas o cerradas ese día (o entre dia y hasta, inclusive)."""
+    hasta = hasta or dia
+    r = api("/cash-sessions?limit=500")
     r = r if isinstance(r, list) else r.get("data") or r.get("items") or []
     out = []
     for c in r:
         a = local(c["openedAt"]).strftime("%Y-%m-%d")
         b = local(c["closedAt"]).strftime("%Y-%m-%d") if c.get("closedAt") else None
-        if dia in (a, b):
+        if dia <= a <= hasta or (b and dia <= b <= hasta):
             out.append(c)
     return out
 
@@ -261,7 +264,8 @@ def alerta_descuadre(cajas, usr):
             just = det.get("differenceReason") or c.get("notes") or "SIN JUSTIFICACIÓN"
             filas.append([Paragraph(f"{'FALTAN' if v < 0 else 'SOBRAN'} {rd(abs(v))} {forma}", t2)])
             from xml.sax.saxutils import escape
-            filas.append([Paragraph(escape(f"{c['registerName']} · {c['userName']} · aprobó: {aprobo} · justificación: {just}"), t3)])
+            cuando = local(c["closedAt"]).strftime("%d/%m") if c.get("closedAt") else "abierta"
+            filas.append([Paragraph(escape(f"{cuando} · {c['registerName']} · {c['userName']} · aprobó: {aprobo} · justificación: {just}"), t3)])
     if not filas:
         return []
     t = Table([[Paragraph("¡ DESCUADRE DE CAJA !", t1)]] + filas, colWidths=[178 * mm])
@@ -372,12 +376,35 @@ def mensual(mes, salida="."):
     el = cabecera("Reporte mensual", f"{calendar.month_name[m]} {y} · ventas, ganancias y resultados")
     el += [kpis([(rd(R["vendido"]), "VENDIDO"), (rd(R["cobrado"]), "COBRADO"), (rd(R["pend"]), "POR COBRAR"), (rd(R["ganancia"]), "GANANCIA BRUTA")]),
            Paragraph(f"{len(R['act'])} facturas · {len(R['anu'])} anuladas ({sum(f(s['total']) for s in R['anu']):,.0f} RD$). Ganancia bruta = precio − costo, sin ITBIS; no incluye gastos.", E["sm"])]
+    el += alerta_descuadre(cajas_del_dia(dias[0][0], dias[-1][0]) if dias else [], usr)
     for g in (g1, g2, g3, g4):
         el += [Image(g, width=170 * mm, height=70 * mm)]
     el += [Paragraph("Por usuario", E["h2"]),
            tabla([["Usuario", "Facturas", "Vendido", "A crédito"]] + [[u, int(c["n"]), rd(c["total"]), rd(c["credito"])] for u, c in R["por_u"].items()], [60 * mm, 25 * mm, 45 * mm, 48 * mm], [1, 2, 3]),
            Paragraph("Propuestas de mejora", E["h2"]),
            Paragraph("Se agregan después de revisar las cifras con la administración (rotación, productos sin venta, precios, promociones).", E["p"])]
+    doc.build(el)
+    print(out)
+    return out
+
+
+def semanal(fin, salida="."):
+    """Los 7 días que terminan en `fin`: totales, descuadres de caja y vendedoras."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate
+    usr, cat = usuarios(), catalogo()
+    f_fin = dt.date.fromisoformat(fin)
+    dias = [(f_fin - dt.timedelta(days=i)).isoformat() for i in range(6, -1, -1)]
+    R = resumen([s for d in dias for s in cargar_dia(d)], usr, cat)
+    _, _, E = estilos()
+    out = os.path.join(salida, f"REPORTE-SEMANAL-{dias[0]}-a-{fin}.pdf")
+    doc = SimpleDocTemplate(out, pagesize=A4, leftMargin=16 * mm, rightMargin=16 * mm, topMargin=14 * mm, bottomMargin=16 * mm, title=f"Reporte semanal {fin}")
+    el = cabecera("Reporte semanal", f"Del {dias[0]} al {fin} · ventas, cajas y descuadres")
+    el += [kpis([(rd(R["vendido"]), "VENDIDO"), (rd(R["cobrado"]), "COBRADO"), (rd(R["pend"]), "POR COBRAR"), (rd(R["ganancia"]), "GANANCIA")])]
+    el += alerta_descuadre(cajas_del_dia(dias[0], fin), usr)
+    el += [Paragraph("Por usuario", E["h2"]),
+           tabla([["Usuario", "Facturas", "Vendido", "A crédito"]] + [[u, int(c["n"]), rd(c["total"]), rd(c["credito"])] for u, c in R["por_u"].items()], [60 * mm, 25 * mm, 45 * mm, 48 * mm], [1, 2, 3])]
     doc.build(el)
     print(out)
     return out
@@ -395,5 +422,7 @@ if __name__ == "__main__":
             print(f"[{s}] {t} — {d}")
     elif a[0] == "mensual":
         mensual(a[1], a[2] if len(a) > 2 else ".")
+    elif a[0] == "semanal":
+        semanal(a[1], a[2] if len(a) > 2 else ".")
     else:
         sys.exit(__doc__)
