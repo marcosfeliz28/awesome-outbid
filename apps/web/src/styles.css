@@ -2579,6 +2579,25 @@ td strong {
 .report-menu button > svg:last-child {
   margin-left: auto;
 }
+.report-menu .report-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.report-group-count {
+  margin-left: 6px;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.report-group-title .report-group-open {
+  transform: rotate(90deg);
+}
+.report-group + .report-group {
+  border-top: 1px solid var(--border);
+}
 .alerts-list {
   padding: 0 20px;
 }
@@ -3245,21 +3264,13 @@ td strong {
   .reports-layout {
     grid-template-columns: 1fr;
   }
+  /* Dueña (21-oct): en el móvil, grupos plegables en lista vertical. */
   .report-menu {
-    display: flex;
-    overflow: auto;
     padding: 10px;
-    gap: 7px;
   }
   .report-menu button {
-    white-space: nowrap;
-    width: auto;
-    flex-shrink: 0;
-    font-size: 10px;
+    font-size: 12px;
     padding: 10px !important;
-  }
-  .report-menu button > svg:last-child {
-    display: none;
   }
   .alerts-list {
     padding: 0 16px;
