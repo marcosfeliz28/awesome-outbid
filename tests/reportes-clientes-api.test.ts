@@ -241,6 +241,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de reportes de clientes",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
   if (originalSettings)
     await request("/settings", owner, originalSettings, "PUT");

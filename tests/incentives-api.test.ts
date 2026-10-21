@@ -203,6 +203,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de incentivos",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
   if (adminCash)
     await request("/cash-sessions/" + adminCash.id + "/close", admin, {
@@ -210,6 +211,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de incentivos",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
   for (const id of productIds)
     await request("/products/" + id, admin, { active: false }, "PATCH");

@@ -403,9 +403,39 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         left: details.left ?? null,
       }
     : { delivered: null, left: null };
+  // Dueña (21-oct): falte o sobre, el descuadre se ve en grande con su
+  // justificación y quién lo aprobó.
+  const offCash = closed ? Number(session.differenceCash ?? 0) : 0;
+  const offCard = closed ? Number(session.differenceCard ?? 0) : 0;
+  const offTransfer = closed ? Number(session.differenceTransfer ?? 0) : 0;
+  const approverIds = [details.cashApprovedBy, details.cardApprovedBy].filter(
+    Boolean,
+  );
+  const approvers = approverIds.length
+    ? await db.user.findMany({
+        where: { id: { in: approverIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const nameOf = (id: unknown) =>
+    approvers.find((u: any) => u.id === id)?.name ?? null;
+  const descuadre =
+    offCash || offCard || offTransfer
+      ? {
+          cash: offCash,
+          card: offCard,
+          transfer: offTransfer,
+          reason: details.differenceReason ?? null,
+          resolution: details.differenceResolution?.note ?? null,
+          notes: session.notes ?? null,
+          cashApprovedBy: nameOf(details.cashApprovedBy),
+          cardApprovedBy: nameOf(details.cardApprovedBy),
+        }
+      : null;
   return {
     sessionId: session.id,
     title: "Cuadre de Caja",
+    descuadre,
     footer: "FIN DEL CUADRE",
     business: {
       name: settings.name ?? "",
@@ -1030,7 +1060,22 @@ export class CashController {
         );
         if (cardOff) (data.closeDetails as any).cardApprovedBy = approver;
         if (cashOff) (data.closeDetails as any).cashApprovedBy = approver;
+      } else if (cardOff || cashOff) {
+        // Un gerente que cierra con descuadre queda como quien lo aprobó.
+        if (cardOff) (data.closeDetails as any).cardApprovedBy = actor.id;
+        if (cashOff) (data.closeDetails as any).cashApprovedBy = actor.id;
       }
+      // Dueña (21-oct): falte o sobre, nadie cierra un descuadre sin decir
+      // qué pasó, tampoco un gerente. El mensaje sigue sin decir el monto.
+      if (
+        (cardOff || cashOff) &&
+        input.differenceReason.replace(/\s/g, "").length < 10
+      )
+        bad(
+          "La caja no cuadra. Escribe la justificación del descuadre: qué pasó y quién lo sabe.",
+        );
+      if (cardOff || cashOff)
+        (data.closeDetails as any).differenceReason = input.differenceReason;
       if (
         cashCloseRequiresNote(actor, differences, differenceLimit) &&
         !input.notes.trim()
@@ -1180,6 +1225,51 @@ export class CashController {
       denied();
     return session;
   }
+  // Dueña (21-oct): cómo se resolvió un descuadre. Queda en el cierre, en la
+  // bitácora y cierra la alerta; el reporte «Descuadres» lo muestra.
+  @Post(":id/descuadre")
+  @Permit("*")
+  async resolveDifference(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const { resolution } = parse(
+      z.object({ resolution: z.string().trim().min(5).max(500) }),
+      body,
+    );
+    return this.db.$transaction(async (tx) => {
+      const session = await tx.cashSession.findFirstOrThrow({
+        where: { id: parse(uuid, id), branchId: actor.branchId },
+      });
+      if (!session.closedAt) bad("La caja sigue abierta.");
+      const details = (session.closeDetails ?? {}) as Record<string, unknown>;
+      const differenceResolution = {
+        note: resolution,
+        byId: actor.id,
+        byName: actor.name,
+        at: new Date().toISOString(),
+      };
+      const row = await tx.cashSession.update({
+        where: { id: session.id },
+        data: { closeDetails: { ...details, differenceResolution } as any },
+      });
+      await tx.alert.updateMany({
+        where: { key: "cash:" + session.id, branchId: actor.branchId },
+        data: { status: "resolved" },
+      });
+      await audit(
+        tx,
+        actor,
+        "difference_resolved",
+        "cash",
+        session.id,
+        undefined,
+        differenceResolution,
+      );
+      return row;
+    });
+  }
   @Get(":id/cuadre")
   @Permit("cash:write")
   async cuadre(@Param("id") id: string, @CurrentUser() actor: Actor) {
@@ -1195,6 +1285,9 @@ export class CashController {
       void difference;
       return visible;
     };
+    // Dueña (21-oct): ya cerrada, la cajera también imprime el aviso de
+    // descuadre (la dueña lo revisa en la foto del cuadre). Antes de cerrar
+    // sigue siendo ciego: sin cierre no hay cuadre para ella.
     return {
       ...report,
       lines: report.lines.filter(

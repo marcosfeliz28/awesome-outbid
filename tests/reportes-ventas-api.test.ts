@@ -123,6 +123,8 @@ beforeAll(async () => {
   cash = await ok("/cash-sessions/open", admin, {
     registerId: "qa-rv-" + suffix,
     openingAmount: 0,
+    // Otro archivo puede dejar fondo en la caja anterior del admin.
+    openingNote: "QA: fondo de la prueba",
   });
   customer = (await ok("/customers", admin, { name: "QA ventas " + suffix }))
     .id;
@@ -155,6 +157,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de reportes de ventas",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
 });
 

@@ -332,6 +332,7 @@ describe("Auditoría 01 · dinero", () => {
         await close(c, {
           countedCash: 100,
           notes: "Faltante sin explicar",
+          differenceReason: "QA: descuadre de la prueba",
           managerPin: "975310",
         })
       ).status,

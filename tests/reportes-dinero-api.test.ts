@@ -221,6 +221,7 @@ beforeAll(async () => {
     countedCard: 0,
     countedTransfer: 0,
     notes: "QA sobrante dinero",
+    differenceReason: "QA: sobrante de la prueba",
   });
   eva.cash = null;
   for (const name of ["formas-pago-mes", "por-mayor-detalle"])
@@ -234,6 +235,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de reportes dinero",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
   if (adminCash)
     await request("/cash-sessions/" + adminCash.id + "/close", admin, {
@@ -241,6 +243,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de reportes dinero",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
   if (productId)
     await request("/products/" + productId, admin, { active: false }, "PATCH");
@@ -264,6 +267,7 @@ describe("Reportes 40 · Dinero", () => {
         "anulaciones",
         "devoluciones-producto",
         "entradas-cuenta",
+        "descuadres",
       ]),
     );
   });
@@ -409,6 +413,61 @@ describe("Reportes 40 · Dinero", () => {
       "Cajas con faltante": 0,
       "Cajas con sobrante": 1,
     });
+  });
+
+  it("descuadres por fecha: PENDIENTE hasta que la gerencia lo resuelve", async () => {
+    const row = () =>
+      report("descuadres").then((rows) => pick(rows, "Cajera", eva.name));
+    expect(await row()).toMatchObject({
+      Día: today,
+      Efectivo: 25,
+      Tarjeta: 0,
+      Transferencia: 0,
+      Justificación: "QA: sobrante de la prueba",
+      Resolución: "PENDIENTE",
+    });
+    const id = (
+      await db.cashSession.findFirstOrThrow({
+        where: { userId: eva.id },
+        select: { id: true },
+      })
+    ).id;
+    const url = "/cash-sessions/" + id + "/descuadre";
+    const note = "QA: se devolvieron los 25 a la clienta";
+    // La cajera no resuelve descuadres ni ve el reporte.
+    expect((await request(url, ana.token, { resolution: note })).status).toBe(
+      403,
+    );
+    expect(
+      (
+        await request(
+          `/reports/descuadres?from=${today}&to=${today}`,
+          ana.token,
+        )
+      ).status,
+    ).toBe(403);
+    expect((await request(url, admin, { resolution: "ok" })).status).toBe(400);
+    // Con la caja abierta no hay descuadre que resolver.
+    expect(
+      (
+        await request("/cash-sessions/" + ana.cash.id + "/descuadre", admin, {
+          resolution: note,
+        })
+      ).status,
+    ).toBe(400);
+    expect((await request(url, admin, { resolution: note })).status).toBe(201);
+    const resolved = await row();
+    expect(resolved.Resolución).toContain(note);
+    expect(resolved.Resolución).not.toBe("PENDIENTE");
+    const saved = await db.cashSession.findUniqueOrThrow({ where: { id } });
+    expect((saved.closeDetails as any).differenceResolution).toMatchObject({
+      note,
+    });
+    expect(
+      await db.auditLog.count({
+        where: { entityId: id, action: "difference_resolved" },
+      }),
+    ).toBe(1);
   });
 
   it("anulaciones por cajera y motivo", async () => {

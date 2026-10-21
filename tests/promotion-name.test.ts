@@ -109,6 +109,7 @@ beforeAll(async () => {
       countedCash: Math.max(0, open.expected.cash),
       countedCard: Math.max(0, open.expected.card),
       countedTransfer: Math.max(0, open.expected.transfer),
+      differenceReason: "QA: cierre de limpieza de la prueba",
       notes: "Cierre previo de pruebas G15",
     });
   cash = await ok("/cash-sessions/open", {
@@ -126,6 +127,7 @@ afterAll(async () => {
       countedCash: Math.max(0, e.cash),
       countedCard: Math.max(0, e.card),
       countedTransfer: Math.max(0, e.transfer),
+      differenceReason: "QA: cierre de limpieza de la prueba",
       notes: "Cierre de pruebas G15",
     });
   }

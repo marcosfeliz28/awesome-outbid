@@ -180,6 +180,7 @@ export function CloseCashModal({
     delivered: "",
     notes: "",
     managerPin: "",
+    differenceReason: "",
   });
   const user = useStore((s) => s.user);
   // Igual que cash.ts (canViewCashExpected).
@@ -190,7 +191,8 @@ export function CloseCashModal({
     [error, setError] = useState(""),
     [confirmBlindClose, setConfirmBlindClose] = useState(false),
     [cardNeedsPin, setCardNeedsPin] = useState(false),
-    [cashNeedsPin, setCashNeedsPin] = useState(false);
+    [cashNeedsPin, setCashNeedsPin] = useState(false),
+    [needsReason, setNeedsReason] = useState(false);
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [key]: e.target.value });
   const subtotal =
@@ -253,6 +255,7 @@ export function CloseCashModal({
         countedTransfer: parse(form.countedTransfer),
         ...(delivered === null ? {} : { delivered }),
         notes: form.notes,
+        differenceReason: form.differenceReason,
         ...(voucherNeedsPin || cardNeedsPin || cashNeedsPin
           ? { managerPin: form.managerPin }
           : {}),
@@ -266,6 +269,7 @@ export function CloseCashModal({
         setCardNeedsPin(true);
       if (/caja no cuadra con el sistema/i.test(e.message))
         setCashNeedsPin(true);
+      if (/no cuadra|no coincide/i.test(e.message)) setNeedsReason(true);
     } finally {
       setBusy(false);
     }
@@ -388,6 +392,20 @@ export function CloseCashModal({
             </strong>
             <small>Será el fondo sugerido de la próxima apertura.</small>
           </div>
+          {needsReason && (
+            <label className="field full">
+              <span className="danger-text">
+                Justificación del descuadre (obligatoria)
+              </span>
+              <textarea
+                value={form.differenceReason}
+                onChange={set("differenceReason")}
+                placeholder="Qué pasó y quién lo sabe"
+                required
+                minLength={10}
+              />
+            </label>
+          )}
           <label className="field full">
             <span>Notas del cierre</span>
             <textarea value={form.notes} onChange={set("notes")} />
