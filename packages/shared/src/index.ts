@@ -571,6 +571,9 @@ export const saleSchema = z.object({
   // Opcional y sin valor por defecto: la huella offline no cambia.
   courierFee: z.number().positive().max(5000).optional(),
   courierName: z.string().trim().min(1).max(100).optional(),
+  // «Crédito» o «Contraentrega» (dueña, 19-oct): sólo estadística; las dos van
+  // con el método `cod` y las mismas reglas. Opcional: la huella offline no cambia.
+  receivableKind: z.enum(["credit", "cod"]).optional(),
   payments: z
     .array(
       z.object({
@@ -796,6 +799,10 @@ export const courierCharge = (sale: {
   const paid = Math.round((Number(sale?.total ?? 0) + fee) * 100) / 100;
   return { fee, name, paid };
 };
+// Servicios (GV Makeup Studio, 20-oct): se venden sin existencia ni
+// movimientos de inventario. Se marcan con la unidad «servicio».
+export const isService = (product: unknown) =>
+  (product as { unit?: unknown } | null)?.unit === "servicio";
 export const weekStart = (value: Date = new Date()) => {
   const day = new Date(businessDate(value) + "T12:00:00Z");
   day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));

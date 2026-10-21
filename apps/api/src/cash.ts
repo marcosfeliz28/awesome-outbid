@@ -460,7 +460,22 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
     cod: {
       sold: salesByMethod.cod,
       collected: codCollected,
+      // Estadística (dueña, 19-oct): cobrado según la etiqueta de la venta.
+      // Ya está sumado en `collected`; esto sólo lo reparte.
+      collectedByKind: {
+        credit: sumOf(
+          codRows.filter(
+            (p: any) => p.status === "ok" && p.sale.receivableKind === "credit",
+          ),
+        ),
+        cod: sumOf(
+          codRows.filter(
+            (p: any) => p.status === "ok" && p.sale.receivableKind === "cod",
+          ),
+        ),
+      },
       rows: codRows.map((p: any) => ({
+        kind: p.sale.receivableKind ?? null,
         paymentId: p.id,
         saleId: p.saleId,
         number: p.sale.number,

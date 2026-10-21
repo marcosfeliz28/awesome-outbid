@@ -124,6 +124,7 @@ async function sell(
   total: number,
   method: string,
   daysAgo: number,
+  receivableKind?: "credit" | "cod",
 ) {
   const sale = await ok("/sales", admin.token, {
     offlineUuid: randomUUID(),
@@ -132,6 +133,7 @@ async function sell(
     items: [{ variantId, qty: total / 100 }],
     payments: [{ method, amount: total }],
     expectedTotal: total,
+    ...(receivableKind ? { receivableKind } : {}),
   });
   sold[key] = sale.id;
   // La antigüedad sale de la fecha de la venta: se corre en la base.
@@ -210,8 +212,10 @@ beforeAll(async () => {
   // a: hoy 200 (cobra 50 en efectivo) y hace 20 días 300 (transferencia de
   // 30 sin verificar); b: hace 45 días 400 y hace 90 días 500; c: contado
   // hace 100 días (inactivo).
-  await sell("a0", "a", 200, "cod", 0);
-  await sell("a20", "a", 300, "cod", 20);
+  // Etiqueta de la caja (dueña, 19-oct): a0 contraentrega, a20 crédito y
+  // las demás sin etiqueta, como las ventas anteriores.
+  await sell("a0", "a", 200, "cod", 0, "cod");
+  await sell("a20", "a", 300, "cod", 20, "credit");
   await sell("b45", "b", 400, "cod", 45);
   await sell("b90", "b", 500, "cod", 90);
   await sell("c100", "c", 100, "cash", 100);
@@ -282,10 +286,12 @@ describe("Reportes · Clientes y crédito", () => {
     // La transferencia sin verificar no descuenta el saldo.
     expect(by[n("a20").number]).toMatchObject({
       Tramo: "16-30 días",
+      Tipo: "Crédito",
       Saldo: 300,
     });
     expect(by[n("b45").number]).toMatchObject({
       Tramo: "31-60 días",
+      Tipo: "Crédito / contraentrega",
       Saldo: 400,
     });
     expect(by[n("b90").number]).toMatchObject({

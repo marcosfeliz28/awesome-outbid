@@ -30,6 +30,7 @@ import { IncentivesController } from "./incentives";
 import { NotificationsController, NotificationWorker } from "./notifications";
 import { CreditReminderService } from "./credit-reminder";
 import { RetentionWorker } from "./retention";
+import { UsdRateWorker } from "./usd-rate";
 import {
   DriveBackupController,
   DriveBackupService,
@@ -96,6 +97,7 @@ export function createAppModule(secret: string) {
       DriveBackupService,
       DriveBackupWorker,
       RetentionWorker,
+      UsdRateWorker,
       RequestRateLimitService,
       SecurityMaintenance,
       { provide: APP_GUARD, useClass: AuthGuard },

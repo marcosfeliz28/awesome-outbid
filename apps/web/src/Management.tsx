@@ -273,6 +273,11 @@ export function Catalog() {
     requiredNumber("costAvg", "Costo de entrada"),
     requiredNumber("minStock", "Stock mínimo", 5),
     {
+      key: "service",
+      label: "Es un servicio (se vende sin existencia)",
+      type: "checkbox",
+    },
+    {
       key: "imageUrl",
       label: "URL de la foto",
       initial: "/products/accessories.svg",
@@ -453,9 +458,10 @@ export function Catalog() {
           fields={fields}
           onClose={() => setCreate(false)}
           onSubmit={(values) => {
-            const { barcode, price, costAvg, ...data } = values;
+            const { barcode, price, costAvg, service, ...data } = values;
             return post("/products", {
               ...data,
+              ...(service ? { unit: "servicio", minStock: 0 } : {}),
               variants: [{ sku: data.sku, barcode, price, costAvg }],
             });
           }}

@@ -295,7 +295,7 @@ test("descuento por monto, crédito y abono en interfaz", async ({ page }) => {
     await page.getByRole("button", { name: /Cobrar/ }).click();
     await page
       .getByRole("button", {
-        name: "Crédito / contraentrega",
+        name: "Contraentrega",
         exact: true,
       })
       .click();
@@ -2223,7 +2223,7 @@ test("R9-offline-1 revisión: un crédito sin respuesta queda pendiente y se con
       await page.getByRole("button", { name: /Cobrar/ }).click();
       await page
         .getByRole("button", {
-          name: "Crédito / contraentrega",
+          name: "Contraentrega",
           exact: true,
         })
         .click();
@@ -2633,7 +2633,7 @@ test.describe("Tienda-pantallas", () => {
     await page.getByRole("button", { name: "Agregar pago" }).click();
     await page
       .getByRole("button", {
-        name: "Crédito / contraentrega",
+        name: "Contraentrega",
         exact: true,
       })
       .click();
@@ -2781,7 +2781,7 @@ test("D-01: la vendedora necesita el PIN del gerente para una contraentrega sobr
       .click();
     await page.getByRole("button", { name: /Cobrar/ }).click();
     await page
-      .getByRole("button", { name: "Crédito / contraentrega", exact: true })
+      .getByRole("button", { name: "Contraentrega", exact: true })
       .click();
     await expect(page.getByLabel("Monto del pago")).toHaveValue("1500");
     await page

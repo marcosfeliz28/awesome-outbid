@@ -96,6 +96,11 @@ export function BusinessHeader({
 }
 
 const COUNT_KEYS = new Set(["tickets", "voidedTickets"]);
+// Etiqueta de la venta por cobrar (dueña, 19-oct); nula en ventas anteriores.
+export const RECEIVABLE_KIND: Record<string, string> = {
+  credit: "Crédito",
+  cod: "Contraentrega",
+};
 const METHOD_SHORT: Record<string, string> = {
   cash: "efectivo",
   card: "tarjeta",
@@ -172,6 +177,18 @@ export function CuadrePrint({ c }: { c: any }) {
         <>
           <h4>Créditos / contraentregas</h4>
           <Row label="Vendidas" value={num(c.cod?.sold)} />
+          {Number(c.cod?.collectedByKind?.credit) > 0 && (
+            <Row
+              label="Cobrado de créditos"
+              value={num(c.cod?.collectedByKind?.credit)}
+            />
+          )}
+          {Number(c.cod?.collectedByKind?.cod) > 0 && (
+            <Row
+              label="Cobrado de contraentregas"
+              value={num(c.cod?.collectedByKind?.cod)}
+            />
+          )}
           <Row label="Cobradas efectivo" value={num(c.cod?.collected?.cash)} />
           <Row
             label="Cobradas transferencia"
@@ -184,7 +201,7 @@ export function CuadrePrint({ c }: { c: any }) {
             .map((r: any) => (
               <div key={r.paymentId} className="tp-sub">
                 <Row
-                  label={`${r.number} · ${METHOD_SHORT[r.method] ?? r.method}`}
+                  label={`${r.number}${r.kind ? " · " + RECEIVABLE_KIND[r.kind] : ""} · ${METHOD_SHORT[r.method] ?? r.method}`}
                   value={num(r.amount)}
                 />
                 <p>

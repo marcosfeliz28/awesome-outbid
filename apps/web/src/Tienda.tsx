@@ -15,6 +15,7 @@ import {
   DailyUserReportPrint,
   PaymentMethodReportPrint,
   PrintSheet,
+  RECEIVABLE_KIND,
 } from "./Prints";
 
 export type PrintKind = "cuadre" | "daily" | "method";
@@ -622,6 +623,10 @@ export function CodPending({ session }: { session: any }) {
                       <strong>{r.number}</strong>{" "}
                       <Badge tone={CREDIT_STATUS[r.status]?.tone}>
                         {CREDIT_STATUS[r.status]?.label}
+                      </Badge>{" "}
+                      <Badge tone="neutral">
+                        {RECEIVABLE_KIND[r.receivableKind] ??
+                          "Crédito / contraentrega"}
                       </Badge>
                       <div className="cod-age">
                         <span>
