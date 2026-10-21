@@ -67,7 +67,7 @@ import {
   StoreSettings,
   type Printing,
 } from "./Tienda";
-import { METHOD_LABEL, printSoon } from "./Prints";
+import { METHOD_LABEL } from "./Prints";
 import {
   customerEditValue,
   customerPrivateDisplay,
@@ -1608,7 +1608,8 @@ export function Cash() {
     [closing, setClosing] = useState<any>(null),
     [discarding, setDiscarding] = useState<any>(null),
     [printing, setPrinting] = useState<Printing>(null),
-    [printSession, setPrintSession] = useState<string>();
+    [printSession, setPrintSession] = useState<string>(),
+    [autoPrint, setAutoPrint] = useState(false);
   // Fondo sugerido: lo dejado en el último cierre de la propia persona.
   const suggestion = useQuery({
     queryKey: ["opening-suggestion"],
@@ -2094,7 +2095,7 @@ export function Cash() {
             setPrintSession(closing.id);
             setClosing(null);
             setPrinting({ kind: "cuadre", data: cuadre });
-            printSoon();
+            setAutoPrint(true);
           }}
         />
       )}
@@ -2115,7 +2116,9 @@ export function Cash() {
         onClose={() => {
           setPrinting(null);
           setPrintSession(undefined);
+          setAutoPrint(false);
         }}
+        autoPrint={autoPrint}
         sessionId={printSession}
         onSwitch={setPrinting}
       />
@@ -2712,6 +2715,92 @@ const reportList = [
   ["customers", "Mejores clientes"],
   ["purchases", "Compras y cuentas por pagar"],
 ];
+// Dueña (21-oct): los reportes ordenados por grupos plegables; en el móvil,
+// lista vertical (nada de fila horizontal).
+const REPORT_GROUPS: [string, string[]][] = [
+  [
+    "Ventas",
+    [
+      "sales",
+      "monthly-consumption",
+      "ventas-categoria-forma-pago",
+      "returns-discounts",
+      "anulaciones",
+      "devoluciones-producto",
+      "por-mayor-detalle",
+    ],
+  ],
+  [
+    "Caja y pagos",
+    [
+      "cash",
+      "descuadres",
+      "diferencias-cuadre",
+      "by-payment",
+      "income-by-day",
+      "entradas-cuenta",
+      "formas-pago-mes",
+      "formas-pago-categoria",
+    ],
+  ],
+  [
+    "Contraentregas y crédito",
+    [
+      "creditos-por-antiguedad",
+      "clientes-con-mas-deuda",
+      "cobros-por-mes",
+      "envios-mensajero",
+    ],
+  ],
+  [
+    "Clientes",
+    [
+      "customers",
+      "top-clientes",
+      "clientes-nuevos-por-mes",
+      "frecuencia-de-compra",
+      "clientes-inactivos",
+    ],
+  ],
+  [
+    "Inventario",
+    [
+      "inventory-value",
+      "kardex",
+      "low-stock",
+      "no-movement",
+      "expiring",
+      "abc",
+      "purchases",
+    ],
+  ],
+  [
+    "Vendedoras",
+    ["by-seller", "ranking-cajeras", "descuentos-cajera", "margen-por-cajera"],
+  ],
+  ["Margen y resultados", ["profit", "expenses", "income-statement", "formal"]],
+];
+// Lo que el servidor agrega después cae en su grupo por nombre.
+const SERVER_GROUP: Record<string, string> = {
+  Ventas: "Ventas",
+  Dinero: "Caja y pagos",
+  "Clientes y crédito": "Clientes",
+  Inventario: "Inventario",
+  Margen: "Margen y resultados",
+};
+export function groupReports(
+  reports: { id: string; name: string; group?: string }[],
+) {
+  const out = new Map<string, { id: string; name: string }[]>(
+    REPORT_GROUPS.map(([g]) => [g, []]),
+  );
+  for (const r of reports) {
+    const fixed = REPORT_GROUPS.find(([, ids]) => ids.includes(r.id))?.[0];
+    const group = fixed ?? SERVER_GROUP[r.group ?? ""] ?? "Ventas";
+    out.get(group)!.push({ id: r.id, name: r.name });
+  }
+  return [...out].filter(([, list]) => list.length);
+}
 export function Reports() {
   const user = useStore((s) => s.user);
   // Los 40 reportes de la dueña (orden 18-oct) vienen del servidor, ya
@@ -2723,8 +2812,12 @@ export function Reports() {
   });
   const allReports: string[][] = [
     ...reportList,
-    ...(extra.data ?? []).map((r) => [r.name, r.group + " · " + r.title]),
+    ...(extra.data ?? []).map((r) => [r.name, r.title]),
   ];
+  const serverGroup = new Map(
+    (extra.data ?? []).map((r) => [r.name, r.group] as const),
+  );
+  const [openGroup, setOpenGroup] = useState<string | null>("Ventas");
   const [report, setReport] = useState("sales"),
     [from, setFrom] = useState(today().slice(0, 8) + "01"),
     [to, setTo] = useState(today()),
@@ -2757,25 +2850,51 @@ export function Reports() {
       />
       <div className="reports-layout">
         <aside className="panel report-menu">
-          {allReports
-            .filter(
-              ([id]) =>
-                id !== "formal" || can(user?.permissions ?? [], "profit:read"),
-            )
-            .map(([id, name]) => (
-              <button
-                key={id}
-                onClick={() => {
-                  setReport(id);
-                  setPage(1);
-                }}
-                className={report === id ? "active" : ""}
-              >
-                <FileText size={17} />
-                {name}
-                <ChevronRight size={14} />
-              </button>
-            ))}
+          {groupReports(
+            allReports
+              .filter(
+                ([id]) =>
+                  id !== "formal" ||
+                  can(user?.permissions ?? [], "profit:read"),
+              )
+              .map(([id, name]) => ({ id, name, group: serverGroup.get(id) })),
+          ).map(([group, list]) => {
+            const open =
+              openGroup === group || list.some((r) => r.id === report);
+            return (
+              <div key={group} className="report-group">
+                <button
+                  type="button"
+                  className="report-group-title"
+                  aria-expanded={open}
+                  onClick={() => setOpenGroup(open ? null : group)}
+                >
+                  {group}
+                  <span className="report-group-count">{list.length}</span>
+                  <ChevronRight
+                    size={14}
+                    className={open ? "report-group-open" : ""}
+                  />
+                </button>
+                {open &&
+                  list.map(({ id, name }) => (
+                    <button
+                      key={id}
+                      onClick={() => {
+                        setReport(id);
+                        setOpenGroup(group);
+                        setPage(1);
+                      }}
+                      className={report === id ? "active" : ""}
+                    >
+                      <FileText size={17} />
+                      {name}
+                      <ChevronRight size={14} />
+                    </button>
+                  ))}
+              </div>
+            );
+          })}
         </aside>
         {report === "formal" ? (
           <FormalReports />

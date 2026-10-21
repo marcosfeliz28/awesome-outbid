@@ -245,6 +245,13 @@ describe("Reportes · Ventas", () => {
     expect(mine).toMatchObject({ Facturas: 3, "Ventas netas": 5000 });
   });
 
+  it("ventas detalladas muestra el nombre de la vendedora, no su código", async () => {
+    const rows = await report("sales");
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows)
+      expect(String(r.Vendedor)).not.toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-/);
+  });
+
   it("por categoría y por marca, con la devolución descontada", () => {
     const cat = after["ventas-categoria-mes"].find(
       (r) => r.Categoría === "QA Ventas " + suffix,
