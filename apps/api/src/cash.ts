@@ -403,9 +403,36 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         left: details.left ?? null,
       }
     : { delivered: null, left: null };
+  // Dueña (21-oct): falte o sobre, el descuadre se ve en grande con su
+  // justificación y quién lo aprobó.
+  const offCash = closed ? Number(session.differenceCash ?? 0) : 0;
+  const offCard = closed ? Number(session.differenceCard ?? 0) : 0;
+  const approverIds = [details.cashApprovedBy, details.cardApprovedBy].filter(
+    Boolean,
+  );
+  const approvers = approverIds.length
+    ? await db.user.findMany({
+        where: { id: { in: approverIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const nameOf = (id: unknown) =>
+    approvers.find((u: any) => u.id === id)?.name ?? null;
+  const descuadre =
+    offCash || offCard
+      ? {
+          cash: offCash,
+          card: offCard,
+          reason: details.differenceReason ?? null,
+          notes: session.notes ?? null,
+          cashApprovedBy: nameOf(details.cashApprovedBy),
+          cardApprovedBy: nameOf(details.cardApprovedBy),
+        }
+      : null;
   return {
     sessionId: session.id,
     title: "Cuadre de Caja",
+    descuadre,
     footer: "FIN DEL CUADRE",
     business: {
       name: settings.name ?? "",
@@ -1030,7 +1057,22 @@ export class CashController {
         );
         if (cardOff) (data.closeDetails as any).cardApprovedBy = approver;
         if (cashOff) (data.closeDetails as any).cashApprovedBy = approver;
+      } else if (cardOff || cashOff) {
+        // Un gerente que cierra con descuadre queda como quien lo aprobó.
+        if (cardOff) (data.closeDetails as any).cardApprovedBy = actor.id;
+        if (cashOff) (data.closeDetails as any).cashApprovedBy = actor.id;
       }
+      // Dueña (21-oct): falte o sobre, nadie cierra un descuadre sin decir
+      // qué pasó, tampoco un gerente. El mensaje sigue sin decir el monto.
+      if (
+        (cardOff || cashOff) &&
+        input.differenceReason.replace(/\s/g, "").length < 10
+      )
+        bad(
+          "La caja no cuadra. Escribe la justificación del descuadre: qué pasó y quién lo sabe.",
+        );
+      if (cardOff || cashOff)
+        (data.closeDetails as any).differenceReason = input.differenceReason;
       if (
         cashCloseRequiresNote(actor, differences, differenceLimit) &&
         !input.notes.trim()
@@ -1197,6 +1239,7 @@ export class CashController {
     };
     return {
       ...report,
+      descuadre: null,
       lines: report.lines.filter(
         (line: any) => !String(line.key).startsWith("difference"),
       ),

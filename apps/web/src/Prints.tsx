@@ -107,6 +107,45 @@ const METHOD_SHORT: Record<string, string> = {
   transfer: "transf.",
 };
 
+/** Dueña (21-oct): falte o sobre dinero, el descuadre sale en grande. */
+export function DescuadreBanner({ d }: { d: any }) {
+  const line = (label: string, value: number, by: string | null) =>
+    value ? (
+      <p style={{ margin: "2px 0", fontSize: "1.25em", fontWeight: 800 }}>
+        {value < 0 ? "FALTAN" : "SOBRAN"} {label}: {value < 0 ? "−" : "+"}RD${" "}
+        {num(Math.abs(value))}
+        {by ? (
+          <span style={{ fontSize: "0.7em", fontWeight: 600 }}>
+            {" "}
+            · aprobó {by}
+          </span>
+        ) : null}
+      </p>
+    ) : null;
+  return (
+    <div
+      className="descuadre-banner"
+      role="alert"
+      style={{
+        border: "3px solid #DC2626",
+        color: "#DC2626",
+        padding: "6px 8px",
+        margin: "8px 0",
+        textAlign: "center",
+      }}
+    >
+      <p style={{ margin: 0, fontSize: "1.4em", fontWeight: 900 }}>
+        ⚠ DESCUADRE DE CAJA
+      </p>
+      {line("EN EFECTIVO", Number(d.cash), d.cashApprovedBy)}
+      {line("EN TARJETA", Number(d.card), d.cardApprovedBy)}
+      <p style={{ margin: "4px 0 0", color: "#111" }}>
+        Justificación: {d.reason || d.notes || "SIN JUSTIFICACIÓN"}
+      </p>
+    </div>
+  );
+}
+
 /** 1. Cuadre de caja, en el orden del impreso de la tienda. */
 export function CuadrePrint({ c }: { c: any }) {
   const eur = !!c.foreign?.eur?.rate;
@@ -136,6 +175,7 @@ export function CuadrePrint({ c }: { c: any }) {
           }
         />
       )}
+      {c.descuadre && <DescuadreBanner d={c.descuadre} />}
       <h4>Detalles de monedas</h4>
       <div className="tp-row tp-head">
         <span>Moneda × Cantidad</span> <span>= Total</span>

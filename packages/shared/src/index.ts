@@ -681,6 +681,8 @@ export const cashCloseSchema = z
     countedEur: cashAmount.default(0),
     delivered: cashAmount.optional(),
     notes: z.string().max(1000).default(""),
+    // Dueña (21-oct): todo descuadre (falta o sobra) exige una justificación.
+    differenceReason: z.string().trim().max(500).default(""),
     // A-1: un vale de caja de quien no gestiona ventas necesita este PIN.
     managerPin: z
       .string()
