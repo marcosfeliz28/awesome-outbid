@@ -139,9 +139,15 @@ export function DescuadreBanner({ d }: { d: any }) {
       </p>
       {line("EN EFECTIVO", Number(d.cash), d.cashApprovedBy)}
       {line("EN TARJETA", Number(d.card), d.cardApprovedBy)}
+      {line("EN TRANSFERENCIA", Number(d.transfer ?? 0), null)}
       <p style={{ margin: "4px 0 0", color: "#111" }}>
         Justificación: {d.reason || d.notes || "SIN JUSTIFICACIÓN"}
       </p>
+      {d.resolution && (
+        <p style={{ margin: "2px 0 0", color: "#111" }}>
+          Resuelto: {d.resolution}
+        </p>
+      )}
     </div>
   );
 }
