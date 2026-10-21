@@ -182,6 +182,8 @@ const productSchema = z.object({
   minStock: amount.default(5),
   maxStock: amount.default(80),
   location: z.string().max(80).default(""),
+  // «servicio» (GV Makeup Studio): se vende sin existencia.
+  unit: z.enum(["unidad", "servicio"]).optional(),
   variants: z.array(variantSchema).min(1).max(500),
 });
 
