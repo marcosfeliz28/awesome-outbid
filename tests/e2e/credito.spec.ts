@@ -129,6 +129,7 @@ test("Crédito: ventana de cobro con el camino claro, venta sin pago y cobro mix
           countedCard: 0,
           countedTransfer: 0,
           notes: "Cierre previo de la prueba de crédito",
+          differenceReason: "E2E: cierre previo de la prueba",
         },
       });
   await login(page);

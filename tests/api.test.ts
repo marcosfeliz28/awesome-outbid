@@ -422,6 +422,7 @@ afterAll(async () => {
             countedCash: Math.max(0, current.expected?.cash ?? 0),
             countedCard: Math.max(0, current.expected?.card ?? 0),
             countedTransfer: Math.max(0, current.expected?.transfer ?? 0),
+            differenceReason: "QA: cierre de limpieza de la prueba",
             notes: "Cierre de pruebas",
           },
           t,
@@ -1120,6 +1121,7 @@ describe("Aceptación financiera y permisos", () => {
       countedCash: s.expected.cash + 10,
       countedCard: s.expected.card - 10,
       countedTransfer: s.expected.transfer,
+      differenceReason: "QA: descuadre de la prueba",
     });
     expect(Number(r.difference)).toBe(0);
     expect(r.differences.cash).toBe(10);
@@ -1256,6 +1258,7 @@ describe("Regresiones de Claude", () => {
       countedCard: expected.card + 10,
       countedTransfer: expected.transfer,
       notes: "Diferencias compensadas verificadas en QA",
+      differenceReason: "QA: descuadre de la prueba",
     });
     expect(r.status).toBe(201);
     const closed = (await ok("/cash-sessions")).find((s) => s.id === c.id);
@@ -2057,6 +2060,7 @@ describe("Seguridad, offline y funciones completadas", () => {
           countedCard: expected.card + 10,
           countedTransfer: expected.transfer,
           notes: "Diferencia de prueba explicada",
+          differenceReason: "QA: descuadre de la prueba",
           managerPin: "987654",
         },
         alertToken,
@@ -7161,6 +7165,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
               countedCash: Math.max(0, expected.cash),
               countedCard: Math.max(0, expected.card),
               countedTransfer: Math.max(0, expected.transfer),
+              differenceReason: "QA: cierre de limpieza de la prueba",
             },
             who.token,
           );
@@ -7759,6 +7764,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
             countedCard: 0,
             countedTransfer: 0,
             notes: "Cierre de limpieza QA",
+            differenceReason: "QA: cierre de limpieza de la prueba",
           },
           cashier3.token,
         );
@@ -7911,6 +7917,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       countedTransfer: expected.transfer,
       delivered: 1700,
       notes: "QA cuadre",
+      differenceReason: "QA: descuadre de la prueba",
       // A-1 (auditoría 01): el vale de caja de una cajera exige el PIN de un
       // gerente además de la nota.
       managerPin: "987654",
@@ -9641,6 +9648,7 @@ describe("Ronda 9 · Windows y zona horaria", () => {
               countedCard: current.expected.card,
               countedTransfer: current.expected.transfer,
               notes: "Cierre de pruebas",
+              differenceReason: "QA: cierre de limpieza de la prueba",
             },
             as,
           );
@@ -9742,6 +9750,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A01 devolución idempotente", (
         countedCash: Math.max(0, s.expected.cash),
         countedCard: Math.max(0, s.expected.card),
         countedTransfer: Math.max(0, s.expected.transfer),
+        differenceReason: "QA: cierre de limpieza de la prueba",
         notes: "Cierre QA R9-A01",
       });
   };
@@ -9920,6 +9929,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A02 cierre histórico intacto",
       countedCash: Math.max(0, s.expected.cash),
       countedCard: Math.max(0, s.expected.card),
       countedTransfer: Math.max(0, s.expected.transfer),
+      differenceReason: "QA: cierre de limpieza de la prueba",
       notes: "Cierre QA R9-A02",
     });
   };
@@ -10073,6 +10083,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A05 merma de devoluciones", () 
         countedCash: Math.max(0, s.expected.cash),
         countedCard: Math.max(0, s.expected.card),
         countedTransfer: Math.max(0, s.expected.transfer),
+        differenceReason: "QA: cierre de limpieza de la prueba",
         notes: "Cierre QA R9-A05",
       });
   };
@@ -10246,6 +10257,7 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A04 precisión monetaria", () =
         countedCash: Math.max(0, s.expected.cash),
         countedCard: Math.max(0, s.expected.card),
         countedTransfer: Math.max(0, s.expected.transfer),
+        differenceReason: "QA: cierre de limpieza de la prueba",
         notes: "Cierre QA R9-A04",
       });
   };
@@ -11092,6 +11104,7 @@ describe("Dinero · D-01 contraentrega y D-04 salidas de efectivo", () => {
               countedCash: Math.max(0, expected.cash),
               countedCard: Math.max(0, expected.card),
               countedTransfer: Math.max(0, expected.transfer),
+              differenceReason: "QA: cierre de limpieza de la prueba",
               notes: "Cierre de pruebas de dinero",
             },
             who.token,

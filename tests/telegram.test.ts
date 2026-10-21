@@ -334,6 +334,7 @@ afterAll(async () => {
           countedCard: Math.max(0, current.expected?.card ?? 0),
           countedTransfer: Math.max(0, current.expected?.transfer ?? 0),
           notes: "Cierre de pruebas Telegram",
+          differenceReason: "QA: descuadre de la prueba",
         });
     }
     if (settingsBefore) await put(withTg.base, "/settings", settingsBefore);
@@ -696,6 +697,7 @@ describe("Telegram · avisos de facturas", () => {
       countedCard: current.expected.card,
       countedTransfer: current.expected.transfer,
       notes: "Faltan 50 en pruebas Telegram",
+      differenceReason: "QA: descuadre de la prueba",
     });
     const text = await waitFor(
       () =>

@@ -108,6 +108,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas GV",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
   await db.variant.deleteMany({ where: { branchId: fakeBranch } });
   await db.product.deleteMany({ where: { branchId: fakeBranch } });
