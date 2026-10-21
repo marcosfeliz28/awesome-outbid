@@ -19,6 +19,7 @@ export default defineConfig({
       "tests/credito-dias.test.ts",
       "tests/recibo-envio.test.ts",
       "tests/descuadre-banner.test.ts",
+      "tests/buscador-palabras.test.ts",
       "packages/shared/**/*.test.ts",
       "tests/invoice.test.ts",
       "tests/merchandise-template.test.ts",

@@ -3,6 +3,8 @@ import {
   formatAmount,
   money,
   quantity,
+  searchTerms,
+  searchVariantsForDb,
   z,
   stockQty,
 } from "@fitstore/shared";
@@ -282,20 +284,26 @@ export class CatalogController {
       ...(query.categoryId
         ? { categoryId: parse(uuid, query.categoryId) }
         : {}),
+      // Dueña (21-oct): palabra por palabra, en cualquier orden, con sinónimos
+      // y unidades («vainilla 2 libras» encuentra «Vanilla / 2 lb»). Un código
+      // de barras exacto también encuentra su producto.
       ...(q
         ? {
             OR: [
-              { name: { contains: q, mode: "insensitive" } },
-              { sku: { contains: q, mode: "insensitive" } },
+              { variants: { some: { barcode: q } } },
               {
-                variants: {
-                  some: {
-                    OR: [
-                      { barcode: q },
-                      { sku: { contains: q, mode: "insensitive" } },
-                    ],
-                  },
-                },
+                AND: searchTerms(q).map((alts) => ({
+                  OR: alts.flatMap(searchVariantsForDb).flatMap((t) => [
+                    { name: { contains: t, mode: "insensitive" } },
+                    { sku: { contains: t, mode: "insensitive" } },
+                    { brand: { contains: t, mode: "insensitive" } },
+                    {
+                      variants: {
+                        some: { sku: { contains: t, mode: "insensitive" } },
+                      },
+                    },
+                  ]),
+                })),
               },
             ],
           }

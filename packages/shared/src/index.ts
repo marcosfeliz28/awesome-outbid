@@ -846,3 +846,99 @@ export function privacyNoticeText(config: any) {
     "."
   );
 }
+
+// ---------------------------------------------------------------- buscador
+// Orden de la dueña (21-oct): el buscador va palabra por palabra, en cualquier
+// orden y en cualquier parte del nombre. «vainilla» encuentra «Vanilla»,
+// «2 libras», «2 L» y «2lbs» encuentran «2 lb», «iso» encuentra «ISO100».
+export const foldSearch = (value: string) =>
+  value
+    .replace(/['’´`ʼ‘]/g, "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+const UNIT: Record<string, string> = {
+  l: "lb",
+  lb: "lb",
+  lbs: "lb",
+  libra: "lb",
+  libras: "lb",
+  oz: "oz",
+  onza: "oz",
+  onzas: "oz",
+  g: "g",
+  gr: "g",
+  grs: "g",
+  gramo: "g",
+  gramos: "g",
+  kg: "kg",
+  kilo: "kg",
+  kilos: "kg",
+  ml: "ml",
+  mg: "mg",
+};
+// Español ↔ inglés de los sabores y palabras de las etiquetas.
+const SYNONYMS: string[][] = [
+  ["vainilla", "vanilla"],
+  ["fresa", "strawberry"],
+  ["canela", "cinnamon"],
+  ["caramelo", "caramel"],
+  ["galleta", "cookie"],
+  ["sandia", "watermelon"],
+  ["limon", "lemon"],
+  ["frambuesa", "raspberry"],
+  ["uva", "grape"],
+  ["naranja", "orange"],
+  ["pina", "pineapple"],
+  ["coco", "coconut"],
+  ["menta", "mint"],
+  ["cafe", "coffee"],
+  ["mani", "peanut"],
+  ["mantequilla", "butter"],
+  ["sinsabor", "unflavored"],
+  ["proteina", "protein"],
+  ["creatina", "creatine"],
+  ["capsulas", "caps", "capsules"],
+  ["tabletas", "tablets", "tabs"],
+  ["chocolate", "choc"],
+  ["mora", "berry"],
+  ["durazno", "peach"],
+];
+const SYN = new Map<string, string[]>();
+for (const group of SYNONYMS) for (const w of group) SYN.set(w, group);
+const UNIT_RE = new RegExp(
+  "(\\d+(?:[.,]\\d+)?)\\s*(" + Object.keys(UNIT).join("|") + ")\\b",
+  "g",
+);
+const units = (text: string) =>
+  text.replace(
+    UNIT_RE,
+    (_, n: string, u: string) => n.replace(",", ".") + UNIT[u],
+  );
+/** Cada palabra de la búsqueda con sus formas equivalentes. */
+export const searchTerms = (query: string): string[][] =>
+  units(foldSearch(query).replace(/\bsin sabor\b/g, "sinsabor"))
+    .split(/[\s/,-]+/)
+    .filter(Boolean)
+    .map((w) => SYN.get(w) ?? [w]);
+/** El texto del producto preparado para buscar (unidades juntas: «2lb»). */
+export const searchHaystack = (text: string) =>
+  units(foldSearch(text).replace(/\bsin sabor\b/g, "sinsabor"));
+/** ¿El texto tiene todas las palabras (o una de sus formas equivalentes)? */
+export const matchesSearch = (text: string, query: string) => {
+  const hay = searchHaystack(text);
+  // «2lb» no debe encontrar «12lb»: los números se buscan desde su inicio.
+  const has = (a: string) =>
+    /^\d/.test(a)
+      ? new RegExp("(^|[^\\d.])" + a.replace(/\./g, "\\.")).test(hay)
+      : hay.includes(a);
+  return searchTerms(query).every((alts) => alts.some(has));
+};
+/** Formas en que una palabra puede estar escrita en la base (para la API). */
+export const searchVariantsForDb = (term: string): string[] => {
+  const m = /^(\d+(?:\.\d+)?)(lb|oz|g|kg|ml|mg)$/.exec(term);
+  if (!m) return [term];
+  const [, n, u] = m;
+  const forms = u === "lb" ? ["lb", "lbs", "libra", "libras"] : [u];
+  return forms.flatMap((f) => [n + f, n + " " + f]);
+};
