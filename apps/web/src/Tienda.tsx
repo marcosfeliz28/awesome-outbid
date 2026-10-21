@@ -55,12 +55,15 @@ export function PrintModal({
   onClose,
   sessionId,
   onSwitch,
+  autoPrint,
 }: {
   printing: Printing;
   onClose: () => void;
   /** Caja recién cerrada: ofrece sus otras dos impresiones del día. */
   sessionId?: string;
   onSwitch?: (p: Printing) => void;
+  /** Imprime solo al abrir, cuando ya está todo lo que va en el papel. */
+  autoPrint?: boolean;
 }) {
   const config = useQuery({
     queryKey: ["settings"],
@@ -76,6 +79,17 @@ export function PrintModal({
     enabled: withProducts,
   });
   const extra = withProducts ? products.data : undefined;
+  // Dueña (21-oct): al cerrar caja sale el cuadre y, pegada, la lista de
+  // productos vendidos. Antes se imprimía a los 50 ms, sin esperar la lista,
+  // y el papel salía solo con el cuadre.
+  const printed = useRef(false);
+  const ready = !withProducts || products.isSuccess || products.isError;
+  useEffect(() => {
+    if (!autoPrint || !printing || !ready || printed.current) return;
+    printed.current = true;
+    const t = setTimeout(() => window.print(), 300);
+    return () => clearTimeout(t);
+  }, [autoPrint, printing, ready]);
   if (!printing) return null;
   const width = config.data?.receiptWidth ?? "80";
   return (
