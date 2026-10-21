@@ -571,6 +571,9 @@ export const saleSchema = z.object({
   // Opcional y sin valor por defecto: la huella offline no cambia.
   courierFee: z.number().positive().max(5000).optional(),
   courierName: z.string().trim().min(1).max(100).optional(),
+  // «Crédito» o «Contraentrega» (dueña, 19-oct): sólo estadística; las dos van
+  // con el método `cod` y las mismas reglas. Opcional: la huella offline no cambia.
+  receivableKind: z.enum(["credit", "cod"]).optional(),
   payments: z
     .array(
       z.object({

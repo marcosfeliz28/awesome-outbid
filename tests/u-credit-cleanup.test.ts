@@ -12,7 +12,10 @@ describe("U-crédito · contrato del cobro y manual", () => {
   });
 
   it("conserva Crédito / contraentrega y sus controles de cliente y aprobación", () => {
-    expect(pos).toContain('id: "cod", label: "Crédito / contraentrega"');
+    // Dueña, 19-oct: dos botones con el mismo método `cod` (sólo estadística).
+    expect(pos).toMatch(/kind: "cod" as const,\s*label: "Contraentrega"/);
+    expect(pos).toMatch(/kind: "credit" as const,\s*label: "Crédito"/);
+    expect(pos).toContain("receivableKind }");
     expect(pos).toContain("receivableNeedsApproval(");
     expect(pos).toContain(
       "Selecciona el cliente para el crédito / contraentrega.",
@@ -22,7 +25,7 @@ describe("U-crédito · contrato del cobro y manual", () => {
 
   it("el manual describe el método visible, sin pedir un vencimiento inexistente", () => {
     expect(manual).not.toContain("agrega **A crédito** y su vencimiento");
-    expect(manual).toContain("selecciona **Crédito / contraentrega**");
+    expect(manual).toContain("selecciona **Crédito** o **Contraentrega**");
   });
 
   it("Int UC-1: el interruptor de Ajustes no habilita la contraentrega, sólo exige PIN", () => {
