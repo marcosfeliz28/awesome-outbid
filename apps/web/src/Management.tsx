@@ -67,7 +67,7 @@ import {
   StoreSettings,
   type Printing,
 } from "./Tienda";
-import { METHOD_LABEL, printSoon } from "./Prints";
+import { METHOD_LABEL } from "./Prints";
 import {
   customerEditValue,
   customerPrivateDisplay,
@@ -1608,7 +1608,8 @@ export function Cash() {
     [closing, setClosing] = useState<any>(null),
     [discarding, setDiscarding] = useState<any>(null),
     [printing, setPrinting] = useState<Printing>(null),
-    [printSession, setPrintSession] = useState<string>();
+    [printSession, setPrintSession] = useState<string>(),
+    [autoPrint, setAutoPrint] = useState(false);
   // Fondo sugerido: lo dejado en el último cierre de la propia persona.
   const suggestion = useQuery({
     queryKey: ["opening-suggestion"],
@@ -2094,7 +2095,7 @@ export function Cash() {
             setPrintSession(closing.id);
             setClosing(null);
             setPrinting({ kind: "cuadre", data: cuadre });
-            printSoon();
+            setAutoPrint(true);
           }}
         />
       )}
@@ -2115,7 +2116,9 @@ export function Cash() {
         onClose={() => {
           setPrinting(null);
           setPrintSession(undefined);
+          setAutoPrint(false);
         }}
+        autoPrint={autoPrint}
         sessionId={printSession}
         onSwitch={setPrinting}
       />
