@@ -891,6 +891,12 @@ function CodCollect({
   // La dueña da por recibida la transferencia desde cualquier equipo: solo
   // indica el banco como guía (sin referencia ni caja propia).
   const owner = can(user?.permissions ?? [], "*");
+  // Cuentas fijas de Configuración (orden de la dueña, 20-oct).
+  const settings = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api<any>("/settings"),
+  });
+  const accounts: string[] = settings.data?.transferAccounts ?? [];
   const newLine = (
     amount: string,
     method: CollectLine["method"] = session || !manager || owner
@@ -1046,11 +1052,26 @@ function CodCollect({
               <>
                 <label className="field">
                   <span>Banco</span>
-                  <input
-                    required
-                    value={l.bank}
-                    onChange={(e) => patch(l.key, { bank: e.target.value })}
-                  />
+                  {accounts.length ? (
+                    <select
+                      required
+                      value={l.bank}
+                      onChange={(e) => patch(l.key, { bank: e.target.value })}
+                    >
+                      <option value="">Elige la cuenta…</option>
+                      {accounts.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      required
+                      value={l.bank}
+                      onChange={(e) => patch(l.key, { bank: e.target.value })}
+                    />
+                  )}
                 </label>
                 <label className="field">
                   <span>{owner ? "Referencia (opcional)" : "Referencia"}</span>

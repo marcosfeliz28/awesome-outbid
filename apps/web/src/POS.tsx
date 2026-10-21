@@ -1744,6 +1744,7 @@ function Checkout({
     [amount, setAmount] = useState(String(total)),
     [details, setDetails] = useState({
       bank: "",
+      terminal: "",
       reference: "",
       cardBrand: "Visa",
       cardLast4: "",
@@ -1904,6 +1905,8 @@ function Checkout({
               cardType: details.cardType,
               cardLast4: details.cardLast4,
               approvalCode: details.approvalCode,
+              // Terminal elegido de la lista de Configuración.
+              ...(details.terminal ? { bank: details.terminal } : {}),
             }
           : method === "transfer"
             ? { bank: details.bank, reference: details.reference }
@@ -1952,6 +1955,9 @@ function Checkout({
   const creditAmount = payments
     .filter((p) => p.method === "cod")
     .reduce((a, p) => a + p.amount, 0);
+  // Cuentas y terminales fijos (Configuración, orden de la dueña 20-oct).
+  const transferAccounts: string[] = config?.transferAccounts ?? [];
+  const cardTerminals: string[] = config?.cardTerminals ?? [];
   // «Con envío» solo con transferencia o tarjeta (orden 3af).
   const courierAllowed = payments.some(
     (p) => p.method === "transfer" || p.method === "card",
@@ -2618,6 +2624,25 @@ function Checkout({
                 <option>Amex</option>
               </select>
             </label>
+            {cardTerminals.length > 0 && (
+              <label className="field">
+                <span>Terminal</span>
+                <select
+                  required
+                  value={details.terminal}
+                  onChange={(e) =>
+                    setDetails({ ...details, terminal: e.target.value })
+                  }
+                >
+                  <option value="">Elige el terminal…</option>
+                  {cardTerminals.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="field">
               <span>Tipo de tarjeta</span>
               <select
@@ -2635,14 +2660,31 @@ function Checkout({
         {method === "transfer" && (
           <div className="form-grid">
             <label className="field">
-              <span>Banco</span>
-              <input
-                required
-                value={details.bank}
-                onChange={(e) =>
-                  setDetails({ ...details, bank: e.target.value })
-                }
-              />
+              <span>Cuenta donde cayó</span>
+              {transferAccounts.length ? (
+                <select
+                  required
+                  value={details.bank}
+                  onChange={(e) =>
+                    setDetails({ ...details, bank: e.target.value })
+                  }
+                >
+                  <option value="">Elige la cuenta…</option>
+                  {transferAccounts.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  required
+                  value={details.bank}
+                  onChange={(e) =>
+                    setDetails({ ...details, bank: e.target.value })
+                  }
+                />
+              )}
             </label>
             <label className="field">
               <span>Referencia</span>
