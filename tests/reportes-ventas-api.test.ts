@@ -123,6 +123,8 @@ beforeAll(async () => {
   cash = await ok("/cash-sessions/open", admin, {
     registerId: "qa-rv-" + suffix,
     openingAmount: 0,
+    // Otro archivo puede dejar fondo en la caja anterior del admin.
+    openingNote: "QA: fondo de la prueba",
   });
   customer = (await ok("/customers", admin, { name: "QA ventas " + suffix }))
     .id;
