@@ -1237,9 +1237,11 @@ export class CashController {
       void difference;
       return visible;
     };
+    // Dueña (21-oct): ya cerrada, la cajera también imprime el aviso de
+    // descuadre (la dueña lo revisa en la foto del cuadre). Antes de cerrar
+    // sigue siendo ciego: sin cierre no hay cuadre para ella.
     return {
       ...report,
-      descuadre: null,
       lines: report.lines.filter(
         (line: any) => !String(line.key).startsWith("difference"),
       ),
