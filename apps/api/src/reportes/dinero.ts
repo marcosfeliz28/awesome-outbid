@@ -71,6 +71,60 @@ function mix(rows: any[], keys: string[]): Row[] {
 }
 
 export const dinero: Record<string, ReportDef> = {
+  descuadres: {
+    title: "Descuadres de caja por fecha",
+    group: "Dinero",
+    // Orden de la dueña (21-oct): cada descuadre (falta o sobra) con la
+    // cajera, el mensajero, cuánto fue por área y cómo se resolvió.
+    async run(db, actor, range) {
+      if (!canViewCashExpected(actor)) denied();
+      const rows: any[] = await db.$queryRaw`
+        SELECT cs.id, to_char(${local(Prisma.sql`cs."closedAt"`)}, 'YYYY-MM-DD') AS dia,
+               cs."registerId", u.name AS cajera, cs."differenceCash" AS efectivo,
+               cs."differenceCard" AS tarjeta, cs."differenceTransfer" AS transferencia,
+               cs.notes, cs."closeDetails" AS det,
+               (SELECT string_agg(DISTINCT s."courierName", ', ') FROM "Sale" s
+                 WHERE s."cashSessionId" = cs.id AND s."courierFee" > 0) AS mensajero
+          FROM "CashSession" cs JOIN "User" u ON u.id::text = cs."userId"
+          WHERE cs."branchId" = ${actor.branchId} AND cs."closedAt" IS NOT NULL
+            AND cs."closedAt" >= ${utc(range.gte)} AND cs."closedAt" <= ${utc(range.lte)}
+            AND (cs."differenceCash" <> 0 OR cs."differenceCard" <> 0 OR cs."differenceTransfer" <> 0)
+          ORDER BY cs."closedAt"`;
+      const ids = [
+        ...new Set(
+          rows.flatMap((r) => [r.det?.cashApprovedBy, r.det?.cardApprovedBy]),
+        ),
+      ].filter(Boolean);
+      const users: { id: string; name: string }[] = ids.length
+        ? await db.user.findMany({
+            where: { id: { in: ids } },
+            select: { id: true, name: true },
+          })
+        : [];
+      const name = (id: unknown) => users.find((u) => u.id === id)?.name ?? "";
+      const terminals: { id: string; name: string }[] =
+        await db.terminal.findMany({ select: { id: true, name: true } });
+      return rows.map((r) => {
+        const fix = r.det?.differenceResolution;
+        return {
+          Día: r.dia,
+          Caja:
+            terminals.find((t) => t.id === r.registerId)?.name ?? r.registerId,
+          Cajera: r.cajera,
+          Mensajero: r.mensajero ?? "",
+          Efectivo: num(r.efectivo),
+          Tarjeta: num(r.tarjeta),
+          Transferencia: num(r.transferencia),
+          Aprobó:
+            [name(r.det?.cashApprovedBy), name(r.det?.cardApprovedBy)]
+              .filter((v, i, a) => v && a.indexOf(v) === i)
+              .join(", ") || "Sin aprobar",
+          Justificación: r.det?.differenceReason || r.notes || "",
+          Resolución: fix ? `${fix.note} (${fix.byName})` : "PENDIENTE",
+        };
+      });
+    },
+  },
   "entradas-cuenta": {
     title: "Entradas por cuenta de banco y terminal",
     group: "Dinero",

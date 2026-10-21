@@ -205,6 +205,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de margen",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
   for (const id of productIds)
     await request("/products/" + id, admin, { active: false }, "PATCH");

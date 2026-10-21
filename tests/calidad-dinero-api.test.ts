@@ -214,6 +214,7 @@ afterAll(async () => {
           countedCard: Math.max(0, listed.expected.card),
           countedTransfer: Math.max(0, listed.expected.transfer),
           notes: "Cierre de pruebas W9",
+          differenceReason: "QA: cierre de limpieza de la prueba",
         });
     }
   if (promotionIds.length)
@@ -629,16 +630,43 @@ describe("Cierre de caja", () => {
         })
       ).closedAt,
     ).toBeNull();
+    // Dueña (21-oct): con el PIN tampoco cierra sin justificar el descuadre.
+    for (const differenceReason of ["", "  corto   "]) {
+      const noReason = await request(url, seller.token, {
+        ...body,
+        managerPin: "246813",
+        differenceReason,
+      });
+      expect(noReason.status).toBe(400);
+      expect(noReason.body.message).toMatch(/justificación del descuadre/);
+      expect(noReason.body.message).not.toMatch(/\d/);
+      expect(
+        (
+          await db.cashSession.findUniqueOrThrow({
+            where: { id: seller.cash.id },
+          })
+        ).closedAt,
+      ).toBeNull();
+    }
+    const reason = "Faltan 50: le di cambio de más a una clienta";
     const approved = await request(url, seller.token, {
       ...body,
       managerPin: "246813",
+      differenceReason: reason,
     });
     expect(approved.status, JSON.stringify(approved.body)).toBe(201);
     const saved = await db.cashSession.findUniqueOrThrow({
       where: { id: seller.cash.id },
     });
     expect((saved.closeDetails as any).cashApprovedBy).toBeTruthy();
+    expect((saved.closeDetails as any).differenceReason).toBe(reason);
     expect(Number(saved.differenceCash)).toBe(-50);
+    // Ya cerrada, la cajera imprime el aviso del descuadre en su cuadre.
+    const own = await ok(
+      "/cash-sessions/" + seller.cash.id + "/cuadre",
+      seller.token,
+    );
+    expect(own.descuadre).toMatchObject({ cash: -50, card: 0, reason });
     void manager;
     // Si cuadra, cierra sin PIN.
     const exact = await person("cajera-exacta-c11", "seller", 0);
@@ -697,6 +725,7 @@ describe("Cierre de caja", () => {
     const approved = await request(url, seller.token, {
       ...body,
       managerPin: "246813",
+      differenceReason: "QA: el verifón marcó 80",
     });
     expect(approved.status, JSON.stringify(approved.body)).toBe(201);
     const saved = await db.cashSession.findUniqueOrThrow({
@@ -712,5 +741,61 @@ describe("Cierre de caja", () => {
     expect(Number(saved.differenceCard)).toBe(-20);
     expect(Number(saved.differenceCash)).toBe(0);
     void manager;
+  });
+
+  it("C13 · la gerencia tampoco cierra un descuadre sin justificarlo y queda como quien lo aprobó", async () => {
+    const adm = await person("gerente-c13", "admin", 0);
+    expect((await cashSale(adm, plain.variantId)).status).toBe(201);
+    const url = "/cash-sessions/" + adm.cash.id + "/close";
+    const body = {
+      countedCash: 70,
+      countedCard: 0,
+      countedTransfer: 0,
+      notes: "Conté 70",
+    };
+    const noReason = await request(url, adm.token, body);
+    expect(noReason.status).toBe(400);
+    expect(noReason.body.message).toMatch(/justificación del descuadre/);
+    expect(
+      (await db.cashSession.findUniqueOrThrow({ where: { id: adm.cash.id } }))
+        .closedAt,
+    ).toBeNull();
+    const reason = "Faltan 30: pagué un delivery sin registrarlo";
+    const closed = await request(url, adm.token, {
+      ...body,
+      differenceReason: reason,
+    });
+    expect(closed.status, JSON.stringify(closed.body)).toBe(201);
+    const saved = await db.cashSession.findUniqueOrThrow({
+      where: { id: adm.cash.id },
+    });
+    expect((saved.closeDetails as any).cashApprovedBy).toBe(adm.id);
+    expect((saved.closeDetails as any).differenceReason).toBe(reason);
+    const cuadre = await ok("/cash-sessions/" + adm.cash.id + "/cuadre", owner);
+    expect(cuadre.descuadre).toMatchObject({
+      cash: -30,
+      card: 0,
+      reason,
+      cashApprovedBy: adm.name,
+    });
+  });
+
+  it("C14 · un sobrante también exige justificación y sale positivo en el cuadre", async () => {
+    const adm = await person("gerente-c14", "admin", 0);
+    expect((await cashSale(adm, plain.variantId)).status).toBe(201);
+    const url = "/cash-sessions/" + adm.cash.id + "/close";
+    const body = { countedCash: 125, countedCard: 0, countedTransfer: 0 };
+    const noReason = await request(url, adm.token, body);
+    expect(noReason.status).toBe(400);
+    expect(noReason.body.message).toMatch(/justificación del descuadre/);
+    const closed = await request(url, adm.token, {
+      ...body,
+      notes: "Sobran 25",
+      differenceReason: "Sobran 25: una clienta no esperó el cambio",
+    });
+    expect(closed.status, JSON.stringify(closed.body)).toBe(201);
+    const cuadre = await ok("/cash-sessions/" + adm.cash.id + "/cuadre", owner);
+    expect(cuadre.descuadre.cash).toBe(25);
+    expect(cuadre.descuadre.reason).toMatch(/no esperó el cambio/);
   });
 });

@@ -7,6 +7,8 @@ Uso:
   python3 reportes.py diario    2026-10-11 [carpeta_salida]   → PDF de cierre diario + hallazgos
   python3 reportes.py anomalias 2026-10-11                    → solo los hallazgos (texto)
   python3 reportes.py mensual   2026-10             [carpeta]  → PDF con gráficos del mes
+  python3 reportes.py descuadres 2026-10-01 2026-10-21          → todos los descuadres por fecha
+  python3 reportes.py semanal   2026-10-20          [carpeta]  → PDF de los 7 días con descuadres de caja
 Reglas: margen = (precio − costo) / precio SIN restar ITBIS. Hora de la tienda = UTC−4.
 Los hallazgos son señales para REVISAR, no acusaciones: cada uno trae el dato que lo causó.
 """
@@ -73,14 +75,16 @@ def clientes():
     return {c["id"]: c["name"] for c in r}
 
 
-def cajas_del_dia(dia):
-    r = api("/cash-sessions?limit=200")
+def cajas_del_dia(dia, hasta=None):
+    """Cajas abiertas o cerradas ese día (o entre dia y hasta, inclusive)."""
+    hasta = hasta or dia
+    r = api("/cash-sessions?limit=500")
     r = r if isinstance(r, list) else r.get("data") or r.get("items") or []
     out = []
     for c in r:
         a = local(c["openedAt"]).strftime("%Y-%m-%d")
         b = local(c["closedAt"]).strftime("%Y-%m-%d") if c.get("closedAt") else None
-        if dia in (a, b):
+        if dia <= a <= hasta or (b and dia <= b <= hasta):
             out.append(c)
     return out
 
@@ -240,6 +244,45 @@ def kpis(vals):
     return t
 
 
+def alerta_descuadre(cajas, usr, solo_pendientes=False):
+    """Dueña (21-oct): falte o sobre dinero, el descuadre va arriba, grande y en rojo."""
+    from reportlab.lib import colors
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Paragraph, Table, TableStyle
+    R = colors.HexColor("#DC2626")
+    t1 = ParagraphStyle("dt", fontName="Helvetica-Bold", fontSize=16, textColor=R, leading=20, alignment=1)
+    t2 = ParagraphStyle("dl", fontName="Helvetica-Bold", fontSize=12, textColor=R, leading=15)
+    t3 = ParagraphStyle("dn", fontName="Helvetica", fontSize=8.5, textColor=colors.HexColor("#111"), leading=11)
+    filas = []
+    for c in cajas:
+        det = c.get("closeDetails") or {}
+        if solo_pendientes and det.get("differenceResolution"):
+            continue
+        for k, forma, quien in (("differenceCash", "EN EFECTIVO", "cashApprovedBy"), ("differenceCard", "EN TARJETA", "cardApprovedBy"), ("differenceTransfer", "EN TRANSFERENCIA", "cashApprovedBy")):
+            v = f(c.get(k) or 0)
+            if not v:
+                continue
+            aprobo = usr.get(det.get(quien)) or ("SIN APROBAR" if c.get("closedAt") else "caja abierta")
+            just = det.get("differenceReason") or c.get("notes") or "SIN JUSTIFICACIÓN"
+            filas.append([Paragraph(f"{'FALTAN' if v < 0 else 'SOBRAN'} {rd(abs(v))} {forma}", t2)])
+            from xml.sax.saxutils import escape
+            cuando = local(c["closedAt"]).strftime("%d/%m") if c.get("closedAt") else "abierta"
+            res = (det.get("differenceResolution") or {}).get("note")
+            filas.append([Paragraph(escape(f"{cuando} · {c['registerName']} · {c['userName']} · aprobó: {aprobo} · justificación: {just}" + (f" · RESUELTO: {res}" if res else "")), t3)])
+    if not filas:
+        return []
+    t = Table([[Paragraph("¡ DESCUADRE DE CAJA !", t1)]] + filas, colWidths=[178 * mm])
+    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 2, R), ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FEF2F2")),
+                           ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
+    return [Spacer_(6), t]
+
+
+def Spacer_(h):
+    from reportlab.platypus import Spacer
+    return Spacer(1, h)
+
+
 def diario(dia, salida="."):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
@@ -255,6 +298,7 @@ def diario(dia, salida="."):
     el = cabecera("Reporte de cierre diario", f"{fecha:%A %d} de {fecha:%B de %Y} · generado con los datos del sistema Nexora POS")
     el += [kpis([(rd(r["vendido"]), "VENDIDO (activas)"), (rd(r["cobrado"]), "COBRADO"), (rd(r["pend"]), "PENDIENTE A CRÉDITO"), (rd(r["ganancia"]), "GANANCIA")]),
            Spacer(1, 3), Paragraph(f"{len(r['act'])} facturas activas · {len(r['anu'])} anuladas. Ganancia = precio − costo, sin descontar ITBIS.", E["sm"])]
+    el += alerta_descuadre(cajas, usr)
     el += [Paragraph("1. Ventas por forma de pago", E["h2"])]
     d = [["Forma de pago", "Monto"]] + [[k, rd(v)] for k, v in r["met"].items()] + [["Total vendido", rd(r["vendido"])]]
     el += [tabla(d, [120 * mm, 58 * mm], [1], True), Paragraph("Banco = tarjeta + transferencia. Efectivo: ver «Cajas». El crédito es dinero por cobrar, no recibido.", E["sm"])]
@@ -267,14 +311,15 @@ def diario(dia, salida="."):
         d.append([u, int(c["n"]), rd(c["total"]), rd(c["Efectivo"]), rd(c["Transferencia"]), rd(c["Tarjeta"]), rd(c["credito"])])
     el += [tabla(d, [30 * mm, 12 * mm, 28 * mm, 26 * mm, 26 * mm, 24 * mm, 32 * mm], [1, 2, 3, 4, 5, 6])]
     el += [Paragraph("4. Cajas", E["h2"])]
-    d = [["Caja", "Cajero", "Apertura", "Cierre", "Esperado", "Contado", "Dif."]]
+    d = [["Caja", "Cajero", "Apertura", "Cierre", "Esperado", "Contado", "Dif. efect.", "Dif. tarj."]]
     for c in cajas:
         ex = (c.get("expected") or {}).get("cash")
         d.append([c["registerName"], c["userName"], local(c["openedAt"]).strftime("%d/%m %H:%M"),
                   local(c["closedAt"]).strftime("%d/%m %H:%M") if c.get("closedAt") else "Abierta",
                   rd(ex) if ex is not None else "—", rd(c["countedCash"]) if c.get("countedCash") is not None else "—",
-                  rd(c["differenceCash"]) if c.get("differenceCash") is not None else "—"])
-    el += [tabla(d, [34 * mm, 24 * mm, 23 * mm, 23 * mm, 26 * mm, 26 * mm, 22 * mm], [4, 5, 6])]
+                  rd(c["differenceCash"]) if c.get("differenceCash") is not None else "—",
+                  rd(c["differenceCard"]) if c.get("differenceCard") is not None else "—"])
+    el += [tabla(d, [30 * mm, 24 * mm, 20 * mm, 20 * mm, 24 * mm, 24 * mm, 18 * mm, 18 * mm], [4, 5, 6, 7])]
     el += [Paragraph("5. Créditos: quién debe", E["h2"])]
     d = [["Factura", "Cliente", "Vendedor", "Saldo"]]
     for s in r["act"]:
@@ -335,12 +380,35 @@ def mensual(mes, salida="."):
     el = cabecera("Reporte mensual", f"{calendar.month_name[m]} {y} · ventas, ganancias y resultados")
     el += [kpis([(rd(R["vendido"]), "VENDIDO"), (rd(R["cobrado"]), "COBRADO"), (rd(R["pend"]), "POR COBRAR"), (rd(R["ganancia"]), "GANANCIA BRUTA")]),
            Paragraph(f"{len(R['act'])} facturas · {len(R['anu'])} anuladas ({sum(f(s['total']) for s in R['anu']):,.0f} RD$). Ganancia bruta = precio − costo, sin ITBIS; no incluye gastos.", E["sm"])]
+    el += alerta_descuadre(cajas_del_dia(dias[0][0], dias[-1][0]) if dias else [], usr, solo_pendientes=True)
     for g in (g1, g2, g3, g4):
         el += [Image(g, width=170 * mm, height=70 * mm)]
     el += [Paragraph("Por usuario", E["h2"]),
            tabla([["Usuario", "Facturas", "Vendido", "A crédito"]] + [[u, int(c["n"]), rd(c["total"]), rd(c["credito"])] for u, c in R["por_u"].items()], [60 * mm, 25 * mm, 45 * mm, 48 * mm], [1, 2, 3]),
            Paragraph("Propuestas de mejora", E["h2"]),
            Paragraph("Se agregan después de revisar las cifras con la administración (rotación, productos sin venta, precios, promociones).", E["p"])]
+    doc.build(el)
+    print(out)
+    return out
+
+
+def semanal(fin, salida="."):
+    """Los 7 días que terminan en `fin`: totales, descuadres de caja y vendedoras."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate
+    usr, cat = usuarios(), catalogo()
+    f_fin = dt.date.fromisoformat(fin)
+    dias = [(f_fin - dt.timedelta(days=i)).isoformat() for i in range(6, -1, -1)]
+    R = resumen([s for d in dias for s in cargar_dia(d)], usr, cat)
+    _, _, E = estilos()
+    out = os.path.join(salida, f"REPORTE-SEMANAL-{dias[0]}-a-{fin}.pdf")
+    doc = SimpleDocTemplate(out, pagesize=A4, leftMargin=16 * mm, rightMargin=16 * mm, topMargin=14 * mm, bottomMargin=16 * mm, title=f"Reporte semanal {fin}")
+    el = cabecera("Reporte semanal", f"Del {dias[0]} al {fin} · ventas, cajas y descuadres")
+    el += [kpis([(rd(R["vendido"]), "VENDIDO"), (rd(R["cobrado"]), "COBRADO"), (rd(R["pend"]), "POR COBRAR"), (rd(R["ganancia"]), "GANANCIA")])]
+    el += alerta_descuadre(cajas_del_dia(dias[0], fin), usr, solo_pendientes=True)
+    el += [Paragraph("Por usuario", E["h2"]),
+           tabla([["Usuario", "Facturas", "Vendido", "A crédito"]] + [[u, int(c["n"]), rd(c["total"]), rd(c["credito"])] for u, c in R["por_u"].items()], [60 * mm, 25 * mm, 45 * mm, 48 * mm], [1, 2, 3])]
     doc.build(el)
     print(out)
     return out
@@ -358,5 +426,13 @@ if __name__ == "__main__":
             print(f"[{s}] {t} — {d}")
     elif a[0] == "mensual":
         mensual(a[1], a[2] if len(a) > 2 else ".")
+    elif a[0] == "descuadres":
+        # Todos los descuadres entre dos fechas, resueltos o no (orden 21-oct).
+        q = f"/reports/descuadres?from={a[1]}&to={a[2] if len(a) > 2 else a[1]}"
+        r = api(q)
+        for row in (r.get("rows") if isinstance(r, dict) else r) or []:
+            print(" · ".join(f"{k}: {v}" for k, v in row.items()))
+    elif a[0] == "semanal":
+        semanal(a[1], a[2] if len(a) > 2 else ".")
     else:
         sys.exit(__doc__)

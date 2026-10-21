@@ -36,6 +36,7 @@ async function ownerApi(request: any) {
         countedCash: Math.max(0, s.expected.cash),
         countedCard: Math.max(0, s.expected.card),
         countedTransfer: Math.max(0, s.expected.transfer),
+        differenceReason: "QA: cierre de limpieza de la prueba",
         notes: "Cierre entre escenarios E2E",
       },
     });
@@ -888,6 +889,7 @@ test("M-2: si la deuda del cliente exige PIN, la caja lo pide y reintenta el mis
           countedCard: 0,
           countedTransfer: 0,
           notes: "Cierre del escenario E2E M-2",
+          differenceReason: "QA: cierre de limpieza de la prueba",
         },
       });
     await retire(request, headers, [product]);
