@@ -928,11 +928,23 @@ export const searchHaystack = (text: string) =>
 export const matchesSearch = (text: string, query: string) => {
   const hay = searchHaystack(text);
   // «2lb» no debe encontrar «12lb»: los números se buscan desde su inicio.
-  const has = (a: string) =>
-    /^\d/.test(a)
-      ? new RegExp("(^|[^\\d.])" + a.replace(/\./g, "\\.")).test(hay)
+  return searchTerms(query).every((alts) => alts.some((a) => hasTerm(hay, a)));
+};
+// Tallas (dueña, 22-oct): «m» busca la talla M como palabra completa, no la
+// letra dentro de «Mousse» o «Magnesium».
+const SIZE = /^(xxs|xs|s|m|l|xl|xxl|\d?x[sl])$/;
+const hasTerm = (hay: string, a: string) =>
+  SIZE.test(a)
+    ? new RegExp("(^|[^a-z0-9])" + a + "($|[^a-z0-9])").test(hay)
+    : /^\d/.test(a)
+      ? // «2lb» no debe encontrar «12lb»: los números se buscan desde su inicio.
+        new RegExp("(^|[^\\d.])" + a.replace(/\./g, "\\.")).test(hay)
       : hay.includes(a);
-  return searchTerms(query).every((alts) => alts.some(has));
+/** Cuántas palabras de la búsqueda tiene el texto (para los parecidos). */
+export const searchHits = (text: string, query: string) => {
+  const hay = searchHaystack(text);
+  return searchTerms(query).filter((alts) => alts.some((a) => hasTerm(hay, a)))
+    .length;
 };
 /** Formas en que una palabra puede estar escrita en la base (para la API). */
 export const searchVariantsForDb = (term: string): string[] => {
