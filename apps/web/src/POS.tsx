@@ -1517,7 +1517,10 @@ const ProductGrid = memo(function ProductGrid({
           : p.variants.reduce((a, v) => a + Number(v.stock), 0);
         return (
           <button
-            className="product-card"
+            // Dueña (22-oct): con existencia, colores vivos; agotado, apagado.
+            className={
+              "product-card " + (stock > 0 ? "in-stock" : "out-of-stock")
+            }
             onClick={() => onAdd(p)}
             key={p.id}
             // Categoría con color propio (GV Makeup Studio en rosado).
