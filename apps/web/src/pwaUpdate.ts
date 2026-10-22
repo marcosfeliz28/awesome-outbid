@@ -38,6 +38,11 @@ export function startPwaUpdates() {
   let dismissed = false;
   let banner: HTMLDivElement | null = null;
   let timer: ReturnType<typeof setInterval> | undefined;
+  // Dueña (21-oct): al abrir y al cerrar caja se busca la versión nueva y se
+  // instala en cuanto el carrito y las ventanas estén libres, sin esperar a
+  // que la caja quede sin usar (la caja abierta todo el día seguía vieja).
+  let eager = false;
+  let registrationRef: ServiceWorkerRegistration | undefined;
 
   const cartItems = () => useStore.getState().cart.length;
 
@@ -149,6 +154,10 @@ export function startPwaUpdates() {
 
   const check = () => {
     if (!waiting || applying) return;
+    if (eager && cartItems() === 0 && !dialogOpen()) {
+      apply();
+      return;
+    }
     if (
       canApplyPwaUpdate({
         cartItems: cartItems(),
@@ -169,9 +178,11 @@ export function startPwaUpdates() {
       waiting = true;
       render();
       timer = setInterval(check, 15_000);
+      if (eager) check();
     },
     onRegisteredSW(_url, registration) {
       if (!registration) return;
+      registrationRef = registration;
       setInterval(() => {
         if (navigator.onLine && !waiting) void registration.update();
       }, PWA_UPDATE_CHECK_MS);
@@ -194,6 +205,11 @@ export function startPwaUpdates() {
     { capture: true, passive: true },
   );
   document.addEventListener("visibilitychange", check);
+  window.addEventListener("nexora:check-update", () => {
+    eager = true;
+    if (navigator.onLine) void registrationRef?.update();
+    check();
+  });
   // El aviso cambia (con o sin botón) cuando se vacía o se llena el carrito.
   useStore.subscribe((state, previous) => {
     if (state.cart.length !== previous.cart.length) {

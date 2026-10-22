@@ -2032,6 +2032,8 @@ export function Cash() {
           onSubmit={async ({ openingNote, ...data }) => {
             // La caja queda asignada a este equipo (el servidor usa su registro).
             await registerTerminal().catch(() => undefined);
+            // Caja nueva, día nuevo: que este equipo use la última versión.
+            window.dispatchEvent(new Event("nexora:check-update"));
             return post("/cash-sessions/open", {
               ...data,
               ...(String(openingNote ?? "").trim()
@@ -2117,6 +2119,7 @@ export function Cash() {
           setPrinting(null);
           setPrintSession(undefined);
           setAutoPrint(false);
+          window.dispatchEvent(new Event("nexora:check-update"));
         }}
         autoPrint={autoPrint}
         sessionId={printSession}
