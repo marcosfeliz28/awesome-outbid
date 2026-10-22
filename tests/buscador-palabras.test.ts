@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   matchesSearch,
+  searchHits,
   searchTerms,
   searchVariantsForDb,
 } from "../packages/shared/src/index";
@@ -45,5 +46,20 @@ describe("Buscador palabra por palabra", () => {
     expect(searchVariantsForDb("2lb")).toEqual(
       expect.arrayContaining(["2lb", "2 lb", "2 lbs", "2lbs"]),
     );
+  });
+  it("la talla es palabra completa: «m» no encuentra Mousse ni la S", () => {
+    const m = "Faja tipo chaleco M";
+    expect(matchesSearch(m, "chaleco m")).toBe(true);
+    expect(matchesSearch("Faja tipo chaleco S", "chaleco m")).toBe(false);
+    expect(matchesSearch("Isopure - Chocolate Mousse", "chocolate m")).toBe(
+      false,
+    );
+    expect(matchesSearch("FAJA TIPO CHALECO 2xs", "chaleco 2xs")).toBe(true);
+  });
+  it("parecidos: cuenta las palabras en común, con la talla", () => {
+    const q = "cinturilla tipo chaleco m";
+    expect(searchHits("Cinturilla tipo corset M", q)).toBe(3);
+    expect(searchHits("Faja tipo chaleco M", q)).toBe(3);
+    expect(searchHits("Cinturilla tipo corset S", q)).toBe(2);
   });
 });

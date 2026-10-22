@@ -5155,6 +5155,22 @@ td strong {
 .product-card:active:not(:disabled) {
   transform: scale(0.98);
 }
+/* Dueña (22-oct): lo que hay se ve vivo; lo agotado, apagado y gris. */
+.product-card.in-stock .product-image img {
+  filter: saturate(1.8) contrast(1.15);
+}
+.product-card.in-stock .product-info h3,
+.product-card.in-stock .product-bottom strong {
+  color: var(--text);
+  font-weight: 800;
+}
+.product-card.out-of-stock {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+.product-card.out-of-stock:hover {
+  opacity: 0.6;
+}
 .product-bottom strong,
 .cart-item-controls,
 .cart-line-total strong,

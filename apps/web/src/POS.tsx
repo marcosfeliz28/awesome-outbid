@@ -47,6 +47,7 @@ import {
   margin,
   courierCharge,
   isService,
+  searchHits,
 } from "@fitstore/shared";
 import type { SaleInput } from "@fitstore/shared";
 // Lo que se puede vender: un servicio no tiene existencia que lo limite.
@@ -680,17 +681,17 @@ export function POS({ go }: { go: (page: string) => void }) {
     // Ninguno tiene todas las palabras ("proteina whey" frente a nombres en
     // inglés): se muestran los que tienen más de ellas, como sugerencia.
     const approximate = !exactMatches.length && words.length > 1;
+    // Dueña (22-oct): de los parecidos, sólo los que tienen más palabras en
+    // común («cinturilla tipo chaleco m» → los M de cinturilla y de chaleco,
+    // no todas las tallas).
+    const scored = approximate
+      ? inCategory.map((p) => ({ p, hits: searchHits(searchText(p), text) }))
+      : [];
+    const best = Math.max(0, ...scored.map((x) => x.hits));
     const filtered = approximate
-      ? inCategory
-          .map((p) => ({
-            p,
-            hits: words.filter(
-              (w) => w.length >= 3 && matchesWords(searchText(p), [w]),
-            ).length,
-          }))
-          .filter((x) => x.hits > 0)
-          .sort((a, b) => b.hits - a.hits)
-          .map((x) => x.p)
+      ? best > 0
+        ? scored.filter((x) => x.hits === best).map((x) => x.p)
+        : []
       : exactMatches;
     return { filtered, approximate };
   };
@@ -1516,7 +1517,10 @@ const ProductGrid = memo(function ProductGrid({
           : p.variants.reduce((a, v) => a + Number(v.stock), 0);
         return (
           <button
-            className="product-card"
+            // Dueña (22-oct): con existencia, colores vivos; agotado, apagado.
+            className={
+              "product-card " + (stock > 0 ? "in-stock" : "out-of-stock")
+            }
             onClick={() => onAdd(p)}
             key={p.id}
             // Categoría con color propio (GV Makeup Studio en rosado).
