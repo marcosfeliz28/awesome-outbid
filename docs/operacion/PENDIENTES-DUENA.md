@@ -121,3 +121,8 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 ## PARA HOY (23-oct): cuadre del 22-oct
 - FS-200 Ramsés Mancebo 8,000 (transferencia Banreservas sin verificar): en el banco entró «Inversiones El Millón SRL» 8,250 (8,000 + 250 envío). Confirmar que es su pago y verificarla.
 - ✔ FS-194 anulada y rehecha como FS-210 (Gold Standard 2 lb Vanilla Ice Cream, 2,200, vendedora Wendy) el 22-oct en la noche.
+
+## Conteo de Lisbeth del 23-oct (maquillaje y pelo): lo que falta
+- Hecho: 20 productos nuevos SKU 1955–1974 creados con su cantidad, **sin precio ni costo** (ponerles precio antes de venderlos). Davines sin cambios.
+- Por confirmar con la dueña antes de ajustar: 1222 Super Stay concealer 45 (3→4), 1283 Matte Ink 120 (10→9), 1285 Matte Ink 15 (10→9), 1544 Redken Acidic (2→1); diferencias grandes: 1269 BC Eyebrow Blonde (4→14), 1281 L.A. Girl Dark Brown (6→1), 1282 Soft Brown (1→12), 1350 Amuse Gloss (1→7), 1419 Set rojo Génesis (32→20).
+- Dudas: Redken All Soft «Shampoo» vs Conditioner (1538); P.Louise «0-100 Real» y Primer Purple Cream sin cantidad; ¿hay otra página antes de «Super Stay Full Coverage 45»?; nombre del vaso 1963 («B…o» térmico).
