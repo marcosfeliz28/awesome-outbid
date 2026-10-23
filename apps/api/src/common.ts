@@ -734,10 +734,11 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    // Seguridad (dueña, 23-oct): ruta sin permiso declarado = denegada.
     if (
-      permission &&
-      permission !== "authenticated" &&
-      !can(req.actor.permissions, permission)
+      !permission ||
+      (permission !== "authenticated" &&
+        !can(req.actor.permissions, permission))
     )
       denied();
     if (

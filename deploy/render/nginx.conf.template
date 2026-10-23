@@ -112,6 +112,7 @@ server {
 
     location @nexora_api_down {
         add_header Cache-Control "no-store" always;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
         return 503;
     }
 

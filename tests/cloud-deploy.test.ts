@@ -411,7 +411,7 @@ describe("Render · proxy público", () => {
       nginx.match(
         /include \/etc\/nginx\/snippets\/nexora-security-headers.conf;/g,
       ),
-    ).toHaveLength(12);
+    ).toHaveLength(13);
     // HSTS cubre subdominios.
     expect(headers).toContain(
       'Strict-Transport-Security "max-age=31536000; includeSubDomains"',

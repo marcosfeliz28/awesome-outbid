@@ -20,6 +20,7 @@ export default defineConfig({
       "tests/recibo-envio.test.ts",
       "tests/descuadre-banner.test.ts",
       "tests/buscador-palabras.test.ts",
+      "tests/rutas-permiso.test.ts",
       "packages/shared/**/*.test.ts",
       "tests/invoice.test.ts",
       "tests/merchandise-template.test.ts",
