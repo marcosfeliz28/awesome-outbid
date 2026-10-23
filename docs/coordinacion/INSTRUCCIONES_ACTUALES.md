@@ -457,3 +457,4 @@ Casa solo se modifica con instrucción expresa de la dueña. Toda salida de Casa
 - 19-oct: fase 0 parcial revisada (81935d2, CI verde). Continuación para ChatGPT PC: `docs/coordinacion/ORDEN_FASE0_CONTINUACION_CHATGPT_PC.md`. `producto-nexora` nunca se mezcla hacia `nexora-cloud`.
 - 19-oct: rescate de los 46 revisado; nada que mezclar. Limpieza autorizada para Claude PC: `docs/coordinacion/ORDEN_CLAUDE_PC_LIMPIEZA_46.md`.
 - 20-oct: fase 0 del producto aprobada (07e5515, CI verde). Fase 1 para ChatGPT PC: `docs/coordinacion/ORDEN_FASE1_CHATGPT_PC.md`.
+- 23-oct: la sincronización `dd10ebd` de `producto-nexora` dejó `verify` rojo (`usd-rate.ts` busca `Settings` sin empresa). Arreglo para ChatGPT PC: `docs/coordinacion/ORDEN_CI_SYNC_23OCT_CHATGPT_PC.md`.
