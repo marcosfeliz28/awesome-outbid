@@ -2729,24 +2729,6 @@ td strong {
   overflow: hidden;
   position: relative;
 }
-.login-page::before {
-  content: "";
-  position: absolute;
-  inset: -40%;
-  background: conic-gradient(
-    from 0deg,
-    transparent,
-    #8b5cf622,
-    transparent 30%,
-    #22d3ee1a,
-    transparent 60%,
-    #e879f91a,
-    transparent
-  );
-  filter: blur(70px);
-  animation: login-aurora 28s linear infinite;
-  pointer-events: none;
-}
 .login-art {
   width: 50%;
   padding: 50px 65px;
@@ -2818,7 +2800,6 @@ td strong {
   border-radius: 12px;
   background: #ffffff0a;
   border: 1px solid #ffffff1c;
-  backdrop-filter: blur(8px);
 }
 .login-stats svg {
   width: 17px;
@@ -2845,7 +2826,6 @@ td strong {
   transform-origin: bottom;
   mask-image: linear-gradient(to top, #000 10%, transparent 85%);
   -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 85%);
-  animation: login-floor 3s linear infinite;
 }
 .scene-cube {
   --cube: 190px;
@@ -2993,19 +2973,7 @@ td strong {
     rotate: 360deg;
   }
 }
-@keyframes login-floor {
-  to {
-    background-position: 0 48px;
-  }
-}
-@keyframes login-aurora {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .login-page::before,
-  .scene-floor,
   .scene-cube,
   .scene-orbit {
     animation: none;
@@ -3086,6 +3054,7 @@ td strong {
 }
 .login-form-panel .show-password {
   color: #c4b5fd;
+  min-height: 44px;
 }
 .login-form-panel .button {
   min-height: 50px;
@@ -3093,7 +3062,7 @@ td strong {
   justify-content: space-between;
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(100deg, #7c3aed, #8b5cf6 45%, #06b6d4);
+  background: linear-gradient(100deg, #6d28d9, #7c3aed 45%, #0e7490);
   box-shadow: 0 10px 30px #7c3aed66;
   transition:
     transform 0.15s,
