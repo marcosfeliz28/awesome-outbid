@@ -124,5 +124,5 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 
 ## Conteo de Lisbeth del 23-oct (maquillaje y pelo): lo que falta
 - Hecho: 20 productos nuevos SKU 1955–1974 creados con su cantidad, **sin precio ni costo** (ponerles precio antes de venderlos). Davines sin cambios.
-- Por confirmar con la dueña antes de ajustar: 1222 Super Stay concealer 45 (3→4), 1283 Matte Ink 120 (10→9), 1285 Matte Ink 15 (10→9), 1544 Redken Acidic (2→1); diferencias grandes: 1269 BC Eyebrow Blonde (4→14), 1281 L.A. Girl Dark Brown (6→1), 1282 Soft Brown (1→12), 1350 Amuse Gloss (1→7), 1419 Set rojo Génesis (32→20).
+- ✔ Aplicados (23-oct, con su sí) los 9 ajustes: 1222 →4, 1283 →9, 1285 →9, 1544 →1, 1269 →14, 1281 →1, 1282 →12, 1350 →7, 1419 →20.
 - Dudas: Redken All Soft «Shampoo» vs Conditioner (1538); P.Louise «0-100 Real» y Primer Purple Cream sin cantidad; ¿hay otra página antes de «Super Stay Full Coverage 45»?; nombre del vaso 1963 («B…o» térmico).
