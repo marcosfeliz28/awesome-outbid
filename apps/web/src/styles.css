@@ -3077,6 +3077,13 @@ td strong {
   border-color: var(--login-cyan);
   box-shadow: 0 0 0 3px #22d3ee33;
 }
+.login-form-panel .password-change-fields {
+  color: #e6e8ff;
+}
+.login-form-panel .password-change-fields p,
+.login-form-panel .password-change-fields small {
+  color: #b9bde0;
+}
 .login-form-panel .show-password {
   color: #c4b5fd;
 }
