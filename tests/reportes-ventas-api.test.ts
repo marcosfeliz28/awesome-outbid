@@ -123,6 +123,8 @@ beforeAll(async () => {
   cash = await ok("/cash-sessions/open", admin, {
     registerId: "qa-rv-" + suffix,
     openingAmount: 0,
+    // Otro archivo puede dejar fondo en la caja anterior del admin.
+    openingNote: "QA: fondo de la prueba",
   });
   customer = (await ok("/customers", admin, { name: "QA ventas " + suffix }))
     .id;
@@ -155,6 +157,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de reportes de ventas",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
 });
 
@@ -240,6 +243,13 @@ describe("Reportes · Ventas", () => {
       (r) => r.Cliente === "QA ventas " + suffix,
     );
     expect(mine).toMatchObject({ Facturas: 3, "Ventas netas": 5000 });
+  });
+
+  it("ventas detalladas muestra el nombre de la vendedora, no su código", async () => {
+    const rows = await report("sales");
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows)
+      expect(String(r.Vendedor)).not.toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-/);
   });
 
   it("por categoría y por marca, con la devolución descontada", () => {

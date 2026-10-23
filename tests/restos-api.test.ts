@@ -103,6 +103,7 @@ afterAll(async () => {
       countedCash: Math.max(0, listed.expected.cash),
       countedCard: Math.max(0, listed.expected.card),
       countedTransfer: Math.max(0, listed.expected.transfer),
+      differenceReason: "QA: cierre de limpieza de la prueba",
       notes: "QA restos",
     });
 });
@@ -160,6 +161,7 @@ describe("D-B6 · caja recién cerrada", () => {
       countedCash: Math.max(0, listed.expected.cash),
       countedCard: Math.max(0, listed.expected.card),
       countedTransfer: Math.max(0, listed.expected.transfer),
+      differenceReason: "QA: cierre de limpieza de la prueba",
       notes: "QA restos cierre",
     });
     const late = await sale();

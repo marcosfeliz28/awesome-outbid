@@ -24,6 +24,7 @@ import {
   canSwitchUserTo,
   parse,
   audit,
+  Permit,
 } from "./common";
 
 import {
@@ -289,6 +290,42 @@ export class AuthController implements OnModuleInit {
   // hora desde equipos no aprobados). Sin esto sólo quedaba una fila en la
   // bitácora que nadie mira: ahora la administración ve una alerta y, si
   // Telegram está activo, recibe el aviso. No incluye IP ni contraseñas.
+  private async alertUnapprovedLogin(user: any, ip: string) {
+    const when = new Date().toLocaleString("es-DO", {
+      timeZone: "America/Santo_Domingo",
+    });
+    const message =
+      `${user.name} (${user.role.name}) entró desde un equipo no aprobado ` +
+      `(IP ${ip}) el ${when}. Si no fue ella o él, cambia su contraseña.`;
+    await this.db.$transaction(async (tx: any) => {
+      await tx.alert.upsert({
+        where: { key: "login-unapproved:" + user.id },
+        create: {
+          key: "login-unapproved:" + user.id,
+          type: "login_unapproved_device",
+          severity: "medium",
+          entityId: user.id,
+          branchId: user.branchId,
+          message,
+        },
+        update: { message, status: "new" },
+      });
+      if (telegramSettings().enabled)
+        await enqueue(
+          tx,
+          "security_alert",
+          "login-unapproved:" +
+            user.id +
+            ":" +
+            new Date().toISOString().slice(0, 13),
+          user.branchId,
+          [
+            "🔐 <b>Entrada desde un equipo no aprobado</b>",
+            escapeHtml(message),
+          ].join("\n"),
+        );
+    });
+  }
   private async alertAccountLocked(tx: any, user: any) {
     const message =
       `La cuenta de ${user.name} recibió 30 contraseñas incorrectas en una hora ` +
@@ -478,6 +515,10 @@ export class AuthController implements OnModuleInit {
       "user",
       user.id,
     );
+    // Seguridad (dueña, 23-oct, punto 19): una cuenta de administración que
+    // entra desde un equipo no aprobado deja un aviso (y Telegram si está).
+    if (user.role.name !== "seller" && !terminalId)
+      await this.alertUnapprovedLogin(user, ip).catch(() => undefined);
     if (user.mustChangePassword)
       return {
         requiresPasswordChange: true,
@@ -618,6 +659,7 @@ export class AuthController implements OnModuleInit {
   // el cupo de la cuenta) y las mismas reglas que el cambio obligatorio. Cierra todas las
   // demás sesiones de la cuenta; este equipo sigue en su sesión (y con su
   // registro de equipo) con un token y una cookie de renovación nuevos.
+  @Permit("authenticated")
   @Post("password")
   @Header("Cache-Control", "no-store")
   async changeOwnPassword(
@@ -764,6 +806,7 @@ export class AuthController implements OnModuleInit {
       bad("La sesión ha expirado.");
     return this.issue(user, res, saved.sessionId);
   }
+  @Permit("authenticated")
   @Post("logout")
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     if (req.cookies?.fitstore_refresh)
@@ -786,7 +829,9 @@ export class AuthController implements OnModuleInit {
     res.clearCookie("nexora_tenant", { path: "/api/auth" });
     return { ok: true };
   }
-  @Get("me") me(@CurrentUser() actor: Actor) {
+  @Permit("authenticated")
+  @Get("me")
+  me(@CurrentUser() actor: Actor) {
     // La IP es para la bitácora; no se devuelve.
     const { ip: _ip, ...rest } = actor;
     return {
@@ -794,6 +839,7 @@ export class AuthController implements OnModuleInit {
       passwordPolicy: passwordPolicyForRole(actor.role),
     };
   }
+  @Permit("authenticated")
   @Post("pin")
   @Header("Cache-Control", "no-store")
   async pin(

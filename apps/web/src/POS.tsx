@@ -46,8 +46,13 @@ import {
   receivableApprovalMessage,
   margin,
   courierCharge,
+  isService,
+  searchHits,
 } from "@fitstore/shared";
 import type { SaleInput } from "@fitstore/shared";
+// Lo que se puede vender: un servicio no tiene existencia que lo limite.
+const available = (stock: unknown, product: any) =>
+  isService(product) ? Infinity : Number(stock);
 import {
   useStore,
   api,
@@ -382,7 +387,7 @@ export function POS({ go }: { go: (page: string) => void }) {
       .getState()
       .cart.find((i) => i.variant.id === variant.id);
     if (
-      (existing?.qty || 0) + 1 > Number(variant.stock) &&
+      (existing?.qty || 0) + 1 > available(variant.stock, product) &&
       !(config.data?.allowNegativeStock && !product.category.requiresLot)
     ) {
       say(
@@ -399,7 +404,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     setChoosing(null);
     clearPersistentErrors();
     setLastAdded((last) => ({ id: variant.id, n: (last?.n ?? 0) + 1 }));
-    if ((existing?.qty || 0) + 1 > Number(variant.stock)) {
+    if ((existing?.qty || 0) + 1 > available(variant.stock, product)) {
       say(
         "Advertencia: " + product.name + " quedará con stock negativo.",
         true,
@@ -676,17 +681,17 @@ export function POS({ go }: { go: (page: string) => void }) {
     // Ninguno tiene todas las palabras ("proteina whey" frente a nombres en
     // inglés): se muestran los que tienen más de ellas, como sugerencia.
     const approximate = !exactMatches.length && words.length > 1;
+    // Dueña (22-oct): de los parecidos, sólo los que tienen más palabras en
+    // común («cinturilla tipo chaleco m» → los M de cinturilla y de chaleco,
+    // no todas las tallas).
+    const scored = approximate
+      ? inCategory.map((p) => ({ p, hits: searchHits(searchText(p), text) }))
+      : [];
+    const best = Math.max(0, ...scored.map((x) => x.hits));
     const filtered = approximate
-      ? inCategory
-          .map((p) => ({
-            p,
-            hits: words.filter(
-              (w) => w.length >= 3 && matchesWords(searchText(p), [w]),
-            ).length,
-          }))
-          .filter((x) => x.hits > 0)
-          .sort((a, b) => b.hits - a.hits)
-          .map((x) => x.p)
+      ? best > 0
+        ? scored.filter((x) => x.hits === best).map((x) => x.p)
+        : []
       : exactMatches;
     return { filtered, approximate };
   };
@@ -1077,7 +1082,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                         aria-label={"Aumentar " + i.product.name}
                         onClick={() => {
                           if (
-                            i.qty < Number(i.variant.stock) ||
+                            i.qty < available(i.variant.stock, i.product) ||
                             (config.data?.allowNegativeStock &&
                               !i.product.category.requiresLot)
                           )
@@ -1276,7 +1281,7 @@ export function POS({ go }: { go: (page: string) => void }) {
               className="variant-option"
               key={v.id}
               disabled={
-                Number(v.stock) <= 0 &&
+                available(v.stock, choosing) <= 0 &&
                 !(
                   config.data?.allowNegativeStock &&
                   !choosing.category.requiresLot
@@ -1289,7 +1294,7 @@ export function POS({ go }: { go: (page: string) => void }) {
               <strong>{attrLabel(v.attributes)}</strong>
               <span>{formatMoney(v.price)}</span>
               <Badge tone={Number(v.stock) > 5 ? "success" : "warning"}>
-                {v.stock} disponibles
+                {isService(choosing) ? "Servicio" : v.stock + " disponibles"}
               </Badge>
             </button>
           ))}
@@ -1507,12 +1512,23 @@ const ProductGrid = memo(function ProductGrid({
   return (
     <div className="product-grid">
       {products.map((p) => {
-        const stock = p.variants.reduce((a, v) => a + Number(v.stock), 0);
+        const stock = isService(p)
+          ? Infinity
+          : p.variants.reduce((a, v) => a + Number(v.stock), 0);
         return (
           <button
-            className="product-card"
+            // Dueña (22-oct): con existencia, colores vivos; agotado, apagado.
+            className={
+              "product-card " + (stock > 0 ? "in-stock" : "out-of-stock")
+            }
             onClick={() => onAdd(p)}
             key={p.id}
+            // Categoría con color propio (GV Makeup Studio en rosado).
+            style={
+              p.category.color && p.category.color !== "#7C3AED"
+                ? { borderColor: p.category.color, borderWidth: 2 }
+                : undefined
+            }
             disabled={
               stock <= 0 && !(allowNegativeStock && !p.category.requiresLot)
             }
@@ -1744,6 +1760,7 @@ function Checkout({
     [amount, setAmount] = useState(String(total)),
     [details, setDetails] = useState({
       bank: "",
+      terminal: "",
       reference: "",
       cardBrand: "Visa",
       cardLast4: "",
@@ -1757,6 +1774,11 @@ function Checkout({
     [receipt, setReceipt] = useState<any>(null);
   // Venta a crédito sin pago: confirmación antes de dejar el saldo pendiente.
   const [confirmingCredit, setConfirmingCredit] = useState(false);
+  // «Crédito» o «Contraentrega» (dueña, 19-oct): sólo estadística; las dos
+  // van con el método `cod` y las mismas reglas de cobro y aprobación.
+  const [receivableKind, setReceivableKind] = useState<"credit" | "cod">(
+    "credit",
+  );
   const [creditNoteId, setCreditNoteId] = useState("");
   const [creditNoteCode, setCreditNoteCode] = useState("");
   const [ncfType, setNcfType] = useState<"" | "B01" | "B02">("");
@@ -1904,6 +1926,8 @@ function Checkout({
               cardType: details.cardType,
               cardLast4: details.cardLast4,
               approvalCode: details.approvalCode,
+              // Terminal elegido de la lista de Configuración.
+              ...(details.terminal ? { bank: details.terminal } : {}),
             }
           : method === "transfer"
             ? { bank: details.bank, reference: details.reference }
@@ -1952,6 +1976,9 @@ function Checkout({
   const creditAmount = payments
     .filter((p) => p.method === "cod")
     .reduce((a, p) => a + p.amount, 0);
+  // Cuentas y terminales fijos (Configuración, orden de la dueña 20-oct).
+  const transferAccounts: string[] = config?.transferAccounts ?? [];
+  const cardTerminals: string[] = config?.cardTerminals ?? [];
   // «Con envío» solo con transferencia o tarjeta (orden 3af).
   const courierAllowed = payments.some(
     (p) => p.method === "transfer" || p.method === "card",
@@ -1998,6 +2025,7 @@ function Checkout({
         ? { ncfType, ...(recipientLegalId ? { recipientLegalId } : {}) }
         : {}),
       payments,
+      ...(payments.some((p) => p.method === "cod") ? { receivableKind } : {}),
       ...(pin ? { managerPin: pin } : {}),
       ...wholesaleField(),
       ...(withCourier
@@ -2409,6 +2437,28 @@ function Checkout({
           aria-label="Confirmar crédito"
         >
           <strong>Confirma la venta a crédito</strong>
+          <div
+            className="segmented"
+            role="group"
+            aria-label="Tipo de venta por cobrar"
+          >
+            {(
+              [
+                ["credit", "Crédito (paga después)"],
+                ["cod", "Contraentrega (paga al recibir)"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={receivableKind === id ? "active" : ""}
+                aria-pressed={receivableKind === id}
+                onClick={() => setReceivableKind(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <p>
             {formatMoney(creditAmount)} quedan pendientes a nombre de{" "}
             <b>
@@ -2445,14 +2495,27 @@ function Checkout({
           { id: "card", label: "Tarjeta", icon: CreditCard },
           { id: "transfer", label: "Transferencia", icon: Landmark },
           { id: "credit_note", label: "Nota de crédito", icon: FileText },
-          { id: "cod", label: "Crédito / contraentrega", icon: Truck },
+          {
+            id: "cod",
+            kind: "cod" as const,
+            label: "Contraentrega",
+            icon: Truck,
+          },
+          { id: "cod", kind: "credit" as const, label: "Crédito", icon: Truck },
         ].map((m) => (
           <button
-            className={method === m.id ? "active" : ""}
-            aria-pressed={method === m.id}
-            key={m.id}
+            className={
+              method === m.id && (!m.kind || m.kind === receivableKind)
+                ? "active"
+                : ""
+            }
+            aria-pressed={
+              method === m.id && (!m.kind || m.kind === receivableKind)
+            }
+            key={m.label}
             onClick={() => {
               setMethod(m.id as any);
+              if (m.kind) setReceivableKind(m.kind);
               setAmount(String(payment.pending));
             }}
           >
@@ -2618,6 +2681,25 @@ function Checkout({
                 <option>Amex</option>
               </select>
             </label>
+            {cardTerminals.length > 0 && (
+              <label className="field">
+                <span>Terminal</span>
+                <select
+                  required
+                  value={details.terminal}
+                  onChange={(e) =>
+                    setDetails({ ...details, terminal: e.target.value })
+                  }
+                >
+                  <option value="">Elige el terminal…</option>
+                  {cardTerminals.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="field">
               <span>Tipo de tarjeta</span>
               <select
@@ -2635,14 +2717,31 @@ function Checkout({
         {method === "transfer" && (
           <div className="form-grid">
             <label className="field">
-              <span>Banco</span>
-              <input
-                required
-                value={details.bank}
-                onChange={(e) =>
-                  setDetails({ ...details, bank: e.target.value })
-                }
-              />
+              <span>Cuenta donde cayó</span>
+              {transferAccounts.length ? (
+                <select
+                  required
+                  value={details.bank}
+                  onChange={(e) =>
+                    setDetails({ ...details, bank: e.target.value })
+                  }
+                >
+                  <option value="">Elige la cuenta…</option>
+                  {transferAccounts.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  required
+                  value={details.bank}
+                  onChange={(e) =>
+                    setDetails({ ...details, bank: e.target.value })
+                  }
+                />
+              )}
             </label>
             <label className="field">
               <span>Referencia</span>

@@ -101,6 +101,26 @@ it("descuento, retiros, cuentas por cobrar y ajustes de incentivos no cruzan emp
     const openB = await send(http.post("/api/cash-sessions/open").send({ openingAmount: 50 }));
     expect(openA.status, JSON.stringify(openA.body)).toBe(201);
     expect(openB.status, JSON.stringify(openB.body)).toBe(201);
+    const closedA = id(390);
+    const closedB = id(391);
+    for (const [row, sessionId] of [[a, closedA], [b, closedB]] as const) {
+      await sql.query(
+        `INSERT INTO "CashSession" (id,"registerId","userId","openingAmount","closedAt","differenceCash",notes,"closeDetails","branchId","tenantId")
+         VALUES ($1,$2,$3,0,now(),10,'Descuadre de prueba','{}'::jsonb,'main',$4)`,
+        [sessionId, row.terminalId, row.userId, row.tenantId],
+      );
+    }
+    denied(await send(http.post(`/api/cash-sessions/${closedA}/descuadre`).send({ resolution: "Resolución ajena bloqueada" })));
+    const ownResolution = await send(http.post(`/api/cash-sessions/${closedB}/descuadre`).send({ resolution: "Resolución propia registrada" }));
+    expect(ownResolution.status, JSON.stringify(ownResolution.body)).toBe(201);
+    const resolutions = await sql.query(
+      `SELECT "tenantId","closeDetails"->'differenceResolution'->>'note' AS note FROM "CashSession" WHERE id IN ($1,$2) ORDER BY "tenantId"`,
+      [closedA, closedB],
+    );
+    expect(resolutions.rows).toEqual([
+      { tenantId: a.tenantId, note: null },
+      { tenantId: b.tenantId, note: "Resolución propia registrada" },
+    ]);
     const saleBody = (row: typeof a, cashSessionId: string, serial: number, method: "cash" | "credit") => ({
       offlineUuid: id(serial), customerId: row.customerId, cashSessionId,
       items: [{ variantId: row.variantId, qty: 1, discountPercent: method === "cash" ? 10 : 0 }],

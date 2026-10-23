@@ -181,6 +181,7 @@ afterAll(async () => {
         countedCard: 0,
         countedTransfer: 0,
         notes: "Cierre de pruebas de caja por usuario",
+        differenceReason: "QA: cierre de limpieza de la prueba",
       });
   if (productId)
     await request("/products/" + productId, owner, { active: false }, "PATCH");

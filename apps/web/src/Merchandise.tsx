@@ -15,7 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Badge, Button, Modal } from "@fitstore/ui";
-import { can, formatMoney } from "@fitstore/shared";
+import { can, formatMoney, matchesSearch } from "@fitstore/shared";
 import {
   api,
   download,
@@ -83,8 +83,6 @@ const when = (value: string | number) =>
     hour: "2-digit",
     minute: "2-digit",
   });
-const fold = (s: string) =>
-  s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const variantName = (v: CatalogVariant) => {
   const attrs = attrLabel(v.attributes ?? {});
   return attrs === "Única" ? v.product.name : v.product.name + " · " + attrs;
@@ -189,19 +187,19 @@ function ProductSearch({
   const [text, setText] = useState(initialText);
   const pool = only ? variants.filter((v) => v.product.id === only) : variants;
   const results = useMemo(() => {
-    const words = fold(text).split(/\s+/).filter(Boolean);
-    if (!words.length) return only ? pool.slice(0, 12) : [];
+    if (!text.trim()) return only ? pool.slice(0, 12) : [];
     return pool
       .filter((v) => {
-        const hay = fold(
+        // Palabra por palabra, como la caja (dueña, 21-oct).
+        return matchesSearch(
           [
             v.product.name,
             v.sku,
             v.barcode,
             attrLabel(v.attributes ?? {}),
           ].join(" "),
+          text,
         );
-        return words.every((w) => hay.includes(w));
       })
       .slice(0, 8);
   }, [text, pool, only]);

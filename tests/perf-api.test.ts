@@ -177,6 +177,7 @@ afterAll(async () => {
           countedCash: Math.max(0, listed.expected.cash),
           countedCard: Math.max(0, listed.expected.card),
           countedTransfer: Math.max(0, listed.expected.transfer),
+          differenceReason: "QA: cierre de limpieza de la prueba",
           notes: "QA perf cierre",
         });
     }

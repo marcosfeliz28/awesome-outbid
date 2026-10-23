@@ -71,6 +71,99 @@ function mix(rows: any[], keys: string[]): Row[] {
 }
 
 export const dinero: Record<string, ReportDef> = {
+  descuadres: {
+    title: "Descuadres de caja por fecha",
+    group: "Dinero",
+    // Orden de la dueña (21-oct): cada descuadre (falta o sobra) con la
+    // cajera, el mensajero, cuánto fue por área y cómo se resolvió.
+    async run(db, actor, range) {
+      if (!canViewCashExpected(actor)) denied();
+      const rows: any[] = await db.$queryRaw`
+        SELECT cs.id, to_char(${local(Prisma.sql`cs."closedAt"`)}, 'YYYY-MM-DD') AS dia,
+               cs."registerId", u.name AS cajera, cs."differenceCash" AS efectivo,
+               cs."differenceCard" AS tarjeta, cs."differenceTransfer" AS transferencia,
+               cs.notes, cs."closeDetails" AS det,
+               (SELECT string_agg(DISTINCT s."courierName", ', ') FROM "Sale" s
+                 WHERE s."cashSessionId" = cs.id AND s."courierFee" > 0) AS mensajero
+          FROM "CashSession" cs JOIN "User" u ON u.id::text = cs."userId"
+          WHERE cs."branchId" = ${actor.branchId} AND cs."closedAt" IS NOT NULL
+            AND cs."closedAt" >= ${utc(range.gte)} AND cs."closedAt" <= ${utc(range.lte)}
+            AND (cs."differenceCash" <> 0 OR cs."differenceCard" <> 0 OR cs."differenceTransfer" <> 0)
+          ORDER BY cs."closedAt"`;
+      const ids = [
+        ...new Set(
+          rows.flatMap((r) => [r.det?.cashApprovedBy, r.det?.cardApprovedBy]),
+        ),
+      ].filter(Boolean);
+      const users: { id: string; name: string }[] = ids.length
+        ? await db.user.findMany({
+            where: { id: { in: ids } },
+            select: { id: true, name: true },
+          })
+        : [];
+      const name = (id: unknown) => users.find((u) => u.id === id)?.name ?? "";
+      const terminals: { id: string; name: string }[] =
+        await db.terminal.findMany({ select: { id: true, name: true } });
+      return rows.map((r) => {
+        const fix = r.det?.differenceResolution;
+        return {
+          Día: r.dia,
+          Caja:
+            terminals.find((t) => t.id === r.registerId)?.name ?? r.registerId,
+          Cajera: r.cajera,
+          Mensajero: r.mensajero ?? "",
+          Efectivo: num(r.efectivo),
+          Tarjeta: num(r.tarjeta),
+          Transferencia: num(r.transferencia),
+          Aprobó:
+            [name(r.det?.cashApprovedBy), name(r.det?.cardApprovedBy)]
+              .filter((v, i, a) => v && a.indexOf(v) === i)
+              .join(", ") || "Sin aprobar",
+          Justificación: r.det?.differenceReason || r.notes || "",
+          Resolución: fix ? `${fix.note} (${fix.byName})` : "PENDIENTE",
+        };
+      });
+    },
+  },
+  "entradas-cuenta": {
+    title: "Entradas por cuenta de banco y terminal",
+    group: "Dinero",
+    // Orden de la dueña (20-oct): por dónde entró el dinero cada día. Cuenta
+    // cobros de venta y abonos (lo que de verdad llegó), no lo pendiente.
+    async run(db, actor, range) {
+      await openCashGuard(db, actor);
+      const rows: any[] = await db.$queryRaw`
+        SELECT to_char(${local(Prisma.sql`p."createdAt"`)}, 'YYYY-MM-DD') AS dia, p.method,
+               COALESCE(NULLIF(TRIM(p.bank), ''), 'Sin indicar') AS cuenta,
+               SUM(p.amount) AS amount, COUNT(*) AS n
+          FROM "Payment" p JOIN "Sale" s ON s.id = p."saleId"
+          WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed'
+            AND p."createdAt" >= ${utc(range.gte)} AND p."createdAt" <= ${utc(range.lte)}
+            AND p.method IN ('cash', 'card', 'transfer') AND p.status <> 'rejected'
+          GROUP BY 1, 2, 3`;
+      const label: Record<string, string> = {
+        cash: "Efectivo",
+        card: "Tarjeta",
+        transfer: "Transferencia",
+      };
+      return rows
+        .map((r) => ({
+          Día: r.dia,
+          Forma: label[r.method] ?? r.method,
+          "Cuenta / terminal": r.method === "cash" ? "Caja" : r.cuenta,
+          Cobros: Number(r.n),
+          Monto: num(r.amount),
+        }))
+        .sort(
+          (a, b) =>
+            String(a.Día).localeCompare(String(b.Día)) ||
+            a.Forma.localeCompare(b.Forma) ||
+            String(a["Cuenta / terminal"]).localeCompare(
+              String(b["Cuenta / terminal"]),
+            ),
+        );
+    },
+  },
   "formas-pago-mes": {
     title: "Formas de pago por mes",
     group: "Dinero",

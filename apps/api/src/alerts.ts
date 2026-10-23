@@ -67,6 +67,8 @@ export const MANUAL_ALERT_TYPES = [
   "cost_change",
   // Cupo de contraseñas de una cuenta agotado (auth.ts, N-01).
   "account_locked",
+  // Administración entró desde un equipo no aprobado (auth.ts, 23-oct).
+  "login_unapproved_device",
   // Recordatorio semanal de créditos por cobrar (credit-reminder.ts).
   "credit_reminder",
   "sale_void_request",

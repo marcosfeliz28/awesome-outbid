@@ -418,6 +418,10 @@ model Sale {
   // la cajera a medida que se cobran (docs/INCENTIVOS.md). false = venta
   // anterior, que sigue el comportamiento viejo (todo al vender).
   incentiveOnCollection  Boolean      @default(false)
+  // Etiqueta de estadística de la venta por cobrar (dueña, 19-oct): "credit"
+  // (Crédito) o "cod" (Contraentrega). Mismas reglas y mismo cobro; nulo en
+  // ventas anteriores o sin saldo (migración 202610250201_receivable_kind).
+  receivableKind         String?
   ncf                    String?
   @@unique([tenantId, ncf])
   ncfType                String?

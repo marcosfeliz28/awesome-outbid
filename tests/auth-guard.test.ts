@@ -32,7 +32,10 @@ function guard(db: any, verify: () => any = () => payload()) {
   return new AuthGuard(
     db,
     { verify } as any,
-    { getAllAndOverride: () => undefined } as any,
+    {
+      getAllAndOverride: (key: string) =>
+        key === "permission" ? "authenticated" : undefined,
+    } as any,
   );
 }
 

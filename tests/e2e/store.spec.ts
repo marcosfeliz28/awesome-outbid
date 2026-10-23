@@ -50,6 +50,7 @@ test.beforeEach(async ({ request }) => {
           countedCash: Math.max(0, s.expected.cash),
           countedCard: Math.max(0, s.expected.card),
           countedTransfer: Math.max(0, s.expected.transfer),
+          differenceReason: "QA: cierre de limpieza de la prueba",
           notes: "Cierre entre escenarios E2E",
         },
       },
@@ -295,7 +296,7 @@ test("descuento por monto, crédito y abono en interfaz", async ({ page }) => {
     await page.getByRole("button", { name: /Cobrar/ }).click();
     await page
       .getByRole("button", {
-        name: "Crédito / contraentrega",
+        name: "Contraentrega",
         exact: true,
       })
       .click();
@@ -2223,7 +2224,7 @@ test("R9-offline-1 revisión: un crédito sin respuesta queda pendiente y se con
       await page.getByRole("button", { name: /Cobrar/ }).click();
       await page
         .getByRole("button", {
-          name: "Crédito / contraentrega",
+          name: "Contraentrega",
           exact: true,
         })
         .click();
@@ -2613,6 +2614,42 @@ test.describe("Tienda-pantallas", () => {
     await expect(sheet).toContainText("FIN DEL CUADRE");
   });
 
+  test("Tienda-pantallas: cerrar con descuadre exige la justificación y el cuadre lo avisa en grande", async ({
+    page,
+  }) => {
+    await stubPrint(page);
+    await login(page);
+    await ensureCash(page);
+    await page
+      .getByRole("button", { name: "Cerrar y arquear" })
+      .first()
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: "Cuadre y cierre de caja",
+    });
+    // Fondo de 500: se cuentan 400.
+    await dialog.getByLabel("Cantidad de 100", { exact: true }).fill("4");
+    await dialog.getByLabel(/Tarjeta declarada/).fill("0");
+    await dialog.getByLabel("Notas del cierre").fill("E2E: faltan 100");
+    await dialog
+      .getByRole("checkbox", { name: /Confirmo que conté efectivo/ })
+      .check();
+    const close = dialog.getByRole("button", {
+      name: "Cerrar caja e imprimir cuadre",
+    });
+    await close.click();
+    const reason = dialog.getByLabel(
+      "Justificación del descuadre (obligatoria)",
+    );
+    await expect(reason).toBeVisible();
+    await reason.fill("E2E: se pagó un delivery con la caja");
+    await close.click();
+    const sheet = page.locator(".thermal-print");
+    await expect(sheet).toContainText("DESCUADRE DE CAJA");
+    await expect(sheet).toContainText("FALTAN EN EFECTIVO");
+    await expect(sheet).toContainText("se pagó un delivery con la caja");
+  });
+
   test("Tienda-pantallas: venta con contraentrega + efectivo, factura impresa con su formato y cobro de la contraentrega", async ({
     page,
     request,
@@ -2633,7 +2670,7 @@ test.describe("Tienda-pantallas", () => {
     await page.getByRole("button", { name: "Agregar pago" }).click();
     await page
       .getByRole("button", {
-        name: "Crédito / contraentrega",
+        name: "Contraentrega",
         exact: true,
       })
       .click();
@@ -2781,7 +2818,7 @@ test("D-01: la vendedora necesita el PIN del gerente para una contraentrega sobr
       .click();
     await page.getByRole("button", { name: /Cobrar/ }).click();
     await page
-      .getByRole("button", { name: "Crédito / contraentrega", exact: true })
+      .getByRole("button", { name: "Contraentrega", exact: true })
       .click();
     await expect(page.getByLabel("Monto del pago")).toHaveValue("1500");
     await page
@@ -2821,6 +2858,7 @@ test("D-01: la vendedora necesita el PIN del gerente para una contraentrega sobr
           countedCash: Math.max(0, s.expected.cash),
           countedCard: Math.max(0, s.expected.card),
           countedTransfer: Math.max(0, s.expected.transfer),
+          differenceReason: "QA: cierre de limpieza de la prueba",
           notes: "Cierre E2E D-01",
         },
       });

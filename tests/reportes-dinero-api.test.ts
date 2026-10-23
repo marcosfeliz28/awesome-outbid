@@ -112,7 +112,7 @@ async function cashier(label: string): Promise<Cashier> {
   return { id: user.id, token: login.accessToken, cash, name };
 }
 const PAYMENT_DATA: Record<string, object> = {
-  transfer: { bank: "QA banco", reference: "QA-DIN-" + suffix },
+  transfer: { bank: "QA banco " + suffix, reference: "QA-DIN-" + suffix },
   card: { cardLast4: "4242", approvalCode: "QA-DIN" },
 };
 // Precio 100, sin ITBIS. `discount` en pesos sobre la línea.
@@ -221,6 +221,7 @@ beforeAll(async () => {
     countedCard: 0,
     countedTransfer: 0,
     notes: "QA sobrante dinero",
+    differenceReason: "QA: sobrante de la prueba",
   });
   eva.cash = null;
   for (const name of ["formas-pago-mes", "por-mayor-detalle"])
@@ -234,6 +235,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de reportes dinero",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
   if (adminCash)
     await request("/cash-sessions/" + adminCash.id + "/close", admin, {
@@ -241,6 +243,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de reportes dinero",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
   if (productId)
     await request("/products/" + productId, admin, { active: false }, "PATCH");
@@ -263,8 +266,52 @@ describe("Reportes 40 · Dinero", () => {
         "diferencias-cuadre",
         "anulaciones",
         "devoluciones-producto",
+        "entradas-cuenta",
+        "descuadres",
       ]),
     );
+  });
+
+  it("Configuración guarda cuentas y terminales; sin la clave se conservan", async () => {
+    const original = await ok("/settings", admin);
+    try {
+      const accounts = ["Popular MacGen ···3620", "BHD MacGen ···0015"];
+      await ok(
+        "/settings",
+        admin,
+        {
+          ...original,
+          transferAccounts: accounts,
+          cardTerminals: ["Verifone QA"],
+        },
+        "PUT",
+      );
+      const saved = await ok("/settings", admin);
+      expect(saved.transferAccounts).toEqual(accounts);
+      expect(saved.cardTerminals).toEqual(["Verifone QA"]);
+      // Un cliente viejo que no envía las listas no las borra.
+      const { transferAccounts: _a, cardTerminals: _t, ...older } = saved;
+      await ok("/settings", admin, older, "PUT");
+      expect((await ok("/settings", admin)).transferAccounts).toEqual(accounts);
+    } finally {
+      await ok("/settings", admin, original, "PUT");
+    }
+  });
+
+  it("entradas por cuenta: la transferencia sale en su cuenta y el efectivo en Caja", async () => {
+    const rows = await report("entradas-cuenta");
+    const bank = rows.filter(
+      (r) => r["Cuenta / terminal"] === "QA banco " + suffix,
+    );
+    expect(bank).toHaveLength(1);
+    expect(bank[0].Forma).toBe("Transferencia");
+    expect(bank[0].Monto).toBe(100);
+    expect(bank[0].Cobros).toBe(1);
+    expect(
+      rows.some(
+        (r) => r.Forma === "Efectivo" && r["Cuenta / terminal"] === "Caja",
+      ),
+    ).toBe(true);
   });
 
   it("formas de pago por mes: venta neta por forma, menos la devolución en efectivo", () => {
@@ -366,6 +413,61 @@ describe("Reportes 40 · Dinero", () => {
       "Cajas con faltante": 0,
       "Cajas con sobrante": 1,
     });
+  });
+
+  it("descuadres por fecha: PENDIENTE hasta que la gerencia lo resuelve", async () => {
+    const row = () =>
+      report("descuadres").then((rows) => pick(rows, "Cajera", eva.name));
+    expect(await row()).toMatchObject({
+      Día: today,
+      Efectivo: 25,
+      Tarjeta: 0,
+      Transferencia: 0,
+      Justificación: "QA: sobrante de la prueba",
+      Resolución: "PENDIENTE",
+    });
+    const id = (
+      await db.cashSession.findFirstOrThrow({
+        where: { userId: eva.id },
+        select: { id: true },
+      })
+    ).id;
+    const url = "/cash-sessions/" + id + "/descuadre";
+    const note = "QA: se devolvieron los 25 a la clienta";
+    // La cajera no resuelve descuadres ni ve el reporte.
+    expect((await request(url, ana.token, { resolution: note })).status).toBe(
+      403,
+    );
+    expect(
+      (
+        await request(
+          `/reports/descuadres?from=${today}&to=${today}`,
+          ana.token,
+        )
+      ).status,
+    ).toBe(403);
+    expect((await request(url, admin, { resolution: "ok" })).status).toBe(400);
+    // Con la caja abierta no hay descuadre que resolver.
+    expect(
+      (
+        await request("/cash-sessions/" + ana.cash.id + "/descuadre", admin, {
+          resolution: note,
+        })
+      ).status,
+    ).toBe(400);
+    expect((await request(url, admin, { resolution: note })).status).toBe(201);
+    const resolved = await row();
+    expect(resolved.Resolución).toContain(note);
+    expect(resolved.Resolución).not.toBe("PENDIENTE");
+    const saved = await db.cashSession.findUniqueOrThrow({ where: { id } });
+    expect((saved.closeDetails as any).differenceResolution).toMatchObject({
+      note,
+    });
+    expect(
+      await db.auditLog.count({
+        where: { entityId: id, action: "difference_resolved" },
+      }),
+    ).toBe(1);
   });
 
   it("anulaciones por cajera y motivo", async () => {

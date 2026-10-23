@@ -84,19 +84,10 @@ export function productRoutes(): string[] {
   return productRouteEntries().map(({ key }) => key);
 }
 
-// These eight endpoints authenticate with the global guard but authorize
-// individual resources inside their handler (their decorators are deliberately
-// not @Permit). A ninth undecorated route must be reviewed before delivery.
-const AUTHENTICATED_RESOURCE_ROUTES = new Set([
-  "POST /api/terminals/register",
-  "POST /api/terminals/:id/approve-with-pin",
-  "POST /api/terminals/:id/rename",
-  "GET /api/terminals/current",
-  "POST /api/auth/password",
-  "POST /api/auth/logout",
-  "GET /api/auth/me",
-  "POST /api/auth/pin",
-]);
+// Every non-public endpoint now declares its policy explicitly. A newly
+// undecorated route must be reviewed before delivery rather than being silently
+// accepted as merely authenticated.
+const AUTHENTICATED_RESOURCE_ROUTES = new Set<string>();
 
 // GETs with no path parameters and a valid empty query. Every entry must
 // return a successful response under tenant B, never a validation error.
@@ -214,6 +205,7 @@ POST /api/auth/pin
 POST /api/auth/refresh
 POST /api/brands
 POST /api/cash-sessions/:id/close
+POST /api/cash-sessions/:id/descuadre
 POST /api/cash-sessions/:id/movements
 POST /api/cash-sessions/:id/transfer
 POST /api/cash-sessions/open
@@ -299,7 +291,7 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  expect(required).toHaveLength(152);
+  expect(required).toHaveLength(153);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");
@@ -318,7 +310,7 @@ it("exige política declarada o excepción justificada en cada ruta de producto"
     expect(entries.some((entry) => entry.key === `GET ${path}`), path).toBe(true);
 });
 
-it("aisla rutas reales de catálogo, búsqueda y los 40 reportes con PostgreSQL", async () => {
+it("aisla rutas reales de catálogo, búsqueda y los 43 reportes con PostgreSQL", async () => {
   const dataDir = await mkdtemp(join(tmpdir(), "nexora-route-matrix-"));
   const port = await freePort();
   const db = new EmbeddedPostgres({
@@ -402,7 +394,7 @@ it("aisla rutas reales de catálogo, búsqueda y los 40 reportes con PostgreSQL"
       expect(JSON.stringify(categoriesA.body)).not.toContain("Sólo empresa B");
       const reports = await http.get("/api/reportes").set("Authorization", tokenB);
       expect(reports.status).toBe(200);
-      expect(reports.body).toHaveLength(40);
+      expect(reports.body).toHaveLength(43);
       for (const { name } of reports.body) {
         const response = await http.get(`/api/reports/${name}`).set("Authorization", tokenB);
         expect(response.status, `Reporte ${name}: ${JSON.stringify(response.body)}`).toBe(200);

@@ -67,7 +67,7 @@ import {
   StoreSettings,
   type Printing,
 } from "./Tienda";
-import { METHOD_LABEL, printSoon } from "./Prints";
+import { METHOD_LABEL } from "./Prints";
 import {
   customerEditValue,
   customerPrivateDisplay,
@@ -273,6 +273,11 @@ export function Catalog() {
     requiredNumber("costAvg", "Costo de entrada"),
     requiredNumber("minStock", "Stock mínimo", 5),
     {
+      key: "service",
+      label: "Es un servicio (se vende sin existencia)",
+      type: "checkbox",
+    },
+    {
       key: "imageUrl",
       label: "URL de la foto",
       initial: "/products/accessories.svg",
@@ -453,9 +458,10 @@ export function Catalog() {
           fields={fields}
           onClose={() => setCreate(false)}
           onSubmit={(values) => {
-            const { barcode, price, costAvg, ...data } = values;
+            const { barcode, price, costAvg, service, ...data } = values;
             return post("/products", {
               ...data,
+              ...(service ? { unit: "servicio", minStock: 0 } : {}),
               variants: [{ sku: data.sku, barcode, price, costAvg }],
             });
           }}
@@ -1602,7 +1608,8 @@ export function Cash() {
     [closing, setClosing] = useState<any>(null),
     [discarding, setDiscarding] = useState<any>(null),
     [printing, setPrinting] = useState<Printing>(null),
-    [printSession, setPrintSession] = useState<string>();
+    [printSession, setPrintSession] = useState<string>(),
+    [autoPrint, setAutoPrint] = useState(false);
   // Fondo sugerido: lo dejado en el último cierre de la propia persona.
   const suggestion = useQuery({
     queryKey: ["opening-suggestion"],
@@ -2025,6 +2032,8 @@ export function Cash() {
           onSubmit={async ({ openingNote, ...data }) => {
             // La caja queda asignada a este equipo (el servidor usa su registro).
             await registerTerminal().catch(() => undefined);
+            // Caja nueva, día nuevo: que este equipo use la última versión.
+            window.dispatchEvent(new Event("nexora:check-update"));
             return post("/cash-sessions/open", {
               ...data,
               ...(String(openingNote ?? "").trim()
@@ -2088,7 +2097,7 @@ export function Cash() {
             setPrintSession(closing.id);
             setClosing(null);
             setPrinting({ kind: "cuadre", data: cuadre });
-            printSoon();
+            setAutoPrint(true);
           }}
         />
       )}
@@ -2109,7 +2118,10 @@ export function Cash() {
         onClose={() => {
           setPrinting(null);
           setPrintSession(undefined);
+          setAutoPrint(false);
+          window.dispatchEvent(new Event("nexora:check-update"));
         }}
+        autoPrint={autoPrint}
         sessionId={printSession}
         onSwitch={setPrinting}
       />
@@ -2706,6 +2718,92 @@ const reportList = [
   ["customers", "Mejores clientes"],
   ["purchases", "Compras y cuentas por pagar"],
 ];
+// Dueña (21-oct): los reportes ordenados por grupos plegables; en el móvil,
+// lista vertical (nada de fila horizontal).
+const REPORT_GROUPS: [string, string[]][] = [
+  [
+    "Ventas",
+    [
+      "sales",
+      "monthly-consumption",
+      "ventas-categoria-forma-pago",
+      "returns-discounts",
+      "anulaciones",
+      "devoluciones-producto",
+      "por-mayor-detalle",
+    ],
+  ],
+  [
+    "Caja y pagos",
+    [
+      "cash",
+      "descuadres",
+      "diferencias-cuadre",
+      "by-payment",
+      "income-by-day",
+      "entradas-cuenta",
+      "formas-pago-mes",
+      "formas-pago-categoria",
+    ],
+  ],
+  [
+    "Contraentregas y crédito",
+    [
+      "creditos-por-antiguedad",
+      "clientes-con-mas-deuda",
+      "cobros-por-mes",
+      "envios-mensajero",
+    ],
+  ],
+  [
+    "Clientes",
+    [
+      "customers",
+      "top-clientes",
+      "clientes-nuevos-por-mes",
+      "frecuencia-de-compra",
+      "clientes-inactivos",
+    ],
+  ],
+  [
+    "Inventario",
+    [
+      "inventory-value",
+      "kardex",
+      "low-stock",
+      "no-movement",
+      "expiring",
+      "abc",
+      "purchases",
+    ],
+  ],
+  [
+    "Vendedoras",
+    ["by-seller", "ranking-cajeras", "descuentos-cajera", "margen-por-cajera"],
+  ],
+  ["Margen y resultados", ["profit", "expenses", "income-statement", "formal"]],
+];
+// Lo que el servidor agrega después cae en su grupo por nombre.
+const SERVER_GROUP: Record<string, string> = {
+  Ventas: "Ventas",
+  Dinero: "Caja y pagos",
+  "Clientes y crédito": "Clientes",
+  Inventario: "Inventario",
+  Margen: "Margen y resultados",
+};
+export function groupReports(
+  reports: { id: string; name: string; group?: string }[],
+) {
+  const out = new Map<string, { id: string; name: string }[]>(
+    REPORT_GROUPS.map(([g]) => [g, []]),
+  );
+  for (const r of reports) {
+    const fixed = REPORT_GROUPS.find(([, ids]) => ids.includes(r.id))?.[0];
+    const group = fixed ?? SERVER_GROUP[r.group ?? ""] ?? "Ventas";
+    out.get(group)!.push({ id: r.id, name: r.name });
+  }
+  return [...out].filter(([, list]) => list.length);
+}
 export function Reports() {
   const user = useStore((s) => s.user);
   // Los 40 reportes de la dueña (orden 18-oct) vienen del servidor, ya
@@ -2717,8 +2815,12 @@ export function Reports() {
   });
   const allReports: string[][] = [
     ...reportList,
-    ...(extra.data ?? []).map((r) => [r.name, r.group + " · " + r.title]),
+    ...(extra.data ?? []).map((r) => [r.name, r.title]),
   ];
+  const serverGroup = new Map(
+    (extra.data ?? []).map((r) => [r.name, r.group] as const),
+  );
+  const [openGroup, setOpenGroup] = useState<string | null>("Ventas");
   const [report, setReport] = useState("sales"),
     [from, setFrom] = useState(today().slice(0, 8) + "01"),
     [to, setTo] = useState(today()),
@@ -2751,25 +2853,51 @@ export function Reports() {
       />
       <div className="reports-layout">
         <aside className="panel report-menu">
-          {allReports
-            .filter(
-              ([id]) =>
-                id !== "formal" || can(user?.permissions ?? [], "profit:read"),
-            )
-            .map(([id, name]) => (
-              <button
-                key={id}
-                onClick={() => {
-                  setReport(id);
-                  setPage(1);
-                }}
-                className={report === id ? "active" : ""}
-              >
-                <FileText size={17} />
-                {name}
-                <ChevronRight size={14} />
-              </button>
-            ))}
+          {groupReports(
+            allReports
+              .filter(
+                ([id]) =>
+                  id !== "formal" ||
+                  can(user?.permissions ?? [], "profit:read"),
+              )
+              .map(([id, name]) => ({ id, name, group: serverGroup.get(id) })),
+          ).map(([group, list]) => {
+            const open =
+              openGroup === group || list.some((r) => r.id === report);
+            return (
+              <div key={group} className="report-group">
+                <button
+                  type="button"
+                  className="report-group-title"
+                  aria-expanded={open}
+                  onClick={() => setOpenGroup(open ? null : group)}
+                >
+                  {group}
+                  <span className="report-group-count">{list.length}</span>
+                  <ChevronRight
+                    size={14}
+                    className={open ? "report-group-open" : ""}
+                  />
+                </button>
+                {open &&
+                  list.map(({ id, name }) => (
+                    <button
+                      key={id}
+                      onClick={() => {
+                        setReport(id);
+                        setOpenGroup(group);
+                        setPage(1);
+                      }}
+                      className={report === id ? "active" : ""}
+                    >
+                      <FileText size={17} />
+                      {name}
+                      <ChevronRight size={14} />
+                    </button>
+                  ))}
+              </div>
+            );
+          })}
         </aside>
         {report === "formal" ? (
           <FormalReports />
@@ -3893,6 +4021,18 @@ export function Configuration() {
       label: "Tasa del euro (RD$ por €)",
       help: "Vacío: el cuadre no muestra euros.",
     },
+    {
+      key: "transferAccounts",
+      label: "Cuentas de banco para transferencias (una por línea)",
+      type: "textarea",
+      help: "Ej.: Popular MacGen ···3620. La caja elige de esta lista.",
+    },
+    {
+      key: "cardTerminals",
+      label: "Terminales de tarjeta (uno por línea)",
+      type: "textarea",
+      help: "Ej.: Verifone G-Pro MacGen. Vacío: la caja no pregunta.",
+    },
     requiredNumber("sellerDiscountLimit", "Descuento máximo del vendedor (%)"),
     requiredNumber("cardFeePercent", "Comisión bancaria (%)"),
     requiredNumber("returnDays", "Plazo de devolución (días)"),
@@ -4188,18 +4328,27 @@ export function Configuration() {
             allowOfflineSales: query.data?.allowOfflineSales === true,
             usdRate: query.data?.usdRate ?? "",
             eurRate: query.data?.eurRate ?? "",
+            transferAccounts: (query.data?.transferAccounts ?? []).join("\n"),
+            cardTerminals: (query.data?.cardTerminals ?? []).join("\n"),
           }}
           onClose={() => setEditing(false)}
           onSubmit={(data) => {
             // Tasa vacía = sin divisa.
             const rate = (v: unknown) =>
               v === "" || v === null || v === undefined ? null : Number(v);
+            const lines = (v: unknown) =>
+              String(v ?? "")
+                .split("\n")
+                .map((l) => l.trim())
+                .filter(Boolean);
             return mutate(
               "/settings",
               {
                 ...data,
                 usdRate: rate(data.usdRate),
                 eurRate: rate(data.eurRate),
+                transferAccounts: lines(data.transferAccounts),
+                cardTerminals: lines(data.cardTerminals),
                 currency: "DOP",
               },
               "PUT",

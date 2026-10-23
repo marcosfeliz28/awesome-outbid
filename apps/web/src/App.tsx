@@ -41,6 +41,12 @@ import {
   Zap,
   Info,
   KeyRound,
+  Dumbbell,
+  Footprints,
+  Brush,
+  GraduationCap,
+  Pill,
+  Shirt,
 } from "lucide-react";
 import { initialCompanyCode, productTenancyRequired } from "./productTenancy";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
@@ -275,6 +281,48 @@ const navigation = [
 const PRODUCT_TENANCY_REQUIRED = productTenancyRequired(
   import.meta.env.VITE_PRODUCT_TENANCY,
 );
+// Caras del cubo de la entrada: lo que venden Grupo MacGen y GV Makeup
+// Studio, por grupo (dueña, 23-oct).
+const LOGIN_CUBE = [
+  {
+    face: "front",
+    icon: Pill,
+    title: "Suplementos",
+    items: "Proteínas · Creatinas · Vitaminas",
+  },
+  {
+    face: "right",
+    icon: Shirt,
+    title: "Fajas",
+    items: "Corsets · Chalecos · Cinturillas",
+  },
+  {
+    face: "back",
+    icon: Footprints,
+    title: "Tenis y ropa",
+    items: "Tenis · Ropa deportiva",
+  },
+  {
+    face: "left",
+    icon: Dumbbell,
+    title: "Accesorios",
+    items: "Accesorios de gym",
+  },
+  {
+    face: "top",
+    icon: Brush,
+    title: "Maquillaje",
+    items: "Bases · Correctores · Brochas",
+    gv: true,
+  },
+  {
+    face: "bottom",
+    icon: GraduationCap,
+    title: "GV Makeup Studio",
+    items: "Cursos · Servicios · Productos",
+    gv: true,
+  },
+];
 
 function Login() {
   const [companyCode, setCompanyCode] = useState(() =>
@@ -301,15 +349,16 @@ function Login() {
           </span>
         </div>
         <div>
-          <span className="eyebrow light">TU TIENDA. TU RITMO.</span>
+          <span className="eyebrow light">GRUPO MACGEN · GV MAKEUP STUDIO</span>
           <h1>
+            Fitness y belleza.
+            <br />
             Todo bajo control.
-            <br />
-            Más espacio
-            <br />
-            para crecer.
           </h1>
-          <p>Ventas, inventario y decisiones que mueven tu negocio.</p>
+          <p>
+            Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos
+            y servicios de GV Makeup Studio, en un solo sistema.
+          </p>
           <div className="login-stats">
             <span>
               <Zap />
@@ -326,8 +375,21 @@ function Login() {
           </div>
         </div>
         <small>Hecho para una tienda con energía.</small>
-        <div className="art-circle one" />
-        <div className="art-circle two" />
+        {/* Escena 3D decorativa (solo CSS): piso en perspectiva y cubo. */}
+        <div className="login-scene" aria-hidden="true">
+          <div className="scene-floor" />
+          <div className="scene-orbit one" />
+          <div className="scene-orbit two" />
+          <div className="scene-cube">
+            {LOGIN_CUBE.map(({ face, icon: Icon, title, items, gv }) => (
+              <span key={face} className={"face " + face + (gv ? " gv" : "")}>
+                <Icon />
+                <strong>{title}</strong>
+                <small>{items}</small>
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="login-form-panel">
         <form
@@ -402,7 +464,7 @@ function Login() {
             }
           }}
         >
-          <span className="eyebrow">BIENVENIDA A NEXORA</span>
+          <span className="eyebrow">BIENVENIDA · MACGEN & GV</span>
           <h2>
             {changeRequired
               ? "Actualiza tu contraseña."

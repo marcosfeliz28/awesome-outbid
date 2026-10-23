@@ -179,9 +179,7 @@ describe("P1 · cambio obligatorio de contraseña", () => {
     );
     expect(component).toContain('role="status"');
     expect(component).toContain('"password-rules password-strength"');
-    expect(component).toContain(
-      '"password-rules cashier-password-guidance"',
-    );
+    expect(component).toContain('"password-rules cashier-password-guidance"');
     expect(component).toContain('autoCapitalize="none"');
     expect(component).toContain("passwordRules(password, policy)");
     expect(
@@ -265,12 +263,28 @@ describe("3t · política visual de contraseña por rol", () => {
   it("no relaja manager/admin: un PIN numérico falla y la clave fuerte pasa", () => {
     for (const role of ["manager", "admin"]) {
       const policy = passwordPolicyForRole(role);
-      expect(passwordChangeError(CASHIER_NEW, CASHIER_NEW, "Anterior!2026", "required", policy)).toMatch(
-        /cinco reglas/,
-      );
+      expect(
+        passwordChangeError(
+          CASHIER_NEW,
+          CASHIER_NEW,
+          "Anterior!2026",
+          "required",
+          policy,
+        ),
+      ).toMatch(/cinco reglas/);
       const strong = "Gerencia-Nexora-2026!";
-      expect(passwordChangeError(strong, strong, "Anterior!2026", "required", policy)).toBe("");
-      expect(passwordRules(strong, policy).filter((rule) => rule.met)).toHaveLength(5);
+      expect(
+        passwordChangeError(
+          strong,
+          strong,
+          "Anterior!2026",
+          "required",
+          policy,
+        ),
+      ).toBe("");
+      expect(
+        passwordRules(strong, policy).filter((rule) => rule.met),
+      ).toHaveLength(5);
     }
   });
 });
@@ -338,7 +352,10 @@ describe("P6 · controles accesibles de venta y caja", () => {
   });
   it("los métodos comunican selección y el texto no usa colores libres", () => {
     const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
-    expect(pos).toContain("aria-pressed={method === m.id}");
+    // Dueña, 19-oct: Crédito y Contraentrega comparten `cod`; se distinguen por kind.
+    expect(pos).toMatch(
+      /aria-pressed=\{\s*method === m\.id && \(!m\.kind \|\| m\.kind === receivableKind\)\s*\}/,
+    );
     expect(pos).not.toContain("style={{ color: p.category.color }}");
   });
   it.each(["claro", "oscuro"])("texto y foco visibles en %s", (theme) => {

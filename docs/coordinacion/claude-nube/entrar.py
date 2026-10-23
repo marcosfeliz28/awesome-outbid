@@ -33,13 +33,16 @@ def call(path, body=None, tok=None):
     try: return json.load(urllib.request.urlopen(r, timeout=60))
     except urllib.error.HTTPError as e: return {"_err": e.code, "_b": e.read().decode()[:300]}
 
-lg = call("/auth/login", {"login": user, "password": pw})
+term_file = "/tmp/nexora_term"
+saved = json.load(open(term_file)) if os.path.exists(term_file) else None
+# Con equipo guardado se entra directo con él: así no salta la alerta de
+# «admin desde equipo no aprobado» en cada entrada.
+lg = call("/auth/login", {"login": user, "password": pw, **({"terminal": saved} if saved else {})})
 if lg.get("requiresPasswordChange"):
     sys.exit("La cuenta pide cambio de contraseña: la dueña la restableció. Pídele la nueva y cámbiala en el entorno.")
 tok = lg.get("accessToken")
 if not tok: sys.exit("Login falló: %s %s" % (lg.get("_err"), lg.get("_b")))
-term_file = "/tmp/nexora_term"
-term = json.load(open(term_file)) if os.path.exists(term_file) else {"id": str(uuid.uuid4()), "secret": secrets.token_urlsafe(32)}
+term = saved or {"id": str(uuid.uuid4()), "secret": secrets.token_urlsafe(32)}
 reg = call("/terminals/register", {"id": term["id"], "name": "Claude nube", "secret": term["secret"]}, tok)
 if reg.get("_err") or not reg.get("approvedAt"):
     sys.exit("No se pudo registrar/aprobar el equipo: %s" % reg)

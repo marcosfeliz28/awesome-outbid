@@ -245,7 +245,7 @@ it("migra datos existentes y aísla lectura, escritura y cambio de tenant con RL
       expect((await http.get("/api/categories").set("Authorization", auth(demo, userB, sessionB))).status).toBe(401);
       const listed = await http.get("/api/reportes").set("Authorization", b);
       expect(listed.status).toBe(200);
-      expect(listed.body).toHaveLength(40);
+      expect(listed.body).toHaveLength(43);
       for (const { name } of listed.body) {
         const result = await http.get(`/api/reports/${name}`).set("Authorization", b);
         expect(result.status, `Reporte ${name}: ${JSON.stringify(result.body)}`).toBe(200);

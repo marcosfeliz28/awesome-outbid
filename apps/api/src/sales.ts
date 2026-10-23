@@ -1050,6 +1050,11 @@ export class SalesController {
             taxIncluded: config?.taxIncluded !== false,
             total,
             creditBalance: money(d(credit).plus(cod)),
+            // Sólo estadística (dueña, 19-oct); nulo si no queda saldo por cobrar.
+            receivableKind:
+              (credit || cod) && input.receivableKind
+                ? input.receivableKind
+                : null,
             // El incentivo de la parte a crédito se acredita al cobrarla.
             incentiveOnCollection: d(credit).plus(cod).gt(0),
             creditDueDate:
@@ -3680,6 +3685,7 @@ export class SalesController {
           createdAt: s.createdAt,
           // Días que lleva sin cerrarse; si ya se cerró, los que tardó.
           ageDays: daysSince(s.createdAt, s.creditClosedAt ?? now),
+          receivableKind: s.receivableKind,
           status,
           cashSessionId: s.cashSessionId,
           total: Number(s.total),

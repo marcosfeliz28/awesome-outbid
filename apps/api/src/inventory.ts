@@ -27,6 +27,7 @@ import {
   signedStockQty,
   countedQty,
   formatAmount,
+  isService,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -459,6 +460,8 @@ export async function stockChange(
   // Entradas: costo unitario de lo recibido (con flete); salidas: costo promedio.
   unitCost?: number,
 ) {
+  // Un servicio no tiene existencia: ni se descuenta ni se repone.
+  if (isService(variant.product)) return;
   const balance = quantity(d(variant.stock).plus(qty));
   if (balance < 0 && !variant.allowNegativeStock)
     bad("Stock insuficiente para " + variant.product.name + ".");
@@ -521,6 +524,7 @@ export async function takeStock(
   refId: string,
 ) {
   if (!variant.active || !variant.product.active) bad("Producto inactivo.");
+  if (isService(variant.product)) return [{ qty }];
   if (Number(variant.stock) < qty && !variant.allowNegativeStock)
     bad("Stock insuficiente para " + variant.product.name + ".");
   const pieces: { lotId?: string; qty: number }[] = [];

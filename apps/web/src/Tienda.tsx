@@ -15,6 +15,7 @@ import {
   DailyUserReportPrint,
   PaymentMethodReportPrint,
   PrintSheet,
+  RECEIVABLE_KIND,
 } from "./Prints";
 
 export type PrintKind = "cuadre" | "daily" | "method";
@@ -54,12 +55,15 @@ export function PrintModal({
   onClose,
   sessionId,
   onSwitch,
+  autoPrint,
 }: {
   printing: Printing;
   onClose: () => void;
   /** Caja recién cerrada: ofrece sus otras dos impresiones del día. */
   sessionId?: string;
   onSwitch?: (p: Printing) => void;
+  /** Imprime solo al abrir, cuando ya está todo lo que va en el papel. */
+  autoPrint?: boolean;
 }) {
   const config = useQuery({
     queryKey: ["settings"],
@@ -75,6 +79,17 @@ export function PrintModal({
     enabled: withProducts,
   });
   const extra = withProducts ? products.data : undefined;
+  // Dueña (21-oct): al cerrar caja sale el cuadre y, pegada, la lista de
+  // productos vendidos. Antes se imprimía a los 50 ms, sin esperar la lista,
+  // y el papel salía solo con el cuadre.
+  const printed = useRef(false);
+  const ready = !withProducts || products.isSuccess || products.isError;
+  useEffect(() => {
+    if (!autoPrint || !printing || !ready || printed.current) return;
+    printed.current = true;
+    const t = setTimeout(() => window.print(), 300);
+    return () => clearTimeout(t);
+  }, [autoPrint, printing, ready]);
   if (!printing) return null;
   const width = config.data?.receiptWidth ?? "80";
   return (
@@ -179,6 +194,7 @@ export function CloseCashModal({
     delivered: "",
     notes: "",
     managerPin: "",
+    differenceReason: "",
   });
   const user = useStore((s) => s.user);
   // Igual que cash.ts (canViewCashExpected).
@@ -189,7 +205,8 @@ export function CloseCashModal({
     [error, setError] = useState(""),
     [confirmBlindClose, setConfirmBlindClose] = useState(false),
     [cardNeedsPin, setCardNeedsPin] = useState(false),
-    [cashNeedsPin, setCashNeedsPin] = useState(false);
+    [cashNeedsPin, setCashNeedsPin] = useState(false),
+    [needsReason, setNeedsReason] = useState(false);
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [key]: e.target.value });
   const subtotal =
@@ -252,6 +269,7 @@ export function CloseCashModal({
         countedTransfer: parse(form.countedTransfer),
         ...(delivered === null ? {} : { delivered }),
         notes: form.notes,
+        differenceReason: form.differenceReason,
         ...(voucherNeedsPin || cardNeedsPin || cashNeedsPin
           ? { managerPin: form.managerPin }
           : {}),
@@ -265,6 +283,7 @@ export function CloseCashModal({
         setCardNeedsPin(true);
       if (/caja no cuadra con el sistema/i.test(e.message))
         setCashNeedsPin(true);
+      if (/no cuadra|no coincide/i.test(e.message)) setNeedsReason(true);
     } finally {
       setBusy(false);
     }
@@ -387,6 +406,20 @@ export function CloseCashModal({
             </strong>
             <small>Será el fondo sugerido de la próxima apertura.</small>
           </div>
+          {needsReason && (
+            <label className="field full">
+              <span className="danger-text">
+                Justificación del descuadre (obligatoria)
+              </span>
+              <textarea
+                value={form.differenceReason}
+                onChange={set("differenceReason")}
+                placeholder="Qué pasó y quién lo sabe"
+                required
+                minLength={10}
+              />
+            </label>
+          )}
           <label className="field full">
             <span>Notas del cierre</span>
             <textarea value={form.notes} onChange={set("notes")} />
@@ -622,6 +655,10 @@ export function CodPending({ session }: { session: any }) {
                       <strong>{r.number}</strong>{" "}
                       <Badge tone={CREDIT_STATUS[r.status]?.tone}>
                         {CREDIT_STATUS[r.status]?.label}
+                      </Badge>{" "}
+                      <Badge tone="neutral">
+                        {RECEIVABLE_KIND[r.receivableKind] ??
+                          "Crédito / contraentrega"}
                       </Badge>
                       <div className="cod-age">
                         <span>
@@ -891,6 +928,12 @@ function CodCollect({
   // La dueña da por recibida la transferencia desde cualquier equipo: solo
   // indica el banco como guía (sin referencia ni caja propia).
   const owner = can(user?.permissions ?? [], "*");
+  // Cuentas fijas de Configuración (orden de la dueña, 20-oct).
+  const settings = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api<any>("/settings"),
+  });
+  const accounts: string[] = settings.data?.transferAccounts ?? [];
   const newLine = (
     amount: string,
     method: CollectLine["method"] = session || !manager || owner
@@ -1046,11 +1089,26 @@ function CodCollect({
               <>
                 <label className="field">
                   <span>Banco</span>
-                  <input
-                    required
-                    value={l.bank}
-                    onChange={(e) => patch(l.key, { bank: e.target.value })}
-                  />
+                  {accounts.length ? (
+                    <select
+                      required
+                      value={l.bank}
+                      onChange={(e) => patch(l.key, { bank: e.target.value })}
+                    >
+                      <option value="">Elige la cuenta…</option>
+                      {accounts.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      required
+                      value={l.bank}
+                      onChange={(e) => patch(l.key, { bank: e.target.value })}
+                    />
+                  )}
                 </label>
                 <label className="field">
                   <span>{owner ? "Referencia (opcional)" : "Referencia"}</span>

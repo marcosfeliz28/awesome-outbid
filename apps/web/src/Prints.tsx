@@ -92,11 +92,61 @@ export function BusinessHeader({
 }
 
 const COUNT_KEYS = new Set(["tickets", "voidedTickets"]);
+// Etiqueta de la venta por cobrar (dueña, 19-oct); nula en ventas anteriores.
+export const RECEIVABLE_KIND: Record<string, string> = {
+  credit: "Crédito",
+  cod: "Contraentrega",
+};
 const METHOD_SHORT: Record<string, string> = {
   cash: "efectivo",
   card: "tarjeta",
   transfer: "transf.",
 };
+
+/** Dueña (21-oct): falte o sobre dinero, el descuadre sale en grande. */
+export function DescuadreBanner({ d }: { d: any }) {
+  const line = (label: string, value: number, by: string | null) =>
+    value ? (
+      <p style={{ margin: "2px 0", fontSize: "1.25em", fontWeight: 800 }}>
+        {value < 0 ? "FALTAN" : "SOBRAN"} {label}: {value < 0 ? "−" : "+"}RD${" "}
+        {num(Math.abs(value))}
+        {by ? (
+          <span style={{ fontSize: "0.7em", fontWeight: 600 }}>
+            {" "}
+            · aprobó {by}
+          </span>
+        ) : null}
+      </p>
+    ) : null;
+  return (
+    <div
+      className="descuadre-banner"
+      role="alert"
+      style={{
+        border: "3px solid #DC2626",
+        color: "#DC2626",
+        padding: "6px 8px",
+        margin: "8px 0",
+        textAlign: "center",
+      }}
+    >
+      <p style={{ margin: 0, fontSize: "1.4em", fontWeight: 900 }}>
+        ⚠ DESCUADRE DE CAJA
+      </p>
+      {line("EN EFECTIVO", Number(d.cash), d.cashApprovedBy)}
+      {line("EN TARJETA", Number(d.card), d.cardApprovedBy)}
+      {line("EN TRANSFERENCIA", Number(d.transfer ?? 0), null)}
+      <p style={{ margin: "4px 0 0", color: "#111" }}>
+        Justificación: {d.reason || d.notes || "SIN JUSTIFICACIÓN"}
+      </p>
+      {d.resolution && (
+        <p style={{ margin: "2px 0 0", color: "#111" }}>
+          Resuelto: {d.resolution}
+        </p>
+      )}
+    </div>
+  );
+}
 
 /** 1. Cuadre de caja, en el orden del impreso de la tienda. */
 export function CuadrePrint({ c }: { c: any }) {
@@ -127,6 +177,7 @@ export function CuadrePrint({ c }: { c: any }) {
           }
         />
       )}
+      {c.descuadre && <DescuadreBanner d={c.descuadre} />}
       <h4>Detalles de monedas</h4>
       <div className="tp-row tp-head">
         <span>Moneda × Cantidad</span> <span>= Total</span>
@@ -168,6 +219,18 @@ export function CuadrePrint({ c }: { c: any }) {
         <>
           <h4>Créditos / contraentregas</h4>
           <Row label="Vendidas" value={num(c.cod?.sold)} />
+          {Number(c.cod?.collectedByKind?.credit) > 0 && (
+            <Row
+              label="Cobrado de créditos"
+              value={num(c.cod?.collectedByKind?.credit)}
+            />
+          )}
+          {Number(c.cod?.collectedByKind?.cod) > 0 && (
+            <Row
+              label="Cobrado de contraentregas"
+              value={num(c.cod?.collectedByKind?.cod)}
+            />
+          )}
           <Row label="Cobradas efectivo" value={num(c.cod?.collected?.cash)} />
           <Row
             label="Cobradas transferencia"
@@ -180,7 +243,7 @@ export function CuadrePrint({ c }: { c: any }) {
             .map((r: any) => (
               <div key={r.paymentId} className="tp-sub">
                 <Row
-                  label={`${r.number} · ${METHOD_SHORT[r.method] ?? r.method}`}
+                  label={`${r.number}${r.kind ? " · " + RECEIVABLE_KIND[r.kind] : ""} · ${METHOD_SHORT[r.method] ?? r.method}`}
                   value={num(r.amount)}
                 />
                 <p>

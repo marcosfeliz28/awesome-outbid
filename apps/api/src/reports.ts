@@ -1394,12 +1394,24 @@ function listing(
             : []
           ).map((r) => [r.saleId, r._sum.total ?? 0]),
         );
+        // Dueña (21-oct): el nombre de la vendedora, no su código.
+        const sellers = new Map(
+          (sales.length
+            ? await db.user.findMany({
+                where: {
+                  id: { in: [...new Set(sales.map((s) => s.sellerId))] },
+                },
+                select: { id: true, name: true },
+              })
+            : []
+          ).map((u) => [u.id, u.name]),
+        );
         return {
           last: sales.at(-1)?.id,
           rows: sales.map((s) => ({
             Factura: s.number,
             Fecha: localTime(s.createdAt),
-            Vendedor: s.sellerId,
+            Vendedor: sellers.get(s.sellerId) ?? s.sellerId,
             Total: Number(s.total),
             ITBIS: Number(s.taxTotal),
             Saldo_crédito: Number(s.creditBalance),

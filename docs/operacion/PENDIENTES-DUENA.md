@@ -8,6 +8,13 @@
 - **Decisiones del cierre de caja** (6): un solo verifone, fondo, tope, Genesis, turnos, mensajero.
 - Señales a revisar: FS-0000113 (Lizbeth 50 %, transferencia ref 1111 por verificar), FS-0000062 (annya bello, 32 % «CREDITO», contraentrega RD$ 71,100 pendiente).
 
+## PARA MAÑANA (22-oct): caja de Fari del 20-oct
+
+- Preguntar a Addison si los 2,500 con tarjeta del Verifone del mensajero (20-oct 4:43 pm, ref 000816) son de Elvyn Meléndez FS-0000146 (2,100 + 400 envío). La dueña cree que sí. Si confirma: cerrar FS-146 con tarjeta 2,100 en caja de Claude.
+- Addison entrega el efectivo de Jefry Familia FS-0000153 (1,750): cerrar cuando llegue.
+- Preguntar a Fari de dónde salen los 300 de efectivo de más (9,950 vs 9,650).
+- Lizbeth: sus 3 ventas con tarjeta de 2,500 (FS-141/142/143) no salen en los lotes Cardnet 347 ni 0816; y no debe contar los 2,500 que volvieron a Fari.
+
 ## Excel de mercancía del 20-oct (Inventario_Cloud_GPro_CORREGIDO)
 
 - COMPLETO: 30 entradas, 89 uds en Tienda. Códigos nuevos 1936-1949 (1946 desactivado: era la Creatine+ que ya existía como 1214).
@@ -110,3 +117,7 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 - Tarjeta sin factura: Lizbeth +600 y Farianelis +2,100 (verifón contra sistema).
 - Regla: no se modifican facturas ni envíos por la dueña/Claude para «arreglar» cuadres; lo anotan las cajeras. Créditos y contraentregas (incl. Ginette) los rastrea la dueña.
 - **Copia diaria de la base fuera de Render (pendiente de la dueña):** crear el drive/almacenamiento privado donde se guarde la copia diaria (laptop o drive). Plan en `docs/RESPALDO_CLOUD_RENDER.md`; no está activado.
+
+## PARA HOY (23-oct): cuadre del 22-oct
+- FS-200 Ramsés Mancebo 8,000 (transferencia Banreservas sin verificar): en el banco entró «Inversiones El Millón SRL» 8,250 (8,000 + 250 envío). Confirmar que es su pago y verificarla.
+- ✔ FS-194 anulada y rehecha como FS-210 (Gold Standard 2 lb Vanilla Ice Cream, 2,200, vendedora Wendy) el 22-oct en la noche.

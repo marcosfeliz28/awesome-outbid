@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Loading, Modal } from "@fitstore/ui";
 import { AlertCircle, Check, WifiOff, X } from "lucide-react";
+import { matchesSearch, searchTerms } from "@fitstore/shared";
 import { api } from "./api";
 import {
   businessErrorMessage,
@@ -435,14 +436,11 @@ const fold = (value: string) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+// Palabra por palabra, con sinónimos y unidades (shared: matchesSearch).
 export const searchWords = (query: string) =>
-  fold(query)
-    .split(/[\s/,-]+/)
-    .filter(Boolean);
-export const matchesWords = (text: string, words: string[]) => {
-  const haystack = fold(text).replace(/(\d)\s+(lb|oz|g|kg|ml|mg)\b/g, "$1$2");
-  return words.every((w) => haystack.includes(w));
-};
+  searchTerms(query).map((alts) => alts.join("|"));
+export const matchesWords = (text: string, words: string[]) =>
+  words.every((w) => matchesSearch(text, w.split("|")[0]));
 // Imagen genérica por categoría cuando el producto no tiene foto.
 export const categoryImage = (category = "") => {
   const c = fold(category);

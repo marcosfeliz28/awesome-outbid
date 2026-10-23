@@ -182,6 +182,7 @@ afterAll(async () => {
       countedCard: 0,
       countedTransfer: 0,
       notes: "Cierre de pruebas de reportes de inventario",
+      differenceReason: "QA: cierre de limpieza de la prueba",
     });
   for (const key of Object.keys(v))
     await fetch(base + "/products/" + v[key].productId, {
