@@ -2011,6 +2011,159 @@ export class SalesController {
     }, MONEY_TRANSACTION);
   }
 
+  // Orden de la dueña (23-oct): corregir el método de un pago mal marcado al
+  // cobrar (p. ej. efectivo que era contraentrega), aunque la caja ya cerró.
+  // Mismo monto, misma venta, sin tocar inventario ni vendedora; la caja de
+  // ese pago recalcula lo esperado y su diferencia.
+  @Post("sales/:id/payments/:paymentId/correct-method")
+  @RequireTerminal()
+  @Permit("*")
+  async correctPaymentMethod(
+    @Param("id") id: string,
+    @Param("paymentId") paymentIdParam: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const saleId = parse(uuid, id);
+    const paymentId = parse(uuid, paymentIdParam);
+    const data = parse(
+      z.object({
+        method: z.enum(["cash", "card", "transfer", "cod", "credit"]),
+        bank: z.string().trim().max(80).optional(),
+        reference: z.string().trim().max(120).optional(),
+        receivableKind: z.enum(["credit", "cod"]).optional(),
+        reason,
+      }),
+      body,
+    );
+    if (data.method === "transfer" && (!data.bank || !data.reference))
+      bad("Escribe el banco y la referencia de la transferencia.");
+    const receivable = (m: string) => m === "cod" || m === "credit";
+    const result = await moneyDb(this.db).$transaction(async (tx) => {
+      const sale = await editableSale(tx, saleId, actor);
+      const payments = await tx.payment.findMany({ where: { saleId } });
+      const payment = payments.find((p) => p.id === paymentId);
+      if (!payment || payment.entryType !== "sale")
+        bad("Pago no encontrado en esta venta.");
+      if (payment.method === data.method)
+        return { number: sale.number, method: payment.method };
+      if (
+        !["cash", "card", "transfer", "cod", "credit"].includes(payment.method)
+      )
+        bad("Este pago no se puede corregir.");
+      if (payment.status === "rejected")
+        bad("Este pago fue rechazado; no se puede corregir.");
+      if (
+        payments.some(
+          (p) => p.entryType === "installment" && p.status !== "rejected",
+        )
+      )
+        bad("La venta ya tiene cobros registrados; no se puede corregir.");
+      if (await tx.saleReturn.count({ where: { saleId } }))
+        bad("La venta tiene devoluciones; no se puede corregir.");
+      const settings = await tx.settings.findUnique({
+        where: { id: actor.branchId },
+      });
+      const config = settings?.data as any;
+      const amount = d(payment.amount);
+      const balanceChange = d(receivable(data.method) ? amount : 0).minus(
+        receivable(payment.method) ? amount : 0,
+      );
+      const balance = money(d(sale.creditBalance).plus(balanceChange));
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          method: data.method,
+          tendered: payment.amount,
+          change: 0,
+          bank: data.method === "transfer" ? data.bank : null,
+          reference: data.reference || null,
+          feeAmount:
+            data.method === "card"
+              ? money(amount.times(config?.cardFeePercent ?? 2.5).div(100))
+              : 0,
+          status:
+            data.method === "transfer"
+              ? "pending_verification"
+              : receivable(data.method)
+                ? "pending"
+                : "ok",
+        },
+      });
+      await tx.sale.update({
+        where: { id: saleId },
+        data: {
+          creditBalance: balance,
+          receivableKind:
+            Number(balance) > 0
+              ? (data.receivableKind ??
+                (receivable(data.method) ? data.method : sale.receivableKind) ??
+                null)
+              : null,
+        },
+      });
+      if (payment.method === "transfer")
+        await resolveTransferAlert(tx, payment.id);
+      if (data.method === "transfer")
+        await tx.alert.upsert({
+          where: { key: "transfer:" + payment.id },
+          create: {
+            key: "transfer:" + payment.id,
+            type: "transfer_pending",
+            severity: "high",
+            entityId: saleId,
+            branchId: actor.branchId,
+            message:
+              `Transferencia de ${sale.number} por RD$ ${formatAmount(Number(payment.amount))} sin verificar · ` +
+              `${data.bank} · ref. ${data.reference}`,
+          },
+          update: {},
+        });
+      await refreshReceivableAlert(tx, saleId, actor.branchId);
+      let differences: unknown = null;
+      if (payment.cashSessionId) {
+        const session = await tx.cashSession.findUniqueOrThrow({
+          where: { id: payment.cashSessionId },
+        });
+        if (session.closedAt)
+          differences = await refreshClosedCash(tx, session);
+      }
+      await audit(
+        tx,
+        actor,
+        "payment_method_corrected",
+        "sale",
+        saleId,
+        {
+          paymentId: payment.id,
+          method: payment.method,
+          status: payment.status,
+          bank: payment.bank,
+          reference: payment.reference,
+          creditBalance: sale.creditBalance,
+        },
+        {
+          number: sale.number,
+          paymentId: payment.id,
+          method: data.method,
+          amount: payment.amount,
+          creditBalance: balance,
+          cashSessionId: payment.cashSessionId,
+          differences,
+          reason: data.reason,
+        },
+      );
+      return {
+        number: sale.number,
+        method: data.method,
+        creditBalance: Number(balance),
+        cashSessionId: payment.cashSessionId,
+        differences,
+      };
+    }, MONEY_TRANSACTION);
+    return result;
+  }
+
   @Post("sales/:id/void")
   // D-11 (auditoría 01): como la devolución, desde un equipo registrado: la
   // anulación puede sacar efectivo de la caja abierta de quien anula (D-02).
