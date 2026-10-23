@@ -318,8 +318,19 @@ function Login() {
           </div>
         </div>
         <small>Hecho para una tienda con energía.</small>
-        <div className="art-circle one" />
-        <div className="art-circle two" />
+        {/* Escena 3D decorativa (solo CSS): piso en perspectiva y cubo. */}
+        <div className="login-scene" aria-hidden="true">
+          <div className="scene-floor" />
+          <div className="scene-orbit one" />
+          <div className="scene-orbit two" />
+          <div className="scene-cube">
+            {["front", "back", "right", "left", "top", "bottom"].map((f) => (
+              <span key={f} className={"face " + f}>
+                n
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="login-form-panel">
         <form
