@@ -117,3 +117,7 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 - Tarjeta sin factura: Lizbeth +600 y Farianelis +2,100 (verifón contra sistema).
 - Regla: no se modifican facturas ni envíos por la dueña/Claude para «arreglar» cuadres; lo anotan las cajeras. Créditos y contraentregas (incl. Ginette) los rastrea la dueña.
 - **Copia diaria de la base fuera de Render (pendiente de la dueña):** crear el drive/almacenamiento privado donde se guarde la copia diaria (laptop o drive). Plan en `docs/RESPALDO_CLOUD_RENDER.md`; no está activado.
+
+## PARA HOY (23-oct): cuadre del 22-oct
+- FS-200 Ramsés Mancebo 8,000 (transferencia Banreservas sin verificar): en el banco entró «Inversiones El Millón SRL» 8,250 (8,000 + 250 envío). Confirmar que es su pago y verificarla.
+- FS-194 (Wendy): se facturó Animal 100% Whey (3,900) a 2,200 con 44 % de descuento; en realidad se vendió un Gold Standard 2 lb vainilla. Anular y rehacer a nombre de Wendy.
