@@ -2141,6 +2141,10 @@ function Checkout({
           );
         const local = {
           number: "LOCAL-" + uuid.current.slice(0, 8),
+          // El recibo provisional conserva el formato de la empresa en el
+          // momento de la venta, incluso si se edita antes de sincronizar.
+          receiptCurrency: config?.tenantLocale?.currency ?? "DOP",
+          receiptTimeZone: config?.tenantLocale?.timeZone ?? "America/Santo_Domingo",
           total,
           taxTotal: tax,
           payments: payments.map((p) => ({

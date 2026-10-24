@@ -404,6 +404,10 @@ model Sale {
   discountApprovedRole String?
   taxTotal               Decimal      @db.Decimal(14, 2)
   taxIncluded            Boolean      @default(true)
+  // La configuración al emitir queda fija: cambiar la empresa no reescribe
+  // recibos anteriores. Los defaults conservan el aspecto histórico.
+  receiptCurrency         String       @default("DOP")
+  receiptTimeZone         String       @default("America/Santo_Domingo")
   total                  Decimal      @db.Decimal(14, 2)
   costTotal              Decimal      @db.Decimal(14, 2)
   // Envío de tercero: nunca forma parte de total, costo ni caja.

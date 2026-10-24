@@ -1,4 +1,4 @@
-import { tenantUnique } from "./tenant-context";
+import { currentTenantId, tenantUnique } from "./tenant-context";
 import { enforcePlanQuota } from "./billing-plans";
 import {
   Body,
@@ -848,15 +848,21 @@ export class AdminController {
   @Get("settings") @Permit("catalog:read") async settings(
     @CurrentUser() actor: Actor,
   ) {
-    const data = (
-      await this.db.settings.findUniqueOrThrow({
+    const [settings, tenant] = await Promise.all([
+      this.db.settings.findUniqueOrThrow({
         where: tenantUnique("id", actor.branchId),
-      })
-    ).data as Record<string, unknown>;
+      }),
+      this.db.$queryRaw<{ currency: string; timeZone: string }[]>`
+        SELECT "currency", "timeZone" FROM "Tenant"
+        WHERE id = ${currentTenantId()}::uuid`,
+    ]);
+    const data = settings.data as Record<string, unknown>;
+    if (tenant.length !== 1) bad("Empresa no disponible.");
     // Instalaciones anteriores no tienen esta clave. El cliente y cualquier
     // integración reciben siempre el valor efectivo seguro, no undefined.
     return {
       ...data,
+      tenantLocale: { currency: tenant[0].currency, timeZone: tenant[0].timeZone },
       allowOfflineSales: data.allowOfflineSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),

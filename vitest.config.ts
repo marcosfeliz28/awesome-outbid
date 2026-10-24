@@ -16,6 +16,8 @@ export default defineConfig({
       "tests/local-queue-n26.test.ts",
       "tests/merchandise-decision-n20.test.ts",
       "tests/product-object-constraints-ci.test.ts",
+      "tests/ticket-locale-n22.test.ts",
+      "tests/ticket-locale-n22-postgres.test.ts",
       "tests/assistant-n02.test.ts",
       "tests/assistant-n04.test.ts",
       "tests/support-n05.test.ts",

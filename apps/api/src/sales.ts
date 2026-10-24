@@ -222,6 +222,8 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     discountApprovedName: sale.discountApprovedName,
     discountApprovedRole: sale.discountApprovedRole,
     taxTotal: sale.taxTotal,
+    receiptCurrency: sale.receiptCurrency,
+    receiptTimeZone: sale.receiptTimeZone,
     total: sale.total,
     ...(can(actor.permissions, "sale:manage")
       ? {
@@ -1029,6 +1031,10 @@ export class SalesController {
           : can(actor.permissions, "sale:manage")
             ? "administrator"
             : "cashier_limit";
+        const receiptLocale = await tx.$queryRaw<{ currency: string; timeZone: string }[]>`
+          SELECT "currency", "timeZone" FROM "Tenant"
+          WHERE id = ${currentTenantId()}::uuid`;
+        if (receiptLocale.length !== 1) bad("Empresa no disponible.");
         const sale = await tx.sale.create({
           data: {
             number: "FS-" + String(counter.value).padStart(7, "0"),
@@ -1062,6 +1068,8 @@ export class SalesController {
               : null,
             taxTotal: money(lines.reduce((a, l) => a.plus(l.totals.tax), d(0))),
             taxIncluded: config?.taxIncluded !== false,
+            receiptCurrency: receiptLocale[0].currency,
+            receiptTimeZone: receiptLocale[0].timeZone,
             total,
             creditBalance: money(d(credit).plus(cod)),
             // Sólo estadística (dueña, 19-oct); nulo si no queda saldo por cobrar.

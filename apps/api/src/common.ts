@@ -527,6 +527,8 @@ export function safe<T>(value: T, actor: Actor): T {
     "tax",
     "taxTotal",
     "taxIncluded",
+    "receiptCurrency",
+    "receiptTimeZone",
     "lineTotal",
     "unitPrice",
     "returnedQty",

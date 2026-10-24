@@ -11,6 +11,7 @@ import {
 } from "@fitstore/shared";
 
 const TZ = "America/Santo_Domingo";
+const LEGACY_CURRENCY = "DOP";
 // Números como en el impreso: 1,234.50 (sin RD$).
 export const num = (value: unknown) =>
   Number(value ?? 0).toLocaleString("en-US", {
@@ -18,6 +19,41 @@ export const num = (value: unknown) =>
     maximumFractionDigits: 2,
   });
 export const rd = (value: unknown) => "RD$ " + num(value);
+// La moneda y la zona se fijan al emitir la venta. Una venta vieja sin esos
+// campos conserva el ticket dominicano original aunque cambie el Tenant.
+export function receiptMoney(value: unknown, currency = LEGACY_CURRENCY) {
+  let formatted: Intl.NumberFormat;
+  try {
+    formatted = new Intl.NumberFormat("es-DO", {
+      style: "currency",
+      currency: /^[A-Z]{3}$/.test(currency) ? currency : LEGACY_CURRENCY,
+    });
+  } catch {
+    formatted = new Intl.NumberFormat("es-DO", { style: "currency", currency: LEGACY_CURRENCY });
+  }
+  const symbol = formatted.formatToParts(0).find((part) => part.type === "currency")?.value ?? "RD$";
+  const { minimumFractionDigits, maximumFractionDigits } = formatted.resolvedOptions();
+  return `${symbol} ${Number(value ?? 0).toLocaleString("en-US", {
+    minimumFractionDigits,
+    maximumFractionDigits,
+  })}`;
+}
+export const receiptWhen = (value: unknown, timeZone = TZ) => {
+  if (!value) return "—";
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  };
+  try {
+    return new Date(value as string).toLocaleString("es-DO", options);
+  } catch {
+    return new Date(value as string).toLocaleString("es-DO", { ...options, timeZone: TZ });
+  }
+};
 export const when = (value: unknown) =>
   value
     ? new Date(value as string).toLocaleString("es-DO", {
@@ -537,6 +573,7 @@ export function InvoicePrint({
     0,
   );
   const units = lines.reduce((a: number, i: any) => a + Number(i.qty), 0);
+  const money = (value: unknown) => receiptMoney(value, sale.receiptCurrency ?? LEGACY_CURRENCY);
   // Lo que entregó el cliente (antes del cambio), como lo anotó la cajera.
   const payments = sale.tendered ?? sale.payments ?? [];
   return (
@@ -554,7 +591,7 @@ export function InvoicePrint({
         </>
       ) : null}
       <Row label="Secuencia No." value={sale.number} />
-      <Row label="Fecha" value={when(sale.createdAt ?? new Date())} />
+      <Row label="Fecha" value={receiptWhen(sale.createdAt ?? new Date(), sale.receiptTimeZone ?? TZ)} />
       <Row label="Cajero" value={sale.cashierName ?? ""} />
       {/* 03-B3: el ticket queda en la bolsa del cliente; sin teléfono, y la
           cédula/RNC sólo cuando se pidió un comprobante B01/B02. */}
@@ -568,18 +605,18 @@ export function InvoicePrint({
           <small>Cod. {i.sku}</small>
           <p>{i.name}</p>
           <Row
-            label={`${i.qty} X ${rd(i.unitPrice)}`}
-            value={rd(Number(i.qty) * Number(i.unitPrice))}
+            label={`${i.qty} X ${money(i.unitPrice)}`}
+            value={money(Number(i.qty) * Number(i.unitPrice))}
           />
           {Number(i.discount) > 0 && (
-            <Row label="Descuento" value={"−" + rd(i.discount)} />
+            <Row label="Descuento" value={"−" + money(i.discount)} />
           )}
           {i.promotionName && <small>Promoción: {i.promotionName}</small>}
         </div>
       ))}
       <hr />
-      <Row label="Sub-Total" value={rd(gross)} />
-      <Row label="Descuento" value={"−" + rd(discount)} />
+      <Row label="Sub-Total" value={money(gross)} />
+      <Row label="Descuento" value={"−" + money(discount)} />
       {discount > 0 && (
         <p>
           Motivo: {sale.discountReason ?? "Sin motivo"}
@@ -588,15 +625,15 @@ export function InvoicePrint({
             : ""}
         </p>
       )}
-      <Row label={taxLabel(sale, config)} value={rd(sale.taxTotal)} />
-      <Row label="Total a pagar" value={rd(sale.total)} strong />
+      <Row label={taxLabel(sale, config)} value={money(sale.taxTotal)} />
+      <Row label="Total a pagar" value={money(sale.total)} strong />
       {courier && (
         <>
           <Row
             label={`Envío (mensajero ${courier.name})`}
-            value={rd(courier.fee)}
+            value={money(courier.fee)}
           />
-          <Row label="Total pagado" value={rd(courier.paid)} strong />
+          <Row label="Total pagado" value={money(courier.paid)} strong />
         </>
       )}
       <hr />
@@ -604,17 +641,17 @@ export function InvoicePrint({
         <Row
           key={n}
           label={METHOD_LABEL[p.method] ?? p.method}
-          value={rd(p.tendered ?? p.amount)}
+          value={money(p.tendered ?? p.amount)}
         />
       ))}
-      <Row label="Cambio" value={rd(sale.change ?? 0)} />
+      <Row label="Cambio" value={money(sale.change ?? 0)} />
       {Number(sale.creditBalance) > 0 && (
         <>
-          <Row label="Pendiente" value={rd(sale.creditBalance)} />
+          <Row label="Pendiente" value={money(sale.creditBalance)} />
           <h3 className="tp-center credit-pending">
             CRÉDITO · PENDIENTE DE PAGO
           </h3>
-          <Row label="Monto pendiente" value={rd(sale.creditBalance)} strong />
+          <Row label="Monto pendiente" value={money(sale.creditBalance)} strong />
         </>
       )}
       {sale.ncfType && (
