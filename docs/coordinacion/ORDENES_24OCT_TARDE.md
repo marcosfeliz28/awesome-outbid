@@ -4,6 +4,8 @@
 
 Reglas de siempre: no tocar Render, la base de la tienda, credenciales ni dominio; no desplegar; e-CF y B04 en pausa; nada que deje ventas fuera de la DGII; la IA solo propone. Cada punto lleva su propio commit y una prueba que falle antes del arreglo y pase después. `pnpm check` y los 3 CI en verde, y se avisa con el SHA en `RESULTADOS_CHATGPT.md` (ChatGPT) o en `REVISION_NOCHE_CLAUDE.md` (Claude PC).
 
+> **Regla fija de la dueña (24-oct-2026), para toda orden a ChatGPT PC, ChatGPT nube, Claude PC y Gemini:** usa **la mayor cantidad de agentes posible en paralelo**, porque los planes ya están pagados. Lo normal es un agente por tarea independiente, más agentes que escriban las pruebas, revisen el diff y vigilen el CI. Cada agente trabaja en su propio `git worktree`, con su base y sus puertos. Nunca uses un solo agente si el trabajo se puede repartir.
+
 ## Claude PC (ramas `claude-pc/*`, con varios agentes en paralelo)
 1. **CPC-2, terminar** en `claude-pc/lote-verifon`:
    - aplicar la regla de la dueña de arriba;
