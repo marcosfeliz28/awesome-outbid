@@ -80,7 +80,7 @@ export class SupportAccessController {
 export class SupportAccessWorker implements OnApplicationBootstrap, OnModuleDestroy {
   private timer?: ReturnType<typeof setInterval>;
   private first?: ReturnType<typeof setTimeout>;
-  private running = false;
+  private running?: Promise<void>;
   constructor(@Inject(Database) private readonly db: Database) {}
 
   onApplicationBootstrap() {
@@ -93,9 +93,19 @@ export class SupportAccessWorker implements OnApplicationBootstrap, OnModuleDest
     if (this.first) clearTimeout(this.first);
     if (this.timer) clearInterval(this.timer);
   }
-  async run(now = new Date()) {
-    if (this.running) return;
-    this.running = true;
+  async run(now?: Date): Promise<void> {
+    // Si ya hay un barrido, el siguiente debe revisar de nuevo: el plazo
+    // pudo vencer mientras el primero consultaba la base.
+    if (this.running) {
+      await this.running;
+      return this.run(now);
+    }
+    const task = this.expire(now ?? new Date());
+    this.running = task;
+    try { await task; }
+    finally { if (this.running === task) this.running = undefined; }
+  }
+  private async expire(now: Date) {
     try {
       // Incluye empresas suspendidas: sus sesiones de soporte también vencen.
       await forEachActiveTenant({ activeTenantIds: () => this.db.loginTenantIds() }, async () => {
@@ -117,6 +127,6 @@ export class SupportAccessWorker implements OnApplicationBootstrap, OnModuleDest
       });
     } catch (error: any) {
       console.warn("[support-access] " + String(error?.message ?? error).slice(0, 160));
-    } finally { this.running = false; }
+    }
   }
 }

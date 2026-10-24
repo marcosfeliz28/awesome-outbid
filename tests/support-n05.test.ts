@@ -3,6 +3,7 @@ import { permissions } from "../packages/shared/src/index";
 import { AuthGuard } from "../apps/api/src/common";
 import { tenantScope } from "../apps/api/src/tenant-context";
 import { createAppModule } from "../apps/api/src/app";
+import { SupportAccessWorker } from "../apps/api/src/support-access";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 
@@ -52,6 +53,25 @@ function fixture(method: string, expiresAt = new Date(Date.now() + 3600000)) {
 }
 
 describe("N-05 · soporte solo lectura", () => {
+  it("un barrido manual espera al automático y vuelve a comprobar vencimientos", async () => {
+    const previous = process.env.PRODUCT_TENANCY;
+    delete process.env.PRODUCT_TENANCY;
+    let release!: (users: any[]) => void;
+    const first = new Promise<any[]>((resolve) => { release = resolve; });
+    const db: any = { user: { findMany: vi.fn().mockReturnValueOnce(first).mockResolvedValueOnce([]) } };
+    try {
+      const worker = new SupportAccessWorker(db);
+      const automatic = worker.run(new Date());
+      await Promise.resolve();
+      const manual = worker.run(new Date());
+      release([]);
+      await Promise.all([automatic, manual]);
+      expect(db.user.findMany).toHaveBeenCalledTimes(2);
+    } finally {
+      if (previous === undefined) delete process.env.PRODUCT_TENANCY;
+      else process.env.PRODUCT_TENANCY = previous;
+    }
+  });
   it("su rol tiene solo los tres permisos de lectura declarados", () => {
     expect(permissions.support).toEqual(["catalog:read", "reports:read", "profit:read"]);
   });
