@@ -83,7 +83,7 @@ Otros datos que faltan:
 
 ## Correo de cierres y anulaciones (14-oct)
 - Hecho en el código: cada cierre de caja y cada solicitud de anulación manda un correo a **marcos.feliz@gmail.com** (con el cuadre y el enlace a Nexora POS). Ortografía confirmada por la dueña el 14-oct: «feliz», no «felix». El correo de la cuenta de Resend y `NOTIFY_EMAIL_TO` deben ser ese mismo.
-- Falta una sola cosa para activarlo: crear una cuenta gratis en resend.com con su correo, crear una clave de API y ponerla en Render (servicio API) como `RESEND_API_KEY`, más `NOTIFY_EMAIL_TO` con ese mismo correo. La clave no se escribe en chats ni en el repositorio.
+- **Activo** (verificado el 24-oct-2026: llegan a Gmail, pestaña Actualizaciones, desde `onboarding@resend.dev`). Opcional: verificar el dominio de la tienda en resend.com para cambiar el remitente.
 - Las cajeras ya no ven "Vale de caja" en el cierre (así no les pide PIN por error); las salidas de efectivo se registran como «Salida».
 
 ## Créditos cobrados en efectivo (15-oct, orden de la dueña)
