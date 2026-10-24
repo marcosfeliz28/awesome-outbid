@@ -2063,7 +2063,7 @@ export class SalesController {
       if (await tx.saleReturn.count({ where: { saleId } }))
         bad("La venta tiene devoluciones; no se puede corregir.");
       const settings = await tx.settings.findUnique({
-        where: { id: actor.branchId },
+        where: tenantUnique("id", actor.branchId),
       });
       const config = settings?.data as any;
       const amount = d(payment.amount);
@@ -2107,7 +2107,7 @@ export class SalesController {
         await resolveTransferAlert(tx, payment.id);
       if (data.method === "transfer")
         await tx.alert.upsert({
-          where: { key: "transfer:" + payment.id },
+          where: tenantUnique("key", "transfer:" + payment.id),
           create: {
             key: "transfer:" + payment.id,
             type: "transfer_pending",

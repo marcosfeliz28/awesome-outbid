@@ -49,6 +49,7 @@ import {
   Shirt,
 } from "lucide-react";
 import { initialCompanyCode, productTenancyRequired } from "./productTenancy";
+import { Registration, ConfirmEmail } from "./Registration";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
 import {
@@ -349,16 +350,13 @@ function Login() {
           </span>
         </div>
         <div>
-          <span className="eyebrow light">GRUPO MACGEN · GV MAKEUP STUDIO</span>
+          <span className="eyebrow light">{PRODUCT_TENANCY_REQUIRED ? "NEXORA POS" : "GRUPO MACGEN · GV MAKEUP STUDIO"}</span>
           <h1>
-            Fitness y belleza.
+            {PRODUCT_TENANCY_REQUIRED ? "Tu negocio." : "Fitness y belleza."}
             <br />
             Todo bajo control.
           </h1>
-          <p>
-            Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos
-            y servicios de GV Makeup Studio, en un solo sistema.
-          </p>
+          <p>{PRODUCT_TENANCY_REQUIRED ? "Ventas, inventario y caja en un solo lugar." : "Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema."}</p>
           <div className="login-stats">
             <span>
               <Zap />
@@ -464,7 +462,7 @@ function Login() {
             }
           }}
         >
-          <span className="eyebrow">BIENVENIDA · MACGEN & GV</span>
+          <span className="eyebrow">{PRODUCT_TENANCY_REQUIRED ? "BIENVENIDA A NEXORA" : "BIENVENIDA · MACGEN & GV"}</span>
           <h2>
             {changeRequired
               ? "Actualiza tu contraseña."
@@ -541,6 +539,7 @@ function Login() {
                 : "Entrar a mi tienda"}
             <ArrowUpRight size={18} />
           </Button>
+          {PRODUCT_TENANCY_REQUIRED && <p><a href="/registro">Crear empresa · 14 días gratis</a></p>}
           {SHOW_DEMO_CREDENTIALS && (
             <div className="demo-note">
               <Badge tone="violet">Demostración</Badge>
@@ -1374,6 +1373,8 @@ function Shell() {
 // sesión: así «Sesión cerrada por inactividad» sigue a la vista en el inicio
 // de sesión (R9-offline-5).
 export function App() {
+  if (PRODUCT_TENANCY_REQUIRED && window.location.pathname === "/registro") return <Registration />;
+  if (PRODUCT_TENANCY_REQUIRED && window.location.pathname === "/confirmar-correo") return <ConfirmEmail />;
   return (
     <>
       <Shell />

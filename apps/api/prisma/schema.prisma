@@ -33,6 +33,10 @@ model User {
   @@unique([tenantId, usernameKey])
   @@unique([tenantId, email])
   passwordHash       String
+  // Alta autoservicio: sólo el dueño nuevo empieza sin verificar.
+  emailVerifiedAt    DateTime? @default(now())
+  emailVerificationHash String? @unique
+  emailVerificationExpiresAt DateTime?
   mustChangePassword Boolean   @default(false)
   // N-08: una contraseña temporal vence (7 días). Null = sin vencimiento
   // (cambio de contraseña forzado por política, no por una clave temporal).
@@ -1318,6 +1322,8 @@ model Tenant {
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique
   name      String
+  businessType String @default("general")
+  trialEndsAt DateTime?
   plan      String   @default("trial")
   status    String   @default("trial")
   country   String   @default("DO")

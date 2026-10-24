@@ -505,6 +505,8 @@ export class AuthController implements OnModuleInit {
       { wrong: "Usuario o contraseña incorrectos." },
     );
     if (!user?.active) bad("Usuario o contraseña incorrectos.");
+    if (process.env.PRODUCT_TENANCY === "required" && !user.emailVerifiedAt)
+      throw new HttpException("Confirma tu correo antes de entrar.", 403);
     // N-08: la clave temporal correcta pero vencida no inicia sesión ni abre
     // el cambio de clave (y no se audita como un inicio de sesión).
     if (temporaryPasswordExpired(user)) bad(TEMPORARY_PASSWORD_EXPIRED_MESSAGE);

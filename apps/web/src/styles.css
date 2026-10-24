@@ -6378,3 +6378,41 @@ td strong {
 [data-theme="dark"] .day-other {
   --day-bg: #3a2a07;
 }
+
+/* Alta autoservicio: misma paleta y lectura cómoda desde un teléfono. */
+.product-registration {
+  min-height: 100dvh;
+  padding: clamp(16px, 5vw, 48px);
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  background: var(--bg);
+}
+.product-registration form,
+.product-registration section {
+  width: min(100%, 480px);
+  padding: clamp(20px, 5vw, 36px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+.product-registration h1 { font-size: clamp(24px, 5vw, 32px); line-height: 1.2; margin: 18px 0 10px; }
+.product-registration p { color: var(--muted); margin: 0 0 20px; }
+.product-registration .field { display: block; margin: 14px 0; }
+.product-registration .field span { display: block; font-weight: 650; margin-bottom: 6px; }
+.product-registration .field input,
+.product-registration .field select { width: 100%; min-height: 44px; }
+.product-registration .field small { display: block; color: var(--muted); margin-top: 4px; }
+.product-registration button {
+  min-height: 46px;
+  border-radius: 10px;
+  padding: 0 20px;
+  background: var(--primary);
+  color: var(--surface);
+  font-weight: 700;
+}
+.product-registration button:disabled { opacity: .6; cursor: wait; }
+[data-theme="dark"] .product-registration button { color: var(--bg); }
+.product-registration button + button { margin-top: 10px; }
+.product-registration .form-error { color: var(--danger-text); }

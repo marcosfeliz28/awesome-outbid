@@ -15,6 +15,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthGuard, Database, Public } from "./common";
 import { AuthController } from "./auth";
+import { RegistrationController, RegistrationService } from "./registration";
 import { CatalogController } from "./catalog";
 import { InventoryController } from "./inventory";
 import { WarehousesController } from "./warehouses";
@@ -78,6 +79,7 @@ export function createAppModule(secret: string) {
       MerchandiseController,
       InventoryImportController,
       AuthController,
+      ...(product ? [RegistrationController] : []),
       CatalogController,
       InventoryController,
       WarehousesController,
@@ -105,6 +107,7 @@ export function createAppModule(secret: string) {
         ? [DriveBackupService, DriveBackupWorker, UsdRateWorker]
         : []),
       RequestRateLimitService,
+      ...(product ? [RegistrationService] : []),
       SecurityMaintenance,
       { provide: APP_GUARD, useClass: AuthGuard },
       { provide: APP_GUARD, useClass: AuthenticatedRateLimitGuard },
@@ -122,6 +125,10 @@ export function createAppModule(secret: string) {
           }
           const path = String(req.originalUrl ?? req.url).split("?")[0];
           if (/^\/api\/health(?:\/live|\/ready)?\/?$/.test(path)) {
+            next();
+            return;
+          }
+          if (/^\/api\/auth\/(?:register|verify-email|resend-verification)\/?$/.test(path)) {
             next();
             return;
           }
