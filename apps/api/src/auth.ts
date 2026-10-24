@@ -59,6 +59,20 @@ export function normalizeUsername(value: string) {
     .replace(/\s+/g, " ");
 }
 
+// Las cookies no aíslan por puerto. La tienda y Nexora POS Local pueden
+// compartir host, por eso el perfil local necesita nombres distintos.
+export function authCookieNames() {
+  return process.env.PRODUCT_LOCAL_LICENSE === "required"
+    ? {
+        refresh: "nexoralocal_refresh",
+        tenant: "nexoralocal_tenant",
+      }
+    : {
+        refresh: "fitstore_refresh",
+        tenant: "nexora_tenant",
+      };
+}
+
 // Hash de una entrada aleatoria descartada, coste 12 igual que passwordHash.
 // Nunca identifica una cuenta ni permite emitir una sesión.
 const DUMMY_PASSWORD_HASH =
@@ -359,6 +373,7 @@ export class AuthController implements OnModuleInit {
   // contraseña temporal) responden con Cache-Control: no-store: ni el
   // navegador ni un proxy guardan tokens ni contraseñas.
   private async issue(user: any, res: Response, sessionId?: string | null) {
+    const cookies = authCookieNames();
     const refresh = randomBytes(48).toString("hex");
     const settings = await this.db.settings.findUnique({
       where: tenantUnique("id", user.branchId),
@@ -400,7 +415,7 @@ export class AuthController implements OnModuleInit {
       });
       return session;
     });
-    res.cookie("fitstore_refresh", refresh, {
+    res.cookie(cookies.refresh, refresh, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -409,7 +424,7 @@ export class AuthController implements OnModuleInit {
     });
     // La cookie contiene sólo el UUID público de empresa; la autenticación
     // sigue dependiendo del refresh aleatorio y de la sesión de ese tenant.
-    res.cookie("nexora_tenant", user.tenantId, {
+    res.cookie(cookies.tenant, user.tenantId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -778,7 +793,8 @@ export class AuthController implements OnModuleInit {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const token = req.cookies?.fitstore_refresh;
+    const cookies = authCookieNames();
+    const token = req.cookies?.[cookies.refresh];
     if (!token) bad("La sesión ha expirado.");
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const saved = await this.db.refreshToken.findUnique({
@@ -811,11 +827,12 @@ export class AuthController implements OnModuleInit {
   @Permit("authenticated")
   @Post("logout")
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (req.cookies?.fitstore_refresh)
+    const cookies = authCookieNames();
+    if (req.cookies?.[cookies.refresh])
       await this.db.refreshToken.deleteMany({
         where: {
           hash: createHash("sha256")
-            .update(req.cookies.fitstore_refresh)
+            .update(req.cookies[cookies.refresh])
             .digest("hex"),
         },
       });
@@ -827,8 +844,8 @@ export class AuthController implements OnModuleInit {
           where: { id: claims.sid, userId: claims.sub },
         });
     }
-    res.clearCookie("fitstore_refresh", { path: "/api/auth" });
-    res.clearCookie("nexora_tenant", { path: "/api/auth" });
+    res.clearCookie(cookies.refresh, { path: "/api/auth" });
+    res.clearCookie(cookies.tenant, { path: "/api/auth" });
     return { ok: true };
   }
   @Permit("authenticated")

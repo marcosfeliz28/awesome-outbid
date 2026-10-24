@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { generateKeyPairSync, sign } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -9,6 +9,7 @@ import {
   licensePayload,
   type LicenseClaims,
 } from "../apps/api/src/local-license";
+import { authCookieNames } from "../apps/api/src/auth";
 
 const keys = generateKeyPairSync("ed25519");
 const other = generateKeyPairSync("ed25519");
@@ -336,6 +337,37 @@ describe("PC-19 licencia local", () => {
         delete process.env.PRODUCT_LOCAL_LICENSE_RENEW_TOKEN;
       else process.env.PRODUCT_LOCAL_LICENSE_RENEW_TOKEN = previous;
       f.cleanup();
+    }
+  });
+});
+
+describe("PC-18 identidad del navegador local", () => {
+  it("no comparte cookies con la tienda aunque use el mismo host", () => {
+    const previous = process.env.PRODUCT_LOCAL_LICENSE;
+    try {
+      delete process.env.PRODUCT_LOCAL_LICENSE;
+      expect(authCookieNames()).toEqual({
+        refresh: "fitstore_refresh",
+        tenant: "nexora_tenant",
+      });
+
+      process.env.PRODUCT_LOCAL_LICENSE = "required";
+      expect(authCookieNames()).toEqual({
+        refresh: "nexoralocal_refresh",
+        tenant: "nexoralocal_tenant",
+      });
+
+      const source = readFileSync(
+        join(process.cwd(), "apps/api/src/auth.ts"),
+        "utf8",
+      );
+      expect(source).not.toMatch(/res\.(?:cookie|clearCookie)\("(?:fitstore_refresh|nexora_tenant)"/);
+      expect(source).not.toMatch(/req\.cookies(?:\?|\.)?\.fitstore_refresh/);
+      expect(source.match(/res\.cookie\(cookies\./g)).toHaveLength(2);
+      expect(source.match(/res\.clearCookie\(cookies\./g)).toHaveLength(2);
+    } finally {
+      if (previous === undefined) delete process.env.PRODUCT_LOCAL_LICENSE;
+      else process.env.PRODUCT_LOCAL_LICENSE = previous;
     }
   });
 });
