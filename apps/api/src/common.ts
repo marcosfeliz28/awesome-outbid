@@ -93,6 +93,7 @@ export class Database extends PrismaClient {
 }
 export type Actor = {
   id: string;
+  authVersion?: number;
   sessionId?: string;
   terminalId?: string;
   terminalApproved?: boolean;
@@ -766,6 +767,7 @@ export class AuthGuard implements CanActivate {
       }
       req.actor = {
         ip: clientIp(req),
+        authVersion: payload.version,
         sessionId: payload.sid,
         terminalId: session?.terminalId ?? undefined,
         terminalApproved,

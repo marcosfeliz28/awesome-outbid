@@ -537,7 +537,7 @@ export class RealtimeController {
         const session = await this.db.authSession.findUnique({
           where: { id: actor.sessionId },
         });
-        const user = await this.db.user.findUnique({ where: { id: actor.id } });
+        const user = await this.db.user.findUnique({ where: { id: actor.id }, include: { role: true } });
         const settings = await this.db.settings.findUnique({
           where: tenantUnique("id", actor.branchId),
         });
@@ -545,7 +545,10 @@ export class RealtimeController {
           Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000;
         if (
           !session ||
+          session.userId !== actor.id ||
           !user?.active ||
+          user.authVersion !== actor.authVersion ||
+          (user.role.name === "support" && (!user.supportExpiresAt || user.supportExpiresAt <= new Date())) ||
           Date.now() - session.lastActivityAt.getTime() >
             timeoutMs + sessionActivityGraceMs(timeoutMs)
         )
