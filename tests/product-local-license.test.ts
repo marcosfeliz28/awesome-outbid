@@ -114,6 +114,32 @@ describe("PC-19 licencia local", () => {
     }
   });
 
+  it("una renovación firmada posterior recupera un reloj adelantado por accidente", () => {
+    const f = fixture();
+    try {
+      f.license.install(token(claims()));
+      expect(f.license.state(base + 365 * 86400000).reason).toBe("expired");
+      const recoveredAt = base + 86400000;
+      const recovered = new LocalLicense({
+        directory: f.dir,
+        publicKey,
+        installationId: "test-installation",
+        now: () => recoveredAt,
+      });
+      recovered.install(
+        token(
+          claims({
+            issuedAt: new Date(recoveredAt).toISOString(),
+            expiresAt: new Date(recoveredAt + 7 * 86400000).toISOString(),
+          }),
+        ),
+      );
+      expect(recovered.state().mode).toBe("write");
+    } finally {
+      f.cleanup();
+    }
+  });
+
   it("cola vencida queda sin escritura y tampoco se habilita con captura anterior", () => {
     const f = fixture();
     try {

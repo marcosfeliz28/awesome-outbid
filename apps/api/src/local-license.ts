@@ -104,9 +104,6 @@ export class LocalLicense {
   install(value: unknown) {
     const token = this.validate(value);
     const now = (this.options.now ?? Date.now)();
-    const previous = this.state(now);
-    if (previous.reason === "clock-backwards")
-      throw new Error("El reloj del equipo está atrasado.");
     const history = this.tokens();
     if (history.length) {
       const oldClaims = history[history.length - 1].claims;
@@ -116,12 +113,19 @@ export class LocalLicense {
     if (Date.parse(token.claims.issuedAt) > now + CLOCK_TOLERANCE)
       throw new Error("La licencia viene del futuro.");
     persist(this.tokenPath, [...history, token].slice(-60));
-    this.advanceClock(now);
+    // Una respuesta nueva y firmada por el servidor es una fuente de tiempo
+    // más fiable que el máximo local. Esto permite recuperarse si Windows se
+    // adelantó por accidente, sin aceptar el token anterior ni uno futuro.
+    this.advanceClock(now, true);
   }
-  private advanceClock(now: number) {
+  private advanceClock(now: number, trustedRenewal = false) {
     const old = readJson(this.clockPath) as { lastSeen?: number } | undefined;
     if (old && typeof old.lastSeen !== "number")
       throw new Error("Registro del reloj inválido.");
+    if (trustedRenewal) {
+      persist(this.clockPath, { lastSeen: now });
+      return true;
+    }
     if (old && now + CLOCK_TOLERANCE < old.lastSeen!) return false;
     if (!old || now > old.lastSeen! + 60000)
       persist(this.clockPath, { lastSeen: now });
