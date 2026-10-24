@@ -60,6 +60,18 @@ export const unsellableLot = (
   lot: { expiryDate: Date | string | null },
   category: { requiresExpiry: boolean },
 ) => expired(lot.expiryDate) || (category.requiresExpiry && !lot.expiryDate);
+// El promedio no protege el margen si FEFO toma un lote más caro. El límite
+// de promoción usa el mayor costo de cualquier lote vendible de la variante.
+export const promotionCostFloor = (variant: {
+  costAvg: unknown;
+  lots?: { qty: unknown; cost: unknown; expiryDate: Date | string | null }[];
+  product: { category: { requiresExpiry: boolean } };
+}) => Math.max(
+  Number(variant.costAvg),
+  ...(variant.lots ?? [])
+    .filter((lot) => Number(lot.qty) > 0 && !unsellableLot(lot, variant.product.category))
+    .map((lot) => Number(lot.cost)),
+);
 export const expiredQty = (
   lots: { qty: unknown; expiryDate: Date | string | null }[],
   category: { requiresExpiry: boolean },

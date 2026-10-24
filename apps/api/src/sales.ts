@@ -73,7 +73,7 @@ import {
   customerForActor,
   maskTail,
 } from "./common";
-import { lockVariant, takeStock, stockChange } from "./inventory";
+import { lockVariant, takeStock, stockChange, promotionCostFloor } from "./inventory";
 import { captureApiException } from "./monitoring";
 import {
   databaseUnavailable,
@@ -525,6 +525,14 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
   return 0;
 }
 
+export function cappedPromotionDiscount(promo: any, variant: any, qty: number, taxIncluded: boolean) {
+  const requested = promotionDiscount(promo, variant, qty);
+  return Math.min(requested, clearanceDiscountLimit(
+    Number(variant.price), promotionCostFloor(variant),
+    Number(variant.product.taxRate), taxIncluded, qty,
+  ));
+}
+
 import { cashExpected, refreshClosedCash } from "./cash";
 import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
@@ -824,13 +832,9 @@ export class SalesController {
           let promo = 0,
             promotionName: string | null = null;
           for (const p of promos) {
-            const requested = promotionDiscount(p, variant, item.qty);
-            const off = p.isClearance
-              ? Math.min(requested, clearanceDiscountLimit(
-                  Number(variant.price), Number(variant.costAvg),
-                  Number(variant.product.taxRate), config?.taxIncluded !== false, item.qty,
-                ))
-              : requested;
+            // El cliente no decide el piso con isClearance: todas las
+            // promociones quedan limitadas, incluso las creadas antes de N-12.
+            const off = cappedPromotionDiscount(p, variant, item.qty, config?.taxIncluded !== false);
             if (off > promo) [promo, promotionName] = [off, p.name];
           }
           // G15: se nombra sólo si la promoción es lo que se aplicó (supera
