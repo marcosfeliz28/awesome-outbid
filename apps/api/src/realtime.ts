@@ -56,11 +56,18 @@ type Listener = {
   cursor: bigint;
   send: (row: { id: bigint; type: string; data: unknown }) => boolean;
 };
+const REALTIME_FAST_POLL_MS = 150;
+const REALTIME_IDLE_MAX_POLL_MS = 2000;
+const REALTIME_BATCH_SIZE = 500;
+type PollSchedule = { nextAt: number; delayMs: number };
 export class RealtimeHub {
   private listeners = new Set<Listener>();
   private timer: ReturnType<typeof setInterval> | undefined;
   private busy = false;
   private cursors = new Map<string, bigint>();
+  // El temporizador es global, pero cada empresa tiene su propio ritmo. Una
+  // empresa activa no debe forzar consultas vacías a todas las demás.
+  private schedules = new Map<string, PollSchedule>();
   // Inicialización compartida: varias altas simultáneas esperan la misma
   // consulta inicial y crean un único intervalo (R4-05).
   private starting = new Map<string, Promise<void>>();
@@ -75,7 +82,8 @@ export class RealtimeHub {
         .then((max) => {
           if (gen !== this.generation) return;
           this.cursors.set(tenantId, max._max.id ?? 0n);
-          if (!this.timer) this.timer = setInterval(() => void this.poll(), 150);
+          this.schedules.set(tenantId, { nextAt: Date.now(), delayMs: REALTIME_FAST_POLL_MS });
+          if (!this.timer) this.timer = setInterval(() => void this.poll(), REALTIME_FAST_POLL_MS);
         })
         .finally(() => {
           if (gen === this.generation) this.starting.delete(tenantId);
@@ -101,6 +109,10 @@ export class RealtimeHub {
       if (removed) return;
       removed = true;
       this.listeners.delete(full);
+      if (![...this.listeners].some((other) => other.tenantId === tenantId)) {
+        this.cursors.delete(tenantId);
+        this.schedules.delete(tenantId);
+      }
       this.stopIfIdle();
     };
   }
@@ -112,6 +124,7 @@ export class RealtimeHub {
     this.generation++;
     this.starting.clear();
     this.cursors.clear();
+    this.schedules.clear();
   }
   count() {
     return this.listeners.size;
@@ -124,11 +137,16 @@ export class RealtimeHub {
     this.busy = true;
     try {
       for (const tenantId of new Set([...this.listeners].map((listener) => listener.tenantId))) {
+        const schedule = this.schedules.get(tenantId);
+        if (!schedule || Date.now() < schedule.nextAt) continue;
         const rows = await tenantScope.run({ tenantId }, () => this.db.realtimeEvent.findMany({
           where: { id: { gt: this.cursors.get(tenantId) ?? 0n } },
           orderBy: { id: "asc" },
-          take: 500,
+          take: REALTIME_BATCH_SIZE,
         }));
+        // Si el último oyente salió mientras PostgreSQL respondía, una nueva
+        // conexión pudo establecer otro cursor. El lote viejo no le pertenece.
+        if (this.schedules.get(tenantId) !== schedule) continue;
         for (const row of rows) {
           this.cursors.set(tenantId, row.id);
           for (const l of this.listeners)
@@ -137,6 +155,12 @@ export class RealtimeHub {
               l.send(row);
             }
         }
+        // Un lote lleno puede tener continuación; jamás esperamos el intervalo
+        // ocioso antes de leerla. Con actividad volvemos a la latencia rápida.
+        schedule.delayMs = rows.length
+          ? REALTIME_FAST_POLL_MS
+          : Math.min(schedule.delayMs * 2, REALTIME_IDLE_MAX_POLL_MS);
+        schedule.nextAt = Date.now() + (rows.length === REALTIME_BATCH_SIZE ? 0 : schedule.delayMs);
       }
     } catch {
       /* Reintenta en el siguiente ciclo. */

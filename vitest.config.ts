@@ -84,6 +84,7 @@ export default defineConfig({
       "tests/xlsx-bomb.test.ts",
       "tests/import-codes.test.ts",
       "tests/realtime.test.ts",
+      "tests/realtime-backoff-n24.test.ts",
       "tests/inventario.test.ts",
       "tests/inventory-import-core.test.ts",
       "tests/inventory-resilience.test.ts",
