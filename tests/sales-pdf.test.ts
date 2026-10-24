@@ -280,7 +280,7 @@ describe("G5 · contenido real de PDF", () => {
     const db = {
       sale: { findFirstOrThrow: async () => sale },
       settings: {
-        findUnique: async () => ({ data: { name: "Grupo Macgen" } }),
+        findUnique: async () => ({ data: { name: "Grupo Macgen", receiptFooter: "Vuelve pronto a Negocio B" } }),
       },
       customer: { findUnique: async () => null },
       user: { findUnique: async () => null },
@@ -296,7 +296,7 @@ describe("G5 · contenido real de PDF", () => {
     expect(rendered.buffer.subarray(0, 5).toString("ascii")).toBe("%PDF-");
     expect(pageCount).toBeGreaterThan(1);
     expect(text).toContain("Producto ñ 99");
-    expect(text).toContain("Gracias por elegirnos");
+    expect(text).toContain("Vuelve pronto a Negocio B");
     expect(text).toMatch(/Página \d+ de \d+/);
     expect(text).toContain("continuación");
   });

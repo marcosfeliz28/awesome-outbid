@@ -4,6 +4,7 @@ import { Button } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
 import { FormModal, toast, dateLabel } from "./helpers";
+import { warehouseLabel } from "./product-branding";
 
 type Warehouse = { id: string; name: string; kind: string; sellable: boolean };
 export function WarehousesPanel({
@@ -33,9 +34,12 @@ export function WarehousesPanel({
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [renaming, setRenaming] = useState<Warehouse | null>(null);
   const selected = warehouses.data?.find((w) => w.id === warehouseId);
   const home = warehouses.data?.find((w) => w.kind === "home");
   const store = warehouses.data?.find((w) => w.kind === "store");
+  const homeName = warehouseLabel(home);
+  const storeName = warehouseLabel(store);
   const defaultFrom = selected?.id || store?.id || home?.id || "";
   const defaultTo =
     warehouses.data?.find((w) => w.id !== defaultFrom)?.id || "";
@@ -58,7 +62,7 @@ export function WarehousesPanel({
       else {
         setPreview(null);
         setFile(null);
-        toast("Levantamiento de Casa aplicado.");
+        toast(`Levantamiento de ${homeName} aplicado.`);
         await client.invalidateQueries();
       }
     } catch (e) {
@@ -76,7 +80,7 @@ export function WarehousesPanel({
       <h2>Dónde está la mercancía</h2>
       <div className="table-toolbar">
         <span>
-          Producto · Tienda · Casa · Total
+          Producto · {storeName} · {homeName} · Total
           {can(user.permissions, "profit:read") ? " · Valor a costo" : ""}
         </span>
       </div>
@@ -85,8 +89,8 @@ export function WarehousesPanel({
           <thead>
             <tr>
               <th>Producto</th>
-              <th>Tienda</th>
-              <th>Casa</th>
+              <th>{storeName}</th>
+              <th>{homeName}</th>
               <th>Total</th>
               {can(user.permissions, "profit:read") && <th>Valor a costo</th>}
             </tr>
@@ -112,6 +116,35 @@ export function WarehousesPanel({
       </div>
       {user.permissions.includes("*") && (
         <>
+          <h2>Nombres de almacenes</h2>
+          <p>Cada empresa puede nombrar sus almacenes según su operación.</p>
+          {(warehouses.data || []).map((warehouse) => (
+            <Button key={warehouse.id} onClick={() => setRenaming(warehouse)}>
+              Renombrar {warehouseLabel(warehouse)}
+            </Button>
+          ))}
+          {renaming && (
+            <FormModal
+              title={`Renombrar ${warehouseLabel(renaming)}`}
+              onClose={() => setRenaming(null)}
+              fields={[
+                {
+                  key: "name",
+                  label: "Nombre",
+                  required: true,
+                  initial: renaming.name,
+                },
+              ]}
+              onSubmit={async (data) => {
+                await api(`/inventory/warehouses/${renaming.id}`, {
+                  method: "PATCH",
+                  body: JSON.stringify({ name: data.name }),
+                });
+                setRenaming(null);
+                await client.invalidateQueries({ queryKey: ["warehouses"] });
+              }}
+            />
+          )}
           <h2>Traspasar mercancía</h2>
           <p>
             El movimiento resta del origen y suma al destino en una sola
@@ -207,13 +240,13 @@ export function WarehousesPanel({
               }}
             />
           )}
-          <h2>Levantamiento inicial de Casa</h2>
+          <h2>Levantamiento inicial de {homeName}</h2>
           <p>
             El Excel usa las columnas ID, EXISTENCIA, COSTO y PRECIODETALLE. Los
-            productos nuevos se crean con cero unidades en Tienda. Los productos
-            con lote se cuentan por lote.
+            productos nuevos se crean con cero unidades en {storeName}. Los
+            productos con lote se cuentan por lote.
           </p>
-          <label htmlFor="casa-excel">Excel de Casa</label>
+          <label htmlFor="casa-excel">Excel de {homeName}</label>
           <input
             id="casa-excel"
             type="file"
@@ -233,12 +266,14 @@ export function WarehousesPanel({
               </p>
               {preview.changes?.length > 0 && (
                 <div className="table-wrap" tabIndex={0}>
-                  <table aria-label="Cambios del levantamiento de Casa">
+                  <table
+                    aria-label={`Cambios del levantamiento de ${homeName}`}
+                  >
                     <thead>
                       <tr>
                         <th>ID</th>
                         <th>Producto</th>
-                        <th>Existencia actual en Casa</th>
+                        <th>Existencia actual en {homeName}</th>
                         <th>Existencia después de cargar</th>
                       </tr>
                     </thead>
@@ -262,7 +297,7 @@ export function WarehousesPanel({
               ))}
               {preview.canApply && (
                 <Button disabled={busy} onClick={() => upload("apply")}>
-                  Cargar en Casa
+                  Cargar en {homeName}
                 </Button>
               )}
             </div>

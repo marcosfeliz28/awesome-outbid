@@ -196,6 +196,7 @@ PATCH /api/alerts/:id
 PATCH /api/customers/:id
 PATCH /api/expense-categories/:id
 PATCH /api/goods-receipts/:id/document
+PATCH /api/inventory/warehouses/:id
 PATCH /api/products/:id
 PATCH /api/promotions/:id
 PATCH /api/purchase-orders/:id/document
@@ -306,7 +307,7 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  expect(required).toHaveLength(168);
+  expect(required).toHaveLength(169);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");

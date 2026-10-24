@@ -556,7 +556,7 @@ export function InvoicePrint({
       <Row label="Cantidad de Productos" value={units} strong />
       <hr />
       <p className="tp-small">{privacyNoticeText(config)}</p>
-      <p className="tp-center">¡Gracias por su compra!</p>
+      <p className="tp-center">{config?.receiptFooter || "¡Gracias por su compra!"}</p>
     </>
   );
 }

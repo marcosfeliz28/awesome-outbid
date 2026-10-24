@@ -35,6 +35,7 @@ export default defineConfig({
       "tests/product-tenant-backup-postgres.test.ts",
       "tests/product-tenant-backup-file.test.ts",
       "tests/product-login-build.test.ts",
+      "tests/product-branding.test.ts",
       "tests/product-app-module.test.ts",
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",

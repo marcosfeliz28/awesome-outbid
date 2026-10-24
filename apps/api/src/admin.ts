@@ -110,6 +110,7 @@ const configSchema = z.object({
   ncfMode: z.enum(["disabled", "prepared"]).default("disabled"),
   // Encabezado de lo impreso (tienda): sucursal, WhatsApp y logo.
   branchName: z.string().max(100).default(""),
+  receiptFooter: z.string().trim().max(200).optional(),
   phone2: z.string().max(30).default(""),
   // Data URL de una imagen de hasta 200 KB. Si no se envía se conserva el
   // logo guardado; "" o null lo quita.
@@ -876,6 +877,8 @@ export class AdminController {
           [],
         cardTerminals:
           config.cardTerminals ?? (previous?.cardTerminals as string[]) ?? [],
+        receiptFooter:
+          config.receiptFooter ?? (previous?.receiptFooter as string) ?? "",
         // Compatibilidad con clientes anteriores, pero la regla comercial es
         // invariable: toda venta se guarda a nombre de un cliente.
         requireCustomer: true,

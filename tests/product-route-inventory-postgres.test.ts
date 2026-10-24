@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { createServer } from "node:net";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -14,6 +15,7 @@ import { ApiExceptionFilter } from "../apps/api/src/common";
 const root = resolve(import.meta.dirname, "..");
 const prismaDir = join(root, "apps/api/prisma");
 const apiRequire = createRequire(join(root, "apps/api/package.json"));
+const pgRequire = createRequire(join(realpathSync(join(root, "node_modules/embedded-postgres")), "package.json"));
 const prismaCli = apiRequire.resolve("prisma/build/index.js");
 const run = promisify(execFile);
 const aTenant = "00000000-0000-0000-0000-000000000001";
@@ -48,17 +50,36 @@ it("rutas reales de catálogo, inventario y almacenes no cruzan empresas con cue
   const oldMode = process.env.PRODUCT_TENANCY;
   let client: any;
   let app: any;
+  let systemBin: string | undefined;
   try {
-    await pg.initialise();
-    await pg.start();
-    await pg.createDatabase("routes_stock_qa");
+    if (process.platform === "win32") {
+      // El paquete PG embebido en Windows carece de tzdata. Un clúster local
+      // desechable, creado en dataDir, reproduce la zona del negocio sin
+      // tocar ninguna base existente ni el servicio PostgreSQL instalado.
+      const base = join(process.env.ProgramFiles || "C:\\Program Files", "PostgreSQL");
+      systemBin = existsSync(base) ? readdirSync(base)
+        .map(version => join(base, version, "bin"))
+        .find(path => existsSync(join(path, "initdb.exe")) && existsSync(join(path, "..", "share", "timezone", "America", "Santo_Domingo"))) : undefined;
+      if (!systemBin) throw new Error("La prueba exige PostgreSQL local con tzdata en Windows.");
+      const passwordFile = join(dataDir, "password.txt");
+      await writeFile(passwordFile, "product_routes_test_only\n");
+      await run(join(systemBin, "initdb.exe"), ["--pgdata", join(dataDir, "data"), "--auth=scram-sha-256", "--username=product_routes_test", "--pwfile", passwordFile, "--encoding=UTF8", "--locale=C"], { timeout: 120_000 });
+      await run(join(systemBin, "pg_ctl.exe"), ["-D", join(dataDir, "data"), "-l", join(dataDir, "postgres.log"), "-o", `-p ${port} -h 127.0.0.1 -c timezone=UTC`, "start"], { timeout: 120_000 });
+      await run(join(systemBin, "createdb.exe"), ["-h", "127.0.0.1", "-p", String(port), "-U", "product_routes_test", "routes_stock_qa"], { env: { ...process.env, PGPASSWORD: "product_routes_test_only" }, timeout: 120_000 });
+    } else {
+      await pg.initialise();
+      await pg.start();
+      await pg.createDatabase("routes_stock_qa");
+    }
     const url = `postgresql://product_routes_test:product_routes_test_only@127.0.0.1:${port}/routes_stock_qa`;
     await run(
       process.execPath,
       [prismaCli, "migrate", "deploy", "--schema", join(prismaDir, "schema.prisma")],
       { cwd: root, env: { ...process.env, DATABASE_URL: url }, timeout: 120_000 },
     );
-    client = pg.getPgClient("routes_stock_qa", "127.0.0.1");
+    client = systemBin
+      ? new (pgRequire("pg").Client)({ host: "127.0.0.1", port, user: "product_routes_test", password: "product_routes_test_only", database: "routes_stock_qa" })
+      : pg.getPgClient("routes_stock_qa", "127.0.0.1");
     await client.connect();
     await client.query(`INSERT INTO "Tenant" (id,slug,name,"updatedAt") VALUES ($1,'negocio-b','Negocio B',now())`, [bTenant]);
     const ids = [
@@ -151,6 +172,17 @@ it("rutas reales de catálogo, inventario y almacenes no cruzan empresas con cue
     const aHome = warehousesA.body.find((w: any) => w.kind === "home");
     const bStore = warehousesB.body.find((w: any) => w.kind === "store");
     const bHome = warehousesB.body.find((w: any) => w.kind === "home");
+    const foreignRename = await http.patch(`/api/inventory/warehouses/${aHome.id}`)
+      .set("Authorization", b).send({ name: "Nombre invasor" });
+    expect(foreignRename.status).toBe(404);
+    const ownRename = await http.patch(`/api/inventory/warehouses/${bHome.id}`)
+      .set("Authorization", b).send({ name: "Depósito Norte" });
+    expect(ownRename.status, JSON.stringify(ownRename.body)).toBe(200);
+    expect(ownRename.body.name).toBe("Depósito Norte");
+    const warehousesBAfterRename = await http.get("/api/inventory/warehouses").set("Authorization", b);
+    expect(warehousesBAfterRename.body.find((w: any) => w.id === bHome.id).name).toBe("Depósito Norte");
+    const warehousesAAfterRename = await http.get("/api/inventory/warehouses").set("Authorization", a);
+    expect(warehousesAAfterRename.body.find((w: any) => w.id === aHome.id).name).toBe(aHome.name);
     const foreignTransfer = await http.post("/api/inventory/transfers").set("Authorization", b)
       .send({ operationId: "10000000-0000-4000-8000-000000000301", fromId: aStore.id,
         toId: aHome.id, reason: "Traspaso ajeno QA", lines: [{ variantId: variantB, qty: 1 }] });
@@ -283,7 +315,8 @@ it("rutas reales de catálogo, inventario y almacenes no cruzan empresas con cue
     else process.env.DATABASE_URL = oldUrl;
     if (oldMode === undefined) delete process.env.PRODUCT_TENANCY;
     else process.env.PRODUCT_TENANCY = oldMode;
-    await pg.stop().catch(() => undefined);
+    if (systemBin) await run(join(systemBin, "pg_ctl.exe"), ["-D", join(dataDir, "data"), "-m", "immediate", "stop"], { timeout: 30_000 }).catch(() => undefined);
+    else await pg.stop().catch(() => undefined);
     await rm(dataDir, { recursive: true, force: true, maxRetries: 12, retryDelay: 250 });
   }
 }, 180_000);

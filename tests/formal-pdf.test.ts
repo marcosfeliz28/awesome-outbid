@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PassThrough } from "node:stream";
+import { inflateSync } from "node:zlib";
 import { renderFormalPdf } from "../apps/api/src/formal-report";
 
 describe("3z · PDF formal", () => {
@@ -48,7 +49,17 @@ describe("3z · PDF formal", () => {
       cash,
       users: [],
       categories: [],
-      rotation: [],
+      storeWarehouseName: "Depósito Norte",
+      rotation: [
+        {
+          product: "Producto A",
+          sku: "SKU-A",
+          storeStock: 3,
+          sold60Days: 2,
+          suggestedMin: 4,
+          suggestedMax: 6,
+        },
+      ],
       credits: {
         open: [],
         closed: [],
@@ -76,5 +87,23 @@ describe("3z · PDF formal", () => {
       (buffer.toString("latin1").match(/\/Type \/Page\b/g) ?? []).length,
     ).toBeGreaterThan(1);
     expect(buffer.length).toBeGreaterThan(3000);
+    const pdf = buffer.toString("latin1");
+    const decoded = [...pdf.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)]
+      .map((match) => {
+        try {
+          return inflateSync(Buffer.from(match[1], "latin1")).toString(
+            "latin1",
+          );
+        } catch {
+          return "";
+        }
+      })
+      .flatMap((stream) =>
+        [...stream.matchAll(/<([0-9a-f]+)>/gi)].map((match) =>
+          Buffer.from(match[1], "hex").toString("latin1"),
+        ),
+      )
+      .join("");
+    expect(decoded).toContain("Depósito Norte");
   });
 });

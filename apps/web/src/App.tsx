@@ -48,7 +48,12 @@ import {
   Pill,
   Shirt,
 } from "lucide-react";
-import { initialCompanyCode, productTenancyRequired, publicRegistrationEnabled } from "./productTenancy";
+import {
+  initialCompanyCode,
+  productTenancyRequired,
+  publicRegistrationEnabled,
+} from "./productTenancy";
+import { businessSidebarLabels, productLoginFaces } from "./product-branding";
 import { Registration, ConfirmEmail } from "./Registration";
 import { Onboarding, type OnboardingStatus } from "./Onboarding";
 import { Billing } from "./Billing";
@@ -193,7 +198,12 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 const navigation = [
-  { id: "onboarding", label: "Asistente de arranque", icon: Sparkles, permission: "*" },
+  {
+    id: "onboarding",
+    label: "Asistente de arranque",
+    icon: Sparkles,
+    permission: "*",
+  },
   { id: "billing", label: "Plan y facturación", icon: Wallet, permission: "*" },
   {
     id: "merchandise",
@@ -335,6 +345,20 @@ const LOGIN_CUBE = [
 ];
 
 function Login() {
+  const loginCube = PRODUCT_TENANCY_REQUIRED
+    ? productLoginFaces.map((face) => ({
+        ...face,
+        icon: {
+          front: Package,
+          right: ShoppingBag,
+          back: Users,
+          left: Boxes,
+          top: ChartNoAxesCombined,
+          bottom: Sparkles,
+        }[face.face],
+        gv: false,
+      }))
+    : LOGIN_CUBE;
   const [companyCode, setCompanyCode] = useState(() =>
       initialCompanyCode(PRODUCT_TENANCY_REQUIRED),
     ),
@@ -359,13 +383,21 @@ function Login() {
           </span>
         </div>
         <div>
-          <span className="eyebrow light">{PRODUCT_TENANCY_REQUIRED ? "NEXORA POS" : "GRUPO MACGEN · GV MAKEUP STUDIO"}</span>
+          <span className="eyebrow light">
+            {PRODUCT_TENANCY_REQUIRED
+              ? "NEXORA POS"
+              : "GRUPO MACGEN · GV MAKEUP STUDIO"}
+          </span>
           <h1>
             {PRODUCT_TENANCY_REQUIRED ? "Tu negocio." : "Fitness y belleza."}
             <br />
             Todo bajo control.
           </h1>
-          <p>{PRODUCT_TENANCY_REQUIRED ? "Ventas, inventario y caja en un solo lugar." : "Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema."}</p>
+          <p>
+            {PRODUCT_TENANCY_REQUIRED
+              ? "Ventas, inventario y caja en un solo lugar."
+              : "Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema."}
+          </p>
           <div className="login-stats">
             <span>
               <Zap />
@@ -381,14 +413,18 @@ function Login() {
             </span>
           </div>
         </div>
-        <small>Hecho para una tienda con energía.</small>
+        <small>
+          {PRODUCT_TENANCY_REQUIRED
+            ? "Hecho para tu negocio."
+            : "Hecho para una tienda con energía."}
+        </small>
         {/* Escena 3D decorativa (solo CSS): piso en perspectiva y cubo. */}
         <div className="login-scene" aria-hidden="true">
           <div className="scene-floor" />
           <div className="scene-orbit one" />
           <div className="scene-orbit two" />
           <div className="scene-cube">
-            {LOGIN_CUBE.map(({ face, icon: Icon, title, items, gv }) => (
+            {loginCube.map(({ face, icon: Icon, title, items, gv }) => (
               <span key={face} className={"face " + face + (gv ? " gv" : "")}>
                 <Icon />
                 <strong>{title}</strong>
@@ -471,7 +507,11 @@ function Login() {
             }
           }}
         >
-          <span className="eyebrow">{PRODUCT_TENANCY_REQUIRED ? "BIENVENIDA A NEXORA" : "BIENVENIDA · MACGEN & GV"}</span>
+          <span className="eyebrow">
+            {PRODUCT_TENANCY_REQUIRED
+              ? "BIENVENIDA A NEXORA"
+              : "BIENVENIDA · MACGEN & GV"}
+          </span>
           <h2>
             {changeRequired
               ? "Actualiza tu contraseña."
@@ -545,11 +585,17 @@ function Login() {
               ? "Procesando…"
               : changeRequired
                 ? "Guardar contraseña y entrar"
-                : "Entrar a mi tienda"}
+                : PRODUCT_TENANCY_REQUIRED
+                  ? "Entrar a mi empresa"
+                  : "Entrar a mi tienda"}
             <ArrowUpRight size={18} />
           </Button>
-          {PUBLIC_REGISTRATION_ENABLED && <p><a href="/registro">Crear empresa · 14 días gratis</a></p>}
-          {SHOW_DEMO_CREDENTIALS && (
+          {PUBLIC_REGISTRATION_ENABLED && (
+            <p>
+              <a href="/registro">Crear empresa · 14 días gratis</a>
+            </p>
+          )}
+          {SHOW_DEMO_CREDENTIALS && !PRODUCT_TENANCY_REQUIRED && (
             <div className="demo-note">
               <Badge tone="violet">Demostración</Badge>
               <p>
@@ -659,6 +705,12 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
 
 function Shell() {
   const { user, online, theme, toggleTheme, setOnline } = useStore();
+  const businessSettings = useQuery<{ name?: string; branchName?: string }>({
+    queryKey: ["settings", user?.branchId],
+    queryFn: () => api("/settings"),
+    enabled: !!user && online && can(user.permissions, "catalog:read"),
+  });
+  const sidebarLabels = businessSidebarLabels(businessSettings.data);
   const alertBell = useQuery({
     queryKey: ["alert-bell"],
     queryFn: () => api<any[]>("/alerts?status=new"),
@@ -688,10 +740,14 @@ function Shell() {
     sidebar = useRef<HTMLElement>(null),
     stayActive = useRef(() => {});
   const allowed = navigation.filter(
-    (n) => user && (!["onboarding", "billing"].includes(n.id) || PRODUCT_TENANCY_REQUIRED) && can(user.permissions, n.permission),
+    (n) =>
+      user &&
+      (!["onboarding", "billing"].includes(n.id) || PRODUCT_TENANCY_REQUIRED) &&
+      can(user.permissions, n.permission),
   );
   const onboarding = useQuery<OnboardingStatus>({
-    queryKey: ["onboarding", user?.id], queryFn: () => api("/onboarding"),
+    queryKey: ["onboarding", user?.id],
+    queryFn: () => api("/onboarding"),
     enabled: PRODUCT_TENANCY_REQUIRED && !!user && can(user.permissions, "*"),
   });
   useRealtime();
@@ -702,7 +758,12 @@ function Shell() {
     setCommands(false);
   };
   useEffect(() => {
-    if (user && page === "dashboard" && onboarding.data?.available && !onboarding.data.dismissed)
+    if (
+      user &&
+      page === "dashboard" &&
+      onboarding.data?.available &&
+      !onboarding.data.dismissed
+    )
       go("onboarding");
   }, [user?.id, page, onboarding.data?.available, onboarding.data?.dismissed]);
   useEffect(() => {
@@ -1034,8 +1095,8 @@ function Shell() {
             <ShoppingBag size={18} />
           </div>
           <div>
-            <strong>Tienda principal</strong>
-            <small>República Dominicana</small>
+            <strong>{sidebarLabels.branch}</strong>
+            <small>{sidebarLabels.business}</small>
           </div>
           <ChevronDown size={15} />
         </div>
@@ -1392,8 +1453,13 @@ function Shell() {
 // sesión: así «Sesión cerrada por inactividad» sigue a la vista en el inicio
 // de sesión (R9-offline-5).
 export function App() {
-  if (PUBLIC_REGISTRATION_ENABLED && window.location.pathname === "/registro") return <Registration />;
-  if (PRODUCT_TENANCY_REQUIRED && window.location.pathname === "/confirmar-correo") return <ConfirmEmail />;
+  if (PUBLIC_REGISTRATION_ENABLED && window.location.pathname === "/registro")
+    return <Registration />;
+  if (
+    PRODUCT_TENANCY_REQUIRED &&
+    window.location.pathname === "/confirmar-correo"
+  )
+    return <ConfirmEmail />;
   return (
     <>
       <Shell />

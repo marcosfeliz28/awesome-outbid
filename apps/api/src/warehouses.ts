@@ -1,5 +1,14 @@
 import { tenantUnique } from "./tenant-context";
-import { Body, Controller, Get, Inject, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+} from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import { d, quantity, z } from "@fitstore/shared";
 import {
@@ -38,6 +47,9 @@ const transferSchema = z.object({
     .min(1)
     .max(100),
 });
+const renameWarehouseSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+});
 
 @Controller()
 export class WarehousesController {
@@ -49,6 +61,37 @@ export class WarehousesController {
     return this.db.warehouse.findMany({
       where: { branchId: actor.branchId, active: true },
       orderBy: { kind: "desc" },
+    });
+  }
+
+  @Patch("inventory/warehouses/:id")
+  @Permit("*")
+  async renameWarehouse(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const warehouseId = parse(uuid, id);
+    const input = parse(renameWarehouseSchema, body);
+    return this.db.$transaction(async (tx) => {
+      const before = await tx.warehouse.findFirst({
+        where: { id: warehouseId, branchId: actor.branchId, active: true },
+      });
+      if (!before) throw new NotFoundException("Almacén no encontrado.");
+      const updated = await tx.warehouse.update({
+        where: { id: warehouseId, branchId: actor.branchId, active: true },
+        data: { name: input.name },
+      });
+      await audit(
+        tx,
+        actor,
+        "warehouse_renamed",
+        "warehouse",
+        warehouseId,
+        { name: before.name },
+        { name: updated.name },
+      );
+      return updated;
     });
   }
 

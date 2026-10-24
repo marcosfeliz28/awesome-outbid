@@ -13,6 +13,22 @@ const days = (range: Range) =>
 const day = (column: Prisma.Sql) =>
   Prisma.sql`to_char(${local(column)}, 'YYYY-MM-DD')`;
 
+async function warehouseLabels(db: any, actor: Actor) {
+  const warehouses: { kind: string; name: string }[] = await db.warehouse.findMany({
+    where: { branchId: actor.branchId, active: true, kind: { in: ["store", "home"] } },
+    select: { kind: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const store = warehouses.find((warehouse) => warehouse.kind === "store")?.name || "Almacén principal";
+  const homes = warehouses.filter((warehouse) => warehouse.kind === "home").map((warehouse) => warehouse.name);
+  const home = homes.length === 1 ? homes[0] : homes.length > 1 ? homes.join(" + ") : "Otros almacenes";
+  // Los nombres son configurables. No pueden pisar claves fijas como SKU o Mínimo.
+  return {
+    store: `Existencia en ${store}`,
+    home: `Existencia en ${home === store ? `${home} (auxiliar)` : home}`,
+  };
+}
+
 export const inventario: Record<string, ReportDef> = {
   "rotacion-producto": {
     title: "Rotación por producto",
@@ -53,6 +69,7 @@ export const inventario: Record<string, ReportDef> = {
         JOIN (${sold(actor, range)}) x ON x."variantId" = v.id
         WHERE v."branchId" = ${actor.branchId} AND x.units > 0`;
       const n = days(range);
+      const labels = await warehouseLabels(db, actor);
       return rows
         .map((r) => {
           const total = Number(r.store) + Number(r.home);
@@ -61,8 +78,8 @@ export const inventario: Record<string, ReportDef> = {
             SKU: r.sku,
             Producto: r.name,
             Categoría: r.category,
-            Tienda: num(r.store),
-            Casa: num(r.home),
+            [labels.store]: num(r.store),
+            [labels.home]: num(r.home),
             "Stock total": num(total),
             "Vendidas en el período": num(r.units),
             "Venta diaria": num(rate),
@@ -87,14 +104,15 @@ export const inventario: Record<string, ReportDef> = {
         WHERE v."branchId" = ${actor.branchId} AND v.active AND v.stock + ${home} > 0
           AND COALESCE(x.last, v."createdAt") <= ${utc(range.lte)} - interval '30 days'
         ORDER BY idle DESC, p.name`;
+      const labels = await warehouseLabels(db, actor);
       return rows.map((r) => {
         const idle = Number(r.idle);
         return {
           SKU: r.sku,
           Producto: r.name,
           Categoría: r.category,
-          Tienda: num(r.store),
-          Casa: num(r.home),
+          [labels.store]: num(r.store),
+          [labels.home]: num(r.home),
           "Última venta": r.last ?? "Nunca",
           "Días sin vender": idle,
           Tramo:
@@ -113,12 +131,13 @@ export const inventario: Record<string, ReportDef> = {
         FROM "Variant" v JOIN "Product" p ON p.id = v."productId" JOIN "Category" c ON c.id = p."categoryId"
         WHERE v."branchId" = ${actor.branchId} AND v.active AND v.stock <= p."minStock"
         ORDER BY v.stock - p."minStock", p.name`;
+      const labels = await warehouseLabels(db, actor);
       return rows.map((r) => ({
         SKU: r.sku,
         Producto: r.name,
         Categoría: r.category,
-        Tienda: num(r.store),
-        Casa: num(r.home),
+        [labels.store]: num(r.store),
+        [labels.home]: num(r.home),
         Mínimo: num(r.min),
         Faltan: num(Math.max(0, Number(r.min) - Number(r.store))),
       }));
@@ -166,7 +185,7 @@ export const inventario: Record<string, ReportDef> = {
     },
   },
   traspasos: {
-    title: "Traspasos Casa↔Tienda",
+    title: "Traspasos entre almacenes",
     group: "Inventario",
     async run(db, actor, range) {
       const rows: any[] = await db.$queryRaw`
@@ -199,12 +218,13 @@ export const inventario: Record<string, ReportDef> = {
         JOIN (${sold(actor, range)}) x ON x."variantId" = v.id
         WHERE v."branchId" = ${actor.branchId} AND v.stock <= 0 AND x.units > 0
         ORDER BY x.units DESC, p.name`;
+      const labels = await warehouseLabels(db, actor);
       return rows.map((r) => ({
         SKU: r.sku,
         Producto: r.name,
         Categoría: r.category,
-        Tienda: num(r.store),
-        Casa: num(r.home),
+        [labels.store]: num(r.store),
+        [labels.home]: num(r.home),
         "Vendidas en el período": num(r.units),
         "Última venta": r.last,
       }));

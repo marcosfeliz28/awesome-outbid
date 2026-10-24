@@ -1,8 +1,8 @@
-# FitStore POS
+# Nexora POS
 
-Aplicación de demostración de facturación e inventario para República Dominicana. React/TypeScript/Vite, NestJS, Prisma y PostgreSQL, con paquetes compartidos, PWA y cola de ventas en IndexedDB.
+Sistema de facturación e inventario para varias empresas. React/TypeScript/Vite, NestJS, Prisma y PostgreSQL, con paquetes compartidos, PWA y cola de ventas en IndexedDB. El modo de demostración de la tienda mantiene sus datos propios; el modo producto exige código de empresa.
 
-**Estado:** funciona localmente y compila para producción. La matriz de cobertura y las funciones todavía pendientes están en [docs/ENTREGA.md](docs/ENTREGA.md). No se ha publicado un servidor externo ni emitido un comprobante fiscal oficial.
+La matriz histórica de cobertura y funciones pendientes de la demostración está en [docs/ENTREGA.md](docs/ENTREGA.md). Ningún ticket sin NCF es un comprobante fiscal oficial.
 
 ## Ejecutar
 
@@ -38,14 +38,11 @@ También puedes usar un PostgreSQL existente y cambiar `DATABASE_URL`, omitiendo
 
 ## Usuarios ficticios
 
-Contraseña de todos: `FitStore-Demo-2026!`, salvo que cambies `SEED_DEMO_PASSWORD` antes del primer seed.
+Define `SEED_DEMO_PASSWORD` antes del primer seed y usa una contraseña de demostración propia.
 
-| Rol           | Correo                 | PIN de demostración |
-| ------------- | ---------------------- | ------------------- |
-| Administrador | admin@fitstore.demo    | 123456              |
-| Gerente       | gerente@fitstore.demo  | 234567              |
-| Vendedor      | vendedor@fitstore.demo | 345678              |
-| Almacén       | almacen@fitstore.demo  | 456789              |
+El seed define usuarios ficticios para los roles de administrador, gerente,
+vendedor y almacén; consulta `apps/api/prisma/seed.ts` para sus identificadores
+de desarrollo. Nunca uses esas identidades ni sus PIN en producción.
 
 Incluye 60 productos, 228 variantes, cinco categorías, tres proveedores, 20 clientes y 848 ventas históricas ficticias. Las pruebas crean registros QA adicionales identificados y conservan los registros financieros.
 

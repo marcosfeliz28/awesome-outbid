@@ -619,11 +619,18 @@ export function drawSaleReceipt(
         color: MUTED,
       }) + 3;
   });
-  y = drawText(doc, "Gracias por elegirnos.", left, y + 4, width, {
-    font: "Helvetica-Bold",
-    fontSize: 9,
-    color: INK,
-  });
+  y = drawText(
+    doc,
+    cleanText(business?.receiptFooter, 200) || "Gracias por elegirnos.",
+    left,
+    y + 4,
+    width,
+    {
+      font: "Helvetica-Bold",
+      fontSize: 9,
+      color: INK,
+    },
+  );
 
   const range = (doc as any).bufferedPageRange?.();
   if (range) {

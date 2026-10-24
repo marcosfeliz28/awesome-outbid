@@ -173,10 +173,10 @@ export class InventoryImportController {
 
   private async casaPlan(buffer: Buffer, actor: Actor, tx: any = this.db) {
     const rows = await this.rows(buffer);
-    const home = await tx.warehouse.findUnique({
-      where: { branchId_kind: { branchId: actor.branchId, kind: "home" } },
+    const home = await tx.warehouse.findFirst({
+      where: { branchId: actor.branchId, kind: "home", active: true },
     });
-    if (!home || !home.active) bad("El almacén Casa no está disponible.");
+    if (!home) bad("El almacén de reserva no está disponible.");
     const problems: { row?: number; message: string }[] = [];
     const changes = [];
     const seen = new Set<string>();
@@ -234,7 +234,7 @@ export class InventoryImportController {
         ) {
           problems.push({
             row: row.line,
-            message: `${row.id} exige lote. Registra su existencia por lote en Casa.`,
+            message: `${row.id} exige lote. Registra su existencia por lote en ${home.name}.`,
           });
           continue;
         }
@@ -255,7 +255,7 @@ export class InventoryImportController {
       ) {
         problems.push({
           row: row.line,
-          message: `${row.id} exige lote. Registra el conteo por lote en Casa.`,
+          message: `${row.id} exige lote. Registra el conteo por lote en ${home.name}.`,
         });
         continue;
       }
@@ -282,7 +282,7 @@ export class InventoryImportController {
       if (row.qty < tracked) {
         problems.push({
           row: row.line,
-          message: `${row.id}: el conteo queda por debajo de los lotes de Casa.`,
+          message: `${row.id}: el conteo queda por debajo de los lotes de ${home.name}.`,
         });
         continue;
       }
@@ -467,7 +467,7 @@ export class InventoryImportController {
                       : change.costAvg,
                   balanceAfter: change.after,
                   refId: hash,
-                  reason: "Levantamiento Casa (" + name + ")",
+                  reason: `Levantamiento ${plan.home.name} (${name})`,
                   userId: actor.id,
                   branchId: actor.branchId,
                 },

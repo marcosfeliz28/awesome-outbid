@@ -266,9 +266,15 @@ export class FormalReportController {
         where: { branchId: actor.branchId },
         select: { id: true, name: true },
       }),
-      this.db.settings.findUnique({ where: tenantUnique("id", actor.branchId) }),
+      this.db.settings.findUnique({
+        where: tenantUnique("id", actor.branchId),
+      }),
     ]);
     const person = new Map(users.map((u) => [u.id, u.name]));
+    const sellableWarehouse = await this.db.warehouse.findFirst({
+      where: { branchId: actor.branchId, kind: "store", active: true },
+      select: { name: true },
+    });
     const sessions = cashSessions.filter((s) => !isTestRegister(s.registerId));
     const expected = await cashExpectedMany(this.db, sessions.slice(0, capped));
     const cash = sessions.slice(0, capped).map((s) => {
@@ -430,6 +436,7 @@ export class FormalReportController {
       );
     const report = {
       title: `Informe formal · ${period.label}`,
+      storeWarehouseName: sellableWarehouse?.name || "Almacén vendible",
       business: {
         name: (settings?.data as any)?.name || "Nexora POS",
         branch: (settings?.data as any)?.branchName || "",
@@ -487,7 +494,7 @@ export class FormalReportController {
         costChanges: costChanges.length > capped,
         rotation: rotationRows.length > 200,
       },
-      note: "Saldo de créditos abiertos al momento de emitir; no reconstruye el saldo histórico. Cajas de prueba identificadas con QA-, TEST- o PRUEBA- excluidas. La rotación es una propuesta basada en ventas brutas de 60 días y stock vendible de Tienda; no cambia precios ni inventario.",
+      note: `Saldo de créditos abiertos al momento de emitir; no reconstruye el saldo histórico. Cajas de prueba identificadas con QA-, TEST- o PRUEBA- excluidas. La rotación es una propuesta basada en ventas brutas de 60 días y stock vendible de ${sellableWarehouse?.name || "Almacén vendible"}; no cambia precios ni inventario.`,
     };
     if (!query.format || query.format === "json") return res.json(report);
     if (query.format !== "pdf") bad("El informe formal se descarga en PDF.");
@@ -598,7 +605,7 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
     section("Rotación de 60 días · propuesta de stock para 1–2 meses");
     for (const item of report.rotation)
       line(
-        `${item.product} · ${item.sku} · Tienda ${item.storeStock} · Vendidas ${item.sold60Days} · Propuesta ${item.suggestedMin} a ${item.suggestedMax}`,
+        `${item.product} · ${item.sku} · ${report.storeWarehouseName || "Almacén vendible"} ${item.storeStock} · Vendidas ${item.sold60Days} · Propuesta ${item.suggestedMin} a ${item.suggestedMax}`,
       );
   }
   section("Créditos abiertos (saldo actual)");

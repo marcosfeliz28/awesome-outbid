@@ -806,6 +806,9 @@ export function Inventory() {
   const selectedWarehouse = (warehouses.data || []).find(
     (w: any) => w.id === warehouseView,
   );
+  const storeWarehouseName =
+    (warehouses.data || []).find((w: any) => w.kind === "store")?.name ||
+    "Almacén vendible";
   const visibleStock = (v: any) =>
     selectedWarehouse
       ? selectedWarehouse.kind === "store"
@@ -894,7 +897,7 @@ export function Inventory() {
                 {
                   label: selectedWarehouse
                     ? "En " + selectedWarehouse.name
-                    : "En Tienda",
+                    : "En " + storeWarehouseName,
                   render: (v) => (
                     <Badge
                       tone={
@@ -911,7 +914,7 @@ export function Inventory() {
                 },
                 { label: "Total", render: (v) => v.totalStock },
                 {
-                  label: "Lote en Tienda",
+                  label: `Lote en ${storeWarehouseName}`,
                   render: (v) =>
                     v.lots.find((l: any) => Number(l.qty) > 0)?.lotNumber ||
                     "Sin lote",
@@ -4005,6 +4008,7 @@ export function Configuration() {
     { key: "phone", label: "Teléfono" },
     // Encabezado de lo impreso (tienda).
     { key: "branchName", label: "Sucursal" },
+    { key: "receiptFooter", label: "Mensaje al pie del ticket (opcional)" },
     { key: "phone2", label: "Teléfono 2 / WhatsApp" },
     {
       key: "autoPrintReceipt",
@@ -4025,13 +4029,13 @@ export function Configuration() {
       key: "transferAccounts",
       label: "Cuentas de banco para transferencias (una por línea)",
       type: "textarea",
-      help: "Ej.: Popular MacGen ···3620. La caja elige de esta lista.",
+      help: "Ej.: Banco Principal ···3620. La caja elige de esta lista.",
     },
     {
       key: "cardTerminals",
       label: "Terminales de tarjeta (uno por línea)",
       type: "textarea",
-      help: "Ej.: Verifone G-Pro MacGen. Vacío: la caja no pregunta.",
+      help: "Ej.: Verifone mostrador. Vacío: la caja no pregunta.",
     },
     requiredNumber("sellerDiscountLimit", "Descuento máximo del vendedor (%)"),
     requiredNumber("cardFeePercent", "Comisión bancaria (%)"),
