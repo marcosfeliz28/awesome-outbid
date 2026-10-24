@@ -50,6 +50,7 @@ import {
 } from "lucide-react";
 import { initialCompanyCode, productTenancyRequired } from "./productTenancy";
 import { Registration, ConfirmEmail } from "./Registration";
+import { Onboarding, type OnboardingStatus } from "./Onboarding";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
 import {
@@ -191,6 +192,7 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 const navigation = [
+  { id: "onboarding", label: "Asistente de arranque", icon: Sparkles, permission: "*" },
   {
     id: "merchandise",
     label: "Mercancía",
@@ -679,8 +681,12 @@ function Shell() {
     sidebar = useRef<HTMLElement>(null),
     stayActive = useRef(() => {});
   const allowed = navigation.filter(
-    (n) => user && can(user.permissions, n.permission),
+    (n) => user && (n.id !== "onboarding" || PRODUCT_TENANCY_REQUIRED) && can(user.permissions, n.permission),
   );
+  const onboarding = useQuery<OnboardingStatus>({
+    queryKey: ["onboarding", user?.id], queryFn: () => api("/onboarding"),
+    enabled: PRODUCT_TENANCY_REQUIRED && !!user && can(user.permissions, "*"),
+  });
   useRealtime();
   const go = (id: string) => {
     location.hash = id;
@@ -688,6 +694,10 @@ function Shell() {
     setMenu(false);
     setCommands(false);
   };
+  useEffect(() => {
+    if (user && page === "dashboard" && onboarding.data?.available && !onboarding.data.dismissed)
+      go("onboarding");
+  }, [user?.id, page, onboarding.data?.available, onboarding.data?.dismissed]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -951,6 +961,7 @@ function Shell() {
     .slice(0, 2)
     .join("");
   const pages: Record<string, React.ReactNode> = {
+    onboarding: <Onboarding go={go} />,
     dashboard: <Dashboard go={go} />,
     "month-report": <MonthReport go={go} />,
     pos: <POS go={go} />,

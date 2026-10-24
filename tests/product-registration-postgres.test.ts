@@ -84,11 +84,23 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     expect(owner.rows[0].pinHash).not.toContain(input.managerPin);
     const before = await http.post("/api/auth/login").set("x-tenant-id", input.companyCode).send({ login: input.email, password: input.password });
     expect(before.status).toBe(403);
+    failNextMail = true;
+    expect((await http.post("/api/auth/resend-verification").send({ companyCode: input.companyCode, email: input.email })).status).toBe(503);
+    // Un reenvío fallido no inutiliza el enlace inicial.
     expect((await http.post("/api/auth/verify-email").send({ token })).status).toBe(201);
     expect((await http.post("/api/auth/verify-email").send({ token })).status).toBe(400);
     const after = await http.post("/api/auth/login").set("x-tenant-id", input.companyCode).send({ login: input.email, password: input.password });
     expect(after.status, JSON.stringify(after.body)).toBe(201);
     expect(after.body.user.tenantId).toBe(tenants.rows[0].id);
+    const aToken = `Bearer ${after.body.accessToken}`;
+    const initialGuide = await http.get("/api/onboarding").set("Authorization", aToken);
+    expect(initialGuide.status).toBe(200);
+    expect(initialGuide.body).toMatchObject({ available: true, dismissed: false, businessType: "retail", categories: 0, products: 0 });
+    expect((await http.post("/api/onboarding").set("Authorization", aToken).send({ dismissed: true })).body.dismissed).toBe(true);
+    expect((await http.get("/api/onboarding").set("Authorization", aToken)).body.dismissed).toBe(true);
+    expect((await http.post("/api/onboarding").set("Authorization", aToken).send({ dismissed: false })).body.dismissed).toBe(false);
+    expect((await http.post("/api/categories").set("Authorization", aToken).send({ name: "Abarrotes" })).status).toBe(201);
+    expect((await http.get("/api/onboarding").set("Authorization", aToken)).body.categories).toBe(1);
     expect((await http.post("/api/auth/register").send(input)).status).toBe(409);
     failNextMail = true;
     const second = await http.post("/api/auth/register").send({ ...input, companyCode: "otra-tienda" });
@@ -106,8 +118,10 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     expect((await http.post("/api/auth/verify-email").send({ token: undeliveredToken })).status).toBe(400);
     const recoveredToken = html.match(/#token=([a-f0-9]{64})/)?.[1];
     expect((await http.post("/api/auth/verify-email").send({ token: recoveredToken })).status).toBe(201);
-    expect((await http.post("/api/auth/login").set("x-tenant-id", "otra-tienda")
-      .send({ login: input.email, password: input.password })).status).toBe(201);
+    const secondLogin = await http.post("/api/auth/login").set("x-tenant-id", "otra-tienda")
+      .send({ login: input.email, password: input.password });
+    expect(secondLogin.status).toBe(201);
+    expect((await http.get("/api/onboarding").set("Authorization", `Bearer ${secondLogin.body.accessToken}`)).body.categories).toBe(0);
     expect((await http.post("/api/auth/resend-verification").send({ companyCode: "otra-tienda", email: "absent@example.invalid" })).body.message).toBe(resent.body.message);
     expect((await http.post("/api/auth/register").send({})).status).toBe(400);
     expect((await http.post("/api/auth/register").send({})).status).toBe(400);

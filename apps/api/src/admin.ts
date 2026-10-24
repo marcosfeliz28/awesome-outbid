@@ -859,6 +859,8 @@ export class AdminController {
       const previous = before?.data as Record<string, unknown> | undefined;
       const data = {
         ...config,
+        ...(previous?.onboarding ? { onboarding: previous.onboarding } : {}),
+        ...(previous?.businessType ? { businessType: previous.businessType } : {}),
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
           : previous?.allowOfflineSales === true,

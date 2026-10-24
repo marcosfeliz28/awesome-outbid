@@ -6416,3 +6416,8 @@ td strong {
 [data-theme="dark"] .product-registration button { color: var(--bg); }
 .product-registration button + button { margin-top: 10px; }
 .product-registration .form-error { color: var(--danger-text); }
+.onboarding { max-width: 980px; margin: 0 auto; padding: 1.5rem; color: var(--text); }
+.onboarding ol { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 1rem; }
+.onboarding li { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1rem; }
+.onboarding li h2 { margin-top: 0; font-size: 1.1rem; }
+.onboarding button { min-height: 44px; margin: .5rem 0; }

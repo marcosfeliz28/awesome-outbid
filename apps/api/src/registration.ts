@@ -89,6 +89,7 @@ export class RegistrationService implements OnModuleDestroy {
           name: input.businessName, branchName: "", currency: "DOP",
           taxIncluded: true, receiptWidth: "80", requireCustomer: true,
           allowOfflineSales: false, cashDifferenceLimit: 100,
+          businessType: input.businessType, onboarding: { dismissed: false },
         } } });
       });
     } catch (error: any) {
@@ -126,10 +127,11 @@ export class RegistrationService implements OnModuleDestroy {
     // Respuesta idéntica para no revelar si existe la empresa o el correo.
     if (!user) return { message: "Si la cuenta está pendiente, recibirás un enlace nuevo." };
     const token = verificationToken();
-    await this.db.user.update({ where: { id: user.id }, data: {
+    // Un fallo transitorio del proveedor no debe invalidar el enlace anterior.
+    await sendVerification(email, token);
+    await this.db.user.updateMany({ where: { id: user.id, emailVerifiedAt: null }, data: {
       emailVerificationHash: digest(token), emailVerificationExpiresAt: expiration(),
     } });
-    await sendVerification(email, token);
     return { message: "Si la cuenta está pendiente, recibirás un enlace nuevo." };
   }
 }

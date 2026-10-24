@@ -16,6 +16,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { AuthGuard, Database, Public } from "./common";
 import { AuthController } from "./auth";
 import { RegistrationController, RegistrationService } from "./registration";
+import { OnboardingController } from "./onboarding";
 import { CatalogController } from "./catalog";
 import { InventoryController } from "./inventory";
 import { WarehousesController } from "./warehouses";
@@ -80,6 +81,7 @@ export function createAppModule(secret: string) {
       InventoryImportController,
       AuthController,
       ...(product ? [RegistrationController] : []),
+      ...(product ? [OnboardingController] : []),
       CatalogController,
       InventoryController,
       WarehousesController,
