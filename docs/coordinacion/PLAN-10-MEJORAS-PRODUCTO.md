@@ -10,14 +10,37 @@
 
 ## Estado (actualizar al avanzar)
 
-| # | Mejora | Responsable | Estado |
-|---|---|---|---|
+Orden decidido por Claude (arquitecto), 24-oct. Dos carriles en paralelo para que ChatGPT PC y ChatGPT NUBE no toquen los mismos archivos. Tiempos estimados.
+
+| Orden | # | Mejora | Quién construye | Cuándo (estimado) | Qué necesita la dueña | Estado |
+|---|---|---|---|---|---|---|
+| 1 | 2 | Fase 1: registro, 14 días gratis, planes, cobro de prueba, solo lectura, exportación y respaldo por empresa | ChatGPT PC (`producto-nexora`) | Semanas 1-6. **El registro público no se abre** hasta tener la parte rápida de la 3 y los términos de la 4 (veredicto Gemini 24-oct). Incluye: respaldos por empresa fuera del Drive de la tienda, cobro por transferencia verificada y asistente de arranque con ticket de prueba | Esta semana: autorizar el sistema aparte en Render (unos US$40-55 al mes; Claude confirma el monto exacto antes) y pedir a Azul o Cardnet la cuenta de comercio (tarda semanas) | En curso: arreglo del CI 23-oct en revisión (074b895, e2de343) |
+| 1 | 8 | Facturas con IA más baratas (Sonnet o Haiku en vez de Opus) | Claude (cambio de modelo + prueba) | Semana 1, 1-2 días | 10 fotos o PDF de facturas reales de suplidores distintos | Pendiente |
+| 1 | 4 | Papeles legales: términos, privacidad (Ley 172-13), licencias | Claude ajusta los borradores de `docs/legal`; ChatGPT PC pone la aceptación en el registro (dentro de la fase 1) | Semana 1 empieza; termina cuando firme el abogado | Esta semana: pedir cotización a un abogado | Pendiente |
+| 2 | 6 | «Pregúntele a Nexora» (IA solo lectura) + acceso de soporte de solo lectura | ChatGPT NUBE (`nexora-chatgpt-nube-ia`) | Semanas 2-6, tras su auditoría | Decidir consultas por plan (propuesta: 30 / 50 / 300 / 1,000) | Pendiente |
+| 3 | 10 | Resumen diario con IA por correo | ChatGPT NUBE (reusa las herramientas de la 6) | Semanas 7-8 | Paso cero: cuenta gratis en resend.com y su clave en Render (`RESEND_API_KEY`); ella misma la pega, nunca en el chat | Pendiente |
+| 3 | 3 | Quitar lo de Macgen (nombre, logo, RNC, ticket, bancos) | ChatGPT PC | Semana 7 | Elegir un solo nombre («Nexora») y revisar la marca en ONAPI | Pendiente |
+| 4 | 5 | 606, 607, 608 e IT-1 para el contador (NCF e ITBIS en gastos, lectura de RNC/NCF/ITBIS en facturas, aviso de secuencias NCF por agotarse) | ChatGPT PC | Semanas 8-10 | Que su contador pruebe el primer 606 de un mes completo | Pendiente |
+| 4 | 7 | Conector MCP/OAuth para la IA del cliente, con bandeja de cambios propuestos | ChatGPT NUBE | Semanas 9-16 | Decidir si la IA puede *proponer* cambios de inventario (si no, el conector queda en solo lectura) | Pendiente |
+| 5 | 3b | Interruptores por negocio (lotes, contraentregas, incentivos, dólar, mensajero) y almacenes con nombre libre | ChatGPT PC | Semanas 11-15 | Nada | Pendiente |
+| 6 | 9 | Asistente de WhatsApp con IA | ChatGPT NUBE, primero para su tienda | Desde semana 17, tras la fase 0 de Meta | Un número nuevo de prueba, verificar el negocio en Meta y que Meta confirme por escrito que permite el asistente | Pendiente (fase 0 Meta) |
+| — | 1 | Factura electrónica e-CF | **Fuera del equipo**: la lleva la dueña con su contable | — | — | Pausada por orden de la dueña (24-oct) |
+
+**Por qué este orden:**
+- La fase 1 (2) va primero porque sin ella nadie puede registrarse ni pagar. Abrir la cuenta de comercio tarda semanas, así que se pide ya.
+- La 8 es casi gratis y baja el costo de su propia tienda desde la semana 1.
+- Los papeles (4) dependen del abogado y no del código; si se empiezan ya, están listos cuando termine la fase 1.
+- La 6 la hace ChatGPT NUBE en paralelo y en archivos propios. Así los dos trabajan a la vez sin pisarse. Y la 10 y la 7 reusan sus herramientas.
+- La 3 y la 5 tocan los mismos archivos que la fase 1: por eso las hace ChatGPT PC después, en orden.
+- La 9 va al final porque depende de permisos de Meta que no controlamos.
+
+---|---|---|---|
 | 1 | Factura electrónica e-CF (tienda y clientes) | **Fuera del equipo** (orden de la dueña 24-oct): lo lleva ella con su contable | Pausada: no programar hasta nueva orden suya |
 | 2 | Terminar fase 1 + producto en línea con cobro real | ChatGPT PC + Claude (Render) + Dueña (procesador de pago) | En curso (verify rojo desde 23-oct) |
 | 3 | Quitar lo de Macgen + interruptores por negocio | ChatGPT PC + Claude | Pendiente |
 | 4 | Papeles legales y soporte | Dueña (abogado) + Claude (borradores) | Pendiente |
 | 5 | 606 e IT-1 para el contador | ChatGPT PC + Claude + contador | Pendiente |
-| 6 | «Pregúntele a Nexora» (IA solo lectura) | ChatGPT PC + Claude | Pendiente (fase 2) |
+| 6 | «Pregúntele a Nexora» (IA solo lectura) | ChatGPT NUBE + Claude (orden `ORDEN_FASE2_IA_SOPORTE_CHATGPT_NUBE.md`, 24-oct) | Pendiente (fase 2) |
 | 7 | Conector MCP/OAuth para la IA del cliente (solo propone) | ChatGPT PC + Claude + Dueña (decide la regla del 19-oct) | Pendiente |
 | 8 | Lectura de facturas con IA para todos | Claude (cambio de modelo) + ChatGPT PC | Pendiente |
 | 9 | Asistente de WhatsApp con IA | Dueña (Meta) + ChatGPT PC + Claude | Pendiente (fase 0 Meta) |

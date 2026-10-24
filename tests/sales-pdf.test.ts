@@ -38,7 +38,7 @@ async function capturePdf(
 function pdfText(pdf: Buffer) {
   const raw = pdf.toString("latin1");
   const text: string[] = [];
-  const streams = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+  const streams = /stream\r?\n([\s\S]*?)\nendstream/g;
   for (const match of raw.matchAll(streams)) {
     const dictionary = raw.slice(Math.max(0, match.index! - 250), match.index);
     let content = Buffer.from(match[1], "latin1");
