@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { permissions, lineTotals, d, money } from "@fitstore/shared";
+import { assertSeedAllowed } from "./seed-guard";
 config({ path: "../../.env" });
 const db = new PrismaClient();
 const id = () => randomUUID();
@@ -90,8 +91,7 @@ function ean(value: number) {
   return digits + checksum;
 }
 async function main() {
-  if (process.env.NODE_ENV === "production")
-    throw new Error("No se permiten datos de demostración en producción.");
+  assertSeedAllowed(process.env);
   if (await db.user.count()) {
     console.log("La base ya tiene usuarios. Seed omitido sin borrar datos.");
     return;
