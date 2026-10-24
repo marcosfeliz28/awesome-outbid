@@ -95,12 +95,15 @@ jobs:
         run: docker build -f deploy/render/Dockerfile.api -t nexora-pos-api:ci .
       - name: Construir la imagen web (Render, sin publicar)
         run: docker build -f deploy/render/Dockerfile.web -t nexora-pos-web:ci .
-      - name: Arranque como en Render y comprobación posterior al despliegue
-        if: github.ref_name != 'producto-nexora' && github.head_ref != 'producto-nexora'
-        run: bash deploy/render/ci-smoke.sh
-      - name: Arranque aislado del producto multiempresa
-        if: github.ref_name == 'producto-nexora' || github.head_ref == 'producto-nexora'
-        run: bash scripts/producto-ci-smoke.sh
+      # El producto se reconoce por su blueprint, no por el nombre de la rama:
+      # toda rama que salga de producto-nexora usa el arranque multiempresa.
+      - name: Arranque como en Render (tienda) o aislado del producto multiempresa
+        run: |
+          if [ -f render.producto.yaml ]; then
+            bash scripts/producto-ci-smoke.sh
+          else
+            bash deploy/render/ci-smoke.sh
+          fi
   windows-installer:
     runs-on: windows-latest
     steps:
