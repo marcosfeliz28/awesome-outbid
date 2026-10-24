@@ -49,6 +49,7 @@ test.beforeEach(async ({ request }) => {
         data: {
           countedCash: Math.max(0, s.expected.cash),
           countedCard: Math.max(0, s.expected.card),
+          ...(s.expected.card > 0 ? { batchNumber: "QA-LOTE" } : {}),
           countedTransfer: Math.max(0, s.expected.transfer),
           differenceReason: "QA: cierre de limpieza de la prueba",
           notes: "Cierre entre escenarios E2E",
@@ -2857,6 +2858,7 @@ test("D-01: la vendedora necesita el PIN del gerente para una contraentrega sobr
         data: {
           countedCash: Math.max(0, s.expected.cash),
           countedCard: Math.max(0, s.expected.card),
+          ...(s.expected.card > 0 ? { batchNumber: "QA-LOTE" } : {}),
           countedTransfer: Math.max(0, s.expected.transfer),
           differenceReason: "QA: cierre de limpieza de la prueba",
           notes: "Cierre E2E D-01",

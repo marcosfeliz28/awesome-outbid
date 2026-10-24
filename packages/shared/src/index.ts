@@ -688,6 +688,8 @@ export const cashCloseSchema = z
       .string()
       .regex(/^\d{4,6}$/)
       .optional(),
+    // CPC-2: lote del verifón (la API lo exige si hubo ventas con tarjeta).
+    batchNumber: z.string().trim().max(40).default(""),
   })
   .refine((v) => v.countedCash !== undefined || v.denominations !== undefined, {
     message: "indica el efectivo contado o el conteo por denominaciones",

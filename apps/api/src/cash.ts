@@ -436,6 +436,8 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
     sessionId: session.id,
     title: "Cuadre de Caja",
     descuadre,
+    // CPC-2: lote del verifón.
+    cardBatch: details.batchNumber ? { number: details.batchNumber } : null,
     footer: "FIN DEL CUADRE",
     business: {
       name: settings.name ?? "",
@@ -1074,6 +1076,22 @@ export class CashController {
       const settings = (
         await tx.settings.findUnique({ where: { id: actor.branchId } })
       )?.data as any;
+      // CPC-2 (dueña, 24-oct): todo cierre con pago en tarjeta (sólo tarjeta o
+      // mixta) exige el lote del verifón; sin tarjeta no se pide.
+      if (!input.batchNumber) {
+        const cardPayments = await tx.payment.count({
+          where: {
+            cashSessionId: session.id,
+            method: "card",
+            sale: { status: "completed" },
+            status: { not: "rejected" },
+          },
+        });
+        if (cardPayments > 0)
+          bad(
+            "Hubo ventas con tarjeta: escribe el número de lote del verifón (cierra el lote en el verifón y copia el número del voucher).",
+          );
+      }
       const data = {
         countedCash: counted,
         countedCard: input.countedCard,
@@ -1084,6 +1102,7 @@ export class CashController {
           denominations: input.denominations ?? null,
           denominationsTotal: input.denominations ? counted : null,
           vouchers: input.vouchers,
+          batchNumber: input.batchNumber || null,
           countedUsd: input.countedUsd,
           countedEur: input.countedEur,
           delivered: split!.delivered,

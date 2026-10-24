@@ -195,6 +195,7 @@ export function CloseCashModal({
     notes: "",
     managerPin: "",
     differenceReason: "",
+    batchNumber: "",
   });
   const user = useStore((s) => s.user);
   // Igual que cash.ts (canViewCashExpected).
@@ -270,6 +271,7 @@ export function CloseCashModal({
         ...(delivered === null ? {} : { delivered }),
         notes: form.notes,
         differenceReason: form.differenceReason,
+        batchNumber: form.batchNumber.trim(),
         ...(voucherNeedsPin || cardNeedsPin || cashNeedsPin
           ? { managerPin: form.managerPin }
           : {}),
@@ -394,6 +396,20 @@ export function CloseCashModal({
             "Total que imprimió el verifón al cerrar el lote de hoy. Cierra el verifón antes de cerrar la caja; escribe 0 solo si no hubo cobros con tarjeta.",
             true,
           )}
+          <label className="field">
+            <span>Número de lote del verifón</span>
+            <input
+              value={form.batchNumber}
+              onChange={set("batchNumber")}
+              maxLength={40}
+              inputMode="numeric"
+              aria-describedby="batch-help"
+            />
+            <small id="batch-help">
+              Obligatorio si hubo cobros con tarjeta (venta sola o mixta): el
+              número que imprime el voucher al cerrar el lote.
+            </small>
+          </label>
           {money(
             "Entregado",
             "delivered",
