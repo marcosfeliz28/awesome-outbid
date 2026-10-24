@@ -114,6 +114,11 @@ it("MCP OAuth usa PKCE, código único, RLS y herramientas de solo lectura", asy
     expect(JSON.stringify(call.body)).not.toContain("A_ONLY_SECRET");
     expect((await http.post("/api/mcp").set("Authorization", bearer).send({ jsonrpc: "2.0", id: 3,
       method: "tools/call", params: { name: "ajustar_stock", arguments: {} } })).status).toBe(400);
+    expect(token.body.expires_in).toBe(900);
+    await sql.query(`UPDATE "AuthSession" SET "lastActivityAt" = now() - interval '2 hours' WHERE id=$1`, [actor.bSession]);
+    expect((await http.post("/api/mcp").set("Authorization", bearer).send({ jsonrpc: "2.0", id: 31, method: "tools/list" })).status).toBe(401);
+    await sql.query(`UPDATE "AuthSession" SET "lastActivityAt" = now() WHERE id=$1`, [actor.bSession]);
+    expect((await http.post("/api/mcp").set("Authorization", bearer).send({ jsonrpc: "2.0", id: 32, method: "tools/list" })).status).toBe(200);
     await sql.query(`UPDATE "User" SET "authVersion" = "authVersion" + 1 WHERE id=$1`, [actor.bUser]);
     expect((await http.post("/api/mcp").set("Authorization", bearer).send({ jsonrpc: "2.0", id: 4, method: "tools/list" })).status).toBe(401);
   } finally {

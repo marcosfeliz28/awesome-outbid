@@ -3,9 +3,10 @@ import { Body, Controller, Get, Header, HttpCode, Inject, Post, Query, Req, Res,
 import { JwtService } from "@nestjs/jwt";
 import type { Request, Response } from "express";
 import { audit, bad, Database, Permit, Public, type Actor, type ActorRequest } from "./common";
-import { tenantScope } from "./tenant-context";
+import { tenantScope, tenantUnique } from "./tenant-context";
 import { mcpClient, pkceChallenge, validateMcpAuthorization } from "./mcp-oauth-core";
 import { RequestRateLimitService } from "./rate-limit";
+import { sessionActivityGraceMs } from "./session-activity";
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -121,13 +122,17 @@ export class McpController {
       if (!user?.active || user.mustChangePassword || user.tenantId !== tenantId || user.branchId !== row.branchId ||
         user.authVersion !== row.authVersion || !user.role.permissions.includes("*") ||
         session?.userId !== user.id) throw new UnauthorizedException("Sesión OAuth vencida.");
+      const settings = await tx.settings.findUnique({ where: tenantUnique("id", user.branchId) });
+      const timeout = Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60_000;
+      if (session.lastActivityAt < new Date(Date.now() - timeout - sessionActivityGraceMs(timeout)))
+        throw new UnauthorizedException("Sesión OAuth vencida.");
       const accessToken = this.jwt.sign({ type: "mcp-read", sub: user.id, sid: session.id, tenantId,
         branchId: row.branchId, version: user.authVersion, clientId: row.clientId },
-        { secret: config.secret, algorithm: "HS256", issuer: config.origin, audience: "nexora-mcp", expiresIn: "1h" });
+        { secret: config.secret, algorithm: "HS256", issuer: config.origin, audience: "nexora-mcp", expiresIn: "15m" });
       await audit(tx, { id: user.id, name: user.name, email: user.email, role: user.role.name,
         permissions: user.role.permissions as string[], branchId: user.branchId, tenantId },
       "mcp.token_issued", "oauth", row.id, undefined, { clientId: row.clientId });
-      return { access_token: accessToken, token_type: "Bearer", expires_in: 3600, scope: "read" };
+      return { access_token: accessToken, token_type: "Bearer", expires_in: 900, scope: "read" };
     }));
   }
 
@@ -156,6 +161,18 @@ export class McpController {
         user.branchId !== payload.branchId || user.authVersion !== payload.version ||
         !user.role.permissions.includes("*") || session?.userId !== user.id)
         throw new UnauthorizedException("Acceso MCP revocado.");
+      const settings = await this.db.settings.findUnique({ where: tenantUnique("id", user.branchId) });
+      const now = Date.now();
+      const timeout = Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60_000;
+      const cutoff = new Date(now - timeout - sessionActivityGraceMs(timeout));
+      if (session.lastActivityAt < cutoff) throw new UnauthorizedException("Sesión MCP inactiva.");
+      if (now - session.lastActivityAt.getTime() >= sessionActivityGraceMs(timeout)) {
+        const touched = await this.db.authSession.updateMany({
+          where: { id: session.id, userId: user.id, lastActivityAt: { gte: cutoff } },
+          data: { lastActivityAt: new Date(now) },
+        });
+        if (!touched.count) throw new UnauthorizedException("Sesión MCP inactiva.");
+      }
       const actor: Actor = { id: user.id, name: user.name, email: user.email, role: user.role.name,
         permissions: user.role.permissions as string[], branchId: user.branchId, tenantId: user.tenantId };
       const reply = (result: unknown) => ({ jsonrpc: "2.0", id: body.id ?? null, result });
