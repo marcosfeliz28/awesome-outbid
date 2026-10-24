@@ -13,6 +13,7 @@ import {
   type PasswordPolicy,
 } from "./passwordChange";
 import { useEffect, useRef, useState } from "react";
+import { observeLocalQueue } from "./localQueueObserver";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
@@ -848,18 +849,11 @@ function Shell() {
   }, [user, page]);
   useEffect(() => {
     if (!user) return;
-    let cancelled = false;
-    const update = async () => {
-      const count = await localDB.sales.where("userId").equals(user.id).count();
-      if (!cancelled) setPending(count);
-    };
-    update();
-    const timer = setInterval(update, 4000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [user]);
+    return observeLocalQueue(
+      () => localDB.sales.where("userId").equals(user.id).count(),
+      setPending,
+    );
+  }, [user?.id]);
   // N-M3: ante un error transitorio del servidor («retry») las ventas siguen
   // pendientes y se reenvían solas, con espera creciente y el mismo UUID.
   const retryTimer = useRef<ReturnType<typeof setTimeout>>(undefined);

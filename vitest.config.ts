@@ -12,6 +12,7 @@ export default defineConfig({
       "tests/table-pagination-n17.test.ts",
       "tests/inventory-errors-n18.test.ts",
       "tests/inventory-review-n19.test.ts",
+      "tests/local-queue-n25.test.ts",
       "tests/assistant-n02.test.ts",
       "tests/assistant-n04.test.ts",
       "tests/support-n05.test.ts",
