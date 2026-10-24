@@ -16,6 +16,7 @@ export default defineConfig({
       "tests/transfer-proof-review-n08.test.ts",
       "tests/realtime-catalog-race.test.ts",
     "tests/cash-close-assistant.test.ts",
+    "tests/payment-reminder-n10.test.ts",
       "tests/product-object-store.test.ts",
       "tests/product-object-portability.test.ts",
       "tests/product-billing-plans.test.ts",
