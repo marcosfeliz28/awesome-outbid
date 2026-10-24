@@ -119,7 +119,10 @@ export class LocalLicense {
     // Una respuesta nueva y firmada por el servidor es una fuente de tiempo
     // más fiable que el máximo local. Esto permite recuperarse si Windows se
     // adelantó por accidente, sin aceptar el token anterior ni uno futuro.
-    this.advanceClock(now, true);
+    this.advanceClock(
+      Math.max(now, Date.parse(token.claims.issuedAt)),
+      true,
+    );
   }
   private advanceClock(now: number, trustedRenewal = false) {
     const old = readJson(this.clockPath) as { lastSeen?: number } | undefined;
@@ -232,7 +235,7 @@ export function localLicenseHttp(
 ) {
   if (!license) return { status: 0 };
   const normalizedMethod = method.toUpperCase();
-  const normalizedPath = path.toLowerCase();
+  const normalizedPath = path.toLowerCase().replace(/\/{2,}/g, "/");
   if (
     normalizedMethod === "GET" &&
     normalizedPath === "/api/local-license/status"

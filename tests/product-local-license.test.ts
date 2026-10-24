@@ -260,6 +260,13 @@ describe("PC-19 licencia local", () => {
           sales: [{ capturedAt: new Date(base + 86400000).toISOString() }],
         }).status,
       ).toBe(0);
+      expect(
+        localLicenseHttp("POST", "/API//SALES//SYNC/", renewed, {
+          sales: [
+            { capturedAt: new Date(base + 7 * 86400000 + 1000).toISOString() },
+          ],
+        }).status,
+      ).toBe(423);
     } finally {
       f.cleanup();
     }
