@@ -19,6 +19,8 @@ export default defineConfig({
     "tests/payment-reminder-n10.test.ts",
     "tests/purchase-draft-n11.test.ts",
     "tests/clearance-margin-n12.test.ts",
+    "tests/mcp-oauth-n15.test.ts",
+    "tests/mcp-readonly-postgres.test.ts",
       "tests/product-object-store.test.ts",
       "tests/product-object-portability.test.ts",
       "tests/product-billing-plans.test.ts",

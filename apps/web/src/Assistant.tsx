@@ -119,6 +119,10 @@ export function Assistant({ online }: { online: boolean }) {
         </header>
         <div className="assistant-body">
           <p className="assistant-usage" role="status">{usage ? `${usage.usadas} de ${usage.limite} este mes` : "Consultando cuota…"}</p>
+          <details>
+            <summary>Bandeja de cambios propuestos · 0</summary>
+            <p>Las propuestas de conteos y entradas de inventario están desactivadas. El conector MCP solo consulta datos.</p>
+          </details>
           {!online && <p role="alert">El asistente necesita internet.</p>}
           {error && <p role="alert">{error}</p>}
           <div className="assistant-messages" role="log" aria-label="Conversación" aria-live="polite">

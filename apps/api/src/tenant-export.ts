@@ -15,7 +15,7 @@ import { tenantObjectStore } from "./tenant-object-store";
 /** Portable business export. Authentication material is deliberately NOT portable;
  * the encrypted disaster-recovery backup is a separate operation. */
 const SECRET_FIELD = /(?:password|pinHash|secret|token|verificationHash|api[_-]?key|private[_-]?key|credential|authorization|cookie)/i;
-const SECRET_EXACT = new Set(["hash", "refreshTokenEnc", "secretHash", "emailVerificationHash"]);
+const SECRET_EXACT = new Set(["hash", "codeHash", "challenge", "refreshTokenEnc", "secretHash", "emailVerificationHash"]);
 const BATCH = 100;
 
 type ExportModel = { name: string; table: string; columns: string[]; order: string[] };

@@ -82,6 +82,7 @@ import { VoidRequests } from "./VoidRequests";
 import { TransferReconciliation } from "./TransferReconciliation";
 import { CourierPayouts } from "./CourierPayouts";
 import { Assistant } from "./Assistant";
+import { McpAuthorize } from "./McpAuthorize";
 import { SupportAccessBanner } from "./SupportAccess";
 import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
@@ -1024,6 +1025,8 @@ function Shell() {
   }, [user?.id]);
   if (!ready) return <Loading />;
   if (!user) return <Login />;
+  if (PRODUCT_TENANCY_REQUIRED && window.location.pathname === "/mcp/autorizar")
+    return <McpAuthorize />;
   const current = navigation.find((n) => n.id === page);
   const initials = user.name
     .split(" ")
