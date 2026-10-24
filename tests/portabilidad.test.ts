@@ -89,6 +89,12 @@ const alive = (pid: number) => {
     return false;
   }
 };
+const killIfAlive = (pid: number) => {
+  if (!pid || !alive(pid)) return;
+  // Puede salir entre alive() y kill(); solo ESRCH es un fin correcto.
+  try { process.kill(pid, "SIGKILL"); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error; }
+};
 async function until(condition: () => boolean, ms = 10000) {
   const end = Date.now() + ms;
   while (!condition() && Date.now() < end)
@@ -688,7 +694,7 @@ describe("Portabilidad · verificación (scripts/verify.mjs)", () => {
       expect(await until(() => !alive(child.pid))).toBe(true);
       if (WINDOWS) expect(await until(() => !alive(server))).toBe(true);
     } finally {
-      if (server && alive(server)) process.kill(server, "SIGKILL");
+      killIfAlive(server);
       await until(() => !server || !alive(server));
       remove(dir);
     }
