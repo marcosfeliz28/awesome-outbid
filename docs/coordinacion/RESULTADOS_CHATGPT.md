@@ -1,5 +1,12 @@
 # Resultados de ChatGPT NUBE y ChatGPT PC
 
+## 2026-10-24 · ChatGPT PC · corrección CPC-8 de PC-15
+
+- La actualización automática retiene cualquier salto mayor de 5 % respecto de la tasa vigente. Configuración muestra la tasa propuesta; una persona con permiso total debe revisarla y escribir ese valor para que el siguiente ciclo la aplique. La propuesta y la confirmación quedan diferenciadas en la bitácora.
+- Cada precio en dólares se compara con `costAvg` usando `(precio - costo) / precio`. Los márgenes menores de 15 % se guardan en Configuración, aparecen como alerta para administración y quedan detallados en la bitácora. La tasa sigue aplicándose porque la orden pidió avisar, no cambiar la regla comercial.
+- El trabajo adquiere un bloqueo PostgreSQL por empresa y sucursal. La enumeración también aísla los fallos: si no se pueden consultar los ajustes de una empresa, registra la advertencia y continúa con las demás.
+- Regresión: 4/4 pruebas focales verdes; cubren 63→400 retenido sin tocar precios, confirmación posterior, margen de 6,67 % y fallo de la empresa A sin bloquear B. `pnpm check` aprobó 768 pruebas y omitió 10 por condiciones documentadas; tipos, lint y compilaciones web/API también quedaron verdes. Faltan los tres trabajos de CI del commit publicado.
+
 ## 2026-10-24 · ChatGPT PC · corrección CPC-8 de PC-16
 
 - La gaveta exige `cash:drawer` o `*`; el rol de cajera no lo recibe. Antes de abrir, la API exige una venta en efectivo completada o un movimiento de caja de la misma empresa y sucursal, y crea `AuditLog` con usuario, terminal y referencia. Si la autorización falla, el comando nativo no se ejecuta.

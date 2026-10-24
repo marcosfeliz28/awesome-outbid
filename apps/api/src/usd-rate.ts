@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { businessDate } from "@fitstore/shared";
 import { Database } from "./common";
-import { currentTenantId, forEachActiveTenant, tenantScope, tenantUnique } from "./tenant-context";
+import { currentTenantId, tenantScope, tenantUnique } from "./tenant-context";
 
 // Tasa del dólar del día (orden de la dueña, 20-oct): se busca sola en
 // internet una vez al día. Los productos con precio en dólares (atributo
@@ -19,6 +19,11 @@ export function parseUsdRate(body: any): number {
 export const usdPrice = (usd: number, rate: number) =>
   Math.round(usd * rate * 100) / 100;
 
+const RATE_CHANGE_LIMIT = 0.05;
+const LOW_MARGIN_LIMIT = 0.15;
+
+type RateOptions = { confirmed?: boolean; userId?: string };
+
 /** Guarda la tasa en Configuración y recalcula los precios en dólares. */
 export async function applyUsdRate(
   db: any,
@@ -26,31 +31,71 @@ export async function applyUsdRate(
   rate: number,
   source: string,
   day = businessDate(),
+  options: RateOptions = {},
 ) {
   const tenantId = currentTenantId();
   return db.$transaction(async (tx: any) => {
+    // Dos instancias pueden despertar a la vez. El bloqueo y la relectura
+    // dentro de la transacción evitan duplicar bitácoras o pisar un cambio.
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`usd-rate:${tenantId}:${branchId}`}))::text AS locked`;
     const settings = await tx.settings.findUnique({
       where: tenantUnique("id", branchId),
     });
     const data = { ...((settings?.data as any) ?? {}) };
-    const before = data.usdRate ?? null;
+    const before = Number(data.usdRate) || null;
+    const pending = data.usdRatePending as
+      { rate?: number; day?: string; source?: string } | undefined;
+    const change = before ? Math.abs(rate - before) / before : 0;
+    const personConfirmed =
+      options.confirmed === true ||
+      (Number(pending?.rate) === rate && Number(data.usdRate) === rate);
+    if (
+      (change > RATE_CHANGE_LIMIT || Number(pending?.rate) === rate) &&
+      !personConfirmed
+    ) {
+      data.usdRatePending = { rate, day, source, previousRate: before };
+      await tx.settings.upsert({
+        where: tenantUnique("id", branchId),
+        create: { id: branchId, data },
+        update: { data },
+      });
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          userId: options.userId ?? "sistema",
+          action: "usd_rate_confirmation_required",
+          entity: "settings",
+          entityId: branchId,
+          before: { usdRate: before },
+          after: { proposedRate: rate, change, day, source },
+          branchId,
+        },
+      });
+      return { rate, changed: 0, confirmationRequired: true, lowMargin: [] };
+    }
     data.usdRate = rate;
     data.usdRateDate = day;
     data.usdRateSource = source;
-    await tx.settings.upsert({
-      where: tenantUnique("id", branchId),
-      create: { id: branchId, data },
-      update: { data },
-    });
+    delete data.usdRatePending;
     const variants = await tx.variant.findMany({
       where: { tenantId, branchId, active: true },
-      select: { id: true, price: true, attributes: true },
+      select: { id: true, price: true, costAvg: true, attributes: true },
     });
     const changed: { id: string; from: string; to: number }[] = [];
+    const lowMargin: {
+      id: string;
+      price: number;
+      cost: number;
+      margin: number;
+    }[] = [];
     for (const v of variants) {
       const usd = Number((v.attributes as any)?.usd);
       if (!(usd > 0)) continue;
       const price = usdPrice(usd, rate);
+      const cost = Number(v.costAvg);
+      const margin = price > 0 ? (price - cost) / price : -Infinity;
+      if (Number.isFinite(cost) && margin < LOW_MARGIN_LIMIT)
+        lowMargin.push({ id: v.id, price, cost, margin });
       if (Number(v.price) === price) continue;
       const updated = await tx.variant.updateMany({
         where: { tenantId, id: v.id },
@@ -60,19 +105,34 @@ export async function applyUsdRate(
         throw new Error("No se pudo actualizar el precio en dólares.");
       changed.push({ id: v.id, from: String(v.price), to: price });
     }
+    data.usdRateLowMargin = lowMargin.length
+      ? { day, count: lowMargin.length, variants: lowMargin.slice(0, 50) }
+      : null;
+    // La advertencia se conoce después de calcular los precios; se guarda en
+    // la misma transacción para que Configuración pueda mostrarla.
+    await tx.settings.upsert({
+      where: tenantUnique("id", branchId),
+      create: { id: branchId, data },
+      update: { data },
+    });
     await tx.auditLog.create({
       data: {
         tenantId,
-        userId: "sistema",
+        userId: options.userId ?? "sistema",
         action: "usd_rate_updated",
         entity: "settings",
         entityId: branchId,
         before: { usdRate: before },
-        after: { usdRate: rate, day, source, prices: changed },
+        after: { usdRate: rate, day, source, prices: changed, lowMargin },
         branchId,
       },
     });
-    return { rate, changed: changed.length };
+    return {
+      rate,
+      changed: changed.length,
+      confirmationRequired: false,
+      lowMargin,
+    };
   });
 }
 
@@ -98,12 +158,30 @@ export class UsdRateWorker {
       const today = businessDate();
       // Enumerar bajo el contexto RLS de cada empresa. Una sola consulta de
       // tasa sirve a todas sus sucursales; una sucursal ya actualizada se omite.
-      const pending = (await forEachActiveTenant(this.db, async () => {
-        const tenantId = currentTenantId();
-        const settings = await this.db.settings.findMany({ select: { id: true, data: true } });
-        return settings.filter((row) => (row.data as any)?.usdRateDate !== today)
-          .map((row) => ({ tenantId, branchId: row.id }));
-      })).flat();
+      const tenantIds =
+        process.env.PRODUCT_TENANCY === "required" &&
+        !tenantScope.getStore()?.tenantId
+          ? await this.db.activeTenantIds()
+          : [currentTenantId()];
+      const pending: { tenantId: string; branchId: string }[] = [];
+      for (const tenantId of tenantIds) {
+        try {
+          const rows = await tenantScope.run({ tenantId }, () =>
+            this.db.settings.findMany({ select: { id: true, data: true } }),
+          );
+          pending.push(
+            ...rows
+              .filter((row) => (row.data as any)?.usdRateDate !== today)
+              .map((row) => ({ tenantId, branchId: row.id })),
+          );
+        } catch (error: any) {
+          // Una empresa dañada o temporalmente inaccesible no priva a las
+          // demás de su actualización diaria.
+          console.warn(
+            `[tasa USD] empresa ${tenantId}: ${String(error?.message ?? error).slice(0, 240)}`,
+          );
+        }
+      }
       if (!pending.length) return;
       const res = await fetch(USD_RATE_URL, {
         signal: AbortSignal.timeout(15_000),
@@ -113,9 +191,12 @@ export class UsdRateWorker {
       for (const { tenantId, branchId } of pending) {
         try {
           await tenantScope.run({ tenantId }, () =>
-            applyUsdRate(this.db, branchId, rate, "open.er-api.com", today));
+            applyUsdRate(this.db, branchId, rate, "open.er-api.com", today),
+          );
         } catch (error: any) {
-          console.warn("[tasa USD] " + String(error?.message ?? error).slice(0, 300));
+          console.warn(
+            "[tasa USD] " + String(error?.message ?? error).slice(0, 300),
+          );
         }
       }
     } catch (error: any) {

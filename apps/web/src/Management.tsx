@@ -4241,6 +4241,28 @@ export function Configuration() {
                 cajero pide PIN de gerente.
               </p>
             )}
+            {query.data?.usdRatePending?.rate && (
+              <p className="cod-hint" role="alert">
+                La tasa automática propuesta es RD${" "}
+                {Number(query.data.usdRatePending.rate).toLocaleString(
+                  "es-DO",
+                  { minimumFractionDigits: 2, maximumFractionDigits: 4 },
+                )}
+                , un cambio mayor de 5 %. Revisa la fuente y, si es correcta,
+                escribe exactamente esa tasa en «Editar configuración». Se
+                aplicará en la próxima comprobación automática.
+              </p>
+            )}
+            {Number(query.data?.usdRateLowMargin?.count) > 0 && (
+              <p className="cod-hint" role="alert">
+                Atención: {query.data.usdRateLowMargin.count} precio
+                {Number(query.data.usdRateLowMargin.count) === 1
+                  ? " queda"
+                  : "s quedan"}{" "}
+                con margen menor de 15 % después de aplicar la tasa del dólar.
+                Revisa sus costos y precios.
+              </p>
+            )}
             <StoreSettings />
             <NcfSequenceSettings />
             <TelegramNotices />

@@ -605,7 +605,10 @@ export class AdminController {
       const existing = await idempotent(
         tx,
         operationId,
-        () => tx.supplierPayment.findUnique({ where: tenantUnique("operationId", operationId) }),
+        () =>
+          tx.supplierPayment.findUnique({
+            where: tenantUnique("operationId", operationId),
+          }),
         (row: any) =>
           row.branchId === actor.branchId &&
           row.createdBy === actor.id &&
@@ -791,7 +794,9 @@ export class AdminController {
     );
     // Una cotización no puede reservar ni revelar precio de un artículo de
     // otra empresa. Validar TODOS los IDs antes de guardar el JSON de líneas.
-    const requestedVariantIds = [...new Set(data.items.map((i) => i.variantId))];
+    const requestedVariantIds = [
+      ...new Set(data.items.map((i) => i.variantId)),
+    ];
     return this.db.$transaction(async (tx) => {
       if (data.customerId) await lockActiveCustomer(tx, actor, data.customerId);
       const ownVariants = await tx.variant.findMany({
@@ -881,10 +886,28 @@ export class AdminController {
       const kept =
         logo === undefined ? (before?.data as any)?.logo : logo || undefined;
       const previous = before?.data as Record<string, unknown> | undefined;
-      const data = {
+      const data: any = {
+        // Datos operativos de la actualización automática no forman parte del
+        // formulario. Conservarlos permite que escribir la tasa propuesta sea
+        // la confirmación humana y que el siguiente ciclo la aplique.
+        ...(previous?.usdRateDate ? { usdRateDate: previous.usdRateDate } : {}),
+        ...(previous?.usdRateSource
+          ? { usdRateSource: previous.usdRateSource }
+          : {}),
+        ...(previous?.usdRatePending
+          ? { usdRatePending: previous.usdRatePending }
+          : {}),
+        ...(Object.prototype.hasOwnProperty.call(
+          previous ?? {},
+          "usdRateLowMargin",
+        )
+          ? { usdRateLowMargin: previous?.usdRateLowMargin }
+          : {}),
         ...config,
         ...(previous?.onboarding ? { onboarding: previous.onboarding } : {}),
-        ...(previous?.businessType ? { businessType: previous.businessType } : {}),
+        ...(previous?.businessType
+          ? { businessType: previous.businessType }
+          : {}),
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
           : previous?.allowOfflineSales === true,
@@ -1111,17 +1134,17 @@ export class AdminController {
       await enforcePlanQuota(tx as any, "branches", actor.branchId);
       return tx.user.create({
         data: {
-        name: data.name,
-        username: requestedUsername,
-        usernameKey,
-        email: (data.email || generatedEmail).toLowerCase(),
-        passwordHash: hashedPassword,
-        mustChangePassword: true,
-        passwordExpiresAt: temporaryPasswordExpiry(),
-        pinHash: hashedPin,
-        roleId: data.roleId,
-        branchId: actor.branchId,
-        cashierNumber: data.cashierNumber,
+          name: data.name,
+          username: requestedUsername,
+          usernameKey,
+          email: (data.email || generatedEmail).toLowerCase(),
+          passwordHash: hashedPassword,
+          mustChangePassword: true,
+          passwordExpiresAt: temporaryPasswordExpiry(),
+          pinHash: hashedPin,
+          roleId: data.roleId,
+          branchId: actor.branchId,
+          cashierNumber: data.cashierNumber,
         },
       });
     });
