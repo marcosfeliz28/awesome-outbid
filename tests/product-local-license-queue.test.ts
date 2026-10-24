@@ -6,18 +6,20 @@ const locked = (message: string, reason?: string) =>
 
 describe("PC-19 cola con licencia local", () => {
   it("aísla una captura inválida y deja pasar el resto del lote", async () => {
+    const rows = Array.from({ length: 100 }, (_, index) => index + 1);
     const calls: number[][] = [];
-    const result = await sendLicenseAwareBatches([1, 2, 3], async (rows) => {
-      calls.push(rows);
-      if (rows.includes(2)) throw locked("captura fuera de vigencia");
-      return rows.map((id) => "ok-" + id);
+    const result = await sendLicenseAwareBatches(rows, async (part) => {
+      calls.push(part);
+      if (part.includes(51)) throw locked("captura fuera de vigencia");
+      return part.map((id) => "ok-" + id);
     });
-    expect(result.accepted).toEqual(["ok-1", "ok-3"]);
+    expect(result.accepted).toHaveLength(99);
+    expect(result.accepted).toContain("ok-1");
+    expect(result.accepted).toContain("ok-100");
     expect(result.rejected).toEqual([
-      { row: 2, message: "captura fuera de vigencia" },
+      { row: 51, message: "captura fuera de vigencia" },
     ]);
-    expect(calls).toContainEqual([1]);
-    expect(calls).toContainEqual([3]);
+    expect(calls).toContainEqual([51]);
   });
 
   it("no convierte un vencimiento global en conflicto", async () => {
