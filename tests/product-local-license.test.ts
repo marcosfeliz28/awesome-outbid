@@ -265,6 +265,39 @@ describe("PC-19 licencia local", () => {
     }
   });
 
+  it("conserva el historial necesario para sincronizar ventas antiguas legítimas", () => {
+    const dir = mkdtempSync(join(tmpdir(), "pc19-history-"));
+    try {
+      for (let week = 0; week < 65; week++) {
+        const issuedAt = base + week * 7 * 86400000;
+        const license = new LocalLicense({
+          directory: dir,
+          publicKey,
+          installationId: "test-installation",
+          now: () => issuedAt,
+        });
+        license.install(
+          token(
+            claims({
+              issuedAt: new Date(issuedAt).toISOString(),
+              expiresAt: new Date(issuedAt + 7 * 86400000).toISOString(),
+            }),
+          ),
+        );
+      }
+      const now = base + 64 * 7 * 86400000;
+      const current = new LocalLicense({
+        directory: dir,
+        publicKey,
+        installationId: "test-installation",
+        now: () => now,
+      });
+      expect(current.canWrite(now, base + 86400000)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("renueva por HTTPS con credencial y verifica la respuesta antes de instalarla", async () => {
     const f = fixture();
     const previous = process.env.PRODUCT_LOCAL_LICENSE_RENEW_TOKEN;

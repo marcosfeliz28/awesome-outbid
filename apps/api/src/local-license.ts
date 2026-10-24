@@ -112,7 +112,10 @@ export class LocalLicense {
     }
     if (Date.parse(token.claims.issuedAt) > now + CLOCK_TOLERANCE)
       throw new Error("La licencia viene del futuro.");
-    persist(this.tokenPath, [...history, token].slice(-60));
+    // Las ventas offline pueden permanecer en revisión más de 60 semanas.
+    // Conservar los intervalos firmados evita declarar inválida una captura
+    // legítima sólo porque su licencia salió de una ventana arbitraria.
+    persist(this.tokenPath, [...history, token]);
     // Una respuesta nueva y firmada por el servidor es una fuente de tiempo
     // más fiable que el máximo local. Esto permite recuperarse si Windows se
     // adelantó por accidente, sin aceptar el token anterior ni uno futuro.
