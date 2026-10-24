@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { observeLocalQueue } from "./localQueueObserver";
+import { merchandiseDecision } from "./merchandiseDecision";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Camera,
@@ -329,7 +330,14 @@ export function Merchandise() {
     [total, setTotal] = useState(""),
     [mismatchAccepted, setMismatchAccepted] = useState(false),
     [doc, setDoc] = useState<SupplierDocument>({}),
-    [queue, setQueue] = useState<any[]>([]);
+    [queue, setQueue] = useState<any[]>([]),
+    [decision, setDecision] = useState<{
+      title: string;
+      consequence: string;
+      confirmLabel: string;
+      onApprove: () => void;
+    } | null>(null);
+  const focusBeforeDecision = useRef<HTMLElement | null>(null);
   const [file, setFile] = useState<File | null>(null),
     [mapping, setMapping] = useState<Record<string, string>>({
       code: "codigo",
@@ -444,17 +452,34 @@ export function Merchandise() {
     setDoc({});
     operationId.current = crypto.randomUUID();
   };
+  const askDecision = (
+    details: ReturnType<typeof merchandiseDecision>,
+    onApprove: () => void,
+  ) => {
+    focusBeforeDecision.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setDecision({ ...details, onApprove });
+  };
+  const closeDecision = () => {
+    setDecision(null);
+    requestAnimationFrame(() => focusBeforeDecision.current?.focus());
+  };
   const switchTo = (next: "entry" | "exit") => {
     if (next === direction) return;
-    if (
-      items.length &&
-      !window.confirm("¿Descartar las líneas al cambiar de modo?")
-    )
-      return;
-    resetForm();
-    setResult(null);
-    setError("");
-    setDirection(next);
+    const perform = () => {
+      resetForm();
+      setResult(null);
+      setError("");
+      setDirection(next);
+    };
+    if (items.length) {
+      askDecision(
+        merchandiseDecision("change-mode", { lines: items.length }),
+        perform,
+      );
+    } else perform();
   };
   const confirm = async () => {
     if (!items.length || busy) return;
@@ -482,14 +507,17 @@ export function Merchandise() {
       setError("Elige el proveedor y escribe la referencia de la devolución.");
       return;
     }
-    if (
-      !window.confirm(
-        direction === "entry"
-          ? `¿Confirmar entrada de ${units} unidad(es)${damaged ? ` y ${damaged} dañada(s) que no entran al stock` : ""}?`
-          : `¿Confirmar salida de ${units} unidad(es) por ${reasonLabel(reason).toLowerCase()}?`,
-      )
-    )
-      return;
+    askDecision(
+      merchandiseDecision("register", {
+        direction,
+        units,
+        damaged,
+        reason: reasonLabel(reason),
+      }),
+      () => void submit(),
+    );
+  };
+  const submit = async () => {
     setBusy(true);
     setError("");
     const input = {
@@ -1399,51 +1427,52 @@ export function Merchandise() {
                     <Button
                       variant="secondary"
                       onClick={() => {
-                        if (
-                          !window.confirm(
-                            "¿Cargar esta operación para corregirla? La cola conservará la original hasta confirmar la corrección.",
-                          )
-                        )
-                          return;
-                        setItems(
-                          row.input.items.map((l: any) => {
-                            // Al corregir, los dañados quedan a la vista.
-                            const v = variants.find(
-                              (v) => v.id === l.variantId,
+                        askDecision(
+                          merchandiseDecision("review-conflict", {}),
+                          () => {
+                            setItems(
+                              row.input.items.map((l: any) => {
+                                // Al corregir, los dañados quedan a la vista.
+                                const v = variants.find(
+                                  (v) => v.id === l.variantId,
+                                );
+                                return {
+                                  ...l,
+                                  showDamage: Number(l.damagedQty) > 0,
+                                  name: v
+                                    ? variantName(v)
+                                    : (l.quick?.name ?? l.variantId),
+                                  expiryDate: l.expiryDate?.slice(0, 10),
+                                };
+                              }),
                             );
-                            return {
-                              ...l,
-                              showDamage: Number(l.damagedQty) > 0,
-                              name: v
-                                ? variantName(v)
-                                : (l.quick?.name ?? l.variantId),
-                              expiryDate: l.expiryDate?.slice(0, 10),
-                            };
-                          }),
+                            setDraft(
+                              row.input.draftId
+                                ? { id: row.input.draftId }
+                                : null,
+                            );
+                            setDirection(row.input.direction);
+                            setSupplier(row.input.supplierId ?? "");
+                            setOrder(row.input.orderId ?? "");
+                            setReason(row.input.reason ?? "merma");
+                            setFreight(row.input.freight);
+                            setTaxes(row.input.taxes);
+                            setDoc({
+                              supplierInvoice: row.input.supplierInvoice,
+                              supplierNcf: row.input.supplierNcf,
+                              invoiceDate: row.input.invoiceDate,
+                              paymentType: row.input.paymentType,
+                              creditDays: row.input.creditDays,
+                              itbis: row.input.itbis,
+                            });
+                            setTotal(
+                              row.input.invoiceTotal != null
+                                ? String(row.input.invoiceTotal)
+                                : "",
+                            );
+                            operationId.current = row.id;
+                          },
                         );
-                        setDraft(
-                          row.input.draftId ? { id: row.input.draftId } : null,
-                        );
-                        setDirection(row.input.direction);
-                        setSupplier(row.input.supplierId ?? "");
-                        setOrder(row.input.orderId ?? "");
-                        setReason(row.input.reason ?? "merma");
-                        setFreight(row.input.freight);
-                        setTaxes(row.input.taxes);
-                        setDoc({
-                          supplierInvoice: row.input.supplierInvoice,
-                          supplierNcf: row.input.supplierNcf,
-                          invoiceDate: row.input.invoiceDate,
-                          paymentType: row.input.paymentType,
-                          creditDays: row.input.creditDays,
-                          itbis: row.input.itbis,
-                        });
-                        setTotal(
-                          row.input.invoiceTotal != null
-                            ? String(row.input.invoiceTotal)
-                            : "",
-                        );
-                        operationId.current = row.id;
                       }}
                     >
                       Revisar
@@ -1459,6 +1488,28 @@ export function Merchandise() {
       {camera && (
         <ContinuousScanner onCode={scan} onClose={() => setCamera(false)} />
       )}
+      <Modal
+        open={decision !== null}
+        title={decision?.title ?? "Confirmar acción"}
+        onClose={closeDecision}
+      >
+        <p className="modal-intro">{decision?.consequence}</p>
+        <div className="goods-row-actions">
+          <Button variant="secondary" onClick={closeDecision}>
+            Cancelar
+          </Button>
+          <Button
+            disabled={busy}
+            onClick={() => {
+              const action = decision?.onApprove;
+              closeDecision();
+              action?.();
+            }}
+          >
+            {decision?.confirmLabel ?? "Confirmar"}
+          </Button>
+        </div>
+      </Modal>
       {unknown !== null && (
         <FormModal
           title="Crear producto rápido"
