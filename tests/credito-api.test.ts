@@ -1165,7 +1165,8 @@ describe("W7 · incentivo al cobrar", () => {
 
   it("la dueña cierra en efectivo lo que recibió en la mano, sin caja; una cajera no puede", async () => {
     const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
-    // La cajera sigue necesitando su caja aunque mande la marca.
+    // La cajera sin caja y sin PIN de gerente no puede (A1, 24-oct: con el
+    // PIN sí, ver la prueba «A1» al final del archivo).
     const cajera = await collect(
       ana,
       s.id,
@@ -1174,7 +1175,7 @@ describe("W7 · incentivo al cobrar", () => {
       null,
     );
     expect(cajera.status).toBe(400);
-    expect(cajera.body.message).toMatch(/caja abierta/i);
+    expect(cajera.body.message).toMatch(/PIN de un gerente/i);
     const r = await collect(
       adminA,
       s.id,
@@ -1590,5 +1591,53 @@ describe("Corregir el método de pago (dueña, 23-oct)", () => {
     const after = await expectedOf(ana);
     expect(after.cash).toBe(before.cash - 200);
     expect(after.transfer).toBe(before.transfer + 200);
+  });
+});
+
+describe("A1 · efectivo que ya tiene la dueña, registrado por la cajera con PIN de gerente (24-oct)", () => {
+  it("sin PIN 400, PIN malo rechazado, con PIN salda sin tocar la gaveta y el reenvío no duplica", async () => {
+    const s = (await sale(ana, 300, [{ method: "cod", amount: 300 }])).body;
+    const before = await expectedOf(ana);
+    const operationId = randomUUID();
+    const send = (managerPin?: string, op = operationId) =>
+      request("/sales/" + s.id + "/credit-collections", ana.token, {
+        operationId: op,
+        cashSessionId: ana.cash.id,
+        ...(managerPin ? { managerPin } : {}),
+        lines: [{ method: "cash", amount: 300, ownerConfirmed: true }],
+      });
+    expect((await send()).status).toBe(400);
+    expect((await send("111111", randomUUID())).status).toBeGreaterThanOrEqual(
+      400,
+    );
+    const done = await send("246813");
+    expect(done.status, JSON.stringify(done.body)).toBeLessThan(300);
+    const payments = await db.payment.findMany({
+      where: { saleId: s.id, entryType: "installment" },
+    });
+    expect(payments).toHaveLength(1);
+    expect(payments[0].cashSessionId).toBeNull();
+    expect(payments[0].receivedById).not.toBe(ana.id);
+    expect([adminA.id, adminB.id, adminNoCash.id]).toContain(
+      payments[0].receivedById,
+    );
+    expect(
+      Number((await db.sale.findUnique({ where: { id: s.id } })).creditBalance),
+    ).toBe(0);
+    expect((await expectedOf(ana)).cash).toBe(before.cash);
+    // A2: el cuadre lo lista aparte, sin sumarlo al esperado.
+    const cuadre = await ok("/cash-sessions/" + ana.cash.id + "/cuadre", owner);
+    expect(
+      cuadre.ownerReceived.some(
+        (r: any) => r.number === s.number && r.amount === 300,
+      ),
+    ).toBe(true);
+    const again = await send("246813");
+    expect(again.status, JSON.stringify(again.body)).toBeLessThan(300);
+    expect(
+      await db.payment.count({
+        where: { saleId: s.id, entryType: "installment" },
+      }),
+    ).toBe(1);
   });
 });
