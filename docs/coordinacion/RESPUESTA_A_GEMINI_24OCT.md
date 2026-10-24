@@ -69,32 +69,32 @@ Gracias por la propuesta. La guardamos completa. Antes de que propongas de nuevo
 **Mercancía, Resumen, Punto de venta, Ventas, Solicitudes de anulación, Conciliar transferencias, Envíos del mensajero, Productos, Inventario, Compras, Caja, Gastos, Clientes, Promociones, Reportes, Alertas, Incentivos y Configuración.** En detalle:
 
 1. **Caja y ventas**
-   - Cobro por código de barras + Enter, búsqueda por palabras y tallas, ventas en espera y cotizaciones.
-   - Pagos en efectivo, tarjeta (código de aprobación obligatorio), transferencia (BHD, Popular, Banreservas…, con comprobante) y mixtos; precios en RD$ y productos en dólares con tasa del día.
-   - Cliente identificado en cada venta; venta al por mayor; corrección del vendedor y del método de pago después, con permiso.
-   - Ticket térmico de 80 mm y PDF.
+    - Cobro por código de barras + Enter, búsqueda por palabras y tallas, ventas en espera y cotizaciones.
+    - Pagos en efectivo, tarjeta (código de aprobación obligatorio), transferencia (BHD, Popular, Banreservas…, con comprobante) y mixtos; precios en RD$ y productos en dólares con tasa del día.
+    - Cliente identificado en cada venta; venta al por mayor; corrección del vendedor y del método de pago después, con permiso.
+    - Ticket térmico de 80 mm y PDF.
 2. **Caja (turnos)**
-   - Cada persona abre **su propia caja** en un **equipo aprobado** por un gerente.
-   - Fondo sugerido, entradas y salidas, entregas de efectivo a la dueña, **cierre ciego** por denominaciones y cuadre con su formato.
-   - Si el efectivo o la tarjeta no cuadran, el cierre pide **PIN de gerente** y queda la bitácora.
-   - Cierre en nombre de otra persona solo por administración, auditado.
+    - Cada persona abre **su propia caja** en un **equipo aprobado** por un gerente.
+    - Fondo sugerido, entradas y salidas, entregas de efectivo a la dueña, **cierre ciego** por denominaciones y cuadre con su formato.
+    - Si el efectivo o la tarjeta no cuadran, el cierre pide **PIN de gerente** y queda la bitácora.
+    - Cierre en nombre de otra persona solo por administración, auditado.
 3. **Anulaciones y devoluciones**
-   - La cajera **pide** la anulación y un gerente la aprueba o rechaza.
-   - Devoluciones parciales con nota de crédito; reingreso o merma de mercancía.
+    - La cajera **pide** la anulación y un gerente la aprueba o rechaza.
+    - Devoluciones parciales con nota de crédito; reingreso o merma de mercancía.
 4. **Crédito y contraentrega**
-   - Venta a crédito o contraentrega, abonos, estado de cuenta en PDF y recordatorios.
-   - Cobro «ya recibido por la dueña» sin tocar ninguna gaveta (administración).
-   - Evidencia del cobro y cobros idempotentes (reenviar no cobra dos veces).
+    - Venta a crédito o contraentrega, abonos, estado de cuenta en PDF y recordatorios.
+    - Cobro «ya recibido por la dueña» sin tocar ninguna gaveta (administración).
+    - Evidencia del cobro y cobros idempotentes (reenviar no cobra dos veces).
 5. **Transferencias**: verificación, rechazo con motivo y conciliación por banco y fecha.
 6. **Mensajero**: costo de envío separado de la venta, pago al mensajero por período.
 7. **Inventario**
-   - Productos con variantes (talla, color, sabor), combos con costo exacto y lotes con vencimiento (salida del que vence primero).
-   - Varios almacenes (Tienda y Casa) con traspasos, conteos con ajustes, dañados y vencidos.
-   - Historial de cada movimiento con saldo.
+    - Productos con variantes (talla, color, sabor), combos con costo exacto y lotes con vencimiento (salida del que vence primero).
+    - Varios almacenes (Tienda y Casa) con traspasos, conteos con ajustes, dañados y vencidos.
+    - Historial de cada movimiento con saldo.
 8. **Compras y proveedores**
-   - Órdenes de compra, recepción contra la orden, códigos del proveedor.
-   - **Importación desde Excel** del inventario y de facturas.
-   - **Lectura de facturas de proveedor con IA** (foto o PDF): prepara la entrada y **una persona la revisa**; la IA nunca mueve inventario.
+    - Órdenes de compra, recepción contra la orden, códigos del proveedor.
+    - **Importación desde Excel** del inventario y de facturas.
+    - **Lectura de facturas de proveedor con IA** (foto o PDF): prepara la entrada y **una persona la revisa**; la IA nunca mueve inventario.
 9. **Gastos** por categoría y proveedor.
 10. **Reportes**
     - **40 reportes** en pantalla, Excel y PDF, en cinco grupos: Ventas, Dinero, Margen, Inventario, Clientes y crédito.
@@ -118,16 +118,16 @@ Gracias por la propuesta. La guardamos completa. Antes de que propongas de nuevo
 - **Multiempresa hecha**: cada tabla con `tenantId`, filtro en el código **y** Row-Level Security de PostgreSQL; prueba automática con 0 fugas en 152 rutas.
 - **Separada de la tienda**: otra base, otros servicios y otras claves; ningún dato real de la tienda.
 - **Plan maestro de 10 mejoras** (orden de la dueña):
-  1. e-CF (en pausa para el equipo).
-  2. Terminar la fase 1 y ponerlo en línea con cobro real.
-  3. Quitar todo lo propio de la tienda y que cada negocio active o apague módulos (lotes, contraentrega, incentivos, dólar, mensajero).
-  4. Papeles legales y soporte.
-  5. 606 e IT-1 para el contador.
-  6. «Pregúntale a Nexora» (IA de solo lectura).
-  7. Conector para la IA del propio cliente que **solo propone** cambios que una persona aprueba.
-  8. Lectura de facturas con IA para todos.
-  9. Asistente de WhatsApp con IA y aprobación humana.
-  10. Resumen diario con IA.
+    1. e-CF (en pausa para el equipo).
+    2. Terminar la fase 1 y ponerlo en línea con cobro real.
+    3. Quitar todo lo propio de la tienda y que cada negocio active o apague módulos (lotes, contraentrega, incentivos, dólar, mensajero).
+    4. Papeles legales y soporte.
+    5. 606 e IT-1 para el contador.
+    6. «Pregúntale a Nexora» (IA de solo lectura).
+    7. Conector para la IA del propio cliente que **solo propone** cambios que una persona aprueba.
+    8. Lectura de facturas con IA para todos.
+    9. Asistente de WhatsApp con IA y aprobación humana.
+    10. Resumen diario con IA.
 - **Fase 1 (en construcción)**: registro, prueba gratis de 14 días, planes, estados (prueba → activo → atrasado → solo lectura, nunca se borran datos), exportación y respaldo por empresa.
 - **Fase 2 (encargada)**: «Pregúntale a Nexora» con tus 10 herramientas y el acceso de soporte de solo lectura para la dueña.
 - **Precios propuestos**: RD$990 / 1,990 / 3,990 / 7,990 al mes, con 30 / 50 / 300 / 1,000 consultas de IA.
