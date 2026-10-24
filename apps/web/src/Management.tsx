@@ -1463,6 +1463,20 @@ export function Expenses() {
               },
               { label: "Monto", render: (e) => formatMoney(e.amount) },
               {
+                label: "Comprobante",
+                render: (e) =>
+                  e.ncf ? (
+                    <span>
+                      <strong>{e.ncf}</strong>
+                      <small>ITBIS: {formatMoney(e.itbis ?? 0)}</small>
+                    </span>
+                  ) : e.receiptUrl ? (
+                    "Comprobante anterior sin datos fiscales"
+                  ) : (
+                    "Sin comprobante"
+                  ),
+              },
+              {
                 label: "Acción",
                 render: (e) => (
                   <button
@@ -1480,45 +1494,68 @@ export function Expenses() {
       {create && (
         <FormModal
           title="Registrar un gasto"
-          fields={[
-            { key: "description", label: "Descripción", required: true },
-            {
-              key: "categoryId",
-              label: "Categoría",
-              type: "select",
-              required: true,
-              options: cats.data?.map((c: any) => ({
-                label: c.name,
-                value: c.id,
-              })),
-            },
-            { ...requiredNumber("amount", "Monto"), min: 0.01 },
-            {
-              key: "date",
-              label: "Fecha",
-              type: "date",
-              initial: today(),
-              required: true,
-            },
-            {
-              key: "method",
-              label: "Método",
-              type: "select",
-              initial: "transfer",
-              options: paymentOptions,
-              required: true,
-            },
-            { key: "receiptUrl", label: "URL del comprobante" },
-            {
-              key: "recurring",
-              label: "Marcar como recurrente mensual",
-              type: "checkbox",
-            },
-          ]}
+          fields={(values) => {
+            const withDocument = Boolean(
+              values.receiptUrl?.trim() ||
+              values.ncf?.trim() ||
+              (values.itbis ?? "") !== "",
+            );
+            return [
+              { key: "description", label: "Descripción", required: true },
+              {
+                key: "categoryId",
+                label: "Categoría",
+                type: "select",
+                required: true,
+                options: cats.data?.map((c: any) => ({
+                  label: c.name,
+                  value: c.id,
+                })),
+              },
+              { ...requiredNumber("amount", "Monto"), min: 0.01 },
+              {
+                key: "date",
+                label: "Fecha",
+                type: "date",
+                initial: today(),
+                required: true,
+              },
+              {
+                key: "method",
+                label: "Método",
+                type: "select",
+                initial: "transfer",
+                options: paymentOptions,
+                required: true,
+              },
+              { key: "receiptUrl", label: "URL del comprobante (opcional)" },
+              {
+                key: "ncf",
+                label: "NCF del comprobante",
+                required: withDocument,
+                help: "Si registras un comprobante, indica también el ITBIS facturado.",
+              },
+              {
+                key: "itbis",
+                label: "ITBIS del comprobante",
+                inputMode: "decimal",
+                pattern: "[0-9]+([.][0-9]{1,2})?",
+                required: withDocument,
+                help: "Escribe 0 cuando el comprobante no facture ITBIS.",
+              },
+              {
+                key: "recurring",
+                label: "Marcar como recurrente mensual",
+                type: "checkbox",
+              },
+            ];
+          }}
           onClose={() => setCreate(false)}
           onSubmit={(data) =>
             post("/expenses", {
               ...data,
+              // Vacío no equivale a cero; la API exige el dato si hay comprobante.
+              itbis: data.itbis === "" ? undefined : Number(data.itbis),
               operationId: create,
               date: new Date(data.date + "T12:00:00-04:00").toISOString(),
             })

@@ -1186,6 +1186,90 @@ describe("Auditoría 01 · dinero", () => {
 });
 
 describe("Auditoría 06 · concurrencia del dinero", () => {
+  it("PC-11: un gasto con comprobante exige NCF e ITBIS, conserva cero y no cambia datos en el reintento", async () => {
+    const categoryId = (await ok("/expense-categories", admin))[0].id;
+    const operationId = randomUUID();
+    const baseExpense = {
+      categoryId,
+      amount: 118,
+      description: "Gasto fiscal de prueba " + operationId,
+      method: "transfer",
+      receiptUrl: "https://example.test/comprobante.pdf",
+    };
+    const missing = await request("/expenses", admin, {
+      ...baseExpense,
+      operationId,
+    });
+    expect(missing.status).toBe(400);
+    expect(JSON.stringify(missing.body)).toMatch(/NCF|ITBIS/);
+    expect(await db.expense.count({ where: { operationId } })).toBe(0);
+
+    const ncfOnly = await request("/expenses", admin, {
+      categoryId,
+      amount: 118,
+      description: "Documento sin impuesto",
+      method: "transfer",
+      ncf: "B0100000123",
+    });
+    expect(ncfOnly.status).toBe(400);
+    const malformed = await request("/expenses", admin, {
+      ...baseExpense,
+      ncf: "NCF-inválido",
+      itbis: 18,
+    });
+    expect(malformed.status).toBe(400);
+
+    const withoutDocument = await request("/expenses", admin, {
+      categoryId,
+      amount: 25,
+      description: "Gasto sin comprobante de prueba",
+      method: "cash",
+    });
+    expect(withoutDocument.status).toBe(201);
+    expect(withoutDocument.body.ncf).toBeNull();
+    expect(withoutDocument.body.itbis).toBeNull();
+
+    const data = {
+      ...baseExpense,
+      operationId,
+      ncf: "b01-00000123",
+      itbis: 0,
+    };
+    const created = await request("/expenses", admin, data);
+    expect(created.status).toBe(201);
+    expect(created.body.ncf).toBe("B0100000123");
+    expect(Number(created.body.itbis)).toBe(0);
+    const listed = await ok("/expenses", admin);
+    expect(
+      listed.find((expense: any) => expense.id === created.body.id),
+    ).toMatchObject({
+      ncf: "B0100000123",
+    });
+    const report = await ok("/reports/expenses", admin);
+    expect(
+      report.rows.find(
+        (expense: any) => expense.Descripción === baseExpense.description,
+      ),
+    ).toMatchObject({ NCF: "B0100000123", ITBIS: 0 });
+
+    const same = await request("/expenses", admin, data);
+    expect(same.status).toBe(201);
+    expect(same.body.id).toBe(created.body.id);
+    const changedTax = await request("/expenses", admin, {
+      ...data,
+      itbis: 18,
+    });
+    expect(changedTax.status).toBe(400);
+    expect(await db.expense.count({ where: { operationId } })).toBe(1);
+
+    const cashier = await person("seller", "pc11", 0);
+    const denied = await request("/expenses", cashier.token, {
+      ...data,
+      operationId: randomUUID(),
+    });
+    expect(denied.status).toBe(403);
+  });
+
   it("D-M4: un doble clic no duplica movimientos de caja, pagos a proveedor ni gastos", async () => {
     const c = await person("seller", "dm4", 500);
     const twice = async (path: string, as: string, data: any) => {

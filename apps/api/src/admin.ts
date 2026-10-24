@@ -682,23 +682,45 @@ export class AdminController {
         date: z.string().datetime().optional(),
         method: z.enum(["cash", "card", "transfer"]),
         receiptUrl: z.string().max(1000).optional(),
+        ncf: z.string().trim().max(30).optional(),
+        itbis: moneyAmount(10000000, true).optional(),
         recurring: z.boolean().default(false),
       }),
       body,
     );
+    // Con comprobante (URL o NCF), ambos datos fiscales se capturan juntos.
+    // Cero es un ITBIS declarado válido; ausencia es diferente de cero.
+    const ncf = data.ncf?.replace(/[\s-]/g, "").toUpperCase() || null;
+    const hasDocument = Boolean(
+      data.receiptUrl?.trim() || ncf || data.itbis !== undefined,
+    );
+    if (hasDocument && (!ncf || data.itbis === undefined))
+      bad(
+        "El gasto con comprobante requiere NCF e ITBIS (usa 0 si no se facturó ITBIS).",
+      );
+    if (ncf && !/^(B\d{10}|E\d{12})$/.test(ncf))
+      bad("NCF del gasto inválido: usa B y 10 dígitos o E y 12 dígitos.");
+    data.ncf = ncf ?? undefined;
     return moneyDb(this.db).$transaction(async (tx) => {
       // D-M4: un reintento con la misma clave devuelve el mismo gasto.
       const existing = await idempotent(
         tx,
         operationId,
-        () => tx.expense.findUnique({ where: tenantUnique("operationId", operationId) }),
+        () =>
+          tx.expense.findUnique({
+            where: tenantUnique("operationId", operationId),
+          }),
         (row: any) =>
           row.branchId === actor.branchId &&
           row.createdBy === actor.id &&
           row.categoryId === data.categoryId &&
           Number(row.amount) === data.amount &&
           row.method === data.method &&
-          row.description === data.description,
+          row.description === data.description &&
+          (row.ncf ?? null) === ncf &&
+          (row.itbis === null ? null : Number(row.itbis)) ===
+            (data.itbis ?? null) &&
+          (row.receiptUrl ?? "") === (data.receiptUrl ?? ""),
         "gasto",
       );
       if (existing) return existing;

@@ -826,6 +826,8 @@ export class ReportsController {
         }),
         Categoría: e.category.name,
         Descripción: e.description,
+        NCF: e.ncf ?? "",
+        ITBIS: e.itbis === null ? "" : Number(e.itbis),
         Monto: Number(e.amount),
         Presupuesto: Number(e.category.monthlyBudget),
       }));

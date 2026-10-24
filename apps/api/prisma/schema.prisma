@@ -868,6 +868,9 @@ model Expense {
   supplierId  String?
   description String
   receiptUrl  String?
+  // PC-11: datos del comprobante del gasto; NULL en gastos sin comprobante.
+  ncf         String?
+  itbis       Decimal?        @db.Decimal(14, 2)
   recurring   Boolean         @default(false)
   voided      Boolean         @default(false)
   branchId    String          @default("main")
