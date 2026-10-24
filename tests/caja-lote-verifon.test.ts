@@ -39,34 +39,40 @@ let owner = "",
   customerId = "",
   variantId = "";
 
-// Abre una caja, vende (en efectivo o con tarjeta) y devuelve el cuerpo base del cierre.
-async function sessionWith(method: "cash" | "card") {
+// Abre una caja, vende (efectivo, tarjeta o mixto) y devuelve el cuerpo base del cierre.
+async function sessionWith(kind: "cash" | "card" | "mixed") {
   const cash = await ok("/cash-sessions/open", {
     openingAmount: 0,
     openingNote: "QA: fondo de la prueba",
   });
+  const cardPart = {
+    method: "card",
+    amount: kind === "card" ? 100 : 40,
+    cardLast4: "4242",
+    approvalCode: "QA-" + suffix,
+  };
+  const cashPart = { method: "cash", amount: kind === "cash" ? 100 : 60 };
   await ok("/sales", {
     offlineUuid: randomUUID(),
     customerId,
     cashSessionId: cash.id,
     items: [{ variantId, qty: 1 }],
-    payments: [
-      {
-        method,
-        amount: 100,
-        ...(method === "card"
-          ? { cardLast4: "4242", approvalCode: "QA-" + suffix }
-          : {}),
-      },
-    ],
+    payments:
+      kind === "cash"
+        ? [cashPart]
+        : kind === "card"
+          ? [cardPart]
+          : [cashPart, cardPart],
     expectedTotal: 100,
   });
   return {
     id: cash.id as string,
     close: {
-      countedCash: method === "cash" ? 100 : 0,
-      countedCard: method === "card" ? 100 : 0,
+      countedCash: kind === "card" ? 0 : kind === "cash" ? 100 : 60,
+      countedCard: kind === "card" ? 100 : kind === "cash" ? 0 : 40,
       countedTransfer: 0,
+      // Entrega todo el efectivo: no deja fondo sugerido a las demás pruebas.
+      delivered: kind === "card" ? 0 : kind === "cash" ? 100 : 60,
       notes: "QA cierre lote",
     },
   };
@@ -161,6 +167,19 @@ describe("CPC-2 · lote del verifón al cerrar caja", () => {
     });
     expect(r.status, JSON.stringify(r.body)).toBeLessThan(300);
     const cuadre = await ok("/cash-sessions/" + s.id + "/cuadre");
-    expect(cuadre.cardBatch).toEqual({ number: "000123", hasPhoto: false });
+    expect(cuadre.cardBatch).toEqual({ number: "000123" });
+  });
+  it("caja mixta (efectivo y tarjeta): también exige el lote", async () => {
+    const s = await sessionWith("mixed");
+    const sin = await request("/cash-sessions/" + s.id + "/close", s.close);
+    expect(sin.status).toBe(400);
+    expect(JSON.stringify(sin.body)).toContain("número de lote del verifón");
+    const con = await request("/cash-sessions/" + s.id + "/close", {
+      ...s.close,
+      batchNumber: "000124",
+    });
+    expect(con.status, JSON.stringify(con.body)).toBeLessThan(300);
+    const cuadre = await ok("/cash-sessions/" + s.id + "/cuadre");
+    expect(cuadre.cardBatch).toEqual({ number: "000124" });
   });
 });

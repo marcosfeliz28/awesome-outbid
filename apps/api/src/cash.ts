@@ -7,10 +7,7 @@ import {
   Post,
   Query,
   Res,
-  UploadedFile,
-  UseInterceptors,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { compare } from "bcryptjs";
 import {
@@ -40,7 +37,6 @@ import {
   audit,
   bad,
   denied,
-  imageType,
   canViewCashExpected,
 } from "./common";
 import { cashLock, terminalName, terminalNames } from "./sales";
@@ -440,10 +436,8 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
     sessionId: session.id,
     title: "Cuadre de Caja",
     descuadre,
-    // CPC-2: lote del verifón (la foto no viaja en el cuadre, sólo si existe).
-    cardBatch: details.batchNumber
-      ? { number: details.batchNumber, hasPhoto: !!details.batchPhoto }
-      : null,
+    // CPC-2: lote del verifón.
+    cardBatch: details.batchNumber ? { number: details.batchNumber } : null,
     footer: "FIN DEL CUADRE",
     business: {
       name: settings.name ?? "",
@@ -668,16 +662,10 @@ export class CashController {
           differenceCash,
           differenceCard,
           differenceTransfer,
-          closeDetails,
           ...visible
         } = s;
-        // CPC-2: la foto del lote (hasta 2 MB) no viaja en el listado.
-        const { batchPhoto, ...details } = (closeDetails ?? {}) as any;
         return {
           ...visible,
-          closeDetails: closeDetails
-            ? { ...details, hasBatchPhoto: !!batchPhoto }
-            : closeDetails,
           registerName: registerName(s.registerId),
           userName: owners.get(s.userId) ?? null,
           ...(showExpected
@@ -1070,7 +1058,8 @@ export class CashController {
       const settings = (
         await tx.settings.findUnique({ where: { id: actor.branchId } })
       )?.data as any;
-      // CPC-2: con ventas en tarjeta se exige el lote del verifón.
+      // CPC-2 (dueña, 24-oct): todo cierre con pago en tarjeta (sólo tarjeta o
+      // mixta) exige el lote del verifón; sin tarjeta no se pide.
       if (!input.batchNumber) {
         const cardPayments = await tx.payment.count({
           where: {
@@ -1339,42 +1328,6 @@ export class CashController {
       );
       return row;
     });
-  }
-  // CPC-2: foto opcional del voucher de cierre de lote (jpg/png/webp, 2 MB),
-  // igual que la evidencia de un cobro (POST /payments/:id/proof). Se sube
-  // después de cerrar y queda en closeDetails.batchPhoto.
-  @Post(":id/batch-photo")
-  @Permit("cash:write")
-  @UseInterceptors(
-    FileInterceptor("file", {
-      limits: { fileSize: 2 * 1024 * 1024 + 1, files: 1 },
-    }),
-  )
-  async batchPhoto(
-    @Param("id") id: string,
-    @UploadedFile() file: any,
-    @CurrentUser() actor: Actor,
-  ) {
-    if (!file?.buffer?.length) bad("Adjunta la foto del voucher del lote.");
-    if (file.size > 2 * 1024 * 1024)
-      bad("La foto debe pesar como máximo 2 MB.");
-    const type = imageType(file.buffer);
-    if (!type || type === "gif")
-      bad("La evidencia debe ser una imagen JPG, PNG o WebP.");
-    const session = await this.ownSession(actor, id);
-    const details = (session.closeDetails ?? {}) as Record<string, unknown>;
-    if (!session.closedAt || !details.batchNumber)
-      bad("La foto se adjunta a una caja cerrada con número de lote.");
-    await this.db.cashSession.update({
-      where: { id: session.id },
-      data: {
-        closeDetails: {
-          ...details,
-          batchPhoto: `data:image/${type};base64,${file.buffer.toString("base64")}`,
-        } as any,
-      },
-    });
-    return { hasPhoto: true };
   }
   @Get(":id/cuadre")
   @Permit("cash:write")

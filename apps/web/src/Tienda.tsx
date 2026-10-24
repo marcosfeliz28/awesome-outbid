@@ -197,7 +197,6 @@ export function CloseCashModal({
     differenceReason: "",
     batchNumber: "",
   });
-  const [batchPhoto, setBatchPhoto] = useState<File | null>(null);
   const user = useStore((s) => s.user);
   // Igual que cash.ts (canViewCashExpected).
   const canSeeExpected =
@@ -277,17 +276,6 @@ export function CloseCashModal({
           ? { managerPin: form.managerPin }
           : {}),
       });
-      // CPC-2: la foto del voucher es opcional y no debe frenar el cierre.
-      if (batchPhoto) {
-        const body = new FormData();
-        body.append("file", batchPhoto);
-        await api("/cash-sessions/" + session.id + "/batch-photo", {
-          method: "POST",
-          body,
-        }).catch(() =>
-          toast("Caja cerrada, pero la foto del voucher no se guardó.", true),
-        );
-      }
       const cuadre = await api("/cash-sessions/" + session.id + "/cuadre");
       await client.invalidateQueries();
       onClosed(cuadre);
@@ -418,15 +406,10 @@ export function CloseCashModal({
               aria-describedby="batch-help"
             />
             <small id="batch-help">
-              Obligatorio si hubo ventas con tarjeta: el número que imprime el
-              voucher al cerrar el lote.
+              Obligatorio si hubo cobros con tarjeta (venta sola o mixta): el
+              número que imprime el voucher al cerrar el lote.
             </small>
           </label>
-          <ProofPicker
-            file={batchPhoto}
-            onChange={setBatchPhoto}
-            disabled={busy}
-          />
           {money(
             "Entregado",
             "delivered",

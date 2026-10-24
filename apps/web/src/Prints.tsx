@@ -317,12 +317,7 @@ export function CuadrePrint({ c }: { c: any }) {
         </>
       )}
       {c.cardBatch && (
-        <Row
-          label="Lote del verifón"
-          value={
-            c.cardBatch.number + (c.cardBatch.hasPhoto ? " (con foto)" : "")
-          }
-        />
+        <Row label="Lote del verifón" value={c.cardBatch.number} />
       )}
       {(c.ownerReceived ?? []).length > 0 && (
         <>
