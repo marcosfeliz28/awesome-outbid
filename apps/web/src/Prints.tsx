@@ -34,9 +34,45 @@ export const day = (value: unknown) =>
     ? new Date(value as string).toLocaleDateString("es-DO", { timeZone: TZ })
     : "—";
 
-// Imprime cuando React ya dibujó el impreso.
-export const printSoon = () =>
-  setTimeout(() => window.print(), 50) as unknown as void;
+// Espera al impreso real, sus imágenes y la tipografía; nunca imprime una hoja
+// anterior ni una cabecera sin logo por depender de un plazo fijo de 50 ms.
+export async function printSoon(): Promise<boolean> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const deadline = Date.now() + 4000;
+    const nextFrame = () => new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    const prepare = async () => {
+      await nextFrame();
+      let sheet = document.querySelector<HTMLElement>(".thermal-print");
+      while (!sheet && Date.now() < deadline) {
+        await nextFrame();
+        sheet = document.querySelector<HTMLElement>(".thermal-print");
+      }
+      if (!sheet) throw new Error("El ticket aún no está disponible.");
+      const images = Array.from(sheet.querySelectorAll("img"));
+      await Promise.all([
+        document.fonts?.ready ?? Promise.resolve(),
+        ...images.map((img) => img.complete ? Promise.resolve() : new Promise<void>((resolve) => {
+          img.addEventListener("load", () => resolve(), { once: true });
+          img.addEventListener("error", () => resolve(), { once: true });
+        })),
+      ]);
+      // Da al navegador una oportunidad de pintar las imágenes ya cargadas.
+      await nextFrame();
+    };
+    await Promise.race([
+      prepare(),
+      new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new Error("El ticket tardó demasiado en cargar.")), 4000); }),
+    ]);
+    window.print();
+    return true;
+  } catch {
+    window.alert("No se pudo preparar la impresión. Revisa la impresora y vuelve a pulsar Imprimir.");
+    return false;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
 
 export function PrintSheet({
   width,
