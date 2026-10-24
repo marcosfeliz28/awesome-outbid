@@ -9,6 +9,7 @@ import EmbeddedPostgres from "embedded-postgres";
 import supertest from "supertest";
 import { expect, it } from "vitest";
 import { createAppModule } from "../apps/api/src/app";
+import { AlertEngine } from "../apps/api/src/alerts";
 import { ApiExceptionFilter } from "../apps/api/src/common";
 import { ncfSequenceWarnings } from "../apps/api/src/ncf-sequences";
 
@@ -50,7 +51,7 @@ it("PC-13: avisa con 19 números o 15 días, aísla empresas y deniega cajera/ge
     const users: Array<{ tenant: string; role: string; id: string; sid: string }> = [];
     for (const [tenant, slug] of [[tenantA, "empresa-pc13-a"], [tenantB, "empresa-pc13-b"]]) {
       await client.query(`INSERT INTO "Tenant" (id,slug,name,"updatedAt") VALUES ($1,$2,$2,now())`, [tenant, slug]);
-      for (const [role, permissions] of [["admin", ["*"]], ["manager", ["alerts:write", "sale:manage"]], ["seller", ["sale:write"]]] as const) {
+      for (const [role, permissions] of [["admin", ["*"]], ["manager", ["alerts:write", "sale:manage", "reports:read"]], ["seller", ["sale:write"]]] as const) {
         const rid = crypto.randomUUID(), uid = crypto.randomUUID(), sid = crypto.randomUUID();
         await client.query(`INSERT INTO "Role" (id,"tenantId",name,permissions,"updatedAt") VALUES ($1,$2,$3,$4,now())`, [rid, tenant, role, permissions]);
         await client.query(`INSERT INTO "User" (id,"tenantId",name,email,"passwordHash","pinHash","roleId","updatedAt") VALUES ($1,$2,$3,$4,'test-only','test-only',$5,now())`,
@@ -134,13 +135,20 @@ it("PC-13: avisa con 19 números o 15 días, aísla empresas y deniega cajera/ge
     expect(alerts1.body).toHaveLength(3);
     expect((await http.get("/api/alerts?type=ncf_sequence").set(as(tenantA, "admin"))).body).toHaveLength(3);
     expect((await http.get("/api/alerts?type=ncf_sequence").set(as(tenantA, "manager"))).body).toEqual([]);
+    // CPC-4a: el tablero tampoco muestra alertas NCF a quien no es administración.
+    const dash = async (role: string) => (await http.get("/api/dashboard/summary").set(as(tenantA, role))).body.alerts.map((a: { type: string }) => a.type);
+    expect(await dash("admin")).toContain("ncf_sequence");
+    expect(await dash("manager")).not.toContain("ncf_sequence");
     const alertsB = (await http.get("/api/alerts?type=ncf_sequence").set(as(tenantB, "admin"))).body;
     expect(alertsB).toHaveLength(1);
     expect(alertsB[0].tenantId).toBe(tenantB);
     expect(alertsB[0].entityId).toBe(sameOther.body.id);
     expect((await client.query(`SELECT count(*)::int AS n FROM "Alert" WHERE "tenantId"=$1 AND type='ncf_sequence'`, [tenantA])).rows[0].n).toBe(3);
     await client.query(`UPDATE "Tenant" SET "timeZone"='Not/A_Real_Zone' WHERE id=$1`, [tenantA]);
+    app.get(AlertEngine).invalidate(); // sin esto responde el caché de 60 s
     expect((await http.get("/api/alerts").set(as(tenantA, "admin"))).status).toBe(200);
+    // CPC-4b: con zona inválida los avisos NCF abiertos siguen abiertos.
+    expect((await client.query(`SELECT count(*)::int AS n FROM "Alert" WHERE "tenantId"=$1 AND type='ncf_sequence' AND status<>'resolved'`, [tenantA])).rows[0].n).toBe(3);
     await client.query(`UPDATE "Tenant" SET "timeZone"='America/Santo_Domingo' WHERE id=$1`, [tenantA]);
     const inactive = await http.patch(`/api/ncf-sequences/${id}`).set(as(tenantA, "admin")).send({ active: false });
     expect(inactive.status).toBe(200);
