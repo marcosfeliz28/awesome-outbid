@@ -25,6 +25,7 @@
     "instalador:validar": "node instalador/tests/run-validation.mjs",
     "instalador:preparar": "powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1 -SoloPreparar",
     "instalador:compilar": "powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1",
+    "instalador:producto-local": "powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1 -ProductoLocal",
     "producto:tauri:build": "node scripts/product-desktop-config.mjs"
   },
   "devDependencies": {

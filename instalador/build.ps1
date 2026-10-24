@@ -1,6 +1,7 @@
 param(
   [switch]$SoloPreparar,
-  [switch]$SinInstalarNSIS
+  [switch]$SinInstalarNSIS,
+  [switch]$ProductoLocal
 )
 
 Set-StrictMode -Version Latest
@@ -333,9 +334,22 @@ Copy-Item -Path (Join-Path $installerRoot "scripts\*") -Destination (Join-Path $
 Copy-Item -Path (Join-Path $installerRoot "service\*") -Destination (Join-Path $payload "service") -Recurse -Force
 Copy-Item -Path (Join-Path $installerRoot "assets\*") -Destination (Join-Path $payload "assets") -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "docs\INSTALADOR.md") -Destination (Join-Path $payload "docs\INSTALADOR.md") -Force
+if ($ProductoLocal) {
+  Copy-Item -LiteralPath (Join-Path $repoRoot "docs\producto\INSTALADOR_LOCAL.md") -Destination (Join-Path $payload "docs\INSTALADOR.md") -Force
+}
 Copy-Item -LiteralPath (Join-Path $installerRoot "tests\Windows-Smoke.ps1") -Destination (Join-Path $payload "tests\Windows-Smoke.ps1") -Force
 Copy-Item -LiteralPath (Join-Path $installerRoot "VERSION") -Destination (Join-Path $payload "VERSION") -Force
 Copy-Item -LiteralPath (Join-Path $installerRoot "THIRD_PARTY_NOTICES.txt") -Destination (Join-Path $payload "THIRD_PARTY_NOTICES.txt") -Force
+
+$nsisScript = Join-Path $installerRoot "installer\FitStore.nsi"
+if ($ProductoLocal) {
+  $productNsi = Join-Path $buildRoot "NexoraLocal.nsi"
+  Invoke-Checked -File "node" -Arguments @(
+    (Join-Path $installerRoot "tools\product-local-profile.mjs"),
+    $payload, $payload, $nsisScript, $productNsi
+  ) -Message "No se pudo aislar el instalador del producto local"
+  $nsisScript = $productNsi
+}
 
 $manifestLines = Get-ChildItem -LiteralPath $payload -Recurse -File |
   Sort-Object FullName |
@@ -375,7 +389,6 @@ $foundNsisVersion = [Version]$Matches[1]
 $minimumNsisVersion = [Version]([string]$lock.nsis.minimumVersion)
 if ($foundNsisVersion -lt $minimumNsisVersion) { throw "NSIS $foundNsisVersion es demasiado antiguo; se requiere $minimumNsisVersion o posterior." }
 
-$nsisScript = Join-Path $installerRoot "installer\FitStore.nsi"
 Invoke-Checked -File $makeNsisPath -Arguments @(
   "/DVERSION=$version",
   "/DPRODUCT_VERSION=$productVersion",
@@ -384,7 +397,8 @@ Invoke-Checked -File $makeNsisPath -Arguments @(
   "/DOUTPUT_DIR=$dist",
   $nsisScript
 ) -Message "NSIS no pudo construir el instalador"
-$setup = Join-Path $dist "Nexora-POS-Setup-$version.exe"
+$setupName = if ($ProductoLocal) { "Nexora-POS-Local-Setup-$version.exe" } else { "Nexora-POS-Setup-$version.exe" }
+$setup = Join-Path $dist $setupName
 if (-not (Test-Path -LiteralPath $setup)) { throw "NSIS terminó sin crear $setup." }
 $setupHash = Get-Sha256 -Path $setup
 "$setupHash *$(Split-Path -Leaf $setup)" | Set-Content -LiteralPath "$setup.sha256" -Encoding ASCII
