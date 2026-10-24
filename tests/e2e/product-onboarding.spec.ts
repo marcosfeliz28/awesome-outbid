@@ -160,6 +160,29 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     expect(browserLogin.ok()).toBe(true);
     const auth = { Authorization: `Bearer ${(await browserLogin.json()).accessToken}` };
     await expect(page.getByRole("heading", { name: "Prepara tu empresa" })).toBeVisible();
+    // N-03: interfaz real con API/modelo falsos; no consume cuota ni clave.
+    await page.route("**/api/assistant/usage", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ usadas: 12, limite: 30, mes: "2026-10" }) }));
+    await page.route("**/api/assistant/ask", async route => {
+      expect(route.request().postDataJSON().messages.at(-1).content).toBe("¿Cómo anulo una factura?");
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ answer: "Abre la factura y solicita la anulación.", usage: { input: 10, output: 10 }, remaining: 17 }) });
+    });
+    await page.setViewportSize({ width: 320, height: 700 });
+    await page.getByRole("button", { name: "Pregúntale a Nexora" }).click();
+    await expect(page.getByRole("dialog", { name: "Pregúntale a Nexora" })).toBeVisible();
+    await expect(page.getByLabel("Tu pregunta")).toBeFocused();
+    const panelBounds = await page.getByRole("dialog", { name: "Pregúntale a Nexora" }).boundingBox();
+    expect(panelBounds?.x).toBeGreaterThanOrEqual(0);
+    expect((panelBounds?.x ?? 0) + (panelBounds?.width ?? 0)).toBeLessThanOrEqual(320);
+    await expect(page.getByText("12 de 30 este mes")).toBeVisible();
+    await page.getByRole("button", { name: "¿Cómo anulo una factura?" }).click();
+    await expect(page.getByText("Abre la factura y solicita la anulación.")).toBeVisible();
+    await expect(page.getByText("13 de 30 este mes")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: "Pregúntale a Nexora" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Pregúntale a Nexora" })).toBeFocused();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.unroute("**/api/assistant/usage");
+    await page.unroute("**/api/assistant/ask");
     await page.getByLabel("Nombre del negocio").fill("Mi Tienda Preparada");
     await page.getByLabel("RNC").fill("101010101");
     await page.getByRole("button", { name: "Guardar identidad" }).click();
