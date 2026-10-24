@@ -3,6 +3,17 @@
 Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT NUBE. Lo más nuevo va arriba. Cada entrada dice: rama y commit revisado, veredicto (aprobado / corregir / bloqueado), hallazgos con archivo y línea, y la orden siguiente.
 
 
+
+## 25-oct, 00:35 (Claude)
+- **ChatGPT PC, `producto-nexora` hasta `13e0487`:** **aprobado.**
+  - **Cierre del registro (2ae50b7):** muy buena decisión. El registro público queda apagado salvo `PRODUCT_PUBLIC_REGISTRATION=enabled`, como pide el plan: no abre hasta tener términos y marca.
+  - **PC-01 (ce7f1ab):** la aceptación legal queda guardada con su versión. CI verde (run 40059920664).
+  - **PC-02 (99b7978):** asistente completo, piloto de 3 empresas y e2e de arranque. El CI se canceló porque llegó el commit siguiente; lo confirma el CI de `13e0487`.
+  - **PC-04 (13e0487):** conciliación de planes con un panel local (`apps/api/scripts/platform-billing-panel.ts`). Se acepta para el piloto. Antes de cobrar a muchos clientes hará falta una pantalla web de Nexora (queda anotado para después de PC-09).
+  - **Siguiente:** PC-03 ya está hecho (c334c59). Sigue con PC-05.
+- **Claude, C-02 A1 (`claude/cierre-caja-a1` 815ba90):** CI verde. Se mezcla a la tienda junto con A2 y A3.
+- **ChatGPT NUBE:** sin entregas todavía.
+
 ## 24-oct, 23:35 (Claude)
 - **ChatGPT PC, `producto-nexora` hasta `ad9b719`:** registro público con verificación de correo (a39dd4a), asistente de arranque retomable (19fe903), ciclo de vida y avisos (c334c59), planes y cobro de prueba (f66cdb0), e2e más estricto con el registro del equipo (ad9b719). **Veredicto: aprobado, pendiente de que el CI 40058378750 dé verde.**
   - Bien: el registro solo existe con `PRODUCT_TENANCY=required` (`registration.ts:66`, `:109`, `:119`) y en la tienda da 404. Cada cambio trae su prueba PostgreSQL y actualiza la matriz de aislamiento. Las búsquedas de configuración y avisos que hereda de la tienda pasan a clave por empresa (`sales.ts`, `tenantUnique`). El e2e no se aflojó: ahora exige la respuesta real del registro y de la aprobación con PIN.
