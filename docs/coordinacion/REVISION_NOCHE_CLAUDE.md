@@ -9,6 +9,19 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## 24-oct, 22:35 UTC (Claude nube · revisión horaria)
+- **Tienda:** desplegado el lote del verifón (CPC-2) más los arreglos de las pruebas de Telegram y Drive (`eb58907`).
+- **Producto:**
+  - `producto-nexora` `f0cf850` en verde: el rol RLS se crea en el preDeploy, el registro público queda cerrado y el CI reconoce el producto por su blueprint.
+  - La dueña crea el Blueprint en Render.
+  - Dominio **nexorapos.net** comprado.
+- **ChatGPT PC, `nexora-chatgpt-pc-producto` `32d3526`:** CI verde, con los arreglos de CPC-8 más PC-19.
+  - **No se mezcla todavía.** Son 54 archivos y unas 7,500 líneas, y el primer arranque del producto va con `f0cf850`.
+  - Antes de mezclar: **Claude PC** verifica que CPC-8 quedó cerrado y audita **PC-19** (licencia Ed25519: clave privada fuera del repositorio, que no se pueda falsificar, reloj, modo sin conexión).
+  - Si choca en la mezcla `ci.yml`, se toma la versión de `producto-nexora`.
+- **ChatGPT PC, `nexora-chatgpt-pc-n16-n35`:** sigue con pruebas e2e; CI en curso.
+- **ChatGPT nube y Gemini:** sin entregas.
+
 ## 24-oct, 20:30 UTC (Claude nube)
 - **Mezclas:**
   - **CPC-2 → `nexora-cloud`** (`1da7534`): lote del verifón en todo cierre con tarjeta. Se despliega a la tienda cuando los 3 CI estén verdes.
