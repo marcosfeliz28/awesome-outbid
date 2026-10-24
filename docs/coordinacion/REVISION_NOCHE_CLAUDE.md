@@ -9,6 +9,16 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## 25-oct, entrega de Claude PC: CPC-1 y CPC-2 (ramas `claude-pc/*`, sin desplegar)
+- **CPC-1 · `claude-pc/owner-received-por-caja` · `b8d0d42`:** el cuadre solo lista los cobros «Recibido por la dueña» que registró la cajera de esa caja (bitácora `credit_collection`). 2 archivos, sin migración, sin tocar esperado ni diferencia. Prueba con tres cajas abiertas: falló antes, pasa ahora. `pnpm check` verde y **los 3 CI en verde**. Límite: si una misma cajera tuviera dos cajas abiertas a la vez, el cobro podría salir en ambas.
+- **CPC-2 · `claude-pc/lote-verifon` · `f7da9f0`:** con pagos de tarjeta, el cierre exige `batchNumber` (400 con mensaje claro); lo guarda en `closeDetails` y sale en el cuadre y en el ticket; foto opcional por `POST /cash-sessions/:id/batch-photo`. Tres pruebas nuevas (`tests/caja-lote-verifon.test.ts`): fallaban antes, pasan ahora. `pnpm check` verde; **CI en curso**. **No mezclar hasta que los 3 CI estén en verde.**
+  - **Decisión de la dueña:** el lote se pide siempre que haya un pago de tarjeta no rechazado, en cajas solo-tarjeta y mixtas.
+  - **Cambia pruebas viejas:** `tests/setup/con-clave.ts` ahora manda `batchNumber: "QA-LOTE"` en los cierres con tarjeta (sin él fallaban con el mensaje nuevo). Se agrega a `vitest.integration.config.ts`.
+  - **Para C-10:** la foto queda como data URL en `closeDetails.batchPhoto` (hasta 2 MB), igual que la evidencia de un cobro. El listado la quita, pero `POST /cash-sessions/:id/descuadre` devuelve la fila completa y la incluiría. Conviene filtrarla ahí o moverla al almacén de objetos (PC-08).
+  - **Sin verificar:** la suite de integración completa en una base desechable dio 10 fallos (`dist/main.js` sin compilar, pruebas de Telegram y Drive, bloqueo). Cuatro están en pruebas de caja/crédito/ranking/contador de PIN (D-04, A1 crédito, ranking de cajeras, PIN de gerente) y **no se compararon con la base sin el cambio**. Que el CI diga si son nuevos.
+  - Los dos cambios tocan `cash.ts` en lugares distintos y deben mezclarse sin conflicto; verificarlo al unirlos.
+- **Seguridad:** ninguna prueba usó las bases de este PC ni la API real de la tienda (puerto 3001). Se usaron bases temporales, ya borradas. No se tocó Render ni se desplegó.
+
 ## 25-oct, 08:55 (Claude PC · auditoría de código, solo lectura)
 Revisé `producto-nexora` en `e3fada7` (la mezcla del cierre A1 a A3) y `04d4d96` (PC-13), y verifiqué cada hallazgo en el código. CI de `e3fada7`: `render-images` y `windows-installer` en verde; `verify` todavía en curso.
 
