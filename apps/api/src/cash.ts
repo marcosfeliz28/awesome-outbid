@@ -580,7 +580,7 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
           method: "cash",
           cashSessionId: null,
           status: "ok",
-          reference: "Recibido por la dueña",
+          reference: { startsWith: "Recibido por la dueña" },
           sale: { branchId: session.branchId },
           createdAt: {
             gte: session.openedAt,

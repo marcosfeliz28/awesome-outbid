@@ -4127,8 +4127,13 @@ export class SalesController {
       ...payment
     } = data;
     // Queda marcado en el pago para distinguirlo del efectivo de una caja.
-    if (ownerClosed && data.method === "cash" && !payment.reference?.trim())
-      payment.reference = "Recibido por la dueña";
+    // La marca va siempre primero: el cuadre y el aviso la buscan así y una
+    // referencia propia no la puede quitar (hallazgo de Claude PC, 25-oct).
+    if (ownerClosed && data.method === "cash")
+      payment.reference = (
+        OWNER_CASH_MARK +
+        (payment.reference?.trim() ? " · " + payment.reference.trim() : "")
+      ).slice(0, 100);
     const row = await tx.payment.create({
       data: {
         ...payment,
@@ -4229,6 +4234,7 @@ function lineKey(operationId: string, index: number) {
     .digest("hex");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
+export const OWNER_CASH_MARK = "Recibido por la dueña";
 const creditLineSchema = z.object({
   amount: moneyAmount().transform((v) => money(v)),
   method: z.enum(["cash", "card", "transfer"]),

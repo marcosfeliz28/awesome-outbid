@@ -1639,5 +1639,37 @@ describe("A1 · efectivo que ya tiene la dueña, registrado por la cajera con PI
         where: { saleId: s.id, entryType: "installment" },
       }),
     ).toBe(1);
+    // Una referencia propia no quita la marca (hallazgo de Claude PC, 25-oct).
+    const s2 = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
+    const tagged = await request(
+      "/sales/" + s2.id + "/credit-collections",
+      ana.token,
+      {
+        operationId: randomUUID(),
+        cashSessionId: ana.cash.id,
+        managerPin: "246813",
+        lines: [
+          {
+            method: "cash",
+            amount: 200,
+            ownerConfirmed: true,
+            reference: "sin marca",
+          },
+        ],
+      },
+    );
+    expect(tagged.status, JSON.stringify(tagged.body)).toBeLessThan(300);
+    const p2 = await db.payment.findFirst({
+      where: { saleId: s2.id, entryType: "installment" },
+    });
+    expect(p2.reference).toBe("Recibido por la dueña · sin marca");
+    expect((await expectedOf(ana)).cash).toBe(before.cash);
+    const cuadre2 = await ok(
+      "/cash-sessions/" + ana.cash.id + "/cuadre",
+      owner,
+    );
+    expect(cuadre2.ownerReceived.some((r: any) => r.number === s2.number)).toBe(
+      true,
+    );
   });
 });
