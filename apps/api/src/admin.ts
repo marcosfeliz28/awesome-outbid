@@ -816,10 +816,16 @@ export class AdminController {
           )
         )
           bad("El descuento por monto supera el importe de la línea.");
+      // El precio de referencia se toma de PostgreSQL, no del cliente: al
+      // recuperar se puede explicar cualquier cambio sin reservar el precio.
+      const savedItems = data.items.map((i) => ({
+        ...i,
+        savedPrice: prices.get(i.variantId),
+      }));
       return tx.quote.create({
         data: {
           ...data,
-          items: json(data.items),
+          items: json(savedItems),
           userId: actor.id,
           branchId: actor.branchId,
         },

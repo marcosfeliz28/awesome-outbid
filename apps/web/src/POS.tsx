@@ -86,6 +86,7 @@ import {
   rememberAttempt,
   restoredAttempt,
 } from "./cartDraft";
+import { heldSaleReview } from "./heldSaleReview";
 import { pickOnEnter, startsWithWords } from "./customerSearch";
 import { scanBeep, scanSoundEnabled, setScanSoundEnabled } from "./scanSound";
 import {
@@ -1589,6 +1590,19 @@ function HeldSales({
 }) {
   const { setCart, setCustomer, setDiscount } = useStore();
   const [busy, setBusy] = useState(false);
+  const [review, setReview] = useState<{
+    quote: any;
+    lines: CartItem[];
+    available: {
+      name: string;
+      qty: number;
+      currentPrice: string;
+      priceKnown: boolean;
+      priceChange: { previous: string; current: string } | null;
+    }[];
+    missing: string[];
+    currentCount: number;
+  } | null>(null);
   const client = useQueryClient();
   const query = useQuery({
     queryKey: ["quotes"],
@@ -1611,59 +1625,50 @@ function HeldSales({
       );
       return;
     }
-    const lines: CartItem[] = [],
-      missing: string[] = [];
-    for (const i of quote.items) {
-      const product = products.find((p) =>
-        p.variants.some((v) => v.id === i.variantId),
-      );
-      const variant = product?.variants.find((v) => v.id === i.variantId);
-      if (product && variant)
-        lines.push({
-          product,
-          variant,
-          qty: Number(i.qty),
-          discountPercent: Number(i.discountPercent ?? 0),
-          ...(i.discountAmount
-            ? { discountAmount: Number(i.discountAmount) }
-            : {}),
-        });
-      else missing.push(i.name || "un artículo");
-    }
+    const details = heldSaleReview<Variant, Product>(quote, products);
+    const lines: CartItem[] = details.available.map(
+      ({ item, product, variant }) => ({
+        product,
+        variant,
+        qty: Number(item.qty),
+        discountPercent: Number(item.discountPercent ?? 0),
+        ...(item.discountAmount
+          ? { discountAmount: Number(item.discountAmount) }
+          : {}),
+      }),
+    );
     if (!lines.length) {
       toast(
         "Ningún artículo de esta venta sigue a la venta: " +
-          missing.join(", ") +
+          details.missing.join(", ") +
           ".",
         true,
       );
       return;
     }
     const current = useStore.getState().cart;
-    const notes = [
-      ...(missing.length
-        ? [
-            "Ya no están a la venta y no se recuperarán: " +
-              missing.join(", ") +
-              ".",
-          ]
-        : []),
-      // El carrito actual no se reemplaza en silencio: queda en espera.
-      ...(current.length
-        ? [
-            "La venta actual (" +
-              current.reduce((a, i) => a + i.qty, 0) +
-              " artículos) quedará en espera.",
-          ]
-        : []),
-    ];
-    if (
-      notes.length &&
-      !window.confirm(notes.join("\n") + "\n¿Recuperar esta venta?")
-    )
-      return;
+    setReview({
+      quote,
+      lines,
+      available: details.available.map(
+        ({ name, item, variant, priceKnown, priceChange }) => ({
+          name,
+          qty: Number(item.qty),
+          currentPrice: variant.price,
+          priceKnown,
+          priceChange,
+        }),
+      ),
+      missing: details.missing,
+      currentCount: current.reduce((count, item) => count + item.qty, 0),
+    });
+  };
+  const confirmRecovery = async () => {
+    if (busy || !review) return;
     setBusy(true);
     try {
+      const { quote, lines } = review;
+      const current = useStore.getState().cart;
       if (current.length && !(await holdCurrent())) return;
       await post("/quotes/" + quote.id + "/convert", {});
       setCart(lines);
@@ -1671,6 +1676,7 @@ function HeldSales({
       // Su propio descuento global, no el del carrito anterior (R9-caja-4).
       setDiscount(Number(quote.globalDiscount ?? 0));
       useWholesale.getState().set(!!quote.wholesale);
+      setReview(null);
       onClose();
     } catch (e: any) {
       toast(e.message, true);
@@ -1722,6 +1728,68 @@ function HeldSales({
           />
         )}
       </QueryState>
+      {review && (
+        <Modal
+          open
+          onClose={() => !busy && setReview(null)}
+          title="Revisar antes de recuperar"
+        >
+          <div className="held-review">
+            <p>
+              Se recuperarán estos artículos con sus descuentos guardados y el
+              precio actual:
+            </p>
+            <ul className="held-review-lines">
+              {review.available.map((line, index) => (
+                <li key={index}>
+                  <strong>
+                    {line.qty} × {line.name}
+                  </strong>
+                  <span>Precio actual: {formatMoney(Number(line.currentPrice))}</span>
+                  {line.priceChange ? (
+                    <span>
+                      Precio cambió:{" "}
+                      {formatMoney(Number(line.priceChange.previous))} →{" "}
+                      {formatMoney(Number(line.priceChange.current))}
+                    </span>
+                  ) : !line.priceKnown ? (
+                    <span>
+                      Precio anterior no registrado; verifica el precio actual
+                      antes de cobrar.
+                    </span>
+                  ) : (
+                    <span>Precio sin cambios.</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {review.missing.length > 0 && (
+              <p role="alert">
+                No se recuperarán porque ya no están a la venta:{" "}
+                {review.missing.join(", ")}.
+              </p>
+            )}
+            {review.currentCount > 0 && (
+              <p>
+                La venta actual ({review.currentCount} artículos) quedará en
+                espera.
+              </p>
+            )}
+            <div className="modal-footer">
+              <Button
+                variant="secondary"
+                disabled={busy}
+                onClick={() => setReview(null)}
+              >
+                Cancelar
+              </Button>
+              <Button disabled={busy} onClick={confirmRecovery}>
+                Recuperar venta
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </Modal>
   );
 }

@@ -1262,12 +1262,17 @@ test("R9-caja-4 y R9-caja-7: la venta en espera conserva descuentos y cliente (t
   await search.press("Enter");
   await page.getByLabel("Descuento global").fill("10");
   await expect(page.locator(".cart-total")).toContainText("RD$ 900.00");
-  page.once("dialog", (d: any) => d.accept());
   await page
     .locator(".heading-actions")
     .getByRole("button", { name: "En espera" })
     .click();
   await page.locator(".held-row").first().click();
+  const review = page.getByRole("dialog", {
+    name: "Revisar antes de recuperar",
+  });
+  await expect(review).toContainText(one);
+  await expect(review).toContainText("La venta actual");
+  await review.getByRole("button", { name: "Recuperar venta" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator(".cart-items")).toContainText(one);
   await expect(page.locator(".cart-items")).not.toContainText(two);
@@ -1284,6 +1289,10 @@ test("R9-caja-4 y R9-caja-7: la venta en espera conserva descuentos y cliente (t
     .getByRole("button", { name: "En espera" })
     .click();
   await page.locator(".held-row").first().click();
+  await page
+    .getByRole("dialog", { name: "Revisar antes de recuperar" })
+    .getByRole("button", { name: "Recuperar venta" })
+    .click();
   await expect(page.locator(".cart-items")).toContainText(two);
   await expect(page.getByLabel("Descuento global")).toHaveValue("10");
   await expect(page.locator(".cart-total")).toContainText("RD$ 900.00");
@@ -1336,24 +1345,25 @@ test("R9-caja-5: recuperar una venta en espera avisa si falta un producto y no p
   await search.press("Enter");
   await expect(r9Qty(page, current)).toHaveText("1");
   // Primero se cancela el aviso: no cambia nada.
-  const messages: string[] = [];
-  page.once("dialog", (d: any) => {
-    messages.push(d.message());
-    d.dismiss();
-  });
   await page
     .locator(".heading-actions")
     .getByRole("button", { name: "En espera" })
     .click();
   await page.locator(".held-row").first().click();
-  await expect.poll(() => messages.length).toBe(1);
-  expect(messages[0]).toContain(gone);
-  expect(messages[0]).toContain("venta actual");
+  const review = page.getByRole("dialog", {
+    name: "Revisar antes de recuperar",
+  });
+  await expect(review).toContainText(gone);
+  await expect(review).toContainText("venta actual");
+  await review.getByRole("button", { name: "Cancelar" }).click();
   await expect(r9Qty(page, current)).toHaveText("1");
   expect(await heldWith(created[1])).toHaveLength(1);
   // Al aceptar, la venta actual queda en espera y se recupera lo disponible.
-  page.once("dialog", (d: any) => d.accept());
   await page.locator(".held-row").first().click();
+  await page
+    .getByRole("dialog", { name: "Revisar antes de recuperar" })
+    .getByRole("button", { name: "Recuperar venta" })
+    .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(r9Qty(page, keep)).toHaveText("1");
   await expect(page.locator(".cart-items")).not.toContainText(gone);

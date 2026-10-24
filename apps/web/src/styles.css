@@ -2203,6 +2203,23 @@ td strong {
 .held-row small {
   margin-top: 5px;
 }
+.held-review-lines {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  max-height: min(45vh, 360px);
+  overflow: auto;
+}
+.held-review-lines li {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+  overflow-wrap: anywhere;
+}
+.held-review-lines span {
+  display: block;
+  color: var(--text);
+  margin-top: 3px;
+}
 .payment-total {
   text-align: center;
   margin: 10px 0 25px;
