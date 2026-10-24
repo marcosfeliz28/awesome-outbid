@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./apoyo";
 
 test("N-13 · estado público explica disponibilidad y falla sin afirmar que todo funciona", async ({ page }) => {
   await page.route("**/api/health/ready", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"status":"ok"}' }));
