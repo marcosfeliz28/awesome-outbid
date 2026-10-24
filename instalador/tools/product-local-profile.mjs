@@ -34,6 +34,39 @@ function profileFile(source, target) {
       '  Remove-Item -LiteralPath (Join-Path $desktop "FitStore POS.lnk") -Force -ErrorAction SilentlyContinue',
       '  # El producto local conserva los accesos de otras instalaciones.',
     );
+    const envAnchor = '  $encoding = [Text.UTF8Encoding]::new($false)';
+    if (!content.includes(envAnchor)) throw new Error("Falta el punto de configuración local de la API.");
+    content = content.replace(envAnchor, `  $localKey = [IO.File]::ReadAllText((Join-Path $Paths.Install "runtime\\license-public-key.pem")).Trim().Replace("\x60r", "").Replace("\x60n", "\\n")
+  $localState = Read-FitStoreJson -Path $Paths.State
+  $lines += @(
+    "PRODUCT_LOCAL_LICENSE=required",
+    "PRODUCT_LOCAL_INSTALLATION_ID=$([string]$localState.installationId)",
+    "PRODUCT_LOCAL_LICENSE_DIR=$(Join-Path $Paths.Data 'license')",
+    "PRODUCT_LOCAL_LICENSE_PUBLIC_KEY=$localKey",
+    "PRODUCT_LOCAL_LICENSE_RENEW_URL=$(Get-ExistingEnvValue -Path $Paths.Env -Name 'PRODUCT_LOCAL_LICENSE_RENEW_URL')",
+    "PRODUCT_LOCAL_LICENSE_RENEW_TOKEN=$(Get-ExistingEnvValue -Path $Paths.Env -Name 'PRODUCT_LOCAL_LICENSE_RENEW_TOKEN')"
+  )
+${envAnchor}`);
+    const stateAnchor = 'Write-EnvironmentFile -Paths $paths -Secrets $secrets';
+    if (!content.includes(stateAnchor)) throw new Error("Falta el punto de instalación de la licencia local.");
+    content = content.replace(stateAnchor, `if (-not ($state.PSObject.Properties.Name -contains 'installationId')) {
+  $state | Add-Member -NotePropertyName installationId -NotePropertyValue ([Guid]::NewGuid().ToString('N')) -Force
+  Write-FitStoreJson -Path $paths.State -Value $state -Protect
+}
+New-FitStoreDirectory -Path (Join-Path $paths.Data 'license')
+${stateAnchor}`);
+  }
+  if (basename(source) === "FitStore.Common.ps1") {
+    const aclAnchor = '    $logDir = Join-Path $Paths.Logs $account[0]';
+    if (!content.includes(aclAnchor)) throw new Error("Falta el punto ACL del servicio de API.");
+    content = content.replace(aclAnchor, `    if ($account[0] -eq 'FitStoreAPI') {
+      $licenseDir = Join-Path $Paths.Data 'license'
+      New-FitStoreDirectory -Path $licenseDir
+      $licenseAcl = [IO.Directory]::GetAccessControl($licenseDir, [Security.AccessControl.AccessControlSections]::Access)
+      $licenseAcl.SetAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, 'Modify', 'ContainerInherit, ObjectInherit', 'None', 'Allow'))
+      [IO.Directory]::SetAccessControl($licenseDir, $licenseAcl)
+    }
+${aclAnchor}`);
   }
   writeFileSync(target, transform(content), "utf8");
 }

@@ -17,6 +17,7 @@ test("perfil local separa identidad, datos y puertos de la tienda", () => {
     assert.match(common, /NexoraLocalPostgreSQL/);
     assert.match(common, /5544/);
     assert.match(common, /nexoralocal/);
+    assert.match(common, /licenseAcl\.SetAccessRule/);
     assert.doesNotMatch(common, /FitStore POS|FitStorePostgreSQL|5434/);
     assert.match(installer, /Nexora-POS-Local-Setup/);
     assert.match(installer, /NexoraPOSLocal/);
@@ -28,6 +29,9 @@ test("perfil local separa identidad, datos y puertos de la tienda", () => {
     assert.match(service, /<depend>NexoraLocalPostgreSQL<\/depend>/);
     const install = readFileSync(join(root, "scripts", "Install-FitStore.ps1"), "utf8");
     assert.match(install, /CREATE DATABASE nexoralocal OWNER nexoralocal/);
+    assert.match(install, /PRODUCT_LOCAL_LICENSE=required/);
+    assert.match(install, /installationId.*NewGuid/);
+    assert.match(install, /PRODUCT_LOCAL_LICENSE_DIR=/);
     assert.match(install, /-TemplateName "NexoraLocalAPI"/);
     assert.match(install, /-TemplateName "NexoraLocalWeb"/);
     assert.match(install, /postgre[sS]qlPort = 5544/);
@@ -59,4 +63,11 @@ test("el perfil se aplica al payload en sitio antes del manifiesto", () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("el constructor exige clave pública real y activa licencia en la web local", () => {
+  const build = readFileSync(join(import.meta.dirname, "..", "build.ps1"), "utf8");
+  assert.match(build, /VITE_PRODUCT_LOCAL_LICENSE = "required"/);
+  assert.match(build, /NEXORA_LICENSE_PUBLIC_KEY/);
+  assert.match(build, /asymmetricKeyType!=='ed25519'/);
 });

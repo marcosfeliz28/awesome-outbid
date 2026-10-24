@@ -65,6 +65,7 @@ import {
   discountLocalStock,
   isNetworkError,
   refreshCart,
+  requireLocalLicenseWrite,
   type CartItem,
   type Product,
   type Variant,
@@ -95,7 +96,11 @@ import {
   PrintSheet,
   printSoon,
 } from "./Prints";
-import { cashDrawerRequired, isNativeDesktop, nativeOpenDrawer } from "./desktopPrinter";
+import {
+  cashDrawerRequired,
+  isNativeDesktop,
+  nativeOpenDrawer,
+} from "./desktopPrinter";
 import {
   announcePriceChanges,
   CashElsewhere,
@@ -2102,6 +2107,7 @@ function Checkout({
       // respuesta, se conserva aparte para confirmar su UUID sin asumir que
       // se completó ni volver a descontar inventario (R9-offline-1/2).
       const saveLocal = async (fallback: boolean) => {
+        await requireLocalLicenseWrite();
         const offlineAction = offlineSaleAction(
           config?.allowOfflineSales,
           fallback,
@@ -2226,7 +2232,9 @@ function Checkout({
       const cashPaid = cashDrawerRequired(payments);
       if (config?.autoPrintReceipt) printSoon(cashPaid);
       else if (cashPaid && isNativeDesktop())
-        void nativeOpenDrawer().catch((error) => toast(String(error?.message ?? error), true));
+        void nativeOpenDrawer().catch((error) =>
+          toast(String(error?.message ?? error), true),
+        );
       clearCart();
       await client.invalidateQueries();
     } catch (e: any) {

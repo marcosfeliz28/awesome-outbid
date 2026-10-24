@@ -21,11 +21,15 @@ ProgramData, claves de registro, servicios, tarea de respaldo, base y rol
 El perfil se aplica al contenido preparado antes de crear su manifiesto y no
 modifica los archivos fuente del instalador heredado. La ruta de la tienda
 permanece intacta. Si el perfil falla, la compilación se detiene.
+Para construirlo debes proporcionar `NEXORA_LICENSE_PUBLIC_KEY` (clave pública
+Ed25519 PEM, con saltos `\n` literales si se pasa en una sola línea). El
+constructor la valida y activa la política de licencia en la API y la PWA.
+Sin una licencia firmada, la instalación inicia en solo lectura.
 
 **Estado:** este perfil está comprobado por prueba de aislamiento de rutas y
 configuración. Falta ejecutar el instalador y su actualización sobre Windows
 10 y 11 limpios con PostgreSQL real, además del rollback de la variante local.
-No distribuir este EXE antes de PC-19 a PC-22 y de esas pruebas.
+No distribuir este EXE antes del emisor de licencias, PC-20 a PC-22 y esas pruebas.
 
 Abre PowerShell en la raíz del repositorio y ejecuta:
 

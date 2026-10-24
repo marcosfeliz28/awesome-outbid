@@ -3,6 +3,7 @@ import { create } from "zustand";
 import type { QueryClient } from "@tanstack/react-query";
 import type { SaleInput } from "@fitstore/shared";
 import { applySyncResults } from "./pendingSales";
+import { requireLocalLicenseWrite as checkLocalLicenseWrite } from "./local-license";
 import { businessOperationName, traceBusinessOperation } from "./monitoring";
 
 export type User = {
@@ -515,6 +516,12 @@ export function refreshCart(products: Product[]) {
   if (changed) state.setCart(cart);
   return changes;
 }
+export async function requireLocalLicenseWrite() {
+  return checkLocalLicenseWrite(
+    import.meta.env.VITE_PRODUCT_LOCAL_LICENSE === "required",
+  );
+}
+
 export async function syncSales() {
   const user = useStore.getState().user;
   if (!user || !navigator.onLine) return { synced: 0, conflicts: 0, retry: 0 };

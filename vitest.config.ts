@@ -8,6 +8,8 @@ export default defineConfig({
     maxWorkers: process.platform === "win32" ? 4 : undefined,
     include: [
       "tests/product-object-store.test.ts",
+      "tests/product-local-license.test.ts",
+      "tests/product-local-license-web.test.ts",
       "tests/product-object-portability.test.ts",
       "tests/product-billing-plans.test.ts",
       "tests/product-billing-web.test.ts",

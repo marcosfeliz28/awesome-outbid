@@ -133,6 +133,8 @@ jobs:
       - run: pnpm instalador:validar
       - name: Compilar instalador aislado Nexora POS Local
         if: github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto'
+        env:
+          NEXORA_LICENSE_PUBLIC_KEY: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA2c54TsrWgQdX58TVC3FOxHEEmoX3LZhHw9IghUUWhzw=\n-----END PUBLIC KEY-----\n'
         run: pnpm instalador:producto-local
       - name: Compilar escritorio Tauri del producto (origen ficticio, sin publicar)
         if: github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto'

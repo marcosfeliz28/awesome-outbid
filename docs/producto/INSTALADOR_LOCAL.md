@@ -1,7 +1,7 @@
 # Nexora POS Local: instalación preliminar
 
 Esta edición instala un servidor en una PC del negocio. Aún no está aprobada
-para distribuir: faltan la licencia (PC-19), el respaldo externo (PC-20), la
+para distribuir: falta el emisor cloud de licencias de PC-19, el respaldo externo (PC-20), la
 firma del instalador (PC-17) y la prueba de compra y venta en Windows limpios
 (PC-22).
 

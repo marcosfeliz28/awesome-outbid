@@ -206,12 +206,21 @@ try {
   Invoke-Checked -File "pnpm" -Arguments @("install", "--frozen-lockfile") -Message "Falló pnpm install"
   if ((Get-Sha256 -Path (Join-Path $repoRoot 'pnpm-lock.yaml')) -ne $verifiedLockHash) { throw 'La instalacion frozen modifico el lock fuente.' }
   Invoke-Checked -File "pnpm" -Arguments @("db:generate") -Message "Falló prisma generate"
+  if ($ProductoLocal) { $env:VITE_PRODUCT_LOCAL_LICENSE = "required" }
   Invoke-Checked -File "pnpm" -Arguments @("build") -Message "Falló la compilación de FitStore"
 } finally { Pop-Location }
 
 if (Test-Path -LiteralPath $buildRoot) { Remove-Item -LiteralPath $buildRoot -Recurse -Force }
 New-Item -Path $payload, $downloads, $dist -ItemType Directory -Force | Out-Null
 New-Item -Path (Join-Path $payload "app"), (Join-Path $payload "runtime"), (Join-Path $payload "runtime\node"), (Join-Path $payload "scripts"), (Join-Path $payload "service"), (Join-Path $payload "assets"), (Join-Path $payload "docs"), (Join-Path $payload "tests") -ItemType Directory -Force | Out-Null
+if ($ProductoLocal) {
+  $publicKey = [string]$env:NEXORA_LICENSE_PUBLIC_KEY
+  if ($publicKey -notmatch '^-----BEGIN PUBLIC KEY-----') { throw "Falta NEXORA_LICENSE_PUBLIC_KEY (clave pública Ed25519); no se puede construir la edición local." }
+  $publicKey = $publicKey.Replace('\n', "`n")
+  $licenseKeyPath = Join-Path $payload "runtime\license-public-key.pem"
+  [IO.File]::WriteAllText($licenseKeyPath, $publicKey, [Text.UTF8Encoding]::new($false))
+  Invoke-Checked -File "node" -Arguments @("-e", "const {createPublicKey}=require('node:crypto');const {readFileSync}=require('node:fs');if(createPublicKey(readFileSync(process.argv[1])).asymmetricKeyType!=='ed25519')process.exit(1)", $licenseKeyPath) -Message "La clave pública local no es Ed25519 válida"
+}
 
 $apiPayload = Join-Path $payload "app\api"
 Deploy-LockedApi -RepositoryRoot $repoRoot -Destination $apiPayload -VerifiedLockHash $verifiedLockHash
@@ -349,6 +358,12 @@ if ($ProductoLocal) {
     $payload, $payload, $nsisScript, $productNsi
   ) -Message "No se pudo aislar el instalador del producto local"
   $nsisScript = $productNsi
+  foreach ($scriptFile in Get-ChildItem -LiteralPath (Join-Path $payload "scripts") -Filter "*.ps1" -File) {
+    $tokens = $null
+    $parseErrors = $null
+    [System.Management.Automation.Language.Parser]::ParseFile($scriptFile.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null
+    if ($parseErrors.Count) { throw "El perfil local generó PowerShell inválido en $($scriptFile.Name): $($parseErrors[0].Message)" }
+  }
 }
 
 $manifestLines = Get-ChildItem -LiteralPath $payload -Recurse -File |
