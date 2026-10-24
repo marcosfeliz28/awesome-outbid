@@ -642,6 +642,8 @@ export async function renderEvent(
         status: true,
         createdAt: true,
         cashSessionId: true,
+        reference: true,
+        receivedById: true,
       },
     });
     if (!payment) return null;
@@ -661,29 +663,39 @@ export async function renderEvent(
     });
     if (!sale) return null;
     const place = await sessionRegister(db, payment.cashSessionId);
-    const [cashier, customer] = await Promise.all([
+    // A1/A3 (24-oct): efectivo que ya tenía la dueña, aprobado con PIN.
+    const ownerCash =
+      payment.method === "cash" &&
+      !payment.cashSessionId &&
+      payment.reference === "Recibido por la dueña";
+    const [cashier, customer, approver] = await Promise.all([
       userName(db, place.userId),
       customerName(db, sale.customerId),
+      ownerCash ? userName(db, payment.receivedById) : null,
     ]);
+    const text = renderCollection({
+      kind: sale.payments.some((p) => p.method === "cod")
+        ? "cod"
+        : sale.payments.length
+          ? "credit"
+          : "other",
+      saleNumber: sale.number,
+      createdAt: payment.createdAt,
+      register: place.register,
+      cashier,
+      customer,
+      method: payment.method,
+      amount: Number(payment.amount),
+      status: payment.status,
+      balance: Number(sale.creditBalance),
+      saleTotal: Number(sale.total),
+    });
     return {
       branchId: sale.branchId,
-      text: renderCollection({
-        kind: sale.payments.some((p) => p.method === "cod")
-          ? "cod"
-          : sale.payments.length
-            ? "credit"
-            : "other",
-        saleNumber: sale.number,
-        createdAt: payment.createdAt,
-        register: place.register,
-        cashier,
-        customer,
-        method: payment.method,
-        amount: Number(payment.amount),
-        status: payment.status,
-        balance: Number(sale.creditBalance),
-        saleTotal: Number(sale.total),
-      }),
+      text: ownerCash
+        ? text +
+          `\nEfectivo recibido por la dueña (fuera de gaveta) · aprobó con PIN: ${approver ?? "—"}`
+        : text,
     };
   }
   const session = await db.cashSession.findUnique({ where: { id: refId } });

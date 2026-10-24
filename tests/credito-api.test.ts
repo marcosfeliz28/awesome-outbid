@@ -1625,6 +1625,13 @@ describe("A1 · efectivo que ya tiene la dueña, registrado por la cajera con PI
       Number((await db.sale.findUnique({ where: { id: s.id } })).creditBalance),
     ).toBe(0);
     expect((await expectedOf(ana)).cash).toBe(before.cash);
+    // A2: el cuadre lo lista aparte, sin sumarlo al esperado.
+    const cuadre = await ok("/cash-sessions/" + ana.cash.id + "/cuadre", owner);
+    expect(
+      cuadre.ownerReceived.some(
+        (r: any) => r.number === s.number && r.amount === 300,
+      ),
+    ).toBe(true);
     const again = await send("246813");
     expect(again.status, JSON.stringify(again.body)).toBeLessThan(300);
     expect(
