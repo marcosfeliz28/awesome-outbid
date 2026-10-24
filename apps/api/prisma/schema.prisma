@@ -1120,7 +1120,8 @@ model InvoiceAttachment {
 // el chat sólo viven en las variables de entorno.
 // Eliminación física después del commit, reintentable si el proveedor falla.
 model TenantObjectDeletion {
-  id String @id @default(uuid()) @db.Uuid
+  // El disparador SQL inserta filas sin pasar por Prisma; PostgreSQL genera el ID.
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId String @db.Uuid
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   objectKey String

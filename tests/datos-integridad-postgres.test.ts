@@ -345,6 +345,25 @@ describe("Auditoría 06 · migraciones de datos en PostgreSQL real", () => {
         join(prismaDir, "schema.prisma"),
         server.url("nexora_datos_clean"),
       );
+      // El ajuste PC-08 de la FK puede volver a ejecutarse sin perder filas ni
+      // alterar el valor por defecto que usa el disparador SQL de borrado.
+      const objectAlignment = await readFile(
+        join(
+          migrationsDir,
+          "202610280012_product_object_schema_alignment",
+          "migration.sql",
+        ),
+        "utf8",
+      );
+      await a.query(objectAlignment);
+      await a.query(objectAlignment);
+      const objectIdDefault = await a.query(
+        `SELECT pg_get_expr(d.adbin, d.adrelid) AS value
+           FROM pg_attrdef d JOIN pg_class t ON t.oid = d.adrelid
+           JOIN pg_attribute c ON c.attrelid = t.oid AND c.attnum = d.adnum
+          WHERE t.relname = 'TenantObjectDeletion' AND c.attname = 'id'`,
+      );
+      expect(objectIdDefault.rows[0]?.value).toBe("gen_random_uuid()");
 
       // Sin deriva: schema.prisma y las migraciones describen la misma base
       // (D-B1: GoodsReceipt_orderId_fkey; las FK nuevas como relaciones).
@@ -716,7 +735,17 @@ describe("Auditoría 06 · migraciones de datos en PostgreSQL real", () => {
       );
       expect(await applyOwn(b)).toEqual([]);
       expect(Object.values(await constraintState(b)).every(Boolean)).toBe(true);
-      // Ya validadas: volver a ejecutar 202610220001 no encuentra pendientes.
+      // PC-08 agrega dos CHECK NOT VALID después de 202610220001. La primera
+      // repetición debe validarlas, sin ocultar las restricciones antiguas.
+      const objectChecks = await applyValidation(b);
+      expect(objectChecks).toEqual([
+        "VALIDAR: BillingRequest_proof_location validada.",
+        "VALIDAR: InvoiceAttachment_object_location validada.",
+        expect.stringMatching(
+          /2 restricción\(es\) validada\(s\) ahora, 0 sin validar/,
+        ),
+      ]);
+      // Una segunda ejecución ya no debe encontrar pendientes.
       expect((await applyValidation(b)).join("\n")).toMatch(
         /0 restricción\(es\) validada\(s\) ahora, 0 sin validar/,
       );
