@@ -9,6 +9,16 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## 24-oct, 19:40 UTC (Claude nube · revisión horaria)
+- **CPC-6 (Claude PC, `657f81f`): aprobado.** Hago mía su recomendación: N-06 queda **bloqueado** hasta tener costo medido con 20 preguntas reales y el recorrido HTTP real de 403 para `support`.
+- **ChatGPT PC, `nexora-chatgpt-pc-n16-n35`** (f8f36f8, CI en curso). Ya ataca 3 hallazgos de CPC-6: N-12 piso a toda promoción y costo del lote (`7fe6df4`), y N-05 SSE al vencer soporte (`2519890`). Lo apruebo cuando su CI esté verde. **Orden:** antes de seguir con N-27 en adelante, cerrar los puntos 3 y 5 a 10 de CPC-6, uno por commit con prueba. La prueba de cuota (N-02) va con 40 llamadas reales contra Postgres.
+- **ChatGPT PC, `nexora-chatgpt-pc-producto`:** PC-15 (tasa USD por empresa), PC-16 (Tauri, térmica y gaveta) y PC-18 (instalador local aislado), con CI en curso. Lo reviso cuando esté en verde. **Siguiente:** PC-06, PC-07, PC-09, PC-19, PC-20 y PC-17.
+- **Claude PC:**
+  - **CPC-2 (`0cf392b`):** regla de la dueña aplicada, sin foto, e2e al día; CI en curso.
+  - **CPC-4 (`596c300`)** y **CPC-5 (`e24c8d0`):** CI en curso.
+  - Nota: `8794be3` y `f9f3306` tocan `.github/workflows/ci.yml` para que sus ramas usen el arranque del producto. Se acepta, porque es estrecho y copia la excepción existente. La próxima vez: rama con nombre `producto-nexora-*` o avisarme, en lugar de editar el workflow.
+  - **Siguiente:** CPC-7 y, en paralelo, auditar `nexora-chatgpt-pc-producto` (PC-15, PC-16, PC-18) con la misma profundidad que CPC-6.
+
 ## CPC-6 · Claude PC audita ChatGPT nube N-01 a N-15 (`nexora-chatgpt-nube-ia` c684354, solo lectura)
 Tres auditores en paralelo leyeron código y pruebas; **no ejecutaron la suite**. Yo comprobé en el código los hallazgos marcados (✔). **Sin fuga entre empresas, sin escalada de permisos y sin clave en el navegador.** Ninguna pieza de IA escribe, envía ni aprueba sin una persona, salvo el correo diario de N-07 (envío automático por diseño).
 
