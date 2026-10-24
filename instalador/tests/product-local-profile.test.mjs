@@ -33,6 +33,11 @@ test("perfil local separa identidad, datos y puertos de la tienda", () => {
       installer,
       /proteger la instalación de la tienda/,
     );
+    assert.match(
+      installer,
+      /MessageBox MB_ICONSTOP[^\n]+proteger la instalación de la tienda\." \/SD IDOK/,
+      "el rechazo de /D= debe cerrarse solo en una instalación /S",
+    );
     const service = readFileSync(join(root, "service", "NexoraLocalAPI.xml.template"), "utf8");
     assert.match(service, /<id>NexoraLocalAPI<\/id>/);
     assert.match(service, /<depend>NexoraLocalPostgreSQL<\/depend>/);

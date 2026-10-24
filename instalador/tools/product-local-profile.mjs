@@ -75,7 +75,7 @@ ${aclAnchor}`);
     content = content.replace(
       initAnchor,
       `${initAnchor}  \${If} $INSTDIR != "$PROGRAMFILES64\\Nexora POS Local"
-    MessageBox MB_ICONSTOP "El producto local solo puede instalarse en C:\\Program Files\\Nexora POS Local. Se rechazó la carpeta elegida para proteger la instalación de la tienda."
+    MessageBox MB_ICONSTOP "El producto local solo puede instalarse en C:\\Program Files\\Nexora POS Local. Se rechazó la carpeta elegida para proteger la instalación de la tienda." /SD IDOK
     SetErrorLevel 4
     Abort
   \${EndIf}
