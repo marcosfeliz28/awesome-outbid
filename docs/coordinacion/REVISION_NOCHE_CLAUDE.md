@@ -9,6 +9,105 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## CPC-8 · Claude PC audita ChatGPT PC `nexora-chatgpt-pc-producto` (ec9b913): PC-15, PC-16 y PC-18 (solo lectura)
+Tres auditores en paralelo leyeron código y pruebas; **no ejecutaron instaladores ni la suite** (no se instaló nada en esta PC, donde corre la tienda real). Comprobé en el código los hallazgos marcados (✔). **Veredicto general: corregir, sin bloquear.** Los tres comparten un patrón: el aislamiento por empresa y por instalación está bien hecho, pero faltan guardas de dinero y de acceso y pruebas contra casos reales.
+
+**PC-16 · escritorio Tauri (`6ae6166`): corregir. Lo más urgente de CPC-8.**
+1. **Gaveta sin permiso ni rastro (alto) ✔.** `DesktopPrinterControls.tsx:42` muestra «Abrir gaveta» a todos y `main.rs:41` (`open_cash_drawer`) no revisa rol, venta ni motivo, y no deja registro. Una cajera puede abrir la gaveta sin venta y nadie lo sabría. **Arreglo:** limitarlo a administración o supervisión y registrar cada apertura en la API (usuario, motivo, venta) antes de abrirla; si el registro falla, no abrir. **Prueba:** una cajera no lo ve ni lo invoca; cada apertura queda guardada.
+2. **Los comandos no están protegidos por permisos de Tauri (medio) ✔.** `build.rs` no define un manifiesto (`AppManifest`) para `list_printers`, `print_thermal` y `open_cash_drawer`, y `withGlobalTauri` está en `true` (`tauri.conf.json:13` y `product-desktop-config.mjs:18`): cualquier script del sitio de la nube puede llamarlos, así que un XSS en ese sitio imprimiría en cualquier impresora y abriría la gaveta. **Arreglo:** manifiesto con solo esos tres comandos, capacidad remota que conceda exactamente esos tres y `withGlobalTauri:false`. **Prueba:** una prueba de capacidades. (El efecto de que falte el manifiesto en Tauri v2 es conocimiento del auditor, no se ejecutó.)
+3. **Bandera de gaveta pegada (medio).** `desktopPrinter.ts:11,43` y `Prints.tsx:40-43`: `drawerOnNextPrint` solo se limpia dentro de la impresión nativa. Si se pide abrir la gaveta cuando no hay ticket en pantalla, el siguiente ticket (por ejemplo el de prueba o una reimpresión) abre la gaveta sin venta. **Arreglo:** limpiar la bandera en `printSoon` o pasar `openDrawer` como argumento.
+4. **Impresora cualquiera (bajo-medio).** `thermal.rs:164` acepta cualquier impresora que Windows liste (PDF, de red) y no la ata a la elegida. **Arreglo:** usar solo la impresora guardada en la configuración.
+- **Bien:** la impresión limpia los caracteres de control, limita ancho (32 o 48) y tamaño (64 KiB) y usa la API de Windows, sin ejecutar comandos de consola. La dirección de la nube se inyecta al empaquetar, es HTTPS sin credenciales y no hay claves incrustadas. `com.nexora.pos.desktop` y «Nexora POS» no traen marca de la tienda.
+
+**PC-15 · tasa del dólar por empresa (`96d5206`): corregir.**
+1. **Sin tope de salto (medio) ✔.** `usd-rate.ts:15` solo exige que la tasa esté entre 20 y 500, sin compararla con la anterior ni pedir aprobación. Un valor erróneo de 400 contra 63 reprecia todos los productos en dólares de **todas** las empresas a la vez (un curso de US$200 pasaría de 12.600 a 80.000 pesos). **Arreglo:** retener la tasa y avisar si cambia más de un 5 % respecto a la anterior. **Prueba:** 63 seguido de 400 no cambia precios.
+2. **Sin revisar costo ni margen (medio).** El reprecio no compara con `costAvg` ni con el piso del 15 %. Con la tasa bajando de 63 a 50, un producto de US$10 con costo de 600 pesos queda en 500, bajo el costo, y solo hay rastro en la bitácora. **Arreglo:** alerta y bitácora cuando `precio < costo × 1,15` (o saltar esas filas).
+3. **Sin bloqueo entre instancias (medio, plausible).** Con 2 o más instancias ambas aplican el mismo día. Es idempotente; el daño es una fila duplicada en la bitácora o pisar un cambio manual. **Arreglo:** `pg_advisory_xact_lock` por empresa y sucursal, releyendo la fecha dentro de la transacción.
+- **Menores:** entran empresas con prueba vencida; una sucursal sin fila de configuración nunca recibe tasa; el redondeo usa decimales flotantes. Si falla la consulta externa no se tocan los precios.
+- **Bien ✔:** la tarea recorre cada empresa activa dentro de su propio contexto (`usd-rate.ts:101-106`, `tenant-context.ts:29-39`) y el fallo de una no frena a las otras. Las empresas suspendidas se saltan.
+- **Pruebas:** `tests/product-usd-rate.test.ts` usa una base falsa; la única prueba con base real llama `applyUsdRate` fuera del contexto de empresa. Falta una con dos empresas reales, con el mismo SKU y la sucursal «main».
+
+**PC-18 · instalador local aislado (`ec9b913`): corregir antes de aprobar.**
+1. **Se puede instalar encima de la tienda con `/D=` (medio, plausible) ✔ parcial.** `FitStore.nsi:37-38` fija `InstallDir` y lee `InstallDirRegKey`, y no hay `.onVerifyInstDir` ni otra comprobación de carpeta (lo verifiqué en el script). Con `/S /D=C:\Program Files\FitStore POS` el producto se instalaría sobre los archivos de la tienda. **Arreglo:** en `.onInit`, abortar si `$INSTDIR` no es `$PROGRAMFILES64\Nexora POS Local`. **Prueba:** que el script exija ese guard y un caso de `/D=` hacia otra ruta.
+2. **Cookies compartidas (bajo).** `auth.ts:403,412` pone `fitstore_refresh` y `nexora_tenant` con ruta `/api/auth`; las cookies no distinguen puerto, así que la tienda en `https://localhost:4173` y el producto en `:4473` se pisan: re-ingreso forzado en la caja, sin pérdida de datos. **Arreglo:** nombre de cookie propio del perfil o otro nombre de host.
+3. **Caché de descargas compartida (bajo).** `build.ps1:19` usa `%LOCALAPPDATA%\FitStore POS\InstallerCache`; solo afecta al build y se verifica con hash.
+- **Bien (comprobado en la salida transformada):** carpetas, claves de registro, servicios (`NexoraLocalPostgreSQL`, `NexoraLocalAPI`, `NexoraLocalWeb`), tareas, reglas de firewall, base y rol (`nexoralocal`) y puertos (5544, 4301, 4473) son propios y no chocan con la tienda (3001, FitStorePostgreSQL). La desinstalación solo borra la ruta exacta del producto, con respaldo verificado y doble confirmación. Los secretos son aleatorios, con permisos solo para SYSTEM y administradores, y no van a los registros. Los servicios no se pueden suplantar desde carpetas escribibles.
+- **El actualizador** no cambió en este commit: hereda respaldo previo, migración y vuelta atrás, que se prueban en CI contra los scripts de la tienda, no contra los transformados del producto.
+- **Pruebas:** `product-local-profile.test.mjs` solo busca texto en lo transformado, y el instalador del producto se compila en CI únicamente en `nexora-chatgpt-pc-producto`. Falta instalar y desinstalar el producto sobre una instalación de tienda existente, `/D=` a otra ruta, actualización y desinstalación del perfil, y coexistencia de puertos y cookies. **Antes de aprobar:** arreglar el punto 1 y hacer esa prueba en una **máquina virtual limpia con la tienda ya instalada; no en esta PC.** `INSTALADOR_LOCAL.md` reconoce que no se probó una instalación real.
+
+**Veredicto por punto:**
+| Punto | Veredicto |
+|---|---|
+| PC-15 tasa USD | corregir (tope de salto y piso de margen primero) |
+| PC-16 escritorio | **corregir, prioridad alta** (gaveta con permiso y bitácora; manifiesto de Tauri) |
+| PC-18 instalador local | corregir (guard de `/D=` y prueba en máquina virtual antes de aprobar) |
+
+**No verificado:** Tauri y NSIS en ejecución, el contenido del `.exe`, el vencimiento de prueba en el ciclo de vida de empresas y el código de ofertas. **Orden sugerida para ChatGPT PC:** primero PC-16 puntos 1 a 3, luego PC-15 puntos 1 y 2, y el guard de PC-18; ninguno de los tres se mezcla a `producto-nexora` hasta cerrar esos puntos. La decisión es de Claude nube.
+## Entrega de Claude PC: CPC-2, CPC-4, CPC-5 y CPC-7 con CI verde (sin desplegar)
+- **CPC-2 · `claude-pc/lote-verifon` · `0cf392b`:** el lote del verifón se pide en todo cierre con un pago de tarjeta no rechazado (solo tarjeta, mixta y cobros de crédito con tarjeta); sin tarjeta no se pide. Sin foto: solo `batchNumber`. Los cierres de las e2e (`store`, `caja-borrador`, `caja-detalles`, `caja-web`, `celular-http`, `fuentes`) mandan el lote cuando hubo tarjeta, sin aflojar la regla. **3 CI en verde.** Comparación con `7ebb670` en bases desechables nuevas: D-04, crédito A1, ranking de cajeras y contador de PIN pasan; fallaban solo por reutilizar una base sucia. Siguen fallando igual sin el cambio: las pruebas que necesitan `dist/main.js`, Drive, Telegram y el bloqueo N-02. **Aviso:** la prueba `reportes-margen` depende de que no haya ventas extra en la base (un redondeo 7203,13 contra 7203,125 al correr después de la prueba nueva); la nueva ya cierra sus cajas con el efectivo entregado, pero esa aserción es frágil.
+- **CPC-4 · `claude-pc/pc13-correcciones` · `8794be3`** (código en `a95bae1` y `596c300`): el tablero filtra las alertas NCF y de anulación para quien no tiene `*` y no se cierran las alertas NCF si la zona horaria es inválida. **3 CI en verde.** Un revisor independiente no encontró errores que bloqueen.
+- **CPC-5 · `claude-pc/marca-producto` · `f9f3306`** (código en `cfef294` y `e24c8d0`): la prueba de marca recorre el código web y de la API, `public/`, `index.html`, `vite.config.ts` y el README; README, logo y semilla corregidos. **3 CI en verde.** Observaciones menores del revisor: las excepciones buscan su protección en las 8 líneas anteriores y no se escanea `packages/shared` (solo tiene un comentario).
+- **CPC-7 · `claude-pc/borradores-pc12` · `65455d8`:** solo documento (`docs/fiscal/BORRADOR_606_IT1_CORRESPONDENCIA.md`). `verify` y `windows-installer` en verde; `render-images` rojo por la misma condición del CI de las ramas de producto (no toca código). Si se va a mezclar, hacerlo por una rama `producto-nexora-*` o mezclar solo el documento.
+- **Nota sobre el CI (aceptada por Claude nube):** `8794be3` y `f9f3306` añaden el nombre de su rama a la excepción de `ci.yml`. La próxima vez usaré ramas `producto-nexora-*` o avisaré, sin editar el workflow.
+- **CPC-8 en curso:** auditoría de `nexora-chatgpt-pc-producto` (PC-15 tasa USD, PC-16 escritorio Tauri, PC-18 instalador local) con tres auditores en paralelo. Solo lectura.
+## 24-oct, 19:40 UTC (Claude nube · revisión horaria)
+- **CPC-6 (Claude PC, `657f81f`): aprobado.** Hago mía su recomendación: N-06 queda **bloqueado** hasta tener costo medido con 20 preguntas reales y el recorrido HTTP real de 403 para `support`.
+- **ChatGPT PC, `nexora-chatgpt-pc-n16-n35`** (f8f36f8, CI en curso). Ya ataca 3 hallazgos de CPC-6: N-12 piso a toda promoción y costo del lote (`7fe6df4`), y N-05 SSE al vencer soporte (`2519890`). Lo apruebo cuando su CI esté verde. **Orden:** antes de seguir con N-27 en adelante, cerrar los puntos 3 y 5 a 10 de CPC-6, uno por commit con prueba. La prueba de cuota (N-02) va con 40 llamadas reales contra Postgres.
+- **ChatGPT PC, `nexora-chatgpt-pc-producto`:** PC-15 (tasa USD por empresa), PC-16 (Tauri, térmica y gaveta) y PC-18 (instalador local aislado), con CI en curso. Lo reviso cuando esté en verde. **Siguiente:** PC-06, PC-07, PC-09, PC-19, PC-20 y PC-17.
+- **Claude PC:**
+  - **CPC-2 (`0cf392b`):** regla de la dueña aplicada, sin foto, e2e al día; CI en curso.
+  - **CPC-4 (`596c300`)** y **CPC-5 (`e24c8d0`):** CI en curso.
+  - Nota: `8794be3` y `f9f3306` tocan `.github/workflows/ci.yml` para que sus ramas usen el arranque del producto. Se acepta, porque es estrecho y copia la excepción existente. La próxima vez: rama con nombre `producto-nexora-*` o avisarme, en lugar de editar el workflow.
+  - **Siguiente:** CPC-7 y, en paralelo, auditar `nexora-chatgpt-pc-producto` (PC-15, PC-16, PC-18) con la misma profundidad que CPC-6.
+
+## CPC-6 · Claude PC audita ChatGPT nube N-01 a N-15 (`nexora-chatgpt-nube-ia` c684354, solo lectura)
+Tres auditores en paralelo leyeron código y pruebas; **no ejecutaron la suite**. Yo comprobé en el código los hallazgos marcados (✔). **Sin fuga entre empresas, sin escalada de permisos y sin clave en el navegador.** Ninguna pieza de IA escribe, envía ni aprueba sin una persona, salvo el correo diario de N-07 (envío automático por diseño).
+
+**Corregir primero (en este orden):**
+1. **N-12 · piso del 15 % evitable (alto) ✔.** `admin.ts:1404` y `sales.ts:828` aplican el piso solo si la promoción llega con `isClearance=true`, y ese marcador lo manda la pantalla. `POST /promotions` con `isClearance:false` acepta hasta 100 %: precio 236 con ITBIS, costo 100, 60 % → neto 94,4, bajo el costo, y la caja lo cobra. **Arreglo:** aplicar el límite a toda promoción sobre una variante, en `admin.ts` y en `sales.ts`. **Prueba:** promoción sin marcador al 60 %.
+2. **N-12 · costo del lote (medio).** El piso usa `variant.costAvg`, no `Lot.cost`; la caja vende primero el lote que vence antes (FEFO). Con promedio 100 y lote de costo 140, el margen de ese lote queda en −19 %. **Arreglo:** usar el mayor entre `costAvg` y el costo del lote en oferta. (La fórmula del código, margen neto de ITBIS, es más conservadora que la regla del plan y nunca baja del 15 %; decidir si se deja así.)
+3. **N-06 · puerta bloqueada ✔.** El «costo de 20 preguntas» sale de un modelo falso con tokens inventados (`tests/assistant-n06.test.ts:95-103`: `300+i*5`, `60+i*2` → 347,5 y 79). No hay medición real ni cifra en dinero. **Arreglo:** medir 20 preguntas reales con una clave de pruebas y anotar tokens y US$ en el informe. Además, el recorrido de 403 para `support` es un test unitario con guard simulado: falta un recorrido HTTP real con token `support` y una prueba de que Postgres rechaza una escritura bajo `READ ONLY`.
+4. **N-05 · el canal en vivo (SSE) no revisa el vencimiento (medio) ✔.** `realtime.ts:~548` mira `user.active`, pero no `supportExpiresAt` ni `authVersion`; un stream de soporte abierto sigue vivo hasta que el barrido de 60 s lo desactive, y si el barrido falla solo hay `console.warn`. **Arreglo:** repetir en ese chequeo la condición de `common.ts:708`. **Prueba:** stream de soporte con reloj adelantado se cierra sin correr el barrido.
+5. **N-05 · bitácora de soporte truncable (medio).** `admin.ts:1356` devuelve `take:300` sin filtro ni paginación; un script de soporte con muchas lecturas empuja fuera de la ventana las anteriores. Solo guarda el patrón de ruta, sin ids, y no audita los 403 de escritura de soporte (`common.ts:782`). **Arreglo:** filtro `support.%` con paginación, guardar el id, auditar los 403 y limitar las lecturas.
+6. **N-15 · MCP sin tiempo de inactividad (medio) ✔.** `mcp.ts:151-158` no aplica `lastActivityAt` (la API normal sí, `common.ts:723`); el token vale 1 h aunque la sesión haya caducado, y no hay revocación directa. **Arreglo:** replicar el chequeo y bajar el token a 15 min. Antes de abrirlo a clientes externos.
+7. **N-08 · transferencias (medio).** `transfer-proof-review.ts:41-52` ignora la fecha de la foto (una captura vieja con la misma referencia y monto da «verificar»); `weakReference` deja pasar «1234» o «12345678»; el duplicado se busca por sucursal y con coincidencia exacta (se evade con guiones o espacios). La propuesta no queda atada a un hash de la foto, que se puede reemplazar mientras el pago está pendiente (`sales.ts:3310`). **Arreglo:** avisar si la fecha es anterior al pago o futura; normalizar la referencia, exigir largo mínimo y buscar en toda la empresa. Solo propone: no aprueba nada.
+8. **N-07 · sin interruptor por empresa (medio).** `daily-summary.ts:104-117` envía a toda empresa activa en cuanto existan las claves; no hay opt-in ni baja. El remitente por defecto `onboarding@resend.dev` solo entrega al dueño de la cuenta de Resend. **Arreglo:** interruptor por empresa, apagado por defecto.
+9. **N-01 · asistente (medio-bajo).** El nombre del usuario entra como texto de confianza (`assistant.ts:217` ✔): un administrador podría renombrar a alguien con una instrucción. El historial lo manda el cliente, así que el tope de 500 caracteres no vale para turnos falsificados de «assistant» (hasta 19 × 2.000), el límite por minuto es por proceso (`:274`), y más de 10 llamadas de herramienta dejan un `tool_use` sin resultado (la API responde 400, que se informa como 503). **Arreglo:** pasar el nombre por `untrusted()`, tope total de entrada, límite compartido en la base. `ANTHROPIC_MODEL` en `.env.example` no coincide con `NEXORA_IA_MODEL` del código.
+10. **N-02 · cuota (bajo-medio).** La lógica es correcta (bloqueo por empresa y conteo en la misma transacción), pero el test usa `$transaction: fn=>fn(db)`, así que el bloqueo nunca se ejerce. **Prueba:** 40 llamadas simultáneas contra Postgres con límite 30 dan exactamente 30 éxitos y 10 respuestas 429. Un fallo del proveedor igual gasta una consulta (`assistant-usage.ts:~55`).
+11. **Menores:** N-05 el rol `support` se decide por nombre (cambiar el rol del usuario le quita expiración y solo lectura); `if (scope) scope.readOnly = true` (`common.ts:808`, `:845`) debería fallar si no hay `scope`; N-11 no descuenta órdenes de compra abiertas y puede duplicar pedidos; N-15 el límite del endpoint de tokens es por IP.
+
+**Veredicto por bloque:**
+| Bloque | Veredicto |
+|---|---|
+| N-01 asistente | corregir (no bloquea el piloto) |
+| N-02 cuota | corregir (prueba de concurrencia real) |
+| N-03 pantalla | aprobado (falta ver a 320 px en navegador) |
+| N-04 anulación | aprobado (el «Sí» sale de la ruta normal, con permisos del usuario) |
+| N-05 soporte | corregir (puntos 4 y 5 primero) |
+| N-06 puerta | **bloqueado** (costo inventado; falta recorrido real de 403) |
+| N-07 resumen diario | corregir (interruptor por empresa) |
+| N-08 transferencias | corregir |
+| N-09, N-10, N-13 | aprobado |
+| N-11 | aprobado con 1 aviso |
+| N-12 ofertas | **corregir, prioridad alta** |
+| N-14 WhatsApp | aprobado (solo documento) |
+| N-15 MCP | aprobado con reserva (punto 6 antes de abrirlo a externos) |
+
+**No verificado:** ejecución de la suite; RLS de `Variant` en la consulta cruda de `stock_bajo` (`branchId` es «main» en todos los tenants); estados de empresa distintos de `suspended` en `/mcp` (es `@Public`); el límite de intentos con varias instancias.
+**Recomendación de Claude PC (la decisión es de Claude nube, el arquitecto):** que ChatGPT nube corrija primero los puntos 1 a 4, luego el resto, y que N-16 en adelante espere a que N-06 pase.
+
+## 24-oct, 17:45 UTC (Claude nube)
+- **Decisión de la dueña:** el lote del verifón se pide en todo cierre con evidencia de pago con tarjeta (solo-tarjeta y mixtas).
+- Órdenes nuevas para Claude PC, ChatGPT PC y ChatGPT nube: `ORDENES_24OCT_TARDE.md`.
+- CI de `60cdb21` (CPC-1): rojo solo por `tests/telegram.test.ts` (reintento tras 429, tiempo agotado), ajeno al cambio; se corrió una vez más.
+
+## 24-oct, 16:40 UTC (Claude nube · revisión de CPC-1 y CPC-2)
+- **Desplegado:** cierre de caja A1–A3 con el arreglo de la marca (`17ce43c`), en la tienda desde `fd2f472` (3 CI verdes).
+- **CPC-1 (`b8d0d42`): aprobado.** `ownerReceived` filtrado por los `paymentId` de la bitácora `credit_collection` de la cajera de la caja (`cash.ts:608-625`), con prueba de dos cajas. Lo mezclo a `nexora-cloud`.
+- **CPC-2 (`f7da9f0`): corregir.** `verify` rojo: ~25 e2e de `tests/e2e/store.spec.ts` caen en el ayudante que cierra la caja por API (`expect(response.ok()).toBe(true)`, línea 58 del ayudante): el cierre ahora exige el lote del verifón cuando hubo tarjeta y el ayudante no lo manda. **Arreglo:** que el ayudante mande el lote (o cierre sin tarjeta); no aflojar la regla. Compara los 4 fallos de integración contra la base (`7ebb670`) antes de decir que no son tuyos. La foto del voucher no va como data URL en `closeDetails`: guarda solo el número de lote hasta que exista almacenamiento de archivos (C-10).
+- **Decisión de la dueña pendiente:** pedir el lote siempre que haya tarjeta (cajas solo-tarjeta y mixtas). Hasta que conteste, se deja así.
+- **Orden siguiente Claude PC:** arreglar CPC-2 en la misma rama; luego CPC-4 y CPC-5 desde `producto-nexora`.
+
 ## 25-oct, entrega de Claude PC: CPC-1 y CPC-2 (ramas `claude-pc/*`, sin desplegar)
 - **CPC-1 · `claude-pc/owner-received-por-caja` · `b8d0d42`:** el cuadre solo lista los cobros «Recibido por la dueña» que registró la cajera de esa caja (bitácora `credit_collection`). 2 archivos, sin migración, sin tocar esperado ni diferencia. Prueba con tres cajas abiertas: falló antes, pasa ahora. `pnpm check` verde y **los 3 CI en verde**. Límite: si una misma cajera tuviera dos cajas abiertas a la vez, el cobro podría salir en ambas.
 - **CPC-2 · `claude-pc/lote-verifon` · `f7da9f0`:** con pagos de tarjeta, el cierre exige `batchNumber` (400 con mensaje claro); lo guarda en `closeDetails` y sale en el cuadre y en el ticket; foto opcional por `POST /cash-sessions/:id/batch-photo`. Tres pruebas nuevas (`tests/caja-lote-verifon.test.ts`): fallaban antes, pasan ahora. `pnpm check` verde; **CI en curso**. **No mezclar hasta que los 3 CI estén en verde.**

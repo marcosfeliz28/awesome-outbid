@@ -572,10 +572,12 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
             difference: differenceDop,
           },
     // Efectivo que la dueña recibió en la mano mientras la caja estuvo
-    // abierta (A1): informativo, no suma al esperado de la gaveta.
+    // abierta (A1): informativo, no suma al esperado de la gaveta. Sólo los
+    // cobros que registró la cajera de esta caja (bitácora credit_collection).
     ownerReceived: (
       await db.payment.findMany({
         where: {
+          id: { in: await ownerCollectionIds(db, session) },
           entryType: "installment",
           method: "cash",
           cashSessionId: null,
@@ -604,6 +606,22 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
     })),
     notes: session.notes,
   };
+}
+async function ownerCollectionIds(db: any, session: any): Promise<string[]> {
+  const logs = await db.auditLog.findMany({
+    where: {
+      action: "credit_collection",
+      userId: session.userId,
+      createdAt: {
+        gte: session.openedAt,
+        ...(session.closedAt ? { lte: session.closedAt } : {}),
+      },
+    },
+    select: { after: true },
+  });
+  return logs.flatMap((l: any) =>
+    ((l.after?.lines ?? []) as any[]).map((x) => String(x.paymentId)),
+  );
 }
 const UUID_RE = /^[0-9a-f-]{36}$/i;
 // Cajas cerradas que lista GET /cash-sessions (además de todas las abiertas).
