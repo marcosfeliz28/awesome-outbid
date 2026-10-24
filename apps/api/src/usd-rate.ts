@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { businessDate } from "@fitstore/shared";
 import { Database } from "./common";
-import { tenantUnique } from "./tenant-context";
+import { currentTenantId, tenantUnique } from "./tenant-context";
 
 // Tasa del dólar del día (orden de la dueña, 20-oct): se busca sola en
 // internet una vez al día. Los productos con precio en dólares (atributo
@@ -27,6 +27,7 @@ export async function applyUsdRate(
   source: string,
   day = businessDate(),
 ) {
+  const tenantId = currentTenantId();
   return db.$transaction(async (tx: any) => {
     const settings = await tx.settings.findUnique({
       where: tenantUnique("id", branchId),
@@ -42,7 +43,7 @@ export async function applyUsdRate(
       update: { data },
     });
     const variants = await tx.variant.findMany({
-      where: { branchId, active: true },
+      where: { tenantId, branchId, active: true },
       select: { id: true, price: true, attributes: true },
     });
     const changed: { id: string; from: string; to: number }[] = [];
@@ -51,14 +52,17 @@ export async function applyUsdRate(
       if (!(usd > 0)) continue;
       const price = usdPrice(usd, rate);
       if (Number(v.price) === price) continue;
-      await tx.variant.update({
-        where: tenantUnique("id", v.id),
+      const updated = await tx.variant.updateMany({
+        where: { tenantId, id: v.id },
         data: { price },
       });
+      if (updated.count !== 1)
+        throw new Error("No se pudo actualizar el precio en dólares.");
       changed.push({ id: v.id, from: String(v.price), to: price });
     }
     await tx.auditLog.create({
       data: {
+        tenantId,
         userId: "sistema",
         action: "usd_rate_updated",
         entity: "settings",
