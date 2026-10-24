@@ -73,6 +73,9 @@ export const MANUAL_ALERT_TYPES = [
   // Recordatorio semanal de créditos por cobrar (credit-reminder.ts).
   "credit_reminder",
   "sale_void_request",
+  // La tasa se aplica automáticamente; un salto superior al 5 % queda para
+  // revisión humana y no debe resolverse por la evaluación periódica.
+  "usd_rate_change",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,

@@ -16,6 +16,7 @@ it("PC-15: una consulta USD actualiza todas las sucursales de las empresas activ
   process.env.PRODUCT_TENANCY = "required";
   const saved: string[] = [];
   const audit: string[] = [];
+  const alerts: string[] = [];
   const fetchRate = vi
     .fn()
     .mockResolvedValue({
@@ -36,7 +37,16 @@ it("PC-15: una consulta USD actualiza todas las sucursales de las empresas activ
       task({
         $queryRaw: async () => [{ locked: "" }],
         settings: {
-          findUnique: async () => null,
+          findUnique: async ({ where }: any) => {
+            const branchId = where.tenantId_id.id;
+            const rate =
+              currentTenantId() === A && branchId === "main"
+                ? 62
+                : currentTenantId() === A
+                  ? 50
+                  : 70;
+            return { data: { usdRate: rate } };
+          },
           upsert: async ({ where, create }: any) => {
             expect(where.tenantId_id.tenantId).toBe(currentTenantId());
             saved.push(
@@ -45,20 +55,34 @@ it("PC-15: una consulta USD actualiza todas las sucursales de las empresas activ
           },
         },
         variant: { findMany: async () => [] },
+        alert: {
+          upsert: async ({ where, create }: any) => {
+            expect(where.tenantId_key.tenantId).toBe(currentTenantId());
+            alerts.push(`${currentTenantId()}:${create.key}`);
+          },
+        },
         auditLog: { create: async () => audit.push(currentTenantId()) },
       }),
   };
   await new UsdRateWorker(db as never).run();
   expect(fetchRate).toHaveBeenCalledTimes(1);
   expect(saved).toEqual([`${A}:main:63`, `${A}:norte:63`, `${B}:main:63`]);
+  expect(alerts).toHaveLength(2);
+  expect(alerts[0]).toMatch(
+    new RegExp(`^${A}:usd-rate-change:norte:\\d{4}-\\d{2}-\\d{2}$`),
+  );
+  expect(alerts[1]).toMatch(
+    new RegExp(`^${B}:usd-rate-change:main:\\d{4}-\\d{2}-\\d{2}$`),
+  );
   expect(audit).toEqual([A, A, B]);
 });
 
-it("PC-15: retiene un salto mayor de 5 % hasta confirmación y no cambia precios", async () => {
+it("PC-15: un salto mayor de 5 % actualiza la tasa y deja un aviso para la dueña", async () => {
   process.env.PRODUCT_TENANCY = "required";
   let data: any = { usdRate: 63 };
   const update = vi.fn().mockResolvedValue({ count: 1 });
   const actions: string[] = [];
+  let alert: any;
   const tx = {
     $queryRaw: async () => [{ locked: "" }],
     settings: {
@@ -76,31 +100,35 @@ it("PC-15: retiene un salto mayor de 5 % hasta confirmación y no cambia precios
     auditLog: {
       create: async ({ data: row }: any) => actions.push(row.action),
     },
+    alert: {
+      upsert: async ({ create }: any) => {
+        alert = create;
+      },
+    },
   };
   const db = { $transaction: async (task: any) => task(tx) };
 
-  const held = await tenantScope.run({ tenantId: A }, () =>
-    applyUsdRate(db, "main", 400, "QA", "2026-10-24"),
+  const result = await tenantScope.run({ tenantId: A }, () =>
+    applyUsdRate(db, "main", 67, "QA", "2026-10-24"),
   );
-  expect(held).toMatchObject({ confirmationRequired: true, changed: 0 });
-  expect(update).not.toHaveBeenCalled();
-  expect(data.usdRate).toBe(63);
-  expect(data.usdRatePending.rate).toBe(400);
-
-  const confirmed = await tenantScope.run({ tenantId: A }, () =>
-    applyUsdRate(db, "main", 400, "QA", "2026-10-24", {
-      confirmed: true,
-      userId: "dueña",
-    }),
-  );
-  expect(confirmed.confirmationRequired).toBe(false);
+  expect(result).toMatchObject({
+    confirmationRequired: false,
+    changed: 1,
+    largeChange: true,
+  });
   expect(update).toHaveBeenCalledOnce();
-  expect(data.usdRate).toBe(400);
+  expect(data.usdRate).toBe(67);
   expect(data.usdRatePending).toBeUndefined();
-  expect(actions).toEqual([
-    "usd_rate_confirmation_required",
-    "usd_rate_updated",
-  ]);
+  expect(actions).toEqual(["usd_rate_updated"]);
+  expect(alert).toMatchObject({
+    key: "usd-rate-change:main:2026-10-24",
+    type: "usd_rate_change",
+    severity: "medium",
+    entityId: "main",
+    branchId: "main",
+  });
+  expect(alert.message).toContain("63");
+  expect(alert.message).toContain("67");
 });
 
 it("PC-15: avisa y audita si el precio nuevo queda bajo 15 % de margen", async () => {

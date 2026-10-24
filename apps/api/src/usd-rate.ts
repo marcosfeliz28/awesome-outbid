@@ -22,7 +22,7 @@ export const usdPrice = (usd: number, rate: number) =>
 const RATE_CHANGE_LIMIT = 0.05;
 const LOW_MARGIN_LIMIT = 0.15;
 
-type RateOptions = { confirmed?: boolean; userId?: string };
+type RateOptions = { userId?: string };
 
 /** Guarda la tasa en Configuración y recalcula los precios en dólares. */
 export async function applyUsdRate(
@@ -43,36 +43,8 @@ export async function applyUsdRate(
     });
     const data = { ...((settings?.data as any) ?? {}) };
     const before = Number(data.usdRate) || null;
-    const pending = data.usdRatePending as
-      { rate?: number; day?: string; source?: string } | undefined;
     const change = before ? Math.abs(rate - before) / before : 0;
-    const personConfirmed =
-      options.confirmed === true ||
-      (Number(pending?.rate) === rate && Number(data.usdRate) === rate);
-    if (
-      (change > RATE_CHANGE_LIMIT || Number(pending?.rate) === rate) &&
-      !personConfirmed
-    ) {
-      data.usdRatePending = { rate, day, source, previousRate: before };
-      await tx.settings.upsert({
-        where: tenantUnique("id", branchId),
-        create: { id: branchId, data },
-        update: { data },
-      });
-      await tx.auditLog.create({
-        data: {
-          tenantId,
-          userId: options.userId ?? "sistema",
-          action: "usd_rate_confirmation_required",
-          entity: "settings",
-          entityId: branchId,
-          before: { usdRate: before },
-          after: { proposedRate: rate, change, day, source },
-          branchId,
-        },
-      });
-      return { rate, changed: 0, confirmationRequired: true, lowMargin: [] };
-    }
+    const largeChange = before !== null && change > RATE_CHANGE_LIMIT;
     data.usdRate = rate;
     data.usdRateDate = day;
     data.usdRateSource = source;
@@ -115,6 +87,24 @@ export async function applyUsdRate(
       create: { id: branchId, data },
       update: { data },
     });
+    if (largeChange) {
+      const percent = (change * 100).toFixed(2);
+      const message =
+        `La tasa automática del dólar cambió ${percent} %: ` +
+        `de RD$ ${before} a RD$ ${rate}. La actualización se aplicó; revisa la fuente ${source}.`;
+      await tx.alert.upsert({
+        where: tenantUnique("key", `usd-rate-change:${branchId}:${day}`),
+        create: {
+          key: `usd-rate-change:${branchId}:${day}`,
+          type: "usd_rate_change",
+          severity: "medium",
+          entityId: branchId,
+          branchId,
+          message,
+        },
+        update: { status: "new", message },
+      });
+    }
     await tx.auditLog.create({
       data: {
         tenantId,
@@ -131,6 +121,7 @@ export async function applyUsdRate(
       rate,
       changed: changed.length,
       confirmationRequired: false,
+      largeChange,
       lowMargin,
     };
   });

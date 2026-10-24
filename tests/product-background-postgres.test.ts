@@ -12,6 +12,7 @@ import { CreditReminderService } from "../apps/api/src/credit-reminder";
 import { enqueue, NotificationWorker } from "../apps/api/src/notifications";
 import { RetentionWorker } from "../apps/api/src/retention";
 import { tenantScope } from "../apps/api/src/tenant-context";
+import { UsdRateWorker } from "../apps/api/src/usd-rate";
 
 const root = resolve(import.meta.dirname, "..");
 const prismaCli = createRequire(join(root, "apps/api/package.json")).resolve(
@@ -98,12 +99,41 @@ it("los trabajos de fondo recorren cada empresa sin mezclar avisos, créditos ni
         `INSERT INTO "NotificationOutbox" (id,"eventType","refId",payload,status,"sentAt","createdAt","tenantId") VALUES ($1,'old','old','{}'::jsonb,'sent',now() - interval '31 days',now() - interval '31 days',$2)`,
         [`40000000-0000-4000-8000-00000000000${index}`, tenantId],
       );
+      await sql.query(
+        `INSERT INTO "Settings" (id,data,"updatedAt","tenantId") VALUES ('main',$1::jsonb,now(),$2)`,
+        [JSON.stringify({ usdRate: index === 0 ? 63 : 65 }), tenantId],
+      );
     }
 
     process.env.DATABASE_URL = url;
     process.env.PRODUCT_TENANCY = "required";
     db = new Database();
     await db.$connect();
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({
+      ok: true,
+      json: async () => ({ rates: { DOP: 67 } }),
+    })) as typeof fetch;
+    try {
+      await new UsdRateWorker(db).run();
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+    const rates = await sql.query(
+      `SELECT "tenantId", data->>'usdRate' AS rate FROM "Settings" ORDER BY "tenantId"`,
+    );
+    expect(rates.rows).toEqual([
+      { tenantId: demo, rate: "67" },
+      { tenantId: other, rate: "67" },
+    ]);
+    const rateAlerts = await sql.query(
+      `SELECT "tenantId",type,status FROM "Alert" WHERE type='usd_rate_change' ORDER BY "tenantId"`,
+    );
+    // 63 -> 67 supera 5 %; 65 -> 67 no. La tasa se aplica en las dos
+    // empresas y el aviso queda exclusivamente en la que tuvo el salto.
+    expect(rateAlerts.rows).toEqual([
+      { tenantId: demo, type: "usd_rate_change", status: "new" },
+    ]);
     await expect(enqueue(db, "test", "sin-empresa", "main", "No enviar"))
       .rejects.toThrow(/contexto de empresa/);
     // La clave idempotente se puede repetir entre negocios y el INSERT bruto
