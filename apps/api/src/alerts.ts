@@ -42,6 +42,7 @@ import {
   canViewCashExpected,
 } from "./common";
 import { currentTenantId } from "./tenant-context";
+import { ncfSequenceWarnings, ncfTenantToday } from "./ncf-sequences";
 
 const CASH_DIFFERENCE_PRIVATE_MESSAGE =
   "Se detectó una diferencia en una caja cerrada. Administración debe revisarla.";
@@ -449,6 +450,24 @@ export class AlertEngine {
       if (enabled(type))
         events.push({ key, type, severity, entityId, message, branchId });
     };
+    // PC-13: sólo avisamos de rangos declarados por administración. Nunca
+    // consumimos ni inferimos números NCF a partir de ventas del POS.
+    if (process.env.PRODUCT_TENANCY === "required") {
+      const [tenant, sequences] = await Promise.all([
+        this.db.$queryRaw<{ timeZone: string }[]>`
+          SELECT "timeZone" FROM "Tenant" WHERE id = ${currentTenantId()}::uuid`,
+        this.db.ncfSequence.findMany({ where: { active: true } }),
+      ]);
+      // Si no conocemos la zona horaria de esta empresa, no fingimos una
+      // fecha fiscal: omitimos el aviso hasta corregir la configuración.
+      const todayForTenant = tenant[0]?.timeZone ? ncfTenantToday(tenant[0].timeZone) : null;
+      if (todayForTenant) {
+        for (const sequence of sequences)
+          for (const warning of ncfSequenceWarnings(sequence, todayForTenant))
+            add(`ncf:${warning.kind}:${sequence.id}:${branchId}`, "ncf_sequence", "high",
+              sequence.id, warning.message);
+      }
+    }
     for (const v of variants) {
       const stock = Number(v.stock),
         cost = Number(v.costAvg),
@@ -860,7 +879,7 @@ export class AlertsController {
         ...(filter.type ? { type: filter.type } : {}),
         ...(filter.entityId ? { entityId: filter.entityId } : {}),
         ...(!can(actor.permissions, "*")
-          ? { AND: [{ type: { not: "sale_void_request" } }] }
+          ? { AND: [{ type: { notIn: ["sale_void_request", "ncf_sequence"] } }] }
           : {}),
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
@@ -886,7 +905,7 @@ export class AlertsController {
         id: parse(uuid, id),
         branchId: actor.branchId,
         ...(!can(actor.permissions, "*")
-          ? { type: { not: "sale_void_request" } }
+          ? { type: { notIn: ["sale_void_request", "ncf_sequence"] } }
           : {}),
       },
     });

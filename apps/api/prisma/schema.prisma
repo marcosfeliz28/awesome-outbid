@@ -937,6 +937,30 @@ model AlertRule {
   updatedAt DateTime @updatedAt
 }
 
+// PC-13: inventario DECLARADO de rangos autorizados por una persona. Nexora
+// no emite NCF ni deduce el próximo número desde ventas o solicitudes.
+model NcfSequence {
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  tenantId String @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
+  type String
+  authorizationReference String
+  firstNumber Decimal @db.Decimal(12, 0)
+  lastNumber Decimal @db.Decimal(12, 0)
+  nextNumber Decimal @db.Decimal(13, 0)
+  nextConfirmedAt DateTime @default(now())
+  numberWidth Int
+  expiryApplies Boolean
+  expiresOn DateTime? @db.Date
+  active Boolean @default(true)
+  recordedBy String @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, type, authorizationReference])
+  @@index([tenantId, active])
+}
+
 model AuditLog {
   tenant Tenant @relation(fields: [tenantId], references: [id])
   tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
@@ -1320,6 +1344,7 @@ model Tenant {
   expenseRows Expense[]
   promotionRows Promotion[]
   alertRows Alert[]
+  ncfSequenceRows NcfSequence[]
   alertRuleRows AlertRule[]
   auditLogRows AuditLog[]
   settingsRows Settings[]

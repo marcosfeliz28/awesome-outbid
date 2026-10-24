@@ -83,6 +83,7 @@ import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportButton } from "./InventoryImport";
+import { NcfSequenceSettings } from "./NcfSequenceSettings";
 import {
   applyPendingSaleReprice,
   conflictHelp,
@@ -4241,6 +4242,7 @@ export function Configuration() {
               </p>
             )}
             <StoreSettings />
+            <NcfSequenceSettings />
             <TelegramNotices />
             <DriveBackupCard />
             <IncentiveRates />

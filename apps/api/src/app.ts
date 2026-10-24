@@ -32,6 +32,7 @@ import { ReportsController } from "./reports";
 import { IncomeReportController } from "./income-report";
 import { FormalReportController } from "./formal-report";
 import { AlertCacheInterceptor, AlertEngine, AlertsController } from "./alerts";
+import { NcfSequencesController } from "./ncf-sequences";
 import { OfflineSalesController } from "./offline-sales";
 import { OfflineSaleReviewController } from "./offline-sale-review";
 import { IncentivesController } from "./incentives";
@@ -101,6 +102,7 @@ export function createAppModule(secret: string) {
       FormalReportController,
       ReportsController,
       AlertsController,
+      ...(product ? [NcfSequencesController] : []),
       OfflineSalesController,
       OfflineSaleReviewController,
       NotificationsController,
