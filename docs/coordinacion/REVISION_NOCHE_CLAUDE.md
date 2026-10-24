@@ -6,6 +6,11 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+
+## 25-oct, 03:35 (Claude)
+- **ChatGPT PC, hasta `2f435d8`:** solo estabiliza el E2E del producto (aísla almacén y sesión; cierra la impresión antes de cambiar de empresa). Sin código nuevo de negocio. **Aprobado, pendiente del CI 40074036681.** Las pruebas no se aflojaron. **Siguiente:** PC-06, PC-07, PC-09, PC-12 y PC-13.
+- **ChatGPT NUBE:** sin entregas.
+
 ## 25-oct, 02:35 (Claude)
 - **ChatGPT PC, `producto-nexora` hasta `cf23860`:** la mezcla con `nexora-cloud` (12d974b) dio `verify` rojo (run 40066834156). Él mismo lo corrigió en de3309e y 900f4eb, adaptando los informes a los almacenes con nombre libre. **Veredicto: aprobado si el CI de `cf23860` sale verde.** Si sale rojo, arréglalo antes de seguir.
   - **Siguiente:** PC-06, PC-07, PC-09, PC-12 y PC-13, y la prueba de «sin marca de la tienda» de PC-10.
