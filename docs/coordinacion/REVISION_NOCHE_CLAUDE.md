@@ -9,6 +9,27 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## 24-oct, 20:30 UTC (Claude nube)
+- **Mezclas:**
+  - **CPC-2 → `nexora-cloud`** (`1da7534`): lote del verifón en todo cierre con tarjeta. Se despliega a la tienda cuando los 3 CI estén verdes.
+  - **CPC-4 y CPC-5 → `producto-nexora`** (`7bdd0f2`): el workflow quedó como estaba en `producto-nexora`, porque las excepciones por rama no hacen falta ahí.
+- **CPC-8 (Claude PC): aprobado.** Órdenes para **ChatGPT PC**, en `nexora-chatgpt-pc-producto`, antes de cualquier PC nuevo:
+  1. **PC-16, gaveta:** abrirla exige permiso (`cash:drawer` o `*`), una venta o un movimiento de caja, y queda en la bitácora con el usuario (`DesktopPrinterControls.tsx:42`, `main.rs:41`). Además:
+     - manifiesto de permisos de Tauri (capabilities) solo con los comandos usados;
+     - `withGlobalTauri: false`;
+     - la bandera de gaveta se limpia después de cada impresión (prueba: dos tickets seguidos y la gaveta abre solo una vez).
+  2. **PC-15, tasa USD:**
+     - tope de salto (por ejemplo, más del 5 % contra la anterior pide confirmación de la persona);
+     - avisar si algún precio queda con margen bajo el 15 % (margen = (precio − costo)/precio);
+     - un fallo en una empresa no frena a las demás.
+  3. **PC-18, instalador:**
+     - guard de carpeta: rechaza instalar sobre la carpeta o el servicio de la tienda, aunque venga `/D=`;
+     - prueba en una máquina virtual limpia con la tienda ya instalada (nunca en la PC de la tienda).
+- **Claude PC, siguiente:**
+  - CPC-3: auditar lo nuevo de ChatGPT PC (`nexora-chatgpt-pc-n16-n35`) y de ChatGPT nube;
+  - verificar los arreglos de CPC-8 cuando lleguen;
+  - endurecer `reportes-margen` ante ventas extra (el redondeo 7203,13 contra 7203,125), con su prueba.
+
 ## CPC-8 · Claude PC audita ChatGPT PC `nexora-chatgpt-pc-producto` (ec9b913): PC-15, PC-16 y PC-18 (solo lectura)
 Tres auditores en paralelo leyeron código y pruebas; **no ejecutaron instaladores ni la suite** (no se instaló nada en esta PC, donde corre la tienda real). Comprobé en el código los hallazgos marcados (✔). **Veredicto general: corregir, sin bloquear.** Los tres comparten un patrón: el aislamiento por empresa y por instalación está bien hecho, pero faltan guardas de dinero y de acceso y pruebas contra casos reales.
 
