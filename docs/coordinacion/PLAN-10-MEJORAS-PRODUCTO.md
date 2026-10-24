@@ -17,7 +17,7 @@
 | 3 | Quitar lo de Macgen + interruptores por negocio | ChatGPT PC + Claude | Pendiente |
 | 4 | Papeles legales y soporte | Dueña (abogado) + Claude (borradores) | Pendiente |
 | 5 | 606 e IT-1 para el contador | ChatGPT PC + Claude + contador | Pendiente |
-| 6 | «Pregúntele a Nexora» (IA solo lectura) | ChatGPT PC + Claude | Pendiente (fase 2) |
+| 6 | «Pregúntele a Nexora» (IA solo lectura) | ChatGPT NUBE + Claude (orden `ORDEN_FASE2_IA_SOPORTE_CHATGPT_NUBE.md`, 24-oct) | Pendiente (fase 2) |
 | 7 | Conector MCP/OAuth para la IA del cliente (solo propone) | ChatGPT PC + Claude + Dueña (decide la regla del 19-oct) | Pendiente |
 | 8 | Lectura de facturas con IA para todos | Claude (cambio de modelo) + ChatGPT PC | Pendiente |
 | 9 | Asistente de WhatsApp con IA | Dueña (Meta) + ChatGPT PC + Claude | Pendiente (fase 0 Meta) |
