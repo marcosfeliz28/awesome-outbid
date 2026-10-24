@@ -56,6 +56,8 @@ import { CourierFeeEditor } from "./CourierFeeEditor";
 import { SaleEditPanel, editableNow } from "./SaleEditPanel";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
+import { SupportAccessCard } from "./SupportAccess";
+import { productTenancyRequired } from "./productTenancy";
 import {
   CloseCashModal,
   CodPending,
@@ -4242,6 +4244,7 @@ export function Configuration() {
               </p>
             )}
             <StoreSettings />
+            {productTenancyRequired(import.meta.env.VITE_PRODUCT_TENANCY) && <SupportAccessCard />}
             <NcfSequenceSettings />
             <TelegramNotices />
             <DriveBackupCard />
@@ -4347,7 +4350,12 @@ export function Configuration() {
                     users.data?.find((u: any) => u.id === l.userId)?.name ||
                     l.userId,
                 },
-                { label: "Acción", render: (l) => <Badge>{l.action}</Badge> },
+                { label: "Acción", render: (l) => <Badge>{l.action === "support.read"
+                  ? `Soporte de Nexora consultó ${String(l.after?.ruta ?? "").includes("reports") ? "un reporte" : String(l.after?.ruta ?? "").includes("dashboard") ? "el resumen" : "una pantalla"}`
+                  : l.action === "support.enable" ? "Permitió soporte de Nexora"
+                  : l.action === "support.disable" ? "Quitó acceso de soporte"
+                  : l.action === "support.expired" ? "Venció el acceso de soporte"
+                  : l.action}</Badge> },
                 { label: "Entidad", render: (l) => l.entity },
                 {
                   label: "Referencia",

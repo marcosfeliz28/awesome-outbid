@@ -1,4 +1,4 @@
-import { z } from "@fitstore/shared";
+import { permissions as rolePermissions, z } from "@fitstore/shared";
 import {
   Body,
   Controller,
@@ -115,7 +115,7 @@ export class AuthController implements OnModuleInit {
       username: user.username,
       email: user.email,
       role: user.role.name,
-      permissions: user.role.permissions,
+      permissions: user.role.name === "support" ? rolePermissions.support : user.role.permissions,
       branchId: user.branchId,
       tenantId: user.tenantId,
     };
@@ -374,7 +374,8 @@ export class AuthController implements OnModuleInit {
       if (
         !current.active ||
         current.mustChangePassword ||
-        current.authVersion !== user.authVersion
+        current.authVersion !== user.authVersion ||
+        (user.role.name === "support" && (!current.supportExpiresAt || current.supportExpiresAt <= new Date()))
       )
         bad("Las credenciales cambiaron. Inicia sesión otra vez.");
       const session = sessionId
@@ -504,7 +505,8 @@ export class AuthController implements OnModuleInit {
       },
       { wrong: "Usuario o contraseña incorrectos." },
     );
-    if (!user?.active) bad("Usuario o contraseña incorrectos.");
+    if (!user?.active || (user.role.name === "support" && (!user.supportExpiresAt || user.supportExpiresAt <= new Date())))
+      bad("Usuario o contraseña incorrectos.");
     if (process.env.PRODUCT_TENANCY === "required" && !user.emailVerifiedAt)
       throw new HttpException("Confirma tu correo antes de entrar.", 403);
     // N-08: la clave temporal correcta pero vencida no inicia sesión ni abre
@@ -803,7 +805,8 @@ export class AuthController implements OnModuleInit {
       !user?.active ||
       user.mustChangePassword ||
       user.authVersion !== saved.authVersion ||
-      !saved.sessionId
+      !saved.sessionId ||
+      (user.role.name === "support" && (!user.supportExpiresAt || user.supportExpiresAt <= new Date()))
     )
       bad("La sesión ha expirado.");
     return this.issue(user, res, saved.sessionId);

@@ -210,6 +210,7 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.getByLabel("Inventario", { exact: true }).check();
     await page.getByRole("button", { name: "Guardar módulos" }).click();
     await page.getByRole("button", { name: "Agregar categorías sugeridas" }).click();
+    await expect(page.getByRole("heading", { name: /2\. Categorías/ })).toContainText("✓");
     const categories = await (await page.request.get(`${web}/api/categories`, { headers: auth })).json();
     expect(categories.length).toBeGreaterThan(0);
     await page.getByRole("button", { name: "Ir a Productos e importar Excel" }).click();
@@ -290,6 +291,18 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await expect(printDialog).toBeVisible();
     await printDialog.getByRole("button", { name: "Listo", exact: true }).click();
     await expect(printDialog).toBeHidden();
+    if (business === 1) {
+      await page.goto(`${web}/#settings`);
+      const support = page.getByRole("region", { name: "Soporte de Nexora" });
+      await expect(support).toContainText("Acceso apagado");
+      await support.getByLabel("Duración del acceso").selectOption("24h");
+      await support.getByRole("button", { name: "Permitir soporte de Nexora" }).click();
+      await expect(support).toContainText("Contraseña, visible solo ahora");
+      await expect(page.getByText(/Soporte de Nexora con acceso hasta/)).toBeVisible();
+      await page.getByRole("button", { name: "Quitar acceso" }).first().click();
+      await expect(support).toContainText("Acceso apagado");
+      await expect(page.getByText(/Soporte de Nexora con acceso hasta/)).toHaveCount(0);
+    }
     await page.locator("button.account").click();
     await page.getByRole("button", { name: "Cerrar sesión" }).click();
     await expect(page.getByLabel("Código de empresa")).toBeVisible();

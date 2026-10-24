@@ -82,6 +82,7 @@ import { VoidRequests } from "./VoidRequests";
 import { TransferReconciliation } from "./TransferReconciliation";
 import { CourierPayouts } from "./CourierPayouts";
 import { Assistant } from "./Assistant";
+import { SupportAccessBanner } from "./SupportAccess";
 import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import {
@@ -1294,6 +1295,7 @@ function Shell() {
           </div>
         </header>
         <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
+          {PRODUCT_TENANCY_REQUIRED && can(user.permissions, "*") && <SupportAccessBanner />}
           <DeviceGate />
           {pages[page.split("?")[0]] || <Dashboard go={go} />}
         </main>
@@ -1381,7 +1383,7 @@ function Shell() {
         </Button>
       </Modal>
       <About open={about} onClose={() => setAbout(false)} />
-      {PRODUCT_TENANCY_REQUIRED && <Assistant online={online} />}
+      {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && <Assistant online={online} />}
       {ownPassword && (
         <ChangeOwnPassword onClose={() => setOwnPassword(false)} />
       )}

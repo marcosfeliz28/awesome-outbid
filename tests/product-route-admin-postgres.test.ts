@@ -9,7 +9,9 @@ import EmbeddedPostgres from "embedded-postgres";
 import supertest from "supertest";
 import { expect, it } from "vitest";
 import { createAppModule } from "../apps/api/src/app";
-import { ApiExceptionFilter } from "../apps/api/src/common";
+import { ApiExceptionFilter, Database } from "../apps/api/src/common";
+import { tenantScope } from "../apps/api/src/tenant-context";
+import { SupportAccessWorker } from "../apps/api/src/support-access";
 
 const root = resolve(import.meta.dirname, "..");
 const apiRequire = createRequire(join(root, "apps/api/package.json"));
@@ -167,6 +169,47 @@ it("aísla trece escrituras administrativas válidas entre dos empresas", async 
     const evaluation = await http.post("/api/alerts/evaluate").set("Authorization", bToken).send({});
     valid(evaluation, "POST alerts/evaluate");
     expect(JSON.stringify(evaluation.body)).not.toContain("A_ONLY_SECRET");
+
+    // N-05: acceso por empresa, clave de un solo uso, cerrojos y revocación.
+    const beforeSupport = await http.get("/api/support-access").set("Authorization", bToken);
+    expect(beforeSupport.body).toEqual({ enabled: false, expiresAt: null });
+    const enabled = await http.post("/api/support-access/enable").set("Authorization", bToken).send({ duration: "24h" });
+    valid(enabled, "POST support-access/enable");
+    expect(enabled.body.password).toMatch(/^.{24,}Aa1!$/);
+    const enableAudit = await client.query(`SELECT after FROM "AuditLog" WHERE "tenantId"=$1 AND action='support.enable' ORDER BY "createdAt" DESC LIMIT 1`, [ids.b]);
+    expect(JSON.stringify(enableAudit.rows[0])).not.toContain(enabled.body.password);
+    const supportRole = await client.query(`SELECT permissions FROM "Role" WHERE "tenantId"=$1 AND name='support'`, [ids.b]);
+    expect(supportRole.rows[0].permissions).toEqual(["catalog:read", "reports:read", "profit:read"]);
+    expect((await http.get("/api/support-access").set("Authorization", aToken)).body.enabled).toBe(false);
+    const supportUser = (await client.query(`SELECT id,"authVersion","passwordHash" FROM "User" WHERE "tenantId"=$1 AND email='soporte-nexora@nexora.local'`, [ids.b])).rows[0];
+    expect(await apiRequire("bcryptjs").compare(enabled.body.password, supportUser.passwordHash)).toBe(true);
+    const supportSession = "60000000-0000-4000-8000-000000000019";
+    await client.query(`INSERT INTO "AuthSession" (id,"userId","tenantId") VALUES ($1,$2,$3)`, [supportSession, supportUser.id, ids.b]);
+    const supportToken = "Bearer " + jwt.sign({ sub: supportUser.id, sid: supportSession, type: "access", version: supportUser.authVersion, tenantId: ids.b });
+    const supportRead = await http.get("/api/reportes").set("Authorization", supportToken);
+    expect(supportRead.status, JSON.stringify(supportRead.body)).toBe(200);
+    expect(supportRead.body).toHaveLength(43);
+    for (const { name } of supportRead.body) {
+      const report = await http.get(`/api/reports/${name}`).set("Authorization", supportToken);
+      expect(report.status, `Soporte reporte ${name}: ${JSON.stringify(report.body)}`).toBe(200);
+      expect(JSON.stringify(report.body)).not.toContain("A_ONLY_SECRET");
+    }
+    expect((await http.post("/api/support-access/disable").set("Authorization", supportToken).send({})).status).toBe(403);
+    expect((await http.post("/api/products").set("Authorization", supportToken).send({})).status).toBe(403);
+    expect((await http.post("/api/assistant/ask").set("Authorization", supportToken).send({ messages: [{ role: "user", content: "¿Cuánto vendimos?" }] })).status).toBe(403);
+    const supportAudit = await client.query(`SELECT count(*)::int AS n FROM "AuditLog" WHERE "tenantId"=$1 AND action='support.read' AND "userId"=$2`, [ids.b, supportUser.id]);
+    expect(supportAudit.rows[0].n).toBeGreaterThanOrEqual(1);
+    await expect(tenantScope.run({ tenantId: ids.b, readOnly: true }, () =>
+      app.get(Database).settings.update({ where: { id: "main" }, data: { data: { name: "NO CAMBIAR" } } }))).rejects.toThrow();
+    const disabled = await http.post("/api/support-access/disable").set("Authorization", bToken).send({});
+    valid(disabled, "POST support-access/disable");
+    expect((await http.get("/api/reportes").set("Authorization", supportToken)).status).toBe(401);
+    valid(await http.post("/api/support-access/enable").set("Authorization", bToken).send({ duration: "7d" }), "reactivar soporte");
+    await client.query(`UPDATE "User" SET "supportExpiresAt"=now()-interval '1 minute' WHERE id=$1`, [supportUser.id]);
+    await app.get(SupportAccessWorker).run(new Date());
+    const expiredSupport = (await client.query(`SELECT active,"supportExpiresAt" FROM "User" WHERE id=$1`, [supportUser.id])).rows[0];
+    expect(expiredSupport).toMatchObject({ active: false, supportExpiresAt: null });
+    expect((await client.query(`SELECT count(*)::int AS n FROM "AuthSession" WHERE "userId"=$1`, [supportUser.id])).rows[0].n).toBe(0);
   } finally {
     await app?.close().catch(() => undefined);
     if (previousMode === undefined) delete process.env.PRODUCT_TENANCY;

@@ -15,7 +15,8 @@ import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaClient } from "@prisma/client";
 import { databaseUrlWithPool } from "./database-pool";
-import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
+import { can, moneyAmount, permissions, stockQty, z, ZodError } from "@fitstore/shared";
+import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { captureApiException } from "./monitoring";
 import { isSerializationConflict } from "./inventory-resilience";
@@ -704,6 +705,8 @@ export class AuthGuard implements CanActivate {
       // dejaría la caja sin cobrar (R9-seguridad-1).
       if (!user?.active || user.mustChangePassword || user.tenantId !== payload.tenantId)
         throw new Error();
+      if (user.role.name === "support" && (!user.supportExpiresAt || user.supportExpiresAt <= new Date()))
+        throw new Error();
       if (payload.version !== user.authVersion || !payload.sid)
         throw new Error();
       const settings = await this.db.settings.findUnique({
@@ -765,7 +768,8 @@ export class AuthGuard implements CanActivate {
         name: user.name,
         email: user.email,
         role: user.role.name,
-        permissions: user.role.permissions,
+        // Nunca se confía en privilegios editables del rol para soporte.
+        permissions: user.role.name === "support" ? permissions.support : user.role.permissions,
         branchId: user.branchId,
         tenantId: user.tenantId,
       };
@@ -775,6 +779,9 @@ export class AuthGuard implements CanActivate {
       if (isDatabaseUnavailable(error)) throw databaseUnavailable();
       throw new HttpException("Inicia sesión para continuar.", 401);
     }
+    if (req.actor.role === "support" && req.method !== "GET" &&
+        !(req.method === "POST" && req.path === "/api/auth/logout"))
+      denied();
     const permission = this.reflector.getAllAndOverride<string>("permission", [
       context.getHandler(),
       context.getClass(),
@@ -826,6 +833,16 @@ export class AuthGuard implements CanActivate {
           },
           403,
         );
+    }
+    if (req.actor.role === "support" && req.method === "GET") {
+      // Bitácora en transacción separada, antes de activar READ ONLY para las
+      // consultas de negocio. No guarda query string ni texto de preguntas.
+      await tenantScope.run({ tenantId: req.actor.tenantId }, () =>
+        audit(this.db, req.actor, "support.read", "route", randomUUID(), undefined, {
+          ruta: req.route?.path ?? req.path,
+        }));
+      const scope = tenantScope.getStore();
+      if (scope) scope.readOnly = true;
     }
     return true;
   }
