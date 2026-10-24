@@ -37,7 +37,7 @@ import {
   denied,
   canViewCashExpected,
 } from "./common";
-import { alertForActor } from "./alerts";
+import { ADMIN_ONLY_ALERT_TYPES, alertForActor } from "./alerts";
 import { REPORTES } from "./reportes";
 
 export function dateRange(query: Record<string, string>) {
@@ -312,7 +312,13 @@ export class ReportsController {
         any[]
       >`SELECT SUM(s.qty * v."costAvg") AS cost, SUM(s.qty * v.price) AS retail FROM "Variant" v JOIN "VariantStock" s ON s."variantId"=v.id JOIN "Warehouse" w ON w.id=s."warehouseId" AND w."branchId"=v."branchId" WHERE v."branchId"=${actor.branchId} AND v.active=true`,
       this.db.alert.findMany({
-        where: { branchId: actor.branchId, status: { not: "resolved" } },
+        where: {
+          branchId: actor.branchId,
+          status: { not: "resolved" },
+          ...(!can(actor.permissions, "*")
+            ? { type: { notIn: ADMIN_ONLY_ALERT_TYPES } }
+            : {}),
+        },
         orderBy: { createdAt: "desc" },
         take: 6,
       }),

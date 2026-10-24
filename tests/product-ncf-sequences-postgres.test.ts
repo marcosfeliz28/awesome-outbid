@@ -50,7 +50,7 @@ it("PC-13: avisa con 19 números o 15 días, aísla empresas y deniega cajera/ge
     const users: Array<{ tenant: string; role: string; id: string; sid: string }> = [];
     for (const [tenant, slug] of [[tenantA, "empresa-pc13-a"], [tenantB, "empresa-pc13-b"]]) {
       await client.query(`INSERT INTO "Tenant" (id,slug,name,"updatedAt") VALUES ($1,$2,$2,now())`, [tenant, slug]);
-      for (const [role, permissions] of [["admin", ["*"]], ["manager", ["alerts:write", "sale:manage"]], ["seller", ["sale:write"]]] as const) {
+      for (const [role, permissions] of [["admin", ["*"]], ["manager", ["alerts:write", "sale:manage", "reports:read"]], ["seller", ["sale:write"]]] as const) {
         const rid = crypto.randomUUID(), uid = crypto.randomUUID(), sid = crypto.randomUUID();
         await client.query(`INSERT INTO "Role" (id,"tenantId",name,permissions,"updatedAt") VALUES ($1,$2,$3,$4,now())`, [rid, tenant, role, permissions]);
         await client.query(`INSERT INTO "User" (id,"tenantId",name,email,"passwordHash","pinHash","roleId","updatedAt") VALUES ($1,$2,$3,$4,'test-only','test-only',$5,now())`,
@@ -134,6 +134,10 @@ it("PC-13: avisa con 19 números o 15 días, aísla empresas y deniega cajera/ge
     expect(alerts1.body).toHaveLength(3);
     expect((await http.get("/api/alerts?type=ncf_sequence").set(as(tenantA, "admin"))).body).toHaveLength(3);
     expect((await http.get("/api/alerts?type=ncf_sequence").set(as(tenantA, "manager"))).body).toEqual([]);
+    // CPC-4a: el tablero tampoco muestra alertas NCF a quien no es administración.
+    const dash = async (role: string) => (await http.get("/api/dashboard/summary").set(as(tenantA, role))).body.alerts.map((a: { type: string }) => a.type);
+    expect(await dash("admin")).toContain("ncf_sequence");
+    expect(await dash("manager")).not.toContain("ncf_sequence");
     const alertsB = (await http.get("/api/alerts?type=ncf_sequence").set(as(tenantB, "admin"))).body;
     expect(alertsB).toHaveLength(1);
     expect(alertsB[0].tenantId).toBe(tenantB);

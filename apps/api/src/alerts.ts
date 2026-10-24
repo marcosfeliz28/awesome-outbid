@@ -54,6 +54,8 @@ const CASH_DIFFERENCE_PRIVATE_MESSAGE =
 // ventana (30 cierres, ventas de hoy): sólo una persona las resuelve, o su
 // propio flujo (verificar la transferencia, cobrar la cuenta, resolver el
 // conflicto offline).
+/** Tipos que sólo ve administración (`*`). */
+export const ADMIN_ONLY_ALERT_TYPES = ["sale_void_request", "ncf_sequence"];
 export const MANUAL_ALERT_TYPES = [
   "offline_conflict",
   "receivable",
@@ -879,7 +881,7 @@ export class AlertsController {
         ...(filter.type ? { type: filter.type } : {}),
         ...(filter.entityId ? { entityId: filter.entityId } : {}),
         ...(!can(actor.permissions, "*")
-          ? { AND: [{ type: { notIn: ["sale_void_request", "ncf_sequence"] } }] }
+          ? { AND: [{ type: { notIn: ADMIN_ONLY_ALERT_TYPES } }] }
           : {}),
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
@@ -905,7 +907,7 @@ export class AlertsController {
         id: parse(uuid, id),
         branchId: actor.branchId,
         ...(!can(actor.permissions, "*")
-          ? { type: { notIn: ["sale_void_request", "ncf_sequence"] } }
+          ? { type: { notIn: ADMIN_ONLY_ALERT_TYPES } }
           : {}),
       },
     });
