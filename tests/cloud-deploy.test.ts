@@ -1316,6 +1316,8 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
     // blueprint con RLS, no el Render legado de la tienda.
     expect(job).toContain("github.ref_name == 'nexora-chatgpt-nube-ia'");
     expect(job).toContain("github.head_ref == 'nexora-chatgpt-nube-ia'");
+    expect(job).toContain("github.ref_name == 'nexora-chatgpt-pc-n16-n35'");
+    expect(job).toContain("github.head_ref == 'nexora-chatgpt-pc-n16-n35'");
     expect(job).toContain("bash scripts/producto-ci-smoke.sh");
     expect(ci).not.toMatch(/docker (push|login)|--push/);
     const smoke = read("deploy/render/ci-smoke.sh");
