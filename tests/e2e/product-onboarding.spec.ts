@@ -155,7 +155,7 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.getByLabel("Usuario").fill(email);
     await page.getByLabel("Contraseña", { exact: true }).fill(password);
     const loginResponse = page.waitForResponse(response => response.url().endsWith("/api/auth/login") && response.request().method() === "POST");
-    await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
+    await page.getByRole("button", { name: "Entrar a mi empresa" }).click();
     const browserLogin = await loginResponse;
     expect(browserLogin.ok()).toBe(true);
     const auth = { Authorization: `Bearer ${(await browserLogin.json()).accessToken}` };
