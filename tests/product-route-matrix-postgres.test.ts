@@ -256,6 +256,7 @@ POST /api/ncf-sequences
 POST /api/notifications/telegram/test
 POST /api/payments/:id/correct-transfer
 POST /api/payments/:id/proof
+POST /api/payments/:id/proof-review
 POST /api/payments/:id/reject
 POST /api/payments/:id/verify
 POST /api/products
@@ -316,7 +317,7 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  expect(required).toHaveLength(177);
+  expect(required).toHaveLength(178);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");

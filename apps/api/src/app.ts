@@ -22,6 +22,7 @@ import { TenantLifecycleController } from "./tenant-lifecycle-controller";
 import { ProductBillingController } from "./product-billing";
 import { AssistantController } from "./assistant";
 import { DailySummaryWorker } from "./daily-summary";
+import { TransferProofReviewController } from "./transfer-proof-review";
 import { SupportAccessController, SupportAccessWorker } from "./support-access";
 import { TenantExportController } from "./tenant-export";
 import { CatalogController } from "./catalog";
@@ -94,6 +95,7 @@ export function createAppModule(secret: string) {
       ...(product ? [TenantLifecycleController] : []),
       ...(product ? [ProductBillingController] : []),
       ...(product ? [AssistantController] : []),
+      ...(product ? [TransferProofReviewController] : []),
       ...(product ? [SupportAccessController] : []),
       ...(product ? [TenantExportController] : []),
       CatalogController,

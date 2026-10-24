@@ -10,6 +10,7 @@ export type PendingTransfer = {
   difference: string;
   bank: string | null;
   reference: string | null;
+  hasProof?: boolean;
   cashier: string | null;
   seller?: string | null;
 };

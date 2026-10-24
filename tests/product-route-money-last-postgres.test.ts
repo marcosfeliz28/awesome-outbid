@@ -44,7 +44,7 @@ it("resoluciones offline, comprobantes y pagos a proveedores son propios de la e
     onLog: () => undefined, onError: () => undefined,
   });
   const saved = Object.fromEntries(
-    ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_OBJECT_STORE_DIR", "TELEGRAM_BOT_TOKEN", "RESEND_API_KEY", "NEXORA_RETENTION"].map(
+    ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_OBJECT_STORE_DIR", "TELEGRAM_BOT_TOKEN", "RESEND_API_KEY", "ANTHROPIC_API_KEY", "NEXORA_RETENTION"].map(
       (name) => [name, process.env[name]],
     ),
   );
@@ -86,6 +86,7 @@ it("resoluciones offline, comprobantes y pagos a proveedores son propios de la e
     process.env.NEXORA_RETENTION = "off";
     delete process.env.TELEGRAM_BOT_TOKEN;
     delete process.env.RESEND_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
     const secret = "clave-local-last-solo-pruebas-monetarias";
     const apiRequire = createRequire(join(root, "apps/api/package.json"));
     const { NestFactory } = apiRequire("@nestjs/core");
@@ -131,6 +132,18 @@ it("resoluciones offline, comprobantes y pagos a proveedores son propios de la e
     const ownProofBytes = await send(http.get(`/api/payments/${b.paymentId}/proof`));
     expect(ownProofBytes.status, JSON.stringify(ownProofBytes.body)).toBe(200);
     expect(Buffer.from(ownProofBytes.body)).toEqual(tinyPng);
+    // N-08: el comprobante también se adjunta a una transferencia original.
+    const saleTransferId = id(599);
+    await sql.query(`INSERT INTO "Payment" (id,"saleId",method,amount,tendered,"entryType",status,bank,reference,"tenantId")
+      VALUES ($1,$2,'transfer',5,5,'sale','pending_verification','BHD','827647262',$3)`, [saleTransferId, b.saleId, b.tenantId]);
+    const saleProof = await send(proof(saleTransferId));
+    expect(saleProof.status, JSON.stringify(saleProof.body)).toBe(201);
+    // La revisión no cruza empresa y, sin clave, no llama a un modelo externo.
+    await sql.query(`UPDATE "Payment" SET method='transfer',status='pending_verification' WHERE id=$1`, [a.paymentId]);
+    denied(await send(http.post(`/api/payments/${a.paymentId}/proof-review`).send({})));
+    const noModel = await send(http.post(`/api/payments/${saleTransferId}/proof-review`).send({}));
+    expect(noModel.status).toBe(503);
+    expect((await sql.query(`SELECT status FROM "Payment" WHERE id=$1`, [saleTransferId])).rows[0].status).toBe("pending_verification");
     const storedPayment = parsePaymentObjectReference(images.rows[1].proofUrl);
     expect(storedPayment).not.toBeNull();
     await sql.query(`UPDATE "Payment" SET "proofUrl"=NULL WHERE id=$1`, [b.paymentId]);

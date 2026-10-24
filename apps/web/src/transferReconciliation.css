@@ -50,6 +50,22 @@
 .reconciliation-details span {
   color: var(--text);
 }
+.reconciliation-photo {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 8px;
+}
+.reconciliation-photo input[type="file"] {
+  max-width: 100%;
+  min-height: 44px;
+}
+.reconciliation-photo > button {
+  justify-self: start;
+}
+.reconciliation-photo .panel {
+  overflow-wrap: anywhere;
+}
 .reconciliation-totals {
   display: flex;
   flex-wrap: wrap;

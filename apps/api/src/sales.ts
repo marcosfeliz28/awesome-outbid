@@ -2450,6 +2450,7 @@ export class SalesController {
         amount: true,
         bank: true,
         reference: true,
+        proofUrl: true,
         receivedById: true,
         cashSession: { select: { userId: true } },
         sale: {
@@ -2508,6 +2509,7 @@ export class SalesController {
         difference: payment.amount.minus(expected).toFixed(2),
         bank: payment.bank,
         reference: payment.reference,
+        hasProof: !!payment.proofUrl,
         // Quien hizo la factura (la vendedora), aunque el cobro lo registre otra
         // persona: sirve para saber a quién preguntar por una transferencia.
         seller: names.get(payment.sale.sellerId) ?? null,
@@ -3380,7 +3382,10 @@ export class SalesController {
     const payment = await this.db.payment.findFirstOrThrow({
       where: {
         id: parse(uuid, id),
-        entryType: "installment",
+        OR: [
+          { entryType: "installment" },
+          { method: "transfer", status: "pending_verification" },
+        ],
         sale: { branchId: actor.branchId },
       },
     });
