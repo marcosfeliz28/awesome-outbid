@@ -3,6 +3,9 @@ export default defineConfig({
   test: {
     // 5 s (el valor por defecto) se agotaban con la máquina ocupada (F-3).
     testTimeout: 30000,
+    // Cada suite PostgreSQL inicia varios procesos propios. En Windows, abrir
+    // docenas de bases a la vez demora incluso las pruebas de Nest sin base.
+    maxWorkers: process.platform === "win32" ? 4 : undefined,
     include: [
       "tests/product-billing-plans.test.ts",
       "tests/product-billing-web.test.ts",

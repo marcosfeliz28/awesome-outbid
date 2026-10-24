@@ -1326,6 +1326,12 @@ model Tenant {
   slug      String   @unique
   name      String
   businessType String @default("general")
+  // Consentimiento del dueño al alta. Nulos para empresas previas: no se
+  // presupone aceptación retroactiva de textos nuevos.
+  termsVersion String?
+  termsAcceptedAt DateTime?
+  privacyVersion String?
+  privacyAcceptedAt DateTime?
   trialEndsAt DateTime?
   paidThroughAt DateTime?
   pastDueAt DateTime?

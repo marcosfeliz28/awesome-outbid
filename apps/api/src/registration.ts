@@ -17,6 +17,10 @@ const registration = z.object({
   managerPin: z.string().refine(isNonTrivialCashierPassword, "El PIN debe tener 6 números y no ser una secuencia fácil."),
   businessType: z.enum(["general", "retail", "beauty", "fitness", "services"]),
   companyCode: z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,62}$/),
+  termsAccepted: z.literal(true),
+  privacyAccepted: z.literal(true),
+  termsVersion: z.string().trim().min(1).max(80),
+  privacyVersion: z.string().trim().min(1).max(80),
 }).strict();
 const tokenSchema = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
 const resendSchema = z.object({
@@ -26,6 +30,20 @@ const resendSchema = z.object({
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const verificationToken = () => randomBytes(32).toString("hex");
 const expiration = () => new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+function legalConfiguration() {
+  const termsVersion = process.env.PRODUCT_TERMS_VERSION?.trim();
+  const privacyVersion = process.env.PRODUCT_PRIVACY_VERSION?.trim();
+  // Los documentos 0.1 del repositorio son BORRADORES. No son consentimiento
+  // publicable: solo una aprobación externa y versiones explícitas habilitan
+  // este paso. El gate de registro público es independiente y sigue cerrado.
+  if (process.env.PRODUCT_LEGAL_APPROVED !== "confirmed"
+    || !termsVersion || !privacyVersion
+    || !/^[A-Za-z0-9._-]{1,80}$/.test(termsVersion)
+    || !/^[A-Za-z0-9._-]{1,80}$/.test(privacyVersion))
+    throw new HttpException("El registro todavía no está disponible.", 503);
+  return { termsVersion, privacyVersion };
+}
 
 function mailConfiguration() {
   const key = process.env.RESEND_API_KEY?.trim();
@@ -69,17 +87,23 @@ export class RegistrationService implements OnModuleDestroy {
     // la tienda del producto; el opt-in debe ser explícito en el despliegue.
     if (process.env.PRODUCT_PUBLIC_REGISTRATION !== "enabled")
       throw new HttpException("No disponible.", 404);
+    const legal = legalConfiguration();
+    if (input.termsVersion !== legal.termsVersion || input.privacyVersion !== legal.privacyVersion)
+      throw new HttpException("Los documentos cambiaron. Vuelve a leerlos y acepta la versión actual.", 409);
     mailConfiguration(); // Fallar cerrado antes de guardar una cuenta sin salida de correo.
     const email = input.email.toLowerCase();
     const token = verificationToken();
     const passwordHash = await hash(input.password, 12);
     const pinHash = await hash(input.managerPin, 12);
+    const acceptedAt = new Date();
     try {
       await this.db.$transaction(async (tx) => {
         const tenant = await tx.tenant.create({ data: {
           slug: input.companyCode, name: input.businessName,
           businessType: input.businessType, plan: "trial", status: "trial",
           trialEndsAt: new Date(Date.now() + 14 * 86400000),
+          termsVersion: legal.termsVersion, termsAcceptedAt: acceptedAt,
+          privacyVersion: legal.privacyVersion, privacyAcceptedAt: acceptedAt,
         } });
         await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_tenant_runtime");
         await tx.$queryRawUnsafe("SELECT set_config('app.tenant_id', $1, true)", tenant.id);

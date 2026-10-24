@@ -2,6 +2,14 @@ import { useState } from "react";
 import { api } from "./api";
 
 const code = /^[a-z0-9][a-z0-9-]{1,62}$/;
+// Estas URLs/versiones se publican solo después de la aprobación legal. Los
+// borradores docs/legal/producto no se presentan como documentos aceptables.
+const termsUrl = String(import.meta.env.VITE_PRODUCT_TERMS_URL ?? "").trim();
+const privacyUrl = String(import.meta.env.VITE_PRODUCT_PRIVACY_URL ?? "").trim();
+const termsVersion = String(import.meta.env.VITE_PRODUCT_TERMS_VERSION ?? "").trim();
+const privacyVersion = String(import.meta.env.VITE_PRODUCT_PRIVACY_VERSION ?? "").trim();
+const legalAvailable = termsUrl.startsWith("https://") && privacyUrl.startsWith("https://")
+  && Boolean(termsVersion && privacyVersion);
 
 export function Registration() {
   const [businessName, setBusinessName] = useState("");
@@ -11,18 +19,25 @@ export function Registration() {
   const [managerPin, setManagerPin] = useState("");
   const [businessType, setBusinessType] = useState("general");
   const [companyCode, setCompanyCode] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
+    if (!legalAvailable || !termsAccepted || !privacyAccepted) {
+      setError("Lee y acepta los términos y la política de privacidad vigentes.");
+      return;
+    }
     const slug = companyCode.trim().toLowerCase();
     if (!code.test(slug)) { setError("El código usa letras minúsculas, números y guiones (2–63 caracteres)."); return; }
     setBusy(true);
     try {
       const result = await api<{ message: string }>("/auth/register", { method: "POST", body: JSON.stringify({
         businessName, ownerName, email, password, managerPin, businessType, companyCode: slug,
+        termsAccepted, privacyAccepted, termsVersion, privacyVersion,
       }) });
       setMessage(result.message);
       setPassword("");
@@ -50,9 +65,13 @@ export function Registration() {
       <label className="field"><span>PIN de gerente</span><input required type="password" inputMode="numeric" pattern="[0-9]{6}" minLength={6} maxLength={6} autoComplete="new-password" value={managerPin} onChange={e => setManagerPin(e.target.value)} /><small>6 números no consecutivos. Lo usarás para autorizaciones; guárdalo en privado.</small></label>
       <label className="field"><span>Tipo de negocio</span><select value={businessType} onChange={e => setBusinessType(e.target.value)}><option value="general">General</option><option value="retail">Tienda</option><option value="beauty">Belleza</option><option value="fitness">Fitness</option><option value="services">Servicios</option></select></label>
       <label className="field"><span>Código de empresa</span><input required autoComplete="organization" placeholder="mi-tienda" value={companyCode} onChange={e => setCompanyCode(e.target.value)} /><small>Lo usarás junto a tu correo para entrar.</small></label>
+      {legalAvailable ? <>
+        <label className="field"><input required type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} /> Acepto los <a href={termsUrl}>términos de servicio</a> (versión {termsVersion}).</label>
+        <label className="field"><input required type="checkbox" checked={privacyAccepted} onChange={e => setPrivacyAccepted(e.target.checked)} /> Acepto la <a href={privacyUrl}>política de privacidad</a> (versión {privacyVersion}).</label>
+      </> : <p role="status">El registro aún no está disponible: los documentos legales no han sido publicados.</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
-      <button className="btn primary full-width" disabled={busy}>{busy ? "Procesando…" : "Crear empresa"}</button>
+      <button className="btn primary full-width" disabled={busy || !legalAvailable}>{busy ? "Procesando…" : "Crear empresa"}</button>
       {message && <button type="button" onClick={resend} disabled={busy}>Reenviar confirmación</button>}
     </form>
   </main>;

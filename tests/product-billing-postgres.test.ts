@@ -37,7 +37,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     postgresFlags: ["-c", "listen_addresses=127.0.0.1", "-c", "timezone=UTC"],
     onLog: () => undefined, onError: () => undefined,
   });
-  const keys = ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL", "RESEND_API_BASE", "NEXORA_BILLING_BANK_NAME", "NEXORA_BILLING_BANK_ACCOUNT", "NEXORA_BILLING_BANK_HOLDER", "BILLING_TEST_MODE"];
+  const keys = ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "PRODUCT_LEGAL_APPROVED", "PRODUCT_TERMS_VERSION", "PRODUCT_PRIVACY_VERSION", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL", "RESEND_API_BASE", "NEXORA_BILLING_BANK_NAME", "NEXORA_BILLING_BANK_ACCOUNT", "NEXORA_BILLING_BANK_HOLDER", "BILLING_TEST_MODE"];
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
   let app: any;
   let operatorDb: InstanceType<typeof PrismaClient> | undefined;
@@ -54,6 +54,9 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     await operatorDb.$executeRawUnsafe('GRANT UPDATE ("pastDueAt", "suspendedAt") ON "Tenant" TO nexora_platform_billing');
     process.env.PRODUCT_TENANCY = "required";
     process.env.PRODUCT_PUBLIC_REGISTRATION = "enabled";
+    process.env.PRODUCT_LEGAL_APPROVED = "confirmed";
+    process.env.PRODUCT_TERMS_VERSION = "terms-test-1";
+    process.env.PRODUCT_PRIVACY_VERSION = "privacy-test-1";
     process.env.RESEND_API_KEY = "local-test-only";
     process.env.NOTIFY_EMAIL_FROM = "Nexora <test@example.invalid>";
     process.env.APP_PUBLIC_URL = "https://example.invalid";
@@ -72,7 +75,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     app.setGlobalPrefix("api"); app.useGlobalFilters(new ApiExceptionFilter()); await app.init();
     const http = supertest(app.getHttpServer());
     const register = async (companyCode: string) => {
-      const body = { businessName: companyCode, ownerName: "Dueña ficticia", email: `${companyCode}@example.invalid`, password: "ClaveSegura-2026!", managerPin: "869253", businessType: "retail", companyCode };
+      const body = { businessName: companyCode, ownerName: "Dueña ficticia", email: `${companyCode}@example.invalid`, password: "ClaveSegura-2026!", managerPin: "869253", businessType: "retail", companyCode, termsAccepted: true, privacyAccepted: true, termsVersion: "terms-test-1", privacyVersion: "privacy-test-1" };
       expect((await http.post("/api/auth/register").send(body)).status).toBe(201);
       const token = html.match(/#token=([a-f0-9]{64})/)?.[1];
       expect((await http.post("/api/auth/verify-email").send({ token })).status).toBe(201);

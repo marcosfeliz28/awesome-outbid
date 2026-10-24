@@ -10,6 +10,7 @@ import supertest from "supertest";
 import { expect, it, vi } from "vitest";
 import { createAppModule } from "../apps/api/src/app";
 import { ApiExceptionFilter } from "../apps/api/src/common";
+import { RegistrationService } from "../apps/api/src/registration";
 
 const root = resolve(import.meta.dirname, "..");
 const prismaDir = join(root, "apps/api/prisma");
@@ -26,6 +27,33 @@ async function port() {
   return address.port;
 }
 
+it("no acepta borradores sin aprobación ni versiones legales caducadas", async () => {
+  const keys = ["PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "PRODUCT_LEGAL_APPROVED", "PRODUCT_TERMS_VERSION", "PRODUCT_PRIVACY_VERSION"];
+  const old = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  const service = new RegistrationService();
+  const input = {
+    businessName: "Negocio ficticio", ownerName: "Dueña ficticia", email: "legal@example.invalid",
+    password: "ClaveSegura-2026!", managerPin: "869253", businessType: "retail",
+    companyCode: "legal-test", termsAccepted: true, privacyAccepted: true,
+    termsVersion: "terms-test-1", privacyVersion: "privacy-test-1",
+  } as const;
+  try {
+    process.env.PRODUCT_TENANCY = "required";
+    process.env.PRODUCT_PUBLIC_REGISTRATION = "enabled";
+    process.env.PRODUCT_TERMS_VERSION = input.termsVersion;
+    process.env.PRODUCT_PRIVACY_VERSION = input.privacyVersion;
+    delete process.env.PRODUCT_LEGAL_APPROVED;
+    await expect(service.register(input)).rejects.toMatchObject({ status: 503 });
+    process.env.PRODUCT_LEGAL_APPROVED = "confirmed";
+    await expect(service.register({ ...input, termsVersion: "anterior" })).rejects.toMatchObject({ status: 409 });
+  } finally {
+    await service.onModuleDestroy();
+    for (const key of keys) {
+      if (old[key] === undefined) delete process.env[key]; else process.env[key] = old[key];
+    }
+  }
+});
+
 it("registra empresa aislada y exige confirmar el correo una sola vez antes de entrar", async () => {
   const directory = await mkdtemp(join(tmpdir(), "nexora-registration-"));
   const pgPort = await port();
@@ -36,7 +64,7 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     postgresFlags: ["-c", "listen_addresses=127.0.0.1", "-c", "timezone=UTC"],
     onLog: () => undefined, onError: () => undefined,
   });
-  const previous = Object.fromEntries(["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL", "RESEND_API_BASE", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"].map(k => [k, process.env[k]]));
+  const previous = Object.fromEntries(["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "PRODUCT_LEGAL_APPROVED", "PRODUCT_TERMS_VERSION", "PRODUCT_PRIVACY_VERSION", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL", "RESEND_API_BASE", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"].map(k => [k, process.env[k]]));
   let app: any;
   let client: any;
   let html = "";
@@ -48,6 +76,9 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
       cwd: root, env: process.env, timeout: 120000,
     });
     process.env.PRODUCT_TENANCY = "required";
+    process.env.PRODUCT_LEGAL_APPROVED = "confirmed";
+    process.env.PRODUCT_TERMS_VERSION = "terms-test-1";
+    process.env.PRODUCT_PRIVACY_VERSION = "privacy-test-1";
     process.env.RESEND_API_KEY = "local-test-only";
     process.env.NOTIFY_EMAIL_FROM = "Nexora <test@example.invalid>";
     process.env.APP_PUBLIC_URL = "https://example.invalid";
@@ -69,21 +100,28 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     // Modo producto, correo configurado, pero todavía sin aprobación legal:
     // el alta pública permanece cerrada por defecto y no deja Tenant.
     delete process.env.PRODUCT_PUBLIC_REGISTRATION;
-    const closed = await http.post("/api/auth/register").send({ ...input, companyCode: "closed-store" });
+    const accepted = { ...input, termsAccepted: true, privacyAccepted: true, termsVersion: "terms-test-1", privacyVersion: "privacy-test-1" };
+    const closed = await http.post("/api/auth/register").send({ ...accepted, companyCode: "closed-store" });
     expect(closed.status).toBe(404);
     client = db.getPgClient("registration_qa", "127.0.0.1");
     await client.connect();
     expect((await client.query(`SELECT count(*)::int AS n FROM "Tenant" WHERE slug='closed-store'`)).rows[0].n).toBe(0);
     process.env.PRODUCT_PUBLIC_REGISTRATION = "enabled";
-    const created = await http.post("/api/auth/register").send(input);
+    const withoutConsent = await http.post("/api/auth/register").send(input);
+    expect(withoutConsent.status).toBe(400);
+    const created = await http.post("/api/auth/register").send(accepted);
     expect(created.status, JSON.stringify(created.body)).toBe(201);
     expect(html).toContain("/confirmar-correo#token=");
     const token = html.match(/#token=([a-f0-9]{64})/)?.[1];
     expect(token).toHaveLength(64);
-    const tenants = await client.query(`SELECT id, status, "trialEndsAt" FROM "Tenant" WHERE slug='tienda-de-prueba'`);
+    const tenants = await client.query(`SELECT id, status, "trialEndsAt", "termsAcceptedAt", "termsVersion", "privacyAcceptedAt", "privacyVersion" FROM "Tenant" WHERE slug='tienda-de-prueba'`);
     expect(tenants.rows).toHaveLength(1);
     expect(tenants.rows[0].status).toBe("trial");
     expect(new Date(tenants.rows[0].trialEndsAt).getTime()).toBeGreaterThan(Date.now() + 13 * 86400000);
+    expect(tenants.rows[0].termsVersion).toBe("terms-test-1");
+    expect(tenants.rows[0].privacyVersion).toBe("privacy-test-1");
+    expect(new Date(tenants.rows[0].termsAcceptedAt).getTime()).toBeGreaterThan(Date.now() - 60000);
+    expect(new Date(tenants.rows[0].privacyAcceptedAt).getTime()).toBeGreaterThan(Date.now() - 60000);
     expect((await client.query(`SELECT count(*)::int AS n FROM "Role" WHERE "tenantId"=$1`, [tenants.rows[0].id])).rows[0].n).toBe(1);
     expect((await client.query(`SELECT count(*)::int AS n FROM "Settings" WHERE "tenantId"=$1`, [tenants.rows[0].id])).rows[0].n).toBe(1);
     const owner = await client.query(`SELECT "pinHash" FROM "User" WHERE "tenantId"=$1`, [tenants.rows[0].id]);
@@ -123,9 +161,9 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     const overBoxes = await http.post("/api/terminals/register").set("Authorization", aToken)
       .send(device("00000000-0000-4000-8000-000000000102"));
     expect(overBoxes.status, JSON.stringify(overBoxes.body)).toBe(409);
-    expect((await http.post("/api/auth/register").send(input)).status).toBe(409);
+    expect((await http.post("/api/auth/register").send(accepted)).status).toBe(409);
     failNextMail = true;
-    const second = await http.post("/api/auth/register").send({ ...input, companyCode: "otra-tienda" });
+    const second = await http.post("/api/auth/register").send({ ...accepted, companyCode: "otra-tienda" });
     expect(second.status).toBe(201);
     expect(second.body.deliveryPending).toBe(true);
     const undeliveredToken = html.match(/#token=([a-f0-9]{64})/)?.[1];
@@ -145,8 +183,7 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     expect(secondLogin.status).toBe(201);
     expect((await http.get("/api/onboarding").set("Authorization", `Bearer ${secondLogin.body.accessToken}`)).body.categories).toBe(0);
     expect((await http.post("/api/auth/resend-verification").send({ companyCode: "otra-tienda", email: "absent@example.invalid" })).body.message).toBe(resent.body.message);
-    // El intento cerrado anterior también cuenta en el límite de 5 por IP.
-    expect((await http.post("/api/auth/register").send({})).status).toBe(400);
+    // Cerrado + sin consentimiento + dos altas + duplicado ya agotaron los cinco intentos.
     expect((await http.post("/api/auth/register").send({})).status).toBe(429);
   } finally {
     await app?.close().catch(() => undefined);
