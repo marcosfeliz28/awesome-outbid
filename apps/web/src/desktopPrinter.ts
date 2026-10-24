@@ -6,6 +6,9 @@ type Invoke = (command: string, args?: Record<string, unknown>) => Promise<unkno
 const PRINTER_KEY = "nexora.desktop.printer";
 export type DrawerAuthorization = {
   accessToken: string;
+  mode: "automatic" | "manual";
+  operationId: string;
+  reason: string;
   saleId?: string;
   movementId?: string;
 };
@@ -51,7 +54,7 @@ export function takeDrawerAuthorizationForNextPrint() {
   return authorization;
 }
 
-export async function nativePrintCurrentSheet(): Promise<void> {
+export async function nativePrintCurrentSheet(): Promise<{ drawerError?: string }> {
   const drawer = takeDrawerAuthorizationForNextPrint();
   const call = invoke();
   if (!call) throw new Error("Esta función solo está disponible en la app de escritorio.");
@@ -71,10 +74,16 @@ export async function nativePrintCurrentSheet(): Promise<void> {
     printerName: name,
     text,
     columns: sheet.classList.contains("w58") ? 32 : 48,
-    drawerAccessToken: drawer?.accessToken ?? null,
-    drawerSaleId: drawer?.saleId ?? null,
-    drawerMovementId: drawer?.movementId ?? null,
   });
+  if (!drawer) return {};
+  try {
+    await nativeOpenDrawer(drawer);
+    return {};
+  } catch (error: any) {
+    // El ticket ya salió. La gaveta queda cerrada si la bitácora/API falla,
+    // pero ese fallo no convierte una impresión exitosa en un error.
+    return { drawerError: String(error?.message ?? error) };
+  }
 }
 
 export async function nativePrintTest(): Promise<void> {
@@ -82,7 +91,7 @@ export async function nativePrintTest(): Promise<void> {
   if (!call) throw new Error("Esta función solo está disponible en la app de escritorio.");
   const name = selectedPrinter();
   if (!name) throw new Error("Elige la impresora térmica en el menú de la app.");
-  await call("print_thermal", { printerName: name, text: "NEXORA POS\nPrueba de impresora - 80 mm\nSin venta ni comprobante fiscal", columns: 48, openDrawer: false });
+  await call("print_thermal", { printerName: name, text: "NEXORA POS\nPrueba de impresora - 80 mm\nSin venta ni comprobante fiscal", columns: 48 });
 }
 
 export async function nativeOpenDrawer(authorization: DrawerAuthorization): Promise<void> {
@@ -93,6 +102,9 @@ export async function nativeOpenDrawer(authorization: DrawerAuthorization): Prom
   await call("open_cash_drawer", {
     printerName: name,
     accessToken: authorization.accessToken,
+    mode: authorization.mode,
+    operationId: authorization.operationId,
+    reason: authorization.reason,
     saleId: authorization.saleId ?? null,
     movementId: authorization.movementId ?? null,
   });

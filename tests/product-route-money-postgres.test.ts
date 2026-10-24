@@ -186,12 +186,22 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
       .toEqual([{ tenantId: tenantB }]);
 
     const foreignDrawer = await send(
-      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id }),
+      http.post("/api/cash-sessions/drawer-open").send({
+        mode: "automatic",
+        operationId: "30000000-0000-4000-8000-000000000012",
+        reason: "Cobro en efectivo de la venta",
+        saleId: ownSale.body.id,
+      }),
       a,
     );
     expectForeignDenied("POST cash-sessions/drawer-open", foreignDrawer);
     const ownDrawer = await send(
-      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id }),
+      http.post("/api/cash-sessions/drawer-open").send({
+        mode: "automatic",
+        operationId: "30000000-0000-4000-8000-000000000013",
+        reason: "Cobro en efectivo de la venta",
+        saleId: ownSale.body.id,
+      }),
     );
     expect(ownDrawer.status, JSON.stringify(ownDrawer.body)).toBe(201);
     expect(
@@ -200,9 +210,11 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
           `SELECT action,"entityId","tenantId" FROM "AuditLog" WHERE action='cash_drawer_open'`,
         )
       ).rows,
-    ).toEqual([
-      { action: "cash_drawer_open", entityId: ownSale.body.id, tenantId: tenantB },
-    ]);
+    ).toEqual([{
+      action: "cash_drawer_open",
+      entityId: `automatic:${ownSale.body.id}`,
+      tenantId: tenantB,
+    }]);
 
     const voidBody = { reason: "Anulación de prueba válida" };
     const foreignVoid = await send(http.post(`/api/sales/${a.saleId}/void`).send(voidBody));

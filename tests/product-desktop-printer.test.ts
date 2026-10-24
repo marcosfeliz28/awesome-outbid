@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import {
   cashDrawerRequired,
   nativeOpenDrawer,
+  nativePrintCurrentSheet,
   nativePrintTest,
   openDrawerOnNextPrint,
   prepareThermalText,
@@ -33,16 +34,23 @@ it("PC-16: la prueba térmica no abre la gaveta; la apertura requiere otra orden
   vi.stubGlobal("localStorage", { getItem: () => "Térmica 80", setItem: vi.fn(), removeItem: vi.fn() });
   await nativePrintTest();
   expect(invoke).toHaveBeenCalledWith("print_thermal", expect.objectContaining({
-    printerName: "Térmica 80", columns: 48, openDrawer: false,
+    printerName: "Térmica 80", columns: 48,
   }));
+  expect(invoke.mock.calls[0]?.[1]).not.toHaveProperty("openDrawer");
   const authorization = {
     accessToken: "token-de-prueba",
+    mode: "manual" as const,
+    operationId: "660e8400-e29b-41d4-a716-446655440000",
+    reason: "Cambio solicitado por cliente",
     saleId: "550e8400-e29b-41d4-a716-446655440000",
   };
   await nativeOpenDrawer(authorization);
   expect(invoke).toHaveBeenLastCalledWith("open_cash_drawer", {
     printerName: "Térmica 80",
     accessToken: authorization.accessToken,
+    mode: authorization.mode,
+    operationId: authorization.operationId,
+    reason: authorization.reason,
     saleId: authorization.saleId,
     movementId: null,
   });
@@ -51,9 +59,43 @@ it("PC-16: la prueba térmica no abre la gaveta; la apertura requiere otra orden
 it("PC-16: dos tickets seguidos consumen la autorización de gaveta una sola vez", () => {
   const authorization = {
     accessToken: "token-de-prueba",
+    mode: "automatic" as const,
+    operationId: "660e8400-e29b-41d4-a716-446655440000",
+    reason: "Cobro en efectivo de la venta",
     saleId: "550e8400-e29b-41d4-a716-446655440000",
   };
   openDrawerOnNextPrint(authorization);
   expect(takeDrawerAuthorizationForNextPrint()).toEqual(authorization);
   expect(takeDrawerAuthorizationForNextPrint()).toBeNull();
+});
+
+it("PC-16: un fallo del API de gaveta no convierte el ticket impreso en error", async () => {
+  const invoke = vi.fn()
+    .mockResolvedValueOnce(null)
+    .mockRejectedValueOnce(new Error("API no disponible"));
+  setNativeInvokeForTest(invoke);
+  vi.stubGlobal("localStorage", { getItem: () => "Térmica 80", setItem: vi.fn(), removeItem: vi.fn() });
+  const preview = { style: { cssText: "" }, innerText: "NEXORA POS\nTicket 42", remove: vi.fn() };
+  vi.stubGlobal("document", {
+    querySelector: () => ({
+      classList: { contains: () => false },
+      cloneNode: () => preview,
+    }),
+    body: { appendChild: vi.fn() },
+  });
+  openDrawerOnNextPrint({
+    accessToken: "token-de-prueba",
+    mode: "automatic",
+    operationId: "660e8400-e29b-41d4-a716-446655440000",
+    reason: "Cobro en efectivo de la venta",
+    saleId: "550e8400-e29b-41d4-a716-446655440000",
+  });
+
+  await expect(nativePrintCurrentSheet()).resolves.toEqual({ drawerError: "API no disponible" });
+  expect(invoke).toHaveBeenNthCalledWith(1, "print_thermal", {
+    printerName: "Térmica 80",
+    text: "NEXORA POS\nTicket 42",
+    columns: 48,
+  });
+  expect(invoke).toHaveBeenNthCalledWith(2, "open_cash_drawer", expect.any(Object));
 });

@@ -2234,9 +2234,15 @@ function Checkout({
         cashPaid &&
         confirmedOnline &&
         isNativeDesktop() &&
-        can(user!.permissions, "cash:drawer") &&
+        can(user!.permissions, "sale:write") &&
         token
-          ? { accessToken: token, saleId: sale.id }
+          ? {
+              accessToken: token,
+              mode: "automatic" as const,
+              operationId: crypto.randomUUID(),
+              reason: "Cobro en efectivo de la venta",
+              saleId: sale.id,
+            }
           : undefined;
       if (config?.autoPrintReceipt) printSoon(drawerAuthorization);
       else if (drawerAuthorization)

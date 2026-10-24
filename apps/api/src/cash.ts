@@ -615,52 +615,89 @@ const CLOSED_SESSIONS_LIMIT = 100;
 export class CashController {
   constructor(@Inject(Database) private db: Database) {}
   @Post("drawer-open")
-  @Permit("cash:drawer")
+  @Permit("authenticated")
   async drawerOpen(
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
     const reference = parse(
       z
-        .object({ saleId: uuid.optional(), movementId: uuid.optional() })
+        .object({
+          mode: z.enum(["automatic", "manual"]),
+          operationId: uuid,
+          reason,
+          saleId: uuid.optional(),
+          movementId: uuid.optional(),
+        })
         .refine((value) => Boolean(value.saleId) !== Boolean(value.movementId), {
           message: "Indica una venta o un movimiento de caja.",
+        })
+        .refine((value) => value.mode !== "automatic" || Boolean(value.saleId), {
+          message: "La apertura automática requiere una venta en efectivo.",
         }),
       body,
     );
+    if (reference.mode === "automatic") {
+      if (!can(actor.permissions, "sale:write")) denied();
+    } else if (!can(actor.permissions, "cash:drawer")) denied();
     const entity = reference.saleId ? "sale" : "cash_movement";
     const entityId = reference.saleId ?? reference.movementId!;
-    const exists = reference.saleId
-      ? await this.db.sale.findFirst({
-          where: {
-            id: reference.saleId,
-            status: "completed",
-            cashSession: { branchId: actor.branchId },
-            payments: {
-              some: { method: "cash", amount: { gt: 0 }, status: { not: "rejected" } },
+    // Una venta en efectivo autoriza una sola apertura automática. Las
+    // aperturas manuales reciben un operationId nuevo por cada confirmación.
+    // El bloqueo evita que dos llamadas simultáneas consuman la misma
+    // autorización antes de que exista la fila de bitácora.
+    const authorizationId = reference.mode === "automatic"
+      ? `automatic:${entityId}`
+      : `manual:${reference.operationId}`;
+    return this.db.$transaction(async (tx: any) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${actor.tenantId + ":drawer:" + authorizationId}))`;
+      const consumed = await tx.auditLog.findFirst({
+        where: {
+          action: "cash_drawer_open",
+          entity: "cash_drawer_authorization",
+          entityId: authorizationId,
+        },
+        select: { id: true },
+      });
+      if (consumed) bad("Esta autorización de gaveta ya fue usada.");
+      const exists = reference.saleId
+        ? await tx.sale.findFirst({
+            where: {
+              id: reference.saleId,
+              status: "completed",
+              cashSession: { branchId: actor.branchId },
+              payments: {
+                some: { method: "cash", amount: { gt: 0 }, status: { not: "rejected" } },
+              },
             },
-          },
-          select: { id: true },
-        })
-      : await this.db.cashMovement.findFirst({
-          where: {
-            id: reference.movementId,
-            session: { branchId: actor.branchId },
-          },
-          select: { id: true },
-        });
-    if (!exists)
-      bad("La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.");
-    const row = await audit(
-      this.db,
-      actor,
-      "cash_drawer_open",
-      entity,
-      entityId,
-      undefined,
-      { source: "desktop" },
-    );
-    return { auditId: row.id };
+            select: { id: true },
+          })
+        : await tx.cashMovement.findFirst({
+            where: {
+              id: reference.movementId,
+              session: { branchId: actor.branchId },
+            },
+            select: { id: true },
+          });
+      if (!exists)
+        bad("La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.");
+      const row = await audit(
+        tx,
+        actor,
+        "cash_drawer_open",
+        "cash_drawer_authorization",
+        authorizationId,
+        undefined,
+        {
+          source: "desktop",
+          mode: reference.mode,
+          reason: reference.reason,
+          operationId: reference.operationId,
+          reference: { entity, entityId },
+        },
+      );
+      return { auditId: row.id };
+    });
   }
   @Get()
   @Permit("cash:write")

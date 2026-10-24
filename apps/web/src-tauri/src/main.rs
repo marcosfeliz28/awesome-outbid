@@ -16,36 +16,18 @@ fn list_printers() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-async fn print_thermal(
-    printer_name: String,
-    text: String,
-    columns: u8,
-    drawer_access_token: Option<String>,
-    drawer_sale_id: Option<String>,
-    drawer_movement_id: Option<String>,
-) -> Result<(), String> {
-    let open_drawer = drawer_sale_id.is_some() || drawer_movement_id.is_some();
-    if open_drawer {
-        authorize_drawer(
-            drawer_access_token.as_deref().unwrap_or_default(),
-            drawer_sale_id.as_deref(),
-            drawer_movement_id.as_deref(),
-        )
-        .await?;
-    } else if drawer_access_token.is_some() {
-        return Err("Falta la venta o movimiento que autoriza la gaveta.".into());
-    }
+async fn print_thermal(printer_name: String, text: String, columns: u8) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         tauri::async_runtime::spawn_blocking(move || {
-            thermal::print(&printer_name, &text, columns, open_drawer)
+            thermal::print(&printer_name, &text, columns, false)
         })
         .await
         .map_err(|_| "No se pudo completar el trabajo de impresión.".to_string())?
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = (printer_name, text, columns, open_drawer);
+        let _ = (printer_name, text, columns);
         Err("La impresión térmica directa requiere Windows.".into())
     }
 }
@@ -54,10 +36,21 @@ async fn print_thermal(
 async fn open_cash_drawer(
     printer_name: String,
     access_token: String,
+    mode: String,
+    operation_id: String,
+    reason: String,
     sale_id: Option<String>,
     movement_id: Option<String>,
 ) -> Result<(), String> {
-    authorize_drawer(&access_token, sale_id.as_deref(), movement_id.as_deref()).await?;
+    authorize_drawer(
+        &access_token,
+        &mode,
+        &operation_id,
+        &reason,
+        sale_id.as_deref(),
+        movement_id.as_deref(),
+    )
+    .await?;
     #[cfg(target_os = "windows")]
     {
         tauri::async_runtime::spawn_blocking(move || thermal::open_drawer(&printer_name))
@@ -84,16 +77,30 @@ fn valid_reference(value: &str) -> bool {
 
 async fn authorize_drawer(
     access_token: &str,
+    mode: &str,
+    operation_id: &str,
+    reason: &str,
     sale_id: Option<&str>,
     movement_id: Option<&str>,
 ) -> Result<(), String> {
-    let reference = match (sale_id, movement_id) {
-        (Some(value), None) if valid_reference(value) => format!(r#"{{"saleId":"{value}"}}"#),
-        (None, Some(value)) if valid_reference(value) => {
-            format!(r#"{{"movementId":"{value}"}}"#)
-        }
+    let (sale_id, movement_id) = match (sale_id, movement_id) {
+        (Some(value), None) if valid_reference(value) => (Some(value), None),
+        (None, Some(value)) if valid_reference(value) => (None, Some(value)),
         _ => return Err("Indica una venta o un movimiento de caja válido.".into()),
     };
+    if !valid_reference(operation_id) {
+        return Err("La autorización de gaveta no es válida.".into());
+    }
+    if !matches!(mode, "automatic" | "manual") || reason.trim().len() < 3 {
+        return Err("Indica un motivo válido para abrir la gaveta.".into());
+    }
+    let reference = serde_json::json!({
+        "mode": mode,
+        "operationId": operation_id,
+        "reason": reason,
+        "saleId": sale_id,
+        "movementId": movement_id,
+    });
     if access_token.is_empty() {
         return Err("La sesión no permite autorizar la gaveta.".into());
     }
@@ -107,7 +114,7 @@ async fn authorize_drawer(
         .post(format!("{origin}/api/cash-sessions/drawer-open"))
         .bearer_auth(access_token)
         .header("content-type", "application/json")
-        .body(reference)
+        .json(&reference)
         .send()
         .await
         .map_err(|_| "No se pudo registrar la apertura de la gaveta.")?;
