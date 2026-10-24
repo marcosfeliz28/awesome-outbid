@@ -1,6 +1,6 @@
 // Reportes 27-34 (Inventario) contra la API compilada, como
 // tests/incentives-api.test.ts: productos propios con entradas, traspasos
-// Casa↔Tienda, ventas y salidas conocidas; cada reporte cuadra con ellos.
+// entre almacenes renombrados, ventas y salidas conocidas; cada reporte cuadra.
 import { conClave } from "./setup/con-clave";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
@@ -19,9 +19,14 @@ const inDays = (n: number) =>
     timeZone: "America/Santo_Domingo",
   });
 
-async function request(path: string, as: string, data?: unknown) {
+async function request(
+  path: string,
+  as: string,
+  data?: unknown,
+  method?: "PATCH",
+) {
   const r = await fetch(base + path, {
-    method: data === undefined ? "GET" : "POST",
+    method: method ?? (data === undefined ? "GET" : "POST"),
     headers: {
       "Content-Type": "application/json",
       "X-Forwarded-For": ip,
@@ -40,8 +45,8 @@ async function request(path: string, as: string, data?: unknown) {
   }
   return { status: r.status, body, type: r.headers.get("content-type") };
 }
-async function ok(path: string, as: string, data?: unknown) {
-  const r = await request(path, as, data);
+async function ok(path: string, as: string, data?: unknown, method?: "PATCH") {
+  const r = await request(path, as, data, method);
   if (r.status >= 400)
     throw new Error(path + ": " + r.status + " " + JSON.stringify(r.body));
   return r.body;
@@ -52,7 +57,9 @@ let admin = "",
   sellerCash: any,
   categoryName = "",
   storeField = "",
-  homeField = "";
+  homeField = "",
+  storeName = "",
+  homeName = "";
 const v: Record<string, { id: string; sku: string; productId: string }> = {};
 const report = (name: string, query = `from=${today}&to=${today}`) =>
   ok(`/reports/${name}?${query}`, admin);
@@ -125,16 +132,41 @@ beforeAll(async () => {
     .sort((a: any, b: any) => a.name.localeCompare(b.name));
   const store = storeWarehouse.id;
   const home = homeWarehouses[0].id;
-  const storeName = storeWarehouse.name;
-  const homeName =
-    homeWarehouses.length === 1
-      ? homeWarehouses[0].name
-      : homeWarehouses.length > 1
-        ? homeWarehouses.map((w: any) => w.name).join(" + ")
-        : "Otros almacenes";
+  const newStoreName = `Mostrador QA ${suffix}`;
+  const newHomeName = `Depósito QA ${suffix}`;
+  expect(
+    (
+      await ok(
+        `/inventory/warehouses/${store}`,
+        admin,
+        { name: newStoreName },
+        "PATCH",
+      )
+    ).name,
+  ).toBe(newStoreName);
+  expect(
+    (
+      await ok(
+        `/inventory/warehouses/${home}`,
+        admin,
+        { name: newHomeName },
+        "PATCH",
+      )
+    ).name,
+  ).toBe(newHomeName);
+  // Leer de nuevo la API: las etiquetas de los reportes deben provenir de los
+  // nombres persistidos, no de una cadena fija ni solo del cuerpo del PATCH.
+  const renamed = await ok("/inventory/warehouses", admin);
+  storeName = renamed.find((w: any) => w.id === store).name;
+  homeName = renamed.find((w: any) => w.id === home).name;
+  const allHomeNames = renamed
+    .filter((w: any) => w.active !== false && w.kind === "home")
+    .map((w: any) => w.name)
+    .sort((a: string, b: string) => a.localeCompare(b));
+  const homeLabel = allHomeNames.join(" + ") || "Otros almacenes";
   storeField = `Existencia en ${storeName}`;
   homeField = `Existencia en ${
-    homeName === storeName ? `${homeName} (auxiliar)` : homeName
+    homeLabel === storeName ? `${homeLabel} (auxiliar)` : homeLabel
   }`;
   await adjust("a", 50, "Entrada QA");
   await adjust("b", 3, "Entrada QA");
@@ -214,8 +246,8 @@ afterAll(async () => {
     });
 }, 60000);
 
-// A: +50 Tienda, 20 a Casa, 5 de vuelta, vende 6, -2 conteo, -1 merma →
-// Tienda 26, Casa 15. B: +3, vende 3 → agotado. C: +10, nunca vendido.
+// A: +50 al principal, 20 al auxiliar, 5 de vuelta, vende 6, -2 conteo,
+// -1 merma → principal 26, auxiliar 15. B: +3, vende 3 → agotado.
 describe("Reportes de inventario (27-34)", () => {
   it("27 rotación: vendidas ÷ stock promedio del período", async () => {
     const a = mine((await report("rotacion-producto")).rows, "a");
@@ -270,7 +302,7 @@ describe("Reportes de inventario (27-34)", () => {
     expect(mine(far, "c").Tramo).toBe("90+ días");
   });
 
-  it("30 bajo el mínimo: Tienda ≤ mínimo del producto", async () => {
+  it("30 bajo el mínimo: almacén principal ≤ mínimo del producto", async () => {
     const rows = (await report("bajo-minimo")).rows;
     expect(mine(rows, "b")).toMatchObject({
       [storeField]: 0,
@@ -285,9 +317,12 @@ describe("Reportes de inventario (27-34)", () => {
       (r: any) => r.Categoría === categoryName,
     );
     const by = Object.fromEntries(rows.map((r: any) => [r.Almacén, r]));
-    // Tienda: A 26 + C 10 (B en 0 no suma); Casa: A 15. Costo 40.
-    expect(by.Tienda).toMatchObject({ Unidades: 36, "Valor a costo": 1440 });
-    expect(by.Casa).toMatchObject({ Unidades: 15, "Valor a costo": 600 });
+    // Principal: A 26 + C 10 (B en 0 no suma); auxiliar: A 15. Costo 40.
+    expect(by[storeName]).toMatchObject({
+      Unidades: 36,
+      "Valor a costo": 1440,
+    });
+    expect(by[homeName]).toMatchObject({ Unidades: 15, "Valor a costo": 600 });
   });
 
   it("32 pérdidas del mes: corrección de conteo aparte de la salida real", async () => {
@@ -308,8 +343,8 @@ describe("Reportes de inventario (27-34)", () => {
       rows.map((r: any) => [r.Cantidad, r.Dirección, r.Usuario]).sort(),
     ).toEqual(
       [
-        [20, "Tienda → Casa", rows[0].Usuario],
-        [5, "Casa → Tienda", rows[0].Usuario],
+        [20, `${storeName} → ${homeName}`, rows[0].Usuario],
+        [5, `${homeName} → ${storeName}`, rows[0].Usuario],
       ].sort(),
     );
     expect(rows[0].Usuario).toBeTruthy();
