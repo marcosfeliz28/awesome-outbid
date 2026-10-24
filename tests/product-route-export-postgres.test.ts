@@ -31,7 +31,8 @@ async function freePort() {
 function pdfText(pdf: Buffer): string {
   const raw = pdf.toString("latin1");
   const pieces: string[] = [];
-  for (const match of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+  // Keep a possible 0x0D final byte in the compressed stream (PDFKit ends it with LF).
+  for (const match of raw.matchAll(/stream\r?\n([\s\S]*?)\nendstream/g)) {
     const dictionary = raw.slice(Math.max(0, match.index! - 250), match.index);
     let content = Buffer.from(match[1], "latin1");
     if (dictionary.includes("/FlateDecode")) {
