@@ -176,3 +176,16 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **Baja · `apps/web/src/App.tsx:481-488` / `apps/web/src/styles.css:3087-3089`:** «Mostrar contraseña» mide **123 × 32 px** en Chromium a 390 px; su área táctil tiene solo 32 px de alto. Es un problema de accesibilidad del formulario que **ya existía antes de esta rama**; el rediseño mantiene el control sin ampliarlo. **Arreglo:** darle al botón un alto/área táctil de al menos 44 px, conservando foco visible y `aria-pressed`.
 
 **Comprobaciones:** el diff de `App.tsx` conserva sin cambios la lógica de envío de usuario/contraseña, la política `cashier-six-digits`, la validación y el mensaje de error; solo añade iconos, cubo y textos. En Chromium a 390 × 844 px, ancho del documento **390 px**, sin desplazamiento horizontal; el formulario normal y el cambio obligatorio aparecen completos (este último requiere desplazamiento vertical, altura de documento **933 px**). Probé el cambio obligatorio simulando la respuesta de la API, sin usar credenciales reales. Los estilos del formulario fijan los mismos colores en tema claro y oscuro; errores y campos son legibles. `aria-hidden="true"` cubre la escena; `prefers-reduced-motion: reduce` deja en `none` las animaciones de aurora, cubo y piso. La CSP permite CSS propio (`style-src 'self'`) y el diff no añade scripts, estilos externos ni atributos `style`. El cubo incluye Suplementos, Fajas, Tenis y Ropa deportiva, Accesorios de gym, Maquillaje, y GV Cursos/Servicios/Productos. `pnpm --filter @fitstore/web typecheck` y `git diff --check` pasaron. No hice prueba de carga en una PC de caja real ni ejecuté la integración completa con PostgreSQL; para estos hallazgos visuales falta la comprobación final en dispositivo real. Claude decide y aplica las correcciones; no se desplegó.
+
+## Propuesta producto 24-oct · N-00 · ChatGPT NUBE
+
+1. Documento: `docs/coordinacion/PROPUESTA_PRODUCTO_CHATGPT_NUBE.md`.
+2. Rama: `nexora-chatgpt-nube`, actualizada mediante merge de `origin/nexora-cloud`.
+3. Base auditada: producto `04d4d96`; instalador de `nexora-cloud` `5897582`.
+4. Se proponen 20 mejoras adicionales con archivo/línea, esfuerzo, riesgo y beneficio.
+5. Se comparan nueve aspectos del instalador actual con un producto instalable y vendible.
+6. El instalador actual sirve un servidor local Windows 11; el cliente Tauri para la nube es otro entregable.
+7. Registro, planes, objetos y avisos fiscales del producto ya están en marcha; no se duplican en las 20 propuestas.
+8. e-CF, B04 y conector fiscal siguen pausados por decisión de la dueña; ninguna propuesta evita reportar ventas.
+9. N-00 es revisión documental: no se cambió código, no hay regresión de comportamiento ni despliegue.
+10. Comprobación: referencias contrastadas con los archivos; `git diff --check` pasó. CI del commit documental: pendiente de publicación y resultado.
