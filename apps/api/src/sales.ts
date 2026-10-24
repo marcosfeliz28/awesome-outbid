@@ -527,7 +527,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 import { cashExpected, refreshClosedCash } from "./cash";
 import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
-import { verifyPinAttempt } from "./security";
+import { managerPinApproval, verifyPinAttempt } from "./security";
 import { drawSaleReceipt } from "./receipt-pdf";
 import {
   moveSaleIncentives,
@@ -3954,6 +3954,25 @@ export class SalesController {
         "Las cajeras solo cierran créditos en efectivo. La tarjeta y la transferencia las registra la administración.",
       );
     const keys = data.lines.map((_, i) => lineKey(data.operationId, i));
+    // «El efectivo ya lo tiene la dueña»: la administración lo marca sola; la
+    // cajera necesita el PIN de un gerente, que queda como quien lo recibió.
+    let ownerApprovedBy: string | null = can(actor.permissions, "*")
+      ? actor.id
+      : null;
+    if (
+      !ownerApprovedBy &&
+      data.lines.some((l) => l.method === "cash" && l.ownerConfirmed === true)
+    ) {
+      if (!data.managerPin)
+        bad(
+          "Para registrar efectivo que ya tiene la dueña hace falta el PIN de un gerente.",
+        );
+      ownerApprovedBy = await managerPinApproval(
+        this.db,
+        actor,
+        data.managerPin,
+      );
+    }
     const rows = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))::text AS locked`;
       const existing = await tx.payment.findMany({
@@ -3973,7 +3992,13 @@ export class SalesController {
             );
           });
         if (!same) bad("La operación ya corresponde a otro cobro.");
-        if (existing.some((p) => p.receivedById !== actor.id)) denied();
+        if (
+          existing.some(
+            (p) =>
+              p.receivedById !== actor.id && p.receivedById !== ownerApprovedBy,
+          )
+        )
+          denied();
         return existing.sort(
           (a, b) =>
             keys.indexOf(a.idempotencyKey!) - keys.indexOf(b.idempotencyKey!),
@@ -3981,9 +4006,7 @@ export class SalesController {
       }
       // La dueña puede cerrar en efectivo lo que tiene en la mano, sin caja.
       const ownerCash = (l: { method: string; ownerConfirmed?: boolean }) =>
-        l.method === "cash" &&
-        l.ownerConfirmed === true &&
-        can(actor.permissions, "*");
+        l.method === "cash" && l.ownerConfirmed === true && !!ownerApprovedBy;
       if (
         !data.cashSessionId &&
         data.lines.some((l) => l.method === "cash" && !ownerCash(l))
@@ -3999,7 +4022,11 @@ export class SalesController {
             tx,
             actor,
             id,
-            { ...data.lines[i], cashSessionId: data.cashSessionId },
+            {
+              ...data.lines[i],
+              cashSessionId: data.cashSessionId,
+              ownerApprovedBy: ownerApprovedBy ?? undefined,
+            },
             keys[i],
             true,
           ),
@@ -4007,6 +4034,9 @@ export class SalesController {
       await audit(tx, actor, "credit_collection", "sale", id, undefined, {
         operationId: data.operationId,
         total: money(total),
+        ownerApprovedBy: data.lines.some((l) => ownerCash(l))
+          ? ownerApprovedBy
+          : undefined,
         lines: out.map((p) => ({
           paymentId: p.id,
           method: p.method,
@@ -4039,6 +4069,8 @@ export class SalesController {
     > & {
       cashSessionId?: string;
       ownerConfirmed?: boolean;
+      // Quien confirmó con su PIN que el efectivo lo tiene la dueña.
+      ownerApprovedBy?: string;
     },
     idempotencyKey: string,
     codOnly: boolean,
@@ -4051,7 +4083,8 @@ export class SalesController {
     const ownerClosed =
       (data.method === "transfer" || data.method === "cash") &&
       data.ownerConfirmed === true &&
-      can(actor.permissions, "*");
+      (can(actor.permissions, "*") ||
+        (data.method === "cash" && !!data.ownerApprovedBy));
     if (ownerClosed) data = { ...data, cashSessionId: undefined };
     if (data.cashSessionId) await cashLock(tx, actor, data.cashSessionId);
     else if (data.method === "cash" && !ownerClosed)
@@ -4114,7 +4147,12 @@ export class SalesController {
     const settings = await tx.settings.findUnique({
       where: tenantUnique("id", actor.branchId),
     });
-    const { cashSessionId, ownerConfirmed: _confirmed, ...payment } = data;
+    const {
+      cashSessionId,
+      ownerConfirmed: _confirmed,
+      ownerApprovedBy,
+      ...payment
+    } = data;
     // Queda marcado en el pago para distinguirlo del efectivo de una caja.
     if (ownerClosed && data.method === "cash" && !payment.reference?.trim())
       payment.reference = "Recibido por la dueña";
@@ -4123,7 +4161,7 @@ export class SalesController {
         ...payment,
         saleId: id,
         cashSessionId: cashSessionId ?? null,
-        receivedById: actor.id,
+        receivedById: (ownerClosed && ownerApprovedBy) || actor.id,
         idempotencyKey,
         entryType: "installment",
         tendered: data.amount,
@@ -4235,6 +4273,12 @@ const creditLineSchema = z.object({
 const creditCollectionSchema = z.object({
   operationId: uuid,
   cashSessionId: uuid.optional(),
+  // PIN de gerente: la cajera marca «este efectivo ya lo tiene la dueña»
+  // (orden de la dueña 24-oct, bloque A1 del veredicto de Gemini).
+  managerPin: z
+    .string()
+    .regex(/^\d{4,6}$/)
+    .optional(),
   lines: z.array(creditLineSchema).min(1).max(6),
 });
 const installmentSchema = z.object({

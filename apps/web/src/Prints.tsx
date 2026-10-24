@@ -285,12 +285,45 @@ export function CuadrePrint({ c }: { c: any }) {
       <h4>Resumen</h4>
       <p>{c.summary?.formula}</p>
       <p className="tp-strong">{c.summary?.text}</p>
-      <Row label="Efectivo" value={num(c.denominationsSubtotal)} />
-      <Row label="Entregado" value={num(c.delivered?.delivered ?? 0)} />
-      <Row
-        label="Dejado en caja"
-        value={num(c.delivered?.left ?? c.denominationsSubtotal)}
-      />
+      {c.cashCheck ? (
+        <>
+          <Row
+            label="Efectivo esperado en gaveta"
+            value={num(c.cashCheck.expected)}
+          />
+          <Row label="Efectivo contado" value={num(c.cashCheck.counted)} />
+          <p className="tp-strong">
+            {"DIFERENCIA " +
+              (Number(c.cashCheck.difference) > 0 ? "+" : "") +
+              num(c.cashCheck.difference) +
+              (Number(c.cashCheck.difference) > 0
+                ? " (sobrante)"
+                : Number(c.cashCheck.difference) < 0
+                  ? " (faltante)"
+                  : "")}
+          </p>
+        </>
+      ) : (
+        <Row label="Efectivo" value={num(c.denominationsSubtotal)} />
+      )}
+      {Number(c.delivered?.delivered) > 0 && (
+        <>
+          <Row label="Entregado" value={num(c.delivered.delivered)} />
+          <Row label="Dejado en caja" value={num(c.delivered.left)} />
+        </>
+      )}
+      {(c.ownerReceived ?? []).length > 0 && (
+        <>
+          <h4>Recibido por la dueña (fuera de gaveta)</h4>
+          {c.ownerReceived.map((r: any) => (
+            <Row
+              key={r.paymentId}
+              label={`${r.number} · ${r.customerName ?? "Sin cliente"}`}
+              value={num(r.amount)}
+            />
+          ))}
+        </>
+      )}
       {c.notes && <p>Notas: {c.notes}</p>}
       <div className="tp-signatures">
         <p>______________________</p>
