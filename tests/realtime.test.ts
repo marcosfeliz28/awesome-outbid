@@ -150,6 +150,34 @@ describe("RealtimeHub · inicialización concurrente (R4-05)", () => {
 });
 
 describe("SSE · cupos y cierre durante el alta (R4-06)", () => {
+  it("revoca el stream de soporte vencido y las sesiones con versión cambiada en el siguiente latido", async () => {
+    const live = fakeTimers();
+    const now = new Date();
+    const support = { ...actor, role: "support", authVersion: 2 };
+    const user = {
+      id: support.id, active: true, authVersion: 2,
+      role: { name: "support" }, supportExpiresAt: new Date(now.getTime() + 60_000),
+    };
+    const db: any = {
+      authSession: { findUnique: async () => ({ userId: support.id, lastActivityAt: now }) },
+      user: { findUnique: async () => user },
+      settings: { findUnique: async () => ({ data: { sessionTimeoutMinutes: 30 } }) },
+    };
+    const controller = new RealtimeController(db);
+    (controller as any).hub = { add: async () => () => {} };
+    const res = response();
+    await controller.events(request() as any, res, support);
+    expect(res.destroyed).toBe(false);
+    user.supportExpiresAt = new Date(now.getTime() - 1);
+    await [...live.values()][0]();
+    expect(res.destroyed).toBe(true);
+    const second = response();
+    user.supportExpiresAt = new Date(now.getTime() + 60_000);
+    await controller.events(request() as any, second, support);
+    user.authVersion = 3;
+    await [...live.values()][0]();
+    expect(second.destroyed).toBe(true);
+  });
   it("una ráfaga de 20 altas sobre una sesión acepta como máximo 2", async () => {
     fakeTimers();
     const pending: ((v: unknown) => void)[] = [];
