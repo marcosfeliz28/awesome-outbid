@@ -10,6 +10,7 @@ import { FormModal, QueryState, toast, mutate, today } from "./helpers";
 import { closeCashIntro } from "./managementMessages";
 import { CreditAccounts } from "./CreditAccounts";
 import { pendingCloseMessage } from "./pendingSales";
+import { closeCashAssistant, type CloseIssue } from "./cash-close-assistant";
 import {
   CuadrePrint,
   DailyUserReportPrint,
@@ -207,6 +208,12 @@ export function CloseCashModal({
     [cardNeedsPin, setCardNeedsPin] = useState(false),
     [cashNeedsPin, setCashNeedsPin] = useState(false),
     [needsReason, setNeedsReason] = useState(false);
+  const [showCloseHelp, setShowCloseHelp] = useState(false);
+  const [closeIssue, setCloseIssue] = useState<CloseIssue>("unknown");
+  const help = closeCashAssistant(
+    waiting ? "pending" : closeIssue,
+    local.data?.length ?? 0,
+  );
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [key]: e.target.value });
   const subtotal =
@@ -284,6 +291,9 @@ export function CloseCashModal({
       if (/caja no cuadra con el sistema/i.test(e.message))
         setCashNeedsPin(true);
       if (/no cuadra|no coincide/i.test(e.message)) setNeedsReason(true);
+      if (/total de tarjeta no coincide/i.test(e.message)) setCloseIssue("card");
+      else if (/caja no cuadra con el sistema/i.test(e.message)) setCloseIssue("cash");
+      if (/no cuadra|no coincide/i.test(e.message)) setShowCloseHelp(true);
     } finally {
       setBusy(false);
     }
@@ -441,6 +451,22 @@ export function CloseCashModal({
             {error}
           </p>
         )}
+        <section aria-label="Ayuda para el cierre de caja">
+          <Button type="button" variant="secondary" onClick={() => setShowCloseHelp(!showCloseHelp)}>
+            {showCloseHelp ? "Ocultar ayuda para el cierre" : "Ayuda antes de cerrar"}
+          </Button>
+          {showCloseHelp && (
+            <div role="status">
+              <ol>{help.lines.map((line) => <li key={line}>{line}</li>)}</ol>
+              {help.note && needsReason && (
+                <Button type="button" variant="secondary" onClick={() => setForm((prev) => ({ ...prev, differenceReason: help.note! }))}>
+                  Copiar nota sugerida (puedes editarla)
+                </Button>
+              )}
+              <p>La nota no se guarda hasta que confirmes el cierre.</p>
+            </div>
+          )}
+        </section>
         <div className="modal-footer">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
