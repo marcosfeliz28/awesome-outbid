@@ -59,6 +59,8 @@ it("login por código de empresa, refresh, cambio de clave y PIN aíslan identid
     sql = db.getPgClient("auth_routes_qa", "127.0.0.1");
     await sql.connect();
     await sql.query(`INSERT INTO "Tenant" (id,slug,name,"updatedAt") VALUES ($1,'empresa-b','Empresa B',now())`, [B]);
+    // La prueba de aislamiento necesita dos equipos aprobados por empresa.
+    await sql.query(`UPDATE "Tenant" SET plan='pro' WHERE id IN ($1,$2)`, [A, B]);
     const adminPassword = "AdminPrueba2026!";
     const sellerTemporary = "348269";
     const sellerNew = "286437";

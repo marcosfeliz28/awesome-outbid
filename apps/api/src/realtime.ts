@@ -36,6 +36,7 @@ import {
   sessionActivityGraceMs,
 } from "./session-activity";
 import { currentTenantId, tenantScope } from "./tenant-context";
+import { enforcePlanQuota } from "./billing-plans";
 const terminalStatus = (t: {
   revokedAt: Date | null;
   approvedAt: Date | null;
@@ -194,6 +195,9 @@ export class RealtimeController {
       // ese dispositivo. Quien lo reclama fija su secreto, pero el equipo queda
       // pendiente hasta que un gerente lo apruebe (R4-01).
       const legacyClaim = !!existing && !existing.secretHash;
+      if ((!existing && manager) || (legacyClaim && manager && !existing?.approvedAt))
+        await enforcePlanQuota(tx as any, "boxes");
+      if (!existing) await enforcePlanQuota(tx as any, "branches", actor.branchId);
       const terminal = existing
         ? await tx.terminal.update({
             where: { id: data.id },
@@ -316,6 +320,7 @@ export class RealtimeController {
           "Este equipo todavía no se ha identificado. Abre Nexora POS en ese equipo y vuelve a intentarlo.",
         );
       if (t.approvedAt) return publicTerminal(t);
+      await enforcePlanQuota(tx as any, "boxes");
       const row = await tx.terminal.update({
         where: { id },
         data: { approvedAt: new Date(), approvedBy },

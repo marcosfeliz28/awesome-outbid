@@ -64,7 +64,7 @@ export function Onboarding({ go }: { go: (page: string) => void }) {
     {data.dismissed && <button disabled={busy} onClick={() => setDismissed(false)}>Retomar asistente</button>}
     <ol>
       <li><h2>1. Categorías {data.categories > 0 && <span>✓</span>}</h2><p>Elige una base sugerida para tu tipo de negocio; después podrás editarla.</p><button disabled={busy || categories.isLoading} onClick={createCategories}>Agregar categorías sugeridas</button></li>
-      <li><h2>2. Productos {data.products > 0 && <span>✓</span>}</h2><p>En Productos usa «Importar Excel» o agrega tus primeros artículos. Revisa el resultado antes de vender.</p><button onClick={() => go("products")}>Ir a Productos e importar Excel</button></li>
+      <li><h2>2. Productos {data.products > 0 && <span>✓</span>}</h2><p>En Productos usa «Importar Excel» o agrega tus primeros artículos. Si tienes una factura de proveedor, Mercancía puede leerla con IA cuando tu plan lo permita. Revisa el resultado antes de vender.</p><button onClick={() => go("products")}>Ir a Productos e importar Excel</button> <button onClick={() => go("merchandise")}>Leer factura de proveedor</button></li>
       <li><h2>3. Cajeras {data.cashiers > 0 && <span>✓</span>}</h2><p>En Configuración › Usuarios y permisos crea cada cajera con su propia contraseña y PIN.</p><button onClick={() => go("settings")}>Crear cajeras</button></li>
       <li><h2>4. Primera caja {data.cashSessions > 0 && <span>✓</span>}</h2><p>Este equipo se registra al entrar. En Caja abre el primer turno con el efectivo inicial.</p><button onClick={() => go("cash")}>Abrir primera caja</button></li>
     </ol>

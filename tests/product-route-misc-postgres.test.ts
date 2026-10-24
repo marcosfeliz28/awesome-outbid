@@ -56,6 +56,8 @@ it("el PIN de equipos y las pruebas Telegram no cruzan empresas", async () => {
     sql = postgres.getPgClient("misc_route_qa", "127.0.0.1");
     await sql.connect();
     await sql.query(`INSERT INTO "Tenant" (id,slug,name,"updatedAt") VALUES ($1,'empresa-misc-b','Empresa B',now())`, [tenants[1]]);
+    // El caso prueba dos equipos B; el plan Autoservicio sólo permite uno.
+    await sql.query(`UPDATE "Tenant" SET plan='pro' WHERE id IN ($1,$2)`, tenants);
     const cases = tenants.map((tenantId, i) => ({
       tenantId, roleId: id(700 + i), userId: id(710 + i), terminalId: id(720 + i), sessionId: id(730 + i),
     }));

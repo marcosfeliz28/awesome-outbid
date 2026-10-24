@@ -1,4 +1,5 @@
 import { tenantUnique } from "./tenant-context";
+import { enforcePlanQuota } from "./billing-plans";
 import {
   Body,
   Controller,
@@ -1078,20 +1079,26 @@ export class AdminController {
     const generatedEmail =
       usernameKey.replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") +
       "@nexora.local";
-    const row = await this.db.user.create({
-      data: {
+    const hashedPassword = await passwordHash(password);
+    const hashedPin = await passwordHash(data.pin);
+    const row = await this.db.$transaction(async (tx) => {
+      await enforcePlanQuota(tx as any, "users");
+      await enforcePlanQuota(tx as any, "branches", actor.branchId);
+      return tx.user.create({
+        data: {
         name: data.name,
         username: requestedUsername,
         usernameKey,
         email: (data.email || generatedEmail).toLowerCase(),
-        passwordHash: await passwordHash(password),
+        passwordHash: hashedPassword,
         mustChangePassword: true,
         passwordExpiresAt: temporaryPasswordExpiry(),
-        pinHash: await passwordHash(data.pin),
+        pinHash: hashedPin,
         roleId: data.roleId,
         branchId: actor.branchId,
         cashierNumber: data.cashierNumber,
-      },
+        },
+      });
     });
     this.rememberLogin(row);
     await audit(this.db, actor, "create", "user", row.id, undefined, {
@@ -1166,6 +1173,8 @@ export class AdminController {
       });
       if (current.roleId !== target.roleId)
         conflict("El rol del usuario cambió. Revisa y vuelve a intentarlo.");
+      if (data.active === true && !current.active)
+        await enforcePlanQuota(tx as any, "users");
       const row = await tx.user.update({
         where: { id: userId },
         data: {

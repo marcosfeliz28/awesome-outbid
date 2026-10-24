@@ -93,7 +93,7 @@ const AUTHENTICATED_RESOURCE_ROUTES = new Set<string>();
 // return a successful response under tenant B, never a validation error.
 const READ_LIST_CASES = [
   "/api/alert-rules", "/api/alerts", "/api/audit-log", "/api/auth/me",
-  "/api/brands", "/api/cash-sessions", "/api/cash-sessions/opening-suggestion",
+  "/api/brands", "/api/billing/plans", "/api/billing/providers", "/api/billing/requests", "/api/cash-sessions", "/api/cash-sessions/opening-suggestion",
   "/api/categories", "/api/cod/pending", "/api/courier/payouts",
   "/api/courier/pending", "/api/credit-accounts", "/api/credit-notes",
   "/api/customers", "/api/dashboard/breakdown", "/api/dashboard/summary",
@@ -122,6 +122,10 @@ GET /api/alert-rules
 GET /api/alerts
 GET /api/audit-log
 GET /api/auth/me
+GET /api/billing/plans
+GET /api/billing/providers
+GET /api/billing/requests
+GET /api/billing/requests/:id/proof
 GET /api/brands
 GET /api/cash-sessions
 GET /api/cash-sessions/:id/cuadre
@@ -210,6 +214,8 @@ POST /api/auth/register
 POST /api/auth/resend-verification
 POST /api/auth/verify-email
 POST /api/brands
+POST /api/billing/requests
+POST /api/billing/requests/:id/proof
 POST /api/cash-sessions/:id/close
 POST /api/cash-sessions/:id/descuadre
 POST /api/cash-sessions/:id/movements
@@ -298,7 +304,7 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  expect(required).toHaveLength(160);
+  expect(required).toHaveLength(166);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");

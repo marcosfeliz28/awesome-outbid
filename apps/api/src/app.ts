@@ -19,6 +19,7 @@ import { RegistrationController, RegistrationService } from "./registration";
 import { OnboardingController } from "./onboarding";
 import { TenantLifecycleService, TenantLifecycleWorker } from "./tenant-lifecycle";
 import { TenantLifecycleController } from "./tenant-lifecycle-controller";
+import { ProductBillingController } from "./product-billing";
 import { CatalogController } from "./catalog";
 import { InventoryController } from "./inventory";
 import { WarehousesController } from "./warehouses";
@@ -85,6 +86,7 @@ export function createAppModule(secret: string) {
       ...(product ? [RegistrationController] : []),
       ...(product ? [OnboardingController] : []),
       ...(product ? [TenantLifecycleController] : []),
+      ...(product ? [ProductBillingController] : []),
       CatalogController,
       InventoryController,
       WarehousesController,

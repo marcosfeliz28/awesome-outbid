@@ -101,6 +101,21 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     expect((await http.post("/api/onboarding").set("Authorization", aToken).send({ dismissed: false })).body.dismissed).toBe(false);
     expect((await http.post("/api/categories").set("Authorization", aToken).send({ name: "Abarrotes" })).status).toBe(201);
     expect((await http.get("/api/onboarding").set("Authorization", aToken)).body.categories).toBe(1);
+    const roleId = (await client.query(`SELECT id FROM "Role" WHERE "tenantId"=$1`, [tenants.rows[0].id])).rows[0].id;
+    const cashier = (name: string) => ({ name, username: name, password: "ClaveSegura-2026!", pin: "869254", roleId });
+    const firstCashier = await http.post("/api/users").set("Authorization", aToken).send(cashier("Cajera A"));
+    expect(firstCashier.status, JSON.stringify(firstCashier.body)).toBe(201);
+    const overUsers = await http.post("/api/users").set("Authorization", aToken).send(cashier("Cajera B"));
+    expect(overUsers.status, JSON.stringify(overUsers.body)).toBe(409);
+    expect((await http.patch(`/api/users/${firstCashier.body.id}`).set("Authorization", aToken).send({ active: false })).status).toBe(200);
+    expect((await http.post("/api/users").set("Authorization", aToken).send(cashier("Cajera B"))).status).toBe(201);
+    expect((await http.patch(`/api/users/${firstCashier.body.id}`).set("Authorization", aToken).send({ active: true })).status).toBe(409);
+    const device = (id: string) => ({ id, name: "Caja de prueba", secret: "only-local-test-secret-123" });
+    expect((await http.post("/api/terminals/register").set("Authorization", aToken)
+      .send(device("00000000-0000-4000-8000-000000000101"))).status).toBe(201);
+    const overBoxes = await http.post("/api/terminals/register").set("Authorization", aToken)
+      .send(device("00000000-0000-4000-8000-000000000102"));
+    expect(overBoxes.status, JSON.stringify(overBoxes.body)).toBe(409);
     expect((await http.post("/api/auth/register").send(input)).status).toBe(409);
     failNextMail = true;
     const second = await http.post("/api/auth/register").send({ ...input, companyCode: "otra-tienda" });

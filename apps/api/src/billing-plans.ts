@@ -1,0 +1,53 @@
+import { HttpException } from "@nestjs/common";
+import { currentTenantId } from "./tenant-context";
+
+export const BILLING_PLANS = {
+  autoservicio: { label: "Autoservicio", monthlyDop: 990, branches: 1, boxes: 1, users: 2, aiQueries: 30 },
+  basico: { label: "Básico", monthlyDop: 1990, branches: 1, boxes: 2, users: 3, aiQueries: 50 },
+  pro: { label: "Pro", monthlyDop: 3990, branches: 2, boxes: 6, users: 10, aiQueries: 300 },
+  premium: { label: "Premium", monthlyDop: 7990, branches: 5, boxes: 20, users: 30, aiQueries: 1000 },
+} as const;
+export type BillingPlan = keyof typeof BILLING_PLANS;
+
+export function billingPlan(value: string): BillingPlan {
+  return Object.prototype.hasOwnProperty.call(BILLING_PLANS, value)
+    ? value as BillingPlan
+    : "autoservicio";
+}
+
+type QuotaDb = {
+  user: { count(args: unknown): Promise<number>; findMany(args: unknown): Promise<{ branchId: string }[]> };
+  terminal: { count(args: unknown): Promise<number>; findMany(args: unknown): Promise<{ branchId: string }[]> };
+  $queryRaw: (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
+};
+
+/** Must run inside the same transaction as the create/approval it protects. */
+export async function enforcePlanQuota(
+  tx: QuotaDb,
+  resource: "users" | "boxes" | "branches",
+  newBranch?: string,
+) {
+  if (process.env.PRODUCT_TENANCY !== "required") return;
+  const tenantId = currentTenantId();
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`plan:${tenantId}`}))::text`;
+  // Tenant has no tenantId column, so the generic tenant database proxy cannot
+  // build a Prisma tenant.findUnique query. PostgreSQL RLS still scopes this read.
+  const tenants = await tx.$queryRaw`SELECT plan FROM "Tenant" WHERE id=${tenantId}::uuid` as { plan: string }[];
+  if (tenants.length !== 1) throw new HttpException("Empresa no disponible.", 403);
+  const plan = BILLING_PLANS[billingPlan(tenants[0].plan)];
+  if (resource === "users") {
+    const active = await tx.user.count({ where: { tenantId, active: true } });
+    if (active >= plan.users) throw new HttpException(`El plan ${plan.label} permite ${plan.users} usuarios activos.`, 409);
+  } else if (resource === "boxes") {
+    const approved = await tx.terminal.count({ where: { tenantId, approvedAt: { not: null }, revokedAt: null } });
+    if (approved >= plan.boxes) throw new HttpException(`El plan ${plan.label} permite ${plan.boxes} equipos aprobados.`, 409);
+  } else {
+    const [users, terminals] = await Promise.all([
+      tx.user.findMany({ where: { tenantId, active: true }, select: { branchId: true } }),
+      tx.terminal.findMany({ where: { tenantId, revokedAt: null }, select: { branchId: true } }),
+    ]);
+    const branches = new Set([...users, ...terminals].map(row => row.branchId));
+    if (newBranch && !branches.has(newBranch) && branches.size >= plan.branches)
+      throw new HttpException(`El plan ${plan.label} permite ${plan.branches} sucursales.`, 409);
+  }
+}

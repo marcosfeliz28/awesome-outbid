@@ -1320,6 +1320,8 @@ model Tenant {
   incentiveSettlementRows IncentiveSettlement[]
   driveBackupRows DriveBackup[]
   lifecycleNoticeRows TenantLifecycleNotice[]
+  billingRequestRows BillingRequest[]
+  billingDecisionRows BillingDecision[]
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique
   name      String
@@ -1353,4 +1355,42 @@ model TenantLifecycleNotice {
   @@unique([tenantId, kind, dueAt])
   @@index([tenantId])
   @@index([status, nextAttemptAt])
+}
+
+// Solicitud de cobro del producto: independiente de Payment (ventas de la tienda).
+model BillingRequest {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  tenantId      String   @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  plan          String
+  provider      String
+  amount        Decimal  @db.Decimal(12, 2)
+  status        String   @default("pending_proof")
+  proof         Bytes?
+  proofMime     String?
+  submittedAt   DateTime?
+  reviewedAt    DateTime?
+  reviewer      String?
+  reviewReason  String?
+  paidThroughAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  decision      BillingDecision?
+
+  @@index([tenantId, createdAt])
+  @@index([status, submittedAt])
+}
+
+model BillingDecision {
+  id         String         @id @default(uuid()) @db.Uuid
+  request    BillingRequest @relation(fields: [requestId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  requestId  String         @unique @db.Uuid
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  tenantId   String         @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  decision   String
+  reviewer   String
+  reason     String
+  createdAt  DateTime       @default(now())
+
+  @@index([tenantId, createdAt])
 }

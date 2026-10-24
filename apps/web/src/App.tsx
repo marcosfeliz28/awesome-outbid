@@ -51,6 +51,7 @@ import {
 import { initialCompanyCode, productTenancyRequired } from "./productTenancy";
 import { Registration, ConfirmEmail } from "./Registration";
 import { Onboarding, type OnboardingStatus } from "./Onboarding";
+import { Billing } from "./Billing";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
 import {
@@ -193,6 +194,7 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 const navigation = [
   { id: "onboarding", label: "Asistente de arranque", icon: Sparkles, permission: "*" },
+  { id: "billing", label: "Plan y facturación", icon: Wallet, permission: "*" },
   {
     id: "merchandise",
     label: "Mercancía",
@@ -681,7 +683,7 @@ function Shell() {
     sidebar = useRef<HTMLElement>(null),
     stayActive = useRef(() => {});
   const allowed = navigation.filter(
-    (n) => user && (n.id !== "onboarding" || PRODUCT_TENANCY_REQUIRED) && can(user.permissions, n.permission),
+    (n) => user && (!["onboarding", "billing"].includes(n.id) || PRODUCT_TENANCY_REQUIRED) && can(user.permissions, n.permission),
   );
   const onboarding = useQuery<OnboardingStatus>({
     queryKey: ["onboarding", user?.id], queryFn: () => api("/onboarding"),
@@ -962,6 +964,7 @@ function Shell() {
     .join("");
   const pages: Record<string, React.ReactNode> = {
     onboarding: <Onboarding go={go} />,
+    billing: <Billing />,
     dashboard: <Dashboard go={go} />,
     "month-report": <MonthReport go={go} />,
     pos: <POS go={go} />,

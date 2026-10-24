@@ -65,6 +65,8 @@ it("aísla alertas, gastos, anonimización, usuarios y cotizaciones", async () =
     sql = db.getPgClient("admin_extra_qa", "127.0.0.1");
     await sql.connect();
     await sql.query(`INSERT INTO "Tenant" (id,slug,name,"updatedAt") VALUES ($1,'empresa-b','Empresa B',now())`, [B]);
+    // Esta matriz ejercita varios equipos; usa un plan que los admite.
+    await sql.query(`UPDATE "Tenant" SET plan='pro' WHERE id IN ($1,$2)`, [A, B]);
     for (const [tenant, role, user, session, customer, expenseCategory, alert, target, marker] of [
       [A, ids.roleA, ids.userA, ids.sessionA, ids.customerA, ids.expenseCategoryA, ids.alertA, ids.targetA, "A_ONLY_SECRET"],
       [B, ids.roleB, ids.userB, ids.sessionB, ids.customerB, ids.expenseCategoryB, ids.alertB, ids.targetB, "B_VISIBLE"],
