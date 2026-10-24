@@ -1,4 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   cashDrawerRequired,
   nativeOpenDrawer,
@@ -13,6 +15,16 @@ import {
 afterEach(() => {
   setNativeInvokeForTest(null);
   vi.unstubAllGlobals();
+});
+
+it("PC-16: Tauri habilita el JSON que usa al autorizar la gaveta", () => {
+  const cargo = readFileSync(
+    join(import.meta.dirname, "../apps/web/src-tauri/Cargo.toml"),
+    "utf8",
+  );
+  expect(cargo).toMatch(
+    /reqwest\s*=\s*\{[^\n]*features\s*=\s*\[[^\]]*"json"/,
+  );
 });
 
 it("PC-16: un ticket nativo conserva sus líneas y rechaza controles de impresora enviados por datos", () => {

@@ -9,5 +9,5 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
-reqwest = { version = "0.13", default-features = true }
+reqwest = { version = "0.13", default-features = true, features = ["json"] }
 serde_json = "1"
