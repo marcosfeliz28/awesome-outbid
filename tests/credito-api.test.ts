@@ -66,7 +66,7 @@ async function ok(path: string, as: string, data?: unknown, method?: string) {
 function extractPdfText(buffer: Buffer) {
   const raw = buffer.toString("latin1");
   const output: string[] = [];
-  for (const match of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+  for (const match of raw.matchAll(/stream\r?\n([\s\S]*?)\nendstream/g)) {
     const dictionary = raw.slice(Math.max(0, match.index! - 250), match.index);
     let content = Buffer.from(match[1], "latin1");
     if (dictionary.includes("/FlateDecode")) {
