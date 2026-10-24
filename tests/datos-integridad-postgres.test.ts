@@ -735,17 +735,13 @@ describe("Auditoría 06 · migraciones de datos en PostgreSQL real", () => {
       );
       expect(await applyOwn(b)).toEqual([]);
       expect(Object.values(await constraintState(b)).every(Boolean)).toBe(true);
-      // PC-08 agrega dos CHECK NOT VALID después de 202610220001. La primera
-      // repetición debe validarlas, sin ocultar las restricciones antiguas.
+      // La migración aditiva posterior ya validó los dos CHECK de objetos en
+      // la misma cadena. Repetir el validador general debe ser idempotente y
+      // no puede volver a declarar trabajo pendiente ni ocultar restricciones.
       const objectChecks = await applyValidation(b);
-      expect(objectChecks).toEqual([
-        "VALIDAR: BillingRequest_proof_location validada.",
-        "VALIDAR: InvoiceAttachment_object_location validada.",
-        expect.stringMatching(
-          /2 restricción\(es\) validada\(s\) ahora, 0 sin validar/,
-        ),
-      ]);
-      // Una segunda ejecución ya no debe encontrar pendientes.
+      expect(objectChecks.join("\n")).toMatch(
+        /0 restricción\(es\) validada\(s\) ahora, 0 sin validar/,
+      );
       expect((await applyValidation(b)).join("\n")).toMatch(
         /0 restricción\(es\) validada\(s\) ahora, 0 sin validar/,
       );
