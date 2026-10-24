@@ -80,14 +80,19 @@ it("migra datos existentes y aísla lectura, escritura y cambio de tenant con RL
     )).rejects.toMatchObject({ code: "23505", constraint: "one_open_cash_per_user" });
     await client.query(`INSERT INTO "Tenant" (id, slug, name, "updatedAt") VALUES ($1, 'otro-negocio', 'Otro negocio', now())`, [other]);
     const tables = (await client.query(`SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename <> '_prisma_migrations' AND tablename <> 'Tenant'`)).rows.map((r: any) => r.tablename);
-    expect(tables).toHaveLength(61);
+    expect(tables).toHaveLength(62);
+    expect(tables).toContain("TenantObjectDeletion");
     for (const table of tables) {
       const status = (await client.query(`SELECT relrowsecurity FROM pg_class WHERE oid=$1::regclass`, [`public."${table}"`])).rows[0];
       expect(status.relrowsecurity, table).toBe(true);
       const column = (await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name=$1 AND column_name='tenantId'`, [table])).rows;
       expect(column, table).toHaveLength(1);
       const def = (await client.query(`SELECT column_default FROM information_schema.columns WHERE table_name=$1 AND column_name='tenantId'`, [table])).rows[0]?.column_default;
-      expect(def, table).toContain(demo);
+      // La cola nueva falla cerrada: nunca asigna la empresa de demostración
+      // a una inserción que omitió tenantId. Las tablas anteriores mantienen
+      // sus defaults históricos, que esta prueba sigue comprobando.
+      if (table === "TenantObjectDeletion") expect(def).toBeNull();
+      else expect(def, table).toContain(demo);
     }
     await client.query(`INSERT INTO "Brand" (id, name) VALUES ($1, 'Marca demo')`, ["10000000-0000-4000-8000-000000000001"]);
     const check = async (tenantId: string, statement: string, values: unknown[] = []) => {
