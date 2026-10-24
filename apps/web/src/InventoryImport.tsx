@@ -9,9 +9,10 @@ import { Upload } from "lucide-react";
 import { Badge, Button, Modal } from "@fitstore/ui";
 import { api } from "./api";
 import { toast } from "./helpers";
+import { csvCell, problemsCsv, type ImportProblem } from "./inventoryImportCsv";
 import "./inventoryImport.css";
 
-type Problem = { row?: number; message: string };
+type Problem = ImportProblem;
 type Change = {
   id: string;
   name: string;
@@ -75,12 +76,6 @@ export function biggestPriceChanges(changes: Change[], limit = 20) {
 const KIND = { existencia: "Existencia", precio: "Precio", costo: "Costo" };
 /** CSV de todos los cambios (Excel lo abre; ; como separador, como el resto de la tienda). */
 export function changesCsv(changes: Change[]) {
-  const quote = (v: string | number) =>
-    '"' +
-    String(v)
-      .replace(/"/g, '""')
-      .replace(/^([=+\-@\t\r])/, "'$1") +
-    '"';
   return (
     "﻿" +
     [
@@ -94,7 +89,7 @@ export function changesCsv(changes: Change[]) {
         c.after,
       ]),
     ]
-      .map((r) => r.map(quote).join(";"))
+      .map((r) => r.map(csvCell).join(";"))
       .join("\r\n")
   );
 }
@@ -241,16 +236,15 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
 
   const s = preview?.summary;
   const top = preview?.changes ? biggestPriceChanges(preview.changes) : [];
-  const download = () => {
-    if (!preview?.changes) return;
+  const downloadCsv = (name: string, content: string) => {
     const url = URL.createObjectURL(
-      new Blob([changesCsv(preview.changes)], {
+      new Blob([content], {
         type: "text/csv;charset=utf-8",
       }),
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "cambios-inventario.csv";
+    a.download = name;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -366,8 +360,11 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
             ))}
           </ul>
           {preview.blocking.length > 50 && (
-            <p>… y {preview.blocking.length - 50} problemas más.</p>
+            <p>… y {preview.blocking.length - 50} problemas más. Descarga la lista completa.</p>
           )}
+          {!!preview.blocking.length && <Button variant="ghost" onClick={() => downloadCsv("errores-inventario.csv", problemsCsv(preview.blocking))}>
+            Descargar todos los errores (.csv)
+          </Button>}
         </div>
       )}
       {preview && s && (
@@ -485,7 +482,7 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
             </div>
           )}
           {!!preview.changes?.length && (
-            <Button variant="ghost" onClick={download}>
+            <Button variant="ghost" onClick={() => downloadCsv("cambios-inventario.csv", changesCsv(preview.changes!))}>
               Descargar la lista de todos los cambios (.csv)
             </Button>
           )}

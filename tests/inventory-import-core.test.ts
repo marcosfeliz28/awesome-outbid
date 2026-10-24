@@ -47,6 +47,7 @@ describe("importador de inventario · módulo compartido", () => {
     ).catch((e) => e);
     expect(error).toBeInstanceOf(InventoryFileError);
     expect(error.problems[0].row).toBe(2);
+    expect(error.problems[0].column).toBe("EXISTENCIA");
     expect(error.message).toContain("Corrige el Excel antes de importar");
   });
   it("respeta el máximo de filas", async () => {

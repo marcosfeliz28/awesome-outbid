@@ -56,7 +56,7 @@ export type Row = {
 };
 
 /** Un problema del archivo, con su fila del Excel cuando se conoce. */
-export type FileProblem = { row?: number; message: string };
+export type FileProblem = { row?: number; column?: string; message: string };
 
 /** El Excel tiene errores: `problems` los lista (con fila) y `message` los resume. */
 export class InventoryFileError extends Error {
@@ -213,7 +213,7 @@ export async function readInventory(
   ) => {
     const v = toNumber(cell);
     if (typeof v === "string") {
-      errors.push({ row: n, message: who + ", " + label + ": " + v });
+      errors.push({ row: n, column: label, message: who + ", " + label + ": " + v });
       return 0;
     }
     const f = 10 ** decimals;
@@ -221,6 +221,7 @@ export async function readInventory(
     if (!Number.isFinite(v) || v > max) {
       errors.push({
         row: n,
+        column: label,
         message: who + ", " + label + ": " + v + " (máximo " + max + ")",
       });
       return 0;
@@ -228,6 +229,7 @@ export async function readInventory(
     if (v < 0 || Math.abs(v * f - Math.round(v * f)) > 1e-6) {
       errors.push({
         row: n,
+        column: label,
         message:
           who +
           ", " +
@@ -288,6 +290,7 @@ export async function readInventory(
       if (isProblem(v))
         errors.push({
           row: n,
+          column: label,
           message: who + ", " + label + ": " + v.problem,
         });
     const lacks = [
@@ -320,6 +323,7 @@ export async function readInventory(
       if (value.length > max)
         errors.push({
           row: n,
+          column: label,
           message:
             who +
             ", " +
@@ -331,6 +335,7 @@ export async function readInventory(
       if (control.test(strict ? value : value.replace(/[\t\n\r]/g, " ")))
         errors.push({
           row: n,
+          column: label,
           message:
             who + ", " + label + ": trae caracteres de control no permitidos",
         });
