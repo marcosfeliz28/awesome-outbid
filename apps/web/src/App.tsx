@@ -876,13 +876,18 @@ function Shell() {
     setSyncing(true);
     try {
       await registerTerminal();
-      await syncMerchandise();
+      const merchandise = await syncMerchandise();
       const result = await syncSales();
       if (result.synced) toast(`${result.synced} ventas sincronizadas.`);
       if (result.conflicts)
         toast(`${result.conflicts} ventas requieren revisión en Caja.`, true);
-      if (result.retry) {
-        toast(retryMessage(result.retry), true);
+      if (merchandise?.retry)
+        toast(
+          "La mercancía sigue pendiente y se reintentará tras renovar la licencia.",
+          true,
+        );
+      if (result.retry) toast(retryMessage(result.retry), true);
+      if (result.retry || merchandise?.retry) {
         scheduleRetry();
       } else retryAttempt.current = 0;
       await client.invalidateQueries();

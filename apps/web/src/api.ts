@@ -8,6 +8,10 @@ import {
   sendLicenseAwareBatches,
 } from "./local-license";
 import { businessOperationName, traceBusinessOperation } from "./monitoring";
+import {
+  syncMerchandiseRows,
+  type MerchandiseSyncResult,
+} from "./merchandise-sync";
 
 export type User = {
   id: string;
@@ -586,29 +590,28 @@ export async function download(path: string, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-let goodsSync: Promise<void> | null = null;
+let goodsSync: Promise<MerchandiseSyncResult> | null = null;
 export async function syncMerchandise() {
   if (goodsSync) return goodsSync;
   goodsSync = (async () => {
     const user = useStore.getState().user;
-    if (!user || !navigator.onLine) return;
+    if (!user || !navigator.onLine)
+      return { synced: 0, conflicts: 0, retry: 0 };
     const pending = await localDB.merchandise
       .where("userId")
       .equals(user.id)
       .filter((r) => r.branchId === user.branchId && r.status === "pending")
       .sortBy("createdAt");
-    for (const row of pending) {
-      try {
-        await post("/merchandise/operations", row.input);
-        await localDB.merchandise.delete(row.id);
-      } catch (e: any) {
-        if (!navigator.onLine || e instanceof TypeError) break;
-        await localDB.merchandise.update(row.id, {
-          status: "conflict",
-          message: e.message,
-        });
-      }
-    }
+    return syncMerchandiseRows(pending, {
+      send: async (row) =>
+        void (await post("/merchandise/operations", row.input)),
+      remove: (id) => localDB.merchandise.delete(id),
+      markPending: (id, message) =>
+        localDB.merchandise.update(id, { status: "pending", message }),
+      markConflict: (id, message) =>
+        localDB.merchandise.update(id, { status: "conflict", message }),
+      online: () => navigator.onLine,
+    });
   })().finally(() => {
     goodsSync = null;
   });

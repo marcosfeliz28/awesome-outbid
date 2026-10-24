@@ -27,6 +27,7 @@ import {
   type Product,
   type Variant,
 } from "./api";
+import { merchandiseFailureStatus } from "./merchandise-sync";
 import { FormModal, attrLabel, toast } from "./helpers";
 import { registerTerminal } from "./realtime";
 import { Barcode } from "./Management";
@@ -573,8 +574,7 @@ export function Merchandise() {
     } catch (e: any) {
       setError(e.message);
       await localDB.merchandise.update(input.id, {
-        status:
-          !navigator.onLine || e instanceof TypeError ? "pending" : "conflict",
+        status: merchandiseFailureStatus(e),
         message: e.message,
       });
     } finally {

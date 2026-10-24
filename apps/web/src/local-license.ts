@@ -22,6 +22,9 @@ export async function requireLocalLicenseWrite(
 
 type HttpFailure = Error & { status?: number; reason?: string };
 
+export const isLocalLicenseReadOnlyFailure = (failure: unknown) =>
+  (failure as HttpFailure | undefined)?.status === 423;
+
 /**
  * Un 423 sin `reason` identifica una captura individual fuera de vigencia.
  * Se divide el lote hasta aislarla; un 423 de licencia global se conserva
