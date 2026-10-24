@@ -9,6 +9,7 @@ import EmbeddedPostgres from "embedded-postgres";
 import supertest from "supertest";
 import { expect, it } from "vitest";
 import { createAppModule } from "../apps/api/src/app";
+import { AlertEngine } from "../apps/api/src/alerts";
 import { ApiExceptionFilter } from "../apps/api/src/common";
 import { ncfSequenceWarnings } from "../apps/api/src/ncf-sequences";
 
@@ -144,7 +145,10 @@ it("PC-13: avisa con 19 números o 15 días, aísla empresas y deniega cajera/ge
     expect(alertsB[0].entityId).toBe(sameOther.body.id);
     expect((await client.query(`SELECT count(*)::int AS n FROM "Alert" WHERE "tenantId"=$1 AND type='ncf_sequence'`, [tenantA])).rows[0].n).toBe(3);
     await client.query(`UPDATE "Tenant" SET "timeZone"='Not/A_Real_Zone' WHERE id=$1`, [tenantA]);
+    app.get(AlertEngine).invalidate(); // sin esto responde el caché de 60 s
     expect((await http.get("/api/alerts").set(as(tenantA, "admin"))).status).toBe(200);
+    // CPC-4b: con zona inválida los avisos NCF abiertos siguen abiertos.
+    expect((await client.query(`SELECT count(*)::int AS n FROM "Alert" WHERE "tenantId"=$1 AND type='ncf_sequence' AND status<>'resolved'`, [tenantA])).rows[0].n).toBe(3);
     await client.query(`UPDATE "Tenant" SET "timeZone"='America/Santo_Domingo' WHERE id=$1`, [tenantA]);
     const inactive = await http.patch(`/api/ncf-sequences/${id}`).set(as(tenantA, "admin")).send({ active: false });
     expect(inactive.status).toBe(200);

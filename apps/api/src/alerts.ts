@@ -454,6 +454,7 @@ export class AlertEngine {
     };
     // PC-13: sólo avisamos de rangos declarados por administración. Nunca
     // consumimos ni inferimos números NCF a partir de ventas del POS.
+    let keepNcfOpen = false;
     if (process.env.PRODUCT_TENANCY === "required") {
       const [tenant, sequences] = await Promise.all([
         this.db.$queryRaw<{ timeZone: string }[]>`
@@ -463,6 +464,8 @@ export class AlertEngine {
       // Si no conocemos la zona horaria de esta empresa, no fingimos una
       // fecha fiscal: omitimos el aviso hasta corregir la configuración.
       const todayForTenant = tenant[0]?.timeZone ? ncfTenantToday(tenant[0].timeZone) : null;
+      // Sin fecha fiscal no hay eventos: tampoco cerramos los avisos abiertos.
+      keepNcfOpen = !todayForTenant;
       if (todayForTenant) {
         for (const sequence of sequences)
           for (const warning of ncfSequenceWarnings(sequence, todayForTenant))
@@ -686,7 +689,7 @@ export class AlertEngine {
     // Resolver sólo reglas de estado (stock, vencimiento, margen…). Las de
     // hechos (MANUAL_ALERT_TYPES) permanecen hasta que una persona o su
     // propio flujo las cierre (M-1).
-    await this.resolveStale(branchId, events);
+    await this.resolveStale(branchId, events, keepNcfOpen);
     const stored = await this.storedAlerts(events);
     const writes: AlertWrite[] = [];
     for (const event of events) {
@@ -722,13 +725,18 @@ export class AlertEngine {
    * PostgreSQL (500 en GET /alerts con el inventario importado): las claves
    * viajan como UN arreglo.
    */
-  private async resolveStale(branchId: string, events: AlertEvent[]) {
+  private async resolveStale(
+    branchId: string,
+    events: AlertEvent[],
+    keepNcfOpen = false,
+  ) {
     const keys = [...new Set(events.map((e) => e.key))];
     await this.db.$executeRaw`
       UPDATE "Alert" SET "status" = 'resolved',
              "updatedAt" = (now() AT TIME ZONE 'UTC')
        WHERE "branchId" = ${branchId} AND "status" <> 'resolved'
          AND NOT ("type" = ANY(${MANUAL_ALERT_TYPES}::text[]))
+         AND NOT (${keepNcfOpen}::boolean AND "type" = 'ncf_sequence')
          AND NOT ("key" = ANY(${keys}::text[]))`;
   }
   /** Estado guardado de las claves evaluadas, en lecturas de 1 000. */
