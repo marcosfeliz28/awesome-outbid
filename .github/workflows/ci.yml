@@ -96,10 +96,10 @@ jobs:
       - name: Construir la imagen web (Render, sin publicar)
         run: docker build -f deploy/render/Dockerfile.web -t nexora-pos-web:ci .
       - name: Arranque como en Render y comprobación posterior al despliegue
-        if: github.ref_name != 'producto-nexora' && github.head_ref != 'producto-nexora'
+        if: github.ref_name != 'producto-nexora' && github.head_ref != 'producto-nexora' && github.ref_name != 'nexora-chatgpt-nube-ia' && github.head_ref != 'nexora-chatgpt-nube-ia'
         run: bash deploy/render/ci-smoke.sh
       - name: Arranque aislado del producto multiempresa
-        if: github.ref_name == 'producto-nexora' || github.head_ref == 'producto-nexora'
+        if: github.ref_name == 'producto-nexora' || github.head_ref == 'producto-nexora' || github.ref_name == 'nexora-chatgpt-nube-ia' || github.head_ref == 'nexora-chatgpt-nube-ia'
         run: bash scripts/producto-ci-smoke.sh
   windows-installer:
     runs-on: windows-latest

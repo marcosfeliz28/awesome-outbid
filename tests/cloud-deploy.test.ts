@@ -1312,6 +1312,11 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
       "docker build -f deploy/render/Dockerfile.web -t nexora-pos-web:ci .",
     );
     expect(job).toContain("bash deploy/render/ci-smoke.sh");
+    // Las ramas de la fase IA parten de producto-nexora: deben probar su
+    // blueprint con RLS, no el Render legado de la tienda.
+    expect(job).toContain("github.ref_name == 'nexora-chatgpt-nube-ia'");
+    expect(job).toContain("github.head_ref == 'nexora-chatgpt-nube-ia'");
+    expect(job).toContain("bash scripts/producto-ci-smoke.sh");
     expect(ci).not.toMatch(/docker (push|login)|--push/);
     const smoke = read("deploy/render/ci-smoke.sh");
     // Usa la misma orden de migración que Render y la misma comprobación.
