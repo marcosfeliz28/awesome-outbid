@@ -95,6 +95,7 @@ import {
   PrintSheet,
   printSoon,
 } from "./Prints";
+import { cashDrawerRequired, isNativeDesktop, nativeOpenDrawer } from "./desktopPrinter";
 import {
   announcePriceChanges,
   CashElsewhere,
@@ -2222,7 +2223,10 @@ function Checkout({
         createdAt: sale.createdAt ?? new Date().toISOString(),
       });
       // Impresión automática del recibo (Ajustes).
-      if (config?.autoPrintReceipt) printSoon();
+      const cashPaid = cashDrawerRequired(payments);
+      if (config?.autoPrintReceipt) printSoon(cashPaid);
+      else if (cashPaid && isNativeDesktop())
+        void nativeOpenDrawer().catch((error) => toast(String(error?.message ?? error), true));
       clearCart();
       await client.invalidateQueries();
     } catch (e: any) {

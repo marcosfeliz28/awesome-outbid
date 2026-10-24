@@ -131,3 +131,11 @@ jobs:
       - run: node -e "if(process.platform!=='win32') process.exit(1)"
       - run: pnpm exec vitest run tests/portabilidad.test.ts --reporter=verbose
       - run: pnpm instalador:validar
+      - name: Compilar escritorio Tauri del producto (origen ficticio, sin publicar)
+        if: github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto'
+        env:
+          NEXORA_PRODUCT_URL: https://pos.example.invalid
+        run: pnpm producto:tauri:build
+      - name: Probar codificación térmica nativa
+        if: github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto'
+        run: cargo test --manifest-path apps/web/src-tauri/Cargo.toml

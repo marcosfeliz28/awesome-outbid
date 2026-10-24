@@ -1,5 +1,5 @@
 [package]
-name = "fitstore-pos"
+name = "nexora-pos-desktop"
 version = "0.1.0"
 description = "Nexora POS"
 edition = "2021"
