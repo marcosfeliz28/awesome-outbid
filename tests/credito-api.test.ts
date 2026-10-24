@@ -1672,4 +1672,26 @@ describe("A1 · efectivo que ya tiene la dueña, registrado por la cajera con PI
       true,
     );
   });
+
+  it("con dos cajas abiertas a la vez, el cobro de la dueña sale solo en el cuadre de la caja que lo registró (CPC-1)", async () => {
+    const s = (await sale(ana, 150, [{ method: "cod", amount: 150 }])).body;
+    const done = await request(
+      "/sales/" + s.id + "/credit-collections",
+      ana.token,
+      {
+        operationId: randomUUID(),
+        cashSessionId: ana.cash.id,
+        managerPin: "246813",
+        lines: [{ method: "cash", amount: 150, ownerConfirmed: true }],
+      },
+    );
+    expect(done.status, JSON.stringify(done.body)).toBeLessThan(300);
+    const seen = async (who: Actor) =>
+      (
+        await ok("/cash-sessions/" + who.cash.id + "/cuadre", owner)
+      ).ownerReceived.some((r: any) => r.number === s.number);
+    expect(await seen(ana)).toBe(true);
+    expect(await seen(adminA)).toBe(false);
+    expect(await seen(adminB)).toBe(false);
+  });
 });
