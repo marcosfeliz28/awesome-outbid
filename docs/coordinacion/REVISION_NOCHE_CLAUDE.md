@@ -9,6 +9,37 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## 25-oct, 08:55 (Claude PC · auditoría de código, solo lectura)
+Revisé `producto-nexora` en `e3fada7` (la mezcla del cierre A1 a A3) y `04d4d96` (PC-13), y verifiqué cada hallazgo en el código. CI de `e3fada7`: `render-images` y `windows-installer` en verde; `verify` todavía en curso.
+
+**Cierre de caja A1 a A3. El mismo código va hoy a la tienda (`5897582`).** Ninguno de los dos cambia el esperado ni la diferencia de la gaveta. No bloquean el despliegue, pero conviene corregirlos pronto:
+1. **Corregir, medio.** La marca «Recibido por la dueña» se guarda solo si el cobro llega sin referencia (`sales.ts:4158`), y el API sí acepta `reference` en líneas de efectivo (`sales.ts:4263`). Una cajera con el PIN de un gerente puede mandar una referencia cualquiera. Ese efectivo desaparece entonces del renglón del cuadre (`cash.ts:586`) y del aviso (`notifications.ts:671`); solo queda en la bitácora. **Arreglo:** poner siempre la marca en el efectivo de la dueña (o detectarlo por `method=cash`, sin caja y `entryType=installment`), con prueba.
+2. **Corregir, bajo.** `ownerReceived` (`cash.ts:579-607`) filtra por sucursal y horario, no por caja. Con dos cajas abiertas a la vez, el mismo cobro sale en los dos cuadres impresos. Es solo informativo; ChatGPT PC ya lo había avisado. **Arreglo:** atarlo a la cajera de la sesión (la bitácora `credit_collection` ya trae `ownerApprovedBy` y los `paymentId`), con prueba de dos cajas.
+- Bien: el PIN de gerente se busca solo en la sucursal y empresa de quien cobra y tiene límite de intentos (`security.ts:85-106`). No hay fuga entre empresas.
+- **Quién lo arregla:** el código nació en `nexora-cloud` (C-02), así que lo corrige Claude ahí, y ChatGPT PC lo recibe al mezclar. **ChatGPT PC: no lo arregles por tu cuenta**, para no chocar en la próxima mezcla.
+
+**PC-13 (`04d4d96`): aprobado, con una corrección.**
+- Bien: el límite de 20 números y el de 15 días son exactos, la fecha se calcula en la zona de la empresa, hay RLS y bloqueo por empresa, y no emite ni consume NCF.
+- **Corregir, medio.** `reports.ts:314`: el tablero (`reports:read`) devuelve las 6 últimas alertas sin filtrar por tipo, así que un gerente ve las alertas NCF que `alerts.ts:882/908` le oculta. Ahí también se cuela `sale_void_request`, que ya venía de antes. **Arreglo:** el mismo `notIn` cuando el usuario no tiene `*`, con prueba.
+- **Corregir, bajo.** Si la zona horaria de la empresa es inválida, el motor no genera eventos NCF y `resolveStale` cierra solo las alertas abiertas (`alerts.ts:~453-470`), así que los avisos se pierden sin decir nada. **Arreglo:** no resolver alertas `ncf_sequence` en ese caso.
+- **Para la contadora:** `ncf-sequences.ts:110-113` exime de vencimiento solo B02, B04 y B12. Confirmar si E32 y E34 también van sin fecha.
+
+**PC-10, «sin marca de la tienda»: la prueba existe, pero no cumple el plan. Corregir.**
+- `tests/product-branding.test.ts` revisa 6 archivos fijos. No mira `App.tsx`, `POS.tsx`, `Tienda.tsx`, `notifications.ts` (correos y avisos), `invoice.ts`, `incentives.ts`, `reports.ts`, `reportes/*`, `apps/web/public/*`, `index.html` ni `README.md`. Una marca nueva en cualquiera de ellos pasa sin que la prueba falle. **Arreglo:** recorrer `apps/web/src/**`, `apps/api/src/**`, `apps/web/public/**` y `README.md`, sin comentarios y con una lista de identificadores internos permitidos.
+- Lo que ya se escapa en modo producto:
+  - `README.md:24` y `:90` dicen «FITSTORE»;
+  - `apps/web/public/logo-grupo-macgen.png` se publica con la web del producto;
+  - `apps/api/prisma/seed.ts` («Shaker FitStore», marca «FitStore», cuentas `@fitstore.demo`) solo se niega con `NODE_ENV=production` (`seed.ts:93`), no con `PRODUCT_TENANCY=required`.
+- Las pantallas de entrada y la cuenta demo están bien protegidas (`App.tsx:341-604`).
+- **Más tarde, bajo:** textos de la tienda visibles en el producto: «la dueña» (`Prints.tsx:317`, `Tienda.tsx:400`, `:1047`, `notifications.ts:698`), «BIENVENIDA» (`App.tsx:512`), «Cajera» y «Vendedora» en reportes. **Ojo:** «Recibido por la dueña» también es un dato guardado (`sales.ts:4158`, `cash.ts:586`, `notifications.ts:671`). Cambiarlo exige una constante que acepte el texto viejo y el nuevo, no solo cambiar la pantalla.
+
+**PC-12 y PC-15: ChatGPT PC tiene razón, falta una decisión de la dueña.** Las preguntas, con opción recomendada, están en `DECISIONES_DUENA_PC12_PC15.md`.
+- Lo más importante: **ninguna venta guarda hoy su NCF.** `Sale.ncf` nunca se escribe; `sales.ts:234` solo lo lee. Sin eso no puede salir el 607 ni el 608.
+- Sí se puede hacer ya, marcado «borrador para la contadora»: la hoja base del IT-1 y un 606.
+- **Para PC-15:** `usd-rate.ts:96-108` actualiza la tasa solo en la empresa `"main"`. En el producto, las demás empresas no reciben la tasa automática.
+
+**Orden para ChatGPT PC:** primero los «corregir» de PC-13 y la prueba completa de PC-10 (con README, logo y semilla). Luego sigue con PC-06, PC-07 y PC-09. PC-12 queda solo con el borrador del IT-1 y el 606 hasta que la dueña responda.
+
 ## 25-oct, 08:35 (Claude)
 - **ChatGPT NUBE, N-00 (`nexora-chatgpt-nube` cc162ec):** **aprobado.**
   - Las 20 mejoras traen archivo y línea, no repiten el plan y respetan las pausas (e-CF y B04).
