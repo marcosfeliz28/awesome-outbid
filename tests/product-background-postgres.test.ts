@@ -12,6 +12,8 @@ import { CreditReminderService } from "../apps/api/src/credit-reminder";
 import { enqueue, NotificationWorker } from "../apps/api/src/notifications";
 import { RetentionWorker } from "../apps/api/src/retention";
 import { tenantScope } from "../apps/api/src/tenant-context";
+import { DailySummaryWorker, collectFacts } from "../apps/api/src/daily-summary";
+import { businessDate } from "../packages/shared/src/index";
 
 const root = resolve(import.meta.dirname, "..");
 const prismaCli = createRequire(join(root, "apps/api/package.json")).resolve(
@@ -47,6 +49,8 @@ it("los trabajos de fondo recorren cada empresa sin mezclar avisos, créditos ni
   });
   const oldUrl = process.env.DATABASE_URL;
   const oldMode = process.env.PRODUCT_TENANCY;
+  const oldResend = process.env.RESEND_API_KEY;
+  const oldAnthropic = process.env.ANTHROPIC_API_KEY;
   let sql: any;
   let db: Database | undefined;
   try {
@@ -104,6 +108,15 @@ it("los trabajos de fondo recorren cada empresa sin mezclar avisos, créditos ni
     process.env.PRODUCT_TENANCY = "required";
     db = new Database();
     await db.$connect();
+    for (const [index, tenantId] of [demo, other].entries()) {
+      const facts = await tenantScope.run({ tenantId }, () => collectFacts(db!, {
+        id: `10000000-0000-4000-8000-00000000002${index}`,
+        name: "Administración QA", email: `cajera-${index}@example.invalid`, role: "admin",
+        permissions: ["*"], branchId: "main", tenantId,
+      }, businessDate()));
+      expect(facts.revenue).toBe(100);
+      expect(facts.invoices).toBe(1);
+    }
     await expect(enqueue(db, "test", "sin-empresa", "main", "No enviar"))
       .rejects.toThrow(/contexto de empresa/);
     // La clave idempotente se puede repetir entre negocios y el INSERT bruto
@@ -138,6 +151,32 @@ it("los trabajos de fondo recorren cada empresa sin mezclar avisos, créditos ni
     const retention = new RetentionWorker(db);
     await retention.run();
     expect((await sql.query(`SELECT "tenantId" FROM "RealtimeEvent" WHERE type='stock'`)).rows).toEqual([]);
+
+    // N-07: correo diario por empresa con PostgreSQL real; ni Anthropic ni
+    // Resend se llaman. La cola de Telegram no toma este tipo de mensaje.
+    await sql.query(`UPDATE "Role" SET name='admin' WHERE name='Administración'`);
+    process.env.RESEND_API_KEY = "resend-falsa";
+    process.env.ANTHROPIC_API_KEY = "anthropic-falsa";
+    const emails: string[] = [];
+    const daily = new DailySummaryWorker(db);
+    const day = new Date("2026-10-25T01:00:00Z");
+    const deps: any = {
+      facts: async (_db: any, actor: any, businessDay: string) => ({ day: businessDay,
+        revenue: actor.tenantId === demo ? 111 : 222, invoices: 1,
+        cashDifference: 0, pendingCod: 0, newAlerts: 0 }),
+      model: async () => "Revisa la jornada.",
+      send: async (settings: any, _subject: string, body: string) => {
+        emails.push(`${settings.to}: ${body}`);
+        return { ok: true };
+      },
+    };
+    await daily.run(day, deps);
+    await daily.run(day, deps);
+    expect(emails).toHaveLength(2);
+    expect(emails.some((email) => email.includes("cajera-0@example.invalid") && email.includes("RD$ 111.00") && !email.includes("RD$ 222.00"))).toBe(true);
+    expect(emails.some((email) => email.includes("cajera-1@example.invalid") && email.includes("RD$ 222.00") && !email.includes("RD$ 111.00"))).toBe(true);
+    const dailyRows = await sql.query(`SELECT "tenantId",status FROM "NotificationOutbox" WHERE "eventType"='ai_daily_email' ORDER BY "tenantId"`);
+    expect(dailyRows.rows).toEqual([{ tenantId: demo, status: "sent" }, { tenantId: other, status: "sent" }]);
   } finally {
     await db?.$disconnect().catch(() => undefined);
     await sql?.end().catch(() => undefined);
@@ -145,6 +184,10 @@ it("los trabajos de fondo recorren cada empresa sin mezclar avisos, créditos ni
     else process.env.DATABASE_URL = oldUrl;
     if (oldMode === undefined) delete process.env.PRODUCT_TENANCY;
     else process.env.PRODUCT_TENANCY = oldMode;
+    if (oldResend === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = oldResend;
+    if (oldAnthropic === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = oldAnthropic;
     await postgres.stop().catch(() => undefined);
     await rm(dataDir, { recursive: true, force: true }).catch(() => undefined);
   }

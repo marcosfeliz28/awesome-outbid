@@ -21,6 +21,7 @@ import { TenantLifecycleService, TenantLifecycleWorker } from "./tenant-lifecycl
 import { TenantLifecycleController } from "./tenant-lifecycle-controller";
 import { ProductBillingController } from "./product-billing";
 import { AssistantController } from "./assistant";
+import { DailySummaryWorker } from "./daily-summary";
 import { SupportAccessController, SupportAccessWorker } from "./support-access";
 import { TenantExportController } from "./tenant-export";
 import { CatalogController } from "./catalog";
@@ -126,6 +127,7 @@ export function createAppModule(secret: string) {
       RequestRateLimitService,
       ...(product ? [RegistrationService] : []),
       ...(product ? [SupportAccessWorker] : []),
+      ...(product ? [DailySummaryWorker] : []),
       // Guard se inyecta también en modo tienda, pero nunca consulta el ciclo.
       TenantLifecycleService,
       ...(product ? [TenantLifecycleWorker] : []),
