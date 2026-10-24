@@ -1,8 +1,7 @@
 # Producto Nexora, infraestructura independiente. NO sincronizar sin revisión
-# de Claude y sin aprovisionar el rol de ejecución RLS de la base nueva.
-# ANTES del primer preDeployCommand, un administrador de nexora-saas-db debe
-# ejecutar scripts/producto-bootstrap.sql y comprobar su SELECT final.
-# No ejecutar el script ni este blueprint contra la base de la tienda.
+# de Claude. El preDeployCommand de la API crea el rol RLS de la base nueva
+# (scripts/producto-bootstrap.sql, idempotente, falla si no queda bien) y
+# después migra. No ejecutar el script ni este blueprint contra la tienda.
 services:
   - type: web
     name: nexora-saas-web
@@ -34,7 +33,7 @@ services:
     dockerContext: .
     dockerfilePath: ./deploy/render/Dockerfile.api
     autoDeployTrigger: off
-    preDeployCommand: node deploy/render/with-cloud-env.mjs node apps/api/node_modules/prisma/build/index.js migrate deploy --schema apps/api/prisma/schema.prisma
+    preDeployCommand: sh -c 'node deploy/render/with-cloud-env.mjs node apps/api/node_modules/prisma/build/index.js db execute --file scripts/producto-bootstrap.sql --schema apps/api/prisma/schema.prisma && node deploy/render/with-cloud-env.mjs node apps/api/node_modules/prisma/build/index.js migrate deploy --schema apps/api/prisma/schema.prisma'
     envVars:
       - key: NODE_ENV
         value: production
@@ -44,6 +43,9 @@ services:
         value: "false"
       - key: PRODUCT_TENANCY
         value: required
+      # Piloto: registro público cerrado (solo "enabled" lo abre).
+      - key: PRODUCT_PUBLIC_REGISTRATION
+        value: disabled
       - key: RENDER_DATABASE_URL
         fromDatabase:
           name: nexora-saas-db

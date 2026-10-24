@@ -44,25 +44,23 @@ wait_status() {
 }
 
 docker network create "$net" >/dev/null
-echo "1) PostgreSQL 17 desechable para Nexora SaaS"
+echo "1) PostgreSQL 17 desechable; dueño SIN superusuario, como en Render"
 docker run -d --name "$db" --network "$net" --network-alias nexora-saas-db \
-  -e POSTGRES_USER=nexora_saas_migrator -e POSTGRES_PASSWORD="$pg_password" \
-  -e POSTGRES_DB=nexora_saas "$PG_IMAGE" \
+  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD="$pg_password" \
+  "$PG_IMAGE" \
   -c ssl=on -c ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem \
   -c ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key >/dev/null
 for _ in $(seq 1 60); do
-  docker exec "$db" pg_isready -U nexora_saas_migrator -d nexora_saas -h 127.0.0.1 \
-    >/dev/null 2>&1 && break
+  docker exec "$db" pg_isready -U postgres -h 127.0.0.1 >/dev/null 2>&1 && break
   sleep 1
 done
-docker exec "$db" pg_isready -U nexora_saas_migrator -d nexora_saas -h 127.0.0.1 \
-  >/dev/null || fail "PostgreSQL no arrancó"
+docker exec "$db" pg_isready -U postgres -h 127.0.0.1 >/dev/null || fail "PostgreSQL no arrancó"
 
-echo "2) Rol de producto antes de migrar: script exacto e idempotente"
-for _ in 1 2; do
-  docker exec -i "$db" psql -X -v ON_ERROR_STOP=1 -U nexora_saas_migrator -d nexora_saas \
-    < scripts/producto-bootstrap.sql >/dev/null
-done
+echo "2) Dueño nexora_saas_migrator con LOGIN CREATEROLE, sin SUPERUSER"
+docker exec -i "$db" psql -X -q -v ON_ERROR_STOP=1 -U postgres -v pw="$pg_password" <<'SQL'
+CREATE ROLE nexora_saas_migrator LOGIN CREATEROLE PASSWORD :'pw';
+CREATE DATABASE nexora_saas OWNER nexora_saas_migrator;
+SQL
 
 echo "3) Web antes que API: disponibilidad y error claro"
 docker run -d --name "$web" --network "$net" -p "127.0.0.1:${WEB_PORT}:10000" \
@@ -75,9 +73,10 @@ wait_status "$WEB_URL/healthz" 204 60
 echo "4) Predeploy exacto de render.producto.yaml"
 predeploy=$(sed -n 's/^ *preDeployCommand: *//p' render.producto.yaml)
 [ -n "$predeploy" ] || fail "render.producto.yaml no tiene preDeployCommand"
-# shellcheck disable=SC2086 -- la orden del blueprint se divide a propósito.
+# La orden del blueprint se divide con comillas de shell (sh -c '...').
+eval "set -- $predeploy"
 docker run --rm --network "$net" -e RENDER_DATABASE_URL="$database_url" \
-  "$API_IMAGE" $predeploy
+  "$API_IMAGE" "$@"
 
 echo "5) API con aislamiento obligatorio y comprobación a través de la web"
 docker run -d --name "$api" --network "$net" --network-alias nexora-saas-api \
@@ -90,7 +89,7 @@ wait_status "$WEB_URL/api/products" 400 10
 
 echo "6) Comprobación SQL: rol sin LOGIN, RLS y claves por empresa"
 docker exec "$db" psql -X -v ON_ERROR_STOP=1 -U nexora_saas_migrator -d nexora_saas \
-  -Atqc "SELECT CASE WHEN NOT r.rolcanlogin AND pg_has_role('nexora_saas_migrator', r.oid, 'MEMBER') THEN 'ok' ELSE 'fail' END FROM pg_roles r WHERE r.rolname='nexora_tenant_runtime'" \
+  -Atqc "SELECT CASE WHEN NOT r.rolcanlogin AND pg_has_role('nexora_saas_migrator', r.oid, 'SET') AND NOT m.rolsuper THEN 'ok' ELSE 'fail' END FROM pg_roles r, pg_roles m WHERE r.rolname='nexora_tenant_runtime' AND m.rolname='nexora_saas_migrator'" \
   | grep -qx ok || fail "rol de ejecución RLS ausente"
 docker exec "$db" psql -X -v ON_ERROR_STOP=1 -U nexora_saas_migrator -d nexora_saas \
   -Atqc "SELECT count(*) FROM pg_tables WHERE schemaname='public' AND tablename IN ('Sale','User','Variant','Tenant') AND rowsecurity" \
@@ -99,9 +98,8 @@ docker exec "$db" psql -X -v ON_ERROR_STOP=1 -U nexora_saas_migrator -d nexora_s
   -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND indexname IN ('Sale_tenantId_number_key','User_tenantId_email_key','Variant_tenantId_sku_ci_key','Counter_pkey')" \
   | grep -qx 4 || fail "faltan índices/secuencias por empresa"
 
-echo "7) Migración idempotente"
-# shellcheck disable=SC2086
+echo "7) Predeploy idempotente (bootstrap + migración otra vez)"
 docker run --rm --network "$net" -e RENDER_DATABASE_URL="$database_url" \
-  "$API_IMAGE" $predeploy | grep -q "No pending migrations to apply" \
+  "$API_IMAGE" "$@" | grep -q "No pending migrations to apply" \
   || fail "migrate deploy no quedó sin pendientes"
 echo "Prueba de humo del producto: correcta."
