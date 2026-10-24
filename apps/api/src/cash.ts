@@ -614,6 +614,52 @@ const CLOSED_SESSIONS_LIMIT = 100;
 @Controller("cash-sessions")
 export class CashController {
   constructor(@Inject(Database) private db: Database) {}
+  @Post("drawer-open/automatic")
+  @Permit("sale:write")
+  async automaticDrawerOpen(
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const { saleId } = parse(z.object({ saleId: uuid }), body);
+    return this.db.$transaction(async (tx) => {
+      // Una misma venta sólo puede producir un pulso automático, incluso si
+      // la pantalla reintenta o dos llamadas llegan al mismo tiempo.
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`drawer-auto:${actor.tenantId}:${saleId}`}))::text AS locked`;
+      const exists = await tx.sale.findFirst({
+        where: {
+          id: saleId,
+          status: "completed",
+          cashSession: { branchId: actor.branchId, userId: actor.id },
+          payments: {
+            some: { method: "cash", amount: { gt: 0 }, status: { not: "rejected" } },
+          },
+        },
+        select: { id: true },
+      });
+      if (!exists)
+        bad("La venta no pertenece a esta caja o no recibió efectivo; la gaveta no se abrirá.");
+      const previous = await tx.auditLog.findFirst({
+        where: {
+          userId: actor.id,
+          action: "cash_drawer_open_auto",
+          entity: "sale",
+          entityId: saleId,
+        },
+        select: { id: true },
+      });
+      if (previous) return { auditId: previous.id, open: false };
+      const row = await audit(
+        tx,
+        actor,
+        "cash_drawer_open_auto",
+        "sale",
+        saleId,
+        undefined,
+        { source: "desktop", automatic: true },
+      );
+      return { auditId: row.id, open: true };
+    });
+  }
   @Post("drawer-open")
   @Permit("cash:drawer")
   async drawerOpen(

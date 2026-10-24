@@ -2234,9 +2234,8 @@ function Checkout({
         cashPaid &&
         confirmedOnline &&
         isNativeDesktop() &&
-        can(user!.permissions, "cash:drawer") &&
         token
-          ? { accessToken: token, saleId: sale.id }
+          ? { accessToken: token, saleId: sale.id, automatic: true as const }
           : undefined;
       if (config?.autoPrintReceipt) printSoon(drawerAuthorization);
       else if (drawerAuthorization)

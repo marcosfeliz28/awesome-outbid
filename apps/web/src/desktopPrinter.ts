@@ -8,6 +8,8 @@ export type DrawerAuthorization = {
   accessToken: string;
   saleId?: string;
   movementId?: string;
+  /** La venta acaba de cobrarse; no es una apertura manual de gerencia. */
+  automatic?: boolean;
 };
 let drawerOnNextPrint: DrawerAuthorization | null = null;
 let testInvoke: Invoke | null = null;
@@ -51,12 +53,31 @@ export function takeDrawerAuthorizationForNextPrint() {
   return authorization;
 }
 
-export async function nativePrintCurrentSheet(): Promise<void> {
-  const drawer = takeDrawerAuthorizationForNextPrint();
+export async function nativePrintThermal(
+  text: string,
+  columns: 32 | 48,
+  drawer: DrawerAuthorization | null = takeDrawerAuthorizationForNextPrint(),
+): Promise<void> {
   const call = invoke();
   if (!call) throw new Error("Esta función solo está disponible en la app de escritorio.");
   const name = selectedPrinter();
   if (!name) throw new Error("Elige la impresora térmica en el menú de la app.");
+  // El ticket sale primero y sin ningún pulso de gaveta. Sólo después se pide
+  // a la API que registre/autorice la apertura. Si esa API falla, este ticket
+  // ya quedó impreso y el segundo comando nunca llega a abrir la gaveta.
+  await call("print_thermal", { printerName: name, text, columns });
+  if (drawer)
+    await call("open_cash_drawer", {
+      printerName: name,
+      accessToken: drawer.accessToken,
+      saleId: drawer.saleId ?? null,
+      movementId: drawer.movementId ?? null,
+      automatic: drawer.automatic === true,
+    });
+}
+
+export async function nativePrintCurrentSheet(): Promise<void> {
+  const drawer = takeDrawerAuthorizationForNextPrint();
   const sheet = document.querySelector<HTMLElement>(".thermal-print");
   if (!sheet) throw new Error("No hay un ticket térmico abierto para imprimir.");
   // La hoja está oculta fuera de @media print. Leer innerText directamente
@@ -67,14 +88,11 @@ export async function nativePrintCurrentSheet(): Promise<void> {
   let text: string;
   try { text = prepareThermalText(preview.innerText); }
   finally { preview.remove(); }
-  await call("print_thermal", {
-    printerName: name,
+  await nativePrintThermal(
     text,
-    columns: sheet.classList.contains("w58") ? 32 : 48,
-    drawerAccessToken: drawer?.accessToken ?? null,
-    drawerSaleId: drawer?.saleId ?? null,
-    drawerMovementId: drawer?.movementId ?? null,
-  });
+    sheet.classList.contains("w58") ? 32 : 48,
+    drawer,
+  );
 }
 
 export async function nativePrintTest(): Promise<void> {
@@ -82,7 +100,7 @@ export async function nativePrintTest(): Promise<void> {
   if (!call) throw new Error("Esta función solo está disponible en la app de escritorio.");
   const name = selectedPrinter();
   if (!name) throw new Error("Elige la impresora térmica en el menú de la app.");
-  await call("print_thermal", { printerName: name, text: "NEXORA POS\nPrueba de impresora - 80 mm\nSin venta ni comprobante fiscal", columns: 48, openDrawer: false });
+  await call("print_thermal", { printerName: name, text: "NEXORA POS\nPrueba de impresora - 80 mm\nSin venta ni comprobante fiscal", columns: 48 });
 }
 
 export async function nativeOpenDrawer(authorization: DrawerAuthorization): Promise<void> {
@@ -95,5 +113,6 @@ export async function nativeOpenDrawer(authorization: DrawerAuthorization): Prom
     accessToken: authorization.accessToken,
     saleId: authorization.saleId ?? null,
     movementId: authorization.movementId ?? null,
+    automatic: false,
   });
 }

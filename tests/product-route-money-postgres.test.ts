@@ -151,6 +151,7 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     const hiddenResourceMessages: Record<string, string> = {
       "PATCH sales/:id/courier": "Venta no encontrada.",
       "POST courier/payouts": "Una factura no tiene un envío pendiente en esta sucursal.",
+      "POST cash-sessions/drawer-open/automatic": "La venta no pertenece a esta caja o no recibió efectivo; la gaveta no se abrirá.",
       "POST cash-sessions/drawer-open": "La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.",
     };
     const expectForeignDenied = (route: string, response: any) => {
@@ -185,6 +186,22 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     expect((await sql.query(`SELECT "tenantId" FROM "Sale" WHERE id=$1`, [ownSale.body.id])).rows)
       .toEqual([{ tenantId: tenantB }]);
 
+    const foreignAutomaticDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open/automatic").send({ saleId: ownSale.body.id }),
+      a,
+    );
+    expectForeignDenied("POST cash-sessions/drawer-open/automatic", foreignAutomaticDrawer);
+    const ownAutomaticDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open/automatic").send({ saleId: ownSale.body.id }),
+    );
+    expect(ownAutomaticDrawer.status, JSON.stringify(ownAutomaticDrawer.body)).toBe(201);
+    expect(ownAutomaticDrawer.body.open).toBe(true);
+    const repeatedAutomaticDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open/automatic").send({ saleId: ownSale.body.id }),
+    );
+    expect(repeatedAutomaticDrawer.status, JSON.stringify(repeatedAutomaticDrawer.body)).toBe(201);
+    expect(repeatedAutomaticDrawer.body.open).toBe(false);
+
     const foreignDrawer = await send(
       http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id }),
       a,
@@ -197,11 +214,12 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     expect(
       (
         await sql.query(
-          `SELECT action,"entityId","tenantId" FROM "AuditLog" WHERE action='cash_drawer_open'`,
+          `SELECT action,"entityId","tenantId" FROM "AuditLog" WHERE action IN ('cash_drawer_open','cash_drawer_open_auto') ORDER BY action`,
         )
       ).rows,
     ).toEqual([
       { action: "cash_drawer_open", entityId: ownSale.body.id, tenantId: tenantB },
+      { action: "cash_drawer_open_auto", entityId: ownSale.body.id, tenantId: tenantB },
     ]);
 
     const voidBody = { reason: "Anulación de prueba válida" };

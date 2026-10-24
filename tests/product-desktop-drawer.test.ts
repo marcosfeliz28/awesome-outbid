@@ -15,6 +15,14 @@ const actor: Actor = {
   terminalId: "desktop-1",
   ip: "127.0.0.1",
 };
+const seller: Actor = {
+  ...actor,
+  id: "11111111-1111-4111-8111-111111111112",
+  name: "Cajera",
+  email: "cajera@example.invalid",
+  role: "seller",
+  permissions: permissions.seller,
+};
 
 describe("PC-16 · apertura auditada de gaveta", () => {
   it("una cajera no recibe el permiso y la pantalla oculta la acción", () => {
@@ -23,6 +31,65 @@ describe("PC-16 · apertura auditada de gaveta", () => {
     const source = readFileSync("apps/web/src/DesktopPrinterControls.tsx", "utf8");
     expect(source).toContain('can(user?.permissions ?? [], "cash:drawer")');
     expect(Reflect.getMetadata("permission", CashController.prototype.drawerOpen)).toBe("cash:drawer");
+    expect(Reflect.getMetadata("permission", CashController.prototype.automaticDrawerOpen)).toBe("sale:write");
+    const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
+    const automaticBlock = pos.slice(
+      pos.indexOf("const drawerAuthorization"),
+      pos.indexOf("if (config?.autoPrintReceipt)"),
+    );
+    expect(automaticBlock).toContain("automatic: true");
+    expect(automaticBlock).not.toContain('"cash:drawer"');
+  });
+
+  it("la venta en efectivo de la cajera autoriza una sola apertura automática y la deja auditada", async () => {
+    let existingAudit: any = null;
+    const auditLog = {
+      findFirst: vi.fn(async () => existingAudit),
+      create: vi.fn(async ({ data }) => {
+        existingAudit = { id: "33333333-3333-4333-8333-333333333334", ...data };
+        return existingAudit;
+      }),
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: "" }]),
+      sale: { findFirst: vi.fn().mockResolvedValue({ id: "44444444-4444-4444-8444-444444444445" }) },
+      cashMovement: { findFirst: vi.fn() },
+      auditLog,
+    } as any;
+    const controller = new CashController({
+      $transaction: (work: (client: any) => unknown) => work(tx),
+    } as any);
+
+    const first = await controller.automaticDrawerOpen(
+      { saleId: "44444444-4444-4444-8444-444444444445" },
+      seller,
+    );
+    const repeated = await controller.automaticDrawerOpen(
+      { saleId: "44444444-4444-4444-8444-444444444445" },
+      seller,
+    );
+
+    expect(first).toEqual({
+      auditId: "33333333-3333-4333-8333-333333333334",
+      open: true,
+    });
+    expect(repeated).toEqual({
+      auditId: "33333333-3333-4333-8333-333333333334",
+      open: false,
+    });
+    expect(tx.sale.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        cashSession: { branchId: seller.branchId, userId: seller.id },
+        payments: { some: expect.objectContaining({ method: "cash" }) },
+      }),
+    }));
+    expect(auditLog.create).toHaveBeenCalledTimes(1);
+    expect(auditLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      userId: seller.id,
+      action: "cash_drawer_open_auto",
+      entity: "sale",
+      entityId: "44444444-4444-4444-8444-444444444445",
+    }) });
   });
 
   it("solo autoriza una venta en efectivo de la sucursal y deja usuario y referencia en bitácora", async () => {

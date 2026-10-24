@@ -20,32 +20,16 @@ async fn print_thermal(
     printer_name: String,
     text: String,
     columns: u8,
-    drawer_access_token: Option<String>,
-    drawer_sale_id: Option<String>,
-    drawer_movement_id: Option<String>,
 ) -> Result<(), String> {
-    let open_drawer = drawer_sale_id.is_some() || drawer_movement_id.is_some();
-    if open_drawer {
-        authorize_drawer(
-            drawer_access_token.as_deref().unwrap_or_default(),
-            drawer_sale_id.as_deref(),
-            drawer_movement_id.as_deref(),
-        )
-        .await?;
-    } else if drawer_access_token.is_some() {
-        return Err("Falta la venta o movimiento que autoriza la gaveta.".into());
-    }
     #[cfg(target_os = "windows")]
     {
-        tauri::async_runtime::spawn_blocking(move || {
-            thermal::print(&printer_name, &text, columns, open_drawer)
-        })
+        tauri::async_runtime::spawn_blocking(move || thermal::print(&printer_name, &text, columns, false))
         .await
         .map_err(|_| "No se pudo completar el trabajo de impresión.".to_string())?
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = (printer_name, text, columns, open_drawer);
+        let _ = (printer_name, text, columns);
         Err("La impresión térmica directa requiere Windows.".into())
     }
 }
@@ -56,8 +40,18 @@ async fn open_cash_drawer(
     access_token: String,
     sale_id: Option<String>,
     movement_id: Option<String>,
+    automatic: bool,
 ) -> Result<(), String> {
-    authorize_drawer(&access_token, sale_id.as_deref(), movement_id.as_deref()).await?;
+    let should_open = authorize_drawer(
+        &access_token,
+        sale_id.as_deref(),
+        movement_id.as_deref(),
+        automatic,
+    )
+    .await?;
+    if !should_open {
+        return Ok(());
+    }
     #[cfg(target_os = "windows")]
     {
         tauri::async_runtime::spawn_blocking(move || thermal::open_drawer(&printer_name))
@@ -86,7 +80,11 @@ async fn authorize_drawer(
     access_token: &str,
     sale_id: Option<&str>,
     movement_id: Option<&str>,
-) -> Result<(), String> {
+    automatic: bool,
+) -> Result<bool, String> {
+    if automatic && (sale_id.is_none() || movement_id.is_some()) {
+        return Err("La apertura automática requiere una venta en efectivo.".into());
+    }
     let reference = match (sale_id, movement_id) {
         (Some(value), None) if valid_reference(value) => format!(r#"{{"saleId":"{value}"}}"#),
         (None, Some(value)) if valid_reference(value) => {
@@ -99,12 +97,17 @@ async fn authorize_drawer(
     }
     let origin = option_env!("NEXORA_PRODUCT_URL")
         .ok_or("Falta el origen aprobado de Nexora para autorizar la gaveta.")?;
+    let route = if automatic {
+        "/api/cash-sessions/drawer-open/automatic"
+    } else {
+        "/api/cash-sessions/drawer-open"
+    };
     let response = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .timeout(std::time::Duration::from_secs(10))
         .build()
         .map_err(|_| "No se pudo preparar la autorización de la gaveta.")?
-        .post(format!("{origin}/api/cash-sessions/drawer-open"))
+        .post(format!("{origin}{route}"))
         .bearer_auth(access_token)
         .header("content-type", "application/json")
         .body(reference)
@@ -114,7 +117,15 @@ async fn authorize_drawer(
     if !response.status().is_success() {
         return Err("La API rechazó la apertura de la gaveta.".into());
     }
-    Ok(())
+    if automatic {
+        let body = response
+            .text()
+            .await
+            .map_err(|_| "La API no confirmó la apertura de la gaveta.")?;
+        // Fallar cerrado: una respuesta exitosa pero incompleta nunca abre.
+        return Ok(body.contains(r#""open":true"#));
+    }
+    Ok(true)
 }
 
 #[cfg(test)]
