@@ -9,6 +9,7 @@ export default defineConfig({
     include: [
       "tests/product-object-store.test.ts",
       "tests/product-local-license.test.ts",
+      "tests/product-local-license-queue.test.ts",
       "tests/product-local-license-web.test.ts",
       "tests/product-object-portability.test.ts",
       "tests/product-billing-plans.test.ts",

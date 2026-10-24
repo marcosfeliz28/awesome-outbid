@@ -2,8 +2,11 @@ import Dexie, { type Table } from "dexie";
 import { create } from "zustand";
 import type { QueryClient } from "@tanstack/react-query";
 import type { SaleInput } from "@fitstore/shared";
-import { applySyncResults } from "./pendingSales";
-import { requireLocalLicenseWrite as checkLocalLicenseWrite } from "./local-license";
+import { applySyncResults, type SyncResultItem } from "./pendingSales";
+import {
+  requireLocalLicenseWrite as checkLocalLicenseWrite,
+  sendLicenseAwareBatches,
+} from "./local-license";
 import { businessOperationName, traceBusinessOperation } from "./monitoring";
 
 export type User = {
@@ -343,6 +346,7 @@ export async function api<T = any>(
       // de permiso (403) de una caída de red (managementMessages.ts).
       throw Object.assign(new Error(result.message), {
         status: response.status,
+        reason: typeof result.reason === "string" ? result.reason : undefined,
       });
     }
     return readJson(response);
@@ -533,17 +537,23 @@ export async function syncSales() {
   if (!pending.length) return { synced: 0, conflicts: 0, retry: 0 };
   const total = { synced: 0, conflicts: 0, retry: 0 };
   for (let i = 0; i < pending.length; i += 100) {
-    const result = await post("/sales/sync", {
-      sales: pending.slice(i, i + 100).map((s) => s.input),
+    const partRows = pending.slice(i, i + 100);
+    const isolated = await sendLicenseAwareBatches(partRows, async (rows) => {
+      const result = await post<{ results: SyncResultItem[] }>("/sales/sync", {
+        sales: rows.map((s) => s.input),
+      });
+      return result.results;
     });
     // N-M3: sólo «conflict» pide revisión; «retry» la deja pendiente.
-    const part = await applySyncResults(result.results, {
+    const part = await applySyncResults(isolated.accepted, {
       deleteLocal: (id) => localDB.sales.delete(id),
       markConflict: (id, message) =>
         localDB.sales.update(id, { status: "conflict", message }),
     });
+    for (const { row, message } of isolated.rejected)
+      await localDB.sales.update(row.id, { status: "conflict", message });
     total.synced += part.synced;
-    total.conflicts += part.conflicts;
+    total.conflicts += part.conflicts + isolated.rejected.length;
     total.retry += part.retry;
   }
   return total;
