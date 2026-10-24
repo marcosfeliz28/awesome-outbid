@@ -128,5 +128,5 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 - Dudas: Redken All Soft «Shampoo» vs Conditioner (1538); P.Louise «0-100 Real» y Primer Purple Cream sin cantidad; ¿hay otra página antes de «Super Stay Full Coverage 45»?; nombre del vaso 1963 («B…o» térmico).
 
 ## Caja de Wendy del 23-oct: −3,500
-- FS-0000225 (Lisbeht Méndez, Faja chaleco M 3,500) se registró en efectivo pero es CONTRAENTREGA con Addison; el efectivo no se ha entregado. Pedido a la sesión de software: función «corregir método de pago» (sin anular). Cuando esté, pasar FS-225 a contraentrega (vendedora sigue siendo Wendy) y cerrarla cuando Addison entregue.
+- ✔ FS-225 corregida 24-oct a contraentrega (Addison), pendiente 3,500; caja de Wendy en 0. Cerrarla cuando Addison entregue el efectivo.
 - Transferencias de Wendy sin verificar: FS-227 2,400 y FS-228 6,500.
