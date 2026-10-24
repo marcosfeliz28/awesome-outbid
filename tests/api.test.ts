@@ -12358,7 +12358,7 @@ describe("SEC-05: datos personales del cliente según el rol (Ley 172-13)", () =
     const raw = Buffer.from(await r.arrayBuffer()).toString("latin1");
     const { inflateSync } = await import("node:zlib");
     const text: string[] = [];
-    for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+    for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)\nendstream/g)) {
       let content = Buffer.from(m[1], "latin1");
       try {
         content = inflateSync(content);

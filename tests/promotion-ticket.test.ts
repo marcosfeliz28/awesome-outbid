@@ -19,7 +19,7 @@ const { renderToStaticMarkup } = webRequire(
 function pdfText(pdf: Buffer) {
   const raw = pdf.toString("latin1");
   const text: string[] = [];
-  for (const match of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+  for (const match of raw.matchAll(/stream\r?\n([\s\S]*?)\nendstream/g)) {
     const dictionary = raw.slice(Math.max(0, match.index! - 250), match.index);
     let content = Buffer.from(match[1], "latin1");
     if (dictionary.includes("/FlateDecode")) {
