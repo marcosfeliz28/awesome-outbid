@@ -16,10 +16,11 @@ describe("N23 · fechas por empresa", () => {
     const tenantId = "00000000-0000-0000-0000-000000000023";
     const db: any = {
       settings: { findUniqueOrThrow: async () => ({ data: { name: "Casa" } }) },
-      tenant: { findUnique: async ({ where }: any) => {
-        expect(where).toEqual({ id: tenantId });
-        return { timeZone: "Pacific/Kiritimati" };
-      } },
+      $queryRaw: async (query: TemplateStringsArray, actualTenant: string) => {
+        expect(query.join("?")).toContain('FROM "Tenant"');
+        expect(actualTenant).toBe(tenantId);
+        return [{ currency: "DOP", timeZone: "Pacific/Kiritimati" }];
+      },
     };
     const controller = new AdminController(db);
     const settings = await tenantScope.run({ tenantId }, () =>

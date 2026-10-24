@@ -859,19 +859,18 @@ export class AdminController {
       this.db.settings.findUniqueOrThrow({
         where: tenantUnique("id", actor.branchId),
       }),
-      this.db.tenant.findUnique({
-        where: { id: currentTenantId() },
-        select: { currency: true, timeZone: true },
-      }),
+      this.db.$queryRaw<{ currency: string; timeZone: string }[]>`
+        SELECT "currency", "timeZone" FROM "Tenant"
+        WHERE id = ${currentTenantId()}::uuid`,
     ]);
     const data = settings.data as Record<string, unknown>;
-    if (!tenant) bad("Empresa no disponible.");
+    if (tenant.length !== 1) bad("Empresa no disponible.");
     // Instalaciones anteriores no tienen esta clave. El cliente y cualquier
     // integración reciben siempre el valor efectivo seguro, no undefined.
     return {
       ...data,
-      tenantLocale: { currency: tenant.currency, timeZone: tenant.timeZone },
-      timeZone: tenant.timeZone ?? BUSINESS_TIME_ZONE,
+      tenantLocale: { currency: tenant[0].currency, timeZone: tenant[0].timeZone },
+      timeZone: tenant[0].timeZone ?? BUSINESS_TIME_ZONE,
       allowOfflineSales: data.allowOfflineSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),
