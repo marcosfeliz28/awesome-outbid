@@ -5,6 +5,7 @@ import { can, formatMoney } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
 import { QueryState } from "./helpers";
 import { courierCsv, expectedCents, type CourierRow } from "./courier-utils";
+import { formatBusinessDateTime } from "./businessDates";
 import "./transferReconciliation.css";
 
 type Pending = { total: string; rows: (CourierRow & { id: string })[] };
@@ -16,15 +17,13 @@ type Payout = {
   total: string;
   sales: { invoice: string; courierName: string; fee: string }[];
 };
-const dateText = (date: string) =>
-  new Date(date).toLocaleString("es-DO", {
-    timeZone: "America/Santo_Domingo",
-    dateStyle: "short",
-    timeStyle: "short",
-  });
-
 export function CourierPayouts() {
   const user = useStore((state) => state.user)!;
+  const settings = useQuery<{ timeZone?: string }>({
+    queryKey: ["settings", user.branchId],
+    queryFn: () => api("/settings"),
+  });
+  const dateText = (date: string) => formatBusinessDateTime(date, settings.data?.timeZone);
   const admin = can(user.permissions, "*");
   const client = useQueryClient();
   const [from, setFrom] = useState("");
@@ -74,7 +73,7 @@ export function CourierPayouts() {
     setOperationId(crypto.randomUUID());
   };
   const exportCsv = () => {
-    const blob = new Blob([courierCsv(rows)], {
+    const blob = new Blob([courierCsv(rows, settings.data?.timeZone)], {
       type: "text/csv;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);

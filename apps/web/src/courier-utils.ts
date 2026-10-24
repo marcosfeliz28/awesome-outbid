@@ -1,4 +1,5 @@
 import { amountCents } from "./transfer-reconciliation-utils";
+import { formatBusinessDateTime } from "./businessDates";
 
 export const courierPresets = [100, 250, 300, 400, 450] as const;
 
@@ -35,15 +36,16 @@ export type CourierRow = {
   courierName: string;
   courierFee: string;
 };
-export function courierCsv(rows: CourierRow[]) {
+export function courierCsv(rows: CourierRow[], timeZone?: string) {
   const header = ["Fecha", "Factura", "Cliente", "Mensajero", "Envío RD$"];
   return (
     "\uFEFF" +
     [
       header,
       ...rows.map((row) => [
-        new Date(row.date).toLocaleString("es-DO", {
-          timeZone: "America/Santo_Domingo",
+        formatBusinessDateTime(row.date, timeZone, {
+          day: "2-digit", month: "2-digit", year: "numeric",
+          hour: "numeric", minute: "2-digit", second: "2-digit",
         }),
         row.invoice,
         row.customer ?? "",

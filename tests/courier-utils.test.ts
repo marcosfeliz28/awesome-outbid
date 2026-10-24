@@ -28,4 +28,12 @@ describe("Envíos del mensajero", () => {
     ]);
     expect(csv).toContain('"\'=1+1"');
   });
+  it("exporta la fecha del mensajero en el día de la empresa", () => {
+    const rows = [{
+      invoice: "FS-2", customer: "Ana", date: "2026-10-25T10:30:00Z",
+      courierName: "Luis", courierFee: "100.00",
+    }];
+    expect(courierCsv(rows, "Pacific/Kiritimati")).toContain("26/10/2026");
+    expect(courierCsv(rows, "America/Santo_Domingo")).toContain("25/10/2026");
+  });
 });

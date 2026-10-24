@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { observeLocalQueue } from "./localQueueObserver";
 import { merchandiseDecision } from "./merchandiseDecision";
+import { formatBusinessDate, formatBusinessDateTime } from "./businessDates";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Camera,
@@ -77,14 +78,6 @@ const EXIT_REASONS = [
 ] as const;
 const reasonLabel = (value: string) =>
   EXIT_REASONS.find(([v]) => v === value)?.[1] ?? value;
-const when = (value: string | number) =>
-  new Date(value).toLocaleString("es-DO", {
-    timeZone: "America/Santo_Domingo",
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 const variantName = (v: CatalogVariant) => {
   const attrs = attrLabel(v.attributes ?? {});
   return attrs === "Única" ? v.product.name : v.product.name + " · " + attrs;
@@ -275,6 +268,15 @@ async function cachedReference(key: string, path: string) {
 
 export function Merchandise() {
   const { user, online } = useStore();
+  const settings = useQuery<{ timeZone?: string }>({
+    queryKey: ["settings", user?.branchId],
+    queryFn: () => api("/settings"),
+    enabled: !!user && online,
+  });
+  const timeZone = settings.data?.timeZone;
+  const when = (value: string | number) => formatBusinessDateTime(value, timeZone, {
+    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+  });
   const client = useQueryClient();
   const seesCost = can(user!.permissions, "profit:read");
   const catalog = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
@@ -1248,10 +1250,7 @@ export function Merchandise() {
                             {lot.lotNumber} · {Number(lot.qty)} u.
                             {lot.expiryDate
                               ? " · vence " +
-                                new Date(lot.expiryDate).toLocaleDateString(
-                                  "es-DO",
-                                  { timeZone: "America/Santo_Domingo" },
-                                )
+                                formatBusinessDate(lot.expiryDate, timeZone)
                               : ""}
                           </option>
                         ))}

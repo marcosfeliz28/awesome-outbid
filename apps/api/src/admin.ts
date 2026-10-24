@@ -43,6 +43,7 @@ import {
   z,
   stockQty,
   moneyAmount,
+  BUSINESS_TIME_ZONE,
   isImageDataUrl,
   LOGO_MAX_BYTES,
   RECEIVABLE_SHIFT_LIMIT,
@@ -869,6 +870,7 @@ export class AdminController {
     return {
       ...data,
       tenantLocale: { currency: tenant[0].currency, timeZone: tenant[0].timeZone },
+      timeZone: tenant[0].timeZone ?? BUSINESS_TIME_ZONE,
       allowOfflineSales: data.allowOfflineSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),

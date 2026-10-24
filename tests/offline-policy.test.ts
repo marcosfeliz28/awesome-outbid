@@ -649,6 +649,7 @@ describe("compatibilidad de ajustes offline", () => {
       auditLog: { create: async () => ({}) },
     };
     const db = {
+      tenant: { findUnique: async () => ({ timeZone: "America/Santo_Domingo" }) },
       settings: {
         findUniqueOrThrow: async () => ({ data: stored }),
       },

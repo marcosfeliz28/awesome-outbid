@@ -11,7 +11,7 @@ import {
 import { createHash } from "node:crypto";
 import { currentTenantId, tenantUnique } from "./tenant-context";
 import { Prisma } from "@prisma/client";
-import { z } from "@fitstore/shared";
+import { BUSINESS_TIME_ZONE, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -41,21 +41,57 @@ const dateInput = z
   .optional();
 const rangeInput = z.object({ from: dateInput, to: dateInput });
 
-function dates(query: Record<string, string>) {
+function checkedUtcDay(day: string): number {
+  const target = Date.parse(`${day}T00:00:00.000Z`);
+  if (!Number.isFinite(target) || new Date(target).toISOString().slice(0, 10) !== day)
+    bad("Fecha inválida.");
+  return target;
+}
+
+function startOfTenantDay(day: string, timeZone: string): Date {
+  const target = checkedUtcDay(day);
+  let formatter: Intl.DateTimeFormat;
+  try {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone, year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+    });
+  } catch {
+    bad("La zona horaria de la empresa no es válida.");
+  }
+  let instant = target;
+  // Resolver la medianoche civil mediante la zona IANA, sin asumir -04:00.
+  // Recalcular cubre también cambios de horario de verano entre días.
+  for (let i = 0; i < 4; i++) {
+    const parts = Object.fromEntries(formatter.formatToParts(new Date(instant))
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)]));
+    const shown = new Date(0);
+    shown.setUTCFullYear(parts.year, parts.month - 1, parts.day);
+    shown.setUTCHours(parts.hour, parts.minute, parts.second, 0);
+    const shownAsUtc = shown.getTime();
+    const correction = target - shownAsUtc;
+    if (correction === 0) return new Date(instant);
+    instant += correction;
+  }
+  bad("No se pudo determinar el inicio del día en la zona de la empresa.");
+}
+
+async function dates(db: Database, query: Record<string, string>) {
   const { from, to } = parse(rangeInput, query);
   if (from && to && from > to)
     bad("La fecha inicial no puede ser posterior a la final.");
-  for (const value of [from, to])
-    if (
-      value &&
-      new Date(value + "T00:00:00-04:00").toLocaleDateString("en-CA", {
-        timeZone: "America/Santo_Domingo",
-      }) !== value
-    )
-      bad("Fecha inválida.");
+  if (!from && !to) return {};
+  const tenant = await db.tenant.findUnique({
+    where: { id: currentTenantId() }, select: { timeZone: true },
+  });
+  const timeZone = tenant?.timeZone ?? BUSINESS_TIME_ZONE;
+  const nextDay = to
+    ? new Date(checkedUtcDay(to) + 86_400_000).toISOString().slice(0, 10)
+    : undefined;
   return {
-    ...(from ? { gte: new Date(from + "T00:00:00-04:00") } : {}),
-    ...(to ? { lte: new Date(to + "T23:59:59.999-04:00") } : {}),
+    ...(from ? { gte: startOfTenantDay(from, timeZone) } : {}),
+    ...(nextDay ? { lt: startOfTenantDay(nextDay, timeZone) } : {}),
   };
 }
 
@@ -119,7 +155,7 @@ export class CourierController {
     @Query() query: Record<string, string>,
     @CurrentUser() actor: Actor,
   ) {
-    const createdAt = dates(query);
+    const createdAt = await dates(this.db, query);
     const rows = await this.db.sale.findMany({
       where: {
         branchId: actor.branchId,
@@ -161,7 +197,7 @@ export class CourierController {
     @Query() query: Record<string, string>,
     @CurrentUser() actor: Actor,
   ) {
-    const createdAt = dates(query);
+    const createdAt = await dates(this.db, query);
     const rows = await this.db.courierPayout.findMany({
       where: {
         branchId: actor.branchId,

@@ -26,6 +26,7 @@ export default defineConfig({
       "tests/daily-summary-n07.test.ts",
       "tests/transfer-proof-review-n08.test.ts",
       "tests/realtime-catalog-race.test.ts",
+      "tests/business-dates-n23.test.ts",
       "tests/cash-close-assistant.test.ts",
       "tests/payment-reminder-n10.test.ts",
       "tests/purchase-draft-n11.test.ts",
