@@ -7,7 +7,7 @@ import { drawSaleReceipt } from "../apps/api/src/receipt-pdf";
 
 const outputDir = fileURLToPath(new URL("../docs/capturas/", import.meta.url));
 const logo = readFileSync(
-  new URL("../apps/web/public/logo-grupo-macgen.png", import.meta.url),
+  new URL("../docs/tienda/logo-grupo-macgen.png", import.meta.url),
 );
 const business = {
   name: "Grupo Macgen",

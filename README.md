@@ -21,7 +21,7 @@ En una terminal, inicia PostgreSQL local sin Docker:
 pnpm db:local
 ```
 
-Escucha en `127.0.0.1:5434`, en UTC, y guarda los datos en `.local-db/`; `FITSTORE_DB_PORT` y `FITSTORE_DB_DIR` los cambian (ajusta entonces `DATABASE_URL`). Se detiene con Ctrl+C o, desde otra terminal, con `node scripts/local-db.mjs --detener`.
+Escucha en `127.0.0.1:5434`, en UTC, y guarda los datos en `.local-db/`; dos variables de entorno, descritas al inicio de `scripts/local-db.mjs`, cambian puerto y carpeta (ajusta entonces `DATABASE_URL`). Se detiene con Ctrl+C o, desde otra terminal, con `node scripts/local-db.mjs --detener`.
 
 En otra terminal:
 
@@ -57,7 +57,7 @@ pnpm exec playwright install chromium
 pnpm verify
 ```
 
-`check`: TypeScript, ESLint, pruebas de fórmulas y compilación. `verify`: pruebas de API y navegador contra la API de `FITSTORE_API_URL` (por defecto `http://127.0.0.1:3001/api`, o el puerto de `PORT`); si no responde, inicia PostgreSQL local y la API, y los detiene al terminar. Playwright inicia la PWA compilada en preview (4173) para verificar recargas offline; ejecuta `pnpm check` antes. `FITSTORE_WEB_URL` permite usar otro servidor de la PWA compilada. `FITSTORE_WEB_PORT` cambia el puerto de ese preview cuando hay varias copias del proyecto probándose a la vez (con un puerto propio no se reutiliza un servidor ya abierto). Las capturas de las pruebas se guardan en `test-results/capturas/`; sólo con `FITSTORE_ACTUALIZAR_CAPTURAS=1` se reescriben las imágenes de `docs/` (usa una base nueva). Los resultados y trazas aparecen en `test-results/` y `playwright-report/`. Los registros de la entrega están en `docs/validacion/`.
+`check`: TypeScript, ESLint, pruebas de fórmulas y compilación. `verify`: pruebas de API y navegador contra la API indicada por una variable de entorno (por defecto `http://127.0.0.1:3001/api`, o el puerto de `PORT`); si no responde, inicia PostgreSQL local y la API, y los detiene al terminar. Playwright inicia la PWA compilada en preview (4173) para verificar recargas offline; ejecuta `pnpm check` antes. Otras variables de entorno (ver `playwright.config.ts` y `scripts/`) permiten usar otro servidor de la PWA compilada o cambiar el puerto de ese preview cuando hay varias copias del proyecto probándose a la vez (con un puerto propio no se reutiliza un servidor ya abierto). Las capturas de las pruebas se guardan en `test-results/capturas/`; sólo con la variable de entorno de actualización de capturas se reescriben las imágenes de `docs/` (usa una base nueva). Los resultados y trazas aparecen en `test-results/` y `playwright-report/`. Los registros de la entrega están en `docs/validacion/`.
 
 Para regenerar el ZIP fuente: `pnpm package:source`.
 
@@ -87,13 +87,13 @@ deploy            Configuración de Nginx
 
 Consulta [el manual](docs/MANUAL.md), [las decisiones](docs/DECISIONES.md) y [el despliegue](docs/DESPLIEGUE.md).
 
-La ronda 3 incorpora stock por SSE, Configuración > Equipos, Mercancía móvil/offline e importación de facturas con revisión. Consulta [el manual](docs/MANUAL.md) y [la revisión](docs/REVISION_CLAUDE_RONDA3.md). Para empaquetarla: `node scripts/package.mjs ../fitstore-pos-ronda3.zip`.
+La ronda 3 incorpora stock por SSE, Configuración > Equipos, Mercancía móvil/offline e importación de facturas con revisión. Consulta [el manual](docs/MANUAL.md) y [la revisión](docs/REVISION_CLAUDE_RONDA3.md). Para empaquetarla: `node scripts/package.mjs ../pos-ronda3.zip`.
 
-**Ronda 4 (Claude):** corrige los hallazgos de la auditoría de ChatGPT (compras sin orden, equipos aprobados, lotes) y de la revisión propia, rediseña Mercancía y Equipos y actualiza la lectura de facturas con Claude. Detalle y evidencia en [docs/RONDA4_CLAUDE.md](docs/RONDA4_CLAUDE.md). Para empaquetarla: `node scripts/package.mjs ../fitstore-pos-ronda4.zip`.
+**Ronda 4 (Claude):** corrige los hallazgos de la auditoría de ChatGPT (compras sin orden, equipos aprobados, lotes) y de la revisión propia, rediseña Mercancía y Equipos y actualiza la lectura de facturas con Claude. Detalle y evidencia en [docs/RONDA4_CLAUDE.md](docs/RONDA4_CLAUDE.md). Para empaquetarla: `node scripts/package.mjs ../pos-ronda4.zip`.
 
-**Ronda 6 (Claude):** cierra los 9 hallazgos de la auditoría completa de ChatGPT a la ronda 4 (equipos y compras anteriores, precisión de cantidades, facturas contra orden, tiempo real concurrente, variante única, API compilada y pestañas en celular). Detalle y evidencia en [docs/RONDA6_CLAUDE.md](docs/RONDA6_CLAUDE.md). Para empaquetarla: `node scripts/package.mjs ../fitstore-pos-ronda6.zip`.
+**Ronda 6 (Claude):** cierra los 9 hallazgos de la auditoría completa de ChatGPT a la ronda 4 (equipos y compras anteriores, precisión de cantidades, facturas contra orden, tiempo real concurrente, variante única, API compilada y pestañas en celular). Detalle y evidencia en [docs/RONDA6_CLAUDE.md](docs/RONDA6_CLAUDE.md). Para empaquetarla: `node scripts/package.mjs ../pos-ronda6.zip`.
 
-**Ronda 7 (Claude):** cierra R6-01/02/03 de la auditoría de ChatGPT (combos enteros con consumo y costo exactos, tallas en facturas, recuperación de compras con líneas incompletas), adapta el sistema al inventario real de la tienda (importador del Excel, caja por código + Enter y búsqueda por palabras) y deja el emparejamiento de facturas conservador tras tres revisiones adversariales. Detalle en [docs/RONDA7_CLAUDE.md](docs/RONDA7_CLAUDE.md). Para empaquetarla: `node scripts/package.mjs ../fitstore-pos-ronda7.zip`.
+**Ronda 7 (Claude):** cierra R6-01/02/03 de la auditoría de ChatGPT (combos enteros con consumo y costo exactos, tallas en facturas, recuperación de compras con líneas incompletas), adapta el sistema al inventario real de la tienda (importador del Excel, caja por código + Enter y búsqueda por palabras) y deja el emparejamiento de facturas conservador tras tres revisiones adversariales. Detalle en [docs/RONDA7_CLAUDE.md](docs/RONDA7_CLAUDE.md). Para empaquetarla: `node scripts/package.mjs ../pos-ronda7.zip`.
 
 **Ronda 8 (Claude):** corrige R7-01 a R7-04 de la auditoría de ChatGPT (códigos contra la base, números en texto, controles de categoría y costo del reporte en devoluciones parciales). Detalle en [docs/RONDA8_CLAUDE.md](docs/RONDA8_CLAUDE.md).
 
