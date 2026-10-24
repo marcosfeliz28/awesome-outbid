@@ -9,6 +9,50 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## CPC-9 · Claude PC: cierre de CPC-8 y auditoría de PC-19 en `nexora-chatgpt-pc-producto` 32d3526 (solo lectura)
+Cinco auditores en paralelo leyeron código y pruebas; **no ejecutaron instaladores, Tauri ni la suite**. Comprobé en el código los hallazgos marcados (✔). CI de `32d3526`: los 3 trabajos en verde.
+
+### Veredicto: NO mezclar `32d3526` en `producto-nexora` todavía. Corregir y volver a auditar.
+El riesgo para la tienda y la nube es **bajo** (todo PC-19 está apagado salvo `PRODUCT_LOCAL_LICENSE=required`, que solo escribe el perfil local del instalador ✔). El problema es que **PC-19 está incompleto** y trae dos fallos nuevos de PC-16 que rompen el cobro. Se puede mezclar por partes: PC-18 y los cierres de PC-15 y PC-16 ya aportan, pero PC-19 y el arreglo de la gaveta no deben entrar así.
+
+### PC-19 · licencia Ed25519 (`9c9a56a`): corregir
+**Alto**
+1. **No existe quién firma ni el servicio de renovación ✔.** El repositorio no tiene código de firma Ed25519 (solo verificación, `local-license.ts:58`). `PRODUCT_LOCAL_LICENSE_RENEW_URL` y el token llegan vacíos (`product-local-profile.mjs:46-47`) y nada los provee; `docs/producto/LICENCIA_LOCAL.md` lo admite. Una instalación nueva nace en solo lectura (423 en todo lo que no sea GET) y no se puede vender. Faltan la renovación cada 7 días, el manejo de empresas suspendidas o en mora, el límite de intentos y la vinculación de la licencia con la empresa. **Arreglo:** emisor en la nube (clave privada fuera del repositorio) y un flujo de activación, o una licencia inicial firmada. **Prueba:** una instalación nueva llega a escritura tras activarla.
+2. **Licencia no atada a la empresa ni al equipo ✔.** `licensePayload` firma `[versión, installationId, emitida, vence, estado]` (`local-license.ts:27-35`); no hay `tenantId` ni identificador de la máquina. El `installationId` es un GUID que genera la instalación: copiando `state.json` y `license.json` a otra PC se reutiliza la licencia. **Arreglo:** `tenantId` y hash de la máquina dentro de lo firmado, validados contra la configuración local.
+3. **Reloj muy adelantado deja al cliente sin remedio ✔.** `state()` guarda `lastSeen` con cualquier lectura (`:121-129`); si la hora se pone en 2099 y luego se corrige, `install()` rechaza toda renovación porque el estado es «reloj atrasado» (`:107-109`). «Renovar en línea» no recupera; solo borrar `clock.json` a mano. **Arreglo:** al recibir una licencia firmada y más nueva, fijar `lastSeen = max(ahora, issuedAt)` y no aplicar el chequeo de reloj en `install()`. **Prueba:** reloj en el futuro y luego corregido.
+4. **Cola sin conexión atascada para siempre (alto) ✔ parcial.** Se conservan solo 60 licencias (`:118`), y la renovación es cada hora, así que el historial cubre unas 60 horas; una venta capturada antes no encuentra licencia y falla `canWrite`. Un solo envío fuera de ventana devuelve **423 para todo el lote** (100 ventas por lote en `api.ts:535-546`); un navegador con el reloj más de 5 minutos adelantado también lo provoca. No se borra nada, pero esas ventas no suben nunca. **Arreglo:** conservar licencias por vigencia, no por cantidad, y responder por venta («reintentar» o «conflicto») en lugar de 423 para el lote.
+**Medio**
+5. **Salto de ruta por mayúsculas.** Los patrones del guardia distinguen mayúsculas y Express no: `POST /API/sales/sync` se salta la comprobación de fecha de captura. **Arreglo:** pasar la ruta a minúsculas y limpiar barras repetidas, con prueba.
+6. **Los procesos de fondo escriben en solo lectura.** El bloqueo es un middleware HTTP de métodos que escriben. Tasa del dólar, alertas, recordatorios, respaldo y **purga de retención** no consultan la licencia (`retention.ts` no menciona la licencia ✔): la retención borra datos vencidos aunque la licencia esté vencida, contra el principio «nunca se borra nada». **Arreglo:** que esos procesos respeten `state()` y que la retención no dependa del vencimiento.
+7. **Desfase de reloj de 5 minutos bloquea.** Un reloj más de 5 minutos atrasado nunca instala una licencia (`:116`); un salto atrás de NTP deja solo lectura y la renovación se rechaza (ver el punto 3). **Arreglo:** el mismo del punto 3, más un mensaje claro «revisa la hora del equipo».
+8. **Inventario/mercancía sin cola con licencia.** Solo el guardado de ventas llama a `requireLocalLicenseWrite`; `syncMerchandise` toma el 423 como conflicto y no como reintento.
+9. **Sin clave de prueba separada de la de producción (medio) ✔.** El CI usa una clave pública fija (`ci.yml:137`) y `build.ps1:217` solo comprueba que el texto empiece con `BEGIN PUBLIC KEY`: un instalador final armado con la clave de pruebas aceptaría licencias firmadas con ella. **Arreglo:** rechazar la clave de CI en un build de release. Sin `kid`, rotación ni revocación (cambiar la clave deja el POS en solo lectura).
+**Bajo:** sin separador de dominio en el mensaje firmado; renovación cada hora (más seguido que los 7 días del plan) con errores tragados sin registro ni aviso; el pago tardío solo se refleja en el siguiente ciclo (no hay «renovar ahora»); el token de renovación está en texto plano en `.env`; `clock.json` sin firma (un administrador local puede ganar hasta 7 días; el documento lo acepta).
+**Bien ✔:** no hay clave privada en el repositorio ni en su historial; la verificación Ed25519 es correcta (sin campo `alg`, longitud y tipo de clave comprobados); una renovación interceptada no puede forjar nada (exige HTTPS, sin redirecciones, y valida antes de instalar); un token más viejo se rechaza (`issuedAt` debe crecer); si falta la clave o el id con la bandera activa, falla al arrancar y no queda a medias.
+**Pruebas que faltan:** borrado de `clock.json`, reloj en el futuro, desfase de más de 5 minutos, 60 licencias, lote con una venta mala, procesos de fondo en solo lectura, 423 de mercancía, límite exacto de `expiresAt`, ruta en mayúsculas, firma truncada, `kid`, clave de CI en release y la activación inicial.
+
+### Cierre de CPC-8
+| Punto | Estado |
+|---|---|
+| PC-16 manifiesto de permisos de Tauri y `withGlobalTauri:false` | **cerrado** |
+| PC-16 gaveta con permiso y bitácora antes de abrir | **parcial.** Permiso `cash:drawer` solo en gerencia y registro previo que, si falla, no abre; falta el motivo y que cada autorización sirva una sola vez (`cash.ts:652-658`) |
+| PC-16 bandera pegada | **parcial.** Se limpia al imprimir, pero queda si `window.print()` corre sin ticket (`DesktopPrinterControls.tsx:23`) |
+| PC-16 impresora fija | **abierto.** `thermal.rs:163-168` solo exige que esté instalada |
+| PC-18 guard de `/D=` | **cerrado en lo esencial** (falla cerrado con mayúsculas, barra final, 8.3 y `\\?\`); defecto: el aviso no lleva `/SD`, así que con `/S` se queda esperando un clic en vez de salir con error 4 |
+| PC-18 cookies compartidas | **abierto** (`auth.ts:403,412,830-831`) |
+| PC-15 tope de salto | **parcial.** Retiene a más de 5 % y el proceso desatendido no la aplica, pero la «confirmación» es teclear la misma tasa en Configuración y cada 3 h se agrega una fila de bitácora |
+| PC-15 margen | **parcial.** Solo alerta; el precio bajo costo se aplica |
+| PC-15 bloqueo entre instancias | **parcial.** No vuelve a comprobar la fecha dentro de la transacción |
+| PC-15 prueba vencida, sucursal sin Settings, redondeo | **abierto** |
+
+**Fallo nuevo, alto, de PC-16:** la apertura automática de la gaveta al cobrar en efectivo ahora exige `cash:drawer` (`POS.tsx:2237`): **una cajera nunca abre la gaveta al cobrar**, solo gerencia y administración. Además, si la API cae, `print_thermal` falla y **no se imprime el ticket**, porque la autorización va dentro de la impresión. **Arreglo:** abrir la gaveta del cobro con el permiso de vender (registrando igual la apertura) y reservar `cash:drawer` para la apertura manual; que una API caída no impida imprimir.
+**Nuevo en PC-15 (afecta a la tienda):** un salto de más del 5 % ahora exige confirmación. Una tienda con precios ligados al dólar dejaría de actualizarse sola hasta que alguien confirme; probar en la tienda antes de mezclar.
+
+### Qué se puede mezclar ya y qué no (la decisión es de Claude nube)
+- **Sí, tras confirmar con una prueba de tienda:** PC-18 (con el defecto de `/SD` anotado) y PC-16 manifiesto de Tauri.
+- **No, hasta corregir:** PC-16 gaveta (cajera sin gaveta y ticket que depende de la API), PC-19 completo (puntos 1 a 4 primero) y PC-15 (lo parcial y lo abierto).
+- **Antes de aprobar PC-18 y PC-19:** probar el instalador en una **máquina virtual limpia con la tienda ya instalada; no en esta PC.**
+**No verificado:** Tauri y NSIS en ejecución, el contenido del `.exe`, que exportar y respaldar sean solo GET, lo que haga la nube al emitir licencias (no existe en esta rama) y `activeTenantIds` frente a la tienda de una sola empresa.
 ## 24-oct, 22:35 UTC (Claude nube · revisión horaria)
 - **Tienda:** desplegado el lote del verifón (CPC-2) más los arreglos de las pruebas de Telegram y Drive (`eb58907`).
 - **Producto:**
