@@ -134,6 +134,8 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     expect(pending.status, JSON.stringify(pending.body)).toBe(200);
     expect(pending.body.requests).toContainEqual(expect.objectContaining({ id, tenantName: "negocio-uno", hasProof: true, proofSha256: digest }));
     expect(JSON.stringify(pending.body)).not.toContain("base64");
+    expect(pending.body.requests[0]).not.toHaveProperty("tenantId");
+    expect(pending.body.requests[0]).not.toHaveProperty("proofObjectKey");
     const panelProof = await panel.get(`/api/requests/${id}/proof`).set("Host", "127.0.0.1").set("Authorization", credential);
     expect(panelProof.status).toBe(200);
     expect(panelProof.body).toEqual(png);

@@ -6,6 +6,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { reviewProductBilling } from "./review-product-billing";
+import { tenantObjectStore } from "../src/tenant-object-store";
 
 type PanelOptions = { reviewer: string; token: string };
 const idPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -50,30 +51,47 @@ async function readJson(req: IncomingMessage) {
 
 // Ambas lecturas usan exclusivamente el rol operacional de plataforma.
 async function pendingRequests(db: PrismaClient) {
-  return db.$transaction(async (tx) => {
+  const rows = await db.$transaction(async (tx) => {
     await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_platform_billing");
-    const rows = await tx.$queryRaw<Array<{
-      id: string; tenantName: string; plan: string; amount: string; provider: string;
-      submittedAt: Date | null; createdAt: Date; hasProof: boolean; proofSha256: string | null;
+    return tx.$queryRaw<Array<{
+      id: string; tenantId: string; tenantName: string; plan: string; amount: string; provider: string;
+      submittedAt: Date | null; createdAt: Date; hasLegacyProof: boolean;
+      legacyProofSha256: string | null; proofObjectKey: string | null;
     }>>`
-      SELECT r.id, t.name AS "tenantName", r.plan, r.amount::text, r.provider,
-             r."submittedAt", r."createdAt", r.proof IS NOT NULL AS "hasProof",
-             encode(sha256(r.proof), 'hex') AS "proofSha256"
+      SELECT r.id, r."tenantId", t.name AS "tenantName", r.plan, r.amount::text, r.provider,
+             r."submittedAt", r."createdAt", r.proof IS NOT NULL AS "hasLegacyProof",
+             encode(sha256(r.proof), 'hex') AS "legacyProofSha256", r."proofObjectKey"
       FROM "BillingRequest" r JOIN "Tenant" t ON t.id=r."tenantId"
       WHERE r.status='pending_review'
       ORDER BY r."submittedAt" ASC NULLS LAST, r."createdAt" ASC
       LIMIT 100`;
-    return rows;
   }, { isolationLevel: "ReadCommitted" });
+  // El comprobante nuevo vive fuera de PostgreSQL. No mantengas una transacción
+  // operacional abierta mientras el almacén de objetos responde.
+  return Promise.all(rows.map(async ({ tenantId, proofObjectKey, hasLegacyProof, legacyProofSha256, ...row }) => ({
+    ...row,
+    hasProof: hasLegacyProof || proofObjectKey !== null,
+    proofSha256: proofObjectKey
+      ? createHash("sha256").update(await tenantObjectStore().get(tenantId, proofObjectKey)).digest("hex")
+      : legacyProofSha256,
+  })));
 }
 
 async function proofForReview(db: PrismaClient, id: string) {
-  return db.$transaction(async (tx) => {
+  const row = await db.$transaction(async (tx) => {
     await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_platform_billing");
-    const rows = await tx.$queryRaw<Array<{ proof: Uint8Array | null; proofMime: string | null }>>`
-      SELECT proof, "proofMime" FROM "BillingRequest" WHERE id=${id}::uuid AND status='pending_review'`;
+    const rows = await tx.$queryRaw<Array<{
+      tenantId: string; proof: Uint8Array | null; proofObjectKey: string | null; proofMime: string | null;
+    }>>`
+      SELECT "tenantId", proof, "proofObjectKey", "proofMime"
+      FROM "BillingRequest" WHERE id=${id}::uuid AND status='pending_review'`;
     return rows[0] ?? null;
   }, { isolationLevel: "ReadCommitted" });
+  if (!row) return null;
+  return {
+    proof: row.proofObjectKey ? await tenantObjectStore().get(row.tenantId, row.proofObjectKey) : row.proof,
+    proofMime: row.proofMime,
+  };
 }
 
 const page = `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
