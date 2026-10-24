@@ -29,6 +29,13 @@ async function freePort() {
   return address.port;
 }
 
+const binaryParser = (response: NodeJS.ReadableStream, done: (error: Error | null, body?: Buffer) => void) => {
+  const chunks: Buffer[] = [];
+  response.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+  response.on("end", () => done(null, Buffer.concat(chunks)));
+  response.on("error", done);
+};
+
 /** Puerta de producto: tres negocios inventados usan la API real sobre PostgreSQL. */
 it("tres empresas se registran y trabajan sin compartir catálogo, caja ni ventas; la suspensión conserva lectura", async () => {
   const dir = await mkdtemp(join(tmpdir(), "nexora-pilot-"));
@@ -152,6 +159,14 @@ it("tres empresas se registran y trabajan sin compartir catálogo, caja ni venta
       });
       expect(sale.status, `${slug}: ${JSON.stringify(sale.body)}`).toBe(201);
       expect(Number(sale.body.total)).toBe(20);
+      const dayReport = await http.get("/api/reports/sales?format=xlsx").set("Authorization", token)
+        .buffer(true).parse(binaryParser);
+      expect(dayReport.status, `${slug}: informe de la jornada`).toBe(200);
+      expect((dayReport.body as Buffer).subarray(0, 2).toString()).toBe("PK");
+      const closed = await http.post(`/api/cash-sessions/${cash.body.id}/close`).set("Authorization", token)
+        .send({ countedCash: 120, countedCard: 0, countedTransfer: 0, notes: "Cierre del día piloto" });
+      expect(closed.status, `${slug}: ${JSON.stringify(closed.body)}`).toBe(201);
+      expect((await http.get("/api/cash-sessions").set("Authorization", token)).body[0].closedAt).toBeTruthy();
       expect((await http.get("/api/onboarding").set("Authorization", token)).body.products).toBe(3);
       // Cronómetro del flujo real de API/PG: registro, correo, inicio, tres productos,
       // primera caja y primera venta. No mide la destreza humana en el navegador.
@@ -179,6 +194,10 @@ it("tres empresas se registran y trabajan sin compartir catálogo, caja ni venta
     expect((await http.get("/api/tenant/status").set("Authorization", suspended.token)).body.status).toBe("suspended");
     expect((await http.get("/api/products").set("Authorization", suspended.token)).status).toBe(200);
     expect((await http.get("/api/sales").set("Authorization", suspended.token)).status).toBe(200);
+    const suspendedExport = await http.get("/api/reports/sales?format=xlsx")
+      .set("Authorization", suspended.token).buffer(true).parse(binaryParser);
+    expect(suspendedExport.status, "Una empresa suspendida conserva la exportación de sus datos").toBe(200);
+    expect((suspendedExport.body as Buffer).subarray(0, 2).toString()).toBe("PK");
     expect((await http.post("/api/categories").set("Authorization", suspended.token).send({ name: "Prohibida" })).status).toBe(403);
     expect((await http.post("/api/sales").set("Authorization", suspended.token).send({})).status).toBe(403);
     expect((await http.post("/api/cash-sessions/open").set("Authorization", suspended.token).send({ openingAmount: 100 })).status).toBe(403);

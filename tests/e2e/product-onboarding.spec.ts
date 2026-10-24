@@ -124,9 +124,12 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     }
   });
 
-  test("registro, identidad, módulos, Excel de 3 productos, primera caja y ticket 80 mm en menos de 30 minutos", async ({ page }) => {
+  test("tres negocios ficticios completan registro, productos, caja, venta y cierre en PWA", async ({ page }) => {
     const begun = performance.now();
     const web = `http://127.0.0.1:${webPort}`;
+    for (let business = 1; business <= 3; business++) {
+    await page.goto(web);
+    await page.evaluate(() => localStorage.clear());
     const slug = `e2e-${randomUUID().slice(0, 8)}`;
     const email = `${slug}@example.invalid`;
     const password = "ClavePiloto-2026!";
@@ -151,7 +154,11 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.getByLabel("Código de empresa").fill(slug);
     await page.getByLabel("Usuario").fill(email);
     await page.getByLabel("Contraseña", { exact: true }).fill(password);
+    const loginResponse = page.waitForResponse(response => response.url().endsWith("/api/auth/login") && response.request().method() === "POST");
     await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
+    const browserLogin = await loginResponse;
+    expect(browserLogin.ok()).toBe(true);
+    const auth = { Authorization: `Bearer ${(await browserLogin.json()).accessToken}` };
     await expect(page.getByRole("heading", { name: "Prepara tu empresa" })).toBeVisible();
     await page.getByLabel("Nombre del negocio").fill("Mi Tienda Preparada");
     await page.getByLabel("RNC").fill("101010101");
@@ -163,18 +170,20 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.getByLabel("Inventario", { exact: true }).check();
     await page.getByRole("button", { name: "Guardar módulos" }).click();
     await page.getByRole("button", { name: "Agregar categorías sugeridas" }).click();
-    const login = await page.request.post(`${web}/api/auth/login`, { headers: { "x-tenant-id": slug }, data: { login: email, password } });
-    expect(login.ok()).toBe(true);
-    const auth = { Authorization: `Bearer ${(await login.json()).accessToken}` };
     const categories = await (await page.request.get(`${web}/api/categories`, { headers: auth })).json();
     expect(categories.length).toBeGreaterThan(0);
     await page.getByRole("button", { name: "Ir a Productos e importar Excel" }).click();
     const book = new ExcelJS.Workbook();
     const sheet = book.addWorksheet("Productos");
     sheet.addRow(["Nombre", "SKU", "ID categoría", "Código de barras", "Precio", "Costo"]);
-    for (let i = 1; i <= 3; i++) sheet.addRow([`Artículo E2E ${i}`, `E2E-${i}`, categories[0].id, `BE2E-${i}`, 20, 10]);
+    for (let i = 1; i <= 3; i++) sheet.addRow([`Artículo E2E ${business}-${i}`, `E2E-${business}-${i}`, categories[0].id, `BE2E-${business}-${i}`, 20, 10]);
     await page.locator('input[type="file"][accept=".xlsx"]').setInputFiles({ name: "tres-productos.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from(await book.xlsx.writeBuffer()) });
     await expect(page.getByText("3 productos importados.")).toBeVisible();
+    const importedProducts = await (await page.request.get(`${web}/api/products`, { headers: auth })).json();
+    expect(importedProducts.items).toHaveLength(3);
+    if (business > 1) expect(JSON.stringify(importedProducts)).not.toContain(`Artículo E2E ${business - 1}-1`);
+    const variantId = importedProducts.items.find((product: any) => product.name === `Artículo E2E ${business}-1`)?.variants[0]?.id;
+    expect(variantId).toBeTruthy();
     await page.goto(`${web}/#onboarding`);
     await expect(page.getByRole("heading", { name: /4\. Productos/ })).toContainText("✓");
     await page.evaluate(() => { window.print = () => undefined; });
@@ -188,6 +197,56 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.getByLabel("Efectivo inicial").fill("100");
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
     await expect(page.getByText("Caja abierta", { exact: true })).toBeVisible();
+    // La API de prueba usa la misma sesión del navegador y su única terminal;
+    // no crea un segundo equipo que sobrepase la cuota Autoservicio.
+    const stock = await page.request.post(`${web}/api/inventory/adjustments`, {
+      headers: auth, data: { variantId, qty: 3, reason: "Existencia inicial de la empresa ficticia E2E" },
+    });
+    expect(stock.ok(), await stock.text()).toBe(true);
+    const customer = await page.request.post(`${web}/api/customers`, {
+      headers: auth, data: { name: "Cliente ficticio E2E" },
+    });
+    expect(customer.ok(), await customer.text()).toBe(true);
+    await page.reload();
+    await page.getByRole("button", { name: "Punto de venta", exact: true }).click();
+    if (business > 1) {
+      await page.getByLabel("Buscar productos").fill(`Artículo E2E ${business - 1}-1`);
+      // La búsqueda aproximada puede ofrecer artículos propios parecidos;
+      // lo prohibido es que aparezca el artículo del negocio anterior.
+      await expect(page.locator(".product-card", { hasText: `Artículo E2E ${business - 1}-1` })).toHaveCount(0);
+    }
+    await page.getByLabel("Buscar productos").fill(`Artículo E2E ${business}-1`);
+    await page.locator(".product-card", { hasText: `Artículo E2E ${business}-1` }).click();
+    await expect(page.locator(".cart-items")).toContainText(`Artículo E2E ${business}-1`);
+    await page.locator(".customer-selector").click();
+    await page.locator(".customer-list button", { hasText: "Cliente ficticio E2E" }).click();
+    await page.getByRole("button", { name: /Cobrar/ }).click();
+    await expect(page.getByRole("dialog", { name: "Todo listo para cobrar" })).toBeVisible();
+    await page.getByLabel("Monto del pago").fill("20");
+    await page.getByRole("button", { name: "Agregar pago" }).click();
+    await page.getByRole("button", { name: "Finalizar venta" }).click();
+    await expect(page.getByText("Venta registrada", { exact: true })).toBeVisible();
+    const sales = await (await page.request.get(`${web}/api/sales`, { headers: auth })).json();
+    expect(sales).toHaveLength(1);
+    expect(Number(sales[0].total)).toBe(20);
+    await page.getByRole("button", { name: "Nueva venta", exact: true }).click();
+    await page.getByRole("button", { name: "Caja", exact: true }).click();
+    await page.getByRole("button", { name: "Cerrar y arquear" }).first().click();
+    const closeDialog = page.getByRole("dialog", { name: "Cuadre y cierre de caja" });
+    await expect(closeDialog).toBeVisible();
+    await closeDialog.getByLabel("Cantidad de 100", { exact: true }).fill("1");
+    await closeDialog.getByLabel("Cantidad de 20", { exact: true }).fill("1");
+    await closeDialog.getByLabel(/Tarjeta declarada/).fill("0");
+    await closeDialog.getByRole("checkbox", { name: /Confirmo que conté efectivo/ }).check();
+    await closeDialog.getByRole("button", { name: "Cerrar caja e imprimir cuadre" }).click();
+    await expect(page.locator(".thermal-print")).toContainText("FIN DEL CUADRE");
+    const sessions = await (await page.request.get(`${web}/api/cash-sessions`, { headers: auth })).json();
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].closedAt).toBeTruthy();
+    const report = await page.request.get(`${web}/api/reports/sales?format=xlsx`, { headers: auth });
+    expect(report.ok(), `Negocio ${business}: informe de jornada`).toBe(true);
+    expect(Buffer.from(await report.body()).subarray(0, 2).toString()).toBe("PK");
+    }
     expect(performance.now() - begun).toBeLessThan(30 * 60 * 1000);
   });
 });
