@@ -650,6 +650,9 @@ describe("compatibilidad de ajustes offline", () => {
     };
     const db = {
       tenant: { findUnique: async () => ({ timeZone: "America/Santo_Domingo" }) },
+      $queryRaw: async () => [
+        { currency: "DOP", timeZone: "America/Santo_Domingo" },
+      ],
       settings: {
         findUniqueOrThrow: async () => ({ data: stored }),
       },
