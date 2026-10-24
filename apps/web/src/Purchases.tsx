@@ -17,6 +17,7 @@ import {
   type Field,
 } from "./helpers";
 import { documentPayload, type SupplierDocument } from "./supplierDocument";
+import { purchaseDrafts, type PurchaseDraft } from "./purchase-draft";
 export { documentPayload, type SupplierDocument } from "./supplierDocument";
 
 // Motivos de las unidades dañadas o rechazadas al recibir (paso 36).
@@ -160,6 +161,8 @@ export function PurchaseEditor({
     [doc, setDoc] = useState<SupplierDocument>({}),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [drafts, setDrafts] = useState<PurchaseDraft[]>([]);
+  const [draftBusy, setDraftBusy] = useState(false);
   const client = useQueryClient();
   return (
     <Modal open onClose={onClose} title="Nueva orden de compra" wide>
@@ -182,6 +185,30 @@ export function PurchaseEditor({
           }
         }}
       >
+        <div className="panel">
+          <Button type="button" variant="secondary" disabled={draftBusy} onClick={async () => {
+            setDraftBusy(true);
+            setError("");
+            try {
+              const report = await api<{ rows: Record<string, unknown>[] }>("/reports/dias-inventario");
+              setDrafts(purchaseDrafts(report.rows, variants));
+            } catch (e: any) { setError(businessErrorMessage(e)); }
+            finally { setDraftBusy(false); }
+          }}>
+            {draftBusy ? "Calculando…" : "Sugerir a partir de ventas de 30 días"}
+          </Button>
+          {drafts.length > 0 && (
+            <div>
+              <p>Revisa la propuesta. El stock en otros almacenes se traslada primero; no entra automáticamente en la orden.</p>
+              <ul>{drafts.map((item) => <li key={item.variantId}>{item.name} · vendidas {item.sold30} · tienda {item.store} · otros almacenes {item.home} · trasladar {item.transfer} · comprar {item.buy}</li>)}</ul>
+              {drafts.some((item) => item.buy > 0) && (
+                <Button type="button" variant="secondary" onClick={() => setLines(drafts.filter((item) => item.buy > 0).map((item) => ({ variantId: item.variantId, qty: item.buy, unitCost: item.unitCost })))}>
+                  Pasar compras a la orden (revisar antes de crear)
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
         <label className="field">
           <span>Proveedor</span>
           <select
