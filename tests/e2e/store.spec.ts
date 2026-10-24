@@ -2790,17 +2790,32 @@ test("D-01: la vendedora necesita el PIN del gerente para una contraentrega sobr
     await page
       .getByLabel("Contraseña", { exact: true })
       .fill("FitStore-Demo-2026!");
+    // El botón «Caja» aparece incluso mientras el registro del equipo está
+    // pendiente. Esperar la respuesta real evita saltarse por carrera el PIN.
+    const registration = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/terminals/register") &&
+        response.request().method() === "POST",
+    );
     await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
+    const registered = await registration;
+    expect(registered.ok(), "registro del equipo de la vendedora").toBe(true);
+    const terminal = await registered.json();
     const approval = page.getByText("Este equipo necesita aprobación");
-    await expect(
-      approval
-        .or(page.getByRole("button", { name: "Caja", exact: true }))
-        .first(),
-    ).toBeVisible({ timeout: 15000 });
-    if (await approval.isVisible()) {
+    expect(["pending", "approved"]).toContain(terminal.status);
+    if (terminal.status === "pending") {
+      await expect(approval).toBeVisible();
       await page.getByLabel("Nombre del equipo").fill("Caja E2E D-01");
       await page.getByLabel("PIN del gerente").fill("234567");
+      const approved = page.waitForResponse(
+        (response) =>
+          response.url().includes("/approve-with-pin") &&
+          response.request().method() === "POST",
+      );
       await page.getByRole("button", { name: "Aprobar este equipo" }).click();
+      const approvalResponse = await approved;
+      expect(approvalResponse.ok(), "PIN aprueba el equipo").toBe(true);
+      expect((await approvalResponse.json()).status).toBe("approved");
       await expect(approval).toHaveCount(0);
     }
     await ensureCash(page);
