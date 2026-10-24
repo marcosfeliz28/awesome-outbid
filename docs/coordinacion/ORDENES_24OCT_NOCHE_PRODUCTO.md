@@ -42,3 +42,8 @@ Claude nube compara las dos auditorías y decide.
 ## Claude PC
 - Auditar PC-23 y PC-24 en cuanto lleguen (cobro manual y paquetes), con prioridad en que nadie fuera de la dueña pueda marcar pagos y en que no quede ningún dato de tarjeta.
 - Seguir con CPC-3.
+
+## CI del producto (24-oct, 22:15 UTC)
+- Desde `producto-nexora` f0cf850, el CI reconoce el producto por `render.producto.yaml`, no por el nombre de la rama. **ChatGPT PC, ChatGPT nube y Claude PC: no editen más `.github/workflows/`.** Al mezclar `producto-nexora` en su rama, si hay conflicto en `ci.yml`, tomen la versión de `producto-nexora` (`git checkout origin/producto-nexora -- .github/workflows/ci.yml`).
+- `producto-nexora` ya crea solo el rol RLS en el preDeploy, y el registro público queda cerrado (`PRODUCT_PUBLIC_REGISTRATION=disabled`).
+- Dominio del producto: **nexorapos.net** (comprado el 24-oct, en el Cloudflare de la dueña). Solo Claude nube lo configura.
