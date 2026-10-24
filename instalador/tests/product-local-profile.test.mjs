@@ -24,6 +24,15 @@ test("perfil local separa identidad, datos y puertos de la tienda", () => {
     assert.doesNotMatch(installer, /FitStorePOS|FitStore POS/);
     assert.match(installer, /\$PROGRAMFILES64\\Nexora POS Local/);
     assert.doesNotMatch(installer, /\$PROGRAMFILES64\\FitStore POS/);
+    assert.match(
+      installer,
+      /Function \.onInit\s+\$\{If\} \$INSTDIR != "\$PROGRAMFILES64\\Nexora POS Local"/,
+    );
+    assert.match(installer, /SetErrorLevel 4\s+Abort\s+\$\{EndIf\}/);
+    assert.match(
+      installer,
+      /proteger la instalación de la tienda/,
+    );
     const service = readFileSync(join(root, "service", "NexoraLocalAPI.xml.template"), "utf8");
     assert.match(service, /<id>NexoraLocalAPI<\/id>/);
     assert.match(service, /<depend>NexoraLocalPostgreSQL<\/depend>/);
@@ -34,6 +43,7 @@ test("perfil local separa identidad, datos y puertos de la tienda", () => {
     assert.match(install, /PRODUCT_LOCAL_LICENSE_DIR=/);
     assert.match(install, /-TemplateName "NexoraLocalAPI"/);
     assert.match(install, /-TemplateName "NexoraLocalWeb"/);
+    assert.doesNotMatch(install, /FitStoreAPI|FitStoreWeb/);
     assert.match(install, /postgre[sS]qlPort = 5544/);
     assert.match(install, /Nexora POS Local\.lnk/);
     assert.doesNotMatch(install, /"Nexora POS\.lnk"/);

@@ -68,6 +68,20 @@ ${stateAnchor}`);
     }
 ${aclAnchor}`);
   }
+  if (basename(source) === "FitStore.nsi") {
+    const initAnchor = "Function .onInit\n";
+    if (!content.includes(initAnchor))
+      throw new Error("Falta .onInit para proteger la carpeta local.");
+    content = content.replace(
+      initAnchor,
+      `${initAnchor}  \${If} $INSTDIR != "$PROGRAMFILES64\\Nexora POS Local"
+    MessageBox MB_ICONSTOP "El producto local solo puede instalarse en C:\\Program Files\\Nexora POS Local. Se rechazó la carpeta elegida para proteger la instalación de la tienda."
+    SetErrorLevel 4
+    Abort
+  \${EndIf}
+`,
+    );
+  }
   writeFileSync(target, transform(content), "utf8");
 }
 

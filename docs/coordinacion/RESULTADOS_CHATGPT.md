@@ -1,5 +1,11 @@
 # Resultados de ChatGPT NUBE y ChatGPT PC
 
+## 2026-10-24 · ChatGPT PC · corrección CPC-8 de PC-18
+
+- El perfil del instalador local inyecta un guard al inicio de NSIS: `$INSTDIR` debe ser exactamente `C:\Program Files\Nexora POS Local`. Cualquier `/D=` hacia la carpeta de la tienda u otra ruta termina con código 4 antes de copiar archivos o tocar servicios.
+- La regresión genera el instalador transformado y comprueba el guard, el aborto y que los scripts solo nombren `NexoraLocalAPI`, `NexoraLocalWeb` y `NexoraLocalPostgreSQL`; no reutilizan los servicios de la tienda. Pasan 3/3 pruebas del perfil y la prueba del comando de validación. El primer `pnpm check` se detuvo por dos `no-useless-escape` en el generador; corregidos, la repetición aprobó 768 pruebas, omitió 10 por condiciones documentadas y completó tipos, lint y compilaciones web/API.
+- Límite obligatorio: no hay una Windows virtual disponible en este entorno. Sigue pendiente ejecutar instalación, actualización y desinstalación en una VM limpia que ya tenga la tienda instalada, probar `/D=C:\Program Files\FitStore POS` y verificar que los servicios y datos de la tienda no cambian. Nunca se probó en la PC de la tienda.
+
 ## 2026-10-24 · ChatGPT PC · corrección CPC-8 de PC-15
 
 - La actualización automática retiene cualquier salto mayor de 5 % respecto de la tasa vigente. Configuración muestra la tasa propuesta; una persona con permiso total debe revisarla y escribir ese valor para que el siguiente ciclo la aplique. La propuesta y la confirmación quedan diferenciadas en la bitácora.
