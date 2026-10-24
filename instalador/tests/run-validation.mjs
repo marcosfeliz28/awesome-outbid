@@ -79,6 +79,10 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
   const steps = [
     [process.execPath, ["--test", "instalador/tests/installer-session.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/product-local-profile.test.mjs"]],
+    [
+      process.execPath,
+      ["--test", "instalador/tests/windows11-coexistence-contract.test.mjs"],
+    ],
     [process.execPath, ["--test", "instalador/tests/web-server.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/deploy-lock.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/recovery-error-contract.test.mjs"]],
