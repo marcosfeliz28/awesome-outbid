@@ -14,6 +14,7 @@ export default defineConfig({
       "tests/assistant-n06.test.ts",
       "tests/daily-summary-n07.test.ts",
       "tests/transfer-proof-review-n08.test.ts",
+      "tests/realtime-catalog-race.test.ts",
       "tests/product-object-store.test.ts",
       "tests/product-object-portability.test.ts",
       "tests/product-billing-plans.test.ts",
