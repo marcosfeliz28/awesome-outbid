@@ -10,11 +10,31 @@ export const editableNow = (sale: { status: string; createdAt: string }) =>
   sale.status === "completed" &&
   Date.now() - new Date(sale.createdAt).getTime() <= EDIT_DAYS * 86400000;
 
+// Métodos que se pueden corregir después de la venta (dueña, 23-oct).
+const PAYMENT_METHODS: Record<string, string> = {
+  cash: "Efectivo",
+  card: "Tarjeta",
+  transfer: "Transferencia",
+  cod: "Contraentrega",
+  credit: "Crédito",
+};
+
 export function SaleEditPanel({
   sale,
   onSaved,
 }: {
-  sale: { id: string; sellerId: string; wholesale: boolean };
+  sale: {
+    id: string;
+    sellerId: string;
+    wholesale: boolean;
+    payments?: {
+      id: string;
+      method: string;
+      amount: string | number;
+      entryType: string;
+      status: string;
+    }[];
+  };
   onSaved: (change: { sellerId?: string; wholesale?: boolean }) => void;
 }) {
   const staff = useQuery({
@@ -25,6 +45,15 @@ export function SaleEditPanel({
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [methods, setMethods] = useState<Record<string, string>>({});
+  const [bank, setBank] = useState("");
+  const [reference, setReference] = useState("");
+  const salePayments = (sale.payments ?? []).filter(
+    (p) =>
+      p.entryType === "sale" &&
+      p.status !== "rejected" &&
+      p.method in PAYMENT_METHODS,
+  );
   const send = async (path: string, body: object) => {
     if (reason.trim().length < 3) {
       setError("Escribe el motivo del cambio.");
@@ -95,6 +124,69 @@ export function SaleEditPanel({
           {sale.wholesale ? "Quitar «al por mayor»" : "Marcar «al por mayor»"}
         </Button>
       </div>
+      {salePayments.map((p) => {
+        const method = methods[p.id] ?? p.method;
+        return (
+          <div className="row" key={p.id}>
+            <label className="field">
+              <span>
+                Pago de {Number(p.amount).toFixed(2)} (
+                {PAYMENT_METHODS[p.method]})
+              </span>
+              <select
+                value={method}
+                disabled={busy}
+                onChange={(event) =>
+                  setMethods({ ...methods, [p.id]: event.target.value })
+                }
+              >
+                {Object.entries(PAYMENT_METHODS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {method === "transfer" && method !== p.method && (
+              <>
+                <label className="field">
+                  <span>Banco</span>
+                  <input
+                    value={bank}
+                    maxLength={80}
+                    disabled={busy}
+                    onChange={(event) => setBank(event.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span>Referencia</span>
+                  <input
+                    value={reference}
+                    maxLength={120}
+                    disabled={busy}
+                    onChange={(event) => setReference(event.target.value)}
+                  />
+                </label>
+              </>
+            )}
+            <Button
+              variant="secondary"
+              disabled={busy || method === p.method}
+              onClick={async () => {
+                if (
+                  await send(`payments/${p.id}/correct-method`, {
+                    method,
+                    ...(method === "transfer" ? { bank, reference } : {}),
+                  })
+                )
+                  onSaved({});
+              }}
+            >
+              Cambiar método de pago
+            </Button>
+          </div>
+        );
+      })}
       {error && (
         <p className="reconciliation-error" role="alert">
           {error}

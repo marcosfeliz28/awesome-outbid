@@ -66,7 +66,7 @@ async function ok(path: string, as: string, data?: unknown, method?: string) {
 function extractPdfText(buffer: Buffer) {
   const raw = buffer.toString("latin1");
   const output: string[] = [];
-  for (const match of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+  for (const match of raw.matchAll(/stream\r?\n([\s\S]*?)\nendstream/g)) {
     const dictionary = raw.slice(Math.max(0, match.index! - 250), match.index);
     let content = Buffer.from(match[1], "latin1");
     if (dictionary.includes("/FlateDecode")) {
@@ -1165,7 +1165,8 @@ describe("W7 · incentivo al cobrar", () => {
 
   it("la dueña cierra en efectivo lo que recibió en la mano, sin caja; una cajera no puede", async () => {
     const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
-    // La cajera sigue necesitando su caja aunque mande la marca.
+    // La cajera sin caja y sin PIN de gerente no puede (A1, 24-oct: con el
+    // PIN sí, ver la prueba «A1» al final del archivo).
     const cajera = await collect(
       ana,
       s.id,
@@ -1174,7 +1175,7 @@ describe("W7 · incentivo al cobrar", () => {
       null,
     );
     expect(cajera.status).toBe(400);
-    expect(cajera.body.message).toMatch(/caja abierta/i);
+    expect(cajera.body.message).toMatch(/PIN de un gerente/i);
     const r = await collect(
       adminA,
       s.id,
@@ -1496,5 +1497,147 @@ describe("Q-02 · reenvíos simultáneos con la misma clave", () => {
     expect(await returns()).toHaveLength(1);
     expect(await stock()).toBe(stockBefore + 1);
     expect((await expectedOf(adminA)).cash).toBe(cashBefore.cash - 100);
+  });
+});
+
+describe("Corregir el método de pago (dueña, 23-oct)", () => {
+  it("efectivo → contraentrega con la caja cerrada: la caja cuadra, queda por cobrar y el incentivo no cambia", async () => {
+    const wendy = await person("wendy", "seller");
+    const s = (await sale(wendy, 300, [{ method: "cash", amount: 300 }])).body;
+    const incentive = await totalOf(s.id);
+    // Cierra sin los 300 (era contraentrega): diferencia −300.
+    await ok("/cash-sessions/" + wendy.cash.id + "/close", owner, {
+      countedCash: 0,
+      countedCard: 0,
+      countedTransfer: 0,
+      notes: "QA cierre",
+      differenceReason: "QA: faltan los 300 de la contraentrega",
+    });
+    const session = () =>
+      db.cashSession.findUnique({ where: { id: wendy.cash.id } });
+    expect(Number((await session()).differenceCash)).toBe(-300);
+    const paymentId = (await db.payment.findFirst({ where: { saleId: s.id } }))
+      .id;
+    const correct = (who: Actor, data: Record<string, unknown>) =>
+      request(
+        `/sales/${s.id}/payments/${paymentId}/correct-method`,
+        who.token,
+        { reason: "Era contraentrega con Addison", ...data },
+      );
+    expect((await correct(ana, { method: "cod" })).status).toBe(403);
+    expect((await correct(adminA, { method: "cod", reason: "" })).status).toBe(
+      400,
+    );
+    const done = await correct(adminA, { method: "cod" });
+    expect(done.status, JSON.stringify(done.body)).toBeLessThan(300);
+    const payment = await db.payment.findUnique({ where: { id: paymentId } });
+    expect(payment.method).toBe("cod");
+    expect(payment.status).toBe("pending");
+    expect(Number(payment.amount)).toBe(300);
+    const row = await db.sale.findUnique({ where: { id: s.id } });
+    expect(Number(row.creditBalance)).toBe(300);
+    expect(row.receivableKind).toBe("cod");
+    expect(row.status).toBe("completed");
+    expect(Number((await session()).differenceCash)).toBe(0);
+    expect(Number((await session()).expectedCash)).toBe(0);
+    expect((await pendingList()).some((p: any) => p.saleId === s.id)).toBe(
+      true,
+    );
+    expect(await totalOf(s.id)).toBe(incentive);
+    // Repetir es inofensivo.
+    expect((await correct(adminA, { method: "cod" })).status).toBeLessThan(300);
+    expect(
+      await db.auditLog.count({
+        where: { action: "payment_method_corrected", entityId: s.id },
+      }),
+    ).toBe(1);
+    // Se cobra como cualquier contraentrega, sin acreditar el incentivo dos veces.
+    await ok("/sales/" + s.id + "/cod-collections", adminA.token, {
+      offlineUuid: randomUUID(),
+      cashSessionId: adminA.cash.id,
+      amount: 300,
+      method: "cash",
+    });
+    expect(
+      Number((await db.sale.findUnique({ where: { id: s.id } })).creditBalance),
+    ).toBe(0);
+    expect(await totalOf(s.id)).toBe(incentive);
+    // Con cobros registrados ya no se corrige.
+    expect((await correct(adminA, { method: "cash" })).status).toBe(400);
+  });
+
+  it("efectivo → transferencia exige banco y referencia y queda por verificar", async () => {
+    const s = (await sale(ana, 200, [{ method: "cash", amount: 200 }])).body;
+    const paymentId = (await db.payment.findFirst({ where: { saleId: s.id } }))
+      .id;
+    const before = await expectedOf(ana);
+    const path = `/sales/${s.id}/payments/${paymentId}/correct-method`;
+    expect(
+      (
+        await request(path, adminA.token, {
+          method: "transfer",
+          reason: "Pagó por transferencia",
+        })
+      ).status,
+    ).toBe(400);
+    await ok(path, adminA.token, {
+      method: "transfer",
+      bank: "Banreservas",
+      reference: "REF-QA",
+      reason: "Pagó por transferencia",
+    });
+    const payment = await db.payment.findUnique({ where: { id: paymentId } });
+    expect(payment.status).toBe("pending_verification");
+    const after = await expectedOf(ana);
+    expect(after.cash).toBe(before.cash - 200);
+    expect(after.transfer).toBe(before.transfer + 200);
+  });
+});
+
+describe("A1 · efectivo que ya tiene la dueña, registrado por la cajera con PIN de gerente (24-oct)", () => {
+  it("sin PIN 400, PIN malo rechazado, con PIN salda sin tocar la gaveta y el reenvío no duplica", async () => {
+    const s = (await sale(ana, 300, [{ method: "cod", amount: 300 }])).body;
+    const before = await expectedOf(ana);
+    const operationId = randomUUID();
+    const send = (managerPin?: string, op = operationId) =>
+      request("/sales/" + s.id + "/credit-collections", ana.token, {
+        operationId: op,
+        cashSessionId: ana.cash.id,
+        ...(managerPin ? { managerPin } : {}),
+        lines: [{ method: "cash", amount: 300, ownerConfirmed: true }],
+      });
+    expect((await send()).status).toBe(400);
+    expect((await send("111111", randomUUID())).status).toBeGreaterThanOrEqual(
+      400,
+    );
+    const done = await send("246813");
+    expect(done.status, JSON.stringify(done.body)).toBeLessThan(300);
+    const payments = await db.payment.findMany({
+      where: { saleId: s.id, entryType: "installment" },
+    });
+    expect(payments).toHaveLength(1);
+    expect(payments[0].cashSessionId).toBeNull();
+    expect(payments[0].receivedById).not.toBe(ana.id);
+    expect([adminA.id, adminB.id, adminNoCash.id]).toContain(
+      payments[0].receivedById,
+    );
+    expect(
+      Number((await db.sale.findUnique({ where: { id: s.id } })).creditBalance),
+    ).toBe(0);
+    expect((await expectedOf(ana)).cash).toBe(before.cash);
+    // A2: el cuadre lo lista aparte, sin sumarlo al esperado.
+    const cuadre = await ok("/cash-sessions/" + ana.cash.id + "/cuadre", owner);
+    expect(
+      cuadre.ownerReceived.some(
+        (r: any) => r.number === s.number && r.amount === 300,
+      ),
+    ).toBe(true);
+    const again = await send("246813");
+    expect(again.status, JSON.stringify(again.body)).toBeLessThan(300);
+    expect(
+      await db.payment.count({
+        where: { saleId: s.id, entryType: "installment" },
+      }),
+    ).toBe(1);
   });
 });

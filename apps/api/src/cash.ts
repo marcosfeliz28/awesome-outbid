@@ -562,6 +562,46 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
           : `${formatAmount(differenceDop)} = (${formatAmount(counted!)} + ${formatAmount(vouchers)}) − ${formatAmount(cashSalesDetail.total)} − ${formatAmount(opening)}`,
     },
     delivered: split,
+    // Bloque A2 (24-oct): esperado, contado y diferencia en renglones propios.
+    cashCheck:
+      differenceDop === null
+        ? null
+        : {
+            expected: money(d(cashSalesDetail.total).plus(opening)),
+            counted: money(d(counted!).plus(vouchers)),
+            difference: differenceDop,
+          },
+    // Efectivo que la dueña recibió en la mano mientras la caja estuvo
+    // abierta (A1): informativo, no suma al esperado de la gaveta.
+    ownerReceived: (
+      await db.payment.findMany({
+        where: {
+          entryType: "installment",
+          method: "cash",
+          cashSessionId: null,
+          status: "ok",
+          reference: "Recibido por la dueña",
+          sale: { branchId: session.branchId },
+          createdAt: {
+            gte: session.openedAt,
+            ...(session.closedAt ? { lte: session.closedAt } : {}),
+          },
+        },
+        select: {
+          id: true,
+          amount: true,
+          sale: {
+            select: { number: true, customer: { select: { name: true } } },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      })
+    ).map((p: any) => ({
+      paymentId: p.id,
+      number: p.sale.number,
+      customerName: p.sale.customer?.name ?? null,
+      amount: Number(p.amount),
+    })),
     notes: session.notes,
   };
 }

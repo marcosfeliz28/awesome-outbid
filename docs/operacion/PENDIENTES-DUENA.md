@@ -121,3 +121,12 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 ## PARA HOY (23-oct): cuadre del 22-oct
 - FS-200 Ramsés Mancebo 8,000 (transferencia Banreservas sin verificar): en el banco entró «Inversiones El Millón SRL» 8,250 (8,000 + 250 envío). Confirmar que es su pago y verificarla.
 - ✔ FS-194 anulada y rehecha como FS-210 (Gold Standard 2 lb Vanilla Ice Cream, 2,200, vendedora Wendy) el 22-oct en la noche.
+
+## Conteo de Lisbeth del 23-oct (maquillaje y pelo): lo que falta
+- Hecho: 20 productos nuevos SKU 1955–1974 creados con su cantidad, **sin precio ni costo** (ponerles precio antes de venderlos). Davines sin cambios.
+- ✔ Aplicados (23-oct, con su sí) los 9 ajustes: 1222 →4, 1283 →9, 1285 →9, 1544 →1, 1269 →14, 1281 →1, 1282 →12, 1350 →7, 1419 →20.
+- Dudas: Redken All Soft «Shampoo» vs Conditioner (1538); P.Louise «0-100 Real» y Primer Purple Cream sin cantidad; ¿hay otra página antes de «Super Stay Full Coverage 45»?; nombre del vaso 1963 («B…o» térmico).
+
+## Caja de Wendy del 23-oct: −3,500
+- ✔ FS-225 corregida 24-oct a contraentrega (Addison), pendiente 3,500; caja de Wendy en 0. Cerrarla cuando Addison entregue el efectivo.
+- Transferencias de Wendy sin verificar: FS-227 2,400 y FS-228 6,500.

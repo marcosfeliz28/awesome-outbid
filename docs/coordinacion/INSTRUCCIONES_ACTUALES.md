@@ -457,3 +457,21 @@ Casa solo se modifica con instrucción expresa de la dueña. Toda salida de Casa
 - 19-oct: fase 0 parcial revisada (81935d2, CI verde). Continuación para ChatGPT PC: `docs/coordinacion/ORDEN_FASE0_CONTINUACION_CHATGPT_PC.md`. `producto-nexora` nunca se mezcla hacia `nexora-cloud`.
 - 19-oct: rescate de los 46 revisado; nada que mezclar. Limpieza autorizada para Claude PC: `docs/coordinacion/ORDEN_CLAUDE_PC_LIMPIEZA_46.md`.
 - 20-oct: fase 0 del producto aprobada (07e5515, CI verde). Fase 1 para ChatGPT PC: `docs/coordinacion/ORDEN_FASE1_CHATGPT_PC.md`.
+- 23-oct: la sincronización `dd10ebd` de `producto-nexora` dejó `verify` rojo (`usd-rate.ts` busca `Settings` sin empresa). Arreglo para ChatGPT PC: `docs/coordinacion/ORDEN_CI_SYNC_23OCT_CHATGPT_PC.md`.
+- 24-oct: ChatGPT nube (Codex) audita, propone 20 mejoras y el camino al instalador vendible; solo lectura. Orden: `docs/coordinacion/ORDEN_AUDITORIA_PRODUCTO_E_INSTALADOR_CHATGPT_NUBE.md`. Después Claude ajusta la propuesta y reparte: ChatGPT construye y Claude arquitecto y aprobador.
+
+## 3ak — Nexora para vender: reparto y fases (dueña, 24-oct-2026, noche)
+**Roles:** Claude = arquitecto y auditor (no construye). **ChatGPT PC** y **ChatGPT NUBE** construyen. Gemini solo propone (`docs/coordinacion/ORDEN_PROPUESTA_GEMINI.md`). Solo Claude despliega y solo con orden de la dueña.
+
+| Fase | Qué | Quién | Orden |
+|---|---|---|---|
+| 0 | Multiempresa (Tenant + RLS, 0 fugas) | ChatGPT PC | Hecha y aprobada (07e5515); arreglo de CI 23-oct hecho (074b895) |
+| 1 | Registro, prueba gratis 14 días, estados del plan, cobro de prueba, exportación y respaldo por empresa | **ChatGPT PC — empieza ya** | `ORDEN_FASE1_CHATGPT_PC.md` |
+| 2 | «Pregúntale a Nexora» (IA de solo lectura con los permisos del usuario), cuota por plan, pedir anulación con confirmación, acceso de soporte Nexora de solo lectura | **ChatGPT NUBE**, después de su auditoría del 24-oct | `ORDEN_FASE2_IA_SOPORTE_CHATGPT_NUBE.md` |
+| 3 | Instalador vendible: laptop Windows (Tauri) firmada, actualización automática, licencia y modo sin internet, primer arranque guiado | ChatGPT PC, tras fase 1 | Claude la escribe con la auditoría de ChatGPT NUBE |
+| 4 | Legal y fiscal R. D. (NCF / e-CF), términos y privacidad, página de venta, cobro real, piloto con 3–5 negocios | Decisiones de la dueña + ChatGPT | Pendiente |
+| 5 | Sin internet completo con sincronización; apps de celular | ChatGPT | Pendiente |
+
+**Protocolo de la noche (24→25-oct):** Claude revisa cada hora las ramas `producto-nexora`, `nexora-chatgpt-nube` y `nexora-chatgpt-nube-ia` y deja sus revisiones y las órdenes siguientes en `docs/coordinacion/REVISION_NOCHE_CLAUDE.md` (rama `nexora-cloud`). **Antes de cada commit, leed ese archivo.** Claude mezcla hacia `producto-nexora` solo bloques con prueba y los 3 CI en verde. Nadie despliega ni toca la tienda, su base o Render durante la noche.
+- **Ajuste 24-oct (propuesta de Gemini):** veredicto en `VEREDICTO_GEMINI_24OCT.md`. El plan maestro es `PLAN-10-MEJORAS-PRODUCTO.md`: la e-CF (mejora 1) va antes que todo y **no** se empieza con Serie B para clientes nuevos. El instalador de Windows pasa a después de la fase 2. ChatGPT PC: primero `ORDEN_AJUSTES_GEMINI_CHATGPT_PC.md` (bloque A, cierre de caja de la tienda) y luego la fase 1 con su bloque B. ChatGPT NUBE: fase 2 actualizada con 10 herramientas y defensas.
+- 24-oct (noche): **plan maestro único** con todos los puntos de los tres carriles: `docs/coordinacion/PLAN_MAESTRO_TODO.md`. Manda sobre órdenes anteriores si chocan. El bloque A de cierre de caja pasa de ChatGPT PC a Claude.

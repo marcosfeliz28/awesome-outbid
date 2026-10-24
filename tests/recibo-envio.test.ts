@@ -44,7 +44,7 @@ async function pdfText(data: any) {
   await done;
   const raw = Buffer.concat(chunks).toString("latin1");
   const text: string[] = [];
-  for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
+  for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)\nendstream/g)) {
     let content = Buffer.from(m[1], "latin1");
     try {
       content = inflateSync(content);

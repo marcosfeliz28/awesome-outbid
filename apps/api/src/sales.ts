@@ -523,7 +523,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
 import { cashExpected, refreshClosedCash } from "./cash";
 import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
-import { verifyPinAttempt } from "./security";
+import { managerPinApproval, verifyPinAttempt } from "./security";
 import { drawSaleReceipt } from "./receipt-pdf";
 import {
   moveSaleIncentives,
@@ -2009,6 +2009,159 @@ export class SalesController {
         sellerName: seller.name,
       };
     }, MONEY_TRANSACTION);
+  }
+
+  // Orden de la dueña (23-oct): corregir el método de un pago mal marcado al
+  // cobrar (p. ej. efectivo que era contraentrega), aunque la caja ya cerró.
+  // Mismo monto, misma venta, sin tocar inventario ni vendedora; la caja de
+  // ese pago recalcula lo esperado y su diferencia.
+  @Post("sales/:id/payments/:paymentId/correct-method")
+  @RequireTerminal()
+  @Permit("*")
+  async correctPaymentMethod(
+    @Param("id") id: string,
+    @Param("paymentId") paymentIdParam: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const saleId = parse(uuid, id);
+    const paymentId = parse(uuid, paymentIdParam);
+    const data = parse(
+      z.object({
+        method: z.enum(["cash", "card", "transfer", "cod", "credit"]),
+        bank: z.string().trim().max(80).optional(),
+        reference: z.string().trim().max(120).optional(),
+        receivableKind: z.enum(["credit", "cod"]).optional(),
+        reason,
+      }),
+      body,
+    );
+    if (data.method === "transfer" && (!data.bank || !data.reference))
+      bad("Escribe el banco y la referencia de la transferencia.");
+    const receivable = (m: string) => m === "cod" || m === "credit";
+    const result = await moneyDb(this.db).$transaction(async (tx) => {
+      const sale = await editableSale(tx, saleId, actor);
+      const payments = await tx.payment.findMany({ where: { saleId } });
+      const payment = payments.find((p) => p.id === paymentId);
+      if (!payment || payment.entryType !== "sale")
+        bad("Pago no encontrado en esta venta.");
+      if (payment.method === data.method)
+        return { number: sale.number, method: payment.method };
+      if (
+        !["cash", "card", "transfer", "cod", "credit"].includes(payment.method)
+      )
+        bad("Este pago no se puede corregir.");
+      if (payment.status === "rejected")
+        bad("Este pago fue rechazado; no se puede corregir.");
+      if (
+        payments.some(
+          (p) => p.entryType === "installment" && p.status !== "rejected",
+        )
+      )
+        bad("La venta ya tiene cobros registrados; no se puede corregir.");
+      if (await tx.saleReturn.count({ where: { saleId } }))
+        bad("La venta tiene devoluciones; no se puede corregir.");
+      const settings = await tx.settings.findUnique({
+        where: { id: actor.branchId },
+      });
+      const config = settings?.data as any;
+      const amount = d(payment.amount);
+      const balanceChange = d(receivable(data.method) ? amount : 0).minus(
+        receivable(payment.method) ? amount : 0,
+      );
+      const balance = money(d(sale.creditBalance).plus(balanceChange));
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          method: data.method,
+          tendered: payment.amount,
+          change: 0,
+          bank: data.method === "transfer" ? data.bank : null,
+          reference: data.reference || null,
+          feeAmount:
+            data.method === "card"
+              ? money(amount.times(config?.cardFeePercent ?? 2.5).div(100))
+              : 0,
+          status:
+            data.method === "transfer"
+              ? "pending_verification"
+              : receivable(data.method)
+                ? "pending"
+                : "ok",
+        },
+      });
+      await tx.sale.update({
+        where: { id: saleId },
+        data: {
+          creditBalance: balance,
+          receivableKind:
+            Number(balance) > 0
+              ? (data.receivableKind ??
+                (receivable(data.method) ? data.method : sale.receivableKind) ??
+                null)
+              : null,
+        },
+      });
+      if (payment.method === "transfer")
+        await resolveTransferAlert(tx, payment.id);
+      if (data.method === "transfer")
+        await tx.alert.upsert({
+          where: { key: "transfer:" + payment.id },
+          create: {
+            key: "transfer:" + payment.id,
+            type: "transfer_pending",
+            severity: "high",
+            entityId: saleId,
+            branchId: actor.branchId,
+            message:
+              `Transferencia de ${sale.number} por RD$ ${formatAmount(Number(payment.amount))} sin verificar · ` +
+              `${data.bank} · ref. ${data.reference}`,
+          },
+          update: {},
+        });
+      await refreshReceivableAlert(tx, saleId, actor.branchId);
+      let differences: unknown = null;
+      if (payment.cashSessionId) {
+        const session = await tx.cashSession.findUniqueOrThrow({
+          where: { id: payment.cashSessionId },
+        });
+        if (session.closedAt)
+          differences = await refreshClosedCash(tx, session);
+      }
+      await audit(
+        tx,
+        actor,
+        "payment_method_corrected",
+        "sale",
+        saleId,
+        {
+          paymentId: payment.id,
+          method: payment.method,
+          status: payment.status,
+          bank: payment.bank,
+          reference: payment.reference,
+          creditBalance: sale.creditBalance,
+        },
+        {
+          number: sale.number,
+          paymentId: payment.id,
+          method: data.method,
+          amount: payment.amount,
+          creditBalance: balance,
+          cashSessionId: payment.cashSessionId,
+          differences,
+          reason: data.reason,
+        },
+      );
+      return {
+        number: sale.number,
+        method: data.method,
+        creditBalance: Number(balance),
+        cashSessionId: payment.cashSessionId,
+        differences,
+      };
+    }, MONEY_TRANSACTION);
+    return result;
   }
 
   @Post("sales/:id/void")
@@ -3774,6 +3927,25 @@ export class SalesController {
         "Las cajeras solo cierran créditos en efectivo. La tarjeta y la transferencia las registra la administración.",
       );
     const keys = data.lines.map((_, i) => lineKey(data.operationId, i));
+    // «El efectivo ya lo tiene la dueña»: la administración lo marca sola; la
+    // cajera necesita el PIN de un gerente, que queda como quien lo recibió.
+    let ownerApprovedBy: string | null = can(actor.permissions, "*")
+      ? actor.id
+      : null;
+    if (
+      !ownerApprovedBy &&
+      data.lines.some((l) => l.method === "cash" && l.ownerConfirmed === true)
+    ) {
+      if (!data.managerPin)
+        bad(
+          "Para registrar efectivo que ya tiene la dueña hace falta el PIN de un gerente.",
+        );
+      ownerApprovedBy = await managerPinApproval(
+        this.db,
+        actor,
+        data.managerPin,
+      );
+    }
     const rows = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.operationId}))::text AS locked`;
       const existing = await tx.payment.findMany({
@@ -3793,7 +3965,13 @@ export class SalesController {
             );
           });
         if (!same) bad("La operación ya corresponde a otro cobro.");
-        if (existing.some((p) => p.receivedById !== actor.id)) denied();
+        if (
+          existing.some(
+            (p) =>
+              p.receivedById !== actor.id && p.receivedById !== ownerApprovedBy,
+          )
+        )
+          denied();
         return existing.sort(
           (a, b) =>
             keys.indexOf(a.idempotencyKey!) - keys.indexOf(b.idempotencyKey!),
@@ -3801,9 +3979,7 @@ export class SalesController {
       }
       // La dueña puede cerrar en efectivo lo que tiene en la mano, sin caja.
       const ownerCash = (l: { method: string; ownerConfirmed?: boolean }) =>
-        l.method === "cash" &&
-        l.ownerConfirmed === true &&
-        can(actor.permissions, "*");
+        l.method === "cash" && l.ownerConfirmed === true && !!ownerApprovedBy;
       if (
         !data.cashSessionId &&
         data.lines.some((l) => l.method === "cash" && !ownerCash(l))
@@ -3819,7 +3995,11 @@ export class SalesController {
             tx,
             actor,
             id,
-            { ...data.lines[i], cashSessionId: data.cashSessionId },
+            {
+              ...data.lines[i],
+              cashSessionId: data.cashSessionId,
+              ownerApprovedBy: ownerApprovedBy ?? undefined,
+            },
             keys[i],
             true,
           ),
@@ -3827,6 +4007,9 @@ export class SalesController {
       await audit(tx, actor, "credit_collection", "sale", id, undefined, {
         operationId: data.operationId,
         total: money(total),
+        ownerApprovedBy: data.lines.some((l) => ownerCash(l))
+          ? ownerApprovedBy
+          : undefined,
         lines: out.map((p) => ({
           paymentId: p.id,
           method: p.method,
@@ -3859,6 +4042,8 @@ export class SalesController {
     > & {
       cashSessionId?: string;
       ownerConfirmed?: boolean;
+      // Quien confirmó con su PIN que el efectivo lo tiene la dueña.
+      ownerApprovedBy?: string;
     },
     idempotencyKey: string,
     codOnly: boolean,
@@ -3871,7 +4056,8 @@ export class SalesController {
     const ownerClosed =
       (data.method === "transfer" || data.method === "cash") &&
       data.ownerConfirmed === true &&
-      can(actor.permissions, "*");
+      (can(actor.permissions, "*") ||
+        (data.method === "cash" && !!data.ownerApprovedBy));
     if (ownerClosed) data = { ...data, cashSessionId: undefined };
     if (data.cashSessionId) await cashLock(tx, actor, data.cashSessionId);
     else if (data.method === "cash" && !ownerClosed)
@@ -3934,7 +4120,12 @@ export class SalesController {
     const settings = await tx.settings.findUnique({
       where: { id: actor.branchId },
     });
-    const { cashSessionId, ownerConfirmed: _confirmed, ...payment } = data;
+    const {
+      cashSessionId,
+      ownerConfirmed: _confirmed,
+      ownerApprovedBy,
+      ...payment
+    } = data;
     // Queda marcado en el pago para distinguirlo del efectivo de una caja.
     if (ownerClosed && data.method === "cash" && !payment.reference?.trim())
       payment.reference = "Recibido por la dueña";
@@ -3943,7 +4134,7 @@ export class SalesController {
         ...payment,
         saleId: id,
         cashSessionId: cashSessionId ?? null,
-        receivedById: actor.id,
+        receivedById: (ownerClosed && ownerApprovedBy) || actor.id,
         idempotencyKey,
         entryType: "installment",
         tendered: data.amount,
@@ -4055,6 +4246,12 @@ const creditLineSchema = z.object({
 const creditCollectionSchema = z.object({
   operationId: uuid,
   cashSessionId: uuid.optional(),
+  // PIN de gerente: la cajera marca «este efectivo ya lo tiene la dueña»
+  // (orden de la dueña 24-oct, bloque A1 del veredicto de Gemini).
+  managerPin: z
+    .string()
+    .regex(/^\d{4,6}$/)
+    .optional(),
   lines: z.array(creditLineSchema).min(1).max(6),
 });
 const installmentSchema = z.object({

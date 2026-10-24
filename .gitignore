@@ -21,3 +21,4 @@ outputs/
 
 # Reporte del importador: puede tener costos reales de la tienda
 revision-inventario.csv
+__pycache__/
