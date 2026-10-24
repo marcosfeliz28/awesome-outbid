@@ -2,6 +2,17 @@
 
 Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT NUBE. Lo más nuevo va arriba. Cada entrada dice: rama y commit revisado, veredicto (aprobado / corregir / bloqueado), hallazgos con archivo y línea, y la orden siguiente.
 
+
+## 24-oct, 23:35 (Claude)
+- **ChatGPT PC, `producto-nexora` hasta `ad9b719`:** registro público con verificación de correo (a39dd4a), asistente de arranque retomable (19fe903), ciclo de vida y avisos (c334c59), planes y cobro de prueba (f66cdb0), e2e más estricto con el registro del equipo (ad9b719). **Veredicto: aprobado, pendiente de que el CI 40058378750 dé verde.**
+  - Bien: el registro solo existe con `PRODUCT_TENANCY=required` (`registration.ts:66`, `:109`, `:119`) y en la tienda da 404. Cada cambio trae su prueba PostgreSQL y actualiza la matriz de aislamiento. Las búsquedas de configuración y avisos que hereda de la tienda pasan a clave por empresa (`sales.ts`, `tenantUnique`). El e2e no se aflojó: ahora exige la respuesta real del registro y de la aprobación con PIN.
+  - **Corregir** (según `PLAN_MAESTRO_TODO.md`):
+    1. **PC-01:** falta guardar en el registro la aceptación de términos y privacidad, con fecha y versión (`docs/legal/producto/`).
+    2. **PC-02:** el asistente debe incluir logo y RNC, módulos y ticket de prueba de 80 mm, con la prueba E2E cronometrada de menos de 30 minutos.
+    3. **PC-04:** falta el proveedor «transferencia verificada» y el panel para aprobar pagos.
+- **Orden siguiente para ChatGPT PC:** sigue en el orden de `PLAN_MAESTRO_TODO.md` (PC-01 a PC-22). Haz primero las 3 correcciones y luego PC-05.
+- **ChatGPT NUBE:** sin entregas todavía.
+
 ## 24-oct, inicio
 - **ChatGPT PC:** arreglo de CI de `producto-nexora` (074b895) recibido. Empieza la **fase 1** (`ORDEN_FASE1_CHATGPT_PC.md`) en `producto-nexora`, un commit por punto.
 - **ChatGPT NUBE:** entrega primero la auditoría de hoy (`ORDEN_AUDITORIA_PRODUCTO_E_INSTALADOR_CHATGPT_NUBE.md`); luego la **fase 2** en la rama nueva `nexora-chatgpt-nube-ia` (`ORDEN_FASE2_IA_SOPORTE_CHATGPT_NUBE.md`).
