@@ -323,6 +323,11 @@ test("la vista previa de Casa detalla el antes y el después del Excel", async (
   request,
 }) => {
   const headers = await ownerHeaders(request);
+  const warehouses = await (
+    await request.get("/api/inventory/warehouses", { headers })
+  ).json();
+  const homeName = warehouses.find((w: any) => w.kind === "home")?.name;
+  expect(homeName).toBeTruthy();
   const categories = await (await request.get("/api/categories", { headers })).json();
   const suffix = crypto.randomUUID().slice(0, 8);
   const sku = "EXCEL-WH-V-" + suffix;
@@ -359,7 +364,7 @@ test("la vista previa de Casa detalla el antes y el después del Excel", async (
   await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
   await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
-  await page.getByLabel("Excel de Casa").setInputFiles({
+  await page.getByLabel(`Excel de ${homeName}`, { exact: true }).setInputFiles({
     name: "levantamiento-casa.xlsx",
     mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     buffer,
@@ -370,8 +375,12 @@ test("la vista previa de Casa detalla el antes y el después del Excel", async (
   const previewRow = preview.getByRole("row", { name: new RegExp(sku) });
   await expect(previewRow.locator("td").nth(2)).toHaveText("0");
   await expect(previewRow.locator("td").nth(3)).toHaveText("7");
-  await preview.getByRole("button", { name: "Cargar en Casa" }).click();
-  await expect(page.getByText("Levantamiento de Casa aplicado.")).toBeVisible();
+  await preview
+    .getByRole("button", { name: `Cargar en ${homeName}`, exact: true })
+    .click();
+  await expect(
+    page.getByText(`Levantamiento de ${homeName} aplicado.`, { exact: true }),
+  ).toBeVisible();
   const stock = await (
     await request.get("/api/inventory/stock", { headers })
   ).json();

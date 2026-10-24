@@ -246,6 +246,9 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     const report = await page.request.get(`${web}/api/reports/sales?format=xlsx`, { headers: auth });
     expect(report.ok(), `Negocio ${business}: informe de jornada`).toBe(true);
     expect(Buffer.from(await report.body()).subarray(0, 2).toString()).toBe("PK");
+    await page.locator("button.account").click();
+    await page.getByRole("button", { name: "Cerrar sesión" }).click();
+    await expect(page.getByLabel("Código de empresa")).toBeVisible();
     }
     expect(performance.now() - begun).toBeLessThan(30 * 60 * 1000);
   });
