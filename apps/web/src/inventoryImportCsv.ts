@@ -13,3 +13,19 @@ export function problemsCsv(problems: ImportProblem[]) {
     ...problems.map((p) => [p.row ?? "", p.column ?? "General", p.message]),
   ].map((row) => row.map(csvCell).join(";")).join("\r\n");
 }
+
+export type ImportReview = {
+  id: string;
+  name: string;
+  category: string;
+  qty: number;
+  active: boolean;
+  notes: string[];
+};
+
+export function reviewCsv(rows: ImportReview[]) {
+  return "\ufeff" + [
+    ["ID", "Producto", "Categoría", "Existencia", "Activo", "Avisos"],
+    ...rows.map((row) => [row.id, row.name, row.category, row.qty, row.active ? "Sí" : "No", row.notes.join("; ")]),
+  ].map((row) => row.map(csvCell).join(";")).join("\r\n");
+}

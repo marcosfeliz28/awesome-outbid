@@ -9,7 +9,7 @@ import { Upload } from "lucide-react";
 import { Badge, Button, Modal } from "@fitstore/ui";
 import { api } from "./api";
 import { toast } from "./helpers";
-import { csvCell, problemsCsv, type ImportProblem } from "./inventoryImportCsv";
+import { csvCell, problemsCsv, reviewCsv, type ImportProblem } from "./inventoryImportCsv";
 import "./inventoryImport.css";
 
 type Problem = ImportProblem;
@@ -501,6 +501,10 @@ function InventoryImport({ onDone }: { onDone: () => void }) {
                   </li>
                 ))}
               </ul>
+              {preview.review.length > 200 && <p>Se muestran 200 de {preview.review.length}. Descarga todos para revisarlos antes de confirmar.</p>}
+              <Button variant="ghost" onClick={() => downloadCsv("avisos-inventario.csv", reviewCsv(preview.review!))}>
+                Descargar todos los avisos (.csv)
+              </Button>
             </details>
           )}
           {preview.canApply && (
