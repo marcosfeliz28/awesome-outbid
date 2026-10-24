@@ -440,7 +440,24 @@ test("Mercancía móvil: entrada offline, sincronización única y etiquetas", a
     page.getByRole("heading", { name: "Mercancía", exact: true }),
   ).toBeVisible();
   await expect(page.getByText(/Pendiente · Entrada/)).toBeVisible();
+  const refreshedHistory = page.waitForResponse(async (response) => {
+    if (
+      response.request().method() !== "GET" ||
+      new URL(response.url()).pathname !== "/api/merchandise/operations" ||
+      !response.ok()
+    )
+      return false;
+    const operations = await response.json().catch(() => []);
+    return operations.some((operation: any) =>
+      operation.result?.variantIds?.includes(p.variants[0].id),
+    );
+  });
   await context.setOffline(false);
+  // Al volver la conexión, App sincroniza la cola y después invalida las
+  // consultas activas. React Query también puede consultar al recuperar la red
+  // antes de que termine el POST; por eso esperamos la respuesta que ya trae
+  // esta recepción, no cualquier GET del historial.
+  await refreshedHistory;
   await expect(page.getByText(/Pendiente · Entrada/)).toHaveCount(0, {
     timeout: 15000,
   });
