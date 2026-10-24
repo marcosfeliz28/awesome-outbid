@@ -160,6 +160,12 @@ describe("PC-19 licencia local", () => {
         localLicenseHttp("POST", "/api/auth/login", f.license).status,
       ).toBe(0);
       expect(
+        localLicenseHttp("POST", "/API/SALES/SYNC", f.license).status,
+      ).toBe(423);
+      expect(
+        localLicenseHttp("POST", "/API/AUTH/LOGIN", f.license).status,
+      ).toBe(0);
+      expect(
         localLicenseHttp("GET", "/api/local-license/status", f.license),
       ).toMatchObject({
         status: 200,

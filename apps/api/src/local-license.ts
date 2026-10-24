@@ -224,18 +224,23 @@ export function localLicenseHttp(
   body?: unknown,
 ) {
   if (!license) return { status: 0 };
-  if (method === "GET" && path === "/api/local-license/status")
+  const normalizedMethod = method.toUpperCase();
+  const normalizedPath = path.toLowerCase();
+  if (
+    normalizedMethod === "GET" &&
+    normalizedPath === "/api/local-license/status"
+  )
     return { status: 200, body: license.state() };
   if (
-    ["GET", "HEAD", "OPTIONS"].includes(method) ||
-    (method === "POST" &&
-      /^\/api\/auth\/(?:login|refresh|logout)\/?$/.test(path))
+    ["GET", "HEAD", "OPTIONS"].includes(normalizedMethod) ||
+    (normalizedMethod === "POST" &&
+      /^\/api\/auth\/(?:login|refresh|logout)\/?$/.test(normalizedPath))
   )
     return { status: 0 };
   const state = license.state();
   if (
-    method === "POST" &&
-    /^\/api\/sales\/sync\/?$/.test(path) &&
+    normalizedMethod === "POST" &&
+    /^\/api\/sales\/sync\/?$/.test(normalizedPath) &&
     state.mode === "write"
   ) {
     const sales = (body as { sales?: unknown })?.sales;
