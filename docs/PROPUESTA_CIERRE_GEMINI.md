@@ -111,3 +111,34 @@ Como no tengo acceso a leer AGENTS.md ni docs/coordinacion/ORDEN_LEVANTAMIENTO_C
 * Horarios y turnos: ¿Hacen un solo cierre de caja al final del día o hay cambio de turno de cajeras al mediodía?
 * Mensajeros de contraentrega: Cuando un mensajero regresa con el dinero de las contraentregas (como las de los días 15 y 16), ¿le entrega siempre a la cajera de turno o a veces a la dueña y a veces a la cajera?
 * Verifones: ¿Usan un solo verifón para toda la tienda o hay más de un aparato / banco (ej. CardNet y Azul) que deban cuadrarse por separado?
+
+
+---
+
+# Actualización de Gemini · 24-oct-2026
+
+*Segunda entrega de Gemini (pegada por la dueña). Claude la guardó sin cambiar el contenido; solo quitó las marcas de cita y el nombre del cajero porque el repositorio es público. Veredicto del arquitecto: `docs/coordinacion/VEREDICTO_GEMINI_24OCT.md` (rama `nexora-cloud`).*
+
+## Bloque 1: CIERRE DE CAJA Y REDISEÑO DE TICKET TÉRMICO
+*(Destino: rama `nexora-gemini-auditoria` -> `docs/PROPUESTA_CIERRE_GEMINI.md`)*
+
+### 1.1 Solución al descuadre de contraentregas y créditos (Caso 17 de octubre: RD$ -3,200)
+* **Causa raíz:** El 17 de octubre el sistema esperaba RD$ 9,900 (RD$ 1,900 de venta en efectivo del día + RD$ 4,700 de contraentregas del 15 y 16 de oct + RD$ 3,300 de una contraentrega del 11 de oct cerrada a las 17:09) y el cajero (cajero del turno) contó RD$ 6,700. Los RD$ 3,300 ya los tenía la dueña antes, pero al cerrarla en efectivo el sistema asumió que entraron a la gaveta.
+* **Regla y cambio en flujo de cobro de CxC / Contraentrega:** Obligar a elegir el **Destino del Dinero** al cerrar cualquier contraentrega o crédito en efectivo:
+  1. `EFECTIVO_EN_GAVETA`: Suma al efectivo esperado del cajero en su turno e imprime mini-recibo de recepción con doble firma (mensajero/cajero).
+  2. `EFECTIVO_RECIBIDO_POR_DUENA` (Nuevo método homologado al cierre de transferencia de crédito del dueño): No depende de ninguna caja, requiere PIN de gerente/dueña o sesión de dueña, salda la factura del cliente y **suma RD$ 0 al efectivo esperado de la gaveta del cajero**.
+  3. **Medida operativa inmediata (Cero código hoy):** Si una cajera debe rebajar una factura cuyo efectivo ya tiene la dueña, debe registrar en el mismo minuto una **Salida de Caja** por el mismo monto firmada por la dueña para anular el efecto en gaveta (+3,300 / -3,300).
+
+### 1.2 Controles anti-robo y cuadre de Tarjeta / Verifón (Caso +21,800 y RD$ 2,500 sin factura)
+* **Verifón sin lote abierto:** Prohibido aprobar un cierre (ni dar PIN de gerente) sin engrapar el voucher físico de **Cierre de Lote (Settlement)** del verifón del día. Al abrir caja en la mañana, la cajera debe imprimir un Sub-total del verifón verificando que esté en `RD$ 0.00` para no arrastrar lotes del día anterior (como pasó del día 16 al 17 con +21,800).
+* **Cero cobros en verifón sin factura:** Para registrar pago con tarjeta en Nexora POS, exigir digitar los últimos 4 dígitos del código de aprobación del voucher y anotar el `# de factura` en el voucher físico (evita cobros sueltos como los RD$ 2,500 del 17 de octubre).
+* **Tope de efectivo en gaveta y alertas activas:** Hacer entregas parciales («sangrías») firmadas al superar un tope en gaveta, mantener el cierre ciego con doble conteo y conectar las alertas de diferencia > RD$ 100 y uso de PIN de gerente al correo/WhatsApp de la dueña.
+
+### 1.3 Rediseño físico de los 2 tickets térmicos (Evaluación de imagen real del 17/10/2026)
+* **Problemas físicos detectados en el ticket actual:**
+  1. En el *Cuadre de Caja* (arriba): Imprime 7 líneas de monedas en `0.00`, salta números en la lista de totales, oculta los cobros de CxC dentro de `10-Total en venta efectivo: 9,900.00` (dejando `11-Recibos CxC: 0.00`), no imprime la línea de `DIFERENCIA (-3,200.00)` y confunde al final poniendo `Entregado: 0.00 / Dejado en caja: 6,700.00`.
+  2. En el *Reporte de la Venta Diaria de Usuario* (abajo): Intenta meter 5 columnas (`DESCRIPCIÓN | CANT | ITBIS | DESC | PRECIO`) en papel estrecho. Los nombres de suplementos ocupan hasta 8 líneas hacia abajo y las cifras se superponen volviéndose ilegibles (ej. `11,205.08`, `579.662,000.006,600.00` y en totales `114,965.255,600.0038,150.00`). Además, muestra el precio bruto (`38,150.00`) en vez del neto cobrado (`32,550.00`).
+* **Nuevo formato lineal compacto (Especificación para impresión térmica de 42 columnas):**
+  * Omitir denominaciones de billetes/monedas en `0`.
+  * Separar claramente: 1) Ventas efectivo del día (`1,900.00`), 2) Cobros CxC que entraron a la gaveta hoy con `#Factura y Cliente` (`4,700.00`), 3) Efectivo Esperado en Gaveta (`6,600.00`), 4) Efectivo Contado (`6,700.00`), 5) **Diferencia (`+100.00`)** y 6) Sección informativa fuera de gaveta con *CxC recibidas por Dueña antes* (`3,300.00`).
+  * En el reporte inferior de productos vendidos: Eliminar el segundo logo repetido, **quitar la columna `ITBIS` por fila** (dejar solo el total de ITBIS al pie), truncar el nombre del producto a 22 caracteres (1 sola línea por producto), quitar decimales `.00` en la columna `DESC` y mostrar a la derecha el **NETO cobrado** para que sume exactamente `32,550.00` sin choques de texto.
