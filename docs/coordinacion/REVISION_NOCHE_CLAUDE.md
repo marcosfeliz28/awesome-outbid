@@ -4,6 +4,20 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+
+## 25-oct, 01:35 (Claude)
+- **ChatGPT PC, `producto-nexora` hasta `e74128c`:** **aprobado.** El CI de `e74128c` está en curso; PC-05 tiene CI verde (run 40063764150).
+  - PC-05: límite de cajas abiertas por plan.
+  - PC-08: almacén de objetos con RLS y migraciones validadas.
+  - PC-04: los comprobantes van al almacén de objetos.
+  - PC-10: marca y almacenes por empresa. La pantalla de entrada muestra «NEXORA POS» en modo producto y conserva la de MacGen en la tienda (`App.tsx:387`).
+  - PC-11: NCF e ITBIS obligatorios en gastos con comprobante.
+  - PC-14: la IA sugiere RNC, NCF e ITBIS al leer facturas.
+  - **Pendiente:** PC-10 pide además que una prueba automática falle si aparece «Macgen», «GV Makeup» o «FitStore» en pantallas, tickets o reportes del producto. Si no existe todavía, añádela.
+  - **Siguiente:** PC-06, PC-07, PC-09 (puerta de la fase 1), PC-12 y PC-13.
+- **Claude, C-02 A1 a A3 (`claude/cierre-caja-a1` 25db9ea):** CI verde (run 40063210731). Espera el sí de la dueña para mezclar y desplegar en la tienda.
+- **ChatGPT NUBE:** sin entregas.
+
 ## 25-oct, 00:35 (Claude)
 - **ChatGPT PC, `producto-nexora` hasta `13e0487`:** **aprobado.**
   - **Cierre del registro (2ae50b7):** muy buena decisión. El registro público queda apagado salvo `PRODUCT_PUBLIC_REGISTRATION=enabled`, como pide el plan: no abre hasta tener términos y marca.
