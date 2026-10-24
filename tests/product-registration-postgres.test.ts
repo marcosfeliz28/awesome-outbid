@@ -36,7 +36,7 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     postgresFlags: ["-c", "listen_addresses=127.0.0.1", "-c", "timezone=UTC"],
     onLog: () => undefined, onError: () => undefined,
   });
-  const previous = Object.fromEntries(["DATABASE_URL", "PRODUCT_TENANCY", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL", "RESEND_API_BASE", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"].map(k => [k, process.env[k]]));
+  const previous = Object.fromEntries(["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL", "RESEND_API_BASE", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"].map(k => [k, process.env[k]]));
   let app: any;
   let client: any;
   let html = "";
@@ -66,13 +66,20 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     await app.init();
     const http = supertest(app.getHttpServer());
     const input = { businessName: "Tienda de prueba", ownerName: "Dueña de prueba", email: "owner@example.invalid", password: "ClaveSegura-2026!", managerPin: "869253", businessType: "retail", companyCode: "tienda-de-prueba" };
+    // Modo producto, correo configurado, pero todavía sin aprobación legal:
+    // el alta pública permanece cerrada por defecto y no deja Tenant.
+    delete process.env.PRODUCT_PUBLIC_REGISTRATION;
+    const closed = await http.post("/api/auth/register").send({ ...input, companyCode: "closed-store" });
+    expect(closed.status).toBe(404);
+    client = db.getPgClient("registration_qa", "127.0.0.1");
+    await client.connect();
+    expect((await client.query(`SELECT count(*)::int AS n FROM "Tenant" WHERE slug='closed-store'`)).rows[0].n).toBe(0);
+    process.env.PRODUCT_PUBLIC_REGISTRATION = "enabled";
     const created = await http.post("/api/auth/register").send(input);
     expect(created.status, JSON.stringify(created.body)).toBe(201);
     expect(html).toContain("/confirmar-correo#token=");
     const token = html.match(/#token=([a-f0-9]{64})/)?.[1];
     expect(token).toHaveLength(64);
-    client = db.getPgClient("registration_qa", "127.0.0.1");
-    await client.connect();
     const tenants = await client.query(`SELECT id, status, "trialEndsAt" FROM "Tenant" WHERE slug='tienda-de-prueba'`);
     expect(tenants.rows).toHaveLength(1);
     expect(tenants.rows[0].status).toBe("trial");
@@ -138,7 +145,7 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     expect(secondLogin.status).toBe(201);
     expect((await http.get("/api/onboarding").set("Authorization", `Bearer ${secondLogin.body.accessToken}`)).body.categories).toBe(0);
     expect((await http.post("/api/auth/resend-verification").send({ companyCode: "otra-tienda", email: "absent@example.invalid" })).body.message).toBe(resent.body.message);
-    expect((await http.post("/api/auth/register").send({})).status).toBe(400);
+    // El intento cerrado anterior también cuenta en el límite de 5 por IP.
     expect((await http.post("/api/auth/register").send({})).status).toBe(400);
     expect((await http.post("/api/auth/register").send({})).status).toBe(429);
   } finally {

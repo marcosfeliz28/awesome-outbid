@@ -64,6 +64,11 @@ export class RegistrationService implements OnModuleDestroy {
 
   async register(input: z.infer<typeof registration>) {
     if (process.env.PRODUCT_TENANCY !== "required") throw new HttpException("No disponible.", 404);
+    // El modo multiempresa por sí solo NO autoriza abrir altas públicas.
+    // Mantener cerrado hasta aprobar los textos legales y quitar la marca de
+    // la tienda del producto; el opt-in debe ser explícito en el despliegue.
+    if (process.env.PRODUCT_PUBLIC_REGISTRATION !== "enabled")
+      throw new HttpException("No disponible.", 404);
     mailConfiguration(); // Fallar cerrado antes de guardar una cuenta sin salida de correo.
     const email = input.email.toLowerCase();
     const token = verificationToken();

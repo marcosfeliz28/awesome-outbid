@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   initialCompanyCode,
+  publicRegistrationEnabled,
   productTenancyRequired,
 } from "../apps/web/src/productTenancy";
 
@@ -21,5 +22,12 @@ describe("acceso separado para la tienda y el producto SaaS", () => {
     expect(blueprint).toContain(
       "key: VITE_PRODUCT_TENANCY\n        value: required",
     );
+  });
+
+  it("mantiene cerrado el registro público salvo doble opt-in explícito", () => {
+    expect(publicRegistrationEnabled(undefined, undefined)).toBe(false);
+    expect(publicRegistrationEnabled("required", undefined)).toBe(false);
+    expect(publicRegistrationEnabled(undefined, "enabled")).toBe(false);
+    expect(publicRegistrationEnabled("required", "enabled")).toBe(true);
   });
 });

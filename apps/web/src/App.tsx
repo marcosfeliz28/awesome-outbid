@@ -48,7 +48,7 @@ import {
   Pill,
   Shirt,
 } from "lucide-react";
-import { initialCompanyCode, productTenancyRequired } from "./productTenancy";
+import { initialCompanyCode, productTenancyRequired, publicRegistrationEnabled } from "./productTenancy";
 import { Registration, ConfirmEmail } from "./Registration";
 import { Onboarding, type OnboardingStatus } from "./Onboarding";
 import { Billing } from "./Billing";
@@ -285,6 +285,11 @@ const navigation = [
 ];
 const PRODUCT_TENANCY_REQUIRED = productTenancyRequired(
   import.meta.env.VITE_PRODUCT_TENANCY,
+);
+// El registro no se ofrece hasta aprobar términos y marca para el producto.
+const PUBLIC_REGISTRATION_ENABLED = publicRegistrationEnabled(
+  import.meta.env.VITE_PRODUCT_TENANCY,
+  import.meta.env.VITE_PRODUCT_PUBLIC_REGISTRATION,
 );
 // Caras del cubo de la entrada: lo que venden Grupo MacGen y GV Makeup
 // Studio, por grupo (dueña, 23-oct).
@@ -543,7 +548,7 @@ function Login() {
                 : "Entrar a mi tienda"}
             <ArrowUpRight size={18} />
           </Button>
-          {PRODUCT_TENANCY_REQUIRED && <p><a href="/registro">Crear empresa · 14 días gratis</a></p>}
+          {PUBLIC_REGISTRATION_ENABLED && <p><a href="/registro">Crear empresa · 14 días gratis</a></p>}
           {SHOW_DEMO_CREDENTIALS && (
             <div className="demo-note">
               <Badge tone="violet">Demostración</Badge>
@@ -1387,7 +1392,7 @@ function Shell() {
 // sesión: así «Sesión cerrada por inactividad» sigue a la vista en el inicio
 // de sesión (R9-offline-5).
 export function App() {
-  if (PRODUCT_TENANCY_REQUIRED && window.location.pathname === "/registro") return <Registration />;
+  if (PUBLIC_REGISTRATION_ENABLED && window.location.pathname === "/registro") return <Registration />;
   if (PRODUCT_TENANCY_REQUIRED && window.location.pathname === "/confirmar-correo") return <ConfirmEmail />;
   return (
     <>

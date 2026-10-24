@@ -5,6 +5,7 @@ export default defineConfig({
     testTimeout: 30000,
     include: [
       "tests/product-billing-plans.test.ts",
+      "tests/product-billing-web.test.ts",
       "tests/product-route-matrix-postgres.test.ts",
       "tests/product-route-export-postgres.test.ts",
       "tests/product-route-money-postgres.test.ts",

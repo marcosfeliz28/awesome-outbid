@@ -37,7 +37,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     postgresFlags: ["-c", "listen_addresses=127.0.0.1", "-c", "timezone=UTC"],
     onLog: () => undefined, onError: () => undefined,
   });
-  const keys = ["DATABASE_URL", "PRODUCT_TENANCY", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL", "RESEND_API_BASE", "NEXORA_BILLING_BANK_NAME", "NEXORA_BILLING_BANK_ACCOUNT", "NEXORA_BILLING_BANK_HOLDER", "BILLING_TEST_MODE"];
+  const keys = ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL", "RESEND_API_BASE", "NEXORA_BILLING_BANK_NAME", "NEXORA_BILLING_BANK_ACCOUNT", "NEXORA_BILLING_BANK_HOLDER", "BILLING_TEST_MODE"];
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
   let app: any;
   let operatorDb: InstanceType<typeof PrismaClient> | undefined;
@@ -53,6 +53,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     await operatorDb.$executeRawUnsafe('GRANT UPDATE ("paidThroughAt") ON "Tenant" TO nexora_platform_billing');
     await operatorDb.$executeRawUnsafe('GRANT UPDATE ("pastDueAt", "suspendedAt") ON "Tenant" TO nexora_platform_billing');
     process.env.PRODUCT_TENANCY = "required";
+    process.env.PRODUCT_PUBLIC_REGISTRATION = "enabled";
     process.env.RESEND_API_KEY = "local-test-only";
     process.env.NOTIFY_EMAIL_FROM = "Nexora <test@example.invalid>";
     process.env.APP_PUBLIC_URL = "https://example.invalid";

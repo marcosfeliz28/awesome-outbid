@@ -16,11 +16,14 @@ export function Billing() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const bank = providers.data?.find((entry) => entry.kind === "bank_transfer");
-  const createRequest = async () => {
+  const testProvider = providers.data?.some((entry) => entry.kind === "test");
+  const createRequest = async (provider: Provider["kind"]) => {
     setBusy(true); setError(""); setMessage("");
     try {
-      await api("/billing/requests", { method: "POST", body: JSON.stringify({ plan: selected, provider: "bank_transfer" }) });
-      setMessage("Solicitud creada. Haz la transferencia y sube el comprobante. Nexora la verificará antes de activar el plan.");
+      await api("/billing/requests", { method: "POST", body: JSON.stringify({ plan: selected, provider }) });
+      setMessage(provider === "test"
+        ? "Solicitud de prueba creada. No mueve dinero real y Nexora debe aprobarla antes de activar el plan."
+        : "Solicitud creada. Haz la transferencia y sube el comprobante. Nexora la verificará antes de activar el plan.");
       await cache.invalidateQueries({ queryKey: ["billing-requests"] });
     } catch (cause: any) { setError(cause.message); }
     finally { setBusy(false); }
@@ -52,8 +55,13 @@ export function Billing() {
       <h2>Transferencia bancaria</h2>
       <p>Banco: {bank.instructions.bank}<br />Titular: {bank.instructions.holder}<br />Cuenta: {bank.instructions.account}</p>
       <p>Importe: RD$ {(plans.data?.find((plan) => plan.id === selected)?.monthlyPrice ?? 0).toLocaleString("es-DO")}</p>
-      <button disabled={busy || plans.isLoading} onClick={createRequest}>Solicitar pago por transferencia</button>
+      <button disabled={busy || plans.isLoading} onClick={() => { void createRequest("bank_transfer"); }}>Solicitar pago por transferencia</button>
     </section> : <p role="status">La cuenta para transferencias aún no está configurada. No hagas un pago hasta que aparezca aquí.</p>}
+    {testProvider && <section aria-label="Facturación de prueba">
+      <h2>Simulación de facturación</h2>
+      <p>No mueve dinero real. La solicitud de prueba también requiere revisión de Nexora para activar el plan.</p>
+      <button disabled={busy || plans.isLoading} onClick={() => { void createRequest("test"); }}>Crear solicitud de prueba</button>
+    </section>}
     <section aria-label="Solicitudes de pago">
       <h2>Mis solicitudes</h2>
       {requests.data?.length ? <ul>{requests.data.map((request) => <li key={request.id}>
