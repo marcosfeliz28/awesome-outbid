@@ -13,6 +13,8 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { createHash } from "node:crypto";
+import { newObjectKey, tenantObjectStore } from "./tenant-object-store";
+import { reserveTenantObject } from "./tenant-object-deletion";
 import {
   can,
   countedQty,
@@ -188,9 +190,13 @@ export class MerchandiseController {
     const a = await this.db.invoiceAttachment.findFirstOrThrow({
       where: { id: parse(uuid, id), branchId: actor.branchId },
     });
+    const bytes = a.objectKey
+      ? await tenantObjectStore().get(actor.tenantId, a.objectKey)
+      : a.data ? Buffer.from(a.data) : bad("El archivo de la factura no está disponible.");
     res.setHeader("Content-Type", a.mime);
     res.setHeader("Content-Disposition", 'attachment; filename="comprobante"');
-    res.send(Buffer.from(a.data));
+    res.setHeader("Cache-Control", "private, no-store");
+    res.send(bytes);
   }
   @Post("merchandise/import")
   @Permit("inventory:write")
@@ -278,7 +284,17 @@ export class MerchandiseController {
         })
       : [];
     const lines = matchInvoiceLines(extracted.lines, variants, equivalents);
-    return this.db.$transaction(async (tx) => {
+    const mime = format === "csv"
+      ? "text/csv"
+      : format === "xlsx"
+        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        : file.mimetype;
+    const store = process.env.PRODUCT_TENANCY === "required" ? tenantObjectStore() : null;
+    const objectKey = store ? newObjectKey("invoice") : null;
+    if (store && objectKey) await reserveTenantObject(this.db, actor.tenantId, objectKey);
+    if (store && objectKey) await store.put(actor.tenantId, objectKey, file.buffer, mime);
+    try {
+    return await this.db.$transaction(async (tx) => {
       await purgeStaleInvoiceDrafts(tx, actor.branchId);
       if (supplierId && mapping)
         await tx.supplierImportProfile.upsert({
@@ -292,13 +308,9 @@ export class MerchandiseController {
         data: {
           branchId: actor.branchId,
           userId: actor.id,
-          mime:
-            format === "csv"
-              ? "text/csv"
-              : format === "xlsx"
-                ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                : file.mimetype,
-          data: file.buffer,
+          mime,
+          data: objectKey ? null : file.buffer,
+          objectKey,
         },
       });
       const draft = await tx.invoiceDraft.create({
@@ -322,11 +334,16 @@ export class MerchandiseController {
         undefined,
         { attachmentId: attachment.id, lineCount: lines.length },
       );
+      if (objectKey) await tx.tenantObjectDeletion.deleteMany({ where: { tenantId: actor.tenantId, objectKey } });
       return {
         ...json(draft),
         skipped: "skipped" in extracted ? extracted.skipped : 0,
       };
     });
+    } catch (error) {
+      if (store && objectKey) await store.delete(actor.tenantId, objectKey).catch(() => undefined);
+      throw error;
+    }
   }
   @Get("merchandise/operations")
   @Permit("inventory:write")

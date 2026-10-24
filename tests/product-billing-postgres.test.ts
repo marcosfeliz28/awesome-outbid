@@ -38,7 +38,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     postgresFlags: ["-c", "listen_addresses=127.0.0.1", "-c", "timezone=UTC"],
     onLog: () => undefined, onError: () => undefined,
   });
-  const keys = ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "PRODUCT_LEGAL_APPROVED", "PRODUCT_TERMS_VERSION", "PRODUCT_PRIVACY_VERSION", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL", "RESEND_API_BASE", "NEXORA_BILLING_BANK_NAME", "NEXORA_BILLING_BANK_ACCOUNT", "NEXORA_BILLING_BANK_HOLDER", "BILLING_TEST_MODE"];
+  const keys = ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_OBJECT_STORE_DIR", "PRODUCT_PUBLIC_REGISTRATION", "PRODUCT_LEGAL_APPROVED", "PRODUCT_TERMS_VERSION", "PRODUCT_PRIVACY_VERSION", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL", "RESEND_API_BASE", "NEXORA_BILLING_BANK_NAME", "NEXORA_BILLING_BANK_ACCOUNT", "NEXORA_BILLING_BANK_HOLDER", "BILLING_TEST_MODE"];
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
   let app: any;
   let operatorDb: InstanceType<typeof PrismaClient> | undefined;
@@ -54,6 +54,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     await operatorDb.$executeRawUnsafe('GRANT UPDATE ("paidThroughAt") ON "Tenant" TO nexora_platform_billing');
     await operatorDb.$executeRawUnsafe('GRANT UPDATE ("pastDueAt", "suspendedAt") ON "Tenant" TO nexora_platform_billing');
     process.env.PRODUCT_TENANCY = "required";
+    process.env.PRODUCT_OBJECT_STORE_DIR = join(directory, "objects");
     process.env.PRODUCT_PUBLIC_REGISTRATION = "enabled";
     process.env.PRODUCT_LEGAL_APPROVED = "confirmed";
     process.env.PRODUCT_TERMS_VERSION = "terms-test-1";
@@ -102,6 +103,15 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==", "base64");
     const proof = await http.post(`/api/billing/requests/${id}/proof`).set("Authorization", ownerA).attach("file", png, "comprobante.png");
     expect(proof.status, JSON.stringify(proof.body)).toBe(201);
+    const proofRow = await operatorDb!.$queryRawUnsafe<Array<{ proof: Buffer | null; proofObjectKey: string | null }>>(
+      'SELECT proof,"proofObjectKey" FROM "BillingRequest" WHERE id=$1::uuid', id,
+    );
+    expect(proofRow).toHaveLength(1);
+    expect(proofRow[0].proof).toBeNull();
+    expect(proofRow[0].proofObjectKey).toMatch(/^billing\/[0-9a-f-]{36}$/);
+    const ownProof = await http.get(`/api/billing/requests/${id}/proof`).set("Authorization", ownerA);
+    expect(ownProof.status).toBe(200);
+    expect(Buffer.from(ownProof.body)).toEqual(png);
     const listed = await http.get("/api/billing/requests").set("Authorization", ownerA);
     expect(listed.body[0].hasProof).toBe(true);
     expect(JSON.stringify(listed.body)).not.toContain("base64");

@@ -5,6 +5,8 @@ import { z } from "@fitstore/shared";
 import { Actor, CurrentUser, Database, Permit, bad, conflict, imageType, parse, uuid } from "./common";
 import { RequestRateLimitService } from "./rate-limit";
 import { BILLING_PLANS } from "./billing-plans";
+import { newObjectKey, tenantObjectStore } from "./tenant-object-store";
+import { reserveTenantObject } from "./tenant-object-deletion";
 
 // Precios de referencia: la dueña debe ratificarlos antes de ofrecer cobros.
 
@@ -85,31 +87,48 @@ export class ProductBillingController {
 
   @Post("requests/:id/proof") @Permit("*")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_PROOF_BYTES + 1, files: 1 } }))
-  async submitProof(@Param("id") id: string, @UploadedFile() file: any) {
+  async submitProof(@Param("id") id: string, @UploadedFile() file: any, @CurrentUser() actor: Actor) {
     if (!file?.buffer?.length) bad("Adjunta el comprobante.");
     if (file.size > MAX_PROOF_BYTES) bad("El comprobante debe pesar como máximo 2 MB.");
     const type = imageType(file.buffer);
     if (!type || type === "gif") bad("El comprobante debe ser JPG, PNG o WebP.");
-    return this.db.$transaction(async (tx) => {
+    const store = tenantObjectStore();
+    const objectKey = newObjectKey("billing");
+    await reserveTenantObject(this.db, actor.tenantId, objectKey);
+    await store.put(actor.tenantId, objectKey, file.buffer, `image/${type}`);
+    let previousObjectKey: string | null = null;
+    try {
+    const result = await this.db.$transaction(async (tx) => {
       const requestId = parse(uuid, id);
       await tx.$queryRaw`SELECT id FROM "BillingRequest" WHERE id=${requestId}::uuid FOR UPDATE`;
       const row = await tx.billingRequest.findFirst({ where: { id: requestId } });
       if (!row) bad("Solicitud no encontrada.");
       if (row.provider !== "bank_transfer" || !["pending_proof", "pending_review"].includes(row.status))
         conflict("Esta solicitud ya fue revisada.");
+      previousObjectKey = row.proofObjectKey;
       await tx.billingRequest.update({ where: { id: requestId }, data: {
-        proof: file.buffer, proofMime: `image/${type}`, submittedAt: new Date(), status: "pending_review",
+        proof: null, proofObjectKey: objectKey, proofMime: `image/${type}`, submittedAt: new Date(), status: "pending_review",
       } });
+      await tx.tenantObjectDeletion.deleteMany({ where: { tenantId: actor.tenantId, objectKey } });
       return { id: requestId, status: "pending_review", hasProof: true };
     });
+    if (previousObjectKey) await store.delete(actor.tenantId, previousObjectKey).catch(() => undefined);
+    return result;
+    } catch (error) {
+      await store.delete(actor.tenantId, objectKey).catch(() => undefined);
+      throw error;
+    }
   }
 
   @Get("requests/:id/proof") @Permit("*")
-  async proof(@Param("id") id: string, @Res() res: Response) {
-    const row = await this.db.billingRequest.findFirst({ where: { id: parse(uuid, id) }, select: { proof: true, proofMime: true } });
-    if (!row?.proof || !row.proofMime) bad("El comprobante no existe.");
+  async proof(@Param("id") id: string, @Res() res: Response, @CurrentUser() actor: Actor) {
+    const row = await this.db.billingRequest.findFirst({ where: { id: parse(uuid, id) }, select: { proof: true, proofObjectKey: true, proofMime: true } });
+    if ((!row?.proof && !row?.proofObjectKey) || !row?.proofMime) bad("El comprobante no existe.");
+    const bytes = row.proofObjectKey
+      ? await tenantObjectStore().get(actor.tenantId, row.proofObjectKey)
+      : Buffer.from(row.proof!);
     res.setHeader("Content-Type", row.proofMime);
     res.setHeader("Cache-Control", "private, no-store");
-    res.send(Buffer.from(row.proof));
+    res.send(bytes);
   }
 }

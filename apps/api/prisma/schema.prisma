@@ -1103,16 +1103,32 @@ model InvoiceAttachment {
   branchId  String
   userId    String
   mime      String
-  data      Bytes
+  data      Bytes?
+  objectKey String?
   createdAt DateTime @default(now())
   // GoodsReceipt_attachmentId_fkey (RESTRICT): no se borra si una recepción
   // la usa (202610210002_datos_restricciones).
   goodsReceipts GoodsReceipt[]
+  @@unique([tenantId, objectKey])
 }
 
 // Cola durable de avisos por Telegram (apps/api/src/notifications.ts). El
 // texto se guarda ya renderizado y sin datos personales sensibles; el token y
 // el chat sólo viven en las variables de entorno.
+// Eliminación física después del commit, reintentable si el proveedor falla.
+model TenantObjectDeletion {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  objectKey String
+  attempts Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, objectKey])
+  @@index([tenantId, nextAttemptAt])
+}
+
 model NotificationOutbox {
   tenant Tenant @relation(fields: [tenantId], references: [id])
   tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
@@ -1313,6 +1329,7 @@ model Tenant {
   supplierCodeRows SupplierCode[]
   invoiceDraftRows InvoiceDraft[]
   invoiceAttachmentRows InvoiceAttachment[]
+  objectDeletionRows TenantObjectDeletion[]
   notificationOutboxRows NotificationOutbox[]
   incentiveRateRows IncentiveRate[]
   incentiveEntryRows IncentiveEntry[]
@@ -1373,6 +1390,7 @@ model BillingRequest {
   amount        Decimal  @db.Decimal(12, 2)
   status        String   @default("pending_proof")
   proof         Bytes?
+  proofObjectKey String?
   proofMime     String?
   submittedAt   DateTime?
   reviewedAt    DateTime?
@@ -1385,6 +1403,7 @@ model BillingRequest {
 
   @@index([tenantId, createdAt])
   @@index([status, submittedAt])
+  @@unique([tenantId, proofObjectKey])
 }
 
 model BillingDecision {

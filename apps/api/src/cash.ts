@@ -49,11 +49,12 @@ import { cashDifferenceMessage } from "./alerts";
 import { MONEY_TRANSACTION } from "./sales";
 import { moneyDb } from "./database-errors";
 import { enforcePlanQuota } from "./billing-plans";
+import { parsePaymentObjectReference } from "./tenant-object-store";
 
 export async function cashExpected(db: any, session: any) {
   // Sólo las columnas que se suman (D-M6): sin select, Prisma traía también
-  // Payment.proofUrl, la foto base64 de cada abono (26 MB con 20 fotos),
-  // dentro de transacciones que retienen el bloqueo de la caja.
+  // Payment.proofUrl, históricamente la foto base64 de cada abono
+  // (26 MB con 20 fotos), dentro de transacciones que bloquean la caja.
   const payments = await db.payment.findMany({
     where: {
       cashSessionId: session.id,
@@ -518,14 +519,14 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         status: p.status,
         reference: p.reference,
         hasProof: !!p.proofUrl,
-        proofContentType:
+        proofContentType: parsePaymentObjectReference(p.proofUrl)?.mime ??
           /^data:([^;,]+);base64,/.exec(p.proofUrl ?? "")?.[1] ?? null,
-        proofBytes: p.proofUrl
+        proofBytes: parsePaymentObjectReference(p.proofUrl)?.bytes ?? (p.proofUrl
           ? Math.max(
               0,
               Math.floor(((p.proofUrl.split(",", 2)[1] ?? "").length * 3) / 4),
             )
-          : 0,
+          : 0),
         createdAt: p.createdAt,
       })),
     },

@@ -7,6 +7,7 @@
 import { PrismaClient } from "@prisma/client";
 import { createHash, randomUUID } from "node:crypto";
 import { BILLING_PLANS } from "../src/billing-plans";
+import { tenantObjectStore } from "../src/tenant-object-store";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type Review = { requestId: string; reviewer: string; decision: "approved" | "rejected"; reason: string; paidThroughAt?: Date; expectedProofSha256?: string };
@@ -20,8 +21,8 @@ export async function reviewProductBilling(db: PrismaClient, input: Review) {
   return db.$transaction(async (tx) => {
     // El SET falla si el login no recibió pertenencia a este rol separado.
     await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_platform_billing");
-    const rows = await tx.$queryRaw<Array<{ id: string; tenantId: string; plan: string; provider: string; status: string; proof: Uint8Array | null; paidThroughAt: Date | null; reviewReason: string | null }>>`
-      SELECT id, "tenantId", plan, provider, status, proof, "paidThroughAt", "reviewReason"
+    const rows = await tx.$queryRaw<Array<{ id: string; tenantId: string; plan: string; provider: string; status: string; proof: Uint8Array | null; proofObjectKey: string | null; paidThroughAt: Date | null; reviewReason: string | null }>>`
+      SELECT id, "tenantId", plan, provider, status, proof, "proofObjectKey", "paidThroughAt", "reviewReason"
       FROM "BillingRequest" WHERE id=${input.requestId}::uuid FOR UPDATE`;
     const row = rows[0];
     if (!row) throw new Error("Solicitud inexistente.");
@@ -33,9 +34,10 @@ export async function reviewProductBilling(db: PrismaClient, input: Review) {
       throw new Error("Esta solicitud ya fue revisada con otra decisión.");
     }
     if (row.status !== "pending_review") throw new Error("La solicitud no está pendiente de revisión.");
-    if (row.provider === "bank_transfer" && !row.proof?.length) throw new Error("Falta el comprobante.");
+    if (row.provider === "bank_transfer" && !row.proof?.length && !row.proofObjectKey) throw new Error("Falta el comprobante.");
+    const proofBytes = row.proofObjectKey ? await tenantObjectStore().get(row.tenantId, row.proofObjectKey) : row.proof;
     if (row.provider === "bank_transfer" && input.decision === "approved" &&
-      createHash("sha256").update(row.proof!).digest("hex") !== input.expectedProofSha256)
+      createHash("sha256").update(proofBytes!).digest("hex") !== input.expectedProofSha256)
       throw new Error("La evidencia cambió o no fue revisada. Indica su SHA-256.");
     if (row.provider !== "bank_transfer" && row.provider !== "test") throw new Error("Proveedor desconocido.");
     if (input.decision === "approved") {

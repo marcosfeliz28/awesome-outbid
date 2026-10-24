@@ -7,9 +7,12 @@ import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import EmbeddedPostgres from "embedded-postgres";
 import supertest from "supertest";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { createAppModule } from "../apps/api/src/app";
 import { ApiExceptionFilter } from "../apps/api/src/common";
+import { Database } from "../apps/api/src/common";
+import { processTenantObjectDeletions } from "../apps/api/src/tenant-object-deletion";
+import { parsePaymentObjectReference, tenantObjectStore } from "../apps/api/src/tenant-object-store";
 
 const root = resolve(import.meta.dirname, "..");
 const prismaCli = createRequire(join(root, "apps/api/package.json")).resolve("prisma/build/index.js");
@@ -41,7 +44,7 @@ it("resoluciones offline, comprobantes y pagos a proveedores son propios de la e
     onLog: () => undefined, onError: () => undefined,
   });
   const saved = Object.fromEntries(
-    ["DATABASE_URL", "PRODUCT_TENANCY", "TELEGRAM_BOT_TOKEN", "RESEND_API_KEY", "NEXORA_RETENTION"].map(
+    ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_OBJECT_STORE_DIR", "TELEGRAM_BOT_TOKEN", "RESEND_API_KEY", "NEXORA_RETENTION"].map(
       (name) => [name, process.env[name]],
     ),
   );
@@ -79,6 +82,7 @@ it("resoluciones offline, comprobantes y pagos a proveedores son propios de la e
 
     process.env.DATABASE_URL = url;
     process.env.PRODUCT_TENANCY = "required";
+    process.env.PRODUCT_OBJECT_STORE_DIR = join(dataDir, "objects");
     process.env.NEXORA_RETENTION = "off";
     delete process.env.TELEGRAM_BOT_TOKEN;
     delete process.env.RESEND_API_KEY;
@@ -119,7 +123,43 @@ it("resoluciones offline, comprobantes y pagos a proveedores son propios de la e
     expect(ownProof.status, JSON.stringify(ownProof.body)).toBe(201);
     const images = await sql.query(`SELECT "tenantId","proofUrl" FROM "Payment" WHERE id IN ($1,$2) ORDER BY "tenantId"`, [a.paymentId, b.paymentId]);
     expect(images.rows[0].proofUrl).toBeNull();
-    expect(images.rows[1].proofUrl).toMatch(/^data:image\/png;base64,/);
+    expect(images.rows[1].proofUrl).toMatch(/^object:v1:payment\/[0-9a-f-]{36}:image\/png:\d+$/);
+    expect(JSON.stringify(images.rows)).not.toContain("base64");
+    expect((await sql.query(`SELECT COUNT(*)::int AS count FROM "TenantObjectDeletion" WHERE "tenantId"=$1`, [b.tenantId])).rows[0].count).toBe(0);
+    denied(await send(http.get(`/api/payments/${a.paymentId}/proof`)));
+    denied(await send(http.get(`/api/payments/${b.paymentId}/proof`), a));
+    const ownProofBytes = await send(http.get(`/api/payments/${b.paymentId}/proof`));
+    expect(ownProofBytes.status, JSON.stringify(ownProofBytes.body)).toBe(200);
+    expect(Buffer.from(ownProofBytes.body)).toEqual(tinyPng);
+    const storedPayment = parsePaymentObjectReference(images.rows[1].proofUrl);
+    expect(storedPayment).not.toBeNull();
+    await sql.query(`UPDATE "Payment" SET "proofUrl"=NULL WHERE id=$1`, [b.paymentId]);
+    expect((await sql.query(`SELECT "tenantId","objectKey" FROM "TenantObjectDeletion"`)).rows)
+      .toContainEqual({ tenantId: b.tenantId, objectKey: storedPayment!.key });
+    expect(await processTenantObjectDeletions(app.get(Database), b.tenantId)).toBe(1);
+    await expect(tenantObjectStore().get(b.tenantId, storedPayment!.key)).rejects.toThrow();
+
+    // Si la escritura en PostgreSQL falla y también falla el borrado inmediato,
+    // la reserva previa conserva el objeto en una cola durable para reintento.
+    await sql.query(`CREATE FUNCTION nexora_test_proof_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fallo inyectado'; END $$`);
+    await sql.query(`CREATE TRIGGER nexora_test_proof_failure BEFORE UPDATE OF "proofUrl" ON "Payment" FOR EACH ROW EXECUTE FUNCTION nexora_test_proof_failure()`);
+    const deletion = vi.spyOn(Object.getPrototypeOf(tenantObjectStore()), "delete").mockRejectedValue(new Error("borrado temporalmente no disponible"));
+    let reserved: Array<{ objectKey: string }> = [];
+    try {
+      const failedProof = await send(proof(b.paymentId));
+      expect(failedProof.status, JSON.stringify(failedProof.body)).toBe(503);
+      expect(failedProof.body.code).toBe("DB_UNAVAILABLE");
+      reserved = (await sql.query(`SELECT "objectKey" FROM "TenantObjectDeletion" WHERE "tenantId"=$1`, [b.tenantId])).rows;
+      expect(reserved).toHaveLength(1);
+      expect(reserved[0].objectKey).toMatch(/^payment\/[0-9a-f-]{36}$/);
+      await expect(tenantObjectStore().get(b.tenantId, reserved[0].objectKey)).resolves.toEqual(tinyPng);
+    } finally {
+      deletion.mockRestore();
+      await sql.query(`DROP TRIGGER nexora_test_proof_failure ON "Payment"`);
+      await sql.query(`DROP FUNCTION nexora_test_proof_failure()`);
+    }
+    expect(await processTenantObjectDeletions(app.get(Database), b.tenantId, new Date(Date.now() + 25 * 3_600_000))).toBe(1);
+    await expect(tenantObjectStore().get(b.tenantId, reserved[0].objectKey)).rejects.toThrow();
 
     const supplierPayment = (supplierId: string) => ({ operationId: id(650), supplierId, amount: 7, method: "transfer", reference: "PROVEEDOR-QA" });
     denied(await send(http.post("/api/supplier-payments").send(supplierPayment(a.supplierId))));

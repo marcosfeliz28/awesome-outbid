@@ -40,6 +40,7 @@ it("recepciones y traspasos con lotes son idempotentes y aislados entre empresas
   });
   const oldUrl = process.env.DATABASE_URL;
   const oldMode = process.env.PRODUCT_TENANCY;
+  const oldObjects = process.env.PRODUCT_OBJECT_STORE_DIR;
   let client: any;
   let app: any;
   try {
@@ -63,6 +64,7 @@ it("recepciones y traspasos con lotes son idempotentes y aislados entre empresas
     }
     process.env.DATABASE_URL = url;
     process.env.PRODUCT_TENANCY = "required";
+    process.env.PRODUCT_OBJECT_STORE_DIR = join(dataDir, "objects");
     const { NestFactory } = apiRequire("@nestjs/core");
     const { JwtService } = apiRequire("@nestjs/jwt");
     app = await NestFactory.create(createAppModule(secret), { logger: false });
@@ -176,11 +178,16 @@ it("recepciones y traspasos con lotes son idempotentes y aislados entre empresas
       .field("mapping", mapping).attach("file", csv, "factura.csv");
     expect(ownImport.status, JSON.stringify(ownImport.body)).toBe(201);
     expect(ownImport.body.lines[0].variantId).toBe(fixtures[1].variantId);
+    const storedAttachment = await client.query(`SELECT data,"objectKey" FROM "InvoiceAttachment" WHERE id=$1`, [ownImport.body.attachmentId]);
+    expect(storedAttachment.rows).toHaveLength(1);
+    expect(storedAttachment.rows[0].data).toBeNull();
+    expect(storedAttachment.rows[0].objectKey).toMatch(/^invoice\/[0-9a-f-]{36}$/);
     const foreignAttachment = await http.get(`/api/merchandise/attachments/${ownImport.body.attachmentId}`).set("Authorization", a);
     expect(foreignAttachment.status).toBe(404);
     const ownAttachment = await http.get(`/api/merchandise/attachments/${ownImport.body.attachmentId}`).set("Authorization", b);
     expect(ownAttachment.status).toBe(200);
     expect(ownAttachment.text).toContain("VARIANTE-COMPARTIDA");
+    expect(ownAttachment.text).toBe(csv.toString("utf8"));
     const foreignQuote = await http.post("/api/quotes").set("Authorization", b)
       .send({ items: [{ variantId: fixtures[0].variantId, qty: 1 }] });
     expect(foreignQuote.status).toBe(400);
@@ -194,6 +201,8 @@ it("recepciones y traspasos con lotes son idempotentes y aislados entre empresas
     else process.env.DATABASE_URL = oldUrl;
     if (oldMode === undefined) delete process.env.PRODUCT_TENANCY;
     else process.env.PRODUCT_TENANCY = oldMode;
+    if (oldObjects === undefined) delete process.env.PRODUCT_OBJECT_STORE_DIR;
+    else process.env.PRODUCT_OBJECT_STORE_DIR = oldObjects;
     await pg.stop().catch(() => undefined);
     await rm(dataDir, { recursive: true, force: true, maxRetries: 12, retryDelay: 250 });
   }

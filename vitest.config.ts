@@ -7,6 +7,7 @@ export default defineConfig({
     // docenas de bases a la vez demora incluso las pruebas de Nest sin base.
     maxWorkers: process.platform === "win32" ? 4 : undefined,
     include: [
+      "tests/product-object-store.test.ts",
       "tests/product-billing-plans.test.ts",
       "tests/product-billing-web.test.ts",
       "tests/product-route-matrix-postgres.test.ts",

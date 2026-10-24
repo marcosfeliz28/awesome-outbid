@@ -37,6 +37,7 @@ import { IncentivesController } from "./incentives";
 import { NotificationsController, NotificationWorker } from "./notifications";
 import { CreditReminderService } from "./credit-reminder";
 import { RetentionWorker } from "./retention";
+import { TenantObjectDeletionWorker } from "./tenant-object-deletion";
 import { UsdRateWorker } from "./usd-rate";
 import {
   DriveBackupController,
@@ -110,6 +111,7 @@ export function createAppModule(secret: string) {
       NotificationWorker,
       CreditReminderService,
       RetentionWorker,
+      TenantObjectDeletionWorker,
       ...(!product
         ? [DriveBackupService, DriveBackupWorker, UsdRateWorker]
         : []),

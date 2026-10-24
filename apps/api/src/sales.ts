@@ -17,6 +17,8 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { Prisma } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { newObjectKey, parsePaymentObjectReference, paymentObjectReference, tenantObjectStore } from "./tenant-object-store";
+import { reserveTenantObject } from "./tenant-object-deletion";
 import { allocateCredit } from "./credit-allocation";
 import {
   expired,
@@ -120,14 +122,15 @@ const PROOF_MAX_BYTES = 2 * 1024 * 1024;
 const paymentSummary = (payment: any) => {
   const { proofUrl, ...summary } = payment;
   const match = /^data:([^;,]+);base64,(.*)$/s.exec(proofUrl ?? "");
+  const object = parsePaymentObjectReference(proofUrl);
   return {
     ...summary,
     hasProof: !!proofUrl,
-    proofContentType: match?.[1] ?? null,
-    proofBytes: match?.[2]
+    proofContentType: object?.mime ?? match?.[1] ?? null,
+    proofBytes: object?.bytes ?? (match?.[2]
       ? Math.floor((match[2].length * 3) / 4) -
         (match[2].endsWith("==") ? 2 : match[2].endsWith("=") ? 1 : 0)
-      : 0,
+      : 0),
   };
 };
 
@@ -3291,9 +3294,10 @@ export class SalesController {
     return this.collect(actor, id, parse(installmentSchema, body), true);
   }
   // Foto de la evidencia de un cobro (voucher, comprobante o el efectivo
-  // recibido por WhatsApp): jpg, png o webp de hasta 2 MB, guardada como data
-  // URL en el pago, igual que el logo. La sube quien registró el cobro en su
-  // caja o quien gestiona ventas; se puede reemplazar.
+  // recibido por WhatsApp): jpg, png o webp de hasta 2 MB. La sube quien
+  // registró el cobro en su caja o quien gestiona ventas; se puede reemplazar.
+  // Producto usa objetos externos por empresa y la tienda antigua conserva
+  // la lectura de data URL.
   @Post("payments/:id/proof")
   @Permit("authenticated")
   @UseInterceptors(
@@ -3313,8 +3317,16 @@ export class SalesController {
     if (!type || type === "gif")
       bad("La evidencia debe ser una imagen JPG, PNG o WebP.");
     const payment = await this.proofPayment(actor, id);
-    const proofUrl = `data:image/${type};base64,${file.buffer.toString("base64")}`;
-    return this.db.$transaction(async (tx) => {
+    const product = process.env.PRODUCT_TENANCY === "required";
+    const store = product ? tenantObjectStore() : null;
+    const objectKey = store ? newObjectKey("payment") : null;
+    const proofUrl = objectKey
+      ? paymentObjectReference(objectKey, `image/${type}`, file.buffer.length)
+      : `data:image/${type};base64,${file.buffer.toString("base64")}`;
+    if (store && objectKey) await reserveTenantObject(this.db, actor.tenantId, objectKey);
+    if (store && objectKey) await store.put(actor.tenantId, objectKey, file.buffer, `image/${type}`);
+    try {
+    const summary = await this.db.$transaction(async (tx) => {
       const row = await tx.payment.update({
         where: { id: payment.id },
         data: { proofUrl },
@@ -3331,8 +3343,16 @@ export class SalesController {
           proof: `(imagen de ${Math.round(file.size / 1024)} KB)`,
         },
       );
+      if (objectKey) await tx.tenantObjectDeletion.deleteMany({ where: { tenantId: actor.tenantId, objectKey } });
       return paymentSummary(row);
     });
+    const previous = parsePaymentObjectReference(payment.proofUrl);
+    if (store && previous) await store.delete(actor.tenantId, previous.key).catch(() => undefined);
+    return summary;
+    } catch (error) {
+      if (store && objectKey) await store.delete(actor.tenantId, objectKey).catch(() => undefined);
+      throw error;
+    }
   }
   @Get("payments/:id/proof")
   @Permit("authenticated")
@@ -3343,6 +3363,12 @@ export class SalesController {
   ) {
     const payment = await this.proofPayment(actor, id);
     if (!payment.proofUrl) bad("Este pago no tiene evidencia adjunta.");
+    const object = parsePaymentObjectReference(payment.proofUrl);
+    if (object) {
+      const bytes = await tenantObjectStore().get(actor.tenantId, object.key);
+      res.setHeader("Cache-Control", "private, no-store");
+      return res.type(object.mime).send(bytes);
+    }
     const match = /^data:(image\/(?:jpeg|png|webp));base64,(.*)$/s.exec(
       payment.proofUrl,
     );
