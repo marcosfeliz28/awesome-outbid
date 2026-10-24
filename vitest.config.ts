@@ -9,6 +9,7 @@ export default defineConfig({
     include: [
       "tests/assistant-n01.test.ts",
       "tests/print-ready-n16.test.ts",
+      "tests/table-pagination-n17.test.ts",
       "tests/assistant-n02.test.ts",
       "tests/assistant-n04.test.ts",
       "tests/support-n05.test.ts",

@@ -6,6 +6,7 @@ import {
   terminalIdentity,
 } from "./realtime";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { tablePage, tableRowsKey } from "./tablePagination";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -124,8 +125,9 @@ function DataTable({
   emptyDescription?: string;
 }) {
   const [page, setPage] = useState(1);
-  useEffect(() => setPage(1), [rows.length]);
-  const totalPages = Math.ceil(rows.length / 20);
+  const rowKey = tableRowsKey(rows);
+  useEffect(() => setPage(1), [rowKey]);
+  const { current, totalPages } = tablePage(page, rows.length);
   return rows.length ? (
     <>
       {/* G12: con desplazamiento horizontal, la tabla se recorre con teclado. */}
@@ -141,7 +143,7 @@ function DataTable({
             </tr>
           </thead>
           <tbody>
-            {rows.slice((page - 1) * 20, page * 20).map((r, index) => (
+            {rows.slice((current - 1) * 20, current * 20).map((r, index) => (
               <tr key={r.id || r.sku || index}>
                 {columns.map((c) => (
                   <td key={c.label} className={c.className}>
@@ -156,19 +158,19 @@ function DataTable({
       {totalPages > 1 && (
         <div className="pagination">
           <span>
-            {rows.length} registros · Página {page} de {totalPages}
+            {rows.length} registros · Página {current} de {totalPages}
           </span>
           <Button
             variant="ghost"
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
+            disabled={current === 1}
+            onClick={() => setPage(current - 1)}
           >
             Anterior
           </Button>
           <Button
             variant="ghost"
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
+            disabled={current === totalPages}
+            onClick={() => setPage(current + 1)}
           >
             Siguiente
           </Button>
