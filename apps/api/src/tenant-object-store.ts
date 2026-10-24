@@ -1,7 +1,7 @@
 import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { HttpException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
 
@@ -10,6 +10,8 @@ const OBJECT_KEY = /^(payment|billing|invoice)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]
 
 export interface TenantObjectStore {
   put(tenantId: string, key: string, bytes: Buffer, mime: string): Promise<void>;
+  /** Restore only: refuse to overwrite an object already present at the destination. */
+  putNew(tenantId: string, key: string, bytes: Buffer, mime: string): Promise<void>;
   get(tenantId: string, key: string): Promise<Buffer>;
   delete(tenantId: string, key: string): Promise<void>;
 }
@@ -43,6 +45,14 @@ class LocalTenantObjectStore implements TenantObjectStore {
       throw error;
     }
   }
+  async putNew(tenantId: string, key: string, bytes: Buffer) {
+    const path = this.path(tenantId, key);
+    await mkdir(dirname(path), { recursive: true });
+    const file = await open(path, "wx", 0o600);
+    try { await file.writeFile(bytes); await file.sync(); }
+    catch (error) { await file.close(); await unlink(path).catch(() => undefined); throw error; }
+    await file.close();
+  }
   async get(tenantId: string, key: string) {
     return readFile(this.path(tenantId, key));
   }
@@ -62,6 +72,12 @@ class S3TenantObjectStore implements TenantObjectStore {
     await this.client.send(new PutObjectCommand({
       Bucket: this.bucket, Key: scopedKey(tenantId, key), Body: bytes, ContentType: mime,
       ServerSideEncryption: "AES256",
+    }));
+  }
+  async putNew(tenantId: string, key: string, bytes: Buffer, mime: string) {
+    await this.client.send(new PutObjectCommand({
+      Bucket: this.bucket, Key: scopedKey(tenantId, key), Body: bytes, ContentType: mime,
+      ServerSideEncryption: "AES256", IfNoneMatch: "*",
     }));
   }
   async get(tenantId: string, key: string) {

@@ -8,6 +8,7 @@ export default defineConfig({
     maxWorkers: process.platform === "win32" ? 4 : undefined,
     include: [
       "tests/product-object-store.test.ts",
+      "tests/product-object-portability.test.ts",
       "tests/product-billing-plans.test.ts",
       "tests/product-billing-web.test.ts",
       "tests/product-route-matrix-postgres.test.ts",
@@ -31,6 +32,8 @@ export default defineConfig({
       "tests/product-pilot-three-tenants-postgres.test.ts",
       "tests/product-tenant-export-postgres.test.ts",
       "tests/product-tenant-export-cleanup.test.ts",
+      "tests/product-tenant-backup-postgres.test.ts",
+      "tests/product-tenant-backup-file.test.ts",
       "tests/product-login-build.test.ts",
       "tests/product-app-module.test.ts",
       "tests/courier-utils.test.ts",

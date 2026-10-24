@@ -271,3 +271,9 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - La exportación JSON y Excel recorre solo los registros de la empresa, con cursor y archivo temporal privado; limpia el archivo si falla la apertura o la descarga. Al existir un comprobante fuera de PostgreSQL, incorpora sus bytes y SHA-256 o falla cerrada si el objeto falta. No deja una referencia sin el archivo.
 - Regresiones del worktree aislado: PostgreSQL desechable **export + backup 3/3**, incluyendo bytes externos y ausencia de objeto; limpieza de archivos temporales **2/2**. En la rama integrada, `pnpm typecheck` y `product-tenant-export-cleanup.test.ts` **2/2** verdes. Falta ejecutar aquí la regresión PostgreSQL y `pnpm check` con PC-07/08 juntos, y verificar los tres trabajos CI antes de publicar/activar.
 - No se cambió producción, Render ni la base de la tienda.
+
+## 2026-10-24 · ChatGPT PC · PC-07, respaldo y restauración por empresa (integración local)
+
+- El respaldo cifrado conserva los datos de una sola empresa en un destino privado y separado, sin usar el Google Drive de la tienda. La restauración de prueba valida integridad, secuencias y aislamiento; la publicación del archivo es atómica. Con PC-08, el formato NXTB/2 incluye los bytes externos y su hash, restaura sin sobrescribir un objeto ya existente y elimina objetos nuevos si falla la operación.
+- Regresiones del worktree aislado: PostgreSQL desechable **exportación/respaldo 3/3**, incluido objeto externo ausente y colisión; ACL privada y archivo atómico **1/1**. En la rama integrada: `pnpm typecheck` código **0** y pruebas unitarias `product-object-portability`, `product-tenant-backup-file` y `product-tenant-export-cleanup` **4/4**. Pendiente correr aquí PostgreSQL y `pnpm check` del conjunto PC-06/07/08 antes de cualquier push; después verificar tres CI del SHA final.
+- No se restauró ni modificó la base de la tienda; no se tocó Render ni producción.
