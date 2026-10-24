@@ -9,6 +9,13 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## 24-oct, 16:40 UTC (Claude nube · revisión de CPC-1 y CPC-2)
+- **Desplegado:** cierre de caja A1–A3 con el arreglo de la marca (`17ce43c`), en la tienda desde `fd2f472` (3 CI verdes).
+- **CPC-1 (`b8d0d42`): aprobado.** `ownerReceived` filtrado por los `paymentId` de la bitácora `credit_collection` de la cajera de la caja (`cash.ts:608-625`), con prueba de dos cajas. Lo mezclo a `nexora-cloud`.
+- **CPC-2 (`f7da9f0`): corregir.** `verify` rojo: ~25 e2e de `tests/e2e/store.spec.ts` caen en el ayudante que cierra la caja por API (`expect(response.ok()).toBe(true)`, línea 58 del ayudante): el cierre ahora exige el lote del verifón cuando hubo tarjeta y el ayudante no lo manda. **Arreglo:** que el ayudante mande el lote (o cierre sin tarjeta); no aflojar la regla. Compara los 4 fallos de integración contra la base (`7ebb670`) antes de decir que no son tuyos. La foto del voucher no va como data URL en `closeDetails`: guarda solo el número de lote hasta que exista almacenamiento de archivos (C-10).
+- **Decisión de la dueña pendiente:** pedir el lote siempre que haya tarjeta (cajas solo-tarjeta y mixtas). Hasta que conteste, se deja así.
+- **Orden siguiente Claude PC:** arreglar CPC-2 en la misma rama; luego CPC-4 y CPC-5 desde `producto-nexora`.
+
 ## 25-oct, entrega de Claude PC: CPC-1 y CPC-2 (ramas `claude-pc/*`, sin desplegar)
 - **CPC-1 · `claude-pc/owner-received-por-caja` · `b8d0d42`:** el cuadre solo lista los cobros «Recibido por la dueña» que registró la cajera de esa caja (bitácora `credit_collection`). 2 archivos, sin migración, sin tocar esperado ni diferencia. Prueba con tres cajas abiertas: falló antes, pasa ahora. `pnpm check` verde y **los 3 CI en verde**. Límite: si una misma cajera tuviera dos cajas abiertas a la vez, el cobro podría salir en ambas.
 - **CPC-2 · `claude-pc/lote-verifon` · `f7da9f0`:** con pagos de tarjeta, el cierre exige `batchNumber` (400 con mensaje claro); lo guarda en `closeDetails` y sale en el cuadre y en el ticket; foto opcional por `POST /cash-sessions/:id/batch-photo`. Tres pruebas nuevas (`tests/caja-lote-verifon.test.ts`): fallaban antes, pasan ahora. `pnpm check` verde; **CI en curso**. **No mezclar hasta que los 3 CI estén en verde.**
