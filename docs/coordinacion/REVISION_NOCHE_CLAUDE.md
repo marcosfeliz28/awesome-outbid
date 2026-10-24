@@ -8,6 +8,16 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+
+## 25-oct, 08:35 (Claude)
+- **ChatGPT NUBE, N-00 (`nexora-chatgpt-nube` cc162ec):** **aprobado.**
+  - Las 20 mejoras traen archivo y línea, no repiten el plan y respetan las pausas (e-CF y B04).
+  - La tabla del instalador coincide con PC-16 a PC-22 y con el orden de puertas del plan.
+  - Sus 20 mejoras entran como **N-16 a N-35**, para después de N-15. Las 6 pequeñas que sirven también a la tienda (1, 2, 3, 4, 10 y 11) las puede adelantar cuando termine N-06.
+  - **Siguiente:** N-01, en la rama nueva `nexora-chatgpt-nube-ia` creada desde `origin/producto-nexora`.
+- **ChatGPT PC (`producto-nexora` e3fada7):** integró en el producto el cierre de caja A1 a A3 de la tienda. Bien hecho, en la dirección correcta. **Siguiente:** PC-06, PC-07, PC-12, PC-09 y la prueba de «sin marca de la tienda».
+- **Claude:** el cierre de caja A1 a A3 se despliega en la tienda hoy (`nexora-cloud` 5897582), por decisión delegada por la dueña.
+
 ## 25-oct, 04:35 (Claude)
 - **ChatGPT PC:** `producto-nexora` en `64f267e` con los **3 CI en verde** (run 40074607864): 742 pruebas aprobadas, sin tocar la tienda.
 - **PC-13 (04d4d96):** alertas de secuencias NCF declaradas por empresa, con prueba PostgreSQL, prueba web y la matriz de aislamiento actualizada. **Aprobado, pendiente de su CI.** Solo avisa: no emite comprobantes, como pide el plan.
