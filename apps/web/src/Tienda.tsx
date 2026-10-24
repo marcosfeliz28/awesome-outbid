@@ -976,6 +976,9 @@ function CodCollect({
     newLine(String(row.pending)),
   ]);
   const [proof, setProof] = useState<File | null>(null),
+    // La cajera registra efectivo que ya tiene la dueña con el PIN de gerente.
+    [ownerCash, setOwnerCash] = useState(false),
+    [managerPin, setManagerPin] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   // Un reintento usa el mismo identificador: no se cobra dos veces.
@@ -998,7 +1001,8 @@ function CodCollect({
         "/sales/" + row.saleId + "/credit-collections",
         {
           operationId,
-          ...(session ? { cashSessionId: session.id } : {}),
+          ...(session && !ownerCash ? { cashSessionId: session.id } : {}),
+          ...(ownerCash && !owner ? { managerPin } : {}),
           lines: lines.map((l) => ({
             method: l.method,
             amount: Number(l.amount),
@@ -1011,7 +1015,7 @@ function CodCollect({
               : l.method === "card"
                 ? { reference: l.reference }
                 : // Sin caja abierta, la dueña tiene el efectivo en la mano.
-                  owner && !session
+                  (owner && !session) || ownerCash
                   ? { ownerConfirmed: true }
                   : {}),
           })),
@@ -1058,7 +1062,33 @@ function CodCollect({
           cada forma de pago (por ejemplo, mitad transferencia y mitad
           efectivo).
         </p>
-        {!session && !owner && (
+        {!owner && (
+          <label className="field full">
+            <span>
+              <input
+                type="checkbox"
+                checked={ownerCash}
+                onChange={(e) => setOwnerCash(e.target.checked)}
+              />{" "}
+              Este efectivo ya lo tiene la dueña (no entra a mi gaveta)
+            </span>
+          </label>
+        )}
+        {ownerCash && !owner && (
+          <label className="field full">
+            <span>PIN de gerente</span>
+            <input
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              pattern="\d{4,6}"
+              required
+              value={managerPin}
+              onChange={(e) => setManagerPin(e.target.value)}
+            />
+          </label>
+        )}
+        {!session && !owner && !ownerCash && (
           <p className="form-error full" role="note">
             No tienes caja abierta: sin ella no puedes recibir efectivo. Abre tu
             caja o registra solo tarjeta o transferencia.
@@ -1081,7 +1111,10 @@ function CodCollect({
                   patch(l.key, { method: e.target.value as any })
                 }
               >
-                <option value="cash" disabled={!session && !owner}>
+                <option
+                  value="cash"
+                  disabled={!session && !owner && !ownerCash}
+                >
                   Efectivo
                 </option>
                 {manager && <option value="card">Tarjeta</option>}

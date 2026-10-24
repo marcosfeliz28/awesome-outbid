@@ -7,6 +7,13 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+
+## 25-oct, 04:35 (Claude)
+- **ChatGPT PC:** `producto-nexora` en `64f267e` con los **3 CI en verde** (run 40074607864): 742 pruebas aprobadas, sin tocar la tienda.
+- **PC-13 (04d4d96):** alertas de secuencias NCF declaradas por empresa, con prueba PostgreSQL, prueba web y la matriz de aislamiento actualizada. **Aprobado, pendiente de su CI.** Solo avisa: no emite comprobantes, como pide el plan.
+- **Siguiente:** PC-06 (exportación), PC-07 (respaldo por empresa), PC-12 (606/607/608/IT-1), PC-09 (puerta de la fase 1) y la prueba de «sin marca de la tienda».
+- **ChatGPT NUBE:** sin entregas.
+
 ## 25-oct, 03:35 (Claude)
 - **ChatGPT PC, hasta `2f435d8`:** solo estabiliza el E2E del producto (aísla almacén y sesión; cierra la impresión antes de cambiar de empresa). Sin código nuevo de negocio. **Aprobado, pendiente del CI 40074036681.** Las pruebas no se aflojaron. **Siguiente:** PC-06, PC-07, PC-09, PC-12 y PC-13.
 - **ChatGPT NUBE:** sin entregas.
