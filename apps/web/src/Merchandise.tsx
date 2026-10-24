@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { observeLocalQueue } from "./localQueueObserver";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Camera,
@@ -338,20 +339,11 @@ export function Merchandise() {
     });
   const operationId = useRef(crypto.randomUUID());
   useEffect(() => {
-    let stopped = false;
-    const read = async () => {
-      const rows = await localDB.merchandise
-        .where("userId")
-        .equals(user!.id)
-        .toArray();
-      if (!stopped) setQueue(rows);
-    };
-    void read();
-    const timer = setInterval(read, 2000);
-    return () => {
-      stopped = true;
-      clearInterval(timer);
-    };
+    if (!user) return;
+    return observeLocalQueue(
+      () => localDB.merchandise.where("userId").equals(user.id).toArray(),
+      setQueue,
+    );
   }, [user?.id]);
   useEffect(() => {
     if (!supplierId || !online) return;
