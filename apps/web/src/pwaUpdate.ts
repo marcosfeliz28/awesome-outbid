@@ -9,11 +9,17 @@
 import { registerSW } from "virtual:pwa-register";
 import { useStore } from "./api";
 import {
+  canApplyScheduledPwaUpdate,
   canApplyPwaUpdate,
+  canSchedulePwaUpdate,
+  clearPwaUpdateSchedule,
   PWA_UPDATE_CHECK_MS,
   PWA_UPDATE_FORM_MS,
   pwaUpdateMessage,
+  readPwaUpdateSchedule,
+  savePwaUpdateSchedule,
 } from "./pwaUpdatePolicy";
+import { loadPwaReleaseNotes, type PwaReleaseNotes } from "./pwaReleaseNotes";
 
 const ACTIVITY_EVENTS = [
   "pointerdown",
@@ -43,12 +49,27 @@ export function startPwaUpdates() {
   // que la caja quede sin usar (la caja abierta todo el día seguía vieja).
   let eager = false;
   let registrationRef: ServiceWorkerRegistration | undefined;
+  let releaseNotes: PwaReleaseNotes | null = null;
+  let scheduleError = "";
+  let scheduleDraft = "";
+  let waitingSince = 0;
+  // El identificador de sucursal es exclusivo de una empresa y no expone datos.
+  const scheduleScope = () => useStore.getState().user?.branchId ?? "";
+  let loadedScope = scheduleScope();
+  let scheduledAt = readPwaUpdateSchedule(localStorage, loadedScope);
 
   const cartItems = () => useStore.getState().cart.length;
 
   const apply = () => {
     if (applying || cartItems() > 0) return;
+    if (dialogOpen() || Date.now() - lastInput < PWA_UPDATE_FORM_MS) {
+      scheduleError = "Termina primero la ventana o el formulario abierto.";
+      render();
+      return;
+    }
     applying = true;
+    clearPwaUpdateSchedule(localStorage, scheduleScope());
+    scheduledAt = null;
     if (timer) clearInterval(timer);
     // Recarga cuando el service worker nuevo tome el control. workbox-window
     // no recarga si la versión la encontró una revisión posterior a la carga
@@ -125,6 +146,27 @@ export function startPwaUpdates() {
     const items = cartItems();
     const text = document.createElement("span");
     text.textContent = pwaUpdateMessage(items);
+    const content = document.createElement("div");
+    content.appendChild(text);
+    if (releaseNotes) {
+      const notes = document.createElement("small");
+      notes.style.display = "block";
+      notes.textContent = `Versión ${releaseNotes.version}: ${releaseNotes.notes.join(" · ")}`;
+      content.appendChild(notes);
+    }
+    if (scheduledAt !== null) {
+      const schedule = document.createElement("small");
+      schedule.style.display = "block";
+      schedule.textContent = `Actualización programada: ${new Date(scheduledAt).toLocaleString("es-DO")}. Se instalará sólo con la caja libre.`;
+      content.appendChild(schedule);
+    }
+    if (scheduleError) {
+      const error = document.createElement("small");
+      error.style.display = "block";
+      error.setAttribute("role", "alert");
+      error.textContent = scheduleError;
+      content.appendChild(error);
+    }
     const buttons: HTMLButtonElement[] = [];
     const button = (label: string, primary: boolean, onClick: () => void) => {
       const element = document.createElement("button");
@@ -145,29 +187,81 @@ export function startPwaUpdates() {
       buttons.push(element);
     };
     if (items === 0) button("Actualizar ahora", true, apply);
+    if (canSchedulePwaUpdate(useStore.getState().user?.permissions ?? [])) {
+      if (scheduledAt === null) {
+        const label = document.createElement("label");
+        label.textContent = "Programar fuera de caja ";
+        const dateInput = document.createElement("input");
+        dateInput.type = "datetime-local";
+        dateInput.value = scheduleDraft;
+        dateInput.addEventListener("input", () => {
+          scheduleDraft = dateInput.value;
+        });
+        dateInput.setAttribute(
+          "aria-label",
+          "Fecha y hora para actualizar Nexora",
+        );
+        dateInput.style.color = "#1E1B4B";
+        label.appendChild(dateInput);
+        content.appendChild(label);
+        button("Programar", false, () => {
+          const when = new Date(dateInput.value).getTime();
+          if (!savePwaUpdateSchedule(localStorage, scheduleScope(), when)) {
+            scheduleError = "Elige una fecha y hora futuras.";
+          } else {
+            scheduledAt = when;
+            scheduleError = "";
+            scheduleDraft = "";
+          }
+          render();
+        });
+      } else {
+        button("Cancelar programación", false, () => {
+          clearPwaUpdateSchedule(localStorage, scheduleScope());
+          scheduledAt = null;
+          scheduleError = "";
+          render();
+        });
+      }
+    }
     button("Ocultar", false, () => {
       dismissed = true;
       render();
     });
-    banner.replaceChildren(text, ...buttons);
+    banner.replaceChildren(content, ...buttons);
   };
 
   const check = () => {
     if (!waiting || applying) return;
+    const scope = scheduleScope();
+    if (scope !== loadedScope) {
+      loadedScope = scope;
+      scheduledAt = readPwaUpdateSchedule(localStorage, scope);
+      render();
+    }
+    const updateState = {
+      cartItems: cartItems(),
+      idleMs: Date.now() - lastActivity,
+      hidden: document.visibilityState === "hidden",
+      dialogOpen: dialogOpen(),
+      sinceInputMs: Date.now() - lastInput,
+    };
+    // Una programación futura suspende la instalación automática y también
+    // el atajo eager de apertura/cierre. Al llegar la hora sigue exigiendo
+    // carrito vacío, ausencia de modal/formulario e inactividad.
+    if (scheduledAt !== null) {
+      if (canApplyScheduledPwaUpdate(updateState, scheduledAt)) apply();
+      else reloadIfFree();
+      return;
+    }
+    // Dejar tiempo real para leer las notas y elegir «Programar» antes de
+    // cualquier instalación automática, incluso en apertura/cierre de caja.
+    if (Date.now() - waitingSince < 30_000) return;
     if (eager && cartItems() === 0 && !dialogOpen()) {
       apply();
       return;
     }
-    if (
-      canApplyPwaUpdate({
-        cartItems: cartItems(),
-        idleMs: Date.now() - lastActivity,
-        hidden: document.visibilityState === "hidden",
-        dialogOpen: dialogOpen(),
-        sinceInputMs: Date.now() - lastInput,
-      })
-    )
-      apply();
+    if (canApplyPwaUpdate(updateState)) apply();
     else reloadIfFree();
   };
 
@@ -176,7 +270,13 @@ export function startPwaUpdates() {
     onNeedRefresh() {
       if (waiting) return;
       waiting = true;
+      waitingSince = Date.now();
+      scheduledAt = readPwaUpdateSchedule(localStorage, scheduleScope());
       render();
+      void loadPwaReleaseNotes().then((notes) => {
+        releaseNotes = notes;
+        render();
+      });
       timer = setInterval(check, 15_000);
       if (eager) check();
     },
@@ -199,12 +299,22 @@ export function startPwaUpdates() {
     );
   window.addEventListener(
     "input",
-    () => {
+    (event) => {
+      // Elegir la hora del aviso no es un formulario de venta sin guardar.
+      if (event.target instanceof Node && banner?.contains(event.target))
+        return;
       lastInput = Date.now();
     },
     { capture: true, passive: true },
   );
   document.addEventListener("visibilitychange", check);
+  window.addEventListener("storage", (event) => {
+    if (event.key?.startsWith("nexora:pwa-update-at:")) {
+      scheduledAt = readPwaUpdateSchedule(localStorage, scheduleScope());
+      render();
+      check();
+    }
+  });
   window.addEventListener("nexora:check-update", () => {
     eager = true;
     if (navigator.onLine) void registrationRef?.update();
@@ -212,6 +322,11 @@ export function startPwaUpdates() {
   });
   // El aviso cambia (con o sin botón) cuando se vacía o se llena el carrito.
   useStore.subscribe((state, previous) => {
+    if (state.user?.branchId !== previous.user?.branchId) {
+      loadedScope = state.user?.branchId ?? "";
+      scheduledAt = readPwaUpdateSchedule(localStorage, loadedScope);
+      render();
+    }
     if (state.cart.length !== previous.cart.length) {
       if (state.cart.length === 0) dismissed = false;
       render();

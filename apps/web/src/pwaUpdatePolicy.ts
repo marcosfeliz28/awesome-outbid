@@ -43,3 +43,62 @@ export function pwaUpdateMessage(cartItems: number): string {
     ? "Hay una versión nueva de Nexora. Podrás instalarla al terminar esta venta."
     : "Hay una versión nueva de Nexora. Se instala sola si la caja queda libre unos minutos.";
 }
+
+/** Sólo la cuenta administradora puede programar instalaciones en este equipo. */
+export function canSchedulePwaUpdate(permissions: readonly string[]): boolean {
+  return permissions.includes("*");
+}
+
+type ScheduleStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+const scheduleKey = (scope: string) => `nexora:pwa-update-at:${scope}`;
+
+/** La clave incluye la sucursal del usuario; una empresa no hereda la hora de otra. */
+export function readPwaUpdateSchedule(
+  storage: ScheduleStorage,
+  scope: string,
+): number | null {
+  if (!scope) return null;
+  try {
+    const value = Number(storage.getItem(scheduleKey(scope)));
+    return Number.isSafeInteger(value) && value > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function savePwaUpdateSchedule(
+  storage: ScheduleStorage,
+  scope: string,
+  scheduledAt: number,
+  now = Date.now(),
+): boolean {
+  if (!scope || !Number.isSafeInteger(scheduledAt) || scheduledAt <= now)
+    return false;
+  try {
+    storage.setItem(scheduleKey(scope), String(scheduledAt));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearPwaUpdateSchedule(
+  storage: ScheduleStorage,
+  scope: string,
+): void {
+  if (!scope) return;
+  try {
+    storage.removeItem(scheduleKey(scope));
+  } catch {
+    /* almacenamiento deshabilitado */
+  }
+}
+
+/** Llegar a la hora no anula la política de carrito, diálogo, formulario ni inactividad. */
+export function canApplyScheduledPwaUpdate(
+  state: PwaUpdateState,
+  scheduledAt: number | null,
+  now = Date.now(),
+): boolean {
+  return scheduledAt !== null && now >= scheduledAt && canApplyPwaUpdate(state);
+}

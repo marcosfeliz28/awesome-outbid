@@ -9,7 +9,12 @@ import {
   PWA_UPDATE_HIDDEN_IDLE_MS,
   PWA_UPDATE_IDLE_MS,
   pwaUpdateMessage,
+  canApplyScheduledPwaUpdate,
+  canSchedulePwaUpdate,
+  readPwaUpdateSchedule,
+  savePwaUpdateSchedule,
 } from "../apps/web/src/pwaUpdatePolicy";
+import { loadPwaReleaseNotes } from "../apps/web/src/pwaReleaseNotes";
 
 const read = (path: string) => readFileSync(path, "utf8");
 
@@ -90,5 +95,94 @@ describe("PWA · actualización sin cortar ventas", () => {
     expect(module).toContain('aria-live", "polite"');
     expect(module).toContain("canApplyPwaUpdate(");
     expect(module).toContain("registration.update()");
+  });
+
+  it("N-29: sólo la dueña puede programar y la fecha persiste por empresa", () => {
+    const values = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        values.set(key, value);
+      },
+      removeItem: (key: string) => {
+        values.delete(key);
+      },
+    };
+    const now = Date.parse("2026-10-24T12:00:00Z");
+    const scheduled = now + 2 * 60 * 60_000;
+    expect(canSchedulePwaUpdate(["*"])).toBe(true);
+    expect(canSchedulePwaUpdate(["sale:write"])).toBe(false);
+    expect(savePwaUpdateSchedule(storage, "empresa-a", scheduled, now)).toBe(
+      true,
+    );
+    expect(readPwaUpdateSchedule(storage, "empresa-a")).toBe(scheduled);
+    expect(readPwaUpdateSchedule(storage, "empresa-b")).toBeNull();
+    expect(savePwaUpdateSchedule(storage, "empresa-a", now - 1, now)).toBe(
+      false,
+    );
+  });
+
+  it("N-29: la hora programada jamás interrumpe una venta, modal o formulario", () => {
+    const now = Date.parse("2026-10-24T12:00:00Z");
+    const safe = {
+      cartItems: 0,
+      idleMs: PWA_UPDATE_IDLE_MS,
+      hidden: false,
+      sinceInputMs: PWA_UPDATE_FORM_MS,
+    };
+    expect(canApplyScheduledPwaUpdate(safe, now + 1, now)).toBe(false);
+    expect(canApplyScheduledPwaUpdate(safe, now, now)).toBe(true);
+    expect(
+      canApplyScheduledPwaUpdate({ ...safe, cartItems: 1 }, now, now),
+    ).toBe(false);
+    expect(
+      canApplyScheduledPwaUpdate({ ...safe, dialogOpen: true }, now, now),
+    ).toBe(false);
+    expect(
+      canApplyScheduledPwaUpdate({ ...safe, sinceInputMs: 1 }, now, now),
+    ).toBe(false);
+  });
+
+  it("N-29: las notas de la versión nueva llegan por red y se limitan a texto breve", async () => {
+    const fetcher = async (_url: string, options: { cache: string }) => {
+      expect(options.cache).toBe("no-store");
+      return {
+        ok: true,
+        json: async () => ({
+          version: "0.1.2",
+          notes: ["Caja más segura", "Corrección de tickets"],
+        }),
+      };
+    };
+    expect(await loadPwaReleaseNotes(fetcher)).toEqual({
+      version: "0.1.2",
+      notes: ["Caja más segura", "Corrección de tickets"],
+    });
+    expect(
+      await loadPwaReleaseNotes(async () => ({
+        ok: true,
+        json: async () => ({ version: "?", notes: ["x".repeat(500)] }),
+      })),
+    ).toBeNull();
+  });
+
+  it("N-29: el aviso real usa la programación y lee notas no precacheadas", () => {
+    const updater = read("apps/web/src/pwaUpdate.ts");
+    const vite = read("apps/web/vite.config.ts");
+    const notes = JSON.parse(read("apps/web/public/release-notes.json"));
+    expect(updater).toContain("loadPwaReleaseNotes()");
+    expect(updater).toContain(
+      "canApplyScheduledPwaUpdate(updateState, scheduledAt)",
+    );
+    expect(updater).toContain(
+      "canSchedulePwaUpdate(useStore.getState().user?.permissions ?? [])",
+    );
+    expect(updater).toContain(
+      "savePwaUpdateSchedule(localStorage, scheduleScope(), when)",
+    );
+    expect(updater).toContain("notes.textContent =");
+    expect(vite).toContain('globPatterns: ["**/*.{js,css,html,svg,woff2}"]');
+    expect(notes).toMatchObject({ version: "0.1.1-prueba" });
+    expect(notes.notes).toHaveLength(2);
   });
 });
