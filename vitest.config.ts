@@ -20,6 +20,7 @@ export default defineConfig({
       "tests/product-background-postgres.test.ts",
       "tests/product-tenants-postgres.test.ts",
       "tests/product-registration-postgres.test.ts",
+      "tests/product-lifecycle-postgres.test.ts",
       "tests/product-login-build.test.ts",
       "tests/product-app-module.test.ts",
       "tests/courier-utils.test.ts",

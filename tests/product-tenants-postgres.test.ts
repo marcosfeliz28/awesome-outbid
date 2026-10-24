@@ -80,7 +80,7 @@ it("migra datos existentes y aísla lectura, escritura y cambio de tenant con RL
     )).rejects.toMatchObject({ code: "23505", constraint: "one_open_cash_per_user" });
     await client.query(`INSERT INTO "Tenant" (id, slug, name, "updatedAt") VALUES ($1, 'otro-negocio', 'Otro negocio', now())`, [other]);
     const tables = (await client.query(`SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename <> '_prisma_migrations' AND tablename <> 'Tenant'`)).rows.map((r: any) => r.tablename);
-    expect(tables).toHaveLength(58);
+    expect(tables).toHaveLength(59);
     for (const table of tables) {
       const status = (await client.query(`SELECT relrowsecurity FROM pg_class WHERE oid=$1::regclass`, [`public."${table}"`])).rows[0];
       expect(status.relrowsecurity, table).toBe(true);

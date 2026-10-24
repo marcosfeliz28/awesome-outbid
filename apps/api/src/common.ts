@@ -34,6 +34,7 @@ import { clientIp } from "./rate-limit";
 import { checkDatabaseTimeZone } from "./database-timezone";
 import { tenantDatabaseProxy } from "./tenant-database";
 import { DEMO_TENANT_ID, tenantScope } from "./tenant-context";
+import { TenantLifecycleService } from "./tenant-lifecycle";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -68,13 +69,19 @@ export class Database extends PrismaClient {
     const row = await this.tenant.findUnique({
       where: { slug }, select: { id: true, status: true },
     });
-    return row && ["trial", "active"].includes(row.status) ? row.id : null;
+    // Una empresa suspendida todavía entra para consultar y exportar.
+    return row?.id ?? null;
   }
   async activeTenantIds(): Promise<string[]> {
     const rows = await this.tenant.findMany({
-      where: { status: { in: ["trial", "active"] } }, select: { id: true },
+      where: { status: { in: ["trial", "active", "past_due"] } }, select: { id: true },
       orderBy: { id: "asc" },
     });
+    return rows.map((row) => row.id);
+  }
+  async loginTenantIds(): Promise<string[]> {
+    // Incluso las cuentas suspendidas pueden iniciar sesión para exportar.
+    const rows = await this.tenant.findMany({ select: { id: true }, orderBy: { id: "asc" } });
     return rows.map((row) => row.id);
   }
 }
@@ -110,6 +117,8 @@ export const CurrentUser = createParamDecorator(
 export const Permit = (permission: string) =>
   SetMetadata("permission", permission);
 export const Public = () => SetMetadata("public", true);
+// Únicamente para exportaciones sin mutación, incluso cuando la empresa está suspendida.
+export const AllowSuspendedExport = () => SetMetadata("suspendedExport", true);
 // Rutas que mueven inventario o dinero: exigen un equipo registrado, aprobado
 // por un gerente y no revocado (Configuración › Equipos).
 export const RequireTerminal = () => SetMetadata("terminal", true);
@@ -668,6 +677,7 @@ export class AuthGuard implements CanActivate {
     @Inject(Database) private db: Database,
     @Inject(JwtService) private jwt: JwtService,
     @Inject(Reflector) private reflector: Reflector,
+    @Inject(TenantLifecycleService) private lifecycle: TenantLifecycleService,
   ) {}
   async canActivate(context: ExecutionContext) {
     if (
@@ -776,6 +786,22 @@ export class AuthGuard implements CanActivate {
         !can(req.actor.permissions, permission))
     )
       denied();
+    if (process.env.PRODUCT_TENANCY === "required") {
+      const status = (await this.lifecycle.statusForTenant(req.actor.tenantId)).status;
+      if (status === "suspended") {
+        const exportAllowed = this.reflector.getAllAndOverride<boolean>("suspendedExport", [
+          context.getHandler(), context.getClass(),
+        ]);
+        const logout = req.method === "POST" && req.path === "/api/auth/logout";
+        if (!(["GET", "HEAD"].includes(req.method) || exportAllowed || logout))
+          throw new HttpException("Plan suspendido. Puedes consultar y exportar tus datos, pero no modificar ni vender.", 403);
+        // La revocación de sesión es la única escritura permitida por la API.
+        if (!logout) {
+          const scope = tenantScope.getStore();
+          if (scope) scope.readOnly = true;
+        }
+      }
+    }
     if (
       this.reflector.getAllAndOverride("terminal", [
         context.getHandler(),

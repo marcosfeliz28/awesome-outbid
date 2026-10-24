@@ -19,6 +19,10 @@ export function tenantDatabaseProxy<T extends PrismaClient>(root: T): T {
     authAttempt: ["key"], invoiceDraft: ["confirmedOperationId"],
   };
   const prepare = async (tx: any, tenantId: string) => {
+    // Aun una ruta GET accidentalmente mutadora queda bloqueada por PostgreSQL.
+    // SET TRANSACTION debe ser la primera orden de la transacción.
+    if (tenantScope.getStore()?.readOnly)
+      await tx.$executeRawUnsafe("SET TRANSACTION READ ONLY");
     await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_tenant_runtime");
     await tx.$queryRawUnsafe(
       "SELECT set_config('app.tenant_id', $1, true)",

@@ -211,3 +211,9 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **Regresión PostgreSQL descartable:** `tests/product-registration-postgres.test.ts` comprueba API real de progreso, saltar/retomar, creación de categoría y que otra empresa mantenga su progreso separado. `tests/product-route-matrix-postgres.test.ts` incluye las dos rutas nuevas y su política administrativa; 159 rutas de producto inventariadas.
 - Se endureció el reenvío de confirmación: si falla el proveedor, no invalida el enlace anterior. La regresión fuerza el fallo y confirma que el primer enlace todavía funciona. No se usó correo real.
 - **Verificación local:** `pnpm check` terminó con código 0: 710 pruebas aprobadas, 11 omitidas (condiciones preexistentes), 94 archivos aprobados; typecheck, ESLint y compilaciones web/API pasaron. **CI remoto:** pendiente de los tres trabajos del SHA de este bloque. No se desplegó ni se usó la base de la tienda.
+
+## 2026-10-23 · ChatGPT PC · `producto-nexora` · fase 1, punto 3 (ciclo de vida)
+
+- Se integró el bloque de ciclo de vida: prueba de 14 días, siete días de gracia tras vencimiento, suspensión sin borrar datos, lectura y exportación permitidas, y aviso de vencimiento de prueba/cobro a 7 y 3 días con persistencia idempotente. La política de solo lectura se impone también en la transacción PostgreSQL, no sólo en la interfaz. No se desplegó.
+- Al integrarlo con el asistente del punto 2, se conservaron ambos controladores y se actualizó la matriz de rutas a 160. Regresión con PostgreSQL descartable: `tests/product-lifecycle-postgres.test.ts` 1/1 y `tests/product-route-matrix-postgres.test.ts` 3/3.
+- **Verificación local:** `pnpm check`: 95 archivos aprobados, 1 omitido; 711 pruebas aprobadas, 11 omitidas; tipado, lint y compilaciones completadas sin fallo. **CI remoto de este SHA:** pendiente de publicación y de los tres trabajos verdes. No se usó la base de la tienda ni el Drive de la tienda.

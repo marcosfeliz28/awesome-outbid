@@ -1319,11 +1319,15 @@ model Tenant {
   incentivePeriodCloseRows IncentivePeriodClose[]
   incentiveSettlementRows IncentiveSettlement[]
   driveBackupRows DriveBackup[]
+  lifecycleNoticeRows TenantLifecycleNotice[]
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique
   name      String
   businessType String @default("general")
   trialEndsAt DateTime?
+  paidThroughAt DateTime?
+  pastDueAt DateTime?
+  suspendedAt DateTime?
   plan      String   @default("trial")
   status    String   @default("trial")
   country   String   @default("DO")
@@ -1331,4 +1335,22 @@ model Tenant {
   timeZone  String   @default("America/Santo_Domingo")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Avisos de vencimiento durables e idempotentes por empresa y período.
+model TenantLifecycleNotice {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  kind String
+  dueAt DateTime
+  status String @default("pending")
+  attempts Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  sentAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, kind, dueAt])
+  @@index([tenantId])
+  @@index([status, nextAttemptAt])
 }

@@ -17,6 +17,8 @@ import { AuthGuard, Database, Public } from "./common";
 import { AuthController } from "./auth";
 import { RegistrationController, RegistrationService } from "./registration";
 import { OnboardingController } from "./onboarding";
+import { TenantLifecycleService, TenantLifecycleWorker } from "./tenant-lifecycle";
+import { TenantLifecycleController } from "./tenant-lifecycle-controller";
 import { CatalogController } from "./catalog";
 import { InventoryController } from "./inventory";
 import { WarehousesController } from "./warehouses";
@@ -82,6 +84,7 @@ export function createAppModule(secret: string) {
       AuthController,
       ...(product ? [RegistrationController] : []),
       ...(product ? [OnboardingController] : []),
+      ...(product ? [TenantLifecycleController] : []),
       CatalogController,
       InventoryController,
       WarehousesController,
@@ -110,6 +113,9 @@ export function createAppModule(secret: string) {
         : []),
       RequestRateLimitService,
       ...(product ? [RegistrationService] : []),
+      // Guard se inyecta también en modo tienda, pero nunca consulta el ciclo.
+      TenantLifecycleService,
+      ...(product ? [TenantLifecycleWorker] : []),
       SecurityMaintenance,
       { provide: APP_GUARD, useClass: AuthGuard },
       { provide: APP_GUARD, useClass: AuthenticatedRateLimitGuard },

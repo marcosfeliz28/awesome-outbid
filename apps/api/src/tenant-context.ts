@@ -4,7 +4,7 @@ import type { Request } from "express";
 export const DEMO_TENANT_ID = "00000000-0000-0000-0000-000000000001";
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export type TenantScope = { tenantId: string; transaction?: unknown };
+export type TenantScope = { tenantId: string; transaction?: unknown; readOnly?: boolean };
 export const tenantScope = new AsyncLocalStorage<TenantScope>();
 
 export function currentTenantId(): string {

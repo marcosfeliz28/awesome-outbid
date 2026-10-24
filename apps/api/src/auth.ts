@@ -125,7 +125,7 @@ export class AuthController implements OnModuleInit {
     // rechace identidades desconocidas antes de findFirst sin impedir que una
     // cuenta real inicie sesion desde la misma IP durante el ataque.
     const users = process.env.PRODUCT_TENANCY === "required"
-      ? (await Promise.all((await this.db.activeTenantIds()).map((tenantId) =>
+      ? (await Promise.all((await this.db.loginTenantIds()).map((tenantId) =>
           tenantScope.run({ tenantId }, () => this.db.user.findMany({
             select: { usernameKey: true, email: true },
           })),
