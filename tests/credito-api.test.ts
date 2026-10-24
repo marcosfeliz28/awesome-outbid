@@ -1506,3 +1506,97 @@ describe("Q-02 · reenvíos simultáneos con la misma clave", () => {
     expect((await expectedOf(adminA)).cash).toBe(cashBefore.cash - 100);
   });
 });
+
+describe("Corregir el método de pago (dueña, 23-oct)", () => {
+  it("efectivo → contraentrega con la caja cerrada: la caja cuadra, queda por cobrar y el incentivo no cambia", async () => {
+    const wendy = await person("wendy", "seller");
+    const s = (await sale(wendy, 300, [{ method: "cash", amount: 300 }])).body;
+    const incentive = await totalOf(s.id);
+    // Cierra sin los 300 (era contraentrega): diferencia −300.
+    await ok("/cash-sessions/" + wendy.cash.id + "/close", owner, {
+      countedCash: 0,
+      countedCard: 0,
+      countedTransfer: 0,
+      notes: "QA cierre",
+      differenceReason: "QA: faltan los 300 de la contraentrega",
+    });
+    const session = () =>
+      db.cashSession.findUnique({ where: { id: wendy.cash.id } });
+    expect(Number((await session()).differenceCash)).toBe(-300);
+    const paymentId = (await db.payment.findFirst({ where: { saleId: s.id } }))
+      .id;
+    const correct = (who: Actor, data: Record<string, unknown>) =>
+      request(
+        `/sales/${s.id}/payments/${paymentId}/correct-method`,
+        who.token,
+        { reason: "Era contraentrega con Addison", ...data },
+      );
+    expect((await correct(ana, { method: "cod" })).status).toBe(403);
+    expect((await correct(adminA, { method: "cod", reason: "" })).status).toBe(
+      400,
+    );
+    const done = await correct(adminA, { method: "cod" });
+    expect(done.status, JSON.stringify(done.body)).toBeLessThan(300);
+    const payment = await db.payment.findUnique({ where: { id: paymentId } });
+    expect(payment.method).toBe("cod");
+    expect(payment.status).toBe("pending");
+    expect(Number(payment.amount)).toBe(300);
+    const row = await db.sale.findUnique({ where: { id: s.id } });
+    expect(Number(row.creditBalance)).toBe(300);
+    expect(row.receivableKind).toBe("cod");
+    expect(row.status).toBe("completed");
+    expect(Number((await session()).differenceCash)).toBe(0);
+    expect(Number((await session()).expectedCash)).toBe(0);
+    expect((await pendingList()).some((p: any) => p.saleId === s.id)).toBe(
+      true,
+    );
+    expect(await totalOf(s.id)).toBe(incentive);
+    // Repetir es inofensivo.
+    expect((await correct(adminA, { method: "cod" })).status).toBeLessThan(300);
+    expect(
+      await db.auditLog.count({
+        where: { action: "payment_method_corrected", entityId: s.id },
+      }),
+    ).toBe(1);
+    // Se cobra como cualquier contraentrega, sin acreditar el incentivo dos veces.
+    await ok("/sales/" + s.id + "/cod-collections", adminA.token, {
+      offlineUuid: randomUUID(),
+      cashSessionId: adminA.cash.id,
+      amount: 300,
+      method: "cash",
+    });
+    expect(
+      Number((await db.sale.findUnique({ where: { id: s.id } })).creditBalance),
+    ).toBe(0);
+    expect(await totalOf(s.id)).toBe(incentive);
+    // Con cobros registrados ya no se corrige.
+    expect((await correct(adminA, { method: "cash" })).status).toBe(400);
+  });
+
+  it("efectivo → transferencia exige banco y referencia y queda por verificar", async () => {
+    const s = (await sale(ana, 200, [{ method: "cash", amount: 200 }])).body;
+    const paymentId = (await db.payment.findFirst({ where: { saleId: s.id } }))
+      .id;
+    const before = await expectedOf(ana);
+    const path = `/sales/${s.id}/payments/${paymentId}/correct-method`;
+    expect(
+      (
+        await request(path, adminA.token, {
+          method: "transfer",
+          reason: "Pagó por transferencia",
+        })
+      ).status,
+    ).toBe(400);
+    await ok(path, adminA.token, {
+      method: "transfer",
+      bank: "Banreservas",
+      reference: "REF-QA",
+      reason: "Pagó por transferencia",
+    });
+    const payment = await db.payment.findUnique({ where: { id: paymentId } });
+    expect(payment.status).toBe("pending_verification");
+    const after = await expectedOf(ana);
+    expect(after.cash).toBe(before.cash - 200);
+    expect(after.transfer).toBe(before.transfer + 200);
+  });
+});
