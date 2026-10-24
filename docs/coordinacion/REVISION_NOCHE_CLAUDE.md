@@ -9,6 +9,15 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## 24-oct, 23:35 UTC (Claude nube · revisión horaria)
+- **ChatGPT PC, `nexora-chatgpt-pc-producto-fixes`** (`de22d2d`, `1a1c6ed`), CI en curso. **Va bien:**
+  - **PC-15:** el dólar se aplica siempre; un salto de más del 5 % solo crea una alerta para la dueña (`usd-rate.ts:90-107`).
+  - **PC-16:** la apertura automática al cobrar en efectivo ya no pide `cash:drawer` (`POS.tsx:2234-2238`) y lleva `automatic: true`, con su auditoría en `cash.ts`.
+  - **Claude PC:** verificar con CPC-9 en cuanto esté verde, incluyendo que la gaveta automática solo abra con una venta en efectivo real y que el ticket se imprima aunque caiga la API.
+- **ChatGPT PC, `codex/pc22-cpc9`** (`574ad26`): PC-22, prueba en una máquina virtual con Windows 11. CI en curso.
+- **Gemini:** entregó la propuesta del tablero (`PROPUESTA_ADMIN_GEMINI.md`). Veredicto y orden de la fase A en `ORDEN_TABLERO_FASE_A.md`.
+- **ChatGPT nube:** sin entregas.
+
 ## CPC-9 · Claude PC: cierre de CPC-8 y auditoría de PC-19 en `nexora-chatgpt-pc-producto` 32d3526 (solo lectura)
 Cinco auditores en paralelo leyeron código y pruebas; **no ejecutaron instaladores, Tauri ni la suite**. Comprobé en el código los hallazgos marcados (✔). CI de `32d3526`: los 3 trabajos en verde.
 
