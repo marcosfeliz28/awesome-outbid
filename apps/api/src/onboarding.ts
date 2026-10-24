@@ -1,9 +1,14 @@
 import { Body, Controller, Get, Inject, Post } from "@nestjs/common";
 import { z } from "@fitstore/shared";
-import { Actor, CurrentUser, Database, Permit, parse } from "./common";
+import { Actor, CurrentUser, Database, Permit, audit, parse } from "./common";
 import { tenantUnique } from "./tenant-context";
 
 const change = z.object({ dismissed: z.boolean() }).strict();
+const profile = z.object({
+  name: z.string().trim().min(2).max(100),
+  legalId: z.string().trim().max(30),
+  modules: z.array(z.enum(["sales", "inventory", "purchases", "customers", "reports", "expenses"])).max(6),
+}).strict();
 
 /** El progreso se deduce de los datos reales; sólo se guarda si se ocultó. */
 @Controller("onboarding")
@@ -25,8 +30,30 @@ export class OnboardingController {
       available: !!data.onboarding,
       dismissed: data.onboarding?.dismissed === true,
       businessType: data.businessType ?? "general",
+      businessName: data.name ?? "",
+      legalId: data.legalId ?? "",
+      hasLogo: typeof data.logo === "string" && data.logo.length > 0,
+      selectedModules: data.onboarding?.modules ?? [],
       categories, products, cashiers, terminals, cashSessions,
     };
+  }
+
+  @Post("profile") @Permit("*")
+  async setProfile(@Body() body: unknown, @CurrentUser() actor: Actor) {
+    const input = parse(profile, body);
+    const modules = [...new Set(input.modules)];
+    return this.db.$transaction(async tx => {
+      const current = await tx.settings.findUniqueOrThrow({ where: tenantUnique("id", actor.branchId) });
+      const before = current.data as Record<string, any>;
+      if (!before.onboarding) return { available: false };
+      const data = { ...before, name: input.name, legalId: input.legalId,
+        onboarding: { ...before.onboarding, modules } };
+      await tx.settings.update({ where: tenantUnique("id", actor.branchId), data: { data } });
+      await audit(tx, actor, "onboarding_profile", "settings", actor.branchId,
+        { name: before.name, legalId: before.legalId, modules: before.onboarding?.modules },
+        { name: input.name, legalId: input.legalId, modules });
+      return { available: true, businessName: input.name, legalId: input.legalId, selectedModules: modules };
+    });
   }
 
   @Post() @Permit("*")
@@ -37,7 +64,7 @@ export class OnboardingController {
       const data = current.data as Record<string, any>;
       if (!data.onboarding) return { available: false, dismissed: true };
       await tx.settings.update({ where: tenantUnique("id", actor.branchId), data: {
-        data: { ...data, onboarding: { dismissed } },
+        data: { ...data, onboarding: { ...data.onboarding, dismissed } },
       } });
       return { available: true, dismissed };
     });

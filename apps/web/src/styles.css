@@ -6421,3 +6421,6 @@ td strong {
 .onboarding li { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1rem; }
 .onboarding li h2 { margin-top: 0; font-size: 1.1rem; }
 .onboarding button { min-height: 44px; margin: .5rem 0; }
+.onboarding li label { display: block; margin: .55rem 0; }
+.onboarding li label input:not([type="checkbox"]):not([type="file"]) { display: block; width: 100%; max-width: 32rem; }
+.onboarding li label input[type="checkbox"] { margin-right: .5rem; }

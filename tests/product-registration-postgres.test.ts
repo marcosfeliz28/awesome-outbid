@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { promisify } from "node:util";
+import { randomUUID } from "node:crypto";
 import EmbeddedPostgres from "embedded-postgres";
 import supertest from "supertest";
 import { expect, it, vi } from "vitest";
@@ -141,15 +142,41 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     const initialGuide = await http.get("/api/onboarding").set("Authorization", aToken);
     expect(initialGuide.status).toBe(200);
     expect(initialGuide.body).toMatchObject({ available: true, dismissed: false, businessType: "retail", categories: 0, products: 0 });
+    expect(initialGuide.body).toMatchObject({ businessName: "Tienda de prueba", legalId: "", hasLogo: false, selectedModules: [] });
+    const profile = { name: "Tienda QA", legalId: "123456789", modules: ["sales", "inventory", "sales"] };
+    const savedProfile = await http.post("/api/onboarding/profile").set("Authorization", aToken).send(profile);
+    expect(savedProfile.status).toBe(201);
+    expect(savedProfile.body).toMatchObject({ businessName: "Tienda QA", legalId: "123456789", selectedModules: ["sales", "inventory"] });
+    expect((await http.get("/api/onboarding").set("Authorization", aToken)).body)
+      .toMatchObject({ businessName: "Tienda QA", legalId: "123456789", selectedModules: ["sales", "inventory"] });
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lNcAAAAASUVORK5CYII=", "base64");
+    expect((await http.post("/api/settings/logo").set("Authorization", aToken).attach("file", png, "marca.png")).status).toBe(201);
+    expect((await http.get("/api/onboarding").set("Authorization", aToken)).body.hasLogo).toBe(true);
+    expect((await http.post("/api/onboarding/profile").set("Authorization", aToken).send({ ...profile, modules: ["unknown"] })).status).toBe(400);
     expect((await http.post("/api/onboarding").set("Authorization", aToken).send({ dismissed: true })).body.dismissed).toBe(true);
     expect((await http.get("/api/onboarding").set("Authorization", aToken)).body.dismissed).toBe(true);
+    expect((await http.get("/api/onboarding").set("Authorization", aToken)).body.selectedModules).toEqual(["sales", "inventory"]);
     expect((await http.post("/api/onboarding").set("Authorization", aToken).send({ dismissed: false })).body.dismissed).toBe(false);
     expect((await http.post("/api/categories").set("Authorization", aToken).send({ name: "Abarrotes" })).status).toBe(201);
     expect((await http.get("/api/onboarding").set("Authorization", aToken)).body.categories).toBe(1);
-    const roleId = (await client.query(`SELECT id FROM "Role" WHERE "tenantId"=$1`, [tenants.rows[0].id])).rows[0].id;
-    const cashier = (name: string) => ({ name, username: name, password: "ClaveSegura-2026!", pin: "869254", roleId });
+    const roleId = randomUUID();
+    await client.query(`INSERT INTO "Role" (id, "tenantId", name, permissions, "updatedAt") VALUES ($1, $2, 'seller', $3, now())`,
+      [roleId, tenants.rows[0].id, ["catalog:read", "sale:write", "cash:write", "customers:write"]]);
+    const cashier = (name: string) => ({ name, username: name, password: "729486", pin: "869254", roleId });
     const firstCashier = await http.post("/api/users").set("Authorization", aToken).send(cashier("Cajera A"));
     expect(firstCashier.status, JSON.stringify(firstCashier.body)).toBe(201);
+    const cashierLogin = await http.post("/api/auth/login").set("x-tenant-id", input.companyCode)
+      .send({ login: "Cajera A", password: "729486" });
+    expect(cashierLogin.status, JSON.stringify(cashierLogin.body)).toBe(201);
+    expect(cashierLogin.body.requiresPasswordChange).toBe(true);
+    const cashierChanged = await http.post("/api/auth/change-password").set("x-tenant-id", input.companyCode)
+      .send({ login: "Cajera A", currentPassword: "729486", newPassword: "825419", confirmPassword: "825419" });
+    expect(cashierChanged.status, JSON.stringify(cashierChanged.body)).toBe(201);
+    const sellerToken = `Bearer ${cashierChanged.body.accessToken}`;
+    const deniedProfile = await http.post("/api/onboarding/profile").set("Authorization", sellerToken).send(profile);
+    expect(deniedProfile.status, JSON.stringify(deniedProfile.body)).toBe(403);
+    const deniedLogo = await http.post("/api/settings/logo").set("Authorization", sellerToken).attach("file", png, "marca.png");
+    expect(deniedLogo.status, JSON.stringify(deniedLogo.body)).toBe(403);
     const overUsers = await http.post("/api/users").set("Authorization", aToken).send(cashier("Cajera B"));
     expect(overUsers.status, JSON.stringify(overUsers.body)).toBe(409);
     expect((await http.patch(`/api/users/${firstCashier.body.id}`).set("Authorization", aToken).send({ active: false })).status).toBe(200);
