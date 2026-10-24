@@ -2,6 +2,36 @@ import { describe, expect, it, vi } from "vitest";
 import { permissions } from "../packages/shared/src/index";
 import { AuthGuard } from "../apps/api/src/common";
 import { tenantScope } from "../apps/api/src/tenant-context";
+import { createAppModule } from "../apps/api/src/app";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
+
+const apiRequire = createRequire(resolve(import.meta.dirname, "../apps/api/package.json"));
+const { MODULE_METADATA, METHOD_METADATA, PATH_METADATA } = apiRequire("@nestjs/common/constants");
+const { RequestMethod } = apiRequire("@nestjs/common");
+
+function productWriteRoutes() {
+  const previous = process.env.PRODUCT_TENANCY;
+  process.env.PRODUCT_TENANCY = "required";
+  let module: ReturnType<typeof createAppModule>;
+  try { module = createAppModule("test-only-route-inventory-secret"); }
+  finally {
+    if (previous === undefined) delete process.env.PRODUCT_TENANCY;
+    else process.env.PRODUCT_TENANCY = previous;
+  }
+  const controllers = Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, module) as Array<new (...args: never[]) => object>;
+  return controllers.flatMap((controller) => {
+    const prefix = String(Reflect.getMetadata(PATH_METADATA, controller) ?? "");
+    return Object.getOwnPropertyNames(controller.prototype).flatMap((key) => {
+      const handler = (controller.prototype as Record<string, unknown>)[key];
+      if (typeof handler !== "function") return [];
+      const method = Reflect.getMetadata(METHOD_METADATA, handler) as number | undefined;
+      if (method === undefined || !["POST", "PATCH", "PUT", "DELETE"].includes(RequestMethod[method])) return [];
+      const route = String(Reflect.getMetadata(PATH_METADATA, handler) ?? "");
+      return [`${RequestMethod[method]} /api/${[prefix, route].filter(Boolean).join("/")}`];
+    });
+  });
+}
 
 const tenantId = "00000000-0000-0000-0000-000000000123";
 const userId = "00000000-0000-0000-0000-000000000124";
@@ -31,6 +61,18 @@ describe("N-05 · soporte solo lectura", () => {
       const { guard, context, db } = fixture(method);
       await tenantScope.run({ tenantId }, () => expect(guard.canActivate(context)).rejects.toMatchObject({ status: 403 }));
       expect(db.auditLog.create).not.toHaveBeenCalled();
+    }
+  });
+
+  it("niega cada ruta de escritura protegida del producto", async () => {
+    const writeRoutes = productWriteRoutes().filter((route) =>
+      !["POST /api/auth/login", "POST /api/auth/refresh", "POST /api/auth/logout"].includes(route));
+    expect(writeRoutes.length).toBeGreaterThan(60);
+    for (const route of writeRoutes) {
+      const [method, path] = route.split(" ");
+      const { guard, context, req } = fixture(method);
+      req.path = path;
+      await tenantScope.run({ tenantId }, () => expect(guard.canActivate(context), route).rejects.toMatchObject({ status: 403 }));
     }
   });
 
