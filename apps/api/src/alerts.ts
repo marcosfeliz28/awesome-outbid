@@ -42,6 +42,7 @@ import {
   canViewCashExpected,
 } from "./common";
 import { currentTenantId } from "./tenant-context";
+import { LocalLicenseBackgroundPolicy } from "./local-license-background";
 import { ncfSequenceWarnings, ncfTenantToday } from "./ncf-sequences";
 
 const CASH_DIFFERENCE_PRIVATE_MESSAGE =
@@ -269,18 +270,26 @@ export class AlertEngine {
         promise: Promise<any[]>;
       })
     | undefined;
-  constructor(@Inject(Database) private db: Database) {}
+  constructor(
+    @Inject(Database) private db: Database,
+    @Inject(LocalLicenseBackgroundPolicy)
+    private readonly background = new LocalLicenseBackgroundPolicy(),
+  ) {}
   onModuleInit() {
     // En el producto no existe una empresa implícita para el trabajo periódico.
     if (process.env.PRODUCT_TENANCY === "required") return;
     this.timer = setInterval(
-      () => this.evaluate("main", { fresh: true }).catch(console.error),
+      () => void this.runScheduled(),
       24 * 3600000,
     );
     this.timer.unref();
   }
   onModuleDestroy() {
     if (this.timer) clearInterval(this.timer);
+  }
+  async runScheduled() {
+    if (!this.background.allows("write-or-delete")) return;
+    await this.evaluate("main", { fresh: true }).catch(console.error);
   }
   /** Una escritura (venta, ajuste, gasto, ajustes…) cambió los datos. */
   invalidate() {

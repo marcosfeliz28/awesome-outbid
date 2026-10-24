@@ -1,5 +1,6 @@
 import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy, HttpException } from "@nestjs/common";
 import { PrismaClient, type Tenant } from "@prisma/client";
+import { LocalLicenseBackgroundPolicy } from "./local-license-background";
 
 export type TenantNoticeMailSettings = { apiKey: string; from: string; to: string; apiBase: string };
 async function sendTenantNotice(settings: TenantNoticeMailSettings, subject: string, text: string, idempotencyKey: string) {
@@ -183,7 +184,12 @@ export class TenantLifecycleWorker implements OnApplicationBootstrap, OnModuleDe
   private timer: ReturnType<typeof setInterval> | undefined;
   private first: ReturnType<typeof setTimeout> | undefined;
   private running = false;
-  constructor(@Inject(TenantLifecycleService) private readonly lifecycle: TenantLifecycleService) {}
+  constructor(
+    @Inject(TenantLifecycleService)
+    private readonly lifecycle: TenantLifecycleService,
+    @Inject(LocalLicenseBackgroundPolicy)
+    private readonly background = new LocalLicenseBackgroundPolicy(),
+  ) {}
   onApplicationBootstrap() {
     this.first = setTimeout(() => void this.run(), 15_000);
     this.first.unref();
@@ -195,6 +201,7 @@ export class TenantLifecycleWorker implements OnApplicationBootstrap, OnModuleDe
     if (this.timer) clearInterval(this.timer);
   }
   async run(now = new Date()) {
+    if (!this.background.allows("write-or-delete")) return;
     if (this.running) return;
     this.running = true;
     try {

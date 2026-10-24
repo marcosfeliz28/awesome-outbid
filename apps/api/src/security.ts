@@ -10,6 +10,7 @@ import { compare } from "bcryptjs";
 import { can } from "@fitstore/shared";
 import { Actor, Database, bad } from "./common";
 import { weakSecretReason } from "./secret-strength";
+import { LocalLicenseBackgroundPolicy } from "./local-license-background";
 
 export function validateSecret(
   secret: string | undefined,
@@ -330,7 +331,11 @@ export const AUDIT_IP_RETENTION_DAYS = 90;
 @Injectable()
 export class SecurityMaintenance implements OnModuleInit, OnModuleDestroy {
   private timer: ReturnType<typeof setInterval> | undefined;
-  constructor(@Inject(Database) private readonly db: Database) {}
+  constructor(
+    @Inject(Database) private readonly db: Database,
+    @Inject(LocalLicenseBackgroundPolicy)
+    private readonly background = new LocalLicenseBackgroundPolicy(),
+  ) {}
   onModuleInit() {
     this.timer = setInterval(
       () => void this.run().catch((error) => console.warn(String(error))),
@@ -342,6 +347,8 @@ export class SecurityMaintenance implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
   async run(): Promise<{ attempts: number; ips: number }> {
+    if (!this.background.allows("write-or-delete"))
+      return { attempts: 0, ips: 0 };
     if (process.env.PRODUCT_TENANCY === "required" && !tenantScope.getStore()?.tenantId) {
       const results = await forEachActiveTenant(this.db, () => this.run());
       return results.reduce((sum, result) => ({

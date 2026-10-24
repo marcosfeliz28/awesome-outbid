@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Database } from "./common";
 import { currentTenantId, forEachActiveTenant } from "./tenant-context";
+import { LocalLicenseBackgroundPolicy } from "./local-license-background";
 
 // Retención de tablas que crecen sin límite (auditoría 06 D-A2/D-B12 y
 // auditoría 03 M7/M11/B1). El disco de la base en Render es de 1 GB: sin
@@ -212,7 +213,11 @@ export class RetentionWorker {
   private timer: ReturnType<typeof setInterval> | undefined;
   private first: ReturnType<typeof setTimeout> | undefined;
   private running = false;
-  constructor(@Inject(Database) private readonly db: Database) {}
+  constructor(
+    @Inject(Database) private readonly db: Database,
+    @Inject(LocalLicenseBackgroundPolicy)
+    private readonly background = new LocalLicenseBackgroundPolicy(),
+  ) {}
   onApplicationBootstrap() {
     if (process.env.NEXORA_RETENTION === "off") return;
     this.first = setTimeout(() => void this.run(), 60_000);
@@ -225,6 +230,7 @@ export class RetentionWorker {
     if (this.timer) clearInterval(this.timer);
   }
   async run() {
+    if (!this.background.allows("write-or-delete")) return;
     if (this.running) return;
     this.running = true;
     try {

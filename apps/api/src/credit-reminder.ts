@@ -16,6 +16,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { BUSINESS_TIME_ZONE, d, formatMoney, money } from "@fitstore/shared";
 import { Database } from "./common";
 import { currentTenantId, forEachActiveTenant, tenantScope, tenantUnique } from "./tenant-context";
+import { LocalLicenseBackgroundPolicy } from "./local-license-background";
 import {
   enqueue,
   escapeHtml,
@@ -137,7 +138,11 @@ export function renderReminder(
 @Injectable()
 export class CreditReminderService {
   private timer: ReturnType<typeof setInterval> | undefined;
-  constructor(@Inject(Database) private db: any) {}
+  constructor(
+    @Inject(Database) private db: any,
+    @Inject(LocalLicenseBackgroundPolicy)
+    private readonly background = new LocalLicenseBackgroundPolicy(),
+  ) {}
   onModuleInit() {
     // Cada 15 minutos; la clave semanal y el candado evitan repetir.
     this.timer = setInterval(
@@ -157,6 +162,7 @@ export class CreditReminderService {
     at: Date = new Date(),
     options: { telegram?: boolean } = {},
   ): Promise<{ created: string[] }> {
+    if (!this.background.allows("write-or-delete")) return { created: [] };
     if (process.env.PRODUCT_TENANCY === "required" && !tenantScope.getStore()?.tenantId) {
       const results = await forEachActiveTenant(this.db, async () => {
         try {

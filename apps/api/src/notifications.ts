@@ -26,6 +26,7 @@ import { randomUUID } from "node:crypto";
 import { formatMoney } from "@fitstore/shared";
 import { Actor, CurrentUser, Database, Permit } from "./common";
 import { saleIncentive } from "./incentives";
+import { LocalLicenseBackgroundPolicy } from "./local-license-background";
 
 // ---------------------------------------------------------------------------
 // Configuración
@@ -885,7 +886,11 @@ export class NotificationWorker
   // El trabajador es compartido, pero cada empresa necesita su propia purga.
   private readonly lastPurge = new Map<string, number>();
   private readonly waker = () => this.wake();
-  constructor(@Inject(Database) private readonly db: Database) {}
+  constructor(
+    @Inject(Database) private readonly db: Database,
+    @Inject(LocalLicenseBackgroundPolicy)
+    private readonly background = new LocalLicenseBackgroundPolicy(),
+  ) {}
 
   onApplicationBootstrap() {
     if (!telegramSettings().enabled) return;
@@ -907,6 +912,7 @@ export class NotificationWorker
   }
 
   async tick() {
+    if (!this.background.allows("write-or-delete")) return;
     if (this.running || this.stopped) return;
     this.running = true;
     try {

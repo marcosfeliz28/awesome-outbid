@@ -41,6 +41,7 @@ import { pipeline } from "node:stream/promises";
 import type { Request, Response } from "express";
 import { can } from "@fitstore/shared";
 import { Actor, CurrentUser, Database, Permit, Public, audit } from "./common";
+import { LocalLicenseBackgroundPolicy } from "./local-license-background";
 import { weakSecretReason } from "./secret-strength";
 import { sessionActivityGraceMs } from "./session-activity";
 import {
@@ -1384,6 +1385,8 @@ export class DriveBackupWorker
   private busy = false;
   constructor(
     @Inject(DriveBackupService) private readonly service: DriveBackupService,
+    @Inject(LocalLicenseBackgroundPolicy)
+    private readonly background = new LocalLicenseBackgroundPolicy(),
   ) {}
 
   onApplicationBootstrap() {
@@ -1402,7 +1405,10 @@ export class DriveBackupWorker
     if (this.interval) clearInterval(this.interval);
     this.service.stop();
   }
-  private async run() {
+  async run() {
+    // Este worker actualiza su fila de control y elimina respaldos remotos
+    // vencidos; no cumple la excepción de «respaldo puramente de lectura».
+    if (!this.background.allows("write-or-delete")) return;
     if (this.busy) return;
     this.busy = true;
     try {

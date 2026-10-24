@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Database } from "./common";
 import { tenantScope } from "./tenant-context";
 import { tenantObjectStore } from "./tenant-object-store";
+import { LocalLicenseBackgroundPolicy } from "./local-license-background";
 
 const HOUR = 3_600_000;
 const ORPHAN_GRACE_MS = 24 * HOUR;
@@ -46,7 +47,11 @@ export class TenantObjectDeletionWorker {
   private first?: ReturnType<typeof setTimeout>;
   private timer?: ReturnType<typeof setInterval>;
   private running = false;
-  constructor(@Inject(Database) private readonly db: Database) {}
+  constructor(
+    @Inject(Database) private readonly db: Database,
+    @Inject(LocalLicenseBackgroundPolicy)
+    private readonly background = new LocalLicenseBackgroundPolicy(),
+  ) {}
   onApplicationBootstrap() {
     if (process.env.PRODUCT_TENANCY !== "required") return;
     this.first = setTimeout(() => void this.run(), 60_000);
@@ -59,6 +64,7 @@ export class TenantObjectDeletionWorker {
     if (this.timer) clearInterval(this.timer);
   }
   async run() {
+    if (!this.background.allows("write-or-delete")) return;
     if (this.running) return;
     this.running = true;
     try {

@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { businessDate } from "@fitstore/shared";
 import { Database } from "./common";
 import { currentTenantId, tenantScope, tenantUnique } from "./tenant-context";
+import { LocalLicenseBackgroundPolicy } from "./local-license-background";
 
 // Tasa del dólar del día (orden de la dueña, 20-oct): se busca sola en
 // internet una vez al día. Los productos con precio en dólares (atributo
@@ -140,7 +141,11 @@ export async function applyUsdRate(
 export class UsdRateWorker {
   private timer: ReturnType<typeof setInterval> | undefined;
   private first: ReturnType<typeof setTimeout> | undefined;
-  constructor(@Inject(Database) private readonly db: Database) {}
+  constructor(
+    @Inject(Database) private readonly db: Database,
+    @Inject(LocalLicenseBackgroundPolicy)
+    private readonly background = new LocalLicenseBackgroundPolicy(),
+  ) {}
   onApplicationBootstrap() {
     // Optativo por instalación; pruebas y CI no salen a internet.
     if (process.env.USD_RATE_AUTO !== "1") return;
@@ -154,6 +159,7 @@ export class UsdRateWorker {
     if (this.timer) clearInterval(this.timer);
   }
   async run() {
+    if (!this.background.allows("write-or-delete")) return;
     try {
       const today = businessDate();
       // Enumerar bajo el contexto RLS de cada empresa. Una sola consulta de

@@ -52,6 +52,7 @@ import {
 } from "./rate-limit";
 import { SecurityMaintenance } from "./security";
 import { tenantFromRequest, tenantScope } from "./tenant-context";
+import { LocalLicenseBackgroundPolicy } from "./local-license-background";
 
 @Controller()
 export class HealthController {
@@ -111,6 +112,7 @@ export function createAppModule(secret: string) {
     ],
     providers: [
       Database,
+      LocalLicenseBackgroundPolicy,
       AlertEngine,
       NotificationWorker,
       CreditReminderService,
