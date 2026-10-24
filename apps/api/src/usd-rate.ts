@@ -28,14 +28,16 @@ export async function applyUsdRate(
   day = businessDate(),
 ) {
   return db.$transaction(async (tx: any) => {
-    const settings = await tx.settings.findUnique({ where: { id: branchId } });
+    const settings = await tx.settings.findUnique({
+      where: tenantUnique("id", branchId),
+    });
     const data = { ...((settings?.data as any) ?? {}) };
     const before = data.usdRate ?? null;
     data.usdRate = rate;
     data.usdRateDate = day;
     data.usdRateSource = source;
     await tx.settings.upsert({
-      where: { id: branchId },
+      where: tenantUnique("id", branchId),
       create: { id: branchId, data },
       update: { data },
     });
@@ -49,7 +51,10 @@ export async function applyUsdRate(
       if (!(usd > 0)) continue;
       const price = usdPrice(usd, rate);
       if (Number(v.price) === price) continue;
-      await tx.variant.update({ where: { id: v.id }, data: { price } });
+      await tx.variant.update({
+        where: tenantUnique("id", v.id),
+        data: { price },
+      });
       changed.push({ id: v.id, from: String(v.price), to: price });
     }
     await tx.auditLog.create({

@@ -230,7 +230,7 @@ describe("GV · tasa del dólar del día", () => {
     expect(product.variants).toHaveLength(2);
     expect(await price("QAUSD-A-" + suffix)).toBe(12600);
     expect(await price("QAUSD-B-" + suffix)).toBe(4500);
-    const settings = await db.settings.findUniqueOrThrow({
+    const settings = await db.settings.findFirstOrThrow({
       where: { id: fakeBranch },
     });
     expect((settings.data as any).usdRate).toBe(63);
