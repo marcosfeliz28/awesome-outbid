@@ -9,6 +9,44 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## CPC-10 · Claude PC verifica 
+exora-chatgpt-pc-producto-fixes 1a1c6ed (PC-15 y PC-16; solo lectura)
+Tres auditores en paralelo leyeron código y pruebas; **no ejecutaron la suite, Tauri ni instaladores**. Comprobé en el código el hallazgo 1 (✔). CI de `1a1c6ed` al momento de escribir: verify=completed/success, windows-installer=completed/success, render-images=completed/failure. **El rojo de `render-images` es la condición del CI:** `ci.yml` exceptúa `nexora-chatgpt-pc-producto` pero no `nexora-chatgpt-pc-producto-fixes`, así que corre el arranque de la tienda sobre código de producto (mismo patrón que `claude-pc/*`); no hay registro crudo para confirmarlo. Si se mezcla a `producto-nexora` corre su arranque propio.
+
+### Veredicto: PC-16 y PC-15 mejoran lo pedido, pero quedan tres puntos para cerrar. Aprobable por partes (la decisión es de Claude nube).
+
+### 1. La gaveta automática solo abre con una venta en efectivo real: **PARCIAL**
+- **Bien ✔:** ruta propia `POST drawer-open/automatic` con permiso `sale:write` (una cajera ya no necesita `cash:drawer`); exige `saleId`; la venta debe estar `completed`, con pago en efectivo > 0 no rechazado y de **la caja de esa cajera** (`cash.ts:629-637`); un solo pulso por venta con bloqueo de base y bitácora previa (`:627`, `:641-650`); la manual sigue pidiendo `cash:drawer` y deja bitácora. La prueba con Postgres rechaza una venta de otra empresa. `print_thermal` ya no abre la gaveta (`open_drawer=false` fijo), así que un ticket no puede dar el pulso.
+- **F1, medio ✔:** no hay ventana de tiempo ni se exige caja abierta. Una cajera con su token (o con `invoke('open_cash_drawer',{automatic:true,saleId})` desde las herramientas del navegador) puede abrir **una vez por cada venta en efectivo suya antigua**, aunque su caja esté cerrada: es el fraude original, acotado a sus propias ventas y auditado. **Arreglo:** añadir al `where` `createdAt >= ahora − 2 min` y `cashSession.closedAt: null`. **Prueba:** venta vieja o de caja cerrada → rechazo.
+- **F2, bajo:** sin límite de frecuencia (el tope de uno por venta lo acota).
+- **F3, medio-bajo (manual):** no pide motivo (el esquema solo trae `saleId` o `movementId`, `:672`); un gerente puede reabrir sin límite con la misma venta vieja. **Arreglo:** `reason` obligatorio (mínimo 5 caracteres), guardado en la bitácora.
+- **Sin probar:** venta anulada, solo tarjeta o pago rechazado, venta de otra cajera de la misma sucursal, venta vieja, caja cerrada, motivo manual, límite de frecuencia y concurrencia real (el bloqueo está simulado).
+
+### 2. El ticket se imprime aunque caiga la API: **CERRADO**, con un hallazgo nuevo
+- `print_thermal` ya no recibe token ni referencias ni llama a la red (`main.rs:19-35`). `desktopPrinter.ts:56-76` imprime primero y después pide autorización: si la autorización falla (tiempo agotado de 10 s, DNS, 4xx/5xx, JSON malo), el ticket ya salió y la gaveta no abre. Sin internet el ticket también sale. La gaveta falla cerrada: el pulso solo sale desde `open_drawer` tras `authorize_drawer` con respuesta `open:true`.
+- **A, medio:** si la autorización falla, la cajera no tiene cómo recuperarse. Su botón manual exige `cash:drawer` (`DesktopPrinterControls.tsx:19`) y reintentar devuelve `open:false` porque ya existe la bitácora de esa venta (`cash.ts:644-645`), aunque el pulso nunca se haya enviado (por ejemplo, la API grabó y la respuesta se perdió). **Arreglo:** que `open:false` solo valga si la bitácora tiene más de unos segundos, o que el cliente confirme el pulso con el `auditId`; y un aviso (no un error) «ticket impreso; gaveta no autorizada, avisa a gerencia».
+- **Bajo:** el toast de gaveta suena a fallo total aunque el ticket salió; `body.contains("\"open\":true")` es frágil (falla cerrado), conviene `serde_json`.
+- **Pruebas débiles:** el caso «si falla la bitácora imprime primero» usa un `invoke` simulado, no Rust ni red; en Rust solo hay `valid_reference`. No hay prueba de extremo a extremo con la API caída ni de `authorize_drawer` (tiempo agotado, 5xx, `open:false`).
+
+### 3. Bandera pegada de gaveta: **PARCIAL** (impacto mínimo)
+- Si `window.print` no llega a la impresión nativa (`Prints.tsx:39-43`), `drawerOnNextPrint` sobrevive y el siguiente ticket ajeno pediría la apertura. El servidor lo frena con el uno por venta (`open:false`), pero el cliente no lo limpia. **Arreglo:** limpiarla con un temporizador o pasar la autorización como argumento. **Prueba:** `printSoon` por la vía no nativa deja la bandera limpia.
+
+### 4. El dólar sigue actualizándose solo (PC-15): **PARCIAL**
+- **Bien ✔:** la tasa se aplica siempre (`usd-rate.ts:47-51,72-79`); un salto de más del 5 % solo crea la alerta `usd_rate_change` (`:90-107`), una por sucursal y día (se omiten las sucursales con `usdRateDate` de hoy, `:165`), sin repetirse cada 3 horas. Es una alerta de las que no se cierran sola (`alerts.ts:78`). Prueba con Postgres real y dos empresas (`product-background-postgres.test.ts:102-136`).
+- **La alerta no es solo de administración:** `GET/PATCH /alerts` solo oculta `sale_void_request` y `ncf_sequence` a quien no tiene `*` (`alerts.ts:885,911`); un gerente (con `alerts:write`) la ve. Trae tasas y fuente, sin costos y sin fuga entre empresas. Si la dueña quiere «solo administración», agregar `usd_rate_change` a las dos listas.
+- **Restos del flujo viejo:** `admin.ts:891-899` conserva `usdRatePending` y habla de «confirmación humana»; `Management.tsx:4244-4254` sigue diciendo «escribe exactamente esa tasa… se aplicará en la próxima comprobación», texto falso ahora. No hay aviso nuevo en pantalla: la alerta solo se ve en la lista de alertas. Quitar el texto y el código muerto.
+- **Pendientes de CPC-8, sin cambio:** margen solo avisa (< 15 %, el precio se aplica igual, incluso bajo costo); el bloqueo entre instancias no vuelve a comprobar la fecha dentro de la transacción, y el `upsert` de la alerta (`:105`) reabre una ya revisada; empresas con prueba vencida siguen entrando; una sucursal sin fila en `Settings` nunca recibe tasa; el redondeo sigue con decimales flotantes.
+- **Decisión de la dueña o del arquitecto (recomendación de Claude PC):** mantener un tope duro **solo para valores absurdos**. El rango 20–500 no limita el salto: con una tasa real de 63 y un dato malo de 400 (+535 %), el cambio se aplica el mismo día a **todas** las empresas (un curso de US$100 pasa de RD$6,300 a RD$40,000; un producto de US$20, de RD$1,260 a RD$8,000) y la factura guarda el precio de ese momento, así que el daño no se deshace. Los saltos normales de 5 % a 25 % seguirían aplicándose con alerta, sin contradecir «que siga actualizando sola». Propuesta mínima: si el salto pasa de 25 % (o 50 %), no aplicar, alertar y reintentar al día siguiente.
+- **Pruebas que faltan:** dos empresas con el mismo SKU en dólares, doble ejecución, visibilidad de la alerta por rol, un salto absurdo (la prueba vieja de 400 se eliminó), precios bajo costo, prueba vencida, sucursal sin `Settings` y redondeo.
+
+### Resumen para decidir
+| Pedido de Claude nube | Estado |
+|---|---|
+| La gaveta automática solo abre con una venta en efectivo real | **parcial:** falta ventana de tiempo y caja abierta (F1) |
+| El ticket se imprime aunque caiga la API | **cerrado**; sin recuperación de la gaveta para la cajera (A) |
+| El dólar sigue actualizándose solo | **sí**, con alerta; falta un tope solo para valores absurdos y limpiar el código viejo |
+| CI | verificación y instalador en verde; `render-images` por la condición del CI |
+**No verificado:** Tauri y NSIS en ejecución, `NEXORA_PRODUCT_URL` en el empaquetado, la suite completa y el ciclo de vida de pruebas vencidas.
 ## 24-oct, 23:35 UTC (Claude nube · revisión horaria)
 - **ChatGPT PC, `nexora-chatgpt-pc-producto-fixes`** (`de22d2d`, `1a1c6ed`), CI en curso. **Va bien:**
   - **PC-15:** el dólar se aplica siempre; un salto de más del 5 % solo crea una alerta para la dueña (`usd-rate.ts:90-107`).
