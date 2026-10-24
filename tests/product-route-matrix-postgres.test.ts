@@ -10,6 +10,7 @@ import supertest from "supertest";
 import { expect, it } from "vitest";
 import { createAppModule } from "../apps/api/src/app";
 import { ApiExceptionFilter } from "../apps/api/src/common";
+import { askAssistant } from "../apps/api/src/assistant";
 
 const apiRequire = createRequire(resolve(import.meta.dirname, "../apps/api/package.json"));
 const { MODULE_METADATA, METHOD_METADATA, PATH_METADATA } = apiRequire("@nestjs/common/constants");
@@ -207,6 +208,7 @@ PATCH /api/terminals/:id/register
 PATCH /api/users/:id
 PATCH /api/variants/:id
 POST /api/alerts/evaluate
+POST /api/assistant/ask
 POST /api/onboarding
 POST /api/onboarding/profile
 POST /api/auth/change-password
@@ -310,7 +312,7 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  expect(required).toHaveLength(172);
+  expect(required).toHaveLength(173);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");
@@ -397,6 +399,27 @@ it("aisla rutas reales de catálogo, búsqueda y los 43 reportes con PostgreSQL"
         "Bearer " + jwt.sign({ sub: userId, sid, type: "access", version: 0, tenantId });
       const tokenA = auth(a, userA, sessionA);
       const tokenB = auth(b, userB, sessionB);
+      // N-01: la herramienta usa el token real de B; el modelo falso no puede
+      // recibir productos ni el identificador interno de la empresa A.
+      const model = async (_messages: any[], _tools: any[]) => {
+        if (_messages.length === 1)
+          return { stop_reason: "tool_use", content: [{ type: "tool_use", id: "inventory-1", name: "existencias", input: {} }], usage: { input_tokens: 1, output_tokens: 1 } };
+        return { stop_reason: "end_turn", content: [{ type: "text", text: JSON.stringify(_messages.at(-1)) }], usage: { input_tokens: 1, output_tokens: 1 } };
+      };
+      const assistant = await askAssistant({ messages: [{ role: "user", content: "¿Qué hay?" }] }, tokenB,
+        { name: "Empresa B" }, {
+          model,
+          get: async (path) => {
+            const response = await http.get(path).set("Authorization", tokenB);
+            return { status: response.status, body: JSON.stringify(response.body) };
+          },
+        });
+      expect(assistant.answer).not.toContain("A_ONLY_SECRET");
+      expect(assistant.answer).not.toContain(a);
+      const noKey = await http.post("/api/assistant/ask").set("Authorization", tokenB)
+        .send({ messages: [{ role: "user", content: "¿Qué hay?" }] });
+      expect(noKey.status).toBe(503);
+      expect(JSON.stringify(noKey.body)).not.toContain("A_ONLY_SECRET");
       for (const path of READ_LIST_CASES) {
         const response = await http.get(path).set("Authorization", tokenB);
         expect(response.status, `${path}: ${JSON.stringify(response.body)}`).toBe(200);
