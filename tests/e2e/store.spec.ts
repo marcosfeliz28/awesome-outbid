@@ -344,6 +344,17 @@ test("descuento por monto, crédito y abono en interfaz", async ({ page }) => {
   }
 });
 
+async function approveMerchandiseEntry(page: any) {
+  const confirmation = page.getByRole("dialog", {
+    name: "Confirmar entrada de mercancía",
+  });
+  await expect(confirmation).toBeVisible();
+  await confirmation
+    .getByRole("button", { name: "Registrar entrada", exact: true })
+    .click();
+  await expect(confirmation).toHaveCount(0);
+}
+
 test("Mercancía móvil: entrada offline, sincronización única y etiquetas", async ({
   page,
   context,
@@ -420,6 +431,7 @@ test("Mercancía móvil: entrada offline, sincronización única y etiquetas", a
   await page
     .getByRole("button", { name: "Confirmar entrada", exact: true })
     .click();
+  await approveMerchandiseEntry(page);
   await expect(
     page.getByText("Guardado en cola. Se sincronizará al reconectar."),
   ).toBeVisible();
@@ -514,7 +526,12 @@ test("Importar CSV exige revisión antes de modificar existencias", async ({
   await page
     .getByRole("button", { name: "Confirmar entrada", exact: true })
     .click();
-  await expect(page.getByText("Mercancía registrada.")).toBeVisible();
+  await approveMerchandiseEntry(page);
+  await expect(page.getByText("Entrada registrada", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Registrando…" })).toHaveCount(
+    0,
+    { timeout: 15000 },
+  );
   expect(
     Number(
       (
@@ -897,6 +914,12 @@ test("R9-codigos-2 y R9-codigos-3: Mercancía reconoce el código sin distinguir
   await expect(lines).not.toContainText("Faja E2E duplicada");
   // Salida: la etiqueta también se reconoce (antes: «Código desconocido»).
   await page.getByRole("tab", { name: /SALIDA/ }).click();
+  const changeMode = page.getByRole("dialog", { name: "Cambiar de modo" });
+  await expect(changeMode).toBeVisible();
+  await changeMode
+    .getByRole("button", { name: "Descartar y cambiar", exact: true })
+    .click();
+  await expect(changeMode).toHaveCount(0);
   await scan("R9M-E-" + tag);
   await expect(lines).toContainText("Faja E2E Mercancía E " + tag);
   await expect(page.getByText(/Código desconocido/)).toHaveCount(0);
@@ -2392,7 +2415,12 @@ test("Aceptación 35-37 en el celular: Mercancía recibe una orden con documento
   await page
     .getByRole("button", { name: "Confirmar entrada", exact: true })
     .click();
-  await expect(page.getByText("Mercancía registrada.")).toBeVisible();
+  await approveMerchandiseEntry(page);
+  await expect(page.getByText("Entrada registrada", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Registrando…" })).toHaveCount(
+    0,
+    { timeout: 15000 },
+  );
   // El stock sube sólo por lo bueno; lo dañado cierra lo pendiente.
   const orders = await (
     await request.get("/api/purchase-orders", { headers })
