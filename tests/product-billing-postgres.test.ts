@@ -12,6 +12,7 @@ import { expect, it, vi } from "vitest";
 import { createAppModule } from "../apps/api/src/app";
 import { ApiExceptionFilter } from "../apps/api/src/common";
 import { reviewProductBilling } from "../apps/api/scripts/review-product-billing";
+import { createPlatformBillingPanel } from "../apps/api/scripts/platform-billing-panel";
 
 const root = resolve(import.meta.dirname, "..");
 const apiRequire = createRequire(join(root, "apps/api/package.json"));
@@ -108,7 +109,40 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     const digest = createHash("sha256").update(png).digest("hex");
     const review = { requestId: id, decision: "approved" as const, paidThroughAt: pendingThrough, expectedProofSha256: digest, reviewer: "Operadora ficticia", reason: "Banco confirmado" };
     await expect(reviewProductBilling(operatorDb!, { ...review, expectedProofSha256: "0".repeat(64) })).rejects.toThrow("SHA-256");
-    expect(await reviewProductBilling(operatorDb!, review)).toMatchObject({ status: "approved", alreadyReviewed: false });
+    const panel = supertest(createPlatformBillingPanel(operatorDb!, { reviewer: "Operadora ficticia", token: "token-local-de-prueba" }));
+    const credential = `Basic ${Buffer.from("operador:token-local-de-prueba").toString("base64")}`;
+    expect((await panel.get("/api/requests").set("Host", "127.0.0.1")).status).toBe(401);
+    expect((await panel.get("/api/requests").set("Host", "127.0.0.1").set("Authorization", "Basic " + Buffer.from("operador:incorrecto").toString("base64"))).status).toBe(401);
+    expect((await panel.get("/api/requests").set("Host", "evil.example").set("Authorization", credential)).status).toBe(403);
+    const panelPage = await panel.get("/").set("Host", "127.0.0.1").set("Authorization", credential);
+    expect(panelPage.status).toBe(200);
+    expect(panelPage.text).toContain("Conciliación de planes Nexora");
+    expect(panelPage.headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect((await panel.get("/panel.js").set("Host", "127.0.0.1").set("Authorization", credential)).status).toBe(200);
+    expect((await http.post(`/api/platform/billing/requests/${id}/decision`).set("Authorization", ownerA).send({ decision: "approved" })).status).toBe(404);
+    const pending = await panel.get("/api/requests").set("Host", "127.0.0.1").set("Authorization", credential);
+    expect(pending.status, JSON.stringify(pending.body)).toBe(200);
+    expect(pending.body.requests).toContainEqual(expect.objectContaining({ id, tenantName: "negocio-uno", hasProof: true, proofSha256: digest }));
+    expect(JSON.stringify(pending.body)).not.toContain("base64");
+    const panelProof = await panel.get(`/api/requests/${id}/proof`).set("Host", "127.0.0.1").set("Authorization", credential);
+    expect(panelProof.status).toBe(200);
+    expect(panelProof.body).toEqual(png);
+    expect((await panel.post(`/api/requests/${id}/decision`).set("Host", "127.0.0.1").set("Authorization", credential)
+      .send({ decision: "approved", reason: review.reason, paidThroughAt: pendingThrough.toISOString(), expectedProofSha256: digest })).status).toBe(403);
+    const wrongHash = await panel.post(`/api/requests/${id}/decision`).set("Host", "127.0.0.1").set("Origin", "http://127.0.0.1")
+      .set("Authorization", credential).set("X-Nexora-Panel", "1")
+      .send({ decision: "approved", reason: review.reason, paidThroughAt: pendingThrough.toISOString(), expectedProofSha256: "0".repeat(64) });
+    expect(wrongHash.status).toBe(400);
+    expect(wrongHash.body.error).toContain("SHA-256");
+    const wrongDate = await panel.post(`/api/requests/${id}/decision`).set("Host", "127.0.0.1").set("Origin", "http://127.0.0.1")
+      .set("Authorization", credential).set("X-Nexora-Panel", "1")
+      .send({ decision: "approved", reason: review.reason, paidThroughAt: "not-a-date", expectedProofSha256: digest });
+    expect(wrongDate.status).toBe(400);
+    const approved = await panel.post(`/api/requests/${id}/decision`).set("Host", "127.0.0.1").set("Origin", "http://127.0.0.1")
+      .set("Authorization", credential).set("X-Nexora-Panel", "1")
+      .send({ decision: "approved", reason: review.reason, paidThroughAt: pendingThrough.toISOString(), expectedProofSha256: digest });
+    expect(approved.status, JSON.stringify(approved.body)).toBe(200);
+    expect(approved.body).toMatchObject({ status: "approved", alreadyReviewed: false });
     expect(await reviewProductBilling(operatorDb!, review)).toMatchObject({ alreadyReviewed: true });
     const rows = await operatorDb.$queryRawUnsafe<Array<{ n: bigint }>>('SELECT count(*) AS n FROM "BillingDecision" WHERE "requestId"=$1::uuid', id);
     expect(Number(rows[0].n)).toBe(1);

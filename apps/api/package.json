@@ -11,6 +11,7 @@
     "start": "node dist/main.js",
     "admin:create": "tsx scripts/create-admin.ts",
     "admin:require-password-change": "tsx --tsconfig tsconfig.json scripts/require-password-change.ts",
+    "billing:panel": "tsx scripts/platform-billing-panel.ts",
     "inventory:import": "tsx scripts/import-inventario.ts"
   },
   "dependencies": {

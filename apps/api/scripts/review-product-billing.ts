@@ -15,7 +15,7 @@ export async function reviewProductBilling(db: PrismaClient, input: Review) {
   if (!uuid.test(input.requestId)) throw new Error("Identificador inválido.");
   if (!input.reviewer.trim() || input.reviewer.length > 100) throw new Error("Identifica al operador.");
   if (!input.reason.trim() || input.reason.length > 500) throw new Error("Escribe el motivo de la decisión.");
-  if (input.decision === "approved" && (!input.paidThroughAt || input.paidThroughAt.getTime() <= Date.now() || input.paidThroughAt.getTime() > Date.now() + 370 * 86400000))
+  if (input.decision === "approved" && (!input.paidThroughAt || !Number.isFinite(input.paidThroughAt.getTime()) || input.paidThroughAt.getTime() <= Date.now() || input.paidThroughAt.getTime() > Date.now() + 370 * 86400000))
     throw new Error("La fecha pagada debe ser futura y no superar 370 días.");
   return db.$transaction(async (tx) => {
     // El SET falla si el login no recibió pertenencia a este rol separado.
