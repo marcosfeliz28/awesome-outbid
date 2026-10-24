@@ -48,6 +48,7 @@ import { cashDifferenceMessage } from "./alerts";
 // Aparte del import anterior de ./sales para no chocar al fusionar ramas.
 import { MONEY_TRANSACTION } from "./sales";
 import { moneyDb } from "./database-errors";
+import { enforcePlanQuota } from "./billing-plans";
 
 export async function cashExpected(db: any, session: any) {
   // Sólo las columnas que se suman (D-M6): sin select, Prisma traía también
@@ -718,6 +719,7 @@ export class CashController {
           },
         });
         if (own) return own;
+        await enforcePlanQuota(tx as any, "cashBoxes");
         // Decisión 38: otra persona puede tener su caja abierta en este mismo
         // equipo; la caja es de quien la abre, no del equipo.
         const row = await tx.cashSession.create({

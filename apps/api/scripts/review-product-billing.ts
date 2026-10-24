@@ -41,16 +41,18 @@ export async function reviewProductBilling(db: PrismaClient, input: Review) {
     if (input.decision === "approved") {
       const limits = BILLING_PLANS[row.plan as keyof typeof BILLING_PLANS];
       if (!limits) throw new Error("Plan desconocido.");
-      const [usage] = await tx.$queryRaw<Array<{ users: bigint; terminals: bigint; branches: bigint }>>`
+      const [usage] = await tx.$queryRaw<Array<{ users: bigint; terminals: bigint; openCashBoxes: bigint; branches: bigint }>>`
         SELECT
           (SELECT count(*) FROM "User" WHERE "tenantId"=${row.tenantId}::uuid AND active) AS users,
           (SELECT count(*) FROM "Terminal" WHERE "tenantId"=${row.tenantId}::uuid AND "approvedAt" IS NOT NULL AND "revokedAt" IS NULL) AS terminals,
+          (SELECT count(*) FROM "CashSession" WHERE "tenantId"=${row.tenantId}::uuid AND "closedAt" IS NULL) AS "openCashBoxes",
           (SELECT count(DISTINCT branch) FROM (
             SELECT "branchId" AS branch FROM "User" WHERE "tenantId"=${row.tenantId}::uuid AND active
             UNION SELECT "branchId" AS branch FROM "Terminal" WHERE "tenantId"=${row.tenantId}::uuid AND "revokedAt" IS NULL
           ) occupied) AS branches`;
-      if (Number(usage.users) > limits.users || Number(usage.terminals) > limits.boxes || Number(usage.branches) > limits.branches)
-        throw new Error("El plan solicitado es menor que los usuarios, cajas o sucursales activas. Libera cupos antes de aprobar.");
+      if (Number(usage.users) > limits.users || Number(usage.terminals) > limits.boxes ||
+        Number(usage.openCashBoxes) > limits.boxes || Number(usage.branches) > limits.branches)
+        throw new Error("El plan solicitado es menor que los usuarios, equipos aprobados, cajas abiertas o sucursales activas. Libera cupos antes de aprobar.");
       // La activación y la decisión se confirman juntas, limpiando el ciclo anterior.
       await tx.$executeRaw`UPDATE "Tenant" SET status='active', plan=${row.plan}, "paidThroughAt"=${input.paidThroughAt!},
         "pastDueAt"=NULL, "suspendedAt"=NULL, "updatedAt"=CURRENT_TIMESTAMP WHERE id=${row.tenantId}::uuid`;

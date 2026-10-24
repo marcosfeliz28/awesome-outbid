@@ -172,6 +172,28 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
       SELECT gen_random_uuid(),"tenantId",name,'cajera3','cajera3','cajera3@example.invalid',"passwordHash","pinHash","roleId","branchId",now()
       FROM "User" WHERE "tenantId"=$1::uuid LIMIT 1`, activated!.id);
     await operatorDb!.$executeRawUnsafe(`UPDATE "User" SET active=false WHERE "tenantId"=$1::uuid AND "usernameKey"='cajera3'`, activated!.id);
+    // Dos cajas de dos usuarios pueden operar en un único equipo aprobado.
+    // Bajar de Pro a Autoservicio (una caja) debe rechazarse también por las
+    // sesiones abiertas, aunque equipos y usuarios sigan dentro del cupo.
+    const cashOwners = await operatorDb!.user.findMany({ where: { tenantId: activated!.id, active: true }, select: { id: true } });
+    expect(cashOwners).toHaveLength(2);
+    const cashIds: string[] = [];
+    for (const user of cashOwners) {
+      const cash = await operatorDb!.cashSession.create({ data: {
+        tenantId: activated!.id, branchId: "main", userId: user.id,
+        registerId: "terminal-qa", openingAmount: 0,
+      } });
+      cashIds.push(cash.id);
+    }
+    const cashDowngrade = await http.post("/api/billing/requests").set("Authorization", ownerA).send({ plan: "autoservicio", provider: "bank_transfer" });
+    expect(cashDowngrade.status).toBe(201);
+    expect((await http.post(`/api/billing/requests/${cashDowngrade.body.id}/proof`).set("Authorization", ownerA).attach("file", png, "comprobante.png")).status).toBe(201);
+    await expect(reviewProductBilling(operatorDb!, { ...review, requestId: cashDowngrade.body.id })).rejects.toThrow("Libera cupos");
+    await expect(operatorDb!.$transaction(async (tx: any) => {
+      await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_platform_billing");
+      await tx.$queryRawUnsafe('SELECT "openingAmount" FROM "CashSession" LIMIT 1');
+    })).rejects.toThrow();
+    await operatorDb!.cashSession.deleteMany({ where: { id: { in: cashIds } } });
     const downgrade = await http.post("/api/billing/requests").set("Authorization", ownerA).send({ plan: "autoservicio", provider: "bank_transfer" });
     expect(downgrade.status).toBe(201);
     expect((await http.post(`/api/billing/requests/${downgrade.body.id}/proof`).set("Authorization", ownerA).attach("file", png, "comprobante.png")).status).toBe(201);

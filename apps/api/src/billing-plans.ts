@@ -18,13 +18,14 @@ export function billingPlan(value: string): BillingPlan {
 type QuotaDb = {
   user: { count(args: unknown): Promise<number>; findMany(args: unknown): Promise<{ branchId: string }[]> };
   terminal: { count(args: unknown): Promise<number>; findMany(args: unknown): Promise<{ branchId: string }[]> };
+  cashSession: { count(args: unknown): Promise<number> };
   $queryRaw: (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
 };
 
 /** Must run inside the same transaction as the create/approval it protects. */
 export async function enforcePlanQuota(
   tx: QuotaDb,
-  resource: "users" | "boxes" | "branches",
+  resource: "users" | "boxes" | "cashBoxes" | "branches",
   newBranch?: string,
 ) {
   if (process.env.PRODUCT_TENANCY !== "required") return;
@@ -41,6 +42,13 @@ export async function enforcePlanQuota(
   } else if (resource === "boxes") {
     const approved = await tx.terminal.count({ where: { tenantId, approvedAt: { not: null }, revokedAt: null } });
     if (approved >= plan.boxes) throw new HttpException(`El plan ${plan.label} permite ${plan.boxes} equipos aprobados.`, 409);
+  } else if (resource === "cashBoxes") {
+    // Un equipo puede compartirlo más de un cajero (W6). Limitar sólo
+    // Terminal aprobados no limita el número de cajas operando a la vez.
+    const open = await tx.cashSession.count({ where: { tenantId, closedAt: null } });
+    if (open >= plan.boxes) throw new HttpException(
+      `El plan ${plan.label} permite ${plan.boxes} ${plan.boxes === 1 ? "caja abierta" : "cajas abiertas"} simultáneamente.`, 409,
+    );
   } else {
     const [users, terminals] = await Promise.all([
       tx.user.findMany({ where: { tenantId, active: true }, select: { branchId: true } }),

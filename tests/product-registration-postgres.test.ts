@@ -180,7 +180,8 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     const overUsers = await http.post("/api/users").set("Authorization", aToken).send(cashier("Cajera B"));
     expect(overUsers.status, JSON.stringify(overUsers.body)).toBe(409);
     expect((await http.patch(`/api/users/${firstCashier.body.id}`).set("Authorization", aToken).send({ active: false })).status).toBe(200);
-    expect((await http.post("/api/users").set("Authorization", aToken).send(cashier("Cajera B"))).status).toBe(201);
+    const secondCashier = await http.post("/api/users").set("Authorization", aToken).send(cashier("Cajera B"));
+    expect(secondCashier.status, JSON.stringify(secondCashier.body)).toBe(201);
     expect((await http.patch(`/api/users/${firstCashier.body.id}`).set("Authorization", aToken).send({ active: true })).status).toBe(409);
     const device = (id: string) => ({ id, name: "Caja de prueba", secret: "only-local-test-secret-123" });
     expect((await http.post("/api/terminals/register").set("Authorization", aToken)
@@ -188,6 +189,22 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     const overBoxes = await http.post("/api/terminals/register").set("Authorization", aToken)
       .send(device("00000000-0000-4000-8000-000000000102"));
     expect(overBoxes.status, JSON.stringify(overBoxes.body)).toBe(409);
+    // W6 permite que dos personas compartan equipo, pero en producto el plan
+    // Autoservicio sólo paga una caja abierta a la vez. El equipo aprobado no
+    // debe convertirse en una vía para crear cajas ilimitadas.
+    const changed = await http.post("/api/auth/change-password").set("x-tenant-id", input.companyCode).send({
+      login: "Cajera B", currentPassword: "729486",
+      newPassword: "684291", confirmPassword: "684291",
+    });
+    expect(changed.status, JSON.stringify(changed.body)).toBe(201);
+    const secondToken = `Bearer ${changed.body.accessToken}`;
+    expect((await http.post("/api/terminals/register").set("Authorization", secondToken)
+      .send(device("00000000-0000-4000-8000-000000000101"))).status).toBe(201);
+    const ownerCash = await http.post("/api/cash-sessions/open").set("Authorization", aToken).send({ openingAmount: 0 });
+    expect(ownerCash.status, JSON.stringify(ownerCash.body)).toBe(201);
+    const secondCash = await http.post("/api/cash-sessions/open").set("Authorization", secondToken).send({ openingAmount: 0 });
+    expect(secondCash.status, JSON.stringify(secondCash.body)).toBe(409);
+    expect(String(secondCash.body.message)).toContain("caja abierta");
     expect((await http.post("/api/auth/register").send(accepted)).status).toBe(409);
     failNextMail = true;
     const second = await http.post("/api/auth/register").send({ ...accepted, companyCode: "otra-tienda" });
