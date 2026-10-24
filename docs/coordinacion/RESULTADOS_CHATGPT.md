@@ -375,3 +375,21 @@ Corrección de CI de N-01: `render-images` de `04ab61b` falló en el paso «Arra
 - `pnpm db:generate` y `pnpm check` en el árbol integrado terminaron con código **0**. Resultado: **108 archivos de pruebas aprobados, 1 omitido; 745 pruebas aprobadas, 11 omitidas**, y tipos, ESLint y compilaciones web/API en verde. Las pruebas PostgreSQL de rutas de dinero, cobro, aislamiento de empresas y piloto de tres negocios pasaron. La prueba de PC-10 «sin marca de la tienda» ya existía (`tests/product-branding.test.ts`, 9/9); no se duplicó.
 - **Observación no verificada en navegador:** el nuevo renglón informativo `ownerReceived` del cuadre busca cobros por sucursal y ventana horaria, no por caja. Si dos cajas de la misma sucursal están abiertas a la vez, un cobro fuera de gaveta podría figurar en ambos impresos. No se cambió la atribución sin una regla de negocio para esos cobros; debe validarse antes del despliegue.
 - **PC-15 aún parcial:** los cinco interruptores requieren una política explícita para ventas contraentrega, cobros pendientes, lotes y documentos históricos. Apagar solamente las pantallas escondería obligaciones y podría falsear reportes; no se implementó ese ocultamiento. Quedan pendientes la verificación de los tres trabajos CI sobre el SHA de esta integración y la revisión externa.
+
+## 24-oct-2026 · ChatGPT PC · N-16 a N-35, avance aislado
+
+Rama propia `nexora-chatgpt-pc-n16-n35`, nacida de N-15 (`c684354`) e integrada **solo en esta rama** con `producto-nexora` (`ae48144`). No hubo despliegue, uso de credenciales ni acceso a la base de la tienda. N-01 a N-15 no se rehicieron. La auditoría CPC-6 llegó durante el trabajo; por prioridad se corrigieron primero el piso de promociones N-12 (`7fe6df4`) y el vencimiento/versionado de SSE de soporte N-05 (`2519890`).
+
+| Punto | Commit | Regresión local y alcance |
+| --- | --- | --- |
+| N-16 / mejora 1 | `bbe2d31` | `printSoon()` espera al ticket, imágenes y fuentes, con límite de 4 s y aviso para reintentar. `tests/print-ready-n16.test.ts`: 2/2. |
+| N-17 / mejora 2 | `ec22cba` | La tabla cambia de página al variar identidad/orden de filas y acota la página si se redujo el total. `tests/table-pagination-n17.test.ts`: 2/2. |
+| N-18 / mejora 3 | `bf96279` | CSV completo de errores del Excel con fila, columna cuando la API la conoce y causa; protección frente a fórmulas. `tests/inventory-errors-n18.test.ts`: 1/1 y `inventory-import-core`: 8/8. |
+| N-19 / mejora 4 | `818450c` | Descarga todos los avisos del Excel, sin quitar confirmación explícita. `tests/inventory-review-n19.test.ts`: 1/1. |
+| N-25 / mejora 10 | `cce61c8` | Pendientes offline reaccionan a mutaciones Dexie y otras pestañas; respaldo al enfocar y cada minuto en vez de cada 4 s. `tests/local-queue-n25.test.ts`: 1/1. |
+| N-26 / mejora 11 | `482fe8a` | Cola de mercancía usa el mismo observador reactivo, con lectura al volver a la pestaña; deja de consultar cada 2 s. `tests/local-queue-n26.test.ts`: 1/1. |
+| Propuesta comercial | `e32b2e6` | `docs/propuestas/PLANES_PRECIOS_NEXORA.md`: planes del código, cuota IA y escenarios de costo por empresa en Render; **no modifica tarifas**. |
+
+Los tests enumerados son pruebas que pasan **después** del cambio; no se ejecutó una copia previa de cada test contra el commit anterior, por lo que no se afirma una salida roja previa. `pnpm typecheck` y ESLint de archivos modificados pasaron en cada bloque. `pnpm check` completo terminó con código **0**: **128 archivos de pruebas aprobados, 1 omitido; 820 pruebas aprobadas, 11 omitidas**; tipos, ESLint y compilaciones web/API en verde. Los tres trabajos de CI de GitHub se informarán sólo al verificarse sobre el último SHA publicado.
+
+**Pendiente de CPC-6:** N-06 requiere 20 consultas reales con una clave de pruebas ajena a esta rama; no se inventaron tokens ni dólares. También quedan las demás observaciones de soporte, MCP, transferencias, correo, cuota y asistente en la revisión de Claude. Las mejoras N-20 a N-24 y N-27 a N-35 no se han implementado ni se presentan como terminadas.
