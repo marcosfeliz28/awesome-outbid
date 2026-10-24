@@ -1,3 +1,4 @@
+/* global document, AbortController, setTimeout, fetch, clearTimeout, setInterval */
 (() => {
   const result = document.getElementById("service-result");
   const time = document.getElementById("service-time");
