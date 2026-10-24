@@ -595,6 +595,15 @@ export function Merchandise() {
         body: form,
       });
       setDraft(d);
+      if (d.fiscal) {
+        // La IA propone, no confirma datos fiscales. Un valor ilegible limpia
+        // la sugerencia anterior; el usuario puede corregir el documento.
+        setDoc((current) => ({
+          ...current,
+          supplierNcf: d.fiscal.supplierNcf ?? "",
+          itbis: d.fiscal.itbis ?? "",
+        }));
+      }
       setResult(null);
       setItems(
         d.lines.map((l: any) => ({
@@ -892,8 +901,32 @@ export function Merchandise() {
             <h2>Revisión de factura</h2>
             <p>
               Nada entra al inventario hasta que confirmes. Comprueba cada
-              producto, cantidad y costo.
+              producto, cantidad, costo y dato fiscal leído de la factura.
             </p>
+            {draft.fiscal && (
+              <div className="goods-cost-note" role="status">
+                <strong>
+                  Datos fiscales sugeridos por IA; verifica con el original:
+                </strong>{" "}
+                RNC/cédula del proveedor:{" "}
+                {draft.fiscal.supplierLegalId ?? "no leído"}; NCF:{" "}
+                {draft.fiscal.supplierNcf ?? "no leído"}; ITBIS:{" "}
+                {draft.fiscal.itbis == null
+                  ? "no leído"
+                  : formatMoney(draft.fiscal.itbis)}
+                .
+                {!supplierId || !draft.supplierLegalId ? (
+                  <span>
+                    {" "}
+                    Para preparar el 606, selecciona un proveedor con RNC/cédula
+                    registrado antes de importar.
+                  </span>
+                ) : null}
+                {draft.fiscal.warnings?.map((warning: string) => (
+                  <span key={warning}> {warning}</span>
+                ))}
+              </div>
+            )}
             <div className="goods-review-stats">
               <Badge tone="violet">{items.length} línea(s)</Badge>
               {unresolved > 0 ? (

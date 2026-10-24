@@ -60,6 +60,7 @@ import {
 } from "./inventory-resilience";
 import {
   DEFAULT_INVOICE_MODEL,
+  assertInvoiceSupplierFiscalMatch,
   extractAnthropic,
   matchInvoiceLines,
   readInvoiceTable,
@@ -215,10 +216,11 @@ export class MerchandiseController {
     const supplierId = body.supplierId
       ? parse(uuid, body.supplierId)
       : undefined;
-    if (supplierId)
-      await this.db.supplier.findFirstOrThrow({
-        where: { id: supplierId, branchId: actor.branchId, active: true },
-      });
+    const supplier = supplierId
+      ? await this.db.supplier.findFirstOrThrow({
+          where: { id: supplierId, branchId: actor.branchId, active: true },
+        })
+      : null;
     const format = String(file.originalname).toLowerCase().endsWith(".csv")
       ? "csv"
       : String(file.originalname).toLowerCase().endsWith(".xlsx")
@@ -269,6 +271,13 @@ export class MerchandiseController {
       extracted = await extractAnthropic(file, process.env.ANTHROPIC_API_KEY, {
         model: process.env.ANTHROPIC_MODEL || DEFAULT_INVOICE_MODEL,
       });
+      // El RNC sugerido por IA no cambia el maestro de proveedores. Si el
+      // usuario eligió uno cuyo RNC registrado contradice la foto, no se
+      // crea un borrador que acabaría en la base fiscal del 606 equivocado.
+      assertInvoiceSupplierFiscalMatch(
+        extracted.fiscal.supplierLegalId,
+        supplier?.legalId,
+      );
     }
     const variants = await this.db.variant.findMany({
       where: {
@@ -338,6 +347,10 @@ export class MerchandiseController {
       return {
         ...json(draft),
         skipped: "skipped" in extracted ? extracted.skipped : 0,
+        // Solo sugerencias para revisión humana; nunca se guardan en el
+        // proveedor ni se presentan como validación oficial de DGII.
+        fiscal: "fiscal" in extracted ? extracted.fiscal : null,
+        supplierLegalId: supplier?.legalId ?? null,
       };
     });
     } catch (error) {

@@ -16,16 +16,9 @@ import {
   today,
   type Field,
 } from "./helpers";
+import { documentPayload, type SupplierDocument } from "./supplierDocument";
+export { documentPayload, type SupplierDocument } from "./supplierDocument";
 
-// Documento del proveedor y condición de pago (paso 35): todo opcional.
-export type SupplierDocument = {
-  supplierInvoice?: string;
-  supplierNcf?: string;
-  invoiceDate?: string;
-  paymentType?: "" | "cash" | "credit";
-  creditDays?: number | "";
-  itbis?: number | "";
-};
 // Motivos de las unidades dañadas o rechazadas al recibir (paso 36).
 export const DAMAGE_REASONS = [
   "Dañado",
@@ -53,31 +46,6 @@ export const paymentLabel = (r: {
     : r.paymentType === "credit"
       ? "Crédito" + (r.creditDays ? " " + r.creditDays + " días" : "")
       : "Sin indicar";
-
-/**
- * Cuerpo para la API. En una alta se omite lo vacío; al completar después
- * (`clear`), lo vacío se envía como null para borrar el dato.
- */
-export function documentPayload(doc: SupplierDocument, clear = false) {
-  const out: Record<string, unknown> = {};
-  const put = (key: string, value: unknown) => {
-    if (value === "" || value === undefined) {
-      if (clear) out[key] = null;
-    } else out[key] = value;
-  };
-  put("supplierInvoice", doc.supplierInvoice?.trim());
-  put("supplierNcf", doc.supplierNcf?.trim());
-  put("invoiceDate", doc.invoiceDate);
-  put("paymentType", doc.paymentType);
-  put(
-    "creditDays",
-    doc.paymentType === "credit" && Number(doc.creditDays) > 0
-      ? Number(doc.creditDays)
-      : undefined,
-  );
-  put("itbis", Number(doc.itbis) > 0 ? Number(doc.itbis) : undefined);
-  return out;
-}
 
 export function DocumentFields({
   value,

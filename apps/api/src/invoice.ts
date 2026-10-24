@@ -326,6 +326,11 @@ export const DEFAULT_INVOICE_MODEL = "claude-opus-5-5";
 // vacíos se convierten después y todo se valida otra vez con extractedSchema.
 const aiInvoiceSchema = z4.object({
   total: z4.number(),
+  // Los campos fiscales ausentes no se fabrican. La IA sólo propone datos
+  // visibles en el documento; el usuario revisa antes de guardar la entrada.
+  supplierRnc: z4.string().optional(),
+  supplierNcf: z4.string().optional(),
+  itbis: z4.number().optional(),
   lines: z4.array(
     z4.object({
       code: z4.string(),
@@ -346,8 +351,70 @@ const INVOICE_SYSTEM = [
   "qty: cantidad facturada. unitCost: costo unitario antes de impuestos en RD$, sin símbolos ni separadores de miles.",
   "lotNumber y expiryDate (AAAA-MM-DD): sólo si aparecen; si no, cadena vacía.",
   "total: total final de la factura; 0 si no aparece.",
+  "supplierRnc: RNC o cédula del EMISOR/proveedor, no del comprador; cadena vacía si no se distingue.",
+  "supplierNcf: NCF emitido por el proveedor (serie B o E); cadena vacía si no aparece.",
+  "itbis: importe total de ITBIS expresamente facturado en RD$; omite el campo si no aparece. Sólo usa 0 si el documento dice expresamente ITBIS 0. No lo calcules con una tasa ni lo infieras de los productos.",
   "No inventes datos. No incluyas filas de subtotal, ITBIS, descuentos ni flete.",
 ].join("\n");
+export type InvoiceFiscalSuggestion = {
+  supplierLegalId: string | null;
+  supplierNcf: string | null;
+  itbis: number | null;
+  warnings: string[];
+};
+/** Formato, no validez/estado del contribuyente o autorización del NCF DGII.
+ * DGII: https://dgii.gov.do/cicloContribuyente/facturacion/comprobantesFiscales/Paginas/tiposComprobantes.aspx
+ * https://ayuda.dgii.gov.do/conversations/formatos-de-envo-de-datos/ca3901-cules-son-las-principales-alertas-que-se-pueden-generar-en-la-remisin-del-formato-606/5f3c17a38cd858ce87a3b912
+ */
+export function normalizeInvoiceFiscal(input: {
+  supplierRnc?: string;
+  supplierNcf?: string;
+  itbis?: number;
+  total: number;
+}): InvoiceFiscalSuggestion {
+  const warnings: string[] = [];
+  const rawRnc = input.supplierRnc?.trim() ?? "";
+  const digits = rawRnc.replace(/[\s-]/g, "");
+  const supplierLegalId =
+    rawRnc && /^(?:\d{9}|\d{11})$/.test(digits) && !/^0+$/.test(digits)
+      ? digits
+      : null;
+  if (rawRnc && !supplierLegalId)
+    warnings.push(
+      "No se pudo validar el formato del RNC/cédula leído. Escríbelo desde la factura.",
+    );
+  const rawNcf = input.supplierNcf?.trim() ?? "";
+  const normalizedNcf = rawNcf.replace(/[\s-]/g, "").toUpperCase();
+  const supplierNcf = /^(?:B\d{10}|E\d{12})$/.test(normalizedNcf)
+    ? normalizedNcf
+    : null;
+  if (rawNcf && !supplierNcf)
+    warnings.push(
+      "No se pudo validar el formato del NCF leído. Escríbelo desde la factura.",
+    );
+  const rawItbis = input.itbis;
+  const itbis =
+    rawItbis !== undefined &&
+    amount.safeParse(rawItbis).success &&
+    (!input.total || rawItbis <= input.total)
+      ? rawItbis
+      : null;
+  if (rawItbis !== undefined && itbis === null)
+    warnings.push(
+      "El ITBIS leído no es un importe válido o supera el total. Revísalo en la factura.",
+    );
+  return { supplierLegalId, supplierNcf, itbis, warnings };
+}
+export function assertInvoiceSupplierFiscalMatch(
+  readRnc: string | null,
+  savedRnc: string | null | undefined,
+) {
+  if (!readRnc || !savedRnc) return;
+  if (readRnc !== savedRnc.replace(/[\s-]/g, ""))
+    bad(
+      "El RNC leído no coincide con el proveedor seleccionado. Revisa la factura y el proveedor antes de continuar.",
+    );
+}
 // Extrae el JSON de la respuesta del modelo aunque venga dentro de ```json ...```
 // o con texto antes/después: toma desde el primer { o [ hasta el último } o ].
 export function parseModelJson(text: string): unknown {
@@ -365,7 +432,9 @@ export async function extractAnthropic(
   file: InvoiceFile,
   apiKey: string,
   options: { model?: string; fetch?: typeof fetch } = {},
-): Promise<ExtractedInvoice & { skipped: number }> {
+): Promise<
+  ExtractedInvoice & { skipped: number; fiscal: InvoiceFiscalSuggestion }
+> {
   const client = new Anthropic({
     apiKey,
     timeout: 120_000,
@@ -411,7 +480,7 @@ export async function extractAnthropic(
             source,
             {
               type: "text",
-              text: "Extrae las líneas y el total de esta factura para revisión humana.",
+              text: "Extrae las líneas, total, RNC/cédula y NCF del proveedor, e ITBIS indicado en esta factura para revisión humana.",
             },
           ],
         },
@@ -458,7 +527,11 @@ export async function extractAnthropic(
         : null,
     })),
   });
-  return { ...extracted, skipped: out.lines.length - readable.length };
+  return {
+    ...extracted,
+    skipped: out.lines.length - readable.length,
+    fiscal: normalizeInvoiceFiscal(out),
+  };
 }
 
 // ---------------------------------------------------------------------------

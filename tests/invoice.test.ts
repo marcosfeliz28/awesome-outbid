@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { createRequire } from "node:module";
+import { documentPayload } from "../apps/web/src/supplierDocument";
+import { MerchandiseController } from "../apps/api/src/merchandise";
 import {
+  assertInvoiceSupplierFiscalMatch,
   decodeCsv,
   extractAnthropic,
   matchInvoiceLines,
@@ -60,6 +63,104 @@ function claudeResponse(
 }
 
 describe("Factura proveedor · Claude simulado (sin llamadas reales)", () => {
+  it("PC-14: conserva ITBIS cero confirmado para la base del 606", () => {
+    expect(documentPayload({ supplierNcf: "B0100000123", itbis: 0 })).toEqual({
+      supplierNcf: "B0100000123",
+      itbis: 0,
+    });
+    expect(documentPayload({ itbis: "" })).toEqual({});
+    expect(documentPayload({ itbis: null } as any)).toEqual({});
+  });
+  it("PC-14: extrae RNC, NCF e ITBIS sin inventarlos y normaliza solo formatos válidos", async () => {
+    const fake = vi.fn().mockResolvedValue(
+      claudeResponse({
+        ...extracted,
+        supplierRnc: "1-01-00000-1",
+        supplierNcf: "b01-0000 0123",
+        itbis: 4.5,
+      }),
+    );
+    const result = await extractAnthropic(
+      { buffer: Buffer.from("foto ficticia"), mimetype: "image/jpeg" },
+      "fake",
+      { fetch: fake as any },
+    );
+    expect(result.fiscal).toEqual({
+      supplierLegalId: "101000001",
+      supplierNcf: "B0100000123",
+      itbis: 4.5,
+      warnings: [],
+    });
+    const prompt = JSON.parse(fake.mock.calls[0][1].body).system;
+    expect(prompt).toContain("RNC");
+    expect(prompt).toContain("NCF");
+    expect(prompt).toContain("ITBIS");
+  });
+  it("PC-14: no acepta identificaciones mal formadas ni ITBIS mayor al total", async () => {
+    const response = claudeResponse({
+      ...extracted,
+      supplierRnc: "1234",
+      supplierNcf: "B01-NOEXISTE",
+      itbis: 125,
+    });
+    const result = await extractAnthropic(
+      { buffer: Buffer.from("foto ficticia"), mimetype: "image/png" },
+      "fake",
+      { fetch: vi.fn().mockResolvedValue(response) as any },
+    );
+    expect(result.fiscal).toMatchObject({
+      supplierLegalId: null,
+      supplierNcf: null,
+      itbis: null,
+    });
+    expect(result.fiscal.warnings).toHaveLength(3);
+  });
+  it("PC-14: no vincula una factura a otro proveedor con RNC distinto", () => {
+    expect(() =>
+      assertInvoiceSupplierFiscalMatch("101000001", "1-01-00000-1"),
+    ).not.toThrow();
+    expect(() =>
+      assertInvoiceSupplierFiscalMatch("101000001", "102000001"),
+    ).toThrow("El RNC leído no coincide");
+  });
+  it("PC-14: la importación real rechaza el RNC de otro proveedor antes de crear borrador", async () => {
+    const before = process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_API_KEY = "fake-test-key";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        claudeResponse({ ...extracted, supplierRnc: "101000001" }),
+      );
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock as any;
+    const db: any = {
+      supplier: {
+        findFirstOrThrow: vi.fn().mockResolvedValue({ legalId: "102000001" }),
+      },
+      invoiceDraft: { count: vi.fn().mockResolvedValue(0) },
+      $transaction: vi.fn(),
+    };
+    try {
+      const ctrl = new MerchandiseController(db);
+      await expect(
+        ctrl.importInvoice(
+          {
+            originalname: "factura.pdf",
+            mimetype: "application/pdf",
+            buffer: Buffer.from("pdf falso"),
+            size: 9,
+          },
+          { supplierId: "00000000-0000-4000-8000-000000000003" },
+          { role: "admin", branchId: "main", id: "test-user" } as any,
+        ),
+      ).rejects.toThrow("El RNC leído no coincide");
+      expect(db.$transaction).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (before === undefined) delete process.env.ANTHROPIC_API_KEY;
+      else process.env.ANTHROPIC_API_KEY = before;
+    }
+  });
   it("usa el SDK oficial, el modelo actual y salida estructurada sin forzar herramientas", async () => {
     const fake = vi.fn().mockResolvedValue(
       claudeResponse({
@@ -72,7 +173,16 @@ describe("Factura proveedor · Claude simulado (sin llamadas reales)", () => {
       "fake-test-key",
       { fetch: fake as any },
     );
-    expect(result).toEqual({ ...extracted, skipped: 0 });
+    expect(result).toEqual({
+      ...extracted,
+      skipped: 0,
+      fiscal: {
+        supplierLegalId: null,
+        supplierNcf: null,
+        itbis: null,
+        warnings: [],
+      },
+    });
     expect(fake).toHaveBeenCalledTimes(1);
     const [url, init] = fake.mock.calls[0];
     expect(String(url)).toContain("/v1/messages");
