@@ -7,6 +7,7 @@ export default defineConfig({
       "tests/gv-servicios-api.test.ts",
       "tests/api.test.ts",
       "tests/caja-por-usuario.test.ts",
+      "tests/caja-lote-verifon.test.ts",
       "tests/caja-fondo-sugerido.test.ts",
       "tests/dinero-auditoria.test.ts",
       "tests/minors.test.ts",

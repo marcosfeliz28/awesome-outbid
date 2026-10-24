@@ -316,6 +316,14 @@ export function CuadrePrint({ c }: { c: any }) {
           <Row label="Dejado en caja" value={num(c.delivered.left)} />
         </>
       )}
+      {c.cardBatch && (
+        <Row
+          label="Lote del verifón"
+          value={
+            c.cardBatch.number + (c.cardBatch.hasPhoto ? " (con foto)" : "")
+          }
+        />
+      )}
       {(c.ownerReceived ?? []).length > 0 && (
         <>
           <h4>Recibido por la dueña (fuera de gaveta)</h4>
