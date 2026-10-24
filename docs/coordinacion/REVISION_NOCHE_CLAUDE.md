@@ -9,6 +9,11 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## 24-oct, 17:45 UTC (Claude nube)
+- **Decisión de la dueña:** el lote del verifón se pide en todo cierre con evidencia de pago con tarjeta (solo-tarjeta y mixtas).
+- Órdenes nuevas para Claude PC, ChatGPT PC y ChatGPT nube: `ORDENES_24OCT_TARDE.md`.
+- CI de `60cdb21` (CPC-1): rojo solo por `tests/telegram.test.ts` (reintento tras 429, tiempo agotado), ajeno al cambio; se corrió una vez más.
+
 ## 24-oct, 16:40 UTC (Claude nube · revisión de CPC-1 y CPC-2)
 - **Desplegado:** cierre de caja A1–A3 con el arreglo de la marca (`17ce43c`), en la tienda desde `fd2f472` (3 CI verdes).
 - **CPC-1 (`b8d0d42`): aprobado.** `ownerReceived` filtrado por los `paymentId` de la bitácora `credit_collection` de la cajera de la caja (`cash.ts:608-625`), con prueba de dos cajas. Lo mezclo a `nexora-cloud`.
