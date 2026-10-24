@@ -26,6 +26,7 @@ import {
   SaleInput,
   saleSchema,
   lineTotals,
+  clearanceDiscountLimit,
   paymentTotals,
   money,
   formatMoney,
@@ -823,7 +824,13 @@ export class SalesController {
           let promo = 0,
             promotionName: string | null = null;
           for (const p of promos) {
-            const off = promotionDiscount(p, variant, item.qty);
+            const requested = promotionDiscount(p, variant, item.qty);
+            const off = p.isClearance
+              ? Math.min(requested, clearanceDiscountLimit(
+                  Number(variant.price), Number(variant.costAvg),
+                  Number(variant.product.taxRate), config?.taxIncluded !== false, item.qty,
+                ))
+              : requested;
             if (off > promo) [promo, promotionName] = [off, p.name];
           }
           // G15: se nombra sólo si la promoción es lo que se aplicó (supera

@@ -2497,7 +2497,7 @@ export function Promotions() {
           <h2>El momento perfecto para una oferta</h2>
           <p>
             Prioriza productos sin rotación o próximos a vencer. El descuento
-            sugerido protege tu costo.
+            sugerido conserva al menos 15% de margen neto según el costo actual.
           </p>
         </div>
         <Badge tone="pink">{query.data?.length || 0} oportunidades</Badge>
@@ -2539,6 +2539,7 @@ export function Promotions() {
                     <small>
                       {c.sku} · {c.category}
                     </small>
+                    {c.daysToExpiry !== null && <small>La oferta se aplica a la variante; la caja vende los lotes más antiguos primero.</small>}
                   </div>
                 </div>
                 <div className="clearance-metrics">
@@ -2564,10 +2565,11 @@ export function Promotions() {
                 <Button
                   variant="secondary"
                   className="full-width"
+                  disabled={c.suggestedDiscount <= 0}
                   onClick={() => setOffer(c)}
                 >
                   <Sparkles size={16} />
-                  Crear oferta <ArrowRight size={16} />
+                  {c.suggestedDiscount <= 0 ? "Sin margen para oferta" : "Crear oferta"} <ArrowRight size={16} />
                 </Button>
               </article>
             ))}
@@ -2650,14 +2652,14 @@ export function Promotions() {
                 "Descuento (%)",
                 offer.suggestedDiscount,
               ),
-              max: 100,
-              help: `Margen actual ${offer.margin}%. Más de ${offer.margin}% puede dejar la venta bajo costo.`,
+              max: offer.suggestedDiscount,
+              help: `Máximo ${offer.suggestedDiscount}% para conservar al menos 15% de margen neto según costo y precio actuales.`,
             },
             {
               key: "endsAt",
               label: "Fecha de finalización",
               type: "date",
-              initial: new Date(Date.now() + 14 * 86400000)
+              initial: new Date(Date.now() + Math.max(0, Math.min(14, offer.daysToExpiry ?? 14)) * 86400000)
                 .toISOString()
                 .slice(0, 10),
               required: true,

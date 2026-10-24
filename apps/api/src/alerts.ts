@@ -23,7 +23,7 @@ import {
   expiryDays,
   businessDate,
   clearanceScore,
-  safeDiscount,
+  clearanceDiscountLimit,
   margin,
   money,
   d,
@@ -550,7 +550,7 @@ export class AlertEngine {
           margin: netMargin,
           suggestedDiscount: Math.min(
             daysToExpiry !== null && daysToExpiry < 30 ? 25 : 15,
-            safeDiscount(Number(v.price), cost, Number(v.product.taxRate)),
+            clearanceDiscountLimit(Number(v.price), cost, Number(v.product.taxRate), config?.taxIncluded !== false),
           ),
           score: clearanceScore(daysIdle, daysToExpiry, stock, cost),
         });
@@ -639,10 +639,11 @@ export class AlertEngine {
             daysToExpiry: null,
             lowSales: true,
             score: 0,
-            suggestedDiscount: safeDiscount(
+            suggestedDiscount: clearanceDiscountLimit(
               Number(variant.price),
               Number(variant.costAvg),
               Number(variant.product.taxRate),
+              config?.taxIncluded !== false,
             ),
           });
       }
