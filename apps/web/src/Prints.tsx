@@ -3,7 +3,7 @@
 // docs/tienda/CUADRE_REPORTES_FACTURA.md. Se dibujan fuera de #root y sólo se
 // ven al imprimir.
 import { createPortal } from "react-dom";
-import { isNativeDesktop, openDrawerOnNextPrint } from "./desktopPrinter";
+import { isNativeDesktop, openDrawerOnNextPrint, type DrawerAuthorization } from "./desktopPrinter";
 import type { ReactNode } from "react";
 import {
   courierCharge,
@@ -36,9 +36,9 @@ export const day = (value: unknown) =>
     : "—";
 
 // Imprime cuando React ya dibujó el impreso.
-export const printSoon = (openDrawer = false) =>
+export const printSoon = (drawerAuthorization?: DrawerAuthorization) =>
   setTimeout(() => {
-    if (openDrawer && isNativeDesktop()) openDrawerOnNextPrint();
+    if (drawerAuthorization && isNativeDesktop()) openDrawerOnNextPrint(drawerAuthorization);
     window.print();
   }, 50) as unknown as void;
 

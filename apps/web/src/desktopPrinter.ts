@@ -1,9 +1,16 @@
 // Puente de impresión de la app de escritorio. La web normal conserva el
 // diálogo del navegador; solo una ventana Tauri con origen permitido usa IPC.
+import { invoke as tauriInvoke, isTauri } from "@tauri-apps/api/core";
+
 type Invoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
-type NativeWindow = Window & { __TAURI__?: { core?: { invoke?: Invoke } } };
 const PRINTER_KEY = "nexora.desktop.printer";
-let drawerOnNextPrint = false;
+export type DrawerAuthorization = {
+  accessToken: string;
+  saleId?: string;
+  movementId?: string;
+};
+let drawerOnNextPrint: DrawerAuthorization | null = null;
+let testInvoke: Invoke | null = null;
 
 export function prepareThermalText(value: string): string {
   const text = Array.from(value.replace(/\r\n?/g, "\n"))
@@ -17,9 +24,12 @@ export const cashDrawerRequired = (payments: { method: string; amount: number | 
   payments.some((payment) => payment.method === "cash" && Number(payment.amount) > 0);
 
 function invoke(): Invoke | null {
-  if (typeof window === "undefined") return null;
-  return (window as NativeWindow).__TAURI__?.core?.invoke ?? null;
+  if (testInvoke) return testInvoke;
+  return typeof window !== "undefined" && isTauri() ? tauriInvoke : null;
 }
+
+/** Solo para pruebas unitarias: producción usa el API oficial de Tauri. */
+export function setNativeInvokeForTest(value: Invoke | null) { testInvoke = value; }
 
 export const isNativeDesktop = () => invoke() !== null;
 export const selectedPrinter = () => localStorage.getItem(PRINTER_KEY) ?? "";
@@ -34,11 +44,15 @@ export async function nativePrinters(): Promise<string[]> {
   return Array.isArray(names) ? names.filter((name): name is string => typeof name === "string") : [];
 }
 
-export function openDrawerOnNextPrint() { drawerOnNextPrint = true; }
+export function openDrawerOnNextPrint(authorization: DrawerAuthorization) { drawerOnNextPrint = authorization; }
+export function takeDrawerAuthorizationForNextPrint() {
+  const authorization = drawerOnNextPrint;
+  drawerOnNextPrint = null;
+  return authorization;
+}
 
 export async function nativePrintCurrentSheet(): Promise<void> {
-  const openDrawer = drawerOnNextPrint;
-  drawerOnNextPrint = false;
+  const drawer = takeDrawerAuthorizationForNextPrint();
   const call = invoke();
   if (!call) throw new Error("Esta función solo está disponible en la app de escritorio.");
   const name = selectedPrinter();
@@ -53,7 +67,14 @@ export async function nativePrintCurrentSheet(): Promise<void> {
   let text: string;
   try { text = prepareThermalText(preview.innerText); }
   finally { preview.remove(); }
-  await call("print_thermal", { printerName: name, text, columns: sheet.classList.contains("w58") ? 32 : 48, openDrawer });
+  await call("print_thermal", {
+    printerName: name,
+    text,
+    columns: sheet.classList.contains("w58") ? 32 : 48,
+    drawerAccessToken: drawer?.accessToken ?? null,
+    drawerSaleId: drawer?.saleId ?? null,
+    drawerMovementId: drawer?.movementId ?? null,
+  });
 }
 
 export async function nativePrintTest(): Promise<void> {
@@ -64,10 +85,15 @@ export async function nativePrintTest(): Promise<void> {
   await call("print_thermal", { printerName: name, text: "NEXORA POS\nPrueba de impresora - 80 mm\nSin venta ni comprobante fiscal", columns: 48, openDrawer: false });
 }
 
-export async function nativeOpenDrawer(): Promise<void> {
+export async function nativeOpenDrawer(authorization: DrawerAuthorization): Promise<void> {
   const call = invoke();
   if (!call) throw new Error("Esta función solo está disponible en la app de escritorio.");
   const name = selectedPrinter();
   if (!name) throw new Error("Elige la impresora térmica en el menú de la app.");
-  await call("open_cash_drawer", { printerName: name });
+  await call("open_cash_drawer", {
+    printerName: name,
+    accessToken: authorization.accessToken,
+    saleId: authorization.saleId ?? null,
+    movementId: authorization.movementId ?? null,
+  });
 }

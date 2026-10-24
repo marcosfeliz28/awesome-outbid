@@ -614,6 +614,54 @@ const CLOSED_SESSIONS_LIMIT = 100;
 @Controller("cash-sessions")
 export class CashController {
   constructor(@Inject(Database) private db: Database) {}
+  @Post("drawer-open")
+  @Permit("cash:drawer")
+  async drawerOpen(
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const reference = parse(
+      z
+        .object({ saleId: uuid.optional(), movementId: uuid.optional() })
+        .refine((value) => Boolean(value.saleId) !== Boolean(value.movementId), {
+          message: "Indica una venta o un movimiento de caja.",
+        }),
+      body,
+    );
+    const entity = reference.saleId ? "sale" : "cash_movement";
+    const entityId = reference.saleId ?? reference.movementId!;
+    const exists = reference.saleId
+      ? await this.db.sale.findFirst({
+          where: {
+            id: reference.saleId,
+            status: "completed",
+            cashSession: { branchId: actor.branchId },
+            payments: {
+              some: { method: "cash", amount: { gt: 0 }, status: { not: "rejected" } },
+            },
+          },
+          select: { id: true },
+        })
+      : await this.db.cashMovement.findFirst({
+          where: {
+            id: reference.movementId,
+            session: { branchId: actor.branchId },
+          },
+          select: { id: true },
+        });
+    if (!exists)
+      bad("La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.");
+    const row = await audit(
+      this.db,
+      actor,
+      "cash_drawer_open",
+      entity,
+      entityId,
+      undefined,
+      { source: "desktop" },
+    );
+    return { auditId: row.id };
+  }
   @Get()
   @Permit("cash:write")
   async sessions(@CurrentUser() actor: Actor) {

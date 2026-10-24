@@ -151,6 +151,7 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     const hiddenResourceMessages: Record<string, string> = {
       "PATCH sales/:id/courier": "Venta no encontrada.",
       "POST courier/payouts": "Una factura no tiene un envío pendiente en esta sucursal.",
+      "POST cash-sessions/drawer-open": "La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.",
     };
     const expectForeignDenied = (route: string, response: any) => {
       const hidden = response.status === 400 &&
@@ -183,6 +184,25 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     expect(ownSale.status, JSON.stringify(ownSale.body)).toBe(201);
     expect((await sql.query(`SELECT "tenantId" FROM "Sale" WHERE id=$1`, [ownSale.body.id])).rows)
       .toEqual([{ tenantId: tenantB }]);
+
+    const foreignDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id }),
+      a,
+    );
+    expectForeignDenied("POST cash-sessions/drawer-open", foreignDrawer);
+    const ownDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id }),
+    );
+    expect(ownDrawer.status, JSON.stringify(ownDrawer.body)).toBe(201);
+    expect(
+      (
+        await sql.query(
+          `SELECT action,"entityId","tenantId" FROM "AuditLog" WHERE action='cash_drawer_open'`,
+        )
+      ).rows,
+    ).toEqual([
+      { action: "cash_drawer_open", entityId: ownSale.body.id, tenantId: tenantB },
+    ]);
 
     const voidBody = { reason: "Anulación de prueba válida" };
     const foreignVoid = await send(http.post(`/api/sales/${a.saleId}/void`).send(voidBody));

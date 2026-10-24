@@ -15,12 +15,14 @@ export function desktopConfig(value) {
   return {
     overlay: {
       app: { windows: [{ label: "main", title: "Nexora POS", url: origin,
-        width: 1440, height: 960, minWidth: 390, minHeight: 600 }], withGlobalTauri: true },
+        width: 1440, height: 960, minWidth: 390, minHeight: 600 }], withGlobalTauri: false },
     },
     capability: {
       identifier: "product-remote-printer",
       description: "Solo la página oficial del producto puede usar la impresora de este equipo.",
-      remote: { urls: [origin + "/*"] }, windows: ["main"], permissions: ["core:default"],
+      remote: { urls: [origin + "/*"] }, windows: ["main"], permissions: [
+        "core:default", "allow-list-printers", "allow-print-thermal", "allow-open-cash-drawer",
+      ],
     },
   };
 }

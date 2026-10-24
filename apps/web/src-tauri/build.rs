@@ -5,5 +5,11 @@ fn main() {
     {
         panic!("NEXORA_PRODUCT_URL es obligatorio para empaquetar Nexora POS Desktop.");
     }
-    tauri_build::build();
+    let attributes =
+        tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(&[
+            "list_printers",
+            "print_thermal",
+            "open_cash_drawer",
+        ]));
+    tauri_build::try_build(attributes).expect("No se pudo generar el manifiesto de permisos Tauri");
 }

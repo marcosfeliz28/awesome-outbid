@@ -1,5 +1,12 @@
 # Resultados de ChatGPT NUBE y ChatGPT PC
 
+## 2026-10-24 · ChatGPT PC · corrección CPC-8 de PC-16
+
+- La gaveta exige `cash:drawer` o `*`; el rol de cajera no lo recibe. Antes de abrir, la API exige una venta en efectivo completada o un movimiento de caja de la misma empresa y sucursal, y crea `AuditLog` con usuario, terminal y referencia. Si la autorización falla, el comando nativo no se ejecuta.
+- La venta automática solo abre la gaveta si está en línea, tiene efectivo, el usuario tiene permiso y la bitácora respondió. La apertura manual queda oculta sin permiso y exige el ID de una venta o movimiento. Dos impresiones consecutivas consumen la autorización una sola vez.
+- Tauri usa `withGlobalTauri: false`, el API oficial de Tauri y un manifiesto que enumera únicamente `list_printers`, `print_thermal` y `open_cash_drawer`. El comando nativo envía la sesión y referencia a la API y solo abre si la API crea la bitácora; inventar un UUID en el navegador no lo evita.
+- Regresiones: la matriz PostgreSQL incluye la ruta 173 y prueba aislamiento A/B; pasan 12/12 pruebas focales tras actualizar el conteo exacto de rutas. Tipos y formato Rust verdes. La primera corrida completa detectó que faltaba declarar la licencia de `@tauri-apps/api`; se regeneraron los avisos (75 componentes) y la regresión de licencias pasó. La repetición completa aprobó 765 pruebas, omitió 10 por condiciones documentadas y completó tipos, lint y compilaciones web/API. Faltan los tres CI del commit y la ejecución física en Windows con impresora/gaveta.
+
 ## 2026-10-24 · ChatGPT PC · PC-18, instalador local aislado
 
 - **Rama:** `nexora-chatgpt-pc-producto`; commit: el que incorpora esta sección (`git log -1`). Sin despliegue ni acceso a la instalación de la tienda.

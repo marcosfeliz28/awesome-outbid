@@ -1753,7 +1753,7 @@ function Checkout({
   config: any;
   customers: any[];
 }) {
-  const { cart, customerId, globalDiscount, user, online, clearCart } =
+  const { cart, customerId, globalDiscount, user, token, online, clearCart } =
     useStore();
   const [courier, setCourier] = useState({
     on: false,
@@ -2230,9 +2230,17 @@ function Checkout({
       });
       // Impresión automática del recibo (Ajustes).
       const cashPaid = cashDrawerRequired(payments);
-      if (config?.autoPrintReceipt) printSoon(cashPaid);
-      else if (cashPaid && isNativeDesktop())
-        void nativeOpenDrawer().catch((error) =>
+      const drawerAuthorization =
+        cashPaid &&
+        confirmedOnline &&
+        isNativeDesktop() &&
+        can(user!.permissions, "cash:drawer") &&
+        token
+          ? { accessToken: token, saleId: sale.id }
+          : undefined;
+      if (config?.autoPrintReceipt) printSoon(drawerAuthorization);
+      else if (drawerAuthorization)
+        void nativeOpenDrawer(drawerAuthorization).catch((error) =>
           toast(String(error?.message ?? error), true),
         );
       clearCart();

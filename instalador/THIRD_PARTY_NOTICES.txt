@@ -70,7 +70,7 @@ SOFTWARE.
 
 <!-- licencias-web: inicio (node scripts/licencias-web.mjs) -->
 
-APLICACIÓN WEB · COMPONENTES INCLUIDOS (73)
+APLICACIÓN WEB · COMPONENTES INCLUIDOS (75)
 
 - @fontsource-variable/inter 5.3.0 · OFL-1.1
 - @fontsource-variable/plus-jakarta-sans 5.3.0 · OFL-1.1
@@ -99,6 +99,7 @@ APLICACIÓN WEB · COMPONENTES INCLUIDOS (73)
 - @sentry/replay 11.4.0 · MIT
 - @tanstack/query-core 5.104.1 · MIT
 - @tanstack/react-query 5.104.1 · MIT
+- @tauri-apps/api 2.12.4 · Apache-2.0 OR MIT
 - @zxing/browser 0.1.5 · MIT
 - @zxing/library 0.21.3 · MIT
 - aria-hidden 1.2.6 · MIT
@@ -123,6 +124,7 @@ APLICACIÓN WEB · COMPONENTES INCLUIDOS (73)
 - lucide-react 0.468.0 · ISC
 - react 19.3.0 · MIT
 - react-dom 19.3.0 · MIT
+- react-is 19.3.0 · MIT
 - react-redux 9.3.0 · MIT
 - react-remove-scroll 2.7.2 · MIT
 - react-remove-scroll-bar 2.3.8 · MIT
