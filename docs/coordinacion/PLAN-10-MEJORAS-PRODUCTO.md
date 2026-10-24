@@ -6,11 +6,13 @@
 > Reglas que siguen valiendo: CLAUDE.md, AGENTS.md y docs/coordinacion/INSTRUCCIONES_ACTUALES.md (despliega solo Claude con los 3 CI en verde; nada se aplica en la tienda sin su confirmación).
 > **Regla fiscal fija:** toda venta lleva su comprobante; el sistema no tendrá ninguna función para dejar ventas fuera de lo que se reporta a la DGII.
 
+> **24-oct, orden de la dueña:** «no trabajaremos con la facturación electrónica, vamos a trabajar con lo demás; eso lo trabajaré con mi contable». La mejora 1 queda pausada; el equipo ejecuta las mejoras 2 a 10.
+
 ## Estado (actualizar al avanzar)
 
 | # | Mejora | Responsable | Estado |
 |---|---|---|---|
-| 1 | Factura electrónica e-CF (tienda y clientes) | Dueña (contador, OFV, certificado, proveedor) + ChatGPT PC (programación) + Claude (revisión/despliegue) | Pendiente: confirmar grupo DGII antes del lun 26-oct |
+| 1 | Factura electrónica e-CF (tienda y clientes) | **Fuera del equipo** (orden de la dueña 24-oct): lo lleva ella con su contable | Pausada: no programar hasta nueva orden suya |
 | 2 | Terminar fase 1 + producto en línea con cobro real | ChatGPT PC + Claude (Render) + Dueña (procesador de pago) | En curso (verify rojo desde 23-oct) |
 | 3 | Quitar lo de Macgen + interruptores por negocio | ChatGPT PC + Claude | Pendiente |
 | 4 | Papeles legales y soporte | Dueña (abogado) + Claude (borradores) | Pendiente |
