@@ -9,6 +9,7 @@ export default defineConfig({
     include: [
       "tests/assistant-n01.test.ts",
       "tests/assistant-n02.test.ts",
+      "tests/assistant-n04.test.ts",
       "tests/product-object-store.test.ts",
       "tests/product-object-portability.test.ts",
       "tests/product-billing-plans.test.ts",

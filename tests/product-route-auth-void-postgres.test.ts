@@ -189,6 +189,9 @@ it("login por código de empresa, refresh, cambio de clave y PIN aíslan identid
     await sql.query(`INSERT INTO "Sale" (id,number,"offlineUuid","sellerId",subtotal,"discountTotal","taxTotal",total,"costTotal","updatedAt","tenantId") VALUES ($1,'FS-A-1',$2,$3,20,0,0,20,10,now(),$4)`, [foreignSaleId, "80000000-0000-4000-8000-000000000041", ids.aSeller, A]);
     const sellerB = change.body.accessToken as string;
     const voidBody = (operationId: string) => ({ operationId, reasonCode: "customer_request", reason: "Cliente pidió anular venta de prueba" });
+    const adminProposal = await http.post(`/api/sales/${sales[0]}/void-requests`)
+      .set("Authorization", adminToken).send(voidBody("80000000-0000-4000-8000-000000000040"));
+    expect(adminProposal.status).toBe(403);
     const foreignRequest = await http.post(`/api/sales/${foreignSaleId}/void-requests`)
       .set("Authorization", `Bearer ${sellerB}`).send(voidBody("80000000-0000-4000-8000-000000000042"));
     expect([403, 404], JSON.stringify(foreignRequest.body)).toContain(foreignRequest.status);

@@ -35,9 +35,9 @@ describe("N-01 · asistente de solo lectura", () => {
     expect(get).not.toHaveBeenCalled();
   });
 
-  it("pedir anulación queda desactivada hasta la confirmación humana de N-04", async () => {
+  it("pedir anulación no ejecuta escritura y exige confirmación humana", async () => {
     const get = vi.fn();
-    const result = await executeAssistantTool("pedir_anulacion", { factura: "FS-1", motivo: "error" }, get);
+    const result = await executeAssistantTool("pedir_anulacion", { factura: "FS-1", motivo: "Error al cobrar" }, get);
     expect(result).toContain("confirmación humana");
     expect(get).not.toHaveBeenCalled();
   });
