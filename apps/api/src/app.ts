@@ -116,9 +116,8 @@ export function createAppModule(secret: string) {
       CreditReminderService,
       RetentionWorker,
       TenantObjectDeletionWorker,
-      ...(!product
-        ? [DriveBackupService, DriveBackupWorker, UsdRateWorker]
-        : []),
+      ...(!product ? [DriveBackupService, DriveBackupWorker] : []),
+      UsdRateWorker,
       RequestRateLimitService,
       ...(product ? [RegistrationService] : []),
       // Guard se inyecta también en modo tienda, pero nunca consulta el ciclo.

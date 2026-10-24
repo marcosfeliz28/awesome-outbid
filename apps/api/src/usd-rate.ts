@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { businessDate } from "@fitstore/shared";
 import { Database } from "./common";
-import { currentTenantId, tenantUnique } from "./tenant-context";
+import { currentTenantId, forEachActiveTenant, tenantScope, tenantUnique } from "./tenant-context";
 
 // Tasa del dólar del día (orden de la dueña, 20-oct): se busca sola en
 // internet una vez al día. Los productos con precio en dólares (atributo
@@ -82,7 +82,7 @@ export class UsdRateWorker {
   private first: ReturnType<typeof setTimeout> | undefined;
   constructor(@Inject(Database) private readonly db: Database) {}
   onApplicationBootstrap() {
-    // Solo en la tienda real (variable en Render): pruebas y CI no salen a internet.
+    // Optativo por instalación; pruebas y CI no salen a internet.
     if (process.env.USD_RATE_AUTO !== "1") return;
     this.first = setTimeout(() => void this.run(), 30_000);
     this.first.unref();
@@ -96,16 +96,28 @@ export class UsdRateWorker {
   async run() {
     try {
       const today = businessDate();
-      const settings = await this.db.settings.findUnique({
-        where: tenantUnique("id", "main"),
-      });
-      if ((settings?.data as any)?.usdRateDate === today) return;
+      // Enumerar bajo el contexto RLS de cada empresa. Una sola consulta de
+      // tasa sirve a todas sus sucursales; una sucursal ya actualizada se omite.
+      const pending = (await forEachActiveTenant(this.db, async () => {
+        const tenantId = currentTenantId();
+        const settings = await this.db.settings.findMany({ select: { id: true, data: true } });
+        return settings.filter((row) => (row.data as any)?.usdRateDate !== today)
+          .map((row) => ({ tenantId, branchId: row.id }));
+      })).flat();
+      if (!pending.length) return;
       const res = await fetch(USD_RATE_URL, {
         signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const rate = parseUsdRate(await res.json());
-      await applyUsdRate(this.db, "main", rate, "open.er-api.com", today);
+      for (const { tenantId, branchId } of pending) {
+        try {
+          await tenantScope.run({ tenantId }, () =>
+            applyUsdRate(this.db, branchId, rate, "open.er-api.com", today));
+        } catch (error: any) {
+          console.warn("[tasa USD] " + String(error?.message ?? error).slice(0, 300));
+        }
+      }
     } catch (error: any) {
       console.warn(
         "[tasa USD] " + String(error?.message ?? error).slice(0, 300),
