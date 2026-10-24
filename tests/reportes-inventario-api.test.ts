@@ -50,7 +50,9 @@ async function ok(path: string, as: string, data?: unknown) {
 let admin = "",
   seller = "",
   sellerCash: any,
-  categoryName = "";
+  categoryName = "",
+  storeField = "",
+  homeField = "";
 const v: Record<string, { id: string; sku: string; productId: string }> = {};
 const report = (name: string, query = `from=${today}&to=${today}`) =>
   ok(`/reports/${name}?${query}`, admin);
@@ -116,8 +118,24 @@ beforeAll(async () => {
     v[key] = { id: p.variants[0].id, sku: "QAR-V-" + tag, productId: p.id };
   }
   const warehouses = await ok("/inventory/warehouses", admin);
-  const store = warehouses.find((w: any) => w.kind === "store").id;
-  const home = warehouses.find((w: any) => w.kind === "home").id;
+  const activeWarehouses = warehouses.filter((w: any) => w.active !== false);
+  const storeWarehouse = activeWarehouses.find((w: any) => w.kind === "store");
+  const homeWarehouses = activeWarehouses
+    .filter((w: any) => w.kind === "home")
+    .sort((a: any, b: any) => a.name.localeCompare(b.name));
+  const store = storeWarehouse.id;
+  const home = homeWarehouses[0].id;
+  const storeName = storeWarehouse.name;
+  const homeName =
+    homeWarehouses.length === 1
+      ? homeWarehouses[0].name
+      : homeWarehouses.length > 1
+        ? homeWarehouses.map((w: any) => w.name).join(" + ")
+        : "Otros almacenes";
+  storeField = `Existencia en ${storeName}`;
+  homeField = `Existencia en ${
+    homeName === storeName ? `${homeName} (auxiliar)` : homeName
+  }`;
   await adjust("a", 50, "Entrada QA");
   await adjust("b", 3, "Entrada QA");
   await adjust("c", 10, "Entrada QA");
@@ -213,8 +231,8 @@ describe("Reportes de inventario (27-34)", () => {
   it("28 días restantes: stock total ÷ venta diaria", async () => {
     const rows = (await report("dias-inventario")).rows;
     expect(mine(rows, "a")).toMatchObject({
-      Tienda: 26,
-      Casa: 15,
+      [storeField]: 26,
+      [homeField]: 15,
       "Stock total": 41,
       "Venta diaria": 6,
       "Días restantes": 6,
@@ -236,13 +254,13 @@ describe("Reportes de inventario (27-34)", () => {
       await report("sin-movimiento", `from=${today}&to=${inDays(45)}`)
     ).rows;
     expect(mine(later, "c")).toMatchObject({
-      Tienda: 10,
+      [storeField]: 10,
       "Última venta": "Nunca",
       Tramo: "30-59 días",
     });
     expect(mine(later, "a")).toMatchObject({
       "Última venta": today,
-      Casa: 15,
+      [homeField]: 15,
       Tramo: "30-59 días",
     });
     expect(mine(later, "b")).toBeUndefined(); // sin existencia
@@ -254,7 +272,11 @@ describe("Reportes de inventario (27-34)", () => {
 
   it("30 bajo el mínimo: Tienda ≤ mínimo del producto", async () => {
     const rows = (await report("bajo-minimo")).rows;
-    expect(mine(rows, "b")).toMatchObject({ Tienda: 0, Mínimo: 5, Faltan: 5 });
+    expect(mine(rows, "b")).toMatchObject({
+      [storeField]: 0,
+      Mínimo: 5,
+      Faltan: 5,
+    });
     expect(mine(rows, "a")).toBeUndefined();
   });
 
@@ -297,7 +319,7 @@ describe("Reportes de inventario (27-34)", () => {
   it("34 agotados con ventas recientes", async () => {
     const rows = (await report("agotados-con-ventas")).rows;
     expect(mine(rows, "b")).toMatchObject({
-      Tienda: 0,
+      [storeField]: 0,
       "Vendidas en el período": 3,
       "Última venta": today,
     });
