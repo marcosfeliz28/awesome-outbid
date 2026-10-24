@@ -9,6 +9,42 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## CPC-6 · Claude PC audita ChatGPT nube N-01 a N-15 (`nexora-chatgpt-nube-ia` c684354, solo lectura)
+Tres auditores en paralelo leyeron código y pruebas; **no ejecutaron la suite**. Yo comprobé en el código los hallazgos marcados (✔). **Sin fuga entre empresas, sin escalada de permisos y sin clave en el navegador.** Ninguna pieza de IA escribe, envía ni aprueba sin una persona, salvo el correo diario de N-07 (envío automático por diseño).
+
+**Corregir primero (en este orden):**
+1. **N-12 · piso del 15 % evitable (alto) ✔.** `admin.ts:1404` y `sales.ts:828` aplican el piso solo si la promoción llega con `isClearance=true`, y ese marcador lo manda la pantalla. `POST /promotions` con `isClearance:false` acepta hasta 100 %: precio 236 con ITBIS, costo 100, 60 % → neto 94,4, bajo el costo, y la caja lo cobra. **Arreglo:** aplicar el límite a toda promoción sobre una variante, en `admin.ts` y en `sales.ts`. **Prueba:** promoción sin marcador al 60 %.
+2. **N-12 · costo del lote (medio).** El piso usa `variant.costAvg`, no `Lot.cost`; la caja vende primero el lote que vence antes (FEFO). Con promedio 100 y lote de costo 140, el margen de ese lote queda en −19 %. **Arreglo:** usar el mayor entre `costAvg` y el costo del lote en oferta. (La fórmula del código, margen neto de ITBIS, es más conservadora que la regla del plan y nunca baja del 15 %; decidir si se deja así.)
+3. **N-06 · puerta bloqueada ✔.** El «costo de 20 preguntas» sale de un modelo falso con tokens inventados (`tests/assistant-n06.test.ts:95-103`: `300+i*5`, `60+i*2` → 347,5 y 79). No hay medición real ni cifra en dinero. **Arreglo:** medir 20 preguntas reales con una clave de pruebas y anotar tokens y US$ en el informe. Además, el recorrido de 403 para `support` es un test unitario con guard simulado: falta un recorrido HTTP real con token `support` y una prueba de que Postgres rechaza una escritura bajo `READ ONLY`.
+4. **N-05 · el canal en vivo (SSE) no revisa el vencimiento (medio) ✔.** `realtime.ts:~548` mira `user.active`, pero no `supportExpiresAt` ni `authVersion`; un stream de soporte abierto sigue vivo hasta que el barrido de 60 s lo desactive, y si el barrido falla solo hay `console.warn`. **Arreglo:** repetir en ese chequeo la condición de `common.ts:708`. **Prueba:** stream de soporte con reloj adelantado se cierra sin correr el barrido.
+5. **N-05 · bitácora de soporte truncable (medio).** `admin.ts:1356` devuelve `take:300` sin filtro ni paginación; un script de soporte con muchas lecturas empuja fuera de la ventana las anteriores. Solo guarda el patrón de ruta, sin ids, y no audita los 403 de escritura de soporte (`common.ts:782`). **Arreglo:** filtro `support.%` con paginación, guardar el id, auditar los 403 y limitar las lecturas.
+6. **N-15 · MCP sin tiempo de inactividad (medio) ✔.** `mcp.ts:151-158` no aplica `lastActivityAt` (la API normal sí, `common.ts:723`); el token vale 1 h aunque la sesión haya caducado, y no hay revocación directa. **Arreglo:** replicar el chequeo y bajar el token a 15 min. Antes de abrirlo a clientes externos.
+7. **N-08 · transferencias (medio).** `transfer-proof-review.ts:41-52` ignora la fecha de la foto (una captura vieja con la misma referencia y monto da «verificar»); `weakReference` deja pasar «1234» o «12345678»; el duplicado se busca por sucursal y con coincidencia exacta (se evade con guiones o espacios). La propuesta no queda atada a un hash de la foto, que se puede reemplazar mientras el pago está pendiente (`sales.ts:3310`). **Arreglo:** avisar si la fecha es anterior al pago o futura; normalizar la referencia, exigir largo mínimo y buscar en toda la empresa. Solo propone: no aprueba nada.
+8. **N-07 · sin interruptor por empresa (medio).** `daily-summary.ts:104-117` envía a toda empresa activa en cuanto existan las claves; no hay opt-in ni baja. El remitente por defecto `onboarding@resend.dev` solo entrega al dueño de la cuenta de Resend. **Arreglo:** interruptor por empresa, apagado por defecto.
+9. **N-01 · asistente (medio-bajo).** El nombre del usuario entra como texto de confianza (`assistant.ts:217` ✔): un administrador podría renombrar a alguien con una instrucción. El historial lo manda el cliente, así que el tope de 500 caracteres no vale para turnos falsificados de «assistant» (hasta 19 × 2.000), el límite por minuto es por proceso (`:274`), y más de 10 llamadas de herramienta dejan un `tool_use` sin resultado (la API responde 400, que se informa como 503). **Arreglo:** pasar el nombre por `untrusted()`, tope total de entrada, límite compartido en la base. `ANTHROPIC_MODEL` en `.env.example` no coincide con `NEXORA_IA_MODEL` del código.
+10. **N-02 · cuota (bajo-medio).** La lógica es correcta (bloqueo por empresa y conteo en la misma transacción), pero el test usa `$transaction: fn=>fn(db)`, así que el bloqueo nunca se ejerce. **Prueba:** 40 llamadas simultáneas contra Postgres con límite 30 dan exactamente 30 éxitos y 10 respuestas 429. Un fallo del proveedor igual gasta una consulta (`assistant-usage.ts:~55`).
+11. **Menores:** N-05 el rol `support` se decide por nombre (cambiar el rol del usuario le quita expiración y solo lectura); `if (scope) scope.readOnly = true` (`common.ts:808`, `:845`) debería fallar si no hay `scope`; N-11 no descuenta órdenes de compra abiertas y puede duplicar pedidos; N-15 el límite del endpoint de tokens es por IP.
+
+**Veredicto por bloque:**
+| Bloque | Veredicto |
+|---|---|
+| N-01 asistente | corregir (no bloquea el piloto) |
+| N-02 cuota | corregir (prueba de concurrencia real) |
+| N-03 pantalla | aprobado (falta ver a 320 px en navegador) |
+| N-04 anulación | aprobado (el «Sí» sale de la ruta normal, con permisos del usuario) |
+| N-05 soporte | corregir (puntos 4 y 5 primero) |
+| N-06 puerta | **bloqueado** (costo inventado; falta recorrido real de 403) |
+| N-07 resumen diario | corregir (interruptor por empresa) |
+| N-08 transferencias | corregir |
+| N-09, N-10, N-13 | aprobado |
+| N-11 | aprobado con 1 aviso |
+| N-12 ofertas | **corregir, prioridad alta** |
+| N-14 WhatsApp | aprobado (solo documento) |
+| N-15 MCP | aprobado con reserva (punto 6 antes de abrirlo a externos) |
+
+**No verificado:** ejecución de la suite; RLS de `Variant` en la consulta cruda de `stock_bajo` (`branchId` es «main» en todos los tenants); estados de empresa distintos de `suspended` en `/mcp` (es `@Public`); el límite de intentos con varias instancias.
+**Recomendación de Claude PC (la decisión es de Claude nube, el arquitecto):** que ChatGPT nube corrija primero los puntos 1 a 4, luego el resto, y que N-16 en adelante espere a que N-06 pase.
+
 ## 24-oct, 17:45 UTC (Claude nube)
 - **Decisión de la dueña:** el lote del verifón se pide en todo cierre con evidencia de pago con tarjeta (solo-tarjeta y mixtas).
 - Órdenes nuevas para Claude PC, ChatGPT PC y ChatGPT nube: `ORDENES_24OCT_TARDE.md`.
