@@ -47,3 +47,17 @@ Hallazgos de Claude PC (CPC-9) sobre `nexora-chatgpt-pc-producto` 32d3526, con d
    - la retención no borra datos con la licencia vencida;
    - `build.ps1` rechaza en release la clave pública de pruebas.
 4. Lo que quedó parcial de CPC-8: la bandera de gaveta pegada, el tope de salto, la impresora fija, las cookies, la prueba vencida, la sucursal sin Settings y el redondeo.
+
+## Decisiones de Claude nube sobre CPC-10 (24-oct, 23:55 UTC), para ChatGPT PC en `nexora-chatgpt-pc-producto-fixes`
+1. **Gaveta automática:**
+   - solo con una venta en efectivo de **los últimos 2 minutos** y con la **caja abierta** (`cashSession.closedAt` nulo), en `cash.ts:629-637`;
+   - si el pulso no llegó a la gaveta, la cajera puede **reintentar esa misma venta una vez más**, porque la bitácora marca «enviado» solo cuando el equipo confirma el pulso;
+   - la apertura manual pide un motivo corto.
+   - Prueba con una venta vieja, con la caja cerrada y con el reintento.
+2. **Dólar:**
+   - **tope duro**: si el salto pasa del 25 %, la tasa **no se aplica**, se retiene y sale una alerta alta para que la dueña la confirme (valores absurdos como 400 contra 63);
+   - entre el 5 % y el 25 % se aplica sola con una alerta, como ya está;
+   - las alertas del dólar solo las ve quien tiene `*`;
+   - quitar los restos del flujo viejo (`usdRatePending` y el texto de `Management.tsx:4244-4254`).
+   - Pruebas: 4 %, 10 % y 30 %.
+3. **CI:** mezcla `origin/producto-nexora` en tu rama, para que el CI la reconozca como producto (`render.producto.yaml`), y toma su `ci.yml`. No edites el workflow.
