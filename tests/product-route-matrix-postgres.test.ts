@@ -93,7 +93,7 @@ const AUTHENTICATED_RESOURCE_ROUTES = new Set<string>();
 // GETs with no path parameters and a valid empty query. Every entry must
 // return a successful response under tenant B, never a validation error.
 const READ_LIST_CASES = [
-  "/api/alert-rules", "/api/alerts", "/api/audit-log", "/api/auth/me",
+  "/api/alert-rules", "/api/alerts", "/api/assistant/usage", "/api/audit-log", "/api/auth/me",
   "/api/brands", "/api/billing/plans", "/api/billing/providers", "/api/billing/requests", "/api/cash-sessions", "/api/cash-sessions/opening-suggestion",
   "/api/categories", "/api/cod/pending", "/api/courier/payouts",
   "/api/courier/pending", "/api/credit-accounts", "/api/credit-notes",
@@ -121,6 +121,7 @@ const READ_LIST_CASES = [
 const TESTED_PRODUCT_ROUTES = new Set(`
 GET /api/alert-rules
 GET /api/alerts
+GET /api/assistant/usage
 GET /api/audit-log
 GET /api/auth/me
 GET /api/billing/plans
@@ -312,7 +313,7 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  expect(required).toHaveLength(173);
+  expect(required).toHaveLength(174);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");
@@ -399,6 +400,15 @@ it("aisla rutas reales de catálogo, búsqueda y los 43 reportes con PostgreSQL"
         "Bearer " + jwt.sign({ sub: userId, sid, type: "access", version: 0, tenantId });
       const tokenA = auth(a, userA, sessionA);
       const tokenB = auth(b, userB, sessionB);
+      await client.query(`INSERT INTO "AuditLog" (id, "tenantId", "userId", action, entity, "entityId", "createdAt") VALUES ($1,$2,$3,'assistant.ask','assistant',$4,now())`, [
+        "40000000-0000-4000-8000-000000000010", a, userA, "consulta-de-a",
+      ]);
+      const usageB = await http.get("/api/assistant/usage").set("Authorization", tokenB);
+      const usageA = await http.get("/api/assistant/usage").set("Authorization", tokenA);
+      expect(usageB.status).toBe(200);
+      expect(usageA.status).toBe(200);
+      expect(usageB.body.usadas).toBe(0);
+      expect(usageA.body.usadas).toBe(1);
       // N-01: la herramienta usa el token real de B; el modelo falso no puede
       // recibir productos ni el identificador interno de la empresa A.
       const model = async (_messages: any[], _tools: any[]) => {

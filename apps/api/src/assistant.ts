@@ -1,9 +1,10 @@
-import { Body, Controller, HttpException, Inject, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, HttpException, Inject, Post, Req } from "@nestjs/common";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import { Permit, type ActorRequest } from "./common";
+import { Database, Permit, type ActorRequest } from "./common";
 import { RequestRateLimitService } from "./rate-limit";
 import { assistantManual } from "./assistant-manual";
+import { finishAssistantQuery, reserveAssistantQuery, usageForTenant } from "./assistant-usage";
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const pair = z.object({ desde: date, hasta: date }).strict();
@@ -188,6 +189,7 @@ export type AssistantDeps = {
   model?: (messages: any[], tools: any[]) => Promise<any>;
   get?: AssistantGet;
   now?: () => Date;
+  onTool?: (name: string) => void;
 };
 export async function askAssistant(body: unknown, auth: string | undefined, actor: { name: string }, deps: AssistantDeps = {}): Promise<AssistantResponse> {
   const parsed = assistantInput.safeParse(body);
@@ -228,8 +230,10 @@ export async function askAssistant(body: unknown, auth: string | undefined, acto
     }
     context.push({ role: "assistant", content: response.content } as any);
     const results = [];
-    for (const call of calls.slice(0, 10))
+    for (const call of calls.slice(0, 10)) {
+      deps.onTool?.(call.name in toolSchemas ? call.name : "desconocida");
       results.push({ type: "tool_result", tool_use_id: call.id, content: await executeAssistantTool(call.name, call.input, get) });
+    }
     context.push({ role: "user", content: results } as any);
   }
   return { answer: "La consulta necesitó demasiados pasos. Haz una pregunta más concreta.", usage, remaining: null };
@@ -237,13 +241,35 @@ export async function askAssistant(body: unknown, auth: string | undefined, acto
 
 @Controller("assistant")
 export class AssistantController {
-  constructor(@Inject(RequestRateLimitService) private readonly limits: RequestRateLimitService) {}
+  constructor(
+    @Inject(RequestRateLimitService) private readonly limits: RequestRateLimitService,
+    @Inject(Database) private readonly db: Database,
+  ) {}
+
+  @Get("usage") @Permit("authenticated")
+  usage(@Req() req: ActorRequest) {
+    return usageForTenant(this.db, req.actor);
+  }
 
   @Post("ask") @Permit("authenticated")
   async ask(@Body() body: unknown, @Req() req: ActorRequest) {
     if (!process.env.ANTHROPIC_API_KEY)
       throw new HttpException("El asistente no está activado en esta empresa.", 503);
+    if (!assistantInput.safeParse(body).success)
+      throw new HttpException("Pregunta inválida: máximo 20 mensajes y 500 caracteres por pregunta.", 400);
     this.limits.assert("assistant-ask", [req.actor.tenantId, req.actor.id], 5);
-    return askAssistant(body, req.headers.authorization, req.actor);
+    const reserved = await reserveAssistantQuery(this.db, req.actor);
+    const herramientas: string[] = [];
+    let result: AssistantResponse;
+    try {
+      result = await askAssistant(body, req.headers.authorization, req.actor, {
+        onTool: (name) => herramientas.push(name),
+      });
+    } catch (error) {
+      await finishAssistantQuery(this.db, reserved.auditId, { input: 0, output: 0 }, herramientas, "fallida");
+      throw error;
+    }
+    await finishAssistantQuery(this.db, reserved.auditId, result.usage, herramientas, "completa");
+    return { ...result, remaining: reserved.remaining };
   }
 }
