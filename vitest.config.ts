@@ -49,6 +49,7 @@ export default defineConfig({
       "tests/product-platform-ai-packs-postgres.test.ts",
       "tests/product-support-platform-postgres.test.ts",
       "tests/product-platform-billing-postgres.test.ts",
+      "tests/product-platform-panel-postgres.test.ts",
       "tests/product-lifecycle-postgres.test.ts",
       "tests/product-billing-postgres.test.ts",
       "tests/product-pilot-three-tenants-postgres.test.ts",
