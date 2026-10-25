@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@fitstore/ui";
+import { SUPPORT_TOKEN_KEY } from "./api";
 
 const TOKEN_KEY = "nexora-plataforma-token";
 const DAY = 86400000;
@@ -527,6 +528,77 @@ function AiPackForm({
   );
 }
 
+type SupportGrant = { slug: string; name: string; expiresAt: string };
+
+function SupportSection({
+  token,
+  slug,
+  onAuthError,
+}: {
+  token: string;
+  slug: string;
+  onAuthError: (e: unknown) => void;
+}) {
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const grants = useQuery({
+    queryKey: ["platform", "support-grants"],
+    queryFn: () =>
+      platformFetch<SupportGrant[]>(token, "/support-grants").catch(onAuthError),
+  });
+  const grant = (grants.data as SupportGrant[] | undefined)?.find(
+    (g) => g.slug === slug,
+  );
+  const open = async () => {
+    setError("");
+    // Se abre antes de esperar la respuesta: si no, el navegador bloquea la pestaña.
+    const tab = window.open("", "_blank");
+    if (!tab) return setError("El navegador bloqueó la pestaña nueva.");
+    setBusy(true);
+    try {
+      const session = await platformFetch<{ accessToken: string }>(
+        token,
+        `/tenants/${slug}/support-session`,
+        {},
+      );
+      // La pestaña nueva hereda el sessionStorage del panel: se quita el token
+      // de plataforma y queda solo el de soporte.
+      tab.sessionStorage.removeItem(TOKEN_KEY);
+      tab.sessionStorage.setItem(SUPPORT_TOKEN_KEY, session.accessToken);
+      tab.opener = null;
+      tab.location.href = "/";
+    } catch (cause) {
+      tab.close();
+      setError((cause as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Section title="Soporte">
+      {grants.isError ? (
+        <ErrorText text={(grants.error as Error).message} />
+      ) : !grants.data ? (
+        <div>Cargando…</div>
+      ) : grant ? (
+        <div className="flex flex-col gap-3 text-base">
+          <div>
+            Acceso de soporte activo hasta <strong>{date(grant.expiresAt)}</strong>.
+          </div>
+          <div>
+            <Button disabled={busy} onClick={() => void open()}>
+              Abrir sesión de solo lectura
+            </Button>
+          </div>
+          <ErrorText text={error} />
+        </div>
+      ) : (
+        <div>La empresa no ha activado el acceso de soporte.</div>
+      )}
+    </Section>
+  );
+}
+
 function ClientDetail({
   token,
   slug,
@@ -659,6 +731,7 @@ function ClientDetail({
               <div>Sin cuenta de administración.</div>
             )}
           </Section>
+          <SupportSection token={token} slug={slug} onAuthError={onAuthError} />
           <Section title="Registrar pago">
             <PaymentForm token={token} tenant={tenant} onDone={refresh} />
           </Section>
@@ -1117,6 +1190,22 @@ export function PlatformPanel() {
             onCreate={() => setView({ name: "create" })}
             onAuthError={onAuthError}
           />
+        )}
+        {token && (
+          <Section title="Manual de soporte">
+            <ul className="flex flex-col gap-2">
+              <li>
+                <a className="font-semibold text-violet-800 underline" href="/soporte-operador/MANUAL_SOPORTE_DUENA.md" target="_blank" rel="noopener noreferrer">
+                  Manual: 25 problemas y cómo resolverlos
+                </a>
+              </li>
+              <li>
+                <a className="font-semibold text-violet-800 underline" href="/soporte-operador/RESPUESTAS_WHATSAPP.md" target="_blank" rel="noopener noreferrer">
+                  Respuestas listas para WhatsApp
+                </a>
+              </li>
+            </ul>
+          </Section>
         )}
       </main>
     </div>

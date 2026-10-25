@@ -226,10 +226,35 @@ async function readJson(response: Response) {
     throw new NetworkError();
   }
 }
+// Sesión de soporte de solo lectura abierta desde /plataforma: el token vive
+// solo en el sessionStorage de esa pestaña, 15 min y sin renovación.
+export const SUPPORT_TOKEN_KEY = "nexora-soporte-token";
+const supportToken = () => {
+  try {
+    return sessionStorage.getItem(SUPPORT_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
 let refreshPromise: Promise<void> | null = null;
 export async function refreshSession() {
   if (!refreshPromise)
     refreshPromise = (async () => {
+      const support = supportToken();
+      if (support) {
+        const response = await send(
+          "/api/auth/me",
+          { headers: { Authorization: "Bearer " + support } },
+          ANSWER_TIMEOUT,
+        );
+        if (!response.ok) {
+          sessionStorage.removeItem(SUPPORT_TOKEN_KEY);
+          throw new Error("La sesión de soporte venció.");
+        }
+        // Sin guardar en IndexedDB: no queda sesión en el equipo.
+        useStore.getState().setSession(await readJson(response), support);
+        return;
+      }
       const response = await send(
         "/api/auth/refresh",
         { method: "POST", credentials: "include" },
