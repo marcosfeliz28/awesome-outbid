@@ -314,7 +314,7 @@ test("Tablero fase A: móvil, temas, privacidad, decisiones reales y caja intact
       });
     }
 
-    const privacy = ownerPage.getByRole("button", { name: "Ocultar cifras" });
+    const privacy = ownerPage.locator(".privacy-toggle__button");
     await privacy.click();
     await expect(ownerPage.locator("html")).toHaveClass(/nexora-privacy-mode/);
     await expect(privacy).toHaveAttribute("aria-pressed", "true");
