@@ -37,7 +37,7 @@ export class PlatformController {
       throw new HttpException("No disponible.", 404);
     const ip = clientIp(req);
     if (this.limits.limited("platform-auth-fail", [ip], 5)) throw new HttpException("Demasiados intentos. Espera un minuto.", 429);
-    const token = /^Platform (\S{32,512})$/.exec(req.headers.authorization ?? "")?.[1];
+    const token = /^Platform (\S{64,512})$/.exec(req.headers.authorization ?? "")?.[1];
     const given = createHash("sha256").update(token ?? "").digest();
     if (!token || !timingSafeEqual(given, Buffer.from(expected, "hex"))) {
       this.limits.assert("platform-auth-fail", [ip], 5);
@@ -76,6 +76,8 @@ export class PlatformController {
       const url = new URL("/aceptar-invitacion", base);
       // Fragmento: el token no llega a logs HTTP ni Referer.
       url.hash = `token=${token}`;
+      // Bitácora del operador, sin el token.
+      console.log(`[plataforma] empresa piloto creada: ${tenant.slug} (${tenant.plan})`);
       return { id: tenant.id, slug: tenant.slug, plan: tenant.plan, status: tenant.status, trialEndsAt: tenant.trialEndsAt, invitationUrl: url.toString() };
     } catch (error: any) {
       if (error?.code === "P2002") throw new HttpException("Este código de empresa ya está ocupado.", 409);

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Crea una empresa piloto por invitación (operador de la plataforma).
+// El token se genera una vez: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" (64 caracteres o más).
 // Uso: NEXORA_PLATFORM_URL=https://... NEXORA_PLATFORM_TOKEN=... \
 //   node scripts/plataforma-crear-empresa.mjs --nombre "Tienda X" --codigo tienda-x \
 //   --tipo retail --plan basico --dias 30 --admin "Ana Pérez" --correo ana@ejemplo.com

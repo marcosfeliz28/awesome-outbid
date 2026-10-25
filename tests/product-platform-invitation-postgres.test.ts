@@ -18,7 +18,7 @@ const apiRequire = createRequire(join(root, "apps/api/package.json"));
 const prismaCli = apiRequire.resolve("prisma/build/index.js");
 const { PrismaClient } = apiRequire("@prisma/client");
 const run = promisify(execFile);
-const platformToken = "operador-plataforma-solo-prueba-0123456789abcdef";
+const platformToken = "operador-plataforma-solo-prueba-".padEnd(72, "0123456789abcdef");
 const keys = ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "PLATFORM_ADMIN_TOKEN_SHA256", "APP_PUBLIC_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"];
 
 async function port() {
