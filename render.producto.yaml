@@ -33,7 +33,7 @@ services:
     dockerContext: .
     dockerfilePath: ./deploy/render/Dockerfile.api
     autoDeployTrigger: off
-    preDeployCommand: sh -c 'node deploy/render/with-cloud-env.mjs node apps/api/node_modules/prisma/build/index.js db execute --file scripts/producto-bootstrap.sql --schema apps/api/prisma/schema.prisma && node deploy/render/with-cloud-env.mjs node apps/api/node_modules/prisma/build/index.js migrate deploy --schema apps/api/prisma/schema.prisma'
+    preDeployCommand: node deploy/render/producto-predeploy.mjs
     envVars:
       - key: NODE_ENV
         value: production

@@ -1361,4 +1361,17 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
     expect(last >= "202610220001_validar_restricciones").toBe(true);
     expect(prefixes.filter((p) => p === "202610220001")).toHaveLength(1);
   });
+
+  // Render no interpreta comillas en preDeployCommand (falló el primer
+  // despliegue del producto con «sh -c '…'»): una sola orden simple.
+  it("el preDeployCommand del producto es una orden sin comillas y su script viaja en la imagen", () => {
+    const line = read("render.producto.yaml").match(
+      /^ *preDeployCommand: *(.+)$/m,
+    )![1]!;
+    expect(line).not.toMatch(/['"&|;]/);
+    expect(line).toBe("node deploy/render/producto-predeploy.mjs");
+    expect(read("deploy/render/Dockerfile.api")).toContain(
+      "COPY deploy/render/producto-predeploy.mjs deploy/render/producto-predeploy.mjs",
+    );
+  });
 });
