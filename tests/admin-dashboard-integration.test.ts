@@ -126,6 +126,118 @@ describe("tablero administrativo · integración", () => {
     warn.mockRestore();
   });
 
+  it("señaliza después del commit anulaciones, devoluciones y todos los cobros sin hacerlos fallar", async () => {
+    const ids = {
+      sale: "00000000-0000-4000-8000-000000000001",
+      cash: "00000000-0000-4000-8000-000000000002",
+      operation: "00000000-0000-4000-8000-000000000003",
+      item: "00000000-0000-4000-8000-000000000004",
+      payment: "00000000-0000-4000-8000-000000000005",
+    };
+    let committed = false;
+    const transaction = vi.fn(async () => {
+      committed = true;
+      const call = transaction.mock.calls.length;
+      if (call === 1) return { ok: true };
+      if (call === 2) return { id: "return-1" };
+      if (call === 5) return [{ id: "payment-lines-1" }];
+      return { id: `payment-${call}` };
+    });
+    const createSignal = vi.fn().mockImplementation(async () => {
+      expect(committed).toBe(true);
+      committed = false;
+      throw new Error("SSE no disponible");
+    });
+    const db = {
+      $transaction: transaction,
+      realtimeEvent: { create: createSignal },
+      sale: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          creditBalance: 0,
+          creditClosedAt: new Date(),
+        }),
+      },
+    };
+    const controller = new SalesController(db as never);
+    const actor = {
+      id: "owner",
+      name: "Dueña",
+      branchId: "branch-a",
+      permissions: ["*"],
+    } as never;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(
+      controller.voidSale(ids.sale, { reason: "Error confirmado" }, actor),
+    ).resolves.toEqual({ ok: true });
+    await expect(
+      controller.returnSale(
+        {
+          operationId: ids.operation,
+          saleId: ids.sale,
+          cashSessionId: ids.cash,
+          reason: "Producto devuelto",
+          refundMethod: "credit_note",
+          items: [
+            {
+              saleItemId: ids.item,
+              qty: 1,
+              restock: true,
+              opened: false,
+              damaged: false,
+            },
+          ],
+        },
+        actor,
+      ),
+    ).resolves.toEqual({ id: "return-1" });
+    await expect(
+      controller.installment(
+        ids.sale,
+        {
+          offlineUuid: ids.payment,
+          cashSessionId: ids.cash,
+          amount: 100,
+          method: "cash",
+        },
+        actor,
+      ),
+    ).resolves.toEqual({ id: "payment-3" });
+    await expect(
+      controller.codCollection(
+        ids.sale,
+        {
+          offlineUuid: "00000000-0000-4000-8000-000000000006",
+          cashSessionId: ids.cash,
+          amount: 100,
+          method: "cash",
+        },
+        actor,
+      ),
+    ).resolves.toEqual({ id: "payment-4" });
+    await expect(
+      controller.creditCollection(
+        ids.sale,
+        {
+          operationId: "00000000-0000-4000-8000-000000000007",
+          lines: [{ amount: 100, method: "cash", ownerConfirmed: true }],
+        },
+        actor,
+      ),
+    ).resolves.toMatchObject({ closed: true, pending: 0 });
+
+    expect(transaction).toHaveBeenCalledTimes(5);
+    expect(createSignal.mock.calls.map(([entry]) => entry.data.data)).toEqual([
+      { action: "void", entity: "sale" },
+      { action: "return", entity: "sale" },
+      { action: "collection", entity: "payment" },
+      { action: "collection", entity: "payment" },
+      { action: "collection", entity: "payment" },
+    ]);
+    expect(warn).toHaveBeenCalledTimes(5);
+    warn.mockRestore();
+  });
+
   it("filtra la bitácora por el día dominicano y resuelve el saleId del pago", async () => {
     const findMany = vi.fn().mockResolvedValue([
       {

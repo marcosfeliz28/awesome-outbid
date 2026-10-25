@@ -2205,6 +2205,10 @@ export class SalesController {
       (tx) => this.voidSaleTx(tx, parse(uuid, id), data.reason, actor),
       MONEY_TRANSACTION,
     );
+    await signalDashboard(this.db, actor, {
+      action: "void",
+      entity: "sale",
+    });
     notify(this.db, "sale_voided", id);
     return voided;
   }
@@ -3184,7 +3188,13 @@ export class SalesController {
       }
       return safe(row, actor);
     }, MONEY_TRANSACTION);
-    if (done?.id) notify(this.db, "return", done.id);
+    if (done?.id) {
+      await signalDashboard(this.db, actor, {
+        action: "return",
+        entity: "sale",
+      });
+      notify(this.db, "return", done.id);
+    }
     return done;
   }
   /**
@@ -3930,6 +3940,10 @@ export class SalesController {
       const { offlineUuid, ...line } = data;
       return this.collectLine(tx, actor, id, line, offlineUuid, codOnly);
     });
+    await signalDashboard(this.db, actor, {
+      action: "collection",
+      entity: "payment",
+    });
     notify(this.db, "collection", row.id);
     return row;
   }
@@ -4049,6 +4063,10 @@ export class SalesController {
         })),
       });
       return out;
+    });
+    await signalDashboard(this.db, actor, {
+      action: "collection",
+      entity: "payment",
     });
     for (const r of rows) notify(this.db, "collection", r.id);
     const sale = await this.db.sale.findUniqueOrThrow({

@@ -358,7 +358,7 @@ type DashboardSignal =
       action: "request" | "cancel" | "approve" | "reject";
       entity: "sale_void_request";
     }
-  | { action: "verify" | "reject"; entity: "payment" }
+  | { action: "collection" | "verify" | "reject"; entity: "payment" }
   | {
       action: "open" | "movement" | "cash_transferred" | "close";
       entity: "cash";
