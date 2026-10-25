@@ -517,7 +517,10 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
     ["profit", "Rentabilidad", profit],
     ["openingAmount", "Fondo Caja inicial", opening],
   ];
-  const counts = countDenominations(details.denominations ?? {});
+  const counts = countDenominations(
+    details.denominations ?? {},
+    details.centavos ?? 0,
+  );
   const split = closed
     ? {
         delivered: details.delivered ?? null,
@@ -603,6 +606,7 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
       qty: l.qty,
       total: l.total,
     })),
+    centavos: Number(details.centavos ?? 0),
     denominationsSubtotal: details.denominations ? counts.total : counted,
     lines: values.map(([key, label, value], n) => ({
       line: n + 1,
@@ -1253,7 +1257,7 @@ export class CashController {
     const input = parse(cashCloseSchema, body);
     // Conteo por denominaciones: el subtotal es el efectivo contado.
     const counted = input.denominations
-      ? countDenominations(input.denominations).total
+      ? countDenominations(input.denominations, input.centavos).total
       : input.countedCash!;
     if (
       input.denominations &&
@@ -1348,6 +1352,7 @@ export class CashController {
         closeDetails: {
           denominations: input.denominations ?? null,
           denominationsTotal: input.denominations ? counted : null,
+          ...(input.centavos ? { centavos: input.centavos } : {}),
           vouchers: input.vouchers,
           batchNumber: input.batchNumber || null,
           countedUsd: input.countedUsd,

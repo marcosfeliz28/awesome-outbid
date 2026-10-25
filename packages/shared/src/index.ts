@@ -680,15 +680,22 @@ export const denominationCountsSchema = z
   )
   .strict();
 export type DenominationCounts = Partial<Record<string, number>>;
-/** Moneda × cantidad = total por denominación, y el subtotal contado. */
-export function countDenominations(counts: DenominationCounts = {}) {
+/**
+ * Moneda × cantidad = total por denominación, y el subtotal contado. Los
+ * centavos (menos de RD$ 1, de las ofertas) se suman aparte para que un
+ * conteo exacto cuadre.
+ */
+export function countDenominations(
+  counts: DenominationCounts = {},
+  centavos: Decimal.Value = 0,
+) {
   const lines = CASH_DENOMINATIONS.map((value) => {
     const qty = counts[String(value)] ?? 0;
     return { value, qty, total: money(d(value).times(qty)) };
   });
   return {
     lines,
-    total: money(lines.reduce((sum, l) => sum.plus(l.total), d(0))),
+    total: money(lines.reduce((sum, l) => sum.plus(l.total), d(centavos))),
   };
 }
 /**
@@ -727,6 +734,8 @@ export const cashCloseSchema = z
     countedCard: cashAmount,
     countedTransfer: cashAmount,
     denominations: denominationCountsSchema.optional(),
+    // Centavos sueltos en pesos (0.10): se suman al conteo por denominaciones.
+    centavos: moneyAmount(0.99, true).default(0),
     vouchers: cashAmount.default(0),
     countedUsd: cashAmount.default(0),
     countedEur: cashAmount.default(0),

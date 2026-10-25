@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
+import { DEFAULT_COURIER, PRODUCT_MODE } from "./productTenancy";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
@@ -1759,7 +1760,7 @@ function Checkout({
   const [courier, setCourier] = useState({
     on: false,
     fee: "",
-    name: "Addison",
+    name: PRODUCT_MODE ? "" : DEFAULT_COURIER,
   });
   const [payments, setPayments] = useState<SaleInput["payments"]>([]),
     // «usd» es efectivo en dólares: se envía como cash con currency USD.
@@ -1900,7 +1901,10 @@ function Checkout({
     0,
   );
   const saleMargin = knownCosts ? margin(total, estimatedCost) : null;
+  // Aviso, no bloqueo: el motivo del descuento ya es obligatorio.
+  const belowCostWarning = hasDiscount && knownCosts && total < estimatedCost;
   const lowMarginWarning =
+    !belowCostWarning &&
     hasDiscount &&
     can(user!.permissions, "profit:read") &&
     saleMargin !== null &&
@@ -2062,7 +2066,7 @@ function Checkout({
       ...(withCourier
         ? {
             courierFee: Number(courier.fee),
-            courierName: courier.name.trim() || "Addison",
+            courierName: courier.name.trim() || DEFAULT_COURIER,
           }
         : {}),
     };
@@ -2263,6 +2267,11 @@ function Checkout({
         createdAt: sale.createdAt ?? new Date().toISOString(),
         drawerAuthorization,
       });
+      if (sale.belowCost)
+        toast(
+          "Esta venta queda por debajo del costo. Quedó registrada con el motivo del descuento.",
+          true,
+        );
       if (config?.autoPrintReceipt) printSoon(drawerAuthorization);
       else if (drawerAuthorization)
         void nativeOpenDrawer(drawerAuthorization).catch((error) =>
@@ -2920,6 +2929,12 @@ function Checkout({
             </div>
           )}
         </div>
+      )}
+      {belowCostWarning && (
+        <p className="form-error" role="alert">
+          Esta venta queda por debajo del costo. Escribe el motivo del
+          descuento.
+        </p>
       )}
       {lowMarginWarning && (
         <p className="cod-hint" role="status">

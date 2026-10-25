@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@fitstore/ui";
 import { api } from "./api";
+import { DEFAULT_COURIER, PRODUCT_MODE } from "./productTenancy";
 import { courierPresets, feeText } from "./courier-utils";
 
 export function CourierFeeEditor({
@@ -17,7 +18,7 @@ export function CourierFeeEditor({
   disabled?: boolean;
 }) {
   const [fee, setFee] = useState(initialFee);
-  const [name, setName] = useState(initialName || "Addison");
+  const [name, setName] = useState(initialName || (PRODUCT_MODE ? "" : DEFAULT_COURIER));
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);

@@ -1,4 +1,4 @@
-import { currentTenantId, tenantUnique } from "./tenant-context";
+import { currentTenantId, defaultCourier, ownerWord, productMode, tenantUnique } from "./tenant-context";
 import {
   Body,
   Controller,
@@ -1115,7 +1115,7 @@ export class SalesController {
             ...(input.courierFee
               ? {
                   courierFee: money(input.courierFee),
-                  courierName: input.courierName ?? "Addison",
+                  courierName: input.courierName ?? defaultCourier(),
                 }
               : {}),
             subtotal: money(
@@ -1459,7 +1459,14 @@ export class SalesController {
       { timeout: MONEY_TRANSACTION.timeout },
     );
     notify(this.db, "sale", result.id);
-    return safe(result, actor);
+    // Aviso sin bloquear (la regla del 15 % no está decidida): no revela el
+    // costo, sólo que lo cobrado no lo cubre.
+    return safe(
+      d(result.total).lt(result.costTotal)
+        ? { ...result, belowCost: true }
+        : result,
+      actor,
+    );
   }
   @Post("sales") @Permit("sale:write") @RequireTerminal() sale(
     @Body() body: unknown,
@@ -3025,7 +3032,7 @@ export class SalesController {
       ) {
         if (!data.managerPin)
           bad(
-            "Esta caja es de otra persona: para devolver efectivo desde ella se necesita el PIN de su dueña o de otro gerente.",
+            `Esta caja es de otra persona: para devolver efectivo desde ella se necesita el PIN de ${productMode() ? "quien la abrió" : "su dueña"} o de otro gerente.`,
           );
         refundApprovedBy = await managerPinApproval(
           this.db,
@@ -4196,7 +4203,7 @@ export class SalesController {
     ) {
       if (!data.managerPin)
         bad(
-          "Para registrar efectivo que ya tiene la dueña hace falta el PIN de un gerente.",
+          `Para registrar efectivo que ya tiene ${ownerWord()} hace falta el PIN de un gerente.`,
         );
       ownerApprovedBy = await managerPinApproval(
         this.db,

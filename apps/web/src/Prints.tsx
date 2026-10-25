@@ -3,6 +3,7 @@
 // docs/tienda/CUADRE_REPORTES_FACTURA.md. Se dibujan fuera de #root y sólo se
 // ven al imprimir.
 import { createPortal } from "react-dom";
+import { OWNER_WORD } from "./productTenancy";
 import { isNativeDesktop, openDrawerOnNextPrint, takeDrawerAuthorizationForNextPrint, type DrawerAuthorization } from "./desktopPrinter";
 import type { ReactNode } from "react";
 import {
@@ -204,6 +205,9 @@ export function CuadrePrint({ c }: { c: any }) {
             value={"= " + num(m.total)}
           />
         ))}
+      {Number(c.centavos) > 0 && (
+        <Row label="Centavos" value={"= " + num(c.centavos)} />
+      )}
       <p className="tp-line">{"Sub-total " + num(c.denominationsSubtotal)}</p>
       <h4>Descripción / Totales</h4>
       {lines.map((l: any) => (
@@ -354,7 +358,7 @@ export function CuadrePrint({ c }: { c: any }) {
       )}
       {(c.ownerReceived ?? []).length > 0 && (
         <>
-          <h4>Recibido por la dueña (fuera de gaveta)</h4>
+          <h4>Recibido por {OWNER_WORD} (fuera de gaveta)</h4>
           {c.ownerReceived.map((r: any) => (
             <Row
               key={r.paymentId}

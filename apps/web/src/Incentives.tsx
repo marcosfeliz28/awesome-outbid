@@ -19,6 +19,7 @@ import { can, formatMoney } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, toast } from "./helpers";
 import "./incentives.css";
+import { OWNER_WORD } from "./productTenancy";
 
 export const IncentivesIcon = HandCoins;
 
@@ -523,7 +524,7 @@ export function IncentivesPage() {
           </li>
           <li>
             «Por cobrar»: incentivo de ventas a crédito o contraentrega aún sin
-            cobrar. Está incluido en el neto; la dueña decide si lo retiene.
+            cobrar. Está incluido en el neto; {OWNER_WORD} decide si lo retiene.
           </li>
           <li>
             «Cerrar mes» guarda el cuadre y ya no cambia. Una venta tardía o una

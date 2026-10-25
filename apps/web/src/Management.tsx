@@ -3852,8 +3852,9 @@ function TelegramNotices() {
           <li>En Telegram, crea el bot con @BotFather (/newbot).</li>
           <li>Agrega el bot al grupo privado de la administración.</li>
           <li>
-            En Render (API), pon TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID y vuelve
-            a desplegar.
+            {productTenancyRequired(import.meta.env.VITE_PRODUCT_TENANCY)
+              ? "Pide a soporte de Nexora que active los avisos por Telegram para tu empresa."
+              : "En Render (API), pon TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID y vuelve a desplegar."}
           </li>
         </ol>
       )}

@@ -1,4 +1,4 @@
-import { currentTenantId, forEachActiveTenant } from "./tenant-context";
+import { currentTenantId, forEachActiveTenant, ownerWord } from "./tenant-context";
 // Avisos de facturas por Telegram.
 //
 // La dueña recibe en un grupo privado cada factura (efectivo, tarjeta,
@@ -695,7 +695,7 @@ export async function renderEvent(
       branchId: sale.branchId,
       text: ownerCash
         ? text +
-          `\nEfectivo recibido por la dueña (fuera de gaveta) · aprobó con PIN: ${approver ?? "—"}`
+          `\nEfectivo recibido por ${ownerWord()} (fuera de gaveta) · aprobó con PIN: ${approver ?? "—"}`
         : text,
     };
   }

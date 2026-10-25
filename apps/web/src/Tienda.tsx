@@ -1,6 +1,7 @@
 // Pantallas de la tienda: cierre por denominaciones, impresión del cuadre y
 // de los reportes, contraentregas pendientes y ajustes de caja/cajero.
 import { useEffect, useRef, useState } from "react";
+import { OWNER_WORD } from "./productTenancy";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Printer, Truck, Upload } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
@@ -183,6 +184,7 @@ export function CloseCashModal({
   const client = useQueryClient();
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
+    centavos: "",
     vouchers: "",
     countedUsd: "",
     countedEur: "",
@@ -213,12 +215,17 @@ export function CloseCashModal({
   );
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [key]: e.target.value });
+  // Centavos de las ofertas (0.10): sin ellos un conteo exacto no cuadra.
+  const centavos =
+    Math.min(0.99, Math.max(0, Math.round(parse(form.centavos) * 100) / 100)) || 0;
   const subtotal =
     Math.round(
-      CASH_DENOMINATIONS.reduce(
+      (CASH_DENOMINATIONS.reduce(
         (a, v) => a + v * Math.max(0, Math.floor(parse(counts[v] ?? ""))),
         0,
-      ) * 100,
+      ) +
+        centavos) *
+        100,
     ) / 100;
   const delivered = form.delivered.trim() === "" ? null : parse(form.delivered);
   const left = delivered === null ? subtotal : subtotal - delivered;
@@ -268,6 +275,7 @@ export function CloseCashModal({
       );
       await post("/cash-sessions/" + session.id + "/close", {
         denominations,
+        centavos,
         countedCash: subtotal,
         vouchers: parse(form.vouchers),
         countedUsd: parse(form.countedUsd),
@@ -365,6 +373,22 @@ export function CloseCashModal({
               </label>
             );
           })}
+          <label className="count-row">
+            <span className="count-value">Centavos</span>
+            <span aria-hidden>+</span>
+            <input
+              aria-label="Centavos"
+              type="number"
+              min="0"
+              max="0.99"
+              step="0.01"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={form.centavos}
+              onChange={set("centavos")}
+            />
+            <span className="count-total">= {formatMoney(centavos)}</span>
+          </label>
         </div>
         <p className="count-subtotal">
           Efectivo contado (Sub-total) <strong>{formatMoney(subtotal)}</strong>
@@ -423,7 +447,7 @@ export function CloseCashModal({
           {money(
             "Entregado",
             "delivered",
-            "Efectivo que se le entrega a la dueña.",
+            `Efectivo que se le entrega a ${OWNER_WORD}.`,
           )}
           <div className="field count-left">
             <span>Dejado en caja</span>
@@ -1086,7 +1110,7 @@ function CodCollect({
                 checked={ownerCash}
                 onChange={(e) => setOwnerCash(e.target.checked)}
               />{" "}
-              Este efectivo ya lo tiene la dueña (no entra a mi gaveta)
+              Este efectivo ya lo tiene {OWNER_WORD} (no entra a mi gaveta)
             </span>
           </label>
         )}

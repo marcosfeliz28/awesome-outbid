@@ -9,3 +9,9 @@ export function publicRegistrationEnabled(tenancyMode: string | undefined, regis
 export function initialCompanyCode(required: boolean): string {
   return required ? "" : "demo";
 }
+
+// Palabras y valores propios de la tienda (la dueña, su mensajero) que el
+// producto no muestra a otras empresas.
+export const PRODUCT_MODE = productTenancyRequired(import.meta.env.VITE_PRODUCT_TENANCY);
+export const OWNER_WORD = PRODUCT_MODE ? "la administración" : "la dueña";
+export const DEFAULT_COURIER = PRODUCT_MODE ? "Mensajero" : "Addison";

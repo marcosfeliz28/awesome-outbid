@@ -9,7 +9,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { createHash } from "node:crypto";
-import { currentTenantId, tenantUnique } from "./tenant-context";
+import { currentTenantId, defaultCourier, tenantUnique } from "./tenant-context";
 import { Prisma } from "@prisma/client";
 import { z } from "@fitstore/shared";
 import {
@@ -99,7 +99,7 @@ export class CourierController {
           // Sin envío no hay mensajero (revisión 25-oct #10).
           courierName:
             Number(data.fee) > 0
-              ? (data.courierName ?? sale.courierName ?? "Addison")
+              ? (data.courierName ?? sale.courierName ?? defaultCourier())
               : null,
         },
       });
@@ -153,7 +153,7 @@ export class CourierController {
         invoice: row.number,
         date: row.createdAt.toISOString(),
         customer: row.customer?.name ?? null,
-        courierName: row.courierName ?? "Addison",
+        courierName: row.courierName ?? defaultCourier(),
         courierFee: row.courierFee.toFixed(2),
       })),
     };
@@ -188,7 +188,7 @@ export class CourierController {
       total: row.total.toFixed(2),
       sales: row.items.map((item) => ({
         invoice: item.sale.number,
-        courierName: item.sale.courierName ?? "Addison",
+        courierName: item.sale.courierName ?? defaultCourier(),
         fee: item.fee.toFixed(2),
       })),
     }));

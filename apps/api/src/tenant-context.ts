@@ -69,3 +69,9 @@ export function tenantFromRequest(req: Request): string | null {
 const localProfile = () => process.env.PRODUCT_LOCAL_LICENSE === "required";
 export const refreshCookieName = () => (localProfile() ? "nexora_local_refresh" : "fitstore_refresh");
 export const tenantCookieName = () => (localProfile() ? "nexora_local_tenant" : "nexora_tenant");
+
+// Palabras y valores propios de la tienda (la dueña, su mensajero) que el
+// producto no muestra a otras empresas.
+export const productMode = () => process.env.PRODUCT_TENANCY === "required";
+export const ownerWord = () => (productMode() ? "la administración" : "la dueña");
+export const defaultCourier = () => (productMode() ? "Mensajero" : "Addison");

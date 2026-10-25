@@ -440,6 +440,7 @@ export function safe<T>(value: T, actor: Actor): T {
     "sale",
     "alerts",
     "total",
+    "belowCost",
     "page",
     "limit",
     // Identificadores que los clientes usan para navegar o relacionar filas.
