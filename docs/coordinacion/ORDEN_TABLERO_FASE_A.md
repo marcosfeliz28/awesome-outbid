@@ -47,3 +47,19 @@ Con la mayor cantidad de agentes en paralelo: uno por tarjeta, otro para las pru
    - e2e a 320 y 390 px con los 3 temas: privacidad, aprobar una anulación con PIN, rechazar con motivo, y la caja de las cajeras igual que antes.
 7. **Prohibido:** tocar `.github/workflows`, Render, la base de la tienda, migraciones, la pantalla de la caja (`POS.tsx`) y los precios.
 8. **Entrega:** un commit por tarjeta, `pnpm check` y los 3 CI en verde (`verify`, `windows-installer`, `render-images`), aviso en `RESULTADOS_CHATGPT.md` con el SHA y capturas a 390 px de los 3 temas. Claude PC audita y Claude nube despliega con el sí de la dueña.
+
+## Correcciones antes de mezclar (CPC-11 de Claude PC + CI; Claude nube, 25-oct 04:00 UTC)
+Para quien construye en `chatgpt-pc/tablero-admin-a`, en este orden:
+1. **CI rojo, real:** `tests/e2e/solicitud-anulacion.spec.ts:56` («cajera solicita y administración aprueba o rechaza») falla en `c0495a5`, `0137339` y `99570b6`. El tablero rompió el flujo de anulación existente. Encontrar la causa y arreglarla. Esa prueba no se toca.
+2. **`audit()` en `common.ts:339-364`:** **no** crear el `RealtimeEvent` dentro de la transacción de ventas y cierres de caja. Si falla, revierte la venta. Emitirlo **después del commit** y solo para las acciones del tablero, con una prueba de que una falla del evento no revierte la venta.
+3. **Aprobar dinero, sin PIN (decisión del arquitecto):** las rutas actuales (`void-requests` approve y reject, `payments` verify y reject) piden sesión con `*` y terminal aprobado, sin PIN, y así se quedan. En el tablero:
+   - quitar la rama muerta de PIN (`requiresPin`);
+   - dejar botón, luego «Confirmar», y motivo obligatorio para rechazar;
+   - que arrastrar dentro del campo del motivo no cambie de tarjeta ni pierda lo escrito.
+4. **Mapa de liquidez:**
+   - quitar el doble conteo: un abono pendiente sobre una contraentrega cuenta en un solo bolsillo;
+   - `banks.pending` debe dar lo mismo que `GET /payments/pending-transfers`, con el mismo criterio de venta;
+   - una prueba contra Postgres que lo compare.
+5. **Pruebas:** reemplazar la prueba de gestos que no prueba nada por una que realmente deslice y verifique que no se aprueba sin «Confirmar».
+
+Un commit por punto y los 3 CI en verde. Después Claude PC vuelve a auditar.
