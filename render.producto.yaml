@@ -57,6 +57,10 @@ services:
           envVarKey: RENDER_EXTERNAL_URL
       - key: JWT_SECRET
         generateValue: true
+      # Operador de plataforma: sha256 (hex) del token que guarda el operador.
+      # Sin valor, /api/platform/* responde 404.
+      - key: PLATFORM_ADMIN_TOKEN_SHA256
+        sync: false
 
 databases:
   - name: nexora-saas-db
