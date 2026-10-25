@@ -1,0 +1,144 @@
+.privacy-toggle {
+  box-sizing: border-box;
+  display: grid;
+  gap: 0.875rem;
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: 1rem;
+  overflow: hidden;
+  color: var(--admin-card-text, #f8fafc);
+  background: var(--admin-card-background, #111827);
+  border: 1px solid var(--admin-card-border, #64748b);
+  border-radius: var(--admin-card-radius, 1rem);
+  box-shadow: var(--admin-card-shadow, 0 0.75rem 2rem rgb(0 0 0 / 22%));
+}
+
+.privacy-toggle,
+.privacy-toggle * {
+  box-sizing: border-box;
+}
+
+.privacy-toggle__copy {
+  display: flex;
+  gap: 0.75rem;
+  min-inline-size: 0;
+  align-items: flex-start;
+}
+
+.privacy-toggle__icon {
+  display: grid;
+  flex: 0 0 2.75rem;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  place-items: center;
+  color: #99f6e4;
+  background: #134e4a;
+  border: 1px solid #2dd4bf;
+  border-radius: 0.875rem;
+}
+
+.privacy-toggle h2,
+.privacy-toggle p {
+  margin: 0;
+}
+
+.privacy-toggle h2 {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.privacy-toggle__copy p,
+.privacy-toggle small {
+  color: var(--admin-card-muted, #cbd5e1);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.privacy-toggle__button {
+  display: flex;
+  gap: 0.75rem;
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding: 0.625rem 0.875rem;
+  align-items: center;
+  justify-content: center;
+  color: #f8fafc;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+  background: #334155;
+  border: 1px solid #94a3b8;
+  border-radius: 0.75rem;
+}
+
+.privacy-toggle__button[aria-pressed="true"] {
+  background: #0f766e;
+  border-color: #5eead4;
+}
+
+.privacy-toggle__button:focus-visible {
+  outline: 3px solid #facc15;
+  outline-offset: 3px;
+}
+
+.privacy-toggle__switch {
+  display: flex;
+  flex: 0 0 2.5rem;
+  inline-size: 2.5rem;
+  block-size: 1.5rem;
+  padding: 0.1875rem;
+  align-items: center;
+  justify-content: flex-start;
+  background: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+}
+
+.privacy-toggle__switch span {
+  inline-size: 1rem;
+  block-size: 1rem;
+  background: #f8fafc;
+  border-radius: 50%;
+  transform: translateX(0);
+  transition: transform 160ms ease;
+}
+
+.privacy-toggle__button[aria-pressed="true"] .privacy-toggle__switch span {
+  transform: translateX(1rem);
+}
+
+.privacy-toggle__status {
+  min-block-size: 1.5rem;
+  color: var(--admin-card-text, #f8fafc);
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+/* Contrato visual: las otras tarjetas deciden qué cifra puede ocultarse. */
+.nexora-privacy-mode [data-private-value] {
+  filter: blur(0.45rem);
+  user-select: none;
+  transition: filter 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .privacy-toggle__switch span,
+  .nexora-privacy-mode [data-private-value] {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .privacy-toggle,
+  .privacy-toggle__button,
+  .privacy-toggle__switch {
+    border-color: ButtonText;
+  }
+
+  .privacy-toggle__button:focus-visible {
+    outline-color: Highlight;
+  }
+}
