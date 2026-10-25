@@ -736,7 +736,11 @@ export class SalesController {
     if (requestsDiscount && !normalizedInput.discountReason)
       bad("Indica el motivo del descuento.");
     input = normalizedInput;
-    if (offline) {
+    // La revisión de gerencia («entregada», `closedCashReason`) registra una
+    // venta que ya se cobró: no la frenan el interruptor de ventas sin
+    // conexión ni el plazo de 48 h; todo lo demás se valida igual.
+    const reviewed = !!review.closedCashReason;
+    if (offline && !reviewed) {
       const settings = await this.db.settings.findUnique({
         where: { id: actor.branchId },
         select: { data: true },
@@ -780,7 +784,7 @@ export class SalesController {
           })
         )
           throw new OfflineSaleDiscardedError();
-        if (offline) {
+        if (offline && !reviewed) {
           const settings = await tx.settings.findUnique({
             where: { id: actor.branchId },
             select: { data: true },
@@ -802,7 +806,11 @@ export class SalesController {
           await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"receivable-shift:" + actor.id}))::text AS locked`;
         const capturedAt =
           offline && input.capturedAt ? new Date(input.capturedAt) : undefined;
-        if (capturedAt && Date.now() - capturedAt.getTime() > 48 * 3600000)
+        if (
+          capturedAt &&
+          !reviewed &&
+          Date.now() - capturedAt.getTime() > 48 * 3600000
+        )
           bad("La venta offline supera el plazo máximo de 48 horas.");
         const cashSession = await cashLock(
           tx,
@@ -1576,7 +1584,18 @@ export class SalesController {
                   if (!valid.success) return null;
                   const { managerPin: ignoredPin, ...stored } = valid.data;
                   void ignoredPin;
-                  return stored;
+                  // N8: nunca la referencia ni el banco del pago. Una venta
+                  // con transferencia no se registra desde la revisión.
+                  return {
+                    ...stored,
+                    payments: stored.payments.map(
+                      ({ reference, bank, ...payment }: any) => {
+                        void reference;
+                        void bank;
+                        return payment;
+                      },
+                    ),
+                  };
                 })(),
                 // Sólo una caja propia de esta sucursal se guarda como evidencia.
                 cashSessionId:

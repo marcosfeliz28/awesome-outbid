@@ -281,6 +281,92 @@ describe("#4 · venta sin conexión descartada con la mercancía entregada", () 
   });
 });
 
+describe("#4 · revisión: plazos, transferencias y doble envío", () => {
+  it("una venta de hace 72 h, con las ventas sin conexión ya apagadas, se registra igual desde la revisión", async () => {
+    // La caja abrió antes de la captura (la venta es de hace 3 días).
+    await db.cashSession.update({
+      where: { id: session.id },
+      data: { openedAt: new Date(Date.now() - 96 * 3600000) },
+    });
+    await setStock(3);
+    const sale = offlineSale({
+      capturedAt: new Date(Date.now() - 72 * 3600000).toISOString(),
+    });
+    const synced = await ok("/sales/sync", cashierToken, { sales: [sale] });
+    expect(synced.results[0].status).toBe("conflict");
+    const settings = await ok("/settings", owner);
+    const put = (data: unknown) =>
+      fetch(base + "/settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Forwarded-For": ip,
+          Authorization: "Bearer " + owner,
+        },
+        body: JSON.stringify(data),
+      });
+    await put({ ...settings, allowOfflineSales: false });
+    try {
+      const done = await discard(sale.offlineUuid, cashierToken, {
+        managerPin: MANAGER_PIN,
+      });
+      expect(done.status, JSON.stringify(done.body)).toBe(201);
+      expect(await stock()).toBe(2);
+    } finally {
+      await put(settings);
+    }
+  });
+
+  it("con transferencia no se registra como entregada (el servidor no guarda la referencia)", async () => {
+    await setStock(0);
+    const sale = offlineSale({
+      payments: [
+        {
+          method: "transfer",
+          amount: 1000,
+          bank: "BHD",
+          reference: "QA-REF-" + tag,
+        },
+      ],
+    });
+    await ok("/sales/sync", cashierToken, { sales: [sale] });
+    const log = await db.auditLog.findFirst({
+      where: { action: "offline_sale_conflict", entityId: sale.offlineUuid },
+    });
+    expect(JSON.stringify(log.after)).not.toContain("QA-REF-" + tag);
+    await setStock(3);
+    const done = await discard(sale.offlineUuid, cashierToken, {
+      managerPin: MANAGER_PIN,
+    });
+    expect(done.status, JSON.stringify(done.body)).toBe(400);
+    expect(done.body.message).toMatch(/transferencia/);
+    expect(await stock()).toBe(3);
+    expect(await alertOpen(sale.offlineUuid)).toBe(true);
+  });
+
+  it("dos «entregada» a la vez (doble clic) registran una sola venta", async () => {
+    await setStock(0);
+    const sale = offlineSale();
+    await ok("/sales/sync", cashierToken, { sales: [sale] });
+    await setStock(3);
+    const sales = () => db.sale.count({ where: { cashSessionId: session.id } });
+    const before = await sales();
+    const results = await Promise.all([
+      discard(sale.offlineUuid, cashierToken, { managerPin: MANAGER_PIN }),
+      discard(sale.offlineUuid, cashierToken, { managerPin: MANAGER_PIN }),
+    ]);
+    expect(results.filter((r) => r.status === 201)).toHaveLength(1);
+    expect(results.filter((r) => r.status >= 400)).toHaveLength(1);
+    expect(await sales()).toBe(before + 1);
+    expect(await stock()).toBe(2);
+    expect(
+      await db.auditLog.count({
+        where: { action: "offline_sale_discarded", entityId: sale.offlineUuid },
+      }),
+    ).toBe(1);
+  });
+});
+
 describe("#6 · cambios en una caja ya cerrada", () => {
   it("venta sin conexión, método corregido y anulación: justificación, bitácora y alerta para la dueña; «falta lote» si entra tarjeta", async () => {
     await setStock(5);

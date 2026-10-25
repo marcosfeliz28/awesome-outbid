@@ -223,6 +223,17 @@ export class OfflineSaleReviewController {
       bad(
         "Esta venta incluía un pago en dólares: no se puede registrar desde aquí. Pide a la administración que la registre a mano.",
       );
+    // N8: el servidor no guarda banco ni referencia; una transferencia no se
+    // puede registrar sin ellos (ni verificar después).
+    if (
+      (stored.payments ?? []).some((p: any) => p?.method === "transfer") ||
+      (evidence.detail?.payments ?? []).some(
+        (p: any) => p?.method === "transfer",
+      )
+    )
+      bad(
+        "Esta venta incluía una transferencia: no se puede registrar desde aquí. Descártala como devuelta y vuelve a facturarla con la referencia.",
+      );
     // Las evidencias antiguas guardan null en lo que no venía.
     const clean = JSON.parse(
       JSON.stringify(stored, (_k, v) => (v === null ? undefined : v)),
