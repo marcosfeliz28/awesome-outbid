@@ -20,9 +20,12 @@ export const usdPrice = (usd: number, rate: number) =>
   Math.round(usd * rate * 100) / 100;
 
 const RATE_CHANGE_LIMIT = 0.05;
+// CPC-10: un salto mayor (p. ej. 400 contra 63) no se aplica solo; queda
+// retenido hasta que alguien con «*» lo confirme.
+const RATE_HOLD_LIMIT = 0.25;
 const LOW_MARGIN_LIMIT = 0.15;
 
-type RateOptions = { userId?: string };
+type RateOptions = { userId?: string; confirmed?: boolean };
 
 /** Guarda la tasa en Configuración y recalcula los precios en dólares. */
 export async function applyUsdRate(
@@ -45,10 +48,30 @@ export async function applyUsdRate(
     const before = Number(data.usdRate) || null;
     const change = before ? Math.abs(rate - before) / before : 0;
     const largeChange = before !== null && change > RATE_CHANGE_LIMIT;
+    const percent = (change * 100).toFixed(2);
+    if (before !== null && change > RATE_HOLD_LIMIT && !options.confirmed) {
+      data.usdRateHeld = { rate, day, source, before, percent };
+      await tx.settings.upsert({
+        where: tenantUnique("id", branchId),
+        create: { id: branchId, data },
+        update: { data },
+      });
+      const key = `usd-rate-hold:${branchId}:${day}`;
+      const message =
+        `La tasa automática del dólar saltó ${percent} %: de RD$ ${before} a RD$ ${rate}. ` +
+        `NO se aplicó; los precios siguen con RD$ ${before}. Revisa la fuente ${source} y confírmala en Configuración si es correcta.`;
+      // update sin status: el reintento de cada 3 h no reabre un aviso ya visto.
+      await tx.alert.upsert({
+        where: tenantUnique("key", key),
+        create: { key, type: "usd_rate_change", severity: "high", entityId: branchId, branchId, message },
+        update: { message },
+      });
+      return { rate, changed: 0, applied: false, held: true, largeChange: true, lowMargin: [] };
+    }
     data.usdRate = rate;
     data.usdRateDate = day;
     data.usdRateSource = source;
-    delete data.usdRatePending;
+    delete data.usdRateHeld;
     const variants = await tx.variant.findMany({
       where: { tenantId, branchId, active: true },
       select: { id: true, price: true, costAvg: true, attributes: true },
@@ -87,8 +110,7 @@ export async function applyUsdRate(
       create: { id: branchId, data },
       update: { data },
     });
-    if (largeChange) {
-      const percent = (change * 100).toFixed(2);
+    if (largeChange && !options.confirmed) {
       const message =
         `La tasa automática del dólar cambió ${percent} %: ` +
         `de RD$ ${before} a RD$ ${rate}. La actualización se aplicó; revisa la fuente ${source}.`;
@@ -102,7 +124,7 @@ export async function applyUsdRate(
           branchId,
           message,
         },
-        update: { status: "new", message },
+        update: { message },
       });
     }
     await tx.auditLog.create({
@@ -113,14 +135,15 @@ export async function applyUsdRate(
         entity: "settings",
         entityId: branchId,
         before: { usdRate: before },
-        after: { usdRate: rate, day, source, prices: changed, lowMargin },
+        after: { usdRate: rate, day, source, prices: changed, lowMargin, confirmed: options.confirmed === true },
         branchId,
       },
     });
     return {
       rate,
       changed: changed.length,
-      confirmationRequired: false,
+      applied: true,
+      held: false,
       largeChange,
       lowMargin,
     };

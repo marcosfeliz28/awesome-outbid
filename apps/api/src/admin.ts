@@ -55,6 +55,7 @@ import {
   temporaryPasswordExpiry,
 } from "./password-policy";
 import { RequestRateLimitService } from "./rate-limit";
+import { applyUsdRate } from "./usd-rate";
 
 const customerSchema = z.object({
   creditLimit: amount.optional(),
@@ -888,14 +889,13 @@ export class AdminController {
       const previous = before?.data as Record<string, unknown> | undefined;
       const data: any = {
         // Datos operativos de la actualización automática no forman parte del
-        // formulario. Conservarlos permite que escribir la tasa propuesta sea
-        // la confirmación humana y que el siguiente ciclo la aplique.
+        // formulario; guardar otro ajuste no los borra.
         ...(previous?.usdRateDate ? { usdRateDate: previous.usdRateDate } : {}),
         ...(previous?.usdRateSource
           ? { usdRateSource: previous.usdRateSource }
           : {}),
-        ...(previous?.usdRatePending
-          ? { usdRatePending: previous.usdRatePending }
+        ...(previous?.usdRateHeld
+          ? { usdRateHeld: previous.usdRateHeld }
           : {}),
         ...(Object.prototype.hasOwnProperty.call(
           previous ?? {},
@@ -945,6 +945,27 @@ export class AdminController {
       );
       return row.data;
     });
+  }
+  // CPC-10: un salto de más de 25 % queda retenido; solo «*» lo aplica.
+  @Post("settings/usd-rate/confirm")
+  @Permit("*")
+  async confirmUsdRate(@Body() body: unknown, @CurrentUser() actor: Actor) {
+    const { rate } = parse(z.object({ rate: z.number().positive() }), body);
+    const settings = await this.db.settings.findUnique({
+      where: tenantUnique("id", actor.branchId),
+    });
+    const held = (settings?.data as any)?.usdRateHeld;
+    if (!held || Number(held.rate) !== rate)
+      bad("No hay una tasa del dólar retenida con ese valor.");
+    const result = await applyUsdRate(this.db, actor.branchId, rate, String(held.source), String(held.day), {
+      userId: actor.id,
+      confirmed: true,
+    });
+    await this.db.alert.updateMany({
+      where: { branchId: actor.branchId, key: { startsWith: `usd-rate-hold:${actor.branchId}:` }, status: { not: "resolved" } },
+      data: { status: "resolved" },
+    });
+    return result;
   }
   // Subida del logo como archivo: un JSON con una imagen de 200 KB superaría
   // el límite de 100 KB del cuerpo de la API.

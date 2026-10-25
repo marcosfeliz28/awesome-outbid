@@ -4241,17 +4241,34 @@ export function Configuration() {
                 cajero pide PIN de gerente.
               </p>
             )}
-            {query.data?.usdRatePending?.rate && (
-              <p className="cod-hint" role="alert">
-                La tasa automática propuesta es RD${" "}
-                {Number(query.data.usdRatePending.rate).toLocaleString(
-                  "es-DO",
-                  { minimumFractionDigits: 2, maximumFractionDigits: 4 },
-                )}
-                , un cambio mayor de 5 %. Revisa la fuente y, si es correcta,
-                escribe exactamente esa tasa en «Editar configuración». Se
-                aplicará en la próxima comprobación automática.
-              </p>
+            {query.data?.usdRateHeld?.rate && (
+              <div className="cod-hint" role="alert">
+                <p>
+                  La tasa automática del dólar saltó{" "}
+                  {query.data.usdRateHeld.percent} %: de RD${" "}
+                  {query.data.usdRateHeld.before} a RD${" "}
+                  {query.data.usdRateHeld.rate}. No se aplicó; los precios en
+                  dólares siguen con la tasa anterior. Revisa la fuente (
+                  {query.data.usdRateHeld.source}) antes de confirmarla.
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={async () => {
+                    try {
+                      await mutate("/settings/usd-rate/confirm", {
+                        rate: Number(query.data.usdRateHeld.rate),
+                      });
+                      toast("Tasa del dólar aplicada.");
+                      await client.invalidateQueries();
+                    } catch (e: any) {
+                      toast(e.message, true);
+                    }
+                  }}
+                >
+                  Confirmar y aplicar RD$ {query.data.usdRateHeld.rate}
+                </Button>
+              </div>
             )}
             {Number(query.data?.usdRateLowMargin?.count) > 0 && (
               <p className="cod-hint" role="alert">

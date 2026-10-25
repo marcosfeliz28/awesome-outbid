@@ -1,6 +1,8 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { currentTenantId, tenantScope } from "../apps/api/src/tenant-context";
 import { applyUsdRate, UsdRateWorker } from "../apps/api/src/usd-rate";
+import { AdminController } from "../apps/api/src/admin";
+import { AlertsController } from "../apps/api/src/alerts";
 
 const A = "00000000-0000-0000-0000-000000000011";
 const B = "00000000-0000-0000-0000-000000000012";
@@ -43,7 +45,7 @@ it("PC-15: una consulta USD actualiza todas las sucursales de las empresas activ
               currentTenantId() === A && branchId === "main"
                 ? 62
                 : currentTenantId() === A
-                  ? 50
+                  ? 58
                   : 70;
             return { data: { usdRate: rate } };
           },
@@ -112,13 +114,13 @@ it("PC-15: un salto mayor de 5 % actualiza la tasa y deja un aviso para la dueñ
     applyUsdRate(db, "main", 67, "QA", "2026-10-24"),
   );
   expect(result).toMatchObject({
-    confirmationRequired: false,
+    applied: true,
     changed: 1,
     largeChange: true,
   });
   expect(update).toHaveBeenCalledOnce();
   expect(data.usdRate).toBe(67);
-  expect(data.usdRatePending).toBeUndefined();
+  expect(data.usdRateHeld).toBeUndefined();
   expect(actions).toEqual(["usd_rate_updated"]);
   expect(alert).toMatchObject({
     key: "usd-rate-change:main:2026-10-24",
@@ -129,6 +131,77 @@ it("PC-15: un salto mayor de 5 % actualiza la tasa y deja un aviso para la dueñ
   });
   expect(alert.message).toContain("63");
   expect(alert.message).toContain("67");
+});
+
+// CPC-10: <5 % en silencio; 5–25 % se aplica con aviso; >25 % se retiene
+// con aviso alto y no cambia precios hasta que «*» lo confirme.
+function rateTx(before: number) {
+  const state: any = { data: { usdRate: before }, alerts: [], audits: [], updates: 0 };
+  state.tx = {
+    $queryRaw: async () => [{ locked: "" }],
+    settings: {
+      findUnique: async () => ({ data: state.data }),
+      upsert: async ({ update }: any) => { state.data = update.data; },
+    },
+    variant: {
+      findMany: async () => [{ id: "v1", price: before * 10, costAvg: 100, attributes: { usd: 10 } }],
+      updateMany: async () => { state.updates++; return { count: 1 }; },
+    },
+    alert: { upsert: async ({ create, update }: any) => state.alerts.push({ create, update }) },
+    auditLog: { create: async ({ data }: any) => state.audits.push(data) },
+  };
+  state.db = { $transaction: async (task: any) => task(state.tx) };
+  return state;
+}
+
+it.each([
+  { label: "4 %", next: 62.4, applied: true, alert: null },
+  { label: "10 %", next: 66, applied: true, alert: "medium" },
+  { label: "30 %", next: 78, applied: false, alert: "high" },
+])("CPC-10: un salto de $label", async ({ next, applied, alert }) => {
+  const state = rateTx(60);
+  const result = await tenantScope.run({ tenantId: A }, () =>
+    applyUsdRate(state.db, "main", next, "QA", "2026-10-25"),
+  );
+  expect(result.applied).toBe(applied);
+  expect(state.data.usdRate).toBe(applied ? next : 60);
+  expect(state.updates).toBe(applied ? 1 : 0);
+  expect(state.audits).toHaveLength(applied ? 1 : 0);
+  expect(state.alerts.map((row: any) => row.create.severity)).toEqual(alert ? [alert] : []);
+  // El reintento de cada 3 horas no reabre un aviso ya visto.
+  for (const row of state.alerts) expect(row.update.status).toBeUndefined();
+  if (!applied) {
+    expect(state.data.usdRateHeld).toMatchObject({ rate: next, before: 60, day: "2026-10-25" });
+    expect(state.alerts[0].create.type).toBe("usd_rate_change");
+    expect(state.alerts[0].create.message).toMatch(/NO se aplicó/);
+  } else expect(state.data.usdRateHeld).toBeUndefined();
+});
+
+it("CPC-10: la tasa retenida solo se aplica al confirmarla", async () => {
+  const state = rateTx(60);
+  await tenantScope.run({ tenantId: A }, () =>
+    applyUsdRate(state.db, "main", 400, "QA", "2026-10-25"),
+  );
+  expect(state.data.usdRate).toBe(60);
+  const result = await tenantScope.run({ tenantId: A }, () =>
+    applyUsdRate(state.db, "main", 400, "QA", "2026-10-25", { userId: "duena", confirmed: true }),
+  );
+  expect(result.applied).toBe(true);
+  expect(state.data.usdRate).toBe(400);
+  expect(state.data.usdRateHeld).toBeUndefined();
+  expect(state.audits[0]).toMatchObject({ userId: "duena", after: expect.objectContaining({ confirmed: true }) });
+  expect(Reflect.getMetadata("permission", AdminController.prototype.confirmUsdRate)).toBe("*");
+});
+
+it("CPC-10: los avisos del dólar solo los ve quien tiene «*»", async () => {
+  const wheres: any[] = [];
+  const db = { alert: { findMany: async ({ where }: any) => { wheres.push(where); return []; } } };
+  const controller = new AlertsController(db as never, { evaluate: async () => undefined } as never);
+  const base = { id: "u", branchId: "main", tenantId: A, name: "x", email: "x", role: "manager", ip: "", terminalId: null } as any;
+  await controller.alerts({ ...base, permissions: ["alerts:write"] }, {});
+  await controller.alerts({ ...base, permissions: ["*"] }, {});
+  expect(JSON.stringify(wheres[0])).toContain("usd_rate_change");
+  expect(JSON.stringify(wheres[1])).not.toContain("usd_rate_change");
 });
 
 it("PC-15: avisa y audita si el precio nuevo queda bajo 15 % de margen", async () => {

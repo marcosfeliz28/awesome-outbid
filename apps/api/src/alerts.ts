@@ -77,6 +77,8 @@ export const MANUAL_ALERT_TYPES = [
   // revisión humana y no debe resolverse por la evaluación periódica.
   "usd_rate_change",
 ];
+// Avisos que solo ve quien tiene «*» (CPC-4 y CPC-10: el dólar es de la dueña).
+const OWNER_ONLY_ALERTS = ["sale_void_request", "ncf_sequence", "usd_rate_change"];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,
 // para que no dependa de que alguien abra Avisos ese día.
@@ -882,7 +884,7 @@ export class AlertsController {
         ...(filter.type ? { type: filter.type } : {}),
         ...(filter.entityId ? { entityId: filter.entityId } : {}),
         ...(!can(actor.permissions, "*")
-          ? { AND: [{ type: { notIn: ["sale_void_request", "ncf_sequence"] } }] }
+          ? { AND: [{ type: { notIn: OWNER_ONLY_ALERTS } }] }
           : {}),
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
@@ -908,7 +910,7 @@ export class AlertsController {
         id: parse(uuid, id),
         branchId: actor.branchId,
         ...(!can(actor.permissions, "*")
-          ? { type: { notIn: ["sale_void_request", "ncf_sequence"] } }
+          ? { type: { notIn: OWNER_ONLY_ALERTS } }
           : {}),
       },
     });
