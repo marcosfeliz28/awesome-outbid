@@ -32,6 +32,7 @@ export default defineConfig({
       "tests/reportes-margen-api.test.ts",
       "tests/reportes-inventario-api.test.ts",
       "tests/reportes-clientes-api.test.ts",
+      "tests/dashboard-liquidity-postgres.test.ts",
     ],
     testTimeout: 30000,
     hookTimeout: 60000,
