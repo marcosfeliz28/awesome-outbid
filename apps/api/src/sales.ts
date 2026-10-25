@@ -560,7 +560,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
   return 0;
 }
 
-import { cashExpected, refreshClosedCash } from "./cash";
+import { cashExpected, closedCashChanged, refreshClosedCash } from "./cash";
 import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
 import { managerPinApproval } from "./security";
@@ -667,7 +667,18 @@ export class SalesController {
       );
     return managerPinApproval(this.db, actor, input.managerPin);
   }
-  async complete(actor: Actor, input: SaleInput, offline = false) {
+  async complete(
+    actor: Actor,
+    input: SaleInput,
+    offline = false,
+    // #4/#6: la revisión de una venta sin conexión entregada la registra por
+    // aquí. `closedCashReason` justifica que entre en una caja ya cerrada;
+    // `inTransaction` corre al inicio de la misma transacción.
+    review: {
+      closedCashReason?: string;
+      inTransaction?: (tx: Prisma.TransactionClient) => Promise<void>;
+    } = {},
+  ) {
     // El envío solo se anota si el dinero llega por banco o verifón; en
     // efectivo o contraentrega el mensajero se cobra de ahí (orden 3af).
     if (
@@ -737,6 +748,7 @@ export class SalesController {
     const result = await moneyDb(this.db).$transaction(
       async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${input.offlineUuid}))::text AS locked`;
+        await review.inTransaction?.(tx);
         const existing = await tx.sale.findUnique({
           where: { offlineUuid: input.offlineUuid },
           include: { items: true, payments: true },
@@ -801,6 +813,12 @@ export class SalesController {
         // cobra. cashLock ya exige que la caja sea de quien vende; esto lo
         // deja como invariante explícito por si esa regla cambia.
         if (cashSession.userId !== actor.id) denied(OTHER_CASH);
+        // #6: una caja cerrada no cambia sin justificación. La venta queda en
+        // conflicto y gerencia la registra desde la revisión, con su motivo.
+        if (cashSession.closedAt && !review.closedCashReason)
+          bad(
+            "La caja de esta venta ya cerró: gerencia debe revisarla y registrarla con una justificación.",
+          );
         const customer = input.customerId
           ? await lockActiveCustomer(tx, actor, input.customerId)
           : null;
@@ -1344,8 +1362,18 @@ export class SalesController {
             "cash",
             cashSession.id,
             cashSession,
-            { saleId: sale.id, ...differences },
+            {
+              saleId: sale.id,
+              ...differences,
+              reason: review.closedCashReason,
+            },
           );
+          await closedCashChanged(tx, actor, cashSession, {
+            ref: sale.id,
+            what: `se registró la venta sin conexión ${sale.number} por RD$ ${formatAmount(Number(sale.total))}`,
+            reason: review.closedCashReason!,
+            differences,
+          });
         }
         await recordSaleIncentives(tx, actor, sale.id);
         await audit(tx, actor, "complete", "sale", sale.id, undefined, {
@@ -1539,6 +1567,15 @@ export class SalesController {
                 // N8: qué se vendió, por si se borran los datos del navegador
                 // antes de que gerencia la descarte.
                 detail: offlineSaleEvidence(attempted),
+                // #4: la venta tal como la validó el servidor, sin el PIN.
+                // Con ella la revisión registra la venta real si se entregó.
+                sale: (() => {
+                  const valid = saleSchema.safeParse(attempted);
+                  if (!valid.success) return null;
+                  const { managerPin: ignoredPin, ...stored } = valid.data;
+                  void ignoredPin;
+                  return stored;
+                })(),
                 // Sólo una caja propia de esta sucursal se guarda como evidencia.
                 cashSessionId:
                   typeof attempted.cashSessionId === "string" &&
@@ -2193,8 +2230,15 @@ export class SalesController {
         const session = await tx.cashSession.findUniqueOrThrow({
           where: { id: payment.cashSessionId },
         });
-        if (session.closedAt)
+        if (session.closedAt) {
           differences = await refreshClosedCash(tx, session);
+          await closedCashChanged(tx, actor, session, {
+            ref: "method:" + payment.id,
+            what: `en la venta ${sale.number}, un pago de RD$ ${formatAmount(Number(payment.amount))} pasó de ${payment.method} a ${data.method}`,
+            reason: data.reason,
+            differences,
+          });
+        }
       }
       await audit(
         tx,
@@ -2444,8 +2488,15 @@ export class SalesController {
           ...(refundCash
             ? { refundCashSessionId: refundCash.id, refundAmount }
             : {}),
+          reason: reasonText,
         },
       );
+      await closedCashChanged(tx, actor, originalCash, {
+        ref: "void:" + id,
+        what: `se anuló la venta ${sale.number} por RD$ ${formatAmount(Number(sale.total))}`,
+        reason: reasonText,
+        differences: cashDifferences,
+      });
     }
     await audit(tx, actor, "void", "sale", id, sale, {
       status: "voided",

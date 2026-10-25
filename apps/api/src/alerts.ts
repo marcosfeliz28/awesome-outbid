@@ -72,9 +72,17 @@ export const MANUAL_ALERT_TYPES = [
   "sale_void_request",
   // Venta offline cobrada en dólares con otra tasa (pago en dólares, 25-oct).
   "usd_rate_offline",
+  // Cambio en una caja ya cerrada y su «falta lote» (#6, 25-oct).
+  "cash_after_close",
+  "card_batch_missing",
 ];
 // Avisos que sólo ve la dueña («*»).
-export const OWNER_ONLY_ALERT_TYPES = ["sale_void_request", "usd_rate_offline"];
+export const OWNER_ONLY_ALERT_TYPES = [
+  "sale_void_request",
+  "usd_rate_offline",
+  "cash_after_close",
+  "card_batch_missing",
+];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,
 // para que no dependa de que alguien abra Avisos ese día.
