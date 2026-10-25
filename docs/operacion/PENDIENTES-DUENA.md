@@ -136,8 +136,3 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 - Wendy: sobrante US$58.30 (la dueña los recibió); preguntar a Wendy de dónde salieron.
 - Addison debe COD: FS-241 Luisa 2,200 + FS-244 Margot 4,650.
 - Cardnet lote 24-oct 17,970 → esperar ~17,278 el lunes.
-
-## Regla de incentivos en días de automaquillaje (dueña, 25-oct)
-- Todo el maquillaje vendido ese día es de **Lisbeth** (incentivo) hasta la hora en que Lisbeth cierra su caja, aunque lo facture otra cajera.
-- Después del cierre de Lisbeth, el maquillaje es de quien lo vende.
-- Suplementos y fajas no cambian.
