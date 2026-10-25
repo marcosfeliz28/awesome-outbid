@@ -123,8 +123,31 @@ export class TenantLifecycleService implements OnModuleDestroy {
         await this.root.tenantLifecycleNotice.createMany({
           data: [{ tenantId: tenant.id, kind, dueAt: due, nextAttemptAt: now }], skipDuplicates: true,
         });
+        await this.queueInAppNotice(tenant.id, kind, due, threshold);
       }
     }
+  }
+
+  /** Aviso dentro del sistema (Alertas, sólo administración), aunque no haya correo. */
+  private async queueInAppNotice(tenantId: string, kind: NoticeKind, due: Date, days: number) {
+    const branches = await this.root.user.findMany({
+      where: { tenantId, active: true, role: { name: "admin" } }, select: { branchId: true }, distinct: ["branchId"],
+    });
+    if (!branches.length) return;
+    const what = kind.startsWith("trial_") ? "Tu prueba" : "Tu plan";
+    const message = `${what} de Nexora vence en ${days} días (${due.toISOString().slice(0, 10)}). ` +
+      `Después hay ${GRACE_DAYS} días de gracia y luego el sistema queda en solo lectura (nada se borra).`;
+    // El trigger de Alert publica un evento en tiempo real: debe salir con esta empresa.
+    await this.root.$transaction([
+      this.root.$queryRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`,
+      this.root.alert.createMany({
+        data: branches.map(({ branchId }) => ({
+          tenantId, branchId, key: `plan-due:${kind}:${due.toISOString()}:${branchId}`,
+          type: "plan_due", severity: days <= 3 ? "high" : "medium", entityId: tenantId, message,
+        })),
+        skipDuplicates: true,
+      }),
+    ]);
   }
 
   async sendPendingNotices(now = new Date(), mailer: Mailer = sendTenantNotice) {

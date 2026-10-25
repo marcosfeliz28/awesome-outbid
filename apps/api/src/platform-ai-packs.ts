@@ -138,7 +138,7 @@ export class PlatformAiPacksController {
     @Body() body: unknown,
     @Req() req: Request,
   ) {
-    authorizePlatform(this.limits, req);
+    authorizePlatform(req, this.limits);
     const input = parse(packInput, body);
     const tenantId = await this.tenantId(tenantSlug);
     try {
@@ -166,7 +166,7 @@ export class PlatformAiPacksController {
   @Public()
   @Get("tenants/:slug/ai-usage")
   async usage(@Param("slug") tenantSlug: string, @Req() req: Request) {
-    authorizePlatform(this.limits, req);
+    authorizePlatform(req, this.limits);
     return aiUsage(this.registration.db, await this.tenantId(tenantSlug));
   }
 }

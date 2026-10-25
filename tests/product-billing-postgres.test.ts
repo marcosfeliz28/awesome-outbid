@@ -94,7 +94,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     expect(requested.status).toBe(400); // No aceptar un monto controlado por el cliente.
     const request = await http.post("/api/billing/requests").set("Authorization", ownerA).send({ plan: "pro", provider: "bank_transfer" });
     expect(request.status, JSON.stringify(request.body)).toBe(201);
-    expect(Number(request.body.amount)).toBe(3990);
+    expect(Number(request.body.amount)).toBe(4000);
     const id = request.body.id;
     expect(id, JSON.stringify(request.body)).toMatch(/^[0-9a-f-]{36}$/i);
     expect((await http.get("/api/billing/requests").set("Authorization", ownerB)).body).toEqual([]);

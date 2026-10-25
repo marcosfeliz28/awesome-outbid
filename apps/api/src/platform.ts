@@ -7,6 +7,7 @@ import { BILLING_PLANS } from "./billing-plans";
 import { Public, parse } from "./common";
 import { clientIp, RequestRateLimitService } from "./rate-limit";
 import { createTenantWithOwner, invitationDigest, RegistrationService } from "./registration";
+import { effectiveTenantStatus } from "./tenant-lifecycle";
 
 const DAY = 86400000;
 const plans = Object.keys(BILLING_PLANS) as [keyof typeof BILLING_PLANS, ...(keyof typeof BILLING_PLANS)[]];
@@ -20,11 +21,8 @@ const invitedTenant = z.object({
   adminEmail: z.string().trim().email().max(254),
 }).strict();
 
-/**
- * Operador de la plataforma (no es un usuario de ninguna empresa). Sin
- * PLATFORM_ADMIN_TOKEN_SHA256 válido, las rutas no existen (404).
- */
-export function authorizePlatform(limits: RequestRateLimitService, req: Request) {
+/** Sin PLATFORM_ADMIN_TOKEN_SHA256 válido, las rutas del operador no existen (404). */
+export function authorizePlatform(req: Request, limits: RequestRateLimitService) {
   const expected = process.env.PLATFORM_ADMIN_TOKEN_SHA256?.trim().toLowerCase();
   if (process.env.PRODUCT_TENANCY !== "required" || !expected || !/^[a-f0-9]{64}$/.test(expected))
     throw new HttpException("No disponible.", 404);
@@ -45,17 +43,19 @@ export class PlatformController {
     @Inject(RequestRateLimitService) private readonly limits: RequestRateLimitService,
   ) {}
 
-  private authorize(req: Request) {
-    authorizePlatform(this.limits, req);
-  }
+  private authorize(req: Request) { authorizePlatform(req, this.limits); }
 
   @Public() @Get("tenants")
   async list(@Req() req: Request) {
     this.authorize(req);
-    return this.registration.db.tenant.findMany({
-      select: { id: true, slug: true, name: true, plan: true, status: true, trialEndsAt: true, createdAt: true },
+    const rows = await this.registration.db.tenant.findMany({
+      select: { id: true, slug: true, name: true, plan: true, status: true, trialEndsAt: true, paidThroughAt: true, pastDueAt: true, createdAt: true },
       orderBy: { createdAt: "desc" },
     });
+    // Estado de cobro calculado con el reloj, aunque el trabajador no haya corrido.
+    return rows.map(({ pastDueAt, paidThroughAt, ...row }) => ({
+      ...row, paidUntil: paidThroughAt, status: effectiveTenantStatus({ ...row, paidThroughAt, pastDueAt }),
+    }));
   }
 
   @Public() @Post("tenants")
