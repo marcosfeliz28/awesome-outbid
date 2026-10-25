@@ -2162,6 +2162,11 @@ export class SalesController {
         where: { id: saleId },
         data: {
           creditBalance: balance,
+          // Revisión 25-oct #9: con saldo pendiente el incentivo llega al
+          // cobrar, como en una venta a crédito o contraentrega. No se apaga:
+          // así devoluciones y anulaciones descuentan lo acreditado de verdad.
+          incentiveOnCollection:
+            sale.incentiveOnCollection || Number(balance) > 0,
           receivableKind:
             Number(balance) > 0
               ? (data.receivableKind ??
@@ -2188,6 +2193,18 @@ export class SalesController {
           update: {},
         });
       await refreshReceivableAlert(tx, saleId, actor.branchId);
+      // El incentivo sigue al saldo (lo ya acreditado se ajusta con una
+      // entrada), igual que al marcar «al por mayor».
+      if (!balanceChange.isZero())
+        await syncCreditIncentives(
+          tx,
+          actor,
+          saleId,
+          "collection",
+          randomUUID(),
+          undefined,
+          true,
+        );
       let differences: unknown = null;
       if (payment.cashSessionId) {
         const session = await tx.cashSession.findUniqueOrThrow({

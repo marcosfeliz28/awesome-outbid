@@ -323,3 +323,48 @@ describe("#8 margen: (precio − costo)/precio sin restar ITBIS", () => {
     expect(alert?.status ?? "resolved").toBe("resolved");
   });
 });
+
+describe("#9 corregir método de pago ajusta el incentivo", () => {
+  const earned = async (saleId: string) =>
+    (await db.incentiveEntry.findMany({ where: { saleId } })).reduce(
+      (s: number, e: any) => s + Number(e.amount),
+      0,
+    );
+  it("efectivo → contraentrega deja el incentivo para el cobro; de vuelta a efectivo lo paga", async () => {
+    const sale = await sell(manager, [{ method: "cash", amount: 100 }]);
+    const full = await earned(sale.id);
+    expect(full).toBeGreaterThan(0);
+    const payment = await db.payment.findFirst({ where: { saleId: sale.id } });
+    const correct = (method: string) =>
+      ok(`/sales/${sale.id}/payments/${payment.id}/correct-method`, owner, {
+        method,
+        reason: "QA: método mal marcado",
+      });
+    await correct("cod");
+    expect(await earned(sale.id)).toBe(0);
+    expect(
+      (await db.sale.findUnique({ where: { id: sale.id } }))
+        .incentiveOnCollection,
+    ).toBe(true);
+    await correct("cash");
+    expect(await earned(sale.id)).toBe(full);
+  });
+  it("contraentrega → efectivo paga el incentivo, y una devolución después lo descuenta", async () => {
+    const sale = await sell(manager, [{ method: "cod", amount: 100 }]);
+    expect(await earned(sale.id)).toBe(0);
+    const payment = await db.payment.findFirst({ where: { saleId: sale.id } });
+    await ok(`/sales/${sale.id}/payments/${payment.id}/correct-method`, owner, {
+      method: "cash",
+      reason: "QA: era efectivo",
+    });
+    expect(await earned(sale.id)).toBeGreaterThan(0);
+    await ok("/returns", manager.token, {
+      saleId: sale.id,
+      cashSessionId: manager.cash.id,
+      reason: "QA devolución después de corregir",
+      refundMethod: "credit_note",
+      items: [{ saleItemId: sale.items[0].id, qty: 1, restock: true }],
+    });
+    expect(await earned(sale.id)).toBe(0);
+  });
+});
