@@ -78,30 +78,57 @@ export type AttemptHooks = {
   onMatched?: (tx: any, matched: string) => Promise<unknown>;
 };
 
+export const SELF_PIN_MESSAGE =
+  "El PIN debe ser de otra persona con permiso; no puedes aprobar tu propia operación.";
+
 // PIN de cualquier gerente activo (sale:manage) de la sucursal, con el mismo
 // contador de intentos y los mismos cupos (solicitante y PIN cortos, S-03)
 // que las demás aprobaciones. Devuelve su id.
+// Dueña (25-oct): la aprobación siempre es de OTRA persona. El PIN de quien
+// hace la operación (o de `exclude`, p. ej. el dueño de la caja) no aprueba y
+// cuenta como un intento fallido, así el aviso claro no da intentos gratis.
 export async function managerPinApproval(
   db: any,
   actor: Actor,
   pin: string,
+  exclude: (string | null | undefined)[] = [],
 ): Promise<string> {
+  // La dueña («*») sí puede usar su propio PIN: la regla es para el personal.
+  const excluded = new Set(
+    can(actor.permissions, "*") ? exclude : [actor.id, ...exclude],
+  );
   const managers = await db.user.findMany({
     where: { active: true, branchId: actor.branchId },
     include: { role: true },
   });
-  return verifyPinAttempt(
-    db,
-    "approval:" + actor.id,
-    async () => {
-      for (const manager of managers.filter((m: any) =>
-        can(m.role.permissions, "sale:manage"),
-      ))
-        if (await compare(pin, manager.pinHash)) return manager.id as string;
-      return null;
-    },
-    { pin, actor },
-  ) as Promise<string>;
+  let own = false;
+  try {
+    return (await verifyPinAttempt(
+      db,
+      "approval:" + actor.id,
+      async () => {
+        // Primero las personas excluidas: si otro gerente tuviera el mismo
+        // PIN, no se le atribuye la aprobación.
+        const able = managers.filter((m: any) =>
+          can(m.role.permissions, "sale:manage"),
+        );
+        for (const manager of [
+          ...able.filter((m: any) => excluded.has(m.id)),
+          ...able.filter((m: any) => !excluded.has(m.id)),
+        ])
+          if (await compare(pin, manager.pinHash)) {
+            if (!excluded.has(manager.id)) return manager.id as string;
+            own = true;
+            return null;
+          }
+        return null;
+      },
+      { pin, actor },
+    )) as string;
+  } catch (error) {
+    if (own) bad(SELF_PIN_MESSAGE);
+    throw error;
+  }
 }
 
 // Evita que una ráfaga con la misma identidad consuma todas las conexiones de

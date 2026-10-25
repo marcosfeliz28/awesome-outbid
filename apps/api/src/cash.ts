@@ -9,7 +9,6 @@ import {
   Res,
 } from "@nestjs/common";
 import type { Response } from "express";
-import { compare } from "bcryptjs";
 import {
   d,
   money,
@@ -41,7 +40,7 @@ import {
 } from "./common";
 import { cashLock, terminalName, terminalNames } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
-import { managerPinApproval, verifyPinAttempt } from "./security";
+import { managerPinApproval } from "./security";
 import { notify } from "./notifications";
 import { cashDifferenceMessage } from "./alerts";
 // Aparte del import anterior de ./sales para no chocar al fusionar ramas.
@@ -854,22 +853,7 @@ export class CashController {
       data.type === "out" && !can(actor.permissions, "sale:manage");
     let approvedBy: string | null = null;
     if (needsApproval && managerPin) {
-      const managers = await this.db.user.findMany({
-        where: { active: true, branchId: actor.branchId },
-        include: { role: true },
-      });
-      approvedBy = await verifyPinAttempt(
-        this.db,
-        "approval:" + actor.id,
-        async () => {
-          for (const manager of managers.filter((m) =>
-            can(m.role.permissions, "sale:manage"),
-          ))
-            if (await compare(managerPin, manager.pinHash)) return manager.id;
-          return null;
-        },
-        { pin: managerPin, actor },
-      );
+      approvedBy = await managerPinApproval(this.db, actor, managerPin);
     }
     return moneyDb(this.db).$transaction(async (tx) => {
       const session = await cashLock(tx, actor, parse(uuid, id));
@@ -971,23 +955,7 @@ export class CashController {
     if (!can(actor.permissions, "sale:manage")) {
       if (!data.managerPin)
         bad("Trasladar la caja requiere el PIN de un gerente.");
-      const managers = await this.db.user.findMany({
-        where: { active: true, branchId: actor.branchId },
-        include: { role: true },
-      });
-      approvedBy = await verifyPinAttempt(
-        this.db,
-        "approval:" + actor.id,
-        async () => {
-          for (const manager of managers.filter((m) =>
-            can(m.role.permissions, "sale:manage"),
-          ))
-            if (await compare(data.managerPin!, manager.pinHash))
-              return manager.id;
-          return null;
-        },
-        { pin: data.managerPin, actor },
-      );
+      approvedBy = await managerPinApproval(this.db, actor, data.managerPin);
     }
     return this.db.$transaction(async (tx) => {
       const sessionId = parse(uuid, id);
@@ -1051,15 +1019,24 @@ export class CashController {
         bad(
           "Explica en las notas del cierre qué comprobantes forman el vale de caja.",
         );
-      if (!can(actor.permissions, "sale:manage")) {
+      const owner = await this.db.cashSession.findFirst({
+        where: { id: parse(uuid, id), branchId: actor.branchId },
+        select: { userId: true },
+      });
+      // Un gerente tampoco cubre con un vale el faltante de SU caja.
+      if (
+        !can(actor.permissions, "sale:manage") ||
+        (owner?.userId === actor.id && !can(actor.permissions, "*"))
+      ) {
         if (!input.managerPin)
           bad(
-            "Cerrar con un vale de caja requiere el PIN de un gerente. Si fue una salida de efectivo, regístrala en «Salida» antes de cerrar.",
+            "Cerrar con un vale de caja requiere el PIN de otro gerente. Si fue una salida de efectivo, regístrala en «Salida» antes de cerrar.",
           );
         voucherApprovedBy = await managerPinApproval(
           this.db,
           actor,
           input.managerPin!,
+          [owner?.userId],
         );
       }
     }
@@ -1123,7 +1100,14 @@ export class CashController {
       // cuánto falta ni sobra (el cierre sigue siendo ciego).
       const cardOff = Number(differences.card) !== 0;
       const cashOff = Number(differences.cash) !== 0;
-      if ((cardOff || cashOff) && !can(actor.permissions, "sale:manage")) {
+      // Dueña (25-oct): nadie aprueba su propio descuadre. Un gerente que
+      // cierra SU caja necesita el PIN de otra persona; la dueña («*») no.
+      const ownClose =
+        session.userId === actor.id && !can(actor.permissions, "*");
+      if (
+        (cardOff || cashOff) &&
+        (ownClose || !can(actor.permissions, "sale:manage"))
+      ) {
         if (!input.managerPin)
           bad(
             cardOff
@@ -1134,6 +1118,7 @@ export class CashController {
           this.db,
           actor,
           input.managerPin!,
+          [session.userId],
         );
         if (cardOff) (data.closeDetails as any).cardApprovedBy = approver;
         if (cashOff) (data.closeDetails as any).cashApprovedBy = approver;
