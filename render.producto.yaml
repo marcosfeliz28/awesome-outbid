@@ -61,6 +61,28 @@ services:
       # Sin valor, /api/platform/* responde 404.
       - key: PLATFORM_ADMIN_TOKEN_SHA256
         sync: false
+      # Botón «Ayuda» de cada empresa (GET /api/support-info). WhatsApp con
+      # código de país, solo números (ej.: 18095551234).
+      - key: SUPPORT_EMAIL
+        value: soporte@nexorapos.net
+      - key: SUPPORT_WHATSAPP
+        sync: false
+      - key: SUPPORT_HOURS
+        sync: false
+      # Avisos al operador (alta, vencimientos, límite de IA, pagos). Sin
+      # valor, no se envían y nada falla. Correo vía Resend; Telegram con el
+      # bot y el chat del operador. No poner TELEGRAM_CHAT_ID en el producto:
+      # mandaría las facturas de todas las empresas a un solo chat.
+      - key: PLATFORM_OWNER_EMAIL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: NOTIFY_EMAIL_FROM
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: PLATFORM_TELEGRAM_CHAT_ID
+        sync: false
 
 databases:
   - name: nexora-saas-db

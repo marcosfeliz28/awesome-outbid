@@ -24,6 +24,7 @@ import { TenantLifecycleService, TenantLifecycleWorker } from "./tenant-lifecycl
 import { TenantLifecycleController } from "./tenant-lifecycle-controller";
 import { ProductBillingController } from "./product-billing";
 import { TenantExportController } from "./tenant-export";
+import { SupportController } from "./support";
 import { CatalogController } from "./catalog";
 import { InventoryController } from "./inventory";
 import { WarehousesController } from "./warehouses";
@@ -93,7 +94,7 @@ export function createAppModule(secret: string) {
       ...(product ? [OnboardingController] : []),
       ...(product ? [TenantLifecycleController] : []),
       ...(product ? [ProductBillingController] : []),
-      ...(product ? [TenantExportController] : []),
+      ...(product ? [TenantExportController, SupportController] : []),
       CatalogController,
       InventoryController,
       WarehousesController,

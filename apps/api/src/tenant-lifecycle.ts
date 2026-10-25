@@ -1,5 +1,6 @@
 import { Inject, Injectable, type OnApplicationBootstrap, type OnModuleDestroy, HttpException } from "@nestjs/common";
 import { PrismaClient, type Tenant } from "@prisma/client";
+import { notifyOperator } from "./platform-notify";
 
 export type TenantNoticeMailSettings = { apiKey: string; from: string; to: string; apiBase: string };
 async function sendTenantNotice(settings: TenantNoticeMailSettings, subject: string, text: string, idempotencyKey: string) {
@@ -82,28 +83,34 @@ export class TenantLifecycleService implements OnModuleDestroy {
       const projected = effectiveTenantStatus(row, now);
       if (projected === row.status) continue;
       const due = tenantDueAt(row);
+      let changed = 0;
       if (row.status === "trial") {
         if (!due) continue;
-        await this.root.tenant.updateMany({
+        changed = (await this.root.tenant.updateMany({
           where: { id: row.id, status: "trial", trialEndsAt: { lte: now } },
           data: projected === "suspended"
             ? { status: "suspended", pastDueAt: due, suspendedAt: now }
             : { status: "past_due", pastDueAt: due },
-        });
+        })).count;
       } else if (row.status === "active") {
         if (!due) continue;
-        await this.root.tenant.updateMany({
+        changed = (await this.root.tenant.updateMany({
           where: { id: row.id, status: "active", paidThroughAt: { lte: now } },
           data: projected === "suspended"
             ? { status: "suspended", pastDueAt: due, suspendedAt: now }
             : { status: "past_due", pastDueAt: due },
-        });
+        })).count;
       } else if (row.pastDueAt) {
-        await this.root.tenant.updateMany({
+        changed = (await this.root.tenant.updateMany({
           where: { id: row.id, status: "past_due", pastDueAt: { lte: new Date(now.getTime() - GRACE_DAYS * DAY) } },
           data: { status: "suspended", suspendedAt: now },
-        });
+        })).count;
       }
+      const key = row.status === "past_due" ? row.pastDueAt : due;
+      if (changed && key) await notifyOperator(this.root, {
+        tenantId: row.id, event: projected === "suspended" ? "op_suspended" : "op_past_due", key,
+        detail: `Venció el ${key.toISOString().slice(0, 10)}`,
+      });
     }
   }
 
@@ -117,6 +124,9 @@ export class TenantLifecycleService implements OnModuleDestroy {
       const due = tenant.status === "trial" ? tenant.trialEndsAt : tenant.paidThroughAt;
       if (!due || due <= now) continue;
       const daysLeft = Math.ceil((due.getTime() - now.getTime()) / DAY);
+      if (daysLeft <= 7) await notifyOperator(this.root, {
+        tenantId: tenant.id, event: "op_due_7", key: due, detail: `Vence el ${due.toISOString().slice(0, 10)} (${daysLeft} días)`,
+      });
       for (const threshold of [7, 3] as const) {
         if (daysLeft !== threshold) continue;
         const kind = `${tenant.status === "trial" ? "trial" : "billing"}_${threshold}` as NoticeKind;

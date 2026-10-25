@@ -58,6 +58,7 @@ import { Registration, ConfirmEmail, AcceptInvitation } from "./Registration";
 import { Onboarding, type OnboardingStatus } from "./Onboarding";
 import { DesktopPrinterControls } from "./DesktopPrinterControls";
 import { Billing } from "./Billing";
+import { SupportHelp } from "./SupportHelp";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
 import {
@@ -1217,6 +1218,13 @@ function Shell() {
             >
               {theme === "light" ? <Moon size={19} /> : <Sun size={19} />}
             </button>
+            {PRODUCT_TENANCY_REQUIRED && (
+              <SupportHelp
+                userName={user.name}
+                screen={current?.label || "Configuración"}
+                admin={can(user.permissions, "*")}
+              />
+            )}
             {can(user.permissions, "alerts:write") && (
               <button
                 className="icon-button notification-bell"

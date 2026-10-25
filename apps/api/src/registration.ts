@@ -8,6 +8,7 @@ import { Public, parse } from "./common";
 import { passwordSchemaForRole, isNonTrivialCashierPassword } from "./password-policy";
 import { clientIp, RequestRateLimitService } from "./rate-limit";
 import { normalizeUsername } from "./auth";
+import { notifyOperator } from "./platform-notify";
 
 const registration = z.object({
   businessName: z.string().trim().min(2).max(120),
@@ -173,7 +174,8 @@ export class RegistrationService implements OnModuleDestroy {
       emailVerificationExpiresAt: { gt: new Date() }, emailVerifiedAt: null,
     };
     const invalid = () => new HttpException("La invitación venció o ya se usó. Pide una nueva.", 400);
-    if (!await this.db.user.findFirst({ where, select: { id: true } })) throw invalid();
+    const invited = await this.db.user.findFirst({ where, select: { tenantId: true } });
+    if (!invited) throw invalid();
     const [passwordHash, pinHash] = await Promise.all([hash(input.password, 12), hash(input.managerPin, 12)]);
     // updateMany condicional: dos envíos simultáneos no aceptan dos veces.
     const result = await this.db.user.updateMany({ where, data: {
@@ -182,6 +184,8 @@ export class RegistrationService implements OnModuleDestroy {
       failedAttempts: 0, lockedUntil: null,
     } });
     if (result.count !== 1) throw invalid();
+    // Clave fija: un solo aviso de alta por empresa.
+    await notifyOperator(this.db, { tenantId: invited.tenantId, event: "op_activated", key: new Date(0) });
     return { message: "Listo. Ya puedes entrar con tu código de empresa, correo y contraseña." };
   }
 

@@ -83,7 +83,7 @@ it("expira prueba y cobro, da siete días de gracia, suspende escrituras y conse
 
     await service.queueNotices(now);
     await service.queueNotices(now);
-    expect((await client.query(`SELECT kind FROM "TenantLifecycleNotice" WHERE "tenantId"=$1`, [idA])).rows).toEqual([{ kind: "trial_7" }]);
+    expect((await client.query(`SELECT kind FROM "TenantLifecycleNotice" WHERE "tenantId"=$1 AND status <> 'operator'`, [idA])).rows).toEqual([{ kind: "trial_7" }]);
     const sent: Array<{ to: string; key: string }> = [];
     await service.sendPendingNotices(now, async (settings, _subject, _text, key) => {
       sent.push({ to: settings.to, key }); return { ok: true };
@@ -92,7 +92,7 @@ it("expira prueba y cobro, da siete días de gracia, suspende escrituras y conse
     expect(sent[0]?.to).toBe("owner@example.invalid");
     await service.sendPendingNotices(now, async () => { throw new Error("Duplicado"); });
     await service.queueNotices(at(now, 4));
-    expect((await client.query(`SELECT kind FROM "TenantLifecycleNotice" WHERE "tenantId"=$1 ORDER BY kind`, [idA])).rows).toEqual([{ kind: "trial_3" }, { kind: "trial_7" }]);
+    expect((await client.query(`SELECT kind FROM "TenantLifecycleNotice" WHERE "tenantId"=$1 AND status <> 'operator' ORDER BY kind`, [idA])).rows).toEqual([{ kind: "trial_3" }, { kind: "trial_7" }]);
 
     // El trabajador persiste la transición, pero la guardia la calcula también
     // sin depender de que el trabajador llegue a tiempo.
