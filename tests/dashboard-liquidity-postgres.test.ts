@@ -443,4 +443,66 @@ describe("GET /api/dashboard/liquidity · PostgreSQL", () => {
       Saldo: 30.03,
     });
   });
+
+  it("coincide con las fuentes operativas actuales de cada bolsillo", async () => {
+    const snapshot = await liquidity();
+    const cashSessions = (await ok("/cash-sessions", owner)) as any[];
+    const openExpected = cashSessions
+      .filter((session) => !session.closedAt)
+      .reduce((sum, session) => sum + cents(session.expected?.cash ?? 0), 0);
+    expect(cents(snapshot.pockets.drawers.amount)).toBe(openExpected);
+    expect(snapshot.pockets.drawers.openRegisters).toBe(
+      cashSessions.filter((session) => !session.closedAt).length,
+    );
+
+    const pending = (await ok("/payments/pending-transfers", owner)) as any[];
+    expect(cents(snapshot.pockets.banks.pending)).toBe(
+      pending.reduce((sum, payment) => sum + cents(payment.amount), 0),
+    );
+
+    const day = new Date().toLocaleDateString("en-CA", {
+      timeZone: "America/Santo_Domingo",
+    });
+    const range = {
+      gte: new Date(day + "T00:00:00-04:00"),
+      lte: new Date(day + "T23:59:59.999-04:00"),
+    };
+    const verifiedLogs = await db.auditLog.findMany({
+      where: {
+        branchId: ownerBranch,
+        action: "verify",
+        entity: "payment",
+        createdAt: range,
+      },
+      select: { entityId: true },
+    });
+    const verified = await db.payment.aggregate({
+      where: {
+        id: { in: [...new Set(verifiedLogs.map((row) => row.entityId))] },
+        method: "transfer",
+        status: "ok",
+        sale: { branchId: ownerBranch, status: "completed" },
+      },
+      _sum: { amount: true },
+    });
+    expect(cents(snapshot.pockets.banks.verified)).toBe(
+      cents(verified._sum.amount?.toString() ?? 0),
+    );
+
+    const ownerCash = await db.payment.aggregate({
+      where: {
+        entryType: "installment",
+        method: "cash",
+        cashSessionId: null,
+        status: "ok",
+        reference: { startsWith: "Recibido por la dueña" },
+        createdAt: range,
+        sale: { branchId: ownerBranch, status: "completed" },
+      },
+      _sum: { amount: true },
+    });
+    expect(cents(snapshot.pockets.owner.amount)).toBe(
+      cents(ownerCash._sum.amount?.toString() ?? 0),
+    );
+  });
 });
