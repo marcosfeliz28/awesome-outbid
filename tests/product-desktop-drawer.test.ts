@@ -46,7 +46,7 @@ describe("PC-16 · apertura auditada de gaveta", () => {
     const auditLog = {
       findFirst: vi.fn(async () => existingAudit),
       create: vi.fn(async ({ data }) => {
-        existingAudit = { id: "33333333-3333-4333-8333-333333333334", ...data };
+        existingAudit = { id: "33333333-3333-4333-8333-333333333334", createdAt: new Date(), ...data };
         return existingAudit;
       }),
     };
@@ -73,9 +73,10 @@ describe("PC-16 · apertura auditada de gaveta", () => {
       auditId: "33333333-3333-4333-8333-333333333334",
       open: true,
     });
+    // Reintento dentro de 30 s: sigue autorizado, sin segunda fila de bitácora.
     expect(repeated).toEqual({
       auditId: "33333333-3333-4333-8333-333333333334",
-      open: false,
+      open: true,
     });
     expect(tx.sale.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
@@ -162,6 +163,16 @@ describe("PC-16 · apertura auditada de gaveta", () => {
   it("apertura automática: una venta en efectivo reciente de caja abierta se acepta", async () => {
     const { controller } = autoController({ createdAt: new Date(Date.now() - 5_000), sessionClosedAt: null });
     expect((await controller.automaticDrawerOpen({ saleId: SALE }, seller)).open).toBe(true);
+  });
+
+  it("apertura automática: reintento a los 10 s devuelve open:true; a los 31 s open:false", async () => {
+    const prev = (ageMs: number) => [{ id: "33333333-3333-4333-8333-333333333399", createdAt: new Date(Date.now() - ageMs) }];
+    const young = autoController({ createdAt: new Date(), sessionClosedAt: null }, prev(10_000));
+    expect(await young.controller.automaticDrawerOpen({ saleId: SALE }, seller))
+      .toEqual({ auditId: "33333333-3333-4333-8333-333333333399", open: true });
+    expect(young.tx.auditLog.create).not.toHaveBeenCalled();
+    const old = autoController({ createdAt: new Date(), sessionClosedAt: null }, prev(31_000));
+    expect((await old.controller.automaticDrawerOpen({ saleId: SALE }, seller)).open).toBe(false);
   });
 
   it("rechaza una referencia ajena o inexistente sin escribir bitácora", async () => {

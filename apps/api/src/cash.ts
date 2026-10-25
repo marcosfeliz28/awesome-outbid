@@ -647,9 +647,11 @@ export class CashController {
           entity: "sale",
           entityId: saleId,
         },
-        select: { id: true },
+        select: { id: true, createdAt: true },
       });
-      if (previous) return { auditId: previous.id, open: false };
+      // Un pulso por venta, pero se permite reintentar 30 s: si la autorización falló en el cliente, la gaveta nunca salió.
+      if (previous)
+        return { auditId: previous.id, open: Date.now() - previous.createdAt.getTime() < 30_000 };
       const row = await audit(
         tx,
         actor,
