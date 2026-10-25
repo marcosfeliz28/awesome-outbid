@@ -147,7 +147,7 @@ export function ProductSalesPage() {
                 className="sales-button sales-button-card"
                 href="#proceso-piloto"
               >
-                Solicitar invitación
+                Ver proceso del piloto
               </a>
             </article>
           ))}
@@ -166,8 +166,8 @@ export function ProductSalesPage() {
             Esta página no procesa tarjetas ni utiliza una pasarela de pago.
           </p>
           <p className="sales-note">
-            No publiques ni envíes dinero hasta recibir las instrucciones del
-            proceso de invitación.
+            No envíes dinero hasta recibir las instrucciones del proceso de
+            invitación.
           </p>
         </article>
 
