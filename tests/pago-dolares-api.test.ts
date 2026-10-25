@@ -64,6 +64,7 @@ async function ok(path: string, as: string, data?: unknown, method?: string) {
 
 let owner = "",
   cajera = "",
+  gerente = "",
   customerId = "",
   variantId = "",
   productId = "",
@@ -176,7 +177,7 @@ beforeAll(async () => {
     expiryDate: new Date(Date.now() + 300 * 86400000).toISOString(),
   });
   cajera = await person("cajera", "seller", "792461");
-  await person("gerente", "manager", MANAGER_PIN);
+  gerente = await person("gerente", "manager", MANAGER_PIN);
   await enroll(cajera, T1, "Caja dólares " + suffix);
 }, 120000);
 
@@ -324,5 +325,173 @@ describe("pago en dólares en efectivo", () => {
     }
     const closed = await close(cash.id, { countedCash: 0, delivered: 0 });
     expect(closed.status, JSON.stringify(closed.body)).toBe(201);
+  });
+
+  it("(f) anular una venta en dólares con su caja cerrada o cambiarle el método se rechaza con un mensaje claro", async () => {
+    const cash = await openCash();
+    const r = await sale(cash.id, [
+      usd(40, 2456.63),
+      { method: "cash", amount: 100 },
+    ]);
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    const payment = await db.payment.findFirst({
+      where: { saleId: r.body.id, currency: "USD" },
+    });
+    const corrected = await request(
+      `/sales/${r.body.id}/payments/${payment.id}/correct-method`,
+      owner,
+      { method: "card", reason: "QA: la cajera eligió mal el método" },
+    );
+    expect(corrected.status, JSON.stringify(corrected.body)).toBe(400);
+    expect(JSON.stringify(corrected.body)).toMatch(/dólares/i);
+    const closed = await close(cash.id, {
+      countedCash: 43.37,
+      countedUsd: 40,
+      delivered: 43.37,
+    });
+    expect(closed.status, JSON.stringify(closed.body)).toBe(201);
+    const voided = await request("/sales/" + r.body.id + "/void", owner, {
+      reason: "QA: anulación de una venta en dólares",
+    });
+    expect(voided.status).toBe(400);
+    expect(JSON.stringify(voided.body)).toMatch(/dólares.*devolución/i);
+    // El cierre no cambió: sigue esperando US$ 40 y RD$ 43.37.
+    const cuadre = await ok("/cash-sessions/" + cash.id + "/cuadre", owner);
+    expect(cuadre.foreign.usd).toMatchObject({ expected: 40, difference: 0 });
+    expect(cuadre.cashCheck).toMatchObject({ expected: 43.37, difference: 0 });
+  });
+
+  it("(g) la tasa se guarda con 4 decimales", async () => {
+    const saved = await setRate(61.41583);
+    expect(saved.usdRate).toBe(61.4158);
+    await setRate(RATE);
+  });
+
+  describe("ventas sin conexión", () => {
+    beforeAll(() =>
+      ok(
+        "/settings",
+        owner,
+        { ...settingsBefore, usdRate: RATE, allowOfflineSales: true },
+        "PUT",
+      ),
+    );
+    afterAll(() => setRate(RATE));
+    const offline = (
+      cashSessionId: string,
+      payments: unknown[],
+      v = variantId,
+    ) => ({
+      offlineUuid: randomUUID(),
+      capturedAt: new Date().toISOString(),
+      customerId,
+      cashSessionId,
+      items: [{ variantId: v, qty: 1, discountPercent: 0 }],
+      globalDiscount: 0,
+      payments,
+      expectedTotal: 2500,
+    });
+
+    it("(h) cobrada con otra tasa (±2 %) se acepta, queda en la bitácora y avisa sólo a la dueña", async () => {
+      const cash = await openCash();
+      // US$ 40 a 62 = RD$ 2,480 + RD$ 20 en pesos (0.95 % sobre la tasa).
+      const body = offline(cash.id, [
+        usd(40, 2480, 62),
+        { method: "cash", amount: 20 },
+      ]);
+      const r = await ok("/sales/sync", cajera, { sales: [body] });
+      expect(r.results[0].status, JSON.stringify(r.results[0])).toBe("synced");
+      const saleId = r.results[0].sale.id;
+      const log = await db.auditLog.findFirst({
+        where: { action: "usd_rate_offline", entityId: saleId },
+      });
+      expect(log?.after).toMatchObject({ currentRate: RATE });
+      const alerts = (who: string) =>
+        ok("/alerts?type=usd_rate_offline&status=all", who);
+      expect(
+        (await alerts(owner)).some((a: any) => a.entityId === saleId),
+      ).toBe(true);
+      expect(
+        (await alerts(gerente)).some((a: any) => a.entityId === saleId),
+      ).toBe(false);
+      // Más del 2 %: conflicto, no se registra.
+      const far = await ok("/sales/sync", cajera, {
+        sales: [
+          offline(cash.id, [usd(40, 2600, 65), { method: "cash", amount: 20 }]),
+        ],
+      });
+      expect(far.results[0].status).toBe("conflict");
+      expect(far.results[0].message).toMatch(/tasa del dólar cambió/i);
+      const closed = await close(cash.id, {
+        countedCash: 20,
+        countedUsd: 40,
+        delivered: 20,
+      });
+      expect(closed.status, JSON.stringify(closed.body)).toBe(201);
+    });
+
+    it("(i) no se descarta como entregada con entrada de caja en pesos si tenía dólares", async () => {
+      const cash = await openCash();
+      // Sin existencias: la sincronización deja el conflicto.
+      const cats = await ok("/categories", owner);
+      const tag = randomUUID().slice(0, 8);
+      const empty = await ok("/products", owner, {
+        name: "QA dólar sin stock " + suffix,
+        sku: "QUZ-" + tag,
+        categoryId: cats.find((c: any) => c.name === "Fajas").id,
+        taxRate: 0,
+        variants: [
+          {
+            sku: "QUZ-V-" + tag,
+            barcode: "QUZ-B-" + tag,
+            price: 2500,
+            costAvg: 1000,
+          },
+        ],
+      });
+      try {
+        const body = offline(
+          cash.id,
+          [usd(40, 2456.63), { method: "cash", amount: 43.37 }],
+          empty.variants[0].id,
+        );
+        const r = await ok("/sales/sync", cajera, { sales: [body] });
+        expect(r.results[0].status).toBe("conflict");
+        // Una caja con la versión anterior no manda la moneda: el servidor
+        // la sabe por la evidencia del conflicto.
+        const discarded = await request(
+          "/sales/offline-review/discard",
+          cajera,
+          {
+            offlineUuid: body.offlineUuid,
+            reason: "QA: el cliente se llevó la faja",
+            outcome: "delivered",
+            managerPin: MANAGER_PIN,
+            detail: {
+              receiptNumber: "LOCAL-usd",
+              total: 2500,
+              items: [{ name: "QA", qty: 1 }],
+              payments: [
+                { method: "cash", amount: 2456.63 },
+                { method: "cash", amount: 43.37 },
+              ],
+            },
+          },
+        );
+        expect(discarded.status).toBe(400);
+        expect(JSON.stringify(discarded.body)).toMatch(/dólares/i);
+        expect(
+          await db.cashMovement.count({ where: { sessionId: cash.id } }),
+        ).toBe(0);
+      } finally {
+        await request(
+          "/products/" + empty.id,
+          owner,
+          { active: false },
+          "PATCH",
+        );
+        await close(cash.id, { countedCash: 0, delivered: 0 });
+      }
+    });
   });
 });

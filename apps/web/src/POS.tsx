@@ -1901,7 +1901,8 @@ function Checkout({
     saleMargin < Number(config?.lowMargin ?? 15);
   // Pago en dólares (dueña, 25-oct): tasa de Configuración; el vuelto y lo
   // pendiente siguen en pesos.
-  const usdRate = Number(config?.usdRate) || 0;
+  // Cuatro decimales, como la API (Configuración puede guardar más).
+  const usdRate = Math.round((Number(config?.usdRate) || 0) * 10000) / 10000;
   const usdFor = (dop: number) =>
     usdRate ? String(Math.ceil((dop / usdRate) * 100) / 100) : "";
   const addPayment = (e: React.FormEvent) => {
