@@ -39,10 +39,10 @@ async function freePort() {
  * Distinct routes covered here: POST/PATCH customers, POST suppliers,
  * POST/PATCH expense-categories, POST/PATCH promotions, PUT settings,
  * PUT roles/:id, POST/PATCH users, PUT alert-rules, POST alerts/evaluate
- * (13 routes).
+ * POST settings/usd-rate/confirm (14 routes).
  * A 2xx response from a real valid body is required; a 400 never counts.
  */
-it("aísla trece escrituras administrativas válidas entre dos empresas", async () => {
+it("aísla catorce escrituras administrativas válidas entre dos empresas", async () => {
   const dataDir = await mkdtemp(join(tmpdir(), "nexora-admin-tenant-"));
   const port = await freePort();
   const db = new EmbeddedPostgres({
@@ -142,6 +142,50 @@ it("aísla trece escrituras administrativas válidas entre dos empresas", async 
     const settings = await http.put("/api/settings").set("Authorization", bToken).send(config);
     valid(settings, "PUT settings");
     await absentFromA("/api/settings", "Negocio B_VISIBLE cambiado");
+
+    await client.query(
+      `UPDATE "Settings"
+          SET data = data || $1::jsonb
+        WHERE id='main' AND "tenantId"=$2`,
+      [
+        JSON.stringify({
+          usdRate: 100,
+          usdRateBlocked: {
+            rate: 130,
+            previousRate: 100,
+            change: 0.3,
+            day: "2026-10-25",
+            source: "prueba-aislada",
+          },
+        }),
+        ids.b,
+      ],
+    );
+    const usdConfirmation = await http
+      .post("/api/settings/usd-rate/confirm")
+      .set("Authorization", bToken)
+      .send({});
+    valid(usdConfirmation, "POST settings/usd-rate/confirm");
+    expect(
+      (
+        await client.query(
+          `SELECT data->>'usdRate' AS rate
+             FROM "Settings"
+            WHERE id='main' AND "tenantId"=$1`,
+          [ids.b],
+        )
+      ).rows[0]?.rate,
+    ).toBe("130");
+    expect(
+      (
+        await client.query(
+          `SELECT data ? 'usdRate' AS changed
+             FROM "Settings"
+            WHERE id='main' AND "tenantId"=$1`,
+          [ids.a],
+        )
+      ).rows[0]?.changed,
+    ).toBe(false);
 
     const role = await http.put(`/api/roles/${ids.roleB}`).set("Authorization", bToken).send({ permissions: ["*"] });
     valid(role, "PUT roles/:id");
