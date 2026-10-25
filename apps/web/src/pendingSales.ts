@@ -344,6 +344,7 @@ export function pendingSaleDetail(sale: PendingSale) {
     payments: sale.input.payments.slice(0, 20).map((payment) => ({
       method: String(payment.method).slice(0, 20),
       amount: money2(payment.amount),
+      ...(payment.currency === "USD" ? { currency: "USD" as const } : {}),
     })),
   };
 }

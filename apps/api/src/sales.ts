@@ -111,6 +111,7 @@ function offlineSaleEvidence(attempted: any) {
       .map((payment: any) => ({
         method: String(payment?.method ?? "").slice(0, 20),
         amount: number(payment?.amount),
+        ...(payment?.currency === "USD" ? { currency: "USD" } : {}),
       })),
   };
 }
@@ -1238,6 +1239,42 @@ export class SalesController {
               cashSessionId: cashSession.id,
             },
           );
+        // Venta offline cobrada con otra tasa del dólar (±2 %): se acepta,
+        // pero queda en la bitácora y en un aviso que sólo ve la dueña.
+        const currentRate = Number(config?.usdRate)
+          ? d(Number(config.usdRate)).toDecimalPlaces(4).toNumber()
+          : null;
+        const drifted = input.payments.filter(
+          (p) => p.currency === "USD" && p.usdRate !== currentRate,
+        );
+        if (drifted.length) {
+          const rates = drifted.map((p) => ({
+            amountUsd: p.amountUsd,
+            usdRate: p.usdRate,
+            amount: p.amount,
+          }));
+          await audit(tx, actor, "usd_rate_offline", "sale", sale.id, null, {
+            currentRate,
+            payments: rates,
+            capturedAt: capturedAt?.toISOString() ?? null,
+          });
+          const message =
+            `La venta ${sale.number} (sin conexión) se cobró en dólares a ` +
+            rates.map((r) => `RD$ ${r.usdRate}`).join(", ") +
+            ` por US$ 1; la tasa actual es RD$ ${currentRate}.`;
+          await tx.alert.upsert({
+            where: { key: "usd_rate_offline:" + sale.id },
+            create: {
+              key: "usd_rate_offline:" + sale.id,
+              type: "usd_rate_offline",
+              severity: "high",
+              entityId: sale.id,
+              message,
+              branchId: actor.branchId,
+            },
+            update: { message, status: "new" },
+          });
+        }
         if ((credit || cod) && approvedBy)
           await audit(
             tx,
@@ -2095,6 +2132,10 @@ export class SalesController {
         !["cash", "card", "transfer", "cod", "credit"].includes(payment.method)
       )
         bad("Este pago no se puede corregir.");
+      if (payment.currency === "USD")
+        bad(
+          "Este pago se recibió en dólares; no se puede cambiar de método. Si fue un error, anula la venta o haz una devolución.",
+        );
       if (payment.status === "rejected")
         bad("Este pago fue rechazado; no se puede corregir.");
       if (
@@ -2258,6 +2299,15 @@ export class SalesController {
     // D-02: si la caja de la venta ya cerró, el efectivo del reembolso sale
     // de la caja abierta de quien anula. Se bloquea antes que la venta, en el
     // mismo orden que una devolución (caja que reembolsa y luego venta).
+    // Pago en dólares: anularla con la caja cerrada recalcularía ese cierre
+    // como si los US$ nunca hubieran entrado. Se devuelve con una devolución.
+    if (
+      originalCash?.closedAt &&
+      saleRef.payments.some((p) => p.currency === "USD")
+    )
+      bad(
+        "Esta venta se cobró en dólares y su caja ya cerró: no se puede anular. Haz una devolución.",
+      );
     let refundCash: any = null;
     if (originalCash?.closedAt && cashCollected(saleRef.payments) > 0) {
       const own = await tx.cashSession.findFirst({

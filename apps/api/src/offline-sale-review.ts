@@ -72,7 +72,15 @@ const discardSchema = z.object({
         }),
       )
       .max(200),
-    payments: z.array(z.object({ method: z.string().max(20), amount })).max(20),
+    payments: z
+      .array(
+        z.object({
+          method: z.string().max(20),
+          amount,
+          currency: z.enum(["DOP", "USD"]).optional(),
+        }),
+      )
+      .max(20),
   }),
 });
 
@@ -218,6 +226,16 @@ export class OfflineSaleReviewController {
             .filter((p) => p.method === "cash")
             .reduce((sum, p) => sum + p.amount, 0),
         );
+        // Pago en dólares: la entrada de caja es en pesos y el cuadre en US$
+        // no la vería. Se descarta como devuelta o se registra a mano.
+        const usd = [
+          ...data.detail.payments,
+          ...(((evidence.detail as any)?.payments ?? []) as any[]),
+        ].some((p) => p?.currency === "USD");
+        if (sessionId && cashPaid > 0 && usd)
+          bad(
+            "Esta venta incluía un pago en dólares: no se puede descartar como entregada con entrada de caja en pesos. Pide a la administración que la registre a mano.",
+          );
         if (sessionId && cashPaid > 0) {
           await tx.cashMovement.create({
             data: {
