@@ -201,6 +201,7 @@ let codNumber = "";
 let creditNumber = "";
 let ambiguousNumber = "";
 let voidedPendingReference = "";
+let creditSaleId = "";
 
 beforeAll(async () => {
   const ownerLogin = await login("admin@fitstore.demo");
@@ -254,6 +255,7 @@ beforeAll(async () => {
     reference: `COD-PEN-${tag}`,
   });
   const creditSale = await receivable("credit", "20.02", customerId);
+  creditSaleId = creditSale.id;
   const ambiguousSale = await receivable(null, "30.03", customerId);
   const mixedHistorical = await createSale({
     amount: "40.04",
@@ -417,6 +419,28 @@ describe("GET /api/dashboard/liquidity · PostgreSQL", () => {
   it("suma el efectivo de la dueña desde ambos flujos con centavos exactos", () => {
     expect(delta(after.pockets.owner.amount, before.pockets.owner.amount)).toBe(
       333,
+    );
+  });
+
+  it("no reserva saldo ni banco por un abono pendiente que no es transferencia", async () => {
+    const snapshotBefore = await liquidity();
+    const reference = `CARD-PEN-${tag}`;
+    await addPayment(creditSaleId, "card", "4.04", {
+      status: "pending_verification",
+      entryType: "installment",
+      reference,
+    });
+    const snapshotAfter = await liquidity();
+
+    expect(snapshotAfter.pockets.street.credit).toBe(
+      snapshotBefore.pockets.street.credit,
+    );
+    expect(snapshotAfter.pockets.banks.pending).toBe(
+      snapshotBefore.pockets.banks.pending,
+    );
+    const pending = (await ok("/payments/pending-transfers", owner)) as any[];
+    expect(pending.some((payment) => payment.reference === reference)).toBe(
+      false,
     );
   });
 

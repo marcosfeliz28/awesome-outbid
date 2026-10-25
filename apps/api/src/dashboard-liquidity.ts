@@ -74,6 +74,7 @@ export class DashboardLiquidityController {
                   FROM "Payment" reserved
                   WHERE reserved."saleId" = s.id
                     AND reserved."entryType" = 'installment'
+                    AND reserved.method = 'transfer'
                     AND reserved.status = 'pending_verification'
                 ), 0),
                 0
