@@ -108,7 +108,8 @@ const READ_LIST_CASES = [
   "/api/payments/pending-transfers", "/api/products", "/api/promotions",
   "/api/promotions/clearance-candidates", "/api/purchase-orders",
   "/api/quotes", "/api/reportes", "/api/roles", "/api/sales",
-  "/api/settings", "/api/staff", "/api/support-access", "/api/suppliers", "/api/terminals",
+  "/api/settings", "/api/staff", "/api/support-access", "/api/suppliers", "/api/support-info",
+  "/api/terminals",
   "/api/terminals/current", "/api/tenant/status", "/api/users", "/api/void-requests",
 ] as const;
 
@@ -199,6 +200,7 @@ GET /api/settings
 GET /api/staff
 GET /api/support-access
 GET /api/suppliers
+GET /api/support-info
 GET /api/terminals
 GET /api/terminals/current
 GET /api/tenant/status
@@ -339,7 +341,7 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  expect(required).toHaveLength(199);
+  expect(required).toHaveLength(200);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");

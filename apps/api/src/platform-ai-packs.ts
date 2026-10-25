@@ -14,6 +14,7 @@ import { z } from "@fitstore/shared";
 import { BILLING_PLANS, billingPlan } from "./billing-plans";
 import { Public, parse, type Actor } from "./common";
 import { authorizePlatform } from "./platform";
+import { notifyOperator } from "./platform-notify";
 import { RequestRateLimitService } from "./rate-limit";
 import { RegistrationService } from "./registration";
 import { currentTenantId } from "./tenant-context";
@@ -77,11 +78,10 @@ export async function reserveAiQuestion(
   now = new Date(),
 ) {
   const tenantId = currentTenantId();
-  return db.$transaction(async (tx: any) => {
+  const reserved = await db.$transaction(async (tx: any) => {
     await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`assistant:${tenantId}`}))::text`;
     const usage = await aiUsage(tx, tenantId, now);
-    if (usage.used >= usage.limit)
-      throw new HttpException(AI_LIMIT_MESSAGE, 429);
+    if (usage.used >= usage.limit) return { limitedMonth: usage.month };
     const row = await tx.auditLog.create({
       data: {
         userId: actor.id,
@@ -102,6 +102,15 @@ export async function reserveAiQuestion(
       remaining: usage.remaining - 1,
     };
   });
+  if ("limitedMonth" in reserved) {
+    // Fuera de la transacción y con la base RLS: solo la empresa actual, una vez al mes.
+    await notifyOperator(db, {
+      tenantId, event: "op_ai_limit", key: new Date(`${reserved.limitedMonth}-01T00:00:00Z`),
+      detail: `Mes: ${reserved.limitedMonth}`,
+    });
+    throw new HttpException(AI_LIMIT_MESSAGE, 429);
+  }
+  return reserved;
 }
 
 const slug = z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/);

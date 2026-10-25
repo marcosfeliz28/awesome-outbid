@@ -3,6 +3,7 @@ import type { Request } from "express";
 import { z } from "@fitstore/shared";
 import { Public, parse } from "./common";
 import { authorizePlatform } from "./platform";
+import { notifyOperator } from "./platform-notify";
 import { RequestRateLimitService } from "./rate-limit";
 import { RegistrationService } from "./registration";
 
@@ -67,10 +68,16 @@ export class PlatformBillingController {
         data: { tenantId: tenant.id, amount: input.amount.toFixed(2), method: input.method, reference: input.reference, months, operator, paidFrom, paidUntil },
         select: paymentSelect,
       });
-      return { payment, tenant: { slug: code, status: "active", paidUntil } };
+      return { tenantId: tenant.id, payment, tenant: { slug: code, status: "active", paidUntil } };
     });
     console.log(`[plataforma] pago registrado: ${code} (${months} mes/es, hasta ${result.tenant.paidUntil.toISOString()})`);
-    return result;
+    const { tenantId, ...response } = result;
+    // paidUntil crece con cada pago: sirve de clave única del aviso.
+    await notifyOperator(this.registration.db, {
+      tenantId, event: "op_payment", key: result.tenant.paidUntil, amount: input.amount,
+      detail: `${months} mes/es, pagado hasta ${result.tenant.paidUntil.toISOString().slice(0, 10)}`,
+    });
+    return response;
   }
 
   @Public() @Get("tenants/:slug/payments")

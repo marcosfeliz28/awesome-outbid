@@ -29,6 +29,7 @@ import { TransferProofReviewController } from "./transfer-proof-review";
 import { PlatformSupportController, SupportAccessController, SupportAccessWorker } from "./support-access";
 import { McpController } from "./mcp";
 import { TenantExportController } from "./tenant-export";
+import { SupportController } from "./support";
 import { CatalogController } from "./catalog";
 import { InventoryController } from "./inventory";
 import { WarehousesController } from "./warehouses";
@@ -102,7 +103,7 @@ export function createAppModule(secret: string) {
       ...(product ? [TransferProofReviewController] : []),
       ...(product ? [SupportAccessController, PlatformSupportController] : []),
       ...(product ? [McpController] : []),
-      ...(product ? [TenantExportController] : []),
+      ...(product ? [TenantExportController, SupportController] : []),
       CatalogController,
       InventoryController,
       WarehousesController,
