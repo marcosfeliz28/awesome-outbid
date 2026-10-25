@@ -36,6 +36,8 @@ export default defineConfig({
       "tests/product-route-inventory-postgres.test.ts",
       "tests/product-route-inventory-extra-postgres.test.ts",
       "tests/product-route-inventory-final-postgres.test.ts",
+      "tests/product-inventario-arreglos-postgres.test.ts",
+      "tests/product-plataforma-arreglos-postgres.test.ts",
       "tests/product-route-admin-postgres.test.ts",
       "tests/product-route-admin-extra-postgres.test.ts",
       "tests/product-route-auth-void-postgres.test.ts",

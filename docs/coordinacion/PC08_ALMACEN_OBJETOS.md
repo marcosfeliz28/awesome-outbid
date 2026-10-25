@@ -16,10 +16,23 @@ actual, sin modo producto, no cambia su escritura de evidencias.
   estándar del SDK; nunca se guardan en el repositorio.
 - El bucket debe ser privado, con acceso mínimo a `PutObject`, `GetObject` y
   `DeleteObject` bajo el prefijo de este producto. Cada clave real tiene el
-  prefijo `<tenantId>/`; la API cifra nuevos objetos con SSE-S3 (`AES256`).
+  prefijo `<tenantId>/`; en AWS la API cifra nuevos objetos con SSE-S3 (`AES256`).
 - Sólo bajo `NODE_ENV=test` se usa carpeta local: `PRODUCT_OBJECT_STORE_DIR` o
-  un directorio temporal del proceso. No existe fallback a disco local en
-  producción: si falta el bucket, la carga falla cerrada con 503.
+  un directorio temporal del proceso. No hay disco local en producción.
+- **Facturas de proveedor sin bucket (25-oct-2026):** si faltan
+  `PRODUCT_OBJECT_BUCKET`/`PRODUCT_OBJECT_REGION`, la importación (CSV, Excel o
+  foto con IA) ya no responde 503: guarda el archivo (≤ 5 MB) en la columna
+  `InvoiceAttachment.data` de PostgreSQL, como la tienda. La comprobación va
+  antes de llamar a la IA, así nunca se paga una extracción que luego falla.
+  Las evidencias de pago y de planes siguen exigiendo bucket.
+- **Cloudflare R2 (S3 compatible)**, variables en Render (servicio API):
+  - `PRODUCT_OBJECT_BUCKET` = nombre del bucket privado
+  - `PRODUCT_OBJECT_REGION` = `auto`
+  - `PRODUCT_OBJECT_ENDPOINT` = `https://<ID_DE_CUENTA>.r2.cloudflarestorage.com`
+  - `AWS_ACCESS_KEY_ID` y `AWS_SECRET_ACCESS_KEY` = el token de API de R2
+    con permiso «Object Read & Write» limitado a ese bucket.
+  Con endpoint propio no se envía `x-amz-server-side-encryption` (R2 cifra en
+  reposo siempre); en AWS S3 sigue SSE-S3.
 - La cola `TenantObjectDeletion` se llena transaccionalmente al reemplazar o
   borrar referencias, incluso por purga de borradores o anonimización. Su
   trabajador reintenta la eliminación física y considera empresas suspendidas.

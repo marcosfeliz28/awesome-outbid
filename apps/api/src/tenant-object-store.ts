@@ -65,19 +65,23 @@ class LocalTenantObjectStore implements TenantObjectStore {
 
 class S3TenantObjectStore implements TenantObjectStore {
   private readonly client: S3Client;
+  // SSE-S3 sólo en AWS: un proveedor compatible con endpoint propio (R2 cifra
+  // siempre en reposo) puede rechazar la cabecera x-amz-server-side-encryption.
+  private readonly sse: { ServerSideEncryption?: "AES256" };
   constructor(private readonly bucket: string, region: string, endpoint?: string) {
     this.client = new S3Client({ region, ...(endpoint ? { endpoint, forcePathStyle: true } : {}) });
+    this.sse = endpoint ? {} : { ServerSideEncryption: "AES256" };
   }
   async put(tenantId: string, key: string, bytes: Buffer, mime: string) {
     await this.client.send(new PutObjectCommand({
       Bucket: this.bucket, Key: scopedKey(tenantId, key), Body: bytes, ContentType: mime,
-      ServerSideEncryption: "AES256",
+      ...this.sse,
     }));
   }
   async putNew(tenantId: string, key: string, bytes: Buffer, mime: string) {
     await this.client.send(new PutObjectCommand({
       Bucket: this.bucket, Key: scopedKey(tenantId, key), Body: bytes, ContentType: mime,
-      ServerSideEncryption: "AES256", IfNoneMatch: "*",
+      ...this.sse, IfNoneMatch: "*",
     }));
   }
   async get(tenantId: string, key: string) {
@@ -88,6 +92,13 @@ class S3TenantObjectStore implements TenantObjectStore {
   async delete(tenantId: string, key: string) {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: scopedKey(tenantId, key) }));
   }
+}
+
+/** ¿Hay dónde guardar objetos? Sin bucket, las facturas de proveedor caen a
+ * la columna `data` de PostgreSQL (ver merchandise.ts). */
+export function tenantObjectStoreConfigured() {
+  return process.env.NODE_ENV === "test" ||
+    !!(process.env.PRODUCT_OBJECT_BUCKET?.trim() && process.env.PRODUCT_OBJECT_REGION?.trim());
 }
 
 /** Local sólo en pruebas; producción falla cerrada sin bucket S3 por empresa. */
