@@ -141,6 +141,13 @@ describe("tablero administrativo · integración", () => {
       if (call === 1) return { ok: true };
       if (call === 2) return { id: "return-1" };
       if (call === 5) return [{ id: "payment-lines-1" }];
+      if (call === 6)
+        return {
+          payments: [{ id: "payment-customer-1" }],
+          allocated: [
+            { saleId: ids.sale, amount: 100, method: "cash" },
+          ],
+        };
       return { id: `payment-${call}` };
     });
     const createSignal = vi.fn().mockImplementation(async () => {
@@ -225,16 +232,29 @@ describe("tablero administrativo · integración", () => {
         actor,
       ),
     ).resolves.toMatchObject({ closed: true, pending: 0 });
+    await expect(
+      controller.collectCustomerCredit(
+        actor,
+        "00000000-0000-4000-8000-000000000008",
+        {
+          operationId: "00000000-0000-4000-8000-000000000009",
+          lines: [{ amount: 100, method: "cash", ownerConfirmed: true }],
+        },
+      ),
+    ).resolves.toMatchObject({
+      payments: [{ id: "payment-customer-1" }],
+    });
 
-    expect(transaction).toHaveBeenCalledTimes(5);
+    expect(transaction).toHaveBeenCalledTimes(6);
     expect(createSignal.mock.calls.map(([entry]) => entry.data.data)).toEqual([
       { action: "void", entity: "sale" },
       { action: "return", entity: "sale" },
       { action: "collection", entity: "payment" },
       { action: "collection", entity: "payment" },
       { action: "collection", entity: "payment" },
+      { action: "collection", entity: "payment" },
     ]);
-    expect(warn).toHaveBeenCalledTimes(5);
+    expect(warn).toHaveBeenCalledTimes(6);
     warn.mockRestore();
   });
 

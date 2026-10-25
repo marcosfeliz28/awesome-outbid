@@ -3782,6 +3782,10 @@ export class SalesController {
       );
       return response;
     }, MONEY_TRANSACTION);
+    await signalDashboard(this.db, actor, {
+      action: "collection",
+      entity: "payment",
+    });
     for (const row of (result as any).payments)
       notify(this.db, "collection", row.id);
     return result;
