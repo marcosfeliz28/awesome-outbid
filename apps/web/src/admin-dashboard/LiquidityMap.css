@@ -1,0 +1,151 @@
+.liquidity-map {
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.liquidity-heading {
+  display: flex;
+  min-width: 0;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.liquidity-heading > div,
+.liquidity-pocket > div {
+  min-width: 0;
+}
+
+.liquidity-heading h2,
+.liquidity-pocket h3,
+.liquidity-pocket p,
+.liquidity-pocket small {
+  overflow-wrap: anywhere;
+}
+
+.liquidity-heading h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.liquidity-heading p,
+.liquidity-pocket p,
+.liquidity-pocket small,
+.liquidity-note {
+  color: var(--admin-muted, #475569);
+}
+
+.liquidity-heading p {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+}
+
+.liquidity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.liquidity-pocket {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid var(--admin-border, #94a3b8);
+  border-radius: 0.9rem;
+  background: var(--admin-card-raised, #ffffff);
+  color: var(--admin-text, #0f172a);
+}
+
+.liquidity-pocket > svg {
+  width: 1.5rem;
+  color: var(--admin-accent, #0f766e);
+}
+
+.liquidity-pocket h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.liquidity-amount {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--admin-text-strong, #020617);
+  font-size: clamp(1rem, 5cqi, 1.35rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.liquidity-pocket p,
+.liquidity-pocket small {
+  display: block;
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.liquidity-pocket dl {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.liquidity-pocket dl > div {
+  min-width: 0;
+}
+
+.liquidity-pocket dt {
+  color: var(--admin-muted, #475569);
+  font-size: 0.75rem;
+}
+
+.liquidity-pocket dd {
+  margin: 0;
+}
+
+.liquidity-pocket dd .liquidity-amount {
+  margin-top: 0.1rem;
+  font-size: 1rem;
+}
+
+.liquidity-state {
+  margin: 1rem 0 0;
+  min-height: 44px;
+  padding: 0.75rem;
+}
+
+.liquidity-error {
+  border-left: 4px solid #b91c1c;
+  color: var(--admin-danger-text, #7f1d1d);
+  background: var(--admin-danger-bg, #fef2f2);
+}
+
+.liquidity-note {
+  margin: 0.85rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 390px) {
+  .liquidity-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 320px) {
+  .liquidity-pocket {
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    padding: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquidity-map *,
+  .liquidity-map *::before,
+  .liquidity-map *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

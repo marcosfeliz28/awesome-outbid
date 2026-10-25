@@ -1,0 +1,163 @@
+import { Controller, Get, Header, Inject } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { businessDate, d } from "@fitstore/shared";
+import { Actor, CurrentUser, Database, Permit } from "./common";
+import { cashExpectedMany } from "./cash";
+
+type AmountRow = { amount: Prisma.Decimal | null };
+type ReceivableRow = {
+  cod: Prisma.Decimal | null;
+  credit: Prisma.Decimal | null;
+};
+
+const fixedMoney = (value: unknown) =>
+  d((value ?? 0) as any)
+    .toDecimalPlaces(2)
+    .toFixed(2);
+
+const paymentIdsFromAudit = (rows: { after: unknown }[]) => [
+  ...new Set(
+    rows.flatMap((row) => {
+      const after = row.after as { lines?: { paymentId?: unknown }[] } | null;
+      return (after?.lines ?? [])
+        .map((line) => String(line.paymentId ?? ""))
+        .filter(Boolean);
+    }),
+  ),
+];
+
+@Controller()
+export class DashboardLiquidityController {
+  constructor(@Inject(Database) private readonly db: Database) {}
+
+  @Get("dashboard/liquidity")
+  @Permit("*")
+  @Header("Cache-Control", "private, no-store")
+  async liquidity(@CurrentUser() actor: Actor) {
+    const day = businessDate();
+    const today = {
+      gte: new Date(day + "T00:00:00-04:00"),
+      lte: new Date(day + "T23:59:59.999-04:00"),
+    };
+    const openSessions = await this.db.cashSession.findMany({
+      where: { branchId: actor.branchId, closedAt: null },
+      select: {
+        id: true,
+        openingAmount: true,
+        openedAt: true,
+        closedAt: true,
+      },
+    });
+
+    const [expectedBySession, ownerLogs, verified, pending, receivables] =
+      await Promise.all([
+        cashExpectedMany(this.db, openSessions),
+        this.db.auditLog.findMany({
+          where: {
+            branchId: actor.branchId,
+            action: "credit_collection",
+            createdAt: today,
+          },
+          select: { after: true },
+        }),
+        this.db.payment.aggregate({
+          where: {
+            method: "transfer",
+            status: "ok",
+            createdAt: today,
+            sale: { branchId: actor.branchId, status: "completed" },
+          },
+          _sum: { amount: true },
+        }),
+        // Es una cola actual, no un saldo bancario ni un histórico del día.
+        this.db.payment.aggregate({
+          where: {
+            method: "transfer",
+            status: "pending_verification",
+            sale: { branchId: actor.branchId, status: "completed" },
+          },
+          _sum: { amount: true },
+        }),
+        this.db.$queryRaw<ReceivableRow[]>`
+          SELECT
+            COALESCE(SUM(CASE WHEN COALESCE(
+              s."receivableKind",
+              CASE WHEN EXISTS (
+                SELECT 1 FROM "Payment" original
+                WHERE original."saleId" = s.id
+                  AND original."entryType" = 'sale'
+                  AND original.method = 'cod'
+              ) THEN 'cod' ELSE 'credit' END
+            ) = 'cod' THEN s."creditBalance" ELSE 0 END), 0) AS cod,
+            COALESCE(SUM(CASE WHEN COALESCE(
+              s."receivableKind",
+              CASE WHEN EXISTS (
+                SELECT 1 FROM "Payment" original
+                WHERE original."saleId" = s.id
+                  AND original."entryType" = 'sale'
+                  AND original.method = 'cod'
+              ) THEN 'cod' ELSE 'credit' END
+            ) = 'credit' THEN s."creditBalance" ELSE 0 END), 0) AS credit
+          FROM "Sale" s
+          WHERE s."branchId" = ${actor.branchId}
+            AND s.status = 'completed'
+            AND s."creditBalance" > 0
+            AND EXISTS (
+              SELECT 1 FROM "Payment" source
+              WHERE source."saleId" = s.id
+                AND source."entryType" = 'sale'
+                AND source.method IN ('credit', 'cod')
+            )
+        `,
+      ]);
+
+    const ownerIds = paymentIdsFromAudit(ownerLogs);
+    const ownerReceived = ownerIds.length
+      ? await this.db.payment.aggregate({
+          where: {
+            id: { in: ownerIds },
+            entryType: "installment",
+            method: "cash",
+            cashSessionId: null,
+            status: "ok",
+            reference: { startsWith: "Recibido por la dueña" },
+            createdAt: today,
+            sale: { branchId: actor.branchId, status: "completed" },
+          },
+          _sum: { amount: true },
+        })
+      : ({ _sum: { amount: null } } as { _sum: AmountRow });
+
+    const drawers = [...expectedBySession.values()].reduce(
+      (total, expected) => total.plus(expected.cash),
+      d(0),
+    );
+    const balances = receivables[0] ?? { cod: null, credit: null };
+
+    return {
+      asOf: new Date().toISOString(),
+      pockets: {
+        drawers: {
+          amount: fixedMoney(drawers),
+          openRegisters: openSessions.length,
+          basis: "Efectivo esperado en cajas abiertas, al momento",
+        },
+        owner: {
+          amount: fixedMoney(ownerReceived._sum.amount),
+          basis: "Efectivo recibido por la dueña registrado hoy",
+        },
+        banks: {
+          verified: fixedMoney(verified._sum.amount),
+          pending: fixedMoney(pending._sum.amount),
+          verifiedBasis: "Transferencias verificadas hoy; no es saldo bancario",
+          pendingBasis: "Transferencias por verificar pendientes actualmente",
+        },
+        street: {
+          cod: fixedMoney(balances.cod),
+          credit: fixedMoney(balances.credit),
+          basis: "Cuentas por cobrar pendientes actualmente",
+        },
+      },
+    };
+  }
+}
