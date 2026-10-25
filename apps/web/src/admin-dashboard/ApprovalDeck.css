@@ -1,0 +1,239 @@
+.approval-deck {
+  --approval-surface: rgba(22, 26, 48, 0.92);
+  --approval-card: rgba(255, 255, 255, 0.075);
+  --approval-border: rgba(255, 255, 255, 0.18);
+  --approval-text: #f8fafc;
+  --approval-muted: #cbd5e1;
+  --approval-focus: #67e8f9;
+  --approval-accent: #a78bfa;
+  --approval-danger: #fecaca;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--approval-border);
+  border-radius: 1.25rem;
+  background: var(--approval-surface);
+  color: var(--approval-text);
+  padding: clamp(1rem, 4vw, 1.5rem);
+  box-shadow: 0 1rem 2.5rem rgba(3, 7, 18, 0.25);
+}
+
+.approval-deck *,
+.approval-deck *::before,
+.approval-deck *::after {
+  box-sizing: border-box;
+}
+
+.approval-deck__header,
+.approval-deck__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.approval-deck__header {
+  justify-content: space-between;
+}
+
+.approval-deck__header h2 {
+  margin: 0;
+  color: var(--approval-text);
+  font-size: clamp(1.15rem, 5vw, 1.5rem);
+}
+
+.approval-deck__eyebrow {
+  margin: 0 0 0.25rem;
+  color: #c4b5fd;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.approval-deck__count {
+  display: grid;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  place-items: center;
+  border: 1px solid var(--approval-border);
+  border-radius: 999px;
+  background: rgba(167, 139, 250, 0.2);
+  font-weight: 800;
+}
+
+.approval-deck__help,
+.approval-deck__empty,
+.approval-deck__message {
+  color: var(--approval-muted);
+  line-height: 1.5;
+}
+
+.approval-deck__stack {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.approval-deck__card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--approval-border);
+  border-radius: 1rem;
+  background: var(--approval-card);
+  padding: 0.75rem;
+  touch-action: pan-y;
+}
+
+.approval-deck__card[data-kind="void"] {
+  border-inline-start: 0.3rem solid var(--approval-accent);
+}
+
+.approval-deck__card[data-kind="transfer"] {
+  border-inline-start: 0.3rem solid #2dd4bf;
+}
+
+.approval-deck__detail {
+  display: grid;
+  width: 100%;
+  min-height: 44px;
+  min-width: 0;
+  gap: 0.3rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--approval-text);
+  padding: 0.5rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+.approval-deck__detail span {
+  overflow-wrap: anywhere;
+  color: var(--approval-muted);
+}
+
+.approval-deck__kind,
+.approval-deck__open {
+  color: #c4b5fd !important;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.approval-deck__open {
+  margin-top: 0.2rem;
+  text-decoration: underline;
+  text-underline-offset: 0.18rem;
+}
+
+.approval-deck__actions {
+  align-items: stretch;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.approval-deck__actions button {
+  min-height: 44px;
+  flex: 1 1 9rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.approval-deck__primary {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.approval-deck__secondary {
+  border-color: var(--approval-border) !important;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--approval-text);
+}
+
+.approval-deck button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.approval-deck button:focus-visible,
+.approval-deck input:focus-visible,
+.approval-deck textarea:focus-visible {
+  outline: 3px solid var(--approval-focus);
+  outline-offset: 2px;
+}
+
+.approval-deck__blocker {
+  color: var(--approval-danger);
+  font-weight: 700;
+}
+
+.approval-deck__decision {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--approval-border);
+  padding-top: 0.75rem;
+}
+
+.approval-deck__decision p {
+  line-height: 1.45;
+}
+
+.approval-deck__decision label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--approval-text);
+  font-weight: 700;
+}
+
+.approval-deck__decision input,
+.approval-deck__decision textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--approval-border);
+  border-radius: 0.7rem;
+  background: #0f172a;
+  color: #fff;
+  padding: 0.7rem;
+  font: inherit;
+}
+
+.approval-deck__decision textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+}
+
+.approval-deck__message {
+  margin-bottom: 0;
+  font-weight: 700;
+}
+
+@media (max-width: 390px) {
+  .approval-deck {
+    border-radius: 1rem;
+    padding: 0.75rem;
+  }
+
+  .approval-deck__card {
+    padding: 0.625rem;
+  }
+
+  .approval-deck__actions {
+    flex-direction: column;
+  }
+
+  .approval-deck__actions button {
+    flex-basis: auto;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .approval-deck *,
+  .approval-deck *::before,
+  .approval-deck *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
