@@ -246,3 +246,51 @@ describe("#5 cierre ciego: no se adivina reintentando", () => {
     expect((row.closeDetails as any).differenceReason).toMatch(/conté mal/);
   });
 });
+
+describe("#7 devolución en efectivo desde la caja de otra persona", () => {
+  it("el gerente necesita el PIN de otra persona (la dueña de la caja sirve); el suyo no", async () => {
+    const sale = await sell(c2, [{ method: "cash", amount: 100 }]);
+    const back = (managerPin?: string) =>
+      request("/returns", manager.token, {
+        saleId: sale.id,
+        cashSessionId: c2.cash.id,
+        reason: "QA devolución desde otra caja",
+        refundMethod: "cash",
+        items: [{ saleItemId: sale.items[0].id, qty: 1, restock: true }],
+        ...(managerPin ? { managerPin } : {}),
+      });
+    const none = await back();
+    expect(none.status, JSON.stringify(none.body)).toBe(400);
+    expect(none.body.message).toMatch(/caja es de otra persona/);
+    const own = await back(PIN_M);
+    expect(own.status).toBe(400);
+    expect(own.body.message).toMatch(/otra persona con permiso/);
+    const cashier = await back(PIN_C2);
+    expect(cashier.status, JSON.stringify(cashier.body)).toBe(201);
+    const log = await db.auditLog.findFirst({
+      where: { action: "return", entityId: sale.id },
+    });
+    expect((log?.after as any)?.refundApprovedBy).toBe(c2.id);
+  });
+
+  it("la dueña («*») y la devolución desde la propia caja no piden PIN", async () => {
+    const sale = await sell(c2, [{ method: "cash", amount: 100 }]);
+    const r = await request("/returns", owner, {
+      saleId: sale.id,
+      cashSessionId: c2.cash.id,
+      reason: "QA devolución de la dueña",
+      refundMethod: "cash",
+      items: [{ saleItemId: sale.items[0].id, qty: 1, restock: true }],
+    });
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    const mine = await sell(manager, [{ method: "cash", amount: 100 }]);
+    const own = await request("/returns", manager.token, {
+      saleId: mine.id,
+      cashSessionId: manager.cash.id,
+      reason: "QA devolución en la caja propia",
+      refundMethod: "cash",
+      items: [{ saleItemId: mine.items[0].id, qty: 1, restock: true }],
+    });
+    expect(own.status, JSON.stringify(own.body)).toBe(201);
+  });
+});

@@ -2855,6 +2855,7 @@ export class SalesController {
         cashSessionId: uuid,
         reason,
         refundMethod: z.enum(["cash", "card", "transfer", "credit_note"]),
+        managerPin: z.string().optional(),
         items: z
           .array(
             z.object({
@@ -2888,6 +2889,27 @@ export class SalesController {
         }
       }
       const refundCash = await cashLock(tx, actor, data.cashSessionId, true);
+      // Revisión 25-oct #7: el efectivo de la caja abierta de otra persona
+      // sólo sale con el PIN de su dueña o de otro gerente (nunca el de quien
+      // devuelve); la dueña del negocio («*») no lo necesita.
+      let refundApprovedBy: string | null = null;
+      if (
+        data.refundMethod === "cash" &&
+        refundCash.userId !== actor.id &&
+        !can(actor.permissions, "*")
+      ) {
+        if (!data.managerPin)
+          bad(
+            "Esta caja es de otra persona: para devolver efectivo desde ella se necesita el PIN de su dueña o de otro gerente.",
+          );
+        refundApprovedBy = await managerPinApproval(
+          this.db,
+          actor,
+          data.managerPin!,
+          [],
+          [refundCash.userId],
+        );
+      }
       // N-A1 (auditoría 06 v2): orden único de bloqueo Caja → Cliente → Venta
       // → Variantes → Notas. La nota de crédito referencia al cliente con una
       // FK (CreditNote_customerId_fkey) que toma FOR KEY SHARE sobre su fila;
@@ -3198,7 +3220,15 @@ export class SalesController {
         },
       });
       await reverseIncentives(tx, actor, "return", sale.id, row.id, data.items);
-      await audit(tx, actor, "return", "sale", sale.id, undefined, row);
+      await audit(
+        tx,
+        actor,
+        "return",
+        "sale",
+        sale.id,
+        undefined,
+        refundApprovedBy ? { ...row, refundApprovedBy } : row,
+      );
       // B-6 (auditoría 01): reembolsar por un medio que la venta no usó (p. ej.
       // efectivo de una venta con tarjeta) convierte tarjeta en efectivo. Se
       // permite a quien gestiona ventas, pero queda una alerta para revisarlo.

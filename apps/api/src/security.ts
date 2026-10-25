@@ -87,11 +87,14 @@ export const SELF_PIN_MESSAGE =
 // Dueña (25-oct): la aprobación siempre es de OTRA persona. El PIN de quien
 // hace la operación (o de `exclude`, p. ej. el dueño de la caja) no aprueba y
 // cuenta como un intento fallido, así el aviso claro no da intentos gratis.
+// `also`: personas que aprueban aunque no gestionen ventas (p. ej. la cajera
+// dueña de la caja de la que sale el efectivo).
 export async function managerPinApproval(
   db: any,
   actor: Actor,
   pin: string,
   exclude: (string | null | undefined)[] = [],
+  also: string[] = [],
 ): Promise<string> {
   // La dueña («*») sí puede usar su propio PIN: la regla es para el personal.
   const excluded = new Set(
@@ -109,8 +112,9 @@ export async function managerPinApproval(
       async () => {
         // Primero las personas excluidas: si otro gerente tuviera el mismo
         // PIN, no se le atribuye la aprobación.
-        const able = managers.filter((m: any) =>
-          can(m.role.permissions, "sale:manage"),
+        const able = managers.filter(
+          (m: any) =>
+            can(m.role.permissions, "sale:manage") || also.includes(m.id),
         );
         for (const manager of [
           ...able.filter((m: any) => excluded.has(m.id)),
