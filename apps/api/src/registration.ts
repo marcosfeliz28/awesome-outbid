@@ -3,7 +3,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import type { Request } from "express";
-import { z } from "@fitstore/shared";
+import { permissions, z } from "@fitstore/shared";
 import { Public, parse } from "./common";
 import { passwordSchemaForRole, isNonTrivialCashierPassword } from "./password-policy";
 import { clientIp, RequestRateLimitService } from "./rate-limit";
@@ -83,6 +83,9 @@ async function sendVerification(email: string, token: string) {
   if (!response?.ok) throw new HttpException("La cuenta se creó, pero no se pudo enviar el correo. Usa Reenviar confirmación.", 503);
 }
 
+/** Roles que nace con cada empresa además de «admin» (migración 202610280024). */
+export const BASE_ROLES = ["manager", "seller", "warehouse"] as const;
+
 /** Alta global compartida (registro e invitación): crea Tenant antes de asumir el rol RLS. */
 export async function createTenantWithOwner(
   tx: Prisma.TransactionClient,
@@ -93,6 +96,8 @@ export async function createTenantWithOwner(
   await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_tenant_runtime");
   await tx.$queryRawUnsafe("SELECT set_config('app.tenant_id', $1, true)", tenant.id);
   const role = await tx.role.create({ data: { tenantId: tenant.id, name: "admin", permissions: ["*"] } });
+  // Los mismos roles base de la tienda (seed.ts): cajera, gerente y almacén.
+  await tx.role.createMany({ data: BASE_ROLES.map(name => ({ tenantId: tenant.id, name, permissions: permissions[name] })) });
   await tx.user.create({ data: {
     tenantId: tenant.id, name: owner.name, username: owner.email,
     usernameKey: normalizeUsername(owner.email), email: owner.email,
