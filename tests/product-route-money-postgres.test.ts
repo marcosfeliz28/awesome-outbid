@@ -46,9 +46,13 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     onError: () => undefined,
   });
   const saved = Object.fromEntries(
-    ["DATABASE_URL", "PRODUCT_TENANCY", "TELEGRAM_BOT_TOKEN", "RESEND_API_KEY", "NEXORA_RETENTION"].map(
-      (name) => [name, process.env[name]],
-    ),
+    [
+      "DATABASE_URL",
+      "PRODUCT_TENANCY",
+      "TELEGRAM_BOT_TOKEN",
+      "RESEND_API_KEY",
+      "NEXORA_RETENTION",
+    ].map((name) => [name, process.env[name]]),
   );
   let sql: any;
   let app: any;
@@ -59,8 +63,18 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     const url = `postgresql://money_test:money_test_only@127.0.0.1:${port}/money_qa`;
     await run(
       process.execPath,
-      [prismaCli, "migrate", "deploy", "--schema", join(root, "apps/api/prisma/schema.prisma")],
-      { cwd: root, env: { ...process.env, DATABASE_URL: url }, timeout: 120_000 },
+      [
+        prismaCli,
+        "migrate",
+        "deploy",
+        "--schema",
+        join(root, "apps/api/prisma/schema.prisma"),
+      ],
+      {
+        cwd: root,
+        env: { ...process.env, DATABASE_URL: url },
+        timeout: 120_000,
+      },
     );
     sql = postgres.getPgClient("money_qa", "127.0.0.1");
     await sql.connect();
@@ -89,7 +103,13 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
       );
       await sql.query(
         `INSERT INTO "User" (id,name,email,"passwordHash","pinHash","roleId","updatedAt","tenantId") VALUES ($1,$2,$3,'test','test',$4,now(),$5)`,
-        [row.userId, `Admin ${i}`, `admin-${i}@example.invalid`, row.roleId, row.tenantId],
+        [
+          row.userId,
+          `Admin ${i}`,
+          `admin-${i}@example.invalid`,
+          row.roleId,
+          row.tenantId,
+        ],
       );
       await sql.query(
         `INSERT INTO "Terminal" (id,name,"branchId","approvedAt","secretHash","tenantId") VALUES ($1,$2,'main',now(),'test',$3)`,
@@ -101,7 +121,13 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
       );
       await sql.query(
         `INSERT INTO "Sale" (id,number,"offlineUuid","sellerId",subtotal,"discountTotal","taxTotal",total,"costTotal","creditBalance","courierFee","updatedAt","tenantId") VALUES ($1,$2,$3,$4,100,0,0,100,0,100,10,now(),$5)`,
-        [row.saleId, `FS-QA-${i}`, `20000000-0000-4000-8000-00000000000${i}`, row.userId, row.tenantId],
+        [
+          row.saleId,
+          `FS-QA-${i}`,
+          `20000000-0000-4000-8000-00000000000${i}`,
+          row.userId,
+          row.tenantId,
+        ],
       );
       await sql.query(
         `INSERT INTO "Payment" (id,"saleId",method,amount,tendered,"tenantId") VALUES ($1,$2,'credit',100,100,$3)`,
@@ -124,7 +150,7 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
         [row.productId, `Artículo ${i}`, row.categoryId, row.tenantId],
       );
       await sql.query(
-        `INSERT INTO "Variant" (id,"productId",sku,barcode,"costAvg",price,stock,"updatedAt","tenantId") VALUES ($1,$2,'VARIANT-QA','BAR-QA',10,20,3,now(),$3)`,
+        `INSERT INTO "Variant" (id,"productId",sku,barcode,"costAvg",price,stock,"updatedAt","tenantId") VALUES ($1,$2,'VARIANT-QA','BAR-QA',10,20,10,now(),$3)`,
         [row.variantId, row.productId, row.tenantId],
       );
     }
@@ -144,25 +170,43 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     const http = supertest(app.getHttpServer());
     const jwt = new JwtService({ secret });
     const auth = (row: (typeof cases)[number]) =>
-      "Bearer " + jwt.sign({ sub: row.userId, sid: row.sessionId, type: "access", version: 0, tenantId: row.tenantId });
+      "Bearer " +
+      jwt.sign({
+        sub: row.userId,
+        sid: row.sessionId,
+        type: "access",
+        version: 0,
+        tenantId: row.tenantId,
+      });
     const [a, b] = cases;
-    const send = (request: any, row = b) => request.set("Authorization", auth(row));
+    const send = (request: any, row = b) =>
+      request.set("Authorization", auth(row));
     const foreignFailures: string[] = [];
     const hiddenResourceMessages: Record<string, string> = {
       "PATCH sales/:id/courier": "Venta no encontrada.",
-      "POST courier/payouts": "Una factura no tiene un envío pendiente en esta sucursal.",
-      "POST cash-sessions/drawer-open": "La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.",
+      "POST courier/payouts":
+        "Una factura no tiene un envío pendiente en esta sucursal.",
+      "POST cash-sessions/drawer-open":
+        "La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.",
     };
     const expectForeignDenied = (route: string, response: any) => {
-      const hidden = response.status === 400 &&
+      const hidden =
+        response.status === 400 &&
         response.body?.message === hiddenResourceMessages[route];
       if (![403, 404].includes(response.status) && !hidden)
-        foreignFailures.push(`${route}: HTTP ${response.status} ${JSON.stringify(response.body)}`);
+        foreignFailures.push(
+          `${route}: HTTP ${response.status} ${JSON.stringify(response.body)}`,
+        );
     };
 
     // Dos aperturas auténticas, una por empresa, son permitidas.
-    const openA = await send(http.post("/api/cash-sessions/open").send({ openingAmount: 50 }), a);
-    const openB = await send(http.post("/api/cash-sessions/open").send({ openingAmount: 60 }));
+    const openA = await send(
+      http.post("/api/cash-sessions/open").send({ openingAmount: 50 }),
+      a,
+    );
+    const openB = await send(
+      http.post("/api/cash-sessions/open").send({ openingAmount: 60 }),
+    );
     expect(openA.status, JSON.stringify(openA.body)).toBe(201);
     expect(openB.status, JSON.stringify(openB.body)).toBe(201);
     expect(openA.body.id).not.toBe(openB.body.id);
@@ -176,14 +220,146 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     };
     const foreignSale = await send(http.post("/api/sales").send(saleBody));
     expectForeignDenied("POST sales", foreignSale);
-    const ownSale = await send(http.post("/api/sales").send({
-      ...saleBody,
-      offlineUuid: "30000000-0000-4000-8000-000000000011",
-      items: [{ variantId: b.variantId, qty: 1 }],
-    }));
+    const ownSale = await send(
+      http.post("/api/sales").send({
+        ...saleBody,
+        offlineUuid: "30000000-0000-4000-8000-000000000011",
+        items: [{ variantId: b.variantId, qty: 1 }],
+      }),
+    );
     expect(ownSale.status, JSON.stringify(ownSale.body)).toBe(201);
-    expect((await sql.query(`SELECT "tenantId" FROM "Sale" WHERE id=$1`, [ownSale.body.id])).rows)
-      .toEqual([{ tenantId: tenantB }]);
+    expect(
+      (
+        await sql.query(`SELECT "tenantId" FROM "Sale" WHERE id=$1`, [
+          ownSale.body.id,
+        ])
+      ).rows,
+    ).toEqual([{ tenantId: tenantB }]);
+
+    const createOwnCashSale = async (offlineUuid: string) => {
+      const response = await send(
+        http.post("/api/sales").send({
+          ...saleBody,
+          offlineUuid,
+          items: [{ variantId: b.variantId, qty: 1 }],
+        }),
+      );
+      expect(response.status, JSON.stringify(response.body)).toBe(201);
+      return response.body;
+    };
+    const exactLimitSale = await createOwnCashSale(
+      "30000000-0000-4000-8000-000000000014",
+    );
+    const oldSale = await createOwnCashSale(
+      "30000000-0000-4000-8000-000000000015",
+    );
+    const closedCashSale = await createOwnCashSale(
+      "30000000-0000-4000-8000-000000000016",
+    );
+    const otherCashierSale = await createOwnCashSale(
+      "30000000-0000-4000-8000-000000000023",
+    );
+    const otherCashSessionId = "30000000-0000-4000-8000-000000000024";
+    await sql.query(
+      `INSERT INTO "CashSession" (id,"registerId","userId","openingAmount","branchId","tenantId")
+       VALUES ($1,'otra-caja','30000000-0000-4000-8000-000000000025',0,'main',$2)`,
+      [otherCashSessionId, tenantB],
+    );
+    await sql.query(`UPDATE "Sale" SET "cashSessionId"=$2 WHERE id=$1`, [
+      otherCashierSale.id,
+      otherCashSessionId,
+    ]);
+    await sql.query(
+      `UPDATE "Payment" SET "cashSessionId"=$2 WHERE "saleId"=$1`,
+      [otherCashierSale.id, otherCashSessionId],
+    );
+    const boundaryNow = new Date();
+    await sql.query(`UPDATE "Sale" SET "createdAt"=$2 WHERE id=$1`, [
+      exactLimitSale.id,
+      new Date(boundaryNow.getTime() - 119_000),
+    ]);
+    await sql.query(`UPDATE "Sale" SET "createdAt"=$2 WHERE id=$1`, [
+      oldSale.id,
+      new Date(boundaryNow.getTime() - 121_000),
+    ]);
+    const exactBoundary = await sql.query(`
+      WITH clock AS (SELECT CURRENT_TIMESTAMP AS now)
+      SELECT
+        (now - INTERVAL '2 minutes') BETWEEN now - INTERVAL '2 minutes' AND now AS exact,
+        (now - INTERVAL '2 minutes 0.001 seconds') BETWEEN now - INTERVAL '2 minutes' AND now AS too_old,
+        (now + INTERVAL '0.001 seconds') BETWEEN now - INTERVAL '2 minutes' AND now AS future
+      FROM clock
+    `);
+    expect(exactBoundary.rows).toEqual([
+      { exact: true, too_old: false, future: false },
+    ]);
+
+    const firstAttempt = await send(
+      http.post("/api/cash-sessions/drawer-open").send({
+        mode: "automatic",
+        operationId: "30000000-0000-4000-8000-000000000017",
+        reason: "Cobro en efectivo de la venta",
+        saleId: exactLimitSale.id,
+      }),
+    );
+    expect(firstAttempt.status, JSON.stringify(firstAttempt.body)).toBe(201);
+    const safeRetry = await send(
+      http.post("/api/cash-sessions/drawer-open").send({
+        mode: "automatic",
+        operationId: "30000000-0000-4000-8000-000000000018",
+        reason: "Reintento porque no llegó el pulso",
+        saleId: exactLimitSale.id,
+      }),
+    );
+    expect(safeRetry.status, JSON.stringify(safeRetry.body)).toBe(201);
+    const thirdAttempt = await send(
+      http.post("/api/cash-sessions/drawer-open").send({
+        mode: "automatic",
+        operationId: "30000000-0000-4000-8000-000000000019",
+        reason: "Tercer intento no permitido",
+        saleId: exactLimitSale.id,
+      }),
+    );
+    expect(thirdAttempt.status).toBe(400);
+    const confirmation = await send(
+      http
+        .post(
+          `/api/cash-sessions/drawer-open/${safeRetry.body.auditId}/confirm`,
+        )
+        .send({}),
+    );
+    expect(confirmation.status, JSON.stringify(confirmation.body)).toBe(201);
+    const staleAttempt = await send(
+      http.post("/api/cash-sessions/drawer-open").send({
+        mode: "automatic",
+        operationId: "30000000-0000-4000-8000-000000000020",
+        reason: "Venta fuera del límite",
+        saleId: oldSale.id,
+      }),
+    );
+    expect(staleAttempt.status).toBe(400);
+    await sql.query(
+      `UPDATE "Sale" SET "createdAt"=CURRENT_TIMESTAMP + INTERVAL '1 minute' WHERE id=$1`,
+      [oldSale.id],
+    );
+    const futureAttempt = await send(
+      http.post("/api/cash-sessions/drawer-open").send({
+        mode: "automatic",
+        operationId: "30000000-0000-4000-8000-000000000026",
+        reason: "Fecha futura no permitida",
+        saleId: oldSale.id,
+      }),
+    );
+    expect(futureAttempt.status).toBe(400);
+    const otherCashierAttempt = await send(
+      http.post("/api/cash-sessions/drawer-open").send({
+        mode: "automatic",
+        operationId: "30000000-0000-4000-8000-000000000027",
+        reason: "Venta de otra cajera",
+        saleId: otherCashierSale.id,
+      }),
+    );
+    expect(otherCashierAttempt.status).toBe(400);
 
     const foreignDrawer = await send(
       http.post("/api/cash-sessions/drawer-open").send({
@@ -204,80 +380,224 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
       }),
     );
     expect(ownDrawer.status, JSON.stringify(ownDrawer.body)).toBe(201);
+    const ownDrawerConfirmation = await send(
+      http
+        .post(
+          `/api/cash-sessions/drawer-open/${ownDrawer.body.auditId}/confirm`,
+        )
+        .send({}),
+    );
+    expect(
+      ownDrawerConfirmation.status,
+      JSON.stringify(ownDrawerConfirmation.body),
+    ).toBe(201);
+    const confirmedRetry = await send(
+      http.post("/api/cash-sessions/drawer-open").send({
+        mode: "automatic",
+        operationId: "30000000-0000-4000-8000-000000000021",
+        reason: "No reabrir una venta confirmada",
+        saleId: ownSale.body.id,
+      }),
+    );
+    expect(confirmedRetry.status).toBe(400);
     expect(
       (
         await sql.query(
-          `SELECT action,"entityId","tenantId" FROM "AuditLog" WHERE action='cash_drawer_open'`,
+          `SELECT action,"entityId","tenantId",after->>'pulseStatus' AS "pulseStatus"
+             FROM "AuditLog"
+            WHERE action='cash_drawer_open' AND "entityId"=$1`,
+          [`automatic:${ownSale.body.id}`],
         )
       ).rows,
-    ).toEqual([{
-      action: "cash_drawer_open",
-      entityId: `automatic:${ownSale.body.id}`,
-      tenantId: tenantB,
-    }]);
+    ).toEqual([
+      {
+        action: "cash_drawer_open",
+        entityId: `automatic:${ownSale.body.id}`,
+        tenantId: tenantB,
+        pulseStatus: "sent",
+      },
+    ]);
 
     const voidBody = { reason: "Anulación de prueba válida" };
-    const foreignVoid = await send(http.post(`/api/sales/${a.saleId}/void`).send(voidBody));
+    const foreignVoid = await send(
+      http.post(`/api/sales/${a.saleId}/void`).send(voidBody),
+    );
     expectForeignDenied("POST sales/:id/void", foreignVoid);
-    const ownVoid = await send(http.post(`/api/sales/${ownSale.body.id}/void`).send(voidBody));
+    const ownVoid = await send(
+      http.post(`/api/sales/${ownSale.body.id}/void`).send(voidBody),
+    );
     expect(ownVoid.status, JSON.stringify(ownVoid.body)).toBe(201);
-    expect((await sql.query(`SELECT status FROM "Sale" WHERE id=$1`, [a.saleId])).rows)
-      .toEqual([{ status: "completed" }]);
+    expect(
+      (await sql.query(`SELECT status FROM "Sale" WHERE id=$1`, [a.saleId]))
+        .rows,
+    ).toEqual([{ status: "completed" }]);
 
-    const movement = { operationId: "30000000-0000-4000-8000-000000000001", type: "in", amount: 5, reason: "Cambio de prueba" };
-    const foreignMovement = await send(http.post(`/api/cash-sessions/${openA.body.id}/movements`).send(movement));
+    const movement = {
+      operationId: "30000000-0000-4000-8000-000000000001",
+      type: "in",
+      amount: 5,
+      reason: "Cambio de prueba",
+    };
+    const foreignMovement = await send(
+      http.post(`/api/cash-sessions/${openA.body.id}/movements`).send(movement),
+    );
     expectForeignDenied("POST cash-sessions/:id/movements", foreignMovement);
-    const ownMovement = await send(http.post(`/api/cash-sessions/${openB.body.id}/movements`).send(movement));
+    const ownMovement = await send(
+      http.post(`/api/cash-sessions/${openB.body.id}/movements`).send(movement),
+    );
     expect(ownMovement.status, JSON.stringify(ownMovement.body)).toBe(201);
-    expect((await sql.query(`SELECT "tenantId" FROM "CashMovement" WHERE "operationId"=$1`, [movement.operationId])).rows).toEqual([{ tenantId: tenantB }]);
+    expect(
+      (
+        await sql.query(
+          `SELECT "tenantId" FROM "CashMovement" WHERE "operationId"=$1`,
+          [movement.operationId],
+        )
+      ).rows,
+    ).toEqual([{ tenantId: tenantB }]);
 
     const fee = { fee: 12, reason: "Ajuste de prueba válido" };
-    const foreignFee = await send(http.patch(`/api/sales/${a.saleId}/courier`).send(fee));
+    const foreignFee = await send(
+      http.patch(`/api/sales/${a.saleId}/courier`).send(fee),
+    );
     expectForeignDenied("PATCH sales/:id/courier", foreignFee);
-    const ownFee = await send(http.patch(`/api/sales/${b.saleId}/courier`).send(fee));
+    const ownFee = await send(
+      http.patch(`/api/sales/${b.saleId}/courier`).send(fee),
+    );
     expect(ownFee.status, JSON.stringify(ownFee.body)).toBe(200);
-    const fees = await sql.query(`SELECT id,"tenantId","courierFee" FROM "Sale" WHERE id IN ($1,$2) ORDER BY "tenantId"`, [a.saleId, b.saleId]);
-    expect(fees.rows.map((r: any) => [r.id, Number(r.courierFee)])).toEqual([[a.saleId, 10], [b.saleId, 12]]);
+    const fees = await sql.query(
+      `SELECT id,"tenantId","courierFee" FROM "Sale" WHERE id IN ($1,$2) ORDER BY "tenantId"`,
+      [a.saleId, b.saleId],
+    );
+    expect(fees.rows.map((r: any) => [r.id, Number(r.courierFee)])).toEqual([
+      [a.saleId, 10],
+      [b.saleId, 12],
+    ]);
 
-    const payout = { operationId: "30000000-0000-4000-8000-000000000002", saleIds: [a.saleId], note: "Mensajero QA" };
-    const foreignPayout = await send(http.post("/api/courier/payouts").send(payout));
+    const payout = {
+      operationId: "30000000-0000-4000-8000-000000000002",
+      saleIds: [a.saleId],
+      note: "Mensajero QA",
+    };
+    const foreignPayout = await send(
+      http.post("/api/courier/payouts").send(payout),
+    );
     expectForeignDenied("POST courier/payouts", foreignPayout);
-    const ownPayout = await send(http.post("/api/courier/payouts").send({ ...payout, saleIds: [b.saleId] }));
+    const ownPayout = await send(
+      http
+        .post("/api/courier/payouts")
+        .send({ ...payout, saleIds: [b.saleId] }),
+    );
     expect(ownPayout.status, JSON.stringify(ownPayout.body)).toBe(201);
-    expect((await sql.query(`SELECT "tenantId" FROM "CourierPayout"`)).rows).toEqual([{ tenantId: tenantB }]);
+    expect(
+      (await sql.query(`SELECT "tenantId" FROM "CourierPayout"`)).rows,
+    ).toEqual([{ tenantId: tenantB }]);
 
-    const collection = { operationId: "30000000-0000-4000-8000-000000000003", lines: [{ method: "transfer", amount: 25, bank: "Banco QA", ownerConfirmed: true }] };
-    const foreignCollection = await send(http.post(`/api/sales/${a.saleId}/credit-collections`).send(collection));
+    const collection = {
+      operationId: "30000000-0000-4000-8000-000000000003",
+      lines: [
+        {
+          method: "transfer",
+          amount: 25,
+          bank: "Banco QA",
+          ownerConfirmed: true,
+        },
+      ],
+    };
+    const foreignCollection = await send(
+      http.post(`/api/sales/${a.saleId}/credit-collections`).send(collection),
+    );
     expectForeignDenied("POST sales/:id/credit-collections", foreignCollection);
-    const ownCollection = await send(http.post(`/api/sales/${b.saleId}/credit-collections`).send(collection));
+    const ownCollection = await send(
+      http.post(`/api/sales/${b.saleId}/credit-collections`).send(collection),
+    );
     expect(ownCollection.status, JSON.stringify(ownCollection.body)).toBe(201);
-    const installment = { offlineUuid: "30000000-0000-4000-8000-000000000020", cashSessionId: openB.body.id, amount: 5, method: "cash" };
-    const foreignInstallment = await send(http.post(`/api/sales/${a.saleId}/installments`).send(installment));
+    const installment = {
+      offlineUuid: "30000000-0000-4000-8000-000000000020",
+      cashSessionId: openB.body.id,
+      amount: 5,
+      method: "cash",
+    };
+    const foreignInstallment = await send(
+      http.post(`/api/sales/${a.saleId}/installments`).send(installment),
+    );
     expectForeignDenied("POST sales/:id/installments", foreignInstallment);
-    const ownInstallment = await send(http.post(`/api/sales/${b.saleId}/installments`).send(installment));
-    expect(ownInstallment.status, JSON.stringify(ownInstallment.body)).toBe(201);
-    const cod = { ...installment, offlineUuid: "30000000-0000-4000-8000-000000000021" };
-    const foreignCod = await send(http.post(`/api/sales/${a.saleId}/cod-collections`).send(cod));
+    const ownInstallment = await send(
+      http.post(`/api/sales/${b.saleId}/installments`).send(installment),
+    );
+    expect(ownInstallment.status, JSON.stringify(ownInstallment.body)).toBe(
+      201,
+    );
+    const cod = {
+      ...installment,
+      offlineUuid: "30000000-0000-4000-8000-000000000021",
+    };
+    const foreignCod = await send(
+      http.post(`/api/sales/${a.saleId}/cod-collections`).send(cod),
+    );
     expectForeignDenied("POST sales/:id/cod-collections", foreignCod);
-    const ownCod = await send(http.post(`/api/sales/${b.saleId}/cod-collections`).send(cod));
+    const ownCod = await send(
+      http.post(`/api/sales/${b.saleId}/cod-collections`).send(cod),
+    );
     expect(ownCod.status, JSON.stringify(ownCod.body)).toBe(201);
-    const foreignVerify = await send(http.post(`/api/payments/${a.transferId}/verify`));
+    const foreignVerify = await send(
+      http.post(`/api/payments/${a.transferId}/verify`),
+    );
     expectForeignDenied("POST payments/:id/verify", foreignVerify);
-    const ownVerify = await send(http.post(`/api/payments/${b.transferId}/verify`));
+    const ownVerify = await send(
+      http.post(`/api/payments/${b.transferId}/verify`),
+    );
     expect(ownVerify.status, JSON.stringify(ownVerify.body)).toBe(201);
-    expect((await sql.query(`SELECT status FROM "Payment" WHERE id=$1`, [a.transferId])).rows)
-      .toEqual([{ status: "pending_verification" }]);
-    const balances = await sql.query(`SELECT id,"creditBalance" FROM "Sale" WHERE id IN ($1,$2) ORDER BY "tenantId"`, [a.saleId, b.saleId]);
-    expect(balances.rows.map((r: any) => [r.id, Number(r.creditBalance)])).toEqual([[a.saleId, 100], [b.saleId, 65]]);
+    expect(
+      (
+        await sql.query(`SELECT status FROM "Payment" WHERE id=$1`, [
+          a.transferId,
+        ])
+      ).rows,
+    ).toEqual([{ status: "pending_verification" }]);
+    const balances = await sql.query(
+      `SELECT id,"creditBalance" FROM "Sale" WHERE id IN ($1,$2) ORDER BY "tenantId"`,
+      [a.saleId, b.saleId],
+    );
+    expect(
+      balances.rows.map((r: any) => [r.id, Number(r.creditBalance)]),
+    ).toEqual([
+      [a.saleId, 100],
+      [b.saleId, 65],
+    ]);
 
-    const closing = { countedCash: 75, countedCard: 0, countedTransfer: 0, notes: "Cierre de prueba" };
-    const foreignClose = await send(http.post(`/api/cash-sessions/${openA.body.id}/close`).send(closing));
+    const closing = {
+      countedCash: 135,
+      countedCard: 0,
+      countedTransfer: 0,
+      notes: "Cierre de prueba",
+    };
+    const foreignClose = await send(
+      http.post(`/api/cash-sessions/${openA.body.id}/close`).send(closing),
+    );
     expectForeignDenied("POST cash-sessions/:id/close", foreignClose);
-    const ownClose = await send(http.post(`/api/cash-sessions/${openB.body.id}/close`).send(closing));
+    const ownClose = await send(
+      http.post(`/api/cash-sessions/${openB.body.id}/close`).send(closing),
+    );
     expect(ownClose.status, JSON.stringify(ownClose.body)).toBe(201);
-    const sessions = await sql.query(`SELECT id,"closedAt" FROM "CashSession" WHERE id IN ($1,$2) ORDER BY id`, [openA.body.id, openB.body.id]);
-    expect(sessions.rows.find((row: any) => row.id === openA.body.id).closedAt).toBeNull();
-    expect(sessions.rows.find((row: any) => row.id === openB.body.id).closedAt).not.toBeNull();
+    const sessions = await sql.query(
+      `SELECT id,"closedAt" FROM "CashSession" WHERE id IN ($1,$2) ORDER BY id`,
+      [openA.body.id, openB.body.id],
+    );
+    expect(
+      sessions.rows.find((row: any) => row.id === openA.body.id).closedAt,
+    ).toBeNull();
+    expect(
+      sessions.rows.find((row: any) => row.id === openB.body.id).closedAt,
+    ).not.toBeNull();
+    const closedCashDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open").send({
+        mode: "automatic",
+        operationId: "30000000-0000-4000-8000-000000000022",
+        reason: "Caja ya cerrada",
+        saleId: closedCashSale.id,
+      }),
+    );
+    expect(closedCashDrawer.status).toBe(400);
     expect(foreignFailures).toEqual([]);
   } finally {
     await app?.close().catch(() => undefined);

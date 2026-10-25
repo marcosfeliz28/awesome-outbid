@@ -42,7 +42,7 @@ async fn open_cash_drawer(
     sale_id: Option<String>,
     movement_id: Option<String>,
 ) -> Result<(), String> {
-    authorize_drawer(
+    let audit_id = authorize_drawer(
         &access_token,
         &mode,
         &operation_id,
@@ -55,13 +55,14 @@ async fn open_cash_drawer(
     {
         tauri::async_runtime::spawn_blocking(move || thermal::open_drawer(&printer_name))
             .await
-            .map_err(|_| "No se pudo abrir la gaveta.".to_string())?
+            .map_err(|_| "No se pudo abrir la gaveta.".to_string())??;
     }
     #[cfg(not(target_os = "windows"))]
     {
         let _ = printer_name;
-        Err("La gaveta requiere Windows.".into())
+        return Err("La gaveta requiere Windows.".into());
     }
+    confirm_drawer(&access_token, &audit_id).await
 }
 
 fn valid_reference(value: &str) -> bool {
@@ -82,7 +83,7 @@ async fn authorize_drawer(
     reason: &str,
     sale_id: Option<&str>,
     movement_id: Option<&str>,
-) -> Result<(), String> {
+) -> Result<String, String> {
     let (sale_id, movement_id) = match (sale_id, movement_id) {
         (Some(value), None) if valid_reference(value) => (Some(value), None),
         (None, Some(value)) if valid_reference(value) => (None, Some(value)),
@@ -91,7 +92,7 @@ async fn authorize_drawer(
     if !valid_reference(operation_id) {
         return Err("La autorización de gaveta no es válida.".into());
     }
-    if !matches!(mode, "automatic" | "manual") || reason.trim().len() < 3 {
+    if !matches!(mode, "automatic" | "manual") || reason.trim().len() < 5 {
         return Err("Indica un motivo válido para abrir la gaveta.".into());
     }
     let reference = serde_json::json!({
@@ -120,6 +121,38 @@ async fn authorize_drawer(
         .map_err(|_| "No se pudo registrar la apertura de la gaveta.")?;
     if !response.status().is_success() {
         return Err("La API rechazó la apertura de la gaveta.".into());
+    }
+    let payload: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|_| "La API devolvió una autorización de gaveta inválida.")?;
+    let audit_id = payload
+        .get("auditId")
+        .and_then(serde_json::Value::as_str)
+        .filter(|value| valid_reference(value))
+        .ok_or("La API devolvió una autorización de gaveta inválida.")?;
+    Ok(audit_id.to_owned())
+}
+
+async fn confirm_drawer(access_token: &str, audit_id: &str) -> Result<(), String> {
+    let origin = option_env!("NEXORA_PRODUCT_URL")
+        .ok_or("Falta el origen aprobado de Nexora para confirmar la gaveta.")?;
+    let response = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|_| "No se pudo preparar la confirmación de la gaveta.")?
+        .post(format!(
+            "{origin}/api/cash-sessions/drawer-open/{audit_id}/confirm"
+        ))
+        .bearer_auth(access_token)
+        .header("content-type", "application/json")
+        .body("{}")
+        .send()
+        .await
+        .map_err(|_| "La gaveta abrió, pero no se pudo confirmar el pulso.")?;
+    if !response.status().is_success() {
+        return Err("La gaveta abrió, pero la API rechazó la confirmación del pulso.".into());
     }
     Ok(())
 }

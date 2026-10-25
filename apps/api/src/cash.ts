@@ -519,14 +519,20 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         status: p.status,
         reference: p.reference,
         hasProof: !!p.proofUrl,
-        proofContentType: parsePaymentObjectReference(p.proofUrl)?.mime ??
-          /^data:([^;,]+);base64,/.exec(p.proofUrl ?? "")?.[1] ?? null,
-        proofBytes: parsePaymentObjectReference(p.proofUrl)?.bytes ?? (p.proofUrl
-          ? Math.max(
-              0,
-              Math.floor(((p.proofUrl.split(",", 2)[1] ?? "").length * 3) / 4),
-            )
-          : 0),
+        proofContentType:
+          parsePaymentObjectReference(p.proofUrl)?.mime ??
+          /^data:([^;,]+);base64,/.exec(p.proofUrl ?? "")?.[1] ??
+          null,
+        proofBytes:
+          parsePaymentObjectReference(p.proofUrl)?.bytes ??
+          (p.proofUrl
+            ? Math.max(
+                0,
+                Math.floor(
+                  ((p.proofUrl.split(",", 2)[1] ?? "").length * 3) / 4,
+                ),
+              )
+            : 0),
         createdAt: p.createdAt,
       })),
     },
@@ -611,30 +617,45 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
 const UUID_RE = /^[0-9a-f-]{36}$/i;
 // Cajas cerradas que lista GET /cash-sessions (además de todas las abiertas).
 const CLOSED_SESSIONS_LIMIT = 100;
+const AUTOMATIC_DRAWER_WINDOW_MINUTES = 2;
+const drawerReason = z.string().trim().min(5).max(1000);
+
+function pulseStatus(after: unknown): string {
+  if (!after || typeof after !== "object" || Array.isArray(after))
+    return "sent";
+  const value = (after as Record<string, unknown>).pulseStatus;
+  // Las filas anteriores al protocolo de confirmación ya representaban una
+  // apertura consumida. Tratarlas como enviadas evita reabrir ventas viejas.
+  return typeof value === "string" ? value : "sent";
+}
+
 @Controller("cash-sessions")
 export class CashController {
   constructor(@Inject(Database) private db: Database) {}
   @Post("drawer-open")
   @Permit("authenticated")
-  async drawerOpen(
-    @Body() body: unknown,
-    @CurrentUser() actor: Actor,
-  ) {
+  async drawerOpen(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const reference = parse(
       z
         .object({
           mode: z.enum(["automatic", "manual"]),
           operationId: uuid,
-          reason,
+          reason: drawerReason,
           saleId: uuid.optional(),
           movementId: uuid.optional(),
         })
-        .refine((value) => Boolean(value.saleId) !== Boolean(value.movementId), {
-          message: "Indica una venta o un movimiento de caja.",
-        })
-        .refine((value) => value.mode !== "automatic" || Boolean(value.saleId), {
-          message: "La apertura automática requiere una venta en efectivo.",
-        }),
+        .refine(
+          (value) => Boolean(value.saleId) !== Boolean(value.movementId),
+          {
+            message: "Indica una venta o un movimiento de caja.",
+          },
+        )
+        .refine(
+          (value) => value.mode !== "automatic" || Boolean(value.saleId),
+          {
+            message: "La apertura automática requiere una venta en efectivo.",
+          },
+        ),
       body,
     );
     if (reference.mode === "automatic") {
@@ -646,41 +667,85 @@ export class CashController {
     // aperturas manuales reciben un operationId nuevo por cada confirmación.
     // El bloqueo evita que dos llamadas simultáneas consuman la misma
     // autorización antes de que exista la fila de bitácora.
-    const authorizationId = reference.mode === "automatic"
-      ? `automatic:${entityId}`
-      : `manual:${reference.operationId}`;
+    const authorizationId =
+      reference.mode === "automatic"
+        ? `automatic:${entityId}`
+        : `manual:${reference.operationId}`;
     return this.db.$transaction(async (tx: any) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${actor.tenantId + ":drawer:" + authorizationId}))`;
-      const consumed = await tx.auditLog.findFirst({
+      const attempts = await tx.auditLog.findMany({
         where: {
           action: "cash_drawer_open",
           entity: "cash_drawer_authorization",
           entityId: authorizationId,
         },
-        select: { id: true },
+        select: { id: true, after: true },
+        orderBy: { createdAt: "asc" },
       });
-      if (consumed) bad("Esta autorización de gaveta ya fue usada.");
-      const exists = reference.saleId
-        ? await tx.sale.findFirst({
-            where: {
-              id: reference.saleId,
-              status: "completed",
-              cashSession: { branchId: actor.branchId },
-              payments: {
-                some: { method: "cash", amount: { gt: 0 }, status: { not: "rejected" } },
-              },
-            },
-            select: { id: true },
-          })
-        : await tx.cashMovement.findFirst({
-            where: {
-              id: reference.movementId,
-              session: { branchId: actor.branchId },
-            },
-            select: { id: true },
-          });
+      if (reference.mode === "automatic") {
+        if (attempts.some((row: any) => pulseStatus(row.after) === "sent"))
+          bad("Esta venta ya envió la apertura de gaveta.");
+        if (attempts.length >= 2)
+          bad("Esta venta ya agotó su único reintento de gaveta.");
+      } else if (attempts.length) {
+        bad("Esta autorización de gaveta ya fue usada.");
+      }
+      const exists =
+        reference.saleId && reference.mode === "automatic"
+          ? (
+              await tx.$queryRaw<Array<{ id: string }>>`
+              SELECT s.id
+                FROM "Sale" s
+                JOIN "CashSession" cs ON cs.id = s."cashSessionId"
+               WHERE s.id = ${reference.saleId}::uuid
+                 AND s."tenantId" = ${actor.tenantId}::uuid
+                 AND s.status = 'completed'
+                 AND s."createdAt" BETWEEN
+                       CURRENT_TIMESTAMP - (${AUTOMATIC_DRAWER_WINDOW_MINUTES} * INTERVAL '1 minute')
+                       AND CURRENT_TIMESTAMP
+                 AND cs."tenantId" = ${actor.tenantId}::uuid
+                 AND cs."branchId" = ${actor.branchId}
+                 AND cs."userId" = ${actor.id}
+                 AND cs."closedAt" IS NULL
+                 AND EXISTS (
+                   SELECT 1
+                     FROM "Payment" p
+                    WHERE p."saleId" = s.id
+                      AND p."tenantId" = ${actor.tenantId}::uuid
+                      AND p.method = 'cash'
+                      AND p.amount > 0
+                      AND p.status <> 'rejected'
+                 )
+               LIMIT 1
+            `
+            )[0]
+          : reference.saleId
+            ? await tx.sale.findFirst({
+                where: {
+                  id: reference.saleId,
+                  status: "completed",
+                  cashSession: { branchId: actor.branchId },
+                  payments: {
+                    some: {
+                      method: "cash",
+                      amount: { gt: 0 },
+                      status: { not: "rejected" },
+                    },
+                  },
+                },
+                select: { id: true },
+              })
+            : await tx.cashMovement.findFirst({
+                where: {
+                  id: reference.movementId,
+                  session: { branchId: actor.branchId },
+                },
+                select: { id: true },
+              });
       if (!exists)
-        bad("La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.");
+        bad(
+          "La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.",
+        );
       const row = await audit(
         tx,
         actor,
@@ -693,10 +758,54 @@ export class CashController {
           mode: reference.mode,
           reason: reference.reason,
           operationId: reference.operationId,
+          attempt: attempts.length + 1,
+          pulseStatus: "authorized",
           reference: { entity, entityId },
         },
       );
-      return { auditId: row.id };
+      return { auditId: row.id, pulseStatus: "authorized" };
+    });
+  }
+
+  @Post("drawer-open/:auditId/confirm")
+  @Permit("authenticated")
+  async confirmDrawerPulse(
+    @Param("auditId") rawAuditId: string,
+    @CurrentUser() actor: Actor,
+  ) {
+    const auditId = parse(uuid, rawAuditId);
+    return this.db.$transaction(async (tx: any) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${actor.tenantId + ":drawer-confirm:" + auditId}))`;
+      const row = await tx.auditLog.findFirst({
+        where: {
+          id: auditId,
+          userId: actor.id,
+          branchId: actor.branchId,
+          action: "cash_drawer_open",
+          entity: "cash_drawer_authorization",
+        },
+        select: { id: true, after: true },
+      });
+      if (!row) bad("La autorización de gaveta no existe o no te pertenece.");
+      const status = pulseStatus(row.after);
+      if (status === "sent") return { auditId, pulseStatus: "sent" };
+      if (status !== "authorized")
+        bad("La autorización de gaveta no se puede confirmar.");
+      const after =
+        row.after && typeof row.after === "object" && !Array.isArray(row.after)
+          ? (row.after as Record<string, unknown>)
+          : {};
+      await tx.auditLog.update({
+        where: { id: auditId },
+        data: {
+          after: {
+            ...after,
+            pulseStatus: "sent",
+            confirmedAt: new Date().toISOString(),
+          },
+        },
+      });
+      return { auditId, pulseStatus: "sent" };
     });
   }
   @Get()
@@ -1143,7 +1252,9 @@ export class CashController {
       );
       const expected = await cashExpected(tx, session);
       const settings = (
-        await tx.settings.findUnique({ where: tenantUnique("id", actor.branchId) })
+        await tx.settings.findUnique({
+          where: tenantUnique("id", actor.branchId),
+        })
       )?.data as any;
       const data = {
         countedCash: counted,
