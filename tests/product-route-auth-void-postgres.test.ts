@@ -61,6 +61,8 @@ it("login por código de empresa, refresh, cambio de clave y PIN aíslan identid
     await sql.query(`INSERT INTO "Tenant" (id,slug,name,"updatedAt") VALUES ($1,'empresa-b','Empresa B',now())`, [B]);
     // La prueba de aislamiento necesita dos equipos aprobados por empresa.
     await sql.query(`UPDATE "Tenant" SET plan='pro' WHERE id IN ($1,$2)`, [A, B]);
+    // La migración 202610280024 ya sembró los roles base; esta prueba usa los suyos.
+    await sql.query(`DELETE FROM "Role"`);
     const adminPassword = "AdminPrueba2026!";
     const sellerTemporary = "348269";
     const sellerNew = "286437";

@@ -122,7 +122,7 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     expect(tenants.rows[0].privacyVersion).toBe("privacy-test-1");
     expect(new Date(tenants.rows[0].termsAcceptedAt).getTime()).toBeGreaterThan(Date.now() - 60000);
     expect(new Date(tenants.rows[0].privacyAcceptedAt).getTime()).toBeGreaterThan(Date.now() - 60000);
-    expect((await client.query(`SELECT count(*)::int AS n FROM "Role" WHERE "tenantId"=$1`, [tenants.rows[0].id])).rows[0].n).toBe(2);
+    expect((await client.query(`SELECT count(*)::int AS n FROM "Role" WHERE "tenantId"=$1`, [tenants.rows[0].id])).rows[0].n).toBe(4); // admin + roles base
     expect((await client.query(`SELECT count(*)::int AS n FROM "Settings" WHERE "tenantId"=$1`, [tenants.rows[0].id])).rows[0].n).toBe(1);
     const owner = await client.query(`SELECT "pinHash" FROM "User" WHERE "tenantId"=$1`, [tenants.rows[0].id]);
     expect(await apiRequire("bcryptjs").compare(input.managerPin, owner.rows[0].pinHash)).toBe(true);
