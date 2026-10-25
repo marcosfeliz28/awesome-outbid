@@ -55,17 +55,26 @@ async fn open_cash_drawer(
         return Ok(());
     };
     pulse(printer_name).await?;
-    // CPC-10: la bitácora marca «enviado» solo cuando este equipo dio el
-    // pulso; sin esa marca la cajera puede reintentar la misma venta una vez.
     if automatic {
-        let _ = post_drawer(
-            &access_token,
-            "/api/cash-sessions/drawer-open/automatic/sent",
-            serde_json::json!({ "auditId": audit_id }).to_string(),
-        )
-        .await;
+        confirm_automatic_pulse(&access_token, &audit_id).await?;
     }
     Ok(())
+}
+
+async fn confirm_automatic_pulse(access_token: &str, audit_id: &str) -> Result<(), String> {
+    let result = post_drawer(
+        access_token,
+        "/api/cash-sessions/drawer-open/automatic/sent",
+        serde_json::json!({ "auditId": audit_id }).to_string(),
+    )
+    .await;
+    require_pulse_confirmation(result)
+}
+
+fn require_pulse_confirmation(result: Result<String, String>) -> Result<(), String> {
+    result.map(|_| ()).map_err(|error| {
+        format!("La gaveta se abrió, pero no se pudo confirmar el pulso en la bitácora. {error}")
+    })
 }
 
 async fn pulse(printer_name: String) -> Result<(), String> {
@@ -138,14 +147,7 @@ async fn authorize_drawer(
     if automatic && (sale_id.is_none() || movement_id.is_some()) {
         return Err("La apertura automática requiere una venta en efectivo.".into());
     }
-    let mut reference = match (sale_id, movement_id) {
-        (Some(value), None) if valid_reference(value) => serde_json::json!({ "saleId": value }),
-        (None, Some(value)) if valid_reference(value) => serde_json::json!({ "movementId": value }),
-        _ => return Err("Indica una venta o un movimiento de caja válido.".into()),
-    };
-    if !automatic {
-        reference["reason"] = serde_json::Value::String(reason.unwrap_or("").to_string());
-    }
+    let reference = drawer_reference(sale_id, movement_id, automatic, reason)?;
     if access_token.is_empty() {
         return Err("La sesión no permite autorizar la gaveta.".into());
     }
@@ -154,13 +156,37 @@ async fn authorize_drawer(
     } else {
         "/api/cash-sessions/drawer-open"
     };
-    let body = post_drawer(access_token, route, reference.to_string()).await?;
+    let body = post_drawer(access_token, route, reference).await?;
     Ok(drawer_audit_id(&body, automatic))
+}
+
+fn drawer_reference(
+    sale_id: Option<&str>,
+    movement_id: Option<&str>,
+    automatic: bool,
+    reason: Option<&str>,
+) -> Result<String, String> {
+    let (key, value) = match (sale_id, movement_id) {
+        (Some(value), None) if valid_reference(value) => ("saleId", value),
+        (None, Some(value)) if valid_reference(value) => ("movementId", value),
+        _ => return Err("Indica una venta o un movimiento de caja válido.".into()),
+    };
+    let mut reference = serde_json::json!({ key: value });
+    if !automatic {
+        let reason = reason.map(str::trim).unwrap_or("");
+        if reason.chars().count() < 5 {
+            return Err("Indica el motivo de la apertura (mínimo 5 caracteres).".into());
+        }
+        reference["reason"] = serde_json::Value::String(reason.to_string());
+    }
+    Ok(reference.to_string())
 }
 
 #[cfg(test)]
 mod audit_tests {
-    use super::{drawer_audit_id, valid_reference};
+    use super::{
+        drawer_audit_id, drawer_reference, require_pulse_confirmation, valid_reference,
+    };
 
     #[test]
     fn drawer_opens_only_with_a_confirmed_audit() {
@@ -178,6 +204,36 @@ mod audit_tests {
         assert!(valid_reference("550e8400-e29b-41d4-a716-446655440000"));
         assert!(!valid_reference(""));
         assert!(!valid_reference("550e8400-e29b-41d4-a716-44665544000z"));
+    }
+
+    #[test]
+    fn manual_drawer_requires_and_escapes_a_trimmed_reason() {
+        let id = "550e8400-e29b-41d4-a716-446655440000";
+        assert!(drawer_reference(Some(id), None, false, None).is_err());
+        assert!(drawer_reference(Some(id), None, false, Some(" 1234 ")).is_err());
+
+        let body = drawer_reference(Some(id), None, false, Some("  cambio \"manual\"  "))
+            .expect("un motivo válido debe serializarse");
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(json["saleId"], id);
+        assert_eq!(json["reason"], "cambio \"manual\"");
+    }
+
+    #[test]
+    fn automatic_drawer_does_not_send_a_reason() {
+        let id = "550e8400-e29b-41d4-a716-446655440000";
+        let body = drawer_reference(Some(id), None, true, Some("no debe viajar")).unwrap();
+        let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(json["saleId"], id);
+        assert!(json.get("reason").is_none());
+    }
+
+    #[test]
+    fn automatic_pulse_confirmation_is_not_ignored() {
+        assert!(require_pulse_confirmation(Ok("{}".into())).is_ok());
+        let error = require_pulse_confirmation(Err("sin red".into())).unwrap_err();
+        assert!(error.contains("La gaveta se abrió"));
+        assert!(error.contains("sin red"));
     }
 }
 
