@@ -214,7 +214,8 @@ export async function askAssistant(body: unknown, auth: string | undefined, acto
   const context = parsed.data.messages.map((entry) => ({ role: entry.role, content: entry.content }));
   const today = (deps.now?.() ?? new Date()).toLocaleDateString("en-CA", { timeZone: "America/Santo_Domingo" });
   const last = context.length - 1;
-  context[last] = { role: "user", content: `Fecha: ${today}. Usuario: ${actor.name.slice(0, 80)}. Pregunta: ${context[last].content}` };
+  // CPC-6 punto 9: el nombre lo edita un administrador; va marcado como dato.
+  context[last] = { role: "user", content: `Fecha: ${today}. Usuario: ${untrusted(actor.name.slice(0, 80))}\nPregunta: ${context[last].content}` };
   const usage = { input: 0, output: 0 };
   let sawBusinessData = false;
   let proposal: VoidProposal | undefined;
@@ -233,7 +234,12 @@ export async function askAssistant(body: unknown, auth: string | undefined, acto
     }
     context.push({ role: "assistant", content: response.content } as any);
     const results = [];
-    for (const call of calls.slice(0, 10)) {
+    for (const [index, call] of calls.entries()) {
+      // Cada tool_use necesita su resultado o el proveedor responde 400 (CPC-6 punto 9).
+      if (index >= 10) {
+        results.push({ type: "tool_result", tool_use_id: call.id, content: untrusted("Límite de 10 herramientas por paso.") });
+        continue;
+      }
       deps.onTool?.(call.name in toolSchemas ? call.name : "desconocida");
       if (call.name === "pedir_anulacion") {
         if (sawBusinessData) {

@@ -12,7 +12,7 @@ const fields = z.object({
   amount: z.string().regex(/^\d{1,12}(?:\.\d{1,2})?$/),
 }).strict();
 export type TransferProofFields = z.infer<typeof fields>;
-type SavedTransfer = { bank: string | null; reference: string | null; amount: string };
+type SavedTransfer = { bank: string | null; reference: string | null; amount: string; createdAt?: Date };
 
 export function parseTransferProof(text: string): TransferProofFields | null {
   try {
@@ -36,12 +36,22 @@ const cents = (amount: string) => {
   const [whole, fraction = ""] = amount.split(".");
   return Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
 };
-const weakReference = (value: string) => /^(\d)\1{3,}$/.test(value) || /^(?:sinref|sinnumero|na|test|prueba)$/i.test(normalized(value));
+// CPC-6 punto 7: menos de 6 caracteres, un solo dígito repetido o 1234… no se verifican.
+const weakReference = (value: string) => {
+  const ref = normalized(value);
+  return ref.length < 6 || /^(\d)\1+$/.test(ref) || "01234567890".includes(ref) || "9876543210".includes(ref) ||
+    /^(?:sinref|sinnumero|na|test|prueba)$/.test(ref);
+};
+const day = (at: Date) => at.toLocaleDateString("en-CA", { timeZone: "America/Santo_Domingo" });
 
-export function assessTransferProof(saved: SavedTransfer, photo: TransferProofFields, duplicate: boolean) {
+export function assessTransferProof(saved: SavedTransfer, photo: TransferProofFields, duplicate: boolean, now = new Date()) {
   const warnings: string[] = [];
+  if (photo.date > day(now)) warnings.push("La fecha de la foto es futura.");
+  // Un día de margen: la transferencia pudo hacerse la víspera del registro.
+  else if (saved.createdAt && photo.date < day(new Date(saved.createdAt.getTime() - 86400000)))
+    warnings.push("La fecha de la foto es anterior al pago; puede ser una captura vieja.");
   if (weakReference(photo.reference)) warnings.push("Referencia no verificable; revisa el banco antes de decidir.");
-  if (duplicate) warnings.push("La referencia ya se usó en otra transferencia de esta sucursal.");
+  if (duplicate) warnings.push("La referencia ya se usó en otra transferencia de esta empresa.");
   if (bankName(saved.bank) !== bankName(photo.bank)) warnings.push("El banco de la foto no coincide con el registrado.");
   if (normalized(saved.reference) !== normalized(photo.reference)) warnings.push("La referencia de la foto no coincide con la registrada.");
   if (cents(saved.amount) !== cents(photo.amount)) warnings.push("El monto de la foto no coincide con el registrado; revisa también el envío.");
@@ -80,7 +90,7 @@ export class TransferProofReviewController {
     extract: typeof extractTransferProof = extractTransferProof) {
     const payment = await this.db.payment.findFirst({
       where: { id: parse(uuid, id), method: "transfer", status: "pending_verification", sale: { branchId: actor.branchId } },
-      select: { id: true, bank: true, reference: true, amount: true, proofUrl: true },
+      select: { id: true, bank: true, reference: true, amount: true, proofUrl: true, createdAt: true },
     });
     if (!payment) throw new HttpException("Transferencia pendiente no encontrada.", 404);
     if (!process.env.ANTHROPIC_API_KEY) throw new HttpException("La lectura de comprobantes no está activada.", 503);
@@ -93,10 +103,11 @@ export class TransferProofReviewController {
     const bytes = object ? await tenantObjectStore().get(actor.tenantId, object.key) : Buffer.from(inline![2], "base64");
     if (bytes.length < 1 || bytes.length > 2 * 1024 * 1024) throw new HttpException("La foto guardada no es válida.", 400);
     const photo = await extract(bytes, mime, process.env.ANTHROPIC_API_KEY);
-    const prior = await this.db.payment.findFirst({
-      where: { id: { not: payment.id }, method: "transfer", reference: { equals: photo.reference, mode: "insensitive" },
-        status: { not: "rejected" }, sale: { branchId: actor.branchId } }, select: { id: true },
-    });
-    return assessTransferProof({ bank: payment.bank, reference: payment.reference, amount: String(payment.amount) }, photo, !!prior);
+    // Toda la empresa (RLS) y referencia sin guiones ni espacios: «12-34 56» = «123456».
+    const prior = await this.db.$queryRaw<{ id: string }[]>`
+      SELECT id::text FROM "Payment" WHERE id <> ${payment.id}::uuid AND method = 'transfer' AND status <> 'rejected'
+        AND regexp_replace(lower(coalesce(reference, '')), '[^a-z0-9]', '', 'g') = ${normalized(photo.reference)} LIMIT 1`;
+    return assessTransferProof({ bank: payment.bank, reference: payment.reference, amount: String(payment.amount),
+      createdAt: payment.createdAt }, photo, prior.length > 0);
   }
 }

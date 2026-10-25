@@ -4,6 +4,17 @@ import { assessTransferProof, parseTransferProof, TransferProofReviewController 
 const saved = { bank: "BHD", reference: "827647262", amount: "1500.00" };
 
 describe("N-08 · lectura de comprobante de transferencia", () => {
+  it("CPC-6: avisa fecha vieja o futura y referencias cortas o en serie", () => {
+    const photo = { bank: "BHD", date: "2026-10-24", reference: "827647262", amount: "1500.00" };
+    const at = new Date("2026-10-24T15:00:00Z");
+    expect(assessTransferProof({ ...saved, createdAt: at }, photo, false, at).recommendation).toBe("verificar");
+    const old = assessTransferProof({ ...saved, createdAt: at }, { ...photo, date: "2026-10-01" }, false, at);
+    expect(old.recommendation).toBe("revisar");
+    expect(old.warnings.join(" ")).toMatch(/anterior al pago/);
+    expect(assessTransferProof(saved, { ...photo, date: "2026-10-26" }, false, at).warnings.join(" ")).toMatch(/futura/);
+    for (const reference of ["1234", "12345678", "98765", "00000000"])
+      expect(assessTransferProof({ ...saved, reference }, { ...photo, reference }, false, at).recommendation, reference).toBe("rechazar");
+  });
   it("extrae sólo banco, fecha, referencia y monto de JSON estricto", () => {
     expect(parseTransferProof('{"bank":"BHD","date":"2026-10-24","reference":"827647262","amount":"1500.00"}'))
       .toEqual({ bank: "BHD", date: "2026-10-24", reference: "827647262", amount: "1500.00" });
@@ -29,14 +40,15 @@ describe("N-08 · lectura de comprobante de transferencia", () => {
     expect(result.recommendation).toBe("revisar");
     expect(result.warnings.join(" ")).toMatch(/banco|monto/);
   });
-  it("consulta sólo la sucursal autenticada y no verifica ni rechaza el pago", async () => {
+  it("consulta la sucursal autenticada, busca repetidas en la empresa y no verifica ni rechaza el pago", async () => {
     const old = process.env.ANTHROPIC_API_KEY;
     process.env.ANTHROPIC_API_KEY = "falsa-de-prueba";
     const findFirst = vi.fn()
       .mockResolvedValueOnce({ id: "10000000-0000-4000-8000-000000000001", bank: "BHD", reference: "827647262", amount: "1500.00",
         proofUrl: "data:image/png;base64,aGVsbG8=" })
-      .mockResolvedValueOnce(null);
-    const db: any = { payment: { findFirst } };
+      ;
+    const $queryRaw = vi.fn().mockResolvedValue([]);
+    const db: any = { payment: { findFirst }, $queryRaw };
     const limits: any = { assert: vi.fn() };
     const actor: any = { id: "u1", tenantId: "t1", branchId: "local" };
     const extract = vi.fn().mockResolvedValue({ bank: "BHD", date: "2026-10-24", reference: "827647262", amount: "1500.00" });
@@ -44,7 +56,8 @@ describe("N-08 · lectura de comprobante de transferencia", () => {
       const result = await new TransferProofReviewController(db, limits).review("10000000-0000-4000-8000-000000000001", actor, extract);
       expect(result.recommendation).toBe("verificar");
       expect(findFirst.mock.calls[0][0].where.sale.branchId).toBe("local");
-      expect(findFirst.mock.calls[1][0].where.sale.branchId).toBe("local");
+      expect(findFirst).toHaveBeenCalledTimes(1);
+      expect($queryRaw.mock.calls[0].slice(1)).toEqual(["10000000-0000-4000-8000-000000000001", "827647262"]);
       expect(Object.keys(db.payment)).toEqual(["findFirst"]);
       expect(extract).toHaveBeenCalledWith(Buffer.from("hello"), "image/png", "falsa-de-prueba");
     } finally {
