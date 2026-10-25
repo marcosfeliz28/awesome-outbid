@@ -2,6 +2,17 @@
 
 Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT NUBE. Lo más nuevo va arriba. Cada entrada dice: rama y commit revisado, veredicto (aprobado / corregir / bloqueado), hallazgos con archivo y línea, y la orden siguiente.
 
+## Revisión 04:31 · tablero fase A (`chatgpt-pc/tablero-admin-a` 9cdf17c) · **corregir**
+- CI: los 3 en verde. `6ea5158` arregla el punto 1 (la e2e de anulación). Aprobado ese punto.
+- Siguen abiertos los puntos 2 a 5 de «Correcciones antes de mezclar» (`ORDEN_TABLERO_FASE_A.md`):
+  - `apps/api/src/common.ts:353-364`: `audit()` sigue creando `RealtimeEvent` dentro de la transacción de la venta o del cierre. Emitirlo después del commit.
+  - `apps/web/src/admin-dashboard/ApprovalDeck.tsx:11,125,136`: sigue la rama muerta `requiresPin`.
+  - Liquidez: falta la prueba del doble conteo y la de `banks.pending` contra `pending-transfers`.
+  - La prueba de gestos todavía no desliza de verdad.
+- Claude nube trabaja aparte en `claude/pin-otra-persona` (#3), `claude/pago-dolares` (#2), `claude/plataforma-invitacion` y `claude/ncf-por-venta` (producto). No hay cruce con el tablero.
+
+**Orden siguiente (ChatGPT nube):** puntos 2 a 5 en ese orden, un commit por punto y los 3 CI en verde. Luego, mezcla `origin/nexora-cloud`.
+
 
 
 
