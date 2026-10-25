@@ -1019,15 +1019,19 @@ export class CashController {
         bad(
           "Explica en las notas del cierre qué comprobantes forman el vale de caja.",
         );
-      if (!can(actor.permissions, "sale:manage")) {
+      const owner = await this.db.cashSession.findFirst({
+        where: { id: parse(uuid, id), branchId: actor.branchId },
+        select: { userId: true },
+      });
+      // Un gerente tampoco cubre con un vale el faltante de SU caja.
+      if (
+        !can(actor.permissions, "sale:manage") ||
+        (owner?.userId === actor.id && !can(actor.permissions, "*"))
+      ) {
         if (!input.managerPin)
           bad(
-            "Cerrar con un vale de caja requiere el PIN de un gerente. Si fue una salida de efectivo, regístrala en «Salida» antes de cerrar.",
+            "Cerrar con un vale de caja requiere el PIN de otro gerente. Si fue una salida de efectivo, regístrala en «Salida» antes de cerrar.",
           );
-        const owner = await this.db.cashSession.findFirst({
-          where: { id: parse(uuid, id), branchId: actor.branchId },
-          select: { userId: true },
-        });
         voucherApprovedBy = await managerPinApproval(
           this.db,
           actor,

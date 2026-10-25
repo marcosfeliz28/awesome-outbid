@@ -611,7 +611,7 @@ export class SalesController {
       (p) => p.method === "credit_note" && !p.creditNoteCode,
     );
     if (
-      (!exceeds || can(actor.permissions, "sale:manage")) &&
+      (!exceeds || can(actor.permissions, "*")) &&
       !needsCreditApproval &&
       !needsNoteApproval
     )

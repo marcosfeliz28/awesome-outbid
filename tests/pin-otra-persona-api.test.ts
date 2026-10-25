@@ -204,6 +204,46 @@ describe("PIN de gerente: siempre de otra persona (dueña, 25-oct)", () => {
     expect(row.discountRule).toBe("manager_pin");
   });
 
+  it("descuento sobre el límite en efectivo: el gerente no se lo aprueba solo", async () => {
+    const sell = (managerPin?: string) =>
+      request("/sales", a.token, {
+        offlineUuid: randomUUID(),
+        cashSessionId: a.cash.id,
+        items: [{ variantId, qty: 1 }],
+        globalDiscount: 50,
+        discountReason: "QA: descuento de gerente",
+        payments: [{ method: "cash", amount: 50 }],
+        expectedTotal: 50,
+        ...(managerPin ? { managerPin } : {}),
+      });
+    expect((await sell()).status).toBe(400);
+    const own = await sell(PIN_A);
+    expect(own.status, JSON.stringify(own.body)).toBe(400);
+    expect(own.body.message).toMatch(SELF);
+    const other = await sell(PIN_B);
+    expect(other.status, JSON.stringify(other.body)).toBe(201);
+    const row = await db.sale.findUnique({ where: { id: other.body.id } });
+    expect(row.discountApprovedBy).toBe(b.id);
+  });
+
+  it("vale de caja en su propia caja: el gerente no cubre su faltante solo", async () => {
+    const close = (managerPin?: string) =>
+      request("/cash-sessions/" + b.cash.id + "/close", b.token, {
+        countedCash: 900,
+        countedCard: 0,
+        countedTransfer: 0,
+        vouchers: 100,
+        notes: "QA: vale de caja de prueba",
+        ...(managerPin ? { managerPin } : {}),
+      });
+    expect((await close()).status).toBe(400);
+    const own = await close(PIN_B);
+    expect(own.status, JSON.stringify(own.body)).toBe(400);
+    expect(own.body.message).toMatch(SELF);
+    const other = await close(PIN_A);
+    expect(other.status, JSON.stringify(other.body)).toBe(201);
+  });
+
   it("efectivo «Recibido por la dueña»: el PIN propio no aprueba; el de otro gerente sí", async () => {
     const s = (
       await ok("/sales", a.token, {

@@ -107,12 +107,19 @@ export async function managerPinApproval(
       db,
       "approval:" + actor.id,
       async () => {
-        for (const manager of managers.filter((m: any) =>
+        // Primero las personas excluidas: si otro gerente tuviera el mismo
+        // PIN, no se le atribuye la aprobación.
+        const able = managers.filter((m: any) =>
           can(m.role.permissions, "sale:manage"),
-        ))
+        );
+        for (const manager of [
+          ...able.filter((m: any) => excluded.has(m.id)),
+          ...able.filter((m: any) => !excluded.has(m.id)),
+        ])
           if (await compare(pin, manager.pinHash)) {
             if (!excluded.has(manager.id)) return manager.id as string;
             own = true;
+            return null;
           }
         return null;
       },
