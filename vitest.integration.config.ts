@@ -8,6 +8,7 @@ export default defineConfig({
       "tests/api.test.ts",
       "tests/caja-por-usuario.test.ts",
       "tests/caja-lote-verifon.test.ts",
+      "tests/pago-dolares-api.test.ts",
       "tests/caja-fondo-sugerido.test.ts",
       "tests/dinero-auditoria.test.ts",
       "tests/minors.test.ts",

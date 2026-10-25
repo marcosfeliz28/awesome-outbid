@@ -60,7 +60,13 @@ export async function cashExpected(db: any, session: any) {
       status: { not: "rejected" },
       OR: [{ entryType: { not: "installment" } }, { status: "ok" }],
     },
-    select: { method: true, amount: true },
+    select: {
+      method: true,
+      amount: true,
+      currency: true,
+      change: true,
+      amountUsd: true,
+    },
   });
   const movements = await db.cashMovement.findMany({
     where: { sessionId: session.id },
@@ -74,8 +80,13 @@ export async function cashExpected(db: any, session: any) {
     card: d(0),
     transfer: d(0),
   };
+  let usd = d(0);
   for (const p of payments)
-    if (p.method in expected)
+    if (p.currency === "USD") {
+      // Los dólares van a su gaveta; de los pesos sólo sale el vuelto.
+      usd = usd.plus(p.amountUsd);
+      expected.cash = expected.cash.minus(p.change);
+    } else if (p.method in expected)
       expected[p.method as keyof typeof expected] = expected[
         p.method as keyof typeof expected
       ].plus(p.amount);
@@ -92,6 +103,7 @@ export async function cashExpected(db: any, session: any) {
     cash: money(expected.cash),
     card: money(expected.card),
     transfer: money(expected.transfer),
+    usd: money(usd),
     movements,
   };
 }
@@ -105,7 +117,7 @@ export async function cashExpectedMany(db: any, sessions: any[]) {
   const ids = sessions.map((s) => s.id);
   if (!ids.length) return result;
   const payments = await db.payment.groupBy({
-    by: ["cashSessionId", "method"],
+    by: ["cashSessionId", "method", "currency"],
     where: {
       cashSessionId: { in: ids },
       sale: { status: "completed" },
@@ -114,7 +126,7 @@ export async function cashExpectedMany(db: any, sessions: any[]) {
       status: { not: "rejected" },
       OR: [{ entryType: { not: "installment" } }, { status: "ok" }],
     },
-    _sum: { amount: true },
+    _sum: { amount: true, change: true, amountUsd: true },
   });
   const movements = await db.cashMovement.findMany({
     where: { sessionId: { in: ids } },
@@ -130,11 +142,17 @@ export async function cashExpectedMany(db: any, sessions: any[]) {
       card: d(0),
       transfer: d(0),
     };
-    for (const p of payments)
-      if (p.cashSessionId === session.id && p.method in expected)
+    let usd = d(0);
+    for (const p of payments) {
+      if (p.cashSessionId !== session.id) continue;
+      if (p.currency === "USD") {
+        usd = usd.plus(p._sum.amountUsd ?? 0);
+        expected.cash = expected.cash.minus(p._sum.change ?? 0);
+      } else if (p.method in expected)
         expected[p.method as keyof typeof expected] = expected[
           p.method as keyof typeof expected
         ].plus(p._sum.amount ?? 0);
+    }
     const own = movements.filter((m: any) => m.sessionId === session.id);
     for (const m of own)
       expected.cash = expected.cash.plus(
@@ -149,6 +167,7 @@ export async function cashExpectedMany(db: any, sessions: any[]) {
       cash: money(expected.cash),
       card: money(expected.card),
       transfer: money(expected.transfer),
+      usd: money(usd),
       movements: own,
     });
   }
@@ -165,6 +184,11 @@ function closeDifferences(session: any, expected: any) {
     ),
     card: money(d(session.countedCard ?? 0).minus(expected.card)),
     transfer: money(d(session.countedTransfer ?? 0).minus(expected.transfer)),
+    usd: money(
+      d((session.closeDetails as any)?.countedUsd ?? 0).minus(
+        expected.usd ?? 0,
+      ),
+    ),
   };
 }
 export { canViewCashExpected } from "./common";
@@ -174,14 +198,24 @@ export { canViewCashExpected } from "./common";
 // gestiona ventas conserva el umbral configurable para cierres supervisados.
 export function cashCloseRequiresNote(
   actor: Actor,
-  differences: { cash: unknown; card: unknown; transfer: unknown },
+  differences: {
+    cash: unknown;
+    card: unknown;
+    transfer: unknown;
+    usd?: unknown;
+  },
   differenceLimit: number,
+  usdRate = 0,
 ) {
   const values = [
     Math.abs(Number(differences.cash)),
     Math.abs(Number(differences.card)),
     Math.abs(Number(differences.transfer)),
+    // Dólares: el umbral está en pesos, se compara su equivalente.
+    Math.abs(Number(differences.usd ?? 0)) * (Number(usdRate) || 0),
   ];
+  if (!canViewCashExpected(actor) && Number(differences.usd ?? 0) !== 0)
+    return true;
   return canViewCashExpected(actor)
     ? Math.max(...values) > differenceLimit
     : values.some((value) => value > 0);
@@ -191,9 +225,21 @@ export function cashCloseRequiresNote(
 export async function refreshClosedCash(tx: any, session: any) {
   const expected = await cashExpected(tx, session);
   const differences = closeDifferences(session, expected);
+  const details = (session.closeDetails as any) ?? {};
   await tx.cashSession.update({
     where: { id: session.id },
     data: {
+      // Los cierres anteriores al pago en dólares no esperaban US$: no se
+      // les inventa un descuadre al recalcular.
+      ...(details.expectedUsd !== undefined || expected.usd
+        ? {
+            closeDetails: {
+              ...details,
+              expectedUsd: expected.usd,
+              differenceUsd: differences.usd,
+            },
+          }
+        : {}),
       expectedCash: expected.cash,
       expectedCard: expected.card,
       expectedTransfer: expected.transfer,
@@ -267,14 +313,27 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   ])
     salesByMethod[method] = sumOf(
       completed.flatMap((s: any) =>
-        s.payments.filter(
-          (p: any) =>
-            p.entryType === "sale" &&
-            p.method === method &&
-            p.status !== "rejected",
-        ),
+        s.payments
+          .filter(
+            (p: any) =>
+              p.entryType === "sale" &&
+              p.method === method &&
+              p.status !== "rejected",
+          )
+          // Efectivo en dólares: a la gaveta de pesos sólo le toca el vuelto.
+          .map((p: any) =>
+            p.currency === "USD" ? { amount: d(p.change).negated() } : p,
+          ),
       ),
     );
+  const usdSales = completed.flatMap((s: any) =>
+    s.payments.filter(
+      (p: any) => p.entryType === "sale" && p.currency === "USD",
+    ),
+  );
+  const expectedUsd = money(
+    usdSales.reduce((a: any, p: any) => a.plus(p.amountUsd), d(0)),
+  );
   // Abonos de la caja: recibos CxC y cobros de contraentrega van aparte.
   const isCod = (p: any) =>
     p.sale.payments.some(
@@ -339,15 +398,16 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
         });
   const usdRate = details.usdRate ?? settings.usdRate ?? null;
   const eurRate = details.eurRate ?? settings.eurRate ?? null;
-  const foreign = (counted: number, rate: number | null) => ({
+  const foreign = (counted: number, rate: number | null, expected = 0) => ({
     counted,
-    expected: 0,
-    difference: counted,
+    expected,
+    difference: money(d(counted).minus(expected)),
     rate,
     dop: rate ? money(d(counted).times(rate)) : null,
   });
   const countedUsd = Number(details.countedUsd ?? 0);
   const countedEur = Number(details.countedEur ?? 0);
+  const differenceUsd = money(d(countedUsd).minus(expectedUsd));
   // Rentabilidad: ventas sin ITBIS menos costo, neto de las devoluciones que
   // se registraron EN ESTA caja. Una devolución hecha después desde otra caja
   // ajusta el cuadre de esa otra caja, con referencia a la venta original; el
@@ -389,7 +449,7 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
     ["cashSales", "Total en venta efectivo", cashSalesDetail.total],
     ["receipts", "Recibos CxC", receipts.total],
     ["differenceDop", "Diferencias RD$", differenceDop],
-    ["differenceUsd", "Diferencias US$", closed ? countedUsd : null],
+    ["differenceUsd", "Diferencias US$", closed ? differenceUsd : null],
     ["differenceEur", "Diferencias €", closed ? countedEur : null],
     ["discounts", "Total Desc.", discounts],
     ["total", "Total", total],
@@ -408,9 +468,14 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   const offCash = closed ? Number(session.differenceCash ?? 0) : 0;
   const offCard = closed ? Number(session.differenceCard ?? 0) : 0;
   const offTransfer = closed ? Number(session.differenceTransfer ?? 0) : 0;
-  const approverIds = [details.cashApprovedBy, details.cardApprovedBy].filter(
-    Boolean,
-  );
+  // Sólo los cierres con pago en dólares guardan la diferencia en US$; en
+  // los anteriores no se esperaban dólares y no se marca descuadre.
+  const offUsd = closed ? Number(details.differenceUsd ?? 0) : 0;
+  const approverIds = [
+    details.cashApprovedBy,
+    details.cardApprovedBy,
+    details.usdApprovedBy,
+  ].filter(Boolean);
   const approvers = approverIds.length
     ? await db.user.findMany({
         where: { id: { in: approverIds } },
@@ -420,11 +485,13 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   const nameOf = (id: unknown) =>
     approvers.find((u: any) => u.id === id)?.name ?? null;
   const descuadre =
-    offCash || offCard || offTransfer
+    offCash || offCard || offTransfer || offUsd
       ? {
           cash: offCash,
           card: offCard,
           transfer: offTransfer,
+          usd: offUsd,
+          usdApprovedBy: nameOf(details.usdApprovedBy),
           reason: details.differenceReason ?? null,
           resolution: details.differenceResolution?.note ?? null,
           notes: session.notes ?? null,
@@ -552,7 +619,7 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
       numbers: voided.map((s: any) => s.number),
     },
     foreign: {
-      usd: foreign(countedUsd, usdRate),
+      usd: foreign(countedUsd, usdRate, expectedUsd),
       eur: foreign(countedEur, eurRate),
     },
     summary: {
@@ -1123,12 +1190,20 @@ export class CashController {
       // cuánto falta ni sobra (el cierre sigue siendo ciego).
       const cardOff = Number(differences.card) !== 0;
       const cashOff = Number(differences.cash) !== 0;
-      if ((cardOff || cashOff) && !can(actor.permissions, "sale:manage")) {
+      // Pago en dólares (25-oct): los US$ contados contra los cobrados en
+      // dólares en la caja, con las mismas reglas que los pesos.
+      const usdOff = Number(differences.usd) !== 0;
+      (data.closeDetails as any).expectedUsd = expected.usd;
+      (data.closeDetails as any).differenceUsd = differences.usd;
+      const anyOff = cardOff || cashOff || usdOff;
+      if (anyOff && !can(actor.permissions, "sale:manage")) {
         if (!input.managerPin)
           bad(
             cardOff
               ? "El total de tarjeta no coincide con el sistema. Revisa el voucher del verifón; para cerrar con esta diferencia se necesita el PIN de un gerente."
-              : "La caja no cuadra con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente.",
+              : cashOff
+                ? "La caja no cuadra con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente."
+                : "Los dólares contados no coinciden con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente.",
           );
         const approver = await managerPinApproval(
           this.db,
@@ -1137,24 +1212,28 @@ export class CashController {
         );
         if (cardOff) (data.closeDetails as any).cardApprovedBy = approver;
         if (cashOff) (data.closeDetails as any).cashApprovedBy = approver;
-      } else if (cardOff || cashOff) {
+        if (usdOff) (data.closeDetails as any).usdApprovedBy = approver;
+      } else if (anyOff) {
         // Un gerente que cierra con descuadre queda como quien lo aprobó.
         if (cardOff) (data.closeDetails as any).cardApprovedBy = actor.id;
         if (cashOff) (data.closeDetails as any).cashApprovedBy = actor.id;
+        if (usdOff) (data.closeDetails as any).usdApprovedBy = actor.id;
       }
       // Dueña (21-oct): falte o sobre, nadie cierra un descuadre sin decir
       // qué pasó, tampoco un gerente. El mensaje sigue sin decir el monto.
-      if (
-        (cardOff || cashOff) &&
-        input.differenceReason.replace(/\s/g, "").length < 10
-      )
+      if (anyOff && input.differenceReason.replace(/\s/g, "").length < 10)
         bad(
           "La caja no cuadra. Escribe la justificación del descuadre: qué pasó y quién lo sabe.",
         );
-      if (cardOff || cashOff)
+      if (anyOff)
         (data.closeDetails as any).differenceReason = input.differenceReason;
       if (
-        cashCloseRequiresNote(actor, differences, differenceLimit) &&
+        cashCloseRequiresNote(
+          actor,
+          differences,
+          differenceLimit,
+          settings?.usdRate,
+        ) &&
         !input.notes.trim()
       )
         bad(
@@ -1200,7 +1279,8 @@ export class CashController {
       if (
         Number(row.differenceCash) ||
         Number(row.differenceCard) ||
-        Number(row.differenceTransfer)
+        Number(row.differenceTransfer) ||
+        usdOff
       )
         await audit(tx, actor, "close_difference", "cash", id, session, row);
       if (d(input.vouchers).gt(0)) {
@@ -1233,11 +1313,13 @@ export class CashController {
           update: { status: "new", message },
         });
       }
+      const usdNote = usdOff ? `, dólares US$ ${differences.usd}` : "";
       if (
         Math.max(
           Math.abs(Number(row.differenceCash)),
           Math.abs(Number(row.differenceCard)),
           Math.abs(Number(row.differenceTransfer)),
+          Math.abs(Number(differences.usd)) * (Number(settings?.usdRate) || 0),
         ) > differenceLimit
       )
         await tx.alert.upsert({
@@ -1248,11 +1330,11 @@ export class CashController {
             severity: "high",
             entityId: id,
             branchId: actor.branchId,
-            message: cashDifferenceMessage(row),
+            message: cashDifferenceMessage(row) + usdNote,
           },
           update: {
             status: "new",
-            message: cashDifferenceMessage(row),
+            message: cashDifferenceMessage(row) + usdNote,
           },
         });
       const showExpected = canViewCashExpected(actor);
