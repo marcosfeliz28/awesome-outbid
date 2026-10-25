@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",
+      "tests/pago-dolares-migration-postgres.test.ts",
       "tests/customer-display.test.ts",
       "tests/conciliar-transferencias.test.ts",
       "tests/year-report.test.ts",

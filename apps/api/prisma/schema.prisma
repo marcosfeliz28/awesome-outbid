@@ -481,6 +481,11 @@ model Payment {
   // Quién recibió el dinero de un cobro de crédito (administrador que lo
   // registró). Migración 202610240201_credito_cobros.
   receivedById   String?  @db.Uuid
+  // Efectivo en dólares (migración 202610250301_pago_dolares): amount es el
+  // equivalente en pesos; amountUsd y usdRate, lo recibido y la tasa usada.
+  currency       String   @default("DOP")
+  amountUsd      Decimal? @db.Decimal(14, 2)
+  usdRate        Decimal? @db.Decimal(12, 4)
 
   // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
   @@index([saleId])

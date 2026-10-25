@@ -576,40 +576,57 @@ export const saleSchema = z.object({
   receivableKind: z.enum(["credit", "cod"]).optional(),
   payments: z
     .array(
-      z.object({
-        // cod: contraentrega. La venta sale de inventario y ese importe queda
-        // pendiente hasta que el mensajero trae el dinero.
-        method: z.enum([
-          "cash",
-          "card",
-          "transfer",
-          "credit_note",
-          "credit",
-          "cod",
-        ]),
-        creditNoteId: z.string().uuid().optional(),
-        creditNoteCode: z
-          .string()
-          .trim()
-          .toUpperCase()
-          .regex(/^[0-9A-F]{32}$/)
-          .optional(),
-        amount: moneyAmount(),
-        bank: z.string().max(100).optional(),
-        reference: z.string().max(100).optional(),
-        cardBrand: z.string().max(40).optional(),
-        cardLast4: z
-          .string()
-          .regex(/^\d{4}$/)
-          .optional(),
-        cardType: z.enum(["credit", "debit"]).optional(),
-        approvalCode: z.string().max(100).optional(),
-      }),
+      z
+        .object({
+          // cod: contraentrega. La venta sale de inventario y ese importe queda
+          // pendiente hasta que el mensajero trae el dinero.
+          method: z.enum([
+            "cash",
+            "card",
+            "transfer",
+            "credit_note",
+            "credit",
+            "cod",
+          ]),
+          creditNoteId: z.string().uuid().optional(),
+          creditNoteCode: z
+            .string()
+            .trim()
+            .toUpperCase()
+            .regex(/^[0-9A-F]{32}$/)
+            .optional(),
+          amount: moneyAmount(),
+          bank: z.string().max(100).optional(),
+          reference: z.string().max(100).optional(),
+          cardBrand: z.string().max(40).optional(),
+          cardLast4: z
+            .string()
+            .regex(/^\d{4}$/)
+            .optional(),
+          cardType: z.enum(["credit", "debit"]).optional(),
+          approvalCode: z.string().max(100).optional(),
+          // Efectivo en dólares (dueña, 25-oct): `amount` es el equivalente en
+          // pesos; la API lo recalcula con la tasa de Configuración. Opcionales:
+          // la huella de una venta offline anterior no cambia.
+          currency: z.enum(["DOP", "USD"]).optional(),
+          amountUsd: moneyAmount(1000000).optional(),
+          usdRate: z.number().positive().max(10000).optional(),
+        })
+        .refine(
+          (p) =>
+            p.currency === "USD"
+              ? p.method === "cash" && p.amountUsd !== undefined
+              : p.amountUsd === undefined && p.usdRate === undefined,
+          "El pago en dólares es sólo en efectivo e indica los US$ recibidos.",
+        ),
     )
     .min(1)
     .max(20),
 });
 export type SaleInput = z.infer<typeof saleSchema>;
+/** Equivalente en pesos de un pago en dólares, al centavo. */
+export const usdToDop = (amountUsd: Decimal.Value, rate: Decimal.Value) =>
+  money(d(amountUsd).times(rate));
 
 // ── Cuadre de caja de la tienda (docs/tienda/CUADRE_REPORTES_FACTURA.md) ──
 

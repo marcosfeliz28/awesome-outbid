@@ -24,6 +24,7 @@ import {
   saleSchema,
   lineTotals,
   paymentTotals,
+  usdToDop,
   money,
   formatMoney,
   formatAmount,
@@ -175,6 +176,9 @@ export function saleHistoryDto(sale: any, actor: Actor) {
       cardLast4: summary.cardLast4,
       approvalCode: summary.approvalCode,
       cardType: summary.cardType,
+      currency: summary.currency,
+      amountUsd: summary.amountUsd,
+      usdRate: summary.usdRate,
       status: summary.status,
       entryType: summary.entryType,
       hasProof: summary.hasProof,
@@ -421,6 +425,42 @@ function cashCollected(
       .filter((p) => p.method === "cash" && p.entryType !== "installment")
       .reduce((sum, p) => sum.plus(p.amount as any), d(0)),
   );
+}
+// Efectivo en dólares (dueña, 25-oct): la tasa la pone Configuración, no la
+// caja. En línea la caja debe cobrar con esa misma tasa; una venta offline
+// cobrada antes de que la tasa cambiara conserva la suya si está a ±2 % (el
+// vuelto ya se dio con ella). El equivalente en pesos se recalcula al centavo.
+export function usdCashPayments<
+  T extends {
+    method: string;
+    amount: number;
+    currency?: string;
+    amountUsd?: number;
+    usdRate?: number;
+  },
+>(payments: T[], configuredRate: unknown, offline = false): T[] {
+  return payments.map((p) => {
+    if (p.currency !== "USD") return p;
+    if (!(Number(configuredRate) > 0))
+      bad(
+        "No hay tasa del dólar en Configuración: no se puede cobrar en dólares. Pide a la administración que registre la tasa del día.",
+      );
+    const current = d(Number(configuredRate)).toDecimalPlaces(4).toNumber();
+    let rate = current;
+    if (p.usdRate !== undefined && Math.abs(p.usdRate - current) > 0.00005) {
+      if (!offline || Math.abs(p.usdRate - current) / current > 0.02)
+        bad(
+          `La tasa del dólar cambió: ahora es RD$ ${current} por US$ 1. Revisa el cobro en dólares.`,
+        );
+      rate = d(p.usdRate).toDecimalPlaces(4).toNumber();
+    }
+    const amount = usdToDop(p.amountUsd!, rate);
+    if (Math.abs(amount - p.amount) > 0.01)
+      bad(
+        `US$ ${p.amountUsd} a RD$ ${rate} son RD$ ${amount}: revisa el cobro en dólares.`,
+      );
+    return { ...p, amount, usdRate: rate };
+  });
 }
 // Decisión 38: una caja es de un usuario; nadie opera con la de otra persona.
 const OTHER_CASH =
@@ -784,6 +824,10 @@ export class SalesController {
           where: { id: actor.branchId },
         });
         const config = settings?.data as any;
+        input = {
+          ...input,
+          payments: usdCashPayments(input.payments, config?.usdRate, offline),
+        };
         if (!customer) bad("Selecciona o crea un cliente antes de vender.");
         const components = await tx.kitComponent.findMany({
           where: { kitVariantId: { in: input.items.map((i) => i.variantId) } },
