@@ -49,7 +49,8 @@ Comentario (opcional): `<_____>`
 **8. Lo que más te confundió.** ¿Qué fue lo que más te confundió o te trabó? Cuéntalo con tus palabras (pantalla, botón o paso): `<_____>`
 
 **9. Precio.** Si el sistema te sigue funcionando bien, ¿cuánto pagarías al mes? *(Solo para entender; no es ningún compromiso.)*
-( ) Menos de RD$ 500 ( ) RD$ 500 a 1,000 ( ) RD$ 1,000 a 2,000 ( ) RD$ 2,000 a 3,500 ( ) Más de RD$ 3,500 ( ) No pagaría
+( ) Menos de RD$ 1,250 ( ) RD$ 1,250 a 2,000 ( ) RD$ 2,000 a 4,000 ( ) RD$ 4,000 a 7,000 ( ) Más de RD$ 7,000 ( ) No pagaría
+*(Planes de referencia: Autoservicio RD$ 1,250 · Básico RD$ 2,000 · Pro RD$ 4,000 · Premium RD$ 7,000 al mes.)*
 
 **10. Recomendación.** Del 0 (jamás) al 10 (sin dudas), ¿qué tan probable es que recomiendes Nexora POS a otro comerciante? `0 1 2 3 4 5 6 7 8 9 10`
 ¿Por qué diste esa nota? (una frase): `<_____>`
