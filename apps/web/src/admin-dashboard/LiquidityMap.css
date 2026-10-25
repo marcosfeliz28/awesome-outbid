@@ -36,7 +36,7 @@
 
 .liquidity-heading p {
   margin: 0.25rem 0 0;
-  font-size: 0.875rem;
+  font-size: 0.925rem;
 }
 
 .liquidity-grid {
@@ -80,7 +80,7 @@
 .liquidity-pocket small {
   display: block;
   margin: 0.35rem 0 0;
-  font-size: 0.78rem;
+  font-size: 0.925rem;
   line-height: 1.4;
 }
 
@@ -96,7 +96,7 @@
 
 .liquidity-pocket dt {
   color: var(--admin-muted, #475569);
-  font-size: 0.75rem;
+  font-size: 0.925rem;
 }
 
 .liquidity-pocket dd {
@@ -122,7 +122,7 @@
 
 .liquidity-note {
   margin: 0.85rem 0 0;
-  font-size: 0.75rem;
+  font-size: 0.925rem;
   line-height: 1.45;
 }
 

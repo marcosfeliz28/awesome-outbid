@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { can } from "@fitstore/shared";
 import { api, post, useStore } from "../api";
-import { toast } from "../helpers";
+import { toast, today } from "../helpers";
 import { ApprovalDeck, type ApprovalDeckItem } from "./ApprovalDeck";
 import { AnomalyScanner, type AuditFact } from "./AnomalyScanner";
 import { LiquidityMap, type LiquiditySnapshot } from "./LiquidityMap";
@@ -78,8 +78,8 @@ export function AdminDashboardCards({
     enabled: isOwner,
   });
   const audit = useQuery<AuditFact[]>({
-    queryKey: ["audit-log", "today"],
-    queryFn: () => api("/audit-log"),
+    queryKey: ["audit-log", today()],
+    queryFn: () => api(`/audit-log?date=${today()}`),
     enabled: isOwner,
   });
 

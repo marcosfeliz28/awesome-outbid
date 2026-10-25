@@ -1332,15 +1332,20 @@ export class AdminController {
       }),
       query,
     );
-    const day = date ?? businessDate();
-    const createdAt = {
-      gte: new Date(day + "T00:00:00-04:00"),
-      lte: new Date(day + "T23:59:59.999-04:00"),
-    };
-    if (!Number.isFinite(+createdAt.gte) || businessDate(createdAt.gte) !== day)
+    const createdAt = date
+      ? {
+          gte: new Date(date + "T00:00:00-04:00"),
+          lte: new Date(date + "T23:59:59.999-04:00"),
+        }
+      : undefined;
+    if (
+      date &&
+      (!Number.isFinite(+createdAt!.gte) ||
+        businessDate(createdAt!.gte) !== date)
+    )
       bad("Fecha inválida.");
     const rows = await this.db.auditLog.findMany({
-      where: { branchId: actor.branchId, createdAt },
+      where: { branchId: actor.branchId, ...(createdAt ? { createdAt } : {}) },
       orderBy: { createdAt: "desc" },
       take: 300,
     });

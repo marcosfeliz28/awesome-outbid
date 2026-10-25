@@ -50,7 +50,7 @@
 .privacy-toggle__copy p,
 .privacy-toggle small {
   color: var(--admin-card-muted, #cbd5e1);
-  font-size: 0.8125rem;
+  font-size: 0.925rem;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
@@ -112,7 +112,7 @@
 .privacy-toggle__status {
   min-block-size: 1.5rem;
   color: var(--admin-card-text, #f8fafc);
-  font-size: 0.875rem;
+  font-size: 0.925rem;
   font-weight: 650;
   line-height: 1.5;
 }

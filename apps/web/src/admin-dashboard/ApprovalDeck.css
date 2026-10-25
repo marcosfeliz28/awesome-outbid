@@ -44,8 +44,8 @@
 
 .approval-deck__eyebrow {
   margin: 0 0 0.25rem;
-  color: #c4b5fd;
-  font-size: 0.75rem;
+  color: var(--admin-accent, #c4b5fd);
+  font-size: 0.925rem;
   font-weight: 800;
   letter-spacing: 0.09em;
 }
@@ -111,10 +111,14 @@
   color: var(--approval-muted);
 }
 
+.approval-deck__detail strong {
+  overflow-wrap: anywhere;
+}
+
 .approval-deck__kind,
 .approval-deck__open {
-  color: #c4b5fd !important;
-  font-size: 0.8rem;
+  color: var(--admin-accent, #c4b5fd) !important;
+  font-size: 0.925rem;
   font-weight: 800;
 }
 
@@ -190,7 +194,7 @@
 .approval-deck__decision textarea {
   width: 100%;
   min-height: 44px;
-  border: 1px solid var(--approval-border);
+  border: 1px solid var(--admin-border-strong, #94a3b8);
   border-radius: 0.7rem;
   background: #0f172a;
   color: #fff;

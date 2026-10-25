@@ -42,7 +42,7 @@
 .anomaly-list time,
 .anomaly-empty {
   color: var(--admin-muted);
-  font-size: 0.8125rem;
+  font-size: 0.925rem;
 }
 
 .anomaly-list button {

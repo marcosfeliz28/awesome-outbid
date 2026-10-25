@@ -250,6 +250,8 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
                     (item.kind === "void" && Boolean(item.approvalBlocker))
                   }
                   onClick={() => startDecision(item, "approve")}
+                  aria-expanded={activeId === item.id && decision === "approve"}
+                  aria-controls={`${item.kind}-${item.id}-decision`}
                 >
                   {item.kind === "void"
                     ? "Aprobar anulación"
@@ -260,6 +262,8 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
                   className="approval-deck__secondary"
                   disabled={busy}
                   onClick={() => startDecision(item, "reject")}
+                  aria-expanded={activeId === item.id && decision === "reject"}
+                  aria-controls={`${item.kind}-${item.id}-decision`}
                 >
                   Rechazar
                 </button>
@@ -267,6 +271,7 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
 
               {activeId === item.id && decision && (
                 <form
+                  id={`${item.kind}-${item.id}-decision`}
                   className="approval-deck__decision"
                   onSubmit={(event) => {
                     event.preventDefault();
