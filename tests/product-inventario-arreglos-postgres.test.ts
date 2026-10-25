@@ -73,3 +73,39 @@ describe("1 · factura de proveedor sin bucket", () => {
     }
   });
 });
+
+describe("2 · combos", () => {
+  it("no convierte en combo un producto con existencia o que es pieza de otro, ni anida; se deshace si no se movió", async () => {
+    const cat = await category("Combos QA");
+    const piece = await product(cat.id);
+    const stocked = await product(cat.id);
+    const combo = await product(cat.id);
+    const other = await product(cat.id);
+    const pid = (p: any) => p.variants[0].id;
+    expect((await t.post("/inventory/adjustments", { variantId: pid(stocked), qty: 3, reason: "Inventario inicial" })).status).toBe(201);
+    const withStock = await t.post("/kits", { kitVariantId: pid(stocked), components: [{ componentVariantId: pid(piece), qty: 1 }] });
+    expect(withStock.status).toBe(400);
+    expect(withStock.body.message).toContain("tiene existencia");
+    const ok = await t.post("/kits", { kitVariantId: pid(combo), components: [{ componentVariantId: pid(piece), qty: 2 }] });
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201);
+    // La pieza de un combo no puede volverse combo (anidado), ni un combo ser pieza.
+    const pieceAsKit = await t.post("/kits", { kitVariantId: pid(piece), components: [{ componentVariantId: pid(other), qty: 1 }] });
+    expect(pieceAsKit.status).toBe(400);
+    expect(pieceAsKit.body.message).toContain("pieza de otro combo");
+    const nested = await t.post("/kits", { kitVariantId: pid(other), components: [{ componentVariantId: pid(combo), qty: 1 }] });
+    expect(nested.status).toBe(400);
+    // Deshacer: sin movimientos se puede; vuelve a ser un producto normal.
+    const undo = await t.del(`/kits/${combo.id}`);
+    expect(undo.status, JSON.stringify(undo.body)).toBe(200);
+    const [row] = await t.q(`SELECT "isKit" FROM "Product" WHERE id=$1::uuid`, combo.id);
+    expect(row.isKit).toBe(false);
+    expect(await t.q(`SELECT 1 FROM "KitComponent" WHERE "kitVariantId"=$1::uuid`, pid(combo))).toHaveLength(0);
+    // Con un movimiento ya no se deshace.
+    expect((await t.post("/kits", { kitVariantId: pid(combo), components: [{ componentVariantId: pid(piece), qty: 1 }] })).status).toBe(201);
+    await t.q(`INSERT INTO "InventoryMovement" (id,"tenantId","variantId",type,qty,"unitCost","balanceAfter",reason,"userId","branchId")
+      VALUES (gen_random_uuid(),'00000000-0000-0000-0000-000000000001',$1::uuid,'sale',0,0,0,'QA','x','main')`, pid(combo));
+    const blocked = await t.del(`/kits/${combo.id}`);
+    expect(blocked.status).toBe(400);
+    expect(blocked.body.message).toContain("movimientos");
+  });
+});

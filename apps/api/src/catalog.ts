@@ -12,6 +12,7 @@ import {
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -679,7 +680,18 @@ export class CatalogController {
         parts.length !== data.components.length ||
         parts.some((p) => p.product.isKit)
       )
-        bad("Usa componentes únicos y simples.");
+        bad("Usa componentes únicos y simples: un combo no puede llevar otro combo.");
+      // Un combo no guarda existencia propia (se descuenta de sus piezas): si
+      // el producto ya tiene unidades o es pieza de otro combo, se perderían
+      // o quedarían combos anidados.
+      const siblings = await tx.variant.findMany({
+        where: { productId: variant.productId },
+        include: { warehouseStocks: true, _count: { select: { usedInKits: true } } },
+      });
+      if (siblings.some((v) => Number(v.stock) !== 0 || v.warehouseStocks.some((s) => Number(s.qty) !== 0)))
+        bad("Este producto tiene existencia. Sácala o muévela antes de convertirlo en combo.");
+      if (siblings.some((v) => v._count.usedInKits > 0))
+        bad("Este producto es pieza de otro combo; un combo no puede ir dentro de otro.");
       await tx.product.update({
         where: { id: variant.productId },
         data: { isKit: true },
@@ -697,6 +709,27 @@ export class CatalogController {
         undefined,
         json(data),
       );
+      return { ok: true };
+    });
+  }
+  // Deshacer un combo creado por error, sólo si nunca se movió (ventas,
+  // compras ni movimientos de inventario): su historial quedaría sin sentido.
+  @Delete("kits/:productId")
+  @Permit("catalog:write")
+  async undoKit(@Param("productId") productId: string, @CurrentUser() actor: Actor) {
+    const id = parse(uuid, productId);
+    return this.db.$transaction(async (tx) => {
+      const product = await tx.product.findFirstOrThrow({
+        where: { id, branchId: actor.branchId },
+        include: { variants: { include: { _count: { select: { saleItems: true, movements: true, purchaseItems: true } } } } },
+      });
+      if (!product.isKit) bad("Este producto no es un combo.");
+      if (product.variants.some((v) => v._count.saleItems + v._count.movements + v._count.purchaseItems > 0))
+        bad("Este combo ya tiene ventas o movimientos; desactívalo en vez de deshacerlo.");
+      const variantIds = product.variants.map((v) => v.id);
+      await tx.kitComponent.deleteMany({ where: { kitVariantId: { in: variantIds } } });
+      await tx.product.update({ where: { id }, data: { isKit: false } });
+      await audit(tx, actor, "kit_undo", "product", id);
       return { ok: true };
     });
   }
