@@ -153,6 +153,12 @@ describe("GET /api/dashboard/liquidity", () => {
     expect(controllers).toContain(DashboardLiquidityController);
   });
 
+  it("no cuenta dos veces una venta histórica con fuentes mixtas", () => {
+    const source = DashboardLiquidityController.prototype.liquidity.toString();
+    expect(source).toContain("NOT EXISTS");
+    expect(source).toContain("original_cod");
+  });
+
   it("un usuario autenticado sin * recibe 403 antes de consultar el endpoint", async () => {
     const userId = "8f2b1c1e-5c1a-4a43-9d37-3a5b0c1d2e3f";
     const sessionId = "0b6c9a8e-1f2d-4e3c-8b7a-6d5e4f3a2b1c";

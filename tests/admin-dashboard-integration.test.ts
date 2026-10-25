@@ -17,6 +17,7 @@ describe("tablero administrativo · integración", () => {
     expect(cards).toContain('queryKey: ["dashboard-liquidity"]');
     expect(cards).not.toContain("refetchInterval");
     expect(dashboard).not.toContain("refetchInterval");
+    expect(read("apps/web/src/YearPie.tsx")).not.toContain("refetchInterval");
   });
 
   it("cada operación auditada emite una señal SSE mínima sin datos sensibles", async () => {
@@ -107,6 +108,8 @@ describe("tablero administrativo · integración", () => {
       "void-requests",
       "pending-transfers",
       "dashboard-liquidity",
+      "dashboard",
+      "dashboard-year",
       "audit-log",
     ])
       expect(realtime).toContain(`"${key}"`);

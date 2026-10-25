@@ -3617,7 +3617,7 @@ td strong {
     padding: 15px;
   }
   .kpi-top {
-    font-size: 9px;
+    font-size: 12px;
     gap: 5px;
   }
   .metric-icon {
@@ -3633,7 +3633,7 @@ td strong {
     margin: 12px 0;
   }
   .kpi-note {
-    font-size: 7px;
+    font-size: 12px;
     gap: 5px;
     flex-wrap: wrap;
     min-height: 19px;
@@ -3650,10 +3650,10 @@ td strong {
     font-size: 13px;
   }
   .panel-heading p {
-    font-size: 9px;
+    font-size: 12px;
   }
   .panel-heading > .text-link {
-    font-size: 9px;
+    font-size: 12px;
   }
   .table-wrap th,
   .table-wrap td {
@@ -3666,7 +3666,7 @@ td strong {
     font-size: 14px;
   }
   .financial-strip span {
-    font-size: 8px;
+    font-size: 12px;
   }
   .pos-content {
     padding: 23px 16px;
@@ -6342,6 +6342,9 @@ td strong {
   background: var(--surface, #fff);
   color: var(--ink, #111827);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+.year-pie-tip button {
+  min-height: 44px;
 }
 .year-pie-note {
   margin: 8px 0 0;

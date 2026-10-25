@@ -40,7 +40,6 @@ export function YearPie({ go }: { go: (page: string) => void }) {
     queryKey: ["dashboard-year", year],
     queryFn: () => api<any>("/dashboard/year?year=" + year),
     enabled: can(user.permissions, "reports:read"),
-    refetchInterval: 60000,
   });
   const months: Month[] = query.data?.months ?? [];
   const shares = monthShares(months.map((m) => m.revenue));
@@ -73,7 +72,12 @@ export function YearPie({ go }: { go: (page: string) => void }) {
         </select>
       </div>
       <div className="year-pie-body">
-        <div className="year-pie-chart" role="img" aria-label="Ventas por mes">
+        <div
+          className="year-pie-chart"
+          role="img"
+          aria-label="Ventas por mes"
+          data-private-value
+        >
           {slices.length ? (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -83,14 +87,9 @@ export function YearPie({ go }: { go: (page: string) => void }) {
                   nameKey="month"
                   outerRadius={125}
                   stroke="var(--surface, #fff)"
-                  onClick={(slice: any) => setPicked(slice)}
                 >
                   {slices.map((m) => (
-                    <Cell
-                      key={m.month}
-                      fill={m.color}
-                      style={{ cursor: "pointer" }}
-                    />
+                    <Cell key={m.month} fill={m.color} />
                   ))}
                 </Pie>
                 <Tooltip
@@ -118,9 +117,13 @@ export function YearPie({ go }: { go: (page: string) => void }) {
         {picked && (
           <div className="year-pie-tip" role="status">
             <strong>{monthNames[picked.month - 1]}</strong>
-            <span>{picked.invoices ?? 0} ventas</span>
-            <span>Bruta {formatMoney(picked.revenue)}</span>
-            {showProfit && <span>Neta {formatMoney(picked.profit ?? 0)}</span>}
+            <span data-private-value>{picked.invoices ?? 0} ventas</span>
+            <span data-private-value>Bruta {formatMoney(picked.revenue)}</span>
+            {showProfit && (
+              <span data-private-value>
+                Neta {formatMoney(picked.profit ?? 0)}
+              </span>
+            )}
             <button type="button" onClick={() => open(picked.month)}>
               Ver detalle del mes
             </button>
@@ -140,8 +143,12 @@ export function YearPie({ go }: { go: (page: string) => void }) {
                   aria-hidden="true"
                 />
                 <strong>{monthNames[m.month - 1]}</strong>
-                <span>Bruta {formatMoney(m.revenue)}</span>
-                {showProfit && <span>Neta {formatMoney(m.profit ?? 0)}</span>}
+                <span data-private-value>Bruta {formatMoney(m.revenue)}</span>
+                {showProfit && (
+                  <span data-private-value>
+                    Neta {formatMoney(m.profit ?? 0)}
+                  </span>
+                )}
               </button>
             </li>
           ))}

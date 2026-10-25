@@ -74,6 +74,12 @@ export function summarizeAuditFacts(rows: AuditFact[]): AuditSummary[] {
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
+export function navigableAuditFacts(rows: AuditFact[]) {
+  return rows.filter(
+    (row) => DEFINITIONS[`${row.entity}:${row.action}`] && row.saleId,
+  );
+}
+
 export function AnomalyScanner({
   rows,
   busy = false,
@@ -83,10 +89,9 @@ export function AnomalyScanner({
   busy?: boolean;
   onOpenSale: (saleId: string) => void;
 }) {
-  const summaries = summarizeAuditFacts(rows);
-  const facts = rows
-    .filter((row) => DEFINITIONS[`${row.entity}:${row.action}`] && row.saleId)
-    .slice(0, 8);
+  const navigableFacts = navigableAuditFacts(rows);
+  const summaries = summarizeAuditFacts(navigableFacts);
+  const facts = navigableFacts.slice(0, 8);
 
   return (
     <article
@@ -99,7 +104,7 @@ export function AnomalyScanner({
         </span>
         <div>
           <h2 id="anomaly-title">Movimientos para revisar</h2>
-          <p>Hechos registrados hoy, sin calificar a ninguna persona.</p>
+          <p>Hechos de ventas registrados hoy, sin calificar a nadie.</p>
         </div>
       </header>
 
@@ -127,6 +132,7 @@ export function AnomalyScanner({
                     <strong>{definition.singular}</strong>
                     <time dateTime={row.createdAt}>
                       {new Intl.DateTimeFormat("es-DO", {
+                        timeZone: "America/Santo_Domingo",
                         hour: "numeric",
                         minute: "2-digit",
                       }).format(new Date(row.createdAt))}

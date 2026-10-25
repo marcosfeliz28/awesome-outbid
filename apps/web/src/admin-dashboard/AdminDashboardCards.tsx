@@ -51,11 +51,12 @@ export function AdminDashboardCards({
   const isOwner = can(user.permissions, "*");
   const canSeeReports = can(user.permissions, "reports:read");
   const canSeeRegisters = canSeeReports && can(user.permissions, "cash:write");
+  const canReadSettings = can(user.permissions, "catalog:read");
 
   const settings = useQuery<any>({
     queryKey: ["settings", user.branchId],
     queryFn: () => api("/settings"),
-    enabled: canSeeRegisters,
+    enabled: canSeeRegisters && canReadSettings,
   });
   const sessions = useQuery<LiveCashSession[]>({
     queryKey: ["cash-sessions"],
@@ -117,7 +118,11 @@ export function AdminDashboardCards({
         {canSeeRegisters && (
           <RegistersLive
             sessions={sessions.data ?? []}
-            deliveryThreshold={settings.data?.cashDeliveryThreshold ?? null}
+            deliveryThreshold={
+              canReadSettings
+                ? (settings.data?.cashDeliveryThreshold ?? null)
+                : null
+            }
           />
         )}
         {isOwner && (

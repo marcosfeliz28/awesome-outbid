@@ -61,7 +61,7 @@ function DayFigures({
     <div className={"day-figures day-" + tone}>
       <span className="day-title">{title}</span>
       <strong data-private-value>{formatMoney(revenue)}</strong>
-      <small>{data?.invoices ?? 0} facturas</small>
+      <small data-private-value>{data?.invoices ?? 0} facturas</small>
       {showProfit && (
         <>
           <small>
@@ -273,6 +273,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                 {m.trend !== undefined && (
                   <span
                     className={`trend ${m.trend >= 0 ? "positive" : "negative"}`}
+                    data-private-value
                   >
                     {m.trend >= 0 ? (
                       <ArrowUpRight size={14} />
@@ -282,7 +283,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                     {Math.abs(m.trend)}%
                   </span>
                 )}
-                <span>{m.note}</span>
+                <span data-private-value>{m.note}</span>
               </div>
             </article>
           ))}
@@ -299,7 +300,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                 Ventas
               </Badge>
             </div>
-            <div className="chart-wrap">
+            <div className="chart-wrap" data-private-value>
               <ResponsiveContainer width="100%" height={265}>
                 <AreaChart
                   data={data?.daily || []}
@@ -376,7 +377,9 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                 <h2>Un poco de atención</h2>
                 <p>Lo importante, antes de que sea urgente.</p>
               </div>
-              <span className="alert-counter">{data?.alerts?.length || 0}</span>
+              <span className="alert-counter" data-private-value>
+                {data?.alerts?.length || 0}
+              </span>
             </div>
             <div className="dashboard-alerts">
               {data?.alerts?.slice(0, 4).map((a: any) => (
@@ -459,7 +462,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                       <td>
                         <Badge>{p.category}</Badge>
                       </td>
-                      <td>{p.units}</td>
+                      <td data-private-value>{p.units}</td>
                       <td className="right amount" data-private-value>
                         {formatMoney(p.revenue)}
                       </td>
@@ -489,9 +492,9 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                       <i style={{ background: c.color }} />
                       {c.name}
                     </span>
-                    <strong>{percent.toFixed(0)}%</strong>
+                    <strong data-private-value>{percent.toFixed(0)}%</strong>
                   </div>
-                  <div className="progress-track">
+                  <div className="progress-track" data-private-value>
                     <div
                       style={{ width: `${percent}%`, background: c.color }}
                     />
@@ -530,6 +533,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           </div>
           <div
             className="heatmap"
+            data-private-value
             role="table"
             aria-label="Ventas por día y hora"
             tabIndex={0}

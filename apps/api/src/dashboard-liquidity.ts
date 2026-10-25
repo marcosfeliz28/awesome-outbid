@@ -70,6 +70,11 @@ export class DashboardLiquidityController {
                 WHERE original."saleId" = s.id
                   AND original."entryType" = 'sale'
                   AND original.method = 'credit'
+              ) AND NOT EXISTS (
+                SELECT 1 FROM "Payment" original_cod
+                WHERE original_cod."saleId" = s.id
+                  AND original_cod."entryType" = 'sale'
+                  AND original_cod.method = 'cod'
               )) THEN s."creditBalance" ELSE 0 END), 0) AS credit,
             COALESCE(SUM(CASE WHEN s."receivableKind" IS NULL AND EXISTS (
               SELECT 1 FROM "Payment" original

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import "./RegistersLive.css";
 
 export type LiveCashSession = {
@@ -52,8 +53,17 @@ function expectedCash(session: LiveCashSession) {
 export function RegistersLive({
   sessions,
   deliveryThreshold = null,
-  now = new Date(),
+  now,
 }: RegistersLiveProps) {
+  const [clock, setClock] = useState(() => now ?? new Date());
+
+  useEffect(() => {
+    if (now) return;
+    const timer = window.setInterval(() => setClock(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, [now]);
+  const activeNow = now ?? clock;
+
   const openSessions = sessions.filter((session) => !session.closedAt);
   const countLabel = `${openSessions.length} ${
     openSessions.length === 1 ? "caja abierta" : "cajas abiertas"
@@ -107,7 +117,7 @@ export function RegistersLive({
                             validOpenedAt ? openedAt.toISOString() : undefined
                           }
                         >
-                          {formatOpenDuration(session.openedAt, now)}
+                          {formatOpenDuration(session.openedAt, activeNow)}
                         </time>
                       </dd>
                     </div>

@@ -249,6 +249,17 @@ beforeAll(async () => {
   const codSale = await receivable("cod", "10.01", customerId);
   const creditSale = await receivable("credit", "20.02", customerId);
   const ambiguousSale = await receivable(null, "30.03", customerId);
+  const mixedHistorical = await createSale({
+    amount: "40.04",
+    receivableKind: null,
+    customerId,
+  });
+  await db.sale.update({
+    where: { id: mixedHistorical.id },
+    data: { creditBalance: "40.04" },
+  });
+  await addPayment(mixedHistorical.id, "credit", "40.04");
+  await addPayment(mixedHistorical.id, "cod", "40.04");
   codNumber = codSale.number;
   creditNumber = creditSale.number;
   ambiguousNumber = ambiguousSale.number;
@@ -336,6 +347,7 @@ afterAll(async () => {
       where: {
         OR: [
           { entityId: { in: [...saleIds, ...paymentIds, terminalId] } },
+          { entityId: { in: customerIds } },
           { branchId: branch },
         ],
       },
@@ -401,7 +413,7 @@ describe("GET /api/dashboard/liquidity · PostgreSQL", () => {
         after.pockets.street.unclassified,
         before.pockets.street.unclassified,
       ),
-    ).toBe(3003);
+    ).toBe(7007);
 
     const today = new Date().toLocaleDateString("en-CA", {
       timeZone: "America/Santo_Domingo",

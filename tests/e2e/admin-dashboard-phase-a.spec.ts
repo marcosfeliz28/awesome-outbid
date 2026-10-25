@@ -282,6 +282,24 @@ test("Tablero fase A: móvil, temas, privacidad, decisiones reales y caja intact
       ownerPage.getByRole("heading", { name: "Aprobaciones pendientes" }),
     ).toBeVisible();
 
+    // Una operación de otra caja actualiza la tarjeta por /events. No se
+    // recarga la página ni existe refetchInterval en las tarjetas nuevas.
+    const sellerRegister = ownerPage
+      .locator(".registers-live__session")
+      .filter({ hasText: `E2E Tablero ${tag}` });
+    await expect(sellerRegister).toContainText(/RD\$700[.,]00/);
+    await api(
+      `/cash-sessions/${cash.id}/movements`,
+      {
+        operationId: crypto.randomUUID(),
+        type: "in",
+        amount: 13.37,
+        reason: "Prueba SSE del tablero",
+      },
+      sellerHeaders,
+    );
+    await expect(sellerRegister).toContainText(/RD\$713[.,]37/);
+
     for (const [theme, label] of [
       ["cristal", "Cristal nocturno"],
       ["ejecutivo", "Ejecutivo claro"],
@@ -300,6 +318,14 @@ test("Tablero fase A: móvil, temas, privacidad, decisiones reales y caja intact
     await privacy.click();
     await expect(ownerPage.locator("html")).toHaveClass(/nexora-privacy-mode/);
     await expect(privacy).toHaveAttribute("aria-pressed", "true");
+    await expect(ownerPage.locator("[data-private-value]").first()).toHaveCSS(
+      "filter",
+      /blur/,
+    );
+    await expect(ownerPage.locator(".progress-track").first()).toHaveCSS(
+      "filter",
+      /blur/,
+    );
     await ownerPage.reload();
     await expect(
       ownerPage.getByRole("button", { name: "Mostrar cifras" }),

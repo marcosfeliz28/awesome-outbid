@@ -76,5 +76,18 @@ describe("PrivacyToggle", () => {
         "s",
       ),
     );
+
+    const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
+    const annual = readFileSync("apps/web/src/YearPie.tsx", "utf8");
+    expect(dashboard).toMatch(
+      /<small data-private-value>\{data\?\.invoices \?\? 0\} facturas<\/small>/,
+    );
+    expect(dashboard).toMatch(/className="alert-counter" data-private-value/);
+    expect(dashboard).toMatch(/<td data-private-value>\{p\.units\}<\/td>/);
+    expect(dashboard).toMatch(/className="progress-track" data-private-value/);
+    expect(annual).toMatch(
+      /<span data-private-value>\{picked\.invoices \?\? 0\} ventas<\/span>/,
+    );
+    expect(annual).not.toContain("onClick={(slice: any)");
   });
 });

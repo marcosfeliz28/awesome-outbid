@@ -226,6 +226,8 @@ export function useRealtime() {
           "void-requests",
           "pending-transfers",
           "dashboard-liquidity",
+          "dashboard",
+          "dashboard-year",
           "audit-log",
         ])
           void client.invalidateQueries({ queryKey: [key] });
