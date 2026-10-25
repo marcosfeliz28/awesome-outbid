@@ -57,6 +57,7 @@ import { businessSidebarLabels, productLoginFaces } from "./product-branding";
 import { Registration, ConfirmEmail } from "./Registration";
 import { Onboarding, type OnboardingStatus } from "./Onboarding";
 import { Billing } from "./Billing";
+import { ProductSalesPage } from "./ProductSalesPage";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
 import {
@@ -593,6 +594,11 @@ function Login() {
           {PUBLIC_REGISTRATION_ENABLED && (
             <p>
               <a href="/registro">Crear empresa · 14 días gratis</a>
+            </p>
+          )}
+          {PRODUCT_TENANCY_REQUIRED && (
+            <p>
+              <a href="/planes">Ver planes de Nexora POS</a>
             </p>
           )}
           {SHOW_DEMO_CREDENTIALS && !PRODUCT_TENANCY_REQUIRED && (
@@ -1453,6 +1459,8 @@ function Shell() {
 // sesión: así «Sesión cerrada por inactividad» sigue a la vista en el inicio
 // de sesión (R9-offline-5).
 export function App() {
+  if (PRODUCT_TENANCY_REQUIRED && window.location.pathname === "/planes")
+    return <ProductSalesPage />;
   if (PUBLIC_REGISTRATION_ENABLED && window.location.pathname === "/registro")
     return <Registration />;
   if (
