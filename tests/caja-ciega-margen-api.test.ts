@@ -68,7 +68,7 @@ let owner = "",
   categoryId = "",
   variantId = "",
   originalSettings: any;
-let manager: Person, c1: Person, c2: Person;
+let manager: Person, c1: Person, c2: Person, c3: Person;
 const products: string[] = [];
 const created: string[] = [];
 
@@ -174,10 +174,11 @@ beforeAll(async () => {
   manager = await person("gerente", "manager", PIN_M);
   c1 = await person("cajera1", "seller", PIN_C1);
   c2 = await person("cajera2", "seller", PIN_C2);
+  c3 = await person("cajera3", "seller", "192837");
 }, 180000);
 
 afterAll(async () => {
-  for (const who of [manager, c2].filter(Boolean))
+  for (const who of [manager, c2, c3].filter(Boolean))
     await request("/cash-sessions/" + who.cash.id + "/close", owner, {
       countedCash: 0,
       countedCard: 0,
@@ -402,5 +403,54 @@ describe("#10 «Addison» sólo en ventas con envío", () => {
     expect(
       (await db.sale.findUnique({ where: { id: withFee.id } })).courierName,
     ).toBe("Addison");
+  });
+});
+
+describe("#5 cierre ciego: un PIN falso o propio no da pistas", () => {
+  const counter = async (cash: { id: string }) =>
+    (
+      await db.authAttempt.findUnique({
+        where: { key: "cash-close:" + cash.id },
+      })
+    )?.failedAttempts ?? 0;
+  it("con un PIN falso: el conteo bueno no cierra, el malo cuenta como intento, y la respuesta es la misma", async () => {
+    const close = (countedCash: number) =>
+      request("/cash-sessions/" + c3.cash.id + "/close", c3.token, {
+        countedCash,
+        countedCard: 0,
+        countedTransfer: 0,
+        notes: "",
+        differenceReason: "QA: probando con un PIN que no existe",
+        managerPin: "999999",
+      });
+    const wrong = await close(900);
+    const exact = await close(1000);
+    expect(wrong.status).toBe(400);
+    expect(exact.status, JSON.stringify(exact.body)).toBe(400);
+    expect(exact.body.message).toBe(wrong.body.message);
+    expect(
+      (await db.cashSession.findUnique({ where: { id: c3.cash.id } })).closedAt,
+    ).toBeNull();
+    expect(await counter(c3.cash)).toBe(1);
+    await close(950);
+    expect(await counter(c3.cash)).toBe(2);
+  });
+  it("con su propio PIN, el gerente que cierra su caja descuadrada suma un intento", async () => {
+    const before = await counter(manager.cash);
+    const own = await request(
+      "/cash-sessions/" + manager.cash.id + "/close",
+      manager.token,
+      {
+        countedCash: 1,
+        countedCard: 0,
+        countedTransfer: 0,
+        notes: "QA",
+        differenceReason: "QA: el gerente se aprueba solo",
+        managerPin: PIN_M,
+      },
+    );
+    expect(own.status).toBe(400);
+    expect(own.body.message).toMatch(/otra persona con permiso/);
+    expect(await counter(manager.cash)).toBe(before + 1);
   });
 });

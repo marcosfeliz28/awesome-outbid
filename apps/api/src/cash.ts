@@ -1170,7 +1170,10 @@ export class CashController {
     // el servidor por caja (la respuesta 400 no guarda nada, así que sin
     // contador se podía adivinar el esperado reintentando).
     const attemptKey = "cash-close:" + parse(uuid, id);
-    const closed = await moneyDb(this.db).$transaction(async (tx) => {
+    // Un conteo que no cuadra y no termina en cierre (sin PIN, PIN falso o
+    // propio, sin justificación…) cuenta como intento fallido.
+    let mismatched = false;
+    const closing = moneyDb(this.db).$transaction(async (tx) => {
       const session = await cashLock(
         tx,
         actor,
@@ -1249,23 +1252,26 @@ export class CashController {
       // justificación y el PIN de otra persona, con la misma respuesta, para
       // que el mensaje no diga si este conteo es el bueno.
       const guessed = needsPin && failedBefore >= CLOSE_ATTEMPTS;
+      mismatched = needsPin && anyOff;
+      // Un PIN enviado siempre se valida, cuadre o no: si no, «PIN incorrecto»
+      // sólo saldría con el conteo malo y delataría el bueno.
+      const approver =
+        needsPin && input.managerPin
+          ? await managerPinApproval(this.db, actor, input.managerPin, [
+              session.userId,
+            ])
+          : null;
       if ((anyOff || guessed) && needsPin) {
-        if (!input.managerPin)
-          return {
-            retry: guessed
+        if (!approver)
+          bad(
+            guessed
               ? CLOSE_ATTEMPTS_MESSAGE
               : cardOff
                 ? "El total de tarjeta no coincide con el sistema. Revisa el voucher del verifón; para cerrar con esta diferencia se necesita el PIN de un gerente."
                 : cashOff
                   ? "La caja no cuadra con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente."
                   : "Los dólares contados no coinciden con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente.",
-          };
-        const approver = await managerPinApproval(
-          this.db,
-          actor,
-          input.managerPin!,
-          [session.userId],
-        );
+          );
         if (cardOff) (data.closeDetails as any).cardApprovedBy = approver;
         if (cashOff) (data.closeDetails as any).cashApprovedBy = approver;
         if (usdOff) (data.closeDetails as any).usdApprovedBy = approver;
@@ -1409,14 +1415,15 @@ export class CashController {
       // D-M2 (auditoría 06): el cierre recalcula todo el turno; mismo plazo
       // que la venta en vez de los 5 s por defecto.
     }, MONEY_TRANSACTION);
-    if ("retry" in closed) {
-      await this.db.authAttempt.upsert({
-        where: { key: attemptKey },
-        create: { key: attemptKey, failedAttempts: 1 },
-        update: { failedAttempts: { increment: 1 } },
-      });
-      bad(closed.retry!);
-    }
+    const closed = await closing.catch(async (error) => {
+      if (mismatched)
+        await this.db.authAttempt.upsert({
+          where: { key: attemptKey },
+          create: { key: attemptKey, failedAttempts: 1 },
+          update: { failedAttempts: { increment: 1 } },
+        });
+      throw error;
+    });
     notify(this.db, "cash_close", closed.id);
     return closed;
   }
