@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { businessDate } from "@fitstore/shared";
+import { businessDate, d } from "@fitstore/shared";
 import { Database } from "./common";
 import { currentTenantId, tenantScope, tenantUnique } from "./tenant-context";
 import { LocalLicenseBackgroundPolicy } from "./local-license-background";
@@ -20,10 +20,57 @@ export function parseUsdRate(body: any): number {
 export const usdPrice = (usd: number, rate: number) =>
   Math.round(usd * rate * 100) / 100;
 
-const RATE_CHANGE_LIMIT = 0.05;
+const RATE_ALERT_LIMIT = d("0.05");
+const RATE_HARD_LIMIT = d("0.25");
 const LOW_MARGIN_LIMIT = 0.15;
 
-type RateOptions = { confirmed?: boolean; userId?: string };
+type BlockedUsdRate = {
+  rate: number;
+  previousRate: number;
+  change: number;
+  day: string;
+  source: string;
+};
+type RateOptions = { explicitConfirmation?: boolean; userId?: string };
+
+export class UsdRateConfirmationError extends Error {}
+
+const rateAlertKey = (branchId: string) => `usd-rate-change:${branchId}`;
+const percent = (change: number) => (change * 100).toFixed(2) + " %";
+
+async function saveRateAlert(
+  tx: any,
+  input: {
+    tenantId: string;
+    branchId: string;
+    previousRate: number;
+    rate: number;
+    change: number;
+    source: string;
+    blocked: boolean;
+    explicitlyConfirmed?: boolean;
+  },
+) {
+  const message = input.blocked
+    ? `La tasa USD/DOP intentó cambiar ${percent(input.change)}: de RD$ ${input.previousRate.toFixed(4)} a RD$ ${input.rate.toFixed(4)}. Supera el límite de 25 %: no se aplicaron la tasa ni los precios. Se volverá a intentar mañana. Fuente: ${input.source}.`
+    : `La tasa USD/DOP cambió ${percent(input.change)}: de RD$ ${input.previousRate.toFixed(4)} a RD$ ${input.rate.toFixed(4)}. ${input.explicitlyConfirmed ? "Administración confirmó y aplicó la propuesta retenida." : "Se aplicó automáticamente."} Fuente: ${input.source}.`;
+  const severity = input.blocked || input.explicitlyConfirmed ? "high" : "medium";
+  const status = input.explicitlyConfirmed ? "resolved" : "new";
+  await tx.alert.upsert({
+    where: tenantUnique("key", rateAlertKey(input.branchId)),
+    create: {
+      tenantId: input.tenantId,
+      key: rateAlertKey(input.branchId),
+      type: "usd_rate_change",
+      severity,
+      entityId: input.branchId,
+      branchId: input.branchId,
+      message,
+      status,
+    },
+    update: { severity, message, status },
+  });
+}
 
 /** Guarda la tasa en Configuración y recalcula los precios en dólares. */
 export async function applyUsdRate(
@@ -43,41 +90,85 @@ export async function applyUsdRate(
       where: tenantUnique("id", branchId),
     });
     const data = { ...((settings?.data as any) ?? {}) };
-    const before = Number(data.usdRate) || null;
-    const pending = data.usdRatePending as
-      { rate?: number; day?: string; source?: string } | undefined;
-    const change = before ? Math.abs(rate - before) / before : 0;
-    const personConfirmed =
-      options.confirmed === true ||
-      (Number(pending?.rate) === rate && Number(data.usdRate) === rate);
+    // Limpia el mecanismo anterior: una tasa ya no se confirma escribiendo el
+    // mismo número en Configuración y esperando otro ciclo del worker.
+    delete data.usdRatePending;
+    const blocked = data.usdRateBlocked as BlockedUsdRate | undefined;
+    const explicitlyConfirmed = options.explicitConfirmation === true;
     if (
-      (change > RATE_CHANGE_LIMIT || Number(pending?.rate) === rate) &&
-      !personConfirmed
-    ) {
-      data.usdRatePending = { rate, day, source, previousRate: before };
+      explicitlyConfirmed &&
+      (!blocked ||
+        Number(blocked.rate) !== rate ||
+        blocked.day !== day ||
+        blocked.source !== source)
+    )
+      throw new UsdRateConfirmationError(
+        "La propuesta retenida cambió. Recarga Configuración antes de confirmarla.",
+      );
+    // La preselección del worker ocurre antes de la transacción. Esta segunda
+    // lectura, ya bajo el advisory lock, hace idempotentes dos instancias.
+    if (
+      !explicitlyConfirmed &&
+      (data.usdRateDate === day || blocked?.day === day)
+    )
+      return {
+        rate,
+        changed: 0,
+        blocked: blocked?.day === day,
+        skipped: true,
+        lowMargin: [],
+      };
+    const before = Number(data.usdRate) || null;
+    const change = before
+      ? d(rate).minus(before).abs().div(before)
+      : d(0);
+    const changeNumber = change.toNumber();
+    if (before && change.gt(RATE_HARD_LIMIT) && !explicitlyConfirmed) {
+      data.usdRateBlocked = {
+        rate,
+        previousRate: before,
+        change: changeNumber,
+        day,
+        source,
+      } satisfies BlockedUsdRate;
       await tx.settings.upsert({
         where: tenantUnique("id", branchId),
         create: { id: branchId, data },
         update: { data },
       });
+      await saveRateAlert(tx, {
+        tenantId,
+        branchId,
+        previousRate: before,
+        rate,
+        change: changeNumber,
+        source,
+        blocked: true,
+      });
       await tx.auditLog.create({
         data: {
           tenantId,
           userId: options.userId ?? "sistema",
-          action: "usd_rate_confirmation_required",
+          action: "usd_rate_blocked",
           entity: "settings",
           entityId: branchId,
           before: { usdRate: before },
-          after: { proposedRate: rate, change, day, source },
+          after: {
+            proposedRate: rate,
+            change: changeNumber,
+            limit: RATE_HARD_LIMIT.toNumber(),
+            day,
+            source,
+          },
           branchId,
         },
       });
-      return { rate, changed: 0, confirmationRequired: true, lowMargin: [] };
+      return { rate, changed: 0, blocked: true, lowMargin: [] };
     }
     data.usdRate = rate;
     data.usdRateDate = day;
     data.usdRateSource = source;
-    delete data.usdRatePending;
+    delete data.usdRateBlocked;
     const variants = await tx.variant.findMany({
       where: { tenantId, branchId, active: true },
       select: { id: true, price: true, costAvg: true, attributes: true },
@@ -116,6 +207,17 @@ export async function applyUsdRate(
       create: { id: branchId, data },
       update: { data },
     });
+    if (before && change.gt(RATE_ALERT_LIMIT))
+      await saveRateAlert(tx, {
+        tenantId,
+        branchId,
+        previousRate: before,
+        rate,
+        change: changeNumber,
+        source,
+        blocked: false,
+        explicitlyConfirmed,
+      });
     await tx.auditLog.create({
       data: {
         tenantId,
@@ -124,17 +226,55 @@ export async function applyUsdRate(
         entity: "settings",
         entityId: branchId,
         before: { usdRate: before },
-        after: { usdRate: rate, day, source, prices: changed, lowMargin },
+        after: {
+          usdRate: rate,
+          day,
+          source,
+          prices: changed,
+          lowMargin,
+          explicitlyConfirmed,
+        },
         branchId,
       },
     });
     return {
       rate,
       changed: changed.length,
-      confirmationRequired: false,
+      blocked: false,
       lowMargin,
     };
   });
+}
+
+/** Confirma la propuesta guardada sin aceptar tasa ni fuente desde el cliente. */
+export async function confirmBlockedUsdRate(
+  db: any,
+  branchId: string,
+  userId: string,
+) {
+  const settings = await db.settings.findUnique({
+    where: tenantUnique("id", branchId),
+  });
+  const blocked = (settings?.data as any)?.usdRateBlocked as
+    | BlockedUsdRate
+    | undefined;
+  if (
+    !blocked ||
+    !(Number(blocked.rate) > 20 && Number(blocked.rate) < 500) ||
+    !blocked.day ||
+    !blocked.source
+  )
+    throw new UsdRateConfirmationError(
+      "No hay una propuesta de tasa retenida para confirmar.",
+    );
+  return applyUsdRate(
+    db,
+    branchId,
+    Number(blocked.rate),
+    blocked.source,
+    blocked.day,
+    { explicitConfirmation: true, userId },
+  );
 }
 
 @Injectable()
@@ -177,7 +317,11 @@ export class UsdRateWorker {
           );
           pending.push(
             ...rows
-              .filter((row) => (row.data as any)?.usdRateDate !== today)
+              .filter(
+                (row) =>
+                  (row.data as any)?.usdRateDate !== today &&
+                  (row.data as any)?.usdRateBlocked?.day !== today,
+              )
               .map((row) => ({ tenantId, branchId: row.id })),
           );
         } catch (error: any) {

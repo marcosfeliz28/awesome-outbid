@@ -55,6 +55,10 @@ import {
   temporaryPasswordExpiry,
 } from "./password-policy";
 import { RequestRateLimitService } from "./rate-limit";
+import {
+  confirmBlockedUsdRate,
+  UsdRateConfirmationError,
+} from "./usd-rate";
 
 const customerSchema = z.object({
   creditLimit: amount.optional(),
@@ -887,15 +891,14 @@ export class AdminController {
         logo === undefined ? (before?.data as any)?.logo : logo || undefined;
       const previous = before?.data as Record<string, unknown> | undefined;
       const data: any = {
-        // Datos operativos de la actualización automática no forman parte del
-        // formulario. Conservarlos permite que escribir la tasa propuesta sea
-        // la confirmación humana y que el siguiente ciclo la aplique.
+        // Los datos operativos de la actualización automática no forman parte
+        // del formulario y no se aceptan desde el navegador.
         ...(previous?.usdRateDate ? { usdRateDate: previous.usdRateDate } : {}),
         ...(previous?.usdRateSource
           ? { usdRateSource: previous.usdRateSource }
           : {}),
-        ...(previous?.usdRatePending
-          ? { usdRatePending: previous.usdRatePending }
+        ...(previous?.usdRateBlocked
+          ? { usdRateBlocked: previous.usdRateBlocked }
           : {}),
         ...(Object.prototype.hasOwnProperty.call(
           previous ?? {},
@@ -945,6 +948,16 @@ export class AdminController {
       );
       return row.data;
     });
+  }
+  @Post("settings/usd-rate/confirm")
+  @Permit("*")
+  async confirmUsdRate(@CurrentUser() actor: Actor) {
+    try {
+      return await confirmBlockedUsdRate(this.db, actor.branchId, actor.id);
+    } catch (error) {
+      if (error instanceof UsdRateConfirmationError) conflict(error.message);
+      throw error;
+    }
   }
   // Subida del logo como archivo: un JSON con una imagen de 200 KB superaría
   // el límite de 100 KB del cuerpo de la API.

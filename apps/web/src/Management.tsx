@@ -4241,16 +4241,43 @@ export function Configuration() {
                 cajero pide PIN de gerente.
               </p>
             )}
-            {query.data?.usdRatePending?.rate && (
+            {query.data?.usdRateBlocked?.rate && (
               <p className="cod-hint" role="alert">
-                La tasa automática propuesta es RD${" "}
-                {Number(query.data.usdRatePending.rate).toLocaleString(
+                La tasa automática de RD${" "}
+                {Number(query.data.usdRateBlocked.rate).toLocaleString(
                   "es-DO",
                   { minimumFractionDigits: 2, maximumFractionDigits: 4 },
-                )}
-                , un cambio mayor de 5 %. Revisa la fuente y, si es correcta,
-                escribe exactamente esa tasa en «Editar configuración». Se
-                aplicará en la próxima comprobación automática.
+                )} {" "}
+                fue retenida porque cambia más de 25 %. No se modificaron los
+                precios. Fuente: {query.data.usdRateBlocked.source}. Se volverá
+                a comprobar mañana.
+                <br />
+                <Button
+                  variant="secondary"
+                  onClick={async () => {
+                    if (
+                      !window.confirm(
+                        "¿Confirmas que revisaste la fuente y quieres aplicar esta tasa y sus precios?",
+                      )
+                    )
+                      return;
+                    try {
+                      await post("/settings/usd-rate/confirm", {});
+                      await client.invalidateQueries({
+                        queryKey: ["settings", user.branchId],
+                      });
+                      toast("Tasa confirmada y precios actualizados.");
+                    } catch (error: any) {
+                      toast(
+                        error?.message ||
+                          "No se pudo confirmar la tasa. Recarga Configuración.",
+                        true,
+                      );
+                    }
+                  }}
+                >
+                  Confirmar y aplicar esta tasa
+                </Button>
               </p>
             )}
             {Number(query.data?.usdRateLowMargin?.count) > 0 && (

@@ -47,6 +47,11 @@ import { ncfSequenceWarnings, ncfTenantToday } from "./ncf-sequences";
 
 const CASH_DIFFERENCE_PRIVATE_MESSAGE =
   "Se detectó una diferencia en una caja cerrada. Administración debe revisarla.";
+const OWNER_ONLY_ALERT_TYPES = [
+  "sale_void_request",
+  "ncf_sequence",
+  "usd_rate_change",
+];
 
 // M-1 (auditoría 01): alertas que registran un hecho (una caja que cerró con
 // diferencia, un descuento, un vale, una transferencia sin verificar, una
@@ -74,6 +79,7 @@ export const MANUAL_ALERT_TYPES = [
   // Recordatorio semanal de créditos por cobrar (credit-reminder.ts).
   "credit_reminder",
   "sale_void_request",
+  "usd_rate_change",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,
@@ -888,7 +894,7 @@ export class AlertsController {
         ...(filter.type ? { type: filter.type } : {}),
         ...(filter.entityId ? { entityId: filter.entityId } : {}),
         ...(!can(actor.permissions, "*")
-          ? { AND: [{ type: { notIn: ["sale_void_request", "ncf_sequence"] } }] }
+          ? { AND: [{ type: { notIn: OWNER_ONLY_ALERT_TYPES } }] }
           : {}),
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
@@ -914,7 +920,7 @@ export class AlertsController {
         id: parse(uuid, id),
         branchId: actor.branchId,
         ...(!can(actor.permissions, "*")
-          ? { type: { notIn: ["sale_void_request", "ncf_sequence"] } }
+          ? { type: { notIn: OWNER_ONLY_ALERT_TYPES } }
           : {}),
       },
     });

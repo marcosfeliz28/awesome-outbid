@@ -312,7 +312,13 @@ export class ReportsController {
         any[]
       >`SELECT SUM(s.qty * v."costAvg") AS cost, SUM(s.qty * v.price) AS retail FROM "Variant" v JOIN "VariantStock" s ON s."variantId"=v.id JOIN "Warehouse" w ON w.id=s."warehouseId" AND w."branchId"=v."branchId" WHERE v."branchId"=${actor.branchId} AND v.active=true`,
       this.db.alert.findMany({
-        where: { branchId: actor.branchId, status: { not: "resolved" } },
+        where: {
+          branchId: actor.branchId,
+          status: { not: "resolved" },
+          ...(!can(actor.permissions, "*")
+            ? { type: { not: "usd_rate_change" } }
+            : {}),
+        },
         orderBy: { createdAt: "desc" },
         take: 6,
       }),
