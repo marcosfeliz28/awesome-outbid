@@ -2,10 +2,10 @@ import { HttpException } from "@nestjs/common";
 import { currentTenantId } from "./tenant-context";
 
 export const BILLING_PLANS = {
-  autoservicio: { label: "Autoservicio", monthlyDop: 990, branches: 1, boxes: 1, users: 2, aiQueries: 30 },
-  basico: { label: "Básico", monthlyDop: 1990, branches: 1, boxes: 2, users: 3, aiQueries: 50 },
-  pro: { label: "Pro", monthlyDop: 3990, branches: 2, boxes: 6, users: 10, aiQueries: 300 },
-  premium: { label: "Premium", monthlyDop: 7990, branches: 5, boxes: 20, users: 30, aiQueries: 1000 },
+  autoservicio: { label: "Autoservicio", monthlyDop: 1250, annualDop: 12500, branches: 1, boxes: 1, users: 2, aiQueries: 100 },
+  basico: { label: "Básico", monthlyDop: 2000, annualDop: 20000, branches: 1, boxes: 2, users: 3, aiQueries: 250 },
+  pro: { label: "Pro", monthlyDop: 4000, annualDop: 40000, branches: 2, boxes: 6, users: 10, aiQueries: 600 },
+  premium: { label: "Premium", monthlyDop: 7000, annualDop: 70000, branches: 5, boxes: 20, users: 30, aiQueries: 1500 },
 } as const;
 export type BillingPlan = keyof typeof BILLING_PLANS;
 
