@@ -1,3 +1,5 @@
+import { margin } from "@fitstore/shared";
+
 /** Rango civil completo de Santo Domingo para informes diarios y mensuales. */
 export function formalPeriod(period: string, value: string) {
   if (
@@ -17,7 +19,7 @@ export function formalPeriod(period: string, value: string) {
   }
   throw new Error("Indica un día AAAA-MM-DD o un mes AAAA-MM válido.");
 }
-export const reportMargin = (sold: number, cost: number) =>
-  sold <= 0 ? 0 : Math.round(((sold - cost) / sold) * 10000) / 100;
+// La misma fórmula de margen de todo el sistema (revisión 25-oct #8).
+export const reportMargin = (sold: number, cost: number) => margin(sold, cost);
 export const isTestRegister = (name: string) =>
   /^(qa|test|prueba)[-_]/i.test(name);

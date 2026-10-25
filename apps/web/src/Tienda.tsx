@@ -282,9 +282,10 @@ export function CloseCashModal({
       setError(e.message);
       if (/total de tarjeta no coincide/i.test(e.message))
         setCardNeedsPin(true);
-      if (/caja no cuadra con el sistema/i.test(e.message))
+      if (/caja no cuadra con el sistema|intentos de cierre/i.test(e.message))
         setCashNeedsPin(true);
-      if (/no cuadra|no coincide/i.test(e.message)) setNeedsReason(true);
+      if (/no cuadra|no coincide|intentos de cierre/i.test(e.message))
+        setNeedsReason(true);
     } finally {
       setBusy(false);
     }

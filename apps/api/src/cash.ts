@@ -41,6 +41,11 @@ import {
 import { cashLock, terminalName, terminalNames } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
 import { managerPinApproval } from "./security";
+
+// Revisión 25-oct #5: intentos de cierre sin cuadrar antes de exigir PIN.
+const CLOSE_ATTEMPTS = 2;
+const CLOSE_ATTEMPTS_MESSAGE =
+  "Ya hubo 2 intentos de cierre que no cuadraron. Para cerrar se necesita la justificación y el PIN de otra persona con permiso.";
 import { notify } from "./notifications";
 import { cashDifferenceMessage } from "./alerts";
 // Aparte del import anterior de ./sales para no chocar al fusionar ramas.
@@ -251,6 +256,60 @@ export async function refreshClosedCash(tx: any, session: any) {
     },
   });
   return differences;
+}
+// #6 (revisión 25-oct): algo cambió una caja ya cerrada (método corregido,
+// venta sin conexión registrada o anulación después del cierre). Lo pide con
+// justificación quien lo hace y queda una alerta para la dueña; si entró
+// tarjeta y el cierre no tiene lote del verifón, otra alerta «falta lote».
+export async function closedCashChanged(
+  tx: any,
+  actor: Actor,
+  session: any,
+  change: { ref: string; what: string; reason: string; differences: any },
+) {
+  const cashier = await tx.user.findUnique({
+    where: { id: session.userId },
+    select: { name: true },
+  });
+  const diff = change.differences ?? {};
+  const message =
+    `Caja cerrada de ${cashier?.name ?? "otra persona"} cambiada por ${actor.name}: ${change.what}. ` +
+    `Justificación: ${change.reason}. Diferencia ahora: efectivo RD$ ${formatAmount(Number(diff.cash ?? 0))}, ` +
+    `tarjeta RD$ ${formatAmount(Number(diff.card ?? 0))}, transferencia RD$ ${formatAmount(Number(diff.transfer ?? 0))}.`;
+  await tx.alert.upsert({
+    where: { key: `cash-after-close:${session.id}:${change.ref}` },
+    create: {
+      key: `cash-after-close:${session.id}:${change.ref}`,
+      type: "cash_after_close",
+      severity: "high",
+      entityId: session.id,
+      branchId: session.branchId,
+      message,
+    },
+    update: { message, status: "new" },
+  });
+  if ((session.closeDetails as any)?.batchNumber) return;
+  const cards = await tx.payment.count({
+    where: {
+      cashSessionId: session.id,
+      method: "card",
+      sale: { status: "completed" },
+      status: { not: "rejected" },
+    },
+  });
+  if (cards)
+    await tx.alert.upsert({
+      where: { key: "card-batch-missing:" + session.id },
+      create: {
+        key: "card-batch-missing:" + session.id,
+        type: "card_batch_missing",
+        severity: "high",
+        entityId: session.id,
+        branchId: session.branchId,
+        message: `Falta lote: la caja cerrada de ${cashier?.name ?? "otra persona"} tiene pagos con tarjeta y su cierre no tiene número de lote del verifón.`,
+      },
+      update: { status: "new" },
+    });
 }
 const sumOf = (rows: { amount: unknown }[]) =>
   money(rows.reduce((a, r) => a.plus(r.amount as any), d(0)));
@@ -1107,7 +1166,14 @@ export class CashController {
         );
       }
     }
-    const closed = await moneyDb(this.db).$transaction(async (tx) => {
+    // Revisión 25-oct #5: los intentos de cierre que no cuadran se cuentan en
+    // el servidor por caja (la respuesta 400 no guarda nada, así que sin
+    // contador se podía adivinar el esperado reintentando).
+    const attemptKey = "cash-close:" + parse(uuid, id);
+    // Un conteo que no cuadra y no termina en cierre (sin PIN, PIN falso o
+    // propio, sin justificación…) cuenta como intento fallido.
+    let mismatched = false;
+    const closing = moneyDb(this.db).$transaction(async (tx) => {
       const session = await cashLock(
         tx,
         actor,
@@ -1116,6 +1182,10 @@ export class CashController {
         undefined,
         { closing: true },
       );
+      // Con la caja bloqueada: dos intentos a la vez no leen el mismo conteo.
+      const failedBefore =
+        (await tx.authAttempt.findUnique({ where: { key: attemptKey } }))
+          ?.failedAttempts ?? 0;
       const expected = await cashExpected(tx, session);
       const settings = (
         await tx.settings.findUnique({ where: { id: actor.branchId } })
@@ -1177,24 +1247,38 @@ export class CashController {
       // cierra SU caja necesita el PIN de otra persona; la dueña («*») no.
       const ownClose =
         session.userId === actor.id && !can(actor.permissions, "*");
-      if (anyOff && (ownClose || !can(actor.permissions, "sale:manage"))) {
-        if (!input.managerPin)
+      const needsPin = ownClose || !can(actor.permissions, "sale:manage");
+      // #5: desde el 2.º intento que no cuadró, todo cierre (cuadre o no) pide
+      // justificación y el PIN de otra persona, con la misma respuesta, para
+      // que el mensaje no diga si este conteo es el bueno.
+      const guessed = needsPin && failedBefore >= CLOSE_ATTEMPTS;
+      mismatched = needsPin && anyOff;
+      // Un PIN enviado siempre se valida, cuadre o no: si no, «PIN incorrecto»
+      // sólo saldría con el conteo malo y delataría el bueno.
+      const approver =
+        needsPin && input.managerPin
+          ? await managerPinApproval(this.db, actor, input.managerPin, [
+              session.userId,
+            ])
+          : null;
+      if ((anyOff || guessed) && needsPin) {
+        if (!approver)
           bad(
-            cardOff
-              ? "El total de tarjeta no coincide con el sistema. Revisa el voucher del verifón; para cerrar con esta diferencia se necesita el PIN de un gerente."
-              : cashOff
-                ? "La caja no cuadra con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente."
-                : "Los dólares contados no coinciden con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente.",
+            guessed
+              ? CLOSE_ATTEMPTS_MESSAGE
+              : cardOff
+                ? "El total de tarjeta no coincide con el sistema. Revisa el voucher del verifón; para cerrar con esta diferencia se necesita el PIN de un gerente."
+                : cashOff
+                  ? "La caja no cuadra con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente."
+                  : "Los dólares contados no coinciden con el sistema. Vuelve a contar; para cerrar con esta diferencia se necesita el PIN de un gerente.",
           );
-        const approver = await managerPinApproval(
-          this.db,
-          actor,
-          input.managerPin!,
-          [session.userId],
-        );
         if (cardOff) (data.closeDetails as any).cardApprovedBy = approver;
         if (cashOff) (data.closeDetails as any).cashApprovedBy = approver;
         if (usdOff) (data.closeDetails as any).usdApprovedBy = approver;
+        if (guessed) {
+          (data.closeDetails as any).failedCloseAttempts = failedBefore;
+          (data.closeDetails as any).attemptsApprovedBy = approver;
+        }
       } else if (anyOff) {
         // Un gerente que cierra con descuadre queda como quien lo aprobó.
         if (cardOff) (data.closeDetails as any).cardApprovedBy = actor.id;
@@ -1203,11 +1287,16 @@ export class CashController {
       }
       // Dueña (21-oct): falte o sobre, nadie cierra un descuadre sin decir
       // qué pasó, tampoco un gerente. El mensaje sigue sin decir el monto.
-      if (anyOff && input.differenceReason.replace(/\s/g, "").length < 10)
+      if (
+        (anyOff || guessed) &&
+        input.differenceReason.replace(/\s/g, "").length < 10
+      )
         bad(
-          "La caja no cuadra. Escribe la justificación del descuadre: qué pasó y quién lo sabe.",
+          guessed
+            ? "Escribe la justificación del descuadre: qué pasó en los intentos de cierre y quién lo sabe."
+            : "La caja no cuadra. Escribe la justificación del descuadre: qué pasó y quién lo sabe.",
         );
-      if (anyOff)
+      if (anyOff || guessed)
         (data.closeDetails as any).differenceReason = input.differenceReason;
       if (
         cashCloseRequiresNote(
@@ -1326,6 +1415,15 @@ export class CashController {
       // D-M2 (auditoría 06): el cierre recalcula todo el turno; mismo plazo
       // que la venta en vez de los 5 s por defecto.
     }, MONEY_TRANSACTION);
+    const closed = await closing.catch(async (error) => {
+      if (mismatched)
+        await this.db.authAttempt.upsert({
+          where: { key: attemptKey },
+          create: { key: attemptKey, failedAttempts: 1 },
+          update: { failedAttempts: { increment: 1 } },
+        });
+      throw error;
+    });
     notify(this.db, "cash_close", closed.id);
     return closed;
   }

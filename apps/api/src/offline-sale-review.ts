@@ -15,11 +15,10 @@
 // Por defecto («returned») la venta no se crea ni se mueve inventario ni
 // dinero: la mercancía y el dinero se devolvieron. M-6 (v1/v2): si el cliente
 // SE LLEVÓ la mercancía y pagó («delivered»), descartar dejaba el stock
-// sobrestimado y un sobrante sin explicar; con esa salida el servidor registra
-// la salida de inventario (ajuste, a costo, cuenta en mermas y ajustes) y una
-// entrada de caja por lo cobrado en efectivo, ambas con la referencia de la
-// venta descartada. No es una venta: gerencia puede cobrar la diferencia o
-// registrarla aparte.
+// sobrestimado y un sobrante sin explicar. #4 (revisión 25-oct): con esa
+// salida se registra la venta REAL (NCF, ITBIS, inventario, pagos, incentivos)
+// con los datos que el servidor guardó al sincronizar, en la caja de quien la
+// cobró; si no se puede, se rechaza. Ya no hay ajuste más entrada de caja.
 import {
   Body,
   Controller,
@@ -27,7 +26,9 @@ import {
   NotFoundException,
   Post,
 } from "@nestjs/common";
-import { can, money, z } from "@fitstore/shared";
+import { randomUUID } from "node:crypto";
+import type { Prisma } from "@prisma/client";
+import { can, money, saleSchema, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -40,8 +41,7 @@ import {
   parse,
 } from "./common";
 import { managerPinApproval } from "./security";
-import { lockVariant, takeStock } from "./inventory";
-import { refreshClosedCash } from "./cash";
+import { SalesController } from "./sales";
 
 const amount = z.number().nonnegative().max(100000000);
 const discardSchema = z.object({
@@ -103,11 +103,9 @@ export class OfflineSaleReviewController {
       where: { id: approverId },
       select: { id: true, name: true },
     });
-    await this.db.$transaction(async (tx) => {
-      // Serializa con la sincronización y con offline-resolution.
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.offlineUuid}))::text AS locked`;
-      // La cajera sólo descarta lo suyo; gerencia, lo de su sucursal.
-      const ownership = await tx.auditLog.findFirst({
+    // La cajera sólo descarta lo suyo; gerencia, lo de su sucursal.
+    const findOwnership = (tx: Prisma.TransactionClient) =>
+      tx.auditLog.findFirst({
         where: {
           action: "offline_sale_conflict",
           entity: "offline_sale",
@@ -117,6 +115,14 @@ export class OfflineSaleReviewController {
         },
         orderBy: { createdAt: "desc" },
       });
+    // Se resuelve el conflicto bajo el candado del UUID (el mismo de la
+    // sincronización); `sale` es la venta real registrada si se entregó.
+    const settle = async (
+      tx: Prisma.TransactionClient,
+      sale?: { offlineUuid: string },
+    ) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.offlineUuid}))::text AS locked`;
+      const ownership = await findOwnership(tx);
       if (!ownership)
         throw new NotFoundException(
           "No hay un conflicto registrado para esta venta en tu sucursal.",
@@ -142,101 +148,6 @@ export class OfflineSaleReviewController {
       const paid = money(
         data.detail.payments.reduce((sum, p) => sum + p.amount, 0),
       );
-      // M-6: el cliente se llevó la mercancía y pagó, pero la venta no se crea.
-      const consequences: string[] = [];
-      if (data.outcome === "delivered") {
-        const wanted = new Map<string, number>();
-        for (const item of data.detail.items)
-          if (
-            item.variantId &&
-            z.string().uuid().safeParse(item.variantId).success
-          )
-            wanted.set(
-              item.variantId,
-              (wanted.get(item.variantId) ?? 0) + item.qty,
-            );
-        // La evidencia viene de lo que la caja envió: nunca se confía en ella.
-        // La caja debe ser de esta sucursal y de quien sincronizó la venta.
-        let sessionId: string | null = null;
-        if (
-          typeof evidence.cashSessionId === "string" &&
-          z.string().uuid().safeParse(evidence.cashSessionId).success
-        ) {
-          const own = await tx.cashSession.findFirst({
-            where: {
-              id: evidence.cashSessionId,
-              branchId: actor.branchId,
-              userId: ownership.userId,
-            },
-            select: { id: true },
-          });
-          if (!own)
-            bad(
-              "La caja de esta venta no corresponde a la sucursal o a la cajera que la envió: no se puede registrar la entrada de dinero.",
-            );
-          sessionId = own!.id;
-        }
-        // Mismo orden que la venta: caja primero, luego las variantes por id.
-        if (sessionId)
-          await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${sessionId}::uuid FOR UPDATE`;
-        for (const variantId of [...wanted.keys()].sort()) {
-          const variant = await lockVariant(tx, variantId, actor);
-          await takeStock(
-            tx,
-            actor,
-            variant,
-            wanted.get(variantId)!,
-            "adjustment",
-            data.offlineUuid,
-          );
-        }
-        if (wanted.size) {
-          await tx.inventoryMovement.updateMany({
-            where: { refId: data.offlineUuid, type: "adjustment" },
-            data: {
-              reason:
-                "Venta sin conexión " +
-                data.detail.receiptNumber +
-                " descartada con la mercancía entregada",
-            },
-          });
-          consequences.push("salida de inventario");
-        }
-        const cashPaid = money(
-          data.detail.payments
-            .filter((p) => p.method === "cash")
-            .reduce((sum, p) => sum + p.amount, 0),
-        );
-        // Pago en dólares: la entrada de caja es en pesos y el cuadre en US$
-        // no la vería. Se descarta como devuelta o se registra a mano.
-        const usd = [
-          ...data.detail.payments,
-          ...(((evidence.detail as any)?.payments ?? []) as any[]),
-        ].some((p) => p?.currency === "USD");
-        if (sessionId && cashPaid > 0 && usd)
-          bad(
-            "Esta venta incluía un pago en dólares: no se puede descartar como entregada con entrada de caja en pesos. Pide a la administración que la registre a mano.",
-          );
-        if (sessionId && cashPaid > 0) {
-          await tx.cashMovement.create({
-            data: {
-              sessionId,
-              type: "in",
-              amount: cashPaid,
-              reason:
-                "Venta sin conexión " +
-                data.detail.receiptNumber +
-                " descartada: efectivo cobrado por mercancía entregada",
-              userId: actor.id,
-            },
-          });
-          const cash = await tx.cashSession.findUnique({
-            where: { id: sessionId },
-          });
-          if (cash?.closedAt) await refreshClosedCash(tx, cash);
-          consequences.push("entrada de caja");
-        }
-      }
       await audit(
         tx,
         actor,
@@ -255,7 +166,8 @@ export class OfflineSaleReviewController {
           approvedByName: approver.name,
           approval: manages ? "session" : "pin",
           outcome: data.outcome,
-          consequences,
+          // La venta real, con el UUID nuevo con que se registró.
+          saleOfflineUuid: sale?.offlineUuid ?? null,
           detail: data.detail,
         },
       );
@@ -272,21 +184,85 @@ export class OfflineSaleReviewController {
           message:
             "Venta sin conexión " +
             data.detail.receiptNumber +
-            " descartada con aprobación de " +
+            " revisada con aprobación de " +
             approver.name +
             ": " +
             data.reason +
             ". Cobrado en el equipo: RD$ " +
             paid.toFixed(2) +
-            (data.outcome === "delivered"
-              ? ". El cliente se llevó la mercancía: se registró " +
-                (consequences.join(" y ") || "sin movimientos") +
-                " (no es una venta; cóbrala o regístrala aparte)."
+            (sale
+              ? ". El cliente se llevó la mercancía: se registró como venta con los datos que guardó el servidor."
               : ". Si el dinero quedó en la caja, el cuadre lo mostrará como sobrante."),
         },
         update: {},
       });
+    };
+    if (data.outcome === "returned") {
+      await this.db.$transaction((tx) => settle(tx));
+      return { ok: true, approvedBy: approver.name };
+    }
+    // #4 (revisión 25-oct): «entregada» registra la venta real por la ruta
+    // normal (precios, impuestos, inventario, pagos e incentivos) con lo que
+    // el SERVIDOR guardó al sincronizar, nunca con lo que manda el navegador.
+    // Si no se puede, se rechaza: no se mueve inventario ni dinero sin venta.
+    const ownership = await findOwnership(this.db as any);
+    if (!ownership)
+      throw new NotFoundException(
+        "No hay un conflicto registrado para esta venta en tu sucursal.",
+      );
+    if (ownership.userId !== actor.id)
+      bad(
+        "La venta entregada se registra en la caja de quien la cobró: que la cajera la revise en su equipo con tu PIN.",
+      );
+    const evidence = (ownership.after ?? {}) as any;
+    const stored = evidence.sale ?? evidence.detail ?? {};
+    if (
+      (stored.payments ?? []).some((p: any) => p?.currency === "USD") ||
+      (evidence.detail?.payments ?? []).some((p: any) => p?.currency === "USD")
+    )
+      bad(
+        "Esta venta incluía un pago en dólares: no se puede registrar desde aquí. Pide a la administración que la registre a mano.",
+      );
+    // N8: el servidor no guarda banco ni referencia; una transferencia no se
+    // puede registrar sin ellos (ni verificar después).
+    if (
+      (stored.payments ?? []).some((p: any) => p?.method === "transfer") ||
+      (evidence.detail?.payments ?? []).some(
+        (p: any) => p?.method === "transfer",
+      )
+    )
+      bad(
+        "Esta venta incluía una transferencia: no se puede registrar desde aquí. Descártala como devuelta y vuelve a facturarla con la referencia.",
+      );
+    // Las evidencias antiguas guardan null en lo que no venía.
+    const clean = JSON.parse(
+      JSON.stringify(stored, (_k, v) => (v === null ? undefined : v)),
+    );
+    const input = saleSchema.safeParse({
+      ...clean,
+      offlineUuid: randomUUID(),
+      cashSessionId: evidence.cashSessionId ?? undefined,
+      // Los precios de hoy mandan; el pago guardado debe cubrir el total.
+      expectedTotal: undefined,
+      managerPin: data.managerPin,
     });
-    return { ok: true, approvedBy: approver.name };
+    if (!input.success)
+      bad(
+        "El servidor no guardó los datos completos de esta venta (caja, cliente, artículos o pagos): no se puede registrar como entregada. Descártala como devuelta y vuelve a facturarla.",
+      );
+    const sale = await new SalesController(this.db).complete(
+      actor,
+      input.data!,
+      true,
+      {
+        closedCashReason: data.reason,
+        inTransaction: (tx) => settle(tx, input.data!),
+      },
+    );
+    return {
+      ok: true,
+      approvedBy: approver.name,
+      sale: { id: sale.id, number: sale.number },
+    };
   }
 }
