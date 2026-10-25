@@ -49,7 +49,10 @@ import {
   today,
   toast,
   mutate,
+  matchesWords,
+  searchWords,
 } from "./helpers";
+import { confirmMargin, productSearchText } from "./catalogChecks";
 import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
 import { CourierFeeEditor } from "./CourierFeeEditor";
@@ -251,14 +254,13 @@ export function Catalog() {
     [labels, setLabels] = useState<Product | null>(null);
   const [tab, setTab] = useState("General");
   const write = can(user.permissions, "catalog:write");
+  // Misma búsqueda que la caja: código de barras, SKU de variante, sin acentos.
+  const words = searchWords(search);
   const rows =
     query.data?.filter(
       (p) =>
         (!category || p.categoryId === category) &&
-        [p.name, p.sku, p.brand]
-          .join(" ")
-          .toLowerCase()
-          .includes(search.toLowerCase()),
+        matchesWords(productSearchText(p), words),
     ) || [];
   const fields: Field[] = [
     { key: "name", label: "Nombre del producto", required: true },
@@ -282,7 +284,8 @@ export function Catalog() {
     },
     {
       key: "soldByUnit",
-      label: "Se vende por unidad (sin decimales; desmárcalo para kg, lb o litro)",
+      label:
+        "Se vende por unidad (sin decimales; desmárcalo para kg, lb o litro)",
       type: "checkbox",
       initial: true,
     },
@@ -468,6 +471,10 @@ export function Catalog() {
           onClose={() => setCreate(false)}
           onSubmit={(values) => {
             const { barcode, price, costAvg, service, ...data } = values;
+            if (!service && !confirmMargin(price, costAvg))
+              return Promise.reject(
+                new Error("No se guardó: corrige el precio o confírmalo."),
+              );
             return post("/products", {
               ...data,
               ...(service ? { unit: "servicio", minStock: 0 } : {}),
@@ -507,22 +514,26 @@ export function Catalog() {
           ]}
           onClose={() => setMatrix(null)}
           onSubmit={(values) =>
-            post("/products/" + matrix.id + "/variants", {
-              attributes: {
-                [values.attribute1]: values.values1
-                  .split(",")
-                  .map((v: string) => v.trim()),
-                ...(values.attribute2 && values.values2
-                  ? {
-                      [values.attribute2]: values.values2
-                        .split(",")
-                        .map((v: string) => v.trim()),
-                    }
-                  : {}),
-              },
-              price: values.price,
-              costAvg: values.costAvg,
-            })
+            !confirmMargin(values.price, values.costAvg)
+              ? Promise.reject(
+                  new Error("No se guardó: corrige el precio o confírmalo."),
+                )
+              : post("/products/" + matrix.id + "/variants", {
+                  attributes: {
+                    [values.attribute1]: values.values1
+                      .split(",")
+                      .map((v: string) => v.trim()),
+                    ...(values.attribute2 && values.values2
+                      ? {
+                          [values.attribute2]: values.values2
+                            .split(",")
+                            .map((v: string) => v.trim()),
+                        }
+                      : {}),
+                  },
+                  price: values.price,
+                  costAvg: values.costAvg,
+                })
           }
         />
       )}
@@ -660,6 +671,11 @@ export function Catalog() {
           }
           onClose={() => setEditing(null)}
           onSubmit={async (data) => {
+            if (
+              editing.type === "variant" &&
+              !confirmMargin(data.price, data.costAvg)
+            )
+              throw new Error("No se guardó: corrige el precio o confírmalo.");
             await mutate(
               "/" +
                 (editing.type === "product" ? "products" : "variants") +
@@ -843,11 +859,9 @@ export function Inventory() {
         ?.qty ?? 0,
     );
   };
+  const words = searchWords(search);
   const rows = (query.data || []).filter((v: any) =>
-    [v.sku, v.barcode, v.product.name]
-      .join(" ")
-      .toLowerCase()
-      .includes(search.toLowerCase()),
+    matchesWords(productSearchText({ ...v.product, variants: [v] }), words),
   );
   return (
     <>
@@ -2550,7 +2564,12 @@ export function Promotions() {
                     <small>
                       {c.sku} · {c.category}
                     </small>
-                    {c.daysToExpiry !== null && <small>La oferta se aplica a la variante; la caja vende los lotes más antiguos primero.</small>}
+                    {c.daysToExpiry !== null && (
+                      <small>
+                        La oferta se aplica a la variante; la caja vende los
+                        lotes más antiguos primero.
+                      </small>
+                    )}
                   </div>
                 </div>
                 <div className="clearance-metrics">
@@ -2580,7 +2599,10 @@ export function Promotions() {
                   onClick={() => setOffer(c)}
                 >
                   <Sparkles size={16} />
-                  {c.suggestedDiscount <= 0 ? "Sin margen para oferta" : "Crear oferta"} <ArrowRight size={16} />
+                  {c.suggestedDiscount <= 0
+                    ? "Sin margen para oferta"
+                    : "Crear oferta"}{" "}
+                  <ArrowRight size={16} />
                 </Button>
               </article>
             ))}
@@ -2670,7 +2692,11 @@ export function Promotions() {
               key: "endsAt",
               label: "Fecha de finalización",
               type: "date",
-              initial: new Date(Date.now() + Math.max(0, Math.min(14, offer.daysToExpiry ?? 14)) * 86400000)
+              initial: new Date(
+                Date.now() +
+                  Math.max(0, Math.min(14, offer.daysToExpiry ?? 14)) *
+                    86400000,
+              )
                 .toISOString()
                 .slice(0, 10),
               required: true,
@@ -4300,7 +4326,9 @@ export function Configuration() {
               </p>
             )}
             <StoreSettings />
-            {productTenancyRequired(import.meta.env.VITE_PRODUCT_TENANCY) && <SupportAccessCard />}
+            {productTenancyRequired(import.meta.env.VITE_PRODUCT_TENANCY) && (
+              <SupportAccessCard />
+            )}
             <NcfSequenceSettings />
             <TelegramNotices />
             <DriveBackupCard />
@@ -4406,12 +4434,22 @@ export function Configuration() {
                     users.data?.find((u: any) => u.id === l.userId)?.name ||
                     l.userId,
                 },
-                { label: "Acción", render: (l) => <Badge>{l.action === "support.read"
-                  ? `Soporte de Nexora consultó ${String(l.after?.ruta ?? "").includes("reports") ? "un reporte" : String(l.after?.ruta ?? "").includes("dashboard") ? "el resumen" : "una pantalla"}`
-                  : l.action === "support.enable" ? "Permitió soporte de Nexora"
-                  : l.action === "support.disable" ? "Quitó acceso de soporte"
-                  : l.action === "support.expired" ? "Venció el acceso de soporte"
-                  : l.action}</Badge> },
+                {
+                  label: "Acción",
+                  render: (l) => (
+                    <Badge>
+                      {l.action === "support.read"
+                        ? `Soporte de Nexora consultó ${String(l.after?.ruta ?? "").includes("reports") ? "un reporte" : String(l.after?.ruta ?? "").includes("dashboard") ? "el resumen" : "una pantalla"}`
+                        : l.action === "support.enable"
+                          ? "Permitió soporte de Nexora"
+                          : l.action === "support.disable"
+                            ? "Quitó acceso de soporte"
+                            : l.action === "support.expired"
+                              ? "Venció el acceso de soporte"
+                              : l.action}
+                    </Badge>
+                  ),
+                },
                 { label: "Entidad", render: (l) => l.entity },
                 {
                   label: "Referencia",
