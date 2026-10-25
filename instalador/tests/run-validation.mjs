@@ -83,6 +83,7 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
     [process.execPath, ["--test", "instalador/tests/deploy-lock.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/recovery-error-contract.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/recovery-documentation.test.mjs"]],
+    [process.execPath, ["--test", "tests/windows-license-acl-contract.test.mjs"]],
     [
       process.execPath,
       ["--test", "instalador/tests/validation-command.test.mjs"],
