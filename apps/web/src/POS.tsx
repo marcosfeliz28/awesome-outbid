@@ -516,7 +516,15 @@ export function POS({ go }: { go: (page: string) => void }) {
     // 05-N1: un error de escaneo no se queda sobre la ventana de cobro.
     clearPersistentErrors();
     if (!cart.length) return;
-    if (!customerId) {
+    // Producto: con «Pedir cliente» apagado se vende a «Consumidor final».
+    const walkIn =
+      config.data?.requireCustomer === false
+        ? (customers.data ?? []).find((c: any) =>
+            /^consumidor final$/i.test(String(c.name).trim()),
+          )
+        : undefined;
+    if (!customerId && walkIn) setCustomer(walkIn.id);
+    else if (!customerId) {
       setPickerHint("Selecciona o crea el cliente antes de cobrar.");
       setClientPicker(true);
       return;

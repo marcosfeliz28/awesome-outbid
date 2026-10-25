@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@fitstore/ui";
+import { Button, Modal } from "@fitstore/ui";
 import { DEFAULT_SETTINGS } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
 import { BusinessHeader, PrintSheet, printSoon } from "./Prints";
 import { InventoryImportButton } from "./InventoryImport";
 import { businessErrorMessage } from "./managementMessages";
 import { registerTerminal, terminalIdentity } from "./realtime";
+import { HelpArticle } from "./SupportHelp";
 
 export type OnboardingStatus = {
   available: boolean;
@@ -64,6 +65,7 @@ export function Onboarding({ go }: { go: (page: string) => void }) {
   const [cashierDone, setCashierDone] = useState<{ username: string; temporaryPassword: string } | null>(null);
   const [opening, setOpening] = useState("0");
   const [ticketVisible, setTicketVisible] = useState(false);
+  const [guide, setGuide] = useState<string | null>(null);
   const userId = useStore(s => s.user?.id);
   const loaded = settings.data;
   const [filledIn, setFilledIn] = useState(false);
@@ -256,7 +258,12 @@ export function Onboarding({ go }: { go: (page: string) => void }) {
       <h2>¡Listo para vender!</h2>
       <label className="field"><span>Efectivo inicial en caja (RD$)</span><input value={opening} inputMode="decimal" onChange={e => setOpening(e.target.value)} /></label>
       <Button variant="success" disabled={busy} onClick={openCash}>Abrir caja y hacer mi primera venta</Button>
-      <p><a href="/ayuda/primera-venta.md" target="_blank" rel="noopener">Ver las guías de ayuda</a></p>
+      <p>Cada celular o computadora donde entras cuenta como un equipo de tu plan. Si llegas al límite, quita uno que ya no uses en Configuración → Equipos.</p>
+      <Button variant="secondary" onClick={() => run(async () => {
+        const response = await fetch("/ayuda/primera-venta.md");
+        if (!response.ok) throw new Error("No se pudo abrir la guía. Revisa tu conexión.");
+        setGuide(await response.text());
+      })}>Ver la guía «Tu primera venta»</Button>
       <Button variant="secondary" onClick={() => { setTicketVisible(true); printSoon(); }}>Imprimir ticket de prueba</Button>
     </section>}
 
@@ -264,6 +271,7 @@ export function Onboarding({ go }: { go: (page: string) => void }) {
       {step > 0 && <Button variant="secondary" disabled={busy} onClick={() => setStep(s => s - 1)}>Atrás</Button>}
       <Button variant="ghost" disabled={busy} onClick={() => run(() => finish("dashboard"))}>Saltar por ahora</Button>
     </footer>
+    <Modal open={guide !== null} onClose={() => setGuide(null)} title="Tu primera venta">{guide && <HelpArticle text={guide} />}</Modal>
     {ticketVisible && <PrintSheet width="80"><BusinessHeader business={settings.data ?? { name }} title="TICKET DE PRUEBA · 80 MM" /><p className="tp-center">NO ES UNA VENTA · DOCUMENTO NO FISCAL</p><p className="tp-center">Si puedes leer esto completo, la impresora está preparada.</p></PrintSheet>}
   </main>;
 }

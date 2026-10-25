@@ -4,6 +4,8 @@ import { api } from "./api";
 
 type Plan = { id: string; monthlyPrice: number; currency: string };
 type Provider = { kind: "bank_transfer" | "test"; instructions: { bank: string; account: string; holder: string } | null };
+const PLAN_NAMES: Record<string, string> = { autoservicio: "Autoservicio", basico: "Básico", pro: "Pro", premium: "Premium" };
+const planName = (id: string) => PLAN_NAMES[id] ?? id;
 type Request = { id: string; plan: string; provider: string; amount: string; status: string; hasProof: boolean; createdAt: string };
 
 export function Billing() {
@@ -11,6 +13,7 @@ export function Billing() {
   const plans = useQuery<Plan[]>({ queryKey: ["billing-plans"], queryFn: () => api("/billing/plans") });
   const providers = useQuery<Provider[]>({ queryKey: ["billing-providers"], queryFn: () => api("/billing/providers") });
   const requests = useQuery<Request[]>({ queryKey: ["billing-requests"], queryFn: () => api("/billing/requests") });
+  const support = useQuery<{ whatsapp: string | null }>({ queryKey: ["support-info"], queryFn: () => api("/support-info") });
   const [selected, setSelected] = useState("autoservicio");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -49,14 +52,16 @@ export function Billing() {
     {message && <p role="status">{message}</p>}
     <label htmlFor="billing-plan">Plan mensual</label>
     <select id="billing-plan" value={selected} onChange={(event) => setSelected(event.target.value)}>
-      {(plans.data ?? []).map((plan) => <option key={plan.id} value={plan.id}>{plan.id} · RD$ {plan.monthlyPrice.toLocaleString("es-DO")}/mes</option>)}
+      {(plans.data ?? []).map((plan) => <option key={plan.id} value={plan.id}>{planName(plan.id)} · RD$ {plan.monthlyPrice.toLocaleString("es-DO")}/mes</option>)}
     </select>
     {bank?.instructions ? <section aria-label="Cuenta bancaria de Nexora">
       <h2>Transferencia bancaria</h2>
       <p>Banco: {bank.instructions.bank}<br />Titular: {bank.instructions.holder}<br />Cuenta: {bank.instructions.account}</p>
       <p>Importe: RD$ {(plans.data?.find((plan) => plan.id === selected)?.monthlyPrice ?? 0).toLocaleString("es-DO")}</p>
       <button disabled={busy || plans.isLoading} onClick={() => { void createRequest("bank_transfer"); }}>Solicitar pago por transferencia</button>
-    </section> : <p role="status">La cuenta para transferencias aún no está configurada. No hagas un pago hasta que aparezca aquí.</p>}
+    </section> : <p role="status">Para pagar escríbenos a <a href="mailto:soporte@nexorapos.net">soporte@nexorapos.net</a> o por {support.data?.whatsapp
+      ? <a href={`https://wa.me/${support.data.whatsapp}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+      : "WhatsApp"}.</p>}
     {testProvider && <section aria-label="Facturación de prueba">
       <h2>Simulación de facturación</h2>
       <p>No mueve dinero real. La solicitud de prueba también requiere revisión de Nexora para activar el plan.</p>
@@ -65,7 +70,7 @@ export function Billing() {
     <section aria-label="Solicitudes de pago">
       <h2>Mis solicitudes</h2>
       {requests.data?.length ? <ul>{requests.data.map((request) => <li key={request.id}>
-        <strong>{request.plan} · RD$ {Number(request.amount).toLocaleString("es-DO")}</strong> · {request.status === "approved" ? "Aprobado" : request.status === "rejected" ? "Rechazado" : request.status === "pending_review" ? "En verificación" : "Falta el comprobante"}
+        <strong>{planName(request.plan)} · RD$ {Number(request.amount).toLocaleString("es-DO")}</strong> · {request.status === "approved" ? "Aprobado" : request.status === "rejected" ? "Rechazado" : request.status === "pending_review" ? "En verificación" : "Falta el comprobante"}
         {request.provider === "bank_transfer" && ["pending_proof", "pending_review"].includes(request.status) && <label>Subir comprobante JPG, PNG o WebP (máx. 2 MB)<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => { void upload(request.id, event.currentTarget.files?.[0]); }} /></label>}
       </li>)}</ul> : <p>Aún no hay solicitudes.</p>}
     </section>

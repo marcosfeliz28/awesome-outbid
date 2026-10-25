@@ -85,6 +85,16 @@ it("empresa nueva: Configuración guarda sin tocar campos, el asistente queda ma
     const untouched = await http.put("/api/settings").set("Authorization", auth).send(settings.body);
     expect(untouched.status, JSON.stringify(untouched.body)).toBe(200);
 
+    // Venta al mostrador: sin cliente obligatorio y con «Consumidor final».
+    expect(settings.body.requireCustomer).toBe(false);
+    const customers = (await http.get("/api/customers").set("Authorization", auth)).body as { name: string }[];
+    expect(customers.map(c => c.name)).toContain("Consumidor final");
+    const { requireCustomer: _omitted, ...withoutCustomerKey } = settings.body;
+    expect((await http.put("/api/settings").set("Authorization", auth).send(withoutCustomerKey)).status).toBe(200);
+    expect((await http.get("/api/settings").set("Authorization", auth)).body.requireCustomer).toBe(false);
+    expect((await http.put("/api/settings").set("Authorization", auth).send({ ...settings.body, requireCustomer: true })).status).toBe(200);
+    expect((await http.get("/api/settings").set("Authorization", auth)).body.requireCustomer).toBe(true);
+
     // El asistente cambia el tipo de negocio y su marca sobrevive al guardado.
     const typed = await http.put("/api/settings").set("Authorization", auth).send({ ...settings.body, businessType: "beauty" });
     expect(typed.status, JSON.stringify(typed.body)).toBe(200);
@@ -104,6 +114,13 @@ it("empresa nueva: Configuración guarda sin tocar campos, el asistente queda ma
     const cashierLogin = await http.post("/api/auth/login").set("x-tenant-id", companyCode).send({ login: "Cajera Uno", password: cashier.body.temporaryPassword });
     expect(cashierLogin.status, JSON.stringify(cashierLogin.body)).toBe(201);
     expect(cashierLogin.body.requiresPasswordChange).toBe(true);
+
+    // Límite de equipos: el mensaje dice qué hacer.
+    const device = (id: string) => ({ id, name: "Equipo", secret: "only-local-test-secret-123" });
+    expect((await http.post("/api/terminals/register").set("Authorization", auth).send(device("00000000-0000-4000-8000-000000000201"))).status).toBe(201);
+    const over = await http.post("/api/terminals/register").set("Authorization", auth).send(device("00000000-0000-4000-8000-000000000202"));
+    expect(over.status).toBe(409);
+    expect(over.body.message).toContain("Configuración → Equipos");
   } finally {
     await app?.close().catch(() => undefined);
     vi.unstubAllGlobals();

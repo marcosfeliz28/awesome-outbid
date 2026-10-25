@@ -131,7 +131,8 @@ const configSchema = z.object({
   autoPrintReceipt: z.boolean().default(false),
   // Toda factura debe identificar a una persona o empresa; puede crearse
   // desde el selector de clientes del POS.
-  requireCustomer: z.boolean().default(true),
+  // Sin la clave se conserva lo guardado (formularios que no la muestran).
+  requireCustomer: z.boolean().optional(),
   // Tasa del día (RD$ por unidad) para el efectivo en dólares y euros.
   usdRate: z.number().positive().max(10000).nullable().optional(),
   eurRate: z.number().positive().max(10000).nullable().optional(),
@@ -147,6 +148,8 @@ const configSchema = z.object({
     .enum(["general", "retail", "beauty", "fitness", "services"])
     .optional(),
 });
+const customerRequired = (value: unknown) =>
+  process.env.PRODUCT_TENANCY !== "required" || value !== false;
 const cashMovementLimit = (data: Record<string, unknown> | undefined) =>
   typeof data?.cashMovementApprovalLimit === "number"
     ? data.cashMovementApprovalLimit
@@ -872,7 +875,7 @@ export class AdminController {
       allowOfflineSales: data.allowOfflineSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),
-      requireCustomer: true,
+      requireCustomer: customerRequired(data.requireCustomer),
     };
   }
   @Put("settings")
@@ -932,9 +935,11 @@ export class AdminController {
           config.cardTerminals ?? (previous?.cardTerminals as string[]) ?? [],
         receiptFooter:
           config.receiptFooter ?? (previous?.receiptFooter as string) ?? "",
-        // Compatibilidad con clientes anteriores, pero la regla comercial es
-        // invariable: toda venta se guarda a nombre de un cliente.
-        requireCustomer: true,
+        // En la tienda la regla es invariable: toda venta lleva cliente. En el
+        // producto cada negocio decide (sin cliente = «Consumidor final»).
+        requireCustomer: customerRequired(
+          config.requireCustomer ?? previous?.requireCustomer,
+        ),
         ...(kept ? { logo: kept } : {}),
       };
       const row = await tx.settings.upsert({

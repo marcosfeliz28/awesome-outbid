@@ -4190,6 +4190,12 @@ export function Configuration() {
     { key: "phone", label: "Teléfono" },
     { key: "address", label: "Dirección" },
     { key: "taxIncluded", label: "Precios con ITBIS incluido", type: "checkbox" },
+    {
+      key: "requireCustomer",
+      label: "Pedir cliente en cada venta",
+      type: "checkbox",
+      help: "Apagado: la venta queda a nombre de «Consumidor final».",
+    },
     fields.find((f) => f.key === "receiptWidth")!,
     fields.find((f) => f.key === "usdRate")!,
     {
@@ -4369,7 +4375,8 @@ export function Configuration() {
                 {product && <SupportAccessCard />}
                 <NcfSequenceSettings />
                 <TelegramNotices />
-                <DriveBackupCard />
+                {/* El producto no tiene respaldo a Drive por empresa (sin /backups). */}
+                {!product && <DriveBackupCard />}
                 <IncentiveRates />
               </>
             )}
@@ -4498,7 +4505,7 @@ export function Configuration() {
           onClose={() => setEditing(false)}
           onSubmit={(values) => {
             // Básico solo edita unos campos: el resto viaja tal como está.
-            const { ncfOn: on, ...data } = basic
+            const { ncfOn: _ncfOn, ...data } = basic
               ? {
                   ...initial,
                   ...values,

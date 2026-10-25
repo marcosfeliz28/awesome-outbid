@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
   HELP_ARTICLES,
+  HelpArticle,
   SupportContent,
   supportMessage,
 } from "../apps/web/src/SupportHelp";
@@ -64,5 +65,17 @@ describe("botón Ayuda", () => {
     expect(html).not.toContain("wa.me");
     expect(html).not.toContain("mailto:");
     expect(html).toContain("Descargar todos mis datos (Excel)");
+  });
+
+  it("las guías se ven como texto con formato (sin # ni **) y las teclas F son de computadora", () => {
+    for (const [slug] of HELP_ARTICLES) {
+      const text = readFileSync(resolve("apps/web/public/ayuda", `${slug}.md`), "utf8");
+      const html = renderToStaticMarkup(createElement(HelpArticle, { text }));
+      expect(html, slug).not.toMatch(/(^|>)#|\*\*/);
+      for (const key of text.match(/[^.\n]*\bF\d{1,2}\b[^.\n]*/g) ?? [])
+        expect(key, slug).toMatch(/en computadora/i);
+    }
+    const html = renderToStaticMarkup(createElement(HelpArticle, { text: "# Título\n\n1. Uno **fuerte**\n2. Dos\n\n- Viñeta" }));
+    expect(html).toBe('<div class="help-article"><h3>Título</h3><ol><li>Uno <strong>fuerte</strong></li><li>Dos</li></ol><ul><li>Viñeta</li></ul></div>');
   });
 });

@@ -30,4 +30,13 @@ describe("facturación en modo de prueba", () => {
     expect(bankOnly).toContain("Solicitar pago por transferencia");
     expect(bankOnly).not.toContain("Crear solicitud de prueba");
   });
+
+  it("muestra el nombre del plan y cómo pagar cuando aún no hay cuenta bancaria", () => {
+    const html = renderWithProviders([]);
+    expect(html).toContain("Autoservicio · RD$");
+    expect(html).not.toContain(">autoservicio ·");
+    expect(html).toContain("Para pagar escríbenos a");
+    expect(html).toContain("soporte@nexorapos.net");
+    expect(html).not.toContain("aún no está configurada");
+  });
 });

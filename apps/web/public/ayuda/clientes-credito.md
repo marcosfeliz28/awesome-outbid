@@ -5,7 +5,7 @@ Crear un cliente:
 2. Escribe nombre y teléfono. Gerencia puede fijar un «Límite de crédito (RD$)».
 
 Vender a crédito:
-1. En «Punto de venta», elige el cliente (tecla F4).
+1. En «Punto de venta», elige el cliente (en computadora: tecla F4).
 2. En «Cobrar», elige «Crédito». La venta queda como cuenta por cobrar del cliente.
 
 Cobrar lo que debe:

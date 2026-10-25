@@ -104,8 +104,12 @@ export async function createTenantWithOwner(
   } });
   await tx.settings.create({ data: { tenantId: tenant.id, id: "main", data: {
     ...DEFAULT_SETTINGS, name: tenant.name,
+    // Un negocio nuevo vende al mostrador sin pedir cliente (venta a
+    // «Consumidor final»); lo puede encender en Configuración.
+    requireCustomer: false,
     businessType: tenant.businessType, onboarding: { dismissed: false },
   } } });
+  await tx.customer.create({ data: { tenantId: tenant.id, name: "Consumidor final" } });
   return tenant;
 }
 

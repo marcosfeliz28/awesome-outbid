@@ -368,7 +368,14 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await expect(page.getByLabel("Buscar productos")).toBeVisible();
     await expect(page.getByRole("button", { name: /Abre tu caja para comenzar/ })).toHaveCount(0);
     await page.getByLabel("Buscar productos").fill("Agua 500");
-    await expect(page.locator(".product-card", { hasText: "Agua 500 ml" })).toBeVisible();
+    await page.locator(".product-card", { hasText: "Agua 500 ml" }).click();
+    // Sin «Pedir cliente» la venta va a «Consumidor final» sin preguntar.
+    await page.getByRole("button", { name: /Cobrar/ }).click();
+    await expect(page.getByRole("dialog", { name: "Todo listo para cobrar" })).toBeVisible();
+    await page.getByLabel("Monto del pago").fill("25");
+    await page.getByRole("button", { name: "Agregar pago" }).click();
+    await page.getByRole("button", { name: "Finalizar venta" }).click();
+    await expect(page.getByText("Venta registrada", { exact: true })).toBeVisible();
     expect(seen.size).toBeLessThanOrEqual(5);
     const settings = await (await page.request.get(`${web}/api/settings`, { headers: auth })).json();
     expect(settings).toMatchObject({ ncfMode: "disabled", legalId: "", phone: "809-555-0101", taxIncluded: true });
@@ -377,6 +384,12 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     expect(sessions.filter((s: any) => !s.closedAt).map((s: any) => Number(s.openingAmount))).toEqual([0]);
     const products = await (await page.request.get(`${web}/api/products`, { headers: auth })).json();
     expect(products.items.map((p: any) => p.name).sort()).toEqual(["Agua 500 ml", "Galletas"]);
+
+    // En el celular «Pregúntale a Nexora» no tapa la barra de Mercancía.
+    await page.goto(`${web}/#dashboard`);
+    const bar = await page.locator(".goods-mobile-bar").boundingBox();
+    const launcher = await page.getByRole("button", { name: "Pregúntale a Nexora" }).boundingBox();
+    expect(launcher!.y + launcher!.height).toBeLessThanOrEqual(bar!.y);
 
     // Configuración arranca en «Básico»: sin RNC mientras el NCF esté apagado.
     await page.goto(`${web}/#settings`);

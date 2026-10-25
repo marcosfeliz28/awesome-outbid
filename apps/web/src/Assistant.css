@@ -26,3 +26,8 @@
 .assistant-body form button { align-self: flex-end; padding: 8px 14px; }
 @media (max-width: 350px) { .assistant-examples { grid-template-columns: 1fr; } .assistant-header { padding: 12px; } .assistant-body { padding: 12px; } }
 @media (prefers-reduced-motion: reduce) { .assistant-panel, .assistant-launcher { scroll-behavior: auto; transition: none; animation: none; } }
+/* En celular el botón no tapa la barra fija de Mercancía ni la confirmación. */
+@media (max-width: 768px) {
+  body:has(.goods-mobile-bar) .assistant-launcher { bottom: calc(84px + env(safe-area-inset-bottom)); }
+  body:has(.goods-actions.has-items) .assistant-launcher { display: none; }
+}
