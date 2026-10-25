@@ -55,7 +55,7 @@ const CASH_DIFFERENCE_PRIVATE_MESSAGE =
 // propio flujo (verificar la transferencia, cobrar la cuenta, resolver el
 // conflicto offline).
 /** Tipos que sólo ve administración (`*`). */
-export const ADMIN_ONLY_ALERT_TYPES = ["sale_void_request", "ncf_sequence"];
+export const ADMIN_ONLY_ALERT_TYPES = ["sale_void_request", "ncf_sequence", "plan_due"];
 export const MANUAL_ALERT_TYPES = [
   "offline_conflict",
   "receivable",
@@ -75,6 +75,8 @@ export const MANUAL_ALERT_TYPES = [
   // Recordatorio semanal de créditos por cobrar (credit-reminder.ts).
   "credit_reminder",
   "sale_void_request",
+  // Vencimiento del plan del producto (tenant-lifecycle.ts, PC-23).
+  "plan_due",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,

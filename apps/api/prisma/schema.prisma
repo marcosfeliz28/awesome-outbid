@@ -1368,6 +1368,7 @@ model Tenant {
   lifecycleNoticeRows TenantLifecycleNotice[]
   billingRequestRows BillingRequest[]
   billingDecisionRows BillingDecision[]
+  platformPaymentRows PlatformPayment[]
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique
   name      String
@@ -1389,6 +1390,24 @@ model Tenant {
   timeZone  String   @default("America/Santo_Domingo")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// PC-23: pago manual registrado por el operador de la plataforma. Sólo
+// INSERT (trigger en la base); sin datos de tarjeta.
+model PlatformPayment {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  tenantId  String   @db.Uuid
+  amount    Decimal  @db.Decimal(12, 2)
+  method    String
+  reference String
+  months    Int
+  operator  String
+  paidFrom  DateTime
+  paidUntil DateTime
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, createdAt])
 }
 
 // Avisos de vencimiento durables e idempotentes por empresa y período.

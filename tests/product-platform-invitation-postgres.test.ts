@@ -113,7 +113,7 @@ it("el operador crea empresas piloto por invitación sin abrir el registro públ
     const listed = await http.get("/api/platform/tenants").set("Authorization", auth);
     expect(listed.status).toBe(200);
     expect(listed.body.map((t: any) => t.slug)).toEqual(expect.arrayContaining(["piloto-a", "piloto-b"]));
-    expect(Object.keys(listed.body[0]).sort()).toEqual(["createdAt", "id", "name", "plan", "slug", "status", "trialEndsAt"]);
+    expect(Object.keys(listed.body[0]).sort()).toEqual(["createdAt", "id", "name", "paidUntil", "plan", "slug", "status", "trialEndsAt"]);
 
     client = new PrismaClient({ datasources: { db: { url: pg.url } } });
     const q = (sql: string, ...params: unknown[]) => client.$queryRawUnsafe(sql, ...params) as Promise<any[]>;
