@@ -609,6 +609,7 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   };
 }
 const UUID_RE = /^[0-9a-f-]{36}$/i;
+const AUTO_DRAWER_WINDOW_MS = 2 * 60_000;
 // Cajas cerradas que lista GET /cash-sessions (además de todas las abiertas).
 const CLOSED_SESSIONS_LIMIT = 100;
 @Controller("cash-sessions")
@@ -629,7 +630,9 @@ export class CashController {
         where: {
           id: saleId,
           status: "completed",
-          cashSession: { branchId: actor.branchId, userId: actor.id },
+          // CPC-10: sólo la venta recién cobrada y con la caja todavía abierta.
+          createdAt: { gte: new Date(Date.now() - AUTO_DRAWER_WINDOW_MS) },
+          cashSession: { branchId: actor.branchId, userId: actor.id, closedAt: null },
           payments: {
             some: { method: "cash", amount: { gt: 0 }, status: { not: "rejected" } },
           },
@@ -637,17 +640,22 @@ export class CashController {
         select: { id: true },
       });
       if (!exists)
-        bad("La venta no pertenece a esta caja o no recibió efectivo; la gaveta no se abrirá.");
-      const previous = await tx.auditLog.findFirst({
+        bad("La venta no pertenece a esta caja abierta, no es de los últimos 2 minutos o no recibió efectivo; la gaveta no se abrirá.");
+      const previous = await tx.auditLog.findMany({
         where: {
           userId: actor.id,
-          action: "cash_drawer_open_auto",
+          action: { in: ["cash_drawer_open_auto", "cash_drawer_open_auto_sent"] },
           entity: "sale",
           entityId: saleId,
         },
-        select: { id: true },
+        select: { id: true, action: true },
       });
-      if (previous) return { auditId: previous.id, open: false };
+      // «Enviado» sólo existe cuando el equipo confirmó el pulso.
+      const sent = previous.find((row: any) => row.action === "cash_drawer_open_auto_sent");
+      if (sent) return { auditId: sent.id, open: false };
+      const attempts = previous.filter((row: any) => row.action === "cash_drawer_open_auto").length;
+      if (attempts >= 2)
+        bad("La gaveta ya se intentó abrir dos veces con esta venta; pide a gerencia la apertura manual.");
       const row = await audit(
         tx,
         actor,
@@ -655,10 +663,33 @@ export class CashController {
         "sale",
         saleId,
         undefined,
-        { source: "desktop", automatic: true },
+        { source: "desktop", automatic: true, attempt: attempts + 1 },
       );
       return { auditId: row.id, open: true };
     });
+  }
+  @Post("drawer-open/automatic/sent")
+  @Permit("sale:write")
+  async automaticDrawerSent(
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const { auditId } = parse(z.object({ auditId: uuid }), body);
+    const row = await this.db.auditLog.findFirst({
+      where: { id: auditId, userId: actor.id, action: "cash_drawer_open_auto", entity: "sale" },
+      select: { entityId: true },
+    });
+    if (!row) bad("No hay una apertura automática pendiente con esa referencia.");
+    const sent = await audit(
+      this.db,
+      actor,
+      "cash_drawer_open_auto_sent",
+      "sale",
+      row!.entityId,
+      undefined,
+      { source: "desktop", auditId },
+    );
+    return { auditId: sent.id };
   }
   @Post("drawer-open")
   @Permit("cash:drawer")
@@ -668,7 +699,11 @@ export class CashController {
   ) {
     const reference = parse(
       z
-        .object({ saleId: uuid.optional(), movementId: uuid.optional() })
+        .object({
+          saleId: uuid.optional(),
+          movementId: uuid.optional(),
+          reason: z.string().trim().min(5, "Escribe el motivo de la apertura (mínimo 5 caracteres).").max(200),
+        })
         .refine((value) => Boolean(value.saleId) !== Boolean(value.movementId), {
           message: "Indica una venta o un movimiento de caja.",
         }),
@@ -704,7 +739,7 @@ export class CashController {
       entity,
       entityId,
       undefined,
-      { source: "desktop" },
+      { source: "desktop", reason: reference.reason },
     );
     return { auditId: row.id };
   }

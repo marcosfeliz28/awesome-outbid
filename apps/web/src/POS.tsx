@@ -2214,6 +2214,15 @@ function Checkout({
             }
           : line;
       });
+      // Impresión automática del recibo (Ajustes).
+      const cashPaid = cashDrawerRequired(payments);
+      const drawerAuthorization =
+        cashPaid &&
+        confirmedOnline &&
+        isNativeDesktop() &&
+        token
+          ? { accessToken: token, saleId: sale.id, automatic: true as const }
+          : undefined;
       setReceipt({
         ...sale,
         snapshot: printed,
@@ -2227,16 +2236,8 @@ function Checkout({
         change: payment.change,
         tendered: payments,
         createdAt: sale.createdAt ?? new Date().toISOString(),
+        drawerAuthorization,
       });
-      // Impresión automática del recibo (Ajustes).
-      const cashPaid = cashDrawerRequired(payments);
-      const drawerAuthorization =
-        cashPaid &&
-        confirmedOnline &&
-        isNativeDesktop() &&
-        token
-          ? { accessToken: token, saleId: sale.id, automatic: true as const }
-          : undefined;
       if (config?.autoPrintReceipt) printSoon(drawerAuthorization);
       else if (drawerAuthorization)
         void nativeOpenDrawer(drawerAuthorization).catch((error) =>
@@ -2358,6 +2359,20 @@ function Checkout({
             <Printer size={20} />
             Imprimir recibo
           </Button>
+          {receipt.drawerAuthorization && (
+            // CPC-10: un reintento de la misma venta si el pulso no llegó;
+            // la API lo permite solo mientras el equipo no confirmó el envío.
+            <Button
+              variant="secondary"
+              onClick={() =>
+                void nativeOpenDrawer({ ...receipt.drawerAuthorization, accessToken: token ?? "" })
+                  .then(() => toast("Gaveta: reintento enviado."))
+                  .catch((e) => toast(String(e?.message ?? e), true))
+              }
+            >
+              Abrir gaveta otra vez
+            </Button>
+          )}
           {!receipt.offline && (
             <Button
               variant="secondary"

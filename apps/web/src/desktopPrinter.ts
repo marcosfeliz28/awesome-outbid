@@ -10,6 +10,8 @@ export type DrawerAuthorization = {
   movementId?: string;
   /** La venta acaba de cobrarse; no es una apertura manual de gerencia. */
   automatic?: boolean;
+  /** Motivo obligatorio de la apertura manual (gerencia). */
+  reason?: string;
 };
 let drawerOnNextPrint: DrawerAuthorization | null = null;
 let testInvoke: Invoke | null = null;
@@ -73,6 +75,7 @@ export async function nativePrintThermal(
       saleId: drawer.saleId ?? null,
       movementId: drawer.movementId ?? null,
       automatic: drawer.automatic === true,
+      reason: drawer.reason ?? null,
     });
 }
 
@@ -113,6 +116,7 @@ export async function nativeOpenDrawer(authorization: DrawerAuthorization): Prom
     accessToken: authorization.accessToken,
     saleId: authorization.saleId ?? null,
     movementId: authorization.movementId ?? null,
-    automatic: false,
+    automatic: authorization.automatic === true,
+    reason: authorization.reason ?? null,
   });
 }
