@@ -46,6 +46,7 @@ import {
   isImageDataUrl,
   LOGO_MAX_BYTES,
   RECEIVABLE_SHIFT_LIMIT,
+  clearanceDiscountLimit,
 } from "@fitstore/shared";
 import { normalizeUsername, passwordHash } from "./auth";
 import {
@@ -1446,6 +1447,19 @@ export class AdminController {
       bad("El descuento máximo es 100%.");
     if (data.type === "nxm" && (data.scope.pay ?? 1) >= (data.scope.buy ?? 2))
       bad("La promoción debe regalar al menos una unidad.");
+    if (data.isClearance) {
+      if (data.type !== "percent" || !data.scope.variantId)
+        bad("La oferta de liquidación requiere una variante y descuento porcentual.");
+      const variant = await this.db.variant.findFirst({
+        where: { id: data.scope.variantId, branchId: actor.branchId, active: true },
+        include: { product: { select: { taxRate: true } } },
+      });
+      if (!variant) bad("Variante no encontrada en esta tienda.");
+      const settings = await this.db.settings.findUnique({ where: tenantUnique("id", actor.branchId) });
+      const limit = clearanceDiscountLimit(Number(variant.price), Number(variant.costAvg), Number(variant.product.taxRate), (settings?.data as any)?.taxIncluded !== false);
+      if (limit <= 0 || data.value > limit)
+        bad(`La oferta supera el descuento máximo de ${limit}% que conserva 15% de margen neto.`);
+    }
     const row = await this.db.promotion.create({
       data: {
         ...data,

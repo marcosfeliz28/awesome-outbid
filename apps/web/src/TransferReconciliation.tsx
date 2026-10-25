@@ -25,6 +25,13 @@ const dateTime = (value: string) =>
     timeStyle: "short",
   });
 
+type PhotoReview = {
+  photo: { bank: string; date: string; reference: string; amount: string };
+  warnings: string[];
+  recommendation: "verificar" | "rechazar" | "revisar";
+  note: string;
+};
+
 export function TransferReconciliation() {
   const user = useStore((state) => state.user)!;
   const admin = can(user.permissions, "*");
@@ -38,6 +45,8 @@ export function TransferReconciliation() {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [photoReviews, setPhotoReviews] = useState<Record<string, PhotoReview>>({});
+  const [photoError, setPhotoError] = useState<Record<string, string>>({});
   const busyRef = useRef(false);
   const query = useQuery<PendingTransfer[]>({
     queryKey: ["pending-transfers", date],
@@ -174,6 +183,35 @@ export function TransferReconciliation() {
       setBusy(false);
     }
   };
+  const uploadPhoto = async (row: PendingTransfer, file?: File) => {
+    if (!file || busyRef.current) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      setPhotoError((old) => ({ ...old, [row.id]: "Usa JPG, PNG o WebP de hasta 2 MB." }));
+      return;
+    }
+    busyRef.current = true; setBusy(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      await api(`/payments/${row.id}/proof`, { method: "POST", body });
+      setPhotoError((old) => ({ ...old, [row.id]: "" }));
+      setPhotoReviews((old) => { const next = { ...old }; delete next[row.id]; return next; });
+      await refresh();
+    } catch (error) {
+      setPhotoError((old) => ({ ...old, [row.id]: error instanceof Error ? error.message : "No se pudo subir la foto." }));
+    } finally { busyRef.current = false; setBusy(false); }
+  };
+  const analyzePhoto = async (row: PendingTransfer) => {
+    if (busyRef.current) return;
+    busyRef.current = true; setBusy(true);
+    try {
+      const review = await post<PhotoReview>(`/payments/${row.id}/proof-review`, {});
+      setPhotoReviews((old) => ({ ...old, [row.id]: review }));
+      setPhotoError((old) => ({ ...old, [row.id]: "" }));
+    } catch (error) {
+      setPhotoError((old) => ({ ...old, [row.id]: error instanceof Error ? error.message : "No se pudo analizar la foto." }));
+    } finally { busyRef.current = false; setBusy(false); }
+  };
 
   return (
     <section className="transfer-reconciliation">
@@ -302,6 +340,22 @@ export function TransferReconciliation() {
                             ? " · cobro: " + row.cashier
                             : ""}
                         </span>
+                        <div className="reconciliation-photo">
+                          <label className="field">
+                            <span>Foto del comprobante de {row.invoice} {row.hasProof ? "· adjunta" : "· pendiente"}</span>
+                            <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy}
+                              onChange={(event) => { void uploadPhoto(row, event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
+                          </label>
+                          {row.hasProof && <Button variant="secondary" disabled={busy}
+                            onClick={() => void analyzePhoto(row)}>Leer foto con IA</Button>}
+                          {photoError[row.id] && <p role="alert">{photoError[row.id]}</p>}
+                          {photoReviews[row.id] && <div className="panel" role="status">
+                            <strong>Propuesta: {photoReviews[row.id].recommendation}</strong>
+                            <p>Foto: {photoReviews[row.id].photo.bank} · {photoReviews[row.id].photo.date} · ref. {photoReviews[row.id].photo.reference} · RD$ {photoReviews[row.id].photo.amount}</p>
+                            {photoReviews[row.id].warnings.map((warning) => <p key={warning}>{warning}</p>)}
+                            <p>{photoReviews[row.id].note}</p>
+                          </div>}
+                        </div>
                         {selectedCount === 1 &&
                           selected.has(row.id) &&
                           validBankTotal &&

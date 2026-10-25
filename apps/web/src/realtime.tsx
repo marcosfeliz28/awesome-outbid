@@ -22,6 +22,7 @@ import {
   useStore,
 } from "./api";
 import { attrLabel, toast } from "./helpers";
+import { applyRealtimeStock } from "./catalog-stock";
 // «Producto · talla: RD$ 1,500.00 → RD$ 1,700.00» (R9-offline-3).
 export const priceChanges = (changes: { item: CartItem; before: number }[]) =>
   changes
@@ -150,7 +151,7 @@ export function useRealtime() {
     let controller: AbortController | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let delay = 1000;
-    const apply = (id: string, stock: number) => {
+    const apply = async (id: string, stock: number, event = true) => {
       const state = useStore.getState();
       let changed = false;
       const cart = state.cart.map((i) => {
@@ -161,14 +162,7 @@ export function useRealtime() {
         return { ...i, variant: { ...i.variant, stock: String(stock) } };
       });
       if (changed) state.setCart(cart);
-      client.setQueryData<Product[]>(["catalog"], (old) =>
-        old?.map((p) => ({
-          ...p,
-          variants: p.variants.map((v) =>
-            v.id === id ? { ...v, stock: String(stock) } : v,
-          ),
-        })),
-      );
+      if (event) await applyRealtimeStock(client, id, stock);
     };
     const handle = async (type: string, data: any) => {
       if (type === "ready") {
@@ -176,7 +170,7 @@ export function useRealtime() {
         if (stopped) return;
         client.setQueryData(["catalog"], catalog);
         for (const p of catalog)
-          for (const v of p.variants) apply(v.id, Number(v.stock));
+          for (const v of p.variants) await apply(v.id, Number(v.stock), false);
         // El carrito toma también precios y datos vigentes, no sólo el
         // stock, y se avisa qué precio cambió (R9-offline-3).
         announcePriceChanges(
@@ -192,7 +186,7 @@ export function useRealtime() {
           if (stopped) return;
           client.setQueryData(["catalog"], catalog);
         }
-        apply(data.variantId, data.qtyOnHand);
+        await apply(data.variantId, data.qtyOnHand);
         const cached = await localDB.cache.get("catalog:" + user.branchId);
         if (cached) {
           cached.data = cached.data.map((p: Product) => ({

@@ -26,6 +26,7 @@ import {
   SaleInput,
   saleSchema,
   lineTotals,
+  clearanceDiscountLimit,
   paymentTotals,
   money,
   formatMoney,
@@ -824,7 +825,13 @@ export class SalesController {
           let promo = 0,
             promotionName: string | null = null;
           for (const p of promos) {
-            const off = promotionDiscount(p, variant, item.qty);
+            const requested = promotionDiscount(p, variant, item.qty);
+            const off = p.isClearance
+              ? Math.min(requested, clearanceDiscountLimit(
+                  Number(variant.price), Number(variant.costAvg),
+                  Number(variant.product.taxRate), config?.taxIncluded !== false, item.qty,
+                ))
+              : requested;
             if (off > promo) [promo, promotionName] = [off, p.name];
           }
           // G15: se nombra sólo si la promoción es lo que se aplicó (supera
@@ -2469,6 +2476,7 @@ export class SalesController {
         amount: true,
         bank: true,
         reference: true,
+        proofUrl: true,
         receivedById: true,
         cashSession: { select: { userId: true } },
         sale: {
@@ -2527,6 +2535,7 @@ export class SalesController {
         difference: payment.amount.minus(expected).toFixed(2),
         bank: payment.bank,
         reference: payment.reference,
+        hasProof: !!payment.proofUrl,
         // Quien hizo la factura (la vendedora), aunque el cobro lo registre otra
         // persona: sirve para saber a quién preguntar por una transferencia.
         seller: names.get(payment.sale.sellerId) ?? null,
@@ -3399,7 +3408,10 @@ export class SalesController {
     const payment = await this.db.payment.findFirstOrThrow({
       where: {
         id: parse(uuid, id),
-        entryType: "installment",
+        OR: [
+          { entryType: "installment" },
+          { method: "transfer", status: "pending_verification" },
+        ],
         sale: { branchId: actor.branchId },
       },
     });

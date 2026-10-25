@@ -84,9 +84,9 @@ export async function sendEmail(
   idempotencyKey?: string,
 ): Promise<SendResult> {
   try {
-    const appUrl =
-      process.env.APP_PUBLIC_URL?.trim() ||
-      "https://nexora-pos-web.onrender.com";
+    // Un correo del producto nunca debe apuntar al servidor de la tienda.
+    const appUrl = process.env.APP_PUBLIC_URL?.trim() ||
+      (process.env.PRODUCT_TENANCY === "required" ? "" : "https://nexora-pos-web.onrender.com");
     const response = await fetch(`${settings.apiBase}/emails`, {
       method: "POST",
       headers: {
@@ -101,7 +101,7 @@ export async function sendEmail(
         subject,
         html:
           text.replace(/\n/g, "<br>") +
-          `<br><br><a href="${appUrl}">Abrir Nexora POS</a>`,
+          (appUrl ? `<br><br><a href="${appUrl}">Abrir Nexora POS</a>` : ""),
       }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
@@ -955,7 +955,8 @@ export class NotificationWorker
           "nextAttemptAt" = timezone('UTC', now()) + make_interval(secs => ${LEASE_SECONDS})
       WHERE o.id = (
         SELECT id FROM "NotificationOutbox"
-        WHERE status = 'pending' AND "nextAttemptAt" <= timezone('UTC', now())
+        WHERE status = 'pending' AND "eventType" <> 'ai_daily_email'
+          AND "nextAttemptAt" <= timezone('UTC', now())
         ORDER BY "nextAttemptAt", "createdAt"
         LIMIT 1
         FOR UPDATE SKIP LOCKED

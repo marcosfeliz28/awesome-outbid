@@ -75,6 +75,10 @@ it("exporta todas las tablas de su empresa, nunca secretos ni datos ajenos, incl
       await sql.query(`INSERT INTO "Settings" (id,"tenantId",data,"updatedAt") VALUES ('main',$1,$2,now())`, [id, JSON.stringify({ shop: `Shop ${tag}`, apiKey: "secret-api-key", nested: { refreshToken: "secret-refresh-token" } })]);
     }
     await sql.query(`INSERT INTO "DriveBackup" (id,"tenantId","refreshTokenEnc") VALUES ('main',$1,'secret-oauth-token')`, [a]);
+    const mcpUser = (await sql.query(`SELECT id FROM "User" WHERE "tenantId"=$1`, [a])).rows[0].id;
+    const mcpSession = (await sql.query(`SELECT id FROM "AuthSession" WHERE "tenantId"=$1`, [a])).rows[0].id;
+    await sql.query(`INSERT INTO "McpAuthorizationCode" (id,"tenantId","branchId","userId","sessionId","authVersion","clientId","redirectUri",challenge,"codeHash","expiresAt")
+      VALUES (gen_random_uuid(),$1,'main',$2,$3,0,'client-qa','https://example.invalid/callback','secret-pkce-challenge','secret-mcp-code-hash',now()+interval '5 minutes')`, [a,mcpUser,mcpSession]);
     await sql.query(`UPDATE "Role" SET permissions=ARRAY['catalog:read'] WHERE "tenantId"=$1`, [b]);
     process.env.PRODUCT_TENANCY = "required";
     process.env.PRODUCT_OBJECT_STORE_DIR = join(directory, "objects");
@@ -92,7 +96,7 @@ it("exporta todas las tablas de su empresa, nunca secretos ni datos ajenos, incl
       expect(snapshot.tables.Brand).toHaveLength(1);
       expect(snapshot.tables.Brand[0].name).toBe("Marca A");
       const portable = JSON.stringify(snapshot);
-      for (const secret of ["secret-password-hash","secret-pin-hash","secret-api-key","secret-refresh-token","secret-oauth-token","Marca B","Empresa B"])
+      for (const secret of ["secret-password-hash","secret-pin-hash","secret-api-key","secret-refresh-token","secret-oauth-token","secret-pkce-challenge","secret-mcp-code-hash","Marca B","Empresa B"])
         expect(portable).not.toContain(secret);
       expect(portable).toContain("[RESERVADO]");
       expect(snapshot.objects?.[objectKey]?.base64).toBe(objectBytes.toString("base64"));

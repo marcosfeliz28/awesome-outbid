@@ -10,6 +10,7 @@ import supertest from "supertest";
 import { expect, it } from "vitest";
 import { createAppModule } from "../apps/api/src/app";
 import { ApiExceptionFilter } from "../apps/api/src/common";
+import { askAssistant } from "../apps/api/src/assistant";
 
 const apiRequire = createRequire(resolve(import.meta.dirname, "../apps/api/package.json"));
 const { MODULE_METADATA, METHOD_METADATA, PATH_METADATA } = apiRequire("@nestjs/common/constants");
@@ -92,7 +93,7 @@ const AUTHENTICATED_RESOURCE_ROUTES = new Set<string>();
 // GETs with no path parameters and a valid empty query. Every entry must
 // return a successful response under tenant B, never a validation error.
 const READ_LIST_CASES = [
-  "/api/alert-rules", "/api/alerts", "/api/audit-log", "/api/auth/me",
+  "/api/alert-rules", "/api/alerts", "/api/assistant/usage", "/api/audit-log", "/api/auth/me",
   "/api/brands", "/api/billing/plans", "/api/billing/providers", "/api/billing/requests", "/api/cash-sessions", "/api/cash-sessions/opening-suggestion",
   "/api/categories", "/api/cod/pending", "/api/courier/payouts",
   "/api/courier/pending", "/api/credit-accounts", "/api/credit-notes",
@@ -107,7 +108,7 @@ const READ_LIST_CASES = [
   "/api/payments/pending-transfers", "/api/products", "/api/promotions",
   "/api/promotions/clearance-candidates", "/api/purchase-orders",
   "/api/quotes", "/api/reportes", "/api/roles", "/api/sales",
-  "/api/settings", "/api/staff", "/api/suppliers", "/api/terminals",
+  "/api/settings", "/api/staff", "/api/support-access", "/api/suppliers", "/api/terminals",
   "/api/terminals/current", "/api/tenant/status", "/api/users", "/api/void-requests",
 ] as const;
 
@@ -121,6 +122,7 @@ const READ_LIST_CASES = [
 const TESTED_PRODUCT_ROUTES = new Set(`
 GET /api/alert-rules
 GET /api/alerts
+GET /api/assistant/usage
 GET /api/audit-log
 GET /api/auth/me
 GET /api/billing/plans
@@ -166,6 +168,8 @@ GET /api/merchandise/attachments/:id
 GET /api/merchandise/operations
 GET /api/merchandise/options
 GET /api/merchandise/profiles/:id
+GET /api/mcp/oauth/client
+GET /api/mcp/oauth/metadata
 GET /api/ncf-sequences
 GET /api/notifications/status
 GET /api/onboarding
@@ -190,6 +194,7 @@ GET /api/sales
 GET /api/sales/:id/receipt.pdf
 GET /api/settings
 GET /api/staff
+GET /api/support-access
 GET /api/suppliers
 GET /api/terminals
 GET /api/terminals/current
@@ -211,6 +216,9 @@ PATCH /api/terminals/:id/register
 PATCH /api/users/:id
 PATCH /api/variants/:id
 POST /api/alerts/evaluate
+POST /api/assistant/ask
+POST /api/support-access/enable
+POST /api/support-access/disable
 POST /api/onboarding
 POST /api/onboarding/profile
 POST /api/auth/accept-invitation
@@ -254,10 +262,14 @@ POST /api/inventory/transfers
 POST /api/kits
 POST /api/merchandise/import
 POST /api/merchandise/operations
+POST /api/mcp
+POST /api/mcp/oauth/authorize
+POST /api/mcp/oauth/token
 POST /api/ncf-sequences
 POST /api/notifications/telegram/test
 POST /api/payments/:id/correct-transfer
 POST /api/payments/:id/proof
+POST /api/payments/:id/proof-review
 POST /api/payments/:id/reject
 POST /api/payments/:id/verify
 POST /api/products
@@ -409,6 +421,36 @@ it("aisla rutas reales de catálogo, búsqueda y los 43 reportes con PostgreSQL"
         "Bearer " + jwt.sign({ sub: userId, sid, type: "access", version: 0, tenantId });
       const tokenA = auth(a, userA, sessionA);
       const tokenB = auth(b, userB, sessionB);
+      await client.query(`INSERT INTO "AuditLog" (id, "tenantId", "userId", action, entity, "entityId", "createdAt") VALUES ($1,$2,$3,'assistant.ask','assistant',$4,now())`, [
+        "40000000-0000-4000-8000-000000000010", a, userA, "consulta-de-a",
+      ]);
+      const usageB = await http.get("/api/assistant/usage").set("Authorization", tokenB);
+      const usageA = await http.get("/api/assistant/usage").set("Authorization", tokenA);
+      expect(usageB.status).toBe(200);
+      expect(usageA.status).toBe(200);
+      expect(usageB.body.usadas).toBe(0);
+      expect(usageA.body.usadas).toBe(1);
+      // N-01: la herramienta usa el token real de B; el modelo falso no puede
+      // recibir productos ni el identificador interno de la empresa A.
+      const model = async (_messages: any[], _tools: any[]) => {
+        if (_messages.length === 1)
+          return { stop_reason: "tool_use", content: [{ type: "tool_use", id: "inventory-1", name: "existencias", input: {} }], usage: { input_tokens: 1, output_tokens: 1 } };
+        return { stop_reason: "end_turn", content: [{ type: "text", text: JSON.stringify(_messages.at(-1)) }], usage: { input_tokens: 1, output_tokens: 1 } };
+      };
+      const assistant = await askAssistant({ messages: [{ role: "user", content: "¿Qué hay?" }] }, tokenB,
+        { name: "Empresa B" }, {
+          model,
+          get: async (path) => {
+            const response = await http.get(path).set("Authorization", tokenB);
+            return { status: response.status, body: JSON.stringify(response.body) };
+          },
+        });
+      expect(assistant.answer).not.toContain("A_ONLY_SECRET");
+      expect(assistant.answer).not.toContain(a);
+      const noKey = await http.post("/api/assistant/ask").set("Authorization", tokenB)
+        .send({ messages: [{ role: "user", content: "¿Qué hay?" }] });
+      expect(noKey.status).toBe(503);
+      expect(JSON.stringify(noKey.body)).not.toContain("A_ONLY_SECRET");
       for (const path of READ_LIST_CASES) {
         const response = await http.get(path).set("Authorization", tokenB);
         expect(response.status, `${path}: ${JSON.stringify(response.body)}`).toBe(200);

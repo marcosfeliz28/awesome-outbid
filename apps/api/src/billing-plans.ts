@@ -38,7 +38,7 @@ export async function enforcePlanQuota(
   if (tenants.length !== 1) throw new HttpException("Empresa no disponible.", 403);
   const plan = BILLING_PLANS[billingPlan(tenants[0].plan)];
   if (resource === "users") {
-    const active = await tx.user.count({ where: { tenantId, active: true } });
+    const active = await tx.user.count({ where: { tenantId, active: true, role: { name: { not: "support" } } } });
     if (active >= plan.users) throw new HttpException(`El plan ${plan.label} permite ${plan.users} usuarios activos.`, 409);
   } else if (resource === "boxes") {
     const approved = await tx.terminal.count({ where: { tenantId, approvedAt: { not: null }, revokedAt: null } });
@@ -52,7 +52,7 @@ export async function enforcePlanQuota(
     );
   } else {
     const [users, terminals] = await Promise.all([
-      tx.user.findMany({ where: { tenantId, active: true }, select: { branchId: true } }),
+      tx.user.findMany({ where: { tenantId, active: true, role: { name: { not: "support" } } }, select: { branchId: true } }),
       tx.terminal.findMany({ where: { tenantId, revokedAt: null }, select: { branchId: true } }),
     ]);
     const branches = new Set([...users, ...terminals].map(row => row.branchId));

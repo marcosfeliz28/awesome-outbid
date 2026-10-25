@@ -23,6 +23,11 @@ import { OnboardingController } from "./onboarding";
 import { TenantLifecycleService, TenantLifecycleWorker } from "./tenant-lifecycle";
 import { TenantLifecycleController } from "./tenant-lifecycle-controller";
 import { ProductBillingController } from "./product-billing";
+import { AssistantController } from "./assistant";
+import { DailySummaryWorker } from "./daily-summary";
+import { TransferProofReviewController } from "./transfer-proof-review";
+import { SupportAccessController, SupportAccessWorker } from "./support-access";
+import { McpController } from "./mcp";
 import { TenantExportController } from "./tenant-export";
 import { CatalogController } from "./catalog";
 import { InventoryController } from "./inventory";
@@ -93,6 +98,10 @@ export function createAppModule(secret: string) {
       ...(product ? [OnboardingController] : []),
       ...(product ? [TenantLifecycleController] : []),
       ...(product ? [ProductBillingController] : []),
+      ...(product ? [AssistantController] : []),
+      ...(product ? [TransferProofReviewController] : []),
+      ...(product ? [SupportAccessController] : []),
+      ...(product ? [McpController] : []),
       ...(product ? [TenantExportController] : []),
       CatalogController,
       InventoryController,
@@ -123,6 +132,8 @@ export function createAppModule(secret: string) {
       UsdRateWorker,
       RequestRateLimitService,
       ...(product ? [RegistrationService] : []),
+      ...(product ? [SupportAccessWorker] : []),
+      ...(product ? [DailySummaryWorker] : []),
       // Guard se inyecta también en modo tienda, pero nunca consulta el ciclo.
       TenantLifecycleService,
       ...(product ? [TenantLifecycleWorker] : []),
@@ -143,6 +154,12 @@ export function createAppModule(secret: string) {
           }
           const path = String(req.originalUrl ?? req.url).split("?")[0];
           if (/^\/api\/health(?:\/live|\/ready)?\/?$/.test(path)) {
+            next();
+            return;
+          }
+          // OAuth público y MCP validan el token y el contexto dentro del
+          // controlador; ningún tenant se deduce de un bearer sin verificar.
+          if (/^\/api\/mcp(?:\/oauth\/(?:client|token|metadata))?\/?$/.test(path)) {
             next();
             return;
           }

@@ -4,6 +4,7 @@ import { Button, Modal } from "@fitstore/ui";
 import { formatMoney } from "@fitstore/shared";
 import { api, apiBlob, post } from "./api";
 import { QueryState, toast } from "./helpers";
+import { paymentReminderDraft } from "./payment-reminder";
 
 type Method = "cash" | "card" | "transfer";
 const methodName: Record<Method, string> = {
@@ -48,6 +49,7 @@ export function CreditAccounts({ session }: { session: any }) {
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [reminder, setReminder] = useState<string | null>(null);
   const list = useQuery({
     queryKey: ["credit-accounts", search, sort, page, view],
     queryFn: () =>
@@ -254,7 +256,7 @@ export function CreditAccounts({ session }: { session: any }) {
                 <small>{row.customer.phone ?? ""}</small>
               </div>
               {view === "open" && <strong>{formatMoney(row.balance)}</strong>}
-              <Button onClick={() => setSelected(row.customer.id)}>
+              <Button onClick={() => { setReminder(null); setSelected(row.customer.id); }}>
                 Ver estado de cuenta
               </Button>
             </div>
@@ -279,7 +281,7 @@ export function CreditAccounts({ session }: { session: any }) {
         </Button>
       )}
       {selected && (
-        <Modal open onClose={() => setSelected(null)} title="Estado de cuenta">
+        <Modal open onClose={() => { setReminder(null); setSelected(null); }} title="Estado de cuenta">
           <QueryState query={detail}>
             {statement && (
               <div className="credit-statement">
@@ -304,6 +306,30 @@ export function CreditAccounts({ session }: { session: any }) {
                 >
                   Descargar estado de cuenta PDF
                 </Button>
+                {statement.balance > 0 && !statement.truncated && (
+                  <section aria-label="Recordatorio de cobro">
+                    <p>Prepara el mensaje y descarga el PDF. Tú decides si lo envías al cliente.</p>
+                    <Button type="button" variant="secondary" onClick={() => setReminder(paymentReminderDraft({
+                      name: statement.customer.name,
+                      balance: statement.balance,
+                      numbers: pendingSales.filter((sale) => sale.balance > 0).map((sale) => sale.number),
+                    }))}>
+                      Preparar recordatorio
+                    </Button>
+                    {reminder !== null && (
+                      <div className="field">
+                        <label htmlFor="credit-reminder-draft">Mensaje listo para revisar</label>
+                        <textarea id="credit-reminder-draft" rows={6} value={reminder} onChange={(event) => setReminder(event.target.value)} />
+                        <Button type="button" variant="secondary" onClick={async () => {
+                          try { await navigator.clipboard.writeText(reminder); toast("Mensaje copiado; adjunta el estado de cuenta si decides enviarlo."); }
+                          catch { toast("No se pudo copiar. Selecciona el texto del mensaje.", true); }
+                        }}>
+                          Copiar mensaje
+                        </Button>
+                      </div>
+                    )}
+                  </section>
+                )}
                 <h3>Pendientes</h3>
                 <div className="cod-list">
                   {pendingSales.map((sale) => saleRow(sale))}

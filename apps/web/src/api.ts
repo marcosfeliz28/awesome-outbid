@@ -4,6 +4,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { SaleInput } from "@fitstore/shared";
 import { applySyncResults } from "./pendingSales";
 import { requireLocalLicenseWrite as checkLocalLicenseWrite } from "./local-license";
+import { currentCatalogRevision } from "./catalog-stock";
 import { businessOperationName, traceBusinessOperation } from "./monitoring";
 
 export type User = {
@@ -427,28 +428,37 @@ export async function loadCatalog() {
   if (!user) throw new Error("Inicia sesión.");
   const key = "catalog:" + user.branchId;
   if (isOnline()) {
-    try {
-      const products = await fetchCatalog();
-      const cached = products.map((p) => ({
-        ...p,
-        variants: p.variants.map(({ costAvg: removed, lots, ...v }) => {
-          void removed;
-          return {
-            ...v,
-            lots: lots?.map(({ cost: unused, ...l }) => {
-              void unused;
-              return l;
-            }),
-          };
-        }),
-      }));
-      if (stillSignedIn(user.id))
-        await localDB.cache.put({ key, data: cached });
-      return products;
-    } catch (e) {
-      // Sin respuesta del servidor se vende con la copia local (R9-offline-1).
-      if (!isNetworkError(e)) throw e;
+    let unavailable = false;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const revision = currentCatalogRevision();
+      try {
+        const products = await fetchCatalog();
+        // Si llegó stock.changed durante el GET, este resultado ya es viejo.
+        if (revision !== currentCatalogRevision()) continue;
+        const cached = products.map((p) => ({
+          ...p,
+          variants: p.variants.map(({ costAvg: removed, lots, ...v }) => {
+            void removed;
+            return {
+              ...v,
+              lots: lots?.map(({ cost: unused, ...l }) => {
+                void unused;
+                return l;
+              }),
+            };
+          }),
+        }));
+        if (stillSignedIn(user.id) && revision === currentCatalogRevision())
+          await localDB.cache.put({ key, data: cached });
+        return products;
+      } catch (e) {
+        // Sin respuesta del servidor se vende con la copia local (R9-offline-1).
+        if (!isNetworkError(e)) throw e;
+        unavailable = true;
+        break;
+      }
     }
+    if (!unavailable) throw new Error("El catálogo cambió mientras se descargaba. Intenta de nuevo.");
   }
   const cached = await localDB.cache.get(key);
   if (!cached) throw new Error("Conéctate una vez para descargar el catálogo.");

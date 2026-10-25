@@ -82,6 +82,9 @@ import { MonthReport } from "./MonthReport";
 import { VoidRequests } from "./VoidRequests";
 import { TransferReconciliation } from "./TransferReconciliation";
 import { CourierPayouts } from "./CourierPayouts";
+import { Assistant } from "./Assistant";
+import { McpAuthorize } from "./McpAuthorize";
+import { SupportAccessBanner } from "./SupportAccess";
 import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import {
@@ -1023,6 +1026,8 @@ function Shell() {
   }, [user?.id]);
   if (!ready) return <Loading />;
   if (!user) return <Login />;
+  if (PRODUCT_TENANCY_REQUIRED && window.location.pathname === "/mcp/autorizar")
+    return <McpAuthorize />;
   const current = navigation.find((n) => n.id === page);
   const initials = user.name
     .split(" ")
@@ -1295,6 +1300,7 @@ function Shell() {
           </div>
         </header>
         <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
+          {PRODUCT_TENANCY_REQUIRED && can(user.permissions, "*") && <SupportAccessBanner />}
           <DeviceGate />
           {pages[page.split("?")[0]] || <Dashboard go={go} />}
         </main>
@@ -1334,12 +1340,15 @@ function Shell() {
       <Modal
         open={help}
         onClose={() => setHelp(false)}
-        title="Tu tienda, en movimiento"
+        title="Centro de ayuda"
       >
-        <p>
-          Abre tu caja, busca un producto en Punto de venta y agrega sus
-          variantes. Cobrar permite combinar efectivo, tarjeta y transferencia.
-        </p>
+        <p>Guías breves para las tareas habituales.</p>
+        <details><summary>Vender y cobrar</summary><p>Abre tu caja, busca el producto y elige su variante. Revisa cliente, cantidades y total antes de cobrar. Puedes combinar efectivo, tarjeta y transferencia.</p></details>
+        <details><summary>Cobrar un crédito</summary><p>En Créditos pendientes, abre el estado de cuenta, revisa el saldo y registra el abono en la forma de pago recibida. Una transferencia queda pendiente de verificación cuando corresponde.</p></details>
+        <details><summary>Cerrar la caja</summary><p>Sincroniza las ventas pendientes, cierra el lote del verifón, cuenta el efectivo por denominación y escribe la tarjeta declarada. Lee el cuadre impreso y avisa a administración si hay diferencia.</p></details>
+        <details><summary>Trabajar sin conexión</summary><p>Las ventas pendientes quedan en este dispositivo. No borres los datos del navegador ni cambies de equipo. Al volver la conexión, revisa la sincronización y los conflictos en Caja.</p></details>
+        <p><a href="/estado.html" target="_blank" rel="noopener noreferrer">Consultar estado del servicio</a></p>
+        <h3>Atajos de teclado</h3>
         <div className="shortcut-list">
           <span>
             <kbd>F2</kbd> Buscar producto
@@ -1382,6 +1391,7 @@ function Shell() {
         </Button>
       </Modal>
       <About open={about} onClose={() => setAbout(false)} />
+      {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && <Assistant online={online} />}
       {ownPassword && (
         <ChangeOwnPassword onClose={() => setOwnPassword(false)} />
       )}

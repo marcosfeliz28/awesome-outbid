@@ -41,6 +41,7 @@ model User {
   // N-08: una contraseña temporal vence (7 días). Null = sin vencimiento
   // (cambio de contraseña forzado por política, no por una clave temporal).
   passwordExpiresAt  DateTime?
+  supportExpiresAt   DateTime?
   pinHash            String
   roleId             String    @db.Uuid
   role               Role      @relation(fields: [roleId], references: [id])
@@ -1030,6 +1031,25 @@ model AuthSession {
   @@index([userId])
 }
 
+model McpAuthorizationCode {
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenantId String @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
+  branchId String
+  userId String @db.Uuid
+  sessionId String @db.Uuid
+  authVersion Int
+  clientId String
+  redirectUri String
+  challenge String
+  codeHash String @unique
+  expiresAt DateTime
+  usedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, expiresAt])
+}
+
 model Terminal {
   tenant Tenant @relation(fields: [tenantId], references: [id])
   tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
@@ -1351,6 +1371,7 @@ model Tenant {
   counterRows Counter[]
   authAttemptRows AuthAttempt[]
   authSessionRows AuthSession[]
+  mcpAuthorizationCodeRows McpAuthorizationCode[]
   terminalRows Terminal[]
   realtimeEventRows RealtimeEvent[]
   merchandiseOperationRows MerchandiseOperation[]

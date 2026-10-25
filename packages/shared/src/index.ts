@@ -531,6 +531,25 @@ export const safeDiscount = (price: number, cost: number, taxRate = 18) =>
     0,
     Math.min(50, Math.floor(margin(price / (1 + taxRate / 100), cost))),
   );
+// Precio base inalterado; solo se calcula el máximo descuento de una oferta.
+// Comprueba también el neto redondeado de la línea, que es lo que se cobra.
+export function clearanceDiscountLimit(
+  price: number,
+  cost: number,
+  taxRate = 18,
+  taxIncluded = true,
+  qty = 1,
+): number {
+  if (![price, cost, taxRate, qty].every(Number.isFinite) || price <= 0 || cost < 0 || taxRate < 0 || qty <= 0) return 0;
+  const minimumPrice = cost / 0.85 * (taxIncluded ? 1 + taxRate / 100 : 1);
+  let percent = Math.floor(Math.max(0, Math.min(50, (1 - minimumPrice / price) * 100)) * 100 + 1e-8) / 100;
+  while (percent > 0) {
+    const net = lineTotals(qty, price, percent, taxRate, taxIncluded).net;
+    if (net > 0 && (net - cost * qty) / net >= 0.15 - 1e-10) break;
+    percent = Math.round((percent - 0.01) * 100) / 100;
+  }
+  return percent;
+}
 export const saleSchema = z.object({
   offlineUuid: z.string().uuid(),
   capturedAt: z.string().datetime().optional(),
@@ -743,6 +762,7 @@ export const permissions: Record<string, string[]> = {
   ],
   seller: ["catalog:read", "sale:write", "cash:write", "customers:write"],
   warehouse: ["catalog:read", "inventory:write", "purchase:write"],
+  support: ["catalog:read", "reports:read", "profit:read"],
 };
 export const can = (grants: string[], permission: string) =>
   grants.includes("*") || grants.includes(permission);

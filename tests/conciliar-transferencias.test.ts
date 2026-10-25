@@ -36,6 +36,7 @@ describe("conciliación de transferencias", () => {
         amount: new Prisma.Decimal("1250.50"),
         bank: "Banco BHD",
         reference: "ABC-1",
+        proofUrl: null,
         receivedById: null,
         cashSession: { userId: "cajera-1" },
         sale: {
@@ -82,6 +83,7 @@ describe("conciliación de transferencias", () => {
         difference: "0.00",
         bank: "Banco BHD",
         reference: "ABC-1",
+        hasProof: false,
         seller: "Cajera Uno",
         cashier: "Cajera Uno",
       },
