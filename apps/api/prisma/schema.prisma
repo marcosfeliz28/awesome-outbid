@@ -334,7 +334,8 @@ model Sale {
   costTotal              Decimal      @db.Decimal(14, 2)
   // Envío de tercero: nunca forma parte de total, costo ni caja.
   courierFee             Decimal      @default(0) @db.Decimal(12, 2)
-  courierName            String?      @default("Addison")
+  // Sin valor por defecto desde 202610250401: sólo con envío.
+  courierName            String?
   courierPaidAt          DateTime?
   courierPaidById        String?      @db.Uuid
   courierPaidBy          User?        @relation("CourierPaidBy", fields: [courierPaidById], references: [id], onDelete: Restrict)

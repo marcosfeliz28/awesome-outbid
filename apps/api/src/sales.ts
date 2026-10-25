@@ -225,7 +225,9 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     ...(can(actor.permissions, "sale:manage")
       ? {
           courierFee: sale.courierFee,
-          courierName: sale.courierName,
+          // Ventas viejas sin envío guardan «Addison» (valor por defecto de la
+          // columna hasta el 25-oct, #10): sin envío no se muestra.
+          courierName: Number(sale.courierFee) > 0 ? sale.courierName : null,
           courierPaidAt: sale.courierPaidAt,
         }
       : {}),

@@ -95,7 +95,11 @@ export class CourierController {
         where: { id: saleId },
         data: {
           courierFee: data.fee,
-          courierName: data.courierName ?? sale.courierName ?? "Addison",
+          // Sin envío no hay mensajero (revisión 25-oct #10).
+          courierName:
+            Number(data.fee) > 0
+              ? (data.courierName ?? sale.courierName ?? "Addison")
+              : null,
         },
       });
       await audit(tx, actor, "courier_fee_changed", "sale", saleId, before, {

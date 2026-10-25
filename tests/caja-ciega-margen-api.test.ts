@@ -368,3 +368,39 @@ describe("#9 corregir método de pago ajusta el incentivo", () => {
     expect(await earned(sale.id)).toBe(0);
   });
 });
+
+describe("#10 «Addison» sólo en ventas con envío", () => {
+  it("una venta sin envío no guarda mensajero y la API ignora el nombre cuando no hay envío", async () => {
+    const sale = await sell(manager, [{ method: "cash", amount: 100 }]);
+    const row = await db.sale.findUnique({ where: { id: sale.id } });
+    expect(row.courierName).toBeNull();
+    // Ventas viejas con «Addison» y envío 0 (los datos no se tocan): la API
+    // no las muestra como de mensajero.
+    await db.sale.update({
+      where: { id: sale.id },
+      data: { courierName: "Addison" },
+    });
+    const list = await ok("/sales?search=" + sale.number, owner);
+    const found = (list.items ?? list.data ?? list).find(
+      (s: any) => s.id === sale.id,
+    );
+    expect(found.courierName).toBeNull();
+    const withFee = await sell(
+      manager,
+      [
+        {
+          method: "card",
+          amount: 100,
+          cardLast4: "4242",
+          approvalCode: "QA-ENVIO",
+        },
+      ],
+      {
+        courierFee: 150,
+      },
+    );
+    expect(
+      (await db.sale.findUnique({ where: { id: withFee.id } })).courierName,
+    ).toBe("Addison");
+  });
+});
