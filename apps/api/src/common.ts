@@ -132,6 +132,9 @@ export const RequireTerminal = () => SetMetadata("terminal", true);
 export function bad(message: string): never {
   throw new HttpException(message, 400);
 }
+/** Nombre repetido sin importar mayúsculas, acentos de caso (Ñ/ñ) ni espacios. */
+export const sameName = <T extends { name: string }>(rows: T[], name: string) =>
+  rows.find((r) => r.name.trim().toLocaleLowerCase("es") === name.trim().toLocaleLowerCase("es"));
 /** Las fajas y todo lo que no es kg/lb/litro se mueven en unidades enteras
  * (Product.soldByUnit). Sólo consulta la base si hay alguna fracción. */
 export async function assertWholeUnits(

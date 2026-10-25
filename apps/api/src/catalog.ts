@@ -39,6 +39,8 @@ import {
   uuid,
   amount,
   json,
+  fieldLabel,
+  sameName,
 } from "./common";
 import { expiredQty } from "./inventory";
 import { assertSafeXlsx, assertSheetCells, cellCodeText } from "./xlsx-guard";
@@ -167,6 +169,10 @@ async function assertCategoriesInBranch(
 }
 
 const FRACTIONAL_UNITS = ["kg", "lb", "litro"];
+function assertStockRange(min: number, max: number) {
+  if (min > max)
+    bad(`El stock mínimo (${min}) no puede ser mayor que el máximo (${max}).`);
+}
 const variantSchema = z.object({
   sku: z.string().trim().min(1).max(80),
   barcode: z.string().trim().min(1).max(80),
@@ -243,7 +249,7 @@ export class CatalogController {
   async category(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
       z.object({
-        name: z.string().min(2),
+        name: z.string().trim().min(2).max(80),
         requiresLot: z.boolean().default(false),
         requiresExpiry: z.boolean().default(false),
         color: z
@@ -256,6 +262,11 @@ export class CatalogController {
     );
     // I-01: el vencimiento se guarda en el lote; sin lote se vendería sin fecha.
     if (data.requiresExpiry) data.requiresLot = true;
+    const same = sameName(
+      await this.db.category.findMany({ where: { branchId: actor.branchId }, select: { name: true } }),
+      data.name,
+    );
+    if (same) bad(`Ya existe la categoría «${same.name}».`);
     const row = await this.db.category.create({
       data: { ...data, createdBy: actor.id, branchId: actor.branchId },
     });
@@ -383,9 +394,16 @@ export class CatalogController {
   @Permit("catalog:write")
   async create(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const { variants, ...data } = parse(productSchema, body);
+    assertStockRange(data.minStock, data.maxStock);
     const codes = variants.map((v) => ({ codes: [v.sku, v.barcode] }));
     const write = this.db.$transaction(async (tx) => {
       await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
+      const sameSku = await tx.product.findFirst({
+        where: { branchId: actor.branchId, sku: { equals: data.sku, mode: "insensitive" } },
+        select: { name: true, sku: true },
+      });
+      if (sameSku)
+        bad(`El SKU «${data.sku}» ya es de «${sameSku.name}» (${sameSku.sku}). Usa otro.`);
       await assertCodesFree(tx, actor.branchId, codes);
       const row = await tx.product.create({
         data: {
@@ -428,6 +446,7 @@ export class CatalogController {
       const before = await tx.product.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
       });
+      assertStockRange(data.minStock ?? Number(before.minStock), data.maxStock ?? Number(before.maxStock));
       await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
       const row = await tx.product.update({ where: { id }, data });
       await audit(tx, actor, "update", "product", id, before, row);
@@ -605,8 +624,10 @@ export class CatalogController {
     if (!sheet || sheet.rowCount > 501) bad("Máximo 500 filas por archivo.");
     assertSheetCells(sheet);
     const rows: any[] = [];
+    const lineOf: number[] = [];
     sheet.eachRow((row, n) => {
       if (n === 1) return;
+      lineOf.push(n);
       rows.push({
         name: String(row.getCell(1).text),
         sku: cellCodeText(row.getCell(2)),
@@ -621,7 +642,20 @@ export class CatalogController {
         ],
       });
     });
-    const validated = rows.map((row) => parse(productSchema, row));
+    // El error dice la fila del Excel, no sólo el campo.
+    const validated = rows.map((row, i) => {
+      const checked = productSchema.safeParse(row);
+      if (!checked.success)
+        bad(
+          `Fila ${lineOf[i]} del Excel: ` +
+            checked.error.issues
+              .slice(0, 3)
+              .map((issue) => fieldLabel(issue.path) + " " + issue.message)
+              .join("; ") +
+            ".",
+        );
+      return checked.data;
+    });
     const codes = validated.flatMap((row) =>
       row.variants.map((v) => ({ codes: [v.sku, v.barcode] })),
     );

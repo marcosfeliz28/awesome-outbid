@@ -612,7 +612,8 @@ async function prepare(
     // producto de ESTA sucursal. Un código de otra sucursal bloquea la fila sin
     // decir de qué producto es.
     const own = holders.find(
-      (v) => v.sku === row.id && v.branchId === actor.branchId,
+      // «aba-10 » del Excel es el ABA-10 ya cargado (la caja no distingue).
+      (v) => low(v.sku) === low(row.id) && v.branchId === actor.branchId,
     );
     ownOf.set(row.id, own);
     for (const code of new Set(
@@ -675,7 +676,7 @@ async function prepare(
     }
   }
   // Productos de la base que el archivo no trae: nunca se tocan.
-  const inFile = new Set(rows.map((r) => r.id));
+  const inFile = new Set(rows.map((r) => low(r.id)));
   const others = await db.variant.findMany({
     where: { branchId: actor.branchId },
     select: {
@@ -685,7 +686,7 @@ async function prepare(
   });
   const notInFile = new Map<string, number>();
   for (const v of others)
-    if (!inFile.has(v.sku))
+    if (!inFile.has(low(v.sku)))
       notInFile.set(
         v.product.category.name,
         (notInFile.get(v.product.category.name) ?? 0) + 1,

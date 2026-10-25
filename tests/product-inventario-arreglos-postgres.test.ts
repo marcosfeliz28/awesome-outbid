@@ -2,7 +2,10 @@ import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createRequire } from "node:module";
 import { startProductApp } from "./setup/product-pg-app";
+
+const ExcelJS = createRequire(import.meta.url)("../apps/api/node_modules/exceljs");
 
 // Auditoría en vivo de inventario (25-oct-2026), con PostgreSQL real.
 let t: Awaited<ReturnType<typeof startProductApp>>;
@@ -204,5 +207,73 @@ describe("6 · lotes en ajustes y conteos", () => {
     expect(rows).toEqual([{ lotNumber: "A", qty: "3.000", stock: "8.000" }, { lotNumber: "B", qty: "5.000", stock: "8.000" }]);
     const [move] = await t.q(`SELECT qty::text, "lotId"::text FROM "InventoryMovement" WHERE "refId"=$1 AND type='count'`, count.body.id);
     expect(move).toEqual({ qty: "-2.000", lotId: lots[0].id });
+  });
+});
+
+describe("8 · detalles", () => {
+  it("categorías y proveedores repetidos (espacios y mayúsculas) se rechazan; SKU repetido explica de quién es", async () => {
+    await category("Bebidas QA");
+    for (const name of ["bebidas qa ", "  BEBIDAS QA"]) {
+      const r = await t.post("/categories", { name });
+      expect(r.status).toBe(400);
+      expect(r.body.message).toBe("Ya existe la categoría «Bebidas QA».");
+    }
+    expect((await t.post("/categories", { name: "  " })).status).toBe(400);
+    expect((await t.post("/suppliers", { name: "Distribuidora Ñandú" })).status).toBe(201);
+    const dup = await t.post("/suppliers", { name: " distribuidora ñandú " });
+    expect(dup.status).toBe(400);
+    expect(dup.body.message).toContain("Ya existe el proveedor");
+    const cat = await category("SKU QA");
+    const first = await product(cat.id);
+    const again = await t.post("/products", { name: "Otro", sku: first.sku.toLowerCase(), categoryId: cat.id,
+      variants: [{ sku: "OTRA-V", barcode: "OTRA-B", costAvg: 10, price: 20 }] });
+    expect(again.status).toBe(400);
+    expect(again.body.message).toBe(`El SKU «${first.sku.toLowerCase()}» ya es de «${first.name}» (${first.sku}). Usa otro.`);
+  });
+
+  it("stock mínimo mayor que el máximo se rechaza al crear y al editar", async () => {
+    const cat = await category("Rangos QA");
+    const bad = await t.post("/products", { name: "Rango", sku: "RANGO-1", categoryId: cat.id, minStock: 50, maxStock: 10,
+      variants: [{ sku: "RANGO-1", barcode: "RANGO-1", costAvg: 10, price: 20 }] });
+    expect(bad.status).toBe(400);
+    expect(bad.body.message).toContain("no puede ser mayor que el máximo");
+    const p = await product(cat.id);
+    const edit = await t.patch(`/products/${p.id}`, { minStock: 100 });
+    expect(edit.status).toBe(400);
+    expect((await t.patch(`/products/${p.id}`, { minStock: 10 })).status).toBe(200);
+  });
+
+  it("el Excel de productos dice la fila del error y Configuración no muestra «undefined»", async () => {
+    const book = new ExcelJS.Workbook();
+    const sheet = book.addWorksheet("Productos");
+    sheet.addRow(["Nombre", "SKU", "ID categoría", "Código de barras", "Precio", "Costo"]);
+    const cat = await category("Excel QA");
+    sheet.addRow(["Bueno", "XL-1", cat.id, "XL-1", 20, 10]);
+    sheet.addRow(["Malo", "XL-2", cat.id, "XL-2", "veinte", 10]);
+    const r = await t.as("post", "/products/import").attach("file", Buffer.from(await book.xlsx.writeBuffer()), "productos.xlsx");
+    expect(r.status).toBe(400);
+    expect(r.body.message).toMatch(/^Fila 3 del Excel: /);
+    // Como una empresa nueva del producto: ajustes sin estas claves.
+    await t.q(`INSERT INTO "Settings" ("tenantId",id,data,"updatedAt") VALUES ('00000000-0000-0000-0000-000000000001','main','{"name":"QA"}',now())
+      ON CONFLICT ("tenantId",id) DO UPDATE SET data='{"name":"QA"}'`);
+    const settings = await t.get("/settings");
+    expect(settings.status, JSON.stringify(settings.body)).toBe(200);
+    for (const key of ["sellerDiscountLimit", "idleDays", "expiryDays", "lowMargin", "returnDays"])
+      expect(typeof settings.body[key], key).toBe("number");
+  });
+
+  it("el inventario en Excel reconoce «aba-10 » como el ABA-10 ya cargado", async () => {
+    const cat = await category("Abarrotes QA");
+    const existing = await t.post("/products", { name: "Café molido 10 años", sku: "ABA-10", categoryId: cat.id,
+      variants: [{ sku: "ABA-10", barcode: "ABA-10", costAvg: 100, price: 200 }] });
+    expect(existing.status, JSON.stringify(existing.body)).toBe(201);
+    const book = new ExcelJS.Workbook();
+    const sheet = book.addWorksheet("Inventario");
+    sheet.addRow(["ID", "REFERENCIA", "DESCRIPCION", "SUB-GRUPO", "EXISTENCIA", "COSTO", "PRECIO DETALLE"]);
+    sheet.addRow(["aba-10 ", "", "Café molido 10 años", "Abarrotes QA", 7, 100, 200]);
+    const r = await t.as("post", "/inventory-import/preview").attach("file", Buffer.from(await book.xlsx.writeBuffer()), "inv.xlsx");
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(r.body.blocking).toEqual([]);
+    expect(r.body.summary.nuevos).toBe(0);
   });
 });

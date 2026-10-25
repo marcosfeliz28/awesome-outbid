@@ -36,6 +36,7 @@ import {
   isMaskedPii,
   withoutImages,
   assertWholeUnits,
+  sameName,
 } from "./common";
 import { moneyDb } from "./database-errors";
 import {
@@ -73,7 +74,7 @@ const anonymizeCustomerSchema = z.object({
   requestRef: z.string().trim().min(3).max(100),
 });
 const supplierSchema = z.object({
-  name: z.string().min(2).max(120),
+  name: z.string().trim().min(2).max(120),
   legalId: z.string().max(30).optional(),
   phone: z.string().max(30).optional(),
   email: z.string().email().or(z.literal("")).optional(),
@@ -577,10 +578,16 @@ export class AdminController {
   }
   @Post("suppliers")
   @Permit("purchase:write")
-  supplier(@Body() body: unknown, @CurrentUser() actor: Actor) {
+  async supplier(@Body() body: unknown, @CurrentUser() actor: Actor) {
+    const data = parse(supplierSchema, body);
+    const same = sameName(
+      await this.db.supplier.findMany({ where: { branchId: actor.branchId }, select: { name: true } }),
+      data.name,
+    );
+    if (same) bad(`Ya existe el proveedor «${same.name}».`);
     return this.db.supplier.create({
       data: {
-        ...parse(supplierSchema, body),
+        ...data,
         createdBy: actor.id,
         branchId: actor.branchId,
       },
@@ -866,6 +873,13 @@ export class AdminController {
     // Instalaciones anteriores no tienen esta clave. El cliente y cualquier
     // integración reciben siempre el valor efectivo seguro, no undefined.
     return {
+      // Empresas nuevas sin estas claves mostraban «undefined%» en
+      // Configuración: mismos valores que usan la caja y los reportes.
+      sellerDiscountLimit: 10,
+      idleDays: 60,
+      expiryDays: 60,
+      lowMargin: 15,
+      returnDays: 30,
       ...data,
       allowOfflineSales: data.allowOfflineSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
