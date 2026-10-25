@@ -218,6 +218,17 @@ export function useRealtime() {
         void client.invalidateQueries({ queryKey: ["alert-bell"] });
         void client.invalidateQueries({ queryKey: ["dashboard"] });
         void client.invalidateQueries({ queryKey: ["void-requests"] });
+      } else if (type === "audit.created") {
+        // Las operaciones ya se confirmaron en el servidor. SSE solo despierta
+        // las lecturas protegidas del tablero; no repite ni aprueba acciones.
+        for (const key of [
+          "cash-sessions",
+          "void-requests",
+          "pending-transfers",
+          "dashboard-liquidity",
+          "audit-log",
+        ])
+          void client.invalidateQueries({ queryKey: [key] });
       }
     };
     const connect = async () => {

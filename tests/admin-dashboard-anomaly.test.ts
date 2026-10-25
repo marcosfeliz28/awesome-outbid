@@ -7,24 +7,28 @@ describe("tablero administrativo · movimientos para revisar", () => {
       {
         id: "1",
         action: "payment_method_corrected",
+        entity: "sale",
         entityId: "sale-1",
         createdAt: "2026-10-25T10:00:00.000Z",
       },
       {
         id: "2",
         action: "payment_method_corrected",
+        entity: "sale",
         entityId: "sale-2",
         createdAt: "2026-10-25T10:01:00.000Z",
       },
       {
         id: "3",
         action: "close_difference",
+        entity: "cash",
         entityId: "cash-1",
         createdAt: "2026-10-25T10:02:00.000Z",
       },
       {
         id: "4",
         action: "login",
+        entity: "user",
         entityId: "user-1",
         createdAt: "2026-10-25T10:03:00.000Z",
       },
@@ -32,12 +36,12 @@ describe("tablero administrativo · movimientos para revisar", () => {
 
     expect(summarizeAuditFacts(rows)).toEqual([
       {
-        action: "payment_method_corrected",
+        action: "sale:payment_method_corrected",
         count: 2,
         label: "2 cambios de método de pago",
       },
       {
-        action: "close_difference",
+        action: "cash:close_difference",
         count: 1,
         label: "1 cierre con diferencia",
       },

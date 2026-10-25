@@ -25,7 +25,9 @@ export const formatLiquidityMoney = (amount: string) =>
   }).format(Number(amount));
 
 const Amount = ({ value }: { value: string }) => (
-  <strong className="liquidity-amount">{formatLiquidityMoney(value)}</strong>
+  <strong className="liquidity-amount" data-private-value>
+    {formatLiquidityMoney(value)}
+  </strong>
 );
 
 export function LiquidityMap({

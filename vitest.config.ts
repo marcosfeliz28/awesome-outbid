@@ -5,6 +5,7 @@ export default defineConfig({
     testTimeout: 30000,
     include: [
       "tests/admin-dashboard-*.test.ts",
+      "tests/dashboard-liquidity-api.test.ts",
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",
       "tests/customer-display.test.ts",

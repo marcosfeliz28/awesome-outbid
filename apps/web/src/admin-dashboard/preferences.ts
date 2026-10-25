@@ -1,21 +1,37 @@
 export const ADMIN_THEME_KEY = "nexora-admin-theme";
-export const ADMIN_PRIVACY_KEY = "nexora-admin-privacy";
-
 export const ADMIN_THEMES = ["cristal", "ejecutivo", "mando"] as const;
 export type AdminTheme = (typeof ADMIN_THEMES)[number];
 
-export function readAdminTheme(storage: Pick<Storage, "getItem"> = localStorage): AdminTheme {
-  const saved = storage.getItem(ADMIN_THEME_KEY);
-  return ADMIN_THEMES.includes(saved as AdminTheme)
-    ? (saved as AdminTheme)
-    : "cristal";
+function localPreferenceStorage() {
+  try {
+    return typeof localStorage === "undefined" ? undefined : localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+export function readAdminTheme(
+  storage: Pick<Storage, "getItem"> | undefined = localPreferenceStorage(),
+): AdminTheme {
+  try {
+    const saved = storage?.getItem(ADMIN_THEME_KEY);
+    return ADMIN_THEMES.includes(saved as AdminTheme)
+      ? (saved as AdminTheme)
+      : "cristal";
+  } catch {
+    return "cristal";
+  }
 }
 
 export function saveAdminTheme(
   theme: AdminTheme,
-  storage: Pick<Storage, "setItem"> = localStorage,
+  storage: Pick<Storage, "setItem"> | undefined = localPreferenceStorage(),
 ) {
-  storage.setItem(ADMIN_THEME_KEY, theme);
+  try {
+    storage?.setItem(ADMIN_THEME_KEY, theme);
+  } catch {
+    // El tema sigue activo durante la sesión aunque el equipo bloquee storage.
+  }
 }
 
 export function adminThemeLabel(theme: AdminTheme) {

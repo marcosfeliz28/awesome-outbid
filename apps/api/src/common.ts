@@ -328,7 +328,7 @@ export function withoutImages(value: unknown): unknown {
     );
   return value;
 }
-export const audit = (
+export const audit = async (
   db: any,
   actor: Actor,
   action: string,
@@ -336,8 +336,8 @@ export const audit = (
   entityId: string,
   before?: unknown,
   after?: unknown,
-) =>
-  db.auditLog.create({
+) => {
+  const row = await db.auditLog.create({
     data: {
       userId: actor.id,
       terminalId: actor.terminalId,
@@ -350,6 +350,19 @@ export const audit = (
       ...(after === undefined ? {} : { after: withoutImages(json(after)) }),
     },
   });
+  // Un evento mínimo despierta las tarjetas administrativas. No lleva importes,
+  // nombres ni el contenido de la bitácora; cada tarjeta vuelve a consultar su
+  // ruta protegida después del commit de la operación.
+  if (db.realtimeEvent?.create)
+    await db.realtimeEvent.create({
+      data: {
+        branchId: actor.branchId,
+        type: "audit.created",
+        data: { action, entity },
+      },
+    });
+  return row;
+};
 // Tipo real de una imagen por sus primeros bytes: no se guarda otra cosa
 // como logo ni como foto de evidencia.
 export function imageType(bytes: Buffer) {

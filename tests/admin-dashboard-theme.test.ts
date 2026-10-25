@@ -20,4 +20,17 @@ describe("temas del tablero administrativo", () => {
     });
     expect(writes).toEqual([[ADMIN_THEME_KEY, "ejecutivo"]]);
   });
+
+  it("no rompe el tablero si el almacenamiento del navegador está bloqueado", () => {
+    const blocked = {
+      getItem: () => {
+        throw new Error("bloqueado");
+      },
+      setItem: () => {
+        throw new Error("bloqueado");
+      },
+    };
+    expect(readAdminTheme(blocked)).toBe("cristal");
+    expect(() => saveAdminTheme("mando", blocked)).not.toThrow();
+  });
 });

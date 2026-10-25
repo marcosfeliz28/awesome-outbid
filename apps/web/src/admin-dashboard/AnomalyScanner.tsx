@@ -4,6 +4,7 @@ import "./AnomalyScanner.css";
 export type AuditFact = {
   id: string;
   action: string;
+  entity: string;
   entityId?: string | null;
   createdAt: string;
   saleId?: string | null;
@@ -16,36 +17,36 @@ type FactDefinition = {
 };
 
 const DEFINITIONS: Record<string, FactDefinition> = {
-  payment_method_corrected: {
+  "sale:payment_method_corrected": {
     singular: "cambio de método de pago",
     plural: "cambios de método de pago",
   },
-  sale_seller_changed: {
+  "sale:sale_seller_changed": {
     singular: "cambio de vendedora",
     plural: "cambios de vendedora",
   },
-  close_difference: {
+  "cash:close_difference": {
     singular: "cierre con diferencia",
     plural: "cierres con diferencia",
   },
-  close_on_behalf: {
+  "cash:close_on_behalf": {
     singular: "cierre realizado por otra persona",
     plural: "cierres realizados por otra persona",
   },
-  close_vouchers: {
+  "cash:close_vouchers": {
     singular: "cierre con vale de caja",
     plural: "cierres con vale de caja",
   },
-  discount_approved: {
+  "sale:discount_approved": {
     singular: "descuento aprobado",
     plural: "descuentos aprobados",
   },
-  void: { singular: "anulación", plural: "anulaciones" },
-  transfer_verified: {
+  "sale:void": { singular: "anulación", plural: "anulaciones" },
+  "payment:verify": {
     singular: "transferencia verificada",
     plural: "transferencias verificadas",
   },
-  transfer_rejected: {
+  "payment:reject": {
     singular: "transferencia rechazada",
     plural: "transferencias rechazadas",
   },
@@ -60,8 +61,9 @@ export type AuditSummary = {
 export function summarizeAuditFacts(rows: AuditFact[]): AuditSummary[] {
   const counts = new Map<string, number>();
   for (const row of rows) {
-    if (!DEFINITIONS[row.action]) continue;
-    counts.set(row.action, (counts.get(row.action) ?? 0) + 1);
+    const key = `${row.entity}:${row.action}`;
+    if (!DEFINITIONS[key]) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   return [...counts.entries()]
     .map(([action, count]) => ({
@@ -70,23 +72,6 @@ export function summarizeAuditFacts(rows: AuditFact[]): AuditSummary[] {
       label: `${count} ${count === 1 ? DEFINITIONS[action].singular : DEFINITIONS[action].plural}`,
     }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-}
-
-function relatedSaleId(row: AuditFact) {
-  if (row.saleId) return row.saleId;
-  if (["sale", "payment"].includes(row.action)) return row.entityId ?? null;
-  if (
-    [
-      "payment_method_corrected",
-      "sale_seller_changed",
-      "discount_approved",
-      "void",
-      "transfer_verified",
-      "transfer_rejected",
-    ].includes(row.action)
-  )
-    return row.entityId ?? null;
-  return null;
 }
 
 export function AnomalyScanner({
@@ -99,10 +84,15 @@ export function AnomalyScanner({
   onOpenSale: (saleId: string) => void;
 }) {
   const summaries = summarizeAuditFacts(rows);
-  const facts = rows.filter((row) => DEFINITIONS[row.action]).slice(0, 8);
+  const facts = rows
+    .filter((row) => DEFINITIONS[`${row.entity}:${row.action}`] && row.saleId)
+    .slice(0, 8);
 
   return (
-    <article className="admin-card anomaly-scanner" aria-labelledby="anomaly-title">
+    <article
+      className="admin-card anomaly-scanner"
+      aria-labelledby="anomaly-title"
+    >
       <header>
         <span className="admin-card-icon" aria-hidden="true">
           <ScanSearch size={20} />
@@ -129,8 +119,8 @@ export function AnomalyScanner({
           </ul>
           <ul className="anomaly-list" aria-label="Detalle de movimientos">
             {facts.map((row) => {
-              const saleId = relatedSaleId(row);
-              const definition = DEFINITIONS[row.action];
+              const saleId = row.saleId!;
+              const definition = DEFINITIONS[`${row.entity}:${row.action}`];
               return (
                 <li key={row.id}>
                   <div>
@@ -142,11 +132,9 @@ export function AnomalyScanner({
                       }).format(new Date(row.createdAt))}
                     </time>
                   </div>
-                  {saleId && (
-                    <button type="button" onClick={() => onOpenSale(saleId)}>
-                      Abrir venta <ArrowRight size={16} aria-hidden="true" />
-                    </button>
-                  )}
+                  <button type="button" onClick={() => onOpenSale(saleId)}>
+                    Abrir venta <ArrowRight size={16} aria-hidden="true" />
+                  </button>
                 </li>
               );
             })}

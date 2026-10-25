@@ -83,6 +83,13 @@ import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportButton } from "./InventoryImport";
+import { ThemeSelector } from "./admin-dashboard/ThemeSelector";
+import {
+  readAdminTheme,
+  saveAdminTheme,
+  type AdminTheme,
+} from "./admin-dashboard/preferences";
+import "./admin-dashboard/themes.css";
 import {
   applyPendingSaleReprice,
   conflictHelp,
@@ -3144,6 +3151,20 @@ export function SalesHistory() {
     queryKey: ["sales", search.trim(), saleDate],
     queryFn: () => api("/sales" + (params.size ? "?" + params : "")),
   });
+  useEffect(() => {
+    if (!query.data) return;
+    let requested: string | null = null;
+    try {
+      requested = sessionStorage.getItem("nexora-open-sale-id");
+    } catch {
+      return;
+    }
+    if (!requested) return;
+    const sale = query.data.find((row: any) => row.id === requested);
+    if (!sale) return;
+    setSelected(sale);
+    sessionStorage.removeItem("nexora-open-sale-id");
+  }, [query.data]);
   const sessions = useQuery({
     queryKey: ["cash-sessions"],
     queryFn: () => api("/cash-sessions"),
@@ -3996,7 +4017,8 @@ export function Configuration() {
     [userEdit, setUserEdit] = useState<any>(null),
     [passwordReset, setPasswordReset] = useState<any>(null),
     [roleEdit, setRoleEdit] = useState<any>(null),
-    [tab, setTab] = useState("business");
+    [tab, setTab] = useState("business"),
+    [adminTheme, setAdminTheme] = useState<AdminTheme>(readAdminTheme);
   const client = useQueryClient();
   if (!can(user.permissions, "*"))
     return can(user.permissions, "sale:manage") ? (
@@ -4049,6 +4071,14 @@ export function Configuration() {
     requiredNumber("expiryDays", "Alerta de vencimiento (días)"),
     requiredNumber("lowMargin", "Margen bajo (%)"),
     requiredNumber("cashDifferenceLimit", "Alerta de diferencia en caja"),
+    {
+      ...requiredNumber(
+        "cashDeliveryThreshold",
+        "Efectivo en caja para sugerir una entrega (RD$)",
+        0,
+      ),
+      help: "0 desactiva la sugerencia. No abre la gaveta ni mueve dinero.",
+    },
     {
       key: "receiptWidth",
       label: "Ancho de ticket",
@@ -4209,6 +4239,13 @@ export function Configuration() {
               </p>
             )}
             <StoreSettings />
+            <ThemeSelector
+              value={adminTheme}
+              onChange={(theme) => {
+                saveAdminTheme(theme);
+                setAdminTheme(theme);
+              }}
+            />
             <TelegramNotices />
             <DriveBackupCard />
             <IncentiveRates />

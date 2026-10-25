@@ -1,6 +1,17 @@
 .admin-dashboard {
   --admin-bg: #0f172a;
   --admin-card: #172036;
+  --admin-card-background: var(--admin-card);
+  --admin-card-bg: var(--admin-card);
+  --admin-card-raised: #202b45;
+  --admin-card-text: var(--admin-text);
+  --admin-card-muted: var(--admin-muted);
+  --admin-card-border: var(--admin-border);
+  --admin-card-radius: 1rem;
+  --admin-card-shadow: var(--admin-shadow);
+  --admin-card-surface: #202b45;
+  --admin-accent-text: #07141c;
+  --admin-warning-text: #422006;
   --admin-card-solid: #172036;
   --admin-text: #f8fafc;
   --admin-muted: #cbd5e1;
@@ -39,6 +50,8 @@
 .admin-dashboard[data-admin-theme="ejecutivo"] {
   --admin-bg: #f1f5f9;
   --admin-card: #fff;
+  --admin-card-raised: #f8fafc;
+  --admin-card-surface: #f8fafc;
   --admin-card-solid: #fff;
   --admin-text: #172033;
   --admin-muted: #475569;
@@ -59,6 +72,8 @@
 .admin-dashboard[data-admin-theme="mando"] {
   --admin-bg: #07141c;
   --admin-card: #0d2630;
+  --admin-card-raised: #103440;
+  --admin-card-surface: #103440;
   --admin-card-solid: #0d2630;
   --admin-text: #f0fdfa;
   --admin-muted: #b6ded8;
@@ -79,6 +94,26 @@
     linear-gradient(90deg, rgb(45 212 191 / 4%) 1px, transparent 1px),
     var(--admin-bg);
   background-size: 24px 24px;
+}
+
+.admin-dashboard .approval-deck {
+  --approval-surface: var(--admin-card);
+  --approval-card: var(--admin-card-raised);
+  --approval-border: var(--admin-border);
+  --approval-text: var(--admin-text);
+  --approval-muted: var(--admin-muted);
+  --approval-focus: var(--admin-focus);
+  --approval-accent: var(--admin-accent);
+  --approval-danger: var(--admin-danger);
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-dashboard[data-admin-theme="ejecutivo"] .approval-deck__decision input,
+.admin-dashboard[data-admin-theme="ejecutivo"]
+  .approval-deck__decision
+  textarea {
+  background: #fff;
+  color: #172033;
 }
 
 .admin-dashboard-grid {
@@ -126,11 +161,6 @@
   border: 1px solid var(--admin-border-strong);
   border-radius: 0.875rem;
   color: var(--admin-accent);
-}
-
-.admin-sensitive[data-private="true"] {
-  user-select: none;
-  filter: blur(7px);
 }
 
 .admin-theme-selector {
@@ -190,24 +220,37 @@
   border-radius: 50%;
 }
 
-[data-theme-swatch="cristal"] { background: linear-gradient(135deg, #6d28d9, #0f766e); }
-[data-theme-swatch="ejecutivo"] { background: linear-gradient(135deg, #fff 50%, #4338ca 50%); }
-[data-theme-swatch="mando"] { background: linear-gradient(135deg, #07141c 50%, #2dd4bf 50%); }
+[data-theme-swatch="cristal"] {
+  background: linear-gradient(135deg, #6d28d9, #0f766e);
+}
+[data-theme-swatch="ejecutivo"] {
+  background: linear-gradient(135deg, #fff 50%, #4338ca 50%);
+}
+[data-theme-swatch="mando"] {
+  background: linear-gradient(135deg, #07141c 50%, #2dd4bf 50%);
+}
 
 @media (min-width: 720px) {
-  .admin-dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1180px) {
-  .admin-dashboard-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .admin-dashboard-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 520px) {
-  .admin-theme-selector > div { grid-template-columns: minmax(0, 1fr); }
+  .admin-theme-selector > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .admin-dashboard *, .admin-theme-selector * {
+  .admin-dashboard *,
+  .admin-theme-selector * {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;

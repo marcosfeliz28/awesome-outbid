@@ -55,6 +55,8 @@ describe("ApprovalDeck", () => {
   it("exige un motivo útil antes de rechazar", () => {
     expect(validApprovalRejectReason("no")).toBe(false);
     expect(validApprovalRejectReason("   ")).toBe(false);
+    expect(validApprovalRejectReason("1234567")).toBe(false);
+    expect(validApprovalRejectReason("12345678")).toBe(true);
     expect(validApprovalRejectReason("Referencia no coincide")).toBe(true);
   });
 

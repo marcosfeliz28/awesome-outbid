@@ -49,7 +49,7 @@ export const approvalDeckGestureIntent = (_gesture: ApprovalDeckGesture) =>
   "open-detail" as const;
 
 export const validApprovalRejectReason = (reason: string) =>
-  reason.trim().length >= 3;
+  reason.trim().length >= 8;
 
 export function buildApprovalDeckQueue({
   voidRequests,
@@ -223,8 +223,10 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
                   </span>
                 ) : (
                   <span>
-                    {money.format(Number(item.amount))} ·{" "}
-                    {item.bank || "Otro banco"}
+                    <span data-private-value>
+                      {money.format(Number(item.amount))}
+                    </span>{" "}
+                    · {item.bank || "Otro banco"}
                     {item.reference
                       ? ` · Ref. ${item.reference}`
                       : " · Sin referencia"}
@@ -304,7 +306,7 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
                       <textarea
                         autoFocus
                         required
-                        minLength={3}
+                        minLength={8}
                         maxLength={1000}
                         value={reason}
                         onChange={(event) => setReason(event.target.value)}
@@ -348,7 +350,11 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
       )}
 
       {message && (
-        <p className="approval-deck__message" role="status" aria-live="polite">
+        <p
+          className="approval-deck__message"
+          role={/no se pudo/i.test(message) ? "alert" : "status"}
+          aria-live="polite"
+        >
           {message}
         </p>
       )}

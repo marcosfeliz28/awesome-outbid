@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   AreaChart,
   Area,
@@ -25,11 +25,13 @@ import {
   ArrowRight,
   Plus,
 } from "lucide-react";
-import { Button, Badge, Modal } from "@fitstore/ui";
+import { Button, Badge } from "@fitstore/ui";
 import { formatMoney, can, weekStart } from "@fitstore/shared";
-import { api, download, post, useStore } from "./api";
+import { api, download, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
+import { AdminDashboardCards } from "./admin-dashboard/AdminDashboardCards";
+import { readAdminTheme } from "./admin-dashboard/preferences";
 
 const dayBefore = (date: string) =>
   new Date(Date.parse(date + "T12:00:00Z") - 86400000)
@@ -58,13 +60,16 @@ function DayFigures({
   return (
     <div className={"day-figures day-" + tone}>
       <span className="day-title">{title}</span>
-      <strong>{formatMoney(revenue)}</strong>
+      <strong data-private-value>{formatMoney(revenue)}</strong>
       <small>{data?.invoices ?? 0} facturas</small>
       {showProfit && (
         <>
-          <small>Costo {formatMoney(cost)}</small>
+          <small>
+            Costo <span data-private-value>{formatMoney(cost)}</span>
+          </small>
           <small className="day-profit">
-            Ganancia (venta − costo) <b>{formatMoney(revenue - cost)}</b>
+            Ganancia (venta − costo){" "}
+            <b data-private-value>{formatMoney(revenue - cost)}</b>
           </small>
         </>
       )}
@@ -106,10 +111,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
   const user = useStore((s) => s.user)!;
   const [period, setPeriod] = useState("month");
   const [day, setDay] = useState(today());
-  const [voidToApprove, setVoidToApprove] = useState<any>(null);
-  const [voidBusy, setVoidBusy] = useState(false);
-  const [voidError, setVoidError] = useState("");
-  const queryClient = useQueryClient();
+  const [adminTheme] = useState(readAdminTheme);
   const to = period === "day" ? day : today(),
     from =
       period === "today"
@@ -125,12 +127,6 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
     // 05-B4: quien no ve reportes (la cajera) pasa por aquí al entrar y la
     // API le contestaba 403 en cada inicio de sesión.
     enabled: can(user.permissions, "reports:read"),
-  });
-  const voidRequests = useQuery<any[]>({
-    queryKey: ["void-requests", "pending"],
-    queryFn: () => api("/void-requests?status=pending"),
-    enabled: can(user.permissions, "*"),
-    refetchInterval: 15000,
   });
   const data = query.data;
   const showProfit = can(user.permissions, "profit:read");
@@ -219,87 +215,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           )}
         </div>
       </div>
-      {can(user.permissions, "*") && !!voidRequests.data?.length && (
-        <section
-          className="void-request-dashboard"
-          aria-label="Solicitudes de anulación pendientes"
-        >
-          <div>
-            <strong>
-              {voidRequests.data.length} solicitud
-              {voidRequests.data.length === 1 ? "" : "es"} de anulación
-              pendiente{voidRequests.data.length === 1 ? "" : "s"}
-            </strong>
-            <p>Revisa la venta antes de aprobar o rechazar.</p>
-          </div>
-          <Button onClick={() => go("void-requests")}>
-            Revisar solicitudes
-          </Button>
-          {voidRequests.data.slice(0, 3).map((row) => (
-            <div className="void-request-dashboard-row" key={row.id}>
-              <span>
-                Factura {row.sale.number} · {row.requester.name}
-              </span>
-              <Button
-                variant="secondary"
-                disabled={!!row.approvalBlocker}
-                onClick={() => {
-                  setVoidError("");
-                  setVoidToApprove(row);
-                }}
-              >
-                Anular venta
-              </Button>
-              {row.approvalBlocker && (
-                <small>No se puede anular: {row.approvalBlocker}</small>
-              )}
-            </div>
-          ))}
-        </section>
-      )}
-      {voidToApprove && (
-        <Modal
-          open
-          title={"Anular factura " + voidToApprove.sale.number}
-          onClose={() => setVoidToApprove(null)}
-        >
-          <p>
-            Confirma la anulación. Se revertirán los movimientos de esta venta.
-          </p>
-          {voidError && (
-            <p role="alert" className="danger-text">
-              {voidError}
-            </p>
-          )}
-          <div className="void-request-actions">
-            <Button variant="secondary" onClick={() => setVoidToApprove(null)}>
-              Cancelar
-            </Button>
-            <Button
-              disabled={voidBusy}
-              onClick={async () => {
-                setVoidBusy(true);
-                setVoidError("");
-                try {
-                  await post(
-                    "/void-requests/" + voidToApprove.id + "/approve",
-                    {},
-                  );
-                  await queryClient.invalidateQueries();
-                  setVoidToApprove(null);
-                  toast("Venta anulada y solicitud aprobada.");
-                } catch (error: any) {
-                  setVoidError(error.message);
-                } finally {
-                  setVoidBusy(false);
-                }
-              }}
-            >
-              Confirmar anulación
-            </Button>
-          </div>
-        </Modal>
-      )}
+      <AdminDashboardCards go={go} theme={adminTheme} />
       <QueryState query={query}>
         <div className="welcome-banner">
           <div>
@@ -352,7 +268,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   <m.icon size={19} />
                 </div>
               </div>
-              <strong>{m.value}</strong>
+              <strong data-private-value>{m.value}</strong>
               <div className="kpi-note">
                 {m.trend !== undefined && (
                   <span
@@ -544,7 +460,9 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                         <Badge>{p.category}</Badge>
                       </td>
                       <td>{p.units}</td>
-                      <td className="right amount">{formatMoney(p.revenue)}</td>
+                      <td className="right amount" data-private-value>
+                        {formatMoney(p.revenue)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -596,7 +514,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               <p>Mismo período del año anterior</p>
             </div>
           </div>
-          <p>
+          <p data-private-value>
             {formatMoney(data?.previousYearRevenue ?? 0)} ·{" "}
             {data?.yearOverYear == null
               ? "Sin base comparable"
@@ -661,25 +579,32 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           <div className="financial-strip">
             <div>
               <span>Gastos del período</span>
-              <strong>{formatMoney(data?.expenses ?? 0)}</strong>
+              <strong data-private-value>
+                {formatMoney(data?.expenses ?? 0)}
+              </strong>
             </div>
             <div>
               <span>Comisiones bancarias</span>
-              <strong>{formatMoney(data?.fees ?? 0)}</strong>
+              <strong data-private-value>{formatMoney(data?.fees ?? 0)}</strong>
             </div>
             <div>
               <span>Mermas, ajustes y devoluciones a proveedor (a costo)</span>
-              <strong>{formatMoney(data?.inventoryLoss ?? 0)}</strong>
+              <strong data-private-value>
+                {formatMoney(data?.inventoryLoss ?? 0)}
+              </strong>
             </div>
             {!!data?.countCorrections && (
               <div>
                 <span>Correcciones del conteo de inventario (no restan)</span>
-                <strong>{formatMoney(data.countCorrections)}</strong>
+                <strong data-private-value>
+                  {formatMoney(data.countCorrections)}
+                </strong>
               </div>
             )}
             <div>
               <span>Ganancia neta</span>
               <strong
+                data-private-value
                 className={
                   (data?.netProfit ?? 0) >= 0 ? "green-text" : "danger-text"
                 }
@@ -689,7 +614,9 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             </div>
             <div>
               <span>Inventario a costo</span>
-              <strong>{formatMoney(data?.inventoryCost ?? 0)}</strong>
+              <strong data-private-value>
+                {formatMoney(data?.inventoryCost ?? 0)}
+              </strong>
             </div>
           </div>
         )}

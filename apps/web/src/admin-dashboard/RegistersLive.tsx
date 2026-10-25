@@ -60,7 +60,7 @@ export function RegistersLive({
   }`;
   const threshold = Number(deliveryThreshold);
   const hasThreshold =
-    deliveryThreshold !== null && Number.isFinite(threshold) && threshold >= 0;
+    deliveryThreshold !== null && Number.isFinite(threshold) && threshold > 0;
 
   return (
     <section className="registers-live" aria-labelledby="registers-live-title">
@@ -90,7 +90,7 @@ export function RegistersLive({
 
             return (
               <li className="registers-live__item" key={session.id}>
-                <article className="registers-live__session" tabIndex={0}>
+                <article className="registers-live__session">
                   <div className="registers-live__identity">
                     <h3>{session.userName?.trim() || "Cajera sin nombre"}</h3>
                     {session.registerName ? (
@@ -114,7 +114,7 @@ export function RegistersLive({
                     {cash !== null ? (
                       <div>
                         <dt>Efectivo esperado</dt>
-                        <dd>{money.format(cash)}</dd>
+                        <dd data-private-value>{money.format(cash)}</dd>
                       </div>
                     ) : null}
                   </dl>

@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
@@ -44,6 +45,7 @@ import {
   isImageDataUrl,
   LOGO_MAX_BYTES,
   RECEIVABLE_SHIFT_LIMIT,
+  businessDate,
 } from "@fitstore/shared";
 import { normalizeUsername, passwordHash } from "./auth";
 import {
@@ -88,6 +90,7 @@ const configSchema = z.object({
   expiryDays: z.number().int().min(1).max(365),
   lowMargin: z.number().min(0).max(100),
   cashDifferenceLimit: amount,
+  cashDeliveryThreshold: amount.optional(),
   receiptWidth: z.enum(["58", "80"]),
   sessionTimeoutMinutes: z.number().min(1).max(480),
   allowNegativeStock: z.boolean().default(false),
@@ -826,6 +829,11 @@ export class AdminController {
       allowOfflineSales: data.allowOfflineSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),
+      cashDeliveryThreshold:
+        typeof data.cashDeliveryThreshold === "number" ||
+        typeof data.cashDeliveryThreshold === "string"
+          ? data.cashDeliveryThreshold
+          : null,
       requireCustomer: true,
     };
   }
@@ -859,6 +867,10 @@ export class AdminController {
           config.cashMovementApprovalLimit ?? cashMovementLimit(previous),
         receivableShiftLimit:
           config.receivableShiftLimit ?? receivableShiftLimit(previous),
+        cashDeliveryThreshold:
+          config.cashDeliveryThreshold ??
+          previous?.cashDeliveryThreshold ??
+          null,
         transferAccounts:
           config.transferAccounts ??
           (previous?.transferAccounts as string[]) ??
@@ -1307,11 +1319,55 @@ export class AdminController {
       return updated;
     });
   }
-  @Get("audit-log") @Permit("*") auditLog(@CurrentUser() actor: Actor) {
-    return this.db.auditLog.findMany({
-      where: { branchId: actor.branchId },
+  @Get("audit-log") @Permit("*") async auditLog(
+    @CurrentUser() actor: Actor,
+    @Query() query: Record<string, string>,
+  ) {
+    const { date } = parse(
+      z.object({
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+      }),
+      query,
+    );
+    const day = date ?? businessDate();
+    const createdAt = {
+      gte: new Date(day + "T00:00:00-04:00"),
+      lte: new Date(day + "T23:59:59.999-04:00"),
+    };
+    if (!Number.isFinite(+createdAt.gte) || businessDate(createdAt.gte) !== day)
+      bad("Fecha inválida.");
+    const rows = await this.db.auditLog.findMany({
+      where: { branchId: actor.branchId, createdAt },
       orderBy: { createdAt: "desc" },
       take: 300,
+    });
+    const paymentIds = rows
+      .filter((row) => row.entity === "payment")
+      .map((row) => row.entityId);
+    const payments = paymentIds.length
+      ? await this.db.payment.findMany({
+          where: {
+            id: { in: paymentIds },
+            sale: { branchId: actor.branchId },
+          },
+          select: { id: true, saleId: true },
+        })
+      : [];
+    const paymentSales = new Map(payments.map((row) => [row.id, row.saleId]));
+    return rows.map((row) => {
+      const after = row.after as { saleId?: unknown } | null;
+      const saleId =
+        row.entity === "sale"
+          ? row.entityId
+          : row.entity === "payment"
+            ? paymentSales.get(row.entityId)
+            : typeof after?.saleId === "string"
+              ? after.saleId
+              : null;
+      return { ...row, saleId: saleId ?? null };
     });
   }
   @Get("promotions") @Permit("catalog:read") promotions(

@@ -130,7 +130,7 @@ async function reachByKeyboard(page: Page, name: string | RegExp) {
 test("Tablero fase A: móvil, temas, privacidad, decisiones reales y caja intacta", async ({
   browser,
   request,
-}) => {
+}, testInfo) => {
   test.setTimeout(180_000);
   const tag = Date.now().toString(36);
   const ownerSession = await request.post("/api/auth/login", {
@@ -290,6 +290,10 @@ test("Tablero fase A: móvil, temas, privacidad, decisiones reales y caja intact
       await chooseTheme(ownerPage, theme, label);
       await assertMobileContract(ownerPage, 320);
       await assertMobileContract(ownerPage, 390);
+      await testInfo.attach(`tablero-${theme}-390px`, {
+        body: await ownerPage.screenshot({ fullPage: true }),
+        contentType: "image/png",
+      });
     }
 
     const privacy = ownerPage.getByRole("button", { name: "Ocultar cifras" });
