@@ -1135,7 +1135,11 @@ export function PlatformPanel() {
   const [view, setView] = useState<
     { name: "list" } | { name: "create" } | { name: "detail"; slug: string }
   >({ name: "list" });
-  useEffect(() => window.scrollTo(0, 0), [view]);
+  // Con llaves: en Chromium nuevo scrollTo devuelve una promesa y React la
+  // tomaría por la función de limpieza («is not a function», pantalla en blanco).
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
   const exit = () => {
     savePlatformToken("");
     setToken("");
