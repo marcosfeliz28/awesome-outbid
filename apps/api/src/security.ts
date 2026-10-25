@@ -93,7 +93,10 @@ export async function managerPinApproval(
   pin: string,
   exclude: (string | null | undefined)[] = [],
 ): Promise<string> {
-  const excluded = new Set([actor.id, ...exclude]);
+  // La dueña («*») sí puede usar su propio PIN: la regla es para el personal.
+  const excluded = new Set(
+    can(actor.permissions, "*") ? exclude : [actor.id, ...exclude],
+  );
   const managers = await db.user.findMany({
     where: { active: true, branchId: actor.branchId },
     include: { role: true },
