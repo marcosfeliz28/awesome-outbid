@@ -337,7 +337,7 @@ export const audit = async (
   before?: unknown,
   after?: unknown,
 ) => {
-  const row = await db.auditLog.create({
+  return db.auditLog.create({
     data: {
       userId: actor.id,
       terminalId: actor.terminalId,
@@ -350,19 +350,45 @@ export const audit = async (
       ...(after === undefined ? {} : { after: withoutImages(json(after)) }),
     },
   });
-  // Un evento mínimo despierta las tarjetas administrativas. No lleva importes,
-  // nombres ni el contenido de la bitácora; cada tarjeta vuelve a consultar su
-  // ruta protegida después del commit de la operación.
-  if (db.realtimeEvent?.create)
+};
+
+type DashboardSignal =
+  | { action: "complete" | "void" | "return"; entity: "sale" }
+  | {
+      action: "request" | "cancel" | "approve" | "reject";
+      entity: "sale_void_request";
+    }
+  | { action: "verify" | "reject"; entity: "payment" }
+  | {
+      action: "open" | "movement" | "cash_transferred" | "close";
+      entity: "cash";
+    };
+
+/**
+ * Despierta las tarjetas después de confirmar la operación principal.
+ * Es deliberadamente independiente de audit(): nunca debe recibir un cliente
+ * transaccional ni hacer fallar una venta, un cobro o un cierre de caja.
+ */
+export async function signalDashboard(
+  db: Pick<Database, "realtimeEvent">,
+  actor: Pick<Actor, "branchId">,
+  signal: DashboardSignal,
+): Promise<void> {
+  if (!db.realtimeEvent?.create) return;
+  try {
     await db.realtimeEvent.create({
       data: {
         branchId: actor.branchId,
         type: "audit.created",
-        data: { action, entity },
+        data: signal,
       },
     });
-  return row;
-};
+  } catch {
+    // El SSE es una señal de refresco de mejor esfuerzo. La operación ya hizo
+    // commit y el navegador puede recuperar el estado en su próxima carga.
+    console.warn("[tablero] No se pudo emitir la señal de actualización.");
+  }
+}
 // Tipo real de una imagen por sus primeros bytes: no se guarda otra cosa
 // como logo ni como foto de evidencia.
 export function imageType(bytes: Buffer) {

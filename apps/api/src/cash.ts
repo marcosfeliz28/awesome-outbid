@@ -35,6 +35,7 @@ import {
   amount,
   reason,
   audit,
+  signalDashboard,
   bad,
   denied,
   canViewCashExpected,
@@ -760,7 +761,7 @@ export class CashController {
       };
     }
     try {
-      return await this.db.$transaction(async (tx) => {
+      const result = await this.db.$transaction(async (tx) => {
         // Una apertura es poco frecuente. Serializar las aperturas de la sucursal
         // evita que el índice único parcial (una caja abierta por usuario)
         // termine mostrando un error Prisma al cajero en un doble clic.
@@ -805,6 +806,11 @@ export class CashController {
           );
         return row;
       });
+      await signalDashboard(this.db, actor, {
+        action: "open",
+        entity: "cash",
+      });
+      return result;
     } catch (error: any) {
       // Durante un despliegue gradual puede responder otra instancia que aún
       // no usa el advisory lock. Recuperar el conflicto de los índices únicos
@@ -871,7 +877,7 @@ export class CashController {
         { pin: managerPin, actor },
       );
     }
-    return moneyDb(this.db).$transaction(async (tx) => {
+    const result = await moneyDb(this.db).$transaction(async (tx) => {
       const session = await cashLock(tx, actor, parse(uuid, id));
       // El bloqueo de la sesión serializa movimientos y ventas concurrentes.
       // D-M4: un reintento con la misma clave devuelve el mismo movimiento
@@ -944,6 +950,11 @@ export class CashController {
       });
       return row;
     });
+    await signalDashboard(this.db, actor, {
+      action: "movement",
+      entity: "cash",
+    });
+    return result;
   }
   // Traslada la caja abierta del usuario al equipo desde el que se solicita
   // (por ejemplo, si el equipo original se dañó). Un vendedor necesita el PIN
@@ -989,7 +1000,7 @@ export class CashController {
         { pin: data.managerPin, actor },
       );
     }
-    return this.db.$transaction(async (tx) => {
+    const result = await this.db.$transaction(async (tx) => {
       const sessionId = parse(uuid, id);
       await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id = ${sessionId}::uuid FOR UPDATE`;
       const session = await tx.cashSession.findFirstOrThrow({
@@ -1014,6 +1025,11 @@ export class CashController {
       );
       return { ...row, registerName: to };
     });
+    await signalDashboard(this.db, actor, {
+      action: "cash_transferred",
+      entity: "cash",
+    });
+    return result;
   }
   @Post(":id/close")
   @RequireTerminal()
@@ -1262,6 +1278,10 @@ export class CashController {
       // D-M2 (auditoría 06): el cierre recalcula todo el turno; mismo plazo
       // que la venta en vez de los 5 s por defecto.
     }, MONEY_TRANSACTION);
+    await signalDashboard(this.db, actor, {
+      action: "close",
+      entity: "cash",
+    });
     notify(this.db, "cash_close", closed.id);
     return closed;
   }

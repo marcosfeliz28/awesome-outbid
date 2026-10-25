@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { AdminController } from "../apps/api/src/admin";
-import { audit } from "../apps/api/src/common";
+import { audit, signalDashboard } from "../apps/api/src/common";
+import { SalesController } from "../apps/api/src/sales";
 
 const read = (path: string) => readFileSync(path, "utf8");
 
@@ -20,7 +21,7 @@ describe("tablero administrativo · integración", () => {
     expect(read("apps/web/src/YearPie.tsx")).not.toContain("refetchInterval");
   });
 
-  it("cada operación auditada emite una señal SSE mínima sin datos sensibles", async () => {
+  it("separa la bitácora de la señal SSE y no envía datos sensibles", async () => {
     const created = { id: "audit-1" };
     const db = {
       auditLog: { create: vi.fn().mockResolvedValue(created) },
@@ -36,6 +37,16 @@ describe("tablero administrativo · integración", () => {
       { amount: 5000, customer: "Nombre privado" },
     );
     expect(result).toBe(created);
+    expect(db.realtimeEvent.create).not.toHaveBeenCalled();
+
+    await signalDashboard(
+      db as never,
+      { branchId: "branch-a" },
+      {
+        action: "verify",
+        entity: "payment",
+      },
+    );
     expect(db.realtimeEvent.create).toHaveBeenCalledWith({
       data: {
         branchId: "branch-a",
@@ -52,6 +63,67 @@ describe("tablero administrativo · integración", () => {
     expect(JSON.stringify(db.realtimeEvent.create.mock.calls)).not.toContain(
       "payment-secret-id",
     );
+  });
+
+  it("un fallo de la señal posterior al commit no revierte la transferencia verificada", async () => {
+    const paymentId = "00000000-0000-4000-8000-000000000001";
+    const saleId = "00000000-0000-4000-8000-000000000002";
+    let committed = false;
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      payment: {
+        findFirstOrThrow: vi.fn().mockResolvedValue({
+          id: paymentId,
+          saleId,
+          cashSessionId: null,
+        }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: paymentId,
+          saleId,
+          cashSessionId: null,
+          status: "pending_verification",
+          entryType: "sale",
+        }),
+        update: vi.fn().mockResolvedValue({ id: paymentId, status: "ok" }),
+      },
+      sale: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ id: saleId, status: "completed" }),
+      },
+      alert: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: "audit-1" }) },
+    };
+    const db = {
+      $transaction: vi.fn(async (operation: (client: typeof tx) => unknown) => {
+        const value = await operation(tx);
+        committed = true;
+        return value;
+      }),
+      realtimeEvent: {
+        create: vi.fn().mockImplementation(async () => {
+          expect(committed).toBe(true);
+          throw new Error("SSE no disponible");
+        }),
+      },
+    };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = await new SalesController(db as never).verify(paymentId, {
+      id: "owner",
+      branchId: "branch-a",
+    } as never);
+
+    expect(result).toEqual({ ok: true });
+    expect(committed).toBe(true);
+    expect(tx.payment.update).toHaveBeenCalledWith({
+      where: { id: paymentId },
+      data: { status: "ok" },
+    });
+    expect(db.realtimeEvent.create).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith(
+      "[tablero] No se pudo emitir la señal de actualización.",
+    );
+    warn.mockRestore();
   });
 
   it("filtra la bitácora por el día dominicano y resuelve el saleId del pago", async () => {

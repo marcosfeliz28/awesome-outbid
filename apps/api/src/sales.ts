@@ -53,6 +53,7 @@ import {
   uuid,
   reason,
   audit,
+  signalDashboard,
   safe,
   bad,
   conflict,
@@ -1323,6 +1324,10 @@ export class SalesController {
       { timeout: MONEY_TRANSACTION.timeout },
     );
     notify(this.db, "sale", result.id);
+    await signalDashboard(this.db, actor, {
+      action: "complete",
+      entity: "sale",
+    });
     return safe(result, actor);
   }
   @Post("sales") @Permit("sale:write") @RequireTerminal() sale(
@@ -1770,6 +1775,10 @@ export class SalesController {
       });
       return row;
     }, MONEY_TRANSACTION);
+    await signalDashboard(this.db, actor, {
+      action: "request",
+      entity: "sale_void_request",
+    });
     notify(this.db, "void_request", result.id);
     return this.voidRequestDto(result.id, actor);
   }
@@ -1821,6 +1830,10 @@ export class SalesController {
         { status: "cancelled" },
       );
     }, MONEY_TRANSACTION);
+    await signalDashboard(this.db, actor, {
+      action: "cancel",
+      entity: "sale_void_request",
+    });
     return this.voidRequestDto(requestId, actor);
   }
 
@@ -1878,6 +1891,10 @@ export class SalesController {
         { status: "rejected", note },
       );
     }, MONEY_TRANSACTION);
+    await signalDashboard(this.db, actor, {
+      action: "reject",
+      entity: "sale_void_request",
+    });
     return this.voidRequestDto(requestId, actor);
   }
 
@@ -1908,6 +1925,10 @@ export class SalesController {
       await this.voidSaleTx(tx, row.saleId, "Solicitud: " + row.reason, actor);
       return row.saleId;
     }, MONEY_TRANSACTION);
+    await signalDashboard(this.db, actor, {
+      action: "approve",
+      entity: "sale_void_request",
+    });
     notify(this.db, "sale_voided", saleId);
     return this.voidRequestDto(requestId, actor);
   }
@@ -2520,7 +2541,7 @@ export class SalesController {
   @RequireTerminal()
   @Permit("*")
   async verify(@Param("id") id: string, @CurrentUser() actor: Actor) {
-    return this.db.$transaction(async (tx) => {
+    const result = await this.db.$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
         where: {
           id: parse(uuid, id),
@@ -2575,6 +2596,11 @@ export class SalesController {
       });
       return { ok: true };
     });
+    await signalDashboard(this.db, actor, {
+      action: "verify",
+      entity: "payment",
+    });
+    return result;
   }
   // 3aa: corrige únicamente los datos de conciliación de una transferencia.
   // La referencia que vio la administradora es un requisito de concurrencia:
@@ -2661,7 +2687,7 @@ export class SalesController {
     @CurrentUser() actor: Actor,
   ) {
     const data = parse(z.object({ reason }), body);
-    return this.db.$transaction(async (tx) => {
+    const result = await this.db.$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
         where: {
           id: parse(uuid, id),
@@ -2763,6 +2789,11 @@ export class SalesController {
       });
       return { ok: true };
     });
+    await signalDashboard(this.db, actor, {
+      action: "reject",
+      entity: "payment",
+    });
+    return result;
   }
   @Post("returns")
   @RequireTerminal()
