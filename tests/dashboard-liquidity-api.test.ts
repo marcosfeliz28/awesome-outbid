@@ -23,8 +23,8 @@ describe("GET /api/dashboard/liquidity", () => {
   it("hace coincidir cada bolsillo con su fuente actual usando Decimal", async () => {
     const paymentAggregate = vi
       .fn()
-      .mockResolvedValueOnce({ _sum: { amount: decimal("70.50") } })
       .mockResolvedValueOnce({ _sum: { amount: decimal("30.00") } })
+      .mockResolvedValueOnce({ _sum: { amount: decimal("70.50") } })
       .mockResolvedValueOnce({ _sum: { amount: decimal("25.00") } });
     const db = {
       cashSession: {
@@ -72,15 +72,17 @@ describe("GET /api/dashboard/liquidity", () => {
         findMany: vi
           .fn()
           .mockResolvedValue([
-            { after: { lines: [{ paymentId: "owner-payment" }] } },
-            { after: { lines: [{ paymentId: "owner-payment" }] } },
+            { entityId: "verified-payment" },
+            { entityId: "verified-payment" },
           ]),
       },
-      $queryRaw: vi
-        .fn()
-        .mockResolvedValue([
-          { cod: decimal("80.00"), credit: decimal("90.00") },
-        ]),
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          cod: decimal("80.00"),
+          credit: decimal("90.00"),
+          unclassified: decimal("11.00"),
+        },
+      ]),
     };
 
     const result = await new DashboardLiquidityController(
@@ -96,17 +98,19 @@ describe("GET /api/dashboard/liquidity", () => {
       },
       owner: {
         amount: "25.00",
-        basis: "Efectivo recibido por la dueña registrado hoy",
+        basis: "Efectivo recibido por la dueña hoy; no es un saldo",
       },
       banks: {
         verified: "70.50",
         pending: "30.00",
-        verifiedBasis: "Transferencias verificadas hoy; no es saldo bancario",
+        verifiedBasis:
+          "Transferencias confirmadas mediante revisión hoy; no es saldo bancario",
         pendingBasis: "Transferencias por verificar pendientes actualmente",
       },
       street: {
         cod: "80.00",
         credit: "90.00",
+        unclassified: "11.00",
         basis: "Cuentas por cobrar pendientes actualmente",
       },
     });
@@ -114,19 +118,21 @@ describe("GET /api/dashboard/liquidity", () => {
       where: { branchId: "sucursal-a", closedAt: null },
       select: expect.any(Object),
     });
-    expect(paymentAggregate.mock.calls[0][0].where).toMatchObject({
-      method: "transfer",
-      status: "ok",
-      sale: { branchId: "sucursal-a", status: "completed" },
-    });
-    expect(paymentAggregate.mock.calls[1][0].where).toEqual({
+    expect(paymentAggregate.mock.calls[0][0].where).toEqual({
       method: "transfer",
       status: "pending_verification",
       sale: { branchId: "sucursal-a", status: "completed" },
     });
-    expect(paymentAggregate.mock.calls[2][0].where.id.in).toEqual([
-      "owner-payment",
+    expect(paymentAggregate.mock.calls[1][0].where.id.in).toEqual([
+      "verified-payment",
     ]);
+    expect(paymentAggregate.mock.calls[2][0].where).toMatchObject({
+      method: "cash",
+      cashSessionId: null,
+      reference: { startsWith: "Recibido por la dueña" },
+      createdAt: expect.any(Object),
+      sale: { branchId: "sucursal-a", status: "completed" },
+    });
   });
 
   it("registra la ruta con permiso * y Cache-Control privado", () => {

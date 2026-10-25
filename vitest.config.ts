@@ -4,7 +4,13 @@ export default defineConfig({
     // 5 s (el valor por defecto) se agotaban con la máquina ocupada (F-3).
     testTimeout: 30000,
     include: [
-      "tests/admin-dashboard-*.test.ts",
+      "tests/admin-dashboard-anomaly.test.ts",
+      "tests/admin-dashboard-approval-deck.test.ts",
+      "tests/admin-dashboard-integration.test.ts",
+      "tests/admin-dashboard-liquidity.test.ts",
+      "tests/admin-dashboard-privacy.test.ts",
+      "tests/admin-dashboard-registers-live.test.ts",
+      "tests/admin-dashboard-theme.test.ts",
       "tests/dashboard-liquidity-api.test.ts",
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",

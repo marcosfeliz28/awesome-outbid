@@ -12,7 +12,12 @@ export type LiquiditySnapshot = {
       verifiedBasis: string;
       pendingBasis: string;
     };
-    street: { cod: string; credit: string; basis: string };
+    street: {
+      cod: string;
+      credit: string;
+      unclassified: string;
+      basis: string;
+    };
   };
 };
 
@@ -90,7 +95,7 @@ export function LiquidityMap({
           >
             <HandCoins aria-hidden="true" />
             <div>
-              <h3 id="liquidity-owner">En manos de la dueña</h3>
+              <h3 id="liquidity-owner">Recibido por la dueña hoy</h3>
               <Amount value={data.pockets.owner.amount} />
               <p>{data.pockets.owner.basis}</p>
             </div>
@@ -102,7 +107,7 @@ export function LiquidityMap({
           >
             <Landmark aria-hidden="true" />
             <div>
-              <h3 id="liquidity-banks">Bancos y verifón</h3>
+              <h3 id="liquidity-banks">Transferencias bancarias</h3>
               <dl>
                 <div>
                   <dt>Verificadas hoy</dt>
@@ -142,6 +147,12 @@ export function LiquidityMap({
                     <Amount value={data.pockets.street.credit} />
                   </dd>
                 </div>
+                <div>
+                  <dt>Crédito / contraentrega histórico</dt>
+                  <dd>
+                    <Amount value={data.pockets.street.unclassified} />
+                  </dd>
+                </div>
               </dl>
               <p>{data.pockets.street.basis}</p>
             </div>
@@ -151,8 +162,8 @@ export function LiquidityMap({
 
       {data && (
         <p className="liquidity-note">
-          No sumes estos bolsillos como un total: una transferencia pendiente
-          sigue incluida en la cuenta por cobrar hasta verificarse.
+          No sumes estos bolsillos como un total: algunos abonos por
+          transferencia pendientes siguen incluidos en la cuenta por cobrar.
         </p>
       )}
     </article>

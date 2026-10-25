@@ -24,17 +24,19 @@ const data: LiquiditySnapshot = {
     },
     owner: {
       amount: "300.00",
-      basis: "Efectivo recibido por la dueña registrado hoy",
+      basis: "Efectivo recibido por la dueña hoy; no es un saldo",
     },
     banks: {
       verified: "725.25",
       pending: "80.00",
-      verifiedBasis: "Transferencias verificadas hoy; no es saldo bancario",
+      verifiedBasis:
+        "Transferencias confirmadas mediante revisión hoy; no es saldo bancario",
       pendingBasis: "Transferencias por verificar pendientes actualmente",
     },
     street: {
       cod: "450.00",
       credit: "600.00",
+      unclassified: "75.00",
       basis: "Cuentas por cobrar pendientes actualmente",
     },
   },
@@ -45,8 +47,8 @@ describe("LiquidityMap", () => {
     const html = renderToStaticMarkup(createElement(LiquidityMap, { data }));
     for (const label of [
       "En gavetas",
-      "En manos de la dueña",
-      "Bancos y verifón",
+      "Recibido por la dueña hoy",
+      "Transferencias bancarias",
       "En la calle",
     ])
       expect(html).toContain(label);
@@ -56,7 +58,7 @@ describe("LiquidityMap", () => {
     expect(html).toContain("Créditos");
     expect(html).toContain("no es saldo bancario");
     expect(html).toContain("No sumes estos bolsillos");
-    expect(html.match(/RD\$/g)).toHaveLength(6);
+    expect(html.match(/RD\$/g)).toHaveLength(7);
   });
 
   it("formatea dinero y explica carga, error y ausencia de datos", () => {

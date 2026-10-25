@@ -90,7 +90,7 @@ const configSchema = z.object({
   expiryDays: z.number().int().min(1).max(365),
   lowMargin: z.number().min(0).max(100),
   cashDifferenceLimit: amount,
-  cashDeliveryThreshold: amount.optional(),
+  cashDeliveryThreshold: amount.nullable().optional(),
   receiptWidth: z.enum(["58", "80"]),
   sessionTimeoutMinutes: z.number().min(1).max(480),
   allowNegativeStock: z.boolean().default(false),
