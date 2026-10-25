@@ -222,8 +222,11 @@ export function CloseCashModal({
   // A-1: un vale de caja exige nota y, a quien no gestiona ventas, el PIN de
   // un gerente (la API aplica la misma regla).
   const hasVouchers = parse(form.vouchers) > 0;
+  // Un gerente tampoco aprueba el vale de su propia caja (la dueña sí).
   const voucherNeedsPin =
-    hasVouchers && !can(user?.permissions ?? [], "sale:manage");
+    hasVouchers &&
+    (!can(user?.permissions ?? [], "sale:manage") ||
+      (session.userId === user?.id && !can(user?.permissions ?? [], "*")));
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -370,7 +373,7 @@ export function CloseCashModal({
             <label className="field">
               <span>
                 {voucherNeedsPin
-                  ? "PIN de gerente (vale de caja)"
+                  ? "PIN de otro gerente (vale de caja)"
                   : cardNeedsPin
                     ? "PIN de gerente (tarjeta no coincide)"
                     : "PIN de gerente (la caja no cuadra)"}
