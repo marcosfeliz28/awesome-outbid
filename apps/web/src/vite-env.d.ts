@@ -14,4 +14,6 @@ interface ImportMetaEnv {
   readonly VITE_SENTRY_RELEASE?: string;
   /** Exige código de empresa en el acceso de la web SaaS. */
   readonly VITE_PRODUCT_TENANCY?: string;
+  /** Habilita la comprobación de licencia antes de ventas offline locales. */
+  readonly VITE_PRODUCT_LOCAL_LICENSE?: string;
 }

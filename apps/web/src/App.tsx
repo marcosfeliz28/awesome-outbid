@@ -56,6 +56,7 @@ import {
 import { businessSidebarLabels, productLoginFaces } from "./product-branding";
 import { Registration, ConfirmEmail, AcceptInvitation } from "./Registration";
 import { Onboarding, type OnboardingStatus } from "./Onboarding";
+import { DesktopPrinterControls } from "./DesktopPrinterControls";
 import { Billing } from "./Billing";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
@@ -1115,6 +1116,7 @@ function Shell() {
           ))}
         </nav>
         <div className="sidebar-bottom">
+          <DesktopPrinterControls />
           <div className="help-card">
             <div className="help-symbol">✦</div>
             <strong>Ayuda para trabajar</strong>

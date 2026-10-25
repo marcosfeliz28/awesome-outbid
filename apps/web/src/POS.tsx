@@ -65,6 +65,7 @@ import {
   discountLocalStock,
   isNetworkError,
   refreshCart,
+  requireLocalLicenseWrite,
   type CartItem,
   type Product,
   type Variant,
@@ -95,6 +96,11 @@ import {
   PrintSheet,
   printSoon,
 } from "./Prints";
+import {
+  cashDrawerRequired,
+  isNativeDesktop,
+  nativeOpenDrawer,
+} from "./desktopPrinter";
 import {
   announcePriceChanges,
   CashElsewhere,
@@ -1747,7 +1753,7 @@ function Checkout({
   config: any;
   customers: any[];
 }) {
-  const { cart, customerId, globalDiscount, user, online, clearCart } =
+  const { cart, customerId, globalDiscount, user, token, online, clearCart } =
     useStore();
   const [courier, setCourier] = useState({
     on: false,
@@ -2101,6 +2107,7 @@ function Checkout({
       // respuesta, se conserva aparte para confirmar su UUID sin asumir que
       // se completó ni volver a descontar inventario (R9-offline-1/2).
       const saveLocal = async (fallback: boolean) => {
+        await requireLocalLicenseWrite();
         const offlineAction = offlineSaleAction(
           config?.allowOfflineSales,
           fallback,
@@ -2207,6 +2214,15 @@ function Checkout({
             }
           : line;
       });
+      // Impresión automática del recibo (Ajustes).
+      const cashPaid = cashDrawerRequired(payments);
+      const drawerAuthorization =
+        cashPaid &&
+        confirmedOnline &&
+        isNativeDesktop() &&
+        token
+          ? { accessToken: token, saleId: sale.id, automatic: true as const }
+          : undefined;
       setReceipt({
         ...sale,
         snapshot: printed,
@@ -2220,9 +2236,13 @@ function Checkout({
         change: payment.change,
         tendered: payments,
         createdAt: sale.createdAt ?? new Date().toISOString(),
+        drawerAuthorization,
       });
-      // Impresión automática del recibo (Ajustes).
-      if (config?.autoPrintReceipt) printSoon();
+      if (config?.autoPrintReceipt) printSoon(drawerAuthorization);
+      else if (drawerAuthorization)
+        void nativeOpenDrawer(drawerAuthorization).catch((error) =>
+          toast(String(error?.message ?? error), true),
+        );
       clearCart();
       await client.invalidateQueries();
     } catch (e: any) {
@@ -2339,6 +2359,20 @@ function Checkout({
             <Printer size={20} />
             Imprimir recibo
           </Button>
+          {receipt.drawerAuthorization && (
+            // CPC-10: un reintento de la misma venta si el pulso no llegó;
+            // la API lo permite solo mientras el equipo no confirmó el envío.
+            <Button
+              variant="secondary"
+              onClick={() =>
+                void nativeOpenDrawer({ ...receipt.drawerAuthorization, accessToken: token ?? "" })
+                  .then(() => toast("Gaveta: reintento enviado."))
+                  .catch((e) => toast(String(e?.message ?? e), true))
+              }
+            >
+              Abrir gaveta otra vez
+            </Button>
+          )}
           {!receipt.offline && (
             <Button
               variant="secondary"

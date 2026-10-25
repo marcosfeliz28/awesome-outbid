@@ -151,6 +151,9 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     const hiddenResourceMessages: Record<string, string> = {
       "PATCH sales/:id/courier": "Venta no encontrada.",
       "POST courier/payouts": "Una factura no tiene un envío pendiente en esta sucursal.",
+      "POST cash-sessions/drawer-open/automatic": "La venta no pertenece a esta caja abierta, no es de los últimos 2 minutos o no recibió efectivo; la gaveta no se abrirá.",
+      "POST cash-sessions/drawer-open/automatic/sent": "No hay una apertura automática pendiente con esa referencia.",
+      "POST cash-sessions/drawer-open": "La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.",
     };
     const expectForeignDenied = (route: string, response: any) => {
       const hidden = response.status === 400 &&
@@ -183,6 +186,69 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
     expect(ownSale.status, JSON.stringify(ownSale.body)).toBe(201);
     expect((await sql.query(`SELECT "tenantId" FROM "Sale" WHERE id=$1`, [ownSale.body.id])).rows)
       .toEqual([{ tenantId: tenantB }]);
+
+    const foreignAutomaticDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open/automatic").send({ saleId: ownSale.body.id }),
+      a,
+    );
+    expectForeignDenied("POST cash-sessions/drawer-open/automatic", foreignAutomaticDrawer);
+    const ownAutomaticDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open/automatic").send({ saleId: ownSale.body.id }),
+    );
+    expect(ownAutomaticDrawer.status, JSON.stringify(ownAutomaticDrawer.body)).toBe(201);
+    expect(ownAutomaticDrawer.body.open).toBe(true);
+    // CPC-10: sin confirmación del pulso, un reintento de la misma venta.
+    const retriedAutomaticDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open/automatic").send({ saleId: ownSale.body.id }),
+    );
+    expect(retriedAutomaticDrawer.status, JSON.stringify(retriedAutomaticDrawer.body)).toBe(201);
+    expect(retriedAutomaticDrawer.body.open).toBe(true);
+    const foreignSent = await send(
+      http.post("/api/cash-sessions/drawer-open/automatic/sent").send({ auditId: retriedAutomaticDrawer.body.auditId }),
+      a,
+    );
+    expectForeignDenied("POST cash-sessions/drawer-open/automatic/sent", foreignSent);
+    const sent = await send(
+      http.post("/api/cash-sessions/drawer-open/automatic/sent").send({ auditId: retriedAutomaticDrawer.body.auditId }),
+    );
+    expect(sent.status, JSON.stringify(sent.body)).toBe(201);
+    const repeatedAutomaticDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open/automatic").send({ saleId: ownSale.body.id }),
+    );
+    expect(repeatedAutomaticDrawer.status, JSON.stringify(repeatedAutomaticDrawer.body)).toBe(201);
+    expect(repeatedAutomaticDrawer.body.open).toBe(false);
+    // Una venta de hace más de 2 minutos ya no abre la gaveta.
+    await sql.query(`UPDATE "Sale" SET "createdAt" = now() - interval '3 minutes' WHERE id=$1`, [ownSale.body.id]);
+    const oldAutomaticDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open/automatic").send({ saleId: ownSale.body.id }),
+    );
+    expect(oldAutomaticDrawer.status, JSON.stringify(oldAutomaticDrawer.body)).toBe(400);
+
+    const foreignDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id, reason: "Cambio de prueba" }),
+      a,
+    );
+    expectForeignDenied("POST cash-sessions/drawer-open", foreignDrawer);
+    const drawerWithoutReason = await send(
+      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id }),
+    );
+    expect(drawerWithoutReason.status, JSON.stringify(drawerWithoutReason.body)).toBe(400);
+    const ownDrawer = await send(
+      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id, reason: "Cambio de prueba" }),
+    );
+    expect(ownDrawer.status, JSON.stringify(ownDrawer.body)).toBe(201);
+    expect(
+      (
+        await sql.query(
+          `SELECT action,"entityId","tenantId" FROM "AuditLog" WHERE action LIKE 'cash_drawer_open%' ORDER BY action`,
+        )
+      ).rows,
+    ).toEqual([
+      { action: "cash_drawer_open", entityId: ownSale.body.id, tenantId: tenantB },
+      { action: "cash_drawer_open_auto", entityId: ownSale.body.id, tenantId: tenantB },
+      { action: "cash_drawer_open_auto", entityId: ownSale.body.id, tenantId: tenantB },
+      { action: "cash_drawer_open_auto_sent", entityId: ownSale.body.id, tenantId: tenantB },
+    ]);
 
     const voidBody = { reason: "Anulación de prueba válida" };
     const foreignVoid = await send(http.post(`/api/sales/${a.saleId}/void`).send(voidBody));

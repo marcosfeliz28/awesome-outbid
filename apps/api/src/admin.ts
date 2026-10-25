@@ -55,6 +55,7 @@ import {
   temporaryPasswordExpiry,
 } from "./password-policy";
 import { RequestRateLimitService } from "./rate-limit";
+import { applyUsdRate } from "./usd-rate";
 
 const customerSchema = z.object({
   creditLimit: amount.optional(),
@@ -607,7 +608,10 @@ export class AdminController {
       const existing = await idempotent(
         tx,
         operationId,
-        () => tx.supplierPayment.findUnique({ where: tenantUnique("operationId", operationId) }),
+        () =>
+          tx.supplierPayment.findUnique({
+            where: tenantUnique("operationId", operationId),
+          }),
         (row: any) =>
           row.branchId === actor.branchId &&
           row.createdBy === actor.id &&
@@ -793,7 +797,9 @@ export class AdminController {
     );
     // Una cotización no puede reservar ni revelar precio de un artículo de
     // otra empresa. Validar TODOS los IDs antes de guardar el JSON de líneas.
-    const requestedVariantIds = [...new Set(data.items.map((i) => i.variantId))];
+    const requestedVariantIds = [
+      ...new Set(data.items.map((i) => i.variantId)),
+    ];
     return this.db.$transaction(async (tx) => {
       if (data.customerId) await lockActiveCustomer(tx, actor, data.customerId);
       const ownVariants = await tx.variant.findMany({
@@ -883,10 +889,27 @@ export class AdminController {
       const kept =
         logo === undefined ? (before?.data as any)?.logo : logo || undefined;
       const previous = before?.data as Record<string, unknown> | undefined;
-      const data = {
+      const data: any = {
+        // Datos operativos de la actualización automática no forman parte del
+        // formulario; guardar otro ajuste no los borra.
+        ...(previous?.usdRateDate ? { usdRateDate: previous.usdRateDate } : {}),
+        ...(previous?.usdRateSource
+          ? { usdRateSource: previous.usdRateSource }
+          : {}),
+        ...(previous?.usdRateHeld
+          ? { usdRateHeld: previous.usdRateHeld }
+          : {}),
+        ...(Object.prototype.hasOwnProperty.call(
+          previous ?? {},
+          "usdRateLowMargin",
+        )
+          ? { usdRateLowMargin: previous?.usdRateLowMargin }
+          : {}),
         ...config,
         ...(previous?.onboarding ? { onboarding: previous.onboarding } : {}),
-        ...(previous?.businessType ? { businessType: previous.businessType } : {}),
+        ...(previous?.businessType
+          ? { businessType: previous.businessType }
+          : {}),
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
           : previous?.allowOfflineSales === true,
@@ -924,6 +947,27 @@ export class AdminController {
       );
       return row.data;
     });
+  }
+  // CPC-10: un salto de más de 25 % queda retenido; solo «*» lo aplica.
+  @Post("settings/usd-rate/confirm")
+  @Permit("*")
+  async confirmUsdRate(@Body() body: unknown, @CurrentUser() actor: Actor) {
+    const { rate } = parse(z.object({ rate: z.number().positive() }), body);
+    const settings = await this.db.settings.findUnique({
+      where: tenantUnique("id", actor.branchId),
+    });
+    const held = (settings?.data as any)?.usdRateHeld;
+    if (!held || Number(held.rate) !== rate)
+      bad("No hay una tasa del dólar retenida con ese valor.");
+    const result = await applyUsdRate(this.db, actor.branchId, rate, String(held.source), String(held.day), {
+      userId: actor.id,
+      confirmed: true,
+    });
+    await this.db.alert.updateMany({
+      where: { branchId: actor.branchId, key: { startsWith: `usd-rate-hold:${actor.branchId}:` }, status: { not: "resolved" } },
+      data: { status: "resolved" },
+    });
+    return result;
   }
   // Subida del logo como archivo: un JSON con una imagen de 200 KB superaría
   // el límite de 100 KB del cuerpo de la API.
@@ -1113,17 +1157,17 @@ export class AdminController {
       await enforcePlanQuota(tx as any, "branches", actor.branchId);
       return tx.user.create({
         data: {
-        name: data.name,
-        username: requestedUsername,
-        usernameKey,
-        email: (data.email || generatedEmail).toLowerCase(),
-        passwordHash: hashedPassword,
-        mustChangePassword: true,
-        passwordExpiresAt: temporaryPasswordExpiry(),
-        pinHash: hashedPin,
-        roleId: data.roleId,
-        branchId: actor.branchId,
-        cashierNumber: data.cashierNumber,
+          name: data.name,
+          username: requestedUsername,
+          usernameKey,
+          email: (data.email || generatedEmail).toLowerCase(),
+          passwordHash: hashedPassword,
+          mustChangePassword: true,
+          passwordExpiresAt: temporaryPasswordExpiry(),
+          pinHash: hashedPin,
+          roleId: data.roleId,
+          branchId: actor.branchId,
+          cashierNumber: data.cashierNumber,
         },
       });
     });

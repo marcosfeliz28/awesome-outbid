@@ -54,8 +54,8 @@ const CASH_DIFFERENCE_PRIVATE_MESSAGE =
 // ventana (30 cierres, ventas de hoy): sólo una persona las resuelve, o su
 // propio flujo (verificar la transferencia, cobrar la cuenta, resolver el
 // conflicto offline).
-/** Tipos que sólo ve administración (`*`). */
-export const ADMIN_ONLY_ALERT_TYPES = ["sale_void_request", "ncf_sequence", "plan_due"];
+/** Tipos que sólo ve administración (`*`); CPC-10: también el dólar. */
+export const ADMIN_ONLY_ALERT_TYPES = ["sale_void_request", "ncf_sequence", "plan_due", "usd_rate_change"];
 export const MANUAL_ALERT_TYPES = [
   "offline_conflict",
   "receivable",
@@ -77,6 +77,9 @@ export const MANUAL_ALERT_TYPES = [
   "sale_void_request",
   // Vencimiento del plan del producto (tenant-lifecycle.ts, PC-23).
   "plan_due",
+  // La tasa se aplica automáticamente; un salto superior al 5 % queda para
+  // revisión humana y no debe resolverse por la evaluación periódica.
+  "usd_rate_change",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,

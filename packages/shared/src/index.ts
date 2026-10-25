@@ -732,6 +732,7 @@ export const permissions: Record<string, string[]> = {
     "sale:write",
     "sale:manage",
     "cash:write",
+    "cash:drawer",
     "expense:write",
     "reports:read",
     "profit:read",

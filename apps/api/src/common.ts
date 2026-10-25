@@ -34,7 +34,7 @@ import { clientIp } from "./rate-limit";
 import { checkDatabaseTimeZone } from "./database-timezone";
 import { tenantDatabaseProxy } from "./tenant-database";
 import { DEMO_TENANT_ID, tenantScope } from "./tenant-context";
-import { TenantLifecycleService } from "./tenant-lifecycle";
+import { effectiveTenantStatus, TenantLifecycleService } from "./tenant-lifecycle";
 
 @Injectable()
 export class Database extends PrismaClient {
@@ -74,10 +74,15 @@ export class Database extends PrismaClient {
   }
   async activeTenantIds(): Promise<string[]> {
     const rows = await this.tenant.findMany({
-      where: { status: { in: ["trial", "active", "past_due"] } }, select: { id: true },
+      where: { status: { in: ["trial", "active", "past_due"] } },
+      select: { id: true, status: true, trialEndsAt: true, paidThroughAt: true, pastDueAt: true },
       orderBy: { id: "asc" },
     });
-    return rows.map((row) => row.id);
+    // CPC-8: una prueba vencida fuera de gracia ya cuenta como suspendida
+    // aunque el trabajador de ciclo de vida todavía no la haya marcado.
+    return rows
+      .filter((row) => effectiveTenantStatus(row) !== "suspended")
+      .map((row) => row.id);
   }
   async loginTenantIds(): Promise<string[]> {
     // Incluso las cuentas suspendidas pueden iniciar sesión para exportar.

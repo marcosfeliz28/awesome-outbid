@@ -25,12 +25,12 @@ function metadata(mode: string | undefined) {
 }
 
 describe("servicios exclusivos de la tienda", () => {
-  it("no registra respaldo completo ni tasa global en el producto multiempresa", () => {
+  it("no registra respaldo completo; registra tasa aislada por empresa en el producto", () => {
     const { controllers, providers } = metadata("required");
     expect(controllers).not.toContain(DriveBackupController);
     expect(providers).not.toContain(DriveBackupService);
     expect(providers).not.toContain(DriveBackupWorker);
-    expect(providers).not.toContain(UsdRateWorker);
+    expect(providers).toContain(UsdRateWorker);
   });
 
   it("los conserva en la aplicación tradicional de la tienda", () => {

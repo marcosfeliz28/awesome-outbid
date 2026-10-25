@@ -4245,6 +4245,45 @@ export function Configuration() {
                 cajero pide PIN de gerente.
               </p>
             )}
+            {query.data?.usdRateHeld?.rate && (
+              <div className="cod-hint" role="alert">
+                <p>
+                  La tasa automática del dólar saltó{" "}
+                  {query.data.usdRateHeld.percent} %: de RD${" "}
+                  {query.data.usdRateHeld.before} a RD${" "}
+                  {query.data.usdRateHeld.rate}. No se aplicó; los precios en
+                  dólares siguen con la tasa anterior. Revisa la fuente (
+                  {query.data.usdRateHeld.source}) antes de confirmarla.
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={async () => {
+                    try {
+                      await mutate("/settings/usd-rate/confirm", {
+                        rate: Number(query.data.usdRateHeld.rate),
+                      });
+                      toast("Tasa del dólar aplicada.");
+                      await client.invalidateQueries();
+                    } catch (e: any) {
+                      toast(e.message, true);
+                    }
+                  }}
+                >
+                  Confirmar y aplicar RD$ {query.data.usdRateHeld.rate}
+                </Button>
+              </div>
+            )}
+            {Number(query.data?.usdRateLowMargin?.count) > 0 && (
+              <p className="cod-hint" role="alert">
+                Atención: {query.data.usdRateLowMargin.count} precio
+                {Number(query.data.usdRateLowMargin.count) === 1
+                  ? " queda"
+                  : "s quedan"}{" "}
+                con margen menor de 15 % después de aplicar la tasa del dólar.
+                Revisa sus costos y precios.
+              </p>
+            )}
             <StoreSettings />
             <NcfSequenceSettings />
             <TelegramNotices />

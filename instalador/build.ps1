@@ -1,6 +1,7 @@
 param(
   [switch]$SoloPreparar,
-  [switch]$SinInstalarNSIS
+  [switch]$SinInstalarNSIS,
+  [switch]$ProductoLocal
 )
 
 Set-StrictMode -Version Latest
@@ -205,12 +206,22 @@ try {
   Invoke-Checked -File "pnpm" -Arguments @("install", "--frozen-lockfile") -Message "Falló pnpm install"
   if ((Get-Sha256 -Path (Join-Path $repoRoot 'pnpm-lock.yaml')) -ne $verifiedLockHash) { throw 'La instalacion frozen modifico el lock fuente.' }
   Invoke-Checked -File "pnpm" -Arguments @("db:generate") -Message "Falló prisma generate"
+  if ($ProductoLocal) { $env:VITE_PRODUCT_LOCAL_LICENSE = "required" }
   Invoke-Checked -File "pnpm" -Arguments @("build") -Message "Falló la compilación de FitStore"
 } finally { Pop-Location }
 
 if (Test-Path -LiteralPath $buildRoot) { Remove-Item -LiteralPath $buildRoot -Recurse -Force }
 New-Item -Path $payload, $downloads, $dist -ItemType Directory -Force | Out-Null
 New-Item -Path (Join-Path $payload "app"), (Join-Path $payload "runtime"), (Join-Path $payload "runtime\node"), (Join-Path $payload "scripts"), (Join-Path $payload "service"), (Join-Path $payload "assets"), (Join-Path $payload "docs"), (Join-Path $payload "tests") -ItemType Directory -Force | Out-Null
+if ($ProductoLocal) {
+  $publicKey = [string]$env:NEXORA_LICENSE_PUBLIC_KEY
+  if ($publicKey -notmatch '^-----BEGIN PUBLIC KEY-----') { throw "Falta NEXORA_LICENSE_PUBLIC_KEY (clave pública Ed25519); no se puede construir la edición local." }
+  $publicKey = $publicKey.Replace('\n', "`n")
+  $licenseKeyPath = Join-Path $payload "runtime\license-public-key.pem"
+  [IO.File]::WriteAllText($licenseKeyPath, $publicKey, [Text.UTF8Encoding]::new($false))
+  Invoke-Checked -File "node" -Arguments @("-e", "const {createPublicKey}=require('node:crypto');const {readFileSync}=require('node:fs');if(createPublicKey(readFileSync(process.argv[1])).asymmetricKeyType!=='ed25519')process.exit(1)", $licenseKeyPath) -Message "La clave pública local no es Ed25519 válida"
+  Invoke-Checked -File "node" -Arguments @((Join-Path $installerRoot "tools\license-key-guard.mjs"), $licenseKeyPath) -Message "La clave pública es la de pruebas del CI; no se puede usar en un instalador final"
+}
 
 $apiPayload = Join-Path $payload "app\api"
 Deploy-LockedApi -RepositoryRoot $repoRoot -Destination $apiPayload -VerifiedLockHash $verifiedLockHash
@@ -333,9 +344,28 @@ Copy-Item -Path (Join-Path $installerRoot "scripts\*") -Destination (Join-Path $
 Copy-Item -Path (Join-Path $installerRoot "service\*") -Destination (Join-Path $payload "service") -Recurse -Force
 Copy-Item -Path (Join-Path $installerRoot "assets\*") -Destination (Join-Path $payload "assets") -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "docs\INSTALADOR.md") -Destination (Join-Path $payload "docs\INSTALADOR.md") -Force
+if ($ProductoLocal) {
+  Copy-Item -LiteralPath (Join-Path $repoRoot "docs\producto\INSTALADOR_LOCAL.md") -Destination (Join-Path $payload "docs\INSTALADOR.md") -Force
+}
 Copy-Item -LiteralPath (Join-Path $installerRoot "tests\Windows-Smoke.ps1") -Destination (Join-Path $payload "tests\Windows-Smoke.ps1") -Force
 Copy-Item -LiteralPath (Join-Path $installerRoot "VERSION") -Destination (Join-Path $payload "VERSION") -Force
 Copy-Item -LiteralPath (Join-Path $installerRoot "THIRD_PARTY_NOTICES.txt") -Destination (Join-Path $payload "THIRD_PARTY_NOTICES.txt") -Force
+
+$nsisScript = Join-Path $installerRoot "installer\FitStore.nsi"
+if ($ProductoLocal) {
+  $productNsi = Join-Path $buildRoot "NexoraLocal.nsi"
+  Invoke-Checked -File "node" -Arguments @(
+    (Join-Path $installerRoot "tools\product-local-profile.mjs"),
+    $payload, $payload, $nsisScript, $productNsi
+  ) -Message "No se pudo aislar el instalador del producto local"
+  $nsisScript = $productNsi
+  foreach ($scriptFile in Get-ChildItem -LiteralPath (Join-Path $payload "scripts") -Filter "*.ps1" -File) {
+    $tokens = $null
+    $parseErrors = $null
+    [System.Management.Automation.Language.Parser]::ParseFile($scriptFile.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null
+    if ($parseErrors.Count) { throw "El perfil local generó PowerShell inválido en $($scriptFile.Name): $($parseErrors[0].Message)" }
+  }
+}
 
 $manifestLines = Get-ChildItem -LiteralPath $payload -Recurse -File |
   Sort-Object FullName |
@@ -375,7 +405,6 @@ $foundNsisVersion = [Version]$Matches[1]
 $minimumNsisVersion = [Version]([string]$lock.nsis.minimumVersion)
 if ($foundNsisVersion -lt $minimumNsisVersion) { throw "NSIS $foundNsisVersion es demasiado antiguo; se requiere $minimumNsisVersion o posterior." }
 
-$nsisScript = Join-Path $installerRoot "installer\FitStore.nsi"
 Invoke-Checked -File $makeNsisPath -Arguments @(
   "/DVERSION=$version",
   "/DPRODUCT_VERSION=$productVersion",
@@ -384,7 +413,8 @@ Invoke-Checked -File $makeNsisPath -Arguments @(
   "/DOUTPUT_DIR=$dist",
   $nsisScript
 ) -Message "NSIS no pudo construir el instalador"
-$setup = Join-Path $dist "Nexora-POS-Setup-$version.exe"
+$setupName = if ($ProductoLocal) { "Nexora-POS-Local-Setup-$version.exe" } else { "Nexora-POS-Setup-$version.exe" }
+$setup = Join-Path $dist $setupName
 if (-not (Test-Path -LiteralPath $setup)) { throw "NSIS terminó sin crear $setup." }
 $setupHash = Get-Sha256 -Path $setup
 "$setupHash *$(Split-Path -Leaf $setup)" | Set-Content -LiteralPath "$setup.sha256" -Encoding ASCII

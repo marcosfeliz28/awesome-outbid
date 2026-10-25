@@ -13,6 +13,7 @@ import { ApiExceptionFilter } from "./common";
 import { captureApiException, initializeApiMonitoring } from "./monitoring";
 import { PrismaClient } from "@prisma/client";
 import { safelyForcePasswordChangeAtStartup } from "./require-password-change";
+import { localLicense, localLicenseHttp } from "./local-license";
 
 config({ path: resolve(process.cwd(), "../../.env") });
 config();
@@ -43,6 +44,25 @@ async function bootstrap() {
   app.use(helmet());
   app.use(jsonBodyParser({ limit: "100kb" }));
   app.use(cookieParser());
+  const license = localLicense();
+  app.use((req: any, res: any, next: () => void) => {
+    const decision = localLicenseHttp(req.method, req.path, license, req.body);
+    if (decision.status) {
+      res.setHeader("Cache-Control", "no-store");
+      res.status(decision.status).json(decision.body);
+    }
+    else next();
+  });
+  const renewalUrl = process.env.PRODUCT_LOCAL_LICENSE_RENEW_URL;
+  if (license && renewalUrl) {
+    const renew = () =>
+      void license.renew(renewalUrl).catch(() => {
+        // Se conserva el último token firmado; la política de expiración bloquea escrituras.
+      });
+    renew();
+    const timer = setInterval(renew, 60 * 60 * 1000);
+    timer.unref();
+  }
   app.enableCors({
     origin: webOrigin || "http://localhost:5173",
     credentials: true,

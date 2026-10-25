@@ -22,3 +22,6 @@ outputs/
 # Reporte del importador: puede tener costos reales de la tienda
 revision-inventario.csv
 __pycache__/
+# Configuración de escritorio generada para el origen de cada producto.
+apps/web/src-tauri/product-build.json
+apps/web/src-tauri/capabilities/product-remote.json

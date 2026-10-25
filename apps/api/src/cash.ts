@@ -609,11 +609,140 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   };
 }
 const UUID_RE = /^[0-9a-f-]{36}$/i;
+const AUTO_DRAWER_WINDOW_MS = 2 * 60_000;
 // Cajas cerradas que lista GET /cash-sessions (además de todas las abiertas).
 const CLOSED_SESSIONS_LIMIT = 100;
 @Controller("cash-sessions")
 export class CashController {
   constructor(@Inject(Database) private db: Database) {}
+  @Post("drawer-open/automatic")
+  @Permit("sale:write")
+  async automaticDrawerOpen(
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const { saleId } = parse(z.object({ saleId: uuid }), body);
+    return this.db.$transaction(async (tx) => {
+      // Una misma venta sólo puede producir un pulso automático, incluso si
+      // la pantalla reintenta o dos llamadas llegan al mismo tiempo.
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`drawer-auto:${actor.tenantId}:${saleId}`}))::text AS locked`;
+      const exists = await tx.sale.findFirst({
+        where: {
+          id: saleId,
+          status: "completed",
+          // CPC-10: sólo la venta recién cobrada y con la caja todavía abierta.
+          createdAt: { gte: new Date(Date.now() - AUTO_DRAWER_WINDOW_MS) },
+          cashSession: { branchId: actor.branchId, userId: actor.id, closedAt: null },
+          payments: {
+            some: { method: "cash", amount: { gt: 0 }, status: { not: "rejected" } },
+          },
+        },
+        select: { id: true },
+      });
+      if (!exists)
+        bad("La venta no pertenece a esta caja abierta, no es de los últimos 2 minutos o no recibió efectivo; la gaveta no se abrirá.");
+      const previous = await tx.auditLog.findMany({
+        where: {
+          userId: actor.id,
+          action: { in: ["cash_drawer_open_auto", "cash_drawer_open_auto_sent"] },
+          entity: "sale",
+          entityId: saleId,
+        },
+        select: { id: true, action: true },
+      });
+      // «Enviado» sólo existe cuando el equipo confirmó el pulso.
+      const sent = previous.find((row: any) => row.action === "cash_drawer_open_auto_sent");
+      if (sent) return { auditId: sent.id, open: false };
+      const attempts = previous.filter((row: any) => row.action === "cash_drawer_open_auto").length;
+      if (attempts >= 2)
+        bad("La gaveta ya se intentó abrir dos veces con esta venta; pide a gerencia la apertura manual.");
+      const row = await audit(
+        tx,
+        actor,
+        "cash_drawer_open_auto",
+        "sale",
+        saleId,
+        undefined,
+        { source: "desktop", automatic: true, attempt: attempts + 1 },
+      );
+      return { auditId: row.id, open: true };
+    });
+  }
+  @Post("drawer-open/automatic/sent")
+  @Permit("sale:write")
+  async automaticDrawerSent(
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const { auditId } = parse(z.object({ auditId: uuid }), body);
+    const row = await this.db.auditLog.findFirst({
+      where: { id: auditId, userId: actor.id, action: "cash_drawer_open_auto", entity: "sale" },
+      select: { entityId: true },
+    });
+    if (!row) bad("No hay una apertura automática pendiente con esa referencia.");
+    const sent = await audit(
+      this.db,
+      actor,
+      "cash_drawer_open_auto_sent",
+      "sale",
+      row!.entityId,
+      undefined,
+      { source: "desktop", auditId },
+    );
+    return { auditId: sent.id };
+  }
+  @Post("drawer-open")
+  @Permit("cash:drawer")
+  async drawerOpen(
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const reference = parse(
+      z
+        .object({
+          saleId: uuid.optional(),
+          movementId: uuid.optional(),
+          reason: z.string().trim().min(5, "Escribe el motivo de la apertura (mínimo 5 caracteres).").max(200),
+        })
+        .refine((value) => Boolean(value.saleId) !== Boolean(value.movementId), {
+          message: "Indica una venta o un movimiento de caja.",
+        }),
+      body,
+    );
+    const entity = reference.saleId ? "sale" : "cash_movement";
+    const entityId = reference.saleId ?? reference.movementId!;
+    const exists = reference.saleId
+      ? await this.db.sale.findFirst({
+          where: {
+            id: reference.saleId,
+            status: "completed",
+            cashSession: { branchId: actor.branchId },
+            payments: {
+              some: { method: "cash", amount: { gt: 0 }, status: { not: "rejected" } },
+            },
+          },
+          select: { id: true },
+        })
+      : await this.db.cashMovement.findFirst({
+          where: {
+            id: reference.movementId,
+            session: { branchId: actor.branchId },
+          },
+          select: { id: true },
+        });
+    if (!exists)
+      bad("La referencia de caja no existe, no pertenece a esta sucursal o no permite abrir la gaveta.");
+    const row = await audit(
+      this.db,
+      actor,
+      "cash_drawer_open",
+      entity,
+      entityId,
+      undefined,
+      { source: "desktop", reason: reference.reason },
+    );
+    return { auditId: row.id };
+  }
   @Get()
   @Permit("cash:write")
   async sessions(@CurrentUser() actor: Actor) {

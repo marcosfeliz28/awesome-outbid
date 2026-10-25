@@ -55,7 +55,17 @@ export function tenantFromRequest(req: Request): string | null {
   // para el login con este encabezado. La firma decide toda operación privada.
   const header = req.headers["x-tenant-id"];
   if (process.env.PRODUCT_TENANCY !== "required" && typeof header === "string" && uuid.test(header)) return header;
-  const cookie = req.headers.cookie?.match(/(?:^|;\s*)nexora_tenant=([^;]+)/)?.[1];
+  const name = tenantCookieName();
+  const cookie = req.headers.cookie
+    ?.split(";")
+    .map((part: string) => part.trim().split("="))
+    .find(([key]: string[]) => key === name)?.[1];
   if (cookie && uuid.test(cookie)) return cookie;
   return process.env.PRODUCT_TENANCY === "required" ? null : DEMO_TENANT_ID;
 }
+
+// CPC-8: las cookies no distinguen puerto; la edición local (localhost:4473)
+// usa nombres propios para no pisar la sesión de la tienda (localhost:4173).
+const localProfile = () => process.env.PRODUCT_LOCAL_LICENSE === "required";
+export const refreshCookieName = () => (localProfile() ? "nexora_local_refresh" : "fitstore_refresh");
+export const tenantCookieName = () => (localProfile() ? "nexora_local_tenant" : "nexora_tenant");
