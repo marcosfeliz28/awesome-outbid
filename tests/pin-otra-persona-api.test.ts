@@ -208,6 +208,7 @@ describe("PIN de gerente: siempre de otra persona (dueña, 25-oct)", () => {
     const sell = (managerPin?: string) =>
       request("/sales", a.token, {
         offlineUuid: randomUUID(),
+        customerId,
         cashSessionId: a.cash.id,
         items: [{ variantId, qty: 1 }],
         globalDiscount: 50,
