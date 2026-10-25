@@ -14,7 +14,7 @@ Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si
 
 - **Qué preguntarle:** nombre de su usuario, si olvidó la contraseña o si la pantalla dice que la temporal venció; nunca preguntes cuál era la contraseña.
 - **Qué revisar:** en **Configuración → Usuarios y permisos**, confirma que sea la cuenta correcta y que siga activa.
-- **Cómo resolverlo:** administración pulsa **Restablecer contraseña**. Puede dejar que el sistema genere una temporal o escribir una válida; se muestra una sola vez. Entrégala de forma privada. Al entrar, la persona debe crear su propia contraseña y sus otras sesiones quedan cerradas.
+- **Cómo resolverlo:** administración pulsa **Restablecer contraseña**. Puede dejar que el sistema genere una temporal o escribir una válida. Solo la generada automáticamente se muestra una vez; si administración la escribe, debe entregarla directamente de forma privada. Al entrar, la persona debe crear su propia contraseña y sus otras sesiones quedan cerradas.
 
 ## 3. La cuenta está bloqueada por intentos fallidos
 
@@ -32,13 +32,13 @@ Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si
 
 - **Qué preguntarle:** en qué equipo abrió la caja, si ese equipo todavía funciona y si hay ventas locales pendientes allí.
 - **Qué revisar:** en **Caja**, confirma el nombre del equipo al que está asignada la caja y que pertenece a la misma persona.
-- **Cómo resolverlo:** cierra la caja en el equipo original o usa **Trasladar caja a este equipo**. Una vendedora necesita que gerencia escriba su PIN; el traslado queda en la bitácora. No abras otra caja para evitar el aviso.
+- **Cómo resolverlo:** cierra la caja en el equipo original o abre el diálogo **Trasladar caja a este equipo** y pulsa **Trasladar caja aquí** o **Trasladar caja**, según la pantalla. Una vendedora necesita que gerencia escriba su PIN; el traslado queda en la bitácora. No abras otra caja para evitar el aviso.
 
 ## 6. No puedo abrir la caja
 
 - **Qué preguntarle:** monto del fondo contado, mensaje exacto, si ya existe una caja abierta y si está usando su propio usuario.
 - **Qué revisar:** estado de la caja, equipo asignado y comparación entre el efectivo inicial escrito y el fondo sugerido.
-- **Cómo resolverlo:** si ya está abierta, continúa con esa caja o resuelve el traslado del caso 5. Si el fondo real es menor que el sugerido, escribe una explicación y pide que gerencia introduzca su PIN cuando Nexora lo solicite. Nunca cambies el conteo para evitar la aprobación.
+- **Cómo resolverlo:** si ya está abierta, continúa con esa caja o resuelve el traslado del caso 5. Si el fondo real es menor que el sugerido, escribe la explicación que solicita Nexora. Nunca cambies el conteo para evitar el control.
 
 ## 7. El lector no escanea
 
@@ -62,7 +62,7 @@ Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si
 
 - **Qué preguntarle:** proveedor, referencia del documento, producto, cantidad, costo, lote y vencimiento; pregunta también si la operación estaba pendiente sin conexión.
 - **Qué revisar:** en **Mercancía → ENTRADA**, confirma que cada línea tenga producto, cantidad y los datos obligatorios de lote/vencimiento. Revisa **Pendientes de este equipo** antes de repetir la entrada.
-- **Cómo resolverlo:** completa los datos reales y pulsa **Confirmar entrada** una sola vez. Si quedó pendiente, reconecta y usa **Reintentar**. Si la factura se importó desde Excel, revisa la vista previa: el archivo no sustituye la captura manual de lote y vencimiento cuando la pantalla los exige.
+- **Cómo resolverlo:** completa los datos reales y pulsa **Confirmar entrada** una sola vez. Si quedó pendiente, reconecta y deja que Nexora la sincronice; usa **Reintentar** solamente si la operación aparece en conflicto y ofrece ese botón. Si la factura se importó desde Excel, revisa la vista previa: el archivo no sustituye la captura manual de lote y vencimiento cuando la pantalla los exige.
 
 ## 11. El precio cambió o el carrito muestra información vieja
 
@@ -134,7 +134,7 @@ Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si
 
 - **Qué preguntarle:** si usa navegador o aplicación de escritorio, qué documento intentó imprimir, ancho del papel y si Windows ve la impresora.
 - **Qué revisar:** encendido, papel, cable, impresora elegida y ancho configurado. En escritorio, abre **Impresora térmica · este equipo**; en navegador, revisa la impresora en el diálogo del sistema.
-- **Cómo resolverlo:** conecta o instala la térmica, elige la impresora y repite la impresión del recibo, no la venta. Tras una venta en línea también puedes descargar **Recibo PDF** desde **Ventas**. Si el contenido se corta, corrige el ancho de ticket antes de reimprimir.
+- **Cómo resolverlo:** conecta o instala la térmica, elige la impresora y repite la impresión del recibo, no la venta. Justo después de registrar una venta en línea puedes pulsar **Recibo PDF**; más tarde, en el historial de **Ventas**, usa el botón con nombre accesible **PDF de [factura]**. Si el contenido se corta, corrige el ancho de ticket antes de reimprimir.
 
 ## 23. No deja vender sin internet
 

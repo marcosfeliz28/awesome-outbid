@@ -1,6 +1,6 @@
 # Respuestas de WhatsApp para soporte y ventas
 
-Textos listos para copiar y completar antes de enviarlos. Sustituye los campos entre corchetes con la información confirmada del cliente. Estos mensajes no se envían automáticamente.
+Textos listos para copiar y completar antes de enviarlos. Sustituye los campos entre corchetes con la información confirmada del cliente. Estos mensajes no se envían automáticamente. Envía las respuestas que confirman un pago, una aplicación, una revisión o un escalamiento solamente después de comprobar que esa acción se realizó.
 
 ## Bienvenida y orientación
 
@@ -20,7 +20,7 @@ Textos listos para copiar y completar antes de enviarlos. Sustituye los campos e
 
 7. Hola, [NOMBRE]. El monto recibido fue [MONTO]. Antes de aplicarlo, necesitamos que nos confirmes a qué empresa y concepto corresponde.
 
-8. Hola, [NOMBRE]. Para registrar un pago en efectivo de [MONTO], indícanos la fecha de entrega, [FECHA], y quién lo recibió. Lo confirmaremos con el registro correspondiente.
+8. Hola, [NOMBRE]. Para registrar un pago en efectivo de [MONTO], indícanos cuándo se entregó (fecha: [FECHA]) y quién lo recibió. Lo confirmaremos con el registro correspondiente.
 
 9. Hola, [NOMBRE]. Para revisar tu pago, envíanos únicamente el comprobante, el monto [MONTO], la fecha [FECHA] y el nombre de la empresa. No envíes claves ni datos bancarios completos.
 
@@ -60,7 +60,7 @@ Textos listos para copiar y completar antes de enviarlos. Sustituye los campos e
 
 24. Hola, [NOMBRE]. Si la impresora no imprime, confirma que esté encendida, con papel y conectada a la computadora correcta. Intenta imprimir de nuevo desde Nexora POS. Si continúa, envíanos una foto del error y el modelo de la impresora.
 
-25. Hola, [NOMBRE]. Si vendiste sin internet, conserva abierta la aplicación y no repitas la venta. Cuando regrese la conexión, deja que Nexora POS procese la cola y verifica el resultado antes de cobrar otra vez.
+25. Hola, [NOMBRE]. Si tu empresa tiene habilitadas las ventas sin conexión y vendiste sin internet, conserva abierta la aplicación y no repitas la venta. Cuando regrese la conexión, deja que Nexora POS procese la cola y verifica el resultado antes de cobrar otra vez.
 
 26. Hola, [NOMBRE]. Para investigar el problema, envíanos: qué estabas haciendo, fecha y hora aproximadas [FECHA], texto completo del error, dispositivo y navegador. Puedes adjuntar una captura, pero oculta contraseñas, PIN y datos sensibles.
 
