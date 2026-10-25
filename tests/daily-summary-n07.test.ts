@@ -8,8 +8,10 @@ describe("N-07 · resumen diario", () => {
     const at = new Date("2026-10-25T00:00:00Z"); // 24-oct, 20:00 Santo Domingo
     expect(dailySummaryDue(at, { RESEND_API_KEY: "", ANTHROPIC_API_KEY: "prueba" })).toBeNull();
     expect(dailySummaryDue(at, { RESEND_API_KEY: "prueba", ANTHROPIC_API_KEY: "" })).toBeNull();
-    expect(dailySummaryDue(new Date("2026-10-24T23:59:59Z"), { RESEND_API_KEY: "prueba", ANTHROPIC_API_KEY: "prueba" })).toBeNull();
-    expect(dailySummaryDue(at, { RESEND_API_KEY: "prueba", ANTHROPIC_API_KEY: "prueba" })).toBe("2026-10-24");
+    expect(dailySummaryDue(new Date("2026-10-24T23:59:59Z"), { NEXORA_RESUMEN_DIARIO: "enabled", RESEND_API_KEY: "prueba", ANTHROPIC_API_KEY: "prueba" })).toBeNull();
+    // Con las dos claves pero sin el interruptor no se envía nada.
+    expect(dailySummaryDue(at, { RESEND_API_KEY: "prueba", ANTHROPIC_API_KEY: "prueba" })).toBeNull();
+    expect(dailySummaryDue(at, { NEXORA_RESUMEN_DIARIO: "enabled", RESEND_API_KEY: "prueba", ANTHROPIC_API_KEY: "prueba" })).toBe("2026-10-24");
   });
 
   it("usa cifras del tablero y de la caja sin permitir que el modelo las reescriba", async () => {
@@ -50,10 +52,11 @@ describe("N-07 · resumen diario", () => {
   });
 
   it("envía una sola vez por empresa con destinatario y cifras aislados", async () => {
-    const old = { PRODUCT_TENANCY: process.env.PRODUCT_TENANCY, RESEND_API_KEY: process.env.RESEND_API_KEY,
+    const old = { PRODUCT_TENANCY: process.env.PRODUCT_TENANCY, RESEND_API_KEY: process.env.RESEND_API_KEY, NEXORA_RESUMEN_DIARIO: process.env.NEXORA_RESUMEN_DIARIO,
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY };
     process.env.PRODUCT_TENANCY = "required";
     process.env.RESEND_API_KEY = "clave-falsa";
+    process.env.NEXORA_RESUMEN_DIARIO = "enabled";
     process.env.ANTHROPIC_API_KEY = "clave-falsa";
     const rows: Array<{ id: string; tenant: string; refId: string; payload: any; status: string; attempts: number }> = [];
     const sent: Array<{ to: string; text: string }> = [];

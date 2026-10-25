@@ -262,7 +262,7 @@ export class AssistantController {
 
   @Get("usage") @Permit("authenticated")
   usage(@Req() req: ActorRequest) {
-    return usageForTenant(this.db, req.actor);
+    return usageForTenant(this.db);
   }
 
   @Post("ask") @Permit("authenticated")

@@ -16,7 +16,10 @@ export type DailyFacts = {
 };
 
 const money = (n: number) => "RD$ " + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const enabled = (env: NodeJS.ProcessEnv) => !!env.RESEND_API_KEY?.trim() && !!env.ANTHROPIC_API_KEY?.trim();
+// shortcut: interruptor global apagado por defecto (CPC-6 punto 8); falta el
+// interruptor por empresa en Ajustes antes de encenderlo para clientes.
+const enabled = (env: NodeJS.ProcessEnv) => env.NEXORA_RESUMEN_DIARIO === "enabled" &&
+  !!env.RESEND_API_KEY?.trim() && !!env.ANTHROPIC_API_KEY?.trim();
 
 /** No crea correo antes de las 20:00 locales ni sin ambas claves. */
 export function dailySummaryDue(at: Date, env: NodeJS.ProcessEnv = process.env, timeZone = "America/Santo_Domingo") {

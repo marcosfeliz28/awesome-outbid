@@ -37,6 +37,7 @@ const keys = [
   "APP_PUBLIC_URL",
   "TELEGRAM_BOT_TOKEN",
   "TELEGRAM_CHAT_ID",
+  "ANTHROPIC_API_KEY",
 ];
 
 async function port() {
@@ -117,6 +118,8 @@ it("PC-24: paquetes de IA del operador, por mes y por empresa, sin pasar del lí
       },
     );
     process.env.PRODUCT_TENANCY = "required";
+    // Clave ficticia: el 429 sale antes de llamar al modelo.
+    process.env.ANTHROPIC_API_KEY = "solo-prueba-sin-red";
     process.env.APP_PUBLIC_URL = "https://pos.example.invalid";
     delete process.env.PRODUCT_PUBLIC_REGISTRATION;
     delete process.env.PLATFORM_ADMIN_TOKEN_SHA256;
@@ -348,6 +351,16 @@ it("PC-24: paquetes de IA del operador, por mes y por empresa, sin pasar del lí
           .set("Authorization", auth)
       ).body,
     ).toMatchObject({ used: 0, packs: 300 });
+    // El asistente usa la misma cuota (plan + paquetes) y el mismo aviso.
+    expect(
+      (await http.get("/api/assistant/usage").set("Authorization", bearer)).body,
+    ).toMatchObject({ usadas: 200, limite: 200, packs: 100 });
+    const ask = await http
+      .post("/api/assistant/ask")
+      .set("Authorization", bearer)
+      .send({ messages: [{ role: "user", content: "¿Cuánto vendí hoy?" }] });
+    expect(ask.status).toBe(429);
+    expect(ask.body.message).toBe(AI_LIMIT_MESSAGE);
     // Solo se pausa la IA: el resto del sistema sigue igual.
     expect(
       (await http.get("/api/onboarding").set("Authorization", bearer)).status,

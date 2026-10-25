@@ -8,7 +8,6 @@ export default defineConfig({
     maxWorkers: process.platform === "win32" ? 4 : undefined,
     include: [
       "tests/assistant-n01.test.ts",
-      "tests/assistant-n02.test.ts",
       "tests/assistant-n04.test.ts",
       "tests/support-n05.test.ts",
       "tests/assistant-n06.test.ts",

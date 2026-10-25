@@ -187,6 +187,7 @@ it("los trabajos de fondo recorren cada empresa sin mezclar avisos, créditos ni
     await sql.query(`UPDATE "Role" SET name='admin' WHERE name='Administración'`);
     process.env.RESEND_API_KEY = "resend-falsa";
     process.env.ANTHROPIC_API_KEY = "anthropic-falsa";
+    process.env.NEXORA_RESUMEN_DIARIO = "enabled";
     const emails: string[] = [];
     const daily = new DailySummaryWorker(db);
     const day = new Date("2026-10-25T01:00:00Z");
@@ -202,6 +203,7 @@ it("los trabajos de fondo recorren cada empresa sin mezclar avisos, créditos ni
     };
     await daily.run(day, deps);
     await daily.run(day, deps);
+    delete process.env.NEXORA_RESUMEN_DIARIO;
     expect(emails).toHaveLength(2);
     expect(emails.some((email) => email.includes("cajera-0@example.invalid") && email.includes("RD$ 111.00") && !email.includes("RD$ 222.00"))).toBe(true);
     expect(emails.some((email) => email.includes("cajera-1@example.invalid") && email.includes("RD$ 222.00") && !email.includes("RD$ 111.00"))).toBe(true);
