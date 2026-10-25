@@ -200,15 +200,15 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
       http.post("/api/cash-sessions/drawer-open/automatic").send({ saleId: ownSale.body.id }),
     );
     expect(repeatedAutomaticDrawer.status, JSON.stringify(repeatedAutomaticDrawer.body)).toBe(201);
-    expect(repeatedAutomaticDrawer.body.open).toBe(false);
+    expect(repeatedAutomaticDrawer.body.open).toBe(true); // reintento dentro de 30 s
 
     const foreignDrawer = await send(
-      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id }),
+      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id, reason: "Cliente pidió cambio" }),
       a,
     );
     expectForeignDenied("POST cash-sessions/drawer-open", foreignDrawer);
     const ownDrawer = await send(
-      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id }),
+      http.post("/api/cash-sessions/drawer-open").send({ saleId: ownSale.body.id, reason: "Cliente pidió cambio" }),
     );
     expect(ownDrawer.status, JSON.stringify(ownDrawer.body)).toBe(201);
     expect(
