@@ -102,22 +102,32 @@ export class PlatformController {
     const rows = await this.registration.db.tenant.findMany({
       select: { status: true, trialEndsAt: true, paidThroughAt: true, pastDueAt: true },
     });
+    // Cada tarjeta cuenta lo mismo que su filtro en «Mis clientes»: un estado
+    // por empresa; «Por vencer» se superpone (pruebas o al día a ≤ 7 días).
     const out = { total: rows.length, alDia: 0, enPrueba: 0, porVencer: 0, atrasados: 0, suspendidos: 0 };
     for (const tenant of rows) {
       const status = effectiveTenantStatus(tenant, now);
       if (status === "suspended") out.suspendidos++;
       else if (status === "past_due") out.atrasados++;
-      else if ((tenantDueAt(tenant)?.getTime() ?? Infinity) - now.getTime() <= 7 * DAY) out.porVencer++;
       else if (status === "trial") out.enPrueba++;
       else out.alDia++;
+      if ((status === "trial" || status === "active") &&
+        (tenantDueAt({ ...tenant, status })?.getTime() ?? Infinity) - now.getTime() <= 7 * DAY) out.porVencer++;
     }
     // Mes calendario de la operadora (República Dominicana, UTC-4 sin horario de verano).
-    const [income] = await this.registration.db.$queryRaw<{ month: string; amount: string }[]>`
+    // Planes (las anulaciones restan en el mes en que se anulan) y paquetes IA.
+    const [income] = await this.registration.db.$queryRaw<{ month: string; payments: string; packs: string }[]>`
+      WITH start AS (SELECT (date_trunc('month', now() AT TIME ZONE 'America/Santo_Domingo')
+        AT TIME ZONE 'America/Santo_Domingo' AT TIME ZONE 'UTC') AS at)
       SELECT to_char(now() AT TIME ZONE 'America/Santo_Domingo', 'YYYY-MM') AS month,
-        coalesce(sum(amount), 0)::text AS amount FROM "PlatformPayment"
-      WHERE "createdAt" >= (date_trunc('month', now() AT TIME ZONE 'America/Santo_Domingo')
-        AT TIME ZONE 'America/Santo_Domingo' AT TIME ZONE 'UTC')`;
-    return { ...out, month: income.month, monthIncome: Number(income.amount) };
+        (SELECT coalesce(sum(CASE WHEN "voidsPaymentId" IS NULL THEN amount ELSE -amount END), 0)
+          FROM "PlatformPayment", start WHERE "createdAt" >= start.at)::text AS payments,
+        (SELECT coalesce(sum("priceDop"), 0) FROM "AiPackCredit", start WHERE "createdAt" >= start.at)::text AS packs`;
+    const monthPayments = Number(income.payments), monthAiPacks = Number(income.packs);
+    return {
+      ...out, month: income.month, monthPayments, monthAiPacks,
+      monthIncome: Math.round((monthPayments + monthAiPacks) * 100) / 100,
+    };
   }
 
   @Public() @Get("tenants/:slug")
@@ -139,6 +149,38 @@ export class PlatformController {
       ...row, paidUntil: paidThroughAt, status: effectiveTenantStatus({ ...row, paidThroughAt, pastDueAt }),
       admin: owner && { name: owner.name, email: owner.email, invitationPending: pending, invitationExpiresAt: pending ? owner.emailVerificationExpiresAt : null },
     };
+  }
+
+  /** La administradora olvidó su clave: enlace de un solo uso (24 h) para
+   * crear contraseña y PIN nuevos. La clave anterior deja de servir y se
+   * cierran sus sesiones. Queda en la bitácora de la empresa. */
+  @Public() @Post("tenants/:slug/password-reset")
+  async passwordReset(@Param("slug") rawSlug: string, @Req() req: Request) {
+    this.authorize(req);
+    const code = parse(slugParam, rawSlug);
+    const tenant = await this.registration.db.tenant.findUnique({ where: { slug: code }, select: { id: true } });
+    if (!tenant) throw new HttpException("Empresa no encontrada.", 404);
+    const owner = await this.registration.db.user.findFirst({
+      where: { tenantId: tenant.id, role: { name: "admin" }, active: true }, orderBy: { createdAt: "asc" },
+      select: { id: true, email: true },
+    });
+    if (!owner) throw new HttpException("La empresa no tiene una cuenta de administración activa.", 409);
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + DAY);
+    const operator = process.env.PLATFORM_OPERATOR_LABEL?.trim().slice(0, 100) || "operador-plataforma";
+    await this.registration.db.$transaction([
+      this.registration.db.user.update({ where: { id: owner.id }, data: {
+        emailVerifiedAt: null, emailVerificationHash: invitationDigest(token), emailVerificationExpiresAt: expiresAt,
+      } }),
+      this.registration.db.refreshToken.deleteMany({ where: { userId: owner.id } }),
+      this.registration.db.authSession.deleteMany({ where: { userId: owner.id } }),
+      this.registration.db.auditLog.create({ data: {
+        tenantId: tenant.id, userId: "plataforma:" + operator, action: "platform_password_reset",
+        entity: "user", entityId: owner.id, after: { email: owner.email, expiresAt: expiresAt.toISOString() },
+      } }),
+    ]);
+    console.log(`[plataforma] enlace para restablecer clave: ${code} por ${operator}`);
+    return { slug: code, email: owner.email, invitationUrl: invitationLink(req, token), expiresAt };
   }
 
   /** Enlace nuevo: el anterior deja de servir. Solo mientras la invitación no se haya aceptado. */

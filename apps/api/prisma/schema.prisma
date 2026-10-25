@@ -1431,6 +1431,9 @@ model PlatformPayment {
   paidFrom  DateTime
   paidUntil DateTime
   createdAt DateTime @default(now())
+  // Anulación (202610290002): fila nueva que apunta al pago anulado.
+  voidsPaymentId String?  @db.Uuid
+  voidReason     String?
 
   @@index([tenantId, createdAt])
 }

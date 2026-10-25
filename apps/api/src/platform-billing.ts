@@ -34,7 +34,25 @@ type TenantRow = { id: string; status: string; trialEndsAt: Date | null; paidThr
 const paymentSelect = {
   id: true, amount: true, method: true, reference: true, months: true,
   operator: true, paidFrom: true, paidUntil: true, createdAt: true,
+  voidsPaymentId: true, voidReason: true,
 } as const;
+const voidInput = z.object({ reason: z.string().trim().min(3).max(300) }).strict();
+type PaymentRow = { id: string; months: number; paidFrom: Date; createdAt: Date; voidsPaymentId: string | null };
+
+/** Pagado hasta, rehecho con los pagos vigentes en orden: cada uno extiende
+ * desde lo ya pagado o, si había vencido, desde el día en que se registró.
+ * Sin pagos vigentes vuelve a la fecha de antes del primer pago. */
+export function paidUntilFrom(rows: PaymentRow[]) {
+  const ordered = [...rows].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const voided = new Set(ordered.map(r => r.voidsPaymentId).filter(Boolean));
+  const kept = ordered.filter(r => !r.voidsPaymentId && !voided.has(r.id));
+  if (!ordered.length) return null;
+  // Base: lo pagado o de prueba antes del primer pago (su paidFrom).
+  let cursor = ordered[0].paidFrom;
+  for (const p of kept)
+    cursor = addMonths(new Date(Math.max(cursor.getTime(), p.createdAt.getTime())), p.months);
+  return cursor;
+}
 
 @Controller("platform")
 export class PlatformBillingController {
@@ -55,6 +73,18 @@ export class PlatformBillingController {
       const [tenant] = await tx.$queryRaw<TenantRow[]>`
         SELECT id, status, "trialEndsAt", "paidThroughAt" FROM "Tenant" WHERE slug=${code} FOR UPDATE`;
       if (!tenant) throw new HttpException("Empresa no encontrada.", 404);
+      // La misma transferencia anotada dos veces regalaba meses: una referencia
+      // vigente (no anulada) no se repite en la misma empresa.
+      const [same] = await tx.$queryRaw<{ createdAt: Date; amount: string }[]>`
+        SELECT p."createdAt", p.amount::text FROM "PlatformPayment" p
+        WHERE p."tenantId"=${tenant.id}::uuid AND p."voidsPaymentId" IS NULL
+          AND lower(btrim(p.reference)) = lower(btrim(${input.reference}))
+          AND NOT EXISTS (SELECT 1 FROM "PlatformPayment" v WHERE v."voidsPaymentId" = p.id)
+        LIMIT 1`;
+      if (same)
+        throw new HttpException(
+          `Ya hay un pago con la referencia «${input.reference}» (RD$${Number(same.amount).toFixed(2)}, ` +
+          `${same.createdAt.toISOString().slice(0, 10)}). Si es otro pago, usa su propia referencia.`, 409);
       const now = new Date();
       // Se extiende desde lo que quede pagado (o de prueba); si ya venció, desde hoy.
       const candidates = [now, tenant.paidThroughAt, tenant.status === "trial" ? tenant.trialEndsAt : null];
@@ -78,6 +108,39 @@ export class PlatformBillingController {
       detail: `${months} mes/es, pagado hasta ${result.tenant.paidUntil.toISOString().slice(0, 10)}`,
     });
     return response;
+  }
+
+  /** Anular un pago anotado por error: fila de anulación con motivo (nunca se
+   * edita ni borra el pago) y «pagado hasta» rehecho sin ese pago. */
+  @Public() @Post("tenants/:slug/payments/:id/void")
+  async void(@Param("slug") rawSlug: string, @Param("id") rawId: string, @Body() body: unknown, @Req() req: Request) {
+    authorizePlatform(req, this.limits);
+    const code = parse(slug, rawSlug);
+    const id = parse(z.string().uuid(), rawId);
+    const { reason } = parse(voidInput, body);
+    const operator = process.env.PLATFORM_OPERATOR_LABEL?.trim().slice(0, 100) || "operador-plataforma";
+    const result = await this.registration.db.$transaction(async tx => {
+      const [tenant] = await tx.$queryRaw<TenantRow[]>`
+        SELECT id, status, "trialEndsAt", "paidThroughAt" FROM "Tenant" WHERE slug=${code} FOR UPDATE`;
+      if (!tenant) throw new HttpException("Empresa no encontrada.", 404);
+      const rows = await tx.platformPayment.findMany({ where: { tenantId: tenant.id } });
+      const original = rows.find(r => r.id === id && !r.voidsPaymentId);
+      if (!original) throw new HttpException("Pago no encontrado.", 404);
+      if (rows.some(r => r.voidsPaymentId === id)) throw new HttpException("Ese pago ya está anulado.", 409);
+      const reversal = await tx.platformPayment.create({
+        data: {
+          tenantId: tenant.id, amount: original.amount, method: original.method, reference: original.reference,
+          months: original.months, operator, paidFrom: original.paidFrom, paidUntil: original.paidUntil,
+          voidsPaymentId: original.id, voidReason: reason,
+        },
+        select: paymentSelect,
+      });
+      const paidUntil = paidUntilFrom([...rows, { ...reversal, voidsPaymentId: original.id }]);
+      await tx.tenant.update({ where: { id: tenant.id }, data: { paidThroughAt: paidUntil } });
+      return { payment: reversal, tenant: { slug: code, paidUntil } };
+    });
+    console.log(`[plataforma] pago anulado: ${code} (${id}) por ${operator}`);
+    return result;
   }
 
   @Public() @Get("tenants/:slug/payments")
