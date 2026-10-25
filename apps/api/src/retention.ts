@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { Database } from "./common";
 import { currentTenantId, forEachActiveTenant } from "./tenant-context";
+import { localLicense } from "./local-license";
 
 // Retención de tablas que crecen sin límite (auditoría 06 D-A2/D-B12 y
 // auditoría 03 M7/M11/B1). El disco de la base en Render es de 1 GB: sin
@@ -226,6 +227,9 @@ export class RetentionWorker {
   }
   async run() {
     if (this.running) return;
+    // CPC-9: con la licencia local en solo lectura (vencida, impaga, reloj)
+    // no se borra nada; la purga sigue al renovar.
+    if (localLicense()?.state().mode === "read-only") return;
     this.running = true;
     try {
       await forEachActiveTenant(this.db, async () => {

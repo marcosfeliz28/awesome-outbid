@@ -1,4 +1,5 @@
-import { createPublicKey, verify } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { createHash, createPublicKey, verify } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -6,10 +7,15 @@ import {
   renameSync,
   writeFileSync,
 } from "node:fs";
+import { hostname } from "node:os";
 import { join } from "node:path";
 
 export type LicenseClaims = {
-  version: 1;
+  version: 2;
+  // CPC-9: la licencia va atada a la empresa y al equipo; copiar
+  // state.json y license.json a otra PC no la reutiliza.
+  tenantId: string;
+  deviceHash: string;
   installationId: string;
   issuedAt: string;
   expiresAt: string;
@@ -23,10 +29,33 @@ export type LicenseState = {
 };
 const DAY = 86400000;
 const CLOCK_TOLERANCE = 5 * 60000;
+// Una venta offline capturada bajo una licencia ya vencida se sigue pudiendo
+// subir mientras esa licencia se conserve: se guardan por vigencia, no por número.
+const HISTORY_DAYS = 90;
+const DEFAULT_TENANT = "00000000-0000-0000-0000-000000000001";
+
+/** Huella del equipo: id de la máquina del sistema operativo, con hash. */
+export function deviceHash(): string {
+  let machine = "";
+  try {
+    machine =
+      process.platform === "win32"
+        ? // shortcut: lee MachineGuid con reg.exe; sin probar fuera de Windows.
+          execFileSync("reg", ["query", "HKLM\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid"], { encoding: "utf8" })
+            .match(/MachineGuid\s+REG_SZ\s+(\S+)/)?.[1] ?? ""
+        : readFileSync("/etc/machine-id", "utf8").trim();
+  } catch {
+    machine = "";
+  }
+  return createHash("sha256").update(`nexora-device-v1|${machine || hostname()}`).digest("hex");
+}
 // Fixed serialization; signing JSON with caller-selected key order is ambiguous.
 export function licensePayload(c: LicenseClaims) {
   return JSON.stringify([
+    "nexora-local-license",
     c.version,
+    c.tenantId,
+    c.deviceHash,
     c.installationId,
     c.issuedAt,
     c.expiresAt,
@@ -51,6 +80,8 @@ export class LocalLicense {
       directory: string;
       publicKey: string;
       installationId: string;
+      tenantId?: string;
+      deviceHash?: string;
       now?: () => number;
     },
   ) {
@@ -67,8 +98,10 @@ export class LocalLicense {
     const { claims: c, signature } = value as SignedLicense;
     if (
       !c ||
-      c.version !== 1 ||
+      c.version !== 2 ||
       c.installationId !== this.options.installationId ||
+      c.tenantId !== (this.options.tenantId ?? DEFAULT_TENANT) ||
+      c.deviceHash !== (this.options.deviceHash ?? deviceHash()) ||
       !["active", "unpaid"].includes(c.status) ||
       typeof signature !== "string" ||
       ![c.issuedAt, c.expiresAt].every(
@@ -104,9 +137,8 @@ export class LocalLicense {
   install(value: unknown) {
     const token = this.validate(value);
     const now = (this.options.now ?? Date.now)();
-    const previous = this.state(now);
-    if (previous.reason === "clock-backwards")
-      throw new Error("El reloj del equipo está atrasado.");
+    // CPC-9: no se aplica el chequeo de reloj aquí. Una licencia firmada y más
+    // nueva es la forma de salir de un reloj que estuvo adelantado.
     const history = this.tokens();
     if (history.length) {
       const oldClaims = history[history.length - 1].claims;
@@ -114,9 +146,15 @@ export class LocalLicense {
         throw new Error("La renovación debe ser más reciente.");
     }
     if (Date.parse(token.claims.issuedAt) > now + CLOCK_TOLERANCE)
-      throw new Error("La licencia viene del futuro.");
-    persist(this.tokenPath, [...history, token].slice(-60));
-    this.advanceClock(now);
+      throw new Error("La licencia viene del futuro. Revisa la hora del equipo.");
+    const keepFrom = now - HISTORY_DAYS * DAY;
+    persist(this.tokenPath, [
+      ...history.filter(({ claims }) => Date.parse(claims.expiresAt) >= keepFrom),
+      token,
+    ]);
+    persist(this.clockPath, {
+      lastSeen: Math.max(now, Date.parse(token.claims.issuedAt)),
+    });
   }
   private advanceClock(now: number) {
     const old = readJson(this.clockPath) as { lastSeen?: number } | undefined;
@@ -193,7 +231,11 @@ export class LocalLicense {
         "content-type": "application/json",
         authorization: `Bearer ${renewalToken}`,
       },
-      body: JSON.stringify({ installationId: this.options.installationId }),
+      body: JSON.stringify({
+        installationId: this.options.installationId,
+        tenantId: this.options.tenantId ?? DEFAULT_TENANT,
+        deviceHash: this.options.deviceHash ?? deviceHash(),
+      }),
       signal: AbortSignal.timeout(10000),
     });
     if (!response.ok) throw new Error("No se pudo renovar la licencia.");
@@ -213,7 +255,12 @@ export function localLicense() {
   const installationId = process.env.PRODUCT_LOCAL_INSTALLATION_ID;
   if (!directory || !publicKey || !installationId)
     throw new Error("Falta configurar la licencia de Nexora POS Local.");
-  configured = new LocalLicense({ directory, publicKey, installationId });
+  configured = new LocalLicense({
+    directory,
+    publicKey,
+    installationId,
+    tenantId: process.env.PRODUCT_LOCAL_TENANT_ID || DEFAULT_TENANT,
+  });
   return configured;
 }
 
@@ -224,6 +271,8 @@ export function localLicenseHttp(
   body?: unknown,
 ) {
   if (!license) return { status: 0 };
+  // Express no distingue mayúsculas ni barras repetidas; el guardia tampoco.
+  path = path.toLowerCase().replace(/\/{2,}/g, "/");
   if (method === "GET" && path === "/api/local-license/status")
     return { status: 200, body: license.state() };
   if (
@@ -239,21 +288,31 @@ export function localLicenseHttp(
     state.mode === "write"
   ) {
     const sales = (body as { sales?: unknown })?.sales;
-    if (
-      !Array.isArray(sales) ||
-      sales.some((item) => {
-        const capturedAt = (item as { capturedAt?: unknown })?.capturedAt;
-        return (
-          typeof capturedAt !== "string" ||
-          !license.canWrite(undefined, Date.parse(capturedAt))
-        );
-      })
-    )
+    if (!Array.isArray(sales))
+      return { status: 400, body: { message: "Lote de ventas inválido." } };
+    const outside = (item: unknown) => {
+      const capturedAt = (item as { capturedAt?: unknown })?.capturedAt;
+      return (
+        typeof capturedAt !== "string" ||
+        !license.canWrite(undefined, Date.parse(capturedAt))
+      );
+    };
+    // CPC-9: una venta fuera de vigencia no atasca el lote. Esa queda en
+    // revisión («conflict») y las demás se reintentan sin ella.
+    if (sales.some(outside))
       return {
-        status: 423,
+        status: 200,
         body: {
-          message:
-            "La cola contiene una venta capturada fuera de la vigencia de la licencia.",
+          results: sales.map((item) => ({
+            offlineUuid: (item as { offlineUuid?: unknown })?.offlineUuid,
+            ...(outside(item)
+              ? {
+                  status: "conflict",
+                  message:
+                    "Venta capturada fuera de la vigencia de la licencia; revísala antes de subirla.",
+                }
+              : { status: "retry" }),
+          })),
         },
       };
   }

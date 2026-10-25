@@ -220,6 +220,7 @@ if ($ProductoLocal) {
   $licenseKeyPath = Join-Path $payload "runtime\license-public-key.pem"
   [IO.File]::WriteAllText($licenseKeyPath, $publicKey, [Text.UTF8Encoding]::new($false))
   Invoke-Checked -File "node" -Arguments @("-e", "const {createPublicKey}=require('node:crypto');const {readFileSync}=require('node:fs');if(createPublicKey(readFileSync(process.argv[1])).asymmetricKeyType!=='ed25519')process.exit(1)", $licenseKeyPath) -Message "La clave pública local no es Ed25519 válida"
+  Invoke-Checked -File "node" -Arguments @((Join-Path $installerRoot "tools\license-key-guard.mjs"), $licenseKeyPath) -Message "La clave pública es la de pruebas del CI; no se puede usar en un instalador final"
 }
 
 $apiPayload = Join-Path $payload "app\api"

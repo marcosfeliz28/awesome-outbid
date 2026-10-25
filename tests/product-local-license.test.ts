@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { generateKeyPairSync, sign } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -16,8 +16,12 @@ const publicKey = keys.publicKey
   .export({ type: "spki", format: "pem" })
   .toString();
 const base = Date.parse("2026-10-24T12:00:00Z");
+const TENANT = "00000000-0000-0000-0000-000000000007";
+const DEVICE = "a".repeat(64);
 const claims = (overrides: Partial<LicenseClaims> = {}): LicenseClaims => ({
-  version: 1,
+  version: 2,
+  tenantId: TENANT,
+  deviceHash: DEVICE,
   installationId: "test-installation",
   issuedAt: new Date(base).toISOString(),
   expiresAt: new Date(base + 7 * 86400000).toISOString(),
@@ -37,6 +41,8 @@ function fixture() {
     directory: dir,
     publicKey,
     installationId: "test-installation",
+    tenantId: TENANT,
+    deviceHash: DEVICE,
     now: () => base,
   });
   return {
@@ -79,6 +85,8 @@ describe("PC-19 licencia local", () => {
         directory: f.dir,
         publicKey,
         installationId: "test-installation",
+        tenantId: TENANT,
+        deviceHash: DEVICE,
         now: () => base + 7 * 86400000,
       });
       renewed.install(
@@ -105,6 +113,8 @@ describe("PC-19 licencia local", () => {
         directory: f.dir,
         publicKey,
         installationId: "test-installation",
+        tenantId: TENANT,
+        deviceHash: DEVICE,
         now: () => base,
       });
       expect(restarted.state().reason).toBe("clock-backwards");
@@ -131,10 +141,10 @@ describe("PC-19 licencia local", () => {
     try {
       f.license.install(token(claims()));
       const unpaidAt = base + 86400000;
-      const unpaid = new LocalLicense({ directory: f.dir, publicKey, installationId: "test-installation", now: () => unpaidAt });
+      const unpaid = new LocalLicense({ directory: f.dir, publicKey, installationId: "test-installation", tenantId: TENANT, deviceHash: DEVICE, now: () => unpaidAt });
       unpaid.install(token(claims({ issuedAt: new Date(unpaidAt).toISOString(), status: "unpaid" })));
       const renewedAt = base + 2 * 86400000;
-      const renewed = new LocalLicense({ directory: f.dir, publicKey, installationId: "test-installation", now: () => renewedAt });
+      const renewed = new LocalLicense({ directory: f.dir, publicKey, installationId: "test-installation", tenantId: TENANT, deviceHash: DEVICE, now: () => renewedAt });
       renewed.install(token(claims({ issuedAt: new Date(renewedAt).toISOString() })));
       expect(renewed.canWrite(renewedAt, base + 12 * 3600000)).toBe(true);
       expect(renewed.canWrite(renewedAt, unpaidAt + 12 * 3600000)).toBe(false);
@@ -202,6 +212,8 @@ describe("PC-19 licencia local", () => {
         directory: f.dir,
         publicKey,
         installationId: "test-installation",
+        tenantId: TENANT,
+        deviceHash: DEVICE,
         now: () => base + 8 * 86400000,
       });
       renewed.install(
@@ -219,10 +231,10 @@ describe("PC-19 licencia local", () => {
       expect(
         localLicenseHttp("POST", "/api/sales/sync/", renewed, {
           sales: [
-            { capturedAt: new Date(base + 7 * 86400000 + 1000).toISOString() },
+            { offlineUuid: "fuera", capturedAt: new Date(base + 7 * 86400000 + 1000).toISOString() },
           ],
-        }).status,
-      ).toBe(423);
+        }).body,
+      ).toEqual({ results: [expect.objectContaining({ offlineUuid: "fuera", status: "conflict" })] });
       expect(
         localLicenseHttp("POST", "/api/sales/sync", renewed, {
           sales: [{ capturedAt: new Date(base + 86400000).toISOString() }],
@@ -265,5 +277,132 @@ describe("PC-19 licencia local", () => {
       else process.env.PRODUCT_LOCAL_LICENSE_RENEW_TOKEN = previous;
       f.cleanup();
     }
+  });
+
+  it("CPC-9: la licencia de otra empresa o de otro equipo no sirve", () => {
+    const f = fixture();
+    try {
+      expect(() => f.license.install(token(claims({ tenantId: "00000000-0000-0000-0000-000000000008" })))).toThrow();
+      expect(() => f.license.install(token(claims({ deviceHash: "b".repeat(64) })))).toThrow();
+      // La firma cubre empresa y equipo: no se pueden cambiar después.
+      expect(() => f.license.install({ ...token(claims()), claims: claims({ deviceHash: "b".repeat(64) }) })).toThrow();
+      f.license.install(token(claims()));
+      const copied = new LocalLicense({
+        directory: f.dir, publicKey, installationId: "test-installation",
+        tenantId: TENANT, deviceHash: "c".repeat(64), now: () => base,
+      });
+      expect(copied.state()).toMatchObject({ mode: "read-only", reason: "invalid" });
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  it("CPC-9: un reloj adelantado y luego corregido se recupera al renovar", () => {
+    const f = fixture();
+    try {
+      f.license.install(token(claims()));
+      expect(f.license.state(Date.parse("2099-01-01T00:00:00Z")).mode).toBe("read-only");
+      const fixedAt = base + 3600000;
+      const fixed = new LocalLicense({
+        directory: f.dir, publicKey, installationId: "test-installation",
+        tenantId: TENANT, deviceHash: DEVICE, now: () => fixedAt,
+      });
+      expect(fixed.state().reason).toBe("clock-backwards");
+      fixed.install(token(claims({
+        issuedAt: new Date(fixedAt).toISOString(),
+        expiresAt: new Date(fixedAt + 7 * 86400000).toISOString(),
+      })));
+      expect(fixed.state().mode).toBe("write");
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  it("CPC-9: conserva las licencias por vigencia, no solo las 60 últimas", () => {
+    const f = fixture();
+    try {
+      let now = base;
+      for (let hour = 0; hour < 80; hour++) {
+        now = base + hour * 3600000;
+        const at = now;
+        new LocalLicense({
+          directory: f.dir, publicKey, installationId: "test-installation",
+          tenantId: TENANT, deviceHash: DEVICE, now: () => at,
+        }).install(token(claims({
+          issuedAt: new Date(at).toISOString(),
+          expiresAt: new Date(at + 7 * 86400000).toISOString(),
+        })));
+      }
+      // Venta capturada en la primera hora, bajo la primera licencia.
+      expect(f.license.canWrite(now, base + 60000)).toBe(true);
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  it("CPC-9: una venta mala no atasca el lote y la ruta no se salta con mayúsculas", () => {
+    const f = fixture();
+    try {
+      f.license.install(token(claims()));
+      const result = localLicenseHttp("POST", "/API//Sales/Sync", f.license, {
+        sales: [
+          { offlineUuid: "buena", capturedAt: new Date(base + 1000).toISOString() },
+          { offlineUuid: "mala", capturedAt: new Date(base - 86400000).toISOString() },
+        ],
+      });
+      expect(result).toEqual({
+        status: 200,
+        body: { results: [
+          { offlineUuid: "buena", status: "retry" },
+          expect.objectContaining({ offlineUuid: "mala", status: "conflict" }),
+        ] },
+      });
+      // Sin la venta mala, el lote pasa al controlador.
+      expect(localLicenseHttp("POST", "/api/sales/sync", f.license, {
+        sales: [{ offlineUuid: "buena", capturedAt: new Date(base + 1000).toISOString() }],
+      }).status).toBe(0);
+      const unpaid = fixture();
+      try {
+        unpaid.license.install(token(claims({ status: "unpaid" })));
+        expect(localLicenseHttp("POST", "/API/SALES", unpaid.license).status).toBe(423);
+        expect(localLicenseHttp("GET", "/API/local-license/STATUS", unpaid.license).status).toBe(200);
+      } finally {
+        unpaid.cleanup();
+      }
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  it("CPC-9: la retención no borra nada con la licencia en solo lectura", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pc19-ret-"));
+    const saved = { ...process.env };
+    Object.assign(process.env, {
+      PRODUCT_LOCAL_LICENSE: "required",
+      PRODUCT_LOCAL_LICENSE_DIR: dir,
+      PRODUCT_LOCAL_LICENSE_PUBLIC_KEY: publicKey,
+      PRODUCT_LOCAL_INSTALLATION_ID: "test-installation",
+    });
+    try {
+      const { RetentionWorker } = await import("../apps/api/src/retention");
+      const touched = vi.fn();
+      const db = new Proxy({}, { get: () => { touched(); return new Proxy(() => undefined, { get: () => touched, apply: touched }); } });
+      await new RetentionWorker(db as never).run();
+      expect(touched).not.toHaveBeenCalled();
+    } finally {
+      process.env = saved;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("CPC-9: el instalador final rechaza la clave pública de pruebas del CI", async () => {
+    const { rejectsTestKey, CI_LICENSE_KEY } = await import("../instalador/tools/license-key-guard.mjs");
+    const ci = readFileSync(".github/workflows/ci.yml", "utf8");
+    expect(ci).toContain(CI_LICENSE_KEY);
+    const pem = `-----BEGIN PUBLIC KEY-----\n${CI_LICENSE_KEY}\n-----END PUBLIC KEY-----\n`;
+    expect(rejectsTestKey(pem, {})).toBe(true);
+    expect(rejectsTestKey(pem, { CI: "true" })).toBe(false);
+    expect(rejectsTestKey(publicKey, {})).toBe(false);
+    expect(readFileSync("instalador/build.ps1", "utf8")).toContain("license-key-guard.mjs");
   });
 });
