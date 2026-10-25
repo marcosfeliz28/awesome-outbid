@@ -494,10 +494,8 @@ export class AlertEngine {
             `${label(v)} · ${lot.lotNumber}: ${days < 0 ? "vencido" : `vence en ${days} días`}.`,
           );
       }
-      const netMargin = margin(
-        Number(v.price) / (1 + Number(v.product.taxRate) / 100),
-        cost,
-      );
+      // Margen de la dueña: sin restar ITBIS (revisión 25-oct #8).
+      const netMargin = margin(v.price, cost);
       if (netMargin < (config?.lowMargin ?? 15))
         add(
           "margin:" + v.id,
@@ -530,7 +528,7 @@ export class AlertEngine {
           margin: netMargin,
           suggestedDiscount: Math.min(
             daysToExpiry !== null && daysToExpiry < 30 ? 25 : 15,
-            safeDiscount(Number(v.price), cost, Number(v.product.taxRate)),
+            safeDiscount(Number(v.price), cost, config?.lowMargin ?? 15),
           ),
           score: clearanceScore(daysIdle, daysToExpiry, stock, cost),
         });
@@ -604,11 +602,7 @@ export class AlertEngine {
             productId: variant.productId,
             imageUrl: variant.product.imageUrl,
             category: variant.product.category.name,
-            margin: margin(
-              Number(variant.price) /
-                (1 + Number(variant.product.taxRate) / 100),
-              Number(variant.costAvg),
-            ),
+            margin: margin(variant.price, variant.costAvg),
             name: variant.product.name,
             sku: variant.sku,
             stock: Number(variant.stock),
@@ -622,7 +616,7 @@ export class AlertEngine {
             suggestedDiscount: safeDiscount(
               Number(variant.price),
               Number(variant.costAvg),
-              Number(variant.product.taxRate),
+              config?.lowMargin ?? 15,
             ),
           });
       }

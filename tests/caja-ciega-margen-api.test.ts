@@ -294,3 +294,32 @@ describe("#7 devolución en efectivo desde la caja de otra persona", () => {
     expect(own.status, JSON.stringify(own.body)).toBe(201);
   });
 });
+
+describe("#8 margen: (precio − costo)/precio sin restar ITBIS", () => {
+  it("tablero, utilidad por producto y alerta usan la misma fórmula", async () => {
+    // Precio 1,180 con ITBIS 18 %, costo 900: margen de la dueña 23.73 %
+    // (restando el ITBIS saldría 10 %).
+    const p = await product(1180, 900, 18);
+    const sale = await sell(
+      manager,
+      [{ method: "cash", amount: 1180 }],
+      {},
+      p.variants[0].id,
+    );
+    const day = "2020-01-15";
+    await db.sale.update({
+      where: { id: sale.id },
+      data: { createdAt: new Date(day + "T16:00:00Z") },
+    });
+    const dash = await ok(`/dashboard/summary?from=${day}&to=${day}`, owner);
+    expect(dash.margin).toBe(23.73);
+    const report = await ok(`/reports/profit?from=${day}&to=${day}`, owner);
+    const row = report.rows.find((r: any) => r.Producto === p.name);
+    expect(row.Margen).toBe(23.73);
+    await ok("/alerts/evaluate", owner, {});
+    const alert = await db.alert.findUnique({
+      where: { key: "margin:" + p.variants[0].id },
+    });
+    expect(alert?.status ?? "resolved").toBe("resolved");
+  });
+});

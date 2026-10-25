@@ -480,8 +480,10 @@ export const receivableApprovalMessage = (
 };
 export const grossProfit = (net: number, cost: number) =>
   money(d(net).minus(cost));
-export const margin = (net: number, cost: number) =>
-  net <= 0 ? 0 : money(d(net).minus(cost).div(net).times(100));
+// Margen de la dueña, la única fórmula del sistema: (precio − costo)/precio en
+// %, con el precio tal como se cobra, SIN restar ITBIS (revisión 25-oct #8).
+export const margin = (price: Decimal.Value, cost: Decimal.Value) =>
+  d(price).lte(0) ? 0 : money(d(price).minus(cost).div(price).times(100));
 export const markup = (price: number, cost: number) =>
   cost <= 0 ? 0 : money(d(price).minus(cost).div(cost).times(100));
 export const netProfit = (
@@ -526,11 +528,24 @@ export const clearanceScore = (
       (daysToExpiry === null ? 0 : Math.max(0, 60 - daysToExpiry) * 2) +
       Math.min((stock * cost) / 1000, 40),
   );
-export const safeDiscount = (price: number, cost: number, taxRate = 18) =>
-  Math.max(
-    0,
-    Math.min(50, Math.floor(margin(price / (1 + taxRate / 100), cost))),
-  );
+// Mayor descuento (%, hasta 50) que deja el margen de la dueña en `minMargin`:
+// precio × (1 − x) ≥ costo / (1 − minMargin).
+export const safeDiscount = (price: number, cost: number, minMargin = 15) =>
+  price <= 0
+    ? 0
+    : Math.max(
+        0,
+        Math.min(
+          50,
+          d(1)
+            .minus(
+              d(cost).div(d(price).times(d(1).minus(d(minMargin).div(100)))),
+            )
+            .times(100)
+            .floor()
+            .toNumber(),
+        ),
+      );
 export const saleSchema = z.object({
   offlineUuid: z.string().uuid(),
   capturedAt: z.string().datetime().optional(),
