@@ -19,6 +19,9 @@ Fuentes: `PROPUESTA_ADMIN_GEMINI.md`, `ORDEN_REDISENO_ADMIN.md` y los 3 estilos 
 
 **La caja de las cajeras no cambia en ninguna fase.**
 
+## Cambio de responsable (25-oct, 01:45 UTC)
+La fase A la construye **ChatGPT nube** (la PC no respondía), en la rama **`chatgpt-nube/tablero-admin-a`**, desde `origin/nexora-cloud`. ChatGPT nube **no** hace los arreglos de CPC-10 (gaveta y dólar): siguen siendo de ChatGPT PC en `nexora-chatgpt-pc-producto-fixes`. Todo lo demás de esta orden vale igual para ChatGPT nube.
+
 ## Orden para ChatGPT PC: construir la fase A
 
 **Rama:** `chatgpt-pc/tablero-admin-a`, creada desde `origin/nexora-cloud`. El tablero sirve a la tienda y al producto; Claude nube mezcla hacia los dos.
