@@ -58,6 +58,10 @@ describe("LiquidityMap", () => {
     expect(html).toContain("Créditos");
     expect(html).toContain("no es saldo bancario");
     expect(html).toContain("No sumes estos bolsillos");
+    expect(html).toContain(
+      "Los abonos por transferencia pendientes se separan de la cuenta por cobrar",
+    );
+    expect(html).not.toContain("siguen incluidos en la cuenta por cobrar");
     expect(html.match(/RD\$/g)).toHaveLength(7);
   });
 

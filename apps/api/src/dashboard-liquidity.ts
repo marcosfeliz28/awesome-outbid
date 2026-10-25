@@ -28,38 +28,43 @@ export class DashboardLiquidityController {
       gte: new Date(day + "T00:00:00-04:00"),
       lte: new Date(day + "T23:59:59.999-04:00"),
     };
-    const openSessions = await this.db.cashSession.findMany({
-      where: { branchId: actor.branchId, closedAt: null },
-      select: {
-        id: true,
-        openingAmount: true,
-        openedAt: true,
-        closedAt: true,
-      },
-    });
+    // Todos los bolsillos deben representar el mismo instante lógico. Con
+    // READ COMMITTED una verificación concurrente podía quedar pendiente en
+    // una consulta y confirmada en otra dentro de la misma respuesta.
+    return this.db.$transaction(
+      async (snapshot) => {
+        const openSessions = await snapshot.cashSession.findMany({
+          where: { branchId: actor.branchId, closedAt: null },
+          select: {
+            id: true,
+            openingAmount: true,
+            openedAt: true,
+            closedAt: true,
+          },
+        });
 
-    const [expectedBySession, verifiedLogs, pending, receivables] =
-      await Promise.all([
-        cashExpectedMany(this.db, openSessions),
-        this.db.auditLog.findMany({
-          where: {
-            branchId: actor.branchId,
-            action: "verify",
-            entity: "payment",
-            createdAt: today,
-          },
-          select: { entityId: true },
-        }),
-        // Es una cola actual, no un saldo bancario ni un histórico del día.
-        this.db.payment.aggregate({
-          where: {
-            method: "transfer",
-            status: "pending_verification",
-            sale: { branchId: actor.branchId, status: "completed" },
-          },
-          _sum: { amount: true },
-        }),
-        this.db.$queryRaw<ReceivableRow[]>`
+        const [expectedBySession, verifiedLogs, pending, receivables] =
+          await Promise.all([
+            cashExpectedMany(snapshot, openSessions),
+            snapshot.auditLog.findMany({
+              where: {
+                branchId: actor.branchId,
+                action: "verify",
+                entity: "payment",
+                createdAt: today,
+              },
+              select: { entityId: true },
+            }),
+            // Es una cola actual, no un saldo bancario ni un histórico del día.
+            snapshot.payment.aggregate({
+              where: {
+                method: "transfer",
+                status: "pending_verification",
+                sale: { branchId: actor.branchId, status: "completed" },
+              },
+              _sum: { amount: true },
+            }),
+            snapshot.$queryRaw<ReceivableRow[]>`
           WITH outstanding AS (
             SELECT
               s.*,
@@ -108,71 +113,81 @@ export class DashboardLiquidityController {
             ) THEN s."availableBalance" ELSE 0 END), 0) AS unclassified
           FROM outstanding s
         `,
-      ]);
+          ]);
 
-    const verifiedIds = [...new Set(verifiedLogs.map((row) => row.entityId))];
-    const [verified, ownerReceived] = await Promise.all([
-      verifiedIds.length
-        ? this.db.payment.aggregate({
+        const verifiedIds = [
+          ...new Set(verifiedLogs.map((row) => row.entityId)),
+        ];
+        const [verified, ownerReceived] = await Promise.all([
+          verifiedIds.length
+            ? snapshot.payment.aggregate({
+                where: {
+                  id: { in: verifiedIds },
+                  method: "transfer",
+                  status: "ok",
+                  sale: { branchId: actor.branchId, status: "completed" },
+                },
+                _sum: { amount: true },
+              })
+            : Promise.resolve({ _sum: { amount: null } }),
+          snapshot.payment.aggregate({
             where: {
-              id: { in: verifiedIds },
-              method: "transfer",
+              entryType: "installment",
+              method: "cash",
+              cashSessionId: null,
               status: "ok",
+              reference: { startsWith: "Recibido por la dueña" },
+              createdAt: today,
               sale: { branchId: actor.branchId, status: "completed" },
             },
             _sum: { amount: true },
-          })
-        : Promise.resolve({ _sum: { amount: null } }),
-      this.db.payment.aggregate({
-        where: {
-          entryType: "installment",
-          method: "cash",
-          cashSessionId: null,
-          status: "ok",
-          reference: { startsWith: "Recibido por la dueña" },
-          createdAt: today,
-          sale: { branchId: actor.branchId, status: "completed" },
-        },
-        _sum: { amount: true },
-      }),
-    ]);
+          }),
+        ]);
 
-    const drawers = [...expectedBySession.values()].reduce(
-      (total, expected) => total.plus(expected.cash),
-      d(0),
-    );
-    const balances = receivables[0] ?? {
-      cod: null,
-      credit: null,
-      unclassified: null,
-    };
+        const drawers = [...expectedBySession.values()].reduce(
+          (total, expected) => total.plus(expected.cash),
+          d(0),
+        );
+        const balances = receivables[0] ?? {
+          cod: null,
+          credit: null,
+          unclassified: null,
+        };
 
-    return {
-      asOf: new Date().toISOString(),
-      pockets: {
-        drawers: {
-          amount: fixedMoney(drawers),
-          openRegisters: openSessions.length,
-          basis: "Efectivo esperado en cajas abiertas, al momento",
-        },
-        owner: {
-          amount: fixedMoney(ownerReceived._sum.amount),
-          basis: "Efectivo recibido por la dueña hoy; no es un saldo",
-        },
-        banks: {
-          verified: fixedMoney(verified._sum.amount),
-          pending: fixedMoney(pending._sum.amount),
-          verifiedBasis:
-            "Transferencias confirmadas mediante revisión hoy; no es saldo bancario",
-          pendingBasis: "Transferencias por verificar pendientes actualmente",
-        },
-        street: {
-          cod: fixedMoney(balances.cod),
-          credit: fixedMoney(balances.credit),
-          unclassified: fixedMoney(balances.unclassified),
-          basis: "Cuentas por cobrar pendientes actualmente",
-        },
+        return {
+          asOf: new Date().toISOString(),
+          pockets: {
+            drawers: {
+              amount: fixedMoney(drawers),
+              openRegisters: openSessions.length,
+              basis: "Efectivo esperado en cajas abiertas, al momento",
+            },
+            owner: {
+              amount: fixedMoney(ownerReceived._sum.amount),
+              basis: "Efectivo recibido por la dueña hoy; no es un saldo",
+            },
+            banks: {
+              verified: fixedMoney(verified._sum.amount),
+              pending: fixedMoney(pending._sum.amount),
+              verifiedBasis:
+                "Transferencias confirmadas mediante revisión hoy; no es saldo bancario",
+              pendingBasis:
+                "Transferencias por verificar pendientes actualmente",
+            },
+            street: {
+              cod: fixedMoney(balances.cod),
+              credit: fixedMoney(balances.credit),
+              unclassified: fixedMoney(balances.unclassified),
+              basis: "Cuentas por cobrar pendientes actualmente",
+            },
+          },
+        };
       },
-    };
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+        maxWait: 5_000,
+        timeout: 15_000,
+      },
+    );
   }
 }

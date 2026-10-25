@@ -162,8 +162,8 @@ export function LiquidityMap({
 
       {data && (
         <p className="liquidity-note">
-          No sumes estos bolsillos como un total: algunos abonos por
-          transferencia pendientes siguen incluidos en la cuenta por cobrar.
+          No sumes estos bolsillos como un total. Los abonos por transferencia
+          pendientes se separan de la cuenta por cobrar.
         </p>
       )}
     </article>

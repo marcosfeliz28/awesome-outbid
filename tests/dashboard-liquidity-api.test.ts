@@ -26,7 +26,7 @@ describe("GET /api/dashboard/liquidity", () => {
       .mockResolvedValueOnce({ _sum: { amount: decimal("30.00") } })
       .mockResolvedValueOnce({ _sum: { amount: decimal("70.50") } })
       .mockResolvedValueOnce({ _sum: { amount: decimal("25.00") } });
-    const db = {
+    const snapshot = {
       cashSession: {
         findMany: vi.fn().mockResolvedValue([
           {
@@ -84,6 +84,11 @@ describe("GET /api/dashboard/liquidity", () => {
         },
       ]),
     };
+    const db = {
+      $transaction: vi.fn(async (read: (client: typeof snapshot) => unknown) =>
+        read(snapshot),
+      ),
+    };
 
     const result = await new DashboardLiquidityController(
       db as never,
@@ -114,9 +119,14 @@ describe("GET /api/dashboard/liquidity", () => {
         basis: "Cuentas por cobrar pendientes actualmente",
       },
     });
-    expect(db.cashSession.findMany).toHaveBeenCalledWith({
+    expect(snapshot.cashSession.findMany).toHaveBeenCalledWith({
       where: { branchId: "sucursal-a", closedAt: null },
       select: expect.any(Object),
+    });
+    expect(db.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+      maxWait: 5_000,
+      timeout: 15_000,
     });
     expect(paymentAggregate.mock.calls[0][0].where).toEqual({
       method: "transfer",
