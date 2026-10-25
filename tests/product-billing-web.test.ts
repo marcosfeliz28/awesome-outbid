@@ -11,7 +11,7 @@ const { createElement } = webRequire("react") as typeof import("react");
 const { renderToStaticMarkup } = webRequire("react-dom/server") as typeof import("react-dom/server");
 const renderWithProviders = (providers: { kind: "test" | "bank_transfer"; instructions: { bank: string; account: string; holder: string } | null }[]) => {
   const cache = new QueryClient();
-  cache.setQueryData(["billing-plans"], [{ id: "autoservicio", monthlyPrice: 990, currency: "DOP" }]);
+  cache.setQueryData(["billing-plans"], [{ id: "autoservicio", monthlyPrice: 1250, currency: "DOP" }]);
   cache.setQueryData(["billing-providers"], providers);
   cache.setQueryData(["billing-requests"], []);
   return renderToStaticMarkup(createElement(QueryClientProvider, { client: cache }, createElement(Billing)));
