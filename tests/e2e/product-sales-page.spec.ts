@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer } from "node:net";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./apoyo";
 
 let productWeb: ChildProcess | undefined;
 let productOrigin = "";
@@ -95,12 +95,16 @@ test.describe("Página pública de planes", () => {
     await expect(page).toHaveURL(productOrigin + "/planes");
   });
 
-  for (const width of [320, 390]) {
+  for (const width of [320, 390, 1280]) {
     test(`presenta los planes y pagos manuales a ${width} px`, async ({
       page,
     }) => {
       await page.setViewportSize({ width, height: 844 });
       await page.goto(productOrigin + "/planes");
+
+      await expect(page.getByRole("banner")).toBeVisible();
+      await expect(page.getByRole("main")).toBeVisible();
+      await expect(page.getByRole("contentinfo")).toBeVisible();
 
       for (const price of ["1,250", "2,000", "4,000", "7,000"])
         await expect(
@@ -139,6 +143,34 @@ test.describe("Página pública de planes", () => {
             .filter(({ width, height }) => width < 44 || height < 44),
         );
       expect(undersized, "controles menores de 44 × 44 px").toEqual([]);
+
+      const annualPriceColor = await page
+        .locator(".sales-plan-annual strong")
+        .first()
+        .evaluate((element) => getComputedStyle(element).color);
+      expect(annualPriceColor).toBe("rgb(247, 251, 255)");
+
+      if (width === 1280) {
+        const priceLine = page.locator(".sales-plan-price").nth(1);
+        const [priceBox, suffixBox] = await Promise.all([
+          priceLine.locator("strong").boundingBox(),
+          priceLine.locator("span").boundingBox(),
+        ]);
+        expect(priceBox).not.toBeNull();
+        expect(suffixBox).not.toBeNull();
+        expect(suffixBox!.x).toBeGreaterThan(priceBox!.x + priceBox!.width);
+        expect(suffixBox!.y).toBeLessThan(priceBox!.y + priceBox!.height);
+      }
     });
   }
+
+  test("respeta reducir movimiento", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(productOrigin + "/planes");
+    const duration = await page
+      .locator(".sales-button")
+      .first()
+      .evaluate((element) => getComputedStyle(element).transitionDuration);
+    expect(duration).toMatch(/^(?:0s|0\.00001s|1e-05s|0\.01ms)$/);
+  });
 });

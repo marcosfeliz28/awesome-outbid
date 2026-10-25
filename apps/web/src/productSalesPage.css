@@ -7,7 +7,7 @@
   --sales-accent: #45e0c1;
   --sales-accent-strong: #20c7a6;
   --sales-accent-ink: #03211b;
-  --sales-border: #31506d;
+  --sales-border: #587896;
   --sales-focus: #ffd166;
   min-height: 100vh;
   overflow-x: clip;
@@ -15,6 +15,7 @@
     radial-gradient(circle at 20% 0%, rgb(44 112 139 / 32%), transparent 30rem),
     linear-gradient(155deg, #07111f 0%, #081729 58%, #07111f 100%);
   color: var(--sales-text);
+  font-size: 16px;
   font-family:
     Inter,
     ui-sans-serif,
@@ -140,7 +141,7 @@
 .sales-card-kicker {
   margin-bottom: 0.75rem;
   color: var(--sales-accent);
-  font-size: 0.78rem;
+  font-size: 14px;
   font-weight: 850;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -278,7 +279,7 @@
   border-radius: 999px;
   background: var(--sales-accent);
   color: var(--sales-accent-ink);
-  font-size: 0.75rem;
+  font-size: 14px;
   font-weight: 900;
 }
 
@@ -291,11 +292,12 @@
   display: flex;
   margin-bottom: 1.25rem;
   align-items: baseline;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.35rem;
 }
 
 .sales-plan-price strong {
+  color: var(--sales-text);
   font-size: clamp(2rem, 10vw, 2.6rem);
   letter-spacing: -0.04em;
 }
@@ -313,11 +315,12 @@
 }
 
 .sales-plan-annual strong {
+  color: var(--sales-text);
   font-size: 1.2rem;
 }
 
 .sales-plan-annual small {
-  font-size: 0.8rem;
+  font-size: 14px;
 }
 
 .sales-plan-inclusions {
