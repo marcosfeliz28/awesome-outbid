@@ -60,10 +60,34 @@ export class DashboardLiquidityController {
           _sum: { amount: true },
         }),
         this.db.$queryRaw<ReceivableRow[]>`
+          WITH outstanding AS (
+            SELECT
+              s.*,
+              GREATEST(
+                s."creditBalance" - COALESCE((
+                  SELECT SUM(reserved.amount)
+                  FROM "Payment" reserved
+                  WHERE reserved."saleId" = s.id
+                    AND reserved."entryType" = 'installment'
+                    AND reserved.status = 'pending_verification'
+                ), 0),
+                0
+              ) AS "availableBalance"
+            FROM "Sale" s
+            WHERE s."branchId" = ${actor.branchId}
+              AND s.status = 'completed'
+              AND s."creditBalance" > 0
+              AND EXISTS (
+                SELECT 1 FROM "Payment" source
+                WHERE source."saleId" = s.id
+                  AND source."entryType" = 'sale'
+                  AND source.method IN ('credit', 'cod')
+              )
+          )
           SELECT
             COALESCE(SUM(CASE WHEN COALESCE(
               s."receivableKind", ''
-            ) = 'cod' THEN s."creditBalance" ELSE 0 END), 0) AS cod,
+            ) = 'cod' THEN s."availableBalance" ELSE 0 END), 0) AS cod,
             COALESCE(SUM(CASE WHEN s."receivableKind" = 'credit'
               OR (s."receivableKind" IS NULL AND EXISTS (
                 SELECT 1 FROM "Payment" original
@@ -75,23 +99,14 @@ export class DashboardLiquidityController {
                 WHERE original_cod."saleId" = s.id
                   AND original_cod."entryType" = 'sale'
                   AND original_cod.method = 'cod'
-              )) THEN s."creditBalance" ELSE 0 END), 0) AS credit,
+              )) THEN s."availableBalance" ELSE 0 END), 0) AS credit,
             COALESCE(SUM(CASE WHEN s."receivableKind" IS NULL AND EXISTS (
               SELECT 1 FROM "Payment" original
               WHERE original."saleId" = s.id
                 AND original."entryType" = 'sale'
                 AND original.method = 'cod'
-            ) THEN s."creditBalance" ELSE 0 END), 0) AS unclassified
-          FROM "Sale" s
-          WHERE s."branchId" = ${actor.branchId}
-            AND s.status = 'completed'
-            AND s."creditBalance" > 0
-            AND EXISTS (
-              SELECT 1 FROM "Payment" source
-              WHERE source."saleId" = s.id
-                AND source."entryType" = 'sale'
-                AND source.method IN ('credit', 'cod')
-            )
+            ) THEN s."availableBalance" ELSE 0 END), 0) AS unclassified
+          FROM outstanding s
         `,
       ]);
 

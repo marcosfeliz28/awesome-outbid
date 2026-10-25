@@ -200,6 +200,7 @@ let after: Liquidity;
 let codNumber = "";
 let creditNumber = "";
 let ambiguousNumber = "";
+let voidedPendingReference = "";
 
 beforeAll(async () => {
   const ownerLogin = await login("admin@fitstore.demo");
@@ -247,6 +248,11 @@ beforeAll(async () => {
   });
 
   const codSale = await receivable("cod", "10.01", customerId);
+  await addPayment(codSale.id, "transfer", "3.03", {
+    status: "pending_verification",
+    entryType: "installment",
+    reference: `COD-PEN-${tag}`,
+  });
   const creditSale = await receivable("credit", "20.02", customerId);
   const ambiguousSale = await receivable(null, "30.03", customerId);
   const mixedHistorical = await createSale({
@@ -263,6 +269,19 @@ beforeAll(async () => {
   codNumber = codSale.number;
   creditNumber = creditSale.number;
   ambiguousNumber = ambiguousSale.number;
+
+  // Una transferencia pendiente de una venta anulada no pertenece a la cola
+  // conciliable ni al bolsillo bancario, aunque el pago antiguo siga guardado.
+  const voidedPendingSale = await createSale({ amount: "9.09" });
+  await db.sale.update({
+    where: { id: voidedPendingSale.id },
+    data: { status: "voided" },
+  });
+  voidedPendingReference = `VOID-PEN-${tag}`;
+  await addPayment(voidedPendingSale.id, "transfer", "9.09", {
+    status: "pending_verification",
+    reference: voidedPendingReference,
+  });
 
   // Flujo 1: cobro de una factura individual.
   const individual = await receivable("credit", "1.11", customerId);
@@ -385,7 +404,7 @@ describe("GET /api/dashboard/liquidity · PostgreSQL", () => {
     ).toBe(707);
     expect(
       delta(after.pockets.banks.pending, before.pockets.banks.pending),
-    ).toBe(808);
+    ).toBe(1111);
     expect(
       delta(after.pockets.drawers.amount, before.pockets.drawers.amount),
     ).toBe(0);
@@ -403,7 +422,7 @@ describe("GET /api/dashboard/liquidity · PostgreSQL", () => {
 
   it("separa contraentrega, crédito e histórico igual que sus fuentes", async () => {
     expect(delta(after.pockets.street.cod, before.pockets.street.cod)).toBe(
-      1001,
+      698,
     );
     expect(
       delta(after.pockets.street.credit, before.pockets.street.credit),
@@ -442,6 +461,14 @@ describe("GET /api/dashboard/liquidity · PostgreSQL", () => {
       Tipo: "Crédito / contraentrega",
       Saldo: 30.03,
     });
+
+    const codPending = (await ok("/cod/pending", owner)) as any[];
+    const cod = codPending.find((row) => row.number === codNumber);
+    expect(cod).toMatchObject({
+      pending: 10.01,
+      pendingVerification: 3.03,
+    });
+    expect(cents(cod.pending) - cents(cod.pendingVerification)).toBe(698);
   });
 
   it("coincide con las fuentes operativas actuales de cada bolsillo", async () => {
@@ -456,6 +483,9 @@ describe("GET /api/dashboard/liquidity · PostgreSQL", () => {
     );
 
     const pending = (await ok("/payments/pending-transfers", owner)) as any[];
+    expect(
+      pending.some((payment) => payment.reference === voidedPendingReference),
+    ).toBe(false);
     expect(cents(snapshot.pockets.banks.pending)).toBe(
       pending.reduce((sum, payment) => sum + cents(payment.amount), 0),
     );

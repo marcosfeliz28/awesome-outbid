@@ -2436,7 +2436,7 @@ export class SalesController {
       where: {
         method: "transfer",
         status: "pending_verification",
-        sale: { branchId: actor.branchId },
+        sale: { branchId: actor.branchId, status: "completed" },
         ...(createdAt ? { createdAt } : {}),
       },
       select: {
