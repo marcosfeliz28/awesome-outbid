@@ -126,6 +126,168 @@ describe("tablero administrativo · integración", () => {
     warn.mockRestore();
   });
 
+  it("un fallo de la señal posterior al commit no revierte una venta completada", async () => {
+    const ids = {
+      actor: "00000000-0000-4000-8000-000000000010",
+      branch: "00000000-0000-4000-8000-000000000011",
+      terminal: "00000000-0000-4000-8000-000000000012",
+      cash: "00000000-0000-4000-8000-000000000013",
+      customer: "00000000-0000-4000-8000-000000000014",
+      variant: "00000000-0000-4000-8000-000000000015",
+      sale: "00000000-0000-4000-8000-000000000016",
+      payment: "00000000-0000-4000-8000-000000000017",
+      operation: "00000000-0000-4000-8000-000000000018",
+    };
+    const actor = {
+      id: ids.actor,
+      name: "Dueña",
+      role: "owner",
+      branchId: ids.branch,
+      terminalId: ids.terminal,
+      permissions: ["*"],
+    } as never;
+    const variant = {
+      id: ids.variant,
+      productId: "product-1",
+      active: true,
+      price: 100,
+      costAvg: 0,
+      stock: 0,
+      lots: [],
+      product: {
+        name: "Servicio de prueba",
+        unit: "servicio",
+        active: true,
+        taxRate: 0,
+        categoryId: "category-1",
+        category: { id: "category-1", name: "Servicios", requiresLot: false },
+      },
+    };
+    const createdSale = {
+      id: ids.sale,
+      number: "FS-0000001",
+      sellerId: ids.actor,
+      branchId: ids.branch,
+      cashSessionId: ids.cash,
+      customerId: ids.customer,
+      total: 100,
+      costTotal: 0,
+      discountTotal: 0,
+      creditBalance: 0,
+      incentiveOnCollection: false,
+      wholesale: false,
+      createdAt: new Date("2026-10-25T12:00:00Z"),
+    };
+    const completedSale = {
+      ...createdSale,
+      items: [{ id: "item-1", qty: 1 }],
+      payments: [{ id: ids.payment, method: "cash", amount: 100 }],
+    };
+    let saleCommitted: typeof completedSale | null = null;
+    const eventOrder: string[] = [];
+    let saleLookup = 0;
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      auditLog: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "audit-1" }),
+      },
+      cashSession: {
+        findFirstOrThrow: vi.fn().mockResolvedValue({
+          id: ids.cash,
+          userId: ids.actor,
+          registerId: ids.terminal,
+          openedAt: new Date("2026-10-25T08:00:00Z"),
+          closedAt: null,
+        }),
+      },
+      customer: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: ids.customer,
+          branchId: ids.branch,
+          active: true,
+          creditLimit: 0,
+        }),
+      },
+      settings: { findUnique: vi.fn().mockResolvedValue({ data: {} }) },
+      kitComponent: { findMany: vi.fn().mockResolvedValue([]) },
+      variant: { findFirstOrThrow: vi.fn().mockResolvedValue(variant) },
+      variantStock: { findMany: vi.fn().mockResolvedValue([]) },
+      promotion: { findMany: vi.fn().mockResolvedValue([]) },
+      counter: { upsert: vi.fn().mockResolvedValue({ value: 1 }) },
+      sale: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue(createdSale),
+        findUniqueOrThrow: vi.fn().mockImplementation(async () => {
+          saleLookup += 1;
+          return saleLookup === 1
+            ? { ...createdSale, items: [] }
+            : completedSale;
+        }),
+      },
+      saleItem: { create: vi.fn().mockResolvedValue({ id: "item-1" }) },
+      payment: {
+        create: vi.fn().mockResolvedValue(completedSale.payments[0]),
+      },
+      incentivePeriodClose: { findMany: vi.fn().mockResolvedValue([]) },
+      incentiveRate: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const db = {
+      sale: { findUnique: vi.fn().mockResolvedValue(null) },
+      settings: { findUnique: vi.fn().mockResolvedValue({ data: {} }) },
+      variant: {
+        findMany: vi.fn().mockResolvedValue([{ id: ids.variant, price: 100 }]),
+      },
+      $transaction: vi.fn(
+        async (
+          operation: (client: typeof tx) => Promise<typeof completedSale>,
+        ) => {
+          const result = await operation(tx);
+          saleCommitted = result;
+          eventOrder.push("commit");
+          return result;
+        },
+      ),
+      realtimeEvent: {
+        create: vi.fn().mockImplementation(async () => {
+          eventOrder.push("sse");
+          throw new Error("SSE no disponible");
+        }),
+      },
+    };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(
+      new SalesController(db as never).complete(actor, {
+        offlineUuid: ids.operation,
+        cashSessionId: ids.cash,
+        customerId: ids.customer,
+        items: [{ variantId: ids.variant, qty: 1, discountPercent: 0 }],
+        payments: [{ method: "cash", amount: 100 }],
+        globalDiscount: 0,
+      } as never),
+    ).resolves.toMatchObject({ id: ids.sale, number: "FS-0000001" });
+
+    expect(saleCommitted).toEqual(completedSale);
+    expect(eventOrder).toEqual(["commit", "sse"]);
+    expect(tx.sale.create).toHaveBeenCalledOnce();
+    expect(tx.payment.create).toHaveBeenCalledOnce();
+    expect(tx.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "complete",
+          entity: "sale",
+          entityId: ids.sale,
+        }),
+      }),
+    );
+    expect(db.realtimeEvent.create).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith(
+      "[tablero] No se pudo emitir la señal de actualización.",
+    );
+    warn.mockRestore();
+  });
+
   it("señaliza después del commit anulaciones, devoluciones y todos los cobros sin hacerlos fallar", async () => {
     const ids = {
       sale: "00000000-0000-4000-8000-000000000001",
@@ -144,9 +306,7 @@ describe("tablero administrativo · integración", () => {
       if (call === 6)
         return {
           payments: [{ id: "payment-customer-1" }],
-          allocated: [
-            { saleId: ids.sale, amount: 100, method: "cash" },
-          ],
+          allocated: [{ saleId: ids.sale, amount: 100, method: "cash" }],
         };
       return { id: `payment-${call}` };
     });
