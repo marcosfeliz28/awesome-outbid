@@ -4125,7 +4125,16 @@ export function Configuration() {
     [userEdit, setUserEdit] = useState<any>(null),
     [passwordReset, setPasswordReset] = useState<any>(null),
     [roleEdit, setRoleEdit] = useState<any>(null),
-    [tab, setTab] = useState("business");
+    // El aviso de cupo de equipos abre directo la pestaña «Equipos».
+    [tab, setTab] = useState(() => {
+      try {
+        const wanted = sessionStorage.getItem("nexora-config-tab");
+        sessionStorage.removeItem("nexora-config-tab");
+        return wanted || "business";
+      } catch {
+        return "business";
+      }
+    });
   const client = useQueryClient();
   if (!can(user.permissions, "*"))
     return can(user.permissions, "sale:manage") ? (

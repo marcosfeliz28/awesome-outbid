@@ -6495,3 +6495,34 @@ td strong {
     width: 100%;
   }
 }
+
+/* Aviso de cupo de equipos y sesión de soporte de solo lectura. */
+.plan-limit-notice {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border-left: 4px solid var(--warning-text);
+}
+.plan-limit-notice ul {
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+.plan-limit-notice li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+.support-mode-banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: -8px 0 14px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 650;
+  text-align: center;
+}
