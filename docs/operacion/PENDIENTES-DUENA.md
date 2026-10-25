@@ -134,5 +134,5 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 ## Cuadre 24-oct (sábado)
 - 4 cajas cuadran. 19 transferencias del 22, 23 y 24 verificadas con fotos del banco (incluye FS-200 El Millón 8,250).
 - Wendy: sobrante US$58.30 (la dueña los recibió); preguntar a Wendy de dónde salieron.
-- Addison debe COD: FS-241 Luisa 2,200 + FS-244 Margot 4,650.
+- ✅ COD FS-241 Luisa 2,200 + FS-244 Margot 4,650 cobradas el 25-oct (Addison entregó 7,000, se le devolvieron 150).
 - Cardnet lote 24-oct 17,970 → esperar ~17,278 el lunes.
