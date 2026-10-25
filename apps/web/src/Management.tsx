@@ -891,6 +891,15 @@ export function Inventory() {
                     </span>
                   ),
                 },
+                { label: "Precio", render: (v) => formatMoney(v.price) },
+                ...(can(user.permissions, "profit:read")
+                  ? [
+                      {
+                        label: "Costo",
+                        render: (v: any) => formatMoney(v.costAvg),
+                      },
+                    ]
+                  : []),
                 {
                   label: selectedWarehouse
                     ? "En " + selectedWarehouse.name
