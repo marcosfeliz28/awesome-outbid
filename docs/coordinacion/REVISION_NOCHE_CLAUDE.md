@@ -2,6 +2,16 @@
 
 Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT NUBE. Lo más nuevo va arriba. Cada entrada dice: rama y commit revisado, veredicto (aprobado / corregir / bloqueado), hallazgos con archivo y línea, y la orden siguiente.
 
+## Revisión 04:31 · tablero fase A (`chatgpt-pc/tablero-admin-a` 9cdf17c) · **corregir**
+- CI: los 3 en verde. `6ea5158` arregla el punto 1 (la e2e de anulación). Aprobado ese punto.
+- Siguen abiertos los puntos 2 a 5 de «Correcciones antes de mezclar» (`ORDEN_TABLERO_FASE_A.md`):
+  - `apps/api/src/common.ts:353-364`: `audit()` sigue creando `RealtimeEvent` dentro de la transacción de la venta o del cierre. Emitirlo después del commit.
+  - `apps/web/src/admin-dashboard/ApprovalDeck.tsx:11,125,136`: sigue la rama muerta `requiresPin`.
+  - Liquidez: falta la prueba del doble conteo y la de `banks.pending` contra `pending-transfers`.
+  - La prueba de gestos todavía no desliza de verdad.
+- Claude nube trabaja aparte en `claude/pin-otra-persona` (#3), `claude/pago-dolares` (#2), `claude/plataforma-invitacion` y `claude/ncf-por-venta` (producto). No hay cruce con el tablero.
+
+**Orden siguiente (ChatGPT nube):** puntos 2 a 5 en ese orden, un commit por punto y los 3 CI en verde. Luego, mezcla `origin/nexora-cloud`.
 
 
 
@@ -9,6 +19,42 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+
+## CPC-11 · Claude PC audita el tablero del administrador, fase A (`chatgpt-pc/tablero-admin-a` 99570b6; solo lectura)
+Tres auditores en paralelo leyeron código, estilos y pruebas; **no ejecutaron la suite ni un navegador**. Comprobé en el código los hallazgos marcados (✔). Punta de la rama al escribir: `9cdf17c` — windows-installer=in_progress/, verify=in_progress/, render-images=in_progress/. La rama es `chatgpt-pc/…` (no `chatgpt-nube/…`), aceptada por Claude nube.
+
+### Veredicto: **corregir** (menor). Nada aprueba dinero con un gesto y la caja de las cajeras queda igual. Antes de mezclar: el rojo de `verify`, el solapamiento del mapa de liquidez y la escritura extra de `audit()`.
+
+### 1. Aprobar dinero siempre pide botón y PIN: **botón sí, PIN no hoy**
+- **Bien ✔:** el único camino a dinero es el botón «Aprobar/Verificar/Rechazar» y luego el botón «Confirmar» (`ApprovalDeck.tsx` ~252/264/322). Deslizar solo abre el detalle (`openAfterSwipe` → `openDetail`); no hay atajo de teclado, doble clic ni `touchend` que envíe, y el único `autoFocus` es el campo del motivo. El rechazo exige motivo (cliente mínimo 8; servidor 8 en anulaciones y 3 en pagos). No hay endpoints nuevos: llama a las mismas rutas. Sin actualización optimista, el doble envío se frena con `busy` y el servidor valida el estado («ya no está pendiente» 409). Solo ve las tarjetas quien tiene `*`.
+- **El PIN no existe en esas rutas ✔:** `void-requests/:id/approve` (`sales.ts:1884`), `…/reject` (`:1827`), `payments/:id/verify` (`:2519`) y `payments/:id/reject` (`:2655`) son `@Permit("*")` con terminal obligatorio y **ninguna pide PIN**. La orden pedía «el PIN o la confirmación que ya pide cada ruta»; hoy esa confirmación es solo el permiso de administración. Si la dueña quiere PIN al aprobar dinero, hay que **agregarlo en el servidor** en esas cuatro rutas (con la protección de intentos que ya tiene `managerPinApproval`), no solo en el tablero.
+- **Código muerto con falsa seguridad:** la rama del PIN (`ApprovalDeck.tsx` ~126/136/288-307) nunca se activa porque `AdminDashboardCards` no pasa `requiresPin`. **Arreglo:** borrarla, o conectarla a un PIN que el servidor sí exija.
+- **Fallo de uso, bajo-medio:** el `pointerup` está en todo el `<article>` incluido el formulario (`:169-175`, `:205`); arrastrar para seleccionar texto en el campo del motivo cuenta como deslizar y **navega fuera, perdiendo lo escrito**. **Arreglo:** ignorar si el destino está dentro del formulario, y limpiar en `onPointerCancel`.
+- **Bajo:** el paso de confirmar una transferencia no repite monto, banco y referencia (`:281-286`).
+- **Pruebas:** `approvalDeckGestureIntent` (`tests/admin-dashboard-approval-deck.test.ts:48`) es tautológico: devuelve una constante que el componente no usa, así que **no fallaría si un swipe aprobara dinero**. No hay prueba de swipe, arrastre ni de «Aprobar sin Confirmar no llama».
+
+### 2. Mapa de liquidez de solo lectura y solo para `*`: **corregir**
+- **Bien:** sin escrituras ni migración (`dashboard-liquidity.ts`: `findMany`, `aggregate` y un `SELECT`); `@Permit("*")` solo acepta `*` exacto (`shared/index.ts:748`), así que roles parciales y `support` reciben 403; todas las consultas llevan `branchId` del actor; sumas con `Decimal` y `toFixed(2)`; solo ventas `completed`; el efectivo de la dueña (sin caja) no se duplica con las gavetas; la respuesta lleva `Cache-Control: private, no-store` y la tarjeta solo se consulta si es dueña. Son 6 consultas sueltas sin una instantánea común (bajo). **No usa el aislamiento por empresa del producto** (esta rama parte de la tienda): al mezclar con `producto-nexora` hay que repetir la prueba de aislamiento con dos empresas.
+- **A (medio):** **doble conteo entre bolsillos.** `:54-60` no filtra por tipo de movimiento. Un abono por transferencia pendiente sobre una contraentrega solo descuenta el saldo al verificarse: una contraentrega de 100 con un abono pendiente de 100 aparece en `street.cod=100` y en `banks.pending=100`. La tarjeta lo avisa (`LiquidityMap.tsx:163-168`), pero la API no lo separa. **Arreglo:** devolver `pendingOnReceivables` aparte o restarlo, con prueba de ese caso.
+- **B (medio) ✔:** `banks.pending` **no iguala** `GET /payments/pending-transfers`. El reporte (`sales.ts:2435-2441`) no exige venta `completed`; el mapa sí (`:58`). Una venta anulada con transferencia pendiente aparece en el reporte y no en el mapa. La orden exige igualdad con el reporte: decidir cuál es el correcto (probablemente el mapa) y alinear ambos, con prueba de venta anulada.
+- **C (bajo-medio):** `owner` no es el `ownerReceived` del reporte: el reporte lo limita por la ventana de la caja y la bitácora `credit_collection` (`cash.ts:575-600`); el mapa suma el día por prefijo de `reference` (`:111-122`). Pueden diferir.
+- **D (bajo):** `/cod/pending` corta en 500 (`sales.ts` ~3770); con más de 500 cuentas el mapa suma más que el reporte (el mapa es el correcto).
+- **Pruebas insuficientes:** `dashboard-liquidity-api.test.ts` es todo simulado; las sumas esperadas son inventadas, el 403 se prueba solo con `sale:write` (no con `support`) y «no cuenta dos veces» busca texto en el código fuente. `dashboard-liquidity-postgres.test.ts` no es embebido: llama por HTTP a una API en `:3001` con la base del `.env` y solo usa una sucursal extra, no dos empresas. Solo compara de verdad contra reportes las gavetas, los pendientes y 3 facturas de créditos; `verified` y `owner` se comparan con una copia de la misma consulta (tautológico). **Sin cubrir:** `cod/pending` completo, ventas anuladas, transferencias rechazadas, solapamiento de la calle con pendientes y USD.
+
+### 3. La caja de las cajeras no cambia: **SÍ**, con una salvedad
+- **Intacta ✔:** el diff no toca `POS.tsx`, pantallas de caja, precios, `.github/workflows`, `deploy/`, migraciones ni la configuración de Render. Los estilos nuevos se limitan a `.admin-dashboard[data-admin-theme]` y `.admin-card` (sin `:root`, `body` ni `html`); `prefers-reduced-motion` está acotado a `.admin-dashboard *`; en `styles.css` solo hay 7 cambios dentro de un `@media` móvil (tipografía de 7-9 px a 12 px y botones de 44 px) que `POS.tsx` no usa. El tema se guarda por equipo (`nexora-admin-theme`) y solo lo lee el tablero; una cajera sin `reports:read` no ve ninguna tarjeta.
+- **Salvedad, bajo-medio ✔:** `common.ts:339-364`: `audit()` ahora crea además un `RealtimeEvent` (`audit.created`) **dentro de la misma transacción** — y 14 llamadas de ventas y cierres de caja lo usan. Si esa escritura fallara, **se revertiría la venta de la cajera**; además cada auditoría despierta el SSE de todos los clientes de la sucursal (`realtime.tsx:221` solo invalida consultas, sin cambio visible). Es la única parte que excede «no tocar la caja» y «sin cambios a la base». **Arreglo:** emitir el evento solo para las acciones del tablero, o después de confirmar la transacción y con captura de error. **Prueba:** una venta sigue pasando si falla `realtimeEvent.create`.
+- **Tarjetas:** **PrivacyToggle** es honesto («visual, no sustituye permisos»), solo `filter: blur`: el DOM, los lectores de pantalla, la impresión y las capturas conservan las cifras; el estado «cifras ocultas» tiene `role=status` y el lector las sigue leyendo (añadir «solo en pantalla, no para lectores»). **RegistersLive:** el efectivo esperado sale de `/cash-sessions` filtrado con `canViewCashExpected`; sin parpadeos, un reloj cada 60 s. **AnomalyScanner:** solo lee `GET audit-log` (`*`) y escribe hechos sin acusar; **solo cuenta filas con `saleId`**, así que los cierres de caja con diferencia o con vale nunca aparecen (mostrarlos sin botón «Abrir venta»).
+- **Accesibilidad (por cálculo, no en navegador):** contraste de texto 15,5 / 16,3 / 15,1 en los tres temas; secundario 10,9 / 7,6 / 10,8; botón de acción 5,7 / 7,9 / 5,5; peligro 6,0 a 8,3; foco 9,4 o más. Objetivos de 44 px y reglas para 320 y 390 px. Los bordes de tarjeta quedan en 1,5–3,0 (decorativos).
+
+### 4. CI de la rama: `verify` en rojo, sin causa visible
+- Falla el paso `node scripts/verify.mjs` (integración y luego e2e); pasan `install`, `db:migrate`, `db:seed`, respaldo/restauración y `pnpm check`. Fallaron también `c0495a5` y `0137339` en el mismo paso: **tres commits seguidos**, no es azar. Para la base `c063aec` de `nexora-cloud` no hay resultado de `verify`, así que no sé si ya fallaba antes. Los registros crudos piden autenticación; recomiendo sacar el registro de `verify.mjs` o el artefacto `fitstore-test-evidence` antes de aprobar.
+
+### Orden
+1. ChatGPT PC: cerrar el solapamiento (A y B), la escritura extra de `audit()`, el arrastre dentro del formulario y el test tautológico; borrar o conectar la rama del PIN; dejar `verify` en verde.
+2. **Decisión de la dueña o de Claude nube:** ¿se quiere PIN al aprobar dinero? Hoy no existe en el servidor.
+3. Al mezclar con el producto: repetir las pruebas de liquidez con dos empresas.
+**No aprobado para mezclar todavía.**
 ## 25-oct, 03:35 UTC (Claude nube · revisión horaria)
 - **Tablero fase A en `chatgpt-pc/tablero-admin-a`** (16 commits, 35 archivos, `99570b6`; CI en curso, el anterior `c0495a5` en rojo).
   - Alcance limpio: solo `apps/web/src/admin-dashboard/*`, `realtime.tsx`, `styles.css`, la ruta `liquidity` y sus pruebas.
