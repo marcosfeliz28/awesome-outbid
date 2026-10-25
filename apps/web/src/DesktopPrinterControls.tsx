@@ -12,6 +12,7 @@ export function DesktopPrinterControls() {
   const [selected, setSelected] = useState(selectedPrinter);
   const [referenceType, setReferenceType] = useState<"saleId" | "movementId">("saleId");
   const [referenceId, setReferenceId] = useState("");
+  const [reason, setReason] = useState("");
   const { user, token } = useStore();
   const native = isNativeDesktop();
   const canOpenDrawer = can(user?.permissions ?? [], "cash:drawer");
@@ -34,8 +35,9 @@ export function DesktopPrinterControls() {
   };
   const openDrawer = async () => {
     if (!token) throw new Error("La sesión no permite autorizar la gaveta.");
-    await nativeOpenDrawer({ accessToken: token, [referenceType]: referenceId.trim() });
+    await nativeOpenDrawer({ accessToken: token, [referenceType]: referenceId.trim(), reason: reason.trim() });
     setReferenceId("");
+    setReason("");
     toast("Apertura registrada y enviada.");
   };
   return <>
@@ -61,10 +63,15 @@ export function DesktopPrinterControls() {
           <span>ID obligatorio de la venta o movimiento</span>
           <input value={referenceId} onChange={(event) => setReferenceId(event.target.value)} placeholder="00000000-0000-0000-0000-000000000000" />
         </label>
+        <label className="field">
+          <span>Motivo de la apertura (obligatorio, mínimo 5 caracteres)</span>
+          <input value={reason} required minLength={5} maxLength={200} aria-required="true"
+            onChange={(event) => setReason(event.target.value)} placeholder="Ej.: cliente pidió cambio" />
+        </label>
       </>}
       <div className="form-actions">
         <Button type="button" onClick={() => void nativePrintTest().then(() => toast("Ticket de prueba enviado.")).catch((e) => toast(String(e?.message ?? e), true))}>Imprimir prueba</Button>
-        {canOpenDrawer && <Button type="button" variant="secondary" disabled={!referenceId.trim()} onClick={() => void openDrawer().catch((e) => toast(String(e?.message ?? e), true))}>Abrir gaveta</Button>}
+        {canOpenDrawer && <Button type="button" variant="secondary" disabled={!referenceId.trim() || reason.trim().length < 5} onClick={() => void openDrawer().catch((e) => toast(String(e?.message ?? e), true))}>Abrir gaveta</Button>}
       </div>
     </Modal>
   </>;

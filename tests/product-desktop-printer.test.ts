@@ -39,6 +39,7 @@ it("PC-16: la prueba térmica no abre la gaveta; la apertura requiere otra orden
   const authorization = {
     accessToken: "token-de-prueba",
     saleId: "550e8400-e29b-41d4-a716-446655440000",
+    reason: "Cliente pidió cambio",
   };
   await nativeOpenDrawer(authorization);
   expect(invoke).toHaveBeenLastCalledWith("open_cash_drawer", {
@@ -47,7 +48,10 @@ it("PC-16: la prueba térmica no abre la gaveta; la apertura requiere otra orden
     saleId: authorization.saleId,
     movementId: null,
     automatic: false,
+    reason: "Cliente pidió cambio",
   });
+  await nativeOpenDrawer({ accessToken: "t", saleId: authorization.saleId, automatic: true });
+  expect(invoke).toHaveBeenLastCalledWith("open_cash_drawer", expect.objectContaining({ automatic: true, reason: null }));
 });
 
 it("PC-16: dos tickets seguidos consumen la autorización automática una sola vez", async () => {

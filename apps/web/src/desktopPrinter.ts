@@ -10,6 +10,8 @@ export type DrawerAuthorization = {
   movementId?: string;
   /** La venta acaba de cobrarse; no es una apertura manual de gerencia. */
   automatic?: boolean;
+  /** Motivo de la apertura manual (mínimo 5 caracteres); se audita en la API. */
+  reason?: string;
 };
 let drawerOnNextPrint: DrawerAuthorization | null = null;
 let testInvoke: Invoke | null = null;
@@ -113,6 +115,7 @@ export async function nativeOpenDrawer(authorization: DrawerAuthorization): Prom
     accessToken: authorization.accessToken,
     saleId: authorization.saleId ?? null,
     movementId: authorization.movementId ?? null,
-    automatic: false,
+    automatic: authorization.automatic === true,
+    reason: authorization.reason ?? null,
   });
 }

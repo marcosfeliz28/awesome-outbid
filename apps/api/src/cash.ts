@@ -670,7 +670,11 @@ export class CashController {
   ) {
     const reference = parse(
       z
-        .object({ saleId: uuid.optional(), movementId: uuid.optional() })
+        .object({
+          saleId: uuid.optional(),
+          movementId: uuid.optional(),
+          reason: z.string().trim().min(5, "Indica el motivo de la apertura (mínimo 5 caracteres).").max(200),
+        })
         .refine((value) => Boolean(value.saleId) !== Boolean(value.movementId), {
           message: "Indica una venta o un movimiento de caja.",
         }),
@@ -706,7 +710,7 @@ export class CashController {
       entity,
       entityId,
       undefined,
-      { source: "desktop" },
+      { source: "desktop", reason: reference.reason },
     );
     return { auditId: row.id };
   }

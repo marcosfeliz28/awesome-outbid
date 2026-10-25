@@ -100,7 +100,7 @@ describe("PC-16 · apertura auditada de gaveta", () => {
       auditLog,
     } as any;
     const result = await new CashController(db).drawerOpen(
-      { saleId: "44444444-4444-4444-8444-444444444444" },
+      { saleId: "44444444-4444-4444-8444-444444444444", reason: "Cliente pidió cambio" },
       actor,
     );
     expect(result.auditId).toBe("33333333-3333-4333-8333-333333333333");
@@ -115,7 +115,17 @@ describe("PC-16 · apertura auditada de gaveta", () => {
       action: "cash_drawer_open",
       entity: "sale",
       entityId: "44444444-4444-4444-8444-444444444444",
+      after: { source: "desktop", reason: "Cliente pidió cambio" },
     }) });
+  });
+
+  it("apertura manual: sin motivo (o de menos de 5 caracteres) falla la validación (400 en HTTP) y no audita", async () => {
+    const auditLog = { create: vi.fn() };
+    const db = { sale: { findFirst: vi.fn().mockResolvedValue({ id: "x" }) }, auditLog } as any;
+    const saleId = "44444444-4444-4444-8444-444444444444";
+    for (const body of [{ saleId }, { saleId, reason: "ab" }, { saleId, reason: "   a  " }])
+      await expect(new CashController(db).drawerOpen(body, actor)).rejects.toThrow(/reason/);
+    expect(auditLog.create).not.toHaveBeenCalled();
   });
 
   // Fake de sale.findFirst que sí aplica la ventana de tiempo y la caja abierta.
@@ -162,7 +172,7 @@ describe("PC-16 · apertura auditada de gaveta", () => {
       auditLog,
     } as any);
     await expect(controller.drawerOpen(
-      { saleId: "44444444-4444-4444-8444-444444444444" },
+      { saleId: "44444444-4444-4444-8444-444444444444", reason: "Motivo válido" },
       actor,
     )).rejects.toThrow(/no existe/i);
     expect(auditLog.create).not.toHaveBeenCalled();
