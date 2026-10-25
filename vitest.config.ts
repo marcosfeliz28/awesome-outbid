@@ -30,6 +30,7 @@ export default defineConfig({
       "tests/product-billing-plans.test.ts",
       "tests/platform-token-rotation.test.ts",
       "tests/product-billing-web.test.ts",
+      "tests/product-sales-page.test.tsx",
       "tests/product-ncf-settings-web.test.ts",
       "tests/product-route-matrix-postgres.test.ts",
       "tests/product-route-export-postgres.test.ts",
