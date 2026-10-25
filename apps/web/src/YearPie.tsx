@@ -134,8 +134,8 @@ export function YearPie({ go }: { go: (page: string) => void }) {
             <li key={m.month}>
               <button
                 type="button"
-                onClick={() => open(m.month)}
-                aria-label={`Ver el desglose de ${monthNames[m.month - 1]}`}
+                onClick={() => setPicked(m)}
+                aria-label={`Mostrar ${monthNames[m.month - 1]}`}
               >
                 <span
                   className="year-pie-dot"
