@@ -98,3 +98,23 @@ it("PC-16: si falla la bitácora, imprime el ticket primero y no abre la gaveta"
     "open_cash_drawer",
   ]);
 });
+
+it("PC-16: la autorización de gaveta no queda pegada si la impresión no es nativa o tarda", async () => {
+  vi.useFakeTimers();
+  try {
+    setNativeInvokeForTest(vi.fn().mockResolvedValue(null));
+    const print = vi.fn(); // ruta del navegador: nadie consume la autorización
+    vi.stubGlobal("window", { print });
+    const { printSoon } = await import("../apps/web/src/Prints");
+    printSoon({ accessToken: "t", saleId: "550e8400-e29b-41d4-a716-446655440000", automatic: true });
+    await vi.advanceTimersByTimeAsync(60);
+    expect(print).toHaveBeenCalledTimes(1);
+    expect(takeDrawerAuthorizationForNextPrint()).toBeNull();
+    // Y si se arma y nadie imprime, caduca a los 10 s.
+    openDrawerOnNextPrint({ accessToken: "t", saleId: "550e8400-e29b-41d4-a716-446655440000" });
+    await vi.advanceTimersByTimeAsync(10_001);
+    expect(takeDrawerAuthorizationForNextPrint()).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});

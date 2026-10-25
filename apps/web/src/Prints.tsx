@@ -3,7 +3,7 @@
 // docs/tienda/CUADRE_REPORTES_FACTURA.md. Se dibujan fuera de #root y sólo se
 // ven al imprimir.
 import { createPortal } from "react-dom";
-import { isNativeDesktop, openDrawerOnNextPrint, type DrawerAuthorization } from "./desktopPrinter";
+import { isNativeDesktop, openDrawerOnNextPrint, takeDrawerAuthorizationForNextPrint, type DrawerAuthorization } from "./desktopPrinter";
 import type { ReactNode } from "react";
 import {
   courierCharge,
@@ -40,6 +40,8 @@ export const printSoon = (drawerAuthorization?: DrawerAuthorization) =>
   setTimeout(() => {
     if (drawerAuthorization && isNativeDesktop()) openDrawerOnNextPrint(drawerAuthorization);
     window.print();
+    // La ruta nativa ya consumió la autorización de forma síncrona; si no, es ruta del navegador y no debe quedar armada.
+    takeDrawerAuthorizationForNextPrint();
   }, 50) as unknown as void;
 
 export function PrintSheet({

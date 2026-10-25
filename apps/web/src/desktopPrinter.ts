@@ -48,10 +48,17 @@ export async function nativePrinters(): Promise<string[]> {
   return Array.isArray(names) ? names.filter((name): name is string => typeof name === "string") : [];
 }
 
-export function openDrawerOnNextPrint(authorization: DrawerAuthorization) { drawerOnNextPrint = authorization; }
+let drawerTimer: ReturnType<typeof setTimeout> | undefined;
+// Caduca a los 10 s: si la impresión nunca la consume, no debe abrir la gaveta en un ticket posterior.
+export function openDrawerOnNextPrint(authorization: DrawerAuthorization) {
+  drawerOnNextPrint = authorization;
+  clearTimeout(drawerTimer);
+  drawerTimer = setTimeout(() => { drawerOnNextPrint = null; }, 10_000);
+}
 export function takeDrawerAuthorizationForNextPrint() {
   const authorization = drawerOnNextPrint;
   drawerOnNextPrint = null;
+  clearTimeout(drawerTimer);
   return authorization;
 }
 
