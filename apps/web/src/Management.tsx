@@ -4082,8 +4082,8 @@ export function Configuration() {
     requiredNumber("sellerDiscountLimit", "Descuento máximo del vendedor (%)"),
     requiredNumber("cardFeePercent", "Comisión bancaria (%)"),
     requiredNumber("returnDays", "Plazo de devolución (días)"),
-    requiredNumber("idleDays", "Días sin rotación"),
-    requiredNumber("expiryDays", "Alerta de vencimiento (días)"),
+    requiredNumber("idleDays", "Días sin rotación", 60),
+    requiredNumber("expiryDays", "Alerta de vencimiento (días)", 60),
     requiredNumber("lowMargin", "Margen bajo (%)"),
     requiredNumber("cashDifferenceLimit", "Alerta de diferencia en caja"),
     {
@@ -4095,7 +4095,7 @@ export function Configuration() {
         { label: "58 mm", value: "58" },
       ],
     },
-    requiredNumber("sessionTimeoutMinutes", "Inactividad (minutos)"),
+    requiredNumber("sessionTimeoutMinutes", "Inactividad (minutos)", 30),
     {
       ...requiredNumber(
         "creditApprovalThreshold",
