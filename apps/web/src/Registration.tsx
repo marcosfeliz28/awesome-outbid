@@ -101,3 +101,35 @@ export function ConfirmEmail() {
     <p><a href="/">Ir a iniciar sesión</a></p>
   </section></main>;
 }
+
+export function AcceptInvitation() {
+  const [password, setPassword] = useState("");
+  const [managerPin, setManagerPin] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const token = new URLSearchParams(window.location.hash.slice(1)).get("token");
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!token) { setError("Falta el enlace de invitación."); return; }
+    setBusy(true); setError("");
+    try {
+      const result = await api<{ message: string }>("/auth/accept-invitation", { method: "POST", body: JSON.stringify({ token, password, managerPin }) });
+      window.history.replaceState(null, "", "/aceptar-invitacion");
+      setMessage(result.message); setPassword(""); setManagerPin("");
+    } catch (cause: any) { setError(cause.message); }
+    finally { setBusy(false); }
+  };
+  return <main className="product-registration"><form onSubmit={submit}>
+    <h1>Activa tu cuenta de Nexora POS</h1>
+    <p>Elige tu contraseña y tu PIN de gerente.</p>
+    {!message && <>
+      <label className="field"><span>Contraseña</span><input required type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} /><small>12 caracteres; incluye mayúscula, minúscula, número y símbolo.</small></label>
+      <label className="field"><span>PIN de gerente</span><input required type="password" inputMode="numeric" pattern="[0-9]{6}" minLength={6} maxLength={6} autoComplete="new-password" value={managerPin} onChange={e => setManagerPin(e.target.value)} /><small>6 números no consecutivos. Guárdalo en privado.</small></label>
+    </>}
+    {error && <p className="form-error" role="alert">{error}</p>}
+    {message && <p role="status">{message}</p>}
+    {!message && <button className="btn primary full-width" disabled={busy}>{busy ? "Guardando…" : "Activar cuenta"}</button>}
+    <p><a href="/">Ir a iniciar sesión</a></p>
+  </form></main>;
+}

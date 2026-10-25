@@ -54,7 +54,7 @@ import {
   publicRegistrationEnabled,
 } from "./productTenancy";
 import { businessSidebarLabels, productLoginFaces } from "./product-branding";
-import { Registration, ConfirmEmail } from "./Registration";
+import { Registration, ConfirmEmail, AcceptInvitation } from "./Registration";
 import { Onboarding, type OnboardingStatus } from "./Onboarding";
 import { Billing } from "./Billing";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
@@ -1460,6 +1460,11 @@ export function App() {
     window.location.pathname === "/confirmar-correo"
   )
     return <ConfirmEmail />;
+  if (
+    PRODUCT_TENANCY_REQUIRED &&
+    window.location.pathname === "/aceptar-invitacion"
+  )
+    return <AcceptInvitation />;
   return (
     <>
       <Shell />
