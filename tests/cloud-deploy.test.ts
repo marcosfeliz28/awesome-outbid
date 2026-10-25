@@ -518,7 +518,7 @@ describe("Render · proxy público", () => {
     );
     expect(block("location ~ ^/assets/ {")).toContain("try_files $uri =404;");
     // Rutas sin extensión: fallback a index.html (que sigue sin caché).
-    expect(block("location / {")).toContain("try_files $uri /index.html;");
+    expect(block("location / {")).toContain("try_files $uri $uri/index.html /index.html;");
     // Las reglas de archivos van antes del fallback de la SPA.
     expect(nginx.indexOf("location ~ /\\. {")).toBeLessThan(
       nginx.indexOf("location / {"),
@@ -543,10 +543,11 @@ describe("Render · proxy público", () => {
     expect(assets).not.toMatch(/Cache-Control[^;]*always/);
     // Los .txt (licencias.txt) llevan charset UTF-8 sin cambiar el resto:
     // misma caché y cabeceras que el bloque genérico y nada global.
-    const txt = block("location ~* \\.txt$ {");
+    const txt = block("location ~* \\.(txt|md)$ {");
     const generic = block("location ~ \\.[A-Za-z0-9]+$ {");
     expect(txt).toContain("charset utf-8;");
-    expect(txt).toContain("charset_types text/plain;");
+    expect(txt).toContain("charset_types text/plain text/markdown;");
+    expect(txt).toContain("text/markdown md;");
     for (const line of [
       'add_header Cache-Control "no-cache";',
       "include /etc/nginx/snippets/nexora-security-headers.conf;",
@@ -558,11 +559,11 @@ describe("Render · proxy público", () => {
     expect(nginx.match(/^\s*charset\s/gm)).toHaveLength(1);
     // Va antes del bloque genérico (en Nginx gana la primera regex) y
     // después de las reglas de dotfiles y mapas.
-    expect(nginx.indexOf("location ~* \\.txt$ {")).toBeLessThan(
+    expect(nginx.indexOf("location ~* \\.(txt|md)$ {")).toBeLessThan(
       nginx.indexOf("location ~ \\.[A-Za-z0-9]+$ {"),
     );
     expect(nginx.indexOf("location ~ /\\. {")).toBeLessThan(
-      nginx.indexOf("location ~* \\.txt$ {"),
+      nginx.indexOf("location ~* \\.(txt|md)$ {"),
     );
     // El service worker, el HTML y la config en runtime siguen sin caché.
     for (const file of ["sw.js", "index.html", "runtime-config.js"]) {
