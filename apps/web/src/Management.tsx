@@ -2506,7 +2506,7 @@ export function Promotions() {
           <h2>El momento perfecto para una oferta</h2>
           <p>
             Prioriza productos sin rotación o próximos a vencer. El descuento
-            sugerido conserva al menos 15% de margen neto según el costo actual.
+            sugerido conserva al menos 15% de margen según el costo actual.
           </p>
         </div>
         <Badge tone="pink">{query.data?.length || 0} oportunidades</Badge>
@@ -2662,7 +2662,7 @@ export function Promotions() {
                 offer.suggestedDiscount,
               ),
               max: offer.suggestedDiscount,
-              help: `Máximo ${offer.suggestedDiscount}% para conservar al menos 15% de margen neto según costo y precio actuales.`,
+              help: `Máximo ${offer.suggestedDiscount}% para conservar al menos 15% de margen según costo y precio actuales.`,
             },
             {
               key: "endsAt",

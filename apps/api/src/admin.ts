@@ -1485,7 +1485,7 @@ export class AdminController {
         : data.type === "nxm" ? (1 - (data.scope.pay ?? 1) / (data.scope.buy ?? 2)) * 100
         : 25;
       if (requested > limit)
-        bad(`La promoción supera el descuento máximo de ${limit}% que conserva 15% de margen neto.`);
+        bad(`La promoción supera el descuento máximo de ${limit}% que conserva 15% de margen.`);
     }
     const row = await this.db.promotion.create({
       data: {

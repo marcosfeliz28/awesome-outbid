@@ -4,24 +4,32 @@ import { cappedPromotionDiscount } from "../apps/api/src/sales";
 import { promotionCostFloor } from "../apps/api/src/inventory";
 import { AdminController } from "../apps/api/src/admin";
 
-describe("N-12 · oferta con margen neto mínimo de 15 %", () => {
-  it("limita el descuento con ITBIS incluido y costo por unidad", () => {
-    const limit = clearanceDiscountLimit(236, 100, 18, true);
+// Regla de la dueña (CLAUDE.md 3): margen sobre lo cobrado, sin restar ITBIS.
+const marginOf = (total: number, cost: number) => (total - cost) / total;
+
+describe("N-12 · oferta con margen mínimo de 15 % sin restar ITBIS", () => {
+  it("limita el descuento sobre el precio cobrado (ITBIS incluido) y costo por unidad", () => {
+    const limit = clearanceDiscountLimit(200, 100, 18, true);
     expect(limit).toBeCloseTo(41.17, 2);
-    const net = lineTotals(1, 236, limit, 18, true).net;
-    expect((net - 100) / net).toBeGreaterThanOrEqual(0.15);
-    expect((lineTotals(1, 236, limit + 0.01, 18, true).net - 100) /
-      lineTotals(1, 236, limit + 0.01, 18, true).net).toBeLessThan(0.15);
+    expect(marginOf(lineTotals(1, 200, limit, 18, true).total, 100)).toBeGreaterThanOrEqual(0.15);
+    expect(marginOf(lineTotals(1, 200, limit + 0.01, 18, true).total, 100)).toBeLessThan(0.15);
+    // Antes (restando ITBIS) 236/100 sólo admitía 41.17 %; ahora el tope es 50 %.
+    expect(clearanceDiscountLimit(236, 100, 18, true)).toBe(50);
   });
 
   it("no sugiere rebaja cuando el precio base ya incumple el margen", () => {
-    expect(clearanceDiscountLimit(118, 100, 18, true)).toBe(0);
+    expect(clearanceDiscountLimit(117, 100, 18, true)).toBe(0);
+  });
+
+  it("con precio sin ITBIS, el margen se mide sobre el total cobrado", () => {
+    const limit = clearanceDiscountLimit(100, 80, 18, false);
+    expect(marginOf(lineTotals(1, 100, limit, 18, false).total, 80)).toBeGreaterThanOrEqual(0.15);
+    expect(marginOf(lineTotals(1, 100, limit + 0.1, 18, false).total, 80)).toBeLessThan(0.15);
   });
 
   it("respeta el piso con varias unidades y redondeo al centavo", () => {
     const limit = clearanceDiscountLimit(1.52, 1.07, 18, true, 7);
-    const net = lineTotals(7, 1.52, limit, 18, true).net;
-    expect((net - 7 * 1.07) / net).toBeGreaterThanOrEqual(0.15);
+    expect(marginOf(lineTotals(7, 1.52, limit, 18, true).total, 7 * 1.07)).toBeGreaterThanOrEqual(0.15);
   });
 
   it("la caja limita también una promoción sin isClearance y usa el lote FEFO más caro", () => {
@@ -34,8 +42,7 @@ describe("N-12 · oferta con margen neto mínimo de 15 %", () => {
     expect(promotionCostFloor(variant)).toBe(140);
     const applied = cappedPromotionDiscount(promo, variant, 1, true);
     expect(applied).toBeLessThan(60);
-    const net = lineTotals(1, 236, applied, 18, true).net;
-    expect((net - 140) / net).toBeGreaterThanOrEqual(0.15);
+    expect(marginOf(lineTotals(1, 236, applied, 18, true).total, 140)).toBeGreaterThanOrEqual(0.15);
   });
 
   it("POST promotions real rechaza el 60% sin marcador antes de crear la promoción", async () => {

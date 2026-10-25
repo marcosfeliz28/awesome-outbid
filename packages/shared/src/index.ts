@@ -587,7 +587,9 @@ export const safeDiscount = (price: number, cost: number, minMargin = 15) =>
         ),
       );
 // Precio base inalterado; solo se calcula el máximo descuento de una oferta.
-// Comprueba también el neto redondeado de la línea, que es lo que se cobra.
+// Regla de la dueña (CLAUDE.md 3): margen = (cobrado − costo)/cobrado, sin
+// restar ITBIS, mínimo 15 %. Se comprueba el total redondeado de la línea,
+// que es lo que se cobra.
 export function clearanceDiscountLimit(
   price: number,
   cost: number,
@@ -596,11 +598,11 @@ export function clearanceDiscountLimit(
   qty = 1,
 ): number {
   if (![price, cost, taxRate, qty].every(Number.isFinite) || price <= 0 || cost < 0 || taxRate < 0 || qty <= 0) return 0;
-  const minimumPrice = cost / 0.85 * (taxIncluded ? 1 + taxRate / 100 : 1);
-  let percent = Math.floor(Math.max(0, Math.min(50, (1 - minimumPrice / price) * 100)) * 100 + 1e-8) / 100;
+  const charged = taxIncluded ? price : price * (1 + taxRate / 100);
+  let percent = Math.floor(Math.max(0, Math.min(50, (1 - cost / 0.85 / charged) * 100)) * 100 + 1e-8) / 100;
   while (percent > 0) {
-    const net = lineTotals(qty, price, percent, taxRate, taxIncluded).net;
-    if (net > 0 && (net - cost * qty) / net >= 0.15 - 1e-10) break;
+    const total = lineTotals(qty, price, percent, taxRate, taxIncluded).total;
+    if (total > 0 && d(total).times(0.85).gte(d(cost).times(qty))) break;
     percent = Math.round((percent - 0.01) * 100) / 100;
   }
   return percent;
