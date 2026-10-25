@@ -4,6 +4,7 @@ export default defineConfig({
     // 5 s (el valor por defecto) se agotaban con la máquina ocupada (F-3).
     testTimeout: 30000,
     include: [
+      "tests/admin-dashboard-*.test.ts",
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",
       "tests/customer-display.test.ts",
