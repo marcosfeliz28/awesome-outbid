@@ -629,7 +629,9 @@ export class CashController {
         where: {
           id: saleId,
           status: "completed",
-          cashSession: { branchId: actor.branchId, userId: actor.id },
+          // Sólo una venta recién cobrada de una caja abierta puede abrir la gaveta sola.
+          createdAt: { gte: new Date(Date.now() - 2 * 60_000) },
+          cashSession: { branchId: actor.branchId, userId: actor.id, closedAt: null },
           payments: {
             some: { method: "cash", amount: { gt: 0 }, status: { not: "rejected" } },
           },

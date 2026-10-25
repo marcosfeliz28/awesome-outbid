@@ -79,7 +79,7 @@ describe("PC-16 · apertura auditada de gaveta", () => {
     });
     expect(tx.sale.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
-        cashSession: { branchId: seller.branchId, userId: seller.id },
+        cashSession: { branchId: seller.branchId, userId: seller.id, closedAt: null },
         payments: { some: expect.objectContaining({ method: "cash" }) },
       }),
     }));
@@ -116,6 +116,42 @@ describe("PC-16 · apertura auditada de gaveta", () => {
       entity: "sale",
       entityId: "44444444-4444-4444-8444-444444444444",
     }) });
+  });
+
+  // Fake de sale.findFirst que sí aplica la ventana de tiempo y la caja abierta.
+  const SALE = "44444444-4444-4444-8444-444444444445";
+  const autoController = (sale: { createdAt: Date; sessionClosedAt: Date | null }, audits: any[] = []) => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ locked: "" }]),
+      sale: {
+        findFirst: vi.fn(async ({ where }: any) => {
+          if (where.createdAt?.gte && sale.createdAt < where.createdAt.gte) return null;
+          if (where.cashSession?.closedAt === null && sale.sessionClosedAt) return null;
+          return { id: SALE };
+        }),
+      },
+      auditLog: {
+        findFirst: vi.fn(async () => audits[0] ?? null),
+        create: vi.fn(async ({ data }: any) => ({ id: "33333333-3333-4333-8333-333333333334", ...data })),
+      },
+    } as any;
+    return { tx, controller: new CashController({ $transaction: (w: any) => w(tx) } as any) };
+  };
+
+  it("apertura automática: rechaza una venta de hace más de 2 minutos", async () => {
+    const { controller, tx } = autoController({ createdAt: new Date(Date.now() - 3 * 60_000), sessionClosedAt: null });
+    await expect(controller.automaticDrawerOpen({ saleId: SALE }, seller)).rejects.toThrow(/no pertenece/i);
+    expect(tx.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it("apertura automática: rechaza una venta de una caja cerrada", async () => {
+    const { controller } = autoController({ createdAt: new Date(), sessionClosedAt: new Date() });
+    await expect(controller.automaticDrawerOpen({ saleId: SALE }, seller)).rejects.toThrow(/no pertenece/i);
+  });
+
+  it("apertura automática: una venta en efectivo reciente de caja abierta se acepta", async () => {
+    const { controller } = autoController({ createdAt: new Date(Date.now() - 5_000), sessionClosedAt: null });
+    expect((await controller.automaticDrawerOpen({ saleId: SALE }, seller)).open).toBe(true);
   });
 
   it("rechaza una referencia ajena o inexistente sin escribir bitácora", async () => {
