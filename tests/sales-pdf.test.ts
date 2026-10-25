@@ -410,7 +410,7 @@ describe("G5 · contenido real de PDF", () => {
 
   // V2-02 (auditoría 03 v2): el PDF sale por WhatsApp o correo.
   it("V2-02: no imprime teléfono ni cédula completa del cliente y lleva política de devolución y aviso de privacidad", async () => {
-    const make = (ncfType: string | null) => ({
+    let make = (ncfType: string | null) => ({
       id: "ee2ed38c-fd20-4e93-8780-24049da3f566",
       number: "FS-0000043",
       status: "completed",
@@ -485,6 +485,13 @@ describe("G5 · contenido real de PDF", () => {
     const fiscal = await render("B01");
     expect(fiscal).toContain("RNC/Cédula");
     expect(fiscal).toContain("678");
+    expect(fiscal).toContain("pendiente de emisión fiscal");
+    // ncfMode «sequences»: la venta ya trae su NCF y el PDF lo imprime.
+    const original = make;
+    make = (type) => ({ ...original(type), ncf: "B0200000007" }) as any;
+    const assigned = await render("B02");
+    expect(assigned).toContain("NCF: B0200000007");
+    expect(assigned).not.toContain("pendiente de emisión fiscal");
   });
 
   it("la nota de crédito incluye negocio, fecha, devolución y condiciones", async () => {

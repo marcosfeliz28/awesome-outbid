@@ -581,8 +581,12 @@ export function InvoicePrint({
           <Row label="Monto pendiente" value={rd(sale.creditBalance)} strong />
         </>
       )}
-      {sale.ncfType && (
-        <p>Solicitud NCF {sale.ncfType} · pendiente de emisión fiscal</p>
+      {sale.ncf && sale.ncfType ? (
+        <Row label="NCF:" value={sale.ncf} />
+      ) : (
+        sale.ncfType && (
+          <p>Solicitud NCF {sale.ncfType} · pendiente de emisión fiscal</p>
+        )
       )}
       {sale.offline && <p>RECIBO PROVISIONAL · PENDIENTE DE SINCRONIZAR</p>}
       <hr />

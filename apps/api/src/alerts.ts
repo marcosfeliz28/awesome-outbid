@@ -452,8 +452,8 @@ export class AlertEngine {
       if (enabled(type))
         events.push({ key, type, severity, entityId, message, branchId });
     };
-    // PC-13: sólo avisamos de rangos declarados por administración. Nunca
-    // consumimos ni inferimos números NCF a partir de ventas del POS.
+    // PC-13: avisos de los rangos declarados. Con ncfMode «sequences» la venta
+    // avanza el próximo número (takeNcf); aquí sólo se lee.
     let keepNcfOpen = false;
     if (process.env.PRODUCT_TENANCY === "required") {
       const [tenant, sequences] = await Promise.all([

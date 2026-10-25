@@ -224,7 +224,10 @@ export function drawSaleReceipt(
     if (sale?.ncfType)
       cursor = drawText(
         doc,
-        `Solicitud NCF: ${cleanText(sale.ncfType, 20)} · pendiente de emisión fiscal`,
+        // Con ncfMode «sequences» la venta ya trae su NCF asignado.
+        sale.ncf
+          ? `NCF: ${cleanText(sale.ncf, 20)}`
+          : `Solicitud NCF: ${cleanText(sale.ncfType, 20)} · pendiente de emisión fiscal`,
         left,
         cursor + 2,
         width,
