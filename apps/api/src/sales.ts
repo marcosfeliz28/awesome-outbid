@@ -843,13 +843,32 @@ export class SalesController {
           bad(
             "La caja de esta venta ya cerró: gerencia debe revisarla y registrarla con una justificación.",
           );
-        const customer = input.customerId
-          ? await lockActiveCustomer(tx, actor, input.customerId)
-          : null;
         const settings = await tx.settings.findUnique({
           where: tenantUnique("id", actor.branchId),
         });
         const config = settings?.data as any;
+        // Producto: con «Pedir cliente» apagado, una venta sin cliente es de
+        // «Consumidor final» (la tienda siempre exige cliente).
+        if (
+          !input.customerId &&
+          productMode() &&
+          config?.requireCustomer === false
+        ) {
+          const walkIn = await tx.customer.findFirst({
+            where: {
+              branchId: actor.branchId,
+              active: true,
+              anonymizedAt: null,
+              name: { equals: "Consumidor final", mode: "insensitive" },
+            },
+            orderBy: { createdAt: "asc" },
+            select: { id: true },
+          });
+          if (walkIn) input = { ...input, customerId: walkIn.id };
+        }
+        const customer = input.customerId
+          ? await lockActiveCustomer(tx, actor, input.customerId)
+          : null;
         input = {
           ...input,
           payments: usdCashPayments(input.payments, config?.usdRate, offline),

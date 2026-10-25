@@ -2,7 +2,8 @@
 // (cajera = seller, gerente = manager, almacén = warehouse); la migración
 // 202610280024 los agrega a las empresas existentes sin tocar lo que ya
 // tienen. Una cajera con ese rol cierra a ciegas, tiene tope de descuento y
-// necesita el PIN de OTRA persona; el conteo con centavos cuadra exacto y
+// necesita el PIN de OTRA persona; vende sin elegir cliente («Consumidor
+// final»); el conteo con centavos cuadra exacto y
 // una venta bajo costo avisa sin bloquearse. Postgres real.
 import { execFile } from "node:child_process";
 import { createServer } from "node:net";
@@ -175,8 +176,10 @@ it("roles base por empresa, backfill idempotente y la cajera con sus reglas", as
         items: [{ variantId, qty: 1, discountPercent }],
         payments: [{ method: "cash", amount: cash ?? 20.1 }], ...extra,
       });
-    const plain = await sell(cashier);
+    // Sin elegir cliente («Pedir cliente» apagado): la venta es de «Consumidor final».
+    const plain = await sell(cashier, { customerId: undefined });
     expect(plain.status, JSON.stringify(plain.body)).toBe(201);
+    expect(plain.body.customerId).toBe(customerId);
     expect(plain.body.belowCost).toBeUndefined();
     // Tope de descuento: 60 % (> 10 %) pide PIN; el de la propia cajera no sirve.
     const reason = { discountReason: "Producto con caja dañada" };

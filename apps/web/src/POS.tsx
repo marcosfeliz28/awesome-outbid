@@ -526,7 +526,8 @@ export function POS({ go }: { go: (page: string) => void }) {
           )
         : undefined;
     if (!customerId && walkIn) setCustomer(walkIn.id);
-    else if (!customerId) {
+    // Si la lista aún no trae «Consumidor final», la API lo pone sola.
+    else if (!customerId && config.data?.requireCustomer !== false) {
       setPickerHint("Selecciona o crea el cliente antes de cobrar.");
       setClientPicker(true);
       return;
@@ -2043,7 +2044,7 @@ function Checkout({
       setError("Escribe el monto del envío o quita la casilla «Con envío».");
       return;
     }
-    if (!customerId) {
+    if (!customerId && config?.requireCustomer !== false) {
       setError("Selecciona o crea el cliente antes de vender.");
       return;
     }

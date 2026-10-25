@@ -377,7 +377,12 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.getByRole("button", { name: "Finalizar venta" }).click();
     await expect(page.getByText("Venta registrada", { exact: true })).toBeVisible();
     expect(seen.size).toBeLessThanOrEqual(5);
-    const settings = await (await page.request.get(`${web}/api/settings`, { headers: auth })).json();
+    // La venta quedó a nombre de «Consumidor final» sin que nadie lo eligiera.
+    const walkIn = (await (await page.request.get(`${web}/api/customers`, { headers: auth })).json())
+      .find((c: any) => c.name === "Consumidor final");
+    const sold = await (await page.request.get(`${web}/api/sales`, { headers: auth })).json();
+    expect((sold.items ?? sold).map((s: any) => s.customerId)).toEqual([walkIn.id]);
+    const settings =await (await page.request.get(`${web}/api/settings`, { headers: auth })).json();
     expect(settings).toMatchObject({ ncfMode: "disabled", legalId: "", phone: "809-555-0101", taxIncluded: true });
     expect((await (await page.request.get(`${web}/api/onboarding`, { headers: auth })).json()).dismissed).toBe(true);
     const sessions = await (await page.request.get(`${web}/api/cash-sessions`, { headers: auth })).json();
