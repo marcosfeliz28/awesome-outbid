@@ -23,6 +23,7 @@ import {
   parse,
   safe,
   uuid,
+  assertWholeUnits,
 } from "./common";
 import { lockVariant, stockChange } from "./inventory";
 import { retrySerializable } from "./inventory-resilience";
@@ -159,6 +160,7 @@ export class WarehousesController {
   async transfer(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const input = parse(transferSchema, body);
     if (input.fromId === input.toId) bad("Elige dos almacenes diferentes.");
+    await assertWholeUnits(this.db, actor.branchId, input.lines);
     const keys = input.lines.map((l) => `${l.variantId}:${l.lotId ?? ""}`);
     if (new Set(keys).size !== keys.length)
       bad("Hay productos o lotes repetidos.");

@@ -139,6 +139,9 @@ model Product {
   location    String    @default("")
   active      Boolean   @default(true)
   isKit       Boolean   @default(false)
+  // false sólo para kg/lb/litro o productos con decimales históricos
+  // (202610290001_sold_by_unit): los demás rechazan cantidades fraccionadas.
+  soldByUnit  Boolean   @default(true)
   variants    Variant[]
   branchId    String    @default("main")
   createdBy   String?

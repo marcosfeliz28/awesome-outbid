@@ -132,6 +132,22 @@ export const RequireTerminal = () => SetMetadata("terminal", true);
 export function bad(message: string): never {
   throw new HttpException(message, 400);
 }
+/** Las fajas y todo lo que no es kg/lb/litro se mueven en unidades enteras
+ * (Product.soldByUnit). Sólo consulta la base si hay alguna fracción. */
+export async function assertWholeUnits(
+  db: { variant: { findFirst: (args: any) => Promise<any> } },
+  branchId: string,
+  items: { variantId: string; qty: unknown }[],
+) {
+  const fractional = items.filter((i) => !Number.isInteger(Number(i.qty)));
+  if (!fractional.length) return;
+  const whole = await db.variant.findFirst({
+    where: { id: { in: fractional.map((i) => i.variantId) }, branchId, product: { soldByUnit: true } },
+    select: { product: { select: { name: true } } },
+  });
+  if (whole)
+    bad(`«${whole.product.name}» se vende por unidad: usa una cantidad entera, sin decimales.`);
+}
 export function denied(
   message = "No tienes permiso para realizar esta acción.",
 ): never {

@@ -46,6 +46,7 @@ import {
   safe,
   json,
   qty,
+  assertWholeUnits,
 } from "./common";
 import {
   isSerializationConflict,
@@ -684,6 +685,7 @@ export class InventoryController {
       (!parsed.supplierId || !parsed.reference)
     )
       bad("Elige el proveedor y escribe la referencia de la devolución.");
+    await assertWholeUnits(this.db, actor.branchId, [parsed]);
     const data = parsed.lotNumber
       ? { ...parsed, ...lotIdentity(parsed.lotNumber, parsed.expiryDate) }
       : parsed;
@@ -996,6 +998,7 @@ export class InventoryController {
     const data = { items, supplierId, expectedDate };
     if (new Set(data.items.map((i) => i.variantId)).size !== data.items.length)
       bad("Agrupa las cantidades por variante.");
+    await assertWholeUnits(this.db, actor.branchId, data.items);
     return this.db.$transaction(async (tx) => {
       const supplier = await tx.supplier.findFirstOrThrow({
         where: { id: data.supplierId, branchId: actor.branchId, active: true },
@@ -1533,6 +1536,7 @@ export class InventoryController {
           where: { tenantId_branchId_kind: { tenantId: currentTenantId(), branchId: actor.branchId, kind: "store" } },
         });
     if (!warehouse) bad("Almacén inválido.");
+    await assertWholeUnits(this.db, actor.branchId, data.items.map((i) => ({ variantId: i.variantId, qty: i.counted })));
     const items = [];
     for (const item of data.items) {
       const variant = await this.db.variant.findFirstOrThrow({

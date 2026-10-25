@@ -35,6 +35,7 @@ import {
   customerForActor,
   isMaskedPii,
   withoutImages,
+  assertWholeUnits,
 } from "./common";
 import { moneyDb } from "./database-errors";
 import {
@@ -797,6 +798,7 @@ export class AdminController {
       }),
       body,
     );
+    await assertWholeUnits(this.db, actor.branchId, data.items);
     // Una cotización no puede reservar ni revelar precio de un artículo de
     // otra empresa. Validar TODOS los IDs antes de guardar el JSON de líneas.
     const requestedVariantIds = [

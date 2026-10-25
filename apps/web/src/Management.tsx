@@ -281,6 +281,12 @@ export function Catalog() {
       type: "checkbox",
     },
     {
+      key: "soldByUnit",
+      label: "Se vende por unidad (sin decimales; desmárcalo para kg, lb o litro)",
+      type: "checkbox",
+      initial: true,
+    },
+    {
       key: "imageUrl",
       label: "URL de la foto",
       initial: "/products/accessories.svg",
@@ -639,6 +645,11 @@ export function Catalog() {
                   requiredNumber("minStock", "Stock mínimo"),
                   requiredNumber("maxStock", "Stock máximo"),
                   { key: "imageUrl", label: "Foto URL" },
+                  {
+                    key: "soldByUnit",
+                    label: "Se vende por unidad (sin decimales)",
+                    type: "checkbox",
+                  },
                   { key: "active", label: "Producto activo", type: "checkbox" },
                 ]
               : [

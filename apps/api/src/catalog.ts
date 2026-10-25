@@ -166,6 +166,7 @@ async function assertCategoriesInBranch(
     );
 }
 
+const FRACTIONAL_UNITS = ["kg", "lb", "litro"];
 const variantSchema = z.object({
   sku: z.string().trim().min(1).max(80),
   barcode: z.string().trim().min(1).max(80),
@@ -186,8 +187,10 @@ const productSchema = z.object({
   minStock: amount.default(5),
   maxStock: amount.default(80),
   location: z.string().max(80).default(""),
-  // «servicio» (GV Makeup Studio): se vende sin existencia.
-  unit: z.enum(["unidad", "servicio"]).optional(),
+  // «servicio» (GV Makeup Studio): se vende sin existencia. kg/lb/litro
+  // admiten decimales; lo demás se vende por unidad (soldByUnit).
+  unit: z.enum(["unidad", "servicio", "kg", "lb", "litro"]).optional(),
+  soldByUnit: z.boolean().optional(),
   variants: z.array(variantSchema).min(1).max(500),
 });
 
@@ -387,6 +390,7 @@ export class CatalogController {
       const row = await tx.product.create({
         data: {
           ...data,
+          soldByUnit: data.soldByUnit ?? !FRACTIONAL_UNITS.includes(data.unit ?? "unidad"),
           createdBy: actor.id,
           branchId: actor.branchId,
           variants: {

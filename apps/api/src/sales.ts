@@ -72,6 +72,7 @@ import {
   canViewCustomerPii,
   customerForActor,
   maskTail,
+  assertWholeUnits,
 } from "./common";
 import { lockVariant, takeStock, stockChange, promotionCostFloor } from "./inventory";
 import { takeNcf } from "./ncf-sequences";
@@ -713,6 +714,8 @@ export class SalesController {
     if (requestsDiscount && !normalizedInput.discountReason)
       bad("Indica el motivo del descuento.");
     input = normalizedInput;
+    // Una venta sin conexión ya se entregó: no se rechaza por decimales.
+    if (!offline) await assertWholeUnits(this.db, actor.branchId, input.items);
     if (offline) {
       const settings = await this.db.settings.findUnique({
         where: tenantUnique("id", actor.branchId),
@@ -2898,6 +2901,10 @@ export class SalesController {
         const remaining = d(line.qty).minus(line.returnedQty);
         if (isKit && !Number.isInteger(i.qty) && !remaining.eq(i.qty))
           bad("Los combos se devuelven por unidades enteras.");
+        // Lo que se vende por unidad se devuelve entero (salvo el saldo de
+        // una venta antigua con decimales).
+        if (line.variant.product.soldByUnit && !Number.isInteger(i.qty) && !remaining.eq(i.qty))
+          bad(`«${line.variant.product.name}» se vende por unidad: devuelve una cantidad entera.`);
         if (
           i.restock &&
           (i.damaged || (i.opened && line.variant.product.category.requiresLot))

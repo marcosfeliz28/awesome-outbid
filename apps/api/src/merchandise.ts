@@ -38,6 +38,7 @@ import {
   json,
   parse,
   uuid,
+  assertWholeUnits,
 } from "./common";
 import { assertCodesFree, explainCodeConflict } from "./catalog";
 import {
@@ -407,6 +408,7 @@ export class MerchandiseController {
       );
     if (data.direction === "exit" && data.items.some((i) => i.quick))
       bad("No puedes crear productos en una salida.");
+    await assertWholeUnits(this.db, actor.branchId, data.items.filter((i): i is typeof i & { variantId: string } => !!i.variantId));
     // En una entrada el lote se indica por número (se crea o se incrementa);
     // un lotId sin validar quedaría en el kardex apuntando a otro lote.
     if (data.direction === "entry" && data.items.some((i) => i.lotId))
