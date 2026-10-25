@@ -11,8 +11,14 @@
 .assistant-body { overflow-y: auto; padding: 16px; }
 .assistant-usage { margin: 0 0 12px; color: #e3f9ff; font-weight: 700; }
 .assistant-body [role="alert"] { color: #fff; background: #713238; padding: 8px; border-radius: 8px; }
-.assistant-messages { display: flex; flex-direction: column; gap: 8px; max-height: 35dvh; overflow-y: auto; }
+.assistant-messages { display: flex; flex-direction: column; gap: 8px; max-height: min(55dvh, 520px); overflow-y: auto; }
 .assistant-message { margin: 0; padding: 10px; border: 1px solid #789ab2; border-radius: 10px; overflow-wrap: anywhere; }
+.assistant-message p, .assistant-message ul, .assistant-message ol { margin: 6px 0 0; white-space: pre-line; }
+.assistant-message ul, .assistant-message ol { padding-left: 20px; }
+.assistant-author { display: block; }
+.assistant-table { margin-top: 6px; overflow-x: auto; }
+.assistant-table table { border-collapse: collapse; font-size: .9rem; }
+.assistant-table th, .assistant-table td { padding: 4px 8px; border: 1px solid #6289a0; text-align: left; }
 .assistant-user { background: #1a425f; }
 .assistant-assistant { background: #18314a; }
 .assistant-proposal { margin-top: 12px; padding: 12px; border: 2px solid #ffd166; border-radius: 10px; background: #2d3450; }
@@ -24,5 +30,10 @@
 .assistant-body form label { font-weight: 700; }
 .assistant-body textarea { width: 100%; min-height: 60px; box-sizing: border-box; border: 2px solid #9ee4f2; border-radius: 8px; background: #fff; color: #10253d; font: inherit; padding: 8px; resize: vertical; }
 .assistant-body form button { align-self: flex-end; padding: 8px 14px; }
+/* En el celular el botón sube por encima de las barras fijas de abajo
+   (Mercancía, cobro del POS) para no taparlas. */
+@media (max-width: 900px) {
+  body:has(.goods-mobile-bar, .pos-mobile-bar, .goods-actions.has-items) .assistant-launcher { bottom: calc(88px + env(safe-area-inset-bottom)); }
+}
 @media (max-width: 350px) { .assistant-examples { grid-template-columns: 1fr; } .assistant-header { padding: 12px; } .assistant-body { padding: 12px; } }
 @media (prefers-reduced-motion: reduce) { .assistant-panel, .assistant-launcher { scroll-behavior: auto; transition: none; animation: none; } }

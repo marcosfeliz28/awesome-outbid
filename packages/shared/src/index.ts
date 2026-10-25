@@ -880,6 +880,11 @@ export const foldSearch = (value: string) =>
     .toLowerCase();
 const UNIT: Record<string, string> = {
   l: "lb",
+  // «2 litros» debe encontrar «2L»: van a la misma forma que «l».
+  lt: "lb",
+  lts: "lb",
+  litro: "lb",
+  litros: "lb",
   lb: "lb",
   lbs: "lb",
   libra: "lb",

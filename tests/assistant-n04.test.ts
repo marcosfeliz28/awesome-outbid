@@ -23,6 +23,6 @@ describe("N-04 · anulación solo tras confirmación humana", () => {
       .mockResolvedValueOnce({ stop_reason: "end_turn", content: [{ type: "text", text: "No puedo proponerlo con esos datos." }], usage: {} });
     const result = await askAssistant(question, "Bearer prueba", { name: "Cajera" }, { model, get });
     expect(result.proposal).toBeUndefined();
-    expect(get).toHaveBeenCalledTimes(3); // existencias y sus dos reportes cerrados
+    expect(get).toHaveBeenCalledTimes(1); // existencias: una sola ruta cerrada
   });
 });
