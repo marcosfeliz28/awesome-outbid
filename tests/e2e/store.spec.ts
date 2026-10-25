@@ -49,6 +49,7 @@ test.beforeEach(async ({ request }) => {
         data: {
           countedCash: Math.max(0, s.expected.cash),
           countedCard: Math.max(0, s.expected.card),
+          ...(s.expected.card > 0 ? { batchNumber: "QA-LOTE" } : {}),
           countedTransfer: Math.max(0, s.expected.transfer),
           differenceReason: "QA: cierre de limpieza de la prueba",
           notes: "Cierre entre escenarios E2E",
@@ -2599,6 +2600,14 @@ test.describe("Tienda-pantallas", () => {
     await expect(sheet).toContainText("Firma cajera");
     await expect(sheet).toContainText("FIN DEL CUADRE");
     await expect.poll(() => prints(page)).toBeGreaterThan(0);
+    // Dueña (25-oct): los productos no salen pegados; se preguntan aparte.
+    await expect(sheet).not.toContainText(
+      "REPORTE DE LA VENTA DIARIA DE USUARIO",
+    );
+    const printsAfterCuadre = await prints(page);
+    await page.getByRole("button", { name: "Sí, imprimir productos" }).click();
+    await expect(sheet).toContainText("REPORTE DE LA VENTA DIARIA DE USUARIO");
+    await expect.poll(() => prints(page)).toBeGreaterThan(printsAfterCuadre);
     // Desde el historial: reimprimir el cuadre y los dos reportes.
     await page.getByRole("button", { name: "Cerrar", exact: true }).click();
     const row = page.locator(".cash-history-actions").first();
@@ -2872,6 +2881,7 @@ test("D-01: la vendedora necesita el PIN del gerente para una contraentrega sobr
         data: {
           countedCash: Math.max(0, s.expected.cash),
           countedCard: Math.max(0, s.expected.card),
+          ...(s.expected.card > 0 ? { batchNumber: "QA-LOTE" } : {}),
           countedTransfer: Math.max(0, s.expected.transfer),
           differenceReason: "QA: cierre de limpieza de la prueba",
           notes: "Cierre E2E D-01",

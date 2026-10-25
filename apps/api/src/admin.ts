@@ -133,7 +133,14 @@ const configSchema = z.object({
   // desde el selector de clientes del POS.
   requireCustomer: z.boolean().default(true),
   // Tasa del día (RD$ por unidad) para el efectivo en dólares y euros.
-  usdRate: z.number().positive().max(10000).nullable().optional(),
+  // Cuatro decimales: los mismos que guarda cada pago en dólares.
+  usdRate: z
+    .number()
+    .positive()
+    .max(10000)
+    .transform((v) => Math.round(v * 10000) / 10000)
+    .nullable()
+    .optional(),
   eurRate: z.number().positive().max(10000).nullable().optional(),
   // Cuentas de banco donde caen las transferencias y terminales de tarjeta
   // (orden de la dueña, 20-oct): la caja elige de esta lista, no escribe.

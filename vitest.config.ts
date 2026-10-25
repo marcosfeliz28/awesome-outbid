@@ -68,6 +68,7 @@ export default defineConfig({
       "tests/product-app-module.test.ts",
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",
+      "tests/pago-dolares-migration-postgres.test.ts",
       "tests/customer-display.test.ts",
       "tests/conciliar-transferencias.test.ts",
       "tests/year-report.test.ts",

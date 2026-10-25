@@ -897,6 +897,15 @@ export function Inventory() {
                     </span>
                   ),
                 },
+                { label: "Precio", render: (v) => formatMoney(v.price) },
+                ...(can(user.permissions, "profit:read")
+                  ? [
+                      {
+                        label: "Costo",
+                        render: (v: any) => formatMoney(v.costAvg),
+                      },
+                    ]
+                  : []),
                 {
                   label: selectedWarehouse
                     ? "En " + selectedWarehouse.name
@@ -2246,16 +2255,16 @@ function DiscardOfflineSale({
               No salió o se devolvió, con su dinero (no se mueve nada)
             </option>
             <option value="delivered">
-              El cliente se la llevó y pagó (salida de inventario y entrada de
-              caja)
+              El cliente se la llevó y pagó (se registra la venta con su
+              factura)
             </option>
           </select>
         </label>
         <p className="form-hint">
           {outcome === "delivered"
-            ? "La venta no se registra, pero se descuenta la mercancía del inventario y lo cobrado en efectivo (" +
+            ? "Se registra la venta real con los datos que guardó el servidor y los precios de hoy, en la caja de quien la cobró (" +
               formatMoney(paid) +
-              ") entra a la caja de esa venta, para que el cuadre y el stock coincidan. Queda en la bitácora y en una alerta para gerencia."
+              " cobrados en el equipo). La revisa la cajera que la cobró, con el PIN de gerencia. Si el pago no cubre el total o falta algún dato, se rechaza: descártala como devuelta y vuelve a facturarla."
             : "La venta no se registra ni descuenta inventario. Lo cobrado en este equipo (" +
               formatMoney(paid) +
               ") queda anotado en la bitácora y en una alerta para gerencia: si el dinero quedó en la caja, el cuadre lo mostrará como sobrante."}

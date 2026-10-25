@@ -1730,7 +1730,9 @@ describe("Seguridad, offline y funciones completadas", () => {
       Number((await ok("/products/" + clothing.id)).variants[0].stock),
     ).toBe(9);
   });
-  it("7: sincroniza en caja cerrada dentro de su horario y audita el reajuste", async () => {
+  // #6 (25-oct): la caja cerrada no cambia sola; la venta queda en conflicto y
+  // gerencia la registra con justificación (tests/caja-cerrada-api.test.ts).
+  it("7: una venta sin conexión en caja cerrada queda en conflicto y no cambia el cierre", async () => {
     const cash = (await ok("/cash-sessions")).find((c) => c.id === session.id);
     const capturedAt = new Date().toISOString();
     const payload = { ...input(clothing.variants[0].id, 118), capturedAt };
@@ -1741,14 +1743,10 @@ describe("Seguridad, offline y funciones completadas", () => {
     });
     expect((await request("/sales", payload)).status).toBe(409);
     const synced = await ok("/sales/sync", { sales: [payload] });
-    expect(synced.results[0].status).toBe("synced");
+    expect(synced.results[0].status).toBe("conflict");
+    expect(synced.results[0].message).toMatch(/ya cerró/);
     const adjusted = (await ok("/cash-sessions")).find((c) => c.id === cash.id);
-    expect(Number(adjusted.differenceCash)).toBe(-118);
-    expect(
-      (await ok("/audit-log")).some(
-        (a) => a.action === "offline_after_close" && a.entityId === cash.id,
-      ),
-    ).toBe(true);
+    expect(Number(adjusted.differenceCash)).toBe(0);
     const outside = await ok("/sales/sync", {
       sales: [
         {

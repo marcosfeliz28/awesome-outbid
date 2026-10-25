@@ -269,7 +269,7 @@ describe("Auditoría 01 · dinero", () => {
     });
     expect((log.after as any).approvedBy).toBeTruthy();
     expect((log.after as any).vouchers).toBe(3000);
-    // Quien gestiona ventas no necesita PIN, pero sí la nota, y queda alerta.
+    // Un gerente en SU caja necesita el PIN de otro (25-oct) y la nota; queda alerta.
     const m = await person("manager", "a1m", 500);
     expect((await close(m, { countedCash: 400, vouchers: 100 })).status).toBe(
       400,
@@ -280,6 +280,7 @@ describe("Auditoría 01 · dinero", () => {
           countedCash: 400,
           vouchers: 100,
           notes: "Vale de compra de agua",
+          managerPin: MANAGER_PIN,
         })
       ).status,
     ).toBeLessThan(300);
@@ -380,6 +381,8 @@ describe("Auditoría 01 · dinero", () => {
       saleBody(m, v, 1, [{ method: "cash", amount: 600 }], {
         globalDiscount: 40,
         discountReason: "Cliente frecuente",
+        // PIN de 25-oct: el descuento del gerente lo aprueba otra persona.
+        managerPin: MANAGER_PIN,
       }),
     );
     await ok("/alerts", admin);
@@ -923,6 +926,7 @@ describe("Auditoría 01 · dinero", () => {
           saleBody(m, v, 1, [{ method: "cash", amount: 600 }], {
             globalDiscount: 40,
             discountReason: "Cliente frecuente",
+            managerPin: MANAGER_PIN,
           }),
         );
         // Sin abrir Avisos ni correr la evaluación.

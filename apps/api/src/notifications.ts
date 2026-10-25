@@ -668,7 +668,7 @@ export async function renderEvent(
     const ownerCash =
       payment.method === "cash" &&
       !payment.cashSessionId &&
-      payment.reference === "Recibido por la dueña";
+      !!payment.reference?.startsWith("Recibido por la dueña");
     const [cashier, customer, approver] = await Promise.all([
       userName(db, place.userId),
       customerName(db, sale.customerId),

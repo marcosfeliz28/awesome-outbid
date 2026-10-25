@@ -1509,7 +1509,7 @@ describe("Q-02 · reenvíos simultáneos con la misma clave", () => {
 });
 
 describe("Corregir el método de pago (dueña, 23-oct)", () => {
-  it("efectivo → contraentrega con la caja cerrada: la caja cuadra, queda por cobrar y el incentivo no cambia", async () => {
+  it("efectivo → contraentrega con la caja cerrada: la caja cuadra, queda por cobrar y el incentivo espera al cobro", async () => {
     const wendy = await person("wendy", "seller");
     const s = (await sale(wendy, 300, [{ method: "cash", amount: 300 }])).body;
     const incentive = await totalOf(s.id);
@@ -1551,7 +1551,9 @@ describe("Corregir el método de pago (dueña, 23-oct)", () => {
     expect((await pendingList()).some((p: any) => p.saleId === s.id)).toBe(
       true,
     );
-    expect(await totalOf(s.id)).toBe(incentive);
+    // Revisión 25-oct #9: el incentivo de una contraentrega llega al cobrar
+    // (antes esta prueba exigía que no cambiara: era el fallo).
+    expect(await totalOf(s.id)).toBe(0);
     // Repetir es inofensivo.
     expect((await correct(adminA, { method: "cod" })).status).toBeLessThan(300);
     expect(
@@ -1559,7 +1561,7 @@ describe("Corregir el método de pago (dueña, 23-oct)", () => {
         where: { action: "payment_method_corrected", entityId: s.id },
       }),
     ).toBe(1);
-    // Se cobra como cualquier contraentrega, sin acreditar el incentivo dos veces.
+    // Se cobra como cualquier contraentrega: el incentivo llega una sola vez.
     await ok("/sales/" + s.id + "/cod-collections", adminA.token, {
       offlineUuid: randomUUID(),
       cashSessionId: adminA.cash.id,
@@ -1647,5 +1649,59 @@ describe("A1 · efectivo que ya tiene la dueña, registrado por la cajera con PI
         where: { saleId: s.id, entryType: "installment" },
       }),
     ).toBe(1);
+    // Una referencia propia no quita la marca (hallazgo de Claude PC, 25-oct).
+    const s2 = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
+    const tagged = await request(
+      "/sales/" + s2.id + "/credit-collections",
+      ana.token,
+      {
+        operationId: randomUUID(),
+        cashSessionId: ana.cash.id,
+        managerPin: "246813",
+        lines: [
+          {
+            method: "cash",
+            amount: 200,
+            ownerConfirmed: true,
+            reference: "sin marca",
+          },
+        ],
+      },
+    );
+    expect(tagged.status, JSON.stringify(tagged.body)).toBeLessThan(300);
+    const p2 = await db.payment.findFirst({
+      where: { saleId: s2.id, entryType: "installment" },
+    });
+    expect(p2.reference).toBe("Recibido por la dueña · sin marca");
+    expect((await expectedOf(ana)).cash).toBe(before.cash);
+    const cuadre2 = await ok(
+      "/cash-sessions/" + ana.cash.id + "/cuadre",
+      owner,
+    );
+    expect(cuadre2.ownerReceived.some((r: any) => r.number === s2.number)).toBe(
+      true,
+    );
+  });
+
+  it("con dos cajas abiertas a la vez, el cobro de la dueña sale solo en el cuadre de la caja que lo registró (CPC-1)", async () => {
+    const s = (await sale(ana, 150, [{ method: "cod", amount: 150 }])).body;
+    const done = await request(
+      "/sales/" + s.id + "/credit-collections",
+      ana.token,
+      {
+        operationId: randomUUID(),
+        cashSessionId: ana.cash.id,
+        managerPin: "246813",
+        lines: [{ method: "cash", amount: 150, ownerConfirmed: true }],
+      },
+    );
+    expect(done.status, JSON.stringify(done.body)).toBeLessThan(300);
+    const seen = async (who: Actor) =>
+      (
+        await ok("/cash-sessions/" + who.cash.id + "/cuadre", owner)
+      ).ownerReceived.some((r: any) => r.number === s.number);
+    expect(await seen(ana)).toBe(true);
+    expect(await seen(adminA)).toBe(false);
+    expect(await seen(adminB)).toBe(false);
   });
 });

@@ -70,27 +70,16 @@ export function PrintModal({
     queryKey: ["settings"],
     queryFn: () => api("/settings"),
   });
-  // Caja recién cerrada: el papel de productos vendidos sale siempre, pegado
-  // al cuadre en la misma impresión (dueña, 17-oct); antes había que pedirlo
-  // con «Siguiente» y nadie lo imprimía.
-  const withProducts = !!sessionId && printing?.kind === "cuadre";
-  const products = useQuery({
-    queryKey: ["session-print", "daily", sessionId],
-    queryFn: () => loadSessionPrint("daily", sessionId!),
-    enabled: withProducts,
-  });
-  const extra = withProducts ? products.data : undefined;
-  // Dueña (21-oct): al cerrar caja sale el cuadre y, pegada, la lista de
-  // productos vendidos. Antes se imprimía a los 50 ms, sin esperar la lista,
-  // y el papel salía solo con el cuadre.
+  // Dueña (25-oct): el cuadre se imprime solo y luego se pregunta aparte si
+  // también se imprimen los productos vendidos (antes salían pegados).
+  const [askProducts, setAskProducts] = useState(true);
   const printed = useRef(false);
-  const ready = !withProducts || products.isSuccess || products.isError;
   useEffect(() => {
-    if (!autoPrint || !printing || !ready || printed.current) return;
+    if (!autoPrint || !printing || printed.current) return;
     printed.current = true;
     const t = setTimeout(() => window.print(), 300);
     return () => clearTimeout(t);
-  }, [autoPrint, printing, ready]);
+  }, [autoPrint, printing]);
   if (!printing) return null;
   const width = config.data?.receiptWidth ?? "80";
   return (
@@ -104,6 +93,26 @@ export function PrintModal({
           Listo
         </Button>
       </div>
+      {sessionId && onSwitch && printing.kind === "cuadre" && askProducts && (
+        <div className="print-actions" role="group" aria-label="Productos">
+          <p>¿También deseas imprimir los productos vendidos de esta caja?</p>
+          <Button
+            onClick={async () => {
+              try {
+                onSwitch(await loadSessionPrint("daily", sessionId));
+                setTimeout(() => window.print(), 300);
+              } catch (e: any) {
+                toast(e.message, true);
+              }
+            }}
+          >
+            Sí, imprimir productos
+          </Button>
+          <Button variant="secondary" onClick={() => setAskProducts(false)}>
+            No
+          </Button>
+        </div>
+      )}
       {sessionId && onSwitch && (
         <div className="print-actions">
           {(
@@ -113,10 +122,7 @@ export function PrintModal({
               ["method", "Facturas por forma de pago"],
             ] as [PrintKind, string][]
           )
-            .filter(
-              ([kind]) =>
-                kind !== printing.kind && !(extra && kind === "daily"),
-            )
+            .filter(([kind]) => kind !== printing.kind)
             .map(([kind, label]) => (
               <Button
                 key={kind}
@@ -136,19 +142,9 @@ export function PrintModal({
       )}
       <div className={"print-preview w" + width}>
         <PrintBody p={printing} />
-        {extra && (
-          <div className="tp-next-sheet">
-            <DailyUserReportPrint r={extra.data} compact />
-          </div>
-        )}
       </div>
       <PrintSheet width={width}>
         <PrintBody p={printing} />
-        {extra && (
-          <div className="tp-next-sheet">
-            <DailyUserReportPrint r={extra.data} compact />
-          </div>
-        )}
       </PrintSheet>
     </Modal>
   );
@@ -196,6 +192,7 @@ export function CloseCashModal({
     notes: "",
     managerPin: "",
     differenceReason: "",
+    batchNumber: "",
   });
   const user = useStore((s) => s.user);
   // Igual que cash.ts (canViewCashExpected).
@@ -228,8 +225,11 @@ export function CloseCashModal({
   // A-1: un vale de caja exige nota y, a quien no gestiona ventas, el PIN de
   // un gerente (la API aplica la misma regla).
   const hasVouchers = parse(form.vouchers) > 0;
+  // Un gerente tampoco aprueba el vale de su propia caja (la dueña sí).
   const voucherNeedsPin =
-    hasVouchers && !can(user?.permissions ?? [], "sale:manage");
+    hasVouchers &&
+    (!can(user?.permissions ?? [], "sale:manage") ||
+      (session.userId === user?.id && !can(user?.permissions ?? [], "*")));
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -277,6 +277,7 @@ export function CloseCashModal({
         ...(delivered === null ? {} : { delivered }),
         notes: form.notes,
         differenceReason: form.differenceReason,
+        batchNumber: form.batchNumber.trim(),
         ...(voucherNeedsPin || cardNeedsPin || cashNeedsPin
           ? { managerPin: form.managerPin }
           : {}),
@@ -288,9 +289,10 @@ export function CloseCashModal({
       setError(e.message);
       if (/total de tarjeta no coincide/i.test(e.message))
         setCardNeedsPin(true);
-      if (/caja no cuadra con el sistema/i.test(e.message))
+      if (/caja no cuadra con el sistema|intentos de cierre/i.test(e.message))
         setCashNeedsPin(true);
-      if (/no cuadra|no coincide/i.test(e.message)) setNeedsReason(true);
+      if (/no cuadra|no coincide|intentos de cierre/i.test(e.message))
+        setNeedsReason(true);
       if (/total de tarjeta no coincide/i.test(e.message)) setCloseIssue("card");
       else if (/caja no cuadra con el sistema/i.test(e.message)) setCloseIssue("cash");
       if (/no cuadra|no coincide/i.test(e.message)) setShowCloseHelp(true);
@@ -378,7 +380,7 @@ export function CloseCashModal({
             <label className="field">
               <span>
                 {voucherNeedsPin
-                  ? "PIN de gerente (vale de caja)"
+                  ? "PIN de otro gerente (vale de caja)"
                   : cardNeedsPin
                     ? "PIN de gerente (tarjeta no coincide)"
                     : "PIN de gerente (la caja no cuadra)"}
@@ -404,6 +406,20 @@ export function CloseCashModal({
             "Total que imprimió el verifón al cerrar el lote de hoy. Cierra el verifón antes de cerrar la caja; escribe 0 solo si no hubo cobros con tarjeta.",
             true,
           )}
+          <label className="field">
+            <span>Número de lote del verifón</span>
+            <input
+              value={form.batchNumber}
+              onChange={set("batchNumber")}
+              maxLength={40}
+              inputMode="numeric"
+              aria-describedby="batch-help"
+            />
+            <small id="batch-help">
+              Obligatorio si hubo cobros con tarjeta (venta sola o mixta): el
+              número que imprime el voucher al cerrar el lote.
+            </small>
+          </label>
           {money(
             "Entregado",
             "delivered",

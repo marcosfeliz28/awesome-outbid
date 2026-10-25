@@ -83,7 +83,7 @@ Otros datos que faltan:
 
 ## Correo de cierres y anulaciones (14-oct)
 - Hecho en el código: cada cierre de caja y cada solicitud de anulación manda un correo a **marcos.feliz@gmail.com** (con el cuadre y el enlace a Nexora POS). Ortografía confirmada por la dueña el 14-oct: «feliz», no «felix». El correo de la cuenta de Resend y `NOTIFY_EMAIL_TO` deben ser ese mismo.
-- Falta una sola cosa para activarlo: crear una cuenta gratis en resend.com con su correo, crear una clave de API y ponerla en Render (servicio API) como `RESEND_API_KEY`, más `NOTIFY_EMAIL_TO` con ese mismo correo. La clave no se escribe en chats ni en el repositorio.
+- **Activo** (verificado el 24-oct-2026: llegan a Gmail, pestaña Actualizaciones, desde `onboarding@resend.dev`). Opcional: verificar el dominio de la tienda en resend.com para cambiar el remitente.
 - Las cajeras ya no ven "Vale de caja" en el cierre (así no les pide PIN por error); las salidas de efectivo se registran como «Salida».
 
 ## Créditos cobrados en efectivo (15-oct, orden de la dueña)
@@ -130,3 +130,9 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 ## Caja de Wendy del 23-oct: −3,500
 - ✔ FS-225 corregida 24-oct a contraentrega (Addison), pendiente 3,500; caja de Wendy en 0. Cerrarla cuando Addison entregue el efectivo.
 - Transferencias de Wendy sin verificar: FS-227 2,400 y FS-228 6,500.
+
+## Cuadre 24-oct (sábado)
+- 4 cajas cuadran. 19 transferencias del 22, 23 y 24 verificadas con fotos del banco (incluye FS-200 El Millón 8,250).
+- ✅ Wendy US$58.30: de una venta suya; resuelto por la dueña (25-oct).
+- ✅ COD FS-241 Luisa 2,200 + FS-244 Margot 4,650 cobradas el 25-oct (Addison entregó 7,000, se le devolvieron 150).
+- Cardnet lote 24-oct 17,970 → esperar ~17,278 el lunes.

@@ -669,10 +669,15 @@ describe("Respaldo a Google Drive · permisos y conexión", () => {
     await invalid("?code=abc&state=" + encodeURIComponent(state), {
       Cookie: "nexora_drive_oauth=otro-navegador",
     });
-    await invalid(
-      "?code=abc&state=" + encodeURIComponent(state.slice(0, -2) + "xx"),
-      { Cookie: cookie },
-    );
+    // Firma alterada: se cambia una letra del medio por otra distinta (las
+    // últimas letras de base64url pueden decodificar a los mismos bytes).
+    const dot = state.indexOf(".");
+    const i = dot + 5;
+    const tampered =
+      state.slice(0, i) + (state[i] === "A" ? "B" : "A") + state.slice(i + 1);
+    await invalid("?code=abc&state=" + encodeURIComponent(tampered), {
+      Cookie: cookie,
+    });
     const claims = JSON.parse(
       Buffer.from(state.split(".")[0]!, "base64url").toString(),
     );

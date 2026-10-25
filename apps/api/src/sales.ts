@@ -15,7 +15,6 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Prisma } from "@prisma/client";
-import { compare } from "bcryptjs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { newObjectKey, parsePaymentObjectReference, paymentObjectReference, tenantObjectStore } from "./tenant-object-store";
 import { reserveTenantObject } from "./tenant-object-deletion";
@@ -28,6 +27,7 @@ import {
   lineTotals,
   clearanceDiscountLimit,
   paymentTotals,
+  usdToDop,
   money,
   formatMoney,
   formatAmount,
@@ -115,6 +115,7 @@ function offlineSaleEvidence(attempted: any) {
       .map((payment: any) => ({
         method: String(payment?.method ?? "").slice(0, 20),
         amount: number(payment?.amount),
+        ...(payment?.currency === "USD" ? { currency: "USD" } : {}),
       })),
   };
 }
@@ -181,6 +182,9 @@ export function saleHistoryDto(sale: any, actor: Actor) {
       cardLast4: summary.cardLast4,
       approvalCode: summary.approvalCode,
       cardType: summary.cardType,
+      currency: summary.currency,
+      amountUsd: summary.amountUsd,
+      usdRate: summary.usdRate,
       status: summary.status,
       entryType: summary.entryType,
       hasProof: summary.hasProof,
@@ -227,7 +231,9 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     ...(can(actor.permissions, "sale:manage")
       ? {
           courierFee: sale.courierFee,
-          courierName: sale.courierName,
+          // Ventas viejas sin envío guardan «Addison» (valor por defecto de la
+          // columna hasta el 25-oct, #10): sin envío no se muestra.
+          courierName: Number(sale.courierFee) > 0 ? sale.courierName : null,
           courierPaidAt: sale.courierPaidAt,
         }
       : {}),
@@ -428,6 +434,42 @@ function cashCollected(
       .reduce((sum, p) => sum.plus(p.amount as any), d(0)),
   );
 }
+// Efectivo en dólares (dueña, 25-oct): la tasa la pone Configuración, no la
+// caja. En línea la caja debe cobrar con esa misma tasa; una venta offline
+// cobrada antes de que la tasa cambiara conserva la suya si está a ±2 % (el
+// vuelto ya se dio con ella). El equivalente en pesos se recalcula al centavo.
+export function usdCashPayments<
+  T extends {
+    method: string;
+    amount: number;
+    currency?: string;
+    amountUsd?: number;
+    usdRate?: number;
+  },
+>(payments: T[], configuredRate: unknown, offline = false): T[] {
+  return payments.map((p) => {
+    if (p.currency !== "USD") return p;
+    if (!(Number(configuredRate) > 0))
+      bad(
+        "No hay tasa del dólar en Configuración: no se puede cobrar en dólares. Pide a la administración que registre la tasa del día.",
+      );
+    const current = d(Number(configuredRate)).toDecimalPlaces(4).toNumber();
+    let rate = current;
+    if (p.usdRate !== undefined && Math.abs(p.usdRate - current) > 0.00005) {
+      if (!offline || Math.abs(p.usdRate - current) / current > 0.02)
+        bad(
+          `La tasa del dólar cambió: ahora es RD$ ${current} por US$ 1. Revisa el cobro en dólares.`,
+        );
+      rate = d(p.usdRate).toDecimalPlaces(4).toNumber();
+    }
+    const amount = usdToDop(p.amountUsd!, rate);
+    if (Math.abs(amount - p.amount) > 0.01)
+      bad(
+        `US$ ${p.amountUsd} a RD$ ${rate} son RD$ ${amount}: revisa el cobro en dólares.`,
+      );
+    return { ...p, amount, usdRate: rate };
+  });
+}
 // Decisión 38: una caja es de un usuario; nadie opera con la de otra persona.
 const OTHER_CASH =
   "Esta caja es de otra persona. Cada usuario vende y mueve dinero sólo en su propia caja; abre la tuya.";
@@ -534,10 +576,10 @@ export function cappedPromotionDiscount(promo: any, variant: any, qty: number, t
   ));
 }
 
-import { cashExpected, refreshClosedCash } from "./cash";
+import { cashExpected, closedCashChanged, refreshClosedCash } from "./cash";
 import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
-import { managerPinApproval, verifyPinAttempt } from "./security";
+import { managerPinApproval } from "./security";
 import { drawSaleReceipt } from "./receipt-pdf";
 import {
   moveSaleIncentives,
@@ -626,7 +668,7 @@ export class SalesController {
       (p) => p.method === "credit_note" && !p.creditNoteCode,
     );
     if (
-      (!exceeds || can(actor.permissions, "sale:manage")) &&
+      (!exceeds || can(actor.permissions, "*")) &&
       !needsCreditApproval &&
       !needsNoteApproval
     )
@@ -639,25 +681,20 @@ export class SalesController {
             ? `La deuda pendiente de este cliente más esta venta supera ${formatMoney(Number((setting?.data as any)?.creditApprovalThreshold ?? 1000))}: esta operación requiere el PIN de un gerente.`
             : "Esta operación requiere el PIN de un gerente.",
       );
-    const managers = await this.db.user.findMany({
-      where: { active: true, branchId: actor.branchId },
-      include: { role: true },
-    });
-    return verifyPinAttempt(
-      this.db,
-      "approval:" + actor.id,
-      async () => {
-        for (const manager of managers.filter((m) =>
-          can(m.role.permissions, "sale:manage"),
-        ))
-          if (await compare(input.managerPin!, manager.pinHash))
-            return manager.id;
-        return null;
-      },
-      { pin: input.managerPin, actor },
-    );
+    return managerPinApproval(this.db, actor, input.managerPin);
   }
-  async complete(actor: Actor, input: SaleInput, offline = false) {
+  async complete(
+    actor: Actor,
+    input: SaleInput,
+    offline = false,
+    // #4/#6: la revisión de una venta sin conexión entregada la registra por
+    // aquí. `closedCashReason` justifica que entre en una caja ya cerrada;
+    // `inTransaction` corre al inicio de la misma transacción.
+    review: {
+      closedCashReason?: string;
+      inTransaction?: (tx: Prisma.TransactionClient) => Promise<void>;
+    } = {},
+  ) {
     // El envío solo se anota si el dinero llega por banco o verifón; en
     // efectivo o contraentrega el mensajero se cobra de ahí (orden 3af).
     if (
@@ -713,7 +750,11 @@ export class SalesController {
     if (requestsDiscount && !normalizedInput.discountReason)
       bad("Indica el motivo del descuento.");
     input = normalizedInput;
-    if (offline) {
+    // La revisión de gerencia («entregada», `closedCashReason`) registra una
+    // venta que ya se cobró: no la frenan el interruptor de ventas sin
+    // conexión ni el plazo de 48 h; todo lo demás se valida igual.
+    const reviewed = !!review.closedCashReason;
+    if (offline && !reviewed) {
       const settings = await this.db.settings.findUnique({
         where: tenantUnique("id", actor.branchId),
         select: { data: true },
@@ -727,6 +768,7 @@ export class SalesController {
     const result = await moneyDb(this.db).$transaction(
       async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${input.offlineUuid}))::text AS locked`;
+        await review.inTransaction?.(tx);
         const existing = await tx.sale.findUnique({
           where: tenantUnique("offlineUuid", input.offlineUuid),
           include: { items: true, payments: true },
@@ -756,7 +798,7 @@ export class SalesController {
           })
         )
           throw new OfflineSaleDiscardedError();
-        if (offline) {
+        if (offline && !reviewed) {
           const settings = await tx.settings.findUnique({
             where: tenantUnique("id", actor.branchId),
             select: { data: true },
@@ -778,7 +820,11 @@ export class SalesController {
           await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"receivable-shift:" + actor.id}))::text AS locked`;
         const capturedAt =
           offline && input.capturedAt ? new Date(input.capturedAt) : undefined;
-        if (capturedAt && Date.now() - capturedAt.getTime() > 48 * 3600000)
+        if (
+          capturedAt &&
+          !reviewed &&
+          Date.now() - capturedAt.getTime() > 48 * 3600000
+        )
           bad("La venta offline supera el plazo máximo de 48 horas.");
         const cashSession = await cashLock(
           tx,
@@ -791,6 +837,12 @@ export class SalesController {
         // cobra. cashLock ya exige que la caja sea de quien vende; esto lo
         // deja como invariante explícito por si esa regla cambia.
         if (cashSession.userId !== actor.id) denied(OTHER_CASH);
+        // #6: una caja cerrada no cambia sin justificación. La venta queda en
+        // conflicto y gerencia la registra desde la revisión, con su motivo.
+        if (cashSession.closedAt && !review.closedCashReason)
+          bad(
+            "La caja de esta venta ya cerró: gerencia debe revisarla y registrarla con una justificación.",
+          );
         const customer = input.customerId
           ? await lockActiveCustomer(tx, actor, input.customerId)
           : null;
@@ -798,6 +850,10 @@ export class SalesController {
           where: tenantUnique("id", actor.branchId),
         });
         const config = settings?.data as any;
+        input = {
+          ...input,
+          payments: usdCashPayments(input.payments, config?.usdRate, offline),
+        };
         if (!customer) bad("Selecciona o crea un cliente antes de vender.");
         const components = await tx.kitComponent.findMany({
           where: { kitVariantId: { in: input.items.map((i) => i.variantId) } },
@@ -1228,6 +1284,42 @@ export class SalesController {
               cashSessionId: cashSession.id,
             },
           );
+        // Venta offline cobrada con otra tasa del dólar (±2 %): se acepta,
+        // pero queda en la bitácora y en un aviso que sólo ve la dueña.
+        const currentRate = Number(config?.usdRate)
+          ? d(Number(config.usdRate)).toDecimalPlaces(4).toNumber()
+          : null;
+        const drifted = input.payments.filter(
+          (p) => p.currency === "USD" && p.usdRate !== currentRate,
+        );
+        if (drifted.length) {
+          const rates = drifted.map((p) => ({
+            amountUsd: p.amountUsd,
+            usdRate: p.usdRate,
+            amount: p.amount,
+          }));
+          await audit(tx, actor, "usd_rate_offline", "sale", sale.id, null, {
+            currentRate,
+            payments: rates,
+            capturedAt: capturedAt?.toISOString() ?? null,
+          });
+          const message =
+            `La venta ${sale.number} (sin conexión) se cobró en dólares a ` +
+            rates.map((r) => `RD$ ${r.usdRate}`).join(", ") +
+            ` por US$ 1; la tasa actual es RD$ ${currentRate}.`;
+          await tx.alert.upsert({
+            where: tenantUnique("key", "usd_rate_offline:" + sale.id),
+            create: {
+              key: "usd_rate_offline:" + sale.id,
+              type: "usd_rate_offline",
+              severity: "high",
+              entityId: sale.id,
+              message,
+              branchId: actor.branchId,
+            },
+            update: { message, status: "new" },
+          });
+        }
         if ((credit || cod) && approvedBy)
           await audit(
             tx,
@@ -1314,8 +1406,18 @@ export class SalesController {
             "cash",
             cashSession.id,
             cashSession,
-            { saleId: sale.id, ...differences },
+            {
+              saleId: sale.id,
+              ...differences,
+              reason: review.closedCashReason,
+            },
           );
+          await closedCashChanged(tx, actor, cashSession, {
+            ref: sale.id,
+            what: `se registró la venta sin conexión ${sale.number} por RD$ ${formatAmount(Number(sale.total))}`,
+            reason: review.closedCashReason!,
+            differences,
+          });
         }
         await recordSaleIncentives(tx, actor, sale.id);
         await audit(tx, actor, "complete", "sale", sale.id, undefined, {
@@ -1509,6 +1611,26 @@ export class SalesController {
                 // N8: qué se vendió, por si se borran los datos del navegador
                 // antes de que gerencia la descarte.
                 detail: offlineSaleEvidence(attempted),
+                // #4: la venta tal como la validó el servidor, sin el PIN.
+                // Con ella la revisión registra la venta real si se entregó.
+                sale: (() => {
+                  const valid = saleSchema.safeParse(attempted);
+                  if (!valid.success) return null;
+                  const { managerPin: ignoredPin, ...stored } = valid.data;
+                  void ignoredPin;
+                  // N8: nunca la referencia ni el banco del pago. Una venta
+                  // con transferencia no se registra desde la revisión.
+                  return {
+                    ...stored,
+                    payments: stored.payments.map(
+                      ({ reference, bank, ...payment }: any) => {
+                        void reference;
+                        void bank;
+                        return payment;
+                      },
+                    ),
+                  };
+                })(),
                 // Sólo una caja propia de esta sucursal se guarda como evidencia.
                 cashSessionId:
                   typeof attempted.cashSessionId === "string" &&
@@ -2085,6 +2207,10 @@ export class SalesController {
         !["cash", "card", "transfer", "cod", "credit"].includes(payment.method)
       )
         bad("Este pago no se puede corregir.");
+      if (payment.currency === "USD")
+        bad(
+          "Este pago se recibió en dólares; no se puede cambiar de método. Si fue un error, anula la venta o haz una devolución.",
+        );
       if (payment.status === "rejected")
         bad("Este pago fue rechazado; no se puede corregir.");
       if (
@@ -2128,6 +2254,11 @@ export class SalesController {
         where: { id: saleId },
         data: {
           creditBalance: balance,
+          // Revisión 25-oct #9: con saldo pendiente el incentivo llega al
+          // cobrar, como en una venta a crédito o contraentrega. No se apaga:
+          // así devoluciones y anulaciones descuentan lo acreditado de verdad.
+          incentiveOnCollection:
+            sale.incentiveOnCollection || Number(balance) > 0,
           receivableKind:
             Number(balance) > 0
               ? (data.receivableKind ??
@@ -2154,13 +2285,32 @@ export class SalesController {
           update: {},
         });
       await refreshReceivableAlert(tx, saleId, actor.branchId);
+      // El incentivo sigue al saldo (lo ya acreditado se ajusta con una
+      // entrada), igual que al marcar «al por mayor».
+      if (!balanceChange.isZero())
+        await syncCreditIncentives(
+          tx,
+          actor,
+          saleId,
+          "collection",
+          randomUUID(),
+          undefined,
+          true,
+        );
       let differences: unknown = null;
       if (payment.cashSessionId) {
         const session = await tx.cashSession.findUniqueOrThrow({
           where: { id: payment.cashSessionId },
         });
-        if (session.closedAt)
+        if (session.closedAt) {
           differences = await refreshClosedCash(tx, session);
+          await closedCashChanged(tx, actor, session, {
+            ref: "method:" + payment.id,
+            what: `en la venta ${sale.number}, un pago de RD$ ${formatAmount(Number(payment.amount))} pasó de ${payment.method} a ${data.method}`,
+            reason: data.reason,
+            differences,
+          });
+        }
       }
       await audit(
         tx,
@@ -2248,6 +2398,15 @@ export class SalesController {
     // D-02: si la caja de la venta ya cerró, el efectivo del reembolso sale
     // de la caja abierta de quien anula. Se bloquea antes que la venta, en el
     // mismo orden que una devolución (caja que reembolsa y luego venta).
+    // Pago en dólares: anularla con la caja cerrada recalcularía ese cierre
+    // como si los US$ nunca hubieran entrado. Se devuelve con una devolución.
+    if (
+      originalCash?.closedAt &&
+      saleRef.payments.some((p) => p.currency === "USD")
+    )
+      bad(
+        "Esta venta se cobró en dólares y su caja ya cerró: no se puede anular. Haz una devolución.",
+      );
     let refundCash: any = null;
     if (originalCash?.closedAt && cashCollected(saleRef.payments) > 0) {
       const own = await tx.cashSession.findFirst({
@@ -2401,8 +2560,15 @@ export class SalesController {
           ...(refundCash
             ? { refundCashSessionId: refundCash.id, refundAmount }
             : {}),
+          reason: reasonText,
         },
       );
+      await closedCashChanged(tx, actor, originalCash, {
+        ref: "void:" + id,
+        what: `se anuló la venta ${sale.number} por RD$ ${formatAmount(Number(sale.total))}`,
+        reason: reasonText,
+        differences: cashDifferences,
+      });
     }
     await audit(tx, actor, "void", "sale", id, sale, {
       status: "voided",
@@ -2814,6 +2980,7 @@ export class SalesController {
         cashSessionId: uuid,
         reason,
         refundMethod: z.enum(["cash", "card", "transfer", "credit_note"]),
+        managerPin: z.string().optional(),
         items: z
           .array(
             z.object({
@@ -2847,6 +3014,27 @@ export class SalesController {
         }
       }
       const refundCash = await cashLock(tx, actor, data.cashSessionId, true);
+      // Revisión 25-oct #7: el efectivo de la caja abierta de otra persona
+      // sólo sale con el PIN de su dueña o de otro gerente (nunca el de quien
+      // devuelve); la dueña del negocio («*») no lo necesita.
+      let refundApprovedBy: string | null = null;
+      if (
+        data.refundMethod === "cash" &&
+        refundCash.userId !== actor.id &&
+        !can(actor.permissions, "*")
+      ) {
+        if (!data.managerPin)
+          bad(
+            "Esta caja es de otra persona: para devolver efectivo desde ella se necesita el PIN de su dueña o de otro gerente.",
+          );
+        refundApprovedBy = await managerPinApproval(
+          this.db,
+          actor,
+          data.managerPin!,
+          [],
+          [refundCash.userId],
+        );
+      }
       // N-A1 (auditoría 06 v2): orden único de bloqueo Caja → Cliente → Venta
       // → Variantes → Notas. La nota de crédito referencia al cliente con una
       // FK (CreditNote_customerId_fkey) que toma FOR KEY SHARE sobre su fila;
@@ -3157,7 +3345,15 @@ export class SalesController {
         },
       });
       await reverseIncentives(tx, actor, "return", sale.id, row.id, data.items);
-      await audit(tx, actor, "return", "sale", sale.id, undefined, row);
+      await audit(
+        tx,
+        actor,
+        "return",
+        "sale",
+        sale.id,
+        undefined,
+        refundApprovedBy ? { ...row, refundApprovedBy } : row,
+      );
       // B-6 (auditoría 01): reembolsar por un medio que la venta no usó (p. ej.
       // efectivo de una venta con tarjeta) convierte tarjeta en efectivo. Se
       // permite a quien gestiona ventas, pero queda una alerta para revisarlo.
@@ -4189,8 +4385,13 @@ export class SalesController {
       ...payment
     } = data;
     // Queda marcado en el pago para distinguirlo del efectivo de una caja.
-    if (ownerClosed && data.method === "cash" && !payment.reference?.trim())
-      payment.reference = "Recibido por la dueña";
+    // La marca va siempre primero: el cuadre y el aviso la buscan así y una
+    // referencia propia no la puede quitar (hallazgo de Claude PC, 25-oct).
+    if (ownerClosed && data.method === "cash")
+      payment.reference = (
+        OWNER_CASH_MARK +
+        (payment.reference?.trim() ? " · " + payment.reference.trim() : "")
+      ).slice(0, 100);
     const row = await tx.payment.create({
       data: {
         ...payment,
@@ -4291,6 +4492,7 @@ function lineKey(operationId: string, index: number) {
     .digest("hex");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
+export const OWNER_CASH_MARK = "Recibido por la dueña";
 const creditLineSchema = z.object({
   amount: moneyAmount().transform((v) => money(v)),
   method: z.enum(["cash", "card", "transfer"]),

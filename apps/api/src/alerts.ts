@@ -54,8 +54,6 @@ const CASH_DIFFERENCE_PRIVATE_MESSAGE =
 // ventana (30 cierres, ventas de hoy): sólo una persona las resuelve, o su
 // propio flujo (verificar la transferencia, cobrar la cuenta, resolver el
 // conflicto offline).
-/** Tipos que sólo ve administración (`*`); CPC-10: también el dólar. */
-export const ADMIN_ONLY_ALERT_TYPES = ["sale_void_request", "ncf_sequence", "plan_due", "usd_rate_change"];
 export const MANUAL_ALERT_TYPES = [
   "offline_conflict",
   "receivable",
@@ -80,6 +78,21 @@ export const MANUAL_ALERT_TYPES = [
   // La tasa se aplica automáticamente; un salto superior al 5 % queda para
   // revisión humana y no debe resolverse por la evaluación periódica.
   "usd_rate_change",
+  // Venta offline cobrada en dólares con otra tasa (pago en dólares, 25-oct).
+  "usd_rate_offline",
+  // Cambio en una caja ya cerrada y su «falta lote» (#6, 25-oct).
+  "cash_after_close",
+  "card_batch_missing",
+];
+// CPC-10 y la tienda: avisos que sólo ve administración («*»).
+export const ADMIN_ONLY_ALERT_TYPES = [
+  "sale_void_request",
+  "ncf_sequence",
+  "plan_due",
+  "usd_rate_change",
+  "usd_rate_offline",
+  "cash_after_close",
+  "card_batch_missing",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,
@@ -524,10 +537,8 @@ export class AlertEngine {
             `${label(v)} · ${lot.lotNumber}: ${days < 0 ? "vencido" : `vence en ${days} días`}.`,
           );
       }
-      const netMargin = margin(
-        Number(v.price) / (1 + Number(v.product.taxRate) / 100),
-        cost,
-      );
+      // Margen de la dueña: sin restar ITBIS (revisión 25-oct #8).
+      const netMargin = margin(v.price, cost);
       if (netMargin < (config?.lowMargin ?? 15))
         add(
           "margin:" + v.id,
@@ -634,11 +645,7 @@ export class AlertEngine {
             productId: variant.productId,
             imageUrl: variant.product.imageUrl,
             category: variant.product.category.name,
-            margin: margin(
-              Number(variant.price) /
-                (1 + Number(variant.product.taxRate) / 100),
-              Number(variant.costAvg),
-            ),
+            margin: margin(variant.price, variant.costAvg),
             name: variant.product.name,
             sku: variant.sku,
             stock: Number(variant.stock),

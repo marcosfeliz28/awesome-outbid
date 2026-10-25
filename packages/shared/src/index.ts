@@ -480,8 +480,10 @@ export const receivableApprovalMessage = (
 };
 export const grossProfit = (net: number, cost: number) =>
   money(d(net).minus(cost));
-export const margin = (net: number, cost: number) =>
-  net <= 0 ? 0 : money(d(net).minus(cost).div(net).times(100));
+// Margen de la dueña, la única fórmula del sistema: (precio − costo)/precio en
+// %, con el precio tal como se cobra, SIN restar ITBIS (revisión 25-oct #8).
+export const margin = (price: Decimal.Value, cost: Decimal.Value) =>
+  d(price).lte(0) ? 0 : money(d(price).minus(cost).div(price).times(100));
 export const markup = (price: number, cost: number) =>
   cost <= 0 ? 0 : money(d(price).minus(cost).div(cost).times(100));
 export const netProfit = (
@@ -526,11 +528,24 @@ export const clearanceScore = (
       (daysToExpiry === null ? 0 : Math.max(0, 60 - daysToExpiry) * 2) +
       Math.min((stock * cost) / 1000, 40),
   );
-export const safeDiscount = (price: number, cost: number, taxRate = 18) =>
-  Math.max(
-    0,
-    Math.min(50, Math.floor(margin(price / (1 + taxRate / 100), cost))),
-  );
+// Mayor descuento (%, hasta 50) que deja el margen de la dueña en `minMargin`:
+// precio × (1 − x) ≥ costo / (1 − minMargin).
+export const safeDiscount = (price: number, cost: number, minMargin = 15) =>
+  price <= 0
+    ? 0
+    : Math.max(
+        0,
+        Math.min(
+          50,
+          d(1)
+            .minus(
+              d(cost).div(d(price).times(d(1).minus(d(minMargin).div(100)))),
+            )
+            .times(100)
+            .floor()
+            .toNumber(),
+        ),
+      );
 // Precio base inalterado; solo se calcula el máximo descuento de una oferta.
 // Comprueba también el neto redondeado de la línea, que es lo que se cobra.
 export function clearanceDiscountLimit(
@@ -595,40 +610,57 @@ export const saleSchema = z.object({
   receivableKind: z.enum(["credit", "cod"]).optional(),
   payments: z
     .array(
-      z.object({
-        // cod: contraentrega. La venta sale de inventario y ese importe queda
-        // pendiente hasta que el mensajero trae el dinero.
-        method: z.enum([
-          "cash",
-          "card",
-          "transfer",
-          "credit_note",
-          "credit",
-          "cod",
-        ]),
-        creditNoteId: z.string().uuid().optional(),
-        creditNoteCode: z
-          .string()
-          .trim()
-          .toUpperCase()
-          .regex(/^[0-9A-F]{32}$/)
-          .optional(),
-        amount: moneyAmount(),
-        bank: z.string().max(100).optional(),
-        reference: z.string().max(100).optional(),
-        cardBrand: z.string().max(40).optional(),
-        cardLast4: z
-          .string()
-          .regex(/^\d{4}$/)
-          .optional(),
-        cardType: z.enum(["credit", "debit"]).optional(),
-        approvalCode: z.string().max(100).optional(),
-      }),
+      z
+        .object({
+          // cod: contraentrega. La venta sale de inventario y ese importe queda
+          // pendiente hasta que el mensajero trae el dinero.
+          method: z.enum([
+            "cash",
+            "card",
+            "transfer",
+            "credit_note",
+            "credit",
+            "cod",
+          ]),
+          creditNoteId: z.string().uuid().optional(),
+          creditNoteCode: z
+            .string()
+            .trim()
+            .toUpperCase()
+            .regex(/^[0-9A-F]{32}$/)
+            .optional(),
+          amount: moneyAmount(),
+          bank: z.string().max(100).optional(),
+          reference: z.string().max(100).optional(),
+          cardBrand: z.string().max(40).optional(),
+          cardLast4: z
+            .string()
+            .regex(/^\d{4}$/)
+            .optional(),
+          cardType: z.enum(["credit", "debit"]).optional(),
+          approvalCode: z.string().max(100).optional(),
+          // Efectivo en dólares (dueña, 25-oct): `amount` es el equivalente en
+          // pesos; la API lo recalcula con la tasa de Configuración. Opcionales:
+          // la huella de una venta offline anterior no cambia.
+          currency: z.enum(["DOP", "USD"]).optional(),
+          amountUsd: moneyAmount(1000000).optional(),
+          usdRate: z.number().positive().max(10000).optional(),
+        })
+        .refine(
+          (p) =>
+            p.currency === "USD"
+              ? p.method === "cash" && p.amountUsd !== undefined
+              : p.amountUsd === undefined && p.usdRate === undefined,
+          "El pago en dólares es sólo en efectivo e indica los US$ recibidos.",
+        ),
     )
     .min(1)
     .max(20),
 });
 export type SaleInput = z.infer<typeof saleSchema>;
+/** Equivalente en pesos de un pago en dólares, al centavo. */
+export const usdToDop = (amountUsd: Decimal.Value, rate: Decimal.Value) =>
+  money(d(amountUsd).times(rate));
 
 // ── Cuadre de caja de la tienda (docs/tienda/CUADRE_REPORTES_FACTURA.md) ──
 
@@ -707,6 +739,8 @@ export const cashCloseSchema = z
       .string()
       .regex(/^\d{4,6}$/)
       .optional(),
+    // CPC-2: lote del verifón (la API lo exige si hubo ventas con tarjeta).
+    batchNumber: z.string().trim().max(40).default(""),
   })
   .refine((v) => v.countedCash !== undefined || v.denominations !== undefined, {
     message: "indica el efectivo contado o el conteo por denominaciones",

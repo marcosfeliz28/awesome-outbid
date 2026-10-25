@@ -509,7 +509,8 @@ export class ReportsController {
         netProfit: money(
           d(netProfit(net, cost, expense, fees)).minus(inventoryLoss),
         ),
-        margin: margin(net, cost),
+        // Margen de la dueña sobre lo cobrado, sin restar ITBIS (#8).
+        margin: margin(revenue, cost),
         fees,
         invoices: sales._count,
         ticketAverage: averageTicket(revenue, sales._count),
@@ -580,7 +581,7 @@ export class ReportsController {
         revenue: money(revenue),
         cost: money(cost),
         profit: money(profit),
-        margin: revenue.gt(0) ? money(profit.div(revenue).times(100)) : 0,
+        margin: margin(revenue, cost),
       };
     });
     const revenue = months.reduce((a, m) => a + m.revenue, 0),
@@ -591,7 +592,7 @@ export class ReportsController {
         months,
         revenue: money(revenue),
         profit: money(profit),
-        margin: revenue > 0 ? money((profit / revenue) * 100) : 0,
+        margin: margin(revenue, revenue - profit),
       },
       actor,
     );
@@ -643,7 +644,7 @@ export class ReportsController {
         units: Number(r.units ?? 0),
         cost: money(cost),
         profit: money(profit),
-        margin: revenue.gt(0) ? money(profit.div(revenue).times(100)) : 0,
+        margin: margin(revenue, cost),
       };
     };
     const total = row({
@@ -1120,7 +1121,7 @@ export class ReportsController {
         const salesBatch = (cursor?: { at: Date; id: string }) => {
           const batch = this.db.$queryRaw<
             any[]
-          >`WITH b AS (SELECT s.id, s."costTotal", s."createdAt" FROM "Sale" s WHERE ${filter}${cursor ? Prisma.sql` AND (s."createdAt", s.id) < (${utc(cursor.at)}, ${cursor.id}::uuid)` : Prisma.empty} ORDER BY s."createdAt" DESC, s.id DESC LIMIT ${SALE_BATCH}) SELECT b.id AS "saleId", b."costTotal", b."createdAt", i.id, i.qty, i."unitCost", i."variantId", i."stockAllocations", i."lineTotal" - i.tax AS net, v."productId", p.name, p."categoryId"::text AS "categoryId", c.name AS category FROM b LEFT JOIN "SaleItem" i ON i."saleId" = b.id LEFT JOIN "Variant" v ON v.id = i."variantId" LEFT JOIN "Product" p ON p.id = v."productId" LEFT JOIN "Category" c ON c.id = p."categoryId" ORDER BY b."createdAt" DESC, b.id DESC, i.id`;
+          >`WITH b AS (SELECT s.id, s."costTotal", s."createdAt" FROM "Sale" s WHERE ${filter}${cursor ? Prisma.sql` AND (s."createdAt", s.id) < (${utc(cursor.at)}, ${cursor.id}::uuid)` : Prisma.empty} ORDER BY s."createdAt" DESC, s.id DESC LIMIT ${SALE_BATCH}) SELECT b.id AS "saleId", b."costTotal", b."createdAt", i.id, i.qty, i."unitCost", i."variantId", i."stockAllocations", i."lineTotal" - i.tax AS net, i."lineTotal" AS gross, v."productId", p.name, p."categoryId"::text AS "categoryId", c.name AS category FROM b LEFT JOIN "SaleItem" i ON i."saleId" = b.id LEFT JOIN "Variant" v ON v.id = i."variantId" LEFT JOIN "Product" p ON p.id = v."productId" LEFT JOIN "Category" c ON c.id = p."categoryId" ORDER BY b."createdAt" DESC, b.id DESC, i.id`;
           // Si el lote en curso falla, este no queda como rechazo sin atender.
           batch.catch(() => undefined);
           return batch;
@@ -1141,6 +1142,7 @@ export class ReportsController {
                 variantId: l.variantId,
                 stockAllocations: l.stockAllocations,
                 net: l.net,
+                gross: l.gross,
                 variant: {
                   productId: l.productId,
                   product: {
@@ -1168,6 +1170,7 @@ export class ReportsController {
               // Sin redondear hasta el final: ventas y devoluciones parciales se
               // compensan exactamente.
               row.Ventas = d(row.Ventas).plus(i.net);
+              row.gross = d(row.gross ?? 0).plus(i.gross);
               row.Costo = d(row.Costo).plus(booked.get(i.id)!);
               row.Unidades += Number(i.qty);
               grouped.set(i.variant.productId, row);
@@ -1240,6 +1243,11 @@ export class ReportsController {
                   ? d(part.total).minus(part.tax)
                   : back(d(line.lineTotal)).minus(back(d(line.tax)));
               row.Ventas = d(row.Ventas).minus(net);
+              row.gross = d(row.gross ?? 0).minus(
+                typeof part.total === "number"
+                  ? d(part.total)
+                  : back(d(line.lineTotal)),
+              );
               if (found.restock) row.Costo = d(row.Costo).minus(found.cost);
               row.Unidades -= Number(part.qty);
               grouped.set(line.variant.productId, row);
@@ -1248,7 +1256,7 @@ export class ReportsController {
           if (page.length < RETURN_BATCH) break;
           cursor = page[page.length - 1].id;
         }
-        rows = [...grouped.values()].map((i) => {
+        rows = [...grouped.values()].map(({ gross, ...i }) => {
           const Ventas = money(i.Ventas),
             Costo = money(i.Costo);
           return {
@@ -1256,7 +1264,9 @@ export class ReportsController {
             Ventas,
             Costo,
             Utilidad: money(d(Ventas).minus(Costo)),
-            Margen: margin(Ventas, Costo),
+            // Ventas y Utilidad son sin ITBIS (cuadran con el estado de
+            // resultados); el margen es el de la dueña, sobre lo cobrado (#8).
+            Margen: margin(money(gross ?? 0), Costo),
           };
         });
         if (name === "abc")

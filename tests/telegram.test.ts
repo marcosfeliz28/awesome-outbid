@@ -523,6 +523,23 @@ describe("Telegram · avisos de facturas", () => {
 
   it("respeta el 429 de Telegram (retry_after)", async () => {
     mode = "ok";
+    // Avisos de pruebas anteriores que sigan en cola se llevarían el 429 y el
+    // de esta venta nunca se reintentaría: se sacan de la cola y se espera a
+    // que no quede ningún envío en curso.
+    await db.notificationOutbox.updateMany({
+      where: { status: "pending" },
+      data: { status: "failed" },
+    });
+    let quiet = 0;
+    let seen = received.length;
+    while (quiet < 3) {
+      await new Promise((r) => setTimeout(r, 500));
+      if (received.length === seen) quiet++;
+      else {
+        quiet = 0;
+        seen = received.length;
+      }
+    }
     once.push("429:3");
     const s = await sell([{ method: "cash", amount: 100 }]);
     await waitFor(

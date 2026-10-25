@@ -106,6 +106,13 @@ describe("Fórmulas financieras", () => {
     expect(markup(200, 100)).toBe(100);
     expect(margin(0, 100)).toBe(0);
   });
+  it("margen de la dueña: (precio − costo)/precio sin restar ITBIS (revisión 25-oct #8)", () => {
+    // Precio 1,180 con ITBIS 18 % y costo 900: 23.73 %, no 10 %.
+    expect(margin(1180, 900)).toBe(23.73);
+    // Decimal: sin errores de coma flotante.
+    expect(margin("0.3", "0.1")).toBe(66.67);
+    expect(margin(100, 120)).toBe(-20);
+  });
   it("equilibrio, rotación, días y reorden", () => {
     expect(breakEven(10000, 25)).toBe(40000);
     expect(breakEven(10000, 0)).toBeNull();
@@ -125,8 +132,17 @@ describe("Fórmulas financieras", () => {
     expect(clearanceScore(60, 15, 20, 500)).toBeGreaterThan(
       clearanceScore(60, 90, 20, 500),
     );
-    expect(safeDiscount(118, 100, 18)).toBe(0);
-    expect(safeDiscount(236, 100, 18)).toBe(50);
+    // Sin restar ITBIS (revisión 25-oct #8): antes el 3.er argumento era el
+    // ITBIS que se restaba del precio; ahora es el margen mínimo que debe
+    // quedar después de la oferta (15 % por defecto).
+    expect(safeDiscount(118, 100)).toBe(0);
+    expect(safeDiscount(236, 100)).toBe(50);
+    // 1,180 de precio y 900 de costo: hasta 10 % deja 15.03 % de margen.
+    expect(safeDiscount(1180, 900)).toBe(10);
+    expect(margin(1180 * 0.9, 900)).toBeGreaterThanOrEqual(15);
+    expect(margin(1180 * 0.89, 900)).toBeLessThan(15);
+    // Margen mínimo de 30 %: 150 → 4 % (150 × 0.96 = 144, margen 30.56 %).
+    expect(safeDiscount(150, 100, 30)).toBe(4);
   });
   it("contrato de venta rechaza UUID y carrito inválidos", () => {
     expect(
