@@ -1,9 +1,13 @@
 import { randomBytes, randomInt } from "node:crypto";
-import { Body, Controller, Get, Header, Inject, Injectable, Post, Req, type OnApplicationBootstrap, type OnModuleDestroy } from "@nestjs/common";
+import { Body, Controller, Get, Header, HttpException, Inject, Injectable, Param, Post, Req, type OnApplicationBootstrap, type OnModuleDestroy } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import type { Request } from "express";
 import { hash } from "bcryptjs";
 import { permissions, z } from "@fitstore/shared";
-import { audit, Database, Permit, type ActorRequest } from "./common";
-import { forEachActiveTenant, tenantUnique } from "./tenant-context";
+import { audit, Database, parse, Permit, Public, type ActorRequest } from "./common";
+import { authorizePlatform } from "./platform";
+import { RequestRateLimitService } from "./rate-limit";
+import { forEachActiveTenant, tenantScope, tenantUnique } from "./tenant-context";
 
 const supportEmail = "soporte-nexora@nexora.local";
 
@@ -73,6 +77,66 @@ export class SupportAccessController {
       await audit(tx, req.actor, "support.disable", "user", user.id);
     });
     return { enabled: false, expiresAt: null };
+  }
+}
+
+const slug = z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/);
+
+/**
+ * Lado del operador (token Platform). Solo ve y abre accesos que el
+ * administrador de la empresa ya activó y que no vencieron. La sesión es la
+ * del usuario «support»: el AuthGuard la deja en solo lectura y cada GET queda
+ * en la bitácora de la empresa. Token de 15 min sin refresh.
+ */
+@Controller("platform")
+export class PlatformSupportController {
+  constructor(
+    @Inject(Database) private readonly db: Database,
+    @Inject(JwtService) private readonly jwt: JwtService,
+    @Inject(RequestRateLimitService) private readonly limits: RequestRateLimitService,
+  ) {}
+
+  private activeSupport() {
+    return this.db.user.findUnique({ where: tenantUnique("email", supportEmail) })
+      .then((user) => user?.active && user.supportExpiresAt && user.supportExpiresAt > new Date() ? user : null);
+  }
+
+  @Public() @Get("support-grants") @Header("Cache-Control", "no-store")
+  async grants(@Req() req: Request) {
+    authorizePlatform(req, this.limits);
+    const grants = [];
+    // Empresa por empresa bajo su propio contexto (RLS), como el barrido de vencimiento.
+    for (const tenantId of await this.db.loginTenantIds()) {
+      const grant = await tenantScope.run({ tenantId }, async () => {
+        const user = await this.activeSupport();
+        if (!user) return null;
+        const [tenant] = await this.db.$queryRaw<{ slug: string; name: string }[]>`SELECT slug, name FROM "Tenant" WHERE id = ${tenantId}::uuid`;
+        return tenant && { ...tenant, expiresAt: user.supportExpiresAt };
+      });
+      if (grant) grants.push(grant);
+    }
+    return grants;
+  }
+
+  @Public() @Post("tenants/:slug/support-session") @Header("Cache-Control", "no-store")
+  async open(@Param("slug") tenantSlug: string, @Req() req: Request) {
+    authorizePlatform(req, this.limits);
+    const tenantId = await this.db.resolveTenantSlug(parse(slug, tenantSlug));
+    if (!tenantId) throw new HttpException("Empresa no encontrada.", 404);
+    return tenantScope.run({ tenantId }, () => this.db.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({ where: tenantUnique("email", supportEmail), include: { role: true } });
+      if (!user?.active || user.role.name !== "support" || !user.supportExpiresAt || user.supportExpiresAt <= new Date())
+        throw new HttpException("La empresa no ha activado el acceso de soporte o ya venció.", 403);
+      const session = await tx.authSession.create({ data: { userId: user.id } });
+      await audit(tx, { id: user.id, name: user.name, email: user.email, role: "support", permissions: [],
+        branchId: user.branchId, tenantId }, "support.platform_session", "user", user.id, undefined,
+      { sessionId: session.id, expiresAt: user.supportExpiresAt });
+      const accessToken = this.jwt.sign(
+        { sub: user.id, type: "access", version: user.authVersion, sid: session.id, tenantId },
+        { expiresIn: "15m" },
+      );
+      return { accessToken, tokenType: "Bearer", expiresIn: 900, readOnly: true, supportExpiresAt: user.supportExpiresAt };
+    }));
   }
 }
 

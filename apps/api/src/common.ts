@@ -787,8 +787,14 @@ export class AuthGuard implements CanActivate {
       throw new HttpException("Inicia sesión para continuar.", 401);
     }
     if (req.actor.role === "support" && req.method !== "GET" &&
-        !(req.method === "POST" && req.path === "/api/auth/logout"))
+        !(req.method === "POST" && req.path === "/api/auth/logout")) {
+      // CPC-6 punto 5: el intento de escritura de soporte queda en la bitácora.
+      await tenantScope.run({ tenantId: req.actor.tenantId }, () =>
+        audit(this.db, req.actor, "support.write_denied", "route", randomUUID(), undefined, {
+          metodo: req.method, ruta: req.route?.path ?? req.path,
+        }));
       denied();
+    }
     const permission = this.reflector.getAllAndOverride<string>("permission", [
       context.getHandler(),
       context.getClass(),
@@ -849,7 +855,8 @@ export class AuthGuard implements CanActivate {
           ruta: req.route?.path ?? req.path,
         }));
       const scope = tenantScope.getStore();
-      if (scope) scope.readOnly = true;
+      if (!scope) denied(); // sin contexto no hay READ ONLY: falla cerrado
+      scope.readOnly = true;
     }
     return true;
   }

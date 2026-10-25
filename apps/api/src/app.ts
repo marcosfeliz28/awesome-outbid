@@ -26,7 +26,7 @@ import { ProductBillingController } from "./product-billing";
 import { AssistantController } from "./assistant";
 import { DailySummaryWorker } from "./daily-summary";
 import { TransferProofReviewController } from "./transfer-proof-review";
-import { SupportAccessController, SupportAccessWorker } from "./support-access";
+import { PlatformSupportController, SupportAccessController, SupportAccessWorker } from "./support-access";
 import { McpController } from "./mcp";
 import { TenantExportController } from "./tenant-export";
 import { CatalogController } from "./catalog";
@@ -100,7 +100,7 @@ export function createAppModule(secret: string) {
       ...(product ? [ProductBillingController] : []),
       ...(product ? [AssistantController] : []),
       ...(product ? [TransferProofReviewController] : []),
-      ...(product ? [SupportAccessController] : []),
+      ...(product ? [SupportAccessController, PlatformSupportController] : []),
       ...(product ? [McpController] : []),
       ...(product ? [TenantExportController] : []),
       CatalogController,
@@ -164,7 +164,7 @@ export function createAppModule(secret: string) {
             return;
           }
           // Sin empresa: alta, invitación y operador de plataforma (credencial propia).
-          if (/^\/api\/(?:auth\/(?:register|verify-email|resend-verification|accept-invitation)|platform\/tenants(?:\/[a-z0-9-]{1,63}\/(?:payments|ai-packs|ai-usage))?)\/?$/.test(path)) {
+          if (/^\/api\/(?:auth\/(?:register|verify-email|resend-verification|accept-invitation)|platform\/(?:support-grants|tenants(?:\/[a-z0-9-]{1,63}\/(?:payments|ai-packs|ai-usage|support-session))?))\/?$/.test(path)) {
             next();
             return;
           }
