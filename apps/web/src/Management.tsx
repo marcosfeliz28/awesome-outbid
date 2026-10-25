@@ -120,11 +120,14 @@ function DataTable({
   columns,
   empty = "Todavía no hay registros",
   emptyDescription = "Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla.",
+  cards = false,
 }: {
   rows: any[];
   columns: Column[];
   empty?: string;
   emptyDescription?: string;
+  /** En el celular cada fila es una tarjeta (sin desplazamiento horizontal). */
+  cards?: boolean;
 }) {
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [rows.length]);
@@ -132,7 +135,10 @@ function DataTable({
   return rows.length ? (
     <>
       {/* G12: con desplazamiento horizontal, la tabla se recorre con teclado. */}
-      <div className="table-wrap" tabIndex={0}>
+      <div
+        className={"table-wrap" + (cards ? " table-cards" : "")}
+        tabIndex={0}
+      >
         <table>
           <thead>
             <tr>
@@ -147,7 +153,11 @@ function DataTable({
             {rows.slice((page - 1) * 20, page * 20).map((r, index) => (
               <tr key={r.id || r.sku || index}>
                 {columns.map((c) => (
-                  <td key={c.label} className={c.className}>
+                  <td
+                    key={c.label}
+                    className={c.className}
+                    data-label={c.label}
+                  >
                     {c.render(r)}
                   </td>
                 ))}
@@ -384,6 +394,7 @@ export function Catalog() {
         </div>
         <QueryState query={query}>
           <DataTable
+            cards
             rows={rows}
             empty="No encontramos productos"
             emptyDescription="Revisa los filtros o agrega un producto con Nuevo producto."
@@ -907,6 +918,7 @@ export function Inventory() {
         <QueryState query={query}>
           {mode === "stock" ? (
             <DataTable
+              cards
               rows={rows}
               empty="No encontramos artículos en el inventario"
               emptyDescription="Revisa la búsqueda o registra una entrada de mercancía."

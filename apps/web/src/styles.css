@@ -6424,3 +6424,74 @@ td strong {
 .onboarding li label { display: block; margin: .55rem 0; }
 .onboarding li label input:not([type="checkbox"]):not([type="file"]) { display: block; width: 100%; max-width: 32rem; }
 .onboarding li label input[type="checkbox"] { margin-right: .5rem; }
+
+/* Auditoría de inventario (25-oct-2026): en el celular, Productos e
+   Inventario son tarjetas con precio, existencia y «Ajustar» a la vista, sin
+   desplazamiento horizontal. */
+@media (max-width: 640px) {
+  .table-wrap.table-cards {
+    overflow-x: visible;
+  }
+  .table-cards table,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: 100%;
+  }
+  .table-cards thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .table-cards tr {
+    margin: 0 0 12px;
+    padding: 4px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .table-cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 9px 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .table-cards tbody tr td:last-child {
+    border-bottom: 0;
+  }
+  .table-cards td::before {
+    content: attr(data-label);
+    flex: none;
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    text-align: left;
+    text-transform: uppercase;
+  }
+  .table-cards td:first-child {
+    display: block;
+    text-align: left;
+  }
+  .table-cards td:first-child::before {
+    display: none;
+  }
+  .table-cards .table-product {
+    min-width: 0;
+  }
+  .table-cards .table-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .table-search {
+    min-width: 0;
+    width: 100%;
+  }
+}
