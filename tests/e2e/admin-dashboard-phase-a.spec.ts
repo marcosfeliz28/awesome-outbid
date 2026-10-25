@@ -335,6 +335,51 @@ test("Tablero fase A: móvil, temas, privacidad, decisiones reales y caja intact
     const approveCard = ownerPage
       .locator(".approval-deck__card")
       .filter({ hasText: saleToApprove.number });
+    let approvalCalls = 0;
+    ownerPage.on("request", (request) => {
+      if (
+        request.method() === "POST" &&
+        /\/api\/void-requests\/[0-9a-f-]+\/approve$/.test(request.url())
+      ) {
+        approvalCalls += 1;
+      }
+    });
+
+    // Cancelar el puntero descarta el inicio: el pointerup posterior no abre.
+    await approveCard.dispatchEvent("pointerdown", {
+      clientX: 280,
+      pointerId: 11,
+    });
+    await approveCard.dispatchEvent("pointercancel", {
+      clientX: 220,
+      pointerId: 11,
+    });
+    await approveCard.dispatchEvent("pointerup", {
+      clientX: 120,
+      pointerId: 11,
+    });
+    await expect(ownerPage).toHaveURL(/#dashboard/);
+    expect(approvalCalls).toBe(0);
+
+    // El gesto abre el detalle, pero nunca aprueba ni cambia la venta.
+    await approveCard.dispatchEvent("pointerdown", {
+      clientX: 280,
+      pointerId: 12,
+    });
+    await approveCard.dispatchEvent("pointerup", {
+      clientX: 120,
+      pointerId: 12,
+    });
+    await expect(ownerPage).toHaveURL(/#void-requests/);
+    expect(approvalCalls).toBe(0);
+    expect(
+      (await api(`/sales?q=${saleToApprove.number}`)).find(
+        (sale: any) => sale.id === saleToApprove.id,
+      ).status,
+    ).not.toBe("voided");
+    await openPage(ownerPage, "dashboard", /Hola,/);
+
+    // La misma apertura sigue disponible por teclado.
     await reachByKeyboard(
       ownerPage,
       `Abrir detalle de ${saleToApprove.number}`,
@@ -346,15 +391,33 @@ test("Tablero fase A: móvil, temas, privacidad, decisiones reales y caja intact
     await approveCard
       .getByRole("button", { name: "Aprobar anulación" })
       .click();
+    const decisionForm = approveCard.locator(".approval-deck__decision");
+    await expect(decisionForm).toBeVisible();
+    expect(approvalCalls).toBe(0);
+
+    // Arrastrar dentro de la confirmación no debe abandonar el formulario.
+    await decisionForm.dispatchEvent("pointerdown", {
+      clientX: 280,
+      pointerId: 13,
+    });
+    await decisionForm.dispatchEvent("pointerup", {
+      clientX: 120,
+      pointerId: 13,
+    });
+    await expect(ownerPage).toHaveURL(/#dashboard/);
+    await expect(decisionForm).toBeVisible();
+    expect(approvalCalls).toBe(0);
+
     const approvalResponse = ownerPage.waitForResponse(
       (response) =>
         response.request().method() === "POST" &&
         /\/api\/void-requests\/[0-9a-f-]+\/approve$/.test(response.url()),
     );
-    // La protección real de esta ruta es sesión de administrador + equipo
-    // aprobado; no se inyecta ni se simula un PIN que el endpoint no recibe.
-    await approveCard.getByRole("button", { name: "Confirmar" }).click();
+    await approveCard
+      .getByRole("button", { name: "Confirmar anulación", exact: true })
+      .click();
     expect((await approvalResponse).status()).toBe(200);
+    expect(approvalCalls).toBe(1);
     await expect(approveCard).toHaveCount(0);
     expect(
       (await api(`/sales?q=${saleToApprove.number}`)).find(

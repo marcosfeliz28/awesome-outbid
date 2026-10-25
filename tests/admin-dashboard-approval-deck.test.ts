@@ -1,8 +1,6 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
-  approvalDeckGestureIntent,
   buildApprovalDeckQueue,
   validApprovalRejectReason,
   type ApprovalDeckProps,
@@ -16,7 +14,6 @@ const props: ApprovalDeckProps = {
       requestedAt: "2026-10-25T13:00:00.000Z",
       requestedBy: "Ana",
       reason: "Venta duplicada",
-      requiresPin: true,
     },
   ],
   pendingTransfers: [
@@ -45,44 +42,11 @@ describe("ApprovalDeck", () => {
     ]);
   });
 
-  it("trata clic, teclado y deslizamiento únicamente como apertura de detalle", () => {
-    expect(approvalDeckGestureIntent("click")).toBe("open-detail");
-    expect(approvalDeckGestureIntent("keyboard")).toBe("open-detail");
-    expect(approvalDeckGestureIntent("swipe-left")).toBe("open-detail");
-    expect(approvalDeckGestureIntent("swipe-right")).toBe("open-detail");
-  });
-
   it("exige un motivo útil antes de rechazar", () => {
     expect(validApprovalRejectReason("no")).toBe(false);
     expect(validApprovalRejectReason("   ")).toBe(false);
     expect(validApprovalRejectReason("1234567")).toBe(false);
     expect(validApprovalRejectReason("12345678")).toBe(true);
     expect(validApprovalRejectReason("Referencia no coincide")).toBe(true);
-  });
-
-  it("expone botones reales y explica que abrir una tarjeta no decide dinero", () => {
-    const source = readFileSync(
-      "apps/web/src/admin-dashboard/ApprovalDeck.tsx",
-      "utf8",
-    );
-    const styles = readFileSync(
-      "apps/web/src/admin-dashboard/ApprovalDeck.css",
-      "utf8",
-    );
-
-    expect(source).toContain("Aprobaciones pendientes");
-    expect(source).toContain("Solicitudes de anulación pendientes");
-    expect(source).toContain("void-request-dashboard-row");
-    expect(source).toContain("Anular venta · Aprobar anulación");
-    expect(source).toContain("Confirmar anulación");
-    expect(source).toContain("Abrir detalle");
-    expect(source).toContain("Aprobar anulación");
-    expect(source).toContain("Verificar transferencia");
-    expect(source).toContain("Rechazar");
-    expect(source).toContain("no aprueba ni rechaza");
-    expect(source.match(/<button/g)?.length).toBeGreaterThanOrEqual(4);
-    expect(styles).toContain("@media (max-width: 390px)");
-    expect(styles).toContain("min-height: 44px");
-    expect(styles).toContain("overflow: hidden");
   });
 });

@@ -8,7 +8,6 @@ export type VoidApproval = {
   requestedAt: string;
   requestedBy: string;
   reason: string;
-  requiresPin?: boolean;
   approvalBlocker?: string | null;
 };
 
@@ -30,10 +29,7 @@ export type ApprovalDeckProps = {
   voidRequests: VoidApproval[];
   pendingTransfers: TransferApproval[];
   onOpenDetail: (item: ApprovalDeckItem) => void;
-  onApproveVoid: (
-    item: VoidApproval,
-    input: { managerPin?: string },
-  ) => Promise<void>;
+  onApproveVoid: (item: VoidApproval) => Promise<void>;
   onRejectVoid: (item: VoidApproval, input: { note: string }) => Promise<void>;
   onVerifyTransfer: (item: TransferApproval) => Promise<void>;
   onRejectTransfer: (
@@ -41,12 +37,6 @@ export type ApprovalDeckProps = {
     input: { reason: string },
   ) => Promise<void>;
 };
-
-export type ApprovalDeckGesture =
-  "click" | "keyboard" | "swipe-left" | "swipe-right";
-
-export const approvalDeckGestureIntent = (_gesture: ApprovalDeckGesture) =>
-  "open-detail" as const;
 
 export const validApprovalRejectReason = (reason: string) =>
   reason.trim().length >= 8;
@@ -90,7 +80,6 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [decision, setDecision] = useState<Decision>(null);
   const [reason, setReason] = useState("");
-  const [managerPin, setManagerPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const pointerStarts = useRef<Record<string, number>>({});
@@ -99,7 +88,6 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
   const resetDecision = () => {
     setDecision(null);
     setReason("");
-    setManagerPin("");
     setMessage("");
   };
   const openDetail = (item: ApprovalDeckItem) => {
@@ -113,28 +101,18 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
     setActiveId(item.id);
     setDecision(next);
     setReason("");
-    setManagerPin("");
     setMessage("");
   };
   const finish = async () => {
     if (!active || !decision || busy) return;
     if (decision === "reject" && !validApprovalRejectReason(reason)) return;
-    if (
-      decision === "approve" &&
-      active.kind === "void" &&
-      active.requiresPin &&
-      !/^\d{4,6}$/.test(managerPin)
-    )
-      return;
 
     setBusy(true);
     setMessage("");
     try {
       if (decision === "approve") {
         if (active.kind === "void") {
-          await props.onApproveVoid(active, {
-            ...(active.requiresPin ? { managerPin } : {}),
-          });
+          await props.onApproveVoid(active);
         } else {
           await props.onVerifyTransfer(active);
         }
@@ -152,7 +130,6 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
       );
       setDecision(null);
       setReason("");
-      setManagerPin("");
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -163,12 +140,23 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
       setBusy(false);
     }
   };
+  const isDecisionInteraction = (event: PointerEvent) =>
+    event.target instanceof Element &&
+    Boolean(event.target.closest(".approval-deck__decision"));
+  const forgetPointer = (item: ApprovalDeckItem) => {
+    delete pointerStarts.current[item.id];
+  };
   const rememberPointer = (item: ApprovalDeckItem, event: PointerEvent) => {
+    if (isDecisionInteraction(event)) {
+      forgetPointer(item);
+      return;
+    }
     pointerStarts.current[item.id] = event.clientX;
   };
   const openAfterSwipe = (item: ApprovalDeckItem, event: PointerEvent) => {
     const start = pointerStarts.current[item.id];
-    delete pointerStarts.current[item.id];
+    forgetPointer(item);
+    if (isDecisionInteraction(event)) return;
     if (Number.isFinite(start) && Math.abs(event.clientX - start) >= 36) {
       openDetail(item);
     }
@@ -211,6 +199,7 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
               key={`${item.kind}:${item.id}`}
               onPointerDown={(event) => rememberPointer(item, event)}
               onPointerUp={(event) => openAfterSwipe(item, event)}
+              onPointerCancel={() => forgetPointer(item)}
             >
               <button
                 className="approval-deck__detail"
@@ -298,26 +287,6 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
                         : "Confirma que el dinero aparece en el banco."
                       : "Escribe por qué rechazas esta solicitud."}
                   </p>
-                  {decision === "approve" &&
-                    item.kind === "void" &&
-                    item.requiresPin && (
-                      <label>
-                        <span>PIN de gerente</span>
-                        <input
-                          autoComplete="off"
-                          inputMode="numeric"
-                          minLength={4}
-                          maxLength={6}
-                          pattern="[0-9]{4,6}"
-                          required
-                          type="password"
-                          value={managerPin}
-                          onChange={(event) =>
-                            setManagerPin(event.target.value)
-                          }
-                        />
-                      </label>
-                    )}
                   {decision === "reject" && (
                     <label>
                       <span>Motivo del rechazo</span>
@@ -338,11 +307,7 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
                       disabled={
                         busy ||
                         (decision === "reject" &&
-                          !validApprovalRejectReason(reason)) ||
-                        (decision === "approve" &&
-                          item.kind === "void" &&
-                          Boolean(item.requiresPin) &&
-                          !/^\d{4,6}$/.test(managerPin))
+                          !validApprovalRejectReason(reason))
                       }
                     >
                       {busy
