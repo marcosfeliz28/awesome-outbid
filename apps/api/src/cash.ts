@@ -257,6 +257,60 @@ export async function refreshClosedCash(tx: any, session: any) {
   });
   return differences;
 }
+// #6 (revisión 25-oct): algo cambió una caja ya cerrada (método corregido,
+// venta sin conexión registrada o anulación después del cierre). Lo pide con
+// justificación quien lo hace y queda una alerta para la dueña; si entró
+// tarjeta y el cierre no tiene lote del verifón, otra alerta «falta lote».
+export async function closedCashChanged(
+  tx: any,
+  actor: Actor,
+  session: any,
+  change: { ref: string; what: string; reason: string; differences: any },
+) {
+  const cashier = await tx.user.findUnique({
+    where: { id: session.userId },
+    select: { name: true },
+  });
+  const diff = change.differences ?? {};
+  const message =
+    `Caja cerrada de ${cashier?.name ?? "otra persona"} cambiada por ${actor.name}: ${change.what}. ` +
+    `Justificación: ${change.reason}. Diferencia ahora: efectivo RD$ ${formatAmount(Number(diff.cash ?? 0))}, ` +
+    `tarjeta RD$ ${formatAmount(Number(diff.card ?? 0))}, transferencia RD$ ${formatAmount(Number(diff.transfer ?? 0))}.`;
+  await tx.alert.upsert({
+    where: { key: `cash-after-close:${session.id}:${change.ref}` },
+    create: {
+      key: `cash-after-close:${session.id}:${change.ref}`,
+      type: "cash_after_close",
+      severity: "high",
+      entityId: session.id,
+      branchId: session.branchId,
+      message,
+    },
+    update: { message, status: "new" },
+  });
+  if ((session.closeDetails as any)?.batchNumber) return;
+  const cards = await tx.payment.count({
+    where: {
+      cashSessionId: session.id,
+      method: "card",
+      sale: { status: "completed" },
+      status: { not: "rejected" },
+    },
+  });
+  if (cards)
+    await tx.alert.upsert({
+      where: { key: "card-batch-missing:" + session.id },
+      create: {
+        key: "card-batch-missing:" + session.id,
+        type: "card_batch_missing",
+        severity: "high",
+        entityId: session.id,
+        branchId: session.branchId,
+        message: `Falta lote: la caja cerrada de ${cashier?.name ?? "otra persona"} tiene pagos con tarjeta y su cierre no tiene número de lote del verifón.`,
+      },
+      update: { status: "new" },
+    });
+}
 const sumOf = (rows: { amount: unknown }[]) =>
   money(rows.reduce((a, r) => a.plus(r.amount as any), d(0)));
 // Datos del impreso «Cuadre de Caja» (docs/tienda/CUADRE_REPORTES_FACTURA.md).

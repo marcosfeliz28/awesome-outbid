@@ -366,7 +366,9 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
     expect([401, 403]).toContain(denied.status);
   });
 
-  it("M-6: si el cliente se llevó la mercancía, el descarte registra la salida de inventario y la entrada de caja", async () => {
+  // #4 (25-oct): ya no es ajuste más entrada de caja: es la venta real, con los
+  // datos que guardó el servidor (lo que manda el navegador no cuenta).
+  it("M-6/#4: si el cliente se llevó la mercancía, se registra la venta real con los datos del servidor", async () => {
     const [first] = cashiers;
     const stockOf = async () =>
       Number(
@@ -398,33 +400,36 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
         reason: "El cliente se fue con el producto; precio subió",
         outcome: "delivered",
         managerPin: MANAGER_PIN,
+        // Alterado en el navegador: no cuenta.
         detail: {
           ...detail,
-          items: [{ ...detail.items[0], variantId: variant.id }],
+          items: [{ ...detail.items[0], variantId: variant.id, qty: 2 }],
         },
       },
       first.token,
     );
-    expect(done.status).toBe(201);
+    expect(done.status, JSON.stringify(done.body)).toBe(201);
     expect(await stockOf()).toBe(stockBefore - 1);
-    const movement = await db.inventoryMovement.findFirstOrThrow({
-      where: { refId: sale.offlineUuid },
-    });
-    expect(movement).toMatchObject({ type: "adjustment" });
-    expect(Number(movement.qty)).toBe(-1);
-    expect(movement.reason).toContain("mercancía entregada");
-    const cashIn = await db.cashMovement.findMany({
-      where: { sessionId: first.session.id, type: "in" },
-    });
-    expect(cashIn.length).toBe(movementsBefore + 1);
-    expect(Number(cashIn.at(-1).amount)).toBe(1000);
+    expect(
+      await db.inventoryMovement.count({ where: { refId: sale.offlineUuid } }),
+    ).toBe(0);
+    expect(
+      await db.cashMovement.count({
+        where: { sessionId: first.session.id, type: "in" },
+      }),
+    ).toBe(movementsBefore);
     const log = await db.auditLog.findFirstOrThrow({
       where: { action: "offline_sale_discarded", entityId: sale.offlineUuid },
     });
-    expect(log.after).toMatchObject({
-      outcome: "delivered",
-      consequences: ["salida de inventario", "entrada de caja"],
+    expect(log.after).toMatchObject({ outcome: "delivered" });
+    const real = await db.sale.findUniqueOrThrow({
+      where: { offlineUuid: (log.after as any).saleOfflineUuid },
+      include: { items: true, payments: true },
     });
+    expect(real.number).toBe(done.body.sale.number);
+    expect(Number(real.total)).toBe(1000);
+    expect(real.cashSessionId).toBe(first.session.id);
+    expect(Number(real.items[0].qty)).toBe(1);
     const alert = await db.alert.findUniqueOrThrow({
       where: { key: "offline-discarded:" + sale.offlineUuid },
     });
@@ -515,7 +520,8 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
           },
           first.token,
         );
-        expect(done.status).toBe(201);
+        // #4: sin caja propia guardada no hay venta que registrar.
+        expect(done.status).toBe(400);
         expect(await movements(target)).toBe(before);
       }
       // Evidencia antigua o alterada que apunta a una caja ajena: se rechaza.
