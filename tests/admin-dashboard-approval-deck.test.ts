@@ -71,6 +71,10 @@ describe("ApprovalDeck", () => {
     );
 
     expect(source).toContain("Aprobaciones pendientes");
+    expect(source).toContain("Solicitudes de anulación pendientes");
+    expect(source).toContain("void-request-dashboard-row");
+    expect(source).toContain("Anular venta · Aprobar anulación");
+    expect(source).toContain("Confirmar anulación");
     expect(source).toContain("Abrir detalle");
     expect(source).toContain("Aprobar anulación");
     expect(source).toContain("Verificar transferencia");

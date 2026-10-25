@@ -175,7 +175,10 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
   };
 
   return (
-    <section className="approval-deck" aria-labelledby="approval-deck-title">
+    <section
+      className="approval-deck"
+      aria-label="Solicitudes de anulación pendientes y transferencias por verificar"
+    >
       <header className="approval-deck__header">
         <div>
           <p className="approval-deck__eyebrow">ADMINISTRACIÓN</p>
@@ -189,7 +192,10 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
         </span>
       </header>
       <p className="approval-deck__help">
-        Tocar, pulsar o deslizar solo abre el detalle; no aprueba ni rechaza.
+        {props.voidRequests.length} solicitud
+        {props.voidRequests.length === 1 ? "" : "es"} de anulación pendiente
+        {props.voidRequests.length === 1 ? "" : "s"}. Tocar, pulsar o deslizar
+        solo abre el detalle; no aprueba ni rechaza.
       </p>
 
       {queue.length === 0 ? (
@@ -198,7 +204,9 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
         <div className="approval-deck__stack">
           {queue.map((item) => (
             <article
-              className="approval-deck__card"
+              className={`approval-deck__card ${
+                item.kind === "void" ? "void-request-dashboard-row" : ""
+              }`}
               data-kind={item.kind}
               key={`${item.kind}:${item.id}`}
               onPointerDown={(event) => rememberPointer(item, event)}
@@ -250,6 +258,11 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
                     (item.kind === "void" && Boolean(item.approvalBlocker))
                   }
                   onClick={() => startDecision(item, "approve")}
+                  aria-label={
+                    item.kind === "void"
+                      ? "Anular venta · Aprobar anulación"
+                      : "Verificar transferencia"
+                  }
                   aria-expanded={activeId === item.id && decision === "approve"}
                   aria-controls={`${item.kind}-${item.id}-decision`}
                 >
@@ -335,7 +348,9 @@ export function ApprovalDeck(props: ApprovalDeckProps) {
                       {busy
                         ? "Procesando…"
                         : decision === "approve"
-                          ? "Confirmar"
+                          ? item.kind === "void"
+                            ? "Confirmar anulación"
+                            : "Confirmar"
                           : "Confirmar rechazo"}
                     </button>
                     <button
