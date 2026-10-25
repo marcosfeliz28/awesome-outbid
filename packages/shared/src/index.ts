@@ -377,6 +377,46 @@ export const paymentTotals = (
 /** Tope por defecto de lo que una cajera deja por cobrar en el turno sin PIN. */
 export const RECEIVABLE_SHIFT_LIMIT = 3000;
 /**
+ * Ajustes completos y válidos de una empresa nueva: «Guardar» en
+ * Configuración funciona sin tocar nada. La API los siembra al crear la
+ * empresa y la web rellena con ellos lo que falte en empresas anteriores.
+ */
+export const DEFAULT_SETTINGS = {
+  legalId: "",
+  address: "",
+  phone: "",
+  currency: "DOP",
+  taxIncluded: true,
+  sellerDiscountLimit: 10,
+  cardFeePercent: 0,
+  returnDays: 30,
+  idleDays: 60,
+  expiryDays: 60,
+  lowMargin: 15,
+  cashDifferenceLimit: 100,
+  receiptWidth: "80",
+  sessionTimeoutMinutes: 30,
+  allowNegativeStock: false,
+  allowOfflineSales: false,
+  allowCreditSales: false,
+  creditApprovalThreshold: 1000,
+  cashMovementApprovalLimit: 1000,
+  receivableShiftLimit: RECEIVABLE_SHIFT_LIMIT,
+  unusualDiscountCount: 10,
+  unusualDiscountPercent: 25,
+  lowSalesDropPercent: 50,
+  ncfMode: "disabled",
+  branchName: "",
+  receiptFooter: "",
+  phone2: "",
+  autoPrintReceipt: false,
+  requireCustomer: true,
+  usdRate: null,
+  eurRate: null,
+  transferAccounts: [] as string[],
+  cardTerminals: [] as string[],
+};
+/**
  * ¿La parte por cobrar de una venta necesita el PIN de un gerente? (D-01)
  * La caja y la API usan esta misma regla.
  *

@@ -142,6 +142,10 @@ const configSchema = z.object({
     .max(20)
     .optional(),
   cardTerminals: z.array(z.string().trim().min(3).max(80)).max(20).optional(),
+  // «Primeros pasos»: sin la clave se conserva el tipo elegido al registrarse.
+  businessType: z
+    .enum(["general", "retail", "beauty", "fitness", "services"])
+    .optional(),
 });
 const cashMovementLimit = (data: Record<string, unknown> | undefined) =>
   typeof data?.cashMovementApprovalLimit === "number"
@@ -909,8 +913,8 @@ export class AdminController {
           : {}),
         ...config,
         ...(previous?.onboarding ? { onboarding: previous.onboarding } : {}),
-        ...(previous?.businessType
-          ? { businessType: previous.businessType }
+        ...(config.businessType || previous?.businessType
+          ? { businessType: config.businessType ?? previous?.businessType }
           : {}),
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
@@ -1128,13 +1132,15 @@ export class AdminController {
   }
   @Post("users")
   @Permit("*")
+  @Header("Cache-Control", "no-store")
   async user(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
       z.object({
         name: z.string().min(2),
         username: z.string().trim().min(2).max(80).optional(),
         email: z.string().email().optional(),
-        password: z.string().min(1).max(128),
+        // Sin contraseña el sistema genera una temporal y la muestra una vez.
+        password: z.string().min(1).max(128).optional(),
         pin: newPinSchema,
         roleId: uuid,
         cashierNumber: cashierNumber.optional(),
@@ -1144,7 +1150,9 @@ export class AdminController {
     const role = await this.db.role.findUniqueOrThrow({
       where: { id: data.roleId },
     });
-    const password = parse(passwordSchemaForRole(role.name), data.password);
+    const password = data.password
+      ? parse(passwordSchemaForRole(role.name), data.password)
+      : generateTemporaryPasswordForRole(role.name);
     await this.freeCashierNumber(actor, data.cashierNumber);
     const requestedUsername =
       data.username?.trim() || data.email?.split("@")[0] || data.name;
@@ -1185,6 +1193,7 @@ export class AdminController {
       username: row.username,
       email: row.email,
       cashierNumber: row.cashierNumber,
+      ...(data.password ? {} : { temporaryPassword: password }),
     };
   }
   @Patch("users/:id")

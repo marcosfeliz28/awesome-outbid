@@ -10,6 +10,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
 import EmbeddedPostgres from "embedded-postgres";
+import type { Page } from "@playwright/test";
 import { test, expect } from "./apoyo";
 
 const root = resolve(process.cwd());
@@ -124,10 +125,8 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     }
   });
 
-  test("tres negocios ficticios completan registro, productos, caja, venta y cierre en PWA", async ({ page }) => {
-    const begun = performance.now();
-    const web = `http://127.0.0.1:${webPort}`;
-    for (let business = 1; business <= 3; business++) {
+  // Alta por la pantalla pública, confirmación del correo y entrada.
+  async function registerAndLogin(page: Page, web: string) {
     await page.goto(web);
     await page.evaluate(() => localStorage.clear());
     const slug = `e2e-${randomUUID().slice(0, 8)}`;
@@ -159,7 +158,15 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     const browserLogin = await loginResponse;
     expect(browserLogin.ok()).toBe(true);
     const auth = { Authorization: `Bearer ${(await browserLogin.json()).accessToken}` };
-    await expect(page.getByRole("heading", { name: "Prepara tu empresa" })).toBeVisible();
+    return auth;
+  }
+
+  test("tres negocios ficticios completan registro, productos, caja, venta y cierre en PWA", async ({ page }) => {
+    const begun = performance.now();
+    const web = `http://127.0.0.1:${webPort}`;
+    for (let business = 1; business <= 3; business++) {
+    const auth = await registerAndLogin(page, web);
+    await expect(page.getByRole("heading", { name: "Primeros pasos" })).toBeVisible();
     // N-03: interfaz real con API/modelo falsos; no consume cuota ni clave.
     await page.route("**/api/assistant/usage", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ usadas: 12, limite: 30, mes: "2026-10" }) }));
     await page.route("**/api/assistant/ask", async route => {
@@ -201,19 +208,28 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.unroute("**/api/sales?q=FS-0123");
     await page.unroute("**/api/sales/00000000-0000-4000-8000-000000000123/void-requests");
     await page.getByLabel("Nombre del negocio").fill("Mi Tienda Preparada");
+    await page.getByLabel("Sí", { exact: true }).check();
     await page.getByLabel("RNC").fill("101010101");
-    await page.getByRole("button", { name: "Guardar identidad" }).click();
-    await expect(page.getByLabel("Nombre del negocio")).toHaveValue("Mi Tienda Preparada");
     const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lNcAAAAASUVORK5CYII=", "base64");
-    await page.getByLabel(/Logo \(PNG/).setInputFiles({ name: "marca.png", mimeType: "image/png", buffer: png });
+    await page.getByLabel(/Logo \(opcional/).setInputFiles({ name: "marca.png", mimeType: "image/png", buffer: png });
     await expect(page.getByText("Logo guardado ✓")).toBeVisible();
-    await page.getByLabel("Inventario", { exact: true }).check();
-    await page.getByRole("button", { name: "Guardar módulos" }).click();
-    await page.getByRole("button", { name: "Agregar categorías sugeridas" }).click();
-    await expect(page.getByRole("heading", { name: /2\. Categorías/ })).toContainText("✓");
-    const categories = await (await page.request.get(`${web}/api/categories`, { headers: auth })).json();
-    expect(categories.length).toBeGreaterThan(0);
-    await page.getByRole("button", { name: "Ir a Productos e importar Excel" }).click();
+    await page.getByRole("button", { name: "Siguiente" }).click();
+    await expect(page.getByText("Paso 2 de 5 · Precios")).toBeVisible();
+    await page.getByRole("button", { name: "Siguiente" }).click();
+    await page.getByRole("button", { name: "Lo hago después" }).click();
+    await page.getByRole("button", { name: "Omitir" }).click();
+    await page.evaluate(() => { window.print = () => undefined; });
+    await page.getByRole("button", { name: "Imprimir ticket de prueba" }).click();
+    await expect(page.locator(".thermal-print.w80")).toContainText("Mi Tienda Preparada");
+    await expect(page.locator(".thermal-print.w80")).toContainText("RNC: 101010101");
+    await expect(page.locator(".thermal-print.w80 .tp-logo")).toHaveAttribute("src", /^data:image\/png;base64,/);
+    await expect(page.locator(".thermal-print.w80")).toContainText("NO ES UNA VENTA · DOCUMENTO NO FISCAL");
+    await page.getByRole("button", { name: "Saltar por ahora" }).click();
+    await expect(page).toHaveURL(/#dashboard$/);
+    const category = await page.request.post(`${web}/api/categories`, { headers: auth, data: { name: "Abarrotes" } });
+    expect(category.ok(), await category.text()).toBe(true);
+    const categories = [await category.json()];
+    await page.goto(`${web}/#products`);
     const book = new ExcelJS.Workbook();
     const sheet = book.addWorksheet("Productos");
     sheet.addRow(["Nombre", "SKU", "ID categoría", "Código de barras", "Precio", "Costo"]);
@@ -225,15 +241,7 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     if (business > 1) expect(JSON.stringify(importedProducts)).not.toContain(`Artículo E2E ${business - 1}-1`);
     const variantId = importedProducts.items.find((product: any) => product.name === `Artículo E2E ${business}-1`)?.variants[0]?.id;
     expect(variantId).toBeTruthy();
-    await page.goto(`${web}/#onboarding`);
-    await expect(page.getByRole("heading", { name: /4\. Productos/ })).toContainText("✓");
-    await page.evaluate(() => { window.print = () => undefined; });
-    await page.getByRole("button", { name: "Imprimir ticket de prueba" }).click();
-    await expect(page.locator(".thermal-print.w80")).toContainText("Mi Tienda Preparada");
-    await expect(page.locator(".thermal-print.w80")).toContainText("RNC: 101010101");
-    await expect(page.locator(".thermal-print.w80 .tp-logo")).toHaveAttribute("src", /^data:image\/png;base64,/);
-    await expect(page.locator(".thermal-print.w80")).toContainText("NO ES UNA VENTA · DOCUMENTO NO FISCAL");
-    await page.getByRole("button", { name: "Abrir primera caja" }).click();
+    await page.goto(`${web}/#cash`);
     await page.getByRole("button", { name: "Abrir caja", exact: true }).click();
     await page.getByLabel("Efectivo inicial").fill("100");
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
@@ -293,6 +301,7 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await expect(printDialog).toBeHidden();
     if (business === 1) {
       await page.goto(`${web}/#settings`);
+      await page.getByRole("button", { name: "Avanzado" }).click();
       const support = page.getByRole("region", { name: "Soporte de Nexora" });
       await expect(support).toContainText("Acceso apagado");
       await support.getByLabel("Duración del acceso").selectOption("24h");
@@ -308,5 +317,84 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await expect(page.getByLabel("Código de empresa")).toBeVisible();
     }
     expect(performance.now() - begun).toBeLessThan(30 * 60 * 1000);
+  });
+  test("Primeros pasos: una dueña nueva queda lista para vender a 390 px en 5 pasos, sin RNC si no da NCF", async ({ page }) => {
+    const web = `http://127.0.0.1:${webPort}`;
+    await page.setViewportSize({ width: 390, height: 844 });
+    const auth = await registerAndLogin(page, web);
+    const fits = async () => expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), "sin desplazamiento horizontal").toBeLessThanOrEqual(0);
+    const seen = new Set<string>();
+    const at = async (n: number) => {
+      await expect(page.getByText(new RegExp(`^Paso ${n} de 5`))).toBeVisible();
+      seen.add(String(n));
+      await fits();
+    };
+    await expect(page.getByRole("heading", { name: "Primeros pasos" })).toBeVisible();
+    await at(1);
+    await expect(page.getByLabel("Nombre del negocio")).toHaveValue("Tienda E2E");
+    // Sin NCF (o «Más tarde») no se ve nada de RNC; con «Sí», sí.
+    await page.getByLabel("No", { exact: true }).check();
+    await expect(page.getByLabel("RNC")).toHaveCount(0);
+    await page.getByLabel("Más tarde", { exact: true }).check();
+    await expect(page.getByLabel("RNC")).toHaveCount(0);
+    await page.getByLabel("Sí", { exact: true }).check();
+    await expect(page.getByLabel("RNC")).toBeVisible();
+    await page.getByLabel("No", { exact: true }).check();
+    await page.getByLabel("Teléfono (opcional)").fill("809-555-0101");
+    await page.getByRole("button", { name: "Siguiente" }).click();
+    await at(2);
+    await expect(page.getByLabel("Sí, ya lo incluyen")).toBeChecked();
+    await page.getByRole("button", { name: "Siguiente" }).click();
+    await at(3);
+    await page.getByLabel("Producto 1").fill("Agua 500 ml");
+    await page.getByLabel("Precio RD$").fill("25");
+    await page.getByLabel("Cantidad").fill("10");
+    await page.getByRole("button", { name: "+ Otro producto" }).click();
+    await page.getByLabel("Producto 2").fill("Galletas");
+    await page.getByLabel("Precio RD$").nth(1).fill("40");
+    await page.getByLabel("Cantidad").nth(1).fill("5");
+    await page.getByLabel("Costo RD$ (opcional)").nth(1).fill("25");
+    await page.getByRole("button", { name: "Guardar y seguir" }).click();
+    await at(4);
+    await page.getByLabel("Nombre de la cajera").fill("Rosa");
+    await page.getByLabel("PIN de 6 números").fill("582914");
+    await page.getByRole("button", { name: "Crear cajera" }).click();
+    await expect(page.locator(".wizard-password")).toHaveText(/^\d{6}$/);
+    await page.getByRole("button", { name: "Siguiente" }).click();
+    await at(5);
+    await expect(page.getByLabel("Efectivo inicial en caja (RD$)")).toHaveValue("0");
+    await page.getByRole("button", { name: "Abrir caja y hacer mi primera venta" }).click();
+    // En la caja, abierta y con los productos para vender.
+    await expect(page.getByLabel("Buscar productos")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Abre tu caja para comenzar/ })).toHaveCount(0);
+    await page.getByLabel("Buscar productos").fill("Agua 500");
+    await expect(page.locator(".product-card", { hasText: "Agua 500 ml" })).toBeVisible();
+    expect(seen.size).toBeLessThanOrEqual(5);
+    const settings = await (await page.request.get(`${web}/api/settings`, { headers: auth })).json();
+    expect(settings).toMatchObject({ ncfMode: "disabled", legalId: "", phone: "809-555-0101", taxIncluded: true });
+    expect((await (await page.request.get(`${web}/api/onboarding`, { headers: auth })).json()).dismissed).toBe(true);
+    const sessions = await (await page.request.get(`${web}/api/cash-sessions`, { headers: auth })).json();
+    expect(sessions.filter((s: any) => !s.closedAt).map((s: any) => Number(s.openingAmount))).toEqual([0]);
+    const products = await (await page.request.get(`${web}/api/products`, { headers: auth })).json();
+    expect(products.items.map((p: any) => p.name).sort()).toEqual(["Agua 500 ml", "Galletas"]);
+
+    // Configuración arranca en «Básico»: sin RNC mientras el NCF esté apagado.
+    await page.goto(`${web}/#settings`);
+    await expect(page.getByRole("button", { name: "Básico" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Editar configuración" }).click();
+    const form = page.getByRole("dialog", { name: "Configuración del negocio" });
+    await expect(form.getByLabel("Nombre del negocio")).toBeVisible();
+    await expect(form.getByLabel("Días sin rotación")).toHaveCount(0);
+    await expect(form.getByLabel("RNC", { exact: true })).toHaveCount(0);
+    await form.getByLabel(/Doy comprobante fiscal/).check();
+    await expect(form.getByLabel("RNC", { exact: true })).toBeVisible();
+    await form.getByLabel(/Doy comprobante fiscal/).uncheck();
+    await form.getByLabel("Dirección").fill("Calle 1, Santo Domingo");
+    await form.getByRole("button", { name: "Guardar", exact: true }).click();
+    await expect(page.getByText("Cambios guardados.")).toBeVisible();
+    expect(await (await page.request.get(`${web}/api/settings`, { headers: auth })).json()).toMatchObject({ address: "Calle 1, Santo Domingo", ncfMode: "disabled", idleDays: 60 });
+    await page.getByRole("button", { name: "Avanzado" }).click();
+    await page.getByRole("button", { name: "Editar configuración" }).click();
+    await expect(page.getByRole("dialog", { name: "Configuración del negocio" }).getByLabel("Días sin rotación")).toBeVisible();
   });
 });

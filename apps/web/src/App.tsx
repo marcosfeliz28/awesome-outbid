@@ -205,7 +205,7 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
 const navigation = [
   {
     id: "onboarding",
-    label: "Asistente de arranque",
+    label: "Primeros pasos",
     icon: Sparkles,
     permission: "*",
   },

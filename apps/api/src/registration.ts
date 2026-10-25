@@ -3,7 +3,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import type { Request } from "express";
-import { z } from "@fitstore/shared";
+import { DEFAULT_SETTINGS, permissions, z } from "@fitstore/shared";
 import { Public, parse } from "./common";
 import { passwordSchemaForRole, isNonTrivialCashierPassword } from "./password-policy";
 import { clientIp, RequestRateLimitService } from "./rate-limit";
@@ -93,6 +93,8 @@ export async function createTenantWithOwner(
   await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_tenant_runtime");
   await tx.$queryRawUnsafe("SELECT set_config('app.tenant_id', $1, true)", tenant.id);
   const role = await tx.role.create({ data: { tenantId: tenant.id, name: "admin", permissions: ["*"] } });
+  // Sin rol de cajera no se puede crear la primera cajera desde la app.
+  await tx.role.create({ data: { tenantId: tenant.id, name: "seller", permissions: permissions.seller } });
   await tx.user.create({ data: {
     tenantId: tenant.id, name: owner.name, username: owner.email,
     usernameKey: normalizeUsername(owner.email), email: owner.email,
@@ -101,9 +103,7 @@ export async function createTenantWithOwner(
     emailVerificationHash: owner.verificationHash, emailVerificationExpiresAt: owner.verificationExpiresAt,
   } });
   await tx.settings.create({ data: { tenantId: tenant.id, id: "main", data: {
-    name: tenant.name, branchName: "", currency: "DOP",
-    taxIncluded: true, receiptWidth: "80", requireCustomer: true,
-    allowOfflineSales: false, cashDifferenceLimit: 100,
+    ...DEFAULT_SETTINGS, name: tenant.name,
     businessType: tenant.businessType, onboarding: { dismissed: false },
   } } });
   return tenant;
