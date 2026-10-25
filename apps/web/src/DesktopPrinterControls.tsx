@@ -4,7 +4,7 @@ import { can } from "@fitstore/shared";
 import { useStore } from "./api";
 import { toast } from "./helpers";
 import { isNativeDesktop, nativeOpenDrawer, nativePrintCurrentSheet, nativePrintTest,
-  nativePrinters, selectPrinter, selectedPrinter } from "./desktopPrinter";
+  nativePrinters, printNotice, selectPrinter, selectedPrinter } from "./desktopPrinter";
 
 export function DesktopPrinterControls() {
   const [open, setOpen] = useState(false);
@@ -22,7 +22,7 @@ export function DesktopPrinterControls() {
     const browserPrint = window.print.bind(window);
     window.print = () => {
       if (!document.querySelector(".thermal-print")) { browserPrint(); return; }
-      void nativePrintCurrentSheet().catch((error) => toast(String(error?.message ?? error), true));
+      void nativePrintCurrentSheet().catch((error) => { const n = printNotice(error); toast(n.message, n.error); });
     };
     return () => { window.print = browserPrint; };
   }, [native]);

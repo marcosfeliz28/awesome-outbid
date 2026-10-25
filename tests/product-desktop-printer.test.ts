@@ -6,6 +6,7 @@ import {
   nativePrintTest,
   openDrawerOnNextPrint,
   prepareThermalText,
+  printNotice,
   setNativeInvokeForTest,
   takeDrawerAuthorizationForNextPrint,
 } from "../apps/web/src/desktopPrinter";
@@ -117,4 +118,21 @@ it("PC-16: la autorización de gaveta no queda pegada si la impresión no es nat
   } finally {
     vi.useRealTimers();
   }
+});
+
+it("PC-16: si el ticket salió y solo falla la autorización de la gaveta, el aviso es advertencia", async () => {
+  const invoke = vi.fn(async (command: string) => {
+    if (command === "open_cash_drawer") throw new Error("La API rechazó la apertura de la gaveta.");
+    return null;
+  });
+  setNativeInvokeForTest(invoke);
+  vi.stubGlobal("localStorage", { getItem: () => "Térmica 80", setItem: vi.fn(), removeItem: vi.fn() });
+  const failure = await nativePrintThermal("Ticket", 48, { accessToken: "t", saleId: "550e8400-e29b-41d4-a716-446655440000", automatic: true })
+    .then(() => null, (error) => error);
+  expect(invoke).toHaveBeenCalledWith("print_thermal", expect.anything());
+  expect(printNotice(failure)).toEqual({
+    message: "Ticket impreso; la gaveta no se autorizó, avisa a gerencia.",
+    error: false,
+  });
+  expect(printNotice(new Error("Sin papel"))).toEqual({ message: "Sin papel", error: true });
 });

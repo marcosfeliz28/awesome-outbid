@@ -16,6 +16,15 @@ export type DrawerAuthorization = {
 let drawerOnNextPrint: DrawerAuthorization | null = null;
 let testInvoke: Invoke | null = null;
 
+/** El ticket salió, pero la API/gaveta no autorizó la apertura. */
+export class DrawerNotAuthorizedError extends Error {}
+export const DRAWER_WARNING = "Ticket impreso; la gaveta no se autorizó, avisa a gerencia.";
+/** Aviso para el cajero: sólo un fallo de gaveta con ticket ya impreso es advertencia (no error). */
+export const printNotice = (error: unknown) =>
+  error instanceof DrawerNotAuthorizedError
+    ? { message: DRAWER_WARNING, error: false }
+    : { message: String((error as { message?: string })?.message ?? error), error: true };
+
 export function prepareThermalText(value: string): string {
   const text = Array.from(value.replace(/\r\n?/g, "\n"))
     .filter((character) => { const code = character.codePointAt(0) ?? 0; return code === 10 || code === 9 || (code >= 32 && code !== 127); })
@@ -82,7 +91,7 @@ export async function nativePrintThermal(
       saleId: drawer.saleId ?? null,
       movementId: drawer.movementId ?? null,
       automatic: drawer.automatic === true,
-    });
+    }).catch((cause) => { throw new DrawerNotAuthorizedError(String(cause?.message ?? cause)); });
 }
 
 export async function nativePrintCurrentSheet(): Promise<void> {
