@@ -1275,15 +1275,17 @@ function CodCollect({
 }
 
 /** Ajustes de la tienda: logo, número/nombre de cada caja y de cada cajero. */
-export function StoreSettings() {
+export function StoreSettings({ logoOnly = false }: { logoOnly?: boolean }) {
   const client = useQueryClient();
   const terminals = useQuery({
     queryKey: ["terminals"],
     queryFn: () => api<any[]>("/terminals"),
+    enabled: !logoOnly,
   });
   const users = useQuery({
     queryKey: ["users"],
     queryFn: () => api<any[]>("/users"),
+    enabled: !logoOnly,
   });
   const config = useQuery({
     queryKey: ["settings"],
@@ -1328,6 +1330,7 @@ export function StoreSettings() {
           />
         </label>
       </div>
+      {!logoOnly && <>
       <h3>Cajas (número y nombre en el cuadre)</h3>
       <div className="store-list">
         {(terminals.data ?? [])
@@ -1364,6 +1367,7 @@ export function StoreSettings() {
           </div>
         ))}
       </div>
+      </>}
       {register && (
         <FormModal
           title={"Caja · " + register.name}

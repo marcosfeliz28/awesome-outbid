@@ -3,7 +3,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import type { Request } from "express";
-import { permissions, z } from "@fitstore/shared";
+import { DEFAULT_SETTINGS, permissions, z } from "@fitstore/shared";
 import { Public, parse } from "./common";
 import { passwordSchemaForRole, isNonTrivialCashierPassword } from "./password-policy";
 import { clientIp, RequestRateLimitService } from "./rate-limit";
@@ -83,7 +83,7 @@ async function sendVerification(email: string, token: string) {
   if (!response?.ok) throw new HttpException("La cuenta se creó, pero no se pudo enviar el correo. Usa Reenviar confirmación.", 503);
 }
 
-/** Roles que nace con cada empresa además de «admin» (migración 202610280024). */
+/** Roles que nace con cada empresa además de «admin» (migración 202610280024_product_base_roles_customer). */
 export const BASE_ROLES = ["manager", "seller", "warehouse"] as const;
 
 /** Alta global compartida (registro e invitación): crea Tenant antes de asumir el rol RLS. */
@@ -106,11 +106,13 @@ export async function createTenantWithOwner(
     emailVerificationHash: owner.verificationHash, emailVerificationExpiresAt: owner.verificationExpiresAt,
   } });
   await tx.settings.create({ data: { tenantId: tenant.id, id: "main", data: {
-    name: tenant.name, branchName: "", currency: "DOP",
-    taxIncluded: true, receiptWidth: "80", requireCustomer: true,
-    allowOfflineSales: false, cashDifferenceLimit: 100,
+    ...DEFAULT_SETTINGS, name: tenant.name,
+    // Un negocio nuevo vende al mostrador sin pedir cliente (venta a
+    // «Consumidor final»); lo puede encender en Configuración.
+    requireCustomer: false,
     businessType: tenant.businessType, onboarding: { dismissed: false },
   } } });
+  await tx.customer.create({ data: { tenantId: tenant.id, name: "Consumidor final" } });
   return tenant;
 }
 

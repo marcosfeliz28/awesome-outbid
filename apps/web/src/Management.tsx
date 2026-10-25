@@ -26,7 +26,7 @@ import {
   ArrowDownToLine,
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
-import { formatMoney, can } from "@fitstore/shared";
+import { formatMoney, can, DEFAULT_SETTINGS } from "@fitstore/shared";
 import {
   api,
   post,
@@ -4016,6 +4016,7 @@ function ResetPassword({
     </Modal>
   );
 }
+const CONFIG_MODE_KEY = "nexora-config-mode";
 export function Configuration() {
   const user = useStore((s) => s.user)!;
   const query = useQuery({
@@ -4042,8 +4043,18 @@ export function Configuration() {
     [userEdit, setUserEdit] = useState<any>(null),
     [passwordReset, setPasswordReset] = useState<any>(null),
     [roleEdit, setRoleEdit] = useState<any>(null),
-    [tab, setTab] = useState("business");
+    [tab, setTab] = useState("business"),
+    // Producto: «Básico» por defecto (empresa nueva); la tienda no cambia.
+    [mode, setMode] = useState(() => {
+      try {
+        return localStorage.getItem(CONFIG_MODE_KEY) ?? "basic";
+      } catch {
+        return "basic";
+      }
+    });
   const client = useQueryClient();
+  const product = productTenancyRequired(import.meta.env.VITE_PRODUCT_TENANCY);
+  const basic = product && mode === "basic";
   if (!can(user.permissions, "*"))
     return can(user.permissions, "sale:manage") ? (
       <Equipment />
@@ -4092,8 +4103,8 @@ export function Configuration() {
     requiredNumber("sellerDiscountLimit", "Descuento máximo del vendedor (%)"),
     requiredNumber("cardFeePercent", "Comisión bancaria (%)"),
     requiredNumber("returnDays", "Plazo de devolución (días)"),
-    requiredNumber("idleDays", "Días sin rotación"),
-    requiredNumber("expiryDays", "Alerta de vencimiento (días)"),
+    requiredNumber("idleDays", "Días sin rotación", 60),
+    requiredNumber("expiryDays", "Alerta de vencimiento (días)", 60),
     requiredNumber("lowMargin", "Margen bajo (%)"),
     requiredNumber("cashDifferenceLimit", "Alerta de diferencia en caja"),
     {
@@ -4105,7 +4116,7 @@ export function Configuration() {
         { label: "58 mm", value: "58" },
       ],
     },
-    requiredNumber("sessionTimeoutMinutes", "Inactividad (minutos)"),
+    requiredNumber("sessionTimeoutMinutes", "Inactividad (minutos)", 30),
     {
       ...requiredNumber(
         "creditApprovalThreshold",
@@ -4183,6 +4194,42 @@ export function Configuration() {
       type: "checkbox",
     },
   ];
+  const ncfOn = (v: Record<string, any>) => v.ncfOn === true;
+  const basicFields = (values: Record<string, any>): Field[] => [
+    { key: "name", label: "Nombre del negocio", required: true },
+    { key: "phone", label: "Teléfono" },
+    { key: "address", label: "Dirección" },
+    { key: "taxIncluded", label: "Precios con ITBIS incluido", type: "checkbox" },
+    {
+      key: "requireCustomer",
+      label: "Pedir cliente en cada venta",
+      type: "checkbox",
+      help: "Apagado: la venta queda a nombre de «Consumidor final».",
+    },
+    fields.find((f) => f.key === "receiptWidth")!,
+    fields.find((f) => f.key === "usdRate")!,
+    {
+      key: "ncfOn",
+      label: "Doy comprobante fiscal (NCF) con RNC",
+      type: "checkbox",
+    },
+    ...(ncfOn(values) ? [{ key: "legalId", label: "RNC" }] : []),
+  ];
+  const initial = {
+    ...DEFAULT_SETTINGS,
+    ...query.data,
+    logo: undefined,
+    branchName: query.data?.branchName ?? "",
+    phone2: query.data?.phone2 ?? "",
+    autoPrintReceipt: !!query.data?.autoPrintReceipt,
+    requireCustomer: query.data?.requireCustomer === true,
+    allowOfflineSales: query.data?.allowOfflineSales === true,
+    usdRate: query.data?.usdRate ?? "",
+    eurRate: query.data?.eurRate ?? "",
+    transferAccounts: (query.data?.transferAccounts ?? []).join("\n"),
+    cardTerminals: (query.data?.cardTerminals ?? []).join("\n"),
+    ncfOn: (query.data?.ncfMode ?? "disabled") !== "disabled",
+  };
   return (
     <>
       <Heading
@@ -4205,6 +4252,31 @@ export function Configuration() {
           </button>
         ))}
       </div>
+      {product && tab === "business" && (
+        <div className="config-mode" role="group" aria-label="Vista de la configuración">
+          {[
+            ["basic", "Básico"],
+            ["advanced", "Avanzado"],
+          ].map(([id, label]) => (
+            <Button
+              key={id}
+              variant="secondary"
+              className={mode === id ? "active" : ""}
+              aria-pressed={mode === id}
+              onClick={() => {
+                setMode(id);
+                try {
+                  localStorage.setItem(CONFIG_MODE_KEY, id);
+                } catch {
+                  // Sin almacenamiento: vale para esta visita.
+                }
+              }}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      )}
       <div className="panel">
         {tab === "equipment" ? (
           <Equipment />
@@ -4231,6 +4303,7 @@ export function Configuration() {
                 Editar configuración
               </Button>
             </div>
+            {!basic && (
             <div className="settings-rules">
               {[
                 ["Descuento vendedor", query.data?.sellerDiscountLimit + "%"],
@@ -4245,7 +4318,8 @@ export function Configuration() {
                 </div>
               ))}
             </div>
-            {(Number(query.data?.creditApprovalThreshold) === 0 ||
+            )}
+            {!basic && (Number(query.data?.creditApprovalThreshold) === 0 ||
               Number(query.data?.receivableShiftLimit) === 0) && (
               <p className="cod-hint" role="note">
                 Algún tope de crédito está en 0: esto significa pedir siempre el
@@ -4253,7 +4327,7 @@ export function Configuration() {
                 escribe un monto alto, por ejemplo RD$ 1,000,000.
               </p>
             )}
-            {query.data?.allowCreditSales !== true && (
+            {!basic && query.data?.allowCreditSales !== true && (
               <p className="cod-hint" role="note">
                 Las ventas a crédito están deshabilitadas: todo crédito de un
                 cajero pide PIN de gerente.
@@ -4298,12 +4372,24 @@ export function Configuration() {
                 Revisa sus costos y precios.
               </p>
             )}
-            <StoreSettings />
-            {productTenancyRequired(import.meta.env.VITE_PRODUCT_TENANCY) && <SupportAccessCard />}
-            <NcfSequenceSettings />
-            <TelegramNotices />
-            <DriveBackupCard />
-            <IncentiveRates />
+            {basic ? (
+              <>
+                <StoreSettings logoOnly />
+                {query.data?.ncfMode && query.data.ncfMode !== "disabled" && (
+                  <NcfSequenceSettings />
+                )}
+              </>
+            ) : (
+              <>
+                <StoreSettings />
+                {product && <SupportAccessCard />}
+                <NcfSequenceSettings />
+                <TelegramNotices />
+                {/* El producto no tiene respaldo a Drive por empresa (sin /backups). */}
+                {!product && <DriveBackupCard />}
+                <IncentiveRates />
+              </>
+            )}
           </QueryState>
         ) : tab === "users" ? (
           <>
@@ -4424,21 +4510,22 @@ export function Configuration() {
       {editing && (
         <FormModal
           title="Configuración del negocio"
-          fields={fields}
-          initial={{
-            ...query.data,
-            branchName: query.data?.branchName ?? "",
-            phone2: query.data?.phone2 ?? "",
-            autoPrintReceipt: !!query.data?.autoPrintReceipt,
-            requireCustomer: query.data?.requireCustomer === true,
-            allowOfflineSales: query.data?.allowOfflineSales === true,
-            usdRate: query.data?.usdRate ?? "",
-            eurRate: query.data?.eurRate ?? "",
-            transferAccounts: (query.data?.transferAccounts ?? []).join("\n"),
-            cardTerminals: (query.data?.cardTerminals ?? []).join("\n"),
-          }}
+          fields={basic ? basicFields : fields}
+          initial={initial}
           onClose={() => setEditing(false)}
-          onSubmit={(data) => {
+          onSubmit={(values) => {
+            // Básico solo edita unos campos: el resto viaja tal como está.
+            const { ncfOn: _ncfOn, ...data } = basic
+              ? {
+                  ...initial,
+                  ...values,
+                  ncfMode: values.ncfOn
+                    ? initial.ncfOn
+                      ? initial.ncfMode
+                      : "prepared"
+                    : "disabled",
+                }
+              : values;
             // Tasa vacía = sin divisa.
             const rate = (v: unknown) =>
               v === "" || v === null || v === undefined ? null : Number(v);

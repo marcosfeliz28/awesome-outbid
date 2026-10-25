@@ -15,6 +15,61 @@ export type SupportInfo = {
   company: { name: string; slug: string } | null;
 };
 
+// **negrita** dentro de una línea.
+const inline = (text: string) =>
+  text
+    .split(/\*\*(.+?)\*\*/g)
+    .map((part, i) => (i % 2 ? <strong key={i}>{part}</strong> : part));
+
+/**
+ * Markdown sencillo de las guías (títulos, listas, párrafos y negrita); sin
+ * HTML crudo. shortcut: no cubre tablas ni enlaces; si una guía los usa,
+ * ampliar aquí.
+ */
+export function HelpArticle({ text }: { text: string }) {
+  const blocks: React.ReactNode[] = [];
+  const open: { list: { ordered: boolean; items: string[] } | null } = {
+    list: null,
+  };
+  const flush = () => {
+    const list = open.list;
+    if (!list) return;
+    const items = list.items.map((item, i) => <li key={i}>{inline(item)}</li>);
+    blocks.push(
+      list.ordered ? (
+        <ol key={blocks.length}>{items}</ol>
+      ) : (
+        <ul key={blocks.length}>{items}</ul>
+      ),
+    );
+    open.list = null;
+  };
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    const item = /^(\d+\.|[-*])\s+(.*)$/.exec(line);
+    if (item) {
+      const ordered = /\d/.test(item[1]);
+      if (open.list?.ordered !== ordered) flush();
+      open.list ??= { ordered, items: [] };
+      open.list.items.push(item[2]);
+      continue;
+    }
+    flush();
+    const heading = /^(#{1,3})\s+(.*)$/.exec(line);
+    if (heading)
+      blocks.push(
+        heading[1].length === 1 ? (
+          <h3 key={blocks.length}>{inline(heading[2])}</h3>
+        ) : (
+          <h4 key={blocks.length}>{inline(heading[2])}</h4>
+        ),
+      );
+    else if (line) blocks.push(<p key={blocks.length}>{inline(line)}</p>);
+  }
+  flush();
+  return <div className="help-article">{blocks}</div>;
+}
+
 export const HELP_ARTICLES = [
   ["primera-venta", "Tu primera venta"],
   ["abrir-cerrar-caja", "Abrir y cerrar la caja"],
@@ -145,7 +200,7 @@ export function SupportHelp({
       <Modal open={open} onClose={close} title={article?.title ?? "Ayuda"}>
         {article ? (
           <>
-            <div style={{ whiteSpace: "pre-wrap" }}>{article.text}</div>
+            <HelpArticle text={article.text} />
             <button className="text-link" onClick={() => setArticle(null)}>
               ← Volver a Ayuda
             </button>

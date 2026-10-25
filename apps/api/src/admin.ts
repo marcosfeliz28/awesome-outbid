@@ -131,7 +131,8 @@ const configSchema = z.object({
   autoPrintReceipt: z.boolean().default(false),
   // Toda factura debe identificar a una persona o empresa; puede crearse
   // desde el selector de clientes del POS.
-  requireCustomer: z.boolean().default(true),
+  // Sin la clave se conserva lo guardado (formularios que no la muestran).
+  requireCustomer: z.boolean().optional(),
   // Tasa del día (RD$ por unidad) para el efectivo en dólares y euros.
   // Cuatro decimales: los mismos que guarda cada pago en dólares.
   usdRate: z
@@ -149,7 +150,13 @@ const configSchema = z.object({
     .max(20)
     .optional(),
   cardTerminals: z.array(z.string().trim().min(3).max(80)).max(20).optional(),
+  // «Primeros pasos»: sin la clave se conserva el tipo elegido al registrarse.
+  businessType: z
+    .enum(["general", "retail", "beauty", "fitness", "services"])
+    .optional(),
 });
+const customerRequired = (value: unknown) =>
+  process.env.PRODUCT_TENANCY !== "required" || value !== false;
 const cashMovementLimit = (data: Record<string, unknown> | undefined) =>
   typeof data?.cashMovementApprovalLimit === "number"
     ? data.cashMovementApprovalLimit
@@ -875,7 +882,7 @@ export class AdminController {
       allowOfflineSales: data.allowOfflineSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),
-      requireCustomer: true,
+      requireCustomer: customerRequired(data.requireCustomer),
     };
   }
   @Put("settings")
@@ -916,8 +923,8 @@ export class AdminController {
           : {}),
         ...config,
         ...(previous?.onboarding ? { onboarding: previous.onboarding } : {}),
-        ...(previous?.businessType
-          ? { businessType: previous.businessType }
+        ...(config.businessType || previous?.businessType
+          ? { businessType: config.businessType ?? previous?.businessType }
           : {}),
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
@@ -935,9 +942,11 @@ export class AdminController {
           config.cardTerminals ?? (previous?.cardTerminals as string[]) ?? [],
         receiptFooter:
           config.receiptFooter ?? (previous?.receiptFooter as string) ?? "",
-        // Compatibilidad con clientes anteriores, pero la regla comercial es
-        // invariable: toda venta se guarda a nombre de un cliente.
-        requireCustomer: true,
+        // En la tienda la regla es invariable: toda venta lleva cliente. En el
+        // producto cada negocio decide (sin cliente = «Consumidor final»).
+        requireCustomer: customerRequired(
+          config.requireCustomer ?? previous?.requireCustomer,
+        ),
         ...(kept ? { logo: kept } : {}),
       };
       const row = await tx.settings.upsert({
@@ -1135,13 +1144,15 @@ export class AdminController {
   }
   @Post("users")
   @Permit("*")
+  @Header("Cache-Control", "no-store")
   async user(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
       z.object({
         name: z.string().min(2),
         username: z.string().trim().min(2).max(80).optional(),
         email: z.string().email().optional(),
-        password: z.string().min(1).max(128),
+        // Sin contraseña el sistema genera una temporal y la muestra una vez.
+        password: z.string().min(1).max(128).optional(),
         pin: newPinSchema,
         roleId: uuid,
         cashierNumber: cashierNumber.optional(),
@@ -1151,7 +1162,9 @@ export class AdminController {
     const role = await this.db.role.findUniqueOrThrow({
       where: { id: data.roleId },
     });
-    const password = parse(passwordSchemaForRole(role.name), data.password);
+    const password = data.password
+      ? parse(passwordSchemaForRole(role.name), data.password)
+      : generateTemporaryPasswordForRole(role.name);
     await this.freeCashierNumber(actor, data.cashierNumber);
     const requestedUsername =
       data.username?.trim() || data.email?.split("@")[0] || data.name;
@@ -1192,6 +1205,7 @@ export class AdminController {
       username: row.username,
       email: row.email,
       cashierNumber: row.cashierNumber,
+      ...(data.password ? {} : { temporaryPassword: password }),
     };
   }
   @Patch("users/:id")

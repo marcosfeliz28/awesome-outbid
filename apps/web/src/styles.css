@@ -6424,3 +6424,25 @@ td strong {
 .onboarding li label { display: block; margin: .55rem 0; }
 .onboarding li label input:not([type="checkbox"]):not([type="file"]) { display: block; width: 100%; max-width: 32rem; }
 .onboarding li label input[type="checkbox"] { margin-right: .5rem; }
+/* «Primeros pasos»: pensado primero para el celular (390 px). */
+.wizard { max-width: 520px; padding: 1rem; }
+.wizard h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+.wizard h2 { font-size: 1.2rem; }
+.wizard header p { margin: 0 0 .5rem; color: var(--muted); }
+.wizard-progress { height: 10px; border-radius: 99px; background: var(--primary-soft); overflow: hidden; }
+.wizard-progress span { display: block; height: 100%; background: var(--primary); transition: width .2s; }
+.wizard .field { font-size: 15px; }
+.wizard .field input, .wizard .field select { min-height: 48px; font-size: 16px; }
+.wizard .button { display: flex; width: 100%; min-height: 52px; font-size: 16px; white-space: normal; margin: .6rem 0; }
+.wizard .text-link { min-height: 44px; font-size: 15px; }
+.wizard-choice { border: 0; padding: 0; margin: 0 0 1rem; font-size: 15px; }
+.wizard-choice legend { font-weight: 600; margin-bottom: .5rem; }
+.wizard-choice label { display: flex; align-items: center; gap: .6rem; min-height: 48px; padding: 0 .8rem; margin: .4rem 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.wizard-choice input { width: 20px; height: 20px; }
+.wizard-product { display: grid; grid-template-columns: 1fr 1fr; gap: 0 .6rem; padding: .6rem 0; border-bottom: 1px solid var(--border); }
+.wizard-product .field:first-child { grid-column: 1 / -1; }
+.wizard-password { font-size: 2rem; font-weight: 700; letter-spacing: .2em; }
+.wizard-nav { display: flex; gap: .6rem; margin-top: 1rem; }
+.wizard-nav .button { margin: 0; }
+.config-mode { display: inline-flex; gap: .4rem; margin: 0 0 1rem; }
+.config-mode .active { background: var(--primary); color: #fff; }

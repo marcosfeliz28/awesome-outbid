@@ -42,7 +42,9 @@ export async function enforcePlanQuota(
     if (active >= plan.users) throw new HttpException(`El plan ${plan.label} permite ${plan.users} usuarios activos.`, 409);
   } else if (resource === "boxes") {
     const approved = await tx.terminal.count({ where: { tenantId, approvedAt: { not: null }, revokedAt: null } });
-    if (approved >= plan.boxes) throw new HttpException(`El plan ${plan.label} permite ${plan.boxes} equipos aprobados.`, 409);
+    if (approved >= plan.boxes) throw new HttpException(
+      `El plan ${plan.label} permite ${plan.boxes} ${plan.boxes === 1 ? "equipo aprobado" : "equipos aprobados"}. Ve a Configuración → Equipos y quita uno que ya no uses, o cambia de plan en «Plan y facturación».`, 409,
+    );
   } else if (resource === "cashBoxes") {
     // Un equipo puede compartirlo más de un cajero (W6). Limitar sólo
     // Terminal aprobados no limita el número de cajas operando a la vez.

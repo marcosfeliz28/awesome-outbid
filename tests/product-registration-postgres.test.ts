@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { promisify } from "node:util";
-import { randomUUID } from "node:crypto";
 import EmbeddedPostgres from "embedded-postgres";
 import supertest from "supertest";
 import { expect, it, vi } from "vitest";
@@ -123,7 +122,7 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     expect(tenants.rows[0].privacyVersion).toBe("privacy-test-1");
     expect(new Date(tenants.rows[0].termsAcceptedAt).getTime()).toBeGreaterThan(Date.now() - 60000);
     expect(new Date(tenants.rows[0].privacyAcceptedAt).getTime()).toBeGreaterThan(Date.now() - 60000);
-    expect((await client.query(`SELECT count(*)::int AS n FROM "Role" WHERE "tenantId"=$1`, [tenants.rows[0].id])).rows[0].n).toBe(1);
+    expect((await client.query(`SELECT count(*)::int AS n FROM "Role" WHERE "tenantId"=$1`, [tenants.rows[0].id])).rows[0].n).toBe(2);
     expect((await client.query(`SELECT count(*)::int AS n FROM "Settings" WHERE "tenantId"=$1`, [tenants.rows[0].id])).rows[0].n).toBe(1);
     const owner = await client.query(`SELECT "pinHash" FROM "User" WHERE "tenantId"=$1`, [tenants.rows[0].id]);
     expect(await apiRequire("bcryptjs").compare(input.managerPin, owner.rows[0].pinHash)).toBe(true);
@@ -159,9 +158,8 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     expect((await http.post("/api/onboarding").set("Authorization", aToken).send({ dismissed: false })).body.dismissed).toBe(false);
     expect((await http.post("/api/categories").set("Authorization", aToken).send({ name: "Abarrotes" })).status).toBe(201);
     expect((await http.get("/api/onboarding").set("Authorization", aToken)).body.categories).toBe(1);
-    const roleId = randomUUID();
-    await client.query(`INSERT INTO "Role" (id, "tenantId", name, permissions, "updatedAt") VALUES ($1, $2, 'seller', $3, now())`,
-      [roleId, tenants.rows[0].id, ["catalog:read", "sale:write", "cash:write", "customers:write"]]);
+    // La empresa nueva ya trae el rol de cajera.
+    const roleId = (await client.query(`SELECT id FROM "Role" WHERE "tenantId"=$1 AND name='seller'`, [tenants.rows[0].id])).rows[0].id;
     const cashier = (name: string) => ({ name, username: name, password: "729486", pin: "869254", roleId });
     const firstCashier = await http.post("/api/users").set("Authorization", aToken).send(cashier("Cajera A"));
     expect(firstCashier.status, JSON.stringify(firstCashier.body)).toBe(201);
