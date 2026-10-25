@@ -461,6 +461,15 @@ export async function inventoryLossAlert(tx: any, actor: Actor) {
   });
 }
 
+// Unidades de un lote en un almacén: en la tienda viven en Lot.qty; en los
+// demás almacenes, en LotStock.
+async function lotHeld(db: any, lot: { id: string; qty: unknown }, warehouse: { id: string; sellable: boolean }) {
+  if (warehouse.sellable) return Number(lot.qty);
+  const row = await db.lotStock.findUnique({
+    where: { lotId_warehouseId: { lotId: lot.id, warehouseId: warehouse.id } },
+  });
+  return Number(row?.qty ?? 0);
+}
 export async function stockChange(
   tx: any,
   actor: Actor,
@@ -891,12 +900,30 @@ export class InventoryController {
                 where: { id: lot.id },
                 data: { qty: { increment: data.qty } },
               });
+            } else if (lotId && !data.lotNumber) {
+              // Lote ya existente elegido en la lista: no se vuelve a pedir
+              // número ni vencimiento (auditoría de inventario, 25-oct).
+              const lot = await tx.lot.findFirst({
+                where: { id: lotId, variantId: variant.id, branchId: actor.branchId },
+              });
+              if (!lot) bad("Lote inválido.");
+              if (lot.expiryDate && expired(lot.expiryDate))
+                bad("No puedes aumentar un lote vencido.");
+              if (variant.product.category.requiresExpiry && !lot.expiryDate)
+                bad("Ese lote no tiene vencimiento; escribe el lote con su vencimiento.");
+              await tx.lot.update({
+                where: { id: lot.id },
+                data: { qty: { increment: data.qty } },
+              });
             } else {
-              if (
-                !data.lotNumber ||
-                (variant.product.category.requiresExpiry && !data.expiryDate)
-              )
-                bad("Indica lote y vencimiento.");
+              if (!data.lotNumber)
+                bad(
+                  variant.product.category.requiresExpiry
+                    ? "Indica lote y vencimiento."
+                    : "Indica el lote.",
+                );
+              if (variant.product.category.requiresExpiry && !data.expiryDate)
+                bad("Indica el vencimiento del lote.");
               const identity = lotIdentity(data.lotNumber, data.expiryDate);
               const existingLot = await tx.lot.findUnique({
                 where: {
@@ -1518,7 +1545,14 @@ export class InventoryController {
       z.object({
         warehouseId: uuid.optional(),
         items: z
-          .array(z.object({ variantId: uuid, counted: countedQty() }))
+          .array(
+            z.object({
+              variantId: uuid,
+              // Productos con lote: se cuenta cada lote por separado.
+              lotId: uuid.optional(),
+              counted: countedQty(),
+            }),
+          )
           .min(1)
           .max(1000),
       }),
@@ -1541,7 +1575,18 @@ export class InventoryController {
     for (const item of data.items) {
       const variant = await this.db.variant.findFirstOrThrow({
         where: { id: item.variantId, branchId: actor.branchId },
+        include: { product: { include: { category: true } } },
       });
+      if (variant.product.category.requiresLot && !item.lotId)
+        bad(`«${variant.product.name}» se controla por lote: elige el lote que contaste.`);
+      if (item.lotId) {
+        const lot = await this.db.lot.findFirst({
+          where: { id: item.lotId, variantId: variant.id, branchId: actor.branchId },
+        });
+        if (!lot) bad("Lote inválido.");
+        items.push({ ...item, expected: await lotHeld(this.db, lot, warehouse) });
+        continue;
+      }
       const held = warehouse.sellable
         ? Number(variant.stock)
         : Number(
@@ -1611,6 +1656,43 @@ export class InventoryController {
                     })
                   )?.qty ?? 0,
                 );
+            if (item.lotId) {
+              const lot = await tx.lot.findFirstOrThrow({
+                where: { id: item.lotId, variantId: variant.id },
+              });
+              const lotQty = await lotHeld(tx, lot, warehouse);
+              if (lotQty !== item.expected)
+                bad("El stock cambió. Repite el conteo.");
+              const delta = quantity(d(item.counted).minus(lotQty));
+              if (!delta) continue;
+              if (warehouse.sellable) {
+                await tx.lot.update({
+                  where: { id: lot.id },
+                  data: { qty: { increment: delta } },
+                });
+                await stockChange(tx, actor, variant, delta, "count", "Conteo físico aprobado", id, lot.id);
+              } else {
+                await tx.lotStock.upsert({
+                  where: { lotId_warehouseId: { lotId: lot.id, warehouseId: warehouse.id } },
+                  create: { lotId: lot.id, warehouseId: warehouse.id, qty: item.counted },
+                  update: { qty: item.counted },
+                });
+                const after = quantity(d(held).plus(delta));
+                await tx.variantStock.upsert({
+                  where: { variantId_warehouseId: { variantId: variant.id, warehouseId: warehouse.id } },
+                  create: { variantId: variant.id, warehouseId: warehouse.id, qty: after },
+                  update: { qty: after },
+                });
+                await tx.inventoryMovement.create({
+                  data: {
+                    variantId: variant.id, lotId: lot.id, warehouseId: warehouse.id, type: "count",
+                    qty: delta, unitCost: variant.costAvg, balanceAfter: after, refId: id,
+                    reason: "Conteo físico aprobado", userId: actor.id, branchId: actor.branchId,
+                  },
+                });
+              }
+              continue;
+            }
             if (held !== item.expected)
               bad("El stock cambió. Repite el conteo.");
             if (variant.product.category.requiresLot)

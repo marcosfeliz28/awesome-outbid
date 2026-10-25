@@ -160,3 +160,49 @@ describe("3 · se vende por unidad", () => {
     expect(Object.fromEntries(rows.map((r) => [r.id, r.soldByUnit]))).toEqual({ [a.id]: false, [b.id]: true });
   });
 });
+
+describe("6 · lotes en ajustes y conteos", () => {
+  it("sumar a un lote existente no pide lote ni vencimiento; sin vencimiento en la categoría no se pide", async () => {
+    const supl = await category("Suplementos QA", { requiresLot: true, requiresExpiry: true });
+    const maq = await category("Maquillaje QA", { requiresLot: true, requiresExpiry: false });
+    const s = (await product(supl.id)).variants[0].id;
+    const m = (await product(maq.id)).variants[0].id;
+    const first = await t.post("/inventory/adjustments", { variantId: s, qty: 4, reason: "Inventario inicial",
+      lotNumber: "L-1", expiryDate: "2030-01-31T00:00:00.000Z" });
+    expect(first.status, JSON.stringify(first.body)).toBe(201);
+    const [lot] = await t.q(`SELECT id::text FROM "Lot" WHERE "variantId"=$1::uuid`, s);
+    const more = await t.post("/inventory/adjustments", { variantId: s, qty: 2, reason: "Ajuste", lotId: lot.id });
+    expect(more.status, JSON.stringify(more.body)).toBe(201);
+    const [after] = await t.q(`SELECT l.qty::text AS lot, v.stock::text AS stock FROM "Lot" l JOIN "Variant" v ON v.id=l."variantId" WHERE l.id=$1::uuid`, lot.id);
+    expect(after).toEqual({ lot: "6.000", stock: "6.000" });
+    const noLot = await t.post("/inventory/adjustments", { variantId: m, qty: 1, reason: "Inventario inicial" });
+    expect(noLot.status).toBe(400);
+    expect(noLot.body.message).toBe("Indica el lote.");
+    const makeup = await t.post("/inventory/adjustments", { variantId: m, qty: 3, reason: "Inventario inicial", lotNumber: "M-1" });
+    expect(makeup.status, JSON.stringify(makeup.body)).toBe(201);
+    const noExpiry = await t.post("/inventory/adjustments", { variantId: s, qty: 1, reason: "Ajuste", lotNumber: "L-2" });
+    expect(noExpiry.body.message).toBe("Indica el vencimiento del lote.");
+  });
+
+  it("el conteo de un producto con lote se hace por lote y se aplica", async () => {
+    const supl = await category("Suplementos conteo", { requiresLot: true, requiresExpiry: true });
+    const s = (await product(supl.id)).variants[0].id;
+    for (const lotNumber of ["A", "B"])
+      expect((await t.post("/inventory/adjustments", { variantId: s, qty: 5, reason: "Inventario inicial",
+        lotNumber, expiryDate: "2030-06-30T00:00:00.000Z" })).status).toBe(201);
+    const lots = await t.q(`SELECT id::text, "lotNumber" FROM "Lot" WHERE "variantId"=$1::uuid ORDER BY "lotNumber"`, s);
+    const withoutLot = await t.post("/inventory/counts", { items: [{ variantId: s, counted: 8 }] });
+    expect(withoutLot.status).toBe(400);
+    expect(withoutLot.body.message).toContain("elige el lote");
+    const count = await t.post("/inventory/counts", { items: [{ variantId: s, lotId: lots[0].id, counted: 3 }] });
+    expect(count.status, JSON.stringify(count.body)).toBe(201);
+    expect(count.body.items[0].expected).toBe(5);
+    const applied = await t.post(`/inventory/counts/${count.body.id}/apply`);
+    expect(applied.status, JSON.stringify(applied.body)).toBe(201);
+    const rows = await t.q(`SELECT l."lotNumber", l.qty::text, v.stock::text AS stock FROM "Lot" l JOIN "Variant" v ON v.id=l."variantId"
+      WHERE l."variantId"=$1::uuid ORDER BY l."lotNumber"`, s);
+    expect(rows).toEqual([{ lotNumber: "A", qty: "3.000", stock: "8.000" }, { lotNumber: "B", qty: "5.000", stock: "8.000" }]);
+    const [move] = await t.q(`SELECT qty::text, "lotId"::text FROM "InventoryMovement" WHERE "refId"=$1 AND type='count'`, count.body.id);
+    expect(move).toEqual({ qty: "-2.000", lotId: lots[0].id });
+  });
+});

@@ -1081,21 +1081,35 @@ export function Inventory() {
               label:
                 "Referencia de la devolución (documento o nota de crédito)",
             },
-            {
-              key: "lotId",
-              label: "Lote de salida",
-              type: "select",
-              options: adjust.lots.map((l: any) => ({
-                label: l.lotNumber + " · " + l.qty + " unidades",
-                value: l.id,
-              })),
-            },
-            { key: "lotNumber", label: "Lote de entrada" },
-            {
-              key: "expiryDate",
-              label: "Vencimiento de entrada",
-              type: "date",
-            },
+            // Un lote existente sirve para sacar o para sumar sin repetir
+            // número ni vencimiento; sólo un lote nuevo los pide, y el
+            // vencimiento sólo si la categoría lo exige.
+            ...(adjust.lots.length
+              ? [
+                  {
+                    key: "lotId",
+                    label: "Lote existente (salida o entrada a ese lote)",
+                    type: "select" as const,
+                    options: adjust.lots.map((l: any) => ({
+                      label: l.lotNumber + " · " + l.qty + " unidades",
+                      value: l.id,
+                    })),
+                  },
+                ]
+              : []),
+            ...(adjust.product.category?.requiresLot ||
+            adjust.product.category?.requiresExpiry
+              ? [{ key: "lotNumber", label: "Lote nuevo de entrada" }]
+              : []),
+            ...(adjust.product.category?.requiresExpiry
+              ? [
+                  {
+                    key: "expiryDate",
+                    label: "Vencimiento del lote nuevo",
+                    type: "date" as const,
+                  },
+                ]
+              : []),
             {
               key: "reason",
               label: "Motivo",
@@ -1144,22 +1158,52 @@ export function Inventory() {
                 value: w.id,
               })),
             },
+            // Suplementos y maquillaje: se cuenta cada lote por separado.
+            ...(count.product.category?.requiresLot
+              ? [
+                  {
+                    key: "lotId",
+                    label: "Lote que contaste",
+                    type: "select" as const,
+                    required: true,
+                    options: count.lots.map((l: any) => ({
+                      label: l.lotNumber,
+                      value: l.id,
+                    })),
+                  },
+                ]
+              : []),
             requiredNumber(
               "counted",
               "Cantidad contada",
-              stockAtWarehouse(count, countWarehouseId),
+              count.product.category?.requiresLot
+                ? 0
+                : stockAtWarehouse(count, countWarehouseId),
             ),
           ]}
           onFieldChange={(key, value, values) =>
-            key === "warehouseId"
-              ? { ...values, counted: stockAtWarehouse(count, String(value)) }
-              : undefined
+            key === "lotId"
+              ? {
+                  ...values,
+                  counted: Number(
+                    count.lots.find((l: any) => l.id === value)?.qty ?? 0,
+                  ),
+                }
+              : key === "warehouseId" && !count.product.category?.requiresLot
+                ? { ...values, counted: stockAtWarehouse(count, String(value)) }
+                : undefined
           }
           onClose={() => setCount(null)}
           onSubmit={(data) =>
             post("/inventory/counts", {
               warehouseId: data.warehouseId,
-              items: [{ variantId: count.id, counted: data.counted }],
+              items: [
+                {
+                  variantId: count.id,
+                  lotId: data.lotId || undefined,
+                  counted: data.counted,
+                },
+              ],
             })
           }
         />
