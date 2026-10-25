@@ -1426,7 +1426,7 @@ export class CashController {
       )
         bad(
           guessed
-            ? "Escribe la justificación: qué pasó en los intentos de cierre y quién lo sabe."
+            ? "Escribe la justificación del descuadre: qué pasó en los intentos de cierre y quién lo sabe."
             : "La caja no cuadra. Escribe la justificación del descuadre: qué pasó y quién lo sabe.",
         );
       if (anyOff || guessed)
