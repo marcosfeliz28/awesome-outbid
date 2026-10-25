@@ -12,10 +12,10 @@ it("tiene los cuatro precios y límites mensuales acordados", () => {
   expect(Object.fromEntries(Object.entries(BILLING_PLANS).map(([key, value]) =>
     [key, [value.monthlyDop, value.branches, value.boxes, value.users, value.aiQueries]])))
     .toEqual({
-      autoservicio: [990, 1, 1, 2, 30],
-      basico: [1990, 1, 2, 3, 50],
-      pro: [3990, 2, 6, 10, 300],
-      premium: [7990, 5, 20, 30, 1000],
+      autoservicio: [990, 1, 1, 2, 100],
+      basico: [1990, 1, 2, 3, 250],
+      pro: [3990, 2, 6, 10, 600],
+      premium: [7990, 5, 20, 30, 1500],
     });
 });
 

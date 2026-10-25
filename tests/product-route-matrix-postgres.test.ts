@@ -114,7 +114,7 @@ const READ_LIST_CASES = [
 // A checked-in manifest of exercised HTTP routes. Each entry corresponds to a
 // valid-body PostgreSQL request in product-route-{matrix,export,admin,
 // admin-extra,auth-void,money,money-extra,money-final,money-last,
-// inventory,inventory-extra,inventory-final,misc,registration}-postgres.test.ts.
+// inventory,inventory-extra,inventory-final,misc,registration,platform-ai-packs}-postgres.test.ts.
 // Adding a Nest route without a concrete case fails this gate; do not generate
 // this set from productRoutes() at runtime, which would hide missing coverage.
 const TESTED_PRODUCT_ROUTES = new Set(`
@@ -171,6 +171,7 @@ GET /api/onboarding
 GET /api/payments/:id/proof
 GET /api/payments/pending-transfers
 GET /api/platform/tenants
+GET /api/platform/tenants/:slug/ai-usage
 GET /api/products
 GET /api/products/:id
 GET /api/promotions
@@ -258,6 +259,7 @@ POST /api/products
 POST /api/products/:id/variants
 POST /api/products/import
 POST /api/platform/tenants
+POST /api/platform/tenants/:slug/ai-packs
 POST /api/promotions
 POST /api/purchase-orders
 POST /api/purchase-orders/:id/receive
@@ -313,7 +315,7 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  expect(required).toHaveLength(175);
+  expect(required).toHaveLength(177);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");

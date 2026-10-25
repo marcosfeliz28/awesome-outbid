@@ -17,6 +17,7 @@ import { AuthGuard, Database, Public } from "./common";
 import { AuthController } from "./auth";
 import { RegistrationController, RegistrationService } from "./registration";
 import { PlatformController } from "./platform";
+import { PlatformAiPacksController } from "./platform-ai-packs";
 import { OnboardingController } from "./onboarding";
 import { TenantLifecycleService, TenantLifecycleWorker } from "./tenant-lifecycle";
 import { TenantLifecycleController } from "./tenant-lifecycle-controller";
@@ -87,7 +88,7 @@ export function createAppModule(secret: string) {
       MerchandiseController,
       InventoryImportController,
       AuthController,
-      ...(product ? [RegistrationController, PlatformController] : []),
+      ...(product ? [RegistrationController, PlatformController, PlatformAiPacksController] : []),
       ...(product ? [OnboardingController] : []),
       ...(product ? [TenantLifecycleController] : []),
       ...(product ? [ProductBillingController] : []),
@@ -146,7 +147,7 @@ export function createAppModule(secret: string) {
             return;
           }
           // Sin empresa: alta, invitación y operador de plataforma (credencial propia).
-          if (/^\/api\/(?:auth\/(?:register|verify-email|resend-verification|accept-invitation)|platform\/tenants)\/?$/.test(path)) {
+          if (/^\/api\/(?:auth\/(?:register|verify-email|resend-verification|accept-invitation)|platform\/tenants(?:\/[a-z0-9-]+\/ai-(?:packs|usage))?)\/?$/.test(path)) {
             next();
             return;
           }
