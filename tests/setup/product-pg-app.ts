@@ -113,7 +113,10 @@ export async function startProductApp(name: string) {
         await db?.$disconnect().catch(() => undefined);
         await pg.stop();
         await rm(objects, { recursive: true, force: true });
-        for (const [k, v] of Object.entries(previous)) v === undefined ? delete process.env[k] : (process.env[k] = v);
+        for (const [k, v] of Object.entries(previous)) {
+          if (v === undefined) delete process.env[k];
+          else process.env[k] = v;
+        }
       },
     };
   } catch (error) {

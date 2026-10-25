@@ -73,7 +73,10 @@ describe("1 · factura de proveedor sin bucket", () => {
       expect(back.text).toBe(csv.toString("utf8"));
     } finally {
       process.env.NODE_ENV = env.NODE_ENV;
-      for (const k of ["ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL"]) env[k] === undefined ? delete process.env[k] : (process.env[k] = env[k]);
+      for (const k of ["ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL"]) {
+        if (env[k] === undefined) delete process.env[k];
+        else process.env[k] = env[k];
+      }
       ai.close();
     }
   });
