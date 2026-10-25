@@ -2,6 +2,8 @@
 // con ella aceptaría licencias firmadas por cualquiera que tenga su privada.
 // Uso: node license-key-guard.mjs <clave.pem>. Fuera del CI (CI=true) la rechaza.
 import { readFileSync } from "node:fs";
+import process from "node:process";
+import console from "node:console";
 import { pathToFileURL } from "node:url";
 
 export const CI_LICENSE_KEY = "MCowBQYDK2VwAyEA2c54TsrWgQdX58TVC3FOxHEEmoX3LZhHw9IghUUWhzw=";

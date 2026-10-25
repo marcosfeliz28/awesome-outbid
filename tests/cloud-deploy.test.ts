@@ -1312,8 +1312,8 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
       "docker build -f deploy/render/Dockerfile.web -t nexora-pos-web:ci .",
     );
     expect(job).toContain("bash deploy/render/ci-smoke.sh");
-    expect(job).toContain("github.ref_name == 'nexora-chatgpt-pc-producto'");
-    expect(job).toContain("github.head_ref == 'nexora-chatgpt-pc-producto'");
+    // El producto se reconoce por su blueprint (ci.yml de producto-nexora).
+    expect(job).toContain("render.producto.yaml");
     expect(job).toContain("bash scripts/producto-ci-smoke.sh");
     expect(ci).not.toMatch(/docker (push|login)|--push/);
     const smoke = read("deploy/render/ci-smoke.sh");
@@ -1363,5 +1363,18 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
     const last = names.sort().at(-1)!;
     expect(last >= "202610220001_validar_restricciones").toBe(true);
     expect(prefixes.filter((p) => p === "202610220001")).toHaveLength(1);
+  });
+
+  // Render no interpreta comillas en preDeployCommand (falló el primer
+  // despliegue del producto con «sh -c '…'»): una sola orden simple.
+  it("el preDeployCommand del producto es una orden sin comillas y su script viaja en la imagen", () => {
+    const line = read("render.producto.yaml").match(
+      /^ *preDeployCommand: *(.+)$/m,
+    )![1]!;
+    expect(line).not.toMatch(/['"&|;]/);
+    expect(line).toBe("node deploy/render/producto-predeploy.mjs");
+    expect(read("deploy/render/Dockerfile.api")).toContain(
+      "COPY deploy/render/producto-predeploy.mjs deploy/render/producto-predeploy.mjs",
+    );
   });
 });

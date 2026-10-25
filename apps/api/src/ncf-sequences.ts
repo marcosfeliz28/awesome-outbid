@@ -4,8 +4,8 @@ import { z } from "@fitstore/shared";
 import { Actor, CurrentUser, Database, Permit, audit, bad, conflict, parse, uuid } from "./common";
 import { currentTenantId } from "./tenant-context";
 
-// Inventario administrativo, no comprobantes emitidos. El dato de «próximo»
-// se declara a mano; jamás se toma de Sale.ncf ni avanza al vender.
+// Inventario administrativo de rangos. El «próximo» se declara a mano y sólo
+// avanza al vender cuando la empresa activa ncfMode «sequences» (takeNcf).
 const digits = z.string().regex(/^\d{1,12}$/, "Escribe de 1 a 12 dígitos.");
 const nextDigits = z.string().regex(/^\d{1,13}$/, "Escribe de 1 a 13 dígitos.");
 const civilDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida.").refine(
@@ -62,6 +62,28 @@ export function ncfTenantToday(timeZone: string, at = new Date()) {
     if (error instanceof RangeError) return null;
     throw error;
   }
+}
+
+/** NCF tradicional para una venta (ncfMode «sequences»). Toma el próximo
+ *  número del rango activo y vigente de esta empresa bajo el mismo candado
+ *  que el alta/activación, así dos ventas nunca reciben el mismo número.
+ *  Va dentro de la transacción de la venta: si la venta falla, el número no
+ *  se gasta. Sin rango válido no hay venta (dueña: «toda venta lleva su
+ *  comprobante»). */
+export async function takeNcf(tx: any, type: string) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`ncf:${currentTenantId()}:${type}`}))`;
+  const tenant = await tx.$queryRaw`
+    SELECT "timeZone" FROM "Tenant" WHERE id = ${currentTenantId()}::uuid`;
+  const today = tenant[0] ? ncfTenantToday(tenant[0].timeZone) : null;
+  if (!today) bad("Zona horaria de empresa inválida; no se puede asignar el NCF.");
+  const rows = await tx.ncfSequence.findMany({ where: { type, active: true }, orderBy: { firstNumber: "asc" } });
+  const row = rows.find((r: any) =>
+    BigInt(r.nextNumber.toString()) <= BigInt(r.lastNumber.toString()) &&
+    (!r.expiryApplies || (r.expiresOn && r.expiresOn.toISOString().slice(0, 10) >= today)));
+  if (!row)
+    bad(`No hay secuencia ${type} activa, vigente y con números disponibles. Declárala en Ajustes › Comprobantes antes de vender.`);
+  await tx.ncfSequence.update({ where: { id: row.id }, data: { nextNumber: { increment: 1 } } });
+  return type + row.nextNumber.toString().padStart(row.numberWidth, "0");
 }
 
 const view = (row: any, today: string) => ({

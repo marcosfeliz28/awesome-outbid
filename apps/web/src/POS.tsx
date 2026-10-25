@@ -2563,7 +2563,7 @@ function Checkout({
           ¿Con envío? Elige Transferencia o Tarjeta y agrega el pago.
         </small>
       )}
-      {config?.ncfMode === "prepared" && (
+      {(config?.ncfMode === "prepared" || config?.ncfMode === "sequences") && (
         <div className="form-grid">
           <label className="field">
             <span>Solicitud de NCF</span>
@@ -2571,7 +2571,11 @@ function Checkout({
               value={ncfType}
               onChange={(e) => setNcfType(e.target.value as any)}
             >
-              <option value="">Sin solicitud</option>
+              <option value="">
+                {config?.ncfMode === "sequences"
+                  ? "B02 · Consumidor final (por defecto)"
+                  : "Sin solicitud"}
+              </option>
               <option value="B01">B01 · Crédito fiscal</option>
               <option value="B02">B02 · Consumidor final</option>
             </select>
@@ -2587,8 +2591,9 @@ function Checkout({
             </label>
           )}
           <small>
-            Preparación de datos. El comprobante sigue siendo interno hasta su
-            emisión fiscal.
+            {config?.ncfMode === "sequences"
+              ? "El NCF se asigna al completar la venta. Si el cliente tiene RNC o cédula guardado, se usa para el B01."
+              : "Preparación de datos. El comprobante sigue siendo interno hasta su emisión fiscal."}
           </small>
         </div>
       )}

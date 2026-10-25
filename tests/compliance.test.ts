@@ -99,7 +99,7 @@ describe("Cumplimiento legal y accesibilidad", () => {
           legalId: "",
           logo:
             "data:image/png;base64," +
-            readFileSync("apps/web/public/logo-grupo-macgen.png").toString(
+            readFileSync("docs/tienda/logo-grupo-macgen.png").toString(
               "base64",
             ),
         };

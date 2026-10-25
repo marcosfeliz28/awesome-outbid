@@ -16,6 +16,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { AuthGuard, Database, Public } from "./common";
 import { AuthController } from "./auth";
 import { RegistrationController, RegistrationService } from "./registration";
+import { PlatformController } from "./platform";
 import { OnboardingController } from "./onboarding";
 import { TenantLifecycleService, TenantLifecycleWorker } from "./tenant-lifecycle";
 import { TenantLifecycleController } from "./tenant-lifecycle-controller";
@@ -86,7 +87,7 @@ export function createAppModule(secret: string) {
       MerchandiseController,
       InventoryImportController,
       AuthController,
-      ...(product ? [RegistrationController] : []),
+      ...(product ? [RegistrationController, PlatformController] : []),
       ...(product ? [OnboardingController] : []),
       ...(product ? [TenantLifecycleController] : []),
       ...(product ? [ProductBillingController] : []),
@@ -143,7 +144,8 @@ export function createAppModule(secret: string) {
             next();
             return;
           }
-          if (/^\/api\/auth\/(?:register|verify-email|resend-verification)\/?$/.test(path)) {
+          // Sin empresa: alta, invitación y operador de plataforma (credencial propia).
+          if (/^\/api\/(?:auth\/(?:register|verify-email|resend-verification|accept-invitation)|platform\/tenants)\/?$/.test(path)) {
             next();
             return;
           }

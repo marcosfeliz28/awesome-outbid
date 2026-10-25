@@ -108,7 +108,9 @@ const configSchema = z.object({
   unusualDiscountCount: z.number().int().min(1).max(1000).default(10),
   unusualDiscountPercent: z.number().min(0).max(100).default(25),
   lowSalesDropPercent: z.number().min(0).max(100).default(50),
-  ncfMode: z.enum(["disabled", "prepared"]).default("disabled"),
+  // «sequences»: cada venta toma su NCF tradicional (B01/B02) de los rangos
+  // declarados; apagado por defecto hasta que la contable lo valide.
+  ncfMode: z.enum(["disabled", "prepared", "sequences"]).default("disabled"),
   // Encabezado de lo impreso (tienda): sucursal, WhatsApp y logo.
   branchName: z.string().max(100).default(""),
   receiptFooter: z.string().trim().max(200).optional(),

@@ -54,6 +54,8 @@ const CASH_DIFFERENCE_PRIVATE_MESSAGE =
 // ventana (30 cierres, ventas de hoy): sólo una persona las resuelve, o su
 // propio flujo (verificar la transferencia, cobrar la cuenta, resolver el
 // conflicto offline).
+/** Tipos que sólo ve administración (`*`); CPC-10: también el dólar. */
+export const ADMIN_ONLY_ALERT_TYPES = ["sale_void_request", "ncf_sequence", "usd_rate_change"];
 export const MANUAL_ALERT_TYPES = [
   "offline_conflict",
   "receivable",
@@ -77,8 +79,6 @@ export const MANUAL_ALERT_TYPES = [
   // revisión humana y no debe resolverse por la evaluación periódica.
   "usd_rate_change",
 ];
-// Avisos que solo ve quien tiene «*» (CPC-4 y CPC-10: el dólar es de la dueña).
-const OWNER_ONLY_ALERTS = ["sale_void_request", "ncf_sequence", "usd_rate_change"];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,
 // para que no dependa de que alguien abra Avisos ese día.
@@ -455,8 +455,9 @@ export class AlertEngine {
       if (enabled(type))
         events.push({ key, type, severity, entityId, message, branchId });
     };
-    // PC-13: sólo avisamos de rangos declarados por administración. Nunca
-    // consumimos ni inferimos números NCF a partir de ventas del POS.
+    // PC-13: avisos de los rangos declarados. Con ncfMode «sequences» la venta
+    // avanza el próximo número (takeNcf); aquí sólo se lee.
+    let keepNcfOpen = false;
     if (process.env.PRODUCT_TENANCY === "required") {
       const [tenant, sequences] = await Promise.all([
         this.db.$queryRaw<{ timeZone: string }[]>`
@@ -466,6 +467,8 @@ export class AlertEngine {
       // Si no conocemos la zona horaria de esta empresa, no fingimos una
       // fecha fiscal: omitimos el aviso hasta corregir la configuración.
       const todayForTenant = tenant[0]?.timeZone ? ncfTenantToday(tenant[0].timeZone) : null;
+      // Sin fecha fiscal no hay eventos: tampoco cerramos los avisos abiertos.
+      keepNcfOpen = !todayForTenant;
       if (todayForTenant) {
         for (const sequence of sequences)
           for (const warning of ncfSequenceWarnings(sequence, todayForTenant))
@@ -689,7 +692,7 @@ export class AlertEngine {
     // Resolver sólo reglas de estado (stock, vencimiento, margen…). Las de
     // hechos (MANUAL_ALERT_TYPES) permanecen hasta que una persona o su
     // propio flujo las cierre (M-1).
-    await this.resolveStale(branchId, events);
+    await this.resolveStale(branchId, events, keepNcfOpen);
     const stored = await this.storedAlerts(events);
     const writes: AlertWrite[] = [];
     for (const event of events) {
@@ -725,13 +728,18 @@ export class AlertEngine {
    * PostgreSQL (500 en GET /alerts con el inventario importado): las claves
    * viajan como UN arreglo.
    */
-  private async resolveStale(branchId: string, events: AlertEvent[]) {
+  private async resolveStale(
+    branchId: string,
+    events: AlertEvent[],
+    keepNcfOpen = false,
+  ) {
     const keys = [...new Set(events.map((e) => e.key))];
     await this.db.$executeRaw`
       UPDATE "Alert" SET "status" = 'resolved',
              "updatedAt" = (now() AT TIME ZONE 'UTC')
        WHERE "branchId" = ${branchId} AND "status" <> 'resolved'
          AND NOT ("type" = ANY(${MANUAL_ALERT_TYPES}::text[]))
+         AND NOT (${keepNcfOpen}::boolean AND "type" = 'ncf_sequence')
          AND NOT ("key" = ANY(${keys}::text[]))`;
   }
   /** Estado guardado de las claves evaluadas, en lecturas de 1 000. */
@@ -884,7 +892,7 @@ export class AlertsController {
         ...(filter.type ? { type: filter.type } : {}),
         ...(filter.entityId ? { entityId: filter.entityId } : {}),
         ...(!can(actor.permissions, "*")
-          ? { AND: [{ type: { notIn: OWNER_ONLY_ALERTS } }] }
+          ? { AND: [{ type: { notIn: ADMIN_ONLY_ALERT_TYPES } }] }
           : {}),
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
@@ -910,7 +918,7 @@ export class AlertsController {
         id: parse(uuid, id),
         branchId: actor.branchId,
         ...(!can(actor.permissions, "*")
-          ? { type: { notIn: OWNER_ONLY_ALERTS } }
+          ? { type: { notIn: ADMIN_ONLY_ALERT_TYPES } }
           : {}),
       },
     });

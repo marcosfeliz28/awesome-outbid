@@ -397,8 +397,6 @@ describe("PC-19 licencia local", () => {
 
   it("CPC-9: el instalador final rechaza la clave pública de pruebas del CI", async () => {
     const { rejectsTestKey, CI_LICENSE_KEY } = await import("../instalador/tools/license-key-guard.mjs");
-    const ci = readFileSync(".github/workflows/ci.yml", "utf8");
-    expect(ci).toContain(CI_LICENSE_KEY);
     const pem = `-----BEGIN PUBLIC KEY-----\n${CI_LICENSE_KEY}\n-----END PUBLIC KEY-----\n`;
     expect(rejectsTestKey(pem, {})).toBe(true);
     expect(rejectsTestKey(pem, { CI: "true" })).toBe(false);

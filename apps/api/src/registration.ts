@@ -1,5 +1,5 @@
 import { Injectable, Controller, Post, Body, Req, HttpException, OnModuleDestroy, Inject } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
 import type { Request } from "express";
@@ -27,9 +27,17 @@ const resendSchema = z.object({
   companyCode: registration.shape.companyCode,
   email: registration.shape.email,
 }).strict();
+const invitationSchema = z.object({
+  token: tokenSchema.shape.token,
+  password: registration.shape.password,
+  managerPin: registration.shape.managerPin,
+}).strict();
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const verificationToken = () => randomBytes(32).toString("hex");
 const expiration = () => new Date(Date.now() + 24 * 60 * 60 * 1000);
+// Prefijo visible: verify-email (que no fija clave) nunca acepta una invitación
+// y resend-verification no la reemplaza.
+export const invitationDigest = (token: string) => `invite:${digest(token)}`;
 
 function legalConfiguration() {
   const termsVersion = process.env.PRODUCT_TERMS_VERSION?.trim();
@@ -74,10 +82,36 @@ async function sendVerification(email: string, token: string) {
   if (!response?.ok) throw new HttpException("La cuenta se creó, pero no se pudo enviar el correo. Usa Reenviar confirmación.", 503);
 }
 
+/** Alta global compartida (registro e invitación): crea Tenant antes de asumir el rol RLS. */
+export async function createTenantWithOwner(
+  tx: Prisma.TransactionClient,
+  tenantData: Prisma.TenantCreateInput,
+  owner: { name: string; email: string; passwordHash: string; pinHash: string; verificationHash: string; verificationExpiresAt: Date },
+) {
+  const tenant = await tx.tenant.create({ data: tenantData });
+  await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_tenant_runtime");
+  await tx.$queryRawUnsafe("SELECT set_config('app.tenant_id', $1, true)", tenant.id);
+  const role = await tx.role.create({ data: { tenantId: tenant.id, name: "admin", permissions: ["*"] } });
+  await tx.user.create({ data: {
+    tenantId: tenant.id, name: owner.name, username: owner.email,
+    usernameKey: normalizeUsername(owner.email), email: owner.email,
+    passwordHash: owner.passwordHash, pinHash: owner.pinHash,
+    roleId: role.id, branchId: "main", emailVerifiedAt: null,
+    emailVerificationHash: owner.verificationHash, emailVerificationExpiresAt: owner.verificationExpiresAt,
+  } });
+  await tx.settings.create({ data: { tenantId: tenant.id, id: "main", data: {
+    name: tenant.name, branchName: "", currency: "DOP",
+    taxIncluded: true, receiptWidth: "80", requireCustomer: true,
+    allowOfflineSales: false, cashDifferenceLimit: 100,
+    businessType: tenant.businessType, onboarding: { dismissed: false },
+  } } });
+  return tenant;
+}
+
 /** Único acceso de alta global: la transacción crea Tenant antes de asumir el rol RLS. */
 @Injectable()
 export class RegistrationService implements OnModuleDestroy {
-  private readonly db = new PrismaClient();
+  readonly db = new PrismaClient();
   async onModuleDestroy() { await this.db.$disconnect(); }
 
   async register(input: z.infer<typeof registration>) {
@@ -97,30 +131,16 @@ export class RegistrationService implements OnModuleDestroy {
     const pinHash = await hash(input.managerPin, 12);
     const acceptedAt = new Date();
     try {
-      await this.db.$transaction(async (tx) => {
-        const tenant = await tx.tenant.create({ data: {
-          slug: input.companyCode, name: input.businessName,
-          businessType: input.businessType, plan: "trial", status: "trial",
-          trialEndsAt: new Date(Date.now() + 14 * 86400000),
-          termsVersion: legal.termsVersion, termsAcceptedAt: acceptedAt,
-          privacyVersion: legal.privacyVersion, privacyAcceptedAt: acceptedAt,
-        } });
-        await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_tenant_runtime");
-        await tx.$queryRawUnsafe("SELECT set_config('app.tenant_id', $1, true)", tenant.id);
-        const role = await tx.role.create({ data: { tenantId: tenant.id, name: "admin", permissions: ["*"] } });
-        await tx.user.create({ data: {
-          tenantId: tenant.id, name: input.ownerName, username: email,
-          usernameKey: normalizeUsername(email), email, passwordHash, pinHash,
-          roleId: role.id, branchId: "main", emailVerifiedAt: null,
-          emailVerificationHash: digest(token), emailVerificationExpiresAt: expiration(),
-        } });
-        await tx.settings.create({ data: { tenantId: tenant.id, id: "main", data: {
-          name: input.businessName, branchName: "", currency: "DOP",
-          taxIncluded: true, receiptWidth: "80", requireCustomer: true,
-          allowOfflineSales: false, cashDifferenceLimit: 100,
-          businessType: input.businessType, onboarding: { dismissed: false },
-        } } });
-      });
+      await this.db.$transaction(tx => createTenantWithOwner(tx, {
+        slug: input.companyCode, name: input.businessName,
+        businessType: input.businessType, plan: "trial", status: "trial",
+        trialEndsAt: new Date(Date.now() + 14 * 86400000),
+        termsVersion: legal.termsVersion, termsAcceptedAt: acceptedAt,
+        privacyVersion: legal.privacyVersion, privacyAcceptedAt: acceptedAt,
+      }, {
+        name: input.ownerName, email, passwordHash, pinHash,
+        verificationHash: digest(token), verificationExpiresAt: expiration(),
+      }));
     } catch (error: any) {
       if (error?.code === "P2002") throw new HttpException("Este código de empresa ya está ocupado.", 409);
       throw error;
@@ -145,13 +165,35 @@ export class RegistrationService implements OnModuleDestroy {
     return { message: "Correo confirmado. Ya puedes entrar." };
   }
 
+  /** Invitación de la plataforma: fija clave y PIN, una sola vez y antes de vencer. */
+  async acceptInvitation(input: z.infer<typeof invitationSchema>) {
+    if (process.env.PRODUCT_TENANCY !== "required") throw new HttpException("No disponible.", 404);
+    const where = {
+      emailVerificationHash: invitationDigest(input.token),
+      emailVerificationExpiresAt: { gt: new Date() }, emailVerifiedAt: null,
+    };
+    const invalid = () => new HttpException("La invitación venció o ya se usó. Pide una nueva.", 400);
+    if (!await this.db.user.findFirst({ where, select: { id: true } })) throw invalid();
+    const [passwordHash, pinHash] = await Promise.all([hash(input.password, 12), hash(input.managerPin, 12)]);
+    // updateMany condicional: dos envíos simultáneos no aceptan dos veces.
+    const result = await this.db.user.updateMany({ where, data: {
+      passwordHash, pinHash, emailVerifiedAt: new Date(),
+      emailVerificationHash: null, emailVerificationExpiresAt: null,
+      failedAttempts: 0, lockedUntil: null,
+    } });
+    if (result.count !== 1) throw invalid();
+    return { message: "Listo. Ya puedes entrar con tu código de empresa, correo y contraseña." };
+  }
+
   async resend(companyCode: string, emailValue: string) {
     if (process.env.PRODUCT_TENANCY !== "required") throw new HttpException("No disponible.", 404);
     mailConfiguration();
     const email = emailValue.toLowerCase();
     const tenant = await this.db.tenant.findUnique({ where: { slug: companyCode }, select: { id: true } });
     const user = tenant && await this.db.user.findFirst({
-      where: { tenantId: tenant.id, email, emailVerifiedAt: null }, select: { id: true },
+      where: { tenantId: tenant.id, email, emailVerifiedAt: null,
+        OR: [{ emailVerificationHash: null }, { NOT: { emailVerificationHash: { startsWith: "invite:" } } }] },
+      select: { id: true },
     });
     // Respuesta idéntica para no revelar si existe la empresa o el correo.
     if (!user) return { message: "Si la cuenta está pendiente, recibirás un enlace nuevo." };
@@ -180,6 +222,11 @@ export class RegistrationController {
   async verify(@Body() body: unknown, @Req() req: Request) {
     this.limits.assert("verify-email-ip", [clientIp(req)], 20);
     return this.registrationService.verify(parse(tokenSchema, body).token);
+  }
+  @Public() @Post("accept-invitation")
+  async acceptInvitation(@Body() body: unknown, @Req() req: Request) {
+    this.limits.assert("accept-invitation-ip", [clientIp(req)], 10);
+    return this.registrationService.acceptInvitation(parse(invitationSchema, body));
   }
   @Public() @Post("resend-verification")
   async resend(@Body() body: unknown, @Req() req: Request) {

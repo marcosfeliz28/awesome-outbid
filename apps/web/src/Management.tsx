@@ -4157,6 +4157,10 @@ export function Configuration() {
       options: [
         { label: "Desactivada", value: "disabled" },
         { label: "Preparar solicitud (sin emisión fiscal)", value: "prepared" },
+        {
+          label: "NCF por venta desde las secuencias declaradas (B01/B02)",
+          value: "sequences",
+        },
       ],
     },
     {

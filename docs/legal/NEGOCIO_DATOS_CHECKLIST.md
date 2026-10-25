@@ -14,7 +14,7 @@ Fuente: configSchema en apps/api/src/admin.ts (líneas 57-110) y Management.tsx 
 | Plazo de devolución | returnDays | Sí (0-365, defecto 30) | No se imprime; se aplica al validar la devolución | Confirmar días; imprimir en pie |
 | Condiciones de devolución / garantía | (no existe) | No | No | Crear campos returnPolicyText, warrantyDays |
 | Correo de contacto | (no existe) | No | No | Opcional, crear campo contactEmail |
-| Modo NCF | ncfMode | Sí | Ticket muestra "Solicitud NCF ... pendiente" | Confirmar con la contable |
+| Modo NCF | ncfMode | Sí | `prepared`: ticket muestra "Solicitud NCF ... pendiente"; `sequences`: cada venta toma su NCF B01/B02 (docs/NCF_POR_VENTA.md) | Confirmar con la contable |
 | ITBIS incluido | taxIncluded | Sí | Ticket muestra línea ITBIS, no dice incluido o adicional | Imprimir "ITBIS incluido" según ajuste |
 | Logo | logo | Opcional | Ticket | Opcional |
 

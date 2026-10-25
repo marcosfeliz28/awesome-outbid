@@ -73,6 +73,7 @@ import {
   maskTail,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
+import { takeNcf } from "./ncf-sequences";
 import { captureApiException } from "./monitoring";
 import {
   databaseUnavailable,
@@ -956,12 +957,26 @@ export class SalesController {
           bad("La venta a crédito requiere cliente y fecha de vencimiento.");
         if (input.creditDueDate && expired(input.creditDueDate))
           bad("La fecha del crédito no puede estar en el pasado.");
-        if (input.ncfType && config?.ncfMode !== "prepared")
+        const sequences = config?.ncfMode === "sequences";
+        if (input.ncfType && config?.ncfMode !== "prepared" && !sequences)
           bad("Activa la preparación de NCF en Ajustes.");
-        if (
-          ["B01", "E31"].includes(input.ncfType ?? "") &&
-          !input.recipientLegalId
-        )
+        // NCF tradicional: B02 salvo que pidan crédito fiscal (B01) u otro tipo
+        // ya modelado. e-CF (E31/E32) sigue pausado por la dueña.
+        const ncfType = sequences ? (input.ncfType ?? "B02") : input.ncfType;
+        if (sequences && ncfType?.startsWith("E"))
+          bad(
+            "La factura electrónica (e-CF) no está habilitada. Usa B01 o B02.",
+          );
+        // El RNC/cédula guardado del cliente sirve para el B01.
+        const customerLegalId = customer.legalId?.replace(/\D/g, "");
+        const recipientLegalId =
+          input.recipientLegalId ??
+          (sequences &&
+          ncfType === "B01" &&
+          /^(\d{9}|\d{11})$/.test(customerLegalId ?? "")
+            ? customerLegalId
+            : undefined);
+        if (["B01", "E31"].includes(ncfType ?? "") && !recipientLegalId)
           bad("Indica el RNC o cédula del cliente.");
         for (const p of input.payments
           .filter((p) => p.method === "credit_note")
@@ -1018,9 +1033,13 @@ export class SalesController {
           : can(actor.permissions, "sale:manage")
             ? "administrator"
             : "cashier_limit";
+        // Al final de las validaciones: el candado del rango se toma lo más
+        // tarde posible. Las ventas offline lo reciben aquí, al sincronizar.
+        const ncf = sequences ? await takeNcf(tx, ncfType!) : null;
         const sale = await tx.sale.create({
           data: {
             number: "FS-" + String(counter.value).padStart(7, "0"),
+            ...(ncf ? { ncf, fiscalStatus: "issued" } : {}),
             offlineUuid: input.offlineUuid,
             requestHash,
             customerId: input.customerId,
@@ -1064,8 +1083,8 @@ export class SalesController {
               credit && input.creditDueDate
                 ? new Date(input.creditDueDate)
                 : null,
-            ncfType: input.ncfType,
-            recipientLegalId: input.recipientLegalId,
+            ncfType,
+            recipientLegalId,
             costTotal: money(
               lines.reduce((a, l) => a.plus(l.cost.times(l.item.qty)), d(0)),
             ),
