@@ -2872,10 +2872,12 @@ export function Reports() {
     // Los listados largos (ventas, kardex, devoluciones) llegan por páginas
     // con su total; Excel y PDF traen el período completo.
     [page, setPage] = useState(1);
+  const inverted = !!from && !!to && from > to;
   const query = useQuery({
     queryKey: ["report", report, from, to, page],
     queryFn: () => api(`/reports/${report}?from=${from}&to=${to}&page=${page}`),
-    enabled: report !== "income-by-day" && report !== "formal",
+    // Rango invertido: se avisa aquí, sin pedirlo (no es falta de conexión).
+    enabled: report !== "income-by-day" && report !== "formal" && !inverted,
   });
   const rows = query.data?.rows || [];
   const total: number = query.data?.total ?? rows.length;
@@ -3030,14 +3032,20 @@ export function Reports() {
                 </Button>
               </div>
             )}
-            <QueryState query={query}>
-              <DataTable
-                rows={rows}
-                columns={columns}
-                empty="No hay datos para este período"
-                emptyDescription="Prueba otras fechas o registra una venta para consultar este reporte."
-              />
-            </QueryState>
+            {inverted ? (
+              <p className="form-error" role="alert">
+                La fecha inicial es posterior a la final.
+              </p>
+            ) : (
+              <QueryState query={query}>
+                <DataTable
+                  rows={rows}
+                  columns={columns}
+                  empty="No hay datos para este período"
+                  emptyDescription="Prueba otras fechas o registra una venta para consultar este reporte."
+                />
+              </QueryState>
+            )}
           </section>
         )}
       </div>

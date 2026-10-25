@@ -26,7 +26,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Button, Badge, Modal } from "@fitstore/ui";
-import { formatMoney, can, weekStart } from "@fitstore/shared";
+import { formatMoney, can, lastDaysStart } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
@@ -117,7 +117,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         : period === "day"
           ? day
           : period === "week"
-            ? weekStart()
+            ? lastDaysStart(7)
             : to.slice(0, 8) + "01";
   const query = useQuery({
     queryKey: ["dashboard", from, to],
@@ -354,7 +354,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               </div>
               <strong>{m.value}</strong>
               <div className="kpi-note">
-                {m.trend !== undefined && (
+                {typeof m.trend === "number" && (
                   <span
                     className={`trend ${m.trend >= 0 ? "positive" : "negative"}`}
                   >
@@ -366,7 +366,10 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                     {Math.abs(m.trend)}%
                   </span>
                 )}
-                <span>{m.note}</span>
+                {/* Sin ventas en el período anterior no hay porcentaje. */}
+                <span>
+                  {m.trend === null ? "sin datos del período anterior" : m.note}
+                </span>
               </div>
             </article>
           ))}

@@ -8,15 +8,16 @@ const phoneFor = (actor: Actor) => {
   const full = canViewCustomerPii(actor);
   return (phone: string | null) => (full ? phone : maskTail(phone)) ?? null;
 };
-// Fecha de negocio (Santo Domingo) de un instante JS: el «hasta» del reporte.
-const businessDay = (date: Date) =>
-  Prisma.sql`(${date}::timestamptz AT TIME ZONE 'America/Santo_Domingo')::date`;
+// Hoy en Santo Domingo: la antigüedad y la inactividad se cuentan hasta hoy,
+// no hasta el «hasta» del filtro (que sólo elige qué facturas entran).
+const TODAY = Prisma.sql`(now() AT TIME ZONE 'America/Santo_Domingo')::date`;
 const day = (column: Prisma.Sql) =>
   Prisma.sql`to_char(${local(column)}, 'YYYY-MM-DD')`;
 const month = (column: Prisma.Sql) =>
   Prisma.sql`to_char(${local(column)}, 'YYYY-MM')`;
-// Cuenta por cobrar: la venta vigente con un pago de crédito o contraentrega.
-const RECEIVABLE = Prisma.sql`EXISTS (SELECT 1 FROM "Payment" rp WHERE rp."saleId" = s.id AND rp."entryType" = 'sale' AND rp.method IN ('credit','cod'))`;
+// Cuenta por cobrar: la venta vigente con un pago de crédito o contraentrega,
+// o con una transferencia rechazada que pasó a deuda (M-3).
+const RECEIVABLE = Prisma.sql`EXISTS (SELECT 1 FROM "Payment" rp WHERE rp."saleId" = s.id AND rp."entryType" = 'sale' AND (rp.method IN ('credit','cod') OR (rp.method = 'transfer' AND rp.status = 'rejected')))`;
 // Lo devuelto de cada venta, para las ventas netas (vigentes menos devoluciones).
 const RETURNS = Prisma.sql`LEFT JOIN (SELECT "saleId", SUM(total) AS t FROM "SaleReturn" GROUP BY 1) rt ON rt."saleId" = s.id`;
 
@@ -50,7 +51,7 @@ const openReceivables = (db: any, actor: Actor, to: Date) =>
   db.$queryRaw`
     SELECT s.id, s.number, ${day(Prisma.sql`s."createdAt"`)} AS sold,
       CASE WHEN s."creditDueDate" IS NULL THEN NULL ELSE ${day(Prisma.sql`s."creditDueDate"`)} END AS due,
-      GREATEST(0, ${businessDay(to)} - ${local(Prisma.sql`s."createdAt"`)}::date)::int AS days,
+      GREATEST(0, ${TODAY} - ${local(Prisma.sql`s."createdAt"`)}::date)::int AS days,
       s."creditBalance" AS balance,
       EXISTS (SELECT 1 FROM "Payment" cp WHERE cp."saleId" = s.id AND cp."entryType" = 'sale' AND cp.method = 'cod') AS cod,
       s."receivableKind" AS kind,
@@ -191,18 +192,20 @@ export const clientes: Record<string, ReportDef> = {
   "clientes-inactivos": {
     title: "Clientes inactivos (60 días sin comprar)",
     group: "Clientes y crédito",
-    async run(db, actor, range) {
+    // Inactividad a hoy: el período del filtro no aplica (una compra de
+    // después del «hasta» también la saca de la lista).
+    async run(db, actor) {
       const phone = phoneFor(actor);
       const rows = (await db.$queryRaw`
         SELECT c.name, c.phone, COUNT(*)::int AS n,
           SUM(s.total - COALESCE(rt.t, 0)) AS net,
           ${day(Prisma.sql`MAX(s."createdAt")`)} AS "lastDay",
-          (${businessDay(range.lte)} - MAX(${local(Prisma.sql`s."createdAt"`)})::date)::int AS days
+          (${TODAY} - MAX(${local(Prisma.sql`s."createdAt"`)})::date)::int AS days
         FROM "Sale" s JOIN "Customer" c ON c.id = s."customerId" ${RETURNS}
         WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed'
-          AND c."anonymizedAt" IS NULL AND s."createdAt" <= ${utc(range.lte)}
+          AND c."anonymizedAt" IS NULL
         GROUP BY c.id, c.name, c.phone
-        HAVING (${businessDay(range.lte)} - MAX(${local(Prisma.sql`s."createdAt"`)})::date) > 60
+        HAVING (${TODAY} - MAX(${local(Prisma.sql`s."createdAt"`)})::date) > 60
         ORDER BY days, net DESC`) as {
         name: string;
         phone: string | null;

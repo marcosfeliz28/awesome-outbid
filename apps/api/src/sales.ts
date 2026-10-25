@@ -72,6 +72,7 @@ import {
   canViewCustomerPii,
   customerForActor,
   maskTail,
+  RECEIVABLE_PAYMENT,
 } from "./common";
 import { lockVariant, takeStock, stockChange, promotionCostFloor } from "./inventory";
 import { takeNcf } from "./ncf-sequences";
@@ -989,6 +990,22 @@ export class SalesController {
             : undefined);
         if (["B01", "E31"].includes(ncfType ?? "") && !recipientLegalId)
           bad("Indica el RNC o cédula del cliente.");
+        if (
+          sequences &&
+          ncfType === "B01" &&
+          !/^(\d{9}|\d{11})$/.test(recipientLegalId ?? "")
+        )
+          bad("El RNC del cliente lleva 9 dígitos y la cédula 11.");
+        // Sin el RNC de la empresa el comprobante no es válido ante la DGII.
+        if (
+          sequences &&
+          !/^(\d{9}|\d{11})$/.test(
+            String(config?.legalId ?? "").replace(/\D/g, ""),
+          )
+        )
+          bad(
+            "Configura el RNC de la empresa en Ajustes antes de emitir comprobantes fiscales.",
+          );
         for (const p of input.payments
           .filter((p) => p.method === "credit_note")
           .sort((a, b) =>
@@ -1090,8 +1107,9 @@ export class SalesController {
                 : null,
             // El incentivo de la parte a crédito se acredita al cobrarla.
             incentiveOnCollection: d(credit).plus(cod).gt(0),
+            // También la contraentrega: la caja vende ambas con `cod`.
             creditDueDate:
-              credit && input.creditDueDate
+              (credit || cod) && input.creditDueDate
                 ? new Date(input.creditDueDate)
                 : null,
             ncfType,
@@ -2738,8 +2756,14 @@ export class SalesController {
           where: { id: sale.id },
           data: {
             creditBalance: { increment: money(owed) },
+            // El incentivo de lo que queda por cobrar se descuenta como en una
+            // anulación y vuelve con cada cobro (syncCreditIncentives).
             ...(d(owed).gt(0)
-              ? { creditClosedAt: null, creditClosedById: null }
+              ? {
+                  creditClosedAt: null,
+                  creditClosedById: null,
+                  incentiveOnCollection: true,
+                }
               : {}),
           },
         });
@@ -3458,7 +3482,7 @@ export class SalesController {
         ? { creditBalance: { equals: 0 }, creditClosedAt: { not: null } }
         : { creditBalance: { gt: 0 } }),
       payments: {
-        some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+        some: RECEIVABLE_PAYMENT,
       },
       ...(text
         ? { customer: { name: { contains: text, mode: "insensitive" } } }
@@ -3524,7 +3548,7 @@ export class SalesController {
         branchId: actor.branchId,
         status: "completed",
         payments: {
-          some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+          some: RECEIVABLE_PAYMENT,
         },
       },
       include: { payments: { orderBy: { createdAt: "asc" } } },
@@ -3538,7 +3562,7 @@ export class SalesController {
         branchId: actor.branchId,
         status: "completed",
         payments: {
-          some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+          some: RECEIVABLE_PAYMENT,
         },
       },
       _sum: { creditBalance: true },
@@ -3709,7 +3733,7 @@ export class SalesController {
           status: "completed",
           creditBalance: { gt: 0 },
           payments: {
-            some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+            some: RECEIVABLE_PAYMENT,
           },
         },
         select: { id: true, createdAt: true, creditBalance: true },
@@ -3820,9 +3844,7 @@ export class SalesController {
     const state = ["pending", "closed", "all"].includes(stateParam ?? "")
       ? (stateParam as "pending" | "closed" | "all")
       : "pending";
-    const receivablePayment = {
-      some: { method: { in: ["credit", "cod"] }, entryType: "sale" },
-    };
+    const receivablePayment = { some: RECEIVABLE_PAYMENT };
     const sales = await this.db.sale.findMany({
       where: {
         branchId: actor.branchId,
@@ -3880,7 +3902,9 @@ export class SalesController {
       );
       const receivableAmount = sum(
         s.payments.filter(
-          (p) => ["credit", "cod"].includes(p.method) && p.entryType === "sale",
+          (p) =>
+            p.entryType === "sale" &&
+            (["credit", "cod"].includes(p.method) || p.status === "rejected"),
         ),
       );
       const pending = Number(s.creditBalance);
@@ -4131,11 +4155,7 @@ export class SalesController {
       where: { id, branchId: actor.branchId, status: "completed" },
     });
     const receivable = !!(await tx.payment.count({
-      where: {
-        saleId: id,
-        method: { in: ["credit", "cod"] },
-        entryType: "sale",
-      },
+      where: { saleId: id, ...RECEIVABLE_PAYMENT },
     }));
     if (codOnly && !receivable)
       bad("Esta venta no tiene crédito / contraentrega pendiente.");

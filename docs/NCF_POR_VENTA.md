@@ -27,6 +27,12 @@ números.
   empresa; B02/B04/B12 no vencen) y con números, **la venta se rechaza** con
   un mensaje en español.
 - Cada empresa sólo usa sus propios rangos.
+- Con el interruptor encendido no se emite ningún NCF sin el **RNC de la
+  empresa** en Ajustes (9 dígitos, o cédula de 11). Para **B01** el RNC del
+  comprador debe tener 9 dígitos o la cédula 11; otro largo se rechaza.
+- El recibo PDF de una venta con NCF emitido muestra el RNC de la empresa, el
+  RNC/cédula del comprador completo (sin enmascarar) y «Comprobante fiscal
+  B01 · NCF …» en vez de «Documento interno, sin valor fiscal».
 - e-CF (E31/E32…) y su envío a la DGII siguen **pausados**: con el interruptor
   encendido se rechazan.
 

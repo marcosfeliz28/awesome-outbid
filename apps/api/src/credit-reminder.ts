@@ -14,7 +14,7 @@
 // crear esa semana. Sin créditos abiertos no se avisa.
 import { Inject, Injectable } from "@nestjs/common";
 import { BUSINESS_TIME_ZONE, d, formatMoney, money } from "@fitstore/shared";
-import { Database } from "./common";
+import { Database, RECEIVABLE_PAYMENT } from "./common";
 import { currentTenantId, forEachActiveTenant, tenantScope, tenantUnique } from "./tenant-context";
 import {
   enqueue,
@@ -179,7 +179,7 @@ export class CreditReminderService {
         status: "completed",
         creditBalance: { gt: 0 },
         payments: {
-          some: { method: { in: ["credit", "cod"] }, entryType: "sale" },
+          some: RECEIVABLE_PAYMENT,
         },
       },
       distinct: ["branchId"],
@@ -199,7 +199,7 @@ export class CreditReminderService {
             status: "completed",
             creditBalance: { gt: 0 },
             payments: {
-              some: { method: { in: ["credit", "cod"] }, entryType: "sale" },
+              some: RECEIVABLE_PAYMENT,
             },
           },
           select: { customerId: true, creditBalance: true, createdAt: true },

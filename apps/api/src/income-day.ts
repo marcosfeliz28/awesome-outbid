@@ -8,6 +8,8 @@ export type IncomeDay = {
   cash: number;
   card: number;
   transfer: number;
+  // Transferencias sin verificar: aparte, no son dinero ingresado todavía.
+  pendingTransfer: number;
   creditGenerated: number;
   collectionCash: number;
   collectionCard: number;
@@ -20,6 +22,7 @@ const kinds: Record<string, keyof Omit<IncomeDay, "day" | "moneyIn">> = {
   sale_cash: "cash",
   sale_card: "card",
   sale_transfer: "transfer",
+  pending_transfer: "pendingTransfer",
   credit_generated: "creditGenerated",
   collection_cash: "collectionCash",
   collection_card: "collectionCard",
@@ -40,6 +43,7 @@ export function groupIncomeDays(events: IncomeEvent[]): IncomeDay[] {
       cash: 0,
       card: 0,
       transfer: 0,
+      pendingTransfer: 0,
       creditGenerated: 0,
       collectionCash: 0,
       collectionCard: 0,

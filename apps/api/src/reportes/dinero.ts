@@ -129,18 +129,20 @@ export const dinero: Record<string, ReportDef> = {
     title: "Entradas por cuenta de banco y terminal",
     group: "Dinero",
     // Orden de la dueña (20-oct): por dónde entró el dinero cada día. Cuenta
-    // cobros de venta y abonos (lo que de verdad llegó), no lo pendiente.
+    // cobros de venta y abonos (lo que de verdad llegó). Una transferencia sin
+    // verificar va en su propia fila «por verificar»: todavía no es dinero.
     async run(db, actor, range) {
       await openCashGuard(db, actor);
       const rows: any[] = await db.$queryRaw`
         SELECT to_char(${local(Prisma.sql`p."createdAt"`)}, 'YYYY-MM-DD') AS dia, p.method,
+               p.status = 'pending_verification' AS pending,
                COALESCE(NULLIF(TRIM(p.bank), ''), 'Sin indicar') AS cuenta,
                SUM(p.amount) AS amount, COUNT(*) AS n
           FROM "Payment" p JOIN "Sale" s ON s.id = p."saleId"
           WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed'
             AND p."createdAt" >= ${utc(range.gte)} AND p."createdAt" <= ${utc(range.lte)}
             AND p.method IN ('cash', 'card', 'transfer') AND p.status <> 'rejected'
-          GROUP BY 1, 2, 3`;
+          GROUP BY 1, 2, 3, 4`;
       const label: Record<string, string> = {
         cash: "Efectivo",
         card: "Tarjeta",
@@ -149,7 +151,8 @@ export const dinero: Record<string, ReportDef> = {
       return rows
         .map((r) => ({
           Día: r.dia,
-          Forma: label[r.method] ?? r.method,
+          Forma:
+            (label[r.method] ?? r.method) + (r.pending ? " por verificar" : ""),
           "Cuenta / terminal": r.method === "cash" ? "Caja" : r.cuenta,
           Cobros: Number(r.n),
           Monto: num(r.amount),

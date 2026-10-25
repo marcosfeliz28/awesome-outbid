@@ -44,6 +44,7 @@ export default defineConfig({
       "tests/product-tenants-postgres.test.ts",
       "tests/product-ncf-sequences-postgres.test.ts",
       "tests/product-ncf-por-venta-postgres.test.ts",
+      "tests/product-reportes-arreglos-postgres.test.ts",
       "tests/product-registration-postgres.test.ts",
       "tests/product-platform-invitation-postgres.test.ts",
       "tests/product-platform-ai-packs-postgres.test.ts",

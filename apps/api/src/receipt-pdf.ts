@@ -153,6 +153,10 @@ export function drawSaleReceipt(
   const width = right - left;
   const bodyBottom = doc.page.height - doc.page.margins.bottom - FOOTER_RESERVE;
   let y = 0;
+  // Comprobante con NCF ya emitido (ncfMode «sequences»): lleva el RNC de la
+  // empresa y el del comprador completos, y no se llama «sin valor fiscal».
+  const fiscal = !!sale?.ncf && sale?.fiscalStatus === "issued";
+  const buyerLegalId = fiscal ? cleanText(sale?.recipientLegalId, 20) : "";
 
   const header = (continuation = false) => {
     const top = PAGE_MARGIN;
@@ -167,7 +171,13 @@ export function drawSaleReceipt(
       color: INK,
       align: logoWidth ? "left" : "center",
     });
-    for (const value of [business?.branchName, business?.address])
+    for (const value of [
+      business?.branchName,
+      business?.address,
+      fiscal && business?.legalId
+        ? "RNC: " + cleanText(business.legalId, 20)
+        : "",
+    ])
       cursor = drawText(doc, value, textX, cursor + 2, textWidth, {
         font: "Helvetica",
         fontSize: 9,
@@ -269,7 +279,7 @@ export function drawSaleReceipt(
         },
       );
     const phone = masked(customer?.phone);
-    const legalId = masked(customer?.legalId);
+    const legalId = buyerLegalId || masked(customer?.legalId);
     if (phone || legalId)
       cursor = drawText(
         doc,
@@ -598,7 +608,9 @@ export function drawSaleReceipt(
   const footer = [
     returnPolicyText(business),
     privacyNoticeText(business),
-    "Documento interno, sin valor fiscal",
+    fiscal
+      ? `Comprobante fiscal ${cleanText(sale?.ncfType, 5)} · NCF ${cleanText(sale?.ncf, 20)}`
+      : "Documento interno, sin valor fiscal",
   ];
   const footerHeight =
     footer.reduce(

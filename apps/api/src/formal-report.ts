@@ -12,6 +12,7 @@ import {
   bad,
   canViewCashExpected,
   denied,
+  RECEIVABLE_PAYMENT,
 } from "./common";
 import { cashExpectedMany } from "./cash";
 import { incomeOptions, incomeSummary } from "./income-report";
@@ -94,13 +95,21 @@ export class FormalReportController {
         WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
           AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)}`),
       this.db.$queryRaw<
-        { userId: string; sold: unknown; count: bigint }[]
+        { userId: string; sold: unknown; returned: unknown; count: bigint }[]
       >(Prisma.sql`
-        SELECT s."sellerId"::text AS "userId",SUM(s.total) sold,COUNT(*)::bigint count
-        FROM "Sale" s LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
-        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
-          AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
-        GROUP BY s."sellerId" ORDER BY SUM(s.total) DESC LIMIT 500`),
+        SELECT "userId",SUM(sold) sold,SUM(returned) returned,SUM(n)::bigint count FROM (
+          SELECT s."sellerId"::text AS "userId",s.total sold,0 returned,1 n
+          FROM "Sale" s LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
+          WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
+            AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
+          UNION ALL
+          -- Neto de devoluciones (D-05): lo devuelto en el período, a quien vendió.
+          SELECT s."sellerId"::text,0,r.total,0
+          FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId"
+            LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
+          WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
+            AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)}
+        ) x GROUP BY "userId" ORDER BY SUM(sold)-SUM(returned) DESC LIMIT 500`),
       this.db.$queryRaw<
         { categoryId: string; sold: unknown; soldProducts: bigint }[]
       >(Prisma.sql`
@@ -166,7 +175,7 @@ export class FormalReportController {
           status: "completed",
           creditBalance: { gt: 0 },
           payments: {
-            some: { entryType: "sale", method: { in: ["cod", "credit"] } },
+            some: RECEIVABLE_PAYMENT,
           },
         },
         select: {
@@ -186,7 +195,7 @@ export class FormalReportController {
           status: "completed",
           creditBalance: { gt: 0 },
           payments: {
-            some: { entryType: "sale", method: { in: ["cod", "credit"] } },
+            some: RECEIVABLE_PAYMENT,
           },
         },
         _sum: { creditBalance: true },
@@ -317,10 +326,13 @@ export class FormalReportController {
         num(e.transfer)
       );
     }, 0);
+    // El esperado de las cajas cuenta las transferencias por verificar.
+    const pendingIn = daily.reduce((sum, row) => sum + row.pendingTransfer, 0);
     const cashReconciliation = {
       moneyIn: Number(moneyIn.toFixed(2)),
+      pendingTransfer: Number(pendingIn.toFixed(2)),
       sessionMoney: Number(sessionMoney.toFixed(2)),
-      difference: Number((moneyIn - sessionMoney).toFixed(2)),
+      difference: Number((moneyIn + pendingIn - sessionMoney).toFixed(2)),
       comparable:
         sessions.length <= capped &&
         sessions.every(
@@ -457,13 +469,17 @@ export class FormalReportController {
         cashIn,
         bankIn,
         creditGenerated: daily.reduce((sum, r) => sum + r.creditGenerated, 0),
+        // Transferencias sin verificar: no son dinero ingresado todavía.
+        pendingTransfer: daily.reduce((sum, r) => sum + r.pendingTransfer, 0),
       },
       cash,
       cashReconciliation,
       findings,
       users: sellerRows.map((r) => ({
         name: person.get(r.userId) ?? r.userId,
-        sold: num(r.sold),
+        gross: num(r.sold),
+        returns: num(r.returned),
+        sold: num(r.sold) - num(r.returned),
         sales: Number(r.count),
       })),
       categories,
@@ -548,7 +564,7 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
   };
   section("Resumen de ventas e ingresos");
   line(
-    `Vendido neto: ${fmt(report.totals.sold)} · Dinero ingresado: ${fmt(report.totals.moneyIn)} · Crédito generado: ${fmt(report.totals.creditGenerated)}`,
+    `Vendido neto: ${fmt(report.totals.sold)} · Dinero ingresado: ${fmt(report.totals.moneyIn)} · Transferencias por verificar: ${fmt(report.totals.pendingTransfer)} · Crédito generado: ${fmt(report.totals.creditGenerated)}`,
     true,
   );
   line(
@@ -564,7 +580,7 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
       true,
     );
     line(
-      `  Ventas: efectivo ${fmt(row.cash)}, tarjeta ${fmt(row.card)}, transferencia ${fmt(row.transfer)}. Cobros previos: efectivo ${fmt(row.collectionCash)}, tarjeta ${fmt(row.collectionCard)}, transferencia ${fmt(row.collectionTransfer)}. Devoluciones ${fmt(row.returns)}.`,
+      `  Ventas: efectivo ${fmt(row.cash)}, tarjeta ${fmt(row.card)}, transferencia ${fmt(row.transfer)}, transferencia por verificar ${fmt(row.pendingTransfer)}. Cobros previos: efectivo ${fmt(row.collectionCash)}, tarjeta ${fmt(row.collectionCard)}, transferencia ${fmt(row.collectionTransfer)}. Devoluciones ${fmt(row.returns)}.`,
     );
   }
   section("Cajas y arqueo");
@@ -595,7 +611,9 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
   }
   section("Por usuario");
   for (const u of report.users)
-    line(`${u.name} · ${u.sales} ventas · ${fmt(u.sold)}`);
+    line(
+      `${u.name} · ${u.sales} ventas · ${fmt(u.gross)} · Devoluciones ${fmt(-u.returns)} · Neto ${fmt(u.sold)}`,
+    );
   section("Por categoría: vendidos y sin vender");
   for (const c of report.categories)
     line(

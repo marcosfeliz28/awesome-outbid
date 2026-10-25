@@ -826,6 +826,13 @@ export const courierCharge = (sale: {
 // movimientos de inventario. Se marcan con la unidad «servicio».
 export const isService = (product: unknown) =>
   (product as { unit?: unknown } | null)?.unit === "servicio";
+// Primer día de «los últimos N días» que terminan hoy (Santo Domingo), hoy
+// incluido: 7 días = hoy y los 6 anteriores, no el lunes de la semana.
+export const lastDaysStart = (days: number, value: Date = new Date()) => {
+  const day = new Date(businessDate(value) + "T12:00:00Z");
+  day.setUTCDate(day.getUTCDate() - (days - 1));
+  return day.toISOString().slice(0, 10);
+};
 export const weekStart = (value: Date = new Date()) => {
   const day = new Date(businessDate(value) + "T12:00:00Z");
   day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));

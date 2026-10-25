@@ -89,6 +89,12 @@ export function FormalReports() {
                 <strong>{formatMoney(report.totals.cashIn)}</strong>
               </div>
               <div>
+                <span>Transferencias por verificar</span>
+                <strong>
+                  {formatMoney(report.totals.pendingTransfer ?? 0)}
+                </strong>
+              </div>
+              <div>
                 <span>Crédito generado</span>
                 <strong>{formatMoney(report.totals.creditGenerated)}</strong>
               </div>
@@ -164,7 +170,9 @@ export function FormalReports() {
             <ul>
               {report.users.map((u: any) => (
                 <li key={u.name}>
-                  {u.name}: {u.sales} ventas · {formatMoney(u.sold)}
+                  {u.name}: {u.sales} ventas · {formatMoney(u.gross ?? u.sold)}{" "}
+                  · Devoluciones {formatMoney(-(u.returns ?? 0))} · Neto{" "}
+                  {formatMoney(u.sold)}
                 </li>
               ))}
             </ul>
