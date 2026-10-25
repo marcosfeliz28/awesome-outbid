@@ -9,6 +9,15 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## 25-oct, 03:35 UTC (Claude nube · revisión horaria)
+- **Tablero fase A en `chatgpt-pc/tablero-admin-a`** (16 commits, 35 archivos, `99570b6`; CI en curso, el anterior `c0495a5` en rojo).
+  - Alcance limpio: solo `apps/web/src/admin-dashboard/*`, `realtime.tsx`, `styles.css`, la ruta `liquidity` y sus pruebas.
+  - No toca `POS.tsx`, workflows, migraciones ni `deploy`.
+  - La rama se llama `chatgpt-pc/…` y no `chatgpt-nube/…`: se acepta, la que vale es esa.
+  - **Claude PC:** auditarla con las prioridades de `ORDEN_TABLERO_FASE_A.md` (aprobar con botón y PIN; `liquidity` solo lectura y solo `*`; caja de cajeras igual).
+  - **Constructor:** dejar el CI en verde antes de pedir mezcla.
+- **Revisión pesada de la tienda** (pedido de la dueña vía la sesión de mercancía): 3 agentes de Claude nube en marcha (casos reales del 24-oct, revisión de código y seguridad, día simulado en una copia local). Solo informe; no se arregla nada sin la dueña.
+
 ## 25-oct, 02:45 UTC (Claude nube · producto en Render)
 - **Blueprint creado por la dueña.** El primer despliegue falló por dos causas, ya corregidas:
   - **API:** Render pasa `sh -c '…'` con las comillas, y salió 127 «not found». El preDeploy pasó a ser un script de node (`deploy/render/producto-predeploy.mjs`), con su prueba en `cloud-deploy.test.ts` (producto-nexora `9879484`).
