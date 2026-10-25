@@ -109,11 +109,16 @@ const METHOD_SHORT: Record<string, string> = {
 
 /** Dueña (21-oct): falte o sobre dinero, el descuadre sale en grande. */
 export function DescuadreBanner({ d }: { d: any }) {
-  const line = (label: string, value: number, by: string | null) =>
+  const line = (
+    label: string,
+    value: number,
+    by: string | null,
+    currency = "RD$",
+  ) =>
     value ? (
       <p style={{ margin: "2px 0", fontSize: "1.25em", fontWeight: 800 }}>
-        {value < 0 ? "FALTAN" : "SOBRAN"} {label}: {value < 0 ? "−" : "+"}RD${" "}
-        {num(Math.abs(value))}
+        {value < 0 ? "FALTAN" : "SOBRAN"} {label}: {value < 0 ? "−" : "+"}
+        {currency} {num(Math.abs(value))}
         {by ? (
           <span style={{ fontSize: "0.7em", fontWeight: 600 }}>
             {" "}
@@ -140,6 +145,7 @@ export function DescuadreBanner({ d }: { d: any }) {
       {line("EN EFECTIVO", Number(d.cash), d.cashApprovedBy)}
       {line("EN TARJETA", Number(d.card), d.cardApprovedBy)}
       {line("EN TRANSFERENCIA", Number(d.transfer ?? 0), null)}
+      {line("EN DÓLARES", Number(d.usd ?? 0), d.usdApprovedBy ?? null, "US$")}
       <p style={{ margin: "4px 0 0", color: "#111" }}>
         Justificación: {d.reason || d.notes || "SIN JUSTIFICACIÓN"}
       </p>
@@ -309,6 +315,30 @@ export function CuadrePrint({ c }: { c: any }) {
         </>
       ) : (
         <Row label="Efectivo" value={num(c.denominationsSubtotal)} />
+      )}
+      {/* Pago en dólares (25-oct): la gaveta de US$ va aparte. La cajera no
+          recibe lo esperado (cierre ciego): sólo ve lo que contó. */}
+      {(Number(c.foreign?.usd?.counted) > 0 ||
+        Number(c.foreign?.usd?.expected) > 0) && (
+        <>
+          {c.foreign.usd.expected !== undefined && (
+            <Row
+              label="Dólares esperados US$"
+              value={num(c.foreign.usd.expected)}
+            />
+          )}
+          <Row
+            label="Dólares contados US$"
+            value={num(c.foreign.usd.counted)}
+          />
+          {c.foreign.usd.difference !== undefined && (
+            <p className="tp-strong">
+              {"DIFERENCIA US$ " +
+                (Number(c.foreign.usd.difference) > 0 ? "+" : "") +
+                num(c.foreign.usd.difference)}
+            </p>
+          )}
+        </>
       )}
       {Number(c.delivered?.delivered) > 0 && (
         <>
@@ -574,7 +604,11 @@ export function InvoicePrint({
       {payments.map((p: any, n: number) => (
         <Row
           key={n}
-          label={METHOD_LABEL[p.method] ?? p.method}
+          label={
+            p.currency === "USD"
+              ? `Dólares US$ ${num(p.amountUsd)} × ${p.usdRate}`
+              : (METHOD_LABEL[p.method] ?? p.method)
+          }
           value={rd(p.tendered ?? p.amount)}
         />
       ))}

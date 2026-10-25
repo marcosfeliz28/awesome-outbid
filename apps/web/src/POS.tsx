@@ -41,6 +41,7 @@ import {
   money,
   d,
   paymentTotals,
+  usdToDop,
   receivableNeedsApproval,
   receivableApprovalReason,
   receivableApprovalMessage,
@@ -1755,8 +1756,10 @@ function Checkout({
     name: "Addison",
   });
   const [payments, setPayments] = useState<SaleInput["payments"]>([]),
-    [method, setMethod] =
-      useState<SaleInput["payments"][number]["method"]>("cash"),
+    // «usd» es efectivo en dólares: se envía como cash con currency USD.
+    [method, setMethod] = useState<
+      SaleInput["payments"][number]["method"] | "usd"
+    >("cash"),
     [amount, setAmount] = useState(String(total)),
     [details, setDetails] = useState({
       bank: "",
@@ -1896,10 +1899,21 @@ function Checkout({
     can(user!.permissions, "profit:read") &&
     saleMargin !== null &&
     saleMargin < Number(config?.lowMargin ?? 15);
+  // Pago en dólares (dueña, 25-oct): tasa de Configuración; el vuelto y lo
+  // pendiente siguen en pesos.
+  const usdRate = Number(config?.usdRate) || 0;
+  const usdFor = (dop: number) =>
+    usdRate ? String(Math.ceil((dop / usdRate) * 100) / 100) : "";
   const addPayment = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     const value = Number(amount);
+    if (method === "usd" && !usdRate) {
+      setError(
+        "No hay tasa del dólar en Configuración: no se puede cobrar en dólares.",
+      );
+      return;
+    }
     if (!Number.isFinite(value) || value <= 0) {
       setError("Indica un monto positivo.");
       return;
@@ -1912,32 +1926,42 @@ function Checkout({
       setError("Selecciona el cliente para el crédito / contraentrega.");
       return;
     }
-    const next = [
+    const next: SaleInput["payments"] = [
       ...payments,
-      {
-        method,
-        amount: value,
-        ...(method === "credit_note"
-          ? { creditNoteId, ...(creditNoteCode ? { creditNoteCode } : {}) }
-          : {}),
-        ...(method === "card"
-          ? {
-              cardBrand: details.cardBrand,
-              cardType: details.cardType,
-              cardLast4: details.cardLast4,
-              approvalCode: details.approvalCode,
-              // Terminal elegido de la lista de Configuración.
-              ...(details.terminal ? { bank: details.terminal } : {}),
-            }
-          : method === "transfer"
-            ? { bank: details.bank, reference: details.reference }
-            : {}),
-      },
+      method === "usd"
+        ? {
+            method: "cash",
+            currency: "USD",
+            amountUsd: value,
+            usdRate,
+            amount: usdToDop(value, usdRate),
+          }
+        : {
+            method,
+            amount: value,
+            ...(method === "credit_note"
+              ? { creditNoteId, ...(creditNoteCode ? { creditNoteCode } : {}) }
+              : {}),
+            ...(method === "card"
+              ? {
+                  cardBrand: details.cardBrand,
+                  cardType: details.cardType,
+                  cardLast4: details.cardLast4,
+                  approvalCode: details.approvalCode,
+                  // Terminal elegido de la lista de Configuración.
+                  ...(details.terminal ? { bank: details.terminal } : {}),
+                }
+              : method === "transfer"
+                ? { bank: details.bank, reference: details.reference }
+                : {}),
+          },
     ];
     try {
       const result = paymentTotals(total, next);
       setPayments(next);
-      setAmount(String(result.pending));
+      setAmount(
+        method === "usd" ? usdFor(result.pending) : String(result.pending),
+      );
       setDetails({
         ...details,
         reference: "",
@@ -2492,6 +2516,7 @@ function Checkout({
       <div className="payment-methods">
         {[
           { id: "cash", label: "Efectivo", icon: Banknote },
+          { id: "usd", label: "Dólares (US$)", icon: Banknote },
           { id: "card", label: "Tarjeta", icon: CreditCard },
           { id: "transfer", label: "Transferencia", icon: Landmark },
           { id: "credit_note", label: "Nota de crédito", icon: FileText },
@@ -2516,7 +2541,11 @@ function Checkout({
             onClick={() => {
               setMethod(m.id as any);
               if (m.kind) setReceivableKind(m.kind);
-              setAmount(String(payment.pending));
+              setAmount(
+                m.id === "usd"
+                  ? usdFor(payment.pending)
+                  : String(payment.pending),
+              );
             }}
           >
             <m.icon size={22} />
@@ -2613,7 +2642,9 @@ function Checkout({
           </p>
         )}
         <label className="field">
-          <span>Monto del pago</span>
+          <span>
+            {method === "usd" ? "Monto en dólares (US$)" : "Monto del pago"}
+          </span>
           <input
             autoFocus
             type="number"
@@ -2623,6 +2654,15 @@ function Checkout({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
+          {method === "usd" && (
+            <small className="usd-hint" role="note">
+              {usdRate
+                ? `Tasa RD$ ${usdRate} por US$ 1 · Equivale a ${formatMoney(
+                    Number(amount) > 0 ? usdToDop(Number(amount), usdRate) : 0,
+                  )}. El cambio se da en pesos.`
+                : "No hay tasa del dólar en Configuración: no se puede cobrar en dólares."}
+            </small>
+          )}
         </label>
         {method === "cash" && (
           <div className="quick-bills">
@@ -2768,7 +2808,9 @@ function Checkout({
         {payments.map((p, index) => (
           <div key={index}>
             <span>
-              {METHOD_LABEL[p.method] ?? p.method}
+              {p.currency === "USD"
+                ? `Dólares US$ ${p.amountUsd}`
+                : (METHOD_LABEL[p.method] ?? p.method)}
               <small>{p.approvalCode || p.reference || ""}</small>
             </span>
             <strong>{formatMoney(p.amount)}</strong>
