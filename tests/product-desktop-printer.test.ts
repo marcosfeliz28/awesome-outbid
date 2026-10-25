@@ -101,3 +101,17 @@ it("PC-16: si falla la bitácora, imprime el ticket primero y no abre la gaveta"
     "open_cash_drawer",
   ]);
 });
+
+it("CPC-8: si window.print no llega a la impresión nativa, la bandera de gaveta no queda pegada", async () => {
+  vi.useFakeTimers();
+  try {
+    setNativeInvokeForTest(vi.fn().mockResolvedValue(null));
+    vi.stubGlobal("window", { print: vi.fn() });
+    const { printSoon } = await import("../apps/web/src/Prints");
+    printSoon({ accessToken: "t", saleId: "550e8400-e29b-41d4-a716-446655440000", automatic: true });
+    vi.advanceTimersByTime(60);
+    expect(takeDrawerAuthorizationForNextPrint()).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});

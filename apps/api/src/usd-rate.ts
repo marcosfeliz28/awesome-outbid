@@ -16,8 +16,10 @@ export function parseUsdRate(body: any): number {
   return Math.round(rate * 10000) / 10000;
 }
 
+// CPC-8: en centavos y diezmilésimas enteras; usd * rate en coma flotante
+// redondeaba mal los ,5 (p. ej. 1.005 * 100).
 export const usdPrice = (usd: number, rate: number) =>
-  Math.round(usd * rate * 100) / 100;
+  Math.round((Math.round(usd * 100) * Math.round(rate * 10000)) / 10000) / 100;
 
 const RATE_CHANGE_LIMIT = 0.05;
 // CPC-10: un salto mayor (p. ej. 400 contra 63) no se aplica solo; queda
@@ -180,14 +182,20 @@ export class UsdRateWorker {
       const pending: { tenantId: string; branchId: string }[] = [];
       for (const tenantId of tenantIds) {
         try {
-          const rows = await tenantScope.run({ tenantId }, () =>
-            this.db.settings.findMany({ select: { id: true, data: true } }),
+          const [rows, users] = await tenantScope.run({ tenantId }, () =>
+            Promise.all([
+              this.db.settings.findMany({ select: { id: true, data: true } }),
+              // CPC-8: una sucursal con usuarios pero sin fila en Settings
+              // también recibe la tasa (applyUsdRate crea la fila).
+              this.db.user.findMany({ distinct: ["branchId"], select: { branchId: true } }),
+            ]),
           );
-          pending.push(
-            ...rows
-              .filter((row) => (row.data as any)?.usdRateDate !== today)
-              .map((row) => ({ tenantId, branchId: row.id })),
+          const updated = new Set(
+            rows.filter((row) => (row.data as any)?.usdRateDate === today).map((row) => row.id),
           );
+          const branches = new Set([...rows.map((row) => row.id), ...users.map((row) => row.branchId)]);
+          for (const branchId of branches)
+            if (!updated.has(branchId)) pending.push({ tenantId, branchId });
         } catch (error: any) {
           // Una empresa dañada o temporalmente inaccesible no priva a las
           // demás de su actualización diaria.

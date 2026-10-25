@@ -41,7 +41,7 @@ import {
   temporaryPasswordExpired,
 } from "./password-policy";
 import { sessionActivityGraceMs } from "./session-activity";
-import { tenantScope, tenantUnique } from "./tenant-context";
+import { refreshCookieName, tenantCookieName, tenantScope, tenantUnique } from "./tenant-context";
 import { enqueue, escapeHtml, telegramSettings } from "./notifications";
 import {
   REQUEST_RATE_LIMITS,
@@ -400,7 +400,7 @@ export class AuthController implements OnModuleInit {
       });
       return session;
     });
-    res.cookie("fitstore_refresh", refresh, {
+    res.cookie(refreshCookieName(), refresh, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -409,7 +409,7 @@ export class AuthController implements OnModuleInit {
     });
     // La cookie contiene sólo el UUID público de empresa; la autenticación
     // sigue dependiendo del refresh aleatorio y de la sesión de ese tenant.
-    res.cookie("nexora_tenant", user.tenantId, {
+    res.cookie(tenantCookieName(), user.tenantId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -778,7 +778,7 @@ export class AuthController implements OnModuleInit {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const token = req.cookies?.fitstore_refresh;
+    const token = req.cookies?.[refreshCookieName()];
     if (!token) bad("La sesión ha expirado.");
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const saved = await this.db.refreshToken.findUnique({
@@ -811,11 +811,11 @@ export class AuthController implements OnModuleInit {
   @Permit("authenticated")
   @Post("logout")
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (req.cookies?.fitstore_refresh)
+    if (req.cookies?.[refreshCookieName()])
       await this.db.refreshToken.deleteMany({
         where: {
           hash: createHash("sha256")
-            .update(req.cookies.fitstore_refresh)
+            .update(req.cookies[refreshCookieName()])
             .digest("hex"),
         },
       });
@@ -827,8 +827,8 @@ export class AuthController implements OnModuleInit {
           where: { id: claims.sid, userId: claims.sub },
         });
     }
-    res.clearCookie("fitstore_refresh", { path: "/api/auth" });
-    res.clearCookie("nexora_tenant", { path: "/api/auth" });
+    res.clearCookie(refreshCookieName(), { path: "/api/auth" });
+    res.clearCookie(tenantCookieName(), { path: "/api/auth" });
     return { ok: true };
   }
   @Permit("authenticated")

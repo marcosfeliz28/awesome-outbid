@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { currentTenantId, tenantScope } from "../apps/api/src/tenant-context";
-import { applyUsdRate, UsdRateWorker } from "../apps/api/src/usd-rate";
+import { applyUsdRate, usdPrice, UsdRateWorker } from "../apps/api/src/usd-rate";
+import { Database } from "../apps/api/src/common";
 import { AdminController } from "../apps/api/src/admin";
 import { AlertsController } from "../apps/api/src/alerts";
 
@@ -28,6 +29,7 @@ it("PC-15: una consulta USD actualiza todas las sucursales de las empresas activ
   vi.stubGlobal("fetch", fetchRate);
   const db = {
     activeTenantIds: async () => [A, B],
+    user: { findMany: async () => [{ branchId: "main" }] },
     settings: {
       findMany: async () =>
         currentTenantId() === A
@@ -248,6 +250,7 @@ it("PC-15: un fallo de una empresa no impide actualizar la siguiente", async () 
   const saved: string[] = [];
   const db = {
     activeTenantIds: async () => [A, B],
+    user: { findMany: async () => [{ branchId: "main" }] },
     settings: {
       findMany: async () => {
         if (currentTenantId() === A) throw new Error("empresa A no disponible");
@@ -270,4 +273,45 @@ it("PC-15: un fallo de una empresa no impide actualizar la siguiente", async () 
   expect(saved).toEqual([B]);
   expect(warn).toHaveBeenCalledWith(expect.stringContaining(`empresa ${A}`));
   warn.mockRestore();
+});
+
+it("CPC-8: una sucursal con usuarios pero sin fila en Settings también recibe la tasa", async () => {
+  process.env.PRODUCT_TENANCY = "required";
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ rates: { DOP: 63 } }) }));
+  const saved: string[] = [];
+  const db = {
+    activeTenantIds: async () => [A],
+    settings: { findMany: async () => [{ id: "main", data: {} }] },
+    user: { findMany: async () => [{ branchId: "main" }, { branchId: "sur" }] },
+    $transaction: async (task: any) =>
+      task({
+        $queryRaw: async () => [{ locked: "" }],
+        settings: {
+          findUnique: async () => null,
+          upsert: async ({ create }: any) => saved.push(create.id),
+        },
+        variant: { findMany: async () => [] },
+        alert: { upsert: async () => undefined },
+        auditLog: { create: async () => undefined },
+      }),
+  };
+  await new UsdRateWorker(db as never).run();
+  expect(saved.sort()).toEqual(["main", "sur"]);
+});
+
+it("CPC-8: el precio en dólares redondea al centavo sin errores de coma flotante", () => {
+  // 0.31 x 63.5 = 19.685 -> 19.69 (antes 19.68); 0.04 x 61.125 = 2.445 -> 2.45.
+  expect(usdPrice(0.31, 63.5)).toBe(19.69);
+  expect(usdPrice(0.04, 61.125)).toBe(2.45);
+  expect(usdPrice(200, 63)).toBe(12600);
+});
+
+it("CPC-8: una prueba vencida fuera de gracia ya no cuenta como empresa activa", async () => {
+  const now = Date.now();
+  const rows = [
+    { id: A, status: "trial", trialEndsAt: new Date(now + 86400000), paidThroughAt: null, pastDueAt: null },
+    { id: B, status: "trial", trialEndsAt: new Date(now - 30 * 86400000), paidThroughAt: null, pastDueAt: null },
+  ];
+  const fake = { tenant: { findMany: async () => rows } };
+  expect(await Database.prototype.activeTenantIds.call(fake as never)).toEqual([A]);
 });

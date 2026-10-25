@@ -405,4 +405,19 @@ describe("PC-19 licencia local", () => {
     expect(rejectsTestKey(publicKey, {})).toBe(false);
     expect(readFileSync("instalador/build.ps1", "utf8")).toContain("license-key-guard.mjs");
   });
+
+  it("CPC-8: la edición local usa cookies propias y no pisa la sesión de la tienda", async () => {
+    const { refreshCookieName, tenantCookieName } = await import("../apps/api/src/tenant-context");
+    const saved = process.env.PRODUCT_LOCAL_LICENSE;
+    try {
+      delete process.env.PRODUCT_LOCAL_LICENSE;
+      expect([refreshCookieName(), tenantCookieName()]).toEqual(["fitstore_refresh", "nexora_tenant"]);
+      process.env.PRODUCT_LOCAL_LICENSE = "required";
+      expect([refreshCookieName(), tenantCookieName()]).toEqual(["nexora_local_refresh", "nexora_local_tenant"]);
+      expect(readFileSync("apps/api/src/auth.ts", "utf8")).not.toMatch(/"fitstore_refresh"|"nexora_tenant"/);
+    } finally {
+      if (saved === undefined) delete process.env.PRODUCT_LOCAL_LICENSE;
+      else process.env.PRODUCT_LOCAL_LICENSE = saved;
+    }
+  });
 });
