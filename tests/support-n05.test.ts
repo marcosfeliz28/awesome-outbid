@@ -80,7 +80,9 @@ describe("N-05 · soporte solo lectura", () => {
     for (const method of ["POST", "PATCH", "PUT", "DELETE"]) {
       const { guard, context, db } = fixture(method);
       await tenantScope.run({ tenantId }, () => expect(guard.canActivate(context)).rejects.toMatchObject({ status: 403 }));
-      expect(db.auditLog.create).not.toHaveBeenCalled();
+      // CPC-6 punto 5: el intento queda anotado; nada más se escribe.
+      expect(db.auditLog.create).toHaveBeenCalledTimes(1);
+      expect(db.auditLog.create.mock.calls[0][0].data).toMatchObject({ action: "support.write_denied" });
     }
   });
 

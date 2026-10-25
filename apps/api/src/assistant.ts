@@ -53,7 +53,7 @@ const untrusted = (value: string) =>
     .replace(/<\/?datos_no_confiables>/gi, "[marca eliminada]")
     .replace(/(contraseña|clave|pin|token|tarjeta)\s*[:=]\s*[^\s,;]+/gi, "$1: [oculto]")
     + "\n</datos_no_confiables>";
-const sensitiveKey = /(?:authorization|password|contraseña|pin|secret|token|cardNumber|cardSecurity|cvv|tenantId|branchId|userId|sessionId|(?:api|access|private|client)[_-]?key)/i;
+const sensitiveKey = /(?:authorization|password|contraseña|pin|secret|token|card[_-]?(?:number|security)|cvv|tenantId|branchId|userId|sessionId|(?:api|access|private|client)[_-]?key)/i;
 function redact(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redact);
   if (value && typeof value === "object")
@@ -267,7 +267,7 @@ export class AssistantController {
   ) {}
 
   @Get("usage") @Permit("authenticated")
-  usage(@Req() req: ActorRequest) {
+  usage() {
     return usageForTenant(this.db);
   }
 
