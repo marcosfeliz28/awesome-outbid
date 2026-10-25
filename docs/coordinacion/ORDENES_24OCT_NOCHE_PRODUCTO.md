@@ -47,3 +47,15 @@ Claude nube compara las dos auditorías y decide.
 - Desde `producto-nexora` f0cf850, el CI reconoce el producto por `render.producto.yaml`, no por el nombre de la rama. **ChatGPT PC, ChatGPT nube y Claude PC: no editen más `.github/workflows/`.** Al mezclar `producto-nexora` en su rama, si hay conflicto en `ci.yml`, tomen la versión de `producto-nexora` (`git checkout origin/producto-nexora -- .github/workflows/ci.yml`).
 - `producto-nexora` ya crea solo el rol RLS en el preDeploy, y el registro público queda cerrado (`PRODUCT_PUBLIC_REGISTRATION=disabled`).
 - Dominio del producto: **nexorapos.net** (comprado el 24-oct, en el Cloudflare de la dueña). Solo Claude nube lo configura.
+
+## Planes definitivos (decisión de la dueña, 25-oct, revisada)
+| Plan | Precio/mes | Sucursales · cajas · usuarios | Preguntas IA/mes | Costo IA máx./mes |
+|---|---|---|---|---|
+| Autoservicio | **RD$1,250** | 1 · 1 · 2 | **100** | ~RD$20 (1.6 %) |
+| Básico | **RD$2,000** | 1 · 2 · 3 | **250** | ~RD$50 (2.5 %) |
+| Pro | **RD$4,000** | 2 · 6 · 10 | **600** | ~RD$120 (3 %) |
+| Premium | **RD$7,000** | 5 · 20 · 30 | **1,500** | ~RD$300 (4.3 %) |
+- Costo por pregunta (Haiku): normal unos RD$0.06; pesada, hasta unos RD$0.20. El «máx.» de la tabla supone que todas son pesadas. N-06 lo confirma midiendo.
+- Pago anual: 2 meses gratis. Paquetes extra sin cambios: RD$399 por 100 y RD$999 por 300.
+- Al llegar al tope se pausa solo la IA; el resto sigue igual.
+- **ChatGPT PC (PC-23/PC-24):** usa estos precios y cuotas en el panel de cobros y en las cuotas de la IA. **ChatGPT nube:** úsalos en la página de venta.

@@ -9,6 +9,18 @@ Claude (arquitecto y auditor) revisa cada hora lo que suben ChatGPT PC y ChatGPT
 
 
 
+## 25-oct, 02:45 UTC (Claude nube · producto en Render)
+- **Blueprint creado por la dueña.** El primer despliegue falló por dos causas, ya corregidas:
+  - **API:** Render pasa `sh -c '…'` con las comillas, y salió 127 «not found». El preDeploy pasó a ser un script de node (`deploy/render/producto-predeploy.mjs`), con su prueba en `cloud-deploy.test.ts` (producto-nexora `9879484`).
+  - **Web:** faltaba `API_UPSTREAM`; puesto a `nexora-saas-api:10000` en el servicio.
+- **En vivo:** `https://nexora-saas-web.onrender.com` responde 200, `/healthz/deep` 204 y `/api/health` «ok». El rol RLS y las migraciones se aplicaron. La tienda no se tocó.
+- **Dominio:** CNAME de `nexorapos.net` y `www` → `nexora-saas-web.onrender.com` en Cloudflare, sin proxy. Falta que la dueña agregue el dominio en Render (Custom Domains). Después hay que ajustar `WEB_ORIGIN` y `APP_PUBLIC_URL`.
+- **Todavía nadie se puede registrar, a propósito:**
+  - el registro público está cerrado;
+  - `PRODUCT_LEGAL_APPROVED` no está confirmado (falta el abogado);
+  - no existe aún el panel de la dueña de la plataforma ni las invitaciones del piloto (PC-23).
+  - **Orden para ChatGPT PC:** PC-23 incluye «crear empresa piloto por invitación desde el panel de la plataforma», sin abrir el registro público.
+
 ## CPC-10 · Claude PC verifica 
 exora-chatgpt-pc-producto-fixes 1a1c6ed (PC-15 y PC-16; solo lectura)
 Tres auditores en paralelo leyeron código y pruebas; **no ejecutaron la suite, Tauri ni instaladores**. Comprobé en el código el hallazgo 1 (✔). CI de `1a1c6ed` al momento de escribir: verify=completed/success, windows-installer=completed/success, render-images=completed/failure. **El rojo de `render-images` es la condición del CI:** `ci.yml` exceptúa `nexora-chatgpt-pc-producto` pero no `nexora-chatgpt-pc-producto-fixes`, así que corre el arranque de la tienda sobre código de producto (mismo patrón que `claude-pc/*`); no hay registro crudo para confirmarlo. Si se mezcla a `producto-nexora` corre su arranque propio.
