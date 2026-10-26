@@ -92,6 +92,7 @@ import "./lumina-clientes.css";
 import "./lumina-reportes.css";
 import "./lumina-config.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
+import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportModal } from "./InventoryImport";
 import { NcfSequenceSettings } from "./NcfSequenceSettings";
@@ -403,7 +404,6 @@ export function Catalog() {
       <InventoryImportModal
         open={importing}
         onClose={() => setImporting(false)}
-        restoreFocus
       />
       <div className="panel catalog-panel">
         <div className="table-toolbar catalog-toolbar">
@@ -4693,6 +4693,7 @@ export function Configuration() {
                 {/* El producto no tiene respaldo a Drive por empresa (sin /backups). */}
                 {!product && <DriveBackupCard />}
                 <IncentiveRates />
+                <CashierSurveySummary />
               </>
             )}
           </QueryState>

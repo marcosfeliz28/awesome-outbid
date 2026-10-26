@@ -182,7 +182,7 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
       return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ status: "pending" }) });
     });
     await page.setViewportSize({ width: 320, height: 700 });
-    await page.getByRole("button", { name: "Pregúntale a Nexora" }).click();
+    await page.getByRole("button", { name: "Pregúntale a Nexora", exact: true }).click();
     await expect(page.getByRole("dialog", { name: "Pregúntale a Nexora" })).toBeVisible();
     await expect(page.getByLabel("Tu pregunta")).toBeFocused();
     const panelBounds = await page.getByRole("dialog", { name: "Pregúntale a Nexora" }).boundingBox();
@@ -203,7 +203,7 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     expect(sentVoid).toBe(1);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog", { name: "Pregúntale a Nexora" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Pregúntale a Nexora" })).toBeFocused();
+    await expect(page.getByRole("button", { name: "Pregúntale a Nexora", exact: true })).toBeFocused();
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.unroute("**/api/assistant/usage");
     await page.unroute("**/api/assistant/ask");
@@ -394,7 +394,7 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     // En el celular «Pregúntale a Nexora» no tapa la barra de Mercancía.
     await page.goto(`${web}/#dashboard`);
     const bar = await page.locator(".goods-mobile-bar").boundingBox();
-    const launcher = await page.getByRole("button", { name: "Pregúntale a Nexora" }).boundingBox();
+    const launcher = await page.getByRole("button", { name: "Pregúntale a Nexora", exact: true }).boundingBox();
     expect(launcher!.y + launcher!.height).toBeLessThanOrEqual(bar!.y);
 
     // Configuración arranca en «Básico»: sin RNC mientras el NCF esté apagado.

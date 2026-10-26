@@ -1,4 +1,6 @@
 .assistant-launcher { position: fixed; z-index: 69; right: 16px; bottom: 16px; min-height: 48px; min-width: 48px; padding: 10px 18px; border: 2px solid #a5f3fc; border-radius: 999px; background: #12345a; color: #fff; font: inherit; font-weight: 700; box-shadow: 0 4px 18px #0009; cursor: pointer; }
+/* `button:not(.button)` de styles.css (0,1,1) igualaba la regla y dejaba el botón sin fondo: texto blanco sobre blanco. */
+button.assistant-launcher.assistant-launcher { border: 2px solid #a5f3fc; background: #12345a; }
 .assistant-backdrop { position: fixed; z-index: 70; inset: 0; border: 0; background: #000a; }
 .assistant-panel { position: fixed; z-index: 71; right: 12px; bottom: 12px; display: flex; flex-direction: column; width: min(420px, calc(100vw - 24px)); max-height: min(700px, calc(100dvh - 24px)); border: 2px solid #8acfe1; border-radius: 18px; background: #10253d; color: #fff; box-shadow: 0 10px 40px #000c; }
 .assistant-panel button { min-width: 44px; min-height: 44px; border: 1px solid #9ee4f2; border-radius: 9px; background: #173f62; color: #fff; font: inherit; cursor: pointer; }
@@ -42,3 +44,7 @@
   body:has(.goods-mobile-bar) .assistant-launcher { bottom: calc(84px + env(safe-area-inset-bottom)); }
   body:has(.goods-actions.has-items) .assistant-launcher { display: none; }
 }
+/* Pregunta que llega desde una tarjeta del tablero: se revisa antes de enviar. */
+.assistant-context, .assistant-context-suggestion { margin: 0 0 14px; padding: 12px; border: 1px solid #9ee4f2; border-radius: 10px; background: #173f62; color: #fff; font-size: .9rem; line-height: 1.6; }
+.assistant-context-suggestion p { margin: 0; }
+.assistant-context-suggestion button { margin: 8px 8px 0 0; padding: 8px; }

@@ -214,6 +214,9 @@ async function send(url: string, init: RequestInit, timeout = 0) {
     useStore.getState().setOnline(false);
     throw new NetworkError();
   }
+  // El servidor contestó: hay conexión otra vez sin esperar la prueba de 5 s
+  // (si no, tras un 503 suelto la caja seguía leyendo copias viejas).
+  if (!useStore.getState().online) useStore.getState().setOnline(true);
   return response;
 }
 // La conexión se cortó, o venció el plazo, mientras llegaba la respuesta: es

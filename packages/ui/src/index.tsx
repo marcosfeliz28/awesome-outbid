@@ -1,4 +1,11 @@
-import { useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import {
+  useId,
+  useLayoutEffect,
+  useRef,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, LoaderCircle } from "lucide-react";
 
@@ -51,24 +58,103 @@ export function Loading() {
     </div>
   );
 }
+
+/** Primitivas aditivas: no cambian las APIs ni las clases de las pantallas existentes. */
+export function Card({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  const id = useId();
+  return (
+    <section className="panel" aria-labelledby={id}>
+      <h2 id={id}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+/** Etiqueta, ayuda y error enlazados al campo por id (lector de pantalla). */
+export function Field({
+  label,
+  hint,
+  error,
+  id,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  hint?: string;
+  error?: string;
+}) {
+  const generated = useId();
+  const inputId = id || generated;
+  const describedBy =
+    [
+      props["aria-describedby"],
+      hint && `${inputId}-hint`,
+      error && `${inputId}-error`,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
+  return (
+    <div className="field">
+      <label htmlFor={inputId}>{label}</label>
+      <input
+        {...props}
+        id={inputId}
+        aria-invalid={error ? true : props["aria-invalid"]}
+        aria-describedby={describedBy}
+      />
+      {hint && <small id={`${inputId}-hint`}>{hint}</small>}
+      {error && (
+        <small id={`${inputId}-error`} className="danger-text">
+          {error}
+        </small>
+      )}
+    </div>
+  );
+}
+
+/** Tabla que desborda: región con nombre y alcanzable con el teclado. */
+export function TableFrame({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="table-wrap" role="region" aria-label={label} tabIndex={0}>
+      {children}
+    </div>
+  );
+}
+
 export function Modal({
   open,
   onClose,
   title,
   children,
   wide = false,
-  restoreFocus = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   wide?: boolean;
-  /** Al cerrar, devuelve el foco a quien lo tenía al abrir (solo diálogos abiertos desde «Más»); por defecto no toca el foco. */
-  restoreFocus?: boolean;
 }) {
-  // Sin Dialog.Trigger Radix no sabe a quién devolver el foco: se guarda quien lo tenía al abrir.
-  const opener = useRef<HTMLElement | null>(null);
+  // Los consumidores abren el diálogo con botones propios, sin Dialog.Trigger:
+  // al cerrar se devuelve el foco a quien lo abrió.
+  const returnFocus = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (open)
+      returnFocus.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+  }, [open]);
   return (
     <Dialog.Root open={open} onOpenChange={(value) => !value && onClose()}>
       <Dialog.Portal>
@@ -76,19 +162,12 @@ export function Modal({
         <Dialog.Content
           className={`modal ${wide ? "wide" : ""}`}
           aria-describedby={undefined}
-          {...(restoreFocus && {
-            onOpenAutoFocus: () => {
-              opener.current = document.activeElement as HTMLElement | null;
-            },
-            onCloseAutoFocus: (event: Event) => {
-              const back = opener.current;
-              opener.current = null;
-              if (back?.isConnected && back !== document.body) {
-                event.preventDefault();
-                back.focus();
-              }
-            },
-          })}
+          onCloseAutoFocus={(event) => {
+            if (returnFocus.current?.isConnected) {
+              event.preventDefault();
+              returnFocus.current.focus();
+            }
+          }}
         >
           <div className="modal-heading">
             <Dialog.Title>{title}</Dialog.Title>

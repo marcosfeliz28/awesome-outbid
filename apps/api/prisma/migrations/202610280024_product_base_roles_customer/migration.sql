@@ -17,6 +17,8 @@ ON CONFLICT ("tenantId", "name") DO NOTHING;
 -- final»; las existentes lo reciben sólo si no tienen uno con ese nombre.
 -- Los ajustes que falten no se rellenan aquí: la API usa sus valores por
 -- defecto y Configuración los completa con DEFAULT_SETTINGS al guardar.
+-- Una sola ejecución a la vez del relleno (dos copias concurrentes duplicarían).
+SELECT pg_advisory_xact_lock(hashtext('nexora:consumidor-final'));
 INSERT INTO "Customer" ("id", "tenantId", "name", "updatedAt")
 SELECT gen_random_uuid(), t."id", 'Consumidor final', CURRENT_TIMESTAMP
 FROM "Tenant" t
@@ -24,3 +26,24 @@ WHERE NOT EXISTS (
   SELECT 1 FROM "Customer" c
   WHERE c."tenantId" = t."id" AND lower(c."name") = 'consumidor final'
 );
+
+-- Un solo «Consumidor final» activo por empresa también si dos procesos
+-- insertan a la vez. Si ya hay repetidos activos, el índice excluye solo a los
+-- posteriores (queda el más antiguo, el que usa la venta); no se borra ni
+-- renombra ninguno.
+DO $$
+DECLARE later TEXT;
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'Customer_consumidor_final_key'
+             AND relnamespace = current_schema()::regnamespace) THEN
+    RETURN;
+  END IF;
+  SELECT string_agg(quote_literal(id::text), ',') INTO later FROM (
+    SELECT id, row_number() OVER (PARTITION BY "tenantId" ORDER BY "createdAt", id) AS pos
+    FROM "Customer"
+    WHERE lower(name) = 'consumidor final' AND active
+  ) ranked WHERE pos > 1;
+  EXECUTE 'CREATE UNIQUE INDEX "Customer_consumidor_final_key" ON "Customer" ("tenantId") '
+    || 'WHERE lower(name) = ''consumidor final'' AND active'
+    || coalesce(' AND id NOT IN (' || later || ')', '');
+END $$;

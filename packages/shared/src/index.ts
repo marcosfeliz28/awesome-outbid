@@ -1081,3 +1081,108 @@ export const searchVariantsForDb = (term: string): string[] => {
   const forms = u === "lb" ? ["lb", "lbs", "libra", "libras"] : [u];
   return forms.flatMap((f) => [n + f, n + " " + f]);
 };
+
+// Encuesta de la caja (dueña, 26-oct): 30 preguntas cortas, una respuesta por
+// persona que puede editar. «yesno»: sí/no; «scale»: 1 a 5; «choice»: una
+// opción; «text»: abierta (máx. 500).
+export type SurveyQuestion = {
+  id: string;
+  text: string;
+  kind: "yesno" | "scale" | "choice" | "text";
+  options?: readonly string[];
+};
+const yesno = (id: string, text: string): SurveyQuestion => ({
+  id,
+  text,
+  kind: "yesno",
+});
+const scale = (id: string, text: string): SurveyQuestion => ({
+  id,
+  text,
+  kind: "scale",
+});
+const choice = (
+  id: string,
+  text: string,
+  options: string[],
+): SurveyQuestion => ({ id, text, kind: "choice", options });
+export const CASHIER_SURVEY: readonly SurveyQuestion[] = [
+  scale("cobro_rapido", "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)"),
+  yesno("cobro_pasos", "¿Cobrar te pide más pasos de los necesarios?"),
+  scale("buscar_producto", "¿Qué tan fácil es encontrar un producto?"),
+  choice("buscar_como", "¿Cómo buscas los productos casi siempre?", [
+    "Lector de código",
+    "Escribo el nombre",
+    "Por categoría",
+    "Cámara del celular",
+  ]),
+  yesno("lector_falla", "¿El lector de código falla a menudo?"),
+  scale("cierre_facil", "¿Qué tan fácil es cerrar la caja?"),
+  yesno("cierre_dudas", "¿Tienes dudas al contar el dinero del cierre?"),
+  yesno("pin_molesta", "¿Te piden el PIN demasiadas veces?"),
+  yesno("permiso_falta", "¿Te falta algún permiso para hacer tu trabajo?"),
+  yesno("mensajes_confusos", "¿Algún mensaje del sistema te confunde?"),
+  choice("equipo_uso", "¿En qué equipo vendes más?", [
+    "Computadora",
+    "Celular",
+    "Tableta",
+    "Igual en varios",
+  ]),
+  scale("celular_comodo", "En el celular, ¿qué tan cómodo es vender?"),
+  yesno("impresion_falla", "¿La impresión del recibo falla o sale mal?"),
+  choice("recibo_prefiere", "¿Cómo prefieren los clientes su recibo?", [
+    "Impreso",
+    "WhatsApp",
+    "Correo",
+    "No lo piden",
+  ]),
+  scale("cliente_registro", "¿Qué tan fácil es registrar un cliente nuevo?"),
+  yesno("cliente_buscar", "¿Te cuesta encontrar a un cliente ya registrado?"),
+  scale("credito_facil", "¿Qué tan fácil es vender a crédito?"),
+  yesno("credito_dudas", "¿Tienes dudas sobre cuándo se puede dar crédito?"),
+  scale("devolucion_facil", "¿Qué tan fácil es hacer una devolución?"),
+  yesno("anulacion_clara", "¿Sabes cómo pedir que anulen una factura?"),
+  yesno("descuento_claro", "¿Está claro cómo aplicar un descuento u oferta?"),
+  yesno("transferencia_clara", "¿Está claro cómo registrar una transferencia?"),
+  yesno("lento_sistema", "¿El sistema se pone lento mientras vendes?"),
+  yesno("sin_internet", "¿Has tenido que vender sin internet?"),
+  choice("ver_solo", "¿Qué te gustaría ver sin tener que preguntar?", [
+    "Mis ventas del día",
+    "Existencia de productos",
+    "Mis incentivos",
+    "Precios y ofertas",
+  ]),
+  yesno("preguntas_utiles", "¿Te sirven las preguntas rápidas de la caja?"),
+  yesno("ayuda_uso", "¿Has usado el asistente con IA?"),
+  scale("satisfaccion", "En general, ¿qué tan a gusto estás con el sistema?"),
+  {
+    id: "mejorar",
+    text: "¿Qué cambiarías primero para vender más cómodo?",
+    kind: "text",
+  },
+  {
+    id: "comentario",
+    text: "¿Algo más que quieras decirle a la dueña?",
+    kind: "text",
+  },
+];
+/** Valida las respuestas: solo preguntas conocidas y valores de su tipo. */
+export function surveyAnswers(input: unknown) {
+  const shape = Object.fromEntries(
+    CASHIER_SURVEY.map((q) => [
+      q.id,
+      (q.kind === "yesno"
+        ? z.boolean()
+        : q.kind === "scale"
+          ? z.number().int().min(1).max(5)
+          : q.kind === "choice"
+            ? z.enum(q.options as [string, ...string[]])
+            : z.string().trim().max(500)
+      ).optional(),
+    ]),
+  );
+  return z.object(shape).strict().parse(input) as Record<
+    string,
+    boolean | number | string | undefined
+  >;
+}

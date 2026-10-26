@@ -104,15 +104,12 @@ const MAX_BYTES = 5 * 1024 * 1024;
 export function InventoryImportModal({
   open,
   onClose,
-  restoreFocus,
 }: {
   open: boolean;
   onClose: () => void;
-  /** Se abre desde «Más» (Productos): el foco vuelve ahí. */
-  restoreFocus?: boolean;
 }) {
   return (
-    <Modal open={open} onClose={onClose} title="Importar inventario" wide restoreFocus={restoreFocus}>
+    <Modal open={open} onClose={onClose} title="Importar inventario" wide>
       {open && <InventoryImport onDone={onClose} />}
     </Modal>
   );
