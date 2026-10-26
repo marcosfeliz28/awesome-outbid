@@ -4429,11 +4429,12 @@ export function Configuration() {
   };
   return (
     <>
-      <Heading
-        title="A la medida de tu negocio"
-        caption="Define cómo trabaja tu tienda, desde los impuestos hasta los permisos."
-      />
-      <div className="tabs outside">
+      <div className={`lumina-settings lumina-settings-${tab}`}>
+        <Heading
+          title="Configuración"
+          caption="Define cómo trabaja tu tienda, desde los impuestos hasta los permisos."
+        />
+        <div className="tabs outside">
         {[
           ["business", "Negocio y reglas"],
           ["users", "Usuarios y permisos"],
@@ -4448,7 +4449,7 @@ export function Configuration() {
             {label}
           </button>
         ))}
-      </div>
+        </div>
       {product && tab === "business" && (
         <div className="config-mode" role="group" aria-label="Vista de la configuración">
           {[
@@ -4474,7 +4475,7 @@ export function Configuration() {
           ))}
         </div>
       )}
-      <div className="panel">
+        <div className="panel lumina-settings-content">
         {tab === "equipment" ? (
           <Equipment />
         ) : tab === "business" ? (
@@ -4496,7 +4497,10 @@ export function Configuration() {
                     : "Sin NCF por venta: los recibos son internos. e-CF en pausa."}
                 </p>
               </div>
-              <Button onClick={() => setEditing(true)}>
+              <Button
+                className="lumina-primary-action"
+                onClick={() => setEditing(true)}
+              >
                 <Pencil size={16} />
                 Editar configuración
               </Button>
@@ -4594,7 +4598,10 @@ export function Configuration() {
           <>
             <div className="panel-heading">
               <h2>Equipo de tu tienda</h2>
-              <Button onClick={() => setNewUser(true)}>
+              <Button
+                className="lumina-primary-action"
+                onClick={() => setNewUser(true)}
+              >
                 <Plus size={17} />
                 Crear usuario
               </Button>
@@ -4715,6 +4722,7 @@ export function Configuration() {
             />
           </QueryState>
         )}
+        </div>
       </div>
       {editing && (
         <FormModal

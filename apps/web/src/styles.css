@@ -6569,6 +6569,130 @@ td strong {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Obsidian Lumina: Configuración y Equipos -----------------------------
+   Reutiliza el marco, los tokens y las primitivas existentes. Los flujos y
+   nombres permanecen intactos; la jerarquía deja una acción primaria visible
+   por pestaña. */
+.lumina-settings .tabs.outside {
+  padding: 4px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  box-shadow: 0 8px 22px rgba(9, 7, 25, .06);
+}
+.lumina-settings .tabs.outside button {
+  min-height: 42px;
+  border-radius: 9px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.lumina-settings .tabs.outside button.active {
+  background: var(--surface) !important;
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent-violet), 0 4px 12px rgba(9, 7, 25, .08);
+}
+.lumina-settings-content {
+  overflow: hidden;
+}
+.lumina-settings .settings-summary {
+  background:
+    radial-gradient(circle at 100% 0, var(--lumina-violet-glow), transparent 34%),
+    radial-gradient(circle at 0 100%, var(--lumina-emerald-glow), transparent 30%);
+}
+.lumina-settings .settings-summary h2 {
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  letter-spacing: -.03em;
+}
+.lumina-settings .settings-rules {
+  gap: 10px;
+  background: var(--surface-soft);
+}
+.lumina-settings .settings-rules > div {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.lumina-settings .settings-rules strong {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.lumina-settings .field:focus-within,
+.equipment .field:focus-within {
+  opacity: 1;
+}
+.lumina-settings .field:focus-within :is(input, select, textarea),
+.equipment .field:focus-within :is(input, select, textarea) {
+  border-color: var(--accent-emerald);
+  box-shadow: 0 0 0 3px var(--lumina-violet-glow);
+}
+.lumina-settings .button.primary:not(.lumina-primary-action) {
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  box-shadow: none;
+}
+.lumina-settings .lumina-primary-action,
+.equipment .lumina-primary-action {
+  background: linear-gradient(115deg, var(--accent-emerald), #43e3b1);
+  color: #031712;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, .2);
+}
+.equipment-here {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 100% 0, var(--lumina-emerald-glow), transparent 36%),
+    var(--lumina-card);
+}
+.equipment-here::before,
+.equipment-item::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--accent-violet);
+}
+.equipment-item {
+  position: relative;
+  overflow: hidden;
+}
+.equipment-item.pending::before { background: var(--warning-text); }
+.equipment-item.revoked::before { background: var(--muted); }
+.equipment-item:not(.pending):not(.revoked)::before { background: var(--accent-emerald); }
+.equipment-item .badge {
+  border: 1px solid var(--lumina-card-border);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.equipment-online {
+  box-shadow: 0 0 0 3px var(--lumina-emerald-glow);
+}
+@media (max-width: 560px) {
+  .lumina-settings .tabs.outside {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .lumina-settings .tabs.outside button {
+    width: 100%;
+    white-space: normal;
+  }
+  .lumina-settings .settings-summary {
+    padding: 20px 16px;
+  }
+  .lumina-settings .settings-summary .lumina-primary-action {
+    width: 100%;
+  }
+  .lumina-settings .settings-rules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 16px;
+  }
+}
 .year-pie-list {
   list-style: none;
   margin: 0;
