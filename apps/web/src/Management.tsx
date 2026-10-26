@@ -2456,6 +2456,7 @@ export function Customers() {
         </div>
         <QueryState query={query}>
           <DataTable
+            cards
             rows={(query.data || []).filter((c: any) =>
               // P5: sin acceso completo la búsqueda no usa el teléfono, para
               // no servir de oráculo de los dígitos ocultos.
