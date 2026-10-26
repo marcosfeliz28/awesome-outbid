@@ -1052,3 +1052,144 @@ model DriveBackup {
   lastAlertAt         DateTime?
   updatedAt           DateTime  @default(now()) @updatedAt
 }
+
+// Módulo GV Makeup Studio (docs/coordinacion/MODULO-GV.md). Registro de
+// cursos, inscripciones y cobros: no son ventas de la caja ni comprobantes.
+// externalId: clave de la importación (única por sucursal) para reimportar
+// sin duplicar.
+model GvCourse {
+  id          String         @id @default(uuid()) @db.Uuid
+  branchId    String         @default("main")
+  externalId  String?
+  name        String
+  // CHECK gv_course_type_valid: automaquillaje | brazilian | personalizado | otro
+  type        String
+  date        DateTime       @db.Date
+  price       Decimal        @db.Decimal(14, 2)
+  capacity    Int
+  active      Boolean        @default(true)
+  createdBy   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  enrollments GvEnrollment[]
+
+  @@unique([branchId, externalId])
+  @@index([branchId, date])
+}
+
+model GvEnrollment {
+  id             String      @id @default(uuid()) @db.Uuid
+  branchId       String      @default("main")
+  externalId     String?
+  operationId    String?     @unique @db.Uuid
+  courseId       String      @db.Uuid
+  course         GvCourse    @relation(fields: [courseId], references: [id])
+  clientName     String
+  phone          String?
+  instagram      String?
+  agreedPrice    Decimal     @db.Decimal(14, 2)
+  // CHECK gv_enrollment_status_valid: activa | no_asistio | personalizado | cancelada | reembolsada
+  status         String      @default("activa")
+  attended       Boolean?
+  boughtBrushSet Boolean     @default(false)
+  note           String?
+  // Reembolso (estado «reembolsada»): se resta de los ingresos.
+  refundAmount   Decimal?    @db.Decimal(14, 2)
+  refundDate     DateTime?   @db.Date
+  createdBy      String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  payments       GvPayment[]
+
+  @@unique([branchId, externalId])
+  @@index([courseId])
+}
+
+model GvPayment {
+  id           String        @id @default(uuid()) @db.Uuid
+  branchId     String        @default("main")
+  externalId   String?
+  operationId  String?       @unique @db.Uuid
+  enrollmentId String?       @db.Uuid
+  enrollment   GvEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  // Cita de maquillaje (FK en la migración 202610260902_gv_citas).
+  appointmentId String?        @db.Uuid
+  appointment   GvAppointment? @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  date         DateTime      @db.Date
+  // CHECK gv_payment_amount_positive
+  amount       Decimal       @db.Decimal(14, 2)
+  // CHECK: separo | restante | segundo | tercero | otro
+  concept      String
+  // CHECK: efectivo | transferencia | tarjeta
+  method       String
+  bank         String?
+  reference    String?
+  // Transferencia: pendiente hasta verificarla; efectivo y tarjeta, verificados.
+  verified     Boolean       @default(false)
+  verifiedBy   String?
+  verifiedAt   DateTime?
+  // Rechazado (transferencia que no llegó o pago anulado): no cuenta como pagado.
+  rejectedAt   DateTime?
+  rejectedBy   String?
+  rejectReason String?
+  createdBy    String
+  createdAt    DateTime      @default(now())
+
+  @@unique([branchId, externalId])
+  @@index([enrollmentId])
+  @@index([appointmentId])
+  @@index([branchId, date])
+}
+
+// GV Makeup Studio · citas de maquillaje (docs/coordinacion/MODULO-GV.md §3 y
+// §5). Los pagos de una cita van en GvPayment.appointmentId; el pendiente se
+// calcula (total − pagos), no se guarda. externalId: clave del Excel o de la
+// pantalla (op:<uuid>) para que importar o reenviar no duplique.
+model GvAppointment {
+  id           String   @id @default(uuid()) @db.Uuid
+  branchId     String   @default("main")
+  date         DateTime @db.Timestamptz(3)
+  clientName   String
+  phone        String?
+  instagram    String?
+  service      String
+  artists      String[]
+  afterHours   Boolean  @default(false)
+  total        Decimal  @db.Decimal(14, 2)
+  tip          Decimal  @default(0) @db.Decimal(14, 2)
+  status       String   @default("agendada")
+  note         String?
+  weddingQuote Decimal? @db.Decimal(14, 2)
+  venue        String?
+  people       Int?
+  // Reembolso (estado «reembolsada»): se resta de los ingresos.
+  refundAmount Decimal? @db.Decimal(14, 2)
+  refundDate   DateTime? @db.Date
+  externalId   String?
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  payments     GvPayment[]
+
+  @@unique([branchId, externalId])
+  @@index([branchId, date])
+}
+
+// GV · interesadas (prospectos).
+model GvLead {
+  id         String   @id @default(uuid()) @db.Uuid
+  branchId   String   @default("main")
+  name       String
+  phone      String?
+  interest   String?
+  action     String?
+  status     String   @default("por_contactar")
+  note       String?
+  externalId String?
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([branchId, externalId])
+  @@index([branchId, status])
+}

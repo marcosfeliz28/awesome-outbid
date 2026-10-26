@@ -2,9 +2,11 @@ import {
   DeviceGate,
   useRealtime,
   registerTerminal,
+  gvOnly,
   storedTerminalCredentials,
 } from "./realtime";
 import { Merchandise } from "./Merchandise";
+import { Gv } from "./Gv";
 import { PasswordChangeFields } from "./PasswordChangeFields";
 import {
   isCashierPasswordRole,
@@ -54,6 +56,7 @@ import {
   useStore,
   post,
   localDB,
+  forgetSessionData,
   saveSession,
   refreshSession,
   syncSales,
@@ -276,6 +279,7 @@ const navigation = [
     icon: IncentivesIcon,
     permission: "sale:manage",
   },
+  { id: "gv", label: "GV Makeup Studio", icon: Brush, permission: "gv:read" },
 ];
 // Caras del cubo de la entrada: lo que venden Grupo MacGen y GV Makeup
 // Studio, por grupo (dueña, 23-oct).
@@ -728,7 +732,8 @@ function Shell() {
     if (
       user &&
       !allowed.some((n) => n.id === page) &&
-      page !== "settings" &&
+      // GV-02: Configuración sólo para quien la ve en el menú.
+      !(page === "settings" && can(user.permissions, "sale:manage")) &&
       !(page === "styles" && SHOW_STYLE_GUIDE)
     )
       go(allowed[0]?.id || "products");
@@ -764,7 +769,8 @@ function Shell() {
     if (syncing || !online) return;
     setSyncing(true);
     try {
-      await registerTerminal();
+      if (!gvOnly(useStore.getState().user?.permissions))
+        await registerTerminal();
       await syncMerchandise();
       const result = await syncSales();
       if (result.synced) toast(`${result.synced} ventas sincronizadas.`);
@@ -939,6 +945,7 @@ function Shell() {
     "courier-payouts": <CourierPayouts />,
     merchandise: <Merchandise />,
     incentives: <IncentivesPage />,
+    gv: <Gv />,
   };
   return (
     <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>
@@ -1290,6 +1297,21 @@ function Shell() {
           onSubmit={async (e) => {
             e.preventDefault();
             try {
+              // GV-01: una cuenta sólo de GV no hereda datos de Macgen de este
+              // equipo. Con ventas o entradas sin enviar no se cambia.
+              const toGv =
+                staff.find((s) => s.id === switchId)?.role?.name === "gv";
+              if (
+                toGv &&
+                ((await localDB.sales.count()) ||
+                  (await localDB.merchandise.count()))
+              ) {
+                toast(
+                  "Hay ventas o entradas de mercancía sin enviar en este equipo: sincronízalas antes de pasar a GV.",
+                  true,
+                );
+                return;
+              }
               const result = await post("/auth/pin", {
                 userId: switchId,
                 pin,
@@ -1297,6 +1319,8 @@ function Shell() {
               // 05-M1: el carrito de quien sale queda guardado a su nombre
               // (cartDraft.ts) y la nueva persona ve el suyo.
               client.clear();
+              if (!can(result.user.permissions, "catalog:read"))
+                await forgetSessionData();
               await saveSession(result.user, result.accessToken);
               setSwitchUser(false);
               setPin("");
