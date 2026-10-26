@@ -893,7 +893,7 @@ export function Inventory() {
   return (
     <>
       <Heading
-        title="Cada unidad, bajo control"
+        title="Inventario"
         caption="El inventario correcto hace espacio para mejores decisiones."
       />
       <div className="panel inventory-panel">
