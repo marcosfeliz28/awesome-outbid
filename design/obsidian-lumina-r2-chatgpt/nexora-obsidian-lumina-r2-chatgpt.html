@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Nexora POS · Obsidian Lumina R2 · ChatGPT</title>
+    <style>
+      :root {
+        --bg: #05050a;
+        --surface: #0d0f18;
+        --surface-raised: #131726;
+        --text: #eef0f8;
+        --muted: #a3abc2;
+        --muted-strong: #c5cadd;
+        --emerald: #43e3b1;
+        --emerald-deep: #18b98b;
+        --violet: #8b5cf6;
+        --border: rgba(187, 196, 224, 0.16);
+        --border-strong: rgba(187, 196, 224, 0.28);
+        --shadow: 0 26px 80px rgba(0, 0, 0, 0.42);
+        --display: "Avenir Next", "Segoe UI", Inter, sans-serif;
+        --body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      html { min-width: 320px; background: var(--bg); }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 8% 10%, rgba(139, 92, 246, 0.085), transparent 30rem),
+          radial-gradient(circle at 88% 84%, rgba(67, 227, 177, 0.055), transparent 32rem),
+          var(--bg);
+        font-family: var(--body);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      body::before {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background-image:
+          linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+        background-size: 80px 80px;
+        mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 90%);
+        content: "";
+        pointer-events: none;
+      }
+
+      button, input { font: inherit; }
+      button, a { -webkit-tap-highlight-color: transparent; }
+      button { cursor: pointer; }
+      a { color: inherit; }
+      :focus-visible { outline: 3px solid var(--emerald); outline-offset: 3px; }
+
+      .skip {
+        position: fixed;
+        z-index: 20;
+        top: 10px;
+        left: 10px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: var(--text);
+        color: var(--bg);
+        transform: translateY(-150%);
+      }
+      .skip:focus { transform: translateY(0); }
+
+      .shell {
+        width: min(1240px, calc(100% - 48px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: flex;
+        min-height: 76px;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+      .brand-mark {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        border: 1px solid rgba(255,255,255,.2);
+        border-radius: 12px;
+        background:
+          linear-gradient(145deg, rgba(139,92,246,.3), rgba(67,227,177,.1)),
+          #0d0f18;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
+        color: white;
+        font: 800 22px/1 var(--display);
+        letter-spacing: -.08em;
+      }
+      .brand-name { font: 800 18px/1 var(--display); letter-spacing: -.03em; }
+      .brand-name small {
+        margin-left: 7px;
+        padding: 3px 6px;
+        border: 1px solid rgba(139,92,246,.3);
+        border-radius: 6px;
+        background: rgba(139,92,246,.12);
+        color: #c9b9ff;
+        font-size: 9px;
+        letter-spacing: .12em;
+        vertical-align: 2px;
+      }
+
+      .top-actions { display: flex; align-items: center; gap: 22px; }
+      .top-actions a {
+        color: var(--muted-strong);
+        font-size: 13px;
+        font-weight: 650;
+        text-decoration: none;
+      }
+      .top-actions a:hover { color: var(--text); }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .status i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--emerald);
+        box-shadow: 0 0 0 4px rgba(67,227,177,.1);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.16fr) minmax(390px, .84fr);
+        gap: clamp(46px, 7vw, 104px);
+        align-items: center;
+        min-height: calc(100vh - 77px);
+        padding: 46px 0 58px;
+      }
+
+      .story { min-width: 0; }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 18px;
+        color: var(--muted-strong);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+      }
+      .eyebrow::before {
+        width: 22px;
+        height: 1px;
+        background: linear-gradient(90deg, var(--emerald), var(--violet));
+        content: "";
+      }
+
+      h1 {
+        max-width: 720px;
+        margin: 0;
+        font: 750 clamp(44px, 5vw, 72px)/.98 var(--display);
+        letter-spacing: -.055em;
+      }
+      h1 span {
+        background: linear-gradient(100deg, #fff 12%, #b9c1d8 57%, #8f9ab8 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .lede {
+        max-width: 650px;
+        margin: 24px 0 0;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.65;
+      }
+
+      .proofs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin: 30px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .proofs li {
+        min-height: 82px;
+        padding: 15px 16px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: rgba(13,15,24,.72);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+      }
+      .proofs strong { display: block; margin-bottom: 5px; font-size: 13px; }
+      .proofs span { display: block; color: var(--muted); font-size: 12px; line-height: 1.45; }
+      .proofs li:first-child { border-top-color: rgba(67,227,177,.38); }
+      .proofs li:nth-child(2) { border-top-color: rgba(139,92,246,.38); }
+
+      .prism-stage {
+        position: relative;
+        overflow: hidden;
+        min-height: 180px;
+        margin-top: 18px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: #05050a;
+        box-shadow: var(--shadow);
+      }
+      .prism-stage::after {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent 55%, rgba(5,5,10,.9));
+        content: "";
+        pointer-events: none;
+      }
+      .prism-stage img {
+        display: block;
+        width: 100%;
+        height: 210px;
+        object-fit: cover;
+        object-position: 36% 53%;
+      }
+      .stage-caption {
+        position: absolute;
+        z-index: 1;
+        right: 22px;
+        top: 50%;
+        max-width: 190px;
+        transform: translateY(-50%);
+        text-align: right;
+      }
+      .stage-caption b { display: block; font: 750 15px var(--display); }
+      .stage-caption span { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+
+      .access-wrap { position: relative; }
+      .access-wrap::before {
+        position: absolute;
+        inset: -1px;
+        z-index: -1;
+        border-radius: 21px;
+        background: linear-gradient(145deg, rgba(139,92,246,.4), rgba(255,255,255,.08) 36%, rgba(67,227,177,.32));
+        content: "";
+        filter: blur(.2px);
+      }
+      .access {
+        padding: 30px;
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 20px;
+        background: linear-gradient(160deg, rgba(19,23,38,.97), rgba(10,12,20,.985));
+        box-shadow: 0 38px 100px rgba(0,0,0,.52), inset 0 1px 0 rgba(255,255,255,.065);
+      }
+      .mockup-tag {
+        display: inline-flex;
+        margin-bottom: 22px;
+        padding: 5px 8px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+      }
+      .access h2 { margin: 0; font: 750 28px/1.12 var(--display); letter-spacing: -.04em; }
+      .access > p { margin: 9px 0 22px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+      .field { display: block; margin-top: 14px; }
+      .field > span {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 7px;
+        color: var(--muted-strong);
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .field small { color: var(--muted); font-size: 10px; font-weight: 500; }
+      .input-wrap { position: relative; }
+      input {
+        width: 100%;
+        min-height: 48px;
+        padding: 0 14px;
+        border: 1px solid var(--border-strong);
+        border-radius: 11px;
+        background: rgba(5,5,10,.7);
+        color: var(--text);
+        font-size: 14px;
+        transition: border-color .16s ease, box-shadow .16s ease;
+      }
+      input::placeholder { color: #747d96; }
+      input:hover { border-color: rgba(187,196,224,.42); }
+      input:focus {
+        border-color: var(--emerald);
+        outline: 0;
+        box-shadow: 0 0 0 3px rgba(67,227,177,.12);
+      }
+      .input-wrap input { padding-right: 74px; }
+      .show {
+        position: absolute;
+        right: 7px;
+        top: 7px;
+        min-height: 34px;
+        padding: 0 9px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted-strong);
+        font-size: 11px;
+        font-weight: 750;
+      }
+      .show:hover { background: rgba(255,255,255,.06); color: white; }
+
+      .primary {
+        display: flex;
+        width: 100%;
+        min-height: 50px;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+        border: 1px solid rgba(113,255,215,.65);
+        border-radius: 12px;
+        background: linear-gradient(105deg, var(--emerald-deep), var(--emerald));
+        color: #031712;
+        box-shadow: 0 14px 34px rgba(24,185,139,.18);
+        font-size: 13px;
+        font-weight: 850;
+      }
+      .primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+      .primary svg { width: 16px; }
+
+      .assistance {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 13px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .assistance a:hover { color: var(--text); }
+
+      .terminal {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 14px;
+        align-items: center;
+        margin-top: 22px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+      }
+      .terminal b { display: block; font-size: 12px; }
+      .terminal span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+      .secondary {
+        min-height: 40px;
+        padding: 0 13px;
+        border: 1px solid rgba(139,92,246,.42);
+        border-radius: 10px;
+        background: rgba(139,92,246,.1);
+        color: #d8ceff;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .secondary:hover { border-color: rgba(139,92,246,.7); background: rgba(139,92,246,.16); }
+      .feedback {
+        min-height: 20px;
+        margin: 13px 0 0;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.45;
+      }
+
+      .trust {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 14px;
+        color: #7f89a3;
+        font-size: 10px;
+      }
+      .trust span { width: 3px; height: 3px; border-radius: 50%; background: #59627a; }
+
+      @media (max-width: 960px) {
+        .shell { width: min(100% - 32px, 700px); }
+        .layout { grid-template-columns: 1fr; gap: 46px; padding-top: 24px; }
+        .access-wrap { order: -1; width: min(100%, 520px); margin: 0 auto; }
+        .story { text-align: center; }
+        .eyebrow { justify-content: center; }
+        h1, .lede { margin-inline: auto; }
+        .proofs { text-align: left; }
+      }
+
+      @media (max-width: 560px) {
+        .shell { width: calc(100% - 32px); }
+        .topbar { min-height: 60px; }
+        .brand-mark { width: 34px; height: 34px; border-radius: 10px; font-size: 18px; }
+        .brand-name { font-size: 16px; }
+        .brand-name small, .status, .top-actions a:first-of-type { display: none; }
+        .top-actions { gap: 0; }
+        .top-actions a { font-size: 12px; }
+        .layout { min-height: 0; gap: 42px; padding: 16px 0 44px; }
+        .access { padding: 22px 18px; border-radius: 17px; }
+        .mockup-tag { margin-bottom: 16px; }
+        .access h2 { font-size: 24px; }
+        .access > p { margin-bottom: 16px; }
+        .field { margin-top: 11px; }
+        input { min-height: 48px; font-size: 16px; }
+        .terminal { grid-template-columns: 1fr; gap: 10px; }
+        .secondary { width: 100%; }
+        .assistance { align-items: flex-start; flex-direction: column; gap: 8px; }
+        .story { text-align: left; }
+        .eyebrow { justify-content: flex-start; margin-bottom: 14px; }
+        h1 { font-size: 39px; line-height: 1.02; }
+        .lede { margin-top: 18px; font-size: 15px; }
+        .proofs { grid-template-columns: 1fr; margin-top: 23px; }
+        .proofs li:nth-child(n+3) { display: none; }
+        .prism-stage { min-height: 170px; }
+        .prism-stage img { height: 180px; object-position: 31% 50%; }
+        .stage-caption { right: 15px; max-width: 140px; }
+        .stage-caption span { display: none; }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .access-wrap { animation: enter .55s cubic-bezier(.2,.75,.25,1) both; }
+        .story { animation: enter .65s .08s cubic-bezier(.2,.75,.25,1) both; }
+        @keyframes enter {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#access">Saltar al acceso</a>
+    <header class="topbar shell">
+      <a class="brand" href="#" aria-label="Nexora POS, inicio">
+        <span class="brand-mark" aria-hidden="true">N</span>
+        <span class="brand-name">NEXORA <small>POS</small></span>
+      </a>
+      <nav class="top-actions" aria-label="Ayuda y demostración">
+        <span class="status"><i aria-hidden="true"></i> Sistema disponible</span>
+        <a href="#demo">Ver demostración</a>
+        <a href="#help">Ayuda</a>
+      </nav>
+    </header>
+
+    <main class="layout shell">
+      <section class="story" aria-labelledby="hero-title">
+        <span class="eyebrow">Control de tienda, sin ruido</span>
+        <h1 id="hero-title">Cada venta en orden.<br /><span>Cada peso bajo control.</span></h1>
+        <p class="lede">Vende, controla inventario y cierra cada turno con la información que necesita tu negocio, desde un solo sistema.</p>
+
+        <ul class="proofs" aria-label="Funciones principales">
+          <li><strong>Arqueo ciego</strong><span>La cajera cuenta sin ver el saldo esperado.</span></li>
+          <li><strong>Márgenes protegidos</strong><span>Solo los roles autorizados ven costos y utilidad.</span></li>
+          <li><strong>Inventario trazable</strong><span>Entradas, salidas y traspasos con historial.</span></li>
+          <li><strong>Reportes claros</strong><span>Datos listos para revisar y tomar decisiones.</span></li>
+        </ul>
+
+        <figure class="prism-stage">
+          <img src="assets/prisma-nexora-r2.webp" alt="" width="1672" height="941" loading="lazy" />
+          <figcaption class="stage-caption"><b>Prisma de enlace</b><span>Venta, inventario y caja conectados con precisión.</span></figcaption>
+        </figure>
+      </section>
+
+      <section class="access-wrap" id="access" aria-labelledby="access-title">
+        <form class="access" id="login-form" novalidate>
+          <span class="mockup-tag">Maqueta visual · sin conexión</span>
+          <h2 id="access-title">Entrar a mi empresa</h2>
+          <p>Accede con tu contraseña web. Tus credenciales no se envían desde esta maqueta.</p>
+
+          <label class="field">
+            <span>Código de empresa <small>La tienda que vas a abrir</small></span>
+            <input type="text" autocomplete="organization" placeholder="Ejemplo: mi-tienda" />
+          </label>
+          <label class="field">
+            <span>Usuario o correo</span>
+            <input type="text" autocomplete="username" placeholder="tu@empresa.com" />
+          </label>
+          <label class="field">
+            <span>Contraseña web <small>No es el PIN de caja</small></span>
+            <span class="input-wrap">
+              <input id="password" type="password" autocomplete="current-password" placeholder="Tu contraseña" />
+              <button class="show" id="show-password" type="button" aria-controls="password" aria-pressed="false">Mostrar</button>
+            </span>
+          </label>
+
+          <button class="primary" type="submit">Entrar a mi empresa
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </button>
+          <div class="assistance">
+            <a href="#recovery">¿Olvidaste tu contraseña?</a>
+            <a href="#change-store">Cambiar de empresa</a>
+          </div>
+
+          <div class="terminal">
+            <div><b>Caja en equipo autorizado</b><span>El PIN de caja funciona dentro de una empresa y un terminal aprobados.</span></div>
+            <button class="secondary" id="terminal-button" type="button">Abrir caja</button>
+          </div>
+          <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+        </form>
+        <div class="trust" aria-label="Características de seguridad"><span></span> Sesión protegida <span></span> Roles y permisos <span></span> Historial de actividad</div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById('login-form');
+      const feedback = document.getElementById('feedback');
+      const pass = document.getElementById('password');
+      const toggle = document.getElementById('show-password');
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        feedback.textContent = 'Maqueta visual: el formulario no autentica ni envía datos.';
+      });
+      toggle.addEventListener('click', () => {
+        const visible = pass.type === 'text';
+        pass.type = visible ? 'password' : 'text';
+        toggle.textContent = visible ? 'Mostrar' : 'Ocultar';
+        toggle.setAttribute('aria-pressed', String(!visible));
+      });
+      document.getElementById('terminal-button').addEventListener('click', () => {
+        feedback.textContent = 'El acceso por PIN se habilita únicamente en un terminal aprobado.';
+      });
+    </script>
+  </body>
+</html>
