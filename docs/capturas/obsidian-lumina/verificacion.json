@@ -1,0 +1,96 @@
+{
+  "widths": [
+    {
+      "width": 1440,
+      "scroll": 1440
+    },
+    {
+      "width": 901,
+      "scroll": 901
+    },
+    {
+      "width": 900,
+      "scroll": 900
+    },
+    {
+      "width": 781,
+      "scroll": 781
+    },
+    {
+      "width": 780,
+      "scroll": 780
+    },
+    {
+      "width": 390,
+      "scroll": 390
+    },
+    {
+      "width": 320,
+      "scroll": 320
+    }
+  ],
+  "contrast": [
+    {
+      "mode": "obsidian",
+      "ratios": [
+        {
+          "a": "--text",
+          "b": "--surface",
+          "ratio": 16.5242919302873
+        },
+        {
+          "a": "--muted",
+          "b": "--surface-soft",
+          "ratio": 8.302999249677862
+        },
+        {
+          "a": "--primary",
+          "b": "--primary-soft",
+          "ratio": 7.616226001329967
+        },
+        {
+          "a": "--danger-text",
+          "b": "#351c28",
+          "ratio": 9.29001677844737
+        },
+        {
+          "a": "#05251c",
+          "b": "--lumina-emerald",
+          "ratio": 9.986547455576037
+        }
+      ]
+    },
+    {
+      "mode": "contrast",
+      "ratios": [
+        {
+          "a": "--text",
+          "b": "--surface",
+          "ratio": 19.57102353756691
+        },
+        {
+          "a": "--muted",
+          "b": "--surface-soft",
+          "ratio": 14.389993321727427
+        },
+        {
+          "a": "--primary",
+          "b": "--primary-soft",
+          "ratio": 10.182458271646091
+        },
+        {
+          "a": "--danger-text",
+          "b": "#351c28",
+          "ratio": 9.29001677844737
+        },
+        {
+          "a": "#05251c",
+          "b": "--lumina-emerald",
+          "ratio": 9.986547455576037
+        }
+      ]
+    }
+  ],
+  "requests": "API sintética; red externa bloqueada",
+  "errors": []
+}

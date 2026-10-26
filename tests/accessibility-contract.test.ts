@@ -21,8 +21,8 @@ describe("U2 · identidad y ayuda de producción", () => {
   it("la guía tiene puerta de desarrollo tanto en navegación como en ruta", () => {
     expect(app).toContain("const SHOW_STYLE_GUIDE = import.meta.env.DEV;");
     expect(app).toContain("SHOW_STYLE_GUIDE && (");
-    expect(app).toContain(
-      "...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {})",
+    expect(app.replace(/\s+/g, " ")).toContain(
+      "...(SHOW_STYLE_GUIDE ? { styles: appearance.active ? <AdminDesignSystem /> : <StyleGuide /> } : {})",
     );
     expect(app).toContain('(page === "styles" && SHOW_STYLE_GUIDE)');
   });

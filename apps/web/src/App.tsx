@@ -6,6 +6,8 @@ import {
 } from "./realtime";
 import { Merchandise } from "./Merchandise";
 import { PasswordChangeFields } from "./PasswordChangeFields";
+import { useAdminAppearance } from "./adminAppearance";
+import { AdminDesignSystem } from "./AdminDesignSystem";
 import {
   isCashierPasswordRole,
   passwordChangeError,
@@ -29,6 +31,7 @@ import {
   Search,
   Sun,
   Moon,
+  Contrast,
   ChevronDown,
   LogOut,
   Menu,
@@ -739,6 +742,7 @@ function Shell() {
     [idleDeadline, setIdleDeadline] = useState<number | null>(null),
     [about, setAbout] = useState(false),
     [ownPassword, setOwnPassword] = useState(false);
+  const appearance = useAdminAppearance(user?.role, page);
   const client = useQueryClient();
   const mobile = useMediaQuery(MOBILE_MENU);
   const menuButton = useRef<HTMLButtonElement>(null),
@@ -1051,7 +1055,9 @@ function Shell() {
     reports: <Reports />,
     alerts: <Alerts go={go} />,
     settings: <Configuration />,
-    ...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {}),
+    ...(SHOW_STYLE_GUIDE
+      ? { styles: appearance.active ? <AdminDesignSystem /> : <StyleGuide /> }
+      : {}),
     sales: <SalesHistory />,
     "void-requests": <VoidRequests />,
     "transfer-reconciliation": <TransferReconciliation />,
@@ -1061,6 +1067,16 @@ function Shell() {
   };
   return (
     <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>
+      <a
+        className="admin-skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById("main-content")?.focus();
+        }}
+      >
+        Saltar al contenido
+      </a>
       {menu && (
         <button
           className="sidebar-backdrop"
@@ -1085,6 +1101,7 @@ function Shell() {
           y del lector de pantalla. */}
       <aside
         ref={sidebar}
+        id="admin-navigation"
         className={`sidebar ${menu ? "open" : ""}`}
         inert={mobile && !menu}
         aria-hidden={mobile && !menu ? true : undefined}
@@ -1108,11 +1125,12 @@ function Shell() {
           <ChevronDown size={15} />
         </div>
         <div className="nav-caption">TU NEGOCIO</div>
-        <nav>
+        <nav aria-label="Navegación del negocio">
           {allowed.map((n) => (
             <button
               key={n.id}
               className={`nav-item ${page === n.id ? "active" : ""}`}
+              aria-current={page === n.id ? "page" : undefined}
               onClick={() => go(n.id)}
             >
               <n.icon size={19} />
@@ -1137,6 +1155,7 @@ function Shell() {
           {can(user.permissions, "sale:manage") && (
             <button
               className={`nav-item ${page === "settings" ? "active" : ""}`}
+              aria-current={page === "settings" ? "page" : undefined}
               onClick={() => go("settings")}
             >
               <Settings size={19} />
@@ -1168,6 +1187,7 @@ function Shell() {
               ref={menuButton}
               className="icon-button mobile-menu"
               aria-expanded={mobile ? menu : undefined}
+              aria-controls="admin-navigation"
               onClick={() => setMenu(true)}
               aria-label="Abrir menú"
             >
@@ -1216,12 +1236,26 @@ function Shell() {
             </button>
             <button
               className="icon-button"
-              onClick={toggleTheme}
-              aria-label={
-                theme === "light" ? "Activar modo oscuro" : "Activar modo claro"
+              onClick={
+                appearance.active ? appearance.toggleContrast : toggleTheme
               }
+              aria-pressed={appearance.active ? appearance.contrast : undefined}
+              aria-label={
+                appearance.active
+                  ? "Alto contraste operativo"
+                  : theme === "light"
+                    ? "Activar modo oscuro"
+                    : "Activar modo claro"
+              }
+              title={appearance.active ? "Alto contraste operativo" : undefined}
             >
-              {theme === "light" ? <Moon size={19} /> : <Sun size={19} />}
+              {appearance.active ? (
+                <Contrast size={19} />
+              ) : theme === "light" ? (
+                <Moon size={19} />
+              ) : (
+                <Sun size={19} />
+              )}
             </button>
             {PRODUCT_TENANCY_REQUIRED && (
               <SupportHelp
@@ -1307,8 +1341,14 @@ function Shell() {
             )}
           </div>
         </header>
-        <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
-          {PRODUCT_TENANCY_REQUIRED && can(user.permissions, "*") && <SupportAccessBanner />}
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className={`main-content ${page === "pos" ? "pos-content" : ""}`}
+        >
+          {PRODUCT_TENANCY_REQUIRED && can(user.permissions, "*") && (
+            <SupportAccessBanner />
+          )}
           <DeviceGate />
           {pages[page.split("?")[0]] || <Dashboard go={go} />}
         </main>
@@ -1399,7 +1439,9 @@ function Shell() {
         </Button>
       </Modal>
       <About open={about} onClose={() => setAbout(false)} />
-      {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && <Assistant online={online} />}
+      {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && (
+        <Assistant online={online} />
+      )}
       {ownPassword && (
         <ChangeOwnPassword onClose={() => setOwnPassword(false)} />
       )}

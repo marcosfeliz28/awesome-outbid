@@ -1,0 +1,23 @@
+Base: producto-nexora 2f147d2da6d5a60f3c85ef67367658139c83e2c7
+LUMINA_TEST_URL=http://127.0.0.1:4263 node tests/obsidian-lumina.mjs
+FAIL: null !== 'obsidian' (base sin cambios)
+
+Vite dev local, API interceptada, red externa bloqueada:
+node tests/obsidian-lumina.mjs
+PASS
+VITE_PRODUCT_TENANCY=required, Vite dev en 4264:
+LUMINA_TEST_URL=http://127.0.0.1:4264 node tests/obsidian-lumina.mjs
+PASS: contraste, 7 anchos, foco/modal, menú, persistencia, reduced-motion,
+impresión, POS, roles admin/manager/seller, logout y sin superposición IA/Mercancía.
+
+pnpm check
+Exit 0
+Test Files: 135 passed | 1 skipped (136)
+Tests: 871 passed | 10 skipped (881)
+Typecheck, ESLint, build web/API: PASS
+
+Vite preview del build en 4265:
+LUMINA_PRODUCTION=1 LUMINA_TEST_URL=http://127.0.0.1:4265 node tests/obsidian-lumina.mjs
+PASS: guía oculta y ruta bloqueada.
+
+Capturas: modo multiempresa local con fixtures ficticios, no producción.
