@@ -2,13 +2,25 @@
 
 Fecha: 2026-10-26  
 Rama auditada: `origin/claude/modulo-gv`  
-Commit auditado: `a97f8fa73f096be98c31bdd63dc1d9d697eaa157`  
+Commit más reciente auditado: `0bd0ca9f536fd9edde3bed356a59708bb6d38e26`
+Comparación histórica: `a97f8fa73f096be98c31bdd63dc1d9d697eaa157`
 Base de hallazgos: `docs/coordinacion/AUDITORIA_GV_CHATGPT.md`  
 Método: auditoría estática de la corrección posterior a `6c292009`; no se modificó código existente.
 
 ## URGENTE · Veredicto
 
-Resultado: **6 resueltos, 8 parciales y 2 siguen abiertos** (actualizado por la comprobación de migración de esta adenda). No recomiendo integrar todavía sin corregir los tres hallazgos altos nuevos de importación: permiten que datos importados contradigan cobros y reembolsos ya asentados.
+Resultado actual sobre `0bd0ca9`: **8 resueltos, 6 parciales y 2 siguen abiertos**. La corrección nueva resolvió los casos secuenciales de GV-09 y GV-13, pero una carrera de GV-12 todavía permite modificar el importe de una transferencia verificada. También permanecen el error 500 con mes inválido y la incompatibilidad de la migración903 con datos que901/902 aceptaban.
+
+### Revalidación más reciente · `0bd0ca9`
+
+- Suite adversaria: **39/42 aprobadas y 3 fallidas**. Las fallas son dos variantes de fecha `2026-13-01` y una carrera real de importación/verificación.
+- Suites GV existentes: **21/21 aprobadas**. Que estas suites estén verdes no cubre los tres contratos adversarios pendientes.
+- GV-09: los dos casos de reimportación con pagos omitidos y total menor ahora pasan.
+- GV-13: los dos casos de reimportación sobre un reembolso definitivo ahora pasan.
+- GV-12: se ejecutó la carrera con PostgreSQL y API locales. Mientras una importación ya había leído una transferencia pendiente de40, otra solicitud la verificó; la importación terminó201 y cambió el importe a80. Se esperaba400/409 y conservar40 verificado.
+- La migración `202610260903_gv_auditoria` no cambió en este commit; conserva el resultado adversario documentado abajo.
+
+La matriz siguiente conserva la clasificación de `a97f8fa` para trazabilidad. En `0bd0ca9`, GV-09 y GV-13 pasan a **resueltos**; GV-12 continúa **parcial · alta** por la carrera reproducida.
 
 ## Verificación individual
 
@@ -33,7 +45,7 @@ Resultado: **6 resueltos, 8 parciales y 2 siguen abiertos** (actualizado por la 
 
 ## Hallazgos nuevos
 
-### Alta · Reimportar sin pagos anteriores permite bajar el total por debajo de lo cobrado
+### Histórico en `a97f8fa`, corregido en `0bd0ca9` · Reimportar sin pagos anteriores permite bajar el total por debajo de lo cobrado
 
 **Archivos:** `apps/api/src/gv-money.ts:295-321`, `apps/api/src/gv.ts:750-770` y `apps/api/src/gv-citas.ts:262-268`.
 
@@ -41,7 +53,7 @@ Resultado: **6 resueltos, 8 parciales y 2 siguen abiertos** (actualizado por la 
 
 **Arreglo propuesto:** después de bloquear la entidad y dentro de la transacción, cargar todos sus pagos existentes, combinar presentes y ausentes y validar la edición mediante `checkGvOwnerEdit()`.
 
-### Alta · La importación puede reabrir una inscripción o cita reembolsada
+### Histórico en `a97f8fa`, corregido en `0bd0ca9` · La importación puede reabrir una inscripción o cita reembolsada
 
 **Archivos:** `apps/api/src/gv.ts:762-770` y `apps/api/src/gv-citas.ts:264-268`.
 
@@ -49,11 +61,11 @@ Resultado: **6 resueltos, 8 parciales y 2 siguen abiertos** (actualizado por la 
 
 **Arreglo propuesto:** bloquear la entidad y aplicar `checkGvOwnerEdit()` también en importación; un reembolso existente debe ser definitivo e inmutable.
 
-### Alta · Carrera entre reimportación y verificación bancaria
+### Alta y vigente en `0bd0ca9` · Carrera entre reimportación y verificación bancaria
 
 **Archivos:** `apps/api/src/gv.ts:673-687,732-735` y `apps/api/src/gv-money.ts:351-388`.
 
-**Cómo reproducirlo:** pausar la importación después de leer una transferencia pendiente; verificarla desde otra solicitud; continuar la importación. La aplicación usa la copia anterior y puede cambiar monto, método, banco o referencia ya verificados.
+**Cómo reproducirlo:** importar una inscripción con transferencia pendiente de40; iniciar una reimportación de la misma clave con importe80 y detenerla, mediante un bloqueo de fila de prueba, después de su lectura inicial; verificar la transferencia desde otra solicitud; liberar el bloqueo. **Esperado:** rechazo400/409 y conservar40 verificado. **Real:** la importación devuelve201 y deja80 verificado.
 
 **Arreglo propuesto:** mover planificación y validación dentro de la transacción después del bloqueo y bloquear/releer cada pago antes de cualquier modificación.
 
@@ -77,7 +89,7 @@ Se conserva la entrega inicial y sus hallazgos. Esta revisión agrega evidencia 
 - Suite adversaria independiente nueva: **41 casos,35 aprobados/6 fallidos**. Los seis fallos son fecha2026-13-01→500 (curso/cita), reducción de total omitiendo pagos (curso/cita), eliminación de reembolso por reimportación (curso/cita). Los archivos y comparación antes/después se entregan en T5, separados de la suite13/13 previamente publicada.
 - Hallazgo nuevo1 de la entrega inicial ahora ejecutado: total100/pago80, reimportación total10 sin pagos → acepta y conserva80 cobrados. Esperado400/409 y total intacto.
 - Hallazgo nuevo2 ahora ejecutado: reembolso40 registrado, reimportar activa con campos de reembolso nulos → borra el reembolso en ambos tipos. Esperado conflicto/conservación íntegra.
-- Carrera del hallazgo nuevo3: segunda revisión confirma que el advisory de importación y el bloqueo de revisión no comparten protocolo. No se ejecutó carrera PostgreSQL; no se presenta como reproducida. Importación requiere `*`, no acceso de GV ordinario.
+- Carrera del hallazgo nuevo3: esta nota corresponde a la ejecución histórica en `a97f8fa`. En la revalidación de `0bd0ca9` sí se ejecutó con PostgreSQL y API locales y se reprodujo el cambio de40 a80 después de verificar la transferencia. Importación requiere `*`, no acceso de GV ordinario.
 
 ## URGENTE · T1-N03 · Alta · La migración903 no admite ciertos datos válidos de901/902
 

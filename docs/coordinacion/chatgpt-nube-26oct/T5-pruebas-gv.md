@@ -5,7 +5,23 @@ Código GV validado: `origin/claude/modulo-gv` en `a97f8fa73f096be98c31bdd63dc1d
 Archivo nuevo: `tests/adversarial/gv-adversarial-t5-postgres.test.ts`
 Archivos existentes modificados: ninguno.
 
-**URGENTE · La suite independiente de la adenda reproduce seis fallos actuales (35/41 aprobadas). El 13/13 de la primera suite no cierra GV.**
+**URGENTE · La revalidación más reciente reproduce tres fallos actuales (39/42 aprobadas). Las cifras 35/41 y 13/13 de las secciones posteriores se conservan como evidencia histórica de `a97f8fa`.**
+
+## Resultado actual · `0bd0ca9`
+
+La suite independiente se amplió con una carrera determinista de importación/verificación y se ejecutó contra API y PostgreSQL locales descartables:
+
+| Contrato actual | Gravedad | Pasos para repetir | Esperado | Observado |
+|---|---|---|---|---|
+| Mes13 en pago de inscripción | Media | Crear inscripción y enviar pago con `date: "2026-13-01"`. | HTTP400 y cero escrituras. | HTTP500; cero escrituras. |
+| Mes13 en pago de cita | Media | Crear cita y enviar pago con `date: "2026-13-01"`. | HTTP400 y cero escrituras. | HTTP500; cero escrituras. |
+| GV-12, revisión durante la planificación | Alta | Importar transferencia40 pendiente; iniciar reimportación80 y detenerla después de planear; verificar la transferencia; reanudar importación. | Rechazo400/409 y conservar40 verificado. | HTTP201 y transferencia80 verificada. |
+
+Resultado: **39 aprobadas / 3 fallidas de42**, salida1 por los defectos reproducidos. Las suites existentes `gv-unit`, `gv-modulo-api` y `gv-citas-api` terminaron **21/21 aprobadas**. El build de API, ESLint focal y formato de los archivos nuevos también pasaron.
+
+Los cuatro contratos financieros secuenciales que fallaban en `a97f8fa` ahora pasan: dos de total inferior con pagos omitidos y dos de reimportación sobre reembolso definitivo. La migración903 no cambió y su prueba hostil sigue documentada en T1/T3.
+
+La carrera se explica por protocolos distintos: la importación toma el advisory de sucursal en `apps/api/src/gv.ts:658-662`, pero la revisión solo bloquea `GvPayment` en `apps/api/src/gv.ts:403-405`. La planificación conserva la copia previa en `apps/api/src/gv-money.ts:303-398`; al aplicar, decide con esa copia en `:427-430`. La revisión concurrente no comparte el advisory ni vuelve a validar la versión leída.
 
 ## Cobertura
 
@@ -65,13 +81,13 @@ El archivo vive en `tests/adversarial/` de forma deliberada. La primera entrega 
 - No prueba el requisito de terminal para verificación, que sigue parcial como GV-05.
 - No cambia pruebas existentes ni la configuración para forzar un verde artificial.
 
-## Adenda independiente · 41 contratos y entorno propio
+## Evidencia histórica · `a97f8fa` · 41 contratos y entorno propio
 
 # T5 · pruebas adversarias de GV
 
 **26-oct-2026. Solo archivos nuevos.** Aplicación, migraciones, pruebas existentes y configuraciones existentes intactas. Sin producción, Render, datos reales ni credenciales fijas. La suite crea y destruye su propia base PostgreSQL y una API compilada de este checkout.
 
-## URGENTE · quedan dos regresiones financieras reproducibles
+## Histórico · dos regresiones financieras reproducibles, corregidas en `0bd0ca9`
 
 Sobre `claude/modulo-gv` **a97f8fa** (incluye correcciones API `07da948`):
 
@@ -81,11 +97,11 @@ Sobre `claude/modulo-gv` **a97f8fa** (incluye correcciones API `07da948`):
 | GV-13 residual: importación borra reembolso definitivo | Alta | `apps/api/src/gv-money.ts:313`, `:320`; edición protegida en `:240`; importación actualiza sin esa guarda en `apps/api/src/gv.ts:770` y `apps/api/src/gv-citas.ts:267` | Importar entidad 100/pago verificado 40; marcar `reembolsada` por PATCH con monto 40 y fecha; reimportar misma entidad activa/agendada, mismos pagos, `refundAmount:null`, `refundDate:null`. Se espera rechazo y conservar reembolso. Devuelve 201 y permite sobrescribir estado/reembolso. Reproducido para inscripción y cita. | Aplicar la misma máquina de estados a la importación bajo bloqueo, conservar reembolso inmutable y exigir operación explícita auditada para correcciones. |
 | Fecha fuera de rango devuelve 500 | Media | `apps/api/src/gv-money.ts:30`–`:35`, especialmente `toISOString()` en `:34` | Enviar pago de 10 con `date: "2026-13-01"` a inscripción o cita válidas. Se espera 400 sin escritura; devuelve 500 porque `Invalid Date.toISOString()` lanza antes de la validación. | Comprobar `Number.isFinite(date.getTime())` antes de convertir a ISO; después comprobar equivalencia del día. Mantener rechazo de fechas normalizadas como 30-feb. |
 
-Los dos primeros casos añaden ejecución a los límites observados en T1. Las pruebas usan respuestas HTTP y consultas al PostgreSQL descartable, no mocks del controlador. No prueban todos los intercalados de concurrencia ni la carrera entre planificación de importación y revisión bancaria.
+Los dos primeros casos añaden ejecución a los límites observados en T1 y describen el estado de `a97f8fa`; ambos quedaron corregidos en `0bd0ca9`. Las pruebas usan respuestas HTTP y consultas al PostgreSQL descartable, no mocks del controlador. La suite actual añade la carrera entre planificación de importación y revisión bancaria.
 
 ## Archivos entregados
 
-- `tests/adversarial/gv-independent-t5.test.ts`: 41 casos; altas y pagos por API HTTP real, comprobación de persistencia, estados, importación y aislamiento.
+- `tests/adversarial/gv-independent-t5.test.ts`: 42 casos; altas y pagos por API HTTP real, comprobación de persistencia, estados, importación, aislamiento y carrera importación/revisión.
 - `vitest.gv-adversarial.config.ts`: configuración nueva que incluye únicamente ese archivo; no se modificó `vitest.config.ts` ni la lista de integración.
 
 ## Cómo ejecutar
@@ -157,3 +173,5 @@ Tests       17 passed (17)
 Se reubicó la suite independiente en `tests/adversarial/gv-independent-t5.test.ts`, con una configuración **nueva** de ejecución explícita `vitest.gv-adversarial.config.ts`. No se alteró el descubrimiento ni se ocultó un fallo en una suite existente: por orden de T5 estas pruebas pendientes de GV no se incorporan al CI general de la rama de documentos. El gancho opcional de controles existentes ahora conserva la limpieza del entorno y propaga un fallo de esos controles, si ocurre.
 
 Última ejecución sobre `a97f8fa`, con los archivos en su ubicación final: **35/41 adversarias aprobadas,6 fallidas;17/17 controles existentes aprobados**, salida final1 por los defectos reales,12,97s. Registro local `/tmp/cola-t5-final-path.log`. ESLint focal y formato de ambos archivos nuevos aprobados. Los41 contratos son los mismos comparados antes/después; los cambios finales son de ruta y limpieza del entorno, no de expectativas. No se ejecutó nuevamente toda la suite antigua del producto.
+
+Revalidación posterior sobre `0bd0ca9`: **39/42 adversarias aprobadas,3 fallidas;21/21 controles existentes aprobados**, salida final1,12,16s. Registro local `/tmp/cola-gv-latest-race.log`. Esta ejecución añade únicamente el contrato de carrera; mantiene sin alterar las expectativas de los41 contratos comparables.

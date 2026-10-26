@@ -592,3 +592,75 @@ describe("GV · aislamiento de rutas Macgen", () => {
     expect((await request(path, gv)).status).toBe(403);
   });
 });
+
+it("GV-12 · reimportar no altera una transferencia verificada durante su planificación", async () => {
+  const key = randomUUID();
+  const payload: any = imported("inscripción", randomUUID(), key, 40);
+  payload.enrollments[0].payments[0].verified = false;
+  await ok("/gv/import", admin, payload);
+  const payment = await db.gvPayment.findFirstOrThrow({
+    where: { externalId: key },
+  });
+  payload.enrollments[0].payments[0].amount = 80;
+  delete payload.enrollments[0].payments[0].verified;
+  let release!: () => void;
+  let started!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const ready = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  // Barrera solo en la base descartable: permite el SELECT del plan y detiene
+  // su posterior UPDATE del propietario, sin modificar código ni triggers.
+  const lock = db.$transaction(
+    async (tx: any) => {
+      await tx.$queryRawUnsafe(
+        'SELECT id FROM "GvEnrollment" WHERE id = $1::uuid FOR UPDATE',
+        payment.enrollmentId,
+      );
+      started();
+      await gate;
+    },
+    { timeout: 15000 },
+  );
+  let pending: ReturnType<typeof request> | undefined;
+  try {
+    await Promise.race([
+      ready,
+      lock.then(() => {
+        throw new Error("La barrera terminó antes de iniciar");
+      }),
+    ]);
+    pending = request("/gv/import", admin, payload);
+    let waiting = false;
+    for (let i = 0; i < 50; i++) {
+      const rows = await db.$queryRawUnsafe(
+        `SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid() AND wait_event_type = 'Lock' AND query ILIKE '%GvEnrollment%'`,
+      );
+      if (rows[0].n > 0) {
+        waiting = true;
+        break;
+      }
+      await sleep(50);
+    }
+    expect(
+      waiting,
+      "La importación debe llegar al UPDATE bloqueado después de planificar",
+    ).toBe(true);
+    await ok(`/gv/payments/${payment.id}/review`, admin, { verified: true });
+    release();
+    await lock;
+    const result = await pending;
+    expect.soft([400, 409], JSON.stringify(result)).toContain(result.status);
+    const after = await db.gvPayment.findUniqueOrThrow({
+      where: { id: payment.id },
+    });
+    expect.soft(after.verified).toBe(true);
+    expect.soft(Number(after.amount)).toBe(40);
+  } finally {
+    release();
+    await lock;
+    if (pending) await pending;
+  }
+});
