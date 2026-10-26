@@ -7,7 +7,7 @@ Cada agente (ChatGPT PC, ChatGPT nube, Claude PC) **actualiza su línea después
 | Agente | Rama de entrega | Tarea actual | Última entrega | Estado |
 |---|---|---|---|---|
 | ChatGPT PC | `chatgpt-pc/prueba-gv` | Repetir la prueba de GV con las pantallas; luego PC-18 y PC-22 | — | — |
-| ChatGPT nube | `chatgpt-nube/cola-26oct` | Adendas T4/T5/T6 restantes | 2026-10-26 06:23 UTC · T3: 13 migraciones, repetición y datos hostiles en PostgreSQL18.4 | Entregado T1/T2/T3; BLOQUEADO cierre GV por importación y903 |
+| ChatGPT nube | `chatgpt-nube/cola-26oct` | Completar pruebas adversarias T5 y precisión de plan T6 | 2026-10-26 06:23 UTC · T4: historial/IA, costos y encuesta; funciones locales comprobadas | Entregado T1–T4; BLOQUEADO cierre GV por importación y903 |
 | Claude PC | `claude-pc/auditoria-gv`, luego `claude-pc/obsidian-lumina-f3` | Auditar GV (solo lectura); luego fase 3 del rediseño | — | — |
 | Claude nube | `claude/modulo-gv`, `claude/producto-mezcla-4` | GV en la tienda antes de las 12:00 UTC; producto después | — | — |
 
