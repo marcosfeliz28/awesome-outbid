@@ -344,10 +344,62 @@ Con Node 24, pnpm 11 y Prisma generado para este checkout:
 - `pnpm test`: 152 archivos aprobados y 1 omitido; 998 pruebas aprobadas y 10
   omitidas. La evaluación local del asistente respondió 79/79 casos.
 
-### Dependencia de integración
+### Integración con el lote A
 
-La implementación y las capturas antes/después empiezan al incorporar
-`origin/chatgpt-pc/lumina-adentro-a`, porque esa rama fija el marco y los
-componentes que este lote debe consumir. Al registrar esta preparación, esa
-rama todavía no estaba publicada en el remoto. Esta dependencia evita crear
-componentes duplicados; no impide continuar el desarrollo del producto.
+`origin/chatgpt-pc/lumina-adentro-a` quedó incorporada mediante el commit de
+mezcla `43e75b9e`. El lote B conserva su selector claro/oscuro, su marco y las
+primitivas existentes de `@fitstore/ui`; no introduce componentes paralelos.
+
+### Implementación terminada
+
+- **Catálogo:** título funcional, una acción principal, conteo y filtros en un
+  panel único, y tarjetas legibles a 390 px.
+- **Inventario:** filtros y Kardex ordenados, estado de existencias expresado
+  con texto y color, y depósitos dentro de `TableFrame` desplazables.
+- **Clientes:** directorio, conteo y búsqueda en una jerarquía única; en móvil
+  cada cliente pasa a tarjeta sin ocultar compras, gasto ni última compra.
+- **Reportes:** navegación lateral con nombre y estado actual, espacio de
+  trabajo flexible, filtros y exportaciones secundarios, y tablas financieras
+  desplazables en móvil.
+- **Configuración y Equipos:** pestañas, resumen del negocio y estados de los
+  equipos alineados con Lumina; «Editar configuración» es la única acción
+  principal del resumen. Se conserva sin cambios el comportamiento conocido de
+  «Guardar».
+- **Mercancía:** entrada/salida, proveedor, escáner, revisión e historial usan
+  las superficies compartidas; el modo activo conserva texto visible en tema
+  oscuro y «Confirmar» mantiene la prioridad.
+- **Asistente:** panel, mensajes, tablas, propuestas y formulario usan tokens
+  compartidos. El lanzador y «Enviar pregunta» usan el acento esmeralda; se
+  mantienen foco, cuota, preguntas desde tarjetas y Markdown seguro.
+
+No se modificaron reglas fiscales o financieras, permisos, autenticación,
+pagos, APIs, base de datos, migraciones ni flujos de negocio. Tampoco hubo
+despliegue ni acceso a Render.
+
+### Capturas comparativas
+
+`docs/diseno/obsidian-lumina/adentro/` contiene 28 PNG: `antes-*` y
+`despues-*` de Catálogo, Inventario, Clientes, Reportes, Configuración,
+Mercancía y Asistente, en 1366×768 y 390×844. Se generaron contra servidores
+locales con una empresa y datos simulados; no se usó el producto en vivo.
+
+La prueba visual `tests/e2e/lumina-adentro-b.spec.ts` valida ambas anchuras, el
+tema oscuro y que el documento no produzca desbordamiento horizontal. Las
+tablas que requieren varias columnas conservan su desplazamiento interno.
+
+### Verificación final
+
+- `pnpm typecheck`, `pnpm lint` y `pnpm build`: aprobados. Vite conserva el
+  aviso informativo previo por un chunk mayor de 500 kB.
+- Suite completa: 152 archivos y 998 pruebas aprobadas; 1 archivo y 10 pruebas
+  omitidas por su configuración explícita.
+- Pruebas focales de accesibilidad, Asistente y contratos Lumina: 84/84
+  aprobadas; pruebas focales de las siete áreas: 128/128 aprobadas.
+- Inventario a 390 px: 5/5 escenarios e2e aprobados.
+- Capturas y contrato visual del lote B: 2/2 escenarios e2e aprobados, tanto
+  sobre la base anterior como sobre el resultado.
+- La e2e general `accesibilidad.spec.ts` requiere API local en el puerto 3001;
+  al ejecutar solo la previsualización web su preparación termina con
+  `ECONNREFUSED`. El contrato estático de accesibilidad sí quedó aprobado
+  (36/36) y la revisión visual confirma foco visible, contraste y navegación
+  móvil en el alcance de este lote.
