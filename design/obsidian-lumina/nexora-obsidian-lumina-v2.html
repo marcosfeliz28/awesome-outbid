@@ -12,7 +12,12 @@
     :root { --bg:#05050a; --surface:rgba(15,17,27,.76); --line:rgba(255,255,255,.12); --muted:#9ca3b8; --ink:#f8f9ff; --violet:#8b5cf6; --mint:#43e3b1; --danger:#ff8fa3; }
     * { box-sizing:border-box } body { margin:0; min-width:320px; background:var(--bg); color:var(--ink); font-family:Manrope,system-ui,sans-serif; }
     body:before { content:""; position:fixed; inset:0; pointer-events:none; background:radial-gradient(620px circle at var(--x,50%) var(--y,20%),rgba(139,92,246,.10),transparent 54%),linear-gradient(105deg,rgba(5,5,10,.985) 4%,rgba(5,5,10,.79) 55%,rgba(5,5,10,.9)); z-index:-1 }
-    body:after { content:""; position:fixed; inset:0; z-index:-2; background:url("assets/obsidian-lumina-hero-v2.png") center/cover no-repeat; opacity:.48; filter:saturate(.84) contrast(1.03) }
+    body:after { content:""; position:fixed; inset:0; z-index:-4; background:url("assets/obsidian-lumina-hero-v2.png") center/cover no-repeat; opacity:.40; filter:saturate(.84) contrast(1.03) }
+    .lumina-motion{position:fixed;inset:0;z-index:-3;overflow:hidden;pointer-events:none;background:radial-gradient(70vw 60vw at 77% 46%,rgba(12,17,31,.23),transparent 61%)}
+    .lumina-motion:before{content:"";position:absolute;width:138vmax;height:2px;left:-18vmax;top:51%;transform:rotate(-31deg);transform-origin:center;background:linear-gradient(90deg,transparent 13%,rgba(67,227,177,0) 26%,rgba(67,227,177,.22) 37%,rgba(67,227,177,.93) 48%,rgba(139,92,246,.84) 54%,rgba(139,92,246,.15) 63%,transparent 77%);filter:blur(.15px) drop-shadow(0 0 12px rgba(67,227,177,.42));animation:ray-sweep 8s ease-in-out infinite}
+    .lumina-motion:after{content:"";position:absolute;width:48vmax;height:48vmax;right:-9vmax;top:4vmax;clip-path:polygon(50% 0,100% 30%,75% 100%,13% 79%,0 25%);background:linear-gradient(128deg,rgba(255,255,255,.13),rgba(98,113,150,.03) 25%,rgba(8,10,21,.02) 48%,rgba(67,227,177,.11) 68%,rgba(139,92,246,.12));border:1px solid rgba(204,220,255,.15);box-shadow:inset 0 0 70px rgba(139,92,246,.10),0 0 80px rgba(4,7,15,.5);opacity:.66;transform:rotate(-8deg) scale(.94);animation:prism-float 10s ease-in-out infinite}
+    @keyframes ray-sweep{0%,100%{opacity:.32;transform:rotate(-31deg) translateX(-5vmax) scaleX(.89)}48%{opacity:.9;transform:rotate(-31deg) translateX(6vmax) scaleX(1.08)}}
+    @keyframes prism-float{0%,100%{transform:rotate(-8deg) translate3d(0,0,0) scale(.94);filter:hue-rotate(0deg)}50%{transform:rotate(-5deg) translate3d(-2vmax,1vmax,0) scale(1.015);filter:hue-rotate(11deg)}}
     button,input { font:inherit } button { cursor:pointer } button:focus-visible,input:focus-visible { outline:3px solid var(--mint); outline-offset:3px }
     .shell { width:min(1180px,calc(100% - 32px)); margin:auto; padding:24px 0 56px }
     .nav { display:flex; justify-content:space-between; align-items:center; gap:14px; padding-bottom:36px }.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.13em;font-size:13px}.mark{width:30px;height:30px;display:grid;place-items:center;border:1px solid rgba(67,227,177,.65);color:var(--mint);clip-path:polygon(0 0,100% 0,100% 78%,76% 100%,0 100%);box-shadow:0 0 28px rgba(67,227,177,.28)}.status{font:500 11px/1 "DM Mono",monospace;color:#d5fdec;border:1px solid rgba(67,227,177,.33);background:rgba(67,227,177,.08);padding:8px 10px;border-radius:999px}
@@ -26,6 +31,7 @@
   </style>
 </head>
 <body>
+  <div class="lumina-motion" aria-hidden="true"></div>
   <div class="shell">
     <header class="nav"><div class="brand"><span class="mark">N</span>NEXORA <span style="color:#8990a6">POS</span></div><span class="status">● INTERFAZ CONCEPTUAL · V2</span></header>
     <nav class="tabs" role="tablist" aria-label="Vistas del prototipo">
