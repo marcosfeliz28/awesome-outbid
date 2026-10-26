@@ -17,7 +17,10 @@ export default defineConfig({
   workers: 1,
   timeout: 45000,
   retries: 0,
-  reporter: [["list"], ["html", { open: "never" }]],
+  // En GitHub Actions el reporte "github" escribe cada fallo como anotación del CI (se lee por la API sin descargar el registro).
+  reporter: process.env.GITHUB_ACTIONS
+    ? [["list"], ["html", { open: "never" }], ["github"]]
+    : [["list"], ["html", { open: "never" }]],
   webServer: process.env.FITSTORE_WEB_URL
     ? undefined
     : {
