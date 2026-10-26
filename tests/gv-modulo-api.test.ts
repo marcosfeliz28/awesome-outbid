@@ -415,3 +415,28 @@ describe("GV · importación", () => {
     expect(ignored.errors).toEqual([]);
   });
 });
+
+describe("GV · reportes", () => {
+  it("ingresos, pendientes y ocupación sólo para quien tiene gv:reports", async () => {
+    expect((await request("/gv/reports", seller)).status).toBe(403);
+    expect(
+      (await request("/gv/reports?from=2026-10-20&to=2026-10-01", gv)).status,
+    ).toBe(400);
+    const r = await ok("/gv/reports?from=2026-10-01&to=2026-10-15", gv);
+    const bank = r.income.byBank.find(
+      (b: any) => b.key === "Popular Grupo Génesis ···9797",
+    );
+    expect(Number(bank.total)).toBeGreaterThanOrEqual(5000);
+    expect(r.income.byMethod.map((m: any) => m.key)).toEqual(
+      expect.arrayContaining(["efectivo", "transferencia"]),
+    );
+    const client = r.pendingByClient.find(
+      (e: any) => e.clientName === "QA Importada " + suffix,
+    );
+    expect(client).toMatchObject({ paid: "7500.50", pending: "10499.50" });
+    const course = r.courses.find(
+      (c: any) => c.name === "QA Brazilian " + suffix,
+    );
+    expect(course).toMatchObject({ capacity: 12, enrolled: 1 });
+  });
+});

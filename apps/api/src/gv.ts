@@ -116,6 +116,7 @@ export function gvTotals(
 }
 // Ocupan cupo las inscritas que no cancelaron ni pasaron a personalizado.
 const OCCUPIES = new Set(["activa", "no_asistio"]);
+const CLOSED = new Set(["cancelada", "reembolsada"]);
 const dateOnly = (value: string) => new Date(value + "T00:00:00Z");
 const dayText = (value: Date) => value.toISOString().slice(0, 10);
 
@@ -205,11 +206,16 @@ export class GvController {
       orderBy: [{ date: "desc" }, { name: "asc" }],
     });
     return rows.map(({ enrollments, ...course }) => {
-      const totals = enrollments.map((e) =>
-        gvTotals(e.agreedPrice, e.payments),
-      );
+      const totals = enrollments.map((e) => ({
+        ...gvTotals(e.agreedPrice, e.payments),
+        closed: CLOSED.has(e.status),
+      }));
+      // Lo pendiente de una cancelada o reembolsada no se cobra.
       const sum = (key: "paid" | "pending" | "unverified") =>
-        totals.reduce((s, t) => s.plus(t[key]), d(0)).toFixed(2);
+        totals
+          .filter((t) => key !== "pending" || !t.closed)
+          .reduce((s, t) => s.plus(t[key]), d(0))
+          .toFixed(2);
       return {
         ...course,
         date: dayText(course.date),
@@ -500,6 +506,119 @@ export class GvController {
       );
       return row;
     });
+  }
+
+  // Reportes de GV: ingresos por día, método, banco y empleada; pendientes por
+  // curso y por clienta; transferencias por verificar y ocupación.
+  @Get("reports")
+  @Permit("gv:reports")
+  async reports(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+  ) {
+    const { from, to } = parse(
+      z.object({ from: day.optional(), to: day.optional() }),
+      query,
+    );
+    if (from && to && from > to)
+      bad("La fecha inicial no puede ser posterior a la final.");
+    const payments = await this.db.gvPayment.findMany({
+      where: {
+        branchId: actor.branchId,
+        rejectedAt: null,
+        ...(from || to
+          ? {
+              date: {
+                ...(from ? { gte: dateOnly(from) } : {}),
+                ...(to ? { lte: dateOnly(to) } : {}),
+              },
+            }
+          : {}),
+      },
+      select: {
+        date: true,
+        amount: true,
+        method: true,
+        bank: true,
+        verified: true,
+        createdBy: true,
+      },
+    });
+    const names = new Map(
+      (
+        await this.db.user.findMany({
+          where: { id: { in: [...new Set(payments.map((p) => p.createdBy))] } },
+          select: { id: true, name: true },
+        })
+      ).map((u) => [u.id, u.name]),
+    );
+    const group = (key: (p: (typeof payments)[number]) => string) => {
+      const map = new Map<string, { total: Prisma.Decimal; count: number }>();
+      for (const p of payments) {
+        const k = key(p);
+        const row = map.get(k) ?? { total: d(0), count: 0 };
+        row.total = row.total.plus(p.amount);
+        row.count++;
+        map.set(k, row);
+      }
+      return [...map]
+        .map(([k, v]) => ({
+          key: k,
+          total: v.total.toFixed(2),
+          count: v.count,
+        }))
+        .sort((a, b) => a.key.localeCompare(b.key));
+    };
+    const total = payments.reduce((s, p) => s.plus(p.amount), d(0));
+    const unverified = payments
+      .filter((p) => !p.verified)
+      .reduce((s, p) => s.plus(p.amount), d(0));
+    const courses = await this.courses(actor);
+    const open = await this.db.gvEnrollment.findMany({
+      where: {
+        branchId: actor.branchId,
+        status: { notIn: [...CLOSED] },
+      },
+      include: {
+        payments: {
+          select: { amount: true, verified: true, rejectedAt: true },
+        },
+        course: { select: { name: true, date: true } },
+      },
+      orderBy: { clientName: "asc" },
+    });
+    return {
+      income: {
+        total: total.toFixed(2),
+        unverified: unverified.toFixed(2),
+        byDay: group((p) => dayText(p.date)),
+        byMethod: group((p) => p.method),
+        byBank: group((p) => p.bank || "Sin banco"),
+        byEmployee: group((p) => names.get(p.createdBy) ?? "Otro usuario"),
+      },
+      courses: courses.map((c) => ({
+        id: c.id,
+        name: c.name,
+        date: c.date,
+        capacity: c.capacity,
+        enrolled: c.enrolled,
+        attended: c.attended,
+        brushSets: c.brushSets,
+        paid: c.paid,
+        pending: c.pending,
+        unverified: c.unverified,
+      })),
+      pendingByClient: open
+        .map((e) => ({
+          id: e.id,
+          clientName: e.clientName,
+          phone: e.phone,
+          course: e.course.name,
+          courseDate: dayText(e.course.date),
+          ...gvTotals(e.agreedPrice, e.payments),
+        }))
+        .filter((e) => d(e.pending).gt(0)),
+    };
   }
 
   @Get("transfers/pending")

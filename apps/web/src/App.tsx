@@ -5,6 +5,7 @@ import {
   storedTerminalCredentials,
 } from "./realtime";
 import { Merchandise } from "./Merchandise";
+import { Gv } from "./Gv";
 import { PasswordChangeFields } from "./PasswordChangeFields";
 import {
   isCashierPasswordRole,
@@ -276,6 +277,7 @@ const navigation = [
     icon: IncentivesIcon,
     permission: "sale:manage",
   },
+  { id: "gv", label: "GV Makeup Studio", icon: Brush, permission: "gv:read" },
 ];
 // Caras del cubo de la entrada: lo que venden Grupo MacGen y GV Makeup
 // Studio, por grupo (dueña, 23-oct).
@@ -939,6 +941,7 @@ function Shell() {
     "courier-payouts": <CourierPayouts />,
     merchandise: <Merchandise />,
     incentives: <IncentivesPage />,
+    gv: <Gv />,
   };
   return (
     <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>
