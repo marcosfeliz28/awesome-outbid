@@ -17,7 +17,8 @@ export default defineConfig({
   workers: 1,
   timeout: 45000,
   retries: 0,
-  reporter: [["list"], ["html", { open: "never" }]],
+  // DIAGNÓSTICO (rama claude-pc/lumina-f3-diag): el reporte "github" escribe cada fallo como anotación del CI, legible por la API sin autenticación.
+  reporter: [["list"], ["html", { open: "never" }], ["github"]],
   webServer: process.env.FITSTORE_WEB_URL
     ? undefined
     : {
