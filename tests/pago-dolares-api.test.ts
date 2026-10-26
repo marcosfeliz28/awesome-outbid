@@ -378,14 +378,16 @@ describe("pago en dólares en efectivo", () => {
     );
     afterAll(() => setRate(RATE));
     const offline = (
-      cashSessionId: string,
+      cashSession: { id: string; openedAt: string },
       payments: unknown[],
       v = variantId,
     ) => ({
       offlineUuid: randomUUID(),
-      capturedAt: new Date().toISOString(),
+      // Usa la frontera devuelta por la API: el reloj del proceso de pruebas
+      // puede quedar unos milisegundos detrás del timestamp de PostgreSQL.
+      capturedAt: cashSession.openedAt,
       customerId,
-      cashSessionId,
+      cashSessionId: cashSession.id,
       items: [{ variantId: v, qty: 1, discountPercent: 0 }],
       globalDiscount: 0,
       payments,
@@ -395,7 +397,7 @@ describe("pago en dólares en efectivo", () => {
     it("(h) cobrada con otra tasa (±2 %) se acepta, queda en la bitácora y avisa sólo a la dueña", async () => {
       const cash = await openCash();
       // US$ 40 a 62 = RD$ 2,480 + RD$ 20 en pesos (0.95 % sobre la tasa).
-      const body = offline(cash.id, [
+      const body = offline(cash, [
         usd(40, 2480, 62),
         { method: "cash", amount: 20 },
       ]);
@@ -417,7 +419,7 @@ describe("pago en dólares en efectivo", () => {
       // Más del 2 %: conflicto, no se registra.
       const far = await ok("/sales/sync", cajera, {
         sales: [
-          offline(cash.id, [usd(40, 2600, 65), { method: "cash", amount: 20 }]),
+          offline(cash, [usd(40, 2600, 65), { method: "cash", amount: 20 }]),
         ],
       });
       expect(far.results[0].status).toBe("conflict");
@@ -451,7 +453,7 @@ describe("pago en dólares en efectivo", () => {
       });
       try {
         const body = offline(
-          cash.id,
+          cash,
           [usd(40, 2456.63), { method: "cash", amount: 43.37 }],
           empty.variants[0].id,
         );
