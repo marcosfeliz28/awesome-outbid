@@ -308,13 +308,17 @@ export function Catalog() {
     { key: "description", label: "Descripción", type: "textarea" },
   ];
   return (
-    <>
+    <div className="catalog-screen">
       <Heading
-        title="Tu catálogo, con personalidad"
-        caption="Cada producto, cada variante y cada oportunidad, en su lugar."
+        title="Catálogo de productos"
+        caption="Consulta productos, variantes, precios y existencias desde una sola vista."
       >
         {write && (
           <>
+            <Button onClick={() => setCreate(true)}>
+              <Plus size={17} />
+              Nuevo producto
+            </Button>
             <Button
               variant="secondary"
               onClick={() =>
@@ -365,15 +369,18 @@ export function Catalog() {
             {can(user.permissions, "inventory:import") && (
               <InventoryImportButton />
             )}
-            <Button onClick={() => setCreate(true)}>
-              <Plus size={17} />
-              Nuevo producto
-            </Button>
           </>
         )}
       </Heading>
-      <div className="panel">
-        <div className="table-toolbar">
+      <section className="panel catalog-panel" aria-labelledby="catalog-list-title">
+        <div className="panel-heading catalog-panel-heading">
+          <div>
+            <h2 id="catalog-list-title">Productos registrados</h2>
+            <p>Busca por nombre, código o marca y revisa el estado del inventario.</p>
+          </div>
+          <Badge tone="violet">{rows.length} productos</Badge>
+        </div>
+        <div className="table-toolbar catalog-toolbar">
           <Filter
             value={search}
             onChange={setSearch}
@@ -391,7 +398,6 @@ export function Catalog() {
               </option>
             ))}
           </select>
-          <Badge tone="violet">{rows.length} productos</Badge>
         </div>
         <QueryState query={query}>
           <DataTable
@@ -483,7 +489,7 @@ export function Catalog() {
             ]}
           />
         </QueryState>
-      </div>
+      </section>
       {create && (
         <FormModal
           title="Un nuevo producto para tu tienda"
@@ -730,7 +736,7 @@ export function Catalog() {
           Imprimir etiquetas
         </Button>
       </Modal>
-    </>
+    </div>
   );
 }
 export function Barcode({ value }: { value: string }) {
