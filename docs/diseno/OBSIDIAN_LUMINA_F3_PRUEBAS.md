@@ -58,3 +58,16 @@ Clientes y Configuración no tienen acciones secundarias: un «Más» vacío ser
 mala experiencia (un menú sin nada que abrir). En esas tres, 4b comprueba en su
 lugar que la cabecera tiene como máximo una acción principal y que NO hay un
 «Más» vacío. Ningún otro criterio se modificó.
+
+## Endurecimiento para el CI de GitHub (Linux, base compartida, API en frío)
+
+Las tres especificaciones (`lumina-f3`, `lumina-f3-arreglos`,
+`lumina-f3-modal-foco`) se endurecieron sin quitar criterios ni subir umbrales
+más de ±1 px: el inicio de sesión espera el armazón de la app (`.app-shell`) y
+falla con un mensaje claro si el login es rechazado; `abrir` espera a que no
+quede ningún `.table-skeleton` y a que existan datos reales (`td`, pestañas o
+`.product-card`) hasta 15 s, y falla (ya no omite) si no hay filas; se espera
+`document.fonts.ready` antes de medir; las áreas táctiles toleran ±1 px de caja
+de layout por las fuentes de reemplazo de Linux; y el esqueleto de tabla se
+prueba reteniendo la respuesta de `/api/products` con una compuerta en lugar de
+una espera fija de 2,5 s.
