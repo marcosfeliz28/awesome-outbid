@@ -41,4 +41,25 @@ describe("AUD-NUEVO · IA", () => {
     expect(sent).toContain("¿Cuánto vendimos ayer?");
     expect(model.mock.calls[0][0].every((m: any) => m.role === "user")).toBe(true);
   });
+
+  it("IA-06: el consumo de vueltas anteriores sobrevive a un fallo posterior", async () => {
+    const model = vi
+      .fn()
+      .mockResolvedValueOnce({
+        stop_reason: "tool_use",
+        content: [{ type: "tool_use", id: "t1", name: "manual_procedimiento", input: { tema: "caja" } }],
+        usage: { input_tokens: 120, output_tokens: 30 },
+      })
+      .mockRejectedValueOnce(new Error("proveedor caído"));
+    const usage = { input: 0, output: 0 };
+    await expect(
+      askAssistant(
+        { messages: [{ role: "user", content: "¿Cómo cuadro?" }] },
+        "Bearer prueba",
+        { name: "Cajera" },
+        { model, usage },
+      ),
+    ).rejects.toThrow(/no respondió/);
+    expect(usage).toEqual({ input: 120, output: 30 });
+  });
 });

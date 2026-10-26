@@ -1174,6 +1174,8 @@ export type AssistantDeps = {
   get?: AssistantGet;
   now?: () => Date;
   onTool?: (name: string) => void;
+  /** IA-06: el llamador lo conserva aunque una vuelta posterior falle. */
+  usage?: { input: number; output: number };
 };
 export type AssistantActor = {
   name: string;
@@ -1262,7 +1264,7 @@ export async function askAssistant(
         `Fecha: ${ctx.today}. Usuario: ${untrusted(actor.name.slice(0, 80))}\nPregunta: ${asked.at(-1)!.content}`,
     },
   ];
-  const usage = { input: 0, output: 0 };
+  const usage = deps.usage ?? { input: 0, output: 0 };
   let sawBusinessData = false;
   let proposal: VoidProposal | undefined;
   const textOf = (response: any) =>
@@ -1395,6 +1397,7 @@ export class AssistantController {
     this.limits.assert("assistant-ask", [req.actor.tenantId, req.actor.id], 5);
     const reserved = await reserveAssistantQuery(this.db, req.actor);
     const herramientas: string[] = [];
+    const usage = { input: 0, output: 0 };
     let result: AssistantResponse;
     try {
       const settings = await this.db.settings
@@ -1407,13 +1410,14 @@ export class AssistantController {
         { ...req.actor, company },
         {
           onTool: (name) => herramientas.push(name),
+          usage,
         },
       );
     } catch (error) {
       await finishAssistantQuery(
         this.db,
         reserved.auditId,
-        { input: 0, output: 0 },
+        usage,
         herramientas,
         "fallida",
       );
