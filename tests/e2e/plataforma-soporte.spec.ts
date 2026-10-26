@@ -80,6 +80,8 @@ test("«Soporte» abre la empresa en otra pestaña con el token de solo lectura 
 
   await page.getByRole("listitem").filter({ hasText: "tienda-maria" }).getByRole("button").first().click();
   await expect(page.getByText(/Acceso de soporte activo hasta/)).toBeVisible();
+  await page.getByLabel("Tu nombre (operadora)").fill("Ana Operadora");
+  await page.getByLabel("Motivo (qué vas a revisar)").fill("Revisar existencias que no cuadran");
   const [tab] = await Promise.all([
     context.waitForEvent("page"),
     page.getByRole("button", { name: "Abrir sesión de solo lectura" }).click(),
