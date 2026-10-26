@@ -7,7 +7,7 @@ Cada agente (ChatGPT PC, ChatGPT nube, Claude PC) **actualiza su línea después
 | Agente | Rama de entrega | Tarea actual | Última entrega | Estado |
 |---|---|---|---|---|
 | ChatGPT PC | `chatgpt-pc/prueba-gv` | Repetir la prueba de GV con las pantallas; luego PC-18 y PC-22 | — | — |
-| ChatGPT nube | `chatgpt-nube/cola2-26oct` | N2 · Evaluación de la IA | 2026-10-26 11:56 UTC · informe `83c0feb` | **BLOQUEADO:** `IA_EVAL_26OCT.md` no existe en `origin/nexora-cloud` (`a912333`) |
+| ChatGPT nube | `chatgpt-nube/cola2-26oct` | N4 · Contenido de ayuda | 2026-10-26 11:57 UTC · `AYUDA_CLIENTES.md` + informe N4 | **ENTREGADO N4:** exactamente 15 preguntas; N2 sigue **BLOQUEADO** porque falta `IA_EVAL_26OCT.md` |
 | Claude PC | `claude-pc/auditoria-gv`, luego `claude-pc/obsidian-lumina-f3` | Auditar GV (solo lectura); luego fase 3 del rediseño | — | — |
 | Claude nube | `claude/modulo-gv`, `claude/producto-mezcla-4` | GV en la tienda antes de las 12:00 UTC; producto después | — | — |
 
