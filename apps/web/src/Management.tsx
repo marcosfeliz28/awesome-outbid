@@ -2459,19 +2459,36 @@ export function Customers() {
       : []),
     { key: "notes", label: "Notas", type: "textarea" },
   ];
+  const rows = (query.data || []).filter((c: any) =>
+    // P5: sin acceso completo la búsqueda no usa el teléfono, para
+    // no servir de oráculo de los dígitos ocultos.
+    (c.name + " " + (fullCustomer ? c.phone : ""))
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
   return (
-    <>
+    <div className="catalog-screen">
       <Heading
-        title="Personas que vuelven a elegirte"
-        caption="Conoce a tus clientes y construye relaciones que duran."
+        title="Clientes"
+        caption="Consulta contactos, compras y datos de crédito desde un solo directorio."
       >
         <Button onClick={() => setCreate(true)}>
           <Plus size={17} />
           Nuevo cliente
         </Button>
       </Heading>
-      <div className="panel">
-        <div className="table-toolbar">
+      <section
+        className="panel catalog-panel"
+        aria-labelledby="customers-list-title"
+      >
+        <div className="panel-heading catalog-panel-heading">
+          <div>
+            <h2 id="customers-list-title">Directorio de clientes</h2>
+            <p>Busca por nombre o teléfono y revisa su historial comercial.</p>
+          </div>
+          <Badge tone="violet">{rows.length} clientes</Badge>
+        </div>
+        <div className="table-toolbar catalog-toolbar">
           <Filter
             value={search}
             onChange={setSearch}
@@ -2481,13 +2498,7 @@ export function Customers() {
         <QueryState query={query}>
           <DataTable
             cards
-            rows={(query.data || []).filter((c: any) =>
-              // P5: sin acceso completo la búsqueda no usa el teléfono, para
-              // no servir de oráculo de los dígitos ocultos.
-              (c.name + " " + (fullCustomer ? c.phone : ""))
-                .toLowerCase()
-                .includes(search.toLowerCase()),
-            )}
+            rows={rows}
             empty="No encontramos clientes"
             emptyDescription="Revisa la búsqueda o registra una persona con Nuevo cliente."
             columns={[
@@ -2545,7 +2556,7 @@ export function Customers() {
             ]}
           />
         </QueryState>
-      </div>
+      </section>
       {create && (
         <FormModal
           title="Nuevo cliente"
@@ -2586,7 +2597,7 @@ export function Customers() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
 
