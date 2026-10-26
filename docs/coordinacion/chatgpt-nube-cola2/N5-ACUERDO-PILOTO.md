@@ -32,7 +32,7 @@ No se revisó legislación ni se interpretó la validez de cláusulas. Tampoco s
 | Paquetes extra de IA | Sí: 100 por RD$399 y 300 por RD$999, acreditados manualmente | No aparecen en el acuerdo; solo valen durante el mes de acreditación y no hay regla contractual sobre expiración o reembolso | Alto si se cobran durante el piloto |
 | Cobro manual | Sí: transferencia, efectivo, tarjeta en el local y mensajero; activa o extiende el plan | El acuerdo omite mensajero, pago anual, comprobación de pago y anulación. El sistema solo registra un cobro hecho fuera de Nexora | Medio |
 | Soporte de solo lectura | Sí: requiere permiso de la empresa, dura 24 h o 7 días, sesión de 15 min, alcance limitado y bitácora | El acuerdo solo dice “soporte por WhatsApp”; no informa el acceso técnico, qué datos ve, plazo, revocación ni registro | Alto de privacidad/transparencia |
-| Copia y borrado de datos | El acuerdo promete copia completa y borrado a los 30 días | No se encontró en el código revisado una exportación integral por empresa ni un proceso de borrado a 30 días | Alto |
+| Copia y borrado de datos | La rama del producto incluye una exportación integral por empresa | No está demostrado el procedimiento operativo de entrega al terminar ni el borrado completo a los 30 días, incluidos respaldos y objetos | Alto |
 | Formulario | Mide venta, configuración, caja, inventario, reportes, hardware, celular, precio y recomendación | No mide invitación/consentimiento, IA, cobro del plan ni soporte. La copia rápida tiene precios viejos | Medio |
 
 ## 3. Coincidencias verificadas
@@ -41,7 +41,7 @@ No se revisó legislación ni se interpretó la validez de cláusulas. Tampoco s
 
 El flujo técnico respalda una alta cerrada por invitación:
 
-- Solo la plataforma crea la empresa y exige nombre de operadora y referencia del acuerdo en papel (`apps/api/src/platform.ts:15-34`, `apps/api/src/platform.ts:102-127`).
+- En el flujo cerrado del piloto, la plataforma crea la empresa y exige nombre de operadora y referencia del acuerdo en papel (`apps/api/src/platform.ts:15-34`, `apps/api/src/platform.ts:102-127`). Existe además un registro público en `registration.ts:248-258`, pero permanece cerrado mientras `PRODUCT_PUBLIC_REGISTRATION` no se habilite explícitamente.
 - El enlace vence a los 7 días, lleva el token en el fragmento de la URL y el servidor almacena su hash, no el token (`apps/api/src/platform.ts:71-77`, `apps/api/src/platform.ts:107-124`).
 - La persona invitada no puede activar la cuenta sin marcar aceptación expresa (`apps/api/src/registration.ts:31-40`, `apps/web/src/Registration.tsx:105-139`).
 - Al aceptar se guardan fecha, versiones del acuerdo y privacidad, método de consentimiento e IP en la bitácora (`apps/api/src/registration.ts:181-223`).
@@ -63,7 +63,7 @@ Fuente: `apps/api/src/billing-plans.ts:4-10`.
 
 El consumo se cuenta por mes en la zona horaria de la empresa; la cuota del plan se suma a los paquetes acreditados y las preguntas simultáneas se serializan para no exceder el límite (`apps/api/src/platform-ai-packs.ts:35-113`). Al agotarse, la IA se bloquea con un mensaje específico, pero el resto del sistema sigue funcionando (`apps/api/src/platform-ai-packs.ts:22-26`, `apps/api/src/platform-ai-packs.ts:105-112`).
 
-Los paquetes existentes son 100 preguntas por RD$399 y 300 por RD$999. Solo la operadora de plataforma puede acreditarlos, exige referencia y se evita reutilizar la misma referencia normalizada (`apps/api/src/platform-ai-packs.ts:22-26`, `apps/api/src/platform-ai-packs.ts:116-180`; `apps/api/prisma/migrations/202610280025_ia08_ai_pack_reference/migration.sql:1-15`). La prueba confirma cuotas, precios, aislamiento, concurrencia y rechazo de referencias repetidas (`tests/product-platform-ai-packs-postgres.test.ts:159-267`, `tests/product-platform-ai-packs-postgres.test.ts:318-330`).
+Los paquetes existentes son 100 preguntas por RD$399 y 300 por RD$999. Solo la operadora de plataforma puede acreditarlos y se exige una referencia (`apps/api/src/platform-ai-packs.ts:22-26`, `apps/api/src/platform-ai-packs.ts:116-180`). La migración intenta imponer unicidad sobre la referencia normalizada, pero omite el índice si encuentra duplicados anteriores (`apps/api/prisma/migrations/202610280025_ia08_ai_pack_reference/migration.sql:1-15`). Las pruebas confirman cuotas, precios, aislamiento, concurrencia y rechazo de referencias repetidas en una base limpia (`tests/product-platform-ai-packs-postgres.test.ts:159-267`, `tests/product-platform-ai-packs-postgres.test.ts:318-330`); antes de depender de esa garantía en una base existente hay que comprobar que el índice fue creado y que una violación de SQL crudo se traduce al 409 esperado.
 
 ### 3.3 Cobro manual del plan
 
@@ -74,7 +74,7 @@ El software no procesa dinero ni guarda tarjetas. La operadora anota un pago que
 - tarjeta cobrada en el local;
 - mensajero.
 
-El servidor deriva el importe del plan, acepta de 1 a 12 meses o un año equivalente a 10 mensualidades, evita dobles registros y extiende la vigencia del plan (`apps/api/src/platform-billing.ts:25-40`, `apps/api/src/platform-billing.ts:75-137`). La anulación exige motivo, agrega una fila inversa y recalcula la vigencia sin borrar el pago original (`apps/api/src/platform-billing.ts:140-170`). Las pruebas cubren acceso exclusivo de plataforma, importes, métodos, reintentos, referencia duplicada, inmutabilidad, vigencia y estado de mora (`tests/product-platform-billing-postgres.test.ts:93-230`).
+El servidor deriva el importe del plan, acepta de 1 a 12 meses o un año equivalente a 10 mensualidades, evita dobles registros y extiende la vigencia del plan (`apps/api/src/platform-billing.ts:25-40`, `apps/api/src/platform-billing.ts:75-137`). La anulación exige motivo, agrega una fila inversa y recalcula `paidThroughAt` sin borrar el pago original (`apps/api/src/platform-billing.ts:140-170`); no recalcula en ese mismo punto todos los campos de estado, que también dependen de la consulta o del trabajador del ciclo de vida. Las pruebas cubren acceso exclusivo de plataforma, importes, métodos, reintentos, referencia duplicada, inmutabilidad, vigencia y estado de mora (`tests/product-platform-billing-postgres.test.ts:93-230`).
 
 Esto respalda los tres medios mencionados en la cláusula 5, pero el acuerdo debe dejar claro que “pagado por tarjeta” significa cobro presencial fuera de Nexora, no una pasarela dentro del sistema.
 
@@ -109,13 +109,13 @@ La cláusula 1 promete soporte por WhatsApp y la cláusula 4 autoriza usar datos
 - sesión operativa de 15 minutos;
 - revocación anticipada;
 - identificación y motivo de la operadora;
-- bitácora de cada consulta e intento de escritura.
+- bitácora de la ruta, parámetros/filtros y cada intento de escritura. No queda demostrado que la bitácora enumere literalmente cada fila mostrada, aunque la interfaz use la frase «cada pantalla y registro consultado».
 
 El abogado debe decidir si esto va en el acuerdo, en la política de privacidad, en un anexo de soporte o en los tres.
 
-#### A3 · Promesa de copia completa y borrado sin implementación localizada — riesgo alto
+#### A3 · Entrega de la copia y borrado sin procedimiento demostrado — riesgo alto
 
-Las cláusulas 4 y 5 prometen copia completa “en cualquier momento”, entrega al terminar y borrado a los 30 días (`ACUERDO_PILOTO.md:12-13`). En el código revisado hay exportaciones funcionales por áreas, pero no se encontró un mecanismo integral que exporte toda una empresa ni un flujo que programe y demuestre el borrado completo a los 30 días. Tampoco está definido cómo se tratan respaldos, bitácoras, comprobantes, fotos u obligaciones de conservación.
+Las cláusulas 4 y 5 prometen copia completa “en cualquier momento”, entrega al terminar y borrado a los 30 días (`ACUERDO_PILOTO.md:12-13`). La rama del producto sí contiene una exportación integral por empresa: descubre sus modelos, incluye tablas y objetos y expone `GET /tenant/export` para administración (`apps/api/src/tenant-export.ts:27-63,141-259,298-315` en `origin/claude/producto-mezcla-4`). Lo que no quedó demostrado es el procedimiento operativo para entregar esa exportación al terminar, verificar que abre correctamente y programar y acreditar el borrado completo a los 30 días. Tampoco está definido cómo se tratan respaldos, bitácoras, comprobantes, fotos u obligaciones de conservación.
 
 No conviene prometer un procedimiento automático hasta definir responsable, formato, plazo de entrega, validación, excepciones de conservación y constancia final.
 
@@ -156,6 +156,10 @@ Las cláusulas 2 y 8 prometen aviso previo de cambios grandes y atención priori
 #### A10 · Identidad contractual por completar — riesgo alto antes de firma
 
 Faltan nombre de la persona representante, identificación del negocio, fecha y firmas (`ACUERDO_PILOTO.md:5-7`, `ACUERDO_PILOTO.md:19-21`). El abogado debe confirmar si “Grupo MacGen” es la persona o entidad que puede contratar y si “Nexora POS” se usa como nombre comercial.
+
+#### A11 · Promesas jurídicas y operativas que el código no puede probar — riesgo alto
+
+El acuerdo afirma que Nexora no vende ni comparte datos, que sólo los usa para prestar servicio y soporte y que pertenecen al negocio (`ACUERDO_PILOTO.md:12`). El aislamiento técnico ayuda, pero no demuestra prácticas de toda la organización ni determina propiedad jurídica. De igual forma, el código no puede demostrar por sí solo la práctica humana de «Nexora nunca pide la contraseña» (`ACUERDO_PILOTO.md:15`) ni que todas las funciones anunciadas estarán operativas durante cada día del piloto. Estas afirmaciones necesitan controles operativos, responsables y revisión jurídica, no sólo referencias al código.
 
 ### B. Formulario de opinión
 
@@ -198,7 +202,7 @@ Siguen pendientes versión, fecha, responsable y contacto de soporte (`FORMULARI
 
 1. Confirmar que la versión que usará el piloto contiene realmente estas funciones; hoy la evidencia está en una rama de integración.
 2. Revisar y describir jurídicamente el acceso de soporte y el tratamiento de datos durante ese acceso.
-3. No prometer exportación completa y borrado a 30 días sin un procedimiento técnico y operativo verificable.
+3. No prometer entrega y borrado a 30 días sin un procedimiento operativo verificable; la exportación integral existe, pero falta ensayar su entrega y la eliminación posterior.
 4. Definir la entidad o persona contratante y completar todos los datos y firmas.
 5. Unificar los precios de la pregunta 9 y su copia rápida.
 6. Si se cobran paquetes de IA, incorporar condiciones de vigencia, expiración, impuestos y reembolso.
@@ -246,11 +250,11 @@ Sin modificar el producto, la siguiente versión del borrador debería:
 4. incorporar un apartado claro de acceso temporal de soporte;
 5. separar piloto gratuito de mensualidades y paquetes que solo aplicarían si continúa;
 6. definir cuota de IA, reinicio y agotamiento, si la IA estará activa durante el piloto;
-7. sustituir la promesa de exportación/borrado por un procedimiento que el producto y la operación puedan cumplir;
+7. convertir la promesa de entrega/borrado en un procedimiento que use la exportación integral existente y que la operación pueda probar y acreditar;
 8. unificar precios y versiones del formulario;
 9. añadir al formulario preguntas sobre alta, IA, facturación y soporte;
 10. mantener visible que el documento final debe aprobarlo el abogado antes de firma.
 
 ## 8. Conclusión técnica
 
-El código de integración revisado sí contiene controles sustanciales para invitación consentida, cuotas y paquetes de IA, cobro manual y soporte limitado de solo lectura. La mayor brecha no es la ausencia de esos controles en esa rama, sino que el acuerdo no describe varios de ellos y promete otros procesos —copia integral y borrado a 30 días— que no quedaron demostrados en el código. Además, la rama de operación indicada por la orden todavía no contiene estas funciones. El borrador debe volver al abogado junto con este informe y no usarse como confirmación de disponibilidad productiva.
+El código de integración revisado sí contiene controles sustanciales para invitación consentida, cuotas y paquetes de IA, cobro manual, exportación integral y soporte limitado de solo lectura. La mayor brecha es que el acuerdo no describe varios controles, formula como absolutas algunas garantías condicionadas por configuración o migraciones y promete entrega y borrado a 30 días sin un procedimiento operativo demostrado. Además, la rama de operación indicada por la orden todavía no contiene estas funciones. El borrador debe volver al abogado junto con este informe y no usarse como confirmación de disponibilidad productiva.
