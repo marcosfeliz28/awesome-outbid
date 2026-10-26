@@ -22,6 +22,7 @@ import { reserveTenantObject } from "./tenant-object-deletion";
 import { allocateCredit } from "./credit-allocation";
 import {
   expired,
+  isWalkInCustomer,
   BUSINESS_TIME_ZONE,
   SaleInput,
   saleSchema,
@@ -931,6 +932,10 @@ export class SalesController {
         );
         if ((credit || cod) && !customer)
           bad("El crédito / contraentrega requiere seleccionar un cliente.");
+        if ((credit || cod) && isWalkInCustomer(customer?.name))
+          bad(
+            "«Consumidor final» no puede quedar debiendo: elige o crea al cliente real para el crédito / contraentrega.",
+          );
         if ((credit || cod) && customer) {
           // Toda mercancía despachada pendiente de cobro cuenta en la deuda
           // (también una transferencia rechazada que pasó a cobrar, M-3).

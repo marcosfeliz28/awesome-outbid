@@ -15,6 +15,7 @@ export type User = {
   role: string;
   permissions: string[];
   branchId: string;
+  tenantId?: string;
   sessionTimeoutMinutes?: number;
 };
 export type Variant = {

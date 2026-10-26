@@ -126,9 +126,10 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
   });
 
   // Alta por la pantalla pública, confirmación del correo y entrada.
-  async function registerAndLogin(page: Page, web: string) {
+  // INI-03: `clear` en false reutiliza el navegador de otra empresa, como en la vida real.
+  async function registerAndLogin(page: Page, web: string, clear = true) {
     await page.goto(web);
-    await page.evaluate(() => localStorage.clear());
+    if (clear) await page.evaluate(() => localStorage.clear());
     const slug = `e2e-${randomUUID().slice(0, 8)}`;
     const email = `${slug}@example.invalid`;
     const password = "ClavePiloto-2026!";
@@ -165,7 +166,8 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     const begun = performance.now();
     const web = `http://127.0.0.1:${webPort}`;
     for (let business = 1; business <= 3; business++) {
-    const auth = await registerAndLogin(page, web);
+    // Las tres empresas comparten navegador sin limpiarlo (INI-03).
+    const auth = await registerAndLogin(page, web, business === 1);
     await expect(page.getByRole("heading", { name: "Primeros pasos" })).toBeVisible();
     // N-03: interfaz real con API/modelo falsos; no consume cuota ni clave.
     await page.route("**/api/assistant/usage", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ usadas: 12, limite: 30, mes: "2026-10" }) }));
@@ -208,27 +210,28 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.unroute("**/api/sales?q=FS-0123");
     await page.unroute("**/api/sales/00000000-0000-4000-8000-000000000123/void-requests");
     await page.getByLabel("Nombre del negocio").fill("Mi Tienda Preparada");
-    await page.getByLabel("Sí", { exact: true }).check();
-    await page.getByLabel("RNC").fill("101010101");
+    await page.getByRole("button", { name: "Siguiente" }).click();
+    await expect(page.getByText("Paso 2 de 2 · Tu primer producto")).toBeVisible();
+    await page.getByRole("button", { name: "Saltar por ahora" }).click();
+    await expect(page).toHaveURL(/#dashboard$/);
+    // RNC y logo ya no están en el asistente: se completan después y salen en el ticket.
+    const { logo: _logo, ...current } = await (await page.request.get(`${web}/api/settings`, { headers: auth })).json();
+    expect((await page.request.put(`${web}/api/settings`, { headers: auth, data: { ...current, legalId: "101010101" } })).ok()).toBe(true);
     const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lNcAAAAASUVORK5CYII=", "base64");
-    await page.getByLabel(/Logo \(opcional/).setInputFiles({ name: "marca.png", mimeType: "image/png", buffer: png });
-    await expect(page.getByText("Logo guardado ✓")).toBeVisible();
-    await page.getByRole("button", { name: "Siguiente" }).click();
-    await expect(page.getByText("Paso 2 de 5 · Precios")).toBeVisible();
-    await page.getByRole("button", { name: "Siguiente" }).click();
-    await page.getByRole("button", { name: "Lo hago después" }).click();
-    await page.getByRole("button", { name: "Omitir" }).click();
+    expect((await page.request.post(`${web}/api/settings/logo`, { headers: auth, multipart: { file: { name: "marca.png", mimeType: "image/png", buffer: png } } })).ok()).toBe(true);
+    await page.reload();
     await page.evaluate(() => { window.print = () => undefined; });
-    await page.getByRole("button", { name: "Imprimir ticket de prueba" }).click();
+    const checklist = page.getByRole("region", { name: "Completa tu tienda" });
+    await checklist.getByText(/Completa tu tienda cuando tengas tiempo \(opcional\) · 2 pendientes/).click();
+    await expect(checklist.getByText("✓ Sube tu logo y tu RNC para los tickets")).toBeVisible();
+    await checklist.getByRole("button", { name: "Imprimir ticket de prueba" }).click();
     await expect(page.locator(".thermal-print.w80")).toContainText("Mi Tienda Preparada");
     await expect(page.locator(".thermal-print.w80")).toContainText("RNC: 101010101");
     await expect(page.locator(".thermal-print.w80 .tp-logo")).toHaveAttribute("src", /^data:image\/png;base64,/);
     await expect(page.locator(".thermal-print.w80")).toContainText("NO ES UNA VENTA · DOCUMENTO NO FISCAL");
-    await page.getByRole("button", { name: "Saltar por ahora" }).click();
-    await expect(page).toHaveURL(/#dashboard$/);
-    const category = await page.request.post(`${web}/api/categories`, { headers: auth, data: { name: "Abarrotes" } });
-    expect(category.ok(), await category.text()).toBe(true);
-    const categories = [await category.json()];
+    // El tipo «Tienda / colmado» trae sus categorías sin preguntar.
+    const categories = (await (await page.request.get(`${web}/api/categories`, { headers: auth })).json()).filter((c: any) => c.name === "Abarrotes");
+    expect(categories).toHaveLength(1);
     await page.goto(`${web}/#products`);
     const book = new ExcelJS.Workbook();
     const sheet = book.addWorksheet("Productos");
@@ -318,52 +321,43 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     }
     expect(performance.now() - begun).toBeLessThan(30 * 60 * 1000);
   });
-  test("Primeros pasos: una dueña nueva queda lista para vender a 390 px en 5 pasos, sin RNC si no da NCF", async ({ page }) => {
+  test("Primeros pasos: una dueña nueva vende a 390 px en 2 pasos, sin RNC ni cajeras", async ({ page }) => {
     const web = `http://127.0.0.1:${webPort}`;
     await page.setViewportSize({ width: 390, height: 844 });
     const auth = await registerAndLogin(page, web);
     const fits = async () => expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), "sin desplazamiento horizontal").toBeLessThanOrEqual(0);
     const seen = new Set<string>();
     const at = async (n: number) => {
-      await expect(page.getByText(new RegExp(`^Paso ${n} de 5`))).toBeVisible();
+      await expect(page.getByText(new RegExp(`^Paso ${n} de 2`))).toBeVisible();
       seen.add(String(n));
       await fits();
     };
     await expect(page.getByRole("heading", { name: "Primeros pasos" })).toBeVisible();
     await at(1);
     await expect(page.getByLabel("Nombre del negocio")).toHaveValue("Tienda E2E");
-    // Sin NCF (o «Más tarde») no se ve nada de RNC; con «Sí», sí.
-    await page.getByLabel("No", { exact: true }).check();
+    await expect(page.getByLabel("Tipo de negocio")).toHaveValue("retail");
     await expect(page.getByLabel("RNC")).toHaveCount(0);
-    await page.getByLabel("Más tarde", { exact: true }).check();
-    await expect(page.getByLabel("RNC")).toHaveCount(0);
-    await page.getByLabel("Sí", { exact: true }).check();
-    await expect(page.getByLabel("RNC")).toBeVisible();
-    await page.getByLabel("No", { exact: true }).check();
-    await page.getByLabel("Teléfono (opcional)").fill("809-555-0101");
+    await expect(page.getByLabel(/cajera/i)).toHaveCount(0);
+    await page.getByRole("button", { name: "RD$ 1,000" }).click();
+    await expect(page.getByRole("button", { name: "RD$ 1,000" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByLabel(/efectivo abres tu caja/)).toHaveValue("1000");
     await page.getByRole("button", { name: "Siguiente" }).click();
     await at(2);
-    await expect(page.getByLabel("Sí, ya lo incluyen")).toBeChecked();
-    await page.getByRole("button", { name: "Siguiente" }).click();
-    await at(3);
-    await page.getByLabel("Producto 1").fill("Agua 500 ml");
+    // INI-08: el foco pasa al título del paso nuevo.
+    await expect(page.getByRole("heading", { name: "Tu primer producto" })).toBeFocused();
+    await page.getByLabel("Nombre del producto").fill("Agua 500 ml");
     await page.getByLabel("Precio RD$").fill("25");
-    await page.getByLabel("Cantidad").fill("10");
-    await page.getByRole("button", { name: "+ Otro producto" }).click();
-    await page.getByLabel("Producto 2").fill("Galletas");
-    await page.getByLabel("Precio RD$").nth(1).fill("40");
-    await page.getByLabel("Cantidad").nth(1).fill("5");
-    await page.getByLabel("Costo RD$ (opcional)").nth(1).fill("25");
-    await page.getByRole("button", { name: "Guardar y seguir" }).click();
-    await at(4);
-    await page.getByLabel("Nombre de la cajera").fill("Rosa");
-    await page.getByLabel("PIN de 6 números").fill("582914");
-    await page.getByRole("button", { name: "Crear cajera" }).click();
-    await expect(page.locator(".wizard-password")).toHaveText(/^\d{6}$/);
-    await page.getByRole("button", { name: "Siguiente" }).click();
-    await at(5);
-    await expect(page.getByLabel("Efectivo inicial en caja (RD$)")).toHaveValue("0");
-    await page.getByRole("button", { name: "Abrir caja y hacer mi primera venta" }).click();
+    await page.getByLabel("¿Cuántos tienes?").fill("10");
+    // INI-04: si la existencia falla después de crear el producto, el reintento no lo duplica.
+    let failOnce = true;
+    await page.route("**/api/inventory/adjustments", route => {
+      if (!failOnce) return route.continue();
+      failOnce = false;
+      return route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Servicio no disponible" }) });
+    });
+    await page.getByRole("button", { name: "Ir a cobrar mi primera venta →" }).click();
+    await expect(page.getByRole("alert")).toBeVisible();
+    await page.getByRole("button", { name: "Ir a cobrar mi primera venta →" }).click();
     // En la caja, abierta y con los productos para vender.
     await expect(page.getByLabel("Buscar productos")).toBeVisible();
     await expect(page.getByRole("button", { name: /Abre tu caja para comenzar/ })).toHaveCount(0);
@@ -376,14 +370,19 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.getByRole("button", { name: "Agregar pago" }).click();
     await page.getByRole("button", { name: "Finalizar venta" }).click();
     await expect(page.getByText("Venta registrada", { exact: true })).toBeVisible();
-    expect(seen.size).toBeLessThanOrEqual(5);
+    expect(seen.size).toBe(2);
     const settings = await (await page.request.get(`${web}/api/settings`, { headers: auth })).json();
-    expect(settings).toMatchObject({ ncfMode: "disabled", legalId: "", phone: "809-555-0101", taxIncluded: true });
+    expect(settings).toMatchObject({ ncfMode: "disabled", legalId: "", taxIncluded: true, receiptWidth: "80" });
     expect((await (await page.request.get(`${web}/api/onboarding`, { headers: auth })).json()).dismissed).toBe(true);
     const sessions = await (await page.request.get(`${web}/api/cash-sessions`, { headers: auth })).json();
-    expect(sessions.filter((s: any) => !s.closedAt).map((s: any) => Number(s.openingAmount))).toEqual([0]);
+    expect(sessions.filter((s: any) => !s.closedAt).map((s: any) => Number(s.openingAmount))).toEqual([1000]);
     const products = await (await page.request.get(`${web}/api/products`, { headers: auth })).json();
-    expect(products.items.map((p: any) => p.name).sort()).toEqual(["Agua 500 ml", "Galletas"]);
+    expect(products.items.map((p: any) => p.name)).toEqual(["Agua 500 ml"]);
+    expect(Number(products.items[0].variants[0].stock)).toBe(9);
+
+    // Lo opcional queda en una tarjeta del resumen que no bloquea.
+    await page.goto(`${web}/#dashboard`);
+    await expect(page.getByText("Completa tu tienda cuando tengas tiempo (opcional) · 3 pendientes")).toBeVisible();
 
     // En el celular «Pregúntale a Nexora» no tapa la barra de Mercancía.
     await page.goto(`${web}/#dashboard`);
@@ -399,9 +398,12 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await expect(form.getByLabel("Nombre del negocio")).toBeVisible();
     await expect(form.getByLabel("Días sin rotación")).toHaveCount(0);
     await expect(form.getByLabel("RNC", { exact: true })).toHaveCount(0);
-    await form.getByLabel(/Doy comprobante fiscal/).check();
+    // INI-02: «prepared» no emite NCF y la pantalla no lo promete.
+    await expect(form.getByText(/Doy comprobante fiscal/)).toHaveCount(0);
+    await form.getByLabel("Preparar solicitudes de NCF con RNC").check();
+    await expect(form.getByText(/No emite NCF/)).toBeVisible();
     await expect(form.getByLabel("RNC", { exact: true })).toBeVisible();
-    await form.getByLabel(/Doy comprobante fiscal/).uncheck();
+    await form.getByLabel("Preparar solicitudes de NCF con RNC").uncheck();
     await form.getByLabel("Dirección").fill("Calle 1, Santo Domingo");
     await form.getByRole("button", { name: "Guardar", exact: true }).click();
     await expect(page.getByText("Cambios guardados.")).toBeVisible();

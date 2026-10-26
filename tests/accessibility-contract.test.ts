@@ -455,6 +455,25 @@ describe("G10 · contrato de contraste WCAG AA", () => {
   });
 });
 
+describe("Primeros pasos · INI-06 a INI-08", () => {
+  const onboarding = readFileSync("apps/web/src/Onboarding.tsx", "utf8");
+  it("Básico/Avanzado activo se lee en tema oscuro (≥ 4.5:1)", () => {
+    const dark = { ...variables(":root"), ...variables(':root[data-theme="dark"]') };
+    const rule = css.match(/:root\[data-theme="dark"\] \.config-mode \.active \{ color: (#[0-9a-f]{6}); \}/i);
+    expect(rule, "regla de color del modo activo en tema oscuro").toBeTruthy();
+    meets("config-mode activo oscuro", rule![1], dark["--primary"], 4.5);
+  });
+  it("el asistente ya no crea cajeras ni muestra contraseñas (INI-05/INI-07)", () => {
+    expect(onboarding).not.toContain("temporaryPassword");
+    expect(onboarding).not.toContain('"/users"');
+  });
+  it("al cambiar de paso el foco va al título y se anuncia el paso", () => {
+    expect(onboarding).toMatch(/<h2 ref=\{heading\} tabIndex=\{-1\}>/);
+    expect(onboarding).toContain("heading.current?.focus()");
+    expect(onboarding).toMatch(/<p aria-live="polite">Paso \{step \+ 1\} de \{STEPS\.length\}/);
+  });
+});
+
 describe("G11 · listener de teclado con modal", () => {
   it.each(["F4", "F8", "F12"])(
     "%s se consume y no ejecuta la acción detrás del diálogo",

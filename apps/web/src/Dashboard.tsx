@@ -28,6 +28,7 @@ import {
 import { Button, Badge, Modal } from "@fitstore/ui";
 import { formatMoney, can, weekStart } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
+import { SetupChecklist } from "./Onboarding";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
 
@@ -219,6 +220,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           )}
         </div>
       </div>
+      {can(user.permissions, "*") && <SetupChecklist go={go} />}
       {can(user.permissions, "*") && !!voidRequests.data?.length && (
         <section
           className="void-request-dashboard"

@@ -4200,8 +4200,16 @@ export function Configuration() {
     fields.find((f) => f.key === "usdRate")!,
     {
       key: "ncfOn",
-      label: "Doy comprobante fiscal (NCF) con RNC",
+      // INI-02: «prepared» no asigna NCF; solo «sequences» emite.
+      label:
+        query.data?.ncfMode === "sequences"
+          ? "Emito comprobante fiscal (NCF) con RNC"
+          : "Preparar solicitudes de NCF con RNC",
       type: "checkbox",
+      help:
+        query.data?.ncfMode === "sequences"
+          ? "El NCF se asigna al cobrar con tus secuencias."
+          : "No emite NCF: el ticket sigue siendo interno hasta configurar las secuencias de NCF en Avanzado.",
     },
     ...(ncfOn(values) ? [{ key: "legalId", label: "RNC" }] : []),
   ];

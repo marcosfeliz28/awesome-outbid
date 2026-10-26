@@ -6443,6 +6443,15 @@ td strong {
 .wizard-product .field:first-child { grid-column: 1 / -1; }
 .wizard-password { font-size: 2rem; font-weight: 700; letter-spacing: .2em; }
 .wizard-nav { display: flex; gap: .6rem; margin-top: 1rem; }
+.wizard-quick { display: flex; gap: .5rem; }
+.wizard .wizard-quick .button { margin: 0 0 .6rem; }
+.wizard-quick .button[aria-pressed="true"] { border-color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); }
+.setup-checklist { margin: 0 0 1rem; padding: .8rem 1rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.setup-checklist summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.setup-checklist ul { margin: .4rem 0 0; padding-left: 1.2rem; }
+.setup-checklist .text-link { min-height: 44px; }
 .wizard-nav .button { margin: 0; }
 .config-mode { display: inline-flex; gap: .4rem; margin: 0 0 1rem; }
 .config-mode .active { background: var(--primary); color: #fff; }
+/* INI-06: blanco sobre el violeta claro del tema oscuro no llega a 4.5:1. */
+:root[data-theme="dark"] .config-mode .active { color: #0b0f19; }

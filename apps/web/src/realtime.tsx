@@ -63,10 +63,30 @@ const defaultDeviceName = () =>
   (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
     ? "Celular "
     : "Computadora ") + crypto.randomUUID().slice(0, 4).toUpperCase();
+// INI-03: cada empresa del producto tiene su propio equipo en el navegador
+// (el id del equipo es único en todo el sistema). La tienda, empresa por
+// defecto, conserva la clave de siempre para no volver a aprobar sus equipos.
+const DEFAULT_TENANT = "00000000-0000-0000-0000-000000000001";
+const equipmentKey = (tenantId: string | undefined, branch: string) =>
+  "fitstore-equipment:" +
+  (tenantId && tenantId !== DEFAULT_TENANT ? tenantId + ":" : "") +
+  branch;
+export const currentEquipmentKey = () => {
+  const user = useStore.getState().user;
+  return equipmentKey(user?.tenantId, user?.branchId ?? "main");
+};
+// Al entrar se recuerda qué empresa es cada código, para mandar luego las
+// credenciales de su equipo y no las de otra empresa de este navegador.
+export function rememberCompany(slug: string, tenantId?: string) {
+  try {
+    if (tenantId) localStorage.setItem("fitstore-company:" + slug, tenantId);
+  } catch {
+    /* sin almacenamiento: solo se pierde el atajo del bloqueo */
+  }
+}
 // Identidad local del equipo: id + secreto que sólo conoce este navegador.
 export function terminalIdentity(): Identity {
-  const branch = useStore.getState().user?.branchId ?? "main";
-  const key = "fitstore-equipment:" + branch;
+  const key = currentEquipmentKey();
   let value: Partial<Identity> | null = null;
   try {
     value = JSON.parse(localStorage.getItem(key) ?? "null");
@@ -92,16 +112,24 @@ export function terminalIdentity(): Identity {
 // pudo provocar un tercero con contraseñas erróneas (S-01). No crea una
 // identidad nueva; antes de iniciar sesión no se conoce la sucursal, así que
 // se prefiere la principal y, si no, la única guardada.
-export function storedTerminalCredentials(): {
+export function storedTerminalCredentials(slug?: string): {
   id: string;
   secret: string;
 } | null {
   try {
-    const keys = Object.keys(localStorage).filter((key) =>
-      key.startsWith("fitstore-equipment:"),
+    const tenantId = slug
+      ? localStorage.getItem("fitstore-company:" + slug)
+      : null;
+    const prefix = equipmentKey(tenantId ?? undefined, "");
+    // Sin empresa conocida solo cuentan las claves de la tienda (sin empresa).
+    const keys = Object.keys(localStorage).filter(
+      (key) =>
+        key.startsWith(prefix) &&
+        (tenantId ? true : !key.slice(prefix.length).includes(":")),
     );
-    const key = keys.includes("fitstore-equipment:main")
-      ? "fitstore-equipment:main"
+    const main = prefix + "main";
+    const key = keys.includes(main)
+      ? main
       : keys.length === 1
         ? keys[0]
         : null;
@@ -119,8 +147,7 @@ export function storedTerminalCredentials(): {
   }
 }
 function forgetIdentity() {
-  const branch = useStore.getState().user?.branchId ?? "main";
-  localStorage.removeItem("fitstore-equipment:" + branch);
+  localStorage.removeItem(currentEquipmentKey());
 }
 export const useTerminal = create<{
   terminal: any | null;
@@ -280,7 +307,6 @@ export function useRealtime() {
 }
 export function Equipment() {
   const client = useQueryClient();
-  const user = useStore((s) => s.user)!;
   const here = terminalIdentity();
   const query = useQuery({
     queryKey: ["terminals"],
@@ -320,7 +346,7 @@ export function Equipment() {
             try {
               await post("/terminals/" + here.id + "/rename", { name });
               localStorage.setItem(
-                "fitstore-equipment:" + user.branchId,
+                currentEquipmentKey(),
                 JSON.stringify({ ...terminalIdentity(), name }),
               );
               toast("Nombre guardado.");
@@ -512,7 +538,7 @@ export function DeviceGate() {
                   name: name.trim(),
                 });
                 localStorage.setItem(
-                  "fitstore-equipment:" + user.branchId,
+                  currentEquipmentKey(),
                   JSON.stringify({ ...t, name: name.trim() }),
                 );
               }
