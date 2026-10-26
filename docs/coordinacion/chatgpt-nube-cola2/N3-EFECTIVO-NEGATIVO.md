@@ -1,7 +1,9 @@
 # N3 · Auditoría de efectivo esperado negativo
 
-**Fecha:** 26 de octubre de 2026  
-**Base revisada:** `origin/nexora-cloud` en `a9123336ca4e1cf5882ec8f31557896119467628`  
+**Fecha:** 26 de octubre de 2026
+
+**Base revisada:** `origin/nexora-cloud` en `a9123336ca4e1cf5882ec8f31557896119467628`
+
 **Alcance:** revisión estática, sin cambios de código ni despliegue.
 
 ## Conclusión ejecutiva
