@@ -1,0 +1,33 @@
+/* Obsidian Lumina f3 · Inventario. Violeta = acción/lugar actual; esmeralda = estado/foco. */
+.inv-num {
+  font-variant-numeric: tabular-nums;
+}
+.inv-panel .inv-field {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--text);
+}
+.inv-panel select {
+  min-height: 44px;
+  max-width: 100%;
+}
+.inv-tabs button {
+  min-height: 44px;
+  font-size: 14px;
+  border-bottom: 3px solid transparent;
+}
+/* Estado activo por más que el color: subrayado grueso y negrita. */
+.inv-tabs button[aria-pressed="true"] {
+  border-bottom-color: var(--accent-violet);
+  font-weight: 700;
+}
+.inv-tabs button:focus-visible,
+.inv-panel .table-actions button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.inv-panel .table-actions button {
+  min-height: 44px;
+  min-width: 44px;
+}
