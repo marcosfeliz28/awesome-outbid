@@ -57,12 +57,15 @@ export function Modal({
   title,
   children,
   wide = false,
+  restoreFocus = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   wide?: boolean;
+  /** Al cerrar, devuelve el foco a quien lo tenía al abrir (solo diálogos abiertos desde «Más»); por defecto no toca el foco. */
+  restoreFocus?: boolean;
 }) {
   // Sin Dialog.Trigger Radix no sabe a quién devolver el foco: se guarda quien lo tenía al abrir.
   const opener = useRef<HTMLElement | null>(null);
@@ -73,17 +76,19 @@ export function Modal({
         <Dialog.Content
           className={`modal ${wide ? "wide" : ""}`}
           aria-describedby={undefined}
-          onOpenAutoFocus={() => {
-            opener.current = document.activeElement as HTMLElement | null;
-          }}
-          onCloseAutoFocus={(event) => {
-            const back = opener.current;
-            opener.current = null;
-            if (back?.isConnected && back !== document.body) {
-              event.preventDefault();
-              back.focus();
-            }
-          }}
+          {...(restoreFocus && {
+            onOpenAutoFocus: () => {
+              opener.current = document.activeElement as HTMLElement | null;
+            },
+            onCloseAutoFocus: (event: Event) => {
+              const back = opener.current;
+              opener.current = null;
+              if (back?.isConnected && back !== document.body) {
+                event.preventDefault();
+                back.focus();
+              }
+            },
+          })}
         >
           <div className="modal-heading">
             <Dialog.Title>{title}</Dialog.Title>
