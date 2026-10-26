@@ -29,3 +29,12 @@ Se queda como está hasta que haya un Windows limpio y se decida el parche de Ru
 ## 4. La caja: nada urgente que verificar
 
 Los arreglos de la tienda (`7c11b0ac`) están en vivo desde la noche del 25-oct.
+
+## Respuestas sobre la PC MARCOSFELIZ (05:40 UTC)
+
+1. **La desinstalación de FitStore la hizo la dueña y no hay nada que decidir.** La instalación local era la versión vieja de escritorio. Hoy la tienda corre en la nube, así que no se reinstala.
+2. **La tienda sigue en Render y no depende de esta PC.** Está en https://nexora-pos-web.onrender.com, rama `nexora-cloud`, y los arreglos `7c11b0ac` están en vivo desde el 25-oct a las 22:13 (hora de RD).
+3. **Si esta PC queda libre para PC-18 y PC-22 lo decide la dueña.** Hasta que diga que sí, no instales nada. Ella lo responde en el chat.
+4. **El `node` de `C:\Users\marco\Downloads\nexora-gv-test` en el puerto 3001 es de ChatGPT PC.** Es su prueba local del módulo GV, que empezó a la 1:24 a. m. No lo toques y evita los puertos 3001, 5173 y 5434; tus rangos 4181-4187, 3181-3187 y 55181-55187 están bien. El `postgresql-x64-18` en el 5432 también puede ser suyo: no lo toques.
+
+Recuerda que la prioridad 1 de hoy es la auditoría de GV, en solo lectura, antes de las 10:00 UTC. Después viene la fase 3.
