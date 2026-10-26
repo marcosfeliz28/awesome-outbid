@@ -4,6 +4,7 @@ import {
   useRealtime,
   registerTerminal,
   storedTerminalCredentials,
+  rememberCompany,
 } from "./realtime";
 import { Merchandise } from "./Merchandise";
 import { supportBannerText, supportExpiresAt } from "./supportSession";
@@ -472,7 +473,7 @@ function Login() {
             setError("");
             try {
               if (!changeRequired) {
-                const terminal = storedTerminalCredentials();
+                const terminal = storedTerminalCredentials(slug);
                 const data = await api("/auth/login", {
                   method: "POST",
                   headers: { "x-tenant-id": slug },
@@ -492,9 +493,10 @@ function Login() {
                   setError("");
                   return;
                 }
+                rememberCompany(slug, data.user.tenantId);
                 await saveSession(data.user, data.accessToken);
               } else {
-                const terminal = storedTerminalCredentials();
+                const terminal = storedTerminalCredentials(slug);
                 const data = await api("/auth/change-password", {
                   method: "POST",
                   headers: { "x-tenant-id": slug },
@@ -506,6 +508,7 @@ function Login() {
                     ...(terminal ? { terminal } : {}),
                   }),
                 });
+                rememberCompany(slug, data.user.tenantId);
                 await saveSession(data.user, data.accessToken);
               }
             } catch (e: any) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Modal } from "@fitstore/ui";
 import { DEFAULT_SETTINGS } from "@fitstore/shared";
@@ -39,12 +39,18 @@ const businessTypes = [
   ["fitness", "Fitness"],
   ["services", "Servicios"],
 ];
-const STEPS = ["Tu negocio", "Precios", "Tus productos", "Tu equipo", "¡Listo!"];
-type Ncf = "yes" | "no" | "later";
-type ProductRow = { name: string; price: string; qty: string; cost: string };
-const emptyRow = (): ProductRow => ({ name: "", price: "", qty: "", cost: "" });
+const STEPS = ["Tu negocio y tu caja", "Tu primer producto"];
+const QUICK_CASH = ["0", "1000", "2000"];
+type ProductRow = { name: string; price: string; qty: string; code: string };
+// El código se fija una vez por fila: un reintento encuentra lo ya guardado (INI-04).
+const newCode = () => `P${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
+const EXAMPLES: ProductRow[] = [
+  { name: "Ejemplo · Agua 500 ml", price: "25", qty: "10", code: "EJEMPLO-1" },
+  { name: "Ejemplo · Refresco", price: "50", qty: "10", code: "EJEMPLO-2" },
+  { name: "Ejemplo · Galletas", price: "40", qty: "10", code: "EJEMPLO-3" },
+];
 
-/** «Primeros pasos»: cinco pantallas cortas para vender el mismo día. */
+/** «Primeros pasos»: dos pantallas y a cobrar con la caja abierta. */
 export function Onboarding({ go }: { go: (page: string) => void }) {
   const cache = useQueryClient();
   const status = useQuery<OnboardingStatus>({ queryKey: ["onboarding"], queryFn: () => api("/onboarding") });
@@ -54,38 +60,25 @@ export function Onboarding({ go }: { go: (page: string) => void }) {
   const [error, setError] = useState("");
   const [name, setName] = useState("");
   const [businessType, setBusinessType] = useState("general");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [ncf, setNcf] = useState<Ncf>("later");
-  const [legalId, setLegalId] = useState("");
-  const [taxIncluded, setTaxIncluded] = useState(true);
-  const [rows, setRows] = useState<ProductRow[]>([emptyRow()]);
-  const [saved, setSaved] = useState(0);
-  const [cashier, setCashier] = useState({ name: "", pin: "" });
-  const [cashierDone, setCashierDone] = useState<{ username: string; temporaryPassword: string } | null>(null);
   const [opening, setOpening] = useState("0");
-  const [ticketVisible, setTicketVisible] = useState(false);
-  const [guide, setGuide] = useState<string | null>(null);
+  const [row, setRow] = useState<ProductRow>(() => ({ name: "", price: "", qty: "", code: newCode() }));
   const userId = useStore(s => s.user?.id);
   const loaded = settings.data;
   const [filledIn, setFilledIn] = useState(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const firstRender = useRef(true);
+  // INI-08: al cambiar de paso el foco va al título del paso nuevo.
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    heading.current?.focus();
+  }, [step]);
   // Solo la primera carga llena el formulario; lo que se escribe no se pisa.
   useEffect(() => {
     if (!loaded || filledIn) return;
     setFilledIn(true);
     setName(loaded.name ?? "");
     setBusinessType(loaded.businessType ?? "general");
-    setPhone(loaded.phone ?? "");
-    setAddress(loaded.address ?? "");
-    setLegalId(loaded.legalId ?? "");
-    setNcf(loaded.legalId || (loaded.ncfMode && loaded.ncfMode !== "disabled") ? "yes" : "later");
-    setTaxIncluded(loaded.taxIncluded !== false);
   }, [loaded, filledIn]);
-  useEffect(() => {
-    const clear = () => setTicketVisible(false);
-    window.addEventListener("afterprint", clear);
-    return () => window.removeEventListener("afterprint", clear);
-  }, []);
 
   const run = async (work: () => Promise<unknown>) => {
     setBusy(true); setError("");
@@ -100,78 +93,52 @@ export function Onboarding({ go }: { go: (page: string) => void }) {
     await api("/settings", { method: "PUT", body: JSON.stringify({ ...DEFAULT_SETTINGS, ...current, ...changes }) });
     await cache.invalidateQueries({ queryKey: ["settings"] });
   };
-  const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
   const finish = async (page: string) => {
     await api("/onboarding", { method: "POST", body: JSON.stringify({ dismissed: true }) });
     await cache.invalidateQueries({ queryKey: ["onboarding"] });
     go(page);
   };
-  const uploadLogo = (file?: File) => run(async () => {
-    if (!file) return;
-    if (file.size > 200 * 1024 || !["image/png", "image/jpeg", "image/webp", "image/gif"].includes(file.type))
-      throw new Error("El logo debe ser PNG, JPG, WebP o GIF de hasta 200 KB.");
-    const body = new FormData(); body.append("file", file);
-    await api("/settings/logo", { method: "POST", body });
-    await Promise.all([cache.invalidateQueries({ queryKey: ["onboarding"] }), cache.invalidateQueries({ queryKey: ["settings"] })]);
-  });
+  // Paso 1: nombre y tipo; las categorías del tipo se crean solas.
   const saveBusiness = () => run(async () => {
-    const current = settings.data ?? {};
-    await saveSettings({
-      name: name.trim(), businessType, phone: phone.trim(), address: address.trim(),
-      ...(ncf === "yes"
-        ? { legalId: legalId.trim(), ncfMode: current.ncfMode && current.ncfMode !== "disabled" ? current.ncfMode : "prepared" }
-        : { ncfMode: "disabled" }),
-    });
-    next();
-  });
-  const saveTax = () => run(async () => { await saveSettings({ taxIncluded }); next(); });
-  const filled = rows.filter(r => r.name.trim() || r.price);
-  const saveProducts = () => run(async () => {
-    for (const row of filled)
-      if (row.name.trim().length < 2 || !(Number(row.price) > 0))
-        throw new Error("Cada producto necesita nombre y precio mayor que 0.");
-    // Las existencias se registran desde un equipo aprobado (como en Caja).
-    await registerTerminal().catch(() => undefined);
+    await saveSettings({ name: name.trim(), businessType });
     const categories = await api<{ id: string }[]>("/categories");
-    const categoryId = categories[0]?.id ?? (await post<{ id: string }>("/categories", {
-      name: (categorySuggestions[businessType] ?? categorySuggestions.general)[0],
-    })).id;
-    let pending = [...rows];
-    for (const row of filled) {
-      const code = `P${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
-      const product = await post<{ variants: { id: string }[] }>("/products", {
-        name: row.name.trim(), sku: code, categoryId, brand: "",
-        variants: [{ sku: code, barcode: code, price: Number(row.price), costAvg: Number(row.cost) || 0 }],
-      });
-      if (Number(row.qty) > 0)
-        await post("/inventory/adjustments", {
-          variantId: product.variants[0].id, qty: Number(row.qty), reason: "Existencia inicial (Primeros pasos)",
-        });
-      // Lo ya guardado sale de la lista: un reintento no lo duplica.
-      pending = pending.filter(r => r !== row);
-      setRows(pending.length ? pending : [emptyRow()]);
-      setSaved(n => n + 1);
-    }
-    await cache.invalidateQueries();
-    next();
+    if (!categories.length)
+      for (const category of categorySuggestions[businessType] ?? categorySuggestions.general)
+        await post("/categories", { name: category });
+    await cache.invalidateQueries({ queryKey: ["onboarding"] });
+    setStep(1);
   });
-  const saveCashier = () => run(async () => {
-    const roles = await api<{ id: string; name: string }[]>("/roles");
-    const seller = roles.find(r => r.name === "seller");
-    if (!seller) throw new Error("Tu empresa aún no tiene el rol de cajera. Créala después en Configuración › Usuarios.");
-    const created = await post<{ username: string; temporaryPassword: string }>("/users", {
-      name: cashier.name.trim(), username: cashier.name.trim(), pin: cashier.pin, roleId: seller.id,
+  // Producto y existencia van en dos solicitudes: si el producto ya existe (por
+  // su código) no se crea otro, y la existencia solo se suma si sigue en 0.
+  const saveProduct = async (item: ProductRow, categoryId: string) => {
+    const found = await api<{ items: { variants: { id: string; barcode: string; stock: string }[] }[] }>(
+      "/products?q=" + encodeURIComponent(item.code));
+    const existing = found.items.find(p => p.variants.some(v => v.barcode === item.code));
+    const product = existing ?? await post<{ variants: { id: string; barcode: string; stock: string }[] }>("/products", {
+      name: item.name.trim(), sku: item.code, categoryId, brand: "",
+      variants: [{ sku: item.code, barcode: item.code, price: Number(item.price), costAvg: 0 }],
     });
-    setCashierDone(created);
-    await cache.invalidateQueries({ queryKey: ["users"] });
-  });
-  const openCash = () => run(async () => {
-    const sessions = await api<{ closedAt: string | null; userId: string }[]>("/cash-sessions");
-    const mine = sessions.find(s => !s.closedAt && s.userId === userId);
-    if (!mine) {
-      await registerTerminal().catch(() => undefined);
-      await post("/cash-sessions/open", { openingAmount: Number(opening) || 0, registerId: terminalIdentity().name });
+    const variant = product.variants.find(v => v.barcode === item.code) ?? product.variants[0];
+    if (Number(item.qty) > 0 && !(Number(variant.stock) > 0))
+      await post("/inventory/adjustments", {
+        variantId: variant.id, qty: Number(item.qty), reason: "Existencia inicial (Primeros pasos)",
+      });
+  };
+  const valid = row.name.trim().length >= 2 && Number(row.price) > 0 && Number(row.qty) > 0;
+  // Paso 2: guarda el producto (o los de ejemplo), abre la caja y va a cobrar.
+  const start = (items: ProductRow[]) => run(async () => {
+    // Las existencias y la caja se registran desde un equipo aprobado.
+    await registerTerminal().catch(() => undefined);
+    if (items.length) {
+      const categories = await api<{ id: string }[]>("/categories");
+      const categoryId = categories[0]?.id ?? (await post<{ id: string }>("/categories", {
+        name: (categorySuggestions[businessType] ?? categorySuggestions.general)[0],
+      })).id;
+      for (const item of items) await saveProduct(item, categoryId);
     }
+    const sessions = await api<{ closedAt: string | null; userId: string }[]>("/cash-sessions");
+    if (!sessions.some(s => !s.closedAt && s.userId === userId))
+      await post("/cash-sessions/open", { openingAmount: Number(opening) || 0, registerId: terminalIdentity().name });
     await cache.invalidateQueries();
     await finish("pos");
   });
@@ -179,99 +146,90 @@ export function Onboarding({ go }: { go: (page: string) => void }) {
   if (status.isLoading || settings.isLoading) return <main className="onboarding"><p>Preparando tu empresa…</p></main>;
   if (status.isError || !status.data) return <main className="onboarding"><p role="alert">No se pudo cargar el asistente.</p><Button onClick={() => status.refetch()}>Reintentar</Button></main>;
   if (!status.data.available) return <main className="onboarding"><h1>Empresa configurada</h1><p>Este asistente está reservado para empresas nuevas.</p><Button onClick={() => go("dashboard")}>Ir al resumen</Button></main>;
-  const setRow = (i: number, key: keyof ProductRow, value: string) =>
-    setRows(current => current.map((r, j) => (j === i ? { ...r, [key]: value } : r)));
+  const field = (key: "name" | "price" | "qty", value: string) => setRow(r => ({ ...r, [key]: value }));
+  const hasProducts = status.data.products > 0;
 
   return <main className="onboarding wizard">
     <header>
       <h1>Primeros pasos</h1>
-      <p>Paso {step + 1} de {STEPS.length} · {STEPS[step]}</p>
+      <p aria-live="polite">Paso {step + 1} de {STEPS.length} · {STEPS[step]}</p>
       <div className="wizard-progress" role="progressbar" aria-label="Avance" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step + 1}>
         <span style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
       </div>
     </header>
     {error && <p className="form-error" role="alert">{error}</p>}
 
-    {step === 0 && <section aria-label="Tu negocio">
-      <h2>Tu negocio</h2>
+    {step === 0 && <section aria-label="Tu negocio y tu caja">
+      <h2 ref={heading} tabIndex={-1}>Tu negocio y tu caja</h2>
       <label className="field"><span>Nombre del negocio</span><input value={name} maxLength={100} onChange={e => setName(e.target.value)} /></label>
       <label className="field"><span>Tipo de negocio</span><select value={businessType} onChange={e => setBusinessType(e.target.value)}>
         {businessTypes.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
       </select></label>
-      <label className="field"><span>Teléfono (opcional)</span><input value={phone} maxLength={30} inputMode="tel" onChange={e => setPhone(e.target.value)} /></label>
-      <label className="field"><span>Dirección (opcional)</span><input value={address} maxLength={200} onChange={e => setAddress(e.target.value)} /></label>
-      <label className="field"><span>Logo (opcional · PNG, JPG, WebP o GIF; máx. 200 KB)</span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={busy} onChange={e => { void uploadLogo(e.currentTarget.files?.[0]); }} /></label>
-      {status.data.hasLogo && <p>Logo guardado ✓</p>}
-      <fieldset className="wizard-choice">
-        <legend>¿Necesitas dar comprobante fiscal (NCF) con RNC?</legend>
-        {([["yes", "Sí"], ["no", "No"], ["later", "Más tarde"]] as const).map(([value, label]) =>
-          <label key={value}><input type="radio" name="ncf" checked={ncf === value} onChange={() => setNcf(value)} />{label}</label>)}
-      </fieldset>
-      {ncf === "yes" && <>
-        <label className="field"><span>RNC</span><input value={legalId} maxLength={30} inputMode="numeric" onChange={e => setLegalId(e.target.value)} /></label>
-        <p><button type="button" className="text-link" onClick={() => go("settings")}>Configurar mis secuencias NCF (cuando las tengas)</button></p>
-      </>}
+      <label className="field"><span>¿Con cuánto efectivo abres tu caja hoy? (RD$)</span><input value={opening} inputMode="decimal" onChange={e => setOpening(e.target.value)} /></label>
+      <div className="wizard-quick" role="group" aria-label="Montos rápidos">
+        {QUICK_CASH.map(amount => <Button key={amount} type="button" variant="secondary" aria-pressed={opening === amount} onClick={() => setOpening(amount)}>RD$ {Number(amount).toLocaleString("en-US")}</Button>)}
+      </div>
+      <p>Precios con ITBIS 18 % incluido y ticket de 80 mm. Lo cambias cuando quieras en Configuración.</p>
       <Button disabled={busy || name.trim().length < 2} onClick={saveBusiness}>Siguiente</Button>
     </section>}
 
-    {step === 1 && <section aria-label="Precios">
-      <h2>Precios</h2>
-      <fieldset className="wizard-choice">
-        <legend>¿Tus precios ya incluyen ITBIS?</legend>
-        <label><input type="radio" name="tax" checked={taxIncluded} onChange={() => setTaxIncluded(true)} />Sí, ya lo incluyen</label>
-        <label><input type="radio" name="tax" checked={!taxIncluded} onChange={() => setTaxIncluded(false)} />No, se suma al cobrar</label>
-      </fieldset>
-      <Button disabled={busy} onClick={saveTax}>Siguiente</Button>
-    </section>}
-
-    {step === 2 && <section aria-label="Tus productos">
-      <h2>Tus productos</h2>
-      <p>Agrega de 1 a 5 para empezar; el resto lo subes después.</p>
-      {saved > 0 && <p role="status">{saved} producto{saved === 1 ? "" : "s"} guardado{saved === 1 ? "" : "s"} ✓</p>}
-      {rows.map((row, i) => <div className="wizard-product" key={i}>
-        <label className="field"><span>Producto {i + 1}</span><input value={row.name} maxLength={150} onChange={e => setRow(i, "name", e.target.value)} /></label>
-        <label className="field"><span>Precio RD$</span><input value={row.price} inputMode="decimal" onChange={e => setRow(i, "price", e.target.value)} /></label>
-        <label className="field"><span>Cantidad</span><input value={row.qty} inputMode="numeric" onChange={e => setRow(i, "qty", e.target.value)} /></label>
-        <label className="field"><span>Costo RD$ (opcional)</span><input value={row.cost} inputMode="decimal" onChange={e => setRow(i, "cost", e.target.value)} /></label>
-      </div>)}
-      {rows.length < 5 && <Button variant="secondary" onClick={() => setRows(r => [...r, emptyRow()])}>+ Otro producto</Button>}
-      <Button disabled={busy || !filled.length} onClick={saveProducts}>Guardar y seguir</Button>
+    {step === 1 && <section aria-label="Tu primer producto">
+      <h2 ref={heading} tabIndex={-1}>Tu primer producto</h2>
+      <div className="wizard-product">
+        <label className="field"><span>Nombre del producto</span><input value={row.name} maxLength={150} onChange={e => field("name", e.target.value)} /></label>
+        <label className="field"><span>Precio RD$</span><input value={row.price} inputMode="decimal" onChange={e => field("price", e.target.value)} /></label>
+        <label className="field"><span>¿Cuántos tienes?</span><input value={row.qty} inputMode="numeric" onChange={e => field("qty", e.target.value)} /></label>
+      </div>
+      <Button variant="success" disabled={busy || !(valid || hasProducts)} onClick={() => start(valid ? [row] : [])}>Ir a cobrar mi primera venta →</Button>
+      <Button variant="secondary" disabled={busy} onClick={() => start(EXAMPLES)}>Usar 3 productos de ejemplo para probar ya</Button>
       <InventoryImportButton />
-      <Button variant="ghost" onClick={next}>Lo hago después</Button>
-    </section>}
-
-    {step === 3 && <section aria-label="Tu equipo">
-      <h2>Tu equipo (opcional)</h2>
-      {cashierDone ? <div role="status" className="wizard-secret">
-        <p>Cajera creada. Entra con el usuario <strong>{cashierDone.username}</strong> y esta contraseña temporal:</p>
-        <p className="wizard-password">{cashierDone.temporaryPassword}</p>
-        <p>Anótala: solo se muestra ahora y la cajera la cambia al entrar.</p>
-      </div> : <>
-        <label className="field"><span>Nombre de la cajera</span><input value={cashier.name} maxLength={80} onChange={e => setCashier(c => ({ ...c, name: e.target.value }))} /></label>
-        <label className="field"><span>PIN de 6 números</span><input type="password" autoComplete="off" inputMode="numeric" maxLength={6} value={cashier.pin} onChange={e => setCashier(c => ({ ...c, pin: e.target.value.replace(/\D/g, "") }))} /></label>
-        <Button disabled={busy || cashier.name.trim().length < 2 || cashier.pin.length !== 6} onClick={saveCashier}>Crear cajera</Button>
-      </>}
-      <Button variant={cashierDone ? "primary" : "ghost"} onClick={next}>{cashierDone ? "Siguiente" : "Omitir"}</Button>
-    </section>}
-
-    {step === 4 && <section aria-label="¡Listo!">
-      <h2>¡Listo para vender!</h2>
-      <label className="field"><span>Efectivo inicial en caja (RD$)</span><input value={opening} inputMode="decimal" onChange={e => setOpening(e.target.value)} /></label>
-      <Button variant="success" disabled={busy} onClick={openCash}>Abrir caja y hacer mi primera venta</Button>
-      <p>Cada celular o computadora donde entras cuenta como un equipo de tu plan. Si llegas al límite, quita uno que ya no uses en Configuración → Equipos.</p>
-      <Button variant="secondary" onClick={() => run(async () => {
-        const response = await fetch("/ayuda/primera-venta.md");
-        if (!response.ok) throw new Error("No se pudo abrir la guía. Revisa tu conexión.");
-        setGuide(await response.text());
-      })}>Ver la guía «Tu primera venta»</Button>
-      <Button variant="secondary" onClick={() => { setTicketVisible(true); printSoon(); }}>Imprimir ticket de prueba</Button>
+      {hasProducts && <p role="status">{status.data.products} producto{status.data.products === 1 ? "" : "s"} en tu catálogo ✓</p>}
     </section>}
 
     <footer className="wizard-nav">
-      {step > 0 && <Button variant="secondary" disabled={busy} onClick={() => setStep(s => s - 1)}>Atrás</Button>}
+      {step > 0 && <Button variant="secondary" disabled={busy} onClick={() => setStep(0)}>Atrás</Button>}
       <Button variant="ghost" disabled={busy} onClick={() => run(() => finish("dashboard"))}>Saltar por ahora</Button>
     </footer>
-    <Modal open={guide !== null} onClose={() => setGuide(null)} title="Tu primera venta">{guide && <HelpArticle text={guide} />}</Modal>
-    {ticketVisible && <PrintSheet width="80"><BusinessHeader business={settings.data ?? { name }} title="TICKET DE PRUEBA · 80 MM" /><p className="tp-center">NO ES UNA VENTA · DOCUMENTO NO FISCAL</p><p className="tp-center">Si puedes leer esto completo, la impresora está preparada.</p></PrintSheet>}
   </main>;
+}
+
+/** Lo que no hace falta para vender el primer día: tarjeta opcional del resumen. */
+export function SetupChecklist({ go }: { go: (page: string) => void }) {
+  const status = useQuery<OnboardingStatus>({ queryKey: ["onboarding"], queryFn: () => api("/onboarding") });
+  const settings = useQuery<Record<string, any>>({ queryKey: ["settings", "onboarding"], queryFn: () => api("/settings"), enabled: !!status.data?.available });
+  const [guide, setGuide] = useState<string | null>(null);
+  const [guideError, setGuideError] = useState("");
+  const [ticketVisible, setTicketVisible] = useState(false);
+  useEffect(() => {
+    const clear = () => setTicketVisible(false);
+    window.addEventListener("afterprint", clear);
+    return () => window.removeEventListener("afterprint", clear);
+  }, []);
+  const data = status.data;
+  if (!data?.available || !settings.data) return null;
+  const tasks = [
+    { label: "Sube tu logo y tu RNC para los tickets", done: data.hasLogo && !!data.legalId },
+    { label: "Agrega a tu primera cajera (Configuración › Usuarios)", done: data.cashiers > 0 },
+    { label: "Configura tus comprobantes fiscales (NCF)", done: settings.data.ncfMode === "sequences" },
+  ];
+  const pending = tasks.filter(t => !t.done).length;
+  if (!pending) return null;
+  return <section className="setup-checklist" aria-label="Completa tu tienda">
+    <details>
+      <summary>Completa tu tienda cuando tengas tiempo (opcional) · {pending} pendiente{pending === 1 ? "" : "s"}</summary>
+      <ul>
+        {tasks.map(t => <li key={t.label}>{t.done ? "✓ " : ""}{t.done ? t.label : <button type="button" className="text-link" onClick={() => go("settings")}>{t.label}</button>}</li>)}
+        <li><button type="button" className="text-link" onClick={() => { setTicketVisible(true); printSoon(); }}>Imprimir ticket de prueba</button></li>
+        <li><button type="button" className="text-link" onClick={async () => {
+          setGuideError("");
+          const response = await fetch("/ayuda/primera-venta.md").catch(() => null);
+          if (!response?.ok) setGuideError("No se pudo abrir la guía. Revisa tu conexión.");
+          else setGuide(await response.text());
+        }}>Ver la guía «Tu primera venta»</button></li>
+      </ul>
+      {guideError && <p role="alert">{guideError}</p>}
+    </details>
+    <Modal open={guide !== null} onClose={() => setGuide(null)} title="Tu primera venta">{guide && <HelpArticle text={guide} />}</Modal>
+    {ticketVisible && <PrintSheet width="80"><BusinessHeader business={settings.data} title="TICKET DE PRUEBA · 80 MM" /><p className="tp-center">NO ES UNA VENTA · DOCUMENTO NO FISCAL</p><p className="tp-center">Si puedes leer esto completo, la impresora está preparada.</p></PrintSheet>}
+  </section>;
 }

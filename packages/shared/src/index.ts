@@ -16,6 +16,10 @@ export const paymentReceiptLine = (payment: {
   change: Decimal.Value;
 }) =>
   `${payment.method}: Recibido RD$ ${payment.tendered} · Aplicado RD$ ${payment.amount} · Cambio RD$ ${payment.change}`;
+// INI-01: «Consumidor final» es el cliente genérico del mostrador; una deuda
+// a su nombre no tiene a quién cobrársela.
+export const isWalkInCustomer = (name: unknown) =>
+  /^consumidor final$/i.test(String(name ?? "").trim());
 export const quantity = (value: Decimal.Value) =>
   d(value).toDecimalPlaces(3).toNumber();
 // Las existencias se guardan con 3 decimales. Una cantidad más fina se

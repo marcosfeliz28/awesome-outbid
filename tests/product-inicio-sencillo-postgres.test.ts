@@ -123,6 +123,32 @@ it("empresa nueva: Configuración guarda sin tocar campos, el asistente queda ma
     expect(over.status, JSON.stringify(over.body)).toBe(201);
     expect(over.body.status).toBe("pending");
     expect(over.body.planLimit).toContain("Configuración → Equipos");
+    // INI-01: a «Consumidor final» no se le vende a crédito ni contraentrega.
+    const current = (await http.get("/api/settings").set("Authorization", auth)).body;
+    expect((await http.put("/api/settings").set("Authorization", auth).send({ ...current, allowCreditSales: true, requireCustomer: false })).status).toBe(200);
+    const category = (await http.post("/api/categories").set("Authorization", auth).send({ name: "Abarrotes" })).body;
+    const product = await http.post("/api/products").set("Authorization", auth).send({
+      name: "Agua", sku: "INI-01", categoryId: category.id, variants: [{ sku: "INI-01", barcode: "INI-01", price: 100, costAvg: 0 }],
+    });
+    expect(product.status, JSON.stringify(product.body)).toBe(201);
+    const variantId = product.body.variants[0].id;
+    expect((await http.post("/api/inventory/adjustments").set("Authorization", auth).send({ variantId, qty: 5, reason: "Prueba INI-01" })).status).toBe(201);
+    const cash = await http.post("/api/cash-sessions/open").set("Authorization", auth).send({ openingAmount: 0, registerId: "Equipo" });
+    expect(cash.status, JSON.stringify(cash.body)).toBe(201);
+    const walkIn = (await http.get("/api/customers").set("Authorization", auth)).body.find((c: any) => c.name === "Consumidor final");
+    const sale = (method: string, customerId: string) => http.post("/api/sales").set("Authorization", auth).send({
+      offlineUuid: crypto.randomUUID(), customerId, cashSessionId: cash.body.id, items: [{ variantId, qty: 1 }],
+      payments: [{ method, amount: 100 }], expectedTotal: 100,
+      ...(method === "credit" ? { creditDueDate: new Date(Date.now() + 7 * 86400000).toISOString() } : {}),
+    });
+    for (const method of ["cod", "credit"]) {
+      const refused = await sale(method, walkIn.id);
+      expect(refused.status, JSON.stringify(refused.body)).toBe(400);
+      expect(refused.body.message).toContain("«Consumidor final» no puede quedar debiendo");
+    }
+    const real = (await http.post("/api/customers").set("Authorization", auth).send({ name: "Rosa Pérez" })).body;
+    const owed = await sale("cod", real.id);
+    expect(owed.status, JSON.stringify(owed.body)).toBe(201);
   } finally {
     await app?.close().catch(() => undefined);
     vi.unstubAllGlobals();

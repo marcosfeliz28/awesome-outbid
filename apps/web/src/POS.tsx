@@ -50,6 +50,7 @@ import {
   courierCharge,
   isService,
   searchHits,
+  isWalkInCustomer,
 } from "@fitstore/shared";
 import type { SaleInput } from "@fitstore/shared";
 // Lo que se puede vender: un servicio no tiene existencia que lo limite.
@@ -190,6 +191,8 @@ const looksLikeCode = (text: string) => {
 // lector (una persona tarda bastante más entre una tecla y otra).
 const DISCOUNT_FIELDS = ".line-discount input, #global-discount";
 const SCAN_GAP_MS = 50;
+const WALK_IN_DEBT =
+  "«Consumidor final» no puede quedar debiendo: cierra esta ventana, pulsa «Selecciona el cliente» (o F4) y elige o crea al cliente real.";
 // Un elemento donde se escribe: ahí el teclado no se desvía al buscador.
 const isEditable = (el: Element | null) =>
   el instanceof HTMLInputElement ||
@@ -522,9 +525,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     // Producto: con «Pedir cliente» apagado se vende a «Consumidor final».
     const walkIn =
       config.data?.requireCustomer === false
-        ? (customers.data ?? []).find((c: any) =>
-            /^consumidor final$/i.test(String(c.name).trim()),
-          )
+        ? (customers.data ?? []).find((c: any) => isWalkInCustomer(c.name))
         : undefined;
     if (!customerId && walkIn) setCustomer(walkIn.id);
     // Si la lista aún no trae «Consumidor final», la API lo pone sola.
@@ -1791,6 +1792,10 @@ function Checkout({
   );
   const [creditNoteId, setCreditNoteId] = useState("");
   const [creditNoteCode, setCreditNoteCode] = useState("");
+  // INI-01: a «Consumidor final» no se le fía; la deuda necesita una persona.
+  const walkIn = isWalkInCustomer(
+    customers.find((c) => c.id === customerId)?.name,
+  );
   const [ncfType, setNcfType] = useState<"" | "B01" | "B02">("");
   const [recipientLegalId, setRecipientLegalId] = useState("");
   const notes = useQuery({
@@ -1937,6 +1942,10 @@ function Checkout({
       setError("Selecciona el cliente para el crédito / contraentrega.");
       return;
     }
+    if ((method === "credit" || method === "cod") && walkIn) {
+      setError(WALK_IN_DEBT);
+      return;
+    }
     const next: SaleInput["payments"] = [
       ...payments,
       method === "usd"
@@ -1987,6 +1996,10 @@ function Checkout({
   // crédito / contraentrega sin escribir montos (mismo método `cod` de D-01).
   const startCredit = () => {
     setError("");
+    if (walkIn) {
+      setError(WALK_IN_DEBT);
+      return;
+    }
     if (!customerId) {
       setError(
         "Para vender a crédito primero elige al cliente: cierra esta ventana, pulsa «Selecciona el cliente» (o F4) y elige o crea al cliente. Sin cliente no se puede dejar una venta pendiente.",
@@ -2637,7 +2650,7 @@ function Checkout({
           <small>
             {config?.ncfMode === "sequences"
               ? "El NCF se asigna al completar la venta. Si el cliente tiene RNC o cédula guardado, se usa para el B01."
-              : "Preparación de datos. El comprobante sigue siendo interno hasta su emisión fiscal."}
+              : "No emite NCF: solo prepara la solicitud. El comprobante sigue siendo interno hasta configurar las secuencias de NCF."}
           </small>
         </div>
       )}
