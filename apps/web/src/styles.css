@@ -6476,6 +6476,153 @@ td strong {
     padding: 16px;
   }
 }
+
+/* --- Obsidian Lumina: Mercancía ------------------------------------------
+   Pantalla operativa sin movimiento decorativo: superficies sobrias, estados
+   legibles y «Confirmar» como única acción primaria. */
+.merchandise {
+  max-width: 1080px;
+}
+.merchandise .goods-header {
+  position: relative;
+  overflow: hidden;
+  align-items: center;
+  padding: 20px 22px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 100% 0, var(--lumina-violet-glow), transparent 38%),
+    var(--lumina-card);
+  box-shadow: 0 12px 30px rgba(9, 7, 25, .08);
+}
+.merchandise .goods-header::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-violet), var(--accent-emerald), transparent);
+}
+.merchandise .goods-header h1 {
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: clamp(24px, 3vw, 32px);
+  letter-spacing: -.03em;
+}
+.merchandise .goods-mode {
+  border-color: var(--lumina-card-border);
+  background: var(--surface-soft);
+}
+.merchandise .goods-mode button {
+  color: var(--muted);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: .06em;
+}
+.merchandise .goods-mode button.active,
+.merchandise .goods-mode button.active.exit {
+  background: var(--surface) !important;
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent-violet), 0 4px 12px rgba(9, 7, 25, .08);
+}
+.merchandise .goods-mode button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.merchandise .goods-card,
+.merchandise .goods-line {
+  border-color: var(--lumina-card-border);
+}
+.merchandise .goods-card {
+  position: relative;
+  overflow: hidden;
+}
+.merchandise .goods-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--accent-violet);
+}
+.merchandise .field:focus-within :is(input, select, textarea),
+.merchandise .goods-search-input:focus-within {
+  border-color: var(--accent-emerald) !important;
+  box-shadow: 0 0 0 3px var(--lumina-violet-glow) !important;
+}
+.merchandise .goods-import {
+  border-color: var(--lumina-card-border) !important;
+  background: var(--surface-soft) !important;
+  color: var(--text);
+}
+.merchandise .goods-import:hover:not(:disabled),
+.merchandise .goods-import:focus-visible {
+  border-color: var(--accent-violet) !important;
+  box-shadow: 0 0 0 3px var(--lumina-violet-glow);
+}
+.merchandise .goods-review {
+  border-color: var(--lumina-card-border);
+  background:
+    radial-gradient(circle at 100% 0, var(--lumina-violet-glow), transparent 34%),
+    var(--surface-soft);
+}
+.merchandise .goods-line {
+  position: relative;
+  overflow: hidden;
+}
+.merchandise .goods-line::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--accent-emerald);
+}
+.merchandise .goods-line.unmatched::before {
+  background: var(--warning-text);
+}
+.merchandise .goods-sum strong,
+.merchandise .goods-actions-summary,
+.merchandise .goods-done span {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.merchandise .goods-done {
+  border-color: var(--accent-emerald);
+  background: var(--emerald-soft);
+  color: var(--positive-text);
+}
+.merchandise .goods-actions {
+  padding: 12px 14px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 10px 26px rgba(9, 7, 25, .08);
+}
+.merchandise .goods-confirm,
+.merchandise .goods-confirm.exit {
+  border-color: transparent !important;
+  background: linear-gradient(115deg, var(--accent-emerald), #43e3b1) !important;
+  color: #031712;
+  box-shadow: 0 9px 22px rgba(16, 185, 129, .22);
+}
+.merchandise .goods-confirm:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+@media (max-width: 560px) {
+  .merchandise .goods-header {
+    align-items: stretch;
+    padding: 16px;
+  }
+  .merchandise .goods-mode {
+    width: 100%;
+  }
+  .merchandise .goods-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .merchandise .goods-actions.has-items {
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 14px 14px 0 0;
+  }
+}
 .year-pie-list {
   list-style: none;
   margin: 0;
