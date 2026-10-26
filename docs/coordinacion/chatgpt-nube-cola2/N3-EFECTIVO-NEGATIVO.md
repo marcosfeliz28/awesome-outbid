@@ -10,7 +10,7 @@ El arreglo de `voidSaleTx` protege correctamente la anulación directa y la apro
 
 La devolución en efectivo y las salidas de caja tienen controles equivalentes. El vale, el traslado y abrir una caja nueva no reducen el efectivo esperado. Un gasto marcado como efectivo tampoco modifica hoy la caja; esto no vuelve negativo el cálculo, pero puede dejarlo por encima del efectivo físico.
 
-Sí encontré **otro camino de severidad alta**: corregir un pago de `cash` a tarjeta, transferencia, crédito o contraentrega mientras la caja sigue abierta. Esa operación retira el cobro del cálculo sin bloquear la caja ni comprobar el saldo resultante, por lo que puede dejar el efectivo esperado negativo.
+Sí encontré **otro camino de severidad alta**: corregir un pago de `cash` a tarjeta, transferencia, crédito o contraentrega. Con la caja abierta, esa operación retira el cobro del cálculo sin bloquear la caja ni comprobar el saldo resultante. Con la caja cerrada, recalcula el cierre, pero tampoco impide persistir un `expectedCash` histórico negativo.
 
 ## Fórmula y frontera de la auditoría
 
@@ -18,13 +18,13 @@ Sí encontré **otro camino de severidad alta**: corregir un pago de `cash` a ta
 
 ## Hallazgos
 
-### N3-01 · Alta · Corregir un pago en efectivo a otro método puede dejar la caja abierta en negativo
+### N3-01 · Alta · Corregir un pago en efectivo a otro método puede dejar el esperado negativo
 
 **Evidencia:**
 
 - `apps/api/src/sales.ts:2164-2169` bloquea/consulta la venta mediante `editableSale` y localiza el pago, pero no bloquea su `CashSession`.
 - `apps/api/src/sales.ts:2199-2217` cambia el método del pago. Si pasa de `cash` a otro método, ese importe deja inmediatamente de sumar en `cashExpected`.
-- `apps/api/src/sales.ts:2266-2280` sólo recalcula cuando la caja está **cerrada**. Para una caja abierta no recalcula ni exige que el efectivo siga siendo mayor o igual a cero.
+- `apps/api/src/sales.ts:2266-2280` recalcula cuando la caja está **cerrada**, pero `refreshClosedCash` persiste el nuevo `expectedCash` sin rechazar un negativo (`apps/api/src/cash.ts:229`). Para una caja abierta ni siquiera recalcula o exige que el efectivo siga siendo mayor o igual a cero.
 - En contraste, una salida normal bloquea la caja y compara el importe contra el esperado antes de escribir (`apps/api/src/cash.ts:984-1043`).
 
 **Reproducción:**
@@ -39,9 +39,9 @@ También existe una carrera: la corrección no toma el bloqueo de la caja que se
 
 **Corrección propuesta:**
 
-1. Si el pago tiene `cashSessionId`, adquirir el bloqueo de esa caja **antes** de modificar el pago, respetando el orden global Caja → Cliente/Venta para no introducir interbloqueos.
-2. Después de actualizar el método y antes de confirmar la transacción, ejecutar `cashExpected` para una caja abierta. Si el nuevo efectivo es negativo, abortar con un mensaje ciego sin importes.
-3. Conservar `refreshClosedCash` y `closedCashChanged` para cajas cerradas.
+1. Hacer una lectura inicial mínima para obtener `cashSessionId`; si existe, bloquear primero esa caja y **después** llamar a `editableSale`, que hoy bloquea la venta, revalidando dentro de la misma transacción que el pago y su caja no cambiaron. Así se respeta el orden global Caja → Venta y no basta con añadir un bloqueo después de `editableSale`.
+2. Después de actualizar el método y antes de confirmar la transacción, ejecutar el cálculo del esperado tanto para una caja abierta como para una cerrada. Si queda negativo, abortar con un mensaje ciego sin importes, salvo que la dueña defina expresamente que una corrección histórica debe conservar el negativo y cómo se resolverá.
+3. Conservar `refreshClosedCash` y `closedCashChanged` para cajas cerradas sólo después de superar esa regla.
 4. Agregar regresiones con PostgreSQL real para: retiro previo + `cash → card`; devolución previa + `cash → credit`; y corrección concurrente con salida. En todos los casos, como máximo una operación debe confirmarse y el esperado final debe ser `>= 0`.
 
 ### N3-02 · Media · Un gasto en efectivo no está conectado con ninguna caja
