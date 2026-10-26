@@ -179,7 +179,7 @@ Rama `claude-pc/obsidian-lumina-f3`, sacada de `claude/obsidian-lumina-f1` (`2f9
 ### Pruebas
 - Nuevas: `tests/e2e/lumina-f3.spec.ts` (82 casos: título, desplazamiento, área táctil, una acción principal, «Más» con teclado, foco, contraste, cifras tabulares, movimiento reducido y la caja intacta, a 1366 y 390 px, en claro y oscuro), `lumina-f3-arreglos.spec.ts`, `lumina-f3-modal-foco.spec.ts` y `tests/modal-foco-caja.test.ts`.
 - **El criterio 4b se acotó a propósito:** exige «Más» solo en las pantallas que tienen acciones secundarias (Productos y Reportes); en Inventario, Clientes y Configuración comprueba que no hay un «Más» vacío. Está explicado en la prueba y en `_PRUEBAS.md`.
-- Resultados: ver «Resultado final» más abajo.
+- Resultados: ver «Resultado final» al pie de esta sección.
 
 ### Riesgos y pendientes
 - **El contraste de varios textos se calculó o estimó**, no se midió con una herramienta como `axe` (no está instalada); la prueba usa una función propia que ignora degradados e imágenes.
@@ -188,3 +188,14 @@ Rama `claude-pc/obsidian-lumina-f3`, sacada de `claude/obsidian-lumina-f1` (`2f9
 - Los estados fiscales aparecen en texto crudo en Reportes (`not_issued`): no hay un mapa de etiquetas en el código y no se inventó uno.
 - La suite `product-reportes-arreglos-postgres` falla en esta PC en la corrida completa por un bloqueo de archivos de Windows al borrar su carpeta temporal (`EBUSY`); pasa sola (8 de 8). El CI de GitHub (Linux) es la comprobación válida.
 - El aspecto nuevo va para la tienda y el producto, pero esta fase parte del producto: pasarlo a `nexora-cloud` es una fase aparte, con pruebas, sin desplegar en horas de caja y avisando antes.
+
+### Resultado final (verificado en esta PC, base de datos temporal propia, sin tocar la tienda)
+- **Prueba de aceptación visual:** `lumina-f3.spec.ts`, `lumina-f3-arreglos.spec.ts` y `lumina-f3-modal-foco.spec.ts`: **91 pasan, 0 fallan, 0 inestables** (la prueba original daba 54 pasan y 28 fallan sobre la base antes del rediseño).
+- **Regresión de la caja de las cajeras:** `pos-pantalla`, `u1-pos`, `caja-borrador`, `caja-detalles`, `caja-web`, `cuatro-cajas`, `fuentes`, `accesibilidad` e `importar-inventario`: **61 de 61**. Y, antes, 51 de 51 en `pos-pantalla`, `u1-pos` y los `caja-*` al aislar el cambio del diálogo compartido.
+- `pnpm check` completo: **966 pruebas pasan, 11 se omiten**; falla una suite (`product-reportes-arreglos-postgres`) por un bloqueo de archivos de Windows al borrar su carpeta temporal (`EBUSY`) debido a procesos de PostgreSQL embebido que quedaban abiertos de corridas anteriores; sola pasa (8 de 8). La verificación válida es el CI de GitHub.
+- **Capturas** en `docs/diseno/obsidian-lumina/f3/`: `antes-*` y `despues-*` de las cinco pantallas a 1366×768 y 390×844 (dos temas en Productos y Configuración, `-claro`), y el menú «Más» abierto a 390 px (`despues-menu-mas-mobile.png` y `despues-menu-mas-mobile-reportes.png`), sin recortes.
+
+### Defectos menores que quedan (de las capturas finales)
+1. Configuración en celular: las cuatro pestañas en 2×2 con alineación desigual.
+2. Reportes en escritorio: la tabla de detalle se desplaza dentro de su contenedor y la columna del NCF queda parcialmente fuera hasta desplazar.
+3. En celular la barra fija «Mercancía» cubre unos 70 px del final; en Configuración ya hay espacio inferior, en las demás pantallas falta comprobarlo.
