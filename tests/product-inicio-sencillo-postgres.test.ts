@@ -119,8 +119,10 @@ it("empresa nueva: Configuración guarda sin tocar campos, el asistente queda ma
     const device = (id: string) => ({ id, name: "Equipo", secret: "only-local-test-secret-123" });
     expect((await http.post("/api/terminals/register").set("Authorization", auth).send(device("00000000-0000-4000-8000-000000000201"))).status).toBe(201);
     const over = await http.post("/api/terminals/register").set("Authorization", auth).send(device("00000000-0000-4000-8000-000000000202"));
-    expect(over.status).toBe(409);
-    expect(over.body.message).toContain("Configuración → Equipos");
+    // Sobre el cupo queda pendiente (sin 409) y el aviso dice qué hacer.
+    expect(over.status, JSON.stringify(over.body)).toBe(201);
+    expect(over.body.status).toBe("pending");
+    expect(over.body.planLimit).toContain("Configuración → Equipos");
   } finally {
     await app?.close().catch(() => undefined);
     vi.unstubAllGlobals();

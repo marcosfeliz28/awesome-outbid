@@ -4,6 +4,10 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import { test, expect } from "./apoyo";
 
+// Sin service worker: sus peticiones a /api no pasan por context.route y,
+// según cuándo se activara, la página llegaba a la red sin la API simulada.
+test.use({ serviceWorkers: "block" });
+
 const SESSION = "nexora-soporte-token";
 const category = {
   id: "c1",
@@ -117,8 +121,9 @@ async function mockApp(
   });
 }
 async function open(page: Page, hash: string, token = "token-de-prueba") {
-  await page.goto("/");
-  await page.evaluate(
+  // El token se pone antes de que arranque la página: si no, la primera
+  // carga ya pidió /api/auth/refresh sin él y a veces quedaba en el login.
+  await page.addInitScript(
     ([key, value]) => sessionStorage.setItem(key, value),
     [SESSION, token],
   );

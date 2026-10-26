@@ -242,7 +242,7 @@ describe("10 · equipos sobre el cupo del plan", () => {
       expect(r.status, JSON.stringify(r.body)).toBe(201);
       expect(r.body.status).toBe("pending");
       if (i === 0)
-        expect(r.body.planLimit).toContain("permite 1 equipos aprobados");
+        expect(r.body.planLimit).toContain("permite 1 equipo aprobado");
     }
     const [row] = await t.q(
       `SELECT "approvedAt" FROM "Terminal" WHERE id=$1::uuid`,

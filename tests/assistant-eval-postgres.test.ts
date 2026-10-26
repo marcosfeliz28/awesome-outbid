@@ -1183,6 +1183,8 @@ it("evaluación IA: ~70 preguntas de la auditoría contra datos sembrados en Pos
     await call("yokasta", "post", `/api/cash-sessions/${cash.yokasta}/close`, {
       countedCash: 2000 + 2935 - 50,
       countedCard: 1465,
+      // CPC-2: con ventas en tarjeta el cierre exige el lote del verifón.
+      batchNumber: "000321",
       countedTransfer: 956,
       differenceReason: "Faltan 50 pesos, posible error al dar cambio",
       notes: "Cierre de prueba evaluación",
