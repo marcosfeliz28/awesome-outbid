@@ -1,0 +1,44 @@
+[
+  {
+    "dir": "Mostrador",
+    "theme": "light",
+    "min": "6.43",
+    "worst": "sup / surface2",
+    "ink": "17.2"
+  },
+  {
+    "dir": "Mostrador",
+    "theme": "dark",
+    "min": "6.89",
+    "worst": "maq / surface2",
+    "ink": "14.8"
+  },
+  {
+    "dir": "Tocador",
+    "theme": "light",
+    "min": "5.42",
+    "worst": "sup / surface2",
+    "ink": "16.7"
+  },
+  {
+    "dir": "Tocador",
+    "theme": "dark",
+    "min": "7.23",
+    "worst": "muted / surface2",
+    "ink": "14.5"
+  },
+  {
+    "dir": "Tres líneas",
+    "theme": "light",
+    "min": "5.87",
+    "worst": "onCobrar / cobrar",
+    "ink": "15.1"
+  },
+  {
+    "dir": "Tres líneas",
+    "theme": "dark",
+    "min": "6.57",
+    "worst": "maq / surface2",
+    "ink": "14.1"
+  }
+]

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cerrar caja · Tres líneas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--font-ui:"Barlow", system-ui, sans-serif;--font-num:"Barlow Semi Condensed", "Barlow", sans-serif;--font-head:"Barlow Semi Condensed", "Barlow", sans-serif;--r-s:4px;--r-m:6px;--r-l:8px;--bg:#EEF2F1;--surface:#FFFFFF;--surface2:#F5F8F7;--ink:#0F2A2E;--muted:#46605F;--line:#CBD6D4;--primary:#0F2A2E;--on-primary:#FFFFFF;--primary-soft:#E1EAE8;--cobrar:#157347;--on-cobrar:#FFFFFF;--danger:#B3261E;--warn:#8A4B00;--ok:#157347;--display:#0F2A2E;--on-display:#F2FAF8;--display-muted:#A9C2BF;--sup:#0B5F86;--maq:#A8325E;--faj:#7A5A00;--focus:#0B5F86;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0C1719;--surface:#132225;--surface2:#192C30;--ink:#E6F0EE;--muted:#9DB5B2;--line:#27403F;--primary:#E6F0EE;--on-primary:#0C1719;--primary-soft:#1E3437;--cobrar:#3CCB7F;--on-cobrar:#04140B;--danger:#FF8F86;--warn:#F0B45E;--ok:#3CCB7F;--display:#081012;--on-display:#F2FAF8;--display-muted:#9DB5B2;--sup:#6CC4EE;--maq:#F291B5;--faj:#E0C060;--focus:#6CC4EE;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0C1719;--surface:#132225;--surface2:#192C30;--ink:#E6F0EE;--muted:#9DB5B2;--line:#27403F;--primary:#E6F0EE;--on-primary:#0C1719;--primary-soft:#1E3437;--cobrar:#3CCB7F;--on-cobrar:#04140B;--danger:#FF8F86;--warn:#F0B45E;--ok:#3CCB7F;--display:#081012;--on-display:#F2FAF8;--display-muted:#9DB5B2;--sup:#6CC4EE;--maq:#F291B5;--faj:#E0C060;--focus:#6CC4EE;color-scheme:dark}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.4;font-feature-settings:"tnum" 1,"lnum" 1}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+.muted{color:var(--muted)}
+h1,h2,h3{font-family:var(--font-head);margin:0;line-height:1.15}
+kbd{font-family:var(--font-num);font-size:12px;font-weight:700;min-width:30px;padding:3px 6px;border-radius:var(--r-s);border:1px solid currentColor;display:inline-flex;justify-content:center;opacity:.9}
+.app{display:grid;grid-template-columns:76px 1fr;min-height:100vh}
+.rail{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 0}
+.rail .logo{width:44px;height:44px;border-radius:var(--r-m);background:var(--primary);color:var(--on-primary);display:grid;place-items:center;font-weight:800;font-size:18px;margin-bottom:12px}
+.rail a{width:64px;min-height:56px;border-radius:var(--r-m);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;color:var(--muted);text-decoration:none}
+.rail a[aria-current]{background:var(--primary-soft);color:var(--primary);font-weight:700}
+.top{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--surface);border-bottom:1px solid var(--line);min-height:60px}
+.top .where{font-weight:700;font-size:16px}
+.top .who{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:14px}
+.online{display:inline-flex;gap:6px;align-items:center;color:var(--ok);font-weight:600}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:800}
+.menu-btn{display:none;width:44px;height:44px;border:0;background:none;border-radius:var(--r-s)}
+.btn{min-height:48px;padding:0 18px;border-radius:var(--r-m);border:1px solid var(--line);background:var(--surface);display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+.btn.primary{background:var(--primary);color:var(--on-primary);border-color:transparent}
+.btn.cobrar{background:var(--cobrar);color:var(--on-cobrar);border-color:transparent}
+.btn.ghost{background:transparent}
+/* ── Caja ── */
+.pos{display:grid;grid-template-columns:1fr 410px;min-height:calc(100vh - 60px)}
+.catalog{padding:18px 20px;min-width:0}
+.search{display:flex;align-items:center;gap:10px;height:56px;padding:0 14px;border:2px solid var(--line);border-radius:var(--r-m);background:var(--surface);font-size:17px}
+.search span{flex:1;color:var(--muted)}
+.chips{display:flex;gap:8px;margin:14px 0;overflow-x:auto}
+.chip{min-height:44px;padding:0 16px;border-radius:var(--r-m);border:1px solid var(--line);background:var(--surface);font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:8px}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chip[aria-pressed=true] .muted{color:inherit}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);padding:12px;display:flex;flex-direction:column;gap:6px;min-height:132px;text-align:left}
+.card .name{font-weight:700;font-size:15px;line-height:1.25}
+.card .meta{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 8px;margin-top:auto}
+.card .price{font-weight:800;font-size:18px}
+.card .stock{font-size:13px;color:var(--muted)}
+.card .stock.low{color:var(--danger);font-weight:700}
+.tag{font-size:12.5px;font-weight:700}
+.tag.sup{color:var(--sup)}.tag.maq{color:var(--maq)}.tag.faj{color:var(--faj)}
+.cart{background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column}
+.cart-head{padding:16px 18px;border-bottom:1px solid var(--line)}
+.client{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 12px;border:1px dashed var(--line);border-radius:var(--r-m);background:var(--surface2);text-align:left}
+.client b{display:block}.client small{color:var(--muted)}
+.client kbd{margin-left:auto}
+.lines{flex:1;padding:6px 18px;overflow:auto}
+.ln{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.ln .name{font-weight:700}
+.ln .amt{font-weight:800;font-size:17px;text-align:right}
+.qty{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:var(--r-s)}
+.qty button{width:44px;height:44px;border:0;background:none;display:grid;place-items:center}
+.qty span{min-width:28px;text-align:center;font-weight:700}
+.sum{padding:14px 18px;border-top:1px solid var(--line);display:grid;gap:6px}
+.sum .row{display:flex;justify-content:space-between}
+.total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:14px 18px}
+.total .label{font-weight:700;font-size:16px}
+.total .value{font-weight:800;font-size:40px;letter-spacing:-.01em}
+.actions{padding:0 18px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions .cobrar{grid-column:1/-1;min-height:64px;font-size:20px;justify-content:space-between;padding:0 20px}
+.actions .btn{justify-content:center;white-space:nowrap;padding:0 12px}
+.mobile-bar{display:none}
+/* ── Cierre ── */
+.page{padding:20px;max-width:1180px;margin:0 auto}
+.page-head{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:flex-end;margin-bottom:16px}
+.page-head h1{font-size:28px}
+.page-head p{margin:0;color:var(--muted)}
+.close{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:18px}
+.panel h2{font-size:19px;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.panel > p{margin:0 0 12px;color:var(--muted)}
+.step{width:30px;height:30px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:inline-grid;place-items:center;font-size:15px;font-family:var(--font-ui)}
+.denoms h3{font-size:14px;color:var(--muted);margin:14px 0 6px;font-family:var(--font-ui);font-weight:700}
+.drow{display:grid;grid-template-columns:110px 20px 110px 1fr;align-items:center;gap:6px;padding:4px 0}
+.drow .d{font-weight:800;font-size:17px}
+.drow input{height:48px;width:100%;border:2px solid var(--line);border-radius:var(--r-s);background:var(--surface2);text-align:center;font-size:18px;font-weight:700;font-family:var(--font-num)}
+.drow .t{text-align:right;font-weight:600}
+.subtotal{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding-top:12px;border-top:2px solid var(--ink)}
+.subtotal b{font-size:26px}
+.field{display:grid;gap:6px;margin-top:12px}
+.field label{font-weight:700}
+.field input{height:52px;border:2px solid var(--line);border-radius:var(--r-s);background:var(--surface2);padding:0 12px;font-size:19px;font-weight:700;font-family:var(--font-num)}
+.field small{color:var(--muted)}
+.note{background:var(--surface2);border-radius:var(--r-m);padding:12px;margin:0}
+.confirm{display:flex;gap:12px;align-items:flex-start;margin:14px 0;font-weight:600}
+.confirm .box{flex:none;width:28px;height:28px;border-radius:var(--r-s);background:var(--primary);color:var(--on-primary);display:grid;place-items:center}
+.close-btn{width:100%;min-height:60px;justify-content:center;font-size:18px}
+/* ── Tablero ── */
+.dash{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.span-12{grid-column:span 12}.span-8{grid-column:span 8}.span-7{grid-column:span 7}.span-5{grid-column:span 5}.span-4{grid-column:span 4}.span-6{grid-column:span 6}
+.hero-figure{font-size:52px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.facts{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:12px}
+.facts div{display:grid}.facts b{font-size:20px}
+.stack{display:flex;height:22px;border-radius:var(--r-s);overflow:hidden;margin:12px 0}
+.legend{display:grid;gap:10px}
+.legend .row{display:grid;grid-template-columns:14px 1fr auto;gap:10px;align-items:center}
+.legend .sw{width:14px;height:14px;border-radius:3px}
+.legend .amt{font-weight:800;font-size:17px}
+.bars{display:grid;gap:12px}
+.bar{display:grid;grid-template-columns:96px 1fr 104px;gap:10px;align-items:center}
+.bar .track{height:14px;background:var(--surface2);border-radius:var(--r-s);overflow:hidden}
+.bar .fill{height:100%;background:var(--primary)}
+.bar .amt{text-align:right;font-weight:700}
+.alerts{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.alerts li{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:12px;border-radius:var(--r-m);background:var(--surface2);border-left:4px solid var(--warn)}
+.alerts li.danger{border-left-color:var(--danger)}
+.alerts b{display:block}
+.alerts small{color:var(--muted)}
+.alerts .btn{min-height:44px;padding:0 14px;font-size:14px}
+.hours{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:8px}
+.hours div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;font-size:12.5px;color:var(--muted)}
+.hours i{display:block;width:100%;background:var(--primary);border-radius:var(--r-s) var(--r-s) 0 0}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .rail{display:none}
+  .menu-btn{display:grid;place-items:center}
+  .top{padding:8px 12px;gap:8px}
+  .top .who .name,.top .who .reg{display:none}
+  .pos{grid-template-columns:1fr}
+  .catalog{padding:12px 16px 120px}
+  .cart{display:none}
+  .grid{grid-template-columns:1fr;gap:8px}
+  .card{min-height:0;display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:12px}
+  .card .meta{display:contents}
+  .card .price{grid-column:2;grid-row:1/3;align-self:center;font-size:18px}
+  .card .stock{grid-column:1}
+  .card .tag{grid-column:1;order:-1}
+  .mobile-bar{display:flex;position:fixed;left:0;right:0;bottom:0;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line);align-items:center}
+  .mobile-bar .see{min-height:56px;flex:1;justify-content:space-between;flex-direction:column;align-items:flex-start;gap:0;padding:6px 12px}
+  .mobile-bar .see small{font-weight:600;color:var(--muted);font-size:13px}
+  .mobile-bar .see .num{font-size:22px}
+  .mobile-bar .cobrar{min-height:56px;font-size:18px}
+  .page{padding:14px 16px 24px}
+  .page-head h1{font-size:24px}
+  .close{grid-template-columns:1fr}
+  .drow{grid-template-columns:92px 14px 1fr 96px}
+  .dash{grid-template-columns:1fr}
+  .dash > *{grid-column:1/-1;min-width:0}
+  .hero-figure{font-size:42px}
+  .bar{grid-template-columns:80px 1fr 92px}
+  .alerts li{grid-template-columns:1fr}
+  .alerts .btn{justify-self:start}
+}
+
+
+  /* Tres líneas: el color dice de qué línea es cada cosa; números condensados. */
+  body{font-size:15.5px}
+  .top{background:var(--display);color:var(--on-display);border-bottom:0}
+  .top .online{color:var(--on-display)}
+  .top .muted{color:var(--display-muted)}
+  .top .avatar{background:var(--on-display);color:var(--display)}
+  .rail{background:var(--display);border-right:0}
+  .rail .logo{background:var(--on-display);color:var(--display)}
+  .rail a{color:var(--display-muted)}
+  .rail a[aria-current]{background:rgba(255,255,255,.12);color:var(--on-display)}
+  .menu-btn{color:var(--on-display)}
+  .card{border-left:6px solid var(--line)}
+  .card.sup,.ln.sup{border-left-color:var(--sup)}.card.maq,.ln.maq{border-left-color:var(--maq)}.card.faj,.ln.faj{border-left-color:var(--faj)}
+  .ln{border-left:5px solid transparent;padding-left:10px}
+  .chip{border-radius:var(--r-s);text-transform:none}
+  .chip .dot{width:10px;height:22px;border-radius:2px}
+  .dot.sup{background:var(--sup)}.dot.maq{background:var(--maq)}.dot.faj{background:var(--faj)}
+  .chip[aria-pressed=true]{background:var(--ink)}
+  .card .price,.ln .amt,.total .value,.hero-figure,.subtotal b,.facts b,.legend .amt{font-family:var(--font-num);font-weight:700}
+  .total .value{font-size:46px}
+  .page-head h1,.panel h2{text-transform:none;font-weight:700}
+  .search{border-width:2px;border-color:var(--ink)}
+  
+</style>
+</head>
+<body>
+<div class="app"><nav class="rail" aria-label="Menú"><div class="logo">n</div><a href="#"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h10.2L20 7H6.2"/><circle cx="9" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>Vender</a><a href="#" aria-current="page"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>Caja</a><a href="#"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4zM3 7v10l9 4 9-4V7M12 11v10"/></svg>Mercancía</a><a href="#"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Tablero</a><a href="#"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4l2-2zM10 21h4"/></svg>Alertas</a></nav><div><header class="top"><button class="menu-btn" aria-label="Abrir menú"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+<span class="where">Cerrar caja</span>
+<div class="who"><span class="online"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></svg><span class="reg">En línea</span></span>
+<span class="reg muted">Tienda · Caja 1</span><span class="name">Lizbeth</span><span class="avatar">L</span></div></header>
+<main class="page"><div class="page-head"><h1>Cerrar caja</h1><p>Lizbeth · Caja 1 · abierta hoy a las 9:02 a.m.</p></div>
+<div class="close">
+<section class="panel denoms"><h2><span class="step">1</span>Cuenta el efectivo</h2><p>Escribe cuántos billetes y monedas hay de cada uno. Lo vacío cuenta como cero.</p>
+<h3>Billetes</h3><label class="drow"><span class="d num">RD$ 2,000</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 2000" inputmode="numeric" value="3" placeholder="0"><span class="t num">RD$ 6,000</span></label><label class="drow"><span class="d num">RD$ 1,000</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 1000" inputmode="numeric" value="4" placeholder="0"><span class="t num">RD$ 4,000</span></label><label class="drow"><span class="d num">RD$ 500</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 500" inputmode="numeric" value="5" placeholder="0"><span class="t num">RD$ 2,500</span></label><label class="drow"><span class="d num">RD$ 200</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 200" inputmode="numeric" value="6" placeholder="0"><span class="t num">RD$ 1,200</span></label><label class="drow"><span class="d num">RD$ 100</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 100" inputmode="numeric" value="7" placeholder="0"><span class="t num">RD$ 700</span></label><label class="drow"><span class="d num">RD$ 50</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 50" inputmode="numeric" value="4" placeholder="0"><span class="t num">RD$ 200</span></label><label class="drow"><span class="d num">RD$ 20</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 20" inputmode="numeric" value="" placeholder="0"><span class="t num">—</span></label>
+<h3>Monedas</h3><label class="drow"><span class="d num">RD$ 25</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 25" inputmode="numeric" value="2" placeholder="0"><span class="t num">RD$ 50</span></label><label class="drow"><span class="d num">RD$ 10</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 10" inputmode="numeric" value="5" placeholder="0"><span class="t num">RD$ 50</span></label><label class="drow"><span class="d num">RD$ 5</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 5" inputmode="numeric" value="3" placeholder="0"><span class="t num">RD$ 15</span></label><label class="drow"><span class="d num">RD$ 1</span><span class="muted" aria-hidden="true">×</span><input aria-label="Cantidad de 1" inputmode="numeric" value="10" placeholder="0"><span class="t num">RD$ 10</span></label>
+<div class="subtotal"><span>Efectivo contado</span><b class="num">RD$ 14,725.00</b></div></section>
+<div style="display:grid;gap:16px">
+<section class="panel"><h2><span class="step">2</span>Tarjeta</h2><p>Cierra primero el lote del verifón y copia lo que imprimió.</p>
+<div class="field"><label for="card">Total del lote</label><input id="card" class="num" value="7,600.00"></div>
+<div class="field"><label for="lote">Número de lote</label><input id="lote" class="num" value="000347"><small>Obligatorio si hubo cobros con tarjeta.</small></div></section>
+<section class="panel"><h2><span class="step">3</span>Transferencias</h2><p class="note">No las cuentas tú: el sistema las suma y la dueña las verifica en el banco.</p></section>
+<section class="panel"><h2><span class="step">4</span>Entrega</h2>
+<div class="field"><label for="ent">Efectivo que entregas a la dueña</label><input id="ent" class="num" value="12,725.00"></div>
+<div class="subtotal" style="border-top-width:1px"><span>Se queda en caja para mañana</span><b class="num" style="font-size:20px">RD$ 2,000.00</b></div>
+<div class="confirm"><span class="box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>Conté el efectivo y copié el lote de tarjeta.</span></div>
+<button class="btn primary close-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>Cerrar caja e imprimir cuadre</button></section>
+</div></div></main></div></div>
+</body>
+</html>
