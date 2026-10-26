@@ -279,3 +279,58 @@ prueba no tiene ventas); no son datos reales.
   oscuro; no se rediseñó.
 - La alerta del tablero solo ofrece «Revisar alertas» con `alerts:write`
   (comportamiento de C).
+
+## Adentro · lote B (ChatGPT nube, 26-oct-2026)
+
+Rama `chatgpt-nube/lumina-adentro-b`, creada desde
+`origin/claude/producto-mezcla-4` en `8ae06d8d`. Alcance asignado: Catálogo,
+Inventario, Clientes, Reportes, Configuración, Mercancía/Equipos y Asistente.
+No incluye caja/POS, tablero «Hoy» ni marco de administración, que pertenecen a
+`chatgpt-pc/lumina-adentro-a`.
+
+### Preparación e inventario
+
+- Catálogo, Inventario, Clientes, Reportes y Configuración comparten
+  `Heading`, `Filter` y `DataTable` en `Management.tsx`, además de `Button`,
+  `Badge`, `Card`, `Field`, `TableFrame`, `Modal`, `Empty` y `Loading` de
+  `@fitstore/ui`. El lote B reutilizará las primitivas y extensiones publicadas
+  por ChatGPT PC; no añadirá un segundo sistema de componentes.
+- Mercancía conserva su selector Entrada/Salida, revisión previa, operación sin
+  conexión, escáner, lotes y barra móvil. Equipos conserva sus estados con
+  texto y color, aprobación, revocación y equipo actual.
+- El Asistente conserva diálogo, foco, cuota, apertura desde tarjetas,
+  confirmación de anulaciones, Markdown seguro y límites. Su cambio visual se
+  limita a sustituir colores directos por el tema compartido.
+- No se cambiarán APIs, permisos, cálculos, pagos, NCF/DGII, base de datos,
+  migraciones, Render ni despliegue.
+
+### Contratos visuales y móviles identificados
+
+- Una acción principal por vista; filtros y exportaciones quedan como acciones
+  secundarias.
+- Tablas numéricas con cifras tabulares, estados con texto además de color,
+  foco visible y regiones desplazables alcanzables por teclado.
+- A 390×844, Catálogo, Inventario y Clientes reutilizan el patrón de tarjetas
+  de `DataTable`; las tablas financieras de Reportes conservan columnas y
+  desplazamiento horizontal accesible.
+- Configuración, Mercancía, Equipos y Asistente no tendrán láser, halo ni
+  movimiento ambiental. `prefers-reduced-motion` continúa desactivando el
+  movimiento no esencial.
+
+### Base verificada antes de cambios visuales
+
+Con Node 24, pnpm 11 y Prisma generado para este checkout:
+
+- `pnpm typecheck`: aprobado.
+- `pnpm lint`: aprobado.
+- `pnpm build`: aprobado; Vite solo informa el aviso previo de tamaño de chunk.
+- `pnpm test`: 152 archivos aprobados y 1 omitido; 998 pruebas aprobadas y 10
+  omitidas. La evaluación local del asistente respondió 79/79 casos.
+
+### Dependencia de integración
+
+La implementación y las capturas antes/después empiezan al incorporar
+`origin/chatgpt-pc/lumina-adentro-a`, porque esa rama fija el marco y los
+componentes que este lote debe consumir. Al registrar esta preparación, esa
+rama todavía no estaba publicada en el remoto. Esta dependencia evita crear
+componentes duplicados; no impide continuar el desarrollo del producto.
