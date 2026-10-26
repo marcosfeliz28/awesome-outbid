@@ -101,6 +101,31 @@ describe("AUD-NUEVO · IA", () => {
     expect(engine.evaluate).toHaveBeenCalledTimes(1);
   });
 
+  it("IA-05: la factura va con lista blanca, sin notas, referencias, tarjeta ni RNC", async () => {
+    const sale = {
+      id: "s1", number: "FS-0000009", status: "completed", createdAt: "2026-10-24T15:00:00Z",
+      customerName: "Ana", subtotal: 1000, discountTotal: 0, taxTotal: 152.54, total: 1000,
+      notes: "NOTA_PRIVADA", recipientLegalId: "RNC_131000000", discountApprovedName: "GERENTE_X",
+      items: [{ qty: 2, unitPrice: 500, lineTotal: 1000, variant: { sku: "A1", product: { name: "Proteína" } } }],
+      payments: [{ method: "transfer", amount: 1000, status: "pending", bank: "BANCO_Y", reference: "REF_123", cardLast4: "4242" }],
+    };
+    const { result } = await (async () => {
+      const get = vi.fn().mockResolvedValue({ status: 200, body: JSON.stringify([sale]) });
+      return { result: await executeAssistantTool("detalle_factura", { numero: "FS-0000009" }, get) };
+    })();
+    for (const secret of ["NOTA_PRIVADA", "RNC_131000000", "GERENTE_X", "BANCO_Y", "REF_123", "4242"])
+      expect(result).not.toContain(secret);
+    expect(result).toContain("Proteína");
+    expect(result).toContain("transferencia");
+
+    const get = vi.fn().mockResolvedValue({ status: 200, body: JSON.stringify([
+      { amount: 500, reference: "REF_999", phone: "809-555-0000", notes: "NOTA_2" },
+    ]) });
+    const pending = await executeAssistantTool("transferencias_por_verificar", { fecha: "2026-10-24" }, get);
+    for (const secret of ["REF_999", "809-555-0000", "NOTA_2"]) expect(pending).not.toContain(secret);
+    expect(pending).toContain("500");
+  });
+
   it("IA-06: el consumo de vueltas anteriores sobrevive a un fallo posterior", async () => {
     const model = vi
       .fn()

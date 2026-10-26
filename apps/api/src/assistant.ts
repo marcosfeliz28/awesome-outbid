@@ -247,6 +247,9 @@ const untrusted = (value: string) =>
   "\n</datos_no_confiables>";
 const sensitiveKey =
   /(?:authorization|password|contraseña|pin|secret|token|card[_-]?(?:number|security)|cv[cv]|tenantId|branchId|userId|sessionId|(?:api|access|private|client)[_-]?key)/i;
+// IA-05: texto libre y datos de contacto, pago o fiscales no van al proveedor del modelo.
+const piiKey =
+  /^(?:notes?|reason|reference|bank|phone|email|address|recipientLegalId|legalId|rnc|cedula|document|cardLast4|cardBrand|approvalCode|resolutionNote)$/i;
 function redact(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redact);
   if (value && typeof value === "object")
@@ -258,7 +261,8 @@ function redact(value: unknown): unknown {
             key !== "id" &&
             !/Id$/.test(key) &&
             !/By$/.test(key) &&
-            !sensitiveKey.test(key),
+            !sensitiveKey.test(key) &&
+            !piiKey.test(key),
         )
         .map(([key, item]) => [key, redact(item)]),
     );
@@ -551,9 +555,6 @@ const ROUTES: Partial<Record<ToolName, (args: any) => string[]>> = {
       (report) =>
         "/api/reports/" + report + query({ from: args.desde, to: args.hasta }),
     ),
-  detalle_factura: (args) => [
-    "/api/sales" + query({ q: args.numero, date: args.fecha }),
-  ],
   transferencias_por_verificar: (args) => [
     "/api/payments/pending-transfers" + query({ date: args.fecha }),
   ],
@@ -1000,6 +1001,55 @@ async function runTool(
         );
       if (!report.ok) return report.text;
       return { incentivos: redact(report.data), nota: "Montos en RD$." };
+    }
+    case "detalle_factura": {
+      const found = await fetchJson(
+        get,
+        "/api/sales" + query({ q: args.numero, date: args.fecha }),
+      );
+      if (!found.ok) return found.text;
+      // IA-05: lista blanca; sin notas, referencias, banco, tarjeta ni RNC.
+      const sales = Array.isArray(found.data) ? found.data : [];
+      return {
+        facturas: sales.slice(0, 20).map((sale: any) => ({
+          numero: sale.number,
+          fecha: businessDay(sale.createdAt) || null,
+          hora: localTime(sale.createdAt),
+          estado: sale.status,
+          cliente: sale.customerName ?? null,
+          subtotal: num(sale.subtotal),
+          descuento: num(sale.discountTotal),
+          itbis: num(sale.taxTotal),
+          total: num(sale.total),
+          ...(num(sale.creditBalance)
+            ? {
+                saldoPendiente: num(sale.creditBalance),
+                vence: businessDay(sale.creditDueDate) || null,
+              }
+            : {}),
+          articulos: (sale.items ?? []).map((item: any) => ({
+            nombre: [
+              item.variant?.product?.name,
+              ...Object.values(item.variant?.attributes ?? {}),
+            ]
+              .filter(Boolean)
+              .join(" "),
+            cantidad: num(item.qty),
+            devueltas: num(item.returnedQty) || undefined,
+            precio: num(item.unitPrice),
+            total: num(item.lineTotal),
+          })),
+          pagos: (sale.payments ?? []).map((pay: any) => ({
+            forma: METHOD[pay.method] ?? pay.method,
+            monto: num(pay.amount),
+            estado: pay.status,
+          })),
+          devoluciones: (sale.returns ?? []).length || undefined,
+          solicitudAnulacion: sale.voidRequest?.status ?? undefined,
+        })),
+        ...(sales.length > 20 ? { masFacturas: sales.length - 20 } : {}),
+        nota: NOTE,
+      };
     }
     case "clientes": {
       const list = await fetchJson(get, "/api/customers");
