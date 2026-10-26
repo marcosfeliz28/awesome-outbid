@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startProductApp } from "./setup/product-pg-app";
 import { paidUntilFrom } from "../apps/api/src/platform-billing";
@@ -44,6 +44,8 @@ async function tenant(code: string, trialDays = 30) {
     trialDays,
     adminName: "Dueña piloto",
     adminEmail: `${code}@example.invalid`,
+    operadora: "Ana Operadora",
+    acuerdo: { version: "piloto-1", fecha: "2026-10-01", referencia: "Carpeta 12" },
   });
   expect(created.status, JSON.stringify(created.body)).toBe(201);
   return created.body;
@@ -69,6 +71,7 @@ describe("11 · cobros de la plataforma", () => {
       a.id,
     );
     const first = await op("post", "/tenants/cobro-ref/payments", {
+      operationId: randomUUID(),
       amount: 2000,
       method: "transfer",
       reference: "BHD-0001",
@@ -77,6 +80,7 @@ describe("11 · cobros de la plataforma", () => {
     expect(first.status, JSON.stringify(first.body)).toBe(201);
     expect(first.body.tenant.paidUntil).toBe("2031-02-28T12:00:00.000Z");
     const again = await op("post", "/tenants/cobro-ref/payments", {
+      operationId: randomUUID(),
       amount: 2000,
       method: "transfer",
       reference: " bhd-0001 ",
@@ -85,6 +89,7 @@ describe("11 · cobros de la plataforma", () => {
     expect(again.status).toBe(409);
     expect(again.body.message).toContain("Ya hay un pago con la referencia");
     const second = await op("post", "/tenants/cobro-ref/payments", {
+      operationId: randomUUID(),
       amount: 4000,
       method: "cash",
       reference: "Recibo 2",
@@ -123,6 +128,7 @@ describe("11 · cobros de la plataforma", () => {
     expect(
       (
         await op("post", "/tenants/cobro-ref/payments", {
+      operationId: randomUUID(),
           amount: 2000,
           method: "transfer",
           reference: "BHD-0001",

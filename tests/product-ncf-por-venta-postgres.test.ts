@@ -319,7 +319,7 @@ it("cada venta toma su NCF B01/B02 consecutivo, único, por empresa y sólo con 
     const migration = await readFile(
       join(
         root,
-        "apps/api/prisma/migrations/202610280024_ncf_coherencia/migration.sql",
+        "apps/api/prisma/migrations/202610300001_ncf_coherencia/migration.sql",
       ),
       "utf8",
     );
