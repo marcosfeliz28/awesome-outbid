@@ -82,3 +82,17 @@ Los 4 archivos de integración que fallaron, clasificados:
 - **`api.test.ts` («Tienda-4cajas») y `auth-lockout` (N-02):** fallan solos en la rama de GV **y también igual en `origin/nexora-cloud` en `53bf1e8b`**, con una base nueva. Ya fallaban antes; no los causó GV, pero conviene revisarlos aparte.
 
 **Cosa que el ejecutor reconoció:** reutilizó una copia de trabajo de otra auditoría para instalar dependencias y escribió ahí un `.env` temporal que luego borró (si ya había uno, lo sobrescribió). No cambió ningún archivo versionado. Todo lo demás se hizo en copias propias, ya eliminadas, con los puertos 3189, 4189 y 55189 libres; no se tocaron 3001, 5432 ni 5434, ni Render ni bases reales.
+
+## Verificación de los arreglos (Claude PC, 07:23 UTC, sobre `origin/nexora-cloud` e890fee2, `claude/modulo-gv` 1069f6c0)
+Leído en el código; **no** se volvió a ejecutar la suite sobre esta versión.
+
+| Punto de la auditoría | Estado | Dónde se ve |
+|---|---|---|
+| URGENTE 1 · `dryRun` fallaba hacia lo peligroso | **Arreglado** | `gv.ts:638-644`: si el parámetro está y no es `0`, `1`, `true` o `false` (una sola vez) responde 400 «dryRun debe ser 0, 1, true o false» |
+| URGENTE 2 · la importación sin bitácora por fila | **Arreglado** | `gv-money.ts:422-452`: `audit()` por fila con `gv_import_create` o `gv_import_update` (más el resumen `gv_import`) |
+| URGENTE 3 · límite de 100 kb | **Arreglado** | `main.ts:44`: `/api/gv/import` con límite de 4 MB, declarado **antes** del analizador global de 100 kb (el orden importa: el primero que coincide consume el cuerpo) |
+| Medio · verificar tras reembolsar o cancelar | **Arreglado** | `gv.ts:412-422`: «Está reembolsada: sus pagos ya no se verifican ni rechazan» |
+| URGENTE 4 · reimportar pisa datos y carrera del plan | **Sin confirmar** | No revisé si el `update` respeta lo ya cobrado ni si el plan pasó dentro de la transacción; sigue valiendo el procedimiento: importar una vez, con un `dryRun` válido antes, sin operar pagos durante la corrida |
+| Clary: equipo pendiente de aprobación, roles `manager`/`gv` en la base real, respaldo de Render | **Sin verificar desde aquí** | Son comprobaciones del día del despliegue |
+
+Después de mi auditoría entraron cuatro commits en `claude/modulo-gv` (`0bd0ca9f` correcciones de la auditoría, `9697fb90` verificación de ChatGPT nube y migración robusta, `0c390dba` y `1069f6c0`). Los dos últimos tocan, entre otras cosas, la importación y las pestañas en celular. **Pendiente de repasar por mi parte:** que la migración "robusta" siga siendo solo aditiva (el ensayo en base temporal se hizo sobre `a97f8fa7`, no sobre esta versión).
