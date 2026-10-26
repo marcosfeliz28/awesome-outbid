@@ -1,0 +1,443 @@
+/* Obsidian Lumina · fase 1. Solo administración autenticada, nunca impresión.
+   Los tokens viven en html para alcanzar también los portales de Radix. */
+@media screen {
+  :root[data-admin-appearance] {
+    --bg: #05050a;
+    --surface: #0e1320;
+    --surface-soft: #151d2e;
+    --text: #eef2fa;
+    --muted: #aab7cc;
+    --muted-on-soft: #b8c4d8;
+    --border: #33415a;
+    --input-border: #72829b;
+    --primary: #bda4ff;
+    --primary-soft: #241c3a;
+    --lumina-violet: #8b5cf6;
+    --lumina-emerald: #43e3b1;
+    --green: var(--lumina-emerald);
+    --focus: var(--lumina-emerald);
+    --success-strong: #43e3b1;
+    --positive-text: #43e3b1;
+    --danger-text: #ffb4be;
+    --warning-text: #f6d28b;
+    --alert-counter-bg: #302619;
+    --alert-counter-border: #a4834c;
+    --shadow: none;
+    --lumina-radius: 12px;
+    --lumina-space: 24px;
+    color-scheme: dark;
+    background: var(--bg);
+    color: var(--text);
+  }
+  :root[data-admin-appearance="contrast"] {
+    --bg: #000;
+    --surface: #080c14;
+    --surface-soft: #111827;
+    --text: #fff;
+    --muted: #e2e8f0;
+    --muted-on-soft: #e2e8f0;
+    --border: #92a3bd;
+    --input-border: #c5d1e3;
+    --primary: #d5c5ff;
+    --focus: #fff;
+  }
+  [data-admin-appearance] body {
+    background: var(--bg);
+  }
+  [data-admin-appearance] :is(.sidebar, .topbar) {
+    background: #090e19;
+  }
+  [data-admin-appearance] .sidebar {
+    padding: 24px 16px;
+  }
+  [data-admin-appearance] .brand {
+    letter-spacing: -1px;
+    margin-bottom: 28px;
+  }
+  [data-admin-appearance] .brand-icon {
+    background: var(--surface-soft);
+    color: var(--lumina-emerald);
+    border: 1px solid var(--border);
+    box-shadow: none;
+  }
+  [data-admin-appearance] .brand-icon span {
+    color: var(--lumina-emerald);
+  }
+  [data-admin-appearance] .store-avatar {
+    background: var(--surface-soft);
+    color: var(--muted);
+  }
+  [data-admin-appearance] .store-switch {
+    padding: 12px;
+  }
+  [data-admin-appearance] .store-switch strong {
+    font-size: 12px;
+  }
+  [data-admin-appearance] .store-switch small {
+    font-size: 11px;
+  }
+  [data-admin-appearance] .nav-caption {
+    font-size: 10px;
+    letter-spacing: 1.2px;
+  }
+  [data-admin-appearance] .nav-item {
+    min-height: 44px;
+    font-size: 12px;
+  }
+  [data-admin-appearance] .nav-item.active {
+    box-shadow: inset 3px 0 var(--lumina-violet);
+    background: var(--primary-soft) !important;
+  }
+  [data-admin-appearance] .help-card {
+    background: var(--surface);
+    box-shadow: none;
+  }
+  [data-admin-appearance] .help-symbol {
+    display: none;
+  }
+  [data-admin-appearance] .help-card :is(p, button, strong) {
+    font-size: 12px;
+  }
+  [data-admin-appearance] .help-card button {
+    min-height: 44px;
+  }
+  [data-admin-appearance] .topbar {
+    gap: 12px;
+  }
+  [data-admin-appearance]
+    :is(.breadcrumb, .breadcrumb strong, .global-search, .account strong) {
+    font-size: 12px;
+  }
+  [data-admin-appearance] :is(.account small, .connection) {
+    font-size: 11px;
+  }
+  [data-admin-appearance] :is(.global-search, .account, .connection) {
+    min-height: 44px;
+  }
+  [data-admin-appearance] .icon-button {
+    min-width: 44px;
+  }
+  [data-admin-appearance] .avatar {
+    background: var(--primary-soft);
+    color: var(--primary);
+  }
+  [data-admin-appearance] .main-content {
+    padding-top: 32px;
+  }
+  [data-admin-appearance] .page-heading {
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  [data-admin-appearance] .page-heading h1 {
+    font-size: clamp(24px, 2.3vw, 32px);
+    letter-spacing: -0.7px;
+  }
+  [data-admin-appearance] :is(.page-heading p, .panel-heading p) {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  [data-admin-appearance] :is(.panel, .kpi-card, .lumina-card) {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--lumina-radius);
+    box-shadow: none;
+  }
+  [data-admin-appearance] .panel-heading {
+    padding: var(--lumina-space);
+  }
+  [data-admin-appearance] .panel-heading h2 {
+    font-size: 16px;
+  }
+  [data-admin-appearance] .button {
+    min-height: 44px;
+    font-size: 13px;
+    border-radius: 8px;
+    white-space: normal;
+    box-shadow: none;
+    transition: background-color 120ms ease;
+  }
+  [data-admin-appearance] :is(.button.primary, .button.success) {
+    background: var(--lumina-emerald);
+    color: #05251c;
+    border-color: var(--lumina-emerald);
+  }
+  [data-admin-appearance] .button.secondary {
+    border-color: var(--input-border);
+  }
+  [data-admin-appearance] .goods-mode button.active:not(.exit) {
+    color: #111827;
+    box-shadow: none;
+  }
+  [data-admin-appearance] .merchandise input[aria-invalid="true"] {
+    background: #302619;
+    color: var(--text);
+  }
+  [data-admin-appearance] .button.danger {
+    background: #9f1835;
+    color: #fff;
+  }
+  [data-admin-appearance] .button:hover:not(:disabled) {
+    transform: none;
+    filter: brightness(1.08);
+  }
+  [data-admin-appearance] .button:disabled {
+    opacity: 1;
+    background: #263147;
+    color: #bcc6d6;
+    border-color: #60718a;
+  }
+  [data-admin-appearance] :is(input, select, textarea) {
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  [data-admin-appearance] .field {
+    gap: 8px;
+  }
+  [data-admin-appearance] .field > span {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  [data-admin-appearance] .field small {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  [data-admin-appearance] :is(input, textarea)::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
+  [data-admin-appearance] table {
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  [data-admin-appearance] th {
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    padding: 14px 20px;
+  }
+  [data-admin-appearance] td :is(small, strong) {
+    font-size: 12px;
+  }
+  [data-admin-appearance]
+    :is(.amount, .kpi-card > strong, .day-figures > strong) {
+    font-variant-numeric: tabular-nums;
+  }
+  [data-admin-appearance] .badge {
+    font-size: 11px;
+    border: 1px solid currentColor;
+  }
+  [data-admin-appearance] :is(.badge.success, .metric-icon.green) {
+    background: #103329;
+    color: #7cefc7;
+  }
+  [data-admin-appearance]
+    :is(.badge.warning, .metric-icon.orange, .alert-symbol.orange) {
+    background: #302619;
+    color: var(--warning-text);
+  }
+  [data-admin-appearance] :is(.badge.danger, .form-error) {
+    background: #351c28;
+    color: var(--danger-text);
+  }
+  [data-admin-appearance] :is(.badge.pink, .metric-icon.pink) {
+    background: var(--surface-soft);
+    color: var(--muted);
+  }
+  [data-admin-appearance] .empty {
+    padding: 40px 24px;
+  }
+  [data-admin-appearance] .empty-orbit {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    border-radius: 12px;
+    color: var(--muted);
+  }
+  [data-admin-appearance] .empty p {
+    font-size: 13px;
+    max-width: 40ch;
+    line-height: 1.7;
+  }
+  [data-admin-appearance] .loading {
+    font-size: 14px;
+  }
+  [data-admin-appearance] .modal-overlay {
+    background: #000b;
+    backdrop-filter: none;
+  }
+  [data-admin-appearance] .modal {
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    box-shadow: 0 16px 64px #0006;
+  }
+  [data-admin-appearance] .welcome-banner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    box-shadow: none;
+    min-height: 0;
+    height: auto;
+    padding: 24px;
+  }
+  [data-admin-appearance]
+    .welcome-banner
+    :is(h2, h2 span, p, button, .banner-chip) {
+    color: var(--text);
+  }
+  [data-admin-appearance] .welcome-banner h2 {
+    font-size: 24px;
+  }
+  [data-admin-appearance] .welcome-banner p {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  [data-admin-appearance] .welcome-banner button {
+    color: var(--primary);
+    min-height: 44px;
+    font-size: 13px;
+  }
+  [data-admin-appearance] .goods-mobile-bar .button {
+    background: var(--surface-soft);
+    color: var(--text);
+    border-color: var(--input-border);
+  }
+  [data-admin-appearance] .assistant-launcher {
+    background: var(--surface-soft);
+    color: var(--text);
+    border: 1px solid var(--lumina-violet);
+    box-shadow: none;
+  }
+  [data-admin-appearance]
+    :is(.banner-illustration, .welcome-banner::before, .welcome-banner::after) {
+    display: none;
+  }
+  [data-admin-appearance] :is(.day-today, .day-yesterday, .day-other) {
+    --day-accent: var(--muted);
+    --day-bg: var(--surface-soft);
+    background: var(--surface-soft);
+    color: var(--text);
+  }
+  [data-admin-appearance] .day-today {
+    --day-accent: var(--lumina-emerald);
+  }
+  [data-admin-appearance] .day-card {
+    margin-block: 24px;
+  }
+  [data-admin-appearance] :is(.day-title, .day-profit) {
+    color: var(--positive-text);
+  }
+  [data-admin-appearance] .table-wrap:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: -3px;
+  }
+  [data-admin-appearance]
+    :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+  }
+  [data-admin-appearance] .lumina-card {
+    padding: var(--lumina-space);
+  }
+  [data-admin-appearance] .lumina-alert {
+    padding: 16px;
+    border: 1px solid var(--input-border);
+    border-left: 3px solid var(--lumina-violet);
+    border-radius: 8px;
+    background: var(--surface-soft);
+  }
+  [data-admin-appearance] .lumina-alert p {
+    margin: 6px 0 0;
+    color: var(--muted);
+  }
+  [data-admin-appearance] .lumina-alert[data-tone="warning"] {
+    border-left-color: var(--warning-text);
+  }
+  [data-admin-appearance] .lumina-alert[data-tone="danger"] {
+    border-left-color: var(--danger-text);
+  }
+  [data-admin-appearance] .lumina-alert[data-tone="success"] {
+    border-left-color: var(--positive-text);
+  }
+  [data-admin-appearance] .lumina-specimens {
+    display: grid;
+    gap: 24px;
+  }
+  [data-admin-appearance] .lumina-specimens h2 {
+    margin-bottom: 16px;
+  }
+  [data-admin-appearance] .lumina-specimens .style-row {
+    flex-wrap: wrap;
+  }
+  @media (max-width: 1100px) {
+    [data-admin-appearance] .global-search :is(span, kbd) {
+      display: none;
+    }
+  }
+  @media (max-width: 780px) {
+    [data-admin-appearance]
+      .app-shell:has(.goods-mobile-bar)
+      .assistant-launcher {
+      bottom: calc(84px + env(safe-area-inset-bottom));
+    }
+    [data-admin-appearance] .main-content {
+      padding: 24px 16px;
+    }
+    [data-admin-appearance] .topbar {
+      padding-inline: 12px;
+    }
+    [data-admin-appearance] .topbar-right {
+      gap: 4px;
+    }
+    [data-admin-appearance] .page-heading {
+      gap: 16px;
+    }
+    [data-admin-appearance] .heading-actions {
+      width: 100%;
+    }
+    [data-admin-appearance] .heading-actions .button {
+      flex: 1;
+    }
+    [data-admin-appearance] .lumina-card {
+      padding: 16px;
+    }
+    [data-admin-appearance] :is(input, select, textarea) {
+      font-size: 16px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-admin-appearance] *,
+    [data-admin-appearance] *::before,
+    [data-admin-appearance] *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  @media (forced-colors: active) {
+    [data-admin-appearance] .nav-item.active {
+      outline: 2px solid Highlight;
+    }
+    [data-admin-appearance] :is(.button, .badge) {
+      border: 1px solid ButtonText;
+    }
+  }
+}
+.admin-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  transform: translateY(-200%);
+  padding: 12px 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--focus);
+  border-radius: 8px;
+}
+.admin-skip-link:focus {
+  transform: translateY(0);
+}
+@media print {
+  .admin-skip-link {
+    display: none;
+  }
+}
