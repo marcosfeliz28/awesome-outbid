@@ -92,4 +92,3 @@ Se conserva la entrega inicial y sus hallazgos. Esta revisión agrega evidencia 
 **Evidencia:** `apps/api/src/gv-money.ts:34` llama `toISOString()` sobre una fecha potencialmente inválida dentro de `refine`. **Reproducción local ejecutada:** crear pago de inscripción/cita con fecha `2026-13-01`. **Esperado:** 400 sin inserción. **Real:** 500 por `RangeError`. No se clasifica como pérdida de dinero ni como nuevo respecto de todas las ramas anteriores; la validación previa ya tenía ese patrón.
 
 **Arreglo propuesto:** comprobar `Number.isFinite(date.getTime())` antes de convertir y comparar día, mes y año sin normalización silenciosa. Pruebas: mes13, día00/32 y 29-feb no bisiesto.
-
