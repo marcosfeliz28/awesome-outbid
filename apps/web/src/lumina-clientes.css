@@ -38,3 +38,23 @@
     font-size: 16px;
   }
 }
+/* Áreas táctiles: 40 px en escritorio, 44 px en celular (criterio 3). El
+   envoltorio no altera el diseño (display: contents) y acota las reglas. */
+.customers-screen {
+  display: contents;
+}
+.customers-screen .table-search input,
+.customers-screen .pagination .button,
+.customers-screen .heading-actions .button {
+  min-height: 40px;
+}
+@media (max-width: 640px) {
+  .customers-screen .table-search input,
+  .customers-screen .pagination .button,
+  .customers-screen .heading-actions .button {
+    min-height: 44px;
+  }
+  .customers-screen .pagination .button {
+    min-width: 44px;
+  }
+}

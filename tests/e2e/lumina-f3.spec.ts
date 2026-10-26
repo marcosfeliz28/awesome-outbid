@@ -261,15 +261,26 @@ for (const p of PANTALLAS) {
       });
     });
 
-    test(`4b. ${en}: «Más» se abre con Enter/Espacio y se cierra con Escape`, async ({
-      page,
-    }) => {
+    // Criterio 4b acotado (decisión documentada en OBSIDIAN_LUMINA_F3_PRUEBAS.md):
+    // «Más» solo existe donde la cabecera tiene acciones secundarias (Productos y
+    // Reportes). En Inventario, Clientes y Configuración un «Más» vacío sería mala
+    // UX, así que ahí se exige una sola acción principal y NINGÚN «Más».
+    const CON_MAS = ["products", "reports"].includes(p.id);
+    test(`4b. ${en}: ${
+      CON_MAS
+        ? "«Más» se abre con Enter/Espacio y se cierra con Escape"
+        : "sin acciones secundarias: sin «Más» vacío y máx. una acción principal"
+    }`, async ({ page }) => {
       await page.setViewportSize({ width: v.width, height: v.height });
       await entrar(page);
       await abrir(page, p.id);
-      const mas = page
-        .locator(".main-content .heading-actions")
-        .getByRole("button", { name: "Más", exact: true });
+      const cabecera = page.locator(".main-content .heading-actions");
+      const mas = cabecera.getByRole("button", { name: "Más", exact: true });
+      if (!CON_MAS) {
+        await expect(mas, "«Más» vacío en la cabecera").toHaveCount(0);
+        expect(await cabecera.locator(".button.primary").count()).toBeLessThanOrEqual(1);
+        return;
+      }
       await expect(mas, "falta el botón «Más» en la cabecera").toHaveCount(1);
       await mas.focus();
       for (const tecla of ["Enter", "Space"]) {

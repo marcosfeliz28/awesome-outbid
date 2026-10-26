@@ -48,3 +48,13 @@ FITSTORE_WEB_PORT=4187 FITSTORE_API_PROXY=http://127.0.0.1:3187 \
 Al terminar: detener la API y la vista previa (puertos 3187 y 4187),
 `node scripts/local-db.mjs --detener` y borrar `.lumina-f3-db` (no está en
 `.gitignore`: no lo agregues al commit). Tarda unos 5 minutos.
+
+## Cambio explícito del criterio 4b
+
+El criterio 4b exigía un botón «Más» en la cabecera de las cinco pantallas.
+Se acota a las pantallas cuya cabecera tiene acciones secundarias de verdad
+(Productos y Reportes, las únicas que pasan `more` a `Heading`). Inventario,
+Clientes y Configuración no tienen acciones secundarias: un «Más» vacío sería
+mala experiencia (un menú sin nada que abrir). En esas tres, 4b comprueba en su
+lugar que la cabecera tiene como máximo una acción principal y que NO hay un
+«Más» vacío. Ningún otro criterio se modificó.
