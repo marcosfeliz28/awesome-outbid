@@ -42,7 +42,6 @@ import {
   ArrowUpRight,
   Palette,
   ScanLine,
-  Zap,
   Info,
   KeyRound,
   Dumbbell,
@@ -385,18 +384,48 @@ function Login() {
     [confirmPassword, setConfirmPassword] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  // La luz ambiental sigue al puntero sin volver a pintar React (solo variables CSS).
+  const page = useRef<HTMLDivElement>(null);
+  const moved = useRef(0);
+  const [tab, setTab] = useState<"clave" | "numerica">("clave");
+  const digits = /^\d{0,6}$/.test(password) ? password : "";
+  const pickTab = (next: "clave" | "numerica") => {
+    if (next === tab) return;
+    setPassword("");
+    setShowPassword(false);
+    setError("");
+    setTab(next);
+  };
+  const pushDigit = (d: string) =>
+    setPassword((p) => (/^\d{0,5}$/.test(p) ? p + d : p));
   return (
-    <div className="login-page">
-      <div className="login-art">
-        <div className="brand">
-          <div className="brand-icon">
-            n<span>•</span>
+    <div
+      className="login-page"
+      ref={page}
+      onPointerMove={(e) => {
+        if (moved.current) return;
+        const { clientX: x, clientY: y } = e;
+        moved.current = requestAnimationFrame(() => {
+          moved.current = 0;
+          page.current?.style.setProperty("--mx", x + "px");
+          page.current?.style.setProperty("--my", y + "px");
+        });
+      }}
+    >
+      <div className="login-aurora" aria-hidden="true" />
+      <header className="login-top">
+        <div className="login-brand">
+          <img src="/emblema-prisma.webp" alt="" width="44" height="44" />
+          <div>
+            <span className="login-wordmark">NEXORA</span>
+            <span className="login-chip">POS</span>
+            <p>Punto de venta, inventario y caja</p>
           </div>
-          <span>
-            nexora<span className="brand-pos">POS</span>
-          </span>
         </div>
-        <div>
+        <span className="login-laser" aria-hidden="true" />
+      </header>
+      <main className="login-main">
+        <section className="login-art" aria-label="Qué hace Nexora POS">
           <span className="eyebrow light">
             {PRODUCT_TENANCY_REQUIRED
               ? "NEXORA POS"
@@ -405,257 +434,377 @@ function Login() {
           <h1>
             {PRODUCT_TENANCY_REQUIRED ? "Tu negocio." : "Fitness y belleza."}
             <br />
-            Todo bajo control.
+            <span>Todo bajo control.</span>
           </h1>
           <p>
             {PRODUCT_TENANCY_REQUIRED
               ? "Ventas, inventario y caja en un solo lugar."
               : "Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema."}
           </p>
-          <div className="login-stats">
-            <span>
-              <Zap />
-              Vende en segundos
-            </span>
-            <span>
-              <Boxes />
-              Inventario al día
-            </span>
-            <span>
-              <Sparkles />
-              Decide con claridad
-            </span>
+          <ul className="login-stats">
+            <li>
+              <small>Arqueo ciego</small>
+              <strong>Caja sin sesgo</strong>
+              <span>La cajera cuenta sin ver lo esperado</span>
+            </li>
+            <li>
+              <small>Margen</small>
+              <strong>Oculto a cajeras</strong>
+              <span>Solo lo ve quien administra</span>
+            </li>
+            <li>
+              <small>PIN rápido</small>
+              <strong>Cambio de turno</strong>
+              <span>Cada persona vende en su caja</span>
+            </li>
+            <li>
+              <small>Inventario</small>
+              <strong>Al día</strong>
+              <span>Entradas, salidas y traspasos</span>
+            </li>
+          </ul>
+          <div className="login-stage">
+            <img
+              src="/nucleo-prisma.webp"
+              alt=""
+              width="480"
+              height="268"
+              loading="lazy"
+            />
+            <ul className="login-faces">
+              {loginCube.map(({ face, icon: Icon, title, items, gv }) => (
+                <li key={face} className={gv ? "gv" : undefined}>
+                  <Icon aria-hidden="true" />
+                  <strong>{title}</strong>
+                  <small>{items}</small>
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
-        <small>
-          {PRODUCT_TENANCY_REQUIRED
-            ? "Hecho para tu negocio."
-            : "Hecho para una tienda con energía."}
-        </small>
-        {/* Escena 3D decorativa (solo CSS): piso en perspectiva y cubo. */}
-        <div className="login-scene" aria-hidden="true">
-          <div className="scene-floor" />
-          <div className="scene-orbit one" />
-          <div className="scene-orbit two" />
-          <div className="scene-cube">
-            {loginCube.map(({ face, icon: Icon, title, items, gv }) => (
-              <span key={face} className={"face " + face + (gv ? " gv" : "")}>
-                <Icon />
-                <strong>{title}</strong>
-                <small>{items}</small>
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="login-form-panel">
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const slug = companyCode.trim().toLowerCase();
-            if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) {
-              setError("Escribe el código de empresa.");
-              return;
-            }
-            if (changeRequired) {
-              const validation = passwordChangeError(
-                newPassword,
-                confirmPassword,
-                password,
-                "required",
-                passwordPolicy,
-              );
-              if (validation) {
-                setError(validation);
+        </section>
+        <div className="login-form-panel">
+          <form
+            className="login-vault"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const slug = companyCode.trim().toLowerCase();
+              if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) {
+                setError("Escribe el código de empresa.");
                 return;
               }
-            }
-            setBusy(true);
-            setError("");
-            try {
-              if (!changeRequired) {
-                const terminal = storedTerminalCredentials(slug);
-                const data = await api("/auth/login", {
-                  method: "POST",
-                  headers: { "x-tenant-id": slug },
-                  body: JSON.stringify({
-                    login,
-                    password,
-                    ...(terminal ? { terminal } : {}),
-                  }),
-                });
-                if (data.requiresPasswordChange) {
-                  setPasswordPolicy(
-                    data.passwordPolicy === "cashier-six-digits"
-                      ? "cashier-six-digits"
-                      : "strong",
-                  );
-                  setChangeRequired(true);
-                  setError("");
+              if (
+                !changeRequired &&
+                tab === "numerica" &&
+                !/^\d{6}$/.test(password)
+              ) {
+                setError("Escribe tu clave de 6 dígitos.");
+                return;
+              }
+              if (changeRequired) {
+                const validation = passwordChangeError(
+                  newPassword,
+                  confirmPassword,
+                  password,
+                  "required",
+                  passwordPolicy,
+                );
+                if (validation) {
+                  setError(validation);
                   return;
                 }
-                rememberCompany(slug, data.user.tenantId);
-                await saveSession(data.user, data.accessToken);
-              } else {
-                const terminal = storedTerminalCredentials(slug);
-                const data = await api("/auth/change-password", {
-                  method: "POST",
-                  headers: { "x-tenant-id": slug },
-                  body: JSON.stringify({
-                    login,
-                    currentPassword: password,
-                    newPassword,
-                    confirmPassword,
-                    ...(terminal ? { terminal } : {}),
-                  }),
-                });
-                rememberCompany(slug, data.user.tenantId);
-                await saveSession(data.user, data.accessToken);
               }
-            } catch (e: any) {
-              setError(
-                changeRequired
-                  ? friendlyPasswordChangeError(e, "required", passwordPolicy)
-                  : e.message,
-              );
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <span className="eyebrow">
-            {PRODUCT_TENANCY_REQUIRED
-              ? "BIENVENIDA A NEXORA"
-              : "BIENVENIDA · MACGEN & GV"}
-          </span>
-          <h2>
-            {changeRequired
-              ? "Actualiza tu contraseña."
-              : "Un nuevo día para crecer."}
-          </h2>
-          <p>
-            {changeRequired
-              ? "Por seguridad, crea una contraseña nueva para continuar."
-              : "Inicia sesión para entrar a tu tienda."}
-          </p>
-          {PRODUCT_TENANCY_REQUIRED && (
+              setBusy(true);
+              setError("");
+              try {
+                if (!changeRequired) {
+                  const terminal = storedTerminalCredentials(slug);
+                  const data = await api("/auth/login", {
+                    method: "POST",
+                    headers: { "x-tenant-id": slug },
+                    body: JSON.stringify({
+                      login,
+                      password,
+                      ...(terminal ? { terminal } : {}),
+                    }),
+                  });
+                  if (data.requiresPasswordChange) {
+                    setTab("clave");
+                    setPasswordPolicy(
+                      data.passwordPolicy === "cashier-six-digits"
+                        ? "cashier-six-digits"
+                        : "strong",
+                    );
+                    setChangeRequired(true);
+                    setError("");
+                    return;
+                  }
+                  rememberCompany(slug, data.user.tenantId);
+                  await saveSession(data.user, data.accessToken);
+                } else {
+                  const terminal = storedTerminalCredentials(slug);
+                  const data = await api("/auth/change-password", {
+                    method: "POST",
+                    headers: { "x-tenant-id": slug },
+                    body: JSON.stringify({
+                      login,
+                      currentPassword: password,
+                      newPassword,
+                      confirmPassword,
+                      ...(terminal ? { terminal } : {}),
+                    }),
+                  });
+                  rememberCompany(slug, data.user.tenantId);
+                  await saveSession(data.user, data.accessToken);
+                }
+              } catch (e: any) {
+                setError(
+                  changeRequired
+                    ? friendlyPasswordChangeError(e, "required", passwordPolicy)
+                    : e.message,
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <span className="eyebrow">
+              {PRODUCT_TENANCY_REQUIRED
+                ? "BIENVENIDA A NEXORA"
+                : "BIENVENIDA · MACGEN & GV"}
+            </span>
+            <h2>
+              {changeRequired
+                ? "Actualiza tu contraseña."
+                : "Un nuevo día para crecer."}
+            </h2>
+            <p>
+              {changeRequired
+                ? "Por seguridad, crea una contraseña nueva para continuar."
+                : "Inicia sesión para entrar a tu tienda."}
+            </p>
+            {!changeRequired && (
+              <div
+                className="login-tabs"
+                role="tablist"
+                aria-label="Forma de entrar"
+              >
+                {(
+                  [
+                    ["clave", "Clave"],
+                    ["numerica", "PIN de 6 dígitos"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    id={"login-tab-" + id}
+                    aria-selected={tab === id}
+                    aria-controls="login-tabpanel"
+                    tabIndex={tab === id ? 0 : -1}
+                    onClick={() => pickTab(id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                        e.preventDefault();
+                        const next = id === "clave" ? "numerica" : "clave";
+                        pickTab(next);
+                        document.getElementById("login-tab-" + next)?.focus();
+                      }
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {PRODUCT_TENANCY_REQUIRED && (
+              <label className="field">
+                <span>Código de empresa</span>
+                <input
+                  type="text"
+                  autoComplete="organization"
+                  required
+                  placeholder="Ejemplo: mi-tienda"
+                  value={companyCode}
+                  onChange={(e) => setCompanyCode(e.target.value)}
+                />
+              </label>
+            )}
             <label className="field">
-              <span>Código de empresa</span>
+              <span>Usuario</span>
               <input
                 type="text"
-                autoComplete="organization"
+                autoComplete="username"
                 required
-                placeholder="Ejemplo: mi-tienda"
-                value={companyCode}
-                onChange={(e) => setCompanyCode(e.target.value)}
+                placeholder="Tu usuario o correo"
+                value={login}
+                onChange={(e) => setLogin(e.target.value)}
               />
             </label>
-          )}
-          <label className="field">
-            <span>Usuario</span>
-            <input
-              type="text"
-              autoComplete="username"
-              required
-              placeholder="Tu usuario o correo"
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
-            />
-          </label>
-          <label className="field">
-            <span>
-              <span id="login-password-label">
-                {changeRequired ? "Contraseña temporal" : "Contraseña"}
-              </span>
-              {/* Visible; el nombre accesible (aria-labelledby) sigue siendo «Contraseña» y el aviso va como descripción. */}
-              {!changeRequired && (
-                <small aria-hidden="true" id="login-password-hint">
-                  {" "}
-                  (no es tu PIN de caja)
-                </small>
-              )}
-            </span>
-            <input
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              required
-              aria-labelledby="login-password-label"
-              aria-describedby={
-                changeRequired ? undefined : "login-password-hint"
-              }
-              placeholder="Tu contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-          {/* 05-B11: ver lo que se escribe, útil con el teclado del celular. */}
-          <button
-            type="button"
-            className="link-button show-password"
-            aria-pressed={showPassword}
-            onClick={() => setShowPassword(!showPassword)}
-          >
-            Mostrar contraseña
-          </button>
-          {changeRequired && (
-            <PasswordChangeFields
-              password={newPassword}
-              confirmation={confirmPassword}
-              onPassword={setNewPassword}
-              onConfirmation={setConfirmPassword}
-              policy={passwordPolicy}
-            />
-          )}
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
-          <Button className="full-width" disabled={busy}>
-            {busy
-              ? "Procesando…"
-              : changeRequired
-                ? "Guardar contraseña y entrar"
-                : PRODUCT_TENANCY_REQUIRED
-                  ? "Entrar a mi empresa"
-                  : "Entrar a mi tienda"}
-            <ArrowUpRight size={18} />
-          </Button>
-          {!changeRequired && (
-            <details className="login-forgot">
-              <summary>¿Olvidaste tu contraseña?</summary>
-              <p>
-                Pide a la dueña o a la administración que use «Restablecer
-                contraseña» en Configuración › Usuarios y permisos. Te dará una
-                contraseña temporal para entrar y crear una nueva.
-              </p>
-              {SUPPORT_EMAIL && (
-                <p>
-                  Si eres la dueña o la administradora, escribe a{" "}
-                  <a href={"mailto:" + SUPPORT_EMAIL}>{SUPPORT_EMAIL}</a> con el
-                  código de tu empresa.
+            {tab === "clave" || changeRequired ? (
+              <div
+                id="login-tabpanel"
+                role={changeRequired ? undefined : "tabpanel"}
+                aria-labelledby={changeRequired ? undefined : "login-tab-clave"}
+              >
+                <label className="field">
+                  <span>
+                    <span id="login-password-label">
+                      {changeRequired ? "Contraseña temporal" : "Contraseña"}
+                    </span>
+                    {/* Visible; el nombre accesible (aria-labelledby) sigue siendo «Contraseña» y el aviso va como descripción. */}
+                    {!changeRequired && (
+                      <small aria-hidden="true" id="login-password-hint">
+                        {" "}
+                        (no es tu PIN de caja)
+                      </small>
+                    )}
+                  </span>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    aria-labelledby="login-password-label"
+                    aria-describedby={
+                      changeRequired ? undefined : "login-password-hint"
+                    }
+                    placeholder="Tu contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </label>
+                {/* 05-B11: ver lo que se escribe, útil con el teclado del celular. */}
+                <button
+                  type="button"
+                  className="link-button show-password"
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  Mostrar contraseña
+                </button>
+              </div>
+            ) : (
+              <div
+                id="login-tabpanel"
+                role="tabpanel"
+                aria-labelledby="login-tab-numerica"
+                className="login-pin"
+                onKeyDown={(e) => {
+                  if (/^\d$/.test(e.key)) pushDigit(e.key);
+                  else if (e.key === "Backspace")
+                    setPassword((p) => p.slice(0, -1));
+                }}
+              >
+                <p className="login-pin-help" id="login-pin-help">
+                  Para cajeras: tu clave de 6 números. Es la clave para entrar
+                  al sistema (la misma «Contraseña»), no el PIN de caja.
                 </p>
-              )}
-            </details>
-          )}
-          {PUBLIC_REGISTRATION_ENABLED && (
-            <p>
-              <a href="/registro">Crear empresa · 14 días gratis</a>
-            </p>
-          )}
-          {SHOW_DEMO_CREDENTIALS && !PRODUCT_TENANCY_REQUIRED && (
-            <div className="demo-note">
-              <Badge tone="violet">Demostración</Badge>
-              <p>
-                Cuenta: admin@fitstore.demo
-                <br />
-                Contraseña: FitStore-Demo-2026!
+                <div
+                  className="login-pin-dots"
+                  role="img"
+                  aria-label={digits.length + " de 6 dígitos escritos"}
+                >
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <span
+                      key={i}
+                      className={i < digits.length ? "on" : undefined}
+                    />
+                  ))}
+                </div>
+                <div
+                  className="login-keypad"
+                  role="group"
+                  aria-label="Teclado numérico"
+                  aria-describedby="login-pin-help"
+                >
+                  {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
+                    <button key={d} type="button" onClick={() => pushDigit(d)}>
+                      {d}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() => setPassword("")}
+                  >
+                    Borrar
+                  </button>
+                  <button type="button" onClick={() => pushDigit("0")}>
+                    0
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost"
+                    aria-label="Quitar el último dígito"
+                    onClick={() => setPassword((p) => p.slice(0, -1))}
+                  >
+                    ⌫
+                  </button>
+                </div>
+              </div>
+            )}
+            {changeRequired && (
+              <PasswordChangeFields
+                password={newPassword}
+                confirmation={confirmPassword}
+                onPassword={setNewPassword}
+                onConfirmation={setConfirmPassword}
+                policy={passwordPolicy}
+              />
+            )}
+            {error && (
+              <p className="form-error" role="alert">
+                {error}
               </p>
-              <small>Datos ficticios · comprobantes internos no fiscales</small>
-            </div>
-          )}
-        </form>
-      </div>
+            )}
+            <Button className="full-width" disabled={busy}>
+              {busy
+                ? "Procesando…"
+                : changeRequired
+                  ? "Guardar contraseña y entrar"
+                  : PRODUCT_TENANCY_REQUIRED
+                    ? "Entrar a mi empresa"
+                    : "Entrar a mi tienda"}
+              <ArrowUpRight size={18} />
+            </Button>
+            {!changeRequired && (
+              <details className="login-forgot">
+                <summary>¿Olvidaste tu contraseña?</summary>
+                <p>
+                  Pide a la dueña o a la administración que use «Restablecer
+                  contraseña» en Configuración › Usuarios y permisos. Te dará
+                  una contraseña temporal para entrar y crear una nueva.
+                </p>
+                {SUPPORT_EMAIL && (
+                  <p>
+                    Si eres la dueña o la administradora, escribe a{" "}
+                    <a href={"mailto:" + SUPPORT_EMAIL}>{SUPPORT_EMAIL}</a> con
+                    el código de tu empresa.
+                  </p>
+                )}
+              </details>
+            )}
+            {PUBLIC_REGISTRATION_ENABLED && (
+              <p>
+                <a href="/registro">Crear empresa · 14 días gratis</a>
+              </p>
+            )}
+            {SHOW_DEMO_CREDENTIALS && !PRODUCT_TENANCY_REQUIRED && (
+              <div className="demo-note">
+                <Badge tone="violet">Demostración</Badge>
+                <p>
+                  Cuenta: admin@fitstore.demo
+                  <br />
+                  Contraseña: FitStore-Demo-2026!
+                </p>
+                <small>
+                  Datos ficticios · comprobantes internos no fiscales
+                </small>
+              </div>
+            )}
+          </form>
+        </div>
+      </main>
     </div>
   );
 }
@@ -678,8 +827,8 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
   return (
     <Modal open onClose={onClose} title="Cambiar mi contraseña">
       <p className="modal-intro">
-        Es la contraseña para entrar al sistema. Tu PIN de caja (los números
-        con que autorizas en caja) es otro: lo cambia la administración en
+        Es la contraseña para entrar al sistema. Tu PIN de caja (los números con
+        que autorizas en caja) es otro: lo cambia la administración en
         Configuración › Usuarios y permisos › Editar.
       </p>
       <form
@@ -1408,7 +1557,9 @@ function Shell() {
               {supportBannerText(supportExpiresAt(token))}
             </div>
           )}
-          {PRODUCT_TENANCY_REQUIRED && can(user.permissions, "*") && <SupportAccessBanner />}
+          {PRODUCT_TENANCY_REQUIRED && can(user.permissions, "*") && (
+            <SupportAccessBanner />
+          )}
           <DeviceGate />
           <PlanLimitNotice
             onOpenEquipment={() => {
@@ -1455,17 +1606,45 @@ function Shell() {
             ))}
         </div>
       </Modal>
-      <Modal
-        open={help}
-        onClose={() => setHelp(false)}
-        title="Centro de ayuda"
-      >
+      <Modal open={help} onClose={() => setHelp(false)} title="Centro de ayuda">
         <p>Guías breves para las tareas habituales.</p>
-        <details><summary>Vender y cobrar</summary><p>Abre tu caja, busca el producto y elige su variante. Revisa cliente, cantidades y total antes de cobrar. Puedes combinar efectivo, tarjeta y transferencia.</p></details>
-        <details><summary>Cobrar un crédito</summary><p>En Créditos pendientes, abre el estado de cuenta, revisa el saldo y registra el abono en la forma de pago recibida. Una transferencia queda pendiente de verificación cuando corresponde.</p></details>
-        <details><summary>Cerrar la caja</summary><p>Sincroniza las ventas pendientes, cierra el lote del verifón, cuenta el efectivo por denominación y escribe la tarjeta declarada. Lee el cuadre impreso y avisa a administración si hay diferencia.</p></details>
-        <details><summary>Trabajar sin conexión</summary><p>Las ventas pendientes quedan en este dispositivo. No borres los datos del navegador ni cambies de equipo. Al volver la conexión, revisa la sincronización y los conflictos en Caja.</p></details>
-        <p><a href="/estado.html" target="_blank" rel="noopener noreferrer">Consultar estado del servicio</a></p>
+        <details>
+          <summary>Vender y cobrar</summary>
+          <p>
+            Abre tu caja, busca el producto y elige su variante. Revisa cliente,
+            cantidades y total antes de cobrar. Puedes combinar efectivo,
+            tarjeta y transferencia.
+          </p>
+        </details>
+        <details>
+          <summary>Cobrar un crédito</summary>
+          <p>
+            En Créditos pendientes, abre el estado de cuenta, revisa el saldo y
+            registra el abono en la forma de pago recibida. Una transferencia
+            queda pendiente de verificación cuando corresponde.
+          </p>
+        </details>
+        <details>
+          <summary>Cerrar la caja</summary>
+          <p>
+            Sincroniza las ventas pendientes, cierra el lote del verifón, cuenta
+            el efectivo por denominación y escribe la tarjeta declarada. Lee el
+            cuadre impreso y avisa a administración si hay diferencia.
+          </p>
+        </details>
+        <details>
+          <summary>Trabajar sin conexión</summary>
+          <p>
+            Las ventas pendientes quedan en este dispositivo. No borres los
+            datos del navegador ni cambies de equipo. Al volver la conexión,
+            revisa la sincronización y los conflictos en Caja.
+          </p>
+        </details>
+        <p>
+          <a href="/estado.html" target="_blank" rel="noopener noreferrer">
+            Consultar estado del servicio
+          </a>
+        </p>
         <h3>Atajos de teclado</h3>
         <div className="shortcut-list">
           <span>

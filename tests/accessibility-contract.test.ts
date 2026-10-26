@@ -552,3 +552,12 @@ describe("G11 · listener de teclado con modal", () => {
     expect(preventDefault).not.toHaveBeenCalled();
   });
 });
+
+describe("Portada y bóveda de acceso (Lumina V2)", () => {
+  it("teclado táctil de 48 px o más, sin fuentes de CDN y sin desenfoque fuera de @supports", () => {
+    expect(css).toMatch(/\.login-keypad button \{\s*min-height: (5\d|[6-9]\d)px/);
+    expect(css).not.toMatch(/fonts\.googleapis|cdn\.tailwindcss/);
+    const sinSupports = css.replace(/@supports \(backdrop-filter[\s\S]*?\n\}\n(?=\.)/, "");
+    expect(sinSupports.match(/\.login-(vault|stage|stats)[^{]*\{[^}]*backdrop-filter/g)).toBeNull();
+  });
+});
