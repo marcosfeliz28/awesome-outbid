@@ -2,7 +2,7 @@
 
 Fecha: 2026-10-26  
 Código GV validado: `origin/claude/modulo-gv` en `a97f8fa73f096be98c31bdd63dc1d9d697eaa157`  
-Archivo nuevo: `tests/adversarial/gv-adversarial-t5-postgres.test.ts`  
+Archivo nuevo: `tests/adversarial/gv-adversarial-t5-postgres.test.ts`
 Archivos existentes modificados: ninguno.
 
 ## Cobertura
