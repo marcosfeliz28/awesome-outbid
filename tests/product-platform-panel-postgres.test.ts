@@ -128,7 +128,7 @@ it("panel del operador: resumen, detalle con contacto y reenvío de invitación"
     const http = supertest(app.getHttpServer());
     const auth = `Platform ${platformToken}`;
     const get = (path: string) => http.get(path).set("Authorization", auth);
-    const post = (path: string, body: object = {}) =>
+    const post = (path: string, body: object = { operadora: "Ana Operadora" }) =>
       http.post(path).set("Authorization", auth).send(body);
 
     // Sin credencial configurada, las rutas nuevas tampoco existen.
@@ -153,7 +153,7 @@ it("panel del operador: resumen, detalle con contacto y reenvío de invitación"
         businessType: "retail",
         plan: "basico",
         adminName: `Dueña ${companyCode}`,
-        adminEmail: `${companyCode}@example.invalid`,
+        adminEmail: `${companyCode}@example.invalid`, operadora: "Ana Operadora", acuerdo: { version: "piloto-1", fecha: "2026-10-01", referencia: "Carpeta 12" },
         trialDays,
       });
       expect(res.status, JSON.stringify(res.body)).toBe(201);
@@ -246,7 +246,7 @@ it("panel del operador: resumen, detalle con contacto y reenvío de invitación"
     const accept = (token: string) =>
       http
         .post("/api/auth/accept-invitation")
-        .send({ token, password: "ClaveSegura-2026!", managerPin: "869253" });
+        .send({ token, password: "ClaveSegura-2026!", managerPin: "869253", consentAccepted: true });
     expect((await accept(oldToken)).status).toBe(400);
     expect((await accept(newToken)).status).toBe(201);
     // Aceptada: ya no se reenvía y el detalle lo dice.

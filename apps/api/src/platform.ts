@@ -12,6 +12,15 @@ import { effectiveTenantStatus, tenantDueAt } from "./tenant-lifecycle";
 const DAY = 86400000;
 const plans = Object.keys(BILLING_PLANS) as [keyof typeof BILLING_PLANS, ...(keyof typeof BILLING_PLANS)[]];
 const slugParam = z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,62}$/);
+// INV-01/INV-02: quien opera se identifica (la credencial es compartida) y el
+// acuerdo de servicio en papel queda con versión, fecha y referencia verificable.
+const operadora = z.string().trim().min(2).max(80);
+const paperAgreement = z.object({
+  version: z.string().trim().regex(/^[A-Za-z0-9._-]{1,40}$/),
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  referencia: z.string().trim().min(3).max(120),
+}).strict();
+const invitationAction = z.object({ operadora, acuerdo: paperAgreement.optional() }).strict();
 const invitedTenant = z.object({
   businessName: z.string().trim().min(2).max(120),
   companyCode: z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,62}$/),
@@ -20,7 +29,16 @@ const invitedTenant = z.object({
   trialDays: z.number().int().min(1).max(365).default(30),
   adminName: z.string().trim().min(2).max(120),
   adminEmail: z.string().trim().email().max(254),
+  operadora,
+  acuerdo: paperAgreement,
 }).strict();
+
+/** Ciclo de vida durable de la invitación en la bitácora de la empresa (sin el token). */
+const invitationEvent = (db: any, tenantId: string, action: string, req: Request, after: object) =>
+  db.auditLog.create({ data: {
+    tenantId, userId: "platform", action, entity: "invitation", entityId: tenantId, ip: clientIp(req), after,
+  } });
+const paperVersion = (acuerdo: z.infer<typeof paperAgreement>) => `papel:${acuerdo.version}`;
 
 /** Sin PLATFORM_ADMIN_TOKEN_SHA256 válido, las rutas del operador no existen (404). */
 export function authorizePlatform(req: Request, limits: RequestRateLimitService) {
@@ -77,16 +95,22 @@ export class PlatformController {
     // Clave y PIN aleatorios descartados: nadie los conoce hasta aceptar la invitación.
     const unusable = await hash(randomBytes(32).toString("hex"), 12);
     try {
-      // Piloto con acuerdo en papel: sin consentimiento web (términos nulos).
-      const tenant = await this.registration.db.$transaction(tx => createTenantWithOwner(tx, {
-        slug: input.companyCode, name: input.businessName, businessType: input.businessType,
-        plan: input.plan, status: "trial", trialEndsAt: new Date(Date.now() + input.trialDays * DAY),
-      }, {
-        name: input.adminName, email, passwordHash: unusable, pinHash: unusable,
-        verificationHash: invitationDigest(token), verificationExpiresAt: new Date(Date.now() + 7 * DAY),
-      }));
-      // Bitácora del operador, sin el token.
-      console.log(`[plataforma] empresa piloto creada: ${tenant.slug} (${tenant.plan})`);
+      // Piloto con acuerdo en papel: la versión queda en la empresa y la
+      // dueña confirma al aceptar la invitación (fecha de aceptación).
+      const expiresAt = new Date(Date.now() + 7 * DAY);
+      const tenant = await this.registration.db.$transaction(async tx => {
+        const tenant = await createTenantWithOwner(tx, {
+          slug: input.companyCode, name: input.businessName, businessType: input.businessType,
+          plan: input.plan, status: "trial", trialEndsAt: new Date(Date.now() + input.trialDays * DAY),
+          termsVersion: paperVersion(input.acuerdo), privacyVersion: paperVersion(input.acuerdo),
+        }, {
+          name: input.adminName, email, passwordHash: unusable, pinHash: unusable,
+          verificationHash: invitationDigest(token), verificationExpiresAt: expiresAt,
+        });
+        await invitationEvent(tx, tenant.id, "invitation.created", req,
+          { operadora: input.operadora, acuerdo: input.acuerdo, expiresAt });
+        return tenant;
+      });
       return { id: tenant.id, slug: tenant.slug, plan: tenant.plan, status: tenant.status, trialEndsAt: tenant.trialEndsAt, invitationUrl: invitationLink(req, token) };
     } catch (error: any) {
       if (error?.code === "P2002") throw new HttpException("Este código de empresa ya está ocupado.", 409);
@@ -141,22 +165,52 @@ export class PlatformController {
     };
   }
 
-  /** Enlace nuevo: el anterior deja de servir. Solo mientras la invitación no se haya aceptado. */
-  @Public() @Post("tenants/:slug/reinvite")
-  async reinvite(@Param("slug") rawSlug: string, @Req() req: Request) {
+  /**
+   * INI-09: cambia solo la invitación pendiente de la dueña, con el hash que
+   * se leyó; si se acepta a la vez, solo uno de los dos gana.
+   */
+  private async replaceInvitation(rawSlug: string, body: unknown, req: Request, hash: string, expiresAt: Date, action: string) {
     this.authorize(req);
     const code = parse(slugParam, rawSlug);
-    const tenant = await this.registration.db.tenant.findUnique({ where: { slug: code }, select: { id: true } });
+    const input = parse(invitationAction, body ?? {});
+    const db = this.registration.db;
+    const tenant = await db.tenant.findUnique({ where: { slug: code }, select: { id: true, termsAcceptedAt: true } });
     if (!tenant) throw new HttpException("Empresa no encontrada.", 404);
+    const accepted = () => new HttpException("La invitación ya se aceptó: la empresa entra con su propia clave.", 409);
+    const owner = await db.user.findFirst({
+      where: { tenantId: tenant.id, emailVerifiedAt: null, emailVerificationHash: { startsWith: "invite:" } },
+      orderBy: { createdAt: "asc" }, select: { id: true, emailVerificationHash: true },
+    });
+    if (!owner) throw accepted();
+    await db.$transaction(async (tx) => {
+      const result = await tx.user.updateMany({
+        where: { id: owner.id, emailVerifiedAt: null, emailVerificationHash: owner.emailVerificationHash },
+        data: { emailVerificationHash: hash, emailVerificationExpiresAt: expiresAt },
+      });
+      if (result.count !== 1) throw accepted();
+      if (input.acuerdo && !tenant.termsAcceptedAt)
+        await tx.tenant.update({ where: { id: tenant.id }, data: {
+          termsVersion: paperVersion(input.acuerdo), privacyVersion: paperVersion(input.acuerdo),
+        } });
+      await invitationEvent(tx, tenant.id, action, req, { ...input, expiresAt });
+    });
+    return code;
+  }
+
+  /** Enlace nuevo: el anterior deja de servir. Solo mientras la invitación no se haya aceptado. */
+  @Public() @Post("tenants/:slug/reinvite")
+  async reinvite(@Param("slug") rawSlug: string, @Body() body: unknown, @Req() req: Request) {
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * DAY);
-    // Condicional: si se acepta a la vez, solo uno de los dos gana.
-    const result = await this.registration.db.user.updateMany({
-      where: { tenantId: tenant.id, emailVerifiedAt: null, emailVerificationHash: { startsWith: "invite:" } },
-      data: { emailVerificationHash: invitationDigest(token), emailVerificationExpiresAt: expiresAt },
-    });
-    if (result.count !== 1) throw new HttpException("La invitación ya se aceptó: la empresa entra con su propia clave.", 409);
-    console.log(`[plataforma] invitación reenviada: ${code}`);
+    const code = await this.replaceInvitation(rawSlug, body, req, invitationDigest(token), expiresAt, "invitation.reissued");
     return { slug: code, invitationUrl: invitationLink(req, token), expiresAt };
+  }
+
+  /** INV-02: cancela el enlace pendiente; «Reenviar invitación» puede emitir otro. */
+  @Public() @Post("tenants/:slug/revoke-invitation")
+  async revokeInvitation(@Param("slug") rawSlug: string, @Body() body: unknown, @Req() req: Request) {
+    // `invite:revocada` nunca coincide con el hash de un token y ya venció.
+    const code = await this.replaceInvitation(rawSlug, body, req, "invite:revocada", new Date(), "invitation.revoked");
+    return { slug: code, revoked: true };
   }
 }

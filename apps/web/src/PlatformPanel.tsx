@@ -633,6 +633,8 @@ function ClientDetail({
   const client = useQueryClient();
   const [invite, setInvite] = useState("");
   const [confirmInvite, setConfirmInvite] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const [operadora, setOperadora] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const detail = useQuery({
@@ -663,7 +665,7 @@ function ClientDetail({
       const result = await platformFetch<{ invitationUrl: string }>(
         token,
         `/tenants/${slug}/reinvite`,
-        {},
+        { operadora: operadora.trim() },
       );
       setInvite(result.invitationUrl);
       refresh();
@@ -672,6 +674,23 @@ function ClientDetail({
     } finally {
       setBusy(false);
       setConfirmInvite(false);
+    }
+  };
+  // INV-02: cancelación explícita; queda en la bitácora con la operadora.
+  const revoke = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await platformFetch(token, `/tenants/${slug}/revoke-invitation`, {
+        operadora: operadora.trim(),
+      });
+      setInvite("");
+      refresh();
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
+      setBusy(false);
+      setConfirmRevoke(false);
     }
   };
   return (
@@ -716,12 +735,38 @@ function ClientDetail({
                   {tenant.admin.email}
                 </a>
                 <div className="text-slate-700">
-                  {tenant.admin.invitationPending
-                    ? `Invitación pendiente (vence ${date(tenant.admin.invitationExpiresAt)}).`
-                    : "Invitación aceptada: entra con su propia clave."}
+                  {!tenant.admin.invitationPending
+                    ? "Invitación aceptada: entra con su propia clave."
+                    : new Date(tenant.admin.invitationExpiresAt ?? 0) <= new Date()
+                      ? "Invitación vencida o cancelada."
+                      : `Invitación pendiente (vence ${date(tenant.admin.invitationExpiresAt)}).`}
                 </div>
+                {tenant.admin.invitationPending && (
+                  <Field label="Tu nombre (operadora)">
+                    <input
+                      value={operadora}
+                      maxLength={80}
+                      onChange={(e) => setOperadora(e.target.value)}
+                    />
+                  </Field>
+                )}
+                {tenant.admin.invitationPending &&
+                  operadora.trim().length >= 2 &&
+                  (confirmRevoke ? (
+                    <ConfirmStep
+                      busy={busy}
+                      onBack={() => setConfirmRevoke(false)}
+                      onConfirm={revoke}
+                      text="El enlace dejará de servir. ¿Cancelar la invitación?"
+                    />
+                  ) : (
+                    <Button variant="secondary" onClick={() => setConfirmRevoke(true)}>
+                      Cancelar invitación
+                    </Button>
+                  ))}
                 {tenant.admin.invitationPending &&
                   !invite &&
+                  operadora.trim().length >= 2 &&
                   (confirmInvite ? (
                     <ConfirmStep
                       busy={busy}
@@ -819,6 +864,10 @@ function CreateClient({
     trialDays: "30",
     adminName: "",
     adminEmail: "",
+    operadora: "",
+    acuerdoVersion: "",
+    acuerdoFecha: "",
+    acuerdoReferencia: "",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -837,7 +886,18 @@ function CreateClient({
         slug: string;
         invitationUrl: string;
       }>(token, "/tenants", {
-        ...form,
+        businessName: form.businessName,
+        businessType: form.businessType,
+        plan: form.plan,
+        adminName: form.adminName,
+        adminEmail: form.adminEmail,
+        operadora: form.operadora,
+        // INV-01: acuerdo de servicio firmado en papel, verificable.
+        acuerdo: {
+          version: form.acuerdoVersion.trim(),
+          fecha: form.acuerdoFecha,
+          referencia: form.acuerdoReferencia,
+        },
         companyCode: form.companyCode.trim().toLowerCase(),
         trialDays: Number(form.trialDays),
       });
@@ -946,6 +1006,40 @@ function CreateClient({
                   required
                   maxLength={254}
                   autoCapitalize="none"
+                />
+              </Field>
+              <Field label="Versión del acuerdo firmado">
+                <input
+                  value={form.acuerdoVersion}
+                  onChange={set("acuerdoVersion")}
+                  required
+                  pattern="[A-Za-z0-9._\-]{1,40}"
+                />
+              </Field>
+              <Field label="Fecha de la firma">
+                <input
+                  type="date"
+                  value={form.acuerdoFecha}
+                  onChange={set("acuerdoFecha")}
+                  required
+                />
+              </Field>
+              <Field label="Referencia del acuerdo (archivo o folio)">
+                <input
+                  value={form.acuerdoReferencia}
+                  onChange={set("acuerdoReferencia")}
+                  required
+                  minLength={3}
+                  maxLength={120}
+                />
+              </Field>
+              <Field label="Tu nombre (operadora)">
+                <input
+                  value={form.operadora}
+                  onChange={set("operadora")}
+                  required
+                  minLength={2}
+                  maxLength={80}
                 />
               </Field>
             </div>

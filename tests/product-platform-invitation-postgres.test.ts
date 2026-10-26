@@ -19,7 +19,7 @@ const prismaCli = apiRequire.resolve("prisma/build/index.js");
 const { PrismaClient } = apiRequire("@prisma/client");
 const run = promisify(execFile);
 const platformToken = "operador-plataforma-solo-prueba-".padEnd(72, "0123456789abcdef");
-const keys = ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "PLATFORM_ADMIN_TOKEN_SHA256", "APP_PUBLIC_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"];
+const keys = ["PRODUCT_LEGAL_APPROVED", "PRODUCT_TERMS_VERSION", "PRODUCT_PRIVACY_VERSION", "DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "PLATFORM_ADMIN_TOKEN_SHA256", "APP_PUBLIC_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"];
 
 async function port() {
   const server = createServer();
@@ -87,7 +87,7 @@ it("el operador crea empresas piloto por invitación sin abrir el registro públ
     const auth = `Platform ${platformToken}`;
     const pilot = (companyCode: string, adminEmail: string) => ({
       businessName: `Piloto ${companyCode}`, companyCode, businessType: "retail",
-      plan: "basico", adminName: "Dueña piloto", adminEmail,
+      plan: "basico", adminName: "Dueña piloto", adminEmail, operadora: "Ana Operadora", acuerdo: { version: "piloto-1", fecha: "2026-10-01", referencia: "Carpeta 12" },
     });
 
     // Sin credencial configurada las rutas no existen, ni con token.
@@ -140,11 +140,23 @@ it("el operador crea empresas piloto por invitación sin abrir el registro públ
     expect(early.status, JSON.stringify(early.body)).toBe(400);
     // El enlace de invitación no sirve como confirmación de correo (no fija clave).
     expect((await http.post("/api/auth/verify-email").send({ token: tokenA })).status).toBe(400);
-    expect((await http.post("/api/auth/accept-invitation").send({ token: tokenA, password: "corta", managerPin: "869253" })).status).toBe(400);
+    expect((await http.post("/api/auth/accept-invitation").send({ token: tokenA, password: "corta", managerPin: "869253", consentAccepted: true })).status).toBe(400);
     expect((await http.post("/api/auth/accept-invitation").send({ token: tokenA, password, managerPin: "123456" })).status).toBe(400);
-    const accepted = await http.post("/api/auth/accept-invitation").send({ token: tokenA, password, managerPin: "869253" });
+    // INV-01: sin aceptación explícita no se activa.
+    expect((await http.post("/api/auth/accept-invitation").send({ token: tokenA, password, managerPin: "869253" })).status).toBe(400);
+    const accepted = await http.post("/api/auth/accept-invitation").send({ token: tokenA, password, managerPin: "869253", consentAccepted: true });
     expect(accepted.status, JSON.stringify(accepted.body)).toBe(201);
-    expect((await http.post("/api/auth/accept-invitation").send({ token: tokenA, password: "OtraClave-2026!!", managerPin: "869253" })).status).toBe(400);
+    // INV-01: queda la versión del acuerdo en papel y la fecha de aceptación; INV-02: ciclo durable, sin el token.
+    const terms = (await q(`SELECT "termsVersion", "termsAcceptedAt", "privacyAcceptedAt" FROM "Tenant" WHERE id=$1::uuid`, tenantA))[0];
+    expect(terms.termsVersion).toBe("papel:piloto-1");
+    expect(terms.termsAcceptedAt).not.toBeNull();
+    expect(terms.privacyAcceptedAt).not.toBeNull();
+    const lifecycleA = await q(`SELECT action, after, ip FROM "AuditLog" WHERE "tenantId"=$1::uuid AND entity='invitation' ORDER BY "createdAt"`, tenantA);
+    expect(lifecycleA.map((row) => row.action)).toEqual(["invitation.created", "invitation.accepted"]);
+    expect(lifecycleA[0].after).toMatchObject({ operadora: "Ana Operadora", acuerdo: { version: "piloto-1", fecha: "2026-10-01", referencia: "Carpeta 12" } });
+    expect(lifecycleA[1].after).toMatchObject({ metodo: "papel", termsVersion: "papel:piloto-1" });
+    expect(JSON.stringify(lifecycleA)).not.toContain(tokenA);
+    expect((await http.post("/api/auth/accept-invitation").send({ token: tokenA, password: "OtraClave-2026!!", managerPin: "869253", consentAccepted: true })).status).toBe(400);
     const session = await login("piloto-a", "a@example.invalid");
     expect(session.status, JSON.stringify(session.body)).toBe(201);
     expect(session.body.user.tenantId).toBe(tenantA);
@@ -155,8 +167,50 @@ it("el operador crea empresas piloto por invitación sin abrir el registro públ
 
     // Invitación vencida: no se acepta y B sigue sin poder entrar.
     await client.$executeRawUnsafe(`UPDATE "User" SET "emailVerificationExpiresAt"=now() - interval '1 minute' WHERE "tenantId"=$1::uuid`, createdB.body.id);
-    expect((await http.post("/api/auth/accept-invitation").send({ token: tokenB, password, managerPin: "869253" })).status).toBe(400);
+    expect((await http.post("/api/auth/accept-invitation").send({ token: tokenB, password, managerPin: "869253", consentAccepted: true })).status).toBe(400);
     expect((await login("piloto-b", "b@example.invalid")).status).not.toBe(201);
+
+    // INV-01: sin acuerdo registrado no se crea la invitación.
+    const { acuerdo: _acuerdo, ...withoutAgreement } = pilot("piloto-e", "e@example.invalid");
+    expect((await http.post("/api/platform/tenants").set("Authorization", auth).send(withoutAgreement)).status).toBe(400);
+
+    // INV-02: cancelación explícita, con operadora y en la bitácora.
+    const platformPost = (path: string, body: object) => http.post(path).set("Authorization", auth).send(body);
+    const createdD = await platformPost("/api/platform/tenants", pilot("piloto-d", "d@example.invalid"));
+    expect(createdD.status).toBe(201);
+    const tenantD = createdD.body.id;
+    const tokenD = createdD.body.invitationUrl.split("#token=")[1];
+    expect((await platformPost("/api/platform/tenants/piloto-d/revoke-invitation", {})).status).toBe(400);
+    expect((await platformPost("/api/platform/tenants/piloto-d/revoke-invitation", { operadora: "Ana Operadora" })).status).toBe(201);
+    expect((await http.post("/api/auth/accept-invitation").send({ token: tokenD, password, managerPin: "869253", consentAccepted: true })).status).toBe(400);
+    // INI-09: otra fila pendiente (dato anómalo) no se toca ni impide reenviar a la dueña.
+    const [ownerD] = await q(`SELECT "roleId" FROM "User" WHERE "tenantId"=$1::uuid`, tenantD);
+    await client.user.create({ data: {
+      tenantId: tenantD, name: "Anómala", username: "anomala", usernameKey: "anomala", email: "anomala@example.invalid",
+      passwordHash: "x", pinHash: "x", roleId: ownerD.roleId, branchId: "main",
+      emailVerificationHash: "invite:anomala", emailVerificationExpiresAt: new Date(Date.now() + 86400000),
+    } });
+    const reissued = await platformPost("/api/platform/tenants/piloto-d/reinvite", { operadora: "Ana Operadora" });
+    expect(reissued.status, JSON.stringify(reissued.body)).toBe(201);
+    expect((await q(`SELECT "emailVerificationHash" FROM "User" WHERE email='anomala@example.invalid'`))[0].emailVerificationHash).toBe("invite:anomala");
+    const tokenD2 = reissued.body.invitationUrl.split("#token=")[1];
+    expect((await http.post("/api/auth/accept-invitation").send({ token: tokenD2, password, managerPin: "869253", consentAccepted: true })).status).toBe(201);
+    const lifecycleD = await q(`SELECT action, after FROM "AuditLog" WHERE "tenantId"=$1::uuid AND entity='invitation' ORDER BY "createdAt"`, tenantD);
+    expect(lifecycleD.map((row) => row.action)).toEqual(["invitation.created", "invitation.revoked", "invitation.reissued", "invitation.accepted"]);
+    expect(lifecycleD[1].after).toMatchObject({ operadora: "Ana Operadora" });
+
+    // INV-01 con textos web aprobados: exige y guarda la versión vigente.
+    process.env.PRODUCT_LEGAL_APPROVED = "confirmed";
+    process.env.PRODUCT_TERMS_VERSION = "terms-test-1";
+    process.env.PRODUCT_PRIVACY_VERSION = "privacy-test-1";
+    const createdF = await platformPost("/api/platform/tenants", pilot("piloto-f", "f@example.invalid"));
+    const tokenF = createdF.body.invitationUrl.split("#token=")[1];
+    const acceptF = (extra: object) => http.post("/api/auth/accept-invitation").send({ token: tokenF, password, managerPin: "869253", consentAccepted: true, ...extra });
+    expect((await acceptF({ termsVersion: "vieja", privacyVersion: "privacy-test-1" })).status).toBe(409);
+    expect((await acceptF({ termsVersion: "terms-test-1", privacyVersion: "privacy-test-1" })).status).toBe(201);
+    expect((await q(`SELECT "termsVersion", "privacyVersion" FROM "Tenant" WHERE id=$1::uuid`, createdF.body.id))[0])
+      .toEqual({ termsVersion: "terms-test-1", privacyVersion: "privacy-test-1" });
+    delete process.env.PRODUCT_LEGAL_APPROVED;
 
     // El registro público sigue cerrado.
     const register = await http.post("/api/auth/register").send({

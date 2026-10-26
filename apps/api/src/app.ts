@@ -165,7 +165,7 @@ export function createAppModule(secret: string) {
             return;
           }
           // Sin empresa: alta, invitación y operador de plataforma (credencial propia).
-          if (/^\/api\/(?:auth\/(?:register|verify-email|resend-verification|accept-invitation)|platform\/(?:summary|support-grants|tenants(?:\/[a-z0-9-]{1,63}(?:\/(?:payments|ai-packs|ai-usage|reinvite|support-session))?)?))\/?$/.test(path)) {
+          if (/^\/api\/(?:auth\/(?:register|verify-email|resend-verification|accept-invitation)|platform\/(?:summary|support-grants|tenants(?:\/[a-z0-9-]{1,63}(?:\/(?:payments|ai-packs|ai-usage|reinvite|revoke-invitation|support-session))?)?))\/?$/.test(path)) {
             next();
             return;
           }

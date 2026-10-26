@@ -95,11 +95,11 @@ it("N-05: el operador abre solo el acceso de soporte que la empresa activó; sol
     const tenant = async (code: string) => {
       const created = await http.post("/api/platform/tenants").set("Authorization", auth).send({
         businessName: `Piloto ${code}`, companyCode: code, businessType: "retail", plan: "pro",
-        adminName: "Dueña", adminEmail: `${code}@example.invalid`,
+        adminName: "Dueña", adminEmail: `${code}@example.invalid`, operadora: "Ana Operadora", acuerdo: { version: "piloto-1", fecha: "2026-10-01", referencia: "Carpeta 12" },
       });
       expect(created.status, JSON.stringify(created.body)).toBe(201);
       const token = created.body.invitationUrl.split("#token=")[1];
-      expect((await http.post("/api/auth/accept-invitation").send({ token, password, managerPin: "869253" })).status).toBe(201);
+      expect((await http.post("/api/auth/accept-invitation").send({ token, password, managerPin: "869253", consentAccepted: true })).status).toBe(201);
       const login = await http.post("/api/auth/login").set("x-tenant-id", code).send({ login: `${code}@example.invalid`, password });
       expect(login.status, JSON.stringify(login.body)).toBe(201);
       return { id: created.body.id as string, bearer: `Bearer ${login.body.accessToken}` };
