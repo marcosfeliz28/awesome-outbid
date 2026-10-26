@@ -20,7 +20,13 @@ Rama `claude-pc/lumina-f3-config`. Solo disposición visual; no cambia lógica, 
 
 ## Pruebas
 
-Ver el resultado exacto en el informe de la entrega; se ejecutaron con web 4185, API 3185 y PostgreSQL 55185 (clúster desechable, eliminado al terminar).
+Entorno propio: web 4185, API 3185, PostgreSQL 55185 (clúster desechable, ya eliminado). Resultados:
+
+- `pnpm install --frozen-lockfile`, `pnpm db:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm build`: sin errores.
+- `tests/accessibility-contract.test.ts`: 36 de 36 pasan.
+- e2e (contrasenas, fuentes, respaldo-drive, accesibilidad, almacenes, incentivos y las 2 pruebas de Configuración de store.spec): todas pasan (36 + 3). Incentivos falló la primera vez por no tener `DATABASE_URL` en el proceso de la prueba; con la URL de la base desechable pasa.
+- `store.spec.ts` completo: no terminó en el tiempo límite (se cortó en la prueba 66 de 76, antes de acabar). Un fallo visible, «R9 códigos» (caja, no Configuración), también era por `DATABASE_URL` ausente. No se repitió el archivo entero.
+- No se corrió `pnpm test` completo (solo el contrato de accesibilidad).
 
 ## Sin verificar / límites
 
