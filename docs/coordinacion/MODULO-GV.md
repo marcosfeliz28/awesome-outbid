@@ -66,3 +66,29 @@ Las respuestas de la dueña están en la sesión de mercancía. El Excel tiene d
 | Interesadas | 17 |
 
 Para importar hacen falta endpoints de creación, o uno de importación en lote, que la sesión de mercancía pueda llamar con el usuario de Claude.
+
+## Entregado (rama `claude/modulo-gv`, 26-oct)
+
+- Rol `gv` (`gv:read`, `gv:write`, `gv:reports`), creado por la migración `202610260901_gv` sin asignarlo a nadie. Gerencia también recibe `gv:*`; administración ya tiene `*`.
+- Endpoints (todos por sucursal, cada escritura en la bitácora):
+  - `GET/POST /api/gv/courses`, `GET/PATCH /api/gv/courses/:id` (el detalle trae las inscripciones con `paid`, `unverified`, `pending` y sus pagos).
+  - `POST /api/gv/enrollments` (exige `operationId` uuid; un reintento devuelve la misma), `PATCH /api/gv/enrollments/:id`.
+  - `POST /api/gv/payments` (exige `operationId`; transferencia queda por verificar, efectivo y tarjeta verificados).
+  - `POST /api/gv/payments/:id/review` con `{ "verified": true }` o `{ "verified": false, "reason": "…" }` (el rechazado deja de contar como pagado).
+  - `GET /api/gv/transfers/pending`, `GET /api/gv/reports?from=AAAA-MM-DD&to=AAAA-MM-DD`.
+  - `POST /api/gv/import[?dryRun=1]` (sólo `*`). Formato:
+
+```json
+{
+  "courses": [{ "key": "auto-2026-11-08", "name": "Automaquillaje", "type": "automaquillaje", "date": "2026-11-08", "price": 4500, "capacity": 32, "active": true }],
+  "enrollments": [{
+    "key": "auto-2026-11-08-01", "courseKey": "auto-2026-11-08",
+    "clientName": "…", "phone": "…", "instagram": "…", "agreedPrice": 4500,
+    "status": "activa", "attended": null, "boughtBrushSet": false, "note": "…",
+    "payments": [{ "key": "opcional", "date": "2026-10-20", "amount": 2000, "concept": "separo", "method": "transferencia", "bank": "Popular Grupo Génesis ···9797", "reference": "…", "verified": false }]
+  }],
+  "appointments": [], "leads": []
+}
+```
+
+  `type`: automaquillaje | brazilian | personalizado | otro. `status`: activa | no_asistio | personalizado | cancelada | reembolsada. `concept`: separo | restante | segundo | tercero | otro. `method`: efectivo | transferencia | tarjeta. Importes con hasta 2 decimales; pagos > 0. La clave de un pago sin `key` es `<clave de la inscripción>#<n>` (orden en la lista). Reimportar actualiza por clave y nunca duplica; la verificación hecha en el sistema sólo cambia si el archivo trae `verified`. `appointments` y `leads` se aceptan y se ignoran (`ignored` en la respuesta) hasta que el módulo de citas los conecte. Con errores no se guarda nada; `?dryRun=1` devuelve `{ courses|enrollments|payments: {create, update}, ignored, errors }` sin escribir.

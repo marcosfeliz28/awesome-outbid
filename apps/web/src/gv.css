@@ -61,3 +61,6 @@
     grid-template-columns: 1fr;
   }
 }
+.gv-page .panel {
+  padding: 16px;
+}
