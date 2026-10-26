@@ -93,8 +93,8 @@ export function IncomeByDay() {
   };
   const reconciliation = query.data?.reconciliation;
   return (
-    <section className="panel income-by-day">
-      <div className="panel-heading">
+    <section className="panel income-by-day report-workspace">
+      <div className="panel-heading report-workspace-heading">
         <div>
           <h2>Ingresos por día y forma de pago</h2>
           <p>
@@ -102,7 +102,7 @@ export function IncomeByDay() {
           </p>
         </div>
       </div>
-      <div className="date-filters">
+      <div className="date-filters report-filters">
         <label className="field">
           <span>Desde</span>
           <input
@@ -181,7 +181,7 @@ export function IncomeByDay() {
           Selecciona fechas válidas y el alcance para consultar el reporte.
         </p>
       )}
-      <div className="table-actions">
+      <div className="table-actions report-export-actions">
         {(["csv", "xlsx", "pdf"] as const).map((format) => (
           <Button
             key={format}
@@ -264,7 +264,7 @@ export function IncomeByDay() {
                 </div>
               )}
               {day && (
-                <div>
+                <div className="income-day-detail">
                   <h3>Movimientos del {day}</h3>
                   <Button variant="secondary" onClick={() => setDay("")}>
                     Cerrar detalle

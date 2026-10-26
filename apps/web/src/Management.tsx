@@ -3041,8 +3041,8 @@ export function Reports() {
         title="Los números cuentan tu historia"
         caption="Transforma tus datos en decisiones para el próximo paso."
       />
-      <div className="reports-layout">
-        <aside className="panel report-menu">
+      <div className="reports-layout lumina-reports">
+        <aside className="panel report-menu" aria-label="Explorar reportes">
           {groupReports(
             allReports
               .filter(
@@ -3073,12 +3073,14 @@ export function Reports() {
                   list.map(({ id, name }) => (
                     <button
                       key={id}
+                      type="button"
                       onClick={() => {
                         setReport(id);
                         setOpenGroup(group);
                         setPage(1);
                       }}
                       className={report === id ? "active" : ""}
+                      aria-current={report === id ? "page" : undefined}
                     >
                       <FileText size={17} />
                       {name}
@@ -3094,13 +3096,13 @@ export function Reports() {
         ) : report === "income-by-day" ? (
           <IncomeByDay />
         ) : (
-          <section className="panel">
-            <div className="panel-heading">
+          <section className="panel report-workspace">
+            <div className="panel-heading report-workspace-heading">
               <div>
                 <h2>{allReports.find((r) => r[0] === report)?.[1]}</h2>
                 <p>Información registrada en tu tienda.</p>
               </div>
-              <div className="table-actions">
+              <div className="table-actions report-export-actions">
                 {["xlsx", "pdf"].map((format) => (
                   <Button
                     variant="secondary"
@@ -3125,7 +3127,7 @@ export function Reports() {
                 ))}
               </div>
             </div>
-            <div className="date-filters">
+            <div className="date-filters report-filters">
               <label className="field">
                 <span>Desde</span>
                 <input
