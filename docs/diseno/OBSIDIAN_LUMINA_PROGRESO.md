@@ -158,3 +158,33 @@ la entrada (login). Nunca en pantallas operativas: caja, tablero, tablas.
 6. **Panel de operadora** (`/plataforma`) con los mismos tokens y tema oscuro.
 7. **Decisión de la dueña:** ¿tema oscuro por defecto? (afecta la caja;
    requiere ajustar las e2e que hoy parten del claro).
+
+## Fase 3 · Catálogo, Inventario, Clientes, Reportes y Configuración (Claude PC, 26-oct)
+
+Rama `claude-pc/obsidian-lumina-f3`, sacada de `claude/obsidian-lumina-f1` (`2f998788`). Sin desplegar. Notas por pantalla: `OBSIDIAN_LUMINA_F3_CATALOGO.md`, `_INVENTARIO.md`, `_CLIENTES.md`, `_REPORTES.md`, `_CONFIG.md`; prueba de aceptación y capturas: `_PRUEBAS.md` y `_CAPTURAS.md`.
+
+### Qué cambió
+- **Contrato común (`admin-ui.tsx` y `admin-ui.css`).** `MoreMenu` («Más»: una sola acción principal por cabecera, las demás dentro del menú; Escape, clic fuera y salir con Tab lo cierran y el foco vuelve al botón) y `TableSkeleton`. `Heading` ganó `eyebrow`, `more` y `className`, todos opcionales: Caja, Promociones e Historial de ventas se ven exactamente igual.
+- **Las cinco pantallas.** El título es la ruta (Productos, Inventario, Clientes, Reportes, Configuración), sin eslogan ni etiqueta en mayúsculas; la acción principal es una sola; el texto suelto quedó dentro de tarjetas; esqueletos de tabla al cargar; cifras tabulares; estados con color y texto; pestañas con subrayado y `aria-pressed`; áreas táctiles de 44 px en celular (40 px en escritorio) con reglas acotadas a cada pantalla; sin desplazamiento horizontal de la página a 390 px.
+  - **Productos:** Nuevo producto es lo principal; Plantilla, Importar Excel e Importar inventario van en «Más».
+  - **Inventario:** «Almacén» con su espacio y su etiqueta, celdas de precio, fecha y SKU sin saltos de línea, bajo y agotado con texto.
+  - **Clientes:** tarjetas por fila en celular (la tabla ya no se corta); la privacidad no se tocó.
+  - **Reportes:** Excel principal y PDF en «Más» (**cambio de comportamiento declarado:** ambos se desactivan con el rango de fechas invertido, antes estaban siempre activos); catálogo de reportes plegable en celular; la tabla se desplaza dentro de su propio contenedor.
+  - **Configuración:** tarjetas con título y descripción, avisos de crédito como avisos con color y texto, pestañas de 44 px en cuadrícula 2×2 en celular, espacio sobre la barra inferior.
+- **Diálogo compartido (`packages/ui`).** `Modal` tiene una opción nueva `restoreFocus`, **apagada por defecto**: sin ella el diálogo se comporta exactamente como antes. Solo «Importar inventario» (Productos) la usa. Esto protege a la caja de las cajeras; una primera versión devolvía el foco en los ~39 diálogos de la aplicación y se corrigió.
+
+### Lo que NO se tocó
+`POS.tsx`, `Tienda.tsx` (caja, cobro, cierre), GV, pagos, la parte fiscal (`FormalReports.tsx`, `NcfSequenceSettings`), seguridad y permisos, la API, la base de datos y las migraciones, `.github/` y Render. Ninguna consulta, clave de consulta ni comprobación de permisos cambió.
+
+### Pruebas
+- Nuevas: `tests/e2e/lumina-f3.spec.ts` (82 casos: título, desplazamiento, área táctil, una acción principal, «Más» con teclado, foco, contraste, cifras tabulares, movimiento reducido y la caja intacta, a 1366 y 390 px, en claro y oscuro), `lumina-f3-arreglos.spec.ts`, `lumina-f3-modal-foco.spec.ts` y `tests/modal-foco-caja.test.ts`.
+- **El criterio 4b se acotó a propósito:** exige «Más» solo en las pantallas que tienen acciones secundarias (Productos y Reportes); en Inventario, Clientes y Configuración comprueba que no hay un «Más» vacío. Está explicado en la prueba y en `_PRUEBAS.md`.
+- Resultados: ver «Resultado final» más abajo.
+
+### Riesgos y pendientes
+- **El contraste de varios textos se calculó o estimó**, no se midió con una herramienta como `axe` (no está instalada); la prueba usa una función propia que ignora degradados e imágenes.
+- **Importar Excel** vive en «Más» (un campo de archivo dentro de un menú que se cierra); ninguna prueba cubre la importación completa desde ahí.
+- Los botones de icono de Kardex se agrandaron a 44 px en celular; falta revisarlos dentro del modal de Kardex.
+- Los estados fiscales aparecen en texto crudo en Reportes (`not_issued`): no hay un mapa de etiquetas en el código y no se inventó uno.
+- La suite `product-reportes-arreglos-postgres` falla en esta PC en la corrida completa por un bloqueo de archivos de Windows al borrar su carpeta temporal (`EBUSY`); pasa sola (8 de 8). El CI de GitHub (Linux) es la comprobación válida.
+- El aspecto nuevo va para la tienda y el producto, pero esta fase parte del producto: pasarlo a `nexora-cloud` es una fase aparte, con pruebas, sin desplegar en horas de caja y avisando antes.
