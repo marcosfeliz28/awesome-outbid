@@ -20,6 +20,7 @@ const apiRequire = createRequire(join(root, "apps/api/package.json"));
 const prismaCli = apiRequire.resolve("prisma/build/index.js");
 const { PrismaClient } = apiRequire("@prisma/client");
 const run = promisify(execFile);
+const why = { operadora: "Ana Operadora", motivo: "Revisar existencias que no cuadran" };
 const platformToken = "operador-soporte-solo-prueba-".padEnd(72, "0123456789abcdef");
 const keys = ["DATABASE_URL", "PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION",
   "PLATFORM_ADMIN_TOKEN_SHA256", "APP_PUBLIC_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"];
@@ -108,10 +109,10 @@ it("N-05: el operador abre solo el acceso de soporte que la empresa activó; sol
 
     // Sin permiso de la empresa no hay nada que abrir.
     expect((await http.get("/api/platform/support-grants").set("Authorization", auth)).body).toEqual([]);
-    expect((await http.post("/api/platform/tenants/soporte-a/support-session").set("Authorization", auth)).status).toBe(403);
+    expect((await http.post("/api/platform/tenants/soporte-a/support-session").set("Authorization", auth).send(why)).status).toBe(403);
     // El token de una empresa no sirve como token de operador.
     expect((await http.get("/api/platform/support-grants").set("Authorization", a.bearer)).status).toBe(401);
-    expect((await http.post("/api/platform/tenants/soporte-a/support-session").set("Authorization", a.bearer)).status).toBe(401);
+    expect((await http.post("/api/platform/tenants/soporte-a/support-session").set("Authorization", a.bearer).send(why)).status).toBe(401);
 
     // La administradora de A concede 24 h.
     const enabled = await http.post("/api/support-access/enable").set("Authorization", a.bearer).send({ duration: "24h" });
@@ -121,9 +122,11 @@ it("N-05: el operador abre solo el acceso de soporte que la empresa activó; sol
     expect(grants[0]).toMatchObject({ slug: "soporte-a" });
     expect(new Date(grants[0].expiresAt).getTime()).toBeGreaterThan(Date.now() + 23 * 3600_000);
     // B no concedió nada.
-    expect((await http.post("/api/platform/tenants/soporte-b/support-session").set("Authorization", auth)).status).toBe(403);
+    expect((await http.post("/api/platform/tenants/soporte-b/support-session").set("Authorization", auth).send(why)).status).toBe(403);
 
-    const opened = await http.post("/api/platform/tenants/soporte-a/support-session").set("Authorization", auth);
+    // SOP-04: sin operadora ni motivo no se abre.
+    expect((await http.post("/api/platform/tenants/soporte-a/support-session").set("Authorization", auth).send({})).status).toBe(400);
+    const opened = await http.post("/api/platform/tenants/soporte-a/support-session").set("Authorization", auth).send(why);
     expect(opened.status, JSON.stringify(opened.body)).toBe(201);
     expect(opened.headers["cache-control"]).toBe("no-store");
     expect(opened.body).toMatchObject({ tokenType: "Bearer", expiresIn: 900, readOnly: true });
@@ -138,6 +141,16 @@ it("N-05: el operador abre solo el acceso de soporte que la empresa activó; sol
     expect(audit.map((row) => row.action)).toEqual(expect.arrayContaining(
       ["support.enable", "support.platform_session", "support.read", "support.write_denied"]));
     expect(audit.some((row) => row.t === b.id)).toBe(false);
+    // SOP-04: la apertura dice quién y por qué; cada lectura, sesión, recurso y filtros (sin valores).
+    const [openRow] = await client.$queryRawUnsafe(
+      `SELECT after, ip FROM "AuditLog" WHERE action = 'support.platform_session'`) as any[];
+    expect(openRow.after).toMatchObject(why);
+    expect(openRow.ip).toBeTruthy();
+    await http.get("/api/products/00000000-0000-4000-8000-000000000000?q=SECRETO_FILTRO").set("Authorization", support);
+    const reads = await client.$queryRawUnsafe(
+      `SELECT after FROM "AuditLog" WHERE action = 'support.read' ORDER BY "createdAt" DESC`) as any[];
+    expect(reads[0].after).toMatchObject({ sesion: openRow.after.sessionId, recurso: { id: "00000000-0000-4000-8000-000000000000" }, filtros: ["q"] });
+    expect(JSON.stringify(reads)).not.toContain("SECRETO_FILTRO");
 
     // Postgres rechaza escrituras cuando el contexto de soporte es READ ONLY.
     runtime = tenantDatabaseProxy(new PrismaClient({ datasources: { db: { url: pg.url } } }));
@@ -148,7 +161,7 @@ it("N-05: el operador abre solo el acceso de soporte que la empresa activó; sol
     await client.$executeRawUnsafe(
       `UPDATE "User" SET "supportExpiresAt" = now() - interval '1 minute' WHERE email = 'soporte-nexora@nexora.local' AND "tenantId" = $1::uuid`, a.id);
     expect((await http.get("/api/products").set("Authorization", support)).status).toBe(401);
-    expect((await http.post("/api/platform/tenants/soporte-a/support-session").set("Authorization", auth)).status).toBe(403);
+    expect((await http.post("/api/platform/tenants/soporte-a/support-session").set("Authorization", auth).send(why)).status).toBe(403);
     expect((await http.get("/api/platform/support-grants").set("Authorization", auth)).body).toEqual([]);
   } finally {
     await app?.close().catch(() => undefined);

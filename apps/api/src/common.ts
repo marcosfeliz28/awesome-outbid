@@ -854,10 +854,14 @@ export class AuthGuard implements CanActivate {
     }
     if (req.actor.role === "support" && req.method === "GET") {
       // Bitácora en transacción separada, antes de activar READ ONLY para las
-      // consultas de negocio. No guarda query string ni texto de preguntas.
+      // consultas de negocio. SOP-04: sesión (enlaza con la operadora que la
+      // abrió), ids de la ruta y solo los NOMBRES de los filtros, sin valores.
       await tenantScope.run({ tenantId: req.actor.tenantId }, () =>
         audit(this.db, req.actor, "support.read", "route", randomUUID(), undefined, {
           ruta: req.route?.path ?? req.path,
+          sesion: req.actor.sessionId,
+          recurso: { ...(req.params ?? {}) },
+          filtros: Object.keys(req.query ?? {}).sort().slice(0, 20),
         }));
       const scope = tenantScope.getStore();
       if (!scope) denied(); // sin contexto no hay READ ONLY: falla cerrado

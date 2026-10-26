@@ -541,6 +541,9 @@ function SupportSection({
 }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // SOP-04: quién abre y por qué queda en la bitácora de la empresa.
+  const [operadora, setOperadora] = useState("");
+  const [motivo, setMotivo] = useState("");
   const grants = useQuery({
     queryKey: ["platform", "support-grants"],
     queryFn: () =>
@@ -559,7 +562,7 @@ function SupportSection({
       const session = await platformFetch<{ accessToken: string }>(
         token,
         `/tenants/${slug}/support-session`,
-        {},
+        { operadora: operadora.trim(), motivo: motivo.trim() },
       );
       // La pestaña nueva hereda el sessionStorage del panel: se quita el token
       // de plataforma y queda solo el de soporte.
@@ -585,8 +588,25 @@ function SupportSection({
           <div>
             Acceso de soporte activo hasta <strong>{date(grant.expiresAt)}</strong>.
           </div>
+          <Field label="Tu nombre (operadora)">
+            <input
+              value={operadora}
+              maxLength={80}
+              onChange={(e) => setOperadora(e.target.value)}
+            />
+          </Field>
+          <Field label="Motivo (qué vas a revisar)">
+            <input
+              value={motivo}
+              maxLength={200}
+              onChange={(e) => setMotivo(e.target.value)}
+            />
+          </Field>
           <div>
-            <Button disabled={busy} onClick={() => void open()}>
+            <Button
+              disabled={busy || operadora.trim().length < 2 || motivo.trim().length < 8}
+              onClick={() => void open()}
+            >
               Abrir sesión de solo lectura
             </Button>
           </div>

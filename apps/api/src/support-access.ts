@@ -6,7 +6,7 @@ import { hash } from "bcryptjs";
 import { permissions, z } from "@fitstore/shared";
 import { audit, Database, parse, Permit, Public, SUPPORT_EMAIL, type ActorRequest } from "./common";
 import { authorizePlatform } from "./platform";
-import { RequestRateLimitService } from "./rate-limit";
+import { clientIp, RequestRateLimitService } from "./rate-limit";
 import { forEachActiveTenant, tenantScope, tenantUnique } from "./tenant-context";
 
 const supportEmail = SUPPORT_EMAIL;
@@ -81,6 +81,11 @@ export class SupportAccessController {
 }
 
 const slug = z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/);
+// SOP-04: la credencial de plataforma es compartida; quien abre se identifica y dice por qué.
+const openInput = z.object({
+  operadora: z.string().trim().min(2).max(80),
+  motivo: z.string().trim().min(8).max(200),
+}).strict();
 
 /**
  * Lado del operador (token Platform). Solo ve y abre accesos que el
@@ -119,8 +124,9 @@ export class PlatformSupportController {
   }
 
   @Public() @Post("tenants/:slug/support-session") @Header("Cache-Control", "no-store")
-  async open(@Param("slug") tenantSlug: string, @Req() req: Request) {
+  async open(@Param("slug") tenantSlug: string, @Body() body: unknown, @Req() req: Request) {
     authorizePlatform(req, this.limits);
+    const why = parse(openInput, body);
     const tenantId = await this.db.resolveTenantSlug(parse(slug, tenantSlug));
     if (!tenantId) throw new HttpException("Empresa no encontrada.", 404);
     return tenantScope.run({ tenantId }, () => this.db.$transaction(async (tx) => {
@@ -129,8 +135,8 @@ export class PlatformSupportController {
         throw new HttpException("La empresa no ha activado el acceso de soporte o ya venció.", 403);
       const session = await tx.authSession.create({ data: { userId: user.id } });
       await audit(tx, { id: user.id, name: user.name, email: user.email, role: "support", permissions: [],
-        branchId: user.branchId, tenantId }, "support.platform_session", "user", user.id, undefined,
-      { sessionId: session.id, expiresAt: user.supportExpiresAt });
+        branchId: user.branchId, tenantId, ip: clientIp(req) }, "support.platform_session", "user", user.id, undefined,
+      { sessionId: session.id, expiresAt: user.supportExpiresAt, ...why });
       const accessToken = this.jwt.sign(
         { sub: user.id, type: "access", version: user.authVersion, sid: session.id, tenantId },
         { expiresIn: "15m" },
