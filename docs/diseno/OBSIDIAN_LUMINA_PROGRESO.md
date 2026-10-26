@@ -199,3 +199,11 @@ Rama `claude-pc/obsidian-lumina-f3`, sacada de `claude/obsidian-lumina-f1` (`2f9
 1. Configuración en celular: las cuatro pestañas en 2×2 con alineación desigual.
 2. Reportes en escritorio: la tabla de detalle se desplaza dentro de su contenedor y la columna del NCF queda parcialmente fuera hasta desplazar.
 3. En celular la barra fija «Mercancía» cubre unos 70 px del final; en Configuración ya hay espacio inferior, en las demás pantallas falta comprobarlo.
+
+### Verificación del CI de GitHub (26-oct, Claude PC)
+El trabajo `verify` del CI falló en `54864cda` (paso `node scripts/verify.mjs`, integración y e2e) y la base `2f998788` lo pasa. No se pudo leer el registro (pide autenticación). Se reprodujo en esta PC, con bases temporales propias, en tres partes:
+- **e2e `store.spec.ts`:** 44 de 44.
+- **Otras 22 e2e** (incluidas `product-onboarding`, `plataforma-*`, `credito`, `contrasenas`, `incentivos`, `almacenes`): 50 pasan y 1 falla una vez, `privacidad-sesion` G9 «el cierre por inactividad también borra clientes y catálogo del navegador», con el reloj simulado y la máquina cargada; pasa 3 de 3 al repetirla sola. Esa misma prueba también falló una vez, con la misma carga, en la corrida larga de otra pantalla. **Probable prueba inestable bajo carga, sin descartar un fallo intermitente real del cierre por inactividad** (ese código no cambió con el rediseño).
+- **Integración (31 archivos):** sin regresión. Fallos de esta PC que también salen en la base: `drive-backup` (no hay `pg_dump`) y `alertas-postgres` (se agota el tiempo de preparación). `api.test.ts` da 182 de 182 en una base limpia (una vez falló «evalúa vencimiento, rotación y presupuesto», `tests/api.test.ts:1064`, que depende de datos y de la hora).
+- `apps/api` es idéntico a la base; solo cambiaron `apps/web`, `packages/ui/src/index.tsx` (la opción `restoreFocus`, apagada por defecto), las pruebas e2e y los documentos.
+- Diferencias con el CI que esta reproducción no cubre: PostgreSQL 17 en el puerto 5434 contra PostgreSQL 18 embebido, Linux contra Windows, y el orden (el CI corre primero la integración y después las e2e sobre la misma base). Si el CI vuelve a fallar, buscar en su registro «evalúa vencimiento» y «cierre por inactividad».
