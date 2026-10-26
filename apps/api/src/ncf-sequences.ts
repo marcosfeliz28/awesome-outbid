@@ -173,11 +173,11 @@ export class NcfSequencesController {
     const input = parse(updateSequence, body);
     const today = await this.today();
     const row = await this.db.$transaction(async (tx) => {
-      if (input.active === true) {
-        const target = await tx.ncfSequence.findFirst({ where: { id: sequenceId }, select: { type: true } });
-        if (!target) bad("Secuencia no encontrada.");
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`ncf:${currentTenantId()}:${target.type}`}))`;
-      }
+      // NCF-01: siempre el candado de takeNcf; corregir o desactivar nunca se
+      // intercala entre la lectura y el incremento de una venta.
+      const target = await tx.ncfSequence.findFirst({ where: { id: sequenceId }, select: { type: true } });
+      if (!target) bad("Secuencia no encontrada.");
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`ncf:${currentTenantId()}:${target.type}`}))`;
       const previous = await tx.ncfSequence.findFirst({ where: { id: sequenceId } });
       if (!previous) bad("Secuencia no encontrada.");
       if (input.active === true && !previous.active) {

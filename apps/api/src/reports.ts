@@ -755,6 +755,8 @@ export class ReportsController {
     )
       denied();
     if (name === "cash" && !canViewCashExpected(actor)) denied();
+    // NCF-05: el libro fiscal lleva el RNC/cédula del receptor; sólo administración.
+    if (name === "fiscal" && !can(actor.permissions, "*")) denied();
     if (name === "by-payment" && !canViewCashExpected(actor)) {
       const openCashSession = await this.db.cashSession.findFirst({
         where: { branchId: actor.branchId, closedAt: null },
@@ -1420,7 +1422,7 @@ export class ReportsController {
 // JSON: una página (`page`, `limit`) y el `total` aparte. Excel/PDF: por lotes
 // en flujo, hasta EXPORT_LIMIT filas; si el período tiene más, se avisa antes
 // de empezar la descarga.
-export const LISTINGS = ["sales", "kardex", "returns-discounts"];
+export const LISTINGS = ["sales", "fiscal", "kardex", "returns-discounts"];
 const EXPORT_BATCH = 1000;
 type ListingPage = { take: number; skip?: number; cursor?: string };
 type Listing = {
@@ -1500,6 +1502,51 @@ function listing(
         };
       },
     };
+  if (name === "fiscal") {
+    // NCF-04/05: libro fiscal (607). Todo NCF asignado, vigente o anulado, con
+    // su receptor: un anulado nunca deja un salto sin explicar.
+    const where = {
+      branchId: actor.branchId,
+      createdAt: range,
+      ncf: { not: null },
+    };
+    return {
+      count: () => db.sale.count({ where }),
+      read: async (page) => {
+        const sales = await db.sale.findMany({
+          where,
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          ...pageArgs(page),
+          select: {
+            id: true,
+            number: true,
+            createdAt: true,
+            status: true,
+            total: true,
+            taxTotal: true,
+            ncf: true,
+            ncfType: true,
+            recipientLegalId: true,
+            voidedReason: true,
+          },
+        });
+        return {
+          last: sales.at(-1)?.id,
+          rows: sales.map((s) => ({
+            NCF: s.ncf ?? "",
+            Tipo_NCF: s.ncfType ?? "",
+            Estado: s.status === "voided" ? "Anulado" : "Emitido",
+            RNC_cédula_receptor: s.recipientLegalId ?? "",
+            Fecha: localTime(s.createdAt),
+            Factura: s.number,
+            Total: Number(s.total),
+            ITBIS: Number(s.taxTotal),
+            Motivo_anulación: s.voidedReason ?? "",
+          })),
+        };
+      },
+    };
+  }
   if (name === "kardex") {
     const where = { branchId: actor.branchId, createdAt: range };
     return {

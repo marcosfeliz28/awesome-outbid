@@ -2842,6 +2842,7 @@ export function Promotions() {
 
 const reportList = [
   ["sales", "Ventas detalladas"],
+  ["fiscal", "Libro fiscal NCF (emitidos y anulados)"],
   ["monthly-consumption", "Consumo mensual"],
   ["profit", "Utilidad por producto"],
   ["inventory-value", "Inventario valorizado"],
@@ -2872,6 +2873,7 @@ const REPORT_GROUPS: [string, string[]][] = [
     "Ventas",
     [
       "sales",
+      "fiscal",
       "monthly-consumption",
       "ventas-categoria-forma-pago",
       "returns-discounts",
@@ -4404,8 +4406,9 @@ export function Configuration() {
                   · Ticket {query.data?.receiptWidth} mm
                 </p>
                 <p>
-                  NCF/e-CF reservado para integración futura. Los recibos son
-                  internos.
+                  {query.data?.ncfMode === "sequences"
+                    ? "NCF por venta activo: cada venta emite su NCF (B01/B02). e-CF en pausa."
+                    : "Sin NCF por venta: los recibos son internos. e-CF en pausa."}
                 </p>
               </div>
               <Button onClick={() => setEditing(true)}>

@@ -89,7 +89,10 @@ describe("03 · textos del recibo no fiscal", () => {
     // La dueña pidió quitarla del ticket térmico; sigue en WhatsApp/correo y PDF.
     expect(render({ sale, config })).not.toContain(NON_FISCAL_LEGEND);
     const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
-    expect(pos).toMatch(/const text = `[^`]*\$\{NON_FISCAL_LEGEND\}/);
+    // NCF-06: con NCF emitido el mensaje lleva el NCF, no la leyenda no fiscal.
+    expect(pos).toMatch(
+      /const text = `[^`]*\$\{receipt\.ncf \? "NCF " \+ receipt\.ncf : NON_FISCAL_LEGEND\}/,
+    );
     expect(pos).not.toContain("Documento interno, no fiscal.");
     const receipt = readFileSync("apps/api/src/receipt-pdf.ts", "utf8");
     expect(receipt).toContain("Documento interno, sin valor fiscal");

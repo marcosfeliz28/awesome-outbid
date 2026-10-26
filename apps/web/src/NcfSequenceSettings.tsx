@@ -166,11 +166,11 @@ function NcfSequenceSettingsContent() {
       <div className="ncf-sequence-intro">
         <h3 id="ncf-sequence-title">Avisos de secuencias NCF</h3>
         <p>
-          Inventario declarado por administración. No emite NCF, no consulta la DGII y
-          no certifica que una secuencia esté vigente. Registra solo datos de una
+          Inventario declarado por administración. Nexora no consulta la DGII ni
+          certifica que una secuencia esté vigente. Registra solo datos de una
           autorización real y concilia el próximo número utilizado fuera de Nexora.
-          Si en Ajustes eliges «NCF por venta», cada venta toma aquí su próximo
-          número (B01/B02).
+          Solo si en Ajustes eliges «NCF por venta», cada venta emite aquí su
+          próximo NCF (B01/B02); si no, Nexora no emite NCF.
         </p>
       </div>
       <form className="ncf-sequence-form" onSubmit={(event) => void create(event)}>

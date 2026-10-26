@@ -636,7 +636,11 @@ export const saleSchema = z.object({
     .optional(),
   creditDueDate: z.string().datetime().optional(),
   ncfType: z.enum(["B01", "B02", "B14", "B15", "E31", "E32"]).optional(),
-  recipientLegalId: z.string().min(9).max(11).regex(/^\d+$/).optional(),
+  // NCF-02: RNC 9 dígitos o cédula 11; diez dígitos no es ninguno de los dos.
+  recipientLegalId: z
+    .string()
+    .regex(/^(\d{9}|\d{11})$/, "El RNC lleva 9 dígitos y la cédula 11.")
+    .optional(),
   notes: z.string().max(1000).optional(),
   // «Venta al por mayor» (INC): sólo reduce el incentivo de la cajera a la
   // mitad. Opcional y sin valor por defecto: la huella de una venta offline

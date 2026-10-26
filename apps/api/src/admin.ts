@@ -433,7 +433,20 @@ export class AdminController {
           // contable. Sólo se eliminan campos libres o identificadores personales.
           await tx.sale.updateMany({
             where: { id: { in: saleIds } },
-            data: { recipientLegalId: null, notes: "" },
+            data: { notes: "" },
+          });
+          // NCF-03: el receptor de un crédito fiscal ya emitido es dato fiscal
+          // (DGII), no de contacto: se conserva en la venta.
+          await tx.sale.updateMany({
+            where: {
+              id: { in: saleIds },
+              OR: [
+                { ncf: null },
+                { ncfType: null },
+                { ncfType: { notIn: ["B01", "E31"] } },
+              ],
+            },
+            data: { recipientLegalId: null },
           });
           // Auditoría 03 (A2): todo lo demás que la pantalla promete borrar.
           // Textos libres: se quitan los datos conocidos del cliente y se

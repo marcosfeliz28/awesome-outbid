@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { createServer } from "node:net";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -304,6 +304,43 @@ it("cada venta toma su NCF B01/B02 consecutivo, único, por empresa y sólo con 
       fiscalStatus: "issued",
     });
     expect(first.body.ncf).toBe("B0200000005");
+    // NCF-07: la base rechaza «emitida» sin NCF y un NCF de otro tipo.
+    await expect(
+      sql.query(`UPDATE "Sale" SET "fiscalStatus"='issued' WHERE id=$1`, [
+        off.body.id,
+      ]),
+    ).rejects.toThrow(/sale_issued_has_ncf/);
+    await expect(
+      sql.query(`UPDATE "Sale" SET ncf='B0100000099' WHERE id=$1`, [
+        first.body.id,
+      ]),
+    ).rejects.toThrow(/sale_ncf_matches_type/);
+    // Filas antiguas que violan: la migración avisa y omite, nunca aborta.
+    const migration = await readFile(
+      join(
+        root,
+        "apps/api/prisma/migrations/202610280024_ncf_coherencia/migration.sql",
+      ),
+      "utf8",
+    );
+    const hasCheck = async () =>
+      (
+        await sql.query(
+          `SELECT 1 FROM pg_constraint WHERE conname='sale_issued_has_ncf'`,
+        )
+      ).rowCount;
+    await sql.query(`ALTER TABLE "Sale" DROP CONSTRAINT sale_issued_has_ncf`);
+    await sql.query(`UPDATE "Sale" SET "fiscalStatus"='issued' WHERE id=$1`, [
+      off.body.id,
+    ]);
+    await sql.query(migration);
+    expect(await hasCheck()).toBe(0);
+    await sql.query(
+      `UPDATE "Sale" SET "fiscalStatus"='not_issued' WHERE id=$1`,
+      [off.body.id],
+    );
+    await sql.query(migration);
+    expect(await hasCheck()).toBe(1);
     expect((await sell(a)).body.ncf).toBe("B0200000006");
 
     // B01: con el RNC guardado del cliente; sin RNC se rechaza.
@@ -321,6 +358,19 @@ it("cada venta toma su NCF B01/B02 consecutivo, único, por empresa y sólo con 
     expect(noRnc.status).toBe(400);
     expect(noRnc.body.message).toContain("RNC o cédula");
     expect(await next(b01)).toBe("2");
+    // NCF-02: 10 dígitos no es RNC (9) ni cédula (11): no consume NCF.
+    const ten = await sell(a, {
+      ncfType: "B01",
+      recipientLegalId: "1234567890",
+    });
+    expect(ten.status).toBe(400);
+    expect(await next(b01)).toBe("2");
+    const cedula = await sell(a, {
+      ncfType: "B01",
+      recipientLegalId: "00100000001",
+    });
+    expect(cedula.status, JSON.stringify(cedula.body)).toBe(201);
+    expect(cedula.body.ncf).toBe("B0100000002");
     expect((await sell(a, { ncfType: "E32" })).status).toBe(400);
 
     // Concurrencia: 12 ventas a la vez desde 4 cajas → 12 NCF únicos y seguidos.
@@ -335,6 +385,25 @@ it("cada venta toma su NCF B01/B02 consecutivo, único, por empresa y sólo con 
     expect(numbers).toEqual(Array.from({ length: 12 }, (_, i) => 7 + i));
     expect(await next(b02)).toBe("19");
 
+    // NCF-01: una corrección administrativa espera el candado de la venta.
+    const holder = new Client({ connectionString: url });
+    await holder.connect();
+    await holder.query("BEGIN");
+    await holder.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+      `ncf:${tenantA}:B02`,
+    ]);
+    let patched = false;
+    const patch = http
+      .patch(`/api/ncf-sequences/${b02}`)
+      .set("Authorization", auth(a))
+      .send({ nextNumber: "00000019" })
+      .then((r) => ((patched = true), r));
+    await new Promise((done) => setTimeout(done, 1500));
+    expect(patched).toBe(false);
+    await holder.query("COMMIT");
+    await holder.end();
+    expect((await patch).status).toBe(200);
+
     // La anulación conserva el NCF; el número nunca se reutiliza.
     const voided = await http
       .post(`/api/sales/${first.body.id}/void`)
@@ -343,6 +412,50 @@ it("cada venta toma su NCF B01/B02 consecutivo, único, por empresa y sólo con 
     expect(voided.status, JSON.stringify(voided.body)).toBe(201);
     expect((await ncfOf(first.body.id)).ncf).toBe("B0200000005");
     expect((await sell(a)).body.ncf).toBe("B0200000019");
+
+    // NCF-04/05: el libro fiscal conserva el anulado y el receptor del B01;
+    // sólo administración.
+    const book = await http
+      .get("/api/reports/fiscal?limit=100")
+      .set("Authorization", auth(a));
+    expect(book.status, JSON.stringify(book.body)).toBe(200);
+    expect(book.body.rows).toContainEqual(
+      expect.objectContaining({ NCF: "B0200000005", Estado: "Anulado" }),
+    );
+    expect(book.body.rows).toContainEqual(
+      expect.objectContaining({
+        NCF: "B0100000001",
+        Estado: "Emitido",
+        RNC_cédula_receptor: "131234567",
+      }),
+    );
+    const readerRole = randomUUID(),
+      reader: Seat = {
+        tenantId: tenantA,
+        userId: randomUUID(),
+        sessionId: randomUUID(),
+      };
+    const readerTerminal = randomUUID();
+    await sql.query(
+      `INSERT INTO "Role" (id,name,permissions,"updatedAt","tenantId") VALUES ($1,'Lectura',ARRAY['reports:read'],now(),$2)`,
+      [readerRole, tenantA],
+    );
+    await sql.query(
+      `INSERT INTO "User" (id,name,email,"passwordHash","pinHash","roleId","updatedAt","tenantId") VALUES ($1,'Lectora','lectora@example.invalid','test','test',$2,now(),$3)`,
+      [reader.userId, readerRole, tenantA],
+    );
+    await sql.query(
+      `INSERT INTO "Terminal" (id,name,"branchId","approvedAt","secretHash","tenantId") VALUES ($1,'Terminal L','main',now(),'test',$2)`,
+      [readerTerminal, tenantA],
+    );
+    await sql.query(
+      `INSERT INTO "AuthSession" (id,"userId","terminalId","tenantId") VALUES ($1,$2,$3,$4)`,
+      [reader.sessionId, reader.userId, readerTerminal, tenantA],
+    );
+    expect(
+      (await http.get("/api/reports/fiscal").set("Authorization", auth(reader)))
+        .status,
+    ).toBe(403);
 
     // Venta offline: recibe el NCF en el servidor al sincronizar.
     const offline = body(a, { capturedAt: new Date().toISOString() });
@@ -399,6 +512,13 @@ it("cada venta toma su NCF B01/B02 consecutivo, único, por empresa y sólo con 
     });
     expect((await sell(b)).body.ncf).toBe("B0200000001");
     expect((await sell(a)).body.ncf).toBe("B0200000050");
+    // NCF-03: anonimizar al cliente no borra el receptor del B01 emitido.
+    const anon = await http
+      .post(`/api/customers/${fixtures[tenantA].withRnc}/anonymize`)
+      .set("Authorization", auth(a))
+      .send({ reason: "Solicitud verificada", requestRef: "NCF-03-PRUEBA" });
+    expect(anon.status, JSON.stringify(anon.body)).toBe(201);
+    expect((await ncfOf(fiscal.body.id)).recipientLegalId).toBe("131234567");
     const dupes = await sql.query(
       `SELECT "tenantId", ncf, count(*)::int AS n FROM "Sale" WHERE ncf IS NOT NULL GROUP BY 1,2 HAVING count(*)>1`,
     );
