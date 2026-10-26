@@ -92,7 +92,12 @@ export function TableSkeleton({
   label?: string;
 }) {
   return (
-    <div className="table-skeleton" role="status" aria-label={label}>
+    <div
+      className="table-skeleton"
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+    >
       {Array.from({ length: rows }, (_, row) => (
         <div className="table-skeleton-row" key={row} aria-hidden="true">
           {Array.from({ length: cols }, (_, col) => (

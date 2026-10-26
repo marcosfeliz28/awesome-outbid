@@ -139,3 +139,16 @@ test("Reportes: Excel y PDF quedan deshabilitados con el rango de fechas inverti
   await mas.click(); // escribir en las fechas sacó el foco y cerró «Más»
   await expect(pdf).toBeDisabled();
 });
+
+test("Esqueleto de tabla: aria-busy y un solo role=status por pantalla", async ({
+  page,
+}) => {
+  await page.route("**/api/products*", async (route) => {
+    await new Promise((r) => setTimeout(r, 2500));
+    await route.continue();
+  });
+  await entrar(page, "products");
+  const esqueleto = page.locator(".main-content .table-skeleton");
+  await expect(esqueleto).toHaveAttribute("aria-busy", "true");
+  await expect(page.locator(".main-content [role=status]")).toHaveCount(1);
+});
