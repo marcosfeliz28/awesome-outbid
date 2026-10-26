@@ -1160,6 +1160,7 @@ function Shell() {
             <button
               key={n.id}
               className={`nav-item ${page === n.id ? "active" : ""}`}
+              aria-current={page === n.id ? "page" : undefined}
               onClick={() => go(n.id)}
             >
               <n.icon size={19} />
@@ -1184,6 +1185,7 @@ function Shell() {
           {can(user.permissions, "sale:manage") && (
             <button
               className={`nav-item ${page === "settings" ? "active" : ""}`}
+              aria-current={page === "settings" ? "page" : undefined}
               onClick={() => go("settings")}
             >
               <Settings size={19} />
