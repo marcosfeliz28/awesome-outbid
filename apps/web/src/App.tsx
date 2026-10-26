@@ -7,6 +7,7 @@ import {
   rememberCompany,
 } from "./realtime";
 import { Merchandise } from "./Merchandise";
+import type { AssistantRequest } from "./dashboardQuestions";
 import { supportBannerText, supportExpiresAt } from "./supportSession";
 import { PasswordChangeFields } from "./PasswordChangeFields";
 import {
@@ -786,6 +787,29 @@ function Shell() {
     [idleDeadline, setIdleDeadline] = useState<number | null>(null),
     [about, setAbout] = useState(false),
     [ownPassword, setOwnPassword] = useState(false);
+  // Tablero ejecutivo: condición propia (producto, admin o gerente con
+  // reports:read); no depende del aspecto ni de la caja.
+  const executiveDashboard =
+    PRODUCT_TENANCY_REQUIRED &&
+    (user?.role === "admin" || user?.role === "manager") &&
+    !!user &&
+    can(user.permissions, "reports:read");
+  const [assistantRequest, setAssistantRequest] =
+    useState<AssistantRequest | null>(null);
+  const askFromDashboard = (label: string, question: string) => {
+    if (!user) return;
+    const origin =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setAssistantRequest((previous) => ({
+      id: (previous?.id || 0) + 1,
+      session: `${user.id}:${user.branchId}`,
+      origin,
+      label,
+      question,
+    }));
+  };
   const client = useQueryClient();
   const mobile = useMediaQuery(MOBILE_MENU);
   const menuButton = useRef<HTMLButtonElement>(null),
@@ -1085,7 +1109,13 @@ function Shell() {
   const pages: Record<string, React.ReactNode> = {
     onboarding: <Onboarding go={go} />,
     billing: <Billing />,
-    dashboard: <Dashboard go={go} />,
+    dashboard: (
+      <Dashboard
+        go={go}
+        executive={executiveDashboard}
+        onAsk={askFromDashboard}
+      />
+    ),
     "month-report": <MonthReport go={go} />,
     pos: <POS go={go} />,
     products: <Catalog />,
@@ -1108,6 +1138,16 @@ function Shell() {
   };
   return (
     <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById("main-content")?.focus();
+        }}
+      >
+        Saltar al contenido
+      </a>
       {menu && (
         <button
           className="sidebar-backdrop"
@@ -1132,6 +1172,7 @@ function Shell() {
           y del lector de pantalla. */}
       <aside
         ref={sidebar}
+        id="admin-navigation"
         className={`sidebar ${menu ? "open" : ""}`}
         inert={mobile && !menu}
         aria-hidden={mobile && !menu ? true : undefined}
@@ -1155,11 +1196,12 @@ function Shell() {
           <ChevronDown size={15} />
         </div>
         <div className="nav-caption">TU NEGOCIO</div>
-        <nav>
+        <nav aria-label="Navegación del negocio">
           {allowed.map((n) => (
             <button
               key={n.id}
               className={`nav-item ${page === n.id ? "active" : ""}`}
+              aria-current={page === n.id ? "page" : undefined}
               onClick={() => go(n.id)}
             >
               <n.icon size={19} />
@@ -1184,6 +1226,7 @@ function Shell() {
           {can(user.permissions, "sale:manage") && (
             <button
               className={`nav-item ${page === "settings" ? "active" : ""}`}
+              aria-current={page === "settings" ? "page" : undefined}
               onClick={() => go("settings")}
             >
               <Settings size={19} />
@@ -1215,6 +1258,7 @@ function Shell() {
               ref={menuButton}
               className="icon-button mobile-menu"
               aria-expanded={mobile ? menu : undefined}
+              aria-controls="admin-navigation"
               onClick={() => setMenu(true)}
               aria-label="Abrir menú"
             >
@@ -1354,7 +1398,11 @@ function Shell() {
             )}
           </div>
         </header>
-        <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className={`main-content ${page === "pos" ? "pos-content" : ""}`}
+        >
           {user.role === "support" && (
             <div className="support-mode-banner" role="status">
               {supportBannerText(supportExpiresAt(token))}
@@ -1461,7 +1509,17 @@ function Shell() {
         </Button>
       </Modal>
       <About open={about} onClose={() => setAbout(false)} />
-      {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && <Assistant online={online} />}
+      {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && (
+        <Assistant
+          key={`${user.id}:${user.branchId}`}
+          online={online}
+          request={
+            assistantRequest?.session === `${user.id}:${user.branchId}`
+              ? assistantRequest
+              : null
+          }
+        />
+      )}
       {ownPassword && (
         <ChangeOwnPassword onClose={() => setOwnPassword(false)} />
       )}

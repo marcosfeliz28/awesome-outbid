@@ -455,6 +455,50 @@ describe("G10 · contrato de contraste WCAG AA", () => {
   });
 });
 
+describe("Obsidian Lumina · contraste de los tokens nuevos", () => {
+  const light = variables(":root");
+  const dark = { ...light, ...variables(':root[data-theme="dark"]') };
+
+  it("el tema oscuro parte de la base obsidiana aprobada", () => {
+    expect(dark["--bg"].toLowerCase()).toBe("#05050a");
+    expect(dark["--accent-emerald"].toLowerCase()).toBe("#43e3b1");
+    expect(dark["--accent-violet"].toLowerCase()).toBe("#8b5cf6");
+  });
+
+  it.each([
+    ["claro", light],
+    ["oscuro", dark],
+  ] as const)("texto ≥ 4.5:1 y controles ≥ 3:1 en tema %s", (theme, p) => {
+    for (const bg of ["--bg", "--surface", "--surface-soft", "--surface-raised", "--shell-bg"])
+      meets(`${theme} texto sobre ${bg}`, p["--text"], p[bg], 4.5);
+    for (const bg of ["--surface", "--surface-raised", "--shell-bg"])
+      meets(`${theme} atenuado sobre ${bg}`, p["--muted"], p[bg], 4.5);
+    // Barra superior: «En línea» / «Sin conexión» y la ruta.
+    meets(`${theme} conexión`, p["--positive-text"], p["--shell-bg"], 4.5);
+    meets(`${theme} sin conexión`, p["--warning-text"], p["--shell-bg"], 4.5);
+    // Menú: icono del lugar actual y barra indicadora.
+    meets(`${theme} icono activo`, p["--primary"], p["--surface-soft"], 3);
+    meets(`${theme} indicador activo`, p["--accent-violet"], p["--shell-bg"], 3);
+    meets(`${theme} foco en barra`, p["--focus"], p["--shell-bg"], 3);
+    // Acción primaria y sus estados.
+    meets(`${theme} acción`, p["--on-action"], p["--action"], 4.5);
+    meets(`${theme} acción encima`, p["--on-action"], p["--action-hover"], 4.5);
+    for (const bg of ["--surface", "--surface-raised"])
+      meets(`${theme} borde fuerte sobre ${bg}`, p["--border-strong"], p[bg], 3);
+    // Avisos: el texto se lee sobre cada fondo de tono.
+    for (const bg of ["--emerald-soft", "--warning-soft", "--danger-soft", "--primary-soft"])
+      meets(`${theme} aviso sobre ${bg}`, p["--text"], p[bg], 4.5);
+    meets(`${theme} error de formulario`, p["--danger-text"], p["--danger-soft"], 4.5);
+    meets(`${theme} borde de aviso`, p["--accent-emerald"], p["--emerald-soft"], 3);
+  });
+
+  it("el botón de peligro lleva texto blanco legible", () => {
+    const rule = css.match(/\.button\.danger \{\s*background: (#[0-9a-f]{6});\s*\}\s*@media \(prefers-reduced-motion/i);
+    expect(rule, "regla Lumina de .button.danger").toBeTruthy();
+    meets("peligro", "#ffffff", rule![1], 4.5);
+  });
+});
+
 describe("Primeros pasos · INI-06 a INI-08", () => {
   const onboarding = readFileSync("apps/web/src/Onboarding.tsx", "utf8");
   it("Básico/Avanzado activo se lee en tema oscuro (≥ 4.5:1)", () => {

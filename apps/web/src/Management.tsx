@@ -4826,12 +4826,13 @@ export function StyleGuide() {
         <h2>Colores que mueven</h2>
         <div className="swatch-grid">
           {[
-            ["Primario", "#7C3AED"],
-            ["Acento", "#EC4899"],
-            ["Éxito", "#10B981"],
-            ["Aviso", "#F59E0B"],
-            ["Peligro", "#EF4444"],
-            ["Fondo", "#F8FAFC"],
+            ["Obsidiana (fondo oscuro)", "#05050A"],
+            ["Superficie zafiro", "#0D0F18"],
+            ["Acción (violeta)", "#7C3AED"],
+            ["Lugar actual (violeta)", "#8B5CF6"],
+            ["Estado y foco (esmeralda)", "#43E3B1"],
+            ["Aviso", "#FBBF24"],
+            ["Peligro", "#FF8FA3"],
           ].map(([label, color]) => (
             <div key={label}>
               <div style={{ background: color }} />
@@ -4866,6 +4867,26 @@ export function StyleGuide() {
               </Badge>
             ),
           )}
+        </div>
+        <h2>Avisos</h2>
+        <div className="style-stack">
+          <p className="notice success" role="status">
+            <strong>Guardado.</strong> Los cambios ya están en el sistema.
+          </p>
+          <p className="notice warning" role="status">
+            <strong>Revisa el conteo.</strong> Hay 3 productos sin contar hoy.
+          </p>
+          <p className="notice danger" role="alert">
+            <strong>No se guardó.</strong> Revisa tu internet e inténtalo otra vez.
+          </p>
+          <p className="notice info">
+            <strong>Dato.</strong> El margen se calcula sobre el precio.
+          </p>
+        </div>
+        <h2>Cargando</h2>
+        <div className="style-stack" aria-hidden="true">
+          <span className="skeleton" style={{ width: "60%" }} />
+          <span className="skeleton" style={{ width: "40%" }} />
         </div>
         <h2>Formularios y superficies</h2>
         <label className="field">

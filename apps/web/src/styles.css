@@ -77,6 +77,22 @@
   --alert-counter-border: #e8c181;
   --muted-on-soft: #586274;
   --shadow: 0 4px 22px #29315b04;
+  /* Obsidian Lumina (fase 1): violeta = acción, esmeralda = estado y foco. */
+  --surface-raised: #ffffff;
+  --shell-bg: #ffffff;
+  --border-strong: #7b8498;
+  --accent-violet: #7c3aed;
+  --accent-emerald: #047857;
+  --emerald-soft: #e7f7ee;
+  --action: #7c3aed;
+  --action-hover: #6d28d9;
+  --on-action: #ffffff;
+  --danger-soft: #fff0f0;
+  --danger-border: #f3b4bd;
+  --warning-soft: #fff5e6;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
   color-scheme: light;
   font-family: "Inter", sans-serif;
   font-synthesis: none;
@@ -86,25 +102,38 @@
   background: var(--bg);
 }
 :root[data-theme="dark"] {
-  --bg: #0b0f19;
-  --surface: #151b2b;
-  --surface-soft: #1b2235;
-  --text: #e2e8f0;
-  --muted: #9ba6ba;
-  --border: #293247;
+  /* Obsidian Lumina: base obsidiana, superficies zafiro sobrias. */
+  --bg: #05050a;
+  --surface: #0d0f18;
+  --surface-soft: #131726;
+  --text: #eef0f8;
+  --muted: #a3abc2;
+  --border: #232a3d;
   --primary: #a78bfa;
-  --primary-soft: #2c2246;
-  --green: #34d399;
-  --focus: #a78bfa;
-  --input-border: #6b7894;
+  --primary-soft: #1d1838;
+  --green: #43e3b1;
+  --focus: #43e3b1;
+  --input-border: #6d7896;
   --success-strong: #047857;
-  --positive-text: #34d399;
-  --danger-text: #f87171;
+  --positive-text: #43e3b1;
+  --danger-text: #ff8fa3;
   --warning-text: #fbbf24;
   --alert-counter-bg: #402b17;
   --alert-counter-border: #8b642f;
-  --muted-on-soft: #b5bfd1;
+  --muted-on-soft: #c4c9da;
   --shadow: none;
+  --surface-raised: #171c2e;
+  --shell-bg: #08090f;
+  --border-strong: #6d7896;
+  --accent-violet: #8b5cf6;
+  --accent-emerald: #43e3b1;
+  --emerald-soft: #0f2a24;
+  --action: #7c3aed;
+  --action-hover: #6d28d9;
+  --on-action: #ffffff;
+  --danger-soft: #2a1219;
+  --danger-border: #7a2e3f;
+  --warning-soft: #2b2111;
   color-scheme: dark;
 }
 * {
@@ -6598,3 +6627,450 @@ td strong {
 }
 /* INI-06: blanco sobre el violeta claro del tema oscuro no llega a 4.5:1. */
 :root[data-theme="dark"] .config-mode .active { color: #0b0f19; }
+
+/* ==========================================================================
+   Obsidian Lumina · fase 1 (docs/diseno/OBSIDIAN_LUMINA_PROGRESO.md)
+   Sistema compartido + marco de administración. Violeta = acción y lugar
+   actual; esmeralda = estado y foco. Todo lo de contenido va bajo
+   `.app-shell:not(.pos-shell)`: la caja conserva su tamaño y su disposición.
+   ========================================================================== */
+
+/* --- Marco: barra lateral y barra superior (también en la caja) --------- */
+.sidebar,
+.topbar {
+  background: var(--shell-bg);
+  border-color: var(--border);
+}
+.nav-caption {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.nav-item {
+  position: relative;
+  font-size: 13px;
+  gap: 12px;
+}
+.nav-item:hover {
+  color: var(--text) !important;
+}
+.nav-item.active {
+  background: var(--surface-soft) !important;
+  color: var(--text) !important;
+}
+/* Lugar actual: barra violeta + peso + aria-current, no solo color. */
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent-violet);
+}
+.nav-item.active svg {
+  color: var(--primary);
+}
+.nav-dot {
+  display: none;
+}
+.store-switch {
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.store-switch strong {
+  font-size: 12px;
+}
+.store-switch small {
+  font-size: 11px;
+}
+.help-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+.help-symbol {
+  font-size: 18px;
+}
+.help-card strong {
+  font-size: 13px;
+}
+.help-card p {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.help-card button {
+  font-size: 12px;
+  min-height: 44px;
+}
+.breadcrumb,
+.breadcrumb strong {
+  font-size: 13px;
+}
+.breadcrumb span {
+  color: var(--muted);
+}
+.global-search {
+  font-size: 12px;
+  min-height: 40px;
+  border-radius: var(--radius-sm);
+}
+.global-search kbd {
+  font-size: 11px;
+}
+/* Conexión: icono distinto + texto + color de estado. */
+.connection {
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 32px;
+  padding: 0 10px !important;
+  border: 1px solid currentColor !important;
+  border-radius: 999px;
+}
+.connection span {
+  font-size: 12px;
+}
+.account strong {
+  font-size: 13px;
+}
+.account small {
+  font-size: 11px;
+}
+.avatar {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+}
+.account-menu {
+  background: var(--surface-raised);
+  border-radius: var(--radius);
+}
+.app-footer {
+  font-size: 11px;
+}
+@media (max-width: 1250px) {
+  .connection span {
+    font-size: 12px;
+  }
+}
+@media (max-width: 780px) {
+  /* La ruta vuelve a su tamaño de celular: a 320 px no cabe más grande. */
+  .breadcrumb,
+  .breadcrumb strong {
+    font-size: 10px;
+  }
+  /* En celular el texto de conexión se oculta a la vista, no al lector. */
+  .connection {
+    border: 0 !important;
+    padding: 0 !important;
+  }
+  .connection span {
+    display: inline;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
+/* --- Botones -------------------------------------------------------------- */
+.button.primary {
+  background: var(--action);
+  color: var(--on-action);
+  box-shadow: none;
+}
+.button.primary:hover:not(:disabled) {
+  background: var(--action-hover);
+}
+.button.secondary {
+  border-color: var(--border-strong);
+}
+.button.ghost {
+  color: var(--text);
+}
+.button.ghost:hover:not(:disabled) {
+  background: var(--surface-soft);
+}
+.button.danger {
+  background: #b91c1c;
+}
+@media (prefers-reduced-motion: reduce) {
+  .button:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* --- Avisos: color + texto + borde -------------------------------------- */
+.notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.notice strong {
+  display: block;
+}
+.notice.success {
+  border-left-color: var(--accent-emerald);
+  background: var(--emerald-soft);
+}
+.notice.warning {
+  border-left-color: var(--warning-text);
+  background: var(--warning-soft);
+}
+.notice.danger {
+  border-left-color: var(--danger-text);
+  background: var(--danger-soft);
+}
+.notice.info {
+  border-left-color: var(--accent-violet);
+  background: var(--primary-soft);
+}
+.form-error {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+}
+.modal {
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+}
+
+.style-stack {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 24px;
+}
+/* --- Carga: esqueleto ----------------------------------------------------- */
+.skeleton {
+  display: block;
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--surface-soft) 25%,
+    var(--border) 50%,
+    var(--surface-soft) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton 1.4s ease-in-out infinite;
+}
+@keyframes skeleton {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* --- Contenido de administración ----------------------------------------- */
+.app-shell:not(.pos-shell) h1,
+.app-shell:not(.pos-shell) h2,
+.app-shell:not(.pos-shell) h3 {
+  /* Con -0.04em Plus Jakarta juntaba palabras («Tucatálogo»). */
+  letter-spacing: -0.01em;
+  word-spacing: 0.08em;
+}
+.app-shell:not(.pos-shell) .page-heading h1 {
+  font-size: 28px;
+  line-height: 1.25;
+}
+.app-shell:not(.pos-shell) .page-heading p {
+  font-size: 13px;
+}
+.app-shell:not(.pos-shell) .eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+@media (min-width: 781px) {
+  .app-shell:not(.pos-shell) .heading-actions select,
+  .app-shell:not(.pos-shell) .heading-actions .button {
+    min-height: 44px;
+    font-size: 13px;
+  }
+  .app-shell:not(.pos-shell) .main-content .button {
+    font-size: 13px;
+  }
+  .app-shell:not(.pos-shell) .kpi-card > strong {
+    font-size: 26px;
+    letter-spacing: -0.02em;
+  }
+}
+.app-shell:not(.pos-shell) .field {
+  font-size: 13px;
+}
+.app-shell:not(.pos-shell) .field small {
+  font-size: 12px;
+}
+.app-shell:not(.pos-shell) .panel,
+.app-shell:not(.pos-shell) .kpi-card {
+  border-radius: var(--radius-lg);
+}
+.app-shell:not(.pos-shell) .panel-heading h2 {
+  font-size: 16px;
+}
+.app-shell:not(.pos-shell) .panel-heading p {
+  font-size: 12px;
+}
+.app-shell:not(.pos-shell) .panel-heading .button {
+  font-size: 12px;
+  min-height: 40px;
+}
+.app-shell:not(.pos-shell) .panel-link {
+  font-size: 13px;
+}
+.app-shell:not(.pos-shell) .tabs button {
+  font-size: 13px;
+}
+.app-shell:not(.pos-shell) .tabs button.active {
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent-violet);
+}
+.app-shell:not(.pos-shell) .kpi-top {
+  font-size: 12px;
+}
+.app-shell:not(.pos-shell) .kpi-note,
+.app-shell:not(.pos-shell) .trend {
+  font-size: 11px;
+}
+.app-shell:not(.pos-shell) table {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.app-shell:not(.pos-shell) th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.app-shell:not(.pos-shell) td small {
+  font-size: 11px;
+}
+.app-shell:not(.pos-shell) td strong {
+  font-size: 13px;
+}
+.app-shell:not(.pos-shell) .badge,
+.app-shell:not(.pos-shell) td .badge {
+  font-size: 11px;
+}
+/* Estados con punto + texto: el color nunca va solo. */
+.app-shell:not(.pos-shell) .badge.success::before,
+.app-shell:not(.pos-shell) .badge.warning::before,
+.app-shell:not(.pos-shell) .badge.danger::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.app-shell:not(.pos-shell) .empty-orbit {
+  height: 48px;
+  width: 48px;
+  border-radius: var(--radius);
+  font-size: 20px;
+  color: var(--primary);
+}
+.app-shell:not(.pos-shell) .empty p {
+  font-size: 13px;
+  max-width: 320px;
+}
+.app-shell:not(.pos-shell) .loading {
+  font-size: 13px;
+}
+.app-shell:not(.pos-shell) .text-link {
+  font-size: 13px;
+  min-height: 44px;
+}
+/* Resumen: una franja sobria con una sola línea de luz, sin ilustración. */
+.app-shell:not(.pos-shell) .welcome-banner {
+  height: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 26px 24px;
+}
+.app-shell:not(.pos-shell) .welcome-banner::after {
+  content: "";
+  position: absolute;
+  left: 26px;
+  bottom: 0;
+  width: 160px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--accent-violet),
+    var(--accent-emerald),
+    transparent
+  );
+}
+.app-shell:not(.pos-shell) .welcome-banner h2 {
+  font-size: 20px;
+  line-height: 1.35;
+  color: var(--text);
+}
+.app-shell:not(.pos-shell) .welcome-banner h2 span {
+  color: var(--primary);
+}
+.app-shell:not(.pos-shell) .welcome-banner p {
+  font-size: 13px;
+  color: var(--muted);
+}
+.app-shell:not(.pos-shell) .banner-chip {
+  font-size: 12px;
+  color: var(--muted);
+}
+.app-shell:not(.pos-shell) .welcome-banner button {
+  font-size: 13px;
+  min-height: 44px;
+  color: var(--primary);
+}
+.app-shell:not(.pos-shell) .banner-illustration {
+  display: none;
+}
+@media (max-width: 780px) {
+  .app-shell:not(.pos-shell) .page-heading h1 {
+    font-size: 24px;
+  }
+  .app-shell:not(.pos-shell) .page-heading .eyebrow,
+  .app-shell:not(.pos-shell) .page-heading p {
+    font-size: 12px;
+  }
+}
+
+/* --- Fase 2: accesibilidad del marco y primitivas --------------------------- */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -64px;
+  z-index: 200;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--action);
+  color: var(--on-action);
+  font-weight: 700;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 8px;
+}
+#main-content:focus {
+  outline: none;
+}
+.field > label {
+  font-weight: 550;
+}
+.table-wrap:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
