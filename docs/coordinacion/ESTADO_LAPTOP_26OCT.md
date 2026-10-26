@@ -108,9 +108,12 @@ nueva** es: **no terminó; no hay evidencia de que haya llegado a ejecutarse**.
   Está sin firma, que es el pendiente PC-17 conocido. Su ejecución se aplaza
   hasta que la dueña esté presente mañana para aceptar UAC y registrar cada
   pantalla.
-- **BLOQUEADO para PC-22:** el instalador separado de la tienda no llegó a
-  generarse. `instalador/build.ps1 -SoloPreparar` falla con salida 1 en
-  `instalador/tools/verify-deploy-lock.mjs:76`: rechaza
-  `@fitstore/shared@file:///C:/Users/marco/Downloads/nexora-pc22-prep/packages/shared`
-  como «Directorio externo al workspace verificado». Es una falla cerrada del
-  empaquetado; no se produjo `.exe` de tienda ni se ejecutó instalador alguno.
+- **Corrección para PC-22:** el error anterior de `verify-deploy-lock.mjs:76`
+  fue causado por compilar mediante una unidad virtual corta (`G:`): pnpm dejó
+  la ruta física `C:` de `@fitstore/shared` y el verificador compara rutas sin
+  canonicalizarlas. En una carpeta físicamente corta se generó correctamente
+  `Nexora-POS-Setup-0.1.1-prueba.exe` (142,509,775 bytes, SHA-256
+  `40D55992800A57AB8ACD125C28642BC261499B95536888A68D95F88E9834E1DD`).
+  También está sin firma. Quedan bloqueadas únicamente la ejecución UAC de
+  mañana y la matriz limpia con ambos instaladores; no se ejecutó instalador
+  alguno hoy.
