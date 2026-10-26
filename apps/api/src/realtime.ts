@@ -195,8 +195,21 @@ export class RealtimeController {
       // ese dispositivo. Quien lo reclama fija su secreto, pero el equipo queda
       // pendiente hasta que un gerente lo apruebe (R4-01).
       const legacyClaim = !!existing && !existing.secretHash;
-      if ((!existing && manager) || (legacyClaim && manager && !existing?.approvedAt))
-        await enforcePlanQuota(tx as any, "boxes");
+      // Con el cupo de equipos del plan lleno, el navegador nuevo de una
+      // administradora queda PENDIENTE (no se aprueba solo ni se rechaza con
+      // 409, que la página reintentaba en bucle): ella revoca otro y lo aprueba.
+      let planLimit: string | undefined;
+      // Su propio equipo que quedó pendiente por el cupo se aprueba al
+      // volver a entrar si ya hay espacio (por ejemplo, tras revocar otro).
+      const retryApproval = !!existing && !legacyClaim && manager &&
+        !existing.approvedAt && existing.createdBy === actor.id;
+      if ((!existing && manager) || retryApproval || (legacyClaim && manager && !existing?.approvedAt))
+        await enforcePlanQuota(tx as any, "boxes").catch((error) => {
+          if (error instanceof HttpException && error.getStatus() === 409)
+            planLimit = error.message;
+          else throw error;
+        });
+      const autoApprove = manager && !planLimit;
       if (!existing) await enforcePlanQuota(tx as any, "branches", actor.branchId);
       const terminal = existing
         ? await tx.terminal.update({
@@ -204,11 +217,14 @@ export class RealtimeController {
             data: {
               lastActivityAt: new Date(),
               lastUserId: actor.id,
+              ...(retryApproval && autoApprove
+                ? { approvedAt: new Date(), approvedBy: actor.id }
+                : {}),
               ...(legacyClaim
                 ? {
                     secretHash: hashSecret(data.secret),
                     createdBy: actor.id,
-                    ...(manager
+                    ...(autoApprove
                       ? { approvedAt: new Date(), approvedBy: actor.id }
                       : { approvedAt: null, approvedBy: null }),
                   }
@@ -223,7 +239,7 @@ export class RealtimeController {
               secretHash: hashSecret(data.secret),
               createdBy: actor.id,
               lastUserId: actor.id,
-              ...(manager
+              ...(autoApprove
                 ? { approvedAt: new Date(), approvedBy: actor.id }
                 : {}),
             },
@@ -262,7 +278,7 @@ export class RealtimeController {
             : undefined,
           { name: terminal.name, status: terminalStatus(terminal) },
         );
-      return publicTerminal(terminal);
+      return { ...publicTerminal(terminal), ...(planLimit ? { planLimit } : {}) };
     });
   }
   @Post("terminals/:id/approve")

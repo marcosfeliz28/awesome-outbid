@@ -84,6 +84,7 @@ import {
   searchWords,
   toast,
 } from "./helpers";
+import { productSearchText } from "./catalogChecks";
 import {
   discardCartDraft,
   rememberAttempt,
@@ -673,17 +674,7 @@ export function POS({ go }: { go: (page: string) => void }) {
   // Búsqueda por palabras sueltas, sin acentos, apóstrofos ni orden:
   // "iso100 vanilla 5lb" encuentra "ISO100 Hydrolyzed - Dymatize - Gourmet
   // Vanilla / 5 lb" y "loreal" encuentra "L'Oréal".
-  const searchText = (p: Product) =>
-    [
-      p.name,
-      p.sku,
-      p.brand,
-      ...p.variants.flatMap((v) => [
-        v.sku,
-        v.barcode,
-        ...Object.values(v.attributes || {}).map(String),
-      ]),
-    ].join(" ");
+  const searchText = (p: Product) => productSearchText(p);
   const inCategory = (products.data ?? []).filter(
     (p) => category === "all" || p.categoryId === category,
   );
@@ -2255,10 +2246,7 @@ function Checkout({
       // Impresión automática del recibo (Ajustes).
       const cashPaid = cashDrawerRequired(payments);
       const drawerAuthorization =
-        cashPaid &&
-        confirmedOnline &&
-        isNativeDesktop() &&
-        token
+        cashPaid && confirmedOnline && isNativeDesktop() && token
           ? { accessToken: token, saleId: sale.id, automatic: true as const }
           : undefined;
       setReceipt({
@@ -2408,7 +2396,10 @@ function Checkout({
             <Button
               variant="secondary"
               onClick={() =>
-                void nativeOpenDrawer({ ...receipt.drawerAuthorization, accessToken: token ?? "" })
+                void nativeOpenDrawer({
+                  ...receipt.drawerAuthorization,
+                  accessToken: token ?? "",
+                })
                   .then(() => toast("Gaveta: reintento enviado."))
                   .catch((e) => toast(String(e?.message ?? e), true))
               }

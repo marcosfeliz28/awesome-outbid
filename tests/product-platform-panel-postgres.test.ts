@@ -201,12 +201,16 @@ it("panel del operador: resumen, detalle con contacto y reenvío de invitación"
     expect(summary.body).toEqual({
       total: base.total + 5,
       alDia: base.alDia + 1,
-      enPrueba: base.enPrueba + 1,
+      // «En prueba» cuenta igual que su filtro (también la que vence en 3
+      // días); «Por vencer» se superpone.
+      enPrueba: base.enPrueba + 2,
       porVencer: base.porVencer + 1,
       atrasados: base.atrasados + 1,
       suspendidos: base.suspendidos + 1,
       month: expect.stringMatching(/^\d{4}-\d{2}$/),
       monthIncome: 990,
+      monthPayments: 990,
+      monthAiPacks: 0,
     });
 
     const detail = await get("/api/platform/tenants/panel-a");

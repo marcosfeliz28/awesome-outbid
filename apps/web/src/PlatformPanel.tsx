@@ -54,6 +54,8 @@ type Summary = {
   suspendidos: number;
   month: string;
   monthIncome: number;
+  monthPayments?: number;
+  monthAiPacks?: number;
 };
 type Usage = {
   used: number;
@@ -70,6 +72,8 @@ type Payment = {
   months: number;
   paidUntil: string;
   createdAt: string;
+  voidsPaymentId?: string | null;
+  voidReason?: string | null;
 };
 
 class PlatformError extends Error {
@@ -234,19 +238,28 @@ const ErrorText = ({ text }: { text: string }) =>
 export function InviteLink({
   url,
   adminName,
+  adminEmail,
   businessName,
   slug,
+  reset = false,
 }: {
   url: string;
   adminName: string;
+  adminEmail: string;
   businessName: string;
   slug: string;
+  /** Enlace para restablecer la clave (24 h) en vez de invitación (7 días). */
+  reset?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
-  const message =
-    `Hola ${adminName}, te damos la bienvenida a Nexora POS. ` +
-    `Para activar tu empresa «${businessName}» (código: ${slug}), abre este enlace y crea tu contraseña: ${url} ` +
-    "El enlace vence en 7 días y sirve una sola vez.";
+  // Dice con qué correo y código se entra: sin eso la persona no sabía cuál usar.
+  const login = `Para entrar usa el código de empresa «${slug}» y el correo ${adminEmail}.`;
+  const message = reset
+    ? `Hola ${adminName}, este es tu enlace para crear una contraseña y un PIN nuevos en Nexora POS (empresa «${businessName}»): ${url} ` +
+      `${login} El enlace vence en 24 horas y sirve una sola vez.`
+    : `Hola ${adminName}, te damos la bienvenida a Nexora POS. ` +
+      `Para activar tu empresa «${businessName}», abre este enlace y crea tu contraseña: ${url} ` +
+      `${login} El enlace vence en 7 días y sirve una sola vez.`;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -258,8 +271,11 @@ export function InviteLink({
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-violet-300 bg-violet-50 p-3">
       <div className="text-sm text-slate-800">
-        Enlace de invitación (vence en 7 días). Por seguridad solo se muestra
-        ahora: si se pierde, usa «Reenviar invitación».
+        {reset
+          ? "Enlace para restablecer la clave (vence en 24 horas). Por seguridad solo se muestra ahora."
+          : "Enlace de invitación (vence en 7 días). Por seguridad solo se muestra ahora: si se pierde, usa «Reenviar invitación»."}{" "}
+        Entra con el correo <strong>{adminEmail}</strong> y el código{" "}
+        <strong>{slug}</strong>.
       </div>
       <input
         readOnly
@@ -544,7 +560,9 @@ function SupportSection({
   const grants = useQuery({
     queryKey: ["platform", "support-grants"],
     queryFn: () =>
-      platformFetch<SupportGrant[]>(token, "/support-grants").catch(onAuthError),
+      platformFetch<SupportGrant[]>(token, "/support-grants").catch(
+        onAuthError,
+      ),
   });
   const grant = (grants.data as SupportGrant[] | undefined)?.find(
     (g) => g.slug === slug,
@@ -583,7 +601,8 @@ function SupportSection({
       ) : grant ? (
         <div className="flex flex-col gap-3 text-base">
           <div>
-            Acceso de soporte activo hasta <strong>{date(grant.expiresAt)}</strong>.
+            Acceso de soporte activo hasta{" "}
+            <strong>{date(grant.expiresAt)}</strong>.
           </div>
           <div>
             <Button disabled={busy} onClick={() => void open()}>
@@ -613,6 +632,8 @@ function ClientDetail({
   const client = useQueryClient();
   const [invite, setInvite] = useState("");
   const [confirmInvite, setConfirmInvite] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetLink, setResetLink] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const detail = useQuery({
@@ -652,6 +673,25 @@ function ClientDetail({
     } finally {
       setBusy(false);
       setConfirmInvite(false);
+    }
+  };
+  const passwordReset = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await platformFetch<{ invitationUrl: string }>(
+        token,
+        `/tenants/${slug}/password-reset`,
+        {},
+      );
+      setResetLink(true);
+      setInvite(result.invitationUrl);
+      refresh();
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
+      setBusy(false);
+      setConfirmReset(false);
     }
   };
   return (
@@ -721,10 +761,29 @@ function ClientDetail({
                   <InviteLink
                     url={invite}
                     adminName={tenant.admin.name}
+                    adminEmail={tenant.admin.email}
                     businessName={tenant.name}
                     slug={tenant.slug}
+                    reset={resetLink}
                   />
                 )}
+                {!tenant.admin.invitationPending &&
+                  !invite &&
+                  (confirmReset ? (
+                    <ConfirmStep
+                      busy={busy}
+                      onBack={() => setConfirmReset(false)}
+                      onConfirm={passwordReset}
+                      text="Su clave actual dejará de servir y se cerrarán sus sesiones. Le darás un enlace para crear clave y PIN nuevos. ¿Continuar?"
+                    />
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() => setConfirmReset(true)}
+                    >
+                      Enlace para restablecer su clave
+                    </Button>
+                  ))}
                 <ErrorText text={error} />
               </div>
             ) : (
@@ -759,9 +818,18 @@ function ClientDetail({
                 {(payments.data as Payment[]).map((p) => (
                   <li key={p.id} className="flex flex-col py-2 text-base">
                     <span className="font-semibold">
+                      {p.voidsPaymentId ? "Anulación · −" : ""}
                       {money(p.amount)} ·{" "}
                       {METHODS[p.method as keyof typeof METHODS] ?? p.method}
+                      {(payments.data as Payment[]).some(
+                        (v) => v.voidsPaymentId === p.id,
+                      ) && " · ANULADO"}
                     </span>
+                    {p.voidReason && (
+                      <span className="text-sm text-slate-700">
+                        Motivo: {p.voidReason}
+                      </span>
+                    )}
                     <span className="text-sm text-slate-700">
                       {date(p.createdAt)} · {p.months}{" "}
                       {p.months === 1 ? "mes" : "meses"} · hasta{" "}
@@ -770,6 +838,17 @@ function ClientDetail({
                     <span className="break-all text-sm text-slate-700">
                       Ref. {p.reference}
                     </span>
+                    {!p.voidsPaymentId &&
+                      !(payments.data as Payment[]).some(
+                        (v) => v.voidsPaymentId === p.id,
+                      ) && (
+                        <VoidPayment
+                          token={token}
+                          slug={slug}
+                          payment={p}
+                          onDone={refresh}
+                        />
+                      )}
                   </li>
                 ))}
               </ul>
@@ -777,6 +856,90 @@ function ClientDetail({
           </Section>
         </>
       )}
+    </div>
+  );
+}
+
+/** «Anular pago»: pide el motivo y confirma. La API agrega una fila de
+ * anulación (no edita ni borra) y rehace el «pagado hasta». */
+function VoidPayment({
+  token,
+  slug,
+  payment,
+  onDone,
+}: {
+  token: string;
+  slug: string;
+  payment: Payment;
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [review, setReview] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  if (!open)
+    return (
+      <div>
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          Anular pago
+        </Button>
+      </div>
+    );
+  const confirm = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await platformFetch(
+        token,
+        `/tenants/${slug}/payments/${payment.id}/void`,
+        {
+          reason: reason.trim(),
+        },
+      );
+      setOpen(false);
+      onDone();
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
+      setBusy(false);
+      setReview(false);
+    }
+  };
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      <Field label="Motivo de la anulación">
+        <input
+          value={reason}
+          maxLength={300}
+          onChange={(e) => setReason(e.target.value)}
+          disabled={review}
+        />
+      </Field>
+      {review ? (
+        <ConfirmStep
+          busy={busy}
+          onBack={() => setReview(false)}
+          onConfirm={confirm}
+          text={`Se anulará el pago de ${money(payment.amount)} (Ref. ${payment.reference}) y se recalculará el «pagado hasta». ¿Continuar?`}
+        />
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="secondary" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={() =>
+              reason.trim().length >= 3
+                ? setReview(true)
+                : setError("Escribe el motivo (mínimo 3 letras).")
+            }
+          >
+            Anular pago
+          </Button>
+        </div>
+      )}
+      <ErrorText text={error} />
     </div>
   );
 }
@@ -848,6 +1011,7 @@ function CreateClient({
             <InviteLink
               url={created.invitationUrl}
               adminName={form.adminName}
+              adminEmail={form.adminEmail.trim().toLowerCase()}
               businessName={form.businessName}
               slug={created.slug}
             />
@@ -1015,7 +1179,19 @@ function ClientList({
           {card("Atrasados", s.atrasados, "border-amber-400")}
           {card("Suspendidos", s.suspendidos, "border-red-300")}
           <div className="col-span-2">
-            {card("Ingreso del mes", money(s.monthIncome), "border-violet-300")}
+            {card(
+              "Ingreso del mes",
+              <>
+                {money(s.monthIncome)}
+                {s.monthAiPacks !== undefined && (
+                  <div className="text-sm font-normal text-slate-700">
+                    Planes {money(s.monthPayments ?? 0)} · Paquetes IA{" "}
+                    {money(s.monthAiPacks)}
+                  </div>
+                )}
+              </>,
+              "border-violet-300",
+            )}
           </div>
         </div>
       )}
@@ -1199,12 +1375,22 @@ export function PlatformPanel() {
           <Section title="Manual de soporte">
             <ul className="flex flex-col gap-2">
               <li>
-                <a className="font-semibold text-violet-800 underline" href="/soporte-operador/MANUAL_SOPORTE_DUENA.md" target="_blank" rel="noopener noreferrer">
+                <a
+                  className="font-semibold text-violet-800 underline"
+                  href="/soporte-operador/MANUAL_SOPORTE_DUENA.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   Manual: 25 problemas y cómo resolverlos
                 </a>
               </li>
               <li>
-                <a className="font-semibold text-violet-800 underline" href="/soporte-operador/RESPUESTAS_WHATSAPP.md" target="_blank" rel="noopener noreferrer">
+                <a
+                  className="font-semibold text-violet-800 underline"
+                  href="/soporte-operador/RESPUESTAS_WHATSAPP.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   Respuestas listas para WhatsApp
                 </a>
               </li>

@@ -1,0 +1,580 @@
+import { createServer } from "node:http";
+import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createRequire } from "node:module";
+import { startProductApp } from "./setup/product-pg-app";
+
+const ExcelJS = createRequire(import.meta.url)(
+  "../apps/api/node_modules/exceljs",
+);
+
+// Auditoría en vivo de inventario (25-oct-2026), con PostgreSQL real.
+let t: Awaited<ReturnType<typeof startProductApp>>;
+beforeAll(async () => {
+  t = await startProductApp("nexora_inventario_arreglos");
+}, 180_000);
+afterAll(async () => {
+  await t?.stop();
+});
+
+let seq = 0;
+async function category(name: string, extra: Record<string, unknown> = {}) {
+  const r = await t.post("/categories", { name, ...extra });
+  expect(r.status, JSON.stringify(r.body)).toBe(201);
+  return r.body;
+}
+async function product(
+  categoryId: string,
+  extra: Record<string, unknown> = {},
+  variant: Record<string, unknown> = {},
+) {
+  seq++;
+  const r = await t.post("/products", {
+    name: `Producto ${seq}`,
+    sku: `P-${seq}`,
+    categoryId,
+    confirmLowMargin: true,
+    variants: [
+      {
+        sku: `V-${seq}`,
+        barcode: `B-${seq}`,
+        costAvg: 10,
+        price: 20,
+        ...variant,
+      },
+    ],
+    ...extra,
+  });
+  expect(r.status, JSON.stringify(r.body)).toBe(201);
+  return r.body;
+}
+
+describe("1 · factura de proveedor sin bucket", () => {
+  it("CSV y foto IA se guardan en PostgreSQL cuando no hay almacenamiento de objetos", async () => {
+    const cat = await category("Facturas sin bucket");
+    const p = await product(cat.id);
+    const mapping = JSON.stringify({
+      code: "codigo",
+      description: "descripcion",
+      qty: "cantidad",
+      unitCost: "costo",
+    });
+    const csv = Buffer.from(
+      `codigo,descripcion,cantidad,costo\n${p.variants[0].sku},Producto,2,10\n`,
+    );
+    // Una IA falsa local: cuenta las llamadas y responde una factura válida.
+    let aiCalls = 0;
+    const ai = createServer((req, res) => {
+      aiCalls++;
+      req.resume();
+      req.on("end", () => {
+        res.setHeader("content-type", "application/json");
+        res.end(
+          JSON.stringify({
+            id: "msg_test",
+            type: "message",
+            role: "assistant",
+            model: "test",
+            stop_reason: "end_turn",
+            usage: { input_tokens: 1, output_tokens: 1 },
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  total: 20,
+                  lines: [
+                    {
+                      code: p.variants[0].sku,
+                      description: "Producto",
+                      qty: 2,
+                      unitCost: 10,
+                      lotNumber: "",
+                      expiryDate: "",
+                    },
+                  ],
+                }),
+              },
+            ],
+          }),
+        );
+      });
+    });
+    await new Promise<void>((done) => ai.listen(0, "127.0.0.1", done));
+    const env = { ...process.env };
+    try {
+      process.env.NODE_ENV = "production"; // fuera de pruebas: sin carpeta local
+      delete process.env.PRODUCT_OBJECT_BUCKET;
+      delete process.env.PRODUCT_OBJECT_REGION;
+      process.env.ANTHROPIC_API_KEY = "sk-ant-solo-prueba";
+      process.env.ANTHROPIC_BASE_URL = `http://127.0.0.1:${(ai.address() as any).port}`;
+      const imported = await t
+        .as("post", "/merchandise/import")
+        .field("mapping", mapping)
+        .attach("file", csv, "factura.csv");
+      expect(imported.status, JSON.stringify(imported.body)).toBe(201);
+      const photo = await t
+        .as("post", "/merchandise/import")
+        .attach("file", Buffer.from("\x89PNG\r\n\x1a\nfalsa"), {
+          filename: "factura.png",
+          contentType: "image/png",
+        });
+      expect(photo.status, JSON.stringify(photo.body)).toBe(201);
+      expect(aiCalls).toBe(1);
+      for (const body of [imported.body, photo.body]) {
+        const [row] = await t.q(
+          `SELECT data IS NOT NULL AS "hasData","objectKey" FROM "InvoiceAttachment" WHERE id=$1::uuid`,
+          body.attachmentId,
+        );
+        expect(row).toEqual({ hasData: true, objectKey: null });
+      }
+      const back = await t.get(
+        `/merchandise/attachments/${imported.body.attachmentId}`,
+      );
+      expect(back.status).toBe(200);
+      expect(back.text).toBe(csv.toString("utf8"));
+    } finally {
+      process.env.NODE_ENV = env.NODE_ENV;
+      for (const k of ["ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL"]) {
+        if (env[k] === undefined) delete process.env[k];
+        else process.env[k] = env[k];
+      }
+      ai.close();
+    }
+  });
+});
+
+describe("2 · combos", () => {
+  it("no convierte en combo un producto con existencia o que es pieza de otro, ni anida; se deshace si no se movió", async () => {
+    const cat = await category("Combos QA");
+    const piece = await product(cat.id);
+    const stocked = await product(cat.id);
+    const combo = await product(cat.id);
+    const other = await product(cat.id);
+    const pid = (p: any) => p.variants[0].id;
+    expect(
+      (
+        await t.post("/inventory/adjustments", {
+          variantId: pid(stocked),
+          qty: 3,
+          reason: "Inventario inicial",
+        })
+      ).status,
+    ).toBe(201);
+    const withStock = await t.post("/kits", {
+      kitVariantId: pid(stocked),
+      components: [{ componentVariantId: pid(piece), qty: 1 }],
+    });
+    expect(withStock.status).toBe(400);
+    expect(withStock.body.message).toContain("tiene existencia");
+    const ok = await t.post("/kits", {
+      kitVariantId: pid(combo),
+      components: [{ componentVariantId: pid(piece), qty: 2 }],
+    });
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201);
+    // La pieza de un combo no puede volverse combo (anidado), ni un combo ser pieza.
+    const pieceAsKit = await t.post("/kits", {
+      kitVariantId: pid(piece),
+      components: [{ componentVariantId: pid(other), qty: 1 }],
+    });
+    expect(pieceAsKit.status).toBe(400);
+    expect(pieceAsKit.body.message).toContain("pieza de otro combo");
+    const nested = await t.post("/kits", {
+      kitVariantId: pid(other),
+      components: [{ componentVariantId: pid(combo), qty: 1 }],
+    });
+    expect(nested.status).toBe(400);
+    // Deshacer: sin movimientos se puede; vuelve a ser un producto normal.
+    const undo = await t.del(`/kits/${combo.id}`);
+    expect(undo.status, JSON.stringify(undo.body)).toBe(200);
+    const [row] = await t.q(
+      `SELECT "isKit" FROM "Product" WHERE id=$1::uuid`,
+      combo.id,
+    );
+    expect(row.isKit).toBe(false);
+    expect(
+      await t.q(
+        `SELECT 1 FROM "KitComponent" WHERE "kitVariantId"=$1::uuid`,
+        pid(combo),
+      ),
+    ).toHaveLength(0);
+    // Con un movimiento ya no se deshace.
+    expect(
+      (
+        await t.post("/kits", {
+          kitVariantId: pid(combo),
+          components: [{ componentVariantId: pid(piece), qty: 1 }],
+        })
+      ).status,
+    ).toBe(201);
+    await t.q(
+      `INSERT INTO "InventoryMovement" (id,"tenantId","variantId",type,qty,"unitCost","balanceAfter",reason,"userId","branchId")
+      VALUES (gen_random_uuid(),'00000000-0000-0000-0000-000000000001',$1::uuid,'sale',0,0,0,'QA','x','main')`,
+      pid(combo),
+    );
+    const blocked = await t.del(`/kits/${combo.id}`);
+    expect(blocked.status).toBe(400);
+    expect(blocked.body.message).toContain("movimientos");
+  });
+});
+
+describe("3 · se vende por unidad", () => {
+  it("rechaza decimales en venta, ajuste, orden, traspaso, conteo, mercancía y cotización; kg los admite", async () => {
+    const cat = await category("Fajas QA");
+    const faja = await product(cat.id);
+    const granel = await product(cat.id, { unit: "kg" });
+    const [row] = await t.q(
+      `SELECT "soldByUnit" FROM "Product" WHERE id=$1::uuid`,
+      faja.id,
+    );
+    expect(row.soldByUnit).toBe(true);
+    const [kg] = await t.q(
+      `SELECT "soldByUnit" FROM "Product" WHERE id=$1::uuid`,
+      granel.id,
+    );
+    expect(kg.soldByUnit).toBe(false);
+    const v = faja.variants[0].id;
+    expect(
+      (
+        await t.post("/inventory/adjustments", {
+          variantId: v,
+          qty: 5,
+          reason: "Inventario inicial",
+        })
+      ).status,
+    ).toBe(201);
+    const supplier = await t.post("/suppliers", { name: "Proveedor fajas" });
+    const warehouses = (await t.get("/inventory/warehouses")).body;
+    const store = warehouses.find((w: any) => w.sellable),
+      home = warehouses.find((w: any) => !w.sellable);
+    const attempts: [string, unknown][] = [
+      [
+        "/inventory/adjustments",
+        { variantId: v, qty: 1.5, reason: "Ajuste QA" },
+      ],
+      [
+        "/sales",
+        {
+          offlineUuid: randomUUID(),
+          cashSessionId: randomUUID(),
+          items: [{ variantId: v, qty: 0.5 }],
+          payments: [{ method: "cash", amount: 10 }],
+        },
+      ],
+      [
+        "/purchase-orders",
+        {
+          supplierId: supplier.body.id,
+          items: [{ variantId: v, qty: 2.5, unitCost: 10 }],
+        },
+      ],
+      [
+        "/inventory/transfers",
+        {
+          operationId: randomUUID(),
+          fromId: store.id,
+          toId: home.id,
+          reason: "Traspaso QA",
+          lines: [{ variantId: v, qty: 0.5 }],
+        },
+      ],
+      ["/inventory/counts", { items: [{ variantId: v, counted: 4.5 }] }],
+      [
+        "/merchandise/operations",
+        {
+          id: randomUUID(),
+          direction: "entry",
+          items: [{ variantId: v, qty: 1.5, unitCost: 10 }],
+        },
+      ],
+      ["/quotes", { items: [{ variantId: v, qty: 1.5 }] }],
+    ];
+    for (const [path, body] of attempts) {
+      const r = await t.post(path, body);
+      expect(r.status, path + " " + JSON.stringify(r.body)).toBe(400);
+      expect(r.body.message, path).toContain("se vende por unidad");
+    }
+    const [stock] = await t.q(
+      `SELECT stock::text FROM "Variant" WHERE id=$1::uuid`,
+      v,
+    );
+    expect(stock.stock).toBe("5.000");
+    const ok = await t.post("/inventory/adjustments", {
+      variantId: granel.variants[0].id,
+      qty: 1.5,
+      reason: "Granel QA",
+    });
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201);
+  });
+
+  it("la migración deja con decimales a los productos que ya los tenían", async () => {
+    const cat = await category("Migración unidad");
+    const a = await product(cat.id),
+      b = await product(cat.id);
+    await t.q(
+      `UPDATE "Variant" SET stock = 2.5 WHERE id=$1::uuid`,
+      a.variants[0].id,
+    );
+    await t.q(
+      `UPDATE "Variant" SET stock = 3 WHERE id=$1::uuid`,
+      b.variants[0].id,
+    );
+    const sql = readFileSync(
+      "apps/api/prisma/migrations/202610290001_sold_by_unit/migration.sql",
+      "utf8",
+    );
+    for (const statement of sql
+      .split(/;\s*\n/)
+      .map((x) => x.replace(/^--.*$/gm, "").trim())
+      .filter(Boolean))
+      await t.db.$executeRawUnsafe(statement);
+    const rows = await t.q(
+      `SELECT id::text, "soldByUnit" FROM "Product" WHERE id IN ($1::uuid,$2::uuid)`,
+      a.id,
+      b.id,
+    );
+    expect(Object.fromEntries(rows.map((r) => [r.id, r.soldByUnit]))).toEqual({
+      [a.id]: false,
+      [b.id]: true,
+    });
+  });
+});
+
+describe("6 · lotes en ajustes y conteos", () => {
+  it("sumar a un lote existente no pide lote ni vencimiento; sin vencimiento en la categoría no se pide", async () => {
+    const supl = await category("Suplementos QA", {
+      requiresLot: true,
+      requiresExpiry: true,
+    });
+    const maq = await category("Maquillaje QA", {
+      requiresLot: true,
+      requiresExpiry: false,
+    });
+    const s = (await product(supl.id)).variants[0].id;
+    const m = (await product(maq.id)).variants[0].id;
+    const first = await t.post("/inventory/adjustments", {
+      variantId: s,
+      qty: 4,
+      reason: "Inventario inicial",
+      lotNumber: "L-1",
+      expiryDate: "2030-01-31T00:00:00.000Z",
+    });
+    expect(first.status, JSON.stringify(first.body)).toBe(201);
+    const [lot] = await t.q(
+      `SELECT id::text FROM "Lot" WHERE "variantId"=$1::uuid`,
+      s,
+    );
+    const more = await t.post("/inventory/adjustments", {
+      variantId: s,
+      qty: 2,
+      reason: "Ajuste",
+      lotId: lot.id,
+    });
+    expect(more.status, JSON.stringify(more.body)).toBe(201);
+    const [after] = await t.q(
+      `SELECT l.qty::text AS lot, v.stock::text AS stock FROM "Lot" l JOIN "Variant" v ON v.id=l."variantId" WHERE l.id=$1::uuid`,
+      lot.id,
+    );
+    expect(after).toEqual({ lot: "6.000", stock: "6.000" });
+    const noLot = await t.post("/inventory/adjustments", {
+      variantId: m,
+      qty: 1,
+      reason: "Inventario inicial",
+    });
+    expect(noLot.status).toBe(400);
+    expect(noLot.body.message).toBe("Indica el lote.");
+    const makeup = await t.post("/inventory/adjustments", {
+      variantId: m,
+      qty: 3,
+      reason: "Inventario inicial",
+      lotNumber: "M-1",
+    });
+    expect(makeup.status, JSON.stringify(makeup.body)).toBe(201);
+    const noExpiry = await t.post("/inventory/adjustments", {
+      variantId: s,
+      qty: 1,
+      reason: "Ajuste",
+      lotNumber: "L-2",
+    });
+    expect(noExpiry.body.message).toBe("Indica el vencimiento del lote.");
+  });
+
+  it("el conteo de un producto con lote se hace por lote y se aplica", async () => {
+    const supl = await category("Suplementos conteo", {
+      requiresLot: true,
+      requiresExpiry: true,
+    });
+    const s = (await product(supl.id)).variants[0].id;
+    for (const lotNumber of ["A", "B"])
+      expect(
+        (
+          await t.post("/inventory/adjustments", {
+            variantId: s,
+            qty: 5,
+            reason: "Inventario inicial",
+            lotNumber,
+            expiryDate: "2030-06-30T00:00:00.000Z",
+          })
+        ).status,
+      ).toBe(201);
+    const lots = await t.q(
+      `SELECT id::text, "lotNumber" FROM "Lot" WHERE "variantId"=$1::uuid ORDER BY "lotNumber"`,
+      s,
+    );
+    const withoutLot = await t.post("/inventory/counts", {
+      items: [{ variantId: s, counted: 8 }],
+    });
+    expect(withoutLot.status).toBe(400);
+    expect(withoutLot.body.message).toContain("elige el lote");
+    const count = await t.post("/inventory/counts", {
+      items: [{ variantId: s, lotId: lots[0].id, counted: 3 }],
+    });
+    expect(count.status, JSON.stringify(count.body)).toBe(201);
+    expect(count.body.items[0].expected).toBe(5);
+    const applied = await t.post(`/inventory/counts/${count.body.id}/apply`);
+    expect(applied.status, JSON.stringify(applied.body)).toBe(201);
+    const rows = await t.q(
+      `SELECT l."lotNumber", l.qty::text, v.stock::text AS stock FROM "Lot" l JOIN "Variant" v ON v.id=l."variantId"
+      WHERE l."variantId"=$1::uuid ORDER BY l."lotNumber"`,
+      s,
+    );
+    expect(rows).toEqual([
+      { lotNumber: "A", qty: "3.000", stock: "8.000" },
+      { lotNumber: "B", qty: "5.000", stock: "8.000" },
+    ]);
+    const [move] = await t.q(
+      `SELECT qty::text, "lotId"::text FROM "InventoryMovement" WHERE "refId"=$1 AND type='count'`,
+      count.body.id,
+    );
+    expect(move).toEqual({ qty: "-2.000", lotId: lots[0].id });
+  });
+});
+
+describe("8 · detalles", () => {
+  it("categorías y proveedores repetidos (espacios y mayúsculas) se rechazan; SKU repetido explica de quién es", async () => {
+    await category("Bebidas QA");
+    for (const name of ["bebidas qa ", "  BEBIDAS QA"]) {
+      const r = await t.post("/categories", { name });
+      expect(r.status).toBe(400);
+      expect(r.body.message).toBe("Ya existe la categoría «Bebidas QA».");
+    }
+    expect((await t.post("/categories", { name: "  " })).status).toBe(400);
+    expect(
+      (await t.post("/suppliers", { name: "Distribuidora Ñandú" })).status,
+    ).toBe(201);
+    const dup = await t.post("/suppliers", { name: " distribuidora ñandú " });
+    expect(dup.status).toBe(400);
+    expect(dup.body.message).toContain("Ya existe el proveedor");
+    const cat = await category("SKU QA");
+    const first = await product(cat.id);
+    const again = await t.post("/products", {
+      name: "Otro",
+      sku: first.sku.toLowerCase(),
+      categoryId: cat.id,
+      variants: [{ sku: "OTRA-V", barcode: "OTRA-B", costAvg: 10, price: 20 }],
+    });
+    expect(again.status).toBe(400);
+    expect(again.body.message).toBe(
+      `El SKU «${first.sku.toLowerCase()}» ya es de «${first.name}» (${first.sku}). Usa otro.`,
+    );
+  });
+
+  it("stock mínimo mayor que el máximo se rechaza al crear y al editar", async () => {
+    const cat = await category("Rangos QA");
+    const bad = await t.post("/products", {
+      name: "Rango",
+      sku: "RANGO-1",
+      categoryId: cat.id,
+      minStock: 50,
+      maxStock: 10,
+      variants: [
+        { sku: "RANGO-1", barcode: "RANGO-1", costAvg: 10, price: 20 },
+      ],
+    });
+    expect(bad.status).toBe(400);
+    expect(bad.body.message).toContain("no puede ser mayor que el máximo");
+    const p = await product(cat.id);
+    const edit = await t.patch(`/products/${p.id}`, { minStock: 100 });
+    expect(edit.status).toBe(400);
+    expect((await t.patch(`/products/${p.id}`, { minStock: 10 })).status).toBe(
+      200,
+    );
+  });
+
+  it("el Excel de productos dice la fila del error y Configuración no muestra «undefined»", async () => {
+    const book = new ExcelJS.Workbook();
+    const sheet = book.addWorksheet("Productos");
+    sheet.addRow([
+      "Nombre",
+      "SKU",
+      "ID categoría",
+      "Código de barras",
+      "Precio",
+      "Costo",
+    ]);
+    const cat = await category("Excel QA");
+    sheet.addRow(["Bueno", "XL-1", cat.id, "XL-1", 20, 10]);
+    sheet.addRow(["Malo", "XL-2", cat.id, "XL-2", "veinte", 10]);
+    const r = await t
+      .as("post", "/products/import")
+      .attach(
+        "file",
+        Buffer.from(await book.xlsx.writeBuffer()),
+        "productos.xlsx",
+      );
+    expect(r.status).toBe(400);
+    expect(r.body.message).toMatch(/^Fila 3 del Excel: /);
+    // Como una empresa nueva del producto: ajustes sin estas claves.
+    await t.q(`INSERT INTO "Settings" ("tenantId",id,data,"updatedAt") VALUES ('00000000-0000-0000-0000-000000000001','main','{"name":"QA"}',now())
+      ON CONFLICT ("tenantId",id) DO UPDATE SET data='{"name":"QA"}'`);
+    const settings = await t.get("/settings");
+    expect(settings.status, JSON.stringify(settings.body)).toBe(200);
+    for (const key of [
+      "sellerDiscountLimit",
+      "idleDays",
+      "expiryDays",
+      "lowMargin",
+      "returnDays",
+    ])
+      expect(typeof settings.body[key], key).toBe("number");
+  });
+
+  it("el inventario en Excel reconoce «aba-10 » como el ABA-10 ya cargado", async () => {
+    const cat = await category("Abarrotes QA");
+    const existing = await t.post("/products", {
+      name: "Café molido 10 años",
+      sku: "ABA-10",
+      categoryId: cat.id,
+      variants: [
+        { sku: "ABA-10", barcode: "ABA-10", costAvg: 100, price: 200 },
+      ],
+    });
+    expect(existing.status, JSON.stringify(existing.body)).toBe(201);
+    const book = new ExcelJS.Workbook();
+    const sheet = book.addWorksheet("Inventario");
+    sheet.addRow([
+      "ID",
+      "REFERENCIA",
+      "DESCRIPCION",
+      "SUB-GRUPO",
+      "EXISTENCIA",
+      "COSTO",
+      "PRECIO DETALLE",
+    ]);
+    sheet.addRow([
+      "aba-10 ",
+      "",
+      "Café molido 10 años",
+      "Abarrotes QA",
+      7,
+      100,
+      200,
+    ]);
+    const r = await t
+      .as("post", "/inventory-import/preview")
+      .attach("file", Buffer.from(await book.xlsx.writeBuffer()), "inv.xlsx");
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(r.body.blocking).toEqual([]);
+    expect(r.body.summary.nuevos).toBe(0);
+  });
+});

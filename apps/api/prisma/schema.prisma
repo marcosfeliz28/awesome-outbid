@@ -139,6 +139,9 @@ model Product {
   location    String    @default("")
   active      Boolean   @default(true)
   isKit       Boolean   @default(false)
+  // false sólo para kg/lb/litro o productos con decimales históricos
+  // (202610290001_sold_by_unit): los demás rechazan cantidades fraccionadas.
+  soldByUnit  Boolean   @default(true)
   variants    Variant[]
   branchId    String    @default("main")
   createdBy   String?
@@ -1434,6 +1437,11 @@ model PlatformPayment {
   paidFrom  DateTime
   paidUntil DateTime
   createdAt DateTime @default(now())
+  // Anulación (202610290002): fila nueva que apunta al pago anulado.
+  voidsPaymentId String?  @db.Uuid
+  voidsPayment   PlatformPayment?  @relation("PaymentVoid", fields: [voidsPaymentId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  voidedBy       PlatformPayment[] @relation("PaymentVoid")
+  voidReason     String?
 
   @@index([tenantId, createdAt])
 }

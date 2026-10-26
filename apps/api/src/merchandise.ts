@@ -13,7 +13,7 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { createHash } from "node:crypto";
-import { newObjectKey, tenantObjectStore } from "./tenant-object-store";
+import { newObjectKey, tenantObjectStore, tenantObjectStoreConfigured } from "./tenant-object-store";
 import { reserveTenantObject } from "./tenant-object-deletion";
 import {
   can,
@@ -38,6 +38,7 @@ import {
   json,
   parse,
   uuid,
+  assertWholeUnits,
 } from "./common";
 import { assertCodesFree, explainCodeConflict } from "./catalog";
 import {
@@ -243,6 +244,11 @@ export class MerchandiseController {
     });
     if (pendingDrafts >= 30)
       bad("Tienes muchas facturas sin confirmar hoy. Confirma o espera.");
+    // Antes de leer (y de pagar la extracción IA): sin bucket configurado la
+    // factura se guarda en PostgreSQL (`data`, ≤ 5 MB) en vez de fallar con 503.
+    const store = process.env.PRODUCT_TENANCY === "required" && tenantObjectStoreConfigured()
+      ? tenantObjectStore()
+      : null;
     let extracted;
     let mapping: Record<string, string> | undefined;
     if (format !== "ai") {
@@ -298,7 +304,6 @@ export class MerchandiseController {
       : format === "xlsx"
         ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         : file.mimetype;
-    const store = process.env.PRODUCT_TENANCY === "required" ? tenantObjectStore() : null;
     const objectKey = store ? newObjectKey("invoice") : null;
     if (store && objectKey) await reserveTenantObject(this.db, actor.tenantId, objectKey);
     if (store && objectKey) await store.put(actor.tenantId, objectKey, file.buffer, mime);
@@ -403,6 +408,7 @@ export class MerchandiseController {
       );
     if (data.direction === "exit" && data.items.some((i) => i.quick))
       bad("No puedes crear productos en una salida.");
+    await assertWholeUnits(this.db, actor.branchId, data.items.filter((i): i is typeof i & { variantId: string } => !!i.variantId));
     // En una entrada el lote se indica por número (se crea o se incrementa);
     // un lotId sin validar quedaría en el kardex apuntando a otro lote.
     if (data.direction === "entry" && data.items.some((i) => i.lotId))

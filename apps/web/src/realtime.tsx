@@ -125,20 +125,31 @@ function forgetIdentity() {
 export const useTerminal = create<{
   terminal: any | null;
   revoked: boolean;
-  set: (terminal: any | null, revoked?: boolean) => void;
+  /** Mensaje del cupo de equipos del plan lleno (el equipo quedó pendiente). */
+  planLimit: string | null;
+  set: (terminal: any | null, revoked?: boolean, planLimit?: string | null) => void;
 }>((set) => ({
   terminal: null,
   revoked: false,
-  set: (terminal, revoked = false) => set({ terminal, revoked }),
+  planLimit: null,
+  set: (terminal, revoked = false, planLimit = null) =>
+    set({ terminal, revoked, planLimit }),
 }));
+// Una sesión de soporte (solo lectura) no es un equipo de la tienda: no se
+// registra ni ocupa cupo, y no llena la pantalla de «No tienes permiso».
+export const isSupportSession = () =>
+  useStore.getState().user?.role === "support";
 export async function registerTerminal() {
+  if (isSupportSession()) return null;
   try {
     const terminal = await post("/terminals/register", terminalIdentity());
-    useTerminal.getState().set(terminal);
+    useTerminal.getState().set(terminal, false, terminal?.planLimit ?? null);
     return terminal;
   } catch (e: any) {
     if (/revocado|otro dispositivo/i.test(e.message))
       useTerminal.getState().set(null, true);
+    // Cupo lleno (API anterior): se avisa una vez, sin reintentar en bucle.
+    else if (e.status === 409) useTerminal.getState().set(null, false, e.message);
     throw e;
   }
 }
@@ -216,7 +227,15 @@ export function useRealtime() {
     };
     const connect = async () => {
       try {
-        await registerTerminal();
+        try {
+          await registerTerminal();
+        } catch (e: any) {
+          // Revocado, de otro dispositivo o sin cupo: reintentar no lo arregla
+          // (antes ~21 POST con 409 en 2 minutos). Se avisa en pantalla.
+          if (e?.status === 409 || e?.status === 403 || useTerminal.getState().revoked)
+            return;
+          throw e;
+        }
         if (stopped) return;
         controller = new AbortController();
         const response = await fetch("/api/events", {
@@ -460,13 +479,15 @@ export function Equipment() {
 }
 // Aviso para un equipo que todavía no puede facturar ni mover mercancía.
 export function DeviceGate() {
-  const { terminal, revoked } = useTerminal();
+  const { terminal, revoked, planLimit } = useTerminal();
   const user = useStore((s) => s.user);
   const [name, setName] = useState(""),
     [pin, setPin] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  if (!user || (!revoked && terminal?.status !== "pending")) return null;
+  // Sin cupo en el plan, el PIN tampoco lo aprobaría: avisa PlanLimitNotice.
+  if (!user || planLimit || (!revoked && terminal?.status !== "pending"))
+    return null;
   if (revoked)
     return (
       <section className="device-gate revoked" role="alert">
@@ -656,5 +677,67 @@ export function CashElsewhere({
         </Button>
       </Modal>
     </>
+  );
+}
+
+/** Aviso único cuando el plan ya no admite otro equipo aprobado: este navegador
+ * quedó pendiente. La administradora revoca otro equipo desde aquí mismo o en
+ * Configuración → Equipos, y éste se aprueba al reintentar. */
+export function PlanLimitNotice({ onOpenEquipment }: { onOpenEquipment: () => void }) {
+  const { planLimit } = useTerminal();
+  const user = useStore((s) => s.user);
+  const manager = !!user && can(user.permissions, "sale:manage");
+  const [hidden, setHidden] = useState(false);
+  const here = terminalIdentity();
+  const terminals = useQuery({
+    queryKey: ["terminals"],
+    queryFn: () => api<any[]>("/terminals"),
+    enabled: !!planLimit && manager && !hidden,
+  });
+  if (!planLimit || hidden) return null;
+  const approved = (terminals.data ?? []).filter(
+    (t) => t.status === "approved" && t.id !== here.id,
+  );
+  return (
+    <section className="panel plan-limit-notice" role="alert">
+      <strong>{planLimit}</strong>
+      <p>
+        Este equipo quedó pendiente de aprobación y no puede vender ni mover
+        mercancía. Revoca un equipo que ya no uses y vuelve a intentarlo.
+      </p>
+      {manager && approved.length > 0 && (
+        <ul>
+          {approved.map((t) => (
+            <li key={t.id}>
+              <span>{t.name}</span>
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    await post("/terminals/" + t.id + "/revoke", {});
+                    await registerTerminal();
+                    await terminals.refetch();
+                    if (!useTerminal.getState().planLimit)
+                      toast("Equipo revocado. Este equipo quedó aprobado.");
+                  } catch (e: any) {
+                    toast(e.message, true);
+                  }
+                }}
+              >
+                Revocar
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="table-actions">
+        <Button variant="secondary" onClick={onOpenEquipment}>
+          Ir a Configuración → Equipos
+        </Button>
+        <Button variant="ghost" onClick={() => setHidden(true)}>
+          Cerrar
+        </Button>
+      </div>
+    </section>
   );
 }

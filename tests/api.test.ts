@@ -5722,6 +5722,8 @@ describe("Ronda 9 · revisión · dinero", () => {
       sku: "R9D-" + randomUUID().slice(0, 8),
       categoryId: cats.find((c: any) => c.name === "Ropa deportiva").id,
       taxRate,
+      // Estas pruebas venden y devuelven fracciones a propósito.
+      soldByUnit: false,
       variants: [
         {
           sku: "R9DV-" + randomUUID().slice(0, 8),
@@ -10402,6 +10404,8 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A04 precisión monetaria", () =
       name: "QA R9-A04 centavos " + suffix,
       sku: "R9A04-" + randomUUID().slice(0, 8),
       categoryId,
+      // Cantidades finas (0.125): producto por peso, no por unidad.
+      soldByUnit: false,
       variants: [
         {
           sku: "R9A04V-" + randomUUID().slice(0, 8),

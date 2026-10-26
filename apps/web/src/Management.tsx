@@ -49,7 +49,10 @@ import {
   today,
   toast,
   mutate,
+  matchesWords,
+  searchWords,
 } from "./helpers";
+import { confirmMargin, productSearchText } from "./catalogChecks";
 import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
 import { CourierFeeEditor } from "./CourierFeeEditor";
@@ -117,11 +120,14 @@ function DataTable({
   columns,
   empty = "Todavía no hay registros",
   emptyDescription = "Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla.",
+  cards = false,
 }: {
   rows: any[];
   columns: Column[];
   empty?: string;
   emptyDescription?: string;
+  /** En el celular cada fila es una tarjeta (sin desplazamiento horizontal). */
+  cards?: boolean;
 }) {
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [rows.length]);
@@ -129,7 +135,10 @@ function DataTable({
   return rows.length ? (
     <>
       {/* G12: con desplazamiento horizontal, la tabla se recorre con teclado. */}
-      <div className="table-wrap" tabIndex={0}>
+      <div
+        className={"table-wrap" + (cards ? " table-cards" : "")}
+        tabIndex={0}
+      >
         <table>
           <thead>
             <tr>
@@ -144,7 +153,11 @@ function DataTable({
             {rows.slice((page - 1) * 20, page * 20).map((r, index) => (
               <tr key={r.id || r.sku || index}>
                 {columns.map((c) => (
-                  <td key={c.label} className={c.className}>
+                  <td
+                    key={c.label}
+                    className={c.className}
+                    data-label={c.label}
+                  >
                     {c.render(r)}
                   </td>
                 ))}
@@ -251,14 +264,13 @@ export function Catalog() {
     [labels, setLabels] = useState<Product | null>(null);
   const [tab, setTab] = useState("General");
   const write = can(user.permissions, "catalog:write");
+  // Misma búsqueda que la caja: código de barras, SKU de variante, sin acentos.
+  const words = searchWords(search);
   const rows =
     query.data?.filter(
       (p) =>
         (!category || p.categoryId === category) &&
-        [p.name, p.sku, p.brand]
-          .join(" ")
-          .toLowerCase()
-          .includes(search.toLowerCase()),
+        matchesWords(productSearchText(p), words),
     ) || [];
   const fields: Field[] = [
     { key: "name", label: "Nombre del producto", required: true },
@@ -279,6 +291,13 @@ export function Catalog() {
       key: "service",
       label: "Es un servicio (se vende sin existencia)",
       type: "checkbox",
+    },
+    {
+      key: "soldByUnit",
+      label:
+        "Se vende por unidad (sin decimales; desmárcalo para kg, lb o litro)",
+      type: "checkbox",
+      initial: true,
     },
     {
       key: "imageUrl",
@@ -375,6 +394,7 @@ export function Catalog() {
         </div>
         <QueryState query={query}>
           <DataTable
+            cards
             rows={rows}
             empty="No encontramos productos"
             emptyDescription="Revisa los filtros o agrega un producto con Nuevo producto."
@@ -462,6 +482,10 @@ export function Catalog() {
           onClose={() => setCreate(false)}
           onSubmit={(values) => {
             const { barcode, price, costAvg, service, ...data } = values;
+            if (!service && !confirmMargin(price, costAvg))
+              return Promise.reject(
+                new Error("No se guardó: corrige el precio o confírmalo."),
+              );
             return post("/products", {
               ...data,
               ...(service ? { unit: "servicio", minStock: 0 } : {}),
@@ -501,22 +525,26 @@ export function Catalog() {
           ]}
           onClose={() => setMatrix(null)}
           onSubmit={(values) =>
-            post("/products/" + matrix.id + "/variants", {
-              attributes: {
-                [values.attribute1]: values.values1
-                  .split(",")
-                  .map((v: string) => v.trim()),
-                ...(values.attribute2 && values.values2
-                  ? {
-                      [values.attribute2]: values.values2
-                        .split(",")
-                        .map((v: string) => v.trim()),
-                    }
-                  : {}),
-              },
-              price: values.price,
-              costAvg: values.costAvg,
-            })
+            !confirmMargin(values.price, values.costAvg)
+              ? Promise.reject(
+                  new Error("No se guardó: corrige el precio o confírmalo."),
+                )
+              : post("/products/" + matrix.id + "/variants", {
+                  attributes: {
+                    [values.attribute1]: values.values1
+                      .split(",")
+                      .map((v: string) => v.trim()),
+                    ...(values.attribute2 && values.values2
+                      ? {
+                          [values.attribute2]: values.values2
+                            .split(",")
+                            .map((v: string) => v.trim()),
+                        }
+                      : {}),
+                  },
+                  price: values.price,
+                  costAvg: values.costAvg,
+                })
           }
         />
       )}
@@ -639,6 +667,11 @@ export function Catalog() {
                   requiredNumber("minStock", "Stock mínimo"),
                   requiredNumber("maxStock", "Stock máximo"),
                   { key: "imageUrl", label: "Foto URL" },
+                  {
+                    key: "soldByUnit",
+                    label: "Se vende por unidad (sin decimales)",
+                    type: "checkbox",
+                  },
                   { key: "active", label: "Producto activo", type: "checkbox" },
                 ]
               : [
@@ -649,6 +682,11 @@ export function Catalog() {
           }
           onClose={() => setEditing(null)}
           onSubmit={async (data) => {
+            if (
+              editing.type === "variant" &&
+              !confirmMargin(data.price, data.costAvg)
+            )
+              throw new Error("No se guardó: corrige el precio o confírmalo.");
             await mutate(
               "/" +
                 (editing.type === "product" ? "products" : "variants") +
@@ -832,11 +870,9 @@ export function Inventory() {
         ?.qty ?? 0,
     );
   };
+  const words = searchWords(search);
   const rows = (query.data || []).filter((v: any) =>
-    [v.sku, v.barcode, v.product.name]
-      .join(" ")
-      .toLowerCase()
-      .includes(search.toLowerCase()),
+    matchesWords(productSearchText({ ...v.product, variants: [v] }), words),
   );
   return (
     <>
@@ -882,6 +918,7 @@ export function Inventory() {
         <QueryState query={query}>
           {mode === "stock" ? (
             <DataTable
+              cards
               rows={rows}
               empty="No encontramos artículos en el inventario"
               emptyDescription="Revisa la búsqueda o registra una entrada de mercancía."
@@ -1065,21 +1102,35 @@ export function Inventory() {
               label:
                 "Referencia de la devolución (documento o nota de crédito)",
             },
-            {
-              key: "lotId",
-              label: "Lote de salida",
-              type: "select",
-              options: adjust.lots.map((l: any) => ({
-                label: l.lotNumber + " · " + l.qty + " unidades",
-                value: l.id,
-              })),
-            },
-            { key: "lotNumber", label: "Lote de entrada" },
-            {
-              key: "expiryDate",
-              label: "Vencimiento de entrada",
-              type: "date",
-            },
+            // Un lote existente sirve para sacar o para sumar sin repetir
+            // número ni vencimiento; sólo un lote nuevo los pide, y el
+            // vencimiento sólo si la categoría lo exige.
+            ...(adjust.lots.length
+              ? [
+                  {
+                    key: "lotId",
+                    label: "Lote existente (salida o entrada a ese lote)",
+                    type: "select" as const,
+                    options: adjust.lots.map((l: any) => ({
+                      label: l.lotNumber + " · " + l.qty + " unidades",
+                      value: l.id,
+                    })),
+                  },
+                ]
+              : []),
+            ...(adjust.product.category?.requiresLot ||
+            adjust.product.category?.requiresExpiry
+              ? [{ key: "lotNumber", label: "Lote nuevo de entrada" }]
+              : []),
+            ...(adjust.product.category?.requiresExpiry
+              ? [
+                  {
+                    key: "expiryDate",
+                    label: "Vencimiento del lote nuevo",
+                    type: "date" as const,
+                  },
+                ]
+              : []),
             {
               key: "reason",
               label: "Motivo",
@@ -1128,22 +1179,52 @@ export function Inventory() {
                 value: w.id,
               })),
             },
+            // Suplementos y maquillaje: se cuenta cada lote por separado.
+            ...(count.product.category?.requiresLot
+              ? [
+                  {
+                    key: "lotId",
+                    label: "Lote que contaste",
+                    type: "select" as const,
+                    required: true,
+                    options: count.lots.map((l: any) => ({
+                      label: l.lotNumber,
+                      value: l.id,
+                    })),
+                  },
+                ]
+              : []),
             requiredNumber(
               "counted",
               "Cantidad contada",
-              stockAtWarehouse(count, countWarehouseId),
+              count.product.category?.requiresLot
+                ? 0
+                : stockAtWarehouse(count, countWarehouseId),
             ),
           ]}
           onFieldChange={(key, value, values) =>
-            key === "warehouseId"
-              ? { ...values, counted: stockAtWarehouse(count, String(value)) }
-              : undefined
+            key === "lotId"
+              ? {
+                  ...values,
+                  counted: Number(
+                    count.lots.find((l: any) => l.id === value)?.qty ?? 0,
+                  ),
+                }
+              : key === "warehouseId" && !count.product.category?.requiresLot
+                ? { ...values, counted: stockAtWarehouse(count, String(value)) }
+                : undefined
           }
           onClose={() => setCount(null)}
           onSubmit={(data) =>
             post("/inventory/counts", {
               warehouseId: data.warehouseId,
-              items: [{ variantId: count.id, counted: data.counted }],
+              items: [
+                {
+                  variantId: count.id,
+                  lotId: data.lotId || undefined,
+                  counted: data.counted,
+                },
+              ],
             })
           }
         />
@@ -2548,7 +2629,12 @@ export function Promotions() {
                     <small>
                       {c.sku} · {c.category}
                     </small>
-                    {c.daysToExpiry !== null && <small>La oferta se aplica a la variante; la caja vende los lotes más antiguos primero.</small>}
+                    {c.daysToExpiry !== null && (
+                      <small>
+                        La oferta se aplica a la variante; la caja vende los
+                        lotes más antiguos primero.
+                      </small>
+                    )}
                   </div>
                 </div>
                 <div className="clearance-metrics">
@@ -2578,7 +2664,10 @@ export function Promotions() {
                   onClick={() => setOffer(c)}
                 >
                   <Sparkles size={16} />
-                  {c.suggestedDiscount <= 0 ? "Sin margen para oferta" : "Crear oferta"} <ArrowRight size={16} />
+                  {c.suggestedDiscount <= 0
+                    ? "Sin margen para oferta"
+                    : "Crear oferta"}{" "}
+                  <ArrowRight size={16} />
                 </Button>
               </article>
             ))}
@@ -2668,7 +2757,11 @@ export function Promotions() {
               key: "endsAt",
               label: "Fecha de finalización",
               type: "date",
-              initial: new Date(Date.now() + Math.max(0, Math.min(14, offer.daysToExpiry ?? 14)) * 86400000)
+              initial: new Date(
+                Date.now() +
+                  Math.max(0, Math.min(14, offer.daysToExpiry ?? 14)) *
+                    86400000,
+              )
                 .toISOString()
                 .slice(0, 10),
               required: true,
@@ -4051,7 +4144,16 @@ export function Configuration() {
     [userEdit, setUserEdit] = useState<any>(null),
     [passwordReset, setPasswordReset] = useState<any>(null),
     [roleEdit, setRoleEdit] = useState<any>(null),
-    [tab, setTab] = useState("business"),
+    // El aviso de cupo de equipos abre directo la pestaña «Equipos».
+    [tab, setTab] = useState(() => {
+      try {
+        const wanted = sessionStorage.getItem("nexora-config-tab");
+        sessionStorage.removeItem("nexora-config-tab");
+        return wanted || "business";
+      } catch {
+        return "business";
+      }
+    }),
     // Producto: «Básico» por defecto (empresa nueva); la tienda no cambia.
     [mode, setMode] = useState(() => {
       try {
@@ -4499,12 +4601,22 @@ export function Configuration() {
                     users.data?.find((u: any) => u.id === l.userId)?.name ||
                     l.userId,
                 },
-                { label: "Acción", render: (l) => <Badge>{l.action === "support.read"
-                  ? `Soporte de Nexora consultó ${String(l.after?.ruta ?? "").includes("reports") ? "un reporte" : String(l.after?.ruta ?? "").includes("dashboard") ? "el resumen" : "una pantalla"}`
-                  : l.action === "support.enable" ? "Permitió soporte de Nexora"
-                  : l.action === "support.disable" ? "Quitó acceso de soporte"
-                  : l.action === "support.expired" ? "Venció el acceso de soporte"
-                  : l.action}</Badge> },
+                {
+                  label: "Acción",
+                  render: (l) => (
+                    <Badge>
+                      {l.action === "support.read"
+                        ? `Soporte de Nexora consultó ${String(l.after?.ruta ?? "").includes("reports") ? "un reporte" : String(l.after?.ruta ?? "").includes("dashboard") ? "el resumen" : "una pantalla"}`
+                        : l.action === "support.enable"
+                          ? "Permitió soporte de Nexora"
+                          : l.action === "support.disable"
+                            ? "Quitó acceso de soporte"
+                            : l.action === "support.expired"
+                              ? "Venció el acceso de soporte"
+                              : l.action}
+                    </Badge>
+                  ),
+                },
                 { label: "Entidad", render: (l) => l.entity },
                 {
                   label: "Referencia",

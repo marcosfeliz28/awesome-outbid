@@ -12,6 +12,7 @@ import {
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -38,6 +39,8 @@ import {
   uuid,
   amount,
   json,
+  fieldLabel,
+  sameName,
 } from "./common";
 import { expiredQty } from "./inventory";
 import { assertSafeXlsx, assertSheetCells, cellCodeText } from "./xlsx-guard";
@@ -165,6 +168,11 @@ async function assertCategoriesInBranch(
     );
 }
 
+const FRACTIONAL_UNITS = ["kg", "lb", "litro"];
+function assertStockRange(min: number, max: number) {
+  if (min > max)
+    bad(`El stock mínimo (${min}) no puede ser mayor que el máximo (${max}).`);
+}
 const variantSchema = z.object({
   sku: z.string().trim().min(1).max(80),
   barcode: z.string().trim().min(1).max(80),
@@ -185,8 +193,10 @@ const productSchema = z.object({
   minStock: amount.default(5),
   maxStock: amount.default(80),
   location: z.string().max(80).default(""),
-  // «servicio» (GV Makeup Studio): se vende sin existencia.
-  unit: z.enum(["unidad", "servicio"]).optional(),
+  // «servicio» (GV Makeup Studio): se vende sin existencia. kg/lb/litro
+  // admiten decimales; lo demás se vende por unidad (soldByUnit).
+  unit: z.enum(["unidad", "servicio", "kg", "lb", "litro"]).optional(),
+  soldByUnit: z.boolean().optional(),
   variants: z.array(variantSchema).min(1).max(500),
 });
 
@@ -239,7 +249,7 @@ export class CatalogController {
   async category(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const data = parse(
       z.object({
-        name: z.string().min(2),
+        name: z.string().trim().min(2).max(80),
         requiresLot: z.boolean().default(false),
         requiresExpiry: z.boolean().default(false),
         color: z
@@ -252,6 +262,11 @@ export class CatalogController {
     );
     // I-01: el vencimiento se guarda en el lote; sin lote se vendería sin fecha.
     if (data.requiresExpiry) data.requiresLot = true;
+    const same = sameName(
+      await this.db.category.findMany({ where: { branchId: actor.branchId }, select: { name: true } }),
+      data.name,
+    );
+    if (same) bad(`Ya existe la categoría «${same.name}».`);
     const row = await this.db.category.create({
       data: { ...data, createdBy: actor.id, branchId: actor.branchId },
     });
@@ -379,13 +394,21 @@ export class CatalogController {
   @Permit("catalog:write")
   async create(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const { variants, ...data } = parse(productSchema, body);
+    assertStockRange(data.minStock, data.maxStock);
     const codes = variants.map((v) => ({ codes: [v.sku, v.barcode] }));
     const write = this.db.$transaction(async (tx) => {
       await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
+      const sameSku = await tx.product.findFirst({
+        where: { branchId: actor.branchId, sku: { equals: data.sku, mode: "insensitive" } },
+        select: { name: true, sku: true },
+      });
+      if (sameSku)
+        bad(`El SKU «${data.sku}» ya es de «${sameSku.name}» (${sameSku.sku}). Usa otro.`);
       await assertCodesFree(tx, actor.branchId, codes);
       const row = await tx.product.create({
         data: {
           ...data,
+          soldByUnit: data.soldByUnit ?? !FRACTIONAL_UNITS.includes(data.unit ?? "unidad"),
           createdBy: actor.id,
           branchId: actor.branchId,
           variants: {
@@ -423,6 +446,7 @@ export class CatalogController {
       const before = await tx.product.findFirstOrThrow({
         where: { id: parse(uuid, id), branchId: actor.branchId },
       });
+      assertStockRange(data.minStock ?? Number(before.minStock), data.maxStock ?? Number(before.maxStock));
       await assertCategoriesInBranch(tx, actor.branchId, [data.categoryId]);
       const row = await tx.product.update({ where: { id }, data });
       await audit(tx, actor, "update", "product", id, before, row);
@@ -600,8 +624,10 @@ export class CatalogController {
     if (!sheet || sheet.rowCount > 501) bad("Máximo 500 filas por archivo.");
     assertSheetCells(sheet);
     const rows: any[] = [];
+    const lineOf: number[] = [];
     sheet.eachRow((row, n) => {
       if (n === 1) return;
+      lineOf.push(n);
       rows.push({
         name: String(row.getCell(1).text),
         sku: cellCodeText(row.getCell(2)),
@@ -616,7 +642,20 @@ export class CatalogController {
         ],
       });
     });
-    const validated = rows.map((row) => parse(productSchema, row));
+    // El error dice la fila del Excel, no sólo el campo.
+    const validated = rows.map((row, i) => {
+      const checked = productSchema.safeParse(row);
+      if (!checked.success)
+        bad(
+          `Fila ${lineOf[i]} del Excel: ` +
+            checked.error.issues
+              .slice(0, 3)
+              .map((issue) => fieldLabel(issue.path) + " " + issue.message)
+              .join("; ") +
+            ".",
+        );
+      return checked.data;
+    });
     const codes = validated.flatMap((row) =>
       row.variants.map((v) => ({ codes: [v.sku, v.barcode] })),
     );
@@ -679,7 +718,18 @@ export class CatalogController {
         parts.length !== data.components.length ||
         parts.some((p) => p.product.isKit)
       )
-        bad("Usa componentes únicos y simples.");
+        bad("Usa componentes únicos y simples: un combo no puede llevar otro combo.");
+      // Un combo no guarda existencia propia (se descuenta de sus piezas): si
+      // el producto ya tiene unidades o es pieza de otro combo, se perderían
+      // o quedarían combos anidados.
+      const siblings = await tx.variant.findMany({
+        where: { productId: variant.productId },
+        include: { warehouseStocks: true, _count: { select: { usedInKits: true } } },
+      });
+      if (siblings.some((v) => Number(v.stock) !== 0 || v.warehouseStocks.some((s) => Number(s.qty) !== 0)))
+        bad("Este producto tiene existencia. Sácala o muévela antes de convertirlo en combo.");
+      if (siblings.some((v) => v._count.usedInKits > 0))
+        bad("Este producto es pieza de otro combo; un combo no puede ir dentro de otro.");
       await tx.product.update({
         where: { id: variant.productId },
         data: { isKit: true },
@@ -697,6 +747,27 @@ export class CatalogController {
         undefined,
         json(data),
       );
+      return { ok: true };
+    });
+  }
+  // Deshacer un combo creado por error, sólo si nunca se movió (ventas,
+  // compras ni movimientos de inventario): su historial quedaría sin sentido.
+  @Delete("kits/:productId")
+  @Permit("catalog:write")
+  async undoKit(@Param("productId") productId: string, @CurrentUser() actor: Actor) {
+    const id = parse(uuid, productId);
+    return this.db.$transaction(async (tx) => {
+      const product = await tx.product.findFirstOrThrow({
+        where: { id, branchId: actor.branchId },
+        include: { variants: { include: { _count: { select: { saleItems: true, movements: true, purchaseItems: true } } } } },
+      });
+      if (!product.isKit) bad("Este producto no es un combo.");
+      if (product.variants.some((v) => v._count.saleItems + v._count.movements + v._count.purchaseItems > 0))
+        bad("Este combo ya tiene ventas o movimientos; desactívalo en vez de deshacerlo.");
+      const variantIds = product.variants.map((v) => v.id);
+      await tx.kitComponent.deleteMany({ where: { kitVariantId: { in: variantIds } } });
+      await tx.product.update({ where: { id }, data: { isKit: false } });
+      await audit(tx, actor, "kit_undo", "product", id);
       return { ok: true };
     });
   }

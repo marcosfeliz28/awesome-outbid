@@ -186,7 +186,12 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
       .send(device("00000000-0000-4000-8000-000000000101"))).status).toBe(201);
     const overBoxes = await http.post("/api/terminals/register").set("Authorization", aToken)
       .send(device("00000000-0000-4000-8000-000000000102"));
-    expect(overBoxes.status, JSON.stringify(overBoxes.body)).toBe(409);
+    // Sobre el cupo, el equipo queda pendiente (no aprobado) en vez de un 409
+    // que la página reintentaba en bucle; vuelve al equipo aprobado.
+    expect(overBoxes.status, JSON.stringify(overBoxes.body)).toBe(201);
+    expect(overBoxes.body).toMatchObject({ status: "pending", planLimit: expect.stringContaining("1 equipos aprobados") });
+    expect((await http.post("/api/terminals/register").set("Authorization", aToken)
+      .send(device("00000000-0000-4000-8000-000000000101"))).body.status).toBe("approved");
     // W6 permite que dos personas compartan equipo, pero en producto el plan
     // Autoservicio sólo paga una caja abierta a la vez. El equipo aprobado no
     // debe convertirse en una vía para crear cajas ilimitadas.

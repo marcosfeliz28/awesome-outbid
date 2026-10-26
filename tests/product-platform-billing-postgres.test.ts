@@ -247,5 +247,5 @@ it("no existe pasarela de pago ni campo de tarjeta en el esquema, las migracione
   // «card_in_store» sólo nombra el método: la tarjeta se pasa en el datáfono del local, fuera del sistema.
   const payment = readFileSync(join(prismaDir, "schema.prisma"), "utf8").match(/model PlatformPayment \{[^}]+\}/)![0];
   expect(payment.match(/^\s+(\w+)\s/gm)!.map(s => s.trim()).sort())
-    .toEqual(["amount", "createdAt", "id", "method", "months", "operator", "paidFrom", "paidUntil", "reference", "tenant", "tenantId"]);
+    .toEqual(["amount", "createdAt", "id", "method", "months", "operator", "paidFrom", "paidUntil", "reference", "tenant", "tenantId", "voidReason", "voidedBy", "voidsPayment", "voidsPaymentId"]);
 });

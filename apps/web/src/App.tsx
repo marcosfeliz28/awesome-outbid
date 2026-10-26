@@ -1,10 +1,12 @@
 import {
   DeviceGate,
+  PlanLimitNotice,
   useRealtime,
   registerTerminal,
   storedTerminalCredentials,
 } from "./realtime";
 import { Merchandise } from "./Merchandise";
+import { supportBannerText, supportExpiresAt } from "./supportSession";
 import { PasswordChangeFields } from "./PasswordChangeFields";
 import {
   isCashierPasswordRole,
@@ -709,7 +711,7 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
 }
 
 function Shell() {
-  const { user, online, theme, toggleTheme, setOnline } = useStore();
+  const { user, token, online, theme, toggleTheme, setOnline } = useStore();
   const businessSettings = useQuery<{ name?: string; branchName?: string }>({
     queryKey: ["settings", user?.branchId],
     queryFn: () => api("/settings"),
@@ -1308,8 +1310,23 @@ function Shell() {
           </div>
         </header>
         <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
+          {user.role === "support" && (
+            <div className="support-mode-banner" role="status">
+              {supportBannerText(supportExpiresAt(token))}
+            </div>
+          )}
           {PRODUCT_TENANCY_REQUIRED && can(user.permissions, "*") && <SupportAccessBanner />}
           <DeviceGate />
+          <PlanLimitNotice
+            onOpenEquipment={() => {
+              try {
+                sessionStorage.setItem("nexora-config-tab", "equipment");
+              } catch {
+                /* sin almacenamiento: abre en la primera pestaña */
+              }
+              go("settings");
+            }}
+          />
           {pages[page.split("?")[0]] || <Dashboard go={go} />}
         </main>
         <footer className="app-footer">

@@ -6463,3 +6463,105 @@ td strong {
     min-width: 96px;
   }
 }
+
+/* Auditoría de inventario (25-oct-2026): en el celular, Productos e
+   Inventario son tarjetas con precio, existencia y «Ajustar» a la vista, sin
+   desplazamiento horizontal. */
+@media (max-width: 640px) {
+  .table-wrap.table-cards {
+    overflow-x: visible;
+  }
+  .table-cards table,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: 100%;
+  }
+  .table-cards thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .table-cards tr {
+    margin: 0 0 12px;
+    padding: 4px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .table-cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 9px 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .table-cards tbody tr td:last-child {
+    border-bottom: 0;
+  }
+  .table-cards td::before {
+    content: attr(data-label);
+    flex: none;
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    text-align: left;
+    text-transform: uppercase;
+  }
+  .table-cards td:first-child {
+    display: block;
+    text-align: left;
+  }
+  .table-cards td:first-child::before {
+    display: none;
+  }
+  .table-cards .table-product {
+    min-width: 0;
+  }
+  .table-cards .table-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .table-search {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Aviso de cupo de equipos y sesión de soporte de solo lectura. */
+.plan-limit-notice {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border-left: 4px solid var(--warning-text);
+}
+.plan-limit-notice ul {
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+.plan-limit-notice li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+.support-mode-banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: -8px 0 14px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 650;
+  text-align: center;
+}

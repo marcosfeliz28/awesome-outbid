@@ -1061,6 +1061,8 @@ describe("Auditoría 01 · dinero", () => {
 
   it("B-2: el total de una recepción de mercancía se suma con Decimal", async () => {
     const v = await product(1500, 600, 0);
+    // 9.1 unidades: producto por peso (las fajas y demás van enteras).
+    await db.product.updateMany({ where: { variants: { some: { id: v } } }, data: { soldByUnit: false } });
     const result = await ok("/merchandise/operations", admin, {
       id: randomUUID(),
       direction: "entry",

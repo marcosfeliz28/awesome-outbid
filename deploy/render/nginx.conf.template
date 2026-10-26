@@ -240,9 +240,15 @@ server {
     # sólo actúa en esta ubicación, así que el resto de tipos conserva su
     # Content-Type; la caché y las cabeceras de seguridad son las del bloque
     # genérico de abajo.
-    location ~* \.txt$ {
+    # Las guías .md (ayuda/, soporte-operador/) van como text/markdown UTF-8:
+    # sin tipo propio salían como application/octet-stream y se descargaban.
+    location ~* \.(txt|md)$ {
+        types {
+            text/plain txt;
+            text/markdown md;
+        }
         charset utf-8;
-        charset_types text/plain;
+        charset_types text/plain text/markdown;
         add_header Cache-Control "no-cache";
         include /etc/nginx/snippets/nexora-security-headers.conf;
         try_files $uri =404;
@@ -258,8 +264,9 @@ server {
     }
 
     # Rutas de la SPA (sin extensión): fallback a index.html, que se sirve por
-    # redirección interna con su Cache-Control no-store.
+    # redirección interna con su Cache-Control no-store. Antes, un directorio
+    # estático con su index.html (/venta/) caía al login de la app.
     location / {
-        try_files $uri /index.html;
+        try_files $uri $uri/index.html /index.html;
     }
 }
