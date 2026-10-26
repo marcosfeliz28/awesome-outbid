@@ -427,6 +427,11 @@ async function main() {
   }
   await db.$transaction(
     async (tx) => {
+      // La migración de roles base ya los crea sin usuarios; el seed solo corre
+      // sin usuarios, así que se reemplazan por los suyos (ids fijos).
+      await tx.role.deleteMany({
+        where: { name: { in: Object.keys(permissions) } },
+      });
       await tx.role.createMany({
         data: Object.keys(permissions).map((name) => ({
           id: roleIds[name],
