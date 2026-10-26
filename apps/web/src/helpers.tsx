@@ -8,6 +8,7 @@ import {
   businessErrorMessage,
   managementQueryError,
 } from "./managementMessages";
+import { nextFieldOnEnter } from "./posKeyboard";
 
 export const today = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "America/Santo_Domingo" });
@@ -350,6 +351,11 @@ export function FormModal({
                 step={f.step || "0.01"}
                 value={values[f.key]}
                 onChange={(e) => changeField(f.key, e.target.value)}
+                onKeyDown={
+                  f.key === "sku" || f.key === "barcode"
+                    ? nextFieldOnEnter
+                    : undefined
+                }
               />
             )}
             <small>{f.help}</small>

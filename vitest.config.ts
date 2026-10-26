@@ -113,6 +113,7 @@ export default defineConfig({
       "tests/datos-integridad-postgres.test.ts",
       "tests/retencion-seguridad-postgres.test.ts",
       "tests/accessibility-contract.test.ts",
+      "tests/aud-gemini-ui.test.ts",
       "tests/variant-code-unique-postgres.test.ts",
       "tests/reports-memory-postgres.test.ts",
       "tests/telegram-render.test.ts",

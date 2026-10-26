@@ -261,12 +261,16 @@ export class AdminController {
     const sales = await this.db.sale.groupBy({
       by: ["customerId"],
       where: { branchId: actor.branchId, status: "completed" },
-      _sum: { total: true },
+      _sum: { total: true, creditBalance: true },
       _count: true,
       _max: { createdAt: true },
     });
     return customers.map((c) => ({
       ...c,
+      // Lo que aún debe (crédito o contraentrega): el aviso de «Anonimizar» lo muestra.
+      debt: Number(
+        sales.find((s) => s.customerId === c.id)?._sum.creditBalance ?? 0,
+      ),
       totalSpent: Number(
         sales.find((s) => s.customerId === c.id)?._sum.total ?? 0,
       ),

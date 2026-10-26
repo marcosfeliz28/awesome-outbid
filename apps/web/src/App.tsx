@@ -301,6 +301,11 @@ const navigation = [
 const PRODUCT_TENANCY_REQUIRED = productTenancyRequired(
   import.meta.env.VITE_PRODUCT_TENANCY,
 );
+// Soporte de la plataforma para «¿Olvidaste tu contraseña?» (antes de entrar
+// no hay /support-info, que exige sesión).
+const SUPPORT_EMAIL =
+  String(import.meta.env.VITE_SUPPORT_EMAIL ?? "").trim() ||
+  (PRODUCT_TENANCY_REQUIRED ? "soporte@nexorapos.net" : "");
 // El registro no se ofrece hasta aprobar términos y marca para el producto.
 const PUBLIC_REGISTRATION_ENABLED = publicRegistrationEnabled(
   import.meta.env.VITE_PRODUCT_TENANCY,
@@ -552,11 +557,23 @@ function Login() {
             />
           </label>
           <label className="field">
-            <span>{changeRequired ? "Contraseña temporal" : "Contraseña"}</span>
+            <span>
+              {changeRequired ? "Contraseña temporal" : "Contraseña"}
+              {/* Visible; el nombre accesible sigue siendo «Contraseña» y el aviso va como descripción. */}
+              {!changeRequired && (
+                <small aria-hidden="true" id="login-password-hint">
+                  {" "}
+                  (no es tu PIN de caja)
+                </small>
+              )}
+            </span>
             <input
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
+              aria-describedby={
+                changeRequired ? undefined : "login-password-hint"
+              }
               placeholder="Tu contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -595,6 +612,23 @@ function Login() {
                   : "Entrar a mi tienda"}
             <ArrowUpRight size={18} />
           </Button>
+          {!changeRequired && (
+            <details className="login-forgot">
+              <summary>¿Olvidaste tu contraseña?</summary>
+              <p>
+                Pide a la dueña o a la administración que use «Restablecer
+                contraseña» en Configuración › Usuarios y permisos. Te dará una
+                contraseña temporal para entrar y crear una nueva.
+              </p>
+              {SUPPORT_EMAIL && (
+                <p>
+                  Si eres la dueña o la administradora, escribe a{" "}
+                  <a href={"mailto:" + SUPPORT_EMAIL}>{SUPPORT_EMAIL}</a> con el
+                  código de tu empresa.
+                </p>
+              )}
+            </details>
+          )}
           {PUBLIC_REGISTRATION_ENABLED && (
             <p>
               <a href="/registro">Crear empresa · 14 días gratis</a>
@@ -634,6 +668,11 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
     (isCashierPasswordRole(role) ? "cashier-six-digits" : "strong");
   return (
     <Modal open onClose={onClose} title="Cambiar mi contraseña">
+      <p className="modal-intro">
+        Es la contraseña para entrar al sistema. Tu PIN de caja (los números
+        con que autorizas en caja) es otro: lo cambia la administración en
+        Configuración › Usuarios y permisos › Editar.
+      </p>
       <form
         onSubmit={async (e) => {
           e.preventDefault();

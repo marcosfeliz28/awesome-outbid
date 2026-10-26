@@ -2441,9 +2441,15 @@ td strong {
   margin: 25px 0 8px;
   letter-spacing: -1px;
 }
-.cash-main > span:last-child {
+.cash-main > span:last-of-type,
+.cash-main > small {
   font-size: 11px;
   color: #ffffff;
+}
+.cash-main > small {
+  display: block;
+  margin-top: 8px;
+  max-width: 46ch;
 }
 .cash-methods {
   padding: 25px;
@@ -3055,6 +3061,24 @@ td strong {
 .login-form-panel .show-password {
   color: #c4b5fd;
   min-height: 44px;
+}
+.login-form-panel .field small {
+  color: #b9bde0;
+  font-weight: 400;
+}
+.login-forgot {
+  color: #b9bde0;
+  font-size: 14px;
+}
+.login-forgot summary {
+  color: #c4b5fd;
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.login-forgot a {
+  color: #67e8f9;
 }
 .login-form-panel .button {
   min-height: 50px;

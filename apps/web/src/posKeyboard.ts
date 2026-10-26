@@ -16,3 +16,20 @@ export function blockPosShortcutWithModal(
   event.preventDefault();
   return true;
 }
+
+// La pistola lectora termina el código con Enter: en SKU y código de barras,
+// Enter pasa al campo siguiente en vez de guardar el formulario a medias.
+export function nextFieldOnEnter(e: {
+  key: string;
+  preventDefault: () => void;
+  currentTarget: HTMLInputElement;
+}) {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  const fields = Array.from(e.currentTarget.form?.elements ?? []).filter(
+    (el): el is HTMLElement =>
+      el.matches("input:not([type=hidden]), select, textarea") &&
+      !(el as HTMLInputElement).disabled,
+  );
+  fields[fields.indexOf(e.currentTarget) + 1]?.focus();
+}
