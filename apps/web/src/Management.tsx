@@ -403,6 +403,7 @@ export function Catalog() {
       <InventoryImportModal
         open={importing}
         onClose={() => setImporting(false)}
+        restoreFocus
       />
       <div className="panel catalog-panel">
         <div className="table-toolbar catalog-toolbar">
