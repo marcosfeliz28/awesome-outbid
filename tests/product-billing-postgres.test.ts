@@ -43,8 +43,18 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
   let app: any;
   let operatorDb: InstanceType<typeof PrismaClient> | undefined;
   try {
-    await pg.initialise(); await pg.start(); await pg.createDatabase("billing_qa");
-    process.env.DATABASE_URL = `postgresql://billing_test:local_test_only@127.0.0.1:${pgPort}/billing_qa`;
+    const external = process.env.NEXORA_TEST_PG_URL;
+    if (external) {
+      const admin = new PrismaClient({ datasources: { db: { url: external } } });
+      await admin.$executeRawUnsafe('DROP DATABASE IF EXISTS "nexora_product_billing_test" WITH (FORCE)');
+      await admin.$executeRawUnsafe('CREATE DATABASE "nexora_product_billing_test"');
+      await admin.$disconnect();
+      const url = new URL(external); url.pathname = "/nexora_product_billing_test";
+      process.env.DATABASE_URL = url.toString();
+    } else {
+      await pg.initialise(); await pg.start(); await pg.createDatabase("billing_qa");
+      process.env.DATABASE_URL = `postgresql://billing_test:local_test_only@127.0.0.1:${pgPort}/billing_qa`;
+    }
     await run(process.execPath, [prismaCli, "migrate", "deploy", "--schema", join(root, "apps/api/prisma/schema.prisma")], { cwd: root, env: process.env, timeout: 120000 });
     operatorDb = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
     // En la integración final esta columna procede de la migración del punto 3.
@@ -98,8 +108,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     const id = request.body.id;
     expect(id, JSON.stringify(request.body)).toMatch(/^[0-9a-f-]{36}$/i);
     expect((await http.get("/api/billing/requests").set("Authorization", ownerB)).body).toEqual([]);
-    const pendingThrough = new Date(Date.now() + 30 * 86400000);
-    await expect(reviewProductBilling(operatorDb!, { requestId: id, decision: "approved", paidThroughAt: pendingThrough, reviewer: "Operadora ficticia", reason: "Banco confirmado" })).rejects.toThrow("pendiente");
+    await expect(reviewProductBilling(operatorDb!, { requestId: id, decision: "approved", reviewer: "Operadora ficticia", reason: "Banco confirmado" })).rejects.toThrow("pendiente");
     const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==", "base64");
     const proof = await http.post(`/api/billing/requests/${id}/proof`).set("Authorization", ownerA).attach("file", png, "comprobante.png");
     expect(proof.status, JSON.stringify(proof.body)).toBe(201);
@@ -117,7 +126,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     expect(JSON.stringify(listed.body)).not.toContain("base64");
     expect((await http.get(`/api/billing/requests/${id}/proof`).set("Authorization", ownerB)).status).toBe(400);
     const digest = createHash("sha256").update(png).digest("hex");
-    const review = { requestId: id, decision: "approved" as const, paidThroughAt: pendingThrough, expectedProofSha256: digest, reviewer: "Operadora ficticia", reason: "Banco confirmado" };
+    const review = { requestId: id, decision: "approved" as const, expectedProofSha256: digest, reviewer: "Operadora ficticia", reason: "Banco confirmado" };
     await expect(reviewProductBilling(operatorDb!, { ...review, expectedProofSha256: "0".repeat(64) })).rejects.toThrow("SHA-256");
     const panel = supertest(createPlatformBillingPanel(operatorDb!, { reviewer: "Operadora ficticia", token: "token-local-de-prueba" }));
     const credential = `Basic ${Buffer.from("operador:token-local-de-prueba").toString("base64")}`;
@@ -140,19 +149,20 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     expect(panelProof.status).toBe(200);
     expect(panelProof.body).toEqual(png);
     expect((await panel.post(`/api/requests/${id}/decision`).set("Host", "127.0.0.1").set("Authorization", credential)
-      .send({ decision: "approved", reason: review.reason, paidThroughAt: pendingThrough.toISOString(), expectedProofSha256: digest })).status).toBe(403);
+      .send({ decision: "approved", reason: review.reason, expectedProofSha256: digest })).status).toBe(403);
     const wrongHash = await panel.post(`/api/requests/${id}/decision`).set("Host", "127.0.0.1").set("Origin", "http://127.0.0.1")
       .set("Authorization", credential).set("X-Nexora-Panel", "1")
-      .send({ decision: "approved", reason: review.reason, paidThroughAt: pendingThrough.toISOString(), expectedProofSha256: "0".repeat(64) });
+      .send({ decision: "approved", reason: review.reason, expectedProofSha256: "0".repeat(64) });
     expect(wrongHash.status).toBe(400);
     expect(wrongHash.body.error).toContain("SHA-256");
     const wrongDate = await panel.post(`/api/requests/${id}/decision`).set("Host", "127.0.0.1").set("Origin", "http://127.0.0.1")
       .set("Authorization", credential).set("X-Nexora-Panel", "1")
-      .send({ decision: "approved", reason: review.reason, paidThroughAt: "not-a-date", expectedProofSha256: digest });
+      .send({ decision: "approved", reason: review.reason, paidThroughAt: new Date(Date.now() + 369 * 86400000).toISOString(), expectedProofSha256: digest });
+    // PLA-04: una fecha libre (370 días por una mensualidad) ya no se acepta.
     expect(wrongDate.status).toBe(400);
     const approved = await panel.post(`/api/requests/${id}/decision`).set("Host", "127.0.0.1").set("Origin", "http://127.0.0.1")
       .set("Authorization", credential).set("X-Nexora-Panel", "1")
-      .send({ decision: "approved", reason: review.reason, paidThroughAt: pendingThrough.toISOString(), expectedProofSha256: digest });
+      .send({ decision: "approved", reason: review.reason, expectedProofSha256: digest });
     expect(approved.status, JSON.stringify(approved.body)).toBe(200);
     expect(approved.body).toMatchObject({ status: "approved", alreadyReviewed: false });
     expect(await reviewProductBilling(operatorDb!, review)).toMatchObject({ alreadyReviewed: true });
@@ -163,6 +173,10 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     expect(activated?.status).toBe("active");
     expect(activated?.plan).toBe("pro");
     expect(other?.status).toBe("trial");
+    // PLA-04: RD$4,000 de Pro = un mes, contado desde el fin de la prueba.
+    const start = new Date(Math.max(Date.now(), activated!.trialEndsAt?.getTime() ?? 0));
+    const oneMonth = new Date(start); oneMonth.setUTCMonth(oneMonth.getUTCMonth() + 1);
+    expect(Math.abs(activated!.paidThroughAt!.getTime() - oneMonth.getTime())).toBeLessThan(4 * 86400000);
     const pendingTerminalId = randomUUID();
     await operatorDb!.terminal.create({ data: {
       id: pendingTerminalId, tenantId: activated!.id, name: "Caja pendiente",
