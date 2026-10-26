@@ -169,7 +169,13 @@ export function GvAppointments() {
               </span>
               {write && (
                 <span className="gv-actions">
-                  <Button variant="secondary" onClick={() => setPaying(a)}>
+                  <Button
+                    variant="secondary"
+                    disabled={
+                      a.status === "cancelada" || a.status === "reembolsada"
+                    }
+                    onClick={() => setPaying(a)}
+                  >
                     Pago
                   </Button>
                   <Button variant="ghost" onClick={() => setEditing(a)}>
@@ -222,7 +228,12 @@ function AppointmentForm({
     weddingQuote: a?.weddingQuote ?? "",
     venue: a?.venue ?? "",
     people: a?.people ? String(a.people) : "",
+    refundAmount: "",
+    refundDate: businessDate(),
   });
+  // «Reembolsada» se registra una vez, con monto y fecha (GV-13).
+  const refunding =
+    form.status === "reembolsada" && a?.status !== "reembolsada";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const set = (key: string, value: unknown) =>
@@ -233,8 +244,12 @@ function AppointmentForm({
     setError("");
     try {
       const wedding = form.service === "boda";
+      const { refundAmount, refundDate, ...rest } = form;
       const data = {
-        ...form,
+        ...rest,
+        ...(refunding
+          ? { refundAmount: Number(refundAmount), refundDate }
+          : {}),
         date: fromLocalInput(form.date),
         total: Number(form.total),
         tip: Number(form.tip || 0),
@@ -339,6 +354,28 @@ function AppointmentForm({
             <Options map={STATUS} />
           </select>
         </label>
+        {refunding && (
+          <>
+            <label className="field">
+              <span>Monto reembolsado (RD$)</span>
+              <input
+                inputMode="decimal"
+                required
+                value={form.refundAmount}
+                onChange={(e) => set("refundAmount", e.target.value)}
+              />
+            </label>
+            <label className="field">
+              <span>Fecha del reembolso</span>
+              <input
+                type="date"
+                required
+                value={form.refundDate}
+                onChange={(e) => set("refundDate", e.target.value)}
+              />
+            </label>
+          </>
+        )}
         <label className="field">
           <span>Total (RD$)</span>
           <input
@@ -441,7 +478,11 @@ function AppointmentPaymentForm({
   const [operationId] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState({
     date: businessDate(),
-    amount: Number(a.pending) > 0 ? a.pending : "",
+    // Lo que falta cobrar, descontando lo que ya espera verificación.
+    amount:
+      Number(a.pending) - Number(a.unverified) > 0
+        ? (Number(a.pending) - Number(a.unverified)).toFixed(2)
+        : "",
     concept: a.payments.length ? "restante" : "separo",
     method: "transferencia",
     bank: "",
@@ -515,6 +556,7 @@ function AppointmentPaymentForm({
             <label className="field">
               <span>Banco</span>
               <input
+                required={form.method === "transferencia"}
                 value={form.bank}
                 onChange={(e) => set("bank", e.target.value)}
               />
@@ -522,6 +564,7 @@ function AppointmentPaymentForm({
             <label className="field">
               <span>Referencia</span>
               <input
+                required={form.method === "transferencia"}
                 value={form.reference}
                 onChange={(e) => set("reference", e.target.value)}
               />

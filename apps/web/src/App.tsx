@@ -55,6 +55,7 @@ import {
   useStore,
   post,
   localDB,
+  forgetSessionData,
   saveSession,
   refreshSession,
   syncSales,
@@ -730,7 +731,8 @@ function Shell() {
     if (
       user &&
       !allowed.some((n) => n.id === page) &&
-      page !== "settings" &&
+      // GV-02: Configuración sólo para quien la ve en el menú.
+      !(page === "settings" && can(user.permissions, "sale:manage")) &&
       !(page === "styles" && SHOW_STYLE_GUIDE)
     )
       go(allowed[0]?.id || "products");
@@ -1293,6 +1295,21 @@ function Shell() {
           onSubmit={async (e) => {
             e.preventDefault();
             try {
+              // GV-01: una cuenta sólo de GV no hereda datos de Macgen de este
+              // equipo. Con ventas o entradas sin enviar no se cambia.
+              const toGv =
+                staff.find((s) => s.id === switchId)?.role?.name === "gv";
+              if (
+                toGv &&
+                ((await localDB.sales.count()) ||
+                  (await localDB.merchandise.count()))
+              ) {
+                toast(
+                  "Hay ventas o entradas de mercancía sin enviar en este equipo: sincronízalas antes de pasar a GV.",
+                  true,
+                );
+                return;
+              }
               const result = await post("/auth/pin", {
                 userId: switchId,
                 pin,
@@ -1300,6 +1317,8 @@ function Shell() {
               // 05-M1: el carrito de quien sale queda guardado a su nombre
               // (cartDraft.ts) y la nueva persona ve el suyo.
               client.clear();
+              if (!can(result.user.permissions, "catalog:read"))
+                await forgetSessionData();
               await saveSession(result.user, result.accessToken);
               setSwitchUser(false);
               setPin("");

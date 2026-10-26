@@ -67,15 +67,18 @@ Las respuestas de la dueña están en la sesión de mercancía. El Excel tiene d
 
 Para importar hacen falta endpoints de creación, o uno de importación en lote, que la sesión de mercancía pueda llamar con el usuario de Claude.
 
-## Entregado (rama `claude/modulo-gv`, 26-oct)
+## Entregado (rama `claude/modulo-gv`, 26-oct; incluye `claude/modulo-gv-citas` y las correcciones de `AUDITORIA_GV_CHATGPT.md`)
 
-- Rol `gv` (`gv:read`, `gv:write`, `gv:reports`), creado por la migración `202610260901_gv` sin asignarlo a nadie. Gerencia también recibe `gv:*`; administración ya tiene `*`.
-- Endpoints (todos por sucursal, cada escritura en la bitácora):
-  - `GET/POST /api/gv/courses`, `GET/PATCH /api/gv/courses/:id` (el detalle trae las inscripciones con `paid`, `unverified`, `pending` y sus pagos).
-  - `POST /api/gv/enrollments` (exige `operationId` uuid; un reintento devuelve la misma), `PATCH /api/gv/enrollments/:id`.
-  - `POST /api/gv/payments` (exige `operationId`; transferencia queda por verificar, efectivo y tarjeta verificados).
-  - `POST /api/gv/payments/:id/review` con `{ "verified": true }` o `{ "verified": false, "reason": "…" }` (el rechazado deja de contar como pagado).
-  - `GET /api/gv/transfers/pending`, `GET /api/gv/reports?from=AAAA-MM-DD&to=AAAA-MM-DD`.
+- Rol `gv` (`gv:read`, `gv:write`, `gv:reports`): lo crea `202610260901_gv` y `202610260903_gv_auditoria` le fija exactamente esos permisos. No se asigna a nadie en la migración. Gerencia recibe `gv:read`, `gv:write`, `gv:reports` y `gv:verify`; administración ya tiene `*`.
+- **Verificar transferencias** (`gv:verify`): sólo administración y gerencia, nunca quien registró el pago (salvo `*`), sólo transferencias pendientes y una sola vez.
+- **Dinero:** «pagado» es sólo lo verificado (efectivo y tarjeta lo están al registrarse); lo que espera verificación va en «por verificar». Ningún pago supera el total contando lo por verificar, y el total no baja de lo cobrado. Una transferencia exige banco y referencia. Cancelada o reembolsada no aceptan pagos. «Reembolsada» exige monto (≤ lo verificado) y fecha, es final y se resta de los ingresos (`income.net`).
+- Endpoints (por sucursal; cada escritura en la bitácora):
+  - `GET/POST /api/gv/courses`, `GET/PATCH /api/gv/courses/:id` (el detalle trae las inscripciones con `paid`, `unverified`, `refunded`, `pending` y sus pagos).
+  - `POST /api/gv/enrollments` (exige `operationId` uuid), `PATCH /api/gv/enrollments/:id` (para «reembolsada»: `refundAmount` y `refundDate`).
+  - `POST /api/gv/payments` (`operationId`, `enrollmentId`, `date`, `amount`, `concept`, `method`, `bank`, `reference`).
+  - Citas e interesadas: `GET/POST /api/gv/appointments`, `GET/PATCH /api/gv/appointments/:id`, `POST /api/gv/appointments/:id/payments`, `GET/POST /api/gv/leads`, `PATCH /api/gv/leads/:id`.
+  - `POST /api/gv/payments/:id/review` (`gv:verify`) con `{ "verified": true }` o `{ "verified": false, "reason": "…" }`.
+  - `GET /api/gv/transfers/pending`, `GET /api/gv/reports?from=AAAA-MM-DD&to=AAAA-MM-DD` (ingresos verificados, reembolsos y neto; pendientes de cursos y citas; ocupación).
   - `POST /api/gv/import[?dryRun=1]` (sólo `*`). Formato:
 
 ```json
@@ -85,10 +88,25 @@ Para importar hacen falta endpoints de creación, o uno de importación en lote,
     "key": "auto-2026-11-08-01", "courseKey": "auto-2026-11-08",
     "clientName": "…", "phone": "…", "instagram": "…", "agreedPrice": 4500,
     "status": "activa", "attended": null, "boughtBrushSet": false, "note": "…",
-    "payments": [{ "key": "opcional", "date": "2026-10-20", "amount": 2000, "concept": "separo", "method": "transferencia", "bank": "Popular Grupo Génesis ···9797", "reference": "…", "verified": false }]
+    "refundAmount": null, "refundDate": null,
+    "payments": [{ "key": "auto-2026-11-08-01-p1", "date": "2026-10-20", "amount": 2000, "concept": "separo", "method": "transferencia", "bank": "Popular Grupo Génesis ···9797", "reference": "…", "verified": false }]
   }],
-  "appointments": [], "leads": []
+  "appointments": [{
+    "key": "cita-2026-10-05-01", "date": "2026-10-05T15:30:00-04:00",
+    "clientName": "…", "phone": "…", "instagram": "…", "service": "social",
+    "artists": ["Génesis"], "afterHours": false, "total": 3500, "tip": 0,
+    "status": "realizada", "note": "…", "refundAmount": null, "refundDate": null,
+    "payments": [{ "key": "cita-2026-10-05-01-p1", "date": "2026-10-05", "amount": 3500, "concept": "otro", "method": "efectivo" }]
+  }],
+  "leads": [{ "key": "int-01", "name": "…", "phone": "…", "interest": "…", "action": "…", "status": "por_contactar", "note": "…" }]
 }
 ```
 
-  `type`: automaquillaje | brazilian | personalizado | otro. `status`: activa | no_asistio | personalizado | cancelada | reembolsada. `concept`: separo | restante | segundo | tercero | otro. `method`: efectivo | transferencia | tarjeta. Importes con hasta 2 decimales; pagos > 0. La clave de un pago sin `key` es `<clave de la inscripción>#<n>` (orden en la lista). Reimportar actualiza por clave y nunca duplica; la verificación hecha en el sistema sólo cambia si el archivo trae `verified`. `appointments` y `leads` se aceptan y se ignoran (`ignored` en la respuesta) hasta que el módulo de citas los conecte. Con errores no se guarda nada; `?dryRun=1` devuelve `{ courses|enrollments|payments: {create, update}, ignored, errors }` sin escribir.
+  `type`: automaquillaje | brazilian | personalizado | otro. `status` de inscripción: activa | no_asistio | personalizado | cancelada | reembolsada. `concept`: separo | restante | segundo | tercero | otro. `method`: efectivo | transferencia | tarjeta (transferencia con `bank` y `reference`). Importes con hasta 2 decimales; pagos > 0; la suma de los pagos no supera el precio. **Cada pago lleva su `key`** (única por sucursal): reordenar no cambia nada, una `key` no puede pasar a otra clienta y un pago ya verificado o rechazado no cambia (si el archivo trae otra cosa, error). «reembolsada» exige `refundAmount` y `refundDate`. Reimportar actualiza por clave y nunca duplica; la verificación hecha en el sistema sólo cambia si el archivo trae `verified`. Con errores no se guarda nada; `?dryRun=1` devuelve los conteos `{create, update}` y `errors` sin escribir.
+
+## Pendientes (anotados por la auditoría)
+
+- **GV-15:** una sesión de GV todavía registra el equipo en «Equipos» de Macgen y corre la sincronización de ventas/mercancía (de sus propias filas, que no tiene). No le da acceso a nada de Macgen; falta no iniciarlo para un usuario sólo GV.
+- **GV-16:** falta la conciliación bancaria completa de GV (filtro por fecha y banco, selección múltiple, totales, CSV y corrección auditada de banco/referencia), como la de Macgen.
+- **GV-01 (resto):** al cambiar de usuario con PIN a una cuenta GV se borra la caché local y se bloquea el cambio si hay ventas o entradas sin enviar. Si una cuenta GV entra con contraseña en un equipo que tiene ventas o entradas de Macgen sin enviar, esas filas siguen en el navegador hasta que su dueña las sincronice.
+- Corregir un pago ya verificado (monto, banco o referencia) necesita una operación administrativa con motivo; hoy no existe.

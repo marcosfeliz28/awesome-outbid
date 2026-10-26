@@ -82,6 +82,7 @@ const METHODS: Record<string, string> = {
   transferencia: "Transferencia",
   tarjeta: "Tarjeta",
 };
+const CLOSED = new Set(["cancelada", "reembolsada"]);
 const money = (value: string | number) => (
   <span className="gv-money">{formatMoney(value)}</span>
 );
@@ -415,6 +416,7 @@ function CourseDetail({ id, back }: { id: string; back: () => void }) {
                       <td className="gv-actions">
                         <Button
                           variant="secondary"
+                          disabled={CLOSED.has(e.status)}
                           onClick={() => setPaying(e)}
                         >
                           Pago
@@ -478,7 +480,12 @@ function EnrollmentForm({
         : String(enrollment.attended),
     boughtBrushSet: enrollment?.boughtBrushSet ?? false,
     note: enrollment?.note ?? "",
+    refundAmount: "",
+    refundDate: businessDate(),
   });
+  // «Reembolsada» se registra una vez, con monto y fecha (GV-13).
+  const refunding =
+    form.status === "reembolsada" && enrollment?.status !== "reembolsada";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const set = (key: string, value: unknown) =>
@@ -488,10 +495,14 @@ function EnrollmentForm({
     setBusy(true);
     setError("");
     try {
+      const { refundAmount, refundDate, ...rest } = form;
       const data = {
-        ...form,
+        ...rest,
         agreedPrice: Number(form.agreedPrice),
         attended: form.attended === "" ? null : form.attended === "true",
+        ...(refunding
+          ? { refundAmount: Number(refundAmount), refundDate }
+          : {}),
       };
       if (enrollment)
         await send("/gv/enrollments/" + enrollment.id, data, "PATCH");
@@ -581,6 +592,28 @@ function EnrollmentForm({
             onChange={(e) => set("note", e.target.value)}
           />
         </label>
+        {refunding && (
+          <>
+            <label className="field">
+              <span>Monto reembolsado (RD$)</span>
+              <input
+                inputMode="decimal"
+                required
+                value={form.refundAmount}
+                onChange={(e) => set("refundAmount", e.target.value)}
+              />
+            </label>
+            <label className="field">
+              <span>Fecha del reembolso</span>
+              <input
+                type="date"
+                required
+                value={form.refundDate}
+                onChange={(e) => set("refundDate", e.target.value)}
+              />
+            </label>
+          </>
+        )}
         {enrollment && <PaymentList enrollment={enrollment} />}
         {error && (
           <p className="form-error full" role="alert">
@@ -639,7 +672,13 @@ function PaymentForm({
   const [operationId] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState({
     date: businessDate(),
-    amount: Number(enrollment.pending) > 0 ? enrollment.pending : "",
+    // Lo que falta cobrar, descontando lo que ya espera verificación.
+    amount:
+      Number(enrollment.pending) - Number(enrollment.unverified) > 0
+        ? (Number(enrollment.pending) - Number(enrollment.unverified)).toFixed(
+            2,
+          )
+        : "",
     concept: enrollment.payments.length ? "restante" : "separo",
     method: "transferencia",
     bank: "",
@@ -719,6 +758,7 @@ function PaymentForm({
               <span>Banco</span>
               <input
                 placeholder="Popular Grupo Génesis ···9797"
+                required={form.method === "transferencia"}
                 value={form.bank}
                 onChange={(e) => set("bank", e.target.value)}
               />
@@ -726,6 +766,7 @@ function PaymentForm({
             <label className="field">
               <span>Referencia</span>
               <input
+                required={form.method === "transferencia"}
                 value={form.reference}
                 onChange={(e) => set("reference", e.target.value)}
               />
@@ -781,7 +822,8 @@ function Transfers() {
       setBusy("");
     }
   };
-  const canReview = can(user.permissions, "gv:write");
+  // GV-05: sólo gerencia y administración verifican (gv:verify).
+  const canReview = can(user.permissions, "gv:verify");
   return (
     <QueryState query={transfers}>
       <div className="panel gv-payments">
@@ -881,8 +923,9 @@ function Reports() {
             <div className="panel">
               <h2>Ingresos</h2>
               <p>
-                Total {money(r.income.total)} · por verificar{" "}
-                {money(r.income.unverified)}
+                Verificado {money(r.income.total)} · reembolsos{" "}
+                {money(r.income.refunds)} · neto {money(r.income.net)} · por
+                verificar {money(r.income.unverified)}
               </p>
             </div>
             <GroupTable title="Por día" rows={r.income.byDay} />
