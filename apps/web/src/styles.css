@@ -7187,6 +7187,122 @@ td strong {
   .app-shell:not(.pos-shell) .topbar::after { animation: none; }
 }
 
+/* --- Obsidian Lumina: catálogo --------------------------------------------
+   La vista conserva los componentes del marco y da prioridad a la búsqueda,
+   al estado del inventario y a una sola acción principal. */
+.catalog-screen {
+  display: grid;
+  gap: 20px;
+}
+.catalog-screen .page-heading {
+  margin-bottom: 0;
+}
+.catalog-screen .page-heading h1 {
+  max-width: 680px;
+}
+.catalog-screen .heading-actions {
+  justify-content: flex-end;
+}
+.catalog-screen .heading-actions .button.primary {
+  background: linear-gradient(115deg, #059669, #20c997);
+  color: #041711;
+  box-shadow: 0 9px 22px rgba(5, 150, 105, .2);
+  font-weight: 750;
+}
+.catalog-screen .heading-actions .button.primary:hover:not(:disabled) {
+  background: linear-gradient(115deg, #047857, #10b981);
+  color: #fff;
+}
+.catalog-panel {
+  overflow: hidden;
+}
+.catalog-panel-heading {
+  border-bottom: 1px solid var(--lumina-card-border);
+  background: linear-gradient(90deg, var(--lumina-emerald-glow), transparent 44%);
+}
+.catalog-panel-heading .badge {
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.catalog-toolbar {
+  justify-content: flex-start;
+  border-bottom: 1px solid var(--lumina-card-border);
+  background: var(--surface-soft);
+}
+.catalog-toolbar .table-search {
+  flex: 1 1 340px;
+  max-width: 640px;
+  background: var(--surface);
+}
+.catalog-toolbar .table-search:focus-within {
+  border-color: var(--accent-emerald);
+  box-shadow: 0 0 0 3px var(--lumina-violet-glow);
+}
+.catalog-toolbar select {
+  min-width: 200px;
+  background: var(--surface);
+}
+.catalog-panel .table-wrap {
+  border-top: 0;
+}
+.catalog-panel tbody tr {
+  transition: background-color .16s ease;
+}
+.catalog-panel tbody tr:hover {
+  background: var(--primary-soft);
+}
+.catalog-panel .table-product img {
+  border: 1px solid var(--lumina-card-border);
+}
+.catalog-panel .table-actions button:not(.button) {
+  border: 1px solid var(--lumina-card-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+.catalog-panel .table-actions button:not(.button):hover {
+  border-color: var(--accent-violet);
+  color: var(--text);
+}
+@media (max-width: 640px) {
+  .catalog-screen {
+    gap: 16px;
+  }
+  .catalog-screen .heading-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .catalog-screen .heading-actions .button,
+  .catalog-screen .heading-actions > label {
+    width: 100%;
+    white-space: normal;
+  }
+  .catalog-screen .heading-actions .button.primary {
+    grid-column: 1 / -1;
+  }
+  .catalog-panel-heading {
+    align-items: flex-start;
+    padding: 18px 16px 14px;
+  }
+  .catalog-toolbar {
+    align-items: stretch;
+  }
+  .catalog-toolbar select {
+    width: 100%;
+    min-width: 0;
+  }
+  .catalog-panel .table-cards tr {
+    background: var(--lumina-card);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .catalog-panel tbody tr {
+    transition: none;
+  }
+}
+
 /* --- Obsidian Lumina: caja clara -------------------------------------------
    La pantalla de venta no hereda luces ambientales: en caja manda el contraste
    y la lectura inmediata de producto, carrito y total. */
