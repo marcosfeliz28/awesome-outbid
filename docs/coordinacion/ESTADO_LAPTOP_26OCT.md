@@ -96,3 +96,21 @@ nueva** es: **no terminó; no hay evidencia de que haya llegado a ejecutarse**.
 - **Siguiente acción autorizada:** continuar PC-18/PC-22 sólo cuando esté el
   instalador verificable. No corresponde inferir una instalación exitosa ni
   reutilizar restos de la anterior.
+
+## Actualización nocturna: artefactos para mañana
+
+- **No se instaló nada.** Después de cancelar/cerrar el aviso de elevación no
+  existen `C:\Program Files\Nexora POS Local`,
+  `C:\ProgramData\Nexora POS Local` ni servicios `NexoraLocal*`.
+- **Producto local preparado:** se generó y verificó
+  `Nexora-POS-Local-Setup-0.1.1.exe` (90,622,757 bytes, SHA-256
+  `5FC5648DBF64CEEE4D62D39F63B171A51EE2D56B38EF0E5FFF04589278E3347D`).
+  Está sin firma, que es el pendiente PC-17 conocido. Su ejecución se aplaza
+  hasta que la dueña esté presente mañana para aceptar UAC y registrar cada
+  pantalla.
+- **BLOQUEADO para PC-22:** el instalador separado de la tienda no llegó a
+  generarse. `instalador/build.ps1 -SoloPreparar` falla con salida 1 en
+  `instalador/tools/verify-deploy-lock.mjs:76`: rechaza
+  `@fitstore/shared@file:///C:/Users/marco/Downloads/nexora-pc22-prep/packages/shared`
+  como «Directorio externo al workspace verificado». Es una falla cerrada del
+  empaquetado; no se produjo `.exe` de tienda ni se ejecutó instalador alguno.
