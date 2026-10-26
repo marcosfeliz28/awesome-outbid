@@ -1,0 +1,78 @@
+# Estado de la laptop compartida · 26-oct-2026
+
+Fecha y alcance: inspección de solo lectura realizada el 26-oct. No se instaló,
+desinstaló, detuvo ni eliminó nada durante esta revisión. La tienda en Render no
+fue consultada ni modificada.
+
+## Respuesta corta
+
+1. **No puedo atribuir la desinstalación a ChatGPT PC.** En los registros de
+   trabajo que tengo no aparece un comando de desinstalación ni la ejecución de
+   un desinstalador de FitStore. La evidencia actual sí confirma que
+   `C:\Program Files\FitStore POS` ya no existe. No es correcto afirmar quién lo
+   borró sin el registro del actor o del instalador.
+
+2. **No hay evidencia de una instalación nueva terminada.** El trabajo de
+   compilación anterior validó las fuentes, pero no produjo ni verificó un
+   `FitStore-POS-Setup-*.exe` ejecutable. Hoy no encontré ese instalador en
+   Descargas, Escritorio o Documentos, ni una entrada de desinstalación de
+   FitStore/Nexora POS en el registro. El Visor de eventos contiene errores de
+   PostgreSQL del 25-oct que intentan cargar
+   `C:\Program Files\FitStore POS\runtime\postgresql\...`, ruta que ya falta.
+   Esto es compatible con una instalación anterior retirada o incompleta, pero
+   no prueba que el instalador nuevo haya terminado. No encontré un log de NSIS
+   o de FitStore que dé un resultado final.
+
+3. **El proceso del puerto 3001 sí es mío y es temporal; PostgreSQL 5432 no lo
+   es.**
+
+   - Puerto `3001`: `node.exe` PID `10468`, iniciado desde
+     `C:\Users\marco\Downloads\nexora-gv-test`, para la prueba local de GV.
+     Usa PostgreSQL embebido en `127.0.0.1:5444` (PID `41140`) y Vite en `5173`
+     (PID `49792`). Se deben apagar los tres al cerrar esta prueba, pero **no se
+     apagaron en esta orden de solo lectura**.
+   - Puerto `5432`: servicio independiente `postgresql-x64-18`, inicio
+     automático, cuenta `NT AUTHORITY\NetworkService`, binario
+     `C:\Program Files\PostgreSQL\18\bin\pg_ctl.exe`, datos en
+     `C:\Program Files\PostgreSQL\18\data`. No fue creado ni usado por la
+     prueba GV; no lo apagué ni recomiendo apagarlo sin que la dueña confirme
+     para qué lo necesita.
+
+4. **Lo que queda hoy en la laptop:**
+
+   - No hay servicios llamados `FitStoreAPI`, `FitStorePostgreSQL` ni
+     `FitStoreWeb` visibles en el inventario de servicios.
+   - Falta `C:\Program Files\FitStore POS` y no existe la carpeta pública vieja
+     de respaldos `C:\Users\Public\Documents\FitStore Backups`.
+   - Persiste la carpeta vacía o sin contenido visible
+     `C:\ProgramData\FitStore POS` (creada el 07-oct; última escritura
+     registrada el 25-oct a las 09:40).
+   - Permanecen los procesos locales temporales de GV indicados arriba y el
+     PostgreSQL 18 independiente en 5432.
+   - Los errores del Visor de eventos del 25-oct muestran intentos de un
+     PostgreSQL que aún referencia la ruta ya inexistente de FitStore; es una
+     señal de estado incompleto que se debe diagnosticar antes de instalar nada.
+
+5. **Para terminar una instalación nueva falta, antes que nada, una decisión y
+   una base limpia controlada.** Hace falta que la dueña confirme si esta laptop
+   se libera como VM/PC limpia para PC-18 y PC-22, y que indique si el
+   PostgreSQL 18 de 5432 se conserva o puede aislarse. Después se necesita un
+   instalador `.exe` compilado, con hash comprobado, su log de ejecución, y una
+   prueba completa en una base local nueva: instalación, primer arranque,
+   crear empresa, venta, impresión/cajón si existe la térmica y desinstalación.
+   No se debe reutilizar la instalación incompleta ni tocar 5432 hasta contar
+   con esa decisión. También hace falta que Claude PC confirme por separado si
+   él ejecutó la desinstalación o un instalador el 25-oct.
+
+## Evidencia consultada
+
+- Servicios y entradas de desinstalación de Windows: sin coincidencias FitStore.
+- Puertos en escucha: 3001, 5173 y 5444 corresponden al ensayo GV local;
+  5432 corresponde a `postgresql-x64-18` independiente.
+- Rutas: ausente `C:\Program Files\FitStore POS`; presente
+  `C:\ProgramData\FitStore POS`; ausente la carpeta pública de respaldos.
+- Visor de eventos, 25-oct: PostgreSQL informa que no puede abrir
+  `C:/Program Files/FitStore POS/runtime/postgresql/share/timezone[s]` porque
+  la ruta ya no existe.
+- No se encontró un `FitStore-POS-Setup-*.exe` en las carpetas locales revisadas
+  ni un log concluyente de instalación de FitStore.
