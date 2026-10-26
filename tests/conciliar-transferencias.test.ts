@@ -62,7 +62,7 @@ describe("conciliación de transferencias", () => {
         where: {
           method: "transfer",
           status: "pending_verification",
-          sale: { branchId: "sucursal-uno" },
+          sale: { branchId: "sucursal-uno", status: "completed" },
           createdAt: {
             gte: new Date(day + "T00:00:00-04:00"),
             lte: new Date(day + "T23:59:59.999-04:00"),
