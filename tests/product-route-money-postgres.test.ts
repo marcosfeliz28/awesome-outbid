@@ -273,15 +273,17 @@ it("las rutas de caja, cobro y mensajero no mutan dinero de otra empresa", async
       `UPDATE "Payment" SET "cashSessionId"=$2 WHERE "saleId"=$1`,
       [otherCashierSale.id, otherCashSessionId],
     );
-    const boundaryNow = new Date();
-    await sql.query(`UPDATE "Sale" SET "createdAt"=$2 WHERE id=$1`, [
-      exactLimitSale.id,
-      new Date(boundaryNow.getTime() - 119_000),
-    ]);
-    await sql.query(`UPDATE "Sale" SET "createdAt"=$2 WHERE id=$1`, [
-      oldSale.id,
-      new Date(boundaryNow.getTime() - 121_000),
-    ]);
+    // Usa el mismo reloj de PostgreSQL que consulta la ruta. En Windows el
+    // reloj de Node y la conversión timestamp/timestamptz podían dejar la
+    // venta válida fuera de la ventana y volver esta regresión inestable.
+    await sql.query(
+      `UPDATE "Sale" SET "createdAt"=CURRENT_TIMESTAMP - INTERVAL '119 seconds' WHERE id=$1`,
+      [exactLimitSale.id],
+    );
+    await sql.query(
+      `UPDATE "Sale" SET "createdAt"=CURRENT_TIMESTAMP - INTERVAL '121 seconds' WHERE id=$1`,
+      [oldSale.id],
+    );
     const exactBoundary = await sql.query(`
       WITH clock AS (SELECT CURRENT_TIMESTAMP AS now)
       SELECT

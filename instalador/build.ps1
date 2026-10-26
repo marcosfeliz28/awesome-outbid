@@ -163,7 +163,7 @@ function Protect-ApiPayload {
     $relative = $full.Substring($root.Length + 1).Replace('\', '/')
     # pnpm deploy no hereda aqui el .gitignore de la raiz. Solo se conservan
     # runtime compilado/dependencias, contrato Prisma y bootstrap del propietario.
-    $allowed = $relative -match '^(package\.json|tsconfig\.json|prisma\.config\.ts|scripts/create-admin\.ts|dist/.+\.(js|json)|node_modules/.+|prisma/schema\.prisma|prisma/migrations/migration_lock\.toml|prisma/migrations/[^/]+/migration\.sql)$'
+    $allowed = $relative -match '^(package\.json|tsconfig\.json|prisma\.config\.ts|scripts/create-admin(-input)?\.ts|dist/.+\.(js|json)|node_modules/.+|prisma/schema\.prisma|prisma/migrations/migration_lock\.toml|prisma/migrations/[^/]+/migration\.sql)$'
     $private = $relative -match '(^|/)(\.env($|\.)|\.npmrc$|secrets\.json$|credentials\.json$|id_(rsa|ed25519)($|\.))|\.(csv|xlsx?|ods|pfx|p12|pem|key|dump|backup|sqlite3?|db|log)$'
     if (-not $allowed -or $private) {
       Remove-Item -LiteralPath $full -Force -ErrorAction Stop
@@ -405,6 +405,8 @@ $minimumNsisVersion = [Version]([string]$lock.nsis.minimumVersion)
 if ($foundNsisVersion -lt $minimumNsisVersion) { throw "NSIS $foundNsisVersion es demasiado antiguo; se requiere $minimumNsisVersion o posterior." }
 
 Invoke-Checked -File $makeNsisPath -Arguments @(
+  "/INPUTCHARSET",
+  "UTF8",
   "/DVERSION=$version",
   "/DPRODUCT_VERSION=$productVersion",
   "/DPOSTGRES_MAJOR=$postgresMajor",

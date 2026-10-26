@@ -44,6 +44,7 @@ export const powershellTests = [
   "Recovery-Cleanup-Login",
   "Exact-Dacl-Contract",
   "Postgres-Real-Sql",
+  "Product-Local-Migrations-Real-Sql",
   "Recovery-Legacy-Schema",
   "Preflight-Backup-Fallback",
 ];
@@ -67,7 +68,9 @@ export function windowsPowerShellEnvironment(source) {
 
 export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
   if (env.CI && !env.PGBIN?.trim())
-    throw new Error("3h1: CI requiere PGBIN; PostgreSQL real no puede omitirse.");
+    throw new Error(
+      "3h1: CI requiere PGBIN; PostgreSQL real no puede omitirse.",
+    );
   const childEnv = windowsPowerShellEnvironment(env);
   const powerShell = path.win32.join(
     env.SystemRoot,
@@ -77,16 +80,32 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
     "powershell.exe",
   );
   const steps = [
-    [process.execPath, ["--test", "instalador/tests/installer-session.test.mjs"]],
-    [process.execPath, ["--test", "instalador/tests/product-local-profile.test.mjs"]],
+    [
+      process.execPath,
+      ["--test", "instalador/tests/installer-session.test.mjs"],
+    ],
+    [
+      process.execPath,
+      ["--test", "instalador/tests/product-local-profile.test.mjs"],
+    ],
+    [
+      process.execPath,
+      ["--test", "instalador/tests/installer-encoding.test.mjs"],
+    ],
     [
       process.execPath,
       ["--test", "instalador/tests/windows11-coexistence-contract.test.mjs"],
     ],
     [process.execPath, ["--test", "instalador/tests/web-server.test.mjs"]],
     [process.execPath, ["--test", "instalador/tests/deploy-lock.test.mjs"]],
-    [process.execPath, ["--test", "instalador/tests/recovery-error-contract.test.mjs"]],
-    [process.execPath, ["--test", "instalador/tests/recovery-documentation.test.mjs"]],
+    [
+      process.execPath,
+      ["--test", "instalador/tests/recovery-error-contract.test.mjs"],
+    ],
+    [
+      process.execPath,
+      ["--test", "instalador/tests/recovery-documentation.test.mjs"],
+    ],
     [
       process.execPath,
       ["--test", "instalador/tests/validation-command.test.mjs"],
@@ -103,7 +122,20 @@ export function runValidation({ spawn = spawnSync, env = process.env } = {}) {
         "Bypass",
         "-File",
         `instalador/tests/${name}.ps1`,
-        ...(["Recovery-FaultInjection", "Recovery-Login-Exit", "Recovery-Activity-Guard", "Recovery-Restart-Previous", "Recovery-Temporary-Acl", "Postgres-Real-Sql", "Recovery-Legacy-Schema", "Recovery-Acl-MissingEntry", "Restore-Real-Sql", "Windows-Smoke-Real-Sql", "Recovery-Cleanup-Login"].includes(name) && env.PGBIN
+        ...([
+          "Recovery-FaultInjection",
+          "Recovery-Login-Exit",
+          "Recovery-Activity-Guard",
+          "Recovery-Restart-Previous",
+          "Recovery-Temporary-Acl",
+          "Postgres-Real-Sql",
+          "Product-Local-Migrations-Real-Sql",
+          "Recovery-Legacy-Schema",
+          "Recovery-Acl-MissingEntry",
+          "Restore-Real-Sql",
+          "Windows-Smoke-Real-Sql",
+          "Recovery-Cleanup-Login",
+        ].includes(name) && env.PGBIN
           ? ["-PgBin", env.PGBIN]
           : []),
       ],

@@ -15,8 +15,8 @@ import {
 const read = (path: string) => readFileSync(path, "utf8");
 
 describe("N-05 · el administrador del script y del instalador exige PIN de 6 dígitos", () => {
-  it("create-admin.ts sólo acepta seis dígitos", () => {
-    const source = read("apps/api/scripts/create-admin.ts");
+  it("el esquema de create-admin sólo acepta seis dígitos", () => {
+    const source = read("apps/api/scripts/create-admin-input.ts");
     expect(source).toContain("pin: z.string().regex(/^\\d{6}$/)");
     expect(source).not.toMatch(/\\d\{4,6\}/);
   });

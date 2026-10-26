@@ -153,6 +153,19 @@ BEGIN
   END IF;
 END
 `$fitstore`$;
+DO `$nexora_runtime`$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'nexora_tenant_runtime') THEN
+    CREATE ROLE nexora_tenant_runtime NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'nexora_platform_billing') THEN
+    CREATE ROLE nexora_platform_billing NOLOGIN;
+  END IF;
+END
+`$nexora_runtime`$;
+ALTER ROLE nexora_tenant_runtime WITH NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+ALTER ROLE nexora_platform_billing WITH NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+GRANT nexora_tenant_runtime TO fitstore WITH ADMIN OPTION;
 SELECT 'CREATE DATABASE fitstore OWNER fitstore'
 WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'fitstore')\gexec
 ALTER DATABASE fitstore OWNER TO fitstore;

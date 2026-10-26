@@ -26,4 +26,6 @@ se conservan al desinstalar, salvo purga solicitada expresamente.
 
 El código fuente de este perfil vive en `instalador/tools/product-local-profile.mjs`.
 Se construye en Windows mediante `pnpm instalador:producto-local`. No se ha
-probado aún una instalación real de este perfil.
+completado aún una instalación real de este perfil. La primera ejecución en la
+laptop de la dueña y el recorrido que debe repetirse están documentados en
+[`LISTO_PARA_VENDER_PC18.md`](./LISTO_PARA_VENDER_PC18.md).

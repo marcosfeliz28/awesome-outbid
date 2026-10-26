@@ -43,6 +43,7 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
     "Recovery-Acl-Interruption",
     "Exact-Dacl-Contract",
     "Postgres-Real-Sql",
+    "Product-Local-Migrations-Real-Sql",
     "Recovery-Legacy-Schema",
     "Preflight-Backup-Fallback",
     "Recovery-FaultInjection",
@@ -63,7 +64,9 @@ test("instalador:validar ejecuta todas las regresiones Windows A1-A7, sin omitir
   }
   assert.ok(launcher.includes('"instalador/tests/web-server.test.mjs"'));
   assert.ok(launcher.includes('"instalador/tests/deploy-lock.test.mjs"'));
-  assert.ok(launcher.includes('"instalador/tests/recovery-error-contract.test.mjs"'));
+  assert.ok(
+    launcher.includes('"instalador/tests/recovery-error-contract.test.mjs"'),
+  );
   assert.ok(
     launcher.includes('"instalador/tests/validation-command.test.mjs"'),
   );

@@ -1,30 +1,20 @@
 import { config } from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import { compare, hash } from "bcryptjs";
-import { z } from "zod";
 import { permissions, categories } from "@fitstore/shared";
+import { createAdminInputSchema } from "./create-admin-input";
 config({ path: "../../.env", quiet: true });
 const db = new PrismaClient();
 async function main() {
-  const input = z
-    .object({
-      email: z.string().email(),
-      password: z
-        .string()
-        .min(12)
-        .max(128)
-        .refine((value) => Buffer.byteLength(value, "utf8") <= 72),
-      pin: z.string().regex(/^\d{6}$/),
-      name: z.string().min(2).max(100).optional(),
-      mode: z.enum(["bootstrap", "repair"]).default("bootstrap"),
-    })
-    .parse({
-      email: process.env.ADMIN_EMAIL,
-      password: process.env.ADMIN_PASSWORD,
-      pin: process.env.ADMIN_PIN,
-      name: process.env.ADMIN_NAME || undefined,
-      mode: process.env.ADMIN_MODE,
-    });
+  const input = createAdminInputSchema(
+    process.env.NEXORA_LOCAL_INSTALL === "1",
+  ).parse({
+    email: process.env.ADMIN_EMAIL,
+    password: process.env.ADMIN_PASSWORD,
+    pin: process.env.ADMIN_PIN,
+    name: process.env.ADMIN_NAME || undefined,
+    mode: process.env.ADMIN_MODE,
+  });
   const email = input.email.toLowerCase();
   await db.$transaction(async (tx) => {
     if (input.mode === "bootstrap")

@@ -41,6 +41,7 @@ export default defineConfig({
       "tests/product-desktop-printer.test.ts",
       "tests/product-desktop-build.test.ts",
       "tests/product-desktop-drawer.test.ts",
+      "tests/product-local-password.test.ts",
       "tests/product-tenant-export-postgres.test.ts",
       "tests/product-tenant-export-cleanup.test.ts",
       "tests/product-tenant-backup-postgres.test.ts",
