@@ -12,11 +12,11 @@
 
 Usar un bucket R2 **privado** y guardar en PostgreSQL solamente metadatos, el identificador del objeto y su suma SHA-256. La API de Nexora sigue siendo quien decide si una persona puede subir o leer cada archivo; conocer una clave de R2 nunca debe otorgar acceso.
 
-**No construir otro almacén desde cero.** La rama `origin/producto-nexora` ya contiene PC-08/PC-04: una interfaz S3/local por tenant, claves validadas, nuevas escrituras externas, lectura compatible con bytes antiguos, cola durable de borrado, RLS y portabilidad. N6 debe convertir/configurar esa interfaz para R2 y completar sus huecos (inventario y backfill del legado, SHA-256 persistente, streaming, verificación, respaldo externo y operación), no crear un segundo mecanismo paralelo. Esa pieza todavía no está en `nexora-cloud`; por eso la sección 2 distingue el estado de la tienda del estado del producto.
+**No construir otro almacén desde cero.** La rama `origin/producto-nexora` ya contiene PC-08/PC-04: una interfaz S3/local por tenant, claves validadas, nuevas escrituras externas, lectura compatible con bytes antiguos, cola durable de borrado, RLS y portabilidad. N6 debe adaptar esa interfaz para R2 y completar sus huecos (inventario y backfill del legado, SHA-256 persistente, streaming, verificación, respaldo externo y operación), no crear un segundo mecanismo paralelo. No basta con cambiar variables: el adaptador actual envía `ServerSideEncryption: "AES256"`, encabezado que R2 no admite en `PutObject`; R2 ya cifra automáticamente en reposo. La implementación debe omitirlo para R2 o hacerlo dependiente del proveedor y probar el adaptador contra un bucket R2 real. Esa pieza todavía no está en `nexora-cloud`; por eso la sección 2 distingue el estado de la tienda del estado del producto.
 
 La transición recomendada es:
 
-1. conservar y endurecer el esquema aditivo de PC-08 y configurar un bucket privado;
+1. conservar y endurecer el esquema aditivo de PC-08, corregir la compatibilidad del adaptador y configurar un bucket privado;
 2. transición por bandera con escritura externa y lectura compatible con la columna antigua;
 3. migración idempotente de los objetos existentes, verificando cada SHA-256;
 4. lectura desde R2 con retorno controlado al dato antiguo;
@@ -40,13 +40,13 @@ La bitácora ya elimina las imágenes de sus copias (`apps/api/src/common.ts:330
 
 ### Trabajo existente en `origin/producto-nexora` que N6 debe reutilizar
 
-- `tenant-object-store.ts` ya define `put`, `putNew`, `get` y `delete`, y separa cada clave con el UUID del tenant (`apps/api/src/tenant-object-store.ts:8-25` en `origin/producto-nexora`). Tiene implementación local para pruebas y S3 compatible para producto (`apps/api/src/tenant-object-store.ts:28-103`). R2 entra por esa interfaz mediante endpoint S3; no hace falta otra abstracción.
+- `tenant-object-store.ts` ya define `put`, `putNew`, `get` y `delete`, y separa cada clave con el UUID del tenant (`apps/api/src/tenant-object-store.ts:8-25` en `origin/producto-nexora`). Tiene implementación local para pruebas y S3 compatible para producto (`apps/api/src/tenant-object-store.ts:28-103`). R2 puede entrar por esa interfaz mediante su endpoint S3 después de quitar para ese proveedor `ServerSideEncryption: "AES256"` de `put` y `putNew`; con el código actual, R2 rechazaría ese encabezado.
 - Las nuevas evidencias de pagos del producto se escriben fuera de PostgreSQL y `proofUrl` conserva una referencia `object:v1`; la lectura mantiene compatibilidad con Base64 antiguo (`apps/api/src/sales.ts:3335-3405` en `origin/producto-nexora`).
 - Las nuevas facturas de mercancía guardan `objectKey` y `data=null`, pero aún leen `data` legado (`apps/api/src/merchandise.ts:183-200`, `apps/api/src/merchandise.ts:296-359` en `origin/producto-nexora`).
 - `TenantObjectDeletion` reserva y reintenta borrados por tenant; el worker no expone el detalle del proveedor en logs (`apps/api/src/tenant-object-deletion.ts:6-40`, `apps/api/src/tenant-object-deletion.ts:43-76` en `origin/producto-nexora`). La migración habilita RLS y disparadores para referencias retiradas (`apps/api/prisma/migrations/202610280007_product_objects/migration.sql:16-67` en `origin/producto-nexora`).
 - La copia por empresa ya descubre las referencias, incluye los bytes con SHA-256 y usa una transacción `REPEATABLE READ` (`apps/api/src/tenant-object-portability.ts:4-57`, `apps/api/src/tenant-backup.ts:168-203` en `origin/producto-nexora`). Esto es una buena base de portabilidad, pero no sustituye una copia secundaria diaria del bucket ni evita cargar cada objeto completo en memoria/Base64.
 
-Huecos comprobados que este plan completa: `put/get` reciben/devuelven `Buffer` completo; no hacen streaming ni `HEAD`; el objeto vivo no guarda SHA-256 verificable como metadato; las claves sólo admiten `payment|billing|invoice`; PC-08 migra **nuevas** escrituras, no trae un backfill de todos los bytes existentes; y la cola considera exitoso `delete` sin una comprobación posterior. Referencias: `apps/api/src/tenant-object-store.ts:11-17,66-90` y comentario de la migración `apps/api/prisma/migrations/202610280007_product_objects/migration.sql:1-13`, ambos en `origin/producto-nexora`.
+Huecos comprobados que este plan completa: `put/get` reciben/devuelven `Buffer` completo; no hacen streaming ni `HEAD`; el adaptador manda un encabezado SSE incompatible con R2; el objeto vivo no guarda SHA-256 verificable como metadato; las claves sólo admiten `payment|billing|invoice`; PC-08 migra **nuevas** escrituras, no trae un backfill de todos los bytes existentes; y la cola considera exitoso `delete` sin una comprobación posterior. Referencias: `apps/api/src/tenant-object-store.ts:11-17,66-90` y comentario de la migración `apps/api/prisma/migrations/202610280007_product_objects/migration.sql:1-13`, ambos en `origin/producto-nexora`.
 
 ### Alcance inicial de la migración
 
@@ -77,13 +77,13 @@ No reemplazar `InvoiceAttachment.objectKey`, `BillingRequest.proofObjectKey`, la
 
 Evolución aditiva sugerida sobre las referencias ya existentes:
 
-- mantener por compatibilidad `Payment.proofUrl = object:v1:...`; evaluar una FK `proofObjectId` sólo en una migración posterior, no como requisito para R2;
-- mantener `InvoiceAttachment.objectKey` y `data` nullable, que PC-08 ya creó;
-- mantener `BillingRequest.proofObjectKey` y `proof` nullable;
+- agregar primero `Payment.proofObjectKey` o `proofObjectId` separado de `proofUrl`, para conservar Base64 y objeto durante la observación;
+- mantener `InvoiceAttachment.objectKey` y `data` temporalmente a la vez, relajando de forma aditiva la restricción XOR de PC-08 durante el backfill;
+- mantener `BillingRequest.proofObjectKey` y `proof` temporalmente a la vez, con la misma relajación controlada;
 - una tabla `BusinessAsset` para `logoObjectId` en vez de esconder una FK dentro de `Settings.data`;
 - más adelante, `Product.imageObjectId` y `Expense.receiptObjectId`, conservando las URLs antiguas durante la transición.
 
-La arquitectura del producto distingue `Tenant` de `branchId`: todas las tablas de negocio deberán llevar `tenantId`, mientras las sucursales quedan dentro de la empresa (`docs/producto/ARQUITECTURA_NEXORA_PRODUCTO.md:12-15`). La rama revisada todavía usa `branchId` como cerrojo operativo —por ejemplo, al descargar facturas (`apps/api/src/merchandise.ts:187-192`) y pruebas de pagos (`apps/api/src/sales.ts:3560-3577`)—. Por ello, la implementación para el SaaS debe enlazar el objeto al `tenantId` real; no debe equiparar para siempre “empresa” y `branchId`.
+La arquitectura del producto distingue `Tenant` de `branchId`: todas las tablas de negocio deberán llevar `tenantId`, mientras las sucursales quedan dentro de la empresa (`docs/producto/ARQUITECTURA_NEXORA_PRODUCTO.md:12-15`). La rama revisada todavía usa `branchId` como cerrojo operativo —por ejemplo, al descargar facturas (`apps/api/src/merchandise.ts:187-192`) y pruebas de pagos (`apps/api/src/sales.ts:3560-3577`)—. Por ello, la implementación para el SaaS debe enlazar el objeto al `tenantId` real; no debe equiparar para siempre “empresa” y `branchId`. El campo `bucket` de metadatos nunca puede elegir libremente el destino: debe coincidir con una configuración permitida del entorno.
 
 ## 4. Bucket y claves por empresa
 
@@ -119,7 +119,7 @@ Reglas:
 
 ## 5. Variables y credenciales
 
-Reutilizar los nombres que ya consume PC-08 para no crear dos configuraciones. Variables propuestas, sólo en el servicio de API y en el ejecutor de migración:
+Reutilizar los nombres que ya consume PC-08 para no crear dos configuraciones. Variables **ya consumidas** por el código, sólo en el servicio de API y en el ejecutor de migración:
 
 ```text
 PRODUCT_OBJECT_BUCKET=
@@ -127,20 +127,29 @@ PRODUCT_OBJECT_REGION=auto
 PRODUCT_OBJECT_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
+```
+
+Prerrequisitos actuales del modo producto: `PRODUCT_TENANCY=required` y `NODE_ENV` distinto de `test`; en pruebas locales se usa `PRODUCT_OBJECT_STORE_DIR` en lugar de S3/R2.
+
+Variables **nuevas que N6 tendría que implementar y conectar** —no existen todavía en el lector de configuración—:
+
+```text
 PRODUCT_OBJECT_PRESIGNED_GET_TTL_SECONDS=60
 PRODUCT_OBJECT_UPLOAD_TIMEOUT_MS=30000
 PRODUCT_OBJECT_MIGRATION_BATCH_SIZE=100
-PRODUCT_OBJECT_LEGACY_READ_FALLBACK=true
 ```
+
+El retorno al legado debe ser una bandera por empresa en la base o en una configuración validada por tenant, no una variable global, para permitir el corte gradual. El timeout debe conectarse al cliente HTTP del SDK; declarar la variable sin consumirla no cuenta como control.
 
 `AWS_ACCESS_KEY_ID` y `AWS_SECRET_ACCESS_KEY` son los nombres estándar que usa el SDK S3; para este servicio contendrían las credenciales R2 y son secretos: no se envían a la web, no se imprimen y no entran al repositorio. `PRODUCT_OBJECT_BUCKET`, `PRODUCT_OBJECT_REGION` y `PRODUCT_OBJECT_ENDPOINT` ya son leídos por `tenantObjectStore()` (`apps/api/src/tenant-object-store.ts:93-103` en `origin/producto-nexora`). Crear tokens separados:
 
 1. **API:** lectura y escritura de objetos sólo en el bucket del entorno;
 2. **backfill:** temporal, mismo bucket, revocado al terminar;
-3. **respaldo:** lectura del origen y escritura en un bucket/cuenta de respaldo, sin permiso para borrar el origen;
-4. **restauración:** credencial temporal aprobada para el simulacro o incidente.
+3. **respaldo de origen:** `Object Read` únicamente sobre el bucket primario;
+4. **respaldo de destino:** `Object Read & Write` únicamente sobre el bucket de respaldo; R2 no separa escribir de borrar, por lo que esta credencial no debe tener acceso al origen;
+5. **restauración:** credencial temporal aprobada para el simulacro o incidente.
 
-Cloudflare permite limitar tokens de lectura o lectura/escritura a buckets concretos. No dar permisos administrativos de cuenta a la aplicación. Rotar claves y probar la anterior revocada antes de cerrar el cambio.
+Cloudflare permite limitar tokens de lectura o lectura/escritura a buckets concretos, pero no por prefijo de tenant. Una credencial de la API para un bucket compartido tiene radio técnico sobre todas las empresas de ese entorno. No dar permisos administrativos de cuenta a la aplicación; mantener autorización/RLS en la API, pruebas cruzadas y buckets separados por entorno, y decidir si clientes de sensibilidad especial requieren bucket y credencial propios. Rotar claves y probar la anterior revocada antes de cerrar el cambio.
 
 ## 6. Subida y lectura seguras
 
@@ -193,8 +202,9 @@ El resultado debe ser un manifiesto sin contenido ni PII: fuente, ID, tamaño, M
 
 ### Fase 1 · Cambio aditivo y lectura compatible
 
-- Agregar metadatos de integridad sin reemplazar las referencias y cola de PC-08.
-- Nuevas subidas: R2 primero; cuando esté verificado, enlazar el puntero. Mantener las filas antiguas sin puntero intactas; no es necesario duplicar cada archivo nuevo en PostgreSQL porque el código ya falla cerrado y reserva su limpieza.
+- Agregar metadatos de integridad y referencias externas separadas sin reemplazar todavía las columnas antiguas ni la cola de PC-08.
+- Relajar temporalmente las restricciones XOR de `InvoiceAttachment` y `BillingRequest`; de otro modo el esquema actual impide conservar binario y objeto simultáneamente. `Payment` necesita una referencia externa nueva porque `proofUrl` hoy sólo puede contener Base64 **o** `object:v1`, no ambos.
+- Nuevas subidas durante la observación: R2 primero; cuando esté verificado, enlazar el puntero y conservar temporalmente una copia antigua sólo durante el plazo acotado de migración. Después del corte no habrá doble escritura permanente.
 - Lecturas: dato antiguo por defecto mientras se prueba R2; habilitación por empresa mediante bandera.
 - Métricas: subidas, huérfanos, divergencias de SHA, latencia, retornos al legado y errores por tipo.
 
@@ -228,7 +238,8 @@ Requisitos antes de continuar: 100 % de fuentes clasificadas, 100 % de objetos m
 3. desactivar escritura antigua, mantener lectura de retorno;
 4. observar al menos otro ciclo de respaldo;
 5. limpiar Base64/BYTEA por lotes con auditoría de conteos, nunca con una sentencia masiva sin control;
-6. retirar el retorno sólo en una versión posterior.
+6. volver a endurecer las restricciones para exigir sólo el objeto externo;
+7. retirar el retorno sólo en una versión posterior.
 
 Rollback antes de la limpieza: desactivar la bandera y leer lo antiguo. Después de la limpieza: restaurar el conjunto coherente base + objetos, no sólo `pg_dump`.
 
@@ -242,7 +253,9 @@ Hoy `pg_dump` incluye los binarios. Después del corte, una copia de PostgreSQL 
 4. manifiesto final firmado o autenticado que enlaza los tres componentes;
 5. verificación diaria de conteos/bytes y muestreo de descarga; verificación completa periódica.
 
-R2 primario no es por sí solo un respaldo. Una credencial equivocada, borrado lógico o compromiso de cuenta puede afectar todo. La credencial de respaldo no debe poder borrar el origen y la de producción no debe borrar el respaldo. Configurar alarmas de antigüedad, objetos faltantes, diferencias de hash, cuota y factura.
+La instantánea de PostgreSQL y la copia de objetos necesitan una barrera frente a `TenantObjectDeletionWorker`. Antes de materializar los objetos, el respaldo debe registrar una retención/lease para cada clave del manifiesto —o pausar de forma acotada los borrados confirmados— y liberarla sólo cuando la copia y su manifiesto final estén cerrados. Sin esa barrera, una sustitución concurrente puede encolar y borrar un objeto que la transacción `REPEATABLE READ` todavía referencia. La prueba de restauración debe reproducir esa carrera; no se puede depender de versionado S3 de R2.
+
+R2 primario no es por sí solo un respaldo. Una credencial equivocada, borrado lógico o compromiso de cuenta puede afectar todo. El lector del respaldo no puede escribir ni borrar el origen; el escritor del respaldo sólo puede operar en el bucket de destino y la credencial de producción no puede tocarlo. Configurar alarmas de antigüedad, objetos faltantes, diferencias de hash, cuota y factura.
 
 ### Restauración probada
 
@@ -261,7 +274,7 @@ No declarar el respaldo válido sólo porque `HEAD` responde. La prueba de no p�
 
 ## 9. Borrado, retención y privacidad
 
-R2 no participa en la transacción de anonimización. Crear una `ObjectDeletionOutbox` dentro de la misma transacción que quita el puntero; un trabajador idempotente borra el objeto, comprueba que dejó de existir y marca `deleted`. Si R2 no responde, el pedido queda visible y reintenta con alerta; nunca se marca completado antes.
+R2 no participa en la transacción de anonimización. **Ampliar la cola existente `TenantObjectDeletion`**, sin crear una segunda outbox: dentro de la misma transacción que quita el puntero se reserva el borrado; el trabajador idempotente borra el objeto, comprueba con `HEAD` que dejó de existir y guarda estado, último error sanitizado y `deletedAt`. Si R2 no responde, el pedido queda visible y reintenta con alerta; nunca se marca completado antes. Durante un respaldo, respeta además las leases de las claves del manifiesto.
 
 Casos:
 
@@ -286,6 +299,8 @@ Precios oficiales consultados el 2026-10-26 para **R2 Standard**:
 - nivel gratis mensual de Standard: 10 GB-mes, 1 millón Class A y 10 millones Class B.
 
 Ejemplo meramente dimensional, no una factura: 100 negocios con 2 GB cada uno son 200 GB; descontando 10 GB gratis, el almacenamiento sería aproximadamente **US$2.85/mes**, antes de impuestos y sin incluir API/Render, copias secundarias, Workers ni operaciones que excedan el nivel gratis. Un respaldo completo duplicado duplica aproximadamente los GB almacenados. El precio real se calcula con el inventario de Fase 0 y se revisa antes de contratar.
+
+Cloudflare redondea el almacenamiento y las operaciones a la siguiente unidad facturable aplicable. Por eso el cálculo final debe usar la calculadora/factura vigente e incluir también almacenamiento secundario y sus operaciones.
 
 No usar Infrequent Access de inicio: añade cargo de recuperación y duración mínima de almacenamiento. Standard simplifica comprobantes que se consultan y borran de forma irregular.
 
@@ -320,6 +335,7 @@ No usar Infrequent Access de inicio: añade cargo de recuperación y duración m
 
 ### Integración con PostgreSQL + bucket R2 de pruebas
 
+- contrato real del adaptador R2: `put`, `putNew`, `get`, `HEAD`, `delete` e `If-None-Match: *`, comprobando que no se envía el encabezado SSE incompatible;
 - subida exitosa enlaza sólo un objeto `ready`;
 - fallo antes/después de `PUT`, `HEAD` o commit no pierde el legado y deja un estado reconciliable;
 - reintento con la misma fuente no duplica;
@@ -342,6 +358,7 @@ No usar Infrequent Access de inicio: añade cargo de recuperación y duración m
 - restaurar el conjunto en un entorno vacío y verificar el 100 % de hashes;
 - abrir por la API al menos un archivo de cada tipo;
 - simular pérdida de base, pérdida del bucket primario y clave revocada;
+- sustituir y encolar un objeto mientras se toma el manifiesto, comprobando que la lease impide que el trabajador lo borre antes de copiarlo;
 - medir RPO/RTO y confirmar que el procedimiento no requiere producción;
 - prueba de salida del proveedor: exportar todos los objetos y manifiesto con hashes a almacenamiento alterno.
 
