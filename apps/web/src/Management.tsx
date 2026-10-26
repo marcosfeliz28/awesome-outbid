@@ -86,6 +86,8 @@ import {
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
 import { MoreMenu } from "./admin-ui";
+import "./lumina-clientes.css";
+import { TableSkeleton } from "./admin-ui";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportButton } from "./InventoryImport";
@@ -2448,15 +2450,16 @@ export function Customers() {
   return (
     <>
       <Heading
-        title="Personas que vuelven a elegirte"
-        caption="Conoce a tus clientes y construye relaciones que duran."
+        title="Clientes"
+        caption="Consulta, busca y actualiza los datos de tus clientes."
+        eyebrow={false}
       >
         <Button onClick={() => setCreate(true)}>
           <Plus size={17} />
           Nuevo cliente
         </Button>
       </Heading>
-      <div className="panel">
+      <div className="panel customers-panel">
         <div className="table-toolbar">
           <Filter
             value={search}
@@ -2464,72 +2467,94 @@ export function Customers() {
             placeholder="Buscar nombre o teléfono"
           />
         </div>
-        <QueryState query={query}>
-          <DataTable
-            rows={(query.data || []).filter((c: any) =>
-              // P5: sin acceso completo la búsqueda no usa el teléfono, para
-              // no servir de oráculo de los dígitos ocultos.
-              (c.name + " " + (fullCustomer ? c.phone : ""))
-                .toLowerCase()
-                .includes(search.toLowerCase()),
-            )}
-            empty="No encontramos clientes"
-            emptyDescription="Revisa la búsqueda o registra una persona con Nuevo cliente."
-            columns={[
-              { label: "Cliente", render: (c) => <strong>{c.name}</strong> },
-              {
-                label: "Contacto",
-                render: (c) => (
-                  <span>
-                    {customerPrivateDisplay(c.phone, fullCustomer)}
-                    <small>{c.email}</small>
-                  </span>
-                ),
-              },
-              {
-                label: "Cédula / RNC",
-                // P5 + SEC-05: la API ya envía el dato enmascarado a la caja;
-                // la vista lo acorta igual («•••123») con el mismo criterio
-                // de acceso que la API (fullCustomer).
-                render: (c) => customerPrivateDisplay(c.legalId, fullCustomer),
-              },
-              ...(fullCustomer
-                ? [
-                    { label: "Compras", render: (c: any) => c.purchases },
-                    {
-                      label: "Total gastado",
-                      render: (c: any) => formatMoney(c.totalSpent),
-                    },
-                    {
-                      label: "Última compra",
-                      render: (c: any) =>
-                        c.lastPurchase
-                          ? dateLabel(c.lastPurchase)
-                          : "Aún sin compras",
-                    },
-                  ]
-                : []),
-              {
-                label: "Acción",
-                render: (c) => (
-                  <div className="table-actions">
-                    <button className="text-link" onClick={() => setEditing(c)}>
-                      Editar
-                    </button>
-                    {can(user.permissions, "customers:erase") && (
+        {query.isPending && query.fetchStatus !== "paused" ? (
+          <TableSkeleton rows={6} cols={4} label="Cargando clientes" />
+        ) : (
+          <QueryState query={query}>
+            <DataTable
+              cards
+              rows={(query.data || []).filter((c: any) =>
+                // P5: sin acceso completo la búsqueda no usa el teléfono, para
+                // no servir de oráculo de los dígitos ocultos.
+                (c.name + " " + (fullCustomer ? c.phone : ""))
+                  .toLowerCase()
+                  .includes(search.toLowerCase()),
+              )}
+              empty="No encontramos clientes"
+              emptyDescription="Revisa la búsqueda o registra una persona con Nuevo cliente."
+              columns={[
+                { label: "Cliente", render: (c) => <strong>{c.name}</strong> },
+                {
+                  label: "Contacto",
+                  render: (c) => (
+                    <span>
+                      {customerPrivateDisplay(c.phone, fullCustomer)}
+                      <small>{c.email}</small>
+                    </span>
+                  ),
+                },
+                {
+                  label: "Cédula / RNC",
+                  // P5 + SEC-05: la API ya envía el dato enmascarado a la caja;
+                  // la vista lo acorta igual («•••123») con el mismo criterio
+                  // de acceso que la API (fullCustomer).
+                  render: (c) =>
+                    customerPrivateDisplay(c.legalId, fullCustomer),
+                },
+                ...(fullCustomer
+                  ? [
+                      {
+                        label: "Compras",
+                        render: (c: any) => (
+                          <span className="num">{c.purchases}</span>
+                        ),
+                      },
+                      {
+                        label: "Total gastado",
+                        render: (c: any) => (
+                          <span className="num">
+                            {formatMoney(c.totalSpent)}
+                          </span>
+                        ),
+                      },
+                      {
+                        label: "Última compra",
+                        render: (c: any) =>
+                          c.lastPurchase ? (
+                            <span className="num">
+                              {dateLabel(c.lastPurchase)}
+                            </span>
+                          ) : (
+                            "Aún sin compras"
+                          ),
+                      },
+                    ]
+                  : []),
+                {
+                  label: "Acción",
+                  render: (c) => (
+                    <div className="table-actions">
                       <button
-                        className="text-link danger-text"
-                        onClick={() => setAnonymizing(c)}
+                        className="text-link"
+                        onClick={() => setEditing(c)}
                       >
-                        Anonimizar
+                        Editar
                       </button>
-                    )}
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </QueryState>
+                      {can(user.permissions, "customers:erase") && (
+                        <button
+                          className="text-link danger-text"
+                          onClick={() => setAnonymizing(c)}
+                        >
+                          Anonimizar
+                        </button>
+                      )}
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </QueryState>
+        )}
       </div>
       {create && (
         <FormModal

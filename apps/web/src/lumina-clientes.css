@@ -1,0 +1,40 @@
+/* Obsidian Lumina f3 · Clientes. Solo valores de tokens existentes. */
+.customers-panel .table-toolbar {
+  padding-bottom: 4px;
+}
+.customers-panel .table-search {
+  max-width: 420px;
+}
+.customers-panel td small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.customers-panel .num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.customers-panel .table-actions .text-link {
+  min-height: 44px;
+  min-width: 44px;
+  justify-content: center;
+  font-size: 13px;
+}
+.customers-panel .table-actions .text-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.customers-panel .table-skeleton {
+  padding: 12px 0;
+}
+@media (max-width: 640px) {
+  .customers-panel .table-search {
+    max-width: none;
+  }
+  .customers-panel .table-cards td strong {
+    font-size: 16px;
+  }
+}
