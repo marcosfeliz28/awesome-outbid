@@ -64,7 +64,7 @@ No. Un producto físico nuevo queda con sus datos de catálogo, pero la existenc
 
 ### 7. ¿Cómo creo una cajera?
 
-Una administradora entra en **Configuración › Usuarios y permisos** y pulsa **Crear usuario**. Elige el rol de cajera o vendedora disponible, escribe nombre, **Usuario para entrar**, una contraseña temporal de seis números y un **PIN de 6 dígitos**. La cajera deberá cambiar la contraseña temporal cuando entre por primera vez.
+Una administradora entra en **Configuración › Usuarios y permisos** y pulsa **Crear usuario**. Elige el rol **Vendedora**, escribe nombre, **Usuario para entrar**, una contraseña temporal de seis números y un **PIN de 6 dígitos**. La cajera deberá cambiar la contraseña temporal cuando entre por primera vez.
 
 ### 8. ¿Qué puede hacer una cajera con su usuario?
 
