@@ -110,7 +110,6 @@ export default defineConfig({
       "tests/lot-migration-postgres.test.ts",
       "tests/warehouses-postgres.test.ts",
       "tests/portabilidad.test.ts",
-      "tests/modal-foco-caja.test.ts",
       "tests/e2e-higiene.test.ts",
       "tests/offline-policy.test.ts",
       "tests/cloud-deploy.test.ts",

@@ -327,3 +327,5 @@ prueba no tiene ventas); no son datos reales.
   oscuro; no se rediseñó.
 - La alerta del tablero solo ofrece «Revisar alertas» con `alerts:write`
   (comportamiento de C).
+
+> Nota (26-oct): tras fusionar `producto-nexora` (8ae06d8d), el Modal devuelve el foco en todos los diálogos por decisión de producto; se retiró la opción `restoreFocus` y sus dos pruebas (`lumina-f3-modal-foco`, `modal-foco-caja`).
