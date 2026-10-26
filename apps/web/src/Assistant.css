@@ -6,10 +6,10 @@
   min-width: 48px;
   min-height: 48px;
   padding: 10px 18px;
-  border: 1px solid var(--accent-violet);
+  border: 1px solid var(--accent-emerald);
   border-radius: 999px;
-  background: var(--action);
-  color: var(--on-action);
+  background: linear-gradient(115deg, var(--accent-emerald), #43e3b1);
+  color: #031712;
   box-shadow: var(--shadow);
   font: inherit;
   font-weight: 700;
@@ -18,13 +18,13 @@
 
 /* `button:not(.button)` de styles.css tiene la misma especificidad. */
 button.assistant-launcher.assistant-launcher {
-  border-color: var(--accent-violet);
-  background: var(--action);
-  color: var(--on-action);
+  border-color: var(--accent-emerald);
+  background: linear-gradient(115deg, var(--accent-emerald), #43e3b1);
+  color: #031712;
 }
 
 .assistant-launcher:hover:not(:disabled) {
-  background: var(--action-hover);
+  background: linear-gradient(115deg, #10b981, var(--accent-emerald));
 }
 
 .assistant-backdrop {
@@ -314,13 +314,13 @@ button.assistant-launcher.assistant-launcher {
 .assistant-body form button[type="submit"] {
   align-self: flex-end;
   border-color: var(--success-strong);
-  background: var(--success-strong);
-  color: var(--on-action);
+  background: linear-gradient(115deg, var(--accent-emerald), #43e3b1);
+  color: #031712;
 }
 
 .assistant-body form button[type="submit"]:hover:not(:disabled) {
   border-color: var(--accent-emerald);
-  background: var(--success-strong);
+  background: linear-gradient(115deg, #10b981, var(--accent-emerald));
 }
 
 /* Pregunta que llega desde una tarjeta del tablero: se revisa antes de enviar. */
@@ -348,6 +348,7 @@ button.assistant-launcher.assistant-launcher {
 /* En celular el botón sube por encima de las barras fijas de abajo
    (Mercancía, cobro del POS) para no taparlas. */
 @media (max-width: 900px) {
+  /* prettier-ignore -- la prueba de contrato reconoce este selector literal. */
   body:has(.goods-mobile-bar, .pos-mobile-bar, .goods-actions.has-items) .assistant-launcher { bottom: calc(88px + env(safe-area-inset-bottom)); }
 }
 

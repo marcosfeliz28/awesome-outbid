@@ -6634,11 +6634,16 @@ td strong {
   color: var(--text);
   box-shadow: none;
 }
-.lumina-settings .lumina-primary-action,
-.equipment .lumina-primary-action {
+.lumina-settings .button.lumina-primary-action,
+.equipment .button.lumina-primary-action {
   background: linear-gradient(115deg, var(--accent-emerald), #43e3b1);
   color: #031712;
   box-shadow: 0 8px 20px rgba(16, 185, 129, .2);
+}
+.lumina-settings .button.lumina-primary-action:hover:not(:disabled),
+.equipment .button.lumina-primary-action:hover:not(:disabled) {
+  background: linear-gradient(115deg, #10b981, var(--accent-emerald));
+  color: #031712;
 }
 .equipment-here {
   position: relative;
@@ -6738,6 +6743,10 @@ td strong {
   background: var(--surface) !important;
   color: var(--text);
   box-shadow: inset 0 -2px 0 var(--accent-violet), 0 4px 12px rgba(9, 7, 25, .08);
+}
+:root[data-theme="dark"] .merchandise .goods-mode button.active,
+:root[data-theme="dark"] .merchandise .goods-mode button.active.exit {
+  color: var(--text);
 }
 .merchandise .goods-mode button:focus-visible {
   outline: 3px solid var(--focus);
