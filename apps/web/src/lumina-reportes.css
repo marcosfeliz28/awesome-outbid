@@ -25,6 +25,8 @@
   color: var(--text);
 }
 .reports-layout .report-menu button:focus-visible,
+.report-panel .date-filters input:focus-visible,
+.report-panel .date-filters input:focus-within,
 .reports-layout .report-panel .table-wrap:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
@@ -95,5 +97,75 @@
   }
   .report-panel .pagination .button {
     min-height: 44px;
+  }
+}
+
+/* Tabla: nada se parte ni se corta; si no cabe, el contenedor (enfocable con
+   teclado) se desplaza dentro de sí mismo. Los estados llegan tal cual del
+   servidor: se muestran completos y en tono neutro. */
+.report-panel .table-wrap {
+  max-width: 100%;
+}
+.report-panel .table-wrap td,
+.report-panel .table-wrap th {
+  white-space: nowrap;
+  padding-inline: 14px;
+}
+.report-panel .table-wrap td {
+  padding-block: 12px;
+  color: var(--text);
+}
+
+/* Catálogo plegable: en escritorio va siempre abierto y sin resumen. */
+.report-catalog > summary {
+  display: none;
+  list-style: none;
+}
+.report-catalog > summary::-webkit-details-marker {
+  display: none;
+}
+/* Fila activa sólida y sin transición: el contraste se mide contra un fondo
+   estable. Claro: #7c3aed sobre #f2ecfe = 5.6:1; oscuro: #a78bfa sobre #1d1838 = 6.9:1. */
+.reports-layout .report-menu button.active {
+  background: var(--primary-soft) !important;
+  transition: none;
+}
+/* Áreas táctiles de la cabecera de Reportes (44 px; 40 px en base global). */
+.main-content:has(.reports-layout) .heading-actions .button {
+  min-height: 44px;
+}
+@media (max-width: 900px) {
+  .report-catalog > summary {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-height: 44px;
+    padding: 4px 8px;
+    cursor: pointer;
+    position: relative;
+    border-radius: 7px;
+  }
+  .report-catalog > summary span {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .report-catalog > summary strong {
+    font-size: 14px;
+    color: var(--text);
+  }
+  .report-catalog > summary::after {
+    content: "▾";
+    position: absolute;
+    right: 24px;
+    color: var(--muted);
+  }
+  .report-catalog[open] > summary {
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .report-catalog > summary:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
   }
 }

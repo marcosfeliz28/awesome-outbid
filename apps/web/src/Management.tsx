@@ -3097,6 +3097,16 @@ export function Reports() {
     (extra.data ?? []).map((r) => [r.name, r.group] as const),
   );
   const [openGroup, setOpenGroup] = useState<string | null>("Ventas");
+  // Catálogo plegable en celular; en escritorio siempre abierto.
+  const [catalogOpen, setCatalogOpen] = useState(
+    () => !window.matchMedia("(max-width: 900px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 900px)");
+    const sync = () => mq.matches || setCatalogOpen(true);
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const [report, setReport] = useState("sales"),
     [from, setFrom] = useState(today().slice(0, 8) + "01"),
     [to, setTo] = useState(today()),
@@ -3170,6 +3180,15 @@ export function Reports() {
       </Heading>
       <div className="reports-layout">
         <aside className="panel report-menu">
+          <details
+            className="report-catalog"
+            open={catalogOpen}
+            onToggle={(e) => setCatalogOpen(e.currentTarget.open)}
+          >
+            <summary>
+              <span>Reportes</span>
+              <strong>{allReports.find((r) => r[0] === report)?.[1]}</strong>
+            </summary>
           {groupReports(
             allReports
               .filter(
@@ -3219,6 +3238,7 @@ export function Reports() {
               </div>
             );
           })}
+          </details>
         </aside>
         {report === "formal" ? (
           <FormalReports />
