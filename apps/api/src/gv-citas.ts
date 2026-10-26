@@ -12,7 +12,7 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
-import { d, moneyAmount, z } from "@fitstore/shared";
+import { moneyAmount, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -23,7 +23,18 @@ import {
   parse,
   uuid,
 } from "./common";
-import { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv";
+import {
+  GV_CLOSED,
+  applyGvImportPayment,
+  checkGvOwnerEdit,
+  createGvPayment,
+  gvImportPayment,
+  gvPaymentInput,
+  gvRefundFields,
+  gvTotals,
+  lockGvOwner,
+  planGvImportPayments,
+} from "./gv-money";
 
 export const GV_SERVICES = [
   "sencillo",
@@ -101,14 +112,6 @@ const leadFields = {
   status: z.enum(GV_LEAD_STATUS).default("por_contactar"),
   note: optionalText(1000),
 };
-const paymentFields = {
-  date: day,
-  amount: moneyAmount(10000000),
-  concept: z.enum(GV_CONCEPTS),
-  method: z.enum(GV_METHODS),
-  bank: optionalText(120),
-  reference: optionalText(120),
-};
 // Alta desde la pantalla (operationId) o de otro sistema (externalId): un
 // reenvío con la misma clave devuelve el mismo registro.
 const createKeys = {
@@ -127,7 +130,9 @@ function appointmentView(row: any) {
     total: money(row.total),
     tip: money(row.tip),
     weddingQuote: money(row.weddingQuote),
-    ...gvTotals(row.total, payments),
+    refundAmount: money(row.refundAmount ?? null),
+    refundDate: row.refundDate ? dayText(row.refundDate) : null,
+    ...gvTotals(row.total, payments, row),
     payments: payments.map((p) => ({
       ...p,
       date: dayText(p.date),
@@ -140,21 +145,15 @@ const paymentsOrder = {
 };
 
 // ── Importación (la llama POST /gv/import de gv.ts, misma transacción) ──
-const importPayment = z.object({
-  key: text(120).optional(),
-  ...paymentFields,
-  verified: z.boolean().optional(),
-});
 export const gvAppointmentImport = z.object({
   key: text(120),
   ...appointmentFields,
-  payments: z.array(importPayment).max(50).default([]),
+  ...gvRefundFields,
+  payments: z.array(gvImportPayment).max(50).default([]),
 });
 export const gvLeadImport = z.object({ key: text(120), ...leadFields });
 type AppointmentImport = z.infer<typeof gvAppointmentImport>;
 type LeadImport = z.infer<typeof gvLeadImport>;
-const paymentKey = (a: { key: string }, p: { key?: string }, j: number) =>
-  p.key ?? `${a.key}#${j + 1}`;
 
 /**
  * Valida cada cita e interesada, revisa claves repetidas y cuenta altas y
@@ -194,7 +193,7 @@ export async function planGvCitasImport(
       errors.push(`appointments.${i}.key: clave repetida «${a.key}»`);
     aKeys.add(a.key);
     a.payments.forEach((p, j) => {
-      const key = paymentKey(a, p, j);
+      const key = p.key;
       if (pKeys.has(key) || paymentKeys.has(key))
         errors.push(
           `appointments.${i}.payments.${j}.key: clave repetida «${key}»`,
@@ -217,23 +216,38 @@ export async function planGvCitasImport(
         })
       ).map((r: any) => r.externalId as string),
     );
-  const [oldA, oldP, oldL] = await Promise.all([
+  const existingPayments = await planGvImportPayments(
+    db,
+    branchId,
+    appointments.map((a, i) => ({
+      kind: "appointment" as const,
+      key: a.key,
+      path: `appointments.${i}`,
+      total: a.total,
+      status: a.status,
+      refundAmount: a.refundAmount,
+      refundDate: a.refundDate,
+      payments: a.payments,
+    })),
+    errors,
+  );
+  const [oldA, oldL] = await Promise.all([
     existing("gvAppointment", aKeys),
-    existing("gvPayment", pKeys),
     existing("gvLead", lKeys),
   ]);
-  const count = (keys: Set<string>, old: Set<string>) => ({
+  const count = (keys: Set<string>, old: { has(k: string): boolean }) => ({
     create: [...keys].filter((k) => !old.has(k)).length,
     update: [...keys].filter((k) => old.has(k)).length,
   });
   return {
     counts: {
       appointments: count(aKeys, oldA),
-      appointmentPayments: count(pKeys, oldP),
+      appointmentPayments: count(pKeys, existingPayments),
       leads: count(lKeys, oldL),
     },
     appointments,
     leads,
+    existingPayments,
   };
 }
 
@@ -242,43 +256,25 @@ export async function applyGvCitasImport(
   actor: Actor,
   appointments: AppointmentImport[],
   leads: LeadImport[],
+  existingPayments: Map<string, any>,
 ) {
   const branchId = actor.branchId;
-  for (const { key, payments, ...a } of appointments) {
+  for (const { key, payments, refundDate, ...rest } of appointments) {
+    const a = { ...rest, refundDate: refundDate ? dateOnly(refundDate) : null };
     const row = await tx.gvAppointment.upsert({
       where: { branchId_externalId: { branchId, externalId: key } },
       create: { ...a, externalId: key, branchId, createdBy: actor.id },
       update: a,
     });
-    for (const [j, p] of payments.entries()) {
-      const { key: _key, verified, date, ...fields } = p;
-      void _key;
-      const externalId = paymentKey({ key }, p, j);
-      const isVerified = verified ?? fields.method !== "transferencia";
-      const review = isVerified
-        ? { verified: true, verifiedBy: actor.id, verifiedAt: new Date() }
-        : { verified: false, verifiedBy: null, verifiedAt: null };
-      await tx.gvPayment.upsert({
-        where: { branchId_externalId: { branchId, externalId } },
-        create: {
-          ...fields,
-          ...review,
-          date: dateOnly(date),
-          appointmentId: row.id,
-          externalId,
-          branchId,
-          createdBy: actor.id,
-        },
-        // La verificación hecha en el sistema no se pisa salvo que el archivo
-        // la indique (igual que los pagos de inscripciones).
-        update: {
-          ...fields,
-          date: dateOnly(date),
-          appointmentId: row.id,
-          ...(verified === undefined ? {} : review),
-        },
-      });
-    }
+    for (const p of payments)
+      await applyGvImportPayment(
+        tx,
+        actor,
+        "appointment",
+        row.id,
+        p,
+        existingPayments.get(p.key),
+      );
   }
   for (const { key, ...l } of leads)
     await tx.gvLead.upsert({
@@ -364,6 +360,8 @@ export class GvCitasController {
       z.object({ ...createKeys, ...appointmentFields }),
       body,
     );
+    if (GV_CLOSED.has(data.status))
+      bad("Una cita nueva no puede empezar cancelada o reembolsada.");
     const key = keyOf({ operationId, externalId });
     return this.db.$transaction(async (tx) => {
       if (key) {
@@ -405,12 +403,23 @@ export class GvCitasController {
     @CurrentUser() actor: Actor,
   ) {
     // partial(): lo que no llega queda undefined y Prisma no lo cambia.
-    const data = parse(z.object(appointmentFields).partial(), body);
+    const data = parse(
+      z.object({ ...appointmentFields, ...gvRefundFields }).partial(),
+      body,
+    );
+    const appointmentId = parse(uuid, id);
     return this.db.$transaction(async (tx) => {
-      const before = await this.appointment(tx, actor, id);
+      const locked = await lockGvOwner(
+        tx,
+        "appointment",
+        appointmentId,
+        actor.branchId,
+      );
+      const { payments: _old, ...before } = locked;
+      void _old;
       const row = await tx.gvAppointment.update({
         where: { id: before.id },
-        data,
+        data: checkGvOwnerEdit("appointment", locked, data) as any,
         include: { payments: paymentsOrder },
       });
       const { payments: _p, ...after } = row;
@@ -438,45 +447,18 @@ export class GvCitasController {
     @CurrentUser() actor: Actor,
   ) {
     const { operationId, ...data } = parse(
-      z.object({ operationId: uuid, ...paymentFields }),
+      gvPaymentInput({ operationId: uuid }),
       body,
     );
+    const appointmentId = parse(uuid, id);
     return this.db.$transaction(async (tx) => {
-      const appointment = await this.appointment(tx, actor, id);
-      const existing = await tx.gvPayment.findUnique({
-        where: { operationId },
-      });
-      if (existing) {
-        if (
-          existing.branchId !== actor.branchId ||
-          existing.appointmentId !== appointment.id ||
-          !d(existing.amount).eq(data.amount) ||
-          existing.method !== data.method
-        )
-          bad("La clave de la operación ya corresponde a otro pago.");
-        return { ...existing, date: dayText(existing.date) };
-      }
-      const verified = data.method !== "transferencia";
-      const row = await tx.gvPayment.create({
-        data: {
-          ...data,
-          date: dateOnly(data.date),
-          operationId,
-          appointmentId: appointment.id,
-          verified,
-          ...(verified ? { verifiedBy: actor.id, verifiedAt: new Date() } : {}),
-          branchId: actor.branchId,
-          createdBy: actor.id,
-        },
-      });
-      await audit(
+      const row = await createGvPayment(
         tx,
         actor,
-        "gv_payment_create",
-        "gv_payment",
-        row.id,
-        undefined,
-        row,
+        "appointment",
+        appointmentId,
+        operationId,
+        data,
       );
       return { ...row, date: dayText(row.date) };
     });

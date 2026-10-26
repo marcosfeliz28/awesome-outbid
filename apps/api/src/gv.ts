@@ -1,7 +1,7 @@
 // Módulo GV Makeup Studio (docs/coordinacion/MODULO-GV.md): cursos,
 // inscripciones y cobros. Es un registro de seguimiento: no crea ventas de la
 // caja ni comprobantes fiscales (los productos de los cursos se venden en la
-// caja normal de Macgen).
+// caja normal de Macgen). Reglas de dinero en gv-money.ts.
 import {
   Body,
   Controller,
@@ -13,7 +13,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { d, moneyAmount, z } from "@fitstore/shared";
+import { can, d, moneyAmount, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -21,10 +21,28 @@ import {
   Permit,
   audit,
   bad,
+  denied,
   parse,
   uuid,
 } from "./common";
+import {
+  GV_CLOSED,
+  applyGvImportPayment,
+  checkGvOwnerEdit,
+  createGvPayment,
+  dateOnly,
+  dayText,
+  gvDay as day,
+  gvImportPayment,
+  gvPaymentInput,
+  gvRefundFields,
+  gvTotals,
+  gvUserNames,
+  lockGvOwner,
+  planGvImportPayments,
+} from "./gv-money";
 
+export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
 export const GV_COURSE_TYPES = [
   "automaquillaje",
   "brazilian",
@@ -38,14 +56,6 @@ export const GV_ENROLLMENT_STATUS = [
   "cancelada",
   "reembolsada",
 ] as const;
-export const GV_CONCEPTS = [
-  "separo",
-  "restante",
-  "segundo",
-  "tercero",
-  "otro",
-] as const;
-export const GV_METHODS = ["efectivo", "transferencia", "tarjeta"] as const;
 
 const text = (max: number) => z.string().trim().min(1).max(max);
 const optionalText = (max: number) =>
@@ -55,13 +65,6 @@ const optionalText = (max: number) =>
     .max(max)
     .nullish()
     .transform((v) => v || null);
-const day = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "debe tener el formato AAAA-MM-DD")
-  .refine(
-    (v) => new Date(v + "T00:00:00Z").toISOString().slice(0, 10) === v,
-    "no es una fecha válida",
-  );
 const price = moneyAmount(10000000, true);
 
 const courseFields = {
@@ -85,46 +88,9 @@ const enrollmentFields = {
   boughtBrushSet: z.boolean().default(false),
   note: optionalText(1000),
 };
-const paymentFields = {
-  date: day,
-  amount: moneyAmount(10000000),
-  concept: z.enum(GV_CONCEPTS),
-  method: z.enum(GV_METHODS),
-  bank: optionalText(120),
-  reference: optionalText(120),
-};
-
-/** Pagado (sin los rechazados), por verificar y pendiente de una inscripción. */
-export function gvTotals(
-  agreedPrice: Prisma.Decimal.Value,
-  payments: {
-    amount: Prisma.Decimal.Value;
-    verified: boolean;
-    rejectedAt?: Date | string | null;
-  }[],
-) {
-  const valid = payments.filter((p) => !p.rejectedAt);
-  const paid = valid.reduce((sum, p) => sum.plus(p.amount), d(0));
-  const unverified = valid
-    .filter((p) => !p.verified)
-    .reduce((sum, p) => sum.plus(p.amount), d(0));
-  return {
-    paid: paid.toFixed(2),
-    unverified: unverified.toFixed(2),
-    pending: d(agreedPrice).minus(paid).toFixed(2),
-  };
-}
 // Ocupan cupo las inscritas que no cancelaron ni pasaron a personalizado.
 const OCCUPIES = new Set(["activa", "no_asistio"]);
-const CLOSED = new Set(["cancelada", "reembolsada"]);
-const dateOnly = (value: string) => new Date(value + "T00:00:00Z");
-const dayText = (value: Date) => value.toISOString().slice(0, 10);
 
-const importPayment = z.object({
-  key: text(120).optional(),
-  ...paymentFields,
-  verified: z.boolean().optional(),
-});
 const importSchema = z.object({
   courses: z
     .array(
@@ -142,7 +108,8 @@ const importSchema = z.object({
         key: text(120),
         courseKey: text(120),
         ...enrollmentFields,
-        payments: z.array(importPayment).max(50).default([]),
+        ...gvRefundFields,
+        payments: z.array(gvImportPayment).max(50).default([]),
       }),
     )
     .max(5000)
@@ -176,13 +143,6 @@ export class GvController {
     if (!row) bad("Curso no encontrado.");
     return row;
   }
-  private async enrollment(tx: any, actor: Actor, id: string) {
-    const row = await tx.gvEnrollment.findFirst({
-      where: { id: parse(uuid, id), branchId: actor.branchId },
-    });
-    if (!row) bad("Inscripción no encontrada.");
-    return row;
-  }
 
   @Get("courses")
   @Permit("gv:read")
@@ -196,6 +156,7 @@ export class GvController {
             status: true,
             attended: true,
             boughtBrushSet: true,
+            refundAmount: true,
             payments: {
               select: { amount: true, verified: true, rejectedAt: true },
             },
@@ -205,16 +166,11 @@ export class GvController {
       orderBy: [{ date: "desc" }, { name: "asc" }],
     });
     return rows.map(({ enrollments, ...course }) => {
-      const totals = enrollments.map((e) => ({
-        ...gvTotals(e.agreedPrice, e.payments),
-        closed: CLOSED.has(e.status),
-      }));
-      // Lo pendiente de una cancelada o reembolsada no se cobra.
-      const sum = (key: "paid" | "pending" | "unverified") =>
-        totals
-          .filter((t) => key !== "pending" || !t.closed)
-          .reduce((s, t) => s.plus(t[key]), d(0))
-          .toFixed(2);
+      const totals = enrollments.map((e) =>
+        gvTotals(e.agreedPrice, e.payments, e),
+      );
+      const sum = (key: "paid" | "pending" | "unverified" | "refunded") =>
+        totals.reduce((s, t) => s.plus(t[key]), d(0)).toFixed(2);
       return {
         ...course,
         date: dayText(course.date),
@@ -225,6 +181,7 @@ export class GvController {
         paid: sum("paid"),
         pending: sum("pending"),
         unverified: sum("unverified"),
+        refunded: sum("refunded"),
       };
     });
   }
@@ -293,42 +250,30 @@ export class GvController {
       },
       orderBy: { clientName: "asc" },
     });
-    const userIds = [
-      ...new Set(
-        enrollments.flatMap((e) => [
-          e.createdBy,
-          ...e.payments.flatMap((p) => [p.createdBy, p.verifiedBy ?? ""]),
+    const name = await gvUserNames(
+      this.db,
+      enrollments.flatMap((e) => [
+        e.createdBy,
+        ...e.payments.flatMap((p) => [
+          p.createdBy,
+          p.verifiedBy ?? "",
+          p.rejectedBy ?? "",
         ]),
-      ),
-    ].filter(Boolean);
-    const users = new Map(
-      (
-        await this.db.user.findMany({
-          where: {
-            id: { in: userIds.filter((u) => /^[0-9a-f-]{36}$/.test(u)) },
-          },
-          select: { id: true, name: true },
-        })
-      ).map((u) => [u.id, u.name]),
+      ]),
     );
     return {
       ...course,
       date: dayText(course.date),
       price: course.price.toFixed(2),
-      enrollments: enrollments.map((e) => ({
+      enrollments: enrollments.map(({ payments, ...e }) => ({
         ...e,
+        createdBy: undefined,
         agreedPrice: e.agreedPrice.toFixed(2),
-        createdByName: users.get(e.createdBy) ?? null,
-        ...gvTotals(e.agreedPrice, e.payments),
-        payments: e.payments.map((p) => ({
-          ...p,
-          date: dayText(p.date),
-          amount: p.amount.toFixed(2),
-          createdByName: users.get(p.createdBy) ?? null,
-          verifiedByName: p.verifiedBy
-            ? (users.get(p.verifiedBy) ?? null)
-            : null,
-        })),
+        refundAmount: e.refundAmount?.toFixed(2) ?? null,
+        refundDate: e.refundDate ? dayText(e.refundDate) : null,
+        createdByName: name(e.createdBy),
+        ...gvTotals(e.agreedPrice, payments, e),
+        payments: payments.map((p) => paymentView(p, name)),
       })),
     };
   }
@@ -340,6 +285,8 @@ export class GvController {
       z.object({ operationId: uuid, courseId: uuid, ...enrollmentFields }),
       body,
     );
+    if (GV_CLOSED.has(data.status))
+      bad("Una inscripción nueva no puede empezar cancelada o reembolsada.");
     await this.course(actor, courseId);
     return this.db.$transaction(async (tx) => {
       // Un reintento con la misma clave devuelve la misma inscripción.
@@ -384,17 +331,27 @@ export class GvController {
     @CurrentUser() actor: Actor,
   ) {
     const data = parse(
-      z.object({ courseId: uuid, ...enrollmentFields }).partial(),
+      z
+        .object({ courseId: uuid, ...enrollmentFields, ...gvRefundFields })
+        .partial(),
       body,
     );
     // partial(): lo que no llega queda undefined (sin los valores por defecto
     // del alta) y Prisma no lo cambia.
     if (data.courseId) await this.course(actor, data.courseId);
+    const enrollmentId = parse(uuid, id);
     return this.db.$transaction(async (tx) => {
-      const before = await this.enrollment(tx, actor, id);
+      const locked = await lockGvOwner(
+        tx,
+        "enrollment",
+        enrollmentId,
+        actor.branchId,
+      );
+      const { payments: _p, ...before } = locked;
+      void _p;
       const row = await tx.gvEnrollment.update({
         where: { id: before.id },
-        data,
+        data: checkGvOwnerEdit("enrollment", locked, data) as any,
       });
       await audit(
         tx,
@@ -413,55 +370,19 @@ export class GvController {
   @Permit("gv:write")
   async createPayment(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const { operationId, enrollmentId, ...data } = parse(
-      z.object({ operationId: uuid, enrollmentId: uuid, ...paymentFields }),
+      gvPaymentInput({ operationId: uuid, enrollmentId: uuid }),
       body,
     );
-    return this.db.$transaction(async (tx) => {
-      const existing = await tx.gvPayment.findUnique({
-        where: { operationId },
-      });
-      if (existing) {
-        if (
-          existing.branchId !== actor.branchId ||
-          existing.enrollmentId !== enrollmentId ||
-          !d(existing.amount).eq(data.amount) ||
-          existing.method !== data.method
-        )
-          bad("La clave de la operación ya corresponde a otro pago.");
-        return existing;
-      }
-      await this.enrollment(tx, actor, enrollmentId);
-      // La transferencia queda por verificar; efectivo y tarjeta, verificados.
-      const verified = data.method !== "transferencia";
-      const row = await tx.gvPayment.create({
-        data: {
-          ...data,
-          date: dateOnly(data.date),
-          operationId,
-          enrollmentId,
-          verified,
-          ...(verified ? { verifiedBy: actor.id, verifiedAt: new Date() } : {}),
-          branchId: actor.branchId,
-          createdBy: actor.id,
-        },
-      });
-      await audit(
-        tx,
-        actor,
-        "gv_payment_create",
-        "gv_payment",
-        row.id,
-        undefined,
-        row,
-      );
-      return row;
-    });
+    return this.db.$transaction((tx) =>
+      createGvPayment(tx, actor, "enrollment", enrollmentId, operationId, data),
+    );
   }
 
-  // Verificar o rechazar un pago (transferencia que llegó o no). Un pago
-  // rechazado deja de contar como pagado; queda en la bitácora con quién.
+  // Verificar o rechazar una transferencia (GV-05/06): sólo gv:verify
+  // (administración y gerencia), nunca quien la registró salvo «*», una sola
+  // vez y con la fila bloqueada. Rechazada deja de contar.
   @Post("payments/:id/review")
-  @Permit("gv:write")
+  @Permit("gv:verify")
   async reviewPayment(
     @Param("id") id: string,
     @Body() body: unknown,
@@ -477,13 +398,22 @@ export class GvController {
       ]),
       body,
     );
+    const paymentId = parse(uuid, id);
     return this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "GvPayment" WHERE id = ${paymentId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
       const before = await tx.gvPayment.findFirst({
-        where: { id: parse(uuid, id), branchId: actor.branchId },
+        where: { id: paymentId, branchId: actor.branchId },
       });
       if (!before) bad("Pago no encontrado.");
-      if (before.rejectedAt) bad("Este pago ya fue rechazado.");
-      if (data.verified && before.verified) return before;
+      if (before.method !== "transferencia")
+        bad("Sólo las transferencias se verifican o rechazan.");
+      if (before.createdBy === actor.id && !can(actor.permissions, "*"))
+        denied("No puedes verificar un pago que registraste tú.");
+      if (before.rejectedAt) bad("Esta transferencia ya fue rechazada.");
+      if (before.verified) {
+        if (data.verified) return before; // repetir la verificación: igual.
+        bad("Esta transferencia ya fue verificada.");
+      }
       const row = await tx.gvPayment.update({
         where: { id: before.id },
         data: data.verified
@@ -507,8 +437,8 @@ export class GvController {
     });
   }
 
-  // Reportes de GV: ingresos por día, método, banco y empleada; pendientes por
-  // curso y por clienta; transferencias por verificar y ocupación.
+  // Reportes de GV: ingresos verificados por día, método, banco y empleada
+  // (menos reembolsos); pendientes por curso, clienta y cita; ocupación.
   @Get("reports")
   @Permit("gv:reports")
   async reports(
@@ -521,18 +451,18 @@ export class GvController {
     );
     if (from && to && from > to)
       bad("La fecha inicial no puede ser posterior a la final.");
+    const range =
+      from || to
+        ? {
+            ...(from ? { gte: dateOnly(from) } : {}),
+            ...(to ? { lte: dateOnly(to) } : {}),
+          }
+        : undefined;
     const payments = await this.db.gvPayment.findMany({
       where: {
         branchId: actor.branchId,
         rejectedAt: null,
-        ...(from || to
-          ? {
-              date: {
-                ...(from ? { gte: dateOnly(from) } : {}),
-                ...(to ? { lte: dateOnly(to) } : {}),
-              },
-            }
-          : {}),
+        ...(range ? { date: range } : {}),
       },
       select: {
         date: true,
@@ -543,17 +473,14 @@ export class GvController {
         createdBy: true,
       },
     });
-    const names = new Map(
-      (
-        await this.db.user.findMany({
-          where: { id: { in: [...new Set(payments.map((p) => p.createdBy))] } },
-          select: { id: true, name: true },
-        })
-      ).map((u) => [u.id, u.name]),
+    const verified = payments.filter((p) => p.verified);
+    const name = await gvUserNames(
+      this.db,
+      verified.map((p) => p.createdBy),
     );
     const group = (key: (p: (typeof payments)[number]) => string) => {
       const map = new Map<string, { total: Prisma.Decimal; count: number }>();
-      for (const p of payments) {
+      for (const p of verified) {
         const k = key(p);
         const row = map.get(k) ?? { total: d(0), count: 0 };
         row.total = row.total.plus(p.amount);
@@ -568,32 +495,55 @@ export class GvController {
         }))
         .sort((a, b) => a.key.localeCompare(b.key));
     };
-    const total = payments.reduce((s, p) => s.plus(p.amount), d(0));
+    const total = verified.reduce((s, p) => s.plus(p.amount), d(0));
     const unverified = payments
       .filter((p) => !p.verified)
       .reduce((s, p) => s.plus(p.amount), d(0));
+    const refundWhere = {
+      branchId: actor.branchId,
+      refundAmount: { not: null },
+      ...(range ? { refundDate: range } : {}),
+    };
+    const [refundE, refundA] = await Promise.all([
+      this.db.gvEnrollment.aggregate({
+        where: refundWhere,
+        _sum: { refundAmount: true },
+      }),
+      this.db.gvAppointment.aggregate({
+        where: refundWhere,
+        _sum: { refundAmount: true },
+      }),
+    ]);
+    const refunds = d(refundE._sum.refundAmount ?? 0).plus(
+      refundA._sum.refundAmount ?? 0,
+    );
     const courses = await this.courses(actor);
-    const open = await this.db.gvEnrollment.findMany({
-      where: {
-        branchId: actor.branchId,
-        status: { notIn: [...CLOSED] },
-      },
-      include: {
-        payments: {
-          select: { amount: true, verified: true, rejectedAt: true },
-        },
-        course: { select: { name: true, date: true } },
-      },
-      orderBy: { clientName: "asc" },
-    });
+    const select = {
+      payments: { select: { amount: true, verified: true, rejectedAt: true } },
+    };
+    const [openEnrollments, openAppointments] = await Promise.all([
+      this.db.gvEnrollment.findMany({
+        where: { branchId: actor.branchId, status: { notIn: [...GV_CLOSED] } },
+        include: { ...select, course: { select: { name: true, date: true } } },
+        orderBy: { clientName: "asc" },
+      }),
+      this.db.gvAppointment.findMany({
+        where: { branchId: actor.branchId, status: { notIn: [...GV_CLOSED] } },
+        include: select,
+        orderBy: { clientName: "asc" },
+      }),
+    ]);
     return {
       income: {
+        // Sólo lo verificado (efectivo y tarjeta lo están al registrarse).
         total: total.toFixed(2),
         unverified: unverified.toFixed(2),
+        refunds: refunds.toFixed(2),
+        net: total.minus(refunds).toFixed(2),
         byDay: group((p) => dayText(p.date)),
         byMethod: group((p) => p.method),
         byBank: group((p) => p.bank || "Sin banco"),
-        byEmployee: group((p) => names.get(p.createdBy) ?? "Otro usuario"),
+        byEmployee: group((p) => name(p.createdBy) ?? "Gerencia"),
       },
       courses: courses.map((c) => ({
         id: c.id,
@@ -607,16 +557,26 @@ export class GvController {
         pending: c.pending,
         unverified: c.unverified,
       })),
-      pendingByClient: open
-        .map((e) => ({
+      pendingByClient: [
+        ...openEnrollments.map((e) => ({
           id: e.id,
+          kind: "curso" as const,
           clientName: e.clientName,
           phone: e.phone,
           course: e.course.name,
           courseDate: dayText(e.course.date),
-          ...gvTotals(e.agreedPrice, e.payments),
-        }))
-        .filter((e) => d(e.pending).gt(0)),
+          ...gvTotals(e.agreedPrice, e.payments, e),
+        })),
+        ...openAppointments.map((a) => ({
+          id: a.id,
+          kind: "cita" as const,
+          clientName: a.clientName,
+          phone: a.phone,
+          course: "Cita · " + a.service,
+          courseDate: a.date.toISOString().slice(0, 10),
+          ...gvTotals(a.total, a.payments, a),
+        })),
+      ].filter((e) => d(e.pending).gt(0)),
     };
   }
 
@@ -624,7 +584,12 @@ export class GvController {
   @Permit("gv:read")
   async pendingTransfers(@CurrentUser() actor: Actor) {
     const rows = await this.db.gvPayment.findMany({
-      where: { branchId: actor.branchId, verified: false, rejectedAt: null },
+      where: {
+        branchId: actor.branchId,
+        method: "transferencia",
+        verified: false,
+        rejectedAt: null,
+      },
       include: {
         enrollment: {
           select: {
@@ -636,17 +601,17 @@ export class GvController {
       },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     });
-    return rows.map((p) => ({
-      ...p,
-      date: dayText(p.date),
-      amount: p.amount.toFixed(2),
-    }));
+    const name = await gvUserNames(
+      this.db,
+      rows.map((p) => p.createdBy),
+    );
+    return rows.map((p) => paymentView(p, name));
   }
 
   // Importación del Excel de GV (sólo administración, «*»). Idempotente: cada
-  // elemento trae su clave (externalId, única por sucursal); reimportar
-  // actualiza y nunca duplica. ?dryRun=1 valida y cuenta sin escribir. Todo o
-  // nada: una transacción.
+  // elemento y cada pago traen su clave (externalId, única por sucursal);
+  // reimportar actualiza y nunca duplica. ?dryRun=1 valida y cuenta sin
+  // escribir. Todo o nada: una transacción, una importación a la vez.
   @Post("import")
   @Permit("*")
   async import(
@@ -680,8 +645,6 @@ export class GvController {
     });
     const enrollmentKeys = new Set<string>();
     const paymentKeys = new Set<string>();
-    const paymentKey = (e: { key: string }, p: { key?: string }, j: number) =>
-      p.key ?? `${e.key}#${j + 1}`;
     const knownCourses = new Map(
       (
         await this.db.gvCourse.findMany({
@@ -699,16 +662,31 @@ export class GvController {
           `enrollments.${i}.courseKey: curso «${e.courseKey}» no existe`,
         );
       e.payments.forEach((p, j) => {
-        const key = paymentKey(e, p, j);
-        if (paymentKeys.has(key))
+        if (!p.key) return; // el esquema ya lo reporta
+        if (paymentKeys.has(p.key))
           errors.push(
-            `enrollments.${i}.payments.${j}.key: clave repetida «${key}»`,
+            `enrollments.${i}.payments.${j}.key: clave repetida «${p.key}»`,
           );
-        paymentKeys.add(key);
+        paymentKeys.add(p.key);
       });
     });
+    const existingPayments = await planGvImportPayments(
+      this.db,
+      branchId,
+      input.enrollments.map((e, i) => ({
+        kind: "enrollment" as const,
+        key: e.key,
+        path: `enrollments.${i}`,
+        total: e.agreedPrice,
+        status: e.status,
+        refundAmount: e.refundAmount,
+        refundDate: e.refundDate,
+        payments: e.payments,
+      })),
+      errors,
+    );
     const existing = async (
-      model: "gvCourse" | "gvEnrollment" | "gvPayment",
+      model: "gvCourse" | "gvEnrollment",
       keys: Set<string>,
     ) =>
       new Set<string>(
@@ -719,12 +697,11 @@ export class GvController {
           })
         ).map((r: any) => r.externalId as string),
       );
-    const [oldCourses, oldEnrollments, oldPayments] = await Promise.all([
+    const [oldCourses, oldEnrollments] = await Promise.all([
       existing("gvCourse", courseKeys),
       existing("gvEnrollment", enrollmentKeys),
-      existing("gvPayment", paymentKeys),
     ]);
-    const count = (keys: Set<string>, old: Set<string>) => ({
+    const count = (keys: Set<string>, old: { has(k: string): boolean }) => ({
       create: [...keys].filter((k) => !old.has(k)).length,
       update: [...keys].filter((k) => old.has(k)).length,
     });
@@ -742,7 +719,7 @@ export class GvController {
       dryRun,
       courses: count(courseKeys, oldCourses),
       enrollments: count(enrollmentKeys, oldEnrollments),
-      payments: count(paymentKeys, oldPayments),
+      payments: count(paymentKeys, existingPayments),
       ...citasPlan.counts,
       errors,
     };
@@ -754,6 +731,7 @@ export class GvController {
       );
     await this.db.$transaction(
       async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"gv-import:" + branchId}))`;
         const courseIds = new Map(knownCourses);
         for (const { key, date, ...c } of input.courses) {
           const row = await tx.gvCourse.upsert({
@@ -769,57 +747,44 @@ export class GvController {
           });
           courseIds.set(key, row.id);
         }
-        for (const { key, courseKey, payments, ...e } of input.enrollments) {
+        for (const {
+          key,
+          courseKey,
+          payments,
+          refundDate,
+          ...e
+        } of input.enrollments) {
+          const fields = {
+            ...e,
+            refundDate: refundDate ? dateOnly(refundDate) : null,
+            courseId: courseIds.get(courseKey)!,
+          };
           const row = await tx.gvEnrollment.upsert({
             where: { branchId_externalId: { branchId, externalId: key } },
             create: {
-              ...e,
-              courseId: courseIds.get(courseKey)!,
+              ...fields,
               externalId: key,
               branchId,
               createdBy: actor.id,
             },
-            update: { ...e, courseId: courseIds.get(courseKey)! },
+            update: fields,
           });
-          for (const [j, p] of payments.entries()) {
-            const { key: _key, verified, date, ...fields } = p;
-            void _key;
-            const isVerified = verified ?? fields.method !== "transferencia";
-            const review = isVerified
-              ? { verified: true, verifiedBy: actor.id, verifiedAt: new Date() }
-              : { verified: false, verifiedBy: null, verifiedAt: null };
-            await tx.gvPayment.upsert({
-              where: {
-                branchId_externalId: {
-                  branchId,
-                  externalId: paymentKey({ key }, p, j),
-                },
-              },
-              create: {
-                ...fields,
-                ...review,
-                date: dateOnly(date),
-                enrollmentId: row.id,
-                externalId: paymentKey({ key }, p, j),
-                branchId,
-                createdBy: actor.id,
-              },
-              // La verificación hecha en el sistema no se pisa salvo que el
-              // archivo la indique.
-              update: {
-                ...fields,
-                date: dateOnly(date),
-                enrollmentId: row.id,
-                ...(verified === undefined ? {} : review),
-              },
-            });
-          }
+          for (const p of payments)
+            await applyGvImportPayment(
+              tx,
+              actor,
+              "enrollment",
+              row.id,
+              p,
+              existingPayments.get(p.key),
+            );
         }
         await citas.applyGvCitasImport(
           tx,
           actor,
           citasPlan.appointments,
           citasPlan.leads,
+          citasPlan.existingPayments,
         );
         await audit(
           tx,
@@ -835,4 +800,19 @@ export class GvController {
     );
     return summary;
   }
+}
+
+export function paymentView(
+  p: any,
+  name: (id: string | null | undefined) => string | null,
+) {
+  const { createdBy, verifiedBy, rejectedBy, ...rest } = p;
+  return {
+    ...rest,
+    date: dayText(p.date),
+    amount: p.amount.toFixed(2),
+    createdByName: name(createdBy),
+    verifiedByName: name(verifiedBy),
+    rejectedByName: name(rejectedBy),
+  };
 }

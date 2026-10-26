@@ -158,8 +158,32 @@ describe("GV · permisos del rol", () => {
   });
 });
 
+const BANK = "Popular Grupo Génesis ···9797";
+const enroll = (courseId: string, agreedPrice: number, name = "QA") =>
+  ok("/gv/enrollments", gv, {
+    operationId: randomUUID(),
+    courseId,
+    clientName: name + " " + suffix,
+    agreedPrice,
+  });
+const payBody = (enrollmentId: string, extra: Record<string, unknown>) => ({
+  operationId: randomUUID(),
+  enrollmentId,
+  date: "2026-10-26",
+  concept: "separo",
+  method: "efectivo",
+  ...extra,
+});
+const transferBody = (enrollmentId: string, amount: number) =>
+  payBody(enrollmentId, {
+    amount,
+    method: "transferencia",
+    bank: BANK,
+    reference: "QA-" + randomUUID().slice(0, 8),
+  });
+
 describe("GV · cursos, inscripciones y pagos", () => {
-  it("valida el curso y calcula pagado y pendiente con decimales exactos", async () => {
+  it("valida el curso; pagado cuenta sólo lo verificado y el pendiente es exacto", async () => {
     expect((await newCourse(gv, { type: "boda" })).status).toBe(400);
     expect((await newCourse(gv, { price: 10.005 })).status).toBe(400);
     expect((await newCourse(gv, { date: "2026-02-30" })).status).toBe(400);
@@ -180,127 +204,205 @@ describe("GV · cursos, inscripciones y pagos", () => {
     expect(again.id).toBe(first.id);
     expect(first.status).toBe("activa");
     expect(first.createdBy).toBe(gvUserId);
-    const pay = (extra: Record<string, unknown>) => ({
-      operationId: randomUUID(),
-      enrollmentId: first.id,
-      date: "2026-10-26",
-      concept: "separo",
-      method: "efectivo",
-      ...extra,
-    });
-    expect((await request("/gv/payments", gv, pay({ amount: 0 }))).status).toBe(
-      400,
-    );
+    for (const amount of [0, -5])
+      expect(
+        (await request("/gv/payments", gv, payBody(first.id, { amount })))
+          .status,
+      ).toBe(400);
+    // GV-07: transferencia sin banco o sin referencia.
     expect(
-      (await request("/gv/payments", gv, pay({ amount: -5 }))).status,
+      (
+        await request(
+          "/gv/payments",
+          gv,
+          payBody(first.id, { amount: 1, method: "transferencia", bank: BANK }),
+        )
+      ).status,
     ).toBe(400);
-    const cash = pay({ amount: 1000.1 });
+    const cash = payBody(first.id, { amount: 1000.1 });
     const p1 = await ok("/gv/payments", gv, cash);
     expect((await ok("/gv/payments", gv, cash)).id).toBe(p1.id);
     expect(p1.verified).toBe(true);
-    const transfer = await ok(
-      "/gv/payments",
-      gv,
-      pay({
-        amount: 0.2,
-        concept: "restante",
-        method: "transferencia",
-        bank: "Popular Grupo Génesis ···9797",
-        reference: "QA-123",
-      }),
-    );
+    const transfer = await ok("/gv/payments", gv, transferBody(first.id, 0.2));
     expect(transfer.verified).toBe(false);
     const detail = await ok("/gv/courses/" + course.id, gv);
     const row = detail.enrollments.find((e: any) => e.id === first.id);
-    // 1000.10 + 0.20 = 1000.30 exacto (en coma flotante sería 1000.3000000000001).
-    expect(row.paid).toBe("1000.30");
-    expect(row.unverified).toBe("0.20");
-    expect(row.pending).toBe("3499.80");
+    // GV-08: la transferencia por verificar no cuenta como pagada.
+    expect(row).toMatchObject({
+      paid: "1000.10",
+      unverified: "0.20",
+      pending: "3500.00",
+    });
     expect(row.createdByName).toBe("QA GV " + suffix);
+    expect(row.payments[0].createdBy).toBeUndefined();
     const list = await ok("/gv/courses", gv);
-    const summary = list.find((c: any) => c.id === course.id);
-    expect(summary).toMatchObject({
+    expect(list.find((c: any) => c.id === course.id)).toMatchObject({
       enrolled: 1,
-      paid: "1000.30",
-      pending: "3499.80",
+      paid: "1000.10",
+      pending: "3500.00",
       capacity: 32,
     });
     const pending = await ok("/gv/transfers/pending", gv);
     expect(pending.some((p: any) => p.id === transfer.id)).toBe(true);
+    expect(pending.every((p: any) => p.method === "transferencia")).toBe(true);
   });
 
-  it("verifica o rechaza una transferencia y registra quién", async () => {
+  it("GV-09: no acepta sobrepagos ni bajar el total por debajo de lo cobrado", async () => {
     const course = (await newCourse(gv)).body;
     courseIds.push(course.id);
-    const e = await ok("/gv/enrollments", gv, {
-      operationId: randomUUID(),
-      courseId: course.id,
-      clientName: "QA Transferencia " + suffix,
-      agreedPrice: 18000,
-    });
-    const transfer = () =>
-      ok("/gv/payments", gv, {
-        operationId: randomUUID(),
-        enrollmentId: e.id,
-        date: "2026-10-26",
-        amount: 9000,
-        concept: "separo",
-        method: "transferencia",
-        bank: "Popular Grupo Génesis ···9797",
-      });
-    const a = await transfer();
-    const b = await transfer();
+    const e = await enroll(course.id, 1000, "QA Tope");
+    await ok("/gv/payments", gv, transferBody(e.id, 600));
+    // 600 por verificar + 400.01 superaría el total.
+    const over = await request(
+      "/gv/payments",
+      gv,
+      payBody(e.id, { amount: 400.01 }),
+    );
+    expect(over.status).toBe(400);
+    expect(over.body.message).toMatch(/supera lo pendiente/);
+    // Dos pagos a la vez por el saldo completo: sólo entra uno.
+    const both = await Promise.all([
+      request("/gv/payments", gv, payBody(e.id, { amount: 400 })),
+      request("/gv/payments", gv, payBody(e.id, { amount: 400 })),
+    ]);
+    expect(both.map((r) => r.status).sort()).toEqual([201, 400]);
     expect(
       (
-        await request("/gv/payments/" + a.id + "/review", seller, {
-          verified: true,
-        })
+        await request(
+          "/gv/enrollments/" + e.id,
+          gv,
+          { agreedPrice: 999.99 },
+          "PATCH",
+        )
       ).status,
-    ).toBe(403);
-    const verified = await ok("/gv/payments/" + a.id + "/review", manager, {
+    ).toBe(400);
+    const row = (await ok("/gv/courses/" + course.id, gv)).enrollments[0];
+    expect(row).toMatchObject({ paid: "400.00", unverified: "600.00" });
+    expect(row.pending).toBe("600.00");
+  });
+
+  it("GV-05/06: sólo gerencia verifica, una vez, nunca su propio pago ni efectivo", async () => {
+    const course = (await newCourse(gv)).body;
+    courseIds.push(course.id);
+    const e = await enroll(course.id, 18000, "QA Transferencia");
+    const a = await ok("/gv/payments", gv, transferBody(e.id, 9000));
+    const b = await ok("/gv/payments", gv, transferBody(e.id, 9000));
+    for (const as of [seller, gv])
+      expect(
+        (await request(`/gv/payments/${a.id}/review`, as, { verified: true }))
+          .status,
+      ).toBe(403);
+    const verified = await ok(`/gv/payments/${a.id}/review`, manager, {
       verified: true,
     });
     expect(verified.verified).toBe(true);
-    expect(verified.verifiedBy).toBeTruthy();
+    // Repetir la verificación: igual; rechazarla después: no.
+    expect(
+      (await ok(`/gv/payments/${a.id}/review`, manager, { verified: true }))
+        .verifiedAt,
+    ).toBe(verified.verifiedAt);
     expect(
       (
-        await request("/gv/payments/" + b.id + "/review", gv, {
+        await request(`/gv/payments/${a.id}/review`, manager, {
+          verified: false,
+          reason: "QA cambio de idea",
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await request(`/gv/payments/${b.id}/review`, manager, {
           verified: false,
         })
       ).status,
     ).toBe(400);
-    const rejected = await ok("/gv/payments/" + b.id + "/review", gv, {
-      verified: false,
-      reason: "No llegó al banco",
-    });
-    expect(rejected.rejectedBy).toBe(gvUserId);
-    const row = (await ok("/gv/courses/" + course.id, gv)).enrollments[0];
-    expect(row).toMatchObject({
-      paid: "9000.00",
-      unverified: "0.00",
-      pending: "9000.00",
-    });
+    // Verificar y rechazar a la vez: sólo una gana.
+    const race = await Promise.all([
+      request(`/gv/payments/${b.id}/review`, manager, { verified: true }),
+      request(`/gv/payments/${b.id}/review`, admin, {
+        verified: false,
+        reason: "No llegó al banco",
+      }),
+    ]);
+    expect(race.map((r) => r.status).sort()).toEqual([201, 400]);
+    const final = await db.gvPayment.findUniqueOrThrow({ where: { id: b.id } });
+    expect(final.verified && final.rejectedAt).toBeFalsy();
+    // La gerencia no verifica una transferencia que registró ella misma.
+    const own = await ok(
+      "/gv/payments",
+      manager,
+      transferBody((await enroll(course.id, 500, "QA Propia")).id, 100),
+    );
+    expect(
+      (
+        await request(`/gv/payments/${own.id}/review`, manager, {
+          verified: true,
+        })
+      ).status,
+    ).toBe(403);
+    // El efectivo no se revisa.
+    const cash = await ok(
+      "/gv/payments",
+      gv,
+      payBody((await enroll(course.id, 500, "QA Efectivo")).id, {
+        amount: 100,
+      }),
+    );
+    expect(
+      (
+        await request(`/gv/payments/${cash.id}/review`, admin, {
+          verified: true,
+        })
+      ).status,
+    ).toBe(400);
     expect(
       await db.auditLog.count({
-        where: {
-          entityId: { in: [a.id, b.id] },
-          action: { startsWith: "gv_" },
-        },
+        where: { entityId: a.id, action: "gv_payment_verify" },
       }),
-    ).toBe(4);
-    // Editar la inscripción: estado y asistencia.
-    const edited = await ok(
-      "/gv/enrollments/" + e.id,
-      gv,
-      { status: "personalizado", attended: true, boughtBrushSet: true },
-      "PATCH",
-    );
-    expect(edited).toMatchObject({
-      status: "personalizado",
-      attended: true,
-      boughtBrushSet: true,
-      clientName: "QA Transferencia " + suffix,
+    ).toBe(1);
+  });
+
+  it("GV-13: cancelada no acepta pagos; reembolsada registra monto y fecha", async () => {
+    const course = (await newCourse(gv)).body;
+    courseIds.push(course.id);
+    const e = await enroll(course.id, 4500, "QA Reembolso");
+    await ok("/gv/payments", gv, payBody(e.id, { amount: 2000 }));
+    const patch = (data: unknown) =>
+      request("/gv/enrollments/" + e.id, gv, data, "PATCH");
+    expect((await patch({ status: "reembolsada" })).status).toBe(400);
+    expect(
+      (
+        await patch({
+          status: "reembolsada",
+          refundAmount: 2000.01,
+          refundDate: "2026-10-26",
+        })
+      ).status,
+    ).toBe(400);
+    expect((await patch({ status: "cancelada" })).status).toBe(200);
+    expect(
+      (await request("/gv/payments", gv, payBody(e.id, { amount: 10 }))).status,
+    ).toBe(400);
+    const refunded = await patch({
+      status: "reembolsada",
+      refundAmount: 1500,
+      refundDate: "2026-10-26",
     });
+    expect(refunded.status).toBe(200);
+    expect((await patch({ status: "activa" })).status).toBe(400);
+    const row = (await ok("/gv/courses/" + course.id, gv)).enrollments[0];
+    expect(row).toMatchObject({
+      paid: "2000.00",
+      refunded: "1500.00",
+      pending: "0.00",
+      refundDate: "2026-10-26",
+    });
+    const r = await ok("/gv/reports?from=2026-10-26&to=2026-10-26", manager);
+    expect(Number(r.income.refunds)).toBeGreaterThanOrEqual(1500);
+    expect(Number(r.income.net)).toBeCloseTo(
+      Number(r.income.total) - Number(r.income.refunds),
+      2,
+    );
   });
 });
 
@@ -330,20 +432,29 @@ describe("GV · importación", () => {
         note: "importada",
         payments: [
           {
+            key: importKey + "-p1",
             date: "2026-10-01",
             amount: 5000,
             concept: "separo",
             method: "transferencia",
-            bank: "Popular Grupo Génesis ···9797",
+            bank: BANK,
             reference: "R1",
           },
           {
+            key: importKey + "-p2",
             date: "2026-10-15",
             amount: 2500.5,
             concept: "segundo",
             method: "efectivo",
           },
         ],
+      },
+      {
+        key: importKey + "-e2",
+        courseKey: importKey + "-c1",
+        clientName: "QA Otra " + suffix,
+        agreedPrice: 18000,
+        payments: [] as any[],
       },
     ],
   });
@@ -353,7 +464,7 @@ describe("GV · importación", () => {
     expect(dry).toMatchObject({
       dryRun: true,
       courses: { create: 1, update: 0 },
-      enrollments: { create: 1, update: 0 },
+      enrollments: { create: 2, update: 0 },
       payments: { create: 2, update: 0 },
       errors: [],
     });
@@ -362,49 +473,84 @@ describe("GV · importación", () => {
     ).toBe(0);
     const broken = payload();
     broken.enrollments.push({
-      ...broken.enrollments[0],
-      key: importKey + "-e2",
+      ...broken.enrollments[1],
+      key: importKey + "-e3",
       courseKey: "no-existe",
     });
     (broken.enrollments[0].payments[0] as any).amount = 0;
+    delete (broken.enrollments[0].payments[1] as any).key;
+    broken.enrollments[1].payments = [
+      {
+        key: importKey + "-px",
+        date: "2026-10-01",
+        amount: 18000.01,
+        concept: "separo",
+        method: "efectivo",
+      },
+    ];
     const report = await ok("/gv/import?dryRun=1", admin, broken);
-    expect(report.errors.join(" ")).toMatch(/courseKey/);
-    expect(report.errors.join(" ")).toMatch(/amount/);
+    const text = report.errors.join(" ");
+    expect(text).toMatch(/courseKey/);
+    expect(text).toMatch(/amount/);
+    expect(text).toMatch(/payments\.1\.key/);
     expect((await request("/gv/import", admin, broken)).status).toBe(400);
     expect(
       await db.gvCourse.count({ where: { externalId: importKey + "-c1" } }),
     ).toBe(0);
+    // Sobrepago dentro del archivo (sin otros errores).
+    const over = payload();
+    over.enrollments[1].payments = broken.enrollments[1].payments;
+    expect(
+      (await ok("/gv/import?dryRun=1", admin, over)).errors.join(" "),
+    ).toMatch(/superan el total/);
   });
 
-  it("importa todo y al repetir actualiza sin duplicar ni pisar la verificación", async () => {
+  it("reimporta sin duplicar, sin mover pagos ni cambiar los ya verificados", async () => {
     const first = await ok("/gv/import", admin, payload());
     expect(first.courses).toEqual({ create: 1, update: 0 });
     const course = await db.gvCourse.findFirstOrThrow({
       where: { externalId: importKey + "-c1" },
     });
     const transfer = await db.gvPayment.findFirstOrThrow({
-      where: { externalId: importKey + "-e1#1" },
+      where: { externalId: importKey + "-p1" },
     });
     expect(transfer.verified).toBe(false);
-    await ok("/gv/payments/" + transfer.id + "/review", gv, { verified: true });
+    await ok("/gv/payments/" + transfer.id + "/review", manager, {
+      verified: true,
+    });
     const changed = payload();
     changed.enrollments[0].note = "nota nueva";
+    // Reordenar los pagos no cambia nada: la identidad es la clave.
+    changed.enrollments[0].payments.reverse();
     const second = await ok("/gv/import", admin, changed);
     expect(second).toMatchObject({
       courses: { create: 0, update: 1 },
-      enrollments: { create: 0, update: 1 },
+      enrollments: { create: 0, update: 2 },
       payments: { create: 0, update: 2 },
     });
     const rows = await db.gvEnrollment.findMany({
-      where: { courseId: course.id },
+      where: { courseId: course.id, externalId: importKey + "-e1" },
       include: { payments: true },
     });
     expect(rows).toHaveLength(1);
     expect(rows[0].note).toBe("nota nueva");
     expect(rows[0].payments).toHaveLength(2);
     expect(rows[0].payments.every((p: any) => p.verified)).toBe(true);
-    const detail = (await ok("/gv/courses/" + course.id, gv)).enrollments[0];
+    const detail = (await ok("/gv/courses/" + course.id, gv)).enrollments.find(
+      (e: any) => e.clientName === "QA Importada " + suffix,
+    );
     expect(detail).toMatchObject({ paid: "7500.50", pending: "10499.50" });
+    // GV-12: el pago verificado no cambia de monto al reimportar.
+    const bigger = payload();
+    bigger.enrollments[0].payments[0].amount = 6000;
+    const e12 = await ok("/gv/import?dryRun=1", admin, bigger);
+    expect(e12.errors.join(" ")).toMatch(/ya fue verificado/);
+    // GV-11: la misma clave de pago bajo otra clienta.
+    const moved = payload();
+    moved.enrollments[1].payments = [moved.enrollments[0].payments[1]];
+    moved.enrollments[0].payments = [moved.enrollments[0].payments[0]];
+    const e11 = await ok("/gv/import?dryRun=1", admin, moved);
+    expect(e11.errors.join(" ")).toMatch(/ya es de otra clienta/);
     // Citas e interesadas las valida gv-citas.ts (gv-citas-api.test.ts).
     const invalid = await ok("/gv/import?dryRun=1", admin, {
       ...payload(),
@@ -421,15 +567,13 @@ describe("GV · importación", () => {
 });
 
 describe("GV · reportes", () => {
-  it("ingresos, pendientes y ocupación sólo para quien tiene gv:reports", async () => {
+  it("ingresos verificados, pendientes y ocupación sólo con gv:reports", async () => {
     expect((await request("/gv/reports", seller)).status).toBe(403);
     expect(
       (await request("/gv/reports?from=2026-10-20&to=2026-10-01", gv)).status,
     ).toBe(400);
     const r = await ok("/gv/reports?from=2026-10-01&to=2026-10-15", gv);
-    const bank = r.income.byBank.find(
-      (b: any) => b.key === "Popular Grupo Génesis ···9797",
-    );
+    const bank = r.income.byBank.find((b: any) => b.key === BANK);
     expect(Number(bank.total)).toBeGreaterThanOrEqual(5000);
     expect(r.income.byMethod.map((m: any) => m.key)).toEqual(
       expect.arrayContaining(["efectivo", "transferencia"]),
@@ -437,10 +581,16 @@ describe("GV · reportes", () => {
     const client = r.pendingByClient.find(
       (e: any) => e.clientName === "QA Importada " + suffix,
     );
-    expect(client).toMatchObject({ paid: "7500.50", pending: "10499.50" });
+    expect(client).toMatchObject({
+      kind: "curso",
+      paid: "7500.50",
+      pending: "10499.50",
+    });
     const course = r.courses.find(
       (c: any) => c.name === "QA Brazilian " + suffix,
     );
-    expect(course).toMatchObject({ capacity: 12, enrolled: 1 });
+    expect(course).toMatchObject({ capacity: 12, enrolled: 2 });
+    // GV-03: los nombres de Macgen (gerencia) no salen en GV.
+    expect(JSON.stringify(r)).not.toContain("Andrea Gómez");
   });
 });

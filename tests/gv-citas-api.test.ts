@@ -64,6 +64,7 @@ async function login(email: string, password: string, next?: string) {
 }
 
 let admin = "",
+  manager = "",
   seller = "",
   warehouse = "",
   gv = "",
@@ -75,6 +76,7 @@ const leadIds: string[] = [];
 beforeAll(async () => {
   admin = await login("admin@fitstore.demo", DEMO);
   seller = await login("vendedor@fitstore.demo", DEMO);
+  manager = await login("gerente@fitstore.demo", DEMO);
   warehouse = await login("almacen@fitstore.demo", DEMO);
   const gvRole = (await ok("/roles", admin)).find((r: any) => r.name === "gv");
   const email = `qa-gv-citas-${suffix}@example.test`;
@@ -194,14 +196,27 @@ describe("GV · citas", () => {
     expect(transfer.verified).toBe(false);
     let detail = await ok("/gv/appointments/" + created.id, gv);
     expect(detail.payments).toHaveLength(2);
-    // 4500.35 − 1000.10 − 0.20 = 3500.05 (en flotante saldría 3500.0499…).
+    // Pagado = sólo lo verificado: 4500.35 − 1000.10 = 3500.25 exacto; la
+    // transferencia de 0.20 queda «por verificar».
     expect(detail).toMatchObject({
-      paid: "1000.30",
+      paid: "1000.10",
       unverified: "0.20",
-      pending: "3500.05",
+      pending: "3500.25",
     });
-    // La transferencia rechazada deja de contar.
-    await ok(`/gv/payments/${transfer.id}/review`, gv, {
+    // No se cobra más que el total (contando lo por verificar).
+    expect(
+      (
+        await request(`/gv/appointments/${created.id}/payments`, gv, {
+          operationId: randomUUID(),
+          date: "2026-10-20",
+          amount: 3500.06,
+          concept: "restante",
+          method: "efectivo",
+        })
+      ).status,
+    ).toBe(400);
+    // La transferencia rechazada (por gerencia) deja de contar.
+    await ok(`/gv/payments/${transfer.id}/review`, manager, {
       verified: false,
       reason: "QA: no llegó",
     });
@@ -279,14 +294,17 @@ describe("GV · importación de citas e interesadas", () => {
         ...cita({ total: 3000, tip: 0, note }),
         payments: [
           {
+            key: key + "-c1-p1",
             date: "2026-10-01",
             amount: 1500.5,
             concept: "separo",
             method: "transferencia",
             bank: "BHD",
+            reference: "QA-BHD-1",
             verified: true,
           },
           {
+            key: key + "-c1-p2",
             date: "2026-10-25",
             amount: 1000,
             concept: "restante",
@@ -370,5 +388,20 @@ describe("GV · importación de citas e interesadas", () => {
     expect(
       await db.gvLead.count({ where: { externalId: { startsWith: key } } }),
     ).toBe(2);
+  });
+});
+
+describe("GV · citas en reportes", () => {
+  it("GV-14: el reporte de pendientes incluye las citas abiertas", async () => {
+    const c = await ok("/gv/appointments", gv, {
+      ...cita({ clientName: "QA Pendiente cita " + suffix, total: 2000 }),
+      operationId: randomUUID(),
+    });
+    ids.push(c.id);
+    const r = await ok("/gv/reports", gv);
+    expect(r.pendingByClient.find((p: any) => p.id === c.id)).toMatchObject({
+      kind: "cita",
+      pending: "2000.00",
+    });
   });
 });

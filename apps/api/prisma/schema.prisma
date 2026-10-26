@@ -1093,6 +1093,9 @@ model GvEnrollment {
   attended       Boolean?
   boughtBrushSet Boolean     @default(false)
   note           String?
+  // Reembolso (estado «reembolsada»): se resta de los ingresos.
+  refundAmount   Decimal?    @db.Decimal(14, 2)
+  refundDate     DateTime?   @db.Date
   createdBy      String
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -1159,6 +1162,9 @@ model GvAppointment {
   weddingQuote Decimal? @db.Decimal(14, 2)
   venue        String?
   people       Int?
+  // Reembolso (estado «reembolsada»): se resta de los ingresos.
+  refundAmount Decimal? @db.Decimal(14, 2)
+  refundDate   DateTime? @db.Date
   externalId   String?
   createdBy    String
   createdAt    DateTime @default(now())
