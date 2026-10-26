@@ -1,12 +1,12 @@
 /* Obsidian Lumina · fase 3 · Configuración. Solo disposición; sin lógica. */
-.cfg-tabs button {
+.tabs.cfg-tabs button {
   position: relative;
   min-height: 44px;
   border-bottom: 3px solid transparent;
 }
 /* La pestaña actual se marca con subrayado y peso, no solo con color. */
-.cfg-tabs button.active,
-.cfg-tabs button[aria-pressed="true"] {
+.tabs.cfg-tabs button.active,
+.tabs.cfg-tabs button[aria-pressed="true"] {
   border-bottom-color: var(--primary);
   font-weight: 700;
 }
@@ -66,7 +66,23 @@
   overflow-wrap: anywhere;
 }
 
+/* Etiquetas de cifras: --muted-on-soft da >= 4.5:1 sobre la tarjeta en ambos temas. */
+.cfg-panel .settings-rules span {
+  color: var(--muted-on-soft);
+}
+
+@media (max-width: 780px) {
+  /* La barra fija «Mercancía» mide 68 px + área segura: nunca tapa las últimas tarjetas. */
+  .app-shell:has(.cfg-panel) .main-content.main-content {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+}
+
 @media (max-width: 640px) {
+  /* Controles >= 44 px en celular (escritorio ya cumple 40). */
+  .app-shell:not(.pos-shell) .cfg-panel :is(button, .button, input:not([type="checkbox"], [type="radio"]), select, textarea) {
+    min-height: 44px;
+  }
   .cfg-panel .settings-summary {
     flex-direction: column;
     padding: 20px 16px;
