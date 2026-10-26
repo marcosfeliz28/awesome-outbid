@@ -87,6 +87,7 @@ import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
 import { MoreMenu, TableSkeleton } from "./admin-ui";
 import "./lumina-catalogo.css";
+import "./lumina-inventario.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportModal } from "./InventoryImport";
@@ -862,15 +863,20 @@ function Kardex({ variantId }: { variantId: string }) {
     queryKey: ["movements", variantId],
     queryFn: () => api("/inventory/movements?variantId=" + variantId),
   });
+  if (query.isLoading)
+    return <TableSkeleton rows={4} cols={5} label="Cargando movimientos" />;
   return (
     <QueryState query={query}>
       <DataTable
+        cards
         rows={query.data || []}
+        empty="Este artículo aún no tiene movimientos"
+        emptyDescription="Las entradas, ventas y ajustes aparecerán aquí con su saldo."
         columns={[
           { label: "Fecha", render: (m) => dateLabel(m.createdAt) },
           { label: "Tipo", render: (m) => <Badge>{m.type}</Badge> },
-          { label: "Cantidad", render: (m) => m.qty },
-          { label: "Saldo", render: (m) => m.balanceAfter },
+          { label: "Cantidad", render: (m) => <span className="inv-num">{m.qty}</span> },
+          { label: "Saldo", render: (m) => <span className="inv-num">{m.balanceAfter}</span> },
           { label: "Motivo", render: (m) => m.reason },
         ]}
       />
@@ -937,11 +943,14 @@ export function Inventory() {
   return (
     <>
       <Heading
-        title="Cada unidad, bajo control"
-        caption="El inventario correcto hace espacio para mejores decisiones."
+        title="Inventario"
+        caption="Existencias por almacén, conteos físicos y movimientos de cada artículo."
+        eyebrow={false}
       />
-      <div className="panel">
-        <label htmlFor="warehouse-view">Almacén</label>
+      <div className="panel inv-panel">
+        <label htmlFor="warehouse-view" className="inv-field">
+          Almacén
+        </label>
         <select
           id="warehouse-view"
           value={warehouseView}
@@ -955,15 +964,17 @@ export function Inventory() {
           ))}
         </select>
         <div className="table-toolbar">
-          <div className="tabs">
+          <div className="tabs inv-tabs">
             <button
               className={mode === "stock" ? "active" : ""}
+              aria-pressed={mode === "stock"}
               onClick={() => setMode("stock")}
             >
               Stock actual
             </button>
             <button
               className={mode === "counts" ? "active" : ""}
+              aria-pressed={mode === "counts"}
               onClick={() => setMode("counts")}
             >
               Conteos físicos
@@ -975,6 +986,9 @@ export function Inventory() {
             placeholder="Buscar producto o código"
           />
         </div>
+        {query.isLoading ? (
+          <TableSkeleton rows={6} cols={5} label="Cargando inventario" />
+        ) : (
         <QueryState query={query}>
           {mode === "stock" ? (
             <DataTable
@@ -994,12 +1008,21 @@ export function Inventory() {
                     </span>
                   ),
                 },
-                { label: "Precio", render: (v) => formatMoney(v.price) },
+                {
+                  label: "Precio",
+                  render: (v) => (
+                    <span className="inv-num">{formatMoney(v.price)}</span>
+                  ),
+                },
                 ...(can(user.permissions, "profit:read")
                   ? [
                       {
                         label: "Costo",
-                        render: (v: any) => formatMoney(v.costAvg),
+                        render: (v: any) => (
+                          <span className="inv-num">
+                            {formatMoney(v.costAvg)}
+                          </span>
+                        ),
                       },
                     ]
                   : []),
@@ -1007,21 +1030,28 @@ export function Inventory() {
                   label: selectedWarehouse
                     ? "En " + selectedWarehouse.name
                     : "En " + storeWarehouseName,
-                  render: (v) => (
-                    <Badge
-                      tone={
-                        selectedWarehouse && !selectedWarehouse.sellable
-                          ? "neutral"
-                          : Number(v.stock) <= Number(v.product.minStock)
-                            ? "warning"
-                            : "success"
-                      }
-                    >
-                      {visibleStock(v)}
-                    </Badge>
-                  ),
+                  render: (v) => {
+                    const neutral =
+                      selectedWarehouse && !selectedWarehouse.sellable;
+                    const low = Number(v.stock) <= Number(v.product.minStock);
+                    return (
+                      <Badge
+                        tone={neutral ? "neutral" : low ? "warning" : "success"}
+                      >
+                        <span className="inv-num">{visibleStock(v)}</span>
+                        {!neutral && low
+                          ? Number(v.stock) <= 0
+                            ? " · Agotado"
+                            : " · Bajo"
+                          : ""}
+                      </Badge>
+                    );
+                  },
                 },
-                { label: "Total", render: (v) => v.totalStock },
+                {
+                  label: "Total",
+                  render: (v) => <span className="inv-num">{v.totalStock}</span>,
+                },
                 {
                   label: `Lote en ${storeWarehouseName}`,
                   render: (v) =>
@@ -1115,6 +1145,7 @@ export function Inventory() {
             </QueryState>
           )}
         </QueryState>
+        )}
       </div>
       <WarehousesPanel rows={rows} warehouseId={warehouseView} />
       {adjust && (
