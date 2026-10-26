@@ -1,0 +1,104 @@
+/* Obsidian Lumina · fase 3 · Configuración. Solo disposición; sin lógica. */
+.cfg-tabs button {
+  position: relative;
+  min-height: 44px;
+  border-bottom: 3px solid transparent;
+}
+/* La pestaña actual se marca con subrayado y peso, no solo con color. */
+.cfg-tabs button.active,
+.cfg-tabs button[aria-current="page"] {
+  border-bottom-color: var(--primary);
+  font-weight: 700;
+}
+.cfg-tabs button:focus-visible,
+.cfg-panel button:focus-visible {
+  outline: 3px solid var(--accent-emerald);
+  outline-offset: 2px;
+}
+
+.cfg-section-head {
+  border-bottom: 1px solid var(--border);
+}
+.cfg-section-head + .settings-summary {
+  padding-top: 22px;
+}
+.cfg-panel .panel-heading p {
+  font-size: 13px;
+  color: var(--muted);
+}
+.cfg-panel .panel-heading h2 {
+  font-size: 17px;
+}
+.cfg-panel .panel-heading + .table-skeleton,
+.cfg-panel > .table-skeleton {
+  margin: 0 22px 22px;
+}
+.cfg-panel .settings-summary h3 {
+  font-size: 24px;
+  margin: 16px 0 10px;
+}
+.cfg-panel .settings-summary p,
+.cfg-panel .settings-rules span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.cfg-panel .settings-rules strong,
+.cfg-panel .cod-amount {
+  font-variant-numeric: tabular-nums;
+}
+/* Avisos dentro de la tarjeta: sembrados con los tokens de .notice. */
+.cfg-note {
+  margin: 14px 22px;
+}
+.cfg-note p {
+  margin: 0 0 8px;
+}
+.cfg-panel .roles-list {
+  display: grid;
+  gap: 10px;
+  padding: 0 22px 22px;
+}
+.cfg-panel .roles-list button {
+  min-height: 56px;
+  width: 100%;
+}
+.cfg-panel .roles-list small {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .cfg-panel .settings-summary {
+    flex-direction: column;
+    padding: 20px 16px;
+  }
+  .cfg-panel .settings-summary .button,
+  .cfg-panel .panel-heading .button {
+    width: 100%;
+    min-height: 44px;
+  }
+  .cfg-panel .panel-heading {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 18px 16px 14px;
+  }
+  .cfg-note {
+    margin: 12px 16px;
+  }
+  .cfg-panel .roles-list {
+    padding: 0 16px 16px;
+  }
+  .cfg-panel .inline-actions .text-link {
+    min-height: 44px;
+  }
+  .config-mode .button {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cfg-tabs button,
+  .cfg-panel * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

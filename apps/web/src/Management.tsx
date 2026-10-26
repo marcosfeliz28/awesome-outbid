@@ -92,6 +92,7 @@ import { MoreMenu } from "./admin-ui";
 import "./lumina-clientes.css";
 import "./lumina-reportes.css";
 import { TableSkeleton } from "./admin-ui";
+import "./lumina-config.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportModal } from "./InventoryImport";
@@ -4497,10 +4498,11 @@ export function Configuration() {
   return (
     <>
       <Heading
-        title="A la medida de tu negocio"
+        title="Configuración"
         caption="Define cómo trabaja tu tienda, desde los impuestos hasta los permisos."
+        eyebrow={false}
       />
-      <div className="tabs outside">
+      <div className="tabs outside cfg-tabs" role="group" aria-label="Secciones de configuración">
         {[
           ["business", "Negocio y reglas"],
           ["users", "Usuarios y permisos"],
@@ -4509,6 +4511,7 @@ export function Configuration() {
         ].map(([id, label]) => (
           <button
             className={tab === id ? "active" : ""}
+            aria-current={tab === id ? "page" : undefined}
             onClick={() => setTab(id)}
             key={id}
           >
@@ -4541,15 +4544,21 @@ export function Configuration() {
           ))}
         </div>
       )}
-      <div className="panel">
+      <div className={"panel cfg-panel cfg-" + tab}>
         {tab === "equipment" ? (
           <Equipment />
         ) : tab === "business" ? (
           <QueryState query={query}>
-            <div className="settings-summary">
+            <div className="panel-heading cfg-section-head">
+              <div>
+                <h2 id="cfg-negocio">Tu negocio</h2>
+                <p>Datos que salen en el ticket, impuestos y reglas de la tienda.</p>
+              </div>
+            </div>
+            <div className="settings-summary" role="group" aria-labelledby="cfg-negocio">
               <div>
                 <Badge tone="violet">República Dominicana · RD$</Badge>
-                <h2>{query.data?.name}</h2>
+                <h3>{query.data?.name}</h3>
                 <p>
                   {query.data?.address || "Configura la dirección de tu tienda"}
                 </p>
@@ -4586,20 +4595,20 @@ export function Configuration() {
             )}
             {!basic && (Number(query.data?.creditApprovalThreshold) === 0 ||
               Number(query.data?.receivableShiftLimit) === 0) && (
-              <p className="cod-hint" role="note">
+              <p className="notice warning cfg-note" role="note">
                 Algún tope de crédito está en 0: esto significa pedir siempre el
                 PIN de gerente para ese control. Si no buscas ese resultado,
                 escribe un monto alto, por ejemplo RD$ 1,000,000.
               </p>
             )}
             {!basic && query.data?.allowCreditSales !== true && (
-              <p className="cod-hint" role="note">
+              <p className="notice warning cfg-note" role="note">
                 Las ventas a crédito están deshabilitadas: todo crédito de un
                 cajero pide PIN de gerente.
               </p>
             )}
             {query.data?.usdRateHeld?.rate && (
-              <div className="cod-hint" role="alert">
+              <div className="notice danger cfg-note" role="alert">
                 <p>
                   La tasa automática del dólar saltó{" "}
                   {query.data.usdRateHeld.percent} %: de RD${" "}
@@ -4628,7 +4637,7 @@ export function Configuration() {
               </div>
             )}
             {Number(query.data?.usdRateLowMargin?.count) > 0 && (
-              <p className="cod-hint" role="alert">
+              <p className="notice warning cfg-note" role="alert">
                 Atención: {query.data.usdRateLowMargin.count} precio
                 {Number(query.data.usdRateLowMargin.count) === 1
                   ? " queda"
@@ -4659,12 +4668,18 @@ export function Configuration() {
         ) : tab === "users" ? (
           <>
             <div className="panel-heading">
-              <h2>Equipo de tu tienda</h2>
+              <div>
+                <h2>Equipo de tu tienda</h2>
+                <p>Quién entra al sistema, con qué rol y si su cuenta está activa.</p>
+              </div>
               <Button onClick={() => setNewUser(true)}>
                 <Plus size={17} />
                 Crear usuario
               </Button>
             </div>
+            {users.isPending && users.fetchStatus !== "paused" ? (
+              <TableSkeleton rows={4} cols={4} label="Cargando usuarios" />
+            ) : (
             <QueryState query={users}>
               <DataTable
                 rows={users.data || []}
@@ -4725,8 +4740,12 @@ export function Configuration() {
                 ]}
               />
             </QueryState>
+            )}
             <div className="panel-heading">
-              <h2>Permisos por rol</h2>
+              <div>
+                <h2>Permisos por rol</h2>
+                <p>Toca un rol para ver y editar lo que puede hacer.</p>
+              </div>
             </div>
             <div className="roles-list">
               {roles.data?.map((r: any) => (
@@ -4739,6 +4758,16 @@ export function Configuration() {
             </div>
           </>
         ) : (
+          <>
+            <div className="panel-heading">
+              <div>
+                <h2>Bitácora</h2>
+                <p>Registro de quién hizo qué y cuándo, incluido el acceso de soporte.</p>
+              </div>
+            </div>
+            {logs.isPending && logs.fetchStatus !== "paused" ? (
+              <TableSkeleton rows={6} cols={5} label="Cargando bitácora" />
+            ) : (
           <QueryState query={logs}>
             <DataTable
               rows={logs.data || []}
@@ -4780,6 +4809,8 @@ export function Configuration() {
               ]}
             />
           </QueryState>
+            )}
+          </>
         )}
       </div>
       {editing && (
