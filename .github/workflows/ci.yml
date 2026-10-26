@@ -96,10 +96,10 @@ jobs:
       - name: Construir la imagen web (Render, sin publicar)
         run: docker build -f deploy/render/Dockerfile.web -t nexora-pos-web:ci .
       - name: Arranque como en Render y comprobación posterior al despliegue
-        if: github.ref_name != 'producto-nexora' && github.head_ref != 'producto-nexora' && github.ref_name != 'nexora-chatgpt-pc-producto' && github.head_ref != 'nexora-chatgpt-pc-producto'
+        if: github.ref_name != 'producto-nexora' && github.head_ref != 'producto-nexora' && github.ref_name != 'nexora-chatgpt-pc-producto' && github.head_ref != 'nexora-chatgpt-pc-producto' && github.ref_name != 'chatgpt-pc/cola3-26oct' && github.head_ref != 'chatgpt-pc/cola3-26oct'
         run: bash deploy/render/ci-smoke.sh
       - name: Arranque aislado del producto multiempresa
-        if: github.ref_name == 'producto-nexora' || github.head_ref == 'producto-nexora' || github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto'
+        if: github.ref_name == 'producto-nexora' || github.head_ref == 'producto-nexora' || github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto' || github.ref_name == 'chatgpt-pc/cola3-26oct' || github.head_ref == 'chatgpt-pc/cola3-26oct'
         run: bash scripts/producto-ci-smoke.sh
   windows-installer:
     runs-on: windows-latest
@@ -132,15 +132,15 @@ jobs:
       - run: pnpm exec vitest run tests/portabilidad.test.ts --reporter=verbose
       - run: pnpm instalador:validar
       - name: Compilar instalador aislado Nexora POS Local
-        if: github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto'
+        if: github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto' || github.ref_name == 'chatgpt-pc/cola3-26oct' || github.head_ref == 'chatgpt-pc/cola3-26oct'
         env:
           NEXORA_LICENSE_PUBLIC_KEY: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA2c54TsrWgQdX58TVC3FOxHEEmoX3LZhHw9IghUUWhzw=\n-----END PUBLIC KEY-----\n'
         run: pnpm instalador:producto-local
       - name: Compilar escritorio Tauri del producto (origen ficticio, sin publicar)
-        if: github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto'
+        if: github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto' || github.ref_name == 'chatgpt-pc/cola3-26oct' || github.head_ref == 'chatgpt-pc/cola3-26oct'
         env:
           NEXORA_PRODUCT_URL: https://pos.example.invalid
         run: pnpm producto:tauri:build
       - name: Probar codificación térmica nativa
-        if: github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto'
+        if: github.ref_name == 'nexora-chatgpt-pc-producto' || github.head_ref == 'nexora-chatgpt-pc-producto' || github.ref_name == 'chatgpt-pc/cola3-26oct' || github.head_ref == 'chatgpt-pc/cola3-26oct'
         run: cargo test --manifest-path apps/web/src-tauri/Cargo.toml

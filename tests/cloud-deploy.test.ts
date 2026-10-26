@@ -1314,6 +1314,8 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
     expect(job).toContain("bash deploy/render/ci-smoke.sh");
     expect(job).toContain("github.ref_name == 'nexora-chatgpt-pc-producto'");
     expect(job).toContain("github.head_ref == 'nexora-chatgpt-pc-producto'");
+    expect(job).toContain("github.ref_name == 'chatgpt-pc/cola3-26oct'");
+    expect(job).toContain("github.head_ref == 'chatgpt-pc/cola3-26oct'");
     expect(job).toContain("bash scripts/producto-ci-smoke.sh");
     expect(ci).not.toMatch(/docker (push|login)|--push/);
     const smoke = read("deploy/render/ci-smoke.sh");
