@@ -304,7 +304,8 @@ describe("Reportes 40 · Dinero", () => {
       (r) => r["Cuenta / terminal"] === "QA banco " + suffix,
     );
     expect(bank).toHaveLength(1);
-    expect(bank[0].Forma).toBe("Transferencia");
+    // Sin verificar todavía: va aparte, no como dinero recibido (25-oct).
+    expect(bank[0].Forma).toBe("Transferencia por verificar");
     expect(bank[0].Monto).toBe(100);
     expect(bank[0].Cobros).toBe(1);
     expect(

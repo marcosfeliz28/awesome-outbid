@@ -290,7 +290,11 @@ it("cada venta toma su NCF B01/B02 consecutivo, único, por empresa y sólo con 
     });
     expect(await next(b02)).toBe("5");
 
-    await settings(tenantA, { ncfMode: "sequences", allowOfflineSales: true });
+    await settings(tenantA, {
+      ncfMode: "sequences",
+      allowOfflineSales: true,
+      legalId: "131-00000-1",
+    });
     // B02 por defecto, consecutivo desde el próximo declarado.
     const first = await sell(a);
     expect(first.status, JSON.stringify(first.body)).toBe(201);
@@ -377,7 +381,7 @@ it("cada venta toma su NCF B01/B02 consecutivo, único, por empresa y sólo con 
     expect(await next(b02)).toBe("101");
 
     // Aislamiento: la empresa B nunca toma números de A.
-    await settings(tenantB, { ncfMode: "sequences" });
+    await settings(tenantB, { ncfMode: "sequences", legalId: "131000002" });
     await sql.query(`UPDATE "NcfSequence" SET "nextNumber"=50 WHERE id=$1`, [
       b02,
     ]);

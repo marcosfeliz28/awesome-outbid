@@ -6186,7 +6186,7 @@ describe("Ronda 9 · revisión · dinero", () => {
       viewer,
     );
     const returns = rows.filter(
-      (r: any) => r.Evento === "return" && r.Referencia === sale.id,
+      (r: any) => r.Evento === "Devolución" && r.Referencia === sale.number,
     );
     expect(returns.length).toBe(1);
     expect(returns[0].Detalle).toMatch(/NC-/);
@@ -6221,7 +6221,21 @@ describe("Ronda 9 · revisión · dinero", () => {
     const rowsFor = async (as: string) =>
       (await ok(endpoint, undefined, as)).rows as any[];
     const amount = (rows: any[], method: string, column: string) =>
-      Number(rows.find((row) => row.Método === method)?.[column] ?? 0);
+      Number(
+        rows.find(
+          (row) =>
+            row.Método ===
+            (
+              {
+                cash: "Efectivo",
+                card: "Tarjeta",
+                transfer: "Transferencia",
+                credit: "Crédito",
+                cod: "Contraentrega",
+              } as Record<string, string>
+            )[method],
+        )?.[column] ?? 0,
+      );
     const adminBefore = await rowsFor(token);
     const variant = await product("reporte ciego", 731, 200, 2);
     await ok("/sales", {
@@ -6260,7 +6274,19 @@ describe("Ronda 9 · revisión · dinero", () => {
           `/reports/by-payment?from=${today}&to=${today}`,
         );
         const at = (method: string, column: string) =>
-          rows.find((r: any) => r.Método === method)?.[column] ?? 0;
+          rows.find(
+            (r: any) =>
+              r.Método ===
+              (
+                {
+                  cash: "Efectivo",
+                  card: "Tarjeta",
+                  transfer: "Transferencia",
+                  credit: "Crédito",
+                  cod: "Contraentrega",
+                } as Record<string, string>
+              )[method],
+          )?.[column] ?? 0;
         const summary = await dashboard();
         return {
           creditSales: at("credit", "Ventas"),
@@ -8190,16 +8216,20 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       Desc: 50,
       Precio: 2500,
     });
+    // Neto de devoluciones: la venta j (500, sin ITBIS) se devolvió en s1.
+    expect(
+      report.rows.find((r: any) => r.Descripción === "DEVOLUCIONES"),
+    ).toMatchObject({ Cant: -1, ITBIS: 0, Precio: -500 });
     expect(report.totals).toEqual({
-      Cant: 8,
+      Cant: 7,
       ITBIS: 540,
       Desc: 50,
-      Precio: 6040,
+      Precio: 5540,
     });
     expect(report.rows.at(-1)).toMatchObject({
       Descripción: "TOTAL",
-      Cant: 8,
-      Precio: 6040,
+      Cant: 7,
+      Precio: 5540,
     });
     expect(report.title).toBe("REPORTE DE LA VENTA DIARIA DE USUARIO");
     expect(report.note).toBe(
@@ -8321,14 +8351,16 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       amount: 1000,
     });
     expect(report.byInvoice).toEqual({ invoices: 7, units: 8, amount: 5990 });
-    expect(report.total).toBe(5990);
+    // Neto: menos la devolución de 500 registrada en la caja.
+    expect(report.returns).toBe(500);
+    expect(report.total).toBe(5490);
     // Filas planas para Excel/PDF: cada grupo cierra con su subtotal.
     expect(
       report.rows.filter((r: any) => r.Descripción === "Sub-Total por Pago"),
     ).toHaveLength(4);
     expect(report.rows.at(-1)).toMatchObject({
       Descripción: "TOTAL",
-      T_Venta: 5990,
+      T_Venta: 5490,
     });
     const xlsx = await call(
       "/reports/venta-por-forma-pago?format=xlsx&cashSessionId=" + s1.id,
@@ -8342,7 +8374,7 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       undefined,
       cashier.token,
     );
-    expect(own.total).toBe(5990);
+    expect(own.total).toBe(5490);
     const ownDaily = await must(
       "/cash-sessions/" + s1.id + "/reports/venta-diaria-usuario",
       undefined,
@@ -12151,7 +12183,7 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
     expect(total(byPayment.rows, "Ventas")).toBe(500);
     expect(
       Object.fromEntries(byPayment.rows.map((r: any) => [r.Método, r.Ventas])),
-    ).toEqual({ cash: 100, card: 300, transfer: 100 });
+    ).toEqual({ Efectivo: 100, Tarjeta: 300, Transferencia: 100 });
     const sales = await ok("/reports/sales" + range, undefined, ownerToken);
     expect(total(sales.rows, "Total") - total(sales.rows, "Devoluciones")).toBe(
       500,

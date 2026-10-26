@@ -6446,3 +6446,20 @@ td strong {
 .wizard-nav .button { margin: 0; }
 .config-mode { display: inline-flex; gap: .4rem; margin: 0 0 1rem; }
 .config-mode .active { background: var(--primary); color: #fff; }
+
+/* Reportes a 390 px (auditoría 25-oct): la columna de margen cabe sin quedar
+   cortada a la derecha; la tabla sigue desplazable si hiciera falta. */
+@media (max-width: 560px) {
+  .reports-layout .table-wrap th,
+  .reports-layout .table-wrap td {
+    padding: 10px 4px;
+    font-size: 10px;
+  }
+  .reports-layout .table-wrap th {
+    font-size: 8px;
+    letter-spacing: 0;
+  }
+  .reports-layout .table-wrap td:first-child {
+    min-width: 96px;
+  }
+}

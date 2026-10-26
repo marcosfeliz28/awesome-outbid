@@ -10,6 +10,7 @@ import {
   SUPPLIER_RETURN_SQL,
 } from "./inventory";
 import {
+  formatMoney,
   businessDate,
   expiryDays,
   BUSINESS_TIME_ZONE,
@@ -45,8 +46,9 @@ export function dateRange(query: Record<string, string>) {
     ? new Date(query.from + "T00:00:00-04:00")
     : new Date(Date.now() - 30 * 86400000);
   const to = query.to ? new Date(query.to + "T23:59:59.999-04:00") : new Date();
-  if (!Number.isFinite(+from) || !Number.isFinite(+to) || from > to)
+  if (!Number.isFinite(+from) || !Number.isFinite(+to))
     bad("Rango de fechas inválido.");
+  if (from > to) bad("La fecha inicial es posterior a la final.");
   return { gte: from, lte: to };
 }
 // Prisma guarda DateTime como «timestamp sin zona» en UTC, pero un Date de JS
@@ -72,6 +74,46 @@ const group = (
     .map(([name, amount]) => ({ name, amount }))
     .sort((a, b) => b.amount - a.amount);
 };
+
+// Formas de pago en español para los informes (no los códigos internos).
+const METHOD_NAME: Record<string, string> = {
+  cash: "Efectivo",
+  card: "Tarjeta",
+  transfer: "Transferencia",
+  credit: "Crédito",
+  cod: "Contraentrega",
+  credit_note: "Nota de crédito",
+};
+// Nombre de cada usuaria en vez de su código interno.
+async function userNames(db: any, ids: (string | null | undefined)[]) {
+  const list = [...new Set(ids.filter((id): id is string => !!id))];
+  const users: { id: string; name: string }[] = list.length
+    ? await db.user.findMany({
+        where: { id: { in: list.filter((id) => /^[0-9a-f-]{36}$/i.test(id)) } },
+        select: { id: true, name: true },
+      })
+    : [];
+  return new Map(users.map((u) => [u.id, u.name]));
+}
+// PDF: los importes como RD$ #,###.00; cantidades, conteos y % tal cual.
+const MONEY_KEY =
+  /venta|monto|total|costo|precio|itbis|^desc|utilidad|ganancia|deuda|saldo|esperado|contado|diferencia|cobros_de|pendiente|pagado|ordenado|valor|presupuesto|efectivo|tarjeta|transferencia|crédito|contraentrega|devoluc|neto/i;
+const NOT_MONEY_KEY =
+  /%|cant|unidad|factura|días|stock|ticket|clientes|^(pagados|pendientes|cobros|compras|envíos)$/i;
+// Columnas que en un reporte concreto son conteos aunque el nombre suene a dinero.
+const COUNT_COLUMNS: Record<string, RegExp> = {
+  "devoluciones-producto": /^devoluciones$/i,
+  kardex: /^saldo$/i,
+};
+export function pdfValue(key: string, value: unknown, report = "") {
+  const notMoney = COUNT_COLUMNS[report];
+  return typeof value === "number" &&
+    MONEY_KEY.test(key) &&
+    !NOT_MONEY_KEY.test(key) &&
+    !notMoney?.test(key)
+    ? formatMoney(value)
+    : String(value ?? "");
+}
 
 // PERF-informes: ningún informe carga todas las ventas del período. Con ~300
 // ventas al día, el mes en curso (lo que abre Reportes) agotaba el montón de
@@ -125,6 +167,7 @@ async function periodReturns(
       sale: {
         select: {
           sellerId: true,
+          customerId: true,
           payments: { select: { method: true, entryType: true } },
           items: {
             select: {
@@ -514,8 +557,9 @@ export class ReportsController {
         fees,
         invoices: sales._count,
         ticketAverage: averageTicket(revenue, sales._count),
-        // Con un neto anterior en cero o negativo no hay base de comparación.
-        trend: prior > 0 ? money(((revenue - prior) / prior) * 100) : 0,
+        // Con un neto anterior en cero o negativo no hay base de comparación:
+        // null («sin datos del período anterior»), nunca un «0 %» engañoso.
+        trend: prior > 0 ? money(((revenue - prior) / prior) * 100) : null,
         inventoryCost: Number(variants[0]?.cost ?? 0),
         inventoryRetail: Number(variants[0]?.retail ?? 0),
         daily: [...dailyNet]
@@ -624,7 +668,7 @@ export class ReportsController {
       // en cada factura se reparte según la mezcla de pagos de esa factura.
       canViewCashExpected(actor)
         ? this.db
-            .$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(${line}) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY i."saleId", c.name), sp AS (SELECT p."saleId", p.method, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY p."saleId", p.method), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" GROUP BY cl.name, sp.method`
+            .$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(${line}) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY i."saleId", c.name), sp AS (SELECT p."saleId", CASE WHEN p.status='rejected' THEN 'credit' ELSE p.method END AS method, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" GROUP BY cl.name, sp.method`
         : Promise.resolve(null),
     ])) as any[][];
     // Días del período hasta hoy: el promedio diario no se diluye con días
@@ -840,16 +884,19 @@ export class ReportsController {
         Monto: Number(e.amount),
         Presupuesto: Number(e.category.monthlyBudget),
       }));
-    else if (name === "cash")
-      rows = (
-        await this.db.cashSession.findMany({
-          where: { branchId: actor.branchId, openedAt: range },
-        })
-      ).map((s) => ({
+    else if (name === "cash") {
+      const sessions = await this.db.cashSession.findMany({
+        where: { branchId: actor.branchId, openedAt: range },
+      });
+      const names = await userNames(
+        this.db,
+        sessions.map((s) => s.userId),
+      );
+      rows = sessions.map((s) => ({
         Fecha: s.openedAt.toLocaleString("es-DO", {
           timeZone: BUSINESS_TIME_ZONE,
         }),
-        Usuario: s.userId,
+        Usuario: names.get(s.userId) ?? s.userId,
         Estado: s.closedAt ? "Cerrada" : "Abierta",
         Esperado: Number(s.expectedCash ?? 0),
         Contado: Number(s.countedCash ?? 0),
@@ -857,7 +904,7 @@ export class ReportsController {
         Diferencia_tarjeta: Number(s.differenceCard ?? 0),
         Diferencia_transferencia: Number(s.differenceTransfer ?? 0),
       }));
-    else if (name === "income-statement") {
+    } else if (name === "income-statement") {
       const summary: any = await this.dashboard(query, actor);
       rows = [
         { Concepto: "Ventas sin ITBIS", Monto: summary.netSales },
@@ -1059,7 +1106,7 @@ export class ReportsController {
           );
         rows = [...methods]
           .map(([method, m]) => ({
-            Método: method,
+            Método: METHOD_NAME[method] ?? method,
             Ventas: money(m.sold),
             Cobros_de_crédito: money(m.collected),
           }))
@@ -1279,6 +1326,16 @@ export class ReportsController {
         const totals = await this.db.$queryRaw<
           { customer: string | null; total: unknown }[]
         >`SELECT s."customerId" AS customer, SUM(s.total) AS total FROM "Sale" s WHERE ${filter} GROUP BY 1 ORDER BY MAX(s."createdAt") DESC`;
+        // D-05: neto de las devoluciones del período, como «by-seller».
+        const back = new Map<string, any>();
+        await forEachPeriodReturn(this.db, actor, range, returnSaleWhere, (r) =>
+          addTo(back, r.sale.customerId ?? "", r.total),
+        );
+        for (const [customer, total] of back)
+          totals.push({
+            customer: customer || null,
+            total: d(total).negated(),
+          });
         const ids = totals.flatMap((t) => (t.customer ? [t.customer] : []));
         const names = new Map(
           (ids.length
@@ -1349,7 +1406,7 @@ export class ReportsController {
       for (const row of rows)
         doc.text(
           Object.entries(row)
-            .map(([k, v]) => k + ": " + v)
+            .map(([k, v]) => k + ": " + pdfValue(k, v, name))
             .join(" | "),
         );
       doc.end();
@@ -1502,13 +1559,43 @@ function listing(
           after: true,
         },
       });
+      // Nombres y números de factura, no códigos internos (dueña, 21-oct).
+      const ids = events
+        .map((e) => e.entityId)
+        .filter((id) => /^[0-9a-f-]{36}$/i.test(id ?? "")) as string[];
+      const [names, sales, returns] = await Promise.all([
+        userNames(
+          db,
+          events.map((e) => e.userId),
+        ),
+        ids.length
+          ? db.sale.findMany({
+              where: { id: { in: ids } },
+              select: { id: true, number: true },
+            })
+          : [],
+        ids.length
+          ? db.saleReturn.findMany({
+              where: { id: { in: ids } },
+              select: { id: true, number: true },
+            })
+          : [],
+      ]);
+      const number = new Map(
+        [...sales, ...returns].map((x) => [x.id, x.number]),
+      );
+      const EVENT: Record<string, string> = {
+        void: "Anulación",
+        return: "Devolución",
+        discount_approved: "Descuento aprobado",
+      };
       return {
         last: events.at(-1)?.id,
         rows: events.map((e) => ({
           Fecha: localTime(e.createdAt),
-          Evento: e.action,
-          Usuario: e.userId,
-          Referencia: e.entityId,
+          Evento: EVENT[e.action] ?? e.action,
+          Usuario: (e.userId && names.get(e.userId)) ?? e.userId,
+          Referencia: number.get(e.entityId ?? "") ?? e.entityId,
           // Sin costos para quien no tiene profit:read: el safe() final no
           // limpia dentro de un texto (R9-dinero-8).
           Detalle: JSON.stringify(safe(e.after, actor)),
@@ -1625,7 +1712,7 @@ async function sendListing(
       for (const row of rows)
         doc.text(
           Object.entries(row)
-            .map(([k, v]) => k + ": " + v)
+            .map(([k, v]) => k + ": " + pdfValue(k, v, name))
             .join(" | "),
         );
     doc.end();
@@ -1677,6 +1764,12 @@ export async function storeReport(
   // PERF-informes: el reporte por producto se agrega en PostgreSQL; el de
   // formas de pago lista cada factura (una caja o una jornada) con tope.
   const where = Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed'${session ? Prisma.sql` AND s."cashSessionId" = ${session.id}::uuid` : Prisma.empty}${query.userId ? Prisma.sql` AND s."sellerId" = ${userId}::uuid` : Prisma.empty}${range ? Prisma.sql` AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}` : Prisma.empty}`;
+  // Neto de devoluciones en todos los reportes de la tienda (D-05): lo devuelto
+  // en esta caja o en el período (de ventas de esa vendedora) va en su propia
+  // línea «Devoluciones» y el TOTAL es neto.
+  const returnsWhere = Prisma.sql`r."branchId" = ${actor.branchId} AND s.status = 'completed'${session ? Prisma.sql` AND r."cashSessionId" = ${session.id}::uuid` : Prisma.empty}${query.userId ? Prisma.sql` AND s."sellerId" = ${userId}::uuid` : Prisma.empty}${range ? Prisma.sql` AND r."createdAt" >= ${utc(range.gte)} AND r."createdAt" <= ${utc(range.lte)}` : Prisma.empty}`;
+  const [returned] =
+    (await db.$queryRaw`SELECT COALESCE(SUM(r.total), 0) AS total, COALESCE(SUM(r."taxTotal"), 0) AS tax, COALESCE(SUM((SELECT SUM((e->>'qty')::numeric) FROM jsonb_array_elements(r.items::jsonb) e)), 0) AS qty FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId" WHERE ${returnsWhere}`) as any[];
   const sales =
     name === "venta-por-forma-pago" ? await storeSales(db, where) : [];
   const [user, terminal] = await Promise.all([
@@ -1729,6 +1822,14 @@ export async function storeReport(
         Precio: money(r.gross),
       }))
       .sort((a, b) => a.Descripción.localeCompare(b.Descripción, "es"));
+    rows.push({
+      Descripción: "DEVOLUCIONES",
+      SKU: "",
+      Cant: d(returned.qty).negated().toNumber(),
+      ITBIS: money(d(returned.tax).negated()),
+      Desc: 0,
+      Precio: money(d(returned.total).negated()),
+    });
     const totals = {
       Cant: d(rows.reduce((a, r) => a.plus(r.Cant), d(0))).toNumber(),
       ITBIS: money(rows.reduce((a, r) => a.plus(r.ITBIS), d(0))),
@@ -1746,7 +1847,7 @@ export async function storeReport(
     // Orden 18-oct: % y monto por categoría y forma de pago. Lo vendido de la
     // categoría en cada factura se reparte según la mezcla de pagos.
     const mix =
-      (await db.$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE ${where} GROUP BY i."saleId", c.name), sp AS (SELECT p."saleId", p.method, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY p."saleId", p.method), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" GROUP BY cl.name, sp.method ORDER BY cl.name, amount DESC`) as any[];
+      (await db.$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE ${where} GROUP BY i."saleId", c.name), sp AS (SELECT p."saleId", CASE WHEN p.status='rejected' THEN 'credit' ELSE p.method END AS method, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" GROUP BY cl.name, sp.method ORDER BY cl.name, amount DESC`) as any[];
     const label: Record<string, string> = {
       cash: "Efectivo",
       card: "Tarjeta",
@@ -1838,6 +1939,8 @@ export async function storeReport(
     ).toNumber(),
     amount: money(sales.reduce((a: any, s: any) => a.plus(s.total), d(0))),
   };
+  const returns = money(returned.total);
+  const net = money(d(byInvoice.amount).minus(returns));
   const rows: any[] = [];
   for (const g of groups) {
     rows.push({ COD: "", Descripción: g.label, Cant: "", T_Venta: "" });
@@ -1865,9 +1968,15 @@ export async function storeReport(
     },
     {
       COD: "",
+      Descripción: "Devoluciones",
+      Cant: d(returned.qty).negated().toNumber(),
+      T_Venta: -returns,
+    },
+    {
+      COD: "",
       Descripción: "TOTAL",
-      Cant: byInvoice.units,
-      T_Venta: byInvoice.amount,
+      Cant: d(byInvoice.units).minus(returned.qty).toNumber(),
+      T_Venta: net,
     },
   );
   return {
@@ -1875,7 +1984,8 @@ export async function storeReport(
     title: "REPORTE DE VENTA USUARIO",
     groups,
     byInvoice,
-    total: byInvoice.amount,
+    returns,
+    total: net,
     rows,
   };
 }
@@ -1973,8 +2083,8 @@ export async function sendStoreReport(
     if (rows[0]) doc.text(Object.keys(rows[0]).join("  |  ")).moveDown(0.3);
     for (const row of rows)
       doc.text(
-        Object.values(row)
-          .map((v) => String(v ?? ""))
+        Object.entries(row)
+          .map(([k, v]) => pdfValue(k, v, report.name))
           .join("  |  "),
       );
     doc.moveDown().text(report.note);

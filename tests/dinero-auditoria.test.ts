@@ -866,7 +866,21 @@ describe("Auditoría 01 · dinero", () => {
       rows.reduce((a: number, r: any) => a + Number(r.amount), 0);
     expect(total(after.payments)).toBeCloseTo(after.revenue, 2);
     const sold = (report: any, method: string) =>
-      Number(report.rows.find((r: any) => r.Método === method)?.Ventas ?? 0);
+      Number(
+        report.rows.find(
+          (r: any) =>
+            r.Método ===
+            (
+              {
+                cash: "Efectivo",
+                card: "Tarjeta",
+                transfer: "Transferencia",
+                credit: "Crédito",
+                cod: "Contraentrega",
+              } as Record<string, string>
+            )[method],
+        )?.Ventas ?? 0,
+      );
     expect(
       sold(afterReport, "transfer") - sold(midReport, "transfer"),
     ).toBeCloseTo(-700, 2);

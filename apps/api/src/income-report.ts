@@ -91,7 +91,9 @@ function scopeSql(opt: Opt, kind: "sale" | "payment" | "return") {
 }
 // Fuente única de resumen, detalle y exportación. Los pagos de crédito al
 // vender figuran como deuda, no como dinero recibido. Sólo abonos verificados
-// entran al día en que se cobraron. Devolución y reembolso tienen signo menos.
+// entran al día en que se cobraron; una transferencia sin verificar (venta o
+// abono) va aparte como «por verificar» y no suma al dinero ingresado.
+// Devolución y reembolso tienen signo menos.
 function eventsSql(actor: Actor, opt: Opt) {
   const soldDate = businessDay(Prisma.sql`s."createdAt"`);
   const paymentTime = Prisma.sql`CASE WHEN p."entryType"='sale' THEN s."createdAt" ELSE p."createdAt" END`;
@@ -113,7 +115,8 @@ function eventsSql(actor: Actor, opt: Opt) {
       AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)} ${saleScope} ${testFilter}
     UNION ALL
     SELECT p.id::text, ${paymentTime}, ${paymentDate},
-      CASE WHEN p."entryType"='installment' THEN 'collection_'||p.method
+      CASE WHEN p.status='pending_verification' THEN 'pending_transfer'
+           WHEN p."entryType"='installment' THEN 'collection_'||p.method
            WHEN p.status='rejected' THEN 'credit_generated'
            WHEN p.method IN ('cod','credit') THEN 'credit_generated'
            ELSE 'sale_'||p.method END,
@@ -124,7 +127,7 @@ function eventsSql(actor: Actor, opt: Opt) {
     WHERE s."branchId"=${actor.branchId} AND s.status='completed'
       AND p."entryType" IN ('sale','installment')
       AND p.method IN ('cash','card','transfer','cod','credit')
-      AND (p."entryType"='sale' OR p.status='ok')
+      AND (p."entryType"='sale' OR p.status IN ('ok','pending_verification'))
       AND ${paymentTime}>=${utc(opt.start)} AND ${paymentTime}<=${utc(opt.end)} ${paymentScope} ${testFilter}
     UNION ALL
     SELECT r.id::text, r."createdAt", ${returnDate}, 'return_total',
@@ -149,6 +152,7 @@ const fields = [
   "cash",
   "card",
   "transfer",
+  "pendingTransfer",
   "creditGenerated",
   "collectionCash",
   "collectionCard",
@@ -162,6 +166,7 @@ const labels = [
   "Efectivo",
   "Tarjeta",
   "Transferencia",
+  "Transferencia por verificar",
   "Crédito generado",
   "Cobro crédito efectivo",
   "Cobro crédito tarjeta",
@@ -274,7 +279,8 @@ export class IncomeReportController {
     const report = {
       cash: row.cash + row.collectionCash,
       card: row.card + row.collectionCard,
-      transfer: row.transfer + row.collectionTransfer,
+      // El esperado de la caja incluye las transferencias por verificar.
+      transfer: row.transfer + row.pendingTransfer + row.collectionTransfer,
     };
     const difference = {
       cash: Number((report.cash - expected.cash).toFixed(2)),
@@ -321,6 +327,7 @@ export class IncomeReportController {
         cash: 0,
         card: 0,
         transfer: 0,
+        pendingTransfer: 0,
         creditGenerated: 0,
         collectionCash: 0,
         collectionCard: 0,
@@ -500,7 +507,7 @@ export class IncomeReportController {
       doc
         .font("Helvetica")
         .text(
-          `Venta: efectivo ${amount(row.cash)} · tarjeta ${amount(row.card)} · transferencia ${amount(row.transfer)} · crédito ${amount(row.creditGenerated)}`,
+          `Venta: efectivo ${amount(row.cash)} · tarjeta ${amount(row.card)} · transferencia ${amount(row.transfer)} · transferencia por verificar ${amount(row.pendingTransfer)} · crédito ${amount(row.creditGenerated)}`,
         );
       doc
         .text(

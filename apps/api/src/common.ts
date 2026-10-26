@@ -13,7 +13,7 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
 import { databaseUrlWithPool } from "./database-pool";
 import { can, moneyAmount, permissions, stockQty, z, ZodError } from "@fitstore/shared";
 import { randomUUID } from "node:crypto";
@@ -982,3 +982,13 @@ export async function editableSale(tx: any, saleId: string, actor: Actor) {
     bad("Solo se puede editar una factura hasta 7 días después de la venta.");
   return sale;
 }
+
+// Pago que deja una cuenta por cobrar: crédito, contraentrega o una
+// transferencia de venta rechazada (M-3, pasó a deuda del cliente).
+export const RECEIVABLE_PAYMENT: Prisma.PaymentWhereInput = {
+  entryType: "sale",
+  OR: [
+    { method: { in: ["credit", "cod"] } },
+    { method: "transfer", status: "rejected" },
+  ],
+};

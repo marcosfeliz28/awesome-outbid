@@ -395,8 +395,24 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   const expectedUsd = money(
     usdSales.reduce((a: any, p: any) => a.plus(p.amountUsd), d(0)),
   );
-  // Abonos de la caja: recibos CxC y cobros de contraentrega van aparte.
+  // Lo que quedó a crédito al vender: método crédito, contraentrega marcada
+  // «Crédito» en la caja (la caja vende ambas con `cod`) y transferencia
+  // rechazada que pasó a deuda. Antes sólo contaba el método `credit`: 0.
+  const creditSold = sumOf(
+    completed.flatMap((s: any) =>
+      s.payments.filter(
+        (p: any) =>
+          p.entryType === "sale" &&
+          (p.method === "credit" ||
+            (p.method === "cod" && s.receivableKind === "credit") ||
+            (p.method === "transfer" && p.status === "rejected")),
+      ),
+    ),
+  );
+  // Abonos de la caja: recibos CxC y cobros de contraentrega van aparte. Un
+  // crédito vendido con `cod` y etiqueta «Crédito» es recibo CxC.
   const isCod = (p: any) =>
+    p.sale.receivableKind !== "credit" &&
     p.sale.payments.some(
       (x: any) => x.method === "cod" && x.entryType === "sale",
     );
@@ -498,7 +514,7 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
     completed.reduce((a: any, s: any) => a.plus(s.discountTotal), d(0)),
   );
   const values: [string, string, number | null][] = [
-    ["credit", "Crédito RD$", salesByMethod.credit],
+    ["credit", "Crédito RD$", creditSold],
     ["cash", "Efectivo RD$", counted],
     ["cards", "Tarjetas", salesByMethod.card],
     ["transfers", "Transferencia", salesByMethod.transfer],
@@ -625,10 +641,11 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
       sold: salesByMethod.cod,
       collected: codCollected,
       // Estadística (dueña, 19-oct): cobrado según la etiqueta de la venta.
-      // Ya está sumado en `collected`; esto sólo lo reparte.
+      // Los de «Crédito» ya están en Recibos CxC; los de «Contraentrega», en
+      // `collected`. Esto sólo lo reparte.
       collectedByKind: {
         credit: sumOf(
-          codRows.filter(
+          receiptRows.filter(
             (p: any) => p.status === "ok" && p.sale.receivableKind === "credit",
           ),
         ),

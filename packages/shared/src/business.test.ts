@@ -3,6 +3,7 @@ import {
   businessDate,
   expired,
   expiryDays,
+  lastDaysStart,
   weekStart,
   weightedCost,
   derivedStockQty,
@@ -156,6 +157,20 @@ describe("Fechas dominicanas y descuentos por monto", () => {
     expect(businessDate("2026-09-01T02:00:00Z")).toBe("2026-08-31");
     expect(weekStart(new Date("2026-09-01T02:00:00Z"))).toBe("2026-08-31");
     expect(weekStart(new Date("2026-08-31T02:00:00Z"))).toBe("2026-08-24");
+  });
+  it("«Últimos 7 días» son hoy y los 6 anteriores en Santo Domingo, no desde el lunes", () => {
+    // Domingo 25-oct-2026 10:00 RD: del 19 al 25, no del lunes 19… ni del 26.
+    expect(lastDaysStart(7, new Date("2026-10-25T14:00:00Z"))).toBe(
+      "2026-10-19",
+    );
+    // Miércoles 28-oct: del 22 al 28 (weekStart daría el lunes 26).
+    expect(lastDaysStart(7, new Date("2026-10-28T14:00:00Z"))).toBe(
+      "2026-10-22",
+    );
+    // 23:30 del 28 en RD ya es 29 en UTC: sigue contando desde el 22.
+    expect(lastDaysStart(7, new Date("2026-10-29T03:30:00Z"))).toBe(
+      "2026-10-22",
+    );
   });
   it("vencimiento sigue vigente durante todo su día local", () => {
     expect(
