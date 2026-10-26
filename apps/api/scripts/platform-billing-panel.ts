@@ -68,13 +68,23 @@ async function pendingRequests(db: PrismaClient) {
   }, { isolationLevel: "ReadCommitted" });
   // El comprobante nuevo vive fuera de PostgreSQL. No mantengas una transacción
   // operacional abierta mientras el almacén de objetos responde.
-  return Promise.all(rows.map(async ({ tenantId, proofObjectKey, hasLegacyProof, legacyProofSha256, ...row }) => ({
-    ...row,
-    hasProof: hasLegacyProof || proofObjectKey !== null,
-    proofSha256: proofObjectKey
-      ? createHash("sha256").update(await tenantObjectStore().get(tenantId, proofObjectKey)).digest("hex")
-      : legacyProofSha256,
-  })));
+  // PLA-07: uno a la vez (una imagen de 2 MB en memoria) y un objeto ausente
+  // marca solo su fila, sin derribar la lista.
+  const out = [];
+  for (const { tenantId, proofObjectKey, hasLegacyProof, legacyProofSha256, ...row } of rows) {
+    let proofSha256 = legacyProofSha256;
+    let proofUnavailable = false;
+    if (proofObjectKey) {
+      try {
+        proofSha256 = createHash("sha256").update(await tenantObjectStore().get(tenantId, proofObjectKey)).digest("hex");
+      } catch {
+        proofSha256 = null;
+        proofUnavailable = true;
+      }
+    }
+    out.push({ ...row, hasProof: hasLegacyProof || proofObjectKey !== null, proofSha256, proofUnavailable });
+  }
+  return out;
 }
 
 async function proofForReview(db: PrismaClient, id: string) {
@@ -114,7 +124,7 @@ async function load(){root.replaceChildren();status.textContent='Cargando…';tr
  const response=await fetch('/api/requests',{cache:'no-store'});if(!response.ok)throw new Error('No se pudieron consultar las solicitudes');
  const {requests}=await response.json();status.textContent=requests.length+' solicitudes pendientes';
  for(const row of requests){const card=el('section');card.className='card';card.append(el('h2',row.tenantName+' · '+row.plan),el('p','RD$ '+row.amount+' · '+row.provider+' · '+row.id));
-  const hash=el('p','SHA-256 de imagen: '+(row.proofSha256||'Sin comprobante'));hash.className='muted';card.append(hash);
+  const hash=el('p','SHA-256 de imagen: '+(row.proofSha256||(row.proofUnavailable?'Comprobante no disponible en el almacén':'Sin comprobante')));hash.className='muted';card.append(hash);
   if(row.hasProof){const img=el('img');img.alt='Comprobante presentado por '+row.tenantName;img.src='/api/requests/'+row.id+'/proof';card.append(img)}
   const reason=el('textarea');reason.placeholder='Motivo y referencia bancaria comprobada';reason.setAttribute('aria-label','Motivo de revisión');card.append(reason);
   const term=el('p','La vigencia se calcula sola: '+row.amount+' RD$ en mensualidades del plan, desde lo que quede pagado.');term.className='muted';card.append(term);

@@ -13,6 +13,7 @@ import { createAppModule } from "../apps/api/src/app";
 import { ApiExceptionFilter } from "../apps/api/src/common";
 import { reviewProductBilling } from "../apps/api/scripts/review-product-billing";
 import { createPlatformBillingPanel } from "../apps/api/scripts/platform-billing-panel";
+import { tenantObjectStore } from "../apps/api/src/tenant-object-store";
 
 const root = resolve(import.meta.dirname, "..");
 const apiRequire = createRequire(join(root, "apps/api/package.json"));
@@ -256,6 +257,17 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     }
     expect((await pendingReview).error).toMatchObject({ message: expect.stringContaining("Libera cupos") });
     expect((await operatorDb!.tenant.findUnique({ where: { slug: "negocio-uno" } }))?.plan).toBe("pro");
+    // PLA-07: un comprobante ausente en el almacén no derriba la lista de conciliación.
+    // Empresa B: A ya agotó su cupo de solicitudes por minuto.
+    const lost = await http.post("/api/billing/requests").set("Authorization", ownerB).send({ plan: "pro", provider: "bank_transfer" });
+    expect(lost.status, JSON.stringify(lost.body)).toBe(201);
+    expect((await http.post(`/api/billing/requests/${lost.body.id}/proof`).set("Authorization", ownerB).attach("file", png, "comprobante.png")).status).toBe(201);
+    const [lostRow] = await operatorDb!.$queryRawUnsafe<Array<{ proofObjectKey: string }>>('SELECT "proofObjectKey" FROM "BillingRequest" WHERE id=$1::uuid', lost.body.id);
+    await tenantObjectStore().delete(other!.id, lostRow.proofObjectKey);
+    const afterLoss = await panel.get("/api/requests").set("Host", "127.0.0.1").set("Authorization", credential);
+    expect(afterLoss.status, JSON.stringify(afterLoss.body)).toBe(200);
+    expect(afterLoss.body.requests).toContainEqual(expect.objectContaining({ id: lost.body.id, proofSha256: null, proofUnavailable: true }));
+    expect(afterLoss.body.requests).toContainEqual(expect.objectContaining({ id: downgrade.body.id, proofSha256: digest, proofUnavailable: false }));
   } finally {
     await app?.close().catch(() => undefined);
     await operatorDb?.$disconnect().catch(() => undefined);
