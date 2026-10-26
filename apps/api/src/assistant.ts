@@ -541,7 +541,8 @@ async function fetchJson(get: AssistantGet, path: string): Promise<Fetched> {
   try {
     return { ok: true, data: JSON.parse(response.body) };
   } catch {
-    return { ok: true, data: response.body };
+    // IA-02: un cuerpo cortado o inválido nunca va al modelo sin pasar por `redact`.
+    return { ok: false, text: "La respuesta de " + path.split("?")[0] + " no es válida." };
   }
 }
 const ROUTES: Partial<Record<ToolName, (args: any) => string[]>> = {
@@ -1233,11 +1234,11 @@ export async function askAssistant(
           signal: AbortSignal.timeout(8000),
         },
       );
-      // Las herramientas resumen el JSON; cortarlo antes lo volvería inválido (catálogos grandes).
-      return {
-        status: res.status,
-        body: (await res.text()).slice(0, 8_000_000),
-      };
+      // Las herramientas resumen el JSON; uno más grande se rechaza entero, nunca se corta (IA-02).
+      const text = await res.text();
+      return text.length > 8_000_000
+        ? { status: 502, body: "" }
+        : { status: res.status, body: text };
     });
   const now = deps.now?.() ?? new Date();
   const ctx: ToolContext = {
