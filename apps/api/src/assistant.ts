@@ -1247,16 +1247,21 @@ export async function askAssistant(
   };
   const tools = assistantTools(!!ctx.canSeeCost);
   const system = assistantSystemFor({ company: actor.company, now });
-  const context = parsed.data.messages.map((entry) => ({
-    role: entry.role,
-    content: entry.content,
-  }));
-  const last = context.length - 1;
+  // IA-03: las respuestas «assistant» las manda el cliente y podrían ser falsas;
+  // solo pasan las preguntas anteriores de la persona, marcadas como datos.
+  const asked = parsed.data.messages.filter((entry) => entry.role === "user");
+  const earlier = asked.slice(0, -1).map((entry) => "- " + entry.content);
   // CPC-6 punto 9: el nombre lo edita un administrador; va marcado como dato.
-  context[last] = {
-    role: "user",
-    content: `Fecha: ${ctx.today}. Usuario: ${untrusted(actor.name.slice(0, 80))}\nPregunta: ${context[last].content}`,
-  };
+  const context: any[] = [
+    {
+      role: "user",
+      content:
+        (earlier.length
+          ? `Preguntas anteriores de esta conversación (sin respuestas): ${untrusted(earlier.join("\n"))}\n`
+          : "") +
+        `Fecha: ${ctx.today}. Usuario: ${untrusted(actor.name.slice(0, 80))}\nPregunta: ${asked.at(-1)!.content}`,
+    },
+  ];
   const usage = { input: 0, output: 0 };
   let sawBusinessData = false;
   let proposal: VoidProposal | undefined;
