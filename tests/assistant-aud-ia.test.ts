@@ -42,6 +42,50 @@ describe("AUD-NUEVO · IA", () => {
     expect(model.mock.calls[0][0].every((m: any) => m.role === "user")).toBe(true);
   });
 
+  const greedy = (tokens: number) =>
+    vi.fn().mockImplementation(async () => ({
+      stop_reason: "tool_use",
+      content: Array.from({ length: 10 }, (_, i) => ({
+        type: "tool_use", id: "t" + Math.random() + i, name: "existencias", input: {},
+      })),
+      usage: { input_tokens: tokens, output_tokens: 10 },
+    }));
+  const bigStock = JSON.stringify(
+    Array.from({ length: 400 }, (_, i) => ({ sku: "S" + i, name: "Producto largo " + "x".repeat(60), stock: i, price: 100 })),
+  );
+
+  it("IA-01: una pregunta tiene tope total de herramientas y datos", async () => {
+    const model = greedy(10);
+    const get = vi.fn().mockResolvedValue({ status: 200, body: bigStock });
+    await askAssistant(
+      { messages: [{ role: "user", content: "Dame todo" }] },
+      "Bearer prueba",
+      { name: "Cajera" },
+      { model, get },
+    );
+    expect(get.mock.calls.length).toBeLessThanOrEqual(12);
+    const sent = model.mock.calls.at(-1)![0]
+      .filter((m: any) => Array.isArray(m.content))
+      .flatMap((m: any) => m.content)
+      .filter((c: any) => c.type === "tool_result")
+      .reduce((total: number, c: any) => total + c.content.length, 0);
+    expect(sent).toBeLessThan(110_000);
+  });
+
+  it("IA-01: una pregunta tiene tope total de tokens", async () => {
+    const model = greedy(60_000);
+    const get = vi.fn().mockResolvedValue({ status: 200, body: "[]" });
+    const result = await askAssistant(
+      { messages: [{ role: "user", content: "Dame todo" }] },
+      "Bearer prueba",
+      { name: "Cajera" },
+      { model, get },
+    );
+    expect(model).toHaveBeenCalledTimes(2);
+    expect(result.answer).toMatch(/límite de datos/);
+    expect(result.incompleta).toBeUndefined();
+  });
+
   it("IA-06: el consumo de vueltas anteriores sobrevive a un fallo posterior", async () => {
     const model = vi
       .fn()

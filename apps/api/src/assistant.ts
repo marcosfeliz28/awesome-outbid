@@ -1187,6 +1187,9 @@ export type AssistantActor = {
 export const actorSeesCost = (actor: AssistantActor) =>
   actor.role !== "seller" && can(actor.permissions ?? [], "profit:read");
 
+// IA-01: tope de UNA pregunta en total (no por vuelta): herramientas, caracteres de datos y tokens.
+export const QUESTION_BUDGET = { tools: 12, chars: 80_000, tokens: 100_000 };
+
 export async function askAssistant(
   body: unknown,
   auth: string | undefined,
@@ -1273,7 +1276,17 @@ export async function askAssistant(
       .map((item: any) => String(item.text ?? ""))
       .join("\n")
       .trim();
+  let toolsUsed = 0,
+    dataChars = 0;
   for (let round = 0; round < 6; round++) {
+    // Se cobra: el costo ya ocurrió (no es un fallo del proveedor).
+    if (usage.input + usage.output >= QUESTION_BUDGET.tokens)
+      return {
+        answer:
+          "La consulta llegó al límite de datos de una pregunta. Haz una pregunta más concreta.",
+        usage,
+        remaining: null,
+      };
     let response: any;
     try {
       response = await model(context, tools, system);
@@ -1322,14 +1335,23 @@ export async function askAssistant(
     const results = [];
     for (const [index, call] of calls.entries()) {
       // Cada tool_use necesita su resultado o el proveedor responde 400 (CPC-6 punto 9).
-      if (index >= 10) {
+      if (
+        index >= 10 ||
+        toolsUsed >= QUESTION_BUDGET.tools ||
+        dataChars >= QUESTION_BUDGET.chars
+      ) {
         results.push({
           type: "tool_result",
           tool_use_id: call.id,
-          content: untrusted("Límite de 10 herramientas por paso."),
+          content: untrusted(
+            index >= 10
+              ? "Límite de 10 herramientas por paso."
+              : "Límite de datos de esta pregunta: responde con lo que ya tienes.",
+          ),
         });
         continue;
       }
+      toolsUsed++;
       deps.onTool?.(call.name in toolSchemas ? call.name : "desconocida");
       if (call.name === "pedir_anulacion") {
         if (sawBusinessData) {
@@ -1350,11 +1372,14 @@ export async function askAssistant(
         sawBusinessData = true;
         proposal = undefined;
       }
-      results.push({
-        type: "tool_result",
-        tool_use_id: call.id,
-        content: await executeAssistantTool(call.name, call.input, get, ctx),
-      });
+      const content = await executeAssistantTool(
+        call.name,
+        call.input,
+        get,
+        ctx,
+      );
+      dataChars += content.length;
+      results.push({ type: "tool_result", tool_use_id: call.id, content });
     }
     context.push({ role: "user", content: results } as any);
   }
