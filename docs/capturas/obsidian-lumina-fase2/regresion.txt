@@ -1,0 +1,22 @@
+ANTES: producto base 2f147d2, puerto local 4263
+LUMINA_TEST_URL=http://127.0.0.1:4263 node tests/obsidian-dashboard.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 12000ms exceeded.
+Call log:
+  - waiting for getByRole('heading', { name: 'Tu día, en claro' }) to be visible
+
+    at /workspace/nexora/tests/obsidian-dashboard.mjs:152:63 {
+  log: [
+    "  - waiting for getByRole('heading', { name: 'Tu día, en claro' }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0
+
+DESPUÉS: implementación OL2, puerto local 4264
+node tests/obsidian-dashboard.mjs
+Fase 2: dashboard, contexto IA, permisos, errores y responsive: PASS

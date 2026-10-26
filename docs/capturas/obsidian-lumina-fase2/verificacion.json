@@ -1,0 +1,42 @@
+{
+  "mode": "Producto multiempresa local, fixtures; no evidencia de IA real",
+  "widths": [
+    {
+      "width": 1440,
+      "scroll": 1440
+    },
+    {
+      "width": 901,
+      "scroll": 901
+    },
+    {
+      "width": 780,
+      "scroll": 780
+    },
+    {
+      "width": 390,
+      "scroll": 390
+    },
+    {
+      "width": 320,
+      "scroll": 320
+    }
+  ],
+  "askRequests": 4,
+  "errors": [],
+  "checks": [
+    "cifras del reporte",
+    "prioridad de alertas",
+    "preguntas <=500",
+    "sin consulta automática",
+    "borrador preservado",
+    "trampa de foco y retorno a tarjeta",
+    "nueva conversación limpia contexto",
+    "503 y 429",
+    "propuesta no ejecutada",
+    "permisos sin margen",
+    "errores y vacío",
+    "alto contraste",
+    "móvil"
+  ]
+}

@@ -48,3 +48,7 @@ Sirve para que dos asistentes trabajen sin pisarse. Se actualiza en cada entrega
 ## Renovación visual · 26-oct-2026
 
 ChatGPT NUBE trabaja por orden directa en `chatgpt-nube/obsidian-lumina-fase1`, desde `producto-nexora` (`2f147d2`): shell administrativo, tokens y componentes compartidos. Entrega y capturas: `docs/PROGRESO_OBSIDIAN_LUMINA.md`. No mezclar hacia `nexora-cloud`. Sin despliegues, cambios de APIs, datos, pagos, fiscalidad ni permisos. Las fases 2–4 quedan documentadas para continuar sobre esta base.
+
+### Renovación visual · fase 2 · 26-oct-2026
+
+OL2: ChatGPT NUBE implementa el tablero del negocio, resumen diario y acceso contextual a IA sobre la fase 1 (`c594cda`), en `chatgpt-nube/obsidian-lumina-fase2`. Documento y evidencia: `docs/PROGRESO_OBSIDIAN_LUMINA_FASE2.md`. PR dependiente de #8; destino temporal fase 1, luego `producto-nexora` tras su revisión. Sin fusión a `nexora-cloud`, cambios financieros/fiscales, APIs, datos, permisos ni despliegues. Pruebas visuales con fixtures; no son auditoría del modelo real. Estado del CI del commit entregado en el PR.
