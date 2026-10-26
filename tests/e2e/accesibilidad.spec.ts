@@ -361,6 +361,7 @@ test("G12: subir el logo y el Excel de productos se puede con el teclado", async
     page.locator("label", { hasText: "Subir logo (hasta 200 KB)" }),
   ).toHaveCSS("outline-style", "solid");
   await open(page, "products");
+  await page.getByRole("button", { name: "Más" }).click();
   const excel = page.getByLabel("Importar Excel");
   await excel.focus();
   await page.keyboard.press("Shift+Tab");
