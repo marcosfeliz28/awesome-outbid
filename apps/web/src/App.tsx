@@ -742,7 +742,7 @@ function Shell() {
     [idleDeadline, setIdleDeadline] = useState<number | null>(null),
     [about, setAbout] = useState(false),
     [ownPassword, setOwnPassword] = useState(false);
-  const appearance = useAdminAppearance(user?.role, page);
+  const appearance = useAdminAppearance(user?.role, page, PRODUCT_TENANCY_REQUIRED);
   const client = useQueryClient();
   const mobile = useMediaQuery(MOBILE_MENU);
   const menuButton = useRef<HTMLButtonElement>(null),

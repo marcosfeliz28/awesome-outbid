@@ -64,9 +64,25 @@ await page.route("**/api/**", async (route) => {
   });
 });
 await page.goto(
-  (process.env.LUMINA_TEST_URL || "http://127.0.0.1:4262") + "/#dashboard",
+  (process.env.LUMINA_TEST_URL || "http://127.0.0.1:4264") + "/#dashboard",
 );
 await page.getByRole("heading", { name: /Hola,/ }).waitFor();
+if (process.env.LUMINA_LEGACY === "1") {
+  assert.equal(
+    await page.locator("html").getAttribute("data-admin-appearance"),
+    null,
+  );
+  await page.getByRole("button", { name: "Activar modo oscuro" }).click();
+  assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
+  await page.getByRole("button", { name: "Activar modo claro" }).click();
+  assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
+  assert.deepEqual(errors, []);
+  await browser.close();
+  process.stdout.write(
+    "Tienda independiente: apariencia original y selector claro/oscuro: PASS\n",
+  );
+  process.exit(0);
+}
 assert.equal(
   await page.locator("html").getAttribute("data-admin-appearance"),
   "obsidian",

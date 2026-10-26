@@ -1,6 +1,6 @@
 # Obsidian Lumina · renovación de Nexora POS
 
-Estado: fase 1 implementada y validada localmente; entrega para revisión. CI remoto pendiente de la publicación. Sin despliegues.
+Estado: fase 1 implementada y validada localmente; entrega para revisión en [PR #8](https://github.com/marcosfeliz28/awesome-outbid/pull/8). El estado actualizado del CI remoto se consulta en el PR. Sin despliegues.
 Fecha: 26 de octubre de 2026.
 Rama: `chatgpt-nube/obsidian-lumina-fase1`, desde `producto-nexora` (`2f147d2`).
 
@@ -31,7 +31,7 @@ Riesgos comprobados antes de editar: Modal usa portal a body, por eso los tokens
 
 ## Fase 1 entregada
 
-- `adminAppearance.ts`: apariencia solo para roles admin/manager y fuera de POS; preferencia de alto contraste local, tolerante al almacenamiento bloqueado. No decide autorizaciones.
+- `adminAppearance.ts`: apariencia solo en producto multiempresa (`VITE_PRODUCT_TENANCY=required`), para roles admin/manager y fuera de POS; preferencia de alto contraste local, tolerante al almacenamiento bloqueado. No decide autorizaciones.
 - `adminAppearance.css`: tokens, superficies, cards, botones, campos, tablas, badges, estados vacíos, loading, alertas y diálogos. Reglas dentro de `@media screen` para no cambiar recibos/impresión.
 - Acceso flotante a Nexora: superficie sobria y separación del acceso móvil a Mercancía; prueba de cajas delimitadoras para impedir superposición.
 - Shell: navegación activa con `aria-current`, menú con `aria-controls`, enlace para saltar al contenido y control de alto contraste con `aria-pressed`.
@@ -53,14 +53,14 @@ La operación Macgen y el acento GV sirven como referencia de jerarquía, no com
 
 ## Validación y autoauditoría
 
-- Chromium local: script `node tests/obsidian-lumina.mjs`, con Vite dev en `127.0.0.1:4262` y modo multiempresa (`VITE_PRODUCT_TENANCY=required`) en `127.0.0.1:4264`. Las capturas finales corresponden al modo multiempresa. Endpoint configurable mediante `LUMINA_TEST_URL`, limitado a servidor local; interceptación de API y bloqueo de tráfico externo.
+- Chromium local: script `node tests/obsidian-lumina.mjs`, con Vite dev en modo multiempresa (`VITE_PRODUCT_TENANCY=required`) en `127.0.0.1:4264`. Las capturas finales corresponden al modo multiempresa. Control adicional de tienda independiente en puerto 4262 con `LUMINA_LEGACY=1`: mantiene apariencia original y selector claro/oscuro. Endpoint configurable mediante `LUMINA_TEST_URL`, limitado a servidor local; interceptación de API y bloqueo de tráfico externo.
 - Regresión contra worktree limpio de `2f147d2`, puerto 4263: FALLA `null !== 'obsidian'` antes de la implementación. El mismo primer control pasa con la fase 1. La ejecución inicial de `pnpm check` encontró una expectativa literal de la ruta antigua de la guía; se actualizó para comprobar las dos galerías dentro de la misma guarda de desarrollo.
 - 7 anchos (320, 390, 780, 781, 900, 901, 1440): dashboard y galería sin scroll horizontal del documento; menú móvil inert al cerrar y foco restaurado al salir.
 - Diálogo real Radix: tokens heredados, Escape y retorno del foco; etiquetas, ayuda y error enlazados en Field.
-- Persistencia tras recarga; modo oscuro previo no derrota los tokens; admin → POS → admin, seller/manager y cierre de sesión sin fuga del atributo de apariencia.
+- Persistencia tras recarga; modo oscuro previo no derrota los tokens; admin → POS → admin, seller/manager y cierre de sesión sin fuga del atributo de apariencia. El tema del producto no se activa en la modalidad de tienda independiente.
 - `prefers-reduced-motion`: spinner sin animación; impresión sin tokens de pantalla.
 - Contraste medido con CSS real: texto/superficie 16,52:1; texto secundario/superficie suave 8,30:1; acento textual 7,62:1; error 9,29:1; botón principal 9,99:1. Alto contraste: texto/superficie 19,57:1. No equivale a certificar todas las pantallas heredadas.
-- `pnpm check`: salida 0; tipos, lint, 135 archivos de pruebas aprobados/1 omitido; 871 pruebas aprobadas/10 omitidas; build web y API correcto. Advertencia existente de chunks grandes, sin aumentar límites ni desactivar comprobaciones.
+- `pnpm check`: salida 0; tipos, lint, 135 archivos de pruebas aprobados/1 omitido; 871 pruebas aprobadas/10 omitidas; build web y API correcto. Advertencia de chunks grandes, sin aumentar límites ni desactivar comprobaciones.
 - Smoke sobre build de producción: `LUMINA_PRODUCTION=1 LUMINA_TEST_URL=http://127.0.0.1:4265 node tests/obsidian-lumina.mjs` PASS; no hay botón de galería y `#styles` redirige.
 - Contrato de guía de desarrollo actualizado para las dos galerías, manteniendo guardas de navegación y ruta.
 - Registro reproducible: `capturas/obsidian-lumina/verificacion.json`.

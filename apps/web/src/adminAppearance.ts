@@ -3,8 +3,15 @@ import { useLayoutEffect, useState } from "react";
 const STORAGE_KEY = "nexora-admin-contrast";
 
 // Presentación únicamente: no interviene en permisos ni en la sesión.
-export function useAdminAppearance(role: string | undefined, page: string) {
-  const active = (role === "admin" || role === "manager") && page !== "pos";
+export function useAdminAppearance(
+  role: string | undefined,
+  page: string,
+  product: boolean,
+) {
+  const active =
+    product &&
+    (role === "admin" || role === "manager") &&
+    page.split("?")[0] !== "pos";
   const [contrast, setContrast] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) === "high";
