@@ -81,6 +81,7 @@ import {
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
+import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportButton } from "./InventoryImport";
 import {
@@ -4212,6 +4213,7 @@ export function Configuration() {
             <TelegramNotices />
             <DriveBackupCard />
             <IncentiveRates />
+            <CashierSurveySummary />
           </QueryState>
         ) : tab === "users" ? (
           <>
