@@ -86,6 +86,8 @@ import {
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
 import { MoreMenu } from "./admin-ui";
+import "./lumina-reportes.css";
+import { TableSkeleton } from "./admin-ui";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportButton } from "./InventoryImport";
@@ -3015,17 +3017,56 @@ export function Reports() {
     .filter((k) => k !== "class")
     .map((key) => ({
       label: key.replace(/_/g, " "),
+      // Lumina: cifras a la derecha y en tabulares; el negativo lleva signo y color.
+      className: typeof rows[0]?.[key] === "number" ? "num" : undefined,
       render: (row: any) =>
-        typeof row[key] === "number"
-          ? row[key].toLocaleString("es-DO", { maximumFractionDigits: 2 })
-          : String(row[key] ?? "—"),
+        typeof row[key] === "number" ? (
+          <span className={row[key] < 0 ? "report-neg" : undefined}>
+            {row[key].toLocaleString("es-DO", { maximumFractionDigits: 2 })}
+          </span>
+        ) : (
+          String(row[key] ?? "—")
+        ),
     }));
+  const standard = report !== "formal" && report !== "income-by-day";
+  const exportReport = (format: string) =>
+    download(
+      `/reports/${report}?from=${from}&to=${to}&format=${format}`,
+      `${report}.${format}`,
+    ).catch((error) =>
+      toast(
+        error.message !== DOWNLOAD_FAILED
+          ? error.message
+          : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
+        true,
+      ),
+    );
   return (
     <>
       <Heading
-        title="Los números cuentan tu historia"
-        caption="Transforma tus datos en decisiones para el próximo paso."
-      />
+        title="Reportes"
+        caption="Consulta ventas, caja, inventario y márgenes por período."
+        eyebrow={false}
+        more={
+          standard ? (
+            <Button
+              variant="secondary"
+              disabled={inverted}
+              onClick={() => exportReport("pdf")}
+            >
+              <Download size={16} />
+              PDF
+            </Button>
+          ) : undefined
+        }
+      >
+        {standard && (
+          <Button disabled={inverted} onClick={() => exportReport("xlsx")}>
+            <Download size={16} />
+            Excel
+          </Button>
+        )}
+      </Heading>
       <div className="reports-layout">
         <aside className="panel report-menu">
           {groupReports(
@@ -3064,9 +3105,13 @@ export function Reports() {
                         setPage(1);
                       }}
                       className={report === id ? "active" : ""}
+                      aria-current={report === id ? "true" : undefined}
                     >
                       <FileText size={17} />
                       {name}
+                      {report === id && (
+                        <span className="report-current">Actual</span>
+                      )}
                       <ChevronRight size={14} />
                     </button>
                   ))}
@@ -3079,35 +3124,11 @@ export function Reports() {
         ) : report === "income-by-day" ? (
           <IncomeByDay />
         ) : (
-          <section className="panel">
+          <section className="panel report-panel">
             <div className="panel-heading">
               <div>
                 <h2>{allReports.find((r) => r[0] === report)?.[1]}</h2>
                 <p>Información registrada en tu tienda.</p>
-              </div>
-              <div className="table-actions">
-                {["xlsx", "pdf"].map((format) => (
-                  <Button
-                    variant="secondary"
-                    key={format}
-                    onClick={() =>
-                      download(
-                        `/reports/${report}?from=${from}&to=${to}&format=${format}`,
-                        `${report}.${format}`,
-                      ).catch((error) =>
-                        toast(
-                          error.message !== DOWNLOAD_FAILED
-                            ? error.message
-                            : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
-                          true,
-                        ),
-                      )
-                    }
-                  >
-                    <Download size={16} />
-                    {format === "xlsx" ? "Excel" : "PDF"}
-                  </Button>
-                ))}
               </div>
             </div>
             <div className="date-filters">
@@ -3164,6 +3185,8 @@ export function Reports() {
               <p className="form-error" role="alert">
                 La fecha inicial es posterior a la final.
               </p>
+            ) : query.isLoading ? (
+              <TableSkeleton cols={4} label="Cargando el reporte" />
             ) : (
               <QueryState query={query}>
                 <DataTable

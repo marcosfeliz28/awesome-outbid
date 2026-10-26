@@ -1,0 +1,99 @@
+/* Obsidian Lumina · fase 3 · Reportes. Violeta = reporte actual; sin decoración. */
+.reports-layout .report-menu {
+  padding: 12px;
+}
+.reports-layout .report-menu .report-group-title {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 14px;
+  min-height: 44px;
+}
+.reports-layout .report-menu .report-group-count {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.reports-layout .report-menu button {
+  font-size: 13px;
+  min-height: 44px;
+  gap: 8px;
+  border-left: 3px solid transparent;
+}
+/* La selección se ve por barra, peso, texto «Actual» y aria-current, no solo por color. */
+.reports-layout .report-menu button.active {
+  border-left-color: var(--accent-violet);
+  font-weight: 700;
+  color: var(--text);
+}
+.reports-layout .report-menu button:focus-visible,
+.reports-layout .report-panel .table-wrap:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.report-current {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.report-menu button.active > .report-current + svg {
+  margin-left: 0;
+}
+.report-panel .panel-heading p {
+  color: var(--muted);
+}
+.report-panel .date-filters {
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 0 20px 16px;
+}
+.report-panel .date-filters .field input {
+  min-height: 44px;
+}
+.report-panel .pagination {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.report-panel .table-wrap td,
+.report-panel .table-wrap th {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+.report-panel .table-wrap th {
+  font-size: 11px;
+}
+.report-panel .table-wrap .num {
+  text-align: right;
+}
+.report-panel .report-neg {
+  color: var(--danger-text);
+}
+.report-panel .form-error {
+  margin: 0 20px 16px;
+}
+.report-panel .table-skeleton {
+  padding: 8px 20px 20px;
+}
+@media (max-width: 900px) {
+  .reports-layout {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .report-panel .date-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: 0 16px 16px;
+  }
+  .reports-layout .report-panel .table-wrap th,
+  .reports-layout .report-panel .table-wrap td {
+    font-size: 12px;
+    padding: 10px 8px;
+  }
+  .reports-layout .report-panel .table-wrap th {
+    font-size: 10px;
+  }
+  .report-panel .pagination .button {
+    min-height: 44px;
+  }
+}
