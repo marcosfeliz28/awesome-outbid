@@ -32,6 +32,7 @@ import {
   ShoppingCart,
   Volume2,
   VolumeX,
+  MessageCircleQuestion,
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import {
@@ -82,6 +83,7 @@ import {
   searchWords,
   toast,
 } from "./helpers";
+import { QuickQuestions } from "./QuickQuestions";
 import {
   discardCartDraft,
   rememberAttempt,
@@ -207,6 +209,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     [choosing, setChoosing] = useState<Product | null>(null),
     [checkout, setCheckout] = useState(false),
     [held, setHeld] = useState(false),
+    [questions, setQuestions] = useState(false),
     [clientPicker, setClientPicker] = useState(false),
     [creatingClient, setCreatingClient] = useState(false),
     [clientBusy, setClientBusy] = useState(false),
@@ -915,6 +918,14 @@ export function POS({ go }: { go: (page: string) => void }) {
             <kbd>F2</kbd>
           </div>
           <div className="heading-actions">
+            <Button
+              variant="secondary"
+              aria-label="Preguntas rápidas sin IA"
+              onClick={() => setQuestions(true)}
+            >
+              <MessageCircleQuestion size={16} />
+              Preguntas
+            </Button>
             <Button variant="secondary" onClick={() => setHeld(true)}>
               <Pause size={16} />
               En espera
@@ -1476,6 +1487,13 @@ export function POS({ go }: { go: (page: string) => void }) {
           onClose={() => setCheckout(false)}
           config={config.data}
           customers={customers.data || []}
+        />
+      )}
+      {questions && (
+        <QuickQuestions
+          products={products.data || []}
+          session={session ?? null}
+          onClose={() => setQuestions(false)}
         />
       )}
       {held && (
