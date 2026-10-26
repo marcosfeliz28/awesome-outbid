@@ -246,9 +246,13 @@ it("PC-24: paquetes de IA del operador, por mes y por empresa, sin pasar del lí
       (await credit("ia-a", { size: 100, reference: "Transferencia 1" }))
         .status,
     ).toBe(409);
+    // IA-08: la misma transferencia no se acredita dos veces, ni con otras
+    // mayúsculas o espacios ni a otra empresa.
+    for (const [code, reference] of [["ia-a", " TRANSFERENCIA1 "], ["ia-b", "Transferencia 1"], ["ia-b", "transferencia  1"]])
+      expect((await credit(code, { size: 300, reference })).status, `${code} ${reference}`).toBe(409);
     const packB = await credit("ia-b", {
       size: 300,
-      reference: "Transferencia 1",
+      reference: "Transferencia 2",
     });
     expect(packB.status).toBe(201);
     expect(packB.body).toMatchObject({ questions: 300, priceDop: 999 });
