@@ -773,9 +773,14 @@ export const permissions: Record<string, string[]> = {
     "customers:erase",
     "promotions:write",
     "alerts:write",
+    "gv:read",
+    "gv:write",
+    "gv:reports",
   ],
   seller: ["catalog:read", "sale:write", "cash:write", "customers:write"],
   warehouse: ["catalog:read", "inventory:write", "purchase:write"],
+  // GV Makeup Studio (dueña, 25-oct): sólo cursos, inscripciones y pagos de GV.
+  gv: ["gv:read", "gv:write", "gv:reports"],
 };
 export const can = (grants: string[], permission: string) =>
   grants.includes("*") || grants.includes(permission);

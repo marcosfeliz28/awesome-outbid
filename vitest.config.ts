@@ -82,6 +82,7 @@ export default defineConfig({
       "tests/calidad-unit.test.ts",
       "tests/promociones-paridad.test.ts",
       "tests/configuracion-pruebas.test.ts",
+      "tests/gv-unit.test.ts",
     ],
   },
 });

@@ -41,6 +41,7 @@ import {
   RequestRateLimitService,
 } from "./rate-limit";
 import { SecurityMaintenance } from "./security";
+import { GvController } from "./gv";
 
 @Controller()
 export class HealthController {
@@ -88,6 +89,7 @@ export function createAppModule(secret: string) {
       NotificationsController,
       IncentivesController,
       DriveBackupController,
+      GvController,
     ],
     providers: [
       Database,
