@@ -2,7 +2,7 @@
 
 **Código auditado:** `origin/claude/modulo-gv` en `a97f8fa7` (7 commits, 21 archivos, 3 migraciones). Incluye lo de citas: `claude/modulo-gv-citas` no tiene ningún commit que `modulo-gv` no tenga.
 **Cómo se hizo:** seis auditores en paralelo, uno por área, leyendo código y pruebas; el de migraciones además hizo un **ensayo en una base temporal**. Verifiqué yo en el código los hallazgos marcados con ✔. No se tocó el código de GV, ni Render, ni la tienda.
-**Falta:** el informe de ejecución de pruebas y compilación (tipos, lint, build y las pruebas de GV). Se agrega aquí abajo cuando llegue.
+**Ejecución de pruebas y compilación:** entregada, ver la sección «Ejecución» al final. Resultado: sin regresiones atribuibles a GV.
 
 ## Veredicto: APROBADO PARA EL DESPLIEGUE DE HOY, **con 4 puntos URGENTES** que se resuelven con una línea de código o con un procedimiento
 
@@ -62,3 +62,23 @@
 
 ## Lo que no se verificó
 Ejecución de pruebas y del servidor (pendiente el informe de ejecución), tamaño y tráfico de las tablas vivas, la versión real de PostgreSQL en producción (el SQL necesita 13 o superior por `gen_random_uuid()`), `drive-backup.ts:1481` (ruta pública, no leída en detalle), nginx y el proxy, la interfaz en un navegador y la lógica de propinas y citas con detalle.
+
+## Ejecución (pruebas y compilación, en una copia limpia de `a97f8fa7` con base PostgreSQL temporal propia)
+**Veredicto: sin regresiones atribuibles a GV.** Nada URGENTE por este lado.
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm install --frozen-lockfile`, `db:generate`, `typecheck`, `lint`, `build` (web y API) | todo con código de salida 0 |
+| Migrar y sembrar una base nueva, incluida `202610260903_gv_auditoria` | código 0 |
+| `gv-unit`, `accessibility-contract`, `rutas-permiso` (la única prueba de matriz de rutas y roles) | 32 de 32 |
+| `gv-modulo-api`, `gv-citas-api`, `gv-servicios-api` | 9/9, 6/6 y 4/4 |
+| Pruebas unitarias completas | 76 archivos pasan, 2 fallan por tiempo agotado bajo carga (`rate-limit-l1` a 60 s y `promociones-paridad`); **las dos pasan solas (29 de 29)** |
+| Pruebas de integración completas | 30 archivos pasan y 4 fallan (ver abajo) |
+| e2e de la caja (`pos-pantalla` y `u1-pos`) | **18 de 18**: caja, productos, mercancía, resumen, configuración y sin desbordes |
+
+Los 4 archivos de integración que fallaron, clasificados:
+- **`drive-backup.test.ts` (16 fallos):** «el servidor no tiene `pg_dump` instalado». Es de la máquina de pruebas, no de GV. **No se pudo validar el flujo de respaldo a Drive**; confirmar que el servidor real tiene `pg_dump`.
+- **`reportes-dinero-api` y `SEC-03` de `api.test.ts`:** error 503 de base de datos por la carga de la corrida larga; pasan solos.
+- **`api.test.ts` («Tienda-4cajas») y `auth-lockout` (N-02):** fallan solos en la rama de GV **y también igual en `origin/nexora-cloud` en `53bf1e8b`**, con una base nueva. Ya fallaban antes; no los causó GV, pero conviene revisarlos aparte.
+
+**Cosa que el ejecutor reconoció:** reutilizó una copia de trabajo de otra auditoría para instalar dependencias y escribió ahí un `.env` temporal que luego borró (si ya había uno, lo sobrescribió). No cambió ningún archivo versionado. Todo lo demás se hizo en copias propias, ya eliminadas, con los puertos 3189, 4189 y 55189 libres; no se tocaron 3001, 5432 ni 5434, ni Render ni bases reales.
