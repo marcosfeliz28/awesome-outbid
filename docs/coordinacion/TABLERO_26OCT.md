@@ -7,7 +7,7 @@ Cada agente (ChatGPT PC, ChatGPT nube, Claude PC) **actualiza su línea después
 | Agente | Rama de entrega | Tarea actual | Última entrega | Estado |
 |---|---|---|---|---|
 | ChatGPT PC | `chatgpt-pc/prueba-gv` | Repetir la prueba de GV con las pantallas; luego PC-18 y PC-22 | — | — |
-| ChatGPT nube | `chatgpt-nube/cola2-26oct` + `chatgpt-nube/pruebas-estables` | Cola 2 · N1–N6 | 2026-10-26 12:20 UTC · N1 `a019955` · N2–N6 `8b1c672` | **ENTREGADO N1 y N3–N6; BLOQUEADO N2:** falta `IA_EVAL_26OCT.md`. Sin despliegue. CI final en curso. |
+| ChatGPT nube | `chatgpt-nube/cola2-26oct` + `chatgpt-nube/pruebas-estables` | Cola 2 · N1–N6 | 2026-10-26 · N1 `73b5930` · N2–N6 en esta rama | **ENTREGADO N1–N6.** N2 analizó 16 casos al publicarse la evaluación. Sin despliegue. CI final en curso. |
 | Claude PC | `claude-pc/auditoria-gv`, luego `claude-pc/obsidian-lumina-f3` | Auditar GV (solo lectura); luego fase 3 del rediseño | — | — |
 | Claude nube | `claude/modulo-gv`, `claude/producto-mezcla-4` | GV en la tienda antes de las 12:00 UTC; producto después | — | — |
 
