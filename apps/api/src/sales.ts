@@ -2570,6 +2570,27 @@ export class SalesController {
         voidedBy: actor.id,
       },
     });
+    // T2: con la caja de la venta todavía abierta, la venta deja de contar en
+    // el esperado; si ya salió ese efectivo (retiro, vale) quedaría negativo.
+    // La caja sigue bloqueada, así que ningún retiro se cuela entre medias.
+    // Sin cifras en el mensaje (arqueo ciego).
+    if (
+      originalCash &&
+      !originalCash.closedAt &&
+      (await cashExpected(tx, originalCash)).cash < 0
+    )
+      bad(
+        "No se puede anular: el efectivo de esta venta ya salió de la caja abierta. Anúlala después de cerrar la caja o registra primero la entrada que lo repone.",
+      );
+    // T2: una transferencia por verificar de una venta anulada no se puede
+    // verificar ni rechazar (la venta ya no está completada): se cierra aquí.
+    const stuck = sale.payments.filter(
+      (p) => p.method === "transfer" && p.status === "pending_verification",
+    );
+    for (const p of stuck) {
+      await tx.payment.update({ where: { id: p.id }, data: { status: "rejected" } });
+      await resolveTransferAlert(tx, p.id);
+    }
     await refreshReceivableAlert(tx, id, actor.branchId);
     await reverseIncentives(tx, actor, "void", id, id);
     let cashDifferences: Record<string, number> | undefined;
@@ -2627,6 +2648,7 @@ export class SalesController {
       reason: reasonText,
       cashSessionId: sale.cashSessionId,
       afterCashClose: Boolean(originalCash?.closedAt),
+      ...(stuck.length ? { closedTransfers: stuck.map((p) => p.id) } : {}),
       ...(cashDifferences ? { cashDifferences } : {}),
     });
     if (pending) {
@@ -2688,7 +2710,7 @@ export class SalesController {
       where: {
         method: "transfer",
         status: "pending_verification",
-        sale: { branchId: actor.branchId },
+        sale: { branchId: actor.branchId, status: "completed" },
         ...(createdAt ? { createdAt } : {}),
       },
       select: {
