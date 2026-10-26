@@ -5,9 +5,13 @@ import { URL } from "node:url";
 import { writeFileSync } from "node:fs";
 import process from "node:process";
 // Solo navegador local y fixtures: no inicia sesión ni opera una empresa real.
+const desktopWidth = Number(process.env.LUMINA_DESKTOP_WIDTH || 1440);
+const desktopHeight = Number(process.env.LUMINA_DESKTOP_HEIGHT || 1100);
+const mobileWidth = Number(process.env.LUMINA_MOBILE_WIDTH || 390);
+const mobileHeight = Number(process.env.LUMINA_MOBILE_HEIGHT || 1000);
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
-  viewport: { width: 1440, height: 1100 },
+  viewport: { width: desktopWidth, height: desktopHeight },
   serviceWorkers: "block",
   reducedMotion: "reduce",
 });
@@ -174,7 +178,10 @@ assert.match(
   /Prioridad alta/,
 );
 assert.equal(asks.length, 0, "Cargar el tablero no consume IA");
-await page.screenshot({ path: out + "tablero-desktop.png", fullPage: false });
+await page.screenshot({
+  path: out + `tablero-${desktopWidth}x${desktopHeight}.png`,
+  fullPage: false,
+});
 const cardQuestion = page.getByRole("button", {
   name: "Pregúntale a Nexora: Ventas del período",
   exact: true,
@@ -220,7 +227,9 @@ assert.match(await question.inputValue(), /lista es limitada/);
 assert.ok(
   !(await question.inputValue()).includes("Presupuesto mensual de prueba"),
 );
-await page.screenshot({ path: out + "nexora-contextual-desktop.png" });
+await page.screenshot({
+  path: out + `nexora-contextual-${desktopWidth}x${desktopHeight}.png`,
+});
 await page
   .getByRole("button", { name: "Enviar pregunta", exact: true })
   .click();
@@ -271,7 +280,7 @@ assert.equal(
 );
 assert.ok(!writes.some((p) => /\/approve|\/void-requests|\/sales$/.test(p)));
 await page.screenshot({
-  path: out + "resumen-ia-desktop.png",
+  path: out + `resumen-ia-${desktopWidth}x${desktopHeight}.png`,
   fullPage: false,
 });
 await page.getByLabel("Período del resumen").selectOption("month");
@@ -284,15 +293,21 @@ assert.match(
   new RegExp(day.split("-").reverse().join("/")),
 );
 const widths = [];
-for (const width of [1440, 901, 780, 390, 320]) {
-  await page.setViewportSize({ width, height: 1000 });
+for (const width of [1440, 901, 780, mobileWidth, 320]) {
+  await page.setViewportSize({
+    width,
+    height: width === mobileWidth ? mobileHeight : 1000,
+  });
   const scroll = await page.evaluate(
     () => document.documentElement.scrollWidth,
   );
   assert.ok(scroll <= width, `Desbordamiento a ${width}: ${scroll}`);
   widths.push({ width, scroll });
-  if (width === 390) {
-    await page.screenshot({ path: out + "tablero-mobile.png", fullPage: true });
+  if (width === mobileWidth) {
+    await page.screenshot({
+      path: out + `tablero-${mobileWidth}x${mobileHeight}.png`,
+      fullPage: false,
+    });
     await page
       .getByRole("button", {
         name: "Pregúntale a Nexora: Ticket promedio",
@@ -300,7 +315,9 @@ for (const width of [1440, 901, 780, 390, 320]) {
       })
       .click();
     await question.waitFor();
-    await page.screenshot({ path: out + "nexora-mobile.png" });
+    await page.screenshot({
+      path: out + `nexora-${mobileWidth}x${mobileHeight}.png`,
+    });
     assert.ok(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -309,7 +326,7 @@ for (const width of [1440, 901, 780, 390, 320]) {
     await page.keyboard.press("Escape");
   }
 }
-await page.setViewportSize({ width: 1440, height: 1100 });
+await page.setViewportSize({ width: desktopWidth, height: desktopHeight });
 // Fase 2 (A): sin alto contraste; la administración usa el selector claro/oscuro.
 permissions = ["reports:read", "catalog:read"];
 role = "manager";

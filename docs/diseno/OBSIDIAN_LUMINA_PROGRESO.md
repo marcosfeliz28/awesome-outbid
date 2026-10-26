@@ -409,6 +409,26 @@ tablas que requieren varias columnas conservan su desplazamiento interno.
 
 ### Verificación final
 
+### Entrega PC: POS clara y tablero «Hoy»
+
+La rama de entrega se reconstruyó desde `origin/chatgpt-nube/lumina-adentro-b`:
+esa base ya contiene el marco administrativo y el selector claro/oscuro
+compartidos. Así se evita mantener una segunda copia; esta entrega reutiliza
+`LuminaFrame` y `LuminaThemeSelector` y conserva los cambios de la caja clara
+y del tablero ejecutivo que abre en «Hoy».
+
+Las capturas locales y con datos simulados de esta verificación son:
+
+- `docs/diseno/obsidian-lumina/adentro/tablero-1366x768.png`
+- `docs/diseno/obsidian-lumina/adentro/tablero-390x844.png`
+- `docs/diseno/obsidian-lumina/adentro/nexora-contextual-1366x768.png`
+- `docs/diseno/obsidian-lumina/adentro/nexora-390x844.png`
+
+Se produjeron con `tests/obsidian-dashboard.mjs`, que ahora recibe las
+dimensiones mediante variables `LUMINA_*`, bloquea servicios de navegador y
+responde sus endpoints con fixtures. El comando focal terminó en PASS y no
+usó Render, la tienda ni una base real.
+
 - `pnpm typecheck`, `pnpm lint` y `pnpm build`: aprobados. Vite conserva el
   aviso informativo previo por un chunk mayor de 500 kB.
 - Suite completa: 152 archivos y 998 pruebas aprobadas; 1 archivo y 10 pruebas
