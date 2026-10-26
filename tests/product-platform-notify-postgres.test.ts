@@ -186,7 +186,7 @@ it("soporte y avisos al operador: una vez por evento, sin datos del negocio y si
           businessType: "retail",
           plan: "autoservicio",
           adminName: "Dueña piloto",
-          adminEmail: `${companyCode}@example.invalid`,
+          adminEmail: `${companyCode}@example.invalid`, operadora: "Ana Operadora", acuerdo: { version: "piloto-1", fecha: "2026-10-01", referencia: "Carpeta 12" },
         });
     const createdA = await pilot("aviso-a");
     const createdB = await pilot("aviso-b");
@@ -206,7 +206,7 @@ it("soporte y avisos al operador: una vez por evento, sin datos del negocio y si
     const accept = () =>
       http
         .post("/api/auth/accept-invitation")
-        .send({ token, password, managerPin: "869253" });
+        .send({ token, password, managerPin: "869253", consentAccepted: true });
     expect((await accept()).status).toBe(201);
     expect((await accept()).status).toBe(400);
     let sent = take();

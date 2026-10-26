@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { permissions } from "../packages/shared/src/index";
-import { AuthGuard } from "../apps/api/src/common";
+import { AuthGuard, SUPPORT_EMAIL } from "../apps/api/src/common";
+import { AdminController } from "../apps/api/src/admin";
 import { tenantScope } from "../apps/api/src/tenant-context";
 import { createAppModule } from "../apps/api/src/app";
 import { SupportAccessWorker } from "../apps/api/src/support-access";
@@ -39,14 +40,14 @@ const userId = "00000000-0000-0000-0000-000000000124";
 const sid = "00000000-0000-0000-0000-000000000125";
 
 function fixture(method: string, expiresAt = new Date(Date.now() + 3600000)) {
-  const req: any = { method, path: "/api/reports/ranking-cajeras", headers: { authorization: "Bearer prueba" } };
+  const req: any = { method, path: "/api/products", headers: { authorization: "Bearer prueba" } };
   const db: any = {
     user: { findUnique: vi.fn().mockResolvedValue({ id: userId, name: "Soporte", email: "support@example.invalid", tenantId, branchId: "main", active: true, authVersion: 1, mustChangePassword: false, supportExpiresAt: expiresAt, role: { name: "support", permissions: ["*"] } }) },
     settings: { findUnique: vi.fn().mockResolvedValue(null) },
     authSession: { findUnique: vi.fn().mockResolvedValue({ id: sid, userId, lastActivityAt: new Date() }), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     auditLog: { create: vi.fn().mockResolvedValue({ id: "audit" }) },
   };
-  const reflector: any = { getAllAndOverride: (key: string) => key === "permission" ? "reports:read" : undefined };
+  const reflector: any = { getAllAndOverride: (key: string) => key === "permission" ? "catalog:read" : undefined };
   const guard = new AuthGuard(db, { verify: () => ({ sub: userId, sid, type: "access", version: 1, tenantId }) } as any, reflector, { statusForTenant: async () => ({ status: "active" }) } as any);
   const context: any = { getHandler: () => undefined, getClass: () => undefined, switchToHttp: () => ({ getRequest: () => req }) };
   return { req, db, guard, context };
@@ -72,8 +73,8 @@ describe("N-05 · soporte solo lectura", () => {
       else process.env.PRODUCT_TENANCY = previous;
     }
   });
-  it("su rol tiene solo los tres permisos de lectura declarados", () => {
-    expect(permissions.support).toEqual(["catalog:read", "reports:read", "profit:read"]);
+  it("SOP-01: su rol solo lee el catálogo (sin reportes, costos ni margen)", () => {
+    expect(permissions.support).toEqual(["catalog:read"]);
   });
 
   it("niega POST, PATCH, PUT y DELETE aun si el rol de base fue alterado a asterisco", async () => {
@@ -120,5 +121,51 @@ describe("N-05 · soporte solo lectura", () => {
   it("vence con 401 aunque la sesión siga viva", async () => {
     const { guard, context } = fixture("GET", new Date(Date.now() - 1000));
     await tenantScope.run({ tenantId }, () => expect(guard.canActivate(context)).rejects.toMatchObject({ status: 401 }));
+  });
+
+  const asAdminRole = (method: string, expiresAt?: Date) => {
+    const parts = fixture(method, expiresAt);
+    parts.db.user.findUnique.mockResolvedValue({ id: userId, name: "Soporte", email: SUPPORT_EMAIL, tenantId, branchId: "main",
+      active: true, authVersion: 1, mustChangePassword: false, supportExpiresAt: expiresAt ?? new Date(Date.now() + 3600000),
+      role: { name: "admin", permissions: ["*"] } });
+    return parts;
+  };
+  it("SOP-02: la cuenta de soporte sigue de solo lectura y con vencimiento aunque le cambien el rol", async () => {
+    const post = asAdminRole("POST");
+    await tenantScope.run({ tenantId }, () => expect(post.guard.canActivate(post.context)).rejects.toMatchObject({ status: 403 }));
+    const get = asAdminRole("GET");
+    await tenantScope.run({ tenantId }, async () => {
+      expect(await get.guard.canActivate(get.context)).toBe(true);
+      expect(tenantScope.getStore()?.readOnly).toBe(true);
+    });
+    expect(get.req.actor).toMatchObject({ role: "support", permissions: permissions.support });
+    const expired = asAdminRole("GET", new Date(Date.now() - 1000));
+    await tenantScope.run({ tenantId }, () => expect(expired.guard.canActivate(expired.context)).rejects.toMatchObject({ status: 401 }));
+  });
+
+  const actor = { id: "00000000-0000-0000-0000-000000000001", branchId: "main", permissions: ["*"], role: "admin" } as any;
+  const adminDb = (target: any) => {
+    const tx = {
+      $queryRaw: vi.fn(), user: { findUniqueOrThrow: vi.fn().mockResolvedValue(target), update: vi.fn().mockResolvedValue(target) },
+      refreshToken: { deleteMany: vi.fn() }, authSession: { deleteMany: vi.fn() },
+    };
+    return { tx, db: {
+      user: { findFirstOrThrow: vi.fn().mockResolvedValue(target), findFirst: vi.fn().mockResolvedValue(null) },
+      role: { findUniqueOrThrow: vi.fn().mockResolvedValue({ id: "00000000-0000-0000-0000-0000000000a1", name: "admin" }) },
+      $transaction: (fn: any) => fn(tx), auditLog: { create: vi.fn() },
+    } as any };
+  };
+  it("SOP-02: las rutas genéricas no cambian rol, clave ni estado de la cuenta de soporte", async () => {
+    const { db } = adminDb({ id: userId, email: SUPPORT_EMAIL, roleId: "r", role: { name: "support" } });
+    const admin = new AdminController(db);
+    await expect(admin.editUser(userId, { roleId: "00000000-0000-0000-0000-0000000000a1" }, actor)).rejects.toMatchObject({ status: 400 });
+    await expect(admin.editUser(userId, { active: true }, actor)).rejects.toMatchObject({ status: 400 });
+    await expect(admin.resetPassword(userId, {}, actor)).rejects.toMatchObject({ status: 400 });
+  });
+  it("SOP-02: cambiar el rol de cualquier usuario cierra sus sesiones", async () => {
+    const { db, tx } = adminDb({ id: userId, email: "caja@x.invalid", roleId: "00000000-0000-0000-0000-0000000000b2", role: { name: "manager" } });
+    await new AdminController(db).editUser(userId, { roleId: "00000000-0000-0000-0000-0000000000a1" }, actor);
+    expect(tx.authSession.deleteMany).toHaveBeenCalledWith({ where: { userId } });
+    expect(tx.user.update.mock.calls[0][0].data.authVersion).toEqual({ increment: 1 });
   });
 });

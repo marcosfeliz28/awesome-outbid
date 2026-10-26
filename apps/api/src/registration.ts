@@ -32,6 +32,11 @@ const invitationSchema = z.object({
   token: tokenSchema.shape.token,
   password: registration.shape.password,
   managerPin: registration.shape.managerPin,
+  // INV-01: la dueña acepta de forma explícita; las versiones las da la web
+  // cuando los textos públicos están aprobados.
+  consentAccepted: z.literal(true),
+  termsVersion: registration.shape.termsVersion.optional(),
+  privacyVersion: registration.shape.privacyVersion.optional(),
 }).strict();
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const verificationToken = () => randomBytes(32).toString("hex");
@@ -174,23 +179,45 @@ export class RegistrationService implements OnModuleDestroy {
   }
 
   /** Invitación de la plataforma: fija clave y PIN, una sola vez y antes de vencer. */
-  async acceptInvitation(input: z.infer<typeof invitationSchema>) {
+  async acceptInvitation(input: z.infer<typeof invitationSchema>, ip?: string) {
     if (process.env.PRODUCT_TENANCY !== "required") throw new HttpException("No disponible.", 404);
     const where = {
       emailVerificationHash: invitationDigest(input.token),
       emailVerificationExpiresAt: { gt: new Date() }, emailVerifiedAt: null,
     };
     const invalid = () => new HttpException("La invitación venció o ya se usó. Pide una nueva.", 400);
-    const invited = await this.db.user.findFirst({ where, select: { tenantId: true } });
+    const invited = await this.db.user.findFirst({ where, select: { id: true, tenantId: true } });
     if (!invited) throw invalid();
+    // INV-01: textos web aprobados (versión vigente) o acuerdo en papel registrado al invitar.
+    const tenant = await this.db.tenant.findUnique({ where: { id: invited.tenantId }, select: { termsVersion: true, privacyVersion: true } });
+    let consent: { metodo: "digital" | "papel"; termsVersion: string; privacyVersion: string };
+    if (process.env.PRODUCT_LEGAL_APPROVED === "confirmed") {
+      const legal = legalConfiguration();
+      if (input.termsVersion !== legal.termsVersion || input.privacyVersion !== legal.privacyVersion)
+        throw new HttpException("Los documentos cambiaron. Vuelve a leerlos y acepta la versión actual.", 409);
+      consent = { metodo: "digital", ...legal };
+    } else if (tenant?.termsVersion?.startsWith("papel:"))
+      consent = { metodo: "papel", termsVersion: tenant.termsVersion, privacyVersion: tenant.privacyVersion ?? tenant.termsVersion };
+    else throw new HttpException("Falta registrar el acuerdo de servicio de esta empresa. Pide a Nexora una invitación nueva.", 409);
     const [passwordHash, pinHash] = await Promise.all([hash(input.password, 12), hash(input.managerPin, 12)]);
-    // updateMany condicional: dos envíos simultáneos no aceptan dos veces.
-    const result = await this.db.user.updateMany({ where, data: {
-      passwordHash, pinHash, emailVerifiedAt: new Date(),
-      emailVerificationHash: null, emailVerificationExpiresAt: null,
-      failedAttempts: 0, lockedUntil: null,
-    } });
-    if (result.count !== 1) throw invalid();
+    const acceptedAt = new Date();
+    await this.db.$transaction(async (tx) => {
+      // updateMany condicional: dos envíos simultáneos no aceptan dos veces.
+      const result = await tx.user.updateMany({ where, data: {
+        passwordHash, pinHash, emailVerifiedAt: acceptedAt,
+        emailVerificationHash: null, emailVerificationExpiresAt: null,
+        failedAttempts: 0, lockedUntil: null,
+      } });
+      if (result.count !== 1) throw invalid();
+      await tx.tenant.update({ where: { id: invited.tenantId }, data: {
+        termsVersion: consent.termsVersion, termsAcceptedAt: acceptedAt,
+        privacyVersion: consent.privacyVersion, privacyAcceptedAt: acceptedAt,
+      } });
+      await tx.auditLog.create({ data: {
+        tenantId: invited.tenantId, userId: invited.id, action: "invitation.accepted",
+        entity: "invitation", entityId: invited.tenantId, ip, after: consent,
+      } });
+    });
     // Clave fija: un solo aviso de alta por empresa.
     await notifyOperator(this.db, { tenantId: invited.tenantId, event: "op_activated", key: new Date(0) });
     return { message: "Listo. Ya puedes entrar con tu código de empresa, correo y contraseña." };
@@ -237,7 +264,7 @@ export class RegistrationController {
   @Public() @Post("accept-invitation")
   async acceptInvitation(@Body() body: unknown, @Req() req: Request) {
     this.limits.assert("accept-invitation-ip", [clientIp(req)], 10);
-    return this.registrationService.acceptInvitation(parse(invitationSchema, body));
+    return this.registrationService.acceptInvitation(parse(invitationSchema, body), clientIp(req));
   }
   @Public() @Post("resend-verification")
   async resend(@Body() body: unknown, @Req() req: Request) {

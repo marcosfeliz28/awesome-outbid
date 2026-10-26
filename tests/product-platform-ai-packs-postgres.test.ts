@@ -166,7 +166,7 @@ it("PC-24: paquetes de IA del operador, por mes y por empresa, sin pasar del lí
           businessType: "retail",
           plan,
           adminName: "Dueña piloto",
-          adminEmail: `${companyCode}@example.invalid`,
+          adminEmail: `${companyCode}@example.invalid`, operadora: "Ana Operadora", acuerdo: { version: "piloto-1", fecha: "2026-10-01", referencia: "Carpeta 12" },
         });
     const createdA = await pilot("ia-a", "autoservicio");
     const createdB = await pilot("ia-b", "pro");
@@ -182,7 +182,7 @@ it("PC-24: paquetes de IA del operador, por mes y por empresa, sin pasar del lí
       (
         await http
           .post("/api/auth/accept-invitation")
-          .send({ token: tokenA, password, managerPin: "869253" })
+          .send({ token: tokenA, password, managerPin: "869253", consentAccepted: true })
       ).status,
     ).toBe(201);
     const session = await http

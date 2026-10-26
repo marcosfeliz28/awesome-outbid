@@ -247,6 +247,9 @@ const untrusted = (value: string) =>
   "\n</datos_no_confiables>";
 const sensitiveKey =
   /(?:authorization|password|contraseña|pin|secret|token|card[_-]?(?:number|security)|cv[cv]|tenantId|branchId|userId|sessionId|(?:api|access|private|client)[_-]?key)/i;
+// IA-05: texto libre y datos de contacto, pago o fiscales no van al proveedor del modelo.
+const piiKey =
+  /^(?:notes?|reason|reference|bank|phone|email|address|recipientLegalId|legalId|rnc|cedula|document|cardLast4|cardBrand|approvalCode|resolutionNote)$/i;
 function redact(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redact);
   if (value && typeof value === "object")
@@ -258,7 +261,8 @@ function redact(value: unknown): unknown {
             key !== "id" &&
             !/Id$/.test(key) &&
             !/By$/.test(key) &&
-            !sensitiveKey.test(key),
+            !sensitiveKey.test(key) &&
+            !piiKey.test(key),
         )
         .map(([key, item]) => [key, redact(item)]),
     );
@@ -541,7 +545,8 @@ async function fetchJson(get: AssistantGet, path: string): Promise<Fetched> {
   try {
     return { ok: true, data: JSON.parse(response.body) };
   } catch {
-    return { ok: true, data: response.body };
+    // IA-02: un cuerpo cortado o inválido nunca va al modelo sin pasar por `redact`.
+    return { ok: false, text: "La respuesta de " + path.split("?")[0] + " no es válida." };
   }
 }
 const ROUTES: Partial<Record<ToolName, (args: any) => string[]>> = {
@@ -550,9 +555,6 @@ const ROUTES: Partial<Record<ToolName, (args: any) => string[]>> = {
       (report) =>
         "/api/reports/" + report + query({ from: args.desde, to: args.hasta }),
     ),
-  detalle_factura: (args) => [
-    "/api/sales" + query({ q: args.numero, date: args.fecha }),
-  ],
   transferencias_por_verificar: (args) => [
     "/api/payments/pending-transfers" + query({ date: args.fecha }),
   ],
@@ -561,7 +563,7 @@ const ROUTES: Partial<Record<ToolName, (args: any) => string[]>> = {
     "/api/inventory/transfers",
   ],
   alertas_auditoria: (args) => [
-    "/api/alerts?limit=100",
+    "/api/alerts?limit=100&soloLectura=1",
     ...["descuadres", "diferencias-cuadre"].map(
       (report) =>
         "/api/reports/" + report + query({ from: args.desde, to: args.hasta }),
@@ -1000,6 +1002,55 @@ async function runTool(
       if (!report.ok) return report.text;
       return { incentivos: redact(report.data), nota: "Montos en RD$." };
     }
+    case "detalle_factura": {
+      const found = await fetchJson(
+        get,
+        "/api/sales" + query({ q: args.numero, date: args.fecha }),
+      );
+      if (!found.ok) return found.text;
+      // IA-05: lista blanca; sin notas, referencias, banco, tarjeta ni RNC.
+      const sales = Array.isArray(found.data) ? found.data : [];
+      return {
+        facturas: sales.slice(0, 20).map((sale: any) => ({
+          numero: sale.number,
+          fecha: businessDay(sale.createdAt) || null,
+          hora: localTime(sale.createdAt),
+          estado: sale.status,
+          cliente: sale.customerName ?? null,
+          subtotal: num(sale.subtotal),
+          descuento: num(sale.discountTotal),
+          itbis: num(sale.taxTotal),
+          total: num(sale.total),
+          ...(num(sale.creditBalance)
+            ? {
+                saldoPendiente: num(sale.creditBalance),
+                vence: businessDay(sale.creditDueDate) || null,
+              }
+            : {}),
+          articulos: (sale.items ?? []).map((item: any) => ({
+            nombre: [
+              item.variant?.product?.name,
+              ...Object.values(item.variant?.attributes ?? {}),
+            ]
+              .filter(Boolean)
+              .join(" "),
+            cantidad: num(item.qty),
+            devueltas: num(item.returnedQty) || undefined,
+            precio: num(item.unitPrice),
+            total: num(item.lineTotal),
+          })),
+          pagos: (sale.payments ?? []).map((pay: any) => ({
+            forma: METHOD[pay.method] ?? pay.method,
+            monto: num(pay.amount),
+            estado: pay.status,
+          })),
+          devoluciones: (sale.returns ?? []).length || undefined,
+          solicitudAnulacion: sale.voidRequest?.status ?? undefined,
+        })),
+        ...(sales.length > 20 ? { masFacturas: sales.length - 20 } : {}),
+        nota: NOTE,
+      };
+    }
     case "clientes": {
       const list = await fetchJson(get, "/api/customers");
       if (!list.ok) return list.text;
@@ -1173,6 +1224,8 @@ export type AssistantDeps = {
   get?: AssistantGet;
   now?: () => Date;
   onTool?: (name: string) => void;
+  /** IA-06: el llamador lo conserva aunque una vuelta posterior falle. */
+  usage?: { input: number; output: number };
 };
 export type AssistantActor = {
   name: string;
@@ -1183,6 +1236,9 @@ export type AssistantActor = {
 /** La vendedora nunca ve costos aunque su rol tenga profit:read (igual que `safe`). */
 export const actorSeesCost = (actor: AssistantActor) =>
   actor.role !== "seller" && can(actor.permissions ?? [], "profit:read");
+
+// IA-01: tope de UNA pregunta en total (no por vuelta): herramientas, caracteres de datos y tokens.
+export const QUESTION_BUDGET = { tools: 12, chars: 80_000, tokens: 100_000 };
 
 export async function askAssistant(
   body: unknown,
@@ -1233,11 +1289,11 @@ export async function askAssistant(
           signal: AbortSignal.timeout(8000),
         },
       );
-      // Las herramientas resumen el JSON; cortarlo antes lo volvería inválido (catálogos grandes).
-      return {
-        status: res.status,
-        body: (await res.text()).slice(0, 8_000_000),
-      };
+      // Las herramientas resumen el JSON; uno más grande se rechaza entero, nunca se corta (IA-02).
+      const text = await res.text();
+      return text.length > 8_000_000
+        ? { status: 502, body: "" }
+        : { status: res.status, body: text };
     });
   const now = deps.now?.() ?? new Date();
   const ctx: ToolContext = {
@@ -1246,17 +1302,22 @@ export async function askAssistant(
   };
   const tools = assistantTools(!!ctx.canSeeCost);
   const system = assistantSystemFor({ company: actor.company, now });
-  const context = parsed.data.messages.map((entry) => ({
-    role: entry.role,
-    content: entry.content,
-  }));
-  const last = context.length - 1;
+  // IA-03: las respuestas «assistant» las manda el cliente y podrían ser falsas;
+  // solo pasan las preguntas anteriores de la persona, marcadas como datos.
+  const asked = parsed.data.messages.filter((entry) => entry.role === "user");
+  const earlier = asked.slice(0, -1).map((entry) => "- " + entry.content);
   // CPC-6 punto 9: el nombre lo edita un administrador; va marcado como dato.
-  context[last] = {
-    role: "user",
-    content: `Fecha: ${ctx.today}. Usuario: ${untrusted(actor.name.slice(0, 80))}\nPregunta: ${context[last].content}`,
-  };
-  const usage = { input: 0, output: 0 };
+  const context: any[] = [
+    {
+      role: "user",
+      content:
+        (earlier.length
+          ? `Preguntas anteriores de esta conversación (sin respuestas): ${untrusted(earlier.join("\n"))}\n`
+          : "") +
+        `Fecha: ${ctx.today}. Usuario: ${untrusted(actor.name.slice(0, 80))}\nPregunta: ${asked.at(-1)!.content}`,
+    },
+  ];
+  const usage = deps.usage ?? { input: 0, output: 0 };
   let sawBusinessData = false;
   let proposal: VoidProposal | undefined;
   const textOf = (response: any) =>
@@ -1265,7 +1326,17 @@ export async function askAssistant(
       .map((item: any) => String(item.text ?? ""))
       .join("\n")
       .trim();
+  let toolsUsed = 0,
+    dataChars = 0;
   for (let round = 0; round < 6; round++) {
+    // Se cobra: el costo ya ocurrió (no es un fallo del proveedor).
+    if (usage.input + usage.output >= QUESTION_BUDGET.tokens)
+      return {
+        answer:
+          "La consulta llegó al límite de datos de una pregunta. Haz una pregunta más concreta.",
+        usage,
+        remaining: null,
+      };
     let response: any;
     try {
       response = await model(context, tools, system);
@@ -1314,14 +1385,23 @@ export async function askAssistant(
     const results = [];
     for (const [index, call] of calls.entries()) {
       // Cada tool_use necesita su resultado o el proveedor responde 400 (CPC-6 punto 9).
-      if (index >= 10) {
+      if (
+        index >= 10 ||
+        toolsUsed >= QUESTION_BUDGET.tools ||
+        dataChars >= QUESTION_BUDGET.chars
+      ) {
         results.push({
           type: "tool_result",
           tool_use_id: call.id,
-          content: untrusted("Límite de 10 herramientas por paso."),
+          content: untrusted(
+            index >= 10
+              ? "Límite de 10 herramientas por paso."
+              : "Límite de datos de esta pregunta: responde con lo que ya tienes.",
+          ),
         });
         continue;
       }
+      toolsUsed++;
       deps.onTool?.(call.name in toolSchemas ? call.name : "desconocida");
       if (call.name === "pedir_anulacion") {
         if (sawBusinessData) {
@@ -1342,11 +1422,14 @@ export async function askAssistant(
         sawBusinessData = true;
         proposal = undefined;
       }
-      results.push({
-        type: "tool_result",
-        tool_use_id: call.id,
-        content: await executeAssistantTool(call.name, call.input, get, ctx),
-      });
+      const content = await executeAssistantTool(
+        call.name,
+        call.input,
+        get,
+        ctx,
+      );
+      dataChars += content.length;
+      results.push({ type: "tool_result", tool_use_id: call.id, content });
     }
     context.push({ role: "user", content: results } as any);
   }
@@ -1389,6 +1472,7 @@ export class AssistantController {
     this.limits.assert("assistant-ask", [req.actor.tenantId, req.actor.id], 5);
     const reserved = await reserveAssistantQuery(this.db, req.actor);
     const herramientas: string[] = [];
+    const usage = { input: 0, output: 0 };
     let result: AssistantResponse;
     try {
       const settings = await this.db.settings
@@ -1401,13 +1485,14 @@ export class AssistantController {
         { ...req.actor, company },
         {
           onTool: (name) => herramientas.push(name),
+          usage,
         },
       );
     } catch (error) {
       await finishAssistantQuery(
         this.db,
         reserved.auditId,
-        { input: 0, output: 0 },
+        usage,
         herramientas,
         "fallida",
       );

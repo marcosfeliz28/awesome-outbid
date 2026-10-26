@@ -288,6 +288,7 @@ POST /api/platform/tenants/:slug/payments/:id/void
 POST /api/platform/tenants/:slug/password-reset
 POST /api/platform/tenants/:slug/support-session
 POST /api/platform/tenants/:slug/reinvite
+POST /api/platform/tenants/:slug/revoke-invitation
 POST /api/promotions
 POST /api/purchase-orders
 POST /api/purchase-orders/:id/receive
@@ -344,7 +345,7 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  expect(required).toHaveLength(203);
+  expect(required).toHaveLength(204);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");

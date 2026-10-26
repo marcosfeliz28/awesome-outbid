@@ -12,6 +12,7 @@ export default defineConfig({
       "tests/support-n05.test.ts",
       "tests/assistant-n06.test.ts",
       "tests/assistant-exactitud.test.ts",
+      "tests/assistant-aud-ia.test.ts",
       "tests/assistant-eval-postgres.test.ts",
       "tests/daily-summary-n07.test.ts",
       "tests/transfer-proof-review-n08.test.ts",

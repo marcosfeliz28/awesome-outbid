@@ -37,6 +37,7 @@ import {
   withoutImages,
   assertWholeUnits,
   sameName,
+  isSupportAccount,
 } from "./common";
 import { moneyDb } from "./database-errors";
 import {
@@ -1259,6 +1260,8 @@ export class AdminController {
       where: { id: userId, branchId: actor.branchId },
       include: { role: true },
     });
+    if (isSupportAccount(target))
+      bad("La cuenta de soporte se maneja solo en «Soporte de Nexora».");
     const role = data.roleId
       ? await this.db.role.findUniqueOrThrow({ where: { id: data.roleId } })
       : target.role;
@@ -1268,6 +1271,8 @@ export class AdminController {
     const passwordPolicyTightened =
       passwordPolicyForRole(target.role.name) === "cashier-six-digits" &&
       passwordPolicyForRole(role.name) === "strong";
+    // SOP-02: todo cambio de rol cierra sus sesiones (nada se hereda).
+    const roleChanged = role.id !== target.roleId;
     const validatedPassword = passwordInput
       ? parse(passwordSchemaForRole(role.name), passwordInput)
       : undefined;
@@ -1306,7 +1311,8 @@ export class AdminController {
           ...(validatedPassword ||
           pin ||
           data.active === false ||
-          passwordPolicyTightened
+          passwordPolicyTightened ||
+          roleChanged
             ? { authVersion: { increment: 1 } }
             : {}),
         },
@@ -1315,7 +1321,8 @@ export class AdminController {
         validatedPassword ||
         pin ||
         data.active === false ||
-        passwordPolicyTightened
+        passwordPolicyTightened ||
+        roleChanged
       ) {
         await tx.refreshToken.deleteMany({ where: { userId } });
         await tx.authSession.deleteMany({ where: { userId } });
@@ -1367,6 +1374,8 @@ export class AdminController {
       where: { id: userId, branchId: actor.branchId },
       include: { role: true },
     });
+    if (isSupportAccount(target))
+      bad("La cuenta de soporte se maneja solo en «Soporte de Nexora».");
     const temporaryPassword = data.password
       ? parse(passwordSchemaForRole(target.role.name), data.password)
       : generateTemporaryPasswordForRole(target.role.name);

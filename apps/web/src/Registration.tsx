@@ -105,6 +105,7 @@ export function ConfirmEmail() {
 export function AcceptInvitation() {
   const [password, setPassword] = useState("");
   const [managerPin, setManagerPin] = useState("");
+  const [consentAccepted, setConsentAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -114,7 +115,8 @@ export function AcceptInvitation() {
     if (!token) { setError("Falta el enlace de invitación."); return; }
     setBusy(true); setError("");
     try {
-      const result = await api<{ message: string }>("/auth/accept-invitation", { method: "POST", body: JSON.stringify({ token, password, managerPin }) });
+      const result = await api<{ message: string }>("/auth/accept-invitation", { method: "POST", body: JSON.stringify({ token, password, managerPin, consentAccepted,
+        ...(legalAvailable ? { termsVersion, privacyVersion } : {}) }) });
       window.history.replaceState(null, "", "/aceptar-invitacion");
       setMessage(result.message); setPassword(""); setManagerPin("");
     } catch (cause: any) { setError(cause.message); }
@@ -126,6 +128,11 @@ export function AcceptInvitation() {
     {!message && <>
       <label className="field"><span>Contraseña</span><input required type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} /><small>12 caracteres; incluye mayúscula, minúscula, número y símbolo.</small></label>
       <label className="field"><span>PIN de gerente</span><input required type="password" inputMode="numeric" pattern="[0-9]{6}" minLength={6} maxLength={6} autoComplete="new-password" value={managerPin} onChange={e => setManagerPin(e.target.value)} /><small>6 números no consecutivos. Guárdalo en privado.</small></label>
+      {/* INV-01: aceptación explícita; queda con fecha y versión en la empresa. */}
+      <label className="field"><span><input required type="checkbox" checked={consentAccepted} onChange={e => setConsentAccepted(e.target.checked)} />{" "}
+        {legalAvailable
+          ? <>Acepto los <a href={termsUrl} target="_blank" rel="noreferrer">términos</a> y la <a href={privacyUrl} target="_blank" rel="noreferrer">política de privacidad</a> de Nexora POS.</>
+          : "Acepto usar Nexora POS bajo el acuerdo de servicio y privacidad que firmé con Nexora."}</span></label>
     </>}
     {error && <p className="form-error" role="alert">{error}</p>}
     {message && <p role="status">{message}</p>}

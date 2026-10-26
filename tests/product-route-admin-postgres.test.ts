@@ -179,21 +179,20 @@ it("aísla trece escrituras administrativas válidas entre dos empresas", async 
     const enableAudit = await client.query(`SELECT after FROM "AuditLog" WHERE "tenantId"=$1 AND action='support.enable' ORDER BY "createdAt" DESC LIMIT 1`, [ids.b]);
     expect(JSON.stringify(enableAudit.rows[0])).not.toContain(enabled.body.password);
     const supportRole = await client.query(`SELECT permissions FROM "Role" WHERE "tenantId"=$1 AND name='support'`, [ids.b]);
-    expect(supportRole.rows[0].permissions).toEqual(["catalog:read", "reports:read", "profit:read"]);
+    expect(supportRole.rows[0].permissions).toEqual(["catalog:read"]);
     expect((await http.get("/api/support-access").set("Authorization", aToken)).body.enabled).toBe(false);
     const supportUser = (await client.query(`SELECT id,"authVersion","passwordHash" FROM "User" WHERE "tenantId"=$1 AND email='soporte-nexora@nexora.local'`, [ids.b])).rows[0];
     expect(await apiRequire("bcryptjs").compare(enabled.body.password, supportUser.passwordHash)).toBe(true);
     const supportSession = "60000000-0000-4000-8000-000000000019";
     await client.query(`INSERT INTO "AuthSession" (id,"userId","tenantId") VALUES ($1,$2,$3)`, [supportSession, supportUser.id, ids.b]);
     const supportToken = "Bearer " + jwt.sign({ sub: supportUser.id, sid: supportSession, type: "access", version: supportUser.authVersion, tenantId: ids.b });
-    const supportRead = await http.get("/api/reportes").set("Authorization", supportToken);
+    const supportRead = await http.get("/api/products").set("Authorization", supportToken);
     expect(supportRead.status, JSON.stringify(supportRead.body)).toBe(200);
-    expect(supportRead.body).toHaveLength(43);
-    for (const { name } of supportRead.body) {
-      const report = await http.get(`/api/reports/${name}`).set("Authorization", supportToken);
-      expect(report.status, `Soporte reporte ${name}: ${JSON.stringify(report.body)}`).toBe(200);
-      expect(JSON.stringify(report.body)).not.toContain("A_ONLY_SECRET");
-    }
+    expect(JSON.stringify(supportRead.body)).not.toContain("A_ONLY_SECRET");
+    // SOP-01: sin reportes (clientes, RNC, costos, margen, personal).
+    expect((await http.get("/api/reportes").set("Authorization", supportToken)).status).toBe(403);
+    for (const name of ["ventas-por-cliente", "utilidad-por-producto", "customers"])
+      expect((await http.get(`/api/reports/${name}`).set("Authorization", supportToken)).status).toBe(403);
     expect((await http.post("/api/support-access/disable").set("Authorization", supportToken).send({})).status).toBe(403);
     expect((await http.post("/api/products").set("Authorization", supportToken).send({})).status).toBe(403);
     expect((await http.post("/api/assistant/ask").set("Authorization", supportToken).send({ messages: [{ role: "user", content: "¿Cuánto vendimos?" }] })).status).toBe(403);
@@ -203,7 +202,7 @@ it("aísla trece escrituras administrativas válidas entre dos empresas", async 
       app.get(Database).settings.update({ where: { id: "main" }, data: { data: { name: "NO CAMBIAR" } } }))).rejects.toThrow();
     const disabled = await http.post("/api/support-access/disable").set("Authorization", bToken).send({});
     valid(disabled, "POST support-access/disable");
-    expect((await http.get("/api/reportes").set("Authorization", supportToken)).status).toBe(401);
+    expect((await http.get("/api/products").set("Authorization", supportToken)).status).toBe(401);
     valid(await http.post("/api/support-access/enable").set("Authorization", bToken).send({ duration: "7d" }), "reactivar soporte");
     await client.query(`UPDATE "User" SET "supportExpiresAt"=now()-interval '1 minute' WHERE id=$1`, [supportUser.id]);
     await app.get(SupportAccessWorker).run(new Date());

@@ -891,10 +891,12 @@ export class AlertsController {
         entityId: z.string().max(100).optional(),
         limit: z.coerce.number().int().min(1).max(500).default(200),
         cursor: uuid.optional(),
+        // IA-04: el asistente solo lee; no recalcula ni escribe alertas.
+        soloLectura: z.literal("1").optional(),
       }),
       query,
     );
-    await this.engine.evaluate(actor.branchId);
+    if (!filter.soloLectura) await this.engine.evaluate(actor.branchId);
     const rows = await this.db.alert.findMany({
       where: {
         branchId: actor.branchId,

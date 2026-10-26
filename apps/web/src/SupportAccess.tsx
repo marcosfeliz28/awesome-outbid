@@ -13,6 +13,7 @@ export function SupportAccessCard() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [understood, setUnderstood] = useState(false);
   useEffect(() => { if (status.data?.enabled === false) setPassword(""); }, [status.data?.enabled]);
 
   async function enable() {
@@ -36,7 +37,14 @@ export function SupportAccessCard() {
 
   return <section aria-labelledby="support-access-title" style={{ marginBlock: 20, padding: 16, border: "1px solid currentColor", borderRadius: 12 }}>
     <h3 id="support-access-title">Soporte de Nexora</h3>
-    <p>El soporte puede consultar datos durante el plazo elegido. Las consultas quedan en la bitácora.</p>
+    {/* SOP-03: alcance real (permissions.support = catalog:read) antes de confirmar. */}
+    <ul>
+      <li><strong>Para qué:</strong> que el equipo de Nexora revise un problema que reportaste.</li>
+      <li><strong>Qué verá, solo para leer:</strong> productos, precios, existencias, movimientos de inventario, compras recibidas, promociones y la configuración de la empresa.</li>
+      <li><strong>Qué no verá:</strong> clientes, ventas, caja, reportes, costos ni márgenes. No puede cambiar nada.</li>
+      <li><strong>Cuánto dura:</strong> el plazo que elijas (24 horas o 7 días); puedes quitarlo antes.</li>
+      <li><strong>Qué se registra:</strong> quién abrió la sesión y por qué, y cada pantalla y registro consultado, en la bitácora.</li>
+    </ul>
     <p role="status">{status.data?.enabled && status.data.expiresAt ? `Acceso permitido hasta ${format(status.data.expiresAt)}` : "Acceso apagado"}</p>
     {error && <p role="alert">{error}</p>}
     {password && <p role="status">Usuario: <strong>soporte-nexora</strong>. Contraseña, visible solo ahora: <strong>{password}</strong>. Guárdala y compártela por un canal seguro.</p>}
@@ -44,7 +52,8 @@ export function SupportAccessCard() {
     <select id="support-duration" value={duration} onChange={event => setDuration(event.target.value as "24h" | "7d")} style={{ minHeight: 44 }}>
       <option value="24h">24 horas</option><option value="7d">7 días</option>
     </select>{" "}
-    <button type="button" disabled={busy} onClick={() => void enable()} style={{ minHeight: 44 }}>Permitir soporte de Nexora</button>{" "}
+    <label style={{ display: "block", marginBlock: 8 }}><input type="checkbox" checked={understood} onChange={event => setUnderstood(event.target.checked)} /> Leí lo que soporte podrá ver y lo permito.</label>
+    <button type="button" disabled={busy || !understood} onClick={() => void enable()} style={{ minHeight: 44 }}>Permitir soporte de Nexora</button>{" "}
     {status.data?.enabled && <button type="button" disabled={busy} onClick={() => void disable()} style={{ minHeight: 44 }}>Quitar acceso</button>}
   </section>;
 }

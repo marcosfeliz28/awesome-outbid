@@ -305,6 +305,7 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
       const support = page.getByRole("region", { name: "Soporte de Nexora" });
       await expect(support).toContainText("Acceso apagado");
       await support.getByLabel("Duración del acceso").selectOption("24h");
+      await support.getByLabel("Leí lo que soporte podrá ver y lo permito.").check();
       await support.getByRole("button", { name: "Permitir soporte de Nexora" }).click();
       await expect(support).toContainText("Contraseña, visible solo ahora");
       await expect(page.getByText(/Soporte de Nexora con acceso hasta/)).toBeVisible();
