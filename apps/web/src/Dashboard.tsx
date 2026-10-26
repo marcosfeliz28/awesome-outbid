@@ -25,12 +25,22 @@ import {
   ArrowRight,
   Plus,
 } from "lucide-react";
-import { Button, Badge, Modal } from "@fitstore/ui";
+import { Button, Badge, Modal, TableFrame } from "@fitstore/ui";
 import { formatMoney, can, lastDaysStart } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
-import { SetupChecklist } from "./Onboarding";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
+import { SetupChecklist } from "./Onboarding";
+import {
+  AskNexora,
+  DailyBrief,
+  DashboardFreshness,
+  ExecutiveMetrics,
+  IntelligentAlerts,
+  profitOf,
+  useBusinessDay,
+} from "./ExecutiveDashboard";
+import type { AskDashboard } from "./dashboardQuestions";
 
 const dayBefore = (date: string) =>
   new Date(Date.parse(date + "T12:00:00Z") - 86400000)
@@ -103,15 +113,24 @@ function DayCard() {
   );
 }
 
-export function Dashboard({ go }: { go: (page: string) => void }) {
+export function Dashboard({
+  go,
+  executive = false,
+  onAsk = () => {},
+}: {
+  go: (page: string) => void;
+  executive?: boolean;
+  onAsk?: AskDashboard;
+}) {
   const user = useStore((s) => s.user)!;
-  const [period, setPeriod] = useState("month");
+  const currentDay = useBusinessDay();
+  const [period, setPeriod] = useState(executive ? "today" : "month");
   const [day, setDay] = useState(today());
   const [voidToApprove, setVoidToApprove] = useState<any>(null);
   const [voidBusy, setVoidBusy] = useState(false);
   const [voidError, setVoidError] = useState("");
   const queryClient = useQueryClient();
-  const to = period === "day" ? day : today(),
+  const to = period === "day" ? day : currentDay,
     from =
       period === "today"
         ? to
@@ -147,7 +166,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
     {
       label: showProfit ? "Ganancia bruta" : "Inventario a la venta",
       value: formatMoney(
-        showProfit ? (data?.grossProfit ?? 0) : (data?.inventoryRetail ?? 0),
+        showProfit ? (profitOf(data) ?? 0) : (data?.inventoryRetail ?? 0),
       ),
       icon: TrendingUp,
       tone: "green",
@@ -174,11 +193,19 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">EL PULSO DE TU NEGOCIO</div>
+          <div className="eyebrow">
+            {executive
+              ? "TU NEGOCIO · DECISIONES DEL DÍA"
+              : "EL PULSO DE TU NEGOCIO"}
+          </div>
           <h1>
             Hola, {user.name.split(" ")[0]} <span className="wave">✦</span>
           </h1>
-          <p>Un vistazo a tu tienda. Un paso más hacia tus metas.</p>
+          <p>
+            {executive
+              ? "Cifras del negocio, pendientes y una lectura con Nexora."
+              : "Un vistazo a tu tienda. Un paso más hacia tus metas."}
+          </p>
         </div>
         <div className="heading-actions">
           <select
@@ -303,90 +330,145 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         </Modal>
       )}
       <QueryState query={query}>
-        <div className="welcome-banner">
-          <div>
-            <span className="banner-chip">
-              <span className="live-dot" />
-              Tu tienda está en movimiento
-            </span>
-            <h2>
-              Pequeñas decisiones.
-              <br />
-              <span>Grandes resultados.</span>
-            </h2>
-            <p>Todo lo que necesitas para vender mejor, en un solo lugar.</p>
-            <button onClick={() => go("reports")}>
-              Explorar mis reportes <ArrowRight size={16} />
-            </button>
-          </div>
-          {/* Ilustración decorativa: el lector de pantalla la omite. */}
-          <div className="banner-illustration" aria-hidden="true">
-            <div className="floating-tag">
-              <TrendingUp size={20} />
-              <span>
-                Tu siguiente meta<strong>Seguir creciendo</strong>
-              </span>
+        {executive && (
+          <>
+            <DashboardFreshness
+              updatedAt={query.dataUpdatedAt}
+              refreshing={query.isFetching}
+              refresh={() => {
+                void query.refetch();
+              }}
+            />
+            <p className="executive-period">
+              Período de ventas: {from} → {to} · Santo Domingo
+            </p>
+            <ExecutiveMetrics
+              data={data || {}}
+              showProfit={showProfit}
+              from={from}
+              to={to}
+              onAsk={onAsk}
+            />
+            <div className="executive-overview">
+              <DailyBrief showProfit={showProfit} onAsk={onAsk} />
+              <IntelligentAlerts
+                alerts={data?.alerts || []}
+                canReview={can(user.permissions, "alerts:write")}
+                from={from}
+                to={to}
+                onAsk={onAsk}
+                go={go}
+              />
             </div>
-            <div className="bag-shape">
-              <div className="bag-handle" />
-              <span>
-                n<span>•</span>
-              </span>
-            </div>
-            <div className="banner-spark one">✦</div>
-            <div className="banner-spark two">✧</div>
-            <div className="floating-ticket">
-              <ReceiptText />
-              <div />
-              <div />
-              <i />
-            </div>
-          </div>
-        </div>
-        <YearPie go={go} />
-        <DayCard />
-        <div className="kpi-grid">
-          {metric.map((m) => (
-            <article className="kpi-card" key={m.label}>
-              <div className="kpi-top">
-                <span>{m.label}</span>
-                <div className={`metric-icon ${m.tone}`}>
-                  <m.icon size={19} />
+          </>
+        )}
+        {!executive && (
+          <>
+            <div className="welcome-banner">
+              <div>
+                <span className="banner-chip">
+                  <span className="live-dot" />
+                  Tu tienda está en movimiento
+                </span>
+                <h2>
+                  Pequeñas decisiones.
+                  <br />
+                  <span>Grandes resultados.</span>
+                </h2>
+                <p>
+                  Todo lo que necesitas para vender mejor, en un solo lugar.
+                </p>
+                <button onClick={() => go("reports")}>
+                  Explorar mis reportes <ArrowRight size={16} />
+                </button>
+              </div>
+              {/* Ilustración decorativa: el lector de pantalla la omite. */}
+              <div className="banner-illustration" aria-hidden="true">
+                <div className="floating-tag">
+                  <TrendingUp size={20} />
+                  <span>
+                    Tu siguiente meta<strong>Seguir creciendo</strong>
+                  </span>
+                </div>
+                <div className="bag-shape">
+                  <div className="bag-handle" />
+                  <span>
+                    n<span>•</span>
+                  </span>
+                </div>
+                <div className="banner-spark one">✦</div>
+                <div className="banner-spark two">✧</div>
+                <div className="floating-ticket">
+                  <ReceiptText />
+                  <div />
+                  <div />
+                  <i />
                 </div>
               </div>
-              <strong>{m.value}</strong>
-              <div className="kpi-note">
-                {typeof m.trend === "number" && (
-                  <span
-                    className={`trend ${m.trend >= 0 ? "positive" : "negative"}`}
-                  >
-                    {m.trend >= 0 ? (
-                      <ArrowUpRight size={14} />
-                    ) : (
-                      <ArrowDownRight size={14} />
-                    )}{" "}
-                    {Math.abs(m.trend)}%
-                  </span>
-                )}
-                {/* Sin ventas en el período anterior no hay porcentaje. */}
-                <span>
-                  {m.trend === null ? "sin datos del período anterior" : m.note}
-                </span>
-              </div>
-            </article>
-          ))}
-        </div>
-        <div className="dashboard-main-grid">
+            </div>
+            <YearPie go={go} />
+            <DayCard />
+            <div className="kpi-grid">
+              {metric.map((m) => (
+                <article className="kpi-card" key={m.label}>
+                  <div className="kpi-top">
+                    <span>{m.label}</span>
+                    <div className={`metric-icon ${m.tone}`}>
+                      <m.icon size={19} />
+                    </div>
+                  </div>
+                  <strong>{m.value}</strong>
+                  <div className="kpi-note">
+                    {typeof m.trend === "number" && (
+                      <span
+                        className={`trend ${m.trend >= 0 ? "positive" : "negative"}`}
+                      >
+                        {m.trend >= 0 ? (
+                          <ArrowUpRight size={14} />
+                        ) : (
+                          <ArrowDownRight size={14} />
+                        )}{" "}
+                        {Math.abs(m.trend)}%
+                      </span>
+                    )}
+                    {/* Sin ventas en el período anterior no hay porcentaje. */}
+                    <span>
+                      {m.trend === null
+                        ? "sin datos del período anterior"
+                        : m.note}
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
+        )}
+        <div
+          className={`dashboard-main-grid ${executive ? "executive-chart-grid" : ""}`}
+        >
           <section className="panel sales-chart">
             <div className="panel-heading">
               <div>
                 <h2>Así van tus ventas</h2>
-                <p>Una historia de crecimiento, día a día.</p>
+                <p>
+                  {executive
+                    ? "Ventas registradas, netas de devoluciones, por fecha."
+                    : "Una historia de crecimiento, día a día."}
+                </p>
               </div>
               <Badge tone="violet">
                 <span className="chart-key" />
                 Ventas
               </Badge>
+              {executive && (
+                <AskNexora
+                  label="Evolución de ventas"
+                  topic="sales"
+                  from={from}
+                  to={to}
+                  onAsk={onAsk}
+                />
+              )}
             </div>
             <div className="chart-wrap">
               <ResponsiveContainer width="100%" height={265}>
@@ -441,6 +523,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   />
                   <Area
                     type="monotone"
+                    isAnimationActive={!executive}
                     dataKey="total"
                     stroke="#8b5cf6"
                     strokeWidth={3}
@@ -459,59 +542,65 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               </button>
             </div>
           </section>
-          <section className="panel alerts-panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Un poco de atención</h2>
-                <p>Lo importante, antes de que sea urgente.</p>
-              </div>
-              <span className="alert-counter">{data?.alerts?.length || 0}</span>
-            </div>
-            <div className="dashboard-alerts">
-              {data?.alerts?.slice(0, 4).map((a: any) => (
-                <button
-                  key={a.id}
-                  className="dashboard-alert"
-                  onClick={() => go("alerts")}
-                >
-                  <span
-                    className={`alert-symbol ${a.severity === "high" ? "orange" : "violet"}`}
-                  >
-                    {a.type === "low_stock" ? (
-                      <Package size={17} />
-                    ) : a.type === "expiring" ? (
-                      <Clock3 size={17} />
-                    ) : (
-                      <TriangleAlert size={17} />
-                    )}
-                  </span>
+          {!executive && (
+            <>
+              <section className="panel alerts-panel">
+                <div className="panel-heading">
                   <div>
-                    <strong>
-                      {a.type === "low_stock"
-                        ? "Stock para reponer"
-                        : a.type === "expiring"
-                          ? "Fecha de vencimiento cerca"
-                          : a.type === "no_movement"
-                            ? "Tiempo de una nueva oportunidad"
-                            : a.type === "expense_budget"
-                              ? "Revisa tu presupuesto"
-                              : "Requiere tu atención"}
-                    </strong>
-                    <p>{a.message}</p>
+                    <h2>Un poco de atención</h2>
+                    <p>Lo importante, antes de que sea urgente.</p>
                   </div>
-                  <ChevronRight size={15} />
+                  <span className="alert-counter">
+                    {data?.alerts?.length || 0}
+                  </span>
+                </div>
+                <div className="dashboard-alerts">
+                  {data?.alerts?.slice(0, 4).map((a: any) => (
+                    <button
+                      key={a.id}
+                      className="dashboard-alert"
+                      onClick={() => go("alerts")}
+                    >
+                      <span
+                        className={`alert-symbol ${a.severity === "high" ? "orange" : "violet"}`}
+                      >
+                        {a.type === "low_stock" ? (
+                          <Package size={17} />
+                        ) : a.type === "expiring" ? (
+                          <Clock3 size={17} />
+                        ) : (
+                          <TriangleAlert size={17} />
+                        )}
+                      </span>
+                      <div>
+                        <strong>
+                          {a.type === "low_stock"
+                            ? "Stock para reponer"
+                            : a.type === "expiring"
+                              ? "Fecha de vencimiento cerca"
+                              : a.type === "no_movement"
+                                ? "Tiempo de una nueva oportunidad"
+                                : a.type === "expense_budget"
+                                  ? "Revisa tu presupuesto"
+                                  : "Requiere tu atención"}
+                        </strong>
+                        <p>{a.message}</p>
+                      </div>
+                      <ChevronRight size={15} />
+                    </button>
+                  ))}
+                  {!data?.alerts?.length && (
+                    <p className="empty-small">
+                      Todo en orden. Tu tienda está al día.
+                    </p>
+                  )}
+                </div>
+                <button className="panel-link" onClick={() => go("alerts")}>
+                  Ver todas las alertas <ArrowRight size={16} />
                 </button>
-              ))}
-              {!data?.alerts?.length && (
-                <p className="empty-small">
-                  Todo en orden. Tu tienda está al día.
-                </p>
-              )}
-            </div>
-            <button className="panel-link" onClick={() => go("alerts")}>
-              Ver todas las alertas <ArrowRight size={16} />
-            </button>
-          </section>
+              </section>
+            </>
+          )}
         </div>
         <div className="dashboard-bottom-grid">
           <section className="panel">
@@ -523,8 +612,17 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               <button className="text-link" onClick={() => go("products")}>
                 Ver productos <ChevronRight size={15} />
               </button>
+              {executive && (
+                <AskNexora
+                  label="Productos destacados"
+                  topic="products"
+                  from={from}
+                  to={to}
+                  onAsk={onAsk}
+                />
+              )}
             </div>
-            <div className="table-wrap" tabIndex={0}>
+            <TableFrame label="Productos destacados">
               <table>
                 <thead>
                   <tr>
@@ -554,7 +652,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableFrame>
           </section>
           <section className="panel category-panel">
             <div className="panel-heading">
@@ -562,6 +660,15 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                 <h2>Cada categoría cuenta</h2>
                 <p>La mezcla que mueve tu tienda.</p>
               </div>
+              {executive && (
+                <AskNexora
+                  label="Categorías"
+                  topic="categories"
+                  from={from}
+                  to={to}
+                  onAsk={onAsk}
+                />
+              )}
             </div>
             {data?.category?.map((c: any) => {
               const total = data.category.reduce(
@@ -600,6 +707,15 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               <h2>Comparativo anual</h2>
               <p>Mismo período del año anterior</p>
             </div>
+            {executive && (
+              <AskNexora
+                label="Comparativo anual"
+                topic="year"
+                from={from}
+                to={to}
+                onAsk={onAsk}
+              />
+            )}
           </div>
           <p>
             {formatMoney(data?.previousYearRevenue ?? 0)} ·{" "}
@@ -614,6 +730,15 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               <h2>Horas pico</h2>
               <p>Ventas por día y hora · Santo Domingo</p>
             </div>
+            {executive && (
+              <AskNexora
+                label="Horas pico"
+                topic="hours"
+                from={from}
+                to={to}
+                onAsk={onAsk}
+              />
+            )}
           </div>
           <div
             className="heatmap"
@@ -662,8 +787,18 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             )}
           </div>
         </section>
+        {executive && <YearPie go={go} onAsk={onAsk} quiet />}
         {showProfit && (
           <div className="financial-strip">
+            {executive && (
+              <AskNexora
+                label="Resultado financiero"
+                topic="profit"
+                from={from}
+                to={to}
+                onAsk={onAsk}
+              />
+            )}
             <div>
               <span>Gastos del período</span>
               <strong>{formatMoney(data?.expenses ?? 0)}</strong>

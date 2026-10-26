@@ -158,3 +158,124 @@ la entrada (login). Nunca en pantallas operativas: caja, tablero, tablas.
 6. **Panel de operadora** (`/plataforma`) con los mismos tokens y tema oscuro.
 7. **Decisión de la dueña:** ¿tema oscuro por defecto? (afecta la caja;
    requiere ajustar las e2e que hoy parten del claro).
+
+## Fase 2 · tablero ejecutivo «Hoy», resumen con IA y accesibilidad del marco
+
+Rama `claude/obsidian-lumina-f2`, sobre `claude/obsidian-lumina-f1` (A). Sigue
+el plan de `docs/diseno/OL_COMPARACION_26OCT.md` y las decisiones de la dueña
+del 26-oct. Sin cambios de API, base de datos, pagos, permisos ni acceso.
+
+### 1. Qué se trajo y de dónde
+
+**De B (`chatgpt-nube/obsidian-lumina-fase1`), solo accesibilidad y primitivas,
+sobre los tokens de A** (no se importó `adminAppearance.css`, ni
+`useAdminAppearance`, ni `AdminDesignSystem`, ni el alto contraste):
+
+- `packages/ui`: `Card` (región con título enlazado), `Field` (etiqueta, ayuda y
+  error enlazados con `aria-describedby`/`aria-invalid`), `TableFrame` (región
+  con nombre y alcanzable con el teclado) y `Modal` que devuelve el foco a quien
+  lo abrió. `Alert` no se trajo: es `.notice` de A. `TableFrame` ya se usa en la
+  tabla «Productos destacados» del Resumen; `Card` y `Field` quedan listas para
+  la fase 3.
+- Marco (`App.tsx`): enlace «Saltar al contenido», `nav` con nombre,
+  `aria-controls` del botón del menú, `main` enfocable (`id="main-content"`).
+  Estilos nuevos al final de `styles.css` con los tokens de A. La caja conserva
+  `.main-content`, `.product-card`, `.cart-items`, `.connection`, F2/F4/F8/F12.
+
+**De C (`chatgpt-nube/obsidian-lumina-fase2`, PR #9):** `ExecutiveDashboard.tsx`,
+`dashboardQuestions.ts`, `Dashboard.tsx`, `Assistant.tsx`, `YearPie.tsx` y
+`tests/obsidian-dashboard.mjs` (Playwright manual, ver riesgos).
+`ExecutiveDashboard.css` se reescribió sobre los tokens de A (`--border-strong`,
+`--accent-violet`, `--radius-sm`…), sin el prefijo `[data-admin-appearance]`.
+
+**Condición propia del tablero ejecutivo** (`App.tsx`, `executiveDashboard`):
+producto (`PRODUCT_TENANCY_REQUIRED`) **y** rol admin o gerente **y** permiso
+`reports:read`. No depende de ningún hook de apariencia. La cajera, la vendedora
+y la tienda heredada ven el Resumen de siempre, abierto en «Mes».
+
+### 2. Decisiones de la dueña aplicadas
+
+- Abre en **«Hoy»**; «Mes» sigue en el selector.
+- La administración conserva el selector **claro/oscuro** (un solo sistema de
+  tema, `data-theme`). La caja y las cajeras arrancan en **claro** (el valor
+  inicial ya era claro; no se cambió).
+- **Ganancia = (precio − costo)/precio, sin restar ITBIS.** El API devuelve
+  `grossProfit` = venta neta de ITBIS − costo. En el cliente la ganancia bruta se
+  calcula `revenue − costTotal` (`profitOf`, `ExecutiveDashboard.tsx`) en la
+  tarjeta del Resumen (también el modo no ejecutivo), en el texto «Tu día, en
+  claro» y la pregunta de la tarjeta a Nexora ya no dice «ITBIS neto». El
+  margen y el círculo anual ya usaban ventas − costo.
+- **Resumen con IA:** solo se pide al pulsar el botón (un único `generate()`,
+  verificado en prueba). El texto dice que esa consulta cuenta en la cuota, que
+  **abrir una tarjeta con «Pregúntale a Nexora» no gasta cuota y que enviar la
+  pregunta sí**; el mismo aviso aparece en el asistente al llegar desde una
+  tarjeta. El servidor ya filtra costos y márgenes para vendedoras y aplica la
+  cuota y el límite por minuto.
+
+### 3. Arreglos de la mezcla 4 conservados
+
+- Porcentaje nulo: `typeof m.trend === "number"` y «sin datos del período
+  anterior». También `lastDaysStart(7)` y `SetupChecklist`.
+- Markdown del asistente (`renderMarkdown`), y ahora también en la lectura con
+  IA del tablero.
+- Evento `nexora:abrir-asistente`: **no existe en A** (llegó con
+  `claude/producto-mezcla-4`, commits `0c946f6d` y siguientes, aún no en f1).
+  Se añadió el mismo `useEffect` de 7 líneas en `Assistant.tsx`, idéntico al de
+  mezcla 4 para que la mezcla no choque; quien lo emite (`QuickQuestions`) llega
+  con esa rama.
+
+### 4. Otros cambios
+
+- `Assistant.css`: el botón flotante «Pregúntale a Nexora» quedaba sin fondo
+  (blanco sobre blanco) porque `button:not(.button)` de `styles.css` tiene la
+  misma especificidad; se refuerza el selector. Error previo, visible en A.
+- Texto «Interpretación de IA · hora · Contrasta…» sin doble punto.
+
+### 5. Conflictos
+
+`Dashboard.tsx` y `Assistant.tsx` chocaron con A como en la fusión de prueba
+(C reformateó los archivos). Se tomó C completo y se repusieron a mano los
+arreglos de la sección 3. `App.tsx` no chocó (se aplicó a mano). No hay otros.
+
+### 6. Pendiente para Claude (cambio de API, no hecho aquí)
+
+- `GET /dashboard/summary` (`apps/api/src/reports.ts`, ~línea 545):
+  `grossProfit = netSales − costTotal` resta el ITBIS. Debe ser
+  `revenue − costTotal`. El reporte exportado (línea ~914) usa
+  `summary.grossProfit` y mostraría la fórmula vieja.
+- `netProfit` (`netProfit(net, cost, expense, fees)`) también parte de la venta
+  neta de ITBIS; la franja financiera del Resumen lo muestra tal cual. Decidir
+  si «Ganancia neta» también pasa a ventas − costo − gastos − comisiones.
+- Cuando el API cambie, `profitOf` pasa a leer `grossProfit` y se borra la
+  conversión del cliente.
+
+### 7. Capturas (`docs/diseno/obsidian-lumina/f2/`)
+
+`antes-*` (rama A) y `despues-*` (esta rama), 1366×768 y 390×844, claro y
+oscuro: `dashboard-{desktop,mobile}`, `resumen-ia-…`, `pregunta-tarjeta-…`.
+Las cifras son **datos de ejemplo simulados** en el navegador (la empresa de
+prueba no tiene ventas); no son datos reales.
+
+### 8. Pruebas
+
+- Nueva: `tests/obsidian-lumina-f2.test.ts` (16 pruebas: primitivas, marco,
+  condición del tablero, «Hoy», arreglos de mezcla 4, solo tokens de A, fórmula
+  de ganancia, IA solo con botón). `accessibility-contract.test.ts` sin cambios
+  y en verde.
+- `pnpm typecheck`, `pnpm lint`, build web y api en verde (Node 22; el proyecto
+  pide 24).
+- E2E contra PostgreSQL 16 local: ver la entrega.
+
+### 9. Riesgos abiertos
+
+- `tests/obsidian-dashboard.mjs` es Playwright manual y no corre en CI. Se
+  adaptó (sin el botón de alto contraste de B; salida con `LUMINA_OUT`) y pasa
+  contra el producto en desarrollo (`LUMINA_TEST_URL=http://127.0.0.1:5180`,
+  `VITE_PRODUCT_TENANCY=required`). El tablero ejecutivo solo existe en el
+  producto, así que las e2e de la tienda no lo ejercitan.
+- La ganancia del cliente y la del servidor difieren hasta que Claude cambie el
+  API (sección 6); la exportación seguirá con la fórmula vieja.
+- El panel del asistente mantiene sus colores propios (azul oscuro) en claro y
+  oscuro; no se rediseñó.
+- La alerta del tablero solo ofrece «Revisar alertas» con `alerts:write`
+  (comportamiento de C).

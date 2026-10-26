@@ -7047,3 +7047,30 @@ td strong {
     font-size: 12px;
   }
 }
+
+/* --- Fase 2: accesibilidad del marco y primitivas --------------------------- */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -64px;
+  z-index: 200;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--action);
+  color: var(--on-action);
+  font-weight: 700;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 8px;
+}
+#main-content:focus {
+  outline: none;
+}
+.field > label {
+  font-weight: 550;
+}
+.table-wrap:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

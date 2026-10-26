@@ -1,0 +1,248 @@
+/* Tablero ejecutivo (admin o gerente con reports:read). Solo usa los tokens de
+   Obsidian Lumina (styles.css); las clases existen únicamente en ese tablero. */
+.dashboard-freshness {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.dashboard-freshness button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dashboard-freshness button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.executive-period {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 8px 0 16px;
+}
+.executive-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.executive-metric {
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+}
+.executive-metric h2 {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.executive-metric > strong {
+  display: block;
+  font-size: clamp(22px, 2vw, 30px);
+  letter-spacing: -0.6px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.executive-metric > p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 12px 0 16px;
+}
+.nexora-card-question {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.nexora-card-question:hover {
+  text-decoration: underline;
+}
+.executive-metric .nexora-card-question {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+}
+.executive-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 24px;
+}
+:is(.daily-brief, .intelligent-alerts) {
+  padding: 24px;
+}
+.executive-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.executive-card-heading h2 {
+  font-size: 20px;
+  line-height: 1.4;
+  letter-spacing: -0.35px;
+}
+.executive-card-heading > svg {
+  color: var(--primary);
+}
+.executive-card-heading .eyebrow {
+  display: block;
+  line-height: 1.7;
+}
+.daily-brief-facts {
+  font-size: 17px;
+  line-height: 1.8;
+  margin: 0 0 12px;
+}
+.executive-source {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 10px 0;
+}
+.daily-brief-ai {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.daily-brief-ai h3 {
+  font-size: 14px;
+}
+.daily-brief-ai > p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-block: 10px;
+}
+.daily-brief-ai .button {
+  margin-block: 8px;
+}
+.daily-ai-answer {
+  border-left: 2px solid var(--accent-violet);
+  background: var(--surface-soft);
+  padding: 16px;
+  margin-top: 16px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.daily-ai-answer .daily-ai-text {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.daily-ai-answer .daily-ai-text :is(p, ul, ol) {
+  margin: 0 0 8px;
+  white-space: normal;
+}
+.daily-ai-answer .daily-ai-text :is(ul, ol) {
+  padding-left: 22px;
+}
+.daily-ai-answer small {
+  margin-top: 12px;
+  color: var(--muted);
+}
+.intelligent-alert-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+.intelligent-alert-list li {
+  padding-block: 18px;
+  border-top: 1px solid var(--border);
+}
+.intelligent-alert-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 12px;
+}
+.intelligent-alert-list h3 {
+  font-size: 14px;
+  margin: 12px 0 6px;
+}
+.intelligent-alert-list p {
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.intelligent-alert-list small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+.executive-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.executive-empty {
+  padding: 20px 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.executive-chart-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.executive-chart-grid .panel-heading,
+.year-pie > .panel-heading {
+  flex-wrap: wrap;
+}
+@media (max-width: 1150px) {
+  .executive-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1000px) {
+  .executive-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .executive-metrics {
+    gap: 12px;
+  }
+  :is(.daily-brief, .intelligent-alerts, .executive-metric) {
+    padding: 20px;
+  }
+  .executive-overview {
+    gap: 16px;
+  }
+}
+@media (max-width: 360px) {
+  .executive-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
