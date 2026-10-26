@@ -2525,7 +2525,7 @@ export function Customers() {
     { key: "notes", label: "Notas", type: "textarea" },
   ];
   return (
-    <>
+    <div className="customers-screen">
       <Heading
         title="Clientes"
         caption="Consulta, busca y actualiza los datos de tus clientes."
@@ -2673,7 +2673,7 @@ export function Customers() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
 
