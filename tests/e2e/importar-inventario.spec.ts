@@ -63,6 +63,7 @@ test.describe("Importar inventario", () => {
   test("la administración revisa, confirma y carga", async ({ page }) => {
     await login(page, "admin@fitstore.demo");
     await page.evaluate(() => (location.hash = "products"));
+    await page.getByRole("button", { name: "Más" }).click();
     await page.getByRole("button", { name: "Importar inventario" }).click();
     const dialog = page.getByRole("dialog", { name: "Importar inventario" });
     await expect(dialog).toBeVisible();
@@ -122,6 +123,7 @@ test.describe("Importar inventario", () => {
     await page.setViewportSize({ width: 320, height: 640 });
     await login(page, "admin@fitstore.demo");
     await page.evaluate(() => (location.hash = "products"));
+    await page.getByRole("button", { name: "Más" }).click();
     await page.getByRole("button", { name: "Importar inventario" }).click();
     const dialog = page.getByRole("dialog", { name: "Importar inventario" });
     await dialog.getByLabel(/Archivo de Excel/).setInputFiles({
@@ -170,6 +172,7 @@ test.describe("Importar inventario", () => {
     expect(made.ok(), await made.text()).toBe(true);
     await login(page, "admin@fitstore.demo");
     await page.evaluate(() => (location.hash = "products"));
+    await page.getByRole("button", { name: "Más" }).click();
     await page.getByRole("button", { name: "Importar inventario" }).click();
     const dialog = page.getByRole("dialog", { name: "Importar inventario" });
     await dialog.getByLabel(/Archivo de Excel/).setInputFiles({

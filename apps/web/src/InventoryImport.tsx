@@ -100,6 +100,21 @@ export function changesCsv(changes: Change[]) {
 }
 const MAX_BYTES = 5 * 1024 * 1024;
 
+/** El diálogo solo: «Más» desmonta sus botones al elegir, así que el estado vive fuera. */
+export function InventoryImportModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <Modal open={open} onClose={onClose} title="Importar inventario" wide>
+      {open && <InventoryImport onDone={onClose} />}
+    </Modal>
+  );
+}
+
 export function InventoryImportButton() {
   const [open, setOpen] = useState(false);
   return (
@@ -108,14 +123,7 @@ export function InventoryImportButton() {
         <Upload size={16} />
         Importar inventario
       </Button>
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title="Importar inventario"
-        wide
-      >
-        {open && <InventoryImport onDone={() => setOpen(false)} />}
-      </Modal>
+      <InventoryImportModal open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

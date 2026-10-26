@@ -85,10 +85,11 @@ import {
 } from "./managementMessages";
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
-import { MoreMenu } from "./admin-ui";
+import { MoreMenu, TableSkeleton } from "./admin-ui";
+import "./lumina-catalogo.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
-import { InventoryImportButton } from "./InventoryImport";
+import { InventoryImportModal } from "./InventoryImport";
 import { NcfSequenceSettings } from "./NcfSequenceSettings";
 import {
   applyPendingSaleReprice,
@@ -272,7 +273,8 @@ export function Catalog() {
     [detail, setDetail] = useState<Product | null>(null),
     [matrix, setMatrix] = useState<Product | null>(null),
     [editing, setEditing] = useState<any>(null),
-    [labels, setLabels] = useState<Product | null>(null);
+    [labels, setLabels] = useState<Product | null>(null),
+    [importing, setImporting] = useState(false);
   const [tab, setTab] = useState("General");
   const write = can(user.permissions, "catalog:write");
   // Misma búsqueda que la caja: código de barras, SKU de variante, sin acentos.
@@ -320,70 +322,82 @@ export function Catalog() {
   return (
     <>
       <Heading
-        title="Tu catálogo, con personalidad"
-        caption="Cada producto, cada variante y cada oportunidad, en su lugar."
+        title="Productos"
+        caption="Busca, revisa precios y existencias, y mantén tu catálogo al día."
+        eyebrow={false}
+        more={
+          write ? (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  download(
+                    "/catalog-template.xlsx",
+                    "plantilla-productos.xlsx",
+                  ).catch(() =>
+                    toast(
+                      "No pudimos descargar la plantilla. Revisa tu conexión e inténtalo de nuevo.",
+                      true,
+                    ),
+                  )
+                }
+              >
+                <Download size={16} />
+                Plantilla
+              </Button>
+              <label className="button secondary">
+                <Upload size={16} />
+                Importar Excel
+                <input
+                  type="file"
+                  accept=".xlsx"
+                  className="sr-only"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      try {
+                        const data = new FormData();
+                        data.append("file", file);
+                        const result = await api("/products/import", {
+                          method: "POST",
+                          body: data,
+                        });
+                        toast(`${result.imported} productos importados.`);
+                        await client.invalidateQueries();
+                      } catch {
+                        toast(
+                          "No pudimos importar el archivo. Revisa las columnas y los datos de la plantilla antes de volver a intentar.",
+                          true,
+                        );
+                      }
+                      e.target.value = "";
+                    }
+                  }}
+                />
+              </label>
+              {can(user.permissions, "inventory:import") && (
+                <Button variant="secondary" onClick={() => setImporting(true)}>
+                  <Upload size={16} />
+                  Importar inventario
+                </Button>
+              )}
+            </>
+          ) : undefined
+        }
       >
         {write && (
-          <>
-            <Button
-              variant="secondary"
-              onClick={() =>
-                download(
-                  "/catalog-template.xlsx",
-                  "plantilla-productos.xlsx",
-                ).catch(() =>
-                  toast(
-                    "No pudimos descargar la plantilla. Revisa tu conexión e inténtalo de nuevo.",
-                    true,
-                  ),
-                )
-              }
-            >
-              <Download size={16} />
-              Plantilla
-            </Button>
-            <label className="button secondary">
-              <Upload size={16} />
-              Importar Excel
-              <input
-                type="file"
-                accept=".xlsx"
-                className="sr-only"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    try {
-                      const data = new FormData();
-                      data.append("file", file);
-                      const result = await api("/products/import", {
-                        method: "POST",
-                        body: data,
-                      });
-                      toast(`${result.imported} productos importados.`);
-                      await client.invalidateQueries();
-                    } catch {
-                      toast(
-                        "No pudimos importar el archivo. Revisa las columnas y los datos de la plantilla antes de volver a intentar.",
-                        true,
-                      );
-                    }
-                    e.target.value = "";
-                  }
-                }}
-              />
-            </label>
-            {can(user.permissions, "inventory:import") && (
-              <InventoryImportButton />
-            )}
-            <Button onClick={() => setCreate(true)}>
-              <Plus size={17} />
-              Nuevo producto
-            </Button>
-          </>
+          <Button onClick={() => setCreate(true)}>
+            <Plus size={17} />
+            Nuevo producto
+          </Button>
         )}
       </Heading>
-      <div className="panel">
-        <div className="table-toolbar">
+      <InventoryImportModal
+        open={importing}
+        onClose={() => setImporting(false)}
+      />
+      <div className="panel catalog-panel">
+        <div className="table-toolbar catalog-toolbar">
           <Filter
             value={search}
             onChange={setSearch}
@@ -403,96 +417,109 @@ export function Catalog() {
           </select>
           <Badge tone="violet">{rows.length} productos</Badge>
         </div>
-        <QueryState query={query}>
-          <DataTable
-            cards
-            rows={rows}
-            empty={
-              query.data?.length
-                ? "No encontramos productos"
-                : "Aún no tienes productos"
-            }
-            emptyDescription={
-              query.data?.length
-                ? "Revisa los filtros o agrega un producto con Nuevo producto."
-                : "Crea tu primer producto con «Nuevo producto» o importa desde Excel."
-            }
-            columns={[
-              {
-                label: "Producto",
-                render: (p) => (
-                  <div className="table-product">
-                    <img
-                      src={p.imageUrl || "/products/accessories.svg"}
-                      alt=""
-                    />
-                    <div>
-                      <strong>{p.name}</strong>
-                      <small>
-                        {p.sku} · {p.brand}
-                      </small>
+        {query.isLoading ? (
+          <TableSkeleton cols={5} label="Cargando productos" />
+        ) : (
+          <QueryState query={query}>
+            <DataTable
+              cards
+              rows={rows}
+              empty={
+                query.data?.length
+                  ? "No encontramos productos"
+                  : "Aún no tienes productos"
+              }
+              emptyDescription={
+                query.data?.length
+                  ? "Revisa los filtros o agrega un producto con Nuevo producto."
+                  : "Crea tu primer producto con «Nuevo producto» o importa desde Excel."
+              }
+              columns={[
+                {
+                  label: "Producto",
+                  render: (p) => (
+                    <div className="table-product">
+                      <img
+                        src={p.imageUrl || "/products/accessories.svg"}
+                        alt=""
+                      />
+                      <div>
+                        <strong>{p.name}</strong>
+                        <small>
+                          {p.sku} · {p.brand}
+                        </small>
+                      </div>
                     </div>
-                  </div>
-                ),
-              },
-              {
-                label: "Categoría",
-                render: (p) => <Badge>{p.category.name}</Badge>,
-              },
-              { label: "Variantes", render: (p) => p.variants.length },
-              {
-                label: "Precio",
-                render: (p) => formatMoney(p.variants[0]?.price || 0),
-              },
-              {
-                label: "Stock",
-                render: (p) => {
-                  const stock = p.variants.reduce(
-                    (a: number, v: any) => a + Number(v.stock),
-                    0,
-                  );
-                  return (
-                    <Badge
-                      tone={stock <= Number(p.minStock) ? "warning" : "success"}
-                    >
-                      {stock} unidades
-                    </Badge>
-                  );
+                  ),
                 },
-              },
-              {
-                label: "Acciones",
-                render: (p) => (
-                  <div className="table-actions">
-                    <button
-                      aria-label={"Ver " + p.name}
-                      onClick={() => {
-                        setDetail(p);
-                        setTab("General");
-                      }}
-                    >
-                      <Eye size={17} />
-                    </button>
-                    <button
-                      aria-label={"Etiquetas de " + p.name}
-                      onClick={() => setLabels(p)}
-                    >
-                      <Printer size={17} />
-                    </button>
-                    {write && (
-                      <button
-                        aria-label={"Variantes de " + p.name}
-                        onClick={() => setMatrix(p)}
+                {
+                  label: "Categoría",
+                  render: (p) => <Badge>{p.category.name}</Badge>,
+                },
+                {
+                  label: "Variantes",
+                  className: "catalog-num",
+                  render: (p) => p.variants.length,
+                },
+                {
+                  label: "Precio",
+                  className: "catalog-num",
+                  render: (p) => formatMoney(p.variants[0]?.price || 0),
+                },
+                {
+                  label: "Stock",
+                  className: "catalog-num",
+                  render: (p) => {
+                    const stock = p.variants.reduce(
+                      (a: number, v: any) => a + Number(v.stock),
+                      0,
+                    );
+                    return (
+                      <Badge
+                        tone={
+                          stock <= Number(p.minStock) ? "warning" : "success"
+                        }
                       >
-                        <Boxes size={17} />
+                        {stock} unidades
+                        {stock <= Number(p.minStock) ? " · bajo" : ""}
+                      </Badge>
+                    );
+                  },
+                },
+                {
+                  label: "Acciones",
+                  render: (p) => (
+                    <div className="table-actions catalog-actions">
+                      <button
+                        aria-label={"Ver " + p.name}
+                        onClick={() => {
+                          setDetail(p);
+                          setTab("General");
+                        }}
+                      >
+                        <Eye size={17} />
                       </button>
-                    )}
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </QueryState>
+                      <button
+                        aria-label={"Etiquetas de " + p.name}
+                        onClick={() => setLabels(p)}
+                      >
+                        <Printer size={17} />
+                      </button>
+                      {write && (
+                        <button
+                          aria-label={"Variantes de " + p.name}
+                          onClick={() => setMatrix(p)}
+                        >
+                          <Boxes size={17} />
+                        </button>
+                      )}
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </QueryState>
+        )}
       </div>
       {create && (
         <FormModal
@@ -573,10 +600,11 @@ export function Catalog() {
         title={detail?.name || "Producto"}
         wide
       >
-        <div className="tabs">
+        <div className="tabs catalog-tabs">
           {["General", "Variantes", "Lotes", "Kardex"].map((t) => (
             <button
               className={tab === t ? "active" : ""}
+              aria-current={tab === t ? "true" : undefined}
               key={t}
               onClick={() => setTab(t)}
             >
@@ -626,12 +654,21 @@ export function Catalog() {
                     </span>
                   ),
                 },
-                { label: "Precio", render: (v) => formatMoney(v.price) },
-                { label: "Stock", render: (v) => v.stock },
+                {
+                  label: "Precio",
+                  className: "catalog-num",
+                  render: (v) => formatMoney(v.price),
+                },
+                {
+                  label: "Stock",
+                  className: "catalog-num",
+                  render: (v) => v.stock,
+                },
                 ...(can(user.permissions, "profit:read")
                   ? [
                       {
                         label: "Costo",
+                        className: "catalog-num",
                         render: (v: any) => formatMoney(v.costAvg),
                       },
                     ]
@@ -663,7 +700,11 @@ export function Catalog() {
                   render: (l) =>
                     l.expiryDate ? dateLabel(l.expiryDate) : "No aplica",
                 },
-                { label: "Cantidad", render: (l) => l.qty },
+                {
+                  label: "Cantidad",
+                  className: "catalog-num",
+                  render: (l) => l.qty,
+                },
               ]}
             />
           ) : (

@@ -237,6 +237,7 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     const sheet = book.addWorksheet("Productos");
     sheet.addRow(["Nombre", "SKU", "ID categoría", "Código de barras", "Precio", "Costo"]);
     for (let i = 1; i <= 3; i++) sheet.addRow([`Artículo E2E ${business}-${i}`, `E2E-${business}-${i}`, categories[0].id, `BE2E-${business}-${i}`, 20, 10]);
+    await page.getByRole("button", { name: "Más" }).click();
     await page.locator('input[type="file"][accept=".xlsx"]').setInputFiles({ name: "tres-productos.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from(await book.xlsx.writeBuffer()) });
     await expect(page.getByText("3 productos importados.")).toBeVisible();
     const importedProducts = await (await page.request.get(`${web}/api/products`, { headers: auth })).json();
