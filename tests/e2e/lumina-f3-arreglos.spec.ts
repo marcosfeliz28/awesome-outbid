@@ -121,3 +121,21 @@ test("Productos: la cabecera lleva su gancho y mide 44 px", async ({
   await expect(page.locator(".main-content h1", { hasText: "Clientes" })).toBeVisible();
   await expect(page.locator(".catalog-heading")).toHaveCount(0);
 });
+
+test("Reportes: Excel y PDF quedan deshabilitados con el rango de fechas invertido", async ({
+  page,
+}) => {
+  await entrar(page, "reports");
+  const excel = page.locator(".heading-actions").getByRole("button", { name: "Excel" });
+  const mas = masDe(page);
+  await mas.click();
+  const pdf = page.getByRole("button", { name: "PDF" });
+  await expect(excel).toBeEnabled();
+  await expect(pdf).toBeEnabled();
+  await page.locator(".date-filters input[type=date]").first().fill("2030-01-02");
+  await page.locator(".date-filters input[type=date]").nth(1).fill("2030-01-01");
+  await expect(page.getByRole("alert")).toContainText("posterior a la final");
+  await expect(excel).toBeDisabled();
+  await mas.click(); // escribir en las fechas sacó el foco y cerró «Más»
+  await expect(pdf).toBeDisabled();
+});

@@ -2,6 +2,12 @@
 
 Rama `claude-pc/lumina-f3-reportes`. Solo visual y de estructura: no cambian cifras, fórmulas, consultas ni exportaciones.
 
+## Cambios de comportamiento (declarados)
+
+- **Excel y PDF se deshabilitan (`disabled`) mientras el rango de fechas está invertido.** Antes los botones estaban siempre habilitados y pedían el archivo con un rango inválido.
+- **PDF pasó a «Más»** (la acción principal de la cabecera es Excel). Con «Más» abierto, escribir en las fechas saca el foco del menú y lo cierra.
+- Cubierto en `tests/e2e/lumina-f3-arreglos.spec.ts` («Excel y PDF quedan deshabilitados con el rango de fechas invertido»).
+
 ## Cambios y por qué
 
 - **Cabecera**: `Heading title="Reportes"` con `eyebrow={false}`. Se quitó la frase «Los números cuentan tu historia». Una acción principal (**Excel**) y **PDF** dentro de «Más». Los botones conservan su nombre y la misma función de descarga (ahora un solo `exportReport`). Con fechas invertidas ambos quedan deshabilitados (antes se podía pedir un archivo con un rango inválido). En «Formal» (DGII) e «Ingresos por día» no se muestran, porque esos paneles traen sus propias acciones.
