@@ -166,6 +166,16 @@ const serializeAll = <T>(keys: string[], work: () => Promise<T>): Promise<T> =>
 const locked = (row: { lockedUntil: Date | null }, now: Date) =>
   !!row.lockedUntil && row.lockedUntil > now;
 
+/** El aviso de bloqueo dice cuánto falta de verdad, no siempre «15 minutos». */
+export function lockedMessage(message: string, until: Date, now: Date) {
+  const minutes = Math.max(1, Math.ceil((until.getTime() - now.getTime()) / 60_000));
+  const left = minutes === 1 ? "1 minuto" : `${minutes} minutos`;
+  const fixed = `${ATTEMPT_LOCK_MINUTES} minutos`;
+  return message.includes(fixed)
+    ? message.replace(fixed, left)
+    : `${message} Falta${minutes === 1 ? "" : "n"} ${left}.`;
+}
+
 // Cinco fallos con la misma clave la bloquean 15 minutos. La contraseña usa
 // el mismo contador, con su propia clave y mensajes (R9-seguridad-1). Los
 // cupos (`hooks.budgets`) se comprueban antes de verificar y cuentan cada
@@ -197,7 +207,8 @@ export async function verifyAttempt(
           create: { key },
           update: {},
         });
-        if (locked(row, now)) return { blocked: messages.blocked };
+        if (locked(row, now))
+          return { blocked: lockedMessage(messages.blocked, row.lockedUntil, now) };
         const budgetRows = [];
         for (const budget of budgets) {
           const budgetRow = await tx.authAttempt.upsert({
@@ -205,7 +216,10 @@ export async function verifyAttempt(
             create: { key: budget.key },
             update: {},
           });
-          if (locked(budgetRow, now)) return { blocked: budget.message };
+          if (locked(budgetRow, now))
+            return {
+              blocked: lockedMessage(budget.message, budgetRow.lockedUntil, now),
+            };
           budgetRows.push(budgetRow);
         }
         if (row.lockedUntil)

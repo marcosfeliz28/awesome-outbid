@@ -396,8 +396,16 @@ export function Catalog() {
           <DataTable
             cards
             rows={rows}
-            empty="No encontramos productos"
-            emptyDescription="Revisa los filtros o agrega un producto con Nuevo producto."
+            empty={
+              query.data?.length
+                ? "No encontramos productos"
+                : "Aún no tienes productos"
+            }
+            emptyDescription={
+              query.data?.length
+                ? "Revisa los filtros o agrega un producto con Nuevo producto."
+                : "Crea tu primer producto con «Nuevo producto» o importa desde Excel."
+            }
             columns={[
               {
                 label: "Producto",
@@ -1831,6 +1839,11 @@ export function Cash() {
             </p>
             <strong>{formatMoney(active.expected.cash)}</strong>
             <span>Efectivo esperado</span>
+            <small>
+              Sólo lo que entró a esta gaveta. Las ventas a crédito y lo
+              «Recibido por la dueña» salen en Reportes pero no aquí; por eso
+              los totales pueden ser distintos sin que haya descuadre.
+            </small>
           </div>
           <div className="panel cash-methods">
             <div>
@@ -2534,7 +2547,7 @@ export function Customers() {
       {anonymizing && (
         <ConfirmModal
           title="Anonimizar cliente"
-          description={`Se eliminarán los datos personales de ${anonymizing.name}: nombre, teléfono, correo, cédula/RNC, notas, fotos de comprobantes y su nombre en motivos, referencias, bitácora y avisos pendientes. Las ventas y sus montos se conservarán. Los avisos que ya llegaron a Telegram y las copias de seguridad se eliminan al vencer su plazo. Esta acción no se puede deshacer.`}
+          description={`${anonymizing.debt > 0 ? `${anonymizing.name} todavía debe ${formatMoney(anonymizing.debt)} (crédito o contraentrega): no se puede anonimizar hasta que salde la deuda. ` : ""}Se eliminarán los datos personales de ${anonymizing.name}: nombre, teléfono, correo, cédula/RNC, notas, fotos de comprobantes y su nombre en motivos, referencias, bitácora y avisos pendientes. Las ventas y sus montos se conservarán. Los avisos que ya llegaron a Telegram y las copias de seguridad se eliminan al vencer su plazo. Esta acción no se puede deshacer.`}
           confirmLabel="Anonimizar"
           onClose={() => setAnonymizing(null)}
           onConfirm={async (reason) => {
@@ -4737,9 +4750,9 @@ export function Configuration() {
             },
             {
               key: "pin",
-              label: "PIN nuevo de 6 dígitos (opcional)",
+              label: "PIN de caja nuevo, 6 dígitos (opcional)",
               type: "password",
-              help: "Déjalo vacío para conservar el PIN actual. Los PIN antiguos de 4 o 5 dígitos siguen sirviendo, pero conviene cambiarlos.",
+              help: "El PIN autoriza en caja y cambia de usuario; no es la contraseña para entrar (esa se cambia con «Restablecer contraseña»). Déjalo vacío para conservar el PIN actual. Los PIN antiguos de 4 o 5 dígitos siguen sirviendo, pero conviene cambiarlos.",
             },
           ]}
           initial={{ name: userEdit.name, username: userEdit.username || "" }}
