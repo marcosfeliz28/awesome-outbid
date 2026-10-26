@@ -1459,14 +1459,14 @@ export async function mySales(
   };
   // Arqueo ciego, igual que el dashboard: sin privilegio de caja no se
   // desglosa lo cobrado en cajas todavía abiertas.
-  const hidden = canViewCashExpected(actor)
+  const open = canViewCashExpected(actor)
     ? []
-    : (
-        await db.cashSession.findMany({
-          where: { branchId: actor.branchId, closedAt: null },
-          select: { id: true },
-        })
-      ).map((s) => s.id);
+    : await db.cashSession.findMany({
+        where: { branchId: actor.branchId, closedAt: null },
+        select: { id: true, userId: true },
+      });
+  const hidden = open.map((s) => s.id);
+  const ownOpen = open.some((s) => s.userId === actor.id);
   const [sales, payments, last, top] = await Promise.all([
     db.sale.aggregate({ where, _sum: { total: true }, _count: true }),
     db.payment.groupBy({
@@ -1516,10 +1516,26 @@ export async function mySales(
       sale: where,
       method: "transfer",
       status: "pending_verification",
+      entryType: { not: "installment" },
     },
     _sum: { amount: true },
     _count: true,
   });
+  // Caja ciega: con caja propia abierta (o cobros en una abierta) ningún
+  // importe, ni suelto ni sumable, para que no se deduzca el efectivo esperado.
+  if (ownOpen || hiddenUntilClose) {
+    const [{ units }] = await db.$queryRaw<{ units: unknown }[]>`SELECT COALESCE(SUM(i.qty-i."returnedQty"),0) AS units FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" WHERE s."branchId"=${actor.branchId} AND s."sellerId"=${actor.id}::uuid AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}`;
+    return {
+      day,
+      from,
+      invoices: sales._count,
+      units: d(units as any).toNumber(),
+      hiddenUntilClose: true as const,
+      topProduct: top[0]
+        ? { name: top[0].name, units: d(top[0].units as any).toNumber() }
+        : null,
+    };
+  }
   return {
     day,
     from,
@@ -1528,7 +1544,7 @@ export async function mySales(
     methods: Object.fromEntries(
       Object.entries(methods).map(([k, v]) => [k, money(v)]),
     ) as Record<"cash" | "card" | "transfer" | "credit" | "credit_note", number>,
-    hiddenUntilClose,
+    hiddenUntilClose: false as const,
     pendingTransfers: {
       count: pending._count,
       amount: money(pending._sum.amount ?? 0),

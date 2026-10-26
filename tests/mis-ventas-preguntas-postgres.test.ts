@@ -135,7 +135,21 @@ beforeAll(async () => {
   await sale(TENANT, cajera.user, 50, "card", { session: id(30) });
   await sale(TENANT, cajera.user, 30, "credit");
   await sale(TENANT, cajera.user, 999, "cash", { status: "voided" });
-  await sale(TENANT, otra.user, 500, "cash");
+  const ajena = await sale(TENANT, otra.user, 500, "cash");
+  // Una transferencia propia sin verificar y un abono de la dueña por
+  // transferencia sobre la misma venta: solo la primera es de la cajera.
+  for (const [n2, type, amount] of [
+    [1, "sale", 40],
+    [2, "installment", 60],
+  ] as const)
+    await q(
+      `INSERT INTO "Payment" (id,"tenantId","saleId",method,amount,tendered,status,"entryType") VALUES ($1::uuid,$2::uuid,$3::uuid,'transfer',$4,$4,'pending_verification',$5)`,
+      id(400 + n2),
+      TENANT,
+      ajena,
+      amount,
+      type,
+    );
   await sale(B, cajeraB.user, 700, "transfer");
   await q(
     `INSERT INTO "SaleReturn" (id,"tenantId","saleId",number,reason,total,"taxTotal","costTotal","refundAmount","refundMethod","userId",items) VALUES ($1::uuid,$2::uuid,$3::uuid,'DEV-QA','Prueba',20,0,10,20,'cash',$4,'[]'::jsonb)`,
@@ -151,22 +165,27 @@ afterAll(async () => {
 });
 
 describe("mis ventas de hoy", () => {
-  it("la cajera ve solo lo suyo, neto, sin costos ni lo cobrado en su caja abierta", async () => {
+  it("con caja propia abierta la cajera solo ve conteos: ningún importe", async () => {
     const r = await as(cajera.user, cajera.session)("get", "/sales/mine/today");
     expect(r.status, JSON.stringify(r.body)).toBe(200);
-    expect(r.body).toMatchObject({
+    expect(r.body).toEqual({
+      day: r.body.day,
+      from: r.body.day,
       invoices: 3,
-      total: 160,
+      units: 0,
       hiddenUntilClose: true,
-      methods: { cash: 80, card: 0, transfer: 0, credit: 30 },
+      topProduct: null,
     });
-    expect(JSON.stringify(r.body)).not.toMatch(/cost|margin|profit|expected/i);
+    expect(JSON.stringify(r.body)).not.toMatch(
+      /cost|margin|profit|expected|total|methods|pending|lastSale|amount/i,
+    );
     const week = await as(cajera.user, cajera.session)(
       "get",
       "/sales/mine/week",
     );
     expect(week.status).toBe(200);
-    expect(week.body.total).toBe(160);
+    expect(week.body.hiddenUntilClose).toBe(true);
+    expect(week.body.total).toBeUndefined();
     expect(
       (await as(cajera.user, cajera.session)("get", "/sales/mine/mes")).status,
     ).toBe(400);
@@ -174,7 +193,11 @@ describe("mis ventas de hoy", () => {
   it("otra vendedora, otra empresa y un rol sin ventas no se cruzan", async () => {
     expect(
       (await as(otra.user, otra.session)("get", "/sales/mine/today")).body,
-    ).toMatchObject({ invoices: 1, total: 500 });
+    ).toMatchObject({
+      invoices: 1,
+      total: 500,
+      pendingTransfers: { count: 1, amount: 40 },
+    });
     expect(
       (await as(cajeraB.user, cajeraB.session, B)("get", "/sales/mine/today"))
         .body,
@@ -221,6 +244,7 @@ describe("atajo del asistente", () => {
     ).send({ messages: [{ role: "user", content: "¿Cuánto vendí hoy?" }] });
     expect(r.status, JSON.stringify(r.body)).toBe(201);
     expect(r.body.answer).toContain("3 facturas");
+    expect(r.body.answer).not.toMatch(/RD\$|\d{2,}\.\d\d|Efectivo/);
     expect(r.body.remaining).toBeNull();
     const after = await as(cajera.user, cajera.session)(
       "get",
@@ -300,5 +324,21 @@ describe("encuesta de la caja", () => {
       summary.body.questions.find((q: any) => q.id === "mejorar").texts,
     ).toEqual([{ name: "Cajera Uno", text: "Más rápido" }]);
     expect(JSON.stringify(summary.body)).not.toContain("TEXTO_DE_B");
+  });
+});
+
+describe("al cerrar la caja", () => {
+  it("los importes de lo vendido reaparecen", async () => {
+    await t.q(
+      `UPDATE "CashSession" SET "closedAt"=now() WHERE id=$1::uuid`,
+      id(30),
+    );
+    const r = await as(cajera.user, cajera.session)("get", "/sales/mine/today");
+    expect(r.body).toMatchObject({
+      invoices: 3,
+      total: 160,
+      hiddenUntilClose: false,
+      methods: { cash: 80, card: 50, transfer: 0, credit: 30 },
+    });
   });
 });

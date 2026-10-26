@@ -8,19 +8,23 @@ import { QueryState, toast } from "./helpers";
 import { MyIncentives } from "./Incentives";
 import { PRODUCT_MODE } from "./productTenancy";
 
-type MySales = {
+type MySalesBlind = {
   day: string;
   from: string;
   invoices: number;
+  units: number;
+  hiddenUntilClose: true;
+  topProduct: { name: string; units: number } | null;
+};
+type MySales = Omit<MySalesBlind, "units" | "hiddenUntilClose"> & {
   total: number;
   methods: Record<
     "cash" | "card" | "transfer" | "credit" | "credit_note",
     number
   >;
-  hiddenUntilClose: boolean;
+  hiddenUntilClose: false;
   pendingTransfers: { count: number; amount: number };
   lastSale: { number: string; total: number; createdAt: string } | null;
-  topProduct: { name: string; units: number } | null;
 };
 type Ctx = { products: Product[]; session: any | null };
 type Question = {
@@ -42,9 +46,12 @@ const HIDDEN = "Se ve al cerrar tu caja (cierre ciego).";
 function Sales({
   period,
   show,
+  blind = () => <p>{HIDDEN}</p>,
 }: {
   period: "today" | "week";
   show: (r: MySales) => ReactNode;
+  /** Con caja propia abierta el servidor no manda importes: solo conteos. */
+  blind?: (r: MySalesBlind) => ReactNode;
 }) {
   const query = useQuery({
     queryKey: ["sales-mine", period],
@@ -53,17 +60,26 @@ function Sales({
   });
   return (
     <QueryState query={query}>
-      {query.data && <div className="cart-summary">{show(query.data)}</div>}
+      {query.data && (
+        <div className="cart-summary">
+          {query.data.hiddenUntilClose
+            ? blind(query.data)
+            : show(query.data)}
+        </div>
+      )}
     </QueryState>
   );
 }
+const topBlind = (none: string) => (r: MySalesBlind) =>
+  r.topProduct ? (
+    <Row label={r.topProduct.name} value={r.topProduct.units + " unidades"} />
+  ) : (
+    <p>{none}</p>
+  );
 const method =
-  (key: keyof MySales["methods"], label: string) => (r: MySales) =>
-    r.hiddenUntilClose && key !== "credit" ? (
-      <p>{HIDDEN}</p>
-    ) : (
-      <Row label={label + " (hoy)"} value={formatMoney(r.methods[key])} />
-    );
+  (key: keyof MySales["methods"], label: string) => (r: MySales) => (
+    <Row label={label + " (hoy)"} value={formatMoney(r.methods[key])} />
+  );
 
 function Fetch<T>({
   path,
@@ -176,24 +192,24 @@ export const QUICK_QUESTIONS: Question[] = [
         show={(r) => (
           <>
             <Row label="Facturas" value={r.invoices} />
-            {!r.hiddenUntilClose && (
-              <>
-                <Row label="Efectivo" value={formatMoney(r.methods.cash)} />
-                <Row label="Tarjeta" value={formatMoney(r.methods.card)} />
-                <Row
-                  label="Transferencia"
-                  value={formatMoney(r.methods.transfer)}
-                />
-              </>
-            )}
+            <Row label="Efectivo" value={formatMoney(r.methods.cash)} />
+            <Row label="Tarjeta" value={formatMoney(r.methods.card)} />
+            <Row
+              label="Transferencia"
+              value={formatMoney(r.methods.transfer)}
+            />
             <Row label="Crédito" value={formatMoney(r.methods.credit)} />
-            {r.hiddenUntilClose && (
-              <p>Efectivo, tarjeta y transferencia: {HIDDEN}</p>
-            )}
             <div className="cart-total">
               <span>Total vendido hoy</span>
               <strong>{formatMoney(r.total)}</strong>
             </div>
+          </>
+        )}
+        blind={(r) => (
+          <>
+            <Row label="Facturas" value={r.invoices} />
+            <Row label="Unidades" value={r.units} />
+            <p>Los importes: {HIDDEN}</p>
           </>
         )}
       />
@@ -218,6 +234,15 @@ export const QUICK_QUESTIONS: Question[] = [
             </div>
           </>
         )}
+        blind={(r) => (
+          <>
+            <Row
+              label={`Desde el lunes ${r.from}`}
+              value={r.invoices + " facturas"}
+            />
+            <p>El total: {HIDDEN}</p>
+          </>
+        )}
       />
     ),
   },
@@ -229,6 +254,7 @@ export const QUICK_QUESTIONS: Question[] = [
       <Sales
         period="today"
         show={(r) => <Row label="Facturas de hoy" value={r.invoices} />}
+        blind={(r) => <Row label="Facturas de hoy" value={r.invoices} />}
       />
     ),
   },
@@ -331,6 +357,7 @@ export const QUICK_QUESTIONS: Question[] = [
             <p>Hoy todavía no tienes ventas.</p>
           )
         }
+        blind={topBlind("Hoy todavía no tienes ventas.")}
       />
     ),
   },
@@ -351,6 +378,7 @@ export const QUICK_QUESTIONS: Question[] = [
             <p>Esta semana todavía no tienes ventas.</p>
           )
         }
+        blind={topBlind("Esta semana todavía no tienes ventas.")}
       />
     ),
   },

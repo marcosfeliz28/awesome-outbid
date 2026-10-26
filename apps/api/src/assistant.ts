@@ -1452,18 +1452,16 @@ export const isOwnSalesTodayQuestion = (text: string) =>
 export function ownSalesTodayAnswer(
   r: Awaited<ReturnType<typeof mySales>>,
 ) {
-  const m = r.methods;
-  const lines = [
-    `Hoy (${r.day}) llevas ${r.invoices} ${r.invoices === 1 ? "factura" : "facturas"} por ${formatMoney(r.total)}, neto de devoluciones.`,
-  ];
+  const count = `${r.invoices} ${r.invoices === 1 ? "factura" : "facturas"}`;
   if (r.hiddenUntilClose)
-    lines.push("El desglose por forma de pago de la caja abierta se ve al cerrarla.");
-  lines.push(
+    return `Hoy (${r.day}) llevas ${count} y ${r.units} unidades. Los importes se ven al cerrar tu caja (cierre ciego).`;
+  const m = r.methods;
+  return [
+    `Hoy (${r.day}) llevas ${count} por ${formatMoney(r.total)}, neto de devoluciones.`,
     `Efectivo: ${formatMoney(m.cash)} · Tarjeta: ${formatMoney(m.card)} · Transferencia: ${formatMoney(m.transfer)} · Crédito: ${formatMoney(m.credit)}` +
       (m.credit_note ? ` · Nota de crédito: ${formatMoney(m.credit_note)}` : "") +
       ".",
-  );
-  return lines.join("\n");
+  ].join("\n");
 }
 
 @Controller("assistant")
