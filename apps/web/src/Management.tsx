@@ -3038,7 +3038,7 @@ export function Reports() {
   return (
     <>
       <Heading
-        title="Los números cuentan tu historia"
+        title="Reportes"
         caption="Transforma tus datos en decisiones para el próximo paso."
       />
       <div className="reports-layout lumina-reports">
