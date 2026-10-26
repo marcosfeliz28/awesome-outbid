@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { askAssistant, executeAssistantTool } from "../apps/api/src/assistant";
+import { AlertsController } from "../apps/api/src/alerts";
 
 // Auditoría AUD-NUEVO, sección A (IA-01…IA-07).
 describe("AUD-NUEVO · IA", () => {
@@ -84,6 +85,20 @@ describe("AUD-NUEVO · IA", () => {
     expect(model).toHaveBeenCalledTimes(2);
     expect(result.answer).toMatch(/límite de datos/);
     expect(result.incompleta).toBeUndefined();
+  });
+
+  it("IA-04: la herramienta de alertas no recalcula ni escribe alertas", async () => {
+    const get = vi.fn().mockResolvedValue({ status: 200, body: "[]" });
+    await executeAssistantTool("alertas_auditoria", { desde: "2026-10-01", hasta: "2026-10-24" }, get);
+    const path = get.mock.calls.map((c) => c[0]).find((p) => p.startsWith("/api/alerts"))!;
+    const engine = { evaluate: vi.fn() };
+    const db = { alert: { findMany: vi.fn().mockResolvedValue([]) } };
+    const controller = new AlertsController(db as any, engine as any);
+    const actor = { branchId: "b1", permissions: ["alerts:write"] } as any;
+    await controller.alerts(actor, Object.fromEntries(new URLSearchParams(path.split("?")[1])));
+    expect(engine.evaluate).not.toHaveBeenCalled();
+    await controller.alerts(actor, {});
+    expect(engine.evaluate).toHaveBeenCalledTimes(1);
   });
 
   it("IA-06: el consumo de vueltas anteriores sobrevive a un fallo posterior", async () => {

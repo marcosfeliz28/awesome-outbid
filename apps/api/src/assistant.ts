@@ -562,7 +562,7 @@ const ROUTES: Partial<Record<ToolName, (args: any) => string[]>> = {
     "/api/inventory/transfers",
   ],
   alertas_auditoria: (args) => [
-    "/api/alerts?limit=100",
+    "/api/alerts?limit=100&soloLectura=1",
     ...["descuadres", "diferencias-cuadre"].map(
       (report) =>
         "/api/reports/" + report + query({ from: args.desde, to: args.hasta }),
