@@ -13,6 +13,8 @@ if (!Number.isInteger(port) || port < 1 || port > 65535)
 const preview = "http://127.0.0.1:" + port;
 export default defineConfig({
   testDir: "tests/e2e",
+  // PRUEBA DE DESCARTE (rama claude-pc/lumina-f3-bisect): excluye las pruebas de aceptación visual nuevas para saber si ellas causan el verify rojo del CI.
+  testIgnore: /lumina-f3.*\.spec\.ts/,
   fullyParallel: false,
   workers: 1,
   timeout: 45000,
