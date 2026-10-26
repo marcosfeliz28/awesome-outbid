@@ -51,6 +51,7 @@ export default defineConfig({
       "tests/product-ncf-sequences-postgres.test.ts",
       "tests/product-ncf-por-venta-postgres.test.ts",
       "tests/product-reportes-arreglos-postgres.test.ts",
+      "tests/mis-ventas-preguntas-postgres.test.ts",
       "tests/product-registration-postgres.test.ts",
       "tests/product-inicio-sencillo-postgres.test.ts",
       "tests/product-base-roles-postgres.test.ts",

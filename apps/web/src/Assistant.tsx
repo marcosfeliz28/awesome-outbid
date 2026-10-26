@@ -47,6 +47,13 @@ export function Assistant({ online }: { online: boolean }) {
 
   useEffect(() => { if (proposal) confirmButton.current?.focus(); }, [proposal]);
 
+  // «Preguntarle a la IA» desde las preguntas rápidas de la caja.
+  useEffect(() => {
+    const show = () => setOpen(true);
+    window.addEventListener("nexora:abrir-asistente", show);
+    return () => window.removeEventListener("nexora:abrir-asistente", show);
+  }, []);
+
   function close() {
     setOpen(false);
     launcher.current?.focus();

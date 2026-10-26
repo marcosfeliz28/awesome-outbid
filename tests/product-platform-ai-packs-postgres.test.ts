@@ -362,7 +362,8 @@ it("PC-24: paquetes de IA del operador, por mes y por empresa, sin pasar del lí
     const ask = await http
       .post("/api/assistant/ask")
       .set("Authorization", bearer)
-      .send({ messages: [{ role: "user", content: "¿Cuánto vendí hoy?" }] });
+      // «¿Cuánto vendí hoy?» ya no usa el modelo ni la cuota (atajo sin IA).
+      .send({ messages: [{ role: "user", content: "¿Qué se vendió más este mes?" }] });
     expect(ask.status).toBe(429);
     expect(ask.body.message).toBe(AI_LIMIT_MESSAGE);
     // Solo se pausa la IA: el resto del sistema sigue igual.

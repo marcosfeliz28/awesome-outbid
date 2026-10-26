@@ -86,6 +86,7 @@ import {
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
+import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportButton } from "./InventoryImport";
 import { NcfSequenceSettings } from "./NcfSequenceSettings";
@@ -4522,6 +4523,7 @@ export function Configuration() {
                 {/* El producto no tiene respaldo a Drive por empresa (sin /backups). */}
                 {!product && <DriveBackupCard />}
                 <IncentiveRates />
+                <CashierSurveySummary />
               </>
             )}
           </QueryState>

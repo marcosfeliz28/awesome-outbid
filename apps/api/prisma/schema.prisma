@@ -1401,6 +1401,7 @@ model Tenant {
   billingRequestRows BillingRequest[]
   billingDecisionRows BillingDecision[]
   aiPackCreditRows AiPackCredit[]
+  cashierSurveyRows CashierSurvey[]
   platformPaymentRows PlatformPayment[]
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique
@@ -1524,4 +1525,18 @@ model AiPackCredit {
   // IA-08: además, índice único global de lower(reference) sin espacios (migración 202610280025).
   @@unique([tenantId, reference])
   @@index([tenantId, month])
+}
+
+// Encuesta de la caja: una respuesta editable por persona (CASHIER_SURVEY).
+model CashierSurvey {
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  tenantId  String   @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  branchId  String   @default("main")
+  answers   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, userId])
 }
