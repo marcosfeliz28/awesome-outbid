@@ -4,12 +4,12 @@ import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
 import { hash } from "bcryptjs";
 import { permissions, z } from "@fitstore/shared";
-import { audit, Database, parse, Permit, Public, type ActorRequest } from "./common";
+import { audit, Database, parse, Permit, Public, SUPPORT_EMAIL, type ActorRequest } from "./common";
 import { authorizePlatform } from "./platform";
 import { RequestRateLimitService } from "./rate-limit";
 import { forEachActiveTenant, tenantScope, tenantUnique } from "./tenant-context";
 
-const supportEmail = "soporte-nexora@nexora.local";
+const supportEmail = SUPPORT_EMAIL;
 
 @Controller("support-access")
 export class SupportAccessController {
@@ -174,7 +174,7 @@ export class SupportAccessWorker implements OnApplicationBootstrap, OnModuleDest
       // Incluye empresas suspendidas: sus sesiones de soporte también vencen.
       await forEachActiveTenant({ activeTenantIds: () => this.db.loginTenantIds() }, async () => {
         const expired = await this.db.user.findMany({
-          where: { active: true, role: { name: "support" }, supportExpiresAt: { lte: now } },
+          where: { active: true, OR: [{ role: { name: "support" } }, { email: supportEmail }], supportExpiresAt: { lte: now } },
           select: { id: true, name: true, email: true, branchId: true, tenantId: true },
         });
         for (const user of expired) await this.db.$transaction(async (tx) => {

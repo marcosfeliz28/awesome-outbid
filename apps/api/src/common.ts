@@ -375,6 +375,10 @@ export function withoutImages(value: unknown): unknown {
     );
   return value;
 }
+/** SOP-02: marca fija de la cuenta técnica de soporte; no depende de su rol. */
+export const SUPPORT_EMAIL = "soporte-nexora@nexora.local";
+export const isSupportAccount = (user: { email?: string | null; role?: { name: string } | null }) =>
+  user.email === SUPPORT_EMAIL || user.role?.name === "support";
 export const audit = (
   db: any,
   actor: Actor,
@@ -711,7 +715,8 @@ export class AuthGuard implements CanActivate {
       // dejaría la caja sin cobrar (R9-seguridad-1).
       if (!user?.active || user.mustChangePassword || user.tenantId !== payload.tenantId)
         throw new Error();
-      if (user.role.name === "support" && (!user.supportExpiresAt || user.supportExpiresAt <= new Date()))
+      const support = isSupportAccount(user);
+      if (support && (!user.supportExpiresAt || user.supportExpiresAt <= new Date()))
         throw new Error();
       if (payload.version !== user.authVersion || !payload.sid)
         throw new Error();
@@ -774,9 +779,9 @@ export class AuthGuard implements CanActivate {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role.name,
+        role: support ? "support" : user.role.name,
         // Nunca se confía en privilegios editables del rol para soporte.
-        permissions: user.role.name === "support" ? permissions.support : user.role.permissions,
+        permissions: support ? permissions.support : user.role.permissions,
         branchId: user.branchId,
         tenantId: user.tenantId,
       };
