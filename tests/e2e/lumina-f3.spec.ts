@@ -34,14 +34,49 @@ async function entrar(page: Page, email = "admin@fitstore.demo") {
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(
-    page.getByRole("button", { name: "Entrar a mi tienda" }),
-  ).toHaveCount(0);
+  // Espera el armazón de la app; si el login falla, lo dice claro (no un timeout lejano).
+  const armazon = page.locator(".app-shell");
+  const fallo = page.locator(".login-page [role=alert]");
+  await expect(armazon.or(fallo).first()).toBeVisible({ timeout: 20000 });
+  if (await fallo.count())
+    throw new Error(
+      `Falló el inicio de sesión de ${email} (¿bloqueo o contraseña cambiada?): ${await fallo.first().innerText()}`,
+    );
+  await expect(armazon).toBeVisible();
+}
+/** Pantallas con tabla: sin filas reales la prueba debe FALLAR, no omitirse. */
+const CON_TABLA = ["products", "inventory", "customers", "reports"];
+/** Contenido real esperado por pantalla (el esqueleto no cuenta). */
+const DATOS: Record<string, string> = {
+  products: ".main-content td",
+  inventory: ".main-content td",
+  customers: ".main-content td",
+  reports: ".main-content td",
+  settings: ".main-content .cfg-tabs button",
+  pos: ".product-card",
+};
+async function fuentesListas(page: Page) {
+  await page.evaluate(() => document.fonts.ready);
 }
 async function abrir(page: Page, id: string) {
   await page.evaluate((hash) => (location.hash = hash), id);
-  await expect(page.locator(".main-content .loading")).toHaveCount(0);
-  await expect(page.locator(".main-content h1").first()).toBeVisible();
+  await expect(page.locator(".main-content h1").first()).toBeVisible({
+    timeout: 15000,
+  });
+  // `TableSkeleton` no es `.loading`: se espera a que no quede ninguno.
+  await expect(page.locator(".main-content .loading")).toHaveCount(0, {
+    timeout: 15000,
+  });
+  await expect(page.locator(".main-content .table-skeleton")).toHaveCount(0, {
+    timeout: 15000,
+  });
+  await expect
+    .poll(() => page.locator(DATOS[id]).count(), {
+      message: `${id}: sin datos reales tras la carga`,
+      timeout: 15000,
+    })
+    .toBeGreaterThan(0);
+  await fuentesListas(page);
 }
 /** El tema real: el botón de la barra superior (guarda en localStorage). */
 async function ponerTema(page: Page, tema: "light" | "dark") {
@@ -66,6 +101,7 @@ async function enTemas(
   await abrir(page, id);
   for (const tema of TEMAS) {
     await ponerTema(page, tema);
+    await fuentesListas(page);
     await comprobar(tema);
   }
 }
@@ -223,24 +259,27 @@ for (const p of PANTALLAS) {
         const chicos = await page.evaluate((min) => {
           const sel =
             ".main-content button, .main-content a[href], .main-content select, .main-content textarea, .main-content input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file])";
-          return [...document.querySelectorAll<HTMLElement>(sel)]
-            .filter((e) => {
-              const r = e.getBoundingClientRect();
-              return (
-                r.width > 0 &&
-                r.height > 0 &&
-                getComputedStyle(e).visibility !== "hidden" &&
-                !e.closest("[inert], [aria-hidden=true]")
-              );
-            })
-            .map((e) => ({ e, r: e.getBoundingClientRect() }))
-            .filter(({ r }) => r.width < min - 0.5 || r.height < min - 0.5)
-            .map(
-              ({ e, r }) =>
-                `${Math.round(r.width)}x${Math.round(r.height)} ${e.outerHTML
-                  .replace(/\s+/g, " ")
-                  .slice(0, 80)}`,
-            );
+          return (
+            [...document.querySelectorAll<HTMLElement>(sel)]
+              .filter((e) => {
+                const r = e.getBoundingClientRect();
+                return (
+                  r.width > 0 &&
+                  r.height > 0 &&
+                  getComputedStyle(e).visibility !== "hidden" &&
+                  !e.closest("[inert], [aria-hidden=true]")
+                );
+              })
+              .map((e) => ({ e, r: e.getBoundingClientRect() }))
+              // ±1 px: la caja de layout varía 1 px con las fuentes de reemplazo de Linux.
+              .filter(({ r }) => r.width < min - 1 || r.height < min - 1)
+              .map(
+                ({ e, r }) =>
+                  `${Math.round(r.width)}x${Math.round(r.height)} ${e.outerHTML
+                    .replace(/\s+/g, " ")
+                    .slice(0, 80)}`,
+              )
+          );
         }, minimo);
         expect(chicos, `tema ${tema}`).toEqual([]);
       });
@@ -278,7 +317,9 @@ for (const p of PANTALLAS) {
       const mas = cabecera.getByRole("button", { name: "Más", exact: true });
       if (!CON_MAS) {
         await expect(mas, "«Más» vacío en la cabecera").toHaveCount(0);
-        expect(await cabecera.locator(".button.primary").count()).toBeLessThanOrEqual(1);
+        expect(
+          await cabecera.locator(".button.primary").count(),
+        ).toBeLessThanOrEqual(1);
         return;
       }
       await expect(mas, "falta el botón «Más» en la cabecera").toHaveCount(1);
@@ -331,7 +372,13 @@ for (const p of PANTALLAS) {
         };
         for (const [nombre, sel] of Object.entries(grupos)) {
           const r = await peorTexto(page, sel);
-          if (r.n === 0 && nombre.includes("tabla")) continue; // no hay tabla
+          // Solo Configuración no tiene tabla; en las demás `abrir` ya exigió filas.
+          if (
+            r.n === 0 &&
+            nombre.includes("tabla") &&
+            !CON_TABLA.includes(p.id)
+          )
+            continue;
           expect(r.n, `${nombre}: sin muestras`).toBeGreaterThan(0);
           expect(
             r.razon,
@@ -350,32 +397,37 @@ for (const p of PANTALLAS) {
     if (["products", "inventory", "reports"].includes(p.id))
       test(`7. ${en}: cifras de tabla con tabular-nums`, async ({ page }) => {
         await enTemas(page, v, p.id, async (tema) => {
-          const r = await page.evaluate(() => {
-            // Celdas que son una cantidad: dígitos con moneda, %, separadores.
-            const cant = /^[^A-Za-zÁ-ú]*\d[\d.,\s%]*[^A-Za-zÁ-ú]*$/;
-            const celdas = [
-              ...document.querySelectorAll<HTMLElement>(".main-content td"),
-            ].filter((c) =>
-              cant.test(
-                (c.textContent || "").replace(/RD$|US$|USD|DOP/g, "").trim(),
-              ),
-            );
-            return {
-              total: celdas.length,
-              muestra: [...document.querySelectorAll(".main-content td")]
-                .slice(0, 8)
-                .map((c) => (c.textContent || "").trim().slice(0, 20)),
-              mal: celdas
-                .filter(
-                  (c) =>
-                    !getComputedStyle(c).fontVariantNumeric.includes(
-                      "tabular-nums",
-                    ),
-                )
-                .map((c) => (c.textContent || "").trim())
-                .slice(0, 5),
-            };
-          });
+          const medir = () =>
+            page.evaluate(() => {
+              // Celdas que son una cantidad: dígitos con moneda, %, separadores.
+              const cant = /^[^A-Za-zÁ-ú]*\d[\d.,\s%]*[^A-Za-zÁ-ú]*$/;
+              const celdas = [
+                ...document.querySelectorAll<HTMLElement>(".main-content td"),
+              ].filter((c) =>
+                cant.test(
+                  (c.textContent || "").replace(/RD$|US$|USD|DOP/g, "").trim(),
+                ),
+              );
+              return {
+                total: celdas.length,
+                muestra: [...document.querySelectorAll(".main-content td")]
+                  .slice(0, 8)
+                  .map((c) => (c.textContent || "").trim().slice(0, 20)),
+                mal: celdas
+                  .filter(
+                    (c) =>
+                      !getComputedStyle(c).fontVariantNumeric.includes(
+                        "tabular-nums",
+                      ),
+                  )
+                  .map((c) => (c.textContent || "").trim())
+                  .slice(0, 5),
+              };
+            });
+          await expect
+            .poll(async () => (await medir()).total, { timeout: 15000 })
+            .toBeGreaterThan(0);
+          const r = await medir();
           expect(
             r.total,
             `tema ${tema}: sin celdas numéricas; muestra ${r.muestra}`,
@@ -426,7 +478,9 @@ test("9. Caja (vendedor): Vender conserva su estructura y no recibe «Más» ni 
     ".connection",
     ".main-content",
   ])
-    await expect(page.locator(sel).first(), sel).toBeVisible();
+    await expect(page.locator(sel).first(), sel).toBeVisible({
+      timeout: 15000,
+    });
   await expect(
     page.locator(".more-menu, .more-menu-trigger, .table-skeleton"),
   ).toHaveCount(0);
