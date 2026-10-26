@@ -377,30 +377,41 @@ describe("pago en dólares en efectivo", () => {
       ),
     );
     afterAll(() => setRate(RATE));
-    const offline = (
+    const offline = async (
       cashSession: { id: string; openedAt: string },
       payments: unknown[],
       v = variantId,
-    ) => ({
-      offlineUuid: randomUUID(),
-      // Usa la frontera devuelta por la API: el reloj del proceso de pruebas
-      // puede quedar unos milisegundos detrás del timestamp de PostgreSQL.
-      capturedAt: cashSession.openedAt,
-      customerId,
-      cashSessionId: cashSession.id,
-      items: [{ variantId: v, qty: 1, discountPercent: 0 }],
-      globalDiscount: 0,
-      payments,
-      expectedTotal: 2500,
-    });
+    ) => {
+      const openedAt = Date.parse(cashSession.openedAt);
+      const capturedAt = openedAt + 1;
+      // La captura debe ser estrictamente posterior a la apertura, pero no
+      // futura para la API. Esperar la frontera elimina la carrera entre el
+      // reloj de PostgreSQL y el proceso de Vitest sin ampliar tolerancias.
+      const wait = capturedAt - Date.now();
+      if (wait >= 0)
+        await new Promise((resolve) => setTimeout(resolve, wait + 1));
+      return {
+        offlineUuid: randomUUID(),
+        capturedAt: new Date(capturedAt).toISOString(),
+        customerId,
+        cashSessionId: cashSession.id,
+        items: [{ variantId: v, qty: 1, discountPercent: 0 }],
+        globalDiscount: 0,
+        payments,
+        expectedTotal: 2500,
+      };
+    };
 
     it("(h) cobrada con otra tasa (±2 %) se acepta, queda en la bitácora y avisa sólo a la dueña", async () => {
       const cash = await openCash();
       // US$ 40 a 62 = RD$ 2,480 + RD$ 20 en pesos (0.95 % sobre la tasa).
-      const body = offline(cash, [
+      const body = await offline(cash, [
         usd(40, 2480, 62),
         { method: "cash", amount: 20 },
       ]);
+      expect(Date.parse(body.capturedAt)).toBeGreaterThan(
+        Date.parse(cash.openedAt),
+      );
       const r = await ok("/sales/sync", cajera, { sales: [body] });
       expect(r.results[0].status, JSON.stringify(r.results[0])).toBe("synced");
       const saleId = r.results[0].sale.id;
@@ -419,7 +430,10 @@ describe("pago en dólares en efectivo", () => {
       // Más del 2 %: conflicto, no se registra.
       const far = await ok("/sales/sync", cajera, {
         sales: [
-          offline(cash, [usd(40, 2600, 65), { method: "cash", amount: 20 }]),
+          await offline(cash, [
+            usd(40, 2600, 65),
+            { method: "cash", amount: 20 },
+          ]),
         ],
       });
       expect(far.results[0].status).toBe("conflict");
@@ -452,7 +466,7 @@ describe("pago en dólares en efectivo", () => {
         ],
       });
       try {
-        const body = offline(
+        const body = await offline(
           cash,
           [usd(40, 2456.63), { method: "cash", amount: 43.37 }],
           empty.variants[0].id,
