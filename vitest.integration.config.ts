@@ -34,6 +34,8 @@ export default defineConfig({
       "tests/reportes-inventario-api.test.ts",
       "tests/reportes-clientes-api.test.ts",
       "tests/pin-otra-persona-api.test.ts",
+      "tests/caja-ciega-margen-api.test.ts",
+      "tests/caja-cerrada-api.test.ts",
     ],
     testTimeout: 30000,
     hookTimeout: 60000,

@@ -17,7 +17,7 @@ import {
   denied,
   parse,
 } from "./common";
-import { refreshClosedCash } from "./cash";
+import { closedCashChanged, refreshClosedCash } from "./cash";
 
 const resolutionBase = {
   offlineUuid: z.string().uuid(),
@@ -241,7 +241,13 @@ export class OfflineSalesController {
           const cash = await tx.cashSession.findUnique({
             where: { id: sale.cashSessionId },
           });
-          if (cash?.closedAt) await refreshClosedCash(tx, cash);
+          if (cash?.closedAt)
+            await closedCashChanged(tx, actor, cash, {
+              ref: "reprice:" + sale.id,
+              what: `entrada de RD$ ${formatAmount(surplus)} por la diferencia de precio de la venta sin conexión ${sale.number}`,
+              reason: data.reason,
+              differences: await refreshClosedCash(tx, cash),
+            });
         }
       }
       return { ok: true, saleId: sale.id };

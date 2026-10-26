@@ -362,8 +362,8 @@ export async function discardWithApproval(
     post: (path: string, body: unknown) => Promise<unknown>;
     deleteLocal: (id: string) => Promise<unknown>;
   },
-  // M-6: «delivered» = el cliente se llevó la mercancía y pagó; el servidor
-  // registra la salida de inventario y la entrada de caja.
+  // M-6/#4: «delivered» = el cliente se llevó la mercancía y pagó; el servidor
+  // registra la venta real con lo que guardó al sincronizar.
   outcome: "returned" | "delivered" = "returned",
 ) {
   await dependencies.post("/sales/offline-review/discard", {

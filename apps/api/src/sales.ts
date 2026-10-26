@@ -225,7 +225,9 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     ...(can(actor.permissions, "sale:manage")
       ? {
           courierFee: sale.courierFee,
-          courierName: sale.courierName,
+          // Ventas viejas sin envío guardan «Addison» (valor por defecto de la
+          // columna hasta el 25-oct, #10): sin envío no se muestra.
+          courierName: Number(sale.courierFee) > 0 ? sale.courierName : null,
           courierPaidAt: sale.courierPaidAt,
         }
       : {}),
@@ -560,7 +562,7 @@ function promotionDiscount(promo: any, variant: any, qty: number) {
   return 0;
 }
 
-import { cashExpected, refreshClosedCash } from "./cash";
+import { cashExpected, closedCashChanged, refreshClosedCash } from "./cash";
 import { unusualDiscountAlerts } from "./alerts";
 import { notify } from "./notifications";
 import { managerPinApproval } from "./security";
@@ -667,7 +669,18 @@ export class SalesController {
       );
     return managerPinApproval(this.db, actor, input.managerPin);
   }
-  async complete(actor: Actor, input: SaleInput, offline = false) {
+  async complete(
+    actor: Actor,
+    input: SaleInput,
+    offline = false,
+    // #4/#6: la revisión de una venta sin conexión entregada la registra por
+    // aquí. `closedCashReason` justifica que entre en una caja ya cerrada;
+    // `inTransaction` corre al inicio de la misma transacción.
+    review: {
+      closedCashReason?: string;
+      inTransaction?: (tx: Prisma.TransactionClient) => Promise<void>;
+    } = {},
+  ) {
     // El envío solo se anota si el dinero llega por banco o verifón; en
     // efectivo o contraentrega el mensajero se cobra de ahí (orden 3af).
     if (
@@ -723,7 +736,11 @@ export class SalesController {
     if (requestsDiscount && !normalizedInput.discountReason)
       bad("Indica el motivo del descuento.");
     input = normalizedInput;
-    if (offline) {
+    // La revisión de gerencia («entregada», `closedCashReason`) registra una
+    // venta que ya se cobró: no la frenan el interruptor de ventas sin
+    // conexión ni el plazo de 48 h; todo lo demás se valida igual.
+    const reviewed = !!review.closedCashReason;
+    if (offline && !reviewed) {
       const settings = await this.db.settings.findUnique({
         where: { id: actor.branchId },
         select: { data: true },
@@ -737,6 +754,7 @@ export class SalesController {
     const result = await moneyDb(this.db).$transaction(
       async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${input.offlineUuid}))::text AS locked`;
+        await review.inTransaction?.(tx);
         const existing = await tx.sale.findUnique({
           where: { offlineUuid: input.offlineUuid },
           include: { items: true, payments: true },
@@ -766,7 +784,7 @@ export class SalesController {
           })
         )
           throw new OfflineSaleDiscardedError();
-        if (offline) {
+        if (offline && !reviewed) {
           const settings = await tx.settings.findUnique({
             where: { id: actor.branchId },
             select: { data: true },
@@ -788,7 +806,11 @@ export class SalesController {
           await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"receivable-shift:" + actor.id}))::text AS locked`;
         const capturedAt =
           offline && input.capturedAt ? new Date(input.capturedAt) : undefined;
-        if (capturedAt && Date.now() - capturedAt.getTime() > 48 * 3600000)
+        if (
+          capturedAt &&
+          !reviewed &&
+          Date.now() - capturedAt.getTime() > 48 * 3600000
+        )
           bad("La venta offline supera el plazo máximo de 48 horas.");
         const cashSession = await cashLock(
           tx,
@@ -801,6 +823,12 @@ export class SalesController {
         // cobra. cashLock ya exige que la caja sea de quien vende; esto lo
         // deja como invariante explícito por si esa regla cambia.
         if (cashSession.userId !== actor.id) denied(OTHER_CASH);
+        // #6: una caja cerrada no cambia sin justificación. La venta queda en
+        // conflicto y gerencia la registra desde la revisión, con su motivo.
+        if (cashSession.closedAt && !review.closedCashReason)
+          bad(
+            "La caja de esta venta ya cerró: gerencia debe revisarla y registrarla con una justificación.",
+          );
         const customer = input.customerId
           ? await lockActiveCustomer(tx, actor, input.customerId)
           : null;
@@ -1344,8 +1372,18 @@ export class SalesController {
             "cash",
             cashSession.id,
             cashSession,
-            { saleId: sale.id, ...differences },
+            {
+              saleId: sale.id,
+              ...differences,
+              reason: review.closedCashReason,
+            },
           );
+          await closedCashChanged(tx, actor, cashSession, {
+            ref: sale.id,
+            what: `se registró la venta sin conexión ${sale.number} por RD$ ${formatAmount(Number(sale.total))}`,
+            reason: review.closedCashReason!,
+            differences,
+          });
         }
         await recordSaleIncentives(tx, actor, sale.id);
         await audit(tx, actor, "complete", "sale", sale.id, undefined, {
@@ -1539,6 +1577,26 @@ export class SalesController {
                 // N8: qué se vendió, por si se borran los datos del navegador
                 // antes de que gerencia la descarte.
                 detail: offlineSaleEvidence(attempted),
+                // #4: la venta tal como la validó el servidor, sin el PIN.
+                // Con ella la revisión registra la venta real si se entregó.
+                sale: (() => {
+                  const valid = saleSchema.safeParse(attempted);
+                  if (!valid.success) return null;
+                  const { managerPin: ignoredPin, ...stored } = valid.data;
+                  void ignoredPin;
+                  // N8: nunca la referencia ni el banco del pago. Una venta
+                  // con transferencia no se registra desde la revisión.
+                  return {
+                    ...stored,
+                    payments: stored.payments.map(
+                      ({ reference, bank, ...payment }: any) => {
+                        void reference;
+                        void bank;
+                        return payment;
+                      },
+                    ),
+                  };
+                })(),
                 // Sólo una caja propia de esta sucursal se guarda como evidencia.
                 cashSessionId:
                   typeof attempted.cashSessionId === "string" &&
@@ -2162,6 +2220,11 @@ export class SalesController {
         where: { id: saleId },
         data: {
           creditBalance: balance,
+          // Revisión 25-oct #9: con saldo pendiente el incentivo llega al
+          // cobrar, como en una venta a crédito o contraentrega. No se apaga:
+          // así devoluciones y anulaciones descuentan lo acreditado de verdad.
+          incentiveOnCollection:
+            sale.incentiveOnCollection || Number(balance) > 0,
           receivableKind:
             Number(balance) > 0
               ? (data.receivableKind ??
@@ -2188,13 +2251,32 @@ export class SalesController {
           update: {},
         });
       await refreshReceivableAlert(tx, saleId, actor.branchId);
+      // El incentivo sigue al saldo (lo ya acreditado se ajusta con una
+      // entrada), igual que al marcar «al por mayor».
+      if (!balanceChange.isZero())
+        await syncCreditIncentives(
+          tx,
+          actor,
+          saleId,
+          "collection",
+          randomUUID(),
+          undefined,
+          true,
+        );
       let differences: unknown = null;
       if (payment.cashSessionId) {
         const session = await tx.cashSession.findUniqueOrThrow({
           where: { id: payment.cashSessionId },
         });
-        if (session.closedAt)
+        if (session.closedAt) {
           differences = await refreshClosedCash(tx, session);
+          await closedCashChanged(tx, actor, session, {
+            ref: "method:" + payment.id,
+            what: `en la venta ${sale.number}, un pago de RD$ ${formatAmount(Number(payment.amount))} pasó de ${payment.method} a ${data.method}`,
+            reason: data.reason,
+            differences,
+          });
+        }
       }
       await audit(
         tx,
@@ -2444,8 +2526,15 @@ export class SalesController {
           ...(refundCash
             ? { refundCashSessionId: refundCash.id, refundAmount }
             : {}),
+          reason: reasonText,
         },
       );
+      await closedCashChanged(tx, actor, originalCash, {
+        ref: "void:" + id,
+        what: `se anuló la venta ${sale.number} por RD$ ${formatAmount(Number(sale.total))}`,
+        reason: reasonText,
+        differences: cashDifferences,
+      });
     }
     await audit(tx, actor, "void", "sale", id, sale, {
       status: "voided",
@@ -2855,6 +2944,7 @@ export class SalesController {
         cashSessionId: uuid,
         reason,
         refundMethod: z.enum(["cash", "card", "transfer", "credit_note"]),
+        managerPin: z.string().optional(),
         items: z
           .array(
             z.object({
@@ -2888,6 +2978,27 @@ export class SalesController {
         }
       }
       const refundCash = await cashLock(tx, actor, data.cashSessionId, true);
+      // Revisión 25-oct #7: el efectivo de la caja abierta de otra persona
+      // sólo sale con el PIN de su dueña o de otro gerente (nunca el de quien
+      // devuelve); la dueña del negocio («*») no lo necesita.
+      let refundApprovedBy: string | null = null;
+      if (
+        data.refundMethod === "cash" &&
+        refundCash.userId !== actor.id &&
+        !can(actor.permissions, "*")
+      ) {
+        if (!data.managerPin)
+          bad(
+            "Esta caja es de otra persona: para devolver efectivo desde ella se necesita el PIN de su dueña o de otro gerente.",
+          );
+        refundApprovedBy = await managerPinApproval(
+          this.db,
+          actor,
+          data.managerPin!,
+          [],
+          [refundCash.userId],
+        );
+      }
       // N-A1 (auditoría 06 v2): orden único de bloqueo Caja → Cliente → Venta
       // → Variantes → Notas. La nota de crédito referencia al cliente con una
       // FK (CreditNote_customerId_fkey) que toma FOR KEY SHARE sobre su fila;
@@ -3198,7 +3309,15 @@ export class SalesController {
         },
       });
       await reverseIncentives(tx, actor, "return", sale.id, row.id, data.items);
-      await audit(tx, actor, "return", "sale", sale.id, undefined, row);
+      await audit(
+        tx,
+        actor,
+        "return",
+        "sale",
+        sale.id,
+        undefined,
+        refundApprovedBy ? { ...row, refundApprovedBy } : row,
+      );
       // B-6 (auditoría 01): reembolsar por un medio que la venta no usó (p. ej.
       // efectivo de una venta con tarjeta) convierte tarjeta en efectivo. Se
       // permite a quien gestiona ventas, pero queda una alerta para revisarlo.
