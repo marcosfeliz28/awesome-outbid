@@ -1,0 +1,268 @@
+@media screen {
+  [data-admin-appearance] .dashboard-freshness {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  [data-admin-appearance] .dashboard-freshness button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+  }
+  [data-admin-appearance] .executive-period {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 8px 0 16px;
+  }
+  [data-admin-appearance] .executive-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  [data-admin-appearance] .executive-metric {
+    display: flex;
+    flex-direction: column;
+    padding: 22px;
+  }
+  [data-admin-appearance] .executive-metric h2 {
+    font:
+      500 13px/1.5 Inter,
+      sans-serif;
+    color: var(--muted);
+  }
+  [data-admin-appearance] .executive-metric > strong {
+    display: block;
+    font-size: clamp(22px, 2vw, 30px);
+    letter-spacing: -0.6px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    margin-top: 10px;
+  }
+  [data-admin-appearance] .executive-metric > p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 12px 0 16px;
+  }
+  [data-admin-appearance] .nexora-card-question {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 0;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+  }
+  [data-admin-appearance] .executive-metric .nexora-card-question {
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+  }
+  [data-admin-appearance] .executive-overview {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+    margin-bottom: 24px;
+  }
+  [data-admin-appearance] :is(.daily-brief, .intelligent-alerts) {
+    padding: 24px;
+  }
+  [data-admin-appearance] .executive-card-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  [data-admin-appearance] .executive-card-heading h2 {
+    font-size: 20px;
+    line-height: 1.4;
+    letter-spacing: -0.35px;
+  }
+  [data-admin-appearance] .executive-card-heading > svg {
+    color: var(--primary);
+  }
+  [data-admin-appearance] .executive-card-heading .eyebrow {
+    display: block;
+    line-height: 1.7;
+  }
+  [data-admin-appearance] .daily-brief-facts {
+    font-size: 17px;
+    line-height: 1.8;
+    margin: 0 0 12px;
+  }
+  [data-admin-appearance] .executive-source {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+    margin: 10px 0;
+  }
+  [data-admin-appearance] .daily-brief-ai {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    margin-top: 20px;
+  }
+  [data-admin-appearance] .daily-brief-ai h3 {
+    font-size: 14px;
+  }
+  [data-admin-appearance] .daily-brief-ai > p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--muted);
+    margin-block: 10px;
+  }
+  [data-admin-appearance] .daily-brief-ai .button {
+    margin-block: 8px;
+  }
+  [data-admin-appearance] .daily-ai-answer {
+    border-left: 2px solid var(--lumina-violet);
+    background: var(--surface-soft);
+    padding: 16px;
+    margin-top: 16px;
+    border-radius: 0 8px 8px 0;
+  }
+  [data-admin-appearance] .daily-ai-answer > p:not(.executive-source) {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  [data-admin-appearance] .daily-ai-answer small {
+    margin-top: 12px;
+    color: var(--muted);
+  }
+  [data-admin-appearance] .intelligent-alert-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+  }
+  [data-admin-appearance] .intelligent-alert-list li {
+    padding-block: 18px;
+    border-top: 1px solid var(--border);
+  }
+  [data-admin-appearance] .intelligent-alert-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  [data-admin-appearance] .intelligent-alert-list h3 {
+    font-size: 14px;
+    margin: 12px 0 6px;
+  }
+  [data-admin-appearance] .intelligent-alert-list p {
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+  [data-admin-appearance] .intelligent-alert-list small {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.7;
+    margin-top: 8px;
+  }
+  [data-admin-appearance] .executive-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  [data-admin-appearance] .executive-empty {
+    padding: 20px 0;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+  [data-admin-appearance] .executive-chart-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-admin-appearance] :is(.panel-heading, .year-pie > .panel-heading) {
+    flex-wrap: wrap;
+  }
+  [data-admin-appearance] .financial-strip {
+    flex-wrap: wrap;
+  }
+  [data-admin-appearance] .assistant-panel {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+  }
+  [data-admin-appearance] .assistant-panel :is(button, textarea) {
+    background: var(--surface-soft);
+    color: var(--text);
+    border-color: var(--input-border);
+  }
+  [data-admin-appearance]
+    .assistant-panel
+    :is(.assistant-usage, .assistant-header p) {
+    color: var(--muted);
+  }
+  [data-admin-appearance] .assistant-context,
+  [data-admin-appearance] .assistant-context-suggestion {
+    padding: 12px;
+    border: 1px solid var(--border);
+    background: var(--primary-soft);
+    border-radius: 8px;
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  [data-admin-appearance] .assistant-context-suggestion button {
+    margin-top: 8px;
+    padding: 8px;
+  }
+  [data-admin-appearance] .assistant-message {
+    background: var(--surface-soft);
+    border-color: var(--border);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  [data-admin-appearance] .assistant-panel :is(button, textarea):focus-visible {
+    outline-color: var(--focus);
+  }
+  @media (max-width: 1150px) {
+    [data-admin-appearance] .executive-metrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 1000px) {
+    [data-admin-appearance] .executive-overview {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (max-width: 520px) {
+    [data-admin-appearance] .executive-metrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    [data-admin-appearance]
+      :is(.daily-brief, .intelligent-alerts, .executive-metric) {
+      padding: 20px;
+    }
+    [data-admin-appearance] .executive-overview {
+      gap: 16px;
+    }
+    [data-admin-appearance] .assistant-panel textarea {
+      font-size: 16px;
+    }
+  }
+  @media (max-width: 360px) {
+    [data-admin-appearance] .executive-metrics {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

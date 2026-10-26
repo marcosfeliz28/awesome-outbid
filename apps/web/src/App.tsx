@@ -8,6 +8,7 @@ import { Merchandise } from "./Merchandise";
 import { PasswordChangeFields } from "./PasswordChangeFields";
 import { useAdminAppearance } from "./adminAppearance";
 import { AdminDesignSystem } from "./AdminDesignSystem";
+import type { AssistantRequest } from "./dashboardQuestions";
 import {
   isCashierPasswordRole,
   passwordChangeError,
@@ -743,6 +744,21 @@ function Shell() {
     [about, setAbout] = useState(false),
     [ownPassword, setOwnPassword] = useState(false);
   const appearance = useAdminAppearance(user?.role, page, PRODUCT_TENANCY_REQUIRED);
+  const [assistantRequest, setAssistantRequest] =
+    useState<AssistantRequest | null>(null);
+  const askFromDashboard = (label: string, question: string) => {
+    if (!user) return;
+    const origin = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    setAssistantRequest((previous) => ({
+      id: (previous?.id || 0) + 1,
+      session: `${user.id}:${user.branchId}`,
+      origin,
+      label,
+      question,
+    }));
+  };
   const client = useQueryClient();
   const mobile = useMediaQuery(MOBILE_MENU);
   const menuButton = useRef<HTMLButtonElement>(null),
@@ -1042,7 +1058,13 @@ function Shell() {
   const pages: Record<string, React.ReactNode> = {
     onboarding: <Onboarding go={go} />,
     billing: <Billing />,
-    dashboard: <Dashboard go={go} />,
+    dashboard: (
+      <Dashboard
+        go={go}
+        executive={appearance.active && can(user.permissions, "reports:read")}
+        onAsk={askFromDashboard}
+      />
+    ),
     "month-report": <MonthReport go={go} />,
     pos: <POS go={go} />,
     products: <Catalog />,
@@ -1440,7 +1462,13 @@ function Shell() {
       </Modal>
       <About open={about} onClose={() => setAbout(false)} />
       {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && (
-        <Assistant online={online} />
+        <Assistant
+          key={`${user.id}:${user.branchId}`}
+          online={online}
+          request={assistantRequest?.session === `${user.id}:${user.branchId}`
+            ? assistantRequest
+            : null}
+        />
       )}
       {ownPassword && (
         <ChangeOwnPassword onClose={() => setOwnPassword(false)} />
