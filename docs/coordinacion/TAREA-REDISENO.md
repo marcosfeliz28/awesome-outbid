@@ -56,3 +56,17 @@ La base es el **producto** (`producto-nexora` / `claude/producto-mezcla-4`), por
 
 - Haz push a tu rama o abre un PR hacia `claude/obsidian-lumina-f1`. **No despliegues:** solo Claude nube despliega, y con los 3 CI en verde (`verify`, `windows-installer`, `render-images`).
 - Agrega un resumen de qué cambiaste, las capturas y los riesgos en `docs/diseno/OBSIDIAN_LUMINA_PROGRESO.md`, en una sección «Fase 3».
+
+## Decisiones de la dueña (26-oct, madrugada)
+
+1. **El aspecto nuevo va para ambos:** la tienda (`nexora-cloud`) y el producto que se vende (`producto-nexora`). La base es el producto (`claude/obsidian-lumina-f1`); pasarlo a la tienda es una fase aparte, con pruebas, **sin desplegar en horas de caja** y avisando antes.
+2. **Administración:** puede cambiar entre claro y oscuro.
+3. **Cajeras:** versión **clara** por defecto en la caja (no se les cambia a oscuro sin que lo pidan). Mismos flujos, botones y teclas.
+4. **Tablero:** abre en **«Hoy»** (no en «Mes»).
+5. **Ganancia:** una sola fórmula en todo el sistema: (precio − costo)/precio, **sin restar ITBIS**. Donde el tablero resta el ITBIS, se corrige.
+
+## Reparto
+
+- **Claude PC:** fase 3 (Catálogo, Inventario, Clientes, Reportes y Configuración) sobre `claude/obsidian-lumina-f1`.
+- **Claude nube:** fase 2 en `claude/obsidian-lumina-f2` (sobre f1): tablero ejecutivo «Hoy» y resumen con IA tomados de `chatgpt-nube/obsidian-lumina-fase2`, más las piezas de accesibilidad de `chatgpt-nube/obsidian-lumina-fase1`. Ver `docs/diseno/OL_COMPARACION_26OCT.md`.
+- **ChatGPT nube:** no hace rediseño; corrige en su PR #9 el texto de la cuota (abrir no gasta, enviar sí gasta) y lleva sus scripts de Playwright a CI, cuando la fase 2 esté integrada.
