@@ -2,10 +2,16 @@
 
 Rama `claude-pc/lumina-f3-reportes`. Solo visual y de estructura: no cambian cifras, fórmulas, consultas ni exportaciones.
 
+## Cambios de comportamiento (declarados)
+
+- **Excel y PDF se deshabilitan (`disabled`) mientras el rango de fechas está invertido.** Antes los botones estaban siempre habilitados y pedían el archivo con un rango inválido.
+- **PDF pasó a «Más»** (la acción principal de la cabecera es Excel). Con «Más» abierto, escribir en las fechas saca el foco del menú y lo cierra.
+- Cubierto en `tests/e2e/lumina-f3-arreglos.spec.ts` («Excel y PDF quedan deshabilitados con el rango de fechas invertido»).
+
 ## Cambios y por qué
 
 - **Cabecera**: `Heading title="Reportes"` con `eyebrow={false}`. Se quitó la frase «Los números cuentan tu historia». Una acción principal (**Excel**) y **PDF** dentro de «Más». Los botones conservan su nombre y la misma función de descarga (ahora un solo `exportReport`). Con fechas invertidas ambos quedan deshabilitados (antes se podía pedir un archivo con un rango inválido). En «Formal» (DGII) e «Ingresos por día» no se muestran, porque esos paneles traen sus propias acciones.
-- **Catálogo (`groupReports`)**: sin cambios de datos. Títulos de grupo en tamaño legible y sin mayúsculas forzadas; el reporte actual se marca con barra violeta, negrita, texto «Actual» y `aria-current`, no solo con color. Filas de 44 px.
+- **Catálogo (`groupReports`)**: sin cambios de datos. Títulos de grupo en tamaño legible y sin mayúsculas forzadas; el reporte actual se marca con barra violeta, negrita, texto «Actual» y `aria-pressed` (son botones que cambian de panel, no enlaces), no solo con color. Filas de 44 px.
 - **Tabla**: columnas numéricas alineadas a la derecha, cifras tabulares en todas las celdas; los negativos conservan su signo «-» y además van en color de peligro. Panel con filtros apilados a 390 px, foco visible en el contenedor desplazable.
 - **Carga y errores**: `TableSkeleton` mientras carga; el error sigue en `QueryState` y el rango invertido en `.form-error`. El vacío usa el existente («No hay datos para este período»).
 - Nada de color decorativo: violeta para lo actual, esmeralda solo como foco.

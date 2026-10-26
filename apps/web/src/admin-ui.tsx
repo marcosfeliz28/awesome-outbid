@@ -19,6 +19,11 @@ export function MoreMenu({
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panelId = useId();
+  // Al elegir una opción su botón se desmonta: el foco vuelve al disparador.
+  const closeAndFocus = () => {
+    setOpen(false);
+    trigger.current?.focus();
+  };
   useEffect(() => {
     if (!open) return;
     const outside = (event: MouseEvent) => {
@@ -26,8 +31,7 @@ export function MoreMenu({
     };
     const escape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      setOpen(false);
-      trigger.current?.focus();
+      closeAndFocus();
     };
     document.addEventListener("mousedown", outside);
     document.addEventListener("keydown", escape);
@@ -37,7 +41,16 @@ export function MoreMenu({
     };
   }, [open]);
   return (
-    <div className="more-menu" ref={root}>
+    <div
+      className="more-menu"
+      ref={root}
+      onBlur={(event) => {
+        // El foco salió del menú (Tab): se cierra sin quitarle el foco al destino.
+        // Sin relatedTarget (ventana inactiva, selector de archivos) sigue abierto.
+        const to = event.relatedTarget as Node | null;
+        if (to && !root.current?.contains(to)) setOpen(false);
+      }}
+    >
       <button
         ref={trigger}
         type="button"
@@ -56,8 +69,10 @@ export function MoreMenu({
           onClick={(event) => {
             // Cualquier botón elegido cierra el menú.
             if ((event.target as HTMLElement).closest("button, a"))
-              setOpen(false);
+              closeAndFocus();
           }}
+          // «Importar Excel» es <label>+<input>: se cierra cuando ya se eligió el archivo.
+          onChange={closeAndFocus}
         >
           {children}
         </div>
@@ -77,7 +92,12 @@ export function TableSkeleton({
   label?: string;
 }) {
   return (
-    <div className="table-skeleton" role="status" aria-label={label}>
+    <div
+      className="table-skeleton"
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+    >
       {Array.from({ length: rows }, (_, row) => (
         <div className="table-skeleton-row" key={row} aria-hidden="true">
           {Array.from({ length: cols }, (_, col) => (

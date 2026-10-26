@@ -19,7 +19,7 @@
   min-height: 44px;
 }
 .catalog-tabs button.active,
-.catalog-tabs button[aria-current="true"] {
+.catalog-tabs button[aria-pressed="true"] {
   font-weight: 700;
   box-shadow: inset 0 -2px 0 var(--accent-violet);
 }
@@ -34,8 +34,8 @@
   }
 }
 /* Cabecera de esta pantalla: acciones táctiles de 44 px (el contrato común usa 40). */
-.page-heading:has(+ .catalog-panel) .button,
-.page-heading:has(+ .catalog-panel) .more-menu-trigger {
+.page-heading.catalog-heading .button,
+.page-heading.catalog-heading .more-menu-trigger {
   min-height: 44px;
 }
 .catalog-panel .pagination .button {

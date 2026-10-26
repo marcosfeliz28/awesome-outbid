@@ -204,6 +204,7 @@ function Heading({
   children,
   eyebrow = "TU NEGOCIO, CON CLARIDAD",
   more,
+  className,
 }: {
   title: string;
   caption: string;
@@ -213,9 +214,11 @@ function Heading({
   eyebrow?: string | false;
   /** Obsidian Lumina f3: las demás acciones, dentro de «Más». */
   more?: ReactNode;
+  /** Gancho de estilo propio de la pantalla (no cambia el de las demás). */
+  className?: string;
 }) {
   return (
-    <div className="page-heading">
+    <div className={className ? `page-heading ${className}` : "page-heading"}>
       <div>
         {eyebrow !== false && <span className="eyebrow">{eyebrow}</span>}
         <h1>{title}</h1>
@@ -327,6 +330,7 @@ export function Catalog() {
     <>
       <Heading
         title="Productos"
+        className="catalog-heading"
         caption="Busca, revisa precios y existencias, y mantén tu catálogo al día."
         eyebrow={false}
         more={
@@ -608,7 +612,7 @@ export function Catalog() {
           {["General", "Variantes", "Lotes", "Kardex"].map((t) => (
             <button
               className={tab === t ? "active" : ""}
-              aria-current={tab === t ? "true" : undefined}
+              aria-pressed={tab === t}
               key={t}
               onClick={() => setTab(t)}
             >
@@ -3201,7 +3205,7 @@ export function Reports() {
                         setPage(1);
                       }}
                       className={report === id ? "active" : ""}
-                      aria-current={report === id ? "true" : undefined}
+                      aria-pressed={report === id}
                     >
                       <FileText size={17} />
                       {name}
@@ -4509,7 +4513,7 @@ export function Configuration() {
         ].map(([id, label]) => (
           <button
             className={tab === id ? "active" : ""}
-            aria-current={tab === id ? "page" : undefined}
+            aria-pressed={tab === id}
             onClick={() => setTab(id)}
             key={id}
           >
