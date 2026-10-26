@@ -17,6 +17,8 @@
     "db:local": "node scripts/local-db.mjs",
     "verify": "node scripts/verify.mjs",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "ia:eval": "vitest run tests/assistant-eval-postgres.test.ts",
+    "ia:eval:vivo": "node scripts/ia-eval-vivo.mjs",
     "cloud:validate": "vitest run tests/cloud-deploy.test.ts",
     "backup": "node scripts/backup.mjs",
     "admin:create": "pnpm --filter @fitstore/api admin:create",

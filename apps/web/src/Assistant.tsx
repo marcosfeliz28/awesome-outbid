@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
+import { renderMarkdown } from "./assistant-markdown";
 import "./Assistant.css";
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -126,7 +127,10 @@ export function Assistant({ online }: { online: boolean }) {
           {!online && <p role="alert">El asistente necesita internet.</p>}
           {error && <p role="alert">{error}</p>}
           <div className="assistant-messages" role="log" aria-label="Conversación" aria-live="polite">
-            {messages.map((message, index) => <p key={index} className={`assistant-message assistant-${message.role}`}><strong>{message.role === "user" ? "Tú" : "Nexora"}:</strong> {message.content}</p>)}
+            {messages.map((message, index) => <div key={index} className={`assistant-message assistant-${message.role}`}>
+              <strong className="assistant-author">{message.role === "user" ? "Tú" : "Nexora"}:</strong>
+              {message.role === "assistant" ? renderMarkdown(message.content) : <p>{message.content}</p>}
+            </div>)}
             {busy && <p>Preparando respuesta…</p>}
           </div>
           {proposal && <div className="assistant-proposal" role="group" aria-label="Confirmar solicitud de anulación">
