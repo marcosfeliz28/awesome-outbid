@@ -1,5 +1,7 @@
 .gv-page .tabs {
   margin-bottom: 16px;
+  /* Cinco pestañas: en celular bajan de línea en vez de esconderse. */
+  flex-wrap: wrap;
 }
 .gv-toolbar {
   display: flex;
