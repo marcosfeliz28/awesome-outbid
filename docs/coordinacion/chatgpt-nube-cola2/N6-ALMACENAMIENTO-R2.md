@@ -169,7 +169,7 @@ Para los tamaños actuales (200 KB, 2 MB y 5 MB), la primera versión debe recib
 
 No usar el ETag como prueba universal de igualdad: los objetos multipart tienen semántica distinta. La fuente de verdad de integridad será SHA-256 calculado por Nexora.
 
-Una segunda versión puede usar `PUT` prefirmado directamente desde el navegador, pero sólo mediante dos endpoints: `iniciar` entrega una URL de 60 segundos para una clave, MIME y tamaño exactos; `finalizar` hace `HEAD`, valida SHA-256/tamaño y enlaza la entidad. Las URLs prefirmadas pueden reutilizarse hasta vencer, así que no sustituyen estados, idempotencia ni verificación final. CORS se limitaría al origen web de Nexora y a `PUT`, `GET`, `HEAD`; nunca `*` con credenciales.
+Una segunda versión puede usar `PUT` prefirmado directamente desde el navegador, pero sólo mediante dos endpoints: `iniciar` entrega una URL de 60 segundos para una clave, MIME, tamaño y checksum exactos; `finalizar` usa `HEAD` para tamaño/metadatos y sólo acepta la suma si R2 verificó un checksum SHA-256 firmado en la solicitud. Si esa garantía no está disponible en el flujo elegido, la API debe descargar el objeto y recalcular el hash antes de marcarlo `ready`. `HEAD` por sí solo no recalcula el contenido. Las URLs prefirmadas pueden reutilizarse hasta vencer, así que no sustituyen estados, idempotencia ni verificación final. CORS se limitaría al origen web de Nexora y a `PUT`, `GET`, `HEAD`; nunca `*` con credenciales.
 
 ### 6.2 Lectura
 
@@ -278,7 +278,7 @@ R2 no participa en la transacción de anonimización. **Ampliar la cola existent
 
 Casos:
 
-- **Anonimización de cliente:** mantener el `proofUrl=null` actual de `apps/api/src/admin.ts:437-453`; el disparador que PC-08 ya pone sobre `Payment.proofUrl` debe encolar la referencia `object:v1` retirada (`apps/api/prisma/migrations/202610280007_product_objects/migration.sql:39-67` en `origin/producto-nexora`). No esperar a una regla de ciclo de vida.
+- **Anonimización de cliente:** quitar en la misma transacción tanto `proofUrl` como la nueva `proofObjectKey`/`proofObjectId`. El disparador actual de PC-08 sólo reconoce referencias `object:v1` retiradas de `Payment.proofUrl` (`apps/api/prisma/migrations/202610280007_product_objects/migration.sql:39-67` en `origin/producto-nexora`); debe ampliarse o añadirse un disparador equivalente sobre la referencia nueva para encolar el objeto externo. Una regresión debe demostrar que anonimizar durante la etapa dual elimina el objeto y ambas referencias. No esperar a una regla de ciclo de vida.
 - **Borrador de factura vencido:** conservar la regla actual: sólo borrar si ningún borrador ni recepción usa el adjunto (`apps/api/src/merchandise.ts:72-102`, `apps/api/src/retention.ts:189-204`). Primero quitar referencia/crear outbox; luego R2.
 - **Reemplazo de logo o foto:** enlazar el nuevo objeto y encolar el anterior después del commit. Una espera corta permite rollback, salvo una solicitud de privacidad.
 - **Baja de empresa:** exportación y plazo contractual primero; luego borrar todos los objetos del tenant y verificar el inventario vacío. No reutilizar su prefijo.
@@ -336,12 +336,13 @@ No usar Infrequent Access de inicio: añade cargo de recuperación y duración m
 ### Integración con PostgreSQL + bucket R2 de pruebas
 
 - contrato real del adaptador R2: `put`, `putNew`, `get`, `HEAD`, `delete` e `If-None-Match: *`, comprobando que no se envía el encabezado SSE incompatible;
+- `PUT` prefirmado con checksum verificado por R2 o descarga y recálculo antes de `ready`; alterar un byte debe impedir el enlace;
 - subida exitosa enlaza sólo un objeto `ready`;
 - fallo antes/después de `PUT`, `HEAD` o commit no pierde el legado y deja un estado reconciliable;
 - reintento con la misma fuente no duplica;
 - dos tenants con UUID conocidos no pueden leer, enumerar, sustituir ni borrar objetos del otro;
 - rol sin permiso recibe 403; rol permitido obtiene exactamente MIME, tamaño y SHA esperados;
-- anonimización crea la orden de borrado en el mismo commit; caída de R2 reintenta; éxito termina en inexistencia comprobada;
+- anonimización en la etapa dual borra `proofUrl` y `proofObjectKey`/`proofObjectId`, crea la orden en el mismo commit; caída de R2 reintenta; éxito termina en inexistencia comprobada;
 - purga respeta adjuntos de `GoodsReceipt` y elimina sólo huérfanos;
 - la API no devuelve Base64 en listados y mantiene `private, no-store`.
 
