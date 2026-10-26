@@ -405,14 +405,18 @@ describe("GV · importación", () => {
     expect(rows[0].payments.every((p: any) => p.verified)).toBe(true);
     const detail = (await ok("/gv/courses/" + course.id, gv)).enrollments[0];
     expect(detail).toMatchObject({ paid: "7500.50", pending: "10499.50" });
-    // Citas e interesadas: se aceptan e ignoran hasta que exista su módulo.
-    const ignored = await ok("/gv/import?dryRun=1", admin, {
+    // Citas e interesadas las valida gv-citas.ts (gv-citas-api.test.ts).
+    const invalid = await ok("/gv/import?dryRun=1", admin, {
       ...payload(),
       appointments: [{}],
       leads: [{}, {}],
     });
-    expect(ignored.ignored).toEqual({ appointments: 1, leads: 2 });
-    expect(ignored.errors).toEqual([]);
+    expect(
+      invalid.errors.some((e: string) => e.startsWith("appointments.0.")),
+    ).toBe(true);
+    expect(invalid.errors.some((e: string) => e.startsWith("leads.1."))).toBe(
+      true,
+    );
   });
 });
 

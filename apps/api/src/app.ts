@@ -42,6 +42,7 @@ import {
 } from "./rate-limit";
 import { SecurityMaintenance } from "./security";
 import { GvController } from "./gv";
+import { GvCitasController } from "./gv-citas";
 
 @Controller()
 export class HealthController {
@@ -90,6 +91,7 @@ export function createAppModule(secret: string) {
       IncentivesController,
       DriveBackupController,
       GvController,
+      GvCitasController,
     ],
     providers: [
       Database,

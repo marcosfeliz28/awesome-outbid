@@ -147,8 +147,7 @@ const importSchema = z.object({
     )
     .max(5000)
     .default([]),
-  // Citas e interesadas: las conecta el módulo de citas (gv-citas.ts). Hasta
-  // entonces se aceptan y se ignoran; el resumen dice cuántas («ignored»).
+  // Citas e interesadas: las valida y guarda gv-citas.ts (misma transacción).
   appointments: z.array(z.unknown()).max(5000).default([]),
   leads: z.array(z.unknown()).max(5000).default([]),
 });
@@ -633,6 +632,7 @@ export class GvController {
             course: { select: { id: true, name: true } },
           },
         },
+        appointment: { select: { clientName: true, service: true } },
       },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     });
@@ -728,15 +728,22 @@ export class GvController {
       create: [...keys].filter((k) => !old.has(k)).length,
       update: [...keys].filter((k) => old.has(k)).length,
     });
+    // Import diferido: gv-citas.ts usa constantes de este archivo.
+    const citas = await import("./gv-citas");
+    const citasPlan = await citas.planGvCitasImport(
+      this.db,
+      branchId,
+      parsed.success ? parsed.data.appointments : [],
+      parsed.success ? parsed.data.leads : [],
+      paymentKeys,
+      errors,
+    );
     const summary = {
       dryRun,
       courses: count(courseKeys, oldCourses),
       enrollments: count(enrollmentKeys, oldEnrollments),
       payments: count(paymentKeys, oldPayments),
-      ignored: {
-        appointments: parsed.success ? parsed.data.appointments.length : 0,
-        leads: parsed.success ? parsed.data.leads.length : 0,
-      },
+      ...citasPlan.counts,
       errors,
     };
     if (dryRun) return summary;
@@ -808,6 +815,12 @@ export class GvController {
             });
           }
         }
+        await citas.applyGvCitasImport(
+          tx,
+          actor,
+          citasPlan.appointments,
+          citasPlan.leads,
+        );
         await audit(
           tx,
           actor,
