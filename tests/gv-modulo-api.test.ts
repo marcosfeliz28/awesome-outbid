@@ -535,6 +535,24 @@ describe("GV · importación", () => {
   it("reimporta sin duplicar, sin mover pagos ni cambiar los ya verificados", async () => {
     const first = await ok("/gv/import", admin, payload());
     expect(first.courses).toEqual({ create: 1, update: 0 });
+    // Bitácora por fila: 1 curso + 2 inscripciones + 2 pagos = 5 asientos.
+    const importedIds = async () => {
+      const c = await db.gvCourse.findMany({
+        where: { externalId: { startsWith: importKey + "-c1" } },
+      });
+      const e = await db.gvEnrollment.findMany({
+        where: { externalId: { in: [importKey + "-e1", importKey + "-e2"] } },
+      });
+      const p = await db.gvPayment.findMany({
+        where: { externalId: { in: [importKey + "-p1", importKey + "-p2"] } },
+      });
+      return [...c, ...e, ...p].map((r: any) => r.id);
+    };
+    const audits = async (action: string) =>
+      db.auditLog.count({
+        where: { action, entityId: { in: await importedIds() } },
+      });
+    expect(await audits("gv_import_create")).toBe(5);
     const course = await db.gvCourse.findFirstOrThrow({
       where: { externalId: importKey + "-c1" },
     });
@@ -550,6 +568,19 @@ describe("GV · importación", () => {
     // Reordenar los pagos no cambia nada: la identidad es la clave.
     changed.enrollments[0].payments.reverse();
     const second = await ok("/gv/import", admin, changed);
+    // Reimportar: curso e inscripciones con antes/después; los pagos ya
+    // verificados no cambian y no dejan asiento.
+    expect(await audits("gv_import_update")).toBe(3);
+    const e1 = await db.gvEnrollment.findFirstOrThrow({
+      where: { externalId: importKey + "-e1" },
+    });
+    const noteChange = await db.auditLog.findFirstOrThrow({
+      where: { action: "gv_import_update", entityId: e1.id },
+    });
+    expect([
+      (noteChange.before as any).note,
+      (noteChange.after as any).note,
+    ]).toEqual(["importada", "nota nueva"]);
     expect(second).toMatchObject({
       courses: { create: 0, update: 1 },
       enrollments: { create: 0, update: 2 },

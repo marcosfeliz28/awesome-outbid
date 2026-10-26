@@ -405,6 +405,32 @@ export async function planGvImportPayments(
   return existing;
 }
 
+/**
+ * Alta o cambio de una fila importada con su asiento en la bitácora (valor
+ * anterior y nuevo), en la misma transacción.
+ */
+export async function gvImportUpsert(
+  tx: any,
+  actor: Actor,
+  model: "gvCourse" | "gvEnrollment" | "gvAppointment" | "gvLead",
+  entity: string,
+  key: string,
+  args: { where: unknown; create: unknown; update: unknown },
+) {
+  const before = await tx[model].findUnique({ where: args.where });
+  const row = await tx[model].upsert(args);
+  await audit(
+    tx,
+    actor,
+    before ? "gv_import_update" : "gv_import_create",
+    entity,
+    row.id,
+    before ?? undefined,
+    { ...row, externalId: key },
+  );
+  return row;
+}
+
 export async function applyGvImportPayment(
   tx: any,
   actor: Actor,
@@ -419,6 +445,18 @@ export async function applyGvImportPayment(
     ? { verified: true, verifiedBy: actor.id, verifiedAt: new Date() }
     : { verified: false, verifiedBy: null, verifiedAt: null };
   const field = OWNER[kind].field;
+  const logged = async (before: any, row: any) => {
+    await audit(
+      tx,
+      actor,
+      before ? "gv_import_update" : "gv_import_create",
+      "gv_payment",
+      row.id,
+      before,
+      row,
+    );
+    return row;
+  };
   if (old) {
     // Releer bajo bloqueo: una verificación o rechazo hecho mientras se
     // importaba gana; si el archivo trae otra cosa, la importación se deshace.
@@ -440,29 +478,35 @@ export async function applyGvImportPayment(
     }
   }
   if (!old)
-    return tx.gvPayment.create({
-      data: {
-        ...fields,
-        ...review,
-        date: dateOnly(date),
-        [field]: ownerId,
-        externalId: key,
-        branchId: actor.branchId,
-        createdBy: actor.id,
-      },
-    });
+    return logged(
+      undefined,
+      await tx.gvPayment.create({
+        data: {
+          ...fields,
+          ...review,
+          date: dateOnly(date),
+          [field]: ownerId,
+          externalId: key,
+          branchId: actor.branchId,
+          createdBy: actor.id,
+        },
+      }),
+    );
   // Un pago ya verificado o rechazado no cambia (planGvImportPayments ya
   // rechazó cualquier diferencia).
   if (old.rejectedAt || old.verified) return old;
-  return tx.gvPayment.update({
-    where: { id: old.id },
-    data: {
-      ...fields,
-      date: dateOnly(date),
-      // La verificación hecha en el sistema sólo cambia si el archivo la trae.
-      ...(verified === undefined ? {} : review),
-    },
-  });
+  return logged(
+    old,
+    await tx.gvPayment.update({
+      where: { id: old.id },
+      data: {
+        ...fields,
+        date: dateOnly(date),
+        // La verificación hecha en el sistema sólo cambia si el archivo la trae.
+        ...(verified === undefined ? {} : review),
+      },
+    }),
+  );
 }
 
 /**

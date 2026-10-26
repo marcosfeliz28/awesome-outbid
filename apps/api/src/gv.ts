@@ -26,6 +26,7 @@ import {
   uuid,
 } from "./common";
 import {
+  gvImportUpsert,
   gvMoney,
   GV_CLOSED,
   applyGvImportPayment,
@@ -760,17 +761,24 @@ export class GvController {
           );
         const courseIds = new Map(knownCourses);
         for (const { key, date, ...c } of input.courses) {
-          const row = await tx.gvCourse.upsert({
-            where: { branchId_externalId: { branchId, externalId: key } },
-            create: {
-              ...c,
-              date: dateOnly(date),
-              externalId: key,
-              branchId,
-              createdBy: actor.id,
+          const row = await gvImportUpsert(
+            tx,
+            actor,
+            "gvCourse",
+            "gv_course",
+            key,
+            {
+              where: { branchId_externalId: { branchId, externalId: key } },
+              create: {
+                ...c,
+                date: dateOnly(date),
+                externalId: key,
+                branchId,
+                createdBy: actor.id,
+              },
+              update: { ...c, date: dateOnly(date) },
             },
-            update: { ...c, date: dateOnly(date) },
-          });
+          );
           courseIds.set(key, row.id);
         }
         for (const {
@@ -785,16 +793,23 @@ export class GvController {
             refundDate: refundDate ? dateOnly(refundDate) : null,
             courseId: courseIds.get(courseKey)!,
           };
-          const row = await tx.gvEnrollment.upsert({
-            where: { branchId_externalId: { branchId, externalId: key } },
-            create: {
-              ...fields,
-              externalId: key,
-              branchId,
-              createdBy: actor.id,
+          const row = await gvImportUpsert(
+            tx,
+            actor,
+            "gvEnrollment",
+            "gv_enrollment",
+            key,
+            {
+              where: { branchId_externalId: { branchId, externalId: key } },
+              create: {
+                ...fields,
+                externalId: key,
+                branchId,
+                createdBy: actor.id,
+              },
+              update: fields,
             },
-            update: fields,
-          });
+          );
           for (const p of payments)
             await applyGvImportPayment(
               tx,

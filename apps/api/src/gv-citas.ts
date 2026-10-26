@@ -24,6 +24,7 @@ import {
   uuid,
 } from "./common";
 import {
+  gvImportUpsert,
   gvMoney,
   GV_CLOSED,
   applyGvImportPayment,
@@ -262,11 +263,18 @@ export async function applyGvCitasImport(
   const branchId = actor.branchId;
   for (const { key, payments, refundDate, ...rest } of appointments) {
     const a = { ...rest, refundDate: refundDate ? dateOnly(refundDate) : null };
-    const row = await tx.gvAppointment.upsert({
-      where: { branchId_externalId: { branchId, externalId: key } },
-      create: { ...a, externalId: key, branchId, createdBy: actor.id },
-      update: a,
-    });
+    const row = await gvImportUpsert(
+      tx,
+      actor,
+      "gvAppointment",
+      "gv_appointment",
+      key,
+      {
+        where: { branchId_externalId: { branchId, externalId: key } },
+        create: { ...a, externalId: key, branchId, createdBy: actor.id },
+        update: a,
+      },
+    );
     for (const p of payments)
       await applyGvImportPayment(
         tx,
@@ -278,7 +286,7 @@ export async function applyGvCitasImport(
       );
   }
   for (const { key, ...l } of leads)
-    await tx.gvLead.upsert({
+    await gvImportUpsert(tx, actor, "gvLead", "gv_lead", key, {
       where: { branchId_externalId: { branchId, externalId: key } },
       create: { ...l, externalId: key, branchId, createdBy: actor.id },
       update: l,
