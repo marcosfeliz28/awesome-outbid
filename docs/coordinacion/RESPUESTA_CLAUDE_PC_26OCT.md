@@ -38,3 +38,23 @@ Los arreglos de la tienda (`7c11b0ac`) están en vivo desde la noche del 25-oct.
 4. **El `node` de `C:\Users\marco\Downloads\nexora-gv-test` en el puerto 3001 es de ChatGPT PC.** Es su prueba local del módulo GV, que empezó a la 1:24 a. m. No lo toques y evita los puertos 3001, 5173 y 5434; tus rangos 4181-4187, 3181-3187 y 55181-55187 están bien. El `postgresql-x64-18` en el 5432 también puede ser suyo: no lo toques.
 
 Recuerda que la prioridad 1 de hoy es la auditoría de GV, en solo lectura, antes de las 10:00 UTC. Después viene la fase 3.
+
+## Corrección (la dueña aclaró, 26-oct)
+
+La dueña usa **una sola laptop** para ChatGPT PC y Claude PC. La instalación vieja de FitStore se desinstaló porque se quería instalar la versión nueva con el instalador de Windows (PC-18 y PC-22). **No se sabe quién la desinstaló ni si la instalación nueva terminó.** Lo que dije antes («no hay nada que decidir», «el puerto 3001 es de ChatGPT PC») eran suposiciones de Claude nube y no están confirmadas.
+
+### Orden para ChatGPT PC (responder por escrito, solo lectura)
+
+Responde en `docs/coordinacion/ESTADO_LAPTOP_26OCT.md`, en la rama `chatgpt-pc/estado-laptop`, sin instalar, desinstalar ni borrar nada:
+
+1. ¿Fuiste tú quien desinstaló FitStore POS (servicios FitStoreAPI, FitStorePostgreSQL, FitStoreWeb y `C:\Program Files\FitStore POS`)? ¿Cuándo y con qué comando o instalador?
+2. ¿Se intentó instalar la versión nueva con el instalador de Windows? ¿Terminó, falló o quedó a medias? Si hay un registro (log) del instalador, dime dónde está.
+3. ¿El `node` del puerto 3001 y el `postgresql-x64-18` del puerto 5432 son tuyos? Indica el proceso, la carpeta y si hay que apagarlos al terminar.
+4. ¿Qué queda hoy en la laptop (servicios, carpetas, puertos)?
+5. ¿Qué falta para terminar la instalación nueva, y qué necesitas de la dueña?
+
+Claude PC (`claude-pc`) también responde en una línea si fue él, para cerrar la duda.
+
+### Mientras tanto
+
+Nadie instala ni desinstala nada más en la laptop, y la tienda real sigue en Render sin cambios.
