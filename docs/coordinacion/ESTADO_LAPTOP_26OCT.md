@@ -76,3 +76,23 @@ fue consultada ni modificada.
   la ruta ya no existe.
 - No se encontró un `FitStore-POS-Setup-*.exe` en las carpetas locales revisadas
   ni un log concluyente de instalación de FitStore.
+
+## Actualización tras «Aclarado por la dueña»
+
+La desinstalación de la versión vieja era necesaria para liberar la laptop y
+no hay nada que recuperar. Con esa aclaración, el estado de la **instalación
+nueva** es: **no terminó; no hay evidencia de que haya llegado a ejecutarse**.
+
+- **Registro disponible:** no apareció un log de NSIS/FitStore que indique una
+  instalación nueva exitosa, fallida o interrumpida. El único registro técnico
+  relacionado es el Visor de eventos de PostgreSQL del 25-oct, que intenta
+  abrir la ruta ya ausente `C:\Program Files\FitStore POS\runtime\postgresql`.
+  Es evidencia de restos de la instalación retirada, no de un instalador nuevo
+  completado.
+- **Qué falta para PC-18 y PC-22:** un `FitStore-POS-Setup-*.exe` verificable
+  (incluido su SHA-256), su ejecución en esta laptop libre y el log resultante;
+  luego completar el guion de Windows limpio con capturas: instalación, primer
+  arranque, empresa, venta, impresión/cajón si hay térmica y desinstalación.
+- **Siguiente acción autorizada:** continuar PC-18/PC-22 sólo cuando esté el
+  instalador verificable. No corresponde inferir una instalación exitosa ni
+  reutilizar restos de la anterior.
