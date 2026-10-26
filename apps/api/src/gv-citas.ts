@@ -25,6 +25,7 @@ import {
 } from "./common";
 import {
   gvImportUpsert,
+  gvDay,
   gvMoney,
   GV_CLOSED,
   applyGvImportPayment,
@@ -70,14 +71,8 @@ const optionalText = (max: number) =>
     .max(max)
     .nullish()
     .transform((v) => v || null);
-const day = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "debe tener el formato AAAA-MM-DD")
-  .refine(
-    (v) => new Date(v + "T00:00:00Z").toISOString().slice(0, 10) === v,
-    "no es una fecha válida",
-  );
 const price = gvMoney(true);
+const day = gvDay;
 const dateOnly = (value: string) => new Date(value + "T00:00:00Z");
 const dayText = (value: Date) => value.toISOString().slice(0, 10);
 
@@ -86,6 +81,11 @@ const appointmentFields = {
   date: z
     .string()
     .datetime({ offset: true })
+    .refine((v) => {
+      const t = new Date(v);
+      const y = t.getUTCFullYear();
+      return Number.isFinite(t.getTime()) && y >= 1900 && y <= 9999;
+    }, "no es una fecha válida (entre 1900 y 9999)")
     .transform((v) => new Date(v)),
   clientName: text(160),
   phone: optionalText(40),
