@@ -193,7 +193,7 @@ describe("PIN de gerente: siempre de otra persona (dueña, 25-oct)", () => {
     expect(own.status, JSON.stringify(own.body)).toBe(400);
     expect(own.body.message).toMatch(SELF);
     // Cuenta como intento fallido: el aviso no da intentos gratis.
-    const attempt = await db.authAttempt.findUnique({
+    const attempt = await db.authAttempt.findFirst({
       where: { key: "approval:" + a.id },
     });
     expect(attempt.failedAttempts).toBe(1);

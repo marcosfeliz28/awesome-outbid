@@ -428,7 +428,7 @@ describe("05-A2 · descartar una venta sin conexión en conflicto", () => {
       where: { action: "offline_sale_discarded", entityId: sale.offlineUuid },
     });
     expect(log.after).toMatchObject({ outcome: "delivered" });
-    const real = await db.sale.findUniqueOrThrow({
+    const real = await db.sale.findFirstOrThrow({
       where: { offlineUuid: (log.after as any).saleOfflineUuid },
       include: { items: true, payments: true },
     });

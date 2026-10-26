@@ -1684,7 +1684,8 @@ describe("A1 · efectivo que ya tiene la dueña, registrado por la cajera con PI
   });
 
   it("con dos cajas abiertas a la vez, el cobro de la dueña sale solo en el cuadre de la caja que lo registró (CPC-1)", async () => {
-    const s = (await sale(ana, 150, [{ method: "cod", amount: 150 }])).body;
+    // 2 unidades enteras: el producto se vende por unidad (soldByUnit).
+    const s = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
     const done = await request(
       "/sales/" + s.id + "/credit-collections",
       ana.token,
@@ -1692,7 +1693,7 @@ describe("A1 · efectivo que ya tiene la dueña, registrado por la cajera con PI
         operationId: randomUUID(),
         cashSessionId: ana.cash.id,
         managerPin: "246813",
-        lines: [{ method: "cash", amount: 150, ownerConfirmed: true }],
+        lines: [{ method: "cash", amount: 200, ownerConfirmed: true }],
       },
     );
     expect(done.status, JSON.stringify(done.body)).toBeLessThan(300);

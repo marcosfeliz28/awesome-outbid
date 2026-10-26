@@ -106,7 +106,7 @@ const discard = (offlineUuid: string, token: string, extra = {}) =>
     ...extra,
   });
 const alertOpen = async (offlineUuid: string) =>
-  (await db.alert.findUnique({ where: { key: "offline:" + offlineUuid } }))
+  (await db.alert.findFirst({ where: { key: "offline:" + offlineUuid } }))
     ?.status !== "resolved";
 
 beforeAll(async () => {
@@ -442,7 +442,7 @@ describe("#6 · cambios en una caja ya cerrada", () => {
         a.key === `cash-after-close:${session.id}:method:${payment.id}`,
     );
     expect(corrected?.message).toMatch(/fue con tarjeta/);
-    const batch = await db.alert.findUnique({
+    const batch = await db.alert.findFirst({
       where: { key: "card-batch-missing:" + session.id },
     });
     expect(batch).toMatchObject({ type: "card_batch_missing", status: "new" });

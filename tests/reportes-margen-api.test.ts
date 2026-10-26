@@ -158,6 +158,8 @@ beforeAll(async () => {
   adminCash = await ok("/cash-sessions/open", admin, {
     registerId: "qa-mar-admin-" + suffix,
     openingAmount: 0,
+    // Otra suite pudo cerrar la caja de la dueña con efectivo (D-03).
+    openingNote: "QA: fondo de la prueba",
   });
   const roles = await ok("/roles", admin);
   const email = `qa-mar-luz-${suffix}@example.test`;

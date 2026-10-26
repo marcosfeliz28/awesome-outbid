@@ -123,6 +123,10 @@ it("empresa nueva: Configuración guarda sin tocar campos, el asistente queda ma
     expect(over.status, JSON.stringify(over.body)).toBe(201);
     expect(over.body.status).toBe("pending");
     expect(over.body.planLimit).toContain("Configuración → Equipos");
+    // La sesión quedó en el equipo pendiente: vender desde ahí se rechaza y
+    // se vuelve al equipo aprobado para seguir.
+    expect((await http.post("/api/cash-sessions/open").set("Authorization", auth).send({ openingAmount: 0, registerId: "Equipo" })).body.code).toBe("TERMINAL_PENDING");
+    expect((await http.post("/api/terminals/register").set("Authorization", auth).send(device("00000000-0000-4000-8000-000000000201"))).body.status).toBe("approved");
     // INI-01: a «Consumidor final» no se le vende a crédito ni contraentrega.
     const current = (await http.get("/api/settings").set("Authorization", auth)).body;
     expect((await http.put("/api/settings").set("Authorization", auth).send({ ...current, allowCreditSales: true, requireCustomer: false })).status).toBe(200);

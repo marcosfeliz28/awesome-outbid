@@ -8382,7 +8382,8 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       undefined,
       cashier.token,
     );
-    expect(ownDaily.totals.Precio).toBe(6040);
+    // Neto de devoluciones, igual que el de la dueña (decisión 42).
+    expect(ownDaily.totals.Precio).toBe(5540);
     expect(
       (
         await call(

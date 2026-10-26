@@ -54,7 +54,7 @@ async function activate(code: string, url: string, pass = password) {
   const token = url.split("#token=")[1];
   const accepted = await t.http
     .post("/api/auth/accept-invitation")
-    .send({ token, password: pass, managerPin: "869253" });
+    .send({ token, password: pass, managerPin: "869253", consentAccepted: true });
   expect(accepted.status, JSON.stringify(accepted.body)).toBe(201);
 }
 const login = (code: string, pass = password) =>

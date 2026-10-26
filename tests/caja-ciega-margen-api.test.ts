@@ -220,7 +220,7 @@ describe("#5 cierre ciego: no se adivina reintentando", () => {
     expect(exact.body.message).toMatch(/2 intentos/);
     expect(exact.body.message).toBe(wrong.body.message);
     expect(exact.body.message).not.toMatch(/\d{3,}/);
-    const counter = await db.authAttempt.findUnique({
+    const counter = await db.authAttempt.findFirst({
       where: { key: "cash-close:" + c1.cash.id },
     });
     expect(counter.failedAttempts).toBeGreaterThanOrEqual(2);
@@ -318,7 +318,7 @@ describe("#8 margen: (precio − costo)/precio sin restar ITBIS", () => {
     const row = report.rows.find((r: any) => r.Producto === p.name);
     expect(row.Margen).toBe(23.73);
     await ok("/alerts/evaluate", owner, {});
-    const alert = await db.alert.findUnique({
+    const alert = await db.alert.findFirst({
       where: { key: "margin:" + p.variants[0].id },
     });
     expect(alert?.status ?? "resolved").toBe("resolved");
@@ -409,7 +409,7 @@ describe("#10 «Addison» sólo en ventas con envío", () => {
 describe("#5 cierre ciego: un PIN falso o propio no da pistas", () => {
   const counter = async (cash: { id: string }) =>
     (
-      await db.authAttempt.findUnique({
+      await db.authAttempt.findFirst({
         where: { key: "cash-close:" + cash.id },
       })
     )?.failedAttempts ?? 0;
