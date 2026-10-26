@@ -12,7 +12,7 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
-import { moneyAmount, z } from "@fitstore/shared";
+import { z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -24,6 +24,7 @@ import {
   uuid,
 } from "./common";
 import {
+  gvMoney,
   GV_CLOSED,
   applyGvImportPayment,
   checkGvOwnerEdit,
@@ -75,7 +76,7 @@ const day = z
     (v) => new Date(v + "T00:00:00Z").toISOString().slice(0, 10) === v,
     "no es una fecha válida",
   );
-const price = moneyAmount(10000000, true);
+const price = gvMoney(true);
 const dateOnly = (value: string) => new Date(value + "T00:00:00Z");
 const dayText = (value: Date) => value.toISOString().slice(0, 10);
 

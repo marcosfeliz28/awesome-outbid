@@ -104,9 +104,16 @@ Para importar hacen falta endpoints de creación, o uno de importación en lote,
 
   `type`: automaquillaje | brazilian | personalizado | otro. `status` de inscripción: activa | no_asistio | personalizado | cancelada | reembolsada. `concept`: separo | restante | segundo | tercero | otro. `method`: efectivo | transferencia | tarjeta (transferencia con `bank` y `reference`). Importes con hasta 2 decimales; pagos > 0; la suma de los pagos no supera el precio. **Cada pago lleva su `key`** (única por sucursal): reordenar no cambia nada, una `key` no puede pasar a otra clienta y un pago ya verificado o rechazado no cambia (si el archivo trae otra cosa, error). «reembolsada» exige `refundAmount` y `refundDate`. Reimportar actualiza por clave y nunca duplica; la verificación hecha en el sistema sólo cambia si el archivo trae `verified`. Con errores no se guarda nada; `?dryRun=1` devuelve los conteos `{create, update}` y `errors` sin escribir.
 
+- **Importación, reglas extra (auditoría de Claude PC):** `dryRun` sólo acepta `0`, `1`, `true` o `false` una vez; cualquier otro valor es 400 y no escribe. El cuerpo de `/gv/import` admite hasta 4 MB (el resto de la API, 100 kb). Todo se valida dentro de la transacción con el candado de la sucursal tomado. Para el tope se suman los pagos que ya están en el sistema y los del archivo; una reembolsada no se reabre, no cambia su reembolso ni acepta pagos nuevos.
+- **Propina:** `tip` de una cita va aparte del `total`: no cuenta para el pendiente ni para los ingresos.
+- Una inscripción o cita reembolsada no acepta pagos ni verificación o rechazo de transferencias.
+- La lista de cambio de usuario del POS (`/staff`) no muestra a las usuarias GV y la bitácora de administración (`/audit-log`) no incluye las acciones `gv_*` (siguen en la base).
+- Importes de GV exactos: más de 2 decimales (por ejemplo 0.1 + 0.2 sin redondear) es 400.
+
 ## Pendientes (anotados por la auditoría)
 
 - **GV-15:** una sesión de GV todavía registra el equipo en «Equipos» de Macgen y corre la sincronización de ventas/mercancía (de sus propias filas, que no tiene). No le da acceso a nada de Macgen; falta no iniciarlo para un usuario sólo GV.
 - **GV-16:** falta la conciliación bancaria completa de GV (filtro por fecha y banco, selección múltiple, totales, CSV y corrección auditada de banco/referencia), como la de Macgen.
 - **GV-01 (resto):** al cambiar de usuario con PIN a una cuenta GV se borra la caché local y se bloquea el cambio si hay ventas o entradas sin enviar. Si una cuenta GV entra con contraseña en un equipo que tiene ventas o entradas de Macgen sin enviar, esas filas siguen en el navegador hasta que su dueña las sincronice.
+- Teléfonos: hoy no se comparan en ningún lado; si se agrega búsqueda o detección de duplicados, comparar sólo los dígitos.
 - Corregir un pago ya verificado (monto, banco o referencia) necesita una operación administrativa con motivo; hoy no existe.

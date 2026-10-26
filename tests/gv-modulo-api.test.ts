@@ -367,6 +367,7 @@ describe("GV · cursos, inscripciones y pagos", () => {
     courseIds.push(course.id);
     const e = await enroll(course.id, 4500, "QA Reembolso");
     await ok("/gv/payments", gv, payBody(e.id, { amount: 2000 }));
+    const late = await ok("/gv/payments", gv, transferBody(e.id, 100));
     const patch = (data: unknown) =>
       request("/gv/enrollments/" + e.id, gv, data, "PATCH");
     expect((await patch({ status: "reembolsada" })).status).toBe(400);
@@ -390,6 +391,14 @@ describe("GV · cursos, inscripciones y pagos", () => {
     });
     expect(refunded.status).toBe(200);
     expect((await patch({ status: "activa" })).status).toBe(400);
+    // Reembolsada: su transferencia pendiente ya no se verifica.
+    expect(
+      (
+        await request(`/gv/payments/${late.id}/review`, manager, {
+          verified: true,
+        })
+      ).status,
+    ).toBe(400);
     const row = (await ok("/gv/courses/" + course.id, gv)).enrollments[0];
     expect(row).toMatchObject({
       paid: "2000.00",
@@ -562,6 +571,141 @@ describe("GV · importación", () => {
     ).toBe(true);
     expect(invalid.errors.some((e: string) => e.startsWith("leads.1."))).toBe(
       true,
+    );
+  });
+});
+
+describe("GV · auditoría de Claude PC", () => {
+  it("dryRun mal escrito o repetido es 400 y no escribe", async () => {
+    const body = {
+      courses: [
+        {
+          key: importKey + "-dry",
+          name: "QA dry " + suffix,
+          type: "otro",
+          date: "2026-11-30",
+          price: 1,
+          capacity: 1,
+        },
+      ],
+    };
+    for (const q of ["TRUE", "yes", "2", "", "1&dryRun=1"])
+      expect([
+        q,
+        (await request("/gv/import?dryRun=" + q, admin, body)).status,
+      ]).toEqual([q, 400]);
+    expect(
+      await db.gvCourse.count({ where: { externalId: importKey + "-dry" } }),
+    ).toBe(0);
+  });
+
+  it("la importación acepta más de 100 kb; el resto de la API no", async () => {
+    const note = "x".repeat(900);
+    const big = {
+      courses: [
+        {
+          key: importKey + "-big",
+          name: "QA big " + suffix,
+          type: "otro",
+          date: "2026-11-30",
+          price: 100,
+          capacity: 500,
+        },
+      ],
+      enrollments: Array.from({ length: 150 }, (_, i) => ({
+        key: `${importKey}-big-${i}`,
+        courseKey: importKey + "-big",
+        clientName: "QA " + i,
+        agreedPrice: 100,
+        note,
+      })),
+    };
+    expect(JSON.stringify(big).length).toBeGreaterThan(110000);
+    const r = await ok("/gv/import?dryRun=1", admin, big);
+    expect(r.enrollments.create).toBe(150);
+    // Fuera de /gv/import sigue el límite global de 100 kb.
+    expect(
+      (await request("/gv/courses", admin, big)).status,
+    ).toBeGreaterThanOrEqual(400);
+  });
+
+  it("reimportar no baja el total de lo cobrado ni reabre una reembolsada", async () => {
+    const base = {
+      courses: [
+        {
+          key: importKey + "-re",
+          name: "QA re " + suffix,
+          type: "otro",
+          date: "2026-11-30",
+          price: 1000,
+          capacity: 5,
+        },
+      ],
+      enrollments: [
+        {
+          key: importKey + "-re-1",
+          courseKey: importKey + "-re",
+          clientName: "QA re 1",
+          agreedPrice: 1000,
+          payments: [] as any[],
+        },
+      ],
+    };
+    await ok("/gv/import", admin, base);
+    const e = await db.gvEnrollment.findFirstOrThrow({
+      where: { externalId: importKey + "-re-1" },
+    });
+    // Un pago hecho en el sistema cuenta para el tope de la reimportación.
+    await ok("/gv/payments", gv, payBody(e.id, { amount: 800 }));
+    const lower = structuredClone(base);
+    lower.enrollments[0].agreedPrice = 700;
+    expect(
+      (await ok("/gv/import?dryRun=1", admin, lower)).errors.join(" "),
+    ).toMatch(/superan el total/);
+    const more = structuredClone(base);
+    more.enrollments[0].payments = [
+      {
+        key: importKey + "-re-p",
+        date: "2026-10-26",
+        amount: 300,
+        concept: "restante",
+        method: "efectivo",
+      },
+    ];
+    expect(
+      (await ok("/gv/import?dryRun=1", admin, more)).errors.join(" "),
+    ).toMatch(/superan el total/);
+    expect((await request("/gv/import", admin, lower)).status).toBe(400);
+    expect(
+      (
+        await db.gvEnrollment.findUniqueOrThrow({ where: { id: e.id } })
+      ).agreedPrice.toFixed(2),
+    ).toBe("1000.00");
+    await ok(
+      "/gv/enrollments/" + e.id,
+      gv,
+      { status: "reembolsada", refundAmount: 800, refundDate: "2026-10-26" },
+      "PATCH",
+    );
+    const reopen = structuredClone(base);
+    expect(
+      (await ok("/gv/import?dryRun=1", admin, reopen)).errors.join(" "),
+    ).toMatch(/no se reabre/);
+  });
+
+  it("importes exactos; /staff y /audit-log no mezclan GV", async () => {
+    const course = (await newCourse(gv)).body;
+    courseIds.push(course.id);
+    const e = await enroll(course.id, 100, "QA exacto");
+    expect(
+      (await request("/gv/payments", gv, payBody(e.id, { amount: 0.1 + 0.2 })))
+        .status,
+    ).toBe(400);
+    const staff = await ok("/staff", admin);
+    expect(staff.some((u: any) => u.id === gvUserId)).toBe(false);
+    const log = await ok("/audit-log", admin);
+    expect(log.some((a: any) => String(a.action).startsWith("gv_"))).toBe(
+      false,
     );
   });
 });

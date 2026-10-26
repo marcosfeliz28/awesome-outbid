@@ -37,9 +37,16 @@ export const gvDay = z
 export const dateOnly = (value: string) => new Date(value + "T00:00:00Z");
 export const dayText = (value: Date) => value.toISOString().slice(0, 10);
 
+// Importe exacto con 2 decimales como máximo (sin la tolerancia de
+// moneyAmount: 0.1 + 0.2 = 0.30000000000000004 se rechaza).
+export const gvMoney = (allowZero = false) =>
+  moneyAmount(10000000, allowZero).refine(
+    (v) => d(v).decimalPlaces() <= 2,
+    "debe tener como máximo 2 decimales",
+  );
 export const gvPaymentFields = {
   date: gvDay,
-  amount: moneyAmount(10000000),
+  amount: gvMoney(),
   concept: z.enum(GV_CONCEPTS),
   method: z.enum(GV_METHODS),
   bank: optionalText(120),
@@ -78,7 +85,7 @@ export type GvPaymentData = {
 };
 // Reembolso de una inscripción o cita «reembolsada» (GV-13).
 export const gvRefundFields = {
-  refundAmount: moneyAmount(10000000).nullish(),
+  refundAmount: gvMoney().nullish(),
   refundDate: gvDay.nullish(),
 };
 
@@ -304,18 +311,61 @@ export async function planGvImportPayments(
       })
     ).map((p: any) => [p.externalId, p]),
   );
+  // Inscripciones o citas que ya existen, con TODOS sus pagos (los hechos en
+  // el sistema también cuentan para el tope y el reembolso).
+  const owned = new Map<string, any>();
+  for (const kind of ["enrollment", "appointment"] as const) {
+    const ownerKeys = owners.filter((o) => o.kind === kind).map((o) => o.key);
+    if (!ownerKeys.length) continue;
+    for (const row of await db[OWNER[kind].model].findMany({
+      where: { branchId, externalId: { in: ownerKeys } },
+      include: { payments: true },
+    }))
+      owned.set(kind + ":" + row.externalId, row);
+  }
   for (const o of owners) {
-    const paid = o.payments.filter(
-      (p) => p.verified ?? p.method !== "transferencia",
+    const before = owned.get(o.kind + ":" + o.key);
+    const fileKeys = new Set(o.payments.map((p) => p.key));
+    const dbOnly = ((before?.payments ?? []) as any[]).filter(
+      (p) => !p.rejectedAt && !fileKeys.has(p.externalId),
     );
-    if (sum(o.payments.map((p) => ({ ...p, verified: true }))).gt(o.total))
-      errors.push(`${o.path}.payments: los pagos superan el total`);
-    if (o.status === "reembolsada") {
+    const fromFile = o.payments
+      .filter((p) => !existing.get(p.key)?.rejectedAt)
+      .map((p) => {
+        const old = existing.get(p.key);
+        return {
+          amount: p.amount,
+          verified: old
+            ? old.verified || p.verified === true
+            : (p.verified ?? p.method !== "transferencia"),
+        };
+      });
+    const all = [...dbOnly, ...fromFile];
+    if (sum(all).gt(o.total))
+      errors.push(
+        `${o.path}.payments: los pagos (en el sistema y en el archivo) superan el total`,
+      );
+    const verifiedPaid = sum(all.filter((p) => p.verified));
+    if (before?.status === "reembolsada") {
+      if (o.status !== "reembolsada")
+        errors.push(`${o.path}.status: ya fue reembolsada y no se reabre`);
+      else if (
+        !before.refundAmount ||
+        !o.refundAmount ||
+        !d(before.refundAmount).eq(o.refundAmount) ||
+        dayText(before.refundDate) !== o.refundDate
+      )
+        errors.push(
+          `${o.path}.refundAmount: el reembolso ya registrado no cambia`,
+        );
+      if (o.payments.some((p) => !existing.has(p.key)))
+        errors.push(
+          `${o.path}.payments: una reembolsada no acepta pagos nuevos`,
+        );
+    } else if (o.status === "reembolsada") {
       if (!o.refundAmount || !o.refundDate)
         errors.push(`${o.path}: «reembolsada» exige refundAmount y refundDate`);
-      else if (
-        d(o.refundAmount).gt(sum(paid.map((p) => ({ ...p, verified: true }))))
-      )
+      else if (d(o.refundAmount).gt(verifiedPaid))
         errors.push(`${o.path}.refundAmount: supera lo pagado verificado`);
     } else if (o.refundAmount != null)
       errors.push(`${o.path}.refundAmount: sólo con estado «reembolsada»`);

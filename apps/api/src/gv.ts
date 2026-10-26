@@ -13,7 +13,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { can, d, moneyAmount, z } from "@fitstore/shared";
+import { can, d, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -26,6 +26,7 @@ import {
   uuid,
 } from "./common";
 import {
+  gvMoney,
   GV_CLOSED,
   applyGvImportPayment,
   checkGvOwnerEdit,
@@ -65,7 +66,7 @@ const optionalText = (max: number) =>
     .max(max)
     .nullish()
     .transform((v) => v || null);
-const price = moneyAmount(10000000, true);
+const price = gvMoney(true);
 
 const courseFields = {
   name: text(160),
@@ -407,6 +408,17 @@ export class GvController {
       if (!before) bad("Pago no encontrado.");
       if (before.method !== "transferencia")
         bad("Sólo las transferencias se verifican o rechazan.");
+      // Una inscripción o cita reembolsada queda cerrada: ni verificar ni
+      // rechazar sus pagos cambia lo ya devuelto.
+      const owner = before.enrollmentId
+        ? await tx.gvEnrollment.findUnique({
+            where: { id: before.enrollmentId },
+          })
+        : await tx.gvAppointment.findUnique({
+            where: { id: before.appointmentId! },
+          });
+      if (owner?.status === "reembolsada")
+        bad("Está reembolsada: sus pagos ya no se verifican ni rechazan.");
       if (before.createdBy === actor.id && !can(actor.permissions, "*"))
         denied("No puedes verificar un pago que registraste tú.");
       if (before.rejectedAt) bad("Esta transferencia ya fue rechazada.");
@@ -616,9 +628,15 @@ export class GvController {
   @Permit("*")
   async import(
     @Body() body: unknown,
-    @Query("dryRun") dryRunQuery: string | undefined,
+    @Query("dryRun") dryRunQuery: unknown,
     @CurrentUser() actor: Actor,
   ) {
+    // Un dryRun mal escrito (TRUE, yes, repetido…) nunca importa de verdad.
+    if (
+      dryRunQuery !== undefined &&
+      !["0", "1", "true", "false"].includes(dryRunQuery as string)
+    )
+      bad("dryRun debe ser 0, 1, true o false (una sola vez).");
     const dryRun = dryRunQuery === "1" || dryRunQuery === "true";
     const parsed = importSchema.safeParse(body);
     const errors: string[] = [];
@@ -637,101 +655,106 @@ export class GvController {
       ? parsed.data
       : (importKeys.safeParse(body).data ?? { courses: [], enrollments: [] });
     const branchId = actor.branchId;
-    const courseKeys = new Set<string>();
-    keys.courses.forEach((c, i) => {
-      if (courseKeys.has(c.key))
-        errors.push(`courses.${i}.key: clave repetida «${c.key}»`);
-      courseKeys.add(c.key);
-    });
-    const enrollmentKeys = new Set<string>();
-    const paymentKeys = new Set<string>();
-    const knownCourses = new Map(
-      (
-        await this.db.gvCourse.findMany({
-          where: { branchId, externalId: { not: null } },
-          select: { id: true, externalId: true },
-        })
-      ).map((c) => [c.externalId!, c.id]),
-    );
-    keys.enrollments.forEach((e, i) => {
-      if (enrollmentKeys.has(e.key))
-        errors.push(`enrollments.${i}.key: clave repetida «${e.key}»`);
-      enrollmentKeys.add(e.key);
-      if (!courseKeys.has(e.courseKey) && !knownCourses.has(e.courseKey))
-        errors.push(
-          `enrollments.${i}.courseKey: curso «${e.courseKey}» no existe`,
-        );
-      e.payments.forEach((p, j) => {
-        if (!p.key) return; // el esquema ya lo reporta
-        if (paymentKeys.has(p.key))
-          errors.push(
-            `enrollments.${i}.payments.${j}.key: clave repetida «${p.key}»`,
-          );
-        paymentKeys.add(p.key);
-      });
-    });
-    const existingPayments = await planGvImportPayments(
-      this.db,
-      branchId,
-      input.enrollments.map((e, i) => ({
-        kind: "enrollment" as const,
-        key: e.key,
-        path: `enrollments.${i}`,
-        total: e.agreedPrice,
-        status: e.status,
-        refundAmount: e.refundAmount,
-        refundDate: e.refundDate,
-        payments: e.payments,
-      })),
-      errors,
-    );
-    const existing = async (
-      model: "gvCourse" | "gvEnrollment",
-      keys: Set<string>,
-    ) =>
-      new Set<string>(
-        (
-          await (this.db[model] as any).findMany({
-            where: { branchId, externalId: { in: [...keys] } },
-            select: { externalId: true },
-          })
-        ).map((r: any) => r.externalId as string),
-      );
-    const [oldCourses, oldEnrollments] = await Promise.all([
-      existing("gvCourse", courseKeys),
-      existing("gvEnrollment", enrollmentKeys),
-    ]);
-    const count = (keys: Set<string>, old: { has(k: string): boolean }) => ({
-      create: [...keys].filter((k) => !old.has(k)).length,
-      update: [...keys].filter((k) => old.has(k)).length,
-    });
-    // Import diferido: gv-citas.ts usa constantes de este archivo.
-    const citas = await import("./gv-citas");
-    const citasPlan = await citas.planGvCitasImport(
-      this.db,
-      branchId,
-      parsed.success ? parsed.data.appointments : [],
-      parsed.success ? parsed.data.leads : [],
-      paymentKeys,
-      errors,
-    );
-    const summary = {
-      dryRun,
-      courses: count(courseKeys, oldCourses),
-      enrollments: count(enrollmentKeys, oldEnrollments),
-      payments: count(paymentKeys, existingPayments),
-      ...citasPlan.counts,
-      errors,
-    };
-    if (dryRun) return summary;
-    if (errors.length)
-      bad(
-        "La importación tiene errores (no se guardó nada): " +
-          errors.slice(0, 20).join("; "),
-      );
-    await this.db.$transaction(
+    // Todo dentro de una transacción con el candado de la sucursal tomado
+    // ANTES de planear: lo que se valida es lo que se escribe.
+    return this.db.$transaction(
       async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"gv-import:" + branchId}))`;
+        const courseKeys = new Set<string>();
+        keys.courses.forEach((c, i) => {
+          if (courseKeys.has(c.key))
+            errors.push(`courses.${i}.key: clave repetida «${c.key}»`);
+          courseKeys.add(c.key);
+        });
+        const enrollmentKeys = new Set<string>();
+        const paymentKeys = new Set<string>();
+        const knownCourses = new Map(
+          (
+            await tx.gvCourse.findMany({
+              where: { branchId, externalId: { not: null } },
+              select: { id: true, externalId: true },
+            })
+          ).map((c) => [c.externalId!, c.id]),
+        );
+        keys.enrollments.forEach((e, i) => {
+          if (enrollmentKeys.has(e.key))
+            errors.push(`enrollments.${i}.key: clave repetida «${e.key}»`);
+          enrollmentKeys.add(e.key);
+          if (!courseKeys.has(e.courseKey) && !knownCourses.has(e.courseKey))
+            errors.push(
+              `enrollments.${i}.courseKey: curso «${e.courseKey}» no existe`,
+            );
+          e.payments.forEach((p, j) => {
+            if (!p.key) return; // el esquema ya lo reporta
+            if (paymentKeys.has(p.key))
+              errors.push(
+                `enrollments.${i}.payments.${j}.key: clave repetida «${p.key}»`,
+              );
+            paymentKeys.add(p.key);
+          });
+        });
+        const existingPayments = await planGvImportPayments(
+          tx,
+          branchId,
+          input.enrollments.map((e, i) => ({
+            kind: "enrollment" as const,
+            key: e.key,
+            path: `enrollments.${i}`,
+            total: e.agreedPrice,
+            status: e.status,
+            refundAmount: e.refundAmount,
+            refundDate: e.refundDate,
+            payments: e.payments,
+          })),
+          errors,
+        );
+        const existing = async (
+          model: "gvCourse" | "gvEnrollment",
+          keys: Set<string>,
+        ) =>
+          new Set<string>(
+            (
+              await (tx[model] as any).findMany({
+                where: { branchId, externalId: { in: [...keys] } },
+                select: { externalId: true },
+              })
+            ).map((r: any) => r.externalId as string),
+          );
+        const [oldCourses, oldEnrollments] = await Promise.all([
+          existing("gvCourse", courseKeys),
+          existing("gvEnrollment", enrollmentKeys),
+        ]);
+        const count = (
+          keys: Set<string>,
+          old: { has(k: string): boolean },
+        ) => ({
+          create: [...keys].filter((k) => !old.has(k)).length,
+          update: [...keys].filter((k) => old.has(k)).length,
+        });
+        // Import diferido: gv-citas.ts usa constantes de este archivo.
+        const citas = await import("./gv-citas");
+        const citasPlan = await citas.planGvCitasImport(
+          tx,
+          branchId,
+          parsed.success ? parsed.data.appointments : [],
+          parsed.success ? parsed.data.leads : [],
+          paymentKeys,
+          errors,
+        );
+        const summary = {
+          dryRun,
+          courses: count(courseKeys, oldCourses),
+          enrollments: count(enrollmentKeys, oldEnrollments),
+          payments: count(paymentKeys, existingPayments),
+          ...citasPlan.counts,
+          errors,
+        };
+        if (dryRun) return summary;
+        if (errors.length)
+          bad(
+            "La importación tiene errores (no se guardó nada): " +
+              errors.slice(0, 20).join("; "),
+          );
         const courseIds = new Map(knownCourses);
         for (const { key, date, ...c } of input.courses) {
           const row = await tx.gvCourse.upsert({
@@ -795,10 +818,10 @@ export class GvController {
           undefined,
           summary,
         );
+        return summary;
       },
       { timeout: 120000, maxWait: 10000 },
     );
-    return summary;
   }
 }
 
