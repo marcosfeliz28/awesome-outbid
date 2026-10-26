@@ -330,6 +330,8 @@ function PaymentForm({
   const [method, setMethod] = useState<keyof typeof METHODS>("transfer");
   const [reference, setReference] = useState("");
   const [period, setPeriod] = useState("1");
+  // PLA-02: una clave por pago; un reintento tras un error reusa la misma.
+  const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [review, setReview] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -356,6 +358,7 @@ function PaymentForm({
         token,
         `/tenants/${tenant.slug}/payments`,
         {
+          operationId,
           amount: value,
           method,
           reference: reference.trim(),
@@ -367,6 +370,7 @@ function PaymentForm({
       );
       setAmount("");
       setReference("");
+      setOperationId(crypto.randomUUID());
       setReview(false);
       onDone();
     } catch (cause) {

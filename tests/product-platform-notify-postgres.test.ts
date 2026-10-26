@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { promisify } from "node:util";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import EmbeddedPostgres from "embedded-postgres";
 import supertest from "supertest";
 import { expect, it } from "vitest";
@@ -259,7 +259,7 @@ it("soporte y avisos al operador: una vez por evento, sin datos del negocio y si
       http
         .post("/api/platform/tenants/aviso-a/payments")
         .set("Authorization", auth)
-        .send({ amount: 990, method: "transfer", reference, months: 1 });
+        .send({ operationId: randomUUID(), amount: 1250, method: "transfer", reference, months: 1 });
     const paid = await pay("REF-PRIVADA-1");
     expect(paid.status, JSON.stringify(paid.body)).toBe(201);
     expect(paid.body).not.toHaveProperty("tenantId");
@@ -267,7 +267,7 @@ it("soporte y avisos al operador: una vez por evento, sin datos del negocio y si
     expect(sent).toHaveLength(2);
     for (const text of texts(sent)) {
       expect(text).toContain("Pago de plataforma registrado");
-      expect(text).toContain("990");
+      expect(text).toMatch(/1,?250/);
       expect(text).not.toContain("REF-PRIVADA-1");
     }
 

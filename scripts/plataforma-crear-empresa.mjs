@@ -7,8 +7,11 @@
 // Sin argumentos de empresa (--listar) muestra las empresas. Nunca imprime el token.
 // Cobro manual (PC-23): --pago tienda-x --monto 2000 --metodo transferencia --ref "BHD 123" --meses 1
 //   (o --anual en vez de --meses; métodos: transferencia, efectivo, tarjeta, mensajero).
+//   El monto debe ser el del plan (mensualidad × meses; el año = 10 meses). Para reintentar
+//   un pago sin duplicarlo, repite el comando con --operacion <id> (el que imprimió el error).
 //   --pagos tienda-x muestra la bitácora de pagos de esa empresa.
 // Paquete de IA ya pagado (solo suma al mes en curso): --paquete-ia tienda-x --tamano 100|300 --ref "Transferencia 123"
+import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 
 const { values } = parseArgs({ options: {
@@ -17,8 +20,9 @@ const { values } = parseArgs({ options: {
   admin: { type: "string" }, correo: { type: "string" }, listar: { type: "boolean", default: false },
   pago: { type: "string" }, monto: { type: "string" }, metodo: { type: "string" }, ref: { type: "string" },
   meses: { type: "string" }, anual: { type: "boolean", default: false }, pagos: { type: "string" },
-  "paquete-ia": { type: "string" }, tamano: { type: "string" },
+  "paquete-ia": { type: "string" }, tamano: { type: "string" }, operacion: { type: "string" },
 } });
+const operationId = values.operacion ?? randomUUID();
 const methods = { transferencia: "transfer", efectivo: "cash", tarjeta: "card_in_store", mensajero: "courier" };
 const base = process.env.NEXORA_PLATFORM_URL?.trim().replace(/\/+$/, "");
 const token = process.env.NEXORA_PLATFORM_TOKEN?.trim();
@@ -34,7 +38,7 @@ const response = pack
     body: JSON.stringify({ size: Number(values.tamano), reference: values.ref }) })
   : values.pago
   ? await fetch(slugPath(values.pago), { method: "POST", headers, body: JSON.stringify({
-    amount: Number(values.monto), method: methods[values.metodo] ?? values.metodo, reference: values.ref,
+    operationId, amount: Number(values.monto), method: methods[values.metodo] ?? values.metodo, reference: values.ref,
     ...(values.anual ? { year: true } : { months: Number(values.meses) }),
   }) })
   : values.pagos
@@ -48,6 +52,7 @@ const response = pack
 const body = await response.json().catch(() => ({}));
 if (!response.ok) {
   console.error(`Error ${response.status}: ${body.message ?? "sin detalle"}`);
+  if (values.pago) console.error(`Para reintentar este mismo pago sin duplicarlo: --operacion ${operationId}`);
   process.exit(1);
 }
 if (pack) console.log(`Paquete de ${body.questions} preguntas (RD$${body.priceDop}) acreditado a ${pack} para ${body.month}. Usadas ${body.usage.used} de ${body.usage.limit}.`);
