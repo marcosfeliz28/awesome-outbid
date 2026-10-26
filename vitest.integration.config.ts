@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       "tests/gv-servicios-api.test.ts",
       "tests/gv-modulo-api.test.ts",
+      "tests/gv-adversarial-t5-postgres.test.ts",
       "tests/gv-citas-api.test.ts",
       "tests/api.test.ts",
       "tests/caja-por-usuario.test.ts",

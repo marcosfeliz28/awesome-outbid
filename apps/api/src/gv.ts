@@ -421,7 +421,10 @@ export class GvController {
         bad("Está reembolsada: sus pagos ya no se verifican ni rechazan.");
       if (before.createdBy === actor.id && !can(actor.permissions, "*"))
         denied("No puedes verificar un pago que registraste tú.");
-      if (before.rejectedAt) bad("Esta transferencia ya fue rechazada.");
+      if (before.rejectedAt) {
+        if (!data.verified) return before; // repetir el rechazo: igual.
+        bad("Esta transferencia ya fue rechazada.");
+      }
       if (before.verified) {
         if (data.verified) return before; // repetir la verificación: igual.
         bad("Esta transferencia ya fue verificada.");

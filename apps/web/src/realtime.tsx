@@ -141,11 +141,16 @@ export async function registerTerminal() {
     throw e;
   }
 }
+// GV-15: una cuenta sólo de GV no usa la caja ni la mercancía de Macgen: sin
+// registro de equipo, sin aviso de «equipo no aprobado» y sin existencias en
+// tiempo real.
+export const gvOnly = (permissions: string[] = []) =>
+  permissions.length > 0 && permissions.every((p) => p.startsWith("gv:"));
 export function useRealtime() {
   const { user, online } = useStore();
   const client = useQueryClient();
   useEffect(() => {
-    if (!user || !online) return;
+    if (!user || !online || gvOnly(user.permissions)) return;
     let stopped = false;
     let controller: AbortController | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -472,7 +477,12 @@ export function DeviceGate() {
     [pin, setPin] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  if (!user || (!revoked && terminal?.status !== "pending")) return null;
+  if (
+    !user ||
+    gvOnly(user.permissions) ||
+    (!revoked && terminal?.status !== "pending")
+  )
+    return null;
   if (revoked)
     return (
       <section className="device-gate revoked" role="alert">

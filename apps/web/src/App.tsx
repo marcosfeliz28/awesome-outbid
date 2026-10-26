@@ -2,6 +2,7 @@ import {
   DeviceGate,
   useRealtime,
   registerTerminal,
+  gvOnly,
   storedTerminalCredentials,
 } from "./realtime";
 import { Merchandise } from "./Merchandise";
@@ -768,7 +769,8 @@ function Shell() {
     if (syncing || !online) return;
     setSyncing(true);
     try {
-      await registerTerminal();
+      if (!gvOnly(useStore.getState().user?.permissions))
+        await registerTerminal();
       await syncMerchandise();
       const result = await syncSales();
       if (result.synced) toast(`${result.synced} ventas sincronizadas.`);

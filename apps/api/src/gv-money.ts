@@ -317,6 +317,13 @@ export async function planGvImportPayments(
   for (const kind of ["enrollment", "appointment"] as const) {
     const ownerKeys = owners.filter((o) => o.kind === kind).map((o) => o.key);
     if (!ownerKeys.length) continue;
+    // Bloqueadas hasta el final de la importación: nadie cobra en ellas entre
+    // la validación y la escritura.
+    await db.$queryRawUnsafe(
+      `SELECT id FROM ${OWNER[kind].table} WHERE "branchId" = $1 AND "externalId" = ANY($2::text[]) FOR UPDATE`,
+      branchId,
+      ownerKeys,
+    );
     for (const row of await db[OWNER[kind].model].findMany({
       where: { branchId, externalId: { in: ownerKeys } },
       include: { payments: true },
@@ -412,6 +419,26 @@ export async function applyGvImportPayment(
     ? { verified: true, verifiedBy: actor.id, verifiedAt: new Date() }
     : { verified: false, verifiedBy: null, verifiedAt: null };
   const field = OWNER[kind].field;
+  if (old) {
+    // Releer bajo bloqueo: una verificación o rechazo hecho mientras se
+    // importaba gana; si el archivo trae otra cosa, la importación se deshace.
+    await tx.$queryRaw`SELECT id FROM "GvPayment" WHERE id = ${old.id}::uuid FOR UPDATE`;
+    old = await tx.gvPayment.findUnique({ where: { id: old.id } });
+    if (old.rejectedAt || old.verified) {
+      const same =
+        sameMoney(old.amount, p.amount) &&
+        old.method === p.method &&
+        (old.bank ?? null) === p.bank &&
+        (old.reference ?? null) === p.reference &&
+        dayText(old.date) === p.date &&
+        old.concept === p.concept;
+      if (!same)
+        bad(
+          `El pago «${key}» fue revisado mientras se importaba; vuelve a intentarlo.`,
+        );
+      return old;
+    }
+  }
   if (!old)
     return tx.gvPayment.create({
       data: {

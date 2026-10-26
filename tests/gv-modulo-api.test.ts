@@ -327,6 +327,24 @@ describe("GV · cursos, inscripciones y pagos", () => {
     expect(race.map((r) => r.status).sort()).toEqual([201, 400]);
     const final = await db.gvPayment.findUniqueOrThrow({ where: { id: b.id } });
     expect(final.verified && final.rejectedAt).toBeFalsy();
+    // Repetir el rechazo: igual (idempotente), sin otra bitácora.
+    const c = await ok(
+      "/gv/payments",
+      gv,
+      transferBody((await enroll(course.id, 500, "QA Rechazo")).id, 50),
+    );
+    const reject = () =>
+      ok(`/gv/payments/${c.id}/review`, manager, {
+        verified: false,
+        reason: "No llegó",
+      });
+    const r1 = await reject();
+    expect((await reject()).rejectedAt).toBe(r1.rejectedAt);
+    expect(
+      await db.auditLog.count({
+        where: { entityId: c.id, action: "gv_payment_reject" },
+      }),
+    ).toBe(1);
     // La gerencia no verifica una transferencia que registró ella misma.
     const own = await ok(
       "/gv/payments",
