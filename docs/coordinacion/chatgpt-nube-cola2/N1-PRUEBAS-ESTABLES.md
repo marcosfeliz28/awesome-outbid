@@ -1,7 +1,9 @@
 # N1 · Estabilización de dos pruebas antiguas
 
-**Fecha:** 26 de octubre de 2026  
-**Rama:** `chatgpt-nube/pruebas-estables`  
+**Fecha:** 26 de octubre de 2026
+
+**Rama:** `chatgpt-nube/pruebas-estables`
+
 **Alcance:** sólo archivos de pruebas; no se cambió código productivo.
 
 ## Correcciones
