@@ -87,3 +87,24 @@ test("pestañas: el detalle de producto expone aria-pressed solo en la activa", 
   ).toHaveAttribute("aria-pressed", "true");
   await soloUnoPresionado(page, ".catalog-tabs");
 });
+
+test("«Más»: se cierra al elegir el archivo de «Importar Excel» y al salir con Tab", async ({
+  page,
+}) => {
+  await entrar(page, "products");
+  const mas = masDe(page);
+  await mas.click();
+  await expect(mas).toHaveAttribute("aria-expanded", "true");
+  await page.locator(".more-menu-panel input[type=file]").setInputFiles({
+    name: "vacio.xlsx",
+    mimeType: "application/octet-stream",
+    buffer: Buffer.from("no es un excel"),
+  });
+  await expect(mas).toHaveAttribute("aria-expanded", "false");
+  // Tab fuera del menú (el último control del panel -> el siguiente de la página).
+  await mas.click();
+  await expect(mas).toHaveAttribute("aria-expanded", "true");
+  await page.locator(".more-menu-panel button, .more-menu-panel a").last().focus();
+  await page.keyboard.press("Tab");
+  await expect(mas).toHaveAttribute("aria-expanded", "false");
+});

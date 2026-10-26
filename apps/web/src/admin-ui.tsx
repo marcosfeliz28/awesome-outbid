@@ -41,7 +41,16 @@ export function MoreMenu({
     };
   }, [open]);
   return (
-    <div className="more-menu" ref={root}>
+    <div
+      className="more-menu"
+      ref={root}
+      onBlur={(event) => {
+        // El foco salió del menú (Tab): se cierra sin quitarle el foco al destino.
+        // Sin relatedTarget (ventana inactiva, selector de archivos) sigue abierto.
+        const to = event.relatedTarget as Node | null;
+        if (to && !root.current?.contains(to)) setOpen(false);
+      }}
+    >
       <button
         ref={trigger}
         type="button"
@@ -62,6 +71,8 @@ export function MoreMenu({
             if ((event.target as HTMLElement).closest("button, a"))
               closeAndFocus();
           }}
+          // «Importar Excel» es <label>+<input>: se cierra cuando ya se eligió el archivo.
+          onChange={closeAndFocus}
         >
           {children}
         </div>
