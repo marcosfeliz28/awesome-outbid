@@ -2,7 +2,7 @@
 
 Fecha: 2026-10-26  
 Código GV validado: `origin/claude/modulo-gv` en `a97f8fa73f096be98c31bdd63dc1d9d697eaa157`  
-Archivo nuevo: `tests/gv-adversarial-t5-postgres.test.ts`  
+Archivo nuevo: `tests/adversarial/gv-adversarial-t5-postgres.test.ts`  
 Archivos existentes modificados: ninguno.
 
 ## Cobertura
@@ -31,7 +31,7 @@ En un worktree de `a97f8fa`:
 
 - 56 migraciones aplicadas en PostgreSQL desechable;
 - base de prueba sembrada correctamente;
-- `tests/gv-adversarial-t5-postgres.test.ts`: **13/13 aprobadas**;
+- `tests/adversarial/gv-adversarial-t5-postgres.test.ts`: **13/13 aprobadas**;
 - `pnpm typecheck`: aprobado;
 - ESLint focal del archivo: aprobado;
 - `git diff --check`: aprobado.
@@ -43,7 +43,7 @@ Los casos estaban diseñados para fallar frente a las aperturas originales GV-05
 Por orden de T5 no se modificó `vitest.integration.config.ts`. Cuando `claude/modulo-gv` se mezcle en la rama que ejecuta integración, agregar esta ruta al arreglo `include`:
 
 ```text
-tests/gv-adversarial-t5-postgres.test.ts
+tests/adversarial/gv-adversarial-t5-postgres.test.ts
 ```
 
 Después ejecutar:
@@ -53,6 +53,8 @@ pnpm test:integration
 ```
 
 No debe habilitarse todavía en `producto-mezcla-4` aislada: esa rama aún no contiene el rol, las migraciones ni las rutas `/gv`. La inclusión corresponde al commit que mezcle el módulo GV.
+
+El archivo vive en `tests/adversarial/` de forma deliberada. La primera entrega lo dejó en `tests/` y el CI falló exactamente con `tests/configuracion-pruebas.test.ts`: «agrégalo a vitest.config.ts o a vitest.integration.config.ts». Moverlo conserva la orden de no tocar configuraciones y evita fingir que corre en la rama que todavía no tiene GV.
 
 ## Límites
 

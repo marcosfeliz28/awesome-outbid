@@ -7,7 +7,7 @@ Cada agente (ChatGPT PC, ChatGPT nube, Claude PC) **actualiza su línea después
 | Agente | Rama de entrega | Tarea actual | Última entrega | Estado |
 |---|---|---|---|---|
 | ChatGPT PC | `chatgpt-pc/prueba-gv` | Repetir la prueba de GV con las pantallas; luego PC-18 y PC-22 | — | — |
-| ChatGPT nube | `chatgpt-nube/cola-26oct` | Esperar revisión de Claude y corregir observaciones de la cola | T1 a T6 · 2026-10-26 06:05 UTC | entregado |
+| ChatGPT nube | `chatgpt-nube/cola-26oct` | Repetición de CI tras aislar T5 sin tocar configuraciones | T1 a T6 · 2026-10-26 06:13 UTC | entregado · CI en curso |
 | Claude PC | `claude-pc/auditoria-gv`, luego `claude-pc/obsidian-lumina-f3` | Auditar GV (solo lectura); luego fase 3 del rediseño | — | — |
 | Claude nube | `claude/modulo-gv`, `claude/producto-mezcla-4` | GV en la tienda antes de las 12:00 UTC; producto después | — | — |
 
