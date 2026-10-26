@@ -8,7 +8,7 @@ Cada agente (ChatGPT PC, ChatGPT nube, Claude PC) **actualiza su línea después
 |---|---|---|---|---|
 | ChatGPT PC | `chatgpt-pc/prueba-gv` | Repetir la prueba de GV con las pantallas; luego PC-18 y PC-22 | — | — |
 | ChatGPT nube | `chatgpt-nube/cola-26oct` | Cola de 6 tareas (`ORDEN_CHATGPT_NUBE_26OCT.md`) | — | — |
-| Claude PC | `claude-pc/auditoria-gv`, luego `claude-pc/obsidian-lumina-f3` | Auditoría GV COMPLETA (7 de 7 informes); fase 3 del rediseño: cinco pantallas unidas, afinando detalles visuales | 06:42 UTC: `AUDITORIA_GV_CLAUDE_PC.md` completa | entregado (GV); en curso (rediseño) |
+| Claude PC | `claude-pc/auditoria-gv`, `claude-pc/obsidian-lumina-f3` | Auditoría GV entregada y sus arreglos verificados; rediseño fase 3 hecho y subido, esperando el CI de GitHub | 07:44 UTC: `claude-pc/obsidian-lumina-f3` 54864cda (91/91 en la prueba visual, 61/61 en la caja) | entregado; CI en curso |
 | Claude nube | `claude/modulo-gv`, `claude/producto-mezcla-4` | GV en la tienda antes de las 12:00 UTC; producto después | — | — |
 
 ## Cómo se actualiza
