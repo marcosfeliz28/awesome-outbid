@@ -12,6 +12,7 @@ import { z } from "zod";
 import {
   can,
   foldSearch,
+  formatMoney,
   margin,
   matchesSearch,
   money,
@@ -27,6 +28,7 @@ import {
   usageForTenant,
 } from "./assistant-usage";
 import { tenantUnique } from "./tenant-context";
+import { mySales } from "./reports";
 
 const ZONE = "America/Santo_Domingo";
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -1442,6 +1444,28 @@ export async function askAssistant(
   };
 }
 
+// Atajo sin modelo ni cuota: solo «¿cuánto vendí hoy?» y parecidas, completas.
+const OWN_SALES_TODAY =
+  /^¿?\s*(?:cu[aá]nto\s+(?:vend[ií]|he\s+vendido|llevo\s+vendido)|(?:cu[aá]les\s+son\s+)?mis\s+ventas|lo\s+que\s+(?:vend[ií]|he\s+vendido))(?:\s+de)?\s+hoy\s*[?.!]*$/i;
+export const isOwnSalesTodayQuestion = (text: string) =>
+  OWN_SALES_TODAY.test(text.trim());
+export function ownSalesTodayAnswer(
+  r: Awaited<ReturnType<typeof mySales>>,
+) {
+  const m = r.methods;
+  const lines = [
+    `Hoy (${r.day}) llevas ${r.invoices} ${r.invoices === 1 ? "factura" : "facturas"} por ${formatMoney(r.total)}, neto de devoluciones.`,
+  ];
+  if (r.hiddenUntilClose)
+    lines.push("El desglose por forma de pago de la caja abierta se ve al cerrarla.");
+  lines.push(
+    `Efectivo: ${formatMoney(m.cash)} · Tarjeta: ${formatMoney(m.card)} · Transferencia: ${formatMoney(m.transfer)} · Crédito: ${formatMoney(m.credit)}` +
+      (m.credit_note ? ` · Nota de crédito: ${formatMoney(m.credit_note)}` : "") +
+      ".",
+  );
+  return lines.join("\n");
+}
+
 @Controller("assistant")
 export class AssistantController {
   constructor(
@@ -1470,6 +1494,17 @@ export class AssistantController {
         400,
       );
     this.limits.assert("assistant-ask", [req.actor.tenantId, req.actor.id], 5);
+    const last = (body as any).messages.at(-1);
+    if (
+      last?.role === "user" &&
+      can(req.actor.permissions, "sale:write") &&
+      isOwnSalesTodayQuestion(last.content)
+    )
+      return {
+        answer: ownSalesTodayAnswer(await mySales(this.db, req.actor)),
+        usage: { input: 0, output: 0 },
+        remaining: null,
+      };
     const reserved = await reserveAssistantQuery(this.db, req.actor);
     const herramientas: string[] = [];
     const usage = { input: 0, output: 0 };
