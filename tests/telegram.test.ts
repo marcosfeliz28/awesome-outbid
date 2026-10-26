@@ -780,9 +780,17 @@ describe("Telegram · avisos de facturas", () => {
       (await db.notificationOutbox.count({ where: { id } })) === 1;
     let purgeApi: Awaited<ReturnType<typeof startApi>> | undefined;
     try {
+      mode = "ok";
       await insert(oldId, "sent", 31, marker + " viejo");
       await insert(recentId, "sent", 29, marker + " reciente");
       await insert(pendingId, "pending", null, marker + " pendiente");
+      // Hay otras APIs de esta misma suite trabajando sobre la misma cola. Da
+      // prioridad inequívoca a esta fila para que una cola ajena no consuma
+      // los 30 s de la aserción, sin saltarse el trabajador ni el envío real.
+      await db.notificationOutbox.update({
+        where: { id: pendingId },
+        data: { nextAttemptAt: new Date(0) },
+      });
       const fakePort = (fake.address() as { port: number }).port;
       purgeApi = await startApi({
         TELEGRAM_BOT_TOKEN: TOKEN,
