@@ -38,6 +38,9 @@ Soporte solo entra cuando la empresa lo permite, solo lee, y el permiso vence so
 - El token solo lleva la empresa que concedió; no sirve para otra (RLS + `tenantId` firmado).
 - Un token de empresa no abre rutas de plataforma (401) y sin
   `PLATFORM_ADMIN_TOKEN_SHA256` las rutas de plataforma no existen (404).
+- Rotación sin corte (PLA-01): poner el SHA-256 del token nuevo en
+  `PLATFORM_ADMIN_TOKEN_SHA256_NEXT` (ambos valen), cambiar el token en el
+  cliente, luego mover el nuevo a `PLATFORM_ADMIN_TOKEN_SHA256` y borrar `_NEXT`.
 - Prueba: `tests/product-support-platform-postgres.test.ts` (PostgreSQL real).
 
 Pendiente: una pantalla del operador. Hoy se usa con `curl` o con una herramienta HTTP.

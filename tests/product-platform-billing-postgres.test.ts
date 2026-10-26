@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { promisify } from "node:util";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import EmbeddedPostgres from "embedded-postgres";
 import supertest from "supertest";
 import { expect, it } from "vitest";
@@ -106,8 +106,8 @@ it("sólo el operador registra pagos; la bitácora es inmutable y el vencimiento
       tenants[code] = { id: created.body.id, bearer: `Bearer ${login.body.accessToken}` };
     }
     const A = tenants["cobro-a"], B = tenants["cobro-b"];
-    const pay = (slug: string, body: unknown, authorization = auth) =>
-      http.post(`/api/platform/tenants/${slug}/payments`).set("Authorization", authorization).send(body);
+    const pay = (slug: string, body: object, authorization = auth) =>
+      http.post(`/api/platform/tenants/${slug}/payments`).set("Authorization", authorization).send({ operationId: randomUUID(), ...body });
     const valid = { amount: 2000, method: "transfer", reference: "BHD-0001", months: 1 };
 
     // Nadie fuera del operador: ni sin credencial, ni la administradora de la empresa.
@@ -122,7 +122,13 @@ it("sólo el operador registra pagos; la bitácora es inmutable y el vencimiento
       { ...valid, months: 13 }, { ...valid, months: 0 }, { ...valid, year: true },
       { amount: 2000, method: "transfer", reference: "x" }, { ...valid, amount: 0 },
       { ...valid, method: "stripe" }, { ...valid, reference: "  " }, { ...valid, cardNumber: "4111111111111111" },
+      { ...valid, operationId: undefined }, { ...valid, operationId: "no-uuid" },
+      // PLA-03: el monto lo fija el plan (básico RD$2,000/mes; año = 10 meses).
+      { ...valid, amount: 0.01 }, { ...valid, amount: 0.01, year: true, months: undefined },
+      { ...valid, amount: 2000, months: 12 }, { ...valid, amount: 24000, months: undefined, year: true },
     ]) expect((await pay("cobro-a", body)).status, JSON.stringify(body)).toBe(400);
+    const wrong = await pay("cobro-a", { ...valid, amount: 1999.99 });
+    expect(wrong.body.message).toContain("RD$2000.00");
     expect((await pay("no-existe", valid)).status).toBe(404);
     expect(await q(`SELECT 1 FROM "PlatformPayment"`)).toHaveLength(0);
 
@@ -132,7 +138,20 @@ it("sólo el operador registra pagos; la bitácora es inmutable y el vencimiento
     expect(first.status, JSON.stringify(first.body)).toBe(201);
     expect(first.body.tenant).toMatchObject({ slug: "cobro-a", status: "active", paidUntil: "2030-02-28T12:00:00.000Z" });
     expect(first.body.payment).toMatchObject({ amount: "2000", method: "transfer", reference: "BHD-0001", months: 1, operator: "dueña-nexora", paidFrom: "2030-01-31T12:00:00.000Z" });
-    const annual = await pay("cobro-a", { amount: 20000, method: "cash", reference: "Recibo 17", year: true });
+    expect(first.body.payment.plan).toBe("basico");
+    // PLA-02: reenviar la misma operación devuelve el pago original y no extiende otra vez.
+    const op = randomUUID();
+    const annualBody = { operationId: op, amount: 20000, method: "cash", reference: "Recibo 17", year: true };
+    const replays = await Promise.all([pay("cobro-a", annualBody), pay("cobro-a", annualBody)]);
+    const annual = replays[0];
+    expect(replays.map(r => r.status)).toEqual([201, 201]);
+    expect(replays[1].body).toEqual(replays[0].body);
+    expect((await pay("cobro-a", { ...annualBody, reference: " recibo17 " })).body).toEqual(annual.body);
+    expect((await pay("cobro-a", { ...annualBody, method: "transfer" })).status).toBe(409);
+    expect((await pay("cobro-b", annualBody)).status).toBe(409);
+    expect(await q(`SELECT 1 FROM "PlatformPayment" WHERE "operationId"=$1::uuid`, op)).toHaveLength(1);
+    // La misma transferencia con otra clave (otro equipo, otra pestaña) tampoco se suma.
+    expect((await pay("cobro-a", { ...valid, reference: " bhd-0001" })).status).toBe(409);
     expect(annual.body.tenant.paidUntil).toBe("2031-02-28T12:00:00.000Z");
     expect(annual.body.payment.months).toBe(12);
     // Vencido: desde hoy, no desde la fecha vieja; limpia la gracia y la suspensión.
@@ -247,5 +266,5 @@ it("no existe pasarela de pago ni campo de tarjeta en el esquema, las migracione
   // «card_in_store» sólo nombra el método: la tarjeta se pasa en el datáfono del local, fuera del sistema.
   const payment = readFileSync(join(prismaDir, "schema.prisma"), "utf8").match(/model PlatformPayment \{[^}]+\}/)![0];
   expect(payment.match(/^\s+(\w+)\s/gm)!.map(s => s.trim()).sort())
-    .toEqual(["amount", "createdAt", "id", "method", "months", "operator", "paidFrom", "paidUntil", "reference", "tenant", "tenantId", "voidReason", "voidedBy", "voidsPayment", "voidsPaymentId"]);
+    .toEqual(["amount", "createdAt", "id", "method", "months", "operationId", "operator", "paidFrom", "paidUntil", "plan", "reference", "tenant", "tenantId", "voidReason", "voidedBy", "voidsPayment", "voidsPaymentId"]);
 });

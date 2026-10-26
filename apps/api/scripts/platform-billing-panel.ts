@@ -68,13 +68,23 @@ async function pendingRequests(db: PrismaClient) {
   }, { isolationLevel: "ReadCommitted" });
   // El comprobante nuevo vive fuera de PostgreSQL. No mantengas una transacción
   // operacional abierta mientras el almacén de objetos responde.
-  return Promise.all(rows.map(async ({ tenantId, proofObjectKey, hasLegacyProof, legacyProofSha256, ...row }) => ({
-    ...row,
-    hasProof: hasLegacyProof || proofObjectKey !== null,
-    proofSha256: proofObjectKey
-      ? createHash("sha256").update(await tenantObjectStore().get(tenantId, proofObjectKey)).digest("hex")
-      : legacyProofSha256,
-  })));
+  // PLA-07: uno a la vez (una imagen de 2 MB en memoria) y un objeto ausente
+  // marca solo su fila, sin derribar la lista.
+  const out = [];
+  for (const { tenantId, proofObjectKey, hasLegacyProof, legacyProofSha256, ...row } of rows) {
+    let proofSha256 = legacyProofSha256;
+    let proofUnavailable = false;
+    if (proofObjectKey) {
+      try {
+        proofSha256 = createHash("sha256").update(await tenantObjectStore().get(tenantId, proofObjectKey)).digest("hex");
+      } catch {
+        proofSha256 = null;
+        proofUnavailable = true;
+      }
+    }
+    out.push({ ...row, hasProof: hasLegacyProof || proofObjectKey !== null, proofSha256, proofUnavailable });
+  }
+  return out;
 }
 
 async function proofForReview(db: PrismaClient, id: string) {
@@ -114,16 +124,15 @@ async function load(){root.replaceChildren();status.textContent='Cargando…';tr
  const response=await fetch('/api/requests',{cache:'no-store'});if(!response.ok)throw new Error('No se pudieron consultar las solicitudes');
  const {requests}=await response.json();status.textContent=requests.length+' solicitudes pendientes';
  for(const row of requests){const card=el('section');card.className='card';card.append(el('h2',row.tenantName+' · '+row.plan),el('p','RD$ '+row.amount+' · '+row.provider+' · '+row.id));
-  const hash=el('p','SHA-256 de imagen: '+(row.proofSha256||'Sin comprobante'));hash.className='muted';card.append(hash);
+  const hash=el('p','SHA-256 de imagen: '+(row.proofSha256||(row.proofUnavailable?'Comprobante no disponible en el almacén':'Sin comprobante')));hash.className='muted';card.append(hash);
   if(row.hasProof){const img=el('img');img.alt='Comprobante presentado por '+row.tenantName;img.src='/api/requests/'+row.id+'/proof';card.append(img)}
   const reason=el('textarea');reason.placeholder='Motivo y referencia bancaria comprobada';reason.setAttribute('aria-label','Motivo de revisión');card.append(reason);
-  const paid=el('input');paid.type='date';paid.setAttribute('aria-label','Vigencia pagada hasta');card.append(paid);
+  const term=el('p','La vigencia se calcula sola: '+row.amount+' RD$ en mensualidades del plan, desde lo que quede pagado.');term.className='muted';card.append(term);
   for(const decision of ['approved','rejected']){const button=el('button',decision==='approved'?'Aprobar pago':'Rechazar');button.onclick=async()=>{
    if(!reason.value.trim()){status.textContent='Escribe el motivo y la referencia bancaria';return}
-   if(decision==='approved'&&!paid.value){status.textContent='Indica la fecha de vigencia';return}
    if(!confirm('¿Confirmas '+(decision==='approved'?'APROBAR':'RECHAZAR')+' esta solicitud tras cotejar el banco?'))return;
    button.disabled=true;try{const response=await fetch('/api/requests/'+row.id+'/decision',{method:'POST',headers:{'Content-Type':'application/json','X-Nexora-Panel':'1'},
-    body:JSON.stringify({decision,reason:reason.value.trim(),paidThroughAt:decision==='approved'?paid.value+'T23:59:59.000Z':undefined,expectedProofSha256:row.proofSha256})});
+    body:JSON.stringify({decision,reason:reason.value.trim(),expectedProofSha256:row.proofSha256})});
     const result=await response.json();if(!response.ok)throw new Error(result.error||'No se guardó la decisión');await load();status.textContent='Decisión guardada: '+result.status;
    }catch(error){status.textContent=String(error.message||error)}finally{button.disabled=false}};card.append(button,el('span',' '))}
   root.append(card)}
@@ -168,14 +177,14 @@ export function createPlatformBillingPanel(db: PrismaClient, options: PanelOptio
       }
       if (req.method === "POST" && match[2] === "decision") {
         const body = await readJson(req);
+        // PLA-04: no se acepta una fecha libre; la vigencia sale del monto.
         if (!["approved", "rejected"].includes(String(body.decision)) || typeof body.reason !== "string" ||
-          (body.paidThroughAt !== undefined && typeof body.paidThroughAt !== "string") ||
+          body.paidThroughAt !== undefined ||
           (body.expectedProofSha256 !== undefined && typeof body.expectedProofSha256 !== "string"))
           throw new Error("Decisión inválida.");
         const result = await reviewProductBilling(db, {
           requestId: id, reviewer: options.reviewer, decision: body.decision as "approved" | "rejected",
-          reason: body.reason, paidThroughAt: typeof body.paidThroughAt === "string" ? new Date(body.paidThroughAt) : undefined,
-          expectedProofSha256: body.expectedProofSha256 as string | undefined,
+          reason: body.reason, expectedProofSha256: body.expectedProofSha256 as string | undefined,
         });
         reply(res, 200, result); return;
       }

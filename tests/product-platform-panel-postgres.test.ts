@@ -170,7 +170,8 @@ it("panel del operador: resumen, detalle con contacto y reenvío de invitación"
     expect(
       (
         await post("/api/platform/tenants/panel-c/payments", {
-          amount: 990,
+          operationId: "8f8d6a52-4c1e-4f5b-9a57-3c1b2e0d9a11",
+          amount: 2000,
           method: "transfer",
           reference: "T-1",
           months: 1,
@@ -208,8 +209,8 @@ it("panel del operador: resumen, detalle con contacto y reenvío de invitación"
       atrasados: base.atrasados + 1,
       suspendidos: base.suspendidos + 1,
       month: expect.stringMatching(/^\d{4}-\d{2}$/),
-      monthIncome: 990,
-      monthPayments: 990,
+      monthIncome: 2000,
+      monthPayments: 2000,
       monthAiPacks: 0,
     });
 

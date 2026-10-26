@@ -165,7 +165,7 @@ export class PlatformAiPacksController {
     } catch (error: any) {
       if (error?.meta?.code === "23505")
         throw new HttpException(
-          "Esa referencia de pago ya se acreditó a esta empresa.",
+          "Esa referencia de pago ya se acreditó.",
           409,
         );
       throw error;

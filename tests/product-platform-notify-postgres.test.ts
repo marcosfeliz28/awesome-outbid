@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { promisify } from "node:util";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import EmbeddedPostgres from "embedded-postgres";
 import supertest from "supertest";
 import { expect, it } from "vitest";
@@ -259,7 +259,7 @@ it("soporte y avisos al operador: una vez por evento, sin datos del negocio y si
       http
         .post("/api/platform/tenants/aviso-a/payments")
         .set("Authorization", auth)
-        .send({ amount: 990, method: "transfer", reference, months: 1 });
+        .send({ operationId: randomUUID(), amount: 1250, method: "transfer", reference, months: 1 });
     const paid = await pay("REF-PRIVADA-1");
     expect(paid.status, JSON.stringify(paid.body)).toBe(201);
     expect(paid.body).not.toHaveProperty("tenantId");
@@ -267,7 +267,7 @@ it("soporte y avisos al operador: una vez por evento, sin datos del negocio y si
     expect(sent).toHaveLength(2);
     for (const text of texts(sent)) {
       expect(text).toContain("Pago de plataforma registrado");
-      expect(text).toContain("990");
+      expect(text).toMatch(/1,?250/);
       expect(text).not.toContain("REF-PRIVADA-1");
     }
 
@@ -359,7 +359,22 @@ it("soporte y avisos al operador: una vez por evento, sin datos del negocio y si
     // Canal caído: tampoco rompe la acción.
     process.env.PLATFORM_OWNER_EMAIL = "duena@example.invalid";
     process.env.RESEND_API_BASE = "http://127.0.0.1:1";
-    expect((await pay("REF-3")).status).toBe(201);
+    const down = await pay("REF-3");
+    expect(down.status).toBe(201);
+    // PLA-06: el aviso que no salió no queda como enviado y se puede reintentar.
+    const notice = () => client.$queryRawUnsafe(
+      `SELECT "sentAt", attempts FROM "TenantLifecycleNotice" WHERE "tenantId"=$1::uuid AND kind='op_payment' AND "dueAt"=$2`,
+      tenantA, new Date(down.body.tenant.paidUntil)) as Promise<any[]>;
+    expect((await notice())[0]).toMatchObject({ sentAt: null, attempts: 1 });
+    const retry = () => notifyOperator(client, { tenantId: tenantA, event: "op_payment", key: new Date(down.body.tenant.paidUntil), amount: 1250 });
+    process.env.RESEND_API_BASE = fakeBase;
+    expect(await retry()).toBe(false); // espera antes de reintentar
+    await client.$executeRawUnsafe(`UPDATE "TenantLifecycleNotice" SET "nextAttemptAt"=now() - interval '1 minute' WHERE "tenantId"=$1::uuid AND kind='op_payment' AND "sentAt" IS NULL`, tenantA);
+    expect(await retry()).toBe(true);
+    expect(take()).toHaveLength(1);
+    expect((await notice())[0].sentAt).not.toBeNull();
+    expect(await retry()).toBe(false);
+    expect(take()).toEqual([]);
   } finally {
     await app?.close().catch(() => undefined);
     await client?.$disconnect().catch(() => undefined);

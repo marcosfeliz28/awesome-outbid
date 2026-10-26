@@ -7,29 +7,29 @@
 import { PrismaClient } from "@prisma/client";
 import { createHash, randomUUID } from "node:crypto";
 import { BILLING_PLANS } from "../src/billing-plans";
+import { addMonths } from "../src/platform-billing";
 import { tenantObjectStore } from "../src/tenant-object-store";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-type Review = { requestId: string; reviewer: string; decision: "approved" | "rejected"; reason: string; paidThroughAt?: Date; expectedProofSha256?: string };
+// PLA-04: la vigencia no se elige; sale del monto de la solicitud (mensualidades del plan).
+type Review = { requestId: string; reviewer: string; decision: "approved" | "rejected"; reason: string; expectedProofSha256?: string };
 
 export async function reviewProductBilling(db: PrismaClient, input: Review) {
   if (!uuid.test(input.requestId)) throw new Error("Identificador inválido.");
   if (!input.reviewer.trim() || input.reviewer.length > 100) throw new Error("Identifica al operador.");
   if (!input.reason.trim() || input.reason.length > 500) throw new Error("Escribe el motivo de la decisión.");
-  if (input.decision === "approved" && (!input.paidThroughAt || !Number.isFinite(input.paidThroughAt.getTime()) || input.paidThroughAt.getTime() <= Date.now() || input.paidThroughAt.getTime() > Date.now() + 370 * 86400000))
-    throw new Error("La fecha pagada debe ser futura y no superar 370 días.");
   return db.$transaction(async (tx) => {
     // El SET falla si el login no recibió pertenencia a este rol separado.
     await tx.$executeRawUnsafe("SET LOCAL ROLE nexora_platform_billing");
-    const rows = await tx.$queryRaw<Array<{ id: string; tenantId: string; plan: string; provider: string; status: string; proof: Uint8Array | null; proofObjectKey: string | null; paidThroughAt: Date | null; reviewReason: string | null }>>`
-      SELECT id, "tenantId", plan, provider, status, proof, "proofObjectKey", "paidThroughAt", "reviewReason"
+    const rows = await tx.$queryRaw<Array<{ id: string; tenantId: string; plan: string; provider: string; status: string; amount: string; proof: Uint8Array | null; proofObjectKey: string | null; reviewReason: string | null }>>`
+      SELECT id, "tenantId", plan, provider, status, amount::text, proof, "proofObjectKey", "reviewReason"
       FROM "BillingRequest" WHERE id=${input.requestId}::uuid FOR UPDATE`;
     const row = rows[0];
     if (!row) throw new Error("Solicitud inexistente.");
     // Serializar la aprobación/downgrade con altas de usuarios y equipos.
     await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`plan:${row.tenantId}`}))::text`;
     if (row.status === input.decision) {
-      if (row.reviewReason === input.reason && (input.decision === "rejected" || row.paidThroughAt?.getTime() === input.paidThroughAt?.getTime()))
+      if (row.reviewReason === input.reason)
         return { id: row.id, status: row.status, alreadyReviewed: true };
       throw new Error("Esta solicitud ya fue revisada con otra decisión.");
     }
@@ -40,9 +40,18 @@ export async function reviewProductBilling(db: PrismaClient, input: Review) {
       createHash("sha256").update(proofBytes!).digest("hex") !== input.expectedProofSha256)
       throw new Error("La evidencia cambió o no fue revisada. Indica su SHA-256.");
     if (row.provider !== "bank_transfer" && row.provider !== "test") throw new Error("Proveedor desconocido.");
+    let paidThroughAt: Date | null = null;
     if (input.decision === "approved") {
       const limits = BILLING_PLANS[row.plan as keyof typeof BILLING_PLANS];
       if (!limits) throw new Error("Plan desconocido.");
+      const months = Number(row.amount) / limits.monthlyDop;
+      if (!Number.isInteger(months) || months < 1 || months > 12) throw new Error("El monto no corresponde a mensualidades del plan.");
+      // Igual que el cobro manual: se extiende desde lo que quede pagado (o de prueba); si ya venció, desde hoy.
+      const [tenant] = await tx.$queryRaw<Array<{ status: string; trialEndsAt: Date | null; paidThroughAt: Date | null }>>`
+        SELECT status, "trialEndsAt", "paidThroughAt" FROM "Tenant" WHERE id=${row.tenantId}::uuid FOR UPDATE`;
+      if (!tenant) throw new Error("Solicitud inexistente.");
+      const from = Math.max(Date.now(), tenant.paidThroughAt?.getTime() ?? 0, tenant.status === "trial" ? tenant.trialEndsAt?.getTime() ?? 0 : 0);
+      paidThroughAt = addMonths(new Date(from), months);
       const [usage] = await tx.$queryRaw<Array<{ users: bigint; terminals: bigint; openCashBoxes: bigint; branches: bigint }>>`
         SELECT
           (SELECT count(*) FROM "User" WHERE "tenantId"=${row.tenantId}::uuid AND active) AS users,
@@ -56,30 +65,30 @@ export async function reviewProductBilling(db: PrismaClient, input: Review) {
         Number(usage.openCashBoxes) > limits.boxes || Number(usage.branches) > limits.branches)
         throw new Error("El plan solicitado es menor que los usuarios, equipos aprobados, cajas abiertas o sucursales activas. Libera cupos antes de aprobar.");
       // La activación y la decisión se confirman juntas, limpiando el ciclo anterior.
-      await tx.$executeRaw`UPDATE "Tenant" SET status='active', plan=${row.plan}, "paidThroughAt"=${input.paidThroughAt!},
+      await tx.$executeRaw`UPDATE "Tenant" SET status='active', plan=${row.plan}, "paidThroughAt"=${paidThroughAt},
         "pastDueAt"=NULL, "suspendedAt"=NULL, "updatedAt"=CURRENT_TIMESTAMP WHERE id=${row.tenantId}::uuid`;
     }
     await tx.$executeRaw`
       UPDATE "BillingRequest" SET status=${input.decision}, "reviewedAt"=CURRENT_TIMESTAMP,
-        reviewer=${input.reviewer}, "reviewReason"=${input.reason}, "paidThroughAt"=${input.decision === "approved" ? input.paidThroughAt! : null},
+        reviewer=${input.reviewer}, "reviewReason"=${input.reason}, "paidThroughAt"=${paidThroughAt},
         "updatedAt"=CURRENT_TIMESTAMP WHERE id=${row.id}::uuid`;
     await tx.$executeRaw`
       INSERT INTO "BillingDecision" (id, "requestId", "tenantId", decision, reviewer, reason)
       VALUES (${randomUUID()}::uuid, ${row.id}::uuid, ${row.tenantId}::uuid, ${input.decision}, ${input.reviewer}, ${input.reason})`;
-    return { id: row.id, status: input.decision, alreadyReviewed: false };
+    return { id: row.id, status: input.decision, alreadyReviewed: false, paidThroughAt };
   // La lectura de cupos debe ver lo confirmado después de esperar el candado.
   }, { isolationLevel: "ReadCommitted" });
 }
 
 if (process.argv[1]?.replaceAll("\\", "/").endsWith("review-product-billing.ts")) {
-  const [requestId, decision, paidThroughValue, reason, expectedProofSha256] = process.argv.slice(2);
+  // El tercer argumento (antes la fecha) se ignora: la vigencia la calcula el sistema.
+  const [requestId, decision, , reason, expectedProofSha256] = process.argv.slice(2);
   const reviewer = process.env.NEXORA_BILLING_OPERATOR_ID?.trim();
   const url = process.env.PLATFORM_BILLING_DATABASE_URL;
   if (process.env.PRODUCT_TENANCY !== "required" || !url || !reviewer || !requestId || !["approved", "rejected"].includes(decision) || !reason)
     throw new Error("Faltan contexto de producto, URL operacional, operador o argumentos.");
-  const paidThroughAt = decision === "approved" ? new Date(paidThroughValue) : undefined;
   const db = new PrismaClient({ datasources: { db: { url } } });
-  reviewProductBilling(db, { requestId, reviewer, decision: decision as Review["decision"], reason, paidThroughAt, expectedProofSha256 })
-    .then((result) => { process.stdout.write(`${result.id}: ${result.status}${result.alreadyReviewed ? " (ya revisada)" : ""}\n`); })
+  reviewProductBilling(db, { requestId, reviewer, decision: decision as Review["decision"], reason, expectedProofSha256 })
+    .then((result) => { process.stdout.write(`${result.id}: ${result.status}${result.alreadyReviewed ? " (ya revisada)" : ""}${"paidThroughAt" in result && result.paidThroughAt ? ` hasta ${result.paidThroughAt.toISOString()}` : ""}\n`); })
     .finally(() => db.$disconnect());
 }
