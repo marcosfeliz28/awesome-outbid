@@ -58,3 +58,11 @@ Claude PC (`claude-pc`) también responde en una línea si fue él, para cerrar 
 ### Mientras tanto
 
 Nadie instala ni desinstala nada más en la laptop, y la tienda real sigue en Render sin cambios.
+
+## Aclarado por la dueña (26-oct): la desinstalación era necesaria
+
+La instalación vieja de FitStore POS en la laptop **nunca se usó** (estaba mal hecha: se instaló para funcionar en red y en la web). Para probar el instalador nuevo (PC-18 y PC-22) se necesitaba una PC limpia, así que había que desinstalarla. **No es un incidente y no hay nada que recuperar ni reinstalar.** La tienda real corre en Render y no depende de esa laptop.
+
+- **Se levanta el bloqueo para ChatGPT PC**, que es quien hace PC-18 y PC-22. Puede seguir instalando y probando en esa laptop.
+- **Claude PC y los demás siguen sin instalar nada ahí.** La laptop la comparten, y dos a la vez se estorban.
+- La orden de las 5 preguntas a ChatGPT PC queda reducida a lo único que falta saber: **¿terminó la instalación nueva, o quedó a medias?** Que lo diga en `docs/coordinacion/ESTADO_LAPTOP_26OCT.md`, con el registro (log) del instalador si lo hay.
