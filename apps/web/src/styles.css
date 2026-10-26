@@ -7303,6 +7303,192 @@ td strong {
   }
 }
 
+/* --- Obsidian Lumina: reportes --------------------------------------------
+   Navegación tranquila, filtros claros y tablas comparables. Reutiliza las
+   superficies y tokens del marco; no introduce otra familia de componentes. */
+.lumina-reports {
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: 18px;
+}
+.lumina-reports .report-menu {
+  position: sticky;
+  top: 82px;
+  max-height: calc(100dvh - 106px);
+  overflow-y: auto;
+  padding: 10px;
+}
+.lumina-reports .report-group + .report-group {
+  border-color: var(--lumina-card-border);
+}
+.lumina-reports .report-group-title {
+  min-height: 44px;
+  color: var(--text);
+  letter-spacing: 0.055em;
+}
+.lumina-reports .report-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  font-variant-numeric: tabular-nums;
+}
+.lumina-reports .report-group-title > svg:last-child {
+  margin-left: 0;
+}
+.lumina-reports .report-group > button:not(.report-group-title) {
+  position: relative;
+  min-height: 44px;
+  border: 1px solid transparent !important;
+  line-height: 1.35;
+}
+.lumina-reports .report-group > button:not(.report-group-title).active {
+  border-color: var(--lumina-card-border) !important;
+  background: linear-gradient(
+    90deg,
+    var(--primary-soft),
+    transparent
+  ) !important;
+  box-shadow: inset 2px 0 0 var(--accent-violet);
+  color: var(--text);
+  font-weight: 650;
+}
+.lumina-reports
+  .report-group
+  > button:not(.report-group-title).active
+  > svg:first-child {
+  color: var(--accent-violet);
+}
+.report-workspace {
+  min-height: 420px;
+}
+.report-workspace-heading {
+  min-height: 82px;
+  border-bottom: 1px solid var(--lumina-card-border);
+}
+.report-workspace-heading h2 {
+  max-width: 58ch;
+}
+.report-export-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.report-filters {
+  flex-wrap: wrap;
+  padding-top: 18px;
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--lumina-card-border);
+}
+.report-filters .field {
+  min-width: 150px;
+  flex: 1 1 160px;
+  max-width: 220px;
+}
+.report-filters .badge {
+  align-self: center;
+  margin-top: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.report-workspace .table-wrap {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.report-workspace table {
+  font-variant-numeric: tabular-nums;
+}
+.report-workspace tbody tr:focus-within {
+  background: var(--surface-soft);
+}
+.formal-report-content {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+.formal-report-content > h3 {
+  margin: 8px 0 -8px;
+}
+.formal-report-content > p,
+.formal-report-content > ul {
+  margin: 0;
+}
+.report-summary-grid {
+  margin: 0;
+}
+.income-by-day > .report-export-actions {
+  justify-content: flex-start;
+  padding: 0 22px 18px;
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--lumina-card-border);
+}
+.income-day-detail {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border-top: 1px solid var(--lumina-card-border);
+}
+.income-day-detail > h3,
+.income-day-detail > p {
+  margin: 0;
+}
+@media (max-width: 1020px) {
+  .lumina-reports {
+    grid-template-columns: 205px minmax(0, 1fr);
+  }
+}
+@media (max-width: 780px) {
+  .lumina-reports {
+    grid-template-columns: 1fr;
+  }
+  .lumina-reports .report-menu {
+    position: static;
+    max-height: none;
+  }
+}
+@media (max-width: 560px) {
+  .lumina-reports {
+    gap: 14px;
+  }
+  .lumina-reports .report-menu,
+  .report-workspace-heading,
+  .formal-report-content,
+  .income-day-detail {
+    padding: 16px;
+  }
+  .report-workspace-heading {
+    align-items: flex-start;
+  }
+  .report-workspace-heading,
+  .report-export-actions {
+    flex-direction: column;
+  }
+  .report-export-actions,
+  .report-export-actions .button {
+    width: 100%;
+  }
+  .report-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+  .report-filters .field {
+    width: 100%;
+    max-width: none;
+  }
+  .report-filters .badge {
+    justify-self: start;
+    margin-top: 0;
+  }
+  .income-by-day > .report-export-actions {
+    padding: 0 16px 16px;
+  }
+}
+
 /* --- Obsidian Lumina: caja clara -------------------------------------------
    La pantalla de venta no hereda luces ambientales: en caja manda el contraste
    y la lectura inmediata de producto, carrito y total. */
