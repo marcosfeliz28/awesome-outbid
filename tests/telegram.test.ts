@@ -56,6 +56,7 @@ const received: Received[] = [];
 let mode: string = "ok";
 const once: string[] = [];
 const hung: ServerResponse[] = [];
+let fakePort = 0;
 const fake = createHttpServer((req, res) => {
   let raw = "";
   req.setEncoding("utf8");
@@ -85,6 +86,11 @@ const fake = createHttpServer((req, res) => {
       });
     else send(200, { ok: true, result: { message_id: received.length } });
   });
+});
+const telegramEnv = () => ({
+  TELEGRAM_BOT_TOKEN: TOKEN,
+  TELEGRAM_CHAT_ID: CHAT,
+  TELEGRAM_API_BASE: `http://127.0.0.1:${fakePort}`,
 });
 
 const freePort = () =>
@@ -248,13 +254,9 @@ const fastForward = (refId: string) =>
 
 beforeAll(async () => {
   await new Promise<void>((resolve) => fake.listen(0, "127.0.0.1", resolve));
-  const fakePort = (fake.address() as { port: number }).port;
+  fakePort = (fake.address() as { port: number }).port;
   [withTg, withoutTg] = await Promise.all([
-    startApi({
-      TELEGRAM_BOT_TOKEN: TOKEN,
-      TELEGRAM_CHAT_ID: CHAT,
-      TELEGRAM_API_BASE: `http://127.0.0.1:${fakePort}`,
-    }),
+    startApi(telegramEnv()),
     startApi({
       TELEGRAM_BOT_TOKEN: undefined,
       TELEGRAM_CHAT_ID: undefined,
@@ -779,24 +781,18 @@ describe("Telegram · avisos de facturas", () => {
     const exists = async (id: string) =>
       (await db.notificationOutbox.count({ where: { id } })) === 1;
     let purgeApi: Awaited<ReturnType<typeof startApi>> | undefined;
+    let originalStopped = false;
+    const receivedBefore = received.length;
     try {
       mode = "ok";
+      // Sólo esta API puede reclamar la fila: la API principal se detiene
+      // antes de sembrar y la otra instancia de la suite no tiene Telegram.
+      await withTg.stop();
+      originalStopped = true;
       await insert(oldId, "sent", 31, marker + " viejo");
       await insert(recentId, "sent", 29, marker + " reciente");
       await insert(pendingId, "pending", null, marker + " pendiente");
-      // Hay otras APIs de esta misma suite trabajando sobre la misma cola. Da
-      // prioridad inequívoca a esta fila para que una cola ajena no consuma
-      // los 30 s de la aserción, sin saltarse el trabajador ni el envío real.
-      await db.notificationOutbox.update({
-        where: { id: pendingId },
-        data: { nextAttemptAt: new Date(0) },
-      });
-      const fakePort = (fake.address() as { port: number }).port;
-      purgeApi = await startApi({
-        TELEGRAM_BOT_TOKEN: TOKEN,
-        TELEGRAM_CHAT_ID: CHAT,
-        TELEGRAM_API_BASE: `http://127.0.0.1:${fakePort}`,
-      });
+      purgeApi = await startApi(telegramEnv());
       await waitFor(
         async () => !(await exists(oldId)),
         "purga del aviso viejo",
@@ -809,7 +805,11 @@ describe("Telegram · avisos de facturas", () => {
             ?.status === "sent",
         "aviso pendiente enviado",
       );
-      expect(messagesFor(marker + " pendiente")).toHaveLength(1);
+      const delivered = received
+        .slice(receivedBefore)
+        .filter((entry) => entry.body?.text === marker + " pendiente");
+      expect(delivered).toHaveLength(1);
+      expect(delivered[0]?.path).toContain("/sendMessage");
       expect(purgeApi.output()).not.toContain("make_interval");
       expect(purgeApi.output()).not.toContain("Error del trabajador");
     } finally {
@@ -817,6 +817,7 @@ describe("Telegram · avisos de facturas", () => {
       await db.notificationOutbox.deleteMany({
         where: { id: { in: [oldId, recentId, pendingId] } },
       });
+      if (originalStopped) withTg = await startApi(telegramEnv());
     }
   }, 60000);
 });
