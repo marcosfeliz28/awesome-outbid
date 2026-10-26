@@ -8,7 +8,7 @@ Método: auditoría estática de la corrección posterior a `6c292009`; no se mo
 
 ## URGENTE · Veredicto
 
-Resultado: **7 resueltos, 7 parciales y 2 siguen abiertos**. No recomiendo integrar todavía sin corregir los tres hallazgos altos nuevos de importación: permiten que datos importados contradigan cobros y reembolsos ya asentados.
+Resultado: **6 resueltos, 8 parciales y 2 siguen abiertos** (actualizado por la comprobación de migración de esta adenda). No recomiendo integrar todavía sin corregir los tres hallazgos altos nuevos de importación: permiten que datos importados contradigan cobros y reembolsos ya asentados.
 
 ## Verificación individual
 
@@ -17,7 +17,7 @@ Resultado: **7 resueltos, 7 parciales y 2 siguen abiertos**. No recomiendo integ
 | GV-01 | **Parcial · Alta** | El cambio por PIN bloquea con ventas o mercancías pendientes y limpia caché: `apps/web/src/App.tsx:1298-1322`. Pero `forgetSessionData()` conserva esas tablas: `apps/web/src/api.ts:282-301`; entrar directamente con contraseña en ese equipo todavía deja datos Macgen en IndexedDB. No hay regresión de navegador. |
 | GV-02 | **Resuelto** | `settings` exige `sale:manage`: `apps/web/src/App.tsx:730-739`; el botón también se condiciona en `apps/web/src/App.tsx:1022-1030`. Falta una prueba explícita de navegación directa a `#settings`. |
 | GV-03 | **Parcial · Media** | Se ocultan nombres de gerencia, pero se siguen mostrando nombres reales de usuarios con `*`: `apps/api/src/gv-money.ts:391-414`. `tests/gv-modulo-api.test.ts:593-594` solo comprueba una gerente; no cubre una administradora de Macgen. |
-| GV-04 | **Resuelto** | La migración fija exactamente los tres permisos del rol reservado: `apps/api/prisma/migrations/202610260903_gv_auditoria/migration.sql:33-39`. Cobertura indirecta: `tests/gv-modulo-api.test.ts:78-84` y `tests/gv-unit.test.ts:31-40`. |
+| GV-04 | **Parcial en actualización · Media** | La migración fija exactamente los tres permisos del rol reservado: `apps/api/prisma/migrations/202610260903_gv_auditoria/migration.sql:33-39`. Cobertura indirecta: `tests/gv-modulo-api.test.ts:78-84` y `tests/gv-unit.test.ts:31-40`. La adenda demuestra que datos legados pueden abortar903 antes del UPDATE de permisos. |
 | GV-05 | **Parcial · Alta** | La revisión exige `gv:verify` y niega autoaprobación de gerencia: `apps/api/src/gv.ts:381-411` y `packages/shared/src/index.ts:776-785`; prueba en `tests/gv-modulo-api.test.ts:284-342`. Falta `@RequireTerminal()`, presente en Macgen en `apps/api/src/sales.ts:2685-2686,2821-2822`. |
 | GV-06 | **Parcial · Media** | Hay bloqueo, validación de método, exclusión de estados y `CHECK`: `apps/api/src/gv.ts:403-425` y migración `202610260903_gv_auditoria/migration.sql:21-25`. La carrera se prueba en `tests/gv-modulo-api.test.ts:319-329`. Repetir rechazo devuelve error en `apps/api/src/gv.ts:412`, mientras repetir verificación es idempotente en `:413-415`; falta regresión de rechazo repetido. |
 | GV-07 | **Resuelto** | Banco y referencia obligatorios en `apps/api/src/gv-money.ts:40-70`, `CHECK` en la migración `:26-30` y lista filtrada por transferencia en `apps/api/src/gv.ts:583-592`. Prueba: `tests/gv-modulo-api.test.ts:212-247`. |
@@ -68,3 +68,28 @@ Pruebas que todavía hacen falta:
 3. Identidad de una administradora `*` de Macgen en reportes GV.
 4. Rechazo repetido idempotente y verificación GV condicionada a terminal.
 5. Las tres regresiones adversarias de importación descritas arriba, incluida la carrera real con PostgreSQL.
+
+## Adenda independiente · ejecución sobre a97f8fa
+
+Se conserva la entrega inicial y sus hallazgos. Esta revisión agrega evidencia ejecutada, el bloqueo de migración y validación de fechas. No modifica código de aplicación ni certifica despliegue.
+
+- Suites existentes `gv-unit`, `gv-modulo-api`, `gv-citas-api`: **17/17 aprobadas**, tres archivos, PostgreSQL/API locales descartables.
+- Suite adversaria independiente nueva: **41 casos,35 aprobados/6 fallidos**. Los seis fallos son fecha2026-13-01→500 (curso/cita), reducción de total omitiendo pagos (curso/cita), eliminación de reembolso por reimportación (curso/cita). Los archivos y comparación antes/después se entregan en T5, separados de la suite13/13 previamente publicada.
+- Hallazgo nuevo1 de la entrega inicial ahora ejecutado: total100/pago80, reimportación total10 sin pagos → acepta y conserva80 cobrados. Esperado400/409 y total intacto.
+- Hallazgo nuevo2 ahora ejecutado: reembolso40 registrado, reimportar activa con campos de reembolso nulos → borra el reembolso en ambos tipos. Esperado conflicto/conservación íntegra.
+- Carrera del hallazgo nuevo3: segunda revisión confirma que el advisory de importación y el bloqueo de revisión no comparten protocolo. No se ejecutó carrera PostgreSQL; no se presenta como reproducida. Importación requiere `*`, no acceso de GV ordinario.
+
+## URGENTE · T1-N03 · Alta · La migración903 no admite ciertos datos válidos de901/902
+
+**Evidencia:** `apps/api/prisma/migrations/202610260903_gv_auditoria/migration.sql:22` y `:27` añaden CHECK validados inmediatamente; actualización del rol recién en `:34`.
+
+**Reproducción PostgreSQL18.4 ejecutada:** preparar esquema901/902 e insertar (a) transferencia sin banco/referencia, o (b) pago `verified=true` con `rejectedAt` no nulo, estados que el esquema anterior admitía. Aplicar903 en transacción. **Esperado:** preflight/diagnóstico y plan seguro de saneamiento que no falsifique conciliaciones. **Real:** error de constraint y rollback; en el ensayo, columnas nuevas quedan ausentes y el rol `gv` preexistente conserva `*`. Sobre base vacía la misma migración pasa dos veces. Eso no prueba aptitud sobre la base viva.
+
+**Arreglo propuesto:** inspección previa de datos por quien tiene autorización, sin exportar información personal; migración correctiva con tratamiento explícito de inconsistencias, posibles restricciones `NOT VALID` para nuevas escrituras y validación posterior. No autoverificar pagos ni inventar banco/referencia. Revisar que correcciones de permisos no dependan de ese saneamiento. Ver adenda T3 para comandos y evidencia.
+
+## T1-N05 · Media · Mes inválido produce500 en vez de validación
+
+**Evidencia:** `apps/api/src/gv-money.ts:34` llama `toISOString()` sobre una fecha potencialmente inválida dentro de `refine`. **Reproducción local ejecutada:** crear pago de inscripción/cita con fecha `2026-13-01`. **Esperado:** 400 sin inserción. **Real:** 500 por `RangeError`. No se clasifica como pérdida de dinero ni como nuevo respecto de todas las ramas anteriores; la validación previa ya tenía ese patrón.
+
+**Arreglo propuesto:** comprobar `Number.isFinite(date.getTime())` antes de convertir y comparar día, mes y año sin normalización silenciosa. Pruebas: mes13, día00/32 y 29-feb no bisiesto.
+
