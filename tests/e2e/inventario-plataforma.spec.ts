@@ -376,6 +376,7 @@ test("plataforma: «Anular pago» pide motivo y la invitación dice con qué cor
   await expect
     .poll(() => posts.find((p) => p.path.endsWith("/void"))?.body)
     .toEqual({ reason: "Pago anotado dos veces" });
+  await page.getByLabel("Tu nombre (operadora)").fill("Ana Operadora");
   await page.getByRole("button", { name: "Reenviar invitación" }).click();
   await page.getByRole("button", { name: "Confirmar" }).click();
   await expect(
