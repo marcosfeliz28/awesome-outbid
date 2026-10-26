@@ -563,8 +563,10 @@ function Login() {
           </label>
           <label className="field">
             <span>
-              {changeRequired ? "Contraseña temporal" : "Contraseña"}
-              {/* Visible; el nombre accesible sigue siendo «Contraseña» y el aviso va como descripción. */}
+              <span id="login-password-label">
+                {changeRequired ? "Contraseña temporal" : "Contraseña"}
+              </span>
+              {/* Visible; el nombre accesible (aria-labelledby) sigue siendo «Contraseña» y el aviso va como descripción. */}
               {!changeRequired && (
                 <small aria-hidden="true" id="login-password-hint">
                   {" "}
@@ -576,6 +578,7 @@ function Login() {
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
+              aria-labelledby="login-password-label"
               aria-describedby={
                 changeRequired ? undefined : "login-password-hint"
               }

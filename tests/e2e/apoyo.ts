@@ -201,14 +201,22 @@ export async function ensureStock(
   }
 }
 
-/** La venta exige un cliente con nombre: elige el primero de la lista si falta. */
+/**
+ * La venta exige un cliente con nombre: elige el primero de la lista si falta.
+ * «Consumidor final» no sirve: no puede quedar debiendo (INI-01).
+ */
 export async function selectNamedCustomer(page: any) {
   const selected =
     (await page.locator(".customer-selector strong").textContent()) || "";
-  if (!selected.includes("Selecciona")) return;
+  if (!selected.includes("Selecciona") && !/consumidor final/i.test(selected))
+    return;
   await page.locator(".customer-selector").click();
-  await expect(page.locator(".customer-list button").first()).toBeVisible();
-  await page.locator(".customer-list button").first().click();
+  const named = page
+    .locator(".customer-list button")
+    .filter({ hasNotText: /consumidor final/i })
+    .first();
+  await expect(named).toBeVisible();
+  await named.click();
 }
 
 /**
